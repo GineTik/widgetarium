@@ -1,4 +1,5 @@
 import { TFile, TFolder, Notice } from "obsidian";
+import { Dialog } from "./dialog.js";
 
 function toRecord(app, file) {
 	const cache = app.metadataCache.getFileCache(file);
@@ -61,6 +62,21 @@ function slugify(text) {
 	return String(text ?? "Untitled").replace(/[\\/:*?"<>|#^[\]]/g, "").trim() || "Untitled";
 }
 
+function settled(app, file) {
+	return new Promise((resolve) => {
+		const done = (changed) => {
+			if (changed?.path !== file.path) return;
+			app.metadataCache.off("changed", done);
+			resolve();
+		};
+		app.metadataCache.on("changed", done);
+		window.setTimeout(() => {
+			app.metadataCache.off("changed", done);
+			resolve();
+		}, 800);
+	});
+}
+
 function createSlot(app, binding) {
 	const folderPath = binding?.path ?? "";
 	const writable = Boolean(folderPath);
@@ -79,6 +95,7 @@ function createSlot(app, binding) {
 		canUpdate: writable,
 		canRemove: writable,
 		canSubscribe: true,
+		canDescribe: true,
 
 		async list(query = {}) {
 			const rows = sortRecords(readFolder().filter((record) => matches(record, query.where)), query.sort);
@@ -105,15 +122,17 @@ function createSlot(app, binding) {
 
 		subscribe(callback) {
 			const handler = (file) => {
-				if (file.path.startsWith(folderPath)) callback({ path: file.path });
+				if (file?.path?.startsWith(folderPath)) callback({ path: file.path });
 			};
-			app.vault.on("modify", handler);
 			app.vault.on("create", handler);
 			app.vault.on("delete", handler);
+			app.vault.on("rename", handler);
+			app.metadataCache.on("changed", handler);
 			return () => {
-				app.vault.off("modify", handler);
 				app.vault.off("create", handler);
 				app.vault.off("delete", handler);
+				app.vault.off("rename", handler);
+				app.metadataCache.off("changed", handler);
 			};
 		},
 	};
@@ -133,6 +152,7 @@ function createSlot(app, binding) {
 			await app.fileManager.processFrontMatter(file, (frontmatter) => {
 				Object.assign(frontmatter, patch.props ?? {});
 			});
+			await settled(app, file);
 			return toRecord(app, file);
 		};
 
@@ -168,6 +188,8 @@ export function createHost(app, plugin) {
 		},
 
 		ui: {
+			Dialog,
+
 			notify(message) {
 				new Notice(message);
 			},
