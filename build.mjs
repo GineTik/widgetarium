@@ -1,6 +1,17 @@
+import { execFileSync } from "node:child_process";
 import esbuild from "esbuild";
 
 const production = process.argv.includes("--prod");
+
+const WIDGETS = `${process.env.WG_VAULT ?? ""}/.widgetarium/widgets`;
+const gateRoots = ["src", "styles.css", "manifest.json", "tools", "install.mjs"];
+if (process.env.WG_VAULT) gateRoots.push(WIDGETS);
+
+try {
+	execFileSync("node", ["tools/lint-language.mjs", ...gateRoots], { stdio: "inherit" });
+} catch {
+	process.exit(1);
+}
 
 await esbuild.build({
 	entryPoints: ["src/main.js"],
@@ -16,3 +27,4 @@ await esbuild.build({
 	minify: production,
 	logLevel: "info",
 });
+

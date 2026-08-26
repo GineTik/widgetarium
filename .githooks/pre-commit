@@ -1,0 +1,6 @@
+#!/bin/sh
+node tools/lint-language.mjs src styles.css manifest.json tools install.mjs build.mjs || {
+	echo ""
+	echo "commit blocked: English only. Fix the lines above."
+	exit 1
+}
