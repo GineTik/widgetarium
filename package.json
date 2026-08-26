@@ -1,0 +1,21 @@
+{
+  "name": "widgetarium",
+  "version": "0.0.1",
+  "description": "Adaptive widget tiles on a dot grid for Obsidian",
+  "main": "index.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "prod": "node build.mjs --prod",
+    "install-vault": "node build.mjs && node install.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  },
+  "dependencies": {
+    "preact": "^10.24.3"
+  }
+}
