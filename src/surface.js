@@ -424,7 +424,6 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 				"div",
 				{
 					class: "wg-grid",
-					ref: gridRef,
 					style: {
 						width: `${metrics.boardWidth}px`,
 						height: `${Math.max(1, rows) * (metrics.cell + metrics.gap) - metrics.gap}px`,
