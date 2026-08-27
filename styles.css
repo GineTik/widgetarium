@@ -1,20 +1,22 @@
-/* Radii come in one ladder so nothing invents its own corner.
-   The first four ARE Obsidian's own scale, so a theme that retunes them retunes us;
-   Obsidian stops at 16px, so the wide end continues here.
-   A widget frame is deliberately separate: it is the one corner a user recognises
-   across every widget, and it must not drift when the inner scale is retuned. */
+/* Two ladders, edited independently.
+   The general one mirrors Obsidian's own scale, so a theme that retunes
+   --radius-s/m/l/xl retunes everything inside a widget with it.
+   The widget ladder is separate on purpose: a widget frame is the one corner a
+   reader recognises across the whole board, and it must not move when the inner
+   scale is retuned. --wg-widget-radius is the step currently in use. */
 :root {
-	--wg-radius-xs: var(--radius-s, 4px);
-	--wg-radius-sm: var(--radius-m, 8px);
-	--wg-radius-base: var(--radius-l, 12px);
-	--wg-radius-lg: var(--radius-xl, 16px);
-	--wg-radius-xl: 1.5rem;
-	--wg-radius-2xl: 2rem;
-	--wg-radius-3xl: 2.5rem;
+	--wg-radius-s: var(--radius-s, 4px);
+	--wg-radius-m: var(--radius-m, 8px);
+	--wg-radius-l: var(--radius-l, 12px);
+	--wg-radius-xl: var(--radius-xl, 16px);
 	--wg-radius-full: 999px;
 
-	--wg-widget-radius-base: 1.875rem;
+	--wg-widget-radius-s: 1rem;
+	--wg-widget-radius-m: 1.5rem;
+	--wg-widget-radius-l: 1.875rem;
+	--wg-widget-radius-xl: 2.5rem;
 	--wg-widget-radius-full: 999px;
+	--wg-widget-radius: var(--wg-widget-radius-l);
 }
 
 .block-language-widgetarium,
@@ -121,7 +123,7 @@ pre:has(> .block-language-widgetarium),
 .wg-grid {
 	position: relative;
 	margin-inline: auto;
-	border-radius: var(--wg-widget-radius-base);
+	border-radius: var(--wg-widget-radius);
 	background-image: radial-gradient(circle, var(--wg-dot) 1.2px, transparent 1.6px);
 	background-repeat: repeat;
 	opacity: 1;
@@ -146,7 +148,7 @@ pre:has(> .block-language-widgetarium),
 	min-width: 0;
 	overflow: hidden;
 	background: var(--wg-card);
-	border-radius: var(--wg-widget-radius-base);
+	border-radius: var(--wg-widget-radius);
 }
 
 .wg-tile.is-editing {
@@ -340,7 +342,7 @@ pre:has(> .block-language-widgetarium),
 	max-height: 70vh;
 	overflow: hidden;
 	background: var(--background-primary);
-	border-radius: var(--wg-widget-radius-base);
+	border-radius: var(--wg-widget-radius);
 	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
