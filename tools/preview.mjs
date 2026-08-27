@@ -183,12 +183,12 @@ const tiles = LAYOUT.map((entry) => {
 	const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 	const width = entry.w * CELL + (entry.w - 1) * GAP;
 	const height = entry.h * CELL + (entry.h - 1) * GAP;
-	const scale = Math.min(2.6, Math.max(0.55, width / (manifest.design?.width ?? 352)));
+	const scale = CELL / 40;  // one board scale, as the host now does
 	const { component, props } = buildWidget(folder, manifest, entry.bind, { w: entry.w, h: entry.h, scale });
-	const bare = manifest.surface === "none" ? " is-bare" : "";
+	
 	const left = entry.x * (CELL + GAP);
 	const top = entry.y * (CELL + GAP);
-	return `<div class="wg-tile${bare}" style="transform:translate3d(${left}px,${top}px,0);width:${width}px;height:${height}px;font-size:${(scale * 16).toFixed(3)}px"><div class="wg-tile-body">${renderNode(h(component, props))}</div></div>`;
+	return `<div class="wg-tile" style="transform:translate3d(${left}px,${top}px,0);width:${width}px;height:${height}px;font-size:${(scale * 16).toFixed(3)}px"><div class="wg-tile-body">${renderNode(h(component, props))}</div></div>`;
 }).join("\n");
 
 const css = fs.readFileSync("styles.css", "utf8");

@@ -143,7 +143,7 @@ function buildWidget(folder, manifest, bindings) {
 		...actions,
 	};
 
-	const api = { createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
+	const api = { DialogOverlay: () => null, DialogContent: (p) => h('div', { class: 'wg-dialog' }, p.children), DialogClose: () => null, WidgetRoot: (props) => h('div', { class: 'wg-widget-root ' + (props.className || ''), 'data-rounded': props.roundedType || 'base', 'data-fill': props.fillType || 'fill' }, props.children), createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
 
 	const scope = {
 		widgetarium: api,
@@ -217,7 +217,7 @@ body{margin:0;padding:0;background:#ECECEC;font-family:Inter,system-ui,sans-seri
 .deck{background:#141414;padding:24px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
 .deck .caption{color:#8a8a8a}
 .theme-dark{--background-primary:#1e1e1e;--background-primary-alt:#1a1a1a;--background-secondary:#161616;--background-modifier-hover:rgba(255,255,255,0.075);--background-modifier-border:#3f3f3f;--text-normal:#dadada;--text-muted:#b3b3b3;--text-faint:rgba(255,255,255,0.35);--text-on-accent:#000000}
-:root{--wg-radius-s:4px;--wg-radius-m:8px;--wg-radius-l:12px;--wg-radius-xl:16px;--wg-radius-full:999px;--wg-widget-radius-s:1rem;--wg-widget-radius-m:1.5rem;--wg-widget-radius-l:1.875rem;--wg-widget-radius-xl:2.5rem;--wg-widget-radius-full:999px;--wg-widget-radius:1.875rem;--background-primary:#ffffff;--background-primary-alt:#F2F2F2;--background-secondary:#f2f3f5;--background-modifier-hover:#F2F2F2;--background-modifier-active-hover:#EAEAEA;--background-modifier-border:#e0e0e0;--text-normal:#000000;--text-muted:#707070;--text-faint:rgba(0,0,0,0.3);--text-on-accent:#000000;--interactive-accent:#E1FF01;--interactive-accent-hover:#d3f000;--color-green:#147E03;--color-blue:#084CCA;--font-interface:Inter,system-ui,sans-serif;--radius-l:14px}
+:root{--wg-radius-s:4px;--wg-radius-m:8px;--wg-radius-l:12px;--wg-radius-xl:16px;--wg-radius-full:999px;--wg-widget-radius-s:1rem;--wg-widget-radius-m:1.5rem;--wg-widget-radius-l:1.875rem;--wg-widget-radius-xl:2.5rem;--wg-widget-radius-full:999px;--wg-widget-radius:1.875rem;--wg-board-pad:1rem;--wg-board-bg:transparent;--wg-board-radius:calc(1.875rem + 0.75rem);--wg-widget-shadow:0 0.1875rem 0.875rem rgba(0,0,0,.08);--background-primary:#ffffff;--background-primary-alt:#F2F2F2;--background-secondary:#f2f3f5;--background-modifier-hover:#F2F2F2;--background-modifier-active-hover:#EAEAEA;--background-modifier-border:#e0e0e0;--text-normal:#000000;--text-muted:#707070;--text-faint:rgba(0,0,0,0.3);--text-on-accent:#000000;--interactive-accent:#E1FF01;--interactive-accent-hover:#d3f000;--color-green:#147E03;--color-blue:#084CCA;--font-interface:Inter,system-ui,sans-serif;--radius-l:14px}
 .solo{--wg-card:var(--background-primary)}
 .solo,.solo *{box-sizing:border-box}
 .solo button,.solo input{font:inherit}
