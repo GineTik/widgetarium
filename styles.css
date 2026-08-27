@@ -17,6 +17,31 @@
 	--wg-widget-radius-xl: 2.5rem;
 	--wg-widget-radius-full: 999px;
 	--wg-widget-radius: var(--wg-widget-radius-l);
+
+	/* The board is the plate widgets sit on. Nested-radius law: the outer corner
+	   equals the inner corner plus the padding between them, so the two stay
+	   concentric when either is retuned. --wg-board-pad is written by the host
+	   so padding and radius can never drift apart. */
+	--wg-board-pad: 1rem;
+	/* the plate is opt-in: by default a board is transparent and a widget that
+	   matches the page behind it separates itself with a shadow instead */
+	--wg-board-bg: transparent;
+
+	/* Cast by a widget whose root declares fillType="shadow"; suppressed on a plated
+	   board, where the plate's tone already draws the edge.
+	   INVARIANT: the shadow's reach — blur/2 plus the offset — must stay inside
+	   --wg-board-pad. Past that it is painted in Obsidian's box, not ours, and
+	   whatever clips there is not something we can turn off.
+	   tools/check-shadow.mjs fails the build if this stops holding. */
+	--wg-widget-shadow: 0 0.1875rem 0.875rem rgba(0, 0, 0, 0.08);
+
+	/* The empty grid, drawn only while editing. Held as a LITERAL, never as var() on a
+	   theme variable: a custom property whose value references an undefined variable
+	   computes to guaranteed-invalid, which makes the property itself count as
+	   undefined — so var(--wg-cell-fill, fallback) would skip the fallback and the
+	   cell would paint nothing. A neutral grey reads on both light and dark. */
+	--wg-cell-fill: #fcfcfc;
+	--wg-cell-radius: 8px;
 }
 
 .block-language-widgetarium,
@@ -42,22 +67,17 @@ pre:has(> .block-language-widgetarium),
 /* a widget draws its own shadow well outside its tile, so nothing on the way up may clip */
 .wg-root,
 .wg-grid,
-.wg-root .wg-tile.is-bare {
-	overflow: visible;
-}
+
 
 .wg-root,
 .wg-portal {
 	box-sizing: border-box;
-	--wg-gap: 0.75rem;
 	--wg-card: var(--background-primary);
 	--wg-sunken: var(--background-modifier-hover);
 	--wg-line: var(--background-modifier-border);
 	--wg-accent: var(--interactive-accent);
 	--wg-on-accent: var(--text-on-accent);
 	--wg-muted: var(--text-muted);
-	--wg-dot: var(--background-modifier-border);
-	--wg-dot-quiet: color-mix(in srgb, var(--background-modifier-border) 45%, transparent);
 	position: relative;
 	padding-top: 1.6rem;
 	font-family: var(--font-interface);
@@ -123,14 +143,65 @@ pre:has(> .block-language-widgetarium),
 .wg-grid {
 	position: relative;
 	margin-inline: auto;
-	border-radius: var(--wg-widget-radius);
-	background-image: radial-gradient(circle, var(--wg-dot) 1.2px, transparent 1.6px);
-	background-repeat: repeat;
-	opacity: 1;
+	padding: var(--wg-board-pad);
+	background: var(--wg-board-bg);
+	/* resolved here, not on :root, so a per-board padding actually moves the corner */
+	border-radius: calc(var(--wg-widget-radius) + var(--wg-board-pad));
 }
 
-.wg-root:not(.is-editing) .wg-grid {
-	background-image: radial-gradient(circle, var(--wg-dot-quiet) 1px, transparent 1.4px);
+.wg-state {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.2rem 0.55rem;
+	border-radius: var(--wg-radius-full);
+	background: var(--background-modifier-hover);
+	font-size: 0.72rem;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.wg-state b {
+	color: var(--text-normal);
+	font-weight: 600;
+}
+
+.wg-state.is-authored {
+	background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+}
+
+.wg-state-reset {
+	border: 0;
+	padding: 0 0.2rem;
+	background: none;
+	box-shadow: none;
+	color: var(--text-muted);
+	font: inherit;
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.wg-state-reset:hover {
+	color: var(--text-normal);
+}
+
+.wg-cells {
+	position: absolute;
+	/* the tile origin is the padding box, so the cells share it — no inset */
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	display: grid;
+	grid-template-columns: repeat(var(--wg-columns), var(--wg-cell));
+	grid-auto-rows: var(--wg-cell);
+	gap: var(--wg-gap);
+}
+
+.wg-cells i {
+	/* the token is an override, not a dependency: a cell must still draw if the
+	   :root block is missing or overridden by a theme */
+	background: var(--wg-cell-fill, rgba(127, 127, 127, 0.18));
+	border-radius: var(--wg-cell-radius, 8px);
 }
 
 .wg-root.is-screen .wg-grid {
@@ -139,6 +210,7 @@ pre:has(> .block-language-widgetarium),
 
 .wg-tile {
 	position: absolute;
+	z-index: 1;
 	top: 0;
 	left: 0;
 	transition: transform 170ms cubic-bezier(0.2, 0, 0, 1), width 170ms cubic-bezier(0.2, 0, 0, 1),
@@ -146,9 +218,7 @@ pre:has(> .block-language-widgetarium),
 	display: flex;
 	flex-direction: column;
 	min-width: 0;
-	overflow: hidden;
-	background: var(--wg-card);
-	border-radius: var(--wg-widget-radius);
+	overflow: visible;
 }
 
 .wg-tile.is-editing {
@@ -182,7 +252,7 @@ pre:has(> .block-language-widgetarium),
 .wg-tile-body {
 	flex: 1;
 	min-height: 0;
-	overflow: hidden;
+	overflow: visible;
 }
 
 .wg-root.is-editing .wg-tile-body {
@@ -395,44 +465,50 @@ pre:has(> .block-language-widgetarium),
 	opacity: 0.7;
 }
 
-/* a bare tile paints no card, so the widget's own shadow must be allowed out */
-.wg-tile.is-bare,
-.wg-tile.is-bare .wg-tile-body {
+/* The widget root decides how the widget sits on the board: its corner and how it
+   separates itself from what is behind. The tile stays paintless so a shadow can
+   leave it, and the board can still overrule elevation. */
+.wg-widget-root {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+}
+
+.wg-widget-root[data-rounded="base"] {
+	border-radius: var(--wg-widget-radius);
+}
+
+.wg-widget-root[data-rounded="full"] {
+	border-radius: var(--wg-widget-radius-full);
+}
+
+.wg-widget-root[data-fill="fill"],
+.wg-widget-root[data-fill="shadow"] {
+	background: var(--wg-surface-fill, var(--background-primary));
+}
+
+.wg-widget-root[data-fill="shadow"] {
+	box-shadow: var(--wg-widget-shadow);
+}
+
+.wg-widget-root[data-fill="none"] {
 	background: none;
-	border-radius: 0;
-	overflow: visible;
+}
+
+/* a plate separates by tone, so elevation on top of it is noise */
+.wg-root.has-plate .wg-widget-root[data-fill="shadow"] {
+	box-shadow: none;
 }
 
 .wg-toolbar-gap {
 	flex: 1;
 }
 
-.wg-tabs {
-	display: flex;
-	gap: 4px;
-}
 
-.wg-tab {
-	background: var(--wg-sunken) !important;
-	border: none !important;
-	box-shadow: none !important;
-	border-radius: var(--wg-radius-full) !important;
-	padding: 3px 10px !important;
-	font-size: 12px;
-	line-height: 18px;
-	color: var(--wg-muted);
-	cursor: pointer;
-}
 
-.wg-tab.is-active {
-	background: var(--wg-accent) !important;
-	color: var(--wg-on-accent);
-}
 
-.wg-tab:disabled {
-	opacity: 0.4;
-	cursor: default;
-}
 
 .wg-blank {
 	position: absolute;

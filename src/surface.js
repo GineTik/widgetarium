@@ -1,15 +1,13 @@
 import { h, Component } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { CLASSES, classOf, measureGrid } from "./paths.js";
-import { clampPlace, packPlaces, rowsOf, toPixels, toCells, generatePlaces } from "./layout.js";
-import { placedIds } from "./model.js";
+import { classOf, measureGrid, scaleOf } from "./paths.js";
+import { clampPlace, packPlaces, rowsOf, toPixels, toCells } from "./layout.js";
+import { placedIds, layoutFor } from "./model.js";
 import { mountInto } from "./portal.js";
 import { useSource } from "./source.js";
 import { createAction } from "./action.js";
 
 const REM = 16;
-const DESIGN_WIDTH = 352;
-const SCALE_RANGE = { min: 0.55, max: 2.6 };
 
 class Boundary extends Component {
 	static getDerivedStateFromError(failure) {
@@ -130,17 +128,21 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource }) {
 	return h(definition.component, props);
 }
 
-function Tile({ definition, tile, place, pixels, host, editing, isDragging, onDragStart, onRemove, onPatch }) {
-	const [showSettings, setShowSettings] = useState(false);
+// the empty grid is real elements, so colour and radius come from tokens rather than
+// from numbers baked into a generated image
+function cellLayer(columns, rows) {
+	const cells = [];
+	for (let index = 0; index < columns * rows; index += 1) cells.push(h("i", { key: index }));
+	return h("div", { class: "wg-cells", key: "cells" }, cells);
+}
 
-	const designWidth = definition?.manifest?.design?.width ?? DESIGN_WIDTH;
-	const scale = Math.min(SCALE_RANGE.max, Math.max(SCALE_RANGE.min, pixels.width / designWidth));
+function Tile({ definition, tile, place, pixels, scale, host, editing, isDragging, onDragStart, onRemove, onPatch }) {
+	const [showSettings, setShowSettings] = useState(false);
 
 	const style = {
 		transform: `translate3d(${pixels.left}px, ${pixels.top}px, 0)`,
 		width: `${pixels.width}px`,
 		height: `${pixels.height}px`,
-		fontSize: `${(scale * REM).toFixed(3)}px`,
 	};
 
 	if (!definition || definition.error) {
@@ -165,9 +167,7 @@ function Tile({ definition, tile, place, pixels, host, editing, isDragging, onDr
 	return h(
 		"div",
 		{
-			class: `wg-tile${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}${
-				definition.manifest.surface === "none" ? " is-bare" : ""
-			}`,
+			class: `wg-tile${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}`,
 			style,
 			"data-tile": tile.id,
 		},
@@ -243,21 +243,21 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 
 	const [width, setWidth] = useState(0);
 	const [isPage, setPage] = useState(false);
-	const [pickedClass, setPickedClass] = useState(null);
 	const [preview, setPreview] = useState(null);
 
-	const deviceClass = classOf(typeof window === "undefined" ? 1280 : window.innerWidth);
-	const deviceRank = CLASSES.findIndex((entry) => entry.name === deviceClass.name);
-	const naturalClass = classOf(width || 700);
-	const active = editing && pickedClass ? CLASSES.find((entry) => entry.name === pickedClass) : naturalClass;
+	// the class no longer picks a layout — the column count does. It survives only to say
+	// how far the screen sits from the eye, which is what the type scale is for.
+	const active = classOf(width || 700);
 
-	const metrics = measureGrid(width || 700, active.columns);
-	const places = board.layouts[active.name];
+	const metrics = measureGrid(width || 700);
+	// layoutFor clamps to the column count and derives when this width was never authored
+	const { places, isAuthored } = layoutFor(board, metrics.columns);
 	const shown = preview ? packPlaces([...places.filter((place) => place.id !== preview.id), preview], preview.id) : places;
 	const rows = rowsOf(shown);
 
+	// editing a derived width authors it: the file gains an entry only once something moved
 	const commit = (nextPlaces, isCommit = true) => {
-		onChange({ ...board, layouts: { ...board.layouts, [active.name]: nextPlaces } }, isCommit);
+		onChange({ ...board, layouts: { ...board.layouts, [metrics.columns]: nextPlaces } }, isCommit);
 	};
 
 	const patchTile = (id, patch) => {
@@ -274,7 +274,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 				tiles: [...board.tiles, { id, widget: widgetId, settings: {}, sources: {} }],
 				layouts: {
 					...board.layouts,
-					[active.name]: [...places, { id, x: 0, y: rows, w: minimum.w, h: minimum.h }],
+					[metrics.columns]: [...places, { id, x: 0, y: rows, w: minimum.w, h: minimum.h }],
 				},
 			},
 			true,
@@ -315,7 +315,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 							h: Math.max(1, toCells(0, base.height + dy, metrics.cell, metrics.gap).y || 1),
 					  };
 
-			const clamped = clampPlace(next, active.columns, drag.minimum, drag.maximum);
+			const clamped = clampPlace(next, metrics.columns, drag.minimum, drag.maximum);
 			setPreview((current) =>
 				current && current.x === clamped.x && current.y === clamped.y && current.w === clamped.w && current.h === clamped.h
 					? current
@@ -342,48 +342,35 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 		window.addEventListener("pointerup", stop);
 	};
 
-	const donor = CLASSES.map((entry) => entry.name).find(
-		(name) => name !== active.name && board.layouts[name].length > 0,
-	);
-
-	const tabs = editing
-		? h(
-				"div",
-				{ class: "wg-tabs" },
-				CLASSES.map((entry, index) =>
-					h(
-						"button",
-						{
-							key: entry.name,
-							class: `wg-tab${entry.name === active.name ? " is-active" : ""}`,
-							disabled: index > deviceRank,
-							title:
-								index > deviceRank
-									? `${entry.label} can only be edited on a wider screen`
-									: `Edit the ${entry.label.toLowerCase()} layout`,
-							onClick: () => setPickedClass(entry.name),
-						},
-						`${entry.label} · ${entry.columns}`,
-					),
-				),
-		  )
+	// the width's state has to be visible: without it the board silently looks different at
+	// 11 and 12 columns and the reader has no way to tell an edit of theirs from a guess of ours
+	const stateChip = editing
+		? h("span", { class: `wg-state${isAuthored ? " is-authored" : ""}` }, [
+				h("b", null, `${metrics.columns} columns`),
+				h("span", null, isAuthored ? "yours" : "derived"),
+				isAuthored
+					? h(
+							"button",
+							{
+								class: "wg-state-reset",
+								title: "Forget this width and derive it again",
+								onClick: () => {
+									const next = { ...board.layouts };
+									delete next[metrics.columns];
+									onChange({ ...board, layouts: next }, true);
+								},
+							},
+							"Reset",
+					  )
+					: null,
+		  ])
 		: null;
 
 	const body =
 		shown.length === 0
 			? h("div", { class: "wg-blank" }, [
-					h("b", null, `The ${active.label.toLowerCase()} layout is empty`),
-					h("span", null, "Widgets placed here show up on this screen size only."),
-					donor
-						? h(
-								"button",
-								{
-									class: "wg-tool",
-									onClick: () => commit(generatePlaces(board.layouts[donor], donor, active.name)),
-								},
-								`Generate from ${donor}`,
-						  )
-						: null,
+					h("b", null, "This board is empty"),
+					h("span", null, "Add a widget below; every other screen width derives from what you lay out here."),
 			  ])
 			: shown.map((place) => {
 					const tile = board.tiles.find((entry) => entry.id === place.id);
@@ -393,6 +380,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 						tile,
 						place,
 						pixels: toPixels(place, metrics.cell, metrics.gap),
+						scale: scaleOf(active),
 						definition: registry.get(tile.widget),
 						host,
 						editing,
@@ -403,11 +391,11 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 					});
 			  });
 
-	const hidden = board.tiles.filter((tile) => !placedIds(board, active.name).has(tile.id));
+	const hidden = board.tiles.filter((tile) => !placedIds(board, metrics.columns).has(tile.id));
 
 	const content = [
 			h("div", { class: "wg-toolbar" }, [
-				tabs,
+				stateChip,
 				h("span", { class: "wg-toolbar-gap" }),
 				onToggleEditing
 					? h(
@@ -427,14 +415,16 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 				{
 					class: "wg-grid",
 					style: {
+						fontSize: `${(scaleOf(active) * REM).toFixed(3)}px`,
 						width: `${metrics.boardWidth}px`,
 						height: `${Math.max(1, rows) * (metrics.cell + metrics.gap) - metrics.gap}px`,
-						padding: `${metrics.pad}px`,
-						backgroundSize: `${metrics.cell + metrics.gap}px ${metrics.cell + metrics.gap}px`,
-						backgroundPosition: `${metrics.pad + metrics.cell / 2}px ${metrics.pad + metrics.cell / 2}px`,
+						"--wg-board-pad": `${metrics.pad}px`,
+						"--wg-cell": `${metrics.cell}px`,
+						"--wg-gap": `${metrics.gap}px`,
+						"--wg-columns": metrics.columns,
 					},
 				},
-				body,
+				[editing ? cellLayer(metrics.columns, Math.max(1, rows)) : null, body],
 			),
 			editing
 				? h("div", { class: "wg-palette" }, [

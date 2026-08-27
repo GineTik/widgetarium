@@ -1,4 +1,3 @@
-import { CLASSES } from "./paths.js";
 
 function overlaps(a, b) {
 	return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
@@ -16,16 +15,25 @@ export function clampPlace(place, columns, minimum, maximum) {
 	};
 }
 
-// reading order is kept; anything that collides is pushed down, like gridstack's "list"
+// Gravity, in reading order. Every place falls to the highest free row, so a hole left by
+// a moved or removed tile closes instead of staying as a band of empty cells nothing can
+// use. The tile under the pointer settles FIRST, so it keeps the spot it was dropped on
+// and the rest flows around it.
 export function packPlaces(places, movedId) {
-	const ordered = [...places].sort((first, second) => first.y - second.y || first.x - second.x);
-	const settled = [];
 	const moved = places.find((place) => place.id === movedId);
+	const rest = places
+		.filter((place) => place.id !== movedId)
+		.sort((first, second) => first.y - second.y || first.x - second.x);
+	const settled = [];
+	// The tile under the pointer is an OBSTACLE at the row it was dropped on, never pulled
+	// up: gravity on the dragged tile too would snap it back to the top and make dragging
+	// downwards impossible. The hole it leaves closes on the next read, which packs with
+	// no moved tile and so gravities everything — reading order survives because the sort
+	// is by row, and the tile now rests on whatever was above it.
 	if (moved) settled.push(moved);
 
-	for (const place of ordered) {
-		if (place.id === movedId) continue;
-		let y = place.y;
+	for (const place of rest) {
+		let y = 0;
 		while (settled.some((other) => overlaps({ ...place, y }, other))) y += 1;
 		settled.push(y === place.y ? place : { ...place, y });
 	}
@@ -50,14 +58,10 @@ export function toCells(left, top, cell, gap) {
 	return { x: Math.max(0, Math.round(left / pitch)), y: Math.max(0, Math.round(top / pitch)) };
 }
 
-export function columnsOf(className) {
-	return CLASSES.find((entry) => entry.name === className)?.columns ?? 12;
-}
-
-// a first draft for an empty class, so nobody has to lay out three boards by hand
-export function generatePlaces(places, fromClass, toClass) {
-	const factor = columnsOf(toClass) / columnsOf(fromClass);
-	const columns = columnsOf(toClass);
+// derives one column count from another: scale across, keep the row, then pack
+export function generatePlaces(places, fromColumns, toColumns) {
+	const factor = toColumns / fromColumns;
+	const columns = toColumns;
 	const scaled = places.map((place) => ({
 		id: place.id,
 		x: Math.round(place.x * factor),

@@ -3,7 +3,7 @@ import path from "node:path";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 
-const VAULT = process.env.WG_VAULT;
+const VAULT = process.env.WG_VAULT ?? "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
 const NOTES = process.argv.slice(2);
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
@@ -18,14 +18,9 @@ for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGE
 }
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
-// package.json says commonjs, so the ES sources need an .mjs mirror to be imported directly
-const CACHE = path.join(process.cwd(), "tools", ".mjs-cache");
-fs.rmSync(CACHE, { recursive: true, force: true });
-fs.mkdirSync(CACHE, { recursive: true });
-for (const file of fs.readdirSync("src").filter((name) => name.endsWith(".js"))) {
-	const body = fs.readFileSync(path.join("src", file), "utf8").replace(/from "\.\/([\w-]+)\.js"/g, 'from "./$1.mjs"');
-	fs.writeFileSync(path.join(CACHE, file.replace(/\.js$/, ".mjs")), body);
-}
+import { buildMirror } from "./mirror.mjs";
+
+buildMirror();
 
 const { h, render } = await import("preact");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
@@ -70,11 +65,37 @@ for (const note of NOTES) {
 	dom.window.document.querySelector(".view-content").appendChild(target);
 	try {
 		const board = normalizeBoard(parseYaml(source) ?? []);
-		render(h(WidgetSurface, { board, registry, host, editing: false, onChange() {}, onToggleEditing() {}, screen: true }), target);
-		const tiles = target.querySelectorAll(".wg-tile").length;
-		const blank = target.querySelector(".wg-blank");
-		console.log(`OK  ${note} — ${board.tiles.length} tiles in model, ${tiles} rendered${blank ? " (blank: " + blank.textContent.slice(0, 60) + ")" : ""}`);
-		if (tiles === 0 && !blank) console.log("    html:", target.innerHTML.slice(0, 300));
+		const draw = (editing) => {
+			render(null, target);
+			render(h(WidgetSurface, { board, registry, host, editing, onChange() {}, onToggleEditing() {}, screen: true }), target);
+			return {
+				tiles: target.querySelectorAll(".wg-tile").length,
+				cells: target.querySelectorAll(".wg-cells i").length,
+				blank: target.querySelector(".wg-blank"),
+				gridStyle: target.querySelector(".wg-grid")?.getAttribute("style") ?? "<no .wg-grid>",
+			};
+		};
+		const readingPass = draw(false);
+		const editingPass = draw(true);
+		// INVARIANT: a tile never draws outside the board, at any column count
+		const grid = target.querySelector(".wg-grid");
+		const boardWidth = parseFloat(grid?.style.width ?? "0");
+		for (const tile of target.querySelectorAll(".wg-tile")) {
+			const left = parseFloat(tile.style.transform?.match(/translate3d\(([-\d.]+)px/)?.[1] ?? "0");
+			const wide = parseFloat(tile.style.width ?? "0");
+			if (left + wide > boardWidth + 0.5) {
+				throw new Error(`tile overflows the board by ${(left + wide - boardWidth).toFixed(0)}px`);
+			}
+		}
+		// the grid backdrop is an editing affordance: it may not cost a node while reading
+		if (readingPass.cells !== 0) throw new Error(`${readingPass.cells} grid cells leaked into reading mode`);
+		if (editingPass.cells === 0) throw new Error("editing mode drew no grid cells");
+		console.log(
+			`OK  ${note} — ${board.tiles.length} tiles in model, ${readingPass.tiles} rendered, ` +
+			`cells ${readingPass.cells} reading / ${editingPass.cells} editing` +
+			`${editingPass.gridStyle.includes("--wg-columns") ? "" : "  !! missing --wg-columns"}` +
+			`${readingPass.blank ? " (blank: " + readingPass.blank.textContent.slice(0, 40) + ")" : ""}`,
+		);
 	} catch (failure) {
 		failed += 1;
 		console.log(`!!  ${note} — ${failure.message}`);

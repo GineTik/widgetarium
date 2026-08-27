@@ -10,7 +10,9 @@
     "dev": "node build.mjs && node install.mjs",
     "lint:lang": "node tools/lint-language.mjs src styles.css manifest.json tools install.mjs build.mjs",
     "hooks": "git config core.hooksPath .githooks",
-    "test:render": "node tools/render-test.mjs \"Widgetarium Demo/Екран.md\" \"Widgetarium Demo/Гаманець.md\" \"Widgetarium Demo/Палітра.md\" \"Widgetarium Demo/Всередині тексту.md\" \"Widgetarium Demo/Crypto Wallet.md\""
+    "test:render": "node tools/render-test.mjs \"Widgetarium Demo/\u0415\u043a\u0440\u0430\u043d.md\" \"Widgetarium Demo/\u0413\u0430\u043c\u0430\u043d\u0435\u0446\u044c.md\" \"Widgetarium Demo/\u041f\u0430\u043b\u0456\u0442\u0440\u0430.md\" \"Widgetarium Demo/\u0412\u0441\u0435\u0440\u0435\u0434\u0438\u043d\u0456 \u0442\u0435\u043a\u0441\u0442\u0443.md\" \"Widgetarium Demo/Crypto Wallet.md\"",
+    "test:model": "node tools/model-test.mjs",
+    "test": "npm run test:model && npm run test:render"
   },
   "keywords": [],
   "author": "",
