@@ -125,7 +125,6 @@ pre:has(> .block-language-widgetarium),
 	overflow: hidden;
 	background: var(--wg-card);
 	border-radius: var(--wg-radius-xl);
-	transition: box-shadow 120ms ease;
 }
 
 .wg-tile.is-editing {
@@ -372,7 +371,9 @@ pre:has(> .block-language-widgetarium),
 	opacity: 0.7;
 }
 
-.wg-tile.is-bare {
+/* a bare tile paints no card, so the widget's own shadow must be allowed out */
+.wg-tile.is-bare,
+.wg-tile.is-bare .wg-tile-body {
 	background: none;
 	border-radius: 0;
 	overflow: visible;
