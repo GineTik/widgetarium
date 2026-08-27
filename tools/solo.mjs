@@ -176,18 +176,36 @@ const LAYOUT_GRID = [
 ];
 
 const SOLO = [
-	{ id: "@wallet/balance", width: 352 },
-	{ id: "@wallet/notice", width: 352 },
-	{ id: "@wallet/period", width: 348 },
-	{ id: "@wallet/quick-send", width: 352, bind: { contacts: "Widgetarium Demo/Wallet/Contacts" } },
-	{ id: "@wallet/transactions", width: 352, bind: { transactions: "Widgetarium Demo/Wallet/Transactions" } },
+	{ id: "@crypto-wallet/hero", width: 352, label: "natural, light" },
+	{ id: "@crypto-wallet/hero", width: 196, height: 196, size: { w: 4, h: 4 }, label: "minimum 4 x 4" },
+	{ id: "@crypto-wallet/hero", width: 352, theme: "dark", label: "dark" },
+	{ id: "@crypto-wallet/quick-actions", width: 352, label: "natural, light" },
+	{ id: "@crypto-wallet/quick-actions", width: 352, theme: "dark", label: "dark" },
+	{
+		id: "@crypto-wallet/transactions",
+		width: 352,
+		label: "natural, light",
+		bind: { transactions: "Widgetarium Demo/Wallet/Transactions" },
+	},
+	{ id: "@core/palette", width: 352, label: "theme palette" },
 ];
+
+// CONTEXT: the host sets font-size = 16 * tileWidth / design.width
+function tileStyle(entry, manifest) {
+	if (!entry.height) return `width:${entry.width}px;font-size:16px`;
+	const scale = (16 * entry.width) / (manifest.design?.width ?? entry.width);
+	return `width:${entry.width}px;height:${entry.height}px;font-size:${scale}px`;
+}
 
 const tiles = SOLO.map((entry) => {
 	const folder = path.join(WIDGETS, entry.id);
 	const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 	const { component, props } = buildWidget(folder, manifest, entry.bind);
-	return `<div class="solo" style="width:${entry.width}px;font-size:16px">${renderNode(h(component, props))}</div>`;
+	if (entry.size) props.size = { ...props.size, ...entry.size };
+	const caption = entry.label ? `<div class="caption">${entry.id} — ${entry.label}</div>` : "";
+	const tile = `<div class="solo" style="${tileStyle(entry, manifest)}">${renderNode(h(component, props))}</div>`;
+	if (entry.theme !== "dark") return caption + tile;
+	return `<div class="theme-dark deck">${caption}${tile}</div>`;
 }).join("\n");
 
 const css = fs.readFileSync("styles.css", "utf8");
@@ -195,7 +213,11 @@ fs.writeFileSync(
 	OUT,
 	`<!doctype html><html><head><meta charset="utf-8"><style>
 body{margin:0;padding:0;background:#ECECEC;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;gap:24px;align-items:flex-start;padding:24px}
-:root{--background-primary:#ffffff;--background-secondary:#f2f3f5;--background-modifier-hover:#F2F2F2;--background-modifier-active-hover:#EAEAEA;--background-modifier-border:#e0e0e0;--text-normal:#000000;--text-muted:#707070;--text-faint:rgba(0,0,0,0.3);--text-on-accent:#000000;--interactive-accent:#E1FF01;--interactive-accent-hover:#d3f000;--color-green:#147E03;--color-blue:#084CCA;--font-interface:Inter,system-ui,sans-serif;--radius-l:14px}
+.caption{font:12px/1.4 Inter,system-ui,sans-serif;color:#666}
+.deck{background:#141414;padding:24px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.deck .caption{color:#8a8a8a}
+.theme-dark{--background-primary:#1e1e1e;--background-primary-alt:#1a1a1a;--background-secondary:#161616;--background-modifier-hover:rgba(255,255,255,0.075);--background-modifier-border:#3f3f3f;--text-normal:#dadada;--text-muted:#b3b3b3;--text-faint:rgba(255,255,255,0.35);--text-on-accent:#000000}
+:root{--background-primary:#ffffff;--background-primary-alt:#F2F2F2;--background-secondary:#f2f3f5;--background-modifier-hover:#F2F2F2;--background-modifier-active-hover:#EAEAEA;--background-modifier-border:#e0e0e0;--text-normal:#000000;--text-muted:#707070;--text-faint:rgba(0,0,0,0.3);--text-on-accent:#000000;--interactive-accent:#E1FF01;--interactive-accent-hover:#d3f000;--color-green:#147E03;--color-blue:#084CCA;--font-interface:Inter,system-ui,sans-serif;--radius-l:14px}
 .solo{--wg-card:var(--background-primary)}
 .solo,.solo *{box-sizing:border-box}
 .solo button,.solo input{font:inherit}

@@ -4,12 +4,13 @@ function overlaps(a, b) {
 	return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
-export function clampPlace(place, columns, minimum) {
-	const w = Math.max(minimum?.w ?? 1, Math.min(place.w, columns));
+export function clampPlace(place, columns, minimum, maximum) {
+	const widest = Math.min(maximum?.w ?? columns, columns);
+	const w = Math.max(minimum?.w ?? 1, Math.min(place.w, widest));
 	return {
 		...place,
 		w,
-		h: Math.max(minimum?.h ?? 1, place.h),
+		h: Math.max(minimum?.h ?? 1, Math.min(place.h, maximum?.h ?? Infinity)),
 		x: Math.max(0, Math.min(place.x, columns - w)),
 		y: Math.max(0, place.y),
 	};

@@ -285,9 +285,11 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 		if (!editing) return;
 		event.preventDefault();
 		const element = event.currentTarget.closest(".wg-tile");
-		const minimum = registry.get(board.tiles.find((tile) => tile.id === place.id)?.widget)?.manifest?.minSize;
+		const manifest = registry.get(board.tiles.find((tile) => tile.id === place.id)?.widget)?.manifest;
+		const minimum = manifest?.minSize;
+		const maximum = manifest?.maxSize;
 
-		dragRef.current = { id: place.id, mode, startX: event.clientX, startY: event.clientY, place, element, minimum };
+		dragRef.current = { id: place.id, mode, startX: event.clientX, startY: event.clientY, place, element, minimum, maximum };
 		setPreview(place);
 
 		const move = (pointer) => {
@@ -313,7 +315,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 							h: Math.max(1, toCells(0, base.height + dy, metrics.cell, metrics.gap).y || 1),
 					  };
 
-			const clamped = clampPlace(next, active.columns, drag.minimum);
+			const clamped = clampPlace(next, active.columns, drag.minimum, drag.maximum);
 			setPreview((current) =>
 				current && current.x === clamped.x && current.y === clamped.y && current.w === clamped.w && current.h === clamped.h
 					? current
