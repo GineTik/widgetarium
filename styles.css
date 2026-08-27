@@ -18,6 +18,13 @@ pre:has(> .block-language-widgetarium),
 	display: none !important;
 }
 
+/* a widget draws its own shadow well outside its tile, so nothing on the way up may clip */
+.wg-root,
+.wg-grid,
+.wg-root .wg-tile.is-bare {
+	overflow: visible;
+}
+
 .wg-root,
 .wg-portal {
 	box-sizing: border-box;
@@ -91,6 +98,7 @@ pre:has(> .block-language-widgetarium),
 }
 
 .wg-root.is-page {
+	overflow: visible;
 	min-height: 100%;
 	padding: 1.6rem 1rem 1rem;
 	background: var(--background-primary);
