@@ -1,3 +1,13 @@
+/* the radius scale is the design language, not surface state: widgets rely on it
+   wherever they render, including outside a .wg-root */
+:root {
+	--wg-radius-none: 0;
+	--wg-radius-xs: 0.25rem;
+	--wg-radius-base: 0.75rem;
+	--wg-radius-xl: 2.5rem;
+	--wg-radius-full: 999px;
+}
+
 .block-language-widgetarium,
 pre:has(> .block-language-widgetarium),
 .cm-preview-code-block:has(> .block-language-widgetarium),
@@ -29,11 +39,6 @@ pre:has(> .block-language-widgetarium),
 .wg-portal {
 	box-sizing: border-box;
 	--wg-gap: 0.75rem;
-	--wg-radius-none: 0;
-	--wg-radius-xs: 0.25rem;
-	--wg-radius-base: 0.75rem;
-	--wg-radius-xl: 2.5rem;
-	--wg-radius-full: min(50%, 2rem);
 	--wg-card: var(--background-primary);
 	--wg-sunken: var(--background-modifier-hover);
 	--wg-line: var(--background-modifier-border);
