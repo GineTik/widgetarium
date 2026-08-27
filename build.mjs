@@ -9,6 +9,7 @@ if (process.env.WG_VAULT) gateRoots.push(WIDGETS);
 
 try {
 	execFileSync("node", ["tools/lint-language.mjs", ...gateRoots], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-shadow.mjs"], { stdio: "inherit" });
 } catch {
 	process.exit(1);
 }
