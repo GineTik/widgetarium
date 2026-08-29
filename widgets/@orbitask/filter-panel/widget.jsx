@@ -126,6 +126,69 @@ function parseGroups(text) {
 		});
 }
 
+// THE FIELDS ARE THE BOARD'S, the way the choices are the data's. Held as a colon-separated
+// string, the list had to be edited by hand every time a board gained a property — so a board
+// could name a property, the dialog could write it, and it was still not filterable.
+const PEOPLE_NAMES = ["assignees", "members", "people", "owner", "owners"];
+// CONTEXT: bookkeeping, or a fact the board already shows — a title is unique, a board is the board
+// CONTEXT: status is the COLUMNS on a kanban, so filtering by it hides the board inside itself
+const NEVER_FILTERED = ["title", "board", "status", "deadline", "due"];
+// TRADE-OFF: a property nearly every note carries a DIFFERENT value for is an identifier, not a
+// filter — ticking it would leave one row, which is a search, and the bar has a search already
+const MOST_DISTINCT_SHARE = 0.75;
+
+// A NUMBER IS NOT A CATEGORY. The bar offers tick lists, and "checklistDone: 3" ticked against
+// "4" answers a question nobody asks — a number wants a range. Left in, the demo data's dead
+// counters (comments, files, a checklist nothing writes) all showed up as filters.
+function isCounted(rows, prop) {
+	const values = valuesFor(rows, prop);
+	return values.length > 0 && values.every((value) => value !== "" && Number.isFinite(Number(value)));
+}
+
+// A BOARD THAT NAMES NOTHING STILL FILTERS. Falling back to an empty list left the bar with no
+// groups at all on every board authored before property lists existed — which is most of them.
+function groupsFromData(rows) {
+	const seen = new Map();
+	for (const row of rows) {
+		for (const key of Object.keys(row.props ?? {})) seen.set(key.toLowerCase(), key);
+	}
+	return [...seen.values()]
+		.filter((key) => !NEVER_FILTERED.includes(key.toLowerCase()))
+		.filter((key) => !isCounted(rows, key))
+		.filter((key) => {
+			const values = valuesFor(rows, key);
+			return values.length > 1 && values.length <= Math.max(2, rows.length * MOST_DISTINCT_SHARE);
+		})
+		.sort()
+		.map((key) => ({
+			prop: key,
+			control: PEOPLE_NAMES.includes(key.toLowerCase()) ? "people" : "checkbox",
+			label: `${key.charAt(0).toUpperCase()}${key.slice(1)}`,
+		}));
+}
+
+function groupsFromBoard(names, rows) {
+	return names
+		.map((name) => {
+			const prop = keyCarrying(rows, name) ?? String(name).toLowerCase();
+			const control = PEOPLE_NAMES.includes(prop.toLowerCase()) ? "people" : "checkbox";
+			return { prop, control, label: String(name) };
+		})
+		// a property no note has ever carried offers nothing to tick, and an empty group is noise
+		.filter((group) => valuesFor(rows, group.prop).length > 0)
+		.filter((group) => !NEVER_FILTERED.includes(group.prop.toLowerCase()));
+}
+
+// CONTEXT: a board names "Assignees", a note spells "assignees" — the note's spelling is the key
+function keyCarrying(rows, name) {
+	const wanted = String(name).toLowerCase();
+	for (const row of rows) {
+		const found = Object.keys(row.props ?? {}).find((key) => key.toLowerCase() === wanted);
+		if (found) return found;
+	}
+	return null;
+}
+
 // CONTEXT: the choices are the data's, never a list kept here
 function valuesFor(rows, prop) {
 	const seen = new Set();
@@ -161,9 +224,13 @@ function dropped(chosen, prop) {
 	return rest;
 }
 
-export default createWidget(function OrbiTaskFilter({ settings, data, context }) {
+export default createWidget(function OrbiTaskFilter({ settings, data, board, context }) {
 	const rows = data?.tasks?.rows ?? [];
-	const groups = parseGroups(settings.groups);
+	// TRADE-OFF: the setting still wins where somebody has written one — a board that wants a
+	// different order, a label of its own or a property nothing carries yet says so explicitly
+	const authored = parseGroups(settings.groups);
+	const fromBoard = groupsFromBoard(board?.properties ?? [], rows);
+	const groups = authored.length > 0 ? authored : fromBoard.length > 0 ? fromBoard : groupsFromData(rows);
 	// CONTEXT: two instances on one board need two keys
 	const key = String(settings.key || "filters");
 	const applied = context?.get(key) ?? {};

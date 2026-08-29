@@ -158,6 +158,8 @@ let board = normalizeBoard({
 		},
 		{ id: "dialog", widget: "@orbitask/task-dialog", sources: { tasks: { path: FOLDER } } },
 	],
+	// CONTEXT: the filter bar reads this list — a property the board names is one it can filter by
+	properties: ["Status", "Priority", "Assignees"],
 	context: { board: "Marketing Team", view: "Kanban" },
 	layouts: { 20: { places: READING_PLACES } },
 });
@@ -357,8 +359,12 @@ check("there is a filter control", Boolean(openFilter), true);
 await click(openFilter);
 check("it opens a panel", all(".orbi-filter .ofp-panel").length, 1);
 
+// THE BAR FOLLOWS THE BOARD. The field list used to be a colon-separated string in a setting,
+// so a board could name a property, the dialog could write it, and it was still not filterable.
 const groupHeads = all(".orbi-filter .ofp-group-head").map((node) => node.textContent.trim());
-check("the panel offers the groups it was configured with", groupHeads.length > 1, true);
+check("the panel offers a group per property the board names", groupHeads, ["Priority", "Assignees"]);
+check("and drops Status even when the board names it, because the columns are the status", groupHeads.includes("Status"), false);
+check("and it offers more than one", groupHeads.length > 1, true);
 
 // THE BAR IS THE KIT'S NOW. Four hand-drawn icons, a hand-rolled search field and a tick rule
 // of its own were each a second copy of something the kit already carried — and each drifted.
@@ -367,7 +373,6 @@ check("the panel offers the groups it was configured with", groupHeads.length > 
 	check("its buttons are the kit's", all(".orbi-filter .ofp-foot .wg-kit-btn").length, 2);
 	check("and it draws no tick of its own", all(".orbi-filter .ofp-tick").length, 0);
 }
-
 
 // open the priority group and tick a value that really exists in the vault
 const priorityHead = all(".orbi-filter .ofp-group-head").find((node) => /priority/i.test(node.textContent));
@@ -804,6 +809,44 @@ const pickView = async (name, id = "views") => {
 	check("and can write it back from inside its holder", board.properties, ["Deadline"]);
 }
 
+
+// A BOARD THAT NAMES NOTHING STILL FILTERS. Most boards were authored before property lists
+// existed, and an empty bar on all of them is worse than a bar that reads the data.
+{
+	const spare = dom.window.document.createElement("div");
+	dom.window.document.body.appendChild(spare);
+	let plain = normalizeBoard({
+		tiles: [{ id: "filters", widget: "@orbitask/filter-panel", sources: { tasks: { path: FOLDER } } }],
+		context: { board: "Marketing Team" },
+		layouts: { 20: { places: [{ id: "filters", x: 0, y: 0, w: 3, h: 1 }] } },
+	});
+	const drawPlain = () =>
+		render(
+			h(WidgetSurface, {
+				board: plain, registry, host, editing: false, screen: true, initialWidth: 1280,
+				onChange: (next) => { plain = next; drawPlain(); },
+				onToggleEditing: () => {}, onWidth: () => {},
+			}),
+			spare,
+		);
+	drawPlain();
+	await settle();
+
+	const heads = () => [...spare.querySelectorAll(".ofp-group-head")].map((node) => node.textContent.trim());
+	spare.querySelector(".ofp-open").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+	await settle();
+	check("with no list on the board the bar reads the data instead", heads().length > 1, true);
+	check("and it offers the properties the notes carry", heads().includes("Priority"), true);
+	check("but not the title, which every note spells differently", heads().includes("Title"), false);
+	check("nor the board, which every row on this board shares", heads().includes("Board"), false);
+	// a number is not a category: the bar ticks values, and a count wants a range instead
+	check("nor a counter, which wants a range and not a tick", heads().some((name) => /checklist|comments|files|progress|order/i.test(name)), false);
+	// the columns ARE the status, so filtering by it hides the board inside itself
+	check("nor status, which the board already draws as its columns", heads().includes("Status"), false);
+
+	render(null, spare);
+	spare.remove();
+}
 
 console.log(failed ? `\n${failed} failed` : "\nthe page answers to a person");
 process.exit(failed ? 1 : 0);

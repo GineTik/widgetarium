@@ -121,6 +121,43 @@ check("and it names the property that was picked", narrowed[1]?.prop, "priority"
 const marketingRows = rows.filter((row) => matches(row, resolveFilter([{ prop: "board", op: "is", value: "@board" }], picking)));
 const p1 = rows.filter((row) => matches(row, narrowed));
 check("picking a priority narrows the board", p1.length < marketingRows.length, true);
+
+// EVERY FIELD THE BOARD NAMES IS FILTERABLE, not the three somebody once typed into a setting.
+// The mechanism was always generic; the LIST was a colon-separated string, so a board could name
+// a property, the dialog could write it, and it was still not offered in the bar.
+{
+	const boardProperties = ["Status", "Priority", "Approval", "Assignees", "Tag"];
+	const spelled = (name) => {
+		const wanted = name.toLowerCase();
+		for (const row of rows) {
+			const found = Object.keys(row.props ?? {}).find((key) => key.toLowerCase() === wanted);
+			if (found) return found;
+		}
+		return null;
+	};
+	const valuesOf = (prop) => [...new Set(rows.flatMap((row) => {
+		const held = row.props?.[prop];
+		return Array.isArray(held) ? held : held === undefined ? [] : [held];
+	}))];
+
+	for (const name of boardProperties) {
+		const prop = spelled(name);
+		if (!prop) {
+			check(`${name}: the board names a property no note carries`, prop, "a note that carries it");
+			continue;
+		}
+		const values = valuesOf(prop);
+		const ctx = createContext({ board: "Marketing Team" });
+		ctx.set("filters", { [prop]: [values[0]] }, "@orbitask/filter-panel");
+		const whole = rows.filter((row) => matches(row, resolveFilter([{ prop: "board", op: "is", value: "@board" }], ctx)));
+		const kept = rows.filter((row) => matches(row, resolveFilter(boardFilter, ctx)));
+		check(`${name}: picking one narrows the board`, kept.length > 0 && kept.length < whole.length, true);
+		check(`${name}: and every row left really carries it`, kept.every((row) => {
+			const held = row.props?.[prop];
+			return (Array.isArray(held) ? held : [held]).includes(values[0]);
+		}), true);
+	}
+}
 check("and every row left really carries it", p1.every((row) => row.props.priority === "P1"), true);
 
 picking.set("filters", {}, "@orbitask/filter-panel");
