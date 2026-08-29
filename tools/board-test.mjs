@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildMirror } from "./mirror.mjs";
 
-const VAULT = process.env.WG_VAULT ?? "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
+const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const TASKS = path.join(VAULT, "Orbitask", "Tasks");
 
 buildMirror();

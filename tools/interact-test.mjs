@@ -7,7 +7,7 @@ import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
 
-const VAULT = process.env.WG_VAULT ?? "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
+const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const FOLDER = "Orbitask/Tasks";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });

@@ -13,7 +13,7 @@ const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
 const { createHost, bindNote } = await import("./.mjs-cache/host.mjs");
 const { MarkdownRenderer, MarkdownRenderChild } = await import("./.mjs-cache/obsidian.mjs");
 
-const VAULT = process.env.WG_VAULT ?? "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
+const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const FOLDER = "Orbitask/Tasks";
 
 function frontmatter(text) {

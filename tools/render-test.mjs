@@ -3,6 +3,9 @@ import path from "node:path";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 
+// TRADE-OFF: the real vault, not the fixture — this suite is ABOUT the installation. It reads the
+// notes a person actually has and proves every widget they name is installed there, which a
+// fixture cannot answer: half those widgets exist only in that vault.
 const VAULT = process.env.WG_VAULT ?? "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
 const NOTES = process.argv.slice(2);
 
