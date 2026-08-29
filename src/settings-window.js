@@ -433,7 +433,7 @@ function zoomBar(state) {
 		h(
 			"button",
 			{ type: "button", key: "fold", "aria-pressed": String(state.folded), "aria-label": "Fold the settings away", onClick: () => state.setFolded(!state.folded) },
-			h(Icon, { name: "fold" }),
+			h(Icon, { name: state.folded ? "fold" : "chevron" }),
 		),
 	]);
 }
@@ -443,7 +443,7 @@ function panel(state) {
 		return h(
 			IconButton,
 			{ key: "panel", class: "wg-set-fold wg-kit-glass", label: "Bring the settings back", style: state.panelStyle, onClick: () => state.setFolded(false) },
-			h(Icon, { name: "chevron" }),
+			h(Icon, { name: "fold" }),
 		);
 	}
 	return h("aside", { class: `wg-set-panel wg-kit-glass${state.phone ? " is-sheet" : ""}`, key: "panel", style: state.panelStyle }, [
