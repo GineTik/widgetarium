@@ -233,12 +233,19 @@ export const fieldClass = variants("wg-kit-field", { size: { m: "", s: "is-s" },
 
 // TRADE-OFF: the field owns its <input> rather than taking children — three widgets had each
 // re-reset Obsidian's input styling by hand, and each got a different subset of it right
+// The label carries the LOOK, the input carries the BEHAVIOUR — anything else handed in reaches
+// the input. Keeping it all on the label silently swallowed an onKeyDown, so Enter did nothing
+// in a search field and there was no error anywhere to say why.
+const FIELD_LOOK = ["size", "block", "class", "className"];
+
 export function Field({ icon, value, onInput, placeholder, type = "text", ...rest }) {
+	const forInput = { ...rest };
+	for (const name of FIELD_LOOK) delete forInput[name];
 	return h(
 		"label",
 		{ class: fieldClass(rest) },
 		icon,
-		h("input", { class: "wg-kit-field-input", type, value, placeholder, onInput }),
+		h("input", { ...forInput, class: "wg-kit-field-input", type, value, placeholder, onInput }),
 	);
 }
 
