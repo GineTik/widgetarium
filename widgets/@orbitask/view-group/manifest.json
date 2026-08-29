@@ -1,0 +1,26 @@
+{
+	"id": "@orbitask/view-group",
+	"title": "OrbiTask · View group",
+	"defaultSize": {
+		"w": 13,
+		"h": 8
+	},
+	"collapseBelowPx": 240,
+	"consumes": [
+		"view"
+	],
+	"provides": [
+		"views"
+	],
+	"mounts": {
+		"views": {}
+	},
+	"settings": [
+		{
+			"key": "views",
+			"type": "text",
+			"label": "Views — widget ids, in order",
+			"default": "@orbitask/kanban-board, @orbitask/archived-columns"
+		}
+	]
+}

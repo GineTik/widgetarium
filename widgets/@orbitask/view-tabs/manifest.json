@@ -1,0 +1,29 @@
+{
+	"id": "@orbitask/view-tabs",
+	"title": "OrbiTask · View tabs",
+	"defaultSize": {
+		"w": 13,
+		"h": 1
+	},
+	"collapseBelowPx": 90,
+	"provides": [
+		"view"
+	],
+	"consumes": [
+		"views"
+	],
+	"settings": [
+		{
+			"key": "views",
+			"type": "text",
+			"label": "Views — only used when no group publishes its own",
+			"default": "Kanban, Archived columns"
+		},
+		{
+			"key": "activeView",
+			"type": "text",
+			"label": "Selected view",
+			"default": "Kanban"
+		}
+	]
+}
