@@ -143,7 +143,7 @@ function buildWidget(folder, manifest, bindings) {
 		...actions,
 	};
 
-	const api = { DialogOverlay: () => null, DialogContent: (p) => h('div', { class: 'wg-dialog' }, p.children), DialogClose: () => null, WidgetRoot: (props) => h('div', { class: 'wg-widget-root ' + (props.className || ''), 'data-rounded': props.roundedType || 'base', 'data-fill': props.fillType || 'fill' }, props.children), createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
+	const api = { DialogOverlay: () => null, DialogContent: (p) => h('div', { class: 'wg-dialog' }, p.children), DialogClose: () => null, WidgetRoot: (props) => h('div', { class: 'wg-widget-root ' + (props.className || ''), 'data-rounded': props.roundedType || 'base', 'data-fill': props.fillType || 'fill' }, props.children), createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, DialogHeader: (p) => h('div', null, p.children), DialogTitle: (p) => h('h2', null, p.children), DialogDescription: (p) => h('p', null, p.children), DialogFooter: (p) => h('div', null, p.children), useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
 
 	const scope = {
 		widgetarium: api,
