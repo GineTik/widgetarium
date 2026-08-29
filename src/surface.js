@@ -402,7 +402,8 @@ function TileView(props) {
 		registry,
 		columns,
 		onPatch,
-		onClose: onCloseSettings,
+		onDone: () => onCloseSettings(true),
+		onDismiss: () => onCloseSettings(false),
 		onResize,
 		onCollapse: () => onCollapse?.(place.id),
 		onExpand: () => onExpand?.(place.id),
@@ -602,9 +603,17 @@ function Page({ onClose, children }) {
 	return null;
 }
 
-export function WidgetSurface({ board, registry, host, editing, onChange, onToggleEditing, screen, initialWidth = 0, onWidth }) {
+export function WidgetSurface({ board: saved, registry, host, editing, onChange: save, onToggleEditing, screen, initialWidth = 0, onWidth }) {
 	const dragRef = useRef(null);
 	const latestRef = useRef(null);
+
+	// THE PLAYGROUND IS A DRAFT. A size changed in the settings window used to reach the file at
+	// once, so cancelling put the numbers back but the layout it had already re-flowed stayed
+	// re-flowed. While the window is up every write lands here instead, and only Done saves it.
+	const [staged, setStaged] = useState(null);
+	const board = staged ?? saved;
+	const onChange = (next, isCommit = true) => (staged === null ? save(next, isCommit) : setStaged(next));
+
 
 	// seeded from the last measurement of the previous element: Obsidian rebuilds the block
 	// after a write, and starting from zero again cost a blank frame every time
@@ -762,13 +771,20 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 	const openSettings = (id) => {
 		sessionRef.current += 1;
 		setClosingTile(null);
+		// CONTEXT: the draft starts as what is saved, so the window opens on the board as it stands
+		setStaged(latestRef.current.board);
 		setSettingsTile({ id, key: String(sessionRef.current) });
 	};
 
 	// TRADE-OFF: the panels fade first and the box follows, per the kit's rule on panels that bounce
-	const closeSettings = () => {
+	const closeSettings = (keep = false) => {
 		const held = settingsTile;
+		const draft = staged;
 		setSettingsTile(null);
+		setStaged(null);
+		// Done keeps the draft, anything else drops it — and dropping it is the whole point:
+		// a layout the person backed out of must not survive in the file.
+		if (keep && draft) save(draft, true);
 		if (!held) return;
 		setClosingTile(held);
 		window.setTimeout(() => setClosingTile((current) => (current === held ? null : current)), SETTINGS_FADE_MS);

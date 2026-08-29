@@ -411,8 +411,8 @@ function header(state) {
 			h(Pill, { key: "size" }, `${state.place.w} × ${state.place.h}`),
 			// TRADE-OFF: both, and they do the same thing — every edit is already written, so
 			// Done is what a person looks for and the cross is what they reach for by habit
-			h(Button, { size: "s", variant: "accent", key: "done", onClick: state.onClose }, "Done"),
-			h(DialogClose, { key: "close", onClose: state.onClose, label: "Close the settings" }),
+			h(Button, { size: "s", variant: "accent", key: "done", onClick: () => state.onDone() }, "Done"),
+			h(DialogClose, { key: "close", onClose: () => state.onDismiss(), label: "Close without keeping the changes" }),
 		]),
 	]);
 }
@@ -575,7 +575,7 @@ function startingDraft(key, options) {
 const FRESH = { tab: "settings", zoom: null, pan: null, folded: false, narrow: false, sheetFull: false, openRow: null, draft: "" };
 
 export function useSettingsWindow(options) {
-	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onPatch, onClose, onResize, onCollapse, onExpand, countReaders } = options;
+	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onPatch, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders } = options;
 	const [phase, key] = String(session ?? "").split(":");
 	const open = phase === "open";
 	const closing = phase === "closing";
@@ -598,12 +598,14 @@ export function useSettingsWindow(options) {
 
 	useEffect(() => {
 		if (!open) return;
+		// CONTEXT: the slot picker is a dialog of its own on top; Escape belongs to whatever is
+		// nearest, and dismissing the window under it would drop the whole draft
 		const closeOnEscape = (event) => {
-			if (event.key === "Escape") onClose();
+			if (event.key === "Escape" && !String(openRow).startsWith("slot:")) onDismiss();
 		};
 		document.addEventListener("keydown", closeOnEscape, true);
 		return () => document.removeEventListener("keydown", closeOnEscape, true);
-	}, [open, onClose]);
+	}, [open, onDismiss, openRow]);
 
 	if (!open && !closing) return { shown: false, dialog: null };
 
@@ -636,7 +638,8 @@ export function useSettingsWindow(options) {
 		registry,
 		columns,
 		onPatch,
-		onClose,
+		onDone,
+		onDismiss,
 		onResize,
 		onCollapse,
 		onExpand,
@@ -714,7 +717,7 @@ export function useSettingsWindow(options) {
 
 	const dialog = h(
 		DialogOverlay,
-		{ class: `wg-set-over${closing ? " is-leaving" : ""}`, onClose },
+		{ class: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: onDismiss },
 		h(
 			"div",
 			{

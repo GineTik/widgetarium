@@ -201,7 +201,10 @@ console.log("\n— and the panel writes what it draws —");
 	field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
 	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
-	check("the tile now holds the new value", board.tiles[0].settings.groupBy, "assignee");
+	// THE WINDOW IS A DRAFT. Everything edited here is visible at once and saved by Done —
+	// nothing reaches the board until then, so backing out really does back out.
+	check("the board on disk has not moved yet", board.tiles[0].settings.groupBy, undefined);
+	check("but the panel already draws the new value", rowSaying("Group tasks by")?.textContent.includes("assignee"), true);
 
 	await press(rowSaying("Tasks"));
 	const path = find(".wg-set-pop input");
@@ -209,14 +212,13 @@ console.log("\n— and the panel writes what it draws —");
 	path.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
 	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
-	check("the source folder is written to the tile", board.tiles[0].sources.tasks.path, "Orbitask/Archive");
+	check("the source folder is written to the draft", rowSaying("Tasks")?.textContent.includes("Orbitask/Archive"), true);
 
 	await press(rowSaying("Card"));
 	const pick = all(".wg-set-pop .wg-kit-pop-item").find((item) => item.textContent.includes("Compact card"));
 	check("every installed widget is offered for the slot", Boolean(pick), true);
 	await press(pick);
-	check("the pick is written to the tile", board.tiles[0].slots.card, OTHER_ID);
-	check("and it survives a save", serializeBoard(board).tiles[0].slots.card, OTHER_ID);
+	check("the pick is written to the draft", rowSaying("Card")?.textContent.includes(OTHER_ID), true);
 
 	const tab = (name) => all(".wg-set-panel .wg-kit-seg button").find((button) => button.textContent.trim() === name);
 	await press(tab("Data"));
@@ -251,7 +253,7 @@ console.log("\n— and the panel writes what it draws —");
 	wide.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
 	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
-	check("changing it writes the place", board.layouts[20].find((place) => place.id === "t1").w, 6);
+	check("changing it writes the place in the draft", rowSaying("Width")?.textContent.includes("6 cells"), true);
 	check("and the panel now says so", rowSaying("Width")?.textContent.includes("6 cells"), true);
 
 	await press(tab("Settings"));
@@ -278,6 +280,12 @@ console.log("\n— and the panel writes what it draws —");
 	check("pressing it again gives the widget back", find(".wg-set-body")?.style.visibility, "visible");
 
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	check("Done saves the setting", board.tiles[0].settings.groupBy, "assignee");
+	// the section cleared this field on purpose, and an empty own path is what falls back
+	check("and the cleared source, still cleared", board.tiles[0].sources.tasks.path, "");
+	check("and the slot that was picked", board.tiles[0].slots.card, OTHER_ID);
+	check("and it survives a save", serializeBoard(board).tiles[0].slots.card, OTHER_ID);
+	check("and the place the Design tab wrote", board.layouts[20].find((place) => place.id === "t1").w, 6);
 	check("Done fades the panels first", Boolean(find(".wg-set-chrome.is-leaving")), true);
 	check("and the box is still open while they go", Boolean(find(".wg-set-window")), true);
 	await new Promise((done) => setTimeout(done, 240));
@@ -287,6 +295,29 @@ console.log("\n— and the panel writes what it draws —");
 	check("and the page scrolls again", document.body.style.overflow, "");
 	check("the widget came back to its tile", Boolean(mount.querySelector(".wg-tile-body .leaf")), true);
 	check("and it carries none of the window\u2019s geometry", mount.querySelector(".wg-tile-body")?.getAttribute("style") || "", "");
+
+	// BACKING OUT REALLY BACKS OUT. The bug this replaces: a size changed in the window reached
+	// the file at once, so pressing the cross put the numbers back while the layout it had already
+	// re-flowed stayed re-flowed — the board came back a different shape from the one it went in.
+	{
+		const before = JSON.stringify(serializeBoard(board));
+		await press(find('.wg-tile-actions button[aria-label="Settings"]'));
+		await press(tab("Design"));
+		await press(rowSaying("Width"));
+		const narrower = find(".wg-set-pop input");
+		narrower.value = "3";
+		narrower.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+		await tick();
+		await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+		check("the window shows the change while it is open", rowSaying("Width")?.textContent.includes("3 cells"), true);
+		check("and the board on disk has not moved", JSON.stringify(serializeBoard(board)), before);
+
+		await press(find(".wg-set-head .wg-kit-icon"));
+		await new Promise((done) => setTimeout(done, 240));
+		await tick();
+		check("closing without Done leaves the board exactly as it was", JSON.stringify(serializeBoard(board)), before);
+		check("and the window is gone", Boolean(find(".wg-set-window")), false);
+	}
 
 	render(null, mount);
 }
