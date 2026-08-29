@@ -1,0 +1,42 @@
+{
+	"id": "@orbitask/page-header",
+	"title": "OrbiTask · Page header",
+	"defaultSize": {
+		"w": 17,
+		"h": 2
+	},
+	"collapseBelowPx": 140,
+	"design": {
+		"width": 1080,
+		"height": 274
+	},
+	"settings": [
+		{
+			"key": "title",
+			"label": "Title",
+			"type": "text",
+			"default": "Marketing Tasks"
+		},
+		{
+			"key": "breadcrumb",
+			"label": "Breadcrumb steps (comma separated)",
+			"type": "text",
+			"default": "Amazon, Projects, Marketing, Tasks"
+		},
+		{
+			"key": "userName",
+			"label": "User name",
+			"type": "text",
+			"default": "Alex Morgan"
+		},
+		{
+			"key": "userRole",
+			"label": "User role",
+			"type": "text",
+			"default": "Product Manager"
+		}
+	],
+	"provides": [
+		"search"
+	]
+}

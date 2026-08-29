@@ -1,0 +1,45 @@
+{
+	"id": "@orbitask/task-popup",
+	"title": "OrbiTask · Task popup",
+	"defaultSize": {
+		"w": 17,
+		"h": 8
+	},
+	"collapseBelowPx": 240,
+	"consumes": [
+		"task"
+	],
+	"slots": {
+		"properties": {
+			"of": "widget",
+			"default": "@orbitask/task-properties"
+		},
+		"comments": {
+			"of": "widget",
+			"default": "@orbitask/task-comments"
+		}
+	},
+	"sources": {
+		"tasks": {
+			"label": "Tasks",
+			"default": {
+				"path": "Orbitask/Tasks",
+				"filters": [
+					{
+						"prop": "path",
+						"op": "is",
+						"value": "@task"
+					}
+				]
+			}
+		}
+	},
+	"settings": [
+		{
+			"key": "actions",
+			"type": "text",
+			"label": "Side actions",
+			"default": "Move Task, Members, Deadline, Add Approval, Set Priority, Set Progress, Activities, More Settings"
+		}
+	]
+}

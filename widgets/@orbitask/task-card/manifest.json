@@ -1,0 +1,77 @@
+{
+	"id": "@orbitask/task-card",
+	"title": "OrbiTask · Task card",
+	"defaultSize": {
+		"w": 4,
+		"h": 2
+	},
+	"collapseBelowPx": 90,
+	"settings": [
+		{
+			"key": "title",
+			"label": "Title",
+			"type": "text",
+			"default": "Design the onboarding flow"
+		},
+		{
+			"key": "tagColour",
+			"label": "Tag colour — error, warning, success, info",
+			"type": "text",
+			"default": "error"
+		},
+		{
+			"key": "priority",
+			"label": "Priority — P1, P2, P3",
+			"type": "text",
+			"default": "P1"
+		},
+		{
+			"key": "status",
+			"label": "Status — approve, check, reject, review",
+			"type": "text",
+			"default": "approve"
+		},
+		{
+			"key": "progress",
+			"label": "Progress %",
+			"type": "number",
+			"default": 60
+		},
+		{
+			"key": "dueDate",
+			"label": "Due date",
+			"type": "text",
+			"default": "12 Aug"
+		},
+		{
+			"key": "comments",
+			"label": "Comments",
+			"type": "number",
+			"default": 4
+		},
+		{
+			"key": "attachments",
+			"label": "Attachments",
+			"type": "number",
+			"default": 2
+		},
+		{
+			"key": "checklistDone",
+			"label": "Checklist done",
+			"type": "number",
+			"default": 3
+		},
+		{
+			"key": "checklistTotal",
+			"label": "Checklist total",
+			"type": "number",
+			"default": 8
+		},
+		{
+			"key": "initials",
+			"label": "Assignee initials, comma separated",
+			"type": "text",
+			"default": "A, M, T"
+		}
+	]
+}

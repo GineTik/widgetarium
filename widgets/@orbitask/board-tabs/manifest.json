@@ -1,0 +1,40 @@
+{
+	"id": "@orbitask/board-tabs",
+	"title": "OrbiTask · Board tabs",
+	"defaultSize": {
+		"w": 13,
+		"h": 1
+	},
+	"collapseBelowPx": 90,
+	"provides": [
+		"board"
+	],
+	"settings": [
+		{
+			"key": "tabs",
+			"type": "text",
+			"label": "Boards",
+			"default": "Marketing Team, Ux Team"
+		},
+		{
+			"key": "activeTab",
+			"type": "text",
+			"label": "Selected board",
+			"default": "Marketing Team"
+		},
+		{
+			"key": "archived",
+			"type": "text",
+			"label": "Archived boards",
+			"default": ""
+		}
+	],
+	"sources": {
+		"tasks": {
+			"label": "Tasks",
+			"default": {
+				"path": "Orbitask/Tasks"
+			}
+		}
+	}
+}

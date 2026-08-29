@@ -1,0 +1,68 @@
+{
+	"id": "@orbitask/kanban-board",
+	"title": "OrbiTask · Kanban board",
+	"view": "Kanban",
+	"defaultSize": {
+		"w": 13,
+		"h": 8
+	},
+	"collapseBelowPx": 240,
+	"slots": {
+		"card": {
+			"of": "widget",
+			"default": "@orbitask/task-card"
+		}
+	},
+	"settings": [
+		{
+			"key": "columns",
+			"type": "text",
+			"label": "Columns",
+			"default": "To Do, Doing, Done"
+		},
+		{
+			"key": "groupBy",
+			"type": "text",
+			"label": "Group tasks by property",
+			"default": "status"
+		},
+		{
+			"key": "archivedColumns",
+			"type": "text",
+			"label": "Archived columns",
+			"default": ""
+		}
+	],
+	"consumes": [
+		"board",
+		"filters",
+		"search"
+	],
+	"sources": {
+		"tasks": {
+			"label": "Tasks",
+			"default": {
+				"path": "Orbitask/Tasks",
+				"filters": [
+					{
+						"prop": "board",
+						"op": "is",
+						"value": "@board"
+					},
+					{
+						"spread": "@filters"
+					}
+				],
+				"sort": [
+					{
+						"prop": "order",
+						"dir": "asc"
+					}
+				]
+			}
+		}
+	},
+	"provides": [
+		"task"
+	]
+}

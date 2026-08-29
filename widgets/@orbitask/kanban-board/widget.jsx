@@ -1,0 +1,588 @@
+import {
+	createWidget,
+	WidgetRoot,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	DialogClose,
+} from "widgetarium";
+import { Button, Card, Count, Icon, Plate } from "widgetarium/kit";
+import { useRef, useState } from "preact/hooks";
+
+const CSS = `
+.ok-board {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--size-4-3, 12px);
+	height: 100%;
+	padding-bottom: var(--size-4-1, 4px);
+	overflow-x: auto;
+	overflow-y: auto;
+	box-sizing: border-box;
+}
+.ok-board * { box-sizing: border-box; }
+
+.ok-empty {
+	margin: 0;
+	padding: var(--size-4-6, 24px);
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-faint);
+}
+
+/* CONTEXT: the kit plate carries fill, radius and pad; the reference's tight gap is 6px */
+/* CONTEXT: the reference's 268 plus 10% — a two-line title and four circles need the room */
+.orbi-kanban .ok-list {
+	flex: 0 0 296px;
+	gap: var(--size-2-3, 6px);
+}
+
+.orbi-kanban .ok-list.is-over { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+
+.ok-list-head {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	padding: var(--size-2-2, 4px) var(--size-4-2, 8px);
+}
+
+/* CONTEXT: the head is the grip — the body below it is full of cards that drag on their own */
+.orbi-kanban .ok-list-head[draggable="true"] { cursor: grab; }
+.orbi-kanban .ok-list-head[draggable="true"]:active { cursor: grabbing; }
+
+/* TRADE-OFF: the columns are TRANSLATED, never reordered mid-drag — a moving DOM changes what
+   the pointer is over, and the aim then oscillates between two neighbours */
+.orbi-kanban .ok-board.is-dragging .ok-list { transition: transform var(--orbi-quick) var(--orbi-ease); }
+
+/* CONTEXT: the plate's own fill and radius ARE the landing block; hidden children keep its size */
+.orbi-kanban .ok-list.is-placeholder > * { visibility: hidden; }
+
+.ok-list-title {
+	min-width: 0;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.orbi-kanban .ok-list-title[contenteditable="true"]:focus {
+	outline: none;
+	border-bottom: 1px solid var(--interactive-accent);
+	cursor: text;
+}
+
+/* CONTEXT: no counterpart in the reference — sized to the count, hover ground from .addrow:hover */
+.orbi-kanban .ok-list-remove {
+	display: grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	margin-left: auto;
+	color: var(--text-muted);
+	opacity: 0;
+	transition: opacity var(--orbi-quick) var(--orbi-ease);
+}
+
+.orbi-kanban .ok-list-remove::before { border-radius: var(--wg-kit-pill); }
+
+.orbi-kanban .ok-list:hover .ok-list-remove,
+.orbi-kanban .ok-list-remove:focus-visible { opacity: 1; }
+
+.orbi-kanban .ok-list-remove:hover { color: var(--text-normal); }
+.orbi-kanban .ok-list-remove:hover::before { background: var(--background-modifier-hover); }
+
+.orbi-kanban .ok-card-slot { cursor: grab; border-radius: var(--wg-kit-item); }
+.orbi-kanban .ok-card-slot:active { cursor: grabbing; }
+.orbi-kanban .ok-card-slot.is-open > * { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+
+/* TRADE-OFF: text only, no fill and no border — a plate is the last background on this board */
+.orbi-kanban .ok-add-task {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2, 8px);
+	padding: var(--size-4-2, 8px);
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.orbi-kanban .ok-add-task::before { border-radius: var(--wg-kit-item); }
+
+.orbi-kanban .ok-add-task:hover { color: var(--text-normal); }
+.orbi-kanban .ok-add-task:hover::before { background: var(--background-modifier-hover); }
+
+/* CONTEXT: drawn only when the card slot holds no widget; the kit card carries fill and radius */
+.orbi-kanban .ok-card { padding: var(--size-4-3, 12px); }
+
+.ok-card-title {
+	min-width: 0;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	line-height: var(--line-height-tight, 1.25);
+	color: var(--text-normal);
+}
+
+/* TRADE-OFF: the plate shape at rest, so the place a new list lands is already drawn */
+/* CONTEXT: Plate puts a kit class on this button, which excludes it from the suite's reset —
+   so the plate's own fill and corner are re-laid on ::before, out of the host's reach. */
+.orbi-kanban .ok-add-list-rest {
+	position: relative;
+	isolation: isolate;
+	flex: 0 0 296px;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	height: 48px;
+	appearance: none;
+	border: none;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+	margin: 0;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.orbi-kanban .ok-add-list-rest::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+}
+
+.orbi-kanban .ok-add-list-rest:hover { color: var(--text-normal); }
+
+.orbi-kanban .ok-add-list { flex: 0 0 296px; }
+
+/* CONTEXT: the reference's .search, at the height a plate wants and on the card's own fill */
+.orbi-kanban .ok-list-name {
+	height: 34px;
+	padding: 0 var(--size-4-3, 12px);
+	appearance: none;
+	border: none;
+	border-radius: var(--wg-kit-pill);
+	background: var(--background-primary);
+	box-shadow: none;
+	font-family: inherit;
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-normal);
+	outline: none;
+}
+
+.orbi-kanban .ok-list-name::placeholder { color: var(--text-faint); }
+
+.ok-add-list-actions {
+	display: flex;
+	gap: var(--size-4-2, 8px);
+}
+
+.ok-cancel { flex: 1 1 0; }
+.ok-confirm { flex: 1 1 0; }
+
+@container widget (width < 420px) {
+	.orbi-kanban .ok-list,
+	.orbi-kanban .ok-add-list,
+	.orbi-kanban .ok-add-list-rest { flex: 0 0 284px; }
+}
+
+/* CONTEXT: the dialog is portalled onto <body>, out of reach of the widget root's class */
+.wg-dialog.ok-archive { width: min(420px, 100%); }
+`;
+
+// TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
+function FallbackCard({ task }) {
+	return (
+		<Card class="ok-card">
+			<span class="ok-card-title">{task.title}</span>
+		</Card>
+	);
+}
+
+function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, onOpen, onDropTask, onGrab, onRelease, shift, placeholder, canWrite, dragging, opened }) {
+	const CardComponent = CardSlot ?? FallbackCard;
+	const [over, setOver] = useState(false);
+	// CONTEXT: a grip around an editable heading steals the drag that selects its text
+	const [renaming, setRenaming] = useState(false);
+
+	return (
+		<Plate
+			class={`ok-list${over ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
+			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
+			onDragOver={(event) => {
+				if (!dragging?.row) return;
+				event.preventDefault();
+				setOver(true);
+			}}
+			onDragLeave={() => setOver(false)}
+			onDrop={(event) => {
+				event.preventDefault();
+				setOver(false);
+				onDropTask?.();
+			}}
+		>
+			<div class="ok-list-head" draggable={Boolean(onGrab) && !renaming} onDragStart={onGrab} onDragEnd={onRelease}>
+				<span
+					class="ok-list-title"
+					// CONTEXT: the lowercase attribute — a property some engines never mirror back is unreadable
+					contenteditable={onRename ? "true" : undefined}
+					suppressContentEditableWarning
+					onFocus={() => setRenaming(true)}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
+							event.currentTarget.blur();
+						}
+						if (event.key === "Escape") {
+							event.currentTarget.textContent = title;
+							event.currentTarget.blur();
+						}
+					}}
+					onBlur={(event) => {
+						setRenaming(false);
+						onRename?.(event.currentTarget.textContent);
+					}}
+				>
+					{title}
+				</span>
+				<Count>{rows.length}</Count>
+				{onArchive ? (
+					<button type="button" class="ok-list-remove" title={`Archive ${title}`} onClick={onArchive}>
+						<Icon name="archive" size={15} />
+					</button>
+				) : null}
+			</div>
+
+			{cards.map((task, index) => (
+				<div
+					key={rows[index]?.path ?? index}
+					class={`ok-card-slot${rows[index]?.path === opened ? " is-open" : ""}`}
+					draggable={canWrite}
+					onDragStart={() => dragging?.pick(rows[index])}
+					onDragEnd={() => dragging?.drop()}
+					onClick={() => onOpen?.(rows[index])}
+				>
+					<CardComponent task={task} />
+				</div>
+			))}
+
+			{canWrite ? (
+				<button type="button" class="ok-add-task" onClick={onAdd}>
+					<Icon name="plus" size={16} />
+					<span>Add new task</span>
+				</button>
+			) : null}
+		</Plate>
+	);
+}
+
+function AddList({ onAdd }) {
+	const [open, setOpen] = useState(false);
+	const [name, setName] = useState("");
+
+	if (!open) {
+		return (
+			<Plate asChild>
+				<button type="button" class="ok-add-list-rest" onClick={() => setOpen(true)}>
+					<Icon name="plus" size={16} />
+					<span>Add List</span>
+				</button>
+			</Plate>
+		);
+	}
+
+	const confirm = () => {
+		const trimmed = name.trim();
+		if (trimmed) onAdd?.(trimmed);
+		setName("");
+		setOpen(false);
+	};
+
+	return (
+		<Plate class="ok-add-list">
+			<input
+				class="ok-list-name"
+				// CONTEXT: the field appeared because it was asked for; a click to reach it is one step too many
+				ref={(node) => node?.focus()}
+				placeholder="Enter list name..."
+				value={name}
+				onInput={(event) => setName(event.target.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") confirm();
+					if (event.key === "Escape") setOpen(false);
+				}}
+			/>
+			<div class="ok-add-list-actions">
+				<Button class="ok-cancel" size="s" onClick={() => setOpen(false)}>
+					Cancel
+				</Button>
+				<Button class="ok-confirm" size="s" variant="accent" onClick={confirm}>
+					Add
+				</Button>
+			</div>
+		</Plate>
+	);
+}
+
+// CONTEXT: columns are the values of ONE property — groupBy regroups the same rows
+// CONTEXT: a value a note names is a column of its own, so an archived one walks back unless refused
+function toColumns(rows, columnNames, groupBy, archived) {
+	const byName = new Map(columnNames.map((name) => [name, []]));
+	for (const row of rows) {
+		const value = row.props?.[groupBy] ?? columnNames[0];
+		if (archived.includes(value)) continue;
+		if (!byName.has(value)) byName.set(value, []);
+		byName.get(value).push(row);
+	}
+	return [...byName.entries()].map(([title, items]) => ({ title, rows: items }));
+}
+
+function afterColumnMoves(columns, from, to) {
+	const left = columns.filter((_, index) => index !== from);
+	left.splice(to, 0, columns[from]);
+	return left;
+}
+
+// CONTEXT: the first free number, so a column leaving does not hand out a name already in use
+function freeUntitled(taken) {
+	let index = 1;
+	while (taken.includes(`Untitled ${index}`)) index += 1;
+	return `Untitled ${index}`;
+}
+
+// CONTEXT: a board with no columns is not a board — the last one out is replaced by a fresh one
+function afterColumnLeaves(columns, leaving, taken) {
+	const left = columns.filter((column) => column !== leaving);
+	return left.length > 0 ? left : [freeUntitled(taken)];
+}
+
+// TRADE-OFF: nothing invented — an absent field must stay absent, or the card cannot tell it from a value
+function toCard(row) {
+	const props = row.props ?? {};
+	return {
+		title: props.title ?? row.name,
+		tag: props.tag,
+		priority: props.priority,
+		status: props.approval,
+		progress: props.progress,
+		initials: toList(props.assignees),
+		due: props.due,
+		comments: props.comments,
+		files: props.files,
+		checklistDone: props.checklistDone,
+		checklistTotal: props.checklistTotal,
+	};
+}
+
+function toList(value) {
+	if (Array.isArray(value)) return value;
+	return String(value ?? "")
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean);
+}
+
+export default createWidget(function KanbanBoard({ settings, slots, data, actions, context, host, configure }) {
+	const archivedColumns = toList(settings.archivedColumns);
+	// CONTEXT: deduped, so a rendered index below the count IS the index in this list
+	const columnNames = [...new Set(toList(settings.columns))].filter((name) => !archivedColumns.includes(name));
+	const groupBy = settings.groupBy || "status";
+	// TRADE-OFF: search narrows rows we already hold — a query per keystroke is a round trip per letter
+	const needle = String(context?.get("search") ?? "").trim().toLowerCase();
+	const rows = (data?.tasks?.rows ?? []).filter(
+		(row) => needle === "" || String(row.name ?? "").toLowerCase().includes(needle),
+	);
+	const write = actions?.tasks;
+	const columns = toColumns(rows, columnNames, groupBy, archivedColumns);
+	const opened = context?.get("task");
+	const [archiving, setArchiving] = useState(null);
+	const heldByArchiving = columns.find((column) => column.title === archiving)?.rows.length ?? 0;
+
+	// CONTEXT: a column is a setting, not a task — adding one must not invent a note
+	// CONTEXT: naming an archived list is how it is restored, or the added one would never show
+	const addList = (name) => {
+		const trimmed = String(name ?? "").trim();
+		if (!trimmed || columnNames.includes(trimmed)) return;
+		configure?.({
+			columns: [...columnNames, trimmed].join(", "),
+			archivedColumns: archivedColumns.filter((column) => column !== trimmed).join(", "),
+		});
+	};
+
+	// CONTEXT: what files a task under a heading is the property in its note, so a rename must reach both
+	const renameList = async (was, next) => {
+		const name = String(next ?? "").trim();
+		if (!name || name === was) return;
+		if (columnNames.includes(name) || archivedColumns.includes(name)) {
+			host?.ui?.notify(`"${name}" is already a list`);
+			return;
+		}
+
+		configure?.({ columns: columnNames.map((column) => (column === was ? name : column)).join(", ") });
+
+		const held = rows.filter((row) => (row.props?.[groupBy] ?? "") === was);
+		if (held.length === 0 || !write?.canUpdate) return;
+		for (const row of held) await write.update({ path: row.path }, { props: { [groupBy]: name } });
+	};
+
+	// CONTEXT: the one place a column leaves the board; the notes keep their groupBy, so a restore is lossless
+	const archiveList = (name) => {
+		configure?.({
+			columns: afterColumnLeaves(columnNames, name, [...columnNames, ...archivedColumns]).join(", "),
+			archivedColumns: [...archivedColumns, name].join(", "),
+		});
+		setArchiving(null);
+	};
+
+	const [carried, setCarried] = useState(null);
+	const dragging = {
+		row: carried,
+		pick: (row) => setCarried(row),
+		drop: () => setCarried(null),
+	};
+
+	const boardRef = useRef(null);
+	const [reorder, setReorder] = useState(null);
+
+	// TRADE-OFF: one step and one origin, not a rect per column — every column is the same width
+	const grabColumn = (from) => (event) => {
+		const board = boardRef.current;
+		const lists = [...board.querySelectorAll(".ok-list")];
+		const first = lists[0].getBoundingClientRect();
+		const carriedRect = lists[from].getBoundingClientRect();
+		event.dataTransfer?.setDragImage?.(lists[from], event.clientX - carriedRect.left, event.clientY - carriedRect.top);
+		const carrying = {
+			from,
+			to: from,
+			step: lists[1] ? lists[1].getBoundingClientRect().left - first.left : first.width,
+			origin: first.left - board.getBoundingClientRect().left + board.scrollLeft,
+		};
+		// CONTEXT: the browser paints the drag image after this handler, so the column empties a frame later
+		requestAnimationFrame(() => setReorder(carrying));
+	};
+
+	// CONTEXT: content coordinates, so scrolling the board mid-drag does not shift the aim
+	const aimColumn = (event) => {
+		if (!reorder) return;
+		event.preventDefault();
+		const board = boardRef.current;
+		const x = event.clientX - board.getBoundingClientRect().left + board.scrollLeft;
+		const wanted = Math.floor((x - reorder.origin) / reorder.step);
+		const to = Math.max(0, Math.min(columnNames.length - 1, wanted));
+		if (to !== reorder.to) setReorder({ ...reorder, to });
+	};
+
+	const dropColumn = () => {
+		if (!reorder) return;
+		if (reorder.to !== reorder.from) {
+			configure?.({ columns: afterColumnMoves(columnNames, reorder.from, reorder.to).join(", ") });
+		}
+		setReorder(null);
+	};
+
+	const shiftOf = (index) => {
+		if (!reorder) return undefined;
+		if (index === reorder.from) return (reorder.to - reorder.from) * reorder.step;
+		if (index > reorder.from && index <= reorder.to) return -reorder.step;
+		if (index < reorder.from && index >= reorder.to) return reorder.step;
+		return 0;
+	};
+
+	const addTask = async (column) => {
+		if (!write?.canCreate) return;
+		// CONTEXT: without an order of its own a new task sorts last by accident, and the first edit moves it
+		const lastOrder = rows.reduce((highest, row) => Math.max(highest, Number(row.props?.order) || 0), 0);
+		await write.create({
+			props: {
+				title: "New task",
+				[groupBy]: column,
+				board: context?.get("board") ?? "",
+				order: lastOrder + 1,
+				progress: 0,
+				priority: "P2",
+			},
+		});
+	};
+
+	// CONTEXT: the vault's own subscription brings the board back updated
+	const moveTask = async (column) => {
+		if (!carried || !write?.canUpdate) return;
+		if ((carried.props?.[groupBy] ?? "") === column) return;
+		await write.update({ path: carried.path }, { props: { [groupBy]: column } });
+		setCarried(null);
+	};
+
+	if (data?.tasks?.isLoading && rows.length === 0) {
+		return (
+			<WidgetRoot defaultRounded="none" className="orbi orbi-kanban" defaultBackgroundType="none">
+				<style>{CSS}</style>
+				<p class="ok-empty">Loading tasks…</p>
+			</WidgetRoot>
+		);
+	}
+
+	return (
+		<WidgetRoot defaultRounded="none" className="orbi orbi-kanban" defaultBackgroundType="none">
+			<style>{CSS}</style>
+			<div
+				class={`ok-board${reorder ? " is-dragging" : ""}`}
+				ref={boardRef}
+				onDragOver={aimColumn}
+				onDrop={dropColumn}
+			>
+				{columns.map((column, index) => (
+					<KanbanList
+						key={column.title}
+						title={column.title}
+						rows={column.rows}
+						cards={column.rows.map(toCard)}
+						CardSlot={slots?.card}
+						canWrite={Boolean(write?.canCreate)}
+						dragging={dragging}
+						shift={shiftOf(index)}
+						placeholder={reorder?.from === index}
+						onGrab={configure && index < columnNames.length ? grabColumn(index) : undefined}
+						onRelease={() => setReorder(null)}
+						onAdd={() => addTask(column.title)}
+						onArchive={configure ? () => setArchiving(column.title) : undefined}
+						onRename={configure ? (next) => renameList(column.title, next) : undefined}
+						onOpen={(row) => context?.set("task", row.path)}
+						onDropTask={() => moveTask(column.title)}
+						opened={opened}
+					/>
+				))}
+				{configure ? <AddList onAdd={addList} /> : null}
+			</div>
+
+			<Dialog open={Boolean(archiving)} onOpenChange={() => setArchiving(null)}>
+				<DialogContent class="ok-archive">
+					<DialogClose />
+					<DialogHeader>
+						<DialogTitle>Archive {archiving}?</DialogTitle>
+						<DialogDescription>
+							The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
+							{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button size="s" onClick={() => setArchiving(null)}>
+							Cancel
+						</Button>
+						<Button size="s" variant="accent" onClick={() => archiveList(archiving)}>
+							Archive
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</WidgetRoot>
+	);
+});

@@ -1,0 +1,26 @@
+{
+	"id": "@orbitask/filter-panel",
+	"title": "OrbiTask · Filter",
+	"defaultSize": { "w": 3, "h": 1 },
+	"provides": ["filters"],
+	"sources": {
+		"tasks": {
+			"label": "Tasks",
+			"default": {
+				"path": "Orbitask/Tasks",
+				"filters": [{ "prop": "board", "op": "is", "value": "@board" }]
+			}
+		}
+	},
+	"consumes": ["board"],
+	"settings": [
+		{
+			"key": "groups",
+			"type": "text",
+			"label": "Filter by",
+			"default": "assignees:people:Members, approval:checkbox:Approval Status, priority:checkbox:Priority Status"
+		},
+		{ "key": "openGroup", "type": "text", "label": "Open by default", "default": "assignees" },
+		{ "key": "key", "type": "text", "label": "Writes to", "default": "filters" }
+	]
+}
