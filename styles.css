@@ -16,6 +16,7 @@
 	--wg-widget-radius-l: 1.875rem;
 	--wg-widget-radius-xl: 2.5rem;
 	--wg-widget-radius-full: 999px;
+	--wg-widget-pad-surface: 16px;
 	--wg-widget-radius: var(--wg-widget-radius-l);
 
 	/* The board is the plate widgets sit on. Nested-radius law: the outer corner
@@ -35,13 +36,6 @@
 	   tools/check-shadow.mjs fails the build if this stops holding. */
 	--wg-widget-shadow: 0 0.1875rem 0.875rem rgba(0, 0, 0, 0.08);
 
-	/* The empty grid, drawn only while editing. Held as a LITERAL, never as var() on a
-	   theme variable: a custom property whose value references an undefined variable
-	   computes to guaranteed-invalid, which makes the property itself count as
-	   undefined — so var(--wg-cell-fill, fallback) would skip the fallback and the
-	   cell would paint nothing. A neutral grey reads on both light and dark. */
-	--wg-cell-fill: #fcfcfc;
-	--wg-cell-radius: 8px;
 }
 
 .block-language-widgetarium,
@@ -74,10 +68,87 @@ pre:has(> .block-language-widgetarium),
 	box-sizing: border-box;
 	--wg-card: var(--background-primary);
 	--wg-sunken: var(--background-modifier-hover);
-	--wg-line: var(--background-modifier-border);
+	/* CONTEXT: a hairline is a step of the INK over whatever it lies on — the host's border token
+	   measured 1.03 against a raised panel in dark, which is no line at all */
+	--wg-line: color-mix(in srgb, var(--text-normal) 14%, transparent);
 	--wg-accent: var(--interactive-accent);
 	--wg-on-accent: var(--text-on-accent);
 	--wg-muted: var(--text-muted);
+
+	/* CONTEXT: the kit's own tokens — hung here, not on :root, for the same reason as above */
+	/* CONTEXT: a step toward the ink, not a ramp position — base-20 is the chrome BEHIND the
+	   note under this repo's recorded dark ramp, so a control read as a hole */
+	--wg-kit-fill: color-mix(in srgb, var(--text-normal) 7%, var(--background-primary));
+	--wg-kit-fill-hover: color-mix(in srgb, var(--text-normal) 12%, var(--background-primary));
+	/* CONTEXT: a raised surface lifts — white is a no-op in light and a real step in dark */
+	--wg-kit-raise: color-mix(in srgb, #ffffff 12%, var(--background-primary));
+	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+	--wg-kit-warning: var(--color-orange, #d9822b);
+	--wg-kit-success-wash: color-mix(in srgb, var(--text-success) 14%, var(--background-primary));
+	--wg-kit-warning-wash: color-mix(in srgb, var(--wg-kit-warning) 16%, var(--background-primary));
+	--wg-kit-error-wash: color-mix(in srgb, var(--text-error) 14%, var(--background-primary));
+
+	/* TRADE-OFF: our own radii because Obsidian stops at 16px and the look needs more */
+	--wg-kit-plate: 22px;
+	--wg-kit-plate-pad: 8px;
+	--wg-kit-pill: 999px;
+	/* CONTEXT: concentric corners — an inner radius is the outer one minus the padding */
+	--wg-kit-item: calc(var(--wg-kit-plate) - var(--wg-kit-plate-pad));
+
+	--wg-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+	--wg-ease: cubic-bezier(0.4, 0, 0.2, 1);
+	--wg-press: 120ms;
+	--wg-quick: 200ms;
+	--wg-grow: 320ms;
+
+	--wg-kit-glass-tint: color-mix(in srgb, var(--background-primary) 42%, transparent);
+	--wg-kit-glass-panel: color-mix(in srgb, var(--wg-kit-raise) 78%, transparent);
+	--wg-kit-glass-blur: blur(24px) saturate(180%);
+	--wg-kit-glass-edge: inset 0 0 0 1px color-mix(in srgb, var(--text-normal) 12%, transparent);
+	--wg-kit-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.06);
+
+	/* Declared HERE and not on :root. Obsidian hangs its theme variables on body, and
+	   :root is body's parent — a var() resolved up there sees none of them, computes to
+	   guaranteed-invalid, and paints nothing at all. Measured: an accent of #ff0000 set on
+	   body read as empty on :root, and the grip came out fully transparent. */
+
+	/* the grid drawn under the tiles while editing */
+	--wg-cell-fill: #fcfcfc;
+	--wg-cell-radius: 8px;
+
+	/* Edit-mode chrome sits OUTSIDE the widget: the content pulls back, a dashed ring is
+	   drawn on the tile's own bounds, and the buttons straddle that ring. No pixel of the
+	   widget is ever covered, which is the only reason this works the same at 1x1 and at
+	   full screen. */
+	--wg-ring-colour: var(--background-modifier-border);
+	--wg-ring-width: 2px;
+	--wg-chrome-fade: 140ms;
+	--wg-chrome-morph: 200ms;
+	/* the pill's height; its radius is exactly half of this, which gives a capsule. A 50%
+	   radius would give an ELLIPSE, because the pill is wider than it is tall. */
+	--wg-chrome-button: 2.4rem;
+	--wg-chrome-icon: 1.05rem;
+	/* how far inside the ring the pill sits */
+	--wg-chrome-inset: 0.45rem;
+	/* Opaque on purpose. background-modifier-hover is a translucent rgba in Obsidian, so a
+	   button using it showed the widget through itself wherever the two overlapped. */
+	--wg-chrome-fill: var(--background-primary);
+	--wg-chrome-hover: var(--background-secondary);
+	/* Lighter than the theme's own border: this line separates two halves of one control,
+	   not two controls, so it only has to be seen, not to divide. */
+	--wg-chrome-divider: color-mix(in srgb, var(--background-modifier-border) 55%, transparent);
+	/* A single shadow puts all its darkness in one narrow band and the edge reads as a cut.
+	   Stacked, each layer wider and fainter than the last, the falloff is gradual — the same
+	   trick a real penumbra plays. */
+	--wg-chrome-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.035), 0 2px 5px rgba(0, 0, 0, 0.03),
+		0 5px 14px rgba(0, 0, 0, 0.022);
+
+	/* the resize grip */
+	--wg-grip-fill: var(--bases-table-border-color);
+	--wg-grip-opacity: 1;
+	/* how far it sits OUTSIDE the widget: level with the edge it reads as being in the
+	   widget, and a handle has to look like it is on the frame */
+	--wg-grip-out: 0px;
 	position: relative;
 	padding-top: 1.6rem;
 	font-family: var(--font-interface);
