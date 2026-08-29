@@ -31,6 +31,16 @@ const CSS = `
 	gap: var(--size-4-2, 8px);
 }
 
+/* ONE LINE SITS ON THE PILLS' LINE, TWO LINES START AT THE TOP. The box is as tall as a pill
+   (measured: 20px against a title line's 17.5px), so a single line centres inside it and a
+   second line grows the box past it, which puts the text back where it started on its own. */
+.orbi-task-card-titlebox {
+	display: flex;
+	align-items: center;
+	min-height: 20px;
+	min-width: 0;
+}
+
 /* CONTEXT: max-height is the fallback where -webkit-box is unsupported — two lines, no ellipsis */
 .orbi-task-card-title {
 	display: -webkit-box;
@@ -241,7 +251,9 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 			) : null}
 
 			<div class="orbi-task-card-head">
-				<h4 class="orbi-task-card-title">{card.title ?? "Untitled"}</h4>
+				<div class="orbi-task-card-titlebox">
+					<h4 class="orbi-task-card-title">{card.title ?? "Untitled"}</h4>
+				</div>
 				{priority || status ? (
 					<div class="orbi-task-card-badges">
 						{priority ? <Pill tone={toneOf(PRIORITY_TONES, priority)}>{priority}</Pill> : null}
