@@ -39,5 +39,20 @@
 				"path": "Orbitask/Tasks"
 			}
 		}
+	},
+	"preview": {
+		"size": {
+			"w": 7,
+			"h": 1
+		},
+		"settings": {
+			"tabs": "Widgetarium, Marketing Team, Ux Team",
+			"activeTab": "Widgetarium"
+		},
+		"sources": {
+			"tasks": {
+				"rows": []
+			}
+		}
 	}
 }

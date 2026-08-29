@@ -48,5 +48,52 @@
 			"label": "Writes to",
 			"default": "filters"
 		}
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"context": {
+			"board": "Widgetarium"
+		},
+		"properties": [
+			"Status",
+			"Priority",
+			"Assignees"
+		],
+		"sources": {
+			"tasks": {
+				"rows": [
+					{
+						"path": "preview/1.md",
+						"title": "Design the onboarding flow",
+						"status": "To Do",
+						"priority": "P1",
+						"assignees": [
+							"Alex Morgan"
+						]
+					},
+					{
+						"path": "preview/2.md",
+						"title": "Build the board layout engine",
+						"status": "Doing",
+						"priority": "P1",
+						"assignees": [
+							"Dana Reid"
+						]
+					},
+					{
+						"path": "preview/3.md",
+						"title": "Ship the colour token set",
+						"status": "Done",
+						"priority": "P2",
+						"assignees": [
+							"Kai Lawson"
+						]
+					}
+				]
+			}
+		}
+	}
 }

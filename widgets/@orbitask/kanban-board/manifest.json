@@ -77,5 +77,79 @@
 	"provides": [
 		"task",
 		"columns"
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 15,
+			"h": 5
+		},
+		"sources": {
+			"tasks": {
+				"rows": [
+					{
+						"path": "preview/1.md",
+						"title": "Design the onboarding flow",
+						"status": "To Do",
+						"priority": "P1",
+						"approval": "Check",
+						"progress": 34,
+						"tag": "error",
+						"assignees": [
+							"Alex Morgan",
+							"Maya Chen"
+						],
+						"order": 1
+					},
+					{
+						"path": "preview/2.md",
+						"title": "Collect competitor references",
+						"status": "To Do",
+						"priority": "P2",
+						"approval": "Check",
+						"progress": 45,
+						"tag": "warning",
+						"assignees": [
+							"Sam Okafor"
+						],
+						"order": 2
+					},
+					{
+						"path": "preview/3.md",
+						"title": "Build the board layout engine",
+						"status": "Doing",
+						"priority": "P1",
+						"approval": "Check",
+						"progress": 68,
+						"tag": "info",
+						"assignees": [
+							"Dana Reid",
+							"Liam Parker"
+						],
+						"order": 3
+					},
+					{
+						"path": "preview/4.md",
+						"title": "Ship the colour token set",
+						"status": "Done",
+						"priority": "P2",
+						"approval": "Approve",
+						"progress": 100,
+						"tag": "success",
+						"assignees": [
+							"Kai Lawson"
+						],
+						"order": 4
+					}
+				]
+			}
+		},
+		"context": {
+			"board": "Widgetarium"
+		},
+		"properties": [
+			"Status",
+			"Priority",
+			"Assignees"
+		]
+	}
 }

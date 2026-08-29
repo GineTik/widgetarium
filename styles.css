@@ -2037,3 +2037,278 @@ pre:has(> .block-language-widgetarium),
 		animation: none;
 	}
 }
+
+/* ── THE CATALOGUE ──────────────────────────────────────────────────────────────────────
+   A bento of widgets drawn live: every tile is the widget itself at its declared preview
+   size, scaled into a frame. Not screenshots — they do not follow the theme, they go stale
+   without saying so, and the code is already compiled and in memory. */
+:is(.wg-root, .wg-portal) .wg-cat {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-4, 16px);
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-head {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-search {
+	flex: 1;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-grid {
+	display: grid;
+	grid-template-columns: repeat(var(--wg-cat-columns, 6), minmax(0, 1fr));
+	grid-auto-rows: var(--wg-cat-row, 56px);
+	/* CONTEXT: a tall tile leaves a hole beside it, and a short one is glad to fill it */
+	grid-auto-flow: row dense;
+	gap: var(--wg-cat-gap, 12px);
+	align-content: start;
+	overflow: auto;
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	background: var(--wg-kit-fill);
+	border-radius: var(--wg-kit-plate);
+	/* CONTEXT: on a light theme nothing is lighter than white, so a card separates by its edge */
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	overflow: hidden;
+	isolation: isolate;
+	cursor: pointer;
+	transition: box-shadow var(--wg-quick) var(--wg-ease), transform var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile:hover {
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge), var(--wg-kit-shadow);
+	transform: translateY(-1px);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-stage {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	min-width: 0;
+	display: grid;
+	place-items: center;
+	padding: 6px;
+	overflow: hidden;
+	/* CONTEXT: a surface inside a lifted one, so the drawn widget reads as sitting on something */
+	background: var(--wg-kit-glass-group);
+}
+
+/* the widget is a PICTURE here: nothing inside it answers a pointer */
+:is(.wg-root, .wg-portal) .wg-cat-fit {
+	position: relative;
+	flex: none;
+	overflow: hidden;
+	pointer-events: none;
+	border-radius: var(--wg-kit-item);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-frame {
+	position: absolute;
+	left: 0;
+	top: 0;
+	transform-origin: top left;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-stand {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	width: 100%;
+	height: 100%;
+	padding: 0 10px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.35;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-mark {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background: var(--wg-kit-raise);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-line {
+	color: var(--text-muted);
+	max-width: 22ch;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-span {
+	color: var(--text-faint);
+	font-variant-numeric: tabular-nums;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-stand.is-broken .wg-cat-line {
+	color: var(--text-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-held {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 15px;
+	height: 15px;
+	border-radius: 50%;
+	background: var(--wg-kit-accent-wash);
+	color: var(--interactive-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-foot {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 28px;
+	padding: 0 6px 0 10px;
+	background: var(--wg-kit-raise);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-size: 11.5px;
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+/* TRADE-OFF: always drawn rather than revealed on hover — a touch device has no hover, and the
+   word is what tells a person whether this press adds, fills or opens */
+:is(.wg-root, .wg-portal) .wg-cat-verb {
+	flex: none;
+	border-radius: var(--wg-kit-pill);
+	padding: 1px 8px;
+	background: var(--wg-kit-fill);
+	color: var(--text-muted);
+	font-size: 10.5px;
+	font-weight: var(--font-semibold, 600);
+	transition: background var(--wg-quick) var(--wg-ease), color var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile:hover .wg-cat-verb,
+:is(.wg-root, .wg-portal) .wg-cat-tile:focus-visible .wg-cat-verb {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-more {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	border: none;
+	border-radius: var(--wg-kit-pill);
+	background: transparent;
+	color: var(--text-faint);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-more:hover {
+	background: var(--wg-kit-fill-hover);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-none {
+	margin: 0;
+	padding: var(--size-4-5, 20px);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small, 14px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal) .wg-cat-tile {
+		transition: none;
+	}
+
+	:is(.wg-root, .wg-portal) .wg-cat-tile:hover {
+		transform: none;
+	}
+}
+
+/* A CANDIDATE THAT FALLS SHORT IS STILL LISTED, and told apart by a line and a reason rather
+   than by absence. It sits over the picture because the tile's height is arithmetic — the grid
+   span is derived from the footer's fixed band, and a second line under it would overflow. */
+:is(.wg-root, .wg-portal) .wg-cat-lack {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	padding: 3px 8px;
+	background: color-mix(in srgb, var(--background-primary) 82%, transparent);
+	color: var(--text-muted);
+	font-size: 10.5px;
+	line-height: 1.3;
+	text-align: center;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* the whole width of the bento, so it reads as a line drawn across the list and not a tile */
+:is(.wg-root, .wg-portal) .wg-cat-divide {
+	grid-column: 1 / -1;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 4px 0 0;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-divide::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--wg-kit-card-edge);
+}
+
+/* THE CATALOGUE IS WIDER THAN A QUESTION. The dialog's own 560px is sized for a sentence and two
+   buttons; a bento of live widgets needs room or every tile falls back to its chip. */
+:is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
+	width: min(1040px, 100%);
+	max-height: 84vh;
+}
+
+/* CONTEXT: the slot picker opens OVER the settings window, which is a dialog on the same layer */
+:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-cat-over {
+	z-index: 2100;
+}
+
+/* the palette is one press now, not a row of every widget's name */
+.wg-palette-open {
+	font-weight: var(--font-semibold, 600);
+}

@@ -22,5 +22,11 @@
 			"label": "Views — widget ids, in order",
 			"default": "@orbitask/kanban-board, @orbitask/archived-columns"
 		}
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 3
+		}
+	}
 }

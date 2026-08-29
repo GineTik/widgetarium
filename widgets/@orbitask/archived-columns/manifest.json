@@ -9,5 +9,14 @@
 	"collapseBelowPx": 240,
 	"consumes": [
 		"board"
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 4
+		},
+		"context": {
+			"board": "Widgetarium"
+		}
+	}
 }

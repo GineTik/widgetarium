@@ -28,5 +28,15 @@
 			"label": "Selected view",
 			"default": "Kanban"
 		}
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 7,
+			"h": 1
+		},
+		"settings": {
+			"views": "Kanban, Archived columns",
+			"activeView": "Kanban"
+		}
+	}
 }

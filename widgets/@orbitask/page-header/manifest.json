@@ -38,5 +38,17 @@
 	],
 	"provides": [
 		"search"
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 17,
+			"h": 2
+		},
+		"settings": {
+			"title": "Marketing Tasks",
+			"breadcrumb": "Amazon, Projects, Marketing, Tasks",
+			"userName": "Alex Morgan",
+			"userRole": "Product Manager"
+		}
+	}
 }

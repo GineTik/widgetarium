@@ -71,5 +71,21 @@
 			"type": "text",
 			"default": "A, M, T"
 		}
-	]
+	],
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 3
+		},
+		"settings": {
+			"title": "Design the onboarding flow",
+			"priority": "P1",
+			"status": "Check",
+			"progress": 34,
+			"initials": "Alex Morgan, Maya Chen",
+			"tagColour": "error",
+			"dueDate": "30 Aug",
+			"attachments": 2
+		}
+	}
 }

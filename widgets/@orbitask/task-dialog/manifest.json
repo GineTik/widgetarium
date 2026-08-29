@@ -29,5 +29,12 @@
 				"path": "Orbitask/Tasks"
 			}
 		}
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 2
+		},
+		"instead": "Opens over the board as a dialog"
 	}
 }
