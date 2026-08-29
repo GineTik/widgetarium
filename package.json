@@ -33,7 +33,8 @@
 		"test:fill": "node tools/fill-test.mjs",
 		"test:settings": "node tools/settings-test.mjs",
 		"test:window": "node tools/window-test.mjs",
-		"test:ideal": "node tools/ideal-test.mjs"
+		"test:ideal": "node tools/ideal-test.mjs",
+		"shot:window": "node tools/window-shot.mjs"
 	},
 	"keywords": [],
 	"author": "",
