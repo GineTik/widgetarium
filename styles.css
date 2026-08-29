@@ -568,10 +568,29 @@ pre:has(> .block-language-widgetarium),
 	background: none;
 }
 
-/* a plate separates by tone, so elevation on top of it is noise */
-.wg-root.has-plate .wg-widget-root[data-fill="shadow"] {
-	box-shadow: none;
+/* Rounding is the widget author's call, not a consequence of the background: a surface-less
+   widget may still want a rounded hit area, and one WITH a surface may want square corners.
+   The two were coupled for a day and it took the choice away from the author. */
+.wg-widget-root[data-rounded="none"] {
+	border-radius: 0;
 }
+
+/* WHO PADS A WIDGET: the widget does — but with this number, not one of its own. Padding
+   only earns its keep when there is a surface for the content to sit inside; with no
+   background the same gap reads as the widget failing to reach its own edges. So the token
+   follows the background the widget ACTUALLY got, and a widget written as
+   `padding: var(--wg-widget-pad)` gains its inset the moment somebody turns a surface on.
+   Anything CSS cannot express reads the same fact through useBackgroundType(). */
+.wg-widget-root[data-fill="fill"],
+.wg-widget-root[data-fill="shadow"] {
+	--wg-widget-pad: var(--wg-widget-pad-surface);
+}
+
+.wg-widget-root[data-fill="none"] {
+	--wg-widget-pad: 0px;
+}
+
+/* a plate separates by tone, so elevation on top of it is noise */
 
 .wg-toolbar-gap {
 	flex: 1;
