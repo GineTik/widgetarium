@@ -360,11 +360,22 @@ check("it opens a panel", all(".orbi-filter .ofp-panel").length, 1);
 const groupHeads = all(".orbi-filter .ofp-group-head").map((node) => node.textContent.trim());
 check("the panel offers the groups it was configured with", groupHeads.length > 1, true);
 
+// THE BAR IS THE KIT'S NOW. Four hand-drawn icons, a hand-rolled search field and a tick rule
+// of its own were each a second copy of something the kit already carried — and each drifted.
+{
+	check("the bar's search is the kit's", all(".orbi-filter .wg-kit-pop-search-field").length, 1);
+	check("its buttons are the kit's", all(".orbi-filter .ofp-foot .wg-kit-btn").length, 2);
+	check("and it draws no tick of its own", all(".orbi-filter .ofp-tick").length, 0);
+}
+
+
 // open the priority group and tick a value that really exists in the vault
 const priorityHead = all(".orbi-filter .ofp-group-head").find((node) => /priority/i.test(node.textContent));
 await click(priorityHead);
 const options = all(".orbi-filter .ofp-option");
 check("its choices come from the notes", options.length > 0, true);
+check("and every one of them is the kit's own item", options.every((node) => node.classList.contains("wg-kit-pop-item")), true);
+check("with the kit's tick inside it, not one of ours", options.every((node) => Boolean(node.querySelector(".wg-kit-pop-tick"))), true);
 
 const beforeApply = cards();
 await click(options[0]);

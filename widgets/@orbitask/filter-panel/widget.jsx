@@ -1,5 +1,5 @@
 import { createWidget, WidgetRoot } from "widgetarium";
-import { ButtonLabel, Field, Popover, useRoomForLabel } from "widgetarium/kit";
+import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "preact/hooks";
 
 const CSS = `
@@ -15,15 +15,6 @@ const CSS = `
 
 .orbi-filter .ofp-icon { width: 16px; height: 16px; flex: none; }
 
-.orbi-filter .ofp-icon path,
-.orbi-filter .ofp-icon circle {
-	fill: none;
-	stroke: currentColor;
-	stroke-width: 1.8;
-	stroke-linecap: round;
-	stroke-linejoin: round;
-}
-
 /* CONTEXT: the kit hides the anchor while open, and visibility inherits */
 .orbi-filter .ofp-pop {
 	visibility: visible;
@@ -37,19 +28,6 @@ const CSS = `
 	gap: var(--size-4-3, 12px);
 	max-height: 70vh;
 	overflow-y: auto;
-}
-
-.orbi-filter .ofp-field {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-2, 8px);
-	padding: var(--size-2-2, 4px) var(--size-2-2, 4px) 0;
-}
-
-.orbi-filter .ofp-hint {
-	padding: 0 var(--size-4-2, 8px);
-	font-size: var(--font-ui-smaller, 12px);
-	color: var(--text-muted);
 }
 
 .orbi-filter .ofp-group { display: flex; flex-direction: column; }
@@ -114,9 +92,6 @@ const CSS = `
 	white-space: nowrap;
 }
 
-.orbi-filter .ofp-tick { margin-left: auto; color: var(--interactive-accent); opacity: 0; }
-.orbi-filter .ofp-option[aria-checked="true"] .ofp-tick { opacity: 1; }
-
 .orbi-filter .ofp-empty {
 	margin: 0;
 	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
@@ -138,39 +113,6 @@ const CSS = `
    doubled root class so it outranks the kit's own padding without relying on file order */
 .orbi.orbi-filter .ofp-open.is-tight { justify-content: center; padding: 0; }
 `;
-
-function FunnelIcon() {
-	return (
-		<svg class="ofp-icon" viewBox="0 0 20 20" aria-hidden="true">
-			<path d="M3 5h14l-5.2 6V16l-3.6-2v-3z" />
-		</svg>
-	);
-}
-
-function SearchIcon() {
-	return (
-		<svg class="ofp-icon" viewBox="0 0 20 20" aria-hidden="true">
-			<circle cx="9" cy="9" r="5.4" />
-			<path d="M13 13l3.5 3.5" />
-		</svg>
-	);
-}
-
-function ChevronIcon() {
-	return (
-		<svg class="ofp-icon ofp-chev" viewBox="0 0 20 20" aria-hidden="true">
-			<path d="M8 5l5 5-5 5" />
-		</svg>
-	);
-}
-
-function TickIcon() {
-	return (
-		<svg class="ofp-icon ofp-tick" viewBox="0 0 20 20" aria-hidden="true">
-			<path d="M4 10.5l4 4 8-9" />
-		</svg>
-	);
-}
 
 // CONTEXT: "prop:control:Label", authored by the board
 function parseGroups(text) {
@@ -233,13 +175,11 @@ export default createWidget(function OrbiTaskFilter({ settings, data, context })
 	const [open, setOpen] = useState(false);
 	// TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
 	const [draft, setDraft] = useState(applied);
-	const [keyword, setKeyword] = useState("");
 	const [shown, setShown] = useState(settings.openGroup ?? "");
 
 	const change = (next) => {
 		if (next) {
 			setDraft(context?.get(key) ?? {});
-			setKeyword("");
 		}
 		setOpen(next);
 	};
@@ -268,7 +208,6 @@ export default createWidget(function OrbiTaskFilter({ settings, data, context })
 	};
 
 	const count = countOf(applied);
-	const needle = keyword.trim().toLowerCase();
 
 	const trigger = (
 		<button
@@ -276,7 +215,7 @@ export default createWidget(function OrbiTaskFilter({ settings, data, context })
 			ref={triggerRef}
 			class={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${roomForWord ? "" : " is-tight"}`}
 		>
-			<FunnelIcon />
+			<Icon name="filter" class="ofp-icon" />
 			{roomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
 			{count > 0 ? <span class="wg-kit-count ofp-count">{count}</span> : null}
 		</button>
@@ -288,61 +227,52 @@ export default createWidget(function OrbiTaskFilter({ settings, data, context })
 
 			<Popover class="ofp-pop" trigger={trigger} open={open} onOpenChange={change}>
 				<div class="ofp-panel">
-						<div class="ofp-field">
-							<Field
-								block
-								icon={<SearchIcon />}
-								placeholder="Keyword"
-								value={keyword}
-								onInput={(event) => setKeyword(event.target.value)}
-							/>
-							<span class="ofp-hint">Narrows the choices below, not the board</span>
-						</div>
+					<PopoverSearch placeholder="Keyword" hint="Narrows the choices below, not the board">
+						{(needle) =>
+							groups.map((group) => {
+								const values = valuesFor(rows, group.prop).filter((value) => needle === "" || value.toLowerCase().includes(needle));
+								const isOpen = shown === group.prop;
+								return (
+									<div class="ofp-group" key={group.prop}>
+										<button
+											type="button"
+											class={`ofp-group-head${isOpen ? " is-on" : ""}`}
+											onClick={() => setShown(isOpen ? "" : group.prop)}
+										>
+											<span>{group.label}</span>
+											<Icon name="chevron" class="ofp-chev" />
+										</button>
 
-						{groups.map((group) => {
-							const values = valuesFor(rows, group.prop).filter((value) => needle === "" || value.toLowerCase().includes(needle));
-							const isOpen = shown === group.prop;
-							return (
-								<div class="ofp-group" key={group.prop}>
-									<button
-										type="button"
-										class={`ofp-group-head${isOpen ? " is-on" : ""}`}
-										onClick={() => setShown(isOpen ? "" : group.prop)}
-									>
-										<span>{group.label}</span>
-										<ChevronIcon />
-									</button>
+										{isOpen
+											? values.length === 0
+												? <p class="ofp-empty">Nothing to choose from yet.</p>
+												: values.map((value) => (
+														<PopoverItem
+															key={value}
+															class="ofp-option"
+															checked={isChosen(group, value)}
+															onClick={() => toggle(group, value)}
+														>
+															{group.control === "people" ? <span class={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
+															<span class="ofp-name">{value}</span>
+														</PopoverItem>
+												  ))
+											: null}
+									</div>
+								);
+							})
+						}
+					</PopoverSearch>
 
-									{isOpen
-										? values.length === 0
-											? <p class="ofp-empty">Nothing to choose from yet.</p>
-											: values.map((value) => (
-													<button
-														type="button"
-														key={value}
-														class="wg-kit-pop-item ofp-option"
-														aria-checked={String(isChosen(group, value))}
-														onClick={() => toggle(group, value)}
-													>
-														{group.control === "people" ? <span class={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
-														<span class="ofp-name">{value}</span>
-														<TickIcon />
-													</button>
-											  ))
-										: null}
-								</div>
-							);
-						})}
-
-						<div class="ofp-foot">
-							<button type="button" class="wg-kit-btn is-m ofp-reset" onClick={reset}>
-								Reset
-							</button>
-							<button type="button" class="wg-kit-btn is-m is-accent ofp-apply" onClick={apply}>
-								Apply
-							</button>
-						</div>
+					<div class="ofp-foot">
+						<Button class="ofp-reset" onClick={reset}>
+							Reset
+						</Button>
+						<Button class="ofp-apply" variant="accent" onClick={apply}>
+							Apply
+						</Button>
 					</div>
+				</div>
 			</Popover>
 		</WidgetRoot>
 	);
