@@ -141,7 +141,7 @@ const READING_PLACES = [
 	{ id: "views", x: 4, y: 3, w: 16, h: 1 },
 	{ id: "filters", x: 4, y: 4, w: 16, h: 1 },
 	{ id: "board", x: 4, y: 5, w: 16, h: 10 },
-	{ id: "popup", x: 0, y: 15, w: 20, h: 8 },
+	{ id: "dialog", x: 0, y: 15, w: 3, h: 1 },
 ];
 
 let board = normalizeBoard({
@@ -156,7 +156,7 @@ let board = normalizeBoard({
 			settings: { views: `${KANBAN}, ${ARCHIVED}` },
 			mounted: { [KANBAN]: { sources: { tasks: { path: FOLDER } } } },
 		},
-		{ id: "popup", widget: "@orbitask/task-popup", sources: { tasks: { path: FOLDER } } },
+		{ id: "dialog", widget: "@orbitask/task-dialog", sources: { tasks: { path: FOLDER } } },
 	],
 	context: { board: "Marketing Team", view: "Kanban" },
 	layouts: { 20: { places: READING_PLACES } },
@@ -251,11 +251,15 @@ if (add) {
 	check("pressing it asks the adapter to create a note", written.created.length > 0, true);
 }
 
-// 6. opening a card fills the popup
+// 6. opening a card opens the task dialog, which is portalled onto <body>
 const card = all(".orbi-kanban .ok-card-slot")[0];
 if (card) {
 	await click(card);
-	check("opening a card fills the popup", surface().querySelectorAll(".orbi-task-popup .otp-title, .orbi-task-popup h2, .orbi-task-popup h3").length > 0, true);
+	const opened = dom.window.document.body.querySelector(".orbi-task-dialog");
+	check("opening a card opens the task dialog", Boolean(opened?.querySelector(".otd-title")?.textContent.trim()), true);
+	// CONTEXT: the dialog is a scrim over the board, and every check below reads the board
+	await click(opened.querySelector(".otd-corner button:last-child"));
+	check("and closing it hands the board back", Boolean(dom.window.document.body.querySelector(".orbi-task-dialog")), false);
 }
 
 

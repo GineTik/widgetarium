@@ -10,7 +10,7 @@ import {
 	DialogClose,
 } from "widgetarium";
 import { Button, Card, Count, Icon, Plate } from "widgetarium/kit";
-import { useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 const CSS = `
 .ok-board {
@@ -424,7 +424,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	);
 	const write = actions?.tasks;
 	const columns = toColumns(rows, columnNames, groupBy, archivedColumns);
-	const opened = context?.get("task");
+	const opened = context?.get("task")?.path;
 	const [archiving, setArchiving] = useState(null);
 	const heldByArchiving = columns.find((column) => column.title === archiving)?.rows.length ?? 0;
 
@@ -463,6 +463,11 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		});
 		setArchiving(null);
 	};
+
+	// CONTEXT: a joined string, not the array — a fresh array every render notifies forever
+	useEffect(() => {
+		context?.set("columns", columnNames.join(", "));
+	}, [columnNames.join(", ")]);
 
 	const [carried, setCarried] = useState(null);
 	const dragging = {
@@ -576,7 +581,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 						onAdd={() => addTask(column.title)}
 						onArchive={configure ? () => setArchiving(column.title) : undefined}
 						onRename={configure ? (next) => renameList(column.title, next) : undefined}
-						onOpen={(row) => context?.set("task", row.path)}
+						onOpen={(row) => context?.set("task", { path: row.path })}
 						onDropTask={() => moveTask(column.title)}
 						opened={opened}
 					/>

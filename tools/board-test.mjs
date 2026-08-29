@@ -105,7 +105,7 @@ const next = rows.filter((row) => matches(row, resolveFilter([{ prop: "path", op
 check("opening another card swaps what the popup shows", next[0]?.props.title, "Rework the empty states");
 
 // one writer per key still holds across widgets that both want to open things
-check("a second widget may not also write the task key", opened.set("task", "x", "@orbitask/task-popup"), false);
+check("a second widget may not also write the task key", opened.set("task", "x", "@orbitask/task-dialog"), false);
 
 // The filter bar writes ONE object; the board's filter carries a spread clause that becomes
 // one query clause per key. Without it every widget would have to know in advance which

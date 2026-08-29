@@ -1,0 +1,33 @@
+{
+	"id": "@orbitask/task-dialog",
+	"title": "OrbiTask · Task dialog",
+	"defaultSize": {
+		"w": 3,
+		"h": 1
+	},
+	"maxSize": {
+		"h": 1
+	},
+	"collapseBelowPx": 40,
+	"consumes": [
+		"task",
+		"board",
+		"columns"
+	],
+	"settings": [
+		{
+			"key": "columns",
+			"type": "text",
+			"label": "Status values — only used when no board publishes its own",
+			"default": "To Do, Doing, Done"
+		}
+	],
+	"sources": {
+		"tasks": {
+			"label": "Tasks",
+			"default": {
+				"path": "Orbitask/Tasks"
+			}
+		}
+	}
+}
