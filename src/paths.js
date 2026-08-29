@@ -20,42 +20,25 @@ export const CLASSES = [
 	{ name: "desktop", upTo: Infinity, scale: 1.1 },
 ];
 
-// The cell a board aims for. Larger on a narrow screen and smaller on a wide one, because
-// the two are constrained by different things: a phone shows FEW cells and every one of
-// them is a finger target, a monitor shows MANY and the pointer is precise. Interpolated
-// across the range rather than stepped per class — a step would resize the whole board on
-// one pixel of width, the same cliff the per-class type scale already taught us to avoid.
+// THE CELL IS A SUM, NOT A PREFERENCE. A control is 42px tall and a widget pads it by 12 on
+// each side, so a widget one cell tall has to hold 42 + 12 + 12 = 66. Anything above that is
+// slack the widget cannot use; anything below it and the control does not fit its own cell.
+// Change the control height or the padding and this number moves with them.
+//
+// It was elastic before — a target interpolated from 84 down to 68 — and the cell it produced
+// ranged from 65 to 93px depending on the pane. That is the whole reason the drawings and the
+// grid disagreed: no single size existed to draw against. The board still fills its pane
+// exactly, but by scaling this one number a few percent rather than by inventing a new size,
+// so there is always a number to draw against and a multiplier that says how far off it is.
+// A user-set scale later multiplies the same number and nothing else changes.
 export const GRID = {
 	padPx: 16,
 	minColumns: 3,
-	targetCellNarrowPx: 84,
-	targetCellWidePx: 68,
-	// the gutter travels with the target. Held per class it stepped 8 -> 16 at 600px, and
-	// a wider window then fitted FEWER columns than a narrower one — the board reflowed
-	// backwards as it grew.
-	gapNarrowPx: 8,
-	gapWidePx: 16,
-	narrowWidthPx: 390,
-	wideWidthPx: 1100,
+	// CONTEXT: one cell is one medium control (42) plus one gutter (12) — at 66 a control
+	// filled two thirds of its cell and every 1x1 tile read as a button lost inside a hole
+	cellPx: 54,
+	gapPx: 12,
 };
-
-function alongWidth(width) {
-	const { narrowWidthPx, wideWidthPx } = GRID;
-	return Math.max(0, Math.min(1, (width - narrowWidthPx) / (wideWidthPx - narrowWidthPx)));
-}
-
-function targetCellFor(width) {
-	const { targetCellNarrowPx, targetCellWidePx } = GRID;
-	return targetCellNarrowPx + (targetCellWidePx - targetCellNarrowPx) * alongWidth(width);
-}
-
-// deliberately fractional: rounding the gutter made one extra column stop fitting at a
-// single width, so a wider window reflowed to FEWER columns. Tiles and cells are both
-// placed from this same number, so they stay aligned on a subpixel value.
-function gapFor(width) {
-	const { gapNarrowPx, gapWidePx } = GRID;
-	return gapNarrowPx + (gapWidePx - gapNarrowPx) * alongWidth(width);
-}
 
 // One scale for the whole board, and it only moves when the class does. Within a class
 // the cell breathes while the type holds still, so a widget given more room adapts
@@ -69,15 +52,23 @@ export function classOf(width) {
 }
 
 export function measureGrid(availableWidth) {
-	const { padPx, minColumns } = GRID;
-	const gapPx = gapFor(availableWidth);
+	const { padPx, minColumns, cellPx, gapPx } = GRID;
 	const inner = Math.max(0, availableWidth - 2 * padPx);
-	// round, not floor: floor always overshoots the target, which widens the sawtooth the
-	// cell rides as a column is added. Rounding picks the count landing nearest the target.
-	const target = targetCellFor(availableWidth);
-	const columns = Math.max(minColumns, Math.round((inner + gapPx) / (target + gapPx)));
-	// the cell absorbs the remainder, so the board is exactly the width it was given:
-	// no ceiling, therefore no dead margin and nothing to overflow
-	const cell = (inner - (columns - 1) * gapPx) / columns;
-	return { columns, cell, gap: gapPx, pad: padPx, boardWidth: inner };
+	// ROUND, not floor: the column count nearest the pane is the one whose scale is nearest 1.
+	// Flooring always left a rag and never asked for less than a whole column.
+	const columns = Math.max(minColumns, Math.round((inner + gapPx) / (cellPx + gapPx)));
+	const wanted = columns * cellPx + (columns - 1) * gapPx;
+	// ONE NUMBER IN THE DESIGN, ONE MULTIPLIER ON THE SCREEN. The cell is 66 everywhere a
+	// person reasons about it; the board then scales by a few percent so the columns land
+	// exactly on the pane's edge. That is how a fixed size and a full fill hold at once —
+	// the alternative was a rag of up to 77px, or an elastic cell nobody could draw against.
+	const scale = wanted > 0 ? inner / wanted : 1;
+	return {
+		columns,
+		scale,
+		cell: cellPx * scale,
+		gap: gapPx * scale,
+		pad: padPx,
+		boardWidth: inner,
+	};
 }
