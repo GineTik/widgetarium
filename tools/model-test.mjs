@@ -259,6 +259,53 @@ check("rendering does not warn", onRender, 0);
 	check("a slots that is not an object is harmless", normalizeBoard({ tiles: [{ id: "a", widget: "w", slots: "card" }] }).tiles[0].slots, {});
 }
 
+// CONTEXT: the property list belongs to the BOARD — one vocabulary, every task shows every row
+{
+	const authored = {
+		tiles: [{ id: "card", widget: "w", slots: { properties: "@other/properties" }, mounted: { body: { settings: { zoom: 2 } } } }],
+		properties: ["Status", "Priority", "Progress", "Deadline", "Members"],
+		context: { board: "Orbitask" },
+		layouts: { 12: { places: [{ id: "card", x: 0, y: 0, w: 4, h: 2 }] } },
+	};
+	const owned = normalizeBoard(authored);
+	check("the board's property list survives normalising", owned.properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
+
+	const written = serializeBoard(owned);
+	// CONTEXT: the comparison is order-sensitive, and the filter draws its rows in this order
+	check("the property list reaches the file, in order", written.properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
+	check("and reopening the file keeps that order", normalizeBoard(written).properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
+	// CONTEXT: VACUOUS until the two above are green — with no properties at either end it compares nothing
+	check("properties, context and mounts round-trip byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
+
+	// CONTEXT: VACUOUS until the list is written at all — nothing wrote the key before
+	const bare = serializeBoard(normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layouts: {} }));
+	check("a board that defines no properties gains no properties key", "properties" in bare, false);
+	check("but the list is still promised in memory", normalizeBoard({ tiles: [], layouts: {} }).properties, []);
+
+	// CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
+	const damaged = normalizeBoard({
+		tiles: [{ id: "a", widget: "w" }],
+		properties: ["Status", null, 7, "", "   ", { name: "Deadline" }, ["Members"], "Client"],
+	});
+	check("a malformed property entry degrades alone", damaged.properties, ["Status", "Client"]);
+	check("and the board is still parsed", damaged.tiles[0].id, "a");
+	check("a properties that is not a list is harmless", normalizeBoard({ properties: "Status" }).properties, []);
+
+	// CONTEXT: the name IS the identity, and the anchors ignore case
+	const doubled = normalizeBoard({ properties: ["Deadline", "Members", "deadline", " Deadline ", "MEMBERS"] });
+	check("a repeated name is one property, whatever its case", doubled.properties, ["Deadline", "Members"]);
+	check("a padded name is trimmed", normalizeBoard({ properties: ["  Deadline  "] }).properties, ["Deadline"]);
+}
+
+// CONTEXT: the normaliser promises the same shape whichever format it was given
+{
+	const fromArray = normalizeBoard([{ id: "a", widget: "w", x: 0, y: 0, w: 3, h: 2 }]);
+	check("a bare array still lands on 12", authoredColumns(fromArray), [12]);
+	check("a bare array gets a mode", fromArray.mode, "collapsed");
+	check("a bare array gets a context", fromArray.context, {});
+	check("a bare array gets a property list", fromArray.properties, []);
+}
+
 // A MOUNTED WIDGET'S SLOT PICK MUST REACH THE FILE TOO. mountedTile now carries `slots`, so the
 // earlier argument that a mounted child could not have one no longer holds — and a pick that the
 // runtime honours but the file forgets is the same silent loss, one level down.

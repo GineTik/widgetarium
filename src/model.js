@@ -35,6 +35,21 @@ function normalizeSlots(input) {
 	return result;
 }
 
+// TRADE-OFF: a name alone, no stored type — the dialog anchors the control off the name
+// CONTEXT: anchors ignore case, so two spellings are one property; the first spelling is kept
+export function normalizeProperties(input) {
+	if (!Array.isArray(input)) return [];
+	const kept = [];
+	const claimed = new Set();
+	for (const entry of input) {
+		const name = typeof entry === "string" ? entry.trim() : "";
+		if (name === "" || claimed.has(name.toLowerCase())) continue;
+		claimed.add(name.toLowerCase());
+		kept.push(name);
+	}
+	return kept;
+}
+
 function normalizeTile(tile, index) {
 	return {
 		id: tile.id ?? `w${index}`,
@@ -86,10 +101,8 @@ function normalizeLayouts(input) {
 }
 
 export function normalizeBoard(input) {
-	if (Array.isArray(input)) {
-		const places = input.map(normalizePlace);
-		return { tiles: input.map(normalizeTile), layouts: places.length ? { [LEGACY_BARE_ARRAY_COLUMNS]: places } : {} };
-	}
+	// CONTEXT: entries are tiles AND places at once; delegating keeps one promised shape
+	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY_COLUMNS]: input } });
 	// LEGACY: folded used to live on the place, once per layout, under the name restoreW. A
 	// file written then still opens, and its panel is still folded — read off whichever layout
 	// recorded it, because the fact was always about the tile.
@@ -114,6 +127,7 @@ export function normalizeBoard(input) {
 		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
 		// the board's shared selection: which board, project or view the widgets are on
 		context: { ...(input?.context ?? {}) },
+		properties: normalizeProperties(input?.properties),
 	};
 }
 
@@ -162,6 +176,7 @@ export function serializeBoard(board) {
 		// arithmetic, and writing it would mark a width the user never touched as theirs
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
 		...(Object.keys(board.context ?? {}).length ? { context: board.context } : {}),
+		...(board.properties?.length ? { properties: board.properties } : {}),
 		layouts: Object.fromEntries(
 			authoredColumns(board).map((columns) => [
 				String(columns),
