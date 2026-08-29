@@ -1,4 +1,4 @@
-import { clampPlace, generatePlaces, packPlaces } from "./layout.js";
+import { arrange, clampPlace } from "./layout.js";
 
 // The pre-columns format named its layouts after device classes, and each name carried a
 // fixed column count, so the move to numeric keys is 1:1 and loses nothing. These are
@@ -7,10 +7,20 @@ import { clampPlace, generatePlaces, packPlaces } from "./layout.js";
 const LEGACY_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
 const LEGACY_BARE_ARRAY_COLUMNS = 12;
 
+// CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
 function normalizeSources(input) {
 	const result = {};
 	for (const [name, value] of Object.entries(input ?? {})) {
-		result[name] = { path: value.path ?? "", filters: value.filters ?? [], sort: value.sort ?? [] };
+		result[name] = { path: value?.path ?? "", filters: value?.filters ?? [], sort: value?.sort ?? [] };
+	}
+	return result;
+}
+
+// CONTEXT: a tile that mounts other widgets keeps their settings here, so a group is one tile
+function normalizeMounted(input) {
+	const result = {};
+	for (const [id, held] of Object.entries(input ?? {})) {
+		result[id] = { settings: held?.settings ?? {}, sources: normalizeSources(held?.sources), mounted: normalizeMounted(held?.mounted) };
 	}
 	return result;
 }
@@ -21,6 +31,11 @@ function normalizeTile(tile, index) {
 		widget: tile.widget,
 		settings: tile.settings ?? {},
 		sources: normalizeSources(tile.sources ?? tile.data),
+		mounted: normalizeMounted(tile.mounted),
+		// Folded or not is a fact about the WIDGET, not about one screen width. Kept on the
+		// place it was stored once per layout, so a board with four layouts held four
+		// opinions and the sidebar sprang open at whichever width was authored first.
+		...(tile.folded ? { folded: true } : {}),
 	};
 }
 
@@ -31,6 +46,11 @@ function normalizePlace(place, index) {
 		y: place.y ?? 0,
 		w: place.w ?? 3,
 		h: place.h ?? 2,
+		// The width a folded tile goes back to. It belongs to the PLACE, not the tile: folded
+		// is one fact about the widget, but how wide it was is a fact about this screen — a
+		// panel folded on a phone must not decide what it reopens to on a desktop.
+		// restoreW is what this field was called before folded moved onto the tile
+		...(place.wasW ?? place.restoreW ? { wasW: place.wasW ?? place.restoreW } : {}),
 	};
 }
 
@@ -59,7 +79,46 @@ export function normalizeBoard(input) {
 		const places = input.map(normalizePlace);
 		return { tiles: input.map(normalizeTile), layouts: places.length ? { [LEGACY_BARE_ARRAY_COLUMNS]: places } : {} };
 	}
-	return { tiles: (input?.tiles ?? []).map(normalizeTile), layouts: normalizeLayouts(input?.layouts) };
+	// LEGACY: folded used to live on the place, once per layout, under the name restoreW. A
+	// file written then still opens, and its panel is still folded — read off whichever layout
+	// recorded it, because the fact was always about the tile.
+	const foldedOnce = new Set();
+	for (const layout of Object.values(input?.layouts ?? {})) {
+		// the RAW entry: normalizePlace has already dropped the field by the time it runs
+		const raw = Array.isArray(layout) ? layout : (layout?.places ?? []);
+		for (const place of raw) {
+			if (place?.restoreW) foldedOnce.add(place.id);
+		}
+	}
+
+	return {
+		tiles: (input?.tiles ?? []).map((tile, index) => {
+			const seen = normalizeTile(tile, index);
+			return foldedOnce.has(seen.id) ? { ...seen, folded: true } : seen;
+		}),
+		layouts: normalizeLayouts(input?.layouts),
+		// One board, two sizes. The mode is a fact about the board, so it lives in the file:
+		// held in a hook it was lost to every re-render the editor caused, which read as
+		// "any keystroke collapses the page".
+		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
+		// the board's shared selection: which board, project or view the widgets are on
+		context: { ...(input?.context ?? {}) },
+	};
+}
+
+// CONTEXT: a view never opened has nothing to say, and an empty record in the file reads as one that does
+function serializeMounted(input) {
+	const result = {};
+	for (const [id, held] of Object.entries(input ?? {})) {
+		const nested = serializeMounted(held.mounted);
+		const kept = {
+			...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
+			...(Object.keys(held.sources ?? {}).length ? { sources: held.sources } : {}),
+			...(nested ? { mounted: nested } : {}),
+		};
+		if (Object.keys(kept).length) result[id] = kept;
+	}
+	return Object.keys(result).length ? result : null;
 }
 
 export function serializeBoard(board) {
@@ -76,15 +135,19 @@ export function serializeBoard(board) {
 		tiles: board.tiles.map((tile) => ({
 			id: tile.id,
 			widget: tile.widget,
+			...(tile.folded ? { folded: true } : {}),
 			...(Object.keys(tile.settings ?? {}).length ? { settings: tile.settings } : {}),
 			...(Object.keys(tile.sources ?? {}).length ? { sources: tile.sources } : {}),
+			...(serializeMounted(tile.mounted) ? { mounted: serializeMounted(tile.mounted) } : {}),
 		})),
 		// only authored counts reach the file: a derived layout is one render's worth of
 		// arithmetic, and writing it would mark a width the user never touched as theirs
+		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
+		...(Object.keys(board.context ?? {}).length ? { context: board.context } : {}),
 		layouts: Object.fromEntries(
 			authoredColumns(board).map((columns) => [
 				String(columns),
-				{ places: board.layouts[columns].map((place) => ({ id: place.id, x: place.x, y: place.y, w: place.w, h: place.h })) },
+				{ places: board.layouts[columns].map((place) => ({ id: place.id, x: place.x, y: place.y, w: place.w, h: place.h, ...(place.wasW ? { wasW: place.wasW } : {}) })) },
 			]),
 		),
 	};
@@ -113,13 +176,38 @@ export function sourceColumnsFor(board, columns) {
 	return best;
 }
 
-export function layoutFor(board, columns) {
+// What a widget declares, by tile id — where it is born and whether it grows. Threaded in
+// rather than read here, because the model must not know the registry exists. Neither answer
+// can make a layout impossible, which is the whole point of replacing the old limits.
+export function layoutFor(board, columns, declaredBy = () => ({})) {
+	const growthOf = (place) => declaredBy(place.id ?? place)?.growth ?? "fill";
 	const own = board.layouts[columns];
-	if (own) return { places: packPlaces(own.map((place) => clampPlace(place, columns))), isAuthored: true };
+	if (own) {
+		const places = own.map((place) => clampPlace(place, columns));
+		return { places: arrange(seatAll(board, places, columns, declaredBy), columns, { reading: true }), isAuthored: true };
+	}
 
 	const source = sourceColumnsFor(board, columns);
-	if (source === null) return { places: [], isAuthored: false };
-	return { places: generatePlaces(board.layouts[source], source, columns), isAuthored: false };
+	const derived = source === null ? [] : arrange(board.layouts[source], columns, { scaleFrom: source, growthOf });
+	return { places: arrange(seatAll(board, derived, columns, declaredBy), columns, { reading: true }), isAuthored: false };
+}
+
+// ONE board, whatever the width. A tile added at one column count had a place only there, so
+// a narrower or wider screen dropped it entirely and the two read as different boards. A tile
+// exists on the board or it does not; where it sits is per width, whether it sits is not.
+function seatAll(board, places, columns, declaredBy) {
+	const seated = new Set(places.map((place) => place.id));
+	const missing = board.tiles.filter((tile) => !seated.has(tile.id));
+	if (missing.length === 0) return places;
+
+	let row = places.reduce((lowest, place) => Math.max(lowest, place.y + place.h), 0);
+	const added = missing.map((tile) => {
+		const born = declaredBy(tile.id)?.defaultSize ?? { w: 3, h: 2 };
+		const place = clampPlace({ id: tile.id, x: 0, y: row, w: born.w ?? 3, h: born.h ?? 2 }, columns);
+		row += place.h;
+		return place;
+	});
+	return [...places, ...added];
 }
 
 export function tileById(board, id) {

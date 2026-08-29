@@ -293,7 +293,6 @@ pre:has(> .block-language-widgetarium),
 }
 
 .wg-tile.is-editing {
-	box-shadow: inset 0 0 0 1px var(--wg-line);
 	cursor: grab;
 }
 
@@ -302,7 +301,6 @@ pre:has(> .block-language-widgetarium),
 	transition: none;
 	z-index: 20;
 	cursor: grabbing;
-	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
 }
 
 .wg-tile.is-editing:active {
@@ -320,81 +318,222 @@ pre:has(> .block-language-widgetarium),
 	font: inherit;
 }
 
+/* The content, and the only thing that scales. Pulled back on hover so the ring has room —
+   a transform, not a reflow, so the widget is not asked to re-lay itself out on every hover. */
 .wg-tile-body {
 	flex: 1;
 	min-height: 0;
 	overflow: visible;
+	transform: scale(1);
+	transform-origin: center;
+	transition: transform var(--wg-chrome-morph) cubic-bezier(0.2, 0, 0, 1);
 }
 
 .wg-root.is-editing .wg-tile-body {
 	pointer-events: none;
 }
 
-.wg-tile-bar {
+.wg-root.is-editing .wg-tile:hover .wg-tile-body,
+.wg-tile.is-dragging .wg-tile-body {
+	transform: scale(var(--wg-tile-scale));
+}
+
+/* The ring is drawn on the tile's bounds and is the surface a drag starts from. */
+.wg-tile-ring {
 	position: absolute;
-	inset: 0 0 auto 0;
+	inset: 0;
 	z-index: 2;
+	border: var(--wg-ring-width) dashed var(--wg-ring-colour);
+	border-radius: var(--wg-widget-radius);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--wg-chrome-fade) ease;
+	touch-action: none;
+}
+
+.wg-tile:hover .wg-tile-ring,
+.wg-tile.is-dragging .wg-tile-ring {
+	opacity: 1;
+	pointer-events: auto;
+	cursor: grab;
+}
+
+.wg-tile.is-dragging .wg-tile-ring {
+	cursor: grabbing;
+}
+
+/* One pill, two halves, a hairline between them. It sits INSIDE the ring, in the band the
+   content vacated — there is room there, and a control floating outside the tile reads as
+   belonging to the board rather than to this widget. */
+.wg-tile-actions {
+	position: absolute;
+	right: var(--wg-chrome-inset);
+	top: var(--wg-chrome-inset);
+	z-index: 3;
+	display: flex;
+	height: var(--wg-chrome-button);
+	border-radius: calc(var(--wg-chrome-button) / 2);
+	background: var(--wg-chrome-fill);
+	box-shadow: var(--wg-chrome-shadow);
+	overflow: hidden;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--wg-chrome-fade) ease;
+}
+
+.wg-tile:hover .wg-tile-actions,
+.wg-tile.is-dragging .wg-tile-actions {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.wg-tile-actions button {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	padding: 5px 8px 5px 14px;
-	font-family: var(--font-interface);
-	font-size: 12px;
-	line-height: 18px;
-	color: var(--wg-muted);
-	background: var(--background-secondary-alt, var(--background-secondary));
-	touch-action: none;
-	user-select: none;
-}
-
-.wg-tile-name {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.wg-tile-actions {
-	display: flex;
-	gap: 2px;
-}
-
-.wg-tile-actions button,
-.wg-x {
-	background: none !important;
+	justify-content: center;
+	width: calc(var(--wg-chrome-button) * 1.15);
+	height: 100%;
+	padding: 0 !important;
 	border: none !important;
+	border-radius: 0 !important;
+	background: transparent !important;
 	box-shadow: none !important;
-	padding: 2px 6px !important;
-	font-size: 12px;
-	color: var(--wg-muted);
+	color: var(--text-normal);
 	cursor: pointer;
-	border-radius: 0.375rem;
 	line-height: 1;
 }
 
-.wg-tile-actions button:hover,
-.wg-x:hover {
-	background: var(--background-modifier-hover) !important;
-	color: var(--text-normal);
+/* the divider is a real line between the halves, not a gap */
+.wg-tile-actions button + button {
+	box-shadow: inset 1px 0 0 var(--wg-chrome-divider) !important;
 }
 
-.wg-resize {
+.wg-tile-actions button:hover {
+	background: var(--wg-chrome-hover) !important;
+}
+
+/* Outlined, never filled: these paths are strokes, and a fill turns each into a blob. */
+.wg-icon {
+	width: var(--wg-chrome-icon);
+	height: var(--wg-chrome-icon);
+	flex: none;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.9;
+	pointer-events: none;
+}
+
+/* The grip sits ASTRIDE the widget's edge, half of it outside the box, the way Apple's
+   resizable controls do — a grip drawn inside the widget reads as decoration on the
+   content, not as a handle on the frame. Corners are an arc with round ends, which only
+   an SVG stroke can draw; sides are the straight case of the same shape. */
+.wg-grip {
 	position: absolute;
-	right: 0;
-	bottom: 0;
 	z-index: 2;
-	width: 18px;
-	height: 18px;
-	cursor: nwse-resize;
 	touch-action: none;
-	background: linear-gradient(
-		135deg,
-		transparent 0 50%,
-		var(--wg-line) 50% 60%,
-		transparent 60% 70%,
-		var(--wg-line) 70% 80%,
-		transparent 80%
-	);
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+
+.wg-tile:hover .wg-grip,
+.wg-tile.is-dragging .wg-grip {
+	opacity: var(--wg-grip-opacity);
+}
+
+.wg-grip-arc {
+	position: absolute;
+	inset: 0;
+	overflow: visible;
+}
+
+.wg-grip-arc path {
+	stroke: var(--wg-grip-fill);
+	stroke-width: 7;
+	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+}
+
+/* sides: the same stroke, straight — a capsule centred on the edge */
+.wg-grip-n,
+.wg-grip-s,
+.wg-grip-w,
+.wg-grip-e {
+	background: var(--wg-grip-fill);
+	border-radius: 999px;
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.wg-grip-n,
+.wg-grip-s {
+	left: 50%;
+	width: 34px;
+	height: 7px;
+	margin-left: -17px;
+	cursor: ns-resize;
+}
+
+.wg-grip-n {
+	top: calc(var(--wg-grip-out) * -1 - 3px);
+}
+
+.wg-grip-s {
+	bottom: calc(var(--wg-grip-out) * -1 - 3px);
+}
+
+.wg-grip-w,
+.wg-grip-e {
+	top: 50%;
+	width: 7px;
+	height: 34px;
+	margin-top: -17px;
+	cursor: ew-resize;
+}
+
+.wg-grip-w {
+	left: calc(var(--wg-grip-out) * -1 - 3px);
+}
+
+.wg-grip-e {
+	right: calc(var(--wg-grip-out) * -1 - 3px);
+}
+
+/* corners: one arc, flipped into each corner so its centre of curvature lands on the
+   widget's own — verified: SE (14,14), NE (14,30), NW (30,30), SW (30,14) */
+.wg-grip-nw,
+.wg-grip-ne,
+.wg-grip-sw,
+.wg-grip-se {
+	/* the arc follows the widget's own corner, so its box has to track that radius: the
+	   path is drawn for a radius of 30 inside a box of 44, and that ratio is what scales.
+	   The stroke does not scale with it — a bigger corner must not mean a fatter grip. */
+	width: calc(var(--wg-widget-radius) * 44 / 30);
+	height: calc(var(--wg-widget-radius) * 44 / 30);
+}
+
+.wg-grip-se {
+	right: calc(var(--wg-grip-out) * -1);
+	bottom: calc(var(--wg-grip-out) * -1);
+	cursor: nwse-resize;
+}
+
+.wg-grip-ne {
+	right: calc(var(--wg-grip-out) * -1);
+	top: calc(var(--wg-grip-out) * -1);
+	cursor: nesw-resize;
+	transform: scaleY(-1);
+}
+
+.wg-grip-nw {
+	left: calc(var(--wg-grip-out) * -1);
+	top: calc(var(--wg-grip-out) * -1);
+	cursor: nwse-resize;
+	transform: scale(-1, -1);
+}
+
+.wg-grip-sw {
+	left: calc(var(--wg-grip-out) * -1);
+	bottom: calc(var(--wg-grip-out) * -1);
+	cursor: nesw-resize;
+	transform: scaleX(-1);
 }
 
 .wg-palette {
@@ -561,20 +700,46 @@ pre:has(> .block-language-widgetarium),
 	box-shadow: inset 0 0 0 1px var(--wg-line);
 }
 
-.wg-empty {
-	opacity: 0.7;
-}
 
 /* The widget root decides how the widget sits on the board: its corner and how it
    separates itself from what is behind. The tile stays paintless so a shadow can
    leave it, and the board can still overrule elevation. */
 .wg-widget-root {
+	/* THE WIDGET ANSWERS FOR ITS OWN BOX. A media query asks how wide the SCREEN is, which a
+	   widget in a tile cannot use — two tiles of different widths on one screen would style
+	   themselves identically. A container query asks how wide THIS IS, in pixels, so a widget
+	   knows nothing about columns, boards or Widgetarium and works unchanged on any site. */
+	container-type: inline-size;
+	container-name: widget;
+
 	display: flex;
 	flex-direction: column;
 	width: 100%;
 	height: 100%;
 	box-sizing: border-box;
+	/* the grid decides the size, never the content: a widget too full for its cells is
+	   clipped, and dealing with that is the widget author's job, not the board's */
+	overflow: hidden;
 }
+
+/* what the tile will become, shown while the pointer holds it */
+.wg-tile[data-size]::after {
+	content: attr(data-size);
+	position: absolute;
+	top: -1.4rem;
+	left: 0;
+	z-index: 21;
+	padding: 0.1rem 0.4rem;
+	border-radius: var(--wg-radius-s);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: 0.7rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	pointer-events: none;
+}
+
+
 
 .wg-widget-root[data-rounded="base"] {
 	border-radius: var(--wg-widget-radius);

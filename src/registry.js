@@ -1,12 +1,13 @@
 import { h, Fragment } from "preact";
 import { useState, useEffect, useMemo, useRef } from "preact/hooks";
 import { transform } from "sucrase";
-import { widgetarium } from "./api.js";
+import { widgetarium, kitModule } from "./api.js";
 import { WIDGETS_DIR } from "./paths.js";
 
 const BASE_SCOPE = {
 	h,
 	Fragment,
+	kitModule,
 	useState,
 	useEffect,
 	useMemo,
@@ -26,6 +27,7 @@ function compile(source, filePath) {
 function createRequire(scope) {
 	const modules = {
 		widgetarium: scope.widgetarium,
+		"widgetarium/kit": scope.kitModule,
 		preact: { h: scope.h, Fragment: scope.Fragment },
 		"preact/hooks": {
 			useState: scope.useState,
@@ -36,7 +38,7 @@ function createRequire(scope) {
 	};
 	return (name) => {
 		const found = modules[name];
-		if (!found) throw new Error(`cannot import "${name}" — a widget may only import widgetarium or preact`);
+		if (!found) throw new Error(`cannot import "${name}" — a widget may only import widgetarium, widgetarium/kit or preact`);
 		return found;
 	};
 }
@@ -57,15 +59,37 @@ export class WidgetRegistry {
 
 	async load() {
 		this.widgets.clear();
+		this.dropStyles();
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
 
 		for (const scope of (await adapter.list(WIDGETS_DIR)).folders) {
+			// A family of widgets shares one palette, so the sheet belongs to the SCOPE folder,
+			// not to each widget. Without this the tokens file was never read at all and every
+			// widget referencing var(--orbi-*) rendered unpainted.
+			await this.loadStyles(adapter, `${scope}/tokens.css`, scope);
 			for (const folder of (await adapter.list(scope)).folders) {
+				await this.loadStyles(adapter, `${folder}/styles.css`, folder);
 				await this.loadOne(adapter, folder);
 			}
 		}
 		return this.widgets;
+	}
+
+	async loadStyles(adapter, cssPath, owner) {
+		if (!(await adapter.exists(cssPath))) return;
+
+		this.styles ??= new Map();
+		const element = document.createElement("style");
+		element.dataset.widgetarium = owner;
+		element.textContent = await adapter.read(cssPath);
+		document.head.appendChild(element);
+		this.styles.set(owner, element);
+	}
+
+	dropStyles() {
+		for (const element of this.styles?.values() ?? []) element.remove();
+		this.styles?.clear();
 	}
 
 	async loadOne(adapter, folder) {
