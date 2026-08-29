@@ -20,7 +20,17 @@ function normalizeSources(input) {
 function normalizeMounted(input) {
 	const result = {};
 	for (const [id, held] of Object.entries(input ?? {})) {
-		result[id] = { settings: held?.settings ?? {}, sources: normalizeSources(held?.sources), mounted: normalizeMounted(held?.mounted) };
+		result[id] = { settings: held?.settings ?? {}, sources: normalizeSources(held?.sources), slots: normalizeSlots(held?.slots), mounted: normalizeMounted(held?.mounted) };
+	}
+	return result;
+}
+
+// CONTEXT: which widget fills a slot, by slot name; a nameless or null pick is no pick at all
+function normalizeSlots(input) {
+	if (typeof input !== "object" || input === null) return {};
+	const result = {};
+	for (const [name, widget] of Object.entries(input)) {
+		if (typeof widget === "string" && widget !== "") result[name] = widget;
 	}
 	return result;
 }
@@ -31,6 +41,7 @@ function normalizeTile(tile, index) {
 		widget: tile.widget,
 		settings: tile.settings ?? {},
 		sources: normalizeSources(tile.sources ?? tile.data),
+		slots: normalizeSlots(tile.slots),
 		mounted: normalizeMounted(tile.mounted),
 		// Folded or not is a fact about the WIDGET, not about one screen width. Kept on the
 		// place it was stored once per layout, so a board with four layouts held four
@@ -114,11 +125,25 @@ function serializeMounted(input) {
 		const kept = {
 			...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
 			...(Object.keys(held.sources ?? {}).length ? { sources: held.sources } : {}),
+			...(Object.keys(held.slots ?? {}).length ? { slots: held.slots } : {}),
 			...(nested ? { mounted: nested } : {}),
 		};
 		if (Object.keys(kept).length) result[id] = kept;
 	}
 	return Object.keys(result).length ? result : null;
+}
+
+function serializeTile(tile) {
+	const mounted = serializeMounted(tile.mounted);
+	return {
+		id: tile.id,
+		widget: tile.widget,
+		...(tile.folded ? { folded: true } : {}),
+		...(Object.keys(tile.settings ?? {}).length ? { settings: tile.settings } : {}),
+		...(Object.keys(tile.sources ?? {}).length ? { sources: tile.sources } : {}),
+		...(Object.keys(tile.slots ?? {}).length ? { slots: tile.slots } : {}),
+		...(mounted ? { mounted } : {}),
+	};
 }
 
 export function serializeBoard(board) {
@@ -132,14 +157,7 @@ export function serializeBoard(board) {
 		}
 	}
 	return {
-		tiles: board.tiles.map((tile) => ({
-			id: tile.id,
-			widget: tile.widget,
-			...(tile.folded ? { folded: true } : {}),
-			...(Object.keys(tile.settings ?? {}).length ? { settings: tile.settings } : {}),
-			...(Object.keys(tile.sources ?? {}).length ? { sources: tile.sources } : {}),
-			...(serializeMounted(tile.mounted) ? { mounted: serializeMounted(tile.mounted) } : {}),
-		})),
+		tiles: board.tiles.map(serializeTile),
 		// only authored counts reach the file: a derived layout is one render's worth of
 		// arithmetic, and writing it would mark a width the user never touched as theirs
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),

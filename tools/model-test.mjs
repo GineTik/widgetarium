@@ -228,5 +228,57 @@ check("rendering does not warn", onRender, 0);
 	check("and nothing was pushed into a column", new Set(once.map((place) => place.y)).size, 2);
 }
 
+// CONTEXT: surface.js resolveSlots reads tile.slots[name] — the person's pick of widget per slot
+{
+	const authored = {
+		tiles: [
+			{
+				id: "popup",
+				widget: "w",
+				slots: { properties: "@other/properties" },
+				mounted: { body: { settings: { zoom: 2 } } },
+			},
+		],
+		layouts: { 12: { places: [{ id: "popup", x: 0, y: 0, w: 4, h: 2 }] } },
+	};
+	const chosen = normalizeBoard(authored);
+	check("a slot choice survives normalising", chosen.tiles[0].slots, { properties: "@other/properties" });
+
+	const written = serializeBoard(chosen);
+	check("a slot choice reaches the file", written.tiles[0].slots, { properties: "@other/properties" });
+	check("and the tile beside it keeps its mounted record", written.tiles[0].mounted, { body: { settings: { zoom: 2 } } });
+	check("the round trip is byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
+
+	const bare = serializeBoard(normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layouts: {} }));
+	check("a board that slots nothing gains no slots key", "slots" in bare.tiles[0], false);
+
+	// CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
+	const damaged = normalizeBoard({ tiles: [{ id: "a", widget: "w", slots: { card: null, row: "@x/row" } }], layouts: {} });
+	check("a null slot entry degrades alone", damaged.tiles[0].slots, { row: "@x/row" });
+	check("and the board is still parsed", damaged.tiles[0].id, "a");
+	check("a slots that is not an object is harmless", normalizeBoard({ tiles: [{ id: "a", widget: "w", slots: "card" }] }).tiles[0].slots, {});
+}
+
+// A MOUNTED WIDGET'S SLOT PICK MUST REACH THE FILE TOO. mountedTile now carries `slots`, so the
+// earlier argument that a mounted child could not have one no longer holds — and a pick that the
+// runtime honours but the file forgets is the same silent loss, one level down.
+{
+	const board = normalizeBoard({
+		tiles: [{ id: "group", widget: "@x/group", mounted: { "@x/kanban": { slots: { card: "@other/card" } } } }],
+		layouts: { 12: { places: [{ id: "group", x: 0, y: 0, w: 4, h: 2 }] } },
+	});
+	check("a mounted child's slot pick survives normalising", board.tiles[0].mounted["@x/kanban"].slots, { card: "@other/card" });
+	check("and reaches the file", serializeBoard(board).tiles[0].mounted["@x/kanban"].slots, { card: "@other/card" });
+
+	const empty = normalizeBoard({
+		tiles: [{ id: "group", widget: "@x/group", mounted: { "@x/kanban": { settings: { a: 1 } } } }],
+		layouts: { 12: { places: [{ id: "group", x: 0, y: 0, w: 4, h: 2 }] } },
+	});
+	check("a mounted child that slots nothing gains no slots key", "slots" in serializeBoard(empty).tiles[0].mounted["@x/kanban"], false);
+
+	const twice = serializeBoard(normalizeBoard(serializeBoard(board)));
+	check("and the round trip is byte-identical", JSON.stringify(twice), JSON.stringify(serializeBoard(board)));
+}
+
 console.log(failed ? `\n${failed} failed` : "\nall passed");
 process.exit(failed ? 1 : 0);
