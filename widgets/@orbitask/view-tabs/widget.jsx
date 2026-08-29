@@ -7,8 +7,6 @@ const STYLE = `
 .orbi-view-tabs .ovt-pick .ovt-caret { transform: rotate(90deg); transition: transform var(--orbi-press) var(--orbi-ease); }
 .orbi-view-tabs .ovt-pick.is-open .ovt-caret { transform: rotate(-90deg); }
 
-.orbi-view-tabs .ovt-item-mark { margin-left: auto; opacity: 0; }
-.orbi-view-tabs .ovt-item.is-on .ovt-item-mark { opacity: 1; }
 `;
 
 function toList(value) {
@@ -46,12 +44,10 @@ export default createWidget(function OrbiTaskViewTabs({ settings, context }) {
 				{views.map((view) => (
 					<PopoverItem
 						key={view}
-						class={`ovt-item${view === selected ? " is-on" : ""}`}
 						checked={view === selected}
 						onClick={choose(view)}
 					>
 						{view}
-						<Icon name="tick" size={15} class="ovt-item-mark" />
 					</PopoverItem>
 				))}
 			</Popover>

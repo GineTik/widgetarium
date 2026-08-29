@@ -1209,6 +1209,16 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: a 1px item in a column flex box is shrunk away without flex: none */
+/* the tick sits at the far end of the row, and only a chosen row has one */
+:is(.wg-root, .wg-portal) .wg-kit-pop-tick {
+	margin-left: auto;
+	flex: none;
+	color: var(--interactive-accent);
+	opacity: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick { opacity: 1; }
+
 :is(.wg-root, .wg-portal) .wg-kit-pop-list {
 	display: flex;
 	flex-direction: column;
@@ -2004,13 +2014,7 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-set-tick {
-	margin-left: auto;
-	color: var(--interactive-accent);
-	opacity: 0;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-set-tick {
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick {
 	opacity: 1;
 }
 

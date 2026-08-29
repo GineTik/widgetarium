@@ -538,6 +538,7 @@ export function PopoverItem({ checked, children, ...rest }) {
 			class: cx("wg-kit-pop-item", rest.class),
 		},
 		children,
+		checked === undefined ? null : h(Icon, { name: "tick", class: "wg-kit-pop-tick" }),
 	);
 }
 

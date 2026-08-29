@@ -199,7 +199,6 @@ function sourceGroups(state) {
 			...offered.map((folder) =>
 				h(PopoverItem, { key: folder, checked: folder === path, onClick: () => state.setDraft(folder) }, [
 					h("span", { class: "wg-set-pop-name", key: "name" }, folder),
-					h(Icon, { name: "tick", class: "wg-set-tick" }),
 				]),
 			),
 			popoverFoot(state, () => state.setDraft(declared), write),

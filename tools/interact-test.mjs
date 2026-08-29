@@ -561,11 +561,11 @@ const groupBoard = (views, seen = "Kanban", tabs = {}) =>
 
 const tileNode = (id) => all(`[data-tile="${id}"]`)[0];
 const tabLabel = (id = "views") => tileNode(id)?.querySelector(".ovt-pick")?.textContent.trim() ?? "";
-const tabItems = () => [...tileNode("views").querySelectorAll(".ovt-item")].map((node) => node.textContent.trim());
+const tabItems = () => [...tileNode("views").querySelectorAll(".wg-kit-pop-item")].map((node) => node.textContent.trim());
 const openTabs = async (id = "views") => click(tileNode(id).querySelector(".ovt-pick"));
 const pickView = async (name, id = "views") => {
 	await openTabs(id);
-	await click([...tileNode(id).querySelectorAll(".ovt-item")].find((node) => node.textContent.trim().startsWith(name)));
+	await click([...tileNode(id).querySelectorAll(".wg-kit-pop-item")].find((node) => node.textContent.trim().startsWith(name)));
 };
 
 {
