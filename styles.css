@@ -103,9 +103,9 @@ pre:has(> .block-language-widgetarium),
 	--wg-quick: 200ms;
 	--wg-grow: 320ms;
 
-	--wg-kit-glass-tint: color-mix(in srgb, var(--background-primary) 42%, transparent);
-	--wg-kit-glass-panel: color-mix(in srgb, var(--wg-kit-raise) 78%, transparent);
-	--wg-kit-glass-blur: blur(24px) saturate(180%);
+	--wg-kit-glass-tint: color-mix(in srgb, var(--background-primary) 82%, transparent);
+	--wg-kit-glass-panel: color-mix(in srgb, var(--wg-kit-raise) 94%, transparent);
+	--wg-kit-glass-blur: blur(40px) saturate(180%);
 	--wg-kit-glass-edge: inset 0 0 0 1px color-mix(in srgb, var(--text-normal) 12%, transparent);
 	/* CONTEXT: inside glass there is no solid background to step from, so a group steps toward the ink */
 	--wg-kit-glass-group: color-mix(in srgb, var(--text-normal) 3.5%, var(--wg-kit-raise));
@@ -1580,8 +1580,10 @@ pre:has(> .block-language-widgetarium),
 	/* the window places itself by inset, so the overlay must not pad it inwards as well */
 	padding: 0;
 	display: block;
+	/* NO backdrop-filter HERE. An ancestor that carries one becomes a backdrop root, and every
+	   blur inside it then samples a flat surface: measured, the panel's own glass went from a
+	   stripe swing of 2 to 27 — thirteen times weaker — purely from this one line. */
 	background: color-mix(in srgb, var(--background-primary) 55%, rgba(0, 0, 0, 0.6));
-	backdrop-filter: blur(3px);
 }
 
 :is(.wg-root, .wg-portal) .wg-set-window {
@@ -1727,6 +1729,13 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-set-head.is-sheet {
 	right: 16px;
 	max-width: none;
+}
+
+/* THE PANEL IS READ, not glanced at. It took --wg-kit-glass-tint, the thin fill meant for small
+   floating chrome, so the board showed through every row of it — measured at srgb 1 1 1 / 0.82.
+   A surface somebody reads takes the panel fill and a blur heavy enough to matter under it. */
+:is(.wg-root, .wg-portal) :is(.wg-set-panel, .wg-set-head, .wg-set-bar).wg-kit-glass {
+	background: var(--wg-kit-glass-panel);
 }
 
 :is(.wg-root, .wg-portal) .wg-set-panel {

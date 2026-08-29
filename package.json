@@ -35,6 +35,7 @@
 		"test:window": "node tools/window-test.mjs",
 		"test:ideal": "node tools/ideal-test.mjs",
 		"shot:window": "node tools/window-shot.mjs",
+		"test:blur": "node tools/blur-test.mjs",
 		"test:ladder": "node tools/ladder-test.mjs"
 	},
 	"keywords": [],

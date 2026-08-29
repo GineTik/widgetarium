@@ -145,7 +145,20 @@ for (const [theme, read] of Object.entries(levels)) {
 check("the window's own ground is the canvas colour", arrival.canvasFill, levels.light["--background-primary"]);
 
 console.log("\n— the glass survives, because nothing above it is transformed —");
-check("the panel is really blurred", arrival.panelBlur, "blur(24px) saturate(1.8)");
+// THE LAW, NOT THE NUMBER. Pinning the exact blur meant the token could not be tuned without
+// editing this line too — and a gate that has to be edited alongside the thing it guards is a
+// second copy of that thing, not a check on it.
+const blurPx = (value) => Number(/blur\((\d+(?:\.\d+)?)px\)/.exec(String(value))?.[1] ?? 0);
+console.log(`   the panel is blurred by ${blurPx(arrival.panelBlur)}px`);
+check("the panel is really blurred", blurPx(arrival.panelBlur) >= 24, true);
+check("and it saturates what shows through", /saturate/.test(String(arrival.panelBlur)), true);
+
+// A SURFACE SOMEBODY READS IS NOT A SURFACE SOMEBODY GLANCES AT. The panel took the thin tint
+// meant for small floating chrome, so the board showed through every row of it and the blur had
+// almost nothing to hide. Measured at 0.82 before; a panel has to be denser than that.
+const alphaOf = (colour) => Number(/\/\s*([\d.]+)\s*\)/.exec(String(colour))?.[1] ?? 1);
+console.log(`   the panel's own fill is ${arrival.panelFill}`);
+check("the panel is dense enough to read on", alphaOf(arrival.panelFill) >= 0.9, true);
 check("three floating surfaces carry the blur", arrival.blurred.length, 3);
 check("and they are the header, the panel and the zoom bar", arrival.blurred.sort().join(" "), "aside.wg-set-panel.wg-kit-glass div.wg-set-bar.wg-kit-glass div.wg-set-head.wg-kit-glass");
 
@@ -165,7 +178,7 @@ check("and the tile stops saying it is live", zoomed.liveAtOpen, false);
 check("1:1 takes the transform back off", live.canvasTransform, "none");
 check("the shield with it", live.hasLookShield, false);
 check("the tile says it is live", live.liveAtOpen, true);
-check("and the glass is still glass", live.panelBlur, "blur(24px) saturate(1.8)");
+check("and the glass is still glass", blurPx(live.panelBlur) >= 24, true);
 
 // THE WINDOW FITS THE SCREEN IT OPENS IN. The board is inside a note and can be far taller
 // than the viewport, so the window's height is the room, never the board's own height.
