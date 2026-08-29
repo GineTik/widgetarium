@@ -630,9 +630,11 @@ pre:has(> .block-language-widgetarium),
 	padding: 18px;
 	overflow: hidden;
 	outline: none;
-	background: var(--background-primary);
+	/* CONTEXT: measured — glass over the 45% scrim read 227 against its own 240 plate, elevation backwards */
+	background: var(--wg-kit-raise);
 	border-radius: var(--wg-widget-radius);
-	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+	/* CONTEXT: a floating panel is told apart by its edge, never by a cast shadow */
+	box-shadow: var(--wg-kit-glass-edge);
 }
 
 /* CONTEXT: a title/description stack — the close button is pinned to the panel, not sat in here */
@@ -956,6 +958,17 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-kit-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
 :is(.wg-root, .wg-portal) .wg-kit-btn[disabled]:active { transform: none; }
 
+/* CONTEXT: min-width 0 is what lets a flex item shrink below its text, so the label clips
+   instead of the button overflowing its tile and taking the chevron off the edge */
+:is(.wg-root, .wg-portal) .wg-kit-btn-label {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: left;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-icon {
 	border: none;
 	cursor: pointer;
@@ -1179,6 +1192,9 @@ pre:has(> .block-language-widgetarium),
 
 :is(.wg-root, .wg-portal) .wg-kit-seg button[aria-selected="true"] { color: var(--text-normal); font-weight: var(--font-semibold, 600); }
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-l button { height: 46px; font-size: var(--font-ui-medium, 16px); padding: 0 var(--size-4-5, 20px); }
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-s { padding: 2px; }
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-s button { height: 24px; font-size: var(--font-ui-smaller, 12px); padding: 0 var(--size-4-2, 8px); gap: var(--size-2-2, 4px); }
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-s .wg-kit-seg-thumb { top: 2px; bottom: 2px; }
 
 :is(.wg-root, .wg-portal) .wg-kit-seg-thumb {
 	position: absolute;
@@ -1193,7 +1209,9 @@ pre:has(> .block-language-widgetarium),
 	z-index: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-anchor { display: inline-flex; }
+/* CONTEXT: the anchor stands between the tile and the trigger, so it must pass both the
+   width it is given and the permission to shrink */
+:is(.wg-root, .wg-portal) .wg-kit-anchor { display: inline-flex; min-width: 0; }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop {
 	/* CONTEXT: the anchor is hidden while open and the panel lives inside it, so it must opt back in */
@@ -1243,6 +1261,191 @@ pre:has(> .block-language-widgetarium),
 	margin: var(--size-2-2, 4px) var(--size-4-3, 12px);
 }
 
+/* CONTEXT: the trigger's measured width, handed over rather than forced */
+:is(.wg-root, .wg-portal) .wg-kit-pop.is-below { min-width: var(--wg-kit-anchor-width, 200px); }
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-search {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2, 4px);
+	padding: var(--size-2-2, 4px) var(--size-2-2, 4px) var(--size-4-2, 8px);
+}
+
+/* CONTEXT: inside glass there is no solid ground to step from */
+:is(.wg-root, .wg-portal) .wg-kit-pop-search .wg-kit-pop-search-field { background: var(--wg-kit-glass-group); }
+:is(.wg-root, .wg-portal) .wg-kit-pop-search .wg-kit-pop-search-field:focus-within { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-search-hint {
+	padding: 0 var(--size-4-2, 8px);
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal {
+	display: flex;
+	flex-direction: column;
+	padding: var(--size-2-3, 6px) var(--size-4-2, 8px) var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2, 8px);
+	padding: var(--size-2-2, 4px) var(--size-2-3, 6px) var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal-month {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 2px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal-weekday {
+	text-align: center;
+	padding-bottom: var(--size-2-2, 4px);
+	font-family: var(--font-monospace);
+	font-size: 9px;
+	letter-spacing: 0.06em;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal-day {
+	height: 28px;
+	padding: 0;
+	border: none;
+	font-family: inherit;
+	font-size: var(--font-ui-smaller, 12px);
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-outside { color: var(--text-faint); opacity: 0.45; }
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-today { color: var(--interactive-accent); font-weight: var(--font-semibold, 600); }
+/* CONTEXT: a day can be today AND picked — the doubled class says which wins, not the file order */
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked { color: var(--text-on-accent); font-weight: var(--font-semibold, 600); opacity: 1; }
+
+:is(.wg-root, .wg-portal) .wg-kit-progress {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	min-width: 0;
+	outline: none;
+	touch-action: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-progress-track {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 64px;
+	height: 6px;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-fill-hover);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-progress-fill {
+	display: block;
+	height: 100%;
+	border-radius: var(--wg-kit-pill);
+	background: var(--interactive-accent);
+}
+
+/* CONTEXT: a knob is not a floating surface — the kit page gives the slider thumb this lift */
+:is(.wg-root, .wg-portal) .wg-kit-progress-knob {
+	position: absolute;
+	top: 50%;
+	width: 16px;
+	height: 16px;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-raise);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), var(--wg-kit-glass-edge);
+	transform: translate(-50%, -50%);
+	transition: width var(--wg-press) var(--wg-ease), height var(--wg-press) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-progress.is-grabbed .wg-kit-progress-knob { width: 20px; height: 20px; }
+
+:is(.wg-root, .wg-portal) .wg-kit-progress-num {
+	flex: none;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-medium, 500);
+	font-variant-numeric: tabular-nums;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-progress.is-grabbed .wg-kit-progress-num { color: var(--interactive-accent); font-weight: var(--font-semibold, 600); }
+
+:is(.wg-root, .wg-portal) .wg-kit-progress:focus-visible .wg-kit-progress-track { box-shadow: 0 0 0 2px var(--interactive-accent); }
+
+/* TRADE-OFF: one scroller for both, so there is no pair of scroll offsets to keep in step */
+:is(.wg-root, .wg-portal) .wg-kit-md {
+	position: relative;
+	overflow-y: auto;
+	background: var(--wg-kit-fill);
+	border-radius: var(--wg-kit-plate);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-md-page { position: relative; }
+
+/* CONTEXT: every metric deciding where a character lands, declared once for mirror and textarea */
+:is(.wg-root, .wg-portal) .wg-kit-md-text {
+	margin: 0;
+	border: 0;
+	padding: var(--size-4-4, 16px);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-normal, 400);
+	font-style: normal;
+	line-height: 1.62;
+	letter-spacing: normal;
+	word-spacing: normal;
+	text-indent: 0;
+	text-transform: none;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	word-break: normal;
+	tab-size: 2;
+	box-sizing: border-box;
+	direction: ltr;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror { color: var(--text-normal); }
+/* CONTEXT: a trailing newline draws no line box, and the caret would sit off the page */
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror::after { content: "\A"; white-space: pre-wrap; }
+
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-heading { font-weight: var(--font-bold, 700); }
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-strong { font-weight: var(--font-semibold, 600); }
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-em { font-style: italic; }
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-link { color: var(--interactive-accent); }
+
+/* CONTEXT: Obsidian paints its own textarea, so the reset needs two classes to win */
+:is(.wg-root, .wg-portal) textarea.wg-kit-md-input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	appearance: none;
+	background: none;
+	border-radius: 0;
+	box-shadow: none;
+	outline: none;
+	resize: none;
+	overflow: hidden;
+	color: transparent;
+	caret-color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) textarea.wg-kit-md-input::selection { background: color-mix(in srgb, var(--interactive-accent) 30%, transparent); }
+:is(.wg-root, .wg-portal) textarea.wg-kit-md-input::placeholder { color: var(--text-faint); }
+
 :is(.wg-root, .wg-portal) .wg-kit-switch {
 	position: relative;
 	width: 50px;
@@ -1279,6 +1482,8 @@ pre:has(> .block-language-widgetarium),
 	.wg-kit-icon::before,
 	.wg-kit-pop-item::before,
 	.wg-kit-row::before,
+	.wg-kit-cal-day::before,
+	.wg-kit-progress-knob,
 	.wg-kit-seg button::before,
 	.wg-kit-switch::before,
 	.wg-kit-pop,
@@ -1302,6 +1507,7 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-kit-icon,
 :is(.wg-root, .wg-portal) .wg-kit-pop-item,
 :is(.wg-root, .wg-portal) .wg-kit-row,
+:is(.wg-root, .wg-portal) .wg-kit-cal-day,
 :is(.wg-root, .wg-portal) .wg-kit-seg button,
 :is(.wg-root, .wg-portal) .wg-kit-switch {
 	position: relative;
@@ -1317,6 +1523,7 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-kit-icon::before,
 :is(.wg-root, .wg-portal) .wg-kit-pop-item::before,
 :is(.wg-root, .wg-portal) .wg-kit-row::before,
+:is(.wg-root, .wg-portal) .wg-kit-cal-day::before,
 :is(.wg-root, .wg-portal) .wg-kit-seg button::before,
 :is(.wg-root, .wg-portal) .wg-kit-switch::before {
 	content: "";
@@ -1361,6 +1568,8 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-plain:hover::before { background: var(--wg-kit-accent-wash); }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-item::before { border-radius: var(--wg-kit-item); }
+:is(.wg-root, .wg-portal) .wg-kit-cal-day:hover::before { background: var(--background-modifier-hover); }
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked::before { background: var(--interactive-accent); }
 :is(.wg-root, .wg-portal) .wg-kit-row::before { border-radius: 0; }
 :is(.wg-root, .wg-portal) .wg-kit-pop-item:hover::before { background: var(--background-modifier-hover); }
 :is(.wg-root, .wg-portal) .wg-kit-row.is-pressable:hover::before { background: var(--background-modifier-hover); }

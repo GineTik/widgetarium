@@ -1,4 +1,4 @@
-import { h, cloneElement, toChildArray } from "preact";
+import { Fragment, h, cloneElement, toChildArray } from "preact";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "preact/hooks";
 
 export function cx(...parts) {
@@ -58,8 +58,6 @@ export function Icon({ name, size = 16, class: cls }) {
 		dangerouslySetInnerHTML: { __html: glyph },
 	});
 }
-
-export const ICON_NAMES = Object.keys(GLYPHS);
 
 // CONTEXT: which colour a priority or an approval reads as — presentation, so the kit owns it
 export const PRIORITY_TONES = { P1: "error", P2: "warning", P3: "success" };
@@ -195,6 +193,42 @@ export function useSegmentedThumb(value, items) {
 	};
 }
 
+// CONTEXT: a bare text node cannot ellipsize — the label needs a box of its own to clip in
+export function ButtonLabel(props) {
+	return render("span", props, cx("wg-kit-btn-label", props.class, props.className));
+}
+
+// CONTEXT: measured, not a constant — Filter's word fits at 100px, the constant dropped it at 150
+export function useRoomForLabel(controlRef) {
+	const [fits, setFits] = useState(true);
+	// TRADE-OFF: remembered — a collapsed control no longer holds the label to re-measure
+	const needed = useRef(0);
+
+	useLayoutEffect(() => {
+		const control = controlRef.current;
+		if (!control) return;
+
+		const measure = () => {
+			const room = control.clientWidth;
+			// CONTEXT: before the first layout every box is zero, which is not "no room"
+			if (room === 0) return;
+			// TRADE-OFF: found, not handed over — preact strips `ref` off a function component
+			const label = control.querySelector(".wg-kit-btn-label");
+			if (label) needed.current = room - label.clientWidth + label.scrollWidth;
+			if (needed.current === 0) return;
+			setFits(room >= needed.current);
+		};
+
+		measure();
+		if (typeof ResizeObserver !== "function") return;
+		const watcher = new ResizeObserver(measure);
+		watcher.observe(control);
+		return () => watcher.disconnect();
+	}, []);
+
+	return fits;
+}
+
 export const fieldClass = variants("wg-kit-field", { size: { m: "", s: "is-s" }, block: { true: "is-block" } }, { size: "m" });
 
 // TRADE-OFF: the field owns its <input> rather than taking children — three widgets had each
@@ -213,7 +247,7 @@ export function Segmented({ items, value, onChange, size = "m", class: cls }) {
 
 	return h(
 		"div",
-		{ class: cx("wg-kit-seg", size === "l" && "is-l", cls), ref: listRef, role: "tablist" },
+		{ class: cx("wg-kit-seg", size === "l" && "is-l", size === "s" && "is-s", cls), ref: listRef, role: "tablist" },
 		h("span", thumbProps),
 		items.map((item) =>
 			h(
@@ -255,7 +289,26 @@ function prefersReducedMotion() {
 	return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
 }
 
-function placePanel(panel, rect) {
+// CONTEXT: the design draws 6px between a row and the panel under it
+const ANCHOR_GAP_PX = 6;
+
+// TRADE-OFF: a table, not a second component — only the origin and the trigger's fate differ
+const PLACEMENTS = {
+	over: {
+		panelClass: "",
+		hidesTrigger: true,
+		origin: (rect) => ({ left: rect.left, top: rect.top }),
+		flipped: (rect, size) => ({ left: rect.right - size.width, top: rect.bottom - size.height }),
+	},
+	below: {
+		panelClass: "is-below",
+		hidesTrigger: false,
+		origin: (rect) => ({ left: rect.left, top: rect.bottom + ANCHOR_GAP_PX }),
+		flipped: (rect, size) => ({ left: rect.right - size.width, top: rect.top - ANCHOR_GAP_PX - size.height }),
+	},
+};
+
+function placePanel(panel, rect, placement) {
 	panel.style.transition = "none";
 	panel.style.transform = "none";
 	panel.style.left = "0px";
@@ -263,12 +316,15 @@ function placePanel(panel, rect) {
 	// CONTEXT: a transform, filter, contain or will-change on ANY ancestor re-anchors position:fixed
 	const zero = panel.getBoundingClientRect();
 	const marginPx = 8;
-	let left = rect.left;
-	let top = rect.top;
-	if (left + zero.width > window.innerWidth - marginPx) left = Math.max(marginPx, rect.right - zero.width);
-	if (top + zero.height > window.innerHeight - marginPx) top = Math.max(marginPx, rect.bottom - zero.height);
+	const wanted = placement.origin(rect, zero);
+	const away = placement.flipped(rect, zero);
+	let { left, top } = wanted;
+	if (left + zero.width > window.innerWidth - marginPx) left = Math.max(marginPx, away.left);
+	if (top + zero.height > window.innerHeight - marginPx) top = Math.max(marginPx, away.top);
 	panel.style.left = `${left - zero.left}px`;
 	panel.style.top = `${top - zero.top}px`;
+	// CONTEXT: only the kit has measured the trigger, and a menu under a row usually matches it
+	panel.style.setProperty("--wg-kit-anchor-width", `${rect.width}px`);
 }
 
 function fold(panel, anchor) {
@@ -298,10 +354,10 @@ function restPanel(panel, anchor) {
 	anchor.style.visibility = "";
 }
 
-function enterPanel(panel, anchor) {
+function enterPanel(panel, anchor, placement) {
 	clearExit(panel);
-	placePanel(panel, anchor.getBoundingClientRect());
-	anchor.style.visibility = "hidden";
+	placePanel(panel, anchor.getBoundingClientRect(), placement);
+	anchor.style.visibility = placement.hidesTrigger ? "hidden" : "";
 	if (prefersReducedMotion()) return;
 	fold(panel, anchor);
 
@@ -344,7 +400,8 @@ function exitPanel(panel, anchor, done) {
 	return stop;
 }
 
-export function Popover({ trigger, children, open: openProp, onOpenChange, class: cls }) {
+export function Popover({ trigger, children, open: openProp, onOpenChange, class: cls, placement = "over" }) {
+	const where = PLACEMENTS[placement] ?? PLACEMENTS.over;
 	const [openState, setOpenState] = useState(false);
 	const open = openProp ?? openState;
 	const triggerRef = useRef(null);
@@ -392,7 +449,7 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 
 		if (open) {
 			setExiting(false);
-			return enterPanel(panel, anchor);
+			return enterPanel(panel, anchor, where);
 		}
 		if (!closing || prefersReducedMotion()) {
 			setExiting(false);
@@ -454,7 +511,7 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 			{
 				id,
 				ref: panelRef,
-				class: cx("wg-kit-pop", (open || exiting) && "is-open", exiting && "is-exiting", cls),
+				class: cx("wg-kit-pop", where.panelClass, (open || exiting) && "is-open", exiting && "is-exiting", cls),
 				role: "dialog",
 				// CONTEXT: a tile is a stacking context, so styles.css lifts the one holding this
 				"data-wg-overlay": shown ? "" : undefined,
@@ -481,6 +538,232 @@ export function PopoverSeparator(props) {
 	return h("div", { ...props, role: "separator", class: cx("wg-kit-pop-sep", props.class) });
 }
 
+// TRADE-OFF: the needle is handed down, not the list taken away — matching is the caller's rule
+export function PopoverSearch({ placeholder, hint, children, class: cls }) {
+	const [keyword, setKeyword] = useState("");
+	const needle = keyword.trim().toLowerCase();
+
+	return h(
+		Fragment,
+		null,
+		h(
+			"div",
+			{ class: cx("wg-kit-pop-search", cls) },
+			h(Field, {
+				block: true,
+				size: "s",
+				class: "wg-kit-pop-search-field",
+				icon: h(Icon, { name: "search" }),
+				placeholder,
+				value: keyword,
+				onInput: (event) => setKeyword(event.target.value),
+			}),
+			hint ? h("span", { class: "wg-kit-pop-search-hint" }, hint) : null,
+		),
+		typeof children === "function" ? children(needle) : children,
+	);
+}
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+// CONTEXT: Monday first, the way the design draws it
+const WEEKDAY_INITIALS = ["M", "T", "W", "T", "F", "S", "S"];
+// TRADE-OFF: always six rows, so the panel does not change height between two months
+const CALENDAR_CELLS = 42;
+
+function startOfCalendar(year, month) {
+	const first = new Date(year, month, 1);
+	const lead = (first.getDay() + 6) % 7;
+	return new Date(year, month, 1 - lead);
+}
+
+function sameDay(one, other) {
+	if (!one || !other) return false;
+	return one.getFullYear() === other.getFullYear() && one.getMonth() === other.getMonth() && one.getDate() === other.getDate();
+}
+
+// TRADE-OFF: the kit owns the month and the state on a cell, never what the cell says
+export function Calendar({ month, onMonthChange, selected, today, onSelect, renderDay, class: cls }) {
+	const [ownMonth, setOwnMonth] = useState(() => month ?? selected ?? today ?? new Date());
+	const shown = month ?? ownMonth;
+	const year = shown.getFullYear();
+	const index = shown.getMonth();
+	const now = today ?? new Date();
+	const first = startOfCalendar(year, index);
+
+	const step = (by) => {
+		const next = new Date(year, index + by, 1);
+		if (month === undefined) setOwnMonth(next);
+		onMonthChange?.(next);
+	};
+
+	const cells = [];
+	for (let offset = 0; offset < CALENDAR_CELLS; offset += 1) {
+		const date = new Date(first.getFullYear(), first.getMonth(), first.getDate() + offset);
+		const day = { date, outside: date.getMonth() !== index, today: sameDay(date, now), selected: sameDay(date, selected) };
+		cells.push(
+			h(
+				"button",
+				{
+					type: "button",
+					key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
+					class: cx("wg-kit-cal-day", day.outside && "is-outside", day.today && "is-today", day.selected && "is-picked"),
+					"aria-pressed": String(day.selected),
+					onClick: () => onSelect?.(date),
+				},
+				renderDay ? renderDay(day) : String(date.getDate()),
+			),
+		);
+	}
+
+	return h(
+		"div",
+		{ class: cx("wg-kit-cal", cls) },
+		h(
+			"div",
+			{ class: "wg-kit-cal-head" },
+			h(IconButton, { size: "s", label: "Previous month", onClick: () => step(-1) }, h(Icon, { name: "fold" })),
+			h("span", { class: "wg-kit-cal-month" }, `${MONTH_NAMES[index]} ${year}`),
+			h(IconButton, { size: "s", label: "Next month", onClick: () => step(1) }, h(Icon, { name: "chevron" })),
+		),
+		h(
+			"div",
+			{ class: "wg-kit-cal-grid" },
+			WEEKDAY_INITIALS.map((initial, at) => h("span", { key: at, class: "wg-kit-cal-weekday" }, initial)),
+			cells,
+		),
+	);
+}
+
+const PROGRESS_MAX = 100;
+const PROGRESS_STEPS = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
+
+function clampPercent(value) {
+	return Math.min(PROGRESS_MAX, Math.max(0, Math.round(value)));
+}
+
+// TRADE-OFF: a track and the digits, not a stepper — the plate is skimmed more than it is set
+export function Progress({ value = 0, onChange, label, class: cls }) {
+	const trackRef = useRef(null);
+	const [grabbed, setGrabbed] = useState(false);
+	const held = useRef(false);
+	const shown = clampPercent(value);
+
+	const report = (next) => {
+		if (next !== null && next !== shown) onChange?.(next);
+	};
+
+	const underPointer = (event) => {
+		const box = trackRef.current?.getBoundingClientRect();
+		// CONTEXT: before the first layout every box is zero, and a division by it is not a value
+		if (!box?.width) return null;
+		return clampPercent(((event.clientX - box.left) / box.width) * PROGRESS_MAX);
+	};
+
+	const grab = (event) => {
+		held.current = true;
+		setGrabbed(true);
+		event.currentTarget.setPointerCapture?.(event.pointerId);
+		report(underPointer(event));
+	};
+
+	const drag = (event) => {
+		if (!held.current) return;
+		report(underPointer(event));
+	};
+
+	const release = () => {
+		held.current = false;
+		setGrabbed(false);
+	};
+
+	const type = (event) => {
+		if (event.key === "Home") return report(0);
+		if (event.key === "End") return report(PROGRESS_MAX);
+		const by = PROGRESS_STEPS[event.key];
+		if (by === undefined) return;
+		event.preventDefault();
+		report(clampPercent(shown + by));
+	};
+
+	return h(
+		"div",
+		{
+			class: cx("wg-kit-progress", grabbed && "is-grabbed", cls),
+			role: "slider",
+			tabIndex: 0,
+			"aria-label": label,
+			"aria-valuemin": "0",
+			"aria-valuemax": String(PROGRESS_MAX),
+			"aria-valuenow": String(shown),
+			onkeydown: type,
+		},
+		h(
+			"span",
+			{
+				class: "wg-kit-progress-track",
+				ref: trackRef,
+				onpointerdown: grab,
+				onpointermove: drag,
+				onpointerup: release,
+				onpointercancel: release,
+			},
+			h("i", { class: "wg-kit-progress-fill", style: { width: `${shown}%` } }),
+			h("span", { class: "wg-kit-progress-knob", style: { left: `${shown}%` } }),
+		),
+		h("span", { class: "wg-kit-progress-num" }, `${shown}%`),
+	);
+}
+
+const HEADING_LINE = /^#{1,6}\s/;
+// CONTEXT: reading B — a backticked span is consumed so its markers stay plain, and takes no class
+const INLINE = /(`[^`\n]*`)|(\[\[[^\]\n]*\]\])|(\[[^\]\n]*\]\([^)\n]*\))|(\*\*[^*\n]+\*\*|__[^_\n]+__)|(\*[^*\n]+\*|_[^_\n]+_)/g;
+const INLINE_CLASSES = [null, "is-link", "is-link", "is-strong", "is-em"];
+
+function markLine(line) {
+	if (HEADING_LINE.test(line)) return [h("span", { class: "is-heading" }, line)];
+	const parts = [];
+	let at = 0;
+	INLINE.lastIndex = 0;
+	for (let found = INLINE.exec(line); found; found = INLINE.exec(line)) {
+		if (found.index > at) parts.push(line.slice(at, found.index));
+		const group = [1, 2, 3, 4, 5].find((index) => found[index] !== undefined);
+		const styled = INLINE_CLASSES[group - 1];
+		parts.push(styled ? h("span", { class: styled }, found[0]) : found[0]);
+		at = found.index + found[0].length;
+	}
+	if (at < line.length) parts.push(line.slice(at));
+	return parts;
+}
+
+function markdownSpans(text) {
+	const out = [];
+	String(text ?? "").split("\n").forEach((line, at) => {
+		if (at > 0) out.push("\n");
+		out.push(...markLine(line));
+	});
+	return out;
+}
+
+// TRADE-OFF: a transparent textarea over a styled mirror — native editing, plain content
+export function MarkdownEditor({ value = "", onInput, placeholder, class: cls }) {
+	return h(
+		"div",
+		{ class: cx("wg-kit-md", cls) },
+		h(
+			"div",
+			{ class: "wg-kit-md-page" },
+			h("div", { class: "wg-kit-md-text wg-kit-md-mirror", "aria-hidden": "true" }, markdownSpans(value)),
+			h("textarea", {
+				class: "wg-kit-md-text wg-kit-md-input",
+				spellcheck: true,
+				placeholder,
+				value,
+				onInput: (event) => onInput?.(event.target.value),
+			}),
+		),
+	);
+}
+
 export function Switch({ checked, onChange, label }) {
 	return h("button", {
 		type: "button",
@@ -497,6 +780,7 @@ export const Kit = {
 	cx,
 	variants,
 	Button,
+	ButtonLabel,
 	IconButton,
 	Pill,
 	Count,
@@ -510,15 +794,19 @@ export const Kit = {
 	Field,
 	fieldClass,
 	Icon,
-	ICON_NAMES,
 	PRIORITY_TONES,
 	APPROVAL_TONES,
 	toneOf,
 	Segmented,
 	useSegmentedThumb,
+	useRoomForLabel,
 	Popover,
 	PopoverItem,
+	PopoverSearch,
 	PopoverSeparator,
+	Calendar,
+	Progress,
+	MarkdownEditor,
 	Switch,
 	buttonClass,
 	iconButtonClass,

@@ -4,15 +4,22 @@
 import { readFileSync, readdirSync } from "node:fs";
 
 const ref = readFileSync("docs/reference/orbitask-converted.html", "utf8");
+// CONTEXT: the approved design for the parts the task dialog is built from
+const dialogRef = readFileSync("docs/reference/task-dialog.html", "utf8");
 const ours = readFileSync("styles.css", "utf8") + readFileSync("widgets/@orbitask/tokens.css", "utf8")
 	+ readdirSync("widgets/@orbitask").filter((n) => !n.endsWith(".css"))
 		.map((n) => readFileSync(`widgets/@orbitask/${n}/widget.jsx`, "utf8")).join("\n");
 
-// pull one declaration out of one rule
+// PULL ONE DECLARATION OUT OF THE BASE RULE. Taking the first rule whose selector merely ENDS
+// with the class read a variant instead: adding `.wg-kit-seg.is-s .wg-kit-seg-thumb` above the
+// base made this gate compare a small control against the ideal's normal one and call it a
+// mismatch. The base is the LEAST QUALIFIED rule — the one carrying the fewest classes.
 const decl = (css, selector, prop) => {
-	const rule = css.match(new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`));
-	if (!rule) return null;
-	const m = rule[1].match(new RegExp(`(?:^|;|\\n)\\s*${prop}\\s*:\\s*([^;}]+)`));
+	const rules = [...css.matchAll(new RegExp(`([^{}]*)\\${selector}\\s*\\{([^}]*)\\}`, "g"))];
+	if (rules.length === 0) return null;
+	const base = rules.reduce((fewest, rule) =>
+		(rule[1].match(/\./g) ?? []).length < (fewest[1].match(/\./g) ?? []).length ? rule : fewest);
+	const m = base[2].match(new RegExp(`(?:^|;|\\n)\\s*${prop}\\s*:\\s*([^;}]+)`));
 	return m ? m[1].trim() : null;
 };
 const px = (css, sel, prop) => {
@@ -140,7 +147,7 @@ for (const [what, needle] of [["the 28px avatar", "28px"], ["its -8px overlap", 
 // that still sets `background` on the ELEMENT paints a square behind the round pseudo. That is
 // how an accent tile, a switch and every hover state came back square.
 {
-	const painted = [".wg-kit-btn", ".wg-kit-icon", ".wg-kit-pop-item", ".wg-kit-seg button", ".wg-kit-switch", ".wg-kit-row"];
+	const painted = [".wg-kit-btn", ".wg-kit-icon", ".wg-kit-pop-item", ".wg-kit-seg button", ".wg-kit-switch", ".wg-kit-row", ".wg-kit-cal-day"];
 	const offenders = [];
 	for (const [index, line] of ours.split("\n").entries()) {
 		if (!/\bbackground\s*:/.test(line) || /::before/.test(line)) continue;
@@ -186,6 +193,33 @@ for (const [what, needle] of [["the 28px avatar", "28px"], ["its -8px overlap", 
 	};
 
 	beats(".wg-dialog-close", ".wg-kit-icon", "position");
+	// CONTEXT: a day can be today AND picked — picked wins, and says so in specificity
+	beats(".is-picked", ".is-today", "color");
+}
+
+console.log("\n— docs/reference/task-dialog.html, the parts the dialog is built from —");
+same("progress track height", px(ours, ".wg-kit-progress-track", "height"), px(dialogRef, ".pbar", "height"));
+same("knob at rest", px(ours, ".wg-kit-progress-knob", "width"), px(dialogRef, ".pbar .knob", "width"));
+same("knob while it is held", px(ours, ".wg-kit-progress.is-grabbed .wg-kit-progress-knob", "width"), px(dialogRef, ".pbar .knob.grabbed", "width"));
+same("calendar day cell", px(ours, ".wg-kit-cal-day", "height"), px(dialogRef, ".cal-grid button", "height"));
+same("the raw text's line height", px(ours, ".wg-kit-md-text", "line-height"), px(dialogRef, ".raw", "line-height"));
+same("and its wrapping, which is what the mirror must match", px(ours, ".wg-kit-md-text", "white-space"), px(dialogRef, ".raw", "white-space"));
+
+// CONTEXT: a floating panel is separated by its edge and the blur, never by a cast shadow
+{
+	const floating = [".wg-kit-pop", ".wg-dialog"];
+	const offenders = [];
+	for (const block of withoutComments.split("}")) {
+		const brace = block.indexOf("{");
+		if (brace < 0) continue;
+		const selectors = splitSelectors(block.slice(0, brace));
+		if (!selectors.some((selector) => floating.some((name) => selector.endsWith(name)))) continue;
+		const declared = block.slice(brace + 1).match(/(?:^|;|\n)\s*box-shadow\s*:\s*([^;}]+)/);
+		if (declared && !/inset|glass-edge|none/.test(declared[1])) offenders.push(`${selectors.join(", ")} → ${declared[1].trim()}`);
+	}
+	same("no floating panel drops a shadow", offenders.join(" | ") || 0, 0);
+	same("the popover is separated by its edge", px(ours, ".wg-kit-pop", "box-shadow"), "var(--wg-kit-glass-edge)");
+	same("and so is the dialog", px(ours, ".wg-dialog", "box-shadow"), "var(--wg-kit-glass-edge)");
 }
 
 console.log(bad ? `\n${bad} deviations from the ideal` : "\nno deviation from the ideal in any measured value");
