@@ -100,6 +100,40 @@ const CSS = `
 	box-shadow: inset 0 0 0 2px var(--interactive-accent);
 }
 
+.orbi-task-dialog .otd-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-2, 4px);
+	padding-right: var(--size-2-2, 4px);
+}
+
+/* CONTEXT: the cross carries the pill's own colour, so one rule dresses every tone */
+.orbi-task-dialog .otd-tag-drop {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	box-shadow: none;
+	color: inherit;
+	opacity: 0.5;
+	cursor: pointer;
+}
+
+.orbi-task-dialog .otd-tag-drop:hover {
+	opacity: 1;
+	background: var(--background-modifier-hover);
+}
+
+.orbi-task-dialog .otd-tag-drop .otd-glyph {
+	width: 10px;
+	height: 10px;
+}
+
 .orbi-task-dialog .otd-tags {
 	display: flex;
 	flex-wrap: wrap;
@@ -956,7 +990,18 @@ function TagRow({ tags, roster, onWrite }) {
 	return (
 		<div class="otd-tags">
 			{tags.map((tag) => (
-				<Pill key={tag}>{`#${tag}`}</Pill>
+				<Pill key={tag} class="otd-tag">
+					{`#${tag}`}
+					<button
+						type="button"
+						class="otd-tag-drop"
+						aria-label={`Take off ${tag}`}
+						title={`Take off ${tag}`}
+						onClick={() => onWrite(tags.filter((entry) => entry !== tag))}
+					>
+						<Glyph name="close" />
+					</button>
+				</Pill>
 			))}
 			<Popover
 				placement="below"

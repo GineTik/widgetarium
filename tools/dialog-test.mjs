@@ -474,5 +474,36 @@ await leaveBody();
 check("a body it CAN hold lands", texts.get(PLAIN_NOTE), "A body the file can hold.");
 check("and the warning goes with it", Boolean(dialog().querySelector(".otd-refused")), false);
 
+console.log("\n— a tag comes off where it is worn, and Enter takes the first match —");
+{
+	const openFirst = async () => {
+		if (!dialog()) await click(cards()[0]);
+	};
+	await openFirst();
+	const tags = () => [...dialog().querySelectorAll(".otd-tags .otd-tag")].map((node) => node.textContent.trim());
+	const tagPanel = () => body.querySelector(".wg-kit-pop-search")?.closest(".wg-kit-pop") ?? body;
+
+	await click(dialog().querySelector(".otd-tag-add"));
+	const field = tagPanel().querySelector(".wg-kit-pop-search-field input");
+	check("the tag panel opens on a field", Boolean(field), true);
+	field.value = "urgent";
+	field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+	await settle();
+	// ENTER TAKES THE FIRST ROW. Typing the whole name and then reaching for the mouse is the
+	// one thing a search field is supposed to save.
+	field.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+	await settle();
+	check("Enter applies the first match", tags().some((text) => text.startsWith("#urgent")), true);
+
+	const worn = dialog().querySelector(".otd-tags .otd-tag");
+	check("and the tag it wrote carries a cross", Boolean(worn.querySelector(".otd-tag-drop")), true);
+	const before = tags().length;
+	await click(worn.querySelector(".otd-tag-drop"));
+	check("pressing it takes the tag off", tags().length, before - 1);
+	const written_ = wroteLast().props.tags ?? [];
+	check("and the note no longer names it", (Array.isArray(written_) ? written_ : String(written_).split(",")).includes("urgent"), false);
+}
+
+
 console.log(failed ? `\n${failed} of ${checks} failed` : `\n${checks} checks: the board's list is the task's rows`);
 process.exit(failed ? 1 : 0);
