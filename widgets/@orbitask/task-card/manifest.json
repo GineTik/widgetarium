@@ -39,33 +39,15 @@
 		},
 		{
 			"key": "dueDate",
-			"label": "Due date",
+			"label": "Deadline",
 			"type": "text",
 			"default": "12 Aug"
-		},
-		{
-			"key": "comments",
-			"label": "Comments",
-			"type": "number",
-			"default": 4
 		},
 		{
 			"key": "attachments",
 			"label": "Attachments",
 			"type": "number",
 			"default": 2
-		},
-		{
-			"key": "checklistDone",
-			"label": "Checklist done",
-			"type": "number",
-			"default": 3
-		},
-		{
-			"key": "checklistTotal",
-			"label": "Checklist total",
-			"type": "number",
-			"default": 8
 		},
 		{
 			"key": "initials",

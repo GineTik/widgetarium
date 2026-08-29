@@ -12,6 +12,10 @@ function toRecord(app, file, body) {
 		props: { ...(cache?.frontmatter ?? {}) },
 		name: file.basename,
 		meta: { created: file.stat.ctime, modified: file.stat.mtime },
+		// HOW MANY FILES THIS NOTE CARRIES, without reading a single note. Obsidian has already
+		// parsed every note's embeds into its cache, so counting them here costs nothing — reading
+		// twenty bodies to count links in them would cost twenty reads to draw one board.
+		attachments: (cache?.embeds ?? []).length,
 		body,
 	};
 }

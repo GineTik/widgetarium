@@ -216,20 +216,18 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 		progress: settings.progress,
 		initials: settings.initials,
 		due: settings.dueDate,
-		comments: settings.comments,
 		files: settings.attachments,
-		checklistDone: settings.checklistDone,
-		checklistTotal: settings.checklistTotal,
 	};
 
 	const priority = has(card.priority) ? String(card.priority) : null;
 	const status = has(card.status) ? String(card.status) : null;
-	const progress = has(card.progress) ? percentOf(card.progress) : null;
+	// TRADE-OFF: an empty bar at 0% says the same as no bar, and says it in a whole row of the card
+	const percent = has(card.progress) ? percentOf(card.progress) : null;
+	const progress = percent === 0 ? null : percent;
 	const initials = initialsOf(card.initials);
 	const shownInitials = initials.slice(0, AVATAR_CAP);
 	const restCount = initials.length - shownInitials.length;
-	const checklistTotal = Number(card.checklistTotal) || 0;
-	const hasMeta = has(card.due) || has(card.comments) || has(card.files) || checklistTotal > 0;
+	const hasMeta = has(card.due) || has(card.files);
 
 	return (
 		<WidgetRoot className="orbi wg-kit-card orbi-task-card">
@@ -264,14 +262,7 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 			{hasMeta || initials.length > 0 ? (
 				<div class="orbi-task-card-meta">
 					{has(card.due) ? <MetaItem icon={<Icon name="clock" size={14} />} text={card.due} /> : null}
-					{has(card.comments) ? <MetaItem icon={<Icon name="chat" size={14} />} text={card.comments} /> : null}
 					{has(card.files) ? <MetaItem icon={<Icon name="folder" size={14} />} text={card.files} /> : null}
-					{checklistTotal > 0 ? (
-						<MetaItem
-							icon={<Icon name="check" size={14} />}
-							text={`${Number(card.checklistDone) || 0}/${checklistTotal}`}
-						/>
-					) : null}
 					{initials.length > 0 ? (
 						<span class="orbi-task-card-avatars">
 							{shownInitials.map((initial, index) => (

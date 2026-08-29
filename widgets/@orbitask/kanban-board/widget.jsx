@@ -10,7 +10,7 @@ import {
 	DialogClose,
 } from "widgetarium";
 import { Button, Card, Count, Icon, Plate } from "widgetarium/kit";
-import { useRef, useState } from "preact/hooks";
+import { useMemo, useRef, useState } from "preact/hooks";
 
 const CSS = `
 .ok-board {
@@ -365,9 +365,31 @@ function afterColumnLeaves(columns, leaving, taken) {
 	return left.length > 0 ? left : [freeUntitled(taken)];
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// TRADE-OFF: the year only when it is not this one — a deadline this year reads as "31 Aug",
+// and one in another year has to say which, or the card is quietly wrong about a whole year
+function dateLabel(value, now) {
+	const date = new Date(String(value));
+	if (Number.isNaN(date.getTime())) return String(value);
+	const day = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+	return date.getFullYear() === now.getFullYear() ? day : `${day} ${date.getFullYear()}`;
+}
+
+// CONTEXT: a note spells its own keys, and a board may have named the property either way
+function valueOf(props, name) {
+	const wanted = name.toLowerCase();
+	const found = Object.keys(props).find((key) => key.toLowerCase() === wanted);
+	return found === undefined ? undefined : props[found];
+}
+
 // TRADE-OFF: nothing invented — an absent field must stay absent, or the card cannot tell it from a value
-function toCard(row) {
+// The strip carries FACTS THE NOTE HAS: the deadline it names and the files it embeds. Comments
+// and a checklist were drawn from properties nothing writes, so every card claimed 0 of each.
+function toCard(row, now) {
 	const props = row.props ?? {};
+	// the DEADLINE, and nothing standing in for it — a note with no deadline shows no date
+	const deadline = valueOf(props, "deadline");
 	return {
 		title: props.title ?? row.name,
 		tag: props.tag,
@@ -375,11 +397,8 @@ function toCard(row) {
 		status: props.approval,
 		progress: props.progress,
 		initials: toList(props.assignees),
-		due: props.due,
-		comments: props.comments,
-		files: props.files,
-		checklistDone: props.checklistDone,
-		checklistTotal: props.checklistTotal,
+		due: deadline === undefined || deadline === null || deadline === "" ? undefined : dateLabel(deadline, now),
+		files: row.attachments > 0 ? row.attachments : undefined,
 	};
 }
 
@@ -392,6 +411,8 @@ function toList(value) {
 }
 
 export default createWidget(function KanbanBoard({ settings, slots, data, actions, context, host, configure }) {
+	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
+	const today = useMemo(() => new Date(), []);
 	const archivedColumns = toList(settings.archivedColumns);
 	// CONTEXT: deduped, so a rendered index below the count IS the index in this list
 	const columnNames = [...new Set(toList(settings.columns))].filter((name) => !archivedColumns.includes(name));
@@ -544,7 +565,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 						key={column.title}
 						title={column.title}
 						rows={column.rows}
-						cards={column.rows.map(toCard)}
+						cards={column.rows.map((row) => toCard(row, today))}
 						CardSlot={slots?.card}
 						canWrite={Boolean(write?.canCreate)}
 						dragging={dragging}
