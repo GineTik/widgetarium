@@ -219,11 +219,41 @@ console.log("\n— and the panel writes what it draws —");
 	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
 	check("the source folder is written to the draft", rowSaying("Tasks")?.textContent.includes("Orbitask/Archive"), true);
 
+	// THE SLOT PICKER IS THE CATALOGUE. What fills a slot is drawn on every row of the parent, so
+	// the question is what it LOOKS like — and the same surface can say which candidates the slot
+	// actually feeds, which a list of titles cannot.
 	await press(rowSaying("Card"));
-	const pick = all(".wg-set-pop .wg-kit-pop-item").find((item) => item.textContent.includes("Compact card"));
-	check("every installed widget is offered for the slot", Boolean(pick), true);
+	check("pressing the slot row opens the catalogue", Boolean(find(".wg-cat-dialog")), true);
+	check("in fill mode, so every tile offers to fill", all(".wg-cat-dialog .wg-cat-verb").every((verb) => verb.textContent === "Use"), true);
+
+	const named = () => all(".wg-cat-dialog .wg-cat-tile").map((tile) => tile.querySelector(".wg-cat-name").textContent);
+	check("it draws a tile per widget, not a row of names", named().length, 3);
+
+	// RANK, NOT FILTER. `gives` is a declaration and drifts from the object the parent really
+	// builds, so a hard filter turns normal drift into "my widget vanished and nothing said why".
+	check("the candidate the slot feeds sorts first", named()[0], "Task card");
+	check("and the one it cannot feed is still listed, last", named().at(-1), "Compact card");
+	check("a widget that declares nothing is neither, so it sits between", named()[1], "Kanban board");
+
+	const lacks = all(".wg-cat-dialog .wg-cat-tile").map((tile) => tile.querySelector(".wg-cat-lack")?.textContent ?? null);
+	check("the misfit names the field it is missing", lacks.at(-1), "Needs estimate");
+	check("the one that fits says nothing", lacks[0], null);
+	check("and neither does the one that declared nothing", lacks[1], null);
+
+	const divider = find(".wg-cat-dialog .wg-cat-divide");
+	check("a divider is drawn above the misfits", Boolean(divider), true);
+	const order = [...find(".wg-cat-dialog .wg-cat-grid").children];
+	const firstShort = order.findIndex((node) => node.querySelector(".wg-cat-lack"));
+	check("immediately above the first candidate that falls short", order.indexOf(divider), firstShort - 1);
+	check("so nothing above it is a misfit", order.slice(0, firstShort - 1).every((node) => !node.querySelector(".wg-cat-lack")), true);
+	check("the slot can still fall back to the widget's own default", Boolean(all(".wg-cat-dialog .wg-dialog-foot button").length), true);
+
+	const pick = all(".wg-cat-dialog .wg-cat-tile").find((tile) => tile.textContent.includes("Compact card"));
+	check("a misfit is offered, not withheld", Boolean(pick), true);
 	await press(pick);
+	check("picking it closes the catalogue", Boolean(find(".wg-cat-dialog")), false);
 	check("the pick is written to the draft", rowSaying("Card")?.textContent.includes(OTHER_ID), true);
+
 
 	const tab = (name) => all(".wg-set-panel .wg-kit-seg button").find((button) => button.textContent.trim() === name);
 	await press(tab("Data"));

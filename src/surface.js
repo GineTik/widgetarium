@@ -12,6 +12,7 @@ import { viewHost } from "./engine/view-host.js";
 import { trace } from "./trace.js";
 import { useSource } from "./source.js";
 import { useSettingsWindow } from "./settings-window.js";
+import { CatalogueDialog } from "./catalogue-dialog.js";
 
 const REM = 16;
 // how far a resize may travel past a limit before it stops giving entirely
@@ -626,6 +627,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const [openedChip, setOpenedChip] = useState(null);
 	const [settingsTile, setSettingsTile] = useState(null);
 	const [closingTile, setClosingTile] = useState(null);
+	const [picking, setPicking] = useState(false);
 	// CONTEXT: a new number every opening, so the window's own state is fresh without an effect
 	const sessionRef = useRef(0);
 	// The pointer's own geometry, in STATE rather than written onto the node. Written
@@ -1158,13 +1160,12 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 			),
 			editing
 				? h("div", { class: "wg-palette" }, [
-						h("span", { class: "wg-palette-label" }, "Add widget:"),
-						...registry.list().map((definition) =>
-							h(
-								"button",
-								{ class: "wg-chip", key: definition.manifest.id, onClick: () => addTile(definition.manifest.id) },
-								definition.manifest.title ?? definition.manifest.id,
-							),
+						// TRADE-OFF: the catalogue draws every widget as it really looks, so the row of
+						// names it replaces is now one press — a name is not a picture of a widget
+						h(
+							"button",
+							{ class: "wg-chip wg-palette-open", key: "add", onClick: () => setPicking(true) },
+							"Add widget",
 						),
 						...hidden.map((tile) =>
 							h(
@@ -1179,6 +1180,21 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 								`↩ ${registry.get(tile.widget)?.manifest?.title ?? tile.widget}`,
 							),
 						),
+						// CONTEXT: addTile writes through onChange, so a pick made while the settings
+						// window is up lands in the draft with everything else it staged
+						picking
+							? h(CatalogueDialog, {
+									key: "catalogue",
+									registry,
+									host,
+									mode: "place",
+									onPick: (widgetId) => {
+										addTile(widgetId);
+										setPicking(false);
+									},
+									onClose: () => setPicking(false),
+							  })
+							: null,
 				  ])
 				: null,
 	];

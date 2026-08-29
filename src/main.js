@@ -9,6 +9,7 @@ import { shieldFromEditor } from "./editor-shield.js";
 import { mountKeyFor } from "./mount-key.js";
 import { trace } from "./trace.js";
 import { findBlocks, replaceBlock } from "./block-writer.js";
+import { openCatalogue } from "./catalogue-dialog.js";
 
 
 // a run of edits settles into one write; longer and an edit could be lost to a crash
@@ -53,12 +54,32 @@ export default class WidgetariumPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "browse-widgets",
+			name: "Browse widgets",
+			callback: () => this.showCatalogue(),
+		});
+
+		this.addCommand({
 			id: "reload-widgets",
 			name: "Reload widgets",
 			callback: async () => {
 				await this.registry.load();
 				this.refresh();
 				new Notice(`Widgetarium: ${this.registry.list().length} widgets`);
+			},
+		});
+	}
+
+	// CONTEXT: the palette has no board under it, so browsing is the one mode whose press adds
+	// nothing anywhere — the detail page behind it is step 6 of docs/widget-catalogue.md
+	showCatalogue() {
+		this.closeCatalogue?.();
+		this.closeCatalogue = openCatalogue({
+			registry: this.registry,
+			host: this.host,
+			mode: "browse",
+			onClose: () => {
+				this.closeCatalogue = null;
 			},
 		});
 	}
@@ -152,6 +173,8 @@ export default class WidgetariumPlugin extends Plugin {
 		// the key is the block, so the element lives on the record — iterating keys here
 		// handed render() a string and left every surface mounted
 		clearTimeout(this.writeTimer);
+		// the catalogue is portalled onto <body>, so it outlives the plugin unless taken down
+		this.closeCatalogue?.();
 		// the widget stylesheets live in document.head and outlive the plugin unless dropped
 		this.registry?.dropStyles?.();
 		// a held-back write must not die with the plugin

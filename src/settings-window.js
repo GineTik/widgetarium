@@ -1,7 +1,9 @@
 import { h } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { DialogClose, DialogOverlay } from "./dialog.js";
-import { Button, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, PopoverSeparator, Row, RowBadge, RowLabel, RowValue, Segmented, Switch } from "./kit.js";
+import { Button, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, Row, RowBadge, RowLabel, RowValue, Segmented, Switch } from "./kit.js";
+import { CatalogueDialog } from "./catalogue-dialog.js";
+import { slotFit } from "./fit.js";
 import { spanToPixels } from "./layout.js";
 import { CHROME, clampPan, dialogBox, freeArea, openingPan, openingScale } from "./settings-fit.js";
 
@@ -89,7 +91,7 @@ function group(key, heading, rows, under) {
 }
 
 function valueRow(parts) {
-	return h(Row, { pressable: true, class: `wg-set-row${parts.unset ? " is-unset" : ""}` }, [
+	return h(Row, { pressable: true, class: `wg-set-row${parts.unset ? " is-unset" : ""}`, onClick: parts.onClick }, [
 		parts.badge ? h(RowBadge, { class: "wg-set-badge", key: "badge" }, parts.badge) : null,
 		h(RowLabel, { key: "label" }, parts.label),
 		h(RowValue, { class: `wg-set-value${parts.unset ? " is-unset" : ""}`, key: "value" }, parts.value),
@@ -214,34 +216,45 @@ function sourceGroups(state) {
 	});
 }
 
+// A SLOT PICKER IS A CATALOGUE, NOT A LIST OF NAMES. What goes in a slot is drawn on every row of
+// the parent, so the question is what it LOOKS like — and the same surface can rank the candidates
+// against what this slot declares it hands down, which a list of titles cannot say anything about.
 function slotRows(state) {
-	const { manifest, tile, registry, onPatch } = state;
+	const { manifest, tile, registry, host, onPatch } = state;
 	const picks = tile.slots ?? {};
 	return Object.entries(manifest.slots ?? {}).map(([name, spec]) => {
 		const chosen = picks[name] ?? spec.default ?? "";
 		const held = registry.get(chosen);
+		const key = `slot:${name}`;
 		const write = (id) => {
 			const { [name]: dropped, ...rest } = picks;
 			onPatch({ slots: id ? { ...picks, [name]: id } : rest });
 			state.openEditor(null);
 		};
-		const trigger = valueRow({
+		const row = valueRow({
 			badge: h(Icon, { name: "check" }),
 			label: titleCase(name),
 			value: held?.manifest?.title ?? chosen ?? "Nothing",
 			unset: !chosen,
+			onClick: () => state.openEditor(key),
 		});
-		const body = h("div", { class: "wg-set-pop-body" }, [
-			...registry.list().map((definition) =>
-				h(PopoverItem, { key: definition.manifest.id, checked: definition.manifest.id === chosen, onClick: () => write(definition.manifest.id) }, [
-					h("span", { class: "wg-set-pop-name", key: "name" }, definition.manifest.title ?? definition.manifest.id),
-					h(Icon, { name: "tick", class: "wg-set-tick" }),
-				]),
-			),
-			spec.default ? h(PopoverSeparator, { key: "sep" }) : null,
-			spec.default ? h(PopoverItem, { key: "default", class: "wg-set-pop-default", onClick: () => write(null) }, h("span", { class: "wg-set-pop-name" }, "Back to the widget's default")) : null,
+		return h("div", { class: "wg-set-slot", key }, [
+			row,
+			state.openRow === key
+				? h(CatalogueDialog, {
+						key: "pick",
+						registry,
+						host,
+						mode: "fill",
+						rank: (candidate) => slotFit(candidate, spec.gives),
+						foot: spec.default
+							? h(Button, { size: "s", onClick: () => write(null) }, "Back to the widget's default")
+							: null,
+						onPick: write,
+						onClose: () => state.openEditor(null),
+				  })
+				: null,
 		]);
-		return editorPopover(state, `slot:${name}`, trigger, body);
 	});
 }
 

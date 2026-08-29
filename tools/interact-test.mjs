@@ -859,5 +859,109 @@ const pickView = async (name, id = "views") => {
 	spare.remove();
 }
 
+// THE CATALOGUE HAS TO STAND UP WITHOUT A BOARD UNDER IT. Every other surface in this plugin is
+// drawn inside a note's own element; this one is opened from the command palette, where there is
+// no note, no block and no tree to hang it on.
+{
+	const { default: WidgetariumPlugin } = await import("./.mjs-cache/main.mjs");
+	const commands = [];
+	const plugin = Object.assign(new WidgetariumPlugin(), {
+		app: { vault: { adapter: { ...adapter, mkdir: async () => {} } } },
+		manifest: { id: "widgetarium" },
+		addCommand: (command) => commands.push(command),
+		addRibbonIcon: () => {},
+		registerMarkdownCodeBlockProcessor: () => {},
+		registerInterval: () => {},
+	});
+	await plugin.onload();
+
+	const command = commands.find((entry) => entry.id === "browse-widgets");
+	check("the plugin registers a command for the catalogue", command?.name, "Browse widgets");
+	command.callback();
+	await settle();
+
+	const opened = dom.window.document.body.querySelector(".wg-cat-dialog");
+	check("running it opens the catalogue", Boolean(opened), true);
+	check("with no board under it", Boolean(root.querySelector(".wg-cat-dialog")), false);
+	check("drawing the widgets the plugin's own registry loaded", opened.querySelectorAll(".wg-cat-tile").length, plugin.registry.list().length);
+	check("in browse mode", [...opened.querySelectorAll(".wg-cat-verb")].every((verb) => verb.textContent === "Open"), true);
+
+	plugin.onunload();
+	check("and unloading takes it down, because nothing else owns that node", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
+}
+
+
+// THE PALETTE IS THE CATALOGUE NOW. A row of titles said nothing about what a widget looks like,
+// which is the only question a person adding one is actually asking.
+{
+	board = normalizeBoard({
+		tiles: [{ id: "header", widget: "@orbitask/page-header" }],
+		layouts: { 20: { places: [{ id: "header", x: 0, y: 0, w: 12, h: 2 }] } },
+	});
+	editing = true;
+	draw();
+	await settle();
+
+	check("the palette is one press, not a chip per widget", all(".wg-palette .wg-chip").length, 1);
+	check("and it says what the press does", all(".wg-palette .wg-palette-open")[0]?.textContent, "Add widget");
+
+	await click(all(".wg-palette .wg-palette-open")[0]);
+	const grid = dom.window.document.body.querySelector(".wg-cat-dialog");
+	check("pressing it opens the catalogue", Boolean(grid), true);
+	check("outside the board, on the body", Boolean(root.querySelector(".wg-cat-dialog")), false);
+	check("it draws every installed widget", grid.querySelectorAll(".wg-cat-tile").length, registry.list().length);
+	check("in place mode, so every press adds", [...grid.querySelectorAll(".wg-cat-verb")].every((verb) => verb.textContent === "Add"), true);
+
+	const before = board.tiles.length;
+	// A BOARD IS MORE THAN ITS TILES: whatever it carried before an add, it carries after. Given
+	// something to carry on purpose — an empty list surviving an add proves nothing at all.
+	board = { ...board, mode: "expanded", properties: ["Status", "Priority", "Assignees"] };
+	draw();
+	await settle();
+	const carried = { mode: board.mode, properties: board.properties, context: board.context };
+	const card = [...grid.querySelectorAll(".wg-cat-tile")].find((tile) => tile.textContent.includes("Task card"));
+	check("the card is offered", Boolean(card), true);
+	await click(card);
+	check("picking it adds a tile", board.tiles.length, before + 1);
+	check("of the widget that was drawn", board.tiles.at(-1).widget, "@orbitask/task-card");
+	const placed = Object.values(board.layouts).flat().find((place) => place.id === board.tiles.at(-1).id);
+	check("at the size that widget asks for", placed?.w, 4);
+	check("and the catalogue closes behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
+
+	// Adding one used to rebuild the board as { tiles, layouts } and throw the rest away — an
+	// expanded board collapsed, and the property list went with it, which is the list the filter
+	// bar offers and the task dialog draws its rows from.
+	check("the board keeps the mode it was in", board.mode, carried.mode);
+	check("and the property list the rest of the app reads", board.properties, carried.properties);
+	check("and the context it was carrying", board.context, carried.context);
+	check("and what it kept was not nothing", carried.properties.length > 0 && carried.mode === "expanded", true);
+}
+
+
+// A PICK IS A BOARD WRITE, AND THE BOARD IS A DRAFT WHILE THE SETTINGS WINDOW IS OPEN. Nobody
+// reaches the palette through the window — it covers the board — so this presses the write PATH,
+// not a journey: the catalogue must go through onChange like the chips did, or a pick made while
+// something is staged would land in the file and survive a cancel.
+{
+	const saved = JSON.stringify(board);
+	const drawn = () => all("[data-tile]").length;
+	const before = drawn();
+
+	await click(surface().querySelector('.wg-tile-actions button[aria-label="Settings"]'));
+	check("the settings window is open, so the board is staged", Boolean(dom.window.document.body.querySelector(".wg-set-window")), true);
+
+	await click(all(".wg-palette .wg-palette-open")[0]);
+	const tabs = [...dom.window.document.body.querySelectorAll(".wg-cat-dialog .wg-cat-tile")].find((tile) => tile.textContent.includes("Board tabs"));
+	await click(tabs);
+	check("the page draws the tile that was added", drawn(), before + 1);
+	check("and the file has not moved", JSON.stringify(board), saved);
+
+	await click(dom.window.document.body.querySelector(".wg-set-head .wg-kit-icon"));
+	await settle();
+	check("closing without Done takes it back with the rest of the draft", drawn(), before);
+	check("and the file still has not moved", JSON.stringify(board), saved);
+}
+
+
 console.log(failed ? `\n${failed} failed` : "\nthe page answers to a person");
 process.exit(failed ? 1 : 0);

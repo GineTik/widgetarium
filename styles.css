@@ -2022,8 +2022,9 @@ pre:has(> .block-language-widgetarium),
 	text-overflow: ellipsis;
 }
 
-:is(.wg-root, .wg-portal) .wg-set-pop-default {
-	color: var(--text-muted);
+/* the slot row is a plain row that opens a catalogue, so the wrapper must not become a box */
+:is(.wg-root, .wg-portal) .wg-set-slot {
+	display: contents;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick {
