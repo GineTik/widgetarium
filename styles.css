@@ -1209,6 +1209,11 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: a 1px item in a column flex box is shrunk away without flex: none */
+:is(.wg-root, .wg-portal) .wg-kit-pop-list {
+	display: flex;
+	flex-direction: column;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-pop-sep {
 	flex: none;
 	height: 1px;

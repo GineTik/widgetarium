@@ -549,6 +549,17 @@ export function PopoverSeparator(props) {
 export function PopoverSearch({ placeholder, hint, children, class: cls }) {
 	const [keyword, setKeyword] = useState("");
 	const needle = keyword.trim().toLowerCase();
+	const listRef = useRef(null);
+
+	// CONTEXT: whatever the caller drew first is what Enter means — the kit does not know the list
+	const takeFirst = (event) => {
+		if (event.key !== "Enter") return;
+		const first = listRef.current?.querySelector(".wg-kit-pop-item:not([disabled])");
+		if (!first) return;
+		event.preventDefault();
+		first.click();
+		setKeyword("");
+	};
 
 	return h(
 		Fragment,
@@ -564,10 +575,11 @@ export function PopoverSearch({ placeholder, hint, children, class: cls }) {
 				placeholder,
 				value: keyword,
 				onInput: (event) => setKeyword(event.target.value),
+				onKeyDown: takeFirst,
 			}),
 			hint ? h("span", { class: "wg-kit-pop-search-hint" }, hint) : null,
 		),
-		typeof children === "function" ? children(needle) : children,
+		h("div", { class: "wg-kit-pop-list", ref: listRef }, typeof children === "function" ? children(needle) : children),
 	);
 }
 
