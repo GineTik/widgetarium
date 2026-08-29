@@ -44,7 +44,7 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 	const sortKey = JSON.stringify(sortRows);
 
 	const [window, setWindow] = useState({ offset: 0, limit: manifest?.window?.limit ?? 0 });
-	const [state, setState] = useState({ rows: [], total: null, isLoading: true });
+	const [state, setState] = useState({ rows: [], total: null, isLoading: true, failure: null });
 
 	const latest = useRef(0);
 	const configRef = useRef(config);
@@ -54,11 +54,21 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 		const ticket = ++latest.current;
 		let alive = true;
 
+		// A rejected list used to leave isLoading true forever, so a THROWN adapter looked
+		// exactly like a slow one: the board sat on "Loading..." and named no cause. A source
+		// that failed must say so.
 		const load = () =>
-			slot.list({ where: filterRows, sort: sortRows }).then((result) => {
-				if (!alive || ticket !== latest.current) return;
-				setState({ rows: result.rows, total: result.total, isLoading: false });
-			});
+			slot
+				.list({ where: filterRows, sort: sortRows })
+				.then((result) => {
+					if (!alive || ticket !== latest.current) return;
+					setState({ rows: result.rows, total: result.total, isLoading: false, failure: null });
+				})
+				.catch((failure) => {
+					console.error(`Widgetarium: source "${name}" failed`, failure);
+					if (!alive || ticket !== latest.current) return;
+					setState({ rows: [], total: 0, isLoading: false, failure: String(failure?.message ?? failure) });
+				});
 
 		load();
 		const stop = slot.canSubscribe ? slot.subscribe(load) : null;
