@@ -10,6 +10,12 @@ if (process.env.WG_VAULT) gateRoots.push(WIDGETS);
 try {
 	execFileSync("node", ["tools/lint-language.mjs", ...gateRoots], { stdio: "inherit" });
 	execFileSync("node", ["tools/check-shadow.mjs"], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-width.mjs", "widgets", ...(process.env.WG_VAULT ? [WIDGETS] : [])], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-appearance.mjs", "widgets", ...(process.env.WG_VAULT ? [WIDGETS] : [])], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-classes.mjs", "widgets", ...(process.env.WG_VAULT ? [WIDGETS] : [])], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-adaptive.mjs", "widgets", ...(process.env.WG_VAULT ? [WIDGETS] : [])], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-overrides.mjs", "styles.css"], { stdio: "inherit" });
+	execFileSync("node", ["tools/check-one-law.mjs", "src"], { stdio: "inherit" });
 } catch {
 	process.exit(1);
 }
