@@ -228,7 +228,11 @@ const CSS = `
 	color: var(--wg-kit-warning);
 }
 
-.orbi-task-dialog .otd-props { gap: var(--size-2-3, 6px); }
+.orbi-task-dialog .otd-props {
+	gap: var(--size-2-3, 6px);
+	/* a surface inside a surface steps from THAT, not from the page the board sits on */
+	background: var(--wg-kit-glass-group);
+}
 
 .orbi-task-dialog .otd-plate-head {
 	display: flex;

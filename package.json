@@ -34,7 +34,8 @@
 		"test:settings": "node tools/settings-test.mjs",
 		"test:window": "node tools/window-test.mjs",
 		"test:ideal": "node tools/ideal-test.mjs",
-		"shot:window": "node tools/window-shot.mjs"
+		"shot:window": "node tools/window-shot.mjs",
+		"test:ladder": "node tools/ladder-test.mjs"
 	},
 	"keywords": [],
 	"author": "",
