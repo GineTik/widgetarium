@@ -49,6 +49,8 @@ const adapter = {
 // board passed this test while being dead in the app.
 const written = { created: [], updated: [] };
 const notices = [];
+// note text lives here, so a body write never reaches the user's own vault
+const texts = new Map();
 
 function frontmatter(text) {
 	const found = /^---\n([\s\S]*?)\n---/.exec(text);
@@ -89,6 +91,13 @@ const app = {
 			return folders.get(target);
 		},
 		create: async (target, body) => { written.created.push({ target, body }); return vaultFiles("Orbitask/Tasks")[0]; },
+		cachedRead: async (file) => texts.get(file.path) ?? fs.readFileSync(path.join(VAULT, file.path), "utf8"),
+		process: async (file, edit) => {
+			const next = edit(texts.get(file.path) ?? fs.readFileSync(path.join(VAULT, file.path), "utf8"));
+			texts.set(file.path, next);
+			written.updated.push({ path: file.path, text: next });
+			return next;
+		},
 		on: () => ({}), off: () => {},
 	},
 	metadataCache: { getFileCache: (file) => ({ frontmatter: file.props }), on: () => {}, off: () => {} },
@@ -98,7 +107,13 @@ const app = {
 	workspace: { getLeaf: () => ({ openFile: async () => {} }) },
 };
 
-const realHost = createHost(app, { registerEvent: () => {} });
+// CONTEXT: renderMarkdown parents a MarkdownRenderChild on the plugin, and unparents it on cleanup
+const children = [];
+const realHost = createHost(app, {
+	registerEvent: () => {},
+	addChild: (child) => children.push(child),
+	removeChild: (child) => children.splice(children.indexOf(child), 1),
+});
 // the widget speaks to the person through host.ui.notify; a test that cannot hear it cannot
 // tell "refused and said why" from "silently did nothing"
 const host = { ...realHost, ui: { ...realHost.ui, notify: (message) => notices.push(String(message)) } };
@@ -686,8 +701,94 @@ const pickView = async (name, id = "views") => {
 	check("a null entry does not take the whole board down", failure, null);
 	check("the tile that carried it survives", broken?.tiles.length, 2);
 	check("its null source degrades to an unbound one", broken?.tiles[0].sources.tasks, { path: "", filters: [], sort: [] });
-	check("and its null mount to an unconfigured one", broken?.tiles[1].mounted["@foo"], { settings: {}, sources: {}, mounted: {} });
+	check("and its null mount to an unconfigured one", broken?.tiles[1].mounted["@foo"], { settings: {}, sources: {}, slots: {}, mounted: {} });
 }
+
+{
+	// THE PROPERTY LIST IS THE BOARD'S, NOT A TILE'S. Two widgets have to read ONE list, so a
+	// widget keeping its own copy in `settings` was right for exactly one widget. The probe is
+	// registered here rather than added to widgets/, because what is under test is what the
+	// ENGINE hands over, not what any product widget does with it.
+	const seen = [];
+	registry.widgets.set("@probe/board", {
+		manifest: { id: "@probe/board", title: "Probe", sources: { notes: {} } },
+		folder: "probe",
+		component: (given) => {
+			seen.push(given);
+			return h(
+				"button",
+				{
+					class: "probe-add",
+					onClick: () => given.configureBoard({ properties: [...(given.board?.properties ?? []), "Deadline"] }),
+				},
+				"add",
+			);
+		},
+	});
+	const last = () => seen[seen.length - 1];
+
+	board = normalizeBoard({
+		tiles: [{ id: "probe", widget: "@probe/board", sources: { notes: { path: FOLDER } } }],
+		properties: ["Status", "Priority"],
+		layouts: { 20: { places: [{ id: "probe", x: 0, y: 0, w: 6, h: 3 }] } },
+	});
+	draw();
+	await settle();
+
+	check("a widget is handed the board's property list", last()?.board?.properties, ["Status", "Priority"]);
+	// the board itself is the model; a widget holding it could rewrite tiles and layouts
+	check("and not the board it came off", last()?.board?.tiles, undefined);
+
+	await click(all("button.probe-add")[0]);
+	check("configureBoard writes the list back to the board", board.properties, ["Status", "Priority", "Deadline"]);
+	check("and the widget reads it back on the next render", last()?.board?.properties, ["Status", "Priority", "Deadline"]);
+
+	last().configureBoard({ properties: ["Status", "status", " Status "] });
+	await settle();
+	check("the same name twice is one property, whatever its case", board.properties, ["Status"]);
+
+	warnings.length = 0;
+	const refused = last().configureBoard({ tiles: [], properties: ["Status"] });
+	await settle();
+	check("a patch naming anything but properties is refused", refused, false);
+	check("and the widget is told which key it may not write", warnings.some((line) => /tiles/.test(line)), true);
+	check("the board is untouched by the refusal", [board.tiles.length, board.properties], [1, ["Status"]]);
+
+	// A RECORD CARRIES NO BODY, so a widget could draw a note's properties and never its text.
+	// The rows a widget is handed stay bodyless — twenty cards, no file reads — and one note's
+	// text is FETCHED, which is the only call that costs anything.
+	const notes = () => last().actions.notes;
+	const first = last().data.notes.rows[0];
+	check("the widget is handed rows to draw", Boolean(first), true);
+	check("and not one of them carries a body", last().data.notes.rows.some((row) => row.body !== undefined), false);
+
+	const opened = await notes().get({ path: first.path });
+	check("a widget can fetch one record's body", typeof opened.body, "string");
+	check("and its properties come with it", opened.props, first.props);
+
+	await notes().update({ path: first.path }, { body: "Written from a widget.\n" });
+	check("and save an edited one", (await notes().get({ path: first.path })).body, "Written from a widget.\n");
+	check("the note's properties survived the body write", (await notes().get({ path: first.path })).props, first.props);
+
+	// what a widget may ask of a source, in full — a new verb here is a decision, not a slip
+	check("the source verbs a widget is handed", Object.keys(notes()).sort(), ["canCreate", "canRemove", "canUpdate", "create", "get", "open", "update"]);
+
+	// A MOUNTED widget must not be handed less than a tile: the list belongs to the board, and
+	// where a widget happens to be standing is not a fact about the board.
+	seen.length = 0;
+	board = normalizeBoard({
+		tiles: [{ id: "group", widget: "@orbitask/view-group", settings: { views: "@probe/board" } }],
+		properties: ["Status", "Priority"],
+		layouts: { 20: { places: [{ id: "group", x: 0, y: 0, w: 12, h: 8 }] } },
+	});
+	draw();
+	await settle();
+	check("a mounted widget reads the same board list", last()?.board?.properties, ["Status", "Priority"]);
+	last().configureBoard({ properties: ["Deadline"] });
+	await settle();
+	check("and can write it back from inside its holder", board.properties, ["Deadline"]);
+}
+
 
 console.log(failed ? `\n${failed} failed` : "\nthe page answers to a person");
 process.exit(failed ? 1 : 0);

@@ -145,6 +145,8 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 			canUpdate: slot.canUpdate,
 			canRemove: slot.canRemove,
 			create: (draft) => (slot.canCreate ? slot.create(draft) : Promise.reject(new Error("read-only"))),
+			// TRADE-OFF: fetched, never carried on the rows — a list re-runs on every vault event
+			get: (ref) => slot.get(ref),
 			describe: () => slot.describe(),
 			openRecord: (ref) => host.ui.openNote(ref.path),
 			update: (ref, patch) => (slot.canUpdate ? slot.update(ref, patch) : Promise.resolve(null)),

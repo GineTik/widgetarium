@@ -5,7 +5,7 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { placedIds, layoutFor } from "./model.js";
+import { placedIds, layoutFor, normalizeProperties } from "./model.js";
 import { createContext } from "./engine/context.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
@@ -141,10 +141,16 @@ export function resolveFilter(rows, context) {
 	return out;
 }
 
+// CONTEXT: a slot resolved with no board behind it — every caller still gets a boolean back
+function refuseBoardPatch() {
+	console.warn("Widgetarium: this widget was rendered without a board and cannot configure one");
+	return false;
+}
+
 // A slot is where the board says WHICH widget draws part of another one. The parent feeds
 // it — a card gets its row from the board — so a slotted widget has no source of its own; it
 // is a view handed data. That is what makes "replace this card" a setting, not a fork.
-export function resolveSlots(manifest, tile, registry, host, viewContext) {
+export function resolveSlots(manifest, tile, registry, host, viewContext, boardAccess) {
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = registry.get(tile.slots?.[name] ?? spec.default);
@@ -160,6 +166,10 @@ export function resolveSlots(manifest, tile, registry, host, viewContext) {
 				size: given?.size ?? { w: 1, h: 1, scale: 1 },
 				host: viewHost(host),
 				context: viewContext,
+				// the same shape a tile gets: one widget file must not read `board` two ways
+				// depending on whether the board placed it or another widget did
+				board: boardAccess?.board ?? { properties: [] },
+				configureBoard: boardAccess?.configureBoard ?? refuseBoardPatch,
 			});
 	}
 	return slots;
@@ -167,9 +177,17 @@ export function resolveSlots(manifest, tile, registry, host, viewContext) {
 
 // TRADE-OFF: a mount resolves its own sources, unlike a slot, which is handed its data
 // CONTEXT: the SLOT, not the widget id — the same widget mounted twice is two of these
-function mountedTile(tile, slot, widget) {
+// CONTEXT: resolveSlots reads tile.slots, so a mount without one can never record a pick
+export function mountedTile(tile, slot, widget) {
 	const held = tile.mounted?.[slot] ?? {};
-	return { id: `${tile.id}/${slot}`, widget, settings: held.settings ?? {}, sources: held.sources ?? {}, mounted: held.mounted ?? {} };
+	return {
+		id: `${tile.id}/${slot}`,
+		widget,
+		settings: held.settings ?? {},
+		sources: held.sources ?? {},
+		slots: held.slots ?? {},
+		mounted: held.mounted ?? {},
+	};
 }
 
 // CONTEXT: module scope, so returning to a view finds the same component type
@@ -227,7 +245,7 @@ export function resolveMounts(manifest, settings, registry, mount) {
 	return mounts;
 }
 
-function WidgetHost({ definition, tile, place, host, scale, patchSource, context, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted }) {
+function WidgetHost({ definition, tile, place, host, scale, patchSource, context, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, configureBoard }) {
 	const manifest = definition.manifest;
 	const [, setTick] = useState(0);
 	// CONTEXT: one INSTANCE, not one widget — two tiles of the same widget are two writers
@@ -271,7 +289,10 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 			canUpdate: source.canUpdate,
 			canRemove: source.canRemove,
 			create: (draft) => source.create(draft),
+			// CONTEXT: patch is { props } and/or { body }; the half not given is left alone
 			update: (ref, patch) => source.update(ref, patch),
+			// CONTEXT: rows carry no body — a widget that wants one asks for that record
+			get: (ref) => source.get(ref),
 			open: (ref) => source.openRecord(ref),
 		};
 		// only a filter UI needs these, and it needs them as data, not as a query engine
@@ -291,6 +312,9 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 	};
 
 	const settings = { ...defaults(definition), ...(tile.settings ?? {}) };
+	// one object, handed to this widget and to anything it slots — the same board, and the
+	// same identity, so a child's memo does not see a new board every frame
+	const boardAccess = { board: { properties: boardProperties }, configureBoard };
 	const props = {
 		settings,
 		// A widget may CHANGE its own settings — the columns a board shows are a setting, and a
@@ -298,6 +322,9 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		// letting the column appear as a side effect. The board still owns the tile; the widget
 		// states what it wants and the board writes it, exactly as with size and folding.
 		configure: (patch) => onPatch({ settings: { ...(tile.settings ?? {}), ...patch } }),
+		// CONTEXT: the BOARD's list, not this tile's — two widgets must read one list
+		board: boardAccess.board,
+		configureBoard,
 		// A widget may ask to be narrower; it may not resize itself. The board owns places, so
 		// it is the board that writes the width and the board that remembers the one it came
 		// from — which is why reopening a panel returns to the width THIS screen had it at.
@@ -320,8 +347,8 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		data,
 		actions,
 		filters,
-		slots: resolveSlots(manifest, tile, registry, host, viewContext),
-		mounts: resolveMounts(manifest, settings, registry, { tile, place, host, scale, context, registry, onCollapse, onExpand, patchMounted }),
+		slots: resolveSlots(manifest, tile, registry, host, viewContext, boardAccess),
+		mounts: resolveMounts(manifest, settings, registry, { tile, place, host, scale, context, registry, onCollapse, onExpand, patchMounted, boardProperties, configureBoard }),
 	};
 
 	return h(definition.component, props);
@@ -390,7 +417,7 @@ function icon(paths) {
 	);
 }
 
-function TileView({ definition, tile, place, pixels, live, cell, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, board, context, registry }) {
+function TileView({ definition, tile, place, pixels, live, cell, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, board, context, registry, boardProperties, configureBoard }) {
 	const [showSettings, setShowSettings] = useState(false);
 
 	// While a tile is under the pointer its geometry is the pointer's, not the grid's.
@@ -449,7 +476,7 @@ function TileView({ definition, tile, place, pixels, live, cell, scale, host, ed
 	const widget = h(
 		Boundary,
 		{ key: tile.widget },
-		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch }),
+		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch, boardProperties, configureBoard }),
 	);
 
 	// The chip replaces the CONTENT and nothing else. Returning it in place of the whole tile
@@ -525,6 +552,7 @@ const Tile = memo(TileView, (before, after) => {
 	if (before.editing !== after.editing || before.isDragging !== after.isDragging) return false;
 	if (before.scale !== after.scale || before.live !== after.live || before.cell !== after.cell) return false;
 	if (before.context !== after.context) return false;
+	if (before.boardProperties !== after.boardProperties) return false;
 	// Whether this tile is the open one is a reason to redraw it. Left out, the chip was set
 	// open, the scrim appeared, and the tile itself was skipped — the board dimmed around a
 	// chip that never opened.
@@ -723,6 +751,19 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 
 	const patchTile = (id, patch) => {
 		onChange({ ...board, tiles: board.tiles.map((tile) => (tile.id === id ? { ...tile, ...patch } : tile)) }, true);
+	};
+
+	// TRADE-OFF: one key wide — a widget patching the board could rewrite its tiles and layouts
+	const BOARD_KEYS = ["properties"];
+	const configureBoard = (patch) => {
+		const refused = Object.keys(patch ?? {}).filter((key) => !BOARD_KEYS.includes(key));
+		if (refused.length > 0) {
+			console.warn(`Widgetarium: a widget may configure the board's ${BOARD_KEYS.join(", ")}, not ${refused.join(", ")}`);
+			return false;
+		}
+		// CONTEXT: the model's own normaliser, so no widget writes a list the file could not hold
+		onChange({ ...latestRef.current.board, properties: normalizeProperties(patch.properties) }, true);
+		return true;
 	};
 
 	// Removing a tile removes the TILE, not its place at this one width. Dropping only the
@@ -991,6 +1032,8 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 						board: { width: metrics.boardWidth, height: Math.max(1, rowsOf(shown)) * (metrics.cell + metrics.gap) },
 						onCollapse: collapseTile,
 						onExpand: expandTile,
+						boardProperties: board.properties,
+						configureBoard,
 					});
 			  });
 

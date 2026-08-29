@@ -115,6 +115,18 @@ if (typeof resolveSlots === "function") {
 	const overridden = resolveSlots(manifest, { slots: { card: "@other/card" } }, registry, noHost, {});
 	check("a tile may name a different widget for the slot", overridden.card, null);
 
+	// ONE SHAPE, EVERY PATH. The registry resolves the same file whether the board placed it
+	// or another widget slotted it, so a widget written against props.board as a tile must not
+	// meet an undefined there as a slot — it crashed on the first property it read.
+	const access = { board: { properties: [{ key: "status" }] }, configureBoard: () => true };
+	const withBoard = resolveSlots(manifest, {}, registry, noHost, {}, access)
+		.card({});
+	check("a slotted widget reads the board the same way a tile does", withBoard.props.board.properties[0].key, "status");
+	check("and it is the SAME board, not a copy", withBoard.props.board === access.board, true);
+	check("it may configure the board too", withBoard.props.configureBoard(), true);
+	const noBoard = bySpec.card({});
+	check("with no board behind it the shape still holds", noBoard.props.board, { properties: [] });
+	check("and the refusal is a boolean, not a missing function", noBoard.props.configureBoard(), false);
 } else {
 	failed += 1;
 	console.log("!!  resolveSlots is not exported from surface.js — slots cannot be tested");
