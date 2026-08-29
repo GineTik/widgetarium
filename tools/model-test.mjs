@@ -3,7 +3,7 @@ import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
 
-const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor } = await import(
+const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds } = await import(
 	"./.mjs-cache/model.mjs"
 );
 
@@ -47,13 +47,14 @@ const { measureGrid } = await import("./.mjs-cache/paths.mjs");
 
 // The grid law, swept across every width the plugin can be given.
 const TAP_TARGET_PX = 48;
-const sweep = { backwards: [], underTap: [], deadMargin: 0, minCell: Infinity, maxCell: 0, biggestJump: 0, jumpAt: 0 };
+const sweep = { backwards: [], underTap: [], deadMargin: 0, minCell: Infinity, maxCell: 0, biggestJump: 0, jumpAt: 0, worstScale: 0 };
 for (let width = 301; width <= 3440; width += 1) {
 	const here = measureGrid(width);
 	const before = measureGrid(width - 1);
 	if (here.columns < before.columns) sweep.backwards.push(width);
 	if (here.cell < TAP_TARGET_PX) sweep.underTap.push(width);
 	sweep.deadMargin = Math.max(sweep.deadMargin, width - 32 - here.boardWidth);
+	sweep.worstScale = Math.max(sweep.worstScale, Math.abs(here.scale - 1));
 	sweep.minCell = Math.min(sweep.minCell, here.cell);
 	sweep.maxCell = Math.max(sweep.maxCell, here.cell);
 	const jump = Math.abs(here.cell - before.cell);
@@ -66,40 +67,119 @@ for (let width = 301; width <= 3440; width += 1) {
 // INVARIANT: a wider board never has fewer columns. Held per class, the gutter stepped at
 // the class edge and the board reflowed backwards as the window grew.
 check("columns never decrease as the width grows", sweep.backwards, []);
-// INVARIANT: the board is exactly as wide as it was given — no ceiling, no dead margin.
+// INVARIANT: the leftover is always less than one more column. The cell is fixed now, so it
+// cannot absorb the remainder the way an elastic one did — but if the rag ever reached a whole
+// cell plus its gutter, that is a column we should have fitted and did not.
+const { GRID } = await import("./.mjs-cache/paths.mjs");
+// INVARIANT, restored: the board is exactly as wide as it was given. The fixed cell would have
+// left a rag of up to 77px; scaling it to the pane closes that without giving up one number.
 check("no dead margin at any width", Math.round(sweep.deadMargin), 0);
+// INVARIANT: the scale is a correction, not a redesign. If it ever had to move far, the cell
+// itself would be the wrong number.
+check("the scale stays within a fifth either way", sweep.worstScale < 0.2, true);
 // INVARIANT: a 1x1 cell is a button and stays inside the finger.
 check("the cell never falls under the tap target", sweep.underTap, []);
 console.log(
-	`--  cell spans ${sweep.minCell.toFixed(1)}..${sweep.maxCell.toFixed(1)}px, ` +
-		`biggest step ${sweep.biggestJump.toFixed(1)}px at ${sweep.jumpAt}px wide`,
+	`--  cell ${GRID.cellPx}px by design, ${sweep.minCell.toFixed(0)}..${sweep.maxCell.toFixed(0)}px on screen ` +
+		`(scale off by at most ${(sweep.worstScale * 100).toFixed(1)}%), no dead margin`,
 );
 
-check("the phone lands on four columns", measureGrid(390).columns, 4);
+// the column count follows the cell, so it is not a number to assert — what must hold is that
+// a phone's cell is still something a finger can hit
+const phone = measureGrid(390);
+check("a phone's cell is still a tap target", phone.cell >= TAP_TARGET_PX, true);
+console.log(`--  a 390px phone: ${phone.columns} columns, cell ${phone.cell.toFixed(1)}px, scale ${(phone.scale * 100).toFixed(1)}%`);
 
-// a hole above a tile is dead space nothing can use, so every place falls to the top
+// A TILE STAYS WHERE IT WAS PUT. Rising to the first free row used to be automatic, so a board
+// rearranged itself whenever anything above it moved. Closing a hole is now the Auto-fit
+// button's job, and nobody else's.
 const gappy = normalizeBoard({
 	tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }],
 	layouts: { 12: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 0, y: 9, w: 4, h: 2 }] } },
 });
-check("a vertical hole closes", layoutFor(gappy, 12).places.map((place) => place.y), [0, 2]);
+check("a vertical hole is left alone", layoutFor(gappy, 12).places.map((place) => place.y), [0, 9]);
 
 const sideBySide = normalizeBoard({
 	tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }],
 	layouts: { 12: { places: [{ id: "a", x: 0, y: 4, w: 4, h: 2 }, { id: "b", x: 6, y: 7, w: 4, h: 2 }] } },
 });
-check("neighbours in free columns both reach the top", layoutFor(sideBySide, 12).places.map((place) => place.y), [0, 0]);
+check("neighbours in free columns keep their rows", layoutFor(sideBySide, 12).places.map((place) => place.y), [4, 7]);
 
-// REGRESSION: gravity on the dragged tile too snapped it back to row 0, so a tile could
-// not be dragged downwards at all
-const { packPlaces } = await import("./.mjs-cache/layout.mjs");
+const { arrange } = await import("./.mjs-cache/layout.mjs");
 const column = [{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 0, y: 2, w: 4, h: 2 }];
-const dropped = packPlaces(column.map((place) => (place.id === "a" ? { ...place, y: 4 } : place)), "a");
+const dropped = arrange(column.map((place) => (place.id === "a" ? { ...place, y: 4 } : place)), 12, { movedId: "a" });
 check("a dragged tile keeps the row it was dropped on", dropped.find((place) => place.id === "a").y, 4);
-check("the tile it passed rises to the top", dropped.find((place) => place.id === "b").y, 0);
-const afterRead = packPlaces(dropped);
-check("the next read closes the hole and keeps the new order", afterRead.map((place) => `${place.id}${place.y}`), ["b0", "a2"]);
-check("packing is idempotent", JSON.stringify(packPlaces(afterRead)), JSON.stringify(afterRead));
+check("the tile it passed does not move", dropped.find((place) => place.id === "b").y, 2);
+const afterRead = arrange(dropped, 12, { reading: true });
+check("the next read changes nothing", afterRead.map((place) => `${place.id}${place.y}`), ["a4", "b2"]);
+
+// two tiles landing on the same cell is the ONE thing reading still fixes
+const stacked = arrange([{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 0, y: 1, w: 4, h: 2 }], 12, { reading: true });
+check("an overlap in the file is pushed down, once", stacked.find((place) => place.id === "b").y, 2);
+
+// AUTO-FIT is the deliberate act: everything grows into whatever is free
+const roomy = arrange([{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 6, y: 0, w: 4, h: 2 }], 12, { autoFit: true });
+check("auto-fit leaves no free column", roomy.reduce((sum, place) => sum + place.w, 0), 12);
+check("auto-fit does not move a tile off its row", roomy.map((place) => place.y), [0, 0]);
+check("reading is idempotent", JSON.stringify(arrange(afterRead, 12, { reading: true })), JSON.stringify(afterRead));
+
+// REGRESSION: a size was converted with the position formula, so the step from 3 to 4
+// cells landed at 70% of the way instead of half
+const { toCellSpan } = await import("./.mjs-cache/layout.mjs");
+const CELL = 67.1;
+const GAP = 16;
+const spanOf = (cells) => cells * CELL + (cells - 1) * GAP;
+const exact = [1, 2, 3, 4, 6, 9].map((cells) => toCellSpan(spanOf(cells), CELL, GAP));
+check("an exact span reads back as itself", exact, [1, 2, 3, 4, 6, 9]);
+const halfway = spanOf(3) + (CELL + GAP) / 2;
+check("the step falls at the halfway point", toCellSpan(halfway + 1, CELL, GAP), 4);
+check("just under halfway stays put", toCellSpan(halfway - 1, CELL, GAP), 3);
+check("a size never reads as zero cells", toCellSpan(0, CELL, GAP), 1);
+
+// THE LAW: the board never refuses a width. Derivation scales down as far as the board goes,
+// and the widget answers with a compact design or a chip — a minimum was a wall the layout
+// could not route around, and its only answer was to drop a tile to the next row.
+const wide = normalizeBoard({
+	tiles: [{ id: "hero", widget: "w" }],
+	layouts: { 20: { places: [{ id: "hero", x: 0, y: 0, w: 9, h: 7 }] } },
+});
+const derivedWidths = [12, 8, 6, 4].map((columns) => layoutFor(wide, columns).places[0].w);
+check("derivation scales all the way down", derivedWidths, [5, 4, 3, 2]);
+check("and every step stays on the board", derivedWidths.every((w) => w >= 1), true);
+
+const cramped = layoutFor(wide, 3, () => ({})).places[0];
+check("a one-tile row still fills the board", [cramped.w, cramped.x + cramped.w <= 3], [1, true]);
+
+// GROWTH: everything shares a shrink, but a folded tile is not handed columns back when the
+// window widens — that is what folded means, and forgetting it sprang the sidebar open.
+const folded = normalizeBoard({
+	tiles: [{ id: "panel", widget: "w", folded: true }, { id: "board", widget: "w" }],
+	layouts: { 10: { places: [{ id: "panel", x: 0, y: 0, w: 1, h: 8 }, { id: "board", x: 1, y: 0, w: 9, h: 8 }] } },
+});
+const declares = (id) => ({ growth: id === "panel" ? "keep" : "fill" });
+const grown = layoutFor(folded, 20, declares).places;
+check("a folded panel does not grow with the board", grown.find((place) => place.id === "panel").w, 1);
+check("and the tile beside it takes the room", grown.find((place) => place.id === "board").w, 19);
+
+// INVARIANT: no path may put a place outside the board — not derivation, not an authored
+// layout, not a widget whose declared minimum is wider than the board itself
+const crowded = normalizeBoard({
+	tiles: [{ id: "big", widget: "w" }, { id: "small", widget: "w" }],
+	layouts: { 20: { places: [{ id: "big", x: 0, y: 0, w: 14, h: 6 }, { id: "small", x: 14, y: 0, w: 6, h: 3 }] } },
+});
+const demanding = (id) => ({ defaultSize: id === "big" ? { w: 8, h: 4 } : { w: 3, h: 2 } });
+const escaped = [];
+for (let columns = 1; columns <= 45; columns += 1) {
+	for (const place of layoutFor(crowded, columns, demanding).places) {
+		if (place.x + place.w > columns || place.w < 1) escaped.push(`${columns}:${place.id}`);
+	}
+}
+check("nothing escapes the board, 1 to 45 columns", escaped, []);
+
+// the hidden-widget tray reads placedIds, which asks for the layout WITHOUT limits: the
+// sizes differ there, so the ids had better not
+const withLimits = new Set(layoutFor(crowded, 6, demanding).places.map((place) => place.id));
+check("placedIds sees the same tiles with or without limits", [...placedIds(crowded, 6)].sort(), [...withLimits].sort());
 
 // a layout written under a class name instead of a column count is dropped on save; it
 // must be loud, because silently losing an added widget is how that bug hid
@@ -117,6 +197,36 @@ const onRender = warned.length;
 console.warn = realWarn;
 check("saving a non-numeric layout key warns", onSave, 1);
 check("rendering does not warn", onRender, 0);
+
+
+// REGRESSION: settling and READING were made one operation, and the arrangement a person made
+// was re-flowed on every render. Once a tile had been nudged the next render nudged it again,
+// and the whole board walked itself into a single vertical column.
+{
+	const arranged = normalizeBoard({
+		tiles: [
+			{ id: "panel", widget: "w" },
+			{ id: "tabs", widget: "w" },
+			{ id: "board", widget: "w" },
+		],
+		layouts: {
+			17: {
+				places: [
+					{ id: "panel", x: 0, y: 0, w: 2, h: 11 },
+					{ id: "tabs", x: 2, y: 0, w: 15, h: 1 },
+					{ id: "board", x: 2, y: 1, w: 15, h: 10 },
+				],
+			},
+		},
+	});
+
+	const once = layoutFor(arranged, 17).places;
+	const twice = layoutFor({ ...arranged, layouts: { 17: once } }, 17).places;
+	check("reading an authored layout returns it unchanged", once, arranged.layouts[17]);
+	check("and reading it again changes nothing either", twice, once);
+	check("every tile stays on the row its author put it on", once.map((place) => place.y), [0, 0, 1]);
+	check("and nothing was pushed into a column", new Set(once.map((place) => place.y)).size, 2);
+}
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");
 process.exit(failed ? 1 : 0);
