@@ -11,12 +11,17 @@ import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
 import { trace } from "./trace.js";
 import { useSource } from "./source.js";
+import { useSettingsWindow } from "./settings-window.js";
 
 const REM = 16;
 // how far a resize may travel past a limit before it stops giving entirely
 const GIVE_PX = 22;
 // under this a board is not laid out yet, and its width is not a fact about the screen
 const MIN_BOARD_WIDTH_PX = 120;
+// CONTEXT: the window must be taller than the widget it frames, or it opens panned
+// TRADE-OFF: the panels fade before the box returns, so closing does not read as a snap
+const SETTINGS_FADE_MS = 140;
+
 // Corners LAST. They overlap the two side grips they touch, and with one z-index the
 // later sibling paints on top — so the corner has to come after the sides it covers.
 function initialOf(name) {
@@ -40,57 +45,6 @@ class Boundary extends Component {
 			h("code", null, String(this.state.failure?.message ?? this.state.failure)),
 		]);
 	}
-}
-
-function SettingsPanel({ definition, tile, onChange, onClose }) {
-	const settings = tile.settings ?? {};
-	const bindings = tile.sources ?? {};
-
-	const fields = (definition.manifest.settings ?? []).map((field) =>
-		h("label", { class: "wg-field", key: field.key }, [
-			h("span", null, field.label ?? field.key),
-			field.type === "boolean"
-				? h("input", {
-						type: "checkbox",
-						checked: Boolean(settings[field.key] ?? field.default),
-						onChange: (event) => onChange({ settings: { ...settings, [field.key]: event.target.checked } }),
-				  })
-				: h("input", {
-						type: field.type === "number" ? "number" : "text",
-						value: settings[field.key] ?? field.default ?? "",
-						onInput: (event) =>
-							onChange({
-								settings: {
-									...settings,
-									[field.key]: field.type === "number" ? Number(event.target.value) : event.target.value,
-								},
-							}),
-				  }),
-		]),
-	);
-
-	const slots = Object.entries(definition.manifest.sources ?? {}).map(([key, source]) =>
-		h("label", { class: "wg-field", key: `source-${key}` }, [
-			h("span", null, `${source.label ?? key} — folder`),
-			h("input", {
-				type: "text",
-				value: bindings[key]?.path ?? "",
-				placeholder: "Widgetarium Demo/Tasks",
-				onInput: (event) =>
-					onChange({ sources: { ...bindings, [key]: { ...(bindings[key] ?? {}), path: event.target.value } } }),
-			}),
-		]),
-	);
-
-	return h("div", { class: "wg-settings" }, [
-		h("div", { class: "wg-settings-head" }, [
-			h("b", null, definition.manifest.title ?? definition.manifest.id),
-			h("button", { class: "wg-x", onClick: onClose }, "✕"),
-		]),
-		...slots,
-		...fields,
-		h("div", { class: "wg-settings-foot" }, h("code", null, definition.manifest.id)),
-	]);
 }
 
 function defaults(definition) {
@@ -417,8 +371,43 @@ function icon(paths) {
 	);
 }
 
-function TileView({ definition, tile, place, pixels, live, cell, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, board, context, registry, boardProperties, configureBoard }) {
-	const [showSettings, setShowSettings] = useState(false);
+function TileView(props) {
+	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, context, registry, boardProperties, configureBoard } = props;
+	const settingsShown = typeof settings === "string";
+
+	// built BEFORE the window that may hold it: the window is a hook and must run on every
+	// render, and it cannot be handed a widget declared further down the function
+	const patchSource = (name, patch) =>
+		onPatch({ sources: { ...(tile.sources ?? {}), [name]: { ...(tile.sources?.[name] ?? {}), ...patch } } });
+
+	const patchMounted = (id, patch) =>
+		onPatch({ mounted: { ...(tile.mounted ?? {}), [id]: { ...(tile.mounted?.[id] ?? {}), ...patch } } });
+
+	const widget = h(
+		Boundary,
+		{ key: tile.widget },
+		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch, boardProperties, configureBoard }),
+	);
+
+	const settingsWindow = useSettingsWindow({
+		session: settings,
+		definition,
+		tile,
+		place,
+		widget,
+		cell,
+		gap,
+		phone,
+		host,
+		registry,
+		columns,
+		onPatch,
+		onClose: onCloseSettings,
+		onResize,
+		onCollapse: () => onCollapse?.(place.id),
+		onExpand: () => onExpand?.(place.id),
+		countReaders,
+	});
 
 	// While a tile is under the pointer its geometry is the pointer's, not the grid's.
 	// Rendering the snapped geometry instead made the tile flicker between the two every
@@ -431,7 +420,7 @@ function TileView({ definition, tile, place, pixels, live, cell, scale, host, ed
 		height: `${shown.height}px`,
 		// the content pulls back to make room for the ring; the chrome is a SIBLING of the
 		// content, never a child, so it keeps its own size while the widget shrinks
-		"--wg-tile-scale": editing ? hoverScale(shown, cell) : 1,
+		"--wg-tile-scale": editing && !settingsShown ? hoverScale(shown, cell) : 1,
 	};
 
 	if (!definition || definition.error) {
@@ -450,20 +439,20 @@ function TileView({ definition, tile, place, pixels, live, cell, scale, host, ed
 		]);
 	}
 
-	const patchSource = (name, patch) =>
-		onPatch({ sources: { ...(tile.sources ?? {}), [name]: { ...(tile.sources?.[name] ?? {}), ...patch } } });
-
-	const patchMounted = (id, patch) =>
-		onPatch({ mounted: { ...(tile.mounted ?? {}), [id]: { ...(tile.mounted?.[id] ?? {}), ...patch } } });
-
 	// TOO NARROW TO BE ITSELF. The tile keeps the width it was given — the board never refuses
 	// one — and the widget stands aside for a chip. Opening the chip grows it from exactly
 	// here, over its neighbours, so the two are visibly the same thing.
 	// Shown while EDITING too. Hiding it there drew the full widget spilling out of a tile it
 	// does not fit, so the person arranging the board saw one thing and the person reading it
 	// saw another — and the arranger could not tell which block was the problem.
-	const narrow = isTooNarrow(shown.width, definition.manifest);
-	const grown = narrow && opened && !editing ? openedBox(shown, wantedBox(definition.manifest, board), board) : null;
+	const narrow = !settingsShown && isTooNarrow(shown.width, definition.manifest);
+	// THE TILE BECOMES THE WINDOW: the same element, given a bigger box. No scale, because a
+	// transformed ancestor re-parents every fixed popover inside the widget and kills the glass.
+	// TRADE-OFF: the tile no longer becomes the window — the window is a dialog over the screen,
+	// so the tile keeps its place and the board keeps its height
+	const grown = !settingsShown && narrow && opened && !editing
+		? openedBox(shown, wantedBox(definition.manifest, board), board)
+		: null;
 	const tileStyle = grown
 		? {
 				...style,
@@ -473,11 +462,6 @@ function TileView({ definition, tile, place, pixels, live, cell, scale, host, ed
 		  }
 		: style;
 
-	const widget = h(
-		Boundary,
-		{ key: tile.widget },
-		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch, boardProperties, configureBoard }),
-	);
 
 	// The chip replaces the CONTENT and nothing else. Returning it in place of the whole tile
 	// took the ring, the grips and the chrome with it — the moment a resize made a tile narrow
@@ -509,24 +493,24 @@ function TileView({ definition, tile, place, pixels, live, cell, scale, host, ed
 			"data-tile": tile.id,
 		},
 		[
-			h("div", { class: "wg-tile-body" }, narrow ? chip : widget),
-			editing
+			// while the window holds it, the widget is drawn THERE and not here: two live copies
+			// of one widget resolve the same sources twice and both answer a press
+			h("div", { class: "wg-tile-body" }, settingsShown ? null : narrow ? chip : widget),
+			editing && !settingsShown
 				? [
 						h("div", { class: "wg-tile-ring", key: "ring", onPointerDown: (event) => onDragStart(event, "move") }),
 						h("span", { class: "wg-tile-actions", key: "actions" }, [
 							h(
 								"button",
-								{ onClick: () => setShowSettings((value) => !value), title: "Settings", "aria-label": "Settings" },
+								{ onClick: () => onOpenSettings?.(tile.id), title: "Settings", "aria-label": "Settings" },
 								icon(ICON_GEAR),
 							),
 							h("button", { onClick: onRemove, title: "Remove", "aria-label": "Remove" }, icon(ICON_TRASH)),
 						]),
 				  ]
 				: null,
-			showSettings
-				? h(SettingsPanel, { definition, tile, onChange: onPatch, onClose: () => setShowSettings(false) })
-				: null,
-			editing
+			settingsWindow.dialog,
+			editing && !settingsShown
 				? EDGES.map((edge) =>
 						h(
 							"div",
@@ -550,7 +534,8 @@ function TileView({ definition, tile, place, pixels, live, cell, scale, host, ed
 const Tile = memo(TileView, (before, after) => {
 	if (before.definition !== after.definition || before.tile !== after.tile) return false;
 	if (before.editing !== after.editing || before.isDragging !== after.isDragging) return false;
-	if (before.scale !== after.scale || before.live !== after.live || before.cell !== after.cell) return false;
+	if (before.scale !== after.scale || before.live !== after.live || before.cell !== after.cell || before.gap !== after.gap) return false;
+	if (before.settings !== after.settings || before.columns !== after.columns || before.phone !== after.phone) return false;
 	if (before.context !== after.context) return false;
 	if (before.boardProperties !== after.boardProperties) return false;
 	// Whether this tile is the open one is a reason to redraw it. Left out, the chip was set
@@ -630,6 +615,10 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 	const toggleExpanded = () => onChange({ ...board, mode: isPage ? "collapsed" : "expanded" }, true);
 	const [preview, setPreview] = useState(null);
 	const [openedChip, setOpenedChip] = useState(null);
+	const [settingsTile, setSettingsTile] = useState(null);
+	const [closingTile, setClosingTile] = useState(null);
+	// CONTEXT: a new number every opening, so the window's own state is fresh without an effect
+	const sessionRef = useRef(0);
 	// The pointer's own geometry, in STATE rather than written onto the node. Written
 	// directly it had two owners: preact only rewrites a style key whose value changed, and
 	// while a resize pressed against a limit the snapped size stopped changing — so preact
@@ -705,6 +694,10 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 		? arrange([...places.filter((place) => place.id !== preview.id), preview], metrics.columns, { movedId: preview.id, moving: dragRef.current?.mode === "move" })
 		: places;
 	const rows = rowsOf(shown);
+	// the settings window is a DIALOG over the screen now, so it no longer stretches the board
+	// to hold itself — which is what used to push the note's own scrollbar in behind it
+	const boardRows = Math.max(1, rows);
+	const boardBox = { width: metrics.boardWidth, height: boardRows * (metrics.cell + metrics.gap) };
 
 	// editing a derived width authors it: the file gains an entry only once something moved
 	// A drag registers its handlers once and they live until the pointer is released, so
@@ -764,6 +757,54 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 		// CONTEXT: the model's own normaliser, so no widget writes a list the file could not hold
 		onChange({ ...latestRef.current.board, properties: normalizeProperties(patch.properties) }, true);
 		return true;
+	};
+
+	const openSettings = (id) => {
+		sessionRef.current += 1;
+		setClosingTile(null);
+		setSettingsTile({ id, key: String(sessionRef.current) });
+	};
+
+	// TRADE-OFF: the panels fade first and the box follows, per the kit's rule on panels that bounce
+	const closeSettings = () => {
+		const held = settingsTile;
+		setSettingsTile(null);
+		if (!held) return;
+		setClosingTile(held);
+		window.setTimeout(() => setClosingTile((current) => (current === held ? null : current)), SETTINGS_FADE_MS);
+	};
+
+	// The size on the board is a PLACE, so the settings window asks the board to write it.
+	const resizeTile = (id, patch) => {
+		const now = latestRef.current;
+		const before = now.places.find((place) => place.id === id);
+		if (!before) return;
+		const manifest = manifestOf(id);
+		const after = clampPlace({ ...before, ...patch }, now.columns, manifest?.minSize, manifest?.maxSize);
+		commit(arrange(now.places.map((place) => (place.id === id ? after : place)), now.columns, { movedId: id }));
+	};
+
+	// CONTEXT: the resolved folder, so a source falling back to its manifest still counts
+	const countReaders = (folderPath) => {
+		if (!folderPath) return 0;
+		let found = 0;
+		const walk = (widget, sources) => {
+			const declared = registry.get(widget)?.manifest?.sources ?? {};
+			for (const name of Object.keys(declared)) {
+				if ((sources?.[name]?.path || declared[name]?.default?.path || "") === folderPath) found += 1;
+			}
+		};
+		const descend = (held) => {
+			for (const [slot, entry] of Object.entries(held ?? {})) {
+				walk(slot.split("#")[0], entry.sources);
+				descend(entry.mounted);
+			}
+		};
+		for (const tile of board.tiles) {
+			walk(tile.widget, tile.sources);
+			descend(tile.mounted);
+		}
+		return found;
 	};
 
 	// Removing a tile removes the TILE, not its place at this one width. Dropping only the
@@ -987,7 +1028,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 	// first click closes it and the second reaches the board. Acting on the widget under the
 	// pointer instead is how people delete the thing they meant to dismiss.
 	const scrim =
-		openedChip === null
+		openedChip === null && settingsTile === null
 			? null
 			: h("div", {
 					class: "wg-scrim",
@@ -996,6 +1037,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 						event.preventDefault();
 						event.stopPropagation();
 						setOpenedChip(null);
+						closeSettings();
 					},
 			  });
 
@@ -1014,6 +1056,14 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 						place,
 						pixels: toPixels(place, metrics.cell, metrics.gap),
 						cell: metrics.cell,
+						gap: metrics.gap,
+						columns: metrics.columns,
+						phone: active.name === "phone",
+						countReaders,
+						settings: settingsTile?.id === place.id ? `open:${settingsTile.key}` : closingTile?.id === place.id ? `closing:${closingTile.key}` : null,
+						onOpenSettings: openSettings,
+						onCloseSettings: closeSettings,
+						onResize: (patch) => resizeTile(place.id, patch),
 						context,
 						live: live?.id === place.id ? live : null,
 						scale: scaleOf(active),
@@ -1029,7 +1079,7 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 						onPatch: (patch) => patchTile(place.id, patch),
 						onOpen: setOpenedChip,
 						opened: openedChip === place.id,
-						board: { width: metrics.boardWidth, height: Math.max(1, rowsOf(shown)) * (metrics.cell + metrics.gap) },
+						board: boardBox,
 						onCollapse: collapseTile,
 						onExpand: expandTile,
 						boardProperties: board.properties,
@@ -1074,14 +1124,14 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 					style: {
 						fontSize: `${(scaleOf(active) * REM).toFixed(3)}px`,
 						width: `${metrics.boardWidth}px`,
-						height: `${Math.max(1, rows) * (metrics.cell + metrics.gap) - metrics.gap}px`,
+						height: `${boardRows * (metrics.cell + metrics.gap) - metrics.gap}px`,
 						"--wg-board-pad": `${metrics.pad}px`,
 						"--wg-cell": `${metrics.cell}px`,
 						"--wg-gap": `${metrics.gap}px`,
 						"--wg-columns": metrics.columns,
 					},
 				},
-				[editing ? cellLayer(metrics.columns, Math.max(1, rows)) : null, scrim, tiles],
+				[editing ? cellLayer(metrics.columns, boardRows) : null, scrim, tiles],
 			),
 			editing
 				? h("div", { class: "wg-palette" }, [

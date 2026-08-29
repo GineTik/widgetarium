@@ -565,49 +565,6 @@ pre:has(> .block-language-widgetarium),
 	background: var(--background-modifier-active-hover) !important;
 }
 
-.wg-settings {
-	position: absolute;
-	inset: 0;
-	z-index: 3;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	padding: 12px 14px;
-	overflow: auto;
-	font-size: 13px;
-	background: var(--background-primary);
-	border-radius: inherit;
-	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-}
-
-.wg-settings-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	font-size: 13px;
-}
-
-.wg-settings-foot {
-	margin-top: auto;
-	font-size: 11px;
-	color: var(--wg-muted);
-}
-
-.wg-field {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	font-size: 12px;
-	color: var(--wg-muted);
-}
-
-.wg-field input[type="text"],
-.wg-field input[type="number"] {
-	width: 100%;
-	font-size: 13px;
-	color: var(--text-normal);
-}
-
 .wg-dialog-overlay {
 	position: fixed;
 	inset: 0;
@@ -1587,7 +1544,475 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-kit-icon:focus-visible::before,
 :is(.wg-root, .wg-portal) .wg-kit-pop-item:focus-visible::before,
 :is(.wg-root, .wg-portal) .wg-kit-row:focus-visible::before,
+:is(.wg-root, .wg-portal) .wg-kit-cal-day:focus-visible::before,
 :is(.wg-root, .wg-portal) .wg-kit-seg button:focus-visible::before,
 :is(.wg-root, .wg-portal) .wg-kit-switch:focus-visible::before {
 	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+/* ═══════════════ THE SETTINGS WINDOW ═══════════════
+   The tile BECOMES the window: the same element, given a bigger box. No scale anywhere on the
+   way down to the widget, because a transformed ancestor re-parents every position:fixed
+   descendant and kills backdrop-filter — which would break the widget's own popovers AND the
+   glass on both floating panels. The playground is the whole window; the header, the settings
+   and the zoom bar float over it and the grid runs underneath all three. */
+/* THE SETTINGS WINDOW IS A DIALOG. Laid out inside the board it had no edge of its own, so it
+   read as part of the note it floated over — and the note went on scrolling behind it. */
+:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-set-over {
+	/* the window places itself by inset, so the overlay must not pad it inwards as well */
+	padding: 0;
+	display: block;
+	background: color-mix(in srgb, var(--background-primary) 55%, rgba(0, 0, 0, 0.6));
+	backdrop-filter: blur(3px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-window {
+	position: absolute;
+	background: var(--background-primary);
+	/* an EDGE, deliberately: the kit fills rather than outlines, but a window is the one thing
+	   that has to end somewhere a person can see it end */
+	border: 1px solid color-mix(in srgb, var(--text-normal) 22%, transparent);
+	border-radius: var(--wg-widget-radius);
+	box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.28);
+	outline: none;
+	/* the widget hangs off the window as you pan, so the window is what cuts it */
+	overflow: hidden;
+	animation: wg-set-rise var(--wg-grow) var(--wg-spring) both;
+}
+
+@keyframes wg-set-rise {
+	from {
+		opacity: 0;
+		transform: translateY(0.75rem) scale(0.985);
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-set-window.is-leaving,
+:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-set-over.is-leaving {
+	opacity: 0;
+	transition: opacity var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-body {
+	position: absolute;
+	z-index: 2;
+	pointer-events: none;
+}
+
+/* Below 1:1 the canvas is LOOK-ONLY: a press pans and a tap snaps to 1:1. Only at zoom 1,
+   where no transform exists, do presses reach the widget. */
+:is(.wg-root, .wg-portal) .wg-set-body.is-live {
+	pointer-events: auto;
+}
+
+/* CONTEXT: the grid is the canvas — the layer writes its own left/top/width/count and carries
+   the canvas scale, so the cells zoom and pan with the widget */
+:is(.wg-root, .wg-portal) .wg-set-cells {
+	position: absolute;
+	z-index: 0;
+	pointer-events: none;
+	display: grid;
+	grid-template-columns: repeat(var(--wg-set-across), var(--wg-cell));
+	grid-auto-rows: var(--wg-cell);
+	gap: var(--wg-gap);
+	transform-origin: top left;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-cells i {
+	background: var(--wg-cell-fill, rgba(127, 127, 127, 0.18));
+	border-radius: var(--wg-cell-radius, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pan {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	cursor: grab;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-look {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	cursor: zoom-in;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-chip {
+	position: absolute;
+	z-index: 2;
+}
+
+/* ── the chrome, which fades in after the box has landed ── */
+:is(.wg-root, .wg-portal) .wg-set-chrome {
+	position: absolute;
+	inset: 0;
+	z-index: 6;
+	pointer-events: none;
+	animation: wg-set-in var(--wg-quick) var(--wg-ease) 80ms both;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-chrome > * {
+	pointer-events: auto;
+}
+
+/* TRADE-OFF: the ease, not the spring — a panel folding away that bounces reads as indecision */
+:is(.wg-root, .wg-portal) .wg-set-chrome.is-leaving {
+	animation: none;
+	opacity: 0;
+	transition: opacity var(--wg-press) var(--wg-ease);
+}
+
+@keyframes wg-set-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+/* a capsule that hugs its content: a bar spanning the window reads as an opaque header */
+:is(.wg-root, .wg-portal) .wg-set-head {
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	width: max-content;
+	max-width: calc(100% - 320px);
+	height: 46px;
+	border-radius: var(--wg-kit-pill);
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 6px 0 16px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-crumbs {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-here {
+	color: var(--text-normal);
+	font-weight: var(--font-semibold, 600);
+	font-size: var(--font-ui-small, 14px);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-head-right {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 8px;
+	white-space: nowrap;
+}
+
+/* no sidebar to leave room for, so the capsule may take the width it needs */
+:is(.wg-root, .wg-portal) .wg-set-head.is-sheet {
+	right: 16px;
+	max-width: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel {
+	position: absolute;
+	border-radius: 28px;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel.is-sheet {
+	padding-top: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-grip {
+	position: relative;
+	isolation: isolate;
+	flex: none;
+	width: 36px;
+	height: 4px;
+	margin: 2px auto 4px;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-grip::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-pill);
+	background: var(--text-faint);
+	opacity: 0.4;
+}
+
+/* a flex child shrinks by default and a group clips, so an uncompressed column is the
+   difference between a trailing note and a trailing note cut in half */
+:is(.wg-root, .wg-portal) .wg-set-scroll {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	overflow-y: auto;
+	flex: 1;
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-scroll > * {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-foot {
+	flex: none;
+	padding: 4px 12px 0;
+	font-family: var(--font-monospace);
+	font-size: 11px;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-window .wg-set-fold {
+	position: absolute;
+}
+
+/* the tab bar sits ON glass, so it takes the panel's own group fill rather than a step from
+   a background that is not there */
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs {
+	flex: none;
+	display: flex;
+	width: 100%;
+	background: var(--wg-kit-glass-group);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs button {
+	flex: 1;
+	height: 30px;
+	font-size: var(--font-ui-smaller, 12px);
+	padding: 0 8px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs .wg-kit-seg-thumb {
+	box-shadow: none;
+}
+
+/* ── a group: the heading OUTSIDE, the block holding rows and nothing else ── */
+:is(.wg-root, .wg-portal) .wg-set-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-label {
+	padding: 0 16px;
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-list {
+	background: var(--wg-kit-glass-group);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-under {
+	margin: 0;
+	padding: 0 16px;
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--text-faint);
+}
+
+/* the anchor stands between the group and the row, so it must pass the width along */
+:is(.wg-root, .wg-portal) .wg-set-list > .wg-kit-anchor {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-list .wg-set-value {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--text-normal);
+	font-weight: var(--font-medium, 500);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-list .wg-set-value.is-unset {
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-list .wg-set-row.is-unset .wg-kit-row-label {
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-list .wg-set-row.is-add {
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-list .wg-set-badge {
+	background: var(--wg-kit-fill-hover);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-list .wg-set-two {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	white-space: normal;
+	overflow: visible;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-sub {
+	font-size: 11px;
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-sub.is-mono {
+	font-family: var(--font-monospace);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-path {
+	font-family: var(--font-monospace);
+	font-size: 11px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-chev {
+	transform: rotate(90deg);
+}
+
+/* ── the zoom bar ── */
+:is(.wg-root, .wg-portal) .wg-set-bar {
+	position: absolute;
+	left: 16px;
+	bottom: 16px;
+	max-width: calc(100% - 32px);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	border-radius: var(--wg-kit-pill);
+	padding: 4px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar::-webkit-scrollbar {
+	display: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar > * {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button {
+	position: relative;
+	isolation: isolate;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	min-width: 28px;
+	padding: 0 8px;
+	border: none;
+	background: none;
+	box-shadow: none;
+	border-radius: 0;
+	font-family: inherit;
+	font-size: 11px;
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-pill);
+	background: none;
+	transition: background var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button:hover::before {
+	background: var(--background-modifier-hover);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button[aria-pressed="true"] {
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button[aria-pressed="true"]::before {
+	background: var(--wg-kit-raise);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-div {
+	width: 1px;
+	height: 16px;
+	background: var(--wg-line);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-said {
+	padding: 0 8px;
+	font-size: 11px;
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+	white-space: nowrap;
+}
+
+/* ── the popover a value opens into ── */
+:is(.wg-root, .wg-portal) .wg-set-pop {
+	width: 264px;
+	max-width: calc(100vw - 32px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-top: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot .wg-kit-btn:first-child {
+	flex: 1;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot .wg-kit-btn:last-child {
+	flex: 2;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-default {
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-tick {
+	margin-left: auto;
+	color: var(--interactive-accent);
+	opacity: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-set-tick {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-set-window,
+	.wg-set-chrome {
+		transition: none;
+		animation: none;
+	}
 }
