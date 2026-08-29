@@ -13,8 +13,12 @@ const TABS = [
 
 const ZOOM_STEP = 0.1;
 const ZOOM_FLOOR = 0.25;
-// CONTEXT: one notch of a mouse wheel is ~100 units, which this turns into about 10%
-const ZOOM_PER_WHEEL_UNIT = 0.001;
+// CONTEXT: measured on a trackpad — one comfortable swipe is ~50 units, and at 0.001 that moved
+// the zoom by 5%, which reads as nothing happening. 0.003 turns the same swipe into about 15%.
+const ZOOM_PER_WHEEL_UNIT = 0.003;
+// TRADE-OFF: a trackpad reports small deltas and the canvas is large, so panning 1:1 with the
+// fingers crawls — the canvas travels twice as far as they do
+const PAN_PER_WHEEL_UNIT = 2;
 // CONTEXT: under this a press is a tap, over it a pan
 const TAP_SLOP_PX = 4;
 const FOLDERS_SHOWN = 12;
@@ -503,7 +507,12 @@ function wheelHandler(state) {
 		const pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
 
 		if (!(event.ctrlKey || event.metaKey)) {
-			state.setLook({ pan: { x: state.at.x - event.deltaX, y: state.at.y - event.deltaY } });
+			state.setLook({
+				pan: {
+					x: state.at.x - event.deltaX * PAN_PER_WHEEL_UNIT,
+					y: state.at.y - event.deltaY * PAN_PER_WHEEL_UNIT,
+				},
+			});
 			return;
 		}
 
