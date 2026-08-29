@@ -5,6 +5,9 @@
 		"w": 13,
 		"h": 1
 	},
+	"maxSize": {
+		"h": 1
+	},
 	"collapseBelowPx": 90,
 	"provides": [
 		"view"

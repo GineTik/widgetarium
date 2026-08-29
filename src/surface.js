@@ -800,7 +800,8 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 			const drag = dragRef.current;
 			setLive({ id: drag.id, ...geometry });
 
-			const clamped = clampPlace(next, metrics.columns, undefined, undefined);
+			const bounds = manifestOf(drag.id);
+			const clamped = clampPlace(next, metrics.columns, bounds?.minSize, bounds?.maxSize);
 			setPreview((current) =>
 				current && current.x === clamped.x && current.y === clamped.y && current.w === clamped.w && current.h === clamped.h
 					? current
@@ -832,11 +833,14 @@ export function WidgetSurface({ board, registry, host, editing, onChange, onTogg
 			// the middle of the widget, and pulling back out did nothing until it had retraced
 			// all that dead travel. Clamped here, the box answers the moment the pointer comes
 			// back to the handle.
-			const widest = Math.min(undefined?.w ?? metrics.columns, metrics.columns);
-			const minWidth = spanToPixels(undefined?.w ?? 1, metrics.cell, metrics.gap);
+			// CONTEXT: a control that cannot use height says so with maxSize; the handle stops there
+			const smallest = manifestOf(drag.id)?.minSize;
+			const largest = manifestOf(drag.id)?.maxSize;
+			const widest = Math.min(largest?.w ?? metrics.columns, metrics.columns);
+			const minWidth = spanToPixels(smallest?.w ?? 1, metrics.cell, metrics.gap);
 			const maxWidth = spanToPixels(widest, metrics.cell, metrics.gap);
-			const minHeight = spanToPixels(undefined?.h ?? 1, metrics.cell, metrics.gap);
-			const maxHeight = undefined?.h ? spanToPixels(undefined.h, metrics.cell, metrics.gap) : Infinity;
+			const minHeight = spanToPixels(smallest?.h ?? 1, metrics.cell, metrics.gap);
+			const maxHeight = largest?.h ? spanToPixels(largest.h, metrics.cell, metrics.gap) : Infinity;
 
 			const wantedWidth = !acrossX ? base.width : holdsLeft ? base.width - dx : base.width + dx;
 			const wantedHeight = !acrossY ? base.height : holdsTop ? base.height - dy : base.height + dy;

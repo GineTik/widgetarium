@@ -305,8 +305,15 @@ function sharesRows(a, b) {
 	return a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
-export function clampPlace(place, columns) {
-	return onBoard(place, columns);
+// TRADE-OFF: bounds the span a drag asks for, never a wall arrange() must route around
+export function clampPlace(place, columns, minimum, maximum) {
+	return onBoard(withinBounds(place, minimum, maximum), columns);
+}
+
+function withinBounds(place, minimum, maximum) {
+	const w = Math.min(Math.max(place.w, minimum?.w ?? 1), maximum?.w ?? Infinity);
+	const h = Math.min(Math.max(place.h, minimum?.h ?? 1), maximum?.h ?? Infinity);
+	return w === place.w && h === place.h ? place : { ...place, w, h };
 }
 
 

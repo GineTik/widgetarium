@@ -2,6 +2,7 @@
 	"id": "@orbitask/filter-panel",
 	"title": "OrbiTask · Filter",
 	"defaultSize": { "w": 3, "h": 1 },
+	"maxSize": { "h": 1 },
 	"provides": ["filters"],
 	"sources": {
 		"tasks": {
