@@ -245,12 +245,23 @@ if (search) {
 	check("clearing the search restores it", cards(), marketing);
 }
 
-// 5. adding a task reaches the adapter
-const add = all(".orbi-kanban button").find((node) => /add/i.test(node.textContent));
+// 5. adding a task reaches the adapter — a task is NAMED when it is made, the way a list is,
+// so the button opens a composer and nothing is written until the name is confirmed
+const add = all(".orbi-kanban .ok-add-task").find((node) => /add/i.test(node.textContent));
 check("there is an add control", Boolean(add), true);
 if (add) {
 	await click(add);
-	check("pressing it asks the adapter to create a note", written.created.length > 0, true);
+	check("pressing it writes nothing yet", written.created.length, 0);
+	const naming = all(".orbi-kanban .ok-task-name")[0];
+	check("it asks for a name first", Boolean(naming), true);
+	naming.value = "Sweep the yard";
+	naming.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+	// CONTEXT: Enter reads the name off state, so the typing has to have landed before it
+	await settle();
+	naming.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+	await settle();
+	check("confirming asks the adapter to create a note", written.created.length > 0, true);
+	check("under the name that was typed", String(written.created.at(-1)?.body ?? "").includes("Sweep the yard"), true);
 }
 
 // 6. opening a card opens the task dialog, which is portalled onto <body>

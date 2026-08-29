@@ -115,6 +115,30 @@ const CSS = `
 .orbi-kanban .ok-add-task::before { border-radius: var(--wg-kit-item); }
 
 .orbi-kanban .ok-add-task:hover { color: var(--text-normal); }
+
+/* the composer stands where the button stood, inside the column, not in a plate of its own */
+.orbi-kanban .ok-add-task-open {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
+	padding: var(--size-2-3, 6px);
+}
+
+.orbi-kanban .ok-task-name {
+	height: 34px;
+	padding: 0 var(--size-4-3, 12px);
+	appearance: none;
+	border: none;
+	border-radius: var(--wg-kit-pill);
+	background: var(--background-primary);
+	box-shadow: none;
+	font-family: inherit;
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-normal);
+	outline: none;
+}
+
+.orbi-kanban .ok-task-name::placeholder { color: var(--text-faint); }
 .orbi-kanban .ok-add-task:hover::before { background: var(--background-modifier-hover); }
 
 /* CONTEXT: drawn only when the card slot holds no widget; the kit card carries fill and radius */
@@ -275,13 +299,55 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 				</div>
 			))}
 
-			{canWrite ? (
-				<button type="button" class="ok-add-task" onClick={onAdd}>
-					<Icon name="plus" size={16} />
-					<span>Add new task</span>
-				</button>
-			) : null}
+			{canWrite ? <AddTask onAdd={onAdd} /> : null}
 		</Plate>
+	);
+}
+
+// TRADE-OFF: the same shape as AddList, not the same component — a list is named in a plate of
+// its own, a task is named inside the column it will land in
+function AddTask({ onAdd }) {
+	const [open, setOpen] = useState(false);
+	const [name, setName] = useState("");
+
+	const confirm = () => {
+		const trimmed = name.trim();
+		if (trimmed) onAdd?.(trimmed);
+		setName("");
+		setOpen(false);
+	};
+
+	if (!open) {
+		return (
+			<button type="button" class="ok-add-task" onClick={() => setOpen(true)}>
+				<Icon name="plus" size={16} />
+				<span>Add new task</span>
+			</button>
+		);
+	}
+
+	return (
+		<div class="ok-add-task-open">
+			<input
+				class="ok-task-name"
+				ref={(node) => node?.focus()}
+				placeholder="Enter task name..."
+				value={name}
+				onInput={(event) => setName(event.target.value)}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") confirm();
+					if (event.key === "Escape") setOpen(false);
+				}}
+			/>
+			<div class="ok-add-list-actions">
+				<Button class="ok-cancel" size="s" onClick={() => setOpen(false)}>
+					Cancel
+				</Button>
+				<Button class="ok-confirm" size="s" variant="accent" onClick={confirm}>
+					Add
+				</Button>
+			</div>
+		</div>
 	);
 }
 
@@ -523,13 +589,13 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		return 0;
 	};
 
-	const addTask = async (column) => {
+	const addTask = async (column, title) => {
 		if (!write?.canCreate) return;
 		// CONTEXT: without an order of its own a new task sorts last by accident, and the first edit moves it
 		const lastOrder = rows.reduce((highest, row) => Math.max(highest, Number(row.props?.order) || 0), 0);
 		await write.create({
 			props: {
-				title: "New task",
+				title,
 				[groupBy]: column,
 				board: context?.get("board") ?? "",
 				order: lastOrder + 1,
@@ -578,7 +644,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 						placeholder={reorder?.from === index}
 						onGrab={configure && index < columnNames.length ? grabColumn(index) : undefined}
 						onRelease={() => setReorder(null)}
-						onAdd={() => addTask(column.title)}
+						onAdd={(title) => addTask(column.title, title)}
 						onArchive={configure ? () => setArchiving(column.title) : undefined}
 						onRename={configure ? (next) => renameList(column.title, next) : undefined}
 						onOpen={(row) => context?.set("task", { path: row.path })}
