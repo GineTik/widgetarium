@@ -1,13 +1,13 @@
 import { createWidget, WidgetRoot } from "widgetarium";
-import { Field, Popover } from "widgetarium/kit";
-import { useState } from "preact/hooks";
+import { ButtonLabel, Field, Popover, useRoomForLabel } from "widgetarium/kit";
+import { useRef, useState } from "preact/hooks";
 
 const CSS = `
 /* CONTEXT: a control fills the tile it was given — centred at intrinsic width it read as
    a small thing lost in a hole, which is what the cell size was blamed for */
 .orbi-filter { justify-content: flex-start; align-items: stretch; }
 
-.orbi-filter .ofp-open { gap: var(--size-4-2, 8px); width: 100%; }
+.orbi-filter .ofp-open { gap: var(--size-4-2, 8px); }
 .orbi-filter .ofp-open.is-on { color: var(--interactive-accent); }
 .orbi-filter .ofp-open.is-on::before { background: var(--wg-kit-accent-wash); }
 .orbi-filter .ofp-open .ofp-icon { width: 17px; height: 17px; }
@@ -134,11 +134,9 @@ const CSS = `
 .orbi-filter .ofp-reset { flex: 1; }
 .orbi-filter .ofp-apply { flex: 2; }
 
-@container widget (width < 150px) {
-	.orbi-filter .ofp-open { width: 42px; padding: 0; gap: 0; }
-	.orbi-filter .ofp-word { display: none; }
-	.orbi-filter .ofp-count { display: none; }
-}
+/* CONTEXT: the word is gone, the tile is not — the control keeps every cell it was given;
+   doubled root class so it outranks the kit's own padding without relying on file order */
+.orbi.orbi-filter .ofp-open.is-tight { justify-content: center; padding: 0; }
 `;
 
 function FunnelIcon() {
@@ -228,6 +226,10 @@ export default createWidget(function OrbiTaskFilter({ settings, data, context })
 	const key = String(settings.key || "filters");
 	const applied = context?.get(key) ?? {};
 
+	const triggerRef = useRef(null);
+	// CONTEXT: the word goes only when the word does not fit, which only a measurement knows
+	const roomForWord = useRoomForLabel(triggerRef);
+
 	const [open, setOpen] = useState(false);
 	// TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
 	const [draft, setDraft] = useState(applied);
@@ -269,9 +271,13 @@ export default createWidget(function OrbiTaskFilter({ settings, data, context })
 	const needle = keyword.trim().toLowerCase();
 
 	const trigger = (
-		<button type="button" class={`wg-kit-btn is-m ofp-open${count > 0 ? " is-on" : ""}`}>
+		<button
+			type="button"
+			ref={triggerRef}
+			class={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${roomForWord ? "" : " is-tight"}`}
+		>
 			<FunnelIcon />
-			<span class="ofp-word">Filter</span>
+			{roomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
 			{count > 0 ? <span class="wg-kit-count ofp-count">{count}</span> : null}
 		</button>
 	);

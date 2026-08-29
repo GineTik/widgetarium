@@ -1,17 +1,14 @@
 import { createWidget, WidgetRoot } from "widgetarium";
-import { Button, Icon, Popover, PopoverItem } from "widgetarium/kit";
+import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
 import { useState } from "preact/hooks";
 
 const STYLE = `
-/* CONTEXT: the widget root is a column flex — without this the trigger stretches full width */
-.orbi-view-tabs { align-items: flex-start; }
-
 /* CONTEXT: the kit's chevron points right; a dropdown caret points down, and up while open */
-.ovt-pick .ovt-caret { transform: rotate(90deg); transition: transform var(--orbi-press) var(--orbi-ease); }
-.ovt-pick.is-open .ovt-caret { transform: rotate(-90deg); }
+.orbi-view-tabs .ovt-pick .ovt-caret { transform: rotate(90deg); transition: transform var(--orbi-press) var(--orbi-ease); }
+.orbi-view-tabs .ovt-pick.is-open .ovt-caret { transform: rotate(-90deg); }
 
-.ovt-item-mark { margin-left: auto; opacity: 0; }
-.ovt-item.is-on .ovt-item-mark { opacity: 1; }
+.orbi-view-tabs .ovt-item-mark { margin-left: auto; opacity: 0; }
+.orbi-view-tabs .ovt-item.is-on .ovt-item-mark { opacity: 1; }
 `;
 
 function toList(value) {
@@ -30,8 +27,8 @@ export default createWidget(function OrbiTaskViewTabs({ settings, context }) {
 	const [open, setOpen] = useState(false);
 
 	const trigger = (
-		<Button class={`ovt-pick${open ? " is-open" : ""}`} aria-label="Change view">
-			{selected}
+		<Button block class={`ovt-pick${open ? " is-open" : ""}`} aria-label="Change view">
+			<ButtonLabel>{selected}</ButtonLabel>
 			<Icon name="chevron" size={15} class="ovt-caret" />
 		</Button>
 	);
