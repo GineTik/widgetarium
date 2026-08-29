@@ -1,0 +1,703 @@
+<!doctype html><html><head><!-- frame-runtime --><base href="/_f/1787964331-59b1/"><script>window.__FRAME_PREAMBLE={"v":1,"capabilities":{"artifact":"artifact.D_F1mx8d.js","assets":"assets.8Gk803W0.js","comments":"comments.GLuHR3zP.js","db":"db.h-3sndFg.js","downloads":"downloads.C3GSvEDP.js","embed":"embed.CxGAyc-v.js","mcp":"mcp.Bvma3qD7.js","network":"network.B5UA9Su4.js","notifications":"notifications.ssU4jy7G.js","permissions":"permissions.BNySkLV5.js","room":"room.BMMoe2BY.js","sample":"sample.BW2Uysoh.js","self":"artifact.D_F1mx8d.js","user":"user.BpKav-Rf.js"},"transforms":"_transforms.DSB5x63f.js","comments":"_comments.BoakUwmM.js","translate":"_translate.5HCW4BJh.js"}</script><script>(function(){"use strict";var te=["light","dark","system"],re=/^[A-Za-z0-9_-]{1,64}$/,$=/^[a-zA-Z_:][a-zA-Z0-9_:.-]{0,127}$/,ne=new Set(["class","hidden","value","checked","style","title","alt","placeholder","lang","dir","role","tabindex","disabled","readonly","contenteditable","open","colspan","rowspan"]);function oe(e){const t=e.toLowerCase();return t.startsWith("data-")||t.startsWith("aria-")||ne.has(t)}var Be="http://www.w3.org/1999/xhtml",se="http://www.w3.org/2000/svg",ae=new Set(["script","style","iframe","noscript","noframes","noembed","xmp","plaintext","template","title","textarea","object","embed"]),ie=new Set(["script","style"]);function ce(e){const t=e.localName.toLowerCase();return e.namespaceURI==="http://www.w3.org/1999/xhtml"?!ae.has(t):e.namespaceURI===se?!ie.has(t):!1}function M(e,t){return e===t||(e===160||e===32)&&(t===160||t===32)}function le(e,t){const r=e.length,n=t.length;let s=0;for(;s<r&&s<n&&M(e.charCodeAt(s),t.charCodeAt(s));)s++;let o=0;for(;o<r-s&&o<n-s&&M(e.charCodeAt(r-1-o),t.charCodeAt(n-1-o));)o++;return{p:s,s:o}}function ue(e,t){const r=e.firstChild;if(e.childNodes.length!==1||r===null||r.nodeType!==Node.TEXT_NODE){e.textContent=t;return}const n=r.data,s=n.length,o=t.length,{p:i,s:c}=le(n,t);i===s&&c===0&&s===o||r.replaceData(i,s-i-c,t.slice(i,o-c));const h=r.data,p=e.ownerDocument.getSelection?.()??null,w=p!==null&&p.rangeCount>0&&(p.anchorNode===r||p.focusNode===r)?{anchor:p.anchorNode,anchorOffset:p.anchorOffset,focus:p.focusNode,focusOffset:p.focusOffset}:null;let m=-1,g=-1;for(let f=0;f<h.length&&f<t.length;f++){const v=h.charCodeAt(f),b=t.charCodeAt(f);v!==b&&M(v,b)&&(m<0&&(m=f),g=f)}const a=m>=0;if(a&&r.replaceData(m,g-m+1,t.slice(m,g+1)),a&&w!==null&&w.anchor!==null&&w.focus!==null)try{p.setBaseAndExtent(w.anchor,w.anchorOffset,w.focus,w.focusOffset)}catch{}}var fe=new Set(["html","head","body","frameset"]);function de(e){return e.namespaceURI==="http://www.w3.org/1999/xhtml"&&fe.has(e.localName)}function pe(e){if(e===null||typeof e!="object")return!1;const t=e;if(typeof t.target!="string"||!re.test(t.target)||t.text!==void 0&&typeof t.text!="string")return!1;if(t.attrsSet!==void 0){if(t.attrsSet===null||typeof t.attrsSet!="object")return!1;for(const[r,n]of Object.entries(t.attrsSet))if(!$.test(r)||typeof n!="string")return!1}if(t.attrsRemoved!==void 0){if(!Array.isArray(t.attrsRemoved))return!1;for(const r of t.attrsRemoved)if(typeof r!="string"||!$.test(r))return!1}return!0}function me(e,t){if(e===null||typeof e!="object")return!1;const{seq:r,elements:n}=e;if(typeof r!="number"||!Number.isSafeInteger(r)||!Array.isArray(n)||n.length===0||n.length>64)return!1;for(let s=0;s<n.length;s++)if(!t(n[s]))return!1;return!0}function he(e){return e===null||typeof e!="object"?!1:me(e.__frame_patch,pe)}function _e(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_init;return t!==null&&typeof t=="object"}function ve(e){return e!==null&&typeof e=="object"&&e.__frame_size_poke===!0}function ye(e){if(e===null||typeof e!="object")return!1;const t=e.__frame_theme;if(t===null||typeof t!="object")return!1;const r=t.theme;return typeof r=="string"&&te.includes(r)}var A=/^[\w.-]+\.js$/;function we(e,t,r){return r?"inert":typeof t=="string"&&A.test(t)?e?[t]:"inert":e?"inert":"framed"}function ge(){return{post(e,t){parent.postMessage(e,t)},on(e){const t=r=>{r.source===parent&&e(r.data,r.origin,r.isTrusted)};return addEventListener("message",t),()=>removeEventListener("message",t)}}}function be(){return{post:()=>{},on:()=>()=>{}}}var j="__frame_scroll",Ee=150,Ae=310,Se=160,Te=3e4;function ke(){let e=0,t=!1,r=!1,n=!1,s=0,o=null;const i=l=>{try{sessionStorage.setItem(j,JSON.stringify({y:l}))}catch{}},c=()=>{if(clearTimeout(e),o===null)return;const l=o;o=null,i(l)},h=()=>{if(t){t=!1;return}r=!0,o=scrollY,clearTimeout(e),e=setTimeout(c,Ee)};try{addEventListener("scroll",h,{passive:!0}),addEventListener("pagehide",c)}catch{}const p=()=>{let l;try{l=sessionStorage.getItem(j)}catch{return null}if(l===null)return null;let _;try{_=JSON.parse(l)}catch{_=null}const d=_?.y;if(!(typeof d=="number"&&Number.isFinite(d)&&d>=0)){try{sessionStorage.removeItem(j)}catch{}return null}return d};let w=!1;const m=l=>{try{const _=scrollY;scrollTo({top:l,left:0,behavior:"instant"}),s=l,n=!0,clearTimeout(e),o=null,i(l);const d=scrollY;d!==_&&(t=!0),d!==l&&!w&&(w=!0,addEventListener("load",()=>{try{if(scrollY===d){const T=p();m(T!==null?T:s)}}catch{}},{once:!0}))}catch{}},g=()=>{try{return!!location.hash}catch{return!0}};let a=!1;const f=()=>{try{if(a||innerWidth>Ae||innerHeight>Se)return;a=!0;const l=Date.now(),_=()=>{try{removeEventListener("resize",_)}catch{}if(Date.now()-l>Te||r||g())return;const d=p();m(d!==null?d:s)};addEventListener("resize",_)}catch{}};let v=!1,b=!1;return{restore(){if(v||(v=!0,g()))return;const l=p();l!==null&&(m(l),f())},promoted(){if(b||(b=!0,g()))return;const l=p();l!==null?(m(l),f()):n&&m(s)}}}function Re(e,t,r,n){let s=null;try{s=window.trustedTypes?.createPolicy("frame-runtime",{createScriptURL:h=>h})??null}catch{}const o=window.Worker,i=o?.prototype,c=Object.freeze({Worker:o,workerOn:i?.addEventListener,workerPost:i?.postMessage,workerTerminate:i?.terminate,fetch:window.fetch.bind(window),preventDefault:Event.prototype.preventDefault,policy:s,origins:t});r(e).then(h=>h?.bootTopLevel?h.bootTopLevel(c,n):n.settle()).catch(()=>n.settle())}var De="modulepreload",Ie=function(e){return"/"+e},Ue={},Le=function(t,r,n){let s=Promise.resolve();function o(i){const c=new Event("vite:preloadError",{cancelable:!0});if(c.payload=i,window.dispatchEvent(c),!c.defaultPrevented)throw i}return s.then(i=>{for(const c of i||[])c.status==="rejected"&&o(c.reason);return t().catch(o)})},Oe=window===top,q=Object.getOwnPropertyDescriptor(window,"claude"),k=we(Oe,window.__FRAME_PREAMBLE?.topLevel,q?.writable===!1),N=typeof k=="object"&&k[0],y=N?be():ge();(function(){const e=Object.defineProperty,t=globalThis,r=["RTCPeerConnection","webkitRTCPeerConnection","RTCDataChannel","RTCIceCandidate","RTCSessionDescription","RTCRtpSender","RTCRtpReceiver"];let n=0;for(let s=0;s<r.length;s++){const o=r[s];try{e(t,o,{value:void 0,writable:!1,configurable:!1})}catch{try{delete t[o]}catch{}try{e(t,o,{value:void 0,writable:!1,configurable:!0})}catch{}}typeof t[o]=="function"&&n++}if(n&&k==="framed")try{y.post({__frame_rtc_lockdown_failed:n},"*")}catch{}})();var Pe=1e4,Y=Object.freeze([...window.__FRAME_PREAMBLE?.origins??["https://claude.ai","https://preview.claude.ai"]]);function X(e){for(const t of Y)if(t.endsWith(":*"))try{const r=new URL(e);if(`${r.protocol}//${r.hostname}:*`===t)return!0}catch{}else if(e===t)return!0;return!1}var R=Object.freeze({...window.__FRAME_PREAMBLE?.capabilities}),B=window.__FRAME_PREAMBLE?.transforms,D=window.__FRAME_PREAMBLE?.comments,I=window.__FRAME_PREAMBLE?.translate;function S(e){return Le(()=>import("/_runtime/"+e),void 0)}function G(e,t){return{contract:e.contract,changes:new Set(e.changes??[]),flags:new Set(e.flags??[]),capabilities:e.capabilities??{},capBudgets:e.capBudgets??{},transforms:new Map,shellOrigin:t,mount:x,hooks:O,pipe:()=>({wrap:(r,n)=>(...s)=>{try{return n(...s)}catch(o){return Promise.reject(o)}}})}}var L=null,E=null;function V(e,t,r){try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!1,enumerable:!0})}catch{try{Object.defineProperty(e,t,{value:r,writable:!1,configurable:!0,enumerable:!0})}catch{}}}var U=!1,O={editBefore:null,edit:null};function Ce(e,t,r=!1){const n=[];let s;if(r)try{O.editBefore?.(e)}catch{}for(const o of e.elements){const i=document.querySelector(`[data-id="${o.target}"]`);if(!i){s=o.target;break}if([...Object.keys(o.attrsSet??{}),...o.attrsRemoved??[]].some(c=>!oe(c))){s=o.target;break}if(o.text!==void 0&&(!ce(i)||de(i))){s=o.target;break}for(const[c,h]of Object.entries(o.attrsSet??{}))if(!J(i,c)){try{i.setAttribute(c,h)}catch{}Z(i,c,h)}for(const c of o.attrsRemoved??[])J(i,c)||(i.removeAttribute(c),Z(i,c,null));typeof o.text=="string"&&ue(i,o.text),n.push(o.target)}if(r)try{O.edit?.(e.seq,n,s)}catch{}if(s!==void 0){y.post({__frame_patch_miss:{seq:e.seq}},t);return}try{document.dispatchEvent(new CustomEvent("claude:edit",{detail:{seq:e.seq,targets:n}}))}catch{}}function Z(e,t,r){if(!(e instanceof HTMLInputElement))return;const n=t.toLowerCase();n==="checked"?e.checked=r!==null:n==="value"&&e.type!=="file"&&(e.value=r??"")}function J(e,t){const r=t.toLowerCase(),n=e;return r==="data-id"||(r==="value"||r==="checked")&&(n.__artifactSecret===!0||/^(password|hidden|file)$/.test(n.type??"")||/(^|\s)(cc-|one-time-code|current-password|new-password)/i.test(`${e.getAttribute("autocomplete")??""} ${n.autocomplete??""}`))}function Q(e){const t=document.documentElement;e==="light"||e==="dark"?(t.dataset.theme=e,t.style.colorScheme=e,U=!0):U&&(delete t.dataset.theme,t.style.colorScheme="",U=!1)}var P=new Map;function Me(){let e;const t={u:new Promise(r=>{e=r}),r:r=>{t.done=!0,e(r)},done:!1,nulled:!1};return t}function F(){for(const e of P.values())e.done||(e.nulled=!0,e.r(null))}var je=Object.freeze(Object.assign(Object.create(null),{call:Function.prototype.call,apply:Function.prototype.apply,bind:Function.prototype.bind})),x=(e,t)=>{const r=P.get(e);if(!r||r.done){r?.nulled&&E&&y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:e}},E);return}const n=typeof t=="function"?Object.setPrototypeOf(t,je):Object.assign(Object.create(null),t);typeof n.then=="function"&&delete n.then,r.r(Object.freeze(n))};function ee(){const e=q?.value??{};V(window,"claude",e);for(const t of Object.keys(R)){if(e[t]!==void 0){V(e,t,e[t]);continue}P.set(t,Me())}if(e.use===void 0){const t=r=>{if(typeof r!="string"||!Object.hasOwn(R,r))return Promise.resolve(null);const n=P.get(r);return n?n.u:Promise.resolve(e[r]??null)};try{Object.defineProperty(e,"use",{value:t,writable:!0,configurable:!0,enumerable:!1})}catch{}}}if(k==="framed"){const e=B&&A.test(B)?S(B).catch(()=>{}):Promise.resolve(void 0),t=a=>{if(a.type==="auxclick"&&a.button!==1)return;const f=a.target,v=f&&f.closest?f.closest("a[href],area[href]"):null;if(!v)return;const b=v.getAttribute("href");if(!b)return;let l;try{l=new URL(b,document.baseURI)}catch{return}if((l.protocol==="http:"||l.protocol==="https:")&&l.origin!==location.origin){a.preventDefault();const _=(v.getAttribute("target")??"").toLowerCase(),d=a.type==="auxclick"||a.metaKey||a.ctrlKey||a.shiftKey||a.altKey||!["","_self","_top","_parent"].includes(_);y.post({__frame_nav:!0,url:l.href,newTab:d},"*")}};addEventListener("click",t,!0),addEventListener("auxclick",t,!0);const r={},n=a=>{a.isTrusted&&(r.pointer=!0)},s=a=>{a.isTrusted&&(r.click=!0)};addEventListener("pointermove",n,{capture:!0,passive:!0}),addEventListener("click",s,{capture:!0,passive:!0}),e.then(a=>{a?.wireNav&&(a.wireNav(),removeEventListener("click",t,!0),removeEventListener("auxclick",t,!0),removeEventListener("pointermove",n,!0),removeEventListener("click",s,!0),a.wireEngagement?.(r))});let o=null;try{o=ke()}catch{}ee();let i=null,c=null,h=0;const p=y.on((a,f)=>{X(f)&&_e(a)&&(i=a.__frame_init,E=f,p(),clearTimeout(h),c?.())});y.post({__frame_connect:!0},"*");const w=new Promise(a=>{c=a,h=setTimeout(()=>{p(),a()},Pe)}),m=document.readyState==="loading"?new Promise(a=>document.addEventListener("DOMContentLoaded",()=>a(),{once:!0})):Promise.resolve();m.then(()=>{try{o?.restore()}catch{}});const g={cb:null};y.on((a,f)=>{if(X(f)&&ve(a)){try{o?.promoted()}catch{}g.cb?.()}}),w.then(async()=>{if(!i||!E){F();return}Q(i.theme);const a=E;let f=!1,v=!1;y.on((u,z,C)=>{if(z!==a)return;ye(u)&&Q(u.__frame_theme.theme),he(u)&&Ce(u.__frame_patch,a,C);const H=u?.__fc_mode;H&&typeof H=="object"&&!f&&D&&A.test(D)&&(f=!0,S(D).then(K=>K.install?.(a,H.on===!0)).catch(()=>{}));const W=u?.__ft_cmd;W&&typeof W=="object"&&!v&&I&&A.test(I)&&(v=!0,S(I).then(K=>K.install?.(a,W)).catch(()=>{}))});const b=Object.keys(i.capabilities??{}).filter(u=>Object.hasOwn(R,u)).map(u=>[u,R[u]]).filter(u=>typeof u[1]=="string"&&A.test(u[1])),l=await Promise.allSettled(b.map(([,u])=>S(u))),_=await e,d=E;if(_?.buildBoot||y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},d),_?.buildBoot)try{L=_.buildBoot(i,_.TRANSFORMS??{},{shellOrigin:d,mount:x,hooks:O},u=>y.post({__frame_cap_telemetry:u},d))}catch{y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:"_transforms"}},d),L=G(i,d)}else L=G(i,d);const T=u=>y.post({__frame_cap_telemetry:{kind:"cap-load-error",cap:u}},d),Ne=L;l.forEach((u,z)=>{const C=b[z][0];if(u.status!=="fulfilled"){T(C);return}try{u.value?.install?.(Ne)}catch{T(C)}}),F(),await m,y.post({__frame_ready:!0},E),e.then(u=>u?.installSizeReporter?.(d,g))})}else N&&(ee(),Re(N,Y,S,{settle:F,mount:x}))})();</script><!-- /frame-runtime --><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>OrbiTask, Converted</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+	/* ── layer 1: the vault's, standing in with Obsidian's defaults ───────────── */
+	:root {
+		--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+		--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+		--color-base-35: #dadada; --color-base-40: #bdbdbd; --color-base-50: #ababab;
+		--color-base-60: #707070; --color-base-70: #5c5c5c; --color-base-100: #222222;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(0,0,0,0.05);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #c0392b; --text-success: #1f8a4c;
+		--interactive-accent: #6d4ee0; --interactive-accent-hover: #5b3ecb;
+		--color-orange: #d9822b;
+		--font-interface: "Inter", -apple-system, system-ui, sans-serif;
+		--font-monospace: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+		--font-ui-smaller: 12px; --font-ui-small: 14px; --font-ui-medium: 16px; --font-ui-large: 20px;
+		--font-medium: 500; --font-semibold: 600; --font-bold: 700;
+		--line-height-tight: 1.25; --line-height-normal: 1.5;
+		--radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px;
+		--size-2-1: 2px; --size-2-2: 4px; --size-2-3: 6px;
+		--size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px;
+		--size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px; --size-4-12: 48px; --size-4-16: 64px;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme="light"]) {
+			--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+			--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+			--color-base-40: #4e505a; --color-base-50: #7b7e89; --color-base-60: #9ea1ac;
+			--color-base-100: #edeef1;
+			--background-modifier-hover: rgba(255,255,255,0.06);
+			--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+			--text-error: #ef7a6d; --text-success: #56c98a; --color-orange: #e0a45c;
+		}
+	}
+	:root[data-theme="dark"] {
+		--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+		--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+		--color-base-40: #4e505a; --color-base-50: #7b7e89; --color-base-60: #9ea1ac;
+		--color-base-100: #edeef1;
+		--background-modifier-hover: rgba(255,255,255,0.06);
+		--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+		--text-error: #ef7a6d; --text-success: #56c98a; --color-orange: #e0a45c;
+	}
+
+	/* ── layer 2: the kit ─────────────────────────────────────────────────────── */
+	:root {
+		/* THE CANVAS IS THE NOTE, and a note in Obsidian is --background-primary. Painting the
+		   board on --background-secondary was drawing it on the sidebar's colour, which is
+		   never what is underneath it. White also earns the grey back: with a white note the
+		   plate is the only grey on screen, so it reads as a container instead of as noise. */
+		--wg-canvas: var(--background-primary);
+		--wg-surface: var(--background-primary);
+		--wg-fill: var(--color-base-10);
+		--wg-fill-hover: var(--color-base-20);
+		--wg-hairline: var(--background-modifier-border);
+		--wg-ink: var(--text-normal); --wg-ink-muted: var(--text-muted); --wg-ink-faint: var(--text-faint);
+		--wg-accent: var(--interactive-accent); --wg-accent-hover: var(--interactive-accent-hover);
+		--wg-on-accent: var(--text-on-accent);
+		--wg-accent-wash: color-mix(in srgb, var(--wg-accent) 12%, var(--background-primary));
+		--wg-success: var(--text-success); --wg-error: var(--text-error); --wg-warning: var(--color-orange);
+		--wg-success-wash: color-mix(in srgb, var(--wg-success) 14%, var(--background-primary));
+		--wg-error-wash: color-mix(in srgb, var(--wg-error) 14%, var(--background-primary));
+		--wg-warning-wash: color-mix(in srgb, var(--wg-warning) 16%, var(--background-primary));
+		--wg-radius-tile: 22px; --wg-radius-card: 28px; --wg-radius-pill: 999px;
+		/* CONCENTRIC CORNERS. An inner radius is the outer one MINUS the padding between them —
+		   otherwise the two curves are not parallel and the gap between them pinches at the
+		   corner. Equal radii, which is what this had, is the mistake; matching them by hand is
+		   the same mistake with extra steps. So the inner radius is derived and cannot drift.
+		   plate 22 − pad 12 = 10 · tighten the pad to 8 and it becomes 14, on its own. */
+		--wg-radius-plate: var(--wg-radius-tile);
+		--wg-plate-pad: var(--size-4-3);
+		--wg-plate-gap: var(--size-4-2);
+		--wg-card-pad: var(--size-4-4);
+		--wg-radius-item: calc(var(--wg-radius-plate) - var(--wg-plate-pad));
+		/* the same rule wherever something sits inside something else */
+		--wg-shell-pad: var(--size-4-2);
+		--wg-radius-inner: calc(var(--wg-radius-tile) - var(--wg-shell-pad));
+		--wg-cell: 76px; --wg-gap: var(--size-4-3);
+		--wg-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+		--wg-ease: cubic-bezier(0.4, 0, 0.2, 1);
+		--wg-dur-press: 120ms; --wg-dur-s: 200ms; --wg-dur-m: 320ms;
+		--wg-press-scale: 0.955;
+		--wg-glass-panel: color-mix(in srgb, var(--wg-surface) 78%, transparent);
+		--wg-glass-blur: blur(24px) saturate(180%);
+		--wg-glass-edge: inset 0 0 0 1px color-mix(in srgb, var(--wg-ink) 12%, transparent);
+		--wg-shadow-s: 0 1px 3px rgba(0,0,0,0.06), 0 6px 16px rgba(0,0,0,0.06);
+		--wg-shadow-l: 0 8px 24px rgba(0,0,0,0.12), 0 24px 64px rgba(0,0,0,0.16);
+	}
+
+	button { border: none; background: none; font: inherit; color: inherit; padding: 0; margin: 0; appearance: none; -webkit-appearance: none; }
+	body { background: var(--wg-canvas); color: var(--wg-ink); font-family: var(--font-interface); font-size: var(--font-ui-medium); line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; }
+	.sheet { max-width: 1120px; margin: 0 auto; padding: 0 var(--size-4-5) var(--size-4-16); display: flex; flex-direction: column; gap: var(--size-4-12); }
+	p { margin: 0; }
+	code, .mono { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); }
+	*:focus-visible { outline: 2px solid var(--wg-accent); outline-offset: 3px; border-radius: var(--radius-m); }
+
+	.masthead { padding: var(--size-4-16) 0 0; display: flex; flex-direction: column; gap: var(--size-4-4); }
+	.eyebrow { font-family: var(--font-monospace); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.masthead h1 { font-size: clamp(34px, 5.5vw, 54px); font-weight: var(--font-bold); letter-spacing: -0.03em; line-height: 1.03; margin: 0; }
+	.lede { max-width: 62ch; color: var(--wg-ink-muted); font-size: 17px; }
+	.lede strong { color: var(--wg-ink); font-weight: var(--font-semibold); }
+
+	section { display: flex; flex-direction: column; gap: var(--size-4-5); }
+	.head { display: flex; flex-direction: column; gap: var(--size-2-2); }
+	.head h2 { font-size: 28px; font-weight: var(--font-semibold); letter-spacing: -0.02em; margin: 0; }
+	.note { font-size: var(--font-ui-small); color: var(--wg-ink-muted); max-width: 64ch; }
+	.note b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.cap { font-family: var(--font-monospace); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-ink-faint); }
+
+	/* ── the before/after pair ────────────────────────────────────────────────── */
+	.pair { background: var(--wg-surface); border-radius: var(--wg-radius-card); overflow: hidden; }
+	.pair-grid { display: grid; grid-template-columns: 1fr 1fr; }
+	.pane { padding: var(--size-4-5); display: flex; flex-direction: column; gap: var(--size-4-3); min-height: 132px; }
+	.pane.was { background: var(--color-base-05); }
+	.pane .tag { font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }
+	.pane.was .tag { color: var(--wg-ink-faint); }
+	.pane.now .tag { color: var(--wg-accent); }
+	.pair-foot { padding: var(--size-4-3) var(--size-4-5); background: var(--wg-fill); display: flex; flex-direction: column; gap: var(--size-2-2); }
+	.pair-foot .kept { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); }
+	.pair-foot .kept b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.pair h3 { margin: 0; font-size: var(--font-ui-medium); font-weight: var(--font-semibold); padding: var(--size-4-4) var(--size-4-5) 0; }
+
+	/* ── BEFORE: the outline world ────────────────────────────────────────────── */
+	.old { font-size: 13px; }
+	.old-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+	.old-card.sel { border: 2px solid #6d4ee0; }
+	.old-btn { border: 1px solid #c9c9c9; border-radius: 6px; padding: 5px 10px; font-size: 12px; background: #fff; color: #303030; cursor: pointer; }
+	.old-icon { border: 1px solid #c9c9c9; border-radius: 6px; width: 30px; height: 30px; display: grid; place-content: center; background: #fff; }
+	.old-tab { font-size: 13px; color: #757575; padding-bottom: 4px; border-bottom: 2px solid transparent; }
+	.old-tab.on { color: #6d4ee0; border-bottom-color: #6d4ee0; font-weight: 600; }
+	.old-pill { border-radius: 999px; font-size: 11px; padding: 2px 8px; }
+	.old-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 4px; font-size: 13px; color: #5e5e5e; }
+	.old-row.on { background: #ede9fc; color: #6d4ee0; }
+	.old-sq { width: 16px; height: 16px; border: 1.6px solid currentColor; border-radius: 3px; flex: none; }
+	.old-input { border: 1px solid #c9c9c9; border-radius: 6px; padding: 5px 8px; font-size: 12px; background: #fff; color: #303030; }
+	.old-plate { background: #f2f2f2; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+	.old-bar { height: 6px; background: #e4e4e4; border-radius: 999px; overflow: hidden; }
+	.old-bar i { display: block; height: 100%; background: #6d4ee0; }
+	.old-av { width: 26px; height: 26px; border-radius: 999px; display: grid; place-content: center; font-size: 11px; font-weight: 700; border: 2px solid #fff; margin-left: -7px; }
+	.old-meta { display: flex; gap: 10px; font-size: 11px; color: #919191; }
+	.old-plain { font-size: 13px; color: #757575; display: flex; align-items: center; gap: 6px; }
+
+	/* ── AFTER: the kit ───────────────────────────────────────────────────────── */
+	.pressable { transition: transform var(--wg-dur-press) var(--wg-ease), background var(--wg-dur-s) var(--wg-ease), color var(--wg-dur-s) var(--wg-ease); }
+	.pressable:active { transform: scale(var(--wg-press-scale)); }
+
+	.btn { font-weight: var(--font-semibold); line-height: 1; cursor: pointer; border-radius: var(--wg-radius-pill); display: inline-flex; align-items: center; justify-content: center; gap: var(--size-4-2); background: var(--wg-fill); color: var(--wg-ink); }
+	.btn-m { font-size: var(--font-ui-small); padding: 0 var(--size-4-5); height: 42px; }
+	.btn-s { font-size: var(--font-ui-small); padding: 0 var(--size-4-4); height: 34px; }
+	.btn:hover { background: var(--wg-fill-hover); }
+	.btn-accent { background: var(--wg-accent); color: var(--wg-on-accent); }
+	.btn-accent:hover { background: var(--wg-accent-hover); }
+	.btn-plain { background: transparent; color: var(--wg-accent); }
+	.btn-plain:hover { background: var(--wg-accent-wash); }
+
+	.iconbtn { border-radius: var(--wg-radius-pill); display: inline-flex; align-items: center; justify-content: center; background: var(--wg-fill); color: var(--wg-ink); cursor: pointer; flex: none; }
+	.iconbtn-m { width: 42px; height: 42px; }
+	.iconbtn-s { width: 32px; height: 32px; }
+	.iconbtn:hover { background: var(--wg-fill-hover); }
+	.iconbtn[aria-pressed="true"] { background: var(--wg-accent-wash); color: var(--wg-accent); }
+
+	/* WIDGET TABS — a segmented control the size of a button, capsule all the way */
+	.segmented { display: inline-flex; background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 4px; position: relative; max-width: 100%; overflow: hidden; }
+	.segmented button { font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink-muted); border-radius: var(--wg-radius-pill); padding: 0 var(--size-4-4); height: 38px; cursor: pointer; position: relative; z-index: 1; white-space: nowrap; transition: color var(--wg-dur-s) var(--wg-ease); display: inline-flex; align-items: center; gap: var(--size-4-2); }
+	.segmented button[aria-selected="true"] { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.seg-thumb { position: absolute; top: 4px; bottom: 4px; background: var(--wg-surface); border-radius: var(--wg-radius-pill); box-shadow: var(--wg-shadow-s); transition: transform var(--wg-dur-m) var(--wg-spring), width var(--wg-dur-m) var(--wg-spring); z-index: 0; }
+	.segmented.big button { height: 46px; font-size: var(--font-ui-medium); padding: 0 var(--size-4-5); }
+
+	.pilltag { display: inline-flex; align-items: center; gap: var(--size-2-2); border-radius: var(--wg-radius-pill); padding: 3px var(--size-4-3); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); background: var(--wg-fill); color: var(--wg-ink-muted); }
+	.pilltag.err { background: var(--wg-error-wash); color: var(--wg-error); }
+	.pilltag.warn { background: var(--wg-warning-wash); color: var(--wg-warning); }
+	.pilltag.ok { background: var(--wg-success-wash); color: var(--wg-success); }
+	.pilltag.accent { background: var(--wg-accent); color: var(--wg-on-accent); }
+	.count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; border-radius: var(--wg-radius-pill); background: var(--wg-surface); color: var(--wg-ink-muted); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); }
+
+	.nav { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-2-3) var(--size-4-3); border-radius: var(--wg-radius-inner); font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink-muted); cursor: pointer; }
+	.nav:hover { background: var(--background-modifier-hover); color: var(--wg-ink); }
+	.nav[aria-current="page"] { background: var(--wg-accent-wash); color: var(--wg-accent); font-weight: var(--font-semibold); }
+	.nav .sq { width: 18px; height: 18px; flex: none; }
+
+	.search { display: flex; align-items: center; gap: var(--size-4-2); background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 0 var(--size-4-4); height: 42px; }
+	.search input { border: none; background: none; outline: none; font: inherit; font-size: var(--font-ui-small); color: var(--wg-ink); width: 100%; }
+	.search input::placeholder { color: var(--wg-ink-faint); }
+
+	.card { background: var(--wg-surface); border-radius: var(--wg-radius-item); padding: var(--wg-card-pad); display: flex; flex-direction: column; gap: var(--size-4-2); cursor: pointer; }
+	.card.sel { box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.card h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); line-height: var(--line-height-tight); }
+	.stripe { height: 4px; width: 32px; border-radius: var(--wg-radius-pill); }
+	.bar { height: 6px; border-radius: var(--wg-radius-pill); background: var(--wg-fill); overflow: hidden; flex: 1; }
+	.bar i { display: block; height: 100%; background: var(--wg-accent); border-radius: var(--wg-radius-pill); }
+	.meta { display: flex; align-items: center; gap: var(--size-4-3); font-size: var(--font-ui-smaller); color: var(--wg-ink-faint); }
+	.meta span { display: inline-flex; align-items: center; gap: var(--size-2-2); }
+	.avatars { display: flex; }
+	.avatar { width: 28px; height: 28px; border-radius: var(--wg-radius-pill); display: grid; place-content: center; font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); box-shadow: 0 0 0 2px var(--wg-surface); margin-left: -8px; }
+	.avatar:first-child { margin-left: 0; }
+
+		.plate { background: var(--wg-fill); border-radius: var(--wg-radius-plate); padding: var(--wg-plate-pad); display: flex; flex-direction: column; gap: var(--wg-plate-gap); }
+
+	/* the one experiment left: density. The radii follow it on their own. */
+	.tight { --wg-plate-pad: var(--size-4-2); --wg-plate-gap: var(--size-2-3); --wg-card-pad: var(--size-4-3); }
+	.flat-radii { --wg-radius-item: var(--wg-radius-plate); }
+	.plate-head { display: flex; align-items: center; gap: var(--size-4-2); padding: var(--size-2-2) var(--size-4-2); }
+	.plate-head h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.addrow { display: flex; align-items: center; justify-content: center; gap: var(--size-4-2); padding: var(--size-4-2); font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink-muted); cursor: pointer; border-radius: var(--wg-radius-item); }
+	.addrow:hover { color: var(--wg-ink); background: var(--background-modifier-hover); }
+
+	.icon { width: 16px; height: 16px; flex: none; }
+	.icon path, .icon circle, .icon rect { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+	/* ── the answers ──────────────────────────────────────────────────────────── */
+	.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--size-4-4); }
+	.option { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-5); display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.option.picked { box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.option .verdict { font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.option.picked .verdict { color: var(--wg-accent); }
+	.demo-canvas { background: var(--wg-canvas); border-radius: var(--wg-radius-tile); padding: var(--size-4-4); }
+
+
+	/* ── the cell, drawn to scale ─────────────────────────────────────────────── */
+	.celldemo { display: flex; gap: var(--size-4-5); flex-wrap: wrap; align-items: flex-start; }
+	.cellbox { position: relative; background: var(--wg-fill); border-radius: var(--wg-radius-tile); display: grid; place-items: center; flex: none; }
+	.cellbox .ruler { position: absolute; left: 50%; transform: translateX(-50%); bottom: -22px; font-family: var(--font-monospace); font-size: 10px; color: var(--wg-ink-faint); white-space: nowrap; }
+	.cellbox .slack { position: absolute; inset: 0; border-radius: inherit; background: repeating-linear-gradient(45deg, transparent, transparent 6px, color-mix(in srgb, var(--wg-error) 12%, transparent) 6px, color-mix(in srgb, var(--wg-error) 12%, transparent) 12px); }
+	.cellctl { background: var(--wg-surface); border-radius: var(--wg-radius-pill); height: 42px; display: inline-flex; align-items: center; padding: 0 var(--size-4-5); font-size: var(--font-ui-small); font-weight: var(--font-semibold); position: relative; box-shadow: var(--wg-shadow-s); }
+	table.sums { border-collapse: collapse; font-size: var(--font-ui-small); width: 100%; }
+	table.sums th { font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-ink-faint); text-align: left; padding: 0 var(--size-4-4) var(--size-4-2) 0; }
+	table.sums td { padding: var(--size-4-2) var(--size-4-4) var(--size-4-2) 0; color: var(--wg-ink-muted); font-variant-numeric: tabular-nums; }
+	table.sums td:first-child { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	table.sums tr.picked td { color: var(--wg-accent); }
+
+	/* ── the app ──────────────────────────────────────────────────────────────── */
+	.picker { display: flex; flex-wrap: wrap; gap: var(--size-4-2); align-items: flex-end; }
+	.picker button { display: flex; flex-direction: column; gap: var(--size-2-2); cursor: pointer; align-items: center; }
+	.picker i { display: block; width: 62px; height: 46px; border-radius: var(--radius-l); box-shadow: inset 0 0 0 1px var(--color-base-30); }
+	.picker span { font-family: var(--font-monospace); font-size: 10px; color: var(--wg-ink-faint); }
+	.picker button[aria-pressed="true"] i { box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.picker button[aria-pressed="true"] span { color: var(--wg-accent); font-weight: var(--font-semibold); }
+	.readout { font-family: var(--font-monospace); font-size: 12px; color: var(--wg-ink-muted); background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: var(--size-2-3) var(--size-4-4); }
+
+	.switches { display: flex; flex-wrap: wrap; gap: var(--size-4-2); }
+	.switches label { display: flex; align-items: center; gap: var(--size-4-2); background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: var(--size-2-3) var(--size-4-4); font-size: var(--font-ui-small); font-weight: var(--font-medium); cursor: pointer; }
+	.switches input { accent-color: var(--wg-accent); margin: 0; width: 16px; height: 16px; }
+
+	.frames { display: flex; flex-direction: column; gap: var(--size-4-6); }
+	.frame { display: flex; flex-direction: column; gap: var(--size-4-2); }
+	.frame > .cap { padding-left: var(--size-4-1); }
+	.viewport { background: var(--wg-canvas); border-radius: var(--wg-radius-card); padding: var(--size-4-3); margin: 0 auto; box-shadow: var(--wg-shadow-s); width: 100%; }
+	.vp-desktop { max-width: 1060px; }
+	.vp-tablet { max-width: 720px; }
+	.vp-mobile { max-width: 392px; }
+
+	.app { display: flex; gap: var(--size-4-3); align-items: flex-start; }
+	.app-side { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-2); display: flex; flex-direction: column; gap: var(--size-2-1); width: 190px; flex: none; transition: width var(--wg-dur-m) var(--wg-spring); }
+	.app-side.folded { width: 58px; align-items: center; }
+	.app-side.folded .nav { justify-content: center; padding: var(--size-2-3); }
+	.app-side.folded .nav span { display: none; }
+	.app-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.app-bar { display: flex; align-items: center; gap: var(--size-4-2); flex-wrap: wrap; }
+	.app-bar .grow { flex: 1; min-width: 0; }
+	.board { display: flex; gap: var(--size-4-3); overflow-x: auto; padding-bottom: var(--size-4-1); }
+	.board .plate { flex: 0 0 268px; }
+	.vp-mobile .app { flex-direction: column; }
+	.vp-mobile .app-side { width: 100%; flex-direction: row; overflow-x: auto; }
+	.vp-mobile .app-side .nav span { display: none; }
+	.vp-mobile .board .plate { flex: 0 0 258px; }
+	.vp-mobile .app-bar .search { width: 100%; }
+	/* the tablet STARTS folded, it is not held folded — pinning it in CSS left its own
+	   fold button doing nothing, which read as the control being missing */
+	.vp-mobile [data-fold] { display: none; }
+
+	/* ── popover ──────────────────────────────────────────────────────────────── */
+	.pop { position: fixed; z-index: 60; border-radius: var(--wg-radius-tile); background: var(--wg-glass-panel); backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur); box-shadow: var(--wg-glass-edge); transform-origin: top left; opacity: 0; pointer-events: none; overflow: hidden; min-width: 232px; }
+	.pop.on { opacity: 1; pointer-events: auto; }
+	.pop-inner { padding: var(--size-4-2); display: flex; flex-direction: column; transition: opacity var(--wg-dur-s) var(--wg-ease); }
+	.pop-head { padding: var(--size-4-3) var(--size-4-3) var(--size-4-2); font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.pop-item { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-2) var(--size-4-3); border-radius: var(--wg-radius-inner); cursor: pointer; font-size: var(--font-ui-small); font-weight: var(--font-medium); text-align: left; }
+	.pop-item:hover { background: var(--background-modifier-hover); }
+	.pop-item .tick { margin-left: auto; color: var(--wg-accent); opacity: 0; }
+	.pop-item[aria-checked="true"] .tick { opacity: 1; }
+	.pop-sep { height: 1px; background: var(--wg-hairline); margin: var(--size-2-2) var(--size-4-3); }
+
+	@media (max-width: 720px) {
+		.pair-grid { grid-template-columns: 1fr; }
+		.pane.was { border-bottom: 1px solid var(--wg-hairline); }
+		.sheet { padding: 0 var(--size-4-4) var(--size-4-12); gap: var(--size-4-8); }
+	}
+	@media (prefers-reduced-motion: reduce) { * { transition: none !important; } .pressable:active { transform: none; } }
+</style>
+
+<div class="sheet">
+
+	<header class="masthead">
+		<span class="eyebrow">Widgetarium · conversion · 29 August 2026</span>
+		<h1>OrbiTask, converted</h1>
+		<p class="lede">Every element taken apart, one at a time: what it was, what it becomes, and — the part that matters most — <strong>what deliberately did not change</strong>. The structure stays exactly where it is. A plain-text action stays plain text; a bordered box becomes a filled one; nothing gains a background it did not earn.</p>
+	</header>
+
+	<section>
+		<div class="head"><span class="eyebrow">The two open questions</span><h2>Answered, with specimens</h2></div>
+
+		<span class="cap">Widget tabs — what shape, what size</span>
+		<div class="options">
+			<div class="option">
+				<span class="verdict">Option · underline, as today</span>
+				<div class="old" style="display: flex; gap: 18px; align-items: center;">
+					<span class="old-tab on">Kanban</span><span class="old-tab">Table</span><span class="old-tab">Timeline</span>
+				</div>
+				<p class="note">The underline belongs to the outline world: it is a border by another name, and it is the one thing on the board that is neither a fill nor a capsule.</p>
+			</div>
+			<div class="option picked">
+				<span class="verdict">Chosen · a segmented control the size of a button</span>
+				<div class="segmented" data-seg><span class="seg-thumb"></span><button aria-selected="true">Kanban</button><button aria-selected="false">Table</button><button aria-selected="false">Timeline</button></div>
+				<p class="note"><b>Capsule outside, capsule inside</b>, 38px tall — the same height as a small button, so it sits in a toolbar without inventing a new rhythm. The active tab is a raised white pill and it <b>springs</b> between positions rather than the underline sliding.</p>
+			</div>
+			<div class="option">
+				<span class="verdict">Option · the big variant, for a tab bar that is the whole widget</span>
+				<div class="segmented big" data-seg><span class="seg-thumb"></span><button aria-selected="true">Kanban</button><button aria-selected="false">Table</button></div>
+				<p class="note">46px, body-size text. Use it when the tabs <em>are</em> the widget — a one-cell-tall switcher — not when they sit above content.</p>
+			</div>
+		</div>
+
+		<span class="cap">Cards and the plate — what is grey, what is white</span>
+		<div class="options">
+			<div class="option picked">
+				<span class="verdict">Chosen · grey plate, white cards</span>
+				<div class="demo-canvas">
+					<div class="plate">
+						<div class="plate-head"><h4>Group</h4><span class="count">3</span></div>
+						<div class="card"><span class="stripe" style="background: var(--wg-error)"></span><h4>A card on the plate</h4></div>
+						<div class="card"><span class="stripe" style="background: var(--wg-warning)"></span><h4>Another one</h4></div>
+					</div>
+				</div>
+				<p class="note"><b>Three levels, and no more:</b> the note is the canvas, a plate is <code>--wg-fill</code>, a card is <code>--wg-surface</code>. Every reference you sent works this way, and it is the only arrangement where a card never has to sit on something the same colour as itself.</p>
+			</div>
+			<div class="option">
+				<span class="verdict">Option · white plate, grey cards</span>
+				<div class="demo-canvas">
+					<div class="plate" style="background: var(--wg-surface)">
+						<div class="plate-head"><h4>Group</h4><span class="count" style="background: var(--wg-fill)">3</span></div>
+						<div class="card" style="background: var(--wg-fill)"><span class="stripe" style="background: var(--wg-error)"></span><h4>A card on the plate</h4></div>
+						<div class="card" style="background: var(--wg-fill)"><span class="stripe" style="background: var(--wg-warning)"></span><h4>Another one</h4></div>
+					</div>
+				</div>
+				<p class="note">Inverts cleanly, but it spends the white on the container instead of on the thing you read, and a white plate on a white note needs a shadow to exist — which is the border problem again, wearing a softer coat.</p>
+			</div>
+		</div>
+	</section>
+
+	<section>
+		<div class="head"><span class="eyebrow">Element by element</span><h2>Before, after, and what stayed</h2></div>
+		<div id="pairs" style="display: flex; flex-direction: column; gap: var(--size-4-4);"></div>
+	</section>
+
+	<section>
+		<div class="head"><span class="eyebrow">The Jira question</span><h2>Which radius belongs to which box</h2></div>
+		<div class="options">
+			<div class="option">
+				<span class="verdict">Wrong · plate and card share a radius</span>
+				<div class="demo-canvas">
+					<div class="plate">
+						<div class="plate-head"><h4>To Do</h4><span class="count">2</span></div>
+						<div class="card"><span class="stripe" style="background: var(--wg-error)"></span><h4>A card on the plate</h4></div>
+						<div class="card"><span class="stripe" style="background: var(--wg-warning)"></span><h4>Another one</h4></div>
+						<div class="addrow">+ Add new task</div>
+					</div>
+				</div>
+				<p class="note">One radius everywhere: the silhouette is calm and the cards read as siblings of the plate.</p>
+			</div>
+			<div class="option picked">
+				<span class="verdict">Right · inner = outer − padding</span>
+				<div class="demo-canvas">
+					<div class="plate">
+						<div class="plate-head"><h4>To Do</h4><span class="count">2</span></div>
+						<div class="card"><span class="stripe" style="background: var(--wg-error)"></span><h4>A card on the plate</h4></div>
+						<div class="card"><span class="stripe" style="background: var(--wg-warning)"></span><h4>Another one</h4></div>
+						<div class="addrow">+ Add new task</div>
+					</div>
+				</div>
+				<p class="note"><b>What it buys:</b> the plate's own corners stop competing with the cards', so the column reads as one container with a stack inside it — which is why the header and the add-row look bound to the same box. <b>What it costs:</b> two radii to keep in step, and the cards lose the softness the rest of the kit has.</p>
+			</div>
+		</div>
+	</section>
+
+
+	<section>
+		<div class="head"><span class="eyebrow">The cell</span><h2>It is not a number to pick — it is a sum</h2></div>
+		<p class="note">You are right that the drawing and the grid disagree, and the reason is that <b>the cell was chosen and the controls were chosen separately</b>. A control is 42px. A widget pads it by 12 on each side. So a widget one cell tall has to hold <b>42 + 12 + 12 = 66px</b> — and anything the cell has above that is slack the widget cannot use.</p>
+
+		<div class="celldemo">
+			<div style="display:flex;flex-direction:column;gap:var(--size-4-5)">
+				<span class="cap">Today · cell 76</span>
+				<div class="cellbox" style="width:76px;height:76px"><span class="slack"></span><span style="position:relative;width:42px;height:42px;border-radius:999px;background:var(--wg-surface);box-shadow:var(--wg-shadow-s)"></span><span class="ruler">76 · 10px of slack</span></div>
+			</div>
+			<div style="display:flex;flex-direction:column;gap:var(--size-4-5)">
+				<span class="cap">Derived · cell 66</span>
+				<div class="cellbox" style="width:66px;height:66px"><span style="position:relative;width:42px;height:42px;border-radius:999px;background:var(--wg-surface);box-shadow:var(--wg-shadow-s)"></span><span class="ruler">66 · exact</span></div>
+			</div>
+			<div style="display:flex;flex-direction:column;gap:var(--size-4-5);flex:1 1 300px;min-width:260px">
+				<span class="cap">A toolbar one cell tall</span>
+				<div class="cellbox" style="height:66px;width:100%;justify-items:start;padding:0 var(--size-4-3)"><span class="cellctl">A control that fits</span></div>
+			</div>
+		</div>
+
+		<p class="note" style="margin-top:var(--size-4-4)">The grid is elastic — the cell is the board's width divided by however many columns fit a target — so the question is not <em>what is the cell</em> but <em>what target keeps it near 66 at every width</em>. Measured by sweeping every board width from 360 to 1300px:</p>
+		<div style="overflow-x:auto">
+		<table class="sums">
+			<thead><tr><th>Target, narrow → wide</th><th>Cell range</th><th>Worst distance from 66</th><th>Average</th></tr></thead>
+			<tbody>
+				<tr><td>84 → 68 <span style="font-weight:400;color:var(--wg-ink-faint)">(today)</span></td><td>65–93px</td><td>27px</td><td>8.7px</td></tr>
+				<tr><td>72 → 62</td><td>60–81px</td><td>15px</td><td>3.5px</td></tr>
+				<tr class="picked"><td>70 → 64 <span style="font-weight:400">← recommended</span></td><td>61–79px</td><td>13px</td><td>2.8px</td></tr>
+				<tr><td>66 → 66 <span style="font-weight:400;color:var(--wg-ink-faint)">(fixed)</span></td><td>59–73px</td><td>7px</td><td>2.2px</td></tr>
+			</tbody>
+		</table>
+		</div>
+		<p class="note"><b>Recommendation: 70 → 64.</b> The fixed target tracks 66 most closely, but it also removes the one thing the elastic target is for — a phone gets a bigger cell so a tap target stays a tap target. 70 → 64 keeps that and cuts the average error from <b>8.7px to 2.8px</b>, which is the difference between a widget that fits its cell and one that floats in it.</p>
+		<p class="note">And it is a <b>sum, not a preference</b>: change the control height or the widget padding and the target moves with them. That is the only version of this that cannot drift again.</p>
+	</section>
+
+	<section>
+		<div class="head"><span class="eyebrow">The whole thing</span><h2>Three widths</h2></div>
+		<p class="note">The same markup at three sizes. Press <b>Filter</b> to see the popover take the button's place; the sidebar's arrow folds it at every width. The tablet simply <em>starts</em> folded — it is not held that way, so its button still works.</p>
+		<p class="note"><b>The grey of the plate.</b> These are Obsidian's real values, not a stand-in — press one and every board below repaints. The card stays white; only the plate under it moves.</p>
+		<div class="picker" id="picker"></div>
+		<div class="switches">
+			<label><input type="checkbox" id="sw-flat"> Break the rule — equal radii, as it was</label>
+			<label><input type="checkbox" id="sw-tight" checked> Tighter spacing</label>
+		</div>
+		<div class="frames" id="frames"></div>
+	</section>
+
+</div>
+
+<div class="pop" id="pop-filter"><div class="pop-inner">
+	<div class="pop-head">Filter by</div>
+	<button class="pop-item" aria-checked="true">Everything<svg class="icon tick" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" aria-checked="false">Mine<svg class="icon tick" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" aria-checked="false">Unassigned<svg class="icon tick" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<div class="pop-sep"></div>
+	<button class="pop-item" aria-checked="false">With attachments<svg class="icon tick" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg></button>
+</div></div>
+
+<script>
+(function () {
+	"use strict";
+	const reduced = Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+	const svg = (d, w) => '<svg class="icon" viewBox="0 0 20 20"' + (w ? ' style="width:' + w + 'px;height:' + w + 'px"' : "") + '>' + d + "</svg>";
+	const I = {
+		chev: '<path d="M8 5l5 5-5 5"/>', fold: '<path d="M12 5l-5 5 5 5"/>',
+		search: '<circle cx="9" cy="9" r="5.4"/><path d="M13 13l3.5 3.5"/>',
+		filter: '<path d="M3 5h14l-5.2 6V16l-3.6-2v-3z"/>', plus: '<path d="M10 4v12M4 10h12"/>',
+		clock: '<circle cx="10" cy="10" r="6"/><path d="M10 6v4l2.4 1.4"/>',
+		chat: '<path d="M3 4h14v9H7l-4 3z"/>', folder: '<path d="M3 5h4l1.4 2H17v8H3z"/>',
+		check: '<rect x="4" y="4" width="12" height="12" rx="3"/><path d="M7 10l2 2 4-4"/>',
+		pencil: '<path d="M4 16l1-4 8-8 3 3-8 8z"/>', close: '<path d="M6 6l8 8M14 6l-8 8"/>',
+		sq: '<rect x="3.5" y="3.5" width="13" height="13" rx="4"/>',
+	};
+
+	// ── element by element ────────────────────────────────────────────────────
+	const PAIRS = [
+		{
+			name: "Sidebar row",
+			was: '<div class="old" style="width:170px"><div class="old-row on"><span class="old-sq"></span>Tasks</div><div class="old-row"><span class="old-sq"></span>Boards</div><div class="old-row"><span class="old-sq"></span>People</div></div>',
+			now: '<div style="width:190px"><div class="nav" aria-current="page">' + svg(I.sq, 18) + '<span>Tasks</span></div><div class="nav">' + svg(I.sq, 18) + '<span>Boards</span></div><div class="nav">' + svg(I.sq, 18) + '<span>People</span></div></div>',
+			kept: "Same rows, same order, same active-row wash. Only the radius grows and the icon stops being a bare square.",
+		},
+		{
+			name: "Sidebar, folded",
+			was: '<div class="old" style="width:52px;display:flex;flex-direction:column;gap:4px"><div class="old-row on" style="justify-content:center"><span class="old-sq"></span></div><div class="old-row" style="justify-content:center"><span class="old-sq"></span></div></div>',
+			now: '<div class="app-side folded" style="width:58px"><div class="nav" aria-current="page">' + svg(I.sq, 18) + "</div><div class=\"nav\">" + svg(I.sq, 18) + "</div></div>",
+			kept: "Still just the rows without their labels — no new drawer, no overlay. The width animates instead of jumping.",
+		},
+		{
+			name: "Board tabs, with the rename pencil",
+			was: '<div class="old" style="display:flex;gap:16px;align-items:center"><span class="old-tab on">Marketing Team</span><span class="old-tab">Ux Team</span><span class="old-icon">' + svg(I.pencil, 13) + "</span></div>",
+			now: '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="segmented" data-seg><span class="seg-thumb"></span><button aria-selected="true">Marketing Team</button><button aria-selected="false">Ux Team</button></div><button class="iconbtn iconbtn-s pressable">' + svg(I.pencil, 15) + "</button></div>",
+			kept: "The pencil stays a separate control beside the tabs, exactly where it was — it does not move into the tab, and it does not gain a label.",
+		},
+		{
+			name: "View tabs",
+			was: '<div class="old" style="display:flex;gap:16px"><span class="old-tab on">Kanban</span><span class="old-tab">Table</span><span class="old-tab">Timeline</span><span class="old-tab">Galaxy</span></div>',
+			now: '<div class="segmented" data-seg><span class="seg-thumb"></span><button aria-selected="true">Kanban</button><button aria-selected="false">Table</button><button aria-selected="false">Timeline</button><button aria-selected="false">Galaxy</button></div>',
+			kept: "Four tabs, same labels, same first one selected. The underline becomes the moving pill.",
+		},
+		{
+			name: "Filter button",
+			was: '<div class="old"><span class="old-icon" style="width:44px;height:44px">' + svg(I.filter, 15) + "</span></div>",
+			now: '<button class="iconbtn iconbtn-m pressable">' + svg(I.filter, 17) + "</button>",
+			kept: "One icon button, same job. Round instead of a rounded rectangle, and it fills rather than outlines — and now it opens a popover in its own place.",
+		},
+		{
+			name: "Search",
+			was: '<div class="old"><input class="old-input" placeholder="Search" style="width:190px"></div>',
+			now: '<div class="search" style="width:230px">' + svg(I.search, 16) + '<input placeholder="Search"></div>',
+			kept: "A field with a placeholder. It gains the magnifier it always implied and loses the outline.",
+		},
+		{
+			name: "Column head",
+			was: '<div class="old" style="display:flex;align-items:center;gap:8px"><b style="font-size:14px">To Do</b><span class="old-pill" style="background:#e4e4e4;color:#5e5e5e">3</span></div>',
+			now: '<div class="plate-head" style="padding:0"><h4>To Do</h4><span class="count">3</span></div>',
+			kept: "Title and count, in that order. The count keeps its pill; only its ground changes so it reads on the plate.",
+		},
+		{
+			name: "Task card",
+			was: '<div class="old" style="width:100%"><div class="old-card"><div style="height:4px;width:30px;border-radius:2px;background:#f44336"></div><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b style="font-size:13px">Design the onboarding flow</b><span class="old-pill" style="background:#ffe3e8;color:#f44336">P1</span></div><div style="display:flex;align-items:center;gap:8px"><span class="old-bar" style="flex:1"><i style="width:20%"></i></span><span style="font-size:11px;color:#757575">20%</span></div><div class="old-meta"><span>12 Aug</span><span>4</span><span>2</span><span style="margin-left:auto;display:flex"><i class="old-av" style="background:#edf2fe">A</i><i class="old-av" style="background:#eefeee">M</i></span></div></div></div>',
+			now: '<div style="width:100%"><div class="card pressable"><span class="stripe" style="background: var(--wg-error)"></span><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h4>Design the onboarding flow</h4><span class="pilltag err">P1</span></div><div style="display:flex;align-items:center;gap:8px"><span class="bar"><i style="width:20%"></i></span><span class="mono" style="color: var(--wg-ink-muted)">20%</span></div><div class="meta"><span>' + svg(I.clock, 14) + '12 Aug</span><span>' + svg(I.chat, 14) + '4</span><span>' + svg(I.folder, 14) + '2</span><span class="avatars" style="margin-left:auto"><i class="avatar" style="background: var(--wg-accent-wash); color: var(--wg-accent)">A</i><i class="avatar" style="background: var(--wg-success-wash); color: var(--wg-success)">M</i></span></div></div></div>',
+			kept: "Every row is where it was: stripe, title with its priority pill, progress with its number, then the meta line with the avatars pushed right. <b>Nothing was added and nothing reordered</b> — the border became a fill, the corners grew, and the status colours now come from the vault.",
+		},
+		{
+			name: "Add new task",
+			was: '<div class="old"><div class="old-plain">+ Add new task</div></div>',
+			now: '<div class="addrow">' + svg(I.plus, 16) + "Add new task</div>",
+			kept: "<b>This is the one to look at.</b> It was plain text, so it stays plain text — no fill, no capsule, no accent. It gains a hover ground and a real plus glyph, and that is all it is allowed to gain.",
+		},
+		{
+			name: "Selected card",
+			was: '<div class="old" style="width:100%"><div class="old-card sel"><div style="height:4px;width:30px;border-radius:2px;background:#ff9800"></div><b style="font-size:13px">Collect competitor references</b></div></div>',
+			now: '<div style="width:100%"><div class="card sel"><span class="stripe" style="background: var(--wg-warning)"></span><h4>Collect competitor references</h4></div></div>',
+			kept: "Selection is still a ring in the accent — but drawn inside the box, so a selected card is exactly the same size as an unselected one. The old 2px border made it grow by two pixels.",
+		},
+	];
+
+	const pairs = document.getElementById("pairs");
+	pairs.innerHTML = PAIRS.map((pair) =>
+		'<article class="pair"><h3>' + pair.name + '</h3><div class="pair-grid">' +
+		'<div class="pane was"><span class="tag">Was</span>' + pair.was + "</div>" +
+		'<div class="pane now"><span class="tag">Is</span>' + pair.now + "</div>" +
+		'</div><div class="pair-foot"><span class="kept">' + pair.kept + "</span></div></article>"
+	).join("");
+
+	// ── the app, at three widths ──────────────────────────────────────────────
+	const CARDS = [
+		{ title: "Design the onboarding flow", stripe: "--wg-error", pill: "err", pillText: "P1", pct: 20, date: "12 Aug", chat: 4, files: 2, people: [["A", "accent"], ["M", "success"], ["K", "error"]] },
+		{ title: "Collect competitor references", stripe: "--wg-warning", pill: "warn", pillText: "P2", pct: 45, date: "14 Aug", chat: 2, files: 5, people: [["S", "accent"], ["R", "success"]], selected: true },
+		{ title: "Rewrite the empty state", stripe: "--wg-success", pill: "ok", pillText: "P3", pct: 0, date: "19 Aug", chat: 0, files: 1, people: [["M", "warning"]] },
+	];
+	const wash = (name) => "var(--wg-" + name + "-wash)";
+	const ink = (name) => "var(--wg-" + name + ")";
+
+	function cardHtml(card) {
+		return '<div class="card pressable' + (card.selected ? " sel" : "") + '">' +
+			'<span class="stripe" style="background: var(' + card.stripe + ')"></span>' +
+			'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h4>' + card.title + '</h4><span class="pilltag ' + card.pill + '">' + card.pillText + "</span></div>" +
+			'<div style="display:flex;align-items:center;gap:8px"><span class="bar"><i style="width:' + card.pct + '%"></i></span><span class="mono" style="color: var(--wg-ink-muted)">' + card.pct + "%</span></div>" +
+			'<div class="meta"><span>' + svg(I.clock, 14) + card.date + "</span><span>" + svg(I.chat, 14) + card.chat + "</span><span>" + svg(I.folder, 14) + card.files +
+			'</span><span class="avatars" style="margin-left:auto">' + card.people.map(([letter, tone]) =>
+				'<i class="avatar" style="background:' + wash(tone) + ";color:" + ink(tone) + '">' + letter + "</i>").join("") + "</span></div></div>";
+	}
+
+	function appHtml(id) {
+		const nav = ["Boards", "Tasks", "People", "Reports"];
+		const columns = [["To Do", CARDS], ["Doing", CARDS.slice(0, 2)], ["Done", CARDS.slice(2)]];
+		return '<div class="app">' +
+			'<div class="app-side' + (id === "vp-tablet" ? " folded" : "") + '" data-side><button class="iconbtn iconbtn-s pressable" data-fold style="align-self:flex-end;margin-bottom:4px">' + svg(I.fold, 15) + "</button>" +
+			nav.map((name, index) => '<div class="nav"' + (index === 1 ? ' aria-current="page"' : "") + ">" + svg(I.sq, 18) + "<span>" + name + "</span></div>").join("") + "</div>" +
+			'<div class="app-main">' +
+				'<div class="app-bar"><div class="segmented" data-seg><span class="seg-thumb"></span><button aria-selected="true">Marketing</button><button aria-selected="false">Ux Team</button></div>' +
+				'<button class="iconbtn iconbtn-s pressable">' + svg(I.pencil, 15) + "</button>" +
+				'<span class="grow"></span>' +
+				'<div class="search" style="max-width:220px">' + svg(I.search, 16) + '<input placeholder="Search"></div>' +
+				'<button class="iconbtn iconbtn-m pressable" data-pop="pop-filter" aria-label="Filter">' + svg(I.filter, 17) + "</button></div>" +
+				'<div class="app-bar"><div class="segmented" data-seg><span class="seg-thumb"></span><button aria-selected="true">Kanban</button><button aria-selected="false">Table</button><button aria-selected="false">Timeline</button></div></div>' +
+				'<div class="board">' + columns.map(([name, cards]) =>
+					'<div class="plate"><div class="plate-head"><h4>' + name + '</h4><span class="count">' + cards.length + "</span></div>" +
+					cards.map(cardHtml).join("") +
+					'<div class="addrow">' + svg(I.plus, 16) + "Add new task</div></div>").join("") +
+				"</div>" +
+			"</div></div>";
+	}
+
+	const frames = document.getElementById("frames");
+	frames.innerHTML = [["Desktop", "vp-desktop"], ["Tablet", "vp-tablet"], ["Mobile", "vp-mobile"]].map(([label, cls]) =>
+		'<div class="frame"><span class="cap">' + label + "</span>" +
+		'<div class="viewport ' + cls + '">' + appHtml(cls) + "</div></div>").join("");
+
+	// THE PLATE'S GREY, chosen on the real thing rather than on a swatch
+	const STEPS = [
+		["base-05", "#fcfcfc"], ["base-10", "#fafafa"], ["base-20", "#f6f6f6"],
+		["base-25", "#efefef"], ["base-30", "#e4e4e4"], ["base-35", "#dadada"],
+	];
+	const picker = document.getElementById("picker");
+	if (picker) {
+		picker.innerHTML = STEPS.map(([name, hex], index) =>
+			'<button type="button" data-step="' + name + '" aria-pressed="' + (index === 1) + '">' +
+			'<i style="background: var(--color-' + name + ')"></i><span>' + name + "</span></button>",
+		).join("") + '<span class="readout" id="readout">--color-base-10 · #fafafa</span>';
+		picker.addEventListener("click", (event) => {
+			const button = event.target.closest("[data-step]");
+			if (!button) return;
+			for (const other of picker.querySelectorAll("[data-step]")) other.setAttribute("aria-pressed", String(other === button));
+			const step = button.dataset.step;
+			const hex = STEPS.find(([name]) => name === step)[1];
+			for (const vp of document.querySelectorAll(".viewport")) {
+				vp.style.setProperty("--wg-fill", "var(--color-" + step + ")");
+			}
+			document.getElementById("readout").textContent = "--color-" + step + " · " + hex;
+		});
+	}
+
+	// two experiments, one token each, applied to every viewport at once
+	for (const [id, cls] of [["sw-flat", "flat-radii"], ["sw-tight", "tight"]]) {
+		const box = document.getElementById(id);
+		box.addEventListener("change", () => {
+			for (const vp of document.querySelectorAll(".viewport")) vp.classList.toggle(cls, box.checked);
+		});
+		for (const vp of document.querySelectorAll(".viewport")) vp.classList.toggle(cls, box.checked);
+	}
+
+	// ── behaviour ─────────────────────────────────────────────────────────────
+	function wireSegmented(seg) {
+		const thumb = seg.querySelector(".seg-thumb");
+		const move = (button) => {
+			thumb.style.width = button.offsetWidth + "px";
+			thumb.style.transform = "translateX(" + (button.offsetLeft - 4) + "px)";
+		};
+		seg.addEventListener("click", (event) => {
+			const button = event.target.closest("button");
+			if (!button) return;
+			for (const other of seg.querySelectorAll("button")) other.setAttribute("aria-selected", String(other === button));
+			move(button);
+		});
+		requestAnimationFrame(() => move(seg.querySelector('[aria-selected="true"]')));
+	}
+	for (const seg of document.querySelectorAll("[data-seg]")) wireSegmented(seg);
+
+	for (const fold of document.querySelectorAll("[data-fold]")) {
+		fold.addEventListener("click", () => fold.closest("[data-side]").classList.toggle("folded"));
+	}
+
+	// the popover, taking the trigger's own place
+	let openPop = null, popTrigger = null;
+	function startRadius(trigger, box, rect) {
+		const raw = parseFloat(getComputedStyle(trigger).borderRadius) || 0;
+		const real = Math.min(raw, Math.min(rect.width, rect.height) / 2);
+		return (real / (rect.width / box.width)).toFixed(1) + "px / " + (real / (rect.height / box.height)).toFixed(1) + "px";
+	}
+	function showPop(trigger) {
+		const pop = document.getElementById(trigger.dataset.pop);
+		if (!pop) return;
+		if (openPop) hidePop(true);
+		openPop = pop; popTrigger = trigger;
+		const rect = trigger.getBoundingClientRect();
+		pop.style.transition = "none"; pop.style.transform = "none";
+		pop.style.left = "0px"; pop.style.top = "0px";
+		pop.classList.add("on");
+		const zero = pop.getBoundingClientRect();
+		const margin = 8;
+		let left = rect.left, top = rect.top;
+		if (left + zero.width > window.innerWidth - margin) left = Math.max(margin, rect.right - zero.width);
+		if (top + zero.height > window.innerHeight - margin) top = Math.max(margin, rect.bottom - zero.height);
+		pop.style.left = (left - zero.left) + "px";
+		pop.style.top = (top - zero.top) + "px";
+		const box = { left, top, width: zero.width, height: zero.height };
+		const inner = pop.querySelector(".pop-inner");
+		trigger.style.visibility = "hidden";
+		if (reduced) return;
+		inner.style.transition = "none"; inner.style.opacity = "0";
+		pop.style.transform = "translate(" + (rect.left - box.left) + "px," + (rect.top - box.top) + "px) scale(" + (rect.width / box.width) + "," + (rect.height / box.height) + ")";
+		pop.style.borderRadius = startRadius(trigger, box, rect);
+		requestAnimationFrame(() => {
+			pop.style.transition = "transform var(--wg-dur-m) var(--wg-spring), border-radius var(--wg-dur-m) var(--wg-spring)";
+			inner.style.transition = "opacity var(--wg-dur-s) var(--wg-ease) 60ms";
+			pop.style.transform = "none"; pop.style.borderRadius = ""; inner.style.opacity = "1";
+		});
+	}
+	function hidePop(instant) {
+		if (!openPop) return;
+		const pop = openPop, trigger = popTrigger, inner = pop.querySelector(".pop-inner");
+		openPop = null; popTrigger = null;
+		if (reduced || instant) { pop.classList.remove("on"); trigger.style.visibility = ""; return; }
+		const rect = trigger.getBoundingClientRect();
+		const box = pop.getBoundingClientRect();
+		pop.style.transition = "transform var(--wg-dur-s) var(--wg-ease), border-radius var(--wg-dur-s) var(--wg-ease), opacity var(--wg-dur-press) var(--wg-ease) 120ms";
+		inner.style.transition = "opacity var(--wg-dur-press) var(--wg-ease)";
+		inner.style.opacity = "0";
+		pop.style.transform = "translate(" + (rect.left - box.left) + "px," + (rect.top - box.top) + "px) scale(" + (rect.width / box.width) + "," + (rect.height / box.height) + ")";
+		pop.style.borderRadius = startRadius(trigger, box, rect);
+		pop.classList.remove("on");
+		window.setTimeout(() => { trigger.style.visibility = ""; }, 200);
+	}
+	for (const trigger of document.querySelectorAll("[data-pop]")) {
+		trigger.addEventListener("click", (event) => { event.stopPropagation(); showPop(trigger); });
+	}
+	for (const item of document.querySelectorAll("#pop-filter .pop-item")) {
+		item.addEventListener("click", () => {
+			for (const other of document.querySelectorAll("#pop-filter .pop-item")) other.setAttribute("aria-checked", String(other === item));
+			hidePop();
+		});
+	}
+	document.addEventListener("click", (event) => { if (openPop && !openPop.contains(event.target)) hidePop(); });
+	document.addEventListener("keydown", (event) => { if (event.key === "Escape") hidePop(); });
+})();
+</script>
+
+</body></html>

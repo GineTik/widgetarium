@@ -1,0 +1,1314 @@
+<title>Dark Ramp Fill Trials</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap">
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════════════
+   PAGE CHROME. Every token is --pg-*, so nothing here can collide with the
+   Obsidian variables the specimens are scoped to further down.
+   ══════════════════════════════════════════════════════════════════════════════ */
+:root {
+	--pg-ground: #eceff3;
+	--pg-panel: #ffffff;
+	--pg-panel-2: #f5f7fa;
+	--pg-ink: #13161c;
+	--pg-ink-2: #545c6b;
+	--pg-ink-3: #868f9f;
+	--pg-rule: #dbe0e8;
+	--pg-rule-2: #c6cdd8;
+	--pg-accent: #9a5600;
+	--pg-accent-bed: #f6ecdd;
+	--pg-pass: #1b7048;
+	--pg-pass-bed: #e0efe7;
+	--pg-fail: #ab2f26;
+	--pg-fail-bed: #f7e4e2;
+	--pg-shadow: 0 1px 2px rgba(19, 22, 28, 0.05), 0 8px 24px rgba(19, 22, 28, 0.06);
+
+	--pg-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+	--pg-prose: "Source Serif 4", Georgia, "Times New Roman", serif;
+	--pg-data: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+
+	color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--pg-ground: #0c0e12;
+		--pg-panel: #15181f;
+		--pg-panel-2: #1b1f27;
+		--pg-ink: #e7eaf1;
+		--pg-ink-2: #98a1b2;
+		--pg-ink-3: #6a7383;
+		--pg-rule: #262b34;
+		--pg-rule-2: #343a45;
+		--pg-accent: #e8a955;
+		--pg-accent-bed: #2b2317;
+		--pg-pass: #4fc98d;
+		--pg-pass-bed: #16281f;
+		--pg-fail: #ef7d6f;
+		--pg-fail-bed: #2c1a18;
+		--pg-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.34);
+		color-scheme: dark;
+	}
+}
+
+:root[data-theme="dark"] {
+	--pg-ground: #0c0e12;
+	--pg-panel: #15181f;
+	--pg-panel-2: #1b1f27;
+	--pg-ink: #e7eaf1;
+	--pg-ink-2: #98a1b2;
+	--pg-ink-3: #6a7383;
+	--pg-rule: #262b34;
+	--pg-rule-2: #343a45;
+	--pg-accent: #e8a955;
+	--pg-accent-bed: #2b2317;
+	--pg-pass: #4fc98d;
+	--pg-pass-bed: #16281f;
+	--pg-fail: #ef7d6f;
+	--pg-fail-bed: #2c1a18;
+	--pg-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.34);
+	color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+	margin: 0;
+	background: var(--pg-ground);
+	color: var(--pg-ink);
+	font-family: var(--pg-prose);
+	font-size: 16px;
+	line-height: 1.55;
+	-webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+	max-width: 1340px;
+	margin: 0 auto;
+	padding: 0 28px 96px;
+	display: flex;
+	flex-direction: column;
+	gap: 56px;
+}
+
+h1, h2, h3, .eyebrow, .rail-name, .verdict, .num, th, .btnish {
+	font-family: var(--pg-display);
+}
+
+.eyebrow {
+	font-family: var(--pg-data);
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--pg-ink-3);
+}
+
+h1 {
+	font-size: clamp(38px, 5.4vw, 62px);
+	font-weight: 700;
+	letter-spacing: -0.035em;
+	line-height: 0.98;
+	margin: 0;
+	text-wrap: balance;
+}
+
+h2 {
+	font-size: 26px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	margin: 0;
+	text-wrap: balance;
+}
+
+h3 { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; margin: 0; }
+
+p { margin: 0; max-width: 70ch; }
+.lede { font-size: 19px; line-height: 1.5; color: var(--pg-ink-2); max-width: 62ch; }
+.lede em { color: var(--pg-ink); font-style: italic; }
+strong { font-weight: 600; color: var(--pg-ink); }
+code, .mono { font-family: var(--pg-data); font-size: 0.86em; }
+
+/* ── masthead ───────────────────────────────────────────────────────────────── */
+.mast { padding-top: 72px; display: flex; flex-direction: column; gap: 22px; }
+.mast-meta { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: baseline; }
+
+.thesis {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 0 20px;
+	align-items: start;
+	background: var(--pg-panel);
+	border-left: 3px solid var(--pg-accent);
+	border-radius: 0 10px 10px 0;
+	padding: 20px 24px;
+	box-shadow: var(--pg-shadow);
+	max-width: 860px;
+}
+.thesis .k { font-family: var(--pg-data); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pg-accent); padding-top: 5px; }
+.thesis p { font-size: 17px; }
+
+/* ── sticky jump bar ────────────────────────────────────────────────────────── */
+.jump {
+	position: sticky;
+	top: 0;
+	z-index: 20;
+	background: color-mix(in srgb, var(--pg-ground) 88%, transparent);
+	backdrop-filter: blur(12px) saturate(160%);
+	-webkit-backdrop-filter: blur(12px) saturate(160%);
+	border-bottom: 1px solid var(--pg-rule);
+	margin: 0 -28px;
+	padding: 9px 28px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+.jump b { font-family: var(--pg-data); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--pg-ink-3); font-weight: 500; margin-right: 4px; }
+.jump a {
+	font-family: var(--pg-data);
+	font-size: 11px;
+	letter-spacing: 0.02em;
+	text-decoration: none;
+	color: var(--pg-ink-2);
+	background: var(--pg-panel);
+	border: 1px solid var(--pg-rule);
+	border-radius: 999px;
+	padding: 4px 11px;
+	transition: color 140ms ease, border-color 140ms ease;
+}
+.jump a:hover { color: var(--pg-ink); border-color: var(--pg-rule-2); }
+.jump a.pick { color: var(--pg-accent); border-color: color-mix(in srgb, var(--pg-accent) 45%, transparent); background: var(--pg-accent-bed); }
+
+/* ── generic section ────────────────────────────────────────────────────────── */
+section { display: flex; flex-direction: column; gap: 22px; scroll-margin-top: 62px; }
+.sec-head { display: flex; flex-direction: column; gap: 8px; }
+.sec-head p { color: var(--pg-ink-2); }
+
+.panel {
+	background: var(--pg-panel);
+	border: 1px solid var(--pg-rule);
+	border-radius: 14px;
+	box-shadow: var(--pg-shadow);
+	overflow: hidden;
+}
+
+/* ── the ramp plot ──────────────────────────────────────────────────────────── */
+.plots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--pg-rule); }
+.plot { background: var(--pg-panel); padding: 22px 24px 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.plot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.plot-head .tag { font-family: var(--pg-data); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; }
+.plot-head .shape { font-family: var(--pg-data); font-size: 11px; color: var(--pg-ink-3); }
+.plot svg { width: 100%; height: auto; display: block; overflow: visible; }
+.swatch-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+.swatch-row div { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.swatch-row i { height: 34px; border-radius: 6px; border: 1px solid var(--pg-rule); display: block; }
+.swatch-row i.flag { border: 2px solid var(--pg-accent); }
+.swatch-row code { font-family: var(--pg-data); font-size: 9.5px; color: var(--pg-ink-3); letter-spacing: -0.01em; }
+.swatch-row code.flag { color: var(--pg-accent); }
+
+/* ── the invariant box ──────────────────────────────────────────────────────── */
+.rule-box { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--pg-rule); }
+.rule-box > div { background: var(--pg-panel); padding: 20px 24px; display: flex; flex-direction: column; gap: 8px; }
+.rule-box .k { font-family: var(--pg-data); font-size: 10.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--pg-ink-3); }
+.rule-box p { font-size: 15px; color: var(--pg-ink-2); }
+
+/* ── a trial strip ──────────────────────────────────────────────────────────── */
+.strip { display: flex; flex-direction: column; scroll-margin-top: 62px; }
+.strip-head {
+	display: grid;
+	grid-template-columns: 34px minmax(150px, 1fr) minmax(0, 2.1fr) auto;
+	gap: 18px;
+	align-items: center;
+	padding: 16px 22px;
+	border-bottom: 1px solid var(--pg-rule);
+	background: var(--pg-panel-2);
+}
+.strip.is-pick .strip-head { background: var(--pg-accent-bed); }
+.mark {
+	font-family: var(--pg-display);
+	font-size: 15px;
+	font-weight: 700;
+	width: 30px; height: 30px;
+	display: grid; place-content: center;
+	border-radius: 8px;
+	background: var(--pg-ink);
+	color: var(--pg-ground);
+}
+.strip.is-pick .mark { background: var(--pg-accent); color: var(--pg-panel); }
+.rail-name { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+.rail-name span { display: block; font-family: var(--pg-data); font-size: 10.5px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--pg-ink-3); margin-top: 3px; }
+.decl {
+	font-family: var(--pg-data);
+	font-size: 11.5px;
+	line-height: 1.55;
+	color: var(--pg-ink-2);
+	background: var(--pg-panel);
+	border: 1px solid var(--pg-rule);
+	border-radius: 8px;
+	padding: 8px 11px;
+	overflow-x: auto;
+	white-space: pre;
+}
+.decl b { color: var(--pg-ink); font-weight: 500; }
+
+.verdict {
+	font-family: var(--pg-data);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	padding: 6px 12px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+.verdict.ok { background: var(--pg-pass-bed); color: var(--pg-pass); }
+.verdict.no { background: var(--pg-fail-bed); color: var(--pg-fail); }
+
+.strip-note { padding: 13px 22px; border-bottom: 1px solid var(--pg-rule); background: var(--pg-panel); font-size: 15px; color: var(--pg-ink-2); }
+.strip-note b { color: var(--pg-ink); font-weight: 600; }
+
+.cells { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--pg-rule); }
+.cellwrap { background: var(--pg-panel); display: flex; flex-direction: column; min-width: 0; }
+.cell-tag {
+	font-family: var(--pg-data);
+	font-size: 10px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--pg-ink-3);
+	padding: 10px 22px 0;
+	display: flex; align-items: center; gap: 8px;
+}
+.cell-tag i { width: 9px; height: 9px; border-radius: 999px; border: 1px solid var(--pg-rule-2); display: block; }
+.cell-tag i.lt { background: #ffffff; }
+.cell-tag i.dk { background: #1b1c20; }
+
+/* ── measurement readout ────────────────────────────────────────────────────── */
+.readout {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1px;
+	background: var(--pg-rule);
+	border-top: 1px solid var(--pg-rule);
+	margin-top: auto;
+}
+.readout > div { background: var(--pg-panel); padding: 11px 14px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.readout .k { font-family: var(--pg-data); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--pg-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.readout .num { font-family: var(--pg-data); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 5px; }
+.readout .num .dir { font-size: 12px; font-weight: 500; }
+.readout .sub { font-family: var(--pg-data); font-size: 10px; color: var(--pg-ink-3); }
+.up { color: var(--pg-pass); }
+.down { color: var(--pg-fail); }
+.readout .num.plain, .readout .num.plain .dir { color: var(--pg-ink); }
+
+/* ── N panel ────────────────────────────────────────────────────────────────── */
+.ntable { width: 100%; border-collapse: collapse; }
+.ntable th, .ntable td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--pg-rule); font-size: 13px; }
+.ntable th { font-family: var(--pg-data); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pg-ink-3); font-weight: 500; background: var(--pg-panel-2); }
+.ntable td { font-family: var(--pg-data); font-variant-numeric: tabular-nums; color: var(--pg-ink-2); }
+.ntable td.name { color: var(--pg-ink); font-weight: 500; }
+.ntable tr:last-child td { border-bottom: none; }
+.ntable tr.flagged td { background: var(--pg-accent-bed); }
+.ntable tr.flagged td.name { color: var(--pg-accent); }
+.sw { display: inline-block; width: 26px; height: 14px; border-radius: 4px; border: 1px solid var(--pg-rule-2); vertical-align: -2px; margin-right: 8px; }
+.tablewrap { overflow-x: auto; }
+.ntable .num { font-weight: 700; color: var(--pg-ink); }
+
+/* ── verdict / pick ─────────────────────────────────────────────────────────── */
+.pick-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1px; background: var(--pg-rule); }
+.pick-grid > div { background: var(--pg-panel); padding: 26px 28px; display: flex; flex-direction: column; gap: 14px; }
+.pick-grid p { font-size: 16px; color: var(--pg-ink-2); }
+pre.patch {
+	font-family: var(--pg-data);
+	font-size: 12.5px;
+	line-height: 1.65;
+	margin: 0;
+	background: var(--pg-panel-2);
+	border: 1px solid var(--pg-rule);
+	border-radius: 10px;
+	padding: 16px 18px;
+	overflow-x: auto;
+	color: var(--pg-ink-2);
+	white-space: pre;
+}
+pre.patch .add { color: var(--pg-pass); }
+pre.patch .del { color: var(--pg-fail); }
+pre.patch .cmt { color: var(--pg-ink-3); font-style: italic; }
+
+.caveats { display: flex; flex-direction: column; gap: 12px; }
+.caveats > div { display: grid; grid-template-columns: 22px 1fr; gap: 12px; align-items: start; }
+.caveats .n { font-family: var(--pg-data); font-size: 11px; font-weight: 700; color: var(--pg-accent); padding-top: 4px; }
+.caveats p { font-size: 15px; }
+
+footer { font-family: var(--pg-data); font-size: 11px; color: var(--pg-ink-3); line-height: 1.8; border-top: 1px solid var(--pg-rule); padding-top: 20px; }
+
+a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--pg-accent); outline-offset: 3px; border-radius: 4px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SPECIMENS. Obsidian's variables are scoped to .ob.is-light / .ob.is-dark, never
+   to a media query — the two themes must be on screen at the same time. The ramp
+   values are the ones recorded in orbitask-converted.html.
+   ══════════════════════════════════════════════════════════════════════════════ */
+.ob {
+	font-family: "Inter", -apple-system, system-ui, sans-serif;
+	--font-interface: "Inter", -apple-system, system-ui, sans-serif;
+	--font-monospace: "JetBrains Mono", ui-monospace, Menlo, monospace;
+	--font-ui-smaller: 12px; --font-ui-small: 14px; --font-ui-medium: 16px;
+	--font-medium: 500; --font-semibold: 600;
+	--size-2-2: 4px; --size-2-3: 6px;
+	--size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px; --size-4-5: 20px;
+
+	--background-primary: var(--color-base-00);
+	--background-secondary: var(--color-base-20);
+	--background-modifier-border: var(--color-base-30);
+	--text-normal: var(--color-base-100);
+	--text-muted: var(--color-base-60);
+	--text-faint: var(--color-base-50);
+	--text-on-accent: #ffffff;
+
+	--wg-kit-pill: 999px;
+	--wg-kit-plate: 22px;
+	--wg-kit-plate-pad: 8px;
+	--wg-kit-item: calc(var(--wg-kit-plate) - var(--wg-kit-plate-pad));
+	--wg-kit-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.06);
+	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+
+	/* the token under trial — set per strip from the candidate table in JS */
+	--wg-kit-fill: var(--color-base-20);
+	--wg-kit-fill-hover: var(--color-base-25);
+	--wg-kit-raise: var(--background-primary);
+}
+
+.ob.is-light {
+	color-scheme: light;
+	--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+	--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+	--color-base-40: #bdbdbd; --color-base-50: #ababab; --color-base-60: #707070;
+	--color-base-100: #222222;
+	--background-modifier-hover: rgba(0, 0, 0, 0.05);
+	--interactive-normal: var(--color-base-20);
+	--interactive-accent: #6d4ee0;
+	--text-success: #1f8a4c;
+}
+
+/* Obsidian's own dark defaults, from the CSS-variables reference. This ramp
+   rises without turning back — the stock app is not where the hole comes from. */
+.ob.is-stock {
+	color-scheme: dark;
+	--color-base-00: #1c1c1c; --color-base-05: #212121; --color-base-10: #232323;
+	--color-base-20: #282828; --color-base-25: #2e2e2e; --color-base-30: #333333;
+	--color-base-40: #555555; --color-base-50: #666666; --color-base-60: #999999;
+	--color-base-100: #dadada;
+	--background-modifier-hover: rgba(255, 255, 255, 0.06);
+	--interactive-normal: var(--color-base-20);
+	--interactive-accent: #7c5cf0;
+	--text-success: #56c98a;
+}
+
+/* The dark ramp recorded in docs/reference — a theme's, not the app's, and the
+   one that reverses at base-20 by pointing it at the chrome behind the note. */
+.ob.is-dark {
+	color-scheme: dark;
+	--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+	--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+	--color-base-40: #4e505a; --color-base-50: #7b7e89; --color-base-60: #9ea1ac;
+	--color-base-100: #edeef1;
+	--background-modifier-hover: rgba(255, 255, 255, 0.06);
+	--interactive-normal: var(--color-base-10);
+	--interactive-accent: #7c5cf0;
+	--text-success: #56c98a;
+}
+
+/* the note the widget board sits on */
+.spec-note {
+	background: var(--background-primary);
+	color: var(--text-normal);
+	padding: 20px 22px 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	min-height: 300px;
+}
+.spec-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+/* ── kit controls, copied from styles.css ───────────────────────────────────── */
+.wg-kit-plate {
+	background: var(--wg-kit-fill);
+	border-radius: var(--wg-kit-plate);
+	padding: var(--wg-kit-plate-pad);
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+.wg-kit-card {
+	background: var(--wg-kit-raise);
+	border-radius: var(--wg-kit-item);
+	padding: var(--size-4-4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+.card-top { display: flex; align-items: center; gap: 10px; }
+.card-top b { font-size: var(--font-ui-small); font-weight: var(--font-semibold); flex: 1; }
+.card-bar { display: flex; align-items: center; gap: 10px; }
+.bar-track { overflow: hidden; flex: 1; height: 6px; border-radius: var(--wg-kit-pill); background: var(--wg-kit-fill); display: block; }
+.bar-fill { display: block; height: 100%; border-radius: var(--wg-kit-pill); background: var(--interactive-accent); }
+.bar-pct { flex: none; font-family: var(--font-monospace); font-size: var(--font-ui-smaller); color: var(--text-muted); }
+
+.wg-kit-btn, .wg-kit-icon, .wg-kit-seg button {
+	position: relative;
+	isolation: isolate;
+	background: none;
+	border: none;
+	border-radius: 0;
+	margin: 0;
+	appearance: none;
+	cursor: pointer;
+	font-family: inherit;
+	color: var(--text-normal);
+	transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.wg-kit-btn::before, .wg-kit-icon::before, .wg-kit-seg button::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-pill);
+	background: none;
+	transition: background 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.wg-kit-btn::before, .wg-kit-icon::before { background: var(--wg-kit-fill); }
+.wg-kit-btn:hover::before, .wg-kit-icon:hover::before { background: var(--wg-kit-fill-hover); }
+.wg-kit-btn.is-accent::before, .wg-kit-icon.is-accent::before { background: var(--interactive-accent); }
+.wg-kit-btn.is-plain::before { background: none; }
+.wg-kit-btn.is-plain:hover::before { background: var(--wg-kit-accent-wash); }
+.wg-kit-btn:active, .wg-kit-icon:active { transform: scale(0.955); }
+
+.wg-kit-btn {
+	font-weight: var(--font-semibold);
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2);
+	font-size: var(--font-ui-small);
+	padding: 0 var(--size-4-5);
+	height: 42px;
+}
+.wg-kit-btn.is-accent { color: var(--text-on-accent); }
+.wg-kit-btn.is-plain { color: var(--interactive-accent); }
+
+.wg-kit-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 42px; height: 42px; }
+
+.wg-kit-seg {
+	display: inline-flex;
+	background: var(--wg-kit-fill);
+	border-radius: var(--wg-kit-pill);
+	padding: 4px;
+	position: relative;
+	max-width: 100%;
+}
+.wg-kit-seg button {
+	flex: none;
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-medium);
+	color: var(--text-muted);
+	border-radius: var(--wg-kit-pill);
+	padding: 0 var(--size-4-4);
+	height: 38px;
+	z-index: 1;
+	white-space: nowrap;
+	transition: color 160ms ease;
+}
+.wg-kit-seg button[aria-selected="true"] { color: var(--text-normal); font-weight: var(--font-semibold); }
+.wg-kit-seg-thumb {
+	position: absolute;
+	top: 4px;
+	bottom: 4px;
+	left: 0;
+	background: var(--wg-kit-raise);
+	border-radius: var(--wg-kit-pill);
+	box-shadow: var(--wg-kit-shadow);
+	z-index: 0;
+}
+
+.wg-kit-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	border-radius: var(--wg-kit-pill);
+	padding: 3px var(--size-4-3);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+	background: var(--wg-kit-fill);
+	color: var(--text-muted);
+}
+.wg-kit-pill.is-accent { background: var(--interactive-accent); color: var(--text-on-accent); }
+
+.wg-kit-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 24px;
+	height: 24px;
+	padding: 0 7px;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-raise);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-semibold);
+}
+
+.wg-kit-field {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	height: 42px;
+	padding: 0 var(--size-4-4);
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-fill);
+	color: var(--text-muted);
+	width: 100%;
+}
+.wg-kit-field svg { flex: none; }
+.wg-kit-field input {
+	flex: 1 1 auto;
+	min-width: 0;
+	appearance: none;
+	border: none;
+	outline: none;
+	padding: 0;
+	background: none;
+	font-family: inherit;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+.wg-kit-field input::placeholder { color: var(--text-faint); }
+.wg-kit-icon-glyph { flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (max-width: 1240px) {
+	.plots, .cells { grid-template-columns: 1fr; }
+}
+@media (max-width: 1020px) {
+	.rule-box, .pick-grid { grid-template-columns: 1fr; }
+	.strip-head { grid-template-columns: 30px 1fr; gap: 12px; }
+	.strip-head .decl { grid-column: 1 / -1; }
+	.strip-head .verdict { grid-column: 1 / -1; justify-self: start; }
+	.readout { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+	.wrap { padding: 0 16px 64px; }
+	.jump { margin: 0 -16px; padding: 9px 16px; }
+	.readout { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*, *::before { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+	<div class="mast-meta">
+		<span class="eyebrow">Widgetarium · kit tokens</span>
+		<span class="eyebrow">docs/reference/kit-dark-theme.html</span>
+	</div>
+	<h1>Dark Ramp Fill Trials</h1>
+	<p class="lede">The kit fills every control with <code>--color-base-20</code>. In light that is one step down from the note and reads as a raised chip. Under the dark ramp this project recorded, <code>base-20</code> is <em>--background-secondary</em> — the chrome behind the note, and darker than it — so the same control reads as a hole punched through the page. Five candidate fills, three grounds at once, measured.</p>
+	<div class="thesis">
+		<span class="k">Defect</span>
+		<p>The base ramp is <strong>authored by the theme</strong>, and its dark shape is not guaranteed — Obsidian's own dark defaults rise cleanly, the ramp recorded in this repo reverses at <code>base-20</code>. A fill picked by <strong>position on that ramp</strong> is a bet on a stranger's file. A fill defined by <strong>relationship to the surface</strong> is not.</p>
+	</div>
+</header>
+
+<nav class="jump" aria-label="Jump to a trial">
+	<b>Trials</b>
+	<a href="#ramp">The ramp</a>
+	<a href="#a">A · base-20</a>
+	<a href="#b">B · base-10</a>
+	<a href="#c">C · interactive-normal</a>
+	<a href="#d">D · mix toward ink</a>
+	<a href="#e" class="pick">E · paired</a>
+	<a href="#n">Choosing N</a>
+	<a href="#numbers">All numbers</a>
+	<a href="#pick">The pick</a>
+</nav>
+
+<section id="ramp">
+	<div class="sec-head">
+		<h2>Three ramps, two shapes</h2>
+		<p>Plotted in CIE L*, the perceptual lightness of each step. Obsidian's light defaults descend without turning back, and its dark defaults rise without turning back — stock, the ramp is well-formed and <code>base-20</code> is a perfectly good fill. The third is the dark ramp recorded in this repo's own reference pages, and it reverses: <code>base-20</code> drops below <code>base-00</code>, because there it is <code>--background-secondary</code>, the sidebar and tab-header colour, which sits <em>behind</em> the note rather than on it.</p>
+		<p>That is the whole problem in one sentence. The kit cannot see which of these two shapes a reader's vault ships, so it must not depend on the answer.</p>
+	</div>
+	<div class="panel">
+		<div class="plots" id="plots"></div>
+	</div>
+	<div class="panel">
+		<div class="rule-box">
+			<div>
+				<span class="k">Two invariants, both computed</span>
+				<p><strong>The fill steps toward the ink</strong> — darker than a white note, lighter than a dark one. That is the strip's pass/fail, and it compares the sign of <em>fill − surface</em> against the sign of <em>ink − surface</em>.</p>
+				<p><strong>A raised surface lifts.</strong> A card on its plate, a thumb on its track and a count chip all have to be lighter than what they sit on, on every ground — that is what raised looks like. Each readout says <em>lifts</em> or <em>sinks</em>, measured the same way.</p>
+			</div>
+			<div>
+				<span class="k">Why a ratio and not a screenshot</span>
+				<p>These separations are all near 1:1 — the working range for a surface step is roughly <strong>1.10 to 1.30</strong>. Below about 1.05 the edge disappears on a dim laptop panel whatever the swatch looks like here, so the number decides and the picture confirms.</p>
+				<p>The last readout is the three-level check: note, plate, card. A <strong>1.000</strong> there means the card is painted the note's own colour — legible only because the plate lies between them, and a warning that the stack has two colours, not three.</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<section id="trials">
+	<div class="sec-head">
+		<h2>Five fills, one specimen set</h2>
+		<p>Each strip renders the identical set — a plate holding a card, three capsule buttons, an icon button, a segmented control with its thumb, a pill, a count chip, a search field and a progress bar — under one fill, on all three grounds at once. The Obsidian variables are scoped to a class, not to a media query, so nothing here depends on your OS setting.</p>
+	</div>
+	<div id="strips" style="display:flex;flex-direction:column;gap:26px"></div>
+</section>
+
+<section id="n">
+	<div class="sec-head">
+		<h2>Choosing N</h2>
+		<p>How far <code>color-mix</code> should travel toward the ink. Too small and the control vanishes in dark; too large and the light theme grows a grey the design never asked for. The band that clears 1.10 in both themes without exceeding light's current <code>base-25</code> is the answer.</p>
+	</div>
+	<div class="panel tablewrap">
+		<table class="ntable" id="ntable">
+			<thead>
+				<tr><th>N</th><th>Light fill</th><th>vs note</th><th>Dark fill</th><th>vs note</th><th>Reading</th></tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+</section>
+
+<section id="numbers">
+	<div class="sec-head">
+		<h2>Every candidate, measured</h2>
+		<p>Including three the trials do not render, kept for reference: <code>base-05</code> and <code>base-25</code> as the neighbouring ramp steps, and <code>--background-modifier-hover</code>, which is a translucent overlay and therefore already relationship-defined — flattened here over each ground's note.</p>
+	</div>
+	<div class="panel tablewrap">
+		<table class="ntable" id="alltable">
+			<thead>
+				<tr><th>Candidate</th><th>Light fill</th><th>vs note</th><th>Dark fill</th><th>vs note</th><th>Toward ink in both</th></tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+</section>
+
+<section id="pick">
+	<div class="sec-head">
+		<h2>The pick</h2>
+	</div>
+	<div class="panel">
+		<div class="pick-grid">
+			<div>
+				<h3>E — paired relationship tokens</h3>
+				<p>The fill steps toward the ink, so it cannot invert on any ramp. The raised token steps toward the light, so a card and a thumb stay <em>above</em> the fill instead of falling back to the note's own colour. B, C and D fix the fill and leave the second defect untouched: <code>--background-primary</code> is both the note and the raised surface, so on a dark ground the card and the thumb come out <strong>darker</strong> than the plate they sit on — elevation reads backwards even though the ratio is fine. E is the only one where the note / plate / card stack is three colours instead of two.</p>
+				<p>If only one line may change, take <strong>D</strong>: it fixes the fill with no new token and no ramp step to re-pick when a theme moves. <strong>B</strong> is a weaker step than D on all three grounds and is still a ramp position; <strong>C</strong> is semantically the best name and the least bounded value, since Obsidian does not publish a default for it and a theme may point it anywhere. <strong>A</strong> is the only candidate that actually inverts, and it does so only under a theme's ramp — which is exactly why the kit should stop asking.</p>
+			</div>
+			<div>
+				<h3>The change, in styles.css</h3>
+<pre class="patch"><span class="cmt">/* a fill is a step from the surface toward the ink,
+   never a position on a ramp that does not mirror */</span>
+<span class="del">- --wg-kit-fill: var(--color-base-20, var(--background-secondary));</span>
+<span class="del">- --wg-kit-fill-hover: var(--color-base-25, var(--background-modifier-hover));</span>
+<span class="add">+ --wg-kit-fill: color-mix(in srgb, var(--text-normal) 7%, var(--background-primary));</span>
+<span class="add">+ --wg-kit-fill-hover: color-mix(in srgb, var(--text-normal) 12%, var(--background-primary));</span>
+<span class="cmt">/* and elevation is light in both themes, so a raised
+   surface lifts instead of returning to the note */</span>
+<span class="add">+ --wg-kit-raise: color-mix(in srgb, #ffffff 12%, var(--background-primary));</span>
+
+<span class="cmt">  then .wg-kit-card, .wg-kit-seg-thumb and .wg-kit-count
+  take --wg-kit-raise where they take --background-primary today.</span></pre>
+			</div>
+		</div>
+	</div>
+	<div class="panel">
+		<div class="pick-grid">
+			<div>
+				<h3>What the numbers changed about the argument</h3>
+				<div class="caveats">
+					<div><span class="n">01</span><p><strong>Stock Obsidian is not broken.</strong> Its dark ramp rises cleanly — <code>base-00 #1c1c1c</code> through <code>base-30 #333333</code> — so <code>base-20</code> is a lighter, perfectly readable fill there. The hole appears only under a theme that points <code>base-20</code> at its chrome colour, which is what the recorded ramp does. The bug is a dependency, not a colour.</p></div>
+					<div><span class="n">02</span><p><strong>base-20 is not invisible by ratio.</strong> On the recorded dark ground it measures <span class="mono" id="fact-a20"></span> against the note — close to base-10's. What fails is direction, not separation: it steps away from the ink, so the control recesses instead of rising.</p></div>
+					<div><span class="n">03</span><p><strong>The raised surfaces are already wrong, today.</strong> Wherever the fill is lighter than the note, a thumb painted <code>--background-primary</code> becomes the darkest thing in the control — which the shipping kit does on stock Obsidian right now, and which B, C and D each reproduce on both dark grounds. The card on its plate and the count chip are the same defect twice more. Only E moves the raised token with the fill.</p></div>
+				</div>
+			</div>
+			<div>
+				<h3>Which values are whose</h3>
+				<p>The <strong>light</strong> ramp in <code>orbitask-converted.html</code> is Obsidian's real default, verbatim — <code>#ffffff · #fcfcfc · #fafafa · #f6f6f6 · #efefef · #e4e4e4</code>, and <code>base-40/50/60/100</code> match too. <code>widgetarium-ui-kit.html</code> carries a different light ramp (<code>#f5f6f8 / #ededf0</code>) that is somebody's approximation.</p>
+				<p>The <strong>dark</strong> ramp both files record is <em>not</em> Obsidian's. Obsidian ships <code>#1c1c1c · #212121 · #232323 · #282828 · #2e2e2e · #333333</code> — neutral grey and monotonic. The recorded <code>#1b1c20 … #14151a</code> is blue-biased and reversed: a theme's ramp, labelled in both files as "Obsidian's own defaults". Anything reasoned from that label alone is reasoning about one theme.</p>
+			</div>
+		</div>
+	</div>
+</section>
+
+<footer>
+	Recorded ramp from docs/reference/orbitask-converted.html · stock ramp from Obsidian's CSS-variables reference · control CSS from styles.css and docs/reference/widgetarium-ui-kit.html<br>
+	Every hex and every ratio on this page is measured in the browser from the painted background of the rendered control — nothing is transcribed.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ── colour maths ───────────────────────────────────────────────────────────── */
+/* A painted background computes to rgb(); a custom property does not — it keeps
+   whatever text the token was written with, which here is a hex triplet. */
+function parseRgb(str) {
+	if (!str) return null;
+	const text = str.trim();
+	if (text.charAt(0) === "#") {
+		const digits = text.slice(1);
+		const full = digits.length === 3 ? digits.split("").map(c => c + c).join("") : digits;
+		if (full.length < 6) return null;
+		return {
+			r: parseInt(full.slice(0, 2), 16),
+			g: parseInt(full.slice(2, 4), 16),
+			b: parseInt(full.slice(4, 6), 16),
+			a: full.length >= 8 ? parseInt(full.slice(6, 8), 16) / 255 : 1
+		};
+	}
+	/* color-mix() computes to color(srgb r g b), whose components run 0..1 —
+	   read as 0..255 they turn every derived fill into near-black. */
+	const isFraction = text.indexOf("color(") === 0;
+	const parts = text.replace(/^color\(\s*[a-z-]+/i, "").match(/[\d.]+(?:e-?\d+)?%?/gi);
+	if (!parts || parts.length < 3) return null;
+	const channel = raw => {
+		const value = parseFloat(raw);
+		if (raw.indexOf("%") >= 0) return value * 2.55;
+		return isFraction ? value * 255 : value;
+	};
+	return {
+		r: channel(parts[0]),
+		g: channel(parts[1]),
+		b: channel(parts[2]),
+		a: parts.length > 3 ? parseFloat(parts[3]) : 1
+	};
+}
+
+function flatten(colour, behind) {
+	if (colour.a >= 1) return colour;
+	const alpha = colour.a;
+	return {
+		r: colour.r * alpha + behind.r * (1 - alpha),
+		g: colour.g * alpha + behind.g * (1 - alpha),
+		b: colour.b * alpha + behind.b * (1 - alpha),
+		a: 1
+	};
+}
+
+function toHex(colour) {
+	const part = value => Math.round(Math.min(255, Math.max(0, value))).toString(16).padStart(2, "0");
+	return "#" + part(colour.r) + part(colour.g) + part(colour.b);
+}
+
+function channelLuminance(value) {
+	const scaled = value / 255;
+	return scaled <= 0.03928 ? scaled / 12.92 : Math.pow((scaled + 0.055) / 1.055, 2.4);
+}
+
+function relativeLuminance(colour) {
+	return 0.2126 * channelLuminance(colour.r) + 0.7152 * channelLuminance(colour.g) + 0.0722 * channelLuminance(colour.b);
+}
+
+function contrastRatio(one, two) {
+	const a = relativeLuminance(one);
+	const b = relativeLuminance(two);
+	return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+function lightnessStar(colour) {
+	const y = relativeLuminance(colour);
+	return y > 0.008856 ? 116 * Math.cbrt(y) - 16 : 903.3 * y;
+}
+
+function readBackground(node, behind) {
+	const raw = getComputedStyle(node).backgroundColor;
+	const colour = parseRgb(raw);
+	if (!colour) return { r: 0, g: 0, b: 0, a: 1 };
+	return behind ? flatten(colour, behind) : colour;
+}
+
+function format(ratio) {
+	return ratio.toFixed(3);
+}
+
+/* ── the candidates, single source of truth ─────────────────────────────────── */
+const CANDIDATES = [
+	{
+		id: "a",
+		mark: "A",
+		name: "Ramp step base-20",
+		kind: "What the kit does today",
+		fill: "var(--color-base-20)",
+		fillHover: "var(--color-base-25)",
+		raise: "var(--background-primary)",
+		decl: "--wg-kit-fill: var(--color-base-20);",
+		note: "The step the control was picked at, from a light-mode picker. It survives Obsidian's stock dark ramp untouched &mdash; and dies on the recorded one, where <b>base-20 is --background-secondary</b>, the surface behind the note and the darkest value in the group. The plate stops reading as a container and starts reading as a cut-out. One vault away from correct is the same as wrong.",
+		inTrials: true
+	},
+	{
+		id: "b",
+		mark: "B",
+		name: "Ramp step base-10",
+		kind: "What the reference uses",
+		fill: "var(--color-base-10)",
+		fillHover: "var(--color-base-20)",
+		raise: "var(--background-primary)",
+		decl: "--wg-kit-fill: var(--color-base-10);",
+		note: "The ramp step that happens to point the right way on all three grounds, and the value the reference page already uses. It is still a ramp position, so it is still the theme's to move. Watch the <b>segmented thumb and the card</b>: both are --background-primary, so on either dark ground they now sit below their own fill.",
+		inTrials: true
+	},
+	{
+		id: "c",
+		mark: "C",
+		name: "Role token",
+		kind: "--interactive-normal",
+		fill: "var(--interactive-normal)",
+		fillHover: "var(--interactive-hover, var(--color-base-25))",
+		raise: "var(--background-primary)",
+		decl: "--wg-kit-fill: var(--interactive-normal);",
+		note: "Obsidian's own name for a control surface &mdash; the semantically right answer, and free. The catch is that the docs do not publish its default, so the value is whatever a theme made it: the two dark grounds here resolve it differently, and a theme is free to point it at the chrome colour that caused this in the first place. Correct in meaning, unbounded in value.",
+		inTrials: true
+	},
+	{
+		id: "d",
+		mark: "D",
+		name: "Mix toward the ink",
+		kind: "7% of --text-normal",
+		fill: "color-mix(in srgb, var(--text-normal) 7%, var(--background-primary))",
+		fillHover: "color-mix(in srgb, var(--text-normal) 12%, var(--background-primary))",
+		raise: "var(--background-primary)",
+		decl: "--wg-kit-fill: color-mix(in srgb,\n    var(--text-normal) 7%, var(--background-primary));",
+		note: "Defined by relationship, not position: always a small step from the surface toward the ink, so it cannot invert whatever the ramp does, and it needs no ramp step to exist. Fixes the fill outright on every ground &mdash; and leaves the raised surfaces still painted --background-primary.",
+		inTrials: true
+	},
+	{
+		id: "e",
+		mark: "E",
+		name: "Paired step",
+		kind: "D, plus a raised token",
+		fill: "color-mix(in srgb, var(--text-normal) 7%, var(--background-primary))",
+		fillHover: "color-mix(in srgb, var(--text-normal) 12%, var(--background-primary))",
+		raise: "color-mix(in srgb, #ffffff 12%, var(--background-primary))",
+		decl: "--wg-kit-fill:  color-mix(in srgb,\n    var(--text-normal) 7%, var(--background-primary));\n--wg-kit-raise: color-mix(in srgb,\n    #ffffff 12%, var(--background-primary));",
+		note: "The fill goes toward the ink; the raised surface goes toward the light. In light the raise resolves to the note's own white and nothing moves. On both dark grounds the <b>card, the thumb and the count chip lift above the fill</b> instead of dropping back to the note &mdash; elevation reads the same way everywhere, and the three-level stack becomes three actual levels.",
+		inTrials: true,
+		pick: true
+	},
+	{ id: "x05", mark: "", name: "Ramp step base-05", kind: "", fill: "var(--color-base-05)", raise: "var(--background-primary)", inTrials: false },
+	{ id: "x25", mark: "", name: "Ramp step base-25", kind: "", fill: "var(--color-base-25)", raise: "var(--background-primary)", inTrials: false },
+	{ id: "xhover", mark: "", name: "--background-modifier-hover", kind: "", fill: "var(--background-modifier-hover)", raise: "var(--background-primary)", inTrials: false }
+];
+
+const RAMP_KEYS = ["--color-base-00", "--color-base-05", "--color-base-10", "--color-base-20", "--color-base-25", "--color-base-30"];
+
+/* ── specimen markup ────────────────────────────────────────────────────────── */
+const GLYPH_SEARCH = '<svg class="wg-kit-icon-glyph" width="16" height="16" viewBox="0 0 20 20"><circle cx="9" cy="9" r="6"></circle><line x1="13.5" y1="13.5" x2="17" y2="17"></line></svg>';
+const GLYPH_MORE = '<svg class="wg-kit-icon-glyph" width="18" height="18" viewBox="0 0 20 20"><circle cx="4" cy="10" r="1.2"></circle><circle cx="10" cy="10" r="1.2"></circle><circle cx="16" cy="10" r="1.2"></circle></svg>';
+const GLYPH_PLUS = '<svg class="wg-kit-icon-glyph" width="16" height="16" viewBox="0 0 20 20"><line x1="10" y1="4" x2="10" y2="16"></line><line x1="4" y1="10" x2="16" y2="10"></line></svg>';
+
+function specimenMarkup() {
+	return '' +
+		'<div class="spec-note" data-probe="surface">' +
+			'<div class="wg-kit-plate" data-probe="plate">' +
+				'<div class="wg-kit-card" data-probe="card">' +
+					'<div class="card-top"><b>Rewire the fill token</b><span class="wg-kit-pill">Kit</span></div>' +
+					'<div class="card-bar"><span class="bar-track" data-probe="track"><i class="bar-fill" style="width:62%"></i></span><span class="bar-pct">62%</span></div>' +
+				'</div>' +
+			'</div>' +
+			'<div class="spec-row">' +
+				'<button class="wg-kit-btn" type="button">Neutral</button>' +
+				'<button class="wg-kit-btn is-accent" type="button">' + GLYPH_PLUS + 'Accent</button>' +
+				'<button class="wg-kit-btn is-plain" type="button">Plain</button>' +
+				'<button class="wg-kit-icon" type="button" aria-label="More">' + GLYPH_MORE + '</button>' +
+			'</div>' +
+			'<div class="spec-row">' +
+				'<div class="wg-kit-seg" role="tablist">' +
+					'<span class="wg-kit-seg-thumb" data-probe="thumb"></span>' +
+					'<button type="button" role="tab" aria-selected="true">Board</button>' +
+					'<button type="button" role="tab" aria-selected="false">List</button>' +
+					'<button type="button" role="tab" aria-selected="false">Log</button>' +
+				'</div>' +
+				'<span class="wg-kit-pill is-accent">Live</span>' +
+				'<span class="wg-kit-count" data-probe="count">12</span>' +
+			'</div>' +
+			'<div class="spec-row">' +
+				'<label class="wg-kit-field">' + GLYPH_SEARCH +
+					'<input type="text" placeholder="Search widgets" aria-label="Search widgets">' +
+				'</label>' +
+			'</div>' +
+		'</div>';
+}
+
+function readoutMarkup() {
+	return '' +
+		'<div class="readout">' +
+			'<div><span class="k">Fill on note</span><span class="num" data-out="fill"></span><span class="sub" data-out="fillHex"></span></div>' +
+			'<div><span class="k">Card on plate</span><span class="num" data-out="card"></span><span class="sub" data-out="cardHex"></span></div>' +
+			'<div><span class="k">Thumb on track</span><span class="num" data-out="thumb"></span><span class="sub" data-out="thumbHex"></span></div>' +
+			'<div><span class="k">Card vs note</span><span class="num plain" data-out="stack"></span><span class="sub" data-out="stackHex"></span></div>' +
+		'</div>';
+}
+
+/* Three grounds, because the dark ramp is theme-authored: the app's own dark
+   defaults rise cleanly, and the ramp this project recorded reverses. A fill has
+   to survive both, and neither is knowable from inside the kit. */
+const THEMES = [
+	{ id: "light", cls: "is-light", label: "Light", swatch: "#ffffff" },
+	{ id: "stock", cls: "is-stock", label: "Dark &middot; Obsidian stock", swatch: "#1c1c1c" },
+	{ id: "dark", cls: "is-dark", label: "Dark &middot; recorded theme", swatch: "#1b1c20" }
+];
+
+function cellMarkup(theme) {
+	return '' +
+		'<div class="cellwrap">' +
+			'<span class="cell-tag"><i style="background:' + theme.swatch + '"></i>' + theme.label + "</span>" +
+			'<div class="ob ' + theme.cls + '" data-theme="' + theme.id + '">' + specimenMarkup() + "</div>" +
+			readoutMarkup() +
+		"</div>";
+}
+
+/* ── build the trial strips ─────────────────────────────────────────────────── */
+function buildStrips() {
+	const host = document.getElementById("strips");
+	CANDIDATES.filter(candidate => candidate.inTrials).forEach(candidate => {
+		const strip = document.createElement("article");
+		strip.className = "panel strip" + (candidate.pick ? " is-pick" : "");
+		strip.id = candidate.id;
+		strip.innerHTML = '' +
+			'<div class="strip-head">' +
+				'<span class="mark">' + candidate.mark + '</span>' +
+				'<span class="rail-name">' + candidate.name + '<span>' + candidate.kind + '</span></span>' +
+				'<code class="decl">' + candidate.decl.replace(/&/g, "&amp;").replace(/</g, "&lt;") + '</code>' +
+				'<span class="verdict" data-verdict></span>' +
+			'</div>' +
+			'<p class="strip-note">' + candidate.note + '</p>' +
+			'<div class="cells">' + THEMES.map(cellMarkup).join("") + "</div>";
+		host.appendChild(strip);
+
+		strip.querySelectorAll(".ob").forEach(cell => {
+			cell.style.setProperty("--wg-kit-fill", candidate.fill);
+			if (candidate.fillHover) cell.style.setProperty("--wg-kit-fill-hover", candidate.fillHover);
+			cell.style.setProperty("--wg-kit-raise", candidate.raise);
+		});
+	});
+}
+
+/* ── the thumb has to be told how wide the selected segment is ──────────────── */
+function seatThumbs() {
+	document.querySelectorAll(".wg-kit-seg").forEach(segmented => {
+		const selected = segmented.querySelector('[aria-selected="true"]');
+		const thumb = segmented.querySelector(".wg-kit-seg-thumb");
+		if (!selected || !thumb) return;
+		thumb.style.left = selected.offsetLeft + "px";
+		thumb.style.width = selected.offsetWidth + "px";
+	});
+}
+
+/* ── measure every rendered cell ────────────────────────────────────────────── */
+function arrow(sample, surface, ink) {
+	const sampleLevel = relativeLuminance(sample);
+	const surfaceLevel = relativeLuminance(surface);
+	const inkLevel = relativeLuminance(ink);
+	const towardInk = (sampleLevel - surfaceLevel) * (inkLevel - surfaceLevel) > 0;
+	return {
+		towardInk: towardInk,
+		glyph: sampleLevel > surfaceLevel ? "&uarr; lighter" : "&darr; darker"
+	};
+}
+
+function measureCells() {
+	const results = {};
+	document.querySelectorAll(".strip").forEach(strip => {
+		results[strip.id] = {};
+		strip.querySelectorAll(".cellwrap").forEach(wrap => {
+			const cell = wrap.querySelector(".ob");
+			const theme = cell.dataset.theme;
+			const surface = readBackground(wrap.querySelector('[data-probe="surface"]'));
+			const plate = readBackground(wrap.querySelector('[data-probe="plate"]'), surface);
+			const card = readBackground(wrap.querySelector('[data-probe="card"]'), plate);
+			const thumbBed = readBackground(wrap.querySelector(".wg-kit-seg"), surface);
+			const thumb = readBackground(wrap.querySelector('[data-probe="thumb"]'), thumbBed);
+			const ink = parseRgb(getComputedStyle(cell).getPropertyValue("--text-normal").trim() || "#000") ||
+				parseRgb(getComputedStyle(wrap.querySelector('[data-probe="surface"]')).color);
+
+			const direction = arrow(plate, surface, ink);
+			const out = key => wrap.querySelector('[data-out="' + key + '"]');
+			/* A raised surface must be LIGHTER than what it sits on, in both themes —
+			   that is what "raised" means to the eye, and it is the reading a fill
+			   lighter than the note quietly reverses. */
+			const lift = (sample, bed) => {
+				const lifts = relativeLuminance(sample) > relativeLuminance(bed);
+				return format(contrastRatio(sample, bed)) +
+					' <span class="dir ' + (lifts ? "up" : "down") + '">' + (lifts ? "&uarr; lifts" : "&darr; sinks") + "</span>";
+			};
+
+			out("fill").innerHTML = format(contrastRatio(plate, surface)) +
+				' <span class="dir ' + (direction.towardInk ? "up" : "down") + '">' + direction.glyph + "</span>";
+			out("fillHex").textContent = toHex(plate) + " on " + toHex(surface);
+
+			out("card").innerHTML = lift(card, plate);
+			out("cardHex").textContent = toHex(card) + " on " + toHex(plate);
+
+			out("thumb").innerHTML = lift(thumb, thumbBed);
+			out("thumbHex").textContent = toHex(thumb) + " on " + toHex(thumbBed);
+
+			const stack = contrastRatio(card, surface);
+			out("stack").textContent = format(stack);
+			out("stackHex").textContent = stack < 1.005 ? "same colour, never adjacent" : toHex(card) + " on " + toHex(surface);
+
+			results[strip.id][theme] = {
+				fill: toHex(plate),
+				surface: toHex(surface),
+				ratio: contrastRatio(plate, surface),
+				towardInk: direction.towardInk,
+				glyph: direction.glyph
+			};
+		});
+
+		const measured = results[strip.id];
+		const failed = THEMES.filter(theme => measured[theme.id] && !measured[theme.id].towardInk);
+		const badge = strip.querySelector("[data-verdict]");
+		badge.className = "verdict " + (failed.length ? "no" : "ok");
+		badge.innerHTML = failed.length
+			? "Inverts on " + failed.length + " of " + THEMES.length
+			: "Holds on all " + THEMES.length;
+	});
+	return results;
+}
+
+/* ── a hidden rig, so the tables measure real painted colour too ────────────── */
+function buildRig() {
+	const rig = document.createElement("div");
+	rig.setAttribute("aria-hidden", "true");
+	rig.style.cssText = "position:absolute;left:-9999px;top:0;width:40px;height:1px;overflow:hidden;pointer-events:none";
+	document.body.appendChild(rig);
+	return rig;
+}
+
+function sampleFill(rig, themeClass, fillExpression) {
+	const cell = document.createElement("div");
+	cell.className = "ob " + themeClass;
+	const note = document.createElement("div");
+	const swatch = document.createElement("div");
+	note.style.background = "var(--background-primary)";
+	swatch.style.background = "var(--wg-kit-fill)";
+	swatch.style.width = "10px";
+	swatch.style.height = "10px";
+	cell.style.setProperty("--wg-kit-fill", fillExpression);
+	note.appendChild(swatch);
+	cell.appendChild(note);
+	rig.appendChild(cell);
+
+	const surface = readBackground(note);
+	const fill = readBackground(swatch, surface);
+	const ink = parseRgb(getComputedStyle(cell).getPropertyValue("--text-normal").trim());
+	rig.removeChild(cell);
+	return { fill: fill, surface: surface, ink: ink };
+}
+
+function readRamp(rig, themeClass) {
+	const cell = document.createElement("div");
+	cell.className = "ob " + themeClass;
+	rig.appendChild(cell);
+	const style = getComputedStyle(cell);
+	const steps = RAMP_KEYS.map(key => {
+		const colour = parseRgb(style.getPropertyValue(key).trim());
+		return { key: key.replace("--color-", ""), colour: colour, lightness: lightnessStar(colour), hex: toHex(colour) };
+	});
+	rig.removeChild(cell);
+
+	/* A ramp is well-formed when every step continues in the direction the ramp
+	   as a whole travels. Flag the ones that reverse — nothing is hardcoded, so
+	   a theme that fixes its ramp shows up here as a clean line. */
+	const rising = steps[steps.length - 1].lightness > steps[0].lightness;
+	steps.forEach((step, index) => {
+		if (index === 0) { step.breaks = false; return; }
+		const moved = step.lightness - steps[index - 1].lightness;
+		step.breaks = rising ? moved < 0 : moved > 0;
+	});
+	return steps;
+}
+
+/* ── the L* plots ───────────────────────────────────────────────────────────── */
+function drawPlot(theme, steps) {
+	const width = 520;
+	const height = 150;
+	const padLeft = 40;
+	const padRight = 14;
+	const padTop = 14;
+	const padBottom = 24;
+	const values = steps.map(step => step.lightness);
+	const low = Math.min.apply(null, values);
+	const high = Math.max.apply(null, values);
+	const span = Math.max(high - low, 1);
+	const floor = low - span * 0.25;
+	const ceiling = high + span * 0.25;
+
+	const xAt = index => padLeft + (width - padLeft - padRight) * (index / (steps.length - 1));
+	const yAt = value => padTop + (height - padTop - padBottom) * (1 - (value - floor) / (ceiling - floor));
+
+	const line = steps.map((step, index) => xAt(index).toFixed(1) + "," + yAt(step.lightness).toFixed(1)).join(" ");
+	const baseline = yAt(steps[0].lightness);
+
+	let svg = '<svg viewBox="0 0 ' + width + " " + height + '" role="img" aria-label="' + theme + ' ramp lightness">';
+	svg += '<line x1="' + padLeft + '" y1="' + baseline.toFixed(1) + '" x2="' + (width - padRight) + '" y2="' + baseline.toFixed(1) +
+		'" stroke="currentColor" stroke-opacity="0.22" stroke-dasharray="3 4"></line>';
+	svg += '<text x="' + (padLeft - 8) + '" y="' + (baseline + 3.5).toFixed(1) + '" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="9" fill="currentColor" fill-opacity="0.5">base-00</text>';
+	svg += '<polyline points="' + line + '" fill="none" stroke="currentColor" stroke-opacity="0.45" stroke-width="1.6" stroke-linejoin="round"></polyline>';
+
+	steps.forEach((step, index) => {
+		const flagged = step.breaks;
+		const x = xAt(index);
+		const y = yAt(step.lightness);
+		svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (flagged ? 6 : 4) + '" fill="' + step.hex +
+			'" stroke="' + (flagged ? "var(--pg-accent)" : "currentColor") + '" stroke-opacity="' + (flagged ? 1 : 0.35) + '" stroke-width="' + (flagged ? 2.2 : 1) + '"></circle>';
+		svg += '<text x="' + x.toFixed(1) + '" y="' + (height - 8) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="' +
+			(flagged ? "var(--pg-accent)" : "currentColor") + '" fill-opacity="' + (flagged ? 1 : 0.5) + '">' + step.key.replace("base-", "") + "</text>";
+		svg += '<text x="' + x.toFixed(1) + '" y="' + (y - (flagged ? 11 : 9)).toFixed(1) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9" fill="currentColor" fill-opacity="' +
+			(flagged ? 0.9 : 0.45) + '">' + step.lightness.toFixed(0) + "</text>";
+	});
+	svg += "</svg>";
+	return svg;
+}
+
+function buildPlots(rig) {
+	const host = document.getElementById("plots");
+	THEMES.forEach(theme => {
+		const steps = readRamp(rig, theme.cls);
+		const broken = steps.filter(step => step.breaks);
+		const rising = steps[steps.length - 1].lightness > steps[0].lightness;
+		const shape = broken.length
+			? broken.map(step => step.key).join(", ") + " reverses the ramp"
+			: (rising ? "rises throughout" : "descends throughout");
+
+		const panel = document.createElement("div");
+		panel.className = "plot";
+		panel.innerHTML = '' +
+			'<div class="plot-head">' +
+				'<span class="tag">' + theme.label + "</span>" +
+				'<span class="shape"' + (broken.length ? ' style="color:var(--pg-accent)"' : "") + ">" + shape + "</span>" +
+			"</div>" +
+			drawPlot(theme.id, steps) +
+			'<div class="swatch-row">' + steps.map(step => {
+				return '<div><i class="' + (step.breaks ? "flag" : "") + '" style="background:' + step.hex + '"></i>' +
+					'<code class="' + (step.breaks ? "flag" : "") + '">' + step.key.replace("base-", "") + "</code>" +
+					'<code style="opacity:.62">' + step.hex + "</code></div>";
+			}).join("") + "</div>";
+		host.appendChild(panel);
+	});
+}
+
+/* ── the two tables ─────────────────────────────────────────────────────────── */
+function directionCell(sample) {
+	const cls = sample.towardInk ? "up" : "down";
+	return '<span class="num">' + format(sample.ratio) + '</span> <span class="' + cls + '">' + sample.glyph + "</span>";
+}
+
+function measureCandidate(rig, fillExpression) {
+	const out = {};
+	THEMES.forEach(theme => {
+		const sample = sampleFill(rig, theme.cls, fillExpression);
+		const direction = arrow(sample.fill, sample.surface, sample.ink);
+		out[theme.id] = {
+			hex: toHex(sample.fill),
+			ratio: contrastRatio(sample.fill, sample.surface),
+			towardInk: direction.towardInk,
+			glyph: direction.glyph
+		};
+	});
+	return out;
+}
+
+function buildAllTable(rig) {
+	const head = document.querySelector("#alltable thead tr");
+	head.innerHTML = "<th>Candidate</th>" +
+		THEMES.map(theme => "<th>" + theme.label + "</th><th>vs note</th>").join("") +
+		"<th>Toward ink everywhere</th>";
+
+	const body = document.querySelector("#alltable tbody");
+	CANDIDATES.forEach(candidate => {
+		const measured = measureCandidate(rig, candidate.fill);
+		const failed = THEMES.filter(theme => !measured[theme.id].towardInk);
+		const row = document.createElement("tr");
+		if (candidate.pick) row.className = "flagged";
+		row.innerHTML = '<td class="name">' + (candidate.mark ? candidate.mark + " &middot; " : "") + candidate.name + "</td>" +
+			THEMES.map(theme => {
+				const sample = measured[theme.id];
+				return '<td><span class="sw" style="background:' + sample.hex + '"></span>' + sample.hex + "</td>" +
+					"<td>" + directionCell(sample) + "</td>";
+			}).join("") +
+			'<td class="' + (failed.length ? "down" : "up") + '">' +
+			(failed.length ? "no &mdash; inverts on " + failed.map(theme => theme.label.replace(/^Dark &middot; /, "")).join(", ") : "yes") + "</td>";
+		body.appendChild(row);
+	});
+}
+
+function buildNTable(rig) {
+	const head = document.querySelector("#ntable thead tr");
+	head.innerHTML = "<th>N</th>" +
+		THEMES.map(theme => "<th>" + theme.label + "</th><th>vs note</th>").join("") +
+		"<th>Reading</th>";
+
+	const body = document.querySelector("#ntable tbody");
+	const chosen = 7;
+	[4, 5, 6, 7, 8, 10, 12].forEach(percent => {
+		const expression = "color-mix(in srgb, var(--text-normal) " + percent + "%, var(--background-primary))";
+		const measured = measureCandidate(rig, expression);
+		const ratios = THEMES.map(theme => measured[theme.id].ratio);
+		const weakest = Math.min.apply(null, ratios);
+		const strongest = Math.max.apply(null, ratios);
+		let reading;
+		if (weakest < 1.06) reading = "too faint &mdash; the edge is gone";
+		else if (weakest < 1.10) reading = "faint on a dim panel";
+		else if (strongest > 1.32) reading = "light grows a grey it never had";
+		else reading = "reads on all three";
+
+		const row = document.createElement("tr");
+		if (percent === chosen) row.className = "flagged";
+		row.innerHTML = '<td class="name">' + percent + "%</td>" +
+			THEMES.map(theme => {
+				const sample = measured[theme.id];
+				return '<td><span class="sw" style="background:' + sample.hex + '"></span>' + sample.hex + "</td>" +
+					'<td><span class="num">' + format(sample.ratio) + "</span></td>";
+			}).join("") +
+			"<td>" + reading + "</td>";
+		body.appendChild(row);
+	});
+}
+
+/* ── run ────────────────────────────────────────────────────────────────────── */
+function start() {
+	const rig = buildRig();
+	buildStrips();
+	seatThumbs();
+	const measured = measureCells();
+	buildPlots(rig);
+	buildAllTable(rig);
+	buildNTable(rig);
+
+	const factA = document.getElementById("fact-a20");
+	if (factA && measured.a && measured.a.dark) {
+		factA.textContent = format(measured.a.dark.ratio) + ":1";
+	}
+
+	window.addEventListener("resize", seatThumbs);
+	if (document.fonts && document.fonts.ready) {
+		document.fonts.ready.then(seatThumbs);
+	}
+}
+
+if (document.readyState === "loading") {
+	document.addEventListener("DOMContentLoaded", start, { once: true });
+} else {
+	start();
+}
+</script>

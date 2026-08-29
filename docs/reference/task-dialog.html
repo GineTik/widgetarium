@@ -1,0 +1,1220 @@
+<title>The Task Dialog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+	/* -- layer 1 . the vault's, standing in with Obsidian's defaults ----------- */
+	:root {
+		--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+		--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+		--color-base-35: #dadada; --color-base-40: #bdbdbd; --color-base-50: #ababab;
+		--color-base-60: #707070; --color-base-70: #5c5c5c; --color-base-100: #222222;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(0,0,0,0.05);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #c0392b; --text-success: #1f8a4c;
+		--interactive-accent: #6d4ee0; --interactive-accent-hover: #5b3ecb;
+		--color-orange: #d9822b;
+		--font-interface: "Inter", -apple-system, system-ui, sans-serif;
+		--font-monospace: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+		--font-ui-smaller: 12px; --font-ui-small: 14px; --font-ui-medium: 16px; --font-ui-large: 20px;
+		--font-medium: 500; --font-semibold: 600; --font-bold: 700;
+		--line-height-tight: 1.25; --line-height-normal: 1.5;
+		--radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px;
+		--size-2-1: 2px; --size-2-2: 4px; --size-2-3: 6px;
+		--size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px;
+		--size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px; --size-4-12: 48px; --size-4-16: 64px;
+		color-scheme: light;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme="light"]) {
+			--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+			--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+			--color-base-35: #3d3f48; --color-base-40: #4e505a; --color-base-50: #7b7e89;
+			--color-base-60: #9ea1ac; --color-base-70: #c3c6ce; --color-base-100: #edeef1;
+			--background-modifier-hover: rgba(255,255,255,0.06);
+			--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+			--text-error: #ef7a6d; --text-success: #56c98a; --color-orange: #e0a45c;
+			color-scheme: dark;
+		}
+	}
+
+	:root[data-theme="dark"] {
+		--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+		--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+		--color-base-35: #3d3f48; --color-base-40: #4e505a; --color-base-50: #7b7e89;
+		--color-base-60: #9ea1ac; --color-base-70: #c3c6ce; --color-base-100: #edeef1;
+		--background-modifier-hover: rgba(255,255,255,0.06);
+		--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+		--text-error: #ef7a6d; --text-success: #56c98a; --color-orange: #e0a45c;
+		color-scheme: dark;
+	}
+
+	/* THE TWO SPECIMENS THAT MUST BE COMPARED SIDE BY SIDE carry their own layer 1.
+	   A custom property is substituted where it is DECLARED, so redefining the base
+	   ramp on a container is not enough -- layer 2 is re-declared for them below. */
+	.theme-light {
+		--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+		--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+		--color-base-35: #dadada; --color-base-40: #bdbdbd; --color-base-50: #ababab;
+		--color-base-60: #707070; --color-base-70: #5c5c5c; --color-base-100: #222222;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(0,0,0,0.05);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #c0392b; --text-success: #1f8a4c;
+		--interactive-accent: #6d4ee0; --interactive-accent-hover: #5b3ecb;
+		--color-orange: #d9822b;
+		color-scheme: light;
+	}
+	.theme-dark {
+		--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+		--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+		--color-base-35: #3d3f48; --color-base-40: #4e505a; --color-base-50: #7b7e89;
+		--color-base-60: #9ea1ac; --color-base-70: #c3c6ce; --color-base-100: #edeef1;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(255,255,255,0.06);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #ef7a6d; --text-success: #56c98a;
+		--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+		--color-orange: #e0a45c;
+		color-scheme: dark;
+	}
+
+	/* -- layer 2 . the kit, derived from whatever layer 1 is in scope ---------- */
+	:root, .theme-light, .theme-dark {
+		--wg-canvas: var(--background-secondary);
+		--wg-surface: var(--background-primary);
+		--wg-fill: var(--color-base-10);
+		--wg-fill-hover: var(--color-base-20);
+		--wg-hairline: var(--background-modifier-border);
+		--wg-ink: var(--text-normal); --wg-ink-muted: var(--text-muted); --wg-ink-faint: var(--text-faint);
+		--wg-accent: var(--interactive-accent); --wg-accent-hover: var(--interactive-accent-hover);
+		--wg-on-accent: var(--text-on-accent);
+		--wg-accent-wash: color-mix(in srgb, var(--wg-accent) 12%, var(--background-primary));
+		--wg-success: var(--text-success); --wg-error: var(--text-error); --wg-warning: var(--color-orange);
+		--wg-success-wash: color-mix(in srgb, var(--wg-success) 14%, var(--background-primary));
+		--wg-error-wash: color-mix(in srgb, var(--wg-error) 14%, var(--background-primary));
+		--wg-warning-wash: color-mix(in srgb, var(--wg-warning) 16%, var(--background-primary));
+		--wg-radius-tile: 22px; --wg-radius-card: 28px; --wg-radius-pill: 999px;
+		--wg-radius-plate: var(--wg-radius-tile);
+		--wg-plate-pad: var(--size-4-3);
+		--wg-plate-gap: var(--size-2-3);
+		--wg-radius-item: calc(var(--wg-radius-plate) - var(--wg-plate-pad));
+		--wg-shell-pad: var(--size-4-2);
+		--wg-radius-inner: calc(var(--wg-radius-tile) - var(--wg-shell-pad));
+		--wg-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+		--wg-ease: cubic-bezier(0.4, 0, 0.2, 1);
+		--wg-dur-press: 120ms; --wg-dur-s: 200ms; --wg-dur-m: 320ms;
+		--wg-press-scale: 0.955;
+		--wg-glass-panel: color-mix(in srgb, var(--wg-surface) 88%, transparent);
+		--wg-glass-blur: blur(24px) saturate(180%);
+		--wg-glass-edge: inset 0 0 0 1px color-mix(in srgb, var(--wg-ink) 12%, transparent);
+		--wg-shadow-s: 0 1px 3px rgba(0,0,0,0.06), 0 6px 16px rgba(0,0,0,0.06);
+		--wg-shadow-l: 0 8px 24px rgba(0,0,0,0.12), 0 24px 64px rgba(0,0,0,0.16);
+	}
+
+	.theme-light, .theme-dark { background: var(--wg-canvas); color: var(--wg-ink); }
+
+	/* -- page shell ------------------------------------------------------------ */
+	*, *::before, *::after { box-sizing: border-box; }
+	button { border: none; background: none; font: inherit; color: inherit; padding: 0; margin: 0; appearance: none; -webkit-appearance: none; }
+	body {
+		background: var(--wg-canvas); color: var(--wg-ink);
+		font-family: var(--font-interface); font-size: var(--font-ui-medium);
+		line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased;
+		margin: 0;
+	}
+	p { margin: 0; }
+	code, .mono { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); }
+	*:focus-visible { outline: 2px solid var(--wg-accent); outline-offset: 3px; border-radius: var(--radius-m); }
+
+	.sheet { max-width: 1120px; margin: 0 auto; padding: 0 var(--size-4-5) var(--size-4-16); display: flex; flex-direction: column; gap: var(--size-4-12); }
+	.masthead { padding: var(--size-4-16) 0 0; display: flex; flex-direction: column; gap: var(--size-4-4); }
+	.eyebrow { font-family: var(--font-monospace); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.masthead h1 { font-size: clamp(34px, 5.5vw, 54px); font-weight: var(--font-bold); letter-spacing: -0.03em; line-height: 1.03; margin: 0; text-wrap: balance; }
+	.lede { max-width: 62ch; color: var(--wg-ink-muted); font-size: 17px; }
+	.lede strong { color: var(--wg-ink); font-weight: var(--font-semibold); }
+
+	section { display: flex; flex-direction: column; gap: var(--size-4-5); }
+	.head { display: flex; flex-direction: column; gap: var(--size-2-2); }
+	.head h2 { font-size: 28px; font-weight: var(--font-semibold); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+	.head h3 { font-size: var(--font-ui-large); font-weight: var(--font-semibold); letter-spacing: -0.01em; margin: 0; }
+	.note { font-size: var(--font-ui-small); color: var(--wg-ink-muted); max-width: 64ch; }
+	.note b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.note code { background: var(--wg-fill); border-radius: var(--radius-s); padding: 1px 5px; }
+	.cap { font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.scrollx { overflow-x: auto; padding-bottom: var(--size-4-2); }
+	.stack { display: flex; flex-direction: column; gap: var(--size-4-3); }
+
+	.pressable { transition: transform var(--wg-dur-press) var(--wg-ease), background var(--wg-dur-s) var(--wg-ease), color var(--wg-dur-s) var(--wg-ease); }
+	.pressable:active { transform: scale(var(--wg-press-scale)); }
+	@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .pressable:active { transform: none; } }
+
+	/* -- kit atoms ------------------------------------------------------------- */
+	.btn { font-weight: var(--font-semibold); line-height: 1; cursor: pointer; border-radius: var(--wg-radius-pill); display: inline-flex; align-items: center; justify-content: center; gap: var(--size-4-2); background: var(--wg-fill); color: var(--wg-ink); }
+	.btn-m { font-size: var(--font-ui-small); padding: 0 var(--size-4-5); height: 42px; }
+	.btn-s { font-size: var(--font-ui-small); padding: 0 var(--size-4-4); height: 34px; }
+	.btn:hover { background: var(--wg-fill-hover); }
+	.btn-accent { background: var(--wg-accent); color: var(--wg-on-accent); }
+	.btn-plain { background: transparent; color: var(--wg-accent); }
+	.btn-plain:hover { background: var(--wg-accent-wash); }
+
+	.iconbtn { border-radius: var(--wg-radius-pill); display: inline-flex; align-items: center; justify-content: center; background: var(--wg-fill); color: var(--wg-ink-muted); cursor: pointer; flex: none; }
+	.iconbtn-s { width: 32px; height: 32px; }
+	.iconbtn-m { width: 42px; height: 42px; }
+	.iconbtn:hover { background: var(--wg-fill-hover); color: var(--wg-ink); }
+
+	.pilltag { display: inline-flex; align-items: center; gap: var(--size-2-2); border-radius: var(--wg-radius-pill); padding: 3px var(--size-4-3); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); background: var(--wg-fill); color: var(--wg-ink-muted); white-space: nowrap; }
+	.pilltag.err { background: var(--wg-error-wash); color: var(--wg-error); }
+	.pilltag.warn { background: var(--wg-warning-wash); color: var(--wg-warning); }
+	.pilltag.ok { background: var(--wg-success-wash); color: var(--wg-success); }
+	.pilltag.accent { background: var(--wg-accent-wash); color: var(--wg-accent); }
+	.plate .pilltag:not(.err):not(.warn):not(.ok):not(.accent),
+	.specimen .pilltag:not(.err):not(.warn):not(.ok):not(.accent) { background: var(--wg-surface); color: var(--wg-ink); }
+
+	.plate { background: var(--wg-fill); border-radius: var(--wg-radius-plate); padding: var(--wg-plate-pad); display: flex; flex-direction: column; gap: var(--wg-plate-gap); }
+	.plate-head { display: flex; align-items: center; gap: var(--size-4-2); padding: var(--size-2-3) var(--size-4-2) var(--size-2-2); }
+	.plate-head h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.plate-head .cap { margin-left: auto; }
+	.addrow { display: flex; align-items: center; gap: var(--size-4-2); padding: var(--size-4-2) var(--size-4-2); font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink-muted); cursor: pointer; border-radius: var(--wg-radius-item); width: 100%; }
+	.addrow:hover { color: var(--wg-ink); background: var(--background-modifier-hover); }
+
+	.avatars { display: flex; align-items: center; flex: none; }
+	.avatar { width: 28px; height: 28px; border-radius: var(--wg-radius-pill); display: grid; place-content: center; font-size: 11px; font-weight: var(--font-semibold); box-shadow: 0 0 0 2px var(--wg-fill); margin-left: -5px; flex: none; letter-spacing: -0.01em; }
+	.avatar:first-child { margin-left: 0; }
+	.av-a { background: var(--wg-accent-wash); color: var(--wg-accent); }
+	.av-b { background: var(--wg-success-wash); color: var(--wg-success); }
+	.av-c { background: var(--wg-warning-wash); color: var(--wg-warning); }
+	.av-d { background: var(--wg-error-wash); color: var(--wg-error); }
+	.avatar.ghost { background: none; box-shadow: 0 0 0 2px var(--wg-fill), inset 0 0 0 1.4px var(--wg-hairline); color: var(--wg-ink-faint); }
+	.avatars.on-surface .avatar { box-shadow: 0 0 0 2px var(--wg-surface); }
+	.avatars.on-surface .avatar.ghost { box-shadow: 0 0 0 2px var(--wg-surface), inset 0 0 0 1.4px var(--wg-hairline); }
+
+	.icon { width: 16px; height: 16px; flex: none; }
+	.icon path, .icon circle, .icon rect, .icon line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+	/* -- THE DIALOG ------------------------------------------------------------ */
+	.dlg {
+		background: var(--wg-surface); color: var(--wg-ink);
+		border-radius: var(--wg-radius-card); box-shadow: var(--wg-shadow-l);
+		padding: var(--size-4-4) var(--size-4-5) var(--size-4-5);
+		display: flex; flex-direction: column; gap: var(--size-4-3);
+		position: relative; width: 100%;
+	}
+	.dlg-top { display: flex; align-items: center; gap: var(--size-4-3); }
+	.dlg-where { display: inline-flex; align-items: center; gap: var(--size-4-2); font-size: var(--font-ui-smaller); font-weight: var(--font-medium); color: var(--wg-ink-faint); min-width: 0; }
+	.dlg-where .icon { width: 14px; height: 14px; }
+	.dlg-corner { margin-left: auto; display: flex; align-items: center; gap: var(--size-2-3); }
+
+	.dlg-body { display: grid; grid-template-columns: minmax(0, 1fr) 316px; gap: var(--size-4-5); align-items: start; }
+	.dlg.is-narrow .dlg-body { grid-template-columns: minmax(0, 1fr); }
+	.dlg-left { display: flex; flex-direction: column; gap: var(--size-4-3); min-width: 0; }
+
+	/* the title is the note's H1 -- pressed, it becomes a caret in the same glyphs */
+	.t-title {
+		margin: 0; font-size: 27px; line-height: 1.18; font-weight: var(--font-bold);
+		letter-spacing: -0.022em; color: var(--wg-ink); text-wrap: balance;
+		border-radius: var(--wg-radius-inner); padding: var(--size-2-3) var(--size-4-2);
+		margin-left: calc(var(--size-4-2) * -1); cursor: text;
+	}
+	.t-title:hover { background: var(--background-modifier-hover); }
+	.t-title.editing { background: var(--background-modifier-hover); box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.caret { display: inline-block; width: 2px; height: 0.92em; background: var(--wg-accent); vertical-align: -0.13em; margin: 0 1px; animation: blink 1.1s steps(1) infinite; }
+	@keyframes blink { 50% { opacity: 0; } }
+
+	.t-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-2-3); }
+	.t-tags .pilltag { font-family: var(--font-monospace); font-weight: var(--font-medium); font-size: 11px; letter-spacing: 0.01em; }
+	.tag-add { display: inline-flex; align-items: center; gap: var(--size-2-2); border-radius: var(--wg-radius-pill); padding: 3px var(--size-4-2) 3px var(--size-2-3); font-size: 11px; font-weight: var(--font-medium); color: var(--wg-ink-faint); cursor: pointer; }
+	.tag-add:hover { background: var(--wg-fill); color: var(--wg-ink-muted); }
+	.tag-add .icon { width: 13px; height: 13px; }
+
+	/* -- the description, as Obsidian's read mode draws it --------------------- */
+	.md { font-size: var(--font-ui-small); line-height: 1.62; color: var(--wg-ink); display: flex; flex-direction: column; gap: var(--size-4-3); padding-top: var(--size-2-2); }
+	.md h3 { margin: 0; font-size: var(--font-ui-medium); font-weight: var(--font-semibold); letter-spacing: -0.01em; }
+	.md p { max-width: 66ch; color: var(--wg-ink-muted); }
+	.md ul { margin: 0; padding-left: 1.15em; display: flex; flex-direction: column; gap: var(--size-2-2); color: var(--wg-ink-muted); }
+	.md li::marker { color: var(--wg-ink-faint); }
+	.md pre { margin: 0; background: var(--wg-fill); border-radius: var(--radius-l); padding: var(--size-4-3) var(--size-4-4); overflow-x: auto; }
+	.md pre code { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); line-height: 1.7; color: var(--wg-ink-muted); white-space: pre; }
+	.md :not(pre) > code { font-family: var(--font-monospace); font-size: 0.85em; background: var(--wg-fill); border-radius: var(--radius-s); padding: 1px 5px; color: var(--wg-ink); }
+	.md a { color: var(--wg-accent); text-decoration: none; font-weight: var(--font-medium); }
+	.md a:hover { text-decoration: underline; }
+	.md .tasklist { list-style: none; padding-left: 0; gap: var(--size-2-3); }
+	.md .tasklist li { display: flex; align-items: flex-start; gap: var(--size-4-2); }
+	.md .tick { width: 16px; height: 16px; border-radius: var(--radius-s); flex: none; margin-top: 3px; box-shadow: inset 0 0 0 1.6px var(--wg-hairline); display: grid; place-content: center; color: transparent; }
+	.md .tick.done { background: var(--wg-accent); box-shadow: none; color: var(--wg-on-accent); }
+	.md .tick .icon { width: 11px; height: 11px; }
+	.md .tick.done .icon path { stroke-width: 2.4; }
+	.md .tasklist li.done span { text-decoration: line-through; color: var(--wg-ink-faint); }
+
+	/* MODE SWITCH -- the kit's segmented capsule, not a third control shape */
+	.segmented { display: inline-flex; background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 3px; flex: none; }
+	.segmented button { font-size: var(--font-ui-smaller); font-weight: var(--font-medium); color: var(--wg-ink-muted); border-radius: var(--wg-radius-pill); padding: 0 var(--size-4-3); height: 26px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: var(--size-2-2); transition: color var(--wg-dur-s) var(--wg-ease); }
+	.segmented button[aria-selected="true"] { color: var(--wg-ink); font-weight: var(--font-semibold); background: var(--wg-surface); box-shadow: var(--wg-shadow-s); }
+	.segmented .icon { width: 13px; height: 13px; }
+	.desc-head { display: flex; align-items: center; gap: var(--size-4-3); padding-top: var(--size-2-2); }
+	.desc-head .cap { margin-right: auto; }
+
+	/* DETAIL MODE -- the raw note, only made readable. Same face and same size as the
+	   note's own body: only WEIGHT and COLOUR change, nothing is hidden or moved.
+	   Drawn as the styled mirror that sits under a transparent textarea, so the metrics
+	   written here are the metrics that textarea must be given. */
+	.raw {
+		font-family: var(--font-interface); font-size: var(--font-ui-small); line-height: 1.62;
+		color: var(--wg-ink); white-space: pre-wrap; overflow-wrap: break-word;
+		background: var(--wg-fill); border-radius: var(--wg-radius-tile);
+		padding: var(--size-4-4); margin: 0; tab-size: 2;
+	}
+	.raw .lnk { color: var(--wg-accent); }
+	.raw .hd { font-weight: var(--font-bold); }
+	.raw .bd { font-weight: var(--font-semibold); }
+	.raw .it { font-style: italic; }
+	.raw .cd { font-weight: var(--font-semibold); }
+	.raw.on-surface { background: var(--wg-surface); }
+
+	.mech { display: grid; grid-template-columns: repeat(auto-fit, minmax(288px, 1fr)); gap: var(--size-4-3); }
+	.mech > div { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-4) var(--size-4-5); display: flex; flex-direction: column; gap: var(--size-2-3); }
+	.mech h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); display: flex; align-items: center; gap: var(--size-4-2); }
+	.mech .assumed { margin-left: auto; font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-accent); flex: none; }
+	.mech .cost { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); line-height: 1.5; }
+	.mech .cost b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+
+	.ask { background: var(--wg-warning-wash); border-radius: var(--wg-radius-tile); padding: var(--size-4-4) var(--size-4-5); display: flex; gap: var(--size-4-3); align-items: flex-start; font-size: var(--font-ui-small); color: var(--wg-warning); line-height: 1.55; }
+	.ask .icon { margin-top: 2px; width: 18px; height: 18px; }
+	.ask b { font-weight: var(--font-semibold); }
+
+	/* -- the properties plate -- a kanban column, indoors ----------------------- */
+	.props { min-width: 0; }
+	.prow {
+		display: flex; align-items: center; gap: var(--size-4-3);
+		width: 100%; text-align: left; cursor: pointer;
+		border-radius: var(--wg-radius-item); padding: var(--size-2-3) var(--size-4-2);
+		min-height: 38px; transition: background var(--wg-dur-s) var(--wg-ease);
+	}
+	.prow:hover { background: var(--background-modifier-hover); }
+	.prow.open { background: var(--wg-surface); box-shadow: var(--wg-shadow-s); }
+	.pname { display: inline-flex; align-items: center; gap: var(--size-4-2); font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink-muted); flex: none; width: 108px; }
+	.pname .icon { width: 15px; height: 15px; color: var(--wg-ink-faint); }
+	.pval { margin-left: auto; display: inline-flex; align-items: center; gap: var(--size-4-2); font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink); min-width: 0; justify-content: flex-end; flex: 1; }
+	.pval .caretdown { color: var(--wg-ink-faint); width: 14px; height: 14px; }
+	.pval.unset { color: var(--wg-ink-faint); font-weight: var(--font-medium); }
+	.prow.is-unset .pname { color: var(--wg-ink-faint); }
+	.pval .num { font-variant-numeric: tabular-nums; }
+
+	/* progress lives on its own row of the plate: a track needs width, not a slot */
+	.pbar { flex: 1; height: 6px; border-radius: var(--wg-radius-pill); background: var(--wg-fill-hover); position: relative; min-width: 64px; }
+	.prow.open .pbar { background: var(--wg-fill); }
+	.pbar i { display: block; height: 100%; border-radius: var(--wg-radius-pill); background: var(--wg-accent); }
+	.pbar .knob { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: var(--wg-radius-pill); background: var(--wg-surface); box-shadow: 0 1px 4px rgba(0,0,0,0.22), var(--wg-glass-edge); transform: translate(-50%, -50%); }
+	.pbar .knob.grabbed { width: 20px; height: 20px; }
+
+	.p-note { padding: var(--size-2-2) var(--size-4-2) 0; font-size: 11px; color: var(--wg-ink-faint); line-height: 1.45; }
+
+	/* -- popover --------------------------------------------------------------- */
+	.pop { border-radius: var(--wg-radius-tile); background: var(--wg-glass-panel); backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur); box-shadow: var(--wg-glass-edge), var(--wg-shadow-l); overflow: hidden; min-width: 216px; }
+	.pop-inner { padding: var(--size-4-2); display: flex; flex-direction: column; }
+	.pop-head { padding: var(--size-4-2) var(--size-4-3) var(--size-2-3); font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.pop-item { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-2) var(--size-4-3); border-radius: var(--wg-radius-inner); cursor: pointer; font-size: var(--font-ui-small); font-weight: var(--font-medium); text-align: left; width: 100%; }
+	.pop-item:hover { background: var(--background-modifier-hover); }
+	.pop-item .tickmark { margin-left: auto; color: var(--wg-accent); opacity: 0; }
+	.pop-item[aria-checked="true"] .tickmark { opacity: 1; }
+	.pop-sep { height: 1px; background: var(--wg-hairline); margin: var(--size-2-2) var(--size-4-3); }
+	.pop-field { display: flex; align-items: center; gap: var(--size-4-2); background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 0 var(--size-4-3); height: 36px; margin: var(--size-2-2) var(--size-2-3) var(--size-4-2); font-size: var(--font-ui-small); box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.pop-field .ph { color: var(--wg-ink-faint); }
+
+	.pslot { position: relative; }
+	.pspacer { height: 212px; }
+	.pop-anchored { position: absolute; z-index: 5; top: calc(100% + var(--size-2-3)); left: 0; right: 0; }
+
+	/* -- the calendar, drawn as it would be ------------------------------------ */
+	.cal { padding: var(--size-2-3) var(--size-4-2) var(--size-4-2); }
+	.cal-head { display: flex; align-items: center; justify-content: space-between; padding: var(--size-2-2) var(--size-2-3) var(--size-4-2); font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+	.cal-grid span { text-align: center; font-family: var(--font-monospace); font-size: 9px; letter-spacing: 0.06em; color: var(--wg-ink-faint); padding-bottom: var(--size-2-2); }
+	.cal-grid button { height: 28px; border-radius: var(--wg-radius-pill); font-size: var(--font-ui-smaller); font-variant-numeric: tabular-nums; color: var(--wg-ink-muted); cursor: pointer; }
+	.cal-grid button:hover { background: var(--background-modifier-hover); }
+	.cal-grid button.off { color: var(--wg-ink-faint); opacity: 0.45; }
+	.cal-grid button.today { color: var(--wg-accent); font-weight: var(--font-semibold); }
+	.cal-grid button.picked { background: var(--wg-accent); color: var(--wg-on-accent); font-weight: var(--font-semibold); }
+
+	/* -- page furniture -------------------------------------------------------- */
+	.frame { display: flex; flex-direction: column; gap: var(--size-4-2); }
+	.stage { background: var(--wg-canvas); border-radius: var(--wg-radius-card); padding: var(--size-4-5); }
+	.theme-light .stage, .theme-dark .stage { background: var(--wg-canvas); }
+	.hero-stage { padding: var(--size-4-6); }
+
+	.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--size-4-4); align-items: start; }
+	.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: var(--size-4-3); align-items: start; }
+	.panel { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-5); display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.panel h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); display: flex; align-items: center; gap: var(--size-4-2); }
+	.panel .kind { margin-left: auto; font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.panel .why { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); line-height: 1.5; }
+	.specimen { background: var(--wg-fill); border-radius: var(--wg-radius-plate); padding: var(--wg-plate-pad); }
+	.specimen + .specimen { margin-top: var(--size-2-3); }
+	.specimen-label { font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-ink-faint); display: block; padding-bottom: var(--size-2-3); }
+
+	.callout { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-4) var(--size-4-5); display: flex; gap: var(--size-4-3); align-items: flex-start; font-size: var(--font-ui-small); color: var(--wg-ink-muted); line-height: 1.55; }
+	.callout .icon { margin-top: 2px; color: var(--wg-accent); width: 18px; height: 18px; }
+	.callout b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.callout.warn .icon { color: var(--wg-warning); }
+
+	.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--size-4-3); }
+	.step { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-4); display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.step-n { font-family: var(--font-monospace); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--wg-accent); }
+	.step .why { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); line-height: 1.5; }
+	.step-stage { background: var(--wg-fill); border-radius: var(--wg-radius-plate); padding: var(--wg-plate-pad); display: flex; flex-direction: column; gap: var(--size-2-3); min-height: 96px; justify-content: center; }
+
+	.flow { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); line-height: 1.75; color: var(--wg-ink-muted); background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-5); overflow-x: auto; white-space: pre; }
+	.flow b { color: var(--wg-ink); font-weight: var(--font-medium); }
+	.flow em { color: var(--wg-accent); font-style: normal; }
+
+	.opens { display: flex; flex-direction: column; gap: var(--size-2-3); }
+	.open { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-3) var(--size-4-4); display: flex; gap: var(--size-4-3); align-items: baseline; font-size: var(--font-ui-small); color: var(--wg-ink-muted); line-height: 1.55; }
+	.open b { color: var(--wg-ink); font-weight: var(--font-semibold); flex: none; min-width: 168px; }
+
+	.pairthemes { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: var(--size-4-3); }
+	.pairthemes > div { border-radius: var(--wg-radius-card); padding: var(--size-4-4); display: flex; flex-direction: column; gap: var(--size-4-3); }
+
+	/* filter */
+	/* shown in isolation, not floating over anything: glass with nothing behind it is
+	   just a pale rectangle, and a white pill on it disappears */
+	.filter { width: 100%; max-width: 320px; background: var(--wg-surface); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: var(--wg-shadow-s); }
+	.frow { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-2-3) var(--size-4-2); border-radius: var(--wg-radius-item); cursor: pointer; }
+	.frow:hover { background: var(--background-modifier-hover); }
+	.frow .fname { font-size: var(--font-ui-small); font-weight: var(--font-medium); color: var(--wg-ink-muted); }
+	.frow .fval { margin-left: auto; display: inline-flex; align-items: center; gap: var(--size-2-3); font-size: var(--font-ui-smaller); color: var(--wg-ink); }
+	.frow .icon { width: 15px; height: 15px; color: var(--wg-ink-faint); }
+	.frow.on .fname { color: var(--wg-accent); font-weight: var(--font-semibold); }
+	.frow.on .icon { color: var(--wg-accent); }
+
+	@media (max-width: 900px) {
+		.dlg-body { grid-template-columns: minmax(0, 1fr); }
+		.hero-stage { padding: var(--size-4-3); }
+		.stage { padding: var(--size-4-3); }
+	}
+	@media (max-width: 640px) {
+		.sheet { padding: 0 var(--size-4-4) var(--size-4-12); gap: var(--size-4-8); }
+		.open { flex-direction: column; gap: var(--size-2-2); }
+		.open b { min-width: 0; }
+	}
+</style>
+
+<div class="sheet">
+
+	<header class="masthead">
+		<span class="eyebrow">Widgetarium &#183; OrbiTask &#183; proposal &#183; 29 August 2026</span>
+		<h1>The task dialog</h1>
+		<p class="lede">One surface replaces <strong>task-popup</strong>, <strong>task-properties</strong> and <strong>task-comments</strong>. Left: the title, the tags, the note body. Right: a plate of properties that belongs to the <strong>board</strong>, not to the task &#8212; every task on this board shows the same rows, and the rows nobody has filled in yet are shown too, because filling one in is how it gets created.</p>
+	</header>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">The arrangement</span>
+			<h2>Wide: the plate sits beside the note</h2>
+			<p class="note">Nothing is being saved here. The title is a caret you type into, a tag opens a picker, a number is dragged. <b>Priority is shown mid-edit</b> &#8212; pressed, the row lifts off the plate onto the dialog's own surface and its list opens under it. The description carries its own <b>Preview / Detail</b> switch at the top right.</p>
+		</div>
+
+		<div class="stage hero-stage">
+			<div class="dlg">
+
+				<div class="dlg-top">
+					<span class="dlg-where">
+						<svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>
+						Widgetarium &#183; Board
+					</span>
+					<div class="dlg-corner">
+						<button class="iconbtn iconbtn-s pressable" title="Open the note" aria-label="Open the note">
+							<svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg>
+						</button>
+						<button class="iconbtn iconbtn-s pressable" title="Close" aria-label="Close">
+							<svg class="icon" viewBox="0 0 16 16"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg>
+						</button>
+					</div>
+				</div>
+
+				<div class="dlg-body">
+
+					<div class="dlg-left">
+						<h2 class="t-title">Replace the three task widgets with one dialog</h2>
+
+						<div class="t-tags">
+							<span class="pilltag">#orbitask</span>
+							<span class="pilltag">#widget</span>
+							<span class="pilltag">#design-debt</span>
+							<button class="tag-add pressable">
+								<svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>
+								Tag
+							</button>
+						</div>
+
+						<div class="desc-head">
+							<span class="cap">Description</span>
+							<div class="segmented">
+								<button aria-selected="true"><svg class="icon" viewBox="0 0 16 16"><path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/></svg>Preview</button>
+								<button aria-selected="false"><svg class="icon" viewBox="0 0 16 16"><path d="M6 3.4L3 8l3 4.6M10 3.4L13 8l-3 4.6"/></svg>Detail</button>
+							</div>
+						</div>
+						<div class="md">
+							<h3>Why one surface</h3>
+							<p>Three widgets read the same frontmatter separately and drew the same status three different ways. The popup owned the header, the properties list owned the fields, the comments panel owned the footer &#8212; and none of them owned the note.</p>
+							<ul>
+								<li>one read of the note, one place that writes it back</li>
+								<li>properties come from the board, never from a per-widget setting</li>
+								<li>comments arrive after this is agreed, not with it</li>
+							</ul>
+							<p>The board's list is declared once, in the board block:</p>
+							<pre><code>properties: Status, Priority, Approval, Progress, Deadline, Members, Client</code></pre>
+							<ul class="tasklist">
+								<li class="done">
+									<span class="tick done"><svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span>
+									<span>Delete <code>task-popup</code>, <code>task-properties</code>, <code>task-comments</code></span>
+								</li>
+								<li>
+									<span class="tick"><svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span>
+									<span>Move the anchored names into <code>kit.js</code></span>
+								</li>
+							</ul>
+							<p>Name &#8594; control table lives in <a href="#anchors">Property anchoring</a>.</p>
+						</div>
+					</div>
+
+					<aside class="dlg-right">
+						<div class="plate props">
+							<div class="plate-head">
+								<h4>Properties</h4>
+								<span class="cap">Board list</span>
+							</div>
+
+							<button class="prow">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>Status</span>
+								<span class="pval"><span class="pilltag">In progress</span><svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span>
+							</button>
+
+							<div class="pslot">
+							<button class="prow open">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><path d="M4 14V2.6"/><path d="M4 3.4h8.4l-2 2.9 2 2.9H4"/></svg>Priority</span>
+								<span class="pval"><span class="pilltag err">P1</span><svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span>
+							</button>
+
+							<div class="pop pop-anchored">
+								<div class="pop-inner">
+									<span class="pop-head">Priority</span>
+									<button class="pop-item" aria-checked="true"><span class="pilltag err">P1</span> Drop everything <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+									<button class="pop-item" aria-checked="false"><span class="pilltag warn">P2</span> This week <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+									<button class="pop-item" aria-checked="false"><span class="pilltag ok">P3</span> When it comes up <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+									<div class="pop-sep"></div>
+									<button class="pop-item" style="color: var(--wg-ink-muted);"><svg class="icon" viewBox="0 0 16 16"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg> Clear</button>
+								</div>
+							</div>
+
+							</div>
+
+							<div class="pspacer" aria-hidden="true"></div>
+
+							<button class="prow">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.4"/><path d="M5.6 8.2l1.7 1.7 3.2-3.5"/></svg>Approval</span>
+								<span class="pval"><span class="pilltag accent">Review</span><svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span>
+							</button>
+
+							<button class="prow">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><path d="M2.6 11.2a5.4 5.4 0 0 1 10.8 0"/><path d="M8 11.2l2.8-2.9"/></svg>Progress</span>
+								<span class="pval"><span class="pbar"><i style="width: 65%"></i><span class="knob" style="left: 65%"></span></span><span class="num">65%</span></span>
+							</button>
+
+							<button class="prow">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><circle cx="6.2" cy="6" r="2.4"/><path d="M2.3 13c.5-2.2 2-3.3 3.9-3.3s3.4 1.1 3.9 3.3"/><path d="M11 4.1a2.2 2.2 0 0 1 0 4.2"/></svg>Members</span>
+								<span class="pval">
+									<span class="avatars">
+										<span class="avatar av-a">DS</span>
+										<span class="avatar av-b">MK</span>
+										<span class="avatar ghost"><svg class="icon" viewBox="0 0 16 16" style="width: 12px; height: 12px;"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg></span>
+									</span>
+								</span>
+							</button>
+
+							<button class="prow is-unset">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="3.4" width="11.2" height="10.2" rx="2.2"/><path d="M2.4 6.6h11.2M5.6 2v3M10.4 2v3"/></svg>Deadline</span>
+								<span class="pval unset">Empty</span>
+							</button>
+
+							<button class="prow is-unset">
+								<span class="pname"><svg class="icon" viewBox="0 0 16 16"><path d="M3 4.4h10M3 8h10M3 11.6h5.6"/></svg>Client</span>
+								<span class="pval unset">Empty</span>
+							</button>
+
+							<button class="addrow pressable">
+								<svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>
+								Add property
+							</button>
+
+							<p class="p-note">Deadline and Client have never been filled in on this task. They are on the board, so they are here &#8212; typing in one is what creates it.</p>
+						</div>
+					</aside>
+
+				</div>
+			</div>
+		</div>
+
+		<div class="grid2">
+			<div class="callout">
+				<svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg>
+				<p><b>Expand, then close &#8212; in that order, top right.</b> Close is the terminal one, so it takes the extreme corner where the hand goes without looking. Expand sits inboard of it, so a mis-aimed press lands on the recoverable control: you are still on the task, just on its own page. Both act on the dialog, never on the task, so they sit in the dialog's own strip and never inside the plate.</p>
+			</div>
+			<div class="callout">
+				<svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>
+				<p><b>The board's name shares that strip.</b> It is the one thing on screen that explains why these particular rows are here &#8212; the property list belongs to it. Nothing else joins the strip; if this reads as clutter, it can go and the two controls sit alone.</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">The arrangement, continued</span>
+			<h2>Narrow: the plate drops below</h2>
+			<p class="note">Below <b>760&nbsp;px</b> the two regions stop being columns and become one. The plate keeps its fill, its radius and its rows &#8212; it moves, it does not change. Both shown at once so the move is visible rather than described.</p>
+		</div>
+
+		<div class="scrollx">
+			<div style="display: flex; gap: var(--size-4-3); align-items: flex-start; min-width: 1080px;">
+
+				<div class="frame" style="width: 700px; flex: none;">
+					<span class="cap">Wide &#183; beside</span>
+					<div class="stage">
+						<div class="dlg" style="--wg-plate-pad: var(--size-4-2);">
+							<div class="dlg-top">
+								<span class="dlg-where"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>Widgetarium &#183; Board</span>
+								<div class="dlg-corner">
+									<button class="iconbtn iconbtn-s" aria-label="Open the note"><svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg></button>
+									<button class="iconbtn iconbtn-s" aria-label="Close"><svg class="icon" viewBox="0 0 16 16"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+								</div>
+							</div>
+							<div class="dlg-body" style="grid-template-columns: minmax(0,1fr) 250px; gap: var(--size-4-4);">
+								<div class="dlg-left">
+									<h2 class="t-title" style="font-size: 21px;">Replace the three task widgets with one dialog</h2>
+									<div class="t-tags">
+										<span class="pilltag">#orbitask</span><span class="pilltag">#widget</span><span class="pilltag">#design-debt</span>
+									</div>
+									<div class="md">
+										<h3>Why one surface</h3>
+										<ul>
+											<li>one read of the note, one writer</li>
+											<li>properties come from the board</li>
+										</ul>
+										<pre><code>properties: Status, Priority, &#8230;</code></pre>
+									</div>
+								</div>
+								<aside>
+									<div class="plate props">
+										<div class="plate-head"><h4>Properties</h4></div>
+										<div class="prow"><span class="pname" style="width: 78px;">Status</span><span class="pval"><span class="pilltag">In progress</span></span></div>
+										<div class="prow"><span class="pname" style="width: 78px;">Priority</span><span class="pval"><span class="pilltag err">P1</span></span></div>
+										<div class="prow"><span class="pname" style="width: 78px;">Approval</span><span class="pval"><span class="pilltag accent">Review</span></span></div>
+										<div class="prow"><span class="pname" style="width: 78px;">Progress</span><span class="pval"><span class="pbar"><i style="width:65%"></i><span class="knob" style="left:65%"></span></span><span class="num">65%</span></span></div>
+										<div class="prow"><span class="pname" style="width: 78px;">Members</span><span class="pval"><span class="avatars"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span></span></span></div>
+										<div class="prow is-unset"><span class="pname" style="width: 78px;">Deadline</span><span class="pval unset">Empty</span></div>
+										<div class="addrow"><svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>Add property</div>
+									</div>
+								</aside>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="frame" style="width: 366px; flex: none;">
+					<span class="cap">Narrow &#183; below</span>
+					<div class="stage" style="padding: var(--size-4-3);">
+						<div class="dlg is-narrow" style="--wg-plate-pad: var(--size-4-2); padding: var(--size-4-3) var(--size-4-4) var(--size-4-4);">
+							<div class="dlg-top">
+								<span class="dlg-where"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>Widgetarium</span>
+								<div class="dlg-corner">
+									<button class="iconbtn iconbtn-s" aria-label="Open the note"><svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg></button>
+									<button class="iconbtn iconbtn-s" aria-label="Close"><svg class="icon" viewBox="0 0 16 16"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+								</div>
+							</div>
+							<div class="dlg-body">
+								<div class="dlg-left">
+									<h2 class="t-title" style="font-size: 20px;">Replace the three task widgets with one dialog</h2>
+									<div class="t-tags">
+										<span class="pilltag">#orbitask</span><span class="pilltag">#widget</span><span class="pilltag">#design-debt</span>
+									</div>
+									<div class="md">
+										<h3>Why one surface</h3>
+										<ul>
+											<li>one read of the note, one writer</li>
+											<li>properties come from the board</li>
+										</ul>
+									</div>
+								</div>
+								<div class="plate props">
+									<div class="plate-head"><h4>Properties</h4><span class="cap">Board list</span></div>
+									<div class="prow"><span class="pname">Status</span><span class="pval"><span class="pilltag">In progress</span></span></div>
+									<div class="prow"><span class="pname">Priority</span><span class="pval"><span class="pilltag err">P1</span></span></div>
+									<div class="prow"><span class="pname">Approval</span><span class="pval"><span class="pilltag accent">Review</span></span></div>
+									<div class="prow"><span class="pname">Progress</span><span class="pval"><span class="pbar"><i style="width:65%"></i><span class="knob" style="left:65%"></span></span><span class="num">65%</span></span></div>
+									<div class="prow"><span class="pname">Members</span><span class="pval"><span class="avatars"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span><span class="avatar ghost"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px;"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg></span></span></span></div>
+									<div class="prow is-unset"><span class="pname">Deadline</span><span class="pval unset">Empty</span></div>
+									<div class="prow is-unset"><span class="pname">Client</span><span class="pval unset">Empty</span></div>
+									<div class="addrow"><svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>Add property</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+
+		<p class="note">The rows do not reflow. A property row is already <b>name left, value right</b>, which is the shape that survives both widths &#8212; no column of labels turning into a column of stacked pairs.</p>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">The idea underneath</span>
+			<h2>The list belongs to the board</h2>
+			<p class="note">A task does not carry a set of properties. The <b>board</b> carries one list and every task on it shows those rows &#8212; filled, or reading <b>Empty</b>. Adding a property adds a row to every task at once; nothing has to be back-filled, because an unset row is a legal state rather than a missing one.</p>
+		</div>
+
+		<div class="flow"><b>BOARD &#183; Widgetarium</b>
+  properties: <em>Status  Priority  Approval  Progress  Deadline  Members  Client</em>
+        &#9474;
+        &#9500;&#9472;&#9472;&#8594; <b>Task</b> "Replace the three task widgets"   In progress &#183; P1 &#183; Review &#183; 65% &#183; DS MK &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span> &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span>
+        &#9500;&#9472;&#9472;&#8594; <b>Task</b> "Ship the kit as a package"        Backlog &#183; P3 &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span> &#183; 0% &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span> &#183; 12 Sep &#183; Internal
+        &#9492;&#9472;&#9472;&#8594; <b>Task</b> "Rewrite the filter panel"         In progress &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span> &#183; Check &#183; 20% &#183; MK &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span> &#183; <span style="color: var(--wg-ink-faint)">&#8212;</span>
+
+        <span style="color: var(--wg-ink-faint)">every task shows seven rows &#183; a dash is a row waiting to be filled</span></div>
+
+		<div class="callout">
+			<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M8 5.2v3.4M8 10.8v.1"/></svg>
+			<p><b>The empty state is the common one</b>, not the exception &#8212; a new board has seven rows and none of them filled. So it is drawn as a real, pressable row with a faint <b>Empty</b>, at the same height as a filled one. It is never hidden behind an "add a value" affordance, because that would make the board's list invisible on exactly the task that most needs to see it.</p>
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section id="anchors">
+		<div class="head">
+			<span class="eyebrow">The property system</span>
+			<h2>The name decides the control</h2>
+			<p class="note">Certain names are <b>anchored</b>: whatever a property called <code>Priority</code> holds, it is drawn and edited as a priority. The anchor applies the moment the name is typed and forever after &#8212; there is no type to pick and no type to change. Every other name falls through to plain text.</p>
+		</div>
+
+		<div class="grid3">
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><path d="M4 14V2.6"/><path d="M4 3.4h8.4l-2 2.9 2 2.9H4"/></svg>Priority<span class="kind">Tag &#183; list</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Priority</span><span class="pval"><span class="pilltag err">P1</span><svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span></div>
+				</div>
+				<div class="specimen" style="background: none; padding: 0;">
+					<span class="specimen-label">Pressed</span>
+					<div class="pop" style="position: static; min-width: 0;">
+						<div class="pop-inner">
+							<button class="pop-item" aria-checked="true"><span class="pilltag err">P1</span> Drop everything <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item"><span class="pilltag warn">P2</span> This week <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item"><span class="pilltag ok">P3</span> When it comes up <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						</div>
+					</div>
+				</div>
+				<p class="why">Three values, one choice. The tone is the kit's: P1 error, P2 warning, P3 success &#8212; the same three colours the card already uses on the board, so a task looks the same open and closed.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.4"/><path d="M5.6 8.2l1.7 1.7 3.2-3.5"/></svg>Approval<span class="kind">Tag &#183; list</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Approval</span><span class="pval"><span class="pilltag accent">Review</span><svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span></div>
+				</div>
+				<div class="specimen" style="background: none; padding: 0;">
+					<span class="specimen-label">Pressed</span>
+					<div class="pop" style="position: static; min-width: 0;">
+						<div class="pop-inner">
+							<button class="pop-item" aria-checked="true"><span class="pilltag accent">Review</span> <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item"><span class="pilltag warn">Check</span> <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item"><span class="pilltag ok">Approve</span> <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item"><span class="pilltag err">Reject</span> <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						</div>
+					</div>
+				</div>
+				<p class="why">Same mechanism as Priority, different four values. Review is the accent because it is the state that wants somebody &#8212; the other three are outcomes.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>Status<span class="kind">Board columns</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Status</span><span class="pval"><span class="pilltag">In progress</span><svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span></div>
+				</div>
+				<div class="specimen" style="background: none; padding: 0;">
+					<span class="specimen-label">Pressed &#183; the board's own columns</span>
+					<div class="pop" style="position: static; min-width: 0;">
+						<div class="pop-inner">
+							<span class="pop-head">Columns on this board</span>
+							<button class="pop-item">Backlog <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item" aria-checked="true">In progress <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item">In review <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item">Done <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						</div>
+					</div>
+				</div>
+				<p class="why">The only anchor whose values are not fixed: they are read off the board's columns, so renaming a column renames the choice, and picking one here is the same write as dragging the card there.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><path d="M2.6 11.2a5.4 5.4 0 0 1 10.8 0"/><path d="M8 11.2l2.8-2.9"/></svg>Progress<span class="kind">0&#8211;100</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Progress</span><span class="pval"><span class="pbar"><i style="width: 65%"></i><span class="knob" style="left: 65%"></span></span><span class="num">65%</span></span></div>
+				</div>
+				<div class="specimen">
+					<span class="specimen-label">Being dragged</span>
+					<div class="prow open"><span class="pname" style="width: 74px;">Progress</span><span class="pval"><span class="pbar"><i style="width: 80%"></i><span class="knob grabbed" style="left: 80%"></span></span><span class="num" style="color: var(--wg-accent); font-weight: var(--font-semibold);">80%</span></span></div>
+				</div>
+				<p class="why">Drag the knob, or press the number and type. The track carries the value so the plate can be read at a glance without parsing digits; the digits are there for when you need the exact one.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="3.4" width="11.2" height="10.2" rx="2.2"/><path d="M2.4 6.6h11.2M5.6 2v3M10.4 2v3"/></svg>Deadline<span class="kind">Date</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest, and unset</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Deadline</span><span class="pval">12 Sep 2026<svg class="icon caretdown" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></span></div>
+					<div class="prow is-unset"><span class="pname" style="width: 74px;">Deadline</span><span class="pval unset">Empty</span></div>
+				</div>
+				<div class="specimen" style="background: none; padding: 0;">
+					<span class="specimen-label">Pressed</span>
+					<div class="pop" style="position: static; min-width: 0;">
+						<div class="cal">
+							<div class="cal-head"><button class="iconbtn iconbtn-s" aria-label="Previous month"><svg class="icon" viewBox="0 0 16 16"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg></button>September 2026<button class="iconbtn iconbtn-s" aria-label="Next month"><svg class="icon" viewBox="0 0 16 16"><path d="M6.4 3.6L10.8 8l-4.4 4.4"/></svg></button></div>
+							<div class="cal-grid">
+								<span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+								<button class="off">31</button><button>1</button><button>2</button><button>3</button><button>4</button><button class="off">5</button><button class="off">6</button>
+								<button>7</button><button>8</button><button>9</button><button>10</button><button>11</button><button class="picked">12</button><button class="off">13</button>
+								<button>14</button><button>15</button><button>16</button><button>17</button><button>18</button><button class="off">19</button><button class="off">20</button>
+								<button>21</button><button>22</button><button>23</button><button>24</button><button>25</button><button class="off">26</button><button class="off">27</button>
+								<button>28</button><button>29</button><button>30</button><button class="off">1</button><button class="off">2</button><button class="off">3</button><button class="off">4</button>
+							</div>
+						</div>
+						<div class="pop-inner" style="padding-top: 0;">
+							<div class="pop-sep"></div>
+							<button class="pop-item">Today <span style="margin-left: auto; color: var(--wg-ink-faint); font-size: var(--font-ui-smaller);">29 Aug</span></button>
+							<button class="pop-item">Next Monday <span style="margin-left: auto; color: var(--wg-ink-faint); font-size: var(--font-ui-smaller);">31 Aug</span></button>
+						</div>
+					</div>
+				</div>
+				<p class="why">A calendar, plus the two shortcuts that account for most dates anybody sets. Typing works too &#8212; the row is a text target and <code>fri</code> resolves.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><circle cx="6.2" cy="6" r="2.4"/><path d="M2.3 13c.5-2.2 2-3.3 3.9-3.3s3.4 1.1 3.9 3.3"/><path d="M11 4.1a2.2 2.2 0 0 1 0 4.2"/></svg>Members<span class="kind">People &#183; ours</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest, and unset</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Members</span><span class="pval"><span class="avatars"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span><span class="avatar av-c">RN</span><span class="avatar ghost"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px;"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg></span></span></span></div>
+					<div class="prow is-unset"><span class="pname" style="width: 74px;">Members</span><span class="pval unset">Empty</span></div>
+				</div>
+				<div class="specimen" style="background: none; padding: 0;">
+					<span class="specimen-label">Pressed &#183; many, not one</span>
+					<div class="pop" style="position: static; min-width: 0;">
+						<div class="pop-inner">
+							<div class="pop-field"><svg class="icon" viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.2"/><path d="M10.4 10.4l3 3"/></svg><span class="ph">Find a person</span></div>
+							<button class="pop-item" aria-checked="true"><span class="avatar av-a" style="margin: 0;">DS</span> Denis S. <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item" aria-checked="true"><span class="avatar av-b" style="margin: 0;">MK</span> Maria K. <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item"><span class="avatar av-c" style="margin: 0;">RN</span> Roman N. <svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						</div>
+					</div>
+				</div>
+				<p class="why"><b>Obsidian has no people type</b> &#8212; this anchor is entirely ours. The stored value is a plain list of names in frontmatter; initials, colour and the overlap ring are drawn from it. Someone editing the note by hand sees a normal list.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><path d="M3 4.4h10M3 8h10M3 11.6h5.6"/></svg>Anything else<span class="kind">Text</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">At rest, and unset</span>
+					<div class="prow"><span class="pname" style="width: 74px;">Client</span><span class="pval">Internal</span></div>
+					<div class="prow is-unset"><span class="pname" style="width: 74px;">Repo</span><span class="pval unset">Empty</span></div>
+				</div>
+				<div class="specimen">
+					<span class="specimen-label">Pressed &#183; the row becomes the field</span>
+					<div class="prow open"><span class="pname" style="width: 74px;">Client</span><span class="pval" style="color: var(--wg-ink);">Internal<span class="caret"></span></span></div>
+				</div>
+				<p class="why">No popover, no mode. The row keeps its place, lifts onto the surface, and a caret appears at the end of the value. Escape reverts, click-away and Enter both commit &#8212; there is nothing to save.</p>
+			</div>
+
+			<div class="panel">
+				<h4><svg class="icon" viewBox="0 0 16 16"><path d="M8.2 2.6h5.2v5.2l-5.9 5.9-5.2-5.3z"/><circle cx="10.6" cy="5.4" r="1"/></svg>Tags<span class="kind">Not a property</span></h4>
+				<div class="specimen">
+					<span class="specimen-label">On the left, under the title</span>
+					<div class="t-tags">
+						<span class="pilltag">#orbitask</span><span class="pilltag">#widget</span>
+						<button class="tag-add"><svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>Tag</button>
+					</div>
+				</div>
+				<p class="why">Tags never enter the plate. They belong to the note the way the title does &#8212; free-form, unbounded, the same on every board &#8212; while the plate holds exactly what this board asked for. Keeping them apart is what stops the plate from being a dumping ground.</p>
+			</div>
+
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">Add property</span>
+			<h2>Type a name, get a control</h2>
+			<p class="note">There is no type picker. Pressing <b>Add property</b> asks one question, and the answer decides everything &#8212; including whether the new row lands as a date, a set of avatars or a line of text.</p>
+		</div>
+
+		<div class="steps">
+			<div class="step">
+				<span class="step-n">Press</span>
+				<div class="step-stage">
+					<div class="addrow" style="background: var(--background-modifier-hover); color: var(--wg-ink);"><svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>Add property</div>
+				</div>
+				<p class="why">Last row of the plate, always. It is the only control in there that is not a property.</p>
+			</div>
+
+			<div class="step">
+				<span class="step-n">Name it</span>
+				<div class="step-stage" style="background: var(--wg-fill); justify-content: flex-start;">
+					<div class="pop" style="position: static; min-width: 0;">
+						<div class="pop-inner">
+							<span class="pop-head">New property</span>
+							<div class="pop-field">Deadline<span class="caret"></span></div>
+							<button class="pop-item" style="color: var(--wg-ink-muted);"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="3.4" width="11.2" height="10.2" rx="2.2"/><path d="M2.4 6.6h11.2M5.6 2v3M10.4 2v3"/></svg>Recognised &#8212; this will be a date <svg class="icon tickmark" style="opacity: 1;" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						</div>
+					</div>
+				</div>
+				<p class="why">The anchor is announced <b>while typing</b>, before commit. That line is the whole explanation of the system, delivered exactly once, at the only moment it matters.</p>
+			</div>
+
+			<div class="step">
+				<span class="step-n">It lands</span>
+				<div class="step-stage">
+					<div class="prow is-unset"><span class="pname"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="3.4" width="11.2" height="10.2" rx="2.2"/><path d="M2.4 6.6h11.2M5.6 2v3M10.4 2v3"/></svg>Deadline</span><span class="pval unset">Empty</span></div>
+					<div class="prow is-unset"><span class="pname"><svg class="icon" viewBox="0 0 16 16"><path d="M3 4.4h10M3 8h10M3 11.6h5.6"/></svg>Repo</span><span class="pval unset">Empty</span></div>
+				</div>
+				<p class="why"><code>Deadline</code> is anchored, so it arrives as a date. <code>Repo</code> is not, so it arrives as text. Both land <b>unset, on every task on the board</b> &#8212; this task included, and it did not have to be open.</p>
+			</div>
+		</div>
+
+		<div class="callout warn">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M8 2.6l6 10.8H2z"/><path d="M8 6.6v3M8 11.6v.1"/></svg>
+			<p><b>Renaming is re-anchoring.</b> Rename <code>Repo</code> to <code>Deadline</code> and the row becomes a date, on every task at once &#8212; with whatever text was already in it now needing to parse as one. That is the cost of deciding by name, and the rename needs to say so before it happens.</p>
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">The payoff</span>
+			<h2>The same list is the filter</h2>
+			<p class="note">Nothing below was configured. The filter's rows <b>are</b> the board's property list, and the control on each row is the one its name already anchors &#8212; a date range for <code>Deadline</code>, tags for <code>Approval</code> and <code>Priority</code>, avatars for <code>Members</code>, a range for <code>Progress</code>. Add a property and it is filterable that second.</p>
+		</div>
+
+		<div class="grid2">
+			<div class="stage">
+				<div class="pop filter" style="position: static;">
+					<div class="pop-inner">
+						<span class="pop-head">Filter &#183; Widgetarium board</span>
+
+						<div class="frow on">
+							<svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/></svg>
+							<span class="fname">Status</span>
+							<span class="fval"><span class="pilltag">In progress</span><span class="pilltag">In review</span></span>
+						</div>
+						<div class="frow on">
+							<svg class="icon" viewBox="0 0 16 16"><path d="M4 14V2.6"/><path d="M4 3.4h8.4l-2 2.9 2 2.9H4"/></svg>
+							<span class="fname">Priority</span>
+							<span class="fval"><span class="pilltag err">P1</span><span class="pilltag warn">P2</span></span>
+						</div>
+						<div class="frow">
+							<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.4"/><path d="M5.6 8.2l1.7 1.7 3.2-3.5"/></svg>
+							<span class="fname">Approval</span>
+							<span class="fval" style="color: var(--wg-ink-faint);">Any</span>
+						</div>
+						<div class="frow on">
+							<svg class="icon" viewBox="0 0 16 16"><path d="M2.6 11.2a5.4 5.4 0 0 1 10.8 0"/><path d="M8 11.2l2.8-2.9"/></svg>
+							<span class="fname">Progress</span>
+							<span class="fval"><span class="num" style="font-variant-numeric: tabular-nums;">40 &#8211; 100%</span></span>
+						</div>
+						<div class="frow on">
+							<svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="3.4" width="11.2" height="10.2" rx="2.2"/><path d="M2.4 6.6h11.2M5.6 2v3M10.4 2v3"/></svg>
+							<span class="fname">Deadline</span>
+							<span class="fval">Before 15 Sep</span>
+						</div>
+						<div class="frow on">
+							<svg class="icon" viewBox="0 0 16 16"><circle cx="6.2" cy="6" r="2.4"/><path d="M2.3 13c.5-2.2 2-3.3 3.9-3.3s3.4 1.1 3.9 3.3"/><path d="M11 4.1a2.2 2.2 0 0 1 0 4.2"/></svg>
+							<span class="fname">Members</span>
+							<span class="fval"><span class="avatars on-surface"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span></span></span>
+						</div>
+						<div class="frow">
+							<svg class="icon" viewBox="0 0 16 16"><path d="M3 4.4h10M3 8h10M3 11.6h5.6"/></svg>
+							<span class="fname">Client</span>
+							<span class="fval" style="color: var(--wg-ink-faint);">Any</span>
+						</div>
+
+						<div class="pop-sep"></div>
+						<div style="display: flex; align-items: center; gap: var(--size-4-2); padding: var(--size-2-3) var(--size-4-2) var(--size-2-2);">
+							<span style="font-size: var(--font-ui-smaller); color: var(--wg-ink-muted);">5 of 7 narrowing &#183; <span style="color: var(--wg-ink); font-weight: var(--font-semibold);">9 tasks</span></span>
+							<button class="btn btn-plain btn-s" style="margin-left: auto;">Clear</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="stack">
+				<div class="callout">
+					<svg class="icon" viewBox="0 0 16 16"><path d="M2.6 4h10.8l-4.2 5v4.4l-2.4-1.4V9z"/></svg>
+					<p><b>The filter stops being a settings screen.</b> Today the panel is hand-configured per board and drifts from the properties it filters. If the board owns the list, the filter has nothing left to configure &#8212; it renders the list, and each row already knows its own control.</p>
+				</div>
+				<div class="callout">
+					<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M8 5.2v3.4M8 10.8v.1"/></svg>
+					<p><b>Unset is filterable too.</b> Every row also offers <b>is empty</b> &#8212; which is how "what has no deadline yet" becomes a question the board can answer, rather than something you notice by scrolling.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">The description</span>
+			<h2>Two modes, one switch</h2>
+			<p class="note"><b>Preview</b> is what Obsidian renders &#8212; read mode, plugins' output included. <b>Detail</b> is the raw note in a plain text box, every marker still on screen, made readable by weight and colour and nothing else. Plain text is honestly unreadable; this is the minimum that fixes that, and it is deliberately <b>not</b> live preview.</p>
+		</div>
+
+		<div class="frame">
+			<span class="cap">The switch &#183; the kit's segmented capsule, at the description's top right</span>
+			<div class="stage" style="display: flex; align-items: center; gap: var(--size-4-5); flex-wrap: wrap;">
+				<div class="segmented">
+					<button aria-selected="true"><svg class="icon" viewBox="0 0 16 16"><path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/></svg>Preview</button>
+					<button aria-selected="false"><svg class="icon" viewBox="0 0 16 16"><path d="M6 3.4L3 8l3 4.6M10 3.4L13 8l-3 4.6"/></svg>Detail</button>
+				</div>
+				<div class="segmented">
+					<button aria-selected="false"><svg class="icon" viewBox="0 0 16 16"><path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/></svg>Preview</button>
+					<button aria-selected="true"><svg class="icon" viewBox="0 0 16 16"><path d="M6 3.4L3 8l3 4.6M10 3.4L13 8l-3 4.6"/></svg>Detail</button>
+				</div>
+				<p class="note" style="flex: 1 1 260px;">Two states of one control the kit already owns. It is the same capsule the board uses for its view tabs, at the small size &#8212; nothing new is invented for the dialog, and the pair sits at the description's top right so it never competes with the title.</p>
+			</div>
+		</div>
+
+		<div class="grid2">
+			<div class="frame">
+				<span class="cap">Preview &#183; what Obsidian renders</span>
+				<div class="stage">
+					<div class="dlg" style="box-shadow: var(--wg-shadow-s); padding: var(--size-4-5);">
+						<div class="desc-head">
+							<span class="cap">Description</span>
+							<div class="segmented">
+								<button aria-selected="true"><svg class="icon" viewBox="0 0 16 16"><path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/></svg>Preview</button>
+								<button aria-selected="false"><svg class="icon" viewBox="0 0 16 16"><path d="M6 3.4L3 8l3 4.6M10 3.4L13 8l-3 4.6"/></svg>Detail</button>
+							</div>
+						</div>
+						<div class="md">
+							<h3>Why one surface</h3>
+							<p>Three widgets read the same frontmatter separately and drew the same status three different ways.</p>
+							<ul>
+								<li>one read of the note, one place that writes it back</li>
+								<li>properties come from the board</li>
+							</ul>
+							<pre><code>properties: Status, Priority, Approval,
+            Progress, Deadline, Members</code></pre>
+							<ul class="tasklist">
+								<li class="done"><span class="tick done"><svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span><span>Delete the three widgets</span></li>
+								<li><span class="tick"><svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span><span>Move the anchors into <code>kit.js</code></span></li>
+							</ul>
+							<p>See <a href="#anchors">Property anchoring</a>.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="frame">
+				<span class="cap">Detail &#183; the same note, raw</span>
+				<div class="stage">
+					<div class="dlg" style="box-shadow: var(--wg-shadow-s); padding: var(--size-4-5);">
+						<div class="desc-head">
+							<span class="cap">Description</span>
+							<div class="segmented">
+								<button aria-selected="false"><svg class="icon" viewBox="0 0 16 16"><path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/></svg>Preview</button>
+								<button aria-selected="true"><svg class="icon" viewBox="0 0 16 16"><path d="M6 3.4L3 8l3 4.6M10 3.4L13 8l-3 4.6"/></svg>Detail</button>
+							</div>
+						</div>
+						<pre class="raw"><span class="hd">## Why one surface</span>
+
+Three widgets read the same <span class="bd">**frontmatter**</span> separately and drew the same status three <span class="it">*different*</span> ways.
+
+- one read of the note, one place that writes it back
+- properties come from the board
+
+<span class="cd">`properties: Status, Priority, Approval`</span>
+
+- [x] Delete the three widgets
+- [ ] Move the anchors into <span class="cd">`kit.js`</span>
+
+See <span class="lnk">[[Property anchoring]]</span> #orbitask<span class="caret"></span></pre>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="callout">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M6 3.4L3 8l3 4.6M10 3.4L13 8l-3 4.6"/></svg>
+			<p><b>Nothing is hidden and nothing moves.</b> The hashes stay on the heading, the asterisks stay around the bold, the brackets stay around the link, the hashtag stays a hashtag. Same face and same size as Preview &#8212; only weight and colour do any work, and the raw text keeps the note's own line breaks, so nothing inside Detail is hoisted, hidden or re-wrapped. Link colour is the vault's own <code>--interactive-accent</code>; the weights are Obsidian's <code>--font-bold</code> and <code>--font-semibold</code>, not numbers we picked.</p>
+		</div>
+
+		<div class="head" style="padding-top: var(--size-4-3);">
+			<span class="eyebrow">One thing I will not guess</span>
+			<h3>"Bold on heading text and on text marked with a border"</h3>
+			<p class="note">In Obsidian the thing that carries a border is inline <code>code</code>. So the sentence has two readings, and they differ by exactly one rule. Both are drawn below; point at the one you meant.</p>
+		</div>
+
+		<div class="grid2">
+			<div class="frame">
+				<span class="cap">Reading A &#183; "bordered" = inline code</span>
+				<pre class="raw on-surface"><span class="hd">## Why one surface</span>
+
+Three widgets read the same <span class="bd">**frontmatter**</span> separately and
+drew the same status three <span class="it">*different*</span> ways.
+
+<span class="cd">`properties: Status, Priority, Approval`</span>
+
+- [ ] Move the anchors into <span class="cd">`kit.js`</span>
+
+See <span class="lnk">[[Property anchoring]]</span> #orbitask</pre>
+				<p class="note">Backticked spans go <b>bold</b> as well, backticks included. Four rules: heading, bold, italic, code.</p>
+			</div>
+			<div class="frame">
+				<span class="cap">Reading B &#183; "bordered" meant the bold markup itself</span>
+				<pre class="raw on-surface"><span class="hd">## Why one surface</span>
+
+Three widgets read the same <span class="bd">**frontmatter**</span> separately and
+drew the same status three <span class="it">*different*</span> ways.
+
+`properties: Status, Priority, Approval`
+
+- [ ] Move the anchors into `kit.js`
+
+See <span class="lnk">[[Property anchoring]]</span> #orbitask</pre>
+				<p class="note">Inline code stays plain text. Three rules: heading, bold, italic. This is the smaller of the two, and the one that keeps the promise of "nothing else".</p>
+			</div>
+		</div>
+
+		<div class="ask">
+			<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M6.4 6.4a1.7 1.7 0 1 1 2 2v.9M8 11.4v.1"/></svg>
+			<p><b>Which reading?</b> A adds one rule and makes code stand out in the raw text; B keeps the rule set at three. Nothing else on this page changes either way.</p>
+		</div>
+
+		<div class="head" style="padding-top: var(--size-4-3);">
+			<span class="eyebrow">The constraint, not papered over</span>
+			<h3>A textarea cannot style its own text</h3>
+			<p class="note">There are no elements inside a <code>&lt;textarea&gt;</code> &#8212; only characters. So coloured-but-plain text is always one of two mechanisms, and they cost different things. <b>The Detail specimens above are drawn as mechanism 1.</b></p>
+		</div>
+
+		<div class="mech">
+			<div>
+				<h4>1 &#183; Transparent textarea over a styled mirror <span class="assumed">Drawn above</span></h4>
+				<p class="cost">The real <code>&lt;textarea&gt;</code> sits on top with transparent text and a visible caret; underneath, the same string is rendered into spans and coloured.</p>
+				<p class="cost"><b>Buys:</b> native editing, native selection, native undo, native spellcheck, and the content stays genuinely plain.</p>
+				<p class="cost"><b>Costs:</b> font, size, line height, letter spacing, padding, border and wrapping must match <b>exactly</b>, and the two must scroll as one &#8212; any drift and the characters visibly separate.</p>
+			</div>
+			<div>
+				<h4>2 &#183; contenteditable</h4>
+				<p class="cost">One element that is both the text and the styling; the spans are the content.</p>
+				<p class="cost"><b>Buys:</b> styling is trivial, there is nothing to keep in sync, and nothing can drift.</p>
+				<p class="cost"><b>Costs:</b> the browser decides what a paste and what an Enter insert &#8212; keeping the content genuinely plain becomes the ongoing work, and re-styling as you type means moving the caret back.</p>
+			</div>
+		</div>
+
+		<div class="callout">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg>
+			<p><b>Expand is still the way to the real editor.</b> Detail lets you fix a line without leaving the dialog. It is not live preview, it has no hotkeys and no plugins &#8212; when the body needs actual work, expand goes to the note's own page, where Obsidian's editor, the outline and the backlinks are.</p>
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">Both themes, at once</span>
+			<h2>It holds either way round</h2>
+			<p class="note">Not the viewer's theme &#8212; both, side by side. Every colour is a token; the plate is <code>--wg-fill</code> against a <code>--wg-surface</code> dialog, which is one step of contrast in light and one step in dark.</p>
+		</div>
+
+		<div class="pairthemes">
+			<div class="theme-light">
+				<span class="cap">Light</span>
+				<div class="dlg" style="--wg-plate-pad: var(--size-4-2); padding: var(--size-4-3) var(--size-4-4) var(--size-4-4); box-shadow: var(--wg-shadow-s);">
+					<div class="dlg-top">
+						<span class="dlg-where">Widgetarium &#183; Board</span>
+						<div class="dlg-corner">
+							<button class="iconbtn iconbtn-s" aria-label="Open the note"><svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg></button>
+							<button class="iconbtn iconbtn-s" aria-label="Close"><svg class="icon" viewBox="0 0 16 16"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+						</div>
+					</div>
+					<h2 class="t-title" style="font-size: 19px;">Replace the three task widgets</h2>
+					<div class="t-tags"><span class="pilltag">#orbitask</span><span class="pilltag">#widget</span></div>
+					<div class="plate props">
+						<div class="prow"><span class="pname" style="width: 74px;">Status</span><span class="pval"><span class="pilltag">In progress</span></span></div>
+						<div class="prow"><span class="pname" style="width: 74px;">Priority</span><span class="pval"><span class="pilltag err">P1</span></span></div>
+						<div class="prow"><span class="pname" style="width: 74px;">Progress</span><span class="pval"><span class="pbar"><i style="width:65%"></i><span class="knob" style="left:65%"></span></span><span class="num">65%</span></span></div>
+						<div class="prow"><span class="pname" style="width: 74px;">Members</span><span class="pval"><span class="avatars"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span></span></span></div>
+						<div class="prow is-unset"><span class="pname" style="width: 74px;">Deadline</span><span class="pval unset">Empty</span></div>
+					</div>
+				</div>
+			</div>
+
+			<div class="theme-dark">
+				<span class="cap">Dark</span>
+				<div class="dlg" style="--wg-plate-pad: var(--size-4-2); padding: var(--size-4-3) var(--size-4-4) var(--size-4-4); box-shadow: var(--wg-shadow-s);">
+					<div class="dlg-top">
+						<span class="dlg-where">Widgetarium &#183; Board</span>
+						<div class="dlg-corner">
+							<button class="iconbtn iconbtn-s" aria-label="Open the note"><svg class="icon" viewBox="0 0 16 16"><path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/></svg></button>
+							<button class="iconbtn iconbtn-s" aria-label="Close"><svg class="icon" viewBox="0 0 16 16"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+						</div>
+					</div>
+					<h2 class="t-title" style="font-size: 19px;">Replace the three task widgets</h2>
+					<div class="t-tags"><span class="pilltag">#orbitask</span><span class="pilltag">#widget</span></div>
+					<div class="plate props">
+						<div class="prow"><span class="pname" style="width: 74px;">Status</span><span class="pval"><span class="pilltag">In progress</span></span></div>
+						<div class="prow"><span class="pname" style="width: 74px;">Priority</span><span class="pval"><span class="pilltag err">P1</span></span></div>
+						<div class="prow"><span class="pname" style="width: 74px;">Progress</span><span class="pval"><span class="pbar"><i style="width:65%"></i><span class="knob" style="left:65%"></span></span><span class="num">65%</span></span></div>
+						<div class="prow"><span class="pname" style="width: 74px;">Members</span><span class="pval"><span class="avatars"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span></span></span></div>
+						<div class="prow is-unset"><span class="pname" style="width: 74px;">Deadline</span><span class="pval unset">Empty</span></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- &#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552;&#9552; -->
+	<section>
+		<div class="head">
+			<span class="eyebrow">Before you say yes</span>
+			<h2>Calls I made that you did not specify</h2>
+			<p class="note">Each of these is a decision the brief left open. They are drawn above rather than left blank, so the page is honest about what it is proposing &#8212; but any of them can go the other way without touching the rest.</p>
+		</div>
+
+		<div class="opens">
+			<div class="open"><b>The board name in the top strip</b><span>You asked for two controls in the corner and nothing else. I put the board's name at the left of the same strip, because it is what owns the property list. Remove it and the strip is two circles on the right.</span></div>
+			<div class="open"><b>The plate keeps 22&nbsp;px, not 8</b><span>The kit's concentric rule would make an inset panel's radius the dialog's 28 minus its 20&nbsp;px padding. You asked for it to read as a kanban column, so it keeps the board's 22. The two curves are 20&nbsp;px apart, which is enough that they never read as a pinched pair.</span></div>
+			<div class="open"><b>Progress is a track, not a stepper</b><span>You said "drag or type a number". I drew the track inside the row, so the whole plate can be skimmed. A stepper capsule (&#8722;&nbsp;65&nbsp;+) would be a legitimate alternative and takes less width.</span></div>
+			<div class="open"><b>Members store as plain names</b><span>There is no people type in Obsidian, so something has to be invented. I chose a plain list of names in frontmatter with the avatar drawn from it, so a hand-edited note still makes sense. The alternative &#8212; storing links to person notes &#8212; is richer and breaks plain editing.</span></div>
+			<div class="open"><b>The unset word is "Empty"</b><span>Obsidian's own property editor says <code>Empty</code>. The alternatives are a dash, or the property's own hint ("No deadline"). I took Obsidian's word so the dialog does not invent vocabulary.</span></div>
+			<div class="open"><b>Anchors are case-insensitive on the whole name</b><span><code>deadline</code>, <code>Deadline</code> and <code>DEADLINE</code> all anchor; <code>Deadline (soft)</code> does not, and falls through to text. Whether near-misses should anchor is a real question I could not answer for you.</span></div>
+			<div class="open"><b>Assignees is an alias, not a second anchor</b><span>You wrote "Members (or Assignees)". I read that as one anchor with two accepted names, so a board can call it either and get the same control. If they are meant to be two separate properties, that changes.</span></div>
+			<div class="open"><b>Detail mode is drawn as the mirror</b><span>A transparent textarea over a styled copy of the same text. It keeps native editing and plain content; a <code>contenteditable</code> would be far simpler to style and far harder to keep plain. The page states the cost of each rather than choosing &#8212; this one is yours.</span></div>
+			<div class="open"><b>Inline code in Detail: bold or plain</b><span>"Text marked with a border" reads as inline <code>code</code> or as the bold markup itself. Both readings are drawn side by side above, labelled A and B. Everything else about Detail is identical either way.</span></div>
+			<div class="open"><b>Hashtags in Detail stay plain</b><span>Links get the accent because you named them. <code>#orbitask</code> is left as ordinary text &#8212; colouring it would be a fourth rule nobody asked for, and the tags already have their own row above the description.</span></div>
+		</div>
+	</section>
+
+</div>
