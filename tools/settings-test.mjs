@@ -126,13 +126,18 @@ console.log("\n— and the panel writes what it draws —");
 		title: "Kanban board",
 		collapseBelowPx: 240,
 		settings: [{ key: "groupBy", type: "text", label: "Group tasks by", default: "status" }],
-		slots: { card: { of: "widget", default: CARD_ID } },
+		// CONTEXT: what the parent DECLARES it hands the slot — the shape src/fit.js ranks against
+		slots: { card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } } },
 		sources: { tasks: { label: "Tasks", default: { path: "Orbitask/Tasks" } }, boards: { label: "Boards" } },
 	};
 	const Leaf = () => h("div", { class: "leaf" }, "leaf");
+	// The misfit is the BIGGER tile on purpose: the bento sorts biggest first, so if fit were not
+	// ranked ahead of size the misfit would lead the list and the ordering check below would fail.
+	const fitting = { id: CARD_ID, title: "Task card", defaultSize: { w: 3, h: 2 }, accepts: { task: { required: ["title"] } } };
+	const misfit = { id: OTHER_ID, title: "Compact card", defaultSize: { w: 8, h: 5 }, accepts: { task: { required: ["title", "estimate"] } } };
 	const registry = {
 		get: (id) => (id === KANBAN_ID ? { manifest, component: Leaf } : { manifest: { id, title: id }, component: Leaf }),
-		list: () => [{ manifest }, { manifest: { id: CARD_ID, title: "Task card" } }, { manifest: { id: OTHER_ID, title: "Compact card" } }],
+		list: () => [{ manifest }, { manifest: fitting }, { manifest: misfit }],
 	};
 	const slot = {
 		canCreate: true,

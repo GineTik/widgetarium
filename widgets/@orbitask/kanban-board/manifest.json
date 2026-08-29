@@ -10,7 +10,19 @@
 	"slots": {
 		"card": {
 			"of": "widget",
-			"default": "@orbitask/task-card"
+			"default": "@orbitask/task-card",
+			"gives": {
+				"task": [
+					"title",
+					"tag",
+					"priority",
+					"status",
+					"progress",
+					"initials",
+					"due",
+					"files"
+				]
+			}
 		}
 	},
 	"settings": [

@@ -6,6 +6,22 @@
 		"h": 2
 	},
 	"collapseBelowPx": 90,
+	"accepts": {
+		"task": {
+			"required": [
+				"title"
+			],
+			"optional": [
+				"tag",
+				"priority",
+				"status",
+				"progress",
+				"initials",
+				"due",
+				"files"
+			]
+		}
+	},
 	"settings": [
 		{
 			"key": "title",
