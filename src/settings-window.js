@@ -13,6 +13,8 @@ const TABS = [
 
 const ZOOM_STEP = 0.1;
 const ZOOM_FLOOR = 0.25;
+// CONTEXT: one notch of a mouse wheel is ~100 units, which this turns into about 10%
+const ZOOM_PER_WHEEL_UNIT = 0.001;
 // CONTEXT: under this a press is a tap, over it a pan
 const TAP_SLOP_PX = 4;
 const FOLDERS_SHOWN = 12;
@@ -488,6 +490,36 @@ function cellLayer(box, at, scale, cell, gap) {
 	);
 }
 
+// THE WHEEL DRIVES THE PLAYGROUND. A trackpad pinch arrives as a wheel event with ctrlKey set —
+// the browser reports it that way and there is no separate gesture — so pinch and ctrl+wheel are
+// one path, and a plain two-finger swipe is the other.
+// TRADE-OFF: a wheel over the widget pans the canvas instead of scrolling the widget. At 1:1 the
+// widget is the thing being looked at, not used; the chrome is exempt so its lists still scroll.
+function wheelHandler(state) {
+	return (event) => {
+		if (event.target?.closest?.(".wg-set-chrome")) return;
+		event.preventDefault();
+
+		const rect = event.currentTarget.getBoundingClientRect();
+		const pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+
+		if (!(event.ctrlKey || event.metaKey)) {
+			state.setLook({ pan: { x: state.at.x - event.deltaX, y: state.at.y - event.deltaY } });
+			return;
+		}
+
+		// the point under the cursor is the one that must not move, so the canvas corner moves
+		// by whatever keeps it still — zooming about the corner slides the whole picture away
+		const wanted = clamp(state.scale * Math.exp(-event.deltaY * ZOOM_PER_WHEEL_UNIT), ZOOM_FLOOR, 1);
+		if (wanted === state.scale) return;
+		const ratio = wanted / state.scale;
+		state.setLook({
+			zoom: wanted,
+			pan: { x: pointer.x - (pointer.x - state.at.x) * ratio, y: pointer.y - (pointer.y - state.at.y) * ratio },
+		});
+	};
+}
+
 // CONTEXT: below 1:1 a press pans and a tap snaps to 1:1 on the point it landed
 function panHandlers(state) {
 	return {
@@ -685,6 +717,7 @@ export function useSettingsWindow(options) {
 				tabIndex: -1,
 				// the grid inside is drawn in CELLS, and the cell tokens live on the BOARD's element.
 				// The window is portaled onto <body> and inherits from nothing, so it carries its own.
+				onWheel: wheelHandler(state),
 				style: {
 					inset: `${frame.inset}px`,
 					"--wg-cell": `${cell}px`,

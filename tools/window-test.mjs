@@ -76,7 +76,7 @@ function stage(hash) {
 const measured = stage("");
 if (process.env.WG_DEBUG) console.log(JSON.stringify(measured, null, 1));
 
-const { arrival, panned, zoomed, floor, live, levels } = measured;
+const { arrival, panned, zoomed, floor, live, levels, wheel } = measured;
 
 let failed = 0;
 function check(label, got, want) {
@@ -185,6 +185,35 @@ console.log("\n— and it reads as a window: an edge, the screen held, nothing s
 	check("its backdrop covers the whole screen", frame.overlayCovers, true);
 	check("the page behind it cannot scroll", frame.bodyOverflow, "hidden");
 	check("and it takes most of the screen", frame.coverage > 0.8, true);
+}
+
+console.log("\n— the wheel drives the playground, and a pinch zooms about the pointer —");
+{
+	const { beforeWheel, wheelPanned, pinchedOut, pinchedIn, before, overPanel } = wheel;
+	console.log(`   pan: corner ${round(beforeWheel.corner.x)},${round(beforeWheel.corner.y)} -> ${round(wheelPanned.corner.x)},${round(wheelPanned.corner.y)}`);
+	console.log(`   pinch: ${beforeWheel.said} -> ${pinchedOut.said} -> ${pinchedIn.said}`);
+
+	check("a plain wheel moves the canvas left", wheelPanned.corner.x < beforeWheel.corner.x, true);
+	check("and up, by the scroll it was given", wheelPanned.corner.y < beforeWheel.corner.y, true);
+	check("it does not zoom while doing it", wheelPanned.said, beforeWheel.said);
+
+	check("a pinch out zooms the canvas down", parseFloat(pinchedOut.said) < parseFloat(beforeWheel.said), true);
+	check("a pinch in zooms it back up", parseFloat(pinchedIn.said) > parseFloat(pinchedOut.said), true);
+	check("and it stops at 1:1, never past it", parseFloat(pinchedIn.said) <= 100, true);
+
+	// THE POINT UNDER THE POINTER IS THE ONE THAT MUST NOT MOVE. Zooming about the corner
+	// instead slides the whole picture out from under the cursor, which is what reads as broken.
+	// seen.scale, NOT the percentage on the bar: the bar rounds to a whole percent, and 0.34%
+	// of a 250px reach is the 1px that made this assertion look like a bug in the zoom
+	const held = (seen) => ({ x: (400 - seen.corner.x) / seen.scale, y: (300 - seen.corner.y) / seen.scale });
+	const was = held(beforeWheel === wheelPanned ? beforeWheel : wheelPanned);
+	const now = held(pinchedOut);
+	console.log(`   the point under the cursor: ${round(was.x)},${round(was.y)} -> ${round(now.x)},${round(now.y)} in canvas coordinates`);
+	near("the pinch keeps the point under the cursor still", now.x, was.x, 0.1);
+	near("on both axes", now.y, was.y, 0.1);
+
+	check("a wheel over the settings panel leaves the canvas alone", overPanel.corner.x, before.corner.x);
+	check("and does not zoom it either", overPanel.said, before.said);
 }
 
 function level(colour, fallback) {

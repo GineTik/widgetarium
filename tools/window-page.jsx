@@ -239,6 +239,25 @@ function panBy(dx, dy) {
 	window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: from.clientX + dx, clientY: from.clientY + dy }));
 }
 
+// a trackpad pinch reaches the page as a wheel event carrying ctrlKey — there is no separate
+// gesture event, so this is exactly what the browser hands a real pinch
+function wheelAt(target, options) {
+	const node = document.querySelector(".wg-set-window");
+	if (!node) return;
+	const rect = node.getBoundingClientRect();
+	node.dispatchEvent(
+		new WheelEvent("wheel", {
+			bubbles: true,
+			cancelable: true,
+			clientX: rect.left + target.x,
+			clientY: rect.top + target.y,
+			deltaX: options.deltaX ?? 0,
+			deltaY: options.deltaY ?? 0,
+			ctrlKey: Boolean(options.pinch),
+		}),
+	);
+}
+
 function step(run) {
 	return new Promise((done) => {
 		run();
@@ -272,7 +291,33 @@ setTimeout(async () => {
 		await step(() => barButton("1:1")?.click());
 		const live = read();
 
-		report({ arrival, panned, zoomed, floor, live, levels });
+		// the wheel: a plain scroll pans, ctrl+wheel (a trackpad pinch) zooms about the pointer
+		await step(() => barButton("Fit")?.click());
+		const beforeWheel = read();
+		await step(() => wheelAt({ x: 400, y: 300 }, { deltaX: 40, deltaY: 60 }));
+		const wheelPanned = read();
+		await step(() => wheelAt({ x: 400, y: 300 }, { deltaY: 240, pinch: true }));
+		const pinchedOut = read();
+		await step(() => wheelAt({ x: 400, y: 300 }, { deltaY: -900, pinch: true }));
+		const pinchedIn = read();
+		// over the settings panel the wheel belongs to the panel, not to the canvas
+		const panelNode = document.querySelector(".wg-set-scroll");
+		const panelRect = panelNode.getBoundingClientRect();
+		const before = read();
+		await step(() =>
+			panelNode.dispatchEvent(
+				new WheelEvent("wheel", {
+					bubbles: true,
+					cancelable: true,
+					clientX: panelRect.left + 20,
+					clientY: panelRect.top + 20,
+					deltaY: 200,
+				}),
+			),
+		);
+		const overPanel = read();
+
+		report({ arrival, panned, zoomed, floor, live, levels, wheel: { beforeWheel, wheelPanned, pinchedOut, pinchedIn, before, overPanel } });
 	} catch (failure) {
 		report({ failure: String(failure && failure.stack) });
 	}
