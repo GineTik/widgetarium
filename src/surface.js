@@ -872,12 +872,19 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const addTile = (widgetId) => {
 		const born = registry.get(widgetId)?.manifest?.defaultSize ?? { w: 3, h: 2 };
 		const id = `w${Math.random().toString(36).slice(2, 8)}`;
+		// The catalogue stays open while a person reads it, and the board can move underneath —
+		// a pick written from the render that opened it would put the board back as it was then.
+		// Every other writer here already reads the latest; this one did not.
+		const now = latestRef.current;
 		onChange(
 			{
-				tiles: [...board.tiles, { id, widget: widgetId, settings: {}, sources: {} }],
+				// CONTEXT: a board carries more than tiles — rebuilt, it loses its mode and its
+				// property list, and that list is what the filter bar and the task dialog read
+				...now.board,
+				tiles: [...now.board.tiles, { id, widget: widgetId, settings: {}, sources: {} }],
 				layouts: {
-					...board.layouts,
-					[metrics.columns]: [...places, { id, x: 0, y: rows, w: born.w, h: born.h }],
+					...now.board.layouts,
+					[now.columns]: [...now.places, { id, x: 0, y: rowsOf(now.places), w: born.w, h: born.h }],
 				},
 			},
 			true,
