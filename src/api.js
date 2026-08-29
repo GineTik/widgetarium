@@ -1,6 +1,18 @@
-import { Dialog, DialogOverlay, DialogContent, DialogClose } from "./dialog.js";
+import {
+	Dialog,
+	DialogOverlay,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	DialogClose,
+} from "./dialog.js";
 import { useAction } from "./action.js";
-import { WidgetRoot } from "./widget-root.js";
+import { WidgetRoot, AppearanceOverride, useWidgetRounded, useBackgroundType, ROUNDED, BACKGROUND } from "./widget-root.js";
+import * as kitModule from "./kit.js";
+
+const { Kit } = kitModule;
 
 // the seam where the host will later wrap the view (provider, error boundary, settings shell);
 // for now it only carries optional metadata for widgets used outside a vault
@@ -9,4 +21,27 @@ function createWidget(component, meta) {
 	return component;
 }
 
-export const widgetarium = { Dialog, DialogOverlay, DialogContent, DialogClose, WidgetRoot, useAction, createWidget };
+const core = {
+	Dialog,
+	DialogOverlay,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogFooter,
+	DialogClose,
+	WidgetRoot,
+	AppearanceOverride,
+	useWidgetRounded,
+	useBackgroundType,
+	ROUNDED,
+	BACKGROUND,
+	useAction,
+	createWidget,
+};
+
+// TRADE-OFF: the kit stays OUT of the core surface and is reached by its own specifier —
+// "widgetarium" is what a widget must have, "widgetarium/kit" is what it may take. `Kit` is
+// kept for <Kit.Button/> in JSX, where a capital is what marks a component.
+export { kitModule };
+export const widgetarium = { ...core, Kit };

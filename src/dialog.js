@@ -1,6 +1,23 @@
-import { h } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { h, cloneElement, createContext, toChildArray } from "preact";
+import { useContext, useEffect, useRef, useState } from "preact/hooks";
 import { mountInto } from "./portal.js";
+import { cx, Icon, IconButton } from "./kit.js";
+
+// CONTEXT: preact's render() starts a new tree, so no provider outside the portal reaches inside
+const DialogState = createContext(null);
+
+// CONTEXT: shadcn's asChild, same shape as render() in kit.js, which is module-private there
+function part(tag, baseClass, name) {
+	function Part({ asChild, children, class: cls, className, ...rest }) {
+		const resolved = cx(baseClass, cls, className);
+		if (!asChild) return h(tag, { ...rest, class: resolved }, children);
+		const only = toChildArray(children)[0];
+		if (!only || typeof only !== "object") return h(tag, { ...rest, class: resolved }, children);
+		return cloneElement(only, { ...rest, class: cx(resolved, only.props.class, only.props.className) });
+	}
+	Part.displayName = name;
+	return Part;
+}
 
 function Portal({ children, onEscape }) {
 	const portalRef = useRef(null);
@@ -17,15 +34,32 @@ function Portal({ children, onEscape }) {
 	return null;
 }
 
-// The backdrop. Owns the portal, Escape and click-outside — nothing else.
-export function DialogOverlay({ className, onClose, children }) {
+// CONTEXT: the portal is mounted on <body>, so the browser has no trigger left to return to
+function useFocusInside(overlayRef) {
+	useEffect(() => {
+		const returnTo = document.activeElement;
+		const overlay = overlayRef.current;
+		(overlay?.querySelector(".wg-dialog") ?? overlay)?.focus?.();
+		return () => {
+			if (returnTo?.isConnected) returnTo.focus?.();
+		};
+	}, []);
+}
+
+export function DialogOverlay({ class: cls, className, onClose, children }) {
+	const overlayRef = useRef(null);
+	// CONTEXT: the child Portal commits first, so the ref is filled before this effect runs
+	useFocusInside(overlayRef);
+
 	return h(
 		Portal,
 		{ onEscape: onClose },
 		h(
 			"div",
 			{
-				class: `wg-dialog-overlay${className ? ` ${className}` : ""}`,
+				ref: overlayRef,
+				class: cx("wg-dialog-overlay", cls, className),
+				tabIndex: -1,
 				onClick: (event) => event.target === event.currentTarget && onClose?.(),
 			},
 			children,
@@ -33,36 +67,43 @@ export function DialogOverlay({ className, onClose, children }) {
 	);
 }
 
-// The panel. Carries no behaviour, so it can be restyled or replaced outright.
-export function DialogContent({ className, width, children }) {
+export function DialogContent({ class: cls, className, width, children }) {
 	return h(
 		"div",
-		{ class: `wg-dialog${className ? ` ${className}` : ""}`, style: width ? { maxWidth: width } : null },
+		{
+			class: cx("wg-dialog", cls, className),
+			role: "dialog",
+			"aria-modal": "true",
+			tabIndex: -1,
+			style: width ? { maxWidth: width } : null,
+		},
 		children,
 	);
 }
 
-export function DialogClose({ className, onClose, label = "✕" }) {
+export const DialogHeader = part("div", "wg-dialog-head", "DialogHeader");
+export const DialogTitle = part("h2", "wg-dialog-title", "DialogTitle");
+export const DialogDescription = part("p", "wg-dialog-desc", "DialogDescription");
+export const DialogFooter = part("div", "wg-dialog-foot", "DialogFooter");
+
+// TRADE-OFF: the kit's icon button, because a fill on a bare <button> loses its radius to the host
+export function DialogClose({ class: cls, className, onClose, label = "Close", ...rest }) {
+	const state = useContext(DialogState);
 	return h(
-		"button",
-		{ class: `wg-dialog-x${className ? ` ${className}` : ""}`, onClick: onClose, title: "Close" },
-		label,
+		IconButton,
+		{
+			size: "s",
+			...rest,
+			class: cx("wg-dialog-close", cls, className),
+			label,
+			title: label,
+			onClick: onClose ?? state?.close,
+		},
+		h(Icon, { name: "close" }),
 	);
 }
 
-// The convenient path, assembled from the three above. Anything it does, a widget
-// can do itself with the same parts — this is a default, not a wall.
-export function Dialog({
-	open,
-	onOpenChange,
-	onClose,
-	title,
-	trigger,
-	children,
-	width,
-	className,
-	overlayClassName,
-}) {
+export function Dialog({ open, onOpenChange, onClose, trigger, children, class: cls, className }) {
 	const [selfOpen, setSelfOpen] = useState(false);
 	const controlled = open !== undefined;
 	const isOpen = controlled ? open : selfOpen;
@@ -73,18 +114,9 @@ export function Dialog({
 		if (!next) onClose?.();
 	};
 
+	const close = () => setOpen(false);
 	const body = isOpen
-		? h(
-				DialogOverlay,
-				{ className: overlayClassName, onClose: () => setOpen(false) },
-				h(DialogContent, { className, width }, [
-					h("div", { class: "wg-dialog-head" }, [
-						h("b", null, title ?? ""),
-						h(DialogClose, { onClose: () => setOpen(false) }),
-					]),
-					h("div", { class: "wg-dialog-body" }, children),
-				]),
-		  )
+		? h(DialogOverlay, { class: cx(cls, className), onClose: close }, h(DialogState.Provider, { value: { close } }, children))
 		: null;
 
 	if (!trigger) return body;
