@@ -33,3 +33,31 @@ export function replaceBlock(text, blockIndex, body, isValidBlock) {
 	if (isValidBlock && !isValidBlock(written)) return null;
 	return next;
 }
+
+const FRONTMATTER_FENCE = /^---\s*$/;
+
+// CONTEXT: frontmatter only when the FIRST line opens it; an unclosed fence is body
+function bodyStart(lines) {
+	if (!FRONTMATTER_FENCE.test(lines[0] ?? "")) return 0;
+	for (let index = 1; index < lines.length; index += 1) {
+		if (FRONTMATTER_FENCE.test(lines[index])) return index + 1;
+	}
+	return 0;
+}
+
+export function readBody(text) {
+	const lines = text.split("\n");
+	return lines.slice(bodyStart(lines)).join("\n");
+}
+
+// CONTEXT: refuse rather than half-write — a body opening with a rule would become frontmatter
+export function replaceBody(text, body) {
+	const lines = text.split("\n");
+	const start = bodyStart(lines);
+	const next = [...lines.slice(0, start), ...String(body ?? "").split("\n")].join("\n");
+
+	const nextLines = next.split("\n");
+	if (bodyStart(nextLines) !== start) return null;
+	if (nextLines.slice(0, start).join("\n") !== lines.slice(0, start).join("\n")) return null;
+	return next;
+}
