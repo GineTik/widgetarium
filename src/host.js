@@ -1,40 +1,16 @@
 import { TFile, TFolder, Notice } from "obsidian";
 import { Dialog } from "./dialog.js";
+import { matches, valueOf } from "./engine/match.js";
 
 function toRecord(app, file) {
 	const cache = app.metadataCache.getFileCache(file);
 	return {
+		path: file.path,
 		ref: { path: file.path },
 		props: { ...(cache?.frontmatter ?? {}) },
 		name: file.basename,
 		meta: { created: file.stat.ctime, modified: file.stat.mtime },
 	};
-}
-
-function valueOf(record, prop) {
-	if (prop === "name" || prop === "title") return record.name;
-	return record.props?.[prop];
-}
-
-const OPERATIONS = {
-	eq: (left, right) => left === right,
-	ne: (left, right) => left !== right,
-	in: (left, right) => Array.isArray(right) && right.includes(left),
-	lt: (left, right) => left < right,
-	lte: (left, right) => left <= right,
-	gt: (left, right) => left > right,
-	gte: (left, right) => left >= right,
-	contains: (left, right) => String(left ?? "").toLowerCase().includes(String(right).toLowerCase()),
-	exists: (left, right) => (right === false ? left == null : left != null),
-};
-
-function matches(record, where) {
-	if (!where || where.length === 0) return true;
-	return where.every((clause) => {
-		const operation = OPERATIONS[clause.op ?? "eq"];
-		if (!operation) return true;
-		return operation(valueOf(record, clause.prop), clause.value);
-	});
 }
 
 function sortRecords(records, sort) {
@@ -44,6 +20,12 @@ function sortRecords(records, sort) {
 	return [...records].sort((first, second) => {
 		const a = valueOf(first, prop);
 		const b = valueOf(second, prop);
+		// A record with nothing to sort by goes LAST in either direction. Comparing against
+		// undefined returns false both ways, so the order it landed in was whatever the
+		// sort happened to do — a note created without the property moved around on its own.
+		const aMissing = a === undefined || a === null || a === "";
+		const bMissing = b === undefined || b === null || b === "";
+		if (aMissing || bMissing) return aMissing && bMissing ? 0 : aMissing ? 1 : -1;
 		if (a === b) return 0;
 		return a > b ? direction : -direction;
 	});
@@ -167,6 +149,10 @@ function createSlot(app, binding) {
 
 export function createHost(app, plugin) {
 	return {
+		// which environment the widget is running in. The same widget runs on the web or on
+		// the desktop against a different host; this is the only thing it may branch on.
+		platform: "obsidian",
+
 		can: {
 			fullscreen: true,
 			systemRun: !app.isMobile,
@@ -203,3 +189,4 @@ export function createHost(app, plugin) {
 		plugin,
 	};
 }
+
