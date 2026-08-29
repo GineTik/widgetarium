@@ -1,4 +1,4 @@
-import { TFile, TFolder, Notice } from "obsidian";
+import { TFile, TFolder, Notice, MarkdownRenderer, MarkdownRenderChild } from "obsidian";
 import { Dialog } from "./dialog.js";
 import { matches, valueOf } from "./engine/match.js";
 import { readBody, replaceBody } from "./block-writer.js";
@@ -166,7 +166,8 @@ function createSlot(app, binding) {
 	return slot;
 }
 
-export function createHost(app, plugin) {
+// CONTEXT: wikilinks resolve against the note they are written in, not the vault root
+export function createHost(app, plugin, notePath = "") {
 	return {
 		// which environment the widget is running in. The same widget runs on the web or on
 		// the desktop against a different host; this is the only thing it may branch on.
@@ -177,6 +178,7 @@ export function createHost(app, plugin) {
 			systemRun: !app.isMobile,
 			subscribe: true,
 			network: true,
+			renderMarkdown: true,
 		},
 
 		slot(binding) {
@@ -202,6 +204,28 @@ export function createHost(app, plugin) {
 				const file = app.vault.getAbstractFileByPath(path);
 				if (file instanceof TFile) app.workspace.getLeaf(false).openFile(file);
 			},
+			// TRADE-OFF: read mode with post-processors, not an editable live preview
+			// CONTEXT: the child unloads the embeds and handlers Obsidian registers inside
+			renderMarkdown(element, markdown, sourcePath = notePath) {
+				element.textContent = "";
+				const child = new MarkdownRenderChild(element);
+				plugin.addChild(child);
+				// A widget re-renders faster than a render settles, so the stop it returns must
+				// survive being called twice and being called early: a second removeChild would
+				// unload an unloaded child, and a render landing after the stop would paint into
+				// an element its owner has already given up.
+				let stopped = false;
+				MarkdownRenderer.render(app, String(markdown ?? ""), element, sourcePath, child)
+					.then(() => {
+						if (stopped) element.textContent = "";
+					})
+					.catch((failure) => console.error("[widgetarium] markdown render failed", failure));
+				return () => {
+					if (stopped) return;
+					stopped = true;
+					plugin.removeChild(child);
+				};
+			},
 		},
 
 		app,
@@ -209,3 +233,16 @@ export function createHost(app, plugin) {
 	};
 }
 
+// The host is built once per plugin; WHICH NOTE a board sits in is known per mount. Binding
+// it here means a widget calls renderMarkdown(element, markdown) and its wikilinks resolve
+// from its own note — a widget has no way to learn the path, so it must not have to pass one.
+export function bindNote(host, notePath) {
+	if (!notePath) return host;
+	return {
+		...host,
+		ui: {
+			...host.ui,
+			renderMarkdown: (element, markdown, sourcePath = notePath) => host.ui.renderMarkdown(element, markdown, sourcePath),
+		},
+	};
+}

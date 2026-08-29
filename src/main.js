@@ -2,7 +2,7 @@ import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild } 
 import { h, render } from "preact";
 import { WidgetSurface } from "./surface.js";
 import { WidgetRegistry } from "./registry.js";
-import { createHost } from "./host.js";
+import { createHost, bindNote } from "./host.js";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
 import { normalizeBoard, serializeBoard } from "./model.js";
 import { shieldFromEditor } from "./editor-shield.js";
@@ -229,13 +229,15 @@ export default class WidgetariumPlugin extends Plugin {
 		node.className = "wg-mount";
 		element.appendChild(node);
 
-		const mount = { element, node, state: { board }, save, screen, width: 0 };
+		// bound ONCE per mount, not per draw: a fresh host object every frame would change
+		// the identity every widget compares against
+		const mount = { element, node, state: { board }, save, screen, width: 0, host: bindNote(this.host, context.sourcePath) };
 		mount.draw = () => {
 			render(
 				h(WidgetSurface, {
 					board: mount.state.board,
 					registry: this.registry,
-					host: this.host,
+					host: mount.host,
 					editing: this.editing,
 					onToggleEditing: () => this.toggleEditing(),
 					screen: mount.screen,

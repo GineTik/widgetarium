@@ -10,7 +10,8 @@ globalThis.window = { setTimeout, clearTimeout };
 
 buildMirror();
 const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
-const { createHost } = await import("./.mjs-cache/host.mjs");
+const { createHost, bindNote } = await import("./.mjs-cache/host.mjs");
+const { MarkdownRenderer, MarkdownRenderChild } = await import("./.mjs-cache/obsidian.mjs");
 
 const VAULT = process.env.WG_VAULT ?? "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
 const FOLDER = "Orbitask/Tasks";
@@ -66,7 +67,20 @@ const app = {
 	workspace: { getLeaf: () => ({ openFile: async () => {} }) },
 };
 
-const host = createHost(app, { registerEvent: () => {} });
+// a stand-in for the plugin's Component half — the only part of it host.js touches
+const children = [];
+const plugin = {
+	registerEvent: () => {},
+	addChild: (child) => { children.push(child); child.loaded = true; return child; },
+	removeChild: (child) => {
+		// CONTEXT: Obsidian is not asked twice — a child it no longer holds is a fault, not a no-op
+		if (!children.includes(child)) throw new Error("removeChild called for a child the plugin does not hold");
+		children.splice(children.indexOf(child), 1);
+		child.loaded = false;
+		return child;
+	},
+};
+const host = createHost(app, plugin);
 const slot = host.slot({ kind: "folder", path: FOLDER });
 
 let failed = 0;
@@ -148,6 +162,43 @@ check("a path that is not a note fetches nothing", await slot.get({ path: "Orbit
 	const refusedWrite = await slot.update(target, { body: "---\nnot: properties\n---\nbody" });
 	check("a body that would become frontmatter is refused", texts.get(target.path), "No properties here.\n");
 	check("and the record does not claim the body that was asked for", refusedWrite.body, undefined);
+}
+
+// A WIDGET CANNOT ASK OBSIDIAN TO RENDER MARKDOWN. Read mode, post-processors and all — not
+// an editable live preview, which is why the design keeps an expand button.
+check("the host declares it can render markdown", host.can.renderMarkdown, true);
+{
+	const element = { textContent: "stale" };
+	const stop = host.ui.renderMarkdown(element, "# Hello", "Orbitask/Tasks/a.md");
+	const call = MarkdownRenderer.calls.at(-1);
+	// the renderer APPENDS — verified on the shipped runtime, where render() does el.appendChild
+	check("what stood in the element before is gone", element.textContent, "# Hello");
+	// the ORDER is the whole point: verified against the shipped runtime, where render is
+	// render(app, markdown, el, sourcePath, component)
+	check("the renderer is called with app, markdown, element, sourcePath", [call.app === app, call.markdown, call.el === element, call.sourcePath], [true, "# Hello", true, "Orbitask/Tasks/a.md"]);
+	check("and a component, or Obsidian leaks what it registered inside", call.component instanceof MarkdownRenderChild, true);
+	check("the component is loaded by the plugin that owns it", children.includes(call.component), true);
+	check("and letting go unloads it", (stop(), children.includes(call.component)), false);
+	check("a host that renders markdown says so through can, not by guessing", typeof host.ui.renderMarkdown, "function");
+	// letting go TWICE must not unload a second time, and a render landing after it must not
+	// paint into an element its owner has already given up
+	check("letting go twice is letting go once", (stop(), children.length), 0);
+	check("and the child stays unloaded", call.component.loaded, false);
+}
+
+// WIKILINKS RESOLVE AGAINST THE NOTE THEY ARE WRITTEN IN. A widget cannot learn its own note's
+// path — nothing in the view host carries it — so the path is bound where it IS known, at the
+// mount. Unbound, every [[link]] resolved from the vault root and quietly found the wrong file.
+{
+	const bound = bindNote(host, "Orbitask/Board.md");
+	const element = { textContent: "" };
+	bound.ui.renderMarkdown(element, "[[Task A]]");
+	check("a bound host renders from its own note", MarkdownRenderer.calls.at(-1).sourcePath, "Orbitask/Board.md");
+	bound.ui.renderMarkdown(element, "[[Task A]]", "Other/Note.md");
+	check("and a caller that names a path still wins", MarkdownRenderer.calls.at(-1).sourcePath, "Other/Note.md");
+	host.ui.renderMarkdown(element, "[[Task A]]");
+	check("an unbound host has no note to resolve from", MarkdownRenderer.calls.at(-1).sourcePath, "");
+	check("binding nothing hands back the same host, not a wrapper", bindNote(host, "") === host, true);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nthe shipped adapter answers");

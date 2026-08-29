@@ -22,7 +22,17 @@ export class Notice { constructor(message) { this.message = message; } }
 export class Plugin {}
 export class Modal {}
 export class Setting {}
-export class MarkdownRenderChild {}
+export class MarkdownRenderChild { constructor(containerEl) { this.containerEl = containerEl; } }
+// A STAND-IN, not a reimplementation to be believed: what it is here for is the ARGUMENT
+// ORDER, read off the shipped runtime — render(app, markdown, el, sourcePath, component),
+// which appends into el and returns a promise.
+export const MarkdownRenderer = {
+	calls: [],
+	async render(app, markdown, el, sourcePath, component) {
+		MarkdownRenderer.calls.push({ app, markdown, el, sourcePath, component });
+		el.textContent = (el.textContent ?? "") + markdown;
+	},
+};
 export const parseYaml = () => { throw new Error("parseYaml is not stubbed"); };
 export const stringifyYaml = () => { throw new Error("stringifyYaml is not stubbed"); };
 `;

@@ -67,8 +67,8 @@ if (typeof resolveFilter === "function") {
 const { viewHost } = await import("./.mjs-cache/engine/view-host.mjs");
 const fullHost = {
 	platform: "obsidian",
-	can: { fullscreen: true, network: true },
-	ui: { notify: () => {}, openNote: () => {} },
+	can: { fullscreen: true, network: true, renderMarkdown: true },
+	ui: { notify: () => {}, openNote: () => {}, renderMarkdown: (element, markdown) => `${markdown} into ${element}` },
 	slot: () => ({ list: () => {} }),
 	query: { backlinks: () => {} },
 	app: { vault: {} },
@@ -76,11 +76,20 @@ const fullHost = {
 };
 const exposed = viewHost(fullHost);
 check("the widget is told which platform it runs on", exposed.platform, "obsidian");
-check("and what it can do there", Object.keys(exposed.can).sort(), ["fullscreen", "network"]);
+check("and what it can do there", Object.keys(exposed.can).sort(), ["fullscreen", "network", "renderMarkdown"]);
 check("but gets no store", exposed.slot, undefined);
 check("no vault query", exposed.query, undefined);
 check("and no Obsidian app object", [exposed.app, exposed.plugin], [undefined, undefined]);
 check("what it does get, in full", Object.keys(exposed).sort(), ["can", "platform", "ui"]);
+
+// MARKDOWN IS THE HOST'S TO DRAW. A widget may only import widgetarium, widgetarium/kit and
+// preact, so Obsidian's renderer can only reach it through the host — and it reaches it as a
+// call taking an element the widget already owns, never as the app that could render it.
+check("a widget can ask the host to render markdown", typeof exposed.ui.renderMarkdown, "function");
+check("and the element it names is its own, not the vault", exposed.ui.renderMarkdown("#node", "# Hi"), "# Hi into #node");
+check("the ui it gets, in full", Object.keys(exposed.ui).sort(), ["notify", "renderMarkdown"]);
+// still nothing else: the seam must not have widened the door it came through
+check("still no Obsidian app object", [exposed.app, exposed.plugin, exposed.slot], [undefined, undefined, undefined]);
 
 // Slots: the board decides WHICH widget draws a part of another. A slotted widget gets no
 // source of its own — the parent feeds it — which is what makes replacing a card a setting.
@@ -105,6 +114,7 @@ if (typeof resolveSlots === "function") {
 
 	const overridden = resolveSlots(manifest, { slots: { card: "@other/card" } }, registry, noHost, {});
 	check("a tile may name a different widget for the slot", overridden.card, null);
+
 } else {
 	failed += 1;
 	console.log("!!  resolveSlots is not exported from surface.js — slots cannot be tested");

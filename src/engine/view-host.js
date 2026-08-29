@@ -6,6 +6,11 @@ export function viewHost(host) {
 	return {
 		platform: host.platform,
 		can: host.can,
-		ui: { notify: (message) => host.ui.notify(message) },
+		ui: {
+			notify: (message) => host.ui.notify(message),
+			// CONTEXT: an element the widget owns, never the renderer's reach into the vault
+			// CONTEXT: a host without Obsidian answers can.renderMarkdown false
+			renderMarkdown: (element, markdown, sourcePath) => host.ui.renderMarkdown(element, markdown, sourcePath),
+		},
 	};
 }
