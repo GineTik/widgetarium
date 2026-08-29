@@ -1,8 +1,10 @@
 import { TFile, TFolder, Notice } from "obsidian";
 import { Dialog } from "./dialog.js";
 import { matches, valueOf } from "./engine/match.js";
+import { readBody, replaceBody } from "./block-writer.js";
 
-function toRecord(app, file) {
+// TRADE-OFF: body absent on a listed record, present on a fetched one — twenty cards, no reads
+function toRecord(app, file, body) {
 	const cache = app.metadataCache.getFileCache(file);
 	return {
 		path: file.path,
@@ -10,7 +12,16 @@ function toRecord(app, file) {
 		props: { ...(cache?.frontmatter ?? {}) },
 		name: file.basename,
 		meta: { created: file.stat.ctime, modified: file.stat.mtime },
+		body,
 	};
+}
+
+// CONTEXT: frontmatter is processFrontMatter's half; refuse rather than let a body write move it
+async function writeBody(app, file, body) {
+	const written = readBody(await app.vault.process(file, (text) => replaceBody(text, body) ?? text));
+	if (written === String(body ?? "")) return written;
+	console.error(`[widgetarium] body write refused: it would have moved the frontmatter of ${file.path}`);
+	return undefined;
 }
 
 function sortRecords(records, sort) {
@@ -85,9 +96,11 @@ function createSlot(app, binding) {
 			return { rows: limited, total: rows.length };
 		},
 
+		// TRADE-OFF: one note, so the read belongs here and never in list()
 		async get(ref) {
 			const file = app.vault.getAbstractFileByPath(ref.path);
-			return file instanceof TFile ? toRecord(app, file) : null;
+			if (!(file instanceof TFile)) return null;
+			return toRecord(app, file, readBody(await app.vault.cachedRead(file)));
 		},
 
 		async describe() {
@@ -125,17 +138,23 @@ function createSlot(app, binding) {
 			const path = `${folderPath}/${slugify(title)}.md`;
 			const body = draft.body ? `\n${draft.body}\n` : "\n";
 			const file = await app.vault.create(path, stringifyFrontmatter(draft.props ?? {}) + body);
-			return toRecord(app, file);
+			// CONTEXT: same rule as update — the record reports the body that landed
+			return toRecord(app, file, draft.body === undefined ? undefined : readBody(await app.vault.read(file)));
 		};
 
 		slot.update = async (ref, patch) => {
 			const file = app.vault.getAbstractFileByPath(ref.path);
 			if (!(file instanceof TFile)) return null;
-			await app.fileManager.processFrontMatter(file, (frontmatter) => {
-				Object.assign(frontmatter, patch.props ?? {});
-			});
+			// CONTEXT: processFrontMatter restringifies the YAML — skip it for a body-only patch
+			if (patch.props) {
+				await app.fileManager.processFrontMatter(file, (frontmatter) => {
+					Object.assign(frontmatter, patch.props);
+				});
+			}
+			// CONTEXT: what LANDED, never what was asked — a refused write must not be reported
+			const body = patch.body === undefined ? undefined : await writeBody(app, file, patch.body);
 			await settled(app, file);
-			return toRecord(app, file);
+			return toRecord(app, file, body);
 		};
 
 		slot.remove = async (ref) => {
