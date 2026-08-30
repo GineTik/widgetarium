@@ -17,57 +17,37 @@ const VERBS = { browse: "Open", place: "Add", fill: "Use" };
 const SHORT_LABEL = "These want more than this slot hands down";
 const UNINSTALLED_VERB = "Install";
 
-// TRADE-OFF: settings-fit.js measured this floor — 12px type lands at 8.4px under it
-const READABLE_SCALE = 0.7;
+// TRADE-OFF: NOT the settings window's 0.7. That floor is for a widget being read and edited;
+// here a widget is being RECOGNISED, and a shape reads long after its type has become texture.
+// Below this even the shape goes, and the widget draws a stand-in instead.
+const READABLE_SCALE = 0.3;
 
-const COLUMN_TARGET_PX = 120;
-const MAX_COLUMNS = 10;
-const MAX_ROWS = 10;
-const ROW_PX = 44;
+// EVERY TILE IS THE SAME SQUARE. Sized from each widget's own proportion, the grid carried
+// real information — and read as clutter: nine different shapes, no two rows alike, and a
+// widget's importance seemingly set by how wide it happened to be. A catalogue is scanned,
+// and scanning wants one shape. The proportion moves into the picture inside the square.
+const TILE_TARGET_PX = 220;
+const MIN_COLUMNS = 2;
+const MAX_COLUMNS = 6;
 const GAP_PX = 12;
-const FRAME_PAD_PX = 6;
-const FOOT_PX = 28;
-const UNREADABLE_SPAN = { columns: 2, rows: 3 };
+const FRAME_PAD_PX = 8;
+const FOOT_PX = 30;
 
 function clamp(value, low, high) {
 	return Math.max(low, Math.min(value, high));
 }
 
-function stageOf(columns, rows, bento) {
-	return {
-		stageWidth: columns * bento.columnPx + (columns - 1) * GAP_PX - 2 * FRAME_PAD_PX,
-		stageHeight: rows * ROW_PX + (rows - 1) * GAP_PX - 2 * FRAME_PAD_PX - FOOT_PX,
-	};
-}
-
-// TRADE-OFF: the smallest span that still reads, so the grid carries proportion without sprawling
-function bestSpan(size, bento) {
-	let best = null;
-	for (let columns = 1; columns <= bento.columns; columns += 1) {
-		for (let rows = 1; rows <= MAX_ROWS; rows += 1) {
-			const stage = stageOf(columns, rows, bento);
-			if (stage.stageHeight <= 0) continue;
-			const scale = Math.min(1, stage.stageWidth / size.width, stage.stageHeight / size.height);
-			if (scale < READABLE_SCALE) continue;
-			const filled = (size.width * scale * size.height * scale) / (stage.stageWidth * stage.stageHeight);
-			const cost = columns * rows * (2 - filled);
-			if (!best || cost < best.cost) best = { columns, rows, ...stage, scale, cost };
-		}
-	}
-	return best;
-}
-
 export function bentoTile(manifest, bento) {
 	const size = previewSize(manifest, GRID.cellPx, GRID.gapPx);
-	const found = bestSpan(size, bento);
-	if (found) return { size, ...found };
-
-	const columns = Math.min(UNREADABLE_SPAN.columns, bento.columns);
-	return { size, columns, rows: UNREADABLE_SPAN.rows, ...stageOf(columns, UNREADABLE_SPAN.rows, bento), scale: 0 };
+	const stageWidth = bento.columnPx - 2 * FRAME_PAD_PX;
+	const stageHeight = bento.columnPx - 2 * FRAME_PAD_PX - FOOT_PX;
+	// CONTEXT: a widget wider than the square shrinks until it fits; one smaller is left alone
+	const scale = Math.min(1, stageWidth / size.width, stageHeight / size.height);
+	return { size, columns: 1, rows: 1, stageWidth, stageHeight, scale };
 }
 
 export function measureBento(width) {
-	const columns = clamp(Math.round((width + GAP_PX) / (COLUMN_TARGET_PX + GAP_PX)), 2, MAX_COLUMNS);
+	const columns = clamp(Math.round((width + GAP_PX) / (TILE_TARGET_PX + GAP_PX)), MIN_COLUMNS, MAX_COLUMNS);
 	return { columns, columnPx: (width - (columns - 1) * GAP_PX) / columns };
 }
 
@@ -157,7 +137,6 @@ function Tile({ definition, tile, registry, host, mode, lacks, onPick, onDetail 
 			role: "button",
 			tabIndex: 0,
 			"aria-label": `${verb} ${shortName(manifest)}`,
-			style: { gridColumn: `span ${tile.columns}`, gridRow: `span ${tile.rows}` },
 			onClick: () => onPick?.(manifest.id, mode),
 			onKeyDown: (event) => (event.key === "Enter" || event.key === " ") && onPick?.(manifest.id, mode),
 		},
@@ -171,7 +150,11 @@ function Tile({ definition, tile, registry, host, mode, lacks, onPick, onDetail 
 			h("footer", { class: "wg-cat-foot", key: "foot" }, [
 				// TRADE-OFF: a mark beside the name, not a pill over the picture — the picture is the point
 				installed
-					? h("span", { class: "wg-cat-held", key: "held", title: "Installed" }, h(Icon, { name: "tick", size: 12 }))
+					? h("span", { class: "wg-cat-held", key: "held" }, [
+							h(Icon, { name: "tick", size: 12, key: "tick" }),
+							// CONTEXT: a bare tick read as decoration — the word is what says what it means
+							h("span", { class: "wg-cat-held-word", key: "word" }, "Installed"),
+					  ])
 					: null,
 				h("span", { class: "wg-cat-name", key: "name", title: manifest.title ?? manifest.id }, shortName(manifest)),
 				h("span", { class: "wg-cat-verb", key: "verb" }, verb),
@@ -231,7 +214,7 @@ export function Catalogue({ registry, host, mode = "browse", available = [], ran
 	const [scope, setScope] = useState("all");
 	const gridRef = useRef(null);
 	const width = useWidth(gridRef);
-	const bento = measureBento(Math.max(width, COLUMN_TARGET_PX));
+	const bento = measureBento(Math.max(width, TILE_TARGET_PX));
 	const needle = keyword.trim().toLowerCase();
 
 	// CONTEXT: local wins over a repository entry of the same id, so an own widget is never replaced
@@ -253,13 +236,8 @@ export function Catalogue({ registry, host, mode = "browse", available = [], ran
 			tile: bentoTile(definition.manifest ?? {}, bento),
 			fit: rank?.(definition.manifest ?? {}) ?? null,
 		}))
-		// TRADE-OFF: fit first and biggest second, because dense packing leaves a hole wherever a
-		// tall tile arrives late
-		.sort(
-			(one, other) =>
-				(one.fit?.order ?? 0) - (other.fit?.order ?? 0) ||
-				other.tile.columns * other.tile.rows - one.tile.columns * one.tile.rows,
-		);
+		// CONTEXT: every tile is one square, so only fit orders them — size cannot
+		.sort((one, other) => (one.fit?.order ?? 0) - (other.fit?.order ?? 0));
 
 	return h("div", { class: "wg-cat" }, [
 		h("header", { class: "wg-cat-head", key: "head" }, [
@@ -280,7 +258,7 @@ export function Catalogue({ registry, host, mode = "browse", available = [], ran
 				key: "grid",
 				ref: gridRef,
 				class: "wg-cat-grid",
-				style: { "--wg-cat-columns": bento.columns, "--wg-cat-row": `${ROW_PX}px`, "--wg-cat-gap": `${GAP_PX}px` },
+				style: { "--wg-cat-columns": bento.columns, "--wg-cat-gap": `${GAP_PX}px` },
 			},
 			width === 0 ? null : rankedTiles(shown, { registry, host, mode, onPick, onDetail }),
 		),

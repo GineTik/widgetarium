@@ -2064,20 +2064,23 @@ pre:has(> .block-language-widgetarium),
 
 :is(.wg-root, .wg-portal) .wg-cat-grid {
 	display: grid;
-	grid-template-columns: repeat(var(--wg-cat-columns, 6), minmax(0, 1fr));
-	grid-auto-rows: var(--wg-cat-row, 56px);
-	/* CONTEXT: a tall tile leaves a hole beside it, and a short one is glad to fill it */
-	grid-auto-flow: row dense;
+	grid-template-columns: repeat(var(--wg-cat-columns, 5), minmax(0, 1fr));
+	/* one shape, every row alike — a catalogue is scanned, and scanning wants a rhythm */
+	grid-auto-rows: auto;
 	gap: var(--wg-cat-gap, 12px);
 	align-content: start;
 	overflow: auto;
 	min-height: 0;
 }
 
+
 :is(.wg-root, .wg-portal) .wg-cat-tile {
 	position: relative;
 	display: flex;
 	flex-direction: column;
+	/* ONE SHAPE. Sized from each widget's own proportion the grid read as clutter — nine
+	   shapes, no two rows alike, and a widget looking important for being wide. */
+	aspect-ratio: 1;
 	min-width: 0;
 	background: var(--wg-kit-fill);
 	border-radius: var(--wg-kit-plate);
@@ -2191,6 +2194,14 @@ pre:has(> .block-language-widgetarium),
 	height: 28px;
 	padding: 0 6px 0 10px;
 	background: var(--wg-kit-raise);
+}
+
+/* the word rides with the tick and steps aside first when the square gets narrow */
+:is(.wg-root, .wg-portal) .wg-cat-held-word {
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-muted);
+	white-space: nowrap;
 }
 
 :is(.wg-root, .wg-portal) .wg-cat-name {

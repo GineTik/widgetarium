@@ -31,8 +31,8 @@
 	],
 	"preview": {
 		"size": {
-			"w": 7,
-			"h": 1
+			"w": 6,
+			"h": 2
 		},
 		"settings": {
 			"views": "Kanban, Archived columns",
