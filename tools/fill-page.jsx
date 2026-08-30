@@ -1,6 +1,6 @@
 import { render } from "preact";
-import ViewTabs from "../widgets/@orbitask/view-tabs/widget.jsx";
-import FilterPanel from "../widgets/@orbitask/filter-panel/widget.jsx";
+import ViewTabs from "../widgets/@task/view-tabs/widget.jsx";
+import FilterPanel from "../widgets/@core/filter-panel/widget.jsx";
 import { spanToPixels } from "../src/layout.js";
 import { GRID } from "../src/paths.js";
 

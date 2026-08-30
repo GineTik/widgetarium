@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/kanban-board",
-	"title": "OrbiTask · Kanban board",
+	"id": "@task/kanban-board",
+	"title": "Kanban board",
 	"view": "Kanban",
 	"defaultSize": {
 		"w": 13,
@@ -10,7 +10,7 @@
 	"slots": {
 		"card": {
 			"of": "widget",
-			"default": "@orbitask/task-card",
+			"default": "@task/task-card",
 			"gives": {
 				"task": [
 					"title",

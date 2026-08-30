@@ -6,9 +6,9 @@ import { readFileSync, readdirSync } from "node:fs";
 const ref = readFileSync("docs/reference/orbitask-converted.html", "utf8");
 // CONTEXT: the approved design for the parts the task dialog is built from
 const dialogRef = readFileSync("docs/reference/task-dialog.html", "utf8");
-const ours = readFileSync("styles.css", "utf8") + readFileSync("widgets/@orbitask/tokens.css", "utf8")
-	+ readdirSync("widgets/@orbitask").filter((n) => !n.endsWith(".css"))
-		.map((n) => readFileSync(`widgets/@orbitask/${n}/widget.jsx`, "utf8")).join("\n");
+const ours = readFileSync("styles.css", "utf8") + readFileSync("widgets/@task/tokens.css", "utf8")
+	+ readdirSync("widgets/@task").filter((n) => !n.endsWith(".css"))
+		.map((n) => readFileSync(`widgets/@task/${n}/widget.jsx`, "utf8")).join("\n");
 
 // PULL ONE DECLARATION OUT OF THE BASE RULE. Taking the first rule whose selector merely ENDS
 // with the class read a variant instead: adding `.wg-kit-seg.is-s .wg-kit-seg-thumb` above the

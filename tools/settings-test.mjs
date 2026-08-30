@@ -110,15 +110,15 @@ console.log("\n— a mounted widget can record which widget fills its slot —")
 {
 	// CONTEXT: resolveSlots reads tile.slots, which mountedTile never built
 	const parent = { id: "group", mounted: { kanban: { settings: { a: 1 }, slots: { card: "@other/card" } } } };
-	const child = mountedTile(parent, "kanban", "@orbitask/kanban-board");
+	const child = mountedTile(parent, "kanban", "@task/kanban-board");
 	check("the child carries the slot pick", child.slots?.card, "@other/card");
 	check("and a mount that never picked one carries an empty table", JSON.stringify(mountedTile({ id: "g" }, "k", "w").slots), "{}");
 }
 
 console.log("\n— and the panel writes what it draws —");
 {
-	const KANBAN_ID = "@orbitask/kanban-board";
-	const CARD_ID = "@orbitask/task-card";
+	const KANBAN_ID = "@task/kanban-board";
+	const CARD_ID = "@task/task-card";
 	const OTHER_ID = "@other/compact-card";
 
 	const manifest = {

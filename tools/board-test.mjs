@@ -64,7 +64,7 @@ check("the columns account for every task on the board", columns.reduce((total, 
 check("and each column really holds its own status", columns.every((column) => marketing.filter((row) => row.props.status === column.name).length === column.count), true);
 
 // the whole point: a click on the other tab changes what the board sees
-context.set("board", "Ux Team", "@orbitask/board-tabs");
+context.set("board", "Ux Team", "@task/board-tabs");
 const ux = applyFilter(rows, resolveFilter(declared, context));
 check("switching the tab switches the tasks", ux.length > 0 && ux.length !== marketing.length, true);
 check("and none of the other board came with it", ux.every((row) => row.props.board === "Ux Team"), true);
@@ -94,24 +94,24 @@ check("and a different path does not match", matches({ path: "a/c.md", props: {}
 // The popup: the board writes which task is open, the popup's own filter resolves @task
 // against it and comes back with exactly one row. Neither widget knows the other exists.
 const opened = createContext({ board: "Marketing Team" });
-opened.set("task", "Orbitask/Tasks/audit-the-type-scale.md", "@orbitask/kanban-board");
+opened.set("task", "Orbitask/Tasks/audit-the-type-scale.md", "@task/kanban-board");
 const popupFilter = resolveFilter([{ prop: "path", op: "is", value: "@task" }], opened);
 const forPopup = rows.filter((row) => matches(row, popupFilter));
 check("the popup gets exactly the opened task", forPopup.length, 1);
 check("and it is the right one", forPopup[0]?.props.title, "Audit the type scale");
 
-opened.set("task", "Orbitask/Tasks/rework-the-empty-states.md", "@orbitask/kanban-board");
+opened.set("task", "Orbitask/Tasks/rework-the-empty-states.md", "@task/kanban-board");
 const next = rows.filter((row) => matches(row, resolveFilter([{ prop: "path", op: "is", value: "@task" }], opened)));
 check("opening another card swaps what the popup shows", next[0]?.props.title, "Rework the empty states");
 
 // one writer per key still holds across widgets that both want to open things
-check("a second widget may not also write the task key", opened.set("task", "x", "@orbitask/task-dialog"), false);
+check("a second widget may not also write the task key", opened.set("task", "x", "@task/task-dialog"), false);
 
 // The filter bar writes ONE object; the board's filter carries a spread clause that becomes
 // one query clause per key. Without it every widget would have to know in advance which
 // properties are filterable — the exact knowledge the bar reads off the data at runtime.
 const picking = createContext({ board: "Marketing Team" });
-picking.set("filters", { priority: "P1" }, "@orbitask/filter-panel");
+picking.set("filters", { priority: "P1" }, "@core/filter-panel");
 
 const boardFilter = [{ prop: "board", op: "is", value: "@board" }, { spread: "@filters" }];
 const narrowed = resolveFilter(boardFilter, picking);
@@ -148,7 +148,7 @@ check("picking a priority narrows the board", p1.length < marketingRows.length, 
 		}
 		const values = valuesOf(prop);
 		const ctx = createContext({ board: "Marketing Team" });
-		ctx.set("filters", { [prop]: [values[0]] }, "@orbitask/filter-panel");
+		ctx.set("filters", { [prop]: [values[0]] }, "@core/filter-panel");
 		const whole = rows.filter((row) => matches(row, resolveFilter([{ prop: "board", op: "is", value: "@board" }], ctx)));
 		const kept = rows.filter((row) => matches(row, resolveFilter(boardFilter, ctx)));
 		check(`${name}: picking one narrows the board`, kept.length > 0 && kept.length < whole.length, true);
@@ -160,7 +160,7 @@ check("picking a priority narrows the board", p1.length < marketingRows.length, 
 }
 check("and every row left really carries it", p1.every((row) => row.props.priority === "P1"), true);
 
-picking.set("filters", {}, "@orbitask/filter-panel");
+picking.set("filters", {}, "@core/filter-panel");
 check("clearing the bar restores the whole board", rows.filter((row) => matches(row, resolveFilter(boardFilter, picking))).length, marketingRows.length);
 
 // REGRESSION: an unset selection used to become a clause matching the empty string, which

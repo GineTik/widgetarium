@@ -13,10 +13,10 @@ const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Content
 const work = mkdtempSync(path.join(tmpdir(), "wg-cat-"));
 
 const SOURCE = "widgets";
-const NOT_INSTALLED = ["@orbitask/view-group", "@orbitask/archived-columns"];
+const NOT_INSTALLED = ["@core/view-group", "@task/archived-columns"];
 const WIDTH = Number(process.env.WG_WIDTH ?? 1280);
 // the only slot two shipped widgets actually share, so fill mode is photographed against real data
-const SLOT = { parent: "@orbitask/kanban-board", name: "card" };
+const SLOT = { parent: "@task/kanban-board", name: "card" };
 const HEIGHT = Number(process.env.WG_HEIGHT ?? 1240);
 
 function collect(from, into, prefix) {
@@ -34,9 +34,9 @@ const files = collect(SOURCE, {}, WIDGETS_DIR);
 // CONTEXT: a divider nobody crossed is a divider nobody has — no shipped widget declares an
 // `accepts` the kanban's card slot cannot satisfy, so the ranked half of the picture needs a probe
 if (process.env.WG_MISFIT) {
-	const folder = `${WIDGETS_DIR}/@orbitask/estimate-card`;
+	const folder = `${WIDGETS_DIR}/@task/estimate-card`;
 	files[`${folder}/manifest.json`] = JSON.stringify({
-		id: "@orbitask/estimate-card",
+		id: "@task/estimate-card",
 		title: "OrbiTask \u00b7 Estimate card",
 		defaultSize: { w: 4, h: 2 },
 		preview: { size: { w: 4, h: 2 } },
@@ -50,9 +50,9 @@ export default createWidget(function EstimateCard() {
 
 // CONTEXT: a containment nobody triggered is a containment nobody has
 if (process.env.WG_BREAK) {
-	const folder = `${WIDGETS_DIR}/@orbitask/throwing-probe`;
+	const folder = `${WIDGETS_DIR}/@task/throwing-probe`;
 	files[`${folder}/manifest.json`] = JSON.stringify({
-		id: "@orbitask/throwing-probe",
+		id: "@task/throwing-probe",
 		title: "OrbiTask \u00b7 Throwing probe",
 		defaultSize: { w: 4, h: 2 },
 		preview: { size: { w: 4, h: 2 } },

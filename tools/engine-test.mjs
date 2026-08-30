@@ -97,11 +97,11 @@ const { resolveSlots } = await import("./.mjs-cache/surface.mjs");
 if (typeof resolveSlots === "function") {
 	const registry = {
 		get: (id) =>
-			id === "@orbitask/task-card"
+			id === "@task/task-card"
 				? { component: () => null, manifest: { settings: [{ key: "tone", default: "plain" }] } }
 				: null,
 	};
-	const manifest = { slots: { card: { of: "widget", default: "@orbitask/task-card" } } };
+	const manifest = { slots: { card: { of: "widget", default: "@task/task-card" } } };
 	const noHost = { platform: "obsidian", can: {}, ui: { notify: () => {} } };
 
 	const bySpec = resolveSlots(manifest, {}, registry, noHost, {});
@@ -143,10 +143,10 @@ if (typeof resolveSlots === "function") {
 	const mine = createContext({ board: "Marketing Team" });
 	const yours = createContext({ board: "Marketing Team" });
 
-	mine.set("search", "audit", "@orbitask/board-tabs");
-	mine.set("filters", { priority: "P1" }, "@orbitask/filter-panel");
-	mine.set("task", "Orbitask/Tasks/one.md", "@orbitask/kanban-board");
-	mine.set("board", "Ux Team", "@orbitask/board-tabs");
+	mine.set("search", "audit", "@task/board-tabs");
+	mine.set("filters", { priority: "P1" }, "@core/filter-panel");
+	mine.set("task", "Orbitask/Tasks/one.md", "@task/kanban-board");
+	mine.set("board", "Ux Team", "@task/board-tabs");
 
 	check("what I look at is mine", [mine.get("search"), mine.get("board")], ["audit", "Ux Team"]);
 	check("and none of it reaches another viewer", [yours.get("search"), yours.get("task"), yours.get("board")], [undefined, undefined, "Marketing Team"]);

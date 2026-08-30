@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/view-group",
-	"title": "OrbiTask · View group",
+	"id": "@core/view-group",
+	"title": "View group",
 	"defaultSize": {
 		"w": 13,
 		"h": 8
@@ -20,7 +20,7 @@
 			"key": "views",
 			"type": "text",
 			"label": "Views — widget ids, in order",
-			"default": "@orbitask/kanban-board, @orbitask/archived-columns"
+			"default": "@task/kanban-board, @task/archived-columns"
 		}
 	],
 	"preview": {

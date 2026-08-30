@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/archived-columns",
-	"title": "OrbiTask · Archived columns",
+	"id": "@task/archived-columns",
+	"title": "Archived columns",
 	"view": "Archived columns",
 	"defaultSize": {
 		"w": 13,

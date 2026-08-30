@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/filter-panel",
-	"title": "OrbiTask · Filter",
+	"id": "@core/filter-panel",
+	"title": "Filter",
 	"defaultSize": {
 		"w": 3,
 		"h": 1

@@ -83,7 +83,7 @@ rather than a fork:
 
 ```js
 export const schema = {
-	slots: { card: { of: "widget", default: "@orbitask/task-card" } },
+	slots: { card: { of: "widget", default: "@task/task-card" } },
 };
 ```
 

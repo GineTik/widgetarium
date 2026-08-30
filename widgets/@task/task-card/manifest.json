@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/task-card",
-	"title": "OrbiTask · Task card",
+	"id": "@task/task-card",
+	"title": "Task card",
 	"defaultSize": {
 		"w": 4,
 		"h": 2

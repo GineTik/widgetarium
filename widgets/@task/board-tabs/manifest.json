@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/board-tabs",
-	"title": "OrbiTask · Board tabs",
+	"id": "@task/board-tabs",
+	"title": "Board tabs",
 	"defaultSize": {
 		"w": 13,
 		"h": 1

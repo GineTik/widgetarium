@@ -50,7 +50,7 @@ const bundle = await esbuild.build({
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@orbitask/tokens.css", "utf8")}</style>
+<style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
 <style>body { margin: 0; font-family: -apple-system, "Segoe UI", sans-serif; }</style>
 </head><body><div class="wg-root"></div><script id="wg-measure" type="application/json"></script>
 <script>${bundle.outputFiles[0].text}</script></body></html>`;
@@ -145,7 +145,7 @@ console.log("\n— the label goes only when the label does not fit —");
 console.log("\n— a widget that cannot use the height says so, and the grip stops —");
 {
 	const { clampPlace } = await import("./.mjs-cache/layout.mjs");
-	const control = JSON.parse(readFileSync("widgets/@orbitask/view-tabs/manifest.json", "utf8"));
+	const control = JSON.parse(readFileSync("widgets/@task/view-tabs/manifest.json", "utf8"));
 	const dragged = { id: "tabs", x: 0, y: 0, w: 6, h: 5 };
 
 	check("the manifest declares a maximum height", control.maxSize?.h, 1);

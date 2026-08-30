@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/task-dialog",
-	"title": "OrbiTask · Task dialog",
+	"id": "@task/task-dialog",
+	"title": "Task dialog",
 	"defaultSize": {
 		"w": 3,
 		"h": 1

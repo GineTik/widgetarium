@@ -7,15 +7,15 @@ widgetarium: screen
 ```widgetarium
 tiles:
   - id: boards
-    widget: "@orbitask/board-tabs"
+    widget: "@task/board-tabs"
     settings:
       tabs: Widgetarium, Marketing Team, Ux Team
       activeTab: Widgetarium
       archived: Untitled 1, Untitled 2, Test
   - id: views
-    widget: "@orbitask/view-tabs"
+    widget: "@task/view-tabs"
   - id: board
-    widget: "@orbitask/kanban-board"
+    widget: "@task/kanban-board"
     settings:
       columns: To Do, Doing, Done
     sources:
@@ -24,11 +24,11 @@ tiles:
         filters: []
         sort: []
     slots:
-      card: "@orbitask/task-card"
+      card: "@task/task-card"
   - id: wynttpz
-    widget: "@orbitask/filter-panel"
+    widget: "@core/filter-panel"
   - id: taskdialog
-    widget: "@orbitask/task-dialog"
+    widget: "@task/task-dialog"
     sources:
       tasks:
         path: Orbitask/Tasks

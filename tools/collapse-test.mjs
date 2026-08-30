@@ -38,7 +38,7 @@ const expand = (places, id) =>
 	});
 
 let board = normalizeBoard({
-	tiles: [{ id: "panel", widget: "@orbitask/kanban-board" }],
+	tiles: [{ id: "panel", widget: "@task/kanban-board" }],
 	layouts: { 20: { places: [{ id: "panel", x: 0, y: 0, w: 5, h: 9 }] } },
 });
 
@@ -59,7 +59,7 @@ check("and stops remembering", at(20).wasW, undefined);
 
 // the remembered width is per screen, which is the whole reason it sits on the place
 board = normalizeBoard({
-	tiles: [{ id: "panel", widget: "@orbitask/kanban-board" }],
+	tiles: [{ id: "panel", widget: "@task/kanban-board" }],
 	layouts: {
 		20: { places: [{ id: "panel", x: 0, y: 0, w: 5, h: 9 }] },
 		8: { places: [{ id: "panel", x: 0, y: 0, w: 4, h: 9 }] },
@@ -72,7 +72,7 @@ check("and the narrow one to four", at(8).w, 4);
 
 // folded survives the file — as ONE fact on the tile, not one per layout
 const foldedBoard = normalizeBoard({
-	tiles: [{ id: "panel", widget: "@orbitask/kanban-board", folded: true }],
+	tiles: [{ id: "panel", widget: "@task/kanban-board", folded: true }],
 	layouts: { 20: { places: [{ id: "panel", x: 0, y: 0, w: 1, h: 9 }] } },
 });
 check("folded is written on the tile", serializeBoard(foldedBoard).tiles[0].folded, true);
@@ -250,7 +250,7 @@ check("and an unfolded tile carries no such field", "folded" in serializeBoard(b
 // the button looked dead because pressing it changed nothing.
 {
 	const start = normalizeBoard({
-		tiles: [{ id: "panel", widget: "@orbitask/kanban-board" }],
+		tiles: [{ id: "panel", widget: "@task/kanban-board" }],
 		layouts: { 20: { places: [{ id: "panel", x: 0, y: 0, w: 5, h: 9 }] } },
 	});
 
@@ -270,7 +270,7 @@ check("and an unfolded tile carries no such field", "folded" in serializeBoard(b
 
 	// and a file written under the old name still carries its width
 	const legacy = normalizeBoard({
-		tiles: [{ id: "panel", widget: "@orbitask/kanban-board" }],
+		tiles: [{ id: "panel", widget: "@task/kanban-board" }],
 		layouts: { 20: { places: [{ id: "panel", x: 0, y: 0, w: 1, h: 9, restoreW: 6 }] } },
 	});
 	check("an old file is folded", legacy.tiles[0].folded, true);

@@ -130,8 +130,8 @@ console.warn = (...parts) => {
 	warnings.push(parts.map((part) => String(part)).join(" "));
 };
 
-const KANBAN = "@orbitask/kanban-board";
-const ARCHIVED = "@orbitask/archived-columns";
+const KANBAN = "@task/kanban-board";
+const ARCHIVED = "@task/archived-columns";
 
 // CONTEXT: the kanban is MOUNTED in a view group now, so its settings live one level down
 const READING_PLACES = [
@@ -146,16 +146,16 @@ const READING_PLACES = [
 
 let board = normalizeBoard({
 	tiles: [
-		{ id: "boards", widget: "@orbitask/board-tabs" },
-		{ id: "views", widget: "@orbitask/view-tabs" },
-		{ id: "filters", widget: "@orbitask/filter-panel", sources: { tasks: { path: FOLDER } } },
+		{ id: "boards", widget: "@task/board-tabs" },
+		{ id: "views", widget: "@task/view-tabs" },
+		{ id: "filters", widget: "@core/filter-panel", sources: { tasks: { path: FOLDER } } },
 		{
 			id: "board",
-			widget: "@orbitask/view-group",
+			widget: "@core/view-group",
 			settings: { views: `${KANBAN}, ${ARCHIVED}` },
 			mounted: { [KANBAN]: { sources: { tasks: { path: FOLDER } } } },
 		},
-		{ id: "dialog", widget: "@orbitask/task-dialog", sources: { tasks: { path: FOLDER } } },
+		{ id: "dialog", widget: "@task/task-dialog", sources: { tasks: { path: FOLDER } } },
 	],
 	// CONTEXT: the filter bar reads this list — a property the board names is one it can filter by
 	properties: ["Status", "Priority", "Assignees"],
@@ -566,8 +566,8 @@ const kanbanSettings = () => mountedSettingsOf("board", KANBAN);
 const groupBoard = (views, seen = "Kanban", tabs = {}) =>
 	normalizeBoard({
 		tiles: [
-			{ id: "views", widget: "@orbitask/view-tabs", settings: tabs },
-			{ id: "board", widget: "@orbitask/view-group", settings: { views } },
+			{ id: "views", widget: "@task/view-tabs", settings: tabs },
+			{ id: "board", widget: "@core/view-group", settings: { views } },
 		],
 		context: { board: "Marketing Team", view: seen },
 		layouts: { 20: { places: [{ id: "views", x: 0, y: 0, w: 20, h: 1 }, { id: "board", x: 0, y: 1, w: 20, h: 10 }] } },
@@ -606,7 +606,7 @@ const pickView = async (name, id = "views") => {
 	);
 	check("a widget's own declaration comes through untouched", twice.views[0].manifest.view, "Kanban");
 
-	const gone = resolveMounts({ mounts: { views: {} } }, { views: "@orbitask/nowhere" }, registry, {});
+	const gone = resolveMounts({ mounts: { views: {} } }, { views: "@task/nowhere" }, registry, {});
 	check("an id that is not a widget is still an entry", gone.views.map((entry) => entry.problem), ["not-found"]);
 	check("with nothing to draw", gone.views[0].render, null);
 }
@@ -622,7 +622,7 @@ const pickView = async (name, id = "views") => {
 
 {
 	// CONTEXT: an unresolvable id used to be dropped, so the group lied about what it holds
-	board = groupBoard("@orbitask/no-such-view", "Kanban");
+	board = groupBoard("@task/no-such-view", "Kanban");
 	draw();
 	await settle();
 	const shown = tileNode("board").textContent;
@@ -649,9 +649,9 @@ const pickView = async (name, id = "views") => {
 	// CONTEXT: ownership was keyed by widget id, so a second instance read as the first updating itself
 	board = normalizeBoard({
 		tiles: [
-			{ id: "left", widget: "@orbitask/view-tabs" },
-			{ id: "right", widget: "@orbitask/view-tabs" },
-			{ id: "board", widget: "@orbitask/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
+			{ id: "left", widget: "@task/view-tabs" },
+			{ id: "right", widget: "@task/view-tabs" },
+			{ id: "board", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
 		],
 		layouts: {
 			20: {
@@ -680,8 +680,8 @@ const pickView = async (name, id = "views") => {
 	const switcherBoard = (id) =>
 		normalizeBoard({
 			tiles: [
-				{ id, widget: "@orbitask/view-tabs" },
-				{ id: "board", widget: "@orbitask/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
+				{ id, widget: "@task/view-tabs" },
+				{ id: "board", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
 			],
 			layouts: { 20: { places: [{ id, x: 0, y: 0, w: 20, h: 1 }, { id: "board", x: 0, y: 1, w: 20, h: 10 }] } },
 		});
@@ -710,7 +710,7 @@ const pickView = async (name, id = "views") => {
 		broken = normalizeBoard({
 			tiles: [
 				{ id: "a", widget: KANBAN, sources: { tasks: null } },
-				{ id: "b", widget: "@orbitask/view-group", mounted: { "@foo": null } },
+				{ id: "b", widget: "@core/view-group", mounted: { "@foo": null } },
 			],
 		});
 	} catch (thrown) {
@@ -795,7 +795,7 @@ const pickView = async (name, id = "views") => {
 	// where a widget happens to be standing is not a fact about the board.
 	seen.length = 0;
 	board = normalizeBoard({
-		tiles: [{ id: "group", widget: "@orbitask/view-group", settings: { views: "@probe/board" } }],
+		tiles: [{ id: "group", widget: "@core/view-group", settings: { views: "@probe/board" } }],
 		properties: ["Status", "Priority"],
 		layouts: { 20: { places: [{ id: "group", x: 0, y: 0, w: 12, h: 8 }] } },
 	});
@@ -814,7 +814,7 @@ const pickView = async (name, id = "views") => {
 	const spare = dom.window.document.createElement("div");
 	dom.window.document.body.appendChild(spare);
 	let plain = normalizeBoard({
-		tiles: [{ id: "filters", widget: "@orbitask/filter-panel", sources: { tasks: { path: FOLDER } } }],
+		tiles: [{ id: "filters", widget: "@core/filter-panel", sources: { tasks: { path: FOLDER } } }],
 		context: { board: "Marketing Team" },
 		layouts: { 20: { places: [{ id: "filters", x: 0, y: 0, w: 3, h: 1 }] } },
 	});
@@ -882,7 +882,7 @@ const pickView = async (name, id = "views") => {
 // which is the only question a person adding one is actually asking.
 {
 	board = normalizeBoard({
-		tiles: [{ id: "header", widget: "@orbitask/board-tabs" }],
+		tiles: [{ id: "header", widget: "@task/board-tabs" }],
 		layouts: { 20: { places: [{ id: "header", x: 0, y: 0, w: 12, h: 2 }] } },
 	});
 	editing = true;
@@ -910,7 +910,7 @@ const pickView = async (name, id = "views") => {
 	check("the card is offered", Boolean(card), true);
 	await click(card);
 	check("picking it adds a tile", board.tiles.length, before + 1);
-	check("of the widget that was drawn", board.tiles.at(-1).widget, "@orbitask/task-card");
+	check("of the widget that was drawn", board.tiles.at(-1).widget, "@task/task-card");
 	const placed = Object.values(board.layouts).flat().find((place) => place.id === board.tiles.at(-1).id);
 	check("at the size that widget asks for", placed?.w, 4);
 	check("and the catalogue closes behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);

@@ -9,7 +9,7 @@ const { findBlocks, replaceBlock } = await import("./.mjs-cache/block-writer.mjs
 
 const [, , file] = process.argv;
 const ID = "taskdialog";
-const WIDGET = "@orbitask/task-dialog";
+const WIDGET = "@task/task-dialog";
 
 const text = readFileSync(file, "utf8");
 const lines = text.split("\n");

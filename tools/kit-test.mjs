@@ -161,11 +161,12 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 // and the other to a literal, so a theme without the ramp drove them apart.
 {
 	const fs = await import("node:fs");
-	const tokens = fs.readFileSync("widgets/@orbitask/tokens.css", "utf8");
+	const tokens = fs.readFileSync("widgets/@task/tokens.css", "utf8");
 	check("the plate fill has ONE owner, so no second fallback can drift", /--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens), true);
 
-	for (const name of ["board-tabs", "filter-panel", "view-tabs"]) {
-		const src = fs.readFileSync(`widgets/@orbitask/${name}/widget.jsx`, "utf8");
+	for (const id of ["@task/board-tabs", "@core/filter-panel", "@task/view-tabs"]) {
+		const name = id.slice(id.indexOf("/") + 1);
+		const src = fs.readFileSync(`widgets/${id}/widget.jsx`, "utf8");
 		// either form counts: the kit is importable as components AND wearable as classes
 		check(`${name} builds on the kit rather than restating it`, /widgetarium\/kit|wg-kit-/.test(src), true);
 		check(`${name} does not paint its own plate`, /background:\s*var\(--orbi-plate\)/.test(src), false);
@@ -439,7 +440,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	render(null, host);
 }
 
-// CONTEXT: widgets/@orbitask/filter-panel builds this by hand today
+// CONTEXT: widgets/@core/filter-panel builds this by hand today
 {
 	const host = document.getElementById("host");
 	render(null, host);

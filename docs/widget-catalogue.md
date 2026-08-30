@@ -152,7 +152,7 @@ generated blocks, each derivable from a TS type and hand-writable until the buil
 
 // parent — what its slot hands down
 "slots": {
-  "card": { "of": "widget", "default": "@orbitask/task-card",
+  "card": { "of": "widget", "default": "@task/task-card",
             "gives": { "task": ["title", "tag", "priority", "status", "progress", "initials", "due", "files"] } }
 }
 ```

@@ -153,8 +153,8 @@ const host = { ...realHost, ui: { ...realHost.ui, notify: () => {} } };
 const registry = new WidgetRegistry({ vault: { adapter } });
 await registry.load();
 
-const KANBAN = "@orbitask/kanban-board";
-const DIALOG = "@orbitask/task-dialog";
+const KANBAN = "@task/kanban-board";
+const DIALOG = "@task/task-dialog";
 
 let board = normalizeBoard({
 	tiles: [

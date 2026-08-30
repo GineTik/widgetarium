@@ -1,5 +1,5 @@
 import { render } from "preact";
-import TaskDialog from "../widgets/@orbitask/task-dialog/widget.jsx";
+import TaskDialog from "../widgets/@task/task-dialog/widget.jsx";
 
 const task = {
 	path: "Orbitask/Tasks/replace-the-three-task-widgets.md",

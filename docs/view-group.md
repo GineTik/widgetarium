@@ -30,7 +30,7 @@ of a single slot". That was wrong, and a review caught it: slots and mounts shar
 except the final registry lookup.
 
 - A **slot** is a template hole. The parent resolves the data and hands it down; the child never
-  touches `sources` or context on its own. `@orbitask/task-card` is the example — it declares no
+  touches `sources` or context on its own. `@task/task-card` is the example — it declares no
   `sources` at all.
 - A **mount** is a nested tile minus geometry. The child goes through its own `WidgetHost`, so it
   resolves its own `sources`, substitutes `@board` and `@filters` itself, claims its own context,

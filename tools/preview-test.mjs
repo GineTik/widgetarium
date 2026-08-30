@@ -26,8 +26,8 @@ function check(label, got, want) {
 	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
 }
 
-const kanban = JSON.parse(readFileSync("widgets/@orbitask/kanban-board/manifest.json", "utf8"));
-const card = JSON.parse(readFileSync("widgets/@orbitask/task-card/manifest.json", "utf8"));
+const kanban = JSON.parse(readFileSync("widgets/@task/kanban-board/manifest.json", "utf8"));
+const card = JSON.parse(readFileSync("widgets/@task/task-card/manifest.json", "utf8"));
 
 console.log("— the data a preview draws comes from the manifest —\n");
 const { data, actions } = previewData(kanban);

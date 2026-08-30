@@ -1,6 +1,6 @@
 {
-	"id": "@orbitask/view-tabs",
-	"title": "OrbiTask · View tabs",
+	"id": "@task/view-tabs",
+	"title": "View tabs",
 	"defaultSize": {
 		"w": 13,
 		"h": 1
