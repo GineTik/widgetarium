@@ -143,7 +143,7 @@ if (typeof resolveSlots === "function") {
 	const mine = createContext({ board: "Marketing Team" });
 	const yours = createContext({ board: "Marketing Team" });
 
-	mine.set("search", "audit", "@orbitask/page-header");
+	mine.set("search", "audit", "@orbitask/board-tabs");
 	mine.set("filters", { priority: "P1" }, "@orbitask/filter-panel");
 	mine.set("task", "Orbitask/Tasks/one.md", "@orbitask/kanban-board");
 	mine.set("board", "Ux Team", "@orbitask/board-tabs");

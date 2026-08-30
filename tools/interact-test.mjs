@@ -146,7 +146,6 @@ const READING_PLACES = [
 
 let board = normalizeBoard({
 	tiles: [
-		{ id: "header", widget: "@orbitask/page-header" },
 		{ id: "boards", widget: "@orbitask/board-tabs" },
 		{ id: "views", widget: "@orbitask/view-tabs" },
 		{ id: "filters", widget: "@orbitask/filter-panel", sources: { tasks: { path: FOLDER } } },
@@ -230,20 +229,8 @@ if (uxTab) {
 	if (back) { await click(back); check("switching back restores the first board", cards(), marketing); }
 }
 
-// 3. the search field narrows it — the thing that used to be a <span>
-const search = surface().querySelector(".oh-search input.wg-kit-field-input");
-check("the search is a real field", Boolean(search), true);
-if (search) {
-	search.value = "audit";
-	search.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-	await settle();
-	const narrowed = cards();
-	check("typing narrows the board", narrowed < marketing && narrowed > 0, true);
-	search.value = "";
-	search.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-	await settle();
-	check("clearing the search restores it", cards(), marketing);
-}
+// CONTEXT: the search that narrowed the board lived in page-header, which is gone — the widget
+// searched by writing a context key, and that law is proved in engine-test without it
 
 // 5. adding a task reaches the adapter — a task is NAMED when it is made, the way a list is,
 // so the button opens a composer and nothing is written until the name is confirmed
@@ -895,7 +882,7 @@ const pickView = async (name, id = "views") => {
 // which is the only question a person adding one is actually asking.
 {
 	board = normalizeBoard({
-		tiles: [{ id: "header", widget: "@orbitask/page-header" }],
+		tiles: [{ id: "header", widget: "@orbitask/board-tabs" }],
 		layouts: { 20: { places: [{ id: "header", x: 0, y: 0, w: 12, h: 2 }] } },
 	});
 	editing = true;
