@@ -5,7 +5,10 @@ status: Doing
 priority: P3
 approval: Check
 progress: 0
-tag: info
+tags:
+  - copy
+tagTones:
+  copy: accent
 due: 18 Aug
 assignees: ["Maya Chen"]
 comments: 0

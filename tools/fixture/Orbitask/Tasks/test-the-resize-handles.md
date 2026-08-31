@@ -5,7 +5,8 @@ status: Doing
 priority: P2
 approval: Check
 progress: 55
-tag: warning
+tags:
+  - testing
 due: 16 Aug
 assignees: ["Dana Reid", "Kai Lawson"]
 comments: 7

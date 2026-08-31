@@ -5,7 +5,11 @@ status: Doing
 priority: P2
 approval: Approve
 progress: 80
-tag: warning
+tags:
+  - spec
+  - design
+tagTones:
+  spec: warning
 due: 10 Aug
 assignees: ["Maya Chen"]
 comments: 1

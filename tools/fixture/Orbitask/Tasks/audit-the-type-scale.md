@@ -5,7 +5,11 @@ status: Done
 priority: P2
 approval: Approve
 progress: 100
-tag: success
+tags:
+  - type
+  - scale
+tagTones:
+  type: success
 due: 01 Aug
 assignees: ["Rosa Duarte", "Tara Nolan", "Sam Okafor"]
 comments: 3

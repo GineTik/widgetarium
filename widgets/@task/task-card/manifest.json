@@ -1,6 +1,23 @@
 {
 	"id": "@task/task-card",
 	"title": "Task card",
+	"description": "One task as a card: title, tags, priority, progress, deadline and who is on it.",
+	"keywords": [
+		"task",
+		"card",
+		"tile",
+		"todo",
+		"item",
+		"ticket",
+		"issue",
+		"priority",
+		"tag",
+		"assignee",
+		"progress",
+		"due",
+		"deadline",
+		"avatar"
+	],
 	"defaultSize": {
 		"w": 4,
 		"h": 2
@@ -12,7 +29,8 @@
 				"title"
 			],
 			"optional": [
-				"tag",
+				"tags",
+				"tagTones",
 				"priority",
 				"status",
 				"progress",
@@ -30,10 +48,16 @@
 			"default": "Design the onboarding flow"
 		},
 		{
-			"key": "tagColour",
-			"label": "Tag colour — error, warning, success, info",
+			"key": "tags",
+			"label": "Tags, comma separated",
 			"type": "text",
-			"default": "error"
+			"default": "design, research"
+		},
+		{
+			"key": "tagTones",
+			"label": "Tag colours — tag: neutral, accent, success, warning, error, info, note or standout",
+			"type": "text",
+			"default": "design: warning, research: accent"
 		},
 		{
 			"key": "priority",
@@ -75,17 +99,18 @@
 	"preview": {
 		"size": {
 			"w": 4,
-			"h": 3
+			"h": 2
 		},
 		"settings": {
-			"title": "Design the onboarding flow",
-			"priority": "P1",
-			"status": "Check",
-			"progress": 34,
-			"initials": "Alex Morgan, Maya Chen",
-			"tagColour": "error",
-			"dueDate": "30 Aug",
-			"attachments": 2
+			"title": "Record the release notes",
+			"priority": "P3",
+			"status": "Approve",
+			"progress": 80,
+			"initials": "Dana Reid",
+			"dueDate": "4 Sep",
+			"attachments": 1,
+			"tags": "launch, notes",
+			"tagTones": "launch: accent"
 		}
 	}
 }

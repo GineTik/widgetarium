@@ -5,7 +5,10 @@ status: Done
 priority: P3
 approval: Approve
 progress: 100
-tag: success
+tags:
+  - icons
+tagTones:
+  icons: success
 due: 05 Aug
 assignees: ["Alex Morgan"]
 comments: 2

@@ -5,7 +5,11 @@ status: Done
 priority: P2
 approval: Approve
 progress: 100
-tag: success
+tags:
+  - tokens
+  - design
+tagTones:
+  tokens: success
 due: 02 Aug
 assignees: ["Kai Lawson", "Alex Morgan"]
 comments: 6

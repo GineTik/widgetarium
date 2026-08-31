@@ -412,10 +412,12 @@ function toColumns(rows, columnNames, groupBy, archived) {
 	return [...byName.entries()].map(([title, items]) => ({ title, rows: items }));
 }
 
-function afterColumnMoves(columns, from, to) {
-	const left = columns.filter((_, index) => index !== from);
-	left.splice(to, 0, columns[from]);
-	return left;
+// CONTEXT: an archived name keeps its slot, so a restore returns the column to where it sat
+function afterColumnMoves(authored, shown, from, to) {
+	const order = shown.filter((_, index) => index !== from);
+	order.splice(to, 0, shown[from]);
+	const moved = order[Symbol.iterator]();
+	return authored.map((name) => (shown.includes(name) ? moved.next().value : name));
 }
 
 // CONTEXT: the first free number, so a column leaving does not hand out a name already in use
@@ -423,12 +425,6 @@ function freeUntitled(taken) {
 	let index = 1;
 	while (taken.includes(`Untitled ${index}`)) index += 1;
 	return `Untitled ${index}`;
-}
-
-// CONTEXT: a board with no columns is not a board — the last one out is replaced by a fresh one
-function afterColumnLeaves(columns, leaving, taken) {
-	const left = columns.filter((column) => column !== leaving);
-	return left.length > 0 ? left : [freeUntitled(taken)];
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -458,7 +454,8 @@ function toCard(row, now) {
 	const deadline = valueOf(props, "deadline");
 	return {
 		title: props.title ?? row.name,
-		tag: props.tag,
+		tags: toList(valueOf(props, "tags")),
+		tagTones: valueOf(props, "tagTones"),
 		priority: props.priority,
 		status: props.approval,
 		progress: props.progress,
@@ -476,12 +473,17 @@ function toList(value) {
 		.filter(Boolean);
 }
 
-export default createWidget(function KanbanBoard({ settings, slots, data, actions, context, host, configure }) {
+export default createWidget(function KanbanBoard({ settings, slots, data, actions, context, host, configure, board, configureBoard }) {
 	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
 	const today = useMemo(() => new Date(), []);
-	const archivedColumns = toList(settings.archivedColumns);
+	// CONTEXT: the board owns this list; a note written before it did still answers until the first edit
+	const archivedColumns = board?.archivedColumns ?? toList(settings.archivedColumns);
 	// CONTEXT: deduped, so a rendered index below the count IS the index in this list
-	const columnNames = [...new Set(toList(settings.columns))].filter((name) => !archivedColumns.includes(name));
+	// CONTEXT: an archived name stays authored, so restoring it is not a guess about where it belonged
+	const authoredColumns = [...new Set(toList(settings.columns))];
+	const shownColumns = authoredColumns.filter((name) => !archivedColumns.includes(name));
+	// CONTEXT: a board with no columns is not a board — the last one out leaves a fresh one behind
+	const columnNames = shownColumns.length > 0 ? shownColumns : [freeUntitled([...authoredColumns, ...archivedColumns])];
 	const groupBy = settings.groupBy || "status";
 	// TRADE-OFF: search narrows rows we already hold — a query per keystroke is a round trip per letter
 	const needle = String(context?.get("search") ?? "").trim().toLowerCase();
@@ -498,11 +500,12 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	// CONTEXT: naming an archived list is how it is restored, or the added one would never show
 	const addList = (name) => {
 		const trimmed = String(name ?? "").trim();
-		if (!trimmed || columnNames.includes(trimmed)) return;
-		configure?.({
-			columns: [...columnNames, trimmed].join(", "),
-			archivedColumns: archivedColumns.filter((column) => column !== trimmed).join(", "),
-		});
+		if (!trimmed || shownColumns.includes(trimmed)) return;
+		if (archivedColumns.includes(trimmed)) {
+			configureBoard?.({ archivedColumns: archivedColumns.filter((column) => column !== trimmed) });
+			return;
+		}
+		configure?.({ columns: [...authoredColumns, trimmed].join(", ") });
 	};
 
 	// CONTEXT: what files a task under a heading is the property in its note, so a rename must reach both
@@ -514,19 +517,19 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 			return;
 		}
 
-		configure?.({ columns: columnNames.map((column) => (column === was ? name : column)).join(", ") });
+		const renamed = authoredColumns.includes(was)
+			? authoredColumns.map((column) => (column === was ? name : column))
+			: [...authoredColumns, name];
+		configure?.({ columns: renamed.join(", ") });
 
 		const held = rows.filter((row) => (row.props?.[groupBy] ?? "") === was);
 		if (held.length === 0 || !write?.canUpdate) return;
 		for (const row of held) await write.update({ path: row.path }, { props: { [groupBy]: name } });
 	};
 
-	// CONTEXT: the one place a column leaves the board; the notes keep their groupBy, so a restore is lossless
+	// CONTEXT: the one place a column leaves the board; nothing is unnamed, so a restore is lossless
 	const archiveList = (name) => {
-		configure?.({
-			columns: afterColumnLeaves(columnNames, name, [...columnNames, ...archivedColumns]).join(", "),
-			archivedColumns: [...archivedColumns, name].join(", "),
-		});
+		configureBoard?.({ archivedColumns: [...archivedColumns, name] });
 		setArchiving(null);
 	};
 
@@ -547,8 +550,8 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 
 	// TRADE-OFF: one step and one origin, not a rect per column — every column is the same width
 	const grabColumn = (from) => (event) => {
-		const board = boardRef.current;
-		const lists = [...board.querySelectorAll(".ok-list")];
+		const strip = boardRef.current;
+		const lists = [...strip.querySelectorAll(".ok-list")];
 		const first = lists[0].getBoundingClientRect();
 		const carriedRect = lists[from].getBoundingClientRect();
 		event.dataTransfer?.setDragImage?.(lists[from], event.clientX - carriedRect.left, event.clientY - carriedRect.top);
@@ -556,7 +559,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 			from,
 			to: from,
 			step: lists[1] ? lists[1].getBoundingClientRect().left - first.left : first.width,
-			origin: first.left - board.getBoundingClientRect().left + board.scrollLeft,
+			origin: first.left - strip.getBoundingClientRect().left + strip.scrollLeft,
 		};
 		// CONTEXT: the browser paints the drag image after this handler, so the column empties a frame later
 		requestAnimationFrame(() => setReorder(carrying));
@@ -566,8 +569,8 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	const aimColumn = (event) => {
 		if (!reorder) return;
 		event.preventDefault();
-		const board = boardRef.current;
-		const x = event.clientX - board.getBoundingClientRect().left + board.scrollLeft;
+		const strip = boardRef.current;
+		const x = event.clientX - strip.getBoundingClientRect().left + strip.scrollLeft;
 		const wanted = Math.floor((x - reorder.origin) / reorder.step);
 		const to = Math.max(0, Math.min(columnNames.length - 1, wanted));
 		if (to !== reorder.to) setReorder({ ...reorder, to });
@@ -576,7 +579,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	const dropColumn = () => {
 		if (!reorder) return;
 		if (reorder.to !== reorder.from) {
-			configure?.({ columns: afterColumnMoves(columnNames, reorder.from, reorder.to).join(", ") });
+			configure?.({ columns: afterColumnMoves(authoredColumns, columnNames, reorder.from, reorder.to).join(", ") });
 		}
 		setReorder(null);
 	};

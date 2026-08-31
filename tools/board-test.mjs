@@ -29,10 +29,19 @@ function readTasks() {
 			const text = fs.readFileSync(path.join(TASKS, name), "utf8");
 			const block = text.match(/^---\n([\s\S]*?)\n---/);
 			const props = {};
+			// CONTEXT: a block list is how Obsidian writes tags, and its items carry no colon
+			let list = null;
 			for (const line of (block?.[1] ?? "").split("\n")) {
+				const item = /^\s+- (.*)$/.exec(line);
+				if (item && list) {
+					props[list].push(item[1].trim());
+					continue;
+				}
 				const at = line.indexOf(":");
-				if (at < 0) continue;
-				props[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+				if (at < 0 || /^\s/.test(line)) continue;
+				const value = line.slice(at + 1).trim();
+				list = value === "" ? line.slice(0, at).trim() : null;
+				props[line.slice(0, at).trim()] = list ? [] : value;
 			}
 			return { path: `Orbitask/Tasks/${name}`, props };
 		});
@@ -126,7 +135,7 @@ check("picking a priority narrows the board", p1.length < marketingRows.length, 
 // The mechanism was always generic; the LIST was a colon-separated string, so a board could name
 // a property, the dialog could write it, and it was still not offered in the bar.
 {
-	const boardProperties = ["Status", "Priority", "Approval", "Assignees", "Tag"];
+	const boardProperties = ["Status", "Priority", "Approval", "Assignees", "Tags"];
 	const spelled = (name) => {
 		const wanted = name.toLowerCase();
 		for (const row of rows) {

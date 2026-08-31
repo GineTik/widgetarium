@@ -1,5 +1,5 @@
 import { createWidget, WidgetRoot } from "widgetarium";
-import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, toneOf } from "widgetarium/kit";
+import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, cx, toneClass, toneOf } from "widgetarium/kit";
 
 // CONTEXT: the card IS the widget root, and .wg-widget-root[data-…] outweighs .wg-kit-card
 // CONTEXT: [data-rounded] is always set, so this scores (0,3,0) and stops tying on source order
@@ -17,12 +17,26 @@ const CSS = `
 	transform: scale(0.955);
 }
 
+.orbi-task-card-stripes {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2, 4px);
+}
+
+/* CONTEXT: a tag the map says nothing about is grey, which is the kit's own neutral */
 .orbi-task-card-stripe {
 	flex: none;
 	width: 32px;
 	height: 4px;
 	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-fill-hover);
 }
+
+.orbi-task-card-stripe.is-accent { background: var(--interactive-accent); }
+.orbi-task-card-stripe.is-ok { background: var(--text-success); }
+.orbi-task-card-stripe.is-warn { background: var(--wg-kit-warning); }
+.orbi-task-card-stripe.is-err { background: var(--text-error); }
 
 .orbi-task-card-head {
 	display: flex;
@@ -163,13 +177,6 @@ const CSS = `
 }
 `;
 
-const STRIPE_COLOURS = {
-	error: "var(--text-error)",
-	warning: "var(--wg-kit-warning)",
-	success: "var(--text-success)",
-	info: "var(--interactive-accent)",
-};
-
 const STATUS_LABELS = { approve: "Approve", check: "Check", reject: "Reject", review: "Review" };
 
 // CONTEXT: four circles is 88px of a 256px row — a fifth pushed the dates off the card
@@ -206,6 +213,22 @@ function initialsOf(value) {
 		.map((name) => name.charAt(0).toUpperCase());
 }
 
+function toList(value) {
+	const held = Array.isArray(value) ? value : String(value ?? "").split(",");
+	return held.map((entry) => String(entry).trim()).filter(Boolean);
+}
+
+// CONTEXT: frontmatter hands over a map, a settings field a "tag: tone" list — both are the map
+function toToneMap(value) {
+	if (value && typeof value === "object" && !Array.isArray(value)) return value;
+	const map = {};
+	for (const entry of toList(value)) {
+		const at = entry.indexOf(":");
+		if (at > 0) map[entry.slice(0, at).trim()] = entry.slice(at + 1).trim();
+	}
+	return map;
+}
+
 // CONTEXT: a field the note lacks is not drawn — defaults made every task render as the mock
 function has(value) {
 	return value !== undefined && value !== null && value !== "";
@@ -220,7 +243,8 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 	// CONTEXT: the board hands down `task`; standing alone, the card has only its settings
 	const card = task ?? {
 		title: settings.title,
-		tag: settings.tagColour,
+		tags: settings.tags,
+		tagTones: settings.tagTones,
 		priority: settings.priority,
 		status: settings.status,
 		progress: settings.progress,
@@ -234,6 +258,8 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 	// TRADE-OFF: an empty bar at 0% says the same as no bar, and says it in a whole row of the card
 	const percent = has(card.progress) ? percentOf(card.progress) : null;
 	const progress = percent === 0 ? null : percent;
+	const tags = toList(card.tags);
+	const tones = toToneMap(card.tagTones);
 	const initials = initialsOf(card.initials);
 	const shownInitials = initials.slice(0, AVATAR_CAP);
 	const restCount = initials.length - shownInitials.length;
@@ -243,11 +269,12 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 		<WidgetRoot className="orbi wg-kit-card orbi-task-card">
 			<style>{CSS}</style>
 
-			{has(card.tag) ? (
-				<span
-					class="orbi-task-card-stripe"
-					style={{ background: STRIPE_COLOURS[String(card.tag)] ?? STRIPE_COLOURS.error }}
-				/>
+			{tags.length > 0 ? (
+				<div class="orbi-task-card-stripes">
+					{tags.map((tag, at) => (
+						<span key={`${tag}-${at}`} class={cx("orbi-task-card-stripe", toneClass(tones[tag]))} title={tag} />
+					))}
+				</div>
 			) : null}
 
 			<div class="orbi-task-card-head">

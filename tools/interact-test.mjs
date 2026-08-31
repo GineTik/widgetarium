@@ -3,15 +3,17 @@
 // and then presses the things a person presses.
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const FOLDER = "Orbitask/Tasks";
+const KANBAN_VIEW = "Kanban";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event"]) {
+for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 globalThis.ResizeObserver = class { observe() {} disconnect() {} };
@@ -22,8 +24,9 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configu
 buildMirror();
 const { h, render } = await import("preact");
 const { WidgetSurface, resolveMounts } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
+const { WidgetRegistry, boardWidgets } = await import("./.mjs-cache/registry.mjs");
+const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
 const { createHost } = await import("./.mjs-cache/host.mjs");
 const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
 
@@ -403,9 +406,9 @@ check("Reset All puts every task back", cards(), beforeApply);
 // effect of the data gaining a value nobody asked for — with a stray task in it. "Add Board"
 // had no handler at all.
 const settingsOf = (id) => board.tiles.find((tile) => tile.id === id)?.settings ?? {};
-// CONTEXT: a mounted widget persists under its own key inside the tile that holds it
-const mountedSettingsOf = (id, key) => board.tiles.find((tile) => tile.id === id)?.mounted?.[key]?.settings ?? {};
-const kanbanSettings = () => mountedSettingsOf("board", KANBAN);
+// CONTEXT: a mounted widget persists under the NAME the board gave it, not under its widget id
+const mountedOf = (id, key) => board.tiles.find((tile) => tile.id === id)?.mounted?.[key];
+const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 
 {
 	const columnsBefore = all(".orbi-kanban .ok-list").length;
@@ -424,6 +427,11 @@ const kanbanSettings = () => mountedSettingsOf("board", KANBAN);
 
 	check("a column was added", all(".orbi-kanban .ok-list").length, columnsBefore + 1);
 	check("and it is written in the tile's settings", String(kanbanSettings().columns ?? "").includes("Blocked"), true);
+	// THE LAZY MIGRATION, MEASURED ON A REAL EDIT. The board arrived with the record under the
+	// widget id; the first write moves it onto the name and takes the old key with it.
+	check("the edit lands under the board-owned name", Boolean(mountedOf("board", KANBAN_VIEW)), true);
+	check("the widget-id key it arrived under is gone", Boolean(mountedOf("board", KANBAN)), false);
+	check("and the record it held came across", mountedOf("board", KANBAN_VIEW)?.sources?.tasks?.path, FOLDER);
 	check("no task was invented to make it appear", cards(), tasksBefore);
 
 	// ARCHIVING ASKS FIRST. The control no longer deletes, so pressing it changes nothing until
@@ -439,8 +447,12 @@ const kanbanSettings = () => mountedSettingsOf("board", KANBAN);
 	await click(listNamed("Blocked").querySelector(".ok-list-remove"));
 	await click(dialogButton("archive"));
 	check("confirming archives it", all(".orbi-kanban .ok-list").length, columnsBefore);
-	check("it leaves the columns setting", String(kanbanSettings().columns ?? "").includes("Blocked"), false);
-	check("and lands in archivedColumns", String(kanbanSettings().archivedColumns ?? "").includes("Blocked"), true);
+	// THE NAME STAYS AUTHORED. Archiving used to strike it out of `columns`, so a restore had to
+	// guess where the column went and appended it; keeping it is what makes the way back exact.
+	check("the name stays in the columns setting", String(kanbanSettings().columns ?? "").includes("Blocked"), true);
+	check("and lands in the BOARD's archived list", board.archivedColumns, ["Blocked"]);
+	check("which is what the note keeps", serializeBoard(board).archivedColumns, ["Blocked"]);
+	check("the tile keeps no list of its own", kanbanSettings().archivedColumns, undefined);
 
 	// A COLUMN WITH TASKS IS ARCHIVED TOO. Refusing was right while removal was permanent;
 	// archiving is reversible, so the count in the dialog is the warning instead.
@@ -454,6 +466,32 @@ const kanbanSettings = () => mountedSettingsOf("board", KANBAN);
 	check("a busy column is archived, not refused", all(".orbi-kanban .ok-list").length, columnsBefore - 1);
 	check("its tasks leave the view", cards(), cardsBefore - held);
 	check("and no note was rewritten", written.updated.length, writesBefore);
+}
+
+// THE VIEW IS THE PROOF, NOT THE SETTING. The archived list lived in the kanban's own mount, and
+// the archived view is the kanban's SIBLING — the two never draw together, so it read nothing.
+{
+	const viewsTile = () => all('[data-tile="views"]')[0];
+	const showView = async (name) => {
+		await click(viewsTile().querySelector(".ovt-pick"));
+		await click([...viewsTile().querySelectorAll(".wg-kit-pop-item")].find((node) => node.textContent.trim().startsWith(name)));
+	};
+	const archivedRows = () => all(".orbi-archived-columns .wg-kit-row");
+	const archivedNames = () => archivedRows().map((node) => node.querySelector(".wg-kit-row-label").textContent.trim());
+	const cardsWithoutIt = cards();
+
+	await showView("Archived columns");
+	check("the archived view draws while the kanban does not", `${all(".orbi-archived-columns").length}|${all(".orbi-kanban").length}`, "1|0");
+	check("and it LISTS what was archived, drawn as rows", archivedNames(), ["Blocked", "To Do"]);
+
+	await click(archivedRows()[1].querySelector("button"));
+	check("Restore takes the column off the list", archivedNames(), ["Blocked"]);
+
+	await showView("Kanban");
+	check("and puts it back on the board", all(".orbi-kanban .ok-list").length, 3);
+	// the position is the point: appending it would pass a count and still move the column
+	check("in the place it was archived from", all(".orbi-kanban .ok-list-title").map((node) => node.textContent.trim()), ["To Do", "Doing", "Done"]);
+	check("and its tasks came back with it", cards() > cardsWithoutIt, true);
 }
 
 {
@@ -596,19 +634,50 @@ const pickView = async (name, id = "views") => {
 }
 
 {
+	// CONTEXT: the setting was read for the tabs' own label and published to nobody, so the two disagreed
+	// CONTEXT: the shared selection is made once per surface, so only a fresh one starts from the setting
+	board = groupBoard(`${KANBAN}, ${ARCHIVED}`, null, { activeView: "Archived columns" });
+	render(null, root);
+	await settle();
+	draw();
+	await settle();
+	check(
+		"the view the tabs name is the view the group draws",
+		`${tabLabel()} | ${all(".orbi-archived-columns").length} | ${all(".orbi-kanban").length}`,
+		"Archived columns | 1 | 0",
+	);
+}
+
+{
 	// CONTEXT: one key in the vnode AND one persistence slot made two entries of one id collide
-	const twice = resolveMounts({ mounts: { views: {} } }, { views: `${KANBAN}, ${KANBAN}` }, registry, {});
-	check("the same widget mounted twice is two slots", twice.views.map((entry) => entry.slot), [KANBAN, `${KANBAN}#2`]);
+	const twice = resolveMounts({ mounts: { holds: {} } }, { holds: `${KANBAN}, ${KANBAN}` }, registry, {});
+	check("the same widget mounted twice is two names, not one repeated", twice.holds.map((entry) => entry.name), ["Kanban", "Kanban 2"]);
 	check(
 		"and the engine hands back what the registry knew, not a field of its own",
-		Object.keys(twice.views[0]).sort(),
-		["failure", "id", "manifest", "problem", "render", "slot", "title"],
+		Object.keys(twice.holds[0]).sort(),
+		["failure", "id", "manifest", "name", "problem", "render", "title"],
 	);
-	check("a widget's own declaration comes through untouched", twice.views[0].manifest.view, "Kanban");
+	check("a widget's own declaration comes through untouched", twice.holds[0].manifest.view, "Kanban");
 
-	const gone = resolveMounts({ mounts: { views: {} } }, { views: "@task/nowhere" }, registry, {});
-	check("an id that is not a widget is still an entry", gone.views.map((entry) => entry.problem), ["not-found"]);
-	check("with nothing to draw", gone.views[0].render, null);
+	// THE BOARD OWNS THE NAME: the same widget id, named twice, answers to what the board typed
+	const named = resolveMounts({ mounts: { holds: {} } }, { holds: [{ name: "Mine", widget: KANBAN }, { name: "Theirs", widget: KANBAN }] }, registry, {});
+	check("a stored row answers to its own name", named.holds.map((entry) => entry.name), ["Mine", "Theirs"]);
+	check("and both still name the same widget", named.holds.map((entry) => entry.id), [KANBAN, KANBAN]);
+
+	// AN INVARIANT THAT ONLY RAN ON ADD IS THE APPSMITH BUG: two rows may never share a name,
+	// however the file came to say they do
+	const clashed = resolveMounts({ mounts: { holds: {} } }, { holds: [{ name: "Same", widget: KANBAN }, { name: "Same", widget: ARCHIVED }] }, registry, {});
+	check("a duplicate name in the file is disambiguated on read", clashed.holds.map((entry) => entry.name), ["Same", "Same 2"]);
+
+	// THE SETTING'S OWN OLD KEY. A note written before the rename still fills the mount.
+	const older = resolveMounts({ mounts: { holds: { was: "views" } } }, { views: `${KANBAN}, ${ARCHIVED}` }, registry, {});
+	check("the setting's former key still fills the mount", older.holds.map((entry) => entry.name), ["Kanban", "Archived columns"]);
+	check("and each row carries the widget-id key its record still sits under", older.holds.map((entry) => entry.id), [KANBAN, ARCHIVED]);
+
+	const gone = resolveMounts({ mounts: { holds: {} } }, { holds: "@task/nowhere" }, registry, {});
+	check("an id that is not a widget is still an entry", gone.holds.map((entry) => entry.problem), ["not-found"]);
+	check("with nothing to draw", gone.holds[0].render, null);
+	check("and it is named off the id, because nothing else knows it", gone.holds.map((entry) => entry.name), ["@task/nowhere"]);
 }
 
 {
@@ -719,7 +788,7 @@ const pickView = async (name, id = "views") => {
 	check("a null entry does not take the whole board down", failure, null);
 	check("the tile that carried it survives", broken?.tiles.length, 2);
 	check("its null source degrades to an unbound one", broken?.tiles[0].sources.tasks, { path: "", filters: [], sort: [] });
-	check("and its null mount to an unconfigured one", broken?.tiles[1].mounted["@foo"], { settings: {}, sources: {}, slots: {}, mounted: {} });
+	check("and its null mount to an unconfigured one, named off its key", broken?.tiles[1].mounted["@foo"], { widget: "@foo", settings: {}, sources: {}, slots: {}, mounted: {} });
 }
 
 {
@@ -852,15 +921,96 @@ const pickView = async (name, id = "views") => {
 {
 	const { default: WidgetariumPlugin } = await import("./.mjs-cache/main.mjs");
 	const commands = [];
+	const ribbon = [];
+	const posts = [];
+	const fences = [];
+	const pluginApp = {
+		vault: { adapter: { ...adapter, mkdir: async () => {} }, getAbstractFileByPath: () => null },
+		metadataCache: { getFileCache: () => null, getFirstLinkpathDest: () => null },
+		workspace: { getLeavesOfType: () => [] },
+	};
 	const plugin = Object.assign(new WidgetariumPlugin(), {
-		app: { vault: { adapter: { ...adapter, mkdir: async () => {} } } },
+		app: pluginApp,
 		manifest: { id: "widgetarium" },
+		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }] },
 		addCommand: (command) => commands.push(command),
-		addRibbonIcon: () => {},
-		registerMarkdownCodeBlockProcessor: () => {},
+		addRibbonIcon: (icon, title) => ribbon.push(title),
+		registerMarkdownCodeBlockProcessor: (language, handler) => fences.push({ language, handler }),
+		registerMarkdownPostProcessor: (handler) => posts.push(handler),
 		registerInterval: () => {},
 	});
 	await plugin.onload();
+
+	check("the plugin hands Obsidian a post processor", posts.length, 1);
+	check("and a processor for its own fence", fences[0]?.language, "widgetarium");
+
+	const noteContext = { sourcePath: "Orbitask/Board.md", addChild: () => {}, getSectionInfo: () => null };
+	const note = dom.window.document.createElement("div");
+	note.innerHTML = "<p>! call Olena before Friday</p>";
+	dom.window.document.body.appendChild(note);
+	posts[0](note, noteContext);
+	check("running it replaces the triggered line with the widget", note.querySelectorAll(".wgi-reminder").length, 1);
+	check("and the paragraph it stood in is gone", note.querySelectorAll("p").length, 0);
+	check("and the host carries the kit's scope, or nothing in it is painted", note.querySelectorAll(".wg-inline-host.wg-root").length, 1);
+	note.remove();
+
+	// CONTEXT: Obsidian never reprocesses a note rendered before registration
+	const brokenPosts = [];
+	const broken = Object.assign(new WidgetariumPlugin(), {
+		app: { ...pluginApp, vault: { adapter: { ...adapter, exists: async () => { throw new Error("vault unreachable"); } } } },
+		manifest: { id: "widgetarium" },
+		addCommand: () => {},
+		addRibbonIcon: () => {},
+		registerMarkdownCodeBlockProcessor: () => {},
+		registerMarkdownPostProcessor: (handler) => brokenPosts.push(handler),
+		registerInterval: () => {},
+	});
+	const failure = await broken.onload().then(() => null, (error) => error.message);
+	check("an await that rejects still fails the load", failure, "vault unreachable");
+	check("but the post processor was registered before it", brokenPosts.length, 1);
+	check("and it substitutes nothing rather than throwing", brokenPosts[0](dom.window.document.createElement("div"), noteContext), 0);
+
+	// CONTEXT: Obsidian draws the open note while onload still awaits, and never draws it twice
+	const asked = [];
+	const openLeaf = { view: { previewMode: { rerender: (full) => asked.push(full) } } };
+	const startingPosts = [];
+	const starting = Object.assign(new WidgetariumPlugin(), {
+		app: { ...pluginApp, workspace: { getLeavesOfType: (kind) => (kind === "markdown" ? [openLeaf] : []) } },
+		manifest: { id: "widgetarium" },
+		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }] },
+		addCommand: () => {},
+		addRibbonIcon: () => {},
+		registerMarkdownCodeBlockProcessor: () => {},
+		registerMarkdownPostProcessor: (handler) => startingPosts.push(handler),
+		registerInterval: () => {},
+	});
+	const loading = starting.onload();
+	const early = dom.window.document.createElement("div");
+	early.innerHTML = "<p>! call Olena before Friday</p>";
+	dom.window.document.body.appendChild(early);
+	check("the processor is live before the load's awaits have landed", startingPosts.length, 1);
+	check("and a note drawn in that gap gets nothing, because there are no rules yet", startingPosts[0](early, noteContext), 0);
+	check("which leaves the note plain", early.querySelectorAll(".wg-inline-host").length, 0);
+	await loading;
+	check("so the load ends by asking every open note to draw again", asked.length, 1);
+	check("in full, because a substitution is only made while a note renders", asked[0], true);
+	check("and the rules it will draw with are the ones on disk", starting.rules.length, 1);
+	const redrawn = dom.window.document.createElement("div");
+	redrawn.innerHTML = early.innerHTML;
+	dom.window.document.body.appendChild(redrawn);
+	check("the very same paragraph, drawn after them, becomes the widget", startingPosts[0](redrawn, noteContext), 1);
+	check("so the empty gap was the timing, not the guard or the selector", redrawn.querySelectorAll(".wg-inline-host").length, 1);
+	redrawn.remove();
+	early.remove();
+
+	check("the ribbon offers substitutions beside edit mode", ribbon, ["Widgetarium: edit mode", "Widgetarium: substitutions"]);
+	check("and a command opens the same surface", commands.some((entry) => entry.id === "edit-substitutions"), true);
+	commands.find((entry) => entry.id === "edit-substitutions").callback();
+	await settle();
+	check("running it opens the substitutions dialog", Boolean(dom.window.document.body.querySelector(".wg-sub-dialog")), true);
+	plugin.closeSubstitutions();
+	await settle();
+	check("and closing it takes the dialog off the page", Boolean(dom.window.document.body.querySelector(".wg-sub-dialog")), false);
 
 	const command = commands.find((entry) => entry.id === "browse-widgets");
 	check("the plugin registers a command for the catalogue", command?.name, "Browse widgets");
@@ -870,8 +1020,8 @@ const pickView = async (name, id = "views") => {
 	const opened = dom.window.document.body.querySelector(".wg-cat-dialog");
 	check("running it opens the catalogue", Boolean(opened), true);
 	check("with no board under it", Boolean(root.querySelector(".wg-cat-dialog")), false);
-	check("drawing the widgets the plugin's own registry loaded", opened.querySelectorAll(".wg-cat-tile").length, plugin.registry.list().length);
-	check("in browse mode", [...opened.querySelectorAll(".wg-cat-verb")].every((verb) => verb.textContent === "Open"), true);
+	check("drawing the widgets the plugin's own registry loaded", opened.querySelectorAll(".wg-cat-tile").length, boardWidgets(plugin.registry.list()).length);
+	check("in browse mode", [...opened.querySelectorAll(".wg-cat-tile")].every((tile) => tile.getAttribute("aria-label").startsWith("Open ")), true);
 
 	plugin.onunload();
 	check("and unloading takes it down, because nothing else owns that node", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
@@ -896,8 +1046,61 @@ const pickView = async (name, id = "views") => {
 	const grid = dom.window.document.body.querySelector(".wg-cat-dialog");
 	check("pressing it opens the catalogue", Boolean(grid), true);
 	check("outside the board, on the body", Boolean(root.querySelector(".wg-cat-dialog")), false);
-	check("it draws every installed widget", grid.querySelectorAll(".wg-cat-tile").length, registry.list().length);
-	check("in place mode, so every press adds", [...grid.querySelectorAll(".wg-cat-verb")].every((verb) => verb.textContent === "Add"), true);
+	check("it draws every installed widget", grid.querySelectorAll(".wg-cat-tile").length, boardWidgets(registry.list()).length);
+	check("in place mode, so every press adds", [...grid.querySelectorAll(".wg-cat-tile")].every((tile) => tile.getAttribute("aria-label").startsWith("Add ")), true);
+
+	// EACH CARD CARRIES THE WIDGET'S OWN PLAYGROUND — the board's lattice at the scale that
+	// card needs — and says the span in words. On one shared lattice the widgets ran together
+	// and nothing marked where a widget ended; a card is what separates it from the space.
+	const drawn = [...grid.querySelectorAll(".wg-cat-tile")];
+	const stageOf = (tile) => tile.querySelector(".wg-cat-stage");
+	// NO LATTICE. The card is what separates a widget from the space around it; cells behind it
+	// drew a second grid nothing ever stood on.
+	check("no card draws a lattice", drawn.some((tile) => tile.querySelector(".wg-cells")), false);
+	check("every card still gives the widget a box of its own", drawn.every((tile) => stageOf(tile).querySelector(".wg-cat-frame > .wg-cat-pic")), true);
+	check("with more than one span among them, or this proves nothing", new Set(drawn.map((tile) => tile.getAttribute("data-span"))).size > 1, true);
+
+	const named = (title) => drawn.find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
+	const declared = registry.get("@task/task-card").manifest.preview.size;
+	const onGrid = named("Task card");
+	check("a card names the widget", Boolean(onGrid), true);
+	check("and says the span the manifest declares", onGrid.getAttribute("data-span"), `${declared.w}x${declared.h}`);
+	check("in words a person reads", onGrid.querySelector(".wg-cat-span").textContent, `${declared.w}\u00d7${declared.h}`);
+	check("and the card says which pack it came from, in one line with the name", onGrid.querySelector(".wg-cat-said").textContent, "@task/Task card");
+
+	// INSTALLED IS NOT A STATE WORTH DRAWING. Fetching a widget and placing one both land at the
+	// press, so the card must look the same either way — no badge, no second verb, one button.
+	const foot = onGrid.querySelector(".wg-cat-foot");
+	// CONTEXT: the card's own buttons, not the widget's — a preview may draw buttons of its own
+	const chromeButtons = (tile) => [...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic"));
+	check("a card carries one button", chromeButtons(onGrid).length, 1);
+	check("and it sits in the card's foot", Boolean(foot?.querySelector(".wg-cat-go")), true);
+	// THE PILL IS GONE. Glass over the picture, it hid the bottom of every widget and made the stage
+	// keep 58px it never gave one. Being the stage's NEXT SIBLING is what proves the foot is out of
+	// the stage and below it, and the exact class name is what proves it dropped the glass.
+	check("which is laid in the card's grey right after the stage, wearing no glass", stageOf(onGrid).nextElementSibling?.className, "wg-cat-foot");
+	const shapeOf = (tile) => `${tile.className}|${tile.getAttribute("aria-label")}|${chromeButtons(tile).length}`;
+	const wasInstalled = shapeOf(onGrid);
+	registry.get("@task/task-card").installed = false;
+	registry.get("@task/board-tabs").update = true;
+	draw();
+	await settle();
+	const renamed = (title) => [...grid.querySelectorAll(".wg-cat-tile")].find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
+	check("a widget the vault does not have looks exactly like one it has", shapeOf(renamed("Task card")), wasInstalled);
+	check("and its press still says Add, not Install", renamed("Task card").getAttribute("aria-label").startsWith("Add "), true);
+	check("nothing marks one with a newer version either", renamed("Board tabs").querySelectorAll(".wg-cat-badge").length, 0);
+	delete registry.get("@task/task-card").installed;
+	delete registry.get("@task/board-tabs").update;
+	draw();
+	await settle();
+
+	// THE SELECTION STRIP WAS REJECTED. Nothing sits under the board — the card's own glass strip
+	// carries everything the strips used to.
+	check("nothing sits under the showcase board", grid.querySelector(".wg-cat").lastElementChild.className, "wg-cat-scroll");
+	// WHAT IS FORBIDDEN IS THE GLOBAL STRIP — one bar at the foot of the panel naming whatever is
+	// selected. A card's own identity row is not that: it belongs to the card and travels with it.
+	check("no global strip names a selection", grid.querySelector(":scope > .wg-cat-bar"), null);
+	check("but every card says what it is", drawn.every((tile) => tile.querySelector(".wg-cat-foot")), true);
 
 	const before = board.tiles.length;
 	// A BOARD IS MORE THAN ITS TILES: whatever it carried before an add, it carries after. Given
@@ -947,6 +1150,74 @@ const pickView = async (name, id = "views") => {
 	await settle();
 	check("closing without Done takes it back with the rest of the draft", drawn(), before);
 	check("and the file still has not moved", JSON.stringify(board), saved);
+}
+
+
+// CONTEXT: the shipped board note still stores its slot as a bare widget id, and reading it must not rewrite it
+{
+	const NOTE = path.join(VAULT, "Orbitask/Board.md");
+	const text = fs.readFileSync(NOTE, "utf8");
+	const beforeBytes = createHash("md5").update(text).digest("hex");
+	const lines = text.split("\n");
+	const fence = findBlocks(lines)[0];
+	const authored = parseYaml(lines.slice(fence.start + 1, fence.end).join("\n"));
+
+	check("the shipped board is stored in the pre-record shape", authored.tiles.find((tile) => tile.slots)?.slots, { card: "@task/task-card" });
+	check("and it holds the five widgets the owner placed", authored.tiles.map((tile) => tile.widget), ["@task/board-tabs", "@task/view-tabs", "@task/kanban-board", "@core/filter-panel", "@task/task-dialog"]);
+
+	const drawBoard = async (source) => {
+		const spare = dom.window.document.createElement("div");
+		dom.window.document.body.appendChild(spare);
+		const standing = new Set(dom.window.document.querySelectorAll(".wg-page"));
+		const writes = [];
+		render(
+			h(WidgetSurface, {
+				board: normalizeBoard(source), registry, host, editing: false, screen: true, initialWidth: 1280,
+				// CONTEXT: a probe counts writes and does not answer them — repainting turns one write into a loop
+				onChange: (next) => writes.push(next),
+				onToggleEditing: () => {}, onWidth: () => {},
+			}),
+			spare,
+		);
+		await settle();
+		// CONTEXT: an expanded board draws through a portal on the body, not into its own element
+		const page = [...dom.window.document.querySelectorAll(".wg-page")].find((node) => !standing.has(node)) ?? spare;
+		const seen = {
+			html: page.innerHTML,
+			tiles: [...page.querySelectorAll("[data-tile]")].map((node) => node.getAttribute("data-tile")).sort(),
+			cards: page.querySelectorAll(".orbi-kanban .ok-card-slot").length,
+			// CONTEXT: the slot's gives clause promises the card a task's title, so a fed slot draws one
+			titles: [...page.querySelectorAll(".orbi-kanban .ok-card-slot")].map((node) => node.textContent.trim()).filter(Boolean).length,
+			writes: writes.length,
+		};
+		// CONTEXT: a counter that cannot go up proves nothing, so one real edit has to move it
+		await click(page.querySelector('.wg-toolbar button[title="Collapse"]'));
+		seen.writesAfterAnEdit = writes.length;
+		render(null, spare);
+		spare.remove();
+		return seen;
+	};
+
+	const old = await drawBoard(authored);
+	const fresh = await drawBoard(serializeBoard(normalizeBoard(authored)));
+
+	// CONTEXT: the owner's pick IS the manifest default, so only a different pick can tell a read from a fallback
+	const repointed = (pick) => ({ ...authored, tiles: authored.tiles.map((tile) => (tile.slots ? { ...tile, slots: { card: pick } } : tile)) });
+	const oldElsewhere = await drawBoard(repointed("@nope/missing"));
+	const freshElsewhere = await drawBoard(repointed({ widget: "@nope/missing" }));
+
+	check("the old-shape board draws every tile the owner placed", old.tiles, ["board", "boards", "taskdialog", "views", "wynttpz"]);
+	check("a pick the registry cannot resolve draws a different page, so the pick is READ", oldElsewhere.html === old.html, false);
+	check("and the bare string is read exactly as the record is", freshElsewhere.html, oldElsewhere.html);
+	check("its fed slot draws real cards, so the slot is not merely declared", old.cards > 0, true);
+	check("and every one of them was fed what the gives clause promised", old.titles, old.cards);
+	check("the record-shape board draws the same tiles", fresh.tiles, old.tiles);
+	check("and the same number of cards through the same slot", fresh.cards, old.cards);
+	check("the two boards render the SAME page, byte for byte", fresh.html === old.html, true);
+	check("drawing the old-shape board writes nothing back", old.writes, 0);
+	check("drawing the record-shape board writes nothing back", fresh.writes, 0);
+	check("and the counter that says so does move when a person edits", old.writesAfterAnEdit > 0, true);
+	check("and the note on disk is byte-identical after both", createHash("md5").update(fs.readFileSync(NOTE, "utf8")).digest("hex"), beforeBytes);
 }
 
 

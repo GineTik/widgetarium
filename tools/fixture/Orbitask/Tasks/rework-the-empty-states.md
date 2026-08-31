@@ -5,7 +5,11 @@ status: To Do
 priority: P1
 approval: Check
 progress: 10
-tag: error
+tags:
+  - design
+  - states
+tagTones:
+  design: error
 due: 20 Aug
 assignees:
   - Nina Vogel

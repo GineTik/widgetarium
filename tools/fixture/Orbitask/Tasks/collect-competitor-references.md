@@ -5,7 +5,10 @@ status: To Do
 priority: P2
 approval: Check
 progress: 45
-tag: warning
+tags:
+  - research
+tagTones:
+  research: warning
 due: 14 Aug
 assignees: ["Sam Okafor", "Rosa Duarte"]
 comments: 2
