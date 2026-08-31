@@ -192,14 +192,34 @@ function part(tag, baseClass, name) {
 	return Part;
 }
 
+// CONTEXT: React strips the portal on unmount, so the exit is played on a copy left in its place
+function foldOut(node) {
+	const found = panelOf(node);
+	if (!found) return null;
+	enterBeats.get(found.panel)?.();
+	const ghost = node.cloneNode(true);
+	const copy = panelOf(ghost);
+	if (!copy) return null;
+	// CONTEXT: the copy inherits the press it grew from, or it folds back toward the wrong point
+	if (dialogPress.has(found.panel)) dialogPress.set(copy.panel, dialogPress.get(found.panel));
+	node.replaceWith(ghost);
+	return ghost;
+}
+
 // CONTEXT: the seat is measured right after the mount, so the children must land in the same commit
 function Portal({ children, onEscape }) {
 	const [portal] = useState(() => {
 		watchPresses();
 		return mountInto(document.body, "wg-root wg-portal", onEscape);
 	});
-	// CONTEXT: a layout cleanup runs before React strips the node, so the exit still has a panel
-	useLayoutEffect(() => () => exitDialog(portal.node, portal.dispose), []);
+	useLayoutEffect(
+		() => () => {
+			const ghost = foldOut(portal.node);
+			portal.dispose();
+			if (ghost) exitDialog(ghost, () => ghost.remove());
+		},
+		[],
+	);
 
 	useEffect(() => enterDialog(portal.node), []);
 

@@ -1045,16 +1045,17 @@ const pickView = async (name, id = "views") => {
 	check("and it says what the press does", all(".wg-palette .wg-palette-open")[0]?.textContent, "Add widget");
 
 	await click(all(".wg-palette .wg-palette-open")[0]);
-	const grid = dom.window.document.body.querySelector(".wg-cat-dialog");
+	// CONTEXT: a redraw remounts the dialog, so a node captured once points at a detached copy
+	const grid = () => dom.window.document.body.querySelector(".wg-cat-dialog");
 	check("pressing it opens the catalogue", Boolean(grid), true);
 	check("outside the board, on the body", Boolean(root.querySelector(".wg-cat-dialog")), false);
-	check("it draws every installed widget", grid.querySelectorAll(".wg-cat-tile").length, boardWidgets(registry.list()).length);
-	check("in place mode, so every press adds", [...grid.querySelectorAll(".wg-cat-tile")].every((tile) => tile.getAttribute("aria-label").startsWith("Add ")), true);
+	check("it draws every installed widget", grid().querySelectorAll(".wg-cat-tile").length, boardWidgets(registry.list()).length);
+	check("in place mode, so every press adds", [...grid().querySelectorAll(".wg-cat-tile")].every((tile) => tile.getAttribute("aria-label").startsWith("Add ")), true);
 
 	// EACH CARD CARRIES THE WIDGET'S OWN PLAYGROUND — the board's lattice at the scale that
 	// card needs — and says the span in words. On one shared lattice the widgets ran together
 	// and nothing marked where a widget ended; a card is what separates it from the space.
-	const drawn = [...grid.querySelectorAll(".wg-cat-tile")];
+	const drawn = [...grid().querySelectorAll(".wg-cat-tile")];
 	const stageOf = (tile) => tile.querySelector(".wg-cat-stage");
 	// NO LATTICE. The card is what separates a widget from the space around it; cells behind it
 	// drew a second grid nothing ever stood on.
@@ -1087,7 +1088,7 @@ const pickView = async (name, id = "views") => {
 	registry.get("@task/board-tabs").update = true;
 	draw();
 	await settle();
-	const renamed = (title) => [...grid.querySelectorAll(".wg-cat-tile")].find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
+	const renamed = (title) => [...grid().querySelectorAll(".wg-cat-tile")].find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
 	check("a widget the vault does not have looks exactly like one it has", shapeOf(renamed("Task card")), wasInstalled);
 	check("and its press still says Add, not Install", renamed("Task card").getAttribute("aria-label").startsWith("Add "), true);
 	check("nothing marks one with a newer version either", renamed("Board tabs").querySelectorAll(".wg-cat-badge").length, 0);
@@ -1098,10 +1099,10 @@ const pickView = async (name, id = "views") => {
 
 	// THE SELECTION STRIP WAS REJECTED. Nothing sits under the board — the card's own glass strip
 	// carries everything the strips used to.
-	check("nothing sits under the showcase board", grid.querySelector(".wg-cat").lastElementChild.className, "wg-cat-scroll");
+	check("nothing sits under the showcase board", grid().querySelector(".wg-cat").lastElementChild.className, "wg-cat-scroll");
 	// WHAT IS FORBIDDEN IS THE GLOBAL STRIP — one bar at the foot of the panel naming whatever is
 	// selected. A card's own identity row is not that: it belongs to the card and travels with it.
-	check("no global strip names a selection", grid.querySelector(":scope > .wg-cat-bar"), null);
+	check("no global strip names a selection", grid().querySelector(":scope > .wg-cat-bar"), null);
 	check("but every card says what it is", drawn.every((tile) => tile.querySelector(".wg-cat-foot")), true);
 
 	const before = board.tiles.length;
@@ -1111,7 +1112,7 @@ const pickView = async (name, id = "views") => {
 	draw();
 	await settle();
 	const carried = { mode: board.mode, properties: board.properties, context: board.context };
-	const card = [...grid.querySelectorAll(".wg-cat-tile")].find((tile) => tile.textContent.includes("Task card"));
+	const card = [...grid().querySelectorAll(".wg-cat-tile")].find((tile) => tile.textContent.includes("Task card"));
 	check("the card is offered", Boolean(card), true);
 	await click(card);
 	check("picking it adds a tile", board.tiles.length, before + 1);
