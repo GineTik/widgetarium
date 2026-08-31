@@ -13,7 +13,6 @@ const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Content
 const work = mkdtempSync(path.join(tmpdir(), "wg-cat-"));
 
 const SOURCE = "widgets";
-const NOT_INSTALLED = ["@core/view-group", "@task/archived-columns"];
 const WIDTH = Number(process.env.WG_WIDTH ?? 1280);
 // the only slot two shipped widgets actually share, so fill mode is photographed against real data
 const SLOT = { parent: "@task/kanban-board", name: "card" };
@@ -97,10 +96,18 @@ function pageFor(theme, mode) {
 <style>
 body { margin: 0; padding: 28px 32px; ${THEMES[theme]}
 	background: var(--background-primary); color: var(--text-normal);
-	font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+	/* THE HOST'S TOKENS, because our own sheet asks for them by name. The wg-root class sets
+	   font-family from var(--font-interface); undefined, that declaration is invalid, and a
+	   class selector still outranks the element one here — so the page inherited the browser
+	   default and photographed itself in Times. Obsidian defines these; a harness that does
+	   not is a harness that lies. */
+	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	--font-text: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	--font-monospace: "SF Mono", Menlo, Consolas, monospace;
+	font-family: var(--font-interface);
 	--font-ui-smaller: 12px; --font-ui-small: 14px; --font-ui-medium: 16px; --font-semibold: 600; }
-/* CONTEXT: the grid scrolls inside a dialog, but a photograph wants the whole of it */
-.wg-cat-grid { overflow: visible !important; }
+/* CONTEXT: the board scrolls inside a dialog, but a photograph wants the whole of it */
+.wg-cat-scroll { overflow: visible !important; }
 .harness-top { display: flex; align-items: baseline; gap: 10px; margin: 0 0 18px; }
 .harness-top h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
 .harness-top span { color: var(--text-muted); font-size: 13px; }
@@ -108,7 +115,7 @@ body { margin: 0; padding: 28px 32px; ${THEMES[theme]}
 </style></head><body class="wg-root">
 <div class="harness-top"><h1>${SAID[mode]?.[0] ?? SAID.browse[0]}</h1><span>${SAID[mode]?.[1] ?? SAID.browse[1]}</span></div>
 <div id="host"></div><pre id="boom" class="harness-boom"></pre><pre id="count" hidden></pre>
-<script>window.__FILES__=${JSON.stringify(files)};window.__NOT_INSTALLED__=${JSON.stringify(NOT_INSTALLED)};window.__MODE__=${JSON.stringify(mode)};window.__SLOT__=${JSON.stringify(SLOT)};</script>
+<script>window.__FILES__=${JSON.stringify(files)};window.__MODE__=${JSON.stringify(mode)};window.__SLOT__=${JSON.stringify(SLOT)};</script>
 <script>${bundle.outputFiles[0].text}</script>
 </body></html>`;
 }
@@ -145,13 +152,53 @@ for (const [index, theme] of ["light", "dark"].entries()) {
 	}
 	if (!seen.tiles) {
 		broken += 1;
-		console.error(`${theme}: the grid drew no tiles`);
+		console.error(`${theme}: the board drew no tiles`);
+	}
+	// ONE FOOT AND ONE BUTTON PER CARD, and no badge anywhere: the installed/not distinction was
+	// rejected, so a photograph showing one is the failure this catches.
+	if (seen.tiles !== seen.captions || seen.tiles !== seen.feet || seen.tiles !== seen.buttons || seen.badges !== 0) {
+		broken += 1;
+		console.error(`${theme}: ${seen.tiles} tiles carry ${seen.captions} names, ${seen.feet} feet, ${seen.buttons} buttons and ${seen.badges} badges`);
+	}
+	if (seen.floating) {
+		broken += 1;
+		console.error(`${theme}: ${seen.floating} feet sit inside a stage, floating on the widget instead of below it`);
+	}
+	if (seen.shown !== 2) {
+		broken += 1;
+		console.error(`${theme}: the header offers ${seen.shown} lists to switch between, wants 2`);
+	}
+	if (seen.cells) {
+		broken += 1;
+		console.error(`${theme}: ${seen.cells} lattice cells are drawn, and none should be`);
+	}
+	if (seen.fogged !== seen.live) {
+		broken += 1;
+		console.error(`${theme}: ${seen.fogged} of ${seen.live} widgets fade out at the foot, and every one should`);
+	}
+	if (!seen.fog?.ends) {
+		broken += 1;
+		console.error(`${theme}: the fog ends in ${seen.fog?.said}, not in the stage's own ${seen.fog?.ground}`);
+	}
+	if (seen.round !== seen.buttons) {
+		broken += 1;
+		console.error(`${theme}: ${seen.round} of ${seen.buttons} buttons are round — ${seen.radius}`);
+	}
+	if (seen.serif) {
+		broken += 1;
+		console.error(`${theme}: the page is drawn in ${seen.serif}, which is not the interface face`);
+	}
+	for (const row of seen.offGrid ?? []) {
+		broken += 1;
+		console.error(`${theme}: ${row.name} spans ${row.drawn} of the lattice, wants ${row.declared}`);
 	}
 	console.log(
-		`${theme}: ${seen.tiles ?? 0} tiles, ${seen.live ?? 0} drawn live, ${seen.stands ?? 0} stand-ins, ` +
-			`${seen.contained ?? 0} contained, ${seen.lacks ?? 0} short of the slot, ${seen.divides ?? 0} dividers  ->  ${out}`,
+		`${theme}: ${seen.tiles ?? 0} tiles, ${seen.live ?? 0} drawn live, ` +
+			`${seen.stands ?? 0} stand-ins, ${seen.contained ?? 0} contained, ${seen.buttons ?? 0} buttons, ` +
+			`fog ${seen.fog?.tall ?? "-"} to ${seen.fog?.ground ?? "-"}, ` +
+			`${seen.lacks ?? 0} short of the slot, ${seen.divides ?? 0} dividers  ->  ${out}`,
 	);
-	if (process.env.WG_FIT) for (const row of seen.over ?? []) console.log(`   ${row.name.padEnd(20)} box ${row.box} wants ${row.wants}`);
+	if (process.env.WG_FIT) for (const row of seen.over ?? []) console.log(`   ${row.name.padEnd(20)} span ${row.span} at ${row.at} box ${row.box} wants ${row.wants}`);
 }
 
 process.exit(broken ? 1 : 0);

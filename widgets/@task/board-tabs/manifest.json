@@ -1,6 +1,20 @@
 {
 	"id": "@task/board-tabs",
 	"title": "Board tabs",
+	"description": "A row of tabs that picks which board every widget under it reads from.",
+	"keywords": [
+		"board",
+		"boards",
+		"tabs",
+		"switch",
+		"project",
+		"workspace",
+		"picker",
+		"navigation",
+		"bar",
+		"select",
+		"header"
+	],
 	"defaultSize": {
 		"w": 13,
 		"h": 1
@@ -42,11 +56,11 @@
 	},
 	"preview": {
 		"size": {
-			"w": 6,
-			"h": 2
+			"w": 5,
+			"h": 1
 		},
 		"settings": {
-			"tabs": "Widgetarium, Marketing Team, Ux Team",
+			"tabs": "Widgetarium, Marketing Team",
 			"activeTab": "Widgetarium"
 		},
 		"sources": {

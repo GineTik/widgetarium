@@ -1,6 +1,22 @@
 {
 	"id": "@core/filter-panel",
 	"title": "Filter",
+	"description": "Narrows every widget bound to it by a task property, from one row of dropdowns.",
+	"keywords": [
+		"filter",
+		"narrow",
+		"refine",
+		"facet",
+		"property",
+		"dropdown",
+		"condition",
+		"sift",
+		"query",
+		"search",
+		"panel",
+		"controls",
+		"where"
+	],
 	"defaultSize": {
 		"w": 3,
 		"h": 1
@@ -51,8 +67,8 @@
 	],
 	"preview": {
 		"size": {
-			"w": 4,
-			"h": 2
+			"w": 3,
+			"h": 1
 		},
 		"context": {
 			"board": "Widgetarium"
