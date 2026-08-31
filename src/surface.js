@@ -5,7 +5,7 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { heldKey, heldTile, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, rekeyed, uniqueName } from "./model.js";
+import { archivedColumnsOn, heldKey, heldTile, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
 import { createContext } from "./engine/context.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
@@ -247,7 +247,17 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 	const settings = { ...settingDefaults(definition.manifest), ...(tile.settings ?? {}) };
 	// one object, handed to this widget and to anything it slots — the same board, and the
 	// same identity, so a child's memo does not see a new board every frame
-	const boardAccess = { board: { properties: boardProperties, archivedColumns: boardArchivedColumns, consumes: toKeys(boardConsumes) }, configureBoard };
+	// CONTEXT: sliced HERE, the one place that re-renders when the selection moves
+	// CONTEXT: the whole map travels too — the migration files each board's own list, not the shown one
+	const boardAccess = {
+		board: {
+			properties: boardProperties,
+			archivedColumns: archivedColumnsOn(boardArchivedColumns, context.get("board")),
+			archivedColumnsByBoard: boardArchivedColumns,
+			consumes: toKeys(boardConsumes),
+		},
+		configureBoard,
+	};
 	const props = {
 		settings,
 		// A widget may CHANGE its own settings — the columns a board shows are a setting, and a
@@ -805,7 +815,8 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		// CONTEXT: the model's own normaliser, so no widget writes a list the file could not hold
 		const named = {};
 		if (patch.properties) named.properties = normalizeNames(patch.properties);
-		if (patch.archivedColumns) named.archivedColumns = normalizeNames(patch.archivedColumns);
+		// CONTEXT: the selection is read at the click, not at the render that made the button
+		if (patch.archivedColumns) named.archivedColumns = withArchivedColumnsOn(latestRef.current.board.archivedColumns, context.get("board"), patch.archivedColumns);
 		onChange({ ...latestRef.current.board, ...named }, true);
 		return true;
 	};
