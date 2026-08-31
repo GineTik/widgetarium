@@ -1617,12 +1617,13 @@ pre:has(> .block-language-widgetarium),
 	transition: background var(--wg-quick) var(--wg-ease);
 }
 
-/* TRADE-OFF: the two that carry a resting fill carry the edge too, on the ::before that owns the
-   corner — a card is edgeless, a control is not, and the element itself is the host's to paint. */
+/* TRADE-OFF: only the RAISED fill carries the edge — grey, accent and wash already read as a
+   control against the surface they sit on. A variable, so the rule that paints that fill asks
+   for the edge beside it, and this one stays weak enough for :focus-visible to take it back. */
 :is(.wg-root, .wg-portal) .wg-kit-btn::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon::before {
 	background: var(--wg-kit-fill);
-	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	box-shadow: var(--wg-kit-control-edge, none);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn:hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon:hover::before { background: var(--wg-kit-fill-hover); }
@@ -1664,8 +1665,12 @@ pre:has(> .block-language-widgetarium),
 /* MEASURED: a neutral control inside a group painted rgb(237,237,240) on rgb(237,237,240) — the
    group's fill IS the control's fill, so a trailing button vanished. It raises, the way a card
    raises off a plate. Two rules, so hover is not left to source order. */
+/* CONTEXT: raised is white in light, the foreground step in dark — the one fill needing a rim */
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn::before,
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon::before { background: var(--wg-kit-raise); }
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon::before {
+	background: var(--wg-kit-raise);
+	--wg-kit-control-edge: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon:hover::before { background: var(--wg-kit-fill-hover); }
 :is(.wg-root, .wg-portal) .wg-kit-switch::before { background: var(--wg-kit-fill); }
