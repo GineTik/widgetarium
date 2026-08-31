@@ -71,8 +71,13 @@ const backgroundsOf = (needle) => {
 		if (brace < 0) continue;
 		if (!splitSelectors(block.slice(0, brace)).some((selector) => selector.endsWith(needle))) continue;
 		// CONTEXT: past the brace — a single-line rule puts the property where ^, ; and \n cannot reach
-		const declared = block.slice(brace + 1).match(/(?:^|;|\n)\s*background\s*:\s*([^;}]+)/);
-		if (declared) found.push(declared[1].trim());
+		const body = block.slice(brace + 1);
+		const declared = body.match(/(?:^|;|\n)\s*background\s*:\s*([^;}]+)/);
+		if (!declared) continue;
+		// CONTEXT: a rule may name its fill through a property it sets itself — follow that one hop
+		const named = /^var\((--[\w-]+)\)$/.exec(declared[1].trim())?.[1];
+		const own = named && body.match(new RegExp(`(?:^|;|\n)\\s*${named}\\s*:\\s*([^;}]+)`));
+		found.push((own ? own[1] : declared[1]).trim());
 	}
 	return found;
 };
