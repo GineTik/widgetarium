@@ -231,6 +231,8 @@ function createSlot(app, binding) {
 		slot.create = async (draft) => {
 			const title = draft.props?.title ?? draft.props?.name ?? "Untitled";
 			const path = `${folderPath}/${slugify(title)}.md`;
+			// CONTEXT: vault.create refuses a path whose folder is not there, and the first record makes it
+			if (!(app.vault.getAbstractFileByPath(folderPath) instanceof TFolder)) await app.vault.createFolder(folderPath);
 			const body = draft.body ? `\n${draft.body}\n` : "\n";
 			const file = await app.vault.create(path, stringifyFrontmatter(draft.props ?? {}) + body);
 			// CONTEXT: same rule as update — the record reports the body that landed
