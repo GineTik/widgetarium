@@ -78,11 +78,25 @@ if (process.env.WG_DEBUG) console.log(JSON.stringify(measured, null, 1));
 
 const { arrival, panned, zoomed, floor, live, levels, wheel } = measured;
 
+// CONTEXT: String() made every object equal to every other, and "1" equal to 1
+function same(got, want) {
+	if (Object.is(got, want)) return true;
+	if (!plain(got) || !plain(want)) return false;
+	return JSON.stringify(got) === JSON.stringify(want);
+}
+function plain(value) {
+	if (value === null || typeof value !== "object") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === Object.prototype || proto === Array.prototype || proto === null;
+}
+function show(value) {
+	return plain(value) ? JSON.stringify(value) : String(value);
+}
 let failed = 0;
 function check(label, got, want) {
-	const ok = String(got) === String(want);
+	const ok = same(got, want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${got}, want ${want}`}`);
+	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${show(got)}, want ${show(want)}`}`);
 }
 
 // a pixel is never exactly a pixel once a transform has been through it
@@ -160,11 +174,21 @@ const alphaOf = (colour) => Number(/\/\s*([\d.]+)\s*\)/.exec(String(colour))?.[1
 console.log(`   the panel's own fill is ${arrival.panelFill}`);
 check("the panel is dense enough to read on", alphaOf(arrival.panelFill) >= 0.9, true);
 check("three floating surfaces carry the blur", arrival.blurred.length, 3);
-check("and they are the header, the panel and the zoom bar", arrival.blurred.sort().join(" "), "aside.wg-set-panel.wg-kit-glass div.wg-set-bar.wg-kit-glass div.wg-set-head.wg-kit-glass");
+check("and they are the header, the panel and the zoom bar", arrival.blurred.sort().join(" "), "aside.wg-kit-side.wg-kit-card.is-lifted.is-glass.wg-set-panel div.wg-set-bar.wg-kit-glass div.wg-set-head.wg-kit-glass");
 
-console.log("\n— exactly one edge per floating panel, and no drop shadow anywhere —");
+// CONTEXT: the panel wrote its own padding, corner and fill, so it missed what the block gained
+console.log(`   the panel: sidebar ${arrival.panelIsSidebar} · padding ${arrival.panelPad} · corner ${arrival.panelRadius}`);
+check("the panel is the kit's sidebar block", arrival.panelIsSidebar, true);
+check("so its padding is the block's", arrival.panelPad, "8px");
+check("and its corner is the block's", arrival.panelRadius, "22px");
+
+// CONTEXT: read part by part — a comma list whose first part is inset used to pass while casting whatever came after
+console.log("\n— exactly one edge per floating panel, and the only cast shadow is the panel's lift —");
+const cast = arrival.shadowed.filter((entry) => entry.cast.length > 0);
+console.log(`   ${cast.length} element(s) cast beyond their own box: ${cast.map((entry) => `${entry.name} (${entry.cast.length})`).join(" | ") || "none"}`);
 check("nothing inside the settings panel carries an edge", arrival.shadowed.filter((entry) => entry.inside).map((entry) => entry.name).join(" | ") || 0, 0);
-check("every shadow in the window is an inset hairline", arrival.shadowed.every((entry) => entry.shadow.includes("inset")), true);
+check("the panel casts the lift the kit gives every sidebar", cast.some((entry) => entry.isPanel), true);
+check("and it is the only thing in the window that casts anything", cast.filter((entry) => !entry.isPanel).map((entry) => entry.name).join(" | ") || 0, 0);
 
 console.log("\n— a group on glass is a fill, and it is opaque —");
 check("the group is not the panel's own colour", arrival.listFill !== arrival.panelFill, true);

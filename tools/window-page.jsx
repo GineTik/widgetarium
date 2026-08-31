@@ -163,6 +163,9 @@ function read() {
 	const windowBox = boxOf(window_);
 	const boardStyle = getComputedStyle(mount.querySelector(".wg-grid"));
 
+	// CONTEXT: a box-shadow is a comma list, and only the parts carrying "inset" stay inside the box
+	const castOf = (shadow) => shadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter((part) => !part.includes("inset"));
+
 	const blurred = [];
 	const shadowed = [];
 	for (const node of window_.querySelectorAll("*")) {
@@ -170,7 +173,9 @@ function read() {
 		// CONTEXT: a closed popover is in the DOM at opacity 0 and paints nothing
 		if (style.opacity === "0" || style.visibility === "hidden") continue;
 		if (style.backdropFilter && style.backdropFilter !== "none") blurred.push(nameOf(node));
-		if (style.boxShadow && style.boxShadow !== "none") shadowed.push({ name: nameOf(node), shadow: style.boxShadow, inside: Boolean(panel && panel.contains(node) && node !== panel) });
+		if (style.boxShadow && style.boxShadow !== "none") {
+			shadowed.push({ name: nameOf(node), shadow: style.boxShadow, cast: castOf(style.boxShadow), isPanel: node === panel, inside: Boolean(panel && panel.contains(node) && node !== panel) });
+		}
 	}
 
 	const underPanel = [...window_.querySelectorAll(".wg-set-cells i")].some((cell) => overlaps(boxOf(cell), panelBox));
@@ -193,8 +198,11 @@ function read() {
 		canvasTransform: getComputedStyle(body).transform,
 		panelBlur: getComputedStyle(panel).backdropFilter,
 		panelOverflow: getComputedStyle(window_).overflow,
-		listFill: getComputedStyle(window_.querySelector(".wg-set-list")).backgroundColor,
+		listFill: getComputedStyle(window_.querySelector(".wg-kit-side-list")).backgroundColor,
 		panelFill: getComputedStyle(panel).backgroundColor,
+		panelIsSidebar: panel.classList.contains("wg-kit-side"),
+		panelRadius: getComputedStyle(panel).borderTopLeftRadius,
+		panelPad: getComputedStyle(panel).paddingTop,
 		blurred,
 		shadowed,
 		gridRunsUnderThePanel: underPanel,

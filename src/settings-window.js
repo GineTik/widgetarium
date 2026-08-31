@@ -1,11 +1,13 @@
 import { h } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { declaredName } from "./registry.js";
+import { heldKey, heldTile, mountRows, mountSetting, rekeyed, uniqueName } from "./model.js";
 import { DialogClose, DialogOverlay } from "./dialog.js";
-import { Button, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, Row, RowBadge, RowLabel, RowValue, Segmented, Switch } from "./kit.js";
+import { Button, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, Row, RowBadge, RowLabel, RowValue, Segmented, Sidebar, SidebarGroup, SidebarRow, SidebarSheet, Switch } from "./kit.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { slotFit } from "./fit.js";
 import { spanToPixels } from "./layout.js";
-import { CHROME, clampPan, dialogBox, freeArea, openingPan, openingScale } from "./settings-fit.js";
+import { CHROME, barPlacement, clampPan, dialogBox, freeArea, openingPan, openingScale } from "./settings-fit.js";
 
 const TABS = [
 	{ value: "settings", label: "Settings" },
@@ -83,20 +85,40 @@ function shownValue(value, fallback) {
 
 // CONTEXT: the heading sits outside the block, so the block holds rows and nothing else
 function group(key, heading, rows, under) {
-	return h("div", { class: "wg-set-group", key }, [
-		heading ? h("span", { class: "wg-set-label", key: "label" }, heading) : null,
-		h(List, { class: "wg-set-list", key: "list" }, rows),
-		under ? h("p", { class: "wg-set-under", key: "under" }, under) : null,
-	]);
+	return h(SidebarGroup, { class: "wg-set-group", key, label: heading, hint: under }, rows);
 }
 
 function valueRow(parts) {
-	return h(Row, { pressable: true, class: `wg-set-row${parts.unset ? " is-unset" : ""}`, onClick: parts.onClick }, [
-		parts.badge ? h(RowBadge, { class: "wg-set-badge", key: "badge" }, parts.badge) : null,
-		h(RowLabel, { key: "label" }, parts.label),
-		h(RowValue, { class: `wg-set-value${parts.unset ? " is-unset" : ""}`, key: "value" }, parts.value),
-		h(Icon, { name: "chevron", class: "wg-set-chev" }),
-	]);
+	return h(SidebarRow, {
+		class: "wg-set-row",
+		pressable: true,
+		unset: parts.unset,
+		onClick: parts.onClick,
+		icon: parts.badge,
+		label: parts.label,
+		sub: parts.sub,
+		value: parts.value,
+		after: parts.after ?? h(Icon, { name: "chevron", class: "wg-set-chev", key: "chev" }),
+	});
+}
+
+// PERMANENTLY VISIBLE, NEVER ON HOVER. Gutenberg shipped a hover-only parent selector, called it
+// a usability mistake, and was still adding a back button to it five years later.
+function enterButton(state, step) {
+	return h(
+		IconButton,
+		{
+			size: "s",
+			key: "enter",
+			class: "wg-set-enter",
+			label: "Open its own settings",
+			onClick: (event) => {
+				event.stopPropagation();
+				state.enter(step);
+			},
+		},
+		h(Icon, { name: "chevron" }),
+	);
 }
 
 function reportRow(key, label, note, value, on) {
@@ -106,14 +128,14 @@ function reportRow(key, label, note, value, on) {
 	]);
 }
 
-function editorPopover(state, key, trigger, body) {
+function editorPopover(state, key, trigger, body, seed) {
 	return h(
 		Popover,
 		{
 			key,
 			class: "wg-set-pop",
 			open: state.openRow === key,
-			onOpenChange: (next) => state.openEditor(next ? key : null),
+			onOpenChange: (next) => state.openEditor(next ? key : null, seed),
 			trigger,
 		},
 		body,
@@ -223,20 +245,25 @@ function slotRows(state) {
 	const { manifest, tile, registry, host, onPatch } = state;
 	const picks = tile.slots ?? {};
 	return Object.entries(manifest.slots ?? {}).map(([name, spec]) => {
-		const chosen = picks[name] ?? spec.default ?? "";
+		const chosen = picks[name]?.widget ?? spec.default ?? "";
 		const held = registry.get(chosen);
 		const key = `slot:${name}`;
+		// CONTEXT: a new widget in the slot is a new record — the old one's settings are not its
 		const write = (id) => {
 			const { [name]: dropped, ...rest } = picks;
-			onPatch({ slots: id ? { ...picks, [name]: id } : rest });
+			onPatch({ slots: id ? { ...picks, [name]: { widget: id } } : rest });
 			state.openEditor(null);
 		};
+		// CONTEXT: a `gives` clause is the manifest saying the parent feeds this slot
+		const fed = Object.keys(spec.gives ?? {});
 		const row = valueRow({
 			badge: h(Icon, { name: "check" }),
 			label: titleCase(name),
+			sub: fed.length ? `Fed ${fed.join(", ")}` : null,
 			value: held?.manifest?.title ?? chosen ?? "Nothing",
 			unset: !chosen,
 			onClick: () => state.openEditor(key),
+			after: fed.length === 0 && chosen ? enterButton(state, { hold: "slots", key: name, widget: chosen }) : null,
 		});
 		return h("div", { class: "wg-set-slot", key }, [
 			row,
@@ -258,49 +285,82 @@ function slotRows(state) {
 	});
 }
 
-function idsOf(value) {
-	if (Array.isArray(value)) return value;
-	return String(value ?? "")
-		.split(",")
-		.map((id) => id.trim())
-		.filter(Boolean);
+// CONTEXT: the row's name IS the record's key, so a rename has to carry the record with it
+function movedRecord(held, from, to) {
+	if (from === to || !held?.[from]) return held ?? {};
+	const { [from]: moved, ...rest } = held;
+	return { ...rest, [to]: moved };
 }
 
+// CONTEXT: every other row keeps its name, so a rename never moves a record it did not touch
+function renamed(rows, index, wanted) {
+	const taken = new Set(rows.filter((row, at) => at !== index).map((row) => row.name));
+	return rows.map((row, at) => (at === index ? { ...row, name: uniqueName(taken, wanted) } : row));
+}
+
+function mountRow(state, rows, index, write, rename) {
+	const { registry } = state;
+	const row = rows[index];
+	const found = registry.get(row.widget);
+	const key = `mount:${row.widget}:${index}`;
+	const drop = (event) => {
+		event.stopPropagation();
+		write(rows.filter((entry, at) => at !== index));
+	};
+	// A NAME IS RENAMED WHERE IT IS READ. The row is the trigger, so the thing pressed is the
+	// thing edited — the same move a text setting already makes, and no second control for it.
+	const trigger = h(Row, { pressable: true, class: "wg-set-row" }, [
+		h(RowLabel, { class: "wg-set-two", key: "label" }, [row.name, h("span", { class: "wg-set-sub is-mono", key: "sub" }, row.widget)]),
+		h(RowValue, { class: "wg-set-value", key: "value" }, [
+			found?.component ? null : h(Pill, { tone: "error", key: "gone" }, "Not installed"),
+			// CONTEXT: a mount is never fed, so it always has its own settings inside it
+			found?.component ? enterButton(state, { hold: "mounted", key: row.name, was: row.was, widget: row.widget }) : null,
+			h(IconButton, { size: "s", key: "drop", label: "Remove", onClick: drop }, h(Icon, { name: "close" })),
+		]),
+	]);
+	const apply = (typed) => rename(renamed(rows, index, typed.trim() || declaredName(registry, row.widget)), index);
+	return editorPopover(state, key, trigger, textEditor(state, row.name, apply), row.name);
+}
+
+// TRADE-OFF: no rank — a mount hands nothing down, so slotFit has no clause to weigh
 function mountGroups(state) {
-	const { manifest, tile, registry, onPatch } = state;
+	const { manifest, tile, registry, host, onPatch } = state;
 	const held = tile.settings ?? {};
-	return Object.keys(manifest.mounts ?? {}).map((name) => {
-		const ids = idsOf(held[name] ?? (manifest.settings ?? []).find((field) => field.key === name)?.default);
-		const write = (next) => onPatch({ settings: { ...held, [name]: next.join(", ") } });
-		const rows = ids.map((id, index) => {
-			const found = registry.get(id);
-			return h(Row, { class: "wg-set-row", key: `${id}#${index}` }, [
-				h(RowLabel, { class: "wg-set-two", key: "label" }, [found?.manifest?.title ?? id, h("span", { class: "wg-set-sub is-mono", key: "sub" }, id)]),
-				h(RowValue, { class: "wg-set-value", key: "value" }, [
-					found?.component ? null : h(Pill, { tone: "error", key: "gone" }, "Not installed"),
-					h(IconButton, { size: "s", key: "drop", label: "Remove", onClick: () => write(ids.filter((entry, at) => at !== index)) }, h(Icon, { name: "close" })),
-				]),
-			]);
-		});
-		const trigger = h(Row, { pressable: true, class: "wg-set-row is-add" }, [h(Icon, { name: "plus" }), h(RowLabel, { key: "label" }, "Add a view")]);
-		const body = h(
-			"div",
-			{ class: "wg-set-pop-body" },
-			registry.list().map((definition) =>
-				h(
-					PopoverItem,
-					{
-						key: definition.manifest.id,
-						onClick: () => {
-							write([...ids, definition.manifest.id]);
-							state.openEditor(null);
-						},
-					},
-					h("span", { class: "wg-set-pop-name" }, definition.manifest.title ?? definition.manifest.id),
-				),
-			),
-		);
-		return group(`mount:${name}`, titleCase(name), [...rows, editorPopover(state, `mount:${name}`, trigger, body)], null);
+	return Object.entries(manifest.mounts ?? {}).map(([name, spec]) => {
+		const rows = mountRows(mountSetting(held, name, spec), (id) => declaredName(registry, id));
+		// CONTEXT: the setting's old key goes in the same write, so the next read has one answer
+		const write = (next, moved) => {
+			const { [spec?.was]: dropped, ...rest } = held;
+			const settings = { ...rest, [name]: next.map((row) => ({ name: row.name, widget: row.widget })) };
+			onPatch(moved ? { settings, mounted: moved } : { settings });
+		};
+		const add = (id) => {
+			write([...rows, { name: uniqueName(new Set(rows.map((row) => row.name)), declaredName(registry, id)), widget: id }]);
+			state.openEditor(null);
+		};
+		const key = `mount:${name}`;
+		const trigger = h(Row, { pressable: true, class: "wg-set-row is-add", onClick: () => state.openEditor(key) }, [
+			h(Icon, { name: "plus" }),
+			h(RowLabel, { key: "label" }, "Add a view"),
+		]);
+		const picker = h("div", { class: "wg-set-slot", key: "add" }, [
+			trigger,
+			state.openRow === key
+				? h(CatalogueDialog, {
+						key: "pick",
+						registry,
+						host,
+						mode: "mount",
+						onPick: add,
+						onClose: () => state.openEditor(null),
+				  })
+				: null,
+		]);
+		// CONTEXT: the record sits under the old name, or still under the widget id it arrived as
+		const rename = (next, index) =>
+			write(next, movedRecord(tile.mounted, heldKey(tile.mounted, rows[index].name, rows[index].was), next[index].name));
+		const drawn = rows.map((row, index) => mountRow(state, rows, index, write, rename));
+		return group(key, spec?.label ?? titleCase(name), [...drawn, picker], spec?.hint ?? null);
 	});
 }
 
@@ -406,22 +466,46 @@ function designGroups(state) {
 	];
 }
 
+// CONTEXT: a widget writing a key nobody reads looks configured and steers nothing
+function unheard(state) {
+	const heard = state.boardConsumes;
+	if (!heard) return null;
+	const mute = (state.manifest.provides ?? []).filter((key) => !heard.includes(key));
+	if (mute.length === 0) return null;
+	return `Nothing on this board reads ${mute.join(", ")}, so these settings steer nothing yet.`;
+}
+
 function panelBody(state) {
 	if (state.tab === "data") return dataGroups(state);
 	if (state.tab === "design") return designGroups(state);
 	return [
 		...sourceGroups(state),
-		state.manifest.settings?.length ? group("settings", "Settings", settingRows(state), null) : null,
+		state.manifest.settings?.length ? group("settings", "Settings", settingRows(state), unheard(state)) : null,
 		state.manifest.slots ? group("slots", "Slots", slotRows(state), "A slot is a hole this widget fills with another widget.") : null,
 		...mountGroups(state),
 	];
 }
 
+// A BREADCRUMB, NOT A TREE. It is what Gutenberg shipped after reverting click-through, and it is
+// enough at this depth.
+function crumbTrail(state) {
+	const last = state.crumbs.length - 1;
+	return state.crumbs.flatMap((crumb, depth) =>
+		depth === last
+			? [h("span", { class: "wg-set-here", key: depth }, crumb)]
+			: [
+					h("button", { type: "button", class: "wg-set-crumb", key: depth, onClick: () => state.popTo(depth) }, crumb),
+					h("span", { class: "wg-set-crumb-sep", key: `sep${depth}`, "aria-hidden": "true" }, "\u203a"),
+			  ],
+	);
+}
+
 function header(state) {
 	return h("div", { class: `wg-set-head wg-kit-glass${state.phone ? " is-sheet" : ""}`, key: "head" }, [
-		h("span", { class: "wg-set-crumbs", key: "crumbs" }, h("span", { class: "wg-set-here" }, state.manifest.title ?? state.manifest.id)),
+		h("span", { class: "wg-set-crumbs", key: "crumbs" }, crumbTrail(state)),
 		h("span", { class: "wg-set-head-right", key: "right" }, [
-			h(Pill, { key: "size" }, `${state.place.w} × ${state.place.h}`),
+			// CONTEXT: the size is the tile's place on the board, which nothing below the root has
+			state.crumbs.length > 1 ? null : h(Pill, { key: "size" }, `${state.place.w} × ${state.place.h}`),
 			// TRADE-OFF: both, and they do the same thing — every edit is already written, so
 			// Done is what a person looks for and the cross is what they reach for by habit
 			h(Button, { size: "s", variant: "accent", key: "done", onClick: () => state.onDone() }, "Done"),
@@ -433,7 +517,7 @@ function header(state) {
 function zoomBar(state) {
 	const percent = `${Math.round(state.scale * 100)}%`;
 	const said = state.opening.panned && state.zoom === null ? `${percent} · panned to the top left` : percent;
-	return h("div", { class: "wg-set-bar wg-kit-glass", key: "bar", style: state.barStyle }, [
+	return h("div", { class: `wg-set-bar wg-kit-glass${state.barHidden ? " is-hidden" : ""}`, key: "bar", style: state.barStyle }, [
 		h("button", { type: "button", key: "fit", "aria-pressed": String(state.zoom === null), onClick: () => state.setZoom(null) }, "Fit"),
 		h("button", { type: "button", key: "one", "aria-pressed": String(state.live), onClick: () => state.setZoom(1) }, "1:1"),
 		h("span", { class: "wg-set-div", key: "d1" }),
@@ -459,21 +543,34 @@ function panel(state) {
 			h(Icon, { name: "fold" }),
 		);
 	}
-	return h("aside", { class: `wg-set-panel wg-kit-glass${state.phone ? " is-sheet" : ""}`, key: "panel", style: state.panelStyle }, [
-		state.phone
-			? h("button", {
-					type: "button",
-					class: "wg-set-grip",
-					key: "grip",
-					"aria-label": "Raise the sheet",
-					"aria-pressed": String(state.sheetFull),
-					onClick: () => state.setSheetFull(!state.sheetFull),
-			  })
-			: null,
-		h(Segmented, { key: "tabs", class: "wg-set-tabs", items: TABS, value: state.tab, onChange: state.setTab }),
+	const inside = [
+		h(Segmented, { key: "tabs", class: "wg-set-tabs", items: state.tabs, value: state.tab, onChange: state.setTab }),
 		h("div", { class: "wg-set-scroll", key: "scroll" }, panelBody(state)),
 		h("div", { class: "wg-set-foot", key: "foot" }, h("code", null, state.manifest.id)),
-	]);
+	];
+
+	// CONTEXT: on a phone the panel IS a sheet, and the kit owns what a sheet does — the grip,
+	// the drag, the point of no return and the spring
+	if (state.phone) {
+		return h(
+			SidebarSheet,
+			{
+				as: "aside",
+				key: "panel",
+				surface: "glass",
+				class: "wg-set-panel is-sheet",
+				style: state.panelStyle,
+				open: state.sheetFull,
+				onOpen: state.setSheetFull,
+				peekPx: state.sheetPeekPx,
+				maxPx: state.sheetMaxPx,
+				onHeight: state.setSheetHeight,
+			},
+			inside,
+		);
+	}
+
+	return h(Sidebar, { as: "aside", surface: "glass", class: "wg-set-panel", key: "panel", style: state.panelStyle }, inside);
 }
 
 // THE GRID IS THE CANVAS, NOT WALLPAPER BEHIND IT — it is what says how big the widget is, so
@@ -570,32 +667,56 @@ function panHandlers(state) {
 	};
 }
 
-function startingDraft(key, options) {
+function startingDraft(key, here, place) {
 	const [kind, name] = String(key).split(":");
-	const manifest = options.definition?.manifest ?? {};
 	if (kind === "setting") {
-		const field = (manifest.settings ?? []).find((entry) => entry.key === name);
-		const held = options.tile.settings?.[name] ?? field?.default;
+		const field = (here.manifest.settings ?? []).find((entry) => entry.key === name);
+		const held = here.tile.settings?.[name] ?? field?.default;
 		return held === undefined || held === null ? "" : String(held);
 	}
-	if (kind === "source") return options.tile.sources?.[name]?.path ?? manifest.sources?.[name]?.default?.path ?? "";
-	if (kind === "size") return String(name === "w" ? options.place.w : options.place.h);
+	if (kind === "source") return here.tile.sources?.[name]?.path ?? here.manifest.sources?.[name]?.default?.path ?? "";
+	if (kind === "size") return String(name === "w" ? place.w : place.h);
 	return "";
 }
 
+// ONE TRIPLE, ADDRESSED BY THE PATH. Everything the panel draws below the root reads the record
+// the path names — its own manifest, its own record, and a write that lands inside it.
+function addressed(options, path) {
+	const root = options.definition?.manifest ?? {};
+	let manifest = root;
+	let tile = options.tile;
+	let onPatch = options.onPatch;
+	const crumbs = [root.title ?? root.id ?? "Widget"];
+	for (const step of path) {
+		const held = tile[step.hold] ?? {};
+		const write = onPatch;
+		manifest = options.registry.get(step.widget)?.manifest ?? { id: step.widget };
+		tile = heldTile(tile, step.hold, heldKey(held, step.key, step.was), step.widget);
+		onPatch = (patch) => write({ [step.hold]: rekeyed(held, step.key, step.was, { widget: step.widget, ...patch }) });
+		crumbs.push(manifest.title ?? manifest.id);
+	}
+	return { manifest, tile, onPatch, crumbs };
+}
+
+// CONTEXT: a child has no place on the board, so there is no width, height or fold to draw
+const CHILD_TABS = TABS.filter((entry) => entry.value !== "design");
+
 // TRADE-OFF: one keyed record, not eight resets in an effect — an effect that resets on open
 // RACES the first press, and wiped the popover the person had just opened
-const FRESH = { tab: "settings", zoom: null, pan: null, folded: false, narrow: false, sheetFull: false, openRow: null, draft: "" };
+const FRESH = { tab: "settings", zoom: null, pan: null, folded: false, narrow: false, sheetFull: false, openRow: null, draft: "", path: [] };
 
 export function useSettingsWindow(options) {
-	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onPatch, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders } = options;
+	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders, boardConsumes } = options;
 	const [phase, key] = String(session ?? "").split(":");
 	const open = phase === "open";
 	const closing = phase === "closing";
 	const [held, setHeld] = useState(null);
+	// CONTEXT: read from the sheet, never recomputed — see SidebarSheet's onHeight
+	const [sheetHeight, setSheetHeight] = useState(CHROME.sheetPeekPx);
 	const view = held && held.key === key ? held : { ...FRESH, key };
-	const put = (patch) => setHeld({ ...view, ...patch });
-	const { tab, zoom, pan, folded, narrow, sheetFull, openRow, draft } = view;
+	// CONTEXT: read from the record, never from the render's copy — Escape pops from a listener
+	const put = (patch) => setHeld((current) => ({ ...(current && current.key === key ? current : { ...FRESH, key }), ...patch }));
+	const { tab, zoom, pan, folded, narrow, sheetFull, openRow, draft, path } = view;
 	const setTab = (next) => put({ tab: next });
 	const setZoom = (next) => put({ zoom: next });
 	const setPan = (next) => put({ pan: next });
@@ -609,20 +730,22 @@ export function useSettingsWindow(options) {
 	const viewport = useViewport();
 	useHeldScroll(open);
 
-	useEffect(() => {
-		if (!open) return;
-		// CONTEXT: the slot picker is a dialog of its own on top; Escape belongs to whatever is
-		// nearest, and dismissing the window under it would drop the whole draft
-		const closeOnEscape = (event) => {
-			if (event.key === "Escape" && !String(openRow).startsWith("slot:")) onDismiss();
-		};
-		document.addEventListener("keydown", closeOnEscape, true);
-		return () => document.removeEventListener("keydown", closeOnEscape, true);
-	}, [open, onDismiss, openRow]);
+	// CLOSE POPS ONE RUNG. A popover and the slot picker are nearer and close themselves, then one
+	// level, and only at the root does the window go — dismissing under any of them drops the draft.
+	// The portal freezes its Escape handler at mount, so the live ladder is read through a ref.
+	const ladderRef = useRef(null);
+	ladderRef.current = () => {
+		if (openRow) return;
+		if (path.length === 0) return onDismiss();
+		put({ path: path.slice(0, -1), tab: "settings", openRow: null, draft: "" });
+	};
+	const closeOne = useRef(() => ladderRef.current()).current;
 
 	if (!open && !closing) return { shown: false, dialog: null };
 
 	const manifest = definition?.manifest ?? {};
+	// CONTEXT: the canvas always draws the tile's own widget; only the panel follows the path
+	const here = addressed(options, path);
 	const frame = dialogBox(viewport, phone);
 	const windowBox = { width: frame.width, height: frame.height };
 	const layout = {
@@ -644,19 +767,24 @@ export function useSettingsWindow(options) {
 	const at = clampPan(pan ?? openingPan(canvas, free, opening), canvas, scale, free, cell);
 
 	const state = {
-		manifest,
-		tile,
+		manifest: here.manifest,
+		tile: here.tile,
+		onPatch: here.onPatch,
+		crumbs: here.crumbs,
+		tabs: path.length > 0 ? CHILD_TABS : TABS,
+		enter: (step) => put({ path: [...path, step], tab: "settings", openRow: null, draft: "" }),
+		popTo: (depth) => put({ path: path.slice(0, depth), tab: "settings", openRow: null, draft: "" }),
 		place,
 		host,
 		registry,
 		columns,
-		onPatch,
 		onDone,
 		onDismiss,
 		onResize,
 		onCollapse,
 		onExpand,
 		countReaders,
+		boardConsumes,
 		tab,
 		setTab,
 		zoom,
@@ -676,7 +804,7 @@ export function useSettingsWindow(options) {
 		sheetFull,
 		setSheetFull,
 		openRow,
-		openEditor: (next) => put({ openRow: next, draft: next ? startingDraft(next, options) : "" }),
+		openEditor: (next, seed) => put({ openRow: next, draft: next ? (seed ?? startingDraft(next, here, place)) : "" }),
 		draft,
 		setDraft,
 		isCollapsed: Boolean(tile.folded),
@@ -687,8 +815,6 @@ export function useSettingsWindow(options) {
 					left: `${CHROME.padPx}px`,
 					right: `${CHROME.padPx}px`,
 					bottom: `${CHROME.padPx}px`,
-					top: sheetFull ? `${CHROME.padPx + CHROME.headerHeightPx + CHROME.gapPx}px` : "auto",
-					height: sheetFull ? "auto" : `${CHROME.sheetPeekPx}px`,
 			  }
 			: {
 					right: `${CHROME.padPx}px`,
@@ -696,7 +822,11 @@ export function useSettingsWindow(options) {
 					bottom: `${CHROME.padPx}px`,
 					width: `${CHROME.panelWidthPx}px`,
 			  },
-		barStyle: phone && !folded ? { bottom: `${CHROME.padPx + CHROME.sheetPeekPx + CHROME.gapPx}px` } : null,
+		barStyle: phone && !folded ? { bottom: `${barPlacement(CHROME, sheetHeight, frame.height).bottomPx}px` } : null,
+		barHidden: phone && barPlacement(CHROME, sheetHeight, frame.height).hidden,
+		sheetHeight,
+		setSheetHeight,
+		sheetMaxPx: Math.max(CHROME.sheetPeekPx, frame.height - 2 * CHROME.padPx - CHROME.headerHeightPx - CHROME.gapPx),
 	};
 
 	const canvasStyle = { left: `${at.x}px`, top: `${at.y}px`, width: `${canvas.width}px`, height: `${canvas.height}px` };
@@ -730,7 +860,7 @@ export function useSettingsWindow(options) {
 
 	const dialog = h(
 		DialogOverlay,
-		{ class: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: onDismiss },
+		{ class: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: closeOne },
 		h(
 			"div",
 			{

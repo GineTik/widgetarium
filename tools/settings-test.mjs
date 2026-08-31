@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 
@@ -15,15 +16,46 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configu
 buildMirror();
 const { h, render } = await import("preact");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
-const { CHROME, dialogBox, freeArea, openingScale, openingPan, clampPan } = await import("./.mjs-cache/settings-fit.mjs");
-const { WidgetSurface, mountedTile } = await import("./.mjs-cache/surface.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { CHROME, barPlacement, dialogBox, freeArea, openingScale, openingPan, clampPan } = await import("./.mjs-cache/settings-fit.mjs");
+const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
+const { heldTile, normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
 
 let failed = 0;
+
+// WHERE THE CONTROLS STAND WHILE THE SHEET MOVES. They were placed against the height the sheet
+// RESTS at, so the moment it was dragged it grew up through them.
+{
+	const frame = 800;
+	const resting = barPlacement(CHROME, CHROME.sheetPeekPx, frame);
+	const raised = barPlacement(CHROME, 400, frame);
+	const full = barPlacement(CHROME, 700, frame);
+	check("the controls sit one gap above the sheet", resting.bottomPx, CHROME.padPx + CHROME.sheetPeekPx + CHROME.gapPx);
+	check("and move with it, rather than staying where it used to rest", raised.bottomPx > resting.bottomPx, true);
+	check("with room to spare they stay", [resting.hidden, raised.hidden], [false, false]);
+	check("and once the sheet leaves them none, they go", full.hidden, true);
+	check("nothing overlaps at any height the sheet can reach", [CHROME.sheetPeekPx, 300, 500, 700].every((height) => {
+		const seen = barPlacement(CHROME, height, frame);
+		return seen.hidden || seen.bottomPx >= CHROME.padPx + height + CHROME.gapPx;
+	}), true);
+}
 function check(label, got, want) {
-	const ok = String(got) === String(want);
+	const ok = same(got, want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${got}, want ${want}`}`);
+	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${show(got)}, want ${show(want)}`}`);
+}
+// CONTEXT: String() made every object equal to every other
+function same(got, want) {
+	if (Object.is(got, want)) return true;
+	if (!plain(got) || !plain(want)) return false;
+	return JSON.stringify(got) === JSON.stringify(want);
+}
+function plain(value) {
+	if (value === null || typeof value !== "object") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === Object.prototype || proto === Array.prototype || proto === null;
+}
+function show(value) {
+	return plain(value) ? JSON.stringify(value) : String(value);
 }
 
 const span = (cells) => cells * GRID.cellPx + (cells - 1) * GRID.gapPx;
@@ -108,11 +140,13 @@ console.log("\n— on a phone the sheet takes the bottom, never the right edge �
 
 console.log("\n— a mounted widget can record which widget fills its slot —");
 {
-	// CONTEXT: resolveSlots reads tile.slots, which mountedTile never built
-	const parent = { id: "group", mounted: { kanban: { settings: { a: 1 }, slots: { card: "@other/card" } } } };
-	const child = mountedTile(parent, "kanban", "@task/kanban-board");
-	check("the child carries the slot pick", child.slots?.card, "@other/card");
-	check("and a mount that never picked one carries an empty table", JSON.stringify(mountedTile({ id: "g" }, "k", "w").slots), "{}");
+	// CONTEXT: resolveSlots reads tile.slots, which the reader never built
+	const parent = { id: "group", mounted: { kanban: { widget: "@task/kanban-board", settings: { a: 1 }, slots: { card: { widget: "@other/card" } } } } };
+	const child = heldTile(parent, "mounted", "kanban", "@task/kanban-board");
+	check("the child carries the slot pick", child.slots?.card?.widget, "@other/card");
+	check("and a mount that never picked one carries an empty table", JSON.stringify(heldTile({ id: "g" }, "mounted", "k", "w").slots), "{}");
+	// CONTEXT: the mount setting is the live truth; the record's widget is a mirror of it
+	check("the setting's widget wins over the record's", heldTile({ id: "g", mounted: { k: { widget: "@stale/one" } } }, "mounted", "k", "@live/two").widget, "@live/two");
 }
 
 console.log("\n— and the panel writes what it draws —");
@@ -131,8 +165,8 @@ console.log("\n— and the panel writes what it draws —");
 		sources: { tasks: { label: "Tasks", default: { path: "Orbitask/Tasks" } }, boards: { label: "Boards" } },
 	};
 	const Leaf = () => h("div", { class: "leaf" }, "leaf");
-	// The misfit is the BIGGER tile on purpose: the bento sorts biggest first, so if fit were not
-	// ranked ahead of size the misfit would lead the list and the ordering check below would fail.
+	// The misfit is the TALLER tile on purpose: the showcase packs tallest first, so if fit were not
+	// ranked ahead of height the misfit would lead the list and the ordering check below would fail.
 	const fitting = { id: CARD_ID, title: "Task card", defaultSize: { w: 3, h: 2 }, accepts: { task: { required: ["title"] } } };
 	const misfit = { id: OTHER_ID, title: "Compact card", defaultSize: { w: 8, h: 5 }, accepts: { task: { required: ["title", "estimate"] } } };
 	const registry = {
@@ -194,8 +228,9 @@ console.log("\n— and the panel writes what it draws —");
 	check("and a modal one", find(".wg-set-window")?.getAttribute("aria-modal"), "true");
 	check("the page underneath cannot scroll while it is up", document.body.style.overflow, "hidden");
 	check("the header names the widget", find(".wg-set-here")?.textContent, "Kanban board");
-	check("the panel is one glass panel", all(".wg-set-panel.wg-kit-glass").length, 1);
-	check("and there are exactly three glass surfaces", all(".wg-set-window .wg-kit-glass").length, 3);
+	// CONTEXT: the panel is a kit sidebar wearing the glass SURFACE, so it says is-glass, not wg-kit-glass
+	check("the panel is one glass sidebar", all(".wg-set-panel.wg-kit-side.is-glass").length, 1);
+	check("and there are exactly three glass surfaces", all(".wg-set-window .wg-kit-glass").length + all(".wg-set-window .wg-kit-side.is-glass").length, 3);
 
 	const settingRow = rowSaying("Group tasks by");
 	check("the setting is drawn with its value", Boolean(settingRow) && settingRow.textContent.includes("status"), true);
@@ -224,7 +259,7 @@ console.log("\n— and the panel writes what it draws —");
 	// actually feeds, which a list of titles cannot.
 	await press(rowSaying("Card"));
 	check("pressing the slot row opens the catalogue", Boolean(find(".wg-cat-dialog")), true);
-	check("in fill mode, so every tile offers to fill", all(".wg-cat-dialog .wg-cat-verb").every((verb) => verb.textContent === "Use"), true);
+	check("in fill mode, so every tile offers to fill", all(".wg-cat-dialog .wg-cat-tile").every((tile) => tile.getAttribute("aria-label").startsWith("Use ")), true);
 
 	const named = () => all(".wg-cat-dialog .wg-cat-tile").map((tile) => tile.querySelector(".wg-cat-name").textContent);
 	check("it draws a tile per widget, not a row of names", named().length, 3);
@@ -240,13 +275,31 @@ console.log("\n— and the panel writes what it draws —");
 	check("the one that fits says nothing", lacks[0], null);
 	check("and neither does the one that declared nothing", lacks[1], null);
 
+	// THE DIVIDER IS A LATTICE ROW, not a sibling in a list — so where it sits is a row number,
+	// and what it separates is everything above that row from everything below it.
 	const divider = find(".wg-cat-dialog .wg-cat-divide");
 	check("a divider is drawn above the misfits", Boolean(divider), true);
-	const order = [...find(".wg-cat-dialog .wg-cat-grid").children];
-	const firstShort = order.findIndex((node) => node.querySelector(".wg-cat-lack"));
-	check("immediately above the first candidate that falls short", order.indexOf(divider), firstShort - 1);
-	check("so nothing above it is a misfit", order.slice(0, firstShort - 1).every((node) => !node.querySelector(".wg-cat-lack")), true);
+	// CONTEXT: cards flow in document order now, so "above" is a position in that order
+	const inOrder = all(".wg-cat-dialog .wg-cat-tile, .wg-cat-dialog .wg-cat-divide");
+	const at = inOrder.indexOf(divider);
+	const drawn = all(".wg-cat-dialog .wg-cat-tile");
+	const short = drawn.filter((tile) => tile.querySelector(".wg-cat-lack"));
+	check("every candidate that fits lies above it", drawn.filter((tile) => !tile.querySelector(".wg-cat-lack")).every((tile) => inOrder.indexOf(tile) < at), true);
+	check("and every one that falls short lies below it", short.length > 0 && short.every((tile) => inOrder.indexOf(tile) > at), true);
 	check("the slot can still fall back to the widget's own default", Boolean(all(".wg-cat-dialog .wg-dialog-foot button").length), true);
+
+	// EACH CANDIDATE IS A CARD carrying its own playground — the board's lattice at the scale
+	// that card needs — so the picker shows how much board a candidate would eat.
+	const card = drawn.find((tile) => tile.querySelector(".wg-cat-name").textContent === "Task card");
+	check("no candidate draws a lattice", drawn.some((tile) => tile.querySelector(".wg-cells")), false);
+	check("with more than one span among them, or this proves nothing", new Set(drawn.map((tile) => tile.getAttribute("data-span"))).size > 1, true);
+	// CONTEXT: these fixtures declare no preview, so the span falls back to the board size
+	check("and the span shown is the size the manifest declares", card.getAttribute("data-span"), `${fitting.defaultSize.w}x${fitting.defaultSize.h}`);
+	check("said in words on the card", card.querySelector(".wg-cat-span").textContent, `${fitting.defaultSize.w}\u00d7${fitting.defaultSize.h}`);
+	check("every candidate carries one button and no state mark", drawn.every((tile) => [...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic")).length === 1 && tile.querySelectorAll(".wg-cat-badge").length === 0), true);
+	check("and the press says the same word on every one", new Set(drawn.map((tile) => tile.getAttribute("aria-label").split(" ")[0])).size, 1);
+	check("nothing sits under the list of candidates", find(".wg-cat-dialog .wg-cat").lastElementChild.className, "wg-cat-scroll");
+	check("and no global strip names a selection", find(".wg-cat-dialog > .wg-cat-bar"), null);
 
 	const pick = all(".wg-cat-dialog .wg-cat-tile").find((tile) => tile.textContent.includes("Compact card"));
 	check("a misfit is offered, not withheld", Boolean(pick), true);
@@ -262,7 +315,7 @@ console.log("\n— and the panel writes what it draws —");
 	check("and says it is on, because the folder is set", canRow("Create")?.textContent.endsWith("On"), true);
 	check("Remove is reported too", canRow("Remove")?.textContent.endsWith("On"), true);
 
-	const groupSaying = (label) => all(".wg-set-group").find((node) => node.querySelector(".wg-set-label")?.textContent === label);
+	const groupSaying = (label) => all(".wg-set-group").find((node) => node.querySelector(".wg-kit-side-label")?.textContent === label);
 	const boards = groupSaying("What Boards can do");
 	check("a source with no folder reports every action off together", [...boards.querySelectorAll(".wg-kit-row")].every((row) => row.textContent.endsWith("Off")), true);
 	check("and says why, once, above them", boards.querySelector(".wg-kit-row")?.textContent.includes("nowhere to put it"), true);
@@ -318,8 +371,9 @@ console.log("\n— and the panel writes what it draws —");
 	check("Done saves the setting", board.tiles[0].settings.groupBy, "assignee");
 	// the section cleared this field on purpose, and an empty own path is what falls back
 	check("and the cleared source, still cleared", board.tiles[0].sources.tasks.path, "");
-	check("and the slot that was picked", board.tiles[0].slots.card, OTHER_ID);
-	check("and it survives a save", serializeBoard(board).tiles[0].slots.card, OTHER_ID);
+	check("and the slot that was picked", board.tiles[0].slots.card.widget, OTHER_ID);
+	// CONTEXT: this file's check stringifies, so two objects always match — the comparison must be text
+	check("and it survives a save, as a record", JSON.stringify(serializeBoard(board).tiles[0].slots.card), JSON.stringify({ widget: OTHER_ID }));
 	check("and the place the Design tab wrote", board.layouts[20].find((place) => place.id === "t1").w, 6);
 	check("Done fades the panels first", Boolean(find(".wg-set-chrome.is-leaving")), true);
 	check("and the box is still open while they go", Boolean(find(".wg-set-window")), true);
@@ -353,6 +407,346 @@ console.log("\n— and the panel writes what it draws —");
 		check("closing without Done leaves the board exactly as it was", JSON.stringify(serializeBoard(board)), before);
 		check("and the window is gone", Boolean(find(".wg-set-window")), false);
 	}
+
+	render(null, mount);
+}
+
+console.log("\n— an unfed child is a level of its own, and the trail is the way back —");
+{
+	const GROUP_ID = "@core/view-group";
+	const KANBAN_ID = "@task/kanban-board";
+	const ARCHIVE_ID = "@task/archived-columns";
+	const CARD_ID = "@task/task-card";
+	const PANEL_ID = "@task/side-panel";
+
+	// CONTEXT: `views` is BOTH the mount name and the setting that fills it — resolveMounts pairs them
+	// CONTEXT: the record is keyed by the NAME the board gave the row, which starts as the title
+	const KANBAN_VIEW = "Kanban board";
+	const shelf = {
+		[GROUP_ID]: {
+			id: GROUP_ID,
+			title: "View group",
+			// CONTEXT: the mount name is `holds`; `views` is the key notes were written with before
+			mounts: { holds: { was: "views", label: "Views" } },
+			settings: [{ key: "views", type: "text", label: "Which views", default: `${KANBAN_ID}, ${ARCHIVE_ID}` }],
+		},
+		[KANBAN_ID]: {
+			id: KANBAN_ID,
+			title: "Kanban board",
+			settings: [{ key: "groupBy", type: "text", label: "Group tasks by", default: "status" }],
+			sources: { tasks: { label: "Tasks", default: { path: "Orbitask/Tasks" } } },
+			// the card is FED a task, the panel is not — one manifest carries both kinds on purpose
+			slots: {
+				card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } },
+				panel: { of: "widget", default: PANEL_ID },
+			},
+		},
+		[ARCHIVE_ID]: { id: ARCHIVE_ID, title: "Archived columns", settings: [{ key: "since", type: "text", label: "Archived since", default: "2019" }] },
+		[PANEL_ID]: { id: PANEL_ID, title: "Side panel", settings: [{ key: "width", type: "text", label: "Panel width", default: "narrow" }] },
+		[CARD_ID]: { id: CARD_ID, title: "Task card" },
+	};
+	const Leaf = () => h("div", { class: "leaf" }, "leaf");
+	const registry = {
+		get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
+		list: () => Object.values(shelf).map((manifest) => ({ manifest })),
+	};
+	const slot = {
+		canCreate: true,
+		canUpdate: true,
+		canRemove: true,
+		canSubscribe: false,
+		list: async () => ({ rows: [], total: 0 }),
+		describe: async () => [],
+	};
+	const host = { platform: "test", can: {}, slot: () => slot, ui: { notify() {}, openNote() {} } };
+
+	// TWO TILES OF ONE WIDGET, because that is the shape the stale-board closure was said to eat
+	let board = normalizeBoard({
+		tiles: [
+			{ id: "t1", widget: GROUP_ID, settings: { views: `${KANBAN_ID}, ${ARCHIVE_ID}` }, mounted: { [ARCHIVE_ID]: { settings: { since: "2020" } } } },
+			{ id: "t2", widget: GROUP_ID, settings: { views: KANBAN_ID } },
+		],
+		layouts: { 20: [{ id: "t1", x: 0, y: 0, w: 9, h: 6 }, { id: "t2", x: 9, y: 0, w: 9, h: 6 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: 1340,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1) {
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+		}
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	const escape = async () => {
+		document.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+		await tick();
+	};
+	const find = (selector) => document.querySelector(selector);
+	const all = (selector) => [...document.querySelectorAll(selector)];
+	const rowSaying = (text) => all(".wg-set-panel .wg-kit-row").find((row) => row.textContent.includes(text));
+	const here = () => find(".wg-set-here")?.textContent;
+	const trail = () => all(".wg-set-crumbs .wg-set-crumb").map((crumb) => crumb.textContent);
+	const settingsButtons = () => all('.wg-tile-actions button[aria-label="Settings"]');
+	const typeInto = async (row, typed) => {
+		await press(row);
+		const field = find(".wg-set-pop input");
+		field.value = typed;
+		field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+		await tick();
+		await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+	};
+
+	await press(settingsButtons()[0]);
+	check("the window opens on the tile's own widget", here(), "View group");
+	check("and one crumb is no trail", trail(), []);
+
+	const viewRow = rowSaying("Kanban board");
+	// THE WAY IN IS DRAWN, NOT REVEALED. Nothing has been hovered, pressed or focused here.
+	check("a mounted view carries a way into it", Boolean(viewRow?.querySelector(".wg-set-enter")), true);
+	check("and it is a real control, not a decoration", viewRow?.querySelector(".wg-set-enter")?.tagName, "BUTTON");
+	check("the sibling view carries one too", Boolean(rowSaying("Archived columns")?.querySelector(".wg-set-enter")), true);
+
+	await press(viewRow.querySelector(".wg-set-enter"));
+	check("pressing it names the child, not the parent", here(), "Kanban board");
+	check("and the parent becomes the crumb behind it", trail(), ["View group"]);
+	check("the child's own setting is drawn", Boolean(rowSaying("Group tasks by")), true);
+	check("and the parent's is gone from the panel", Boolean(rowSaying("Which views")), false);
+	check("the child's own source is drawn too", Boolean(rowSaying("Tasks")), true);
+	// A CHILD HAS NO PLACE ON THE BOARD, so there is no width, height or fold to show
+	check("the Design tab is not offered one level down", all(".wg-set-panel .wg-kit-seg button").map((button) => button.textContent.trim()), ["Settings", "Data"]);
+	check("nor is the size the tile has on the board", Boolean(all(".wg-set-head .wg-kit-pill").length), false);
+
+	const cardRow = rowSaying("Card");
+	check("a slot the parent feeds says what it is fed", cardRow?.textContent.includes("Fed task"), true);
+	check("and offers no way in, because there is nothing inside it", Boolean(cardRow?.querySelector(".wg-set-enter")), false);
+	const panelRow = rowSaying("Panel");
+	check("a slot it does not feed offers one", Boolean(panelRow?.querySelector(".wg-set-enter")), true);
+
+	await typeInto(rowSaying("Group tasks by"), "assignee");
+	check("the child's panel draws the new value", rowSaying("Group tasks by")?.textContent.includes("assignee"), true);
+
+	await press(panelRow.querySelector(".wg-set-enter"));
+	check("a child of the child opens too", here(), "Side panel");
+	check("and the trail is two deep", trail(), ["View group", "Kanban board"]);
+	check("drawing the grandchild's own setting", Boolean(rowSaying("Panel width")), true);
+	await typeInto(rowSaying("Panel width"), "wide");
+
+	await escape();
+	check("Escape pops one level, it does not close", here(), "Kanban board");
+	check("and the window is still up", Boolean(find(".wg-set-window")), true);
+
+	await press(all(".wg-set-crumbs .wg-set-crumb")[0]);
+	check("pressing the first crumb returns to the parent", here(), "View group");
+	check("and the parent's own setting is back", Boolean(rowSaying("Which views")), true);
+	check("with the Design tab back with it", all(".wg-set-panel .wg-kit-seg button").map((button) => button.textContent.trim()), ["Settings", "Data", "Design"]);
+
+	const beforeDone = JSON.stringify(serializeBoard(board));
+	check("and nothing has reached the board yet", board.tiles[0].mounted[KANBAN_VIEW]?.settings?.groupBy, undefined);
+	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	check("Done writes the child's edit into the child's record", board.tiles[0].mounted[KANBAN_VIEW].settings.groupBy, "assignee");
+	check("and the grandchild's into the grandchild's", board.tiles[0].mounted[KANBAN_VIEW].slots.panel.settings.width, "wide");
+	check("the record names the widget it holds", board.tiles[0].mounted[KANBAN_VIEW].slots.panel.widget, PANEL_ID);
+	check("and the row itself names the widget its name stands for", board.tiles[0].mounted[KANBAN_VIEW].widget, KANBAN_ID);
+	// NOTHING ELSE MOVES. The sibling view was seeded before any of this and must still be there.
+	check("the sibling view's settings are untouched", board.tiles[0].mounted[ARCHIVE_ID].settings.since, "2020");
+	check("and the parent's own settings with them", board.tiles[0].settings.views, `${KANBAN_ID}, ${ARCHIVE_ID}`);
+	check("the draft really was a draft", beforeDone === JSON.stringify(serializeBoard(board)), false);
+	await new Promise((done) => setTimeout(done, 240));
+	await tick();
+
+	// THE SECOND TILE OF THE SAME WIDGET. patchTile closes over the render's board; if that closure
+	// were stale, writing here would put the first tile back the way it was before its own edit.
+	await press(settingsButtons()[1]);
+	await press(rowSaying("Kanban board").querySelector(".wg-set-enter"));
+	await typeInto(rowSaying("Group tasks by"), "priority");
+	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	check("the second tile keeps its own edit", board.tiles[1].mounted[KANBAN_VIEW].settings.groupBy, "priority");
+	check("and the first tile's survives it", board.tiles[0].mounted[KANBAN_VIEW].settings.groupBy, "assignee");
+	await new Promise((done) => setTimeout(done, 240));
+	await tick();
+
+	// THE LADDER, ONE RUNG AT A TIME, ending at the root and only there
+	await press(settingsButtons()[0]);
+	await press(rowSaying("Kanban board").querySelector(".wg-set-enter"));
+	await press(rowSaying("Panel").querySelector(".wg-set-enter"));
+	check("three levels deep", trail().length, 2);
+	await escape();
+	check("one rung", trail(), ["View group"]);
+	await escape();
+	check("another", trail(), []);
+	check("and the window is still open at the root", Boolean(find(".wg-set-window")), true);
+	await escape();
+	await new Promise((done) => setTimeout(done, 240));
+	await tick();
+	check("only at the root does Escape close it", Boolean(find(".wg-set-window")), false);
+
+	// THE AFFORDANCE IS NOT BEHIND A HOVER. Gutenberg shipped that, called it a mistake, and was
+	// still adding a back button to it five years later.
+	const sheet = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+	const hoverGated = sheet
+		.split("}")
+		.map((block) => block.split("{")[0])
+		.filter((selector) => selector.includes(".wg-set-enter") && /:hover|:focus/.test(selector));
+	check("no rule keeps it until the pointer arrives", hoverGated, []);
+
+	// THE BOARD OWNS THE NAME, so it can be typed over. The record is keyed by that name, which
+	// makes a rename a MOVE — Appsmith shipped the same feature with the invariant only on the
+	// add path, and its tabs could be renamed into duplicates of one another.
+	await press(settingsButtons()[0]);
+	check("the mount group is labelled by the manifest, not by its setting key", Boolean(all(".wg-set-panel .wg-kit-side-label").find((node) => node.textContent.trim() === "Views")), true);
+	check("the row is drawn under its name", Boolean(rowSaying("Kanban board")), true);
+
+	await typeInto(rowSaying("Kanban board"), "Planner");
+	check("the renamed row is drawn under the new name", Boolean(rowSaying("Planner")), true);
+	check("and the old name is gone from the panel", Boolean(rowSaying("Kanban board")), false);
+	check("the sibling row is untouched by it", Boolean(rowSaying("Archived columns")), true);
+
+	// RENAMING ONTO A NAME ALREADY TAKEN. Refusing would silently drop what was typed; merging
+	// would silently drop a record. It is disambiguated instead, and the panel says so.
+	await typeInto(rowSaying("Planner"), "Archived columns");
+	check("a duplicate name is disambiguated, in the panel itself", Boolean(rowSaying("Archived columns 2")), true);
+	check("and the row it collided with keeps its own name", all(".wg-set-panel .wg-kit-row").filter((row) => row.textContent.includes("Archived columns") && !row.textContent.includes("Archived columns 2")).length, 1);
+
+	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	const holds = board.tiles[0].settings.holds;
+	check("Done writes the new shape, a row per name", holds, [{ name: "Archived columns 2", widget: KANBAN_ID }, { name: "Archived columns", widget: ARCHIVE_ID }]);
+	check("and the setting's old key goes with it", "views" in board.tiles[0].settings, false);
+	check("the renamed row's record came with the name", board.tiles[0].mounted["Archived columns 2"]?.settings?.groupBy, "assignee");
+	check("and nothing is left behind under the old one", "Kanban board" in board.tiles[0].mounted, false);
+	// THE SIBLING NEVER MOVED. It was seeded under the widget-id key and nothing edited it, so
+	// the lazy migration must have left it exactly where it was.
+	check("a sibling nobody edited stays on its old key", board.tiles[0].mounted[ARCHIVE_ID].settings.since, "2020");
+	await new Promise((done) => setTimeout(done, 240));
+	await tick();
+
+	render(null, mount);
+}
+
+console.log("\n— a tile that was skipped by the memo still writes onto the board as it stands —");
+{
+	const PROBE_ID = "@test/probe";
+	// THE TILE IS MEMOISED, so a tile nothing changed keeps the props of the render it last drew —
+	// including the write. If that write carries its own copy of the board, everything written
+	// between the two renders is gone the moment the skipped tile speaks.
+	const configureBy = {};
+	const Probe = (props) => {
+		configureBy[props.settings.mark] = props.configure;
+		return h("div", { class: "leaf" }, props.settings.mark);
+	};
+	const manifest = { id: PROBE_ID, title: "Probe", settings: [{ key: "mark", type: "text", label: "Mark", default: "" }] };
+	// CONTEXT: one definition object, or every tile redraws and the memo is never exercised
+	const definition = { manifest, component: Probe };
+	const registry = { get: (id) => (id === PROBE_ID ? definition : null), list: () => [{ manifest }] };
+	const host = { platform: "test", can: {}, slot: () => null, ui: { notify() {}, openNote() {} } };
+
+	let board = normalizeBoard({
+		tiles: [
+			{ id: "a", widget: PROBE_ID, settings: { mark: "a" } },
+			{ id: "b", widget: PROBE_ID, settings: { mark: "b" } },
+		],
+		layouts: { 20: [{ id: "a", x: 0, y: 0, w: 6, h: 4 }, { id: "b", x: 6, y: 0, w: 6, h: 4 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: 1340,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+	const settle = async () => {
+		for (let frame = 0; frame < 3; frame += 1) {
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+		}
+	};
+	await settle();
+
+	const held = configureBy.a;
+	check("both tiles handed their widget a way to write", Boolean(configureBy.a) && Boolean(configureBy.b), true);
+
+	configureBy.b({ note: "from b" });
+	await settle();
+	check("the second tile's write landed", board.tiles[1].settings.note, "from b");
+	check("and the first tile was skipped, or this proves nothing", configureBy.a === held, true);
+
+	configureBy.a({ note: "from a" });
+	await settle();
+	check("the skipped tile's own write lands", board.tiles[0].settings.note, "from a");
+	check("and it does not put the other tile back", board.tiles[1].settings.note, "from b");
+
+	render(null, mount);
+}
+
+console.log("\n— a folder's readers are counted by the widget in the record, not by its key —");
+{
+	// THE KEY IS NO LONGER A WIDGET ID, so counting readers by parsing it can only ever answer
+	// zero for everything mounted. Nothing covered this line before, which is why it stayed.
+	const FOLDER = "Notes/Tasks";
+	const READER_ID = "@test/reader";
+	const GROUP_ID = "@test/group";
+	const shelf = {
+		[READER_ID]: { id: READER_ID, title: "Reader", sources: { rows: { label: "Rows", default: { path: FOLDER } } } },
+		[GROUP_ID]: { id: GROUP_ID, title: "Group", mounts: { holds: {} } },
+	};
+	const Leaf = () => h("div", { class: "leaf" }, "leaf");
+	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null), list: () => Object.values(shelf).map((manifest) => ({ manifest })) };
+	const slot = { canCreate: true, canUpdate: true, canRemove: true, canSubscribe: false, list: async () => ({ rows: [], total: 0 }), describe: async () => [] };
+	const host = { platform: "test", can: {}, slot: () => slot, ui: { notify() {}, openNote() {} } };
+
+	let board = normalizeBoard({
+		tiles: [
+			{ id: "alone", widget: READER_ID, sources: { rows: { path: FOLDER } } },
+			{ id: "group", widget: GROUP_ID, settings: { holds: [{ name: "Mine", widget: READER_ID }] }, mounted: { Mine: { widget: READER_ID, sources: { rows: { path: FOLDER } } } } },
+		],
+		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }, { id: "group", x: 9, y: 0, w: 9, h: 6 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () => render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: 1340, onChange: (next) => { board = next; draw(); } }), mount);
+	draw();
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1) await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+
+	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
+	const hints = [...document.querySelectorAll(".wg-set-panel .wg-kit-side-hint")].map((node) => node.textContent.trim());
+	check("a widget mounted under a NAME still counts as a reader of its folder", hints.includes(`2 widgets on this board read this folder.`), true);
+	// CONTEXT: VACUOUS unless the count can be wrong — one reader must draw no hint at all
+	board = normalizeBoard({ tiles: [{ id: "alone", widget: READER_ID, sources: { rows: { path: FOLDER } } }], layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] } });
+	render(null, mount);
+	draw();
+	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
+	check("and the only reader on a board is told nothing", [...document.querySelectorAll(".wg-set-panel .wg-kit-side-hint")].map((node) => node.textContent.trim()), []);
 
 	render(null, mount);
 }

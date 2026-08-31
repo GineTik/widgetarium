@@ -35,6 +35,15 @@ export const CHROME = {
 	sheet: false,
 };
 
+// WHERE THE CONTROLS STAND WHILE THE SHEET MOVES. They sit one gap above it and leave the moment
+// there is no room left between the sheet and the header — measured against the sheet's REAL
+// height, because a second place holding the resting height is what let the sheet grow into them.
+export function barPlacement(chrome, sheetHeightPx, frameHeightPx) {
+	const bottomPx = chrome.padPx + sheetHeightPx + chrome.gapPx;
+	const ceilingPx = frameHeightPx - chrome.padPx - chrome.headerHeightPx;
+	return { bottomPx, hidden: bottomPx + chrome.barHeightPx + chrome.gapPx > ceilingPx };
+}
+
 // TRADE-OFF: one cell on every side, not one in total — flush against glass reads as tucked under
 function marginPx() {
 	return GRID.cellPx;
