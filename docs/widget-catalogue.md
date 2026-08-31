@@ -410,3 +410,39 @@ way to find out whether `gives` can be written honestly.
   repo, but it makes the curator a bottleneck for every version bump.
 - **Whether `accepts` is per-prop or one shape per slot kind.** Per-prop matches what the code does
   today; one shape is simpler to generate. Needs the build to exist before it can be answered.
+
+---
+
+## What is built, 2026-08-30
+
+Steps 0–4 stand, and step 5 is built except the fetch of the index itself.
+
+**The index is a file, not yet a fetch.** `.widgetarium/catalogue.json` — absent by default, and an
+absent index simply means All and Installed show the same list. Its shape:
+
+```jsonc
+{ "widgets": [
+  { "id": "@demo/clock", "title": "Clock",
+    "repository": "https://github.com/acme/widgets", "ref": "main",
+    "path": "widgets/@demo/clock", "files": ["manifest.json", "widget.jsx"],
+    "defaultSize": { "w": 3, "h": 2 } } ] }
+```
+
+No sample file ships, because no curated repository exists yet and an index pointing at nothing
+would answer every press with a 404. Writing the file is what turns the toggle into two lists.
+
+**Install is one press, and it is pinned.** The card never says whether a widget is here already —
+that distinction was rejected — so the press picks when the widget is installed and fetches first
+when it is not. `ref` is resolved to a commit SHA once, every file is taken at that SHA, and
+`.widgetarium/widgets.lock.json` records the SHA plus a content hash per file. Nothing re-fetches
+on its own.
+
+**One check runs before anything reaches disk:** the `manifest.json` that came back must carry the
+id the index promised. A repository serving `@evil/miner` under `@demo/clock` is refused with
+nothing written. This is the only attack this design can actually see — §7 still stands on the
+rest, and installing still runs somebody's code in the plugin's own realm.
+
+**Uninstall refuses what it did not install.** A widget with no lock entry is one the person wrote,
+and removing it is not the catalogue's to do.
+
+Still open from §9: the index fetch, update-with-diff, and the detail page.
