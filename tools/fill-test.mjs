@@ -80,11 +80,25 @@ if (measured.failure) {
 if (process.env.WG_DEBUG) console.log(JSON.stringify(measured, null, 1));
 const byName = new Map(measured.map((entry) => [entry.name, entry]));
 
+// CONTEXT: String() made every object equal to every other, and "1" equal to 1
+function same(got, want) {
+	if (Object.is(got, want)) return true;
+	if (!plain(got) || !plain(want)) return false;
+	return JSON.stringify(got) === JSON.stringify(want);
+}
+function plain(value) {
+	if (value === null || typeof value !== "object") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === Object.prototype || proto === Array.prototype || proto === null;
+}
+function show(value) {
+	return plain(value) ? JSON.stringify(value) : String(value);
+}
 let failed = 0;
 function check(label, got, want) {
-	const ok = String(got) === String(want);
+	const ok = same(got, want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${got}, want ${want}`}`);
+	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${show(got)}, want ${show(want)}`}`);
 }
 
 const cellsWide = (cells) => spanToPixels(cells, GRID.cellPx, GRID.gapPx);

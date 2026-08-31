@@ -46,11 +46,25 @@ const bareSwing = swingAt(bare, ...BAND);
 const aloneSwing = swingAt(alone, ...BAND);
 const windowSwing = swingAt(inWindow, ...BAND);
 
+// CONTEXT: String() made every object equal to every other, and "1" equal to 1
+function same(got, want) {
+	if (Object.is(got, want)) return true;
+	if (!plain(got) || !plain(want)) return false;
+	return JSON.stringify(got) === JSON.stringify(want);
+}
+function plain(value) {
+	if (value === null || typeof value !== "object") return false;
+	const proto = Object.getPrototypeOf(value);
+	return proto === Object.prototype || proto === Array.prototype || proto === null;
+}
+function show(value) {
+	return plain(value) ? JSON.stringify(value) : String(value);
+}
 let failed = 0;
 const check = (label, got, want) => {
-	const ok = String(got) === String(want);
+	const ok = same(got, want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${got}, want ${want}`}`);
+	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${show(got)}, want ${show(want)}`}`);
 };
 
 console.log(`   stripes swing ${bareSwing} bare · ${aloneSwing} under glass alone · ${windowSwing} under glass in the window\n`);
