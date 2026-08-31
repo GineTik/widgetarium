@@ -682,9 +682,15 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 			mount,
 		);
 	draw();
+	// CONTEXT: React commits on a scheduled task, so three frames is a race under load
 	const settle = async () => {
-		for (let frame = 0; frame < 3; frame += 1) {
+		let seen = "";
+		let still = 0;
+		for (let frame = 0; frame < 60 && still < 4; frame += 1) {
 			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+			const now = `${document.body.innerHTML.length}`;
+			still = now === seen ? still + 1 : 0;
+			seen = now;
 		}
 	};
 	await settle();

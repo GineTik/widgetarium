@@ -67,7 +67,7 @@ function pageFor(theme, script, name) {
 	--font-monospace: "SF Mono", Menlo, Consolas, monospace;
 	font-family: var(--font-interface); background: var(--background-secondary); }</style>
 </head><body class="wg-root"><div id="host"></div>
-<script>window.__FILES__=${JSON.stringify(files)};</script>
+<script>window.__FILES__=${JSON.stringify(files)}; window.__err = ""; addEventListener("error", (e) => { window.__err += e.message + " @ " + e.lineno + ":" + e.colno + "\\n"; });</script>
 <script>${script}</script></body></html>`;
 	const file = path.join(work, `${name}-${theme}.html`);
 	writeFileSync(file, page);
@@ -117,7 +117,12 @@ async function ask(file, expression, settleMs) {
 	});
 	socket.close();
 	chrome.kill();
-	if (reply.result?.exceptionDetails) throw new Error(JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails));
+	if (reply.result?.exceptionDetails) {
+		// CONTEXT: React reports a render failure as a window error event, so the page holds it, not the throw
+		const onPage = await send(socket, "Runtime.evaluate", { expression: "window.__err || ''", returnByValue: true });
+		const why = onPage.result?.result?.value;
+		throw new Error(why ? `the page threw: ${why}` : JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails));
+	}
 	return reply.result.result.value;
 }
 
@@ -183,18 +188,28 @@ render(h(Harness), document.getElementById("host"));
 const KIT_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
-import { Button, Card, Icon, IconButton } from "./src/kit.js";
+import { Button, Card, Icon, IconButton, List, Row } from "./src/kit.js";
 render(
-	h("div", { style: "padding:40px;display:flex;flex-direction:column;gap:24px;align-items:flex-start" }, [
-		h("div", { key: "controls", style: "display:flex;gap:24px;align-items:center" }, [
+	h("div", { style: { padding: "40px", display: "flex", flexDirection: "column", gap: "24px", alignItems: "flex-start" } }, [
+		h("div", { key: "controls", style: { display: "flex", gap: "24px", alignItems: "center" } }, [
 			h(Button, { key: "neutral", id: "neutral" }, "Delete"),
 			h(Button, { key: "accent", id: "accent", variant: "accent" }, "Save"),
 			h(Button, { key: "plain", id: "plain", variant: "plain" }, "Cancel"),
+			h(Button, { key: "danger", id: "danger", variant: "danger" }, "Discard"),
 			h(IconButton, { key: "icon", id: "icon" }, h(Icon, { name: "close" })),
 			h(IconButton, { key: "glass", id: "glass", variant: "glass" }, h(Icon, { name: "close" })),
 		]),
-		h(Card, { key: "plate", id: "plain-card", style: "width:240px;height:80px" }, "A plain light card"),
-		h(Card, { key: "lifted", id: "lifted-card", lift: true, style: "width:240px;height:80px" }, "A lifted card"),
+		h(List, { key: "list", style: { width: "320px" } }, [
+			h(Row, { key: "row" }, [
+				h("span", { key: "label", className: "wg-kit-row-label" }, "In a group"),
+				h(Button, { key: "rowbutton", id: "row-button" }, "Open"),
+				h(IconButton, { key: "rowicon", id: "row-icon" }, h(Icon, { name: "close" })),
+			]),
+		]),
+		h(Card, { key: "plate", id: "plain-card", style: { width: "240px", height: "80px" } }, "A plain light card"),
+		h(Card, { key: "lifted", id: "lifted-card", lift: true, style: { width: "240px", height: "80px" } }, "A lifted card"),
+		h("div", { key: "raise", id: "raise-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-raise)" } }),
+		h("div", { key: "fill", id: "fill-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill)" } }),
 	]),
 	document.getElementById("host"),
 );
@@ -257,17 +272,33 @@ const KIT_ASK = `(() => {
 	${SHADOW_READER}
 	const edgeOf = (id) => {
 		const painted = getComputedStyle(document.getElementById(id), "::before").boxShadow;
-		const inset = shadowLayers(painted).find((layer) => layer.inset);
-		if (!inset) return null;
+		const insets = shadowLayers(painted).filter((layer) => layer.inset);
+		if (insets.length === 0) return null;
 		const alpha = /\\/\\s*([\\d.]+)\\s*\\)/.exec(painted);
-		return { widthPx: inset.lengths[3] ?? 0, inkAlpha: alpha ? Number(alpha[1]) : null };
+		return { edges: insets.length, widthPx: insets[0].lengths[3] ?? 0, inkAlpha: alpha ? Number(alpha[1]) : null };
+	};
+	const fillOf = (id) => getComputedStyle(document.getElementById(id), "::before").backgroundColor;
+	const swatchOf = (id) => getComputedStyle(document.getElementById(id)).backgroundColor;
+	const ringOf = (id) => {
+		const control = document.getElementById(id);
+		control.focus();
+		const layers = shadowLayers(getComputedStyle(control, "::before").boxShadow);
+		control.blur();
+		return { layers: layers.length, inset: layers[0]?.inset ?? null, spreadPx: layers[0]?.lengths[3] ?? null };
 	};
 	return {
 		neutralButton: edgeOf("neutral"),
 		neutralIcon: edgeOf("icon"),
 		glassIcon: edgeOf("glass"),
 		accentButton: edgeOf("accent"),
+		dangerButton: edgeOf("danger"),
 		plainButton: edgeOf("plain"),
+		rowButton: edgeOf("row-button"),
+		rowIcon: edgeOf("row-icon"),
+		rowButtonIsRaised: fillOf("row-button") === swatchOf("raise-swatch"),
+		neutralIsTheGreyFill: fillOf("neutral") === swatchOf("fill-swatch"),
+		raisedIsNotTheGreyFill: swatchOf("raise-swatch") !== swatchOf("fill-swatch"),
+		focusRing: ringOf("row-button"),
 		plainCard: getComputedStyle(document.getElementById("plain-card")).boxShadow,
 		liftedCardInsets: shadowLayers(getComputedStyle(document.getElementById("lifted-card")).boxShadow).filter((layer) => layer.inset).length,
 	};
@@ -315,11 +346,17 @@ for (const theme of ["light", "dark"]) {
 	check("and that cast cannot paint beside the block", side.reachesSideways, false);
 
 	const kit = await ask(pageFor(theme, kitScript, "kit"), KIT_ASK, 1200);
-	check("a neutral button carries a hairline on the ::before that owns its corner", kit.neutralButton, { widthPx: 1, inkAlpha: 0.09 });
-	check("so does a neutral icon button", kit.neutralIcon, { widthPx: 1, inkAlpha: 0.09 });
-	check("glass keeps its own edge, undoubled", kit.glassIcon, { widthPx: 1, inkAlpha: 0.12 });
+	check("a raised control carries a hairline on the ::before that owns its corner", kit.rowButton, { edges: 1, widthPx: 1, inkAlpha: 0.09 });
+	check("so does a raised icon button", kit.rowIcon, { edges: 1, widthPx: 1, inkAlpha: 0.09 });
+	check("and the control that carries it is the RAISED one, not a colour we guessed", kit.rowButtonIsRaised, true);
+	check("a grey neutral button has none", kit.neutralButton, null);
+	check("nor has a grey neutral icon button", kit.neutralIcon, null);
+	check("and that grey is the kit fill, a step away from the raised one", [kit.neutralIsTheGreyFill, kit.raisedIsNotTheGreyFill], [true, true]);
 	check("an accent button has none, because its fill already says control", kit.accentButton, null);
+	check("nor has a danger one", kit.dangerButton, null);
 	check("nor has a plain one", kit.plainButton, null);
+	check("glass keeps its own edge, undoubled", kit.glassIcon, { edges: 1, widthPx: 1, inkAlpha: 0.12 });
+	check("the focus ring outranks the edge it lands on", kit.focusRing, { layers: 1, inset: false, spreadPx: 2 });
 	check("a plain light card is still edgeless", kit.plainCard, "none");
 	check("and only a lifted card draws one", kit.liftedCardInsets, 1);
 
