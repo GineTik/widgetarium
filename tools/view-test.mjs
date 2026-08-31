@@ -183,7 +183,7 @@ const STUCK = {
 };
 
 const SETTINGS_STEP = { name: "settings", within: ".orbi-view-tabs", click: '.wg-tile-actions button[aria-label="Settings"]' };
-const BOARD_SETTINGS_STEP = { name: "boardSettings", within: ".orbi-board-tabs", click: '.wg-tile-actions button[aria-label="Settings"]' };
+const BOARD_SETTINGS_STEP = { name: "boardSettings", within: '[data-tile="boards"]', click: '.wg-tile-actions button[aria-label="Settings"]' };
 const CLOSE_STEP = { name: "closed", click: '.wg-set-head button[aria-label="Close without keeping the changes"]' };
 
 let bad = 0;

@@ -7,8 +7,11 @@ import {
 	DialogDescription,
 	DialogFooter,
 	DialogClose,
+	ConfirmDialog,
 } from "./dialog.js";
 import { useAction } from "./action.js";
+import { EditableTabs, toTabList } from "./editable-tabs.js";
+import { archivedColumnsFor, boardWriter, boardsToCreate, readBoardRecord } from "./board-record.js";
 import { WidgetRoot, AppearanceOverride, useWidgetRounded, useBackgroundType, ROUNDED, BACKGROUND } from "./widget-root.js";
 import * as kitModule from "./kit.js";
 
@@ -30,6 +33,7 @@ const core = {
 	DialogDescription,
 	DialogFooter,
 	DialogClose,
+	ConfirmDialog,
 	WidgetRoot,
 	AppearanceOverride,
 	useWidgetRounded,
@@ -38,6 +42,12 @@ const core = {
 	BACKGROUND,
 	useAction,
 	createWidget,
+	EditableTabs,
+	toTabList,
+	readBoardRecord,
+	boardWriter,
+	boardsToCreate,
+	archivedColumnsFor,
 };
 
 // TRADE-OFF: the kit stays OUT of the core surface and is reached by its own specifier —

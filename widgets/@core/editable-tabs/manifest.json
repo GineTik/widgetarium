@@ -1,19 +1,21 @@
 {
-	"id": "@task/board-tabs",
-	"title": "Board tabs",
-	"description": "A row of tabs that picks which board every widget under it reads from.",
+	"id": "@core/editable-tabs",
+	"was": "@task/board-tabs",
+	"title": "Editable tabs",
+	"description": "A row of tabs you can rename, add to and archive; every widget under it reads the one you pick.",
 	"keywords": [
-		"board",
-		"boards",
 		"tabs",
+		"tab",
+		"strip",
 		"switch",
-		"project",
-		"workspace",
 		"picker",
 		"navigation",
 		"bar",
 		"select",
-		"header"
+		"header",
+		"board",
+		"project",
+		"workspace"
 	],
 	"defaultSize": {
 		"w": 13,
@@ -24,26 +26,33 @@
 	},
 	"collapseBelowPx": 90,
 	"provides": [
-		"board"
+		"board",
+		"boards"
 	],
 	"settings": [
 		{
 			"key": "tabs",
 			"type": "text",
-			"label": "Boards",
+			"label": "Tabs",
 			"default": "Marketing Team, Ux Team"
 		},
 		{
 			"key": "activeTab",
 			"type": "text",
-			"label": "Selected board",
+			"label": "Selected tab",
 			"default": "Marketing Team"
 		},
 		{
 			"key": "archived",
 			"type": "text",
-			"label": "Archived boards",
+			"label": "Archived tabs",
 			"default": ""
+		},
+		{
+			"key": "selectionKey",
+			"type": "text",
+			"label": "Selection key",
+			"default": "board"
 		}
 	],
 	"sources": {

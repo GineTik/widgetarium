@@ -205,13 +205,81 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const tokens = fs.readFileSync("widgets/@task/tokens.css", "utf8");
 	check("the plate fill has ONE owner, so no second fallback can drift", /--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens), true);
 
-	for (const id of ["@task/board-tabs", "@core/filter-panel", "@task/view-tabs"]) {
+	// CONTEXT: the tab strip left the widget for src/editable-tabs.js, so that is where it is checked
+	const strip = fs.readFileSync("src/editable-tabs.js", "utf8");
+	check("the tab strip builds on the kit rather than restating it", /from "\.\/kit\.js"|wg-kit-/.test(strip), true);
+	check("the tab strip does not paint its own plate", /background:\s*var\(--orbi-plate\)/.test(strip), false);
+	check("and the widget holding it draws no strip of its own", /wg-kit-seg|role="tablist"/.test(fs.readFileSync("widgets/@core/editable-tabs/widget.jsx", "utf8")), false);
+
+	for (const id of ["@core/filter-panel", "@task/view-tabs"]) {
 		const name = id.slice(id.indexOf("/") + 1);
 		const src = fs.readFileSync(`widgets/${id}/widget.jsx`, "utf8");
 		// either form counts: the kit is importable as components AND wearable as classes
 		check(`${name} builds on the kit rather than restating it`, /widgetarium\/kit|wg-kit-/.test(src), true);
 		check(`${name} does not paint its own plate`, /background:\s*var\(--orbi-plate\)/.test(src), false);
 	}
+}
+
+// A DESTRUCTIVE CONTROL IS PROVED BY WHAT IT DRAWS. The archived list asserted a Delete in its
+// source and drew Restore alone for a whole session — a declared control nobody can press.
+{
+	const { useState } = await import("react");
+	const { EditableTabs } = await import("./.mjs-cache/editable-tabs.mjs");
+	const host = document.getElementById("host");
+	render(null, host);
+
+	const steps = [];
+	function Strip() {
+		const [held, setHeld] = useState({ tabs: ["Marketing Team"], archived: ["Ux Team", "Sales"], selected: "Marketing Team" });
+		return h(EditableTabs, {
+			...held,
+			onChange: (step) => {
+				steps.push(step);
+				setHeld({ tabs: step.tabs, archived: step.archived, selected: step.selected });
+			},
+		});
+	}
+
+	const press = async (node) => {
+		node.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		await settle();
+	};
+	const inBody = (selector) => [...document.body.querySelectorAll(selector)];
+	const rows = () => inBody(".wg-tabs-archive .wg-kit-row");
+	const names = () => rows().map((row) => row.querySelector(".wg-kit-row-label").textContent.trim());
+	const confirm = () => document.body.querySelector(".wg-tabs-confirm");
+
+	render(h(Strip, {}), host);
+	await settle();
+	await press(host.querySelector(".wg-tabs-more"));
+	await press(inBody(".wg-kit-pop-item").find((item) => item.textContent.includes("Archived list")));
+
+	check("the archived list draws a row per archived tab", names(), ["Ux Team", "Sales"]);
+	check("and every row draws a Restore beside a Delete", rows().map((row) => [...row.querySelectorAll("button")].map((node) => node.textContent.trim())), [["Restore", "Delete"], ["Restore", "Delete"]]);
+
+	await press(rows()[0].querySelector(".wg-tabs-delete"));
+	check("pressing Delete asks first", Boolean(confirm()), true);
+	check("and names the tab it is asking about", /Ux Team/.test(confirm().textContent), true);
+	check("nothing has left the list yet", names(), ["Ux Team", "Sales"]);
+	check("and the caller has been told nothing", steps.length, 0);
+
+	await press(confirm().querySelector(".wg-dialog-cancel"));
+	check("dismissing closes the question", Boolean(confirm()), false);
+	check("and leaves the entry exactly as it was", names(), ["Ux Team", "Sales"]);
+	check("still telling the caller nothing", steps.length, 0);
+
+	await press(rows()[0].querySelector(".wg-tabs-delete"));
+	await press(confirm().querySelector(".wg-dialog-confirm"));
+	check("confirming takes the entry off the list", names(), ["Sales"]);
+	check("and hands the caller the whole archive after it", steps.at(-1), { verb: "delete", tabs: ["Marketing Team"], archived: ["Sales"], selected: "Marketing Team", name: "Ux Team", was: null });
+	check("the strip itself is untouched", [...host.querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim()), ["Marketing Team"]);
+
+	await press(rows()[0].querySelector(".wg-tabs-restore"));
+	check("Restore still empties the list", names(), []);
+	check("by putting the tab back on the strip", [...host.querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim()), ["Marketing Team", "Sales"]);
+
+	render(null, host);
+	for (const stray of inBody(".wg-dialog-overlay")) stray.remove();
 }
 
 // THE PANEL MUST BE CLOSABLE, and the press that closes it never reaches `document`.
