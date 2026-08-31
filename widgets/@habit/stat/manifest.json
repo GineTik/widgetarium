@@ -1,0 +1,123 @@
+{
+	"id": "@habit/stat",
+	"title": "Habit stat",
+	"description": "One number about a habit: its streak, its best, how often you keep it.",
+	"keywords": [
+		"stat",
+		"streak",
+		"best",
+		"rate",
+		"total",
+		"goal",
+		"number",
+		"metric",
+		"habit",
+		"tile",
+		"count",
+		"progress"
+	],
+	"defaultSize": {
+		"w": 3,
+		"h": 1
+	},
+	"maxSize": {
+		"h": 1
+	},
+	"collapseBelowPx": 110,
+	"sources": {
+		"habits": {
+			"label": "Habits",
+			"default": {
+				"path": "Habits"
+			}
+		}
+	},
+	"settings": [
+		{
+			"key": "pick",
+			"type": "text",
+			"label": "Which habit",
+			"default": "Exercise"
+		},
+		{
+			"key": "metric",
+			"type": "text",
+			"label": "streak · best · total · rate · goal",
+			"default": "streak"
+		},
+		{
+			"key": "field",
+			"type": "text",
+			"label": "Property holding the dates",
+			"default": "entries"
+		},
+		{
+			"key": "period",
+			"type": "number",
+			"label": "Days the rate looks back over",
+			"default": 30
+		}
+	],
+	"preview": {
+		"size": {
+			"w": 3,
+			"h": 1
+		},
+		"sources": {
+			"habits": {
+				"rows": [
+					{
+						"path": "Habits/Exercise.md",
+						"name": "Exercise",
+						"props": {
+							"title": "Exercise",
+							"color": "#4CAF50",
+							"maxGap": 1,
+							"goal": 21,
+							"entries": [
+								"2026-07-04",
+								"2026-07-05",
+								"2026-07-06",
+								"2026-07-07",
+								"2026-07-08",
+								"2026-07-13",
+								"2026-07-14",
+								"2026-07-15",
+								"2026-07-16",
+								"2026-07-17",
+								"2026-07-19",
+								"2026-07-21",
+								"2026-07-23",
+								"2026-07-24",
+								"2026-07-25",
+								"2026-07-28",
+								"2026-07-29",
+								"2026-07-31",
+								"2026-08-01",
+								"2026-08-02",
+								"2026-08-05",
+								"2026-08-06",
+								"2026-08-07",
+								"2026-08-08",
+								"2026-08-09",
+								"2026-08-11",
+								"2026-08-12",
+								"2026-08-16",
+								"2026-08-17",
+								"2026-08-18",
+								"2026-08-21",
+								"2026-08-22",
+								"2026-08-23",
+								"2026-08-25",
+								"2026-08-26",
+								"2026-08-27",
+								"2026-08-29",
+								"2026-08-31"
+							]
+						}
+					}
+				]
+			}
+		}
+	}
+}

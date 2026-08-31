@@ -32,10 +32,16 @@ for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("
 	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;
 }
 
+// CONTEXT: a fed slot is what the board fills from the manifest default — a shot without it draws a hole
+const slots = Object.entries(manifest.slots ?? {});
+const slotImports = slots.map(([name, spec], at) => `import Slot${at} from "./widgets/${spec.default}/widget.jsx";`).join("\n");
+const slotMap = `{ ${slots.map(([name], at) => `${name}: Slot${at}`).join(", ")} }`;
+
 const PAGE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
 import Widget from "./${folder}/widget.jsx";
+${slotImports}
 
 const settings = ${JSON.stringify(settings)};
 const data = ${JSON.stringify(data)};
@@ -43,7 +49,7 @@ const navigator = { canNavigate: false, resolve: () => null, navigate: () => fal
 const host = { platform: "shot", can: {}, ui: { notify() {}, renderMarkdown() {} } };
 
 render(
-	h(Widget, { settings, data, navigator, host, size: { w: 13, h: 3, scale: 1 }, context: { get: () => undefined, set: () => {} } }),
+	h(Widget, { settings, data, navigator, host, slots: ${slotMap}, actions: {}, size: { w: 13, h: 3, scale: 1 }, context: { get: () => undefined, set: () => {} } }),
 	document.querySelector(".wg-root"),
 );
 `;

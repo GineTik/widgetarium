@@ -1,0 +1,119 @@
+{
+	"id": "@habit/today",
+	"title": "Today",
+	"description": "Every habit with a mark for today, and the week behind it.",
+	"keywords": [
+		"today",
+		"habit",
+		"check",
+		"daily",
+		"routine",
+		"morning",
+		"week",
+		"tick",
+		"list",
+		"now",
+		"keep",
+		"done"
+	],
+	"defaultSize": {
+		"w": 4,
+		"h": 3
+	},
+	"collapseBelowPx": 180,
+	"sources": {
+		"habits": {
+			"label": "Habits",
+			"default": {
+				"path": "Habits"
+			}
+		}
+	},
+	"settings": [
+		{
+			"key": "days",
+			"type": "number",
+			"label": "Days behind today",
+			"default": 7
+		},
+		{
+			"key": "field",
+			"type": "text",
+			"label": "Property holding the dates",
+			"default": "entries"
+		}
+	],
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 3
+		},
+		"sources": {
+			"habits": {
+				"rows": [
+					{
+						"path": "Habits/Exercise.md",
+						"name": "Exercise",
+						"props": {
+							"title": "Exercise",
+							"color": "#4CAF50",
+							"entries": [
+								"2026-08-19",
+								"2026-08-20",
+								"2026-08-21",
+								"2026-08-22",
+								"2026-08-23",
+								"2026-08-24",
+								"2026-08-25",
+								"2026-08-26",
+								"2026-08-27",
+								"2026-08-28",
+								"2026-08-30",
+								"2026-08-31",
+								"2026-09-01"
+							]
+						}
+					},
+					{
+						"path": "Habits/Reading.md",
+						"name": "Reading",
+						"props": {
+							"title": "Reading",
+							"entries": [
+								"2026-08-19",
+								"2026-08-20",
+								"2026-08-22",
+								"2026-08-23",
+								"2026-08-28",
+								"2026-08-29",
+								"2026-08-30",
+								"2026-08-31"
+							]
+						}
+					},
+					{
+						"path": "Habits/Meditation.md",
+						"name": "Meditation",
+						"props": {
+							"title": "Meditation",
+							"color": "#3c8ce0",
+							"entries": [
+								"2026-08-19",
+								"2026-08-20",
+								"2026-08-21",
+								"2026-08-23",
+								"2026-08-24",
+								"2026-08-25",
+								"2026-08-26",
+								"2026-08-28",
+								"2026-08-29",
+								"2026-08-30",
+								"2026-09-01"
+							]
+						}
+					}
+				]
+			}
+		}
+	}
+}

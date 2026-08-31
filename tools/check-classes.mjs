@@ -26,11 +26,18 @@ for (const [, name] of (fs.existsSync("styles.css") ? fs.readFileSync("styles.cs
 	ENGINE.add(name);
 }
 
+// CONTEXT: a scope sheet is loaded for every widget under it, exactly as the registry loads it
+function scopeSheet(file) {
+	const scope = path.dirname(path.dirname(file));
+	const sheet = path.join(scope, "tokens.css");
+	return fs.existsSync(sheet) ? fs.readFileSync(sheet, "utf8") : "";
+}
+
 for (const root of roots) {
 	for (const file of widgetFiles(root)) {
 		const text = fs.readFileSync(file, "utf8");
 		const styled = new Set();
-		for (const [, name] of text.matchAll(/\.([a-z][\w-]*)/g)) styled.add(name);
+		for (const [, name] of `${text}\n${scopeSheet(file)}`.matchAll(/\.([a-z][\w-]*)/g)) styled.add(name);
 
 		const used = new Set();
 		// Only LITERAL words count. Everything inside ${...} is JavaScript — variable names,

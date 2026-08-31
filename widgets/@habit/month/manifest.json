@@ -1,0 +1,114 @@
+{
+	"id": "@habit/month",
+	"title": "Habit month",
+	"description": "One habit as a month you can press, day by day.",
+	"keywords": [
+		"month",
+		"calendar",
+		"habit",
+		"days",
+		"grid",
+		"press",
+		"tick",
+		"check",
+		"tracker",
+		"dates",
+		"weeks",
+		"log"
+	],
+	"defaultSize": {
+		"w": 6,
+		"h": 5
+	},
+	"collapseBelowPx": 220,
+	"sources": {
+		"habits": {
+			"label": "Habits",
+			"default": {
+				"path": "Habits"
+			}
+		}
+	},
+	"settings": [
+		{
+			"key": "pick",
+			"type": "text",
+			"label": "Which habit",
+			"default": "Exercise"
+		},
+		{
+			"key": "field",
+			"type": "text",
+			"label": "Property holding the dates",
+			"default": "entries"
+		},
+		{
+			"key": "startMonday",
+			"type": "boolean",
+			"label": "Weeks start on Monday",
+			"default": true
+		}
+	],
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 4
+		},
+		"sources": {
+			"habits": {
+				"rows": [
+					{
+						"path": "Habits/Exercise.md",
+						"name": "Exercise",
+						"props": {
+							"title": "Exercise",
+							"color": "#4CAF50",
+							"maxGap": 1,
+							"goal": 21,
+							"entries": [
+								"2026-07-04",
+								"2026-07-05",
+								"2026-07-06",
+								"2026-07-07",
+								"2026-07-08",
+								"2026-07-13",
+								"2026-07-14",
+								"2026-07-15",
+								"2026-07-16",
+								"2026-07-17",
+								"2026-07-19",
+								"2026-07-21",
+								"2026-07-23",
+								"2026-07-24",
+								"2026-07-25",
+								"2026-07-28",
+								"2026-07-29",
+								"2026-07-31",
+								"2026-08-01",
+								"2026-08-02",
+								"2026-08-05",
+								"2026-08-06",
+								"2026-08-07",
+								"2026-08-08",
+								"2026-08-09",
+								"2026-08-11",
+								"2026-08-12",
+								"2026-08-16",
+								"2026-08-17",
+								"2026-08-18",
+								"2026-08-21",
+								"2026-08-22",
+								"2026-08-23",
+								"2026-08-25",
+								"2026-08-26",
+								"2026-08-27",
+								"2026-08-29",
+								"2026-08-31"
+							]
+						}
+					}
+				]
+			}
+		}
+	}
+}

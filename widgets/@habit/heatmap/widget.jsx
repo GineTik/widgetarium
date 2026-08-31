@@ -143,6 +143,7 @@ export default createWidget(function HabitHeatmap({ settings, data, navigator })
 	const top = Math.max(...byDate.values(), 1);
 
 	const days = weeksOf(year, settings.startMonday !== false);
+	const months = monthSpans(days);
 	const inYear = log.filter((entry) => entry.date.startsWith(String(year)));
 	const streak = streakOf(inYear, { maxGap: 0, today });
 	const named = settings.pick ? settings.pick : "every habit";
@@ -166,8 +167,8 @@ export default createWidget(function HabitHeatmap({ settings, data, navigator })
 				<h3 className="hh-title">{year}</h3>
 				<span className="hh-note">{named}</span>
 			</div>
-			<div className="hh-months" style={{ gridTemplateColumns: monthSpans(days).map((span) => `${span.weeks}fr`).join(" ") }}>
-				{monthSpans(days).map((span, at) => (
+			<div className="hh-months" style={{ gridTemplateColumns: months.map((span) => `${span.weeks}fr`).join(" ") }}>
+				{months.map((span, at) => (
 					<span className="hh-month" key={at}>
 						{span.month >= 0 && span.weeks > 1 ? MONTHS[span.month] : ""}
 					</span>
