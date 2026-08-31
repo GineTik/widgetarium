@@ -1,5 +1,6 @@
-import { h, cloneElement, createContext, toChildArray } from "preact";
-import { useContext, useEffect, useRef, useState } from "preact/hooks";
+import { createElement as h, cloneElement, createContext, Children } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { mountInto } from "./portal.js";
 import { cx, Icon, IconButton } from "./kit.js";
 
@@ -180,40 +181,35 @@ function exitDialog(node, done) {
 
 // CONTEXT: shadcn's asChild, same shape as render() in kit.js, which is module-private there
 function part(tag, baseClass, name) {
-	function Part({ asChild, children, class: cls, className, ...rest }) {
-		const resolved = cx(baseClass, cls, className);
-		if (!asChild) return h(tag, { ...rest, class: resolved }, children);
-		const only = toChildArray(children)[0];
-		if (!only || typeof only !== "object") return h(tag, { ...rest, class: resolved }, children);
-		return cloneElement(only, { ...rest, class: cx(resolved, only.props.class, only.props.className) });
+	function Part({ asChild, children, className: cls, ...rest }) {
+		const resolved = cx(baseClass, cls);
+		if (!asChild) return h(tag, { ...rest, className: resolved }, children);
+		const only = Children.toArray(children)[0];
+		if (!only || typeof only !== "object") return h(tag, { ...rest, className: resolved }, children);
+		return cloneElement(only, { ...rest, className: cx(resolved, only.props.className) });
 	}
 	Part.displayName = name;
 	return Part;
 }
 
+// CONTEXT: the seat is measured right after the mount, so the children must land in the same commit
 function Portal({ children, onEscape }) {
-	const portalRef = useRef(null);
+	const [portal] = useState(() => {
+		watchPresses();
+		return mountInto(document.body, "wg-root wg-portal", onEscape);
+	});
 	const entered = useRef(false);
 
-	useEffect(() => {
-		watchPresses();
-		portalRef.current = mountInto(document.body, "wg-root wg-portal", onEscape);
-		return () => {
-			const portal = portalRef.current;
-			portalRef.current = null;
-			if (portal) exitDialog(portal.node, portal.dispose);
-		};
-	}, []);
+	// CONTEXT: a layout cleanup runs before React strips the node, so the exit still has a panel
+	useLayoutEffect(() => () => exitDialog(portal.node, portal.dispose), []);
 
-	// CONTEXT: draw() flushes the inner tree synchronously, so the seat lands in the same frame
 	useEffect(() => {
-		portalRef.current?.draw(children);
-		if (entered.current || !portalRef.current) return;
+		if (entered.current) return;
 		entered.current = true;
-		enterDialog(portalRef.current.node);
+		enterDialog(portal.node);
 	});
 
-	return null;
+	return createPortal(children, portal.node);
 }
 
 // CONTEXT: the portal is mounted on <body>, so the browser has no trigger left to return to
@@ -228,7 +224,7 @@ function useFocusInside(overlayRef) {
 	}, []);
 }
 
-export function DialogOverlay({ class: cls, className, onClose, children }) {
+export function DialogOverlay({ className: cls, onClose, children }) {
 	const overlayRef = useRef(null);
 	// CONTEXT: the child Portal commits first, so the ref is filled before this effect runs
 	useFocusInside(overlayRef);
@@ -240,7 +236,7 @@ export function DialogOverlay({ class: cls, className, onClose, children }) {
 			"div",
 			{
 				ref: overlayRef,
-				class: cx("wg-dialog-overlay", cls, className),
+				className: cx("wg-dialog-overlay", cls),
 				tabIndex: -1,
 				onClick: (event) => event.target === event.currentTarget && onClose?.(),
 			},
@@ -249,11 +245,11 @@ export function DialogOverlay({ class: cls, className, onClose, children }) {
 	);
 }
 
-export function DialogContent({ class: cls, className, width, children }) {
+export function DialogContent({ className: cls, width, children }) {
 	return h(
 		"div",
 		{
-			class: cx("wg-dialog", cls, className),
+			className: cx("wg-dialog", cls),
 			role: "dialog",
 			"aria-modal": "true",
 			tabIndex: -1,
@@ -269,14 +265,14 @@ export const DialogDescription = part("p", "wg-dialog-desc", "DialogDescription"
 export const DialogFooter = part("div", "wg-dialog-foot", "DialogFooter");
 
 // TRADE-OFF: the kit's icon button, because a fill on a bare <button> loses its radius to the host
-export function DialogClose({ class: cls, className, onClose, label = "Close", ...rest }) {
+export function DialogClose({ className: cls, onClose, label = "Close", ...rest }) {
 	const state = useContext(DialogState);
 	return h(
 		IconButton,
 		{
 			size: "s",
 			...rest,
-			class: cx("wg-dialog-close", cls, className),
+			className: cx("wg-dialog-close", cls),
 			label,
 			title: label,
 			onClick: onClose ?? state?.close,
@@ -285,7 +281,7 @@ export function DialogClose({ class: cls, className, onClose, label = "Close", .
 	);
 }
 
-export function Dialog({ open, onOpenChange, onClose, trigger, children, class: cls, className }) {
+export function Dialog({ open, onOpenChange, onClose, trigger, children, className: cls }) {
 	const [selfOpen, setSelfOpen] = useState(false);
 	const controlled = open !== undefined;
 	const isOpen = controlled ? open : selfOpen;
@@ -298,10 +294,10 @@ export function Dialog({ open, onOpenChange, onClose, trigger, children, class: 
 
 	const close = () => setOpen(false);
 	const body = isOpen
-		? h(DialogOverlay, { class: cx(cls, className), onClose: close }, h(DialogState.Provider, { value: { close } }, children))
+		? h(DialogOverlay, { className: cx(cls), onClose: close }, h(DialogState.Provider, { value: { close } }, children))
 		: null;
 
 	if (!trigger) return body;
 
-	return h("span", { class: "wg-dialog-trigger" }, [h("span", { onClick: () => setOpen(true) }, trigger), body]);
+	return h("span", { className: "wg-dialog-trigger" }, [h("span", { onClick: () => setOpen(true) }, trigger), body]);
 }

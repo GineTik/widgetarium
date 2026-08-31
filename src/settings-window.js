@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { useEffect, useRef, useState } from "react";
 import { declaredName } from "./registry.js";
 import { heldKey, heldTile, mountRows, mountSetting, rekeyed, uniqueName } from "./model.js";
 import { DialogClose, DialogOverlay } from "./dialog.js";
@@ -85,12 +85,12 @@ function shownValue(value, fallback) {
 
 // CONTEXT: the heading sits outside the block, so the block holds rows and nothing else
 function group(key, heading, rows, under) {
-	return h(SidebarGroup, { class: "wg-set-group", key, label: heading, hint: under }, rows);
+	return h(SidebarGroup, { className: "wg-set-group", key, label: heading, hint: under }, rows);
 }
 
 function valueRow(parts) {
 	return h(SidebarRow, {
-		class: "wg-set-row",
+		className: "wg-set-row",
 		pressable: true,
 		unset: parts.unset,
 		onClick: parts.onClick,
@@ -98,7 +98,7 @@ function valueRow(parts) {
 		label: parts.label,
 		sub: parts.sub,
 		value: parts.value,
-		after: parts.after ?? h(Icon, { name: "chevron", class: "wg-set-chev", key: "chev" }),
+		after: parts.after ?? h(Icon, { name: "chevron", className: "wg-set-chev", key: "chev" }),
 	});
 }
 
@@ -110,7 +110,7 @@ function enterButton(state, step) {
 		{
 			size: "s",
 			key: "enter",
-			class: "wg-set-enter",
+			className: "wg-set-enter",
 			label: "Open its own settings",
 			onClick: (event) => {
 				event.stopPropagation();
@@ -122,9 +122,9 @@ function enterButton(state, step) {
 }
 
 function reportRow(key, label, note, value, on) {
-	return h(Row, { class: "wg-set-row", key }, [
-		h(RowLabel, { class: "wg-set-two", key: "label" }, [label, h("span", { class: "wg-set-sub", key: "sub" }, note)]),
-		h(RowValue, { class: `wg-set-value${on ? "" : " is-unset"}`, key: "value" }, value),
+	return h(Row, { className: "wg-set-row", key }, [
+		h(RowLabel, { className: "wg-set-two", key: "label" }, [label, h("span", { className: "wg-set-sub", key: "sub" }, note)]),
+		h(RowValue, { className: `wg-set-value${on ? "" : " is-unset"}`, key: "value" }, value),
 	]);
 }
 
@@ -133,7 +133,7 @@ function editorPopover(state, key, trigger, body, seed) {
 		Popover,
 		{
 			key,
-			class: "wg-set-pop",
+			className: "wg-set-pop",
 			open: state.openRow === key,
 			onOpenChange: (next) => state.openEditor(next ? key : null, seed),
 			trigger,
@@ -143,7 +143,7 @@ function editorPopover(state, key, trigger, body, seed) {
 }
 
 function popoverFoot(state, onReset, onApply) {
-	return h("div", { class: "wg-set-pop-foot", key: "foot" }, [
+	return h("div", { className: "wg-set-pop-foot", key: "foot" }, [
 		h(Button, { size: "s", key: "reset", onClick: onReset }, "Reset"),
 		h(
 			Button,
@@ -162,7 +162,7 @@ function popoverFoot(state, onReset, onApply) {
 }
 
 function textEditor(state, fallback, onApply) {
-	return h("div", { class: "wg-set-pop-body" }, [
+	return h("div", { className: "wg-set-pop-body" }, [
 		h(Field, {
 			block: true,
 			key: "field",
@@ -181,9 +181,9 @@ function settingRows(state) {
 		const label = field.label ?? field.key;
 		const write = (value) => onPatch({ settings: { ...held, [field.key]: value } });
 		if (field.type === "boolean") {
-			return h(Row, { class: "wg-set-row", key: field.key }, [
+			return h(Row, { className: "wg-set-row", key: field.key }, [
 				h(RowLabel, { key: "label" }, label),
-				h(RowValue, { class: "wg-set-value", key: "value" }, h(Switch, { checked: Boolean(held[field.key] ?? field.default), onChange: write, label })),
+				h(RowValue, { className: "wg-set-value", key: "value" }, h(Switch, { checked: Boolean(held[field.key] ?? field.default), onChange: write, label })),
 			]);
 		}
 		const value = shownValue(held[field.key], field.default);
@@ -209,13 +209,13 @@ function sourceGroups(state) {
 		const trigger = valueRow({
 			badge: h(Icon, { name: "folder" }),
 			label,
-			value: path ? h("span", { class: "wg-set-path" }, path) : "Pick a folder",
+			value: path ? h("span", { className: "wg-set-path" }, path) : "Pick a folder",
 			unset: own === "",
 		});
 
 		const needle = String(state.draft ?? "").toLowerCase();
 		const offered = folders.filter((folder) => folder.toLowerCase().includes(needle)).slice(0, FOLDERS_SHOWN);
-		const body = h("div", { class: "wg-set-pop-body" }, [
+		const body = h("div", { className: "wg-set-pop-body" }, [
 			h(Field, {
 				block: true,
 				key: "field",
@@ -226,7 +226,7 @@ function sourceGroups(state) {
 			}),
 			...offered.map((folder) =>
 				h(PopoverItem, { key: folder, checked: folder === path, onClick: () => state.setDraft(folder) }, [
-					h("span", { class: "wg-set-pop-name", key: "name" }, folder),
+					h("span", { className: "wg-set-pop-name", key: "name" }, folder),
 				]),
 			),
 			popoverFoot(state, () => state.setDraft(declared), write),
@@ -265,7 +265,7 @@ function slotRows(state) {
 			onClick: () => state.openEditor(key),
 			after: fed.length === 0 && chosen ? enterButton(state, { hold: "slots", key: name, widget: chosen }) : null,
 		});
-		return h("div", { class: "wg-set-slot", key }, [
+		return h("div", { className: "wg-set-slot", key }, [
 			row,
 			state.openRow === key
 				? h(CatalogueDialog, {
@@ -309,9 +309,9 @@ function mountRow(state, rows, index, write, rename) {
 	};
 	// A NAME IS RENAMED WHERE IT IS READ. The row is the trigger, so the thing pressed is the
 	// thing edited — the same move a text setting already makes, and no second control for it.
-	const trigger = h(Row, { pressable: true, class: "wg-set-row" }, [
-		h(RowLabel, { class: "wg-set-two", key: "label" }, [row.name, h("span", { class: "wg-set-sub is-mono", key: "sub" }, row.widget)]),
-		h(RowValue, { class: "wg-set-value", key: "value" }, [
+	const trigger = h(Row, { pressable: true, className: "wg-set-row" }, [
+		h(RowLabel, { className: "wg-set-two", key: "label" }, [row.name, h("span", { className: "wg-set-sub is-mono", key: "sub" }, row.widget)]),
+		h(RowValue, { className: "wg-set-value", key: "value" }, [
 			found?.component ? null : h(Pill, { tone: "error", key: "gone" }, "Not installed"),
 			// CONTEXT: a mount is never fed, so it always has its own settings inside it
 			found?.component ? enterButton(state, { hold: "mounted", key: row.name, was: row.was, widget: row.widget }) : null,
@@ -339,11 +339,11 @@ function mountGroups(state) {
 			state.openEditor(null);
 		};
 		const key = `mount:${name}`;
-		const trigger = h(Row, { pressable: true, class: "wg-set-row is-add", onClick: () => state.openEditor(key) }, [
+		const trigger = h(Row, { pressable: true, className: "wg-set-row is-add", onClick: () => state.openEditor(key) }, [
 			h(Icon, { name: "plus" }),
 			h(RowLabel, { key: "label" }, "Add a view"),
 		]);
-		const picker = h("div", { class: "wg-set-slot", key: "add" }, [
+		const picker = h("div", { className: "wg-set-slot", key: "add" }, [
 			trigger,
 			state.openRow === key
 				? h(CatalogueDialog, {
@@ -392,9 +392,9 @@ function dataGroups(state) {
 					`filters:${key}`,
 					`Filters · ${label}`,
 					filters.map((entry, index) =>
-						h(Row, { class: "wg-set-row", key: index }, [
-							h(RowLabel, { class: "wg-set-two", key: "label" }, [filterSentence(entry.row), h("span", { class: "wg-set-sub is-mono", key: "sub" }, filterRaw(entry.row))]),
-							h(RowValue, { class: "wg-set-value", key: "value" }, h(Pill, null, entry.fixed ? "Fixed" : "Yours")),
+						h(Row, { className: "wg-set-row", key: index }, [
+							h(RowLabel, { className: "wg-set-two", key: "label" }, [filterSentence(entry.row), h("span", { className: "wg-set-sub is-mono", key: "sub" }, filterRaw(entry.row))]),
+							h(RowValue, { className: "wg-set-value", key: "value" }, h(Pill, null, entry.fixed ? "Fixed" : "Yours")),
 						]),
 					),
 					"These decide which data arrives. A filter the widget declares cannot be edited here.",
@@ -409,9 +409,9 @@ function dataGroups(state) {
 					`sort:${key}`,
 					`Sort · ${label}`,
 					sort.map((row, index) =>
-						h(Row, { class: "wg-set-row", key: index }, [
+						h(Row, { className: "wg-set-row", key: index }, [
 							h(RowLabel, { key: "label" }, row.prop),
-							h(RowValue, { class: "wg-set-value", key: "value" }, row.dir === "desc" ? "Descending" : "Ascending"),
+							h(RowValue, { className: "wg-set-value", key: "value" }, row.dir === "desc" ? "Descending" : "Ascending"),
 						]),
 					),
 					null,
@@ -436,7 +436,7 @@ function dataGroups(state) {
 	}
 
 	if (groups.length > 0) return groups;
-	return [group("no-data", "Data", h(Row, { class: "wg-set-row" }, h(RowLabel, null, "This widget declares no source")), null)];
+	return [group("no-data", "Data", h(Row, { className: "wg-set-row" }, h(RowLabel, null, "This widget declares no source")), null)];
 }
 
 function designGroups(state) {
@@ -457,9 +457,9 @@ function designGroups(state) {
 		group(
 			"fold",
 			"Folded",
-			h(Row, { class: "wg-set-row" }, [
+			h(Row, { className: "wg-set-row" }, [
 				h(RowLabel, { key: "label" }, "Fold to one column"),
-				h(RowValue, { class: "wg-set-value", key: "value" }, h(Switch, { checked: isCollapsed, label: "Folded", onChange: (next) => (next ? onCollapse?.() : onExpand?.()) })),
+				h(RowValue, { className: "wg-set-value", key: "value" }, h(Switch, { checked: isCollapsed, label: "Folded", onChange: (next) => (next ? onCollapse?.() : onExpand?.()) })),
 			]),
 			null,
 		),
@@ -492,18 +492,18 @@ function crumbTrail(state) {
 	const last = state.crumbs.length - 1;
 	return state.crumbs.flatMap((crumb, depth) =>
 		depth === last
-			? [h("span", { class: "wg-set-here", key: depth }, crumb)]
+			? [h("span", { className: "wg-set-here", key: depth }, crumb)]
 			: [
-					h("button", { type: "button", class: "wg-set-crumb", key: depth, onClick: () => state.popTo(depth) }, crumb),
-					h("span", { class: "wg-set-crumb-sep", key: `sep${depth}`, "aria-hidden": "true" }, "\u203a"),
+					h("button", { type: "button", className: "wg-set-crumb", key: depth, onClick: () => state.popTo(depth) }, crumb),
+					h("span", { className: "wg-set-crumb-sep", key: `sep${depth}`, "aria-hidden": "true" }, "\u203a"),
 			  ],
 	);
 }
 
 function header(state) {
-	return h("div", { class: `wg-set-head wg-kit-glass${state.phone ? " is-sheet" : ""}`, key: "head" }, [
-		h("span", { class: "wg-set-crumbs", key: "crumbs" }, crumbTrail(state)),
-		h("span", { class: "wg-set-head-right", key: "right" }, [
+	return h("div", { className: `wg-set-head wg-kit-glass${state.phone ? " is-sheet" : ""}`, key: "head" }, [
+		h("span", { className: "wg-set-crumbs", key: "crumbs" }, crumbTrail(state)),
+		h("span", { className: "wg-set-head-right", key: "right" }, [
 			// CONTEXT: the size is the tile's place on the board, which nothing below the root has
 			state.crumbs.length > 1 ? null : h(Pill, { key: "size" }, `${state.place.w} × ${state.place.h}`),
 			// TRADE-OFF: both, and they do the same thing — every edit is already written, so
@@ -517,16 +517,16 @@ function header(state) {
 function zoomBar(state) {
 	const percent = `${Math.round(state.scale * 100)}%`;
 	const said = state.opening.panned && state.zoom === null ? `${percent} · panned to the top left` : percent;
-	return h("div", { class: `wg-set-bar wg-kit-glass${state.barHidden ? " is-hidden" : ""}`, key: "bar", style: state.barStyle }, [
+	return h("div", { className: `wg-set-bar wg-kit-glass${state.barHidden ? " is-hidden" : ""}`, key: "bar", style: state.barStyle }, [
 		h("button", { type: "button", key: "fit", "aria-pressed": String(state.zoom === null), onClick: () => state.setZoom(null) }, "Fit"),
 		h("button", { type: "button", key: "one", "aria-pressed": String(state.live), onClick: () => state.setZoom(1) }, "1:1"),
-		h("span", { class: "wg-set-div", key: "d1" }),
+		h("span", { className: "wg-set-div", key: "d1" }),
 		h("button", { type: "button", key: "out", "aria-label": "Zoom out", onClick: () => state.setZoom(clamp(state.scale - ZOOM_STEP, ZOOM_FLOOR, 1)) }, "-"),
 		h("button", { type: "button", key: "in", "aria-label": "Zoom in", onClick: () => state.setZoom(clamp(state.scale + ZOOM_STEP, ZOOM_FLOOR, 1)) }, "+"),
-		h("span", { class: "wg-set-said", key: "said" }, said),
-		state.canNarrow ? h("span", { class: "wg-set-div", key: "d2" }) : null,
+		h("span", { className: "wg-set-said", key: "said" }, said),
+		state.canNarrow ? h("span", { className: "wg-set-div", key: "d2" }) : null,
 		state.canNarrow ? h("button", { type: "button", key: "narrow", "aria-pressed": String(state.narrow), onClick: () => state.setNarrow(!state.narrow) }, "Narrow") : null,
-		h("span", { class: "wg-set-div", key: "d3" }),
+		h("span", { className: "wg-set-div", key: "d3" }),
 		h(
 			"button",
 			{ type: "button", key: "fold", "aria-pressed": String(state.folded), "aria-label": "Fold the settings away", onClick: () => state.setFolded(!state.folded) },
@@ -539,14 +539,14 @@ function panel(state) {
 	if (state.folded) {
 		return h(
 			IconButton,
-			{ key: "panel", class: "wg-set-fold wg-kit-glass", label: "Bring the settings back", style: state.panelStyle, onClick: () => state.setFolded(false) },
+			{ key: "panel", className: "wg-set-fold wg-kit-glass", label: "Bring the settings back", style: state.panelStyle, onClick: () => state.setFolded(false) },
 			h(Icon, { name: "fold" }),
 		);
 	}
 	const inside = [
-		h(Segmented, { key: "tabs", class: "wg-set-tabs", items: state.tabs, value: state.tab, onChange: state.setTab }),
-		h("div", { class: "wg-set-scroll", key: "scroll" }, panelBody(state)),
-		h("div", { class: "wg-set-foot", key: "foot" }, h("code", null, state.manifest.id)),
+		h(Segmented, { key: "tabs", className: "wg-set-tabs", items: state.tabs, value: state.tab, onChange: state.setTab }),
+		h("div", { className: "wg-set-scroll", key: "scroll" }, panelBody(state)),
+		h("div", { className: "wg-set-foot", key: "foot" }, h("code", null, state.manifest.id)),
 	];
 
 	// CONTEXT: on a phone the panel IS a sheet, and the kit owns what a sheet does — the grip,
@@ -558,7 +558,7 @@ function panel(state) {
 				as: "aside",
 				key: "panel",
 				surface: "glass",
-				class: "wg-set-panel is-sheet",
+				className: "wg-set-panel is-sheet",
 				style: state.panelStyle,
 				open: state.sheetFull,
 				onOpen: state.setSheetFull,
@@ -570,7 +570,7 @@ function panel(state) {
 		);
 	}
 
-	return h(Sidebar, { as: "aside", surface: "glass", class: "wg-set-panel", key: "panel", style: state.panelStyle }, inside);
+	return h(Sidebar, { as: "aside", surface: "glass", className: "wg-set-panel", key: "panel", style: state.panelStyle }, inside);
 }
 
 // THE GRID IS THE CANVAS, NOT WALLPAPER BEHIND IT — it is what says how big the widget is, so
@@ -589,7 +589,7 @@ function cellLayer(box, at, scale, cell, gap) {
 	return h(
 		"div",
 		{
-			class: "wg-set-cells",
+			className: "wg-set-cells",
 			key: "cells",
 			style: {
 				left: `${left}px`,
@@ -842,29 +842,29 @@ export function useSettingsWindow(options) {
 	// the size the board gives it — which is what makes a size edit visible while it is made.
 	const parts = [
 		cellLayer(windowBox, at, scale, cell, gap),
-		h("div", { class: "wg-set-pan", key: "pan", ...panHandlers(state) }),
-		h("div", { class: `wg-set-body${live ? " is-live" : ""}`, key: "body", style: bodyStyle }, widget),
+		h("div", { className: "wg-set-pan", key: "pan", ...panHandlers(state) }),
+		h("div", { className: `wg-set-body${live ? " is-live" : ""}`, key: "body", style: bodyStyle }, widget),
 		showingChip
 			? h(
 					"div",
-					{ class: "wg-set-chip", key: "chip", style: canvasStyle },
-					h("div", { class: "wg-narrow" }, [
-						h("span", { class: "wg-narrow-mark" }, initialOf(manifest.title ?? manifest.id)),
-						h("span", { class: "wg-narrow-open" }, "Narrow"),
+					{ className: "wg-set-chip", key: "chip", style: canvasStyle },
+					h("div", { className: "wg-narrow" }, [
+						h("span", { className: "wg-narrow-mark" }, initialOf(manifest.title ?? manifest.id)),
+						h("span", { className: "wg-narrow-open" }, "Narrow"),
 					]),
 			  )
 			: null,
-		live ? null : h("div", { class: "wg-set-look", key: "look", ...panHandlers(state) }),
-		h("div", { class: `wg-set-chrome${closing ? " is-leaving" : ""}`, key: "chrome" }, [header(state), panel(state), zoomBar(state)]),
+		live ? null : h("div", { className: "wg-set-look", key: "look", ...panHandlers(state) }),
+		h("div", { className: `wg-set-chrome${closing ? " is-leaving" : ""}`, key: "chrome" }, [header(state), panel(state), zoomBar(state)]),
 	];
 
 	const dialog = h(
 		DialogOverlay,
-		{ class: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: closeOne },
+		{ className: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: closeOne },
 		h(
 			"div",
 			{
-				class: `wg-set-window${closing ? " is-leaving" : ""}`,
+				className: `wg-set-window${closing ? " is-leaving" : ""}`,
 				role: "dialog",
 				"aria-modal": "true",
 				"aria-label": `${manifest.title ?? manifest.id} settings`,

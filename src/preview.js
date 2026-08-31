@@ -1,4 +1,4 @@
-import { h } from "preact";
+import { createElement as h } from "react";
 import { viewHost } from "./engine/view-host.js";
 import { spanToPixels } from "./layout.js";
 import { typeOf } from "./engine/record-type.js";

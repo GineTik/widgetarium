@@ -104,8 +104,9 @@ globalThis.ResizeObserver = class {
 // CONTEXT: reduced motion is the branch that measures nothing, which is all jsdom can lay out
 page.window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
 
-const { h, render } = await import("preact");
-const { useState } = await import("preact/hooks");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
+const { useState } = await import("react");
 const { SizeFilter, NO_SIZE, sizeBounds, narrowsSize, withinSize } = await import("./.mjs-cache/catalogue.mjs");
 const { START_CELLS, emptyPick, grownTo, pickCell, pickedSize, saidFor } = await import("./.mjs-cache/size-grid.mjs");
 

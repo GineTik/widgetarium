@@ -1,4 +1,5 @@
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
 
@@ -14,7 +15,7 @@ const manifest = {
 };
 
 function Probe() {
-	return h("div", { class: "probe" }, "probe");
+	return h("div", { className: "probe" }, "probe");
 }
 
 const registry = {

@@ -12,7 +12,8 @@ globalThis.ResizeObserver = class { observe() {} disconnect() {} };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { previewProps, previewData, previewSize, previewReader, previewHost } = await import("./.mjs-cache/preview.mjs");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
 const { readFileSync } = await import("node:fs");
@@ -91,7 +92,7 @@ check("and never carries the vault across", "app" in previewHost({ platform: "ob
 
 console.log("\n— it really draws —");
 const Leaf = ({ data: given, settings }) =>
-	h("div", { class: "leaf" }, `${settings.title ?? "?"} · ${given.tasks?.rows.length ?? 0} rows`);
+	h("div", { className: "leaf" }, `${settings.title ?? "?"} · ${given.tasks?.rows.length ?? 0} rows`);
 const mount = dom.window.document.getElementById("host");
 render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);
 check("the widget is handed the sample rows", mount.textContent.includes("4 rows"), true);

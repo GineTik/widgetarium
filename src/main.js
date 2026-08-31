@@ -1,5 +1,6 @@
 import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild, requestUrl } from "obsidian";
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "./engine/render.js";
 import { WidgetSurface } from "./surface.js";
 import { WidgetRegistry } from "./registry.js";
 import { createHost, bindNote } from "./host.js";

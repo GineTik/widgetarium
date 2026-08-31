@@ -1,4 +1,4 @@
-import { render } from "preact";
+import { render } from "../src/engine/render.js";
 import TaskDialog from "../widgets/@task/task-dialog/widget.jsx";
 
 const task = {
@@ -80,6 +80,9 @@ function measure() {
 	const code = dialog.querySelector(".otd-md pre");
 	const table = dialog.querySelector(".otd-md table");
 	const diagram = dialog.querySelector(".otd-md .mermaid");
+	// CONTEXT: a null here reads as a crash three lines later, naming nothing
+	const missing = Object.entries({ left, plate, row, code, table, diagram }).filter(([, node]) => !node).map(([name]) => name);
+	if (missing.length) return { failure: `never rendered: ${missing.join(", ")}` };
 	// CONTEXT: a box with overflow visible reports the same scrollWidth and scrolls nothing
 	const scroller = (node) => ({
 		...box(node),

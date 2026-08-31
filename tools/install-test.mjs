@@ -12,7 +12,8 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { contentHash } = await import("./.mjs-cache/engine/content-hash.mjs");
 const { readIndex, mergeCatalogue, isInstalled } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 const { readLock, lockEntry, withEntry, withoutEntry, isEdited } = await import("./.mjs-cache/engine/widget-lock.mjs");

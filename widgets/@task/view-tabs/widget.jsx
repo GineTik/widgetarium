@@ -1,6 +1,6 @@
 import { createWidget, WidgetRoot } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useState } from "react";
 
 const STYLE = `
 /* CONTEXT: the kit's chevron points right; a dropdown caret points down, and up while open */
@@ -38,7 +38,7 @@ export default createWidget(function OrbiTaskViewTabs({ settings, context, board
 				<style>{STYLE}</style>
 				<Button
 					block
-					class="ovt-deaf"
+					className="ovt-deaf"
 					title="No view group on this board — one holds the views and swaps between them. This puts the board's views inside a new group."
 					onClick={() => configureBoard?.({ holder: "view" })}
 				>
@@ -50,9 +50,9 @@ export default createWidget(function OrbiTaskViewTabs({ settings, context, board
 	}
 
 	const trigger = (
-		<Button block class={`ovt-pick${open ? " is-open" : ""}`} aria-label="Change view">
+		<Button block className={`ovt-pick${open ? " is-open" : ""}`} aria-label="Change view">
 			<ButtonLabel>{selected}</ButtonLabel>
-			<Icon name="chevron" size={15} class="ovt-caret" />
+			<Icon name="chevron" size={15} className="ovt-caret" />
 		</Button>
 	);
 

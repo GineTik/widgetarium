@@ -162,12 +162,19 @@ function createSlot(app, binding) {
 	const folderPath = binding?.path ?? "";
 	const writable = Boolean(folderPath);
 
+	// CONTEXT: a subfolder groups a collection, it does not divide it — Notes/2025 is still Notes
 	const readFolder = () => {
 		const folder = app.vault.getAbstractFileByPath(folderPath);
 		if (!(folder instanceof TFolder)) return [];
-		return folder.children
-			.filter((child) => child instanceof TFile && child.extension === "md")
-			.map((file) => toRecord(app, file));
+		const found = [];
+		const walk = (node) => {
+			for (const child of node.children) {
+				if (child instanceof TFolder) walk(child);
+				else if (child instanceof TFile && child.extension === "md") found.push(toRecord(app, child));
+			}
+		};
+		walk(folder);
+		return found;
 	};
 
 	const slot = {

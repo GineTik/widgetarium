@@ -1,5 +1,6 @@
-import { h, render } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { render } from "../src/engine/render.js";
+import { useEffect, useState } from "react";
 import { Catalogue } from "../src/catalogue.js";
 import { WidgetRegistry } from "../src/registry.js";
 import { slotFit } from "../src/fit.js";
@@ -51,7 +52,7 @@ function Harness() {
 			.catch((failure) => boom(`load: ${failure.stack}`));
 	}, []);
 
-	if (!registry) return h("p", { class: "harness-wait" }, "Loading widgets…");
+	if (!registry) return h("p", { className: "harness-wait" }, "Loading widgets…");
 
 	// CONTEXT: only a slot ranks candidates, so place and browse are photographed unranked
 	const gives = MODE === "fill" && SLOT ? registry.get(SLOT.parent)?.manifest?.slots?.[SLOT.name]?.gives : null;

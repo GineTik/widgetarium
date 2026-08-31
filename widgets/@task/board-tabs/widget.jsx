@@ -1,6 +1,6 @@
 import { createWidget, WidgetRoot, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "widgetarium";
 import { Button, Icon, List, Popover, PopoverItem, PopoverSeparator, Row, RowLabel, useSegmentedThumb } from "widgetarium/kit";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 
 const STYLE = `
 .orbi-board-tabs .obt-row { display: flex; align-items: center; gap: var(--size-4-2, 8px); flex-wrap: wrap; }
@@ -120,7 +120,7 @@ export default createWidget(function OrbiTaskBoardTabs({ settings, context, conf
 	};
 
 	const menuTrigger = (
-		<button type="button" class="wg-kit-icon is-s obt-more" title="Board actions" aria-label="Board actions">
+		<button type="button" className="wg-kit-icon is-s obt-more" title="Board actions" aria-label="Board actions">
 			<Icon name="menu" />
 		</button>
 	);
@@ -128,18 +128,18 @@ export default createWidget(function OrbiTaskBoardTabs({ settings, context, conf
 	return (
 		<WidgetRoot defaultRounded="none" className="orbi orbi-board-tabs" defaultBackgroundType="none">
 			<style>{STYLE}</style>
-			<div class="obt-row">
-				<div class="wg-kit-seg" ref={listRef} role="tablist">
+			<div className="obt-row">
+				<div className="wg-kit-seg" ref={listRef} role="tablist">
 					<span {...thumbProps} />
 					{tabs.map((tab) => (
 						<button
 							type="button"
 							key={tab}
-							class={`obt-tab${editing === tab ? " is-editing" : ""}`}
+							className={`obt-tab${editing === tab ? " is-editing" : ""}`}
 							role="tab"
 							aria-selected={String(tab === selected)}
 							// CONTEXT: the name is edited where it is read, not in a dialog
-							contenteditable={editing === tab ? "true" : undefined}
+							contentEditable={editing === tab ? "true" : undefined}
 							suppressContentEditableWarning
 							onClick={() => (editing === tab ? null : context?.set("board", tab))}
 							onKeyDown={(event) => onTabKey(event, tab)}
@@ -172,21 +172,21 @@ export default createWidget(function OrbiTaskBoardTabs({ settings, context, conf
 			</div>
 
 			<Dialog open={showingArchive} onOpenChange={setShowingArchive}>
-				<DialogContent class="obt-archive">
+				<DialogContent className="obt-archive">
 					<DialogClose />
 					<DialogHeader>
 						<DialogTitle>Archived boards</DialogTitle>
 						<DialogDescription>To remove a board for good, delete its task files yourself.</DialogDescription>
 					</DialogHeader>
-					<div class="wg-dialog-body">
+					<div className="wg-dialog-body">
 						{archived.length === 0 ? (
-							<p class="obt-archive-empty">No boards are archived.</p>
+							<p className="obt-archive-empty">No boards are archived.</p>
 						) : (
 							<List>
 								{archived.map((board) => (
 									<Row key={board}>
 										<RowLabel>{board}</RowLabel>
-										<Button size="s" class="obt-restore" onClick={() => restore(board)}>
+										<Button size="s" className="obt-restore" onClick={() => restore(board)}>
 											Restore
 										</Button>
 									</Row>

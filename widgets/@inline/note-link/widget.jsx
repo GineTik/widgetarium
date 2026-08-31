@@ -38,10 +38,10 @@ function NoteLink({ content, navigator }) {
 	const target = String(content ?? "").trim();
 	const found = navigator.resolve(target);
 	return (
-		<button type="button" class={`wgi-link${found ? "" : " is-missing"}`} onClick={() => navigator.navigate(target)}>
+		<button type="button" className={`wgi-link${found ? "" : " is-missing"}`} onClick={() => navigator.navigate(target)}>
 			<style>{STYLE}</style>
-			<span class="wgi-link-name">{target}</span>
-			<span class="wgi-link-state">{found ? "open" : "not in this vault"}</span>
+			<span className="wgi-link-name">{target}</span>
+			<span className="wgi-link-state">{found ? "open" : "not in this vault"}</span>
 		</button>
 	);
 }

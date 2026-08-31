@@ -1,4 +1,5 @@
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "./engine/render.js";
 import { Catalogue } from "./catalogue.js";
 import { DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle } from "./dialog.js";
 
@@ -16,8 +17,8 @@ export function CatalogueDialog({ registry, host, mode = "browse", kind = "board
 	const said = SAID[mode] ?? SAID.browse;
 	return h(
 		DialogOverlay,
-		{ class: "wg-cat-over", onClose },
-		h(DialogContent, { class: "wg-cat-dialog" }, [
+		{ className: "wg-cat-over", onClose },
+		h(DialogContent, { className: "wg-cat-dialog" }, [
 			h(DialogHeader, { key: "head" }, [
 				h(DialogTitle, { key: "title" }, said.title),
 				h(DialogDescription, { key: "lead" }, said.lead),

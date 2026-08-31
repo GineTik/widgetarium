@@ -1,5 +1,6 @@
-import { h, render } from "preact";
-import { useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { render } from "./engine/render.js";
+import { useState } from "react";
 import { MarkdownRenderChild } from "obsidian";
 import { activeRules, matchLines, renderSpan } from "./substitution.js";
 import { traceSub } from "./trace.js";
@@ -29,7 +30,7 @@ function InlineMenu({ asText, onShowSource }) {
 
 	return h(
 		"span",
-		{ class: "wg-inline-at wg-inline-shy" },
+		{ className: "wg-inline-at wg-inline-shy" },
 		h(
 			Popover,
 			{
@@ -39,7 +40,7 @@ function InlineMenu({ asText, onShowSource }) {
 				trigger: h(
 					"button",
 					{
-						class: cx("wg-inline-more", iconButtonClass({ variant: "glass", size: "s" })),
+						className: cx("wg-inline-more", iconButtonClass({ variant: "glass", size: "s" })),
 						type: "button",
 						"aria-label": "More",
 						title: "More",
@@ -48,11 +49,11 @@ function InlineMenu({ asText, onShowSource }) {
 				),
 			},
 			[
-				h(PopoverItem, { key: "settings", class: "wg-inline-settings", disabled: true }, [
+				h(PopoverItem, { key: "settings", className: "wg-inline-settings", disabled: true }, [
 					"Settings",
-					h("span", { key: "why", class: "wg-inline-off" }, NO_PLAYGROUND),
+					h("span", { key: "why", className: "wg-inline-off" }, NO_PLAYGROUND),
 				]),
-				h(PopoverItem, { key: "source", class: "wg-inline-source", onClick: showSource }, asText ? "Show the widget" : "Show the source"),
+				h(PopoverItem, { key: "source", className: "wg-inline-source", onClick: showSource }, asText ? "Show the widget" : "Show the source"),
 			],
 		),
 	);
@@ -62,19 +63,19 @@ export function InlineWidget({ definition, here, navigator, raw, host, reader })
 	const [asText, setAsText] = useState(false);
 	const menu = h(InlineMenu, { asText, onShowSource: () => setAsText(!asText) });
 
-	if (asText) return h("div", { class: "wg-inline is-text" }, [h("span", { key: "raw", class: "wg-inline-raw" }, raw), menu]);
+	if (asText) return h("div", { className: "wg-inline is-text" }, [h("span", { key: "raw", className: "wg-inline-raw" }, raw), menu]);
 	if (!definition?.component) {
-		return h("div", { class: "wg-inline is-missing" }, [
-			h("span", { key: "raw", class: "wg-inline-raw" }, raw),
-			h("span", { key: "why", class: "wg-inline-why" }, "widget not installed"),
+		return h("div", { className: "wg-inline is-missing" }, [
+			h("span", { key: "raw", className: "wg-inline-raw" }, raw),
+			h("span", { key: "why", className: "wg-inline-why" }, "widget not installed"),
 			menu,
 		]);
 	}
 
-	return h("div", { class: "wg-inline" }, [
+	return h("div", { className: "wg-inline" }, [
 		h(
 			"div",
-			{ key: "view", class: "wg-inline-view" },
+			{ key: "view", className: "wg-inline-view" },
 			h(definition.component, {
 				here,
 				navigator,

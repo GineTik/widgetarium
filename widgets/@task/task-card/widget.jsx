@@ -191,9 +191,9 @@ const AVATAR_TONE_STYLES = [
 
 function MetaItem({ icon, text }) {
 	return (
-		<span class="orbi-task-card-meta-item">
+		<span className="orbi-task-card-meta-item">
 			{icon}
-			<span class="orbi-task-card-meta-text">{text}</span>
+			<span className="orbi-task-card-meta-text">{text}</span>
 		</span>
 	);
 }
@@ -270,19 +270,19 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 			<style>{CSS}</style>
 
 			{tags.length > 0 ? (
-				<div class="orbi-task-card-stripes">
+				<div className="orbi-task-card-stripes">
 					{tags.map((tag, at) => (
-						<span key={`${tag}-${at}`} class={cx("orbi-task-card-stripe", toneClass(tones[tag]))} title={tag} />
+						<span key={`${tag}-${at}`} className={cx("orbi-task-card-stripe", toneClass(tones[tag]))} title={tag} />
 					))}
 				</div>
 			) : null}
 
-			<div class="orbi-task-card-head">
-				<div class="orbi-task-card-titlebox">
-					<h4 class="orbi-task-card-title">{card.title ?? "Untitled"}</h4>
+			<div className="orbi-task-card-head">
+				<div className="orbi-task-card-titlebox">
+					<h4 className="orbi-task-card-title">{card.title ?? "Untitled"}</h4>
 				</div>
 				{priority || status ? (
-					<div class="orbi-task-card-badges">
+					<div className="orbi-task-card-badges">
 						{priority ? <Pill tone={toneOf(PRIORITY_TONES, priority)}>{priority}</Pill> : null}
 						{status ? <Pill tone={toneOf(APPROVAL_TONES, status)}>{labelOf(status)}</Pill> : null}
 					</div>
@@ -290,31 +290,31 @@ export default createWidget(function OrbiTaskCard({ settings, task }) {
 			</div>
 
 			{progress !== null ? (
-				<div class="orbi-task-card-track">
-					<span class="orbi-task-card-bar">
-						<i class="orbi-task-card-bar-fill" style={{ width: `${progress}%` }} />
+				<div className="orbi-task-card-track">
+					<span className="orbi-task-card-bar">
+						<i className="orbi-task-card-bar-fill" style={{ width: `${progress}%` }} />
 					</span>
-					<span class="orbi-task-card-percent">{progress}%</span>
+					<span className="orbi-task-card-percent">{progress}%</span>
 				</div>
 			) : null}
 
 			{hasMeta || initials.length > 0 ? (
-				<div class="orbi-task-card-meta">
+				<div className="orbi-task-card-meta">
 					{has(card.due) ? <MetaItem icon={<Icon name="clock" size={14} />} text={card.due} /> : null}
 					{has(card.files) ? <MetaItem icon={<Icon name="folder" size={14} />} text={card.files} /> : null}
 					{initials.length > 0 ? (
-						<span class="orbi-task-card-avatars">
+						<span className="orbi-task-card-avatars">
 							{shownInitials.map((initial, index) => (
 								<i
 									key={`${initial}-${index}`}
-									class="orbi-task-card-avatar"
+									className="orbi-task-card-avatar"
 									style={AVATAR_TONE_STYLES[index % AVATAR_TONE_STYLES.length]}
 								>
 									{initial}
 								</i>
 							))}
 							{restCount > 0 ? (
-								<i class="orbi-task-card-avatar orbi-task-card-avatar-rest">+{restCount}</i>
+								<i className="orbi-task-card-avatar orbi-task-card-avatar-rest">+{restCount}</i>
 							) : null}
 						</span>
 					) : null}

@@ -1,5 +1,6 @@
-import { h, render } from "preact";
-import { useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { render } from "./engine/render.js";
+import { useState } from "react";
 import { DialogClose, DialogContent, DialogOverlay } from "./dialog.js";
 import { Button, Card, Field, Icon, IconButton, Pill, Segmented, Sidebar, SidebarGroup, SidebarRow, Switch, cx } from "./kit.js";
 import { matchLines, newRule, ruleBlock, ruleError } from "./substitution.js";
@@ -52,7 +53,7 @@ function Sentence({ rule, patch, choices, registry, host, available, onInstall, 
 		{
 			key: "widget",
 			size: "s",
-			class: "wg-sub-pick",
+			className: "wg-sub-pick",
 			onClick: () => {
 				const close = openCatalogue({
 					registry,
@@ -70,7 +71,7 @@ function Sentence({ rule, patch, choices, registry, host, available, onInstall, 
 		},
 		[
 			h("span", { key: "name" }, chosen?.manifest.title ?? "Choose a widget"),
-			h(Icon, { key: "caret", name: "chevron", size: 12, class: "wg-sub-caret" }),
+			h(Icon, { key: "caret", name: "chevron", size: 12, className: "wg-sub-caret" }),
 		],
 	);
 
@@ -80,7 +81,7 @@ function Sentence({ rule, patch, choices, registry, host, available, onInstall, 
 			size: "s",
 			value,
 			placeholder,
-			class: cx("wg-sub-trigger", wide && "is-wide"),
+			className: cx("wg-sub-trigger", wide && "is-wide"),
 			onInput: (event) => patch({ [key]: event.target.value }),
 		});
 
@@ -97,21 +98,21 @@ function Sentence({ rule, patch, choices, registry, host, available, onInstall, 
 	}
 	parts.push(picker);
 
-	return h("div", { class: "wg-sub-sentence" }, [
-		h("div", { key: "line", class: "wg-sub-words" }, parts),
-		error ? h("div", { key: "why", class: "wg-sub-error" }, error) : null,
+	return h("div", { className: "wg-sub-sentence" }, [
+		h("div", { key: "line", className: "wg-sub-words" }, parts),
+		error ? h("div", { key: "why", className: "wg-sub-error" }, error) : null,
 	]);
 }
 
 // CONTEXT: the number hangs to the left and the stage's content starts under its name, so the
 // three read as three blocks instead of one column of lines
 function Step({ index, name, children }) {
-	return h("section", { class: "wg-sub-step" }, [
-		h("h4", { key: "label", class: "wg-sub-step-label" }, [
-			h("span", { key: "no", class: "wg-sub-step-no" }, String(index)),
+	return h("section", { className: "wg-sub-step" }, [
+		h("h4", { key: "label", className: "wg-sub-step-label" }, [
+			h("span", { key: "no", className: "wg-sub-step-no" }, String(index)),
 			h("span", { key: "name" }, name),
 		]),
-		h("div", { key: "body", class: "wg-sub-step-body" }, children),
+		h("div", { key: "body", className: "wg-sub-step-body" }, children),
 	]);
 }
 
@@ -140,22 +141,22 @@ function Example({ rule, registry, host, sample, onSample }) {
 			at = span.to + 1;
 			continue;
 		}
-		out.push(h("p", { key: `p${at}`, class: "wg-sub-plain" }, lines[at] || " "));
+		out.push(h("p", { key: `p${at}`, className: "wg-sub-plain" }, lines[at] || " "));
 		at += 1;
 	}
 
 	// CONTEXT: no "you write" / "you see" — the stage is named already, and the pair is an editable
 	// line above what it draws
-	return h("div", { class: "wg-sub-example" }, [
+	return h("div", { className: "wg-sub-example" }, [
 		h("textarea", {
 			key: "in",
-			class: "wg-sub-sample",
+			className: "wg-sub-sample",
 			value: sample,
-			spellcheck: false,
+			spellCheck: false,
 			rows: Math.min(6, Math.max(2, lines.length)),
 			onInput: (event) => onSample(event.target.value),
 		}),
-		h("div", { key: "out", class: "wg-sub-out" }, out),
+		h("div", { key: "out", className: "wg-sub-out" }, out),
 	]);
 }
 
@@ -182,26 +183,26 @@ export function SubstitutionDialog({ rules, registry, host, available = [], onIn
 	// list of rules is a list of named values like any other
 	const side = h(
 		"aside",
-		{ key: "side", class: "wg-sub-side" },
-		h(Sidebar, { key: "list", mode: "full", class: "wg-sub-list" }, [
-			h("div", { key: "head", class: "wg-sub-side-head" }, [
+		{ key: "side", className: "wg-sub-side" },
+		h(Sidebar, { key: "list", mode: "full", className: "wg-sub-list" }, [
+			h("div", { key: "head", className: "wg-sub-side-head" }, [
 				h("b", { key: "t" }, "Substitutions"),
 				h(IconButton, { key: "new", variant: "accent", size: "xs", label: "New substitution", onClick: add }, h(Icon, { name: "plus", size: 15 })),
 			]),
 			h(
 				SidebarGroup,
-				{ key: "rules", class: "wg-sub-rules" },
+				{ key: "rules", className: "wg-sub-rules" },
 				rules.map((entry) =>
 					h(SidebarRow, {
 						key: entry.id,
 						as: "button",
-						class: cx("wg-sub-item", !entry.enabled && "is-disabled"),
+						className: cx("wg-sub-item", !entry.enabled && "is-disabled"),
 						selected: entry.id === rule?.id,
 						onClick: () => setSelectedId(entry.id),
 						label: entry.name || "Untitled",
 						value: entry.draft
-							? h("span", { class: "wg-sub-draft" }, "draft")
-							: h("span", { class: "wg-sub-trg" }, triggerLabel(entry)),
+							? h("span", { className: "wg-sub-draft" }, "draft")
+							: h("span", { className: "wg-sub-trg" }, triggerLabel(entry)),
 					}),
 				),
 			),
@@ -209,12 +210,12 @@ export function SubstitutionDialog({ rules, registry, host, available = [], onIn
 	);
 
 	if (!rule) {
-		return h(DialogOverlay, { class: "wg-sub-over", onClose }, [
-			h(DialogContent, { key: "content", class: "wg-sub-dialog" }, [
+		return h(DialogOverlay, { className: "wg-sub-over", onClose }, [
+			h(DialogContent, { key: "content", className: "wg-sub-dialog" }, [
 				h(DialogClose, { key: "x", onClose }),
-				h("div", { key: "body", class: "wg-sub-body" }, [
+				h("div", { key: "body", className: "wg-sub-body" }, [
 					
-					h("section", { key: "editor", class: "wg-sub-editor is-empty" }, [
+					h("section", { key: "editor", className: "wg-sub-editor is-empty" }, [
 						h("p", { key: "why" }, "A substitution turns a line of text into a widget."),
 						h(Button, { key: "new", variant: "accent", onClick: add }, "New substitution"),
 					]),
@@ -230,23 +231,23 @@ export function SubstitutionDialog({ rules, registry, host, available = [], onIn
 	const status = ruleStatus(rule);
 
 	// CONTEXT: what the rule IS on the left, what you may do to it on the right, one 34px band
-	const editor = h("section", { key: "editor", class: "wg-sub-editor" }, [
-		h("div", { key: "head", class: "wg-sub-head" }, [
+	const editor = h("section", { key: "editor", className: "wg-sub-editor" }, [
+		h("div", { key: "head", className: "wg-sub-head" }, [
 			h(Field, {
 				key: "name",
 				size: "s",
 				value: rule.name,
 				placeholder: "Name",
-				class: "wg-sub-name",
+				className: "wg-sub-name",
 				onInput: (event) => patch({ name: event.target.value }),
 			}),
 			// CONTEXT: a bare switch names nothing, so the word and the control are one group
-			h(Card, { key: "on", variant: "solid", class: "wg-sub-power" }, [
-				h("span", { key: "word", class: "wg-sub-power-word" }, "Enabled"),
+			h(Card, { key: "on", variant: "solid", className: "wg-sub-power" }, [
+				h("span", { key: "word", className: "wg-sub-power-word" }, "Enabled"),
 				h(Switch, { key: "switch", checked: rule.enabled, onChange: (next) => patch({ enabled: next }), label: "Enabled" }),
 			]),
-			h(Pill, { key: "state", tone: status.tone, class: "wg-sub-state" }, status.say),
-			h("span", { key: "gap", class: "wg-sub-spacer" }),
+			h(Pill, { key: "state", tone: status.tone, className: "wg-sub-state" }, status.say),
+			h("span", { key: "gap", className: "wg-sub-spacer" }),
 			h(Button, { key: "del", size: "s", onClick: drop }, "Delete"),
 			h(Button, { key: "save", size: "s", variant: "accent", disabled: Boolean(error), onClick: publish }, "Save"),
 		]),
@@ -254,7 +255,7 @@ export function SubstitutionDialog({ rules, registry, host, available = [], onIn
 			Step,
 			{ key: "match", index: 1, name: "How it matches" },
 			h(Segmented, {
-				class: "wg-sub-tabs",
+				className: "wg-sub-tabs",
 				size: "s",
 				items: TABS,
 				value: rule.mode,
@@ -279,10 +280,10 @@ export function SubstitutionDialog({ rules, registry, host, available = [], onIn
 		),
 	]);
 
-	return h(DialogOverlay, { class: "wg-sub-over", onClose }, [
-		h(DialogContent, { key: "content", class: "wg-sub-dialog" }, [
+	return h(DialogOverlay, { className: "wg-sub-over", onClose }, [
+		h(DialogContent, { key: "content", className: "wg-sub-dialog" }, [
 			h(DialogClose, { key: "x", onClose }),
-			h("div", { key: "body", class: "wg-sub-body" }, [editor, side]),
+			h("div", { key: "body", className: "wg-sub-body" }, [editor, side]),
 		]),
 	]);
 }

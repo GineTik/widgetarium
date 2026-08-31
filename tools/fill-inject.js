@@ -1,1 +1,1 @@
-export { h, Fragment } from "preact";
+export { createElement as h, Fragment } from "react";

@@ -16,7 +16,8 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
 const { normalizeBoard, layoutFor } = await import("./.mjs-cache/model.mjs");
 const { arrange } = await import("./.mjs-cache/layout.mjs");

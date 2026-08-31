@@ -18,10 +18,10 @@ const STYLE = `
 function Note({ content }) {
 	const lines = String(content ?? "").split("\n");
 	return (
-		<div class="wgi-note">
+		<div className="wgi-note">
 			<style>{STYLE}</style>
 			{lines.map((line, at) => (
-				<p key={at} class="wgi-note-line">
+				<p key={at} className="wgi-note-line">
 					{line}
 				</p>
 			))}

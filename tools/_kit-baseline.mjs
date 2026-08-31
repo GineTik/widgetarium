@@ -13,7 +13,8 @@ globalThis.ResizeObserver = class {
 	disconnect() {}
 };
 
-const { render, h } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, toneClass, variants, cx } = await import("./.mjs-cache/kit.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
@@ -32,7 +33,7 @@ function check(name, got, want) {
 // the components are a convenience over them.
 check("a default button", buttonClass({}), "wg-kit-btn is-m");
 check("accent, large, full width", buttonClass({ variant: "accent", size: "l", block: true }), "wg-kit-btn is-accent is-l is-block");
-check("a caller's own class survives", buttonClass({ variant: "plain", class: "mine" }), "wg-kit-btn is-plain is-m mine");
+check("a caller's own class survives", buttonClass({ variant: "plain", className: "mine" }), "wg-kit-btn is-plain is-m mine");
 check("variants() builds a widget's OWN component too", variants("x", { tone: { hot: "is-hot" } })({ tone: "hot" }), "x is-hot");
 check("cx drops the falsy and flattens", cx("a", false, ["b", null], "c"), "a b c");
 
@@ -121,7 +122,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 // Give the DOM believable rects and the loop becomes reproducible.
 {
 	const { useSegmentedThumb } = await import("./.mjs-cache/kit.mjs");
-	const { useState } = await import("preact/hooks");
+	const { useState } = await import("react");
 	const was = Element.prototype.getBoundingClientRect;
 	const rect = (left, width) => ({ left, width, right: left + width, top: 0, bottom: 38, height: 38, x: left, y: 0 });
 	Element.prototype.getBoundingClientRect = function () {
@@ -140,7 +141,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		const thumb = useSegmentedThumb(value, renders > 40 ? 0 : items);
 		return h(
 			"div",
-			{ class: "wg-kit-seg", ref: thumb.listRef },
+			{ className: "wg-kit-seg", ref: thumb.listRef },
 			h("span", thumb.thumbProps),
 			items.map((item) => h("button", { key: item.value, "aria-selected": String(item.value === value) }, item.label)),
 		);
@@ -190,7 +191,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 // phase, so CodeMirror cannot move the caret under a live widget. A document-level bubble
 // listener is therefore never called for a press landing on any widget on the board.
 {
-	const { useState } = await import("preact/hooks");
+	const { useState } = await import("react");
 	const host = document.getElementById("host");
 	render(null, host);
 
@@ -228,13 +229,13 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		return h(
 			Kit.Popover,
 			{
-				class: "harness-pop",
-				trigger: h("button", { class: "harness-trigger" }, "Filter"),
+				className: "harness-pop",
+				trigger: h("button", { className: "harness-trigger" }, "Filter"),
 				open,
 				// a NEW identity every render, which is what the filter panel hands over
 				onOpenChange: (next) => setOpen(next),
 			},
-			open ? h("button", { class: "harness-inside" }, "Tick") : null,
+			open ? h("button", { className: "harness-inside" }, "Tick") : null,
 		);
 	}
 
@@ -344,7 +345,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const has = (name) => Boolean(pop()?.classList.contains(name));
 	const show = async (open) => {
-		render(h(Kit.Popover, { open, trigger: h("button", { class: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -421,7 +422,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const pop = () => host.querySelector(".wg-kit-pop");
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const show = async (open, placement) => {
-		render(h(Kit.Popover, { open, placement, trigger: h("button", { class: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -659,7 +660,8 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const PROPS = ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "whiteSpace", "overflowWrap", "wordBreak", "tabSize", "textIndent", "textTransform", "boxSizing", "direction"];
 
 	const entry = [
-		'import { h, render } from "preact";',
+		'import { createElement as h } from "react";',
+		'import { render } from "./src/engine/render.js";',
 		'import { MarkdownEditor, List, Row, RowLabel, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./src/kit.js";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,

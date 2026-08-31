@@ -1,5 +1,5 @@
-import { h } from "preact";
-import { useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { useState } from "react";
 import { Button } from "./kit.js";
 
 // TRADE-OFF: 12 clears every shipped height and leaves the 13-wide family one edge click away
@@ -85,7 +85,7 @@ function cellsOf(pick, held, shown, press, enter) {
 				h("button", {
 					type: "button",
 					key: `${x}-${y}`,
-					class: cellClass(held, shown, x, y),
+					className: cellClass(held, shown, x, y),
 					"data-cell": `${x}x${y}`,
 					"aria-label": filled(SAID.cell, { width: x, height: y }),
 					onMouseEnter: () => enter({ x, y }),
@@ -105,23 +105,23 @@ export function SizeGrid({ phone, onClear, onApply }) {
 	const planted = pick.corners.length === 1 ? spanOf(pick.corners[0], hover ?? pick.corners[0]) : null;
 	const shown = held ?? planted;
 
-	return h("div", { class: "wg-size-pick" }, [
+	return h("div", { className: "wg-size-pick" }, [
 		h(
 			"div",
 			{
 				key: "grid",
-				class: phone ? "wg-size-grid is-phone" : "wg-size-grid",
+				className: phone ? "wg-size-grid is-phone" : "wg-size-grid",
 				style: { "--wg-size-across": pick.cells },
 				onMouseLeave: () => setHover(null),
 			},
 			cellsOf(pick, held, shown, (cell) => setPick((last) => pickCell(last, cell)), setHover),
 		),
-		h("p", { key: "said", class: "wg-size-said" }, saidFor(pick)),
-		h("div", { key: "foot", class: "wg-size-foot" }, [
-			h(Button, { key: "clear", size: "s", class: "wg-size-clear", onClick: onClear }, "Clear"),
+		h("p", { key: "said", className: "wg-size-said" }, saidFor(pick)),
+		h("div", { key: "foot", className: "wg-size-foot" }, [
+			h(Button, { key: "clear", size: "s", className: "wg-size-clear", onClick: onClear }, "Clear"),
 			h(
 				Button,
-				{ key: "apply", size: "s", variant: "accent", class: "wg-size-apply", disabled: held === null, onClick: () => onApply(typedOf(held)) },
+				{ key: "apply", size: "s", variant: "accent", className: "wg-size-apply", disabled: held === null, onClick: () => onApply(typedOf(held)) },
 				"Apply",
 			),
 		]),

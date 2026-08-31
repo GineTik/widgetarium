@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const AUTHOR_RANK = { settings: 0, widget: 1, link: 2, manifest: 3 };
 

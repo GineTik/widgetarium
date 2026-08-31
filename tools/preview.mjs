@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { transform } from "sucrase";
-import { h, Fragment } from "preact";
+import { createElement as h, Fragment } from "react";
 
 // minimal browser stubs: the harness renders to a string, widgets may still probe the DOM
 globalThis.document ??= { body: {} };
@@ -54,13 +54,7 @@ function renderNode(node) {
 function createRequire(scope) {
 	const modules = {
 		widgetarium: scope.widgetarium,
-		preact: { h: scope.h, Fragment: scope.Fragment },
-		"preact/hooks": {
-			useState: scope.useState,
-			useEffect: scope.useEffect,
-			useMemo: scope.useMemo,
-			useRef: scope.useRef,
-		},
+		react: { createElement: scope.h, Fragment: scope.Fragment, useState: scope.useState, useEffect: scope.useEffect, useMemo: scope.useMemo, useRef: scope.useRef },
 	};
 	return (name) => {
 		const found = modules[name];
@@ -143,7 +137,7 @@ function buildWidget(folder, manifest, bindings, size = { w: 7, h: 6 }) {
 		...actions,
 	};
 
-	const api = { createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, DialogOverlay: () => null, DialogContent: (p) => h('div', { class: 'wg-dialog' }, p.children), DialogClose: () => null, DialogHeader: (p) => h('div', null, p.children), DialogTitle: (p) => h('h2', null, p.children), DialogDescription: (p) => h('p', null, p.children), DialogFooter: (p) => h('div', null, p.children), useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
+	const api = { createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, DialogOverlay: () => null, DialogContent: (p) => h('div', { className: 'wg-dialog' }, p.children), DialogClose: () => null, DialogHeader: (p) => h('div', null, p.children), DialogTitle: (p) => h('h2', null, p.children), DialogDescription: (p) => h('p', null, p.children), DialogFooter: (p) => h('div', null, p.children), useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
 
 	const scope = {
 		widgetarium: api,

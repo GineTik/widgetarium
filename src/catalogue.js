@@ -1,5 +1,5 @@
-import { h, Component } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { createElement as h, Component } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { boardWidgets, inlineWidgets } from "./registry.js";
 import { isInstalled, mergeCatalogue } from "./engine/catalogue-index.js";
 import { Button, Card, Field, Icon, IconButton, Pill, Popover, Segmented } from "./kit.js";
@@ -132,19 +132,21 @@ function initialOf(manifest) {
 }
 
 class Contained extends Component {
+	state = { failure: null };
+
 	componentDidCatch(failure) {
 		this.setState({ failure });
 	}
 
-	render(props, state) {
-		return state.failure ? props.instead(state.failure) : props.children;
+	render() {
+		return this.state.failure ? this.props.instead(this.state.failure) : this.props.children;
 	}
 }
 
 function Standin({ manifest, line, tone }) {
-	return h("div", { class: tone === "broken" ? "wg-cat-stand is-broken" : "wg-cat-stand" }, [
-		h("span", { class: "wg-cat-mark", key: "mark" }, initialOf(manifest)),
-		h("span", { class: "wg-cat-line", key: "line" }, line),
+	return h("div", { className: tone === "broken" ? "wg-cat-stand is-broken" : "wg-cat-stand" }, [
+		h("span", { className: "wg-cat-mark", key: "mark" }, initialOf(manifest)),
+		h("span", { className: "wg-cat-line", key: "line" }, line),
 	]);
 }
 
@@ -172,7 +174,7 @@ function Preview({ definition, registry, host, tile }) {
 		h(
 			"div",
 			{
-				class: "wg-cat-scaled",
+				className: "wg-cat-scaled",
 				style: {
 					width: `${tile.size.width}px`,
 					height: `${tile.size.height}px`,
@@ -208,7 +210,7 @@ function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onI
 		Card,
 		{
 			asChild: true,
-			class: "wg-cat-tile",
+			className: "wg-cat-tile",
 		},
 		h(
 			"article",
@@ -226,7 +228,7 @@ function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onI
 			h(
 				"div",
 				{
-					class: "wg-cat-stage",
+					className: "wg-cat-stage",
 					key: "stage",
 					style: {
 						"--wg-cell": `${tile.cell}px`,
@@ -237,32 +239,32 @@ function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onI
 				h(
 					"div",
 					{
-						class: "wg-cat-frame",
+						className: "wg-cat-frame",
 						style: { width: `${Math.round(tile.frameWidth)}px`, height: `${Math.round(tile.frameHeight)}px` },
 					},
 					// NO LATTICE AT ALL. A card is what separates a widget from the space around it;
 					// cells behind it drew a second grid nothing ever stood on.
-					h("div", { class: "wg-cat-pic", key: "pic" }, h(Preview, { definition, registry, host, tile })),
+					h("div", { className: "wg-cat-pic", key: "pic" }, h(Preview, { definition, registry, host, tile })),
 				),
 			),
 			// THE FOOT, IN THE CARD'S OWN GREY. Floating on the picture as glass the strip both
 			// covered the widget and cost the stage the room it stood in; laid below the stage it is
 			// an ordinary row, and the widget gets the whole stage back.
-			h("div", { class: "wg-cat-foot", key: "foot" }, [
+			h("div", { className: "wg-cat-foot", key: "foot" }, [
 				// CONTEXT: one line, pack first — "@task / Task card" reads as a path, which is what it is
-				h("span", { class: "wg-cat-said", key: "said", title: manifest.id }, [
-					h("span", { class: "wg-cat-scope", key: "scope" }, scope),
-					h("span", { class: "wg-cat-slash", key: "slash" }, "/"),
-					h("span", { class: "wg-cat-name", key: "name" }, name),
+				h("span", { className: "wg-cat-said", key: "said", title: manifest.id }, [
+					h("span", { className: "wg-cat-scope", key: "scope" }, scope),
+					h("span", { className: "wg-cat-slash", key: "slash" }, "/"),
+					h("span", { className: "wg-cat-name", key: "name" }, name),
 				]),
-				kind === "inline" ? null : h(Pill, { class: "wg-cat-span", key: "span" }, `${tile.size.w}\u00d7${tile.size.h}`),
+				kind === "inline" ? null : h(Pill, { className: "wg-cat-span", key: "span" }, `${tile.size.w}\u00d7${tile.size.h}`),
 				// THE KIT OWNS THE BUTTON. Its accent ground is painted by a ::before, so a
 				// hand-rolled background is a different button wearing the same colour.
 				h(
 					IconButton,
 					{
 						key: "go",
-						class: "wg-cat-go",
+						className: "wg-cat-go",
 						variant: "accent",
 						size: "s",
 						label: `${verb} ${name}`,
@@ -276,9 +278,9 @@ function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onI
 				),
 			]),
 			// TRADE-OFF: the sentence lives on the card, because there is no detail page to hold it
-			manifest.description ? h("p", { class: "wg-cat-what", key: "what" }, manifest.description) : null,
-			failure ? h("p", { class: "wg-cat-lack is-failure", key: "failure" }, failure) : null,
-			lacks ? h("p", { class: "wg-cat-lack", key: "lack" }, lacks) : null,
+			manifest.description ? h("p", { className: "wg-cat-what", key: "what" }, manifest.description) : null,
+			failure ? h("p", { className: "wg-cat-lack is-failure", key: "failure" }, failure) : null,
+			lacks ? h("p", { className: "wg-cat-lack", key: "lack" }, lacks) : null,
 		],
 		),
 	);
@@ -300,7 +302,7 @@ export function SizeFilter({ typed, onTyped, phone }) {
 				setOpen(next);
 				if (next) setOpenings((count) => count + 1);
 			},
-			trigger: h(Button, { class: narrowed ? "wg-cat-size is-on" : "wg-cat-size" }, [
+			trigger: h(Button, { className: narrowed ? "wg-cat-size is-on" : "wg-cat-size" }, [
 				h(Icon, { name: "widget", key: "mark" }),
 				h("span", { key: "said" }, sizeSaid(bounds)),
 			]),
@@ -384,30 +386,30 @@ export function Catalogue({ registry, host, mode = "browse", kind = "board", ava
 
 	const { placed, divide } = laidOut(shown);
 
-	return h("div", { class: "wg-cat" }, [
-		h("header", { class: "wg-cat-head", key: "head" }, [
+	return h("div", { className: "wg-cat" }, [
+		h("header", { className: "wg-cat-head", key: "head" }, [
 			h(Field, {
 				key: "search",
 				block: true,
-				class: "wg-cat-search",
+				className: "wg-cat-search",
 				icon: h(Icon, { name: "search" }),
 				placeholder: "Search widgets",
 				value: keyword,
 				onInput: (event) => setKeyword(event.target.value),
 			}),
-			h(Segmented, { key: "shown", class: "wg-cat-shown", items: SHOWN, value: showing, onChange: setShowing }),
+			h(Segmented, { key: "shown", className: "wg-cat-shown", items: SHOWN, value: showing, onChange: setShowing }),
 			kind === "inline"
 				? null
 				: h(SizeFilter, { key: "size", typed: typedSize, onTyped: setTypedSize, phone: width > 0 && classOf(width).name === "phone" }),
 		]),
 		h(
 			"div",
-			{ key: "scroll", ref: scrollRef, class: "wg-cat-scroll" },
+			{ key: "scroll", ref: scrollRef, className: "wg-cat-scroll" },
 			width <= 0
 				? null
 				: h(
 						"div",
-						{ class: "wg-cat-grid", style: { "--wg-cat-columns": cards.columns } },
+						{ className: "wg-cat-grid", style: { "--wg-cat-columns": cards.columns } },
 						placed.flatMap((entry, index) => {
 							const card = h(Tile, {
 								key: entry.definition.manifest?.id ?? index,
@@ -422,10 +424,10 @@ export function Catalogue({ registry, host, mode = "browse", kind = "board", ava
 								onInstall,
 							});
 							if (index !== divide) return [card];
-							return [h("p", { class: "wg-cat-divide", key: "divide" }, SHORT_LABEL), card];
+							return [h("p", { className: "wg-cat-divide", key: "divide" }, SHORT_LABEL), card];
 						}),
 				  ),
 		),
-		shown.length === 0 ? h("p", { class: "wg-cat-none", key: "none" }, "Nothing here answers to that.") : null,
+		shown.length === 0 ? h("p", { className: "wg-cat-none", key: "none" }, "Nothing here answers to that.") : null,
 	]);
 }

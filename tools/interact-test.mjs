@@ -22,7 +22,8 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { WidgetSurface, resolveMounts } = await import("./.mjs-cache/surface.mjs");
 const { WidgetRegistry, boardWidgets } = await import("./.mjs-cache/registry.mjs");
 const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
@@ -516,7 +517,8 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 {
 	await click(all(".orbi-kanban .ok-add-list-rest")[0]);
 	const field = all(".orbi-kanban .ok-list-name")[0];
-	check("the new-list field takes focus by itself", dom.window.document.activeElement, field);
+	// CONTEXT: React hangs a fiber off the node, so a DOM node cannot be compared by JSON
+	check("the new-list field takes focus by itself", dom.window.document.activeElement === field, true);
 	field.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 	await settle();
 
@@ -805,7 +807,7 @@ const pickView = async (name, id = "views") => {
 			return h(
 				"button",
 				{
-					class: "probe-add",
+					className: "probe-add",
 					onClick: () => given.configureBoard({ properties: [...(given.board?.properties ?? []), "Deadline"] }),
 				},
 				"add",
@@ -1183,7 +1185,8 @@ const pickView = async (name, id = "views") => {
 		// CONTEXT: an expanded board draws through a portal on the body, not into its own element
 		const page = [...dom.window.document.querySelectorAll(".wg-page")].find((node) => !standing.has(node)) ?? spare;
 		const seen = {
-			html: page.innerHTML,
+			// CONTEXT: React's useId counts per root, so two mounts of one tree differ by that id alone
+			html: page.innerHTML.replace(/_r_[0-9a-z]+_/g, "_id_"),
 			tiles: [...page.querySelectorAll("[data-tile]")].map((node) => node.getAttribute("data-tile")).sort(),
 			cards: page.querySelectorAll(".orbi-kanban .ok-card-slot").length,
 			// CONTEXT: the slot's gives clause promises the card a task's title, so a fed slot draws one

@@ -17,7 +17,8 @@ globalThis.ResizeObserver = class { observe() {} disconnect() {} };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
 const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
 const { measureGrid } = await import("./.mjs-cache/paths.mjs");

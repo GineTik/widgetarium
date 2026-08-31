@@ -31,10 +31,10 @@ const STYLE = `
 
 function Reminder({ content }) {
 	return (
-		<div class="wgi-reminder">
+		<div className="wgi-reminder">
 			<style>{STYLE}</style>
-			<span class="wgi-reminder-mark">!</span>
-			<span class="wgi-reminder-text">{content}</span>
+			<span className="wgi-reminder-mark">!</span>
+			<span className="wgi-reminder-text">{content}</span>
 		</div>
 	);
 }

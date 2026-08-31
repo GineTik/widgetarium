@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { transform } from "sucrase";
 import { buildMirror } from "./mirror.mjs";
-import { h, Fragment } from "preact";
+import { createElement as h, Fragment } from "react";
 // preact-render-to-string is NOT a dependency of this repo, and adding one just to check
 // widgets is not worth it. Walking the vnode tree is a dozen lines and has no install step.
 function render(vnode) {
@@ -37,7 +37,7 @@ const api = {
 		if (meta) component.meta = meta;
 		return component;
 	},
-	WidgetRoot: (props) => h("div", { class: `wg-widget-root ${props.className ?? ""}` }, props.children),
+	WidgetRoot: (props) => h("div", { className: `wg-widget-root ${props.className ?? ""}` }, props.children),
 	Dialog: () => null,
 	DialogOverlay: () => null,
 	DialogContent: (props) => h("div", null, props.children),
@@ -65,7 +65,7 @@ function load(folder) {
 		production: true,
 	}).code;
 
-	const modules = { widgetarium: api, "widgetarium/kit": kit, preact: { h, Fragment }, "preact/hooks": hooks };
+	const modules = { widgetarium: api, "widgetarium/kit": kit, react: { createElement: h, Fragment, ...hooks } };
 	const shell = { exports: {} };
 	new Function("require", "module", "exports", "h", "Fragment", source)(
 		(name) => {

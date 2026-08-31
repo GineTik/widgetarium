@@ -1,5 +1,6 @@
-import { h, Fragment } from "preact";
-import { useState, useEffect, useMemo, useRef } from "preact/hooks";
+import { createElement as h, Fragment } from "react";
+import * as react from "react";
+import * as reactDom from "react-dom";
 import { transform } from "sucrase";
 import { widgetarium, kitModule } from "./api.js";
 import { WIDGETS_DIR } from "./paths.js";
@@ -8,10 +9,10 @@ const BASE_SCOPE = {
 	h,
 	Fragment,
 	kitModule,
-	useState,
-	useEffect,
-	useMemo,
-	useRef,
+	useState: react.useState,
+	useEffect: react.useEffect,
+	useMemo: react.useMemo,
+	useRef: react.useRef,
 };
 
 function compile(source, filePath) {
@@ -24,21 +25,17 @@ function compile(source, filePath) {
 	}).code;
 }
 
+// CONTEXT: the specifier is the contract with widget authors; what stands behind it is not
 function createRequire(scope) {
 	const modules = {
 		widgetarium: scope.widgetarium,
 		"widgetarium/kit": scope.kitModule,
-		preact: { h: scope.h, Fragment: scope.Fragment },
-		"preact/hooks": {
-			useState: scope.useState,
-			useEffect: scope.useEffect,
-			useMemo: scope.useMemo,
-			useRef: scope.useRef,
-		},
+		react,
+		"react-dom": reactDom,
 	};
 	return (name) => {
 		const found = modules[name];
-		if (!found) throw new Error(`cannot import "${name}" — a widget may only import widgetarium, widgetarium/kit or preact`);
+		if (!found) throw new Error(`cannot import "${name}" — a widget may only import widgetarium, widgetarium/kit or react`);
 		return found;
 	};
 }

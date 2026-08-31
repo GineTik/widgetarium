@@ -1,5 +1,5 @@
-import { h, createContext } from "preact";
-import { useContext } from "preact/hooks";
+import { createElement as h, createContext } from "react";
+import { useContext } from "react";
 
 // TWO contexts, because they answer different questions.
 //
@@ -52,7 +52,7 @@ export function WidgetRoot({
 				"div",
 				{
 					...rest,
-					class: `wg-widget-root${className ? ` ${className}` : ""}`,
+					className: `wg-widget-root${className ? ` ${className}` : ""}`,
 					"data-rounded": rounded,
 					"data-fill": backgroundType,
 					style: background ? { ...(rest.style ?? {}), "--wg-surface-fill": background } : rest.style,

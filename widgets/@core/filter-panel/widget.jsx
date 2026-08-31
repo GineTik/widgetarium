@@ -1,6 +1,6 @@
 import { createWidget, WidgetRoot } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
-import { useRef, useState } from "preact/hooks";
+import { useRef, useState } from "react";
 
 const CSS = `
 /* CONTEXT: a control fills the tile it was given — centred at intrinsic width it read as
@@ -280,11 +280,11 @@ export default createWidget(function OrbiTaskFilter({ settings, data, board, con
 		<button
 			type="button"
 			ref={triggerRef}
-			class={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${roomForWord ? "" : " is-tight"}`}
+			className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${roomForWord ? "" : " is-tight"}`}
 		>
-			<Icon name="filter" class="ofp-icon" />
+			<Icon name="filter" className="ofp-icon" />
 			{roomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
-			{count > 0 ? <span class="wg-kit-count ofp-count">{count}</span> : null}
+			{count > 0 ? <span className="wg-kit-count ofp-count">{count}</span> : null}
 		</button>
 	);
 
@@ -292,36 +292,36 @@ export default createWidget(function OrbiTaskFilter({ settings, data, board, con
 		<WidgetRoot className="orbi orbi-filter" defaultRounded="none" defaultBackgroundType="none">
 			<style>{CSS}</style>
 
-			<Popover class="ofp-pop" trigger={trigger} open={open} onOpenChange={change}>
-				<div class="ofp-panel">
+			<Popover className="ofp-pop" trigger={trigger} open={open} onOpenChange={change}>
+				<div className="ofp-panel">
 					<PopoverSearch placeholder="Keyword" hint="Narrows the choices below, not the board">
 						{(needle) =>
 							groups.map((group) => {
 								const values = valuesFor(rows, group.prop).filter((value) => needle === "" || value.toLowerCase().includes(needle));
 								const isOpen = shown === group.prop;
 								return (
-									<div class="ofp-group" key={group.prop}>
+									<div className="ofp-group" key={group.prop}>
 										<button
 											type="button"
-											class={`ofp-group-head${isOpen ? " is-on" : ""}`}
+											className={`ofp-group-head${isOpen ? " is-on" : ""}`}
 											onClick={() => setShown(isOpen ? "" : group.prop)}
 										>
 											<span>{group.label}</span>
-											<Icon name="chevron" class="ofp-chev" />
+											<Icon name="chevron" className="ofp-chev" />
 										</button>
 
 										{isOpen
 											? values.length === 0
-												? <p class="ofp-empty">Nothing to choose from yet.</p>
+												? <p className="ofp-empty">Nothing to choose from yet.</p>
 												: values.map((value) => (
 														<PopoverItem
 															key={value}
-															class="ofp-option"
+															className="ofp-option"
 															checked={isChosen(group, value)}
 															onClick={() => toggle(group, value)}
 														>
-															{group.control === "people" ? <span class={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
-															<span class="ofp-name">{value}</span>
+															{group.control === "people" ? <span className={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
+															<span className="ofp-name">{value}</span>
 														</PopoverItem>
 												  ))
 											: null}
@@ -331,11 +331,11 @@ export default createWidget(function OrbiTaskFilter({ settings, data, board, con
 						}
 					</PopoverSearch>
 
-					<div class="ofp-foot">
-						<Button class="ofp-reset" onClick={reset}>
+					<div className="ofp-foot">
+						<Button className="ofp-reset" onClick={reset}>
 							Reset
 						</Button>
-						<Button class="ofp-apply" variant="accent" onClick={apply}>
+						<Button className="ofp-apply" variant="accent" onClick={apply}>
 							Apply
 						</Button>
 					</div>

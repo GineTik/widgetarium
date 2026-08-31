@@ -1,4 +1,4 @@
-import { render } from "preact";
+import { render } from "../src/engine/render.js";
 import ViewTabs from "../widgets/@task/view-tabs/widget.jsx";
 import FilterPanel from "../widgets/@core/filter-panel/widget.jsx";
 import { spanToPixels } from "../src/layout.js";

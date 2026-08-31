@@ -1,5 +1,5 @@
 import { createWidget, WidgetRoot } from "widgetarium";
-import { useEffect } from "preact/hooks";
+import { useEffect } from "react";
 
 const STYLE = `
 .orbi-view-group {
@@ -48,10 +48,10 @@ const STYLE = `
 
 function Missing({ entry }) {
 	return (
-		<div class="ovg-empty">
+		<div className="ovg-empty">
 			<b>{entry.problem === "failed" ? "This view failed to load" : "This view is not a widget"}</b>
-			<p class="ovg-empty-note">{entry.id}</p>
-			<p class="ovg-empty-note">
+			<p className="ovg-empty-note">{entry.id}</p>
+			<p className="ovg-empty-note">
 				{entry.failure ?? "Check the Views setting, or restore the widget folder — the setting is kept either way."}
 			</p>
 		</div>
@@ -75,9 +75,9 @@ export default createWidget(function OrbiTaskViewGroup({ context, mounts }) {
 		return (
 			<WidgetRoot className="orbi orbi-view-group">
 				<style>{STYLE}</style>
-				<div class="ovg-empty">
+				<div className="ovg-empty">
 					<b>This group holds no views</b>
-					<p class="ovg-empty-note">
+					<p className="ovg-empty-note">
 						Add the widgets it should hold in its Views setting, and give each one a name.
 					</p>
 				</div>
@@ -93,10 +93,10 @@ export default createWidget(function OrbiTaskViewGroup({ context, mounts }) {
 	return (
 		<WidgetRoot className="orbi orbi-view-group ovg-stack">
 			<style>{STYLE}</style>
-			<p class="ovg-stray">
+			<p className="ovg-stray">
 				This group has no view called {wanted} — showing {active.name} instead.
 			</p>
-			<div class="ovg-held">{body}</div>
+			<div className="ovg-held">{body}</div>
 		</WidgetRoot>
 	);
 });

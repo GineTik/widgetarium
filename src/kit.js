@@ -1,5 +1,5 @@
-import { Fragment, h, cloneElement, toChildArray } from "preact";
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { Fragment, createElement as h, cloneElement, Children } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 export function cx(...parts) {
 	return parts.flat(Infinity).filter(Boolean).join(" ");
@@ -8,7 +8,7 @@ export function cx(...parts) {
 export function variants(base, groups, fallback = {}) {
 	return (props = {}) => {
 		const chosen = Object.keys(groups).map((name) => groups[name][props[name] ?? fallback[name]]);
-		return cx(base, chosen, props.class, props.className);
+		return cx(base, chosen, props.className);
 	};
 }
 
@@ -17,12 +17,12 @@ export function variants(base, groups, fallback = {}) {
 const OWN_PROPS = ["variant", "size", "tone", "block", "selected", "pressable", "mode", "surface", "lift"];
 
 function render(tag, props, resolvedClass) {
-	const { asChild, children, class: cls, className, ...rest } = props;
+	const { asChild, children, className: cls, ...rest } = props;
 	for (const name of OWN_PROPS) delete rest[name];
-	if (!asChild) return h(tag, { ...rest, class: resolvedClass }, children);
-	const only = toChildArray(children)[0];
-	if (!only || typeof only !== "object") return h(tag, { ...rest, class: resolvedClass }, children);
-	return cloneElement(only, { ...rest, class: cx(resolvedClass, only.props.class, only.props.className) });
+	if (!asChild) return h(tag, { ...rest, className: resolvedClass }, children);
+	const only = Children.toArray(children)[0];
+	if (!only || typeof only !== "object") return h(tag, { ...rest, className: resolvedClass }, children);
+	return cloneElement(only, { ...rest, className: cx(resolvedClass, only.props.className) });
 }
 
 // CONTEXT: paths copied verbatim from docs/reference/orbitask-converted.html:456-464, on its 20 grid.
@@ -50,11 +50,11 @@ const GLYPHS = {
 	copy: '<rect x="7.4" y="7.4" width="8.4" height="8.4" rx="2.4"/><path d="M12.6 4.2H6.6a2.4 2.4 0 00-2.4 2.4v6"/>',
 };
 
-export function Icon({ name, size = 16, class: cls }) {
+export function Icon({ name, size = 16, className: cls }) {
 	const glyph = GLYPHS[name];
 	if (!glyph) return null;
 	return h("svg", {
-		class: cx("wg-kit-icon-glyph", cls),
+		className: cx("wg-kit-icon-glyph", cls),
 		viewBox: "0 0 20 20",
 		width: size,
 		height: size,
@@ -162,7 +162,7 @@ export function Row(props) {
 // the row's anatomy: badge, label, value — a chevron is a bare <Icon> the row styles itself
 function rowPart(baseClass, name) {
 	function Part(props) {
-		return render("span", props, cx(baseClass, props.class, props.className));
+		return render("span", props, cx(baseClass, props.className));
 	}
 	Part.displayName = name;
 	return Part;
@@ -193,7 +193,7 @@ export function Sidebar({ as = "div", ...props }) {
 // read as a thing with weight rather than a box being resized.
 const SHEET_COMMIT = 0.4;
 
-export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight, peekPx = 220, maxPx = 640, grip = "Raise the sheet", class: cls, style, children, ...rest }) {
+export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight, peekPx = 220, maxPx = 640, grip = "Raise the sheet", className: cls, style, children, ...rest }) {
 	const [dragged, setDragged] = useState(null);
 	const from = useRef(null);
 	const latest = useRef(0);
@@ -234,14 +234,14 @@ export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight
 		as,
 		{
 			...rest,
-			class: cx("wg-kit-sheet", sidebarClass({ mode, surface }), from.current && "is-dragging", cls),
+			className: cx("wg-kit-sheet", sidebarClass({ mode, surface }), from.current && "is-dragging", cls),
 			style: { ...style, height: `${Math.round(height)}px` },
 		},
 		[
 			h("button", {
 				key: "grip",
 				type: "button",
-				class: "wg-kit-sheet-grip",
+				className: "wg-kit-sheet-grip",
 				"aria-label": grip,
 				"aria-pressed": String(Boolean(open)),
 				onPointerDown: start,
@@ -254,17 +254,17 @@ export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight
 	);
 }
 
-export function SidebarGroup({ label, hint, children, class: cls, className }) {
-	return h("div", { class: cx("wg-kit-side-group", cls, className) }, [
-		label ? h("span", { class: "wg-kit-side-label", key: "label" }, label) : null,
-		h(List, { class: "wg-kit-side-list", key: "list" }, children),
-		hint ? h("p", { class: "wg-kit-side-hint", key: "hint" }, hint) : null,
+export function SidebarGroup({ label, hint, children, className: cls }) {
+	return h("div", { className: cx("wg-kit-side-group", cls) }, [
+		label ? h("span", { className: "wg-kit-side-label", key: "label" }, label) : null,
+		h(List, { className: "wg-kit-side-list", key: "list" }, children),
+		hint ? h("p", { className: "wg-kit-side-hint", key: "hint" }, hint) : null,
 	]);
 }
 
 // TRADE-OFF: one row for both sizes, and `unset` is a state rather than a colour a caller picks —
 // three files had each spelled "this property is empty" their own way
-export function SidebarRow({ as = "div", icon, label, sub, value, after, children, unset, open, selected, pressable, onClick, class: cls, ...rest }) {
+export function SidebarRow({ as = "div", icon, label, sub, value, after, children, unset, open, selected, pressable, onClick, className: cls, ...rest }) {
 	const shown = value ?? children;
 	// TRADE-OFF: the row owns its TAG, because a settings row is read and a property row is
 	// pressed — and a pressable div is a button a keyboard cannot reach
@@ -277,21 +277,21 @@ export function SidebarRow({ as = "div", icon, label, sub, value, after, childre
 			// CONTEXT: aria-current is how a list says which of its rows is the one being read
 			"aria-current": selected ? "true" : undefined,
 			// CONTEXT: is-two is the row's own state — the height law reads it, not the caller's markup
-			class: cx(rowClass({ pressable: pressable || as === "button" }), "wg-kit-side-row", sub && "is-two", unset && "is-unset", open && "is-open", selected && "is-selected", cls),
+			className: cx(rowClass({ pressable: pressable || as === "button" }), "wg-kit-side-row", sub && "is-two", unset && "is-unset", open && "is-open", selected && "is-selected", cls),
 		},
 		[
 			// CONTEXT: a glyph, never RowBadge — a badge is a FILLED marker, and putting an icon in
 			// one painted every property row with an accent tile
-			icon ? h("span", { class: "wg-kit-side-icon", key: "icon" }, icon) : null,
-			h(RowLabel, { key: "label" }, sub ? [label, h("span", { class: "wg-kit-side-sub", key: "sub" }, sub)] : label),
-			shown === undefined || shown === null ? null : h(RowValue, { class: "wg-kit-side-value", key: "value" }, shown),
+			icon ? h("span", { className: "wg-kit-side-icon", key: "icon" }, icon) : null,
+			h(RowLabel, { key: "label" }, sub ? [label, h("span", { className: "wg-kit-side-sub", key: "sub" }, sub)] : label),
+			shown === undefined || shown === null ? null : h(RowValue, { className: "wg-kit-side-value", key: "value" }, shown),
 			after ?? null,
 		],
 	);
 }
 
 export function Count({ children, ...rest }) {
-	return h("span", { ...rest, class: cx("wg-kit-count", rest.class) }, children);
+	return h("span", { ...rest, className: cx("wg-kit-count", rest.className) }, children);
 }
 
 // TRADE-OFF: headless, so a tab bar that needs its own children — a rename field, an
@@ -334,7 +334,7 @@ export function useSegmentedThumb(value, items) {
 	return {
 		listRef,
 		thumbProps: {
-			class: "wg-kit-seg-thumb",
+			className: "wg-kit-seg-thumb",
 			style: thumb ? { transform: `translateX(${thumb.left}px)`, width: `${thumb.width}px` } : { opacity: 0 },
 		},
 	};
@@ -342,7 +342,7 @@ export function useSegmentedThumb(value, items) {
 
 // CONTEXT: a bare text node cannot ellipsize — the label needs a box of its own to clip in
 export function ButtonLabel(props) {
-	return render("span", props, cx("wg-kit-btn-label", props.class, props.className));
+	return render("span", props, cx("wg-kit-btn-label", props.className));
 }
 
 // CONTEXT: measured, not a constant — Filter's word fits at 100px, the constant dropped it at 150
@@ -383,25 +383,25 @@ export const fieldClass = variants("wg-kit-field", { size: { m: "", s: "is-s" },
 // The label carries the LOOK, the input carries the BEHAVIOUR — anything else handed in reaches
 // the input. Keeping it all on the label silently swallowed an onKeyDown, so Enter did nothing
 // in a search field and there was no error anywhere to say why.
-const FIELD_LOOK = ["size", "block", "class", "className"];
+const FIELD_LOOK = ["size", "block", "className"];
 
 export function Field({ icon, value, onInput, placeholder, type = "text", ...rest }) {
 	const forInput = { ...rest };
 	for (const name of FIELD_LOOK) delete forInput[name];
 	return h(
 		"label",
-		{ class: fieldClass(rest) },
+		{ className: fieldClass(rest) },
 		icon,
-		h("input", { ...forInput, class: "wg-kit-field-input", type, value, placeholder, onInput }),
+		h("input", { ...forInput, className: "wg-kit-field-input", type, value, placeholder, onInput }),
 	);
 }
 
-export function Segmented({ items, value, onChange, size = "m", class: cls }) {
+export function Segmented({ items, value, onChange, size = "m", className: cls }) {
 	const { listRef, thumbProps } = useSegmentedThumb(value, items);
 
 	return h(
 		"div",
-		{ class: cx("wg-kit-seg", size === "l" && "is-l", size === "s" && "is-s", cls), ref: listRef, role: "tablist" },
+		{ className: cx("wg-kit-seg", size === "l" && "is-l", size === "s" && "is-s", cls), ref: listRef, role: "tablist" },
 		h("span", thumbProps),
 		items.map((item) =>
 			h(
@@ -694,7 +694,7 @@ function exitPanel(panel, anchor, done) {
 	return stop;
 }
 
-export function Popover({ trigger, children, open: openProp, onOpenChange, class: cls, placement = "over" }) {
+export function Popover({ trigger, children, open: openProp, onOpenChange, className: cls, placement = "over" }) {
 	const where = PLACEMENTS[placement] ?? PLACEMENTS.over;
 	const [openState, setOpenState] = useState(false);
 	const open = openProp ?? openState;
@@ -789,7 +789,7 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 	return h(
 		"span",
 		{
-			class: "wg-kit-anchor",
+			className: "wg-kit-anchor",
 			ref: triggerRef,
 			"aria-expanded": String(open),
 			"aria-controls": id,
@@ -805,12 +805,12 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 			{
 				id,
 				ref: panelRef,
-				class: cx("wg-kit-pop", where.panelClass, (open || exiting) && "is-open", exiting && "is-exiting", cls),
+				className: cx("wg-kit-pop", where.panelClass, (open || exiting) && "is-open", exiting && "is-exiting", cls),
 				role: "dialog",
 				// CONTEXT: a tile is a stacking context, so styles.css lifts the one holding this
 				"data-wg-overlay": shown ? "" : undefined,
 			},
-			h("div", { class: "wg-kit-pop-inner" }, shown ? held.current : null),
+			h("div", { className: "wg-kit-pop-inner" }, shown ? held.current : null),
 		),
 	);
 }
@@ -822,19 +822,19 @@ export function PopoverItem({ checked, children, ...rest }) {
 			type: "button",
 			...rest,
 			"aria-checked": checked === undefined ? undefined : String(checked),
-			class: cx("wg-kit-pop-item", rest.class),
+			className: cx("wg-kit-pop-item", rest.className),
 		},
 		children,
-		checked === undefined ? null : h(Icon, { name: "tick", class: "wg-kit-pop-tick" }),
+		checked === undefined ? null : h(Icon, { name: "tick", className: "wg-kit-pop-tick" }),
 	);
 }
 
 export function PopoverSeparator(props) {
-	return h("div", { ...props, role: "separator", class: cx("wg-kit-pop-sep", props.class) });
+	return h("div", { ...props, role: "separator", className: cx("wg-kit-pop-sep", props.className) });
 }
 
 // TRADE-OFF: the needle is handed down, not the list taken away — matching is the caller's rule
-export function PopoverSearch({ placeholder, hint, children, class: cls }) {
+export function PopoverSearch({ placeholder, hint, children, className: cls }) {
 	const [keyword, setKeyword] = useState("");
 	const needle = keyword.trim().toLowerCase();
 	const listRef = useRef(null);
@@ -866,29 +866,29 @@ export function PopoverSearch({ placeholder, hint, children, class: cls }) {
 		null,
 		h(
 			"div",
-			{ class: cx("wg-kit-pop-search", cls) },
+			{ className: cx("wg-kit-pop-search", cls) },
 			h(Field, {
 				block: true,
 				size: "s",
-				class: "wg-kit-pop-search-field",
+				className: "wg-kit-pop-search-field",
 				icon: h(Icon, { name: "search" }),
 				placeholder,
 				value: keyword,
 				onInput: (event) => setKeyword(event.target.value),
 				onKeyDown: takeFirst,
 			}),
-			hint ? h("span", { class: "wg-kit-pop-search-hint" }, hint) : null,
+			hint ? h("span", { className: "wg-kit-pop-search-hint" }, hint) : null,
 		),
 		h(
 			"div",
-			{ class: "wg-kit-pop-scroll" },
+			{ className: "wg-kit-pop-scroll" },
 			h(
 				"div",
-				{ class: "wg-kit-pop-list", ref: listRef, onScroll: measureReach },
+				{ className: "wg-kit-pop-list", ref: listRef, onScroll: measureReach },
 				typeof children === "function" ? children(needle) : children,
 			),
-			reach.up ? h("span", { class: "wg-kit-pop-edge is-up" }, h(Icon, { name: "chevron", size: 12 })) : null,
-			reach.down ? h("span", { class: "wg-kit-pop-edge is-down" }, h(Icon, { name: "chevron", size: 12 })) : null,
+			reach.up ? h("span", { className: "wg-kit-pop-edge is-up" }, h(Icon, { name: "chevron", size: 12 })) : null,
+			reach.down ? h("span", { className: "wg-kit-pop-edge is-down" }, h(Icon, { name: "chevron", size: 12 })) : null,
 		),
 	);
 }
@@ -911,7 +911,7 @@ function sameDay(one, other) {
 }
 
 // TRADE-OFF: the kit owns the month and the state on a cell, never what the cell says
-export function Calendar({ month, onMonthChange, selected, today, onSelect, renderDay, class: cls }) {
+export function Calendar({ month, onMonthChange, selected, today, onSelect, renderDay, className: cls }) {
 	const [ownMonth, setOwnMonth] = useState(() => month ?? selected ?? today ?? new Date());
 	const shown = month ?? ownMonth;
 	const year = shown.getFullYear();
@@ -935,7 +935,7 @@ export function Calendar({ month, onMonthChange, selected, today, onSelect, rend
 				{
 					type: "button",
 					key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
-					class: cx("wg-kit-cal-day", day.outside && "is-outside", day.today && "is-today", day.selected && "is-picked"),
+					className: cx("wg-kit-cal-day", day.outside && "is-outside", day.today && "is-today", day.selected && "is-picked"),
 					"aria-pressed": String(day.selected),
 					onClick: () => onSelect?.(date),
 				},
@@ -946,18 +946,18 @@ export function Calendar({ month, onMonthChange, selected, today, onSelect, rend
 
 	return h(
 		"div",
-		{ class: cx("wg-kit-cal", cls) },
+		{ className: cx("wg-kit-cal", cls) },
 		h(
 			"div",
-			{ class: "wg-kit-cal-head" },
+			{ className: "wg-kit-cal-head" },
 			h(IconButton, { size: "s", label: "Previous month", onClick: () => step(-1) }, h(Icon, { name: "fold" })),
-			h("span", { class: "wg-kit-cal-month" }, `${MONTH_NAMES[index]} ${year}`),
+			h("span", { className: "wg-kit-cal-month" }, `${MONTH_NAMES[index]} ${year}`),
 			h(IconButton, { size: "s", label: "Next month", onClick: () => step(1) }, h(Icon, { name: "chevron" })),
 		),
 		h(
 			"div",
-			{ class: "wg-kit-cal-grid" },
-			WEEKDAY_INITIALS.map((initial, at) => h("span", { key: at, class: "wg-kit-cal-weekday" }, initial)),
+			{ className: "wg-kit-cal-grid" },
+			WEEKDAY_INITIALS.map((initial, at) => h("span", { key: at, className: "wg-kit-cal-weekday" }, initial)),
 			cells,
 		),
 	);
@@ -971,7 +971,7 @@ function clampPercent(value) {
 }
 
 // TRADE-OFF: a track and the digits, not a stepper — the plate is skimmed more than it is set
-export function Progress({ value = 0, onChange, label, class: cls }) {
+export function Progress({ value = 0, onChange, label, className: cls }) {
 	const trackRef = useRef(null);
 	const [grabbed, setGrabbed] = useState(false);
 	const held = useRef(false);
@@ -1017,29 +1017,29 @@ export function Progress({ value = 0, onChange, label, class: cls }) {
 	return h(
 		"div",
 		{
-			class: cx("wg-kit-progress", grabbed && "is-grabbed", cls),
+			className: cx("wg-kit-progress", grabbed && "is-grabbed", cls),
 			role: "slider",
 			tabIndex: 0,
 			"aria-label": label,
 			"aria-valuemin": "0",
 			"aria-valuemax": String(PROGRESS_MAX),
 			"aria-valuenow": String(shown),
-			onkeydown: type,
+			onKeyDown: type,
 		},
 		h(
 			"span",
 			{
-				class: "wg-kit-progress-track",
+				className: "wg-kit-progress-track",
 				ref: trackRef,
-				onpointerdown: grab,
-				onpointermove: drag,
-				onpointerup: release,
-				onpointercancel: release,
+				onPointerDown: grab,
+				onPointerMove: drag,
+				onPointerUp: release,
+				onPointerCancel: release,
 			},
-			h("i", { class: "wg-kit-progress-fill", style: { width: `${shown}%` } }),
-			h("span", { class: "wg-kit-progress-knob", style: { left: `${shown}%` } }),
+			h("i", { className: "wg-kit-progress-fill", style: { width: `${shown}%` } }),
+			h("span", { className: "wg-kit-progress-knob", style: { left: `${shown}%` } }),
 		),
-		h("span", { class: "wg-kit-progress-num" }, `${shown}%`),
+		h("span", { className: "wg-kit-progress-num" }, `${shown}%`),
 	);
 }
 
@@ -1049,7 +1049,7 @@ const INLINE = /(`[^`\n]*`)|(\[\[[^\]\n]*\]\])|(\[[^\]\n]*\]\([^)\n]*\))|(\*\*[^
 const INLINE_CLASSES = [null, "is-link", "is-link", "is-strong", "is-em"];
 
 function markLine(line) {
-	if (HEADING_LINE.test(line)) return [h("span", { class: "is-heading" }, line)];
+	if (HEADING_LINE.test(line)) return [h("span", { className: "is-heading" }, line)];
 	const parts = [];
 	let at = 0;
 	INLINE.lastIndex = 0;
@@ -1057,7 +1057,7 @@ function markLine(line) {
 		if (found.index > at) parts.push(line.slice(at, found.index));
 		const group = [1, 2, 3, 4, 5].find((index) => found[index] !== undefined);
 		const styled = INLINE_CLASSES[group - 1];
-		parts.push(styled ? h("span", { class: styled }, found[0]) : found[0]);
+		parts.push(styled ? h("span", { className: styled }, found[0]) : found[0]);
 		at = found.index + found[0].length;
 	}
 	if (at < line.length) parts.push(line.slice(at));
@@ -1074,7 +1074,7 @@ function markdownSpans(text) {
 }
 
 // TRADE-OFF: a transparent textarea over a styled mirror — native editing, plain content
-export function MarkdownEditor({ value = "", onInput, placeholder, class: cls, focusAtStart = false }) {
+export function MarkdownEditor({ value = "", onInput, placeholder, className: cls, focusAtStart = false }) {
 	const input = useRef(null);
 
 	// TRADE-OFF: opt-in — an editor that always grabbed the caret would steal it from whatever opened it
@@ -1086,15 +1086,15 @@ export function MarkdownEditor({ value = "", onInput, placeholder, class: cls, f
 
 	return h(
 		"div",
-		{ class: cx("wg-kit-md", cls) },
+		{ className: cx("wg-kit-md", cls) },
 		h(
 			"div",
-			{ class: "wg-kit-md-page" },
-			h("div", { class: "wg-kit-md-text wg-kit-md-mirror", "aria-hidden": "true" }, markdownSpans(value)),
+			{ className: "wg-kit-md-page" },
+			h("div", { className: "wg-kit-md-text wg-kit-md-mirror", "aria-hidden": "true" }, markdownSpans(value)),
 			h("textarea", {
 				ref: input,
-				class: "wg-kit-md-text wg-kit-md-input",
-				spellcheck: true,
+				className: "wg-kit-md-text wg-kit-md-input",
+				spellCheck: true,
 				placeholder,
 				value,
 				onInput: (event) => onInput?.(event.target.value),
@@ -1109,7 +1109,7 @@ export function Switch({ checked, onChange, label }) {
 		role: "switch",
 		"aria-checked": String(Boolean(checked)),
 		"aria-label": label,
-		class: "wg-kit-switch",
+		className: "wg-kit-switch",
 		onClick: () => onChange?.(!checked),
 	});
 }

@@ -138,8 +138,9 @@ function sideReach(value) {
 }`;
 
 const SUB_PROBE = `
-import { h, render } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
+import { useEffect, useState } from "react";
 import { SubstitutionDialog } from "./src/substitution-dialog.js";
 import { WidgetRegistry } from "./src/registry.js";
 import { normalizeRules } from "./src/substitution.js";
@@ -180,7 +181,8 @@ render(h(Harness), document.getElementById("host"));
 `;
 
 const KIT_PROBE = `
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
 import { Button, Card, Icon, IconButton } from "./src/kit.js";
 render(
 	h("div", { style: "padding:40px;display:flex;flex-direction:column;gap:24px;align-items:flex-start" }, [
@@ -199,7 +201,8 @@ render(
 `;
 
 const MOUNT_PROBE = `
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
 import { WidgetSurface } from "./src/surface.js";
 import { normalizeBoard } from "./src/model.js";
 
@@ -213,7 +216,7 @@ const shelf = {
 	[ARCHIVE_ID]: { id: ARCHIVE_ID, title: "Archived columns", defaultSize: { w: 4, h: 3 } },
 	[INLINE_ID]: { id: INLINE_ID, title: "Reminder", inline: true },
 };
-const Leaf = () => h("div", { class: "leaf" }, "leaf");
+const Leaf = () => h("div", { className: "leaf" }, "leaf");
 const registry = {
 	get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
 	list: () => Object.values(shelf).map((manifest) => ({ manifest, component: Leaf })),

@@ -1,4 +1,5 @@
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
 import { WidgetRegistry } from "../src/registry.js";

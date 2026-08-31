@@ -1,4 +1,5 @@
-import { h, render } from "preact";
+import { createElement as h } from "react";
+import { render } from "../src/engine/render.js";
 import { InlineWidget, HOST_CLASS } from "../src/inline-render.js";
 import CodeBlock from "../widgets/@inline/code-block/widget.jsx";
 import manifest from "../widgets/@inline/code-block/manifest.json";

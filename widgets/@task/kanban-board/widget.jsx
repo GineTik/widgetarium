@@ -10,7 +10,7 @@ import {
 	DialogClose,
 } from "widgetarium";
 import { Button, Card, Count, Icon, Plate } from "widgetarium/kit";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const CSS = `
 .ok-board {
@@ -226,8 +226,8 @@ const CSS = `
 // TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
 function FallbackCard({ task }) {
 	return (
-		<Card class="ok-card">
-			<span class="ok-card-title">{task.title}</span>
+		<Card className="ok-card">
+			<span className="ok-card-title">{task.title}</span>
 		</Card>
 	);
 }
@@ -240,7 +240,7 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 
 	return (
 		<Plate
-			class={`ok-list${over ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
+			className={`ok-list${over ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
 			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
 			onDragOver={(event) => {
 				if (!dragging?.row) return;
@@ -254,11 +254,11 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 				onDropTask?.();
 			}}
 		>
-			<div class="ok-list-head" draggable={Boolean(onGrab) && !renaming} onDragStart={onGrab} onDragEnd={onRelease}>
+			<div className="ok-list-head" draggable={Boolean(onGrab) && !renaming} onDragStart={onGrab} onDragEnd={onRelease}>
 				<span
-					class="ok-list-title"
+					className="ok-list-title"
 					// CONTEXT: the lowercase attribute — a property some engines never mirror back is unreadable
-					contenteditable={onRename ? "true" : undefined}
+					contentEditable={onRename ? "true" : undefined}
 					suppressContentEditableWarning
 					onFocus={() => setRenaming(true)}
 					onKeyDown={(event) => {
@@ -280,7 +280,7 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 				</span>
 				<Count>{rows.length}</Count>
 				{onArchive ? (
-					<button type="button" class="ok-list-remove" title={`Archive ${title}`} onClick={onArchive}>
+					<button type="button" className="ok-list-remove" title={`Archive ${title}`} onClick={onArchive}>
 						<Icon name="archive" size={15} />
 					</button>
 				) : null}
@@ -289,7 +289,7 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 			{cards.map((task, index) => (
 				<div
 					key={rows[index]?.path ?? index}
-					class={`ok-card-slot${rows[index]?.path === opened ? " is-open" : ""}`}
+					className={`ok-card-slot${rows[index]?.path === opened ? " is-open" : ""}`}
 					draggable={canWrite}
 					onDragStart={() => dragging?.pick(rows[index])}
 					onDragEnd={() => dragging?.drop()}
@@ -319,7 +319,7 @@ function AddTask({ onAdd }) {
 
 	if (!open) {
 		return (
-			<button type="button" class="ok-add-task" onClick={() => setOpen(true)}>
+			<button type="button" className="ok-add-task" onClick={() => setOpen(true)}>
 				<Icon name="plus" size={16} />
 				<span>Add new task</span>
 			</button>
@@ -327,9 +327,9 @@ function AddTask({ onAdd }) {
 	}
 
 	return (
-		<div class="ok-add-task-open">
+		<div className="ok-add-task-open">
 			<input
-				class="ok-task-name"
+				className="ok-task-name"
 				ref={(node) => node?.focus()}
 				placeholder="Enter task name..."
 				value={name}
@@ -339,11 +339,11 @@ function AddTask({ onAdd }) {
 					if (event.key === "Escape") setOpen(false);
 				}}
 			/>
-			<div class="ok-add-list-actions">
-				<Button class="ok-cancel" size="s" onClick={() => setOpen(false)}>
+			<div className="ok-add-list-actions">
+				<Button className="ok-cancel" size="s" onClick={() => setOpen(false)}>
 					Cancel
 				</Button>
-				<Button class="ok-confirm" size="s" variant="accent" onClick={confirm}>
+				<Button className="ok-confirm" size="s" variant="accent" onClick={confirm}>
 					Add
 				</Button>
 			</div>
@@ -358,7 +358,7 @@ function AddList({ onAdd }) {
 	if (!open) {
 		return (
 			<Plate asChild>
-				<button type="button" class="ok-add-list-rest" onClick={() => setOpen(true)}>
+				<button type="button" className="ok-add-list-rest" onClick={() => setOpen(true)}>
 					<Icon name="plus" size={16} />
 					<span>Add List</span>
 				</button>
@@ -374,9 +374,9 @@ function AddList({ onAdd }) {
 	};
 
 	return (
-		<Plate class="ok-add-list">
+		<Plate className="ok-add-list">
 			<input
-				class="ok-list-name"
+				className="ok-list-name"
 				// CONTEXT: the field appeared because it was asked for; a click to reach it is one step too many
 				ref={(node) => node?.focus()}
 				placeholder="Enter list name..."
@@ -387,11 +387,11 @@ function AddList({ onAdd }) {
 					if (event.key === "Escape") setOpen(false);
 				}}
 			/>
-			<div class="ok-add-list-actions">
-				<Button class="ok-cancel" size="s" onClick={() => setOpen(false)}>
+			<div className="ok-add-list-actions">
+				<Button className="ok-cancel" size="s" onClick={() => setOpen(false)}>
 					Cancel
 				</Button>
-				<Button class="ok-confirm" size="s" variant="accent" onClick={confirm}>
+				<Button className="ok-confirm" size="s" variant="accent" onClick={confirm}>
 					Add
 				</Button>
 			</div>
@@ -620,7 +620,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		return (
 			<WidgetRoot defaultRounded="none" className="orbi orbi-kanban" defaultBackgroundType="none">
 				<style>{CSS}</style>
-				<p class="ok-empty">Loading tasks…</p>
+				<p className="ok-empty">Loading tasks…</p>
 			</WidgetRoot>
 		);
 	}
@@ -629,7 +629,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		<WidgetRoot defaultRounded="none" className="orbi orbi-kanban" defaultBackgroundType="none">
 			<style>{CSS}</style>
 			<div
-				class={`ok-board${reorder ? " is-dragging" : ""}`}
+				className={`ok-board${reorder ? " is-dragging" : ""}`}
 				ref={boardRef}
 				onDragOver={aimColumn}
 				onDrop={dropColumn}
@@ -659,7 +659,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 			</div>
 
 			<Dialog open={Boolean(archiving)} onOpenChange={() => setArchiving(null)}>
-				<DialogContent class="ok-archive">
+				<DialogContent className="ok-archive">
 					<DialogClose />
 					<DialogHeader>
 						<DialogTitle>Archive {archiving}?</DialogTitle>

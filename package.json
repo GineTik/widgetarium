@@ -58,6 +58,8 @@
 	},
 	"dependencies": {
 		"preact": "^10.24.3",
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8",
 		"sucrase": "^3.35.0"
 	}
 }

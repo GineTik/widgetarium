@@ -1,5 +1,6 @@
-import { h, render } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { createElement as h } from "react";
+import { render } from "../src/engine/render.js";
+import { useEffect, useState } from "react";
 import { SubstitutionDialog } from "../src/substitution-dialog.js";
 import { WidgetRegistry } from "../src/registry.js";
 import { normalizeRules } from "../src/substitution.js";

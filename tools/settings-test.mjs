@@ -14,7 +14,8 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1340 });
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
 const { CHROME, barPlacement, dialogBox, freeArea, openingScale, openingPan, clampPan } = await import("./.mjs-cache/settings-fit.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
@@ -164,7 +165,7 @@ console.log("\n— and the panel writes what it draws —");
 		slots: { card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } } },
 		sources: { tasks: { label: "Tasks", default: { path: "Orbitask/Tasks" } }, boards: { label: "Boards" } },
 	};
-	const Leaf = () => h("div", { class: "leaf" }, "leaf");
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
 	// The misfit is the TALLER tile on purpose: the showcase packs tallest first, so if fit were not
 	// ranked ahead of height the misfit would lead the list and the ordering check below would fail.
 	const fitting = { id: CARD_ID, title: "Task card", defaultSize: { w: 3, h: 2 }, accepts: { task: { required: ["title"] } } };
@@ -445,7 +446,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 		[PANEL_ID]: { id: PANEL_ID, title: "Side panel", settings: [{ key: "width", type: "text", label: "Panel width", default: "narrow" }] },
 		[CARD_ID]: { id: CARD_ID, title: "Task card" },
 	};
-	const Leaf = () => h("div", { class: "leaf" }, "leaf");
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
 	const registry = {
 		get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
 		list: () => Object.values(shelf).map((manifest) => ({ manifest })),
@@ -649,7 +650,7 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 	const configureBy = {};
 	const Probe = (props) => {
 		configureBy[props.settings.mark] = props.configure;
-		return h("div", { class: "leaf" }, props.settings.mark);
+		return h("div", { className: "leaf" }, props.settings.mark);
 	};
 	const manifest = { id: PROBE_ID, title: "Probe", settings: [{ key: "mark", type: "text", label: "Mark", default: "" }] };
 	// CONTEXT: one definition object, or every tile redraws and the memo is never exercised
@@ -715,7 +716,7 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 		[READER_ID]: { id: READER_ID, title: "Reader", sources: { rows: { label: "Rows", default: { path: FOLDER } } } },
 		[GROUP_ID]: { id: GROUP_ID, title: "Group", mounts: { holds: {} } },
 	};
-	const Leaf = () => h("div", { class: "leaf" }, "leaf");
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
 	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null), list: () => Object.values(shelf).map((manifest) => ({ manifest })) };
 	const slot = { canCreate: true, canUpdate: true, canRemove: true, canSubscribe: false, list: async () => ({ rows: [], total: 0 }), describe: async () => [] };
 	const host = { platform: "test", can: {}, slot: () => slot, ui: { notify() {}, openNote() {} } };

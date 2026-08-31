@@ -23,7 +23,7 @@ import {
 	toneClass,
 	toneOf,
 } from "widgetarium/kit";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const CSS = `
 /* CONTEXT: the dialog is portalled onto <body>, out of reach of the widget root's container */
@@ -609,7 +609,7 @@ const GLYPHS = {
 function Glyph({ name, className }) {
 	return (
 		<svg
-			class={`otd-glyph${className ? ` ${className}` : ""}`}
+			className={`otd-glyph${className ? ` ${className}` : ""}`}
 			viewBox="0 0 16 16"
 			aria-hidden="true"
 			dangerouslySetInnerHTML={{ __html: GLYPHS[name] }}
@@ -733,7 +733,7 @@ function initialsOf(name) {
 
 function Avatar({ person }) {
 	return (
-		<i class="otd-avatar" style={toneForPerson(person)} title={person}>
+		<i className="otd-avatar" style={toneForPerson(person)} title={person}>
 			{initialsOf(person)}
 		</i>
 	);
@@ -744,7 +744,7 @@ function RowFrame({ anchor, name, unset, open, children, asButton, onClick }) {
 	return (
 		<SidebarRow
 			as={asButton ? "button" : "div"}
-			class="otd-row"
+			className="otd-row"
 			icon={<Glyph name={anchor.icon} />}
 			label={name}
 			unset={unset}
@@ -761,9 +761,9 @@ function ChoiceRow({ anchor, name, value, choices, onPick }) {
 	const unset = isUnset(value);
 
 	const shown = unset ? (
-		<span class="otd-value is-empty">Empty</span>
+		<span className="otd-value is-empty">Empty</span>
 	) : (
-		<span class="otd-value">
+		<span className="otd-value">
 			<Pill tone={anchor.tones ? toneOf(anchor.tones, value) : "neutral"}>{String(value)}</Pill>
 			<Glyph name="caret" className="otd-caret" />
 		</span>
@@ -791,7 +791,7 @@ function ChoiceRow({ anchor, name, value, choices, onPick }) {
 					) : (
 						<span>{choice.value}</span>
 					)}
-					{choice.note ? <span class="otd-item-note">{choice.note}</span> : null}
+					{choice.note ? <span className="otd-item-note">{choice.note}</span> : null}
 				</PopoverItem>
 			))}
 {anchor.required ? null : (
@@ -811,7 +811,7 @@ function ProgressRow({ anchor, name, value, onPick }) {
 	const number = Number(value);
 	return (
 		<RowFrame anchor={anchor} name={name} unset={isUnset(value)}>
-			<span class="otd-value">
+			<span className="otd-value">
 				<Progress value={Number.isFinite(number) ? number : 0} label={name} onChange={onPick} />
 			</span>
 		</RowFrame>
@@ -823,9 +823,9 @@ function DeadlineRow({ anchor, name, value, today, onPick }) {
 	const unset = isUnset(value);
 
 	const shown = unset ? (
-		<span class="otd-value is-empty">Empty</span>
+		<span className="otd-value is-empty">Empty</span>
 	) : (
-		<span class="otd-value">
+		<span className="otd-value">
 			{dateLabel(value)}
 			<Glyph name="caret" className="otd-caret" />
 		</span>
@@ -850,11 +850,11 @@ function DeadlineRow({ anchor, name, value, today, onPick }) {
 			<PopoverSeparator />
 			<PopoverItem onClick={() => pick(today)}>
 				Today
-				<span class="otd-item-note">{dateLabel(isoOf(today))}</span>
+				<span className="otd-item-note">{dateLabel(isoOf(today))}</span>
 			</PopoverItem>
 			<PopoverItem onClick={() => pick(nextMonday(today))}>
 				Next Monday
-				<span class="otd-item-note">{dateLabel(isoOf(nextMonday(today)))}</span>
+				<span className="otd-item-note">{dateLabel(isoOf(nextMonday(today)))}</span>
 			</PopoverItem>
 			<PopoverSeparator />
 			<PopoverItem onClick={() => pick(null)}>
@@ -875,15 +875,15 @@ function MembersRow({ anchor, name, value, roster, onPick }) {
 	};
 
 	const shown = (
-		<span class={`otd-value${unset ? " is-empty" : ""}`}>
+		<span className={`otd-value${unset ? " is-empty" : ""}`}>
 			{unset ? (
 				"Empty"
 			) : (
-				<span class="otd-avatars">
+				<span className="otd-avatars">
 					{held.map((person) => (
 						<Avatar key={person} person={person} />
 					))}
-					<i class="otd-avatar otd-avatar-add">
+					<i className="otd-avatar otd-avatar-add">
 						<Glyph name="plus" />
 					</i>
 				</span>
@@ -933,9 +933,9 @@ function TextRow({ anchor, name, value, onPick }) {
 
 	return (
 		<RowFrame anchor={anchor} name={name} unset={isUnset(value)}>
-			<span class="otd-value">
+			<span className="otd-value">
 				<input
-					class="otd-text"
+					className="otd-text"
 					placeholder="Empty"
 					value={draft}
 					onInput={(event) => setDraft(event.target.value)}
@@ -999,13 +999,13 @@ function AddProperty({ taken, onAdd }) {
 			open={open}
 			onOpenChange={setOpen}
 			trigger={
-				<button type="button" class="otd-add">
+				<button type="button" className="otd-add">
 					<Glyph name="plus" />
 					Add property
 				</button>
 			}
 		>
-			<div class="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && commit()}>
+			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && commit()}>
 				<Field
 					block
 					size="s"
@@ -1014,7 +1014,7 @@ function AddProperty({ taken, onAdd }) {
 					onInput={(event) => setDraft(event.target.value)}
 				/>
 			</div>
-			<span class="otd-hint">
+			<span className="otd-hint">
 				<Glyph name={anchor.icon} />
 				{clash
 					? "This board already has a property with that name"
@@ -1094,7 +1094,7 @@ function Preview({ markdown, render }) {
 		};
 	}, [markdown]);
 
-	return <div class="otd-md" ref={holder} />;
+	return <div className="otd-md" ref={holder} />;
 }
 
 // TRADE-OFF: fetched when the note opens — listing re-runs on every vault event, so rows carry no body
@@ -1134,9 +1134,9 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 	};
 
 	return (
-		<div class="otd-desc" onBlur={save}>
-			<div class="otd-desc-head">
-				<span class="otd-cap">Description</span>
+		<div className="otd-desc" onBlur={save}>
+			<div className="otd-desc-head">
+				<span className="otd-cap">Description</span>
 				{offered.length > 1 ? (
 					<Segmented
 						items={[
@@ -1153,7 +1153,7 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 				) : null}
 			</div>
 			{refused ? (
-				<p class="otd-refused">
+				<p className="otd-refused">
 					<Glyph name="alert" />
 					Not saved. This would turn the note's first line into its properties.
 				</p>
@@ -1161,7 +1161,7 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 			{mode === PREVIEW ? (
 				<Preview markdown={draft} render={render} />
 			) : (
-				<MarkdownEditor class="otd-editor" value={draft} placeholder="Say what this is" onInput={setDraft} focusAtStart={switched} />
+				<MarkdownEditor className="otd-editor" value={draft} placeholder="Say what this is" onInput={setDraft} focusAtStart={switched} />
 			)}
 		</div>
 	);
@@ -1229,7 +1229,7 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 				<Pill tone={tone} asChild>
 					<button
 						type="button"
-						class={`otd-tag${held ? " is-held" : ""}`}
+						className={`otd-tag${held ? " is-held" : ""}`}
 						title={`Edit ${tag}`}
 						onPointerDown={onGrab}
 					>
@@ -1238,15 +1238,15 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 				</Pill>
 			}
 		>
-			<div class="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && save()}>
+			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && save()}>
 				<Field block size="s" placeholder="Name it" value={name} onInput={(event) => setName(event.target.value)} />
 			</div>
-			<div class="otd-tones">
+			<div className="otd-tones">
 				{TONE_NAMES.map((each) => (
 					<button
 						key={each}
 						type="button"
-						class={cx("otd-tone", toneClass(each), each === picked && "is-picked")}
+						className={cx("otd-tone", toneClass(each), each === picked && "is-picked")}
 						aria-label={each}
 						title={each}
 						aria-pressed={String(each === picked)}
@@ -1254,7 +1254,7 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 					/>
 				))}
 			</div>
-			<div class="otd-pop-actions">
+			<div className="otd-pop-actions">
 				<Button size="s" variant="neutral" onClick={() => setOpen(false)}>
 					Cancel
 				</Button>
@@ -1316,7 +1316,7 @@ function TagRow({ tags, tones, roster, onWrite }) {
 	};
 
 	return (
-		<div class="otd-tags" ref={listRef}>
+		<div className="otd-tags" ref={listRef}>
 			{shown.map((tag, at) => (
 				<TagChip
 					key={tag}
@@ -1331,7 +1331,7 @@ function TagRow({ tags, tones, roster, onWrite }) {
 				open={open}
 				onOpenChange={setOpen}
 				trigger={
-					<button type="button" class="otd-tag-add">
+					<button type="button" className="otd-tag-add">
 						<Glyph name="plus" />
 						Tag
 					</button>
@@ -1403,14 +1403,14 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 		<WidgetRoot defaultRounded="none" className="orbi" defaultBackgroundType="none">
 			<style>{CSS}</style>
 			<Dialog open={isOpen} onOpenChange={(next) => !next && setDismissed(opened)}>
-				<DialogContent class="orbi orbi-task-dialog">
-					<div class="otd-top">
-						<span class="otd-where">
+				<DialogContent className="orbi orbi-task-dialog">
+					<div className="otd-top">
+						<span className="otd-where">
 							<Glyph name="task" />
 							Card
 							{context?.get("board") ? ` · ${context.get("board")}` : ""}
 						</span>
-						<div class="otd-corner">
+						<div className="otd-corner">
 							<IconButton
 								size="s"
 								label="Open the note"
@@ -1425,11 +1425,11 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 						</div>
 					</div>
 
-					<div class="otd-body">
-						<div class="otd-left">
+					<div className="otd-body">
+						<div className="otd-left">
 							<h2
-								class="otd-title"
-								contenteditable={write?.canUpdate ? "true" : undefined}
+								className="otd-title"
+								contentEditable={write?.canUpdate ? "true" : undefined}
 								suppressContentEditableWarning
 								onKeyDown={(event) => {
 									if (event.key === "Enter") {
@@ -1468,9 +1468,9 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 							) : null}
 						</div>
 
-						<aside class="otd-right">
-							<Sidebar mode="minimal" class="otd-props">
-								<div class="otd-plate-head">
+						<aside className="otd-right">
+							<Sidebar mode="minimal" className="otd-props">
+								<div className="otd-plate-head">
 									<h4>Properties</h4>
 								</div>
 								<SidebarGroup>

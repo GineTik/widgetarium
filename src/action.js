@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useCallback, useMemo, useState } from "react";
 
 export function createAction({ can = true, blockedReason = null, run }) {
 	return { can, blockedReason, run };

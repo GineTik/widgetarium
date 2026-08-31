@@ -1,6 +1,6 @@
 import { createWidget } from "widgetarium";
 import { Button, Icon, IconButton, Popover, PopoverItem, PopoverSearch } from "widgetarium/kit";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "react";
 
 const STYLE = `
 .wgc-code {
@@ -146,7 +146,7 @@ const BINARY = new Set([
 	"png", "jpg", "jpeg", "gif", "webp", "bmp", "avif", "ico", "tif", "tiff", "psd",
 	"pdf", "zip", "gz", "tar", "7z", "rar", "bz2", "xz",
 	"mp4", "webm", "mov", "mkv", "avi", "mp3", "wav", "ogg", "m4a", "flac",
-	"ttf", "otf", "woff", "woff2", "eot", "exe", "dll", "so", "dylib", "class", "wasm",
+	"ttf", "otf", "woff", "woff2", "eot", "exe", "dll", "so", "dylib", "className", "wasm",
 ]);
 
 // CONTEXT: no text file carries NUL..BS or SO..US — the defence against a binary nobody listed
@@ -194,9 +194,9 @@ function LanguagePicker({ language, onPick }) {
 			onOpenChange={setOpen}
 			placement="below"
 			trigger={
-				<Button size="s" class="wgc-lang wg-kit-glass">
+				<Button size="s" className="wgc-lang wg-kit-glass">
 					{language || "plain"}
-					<Icon name="chevron" size={12} class="wgc-caret" />
+					<Icon name="chevron" size={12} className="wgc-caret" />
 				</Button>
 			}
 		>
@@ -209,9 +209,9 @@ function LanguagePicker({ language, onPick }) {
 					)),
 					needle !== "" && !LANGUAGES.includes(needle) ? (
 						<PopoverItem key="custom" onClick={() => choose(needle)}>
-							<Icon name="plus" size={14} class="wgc-plus" />
+							<Icon name="plus" size={14} className="wgc-plus" />
 							Use custom language
-							<span class="wgc-needle">{needle}</span>
+							<span className="wgc-needle">{needle}</span>
 						</PopoverItem>
 					) : null,
 				]}
@@ -228,15 +228,15 @@ function Painted({ host, markdown }) {
 		return host.ui.renderMarkdown(node.current, markdown);
 	}, [markdown]);
 
-	return <div class="wgc-body" ref={node} />;
+	return <div className="wgc-body" ref={node} />;
 }
 
 function Refusal({ why }) {
 	return (
-		<div class="wgc-code is-failed">
+		<div className="wgc-code is-failed">
 			<style>{STYLE}</style>
-			<span class="wgc-what">This file cannot be shown as code</span>
-			<span class="wgc-why">{why}</span>
+			<span className="wgc-what">This file cannot be shown as code</span>
+			<span className="wgc-why">{why}</span>
 		</div>
 	);
 }
@@ -294,9 +294,9 @@ function CodeBlock({ content, reader, host, here, settings }) {
 	};
 
 	return (
-		<div class="wgc-code">
+		<div className="wgc-code">
 			<style>{STYLE}</style>
-			<div class="wgc-bar wg-inline-shy">
+			<div className="wgc-bar wg-inline-shy">
 				<LanguagePicker language={language} onPick={pick} />
 				<IconButton size="s" variant="glass" label={copied ? "Copied" : "Copy"} onClick={copy}>
 					<Icon name={copied ? "tick" : "copy"} size={15} />
@@ -305,14 +305,14 @@ function CodeBlock({ content, reader, host, here, settings }) {
 			{host?.can?.renderMarkdown ? (
 				<Painted host={host} markdown={`${fence}${language}\n${body}\n${fence}`} />
 			) : (
-				<pre class="wgc-plain">
+				<pre className="wgc-plain">
 					<code>{body}</code>
 				</pre>
 			)}
 			{left > 0 ? (
-				<div class="wgc-more">
+				<div className="wgc-more">
 					<Button size="s" onClick={() => setShown(shown + step)}>{`Show ${step} more`}</Button>
-					<span class="wgc-left">{`${left} lines left`}</span>
+					<span className="wgc-left">{`${left} lines left`}</span>
 				</div>
 			) : null}
 		</div>

@@ -18,7 +18,8 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
 buildMirror();
-const { h, render } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
 const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
 const { normalizeBoard } = await import("./.mjs-cache/model.mjs");

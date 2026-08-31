@@ -13,7 +13,8 @@ globalThis.ResizeObserver = class {
 	disconnect() {}
 };
 
-const { render, h } = await import("preact");
+const { createElement: h } = await import("react");
+const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, cardClass, sidebarClass, toneClass, variants, cx } = await import("./.mjs-cache/kit.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
@@ -47,7 +48,7 @@ function show(value) {
 // the components are a convenience over them.
 check("a default button", buttonClass({}), "wg-kit-btn is-m");
 check("accent, large, full width", buttonClass({ variant: "accent", size: "l", block: true }), "wg-kit-btn is-accent is-l is-block");
-check("a caller's own class survives", buttonClass({ variant: "plain", class: "mine" }), "wg-kit-btn is-plain is-m mine");
+check("a caller's own class survives", buttonClass({ variant: "plain", className: "mine" }), "wg-kit-btn is-plain is-m mine");
 check("variants() builds a widget's OWN component too", variants("x", { tone: { hot: "is-hot" } })({ tone: "hot" }), "x is-hot");
 check("cx drops the falsy and flattens", cx("a", false, ["b", null], "c"), "a b c");
 
@@ -149,7 +150,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 // Give the DOM believable rects and the loop becomes reproducible.
 {
 	const { useSegmentedThumb } = await import("./.mjs-cache/kit.mjs");
-	const { useState } = await import("preact/hooks");
+	const { useState } = await import("react");
 	const was = Element.prototype.getBoundingClientRect;
 	const rect = (left, width) => ({ left, width, right: left + width, top: 0, bottom: 38, height: 38, x: left, y: 0 });
 	Element.prototype.getBoundingClientRect = function () {
@@ -168,7 +169,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		const thumb = useSegmentedThumb(value, renders > 40 ? 0 : items);
 		return h(
 			"div",
-			{ class: "wg-kit-seg", ref: thumb.listRef },
+			{ className: "wg-kit-seg", ref: thumb.listRef },
 			h("span", thumb.thumbProps),
 			items.map((item) => h("button", { key: item.value, "aria-selected": String(item.value === value) }, item.label)),
 		);
@@ -218,7 +219,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 // phase, so CodeMirror cannot move the caret under a live widget. A document-level bubble
 // listener is therefore never called for a press landing on any widget on the board.
 {
-	const { useState } = await import("preact/hooks");
+	const { useState } = await import("react");
 	const host = document.getElementById("host");
 	render(null, host);
 
@@ -256,13 +257,13 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		return h(
 			Kit.Popover,
 			{
-				class: "harness-pop",
-				trigger: h("button", { class: "harness-trigger" }, "Filter"),
+				className: "harness-pop",
+				trigger: h("button", { className: "harness-trigger" }, "Filter"),
 				open,
 				// a NEW identity every render, which is what the filter panel hands over
 				onOpenChange: (next) => setOpen(next),
 			},
-			open ? h("button", { class: "harness-inside" }, "Tick") : null,
+			open ? h("button", { className: "harness-inside" }, "Tick") : null,
 		);
 	}
 
@@ -381,7 +382,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const has = (name) => Boolean(pop()?.classList.contains(name));
 	const show = async (open) => {
-		render(h(Kit.Popover, { open, trigger: h("button", { class: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -485,8 +486,8 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const row = () => host.querySelector(".enter-trigger") ?? host.querySelector(".enter-ghost");
 	// CONTEXT: the seat is written in the layout effect, so it is gone by the first await
-	const open = (mark = "enter-trigger") => render(h(Kit.Popover, { open: true, trigger: h("button", { class: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
-	const shut = (mark = "enter-trigger") => render(h(Kit.Popover, { open: false, trigger: h("button", { class: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+	const open = (mark = "enter-trigger") => render(h(Kit.Popover, { open: true, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+	const shut = (mark = "enter-trigger") => render(h(Kit.Popover, { open: false, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 	const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 	const snap = () => {
 		const node = pop();
@@ -662,7 +663,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const pop = () => host.querySelector(".wg-kit-pop");
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const show = async (open, placement) => {
-		render(h(Kit.Popover, { open, placement, trigger: h("button", { class: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -908,7 +909,8 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const kitNumber = (name) => Number(new RegExp(`const ${name} = ([\\d.]+)`).exec(KIT_SOURCE)[1]);
 
 	const entry = [
-		'import { h, render } from "preact";',
+		'import { createElement as h } from "react";',
+		'import { render } from "./src/engine/render.js";',
 		'import { Button, Card, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./src/kit.js";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,
@@ -966,9 +968,9 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		"const readTwo = (side) => { const rows = [...two.querySelectorAll(side + ' .wg-kit-side-row')]; const [bare, sub] = rows; const label = sub.querySelector('.wg-kit-row-label'); const note = sub.querySelector('.wg-kit-side-sub'); const pad = (row) => { const s = getComputedStyle(row); return round(parseFloat(s.paddingTop)) + ' ' + round(parseFloat(s.paddingBottom)); }; return { bareHeight: round(bare.getBoundingClientRect().height), subHeight: round(sub.getBoundingClientRect().height), barePad: pad(bare), subPad: pad(sub), name: nameRect(label), note: rectOf(note), noteLine: round(parseFloat(getComputedStyle(note).lineHeight)), noteColour: getComputedStyle(note).color, nameColour: getComputedStyle(label).color, noteFont: getComputedStyle(note).fontSize, labelFits: label.scrollWidth <= label.clientWidth + 1 && label.scrollHeight <= label.clientHeight + 1, noteFits: note.scrollWidth <= note.clientWidth + 1, noteText: note.textContent, isTwo: sub.classList.contains('is-two'), bareIsTwo: bare.classList.contains('is-two'), bareValue: round(bare.querySelector('.wg-kit-side-value').getBoundingClientRect().right), subValue: round(sub.querySelector('.wg-kit-side-value').getBoundingClientRect().right) }; };",
 		"const swatch = document.createElement('span'); swatch.style.color = 'var(--text-faint)'; two.appendChild(swatch);",
 		"const panel = document.querySelector('.wg-panel');",
-		"render(h(Sidebar, { class: 'wg-set-panel' }, h(SidebarGroup, { class: 'wg-set-group' }, h(Row, { class: 'wg-set-row' }, [h(RowLabel, { class: 'wg-set-two', key: 'label' }, ['Create', h('span', { class: 'wg-set-sub', key: 'sub' }, DESC)]), h(RowValue, { class: 'wg-set-value', key: 'value' }, 'On')]))), panel);", 
+		"render(h(Sidebar, { className: 'wg-set-panel' }, h(SidebarGroup, { className: 'wg-set-group' }, h(Row, { className: 'wg-set-row' }, [h(RowLabel, { className: 'wg-set-two', key: 'label' }, ['Create', h('span', { className: 'wg-set-sub', key: 'sub' }, DESC)]), h(RowValue, { className: 'wg-set-value', key: 'value' }, 'On')]))), panel);", 
 		"const panelLong = document.querySelector('.wg-panel-long');", 
-		"render(h(Sidebar, { class: 'wg-set-panel' }, h(SidebarGroup, { class: 'wg-set-group' }, h(Row, { class: 'wg-set-row' }, [h(RowLabel, { class: 'wg-set-two', key: 'label' }, [UNBROKEN, h('span', { class: 'wg-set-sub', key: 'sub' }, UNBROKEN_PATH)]), h(RowValue, { class: 'wg-set-value', key: 'value' }, 'On')]))), panelLong);",
+		"render(h(Sidebar, { className: 'wg-set-panel' }, h(SidebarGroup, { className: 'wg-set-group' }, h(Row, { className: 'wg-set-row' }, [h(RowLabel, { className: 'wg-set-two', key: 'label' }, [UNBROKEN, h('span', { className: 'wg-set-sub', key: 'sub' }, UNBROKEN_PATH)]), h(RowValue, { className: 'wg-set-value', key: 'value' }, 'On')]))), panelLong);",
 		"{ const row = panel.querySelector('.wg-set-row'); const label = panel.querySelector('.wg-set-two'); const note = panel.querySelector('.wg-set-sub'); payload.setTwo = { height: round(row.getBoundingClientRect().height), name: nameRect(label), note: rectOf(note), noteOver: round(rectOf(note).right - label.getBoundingClientRect().right), noteLine: round(parseFloat(getComputedStyle(note).lineHeight)), fits: label.scrollWidth <= label.clientWidth + 1, valueRight: round(panel.querySelector('.wg-set-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; }", "{ const label = panelLong.querySelector('.wg-set-two'); const row = panelLong.querySelector('.wg-set-row'); payload.setLong = { nameOver: round(nameRect(label).right - label.getBoundingClientRect().right), valueRight: round(panelLong.querySelector('.wg-set-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; }",
 		"const unbroken = (side) => { const row = [...two.querySelectorAll(side + ' .wg-kit-side-row')][2]; const label = row.querySelector('.wg-kit-row-label'); const note = row.querySelector('.wg-kit-side-sub'); const edge = round(label.getBoundingClientRect().right); return { nameOver: round(nameRect(label).right - edge), noteOver: round(rectOf(note).right - edge), valueRight: round(row.querySelector('.wg-kit-side-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; };",
 		"payload.twoLine = { full: readTwo('.wg-kit-side:not(.is-minimal)'), lean: readTwo('.wg-kit-side.is-minimal'), unbroken: unbroken('.wg-kit-side:not(.is-minimal)'), faint: getComputedStyle(swatch).color };",
@@ -1032,6 +1034,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 			+ `<div class="wg-root wg-pops2" style="width:300px"></div>`
 			+ `<div class="wg-root wg-cards" style="width:300px"></div>`
 			+ `<script id="wg-measure" type="application/json"></script>`
+			+ `<script>window.__errs = []; addEventListener("error", (e) => { window.__errs.push(e.message + " @ " + e.lineno); document.getElementById("wg-measure").textContent = JSON.stringify({ pageError: window.__errs }); });</script>`
 			+ `<script>${built.outputFiles[0].text}</script></body></html>`,
 	);
 
@@ -1043,6 +1046,13 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const raw = dumped.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
 	if (!raw) {
 		console.error(`mirror gate: the page never reported — file://${file}`);
+		process.exit(1);
+	}
+	// CONTEXT: React 19 reports a render failure as a window error event, not a throw
+	const broke = JSON.parse(raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")).pageError;
+	if (broke) {
+		for (const message of broke) console.error(`mirror gate: ${message}`);
+		console.error(`mirror gate: file://${file}`);
 		process.exit(1);
 	}
 	const measured = JSON.parse(raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));

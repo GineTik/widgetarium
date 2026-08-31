@@ -1,4 +1,4 @@
-import { render } from "preact";
+import { render } from "./engine/render.js";
 import { shieldFromEditor } from "./editor-shield.js";
 
 export function mountInto(anchor, className, onEscape) {

@@ -1,6 +1,6 @@
-import { h, Component } from "preact";
-import { memo } from "preact/compat";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { createElement as h, Component, Fragment } from "react";
+import { memo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
@@ -35,6 +35,8 @@ function initialOf(name) {
 const EDGES = ["n", "s", "w", "e", "nw", "ne", "sw", "se"];
 
 class Boundary extends Component {
+	state = { failure: null };
+
 	static getDerivedStateFromError(failure) {
 		// the message alone names no file; without the stack a crash inside a widget costs a
 		// bisect to locate
@@ -44,7 +46,7 @@ class Boundary extends Component {
 
 	render() {
 		if (!this.state.failure) return this.props.children;
-		return h("div", { class: "wg-error" }, [
+		return h("div", { className: "wg-error" }, [
 			h("b", null, "Widget crashed"),
 			h("code", null, String(this.state.failure?.message ?? this.state.failure)),
 		]);
@@ -295,7 +297,7 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 function cellLayer(columns, rows) {
 	const cells = [];
 	for (let index = 0; index < columns * rows; index += 1) cells.push(h("i", { key: index }));
-	return h("div", { class: "wg-cells", key: "cells" }, cells);
+	return h("div", { className: "wg-cells", key: "cells" }, cells);
 }
 
 // Past a limit the box keeps giving, but less and less — the further you pull, the less it
@@ -327,8 +329,8 @@ function arcPath() {
 function cornerArc() {
 	return h(
 		"svg",
-		{ class: "wg-grip-arc", viewBox: `0 0 ${ARC_BOX} ${ARC_BOX}`, "aria-hidden": "true" },
-		h("path", { d: arcPath(), fill: "none", "stroke-linecap": "round", "vector-effect": "non-scaling-stroke" }),
+		{ className: "wg-grip-arc", viewBox: `0 0 ${ARC_BOX} ${ARC_BOX}`, "aria-hidden": "true" },
+		h("path", { d: arcPath(), fill: "none", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" }),
 	);
 }
 
@@ -348,8 +350,8 @@ const ICON_TRASH = ["M3 6h18", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", "M8 6
 function icon(paths) {
 	return h(
 		"svg",
-		{ class: "wg-icon", viewBox: "0 0 24 24", "aria-hidden": "true" },
-		paths.map((d, index) => h("path", { key: index, d, "stroke-linecap": "round", "stroke-linejoin": "round" })),
+		{ className: "wg-icon", viewBox: "0 0 24 24", "aria-hidden": "true" },
+		paths.map((d, index) => h("path", { key: index, d, strokeLinecap: "round", strokeLinejoin: "round" })),
 	);
 }
 
@@ -407,13 +409,13 @@ function TileView(props) {
 	};
 
 	if (!definition || definition.error) {
-		return h("div", { class: "wg-tile wg-tile-missing", style }, [
-			h("div", { class: "wg-missing" }, [
-				h("b", null, definition ? "Widget failed to load" : "Widget not found"),
-				h("code", null, tile.widget),
+		return h("div", { className: "wg-tile wg-tile-missing", style }, [
+			h("div", { className: "wg-missing", key: "missing" }, [
+				h("b", { key: "what" }, definition ? "Widget failed to load" : "Widget not found"),
+				h("code", { key: "id" }, tile.widget),
 				h(
 					"span",
-					null,
+					{ key: "why" },
 					definition
 						? String(definition.error?.message ?? definition.error)
 						: "Settings are kept — restore the widget file and the tile comes back.",
@@ -454,15 +456,15 @@ function TileView(props) {
 			? h(
 					editing ? "div" : "button",
 					{
-						class: "wg-narrow",
+						className: "wg-narrow",
 						title: editing
 							? "Too narrow here — this is what a reader sees"
 							: `Open ${definition.manifest.title ?? tile.widget}`,
 						onClick: editing ? undefined : () => onOpen?.(tile.id),
 					},
 					[
-						h("span", { class: "wg-narrow-mark" }, initialOf(definition.manifest.title ?? tile.widget)),
-						h("span", { class: "wg-narrow-open" }, "Open"),
+						h("span", { className: "wg-narrow-mark", key: "mark" }, initialOf(definition.manifest.title ?? tile.widget)),
+						h("span", { className: "wg-narrow-open", key: "open" }, "Open"),
 					],
 			  )
 			: widget;
@@ -471,24 +473,24 @@ function TileView(props) {
 	return h(
 		"div",
 		{
-			class: `wg-tile${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}${narrow ? " wg-tile-chip" : ""}${narrow && opened && !editing ? " is-open" : ""}`,
+			className: `wg-tile${editing ? " is-editing" : ""}${isDragging ? " is-dragging" : ""}${narrow ? " wg-tile-chip" : ""}${narrow && opened && !editing ? " is-open" : ""}`,
 			style: tileStyle,
 			"data-tile": tile.id,
 		},
 		[
 			// while the window holds it, the widget is drawn THERE and not here: two live copies
 			// of one widget resolve the same sources twice and both answer a press
-			h("div", { class: "wg-tile-body" }, settingsShown ? null : narrow ? chip : widget),
+			h("div", { className: "wg-tile-body", key: "body" }, settingsShown ? null : narrow ? chip : widget),
 			editing && !settingsShown
 				? [
-						h("div", { class: "wg-tile-ring", key: "ring", onPointerDown: (event) => onDragStart(event, "move") }),
-						h("span", { class: "wg-tile-actions", key: "actions" }, [
+						h("div", { className: "wg-tile-ring", key: "ring", onPointerDown: (event) => onDragStart(event, "move") }),
+						h("span", { className: "wg-tile-actions", key: "actions" }, [
 							h(
 								"button",
-								{ onClick: () => onOpenSettings?.(tile.id), title: "Settings", "aria-label": "Settings" },
+								{ key: "settings", onClick: () => onOpenSettings?.(tile.id), title: "Settings", "aria-label": "Settings" },
 								icon(ICON_GEAR),
 							),
-							h("button", { onClick: onRemove, title: "Remove", "aria-label": "Remove" }, icon(ICON_TRASH)),
+							h("button", { key: "remove", onClick: onRemove, title: "Remove", "aria-label": "Remove" }, icon(ICON_TRASH)),
 						]),
 				  ]
 				: null,
@@ -499,7 +501,7 @@ function TileView(props) {
 							"div",
 							{
 								key: edge,
-								class: `wg-grip wg-grip-${edge}`,
+								className: `wg-grip wg-grip-${edge}`,
 								onPointerDown: (event) => onDragStart(event, "resize", edge),
 							},
 							edge.length === 2 ? cornerArc() : null,
@@ -561,7 +563,7 @@ function Board({ className, onWidth, children }) {
 		};
 	}, []);
 
-	return h("div", { class: className, ref: rootRef }, children);
+	return h("div", { className: className, ref: rootRef }, children);
 }
 
 // the expanded board is its own render root: moving the node would make preact
@@ -635,6 +637,9 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		[],
 	);
 
+	// CONTEXT: local to this viewer — two people on one board must filter without moving each other
+	const context = useMemo(() => createContext(board.context ?? {}), []);
+
 	const boardShell = (children) =>
 		h(Board, {
 			className: `wg-root${editing ? " is-editing" : ""}${screen ? " is-screen" : ""}${isPage ? " is-page" : ""}`,
@@ -652,12 +657,6 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 
 	// the class no longer picks a layout — the column count does. It survives only to say
 	// how far the screen sits from the eye, which is what the type scale is for.
-	// One context per board, alive for as long as the board is, and LOCAL to this viewer. The
-	// block seeds it — the file says where a fresh visitor starts — and nothing is written
-	// back: two people on one board must be able to filter and open tasks without moving each
-	// other's screen. Anything meant for everyone goes to a store instead.
-	const context = useMemo(() => createContext(board.context ?? {}), []);
-
 	const active = classOf(width);
 
 	const metrics = measureGrid(width);
@@ -1089,14 +1088,15 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	// the width's state has to be visible: without it the board silently looks different at
 	// 11 and 12 columns and the reader has no way to tell an edit of theirs from a guess of ours
 	const stateChip = editing
-		? h("span", { class: `wg-state${isAuthored ? " is-authored" : ""}` }, [
-				h("b", null, `${metrics.columns} columns`),
-				h("span", null, isAuthored ? "yours" : "derived"),
+		? h("span", { className: `wg-state${isAuthored ? " is-authored" : ""}`, key: "state" }, [
+				h("b", { key: "count" }, `${metrics.columns} columns`),
+				h("span", { key: "kind" }, isAuthored ? "yours" : "derived"),
 				isAuthored
 					? h(
 							"button",
 							{
-								class: "wg-state-reset",
+								key: "reset",
+								className: "wg-state-reset",
 								title: "Forget this width and derive it again",
 								onClick: () => {
 									const next = { ...board.layouts };
@@ -1117,7 +1117,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		openedChip === null && settingsTile === null
 			? null
 			: h("div", {
-					class: "wg-scrim",
+					className: "wg-scrim",
 					key: "scrim",
 					onPointerDown: (event) => {
 						event.preventDefault();
@@ -1129,9 +1129,9 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 
 	const tiles =
 		shown.length === 0
-			? h("div", { class: "wg-blank" }, [
-					h("b", null, "This board is empty"),
-					h("span", null, "Add a widget below; every other screen width derives from what you lay out here."),
+			? h("div", { className: "wg-blank" }, [
+					h("b", { key: "title" }, "This board is empty"),
+					h("span", { key: "hint" }, "Add a widget below; every other screen width derives from what you lay out here."),
 			  ])
 			: shown.map((place) => {
 					const tile = board.tiles.find((entry) => entry.id === place.id);
@@ -1178,14 +1178,15 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const hidden = board.tiles.filter((tile) => !placedIds(board, metrics.columns).has(tile.id));
 
 	const content = [
-			h("div", { class: "wg-toolbar" }, [
+			h("div", { className: "wg-toolbar", key: "toolbar" }, [
 				stateChip,
-				h("span", { class: "wg-toolbar-gap" }),
+				h("span", { className: "wg-toolbar-gap", key: "gap" }),
 				editing
 					? h(
 							"button",
 							{
-								class: "wg-tool",
+								key: "autofit",
+								className: "wg-tool",
 								onClick: () => commit(arrange(latestRef.current.places, latestRef.current.columns, { autoFit: true })),
 								title: "Grow every tile into the empty cells around it",
 							},
@@ -1195,20 +1196,21 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				onToggleEditing
 					? h(
 							"button",
-							{ class: "wg-tool", onClick: onToggleEditing, title: editing ? "Done editing" : "Edit tiles" },
+							{ key: "edit", className: "wg-tool", onClick: onToggleEditing, title: editing ? "Done editing" : "Edit tiles" },
 							editing ? "Done" : "Edit",
 					  )
 					: null,
 				h(
 					"button",
-					{ class: "wg-tool", onClick: () => toggleExpanded(), title: isPage ? "Collapse" : "Expand" },
+					{ key: "expand", className: "wg-tool", onClick: () => toggleExpanded(), title: isPage ? "Collapse" : "Expand" },
 					isPage ? "Collapse" : "Expand",
 				),
 			]),
 			h(
 				"div",
 				{
-					class: "wg-grid",
+					key: "grid",
+					className: "wg-grid",
 					style: {
 						fontSize: `${(scaleOf(active) * REM).toFixed(3)}px`,
 						width: `${metrics.boardWidth}px`,
@@ -1219,22 +1221,22 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						"--wg-columns": metrics.columns,
 					},
 				},
-				[editing ? cellLayer(metrics.columns, boardRows) : null, scrim, tiles],
+				[editing ? cellLayer(metrics.columns, boardRows) : null, scrim, h(Fragment, { key: "tiles" }, tiles)],
 			),
 			editing
-				? h("div", { class: "wg-palette" }, [
+				? h("div", { className: "wg-palette", key: "palette" }, [
 						// TRADE-OFF: the catalogue draws every widget as it really looks, so the row of
 						// names it replaces is now one press — a name is not a picture of a widget
 						h(
 							"button",
-							{ class: "wg-chip wg-palette-open", key: "add", onClick: () => setPicking(true) },
+							{ className: "wg-chip wg-palette-open", key: "add", onClick: () => setPicking(true) },
 							"Add widget",
 						),
 						...hidden.map((tile) =>
 							h(
 								"button",
 								{
-									class: "wg-chip is-hidden",
+									className: "wg-chip is-hidden",
 									key: `hidden-${tile.id}`,
 									title: "Not on this layout — click to place it here",
 									onClick: () =>
