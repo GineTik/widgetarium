@@ -26,18 +26,32 @@ function compile(source, filePath) {
 }
 
 // CONTEXT: the specifier is the contract with widget authors; what stands behind it is not
-function createRequire(scope) {
+function createRequire(libs) {
 	const modules = {
-		widgetarium: scope.widgetarium,
-		"widgetarium/kit": scope.kitModule,
+		widgetarium,
+		"widgetarium/kit": kitModule,
 		react,
 		"react-dom": reactDom,
+		...Object.fromEntries(libs),
 	};
 	return (name) => {
 		const found = modules[name];
 		if (!found) throw new Error(`cannot import "${name}" — a widget may only import ${Object.keys(modules).join(", ")}`);
 		return found;
 	};
+}
+
+// TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
+function runModule(source, filePath, libs) {
+	const code = compile(source, filePath);
+	const shell = { exports: {} };
+	new Function("require", "module", "exports", ...Object.keys(BASE_SCOPE), code)(
+		createRequire(libs),
+		shell,
+		shell.exports,
+		...Object.values(BASE_SCOPE),
+	);
+	return shell.exports;
 }
 
 // CONTEXT: a widget declares that it may stand in text; claiming no tile size is what says
@@ -68,6 +82,8 @@ export class WidgetRegistry {
 		this.widgets = new Map();
 		// CONTEXT: a manifest's `was` is the id it shipped under — read there, write here
 		this.renamed = new Map();
+		// CONTEXT: one shared module per scope, so four widgets cannot hold four copies of one rule
+		this.libs = new Map();
 	}
 
 	// CONTEXT: the one place an id is made current, so a board saved after a read carries the new one
@@ -87,11 +103,17 @@ export class WidgetRegistry {
 	async load() {
 		this.widgets.clear();
 		this.renamed.clear();
+		this.libs.clear();
 		this.dropStyles();
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
 
-		for (const scope of (await adapter.list(WIDGETS_DIR)).folders) {
+		const scopes = (await adapter.list(WIDGETS_DIR)).folders;
+		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
+		// second pass is cheaper than deciding an order between scopes that reference each other
+		for (const scope of scopes) await this.loadLib(adapter, scope);
+
+		for (const scope of scopes) {
 			// A family of widgets shares one palette, so the sheet belongs to the SCOPE folder,
 			// not to each widget. Without this the tokens file was never read at all and every
 			// widget referencing var(--orbi-*) rendered unpainted.
@@ -102,6 +124,20 @@ export class WidgetRegistry {
 			}
 		}
 		return this.widgets;
+	}
+
+	// CONTEXT: the specifier is the scope's own name plus /lib — @habit/lib, beside @habit/heatmap
+	async loadLib(adapter, scope) {
+		const path = `${scope}/lib.js`;
+		if (!(await adapter.exists(path))) return;
+
+		const name = `${scope.slice(WIDGETS_DIR.length + 1)}/lib`;
+		try {
+			this.libs.set(name, runModule(await adapter.read(path), path, this.libs));
+		} catch (failure) {
+			// CONTEXT: a lib that will not load takes its widgets with it, so it must be named here
+			console.error(`[widgetarium] failed to load ${path}`, failure);
+		}
 	}
 
 	async loadStyles(adapter, cssPath, owner) {
@@ -132,20 +168,9 @@ export class WidgetRegistry {
 
 		try {
 			const manifest = JSON.parse(await adapter.read(manifestPath));
-			const raw = await adapter.read(codePath);
-			const source = isJsx ? compile(raw, codePath) : raw;
+			const shell = runModule(await adapter.read(codePath), codePath, this.libs);
 
-			const scope = { ...BASE_SCOPE, widgetarium };
-			const shell = { exports: {} };
-
-			new Function("require", "module", "exports", ...Object.keys(scope), source)(
-				createRequire(scope),
-				shell,
-				shell.exports,
-				...Object.values(scope),
-			);
-
-			const exported = shell.exports.default ?? shell.exports;
+			const exported = shell.default ?? shell;
 			if (typeof exported !== "function") {
 				throw new Error(`${folder}: the file must "export default createWidget(...)"`);
 			}
