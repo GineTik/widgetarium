@@ -25,6 +25,7 @@ for (const field of manifest.settings ?? []) if (field.default !== undefined) se
 const data = {};
 for (const [name, given] of Object.entries(manifest.preview?.sources ?? {})) data[name] = { rows: given.rows ?? [], isLoading: false };
 
+// CONTEXT: the board paints nothing behind a tile — WidgetRoot's own fill is the whole surface
 // CONTEXT: a lib is reached by its scope name, so every scope that has one becomes an alias
 const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js" };
 for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("@"))) {
@@ -85,11 +86,11 @@ for (const theme of ["light", "dark"]) {
 	const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${fs.readFileSync("styles.css", "utf8")}</style>
 ${fs.existsSync(scopeSheet) ? `<style>${fs.readFileSync(scopeSheet, "utf8")}</style>` : ""}
-<style>body { margin: 0; padding: 24px; ${THEMES[theme]}
+<style>body { margin: 0; ${THEMES[theme]}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	--font-text: "Helvetica Neue", Helvetica, Arial, sans-serif;
-	font-family: var(--font-interface); background: var(--background-secondary); }
-.wg-root { width: ${WIDTH}px; background: var(--background-primary); border-radius: 12px; }</style>
+	font-family: var(--font-interface); background: var(--background-primary); }
+.wg-root { width: ${WIDTH}px; }</style>
 </head><body><div class="wg-root"></div>
 <script>window.__err = ""; addEventListener("error", (e) => { window.__err += e.message; });</script>
 <script>${bundle.outputFiles[0].text}</script></body></html>`;
