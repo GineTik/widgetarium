@@ -1,0 +1,26 @@
+{
+	"id": "@inline/note-link",
+	"title": "Note link",
+	"description": "A rounded chip in the text that opens another note in the vault.",
+	"keywords": [
+		"link",
+		"note",
+		"chip",
+		"open",
+		"jump",
+		"reference",
+		"wikilink",
+		"navigate",
+		"shortcut",
+		"pill",
+		"button"
+	],
+	"inline": true,
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 2
+		},
+		"content": "Board"
+	}
+}

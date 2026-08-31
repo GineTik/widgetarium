@@ -1,0 +1,26 @@
+{
+	"id": "@inline/note",
+	"title": "Note",
+	"description": "A short block of text pinned in the middle of a note, marked in the accent colour.",
+	"keywords": [
+		"note",
+		"callout",
+		"aside",
+		"memo",
+		"remark",
+		"text",
+		"block",
+		"highlight",
+		"quote",
+		"panel",
+		"comment"
+	],
+	"inline": true,
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 2
+		},
+		"content": "Check before release:\naccess rights, error log."
+	}
+}

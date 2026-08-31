@@ -1,0 +1,336 @@
+// CONTEXT: jsdom lays nothing out and resolves no cascade, so every check here runs in real Chrome
+import { spawn } from "node:child_process";
+import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import esbuild from "esbuild";
+import { buildMirror } from "./mirror.mjs";
+
+buildMirror();
+const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
+
+const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const work = mkdtempSync(path.join(tmpdir(), "wg-paint-"));
+const ROOT = process.cwd();
+
+let failed = 0;
+function check(name, got, want) {
+	const ok = JSON.stringify(got) === JSON.stringify(want);
+	if (!ok) failed += 1;
+	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+}
+
+function collect(from, into, prefix) {
+	for (const name of readdirSync(from)) {
+		const full = path.join(from, name);
+		const key = `${prefix}/${name}`;
+		if (statSync(full).isDirectory()) collect(full, into, key);
+		else if (/\.(json|jsx|js|css)$/.test(name)) into[key] = readFileSync(full, "utf8");
+	}
+	return into;
+}
+
+const files = collect("widgets", {}, WIDGETS_DIR);
+
+const THEMES = {
+	light: `--background-primary:#ffffff;--background-secondary:#f6f6f6;--background-modifier-border:#e4e4e4;
+		--background-modifier-hover:rgba(0,0,0,0.05);--text-normal:#222222;--text-muted:#707070;--text-faint:#a0a0a0;
+		--text-on-accent:#ffffff;--text-error:#c0392b;--text-success:#1f8a4c;--interactive-accent:#6d4ee0;`,
+	dark: `--background-primary:#1e1e1e;--background-secondary:#161616;--background-modifier-border:#333333;
+		--background-modifier-hover:rgba(255,255,255,0.07);--text-normal:#dadada;--text-muted:#999999;--text-faint:#6b6b6b;
+		--text-on-accent:#ffffff;--text-error:#e06c5f;--text-success:#4ec97f;--interactive-accent:#8b6cef;`,
+};
+
+async function bundle(source) {
+	const built = await esbuild.build({
+		stdin: { contents: source, resolveDir: ROOT, loader: "jsx", sourcefile: "probe.jsx" },
+		bundle: true,
+		write: false,
+		format: "iife",
+		platform: "browser",
+		target: "es2020",
+		jsxFactory: "h",
+		jsxFragment: "Fragment",
+		inject: ["tools/fill-inject.js"],
+		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", obsidian: "./tools/obsidian-shim.js" },
+		logLevel: "warning",
+	});
+	return built.outputFiles[0].text;
+}
+
+function pageFor(theme, script, name) {
+	const page = `<!doctype html><html><head><meta charset="utf-8">
+<style>${readFileSync("styles.css", "utf8")}</style>
+<style>body { margin: 0; ${THEMES[theme]}
+	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	--font-text: "Helvetica Neue", Helvetica, Arial, sans-serif;
+	--font-monospace: "SF Mono", Menlo, Consolas, monospace;
+	font-family: var(--font-interface); background: var(--background-secondary); }</style>
+</head><body class="wg-root"><div id="host"></div>
+<script>window.__FILES__=${JSON.stringify(files)};</script>
+<script>${script}</script></body></html>`;
+	const file = path.join(work, `${name}-${theme}.html`);
+	writeFileSync(file, page);
+	return file;
+}
+
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+
+async function openChrome(file) {
+	const port = 9300 + Math.floor(Math.random() * 500);
+	const profile = mkdtempSync(path.join(tmpdir(), "wg-paint-profile-"));
+	const chrome = spawn(
+		CHROME,
+		["--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1280,900",
+			`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `file://${file}`],
+		{ stdio: ["ignore", "ignore", "ignore"] },
+	);
+	for (let attempt = 0; attempt < 100; attempt += 1) {
+		try {
+			const list = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+			const target = list.find((entry) => entry.type === "page" && entry.webSocketDebuggerUrl);
+			if (target) return { chrome, socketUrl: target.webSocketDebuggerUrl };
+		} catch {}
+		await sleep(120);
+	}
+	chrome.kill();
+	throw new Error("chrome never opened a page target");
+}
+
+async function ask(file, expression, settleMs) {
+	const { chrome, socketUrl } = await openChrome(file);
+	const socket = new WebSocket(socketUrl);
+	await new Promise((done, fail) => {
+		socket.addEventListener("open", done, { once: true });
+		socket.addEventListener("error", fail, { once: true });
+	});
+	const pending = new Map();
+	socket.addEventListener("message", (event) => {
+		const message = JSON.parse(event.data);
+		pending.get(message.id)?.(message);
+		pending.delete(message.id);
+	});
+	await sleep(settleMs);
+	const reply = await new Promise((done) => {
+		pending.set(1, done);
+		socket.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
+	});
+	socket.close();
+	chrome.kill();
+	if (reply.result?.exceptionDetails) throw new Error(JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails));
+	return reply.result.result.value;
+}
+
+// CONTEXT: Chrome resolves var() and calc() before this reads it, so these are the painted numbers
+const SHADOW_READER = `
+function shadowLayers(value) {
+	if (!value || value === "none") return [];
+	return value.split(/,(?![^(]*\\))/).map((layer) => {
+		const lengths = [...layer.matchAll(/(-?[\\d.]+)px/g)].map((hit) => Number(hit[1]));
+		return { inset: layer.includes("inset"), lengths };
+	});
+}
+function sideReach(value) {
+	return shadowLayers(value).filter((layer) => !layer.inset).reduce((widest, layer) => {
+		const [offsetX = 0, offsetY = 0, blur = 0, spread = 0] = layer.lengths;
+		return Math.max(widest, Math.abs(offsetX) + blur / 2 + spread);
+	}, -Infinity);
+}`;
+
+const SUB_PROBE = `
+import { h, render } from "preact";
+import { useEffect, useState } from "preact/hooks";
+import { SubstitutionDialog } from "./src/substitution-dialog.js";
+import { WidgetRegistry } from "./src/registry.js";
+import { normalizeRules } from "./src/substitution.js";
+
+const FILES = window.__FILES__;
+const adapter = {
+	async exists(path) {
+		return Object.hasOwn(FILES, path) || Object.keys(FILES).some((key) => key.startsWith(path + "/"));
+	},
+	async list(path) {
+		const files = [];
+		const folders = new Set();
+		for (const key of Object.keys(FILES)) {
+			if (!key.startsWith(path + "/")) continue;
+			const rest = key.slice(path.length + 1);
+			const cut = rest.indexOf("/");
+			if (cut === -1) files.push(key);
+			else folders.add(path + "/" + rest.slice(0, cut));
+		}
+		return { files, folders: [...folders] };
+	},
+	async read(path) {
+		return FILES[path];
+	},
+};
+const START = normalizeRules([{ id: "sub-0", name: "Code", mode: "line", open: "!code", widget: "@inline/code-block" }]);
+function Harness() {
+	const [registry, setRegistry] = useState(null);
+	const [rules, setRules] = useState(START);
+	useEffect(() => {
+		const loading = new WidgetRegistry({ vault: { adapter } });
+		loading.load().then(() => setRegistry(loading));
+	}, []);
+	if (!registry) return h("p", null, "Loading widgets");
+	return h(SubstitutionDialog, { rules, registry, host: null, onChange: setRules, onClose: () => {} });
+}
+render(h(Harness), document.getElementById("host"));
+`;
+
+const KIT_PROBE = `
+import { h, render } from "preact";
+import { Button, Card, Icon, IconButton } from "./src/kit.js";
+render(
+	h("div", { style: "padding:40px;display:flex;flex-direction:column;gap:24px;align-items:flex-start" }, [
+		h("div", { key: "controls", style: "display:flex;gap:24px;align-items:center" }, [
+			h(Button, { key: "neutral", id: "neutral" }, "Delete"),
+			h(Button, { key: "accent", id: "accent", variant: "accent" }, "Save"),
+			h(Button, { key: "plain", id: "plain", variant: "plain" }, "Cancel"),
+			h(IconButton, { key: "icon", id: "icon" }, h(Icon, { name: "close" })),
+			h(IconButton, { key: "glass", id: "glass", variant: "glass" }, h(Icon, { name: "close" })),
+		]),
+		h(Card, { key: "plate", id: "plain-card", style: "width:240px;height:80px" }, "A plain light card"),
+		h(Card, { key: "lifted", id: "lifted-card", lift: true, style: "width:240px;height:80px" }, "A lifted card"),
+	]),
+	document.getElementById("host"),
+);
+`;
+
+const MOUNT_PROBE = `
+import { h, render } from "preact";
+import { WidgetSurface } from "./src/surface.js";
+import { normalizeBoard } from "./src/model.js";
+
+const GROUP_ID = "@core/view-group";
+const KANBAN_ID = "@task/kanban-board";
+const ARCHIVE_ID = "@task/archived-columns";
+const INLINE_ID = "@inline/reminder";
+const shelf = {
+	[GROUP_ID]: { id: GROUP_ID, title: "View group", mounts: { holds: { label: "Views" } } },
+	[KANBAN_ID]: { id: KANBAN_ID, title: "Kanban board", defaultSize: { w: 6, h: 4 } },
+	[ARCHIVE_ID]: { id: ARCHIVE_ID, title: "Archived columns", defaultSize: { w: 4, h: 3 } },
+	[INLINE_ID]: { id: INLINE_ID, title: "Reminder", inline: true },
+};
+const Leaf = () => h("div", { class: "leaf" }, "leaf");
+const registry = {
+	get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
+	list: () => Object.values(shelf).map((manifest) => ({ manifest, component: Leaf })),
+};
+const slot = { canCreate: true, canUpdate: true, canRemove: true, canSubscribe: false, list: async () => ({ rows: [], total: 0 }), describe: async () => [] };
+const host = { platform: "probe", can: {}, slot: () => slot, ui: { notify() {}, openNote() {} } };
+let board = normalizeBoard({
+	tiles: [{ id: "t1", widget: GROUP_ID, settings: { holds: [{ name: "Kanban", widget: KANBAN_ID }] } }],
+	layouts: { 20: [{ id: "t1", x: 0, y: 0, w: 12, h: 6 }] },
+});
+const node = document.getElementById("host");
+function draw() {
+	render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: 1240, onChange: (next) => { board = next; draw(); } }), node);
+}
+draw();
+const settle = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 140)));
+window.__PRESS__ = async (target) => {
+	target?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	await settle();
+};
+window.__ROWS__ = () => [...document.querySelectorAll(".wg-set-panel .wg-kit-row")];
+`;
+
+const SUB_ASK = `(() => {
+	${SHADOW_READER}
+	const list = document.querySelector(".wg-sub-list");
+	const shadow = list ? getComputedStyle(list).boxShadow : "none";
+	return {
+		found: Boolean(list),
+		insetLayers: shadowLayers(shadow).filter((layer) => layer.inset).length,
+		layers: shadowLayers(shadow).length,
+		reachesSideways: sideReach(shadow) > 0,
+	};
+})()`;
+
+const KIT_ASK = `(() => {
+	${SHADOW_READER}
+	const edgeOf = (id) => {
+		const painted = getComputedStyle(document.getElementById(id), "::before").boxShadow;
+		const inset = shadowLayers(painted).find((layer) => layer.inset);
+		if (!inset) return null;
+		const alpha = /\\/\\s*([\\d.]+)\\s*\\)/.exec(painted);
+		return { widthPx: inset.lengths[3] ?? 0, inkAlpha: alpha ? Number(alpha[1]) : null };
+	};
+	return {
+		neutralButton: edgeOf("neutral"),
+		neutralIcon: edgeOf("icon"),
+		glassIcon: edgeOf("glass"),
+		accentButton: edgeOf("accent"),
+		plainButton: edgeOf("plain"),
+		plainCard: getComputedStyle(document.getElementById("plain-card")).boxShadow,
+		liftedCardInsets: shadowLayers(getComputedStyle(document.getElementById("lifted-card")).boxShadow).filter((layer) => layer.inset).length,
+	};
+})()`;
+
+const MOUNT_ASK = `(async () => {
+	await window.__PRESS__(document.querySelector('.wg-tile-actions button[aria-label="Settings"]'));
+	const held = window.__ROWS__().find((row) => row.textContent.includes("Kanban"));
+	const value = held.querySelector(".wg-kit-row-value");
+	const boxes = [...value.querySelectorAll("button")].map((button) => button.getBoundingClientRect());
+	const gaps = boxes.slice(1).map((box, at) => Math.round(box.left - boxes[at].right));
+	await window.__PRESS__(window.__ROWS__().find((row) => row.textContent.includes("Add a view")));
+	const dialog = document.querySelector(".wg-cat-dialog");
+	const tiles = dialog ? [...dialog.querySelectorAll(".wg-cat-tile")] : [];
+	const bareList = Boolean(document.querySelector(".wg-set-pop-name"));
+	const pickable = (name) => {
+		const tile = [...document.querySelectorAll(".wg-cat-tile")].find((node) => node.getAttribute("aria-label") === name);
+		return tile ? tile.querySelector(".wg-cat-go") ?? tile : null;
+	};
+	await window.__PRESS__(pickable("Add Archived columns"));
+	await window.__PRESS__(window.__ROWS__().find((row) => row.textContent.includes("Add a view")));
+	await window.__PRESS__(pickable("Add Archived columns"));
+	return {
+		trailingCount: boxes.length,
+		gaps,
+		opened: Boolean(dialog),
+		said: dialog ? [...dialog.querySelectorAll("h1,h2,h3,p")].map((node) => node.textContent.trim())[0] : null,
+		offered: tiles.map((tile) => tile.querySelector(".wg-cat-name").textContent).sort(),
+		everyCardDrawsTheWidget: tiles.length > 0 && tiles.every((tile) => Boolean(tile.querySelector(".wg-cat-pic"))),
+		searchable: Boolean(dialog?.querySelector("input")),
+		bareList,
+		names: window.__ROWS__().map((row) => row.querySelector(".wg-kit-row-label")?.firstChild?.textContent ?? row.textContent.trim()),
+	};
+})()`;
+
+const [subScript, kitScript, mountScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE)]);
+
+for (const theme of ["light", "dark"]) {
+	console.log(`\n— ${theme} —`);
+
+	const side = await ask(pageFor(theme, subScript, "sub"), SUB_ASK, 3000);
+	check("the substitutions sidebar is drawn at all", side.found, true);
+	check("and carries no inset edge", side.insetLayers, 0);
+	check("its cast is one layer, kept", side.layers, 1);
+	check("and that cast cannot paint beside the block", side.reachesSideways, false);
+
+	const kit = await ask(pageFor(theme, kitScript, "kit"), KIT_ASK, 1200);
+	check("a neutral button carries a hairline on the ::before that owns its corner", kit.neutralButton, { widthPx: 1, inkAlpha: 0.09 });
+	check("so does a neutral icon button", kit.neutralIcon, { widthPx: 1, inkAlpha: 0.09 });
+	check("glass keeps its own edge, undoubled", kit.glassIcon, { widthPx: 1, inkAlpha: 0.12 });
+	check("an accent button has none, because its fill already says control", kit.accentButton, null);
+	check("nor has a plain one", kit.plainButton, null);
+	check("a plain light card is still edgeless", kit.plainCard, "none");
+	check("and only a lifted card draws one", kit.liftedCardInsets, 1);
+
+	const mount = await ask(pageFor(theme, mountScript, "mount"), MOUNT_ASK, 2500);
+	check("a mount row ends in two controls", mount.trailingCount, 2);
+	check("spaced the way the kit spaces adjacent controls", mount.gaps, [8]);
+	check("adding a view opens the catalogue", mount.opened, true);
+	check("which says what the press means", mount.said, "Add a view");
+	check("it offers the widgets that can stand on their own", mount.offered, ["Archived columns", "Kanban board", "View group"]);
+	check("drawing each as the widget it is", mount.everyCardDrawsTheWidget, true);
+	check("and it can be searched", mount.searchable, true);
+	check("no bare list of titles is left anywhere", mount.bareList, false);
+	check("a pick lands under its declared name, disambiguated", mount.names, ["Kanban", "Archived columns", "Archived columns 2", "Add a view"]);
+}
+
+console.log(failed === 0 ? "\npaint: clean" : `\npaint: ${failed} failed`);
+process.exit(failed === 0 ? 0 : 1);
