@@ -25,6 +25,14 @@
 	"consumes": [
 		"board"
 	],
+	"sources": {
+		"boards": {
+			"label": "Boards",
+			"default": {
+				"path": "Orbitask/Boards"
+			}
+		}
+	},
 	"preview": {
 		"size": {
 			"w": 5,

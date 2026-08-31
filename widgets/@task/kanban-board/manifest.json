@@ -60,6 +60,7 @@
 	],
 	"consumes": [
 		"board",
+		"boards",
 		"filters",
 		"search"
 	],
@@ -84,6 +85,12 @@
 						"dir": "asc"
 					}
 				]
+			}
+		},
+		"boards": {
+			"label": "Boards",
+			"default": {
+				"path": "Orbitask/Boards"
 			}
 		}
 	},

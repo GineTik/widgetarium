@@ -217,19 +217,19 @@ check("the board shows cards from real notes", cards() > 0, true);
 
 // The baseline is taken WITH a board selected, not before: unselected means unfiltered, and
 // comparing a later filtered count against that would fail on the board filter working.
-const marketingTab = byText(".orbi-board-tabs button", "Marketing Team");
+const marketingTab = byText(".wg-tabs button", "Marketing Team");
 if (marketingTab) await click(marketingTab);
 const marketing = cards();
 check("selecting a board narrows to its own tasks", marketing > 0 && marketing <= 10, true);
 
 // 2. a board tab steers it
-const uxTab = byText(".orbi-board-tabs button", "Ux Team") ?? byText(".orbi-board-tabs button", "UX Team");
+const uxTab = byText(".wg-tabs button", "Ux Team") ?? byText(".wg-tabs button", "UX Team");
 check("the second board tab exists", Boolean(uxTab), true);
 if (uxTab) {
 	await click(uxTab);
 	check("switching board changes what is shown", cards() !== marketing, true);
 	check("and it is not empty", cards() > 0, true);
-	const back = byText(".orbi-board-tabs button", "Marketing Team");
+	const back = byText(".wg-tabs button", "Marketing Team");
 	if (back) { await click(back); check("switching back restores the first board", cards(), marketing); }
 }
 
@@ -451,8 +451,8 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	// THE NAME STAYS AUTHORED. Archiving used to strike it out of `columns`, so a restore had to
 	// guess where the column went and appended it; keeping it is what makes the way back exact.
 	check("the name stays in the columns setting", String(kanbanSettings().columns ?? "").includes("Blocked"), true);
-	check("and lands in the BOARD's archived list", board.archivedColumns, ["Blocked"]);
-	check("which is what the note keeps", serializeBoard(board).archivedColumns, ["Blocked"]);
+	check("and lands in the archived list of the SELECTED board", board.archivedColumns, { "Marketing Team": ["Blocked"] });
+	check("which is what the note keeps", serializeBoard(board).archivedColumns, { "Marketing Team": ["Blocked"] });
 	check("the tile keeps no list of its own", kanbanSettings().archivedColumns, undefined);
 
 	// A COLUMN WITH TASKS IS ARCHIVED TOO. Refusing was right while removal was permanent;
@@ -493,21 +493,54 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	// the position is the point: appending it would pass a count and still move the column
 	check("in the place it was archived from", all(".orbi-kanban .ok-list-title").map((node) => node.textContent.trim()), ["To Do", "Doing", "Done"]);
 	check("and its tasks came back with it", cards() > cardsWithoutIt, true);
+
+	// CONTEXT: on the note, every board read one list — archived on one, shown on all
+	const firstBoard = () => byText(".wg-tabs button", "Marketing Team");
+	const otherBoard = () => byText(".wg-tabs button", "Ux Team") ?? byText(".wg-tabs button", "UX Team");
+	const columnNamed = (name) => all(".orbi-kanban .ok-list").find((node) => node.textContent.includes(name));
+
+	await showView("Archived columns");
+	check("the board it was archived on lists it", archivedNames(), ["Blocked"]);
+
+	await click(otherBoard());
+	check("the next board over lists nothing", archivedNames(), []);
+
+	await click(firstBoard());
+	check("and switching back brings the list with it", archivedNames(), ["Blocked"]);
+
+	await click(otherBoard());
+	await showView("Kanban");
+	await click(columnNamed("Done").querySelector(".ok-list-remove"));
+	await click(dialogButton("archive"));
+	await showView("Archived columns");
+	check("a second board lists what was archived on it", archivedNames(), ["Done"]);
+
+	await click(firstBoard());
+	check("and the first board still lists only its own", archivedNames(), ["Blocked"]);
+	check("the note keeps one list per board", serializeBoard(board).archivedColumns, { "Marketing Team": ["Blocked"], "Ux Team": ["Done"] });
+
+	await click(otherBoard());
+	await click(archivedRows()[0].querySelector("button"));
+	check("Restore empties the second board's list", archivedNames(), []);
+
+	await click(firstBoard());
+	check("and leaves the first board's alone", archivedNames(), ["Blocked"]);
+	await showView("Kanban");
 }
 
 {
-	const tabsBefore = all(".orbi-board-tabs .obt-tab").length;
-	await click(all(".orbi-board-tabs .obt-more")[0]);
-	await click(byText(".orbi-board-tabs .wg-kit-pop-item", "Add board"));
-	check("Add Board adds a tab", all(".orbi-board-tabs .obt-tab").length, tabsBefore + 1);
+	const tabsBefore = all(".wg-tabs .wg-tabs-tab").length;
+	await click(all(".wg-tabs .wg-tabs-more")[0]);
+	await click(byText(".wg-tabs .wg-kit-pop-item", "Add"));
+	check("Add Board adds a tab", all(".wg-tabs .wg-tabs-tab").length, tabsBefore + 1);
 	check("named Untitled 1", String(settingsOf("boards").tabs ?? "").includes("Untitled 1"), true);
 	// the board's own selection is not reachable from here — the visible truth is which tab
 	// the kit's thumb sits on, which is the tab marked selected, and what a person sees anyway
-	const active = all('.orbi-board-tabs .obt-tab[aria-selected="true"]').map((node) => node.textContent.trim());
+	const active = all('.wg-tabs .wg-tabs-tab[aria-selected="true"]').map((node) => node.textContent.trim());
 	check("and it becomes the selected board", active, ["Untitled 1"]);
 
 	// the new tab opens ready to be renamed, in place
-	const editable = all('.orbi-board-tabs .obt-tab[contenteditable="true"]');
+	const editable = all('.wg-tabs .wg-tabs-tab[contenteditable="true"]');
 	check("the new board is editable where it stands", editable.length, 1);
 }
 
@@ -524,7 +557,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 
 	// back to a board that has tasks: the previous block selected a new empty one, and a rename
 	// that touches nothing proves nothing
-	const marketing = all(".orbi-board-tabs .obt-tab").find((node) => /Marketing/.test(node.textContent));
+	const marketing = all(".wg-tabs .wg-tabs-tab").find((node) => /Marketing/.test(node.textContent));
 	await click(marketing);
 
 	// RENAMING A COLUMN MUST REACH THE TASKS. The heading is a setting; what files a task under
@@ -553,16 +586,16 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 {
 	// ONE MENU, NOT A PAIR OF BUTTONS. The pencil and the tick are gone; renaming is a menu
 	// item, and Enter or blur commits. The menu stands beside the capsule, never inside a tab.
-	const more = all(".orbi-board-tabs .obt-more")[0];
+	const more = all(".wg-tabs .wg-tabs-more")[0];
 	check("the board row offers a menu", Boolean(more), true);
 	check("and it stands outside the tab capsule", Boolean(more.closest(".wg-kit-seg")), false);
 
 	await click(more);
 	// CONTEXT: the panel stays in the DOM when shut, so only is-open proves it opened
-	check("the menu opens", all(".orbi-board-tabs .wg-kit-pop.is-open").length, 1);
+	check("the menu opens", all(".wg-tabs .wg-kit-pop.is-open").length, 1);
 
-	await click(byText(".orbi-board-tabs .wg-kit-pop-item", "Rename"));
-	check("and Rename edits the selected tab in place", all('.orbi-board-tabs .obt-tab[contenteditable="true"]').length, 1);
+	await click(byText(".wg-tabs .wg-kit-pop-item", "Rename"));
+	check("and Rename edits the selected tab in place", all('.wg-tabs .wg-tabs-tab[contenteditable="true"]').length, 1);
 }
 
 {
@@ -570,22 +603,22 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	// one, and a fresh Untitled must be standing there — a board bar with nothing on it offers
 	// the person no way back in.
 	const archive = async () => {
-		await click(all(".orbi-board-tabs .obt-more")[0]);
-		await click(byText(".orbi-board-tabs .wg-kit-pop-item", "Archive"));
+		await click(all(".wg-tabs .wg-tabs-more")[0]);
+		await click(byText(".wg-tabs .wg-kit-pop-item", "Archive"));
 	};
 
 	let guard = 0;
-	while (all(".orbi-board-tabs .obt-tab").length > 1 && guard < 12) {
+	while (all(".wg-tabs .wg-tabs-tab").length > 1 && guard < 12) {
 		await archive();
 		guard += 1;
 	}
-	check("archiving hands the strip down to one board", all(".orbi-board-tabs .obt-tab").length, 1);
+	check("archiving hands the strip down to one board", all(".wg-tabs .wg-tabs-tab").length, 1);
 
-	const last = all(".orbi-board-tabs .obt-tab")[0].textContent.trim();
+	const last = all(".wg-tabs .wg-tabs-tab")[0].textContent.trim();
 	await archive();
-	check("archiving the LAST board still leaves one", all(".orbi-board-tabs .obt-tab").length, 1);
-	check("and the one left is a fresh Untitled", /^Untitled \d+$/.test(all(".orbi-board-tabs .obt-tab")[0].textContent.trim()), true);
-	check("which is not the board just archived", all(".orbi-board-tabs .obt-tab")[0].textContent.trim() === last, false);
+	check("archiving the LAST board still leaves one", all(".wg-tabs .wg-tabs-tab").length, 1);
+	check("and the one left is a fresh Untitled", /^Untitled \d+$/.test(all(".wg-tabs .wg-tabs-tab")[0].textContent.trim()), true);
+	check("which is not the board just archived", all(".wg-tabs .wg-tabs-tab")[0].textContent.trim() === last, false);
 	check("the archived board was remembered, not lost", String(settingsOf("boards").archived ?? "").includes(last), true);
 }
 
@@ -603,13 +636,14 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 }
 
 // CONTEXT: one tile, several whole widgets, one of them on screen
-const groupBoard = (views, seen = "Kanban", tabs = {}) =>
+const groupBoard = (views, seen = "Kanban", tabs = {}, archived = null) =>
 	normalizeBoard({
 		tiles: [
 			{ id: "views", widget: "@task/view-tabs", settings: tabs },
 			{ id: "board", widget: "@core/view-group", settings: { views } },
 		],
 		context: { board: "Marketing Team", view: seen },
+		...(archived ? { archivedColumns: archived } : {}),
 		layouts: { 20: { places: [{ id: "views", x: 0, y: 0, w: 20, h: 1 }, { id: "board", x: 0, y: 1, w: 20, h: 10 }] } },
 	});
 
@@ -647,6 +681,49 @@ const pickView = async (name, id = "views") => {
 		"the view the tabs name is the view the group draws",
 		`${tabLabel()} | ${all(".orbi-archived-columns").length} | ${all(".orbi-kanban").length}`,
 		"Archived columns | 1 | 0",
+	);
+}
+
+{
+	// CONTEXT: one flat list is the shape written before it was keyed by board
+	board = groupBoard(`${KANBAN}, ${ARCHIVED}`, "Archived columns", {}, ["Blocked", "On hold"]);
+	render(null, root);
+	await settle();
+	draw();
+	await settle();
+
+	const rows = () => all(".orbi-archived-columns .wg-kit-row .wg-kit-row-label").map((node) => node.textContent.trim());
+	check("a note written in yesterday's shape still lists its archived columns", rows(), ["Blocked", "On hold"]);
+
+	await click(all(".orbi-archived-columns .wg-kit-row button")[0]);
+	check("Restore reads it too", rows(), ["On hold"]);
+	check("and the write keys it to the selected board", serializeBoard(board).archivedColumns, { "Marketing Team": ["On hold"] });
+}
+
+{
+	// CONTEXT: the shape before the board held a list at all — the kanban's own tile carried it
+	board = normalizeBoard({
+		tiles: [
+			{
+				id: "fallback",
+				widget: "@core/view-group",
+				settings: { views: `${KANBAN}, ${ARCHIVED}` },
+				mounted: { [KANBAN]: { settings: { columns: "To Do, Blocked", archivedColumns: "Blocked" } } },
+			},
+		],
+		context: { board: "Marketing Team", view: "Kanban" },
+		layouts: { 20: { places: [{ id: "fallback", x: 0, y: 0, w: 20, h: 10 }] } },
+	});
+	render(null, root);
+	await settle();
+	draw();
+	await settle();
+	// CONTEXT: the other titles are statuses the tasks carry, which the kanban draws as columns
+	console.log("PROBE", all(".orbi-kanban .ok-list-title").map((node) => node.textContent.trim()).join("|"), all(".orbi-archived-columns").length, all("[data-tile]").map((node) => node.getAttribute("data-tile")).join("|"));
+	check(
+		"a list on the tile still answers where no board has claimed one",
+		all('[data-tile="fallback"] .ok-list-title').map((node) => node.textContent.trim()).includes("Blocked"),
+		false,
 	);
 }
 
@@ -1091,7 +1168,7 @@ const pickView = async (name, id = "views") => {
 	const renamed = (title) => [...grid().querySelectorAll(".wg-cat-tile")].find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
 	check("a widget the vault does not have looks exactly like one it has", shapeOf(renamed("Task card")), wasInstalled);
 	check("and its press still says Add, not Install", renamed("Task card").getAttribute("aria-label").startsWith("Add "), true);
-	check("nothing marks one with a newer version either", renamed("Board tabs").querySelectorAll(".wg-cat-badge").length, 0);
+	check("nothing marks one with a newer version either", renamed("Editable tabs").querySelectorAll(".wg-cat-badge").length, 0);
 	delete registry.get("@task/task-card").installed;
 	delete registry.get("@task/board-tabs").update;
 	draw();
@@ -1144,7 +1221,7 @@ const pickView = async (name, id = "views") => {
 	check("the settings window is open, so the board is staged", Boolean(dom.window.document.body.querySelector(".wg-set-window")), true);
 
 	await click(all(".wg-palette .wg-palette-open")[0]);
-	const tabs = [...dom.window.document.body.querySelectorAll(".wg-cat-dialog .wg-cat-tile")].find((tile) => tile.textContent.includes("Board tabs"));
+	const tabs = [...dom.window.document.body.querySelectorAll(".wg-cat-dialog .wg-cat-tile")].find((tile) => tile.textContent.includes("Editable tabs"));
 	await click(tabs);
 	check("the page draws the tile that was added", drawn(), before + 1);
 	check("and the file has not moved", JSON.stringify(board), saved);
@@ -1224,6 +1301,73 @@ const pickView = async (name, id = "views") => {
 	check("and the note on disk is byte-identical after both", createHash("md5").update(fs.readFileSync(NOTE, "utf8")).digest("hex"), beforeBytes);
 }
 
+
+
+// AN ARCHIVED TAB HAD NO WAY OUT. Archive moved a name aside and Restore brought it back, so a
+// name typed by mistake stayed on the note for good. Delete is the way out, and it asks first.
+{
+	const stage = dom.window.document.createElement("div");
+	dom.window.document.body.appendChild(stage);
+	const standing = new Set(dom.window.document.querySelectorAll(".wg-page"));
+
+	let strip = normalizeBoard({
+		tiles: [{ id: "boards", widget: "@core/editable-tabs", settings: { tabs: "Marketing Team, Ux Team", activeTab: "Marketing Team", archived: "" } }],
+		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }] } },
+	});
+	const paint = () =>
+		render(
+			h(WidgetSurface, {
+				board: strip, registry, host, editing: false, screen: true, initialWidth: 1280,
+				onChange: (next) => { strip = next; paint(); },
+				onToggleEditing: () => {}, onWidth: () => {},
+			}),
+			stage,
+		);
+	paint();
+	await settle();
+
+	// CONTEXT: an expanded board draws through a portal on the body, not into its own element
+	const page = [...dom.window.document.querySelectorAll(".wg-page")].find((node) => !standing.has(node)) ?? stage;
+	const tile = () => page.querySelector('[data-tile="boards"]');
+	const shown = () => [...tile().querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim());
+	const menu = async (item) => {
+		await click(tile().querySelector(".wg-tabs-more"));
+		await click([...tile().querySelectorAll(".wg-kit-pop-item")].find((node) => node.textContent.includes(item)));
+	};
+	const listed = () => [...dom.window.document.body.querySelectorAll(".wg-tabs-archive .wg-kit-row")];
+	const listedNames = () => listed().map((row) => row.querySelector(".wg-kit-row-label").textContent.trim());
+	const asking = () => dom.window.document.body.querySelector(".wg-tabs-confirm");
+	const noted = () => serializeBoard(strip).tiles.find((held) => held.id === "boards")?.settings ?? {};
+
+	check("the strip draws the tabs the note names", shown(), ["Marketing Team", "Ux Team"]);
+
+	await menu("Archive");
+	check("archiving takes the tab off the strip", shown(), ["Ux Team"]);
+	check("and the note keeps it under archived", noted().archived, "Marketing Team");
+
+	await menu("Archived list");
+	check("the archived list draws it as a row", listedNames(), ["Marketing Team"]);
+	check("with a Delete beside the Restore", [...listed()[0].querySelectorAll("button")].map((node) => node.textContent.trim()), ["Restore", "Delete"]);
+
+	await click(listed()[0].querySelector(".wg-tabs-delete"));
+	check("Delete asks before it takes anything", Boolean(asking()), true);
+	check("and the note still holds the tab", noted().archived, "Marketing Team");
+	await click(asking().querySelector(".wg-dialog-cancel"));
+	check("dismissing leaves the entry on the list", listedNames(), ["Marketing Team"]);
+	check("and the note exactly as it was", noted().archived, "Marketing Team");
+
+	const tabsBefore = noted().tabs;
+	await click(listed()[0].querySelector(".wg-tabs-delete"));
+	await click(asking().querySelector(".wg-dialog-confirm"));
+	check("confirming takes the entry off the list", listedNames(), []);
+	check("and off the note", noted().archived ?? "", "");
+	// CONTEXT: a tab owns nothing but its name yet — what it will own is the widget mounted under it
+	check("the tabs still on the strip are untouched", noted().tabs, tabsBefore);
+	check("and no widget was left behind under the deleted name", strip.tiles[0].mounted?.["Marketing Team"], undefined);
+
+	render(null, stage);
+	stage.remove();
+}
 
 console.log(failed ? `\n${failed} failed` : "\nthe page answers to a person");
 process.exit(failed ? 1 : 0);

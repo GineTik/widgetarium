@@ -1,16 +1,17 @@
-import {
-	createWidget,
-	WidgetRoot,
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogDescription,
-	DialogFooter,
-	DialogClose,
-} from "widgetarium";
+import { createWidget, WidgetRoot, ConfirmDialog, archivedColumnsFor, boardWriter, boardsToCreate, readBoardRecord } from "widgetarium";
 import { Button, Card, Count, Icon, Plate } from "widgetarium/kit";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+// CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
+const ARCHIVE_TITLE = "Archive {name}?";
+const ARCHIVE = "Archive";
+const MOVE_BOARDS = "Move boards into files";
+const MOVE_TITLE = "Move boards into files?";
+const MOVE_ONE =
+	"One board is written to a note of its own, carrying the columns on screen now, their order, and the columns it has archived. A board already on file is left exactly as it is.";
+const MOVE_MANY =
+	"{count} boards are written to notes of their own, each carrying the columns on screen now, their order, and the columns it has archived. A board already on file is left exactly as it is.";
+const MOVE = "Move";
 
 const CSS = `
 .ok-board {
@@ -219,8 +220,12 @@ const CSS = `
 	.orbi-kanban .ok-add-list-rest { flex: 0 0 284px; }
 }
 
+/* CONTEXT: the move is offered once and disappears — a dashed plate says it is not a list */
+.orbi-kanban .ok-move-boards::before { border: 1px dashed var(--background-modifier-border); }
+
 /* CONTEXT: the dialog is portalled onto <body>, out of reach of the widget root's class */
-.wg-dialog.ok-archive { width: min(420px, 100%); }
+.wg-dialog.ok-archive,
+.wg-dialog.ok-move-boards-ask { width: min(420px, 100%); }
 `;
 
 // TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
@@ -476,11 +481,23 @@ function toList(value) {
 export default createWidget(function KanbanBoard({ settings, slots, data, actions, context, host, configure, board, configureBoard }) {
 	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
 	const today = useMemo(() => new Date(), []);
-	// CONTEXT: the board owns this list; a note written before it did still answers until the first edit
-	const archivedColumns = board?.archivedColumns ?? toList(settings.archivedColumns);
+	const onBoard = context?.get("board") ?? "";
+	// THE BOARD'S OWN RECORD. Its columns, their order and which of them are archived belong to
+	// the board, so a column added here cannot land on the board next door. A board with no file
+	// yet answers from the tile and the note, exactly as it did before.
+	const record = readBoardRecord(data?.boards?.rows, { name: onBoard }, {
+		columns: settings.columns,
+		archivedColumns: board?.archivedColumns ?? settings.archivedColumns,
+	});
+	const archivedColumns = record.archivedColumns;
 	// CONTEXT: deduped, so a rendered index below the count IS the index in this list
 	// CONTEXT: an archived name stays authored, so restoring it is not a guess about where it belonged
-	const authoredColumns = [...new Set(toList(settings.columns))];
+	const authoredColumns = [...new Set(record.columns)];
+	// CONTEXT: the record once it has a file, the note until then — one writer either way
+	const saveColumns = boardWriter(record, actions?.boards, {
+		columns: (names) => configure?.({ columns: names.join(", ") }),
+		archivedColumns: (names) => configureBoard?.({ archivedColumns: names }),
+	});
 	const shownColumns = authoredColumns.filter((name) => !archivedColumns.includes(name));
 	// CONTEXT: a board with no columns is not a board — the last one out leaves a fresh one behind
 	const columnNames = shownColumns.length > 0 ? shownColumns : [freeUntitled([...authoredColumns, ...archivedColumns])];
@@ -494,7 +511,22 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	const columns = toColumns(rows, columnNames, groupBy, archivedColumns);
 	const opened = context?.get("task")?.path;
 	const [archiving, setArchiving] = useState(null);
+	const [movingBoards, setMovingBoards] = useState(false);
 	const heldByArchiving = columns.find((column) => column.title === archiving)?.rows.length ?? 0;
+
+	// THE MOVE IS A PRESS, never a render. The strip publishes the names; each one that has no
+	// file yet is written with the columns it is showing and the columns it has archived, and a
+	// board already on file is passed over untouched.
+	const unfiled = boardsToCreate(context?.get("boards"), data?.boards?.rows, (name) => ({
+		columns: authoredColumns,
+		archivedColumns: archivedColumnsFor(board?.archivedColumnsByBoard, name, onBoard),
+	}));
+	const canMoveBoards = Boolean(actions?.boards?.canCreate) && unfiled.length > 0;
+
+	const moveBoards = async () => {
+		setMovingBoards(false);
+		for (const draft of unfiled) await actions.boards.create({ props: draft.props });
+	};
 
 	// CONTEXT: a column is a setting, not a task — adding one must not invent a note
 	// CONTEXT: naming an archived list is how it is restored, or the added one would never show
@@ -502,10 +534,10 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		const trimmed = String(name ?? "").trim();
 		if (!trimmed || shownColumns.includes(trimmed)) return;
 		if (archivedColumns.includes(trimmed)) {
-			configureBoard?.({ archivedColumns: archivedColumns.filter((column) => column !== trimmed) });
+			saveColumns({ archivedColumns: archivedColumns.filter((column) => column !== trimmed) });
 			return;
 		}
-		configure?.({ columns: [...authoredColumns, trimmed].join(", ") });
+		saveColumns({ columns: [...authoredColumns, trimmed] });
 	};
 
 	// CONTEXT: what files a task under a heading is the property in its note, so a rename must reach both
@@ -520,7 +552,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		const renamed = authoredColumns.includes(was)
 			? authoredColumns.map((column) => (column === was ? name : column))
 			: [...authoredColumns, name];
-		configure?.({ columns: renamed.join(", ") });
+		saveColumns({ columns: renamed });
 
 		const held = rows.filter((row) => (row.props?.[groupBy] ?? "") === was);
 		if (held.length === 0 || !write?.canUpdate) return;
@@ -529,7 +561,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 
 	// CONTEXT: the one place a column leaves the board; nothing is unnamed, so a restore is lossless
 	const archiveList = (name) => {
-		configureBoard?.({ archivedColumns: [...archivedColumns, name] });
+		saveColumns({ archivedColumns: [...archivedColumns, name] });
 		setArchiving(null);
 	};
 
@@ -579,7 +611,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	const dropColumn = () => {
 		if (!reorder) return;
 		if (reorder.to !== reorder.from) {
-			configure?.({ columns: afterColumnMoves(authoredColumns, columnNames, reorder.from, reorder.to).join(", ") });
+			saveColumns({ columns: afterColumnMoves(authoredColumns, columnNames, reorder.from, reorder.to) });
 		}
 		setReorder(null);
 	};
@@ -656,28 +688,42 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 					/>
 				))}
 				{configure ? <AddList onAdd={addList} /> : null}
+				{canMoveBoards ? (
+					<Plate asChild>
+						<button type="button" className="ok-add-list-rest ok-move-boards" onClick={() => setMovingBoards(true)}>
+							<Icon name="folder" size={16} />
+							<span>{MOVE_BOARDS}</span>
+						</button>
+					</Plate>
+				) : null}
 			</div>
 
-			<Dialog open={Boolean(archiving)} onOpenChange={() => setArchiving(null)}>
-				<DialogContent className="ok-archive">
-					<DialogClose />
-					<DialogHeader>
-						<DialogTitle>Archive {archiving}?</DialogTitle>
-						<DialogDescription>
-							The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
-							{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
-						</DialogDescription>
-					</DialogHeader>
-					<DialogFooter>
-						<Button size="s" onClick={() => setArchiving(null)}>
-							Cancel
-						</Button>
-						<Button size="s" variant="accent" onClick={() => archiveList(archiving)}>
-							Archive
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<ConfirmDialog
+				open={Boolean(archiving)}
+				onOpenChange={() => setArchiving(null)}
+				className="ok-archive"
+				variant="accent"
+				confirmLabel={ARCHIVE}
+				title={ARCHIVE_TITLE.replace("{name}", archiving)}
+				description={
+					<>
+						The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
+						{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
+					</>
+				}
+				onConfirm={() => archiveList(archiving)}
+			/>
+
+			<ConfirmDialog
+				open={movingBoards}
+				onOpenChange={() => setMovingBoards(false)}
+				className="ok-move-boards-ask"
+				variant="accent"
+				confirmLabel={MOVE}
+				title={MOVE_TITLE}
+				description={unfiled.length === 1 ? MOVE_ONE : MOVE_MANY.replace("{count}", String(unfiled.length))}
+				onConfirm={moveBoards}
+			/>
 		</WidgetRoot>
 	);
 });
