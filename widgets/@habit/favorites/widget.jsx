@@ -186,12 +186,12 @@ function stripOf(shift) {
 	return days;
 }
 
-function rateOf(entries, until, window) {
+function rateOf(entries, until, span) {
 	const from = new Date(Date.parse(`${until}T00:00:00Z`));
-	from.setUTCDate(from.getUTCDate() - window + 1);
+	from.setUTCDate(from.getUTCDate() - span + 1);
 	const first = from.toISOString().slice(0, 10);
 	const kept = entries.filter((date) => date >= first && date <= until).length;
-	return kept / window;
+	return kept / span;
 }
 
 export default createWidget(function HabitFavorites({ settings, data }) {
@@ -200,7 +200,7 @@ export default createWidget(function HabitFavorites({ settings, data }) {
 	const [chosen, setChosen] = useState("");
 
 	const field = settings.field || "entries";
-	const window = Math.max(1, Number(settings.window) || 30);
+	const span = Math.max(1, Number(settings.window) || 30);
 	const strip = stripOf(shift);
 	const onDay = strip[strip.length - 1];
 
@@ -208,7 +208,7 @@ export default createWidget(function HabitFavorites({ settings, data }) {
 		.filter((row) => (row.props?.title ?? row.name).toLowerCase().includes(needle.toLowerCase()))
 		.map((row) => ({
 			name: row.props?.title ?? row.name,
-			rate: rateOf((row.props?.[field] ?? []).filter((date) => typeof date === "string"), onDay.iso, window),
+			rate: rateOf((row.props?.[field] ?? []).filter((date) => typeof date === "string"), onDay.iso, span),
 		}));
 
 	const top = Math.max(...bars.map((bar) => bar.rate), 0.01);
