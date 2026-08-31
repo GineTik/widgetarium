@@ -16,6 +16,7 @@ export {
 	DialogDescription,
 	DialogFooter,
 	DialogClose,
+	ConfirmDialog,
 } from "../src/dialog.js";
 export { useAction } from "../src/action.js";
 export { Kit } from "../src/kit.js";

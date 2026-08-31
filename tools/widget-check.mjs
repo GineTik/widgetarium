@@ -39,6 +39,7 @@ const api = {
 	},
 	WidgetRoot: (props) => h("div", { className: `wg-widget-root ${props.className ?? ""}` }, props.children),
 	Dialog: () => null,
+	ConfirmDialog: () => null,
 	DialogOverlay: () => null,
 	DialogContent: (props) => h("div", null, props.children),
 	DialogClose: () => null,

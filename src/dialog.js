@@ -2,7 +2,7 @@ import { createElement as h, cloneElement, createContext, Children } from "react
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { mountInto } from "./portal.js";
-import { cx, Icon, IconButton } from "./kit.js";
+import { Button, cx, Icon, IconButton } from "./kit.js";
 
 // CONTEXT: preact's render() starts a new tree, so no provider outside the portal reaches inside
 const DialogState = createContext(null);
@@ -314,4 +314,26 @@ export function Dialog({ open, onOpenChange, onClose, trigger, children, classNa
 	if (!trigger) return body;
 
 	return h("span", { className: "wg-dialog-trigger" }, [h("span", { onClick: () => setOpen(true) }, trigger), body]);
+}
+
+// CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
+const CANCEL = "Cancel";
+
+// CONTEXT: one shape for every ask-before-it-is-gone — the caller owns the words and the verb
+export function ConfirmDialog({ open, title, description, confirmLabel, variant = "danger", onConfirm, onOpenChange, className }) {
+	return h(
+		Dialog,
+		{ open, onOpenChange },
+		h(DialogContent, { className }, [
+			h(DialogClose, { key: "close" }),
+			h(DialogHeader, { key: "head" }, [
+				h(DialogTitle, { key: "title" }, title),
+				h(DialogDescription, { key: "desc" }, description),
+			]),
+			h(DialogFooter, { key: "foot" }, [
+				h(Button, { key: "cancel", size: "s", className: "wg-dialog-cancel", onClick: () => onOpenChange?.(false) }, CANCEL),
+				h(Button, { key: "confirm", size: "s", variant, className: "wg-dialog-confirm", onClick: onConfirm }, confirmLabel),
+			]),
+		]),
+	);
 }
