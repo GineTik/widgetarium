@@ -66,6 +66,14 @@ export class WidgetRegistry {
 	constructor(app) {
 		this.app = app;
 		this.widgets = new Map();
+		// CONTEXT: a manifest's `was` is the id it shipped under — read there, write here
+		this.renamed = new Map();
+	}
+
+	// CONTEXT: the one place an id is made current, so a board saved after a read carries the new one
+	resolveId(id) {
+		if (this.widgets.has(id)) return id;
+		return this.renamed.get(id) ?? id;
 	}
 
 	list() {
@@ -73,11 +81,12 @@ export class WidgetRegistry {
 	}
 
 	get(id) {
-		return this.widgets.get(id) ?? null;
+		return this.widgets.get(this.resolveId(id)) ?? null;
 	}
 
 	async load() {
 		this.widgets.clear();
+		this.renamed.clear();
 		this.dropStyles();
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
@@ -142,6 +151,7 @@ export class WidgetRegistry {
 			}
 
 			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder });
+			for (const id of [].concat(manifest.was ?? [])) this.renamed.set(id, manifest.id);
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
 			const id = folder.slice(WIDGETS_DIR.length + 1);

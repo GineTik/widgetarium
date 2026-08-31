@@ -430,7 +430,7 @@ export default class WidgetariumPlugin extends Plugin {
 	renderBlock(source, element, context) {
 		let board;
 		try {
-			board = normalizeBoard(parseYaml(source) ?? []);
+			board = normalizeBoard(parseYaml(source) ?? [], (id) => this.registry.resolveId(id));
 		} catch (failure) {
 			element.createEl("pre", { text: `Widgetarium: cannot read YAML — ${failure}` });
 			return;

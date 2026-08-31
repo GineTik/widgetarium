@@ -7,6 +7,9 @@ import { arrange, clampPlace } from "./layout.js";
 const LEGACY_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
 const LEGACY_BARE_ARRAY_COLUMNS = 12;
 
+// CONTEXT: a board read without a registry cannot know a widget was renamed, and keeps what it has
+const SAME_ID = (id) => id;
+
 // CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
 function normalizeSources(input) {
 	const result = {};
@@ -24,30 +27,30 @@ function heldWidget(input, keyWidget) {
 }
 
 // CONTEXT: a slot and a mount are one record — whether the parent feeds it is the manifest's answer
-function normalizeHeld(input, keyWidget) {
+function normalizeHeld(input, keyWidget, idOf) {
 	const widget = heldWidget(input, keyWidget);
 	if (typeof widget !== "string" || widget === "") return null;
 	const held = typeof input === "object" && input !== null ? input : {};
-	return { widget, settings: held.settings ?? {}, sources: normalizeSources(held.sources), slots: normalizeSlots(held.slots), mounted: normalizeMounted(held.mounted) };
+	return { widget: idOf(widget), settings: held.settings ?? {}, sources: normalizeSources(held.sources), slots: normalizeSlots(held.slots, idOf), mounted: normalizeMounted(held.mounted, idOf) };
 }
 
 // CONTEXT: a mount key is the widget id, with #n on a repeat — a record written before this carries no widget
-function normalizeMounted(input) {
+function normalizeMounted(input, idOf = SAME_ID) {
 	if (typeof input !== "object" || input === null) return {};
 	const result = {};
 	for (const [key, held] of Object.entries(input)) {
-		const record = normalizeHeld(held, key.split("#")[0]);
+		const record = normalizeHeld(held, key.split("#")[0], idOf);
 		if (record) result[key] = record;
 	}
 	return result;
 }
 
 // CONTEXT: a slot key is a manifest name and names no widget, so a nameless pick is no pick
-function normalizeSlots(input) {
+function normalizeSlots(input, idOf = SAME_ID) {
 	if (typeof input !== "object" || input === null) return {};
 	const result = {};
 	for (const [name, held] of Object.entries(input)) {
-		const record = normalizeHeld(held, null);
+		const record = normalizeHeld(held, null, idOf);
 		if (record) result[name] = record;
 	}
 	return result;
@@ -142,14 +145,35 @@ export function normalizeNames(input) {
 	return kept;
 }
 
-function normalizeTile(tile, index) {
+// CONTEXT: keyed by selected board; a bare array is yesterday's shape, kept as it was written
+export function normalizeArchivedColumns(input) {
+	if (Array.isArray(input)) return normalizeNames(input);
+	const byBoard = {};
+	for (const [selected, columns] of Object.entries(input ?? {})) byBoard[selected] = normalizeNames(columns);
+	return byBoard;
+}
+
+// CONTEXT: no board selected is its own key, so a note without a tab strip still keeps a list
+// CONTEXT: nothing back means no board claimed it — the kanban's own setting still answers
+export function archivedColumnsOn(archived, selected) {
+	if (Array.isArray(archived)) return archived;
+	return archived?.[selected ?? ""];
+}
+
+// TRADE-OFF: the first write drops the unkeyed list — it belonged to whichever board displayed it
+export function withArchivedColumnsOn(archived, selected, columns) {
+	const byBoard = archived && !Array.isArray(archived) ? archived : {};
+	return { ...byBoard, [selected ?? ""]: normalizeNames(columns) };
+}
+
+function normalizeTile(tile, index, idOf) {
 	return {
 		id: tile.id ?? `w${index}`,
-		widget: tile.widget,
+		widget: idOf(tile.widget),
 		settings: tile.settings ?? {},
 		sources: normalizeSources(tile.sources ?? tile.data),
-		slots: normalizeSlots(tile.slots),
-		mounted: normalizeMounted(tile.mounted),
+		slots: normalizeSlots(tile.slots, idOf),
+		mounted: normalizeMounted(tile.mounted, idOf),
 		// Folded or not is a fact about the WIDGET, not about one screen width. Kept on the
 		// place it was stored once per layout, so a board with four layouts held four
 		// opinions and the sidebar sprang open at whichever width was authored first.
@@ -192,9 +216,10 @@ function normalizeLayouts(input) {
 	return layouts;
 }
 
-export function normalizeBoard(input) {
+// CONTEXT: `idOf` is the registry's rename table — a note naming an old id is read, and saved, as the new one
+export function normalizeBoard(input, idOf = SAME_ID) {
 	// CONTEXT: entries are tiles AND places at once; delegating keeps one promised shape
-	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY_COLUMNS]: input } });
+	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY_COLUMNS]: input } }, idOf);
 	// LEGACY: folded used to live on the place, once per layout, under the name restoreW. A
 	// file written then still opens, and its panel is still folded — read off whichever layout
 	// recorded it, because the fact was always about the tile.
@@ -209,7 +234,7 @@ export function normalizeBoard(input) {
 
 	return {
 		tiles: (input?.tiles ?? []).map((tile, index) => {
-			const seen = normalizeTile(tile, index);
+			const seen = normalizeTile(tile, index, idOf);
 			return foldedOnce.has(seen.id) ? { ...seen, folded: true } : seen;
 		}),
 		layouts: normalizeLayouts(input?.layouts),
@@ -222,7 +247,7 @@ export function normalizeBoard(input) {
 		properties: normalizeNames(input?.properties),
 		// CONTEXT: two views that never draw together must still read one list, so the board holds it
 		// CONTEXT: absent means no board has claimed it yet — the kanban's own setting still answers
-		...(input?.archivedColumns ? { archivedColumns: normalizeNames(input.archivedColumns) } : {}),
+		...(input?.archivedColumns ? { archivedColumns: normalizeArchivedColumns(input.archivedColumns) } : {}),
 	};
 }
 
