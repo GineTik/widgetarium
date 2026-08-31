@@ -58,17 +58,21 @@ const hooks = {
 	useCallback: (fn) => fn,
 };
 
-function load(folder) {
-	const source = transform(fs.readFileSync(path.join(folder, "widget.jsx"), "utf8"), {
+// CONTEXT: the same four specifiers the plugin serves, plus whatever lib each scope carries
+const libs = new Map();
+
+function run(file, source) {
+	const code = transform(source, {
 		transforms: ["jsx", "imports"],
 		jsxPragma: "h",
 		jsxFragmentPragma: "Fragment",
 		production: true,
+		filePath: file,
 	}).code;
 
-	const modules = { widgetarium: api, "widgetarium/kit": kit, react: { createElement: h, Fragment, ...hooks } };
+	const modules = { widgetarium: api, "widgetarium/kit": kit, react: { createElement: h, Fragment, ...hooks }, ...Object.fromEntries(libs) };
 	const shell = { exports: {} };
-	new Function("require", "module", "exports", "h", "Fragment", source)(
+	new Function("require", "module", "exports", "h", "Fragment", code)(
 		(name) => {
 			const found = modules[name];
 			if (!found) throw new Error(`cannot import "${name}"`);
@@ -79,12 +83,25 @@ function load(folder) {
 		h,
 		Fragment,
 	);
-	return shell.exports.default ?? shell.exports;
+	return shell.exports;
+}
+
+function load(folder) {
+	const file = path.join(folder, "widget.jsx");
+	const shell = run(file, fs.readFileSync(file, "utf8"));
+	return shell.default ?? shell;
 }
 
 let failed = 0;
 const root = "widgets";
-for (const scope of fs.readdirSync(root).filter((name) => name.startsWith("@"))) {
+const scopes = fs.readdirSync(root).filter((name) => name.startsWith("@"));
+
+for (const scope of scopes) {
+	const file = path.join(root, scope, "lib.js");
+	if (fs.existsSync(file)) libs.set(`${scope}/lib`, run(file, fs.readFileSync(file, "utf8")));
+}
+
+for (const scope of scopes) {
 	for (const name of fs.readdirSync(path.join(root, scope))) {
 		const folder = path.join(root, scope, name);
 		if (!fs.existsSync(path.join(folder, "widget.jsx"))) continue;
