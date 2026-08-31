@@ -1,7 +1,12 @@
-import { TFile, TFolder, Notice, MarkdownRenderer, MarkdownRenderChild } from "obsidian";
+import { TFile, TFolder, Notice, MarkdownRenderer, MarkdownRenderChild, Platform } from "obsidian";
 import { Dialog } from "./dialog.js";
 import { matches, valueOf } from "./engine/match.js";
 import { readBody, replaceBody } from "./block-writer.js";
+import { typeOf } from "./engine/record-type.js";
+import { readLink } from "./engine/link.js";
+import { hostTypeOf } from "./engine/host-type.js";
+import { createConsole } from "./engine/host-console.js";
+import { readTarget, refusedRead } from "./engine/read-file.js";
 
 // TRADE-OFF: body absent on a listed record, present on a fetched one — twenty cards, no reads
 function toRecord(app, file, body) {
@@ -11,6 +16,7 @@ function toRecord(app, file, body) {
 		ref: { path: file.path },
 		props: { ...(cache?.frontmatter ?? {}) },
 		name: file.basename,
+		type: typeOf(file.path),
 		meta: { created: file.stat.ctime, modified: file.stat.mtime },
 		// HOW MANY FILES THIS NOTE CARRIES, without reading a single note. Obsidian has already
 		// parsed every note's embeds into its cache, so counting them here costs nothing — reading
@@ -26,6 +32,84 @@ async function writeBody(app, file, body) {
 	if (written === String(body ?? "")) return written;
 	console.error(`[widgetarium] body write refused: it would have moved the frontmatter of ${file.path}`);
 	return undefined;
+}
+
+// CONTEXT: one spelling of "which file is this link", shared by the navigator and the reader
+function findByLink(app, from, link) {
+	const parsed = readLink(link);
+	if (!parsed) return null;
+	if (!parsed.rooted) return app.metadataCache.getFirstLinkpathDest(parsed.path, from) ?? null;
+	const direct = app.vault.getAbstractFileByPath(parsed.path);
+	return direct ?? app.vault.getAbstractFileByPath(`${parsed.path}.md`) ?? null;
+}
+
+// NAVIGATION IS NOT DATA. The gateway answers what exists; this one takes a person somewhere,
+// and it is the only thing in a widget's hands that can.
+function createNavigator(app, from) {
+	const find = (link) => findByLink(app, from, link);
+
+	return {
+		canNavigate: true,
+		resolve: (link) => find(link)?.path ?? null,
+		navigate: (link) => {
+			const file = find(link);
+			if (!(file instanceof TFile)) return false;
+			app.workspace.getLeaf(false).openFile(file);
+			return true;
+		},
+	};
+}
+
+// CONTEXT: a widget reading a file it names is its own entity, like the navigator beside it
+function createReader(app, from) {
+	return {
+		canRead: true,
+		// TRADE-OFF: the cap is asked before the read — a refusal after loading 200 MB is not one
+		async read(link, options = {}) {
+			const target = readTarget(link);
+			if (!target.ok) return refusedRead(target.failure);
+
+			const found = findByLink(app, from, target.link);
+			if (!found) return refusedRead(`${target.link} is not in this vault`);
+			if (!(found instanceof TFile)) return refusedRead(`${found.path} is a folder, not a file`, found.path);
+
+			const bytes = found.stat?.size ?? 0;
+			const cap = Number(options.maxBytes ?? 0);
+			if (cap > 0 && bytes > cap) {
+				return refusedRead(`${found.path} is ${Math.round(bytes / 1024)} KB, over the ${Math.round(cap / 1024)} KB limit`, found.path, bytes);
+			}
+			return { ok: true, text: await app.vault.cachedRead(found), path: found.path, bytes, failure: null };
+		},
+	};
+}
+
+// THE SOLO GATEWAY: one record, no list and no filters, because there is nothing to choose
+// between. What "here" means is set by whoever mounts the widget — the note under a board,
+// the paragraph under an inline widget.
+export function noteHere(app, notePath) {
+	const fileAt = () => {
+		const found = app.vault.getAbstractFileByPath(notePath);
+		return found instanceof TFile ? found : null;
+	};
+
+	return {
+		of: "entry",
+		// TRADE-OFF: absent here, present after get() — mirroring a listed record against a
+		// fetched one, because reading every note body to draw a board is the cost this avoids
+		content: null,
+		canUpdate: true,
+		async get() {
+			const file = fileAt();
+			if (!file) return null;
+			const body = readBody(await app.vault.read(file));
+			return { ...toRecord(app, file, body), content: body };
+		},
+		async update(content) {
+			const file = fileAt();
+			if (!file) return false;
+			return (await writeBody(app, file, content)) !== undefined;
+		},
+	};
 }
 
 function sortRecords(records, sort) {
@@ -176,14 +260,19 @@ export function createHost(app, plugin, notePath = "") {
 		// which environment the widget is running in. The same widget runs on the web or on
 		// the desktop against a different host; this is the only thing it may branch on.
 		platform: "obsidian",
+		// CONTEXT: the family above, the BUILD here — what the host can actually reach differs
+		// between a desktop app, a phone and a browser tab
+		type: hostTypeOf(Platform),
 
 		can: {
 			fullscreen: true,
-			systemRun: !app.isMobile,
 			subscribe: true,
 			network: true,
 			renderMarkdown: true,
 		},
+
+		// CONTEXT: `systemRun` was declared here and read by nobody — console.can.run owns it now
+		console: createConsole(hostTypeOf(Platform), window.require?.bind(window), app.vault.adapter?.basePath),
 
 		slot(binding) {
 			return createSlot(app, binding);
@@ -203,10 +292,6 @@ export function createHost(app, plugin, notePath = "") {
 
 			notify(message) {
 				new Notice(message);
-			},
-			openNote(path) {
-				const file = app.vault.getAbstractFileByPath(path);
-				if (file instanceof TFile) app.workspace.getLeaf(false).openFile(file);
 			},
 			// TRADE-OFF: read mode with post-processors, not an editable live preview
 			// CONTEXT: the child unloads the embeds and handlers Obsidian registers inside
@@ -232,6 +317,10 @@ export function createHost(app, plugin, notePath = "") {
 			},
 		},
 
+		navigator: createNavigator(app, notePath),
+		reader: createReader(app, notePath),
+		here: notePath ? noteHere(app, notePath) : null,
+
 		app,
 		plugin,
 	};
@@ -244,6 +333,9 @@ export function bindNote(host, notePath) {
 	if (!notePath) return host;
 	return {
 		...host,
+		here: noteHere(host.app, notePath),
+		navigator: createNavigator(host.app, notePath),
+		reader: createReader(host.app, notePath),
 		ui: {
 			...host.ui,
 			renderMarkdown: (element, markdown, sourcePath = notePath) => host.ui.renderMarkdown(element, markdown, sourcePath),

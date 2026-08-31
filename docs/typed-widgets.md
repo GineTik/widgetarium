@@ -105,3 +105,69 @@ stays light, but every widget gains a build step. Undecided.
 
 After the task dialog. Changing the language while two agents hold half the tree would put a
 conflict in every file.
+
+## Where a widget stands, and how it says so
+
+Three entities were split apart, because one of them was doing all three jobs:
+
+| entity | answers | has |
+|---|---|---|
+| gateway (many) | what exists | `list` + `get`, filters, sort, window |
+| **`here`** (solo) | what this widget is standing in | `get`, `update` — no list, no filters |
+| **`navigator`** | how to get somewhere | `resolve`, `navigate` |
+
+Navigation was `host.ui.openNote(path)` and took a vault path. It is now `navigator.navigate(link)`
+and takes ONE grammar every platform can implement: `/Folder/Note` reads from the root, `Note` is
+relative and resolved the way that platform resolves a link a person wrote. `openRecord` on a
+source goes through it, so there is one way to move a person and not two.
+
+**`here` is a file OR a paragraph, and the difference is a field.** `here.of` is `"entry"` for the
+record a board sits in and `"passage"` for the text a trigger captured. An entry carries no
+`content` until `get()` fetches it — the same trade-off a listed record already makes against a
+fetched one. A passage carries its text at once, because the engine already had it.
+
+A passage can be written back only where the trigger can be spelled again: a line trigger and a
+capsule can, a regular expression cannot, and `canUpdate` says so rather than the write guessing.
+The lines are located by WHAT THEY SAY, inside the write, and a run found twice is refused.
+
+## The type is the declaration
+
+`SoloGateway<Passage>` in the props is what makes a widget an inline widget, and the build writes
+that down:
+
+```ts
+function Reminder({ here }: { here: SoloGateway<Passage> }) {}   // manifest gains inline: true
+function Summary({ here }: { here: SoloGateway<Entry> }) {}      // manifest gains inline: false
+```
+
+This is the same rule as the rest of this document — types are erased, so the BUILD reads the
+generic and the ENGINE injects by the manifest. `inline` therefore stops being a hand-written flag
+that can lie about the props beside it. Until the build exists it is authored by hand, and it is
+already the field the build will own.
+
+Placement follows from two facts the manifest already carries: a widget is offered for text when
+it declares `inline`, and for a board when it claims a `defaultSize`. A widget may claim both.
+
+## The host differs by build; the gateway and the navigator do not
+
+`host.platform` says whose host it is. **`host.type`** says which build — `obsidian-desktop`,
+`obsidian-mobile`, `obsidian-web` — and it exists because one part of the host genuinely differs
+between them:
+
+```
+host.console.can    { log: true, run: <desktop only> }
+host.console.log(...)                 every build
+host.console.run(command)  ->  { ok, output, failure }
+```
+
+`run` reaches a machine, so it is a desktop verb; a phone and a browser tab answer
+`can.run === false` and a call returns the refusal shape rather than throwing. **A widget asks
+`console.can`, never `host.type`** — the type is there for the rare case that needs the name.
+
+This replaces `can.systemRun`, which was declared on the host and read by nobody: a capability
+with no verb behind it is a claim nothing can honour. Running a command is not a new power either
+— a widget is compiled and run in the plugin's own context, so the machine was always reachable.
+Naming it puts it behind a `can` a widget has to ask.
+
+The other two entities are the same everywhere on purpose: the gateway answers what exists, and
+the navigator moves a person, and neither has any business knowing what it is running on.

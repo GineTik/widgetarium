@@ -148,7 +148,7 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 			// TRADE-OFF: fetched, never carried on the rows — a list re-runs on every vault event
 			get: (ref) => slot.get(ref),
 			describe: () => slot.describe(),
-			openRecord: (ref) => host.ui.openNote(ref.path),
+			openRecord: (ref) => host.navigator.navigate(`/${ref.path}`),
 			update: (ref, patch) => (slot.canUpdate ? slot.update(ref, patch) : Promise.resolve(null)),
 		}),
 		[data, filters, sort, windowApi, slot],

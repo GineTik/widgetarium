@@ -5,6 +5,7 @@
 export function valueOf(record, prop) {
 	if (prop === "name" || prop === "title") return record.name;
 	if (prop === "path") return record.path;
+	if (prop === "type") return record.type;
 	return record.props?.[prop];
 }
 

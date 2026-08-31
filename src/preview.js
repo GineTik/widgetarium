@@ -1,6 +1,10 @@
 import { h } from "preact";
 import { viewHost } from "./engine/view-host.js";
 import { spanToPixels } from "./layout.js";
+import { typeOf } from "./engine/record-type.js";
+import { NO_HOST } from "./engine/host-none.js";
+import { refusedRead } from "./engine/read-file.js";
+import { settingDefaults } from "./engine/widget-settings.js";
 
 // A WIDGET DRAWN WITH NOBODY BEHIND IT. The catalogue shows a widget before it has a board, a
 // folder or a person's notes — so everything it would normally read comes from its own manifest,
@@ -15,6 +19,7 @@ function toRecord(row, index) {
 		ref: { path },
 		props,
 		name: props.title ?? path.slice(path.lastIndexOf("/") + 1).replace(/\.md$/, ""),
+		type: typeOf(path),
 		meta: { created: 0, modified: 0 },
 		attachments: 0,
 		body,
@@ -64,6 +69,47 @@ function previewContext(seed) {
 	};
 }
 
+// CONTEXT: a picture of a widget still needs somewhere to BE — a passage when the preview is
+// of text becoming a widget, an entry when it is of a tile
+export function previewHere(content = null) {
+	return {
+		of: content === null ? "entry" : "passage",
+		content,
+		canUpdate: false,
+		get: async () => ({ of: content === null ? "entry" : "passage", path: "preview.md", props: {}, content }),
+		update: refuse("write what it is standing in"),
+	};
+}
+
+export const previewNavigator = {
+	canNavigate: false,
+	resolve: () => null,
+	navigate: () => {
+		console.warn("Widgetarium: a preview cannot navigate — it is a picture of a widget, not the widget");
+		return false;
+	},
+};
+
+// CONTEXT: a preview reads the files its manifest declares, exactly as it reads the rows it declares
+export function previewReader(manifest) {
+	const declared = manifest?.preview?.files ?? {};
+	return {
+		canRead: true,
+		async read(link) {
+			const named = String(link ?? "").trim();
+			const text = declared[named];
+			if (text === undefined) return refusedRead(`${named || "that file"} is not in this preview`);
+			return { ok: true, text, path: named, bytes: text.length, failure: null };
+		},
+	};
+}
+
+// TRADE-OFF: the real environment when there is one — a catalogue tile that cannot render
+// markdown draws a widget nobody could judge
+export function previewHost(host) {
+	return host ? viewHost(host) : NO_HOST;
+}
+
 export function previewSize(manifest, cell, gap) {
 	const size = manifest?.preview?.size ?? manifest?.defaultSize ?? { w: 4, h: 3 };
 	return { w: size.w, h: size.h, width: spanToPixels(size.w, cell, gap), height: spanToPixels(size.h, cell, gap) };
@@ -73,24 +119,32 @@ export function previewSize(manifest, cell, gap) {
 export function previewProps(definition, options) {
 	const manifest = definition?.manifest ?? {};
 	const { data, actions } = previewData(manifest);
-	const settings = {};
-	for (const field of manifest.settings ?? []) settings[field.key] = field.default;
+	const settings = settingDefaults(manifest);
 
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = options?.registry?.get(spec.default);
 		slots[name] = child?.component && !child.error
-			? (given) => h(child.component, { ...given, settings: {}, size: { w: 1, h: 1, scale: 1 }, host: options.host, context: previewContext() })
+			? (given) => h(child.component, { ...given, settings: {}, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host), context: previewContext() })
 			: null;
 	}
 
+	// CONTEXT: an inline widget is drawn from the text its manifest offers, the way a board
+	// widget is drawn from the settings its manifest offers
+	const content = manifest.inline ? (manifest.preview?.content ?? manifest.title ?? "Sample text") : null;
+
 	return {
+		here: previewHere(content),
+		navigator: previewNavigator,
+		reader: previewReader(manifest),
+		content,
 		settings: { ...settings, ...(manifest.preview?.settings ?? {}) },
 		size: { w: manifest.preview?.size?.w ?? 4, h: manifest.preview?.size?.h ?? 3, scale: 1, isCollapsed: false, collapse() {}, expand() {} },
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
-		host: options?.host ? viewHost(options.host) : { platform: "preview", can: {}, ui: { notify() {}, renderMarkdown: () => () => {} } },
+		host: previewHost(options?.host),
 		context: previewContext(manifest.preview?.context),
-		board: { properties: manifest.preview?.properties ?? [] },
+		// CONTEXT: the sample world hears everything the widget offers, so it draws its working face
+		board: { properties: manifest.preview?.properties ?? [], archivedColumns: manifest.preview?.archivedColumns ?? [], consumes: manifest.provides ?? [] },
 		configureBoard: () => false,
 		configure: () => {},
 		data,

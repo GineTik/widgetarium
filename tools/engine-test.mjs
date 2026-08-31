@@ -74,13 +74,39 @@ const fullHost = {
 	app: { vault: {} },
 	plugin: {},
 };
+fullHost.type = "obsidian-desktop";
+fullHost.console = { can: { log: true, run: true }, log: () => true, run: async () => ({ ok: true, output: "", failure: null }) };
 const exposed = viewHost(fullHost);
 check("the widget is told which platform it runs on", exposed.platform, "obsidian");
 check("and what it can do there", Object.keys(exposed.can).sort(), ["fullscreen", "network", "renderMarkdown"]);
 check("but gets no store", exposed.slot, undefined);
 check("no vault query", exposed.query, undefined);
 check("and no Obsidian app object", [exposed.app, exposed.plugin], [undefined, undefined]);
-check("what it does get, in full", Object.keys(exposed).sort(), ["can", "platform", "ui"]);
+check("and which build of it, so `can` never has to be guessed from the family", exposed.type, "obsidian-desktop");
+// CONTEXT: a console is an OUTPUT, so it crosses the boundary; what it may do on this build is
+// on its own `can`, which is what a widget asks instead of reading the host type
+check("a console crosses, and says what it may do here", Object.keys(exposed.console.can).sort(), ["log", "run"]);
+check("what it does get, in full", Object.keys(exposed).sort(), ["can", "console", "platform", "type", "ui"]);
+
+// WHICH BUILD, AND WHAT IT CAN REACH. `systemRun` used to be declared on the host and read by
+// nobody; the console is what consumes it, and it answers per build rather than per family.
+const { hostTypeOf } = await import("./.mjs-cache/engine/host-type.mjs");
+const { createConsole, refusingConsole } = await import("./.mjs-cache/engine/host-console.mjs");
+
+check("a desktop app is a desktop", hostTypeOf({ isDesktopApp: true }), "obsidian-desktop");
+check("a phone is a phone even when the desktop flag is on too", hostTypeOf({ isDesktopApp: true, isMobileApp: true }), "obsidian-mobile");
+check("a tablet reading as mobile is mobile", hostTypeOf({ isMobile: true }), "obsidian-mobile");
+check("anything else is the web", hostTypeOf({}), "obsidian-web");
+
+const fakeRequire = (name) => (name === "child_process" ? { exec: (command, options, done) => done(null, `ran ${command}`, "") } : null);
+check("logging is available on every build", [createConsole("obsidian-mobile", null).can.log, createConsole("obsidian-web", null).can.log], [true, true]);
+check("a command line only on the desktop", ["obsidian-desktop", "obsidian-mobile", "obsidian-web"].map((type) => createConsole(type, fakeRequire).can.run), [true, false, false]);
+check("and only where there is a way to reach one", createConsole("obsidian-desktop", null).can.run, false);
+// CONTEXT: caught on purpose — a throw must show up as a wrong VALUE here, not as a crash
+const refusedRun = await createConsole("obsidian-mobile", fakeRequire).run("ls").catch((failure) => ({ threw: String(failure?.message ?? failure) }));
+check("a refused run says why instead of throwing", refusedRun, { ok: false, output: "", failure: "no command line in this build" });
+check("a run hands back what the command printed", await createConsole("obsidian-desktop", fakeRequire).run("ls"), { ok: true, output: "ran ls", failure: null });
+check("a preview's console refuses both", Object.values(refusingConsole("no").can), [false, false]);
 
 // MARKDOWN IS THE HOST'S TO DRAW. A widget may only import widgetarium, widgetarium/kit and
 // preact, so Obsidian's renderer can only reach it through the host — and it reaches it as a
@@ -110,10 +136,13 @@ if (typeof resolveSlots === "function") {
 	const node = bySpec.card({ task: { title: "Analyze Insights" } });
 	check("the parent's data reaches the slotted widget", node.props.task.title, "Analyze Insights");
 	check("and the child's own defaults are applied", node.props.settings.tone, "plain");
-	check("the child is handed the narrow host, not the store", Object.keys(node.props.host).sort(), ["can", "platform", "ui"]);
+	check("the child is handed the narrow host, not the store", Object.keys(node.props.host).sort(), ["can", "console", "platform", "type", "ui"]);
 
-	const overridden = resolveSlots(manifest, { slots: { card: "@other/card" } }, registry, noHost, {});
+	// CONTEXT: the model normalises both stored shapes, so the engine only ever meets the record
+	const overridden = resolveSlots(manifest, { slots: { card: { widget: "@other/card" } } }, registry, noHost, {});
 	check("a tile may name a different widget for the slot", overridden.card, null);
+	const kept = resolveSlots(manifest, { slots: { card: { widget: "@task/task-card" } } }, registry, noHost, {});
+	check("and naming the same widget the manifest defaults to still resolves it", typeof kept.card, "function");
 
 	// ONE SHAPE, EVERY PATH. The registry resolves the same file whether the board placed it
 	// or another widget slotted it, so a widget written against props.board as a tile must not
@@ -125,7 +154,7 @@ if (typeof resolveSlots === "function") {
 	check("and it is the SAME board, not a copy", withBoard.props.board === access.board, true);
 	check("it may configure the board too", withBoard.props.configureBoard(), true);
 	const noBoard = bySpec.card({});
-	check("with no board behind it the shape still holds", noBoard.props.board, { properties: [] });
+	check("with no board behind it the shape still holds", noBoard.props.board, { properties: [], consumes: [] });
 	check("and the refusal is a boolean, not a missing function", noBoard.props.configureBoard(), false);
 } else {
 	failed += 1;

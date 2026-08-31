@@ -2,10 +2,16 @@
 // it can do there. Never the store, and never the platform's own API — a widget holding
 // Obsidian's `app` can reach the whole vault behind the engine, which is the model crossing
 // into the view. Platform-agnostic on purpose: a web build narrows its own host the same way.
+// NOT the navigator and NOT `here`: those are entities of their own, handed over as their own
+// props, so nothing has two doors into it.
 export function viewHost(host) {
 	return {
 		platform: host.platform,
+		type: host.type,
 		can: host.can,
+		// CONTEXT: not the store and not the app — a console is an output, and what it may do
+		// on this build is on `console.can`
+		console: host.console,
 		ui: {
 			notify: (message) => host.ui.notify(message),
 			// CONTEXT: an element the widget owns, never the renderer's reach into the vault
