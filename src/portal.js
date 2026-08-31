@@ -13,7 +13,9 @@ export function mountInto(anchor, className, onEscape) {
 	const onKey = (event) => event.key === "Escape" && onEscape?.();
 	if (onEscape) document.addEventListener("keydown", onKey);
 
+	// CONTEXT: `node` is handed back so a caller can animate the mount out before disposing it
 	return {
+		node,
 		draw: (tree) => render(tree, node),
 		dispose: () => {
 			if (onEscape) document.removeEventListener("keydown", onKey);
