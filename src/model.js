@@ -16,28 +16,120 @@ function normalizeSources(input) {
 	return result;
 }
 
-// CONTEXT: a tile that mounts other widgets keeps their settings here, so a group is one tile
+// CONTEXT: a slot used to persist as the widget id alone, a mount as a record keyed by that id
+function heldWidget(input, keyWidget) {
+	if (typeof input === "string") return input === "" ? null : input;
+	if (typeof input?.widget === "string" && input.widget !== "") return input.widget;
+	return keyWidget;
+}
+
+// CONTEXT: a slot and a mount are one record — whether the parent feeds it is the manifest's answer
+function normalizeHeld(input, keyWidget) {
+	const widget = heldWidget(input, keyWidget);
+	if (typeof widget !== "string" || widget === "") return null;
+	const held = typeof input === "object" && input !== null ? input : {};
+	return { widget, settings: held.settings ?? {}, sources: normalizeSources(held.sources), slots: normalizeSlots(held.slots), mounted: normalizeMounted(held.mounted) };
+}
+
+// CONTEXT: a mount key is the widget id, with #n on a repeat — a record written before this carries no widget
 function normalizeMounted(input) {
+	if (typeof input !== "object" || input === null) return {};
 	const result = {};
-	for (const [id, held] of Object.entries(input ?? {})) {
-		result[id] = { settings: held?.settings ?? {}, sources: normalizeSources(held?.sources), slots: normalizeSlots(held?.slots), mounted: normalizeMounted(held?.mounted) };
+	for (const [key, held] of Object.entries(input)) {
+		const record = normalizeHeld(held, key.split("#")[0]);
+		if (record) result[key] = record;
 	}
 	return result;
 }
 
-// CONTEXT: which widget fills a slot, by slot name; a nameless or null pick is no pick at all
+// CONTEXT: a slot key is a manifest name and names no widget, so a nameless pick is no pick
 function normalizeSlots(input) {
 	if (typeof input !== "object" || input === null) return {};
 	const result = {};
-	for (const [name, widget] of Object.entries(input)) {
-		if (typeof widget === "string" && widget !== "") result[name] = widget;
+	for (const [name, held] of Object.entries(input)) {
+		const record = normalizeHeld(held, null);
+		if (record) result[name] = record;
 	}
 	return result;
+}
+
+// CONTEXT: the SLOT, not the widget id — the same widget held twice is two of these
+// TRADE-OFF: the live widget wins over the record's, which is a mirror of it
+export function heldTile(holder, hold, key, widget) {
+	const held = holder[hold]?.[key] ?? {};
+	return {
+		id: `${holder.id}/${key}`,
+		widget,
+		settings: held.settings ?? {},
+		sources: held.sources ?? {},
+		slots: held.slots ?? {},
+		mounted: held.mounted ?? {},
+	};
+}
+
+// CONTEXT: the key a mount was stored under while the widget id was the key
+export function mountKeys(ids) {
+	const taken = new Map();
+	return ids.map((id) => {
+		const nth = (taken.get(id) ?? 0) + 1;
+		taken.set(id, nth);
+		return nth === 1 ? id : `${id}#${nth}`;
+	});
+}
+
+// CONTEXT: the old shape is a comma list of widget ids, the new one substitution's { name, widget }
+function rowsOf(value) {
+	const list = Array.isArray(value) ? value : String(value ?? "").split(",");
+	return list
+		.map((entry) => (typeof entry === "string" ? { name: "", widget: entry } : { name: String(entry?.name ?? ""), widget: String(entry?.widget ?? "") }))
+		.map((row) => ({ name: row.name.trim(), widget: row.widget.trim() }))
+		.filter((row) => row.widget !== "");
+}
+
+// CONTEXT: run on every READ as well as on rename, so no stored name can shadow another
+export function uniqueName(taken, wanted) {
+	const base = String(wanted ?? "").trim();
+	let name = base;
+	let nth = 1;
+	while (taken.has(name)) {
+		nth += 1;
+		name = `${base} ${nth}`;
+	}
+	taken.add(name);
+	return name;
+}
+
+// CONTEXT: read where the record sits, write under the new key — that is the whole migration
+export function heldKey(held, key, was) {
+	return !held?.[key] && was && held?.[was] ? was : key;
+}
+
+// CONTEXT: the record moves onto its new key in the same write that changes it
+export function rekeyed(held, key, was, patch) {
+	const { [was]: legacy, ...rest } = held ?? {};
+	return { ...rest, [key]: { ...(held?.[key] ?? legacy ?? {}), ...patch } };
+}
+
+// CONTEXT: `was` is the setting's former key — a note written before the rename still fills the mount
+export function mountSetting(settings, name, spec) {
+	return settings?.[name] ?? settings?.[spec?.was] ?? spec?.default;
+}
+
+// CONTEXT: `was` is the widget-id key a note written before this still stores the record under
+export function mountRows(value, nameFor) {
+	const rows = rowsOf(value);
+	const legacy = mountKeys(rows.map((row) => row.widget));
+	const taken = new Set();
+	return rows.map((row, index) => ({
+		name: uniqueName(taken, row.name || nameFor?.(row.widget) || row.widget),
+		widget: row.widget,
+		was: legacy[index],
+	}));
 }
 
 // TRADE-OFF: a name alone, no stored type — the dialog anchors the control off the name
 // CONTEXT: anchors ignore case, so two spellings are one property; the first spelling is kept
-export function normalizeProperties(input) {
+export function normalizeNames(input) {
 	if (!Array.isArray(input)) return [];
 	const kept = [];
 	const claimed = new Set();
@@ -127,35 +219,42 @@ export function normalizeBoard(input) {
 		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
 		// the board's shared selection: which board, project or view the widgets are on
 		context: { ...(input?.context ?? {}) },
-		properties: normalizeProperties(input?.properties),
+		properties: normalizeNames(input?.properties),
+		// CONTEXT: two views that never draw together must still read one list, so the board holds it
+		// CONTEXT: absent means no board has claimed it yet — the kanban's own setting still answers
+		...(input?.archivedColumns ? { archivedColumns: normalizeNames(input.archivedColumns) } : {}),
 	};
 }
 
-// CONTEXT: a view never opened has nothing to say, and an empty record in the file reads as one that does
-function serializeMounted(input) {
+// CONTEXT: a view never opened has nothing to say, and an empty sub-record in the file reads as one that does
+function serializeHeld(held) {
+	const slots = serializeHolders(held.slots);
+	const mounted = serializeHolders(held.mounted);
+	return {
+		widget: held.widget,
+		...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
+		...(Object.keys(held.sources ?? {}).length ? { sources: held.sources } : {}),
+		...(slots ? { slots } : {}),
+		...(mounted ? { mounted } : {}),
+	};
+}
+
+function serializeHolders(input) {
 	const result = {};
-	for (const [id, held] of Object.entries(input ?? {})) {
-		const nested = serializeMounted(held.mounted);
-		const kept = {
-			...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
-			...(Object.keys(held.sources ?? {}).length ? { sources: held.sources } : {}),
-			...(Object.keys(held.slots ?? {}).length ? { slots: held.slots } : {}),
-			...(nested ? { mounted: nested } : {}),
-		};
-		if (Object.keys(kept).length) result[id] = kept;
-	}
+	for (const [key, held] of Object.entries(input ?? {})) result[key] = serializeHeld(held);
 	return Object.keys(result).length ? result : null;
 }
 
 function serializeTile(tile) {
-	const mounted = serializeMounted(tile.mounted);
+	const slots = serializeHolders(tile.slots);
+	const mounted = serializeHolders(tile.mounted);
 	return {
 		id: tile.id,
 		widget: tile.widget,
 		...(tile.folded ? { folded: true } : {}),
 		...(Object.keys(tile.settings ?? {}).length ? { settings: tile.settings } : {}),
 		...(Object.keys(tile.sources ?? {}).length ? { sources: tile.sources } : {}),
-		...(Object.keys(tile.slots ?? {}).length ? { slots: tile.slots } : {}),
+		...(slots ? { slots } : {}),
 		...(mounted ? { mounted } : {}),
 	};
 }
@@ -177,6 +276,8 @@ export function serializeBoard(board) {
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
 		...(Object.keys(board.context ?? {}).length ? { context: board.context } : {}),
 		...(board.properties?.length ? { properties: board.properties } : {}),
+		// CONTEXT: an emptied list is still written — its absence is what hands the fact back to the tile
+		...(board.archivedColumns ? { archivedColumns: board.archivedColumns } : {}),
 		layouts: Object.fromEntries(
 			authoredColumns(board).map((columns) => [
 				String(columns),

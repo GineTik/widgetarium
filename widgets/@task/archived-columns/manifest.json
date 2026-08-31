@@ -1,6 +1,21 @@
 {
 	"id": "@task/archived-columns",
 	"title": "Archived columns",
+	"description": "Lists the columns a board has put away, with the tasks still sitting in them.",
+	"keywords": [
+		"archive",
+		"archived",
+		"hidden",
+		"columns",
+		"board",
+		"kanban",
+		"storage",
+		"restore",
+		"put away",
+		"old",
+		"closed",
+		"backlog"
+	],
 	"view": "Archived columns",
 	"defaultSize": {
 		"w": 13,
@@ -17,6 +32,10 @@
 		},
 		"context": {
 			"board": "Widgetarium"
-		}
+		},
+		"archivedColumns": [
+			"Blocked",
+			"On hold"
+		]
 	}
 }

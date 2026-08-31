@@ -5,14 +5,17 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { placedIds, layoutFor, normalizeProperties } from "./model.js";
+import { heldKey, heldTile, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, rekeyed, uniqueName } from "./model.js";
 import { createContext } from "./engine/context.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
+import { settingDefaults } from "./engine/widget-settings.js";
+import { NOWHERE } from "./engine/navigator-none.js";
 import { trace } from "./trace.js";
 import { useSource } from "./source.js";
 import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
+import { declaredName } from "./registry.js";
 
 const REM = 16;
 // how far a resize may travel past a limit before it stops giving entirely
@@ -46,14 +49,6 @@ class Boundary extends Component {
 			h("code", null, String(this.state.failure?.message ?? this.state.failure)),
 		]);
 	}
-}
-
-function defaults(definition) {
-	const result = {};
-	for (const field of definition.manifest.settings ?? []) {
-		if (field.default !== undefined) result[field.key] = field.default;
-	}
-	return result;
 }
 
 // A widget's source filter may name a context key with a leading @: `{ board: "@board" }`
@@ -108,99 +103,76 @@ function refuseBoardPatch() {
 export function resolveSlots(manifest, tile, registry, host, viewContext, boardAccess) {
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
-		const child = registry.get(tile.slots?.[name] ?? spec.default);
+		const child = registry.get(tile.slots?.[name]?.widget ?? spec.default);
 		if (!child?.component || child.error) {
 			slots[name] = null;
 			continue;
 		}
-		const childDefaults = defaults(child);
+		const childDefaults = settingDefaults(child.manifest);
 		slots[name] = (given) =>
 			h(child.component, {
 				...given,
 				settings: { ...childDefaults, ...(given?.settings ?? {}) },
 				size: given?.size ?? { w: 1, h: 1, scale: 1 },
 				host: viewHost(host),
+				here: host.here ?? null,
+				navigator: host.navigator ?? NOWHERE,
 				context: viewContext,
 				// the same shape a tile gets: one widget file must not read `board` two ways
 				// depending on whether the board placed it or another widget did
-				board: boardAccess?.board ?? { properties: [] },
+				board: boardAccess?.board ?? { properties: [], consumes: [] },
 				configureBoard: boardAccess?.configureBoard ?? refuseBoardPatch,
 			});
 	}
 	return slots;
 }
 
-// TRADE-OFF: a mount resolves its own sources, unlike a slot, which is handed its data
-// CONTEXT: the SLOT, not the widget id — the same widget mounted twice is two of these
-// CONTEXT: resolveSlots reads tile.slots, so a mount without one can never record a pick
-export function mountedTile(tile, slot, widget) {
-	const held = tile.mounted?.[slot] ?? {};
-	return {
-		id: `${tile.id}/${slot}`,
-		widget,
-		settings: held.settings ?? {},
-		sources: held.sources ?? {},
-		slots: held.slots ?? {},
-		mounted: held.mounted ?? {},
-	};
-}
-
 // CONTEXT: module scope, so returning to a view finds the same component type
-function MountedWidget({ slot, widget, definition, tile, patchMounted, ...rest }) {
-	const child = mountedTile(tile, slot, widget);
+function MountedWidget({ name, was, widget, definition, tile, patchMounted, ...rest }) {
+	const child = heldTile(tile, "mounted", heldKey(tile.mounted, name, was), widget);
 	return h(WidgetHost, {
 		...rest,
 		definition,
 		tile: child,
 		isMounted: true,
-		patchSource: (name, patch) =>
-			patchMounted(slot, { sources: { ...child.sources, [name]: { ...(child.sources[name] ?? {}), ...patch } } }),
-		patchMounted: (held, patch) =>
-			patchMounted(slot, { mounted: { ...child.mounted, [held]: { ...(child.mounted[held] ?? {}), ...patch } } }),
-		onPatch: (patch) => patchMounted(slot, patch),
+		patchSource: (given, patch) =>
+			patchMounted(name, was, { sources: { ...child.sources, [given]: { ...(child.sources[given] ?? {}), ...patch } } }),
+		patchMounted: (held, heldWas, patch) => patchMounted(name, was, { mounted: rekeyed(child.mounted, held, heldWas, patch) }),
+		onPatch: (patch) => patchMounted(name, was, patch),
 	});
 }
 
-function idsOf(value) {
-	if (Array.isArray(value)) return value;
-	return String(value ?? "")
-		.split(",")
-		.map((id) => id.trim())
-		.filter(Boolean);
+function toKeys(value) {
+	return String(value ?? "").split(",").filter(Boolean);
 }
 
 // CONTEXT: an id the registry could not resolve is still an entry — dropping it hid the gap
-function mountEntry(slot, id, registry, mount) {
-	const held = registry.get(id);
+function mountEntry(row, registry, mount) {
+	const held = registry.get(row.widget);
 	const drawable = Boolean(held?.component) && !held.error;
 	return {
-		slot,
-		id,
-		title: held?.manifest?.title ?? id,
+		name: row.name,
+		id: row.widget,
+		title: held?.manifest?.title ?? row.widget,
 		// CONTEXT: the child's own declaration — what a holder matches on is the holder's business
 		manifest: held?.manifest ? { ...held.manifest } : null,
 		problem: drawable ? null : held ? "failed" : "not-found",
 		failure: held?.error ? String(held.error.message ?? held.error) : null,
-		render: drawable ? () => h(MountedWidget, { ...mount, key: slot, slot, widget: id, definition: held }) : null,
+		render: drawable ? () => h(MountedWidget, { ...mount, key: row.name, name: row.name, was: row.was, widget: row.widget, definition: held }) : null,
 	};
 }
 
-// CONTEXT: a mount is filled by the SETTING of the same name, so which widgets it holds is configuration
+// CONTEXT: `was` on the spec is the setting's own former key, so an old note still fills the mount
 export function resolveMounts(manifest, settings, registry, mount) {
 	const mounts = {};
-	for (const name of Object.keys(manifest.mounts ?? {})) {
-		// CONTEXT: a repeated id is a second slot, with settings and sources of its own
-		const taken = new Map();
-		mounts[name] = idsOf(settings[name]).map((id) => {
-			const nth = (taken.get(id) ?? 0) + 1;
-			taken.set(id, nth);
-			return mountEntry(nth === 1 ? id : `${id}#${nth}`, id, registry, mount);
-		});
+	for (const [name, spec] of Object.entries(manifest.mounts ?? {})) {
+		const rows = mountRows(mountSetting(settings, name, spec), (id) => declaredName(registry, id));
+		mounts[name] = rows.map((row) => mountEntry(row, registry, mount));
 	}
 	return mounts;
 }
 
-function WidgetHost({ definition, tile, place, host, scale, patchSource, context, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, configureBoard }) {
+function WidgetHost({ definition, tile, place, host, scale, patchSource, context, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, boardArchivedColumns, boardConsumes, configureBoard }) {
 	const manifest = definition.manifest;
 	const [, setTick] = useState(0);
 	// CONTEXT: one INSTANCE, not one widget — two tiles of the same widget are two writers
@@ -213,9 +185,13 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 	// one that consumes: the tab bar draws the active tab from the very key it writes, and
 	// without the subscription the click would land but the underline would not follow.
 	const touchesContext = (manifest.consumes ?? []).length > 0 || (manifest.provides ?? []).length > 0;
+	const drawnFrom = context.all();
 	useEffect(() => {
 		if (!touchesContext) return;
-		return context.subscribe(() => setTick((count) => count + 1));
+		const stop = context.subscribe(() => setTick((count) => count + 1));
+		// CONTEXT: a value written while this tile was mounting reached no listener, and an equal set never resends it
+		if (context.all() !== drawnFrom) setTick((count) => count + 1);
+		return stop;
 	}, [context, touchesContext]);
 
 	const sources = {};
@@ -266,10 +242,10 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		console.warn(`Widgetarium: ${owner} is mounted and cannot ${verb} — a mount has no place of its own`);
 	};
 
-	const settings = { ...defaults(definition), ...(tile.settings ?? {}) };
+	const settings = { ...settingDefaults(definition.manifest), ...(tile.settings ?? {}) };
 	// one object, handed to this widget and to anything it slots — the same board, and the
 	// same identity, so a child's memo does not see a new board every frame
-	const boardAccess = { board: { properties: boardProperties }, configureBoard };
+	const boardAccess = { board: { properties: boardProperties, archivedColumns: boardArchivedColumns, consumes: toKeys(boardConsumes) }, configureBoard };
 	const props = {
 		settings,
 		// A widget may CHANGE its own settings — the columns a board shows are a setting, and a
@@ -297,13 +273,18 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		// the environment, not the store: platform, capabilities, and a way to speak to the user
 		host: viewHost(host),
+		// WHERE THIS WIDGET IS, as one record with no list and no filters — the note under a
+		// board, the paragraph under an inline widget. `here.of` says which.
+		here: host.here ?? null,
+		// CONTEXT: navigation is its own entity, never a gateway verb — data does not move people
+		navigator: host.navigator ?? NOWHERE,
 		// what this widget may read and write of the shared selection, and nothing else
 		context: viewContext,
 		data,
 		actions,
 		filters,
 		slots: resolveSlots(manifest, tile, registry, host, viewContext, boardAccess),
-		mounts: resolveMounts(manifest, settings, registry, { tile, place, host, scale, context, registry, onCollapse, onExpand, patchMounted, boardProperties, configureBoard }),
+		mounts: resolveMounts(manifest, settings, registry, { tile, place, host, scale, context, registry, onCollapse, onExpand, patchMounted, boardProperties, boardArchivedColumns, boardConsumes, configureBoard }),
 	};
 
 	return h(definition.component, props);
@@ -373,7 +354,7 @@ function icon(paths) {
 }
 
 function TileView(props) {
-	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, context, registry, boardProperties, configureBoard } = props;
+	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, context, registry, boardProperties, boardArchivedColumns, boardConsumes, configureBoard } = props;
 	const settingsShown = typeof settings === "string";
 
 	// built BEFORE the window that may hold it: the window is a hook and must run on every
@@ -381,13 +362,12 @@ function TileView(props) {
 	const patchSource = (name, patch) =>
 		onPatch({ sources: { ...(tile.sources ?? {}), [name]: { ...(tile.sources?.[name] ?? {}), ...patch } } });
 
-	const patchMounted = (id, patch) =>
-		onPatch({ mounted: { ...(tile.mounted ?? {}), [id]: { ...(tile.mounted?.[id] ?? {}), ...patch } } });
+	const patchMounted = (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) });
 
 	const widget = h(
 		Boundary,
 		{ key: tile.widget },
-		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch, boardProperties, configureBoard }),
+		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch, boardProperties, boardArchivedColumns, boardConsumes, configureBoard }),
 	);
 
 	const settingsWindow = useSettingsWindow({
@@ -402,6 +382,7 @@ function TileView(props) {
 		host,
 		registry,
 		columns,
+		boardConsumes: toKeys(boardConsumes),
 		onPatch,
 		onDone: () => onCloseSettings(true),
 		onDismiss: () => onCloseSettings(false),
@@ -540,6 +521,8 @@ const Tile = memo(TileView, (before, after) => {
 	if (before.settings !== after.settings || before.columns !== after.columns || before.phone !== after.phone) return false;
 	if (before.context !== after.context) return false;
 	if (before.boardProperties !== after.boardProperties) return false;
+	if (before.boardArchivedColumns !== after.boardArchivedColumns) return false;
+	if (before.boardConsumes !== after.boardConsumes) return false;
 	// Whether this tile is the open one is a reason to redraw it. Left out, the chip was set
 	// open, the scrim appeared, and the tile itself was skipped — the board dimmed around a
 	// chip that never opened.
@@ -754,19 +737,77 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	};
 
 	const patchTile = (id, patch) => {
-		onChange({ ...board, tiles: board.tiles.map((tile) => (tile.id === id ? { ...tile, ...patch } : tile)) }, true);
+		// CONTEXT: a memoised tile's write carries the render it was drawn in, not the board as it stands
+		const now = latestRef.current.board;
+		onChange({ ...now, tiles: now.tiles.map((tile) => (tile.id === id ? { ...tile, ...patch } : tile)) }, true);
 	};
 
-	// TRADE-OFF: one key wide — a widget patching the board could rewrite its tiles and layouts
-	const BOARD_KEYS = ["properties"];
+	// CONTEXT: `view` in a manifest is a widget declaring itself a nameable view
+	const viewTiles = (tiles) => tiles.filter((tile) => registry.get(tile.widget)?.manifest?.view);
+
+	// TRADE-OFF: the board folds it, not the widget — only the board can move a tile INTO a holder
+	const addHolder = (key) => {
+		const holder = registry
+			.list()
+			.find((entry) => (entry.manifest?.consumes ?? []).includes(key) && Object.keys(entry.manifest?.mounts ?? {}).length > 0);
+		if (!holder) {
+			console.warn(`Widgetarium: no installed widget holds "${key}"`);
+			return false;
+		}
+		const now = latestRef.current;
+		const [mountName, spec] = Object.entries(holder.manifest.mounts)[0];
+		const moved = viewTiles(now.board.tiles);
+		const taken = new Set();
+		const held = moved.map((tile) => ({ name: uniqueName(taken, declaredName(registry, tile.widget)), widget: tile.widget, tile }));
+		// CONTEXT: a holder of one view switches nothing, so its declared default fills the rest
+		const owned = new Set(moved.map((tile) => tile.widget));
+		const spare = mountRows(spec?.default ?? [], (id) => declaredName(registry, id)).filter((row) => !owned.has(row.widget));
+		const rows = [
+			...held.map((row) => ({ name: row.name, widget: row.widget })),
+			...spare.map((row) => ({ name: uniqueName(taken, row.name), widget: row.widget })),
+		];
+		const mounted = {};
+		for (const row of held) {
+			mounted[row.name] = { widget: row.widget, settings: row.tile.settings, sources: row.tile.sources, slots: row.tile.slots, mounted: row.tile.mounted };
+		}
+		const id = `w${Math.random().toString(36).slice(2, 8)}`;
+		const gone = new Set(moved.map((tile) => tile.id));
+		const born = holder.manifest.defaultSize ?? { w: 3, h: 2 };
+		// CONTEXT: the holder stands where the tile it swallowed stood, at every authored width
+		const stand = (places) => {
+			const stood = places.find((place) => gone.has(place.id));
+			const rest = places.filter((place) => !gone.has(place.id));
+			return [...rest, stood ? { ...stood, id } : { id, x: 0, y: rowsOf(rest), w: born.w, h: born.h }];
+		};
+		const layouts = {};
+		for (const [columns, places] of Object.entries(now.board.layouts)) layouts[columns] = stand(places);
+		layouts[now.columns] = stand(now.places);
+		onChange(
+			{
+				...now.board,
+				tiles: [...now.board.tiles.filter((tile) => !gone.has(tile.id)), { id, widget: holder.manifest.id, settings: { [mountName]: rows }, sources: {}, mounted }],
+				layouts,
+			},
+			true,
+		);
+		return true;
+	};
+
+	// TRADE-OFF: three keys wide — a widget patching the board could rewrite its tiles and layouts
+	const BOARD_KEYS = ["properties", "archivedColumns", "holder"];
 	const configureBoard = (patch) => {
 		const refused = Object.keys(patch ?? {}).filter((key) => !BOARD_KEYS.includes(key));
 		if (refused.length > 0) {
 			console.warn(`Widgetarium: a widget may configure the board's ${BOARD_KEYS.join(", ")}, not ${refused.join(", ")}`);
 			return false;
 		}
+		// CONTEXT: a holder is a tile, so the intent is folded, not written as a field
+		if (patch.holder) return addHolder(patch.holder);
 		// CONTEXT: the model's own normaliser, so no widget writes a list the file could not hold
-		onChange({ ...latestRef.current.board, properties: normalizeProperties(patch.properties) }, true);
+		const named = {};
+		if (patch.properties) named.properties = normalizeNames(patch.properties);
+		if (patch.archivedColumns) named.archivedColumns = normalizeNames(patch.archivedColumns);
+		onChange({ ...latestRef.current.board, ...named }, true);
 		return true;
 	};
 
@@ -813,8 +854,8 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 			}
 		};
 		const descend = (held) => {
-			for (const [slot, entry] of Object.entries(held ?? {})) {
-				walk(slot.split("#")[0], entry.sources);
+			for (const entry of Object.values(held ?? {})) {
+				walk(entry.widget, entry.sources);
 				descend(entry.mounted);
 			}
 		};
@@ -824,6 +865,26 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		}
 		return found;
 	};
+
+	// CONTEXT: a provider cannot see its readers, and a switcher steering nobody looked alive
+	const readKeys = () => {
+		const keys = new Set();
+		const walk = (widget) => {
+			for (const key of registry.get(widget)?.manifest?.consumes ?? []) keys.add(key);
+		};
+		const descend = (held) => {
+			for (const entry of Object.values(held ?? {})) {
+				walk(entry.widget);
+				descend(entry.mounted);
+			}
+		};
+		for (const tile of board.tiles) {
+			walk(tile.widget);
+			descend(tile.mounted);
+		}
+		return [...keys].sort().join(",");
+	};
+	const boardConsumes = readKeys();
 
 	// Removing a tile removes the TILE, not its place at this one width. Dropping only the
 	// place left it in board.tiles, so the next width derived it back and a widget deleted in
@@ -1108,6 +1169,8 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						onCollapse: collapseTile,
 						onExpand: expandTile,
 						boardProperties: board.properties,
+						boardArchivedColumns: board.archivedColumns,
+						boardConsumes,
 						configureBoard,
 					});
 			  });

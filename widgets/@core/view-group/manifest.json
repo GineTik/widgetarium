@@ -1,6 +1,21 @@
 {
 	"id": "@core/view-group",
 	"title": "View group",
+	"description": "Holds several widgets in one place and draws only the one the view tabs select.",
+	"keywords": [
+		"view",
+		"views",
+		"group",
+		"switch",
+		"swap",
+		"container",
+		"holder",
+		"stack",
+		"panes",
+		"tabs",
+		"layout",
+		"shell"
+	],
 	"defaultSize": {
 		"w": 13,
 		"h": 8
@@ -13,19 +28,19 @@
 		"views"
 	],
 	"mounts": {
-		"views": {}
-	},
-	"settings": [
-		{
-			"key": "views",
-			"type": "text",
-			"label": "Views — widget ids, in order",
-			"default": "@task/kanban-board, @task/archived-columns"
+		"holds": {
+			"was": "views",
+			"label": "Views",
+			"hint": "Each view is a widget with a name of your own. Press a name to rename it.",
+			"default": [
+				{ "name": "Kanban", "widget": "@task/kanban-board" },
+				{ "name": "Archived columns", "widget": "@task/archived-columns" }
+			]
 		}
-	],
+	},
 	"preview": {
 		"size": {
-			"w": 5,
+			"w": 4,
 			"h": 3
 		}
 	}

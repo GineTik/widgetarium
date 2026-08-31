@@ -1,5 +1,5 @@
 import { createWidget, WidgetRoot } from "widgetarium";
-import { Icon } from "widgetarium/kit";
+import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 
 const STYLE = `
 .orbi-archived-columns {
@@ -27,6 +27,10 @@ const STYLE = `
 	color: var(--text-muted);
 }
 
+.oac-restore {
+	flex: none;
+}
+
 .oac-soon {
 	display: flex;
 	flex-direction: column;
@@ -52,30 +56,46 @@ const STYLE = `
 `;
 
 // CONTEXT: archived BOARDS stay behind the tab strip's menu; this view holds columns only
-export default createWidget(function OrbiTaskArchivedColumns({ context }) {
-	const board = context?.get("board");
+export default createWidget(function OrbiTaskArchivedColumns({ context, board, configureBoard }) {
+	const onBoard = context?.get("board");
+	// CONTEXT: the board owns the list, so it reads the same whether or not the kanban is drawn
+	const archived = board?.archivedColumns ?? [];
+	const restore = (name) => configureBoard?.({ archivedColumns: archived.filter((column) => column !== name) });
 
 	return (
 		<WidgetRoot className="orbi orbi-archived-columns">
 			<style>{STYLE}</style>
 			<div class="oac-head">
 				<h3 class="oac-title">Archived columns</h3>
-				<span class="oac-board">{board ? board : "No board selected"}</span>
+				<span class="oac-board">{onBoard ? onBoard : "No board selected"}</span>
 			</div>
-			<div class="oac-soon">
-				<p class="oac-soon-line">
-					<Icon name="archive" size={15} />
-					Every column archived from this board, with the tasks still filed under it.
-				</p>
-				<p class="oac-soon-line">
-					<Icon name="chevron" size={15} />
-					Restore puts a column back on the board it came from.
-				</p>
-				<p class="oac-soon-line">
-					<Icon name="folder" size={15} />
-					Archived boards are not here — they live behind the board strip's own menu.
-				</p>
-			</div>
+			{archived.length === 0 ? (
+				<div class="oac-soon">
+					<p class="oac-soon-line">
+						<Icon name="archive" size={15} />
+						Every column archived from this board, with the tasks still filed under it.
+					</p>
+					<p class="oac-soon-line">
+						<Icon name="chevron" size={15} />
+						Restore puts a column back on the board it came from.
+					</p>
+					<p class="oac-soon-line">
+						<Icon name="folder" size={15} />
+						Archived boards are not here — they live behind the board strip's own menu.
+					</p>
+				</div>
+			) : (
+				<List>
+					{archived.map((name) => (
+						<Row key={name}>
+							<RowLabel>{name}</RowLabel>
+							<Button size="s" class="oac-restore" onClick={() => restore(name)}>
+								Restore
+							</Button>
+						</Row>
+					))}
+				</List>
+			)}
 		</WidgetRoot>
 	);
 });

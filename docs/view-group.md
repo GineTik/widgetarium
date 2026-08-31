@@ -23,23 +23,49 @@ tiles whose view is not active. It loses twice.
   (4, 8 and 12 columns). Adding Timeline means placing it three times, and getting the three to
   agree. In the group it is one entry.
 
-## A mount is not a slot
+## A mount is a slot the parent does not feed
 
-The first draft of this note claimed the group was "the same machinery pointed at a list instead
-of a single slot". That was wrong, and a review caught it: slots and mounts share no code path
-except the final registry lookup.
+This section used to say the opposite, and the reason it said so was real: slots and mounts shared
+no code path except the final registry lookup. That was a fact about the code, not about the idea,
+and the code has since been changed to match the idea. Both are now the same record in the file —
+`{ widget, settings?, sources?, slots?, mounted? }` — read and written by one pair of functions in
+`src/model.js`.
 
-- A **slot** is a template hole. The parent resolves the data and hands it down; the child never
-  touches `sources` or context on its own. `@task/task-card` is the example — it declares no
-  `sources` at all.
-- A **mount** is a nested tile minus geometry. The child goes through its own `WidgetHost`, so it
-  resolves its own `sources`, substitutes `@board` and `@filters` itself, claims its own context,
-  and persists its own settings.
+Two words for "a place a widget goes" is one word too many. The distinction that survives is
+whether the PARENT FEEDS IT, and the manifest already says that: a slot spec with a `gives` clause
+is fed, one without is not.
 
-Reach for a slot when the child only draws data the parent already holds. Reach for a mount when
-the child is a whole widget that must be swappable — its own manifest, settings and sources.
+- **Fed** — the parent resolves the data and hands it down, so the child owns nothing and there is
+  nothing inside it to configure. `@task/kanban-board` gives its `card` slot a task; that is what
+  makes replacing the card a setting rather than a fork.
+- **Unfed** — the child owns its own `sources` and settings, goes through its own `WidgetHost`,
+  substitutes `@board` and `@filters` itself and claims its own context. The group's views are
+  these.
 
-The group needs the second. That is the whole reason mounts exist.
+This is the distinction Vue calls a scoped slot, React a render prop and Plasmic
+`renderPropParams`. None of them needed a second noun for it either.
+
+The stored shape is the same; whether the record HOLDS anything is the consequence. A fed slot
+carries nothing but `widget`, so its record reads as one line and a diff on a real note stays
+small.
+
+### What the file still keeps apart
+
+`slots` and `mounted` remain two keys sharing one record shape, because the KEYS are different
+namespaces: a slot key is a name the widget's manifest declares (`card`), a mount key is a widget
+id derived from a setting value (`@task/kanban-board`, `#2` on a repeat). Merged today, the map
+would have to hold both — and the widget-id key is the very thing that moves onto board-owned
+names next. Measured across the twelve shipped manifests: one declares slots, one declares mounts,
+none declares both, no slot name contains `@` or `/`, and every widget id does. Zero collisions
+today, and no reason to spend the risk before the keys are the same kind of thing.
+
+### The pre-record shape still reads
+
+A slot persisted as the widget id alone for as long as the id was all it had to hold:
+`slots: { card: "@task/task-card" }`. Every note in the vault is written that way, and every one of
+them still opens — `normalizeHeld` takes the bare string as the record's `widget`, and a mount
+written before the shape takes its widget off its own key. Nothing migrates a note in bulk; a note
+is rewritten when its owner edits it, and not before.
 
 ## Who owns what
 
@@ -56,8 +82,9 @@ belongs beside the board tabs rather than inside the board region.
 Both risks were real, and two reviews found more. What the code does now:
 
 - **Sizing** stayed out of the group, as decided. It passes its own place straight through.
-- **`sources` do resolve** — but not through slots. A mount goes through its own `WidgetHost`,
-  which is the only path that builds `data`, `actions` and the `@board` / `@filters` substitution.
+- **`sources` do resolve** — but only for an UNFED child. A fed slot is handed its data; an unfed
+  one goes through its own `WidgetHost`, which is the only path that builds `data`, `actions` and
+  the `@board` / `@filters` substitution.
 - **Ownership is per INSTANCE, not per widget.** Context was keyed by the widget's registry id, so
   two mounted copies of one widget shared an owner and the second silently overwrote the first —
   quieter than the collision between two different widgets, which at least warned. The key is now
@@ -74,6 +101,23 @@ Both risks were real, and two reviews found more. What the code does now:
 Still open: releasing a claim frees the key's OWNER but leaves its VALUE. A removed group's
 published list outlives it. Fixing that means deciding whether removing the board tabs should also
 forget which board was selected — a bigger question than it looks.
+
+## A board with no group offers to become one
+
+A switcher with nothing reading `view` used to say so and stop there, and the sentence was cut off
+by its own one-row tile. Every board written before the group existed is in that state, and the
+manual repair leaves the board worse: placing a group from the catalogue gives it its own kanban
+while the loose one stays, so two boards are drawn at once and both write `columns`.
+
+So the switcher offers **Add a view group**, and the BOARD folds it — `configureBoard({ holder:
+"view" })`. A widget cannot do this: it owns no tiles. The board finds the installed widget that
+consumes the key and has a mount, moves every tile whose manifest declares a `view` name into that
+mount with the settings, sources and slots it already had, seats the group in the place it emptied
+at every authored width, and fills the rest of the list from the mount's declared default so a
+group of one view is never the result.
+
+`manifest.view` is the whole selector: it is a widget saying it is a nameable view, which is
+already what names it in the strip.
 
 ## What the archived view shows
 

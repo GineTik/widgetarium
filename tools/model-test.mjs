@@ -3,7 +3,7 @@ import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
 
-const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds } = await import(
+const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, mountRows, mountSetting, rekeyed, uniqueName } = await import(
 	"./.mjs-cache/model.mjs"
 );
 
@@ -242,11 +242,14 @@ check("rendering does not warn", onRender, 0);
 		layouts: { 12: { places: [{ id: "popup", x: 0, y: 0, w: 4, h: 2 }] } },
 	};
 	const chosen = normalizeBoard(authored);
-	check("a slot choice survives normalising", chosen.tiles[0].slots, { properties: "@other/properties" });
+	check("a slot choice survives normalising", chosen.tiles[0].slots.properties.widget, "@other/properties");
+	check("and it arrives as a record, like a mount", Object.keys(chosen.tiles[0].slots.properties).sort(), ["mounted", "settings", "slots", "sources", "widget"]);
+	// CONTEXT: a mount written before the record shape names its widget nowhere but the key
+	check("a mount written without a widget takes it off its key", chosen.tiles[0].mounted.body.widget, "body");
 
 	const written = serializeBoard(chosen);
-	check("a slot choice reaches the file", written.tiles[0].slots, { properties: "@other/properties" });
-	check("and the tile beside it keeps its mounted record", written.tiles[0].mounted, { body: { settings: { zoom: 2 } } });
+	check("a slot choice reaches the file, as a record", written.tiles[0].slots, { properties: { widget: "@other/properties" } });
+	check("and the tile beside it keeps its mounted record", written.tiles[0].mounted, { body: { widget: "body", settings: { zoom: 2 } } });
 	check("the round trip is byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
 
 	const bare = serializeBoard(normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layouts: {} }));
@@ -254,9 +257,46 @@ check("rendering does not warn", onRender, 0);
 
 	// CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
 	const damaged = normalizeBoard({ tiles: [{ id: "a", widget: "w", slots: { card: null, row: "@x/row" } }], layouts: {} });
-	check("a null slot entry degrades alone", damaged.tiles[0].slots, { row: "@x/row" });
+	check("a null slot entry degrades alone", Object.keys(damaged.tiles[0].slots), ["row"]);
 	check("and the board is still parsed", damaged.tiles[0].id, "a");
 	check("a slots that is not an object is harmless", normalizeBoard({ tiles: [{ id: "a", widget: "w", slots: "card" }] }).tiles[0].slots, {});
+}
+
+// CONTEXT: a slot persisted as a bare widget id until it had more than the id to hold
+{
+	const old = { tiles: [{ id: "t", widget: "w", slots: { card: "@task/task-card" } }], layouts: { 12: { places: [{ id: "t", x: 0, y: 0, w: 4, h: 2 }] } } };
+	const fresh = { tiles: [{ id: "t", widget: "w", slots: { card: { widget: "@task/task-card" } } }], layouts: { 12: { places: [{ id: "t", x: 0, y: 0, w: 4, h: 2 }] } } };
+	check("the old shape reads", normalizeBoard(old).tiles[0].slots.card.widget, "@task/task-card");
+	check("the new shape reads", normalizeBoard(fresh).tiles[0].slots.card.widget, "@task/task-card");
+	check("and the two are the same board in memory", JSON.stringify(normalizeBoard(old)), JSON.stringify(normalizeBoard(fresh)));
+	check("an edited file is written in the new shape only", serializeBoard(normalizeBoard(old)).tiles[0].slots, { card: { widget: "@task/task-card" } });
+
+	// CONTEXT: one hand-edited file, one tile per shape — a half-migrated note is the normal case
+	const mixed = normalizeBoard({
+		tiles: [
+			{ id: "old", widget: "w", slots: { card: "@task/task-card" } },
+			{ id: "new", widget: "w", slots: { card: { widget: "@other/card", settings: { tone: "quiet" } } } },
+		],
+		layouts: { 12: { places: [{ id: "old", x: 0, y: 0, w: 4, h: 2 }, { id: "new", x: 4, y: 0, w: 4, h: 2 }] } },
+	});
+	check("both shapes read out of ONE file", [mixed.tiles[0].slots.card.widget, mixed.tiles[1].slots.card.widget], ["@task/task-card", "@other/card"]);
+	check("and the new one keeps what only a record can hold", mixed.tiles[1].slots.card.settings, { tone: "quiet" });
+	check("writing the mixed file emits one shape", serializeBoard(mixed).tiles.map((tile) => tile.slots.card.widget), ["@task/task-card", "@other/card"]);
+
+	// CONTEXT: a slot is now the record a mount is, so it nests the same way
+	const deep = normalizeBoard({
+		tiles: [{ id: "t", widget: "w", slots: { card: { widget: "@a/one", slots: { badge: { widget: "@a/two", mounted: { "@a/three": { settings: { zoom: 3 } } } } } } } }],
+		layouts: { 12: { places: [{ id: "t", x: 0, y: 0, w: 4, h: 2 }] } },
+	});
+	check("a slot inside a slot survives", deep.tiles[0].slots.card.slots.badge.widget, "@a/two");
+	check("and a mount three levels down keeps its settings", deep.tiles[0].slots.card.slots.badge.mounted["@a/three"].settings, { zoom: 3 });
+	const deepWritten = serializeBoard(deep);
+	check("depth 3 reaches the file", deepWritten.tiles[0].slots.card.slots.badge.mounted["@a/three"], { widget: "@a/three", settings: { zoom: 3 } });
+	check("and depth 3 round-trips byte-identical", JSON.stringify(serializeBoard(normalizeBoard(deepWritten))), JSON.stringify(deepWritten));
+
+	// CONTEXT: a repeat is keyed id#2, and the widget is the key without it
+	const repeated = normalizeBoard({ tiles: [{ id: "g", widget: "w", mounted: { "@x/k": { settings: { a: 1 } }, "@x/k#2": { settings: { a: 2 } } } }] });
+	check("a repeated mount takes its widget off the key, without the #2", [repeated.tiles[0].mounted["@x/k"].widget, repeated.tiles[0].mounted["@x/k#2"].widget], ["@x/k", "@x/k"]);
 }
 
 // CONTEXT: the property list belongs to the BOARD — one vocabulary, every task shows every row
@@ -314,8 +354,8 @@ check("rendering does not warn", onRender, 0);
 		tiles: [{ id: "group", widget: "@x/group", mounted: { "@x/kanban": { slots: { card: "@other/card" } } } }],
 		layouts: { 12: { places: [{ id: "group", x: 0, y: 0, w: 4, h: 2 }] } },
 	});
-	check("a mounted child's slot pick survives normalising", board.tiles[0].mounted["@x/kanban"].slots, { card: "@other/card" });
-	check("and reaches the file", serializeBoard(board).tiles[0].mounted["@x/kanban"].slots, { card: "@other/card" });
+	check("a mounted child's slot pick survives normalising", board.tiles[0].mounted["@x/kanban"].slots.card.widget, "@other/card");
+	check("and reaches the file", serializeBoard(board).tiles[0].mounted["@x/kanban"].slots, { card: { widget: "@other/card" } });
 
 	const empty = normalizeBoard({
 		tiles: [{ id: "group", widget: "@x/group", mounted: { "@x/kanban": { settings: { a: 1 } } } }],
@@ -325,6 +365,63 @@ check("rendering does not warn", onRender, 0);
 
 	const twice = serializeBoard(normalizeBoard(serializeBoard(board)));
 	check("and the round trip is byte-identical", JSON.stringify(twice), JSON.stringify(serializeBoard(board)));
+}
+
+// THE BOARD OWNS THE NAME. A mount key used to be the widget id, which made a view unrenameable,
+// made two of one widget one duplicated tab, and let a widget with no `view` answer to its title.
+{
+	const named = (id) => ({ "@x/kanban": "Kanban", "@x/plain": undefined, "@x/titled": undefined }[id]);
+	const titled = (id) => ({ "@x/kanban": "Kanban board", "@x/plain": undefined, "@x/titled": "A title" }[id]);
+	const nameFor = (id) => named(id) ?? titled(id) ?? id;
+
+	const old = mountRows("@x/kanban, @x/kanban", nameFor);
+	check("the old comma list of ids still reads", old.map((row) => row.widget), ["@x/kanban", "@x/kanban"]);
+	check("and two of one widget become two names, not one twice", old.map((row) => row.name), ["Kanban", "Kanban 2"]);
+	check("each row remembers the widget-id key its record still sits under", old.map((row) => row.was), ["@x/kanban", "@x/kanban#2"]);
+
+	const rows = mountRows([{ name: "Mine", widget: "@x/kanban" }, { name: "Theirs", widget: "@x/kanban" }], nameFor);
+	check("a stored name wins over the widget's own declaration", rows.map((row) => row.name), ["Mine", "Theirs"]);
+
+	// A DUPLICATE IS DISAMBIGUATED ON READ, so no write — by us or by hand — can shadow a record
+	const clashing = mountRows([{ name: "Same", widget: "@x/kanban" }, { name: "Same", widget: "@x/titled" }], nameFor);
+	check("two rows may never share a name, however the file came to say they do", clashing.map((row) => row.name), ["Same", "Same 2"]);
+
+	check("a widget declaring no view falls back to its title", mountRows("@x/titled", nameFor)[0].name, "A title");
+	check("and one with neither is still usable, named off its id", mountRows("@x/plain", nameFor)[0].name, "@x/plain");
+	check("a blank name in the file is no name at all", mountRows([{ name: "   ", widget: "@x/titled" }], nameFor)[0].name, "A title");
+	check("and a row with no widget is no row", mountRows([{ name: "Ghost", widget: "" }, "@x/titled"], nameFor).length, 1);
+
+	const taken = new Set(["View", "View 2"]);
+	check("a free name is handed back untouched", uniqueName(new Set(), "View"), "View");
+	check("a taken one climbs past every name already out", uniqueName(taken, "View"), "View 3");
+	check("and claiming it takes it out of circulation", uniqueName(taken, "View"), "View 4");
+}
+
+// THE LAZY MIGRATION, BOTH HALVES. Reading takes the old key; writing emits only the new one.
+{
+	check("the setting's new key wins", mountSetting({ holds: "a", views: "b" }, "holds", { was: "views" }), "a");
+	check("its old key is read when the new one is absent", mountSetting({ views: "b" }, "holds", { was: "views" }), "b");
+	check("and the manifest's default when neither is there", mountSetting({}, "holds", { was: "views", default: "d" }), "d");
+	// CONTEXT: emptied deliberately is not the same as never set — `[]` must not fall back
+	check("an emptied list stays empty", mountSetting({ holds: [] }, "holds", { was: "views", default: "d" }), []);
+
+	const legacy = { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } };
+	check("a record is read where it sits", heldKey(legacy, "Kanban", "@x/kanban"), "@x/kanban");
+	check("and under its name once it has moved", heldKey({ Kanban: {} }, "Kanban", "@x/kanban"), "Kanban");
+	check("a mount that never had a legacy key reads its name", heldKey({}, "Kanban", "@x/kanban"), "Kanban");
+
+	const moved = rekeyed(legacy, "Kanban", "@x/kanban", { settings: { a: 2 } });
+	check("writing moves the record onto the name", moved.Kanban, { widget: "@x/kanban", settings: { a: 2 } });
+	check("and takes the widget-id key with it", "@x/kanban" in moved, false);
+	const beside = rekeyed({ ...legacy, Other: { widget: "@x/other" } }, "Kanban", "@x/kanban", { settings: { a: 2 } });
+	check("a sibling record is not touched by the move", beside.Other, { widget: "@x/other" });
+
+	// AN UNEDITED NOTE MUST NOT MOVE. The record still keyed by a widget id round-trips as it is.
+	const untouched = { tiles: [{ id: "g", widget: "@x/group", settings: { views: "@x/kanban" }, mounted: { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
+	check("an old-shape board round-trips byte-identical", JSON.stringify(serializeBoard(normalizeBoard(untouched))), JSON.stringify(untouched));
+
+	const fresh = { tiles: [{ id: "g", widget: "@x/group", settings: { holds: [{ name: "Mine", widget: "@x/kanban" }] }, mounted: { Mine: { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
+	check("and so does a new-shape one", JSON.stringify(serializeBoard(normalizeBoard(fresh))), JSON.stringify(fresh));
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");

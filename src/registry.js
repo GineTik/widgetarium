@@ -43,6 +43,28 @@ function createRequire(scope) {
 	};
 }
 
+// CONTEXT: a widget declares that it may stand in text; claiming no tile size is what says
+// it may ONLY stand there. One widget can be both, and most are neither declaration.
+function isInlineOnly(entry) {
+	return entry?.manifest?.inline === true && !entry?.manifest?.defaultSize;
+}
+
+// TRADE-OFF: a function over the list, not a method on the registry — every stand-in registry
+// in the tests would otherwise have to grow a second method to say the same thing
+export function boardWidgets(entries) {
+	return entries.filter((entry) => !isInlineOnly(entry));
+}
+
+export function inlineWidgets(entries) {
+	return entries.filter((entry) => entry?.manifest?.inline === true);
+}
+
+// CONTEXT: the name a widget arrives under — the board owns it from the first write onwards
+export function declaredName(registry, id) {
+	const manifest = registry?.get(id)?.manifest;
+	return manifest?.view ?? manifest?.title ?? id;
+}
+
 export class WidgetRegistry {
 	constructor(app) {
 		this.app = app;

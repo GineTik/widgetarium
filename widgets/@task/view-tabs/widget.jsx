@@ -1,12 +1,15 @@
 import { createWidget, WidgetRoot } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 
 const STYLE = `
 /* CONTEXT: the kit's chevron points right; a dropdown caret points down, and up while open */
 .orbi-view-tabs .ovt-pick .ovt-caret { transform: rotate(90deg); transition: transform var(--orbi-press) var(--orbi-ease); }
 .orbi-view-tabs .ovt-pick.is-open .ovt-caret { transform: rotate(-90deg); }
 
+/* CONTEXT: one row high and often narrow, so the label truncates and the sign stays */
+.orbi-view-tabs .ovt-deaf { margin: auto 0; }
+.orbi-view-tabs .ovt-deaf .wg-kit-btn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
 function toList(value) {
@@ -18,11 +21,33 @@ function toList(value) {
 }
 
 // CONTEXT: the view is presentation, not a filter — its own key, so two widgets may draw the same tasks differently.
-export default createWidget(function OrbiTaskViewTabs({ settings, context }) {
+export default createWidget(function OrbiTaskViewTabs({ settings, context, board, configureBoard }) {
 	// CONTEXT: the group that holds the views publishes the live list; the setting is the fallback
 	const views = toList(context?.get("views") || settings.views);
 	const selected = context?.get("view") ?? settings.activeView ?? views[0];
 	const [open, setOpen] = useState(false);
+	// CONTEXT: the setting was read for the label and published to nobody, so the group drew another view
+	useEffect(() => {
+		context?.set("view", selected);
+	}, [context, selected]);
+
+	// CONTEXT: only a view group draws a view, so with none on the board the picker steers nobody
+	if (!(board?.consumes?.includes("view") ?? true)) {
+		return (
+			<WidgetRoot defaultRounded="none" className="orbi orbi-view-tabs" defaultBackgroundType="none">
+				<style>{STYLE}</style>
+				<Button
+					block
+					class="ovt-deaf"
+					title="No view group on this board — one holds the views and swaps between them. This puts the board's views inside a new group."
+					onClick={() => configureBoard?.({ holder: "view" })}
+				>
+					<Icon name="plus" size={15} />
+					<ButtonLabel>Add a view group</ButtonLabel>
+				</Button>
+			</WidgetRoot>
+		);
+	}
 
 	const trigger = (
 		<Button block class={`ovt-pick${open ? " is-open" : ""}`} aria-label="Change view">

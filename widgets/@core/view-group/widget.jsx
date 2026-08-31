@@ -46,11 +46,6 @@ const STYLE = `
 }
 `;
 
-// CONTEXT: a view answers to its own declared name, or to its title when it declares none
-function nameOf(entry) {
-	return entry.manifest?.view ?? entry.title;
-}
-
 function Missing({ entry }) {
 	return (
 		<div class="ovg-empty">
@@ -65,15 +60,15 @@ function Missing({ entry }) {
 
 // CONTEXT: the tile renders one view at a time and sizes nothing — the child gets the whole area
 export default createWidget(function OrbiTaskViewGroup({ context, mounts }) {
-	const held = mounts?.views ?? [];
+	const held = mounts?.holds ?? [];
 	// CONTEXT: the switcher reads this instead of authoring a second copy of the same list
-	const offered = held.map(nameOf).join(", ");
+	const offered = held.map((entry) => entry.name).join(", ");
 	useEffect(() => {
 		context?.set("views", offered);
 	}, [context, offered]);
 
 	const wanted = context?.get("view");
-	const asked = held.find((entry) => nameOf(entry) === wanted);
+	const asked = held.find((entry) => entry.name === wanted);
 	const active = asked ?? held[0];
 
 	if (!active) {
@@ -83,7 +78,7 @@ export default createWidget(function OrbiTaskViewGroup({ context, mounts }) {
 				<div class="ovg-empty">
 					<b>This group holds no views</b>
 					<p class="ovg-empty-note">
-						Name the widgets it should hold in its Views setting, as a comma separated list of widget ids.
+						Add the widgets it should hold in its Views setting, and give each one a name.
 					</p>
 				</div>
 			</WidgetRoot>
@@ -99,7 +94,7 @@ export default createWidget(function OrbiTaskViewGroup({ context, mounts }) {
 		<WidgetRoot className="orbi orbi-view-group ovg-stack">
 			<style>{STYLE}</style>
 			<p class="ovg-stray">
-				This group has no view called {wanted} — showing {nameOf(active)} instead.
+				This group has no view called {wanted} — showing {active.name} instead.
 			</p>
 			<div class="ovg-held">{body}</div>
 		</WidgetRoot>
