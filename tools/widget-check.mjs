@@ -53,6 +53,7 @@ const api = {
 const hooks = {
 	useState: (initial) => [typeof initial === "function" ? initial() : initial, () => {}],
 	useEffect: () => {},
+	useLayoutEffect: () => {},
 	useMemo: (factory) => factory(),
 	useRef: () => ({ current: null }),
 	useCallback: (fn) => fn,
