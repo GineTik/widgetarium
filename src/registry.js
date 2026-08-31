@@ -35,7 +35,7 @@ function createRequire(scope) {
 	};
 	return (name) => {
 		const found = modules[name];
-		if (!found) throw new Error(`cannot import "${name}" — a widget may only import widgetarium, widgetarium/kit or react`);
+		if (!found) throw new Error(`cannot import "${name}" — a widget may only import ${Object.keys(modules).join(", ")}`);
 		return found;
 	};
 }

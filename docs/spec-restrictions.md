@@ -147,7 +147,7 @@ The largest of the three, and the one that pays the author back.
 ### The four components
 
 Exported from `src/api.js` on the `widgetarium` object — the only import a widget is allowed
-besides preact.
+besides react.
 
 | component | replaces | degradation ladder, widest → narrowest |
 |---|---|---|

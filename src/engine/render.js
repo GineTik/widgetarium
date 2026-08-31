@@ -11,11 +11,11 @@ function commit(root, tree) {
 
 export function render(tree, node) {
 	if (tree === null || tree === undefined) {
-		const held = roots.get(node);
-		if (!held) return;
+		const existing = roots.get(node);
+		if (!existing) return;
 		roots.delete(node);
-		commit(held, null);
-		held.unmount();
+		commit(existing, null);
+		existing.unmount();
 		return;
 	}
 

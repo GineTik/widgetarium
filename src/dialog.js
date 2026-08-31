@@ -198,16 +198,10 @@ function Portal({ children, onEscape }) {
 		watchPresses();
 		return mountInto(document.body, "wg-root wg-portal", onEscape);
 	});
-	const entered = useRef(false);
-
 	// CONTEXT: a layout cleanup runs before React strips the node, so the exit still has a panel
 	useLayoutEffect(() => () => exitDialog(portal.node, portal.dispose), []);
 
-	useEffect(() => {
-		if (entered.current) return;
-		entered.current = true;
-		enterDialog(portal.node);
-	});
+	useEffect(() => enterDialog(portal.node), []);
 
 	return createPortal(children, portal.node);
 }

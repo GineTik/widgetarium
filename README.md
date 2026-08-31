@@ -26,7 +26,7 @@ src/
 
 ## Контракт віджета
 
-Файл `.widgetarium/widgets/<scope>/<name>/widget.js` виконується з доступними `h`, `useState`, `useEffect`, `useMemo`, `useRef` і мусить визначити `const widget = ({ settings, data, host, size, fullscreen }) => …`.
+Файл `.widgetarium/widgets/<scope>/<name>/widget.js` виконується з доступними `h`, `useState`, `useEffect`, `useMemo`, `useRef` і може імпортувати `react`, `react-dom`, `widgetarium`, `widgetarium/kit` і мусить визначити `const widget = ({ settings, data, host, size, fullscreen }) => …`.
 
 Поруч — `manifest.json` з `id`, `minSize`, `data` (слоти) і `settings` (схема форми).
 

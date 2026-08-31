@@ -253,8 +253,8 @@ const loudNote = noteWith("<p>! call Olena before Friday</p>");
 const loud = logged(true, () => substitute(loudNote, [line]));
 check("with the log off the console hears nothing at all", quiet.lines.length, 0);
 // CONTEXT: React's useId counts per root, so the id differs between two mounts of one tree
-const withoutIds = (html) => html.replace(/_r_[0-9a-z]+_/g, "_id_");
-check("and with it on the same run draws exactly the same thing", withoutIds(loudNote.innerHTML), withoutIds(quietHtml));
+const normalizeIds = (html) => html.replace(/_r_[0-9a-z]+_/g, "_id_");
+check("and with it on the same run draws exactly the same thing", normalizeIds(loudNote.innerHTML), normalizeIds(quietHtml));
 check("and answers the same count either way", [quiet.answer, loud.answer], [1, 1]);
 
 const emptyNote = noteWith("<p>nothing to see here</p>");
