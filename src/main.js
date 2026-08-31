@@ -1,4 +1,4 @@
-import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild } from "obsidian";
+import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild, requestUrl } from "obsidian";
 import { h, render } from "preact";
 import { WidgetSurface } from "./surface.js";
 import { WidgetRegistry } from "./registry.js";
@@ -7,9 +7,13 @@ import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
 import { normalizeBoard, serializeBoard } from "./model.js";
 import { shieldFromEditor } from "./editor-shield.js";
 import { mountKeyFor } from "./mount-key.js";
-import { trace } from "./trace.js";
+import { trace, traceSub, setTracing, tracing } from "./trace.js";
 import { findBlocks, replaceBlock } from "./block-writer.js";
 import { openCatalogue } from "./catalogue-dialog.js";
+import { createInstaller } from "./installer.js";
+import { openSubstitutions } from "./substitution-dialog.js";
+import { normalizeRules, activeRules, ruleBlock } from "./substitution.js";
+import { substituteIn } from "./inline-render.js";
 
 
 // a run of edits settles into one write; longer and an edit could be lost to a crash
@@ -17,24 +21,65 @@ const WRITE_SETTLE_MS = 400;
 const SCREEN_KEY = "widgetarium";
 
 export default class WidgetariumPlugin extends Plugin {
+	// CONTEXT: the console switch — app.plugins.plugins.widgetarium.logging = true
+	get logging() {
+		return tracing();
+	}
+
+	set logging(on) {
+		setTracing(on);
+	}
+
 	async onload() {
 		this.editing = false;
 		this.mounts = new Map();
 		this.registry = new WidgetRegistry(this.app);
 		this.host = createHost(this.app, this);
 
-		await this.ensureFolders();
-		await this.registry.load();
+		this.rules = [];
 
+		// CONTEXT: Obsidian never reprocesses a note rendered before registration
 		this.registerMarkdownCodeBlockProcessor("widgetarium", (source, element, context) =>
 			this.renderBlock(source, element, context),
 		);
+
+		this.registerMarkdownPostProcessor((element, context) =>
+			substituteIn({
+				element,
+				context,
+				rules: this.rules,
+				registry: this.registry,
+				app: this.app,
+				// CONTEXT: bound to the note, so a link a widget reads resolves the way one written there does
+				host: bindNote(this.host, context.sourcePath),
+			}),
+		);
+		traceSub("post-processor registered", { rules: this.rules.length });
+
+		await this.ensureFolders();
+		await this.registry.load();
+		this.rules = normalizeRules((await this.loadData())?.substitutions);
+		traceSub("rules loaded", () => ({
+			rules: this.rules.length,
+			live: activeRules(this.rules).length,
+			blocked: this.rules.filter(ruleBlock).map((rule) => `${rule.id} (${ruleBlock(rule)})`),
+			widgets: this.rules.map((rule) => rule.widget),
+		}));
+		// CONTEXT: the open note was drawn against an empty rule list while those awaits ran
+		this.rerenderNotes();
+		this.installer = createInstaller({
+			adapter: this.app.vault.adapter,
+			fetchJson: (url) => requestUrl({ url }).then((answer) => answer.json),
+			fetchText: (url) => requestUrl({ url }).then((answer) => answer.text),
+		});
+		this.available = await this.installer.available();
 
 		// .widgetarium is a dot folder, so the vault never emits events for it — poll instead
 		this.signature = await this.widgetSignature();
 		this.registerInterval(window.setInterval(() => this.pollWidgets(), 500));
 
 		this.addRibbonIcon("layout-grid", "Widgetarium: edit mode", () => this.toggleEditing());
+		this.addRibbonIcon("replace", "Widgetarium: substitutions", () => this.showSubstitutions());
 
 		this.addCommand({
 			id: "toggle-edit",
@@ -51,6 +96,12 @@ export default class WidgetariumPlugin extends Plugin {
 				await plugins.enablePlugin(this.manifest.id);
 				new Notice("Widgetarium: plugin reloaded");
 			},
+		});
+
+		this.addCommand({
+			id: "edit-substitutions",
+			name: "Edit substitutions",
+			callback: () => this.showSubstitutions(),
 		});
 
 		this.addCommand({
@@ -78,10 +129,61 @@ export default class WidgetariumPlugin extends Plugin {
 			registry: this.registry,
 			host: this.host,
 			mode: "browse",
+			available: this.available,
+			onInstall: (entry) => this.install(entry),
 			onClose: () => {
 				this.closeCatalogue = null;
 			},
 		});
+	}
+
+	// CONTEXT: fetching runs somebody's code in this plugin's own realm, so it is pinned to the
+	// commit it resolved to and nothing here ever re-fetches on its own
+	async install(entry) {
+		const done = await this.installer.install(entry);
+		if (!done.ok) return done;
+		this.signature = await this.widgetSignature();
+		await this.registry.load();
+		this.available = await this.installer.available();
+		this.refresh();
+		new Notice(`Widgetarium: installed ${entry.manifest.id} at ${done.commit.slice(0, 7)}`);
+		return done;
+	}
+
+	showSubstitutions() {
+		this.closeSubstitutions?.();
+		this.closeSubstitutions = openSubstitutions({
+			rules: this.rules,
+			registry: this.registry,
+			host: this.host,
+			available: this.available,
+			onInstall: (entry) => this.install(entry),
+			onChange: (next) => this.setRules(next),
+			onClose: () => {
+				this.closeSubstitutions = null;
+			},
+		});
+	}
+
+	async setRules(next) {
+		traceSub("rules changed", () => ({ was: this.rules.length, now: next.length, live: activeRules(next).length }));
+		this.rules = next;
+		await this.saveData({ ...((await this.loadData()) ?? {}), substitutions: next });
+		traceSub("rules saved", { rules: next.length });
+		this.rerenderNotes();
+	}
+
+	// CONTEXT: a substitution is applied while a note renders, so nothing changes until it does
+	rerenderNotes() {
+		const leaves = this.app.workspace.getLeavesOfType("markdown");
+		traceSub("rerender open notes", () => ({
+			leaves: leaves.length,
+			redrawable: leaves.filter((leaf) => leaf.view?.previewMode?.rerender).length,
+		}));
+		for (const leaf of leaves) {
+			leaf.view?.previewMode?.rerender?.(true);
+		}
+		traceSub("rerender open notes done", { leaves: leaves.length });
 	}
 
 	queueWrite(sourcePath, blockIndex, board) {
@@ -175,6 +277,7 @@ export default class WidgetariumPlugin extends Plugin {
 		clearTimeout(this.writeTimer);
 		// the catalogue is portalled onto <body>, so it outlives the plugin unless taken down
 		this.closeCatalogue?.();
+		this.closeSubstitutions?.();
 		// the widget stylesheets live in document.head and outlive the plugin unless dropped
 		this.registry?.dropStyles?.();
 		// a held-back write must not die with the plugin
