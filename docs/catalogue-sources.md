@@ -13,11 +13,15 @@ needs no network. The old `{ widgets: [...] }` index still reads; nothing migrat
 ```json
 {
   "sources": [
-    { "path": ".widgetarium/available" },
+    { "path": "/Users/me/Projects/widgetarium/widgets" },
     { "repository": "https://github.com/owner/repo", "ref": "main", "path": "widgets" }
   ]
 }
 ```
+
+**The vault IS the installed set.** Anything under `.widgetarium/widgets` is installed, by
+definition — so a source is never a folder inside the vault. It is a path on the machine, or a
+repository. Nothing waits in the vault to be installed; that is a contradiction in terms.
 
 Both kinds hold the same thing: `@scope/name/manifest.json`. That is the only shape either
 side has to agree on.
@@ -32,7 +36,7 @@ Reading the place removes the second copy of a fact the folder already carries.
 
 | source | discovery | install |
 |---|---|---|
-| folder in the vault | `adapter.list` over `@scope/name` | copy, no network |
+| folder on the machine | `fs` over `@scope/name`, desktop only | copy into the vault, no network |
 | repository | the commit's tree, filtered to `manifest.json` | fetch each file at that commit |
 | index entry (old) | none — the entry IS the declaration | fetch, as before |
 
@@ -47,10 +51,16 @@ beside it — the scope is part of what a widget is, not a thing installed separ
 
 ## What a folder source is for
 
-Staging. Widgets sit in `.widgetarium/available` where the registry does not look, so they are
-genuinely **not installed** — the catalogue offers them, a press puts them in `widgets/`, and
-uninstall takes them back out. It is also the only path that works with no remote at all, which
-is what makes a widget testable before it is published.
+The monorepo, before it is published. A widget in `widgets/` on disk is not in anybody's vault,
+so it is genuinely not installed — the catalogue offers it, a press copies it in, uninstall takes
+it back out. The same widget served from GitHub later installs by the same press.
+
+It is also what lets someone clone the repository and install from their own copy without a
+network, which is the cheapest possible distribution and needs nothing built.
+
+Reading outside the vault is a **desktop power**: `Platform.isDesktopApp` gates the door, and a
+build without one offers no folder source and refuses to install from one rather than writing
+nothing quietly.
 
 ## The check that has to hold
 

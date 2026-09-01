@@ -7,6 +7,7 @@ import { readLink } from "./engine/link.js";
 import { hostTypeOf } from "./engine/host-type.js";
 import { createConsole } from "./engine/host-console.js";
 import { readTarget, refusedRead } from "./engine/read-file.js";
+import { duplicateIds, mintId, mustRemint, readId, reportDuplicates, withId } from "./record-id.js";
 
 // TRADE-OFF: body absent on a listed record, present on a fetched one — twenty cards, no reads
 function toRecord(app, file, body) {
@@ -15,6 +16,8 @@ function toRecord(app, file, body) {
 		path: file.path,
 		ref: { path: file.path },
 		props: { ...(cache?.frontmatter ?? {}) },
+		// CONTEXT: the storage key never leaves this line — a widget sees record.id and nothing else
+		id: readId(cache?.frontmatter),
 		name: file.basename,
 		type: typeOf(file.path),
 		meta: { created: file.stat.ctime, modified: file.stat.mtime },
@@ -134,6 +137,10 @@ function stringifyFrontmatter(props) {
 	const lines = Object.entries(props).map(([key, value]) => {
 		if (Array.isArray(value)) return `${key}: [${value.map((item) => JSON.stringify(item)).join(", ")}]`;
 		if (typeof value === "string") return `${key}: ${JSON.stringify(value)}`;
+		// CONTEXT: one level deep is all this emits — the namespace around an id
+		if (value && typeof value === "object") {
+			return [`${key}:`, ...Object.entries(value).map(([held, inner]) => `  ${held}: ${JSON.stringify(inner)}`)].join("\n");
+		}
 		return `${key}: ${value}`;
 	});
 	return `---\n${lines.join("\n")}\n---\n`;
@@ -177,18 +184,32 @@ function createSlot(app, binding) {
 		return found;
 	};
 
+	// CONTEXT: said once per id — list() re-runs on every vault event
+	const reported = new Set();
+
 	const slot = {
 		binding,
 		canCreate: writable,
+		canRepairIds: writable,
 		canUpdate: writable,
 		canRemove: writable,
 		canSubscribe: true,
 		canDescribe: true,
 
 		async list(query = {}) {
-			const rows = sortRecords(readFolder().filter((record) => matches(record, query.where)), query.sort);
+			const held = readFolder();
+			// CONTEXT: picking one of two records claiming an id in silence is forbidden
+			const duplicates = duplicateIds(held);
+			reportDuplicates(
+				duplicates.filter((entry) => !reported.has(entry.id)),
+				(said) => {
+					console.warn(said);
+				},
+			);
+			for (const entry of duplicates) reported.add(entry.id);
+			const rows = sortRecords(held.filter((record) => matches(record, query.where)), query.sort);
 			const limited = query.limit ? rows.slice(0, query.limit) : rows;
-			return { rows: limited, total: rows.length };
+			return { rows: limited, total: rows.length, duplicates };
 		},
 
 		// TRADE-OFF: one note, so the read belongs here and never in list()
@@ -234,7 +255,8 @@ function createSlot(app, binding) {
 			// CONTEXT: vault.create refuses a path whose folder is not there, and the first record makes it
 			if (!(app.vault.getAbstractFileByPath(folderPath) instanceof TFolder)) await app.vault.createFolder(folderPath);
 			const body = draft.body ? `\n${draft.body}\n` : "\n";
-			const file = await app.vault.create(path, stringifyFrontmatter(draft.props ?? {}) + body);
+			// CONTEXT: creating a record IS the explicit action an id is minted on
+			const file = await app.vault.create(path, stringifyFrontmatter(withId(draft.props ?? {}, mintId())) + body);
 			// CONTEXT: same rule as update — the record reports the body that landed
 			return toRecord(app, file, draft.body === undefined ? undefined : readBody(await app.vault.read(file)));
 		};
@@ -243,15 +265,33 @@ function createSlot(app, binding) {
 			const file = app.vault.getAbstractFileByPath(ref.path);
 			if (!(file instanceof TFile)) return null;
 			// CONTEXT: processFrontMatter restringifies the YAML — skip it for a body-only patch
-			if (patch.props) {
+			// CONTEXT: a duplicate's loser is re-minted by the first write that reaches it, never on read
+			const remint = mustRemint(duplicateIds(readFolder()), ref.path);
+			if (patch.props || remint) {
 				await app.fileManager.processFrontMatter(file, (frontmatter) => {
-					Object.assign(frontmatter, patch.props);
+					Object.assign(frontmatter, patch.props ?? {});
+					if (remint) Object.assign(frontmatter, withId(frontmatter, mintId()));
 				});
 			}
 			// CONTEXT: what LANDED, never what was asked — a refused write must not be reported
 			const body = patch.body === undefined ? undefined : await writeBody(app, file, patch.body);
 			await settled(app, file);
 			return toRecord(app, file, body);
+		};
+
+		// CONTEXT: the repair is a press — detection only reports
+		slot.repairIds = async () => {
+			const duplicates = duplicateIds(readFolder());
+			let minted = 0;
+			for (const entry of duplicates) {
+				for (const path of entry.remints) {
+					const file = app.vault.getAbstractFileByPath(path);
+					if (!(file instanceof TFile)) continue;
+					await app.fileManager.processFrontMatter(file, (frontmatter) => Object.assign(frontmatter, withId(frontmatter, mintId())));
+					minted += 1;
+				}
+			}
+			return minted;
 		};
 
 		slot.remove = async (ref) => {

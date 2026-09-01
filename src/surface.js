@@ -5,7 +5,8 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { archivedColumnsOn, heldKey, heldTile, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
+import { archivedColumnsOn, heldKey, heldTile, mountPatch, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
+import { pickWidget } from "./catalogue-dialog.js";
 import { createContext } from "./engine/context.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
@@ -84,10 +85,17 @@ export function resolveFilter(rows, context) {
 			out.push(row);
 			continue;
 		}
-		const resolved = context.get(value.slice(1));
+		const key = value.slice(1);
+		const resolved = context.get(key);
 		// an unset selection must not become a clause matching the empty string, or the board
 		// would show nothing at all until something was picked
 		if (resolved === undefined || resolved === null || resolved === "") continue;
+		// CONTEXT: id first, name second — a note that still stores the name goes on matching
+		const aliases = context.get(`${key}Refs`);
+		if (Array.isArray(aliases) && aliases.length > 1) {
+			out.push({ ...row, op: "in", value: aliases });
+			continue;
+		}
 		out.push({ ...row, value: resolved });
 	}
 	return out;
@@ -150,15 +158,17 @@ function toKeys(value) {
 
 // CONTEXT: an id the registry could not resolve is still an entry — dropping it hid the gap
 function mountEntry(row, registry, mount) {
-	const held = registry.get(row.widget);
+	const held = row.widget ? registry.get(row.widget) : null;
 	const drawable = Boolean(held?.component) && !held.error;
 	return {
 		name: row.name,
 		id: row.widget,
+		// CONTEXT: archived is hidden, never gone — the record and its settings stay put
+		hidden: row.hidden === true,
 		title: held?.manifest?.title ?? row.widget,
 		// CONTEXT: the child's own declaration — what a holder matches on is the holder's business
 		manifest: held?.manifest ? { ...held.manifest } : null,
-		problem: drawable ? null : held ? "failed" : "not-found",
+		problem: drawable ? null : row.widget ? (held ? "failed" : "not-found") : "empty",
 		failure: held?.error ? String(held.error.message ?? held.error) : null,
 		render: drawable ? () => h(MountedWidget, { ...mount, key: row.name, name: row.name, was: row.was, widget: row.widget, definition: held }) : null,
 	};
@@ -216,11 +226,14 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 	const actions = {};
 	const filters = {};
 	for (const [name, source] of Object.entries(sources)) {
-		data[name] = { rows: source.data.rows, total: source.data.total, isLoading: source.data.isLoading, failure: source.data.failure ?? null };
+		data[name] = { rows: source.data.rows, total: source.data.total, isLoading: source.data.isLoading, failure: source.data.failure ?? null, duplicates: source.data.duplicates ?? [] };
 		actions[name] = {
 			canCreate: source.canCreate,
 			canUpdate: source.canUpdate,
 			canRemove: source.canRemove,
+			canRepairIds: source.canRepairIds,
+			repairIds: () => source.repairIds(),
+			remove: (ref) => source.remove(ref),
 			create: (draft) => source.create(draft),
 			// CONTEXT: patch is { props } and/or { body }; the half not given is left alone
 			update: (ref, patch) => source.update(ref, patch),
@@ -236,6 +249,11 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		get: (key) => context.get(key),
 		set: (key, value) => context.set(key, value, owner),
 		offered: () => context.offered(),
+		// CONTEXT: a second writer of one key is refused, so a widget may ask before offering to write
+		claimedByAnother: (key) => {
+			const held = context.providerOf(key);
+			return Boolean(held) && held !== owner;
+		},
 	};
 
 	// CONTEXT: a mount has no place, so folding one would fold the tile holding it
@@ -265,6 +283,10 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		// letting the column appear as a side effect. The board still owns the tile; the widget
 		// states what it wants and the board writes it, exactly as with size and folding.
 		configure: (patch) => onPatch({ settings: { ...(tile.settings ?? {}), ...patch } }),
+		// CONTEXT: the list a mount holds and the records it keys are one write
+		configureMounts: (name, rows) => onPatch(mountPatch(tile, name, rows)),
+		// CONTEXT: the board's registry, never the widget's — an id comes back
+		pickWidget: (options) => pickWidget(registry, host, options),
 		// CONTEXT: the BOARD's list, not this tile's — two widgets must read one list
 		board: boardAccess.board,
 		configureBoard,

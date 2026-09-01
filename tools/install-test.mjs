@@ -137,14 +137,28 @@ check("a network that answers nothing is a refusal, not a crash", [lost.ok, lost
 
 // ── A SOURCE IS A PLACE: name a folder and the widgets in it are found by reading it ─────
 const shelf = fakeVault();
-shelf.files.set(".widgetarium/available/@habit/lib.js", "export const RATE = 21;");
-shelf.files.set(".widgetarium/available/@habit/tokens.css", ".habit-dot { }");
-shelf.files.set(".widgetarium/available/@habit/heatmap/manifest.json", '{"id":"@habit/heatmap","title":"Heatmap"}');
-shelf.files.set(".widgetarium/available/@habit/heatmap/widget.jsx", "export default () => null;");
-shelf.files.set(".widgetarium/available/@habit/nothing/readme.md", "not a widget");
-shelf.files.set(INDEX_PATH, JSON.stringify({ sources: [{ path: ".widgetarium/available" }] }));
+shelf.files.set("/repo/widgets/@habit/lib.js", "export const RATE = 21;");
+shelf.files.set("/repo/widgets/@habit/tokens.css", ".habit-dot { }");
+shelf.files.set("/repo/widgets/@habit/heatmap/manifest.json", '{"id":"@habit/heatmap","title":"Heatmap"}');
+shelf.files.set("/repo/widgets/@habit/heatmap/widget.jsx", "export default () => null;");
+shelf.files.set("/repo/widgets/@habit/nothing/readme.md", "not a widget");
+shelf.files.set(INDEX_PATH, JSON.stringify({ sources: [{ path: "/repo/widgets" }] }));
 
-const shelved = createInstaller({ adapter: shelf, ...network({}) });
+const onMachine = {
+	exists: async (at) => shelf.files.has(at) || [...shelf.files.keys()].some((held) => held.startsWith(`${at}/`)),
+	read: async (at) => shelf.files.get(at),
+	folders: async (at) => {
+		const under = `${at}/`;
+		const held = new Set();
+		for (const each of shelf.files.keys()) {
+			if (!each.startsWith(under)) continue;
+			const rest = each.slice(under.length);
+			if (rest.includes("/")) held.add(under + rest.slice(0, rest.indexOf("/")));
+		}
+		return [...held];
+	},
+};
+const shelved = createInstaller({ adapter: shelf, disk: onMachine, ...network({}) });
 const onShelf = await shelved.available();
 check("a folder source is read, not listed by hand", onShelf.map((entry) => entry.manifest.id), ["@habit/heatmap"]);
 check("and what it offers is not installed", onShelf[0].installed, false);
@@ -155,10 +169,15 @@ check("installing from a folder needs no network", [copied.ok, copied.commit], [
 check("and puts the widget where the registry looks", [...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@habit/heatmap")).sort(), [".widgetarium/widgets/@habit/heatmap/manifest.json", ".widgetarium/widgets/@habit/heatmap/widget.jsx"]);
 // A WIDGET IMPORTING ITS SCOPE'S LIB IS BROKEN WITHOUT IT
 check("the scope comes along with it", [shelf.files.has(".widgetarium/widgets/@habit/lib.js"), shelf.files.has(".widgetarium/widgets/@habit/tokens.css")], [true, true]);
-check("and the lock records where it came from", (await shelved.lock()).widgets["@habit/heatmap"].source, ".widgetarium/available");
+check("and the lock records where it came from", (await shelved.lock()).widgets["@habit/heatmap"].source, "/repo/widgets");
 
-const bare = await shelved.install({ manifest: { id: "@habit/ghost" }, from: { folder: ".widgetarium/available/@habit/ghost" } });
-check("a folder that holds no manifest is refused", bare.failure, ".widgetarium/available/@habit/ghost holds no manifest.json");
+const bare = await shelved.install({ manifest: { id: "@habit/ghost" }, from: { folder: "/repo/widgets/@habit/ghost" } });
+check("a folder that holds no manifest is refused", bare.failure, "/repo/widgets/@habit/ghost holds no manifest.json");
+
+const noDoor = createInstaller({ adapter: fakeVault(), ...network({}) });
+check("a build with no door to the machine offers no folder source", (await noDoor.discover({ path: "/repo/widgets" })).length, 0);
+const refusedCopy = await noDoor.install({ manifest: { id: "@habit/heatmap" }, from: { folder: "/repo/widgets/@habit/heatmap" } });
+check("and refuses to install from one, rather than writing nothing quietly", refusedCopy.failure, "this build cannot read a folder outside the vault");
 
 const gone = await installer.uninstall("@demo/clock");
 check("uninstalling answers ok", gone.ok, true);

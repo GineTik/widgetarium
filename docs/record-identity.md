@@ -1,6 +1,6 @@
 # A record's identity is an id, not its name
 
-`DECISION` · 2026-08-31
+`DECISION` · 2026-08-31 · **built 2026-09-01**, `src/record-id.js`, proved by `npm run test:identity`
 
 ## TL;DR
 

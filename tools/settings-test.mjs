@@ -316,6 +316,10 @@ console.log("\n— and the panel writes what it draws —");
 	check("and says it is on, because the folder is set", canRow("Create")?.textContent.endsWith("On"), true);
 	check("Remove is reported too", canRow("Remove")?.textContent.endsWith("On"), true);
 
+	// CONTEXT: the kit took the row, so the class the old list rules were scoped under is never drawn
+	check("nothing in the window draws a .wg-set-list", all(".wg-set-list").length, 0);
+	check("and the rows it would have styled are drawn all the same", all(".wg-set-row").length > 0, true);
+
 	const groupSaying = (label) => all(".wg-set-group").find((node) => node.querySelector(".wg-kit-side-label")?.textContent === label);
 	const boards = groupSaying("What Boards can do");
 	check("a source with no folder reports every action off together", [...boards.querySelectorAll(".wg-kit-row")].every((row) => row.textContent.endsWith("Off")), true);

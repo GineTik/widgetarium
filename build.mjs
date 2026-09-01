@@ -27,7 +27,8 @@ await esbuild.build({
 	format: "cjs",
 	platform: "browser",
 	target: "es2020",
-	external: ["obsidian", "electron"],
+	// CONTEXT: Electron supplies these at runtime; bundling them for the browser cannot work
+	external: ["obsidian", "electron", "node:fs/promises", "node:path"],
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	sourcemap: production ? false : "inline",

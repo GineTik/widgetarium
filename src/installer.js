@@ -22,7 +22,8 @@ function refuse(failure) {
 
 // EVERYTHING THAT REACHES OUT IS HANDED IN, so the whole flow is provable without a network:
 // fetchJson and fetchText are the only two doors, and a test drives them itself.
-export function createInstaller({ adapter, fetchJson, fetchText }) {
+// CONTEXT: the vault IS the installed set, so a folder source is a path on the machine, not in it
+export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 	const readJson = async (path, fallback) => {
 		if (!(await adapter.exists(path))) return fallback;
 		try {
@@ -36,14 +37,15 @@ export function createInstaller({ adapter, fetchJson, fetchText }) {
 	const writeJson = (path, value) => adapter.write(path, `${JSON.stringify(value, null, "\t")}\n`);
 
 	async function discoverFolder(source) {
-		if (!(await adapter.exists(source.path))) return [];
+		// CONTEXT: reading a folder outside the vault is a desktop power; a phone has no such door
+		if (!disk || !(await disk.exists(source.path))) return [];
 		const found = [];
-		for (const scope of (await adapter.list(source.path)).folders) {
-			for (const folder of (await adapter.list(scope)).folders) {
+		for (const scope of await disk.folders(source.path)) {
+			for (const folder of await disk.folders(scope)) {
 				const at = `${folder}/${NEEDED}`;
-				if (!(await adapter.exists(at))) continue;
+				if (!(await disk.exists(at))) continue;
 				try {
-					const manifest = JSON.parse(await adapter.read(at));
+					const manifest = JSON.parse(await disk.read(at));
 					if (manifest?.id) found.push({ manifest, installed: false, origin: source.path, from: { folder } });
 				} catch (failure) {
 					console.error(`[widgetarium] cannot read ${at}`, failure);
@@ -77,16 +79,17 @@ export function createInstaller({ adapter, fetchJson, fetchText }) {
 		}
 	}
 
-	// CONTEXT: a folder source is already in the vault, so installing it is a copy, never a fetch
+	// CONTEXT: a folder source is on the machine, so installing it is a copy INTO the vault
 	async function copyIn(listed) {
 		const manifest = listed.manifest ?? {};
 		const folder = folderFor(WIDGETS_DIR, manifest.id);
 		if (!folder) return refuse(`"${manifest.id}" is not a scoped widget id`);
+		if (!disk) return refuse("this build cannot read a folder outside the vault");
 
 		const files = {};
 		for (const name of WIDGET_FILES) {
 			const at = `${listed.from.folder}/${name}`;
-			if (await adapter.exists(at)) files[name] = await adapter.read(at);
+			if (await disk.exists(at)) files[name] = await disk.read(at);
 		}
 		if (!files[NEEDED]) return refuse(`${listed.from.folder} holds no ${NEEDED}`);
 
@@ -96,7 +99,7 @@ export function createInstaller({ adapter, fetchJson, fetchText }) {
 		// CONTEXT: a widget importing its scope's lib is broken without it, so the scope comes along
 		for (const name of SCOPE_FILES) {
 			const at = `${scopeOf(listed.from.folder)}/${name}`;
-			if (await adapter.exists(at)) await adapter.write(`${scopeOf(folder)}/${name}`, await adapter.read(at));
+			if (await disk.exists(at)) await adapter.write(`${scopeOf(folder)}/${name}`, await disk.read(at));
 		}
 
 		const held = readLock(await readJson(LOCK_PATH, null));

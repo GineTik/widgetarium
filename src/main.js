@@ -1,4 +1,4 @@
-import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild, requestUrl } from "obsidian";
+import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild, Platform, requestUrl } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "./engine/render.js";
 import { WidgetSurface } from "./surface.js";
@@ -20,6 +20,22 @@ import { substituteIn } from "./inline-render.js";
 // a run of edits settles into one write; longer and an edit could be lost to a crash
 const WRITE_SETTLE_MS = 400;
 const SCREEN_KEY = "widgetarium";
+
+// CONTEXT: a folder source lives on the machine, and only a desktop build can reach one
+function diskDoor() {
+	// CONTEXT: a phone has no such door, and neither does a harness that loads this as an ES module
+	if (!Platform.isDesktopApp || typeof require !== "function") return null;
+	const fs = require("node:fs/promises");
+	const path = require("node:path");
+	return {
+		exists: (at) => fs.access(at).then(() => true, () => false),
+		read: (at) => fs.readFile(at, "utf8"),
+		folders: async (at) => {
+			const held = await fs.readdir(at, { withFileTypes: true });
+			return held.filter((entry) => entry.isDirectory()).map((entry) => path.join(at, entry.name));
+		},
+	};
+}
 
 export default class WidgetariumPlugin extends Plugin {
 	// CONTEXT: the console switch — app.plugins.plugins.widgetarium.logging = true
@@ -72,6 +88,7 @@ export default class WidgetariumPlugin extends Plugin {
 			adapter: this.app.vault.adapter,
 			fetchJson: (url) => requestUrl({ url }).then((answer) => answer.json),
 			fetchText: (url) => requestUrl({ url }).then((answer) => answer.text),
+			disk: diskDoor(),
 		});
 		this.available = await this.installer.available();
 

@@ -65,6 +65,7 @@ function previewContext(seed) {
 		set: () => false,
 		release: () => {},
 		offered: () => [...held.keys()],
+		claimedByAnother: () => false,
 		subscribe: () => () => {},
 	};
 }

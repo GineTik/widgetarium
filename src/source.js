@@ -44,7 +44,7 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 	const sortKey = JSON.stringify(sortRows);
 
 	const [window, setWindow] = useState({ offset: 0, limit: manifest?.window?.limit ?? 0 });
-	const [state, setState] = useState({ rows: [], total: null, isLoading: true, failure: null });
+	const [state, setState] = useState({ rows: [], total: null, isLoading: true, failure: null, duplicates: [] });
 
 	const latest = useRef(0);
 	const configRef = useRef(config);
@@ -62,12 +62,12 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 				.list({ where: filterRows, sort: sortRows })
 				.then((result) => {
 					if (!alive || ticket !== latest.current) return;
-					setState({ rows: result.rows, total: result.total, isLoading: false, failure: null });
+					setState({ rows: result.rows, total: result.total, isLoading: false, failure: null, duplicates: result.duplicates ?? [] });
 				})
 				.catch((failure) => {
 					console.error(`Widgetarium: source "${name}" failed`, failure);
 					if (!alive || ticket !== latest.current) return;
-					setState({ rows: [], total: 0, isLoading: false, failure: String(failure?.message ?? failure) });
+					setState({ rows: [], total: 0, isLoading: false, failure: String(failure?.message ?? failure), duplicates: [] });
 				});
 
 		load();
@@ -129,6 +129,8 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 			rows: applyWindow(state.rows, window),
 			total: state.total,
 			isLoading: state.isLoading,
+			// CONTEXT: found on the read and carried — the re-mint waits for a write
+			duplicates: state.duplicates,
 		}),
 		[state, window.offset, window.limit],
 	);
@@ -144,12 +146,15 @@ export function useSource({ host, name, config, manifest, patchConfig, author = 
 			canCreate: slot.canCreate,
 			canUpdate: slot.canUpdate,
 			canRemove: slot.canRemove,
+			canRepairIds: slot.canRepairIds,
+			repairIds: () => (slot.canRepairIds ? slot.repairIds() : Promise.resolve(0)),
 			create: (draft) => (slot.canCreate ? slot.create(draft) : Promise.reject(new Error("read-only"))),
 			// TRADE-OFF: fetched, never carried on the rows — a list re-runs on every vault event
 			get: (ref) => slot.get(ref),
 			describe: () => slot.describe(),
 			openRecord: (ref) => host.navigator.navigate(`/${ref.path}`),
 			update: (ref, patch) => (slot.canUpdate ? slot.update(ref, patch) : Promise.resolve(null)),
+			remove: (ref) => (slot.canRemove ? slot.remove(ref) : Promise.resolve(undefined)),
 		}),
 		[data, filters, sort, windowApi, slot],
 	);

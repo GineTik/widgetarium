@@ -11,7 +11,8 @@ import {
 } from "./dialog.js";
 import { useAction } from "./action.js";
 import { EditableTabs, toTabList } from "./editable-tabs.js";
-import { archivedColumnsFor, boardWriter, boardsToCreate, readBoardRecord } from "./board-record.js";
+import { archivedColumnsFor, boardWriter, boardsToCreate, readBoardRecord, recordName } from "./board-record.js";
+import { applyTabStep, archivedOf, movesRows, movesSelection, rowNamed, tabsOf } from "./tab-rows.js";
 import { WidgetRoot, AppearanceOverride, useWidgetRounded, useBackgroundType, ROUNDED, BACKGROUND } from "./widget-root.js";
 import * as kitModule from "./kit.js";
 
@@ -48,6 +49,13 @@ const core = {
 	boardWriter,
 	boardsToCreate,
 	archivedColumnsFor,
+	recordName,
+	applyTabStep,
+	archivedOf,
+	movesRows,
+	movesSelection,
+	rowNamed,
+	tabsOf,
 };
 
 // TRADE-OFF: the kit stays OUT of the core surface and is reached by its own specifier —

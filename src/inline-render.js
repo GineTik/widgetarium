@@ -12,6 +12,12 @@ import { UNREADABLE, refusedRead } from "./engine/read-file.js";
 import { settingDefaults } from "./engine/widget-settings.js";
 
 const BLOCK_SELECTOR = "p, li";
+
+// CONTEXT: Obsidian hands the paragraph ITSELF as often as a wrapper around it
+function blocksIn(element, selector) {
+	const found = [...element.querySelectorAll(selector)];
+	return element.matches?.(selector) ? [element, ...found] : found;
+}
 const GUARDS = [".wg-mount", ".wg-inline", ".wg-root", "pre", "code"];
 const GUARDED = GUARDS.join(", ");
 const CLIP_CHARS = 60;
@@ -233,8 +239,11 @@ function substituteBlock(block, rules, tools) {
 	const rawOf = (span) => lines.slice(span.from, span.to + 1);
 	const whole = spans.length === 1 && spans[0].from === 0 && spans[0].to === groups.length - 1;
 	if (whole) {
-		block.replaceWith(hostFor(spans[0], rawOf(spans[0]), tools));
-		traceSub("block done", { made: 1, how: "whole block replaced" });
+		const drawn = hostFor(spans[0], rawOf(spans[0]), tools);
+		// CONTEXT: the element the processor was handed belongs to reading view — fill it, never replace it
+		if (block === tools.element) block.replaceChildren(drawn);
+		else block.replaceWith(drawn);
+		traceSub("block done", { made: 1, how: block === tools.element ? "whole block filled" : "whole block replaced" });
 		return 1;
 	}
 
@@ -260,7 +269,7 @@ export function substituteIn({ element, context, rules, registry, app, host }) {
 	traceSub("process", () => ({
 		path: context?.sourcePath ?? null,
 		element: elementOf(element),
-		blocks: element.querySelectorAll(BLOCK_SELECTOR).length,
+		blocks: blocksIn(element, BLOCK_SELECTOR).length,
 		rules: rules?.length ?? 0,
 		live: activeRules(rules ?? []).length,
 	}));
@@ -268,9 +277,10 @@ export function substituteIn({ element, context, rules, registry, app, host }) {
 		traceSub("process done", () => ({ path: context?.sourcePath ?? null, seen: 0, drawn: 0, why: "no rules" }));
 		return 0;
 	}
-	const blocks = [...element.querySelectorAll(BLOCK_SELECTOR)];
+	const blocks = blocksIn(element, BLOCK_SELECTOR);
 	const tools = {
 		doc: element.ownerDocument,
+		element,
 		context,
 		registry,
 		app,

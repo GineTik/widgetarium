@@ -174,10 +174,10 @@ function textEditor(state, fallback, onApply) {
 	]);
 }
 
-function settingRows(state) {
+function settingRows(state, wanted = (field) => !field.design) {
 	const { manifest, tile, onPatch } = state;
 	const held = tile.settings ?? {};
-	return (manifest.settings ?? []).map((field) => {
+	return (manifest.settings ?? []).filter(wanted).map((field) => {
 		const label = field.label ?? field.key;
 		const write = (value) => onPatch({ settings: { ...held, [field.key]: value } });
 		if (field.type === "boolean") {
@@ -441,6 +441,7 @@ function dataGroups(state) {
 
 function designGroups(state) {
 	const { place, columns, onResize, isCollapsed, onCollapse, onExpand } = state;
+	const own = settingRows(state, (field) => field.design === true);
 	const sizeRow = (axis, label, cellsNow, apply) =>
 		editorPopover(state, `size:${axis}`, valueRow({ label, value: `${cellsNow} cells` }), textEditor(state, String(cellsNow), (typed) => apply(Number(typed))));
 
@@ -463,7 +464,8 @@ function designGroups(state) {
 			]),
 			null,
 		),
-	];
+		own.length > 0 ? group("design:own", "This widget", own, null) : null,
+	].filter(Boolean);
 }
 
 // CONTEXT: a widget writing a key nobody reads looks configured and steers nothing

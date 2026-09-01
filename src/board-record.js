@@ -14,18 +14,22 @@ export function toTabList(value) {
 		.filter(Boolean);
 }
 
-function nameOf(row) {
+// CONTEXT: the title a person typed, the file name until they have
+export function recordName(row) {
 	return String(row?.props?.title ?? row?.name ?? "");
 }
 
-// CONTEXT: id first, name second — a record is given an id on a press, never on render
+const nameOf = recordName;
+
+// CONTEXT: id first, name second — a record has an id only after an explicit action
 function isRecordOf(row, ref) {
-	if (ref.id) return (row?.props?.wgId ?? null) === ref.id;
-	return nameOf(row) === ref.name;
+	if (row?.id && row.id === ref) return true;
+	return nameOf(row) === ref;
 }
 
 function asRef(ref) {
-	return typeof ref === "string" ? { name: ref } : (ref ?? {});
+	if (typeof ref === "string") return ref;
+	return String(ref?.id ?? ref?.name ?? "");
 }
 
 // CONTEXT: nothing on file is not an error — the board answers from what the note still carries
@@ -34,8 +38,8 @@ export function readBoardRecord(rows, ref, fallback) {
 	const found = (rows ?? []).find((row) => isRecordOf(row, wanted));
 	const columns = toTabList(found?.props?.columns);
 	return {
-		name: found ? nameOf(found) : (wanted.name ?? ""),
-		id: found?.props?.wgId ?? null,
+		name: found ? nameOf(found) : wanted,
+		id: found?.id ?? null,
 		path: found?.path ?? null,
 		exists: Boolean(found),
 		columns: columns.length > 0 ? columns : toTabList(fallback?.columns),

@@ -175,6 +175,12 @@ check("the paragraph itself is gone, not wrapped around the widget", one.querySe
 check("the widget the rule names is what got drawn", one.querySelectorAll(".wgi-reminder").length, 1);
 check("the widget was handed the text after the trigger", one.querySelector(".wgi-reminder-text").textContent, "call Olena before Friday");
 
+// CONTEXT: Obsidian hands the paragraph itself as often as a wrapper around it
+const bare = noteWith("<p>! call Olena before Friday</p>").querySelector("p");
+check("a paragraph handed in directly is substituted too", substitute(bare, [line]), 1);
+check("the widget lands inside the element the processor was handed", bare.querySelectorAll(".wgi-reminder").length, 1);
+check("which is still where Obsidian put it, not replaced out of the note", bare.isConnected, true);
+
 const mixed = noteWith("<p>before<br>! call Olena<br>after</p>");
 check("one line inside a paragraph is replaced", substitute(mixed, [line]), 1);
 const kept = [...mixed.querySelector("p").childNodes].filter((node) => node.nodeType === 3).map((node) => node.textContent);

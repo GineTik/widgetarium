@@ -217,19 +217,19 @@ check("the board shows cards from real notes", cards() > 0, true);
 
 // The baseline is taken WITH a board selected, not before: unselected means unfiltered, and
 // comparing a later filtered count against that would fail on the board filter working.
-const marketingTab = byText(".wg-tabs button", "Marketing Team");
+const marketingTab = byText(".wg-tabs:not(.ovg-strip) button", "Marketing Team");
 if (marketingTab) await click(marketingTab);
 const marketing = cards();
 check("selecting a board narrows to its own tasks", marketing > 0 && marketing <= 10, true);
 
 // 2. a board tab steers it
-const uxTab = byText(".wg-tabs button", "Ux Team") ?? byText(".wg-tabs button", "UX Team");
+const uxTab = byText(".wg-tabs:not(.ovg-strip) button", "Ux Team") ?? byText(".wg-tabs:not(.ovg-strip) button", "UX Team");
 check("the second board tab exists", Boolean(uxTab), true);
 if (uxTab) {
 	await click(uxTab);
 	check("switching board changes what is shown", cards() !== marketing, true);
 	check("and it is not empty", cards() > 0, true);
-	const back = byText(".wg-tabs button", "Marketing Team");
+	const back = byText(".wg-tabs:not(.ovg-strip) button", "Marketing Team");
 	if (back) { await click(back); check("switching back restores the first board", cards(), marketing); }
 }
 
@@ -495,8 +495,8 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	check("and its tasks came back with it", cards() > cardsWithoutIt, true);
 
 	// CONTEXT: on the note, every board read one list — archived on one, shown on all
-	const firstBoard = () => byText(".wg-tabs button", "Marketing Team");
-	const otherBoard = () => byText(".wg-tabs button", "Ux Team") ?? byText(".wg-tabs button", "UX Team");
+	const firstBoard = () => byText(".wg-tabs:not(.ovg-strip) button", "Marketing Team");
+	const otherBoard = () => byText(".wg-tabs:not(.ovg-strip) button", "Ux Team") ?? byText(".wg-tabs:not(.ovg-strip) button", "UX Team");
 	const columnNamed = (name) => all(".orbi-kanban .ok-list").find((node) => node.textContent.includes(name));
 
 	await showView("Archived columns");
@@ -529,18 +529,18 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 }
 
 {
-	const tabsBefore = all(".wg-tabs .wg-tabs-tab").length;
-	await click(all(".wg-tabs .wg-tabs-more")[0]);
-	await click(byText(".wg-tabs .wg-kit-pop-item", "Add"));
-	check("Add Board adds a tab", all(".wg-tabs .wg-tabs-tab").length, tabsBefore + 1);
+	const tabsBefore = all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length;
+	await click(all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0]);
+	await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Add"));
+	check("Add Board adds a tab", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, tabsBefore + 1);
 	check("named Untitled 1", String(settingsOf("boards").tabs ?? "").includes("Untitled 1"), true);
 	// the board's own selection is not reachable from here — the visible truth is which tab
 	// the kit's thumb sits on, which is the tab marked selected, and what a person sees anyway
-	const active = all('.wg-tabs .wg-tabs-tab[aria-selected="true"]').map((node) => node.textContent.trim());
+	const active = all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[aria-selected="true"]').map((node) => node.textContent.trim());
 	check("and it becomes the selected board", active, ["Untitled 1"]);
 
 	// the new tab opens ready to be renamed, in place
-	const editable = all('.wg-tabs .wg-tabs-tab[contenteditable="true"]');
+	const editable = all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[contenteditable="true"]');
 	check("the new board is editable where it stands", editable.length, 1);
 }
 
@@ -557,7 +557,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 
 	// back to a board that has tasks: the previous block selected a new empty one, and a rename
 	// that touches nothing proves nothing
-	const marketing = all(".wg-tabs .wg-tabs-tab").find((node) => /Marketing/.test(node.textContent));
+	const marketing = all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").find((node) => /Marketing/.test(node.textContent));
 	await click(marketing);
 
 	// RENAMING A COLUMN MUST REACH THE TASKS. The heading is a setting; what files a task under
@@ -586,16 +586,16 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 {
 	// ONE MENU, NOT A PAIR OF BUTTONS. The pencil and the tick are gone; renaming is a menu
 	// item, and Enter or blur commits. The menu stands beside the capsule, never inside a tab.
-	const more = all(".wg-tabs .wg-tabs-more")[0];
+	const more = all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0];
 	check("the board row offers a menu", Boolean(more), true);
 	check("and it stands outside the tab capsule", Boolean(more.closest(".wg-kit-seg")), false);
 
 	await click(more);
 	// CONTEXT: the panel stays in the DOM when shut, so only is-open proves it opened
-	check("the menu opens", all(".wg-tabs .wg-kit-pop.is-open").length, 1);
+	check("the menu opens", all(".wg-tabs:not(.ovg-strip) .wg-kit-pop.is-open").length, 1);
 
-	await click(byText(".wg-tabs .wg-kit-pop-item", "Rename"));
-	check("and Rename edits the selected tab in place", all('.wg-tabs .wg-tabs-tab[contenteditable="true"]').length, 1);
+	await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Rename"));
+	check("and Rename edits the selected tab in place", all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[contenteditable="true"]').length, 1);
 }
 
 {
@@ -603,22 +603,22 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	// one, and a fresh Untitled must be standing there — a board bar with nothing on it offers
 	// the person no way back in.
 	const archive = async () => {
-		await click(all(".wg-tabs .wg-tabs-more")[0]);
-		await click(byText(".wg-tabs .wg-kit-pop-item", "Archive"));
+		await click(all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0]);
+		await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Archive"));
 	};
 
 	let guard = 0;
-	while (all(".wg-tabs .wg-tabs-tab").length > 1 && guard < 12) {
+	while (all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length > 1 && guard < 12) {
 		await archive();
 		guard += 1;
 	}
-	check("archiving hands the strip down to one board", all(".wg-tabs .wg-tabs-tab").length, 1);
+	check("archiving hands the strip down to one board", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, 1);
 
-	const last = all(".wg-tabs .wg-tabs-tab")[0].textContent.trim();
+	const last = all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim();
 	await archive();
-	check("archiving the LAST board still leaves one", all(".wg-tabs .wg-tabs-tab").length, 1);
-	check("and the one left is a fresh Untitled", /^Untitled \d+$/.test(all(".wg-tabs .wg-tabs-tab")[0].textContent.trim()), true);
-	check("which is not the board just archived", all(".wg-tabs .wg-tabs-tab")[0].textContent.trim() === last, false);
+	check("archiving the LAST board still leaves one", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, 1);
+	check("and the one left is a fresh Untitled", /^Untitled \d+$/.test(all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim()), true);
+	check("which is not the board just archived", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim() === last, false);
 	check("the archived board was remembered, not lost", String(settingsOf("boards").archived ?? "").includes(last), true);
 }
 
@@ -734,7 +734,7 @@ const pickView = async (name, id = "views") => {
 	check(
 		"and the engine hands back what the registry knew, not a field of its own",
 		Object.keys(twice.holds[0]).sort(),
-		["failure", "id", "manifest", "name", "problem", "render", "title"],
+		["failure", "hidden", "id", "manifest", "name", "problem", "render", "title"],
 	);
 	check("a widget's own declaration comes through untouched", twice.holds[0].manifest.view, "Kanban");
 
@@ -937,7 +937,7 @@ const pickView = async (name, id = "views") => {
 	check("the note's properties survived the body write", (await notes().get({ path: first.path })).props, first.props);
 
 	// what a widget may ask of a source, in full — a new verb here is a decision, not a slip
-	check("the source verbs a widget is handed", Object.keys(notes()).sort(), ["canCreate", "canRemove", "canUpdate", "create", "get", "open", "update"]);
+	check("the source verbs a widget is handed", Object.keys(notes()).sort(), ["canCreate", "canRemove", "canRepairIds", "canUpdate", "create", "get", "open", "remove", "repairIds", "update"]);
 
 	// A MOUNTED widget must not be handed less than a tile: the list belongs to the board, and
 	// where a widget happens to be standing is not a fact about the board.

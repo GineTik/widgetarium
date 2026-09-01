@@ -84,9 +84,10 @@ export function mountKeys(ids) {
 function rowsOf(value) {
 	const list = Array.isArray(value) ? value : String(value ?? "").split(",");
 	return list
-		.map((entry) => (typeof entry === "string" ? { name: "", widget: entry } : { name: String(entry?.name ?? ""), widget: String(entry?.widget ?? "") }))
-		.map((row) => ({ name: row.name.trim(), widget: row.widget.trim() }))
-		.filter((row) => row.widget !== "");
+		.map((entry) => (typeof entry === "string" ? { name: "", widget: entry, hidden: false } : { name: String(entry?.name ?? ""), widget: String(entry?.widget ?? ""), hidden: entry?.hidden === true }))
+		.map((row) => ({ name: row.name.trim(), widget: row.widget.trim(), hidden: row.hidden }))
+		// CONTEXT: a named row with no widget yet is a view waiting to be filled
+		.filter((row) => row.widget !== "" || row.name !== "");
 }
 
 // CONTEXT: run on every READ as well as on rename, so no stored name can shadow another
@@ -126,8 +127,26 @@ export function mountRows(value, nameFor) {
 	return rows.map((row, index) => ({
 		name: uniqueName(taken, row.name || nameFor?.(row.widget) || row.widget),
 		widget: row.widget,
+		hidden: row.hidden,
 		was: legacy[index],
 	}));
+}
+
+// CONTEXT: the rows and the records they key move in one write, or a rename orphans the settings
+export function mountPatch(tile, name, rows) {
+	let mounted = tile.mounted ?? {};
+	for (const row of rows) {
+		if (!row.was || row.was === row.name || !mounted[row.was]) continue;
+		mounted = rekeyed(mounted, row.name, row.was, {});
+	}
+	const kept = new Set(rows.map((row) => row.name));
+	return {
+		settings: {
+			...(tile.settings ?? {}),
+			[name]: rows.map((row) => ({ name: row.name, widget: row.widget ?? "", ...(row.hidden ? { hidden: true } : {}) })),
+		},
+		mounted: Object.fromEntries(Object.entries(mounted).filter(([key]) => kept.has(key))),
+	};
 }
 
 // TRADE-OFF: a name alone, no stored type — the dialog anchors the control off the name

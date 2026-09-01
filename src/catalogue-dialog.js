@@ -30,6 +30,25 @@ export function CatalogueDialog({ registry, host, mode = "browse", kind = "board
 	);
 }
 
+// CONTEXT: a widget may ask for a widget, and only the board holds the registry to ask with
+export function pickWidget(registry, host, options = {}) {
+	return new Promise((resolve) => {
+		// CONTEXT: closing is what settles it — a pick closes, and closing unpicked answers null
+		let picked = null;
+		const close = openCatalogue({
+			registry,
+			host,
+			mode: options.mode ?? "mount",
+			kind: options.kind ?? "board",
+			onPick: (id) => {
+				picked = id;
+				close();
+			},
+			onClose: () => resolve(picked),
+		});
+	});
+}
+
 // CONTEXT: the command palette has no preact tree to hang this on, so the surface brings its own —
 // a holder that is never attached, because the dialog portals its overlay onto <body> by itself
 export function openCatalogue(options) {

@@ -97,7 +97,7 @@ async function openChrome(file) {
 	throw new Error("chrome never opened a page target");
 }
 
-async function ask(file, expression, settleMs) {
+async function ask(file, expression, settleMs, hover) {
 	const { chrome, socketUrl } = await openChrome(file);
 	const socket = new WebSocket(socketUrl);
 	await new Promise((done, fail) => {
@@ -105,24 +105,44 @@ async function ask(file, expression, settleMs) {
 		socket.addEventListener("error", fail, { once: true });
 	});
 	const pending = new Map();
+	let ticket = 0;
 	socket.addEventListener("message", (event) => {
 		const message = JSON.parse(event.data);
 		pending.get(message.id)?.(message);
 		pending.delete(message.id);
 	});
+	const send = (method, params) =>
+		new Promise((done) => {
+			const id = (ticket += 1);
+			pending.set(id, done);
+			socket.send(JSON.stringify({ id, method, params }));
+		});
 	await sleep(settleMs);
-	const reply = await new Promise((done) => {
-		pending.set(1, done);
-		socket.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
-	});
+	// CONTEXT: :hover cannot be set from script — only a real pointer puts it on
+	if (hover) {
+		const found = await send("Runtime.evaluate", {
+			expression: `(() => { const node = document.querySelector(${JSON.stringify(hover)}); if (!node) return null; const box = node.getBoundingClientRect(); return { x: box.left + box.width / 2, y: box.top + box.height / 2 }; })()`,
+			returnByValue: true,
+		});
+		const at = found.result?.result?.value;
+		if (!at) {
+			socket.close();
+			chrome.kill();
+			throw new Error(`nothing to hover at ${hover}`);
+		}
+		await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: at.x, y: at.y, buttons: 0 });
+		await sleep(420);
+	}
+	const reply = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
+	let why = null;
+	// CONTEXT: React reports a render failure as a window error event, so the page holds it, not the throw
+	if (reply.result?.exceptionDetails) {
+		const onPage = await send("Runtime.evaluate", { expression: "window.__err || ''", returnByValue: true });
+		why = onPage.result?.result?.value || JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails);
+	}
 	socket.close();
 	chrome.kill();
-	if (reply.result?.exceptionDetails) {
-		// CONTEXT: React reports a render failure as a window error event, so the page holds it, not the throw
-		const onPage = await send(socket, "Runtime.evaluate", { expression: "window.__err || ''", returnByValue: true });
-		const why = onPage.result?.result?.value;
-		throw new Error(why ? `the page threw: ${why}` : JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails));
-	}
+	if (why !== null) throw new Error(`the page threw: ${why}`);
 	return reply.result.result.value;
 }
 
@@ -210,6 +230,7 @@ render(
 		h(Card, { key: "lifted", id: "lifted-card", lift: true, style: { width: "240px", height: "80px" } }, "A lifted card"),
 		h("div", { key: "raise", id: "raise-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-raise)" } }),
 		h("div", { key: "fill", id: "fill-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill)" } }),
+		h("div", { key: "hover", id: "hover-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill-hover)" } }),
 	]),
 	document.getElementById("host"),
 );
@@ -304,6 +325,18 @@ const KIT_ASK = `(() => {
 	};
 })()`;
 
+const KIT_HOVER_ASK = `(() => {
+	${SHADOW_READER}
+	const before = (id) => getComputedStyle(document.getElementById(id), "::before");
+	const insetsOf = (id) => shadowLayers(before(id).boxShadow).filter((layer) => layer.inset).length;
+	return {
+		hoveredFill: before("row-button").backgroundColor,
+		hoverFill: getComputedStyle(document.getElementById("hover-swatch")).backgroundColor,
+		hoveredEdges: insetsOf("row-button"),
+		restingEdges: insetsOf("row-icon"),
+	};
+})()`;
+
 const MOUNT_ASK = `(async () => {
 	await window.__PRESS__(document.querySelector('.wg-tile-actions button[aria-label="Settings"]'));
 	const held = window.__ROWS__().find((row) => row.textContent.includes("Kanban"));
@@ -347,6 +380,11 @@ for (const theme of ["light", "dark"]) {
 
 	const kit = await ask(pageFor(theme, kitScript, "kit"), KIT_ASK, 1200);
 	check("a raised control carries a hairline on the ::before that owns its corner", kit.rowButton, { edges: 1, widthPx: 1, inkAlpha: 0.09 });
+
+	const hovered = await ask(pageFor(theme, kitScript, "kit"), KIT_HOVER_ASK, 1200, "#row-button");
+	check("the pointer turns a raised control's fill grey", hovered.hoveredFill, hovered.hoverFill);
+	check("and the hairline goes with it, because a grey control has no edge", hovered.hoveredEdges, 0);
+	check("while the control beside it, untouched, keeps its own", hovered.restingEdges, 1);
 	check("so does a raised icon button", kit.rowIcon, { edges: 1, widthPx: 1, inkAlpha: 0.09 });
 	check("and the control that carries it is the RAISED one, not a colour we guessed", kit.rowButtonIsRaised, true);
 	check("a grey neutral button has none", kit.neutralButton, null);

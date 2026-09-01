@@ -34,7 +34,8 @@ const px = (css, sel, prop) => {
 
 let bad = 0;
 const same = (what, a, b) => {
-	const ok = a !== null && String(a) === String(b);
+	// CONTEXT: both sides are CSS text — comparing them as anything looser proves nothing
+	const ok = a !== null && a === b;
 	if (!ok) bad += 1;
 	console.log(`${ok ? "OK " : "!! "} ${what.padEnd(46)} ideal ${String(b).padEnd(12)} ours ${a}`);
 };

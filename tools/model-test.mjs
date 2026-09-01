@@ -389,7 +389,9 @@ check("rendering does not warn", onRender, 0);
 	check("a widget declaring no view falls back to its title", mountRows("@x/titled", nameFor)[0].name, "A title");
 	check("and one with neither is still usable, named off its id", mountRows("@x/plain", nameFor)[0].name, "@x/plain");
 	check("a blank name in the file is no name at all", mountRows([{ name: "   ", widget: "@x/titled" }], nameFor)[0].name, "A title");
-	check("and a row with no widget is no row", mountRows([{ name: "Ghost", widget: "" }, "@x/titled"], nameFor).length, 1);
+	check("a row with neither a name nor a widget is no row", mountRows([{ name: "", widget: "" }, "@x/titled"], nameFor).length, 1);
+	check("but a named row with no widget is a view waiting to be filled", mountRows([{ name: "Ghost", widget: "" }], nameFor)[0].name, "Ghost");
+	check("and an archived row keeps everything it had", mountRows([{ name: "Away", widget: "@x/titled", hidden: true }], nameFor)[0].hidden, true);
 
 	const taken = new Set(["View", "View 2"]);
 	check("a free name is handed back untouched", uniqueName(new Set(), "View"), "View");

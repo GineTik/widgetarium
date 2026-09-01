@@ -13,6 +13,7 @@ const TASKS = "Orbitask/Tasks";
 const BOARDS = "Orbitask/Boards";
 const NOWHERE = "Orbitask/NotYetMoved";
 const NOWHERE_STILL = "Orbitask/StillNotMoved";
+const NEVER_MOVED = "Orbitask/NeverMoved";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
@@ -317,6 +318,25 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	check("the second board's lands on the second, and only it", archivedIn(made[`${NOWHERE_STILL}/Ux Team.md`]), "Done");
 }
 
+// 6c. A COLUMN ARCHIVED BEFORE ANY RECORD EXISTED is named in the map and nowhere else, so
+// nothing authors it — and restoring it has to bring the column back all the same.
+{
+	await start(
+		normalizeBoard({
+			tiles: [
+				{ id: "boards", widget: "@core/editable-tabs", settings: { tabs: "Marketing Team, Ux Team", activeTab: "Marketing Team" }, sources: { tasks: { path: TASKS } } },
+				{ id: "board", widget: "@task/kanban-board", sources: { tasks: { path: TASKS }, boards: { path: NEVER_MOVED } } },
+			],
+			archivedColumns: { "Marketing Team": ["Paused"] },
+			context: { board: "Marketing Team" },
+			layouts: { 20: { places: PLACES } },
+		}),
+	);
+	check("a column archived by the old map is not drawn", titles(), ["To Do", "Doing", "Done"]);
+	await addColumn("Paused");
+	check("and naming it brings the column back", titles(), ["To Do", "Doing", "Done", "Paused"]);
+}
+
 // 7. AN EXISTING FILE IS NEVER OVERWRITTEN.
 {
 	const madeBefore = written.created.length;
@@ -337,7 +357,8 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	const wroteBefore = boardWrites();
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archive"));
-	check("archiving a tab takes it off the strip", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Ux Team"]);
+	// CONTEXT: the strip is record-backed here, so its list is the folder — Growth was filed above
+	check("archiving a tab takes it off the strip", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Ux Team", "Growth"]);
 	check("and it is remembered as archived", String(board.tiles.find((tile) => tile.id === "boards").settings.archived), "Marketing Team");
 	check("no board record was written by it", boardWrites(), wroteBefore);
 	check("the board's columns were not touched", String(fileProps("Marketing Team").columns), columnsBefore);
@@ -345,7 +366,7 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archived list"));
 	await click([...dialog().querySelectorAll("button")].find((node) => node.textContent.trim() === "Restore"));
-	check("restoring puts the tab back", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()).sort(), ["Marketing Team", "Ux Team"]);
+	check("restoring puts the tab back", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()).sort(), ["Growth", "Marketing Team", "Ux Team"]);
 	check("and it wrote no board record either", boardWrites(), wroteBefore);
 }
 

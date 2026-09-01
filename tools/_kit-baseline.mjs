@@ -24,7 +24,7 @@ let failed = 0;
 let checks = 0;
 function check(name, got, want) {
 	checks += 1;
-	const ok = String(got) === String(want);
+	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
 	console.log(`${ok ? "OK " : "!! "} ${name}${ok ? "" : `  got ${got}, want ${want}`}`);
 }
