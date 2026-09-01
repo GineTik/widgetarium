@@ -2494,13 +2494,6 @@ pre:has(> .block-language-widgetarium),
 	background: none;
 }
 
-/* TRADE-OFF: a cast that FALLS instead of rimming. The lift's ink is mixed from the text colour, so
-   in dark it paints LIGHT and its sideways reach reads as a drawn border — measured 66 on a 57
-   ground. Pulling the spread in by half the blur cancels that reach and leaves the drop. */
-:is(.wg-root, .wg-portal) .wg-sub-side .wg-sub-list {
-	box-shadow: 0 var(--wg-kit-lift-drop) var(--wg-kit-lift-blur) calc(var(--wg-kit-lift-blur) / -2) var(--wg-kit-lift-ink-soft);
-}
-
 .wg-sub-side-head {
 	display: flex;
 	align-items: center;
@@ -2847,12 +2840,16 @@ pre:has(> .block-language-widgetarium),
 	min-width: 0;
 }
 
+/* CONTEXT: a sidebar separates by its cast, never a drawn 1px edge */
+:is(.wg-root, .wg-portal) .wg-kit-side.is-lifted {
+	box-shadow: var(--wg-kit-lift);
+}
+
 /* CONTEXT: a sidebar is READ, so glass here is the dense panel fill, never the thin chrome tint */
 :is(.wg-root, .wg-portal) .wg-kit-side.is-glass {
 	--wg-kit-card-fill: var(--wg-kit-glass-panel);
 	backdrop-filter: var(--wg-kit-glass-blur);
 	-webkit-backdrop-filter: var(--wg-kit-glass-blur);
-	box-shadow: var(--wg-kit-glass-edge), var(--wg-kit-lift);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-side-group {

@@ -375,8 +375,8 @@ for (const theme of ["light", "dark"]) {
 	const side = await ask(pageFor(theme, subScript, "sub"), SUB_ASK, 3000);
 	check("the substitutions sidebar is drawn at all", side.found, true);
 	check("and carries no inset edge", side.insetLayers, 0);
-	check("its cast is one layer, kept", side.layers, 1);
-	check("and that cast cannot paint beside the block", side.reachesSideways, false);
+	check("its cast is the kit lift, both layers", side.layers, 2);
+	check("and that cast paints beside the block, as every sidebar's does", side.reachesSideways, true);
 
 	const kit = await ask(pageFor(theme, kitScript, "kit"), KIT_ASK, 1200);
 	check("a raised control carries a hairline on the ::before that owns its corner", kit.rowButton, { edges: 1, widthPx: 1, inkAlpha: 0.09 });
