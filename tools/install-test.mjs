@@ -74,8 +74,14 @@ function fakeVault() {
 		files,
 		exists: async (path) => files.has(path) || [...files.keys()].some((held) => held.startsWith(`${path}/`)),
 		read: async (path) => files.get(path),
-		write: async (path, text) => { files.set(path, text); },
-		mkdir: async () => {},
+		write: async function (path, text) {
+			const parent = path.slice(0, path.lastIndexOf("/"));
+			if (parent.includes("/") && !this.made.has(parent)) throw new Error(`no such folder: ${parent}`);
+			files.set(path, text);
+		},
+		made: new Set(),
+		// CONTEXT: Obsidian's mkdir makes ONE folder — a stand-in that makes any path hides that
+		mkdir: async function (path) { this.made.add(path); },
 		list: async (path) => {
 			const under = `${path}/`;
 			const folders = new Set();

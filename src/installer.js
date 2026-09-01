@@ -93,6 +93,8 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		}
 		if (!files[NEEDED]) return refuse(`${listed.from.folder} holds no ${NEEDED}`);
 
+		// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
+		await adapter.mkdir(scopeOf(folder));
 		await adapter.mkdir(folder);
 		for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
 
@@ -166,6 +168,8 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			}
 			if (served.id !== manifest.id) return refuse(`the repository served "${served.id}" under "${manifest.id}"`);
 
+			// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
+			await adapter.mkdir(scopeOf(folder));
 			await adapter.mkdir(folder);
 			for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
 			await writeJson(LOCK_PATH, withEntry(await this.lock(), manifest.id, lockEntry({ source: manifest.repository, commit, files })));
