@@ -15,6 +15,10 @@ if (!ID) {
 	process.exit(1);
 }
 
+// CONTEXT: the same ladder the registry walks, so a rename cannot photograph a blank page
+const WIDGET_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
+const widgetFile = (at) => WIDGET_FILES.map((name) => path.join(at, name)).find((file) => fs.existsSync(file));
+
 const folder = path.join("widgets", ID);
 const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 
@@ -35,13 +39,13 @@ for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("
 
 // CONTEXT: a fed slot is what the board fills from the manifest default — a shot without it draws a hole
 const slots = Object.entries(manifest.slots ?? {});
-const slotImports = slots.map(([name, spec], at) => `import Slot${at} from "./widgets/${spec.default}/widget.jsx";`).join("\n");
+const slotImports = slots.map(([name, spec], at) => `import Slot${at} from "./${widgetFile(path.join("widgets", spec.default))}";`).join("\n");
 const slotMap = `{ ${slots.map(([name], at) => `${name}: Slot${at}`).join(", ")} }`;
 
 const PAGE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
-import Widget from "./${folder}/widget.jsx";
+import Widget from "./${widgetFile(folder)}";
 ${slotImports}
 
 const settings = ${JSON.stringify(settings)};

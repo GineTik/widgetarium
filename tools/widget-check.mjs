@@ -64,7 +64,7 @@ const libs = new Map();
 
 function run(file, source) {
 	const code = transform(source, {
-		transforms: ["jsx", "imports"],
+		transforms: file.endsWith(".tsx") || file.endsWith(".ts") ? ["typescript", "jsx", "imports"] : ["jsx", "imports"],
 		jsxPragma: "h",
 		jsxFragmentPragma: "Fragment",
 		production: true,
@@ -87,8 +87,15 @@ function run(file, source) {
 	return shell.exports;
 }
 
+// CONTEXT: the same ladder the registry walks — a tool blind to a rename passes on nothing
+const WIDGET_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
+
+function widgetFile(folder) {
+	return WIDGET_FILES.map((name) => path.join(folder, name)).find((at) => fs.existsSync(at)) ?? null;
+}
+
 function load(folder) {
-	const file = path.join(folder, "widget.jsx");
+	const file = widgetFile(folder);
 	const shell = run(file, fs.readFileSync(file, "utf8"));
 	return shell.default ?? shell;
 }
@@ -105,7 +112,7 @@ for (const scope of scopes) {
 for (const scope of scopes) {
 	for (const name of fs.readdirSync(path.join(root, scope))) {
 		const folder = path.join(root, scope, name);
-		if (!fs.existsSync(path.join(folder, "widget.jsx"))) continue;
+		if (!widgetFile(folder)) continue;
 
 		try {
 			const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
@@ -116,7 +123,7 @@ for (const scope of scopes) {
 			const html = render(h(component, { settings, size: { w: 6, h: 10, scale: 1 }, host: { ui: {} } }));
 
 			if (!html || html.length < 50) throw new Error("rendered almost nothing");
-			const hexes = [...new Set((fs.readFileSync(path.join(folder, "widget.jsx"), "utf8").match(/#[0-9a-fA-F]{6}\b/g) ?? []))];
+			const hexes = [...new Set((fs.readFileSync(widgetFile(folder), "utf8").match(/#[0-9a-fA-F]{6}\b/g) ?? []))];
 			console.log(`OK  ${scope}/${name} — ${html.length} chars, ${hexes.length} raw hex ${hexes.length ? `(${hexes.join(" ")})` : ""}`);
 		} catch (failure) {
 			failed += 1;

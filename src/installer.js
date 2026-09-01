@@ -8,7 +8,7 @@ export const LOCK_PATH = `${ROOT}/widgets.lock.json`;
 
 const NEEDED = "manifest.json";
 // CONTEXT: a widget travels with its own sheet; a lib and a palette belong to the whole scope
-const WIDGET_FILES = ["manifest.json", "widget.jsx", "widget.js", "styles.css"];
+const WIDGET_FILES = ["manifest.json", "widget.tsx", "widget.ts", "widget.jsx", "widget.js", "styles.css"];
 const SCOPE_FILES = ["lib.js", "tokens.css"];
 
 function scopeOf(folder) {
@@ -39,7 +39,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 	// CONTEXT: the card draws the widget, so its code travels with the offer, not only its name
 	async function codeAt(folder, scope) {
 		const held = {};
-		for (const name of ["widget.jsx", "widget.js"]) {
+		for (const name of ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"]) {
 			const at = `${folder}/${name}`;
 			if (!held.code && (await disk.exists(at))) Object.assign(held, { code: await disk.read(at), path: at });
 		}
@@ -154,7 +154,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			const folder = folderFor(WIDGETS_DIR, manifest.id);
 			if (!folder) return refuse(`"${manifest.id}" is not a scoped widget id`);
 
-			const wanted = Array.isArray(manifest.files) && manifest.files.length > 0 ? manifest.files : [NEEDED, "widget.jsx"];
+			const wanted = Array.isArray(manifest.files) && manifest.files.length > 0 ? manifest.files : WIDGET_FILES;
 			if (!wanted.includes(NEEDED)) return refuse(`the entry does not list ${NEEDED}`);
 
 			let commit;
