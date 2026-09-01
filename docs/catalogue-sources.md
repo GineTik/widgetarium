@@ -5,8 +5,8 @@
 ## TL;DR
 
 `catalogue.json` names **sources** — a folder or a repository — and the widgets in one are
-found by reading it. A folder source lives in the vault, so installing from it is a copy and
-needs no network. The old `{ widgets: [...] }` index still reads; nothing migrates.
+found by reading it. A folder source is a path on the machine, so installing from it is a copy
+into the vault and needs no network. The old `{ widgets: [...] }` index still reads; nothing migrates.
 
 ## The shape
 
