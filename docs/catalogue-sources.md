@@ -62,6 +62,21 @@ Reading outside the vault is a **desktop power**: `Platform.isDesktopApp` gates 
 build without one offers no folder source and refuses to install from one rather than writing
 nothing quietly.
 
+## An offer carries its code, not only its name
+
+A card saying "not installed yet" defeats the reason cards draw widgets at all: a name teaches
+nothing about what a widget looks like, and that is the moment somebody has to decide.
+
+A folder source is on the machine, so its code costs one file read. The offer carries the
+widget's source and its scope's lib, and `buildWidget` compiles them through the same
+`runModule` the registry uses — one path, so a card cannot draw something the board would not.
+A widget that will not compile becomes the card an installed broken one already gets.
+
+**This runs code from the source before anybody chose to install it.** That is the trade: the
+preview host is a stub with no actions and an inert frame (`docs/widget-catalogue.md`), so what
+it can reach is a render. A repository source is not compiled — its code would have to be
+fetched per card, and a network read per tile is a different decision than a file read.
+
 ## The check that has to hold
 
 A repository serving something else under a known id is the one attack this catalogue can see,
