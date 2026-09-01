@@ -2,7 +2,7 @@ import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild, P
 import { createElement as h } from "react";
 import { render } from "./engine/render.js";
 import { WidgetSurface } from "./surface.js";
-import { WidgetRegistry } from "./registry.js";
+import { WidgetRegistry, buildWidget } from "./registry.js";
 import { createHost, bindNote } from "./host.js";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
 import { normalizeBoard, serializeBoard } from "./model.js";
@@ -20,6 +20,16 @@ import { substituteIn } from "./inline-render.js";
 // a run of edits settles into one write; longer and an edit could be lost to a crash
 const WRITE_SETTLE_MS = 400;
 const SCREEN_KEY = "widgetarium";
+
+// CONTEXT: an offer that cannot be drawn is a name; one that can is the widget itself
+function drawable(entry) {
+	if (!entry?.code) return entry;
+	try {
+		return { ...entry, component: buildWidget(entry) };
+	} catch (error) {
+		return { ...entry, error };
+	}
+}
 
 // CONTEXT: a folder source lives on the machine, and only a desktop build can reach one
 function diskDoor() {
@@ -90,7 +100,7 @@ export default class WidgetariumPlugin extends Plugin {
 			fetchText: (url) => requestUrl({ url }).then((answer) => answer.text),
 			disk: diskDoor(),
 		});
-		this.available = await this.installer.available();
+		this.available = (await this.installer.available()).map(drawable);
 
 		// .widgetarium is a dot folder, so the vault never emits events for it — poll instead
 		this.signature = await this.widgetSignature();
@@ -162,7 +172,7 @@ export default class WidgetariumPlugin extends Plugin {
 		if (!done.ok) return done;
 		this.signature = await this.widgetSignature();
 		await this.registry.load();
-		this.available = await this.installer.available();
+		this.available = (await this.installer.available()).map(drawable);
 		this.refresh();
 		new Notice(`Widgetarium: installed ${entry.manifest.id} at ${done.commit.slice(0, 7)}`);
 		return done;

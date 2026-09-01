@@ -143,5 +143,27 @@ const check = (name, got, want) => {
 	check("and a category count is by value, biggest first", groupOf([{ props: { tag: ["a", "b"] } }, { props: { tag: "a" } }], "tag"), [{ label: "a", value: 2 }, { label: "b", value: 1 }]);
 }
 
+{
+	const { readFileSync } = await import("node:fs");
+	const { buildWidget } = await import("./.mjs-cache/registry.mjs");
+	// CONTEXT: the catalogue draws a widget nobody installed, so it compiles one straight off disk
+	const drawn = buildWidget({
+		code: readFileSync("widgets/@habit/heatmap/widget.jsx", "utf8"),
+		path: "widgets/@habit/heatmap/widget.jsx",
+		lib: readFileSync("widgets/@habit/lib.js", "utf8"),
+		libPath: "widgets/@habit/lib.js",
+		scope: "@habit",
+	});
+	check("a widget is built from files nobody installed", typeof drawn, "function");
+
+	let refused = "";
+	try {
+		buildWidget({ code: "export default 5;", path: "nowhere/widget.jsx" });
+	} catch (failure) {
+		refused = String(failure.message);
+	}
+	check("and one exporting no component says so", refused, 'nowhere/widget.jsx: the file must "export default createWidget(...)"');
+}
+
 console.log(`\n${failed === 0 ? `lib gate: clean (${checks} checks)` : `lib gate: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

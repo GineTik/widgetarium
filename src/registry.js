@@ -54,6 +54,16 @@ function runModule(source, filePath, libs) {
 	return shell.exports;
 }
 
+// CONTEXT: a catalogue card draws the widget itself, so code nobody installed still has to run
+export function buildWidget({ code, path, lib, libPath, scope }) {
+	const libs = new Map();
+	if (lib && scope) libs.set(`${scope}/lib`, runModule(lib, libPath, libs));
+	const shell = runModule(code, path, libs);
+	const exported = shell.default ?? shell;
+	if (typeof exported !== "function") throw new Error(`${path}: the file must "export default createWidget(...)"`);
+	return exported;
+}
+
 // CONTEXT: a widget declares that it may stand in text; claiming no tile size is what says
 // it may ONLY stand there. One widget can be both, and most are neither declaration.
 function isInlineOnly(entry) {

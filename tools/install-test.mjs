@@ -168,6 +168,9 @@ const shelved = createInstaller({ adapter: shelf, disk: onMachine, ...network({}
 const onShelf = await shelved.available();
 check("a folder source is read, not listed by hand", onShelf.map((entry) => entry.manifest.id), ["@habit/heatmap"]);
 check("and what it offers is not installed", onShelf[0].installed, false);
+// A CARD DRAWS THE WIDGET, INSTALLED OR NOT: the code has to travel with the offer
+check("an offer carries the code its card will draw", [typeof onShelf[0].code, onShelf[0].path], ["string", "/repo/widgets/@habit/heatmap/widget.jsx"]);
+check("and the scope lib it cannot run without", [typeof onShelf[0].lib, onShelf[0].scope], ["string", "@habit"]);
 check("a folder with no manifest is not a widget", onShelf.length, 1);
 
 const copied = await shelved.install(onShelf[0]);

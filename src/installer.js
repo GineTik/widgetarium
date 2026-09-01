@@ -36,6 +36,18 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 
 	const writeJson = (path, value) => adapter.write(path, `${JSON.stringify(value, null, "\t")}\n`);
 
+	// CONTEXT: the card draws the widget, so its code travels with the offer, not only its name
+	async function codeAt(folder, scope) {
+		const held = {};
+		for (const name of ["widget.jsx", "widget.js"]) {
+			const at = `${folder}/${name}`;
+			if (!held.code && (await disk.exists(at))) Object.assign(held, { code: await disk.read(at), path: at });
+		}
+		const libAt = `${scope}/lib.js`;
+		if (await disk.exists(libAt)) Object.assign(held, { lib: await disk.read(libAt), libPath: libAt, scope: scope.slice(scope.lastIndexOf("/") + 1) });
+		return held;
+	}
+
 	async function discoverFolder(source) {
 		// CONTEXT: reading a folder outside the vault is a desktop power; a phone has no such door
 		if (!disk || !(await disk.exists(source.path))) return [];
@@ -46,7 +58,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 				if (!(await disk.exists(at))) continue;
 				try {
 					const manifest = JSON.parse(await disk.read(at));
-					if (manifest?.id) found.push({ manifest, installed: false, origin: source.path, from: { folder } });
+					if (manifest?.id) found.push({ manifest, installed: false, origin: source.path, from: { folder }, ...(await codeAt(folder, scope)) });
 				} catch (failure) {
 					console.error(`[widgetarium] cannot read ${at}`, failure);
 				}
