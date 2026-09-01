@@ -76,6 +76,19 @@ function fakeVault() {
 		read: async (path) => files.get(path),
 		write: async (path, text) => { files.set(path, text); },
 		mkdir: async () => {},
+		list: async (path) => {
+			const under = `${path}/`;
+			const folders = new Set();
+			const found = [];
+			for (const held of files.keys()) {
+				if (!held.startsWith(under)) continue;
+				const rest = held.slice(under.length);
+				const cut = rest.indexOf("/");
+				if (cut === -1) found.push(held);
+				else folders.add(under + rest.slice(0, cut));
+			}
+			return { files: found, folders: [...folders] };
+		},
 		remove: async (path) => { files.delete(path); },
 		rmdir: async (path) => { for (const held of [...files.keys()]) if (held.startsWith(`${path}/`)) files.delete(held); },
 	};
@@ -121,6 +134,31 @@ check("an entry that does not list its manifest is refused", noManifest.failure,
 const offline = createInstaller({ adapter: fakeVault(), ...network({}) });
 const lost = await offline.install(listed[0]);
 check("a network that answers nothing is a refusal, not a crash", [lost.ok, lost.failure.startsWith("404")], [false, true]);
+
+// ── A SOURCE IS A PLACE: name a folder and the widgets in it are found by reading it ─────
+const shelf = fakeVault();
+shelf.files.set(".widgetarium/available/@habit/lib.js", "export const RATE = 21;");
+shelf.files.set(".widgetarium/available/@habit/tokens.css", ".habit-dot { }");
+shelf.files.set(".widgetarium/available/@habit/heatmap/manifest.json", '{"id":"@habit/heatmap","title":"Heatmap"}');
+shelf.files.set(".widgetarium/available/@habit/heatmap/widget.jsx", "export default () => null;");
+shelf.files.set(".widgetarium/available/@habit/nothing/readme.md", "not a widget");
+shelf.files.set(INDEX_PATH, JSON.stringify({ sources: [{ path: ".widgetarium/available" }] }));
+
+const shelved = createInstaller({ adapter: shelf, ...network({}) });
+const onShelf = await shelved.available();
+check("a folder source is read, not listed by hand", onShelf.map((entry) => entry.manifest.id), ["@habit/heatmap"]);
+check("and what it offers is not installed", onShelf[0].installed, false);
+check("a folder with no manifest is not a widget", onShelf.length, 1);
+
+const copied = await shelved.install(onShelf[0]);
+check("installing from a folder needs no network", [copied.ok, copied.commit], [true, "local"]);
+check("and puts the widget where the registry looks", [...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@habit/heatmap")).sort(), [".widgetarium/widgets/@habit/heatmap/manifest.json", ".widgetarium/widgets/@habit/heatmap/widget.jsx"]);
+// A WIDGET IMPORTING ITS SCOPE'S LIB IS BROKEN WITHOUT IT
+check("the scope comes along with it", [shelf.files.has(".widgetarium/widgets/@habit/lib.js"), shelf.files.has(".widgetarium/widgets/@habit/tokens.css")], [true, true]);
+check("and the lock records where it came from", (await shelved.lock()).widgets["@habit/heatmap"].source, ".widgetarium/available");
+
+const bare = await shelved.install({ manifest: { id: "@habit/ghost" }, from: { folder: ".widgetarium/available/@habit/ghost" } });
+check("a folder that holds no manifest is refused", bare.failure, ".widgetarium/available/@habit/ghost holds no manifest.json");
 
 const gone = await installer.uninstall("@demo/clock");
 check("uninstalling answers ok", gone.ok, true);

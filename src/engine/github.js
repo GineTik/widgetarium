@@ -12,6 +12,10 @@ export function rawUrl(repository, commit, path) {
 	return `https://raw.githubusercontent.com/${repository.owner}/${repository.repo}/${commit}/${path}`;
 }
 
+export function treeUrl(repository, commit) {
+	return `https://api.github.com/repos/${repository.owner}/${repository.repo}/git/trees/${commit}?recursive=1`;
+}
+
 export function folderFor(root, id) {
 	const [scope, name] = String(id ?? "").split("/");
 	return scope && name ? `${root}/${scope}/${name}` : null;
