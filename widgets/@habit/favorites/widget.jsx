@@ -55,7 +55,7 @@ const STYLE = `
 	position: relative;
 	width: 100%;
 	border-radius: 12px;
-	background: var(--background-modifier-hover);
+	background: var(--background-primary);
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
@@ -193,7 +193,7 @@ export default createWidget(function HabitFavorites({ settings, data }) {
 	const shown = bars[at];
 
 	return (
-		<WidgetRoot className="habit-favorites">
+		<WidgetRoot background="var(--wg-kit-fill)" className="habit-favorites">
 			<style>{STYLE}</style>
 			<h3 className="hf-title">Favourite habit</h3>
 

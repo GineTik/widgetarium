@@ -104,7 +104,7 @@ export default createWidget(function HabitMonth({ settings, data, actions }) {
 	};
 
 	return (
-		<WidgetRoot className="habit-month" style={habit?.props?.color ? { "--habit-ink": habit.props.color } : undefined}>
+		<WidgetRoot background="var(--wg-kit-fill)" className="habit-month" style={habit?.props?.color ? { "--habit-ink": habit.props.color } : undefined}>
 			<style>{STYLE}</style>
 			<div className="hm-head">
 				<IconButton size="s" label="Previous month" onClick={() => setShift(shift - 1)}>

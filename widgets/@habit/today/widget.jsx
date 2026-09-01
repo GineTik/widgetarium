@@ -80,7 +80,7 @@ export default createWidget(function HabitToday({ settings, data, actions }) {
 	};
 
 	return (
-		<WidgetRoot className="habit-today">
+		<WidgetRoot background="var(--wg-kit-fill)" className="habit-today">
 			<style>{STYLE}</style>
 			<div className="ht-head">
 				<h3 className="ht-title">Today</h3>

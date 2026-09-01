@@ -73,7 +73,7 @@ const STYLE = `
 	padding: 10px 0 12px;
 	border: 0;
 	border-radius: 14px;
-	background: var(--background-modifier-hover);
+	background: var(--background-primary);
 	cursor: pointer;
 }
 
@@ -261,7 +261,7 @@ export default createWidget(function HabitStreak({ settings, data }) {
 	}, []);
 
 	return (
-		<WidgetRoot className="habit-streak">
+		<WidgetRoot background="var(--wg-kit-fill)" className="habit-streak">
 			<style>{STYLE}</style>
 			<h3 className="hk-title">Habit streak</h3>
 			{rows.length === 0 ? (
