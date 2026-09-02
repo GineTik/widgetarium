@@ -11,6 +11,7 @@
 		"lint:lang": "node tools/lint-language.mjs src styles.css manifest.json tools install.mjs build.mjs",
 		"hooks": "git config core.hooksPath .githooks",
 		"test:lib": "node tools/lib-test.mjs",
+		"test:streak": "node tools/streak-test.mjs",
 		"test:model": "node tools/model-test.mjs",
 		"test:dialog": "node tools/dialog-test.mjs",
 		"test:dialog-fit": "node tools/dialog-fit-test.mjs",
