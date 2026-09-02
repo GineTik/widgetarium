@@ -12,6 +12,13 @@ export function dayOf(iso) {
 	return Math.floor(Date.parse(`${iso}T00:00:00Z`) / DAY_MS);
 }
 
+// TRADE-OFF: UTC, while isoOf reads a Date in local time — a date-only shift must not drift over a DST seam
+export function shiftedBy(iso, days) {
+	const when = new Date(Date.parse(`${iso}T00:00:00Z`));
+	when.setUTCDate(when.getUTCDate() + days);
+	return when.toISOString().slice(0, 10);
+}
+
 // CONTEXT: a boolean tick counts as one; a number counts as itself
 function amountOf(value) {
 	if (value === true) return 1;
