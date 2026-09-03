@@ -637,35 +637,30 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 	const floorOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.stackBelowPx ?? 0;
 	const capOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.tallestPx ?? 0;
 
-	const paintWhileHeld = (at, row) => {
-		const node = rowsRef.current.get(at);
-		if (!node) return;
-		const cells = [...node.querySelectorAll(":scope > .wg-tree-cell")];
-		const widths = widthsOf(row, innerOf(row.length, node.getBoundingClientRect().width, GAP_PX));
-		cells.forEach((cell, index) => {
-			if (cells.length > 1) {
-				cell.style.flex = `0 0 ${widths[index]}px`;
-				cell.style.width = `${widths[index]}px`;
-			}
-			cell.style.height = row[index]?.height ? `${row[index].height}px` : "";
-		});
-	};
-
 	const startDrag = (event, at, read) => {
 		event.preventDefault();
 		event.stopPropagation();
 		const node = rowsRef.current.get(at);
 		if (!node) return;
 		const box = node.getBoundingClientRect();
+		const cells = [...node.querySelectorAll(":scope > .wg-tree-cell")];
+		const inner = innerOf(cells.length, box.width, GAP_PX);
 		let latest = null;
 		let frame = 0;
-		const move = (moved) => {
-			latest = read(moved, box);
-			if (frame) return;
-			frame = window.requestAnimationFrame(() => {
-				frame = 0;
-				paintWhileHeld(at, latest);
+		const paint = () => {
+			frame = 0;
+			node.style.height = `${tallestOf(latest)}px`;
+			if (cells.length < 2) return;
+			const widths = widthsOf(latest, inner);
+			cells.forEach((cell, index) => {
+				cell.style.flex = `0 0 ${widths[index]}px`;
+				cell.style.width = `${widths[index]}px`;
 			});
+		};
+		const move = (moved) => {
+			latest = read(moved, box, event);
+			if (frame) return;
+			frame = window.requestAnimationFrame(paint);
 		};
 		const stop = () => {
 			window.cancelAnimationFrame(frame);
@@ -685,11 +680,14 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 	const bare = (row) => row.map(({ minPx, ...cell }) => cell);
 
 	const grabRatio = (at, boundary) => (event) =>
-		startDrag(event, at, (moved, box) =>
-			bare(resized(withFloors(board.layout[at]), boundary, moved.clientX - box.left, innerOf(board.layout[at].length, box.width, GAP_PX), moved.shiftKey)),
-		);
+		startDrag(event, at, (moved, box, down) => {
+			const inner = innerOf(board.layout[at].length, box.width, GAP_PX);
+			const held = widthsOf(board.layout[at], inner).slice(0, boundary + 1).reduce((sum, one) => sum + one, 0);
+			const grabbed = down.clientX - box.left - held;
+			return bare(resized(withFloors(board.layout[at]), boundary, moved.clientX - box.left - grabbed, inner, moved.shiftKey));
+		});
 
-	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box) => restacked(board.layout[at], moved.clientY - box.top, capOf));
+	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down) => restacked(board.layout[at], box.height + moved.clientY - down.clientY));
 
 	const shared = useMemo(
 		() => ({
