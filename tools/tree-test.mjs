@@ -178,7 +178,9 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	check("the dialog is drawn without taking a row", seen.overlays, 1);
 	check("and no row is wider than the board it sits in", seen.widest <= 1600.5, true);
 	check("one grip stands between the two that share a row", seen.across, 1);
-	check("and every drawn cell can be dragged taller", seen.along, 4);
+	check("one strip under each row, not one under each tile", seen.along, 3);
+	check("and it runs the whole line", seen.alongWidth, 1600);
+	check("the two rows of capped widgets offer no strip to pull", seen.capped, 2);
 	check("the gap the grip fills is the gap the layout counted", seen.sharedRow[0] + seen.sharedRow[1] + 12, 1600);
 }
 

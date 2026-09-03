@@ -157,8 +157,10 @@ function readSurface() {
 		painted: [...root.querySelectorAll(".wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
 		overlays: root.querySelectorAll(".wg-tree-overlay").length,
 		widest: Math.max(...[...root.querySelectorAll(".wg-tree-row")].map((node) => node.getBoundingClientRect().width)),
-		across: root.querySelectorAll(".wg-tree-grip.is-across").length,
-		along: root.querySelectorAll(".wg-tree-grip.is-along").length,
+		across: root.querySelectorAll(".wg-tree-handle.is-across").length,
+		along: root.querySelectorAll(".wg-tree-handle.is-along").length,
+		capped: root.querySelectorAll(".wg-tree-handle.is-along.is-capped").length,
+		alongWidth: Math.round(root.querySelector(".wg-tree-handle.is-along")?.getBoundingClientRect().width ?? 0),
 		sharedRow: cellsOf([...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1)),
 		writes: surfaceWrites,
 		ratios: (surfaceBoard.layout.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
@@ -169,7 +171,7 @@ function report() {
 	const sink = document.getElementById("wg-measure");
 	try {
 		const before = readSurface();
-		const grip = document.querySelector(".wg-surface-probe .wg-tree-grip.is-across");
+		const grip = document.querySelector(".wg-surface-probe .wg-tree-handle.is-across");
 		if (grip) dragGrip(grip, 120, 0);
 		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged: readSurface(), failures });
 	} catch (failure) {
