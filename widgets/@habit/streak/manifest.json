@@ -42,38 +42,14 @@
 			},
 			"days": {
 				"rows": [
-					{
-						"path": "Habits/2026-08-24.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-08-25.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-08-27.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-08-28.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-08-29.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-08-30.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-08-31.md",
-						"done": 1
-					},
-					{
-						"path": "Habits/2026-09-01.md",
-						"done": 1
-					}
+					{ "path": "Habits/2026-08-24.md", "done": 1 },
+					{ "path": "Habits/2026-08-25.md", "done": 1 },
+					{ "path": "Habits/2026-08-27.md", "done": 1 },
+					{ "path": "Habits/2026-08-28.md", "done": 1 },
+					{ "path": "Habits/2026-08-29.md", "done": 1 },
+					{ "path": "Habits/2026-08-30.md", "done": 1 },
+					{ "path": "Habits/2026-08-31.md", "done": 1 },
+					{ "path": "Habits/2026-09-01.md", "done": 1 }
 				]
 			}
 		}
@@ -94,23 +70,11 @@
 			"needs": {
 				"done": {
 					"type": "number",
-					"aka": [
-						"kept",
-						"value",
-						"count",
-						"steps",
-						"amount",
-						"score"
-					]
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				},
 				"date": {
 					"type": "date",
-					"aka": [
-						"created",
-						"day",
-						"when",
-						"on"
-					]
+					"aka": ["created", "day", "when", "on"]
 				}
 			}
 		},
