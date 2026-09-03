@@ -67,7 +67,7 @@ function cellNode(cell, width, wiring) {
 }
 
 function rowNode(row, at, width, wiring) {
-	return h("div", { className: "wg-tree-row", key: at }, row.map((cell) => cellNode(cell, width, wiring)));
+	return h("div", { className: "wg-tree-row", key: at }, row.cells.map((cell) => cellNode(cell, width, wiring)));
 }
 
 function boardNode(width) {
@@ -106,25 +106,41 @@ function readOne(width) {
 
 const mount = document.querySelector(".wg-host");
 
-const SURFACE_WIDTH = 1194;
+const SURFACE_WIDTH = 1600;
+
+let surfaceBoard = { ...BOARD, layout: TREE.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) }))), layouts: {} };
+let surfaceWrites = 0;
 
 function surfaceNode() {
-	const laid = { ...BOARD, layout: TREE.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) }))), layouts: {} };
 	return h(
 		"div",
 		{ className: "wg-surface-probe", key: "surface", style: { width: `${SURFACE_WIDTH}px` } },
 		h(WidgetSurface, {
-			board: laid,
+			board: surfaceBoard,
 			registry,
 			host,
 			editing: false,
 			screen: true,
 			initialWidth: SURFACE_WIDTH,
-			onChange: () => {},
+			onChange: (next) => {
+				surfaceWrites += 1;
+				surfaceBoard = next;
+				draw();
+			},
 			onToggleEditing: () => {},
 			onWidth: () => {},
 		}),
 	);
+}
+
+function dragGrip(grip, byX, byY) {
+	const box = grip.getBoundingClientRect();
+	const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+	const fire = (type, at, target) =>
+		target.dispatchEvent(new window.PointerEvent(type, { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, shiftKey: true, pointerId: 1 }));
+	fire("pointerdown", from, grip);
+	fire("pointermove", { x: from.x + byX, y: from.y + byY }, window);
+	fire("pointerup", { x: from.x + byX, y: from.y + byY }, window);
 }
 
 function draw() {
@@ -134,19 +150,28 @@ function draw() {
 function readSurface() {
 	const root = document.querySelector(".wg-surface-probe .wg-tree");
 	if (!root) return { drawn: false, host: document.querySelector(".wg-surface-probe")?.innerHTML.slice(0, 600) ?? "" };
+	const cellsOf = (row) => (row ? [...row.querySelectorAll(".wg-tree-cell")].map((node) => Math.round(node.getBoundingClientRect().width)) : []);
 	return {
 		drawn: true,
 		rows: [...root.querySelectorAll(".wg-tree-row")].map((node) => node.querySelectorAll(".wg-tree-cell").length),
 		painted: [...root.querySelectorAll(".wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
 		overlays: root.querySelectorAll(".wg-tree-overlay").length,
 		widest: Math.max(...[...root.querySelectorAll(".wg-tree-row")].map((node) => node.getBoundingClientRect().width)),
+		across: root.querySelectorAll(".wg-tree-grip.is-across").length,
+		along: root.querySelectorAll(".wg-tree-grip.is-along").length,
+		sharedRow: cellsOf([...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1)),
+		writes: surfaceWrites,
+		ratios: (surfaceBoard.layout.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
 	};
 }
 
 function report() {
 	const sink = document.getElementById("wg-measure");
 	try {
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: readSurface(), failures });
+		const before = readSurface();
+		const grip = document.querySelector(".wg-surface-probe .wg-tree-grip.is-across");
+		if (grip) dragGrip(grip, 120, 0);
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged: readSurface(), failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

@@ -5,6 +5,10 @@ import path from "node:path";
 import esbuild from "esbuild";
 import { parse } from "yaml";
 import { findBrowser, widgetFiles } from "./harness.mjs";
+import { buildMirror } from "./mirror.mjs";
+
+buildMirror();
+const { innerOf, resized } = await import("./.mjs-cache/tree.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -169,10 +173,25 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 {
 	const seen = measured.surface;
 	check("the surface drew a tree, not a grid", seen.drawn, true);
-	check("four rows of one, because at 1194 the filter will not share with the tabs", seen.rows, [1, 1, 1, 1]);
+	check("the tabs and the filter share a row, the kanban keeps its own", seen.rows, [1, 2, 1]);
 	check("every cell painted a widget, the dialog included", seen.painted, 5);
 	check("the dialog is drawn without taking a row", seen.overlays, 1);
-	check("and no row is wider than the board it sits in", seen.widest <= 1194.5, true);
+	check("and no row is wider than the board it sits in", seen.widest <= 1600.5, true);
+	check("one grip stands between the two that share a row", seen.across, 1);
+	check("and every drawn cell can be dragged taller", seen.along, 4);
+	check("the gap the grip fills is the gap the layout counted", seen.sharedRow[0] + seen.sharedRow[1] + 12, 1600);
+}
+
+console.log("\n— and dragging that grip writes the board once —");
+{
+	const before = measured.surface;
+	const after = measured.dragged;
+	check("the filter stops on the floor its manifest names, not where the pointer went", after.sharedRow[1], 320);
+	check("the tabs took exactly what the filter could give", after.sharedRow[0] - before.sharedRow[0], before.sharedRow[1] - 320);
+	check("the row is still as wide as it was", after.sharedRow[0] + after.sharedRow[1] + 12, 1600);
+	check("the board was written once, on release", after.writes, 1);
+	check("the ratios in the file changed with it", after.ratios[0] > before.ratios[0], true);
+	check("and the row still weighs what it weighed", Math.round(after.ratios.reduce((sum, one) => sum + one, 0) * 100), Math.round(before.ratios.reduce((sum, one) => sum + one, 0) * 100));
 }
 
 console.log("\n— the ratio the person chose is the ratio drawn —");
@@ -181,6 +200,42 @@ console.log("\n— the ratio the person chose is the ratio drawn —");
 	const views = wide.cells.find((cell) => cell.id === "views").box.width;
 	const filter = wide.cells.find((cell) => cell.id === "wynttpz").box.width;
 	check("three to one, within a pixel", Math.abs(views / filter - 3) < 0.02, true);
+}
+
+console.log("\n— dragging the grip moves the boundary, and never past a floor —");
+{
+	const row = [
+		{ id: "left", ratio: 1, minPx: 200 },
+		{ id: "right", ratio: 1, minPx: 200 },
+	];
+	const inner = innerOf(2, 1212);
+	const pxAt = (cells, at) => (inner * cells[at].ratio) / cells.reduce((sum, cell) => sum + cell.ratio, 0);
+
+	check("the row is 1200 wide once the gap is taken", inner, 1200);
+	check("even to start with", Math.round(pxAt(row, 0)), 600);
+
+	const wider = resized(row, 0, 800, inner, true);
+	check("dragged to 800 the left cell is 800", Math.round(pxAt(wider, 0)), 800);
+	check("and the right one gives up exactly that", Math.round(pxAt(wider, 1)), 400);
+
+	const floored = resized(row, 0, 60, inner, true);
+	check("dragged past the left floor it stops at the floor", Math.round(pxAt(floored, 0)), 200);
+	const ceiled = resized(row, 0, 1180, inner, true);
+	check("and past the right floor it stops there too", Math.round(pxAt(ceiled, 1)), 200);
+
+	const snapping = resized(row, 0, 640, inner, false);
+	check("without shift it lands on a twelfth", Math.round(pxAt(snapping, 0)), 600);
+	const free = resized(row, 0, 640, inner, true);
+	check("with shift it lands where the pointer is", Math.round(pxAt(free, 0)), 640);
+
+	const three = [
+		{ id: "a", ratio: 1, minPx: 100 },
+		{ id: "b", ratio: 1, minPx: 100 },
+		{ id: "c", ratio: 1, minPx: 100 },
+	];
+	const moved = resized(three, 0, 500, innerOf(3, 1224), true);
+	check("a neighbour outside the pair does not move", moved[2].ratio, three[2].ratio);
+	check("and the row still weighs what it weighed", Math.round(moved.reduce((sum, cell) => sum + cell.ratio, 0) * 1000), 3000);
 }
 
 if (measured.failures.length > 0) {
