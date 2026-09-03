@@ -233,18 +233,18 @@ console.log("\n— dragging the grip moves the boundary, and never past a floor 
 	check("the row is 1200 wide once the gap is taken", inner, 1200);
 	check("even to start with", Math.round(pxAt(row, 0)), 600);
 
-	const wider = resized(row, 0, 800, inner, true);
+	const wider = resized(row, 0, { boundaryPx: 800, inner, isFree: true });
 	check("dragged to 800 the left cell is 800", Math.round(pxAt(wider, 0)), 800);
 	check("and the right one gives up exactly that", Math.round(pxAt(wider, 1)), 400);
 
-	const floored = resized(row, 0, 60, inner, true);
+	const floored = resized(row, 0, { boundaryPx: 60, inner, isFree: true });
 	check("dragged past the left floor it stops at the floor", Math.round(pxAt(floored, 0)), 200);
-	const ceiled = resized(row, 0, 1180, inner, true);
+	const ceiled = resized(row, 0, { boundaryPx: 1180, inner, isFree: true });
 	check("and past the right floor it stops there too", Math.round(pxAt(ceiled, 1)), 200);
 
-	const snapping = resized(row, 0, 640, inner, false);
+	const snapping = resized(row, 0, { boundaryPx: 640, inner, isFree: false });
 	check("without shift it lands on a twelfth", Math.round(pxAt(snapping, 0)), 600);
-	const free = resized(row, 0, 640, inner, true);
+	const free = resized(row, 0, { boundaryPx: 640, inner, isFree: true });
 	check("with shift it lands where the pointer is", Math.round(pxAt(free, 0)), 640);
 
 	const three = [
@@ -252,7 +252,7 @@ console.log("\n— dragging the grip moves the boundary, and never past a floor 
 		{ id: "b", ratio: 1, minPx: 100 },
 		{ id: "c", ratio: 1, minPx: 100 },
 	];
-	const moved = resized(three, 0, 500, innerOf(3, 1224), true);
+	const moved = resized(three, 0, { boundaryPx: 500, inner: innerOf(3, 1224), isFree: true });
 	check("a neighbour outside the pair does not move", moved[2].ratio, three[2].ratio);
 	check("and the row still weighs what it weighed", Math.round(moved.reduce((sum, cell) => sum + cell.ratio, 0) * 1000), 3000);
 }

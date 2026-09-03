@@ -27,7 +27,7 @@ function sized(cell, width) {
 	return { id: cell.id, width, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
 }
 
-export function resized(row, at, boundaryPx, inner, isFree) {
+export function resized(row, at, { boundaryPx, inner, isFree }) {
 	const total = row.reduce((sum, cell) => sum + cell.ratio, 0);
 	const widths = widthsOf(row, inner);
 	const before = widths.slice(0, at).reduce((sum, one) => sum + one, 0);
@@ -69,33 +69,40 @@ export function aimedAt(bands, x, y) {
 	const band = bands.find((one) => y >= one.top && y <= one.bottom);
 	if (!band) return { kind: "row", at: bands[bands.length - 1].from + 1 };
 	if (y > band.rowBottom) return { kind: "row", at: band.from + 1 };
+	return besideIn(band, x);
+}
+
+function besideIn(band, x) {
 	const at = band.cells.findIndex((cell) => x <= cell.right);
-	const cell = band.cells[at < 0 ? band.cells.length - 1 : at];
-	if (at < 0) return { kind: "beside", row: band.from, at: band.cells.length, edge: cell.right };
+	if (at < 0) return { kind: "beside", row: band.from, at: band.cells.length, edge: band.cells.at(-1).right };
+	const cell = band.cells[at];
 	const isBefore = x < cell.left + (cell.right - cell.left) / 2;
 	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
 }
 
+const NOTHING_MOVES = { cells: {}, bands: {}, slot: null };
+
 export function partedBy(bands, target, carried, gap = GAP_PX) {
-	const still = { cells: {}, bands: {}, slot: null };
-	if (!target || bands.length === 0) return still;
-	if (target.kind === "beside") {
-		const band = bands.find((one) => one.from === target.row);
-		if (!band) return still;
-		const cells = {};
-		for (const [index, cell] of band.cells.entries()) if (index >= target.at && cell.id !== carried.id) cells[cell.id] = carried.width + gap;
-		const last = band.cells[band.cells.length - 1];
-		const left = target.at < band.cells.length ? band.cells[target.at].left : last.right + gap;
-		return { cells, bands: {}, slot: { left, top: band.top, width: carried.width, height: band.rowBottom - band.top } };
-	}
+	if (!target || bands.length === 0) return NOTHING_MOVES;
+	if (target.kind !== "beside") return partedAsRow(bands, target, carried, gap);
+	const band = bands.find((one) => one.from === target.row);
+	return band ? partedBeside(band, target, carried, gap) : NOTHING_MOVES;
+}
+
+function partedBeside(band, target, carried, gap) {
+	const cells = {};
+	for (const [index, cell] of band.cells.entries()) if (index >= target.at && cell.id !== carried.id) cells[cell.id] = carried.width + gap;
+	const last = band.cells[band.cells.length - 1];
+	const left = target.at < band.cells.length ? band.cells[target.at].left : last.right + gap;
+	return { cells, bands: {}, slot: { left, top: band.top, width: carried.width, height: band.rowBottom - band.top } };
+}
+
+function partedAsRow(bands, target, carried, gap) {
 	const shifted = {};
 	for (const band of bands) if (band.from >= target.at) shifted[band.from] = carried.height + gap;
 	const above = bands.filter((one) => one.from < target.at).at(-1);
-	return {
-		cells: {},
-		bands: shifted,
-		slot: { left: bands[0].left, top: above ? above.rowBottom + gap : bands[0].top, width: bands[0].width, height: carried.height },
-	};
+	const top = above ? above.rowBottom + gap : bands[0].top;
+	return { cells: {}, bands: shifted, slot: { left: bands[0].left, top, width: bands[0].width, height: carried.height } };
 }
 
 export function sameTarget(one, other) {

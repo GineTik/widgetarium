@@ -756,7 +756,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 			const inner = innerOf(board.layout[at].length, box.width, GAP_PX);
 			const held = widthsOf(board.layout[at], inner).slice(0, boundary + 1).reduce((sum, one) => sum + one, 0);
 			const grabbed = down.clientX - box.left - held;
-			return bare(resized(withFloors(board.layout[at]), boundary, moved.clientX - box.left - grabbed, inner, moved.shiftKey));
+			return bare(resized(withFloors(board.layout[at]), boundary, { boundaryPx: moved.clientX - box.left - grabbed, inner, isFree: moved.shiftKey }));
 		});
 
 	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down) => restacked(board.layout[at], box.height + moved.clientY - down.clientY));
