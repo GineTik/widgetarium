@@ -24,7 +24,7 @@ export function widthsOf(row, inner) {
 }
 
 function sized(cell, width) {
-	return { id: cell.id, width, minPx: cell.minPx, height: cell.height ?? null };
+	return { id: cell.id, width, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
 }
 
 export function resized(row, at, boundaryPx, inner, isFree) {
@@ -43,12 +43,13 @@ export function resized(row, at, boundaryPx, inner, isFree) {
 	});
 }
 
-export function restacked(row, wantedPx, capOf) {
+export function restacked(row, wantedPx) {
 	const tall = Math.max(MIN_HEIGHT_PX, Math.round(wantedPx));
-	return row.map((cell) => {
-		const cap = capOf(cell.id);
-		return { ...cell, height: cap ? Math.min(tall, cap) : tall };
-	});
+	return row.map((cell) => ({ ...cell, height: tall }));
+}
+
+export function tallestOf(row) {
+	return row.reduce((most, cell) => Math.max(most, cell.height ?? 0), 0);
 }
 
 function snapped(px, inner) {
