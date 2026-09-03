@@ -22,7 +22,7 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { GAP_PX, layTree } from "./tree.js";
+import { GAP_PX, innerOf, layTree, MIN_HEIGHT_PX, resized } from "./tree.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -591,13 +591,14 @@ const Tile = memo(TileView, (before, after) => {
 	return true;
 });
 
-function TreeCell({ cell, tile, definition, shared, patchTile }) {
+function TreeCell({ cell, tile, definition, shared, patchTile, onGrabHeight }) {
 	const onPatch = (patch) => patchTile(tile.id, patch);
 	const patchProp = (name, patch) => onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
-	const style = { flex: `0 0 ${cell.width}px`, width: `${cell.width}px`, ...(cell.height ? { minHeight: `${cell.height}px` } : {}) };
+	const style = { flex: `0 0 ${cell.width}px`, width: `${cell.width}px`, ...(cell.height ? { height: `${cell.height}px` } : {}) };
 	return h(
 		"div",
 		{ className: "wg-tile wg-tree-cell", style },
+		onGrabHeight ? h("div", { className: "wg-tree-grip is-along", onPointerDown: onGrabHeight }) : null,
 		h(
 			"div",
 			{ className: "wg-tile-body" },
@@ -616,10 +617,67 @@ function TreeCell({ cell, tile, definition, shared, patchTile }) {
 	);
 }
 
-function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTile }) {
+function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTile, commitLayout }) {
+	const rowsRef = useRef(null);
+	const dragRef = useRef(null);
+	const [live, setLive] = useState(null);
+	const layout = live ?? board.layout;
+
+	useEffect(
+		() => () => {
+			const drag = dragRef.current;
+			if (!drag) return;
+			window.removeEventListener("pointermove", drag.move);
+			window.removeEventListener("pointerup", drag.stop);
+			dragRef.current = null;
+		},
+		[],
+	);
+
 	const tileOf = (id) => board.tiles.find((tile) => tile.id === id);
 	const floorOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.stackBelowPx ?? 0;
-	const heightOf = (id) => board.layout.flat().find((cell) => cell.id === id)?.height ?? null;
+	const heightOf = (id) => layout.flat().find((cell) => cell.id === id)?.height ?? null;
+
+	const startDrag = (event, read) => {
+		event.preventDefault();
+		event.stopPropagation();
+		let latest = layout;
+		const move = (moved) => {
+			latest = read(moved);
+			setLive(latest);
+		};
+		const stop = () => {
+			window.removeEventListener("pointermove", move);
+			window.removeEventListener("pointerup", stop);
+			dragRef.current = null;
+			setLive(null);
+			commitLayout(latest);
+		};
+		dragRef.current = { move, stop };
+		window.addEventListener("pointermove", move);
+		window.addEventListener("pointerup", stop);
+	};
+
+	const grabRatio = (from, at) => (event) => {
+		const row = rowsRef.current?.get(from);
+		if (!row) return;
+		const left = row.getBoundingClientRect().left;
+		const authored = layout[from];
+		const inner = innerOf(authored.length, row.getBoundingClientRect().width, GAP_PX);
+		const withFloors = authored.map((cell) => ({ ...cell, minPx: floorOf(cell.id) }));
+		startDrag(event, (moved) => {
+			const next = resized(withFloors, at, moved.clientX - left, inner, moved.shiftKey).map(({ minPx, ...cell }) => cell);
+			return layout.map((each, index) => (index === from ? next : each));
+		});
+	};
+
+	const grabHeight = (from, id) => (event) => {
+		const top = event.currentTarget.closest(".wg-tree-cell")?.getBoundingClientRect().top ?? 0;
+		startDrag(event, (moved) => {
+			const tall = Math.max(MIN_HEIGHT_PX, Math.round(moved.clientY - top));
+			return layout.map((row, index) => (index === from ? row.map((cell) => (cell.id === id ? { ...cell, height: tall } : cell)) : row));
+		});
+	};
 	const shared = {
 		host,
 		scale,
@@ -634,9 +692,28 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 		boardArchivedColumns: board.archivedColumns,
 		configureBoard: refuseBoardPatch,
 	};
-	const asked = board.layout.filter((row) => row.some((cell) => tileOf(cell.id))).map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id) })));
+	const asked = layout.map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id) })));
 	const placed = new Set(asked.flat().map((cell) => cell.id));
 	const overlay = board.tiles.filter((tile) => !placed.has(tile.id));
+	const keep = (from) => (node) => {
+		rowsRef.current = rowsRef.current ?? new Map();
+		if (node) rowsRef.current.set(from, node);
+		else rowsRef.current.delete(from);
+	};
+	const cellNode = (cell, from, hasGrip, at) =>
+		h(
+			Fragment,
+			{ key: cell.id },
+			hasGrip ? h("div", { className: "wg-tree-grip is-across", onPointerDown: grabRatio(from, at - 1) }) : null,
+			h(TreeCell, {
+				cell: { ...cell, height: heightOf(cell.id) },
+				tile: tileOf(cell.id),
+				definition: registry.get(tileOf(cell.id).widget),
+				shared,
+				patchTile,
+				onGrabHeight: grabHeight(from, cell.id),
+			}),
+		);
 	return h(
 		"div",
 		{ className: "wg-tree" },
@@ -647,23 +724,15 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 				h(TreeCell, { cell: { id: tile.id, width: 0, height: null }, tile, definition: registry.get(tile.widget), shared, patchTile }),
 			),
 		),
-		layTree(asked, width, GAP_PX).map((row, at) =>
-			h(
-				"div",
-				{ className: "wg-tree-row", key: at },
-				row.map((cell) => {
-					const tile = tileOf(cell.id);
-					return h(TreeCell, {
-						key: cell.id,
-						cell: { ...cell, height: heightOf(cell.id) },
-						tile,
-						definition: registry.get(tile.widget),
-						shared,
-						patchTile,
-					});
-				}),
+		layTree(asked, width, GAP_PX)
+			.filter((row) => row.cells.length > 0)
+			.map((row, at) =>
+				h(
+					"div",
+					{ className: "wg-tree-row", key: at, ref: row.cells.length > 1 ? keep(row.from) : undefined },
+					row.cells.map((cell, index) => cellNode(cell, row.from, row.cells.length > 1 && index > 0, index)),
+				),
 			),
-		),
 	);
 }
 
@@ -790,8 +859,10 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		onChange({ ...boardAsItStands, tiles: boardAsItStands.tiles.map((tile) => (tile.id === id ? patched(tile) : tile)) }, true);
 	};
 
+	const commitLayout = (layout) => onChange({ ...(latestRef.current?.board ?? board), layout }, true);
+
 	if (board.layout) {
-		const laid = boardShell(h(TreeBoard, { board, width, registry, host, refs, cellFor, scale: scaleOf(classOf(width)), patchTile }));
+		const laid = boardShell(h(TreeBoard, { board, width, registry, host, refs, cellFor, scale: scaleOf(classOf(width)), patchTile, commitLayout }));
 		return isPage ? h(Page, { onClose: () => toggleExpanded() }, laid) : laid;
 	}
 

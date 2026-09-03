@@ -3189,7 +3189,6 @@ pre:has(> .block-language-widgetarium),
 .wg-tree-row {
 	display: flex;
 	align-items: stretch;
-	gap: var(--wg-tree-gap, 12px);
 	min-width: 0;
 }
 
@@ -3204,4 +3203,52 @@ pre:has(> .block-language-widgetarium),
 	width: 0;
 	height: 0;
 	overflow: visible;
+}
+
+.wg-tree-grip {
+	position: absolute;
+	z-index: 4;
+	border-radius: 999px;
+	background: transparent;
+	transition: background var(--wg-chrome-fade, 120ms) ease;
+	touch-action: none;
+}
+
+.wg-tree-grip::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	border-radius: 999px;
+	background: var(--background-modifier-border);
+	opacity: 0;
+	transition: opacity var(--wg-chrome-fade, 120ms) ease;
+}
+
+.wg-tree-grip:hover::after,
+.wg-tree-grip:active::after { opacity: 1; }
+
+.wg-tree-row > .wg-tree-grip.is-across {
+	position: relative;
+	flex: 0 0 var(--wg-tree-gap, 12px);
+	align-self: stretch;
+	cursor: col-resize;
+}
+
+.wg-tree-grip.is-across::after {
+	width: 4px;
+	height: 36px;
+}
+
+.wg-tree-cell > .wg-tree-grip.is-along {
+	left: 0;
+	right: 0;
+	bottom: calc(var(--wg-tree-gap, 12px) / -2);
+	height: var(--wg-tree-gap, 12px);
+	cursor: row-resize;
+}
+
+.wg-tree-grip.is-along::after {
+	width: 36px;
+	height: 4px;
 }
