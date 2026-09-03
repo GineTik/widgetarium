@@ -112,5 +112,6 @@
 			"tags": "launch, notes",
 			"tagTones": "launch: accent"
 		}
-	}
+	},
+	"stackBelowPx": 220
 }

@@ -164,5 +164,6 @@
 				"from": "memory"
 			}
 		}
-	}
+	},
+	"stackBelowPx": 320
 }
