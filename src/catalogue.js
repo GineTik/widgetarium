@@ -189,7 +189,7 @@ function Preview({ definition, registry, host, tile }) {
 function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onInstall }) {
 	const manifest = definition.manifest ?? {};
 	const verb = VERBS[mode] ?? VERBS.browse;
-	const [busy, setBusy] = useState(false);
+	const [isBusy, setBusy] = useState(false);
 	const [failure, setFailure] = useState(null);
 
 	// ONE PRESS, ONE WORD. Fetching a widget is a step the press takes on the way, never a second
@@ -268,7 +268,7 @@ function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onI
 						variant: "accent",
 						size: "s",
 						label: `${verb} ${name}`,
-						disabled: busy,
+						disabled: isBusy,
 						onClick: (event) => {
 							event.stopPropagation();
 							press();
@@ -290,14 +290,14 @@ function Tile({ definition, tile, registry, host, mode, kind, lacks, onPick, onI
 export function SizeFilter({ typed, onTyped, phone }) {
 	const bounds = sizeBounds(typed);
 	const narrowed = narrowsSize(bounds);
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const [openings, setOpenings] = useState(0);
 
 	return h(
 		Popover,
 		{
 			placement: "below",
-			open,
+			isOpen,
 			onOpenChange: (next) => {
 				setOpen(next);
 				if (next) setOpenings((count) => count + 1);

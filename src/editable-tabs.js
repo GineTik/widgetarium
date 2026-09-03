@@ -51,8 +51,8 @@ function fill(sentence, name) {
 // CONTEXT: one step per action, carrying the whole strip after it; archiving destroys nothing
 export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, deleteWarning, className }) {
 	const [editing, setEditing] = useState("");
-	const [menuOpen, setMenuOpen] = useState(false);
-	const [showingArchive, setShowingArchive] = useState(false);
+	const [isMenuOpen, setMenuOpen] = useState(false);
+	const [isArchiveShown, setArchiveShown] = useState(false);
 	const [deleting, setDeleting] = useState("");
 	const { listRef, thumbProps } = useSegmentedThumb(selected, tabs);
 
@@ -144,12 +144,12 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 		h(Icon, { name: "menu" }),
 	);
 
-	const menu = h(Popover, { key: "menu", trigger: menuTrigger, open: menuOpen, onOpenChange: setMenuOpen }, [
+	const menu = h(Popover, { key: "menu", trigger: menuTrigger, isOpen: isMenuOpen, onOpenChange: setMenuOpen }, [
 		h(PopoverItem, { key: "rename", onClick: pick(() => setEditing(selected)) }, [h(Icon, { key: "i", name: "pencil", size: 15 }), "Rename"]),
 		h(PopoverItem, { key: "add", onClick: pick(add) }, [h(Icon, { key: "i", name: "plus", size: 15 }), "Add"]),
 		h(PopoverItem, { key: "archive", onClick: pick(() => archive(selected)) }, [h(Icon, { key: "i", name: "archive", size: 15 }), "Archive"]),
 		h(PopoverSeparator, { key: "sep" }),
-		h(PopoverItem, { key: "list", onClick: pick(() => setShowingArchive(true)) }, [h(Icon, { key: "i", name: "folder", size: 15 }), "Archived list"]),
+		h(PopoverItem, { key: "list", onClick: pick(() => setArchiveShown(true)) }, [h(Icon, { key: "i", name: "folder", size: 15 }), "Archived list"]),
 	]);
 
 	const archivedRow = (tab) =>
@@ -161,7 +161,7 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 
 	const archiveDialog = h(
 		Dialog,
-		{ key: "archive", open: showingArchive, onOpenChange: setShowingArchive },
+		{ key: "archive", isOpen: isArchiveShown, onOpenChange: setArchiveShown },
 		h(DialogContent, { className: "wg-tabs-archive" }, [
 			h(DialogClose, { key: "close" }),
 			h(DialogHeader, { key: "head" }, [
@@ -178,7 +178,7 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 
 	const confirmDialog = h(ConfirmDialog, {
 		key: "confirm",
-		open: Boolean(deleting),
+		isOpen: Boolean(deleting),
 		onOpenChange: () => setDeleting(""),
 		className: "wg-tabs-confirm",
 		title: fill(DELETE_TITLE, deleting),

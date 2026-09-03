@@ -27,8 +27,8 @@ export const HOST_CLASS = "wg-inline-host wg-root";
 // CONTEXT: the playground is a hook inside TileView keyed by a board tile id, and a passage has none
 const NO_PLAYGROUND = "not yet for inline widgets";
 
-function InlineMenu({ asText, onShowSource }) {
-	const [open, setOpen] = useState(false);
+function InlineMenu({ isText, onShowSource }) {
+	const [isOpen, setOpen] = useState(false);
 	const showSource = () => {
 		setOpen(false);
 		onShowSource();
@@ -40,7 +40,7 @@ function InlineMenu({ asText, onShowSource }) {
 		h(
 			Popover,
 			{
-				open,
+				isOpen,
 				onOpenChange: setOpen,
 				placement: "below",
 				trigger: h(
@@ -59,17 +59,17 @@ function InlineMenu({ asText, onShowSource }) {
 					"Settings",
 					h("span", { key: "why", className: "wg-inline-off" }, NO_PLAYGROUND),
 				]),
-				h(PopoverItem, { key: "source", className: "wg-inline-source", onClick: showSource }, asText ? "Show the widget" : "Show the source"),
+				h(PopoverItem, { key: "source", className: "wg-inline-source", onClick: showSource }, isText ? "Show the widget" : "Show the source"),
 			],
 		),
 	);
 }
 
 export function InlineWidget({ definition, here, navigator, raw, host, reader }) {
-	const [asText, setAsText] = useState(false);
-	const menu = h(InlineMenu, { asText, onShowSource: () => setAsText(!asText) });
+	const [isText, setText] = useState(false);
+	const menu = h(InlineMenu, { key: "menu", isText, onShowSource: () => setText(!isText) });
 
-	if (asText) return h("div", { className: "wg-inline is-text" }, [h("span", { key: "raw", className: "wg-inline-raw" }, raw), menu]);
+	if (isText) return h("div", { className: "wg-inline is-text" }, [h("span", { key: "raw", className: "wg-inline-raw" }, raw), menu]);
 	if (!definition?.component) {
 		return h("div", { className: "wg-inline is-missing" }, [
 			h("span", { key: "raw", className: "wg-inline-raw" }, raw),

@@ -192,12 +192,12 @@ export function Sidebar({ as = "div", ...props }) {
 // read as a thing with weight rather than a box being resized.
 const SHEET_COMMIT = 0.4;
 
-export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight, peekPx = 220, maxPx = 640, grip = "Raise the sheet", className: cls, style, children, ...rest }) {
+export function SidebarSheet({ as = "div", mode, surface, isOpen, onOpen, onHeight, peekPx = 220, maxPx = 640, grip = "Raise the sheet", className: cls, style, children, ...rest }) {
 	const [dragged, setDragged] = useState(null);
 	const from = useRef(null);
 	const latest = useRef(0);
 
-	const height = dragged ?? (open ? maxPx : peekPx);
+	const height = dragged ?? (isOpen ? maxPx : peekPx);
 	latest.current = height;
 
 	// CONTEXT: the sheet OWNS its height, so anything that has to stand clear of it is told —
@@ -226,7 +226,7 @@ export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight
 		const moved = Math.abs(settled - from.current.height) > 2;
 		from.current = null;
 		setDragged(null);
-		onOpen?.(moved ? settled > peekPx + (maxPx - peekPx) * SHEET_COMMIT : !open);
+		onOpen?.(moved ? settled > peekPx + (maxPx - peekPx) * SHEET_COMMIT : !isOpen);
 	};
 
 	return h(
@@ -242,7 +242,7 @@ export function SidebarSheet({ as = "div", mode, surface, open, onOpen, onHeight
 				type: "button",
 				className: "wg-kit-sheet-grip",
 				"aria-label": grip,
-				"aria-pressed": String(Boolean(open)),
+				"aria-pressed": String(Boolean(isOpen)),
 				onPointerDown: start,
 				onPointerMove: move,
 				onPointerUp: finish,
@@ -263,7 +263,7 @@ export function SidebarGroup({ label, hint, children, className: cls }) {
 
 // TRADE-OFF: one row for both sizes, and `unset` is a state rather than a colour a caller picks —
 // three files had each spelled "this property is empty" their own way
-export function SidebarRow({ as = "div", icon, label, sub, value, after, children, unset, open, selected, pressable, onClick, className: cls, ...rest }) {
+export function SidebarRow({ as = "div", icon, label, sub, value, after, children, unset, isOpen, selected, pressable, onClick, className: cls, ...rest }) {
 	const shown = value ?? children;
 	// TRADE-OFF: the row owns its TAG, because a settings row is read and a property row is
 	// pressed — and a pressable div is a button a keyboard cannot reach
@@ -276,7 +276,7 @@ export function SidebarRow({ as = "div", icon, label, sub, value, after, childre
 			// CONTEXT: aria-current is how a list says which of its rows is the one being read
 			"aria-current": selected ? "true" : undefined,
 			// CONTEXT: is-two is the row's own state — the height law reads it, not the caller's markup
-			className: cx(rowClass({ pressable: pressable || as === "button" }), "wg-kit-side-row", sub && "is-two", unset && "is-unset", open && "is-open", selected && "is-selected", cls),
+			className: cx(rowClass({ pressable: pressable || as === "button" }), "wg-kit-side-row", sub && "is-two", unset && "is-unset", isOpen && "is-open", selected && "is-selected", cls),
 		},
 		[
 			// CONTEXT: a glyph, never RowBadge — a badge is a FILLED marker, and putting an icon in
@@ -346,7 +346,7 @@ export function ButtonLabel(props) {
 
 // CONTEXT: measured, not a constant — Filter's word fits at 100px, the constant dropped it at 150
 export function useRoomForLabel(controlRef) {
-	const [fits, setFits] = useState(true);
+	const [isFitting, setFitting] = useState(true);
 	// TRADE-OFF: remembered — a collapsed control no longer holds the label to re-measure
 	const needed = useRef(0);
 
@@ -362,7 +362,7 @@ export function useRoomForLabel(controlRef) {
 			const label = control.querySelector(".wg-kit-btn-label");
 			if (label) needed.current = room - label.clientWidth + label.scrollWidth;
 			if (needed.current === 0) return;
-			setFits(room >= needed.current);
+			setFitting(room >= needed.current);
 		};
 
 		measure();
@@ -372,7 +372,7 @@ export function useRoomForLabel(controlRef) {
 		return () => watcher.disconnect();
 	}, []);
 
-	return fits;
+	return isFitting;
 }
 
 export const fieldClass = variants("wg-kit-field", { size: { m: "", s: "is-s" }, block: { true: "is-block" } }, { size: "m" });
@@ -440,9 +440,9 @@ const EXIT_GUARD_MS = 400;
 
 // TRADE-OFF: durations here, the curve in styles.css — JS schedules the beats, so it owns the numbers
 const GROW_MS = 420;
-const CONTENT_MS = 180;
-// CONTEXT: the peak sits at 60% of the growth, and the text may not be read above it
-const CONTENT_DELAY_MS = 252;
+const CONTENT_MS = 240;
+// CONTEXT: past the worst of the seed's squash, and fully readable before the growth settles
+const CONTENT_DELAY_MS = 80;
 // TRADE-OFF: the landing waits past the last curve, or it cancels the settle a few ms early
 const LAND_MARGIN_MS = 40;
 
@@ -693,26 +693,26 @@ function exitPanel(panel, anchor, done) {
 	return stop;
 }
 
-export function Popover({ trigger, children, open: openProp, onOpenChange, className: cls, placement = "over" }) {
+export function Popover({ trigger, children, isOpen: isOpenAsked, onOpenChange, className: cls, placement = "over" }) {
 	const where = PLACEMENTS[placement] ?? PLACEMENTS.over;
-	const [openState, setOpenState] = useState(false);
-	const open = openProp ?? openState;
+	const [isOpenHeld, setOpenHeld] = useState(false);
+	const isOpen = isOpenAsked ?? isOpenHeld;
 	const triggerRef = useRef(null);
 	const panelRef = useRef(null);
 	const id = useId();
 
 	// CONTEXT: one press fires pointerdown AND mousedown — report the transition once
-	const reported = useRef(open);
-	reported.current = open;
+	const reported = useRef(isOpen);
+	reported.current = isOpen;
 
 	const setOpen = useCallback(
 		(next) => {
 			if (reported.current === next) return;
 			reported.current = next;
-			if (openProp === undefined) setOpenState(next);
+			if (isOpenAsked === undefined) setOpenHeld(next);
 			onOpenChange?.(next);
 		},
-		[openProp, onOpenChange],
+		[isOpenAsked, onOpenChange],
 	);
 
 	// TRADE-OFF: a ref, so the listener below depends on `open` alone — a caller handing over
@@ -721,26 +721,26 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 	latestSetOpen.current = setOpen;
 
 	// CONTEXT: preact drops `is-open` the instant `open` turns false, so the exit needs its own state
-	const [exiting, setExiting] = useState(false);
+	const [isExiting, setExiting] = useState(false);
 	const wasOpen = useRef(false);
 	const stopExit = useRef(null);
 
 	// CONTEXT: a caller writes `{open ? <panel/> : null}`, so the children go before the fold is measured
 	const held = useRef(null);
-	if (open) held.current = children;
+	if (isOpen) held.current = children;
 	// CONTEXT: wasOpen is still true on the closing render, the one render `exiting` cannot cover
-	const shown = open || exiting || wasOpen.current;
+	const shown = isOpen || isExiting || wasOpen.current;
 
 	useLayoutEffect(() => {
 		const panel = panelRef.current;
 		const anchor = triggerRef.current;
 		if (!panel || !anchor) return;
-		const closing = wasOpen.current && !open;
-		wasOpen.current = open;
+		const closing = wasOpen.current && !isOpen;
+		wasOpen.current = isOpen;
 		stopExit.current?.();
 		stopExit.current = null;
 
-		if (open) {
+		if (isOpen) {
 			setExiting(false);
 			return enterPanel(panel, anchor, where);
 		}
@@ -760,12 +760,12 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 			stopExit.current?.();
 			stopExit.current = null;
 		};
-	}, [open]);
+	}, [isOpen]);
 
 	// CONTEXT: src/editor-shield.js stops pointerdown/mousedown in the BUBBLE phase on every
 	// widget root, so a press on the board never reached a bubble listener here — capture does
 	useEffect(() => {
-		if (!open) return;
+		if (!isOpen) return;
 		const closeOnOutsidePress = (event) => {
 			if (panelRef.current?.contains(event.target)) return;
 			if (triggerRef.current?.contains(event.target)) return;
@@ -781,7 +781,7 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 			for (const name of PRESS_EVENTS) document.removeEventListener(name, closeOnOutsidePress, true);
 			document.removeEventListener("keydown", closeOnEscape, true);
 		};
-	}, [open]);
+	}, [isOpen]);
 
 	// TRADE-OFF: measure the WRAPPER, not the trigger — a ref does not reach a DOM node
 	// through a function component, so any component trigger would have gone unmeasured
@@ -790,12 +790,12 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 		{
 			className: "wg-kit-anchor",
 			ref: triggerRef,
-			"aria-expanded": String(open),
+			"aria-expanded": String(isOpen),
 			"aria-controls": id,
 			// CONTEXT: the panel is a child of the anchor, so only the trigger may toggle
 			onClick: (event) => {
 				if (panelRef.current?.contains(event.target)) return;
-				setOpen(!open);
+				setOpen(!isOpen);
 			},
 		},
 		trigger,
@@ -804,7 +804,7 @@ export function Popover({ trigger, children, open: openProp, onOpenChange, class
 			{
 				id,
 				ref: panelRef,
-				className: cx("wg-kit-pop", where.panelClass, (open || exiting) && "is-open", exiting && "is-exiting", cls),
+				className: cx("wg-kit-pop", where.panelClass, (isOpen || isExiting) && "is-open", isExiting && "is-exiting", cls),
 				role: "dialog",
 				// CONTEXT: a tile is a stacking context, so styles.css lifts the one holding this
 				"data-wg-overlay": shown ? "" : undefined,
@@ -972,7 +972,7 @@ function clampPercent(value) {
 // TRADE-OFF: a track and the digits, not a stepper — the plate is skimmed more than it is set
 export function Progress({ value = 0, onChange, label, className: cls }) {
 	const trackRef = useRef(null);
-	const [grabbed, setGrabbed] = useState(false);
+	const [isGrabbed, setGrabbed] = useState(false);
 	const held = useRef(false);
 	const shown = clampPercent(value);
 
@@ -1016,7 +1016,7 @@ export function Progress({ value = 0, onChange, label, className: cls }) {
 	return h(
 		"div",
 		{
-			className: cx("wg-kit-progress", grabbed && "is-grabbed", cls),
+			className: cx("wg-kit-progress", isGrabbed && "is-grabbed", cls),
 			role: "slider",
 			tabIndex: 0,
 			"aria-label": label,

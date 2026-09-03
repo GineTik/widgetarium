@@ -295,13 +295,13 @@ export function DialogClose({ className: cls, onClose, label = "Close", ...rest 
 	);
 }
 
-export function Dialog({ open, onOpenChange, onClose, trigger, children, className: cls }) {
-	const [selfOpen, setSelfOpen] = useState(false);
-	const controlled = open !== undefined;
-	const isOpen = controlled ? open : selfOpen;
+export function Dialog({ isOpen: isOpenAsked, onOpenChange, onClose, trigger, children, className: cls }) {
+	const [isSelfOpen, setSelfOpen] = useState(false);
+	const isControlled = isOpenAsked !== undefined;
+	const isOpen = isControlled ? isOpenAsked : isSelfOpen;
 
 	const setOpen = (next) => {
-		if (!controlled) setSelfOpen(next);
+		if (!isControlled) setSelfOpen(next);
 		onOpenChange?.(next);
 		if (!next) onClose?.();
 	};
@@ -320,10 +320,10 @@ export function Dialog({ open, onOpenChange, onClose, trigger, children, classNa
 const CANCEL = "Cancel";
 
 // CONTEXT: one shape for every ask-before-it-is-gone — the caller owns the words and the verb
-export function ConfirmDialog({ open, title, description, confirmLabel, variant = "danger", onConfirm, onOpenChange, className }) {
+export function ConfirmDialog({ isOpen, title, description, confirmLabel, variant = "danger", onConfirm, onOpenChange, className }) {
 	return h(
 		Dialog,
-		{ open, onOpenChange },
+		{ isOpen, onOpenChange },
 		h(DialogContent, { className }, [
 			h(DialogClose, { key: "close" }),
 			h(DialogHeader, { key: "head" }, [

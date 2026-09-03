@@ -231,7 +231,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 			{
 				className: "harness-pop",
 				trigger: h("button", { className: "harness-trigger" }, "Filter"),
-				open,
+				isOpen: open,
 				// a NEW identity every render, which is what the filter panel hands over
 				onOpenChange: (next) => setOpen(next),
 			},
@@ -345,7 +345,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const has = (name) => Boolean(pop()?.classList.contains(name));
 	const show = async (open) => {
-		render(h(Kit.Popover, { open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { isOpen: open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -422,7 +422,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const pop = () => host.querySelector(".wg-kit-pop");
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const show = async (open, placement) => {
-		render(h(Kit.Popover, { open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { isOpen: open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -853,7 +853,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const stage = dom.window.document.createElement("div");
 	dom.window.document.body.appendChild(stage);
 	let open = false;
-	const draw = () => render(h(Kit.SidebarSheet, { open, onOpen: (next) => { open = next; draw(); }, peekPx: 100, maxPx: 500 }, "body"), stage);
+	const draw = () => render(h(Kit.SidebarSheet, { isOpen: open, onOpen: (next) => { open = next; draw(); }, peekPx: 100, maxPx: 500 }, "body"), stage);
 	draw();
 
 	const sheet = () => stage.querySelector(".wg-kit-sheet");
