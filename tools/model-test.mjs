@@ -424,5 +424,23 @@ check("rendering does not warn", onRender, 0);
 	check("and so does a new-shape one", JSON.stringify(serializeBoard(normalizeBoard(fresh))), JSON.stringify(fresh));
 }
 
+{
+	console.log("\n— a board laid in rows —");
+	const grid = { tiles: [{ id: "a", widget: "w" }], layouts: { 12: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 2 }] } } };
+	check("a board with no rows carries no layout at all", "layout" in normalizeBoard(grid), false);
+
+	const rows = { tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }], layout: [[{ id: "a", ratio: 3 }, { id: "b" }], [{ id: "a", height: 640 }]], layouts: {} };
+	const laid = normalizeBoard(rows);
+	check("a cell keeps the ratio it was given", laid.layout[0][0], { id: "a", ratio: 3 });
+	check("a cell without one is worth the same as its neighbours", laid.layout[0][1], { id: "b", ratio: 1 });
+	check("a height survives", laid.layout[1][0], { id: "a", ratio: 1, height: 640 });
+
+	const shorthand = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: [["a"], [{ id: "" }]], layouts: {} });
+	check("a bare name is a cell", shorthand.layout, [[{ id: "a", ratio: 1 }]]);
+
+	check("rows round-trip through the file", serializeBoard(laid).layout, laid.layout);
+	check("and an empty list of rows is no list", "layout" in normalizeBoard({ tiles: [], layout: [], layouts: {} }), false);
+}
+
 console.log(failed ? `\n${failed} failed` : "\nall passed");
 process.exit(failed ? 1 : 0);
