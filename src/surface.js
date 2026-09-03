@@ -219,7 +219,7 @@ function resolveSelection({ name, spec, tile, refs, cellFor, config, gatewayFor 
 	});
 }
 
-function WidgetHost({ definition, tile, place, host, scale, patchProp, refs, cellFor, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, boardArchivedColumns, configureBoard }) {
+export function WidgetHost({ definition, tile, place, host, scale, patchProp, refs, cellFor, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, boardArchivedColumns, configureBoard }) {
 	const manifest = definition.manifest;
 
 	// CONTEXT: gateways read the tile through this ref, so a refetch sees the write that caused it
