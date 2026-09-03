@@ -202,10 +202,39 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 }
 
 {
-	await draw(RUN_NOTES);
-	dayLabelled(`${KEPT_RUN[0]}, kept`).click();
+	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
+	dayLabelled(`${TODAY}, kept`).click();
 	await settled();
-	check("pressing a kept day empties the property", written, [{ verb: "update", ref: `Habits/${KEPT_RUN[0]}.md`, data: { props: { done: null } } }]);
+	check("pressing a kept day empties the property", written, [{ verb: "update", ref: `Habits/${TODAY}.md`, data: { props: { done: null } } }]);
+}
+
+{
+	await draw(RUN_NOTES);
+	const behind = dayButtons().filter((button) => daysShown()[dayButtons().indexOf(button)] <= TODAY);
+	const ahead = dayButtons().filter((button) => daysShown()[dayButtons().indexOf(button)] > TODAY);
+	check("a day still to come takes no press", ahead.every((button) => button.disabled), true);
+	check("and says so on its face", ahead.every((button) => button.className.includes("is-ahead")), true);
+	check("today and every day behind it takes one", behind.every((button) => !button.disabled), true);
+	check("and none of them is dimmed for it", behind.every((button) => !button.className.includes("is-ahead")), true);
+	check("there is a day of each kind to have judged", ahead.length > 0 && behind.length > 0, true);
+}
+
+{
+	await draw(RUN_NOTES);
+	host.querySelector('[aria-label="Previous month"]').click();
+	await settled();
+	const shown = daysShown();
+	const outsideAndBehind = dayButtons().filter((button, at) => button.className.includes("is-outside") && shown[at] <= TODAY);
+	check("a day of the month before still takes a press", dayButtons().filter((button, at) => shown[at] <= TODAY).every((button) => !button.disabled), true);
+	check("and so does one only visiting from a neighbouring month", outsideAndBehind.length > 0 && outsideAndBehind.every((button) => !button.disabled), true);
+	check("while a day this grid borrows from the month ahead is still ahead", dayButtons().filter((button, at) => shown[at] > TODAY).every((button) => button.disabled), true);
+}
+
+{
+	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
+	host.querySelector('[aria-label="Next month"]').click();
+	await settled();
+	check("and no day of the month ahead takes one", dayButtons().every((button) => button.disabled), true);
 }
 
 {
@@ -213,7 +242,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	check("a folder nobody may write refuses the press", dayButtons().every((button) => button.disabled), true);
 }
 
-const SHARES = { number: 0.56, numberGap: 0.08, seat: 1.16, gap: 0.16, weekday: 0.52 };
+const SHARES = { number: 0.56, numberGap: 0.2, seat: 1.16, gap: 0.16, weekday: 0.52 };
 const ringWanted = ({ width, height }) => {
 	const perWeek = SHARES.number + SHARES.numberGap + SHARES.seat + SHARES.gap;
 	const tallest = height / (SHARES.weekday + SHARES.gap / 2 + 6 * perWeek);

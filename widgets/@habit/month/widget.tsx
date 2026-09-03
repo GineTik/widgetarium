@@ -8,7 +8,7 @@ const ACROSS = 7;
 const MOST_WEEKS = 6;
 
 const DAY_NUMBER_SHARE = 0.56;
-const NUMBER_GAP_SHARE = 0.08;
+const NUMBER_GAP_SHARE = 0.2;
 const SEAT_SHARE = 1.16;
 const ROW_GAP_SHARE = 0.16;
 const WEEKDAY_ROW_SHARE = 0.52;
@@ -96,8 +96,12 @@ const STYLE = `
 	font-variant-numeric: tabular-nums;
 }
 
-.hm-day.is-outside {
-	opacity: 0.42;
+.hm-day.is-outside .hm-number {
+	color: var(--text-faint);
+}
+
+.hm-day.is-ahead {
+	opacity: 0.38;
 }
 
 .hm-seat {
@@ -178,6 +182,7 @@ type DayCell = MonthDay & {
 	kept: boolean;
 	seat: string;
 	ring: string;
+	isAhead: boolean;
 	canPress: boolean;
 };
 
@@ -225,14 +230,15 @@ function ringClass(day: string, kept: boolean, today: string) {
 	return day === today ? "hm-ring is-today" : "hm-ring";
 }
 
-function cellsOver(days: MonthDay[], keptDays: Set<string>, today: string, canPress: boolean): DayCell[] {
+function cellsOver(days: MonthDay[], keptDays: Set<string>, today: string, canWrite: boolean): DayCell[] {
 	const kept = days.map((each) => keptDays.has(each.day));
 	return days.map((each, at) => ({
 		...each,
 		kept: kept[at],
 		seat: seatClass(kept, at),
 		ring: ringClass(each.day, kept[at], today),
-		canPress,
+		isAhead: each.day > today,
+		canPress: canWrite && each.day <= today,
 	}));
 }
 
@@ -260,7 +266,7 @@ function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSize: num
 	return (
 		<button
 			type="button"
-			className={`hm-day${cell.isOutside ? " is-outside" : ""}`}
+			className={`hm-day${cell.isOutside ? " is-outside" : ""}${cell.isAhead ? " is-ahead" : ""}`}
 			disabled={!cell.canPress}
 			aria-pressed={cell.kept}
 			aria-label={filled(cell.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: cell.day })}
