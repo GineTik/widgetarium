@@ -26,7 +26,13 @@ const STYLE = `
 `;
 
 // CONTEXT: one splitter, because a tab name and a board's column name are the same kind of list
-export { toTabList } from "./board-record.js";
+export function toTabList(value) {
+	if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean);
+	return String(value ?? "")
+		.split(",")
+		.map((item) => item.trim())
+		.filter(Boolean);
+}
 
 // CONTEXT: the first free number, so a tab leaving does not hand out a name already in use
 function freeUntitled(taken) {

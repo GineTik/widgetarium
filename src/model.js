@@ -10,14 +10,6 @@ const LEGACY_BARE_ARRAY_COLUMNS = 12;
 // CONTEXT: a board read without a registry cannot know a widget was renamed, and keeps what it has
 const SAME_ID = (id) => id;
 
-// CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
-function normalizeSources(input) {
-	const result = {};
-	for (const [name, value] of Object.entries(input ?? {})) {
-		result[name] = { path: value?.path ?? "", filters: value?.filters ?? [], sort: value?.sort ?? [] };
-	}
-	return result;
-}
 
 // CONTEXT: a slot used to persist as the widget id alone, a mount as a record keyed by that id
 function heldWidget(input, keyWidget) {
@@ -31,7 +23,7 @@ function normalizeHeld(input, keyWidget, idOf) {
 	const widget = heldWidget(input, keyWidget);
 	if (typeof widget !== "string" || widget === "") return null;
 	const held = typeof input === "object" && input !== null ? input : {};
-	return { widget: idOf(widget), settings: held.settings ?? {}, sources: normalizeSources(held.sources), slots: normalizeSlots(held.slots, idOf), mounted: normalizeMounted(held.mounted, idOf) };
+	return { widget: idOf(widget), settings: held.settings ?? {}, props: held.props ?? {}, slots: normalizeSlots(held.slots, idOf), mounted: normalizeMounted(held.mounted, idOf) };
 }
 
 // CONTEXT: a mount key is the widget id, with #n on a repeat — a record written before this carries no widget
@@ -64,7 +56,7 @@ export function heldTile(holder, hold, key, widget) {
 		id: `${holder.id}/${key}`,
 		widget,
 		settings: held.settings ?? {},
-		sources: held.sources ?? {},
+		props: held.props ?? {},
 		slots: held.slots ?? {},
 		mounted: held.mounted ?? {},
 	};
@@ -106,6 +98,10 @@ export function uniqueName(taken, wanted) {
 // CONTEXT: read where the record sits, write under the new key — that is the whole migration
 export function heldKey(held, key, was) {
 	return !held?.[key] && was && held?.[was] ? was : key;
+}
+
+export function propConfig(props, key, spec) {
+	return props?.[heldKey(props, key, spec?.was)] ?? {};
 }
 
 // CONTEXT: the record moves onto its new key in the same write that changes it
@@ -190,7 +186,7 @@ function normalizeTile(tile, index, idOf) {
 		id: tile.id ?? `w${index}`,
 		widget: idOf(tile.widget),
 		settings: tile.settings ?? {},
-		sources: normalizeSources(tile.sources ?? tile.data),
+		props: tile.props ?? {},
 		slots: normalizeSlots(tile.slots, idOf),
 		mounted: normalizeMounted(tile.mounted, idOf),
 		// Folded or not is a fact about the WIDGET, not about one screen width. Kept on the
@@ -261,8 +257,6 @@ export function normalizeBoard(input, idOf = SAME_ID) {
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".
 		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
-		// the board's shared selection: which board, project or view the widgets are on
-		context: { ...(input?.context ?? {}) },
 		properties: normalizeNames(input?.properties),
 		// CONTEXT: two views that never draw together must still read one list, so the board holds it
 		// CONTEXT: absent means no board has claimed it yet — the kanban's own setting still answers
@@ -277,7 +271,7 @@ function serializeHeld(held) {
 	return {
 		widget: held.widget,
 		...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
-		...(Object.keys(held.sources ?? {}).length ? { sources: held.sources } : {}),
+		...(Object.keys(held.props ?? {}).length ? { props: held.props } : {}),
 		...(slots ? { slots } : {}),
 		...(mounted ? { mounted } : {}),
 	};
@@ -297,7 +291,7 @@ function serializeTile(tile) {
 		widget: tile.widget,
 		...(tile.folded ? { folded: true } : {}),
 		...(Object.keys(tile.settings ?? {}).length ? { settings: tile.settings } : {}),
-		...(Object.keys(tile.sources ?? {}).length ? { sources: tile.sources } : {}),
+		...(Object.keys(tile.props ?? {}).length ? { props: tile.props } : {}),
 		...(slots ? { slots } : {}),
 		...(mounted ? { mounted } : {}),
 	};
@@ -318,7 +312,6 @@ export function serializeBoard(board) {
 		// only authored counts reach the file: a derived layout is one render's worth of
 		// arithmetic, and writing it would mark a width the user never touched as theirs
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
-		...(Object.keys(board.context ?? {}).length ? { context: board.context } : {}),
 		...(board.properties?.length ? { properties: board.properties } : {}),
 		// CONTEXT: an emptied list is still written — its absence is what hands the fact back to the tile
 		...(board.archivedColumns ? { archivedColumns: board.archivedColumns } : {}),
