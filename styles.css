@@ -3178,3 +3178,30 @@ pre:has(> .block-language-widgetarium),
 	padding: 0;
 	min-width: 0;
 }
+
+.wg-tree {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-tree-gap, 12px);
+	width: 100%;
+}
+
+.wg-tree-row {
+	display: flex;
+	align-items: stretch;
+	gap: var(--wg-tree-gap, 12px);
+	min-width: 0;
+}
+
+.wg-tree-cell {
+	position: relative;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.wg-tree-overlay {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: visible;
+}

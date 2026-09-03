@@ -22,6 +22,7 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
+import { GAP_PX, layTree } from "./tree.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -590,6 +591,82 @@ const Tile = memo(TileView, (before, after) => {
 	return true;
 });
 
+function TreeCell({ cell, tile, definition, shared, patchTile }) {
+	const onPatch = (patch) => patchTile(tile.id, patch);
+	const patchProp = (name, patch) => onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
+	const style = { flex: `0 0 ${cell.width}px`, width: `${cell.width}px`, ...(cell.height ? { minHeight: `${cell.height}px` } : {}) };
+	return h(
+		"div",
+		{ className: "wg-tile wg-tree-cell", style },
+		h(
+			"div",
+			{ className: "wg-tile-body" },
+			definition
+				? h(WidgetHost, {
+						...shared,
+						definition,
+						tile,
+						place: { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 },
+						patchProp,
+						patchMounted: (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) }),
+						onPatch,
+					})
+				: h("div", { className: "wg-missing" }, h("b", null, "This widget is not installed")),
+		),
+	);
+}
+
+function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTile }) {
+	const tileOf = (id) => board.tiles.find((tile) => tile.id === id);
+	const floorOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.stackBelowPx ?? 0;
+	const heightOf = (id) => board.layout.flat().find((cell) => cell.id === id)?.height ?? null;
+	const shared = {
+		host,
+		scale,
+		refs,
+		cellFor,
+		registry,
+		onCollapse: () => {},
+		onExpand: () => {},
+		patchMounted: () => {},
+		isMounted: false,
+		boardProperties: board.properties,
+		boardArchivedColumns: board.archivedColumns,
+		configureBoard: refuseBoardPatch,
+	};
+	const asked = board.layout.filter((row) => row.some((cell) => tileOf(cell.id))).map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id) })));
+	const placed = new Set(asked.flat().map((cell) => cell.id));
+	const overlay = board.tiles.filter((tile) => !placed.has(tile.id));
+	return h(
+		"div",
+		{ className: "wg-tree" },
+		overlay.map((tile) =>
+			h(
+				"div",
+				{ className: "wg-tree-overlay", key: tile.id },
+				h(TreeCell, { cell: { id: tile.id, width: 0, height: null }, tile, definition: registry.get(tile.widget), shared, patchTile }),
+			),
+		),
+		layTree(asked, width, GAP_PX).map((row, at) =>
+			h(
+				"div",
+				{ className: "wg-tree-row", key: at },
+				row.map((cell) => {
+					const tile = tileOf(cell.id);
+					return h(TreeCell, {
+						key: cell.id,
+						cell: { ...cell, height: heightOf(cell.id) },
+						tile,
+						definition: registry.get(tile.widget),
+						shared,
+						patchTile,
+					});
+				}),
+			),
+		),
+	);
+}
+
 function Board({ className, onWidth, children }) {
 	const rootRef = useRef(null);
 
@@ -707,6 +784,17 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	// a phantom column count for the next commit to author.
 	if (width < MIN_BOARD_WIDTH_PX) return isPage ? h(Page, { onClose: () => toggleExpanded() }, boardShell(null)) : boardShell(null);
 
+	const patchTile = (id, patch) => {
+		const boardAsItStands = latestRef.current?.board ?? board;
+		const patched = (tile) => ({ ...tile, ...(typeof patch === "function" ? patch(tile) : patch) });
+		onChange({ ...boardAsItStands, tiles: boardAsItStands.tiles.map((tile) => (tile.id === id ? patched(tile) : tile)) }, true);
+	};
+
+	if (board.layout) {
+		const laid = boardShell(h(TreeBoard, { board, width, registry, host, refs, cellFor, scale: scaleOf(classOf(width)), patchTile }));
+		return isPage ? h(Page, { onClose: () => toggleExpanded() }, laid) : laid;
+	}
+
 	// the class no longer picks a layout — the column count does. It survives only to say
 	// how far the screen sits from the eye, which is what the type scale is for.
 	const active = classOf(width);
@@ -787,12 +875,6 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		onChange({ ...now.board, layouts: { ...now.board.layouts, [now.columns]: nextPlaces } }, isCommit);
 	};
 
-	const patchTile = (id, patch) => {
-		// CONTEXT: a memoised tile's write carries the render it was drawn in, not the board as it stands
-		const now = latestRef.current.board;
-		// CONTEXT: a function patch reads the tile as it stands, so batched writes cannot eat each other
-		onChange({ ...now, tiles: now.tiles.map((tile) => (tile.id === id ? { ...tile, ...(typeof patch === "function" ? patch(tile) : patch) } : tile)) }, true);
-	};
 
 	// CONTEXT: `view` in a manifest is a widget declaring itself a nameable view
 	const viewTiles = (tiles) => tiles.filter((tile) => registry.get(tile.widget)?.manifest?.view);
