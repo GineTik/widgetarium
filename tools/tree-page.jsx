@@ -140,7 +140,9 @@ function dragGrip(grip, byX, byY) {
 		target.dispatchEvent(new window.PointerEvent(type, { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, shiftKey: true, pointerId: 1 }));
 	fire("pointerdown", from, grip);
 	fire("pointermove", { x: from.x + byX, y: from.y + byY }, window);
+	const whileHeld = surfaceWrites;
 	fire("pointerup", { x: from.x + byX, y: from.y + byY }, window);
+	return whileHeld;
 }
 
 function draw() {
@@ -161,6 +163,8 @@ function readSurface() {
 		along: root.querySelectorAll(".wg-tree-handle.is-along").length,
 		capped: root.querySelectorAll(".wg-tree-handle.is-along.is-capped").length,
 		alongWidth: Math.round(root.querySelector(".wg-tree-handle.is-along")?.getBoundingClientRect().width ?? 0),
+		firstRowHeight: Math.round(document.querySelector(".wg-surface-probe .wg-tree-row")?.getBoundingClientRect().height ?? 0),
+		firstCellHeight: Math.round(document.querySelector(".wg-surface-probe .wg-tree-row .wg-tree-cell")?.getBoundingClientRect().height ?? 0),
 		sharedRow: cellsOf([...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1)),
 		writes: surfaceWrites,
 		ratios: (surfaceBoard.layout.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
@@ -171,9 +175,12 @@ function report() {
 	const sink = document.getElementById("wg-measure");
 	try {
 		const before = readSurface();
-		const grip = document.querySelector(".wg-surface-probe .wg-tree-handle.is-across");
-		if (grip) dragGrip(grip, 120, 0);
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged: readSurface(), failures });
+		const across = document.querySelector(".wg-surface-probe .wg-tree-handle.is-across");
+		const writesWhileAcross = across ? dragGrip(across, 120, 0) : null;
+		const dragged = readSurface();
+		const along = document.querySelector(".wg-surface-probe .wg-tree-handle.is-along");
+		const writesWhileAlong = along ? dragGrip(along, 0, 200) : null;
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged, stretched: readSurface(), whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

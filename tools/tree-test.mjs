@@ -180,7 +180,7 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	check("one grip stands between the two that share a row", seen.across, 1);
 	check("one strip under each row, not one under each tile", seen.along, 3);
 	check("and it runs the whole line", seen.alongWidth, 1600);
-	check("the two rows of capped widgets offer no strip to pull", seen.capped, 2);
+	check("no row is left without a strip, capped widgets or not", seen.capped, 0);
 	check("the gap the grip fills is the gap the layout counted", seen.sharedRow[0] + seen.sharedRow[1] + 12, 1600);
 }
 
@@ -194,6 +194,22 @@ console.log("\n— and dragging that grip writes the board once —");
 	check("the board was written once, on release", after.writes, 1);
 	check("the ratios in the file changed with it", after.ratios[0] > before.ratios[0], true);
 	check("and the row still weighs what it weighed", Math.round(after.ratios.reduce((sum, one) => sum + one, 0) * 100), Math.round(before.ratios.reduce((sum, one) => sum + one, 0) * 100));
+}
+
+console.log("\n— and pulling the strip down makes the row taller, not the widget —");
+{
+	const before = measured.dragged;
+	const after = measured.stretched;
+	check("the row took the whole pull", after.firstRowHeight - before.firstRowHeight, 200);
+	check("the widget inside stayed on its ceiling", after.firstCellHeight, 96);
+	check("before the pull it sat at its own natural height", before.firstCellHeight, 46);
+	check("the board was written a second time", after.writes, 2);
+}
+
+console.log("\n— and while the pointer is down the board is not written at all —");
+{
+	check("no write while the width was being dragged", measured.whileHeld.across, 0);
+	check("nor while the height was", measured.whileHeld.along, 1);
 }
 
 console.log("\n— the ratio the person chose is the ratio drawn —");
