@@ -1,0 +1,31 @@
+{
+	"compilerOptions": {
+		"target": "ES2020",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": [
+			"ES2020",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"strict": true,
+		"noImplicitAny": false,
+		"noEmit": true,
+		"jsx": "react-jsx",
+		"jsxImportSource": "react",
+		"skipLibCheck": false,
+		"allowJs": false,
+		"paths": {
+			"widgetarium": [
+				"./widgets/types/widgetarium.d.ts"
+			]
+		}
+	},
+	"include": [
+		"widgets/types/**/*.d.ts",
+		"tools/type-gate/**/*.ts",
+		"widgets/@habit/grid/widget.tsx",
+		"widgets/@habit/streak/widget.tsx",
+		"widgets/@habit/month/widget.tsx"
+	]
+}
