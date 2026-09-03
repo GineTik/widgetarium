@@ -163,7 +163,10 @@ console.log("\n— and the panel writes what it draws —");
 		settings: [{ key: "groupBy", type: "text", label: "Group tasks by", default: "status" }],
 		// CONTEXT: what the parent DECLARES it hands the slot — the shape src/fit.js ranks against
 		slots: { card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } } },
-		sources: { tasks: { label: "Tasks", default: { path: "Orbitask/Tasks" } }, boards: { label: "Boards" } },
+		props: {
+			tasks: { kind: "collection", label: "Tasks", verbs: { list: "required", create: "optional", update: "optional", remove: "optional" }, default: { path: "Orbitask/Tasks" } },
+			boards: { kind: "collection", label: "Boards", verbs: { list: "required", create: "optional", update: "optional", remove: "optional" } },
+		},
 	};
 	const Leaf = () => h("div", { className: "leaf" }, "leaf");
 	// The misfit is the TALLER tile on purpose: the showcase packs tallest first, so if fit were not
@@ -323,7 +326,7 @@ console.log("\n— and the panel writes what it draws —");
 	const groupSaying = (label) => all(".wg-set-group").find((node) => node.querySelector(".wg-kit-side-label")?.textContent === label);
 	const boards = groupSaying("What Boards can do");
 	check("a source with no folder reports every action off together", [...boards.querySelectorAll(".wg-kit-row")].every((row) => row.textContent.endsWith("Off")), true);
-	check("and says why, once, above them", boards.querySelector(".wg-kit-row")?.textContent.includes("nowhere to put it"), true);
+	check("and says why, once, above them", boards.querySelector(".wg-kit-row")?.textContent.includes("nowhere"), true);
 
 	await press(tab("Settings"));
 	await press(rowSaying("Tasks"));
@@ -375,7 +378,7 @@ console.log("\n— and the panel writes what it draws —");
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
 	check("Done saves the setting", board.tiles[0].settings.groupBy, "assignee");
 	// the section cleared this field on purpose, and an empty own path is what falls back
-	check("and the cleared source, still cleared", board.tiles[0].sources.tasks.path, "");
+	check("and the cleared source, still cleared", board.tiles[0].props.tasks.path, "");
 	check("and the slot that was picked", board.tiles[0].slots.card.widget, OTHER_ID);
 	// CONTEXT: this file's check stringifies, so two objects always match — the comparison must be text
 	check("and it survives a save, as a record", JSON.stringify(serializeBoard(board).tiles[0].slots.card), JSON.stringify({ widget: OTHER_ID }));
@@ -439,7 +442,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 			id: KANBAN_ID,
 			title: "Kanban board",
 			settings: [{ key: "groupBy", type: "text", label: "Group tasks by", default: "status" }],
-			sources: { tasks: { label: "Tasks", default: { path: "Orbitask/Tasks" } } },
+			props: { tasks: { kind: "collection", label: "Tasks", verbs: { list: "required" }, default: { path: "Orbitask/Tasks" } } },
 			// the card is FED a task, the panel is not — one manifest carries both kinds on purpose
 			slots: {
 				card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } },
@@ -723,7 +726,7 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 	const READER_ID = "@test/reader";
 	const GROUP_ID = "@test/group";
 	const shelf = {
-		[READER_ID]: { id: READER_ID, title: "Reader", sources: { rows: { label: "Rows", default: { path: FOLDER } } } },
+		[READER_ID]: { id: READER_ID, title: "Reader", props: { rows: { kind: "collection", label: "Rows", verbs: { list: "required" }, default: { path: FOLDER } } } },
 		[GROUP_ID]: { id: GROUP_ID, title: "Group", mounts: { holds: {} } },
 	};
 	const Leaf = () => h("div", { className: "leaf" }, "leaf");
@@ -733,8 +736,8 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 
 	let board = normalizeBoard({
 		tiles: [
-			{ id: "alone", widget: READER_ID, sources: { rows: { path: FOLDER } } },
-			{ id: "group", widget: GROUP_ID, settings: { holds: [{ name: "Mine", widget: READER_ID }] }, mounted: { Mine: { widget: READER_ID, sources: { rows: { path: FOLDER } } } } },
+			{ id: "alone", widget: READER_ID, props: { rows: { path: FOLDER } } },
+			{ id: "group", widget: GROUP_ID, settings: { holds: [{ name: "Mine", widget: READER_ID }] }, mounted: { Mine: { widget: READER_ID, props: { rows: { path: FOLDER } } } } },
 		],
 		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }, { id: "group", x: 9, y: 0, w: 9, h: 6 }] },
 	});
@@ -750,14 +753,69 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 	};
 
 	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
-	const hints = [...document.querySelectorAll(".wg-set-panel .wg-kit-side-hint")].map((node) => node.textContent.trim());
-	check("a widget mounted under a NAME still counts as a reader of its folder", hints.includes(`2 widgets on this board read this folder.`), true);
+	await press(document.querySelector(".wg-set-panel .wg-set-row"));
+	const notes = [...document.querySelectorAll(".wg-set-pop .wg-set-pop-note")].map((node) => node.textContent.trim());
+	check("a widget mounted under a NAME still counts as a reader of its folder", notes.includes("This folder is read by 2 widgets on this board."), true);
 	// CONTEXT: VACUOUS unless the count can be wrong — one reader must draw no hint at all
-	board = normalizeBoard({ tiles: [{ id: "alone", widget: READER_ID, sources: { rows: { path: FOLDER } } }], layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] } });
+	board = normalizeBoard({ tiles: [{ id: "alone", widget: READER_ID, props: { rows: { path: FOLDER } } }], layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] } });
 	render(null, mount);
 	draw();
 	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
-	check("and the only reader on a board is told nothing", [...document.querySelectorAll(".wg-set-panel .wg-kit-side-hint")].map((node) => node.textContent.trim()), []);
+	await press(document.querySelector(".wg-set-panel .wg-set-row"));
+	check(
+		"and the only reader on a board is told nothing",
+		[
+			document.querySelector(".wg-set-pop .wg-set-pop-hint")?.textContent.trim() ?? null,
+			[...document.querySelectorAll(".wg-set-pop .wg-set-pop-note")].map((node) => node.textContent.trim()),
+		],
+		["Every note in the folder arrives as one item.", []],
+	);
+
+	render(null, mount);
+}
+
+console.log("\n— a prop renamed in the manifest still finds the folder the tile chose —");
+{
+	const CHOSEN = "Notes/Days";
+	const DECLARED = "Notes/Fallback";
+	const RENAMED_ID = "@test/renamed";
+	const shelf = {
+		[RENAMED_ID]: {
+			id: RENAMED_ID,
+			title: "Renamed",
+			props: { days: { kind: "collection", label: "Days", was: "rows", verbs: { list: "required" }, default: { path: DECLARED } } },
+		},
+	};
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
+	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null), list: () => Object.values(shelf).map((manifest) => ({ manifest })) };
+	const slot = { canCreate: true, canUpdate: true, canRemove: true, canSubscribe: false, list: async () => ({ rows: [], total: 0 }), describe: async () => [] };
+	const asked = [];
+	const host = { platform: "test", can: {}, slot: (binding) => { asked.push(binding.path); return slot; }, ui: { notify() {}, openNote() {} } };
+
+	let board = normalizeBoard({
+		tiles: [{ id: "alone", widget: RENAMED_ID, props: { rows: { path: CHOSEN } } }],
+		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () => render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: 1340, onChange: (next) => { board = next; draw(); } }), mount);
+	render(null, mount);
+	draw();
+	check("the gateway reads the folder stored under the old key", [asked.includes(CHOSEN), asked.includes(DECLARED)], [true, false]);
+
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1) await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
+	await press(document.querySelector(".wg-set-panel .wg-set-row"));
+	check("the window offers the folder that was chosen, not the declared one", document.querySelector(".wg-set-panel .wg-set-row").textContent.includes(CHOSEN), true);
+	await press([...document.querySelectorAll(".wg-set-pop button")].find((node) => node.textContent === "Apply"));
+	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
+	check("and the first write moves the record onto the new key", Object.keys(board.tiles[0].props ?? {}), ["days"]);
+	check("without losing the folder on the way", board.tiles[0].props.days.path, CHOSEN);
 
 	render(null, mount);
 }

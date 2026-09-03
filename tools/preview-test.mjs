@@ -14,7 +14,7 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { previewProps, previewData, previewSize, previewReader, previewHost } = await import("./.mjs-cache/preview.mjs");
+const { previewProps, previewGateways, previewSize, previewReader, previewHost } = await import("./.mjs-cache/preview.mjs");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
 const { readFileSync } = await import("node:fs");
 
@@ -31,18 +31,26 @@ const kanban = JSON.parse(readFileSync("widgets/@task/kanban-board/manifest.json
 const card = JSON.parse(readFileSync("widgets/@task/task-card/manifest.json", "utf8"));
 
 console.log("— the data a preview draws comes from the manifest —\n");
-const { data, actions } = previewData(kanban);
-check("the source the widget declares is answered", data.tasks.rows.length, kanban.preview.sources.tasks.rows.length);
-check("and the rows carry the widget's own property names", data.tasks.rows[0].props.title, "Design the onboarding flow");
-check("each row is a record, with a path of its own", data.tasks.rows[0].ref.path, "preview/1.md");
-check("nothing is loading, because nothing was fetched", data.tasks.isLoading, false);
+const gateways = previewGateways(kanban);
+const listed = await gateways.tasks.list();
+check("the prop the widget declares is answered", listed.total, kanban.preview.props.tasks.rows.length);
+check("and the rows carry the widget's own property names", listed.rows[0].value.props.title, "Design the onboarding flow");
+check("each row is a record, with a ref of its own", listed.rows[0].ref, "preview/1.md");
 
 console.log("\n— and every way back to the vault is shut —");
-check("it cannot create", actions.tasks.canCreate, false);
-check("it cannot update", actions.tasks.canUpdate, false);
-check("it cannot remove", actions.tasks.canRemove, false);
-check("calling one anyway is refused, not a crash", actions.tasks.create({ props: {} }), null);
-check("and update the same", actions.tasks.update({ path: "preview/1.md" }, { props: {} }), null);
+check("it cannot create", gateways.tasks.create.can().can, false);
+check("it cannot update", gateways.tasks.update.can().can, false);
+check("it cannot remove", gateways.tasks.remove.can().can, false);
+check(
+	"calling one anyway is refused, not a crash",
+	await gateways.tasks.create({ props: {} }).then(() => "made", () => "refused"),
+	"refused",
+);
+check(
+	"and update the same",
+	await gateways.tasks.update({ ref: "preview/1.md", data: {} }).then(() => "made", () => "refused"),
+	"refused",
+);
 
 console.log("\n— a widget with no source of its own still previews —");
 const cardProps = previewProps({ manifest: card }, {});
@@ -52,12 +60,11 @@ const cardDefaults = Object.fromEntries((card.settings ?? []).map((field) => [fi
 check("its settings come from the manifest's sample", cardProps.settings.title, sampled.title);
 check("over the manifest's own defaults", cardProps.settings.priority, sampled.priority);
 check("and the sample really overrides something", sampled.priority !== cardDefaults.priority, true);
-check("and it is handed no sources it never declared", Object.keys(cardProps.data), []);
+check("and it is handed no gateway it never declared", Object.keys(cardProps).filter((name) => name === "tasks"), []);
 
-console.log("\n— the context is local to the preview —");
+console.log("\n— the sample world is local to the preview —");
 const boardProps = previewProps({ manifest: kanban }, {});
-check("what the sample declares is readable", boardProps.context.get("board"), "Widgetarium");
-check("but a preview may not claim a key", boardProps.context.set("board", "Other", "preview"), false);
+check("a preview reaches no shared box", boardProps.context, undefined);
 check("and it may not configure a board", boardProps.configureBoard({ properties: [] }), false);
 check("the board list it reads is the sample's", boardProps.board.properties, ["Status", "Priority", "Assignees"]);
 
@@ -91,8 +98,8 @@ check("but a real host behind it is passed through, narrowed", previewHost({ pla
 check("and never carries the vault across", "app" in previewHost({ platform: "obsidian", type: "x", can: {}, console: null, ui: { notify() {}, renderMarkdown() {} }, app: {} }), false);
 
 console.log("\n— it really draws —");
-const Leaf = ({ data: given, settings }) =>
-	h("div", { className: "leaf" }, `${settings.title ?? "?"} · ${given.tasks?.rows.length ?? 0} rows`);
+const drawnRows = (await previewProps({ manifest: kanban }, {}).tasks.list()).total;
+const Leaf = ({ settings }) => h("div", { className: "leaf" }, `${settings.title ?? "?"} · ${drawnRows} rows`);
 const mount = dom.window.document.getElementById("host");
 render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);
 check("the widget is handed the sample rows", mount.textContent.includes("4 rows"), true);

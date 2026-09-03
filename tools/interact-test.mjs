@@ -133,6 +133,11 @@ const warnings = [];
 console.warn = (...parts) => {
 	warnings.push(parts.map((part) => String(part)).join(" "));
 };
+const reactComplaints = [];
+console.error = (...parts) => {
+	const said = parts.map((part) => String(part)).join(" ");
+	if (/unique "key"|flushSync|unmount a root/.test(said)) reactComplaints.push(said.split("\n")[0]);
+};
 
 const KANBAN = "@task/kanban-board";
 const ARCHIVED = "@task/archived-columns";
@@ -150,20 +155,31 @@ const READING_PLACES = [
 
 let board = normalizeBoard({
 	tiles: [
-		{ id: "boards", widget: "@task/board-tabs" },
-		{ id: "views", widget: "@task/view-tabs" },
-		{ id: "filters", widget: "@core/filter-panel", sources: { tasks: { path: FOLDER } } },
+		{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "Marketing Team" }, { name: "Ux Team" }] } } },
+		{ id: "views", widget: "@task/view-tabs", props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } } },
+		{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: FOLDER } } },
 		{
 			id: "board",
 			widget: "@core/view-group",
-			settings: { views: `${KANBAN}, ${ARCHIVED}` },
-			mounted: { [KANBAN]: { sources: { tasks: { path: FOLDER } } } },
+			settings: { holds: [{ name: "Kanban", widget: KANBAN }, { name: "Archived columns", widget: ARCHIVED }] },
+			mounted: {
+				"Archived columns": { widget: ARCHIVED, props: { selection: { from: "ref", ref: "boards/selection" } } },
+				Kanban: {
+					widget: KANBAN,
+					props: {
+						tasks: {
+							path: FOLDER,
+							where: [{ prop: "board", op: "is", value: { ref: "boards/selection" } }, { spread: { ref: "filters/chosen" } }],
+						},
+						selection: { from: "ref", ref: "boards/selection" },
+					},
+				},
+			},
 		},
-		{ id: "dialog", widget: "@task/task-dialog", sources: { tasks: { path: FOLDER } } },
+		{ id: "dialog", widget: "@task/task-dialog", props: { tasks: { path: FOLDER }, selection: { from: "ref", ref: "boards/selection" }, opened: { from: "ref", ref: "board/Kanban/opened" } } },
 	],
 	// CONTEXT: the filter bar reads this list — a property the board names is one it can filter by
 	properties: ["Status", "Priority", "Assignees"],
-	context: { board: "Marketing Team", view: "Kanban" },
 	layouts: { 20: { places: READING_PLACES } },
 });
 
@@ -407,6 +423,8 @@ check("Reset All puts every task back", cards(), beforeApply);
 // effect of the data gaining a value nobody asked for — with a stray task in it. "Add Board"
 // had no handler at all.
 const settingsOf = (id) => board.tiles.find((tile) => tile.id === id)?.settings ?? {};
+const tabRowsOf = (id) => (board.tiles.find((tile) => tile.id === id)?.props?.tabs?.value ?? []).map((row) => row.value ?? row);
+const tabFieldOf = (row, field) => row?.props?.[field] ?? row?.[field];
 // CONTEXT: a mounted widget persists under the NAME the board gave it, not under its widget id
 const mountedOf = (id, key) => board.tiles.find((tile) => tile.id === id)?.mounted?.[key];
 const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
@@ -432,7 +450,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	// widget id; the first write moves it onto the name and takes the old key with it.
 	check("the edit lands under the board-owned name", Boolean(mountedOf("board", KANBAN_VIEW)), true);
 	check("the widget-id key it arrived under is gone", Boolean(mountedOf("board", KANBAN)), false);
-	check("and the record it held came across", mountedOf("board", KANBAN_VIEW)?.sources?.tasks?.path, FOLDER);
+	check("and the record it held came across", mountedOf("board", KANBAN_VIEW)?.props?.tasks?.path, FOLDER);
 	check("no task was invented to make it appear", cards(), tasksBefore);
 
 	// ARCHIVING ASKS FIRST. The control no longer deletes, so pressing it changes nothing until
@@ -533,7 +551,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	await click(all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Add"));
 	check("Add Board adds a tab", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, tabsBefore + 1);
-	check("named Untitled 1", String(settingsOf("boards").tabs ?? "").includes("Untitled 1"), true);
+	check("named Untitled 1", tabRowsOf("boards").some((row) => tabFieldOf(row, "name") === "Untitled 1"), true);
 	// the board's own selection is not reachable from here — the visible truth is which tab
 	// the kit's thumb sits on, which is the tab marked selected, and what a person sees anyway
 	const active = all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[aria-selected="true"]').map((node) => node.textContent.trim());
@@ -619,7 +637,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	check("archiving the LAST board still leaves one", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, 1);
 	check("and the one left is a fresh Untitled", /^Untitled \d+$/.test(all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim()), true);
 	check("which is not the board just archived", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim() === last, false);
-	check("the archived board was remembered, not lost", String(settingsOf("boards").archived ?? "").includes(last), true);
+	check("the archived board was remembered, not lost", Boolean(tabFieldOf(tabRowsOf("boards").find((row) => tabFieldOf(row, "name") === last), "archivedAt")), true);
 }
 
 // THE BOARD IS NEVER EMPTY EITHER. Archiving is the one way a column leaves, and the last one
@@ -636,15 +654,24 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 }
 
 // CONTEXT: one tile, several whole widgets, one of them on screen
-const groupBoard = (views, seen = "Kanban", tabs = {}, archived = null) =>
+const groupBoard = (views, archived = null) =>
 	normalizeBoard({
 		tiles: [
-			{ id: "views", widget: "@task/view-tabs", settings: tabs },
-			{ id: "board", widget: "@core/view-group", settings: { views } },
+			{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "Marketing Team" }] } } },
+			{ id: "views", widget: "@task/view-tabs", props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } } },
+			{
+				id: "board",
+				widget: "@core/view-group",
+				settings: { views },
+				mounted: { "Archived columns": { widget: ARCHIVED, props: { selection: { from: "ref", ref: "boards/selection" } } } },
+			},
 		],
-		context: { board: "Marketing Team", view: seen },
 		...(archived ? { archivedColumns: archived } : {}),
-		layouts: { 20: { places: [{ id: "views", x: 0, y: 0, w: 20, h: 1 }, { id: "board", x: 0, y: 1, w: 20, h: 10 }] } },
+		layouts: { 20: { places: [
+			{ id: "boards", x: 0, y: 0, w: 20, h: 1 },
+			{ id: "views", x: 0, y: 1, w: 20, h: 1 },
+			{ id: "board", x: 0, y: 2, w: 20, h: 10 },
+		] } },
 	});
 
 const tileNode = (id) => all(`[data-tile="${id}"]`)[0];
@@ -670,13 +697,12 @@ const pickView = async (name, id = "views") => {
 }
 
 {
-	// CONTEXT: the setting was read for the tabs' own label and published to nobody, so the two disagreed
-	// CONTEXT: the shared selection is made once per surface, so only a fresh one starts from the setting
-	board = groupBoard(`${KANBAN}, ${ARCHIVED}`, null, { activeView: "Archived columns" });
+	board = groupBoard(`${KANBAN}, ${ARCHIVED}`);
 	render(null, root);
 	await settle();
 	draw();
 	await settle();
+	await pickView("Archived columns");
 	check(
 		"the view the tabs name is the view the group draws",
 		`${tabLabel()} | ${all(".orbi-archived-columns").length} | ${all(".orbi-kanban").length}`,
@@ -686,11 +712,12 @@ const pickView = async (name, id = "views") => {
 
 {
 	// CONTEXT: one flat list is the shape written before it was keyed by board
-	board = groupBoard(`${KANBAN}, ${ARCHIVED}`, "Archived columns", {}, ["Blocked", "On hold"]);
+	board = groupBoard(`${KANBAN}, ${ARCHIVED}`, ["Blocked", "On hold"]);
 	render(null, root);
 	await settle();
 	draw();
 	await settle();
+	await pickView("Archived columns");
 
 	const rows = () => all(".orbi-archived-columns .wg-kit-row .wg-kit-row-label").map((node) => node.textContent.trim());
 	check("a note written in yesterday's shape still lists its archived columns", rows(), ["Blocked", "On hold"]);
@@ -711,7 +738,6 @@ const pickView = async (name, id = "views") => {
 				mounted: { [KANBAN]: { settings: { columns: "To Do, Blocked", archivedColumns: "Blocked" } } },
 			},
 		],
-		context: { board: "Marketing Team", view: "Kanban" },
 		layouts: { 20: { places: [{ id: "fallback", x: 0, y: 0, w: 20, h: 10 }] } },
 	});
 	render(null, root);
@@ -760,17 +786,16 @@ const pickView = async (name, id = "views") => {
 }
 
 {
-	// CONTEXT: the switcher used to author its own list of names, reconciled by nothing
-	board = groupBoard(KANBAN, "Kanban");
+	board = groupBoard(KANBAN);
 	draw();
 	await settle();
 	await openTabs();
-	check("the switcher offers what the group actually holds", tabItems(), ["Kanban"]);
+	check("the switcher offers exactly what the group holds", tabItems(), ["Kanban"]);
 }
 
 {
 	// CONTEXT: an unresolvable id used to be dropped, so the group lied about what it holds
-	board = groupBoard("@task/no-such-view", "Kanban");
+	board = groupBoard("@task/no-such-view");
 	draw();
 	await settle();
 	const shown = tileNode("board").textContent;
@@ -779,26 +804,11 @@ const pickView = async (name, id = "views") => {
 }
 
 {
-	// CONTEXT: the shared selection outlives the group's list, so a view can be taken out from under it
-	board = groupBoard(`${KANBAN}, ${ARCHIVED}`);
-	draw();
-	await settle();
-	await pickView("Archived columns");
-
-	board = groupBoard(KANBAN);
-	draw();
-	await settle();
-	const shown = tileNode("board").textContent;
-	check("a selection no view answers to is said out loud", /has no view called Archived columns/.test(shown), true);
-	check("and the group still draws something", all(".orbi-kanban").length, 1);
-}
-
-{
 	// CONTEXT: ownership was keyed by widget id, so a second instance read as the first updating itself
 	board = normalizeBoard({
 		tiles: [
-			{ id: "left", widget: "@task/view-tabs" },
-			{ id: "right", widget: "@task/view-tabs" },
+			{ id: "left", widget: "@task/view-tabs", props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } } },
+			{ id: "right", widget: "@task/view-tabs", props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } } },
 			{ id: "board", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
 		],
 		layouts: {
@@ -816,11 +826,11 @@ const pickView = async (name, id = "views") => {
 
 	warnings.length = 0;
 	await pickView("Archived columns", "left");
-	check("the first instance writes the shared selection", tabLabel("left"), "Archived columns");
+	check("one switcher writes the box both read", [tabLabel("left"), tabLabel("right")], ["Archived columns", "Archived columns"]);
 
 	await pickView("Kanban", "right");
-	check("a second instance of the same widget may not overwrite it", tabLabel("left"), "Archived columns");
-	check("and it is told which instance holds the key", warnings.some((line) => /\bleft\b/.test(line) && /\bright\b/.test(line)), true);
+	check("and the other moves it back for both", [tabLabel("left"), tabLabel("right")], ["Kanban", "Kanban"]);
+	check("with nothing refused along the way", warnings.filter((line) => /may not/.test(line)), []);
 }
 
 {
@@ -857,7 +867,7 @@ const pickView = async (name, id = "views") => {
 	try {
 		broken = normalizeBoard({
 			tiles: [
-				{ id: "a", widget: KANBAN, sources: { tasks: null } },
+				{ id: "a", widget: KANBAN, props: { tasks: null } },
 				{ id: "b", widget: "@core/view-group", mounted: { "@foo": null } },
 			],
 		});
@@ -866,8 +876,8 @@ const pickView = async (name, id = "views") => {
 	}
 	check("a null entry does not take the whole board down", failure, null);
 	check("the tile that carried it survives", broken?.tiles.length, 2);
-	check("its null source degrades to an unbound one", broken?.tiles[0].sources.tasks, { path: "", filters: [], sort: [] });
-	check("and its null mount to an unconfigured one, named off its key", broken?.tiles[1].mounted["@foo"], { widget: "@foo", settings: {}, sources: {}, slots: {}, mounted: {} });
+	check("its null binding is carried as it stands", broken?.tiles[0].props.tasks, null);
+	check("and its null mount to an unconfigured one, named off its key", broken?.tiles[1].mounted["@foo"], { widget: "@foo", settings: {}, props: {}, slots: {}, mounted: {} });
 }
 
 {
@@ -877,7 +887,7 @@ const pickView = async (name, id = "views") => {
 	// ENGINE hands over, not what any product widget does with it.
 	const seen = [];
 	registry.widgets.set("@probe/board", {
-		manifest: { id: "@probe/board", title: "Probe", sources: { notes: {} } },
+		manifest: { id: "@probe/board", title: "Probe", props: { notes: { kind: "collection", label: "Notes", verbs: { list: "required" }, default: { path: FOLDER } } } },
 		folder: "probe",
 		component: (given) => {
 			seen.push(given);
@@ -894,7 +904,7 @@ const pickView = async (name, id = "views") => {
 	const last = () => seen[seen.length - 1];
 
 	board = normalizeBoard({
-		tiles: [{ id: "probe", widget: "@probe/board", sources: { notes: { path: FOLDER } } }],
+		tiles: [{ id: "probe", widget: "@probe/board", props: { notes: { path: FOLDER } } }],
 		properties: ["Status", "Priority"],
 		layouts: { 20: { places: [{ id: "probe", x: 0, y: 0, w: 6, h: 3 }] } },
 	});
@@ -923,21 +933,21 @@ const pickView = async (name, id = "views") => {
 	// A RECORD CARRIES NO BODY, so a widget could draw a note's properties and never its text.
 	// The rows a widget is handed stay bodyless — twenty cards, no file reads — and one note's
 	// text is FETCHED, which is the only call that costs anything.
-	const notes = () => last().actions.notes;
-	const first = last().data.notes.rows[0];
+	const notes = () => last().notes;
+	const listed = await notes().list();
+	const first = listed.rows[0];
 	check("the widget is handed rows to draw", Boolean(first), true);
-	check("and not one of them carries a body", last().data.notes.rows.some((row) => row.body !== undefined), false);
+	check("and not one of them carries a body", listed.rows.some((row) => row.value.body !== undefined), false);
 
-	const opened = await notes().get({ path: first.path });
-	check("a widget can fetch one record's body", typeof opened.body, "string");
-	check("and its properties come with it", opened.props, first.props);
+	const opened = await notes().get(first.ref);
+	check("a widget can fetch one record's body", typeof opened.value.body, "string");
+	check("and its properties come with it", opened.value.props, first.value.props);
 
-	await notes().update({ path: first.path }, { body: "Written from a widget.\n" });
-	check("and save an edited one", (await notes().get({ path: first.path })).body, "Written from a widget.\n");
-	check("the note's properties survived the body write", (await notes().get({ path: first.path })).props, first.props);
+	await notes().update({ ref: first.ref, data: { body: "Written from a widget.\n" } });
+	check("and save an edited one", (await notes().get(first.ref)).value.body, "Written from a widget.\n");
+	check("the note's properties survived the body write", (await notes().get(first.ref)).value.props, first.value.props);
 
-	// what a widget may ask of a source, in full — a new verb here is a decision, not a slip
-	check("the source verbs a widget is handed", Object.keys(notes()).sort(), ["canCreate", "canRemove", "canRepairIds", "canUpdate", "create", "get", "open", "remove", "repairIds", "update"]);
+	check("the verbs a widget is handed on a folder", Object.keys(notes()).filter((key) => typeof notes()[key] === "function").sort(), ["create", "describe", "get", "list", "remove", "repairIds", "subscribe", "update"]);
 
 	// A MOUNTED widget must not be handed less than a tile: the list belongs to the board, and
 	// where a widget happens to be standing is not a fact about the board.
@@ -962,8 +972,7 @@ const pickView = async (name, id = "views") => {
 	const spare = dom.window.document.createElement("div");
 	dom.window.document.body.appendChild(spare);
 	let plain = normalizeBoard({
-		tiles: [{ id: "filters", widget: "@core/filter-panel", sources: { tasks: { path: FOLDER } } }],
-		context: { board: "Marketing Team" },
+		tiles: [{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: FOLDER } } }],
 		layouts: { 20: { places: [{ id: "filters", x: 0, y: 0, w: 3, h: 1 }] } },
 	});
 	const drawPlain = () =>
@@ -1107,6 +1116,34 @@ const pickView = async (name, id = "views") => {
 }
 
 
+
+{
+	board = normalizeBoard({
+		tiles: [
+			{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "Marketing Team" }] } } },
+			{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: FOLDER } } },
+		],
+		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 12, h: 1 }, { id: "filters", x: 12, y: 0, w: 4, h: 1 }] } },
+	});
+	editing = true;
+	render(null, root);
+	await settle();
+	draw();
+	await settle();
+
+	await click(all(".wg-palette .wg-palette-open")[0]);
+	const card = [...dom.window.document.body.querySelectorAll(".wg-cat-dialog .wg-cat-tile")].find((tile) => tile.textContent.includes("Kanban board"));
+	await click(card);
+
+	const added = board.tiles.find((tile) => tile.widget === KANBAN);
+	check("the added kanban points its board at the strip already standing", added?.props?.selection, { from: "ref", ref: "boards/selection" });
+	check("and its tasks are narrowed by that strip and by the filter beside it", added?.props?.tasks?.where, [
+		{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true },
+		{ spread: { ref: "filters/chosen" }, fixed: true },
+	]);
+	check("nothing was refused on the way", warnings.filter((line) => /may not/.test(line)), []);
+}
+
 // THE PALETTE IS THE CATALOGUE NOW. A row of titles said nothing about what a widget looks like,
 // which is the only question a person adding one is actually asking.
 {
@@ -1188,7 +1225,7 @@ const pickView = async (name, id = "views") => {
 	board = { ...board, mode: "expanded", properties: ["Status", "Priority", "Assignees"] };
 	draw();
 	await settle();
-	const carried = { mode: board.mode, properties: board.properties, context: board.context };
+	const carried = { mode: board.mode, properties: board.properties };
 	const card = [...grid().querySelectorAll(".wg-cat-tile")].find((tile) => tile.textContent.includes("Task card"));
 	check("the card is offered", Boolean(card), true);
 	await click(card);
@@ -1311,7 +1348,7 @@ const pickView = async (name, id = "views") => {
 	const standing = new Set(dom.window.document.querySelectorAll(".wg-page"));
 
 	let strip = normalizeBoard({
-		tiles: [{ id: "boards", widget: "@core/editable-tabs", settings: { tabs: "Marketing Team, Ux Team", activeTab: "Marketing Team", archived: "" } }],
+		tiles: [{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: [{ name: "Marketing Team" }, { name: "Ux Team" }] } } }],
 		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }] } },
 	});
 	const paint = () =>
@@ -1337,13 +1374,14 @@ const pickView = async (name, id = "views") => {
 	const listed = () => [...dom.window.document.body.querySelectorAll(".wg-tabs-archive .wg-kit-row")];
 	const listedNames = () => listed().map((row) => row.querySelector(".wg-kit-row-label").textContent.trim());
 	const asking = () => dom.window.document.body.querySelector(".wg-tabs-confirm");
-	const noted = () => serializeBoard(strip).tiles.find((held) => held.id === "boards")?.settings ?? {};
+	const kept = () => (serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.tabs?.value ?? []).map((row) => row.value ?? row);
+	const keptNamed = (name) => kept().find((row) => tabFieldOf(row, "name") === name) ?? null;
 
 	check("the strip draws the tabs the note names", shown(), ["Marketing Team", "Ux Team"]);
 
 	await menu("Archive");
 	check("archiving takes the tab off the strip", shown(), ["Ux Team"]);
-	check("and the note keeps it under archived", noted().archived, "Marketing Team");
+	check("and the row it archived carries the day", typeof tabFieldOf(keptNamed("Marketing Team"), "archivedAt"), "string");
 
 	await menu("Archived list");
 	check("the archived list draws it as a row", listedNames(), ["Marketing Team"]);
@@ -1351,23 +1389,23 @@ const pickView = async (name, id = "views") => {
 
 	await click(listed()[0].querySelector(".wg-tabs-delete"));
 	check("Delete asks before it takes anything", Boolean(asking()), true);
-	check("and the note still holds the tab", noted().archived, "Marketing Team");
+	check("and the note still holds the row", Boolean(keptNamed("Marketing Team")), true);
 	await click(asking().querySelector(".wg-dialog-cancel"));
 	check("dismissing leaves the entry on the list", listedNames(), ["Marketing Team"]);
-	check("and the note exactly as it was", noted().archived, "Marketing Team");
+	check("and the note exactly as it was", typeof tabFieldOf(keptNamed("Marketing Team"), "archivedAt"), "string");
 
-	const tabsBefore = noted().tabs;
 	await click(listed()[0].querySelector(".wg-tabs-delete"));
 	await click(asking().querySelector(".wg-dialog-confirm"));
 	check("confirming takes the entry off the list", listedNames(), []);
-	check("and off the note", noted().archived ?? "", "");
-	// CONTEXT: a tab owns nothing but its name yet — what it will own is the widget mounted under it
-	check("the tabs still on the strip are untouched", noted().tabs, tabsBefore);
+	check("and off the note", keptNamed("Marketing Team"), null);
+	check("the tabs still on the strip are untouched", kept().map((row) => tabFieldOf(row, "name")), ["Ux Team"]);
 	check("and no widget was left behind under the deleted name", strip.tiles[0].mounted?.["Marketing Team"], undefined);
 
 	render(null, stage);
 	stage.remove();
 }
+
+check("react complained about nothing on the way", [...new Set(reactComplaints)], []);
 
 console.log(failed ? `\n${failed} failed` : "\nthe page answers to a person");
 process.exit(failed ? 1 : 0);

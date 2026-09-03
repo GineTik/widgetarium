@@ -134,13 +134,41 @@ const PLACES = [
 	{ id: "board", x: 0, y: 1, w: 20, h: 10 },
 ];
 
-function surfaceBoard(boardsPath, tabs = "Marketing Team, Ux Team") {
+const named = (tabs) => tabs.map((name) => ({ name }));
+const PICKED = "boards/selection";
+
+function surfaceOverBoards(boardsPath) {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@core/editable-tabs", settings: { tabs, activeTab: "Marketing Team" }, sources: { tasks: { path: TASKS } } },
-			{ id: "board", widget: "@task/kanban-board", sources: { tasks: { path: TASKS }, boards: { path: boardsPath } } },
+			{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { path: boardsPath } } },
+			{
+				id: "board",
+				widget: "@task/kanban-board",
+				props: {
+					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { path: boardsPath },
+					selection: { from: "ref", ref: PICKED },
+				},
+			},
 		],
-		context: { board: "Marketing Team" },
+		layouts: { 20: { places: PLACES } },
+	});
+}
+
+function surfaceBoard(boardsPath, tabs = ["Marketing Team", "Ux Team"]) {
+	return normalizeBoard({
+		tiles: [
+			{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: named(tabs) } } },
+			{
+				id: "board",
+				widget: "@task/kanban-board",
+				props: {
+					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { path: boardsPath },
+					selection: { from: "ref", ref: PICKED },
+				},
+			},
+		],
 		layouts: { 20: { places: PLACES } },
 	});
 }
@@ -253,69 +281,30 @@ check("and the strip still lists its tabs", all(".wg-tabs .wg-tabs-tab").map((no
 await click(pickBoard("Ux Team"));
 check("switching board still works from the old string", all(".orbi-kanban").length, 1);
 
-// 6. THE MOVE IS A PRESS. Nothing is written until it is pressed, and never onto a board on file.
-{
-	const madeBefore = written.created.length;
-	await start(surfaceBoard(NOWHERE));
-	check("drawing a board with no records writes nothing", written.created.length, madeBefore);
-	const move = all(".orbi-kanban .ok-move-boards")[0];
-	check("the move is offered", Boolean(move), true);
-	await click(move);
-	check("and it asks first", Boolean(dialog()), true);
-	check("with nothing written yet", written.created.length, madeBefore);
-	await click(dialogButton("cancel"));
-	check("dismissing the question creates nothing", written.created.length, madeBefore);
-	check("and leaves the move there to press again", all(".orbi-kanban .ok-move-boards").length, 1);
-	await click(all(".orbi-kanban .ok-move-boards")[0]);
-	await click(dialogButton("move"));
-	check("confirming writes one file per board", written.created.length - madeBefore, 2);
-	check(
-		"named for the boards the strip holds",
-		written.created.slice(madeBefore).map((made) => made.target).sort(),
-		[`${NOWHERE}/Marketing Team.md`, `${NOWHERE}/Ux Team.md`],
-	);
-	check("each carrying the columns that were on screen", written.created.slice(madeBefore).every((made) => made.body.includes("To Do, Doing, Done")), true);
-
-	// AFTER THE MOVE THE RECORD IS THE SOURCE. The file is edited behind the board's back and
-	// what it names — the columns, their order, which of them is archived — is what is drawn.
-	const moved = fileAt(`${NOWHERE}/Marketing Team.md`);
-	check("the board that was moved now has a file", Boolean(moved), true);
-	moved.props.columns = "Done, Doing, To Do, Shipped";
-	moved.props.archivedColumns = "Doing";
-	fire("changed", moved);
-	await settle();
-	check("the columns drawn are the record's, in the record's order", titles(), ["Done", "To Do", "Shipped"]);
-	check("and the column the record archived is not among them", titles().includes("Doing"), false);
-}
-
 // 6b. THE MAP KEYED BY BOARD NAME still reads where no record exists, and the move files each
 // board's own half of it — the previous round's storage must survive the crossing intact.
 {
-	const madeBefore = written.created.length;
 	await start(
 		normalizeBoard({
 			tiles: [
-				{ id: "boards", widget: "@core/editable-tabs", settings: { tabs: "Marketing Team, Ux Team", activeTab: "Marketing Team" }, sources: { tasks: { path: TASKS } } },
-				{ id: "board", widget: "@task/kanban-board", sources: { tasks: { path: TASKS }, boards: { path: NOWHERE_STILL } } },
+				{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: named(["Marketing Team", "Ux Team"]) } } },
+				{
+				id: "board",
+				widget: "@task/kanban-board",
+				props: {
+					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { path: NOWHERE_STILL },
+					selection: { from: "ref", ref: PICKED },
+				},
+			}
 			],
 			archivedColumns: { "Marketing Team": ["Doing"], "Ux Team": ["Done"] },
-			context: { board: "Marketing Team" },
 			layouts: { 20: { places: PLACES } },
 		}),
 	);
 	check("the map on the note still hides the column it archived", titles(), ["To Do", "Done"]);
 	await click(pickBoard("Ux Team"));
 	check("and the next board over reads its own half", titles(), ["To Do", "Doing", "Backlog", "Shipping"]);
-
-	await click(pickBoard("Marketing Team"));
-	await click(all(".orbi-kanban .ok-move-boards")[0]);
-	await click(dialogButton("move"));
-	const made = Object.fromEntries(written.created.slice(madeBefore).map((entry) => [entry.target, entry.body]));
-	check("the move writes both boards", Object.keys(made).sort(), [`${NOWHERE_STILL}/Marketing Team.md`, `${NOWHERE_STILL}/Ux Team.md`]);
-	// CONTEXT: the whole value, not a substring — "Doing, Done" contains neither name on its own
-	const archivedIn = (body) => (/archivedColumns: "(.*)"/.exec(body ?? "") ?? ["", ""])[1];
-	check("the first board's archived column lands on the first board, and only it", archivedIn(made[`${NOWHERE_STILL}/Marketing Team.md`]), "Doing");
-	check("the second board's lands on the second, and only it", archivedIn(made[`${NOWHERE_STILL}/Ux Team.md`]), "Done");
 }
 
 // 6c. A COLUMN ARCHIVED BEFORE ANY RECORD EXISTED is named in the map and nowhere else, so
@@ -324,11 +313,18 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	await start(
 		normalizeBoard({
 			tiles: [
-				{ id: "boards", widget: "@core/editable-tabs", settings: { tabs: "Marketing Team, Ux Team", activeTab: "Marketing Team" }, sources: { tasks: { path: TASKS } } },
-				{ id: "board", widget: "@task/kanban-board", sources: { tasks: { path: TASKS }, boards: { path: NEVER_MOVED } } },
+				{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: named(["Marketing Team", "Ux Team"]) } } },
+				{
+				id: "board",
+				widget: "@task/kanban-board",
+				props: {
+					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { path: NEVER_MOVED },
+					selection: { from: "ref", ref: PICKED },
+				},
+			}
 			],
 			archivedColumns: { "Marketing Team": ["Paused"] },
-			context: { board: "Marketing Team" },
 			layouts: { 20: { places: PLACES } },
 		}),
 	);
@@ -337,37 +333,25 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	check("and naming it brings the column back", titles(), ["To Do", "Doing", "Done", "Paused"]);
 }
 
-// 7. AN EXISTING FILE IS NEVER OVERWRITTEN.
+// 8. ARCHIVING IS A DATE ON THE RECORD — it touches that record and no column data.
 {
-	const madeBefore = written.created.length;
-	await start(surfaceBoard(BOARDS, "Marketing Team, Ux Team, Growth"));
-	const move = all(".orbi-kanban .ok-move-boards")[0];
-	check("a board with no file yet is still offered the move", Boolean(move), true);
-	await click(move);
-	await click(dialogButton("move"));
-	check("only the board that had no file is written", written.created.length - madeBefore, 1);
-	check("and it is the new one, with nothing written for the boards already on file", written.created.slice(madeBefore).map((made) => made.target), [`${BOARDS}/Growth.md`]);
-	check("and the move is not offered again", all(".orbi-kanban .ok-move-boards").length, 0);
-}
-
-// 8. THE STRIP CARRIES NAMES AND NOTHING ELSE — archive and restore touch no column data.
-{
-	await start(surfaceBoard(BOARDS));
+	await start(surfaceOverBoards(BOARDS));
+	await click(pickBoard("Marketing Team"));
 	const columnsBefore = String(fileProps("Marketing Team").columns);
-	const wroteBefore = boardWrites();
+	written.updated.length = 0;
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archive"));
-	// CONTEXT: the strip is record-backed here, so its list is the folder — Growth was filed above
-	check("archiving a tab takes it off the strip", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Ux Team", "Growth"]);
-	check("and it is remembered as archived", String(board.tiles.find((tile) => tile.id === "boards").settings.archived), "Marketing Team");
-	check("no board record was written by it", boardWrites(), wroteBefore);
+	check("archiving a tab takes it off the strip", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Ux Team"]);
+	check("the record it archived is the only one written", written.updated.map((made) => made.path), [`${BOARDS}/Marketing Team.md`]);
+	check("and it carries the day it was archived", typeof fileProps("Marketing Team").archivedAt, "string");
 	check("the board's columns were not touched", String(fileProps("Marketing Team").columns), columnsBefore);
 
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archived list"));
 	await click([...dialog().querySelectorAll("button")].find((node) => node.textContent.trim() === "Restore"));
-	check("restoring puts the tab back", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()).sort(), ["Growth", "Marketing Team", "Ux Team"]);
-	check("and it wrote no board record either", boardWrites(), wroteBefore);
+	check("restoring puts the tab back", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()).sort(), ["Marketing Team", "Ux Team"]);
+	check("and the date it carried is gone", fileProps("Marketing Team").archivedAt, null);
+	check("with the columns still untouched", String(fileProps("Marketing Team").columns), columnsBefore);
 }
 
 check("nothing was refused along the way", warnings.filter((line) => line.includes("may not")), []);

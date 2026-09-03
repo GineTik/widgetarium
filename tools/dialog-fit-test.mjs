@@ -36,7 +36,7 @@ const bundle = await esbuild.build({
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	inject: ["tools/fill-inject.js"],
-	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js" },
+	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "@task/lib": "./widgets/@task/lib.js" },
 	logLevel: "warning",
 });
 

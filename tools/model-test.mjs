@@ -243,7 +243,7 @@ check("rendering does not warn", onRender, 0);
 	};
 	const chosen = normalizeBoard(authored);
 	check("a slot choice survives normalising", chosen.tiles[0].slots.properties.widget, "@other/properties");
-	check("and it arrives as a record, like a mount", Object.keys(chosen.tiles[0].slots.properties).sort(), ["mounted", "settings", "slots", "sources", "widget"]);
+	check("and it arrives as a record, like a mount", Object.keys(chosen.tiles[0].slots.properties).sort(), ["mounted", "props", "settings", "slots", "widget"]);
 	// CONTEXT: a mount written before the record shape names its widget nowhere but the key
 	check("a mount written without a widget takes it off its key", chosen.tiles[0].mounted.body.widget, "body");
 
@@ -304,7 +304,6 @@ check("rendering does not warn", onRender, 0);
 	const authored = {
 		tiles: [{ id: "card", widget: "w", slots: { properties: "@other/properties" }, mounted: { body: { settings: { zoom: 2 } } } }],
 		properties: ["Status", "Priority", "Progress", "Deadline", "Members"],
-		context: { board: "Orbitask" },
 		layouts: { 12: { places: [{ id: "card", x: 0, y: 0, w: 4, h: 2 }] } },
 	};
 	const owned = normalizeBoard(authored);
@@ -315,7 +314,7 @@ check("rendering does not warn", onRender, 0);
 	check("the property list reaches the file, in order", written.properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
 	check("and reopening the file keeps that order", normalizeBoard(written).properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
 	// CONTEXT: VACUOUS until the two above are green — with no properties at either end it compares nothing
-	check("properties, context and mounts round-trip byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
+	check("properties and mounts round-trip byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
 
 	// CONTEXT: VACUOUS until the list is written at all — nothing wrote the key before
 	const bare = serializeBoard(normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layouts: {} }));
@@ -342,7 +341,6 @@ check("rendering does not warn", onRender, 0);
 	const fromArray = normalizeBoard([{ id: "a", widget: "w", x: 0, y: 0, w: 3, h: 2 }]);
 	check("a bare array still lands on 12", authoredColumns(fromArray), [12]);
 	check("a bare array gets a mode", fromArray.mode, "collapsed");
-	check("a bare array gets a context", fromArray.context, {});
 	check("a bare array gets a property list", fromArray.properties, []);
 }
 

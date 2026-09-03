@@ -1,5 +1,7 @@
 import { render } from "../src/engine/render.js";
-import TaskDialog from "../widgets/@task/task-dialog/widget.jsx";
+import { arrayGateway, soloGateway } from "../src/gateway/create";
+import { createViewCells } from "../src/gateway/refs.js";
+import TaskDialog from "../widgets/@task/task-dialog/widget.tsx";
 
 const task = {
 	path: "Orbitask/Tasks/replace-the-three-task-widgets.md",
@@ -15,23 +17,19 @@ const task = {
 	},
 };
 
-// CONTEXT: the opener hands over a fresh ref per press; one press is one object
-const held = { path: task.path };
-const board = "Widgetarium";
-const context = {
-	get: (key) => (key === "task" ? held : key === "board" ? board : undefined),
-	set: () => {},
-};
+const opened = createViewCells()("dialog/opened");
+opened.update(task.path);
+const selection = soloGateway("Widgetarium", {}, "dialog-fit-board");
+const boards = arrayGateway([], {}, "dialog-fit-boards");
 
-const actions = {
-	tasks: {
-		canUpdate: true,
-		canCreate: true,
-		update: async () => {},
-		open: () => {},
-		get: async () => ({ body: "A description with wide things in it." }),
+const tasks = arrayGateway(
+	[{ ref: task.path, value: task }],
+	{
+		update: async () => null,
+		get: async () => ({ ref: task.path, value: { ...task, body: "A description with wide things in it." } }),
 	},
-};
+	"dialog-fit-tasks",
+);
 
 // CONTEXT: a stand-in for Obsidian's renderer — the wide blocks are what this page measures
 const WIDE_CODE = "const aLineOfCodeFarWiderThanTheColumnItSitsIn = somethingElseEntirelyTooLongToFit(1, 2, 3, 4, 5, 6);";
@@ -56,10 +54,11 @@ const host = {
 render(
 	<TaskDialog
 		settings={{ properties: "Status, Priority, Approval, Progress, Assignees, Deadline, Client", columns: "To Do, Doing, Done" }}
-		data={{ tasks: { rows: [task] } }}
-		actions={actions}
+		tasks={tasks}
+		boards={boards}
+		selection={selection}
+		opened={opened}
 		host={host}
-		context={context}
 		configure={() => {}}
 	/>,
 	document.querySelector(".wg-root"),

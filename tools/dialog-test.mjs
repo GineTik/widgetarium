@@ -160,11 +160,10 @@ const DIALOG = "@task/task-dialog";
 
 let board = normalizeBoard({
 	tiles: [
-		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, sources: { tasks: { path: FOLDER } } },
-		{ id: "dialog", widget: DIALOG, sources: { tasks: { path: FOLDER } } },
+		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: FOLDER }, boards: { path: FOLDER } } },
+		{ id: "dialog", widget: DIALOG, props: { tasks: { path: FOLDER }, boards: { path: FOLDER }, opened: { from: "ref", ref: "board/opened" } } },
 	],
 	properties: ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"],
-	context: { board: "Marketing Team" },
 	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }, { id: "dialog", x: 0, y: 10, w: 3, h: 1 }] } },
 });
 
@@ -587,8 +586,8 @@ console.log("\n— a body the file cannot hold is refused, and the dialog says s
 render(null, root);
 let plain = normalizeBoard({
 	tiles: [
-		{ id: "board", widget: KANBAN, settings: { columns: "To Do" }, sources: { tasks: { path: PLAIN } } },
-		{ id: "dialog", widget: DIALOG, sources: { tasks: { path: PLAIN } } },
+		{ id: "board", widget: KANBAN, settings: { columns: "To Do" }, props: { tasks: { path: PLAIN }, boards: { path: PLAIN } } },
+		{ id: "dialog", widget: DIALOG, props: { tasks: { path: PLAIN }, boards: { path: PLAIN }, opened: { from: "ref", ref: "board/opened" } } },
 	],
 	properties: ["Status"],
 	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }, { id: "dialog", x: 0, y: 10, w: 3, h: 1 }] } },

@@ -3,10 +3,12 @@
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { createContext } = await import("./.mjs-cache/engine/context.mjs");
+const { createGatewayRefs, createViewCells, narrowedByRefs, refValue, selectionGateway } = await import("./.mjs-cache/gateway/refs.mjs");
+const { arrayGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const { wiredTiles } = await import("./.mjs-cache/engine/wiring.mjs");
 const { mountKeyFor } = await import("./.mjs-cache/mount-key.mjs");
 const { createWidthGate, createWidthWatcher } = await import("./.mjs-cache/width-gate.mjs");
-const { matches } = await import("./.mjs-cache/engine/match.mjs");
+const { isMatch } = await import("./.mjs-cache/gateway/match.mjs");
 
 let failed = 0;
 function check(name, got, want) {
@@ -15,50 +17,117 @@ function check(name, got, want) {
 	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
 }
 
-const persisted = [];
-const context = createContext({ board: "Marketing" });
-check("the first widget to write a key owns it", context.set("board", "Ux Team", "board-tabs"), true);
-check("a second widget is refused", context.set("board", "Other", "breadcrumb"), false);
-check("and the value is untouched", context.get("board"), "Ux Team");
-check("looking at another board changes nothing outside this viewer", persisted.length, 0);
-check("the key is offered to the binding dropdown", context.offered(), ["board"]);
+const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-let seen = 0;
-const stop = context.subscribe(() => {
-	seen += 1;
-});
-context.set("view", "Table", "view-tabs");
-check("subscribers hear a change", seen, 1);
-context.set("view", "Table", "view-tabs");
-check("and are not woken by a write of the same value", seen, 1);
-stop();
-context.set("view", "Kanban", "view-tabs");
-check("unsubscribing stops the calls", seen, 1);
+{
+	const refs = createGatewayRefs();
+	const cellFor = createViewCells();
+	const boards = arrayGateway([{ name: "Marketing", props: { board: "Marketing" } }, { name: "Ux", props: { board: "Ux" } }], {}, "boards");
+	const picked = cellFor("tabs/selection");
+	const selection = selectionGateway({ id: "tabs/selection", memory: picked, collection: boards, fieldName: "board", isFallbackToFirst: true });
+	refs.put("tabs/selection", selection, { describes: { tile: "tabs", prop: "selection", label: "Selected tab", title: "Editable tabs", kind: "value" } });
 
-// The binding itself: a source filter naming "@board" must resolve against the shared
-// selection, so the tabs widget steers the board without either knowing the other.
-const { resolveFilter } = await import("./.mjs-cache/surface.mjs");
-if (typeof resolveFilter === "function") {
-	const bound = createContext({ board: "Ux Team" });
-	check(
-		"a filter bound to @board reads the selection",
-		resolveFilter([{ prop: "board", op: "is", value: "@board" }], bound),
-		[{ prop: "board", op: "is", value: "Ux Team" }],
+	check("a box with nothing picked answers the first row", await selection.get(), "Marketing");
+	check("the dropdown is offered what the board holds", refs.offered().map((entry) => entry.ref), ["tabs/selection"]);
+
+	const tasks = arrayGateway(
+		[{ name: "One", props: { board: "Marketing" } }, { name: "Two", props: { board: "Ux" } }],
+		{},
+		"tasks",
 	);
-	check(
-		"a plain value is left alone",
-		resolveFilter([{ prop: "status", op: "is", value: "todo" }], bound),
-		[{ prop: "status", op: "is", value: "todo" }],
+	const narrowed = narrowedByRefs(tasks, [{ prop: "board", op: "is", value: { ref: "tabs/selection" } }], refs);
+	check("a where row naming a ref reads through it", (await narrowed.list()).rows.map((row) => row.value.name), ["One"]);
+
+	await selection.update("i1");
+	check("and follows the box when it moves", (await narrowed.list()).rows.map((row) => row.value.name), ["Two"]);
+
+	let woke = 0;
+	const stop = narrowed.subscribe(() => { woke += 1; });
+	await selection.update("i0");
+	check("a widget reading through a ref is woken by the write", woke > 0, true);
+	stop();
+
+	const alias = refValue(refs, "tabs/selection");
+	check("an alias reads the same box", await alias.get(), "Marketing");
+	check("a ref nothing has registered reads as nothing", await refValue(refs, "nowhere/selection").get(), null);
+
+	refs.put("loop/one", refValue(refs, "loop/two"), { describes: { tile: "loop", prop: "one", label: "One", title: "Loop", kind: "value" }, dependsOn: ["loop/two"] });
+	refs.put("loop/two", refValue(refs, "loop/one"), { describes: { tile: "loop", prop: "two", label: "Two", title: "Loop", kind: "value" }, dependsOn: ["loop/one"] });
+	check("a ref that reads itself is cut, not chased", await refs.read("loop/one"), null);
+
+	refs.drop("tabs/selection");
+	check("dropping a tile takes its box out of the dropdown", refs.offered().map((entry) => entry.ref).includes("tabs/selection"), false);
+	await tick();
+}
+
+
+{
+	const shelf = {
+		"@core/editable-tabs": { props: { tabs: { kind: "collection" }, selection: { kind: "value", of: "tabs" } } },
+		"@core/filter-panel": { props: { chosen: { kind: "value" } } },
+		"@task/kanban-board": {
+			props: {
+				tasks: {
+					kind: "collection",
+					default: {
+						path: "Orbitask/Tasks",
+						where: [
+							{ prop: "board", op: "is", value: { wants: "@core/editable-tabs/selection" } },
+							{ spread: { wants: "@core/filter-panel/chosen" } },
+						],
+					},
+				},
+				selection: { kind: "value", wants: "@core/editable-tabs/selection" },
+				opened: { kind: "value", of: "tasks" },
+			},
+		},
+		"@task/task-dialog": { props: { opened: { kind: "value", wants: "@task/kanban-board/opened" } } },
+	};
+	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id] } : null) };
+
+	const alone = { id: "board", widget: "@task/kanban-board" };
+	check("a widget with nothing to point at is not written to at all", wiredTiles([alone], registry)[0], alone);
+
+	const wired = wiredTiles(
+		[
+			{ id: "boards", widget: "@core/editable-tabs" },
+			{ id: "filters", widget: "@core/filter-panel" },
+			{ id: "board", widget: "@task/kanban-board" },
+			{ id: "dialog", widget: "@task/task-dialog" },
+		],
+		registry,
 	);
-	bound.set("board", "Marketing", "tabs");
-	check(
-		"and it follows the selection when it changes",
-		resolveFilter([{ prop: "board", op: "is", value: "@board" }], bound)[0].value,
-		"Marketing",
+	const kanban = wired.find((tile) => tile.id === "board");
+	check("the tile it wants is found by widget id and named by ref", kanban.props.selection, { from: "ref", ref: "boards/selection" });
+	check("a where row is written onto the tile, resolved", kanban.props.tasks.where, [
+		{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true },
+		{ spread: { ref: "filters/chosen" }, fixed: true },
+	]);
+	check("and a dialog points at the kanban's own box", wired.find((tile) => tile.id === "dialog").props.opened, { from: "ref", ref: "board/opened" });
+
+	const again = wiredTiles(wired, registry);
+	check("wiring an already-wired board writes nothing twice", JSON.stringify(again), JSON.stringify(wired));
+
+	const byHand = wiredTiles(
+		[
+			{ id: "boards", widget: "@core/editable-tabs" },
+			{ id: "board", widget: "@task/kanban-board", props: { selection: { from: "ref", ref: "elsewhere/selection" }, tasks: { where: [{ prop: "status", op: "is", value: "Doing" }] } } },
+		],
+		registry,
 	);
-} else {
-	failed += 1;
-	console.log("!!  resolveFilter is not exported from surface.js — the binding cannot be tested");
+	const held = byHand.find((tile) => tile.id === "board");
+	check("a binding somebody made by hand is never overwritten", held.props.selection.ref, "elsewhere/selection");
+	check("and their own conditions survive beside the wired ones", held.props.tasks.where.filter((row) => row.fixed !== true), [{ prop: "status", op: "is", value: "Doing" }]);
+
+	const mounted = wiredTiles(
+		[
+			{ id: "boards", widget: "@core/editable-tabs" },
+			{ id: "group", widget: "@core/view-group", mounted: { Kanban: { widget: "@task/kanban-board" } } },
+			{ id: "dialog", widget: "@task/task-dialog" },
+		],
+		registry,
+	);
+	check("a widget inside a holder is found under the holder's own ref", mounted.find((tile) => tile.id === "dialog").props.opened.ref, "group/Kanban/opened");
 }
 
 // INVARIANT: a widget sees its ENVIRONMENT, never the store and never the Obsidian API.
@@ -130,7 +199,7 @@ if (typeof resolveSlots === "function") {
 	const manifest = { slots: { card: { of: "widget", default: "@task/task-card" } } };
 	const noHost = { platform: "obsidian", can: {}, ui: { notify: () => {} } };
 
-	const bySpec = resolveSlots(manifest, {}, registry, noHost, {});
+	const bySpec = resolveSlots(manifest, {}, registry, noHost, null);
 	check("a slot resolves to its default widget", typeof bySpec.card, "function");
 	// the slot builds a vnode; preact calls the component later, so read the props off it
 	const node = bySpec.card({ task: { title: "Analyze Insights" } });
@@ -139,22 +208,22 @@ if (typeof resolveSlots === "function") {
 	check("the child is handed the narrow host, not the store", Object.keys(node.props.host).sort(), ["can", "console", "platform", "type", "ui"]);
 
 	// CONTEXT: the model normalises both stored shapes, so the engine only ever meets the record
-	const overridden = resolveSlots(manifest, { slots: { card: { widget: "@other/card" } } }, registry, noHost, {});
+	const overridden = resolveSlots(manifest, { slots: { card: { widget: "@other/card" } } }, registry, noHost, null);
 	check("a tile may name a different widget for the slot", overridden.card, null);
-	const kept = resolveSlots(manifest, { slots: { card: { widget: "@task/task-card" } } }, registry, noHost, {});
+	const kept = resolveSlots(manifest, { slots: { card: { widget: "@task/task-card" } } }, registry, noHost, null);
 	check("and naming the same widget the manifest defaults to still resolves it", typeof kept.card, "function");
 
 	// ONE SHAPE, EVERY PATH. The registry resolves the same file whether the board placed it
 	// or another widget slotted it, so a widget written against props.board as a tile must not
 	// meet an undefined there as a slot — it crashed on the first property it read.
 	const access = { board: { properties: [{ key: "status" }] }, configureBoard: () => true };
-	const withBoard = resolveSlots(manifest, {}, registry, noHost, {}, access)
+	const withBoard = resolveSlots(manifest, {}, registry, noHost, access)
 		.card({});
 	check("a slotted widget reads the board the same way a tile does", withBoard.props.board.properties[0].key, "status");
 	check("and it is the SAME board, not a copy", withBoard.props.board === access.board, true);
 	check("it may configure the board too", withBoard.props.configureBoard(), true);
 	const noBoard = bySpec.card({});
-	check("with no board behind it the shape still holds", noBoard.props.board, { properties: [], consumes: [] });
+	check("with no board behind it the shape still holds", noBoard.props.board, { properties: [] });
 	check("and the refusal is a boolean, not a missing function", noBoard.props.configureBoard(), false);
 } else {
 	failed += 1;
@@ -162,24 +231,16 @@ if (typeof resolveSlots === "function") {
 }
 
 
-// THE LAW: the context is LOCAL. Nothing written to it reaches the file or another viewer —
-// so one person filtering a shared board does not move anybody else's screen. A widget that
-// means to tell everyone writes to a store instead, through actions.
-//
-// REGRESSION: it used to persist, which wrote the note on every keystroke in the search box.
-// The editor rebuilt the block on each write and the expanded page came down with it.
 {
-	const mine = createContext({ board: "Marketing Team" });
-	const yours = createContext({ board: "Marketing Team" });
+	const mine = createViewCells();
+	const yours = createViewCells();
 
-	mine.set("search", "audit", "@task/board-tabs");
-	mine.set("filters", { priority: "P1" }, "@core/filter-panel");
-	mine.set("task", "Orbitask/Tasks/one.md", "@task/kanban-board");
-	mine.set("board", "Ux Team", "@task/board-tabs");
+	await mine("filter/chosen").update({ priority: "P1" });
+	await mine("kanban/opened").update("Orbitask/Tasks/one.md");
 
-	check("what I look at is mine", [mine.get("search"), mine.get("board")], ["audit", "Ux Team"]);
-	check("and none of it reaches another viewer", [yours.get("search"), yours.get("task"), yours.get("board")], [undefined, undefined, "Marketing Team"]);
-	check("the context offers no way to persist", typeof mine.markTransient, "undefined");
+	check("what I look at is mine", await mine("kanban/opened").get(), "Orbitask/Tasks/one.md");
+	check("and none of it reaches another viewer", await yours("kanban/opened").get(), null);
+	check("a box offers no way to persist", typeof mine("filter/chosen").markTransient, "undefined");
 }
 
 
@@ -299,11 +360,14 @@ if (typeof resolveSlots === "function") {
 // includes() answered false for every task that had more than one of anything.
 {
 	const task = { name: "t", path: "t.md", props: { assignees: ["Emma", "Liam"], priority: "P1" } };
-	check("a task matches a member who is on it", matches(task, [{ prop: "assignees", op: "in", value: ["Liam"] }]), true);
-	check("and not one who is not", matches(task, [{ prop: "assignees", op: "in", value: ["Brandon"] }]), false);
-	check("any of the ticked members is enough", matches(task, [{ prop: "assignees", op: "in", value: ["Brandon", "Emma"] }]), true);
-	check("a single value still works against a list of choices", matches(task, [{ prop: "priority", op: "in", value: ["P1", "P2"] }]), true);
-	check("and an empty choice matches nothing", matches(task, [{ prop: "priority", op: "in", value: [] }]), false);
+	check("a task matches a member who is on it", isMatch(task, [{ prop: "assignees", op: "in", value: ["Liam"] }]), true);
+	check("and not one who is not", isMatch(task, [{ prop: "assignees", op: "in", value: ["Brandon"] }]), false);
+	check("any of the ticked members is enough", isMatch(task, [{ prop: "assignees", op: "in", value: ["Brandon", "Emma"] }]), true);
+	check("a single value still works against a list of choices", isMatch(task, [{ prop: "priority", op: "in", value: ["P1", "P2"] }]), true);
+	check("and an empty choice matches nothing", isMatch(task, [{ prop: "priority", op: "in", value: [] }]), false);
+	check("the same clause negated keeps a task off nobody's list", isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon"] }]), true);
+	check("and takes off one that is on it", isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon", "Emma"] }]), false);
+	check("an empty choice excludes nobody", isMatch(task, [{ prop: "priority", op: "nin", value: [] }]), true);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");

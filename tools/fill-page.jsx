@@ -1,17 +1,40 @@
 import { render } from "../src/engine/render.js";
-import ViewTabs from "../widgets/@task/view-tabs/widget.jsx";
-import FilterPanel from "../widgets/@core/filter-panel/widget.jsx";
+import { arrayGateway, soloGateway } from "../src/gateway/create";
+import { createGatewayRefs, createViewCells, selectionGateway } from "../src/gateway/refs.js";
+import ViewTabs from "../widgets/@task/view-tabs/widget.tsx";
+import FilterPanel from "../widgets/@core/filter-panel/widget.tsx";
 import { spanToPixels } from "../src/layout.js";
 import { GRID } from "../src/paths.js";
 
-// CONTEXT: a widget reads its board through this, and a standalone tile has no board
-const context = { get: () => undefined, set: () => {} };
+const emptyTasks = arrayGateway([], {}, "fill-tasks");
+const refs = createGatewayRefs();
+const cellFor = createViewCells();
+
+const viewOptions = (selected) => {
+	const options = arrayGateway(
+		["Kanban", "Archived columns"].map((label) => ({ label, value: label })),
+		{},
+		`fill-views-${selected}`,
+	);
+	const picked = cellFor(`fill-picked-${selected}`);
+	picked.update(selected === "Kanban" ? "i0" : "i1");
+	return { options, selection: selectionGateway({ id: `fill-selection-${selected}`, memory: picked, collection: options, fieldName: "value", isFallbackToFirst: true }) };
+};
+const shortLabel = viewOptions("Kanban");
+const longLabel = viewOptions("Archived columns");
+const filterGroups = arrayGateway([{ prop: "assignees", control: "people", label: "Members" }], {}, "fill-groups");
+const noProperties = arrayGateway([], {}, "fill-properties");
+const openNothing = soloGateway("", {}, "fill-open");
+const chosenFilters = cellFor("fill-chosen");
+const filterPanel = () => (
+	<FilterPanel tasks={emptyTasks} groups={filterGroups} openGroup={openNothing} properties={noProperties} chosen={chosenFilters} />
+);
 
 const CASES = [
 	{
 		name: "view-tabs, 3 cells, short label",
 		cells: 3,
-		node: <ViewTabs settings={{ views: "Kanban, Archived columns", activeView: "Kanban" }} context={context} />,
+		node: <ViewTabs options={shortLabel.options} selection={shortLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -19,7 +42,7 @@ const CASES = [
 	{
 		name: "view-tabs, 2 cells, over-long label",
 		cells: 2,
-		node: <ViewTabs settings={{ views: "Kanban, Archived columns", activeView: "Archived columns" }} context={context} />,
+		node: <ViewTabs options={longLabel.options} selection={longLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -27,7 +50,7 @@ const CASES = [
 	{
 		name: "view-tabs, 1 cell, over-long label",
 		cells: 1,
-		node: <ViewTabs settings={{ views: "Kanban, Archived columns", activeView: "Archived columns" }} context={context} />,
+		node: <ViewTabs options={longLabel.options} selection={longLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -35,7 +58,7 @@ const CASES = [
 	{
 		name: "view-tabs, 13 cells, over-long label",
 		cells: 13,
-		node: <ViewTabs settings={{ views: "Kanban, Archived columns", activeView: "Archived columns" }} context={context} />,
+		node: <ViewTabs options={longLabel.options} selection={longLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -43,7 +66,7 @@ const CASES = [
 	{
 		name: "filter, 3 cells",
 		cells: 3,
-		node: <FilterPanel settings={{ groups: "assignees:people:Members", key: "filters" }} data={{ tasks: { rows: [] } }} context={context} />,
+		node: filterPanel(),
 		control: "button.ofp-open",
 		label: ".ofp-open .wg-kit-btn-label",
 		icon: ".ofp-icon",
@@ -51,7 +74,7 @@ const CASES = [
 	{
 		name: "filter, 2 cells",
 		cells: 2,
-		node: <FilterPanel settings={{ groups: "assignees:people:Members", key: "filters" }} data={{ tasks: { rows: [] } }} context={context} />,
+		node: filterPanel(),
 		control: "button.ofp-open",
 		label: ".ofp-open .wg-kit-btn-label",
 		icon: ".ofp-icon",
@@ -59,7 +82,7 @@ const CASES = [
 	{
 		name: "filter, 1 cell",
 		cells: 1,
-		node: <FilterPanel settings={{ groups: "assignees:people:Members", key: "filters" }} data={{ tasks: { rows: [] } }} context={context} />,
+		node: filterPanel(),
 		control: "button.ofp-open",
 		label: ".ofp-open .wg-kit-btn-label",
 		icon: ".ofp-icon",
