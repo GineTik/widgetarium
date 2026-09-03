@@ -28,7 +28,7 @@ const STYLE = `
 `;
 
 // CONTEXT: a fed slot owns nothing — the parent hands the habit down and takes the press back
-export default createWidget(function HabitRow({ habit, days = [], today = "", square = false, onToggle }) {
+export default createWidget(function HabitRow({ habit, days = [], today = "", isSquare = false, onToggle }) {
 	const marked = new Set(habit?.entries ?? []);
 	const streak = streakOf([...marked].map((date) => ({ date })), { maxGap: habit?.maxGap ?? 0, today });
 	const goal = Number(habit?.goal ?? 0);
@@ -45,7 +45,7 @@ export default createWidget(function HabitRow({ habit, days = [], today = "", sq
 					<button
 						type="button"
 						key={date}
-						className={`habit-dot${square ? " is-square" : ""}${marked.has(date) ? " is-done" : ""}${date === today ? " is-today" : ""}`}
+						className={`habit-dot${isSquare ? " is-square" : ""}${marked.has(date) ? " is-done" : ""}${date === today ? " is-today" : ""}`}
 						title={date}
 						aria-pressed={marked.has(date)}
 						onClick={() => onToggle?.(date)}

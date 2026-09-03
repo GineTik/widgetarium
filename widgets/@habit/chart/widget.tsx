@@ -1,4 +1,4 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
 import { bucketOf, groupOf, readLog } from "@habit/lib";
 
 const STYLE = `
@@ -159,8 +159,9 @@ function Plot({ parts, kind }) {
 	);
 }
 
-export default createWidget(function HabitChart({ settings, data }) {
-	const rows = data?.log?.rows ?? [];
+export default createWidget(function HabitChart({ settings, log: source }: any) {
+	const listedRows = useData(source.list);
+	const rows = flatRows(listedRows.rows);
 	const kind = ["area", "line", "step", "bar", "pie", "donut"].includes(settings.kind) ? settings.kind : "area";
 	const byCategory = CATEGORY.has(kind);
 

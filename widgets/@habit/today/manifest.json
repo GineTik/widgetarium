@@ -21,14 +21,6 @@
 		"h": 3
 	},
 	"collapseBelowPx": 180,
-	"sources": {
-		"habits": {
-			"label": "Habits",
-			"default": {
-				"path": "Habits"
-			}
-		}
-	},
 	"settings": [
 		{
 			"key": "days",
@@ -48,7 +40,7 @@
 			"w": 4,
 			"h": 3
 		},
-		"sources": {
+		"props": {
 			"habits": {
 				"rows": [
 					{
@@ -113,6 +105,19 @@
 						}
 					}
 				]
+			}
+		}
+	},
+	"props": {
+		"habits": {
+			"kind": "collection",
+			"label": "Habits",
+			"verbs": {
+				"list": "required",
+				"update": "optional"
+			},
+			"default": {
+				"path": "Habits"
 			}
 		}
 	}

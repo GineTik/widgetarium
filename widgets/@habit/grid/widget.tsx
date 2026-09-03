@@ -1,4 +1,5 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
+import type { Aka, CollectionGateway, Day, ListAction, Text, UpdateAction, VaultRecord } from "widgetarium";
 import { isoOf } from "@habit/lib";
 
 const STYLE = `
@@ -33,7 +34,7 @@ const STYLE = `
 
 // CONTEXT: the newest day sits last, the way a week reads
 function lastDays(count) {
-	const days = [];
+	const days: string[] = [];
 	const day = new Date();
 	for (let at = count - 1; at >= 0; at -= 1) {
 		const when = new Date(day);
@@ -43,30 +44,50 @@ function lastDays(count) {
 	return days;
 }
 
-function toHabit(row, field) {
+type Habit = VaultRecord & {
+	days: Day[] & Aka<"entries" | "dates" | "log" | "checkins" | "done">;
+	title?: Text & Aka<"name">;
+	color?: Text & Aka<"colour">;
+	goal?: number & Aka<"target">;
+	maxGap?: number;
+};
+
+type Accesses = {
+	list: ListAction;
+	update?: UpdateAction;
+};
+
+function toHabit(row) {
 	return {
 		name: row.name,
-		title: row.props?.title ?? row.name,
-		color: row.props?.color ?? "",
-		maxGap: row.props?.maxGap,
-		goal: row.props?.goal,
-		entries: (row.props?.[field] ?? []).filter((date) => typeof date === "string"),
+		title: row.title ?? row.name,
+		color: row.color ?? "",
+		maxGap: row.maxGap,
+		goal: row.goal,
+		entries: row.days ?? [],
 	};
 }
 
-export default createWidget(function HabitGrid({ settings, data, actions, slots }) {
-	const rows = data?.habits?.rows ?? [];
-	const field = settings.field || "entries";
+export default createWidget(function HabitGrid({
+	settings,
+	habits,
+	slots,
+}: {
+	settings: any;
+	habits: CollectionGateway<Habit, Accesses>;
+	slots: any;
+}) {
+	const listedRows = useData(habits.list);
+	const rows = flatRows(listedRows.rows);
 	const days = lastDays(Math.max(1, Math.min(60, Number(settings.days) || 14)));
 	const today = isoOf(new Date());
-	const write = actions?.habits;
+	const canWrite = habits.update.can().can === true;
 
-	// CONTEXT: one writer for `entries` — the row raises the press, the board owns the write
 	const toggle = async (row, date) => {
-		if (!write?.canUpdate) return;
-		const held = (row.props?.[field] ?? []).filter((each) => typeof each === "string");
+		if (!canWrite) return;
+		const held = row.days ?? [];
 		const next = held.includes(date) ? held.filter((each) => each !== date) : [...held, date].sort();
-		await write.update({ path: row.path }, { props: { [field]: next } });
+		await habits.update({ ref: row.ref, data: { days: next } });
 	};
 
 	const Row = slots?.row;
@@ -86,10 +107,10 @@ export default createWidget(function HabitGrid({ settings, data, actions, slots 
 						Row ? (
 							<Row
 								key={row.path}
-								habit={{ ...toHabit(row, field), maxGap: row.props?.maxGap ?? (Number(settings.maxGap) || 0) }}
+								habit={{ ...toHabit(row), maxGap: row.maxGap ?? (Number(settings.maxGap) || 0) }}
 								days={days}
 								today={today}
-								square={Boolean(settings.square)}
+								isSquare={Boolean(settings.isSquare)}
 								onToggle={(date) => toggle(row, date)}
 							/>
 						) : null,

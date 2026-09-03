@@ -1,4 +1,4 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 
 const STYLE = `
@@ -102,9 +102,9 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const WEEK = 7;
 
 // CONTEXT: the grid is columns of weeks, so it must start on the weekday the year's first day fell
-function weeksOf(year, startMonday) {
+function weeksOf(year, isWeekStartingMonday) {
 	const first = new Date(year, 0, 1);
-	const lead = startMonday ? (first.getDay() + 6) % 7 : first.getDay();
+	const lead = isWeekStartingMonday ? (first.getDay() + 6) % 7 : first.getDay();
 	const days = [];
 	for (let at = 0; at < lead; at += 1) days.push(null);
 	for (const day = new Date(year, 0, 1); day.getFullYear() === year; day.setDate(day.getDate() + 1)) {
@@ -132,8 +132,9 @@ function monthSpans(days) {
 	return spans;
 }
 
-export default createWidget(function HabitHeatmap({ settings, data, navigator }) {
-	const rows = data?.log?.rows ?? [];
+export default createWidget(function HabitHeatmap({ settings, log: source, navigator }: any) {
+	const listedRows = useData(source.list);
+	const rows = flatRows(listedRows.rows);
 	const log = readLog(rows, { field: settings.field, pick: settings.pick });
 	const today = isoOf(new Date());
 	const year = Number(settings.year) > 0 ? Number(settings.year) : new Date().getFullYear();
@@ -142,7 +143,7 @@ export default createWidget(function HabitHeatmap({ settings, data, navigator })
 	for (const entry of log) byDate.set(entry.date, (byDate.get(entry.date) ?? 0) + entry.value);
 	const top = Math.max(...byDate.values(), 1);
 
-	const days = weeksOf(year, settings.startMonday !== false);
+	const days = weeksOf(year, settings.isWeekStartingMonday !== false);
 	const months = monthSpans(days);
 	const inYear = log.filter((entry) => entry.date.startsWith(String(year)));
 	const streak = streakOf(inYear, { maxGap: 0, today });
@@ -180,7 +181,7 @@ export default createWidget(function HabitHeatmap({ settings, data, navigator })
 					const step = stepOf(value, top);
 					const marks = ["hh-cell"];
 					if (!iso) marks.push("is-outside");
-					if (settings.round) marks.push("is-round");
+					if (settings.isRound) marks.push("is-round");
 					if (step > 0) marks.push("is-done");
 					if (iso === today) marks.push("is-today");
 					return (

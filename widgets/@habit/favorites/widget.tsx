@@ -1,4 +1,4 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
 import { useState } from "react";
 import { isoOf } from "@habit/lib";
 
@@ -174,13 +174,14 @@ function readingOf(entries, until, span) {
 	return { kept: now, delta: was === 0 ? null : Math.round(((now - was) / was) * 100) };
 }
 
-export default createWidget(function HabitFavorites({ settings, data }) {
+export default createWidget(function HabitFavorites({ settings, habits }: any) {
 	const [chosen, setChosen] = useState("");
 	const field = settings.field || "entries";
 	const span = Math.max(1, Number(settings.window) || 30);
 	const until = isoOf(new Date());
 
-	const bars = (data?.habits?.rows ?? []).map((row) => ({
+	const listedRows = useData(habits.list);
+	const bars = flatRows(listedRows.rows).map((row) => ({
 		name: row.props?.title ?? row.name,
 		...readingOf((row.props?.[field] ?? []).filter((date) => typeof date === "string"), until, span),
 	}));

@@ -1,4 +1,4 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
 import { isoOf, streakOf } from "@habit/lib";
 
 const STYLE = `
@@ -64,19 +64,20 @@ function lastDays(count) {
 	return days;
 }
 
-export default createWidget(function HabitToday({ settings, data, actions }) {
-	const rows = data?.habits?.rows ?? [];
+export default createWidget(function HabitToday({ settings, habits }: any) {
+	const listedRows = useData(habits.list);
+	const rows = flatRows(listedRows.rows);
 	const field = settings.field || "entries";
 	const today = isoOf(new Date());
 	const behind = lastDays(Math.max(1, Math.min(21, Number(settings.days) || 7)));
-	const write = actions?.habits;
+	const canWrite = habits.update.can().can === true;
 	const kept = rows.filter((row) => (row.props?.[field] ?? []).includes(today)).length;
 
 	const toggle = async (row) => {
-		if (!write?.canUpdate) return;
+		if (!canWrite) return;
 		const held = (row.props?.[field] ?? []).filter((each) => typeof each === "string");
 		const next = held.includes(today) ? held.filter((each) => each !== today) : [...held, today].sort();
-		await write.update({ path: row.path }, { props: { [field]: next } });
+		await habits.update({ ref: row.ref, data: { props: { [field]: next } } });
 	};
 
 	return (

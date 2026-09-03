@@ -24,14 +24,6 @@
 		"h": 4
 	},
 	"collapseBelowPx": 320,
-	"sources": {
-		"log": {
-			"label": "Log",
-			"default": {
-				"path": "Habits"
-			}
-		}
-	},
 	"settings": [
 		{
 			"key": "field",
@@ -52,13 +44,13 @@
 			"default": 0
 		},
 		{
-			"key": "round",
+			"key": "isRound",
 			"type": "boolean",
 			"label": "Round cells instead of square",
 			"default": false
 		},
 		{
-			"key": "startMonday",
+			"key": "isWeekStartingMonday",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
 			"default": true
@@ -69,7 +61,7 @@
 			"w": 7,
 			"h": 3
 		},
-		"sources": {
+		"props": {
 			"log": {
 				"rows": [
 					{
@@ -224,6 +216,18 @@
 						}
 					}
 				]
+			}
+		}
+	},
+	"props": {
+		"log": {
+			"kind": "collection",
+			"label": "Log",
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"path": "Habits"
 			}
 		}
 	}

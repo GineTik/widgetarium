@@ -21,14 +21,6 @@
 		"h": 5
 	},
 	"collapseBelowPx": 300,
-	"sources": {
-		"habits": {
-			"label": "Habits",
-			"default": {
-				"path": "Habits"
-			}
-		}
-	},
 	"slots": {
 		"row": {
 			"of": "widget",
@@ -53,19 +45,13 @@
 			"default": 14
 		},
 		{
-			"key": "field",
-			"type": "text",
-			"label": "Property holding the dates",
-			"default": "entries"
-		},
-		{
 			"key": "maxGap",
 			"type": "number",
 			"label": "Missed days a streak survives",
 			"default": 0
 		},
 		{
-			"key": "square",
+			"key": "isSquare",
 			"type": "boolean",
 			"label": "Square marks instead of round",
 			"default": false
@@ -76,7 +62,7 @@
 			"w": 6,
 			"h": 4
 		},
-		"sources": {
+		"props": {
 			"habits": {
 				"rows": [
 					{
@@ -167,6 +153,58 @@
 						}
 					}
 				]
+			}
+		}
+	},
+	"props": {
+		"habits": {
+			"kind": "collection",
+			"label": "Habits",
+			"verbs": {
+				"list": "required",
+				"update": "optional"
+			},
+			"default": {
+				"path": "Habits"
+			},
+			"needs": {
+				"days": {
+					"type": "date",
+					"many": true,
+					"required": true,
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins",
+						"done"
+					]
+				},
+				"title": {
+					"type": "text",
+					"aka": [
+						"name"
+					]
+				},
+				"color": {
+					"type": "text",
+					"aka": [
+						"colour"
+					]
+				},
+				"goal": {
+					"type": "number",
+					"aka": [
+						"target"
+					]
+				},
+				"maxGap": {
+					"type": "number",
+					"aka": [
+						"max gap",
+						"grace"
+					]
+				}
 			}
 		}
 	}

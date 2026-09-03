@@ -21,14 +21,6 @@
 		"h": 5
 	},
 	"collapseBelowPx": 280,
-	"sources": {
-		"habits": {
-			"label": "Habits",
-			"default": {
-				"path": "Habits"
-			}
-		}
-	},
 	"settings": [
 		{
 			"key": "field",
@@ -48,7 +40,7 @@
 			"w": 6,
 			"h": 4
 		},
-		"sources": {
+		"props": {
 			"habits": {
 				"rows": [
 					{
@@ -443,6 +435,18 @@
 						}
 					}
 				]
+			}
+		}
+	},
+	"props": {
+		"habits": {
+			"kind": "collection",
+			"label": "Habits",
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"path": "Habits"
 			}
 		}
 	}

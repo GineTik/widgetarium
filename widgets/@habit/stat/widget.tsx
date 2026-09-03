@@ -1,4 +1,4 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 
 const STYLE = `
@@ -74,8 +74,9 @@ function readingOf(metric, log, habit, period, today) {
 	return { value: streak.current, unit: "days" };
 }
 
-export default createWidget(function HabitStat({ settings, data }) {
-	const rows = data?.habits?.rows ?? [];
+export default createWidget(function HabitStat({ settings, habits }: any) {
+	const listedRows = useData(habits.list);
+	const rows = flatRows(listedRows.rows);
 	const field = settings.field || "entries";
 	const habit = rows.find((row) => row.name === settings.pick) ?? rows[0];
 	const today = isoOf(new Date());
