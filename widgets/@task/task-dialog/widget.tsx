@@ -1,4 +1,5 @@
-import { createWidget, WidgetRoot, Dialog, DialogContent } from "widgetarium";
+import { flatRows, createWidget, pickedValue, useData, WidgetRoot, Dialog, DialogContent } from "widgetarium";
+import { readBoardRecord } from "@task/lib";
 import {
 	APPROVAL_TONES,
 	Button,
@@ -740,7 +741,7 @@ function Avatar({ person }) {
 }
 
 // CONTEXT: the kit owns the row now — this is the same list as the settings panel, read closer
-function RowFrame({ anchor, name, unset, open, children, asButton, onClick }) {
+function RowFrame({ anchor, name, unset, isOpen, children, asButton, onClick }) {
 	return (
 		<SidebarRow
 			as={asButton ? "button" : "div"}
@@ -748,7 +749,7 @@ function RowFrame({ anchor, name, unset, open, children, asButton, onClick }) {
 			icon={<Glyph name={anchor.icon} />}
 			label={name}
 			unset={unset}
-			open={open}
+			isOpen={isOpen}
 			onClick={onClick}
 		>
 			{children}
@@ -757,7 +758,7 @@ function RowFrame({ anchor, name, unset, open, children, asButton, onClick }) {
 }
 
 function ChoiceRow({ anchor, name, value, choices, onPick }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const unset = isUnset(value);
 
 	const shown = unset ? (
@@ -776,10 +777,10 @@ function ChoiceRow({ anchor, name, value, choices, onPick }) {
 
 	return (
 		<Popover
-			open={open}
+			isOpen={isOpen}
 			onOpenChange={setOpen}
 			trigger={
-				<RowFrame anchor={anchor} name={name} unset={unset} open={open} asButton>
+				<RowFrame anchor={anchor} name={name} unset={unset} isOpen={isOpen} asButton>
 					{shown}
 				</RowFrame>
 			}
@@ -819,7 +820,7 @@ function ProgressRow({ anchor, name, value, onPick }) {
 }
 
 function DeadlineRow({ anchor, name, value, today, onPick }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const unset = isUnset(value);
 
 	const shown = unset ? (
@@ -838,10 +839,10 @@ function DeadlineRow({ anchor, name, value, today, onPick }) {
 
 	return (
 		<Popover
-			open={open}
+			isOpen={isOpen}
 			onOpenChange={setOpen}
 			trigger={
-				<RowFrame anchor={anchor} name={name} unset={unset} open={open} asButton>
+				<RowFrame anchor={anchor} name={name} unset={unset} isOpen={isOpen} asButton>
 					{shown}
 				</RowFrame>
 			}
@@ -866,7 +867,7 @@ function DeadlineRow({ anchor, name, value, today, onPick }) {
 }
 
 function MembersRow({ anchor, name, value, roster, onPick }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const held = toList(value);
 	const unset = held.length === 0;
 
@@ -893,10 +894,10 @@ function MembersRow({ anchor, name, value, roster, onPick }) {
 
 	return (
 		<Popover
-			open={open}
+			isOpen={isOpen}
 			onOpenChange={setOpen}
 			trigger={
-				<RowFrame anchor={anchor} name={name} unset={unset} open={open} asButton>
+				<RowFrame anchor={anchor} name={name} unset={unset} isOpen={isOpen} asButton>
 					{shown}
 				</RowFrame>
 			}
@@ -982,21 +983,21 @@ function PropertyRow({ name, props, columns, roster, today, onWrite }) {
 
 // CONTEXT: the anchor is announced while typing, before the name is committed
 function AddProperty({ taken, onAdd }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const [draft, setDraft] = useState("");
 	const anchor = anchorOf(draft);
-	const clash = taken.some((name) => name.toLowerCase() === draft.trim().toLowerCase());
+	const isNameTaken = taken.some((name) => name.toLowerCase() === draft.trim().toLowerCase());
 
 	const commit = () => {
 		const name = draft.trim();
 		setDraft("");
 		setOpen(false);
-		if (name !== "" && !clash) onAdd(name);
+		if (name !== "" && !isNameTaken) onAdd(name);
 	};
 
 	return (
 		<Popover
-			open={open}
+			isOpen={isOpen}
 			onOpenChange={setOpen}
 			trigger={
 				<button type="button" className="otd-add">
@@ -1016,7 +1017,7 @@ function AddProperty({ taken, onAdd }) {
 			</div>
 			<span className="otd-hint">
 				<Glyph name={anchor.icon} />
-				{clash
+				{isNameTaken
 					? "This board already has a property with that name"
 					: "Recognised — this will be {kind}".replace("{kind}", anchor.word)}
 			</span>
@@ -1101,10 +1102,10 @@ function Preview({ markdown, render }) {
 function Description({ path, read, write, render, canPreview, canEdit }) {
 	const [saved, setSaved] = useState("");
 	const [draft, setDraft] = useState("");
-	const [refused, setRefused] = useState(false);
+	const [isRefused, setRefused] = useState(false);
 	const [wanted, setWanted] = useState(PREVIEW);
 	// CONTEXT: the caret is only handed over to somebody who ASKED for the editor, never on first paint
-	const [switched, setSwitched] = useState(false);
+	const [isSwitched, setSwitched] = useState(false);
 
 	useEffect(() => {
 		let alive = true;
@@ -1152,7 +1153,7 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 					/>
 				) : null}
 			</div>
-			{refused ? (
+			{isRefused ? (
 				<p className="otd-refused">
 					<Glyph name="alert" />
 					Not saved. This would turn the note's first line into its properties.
@@ -1161,7 +1162,7 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 			{mode === PREVIEW ? (
 				<Preview markdown={draft} render={render} />
 			) : (
-				<MarkdownEditor className="otd-editor" value={draft} placeholder="Say what this is" onInput={setDraft} focusAtStart={switched} />
+				<MarkdownEditor className="otd-editor" value={draft} placeholder="Say what this is" onInput={setDraft} focusAtStart={isSwitched} />
 			)}
 		</div>
 	);
@@ -1204,7 +1205,7 @@ function swallowNextClick() {
 }
 
 function TagChip({ tag, tone, held, onGrab, onSave }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState(tag);
 	const [picked, setPicked] = useState(tone);
 
@@ -1223,7 +1224,7 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 
 	return (
 		<Popover
-			open={open}
+			isOpen={isOpen}
 			onOpenChange={show}
 			trigger={
 				<Pill tone={tone} asChild>
@@ -1267,7 +1268,7 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 }
 
 function TagRow({ tags, tones, roster, onWrite }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const [dragged, setDragged] = useState(null);
 	const listRef = useRef(null);
 	const shown = dragged?.list ?? tags;
@@ -1288,12 +1289,12 @@ function TagRow({ tags, tones, roster, onWrite }) {
 	const grab = (at) => (event) => {
 		if (event.button) return;
 		const start = { x: event.clientX, y: event.clientY };
-		const drag = { at, list: tags, live: false };
+		const drag = { at, list: tags, isDragging: false };
 
 		const move = (pointer) => {
-			const far = Math.abs(pointer.clientX - start.x) > TAP_SLOP_PX || Math.abs(pointer.clientY - start.y) > TAP_SLOP_PX;
-			if (!drag.live && !far) return;
-			drag.live = true;
+			const isPastTapSlop = Math.abs(pointer.clientX - start.x) > TAP_SLOP_PX || Math.abs(pointer.clientY - start.y) > TAP_SLOP_PX;
+			if (!drag.isDragging && !isPastTapSlop) return;
+			drag.isDragging = true;
 			const boxes = [...(listRef.current?.querySelectorAll(".otd-tag") ?? [])].map((node) => node.getBoundingClientRect());
 			const to = dropIndex(boxes, pointer.clientX, pointer.clientY);
 			if (to < 0 || to === drag.at) return setDragged({ ...drag });
@@ -1306,7 +1307,7 @@ function TagRow({ tags, tones, roster, onWrite }) {
 			window.removeEventListener("pointermove", move);
 			window.removeEventListener("pointerup", stop);
 			setDragged(null);
-			if (!drag.live) return;
+			if (!drag.isDragging) return;
 			swallowNextClick();
 			if (drag.list.join("\n") !== tags.join("\n")) onWrite(drag.list, tones);
 		};
@@ -1322,13 +1323,13 @@ function TagRow({ tags, tones, roster, onWrite }) {
 					key={tag}
 					tag={tag}
 					tone={tones[tag] ?? "neutral"}
-					held={dragged?.live === true && dragged.at === at}
+					held={dragged?.isDragging === true && dragged.at === at}
 					onGrab={grab(at)}
 					onSave={(name, tone) => save(tag, name, tone)}
 				/>
 			))}
 			<Popover
-				open={open}
+				isOpen={isOpen}
 				onOpenChange={setOpen}
 				trigger={
 					<button type="button" className="otd-tag-add">
@@ -1368,18 +1369,20 @@ function valuesAcross(rows, name) {
 	return [...seen];
 }
 
-export default createWidget(function OrbiTaskDialog({ settings, data, actions, board, configureBoard, context, host }) {
-	const opened = context?.get("task");
-	const [dismissed, setDismissed] = useState(null);
-	const rows = data?.tasks?.rows ?? [];
-	const task = rows.find((row) => row.path === opened?.path) ?? null;
-	// CONTEXT: the opener hands over a fresh ref per press, so reopening what was just closed is a change
-	const isOpen = Boolean(task) && dismissed !== opened;
+export default createWidget(function OrbiTaskDialog({ settings, tasks, boards, selection, opened, board, configureBoard, host, navigator }: any) {
+	const chosen = useData(opened.get).data;
+	const onBoard = pickedValue(useData(selection.get).data);
+	const listed = useData(tasks.list);
+	const rows = flatRows(listed.rows);
+	// TRADE-OFF: found in the list the dialog already holds — tasks.get would read the note again on every vault event
+	const task = rows.find((row) => row.ref === chosen) ?? null;
+	const isOpen = Boolean(chosen) && Boolean(task);
 
 	// CONTEXT: a dialog opened outside a board has no list to read, and an empty plate is no dialog
 	const names = board?.properties?.length ? board.properties : STARTING_PROPERTIES;
-	const columns = toList(context?.get("columns") ?? settings.columns);
-	const write = actions?.tasks;
+	const record = readBoardRecord(flatRows(useData(boards.list).rows), { name: onBoard }, { columns: settings.columns });
+	const columns = record.columns;
+	const canUpdate = tasks.update.can().can === true;
 	const props = task?.props ?? {};
 	const today = useMemo(() => new Date(), []);
 	const people = useMemo(() => [...valuesAcross(rows, "members"), ...valuesAcross(rows, "assignees")], [rows]);
@@ -1387,8 +1390,8 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 
 	// CONTEXT: one writer, and what must become true together is written together
 	const setProperties = (patch) => {
-		if (!write?.canUpdate || !task) return;
-		write.update({ path: task.path }, { props: patch });
+		if (!canUpdate || !task) return;
+		tasks.update({ ref: task.ref, data: { props: patch } });
 	};
 
 	const setProperty = (key, value) => setProperties({ [key]: value });
@@ -1402,24 +1405,24 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 	return (
 		<WidgetRoot defaultRounded="none" className="orbi" defaultBackgroundType="none">
 			<style>{CSS}</style>
-			<Dialog open={isOpen} onOpenChange={(next) => !next && setDismissed(opened)}>
+			<Dialog isOpen={isOpen} onOpenChange={(next) => !next && opened.update(null)}>
 				<DialogContent className="orbi orbi-task-dialog">
 					<div className="otd-top">
 						<span className="otd-where">
 							<Glyph name="task" />
 							Card
-							{context?.get("board") ? ` · ${context.get("board")}` : ""}
+							{onBoard ? ` · ${onBoard}` : ""}
 						</span>
 						<div className="otd-corner">
 							<IconButton
 								size="s"
 								label="Open the note"
 								title="Open the note"
-								onClick={() => write?.open?.({ path: task.path })}
+								onClick={() => navigator?.navigate?.(`/${task.ref}`)}
 							>
 								<Glyph name="expand" />
 							</IconButton>
-							<IconButton size="s" label="Close" title="Close" onClick={() => setDismissed(opened)}>
+							<IconButton size="s" label="Close" title="Close" onClick={() => opened.update(null)}>
 								<Glyph name="close" />
 							</IconButton>
 						</div>
@@ -1429,7 +1432,7 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 						<div className="otd-left">
 							<h2
 								className="otd-title"
-								contentEditable={write?.canUpdate ? "true" : undefined}
+								contentEditable={canUpdate ? "true" : undefined}
 								suppressContentEditableWarning
 								onKeyDown={(event) => {
 									if (event.key === "Enter") {
@@ -1455,15 +1458,15 @@ export default createWidget(function OrbiTaskDialog({ settings, data, actions, b
 								}
 							/>
 
-							{task && write?.get ? (
+							{task && tasks.get.can().can ? (
 								<Description
-									key={task.path}
-									path={task.path}
-									read={write.get}
-									write={write.update}
+									key={task.ref}
+									path={task.ref}
+									read={(given) => tasks.get(given.path).then((row) => (row ? row.value : null))}
+									write={(given, patch) => tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))}
 									render={host?.ui?.renderMarkdown}
 									canPreview={Boolean(host?.can?.renderMarkdown && host?.ui?.renderMarkdown)}
-									canEdit={Boolean(write.canUpdate)}
+									canEdit={canUpdate}
 								/>
 							) : null}
 						</div>

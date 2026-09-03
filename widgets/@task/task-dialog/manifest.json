@@ -25,32 +25,66 @@
 		"h": 1
 	},
 	"collapseBelowPx": 40,
-	"consumes": [
-		"task",
-		"board",
-		"columns"
-	],
 	"settings": [
 		{
 			"key": "columns",
 			"type": "text",
-			"label": "Status values — only used when no board publishes its own",
+			"label": "Status values, used when the board names none",
 			"default": "To Do, Doing, Done"
 		}
 	],
-	"sources": {
-		"tasks": {
-			"label": "Tasks",
-			"default": {
-				"path": "Orbitask/Tasks"
-			}
-		}
-	},
 	"preview": {
 		"size": {
 			"w": 3,
 			"h": 2
 		},
 		"instead": "Opens over the board as a dialog"
+	},
+	"props": {
+		"tasks": {
+			"kind": "collection",
+			"label": "Tasks",
+			"verbs": {
+				"list": "required",
+				"get": "optional",
+				"update": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Tasks"
+			}
+		},
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"verbs": {
+				"list": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Boards"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Shown board",
+			"hint": "Which board the open task belongs to. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"verbs": {
+				"get": "required"
+			},
+			"wants": "@core/editable-tabs/selection"
+		},
+		"opened": {
+			"kind": "value",
+			"label": "Opened task",
+			"hint": "Which task this shows. Bind a kanban's own box and a card opens here.",
+			"of": "tasks",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			},
+			"wants": "@task/kanban-board/opened"
+		}
 	}
 }

@@ -1,17 +1,19 @@
-import { createWidget, WidgetRoot, ConfirmDialog, archivedColumnsFor, boardWriter, boardsToCreate, readBoardRecord } from "widgetarium";
+import { canDo, createWidget, WidgetRoot, ConfirmDialog, flatRows, pickedValue, useData } from "widgetarium";
+import { archivedColumnsFor, boardWriter, readBoardRecord } from "@task/lib";
 import { Button, Card, Count, Icon, Plate } from "widgetarium/kit";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+type RecordRow = { ref: string; value: { path?: string; props?: Record<string, any>; name?: string; attachments?: number } };
+
 
 // CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
 const ARCHIVE_TITLE = "Archive {name}?";
 const ARCHIVE = "Archive";
-const MOVE_BOARDS = "Move boards into files";
-const MOVE_TITLE = "Move boards into files?";
-const MOVE_ONE =
-	"One board is written to a note of its own, carrying the columns on screen now, their order, and the columns it has archived. A board already on file is left exactly as it is.";
-const MOVE_MANY =
-	"{count} boards are written to notes of their own, each carrying the columns on screen now, their order, and the columns it has archived. A board already on file is left exactly as it is.";
-const MOVE = "Move";
+const REPAIR_BOARDS = "Repair duplicate ids";
+const REPAIR_TITLE = "Repair duplicate ids?";
+const REPAIR_ONE = "One board shares its id with another. The board whose path sorts first keeps it; the other is given a new one. Nothing else in either note changes.";
+const REPAIR_MANY = "{count} boards share an id with another. In each pair the board whose path sorts first keeps it; the other is given a new one. Nothing else in either note changes.";
+const REPAIR = "Repair";
 
 const CSS = `
 .ok-board {
@@ -222,10 +224,12 @@ const CSS = `
 
 /* CONTEXT: the move is offered once and disappears — a dashed plate says it is not a list */
 .orbi-kanban .ok-move-boards::before { border: 1px dashed var(--background-modifier-border); }
+.orbi-kanban .ok-repair-ids::before { border: 1px dashed var(--background-modifier-border); }
 
 /* CONTEXT: the dialog is portalled onto <body>, out of reach of the widget root's class */
 .wg-dialog.ok-archive,
 .wg-dialog.ok-move-boards-ask { width: min(420px, 100%); }
+.wg-dialog.ok-repair-ids-ask { width: min(420px, 100%); }
 `;
 
 // TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
@@ -239,13 +243,13 @@ function FallbackCard({ task }) {
 
 function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, onOpen, onDropTask, onGrab, onRelease, shift, placeholder, canWrite, dragging, opened }) {
 	const CardComponent = CardSlot ?? FallbackCard;
-	const [over, setOver] = useState(false);
+	const [isOver, setOver] = useState(false);
 	// CONTEXT: a grip around an editable heading steals the drag that selects its text
-	const [renaming, setRenaming] = useState(false);
+	const [isRenaming, setRenaming] = useState(false);
 
 	return (
 		<Plate
-			className={`ok-list${over ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
+			className={`ok-list${isOver ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
 			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
 			onDragOver={(event) => {
 				if (!dragging?.row) return;
@@ -259,7 +263,7 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 				onDropTask?.();
 			}}
 		>
-			<div className="ok-list-head" draggable={Boolean(onGrab) && !renaming} onDragStart={onGrab} onDragEnd={onRelease}>
+			<div className="ok-list-head" draggable={Boolean(onGrab) && !isRenaming} onDragStart={onGrab} onDragEnd={onRelease}>
 				<span
 					className="ok-list-title"
 					// CONTEXT: the lowercase attribute — a property some engines never mirror back is unreadable
@@ -293,8 +297,8 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 
 			{cards.map((task, index) => (
 				<div
-					key={rows[index]?.path ?? index}
-					className={`ok-card-slot${rows[index]?.path === opened ? " is-open" : ""}`}
+					key={rows[index]?.ref ?? index}
+					className={`ok-card-slot${rows[index]?.ref === opened ? " is-open" : ""}`}
 					draggable={canWrite}
 					onDragStart={() => dragging?.pick(rows[index])}
 					onDragEnd={() => dragging?.drop()}
@@ -312,7 +316,7 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 // TRADE-OFF: the same shape as AddList, not the same component — a list is named in a plate of
 // its own, a task is named inside the column it will land in
 function AddTask({ onAdd }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState("");
 
 	const confirm = () => {
@@ -322,7 +326,7 @@ function AddTask({ onAdd }) {
 		setOpen(false);
 	};
 
-	if (!open) {
+	if (!isOpen) {
 		return (
 			<button type="button" className="ok-add-task" onClick={() => setOpen(true)}>
 				<Icon name="plus" size={16} />
@@ -357,10 +361,10 @@ function AddTask({ onAdd }) {
 }
 
 function AddList({ onAdd }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState("");
 
-	if (!open) {
+	if (!isOpen) {
 		return (
 			<Plate asChild>
 				<button type="button" className="ok-add-list-rest" onClick={() => setOpen(true)}>
@@ -478,54 +482,53 @@ function toList(value) {
 		.filter(Boolean);
 }
 
-export default createWidget(function KanbanBoard({ settings, slots, data, actions, context, host, configure, board, configureBoard }) {
+export default createWidget(function KanbanBoard({ settings, slots, tasks, boards, selection, opened, host, configure, board, configureBoard }: any) {
 	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
 	const today = useMemo(() => new Date(), []);
-	const onBoard = context?.get("board") ?? "";
+	const onBoard = pickedValue(useData(selection.get).data);
+	const openedRef = useData(opened.get).data;
+	const tasksData = useData(tasks.list);
+	const boardsData = useData(boards.list);
+	const boardRows = useMemo(() => flatRows(boardsData.rows as RecordRow[]), [boardsData.rows]);
+	const allTasks = useMemo(() => flatRows(tasksData.rows as RecordRow[]), [tasksData.rows]);
 	// THE BOARD'S OWN RECORD. Its columns, their order and which of them are archived belong to
 	// the board, so a column added here cannot land on the board next door. A board with no file
 	// yet answers from the tile and the note, exactly as it did before.
-	const record = readBoardRecord(data?.boards?.rows, { name: onBoard }, {
+	const fromTheBoard = archivedColumnsFor(board?.archivedColumnsByBoard, onBoard, onBoard);
+	const record = readBoardRecord(boardRows, { name: onBoard }, {
 		columns: settings.columns,
-		archivedColumns: board?.archivedColumns ?? settings.archivedColumns,
+		archivedColumns: fromTheBoard.length > 0 ? fromTheBoard : settings.archivedColumns,
 	});
 	const archivedColumns = record.archivedColumns;
 	// CONTEXT: deduped, so a rendered index below the count IS the index in this list
 	// CONTEXT: an archived name stays authored, so restoring it is not a guess about where it belonged
-	const authoredColumns = [...new Set(record.columns)];
+	// CONTEXT: a column archived before the record existed is named nowhere else
+	const authoredColumns = [...new Set([...record.columns, ...archivedColumns])];
 	// CONTEXT: the record once it has a file, the note until then — one writer either way
-	const saveColumns = boardWriter(record, actions?.boards, {
-		columns: (names) => configure?.({ columns: names.join(", ") }),
-		archivedColumns: (names) => configureBoard?.({ archivedColumns: names }),
+	const saveColumns = boardWriter(record, boards, {
+		columns: (names: string[]) => configure?.({ columns: names.join(", ") }),
+		archivedColumns: (names: string[]) => configureBoard?.({ archivedColumns: names, board: onBoard }),
 	});
 	const shownColumns = authoredColumns.filter((name) => !archivedColumns.includes(name));
 	// CONTEXT: a board with no columns is not a board — the last one out leaves a fresh one behind
 	const columnNames = shownColumns.length > 0 ? shownColumns : [freeUntitled([...authoredColumns, ...archivedColumns])];
 	const groupBy = settings.groupBy || "status";
-	// TRADE-OFF: search narrows rows we already hold — a query per keystroke is a round trip per letter
-	const needle = String(context?.get("search") ?? "").trim().toLowerCase();
-	const rows = (data?.tasks?.rows ?? []).filter(
-		(row) => needle === "" || String(row.name ?? "").toLowerCase().includes(needle),
-	);
-	const write = actions?.tasks;
+	const rows = allTasks;
+	const canCreateTask = canDo(tasks.create);
+	const canUpdateTask = canDo(tasks.update);
 	const columns = toColumns(rows, columnNames, groupBy, archivedColumns);
-	const opened = context?.get("task")?.path;
 	const [archiving, setArchiving] = useState(null);
-	const [movingBoards, setMovingBoards] = useState(false);
 	const heldByArchiving = columns.find((column) => column.title === archiving)?.rows.length ?? 0;
 
-	// THE MOVE IS A PRESS, never a render. The strip publishes the names; each one that has no
-	// file yet is written with the columns it is showing and the columns it has archived, and a
-	// board already on file is passed over untouched.
-	const unfiled = boardsToCreate(context?.get("boards"), data?.boards?.rows, (name) => ({
-		columns: authoredColumns,
-		archivedColumns: archivedColumnsFor(board?.archivedColumnsByBoard, name, onBoard),
-	}));
-	const canMoveBoards = Boolean(actions?.boards?.canCreate) && unfiled.length > 0;
+	// CONTEXT: found on the read and only reported — the re-mint is this press
+	const duplicates = (boardsData.data as { duplicates?: { remints: string[] }[] } | null)?.duplicates ?? [];
+	const remintCount = duplicates.reduce((count, entry) => count + entry.remints.length, 0);
+	const canRepairIds = canDo(boards.repairIds) && remintCount > 0;
+	const [isRepairingIds, setRepairingIds] = useState(false);
 
-	const moveBoards = async () => {
-		setMovingBoards(false);
-		for (const draft of unfiled) await actions.boards.create({ props: draft.props });
+	const repairIds = async () => {
+		setRepairingIds(false);
+		await boards.repairIds();
 	};
 
 	// CONTEXT: a column is a setting, not a task — adding one must not invent a note
@@ -534,7 +537,8 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		const trimmed = String(name ?? "").trim();
 		if (!trimmed || shownColumns.includes(trimmed)) return;
 		if (archivedColumns.includes(trimmed)) {
-			saveColumns({ archivedColumns: archivedColumns.filter((column) => column !== trimmed) });
+			// CONTEXT: a column the old map archived is authored nowhere, so restoring has to author it
+			saveColumns({ archivedColumns: archivedColumns.filter((column) => column !== trimmed), columns: authoredColumns });
 			return;
 		}
 		saveColumns({ columns: [...authoredColumns, trimmed] });
@@ -555,8 +559,8 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 		saveColumns({ columns: renamed });
 
 		const held = rows.filter((row) => (row.props?.[groupBy] ?? "") === was);
-		if (held.length === 0 || !write?.canUpdate) return;
-		for (const row of held) await write.update({ path: row.path }, { props: { [groupBy]: name } });
+		if (held.length === 0 || !canUpdateTask) return;
+		for (const row of held) await tasks.update({ ref: row.ref, data: { props: { [groupBy]: name } } });
 	};
 
 	// CONTEXT: the one place a column leaves the board; nothing is unnamed, so a restore is lossless
@@ -566,10 +570,6 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	};
 
 	// CONTEXT: a joined string, not the array — a fresh array every render notifies forever
-	useEffect(() => {
-		context?.set("columns", columnNames.join(", "));
-	}, [columnNames.join(", ")]);
-
 	const [carried, setCarried] = useState(null);
 	const dragging = {
 		row: carried,
@@ -625,14 +625,14 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 	};
 
 	const addTask = async (column, title) => {
-		if (!write?.canCreate) return;
+		if (!canCreateTask) return;
 		// CONTEXT: without an order of its own a new task sorts last by accident, and the first edit moves it
 		const lastOrder = rows.reduce((highest, row) => Math.max(highest, Number(row.props?.order) || 0), 0);
-		await write.create({
+		await tasks.create({
 			props: {
 				title,
 				[groupBy]: column,
-				board: context?.get("board") ?? "",
+				board: onBoard,
 				order: lastOrder + 1,
 				progress: 0,
 				priority: "P2",
@@ -642,13 +642,13 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 
 	// CONTEXT: the vault's own subscription brings the board back updated
 	const moveTask = async (column) => {
-		if (!carried || !write?.canUpdate) return;
+		if (!carried || !canUpdateTask) return;
 		if ((carried.props?.[groupBy] ?? "") === column) return;
-		await write.update({ path: carried.path }, { props: { [groupBy]: column } });
+		await tasks.update({ ref: carried.ref, data: { props: { [groupBy]: column } } });
 		setCarried(null);
 	};
 
-	if (data?.tasks?.isLoading && rows.length === 0) {
+	if (tasksData.isLoading && rows.length === 0) {
 		return (
 			<WidgetRoot defaultRounded="none" className="orbi orbi-kanban" defaultBackgroundType="none">
 				<style>{CSS}</style>
@@ -673,7 +673,7 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 						rows={column.rows}
 						cards={column.rows.map((row) => toCard(row, today))}
 						CardSlot={slots?.card}
-						canWrite={Boolean(write?.canCreate)}
+						canWrite={canCreateTask}
 						dragging={dragging}
 						shift={shiftOf(index)}
 						placeholder={reorder?.from === index}
@@ -682,24 +682,24 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 						onAdd={(title) => addTask(column.title, title)}
 						onArchive={configure ? () => setArchiving(column.title) : undefined}
 						onRename={configure ? (next) => renameList(column.title, next) : undefined}
-						onOpen={(row) => context?.set("task", { path: row.path })}
+						onOpen={(row) => opened.update(row.ref)}
 						onDropTask={() => moveTask(column.title)}
-						opened={opened}
+						opened={openedRef}
 					/>
 				))}
 				{configure ? <AddList onAdd={addList} /> : null}
-				{canMoveBoards ? (
+				{canRepairIds ? (
 					<Plate asChild>
-						<button type="button" className="ok-add-list-rest ok-move-boards" onClick={() => setMovingBoards(true)}>
+						<button type="button" className="ok-add-list-rest ok-repair-ids" onClick={() => setRepairingIds(true)}>
 							<Icon name="folder" size={16} />
-							<span>{MOVE_BOARDS}</span>
+							<span>{REPAIR_BOARDS}</span>
 						</button>
 					</Plate>
 				) : null}
 			</div>
 
 			<ConfirmDialog
-				open={Boolean(archiving)}
+				isOpen={Boolean(archiving)}
 				onOpenChange={() => setArchiving(null)}
 				className="ok-archive"
 				variant="accent"
@@ -715,15 +715,16 @@ export default createWidget(function KanbanBoard({ settings, slots, data, action
 			/>
 
 			<ConfirmDialog
-				open={movingBoards}
-				onOpenChange={() => setMovingBoards(false)}
-				className="ok-move-boards-ask"
+				isOpen={isRepairingIds}
+				onOpenChange={() => setRepairingIds(false)}
+				className="ok-repair-ids-ask"
 				variant="accent"
-				confirmLabel={MOVE}
-				title={MOVE_TITLE}
-				description={unfiled.length === 1 ? MOVE_ONE : MOVE_MANY.replace("{count}", String(unfiled.length))}
-				onConfirm={moveBoards}
+				confirmLabel={REPAIR}
+				title={REPAIR_TITLE}
+				description={remintCount === 1 ? REPAIR_ONE : REPAIR_MANY.replace("{count}", String(remintCount))}
+				onConfirm={repairIds}
 			/>
+
 		</WidgetRoot>
 	);
 });

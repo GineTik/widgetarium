@@ -58,52 +58,17 @@
 			"default": "status"
 		}
 	],
-	"consumes": [
-		"board",
-		"boards",
-		"filters",
-		"search"
-	],
-	"sources": {
-		"tasks": {
-			"label": "Tasks",
-			"default": {
-				"path": "Orbitask/Tasks",
-				"filters": [
-					{
-						"prop": "board",
-						"op": "is",
-						"value": "@board"
-					},
-					{
-						"spread": "@filters"
-					}
-				],
-				"sort": [
-					{
-						"prop": "order",
-						"dir": "asc"
-					}
-				]
-			}
-		},
-		"boards": {
-			"label": "Boards",
-			"default": {
-				"path": "Orbitask/Boards"
-			}
-		}
-	},
-	"provides": [
-		"task",
-		"columns"
-	],
 	"preview": {
 		"size": {
 			"w": 5,
 			"h": 4
 		},
-		"sources": {
+		"properties": [
+			"Status",
+			"Priority",
+			"Assignees"
+		],
+		"props": {
 			"tasks": {
 				"rows": [
 					{
@@ -184,14 +149,77 @@
 					}
 				]
 			}
+		}
+	},
+	"props": {
+		"tasks": {
+			"kind": "collection",
+			"label": "Tasks",
+			"verbs": {
+				"list": "required",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Tasks",
+				"sort": [
+					{
+						"prop": "order",
+						"dir": "asc"
+					}
+				],
+				"where": [
+					{
+						"prop": "board",
+						"op": "is",
+						"value": {
+							"wants": "@core/editable-tabs/selection"
+						}
+					},
+					{
+						"spread": {
+							"wants": "@core/filter-panel/chosen"
+						}
+					}
+				]
+			}
 		},
-		"context": {
-			"board": "Widgetarium"
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"verbs": {
+				"list": "optional",
+				"create": "optional",
+				"update": "optional",
+				"repairIds": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Boards"
+			}
 		},
-		"properties": [
-			"Status",
-			"Priority",
-			"Assignees"
-		]
+		"selection": {
+			"kind": "value",
+			"label": "Shown board",
+			"hint": "Which board this draws. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"wants": "@core/editable-tabs/selection"
+		},
+		"opened": {
+			"kind": "value",
+			"label": "Opened task",
+			"hint": "Which card is open, as a box. Bind a task dialog and a card opens it.",
+			"of": "tasks",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			}
+		}
 	}
 }

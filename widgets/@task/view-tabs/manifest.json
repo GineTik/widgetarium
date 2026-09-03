@@ -23,34 +23,61 @@
 		"h": 1
 	},
 	"collapseBelowPx": 90,
-	"provides": [
-		"view"
-	],
-	"consumes": [
-		"views"
-	],
-	"settings": [
-		{
-			"key": "views",
-			"type": "text",
-			"label": "Views — only used when no group publishes its own",
-			"default": "Kanban, Archived columns"
+	"props": {
+		"options": {
+			"kind": "collection",
+			"label": "Options",
+			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
+			"item": {
+				"fields": [
+					{
+						"key": "label",
+						"label": "Label",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "value",
+						"label": "Value",
+						"type": "text"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": [
+					{
+						"label": "Kanban",
+						"value": "Kanban"
+					},
+					{
+						"label": "Archived columns",
+						"value": "Archived columns"
+					}
+				]
+			},
+			"wants": "@core/view-group/holds"
 		},
-		{
-			"key": "activeView",
-			"type": "text",
-			"label": "Selected view",
-			"default": "Kanban"
+		"selection": {
+			"kind": "value",
+			"label": "Picked option",
+			"hint": "Which option is picked. Bind the view group's own box and the two move together.",
+			"of": "options",
+			"field": "value",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			},
+			"wants": "@core/view-group/selection"
 		}
-	],
+	},
 	"preview": {
 		"size": {
 			"w": 3,
 			"h": 1
-		},
-		"settings": {
-			"views": "Kanban, Archived columns",
-			"activeView": "Kanban"
 		}
 	}
 }

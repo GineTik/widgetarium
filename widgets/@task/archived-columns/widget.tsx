@@ -1,4 +1,5 @@
-import { createWidget, WidgetRoot, boardWriter, readBoardRecord } from "widgetarium";
+import { flatRows, createWidget, pickedValue, WidgetRoot, useData } from "widgetarium";
+import { archivedColumnsFor, boardWriter, readBoardRecord } from "@task/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 
 const STYLE = `
@@ -56,13 +57,15 @@ const STYLE = `
 `;
 
 // CONTEXT: archived BOARDS stay behind the tab strip's menu; this view holds columns only
-export default createWidget(function OrbiTaskArchivedColumns({ context, data, actions, board, configureBoard }) {
-	const onBoard = context?.get("board");
+export default createWidget(function OrbiTaskArchivedColumns({ selection, boards, board, configureBoard }: any) {
+	const onBoard = pickedValue(useData(selection.get).data);
+	const listed = useData(boards.list);
+	const boardRows = flatRows(listed.rows);
 	// CONTEXT: the same gateway the kanban asks, so the two never disagree about one board
-	const record = readBoardRecord(data?.boards?.rows, { name: onBoard ?? "" }, { archivedColumns: board?.archivedColumns });
+	const record = readBoardRecord(boardRows, { name: onBoard }, { archivedColumns: archivedColumnsFor(board?.archivedColumnsByBoard, onBoard, onBoard) });
 	const archived = record.archivedColumns;
-	const save = boardWriter(record, actions?.boards, { archivedColumns: (names) => configureBoard?.({ archivedColumns: names }) });
-	const restore = (name) => save({ archivedColumns: archived.filter((column) => column !== name) });
+	const save = boardWriter(record, boards, { archivedColumns: (names: string[]) => configureBoard?.({ archivedColumns: names, board: onBoard }) });
+	const restore = (name: string) => save({ archivedColumns: archived.filter((column: string) => column !== name) });
 
 	return (
 		<WidgetRoot className="orbi orbi-archived-columns">

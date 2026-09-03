@@ -239,7 +239,7 @@ function labelOf(status) {
 	return STATUS_LABELS[status.toLowerCase()] ?? status;
 }
 
-export default createWidget(function OrbiTaskCard({ settings, task }) {
+export default createWidget(function OrbiTaskCard({ settings, task }: any) {
 	// CONTEXT: the board hands down `task`; standing alone, the card has only its settings
 	const card = task ?? {
 		title: settings.title,

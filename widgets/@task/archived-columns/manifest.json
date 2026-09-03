@@ -22,28 +22,39 @@
 		"h": 8
 	},
 	"collapseBelowPx": 240,
-	"consumes": [
-		"board"
-	],
-	"sources": {
-		"boards": {
-			"label": "Boards",
-			"default": {
-				"path": "Orbitask/Boards"
-			}
-		}
-	},
 	"preview": {
 		"size": {
 			"w": 5,
 			"h": 4
 		},
-		"context": {
-			"board": "Widgetarium"
-		},
 		"archivedColumns": [
 			"Blocked",
 			"On hold"
 		]
+	},
+	"props": {
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"verbs": {
+				"list": "optional",
+				"update": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Boards"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Shown board",
+			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"verbs": {
+				"get": "required"
+			},
+			"wants": "@core/editable-tabs/selection"
+		}
 	}
 }
