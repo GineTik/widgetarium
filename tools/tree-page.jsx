@@ -110,6 +110,7 @@ const SURFACE_WIDTH = 1600;
 
 let surfaceBoard = { ...BOARD, layout: TREE.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) }))), layouts: {} };
 let surfaceWrites = 0;
+let surfaceEditing = false;
 
 function surfaceNode() {
 	return h(
@@ -119,7 +120,7 @@ function surfaceNode() {
 			board: surfaceBoard,
 			registry,
 			host,
-			editing: false,
+			editing: surfaceEditing,
 			screen: true,
 			initialWidth: SURFACE_WIDTH,
 			onChange: (next) => {
@@ -135,14 +136,44 @@ function surfaceNode() {
 
 function dragGrip(grip, byX, byY) {
 	const box = grip.getBoundingClientRect();
-	const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+	return dragFrom(grip, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, byX, byY);
+}
+
+function firePointer(type, at, target) {
+	target.dispatchEvent(new window.PointerEvent(type, { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, shiftKey: true, button: 0, pointerId: 1 }));
+}
+
+function dragFrom(node, from, byX, byY) {
 	const fire = (type, at, target) =>
-		target.dispatchEvent(new window.PointerEvent(type, { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, shiftKey: true, pointerId: 1 }));
-	fire("pointerdown", from, grip);
+		target.dispatchEvent(new window.PointerEvent(type, { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y, shiftKey: true, button: 0, pointerId: 1 }));
+	fire("pointerdown", from, node);
 	fire("pointermove", { x: from.x + byX, y: from.y + byY }, window);
 	const whileHeld = surfaceWrites;
 	fire("pointerup", { x: from.x + byX, y: from.y + byY }, window);
 	return whileHeld;
+}
+
+function rowsOfSurface() {
+	const root = document.querySelector(".wg-surface-probe .wg-tree");
+	return [...root.querySelectorAll(".wg-tree-row")].map((row) => [...row.querySelectorAll(".wg-tree-cell")].map((cell) => cell.dataset.cell));
+}
+
+const settled = () => new Promise((done) => setTimeout(done, 30));
+
+async function carryTile() {
+	const before = rowsOfSurface();
+	const held = document.querySelector('.wg-surface-probe .wg-tree-cell[data-cell="board"]');
+	if (!held) return { before, failed: "the kanban cell was not found" };
+	const box = held.getBoundingClientRect();
+	const first = document.querySelector(".wg-surface-probe .wg-tree-row").getBoundingClientRect();
+	const onto = { x: first.left + 20, y: first.top + first.height / 2 };
+	firePointer("pointerdown", { x: box.left + 40, y: box.top + 40 }, held);
+	firePointer("pointermove", onto, window);
+	await settled();
+	const aimed = document.querySelectorAll(".wg-surface-probe .wg-tree-aim").length;
+	const dimmed = document.querySelectorAll(".wg-surface-probe .wg-tree-cell.is-carried").length;
+	firePointer("pointerup", onto, window);
+	return { before, aimed, dimmed, after: rowsOfSurface(), writes: surfaceWrites };
 }
 
 function draw() {
@@ -171,7 +202,7 @@ function readSurface() {
 	};
 }
 
-function report() {
+async function report() {
 	const sink = document.getElementById("wg-measure");
 	try {
 		const before = readSurface();
@@ -180,7 +211,12 @@ function report() {
 		const dragged = readSurface();
 		const along = document.querySelector(".wg-surface-probe .wg-tree-handle.is-along");
 		const writesWhileAlong = along ? dragGrip(along, 0, 200) : null;
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged, stretched: readSurface(), whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		const stretched = readSurface();
+		const whileReading = await carryTile();
+		surfaceEditing = true;
+		draw();
+		const carried = await carryTile();
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}
@@ -188,7 +224,9 @@ function report() {
 
 registry.load().then(() => {
 	draw();
-	setTimeout(report, 600);
+	setTimeout(() => {
+		report();
+	}, 600);
 });
 
 window.addEventListener("error", (event) => failures.push(String(event.message)));

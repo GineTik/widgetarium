@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { innerOf, resized } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, innerOf, moved, resized } = await import("./.mjs-cache/tree.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -254,6 +254,55 @@ console.log("\n— dragging the grip moves the boundary, and never past a floor 
 	const moved = resized(three, 0, 500, innerOf(3, 1224), true);
 	check("a neighbour outside the pair does not move", moved[2].ratio, three[2].ratio);
 	check("and the row still weighs what it weighed", Math.round(moved.reduce((sum, cell) => sum + cell.ratio, 0) * 1000), 3000);
+}
+
+console.log("\n— in reading mode a press on a tile carries nothing —");
+{
+	const seen = measured.whileReading;
+	check("no line was drawn", seen.aimed, 0);
+	check("nothing was dimmed", seen.dimmed, 0);
+	check("and the rows are exactly as they were", seen.after, seen.before);
+}
+
+console.log("\n— and carrying the kanban onto the first row moves it there —");
+{
+	const seen = measured.carried;
+	check("the probe found the kanban", seen.failed ?? null, null);
+	check("before the carry it stood alone on the last row", seen.before.at(-1), ["board"]);
+	check("a line was drawn where it would land", seen.aimed, 1);
+	check("and the tile being carried was dimmed", seen.dimmed, 1);
+	check("after the drop it stands on the first row", seen.after[0].includes("board"), true);
+	check("and it left no empty row behind", seen.after.length, seen.before.length - 1);
+	check("the board was written a third time", seen.writes, 3);
+}
+
+console.log("\n— carrying a tile puts it where it was aimed, and closes the row it left —");
+{
+	const rows = [[{ id: "a", ratio: 1 }], [{ id: "b", ratio: 1 }, { id: "c", ratio: 2 }]];
+	const ids = (given) => given.map((row) => row.map((cell) => cell.id));
+
+	check("dropped as a row of its own it lands there", ids(moved(rows, "c", { kind: "row", at: 0 })), [["c"], ["a"], ["b"]]);
+	check("and the row it left keeps the rest", ids(moved(rows, "b", { kind: "row", at: 2 })), [["a"], ["c"], ["b"]]);
+	check("dropped beside a tile it joins that row", ids(moved(rows, "a", { kind: "beside", row: 1, at: 1 })), [["b", "a", "c"]]);
+	check("and the row it emptied is gone", moved(rows, "a", { kind: "beside", row: 1, at: 1 }).length, 1);
+	check("it carries its own weight along", moved(rows, "c", { kind: "row", at: 0 })[0][0].ratio, 2);
+	check("a tile nobody is holding moves nothing", ids(moved(rows, "nobody", { kind: "row", at: 0 })), ids(rows));
+	check("and no target moves nothing either", ids(moved(rows, "a", null)), ids(rows));
+}
+
+console.log("\n— and the aim reads the pointer against the bands —");
+{
+	const bands = [
+		{ from: 0, top: 0, bottom: 112, rowBottom: 100, cells: [{ left: 0, right: 600 }, { left: 612, right: 1200 }] },
+		{ from: 1, top: 112, bottom: 324, rowBottom: 312, cells: [{ left: 0, right: 1200 }] },
+	];
+	check("above everything it aims at the first row", aimedAt(bands, 300, -20), { kind: "row", at: 0 });
+	check("below everything it aims past the last", aimedAt(bands, 300, 900), { kind: "row", at: 2 });
+	check("in the strip under a row it makes a new row after it", aimedAt(bands, 300, 106), { kind: "row", at: 1 });
+	check("in a tile's left half it goes before that tile", aimedAt(bands, 100, 50).at, 0);
+	check("in its right half it goes after", aimedAt(bands, 500, 50).at, 1);
+	check("and the line is drawn on the edge it chose", aimedAt(bands, 500, 50).edge, 600);
+	check("past the last tile it goes to the end of the row", aimedAt(bands, 1400, 50).at, 2);
 }
 
 if (measured.failures.length > 0) {
