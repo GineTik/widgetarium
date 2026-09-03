@@ -232,6 +232,20 @@ function normalizeLayouts(input) {
 }
 
 // CONTEXT: `idOf` is the registry's rename table — a note naming an old id is read, and saved, as the new one
+function normalizeCell(cell) {
+	const id = typeof cell === "string" ? cell : cell?.id;
+	if (typeof id !== "string" || id === "") return null;
+	const ratio = Number(cell?.ratio);
+	const height = Number(cell?.height);
+	return { id, ratio: Number.isFinite(ratio) && ratio > 0 ? ratio : 1, ...(Number.isFinite(height) && height > 0 ? { height } : {}) };
+}
+
+function normalizeTree(rows) {
+	if (!Array.isArray(rows)) return null;
+	const laid = rows.map((row) => (Array.isArray(row) ? row : [row]).map(normalizeCell).filter(Boolean)).filter((row) => row.length > 0);
+	return laid.length > 0 ? laid : null;
+}
+
 export function normalizeBoard(input, idOf = SAME_ID) {
 	// CONTEXT: entries are tiles AND places at once; delegating keeps one promised shape
 	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY_COLUMNS]: input } }, idOf);
@@ -253,6 +267,7 @@ export function normalizeBoard(input, idOf = SAME_ID) {
 			return foldedOnce.has(seen.id) ? { ...seen, folded: true } : seen;
 		}),
 		layouts: normalizeLayouts(input?.layouts),
+		...(normalizeTree(input?.layout) ? { layout: normalizeTree(input.layout) } : {}),
 		// One board, two sizes. The mode is a fact about the board, so it lives in the file:
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".
@@ -315,6 +330,7 @@ export function serializeBoard(board) {
 		...(board.properties?.length ? { properties: board.properties } : {}),
 		// CONTEXT: an emptied list is still written — its absence is what hands the fact back to the tile
 		...(board.archivedColumns ? { archivedColumns: board.archivedColumns } : {}),
+		...(board.layout ? { layout: board.layout } : {}),
 		layouts: Object.fromEntries(
 			authoredColumns(board).map((columns) => [
 				String(columns),
