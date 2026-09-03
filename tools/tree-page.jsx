@@ -174,7 +174,7 @@ async function carryTile() {
 	const aimed = document.querySelectorAll(".wg-surface-probe .wg-tree-aim").length;
 	const dimmed = document.querySelectorAll(".wg-surface-probe .wg-tree-cell.is-carried").length;
 	firePointer("pointerup", onto, window);
-	return { before, gripShown, rootClass: document.querySelector(".wg-surface-probe .wg-root")?.className ?? "no root", aimed, dimmed, after: rowsOfSurface(), writes: surfaceWrites };
+	return { before, gripShown, aimed, dimmed, after: rowsOfSurface(), writes: surfaceWrites };
 }
 
 function draw() {
