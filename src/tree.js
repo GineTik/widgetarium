@@ -76,6 +76,28 @@ export function aimedAt(bands, x, y) {
 	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
 }
 
+export function partedBy(bands, target, carried, gap = GAP_PX) {
+	const still = { cells: {}, bands: {}, slot: null };
+	if (!target || bands.length === 0) return still;
+	if (target.kind === "beside") {
+		const band = bands.find((one) => one.from === target.row);
+		if (!band) return still;
+		const cells = {};
+		for (const [index, cell] of band.cells.entries()) if (index >= target.at && cell.id !== carried.id) cells[cell.id] = carried.width + gap;
+		const last = band.cells[band.cells.length - 1];
+		const left = target.at < band.cells.length ? band.cells[target.at].left : last.right + gap;
+		return { cells, bands: {}, slot: { left, top: band.top, width: carried.width, height: band.rowBottom - band.top } };
+	}
+	const shifted = {};
+	for (const band of bands) if (band.from >= target.at) shifted[band.from] = carried.height + gap;
+	const above = bands.filter((one) => one.from < target.at).at(-1);
+	return {
+		cells: {},
+		bands: shifted,
+		slot: { left: bands[0].left, top: above ? above.rowBottom + gap : bands[0].top, width: bands[0].width, height: carried.height },
+	};
+}
+
 export function sameTarget(one, other) {
 	if (!one || !other) return one === other;
 	return one.kind === other.kind && one.at === other.at && one.row === other.row;
