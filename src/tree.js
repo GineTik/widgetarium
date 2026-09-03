@@ -52,6 +52,35 @@ export function tallestOf(row) {
 	return row.reduce((most, cell) => Math.max(most, cell.height ?? 0), 0);
 }
 
+export function moved(rows, id, target) {
+	const held = rows.flat().find((cell) => cell.id === id);
+	if (!held || !target) return rows;
+	const fresh = { ...held };
+	const opened =
+		target.kind === "row"
+			? [...rows.slice(0, target.at), [fresh], ...rows.slice(target.at)]
+			: rows.map((row, index) => (index === target.row ? [...row.slice(0, target.at), fresh, ...row.slice(target.at)] : row));
+	return opened.map((row) => row.filter((cell) => cell === fresh || cell.id !== id)).filter((row) => row.length > 0);
+}
+
+export function aimedAt(bands, x, y) {
+	if (bands.length === 0) return null;
+	if (y < bands[0].top) return { kind: "row", at: bands[0].from };
+	const band = bands.find((one) => y >= one.top && y <= one.bottom);
+	if (!band) return { kind: "row", at: bands[bands.length - 1].from + 1 };
+	if (y > band.rowBottom) return { kind: "row", at: band.from + 1 };
+	const at = band.cells.findIndex((cell) => x <= cell.right);
+	const cell = band.cells[at < 0 ? band.cells.length - 1 : at];
+	if (at < 0) return { kind: "beside", row: band.from, at: band.cells.length, edge: cell.right };
+	const isBefore = x < cell.left + (cell.right - cell.left) / 2;
+	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
+}
+
+export function sameTarget(one, other) {
+	if (!one || !other) return one === other;
+	return one.kind === other.kind && one.at === other.at && one.row === other.row;
+}
+
 function snapped(px, inner) {
 	const step = inner / LADDER;
 	return Math.round(px / step) * step;
