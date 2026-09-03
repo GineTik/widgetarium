@@ -47,6 +47,7 @@ const GLYPHS = {
 	close: '<path d="M6.4 6.4l7.2 7.2M13.6 6.4l-7.2 7.2"/>',
 	widget: '<rect x="4" y="4" width="12" height="12" rx="3.4"/><path d="M7.4 8.2h5.2M7.4 11.6h3.2"/>',
 	copy: '<rect x="7.4" y="7.4" width="8.4" height="8.4" rx="2.4"/><path d="M12.6 4.2H6.6a2.4 2.4 0 00-2.4 2.4v6"/>',
+	link: '<path d="M8.5 11.5a2.8 2.8 0 000 4l.5.5a2.8 2.8 0 004 0l2.5-2.5a2.8 2.8 0 000-4l-.5-.5"/><path d="M11.5 8.5a2.8 2.8 0 000-4L11 4a2.8 2.8 0 00-4 0L4.5 6.5a2.8 2.8 0 000 4l.5.5"/>',
 };
 
 export function Icon({ name, size = 16, className: cls }) {
@@ -392,6 +393,59 @@ export function Field({ icon, value, onInput, placeholder, type = "text", ...res
 		{ className: fieldClass(rest) },
 		icon,
 		h("input", { ...forInput, className: "wg-kit-field-input", type, value, placeholder, onInput }),
+	);
+}
+
+function commentAt(line) {
+	let quoted = "";
+	for (let at = 0; at < line.length; at += 1) {
+		const letter = line[at];
+		if (quoted) {
+			if (letter === quoted) quoted = "";
+			continue;
+		}
+		if (letter === '"' || letter === "'") quoted = letter;
+		else if (letter === "#") return at;
+	}
+	return -1;
+}
+
+function yamlLine(line, at) {
+	const cut = commentAt(line);
+	const said = cut === -1 ? line : line.slice(0, cut);
+	const note = cut === -1 ? "" : line.slice(cut);
+	const named = /^(\s*)([\w.$-]+)(:)([\s\S]*)$/.exec(said);
+	const out = named
+		? [
+				named[1],
+				h("span", { className: "is-key", key: `k${at}` }, named[2]),
+				named[3],
+				named[4],
+		  ]
+		: [said];
+	if (note) out.push(h("span", { className: "is-note", key: `n${at}` }, note));
+	return out;
+}
+
+function yamlSpans(text) {
+	const out = [];
+	String(text ?? "").split("\n").forEach((line, at) => {
+		if (at > 0) out.push("\n");
+		out.push(...yamlLine(line, at));
+	});
+	return out;
+}
+
+export function CodeArea({ value = "", onInput, placeholder, className: cls }) {
+	return h(
+		"div",
+		{ className: cx("wg-kit-md", "wg-kit-code", cls) },
+		h(
+			"div",
+			{ className: "wg-kit-md-page" },
+			h("div", { className: "wg-kit-md-text wg-kit-md-mirror", "aria-hidden": "true" }, yamlSpans(value)),
+			h("textarea", { className: "wg-kit-md-text wg-kit-md-input", spellCheck: false, placeholder, value, onInput }),
+		),
 	);
 }
 

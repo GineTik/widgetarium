@@ -1,10 +1,15 @@
 import { createElement as h } from "react";
 import { useEffect, useRef, useState } from "react";
 import { declaredName } from "./registry.js";
-import { heldKey, heldTile, mountRows, mountSetting, rekeyed, uniqueName } from "./model.js";
+import { heldKey, heldTile, mountRows, mountSetting, propConfig, rekeyed, uniqueName } from "./model.js";
 import { DialogClose, DialogOverlay } from "./dialog.js";
-import { Button, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, Row, RowBadge, RowLabel, RowValue, Segmented, Sidebar, SidebarGroup, SidebarRow, SidebarSheet, Switch } from "./kit.js";
+import { parse as parseYaml } from "yaml";
+import { Button, CodeArea, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, Row, RowBadge, RowLabel, RowValue, Segmented, Sidebar, SidebarGroup, SidebarRow, SidebarSheet, Switch } from "./kit.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
+import { bindingOf, storedRows } from "./gateway/props.js";
+import { fieldsOf } from "./gateway/fields.js";
+import { boxNamed, matchesNeedle, referenceIn, referenceText, widgetsOffering } from "./ref-draft.js";
+import { conditionOfRow, conditionsFor, rowFor } from "./gateway/operators.js";
 import { slotFit } from "./fit.js";
 import { spanToPixels } from "./layout.js";
 import { CHROME, barPlacement, clampPan, dialogBox, freeArea, openingPan, openingScale } from "./settings-fit.js";
@@ -61,12 +66,51 @@ function useHeldScroll(open) {
 	}, [open]);
 }
 
+function boundPath(spec, config) {
+	return config.path || spec.default?.path || "";
+}
+
+function folderRead(spec, config) {
+	if (spec.kind === "value" || spec.of) return "";
+	if (bindingOf(spec, config).binding !== "vault") return "";
+	return boundPath(spec, config);
+}
+
+function vaultPathsOf(manifest, tile) {
+	const held = Object.entries(manifest?.props ?? {}).map(([name, spec]) => folderRead(spec, propConfig(tile?.props, name, spec)));
+	return [...new Set(held)].filter(Boolean).sort();
+}
+
+function useVaultFields(host, paths) {
+	const [held, setHeld] = useState({});
+	const wanted = JSON.stringify(paths);
+	useEffect(() => {
+		let alive = true;
+		const asked = JSON.parse(wanted);
+		Promise.all(asked.map((path) => host?.slot?.({ kind: "folder", path })?.describe?.() ?? []))
+			.then((found) => alive && setHeld(Object.fromEntries(asked.map((path, at) => [path, found[at] ?? []]))))
+			.catch(() => {});
+		return () => {
+			alive = false;
+		};
+	}, [wanted, host]);
+	return held;
+}
+
 function initialOf(name) {
 	return String(name ?? "?").replace(/^@[\w-]+\//, "").trim().charAt(0).toUpperCase() || "?";
 }
 
 function titleCase(name) {
 	return `${String(name).charAt(0).toUpperCase()}${String(name).slice(1)}`;
+}
+
+function notesOf(host) {
+	const files = host?.app?.vault?.getAllLoadedFiles?.() ?? [];
+	return files
+		.filter((file) => !Array.isArray(file?.children) && typeof file.path === "string")
+		.map((file) => file.path)
+		.sort();
 }
 
 function foldersOf(host) {
@@ -128,13 +172,13 @@ function reportRow(key, label, note, value, on) {
 	]);
 }
 
-function editorPopover(state, key, trigger, body, seed) {
+function editorPopover(state, key, trigger, body, seed, isAlsoOpen) {
 	return h(
 		Popover,
 		{
 			key,
 			className: "wg-set-pop",
-			open: state.openRow === key,
+			isOpen: state.openRow === key || isAlsoOpen === true,
 			onOpenChange: (next) => state.openEditor(next ? key : null, seed),
 			trigger,
 		},
@@ -174,12 +218,19 @@ function textEditor(state, fallback, onApply) {
 	]);
 }
 
+// CONTEXT: the bus wins for the life of the surface, so an edit must be SPOKEN onto it — a changed default alone moves nothing until reload
+function settingWrite(state, field, held) {
+	return (value) => {
+		state.onPatch({ settings: { ...held, [field.key]: value } });
+	};
+}
+
 function settingRows(state, wanted = (field) => !field.design) {
-	const { manifest, tile, onPatch } = state;
+	const { manifest, tile } = state;
 	const held = tile.settings ?? {};
 	return (manifest.settings ?? []).filter(wanted).map((field) => {
 		const label = field.label ?? field.key;
-		const write = (value) => onPatch({ settings: { ...held, [field.key]: value } });
+		const write = settingWrite(state, field, held);
 		if (field.type === "boolean") {
 			return h(Row, { className: "wg-set-row", key: field.key }, [
 				h(RowLabel, { key: "label" }, label),
@@ -193,49 +244,379 @@ function settingRows(state, wanted = (field) => !field.design) {
 	});
 }
 
-function sourceGroups(state) {
-	const { manifest, tile, host, onPatch, countReaders } = state;
-	const bindings = tile.sources ?? {};
-	const folders = foldersOf(host);
-	const declaredSources = Object.entries(manifest.sources ?? {});
+function propConfigOf(state, key, spec) {
+	return propConfig(state.tile.props, key, spec);
+}
 
-	return declaredSources.map(([key, source]) => {
-		const label = source.label ?? key;
-		const declared = source.default?.path ?? "";
-		const own = bindings[key]?.path ?? "";
-		const path = own || declared;
-		const write = (value) => onPatch({ sources: { ...bindings, [key]: { ...(bindings[key] ?? {}), path: value } } });
+function writtenAsText(spec) {
+	return spec.kind === "value" && typeof spec.default?.value === "string";
+}
 
-		const trigger = valueRow({
-			badge: h(Icon, { name: "folder" }),
-			label,
-			value: path ? h("span", { className: "wg-set-path" }, path) : "Pick a folder",
-			unset: own === "",
-		});
+const TYPED_HERE = "typed";
+const IN_VAULT = "vault";
+const FROM_WIDGET = "ref";
+const FIELDS_SHOWN = 6;
 
-		const needle = String(state.draft ?? "").toLowerCase();
-		const offered = folders.filter((folder) => folder.toLowerCase().includes(needle)).slice(0, FOLDERS_SHOWN);
-		const body = h("div", { className: "wg-set-pop-body" }, [
-			h(Field, {
-				block: true,
-				key: "field",
-				icon: h(Icon, { name: "search" }),
-				value: state.draft ?? "",
-				placeholder: declared || "Folder in the vault",
-				onInput: (event) => state.setDraft(event.target.value),
-			}),
-			...offered.map((folder) =>
-				h(PopoverItem, { key: folder, checked: folder === path, onClick: () => state.setDraft(folder) }, [
-					h("span", { className: "wg-set-pop-name", key: "name" }, folder),
-				]),
+const OWN_BOX = "box";
+
+function kindItems(state, spec) {
+	const typed = { value: TYPED_HERE, label: "Typed here" };
+	const shared = (state.refs?.offered?.() ?? []).length > 0 ? [{ value: FROM_WIDGET, label: "From a widget" }] : [];
+	if (spec.of) return [{ value: OWN_BOX, label: "This widget's" }, ...shared];
+	if (writtenAsText(spec)) return [typed, ...shared];
+	return [{ value: IN_VAULT, label: spec.kind === "value" ? "File" : "Folder" }, typed, ...shared];
+}
+
+function writtenText(spec, held) {
+	if (held === undefined) return "";
+	return writtenAsText(spec) ? String(held) : JSON.stringify(held);
+}
+
+function blankValue(spec) {
+	if (spec.default?.value !== undefined) return spec.default.value;
+	return spec.kind === "value" ? "" : [];
+}
+
+// TRADE-OFF: not rekeyed() — that MERGES, and switching a prop to its own box writes a record with keys deliberately dropped
+function writeProp(state, key, spec, config) {
+	const kept = Object.entries(state.tile.props ?? {}).filter(([propName]) => propName !== spec?.was);
+	state.onPatch({ props: { ...Object.fromEntries(kept), [key]: config } });
+}
+
+const KIND_OF_BINDING = { ref: FROM_WIDGET, box: OWN_BOX, hardcode: TYPED_HERE };
+const ICON_OF_BINDING = { ref: "link", box: "check", hardcode: "check" };
+
+function kindSwitch(state, key, spec, config, binding) {
+	const held = KIND_OF_BINDING[binding] ?? IN_VAULT;
+	const items = kindItems(state, spec);
+	if (items.length < 2) return null;
+	const pick = (kind) => {
+		if (kind === held) return;
+		if (kind === OWN_BOX) {
+			const { ref: dropped, from: gone, ...rest } = config;
+			writeProp(state, key, spec, rest);
+			return;
+		}
+		const typed = kind === TYPED_HERE;
+		const kept = {
+			...config,
+			from: kind,
+			value: config.value === undefined && typed ? blankValue(spec) : config.value,
+			path: config.path === undefined && kind === IN_VAULT ? spec.default?.path ?? "" : config.path,
+		};
+		writeProp(state, key, spec, kept);
+		state.openEditor(`prop:${key}`, typed ? writtenText(spec, kept.value) : kept.path);
+	};
+	return h(Segmented, { key: "kind", className: "wg-set-pop-kind", size: "s", items, value: held, onChange: pick });
+}
+
+const FROM_FOLDER = "Every note in the folder arrives as one item.";
+const FROM_FILE = "What the note holds is this value.";
+const TYPED_ITEMS = "The items live in this tile, not in the vault.";
+const TYPED_VALUE = "The value lives in this tile.";
+const FROM_ANOTHER = "Reads another widget on this board, and the two move together.";
+const OWN_BOX_NOTE = "This widget keeps the pick to itself until you bind it.";
+
+function kindNote(spec, binding) {
+	if (binding === "box") return OWN_BOX_NOTE;
+	if (binding === "ref") return FROM_ANOTHER;
+	if (binding === "hardcode") return spec.kind === "value" ? TYPED_VALUE : TYPED_ITEMS;
+	return spec.kind === "value" ? FROM_FILE : FROM_FOLDER;
+}
+
+function typedBody(state, key, spec, config) {
+	const shown = writtenText(spec, config.value ?? spec.default?.value);
+	const apply = (typed) => {
+		if (writtenAsText(spec)) {
+			writeProp(state, key, spec, { ...config, from: TYPED_HERE, value: typed.trim() });
+			return;
+		}
+		let parsed;
+		try {
+			parsed = JSON.parse(typed);
+		} catch {
+			state.host?.ui?.notify("That is not valid JSON, so the value was not kept.");
+			return;
+		}
+		if (spec.kind !== "value" && !Array.isArray(parsed)) {
+			state.host?.ui?.notify("This prop is a collection, so the value must be a JSON array.");
+			return;
+		}
+		writeProp(state, key, spec, { ...config, from: TYPED_HERE, value: parsed });
+	};
+	return [
+		h(Field, {
+			block: true,
+			key: "field",
+			value: state.draft ?? "",
+			placeholder: shown || (writtenAsText(spec) ? "A field name" : "A JSON value"),
+			onInput: (event) => state.setDraft(event.target.value),
+		}),
+		popoverFoot(state, () => state.setDraft(shown), apply),
+	];
+}
+
+function offeredPaths(host, spec) {
+	return spec.kind === "value" ? notesOf(host) : foldersOf(host);
+}
+
+function vaultBody(state, key, spec, config) {
+	const offered = offeredPaths(state.host, spec);
+	const declared = spec.default?.path ?? "";
+	const path = config.path ?? declared;
+	const needle = String(state.draft ?? "").toLowerCase();
+	const found = offered.filter((entry) => entry.toLowerCase().includes(needle)).slice(0, FOLDERS_SHOWN);
+	return [
+		h(Field, {
+			block: true,
+			key: "field",
+			icon: h(Icon, { name: "search" }),
+			value: state.draft ?? "",
+			placeholder: declared || (spec.kind === "value" ? "Note in the vault" : "Folder in the vault"),
+			onInput: (event) => state.setDraft(event.target.value),
+		}),
+		...found.map((entry) =>
+			h(PopoverItem, { key: entry, checked: entry === path, onClick: () => state.setDraft(entry) }, [
+				h("span", { className: "wg-set-pop-name", key: "name" }, entry),
+			]),
+		),
+		popoverFoot(state, () => state.setDraft(declared), (typed) => writeProp(state, key, spec, { ...config, from: IN_VAULT, path: typed.trim() })),
+	];
+}
+
+function refBody(state, key, spec, config) {
+	const offered = (state.refs?.offered?.() ?? []).filter((entry) => entry.tile !== state.tile.id && entry.kind === (spec.kind === "value" ? "value" : "collection"));
+	if (offered.length === 0) return [h("p", { className: "wg-set-pop-note", key: "none" }, NOTHING_OFFERED)];
+	const byTitle = new Map();
+	for (const entry of offered) byTitle.set(entry.title, [...(byTitle.get(entry.title) ?? []), entry]);
+	return [...byTitle.entries()].flatMap(([title, entries]) => [
+		h("p", { className: "wg-set-pop-note", key: `t${title}` }, title),
+		...entries.map((entry) =>
+			h(PopoverItem, { key: entry.ref, checked: entry.ref === config.ref, onClick: () => writeProp(state, key, spec, { ...config, from: FROM_WIDGET, ref: entry.ref }) }, [
+				h("span", { className: "wg-set-pop-name", key: "name" }, entry.label),
+			]),
+		),
+	]);
+}
+
+function itemFields(spec) {
+	const declared = spec.item?.fields;
+	if (!Array.isArray(declared) || declared.length === 0) return null;
+	const fields = declared
+		.slice(0, FIELDS_SHOWN)
+		.map((field) => ({ key: field.key ?? "", label: field.label ?? field.key, type: field.type ?? "text", required: field.required === true }))
+		.filter((field) => field.key !== "");
+	return fields.length > 0 ? fields : null;
+}
+
+function listedItems(spec, config) {
+	const held = config.value ?? spec.default?.value;
+	return Array.isArray(held) ? held : [];
+}
+
+const isWrappedRow = (row) => Boolean(row) && typeof row === "object" && "id" in row && "value" in row;
+const itemOf = (row) => (isWrappedRow(row) ? row.value : row) ?? {};
+const rowWith = (row, item) => (isWrappedRow(row) ? { ...row, value: item } : item);
+
+const ITEM_IS_YAML = "YAML, one field per line. A field marked optional may stay empty.";
+const BAD_YAML = "That is not valid YAML, so nothing was kept.";
+const NOT_A_MAP = "An item is a set of fields, so this has to be a YAML map.";
+const UNKNOWN_FIELD = 'The field "{field}" is not one this list keeps.';
+const EMPTY_FIELD = 'The field "{field}" is required, so it cannot be left empty.';
+const BAD_DATETIME = 'The field "{field}" must be a date and time, like 2026-09-01T09:00:00Z.';
+const BAD_BOOLEAN = 'The field "{field}" must be true or false.';
+const BOOLEAN_WORDS = new Set(["true", "false"]);
+
+const said = (sentence, field) => sentence.replace("{field}", field);
+const isMap = (held) => Boolean(held) && typeof held === "object" && !Array.isArray(held);
+const isEmpty = (held) => held === undefined || held === null || String(held).trim() === "";
+
+function noteOf(field) {
+	return field.required ? ` # ${field.type ?? "text"}` : ` # optional, ${field.type ?? "text"}`;
+}
+
+function yamlOf(fields, item) {
+	return fields
+		.map((field) => {
+			const held = item[field.key];
+			const empty = field.required ? '""' : "null";
+			const spelled = field.type === "boolean" ? String(held) : JSON.stringify(String(held));
+			return `${field.key}: ${isEmpty(held) ? empty : spelled}${noteOf(field)}`;
+		})
+		.join("\n");
+}
+
+function readYaml(text, fields) {
+	let parsed;
+	try {
+		parsed = parseYaml(String(text ?? "")) ?? {};
+	} catch {
+		return { failure: BAD_YAML };
+	}
+	if (!isMap(parsed)) return { failure: NOT_A_MAP };
+	const known = new Set(fields.map((field) => field.key));
+	const stray = Object.keys(parsed).find((name) => !known.has(name));
+	if (stray) return { failure: said(UNKNOWN_FIELD, stray) };
+	const item = {};
+	for (const field of fields) {
+		const held = parsed[field.key];
+		if (isEmpty(held)) {
+			if (field.required) return { failure: said(EMPTY_FIELD, field.key) };
+			continue;
+		}
+		const written = held instanceof Date ? held.toISOString() : String(held);
+		if (field.type === "datetime" && Number.isNaN(Date.parse(written))) return { failure: said(BAD_DATETIME, field.key) };
+		if (field.type === "boolean" && !BOOLEAN_WORDS.has(written)) return { failure: said(BAD_BOOLEAN, field.key) };
+		item[field.key] = field.type === "boolean" ? written === "true" : written;
+	}
+	return { item };
+}
+
+function openedItem(openRow, key) {
+	const at = String(openRow ?? "").startsWith(`prop:${key}#`) ? Number(String(openRow).split("#")[1]) : NaN;
+	return Number.isInteger(at) ? at : null;
+}
+
+function itemBody(state, key, spec, config, index) {
+	const fields = itemFields(spec);
+	const rows = listedItems(spec, config);
+	const isExisting = index < rows.length;
+	const read = readYaml(state.draft, fields);
+	const write = (next) => {
+		writeProp(state, key, spec, { ...config, from: TYPED_HERE, value: next });
+		state.openEditor(`prop:${key}`, writtenText(spec, next));
+	};
+	return [
+		h(CodeArea, { key: "yaml", value: state.draft ?? "", onInput: (event) => state.setDraft(event.target.value) }),
+		h("p", { className: read.failure ? "wg-set-pop-error" : "wg-set-pop-note", key: "note" }, read.failure ?? ITEM_IS_YAML),
+		h("div", { className: "wg-set-pop-foot", key: "foot" }, [
+			isExisting
+				? h(Button, { size: "s", key: "remove", onClick: () => write(rows.filter((_, at) => at !== index)) }, "Remove")
+				: h(Button, { size: "s", key: "back", onClick: () => state.openEditor(`prop:${key}`, "") }, "Back"),
+			h(
+				Button,
+				{
+					size: "s",
+					variant: "accent",
+					key: "apply",
+					disabled: Boolean(read.failure),
+					onClick: () => {
+						if (read.failure) return;
+						write(isExisting ? rows.map((row, at) => (at === index ? rowWith(row, read.item) : row)) : [...rows, read.item]);
+					},
+				},
+				"Apply",
 			),
-			popoverFoot(state, () => state.setDraft(declared), write),
-		]);
+		]),
+	];
+}
 
-		const readers = countReaders(path);
-		const under = path && readers > 1 ? `${readers} widgets on this board read this folder.` : null;
-		return group(`source:${key}`, declaredSources.length > 1 ? `Source · ${label}` : "Source", editorPopover(state, `source:${key}`, trigger, body), under);
+function itemRows(state, key, spec, config) {
+	const fields = itemFields(spec);
+	const rows = listedItems(spec, config);
+	const open = (index, item) => state.openEditor(`prop:${key}#${index}`, yamlOf(fields, item));
+	const listed = rows.map((row, index) => {
+		const item = itemOf(row);
+		return h(Row, { key: `item${index}`, pressable: true, className: "wg-set-row", onClick: () => open(index, item) }, [
+			h(RowLabel, { key: "label" }, String(item[fields[0].key] ?? "") || "Empty"),
+			h(RowValue, { className: "wg-set-value", key: "value" }, shownValue(item[fields[1]?.key], null) ?? ""),
+		]);
 	});
+	const add = h(Row, { key: "add", pressable: true, className: "wg-set-row is-add", onClick: () => open(rows.length, {}) }, [
+		h(Icon, { name: "plus", key: "plus" }),
+		h(RowLabel, { key: "label" }, "Add item"),
+	]);
+	return [h(SidebarGroup, { className: "wg-set-group", key: "items" }, [...listed, add])];
+}
+
+const READ_BY_MANY_FOLDER = "This folder is read by {field} widgets on this board.";
+const READ_BY_MANY_NOTE = "This note is read by {field} widgets on this board.";
+
+function readersNote(spec, readerCount) {
+	if (readerCount < 2) return null;
+	return h("p", { className: "wg-set-pop-note", key: "readers" }, said(spec.kind === "value" ? READ_BY_MANY_NOTE : READ_BY_MANY_FOLDER, readerCount));
+}
+
+function propHead(spec, key, binding) {
+	return h("div", { className: "wg-set-pop-head", key: "head" }, [
+		h("span", { className: "wg-set-pop-title", key: "title" }, spec.label ?? key),
+		h("span", { className: "wg-set-pop-hint", key: "hint" }, spec.hint ?? kindNote(spec, binding)),
+	]);
+}
+
+function collectionFields(spec) {
+	return spec.kind !== "value" && itemFields(spec);
+}
+
+function listedFields(spec, binding) {
+	return binding === "hardcode" && collectionFields(spec);
+}
+
+function typedLabel(spec, config) {
+	if (collectionFields(spec)) return "Typed here";
+	return writtenText(spec, config.value ?? spec.default?.value) || "Empty";
+}
+
+function unpickedLabel(spec) {
+	return spec.kind === "value" ? "Pick a note" : "Pick a folder";
+}
+
+function boundLabel(state, prop) {
+	const { spec, config, binding, path } = prop;
+	if (binding === "box") return "Its own";
+	if (binding === "ref") return refLabel(state, config.ref);
+	if (binding === "hardcode") return typedLabel(spec, config);
+	return path || unpickedLabel(spec);
+}
+
+function bindingBody(state, prop) {
+	const { key, spec, config, binding } = prop;
+	if (binding === "ref") return refBody(state, key, spec, config);
+	if (binding === "box") return [];
+	if (binding !== "hardcode") return vaultBody(state, key, spec, config);
+	return listedFields(spec, binding) ? itemRows(state, key, spec, config) : typedBody(state, key, spec, config);
+}
+
+function propTrigger(state, prop) {
+	const { key, spec, config, binding } = prop;
+	return valueRow({
+		badge: h(Icon, { name: ICON_OF_BINDING[binding] ?? "folder" }),
+		label: spec.label ?? key,
+		value: h("span", { className: "wg-set-path" }, boundLabel(state, prop)),
+		unset: !config.path && config.value === undefined && !config.ref,
+	});
+}
+
+function propBody(state, prop, readerCount) {
+	const { key, spec, config, binding } = prop;
+	return [
+		propHead(spec, key, binding),
+		kindSwitch(state, key, spec, config, binding),
+		readersNote(spec, readerCount),
+		...bindingBody(state, prop),
+	];
+}
+
+function propRow(state, prop) {
+	const { key, spec, config, binding, path } = prop;
+	const readerCount = binding === "vault" ? state.countReaders(path) : 0;
+	const at = listedFields(spec, binding) ? openedItem(state.openRow, key) : null;
+	const under = at === null ? propBody(state, prop, readerCount) : itemBody(state, key, spec, config, at);
+	const seed = binding === "hardcode" ? writtenText(spec, config.value ?? spec.default?.value) : path;
+	const body = h("div", { className: "wg-set-pop-body" }, under);
+	return editorPopover(state, `prop:${key}`, propTrigger(state, prop), body, seed, at !== null);
+}
+
+function boundProp(state, key, spec) {
+	const config = propConfigOf(state, key, spec);
+	return { key, spec, config, binding: bindingOf(spec, config).binding, path: config.path || spec.default?.path || "" };
+}
+
+function propGroup(state) {
+	const declared = Object.entries(state.manifest.props ?? {});
+	if (declared.length === 0) return null;
+	const rows = declared.map(([key, spec]) => propRow(state, boundProp(state, key, spec)));
+	return group("props", declared.length > 1 ? "Sources" : "Source", rows, null);
 }
 
 // A SLOT PICKER IS A CATALOGUE, NOT A LIST OF NAMES. What goes in a slot is drawn on every row of
@@ -364,45 +745,321 @@ function mountGroups(state) {
 	});
 }
 
-// CONTEXT: `{ spread: "@filters" }` is unreadable drawn literally, so the row is a sentence
-function filterSentence(row) {
-	if (typeof row.spread === "string") return "everything that source has set";
-	return `${row.prop} ${row.op ?? "is"} ${String(row.value)}`;
+function valueRefsOf(refs) {
+	return (refs?.offered?.() ?? []).filter((entry) => entry.kind === "value").map((entry) => entry.ref);
 }
 
-function filterRaw(row) {
-	return typeof row.spread === "string" ? `spread ${row.spread}` : `${row.prop}: ${row.op ?? "is"} ${String(row.value)}`;
+function useBoxValues(refs, isOpen) {
+	const [held, setHeld] = useState({});
+	const wanted = isOpen ? valueRefsOf(refs).join("|") : "";
+	useEffect(() => {
+		if (!wanted) return undefined;
+		let alive = true;
+		const asked = wanted.split("|");
+		const reread = () =>
+			Promise.all(asked.map((ref) => Promise.resolve(refs.read(ref)).catch(() => null))).then(
+				(found) => alive && setHeld(Object.fromEntries(asked.map((ref, at) => [ref, found[at]]))),
+			);
+		reread();
+		const stop = refs.watch(asked, reread);
+		return () => {
+			alive = false;
+			stop?.();
+		};
+	}, [wanted, refs]);
+	return held;
+}
+
+function fieldsFor(state, spec, config) {
+	if (bindingOf(spec, config).binding === "hardcode") return fieldsOf(storedRows(config.value ?? spec.default?.value).map((row) => row.value));
+	return state.vaultFields?.[boundPath(spec, config)] ?? [];
+}
+
+const NOTHING_OFFERED = "Nothing else on this board offers a value yet.";
+const NOT_WIRED = "nothing on this board yet";
+const PICK_FIELD = "Which property of the data are we looking at?";
+const PICK_CONDITION = "How should that property be compared?";
+const PICK_VALUE = "What is it compared against?";
+const PICK_SPREAD = "Everything a filter has picked arrives as conditions of its own.";
+const OTHER_FIELD = "A property the notes here do not carry yet";
+const FROM_A_WIDGET = "From another widget";
+const PICK_WIDGET = "Which widget is it read from?";
+const PICK_ITS_FIELD = "Which of its fields?";
+const NO_SUCH_BOX = "Nothing on this board is called that.";
+const FIELD_PLACEHOLDER = { text: "Anything the notes carry", number: "A number", day: "2026-09-01", one: "One value", many: "One value" };
+
+function refLabel(state, ref) {
+	const found = state.refs?.offered?.().find((entry) => entry.ref === ref);
+	return found ? `${found.title} · ${found.label}` : ref;
+}
+
+function valueSaid(state, held) {
+	if (typeof held?.ref === "string") return refLabel(state, held.ref);
+	if (typeof held?.wants === "string") return NOT_WIRED;
+	if (Array.isArray(held)) return held.join(", ");
+	return String(held ?? "");
+}
+
+function fieldNamed(fields, prop) {
+	return fields.find((field) => field.prop === prop) ?? { prop, type: "text", values: [] };
+}
+
+function conditionSentence(state, fields, row) {
+	if (row.spread) return `everything ${valueSaid(state, row.spread)} has picked`;
+	const field = fieldNamed(fields, row.prop);
+	const kind = conditionOfRow(field.type, row);
+	if (!kind) return `${row.prop} ${row.op ?? "is"} ${valueSaid(state, row.value)}`;
+	return kind.takes === "none" ? `${row.prop} ${kind.label}` : `${row.prop} ${kind.label} ${valueSaid(state, row.value)}`;
+}
+
+function stepAt(openRow, key) {
+	const head = `where:${key}#`;
+	if (!String(openRow ?? "").startsWith(head)) return null;
+	const [index, step] = String(openRow).slice(head.length).split("|");
+	return { index, step: step ?? "" };
+}
+
+function writeWhere(state, at, rows) {
+	const fixed = (at.config.where ?? []).filter((row) => row.fixed === true);
+	state.onPatch({ props: { ...(state.tile.props ?? {}), [at.key]: { ...at.config, where: [...fixed, ...rows] } } });
+}
+
+function withRowAt(rows, index, row) {
+	return index < rows.length ? rows.map((held, one) => (one === index ? row : held)) : [...rows, row];
+}
+
+function openStep(state, at, step, seed) {
+	state.openEditor(`where:${at.key}#${at.index}${step ? `|${step}` : ""}`, seed ?? "");
+}
+
+function keepRow(state, at, row, step, seed) {
+	writeWhere(state, at, withRowAt(at.rows, at.index, row));
+	if (step) openStep(state, at, step, seed);
+	else state.openEditor(null);
+}
+
+function note(said) {
+	return h("p", { className: "wg-set-pop-note", key: "note" }, said);
+}
+
+function pickRow(key, label, onClick, checked) {
+	return h(PopoverItem, { key, checked, onClick }, [h("span", { className: "wg-set-pop-name", key: "name" }, label)]);
+}
+
+function fieldStep(state, at, fields) {
+	const typed = String(state.draft ?? "").trim();
+	const start = (prop) => keepRow(state, at, { prop, op: conditionsFor(fieldNamed(fields, prop).type)[0].op, value: "" }, "op");
+	return [
+		note(PICK_FIELD),
+		...fields.map((field) => pickRow(field.prop, field.prop, () => start(field.prop), field.prop === at.rows[at.index]?.prop)),
+		h(Field, { block: true, key: "typed", value: state.draft ?? "", placeholder: OTHER_FIELD, onInput: (event) => state.setDraft(event.target.value) }),
+		h("div", { className: "wg-set-pop-foot", key: "foot" }, [
+			h(Button, { size: "s", variant: "accent", key: "apply", disabled: typed === "", onClick: () => typed && start(typed) }, "Use it"),
+		]),
+	];
+}
+
+function conditionStep(state, at, field) {
+	const held = at.rows[at.index] ?? {};
+	const pick = (kind) => keepRow(state, at, rowFor(field.prop, kind, held.value ?? ""), kind.takes === "none" ? null : "value");
+	return [
+		note(PICK_CONDITION),
+		...conditionsFor(field.type).map((kind) =>
+			pickRow(kind.id, kind.label, () => pick(kind), kind.id === conditionOfRow(field.type, held)?.id),
+		),
+	];
+}
+
+function fitsSlot(entry, shape, mine) {
+	return !mine.has(entry.ref) && entry.kind === "value" && (entry.shape ?? "value") === shape;
+}
+
+function offeredBoxes(state, shape) {
+	const mine = new Set(Object.keys(state.manifest.props ?? {}).map((name) => `${state.tile.id}/${name}`));
+	const byTitle = new Map();
+	for (const entry of state.refs?.offered?.() ?? []) {
+		if (!fitsSlot(entry, shape, mine)) continue;
+		byTitle.set(entry.title, [...(byTitle.get(entry.title) ?? []), entry]);
+	}
+	return byTitle;
+}
+
+function boxRows(state, shape, onPick) {
+	const offered = [...offeredBoxes(state, shape).values()].flat();
+	if (offered.length === 0) return [note(NOTHING_OFFERED)];
+	return [
+		h(
+			SidebarGroup,
+			{ key: "boxes", label: FROM_A_WIDGET },
+			offered.map((entry) => pickRow(entry.ref, `${entry.title} · ${entry.label}`, () => onPick(entry))),
+		),
+	];
+}
+
+function offeredValues(state, shape) {
+	return [...offeredBoxes(state, shape).values()].flat();
+}
+
+function widgetRows(offered, needle, onPick) {
+	return widgetsOffering(offered)
+		.filter((entry) => matchesNeedle(entry.tile, needle) || matchesNeedle(entry.title, needle))
+		.map((entry) => pickRow(entry.tile, entry.tile, () => onPick(entry.tile)));
+}
+
+function boxFieldRows(offered, tile, needle, onPick) {
+	return offered
+		.filter((entry) => entry.tile === tile && (matchesNeedle(entry.prop, needle) || matchesNeedle(entry.label, needle)))
+		.map((entry) => pickRow(entry.ref, entry.prop, () => onPick(entry)));
+}
+
+function completionRows(state, said, offered, setDraft, onPick) {
+	if (!said) return [h(SidebarGroup, { key: "boxes", label: FROM_A_WIDGET }, widgetRows(offered, "", (tile) => setDraft(referenceText(tile))))];
+	if (said.tile === null) {
+		return [
+			note(PICK_WIDGET),
+			h(SidebarGroup, { key: "boxes", label: FROM_A_WIDGET }, widgetRows(offered, said.needle, (tile) => setDraft(referenceText(tile)))),
+		];
+	}
+	const rows = boxFieldRows(offered, said.tile, said.needle, onPick);
+	return [
+		note(rows.length === 0 ? NO_SUCH_BOX : PICK_ITS_FIELD),
+		h(SidebarGroup, { key: "boxes", label: FROM_A_WIDGET }, rows),
+	];
+}
+
+function draftOf(value, state) {
+	if (typeof value?.ref !== "string") return typeof value === "object" ? "" : String(value ?? "");
+	const found = state.refs?.offered?.().find((entry) => entry.ref === value.ref);
+	return found ? referenceText(found.tile, found.prop) : "";
+}
+
+function heldValues(held) {
+	if (Array.isArray(held)) return held;
+	return held === undefined || held === null || held === "" ? [] : [held];
+}
+
+function valueChoices(state, at, field, kind) {
+	const held = at.rows[at.index] ?? {};
+	const chosen = heldValues(held.value);
+	const keep = (value) => keepRow(state, at, { ...held, value }, null);
+	const toggle = (value) => {
+		const next = chosen.includes(value) ? chosen.filter((one) => one !== value) : [...chosen, value];
+		writeWhere(state, at, withRowAt(at.rows, at.index, { ...held, value: next }));
+	};
+	if (kind.takes === "many") return field.values.map((value) => pickRow(value, value, () => toggle(value), chosen.includes(value)));
+	return field.values.map((value) => pickRow(value, value, () => keep(value), held.value === value));
+}
+
+function valueStep(state, at, field, kind) {
+	const held = at.rows[at.index] ?? {};
+	const typed = String(state.draft ?? "").trim();
+	const said = referenceIn(typed);
+	const offered = offeredValues(state, "value");
+	const pointedAt = boxNamed(offered, said);
+	const keepValue = (value) => keepRow(state, at, { ...held, value }, null);
+	const apply = () => keepValue(pointedAt ? { ref: pointedAt.ref } : kind.takes === "number" ? Number(typed) : typed);
+	return [
+		note(PICK_VALUE),
+		...valueChoices(state, at, field, kind),
+		h(Field, {
+			block: true,
+			key: "typed",
+			className: said ? (pointedAt ? "wg-set-ref" : "wg-set-ref-unknown") : null,
+			value: state.draft ?? "",
+			placeholder: FIELD_PLACEHOLDER[kind.takes] ?? FIELD_PLACEHOLDER.one,
+			onInput: (event) => state.setDraft(event.target.value),
+		}),
+		h("div", { className: "wg-set-pop-foot", key: "foot" }, [
+			h(
+				Button,
+				{ size: "s", variant: "accent", key: "apply", disabled: typed === "" || (said !== null && !pointedAt), onClick: apply },
+				"Use it",
+			),
+		]),
+		...completionRows(state, said, offered, state.setDraft, (entry) => keepValue({ ref: entry.ref })),
+	];
+}
+
+function summaryRow(state, at, step, label, value, seed) {
+	return valueRow({ label, value: h("span", { className: "wg-set-path" }, value), onClick: () => openStep(state, at, step, seed) });
+}
+
+function conditionSummary(state, at, field) {
+	const held = at.rows[at.index] ?? {};
+	const kind = conditionOfRow(field.type, held);
+	const rows = [
+		summaryRow(state, at, "field", "Property", held.prop ?? "Pick one", ""),
+		summaryRow(state, at, "op", "Condition", kind?.label ?? "Pick one", ""),
+	];
+	if (kind && kind.takes !== "none") {
+		rows.push(summaryRow(state, at, "value", "Value", valueSaid(state, held.value) || "Pick one", draftOf(held.value, state)));
+	}
+	return [
+		...rows,
+		h("div", { className: "wg-set-pop-foot", key: "foot" }, [
+			h(Button, { size: "s", key: "remove", onClick: () => { writeWhere(state, at, at.rows.filter((_, one) => one !== at.index)); state.openEditor(null); } }, "Remove"),
+			h(Button, { size: "s", variant: "accent", key: "done", onClick: () => state.openEditor(null) }, "Done"),
+		]),
+	];
+}
+
+function conditionBody(state, at, fields, step) {
+	const held = at.rows[at.index] ?? {};
+	const field = fieldNamed(fields, held.prop);
+	if (step === "field" || !held.prop) return fieldStep(state, at, fields);
+	if (step === "op") return conditionStep(state, at, field);
+	const kind = conditionOfRow(field.type, held);
+	if (step === "value" && kind) return valueStep(state, at, field, kind);
+	return conditionSummary(state, at, field);
+}
+
+function spreadBody(state, at) {
+	return [note(PICK_SPREAD), ...boxRows(state, "conditions", (entry) => keepRow(state, at, { spread: { ref: entry.ref } }, null))];
+}
+
+function conditionRow(state, at, fields, trigger) {
+	const body = at.index === "spread" ? spreadBody(state, at) : conditionBody(state, at, fields, at.step ?? "");
+	return editorPopover(state, `where:${at.key}#${at.index}`, trigger, h("div", { className: "wg-set-pop-body" }, body), "", at.step !== null);
+}
+
+function fixedCondition(state, fields, row, index) {
+	return h(Row, { className: "wg-set-row", key: `fixed${index}` }, [
+		h(RowLabel, { key: "label" }, conditionSentence(state, fields, row)),
+		h(RowValue, { className: "wg-set-value", key: "value" }, h(Pill, null, "Fixed")),
+	]);
+}
+
+const addRow = (said) => h(Row, { className: "wg-set-row is-add", pressable: true }, [h(Icon, { name: "plus", key: "plus" }), h(RowLabel, { key: "label" }, said)]);
+
+function whereGroup(state, key, spec, config) {
+	const fields = fieldsFor(state, spec, config);
+	const held = config.where ?? [];
+	const rows = held.filter((row) => row.fixed !== true);
+	const open = stepAt(state.openRow, key);
+	const at = (index) => ({ key, config, rows, index, step: open?.index === String(index) ? open.step : null });
+	const drawn = [
+		...held.filter((row) => row.fixed === true).map((row, index) => fixedCondition(state, fields, row, index)),
+		...rows.map((row, index) => conditionRow(state, at(index), fields, valueRow({ label: conditionSentence(state, fields, row), value: "" }))),
+		conditionRow(state, at(rows.length), fields, addRow("Add condition")),
+	];
+	if (offeredBoxes(state, "conditions").size > 0) {
+		drawn.push(conditionRow(state, at("spread"), fields, addRow("Everything a filter has picked")));
+	}
+	return group(`where:${key}`, `Where · ${spec.label ?? key}`, drawn, "These decide which data arrives. A condition the widget declares cannot be edited here.");
 }
 
 function dataGroups(state) {
-	const { manifest, tile } = state;
-	const bindings = tile.sources ?? {};
+	const { manifest } = state;
 	const groups = [];
 
-	for (const [key, source] of Object.entries(manifest.sources ?? {})) {
-		const declared = source.default ?? {};
-		const own = bindings[key] ?? {};
-		const path = own.path || declared.path || "";
-		const label = source.label ?? key;
+	for (const [key, spec] of Object.entries(manifest.props ?? {})) {
+		const config = propConfigOf(state, key, spec);
+		const label = spec.label ?? key;
+		const declared = spec.default ?? {};
 
-		const filters = [...(declared.filters ?? []).map((row) => ({ row, fixed: true })), ...(own.filters ?? []).map((row) => ({ row, fixed: false }))];
-		if (filters.length > 0) {
-			groups.push(
-				group(
-					`filters:${key}`,
-					`Filters · ${label}`,
-					filters.map((entry, index) =>
-						h(Row, { className: "wg-set-row", key: index }, [
-							h(RowLabel, { className: "wg-set-two", key: "label" }, [filterSentence(entry.row), h("span", { className: "wg-set-sub is-mono", key: "sub" }, filterRaw(entry.row))]),
-							h(RowValue, { className: "wg-set-value", key: "value" }, h(Pill, null, entry.fixed ? "Fixed" : "Yours")),
-						]),
-					),
-					"These decide which data arrives. A filter the widget declares cannot be edited here.",
-				),
-			);
-		}
+		if (spec.kind !== "value" && !spec.of) groups.push(whereGroup(state, key, spec, config));
 
-		const sort = [...(declared.sort ?? []), ...(own.sort ?? [])];
+		const sort = [...(declared.sort ?? []), ...(config.sort ?? [])];
 		if (sort.length > 0) {
 			groups.push(
 				group(
@@ -419,18 +1076,24 @@ function dataGroups(state) {
 			);
 		}
 
-		const on = Boolean(path);
+		const isHardcoded = bindingOf(spec, config).binding === "hardcode";
+		const path = config.path || declared.path || "";
+		const isOn = isHardcoded || Boolean(path);
+		const verbs = Array.isArray(spec.verbs) ? spec.verbs : Object.keys(spec.verbs ?? {});
+		const asked = verbs.length > 0 ? verbs : ["list", "create", "update", "remove"];
+		const said = {
+			list: isHardcoded ? "reads this widget's own list" : `reads the notes in ${path || "nowhere"}`,
+			get: "reads one record",
+			create: isHardcoded ? "adds a row to this widget's own list" : `a new note lands in ${path || "nowhere"}`,
+			update: isHardcoded ? "rewrites a row in this widget's own list" : "writes frontmatter on the note it came from",
+			remove: isHardcoded ? "drops a row from this widget's own list" : "moves the note to the vault's trash",
+		};
 		groups.push(
 			group(
 				`can:${key}`,
 				`What ${label} can do`,
-				[
-					reportRow("create", "Create", on ? `a new note lands in ${path}` : "nowhere to put it", on ? "On" : "Off", on),
-					reportRow("update", "Update", on ? "writes frontmatter on the note it came from" : "no note to write to", on ? "On" : "Off", on),
-					reportRow("open", "Open", on ? "opens the note in a pane" : "nothing listed", on ? "On" : "Off", on),
-					reportRow("remove", "Remove", on ? "moves the note to the vault's trash" : "nothing to remove", on ? "On" : "Off", on),
-				],
-				on ? "All four follow the folder. Clear the path and all four go off together." : "One empty field turns the rows grey.",
+				asked.map((verb) => reportRow(verb, titleCase(verb), said[verb] ?? `runs "${verb}" on this source`, isOn ? "On" : "Off", isOn)),
+				isHardcoded ? "The rows live in this widget's settings, so every verb is on." : isOn ? "All of these follow the binding. Clear it and they go off together." : "One empty field turns the rows grey.",
 			),
 		);
 	}
@@ -468,22 +1131,13 @@ function designGroups(state) {
 	].filter(Boolean);
 }
 
-// CONTEXT: a widget writing a key nobody reads looks configured and steers nothing
-function unheard(state) {
-	const heard = state.boardConsumes;
-	if (!heard) return null;
-	const mute = (state.manifest.provides ?? []).filter((key) => !heard.includes(key));
-	if (mute.length === 0) return null;
-	return `Nothing on this board reads ${mute.join(", ")}, so these settings steer nothing yet.`;
-}
-
 function panelBody(state) {
 	if (state.tab === "data") return dataGroups(state);
 	if (state.tab === "design") return designGroups(state);
 	return [
-		...sourceGroups(state),
-		state.manifest.settings?.length ? group("settings", "Settings", settingRows(state), unheard(state)) : null,
-		state.manifest.slots ? group("slots", "Slots", slotRows(state), "A slot is a hole this widget fills with another widget.") : null,
+		propGroup(state),
+		state.manifest.settings?.length ? group("settings", "Settings", settingRows(state), null) : null,
+		state.manifest.slots ? group("slots", "Slots", slotRows(state), "A hole this widget fills with another widget.") : null,
 		...mountGroups(state),
 	];
 }
@@ -562,7 +1216,7 @@ function panel(state) {
 				surface: "glass",
 				className: "wg-set-panel is-sheet",
 				style: state.panelStyle,
-				open: state.sheetFull,
+				isOpen: state.sheetFull,
 				onOpen: state.setSheetFull,
 				peekPx: state.sheetPeekPx,
 				maxPx: state.sheetMaxPx,
@@ -676,7 +1330,17 @@ function startingDraft(key, here, place) {
 		const held = here.tile.settings?.[name] ?? field?.default;
 		return held === undefined || held === null ? "" : String(held);
 	}
-	if (kind === "source") return here.tile.sources?.[name]?.path ?? here.manifest.sources?.[name]?.default?.path ?? "";
+	if (kind === "where") return "";
+	if (kind === "prop") {
+		const spec = here.manifest.props?.[name];
+		const config = here.tile.props?.[name] ?? {};
+		if (bindingOf(spec, config).binding === "hardcode") {
+			const held = config.value ?? spec?.default?.value;
+			if (held === undefined) return "";
+			return writtenAsText(spec) ? String(held) : JSON.stringify(held);
+		}
+		return config.path ?? spec?.default?.path ?? "";
+	}
 	if (kind === "size") return String(name === "w" ? place.w : place.h);
 	return "";
 }
@@ -708,7 +1372,7 @@ const CHILD_TABS = TABS.filter((entry) => entry.value !== "design");
 const FRESH = { tab: "settings", zoom: null, pan: null, folded: false, narrow: false, sheetFull: false, openRow: null, draft: "", path: [] };
 
 export function useSettingsWindow(options) {
-	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders, boardConsumes } = options;
+	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders, refs } = options;
 	const [phase, key] = String(session ?? "").split(":");
 	const open = phase === "open";
 	const closing = phase === "closing";
@@ -731,6 +1395,9 @@ export function useSettingsWindow(options) {
 
 	const viewport = useViewport();
 	useHeldScroll(open);
+	const here = addressed(options, path);
+	const vaultFields = useVaultFields(host, vaultPathsOf(here.manifest, here.tile));
+	const boxValues = useBoxValues(refs, open);
 
 	// CLOSE POPS ONE RUNG. A popover and the slot picker are nearer and close themselves, then one
 	// level, and only at the root does the window go — dismissing under any of them drops the draft.
@@ -747,7 +1414,6 @@ export function useSettingsWindow(options) {
 
 	const manifest = definition?.manifest ?? {};
 	// CONTEXT: the canvas always draws the tile's own widget; only the panel follows the path
-	const here = addressed(options, path);
 	const frame = dialogBox(viewport, phone);
 	const windowBox = { width: frame.width, height: frame.height };
 	const layout = {
@@ -786,7 +1452,9 @@ export function useSettingsWindow(options) {
 		onCollapse,
 		onExpand,
 		countReaders,
-		boardConsumes,
+		refs,
+		vaultFields,
+		boxValues,
 		tab,
 		setTab,
 		zoom,
@@ -862,7 +1530,7 @@ export function useSettingsWindow(options) {
 
 	const dialog = h(
 		DialogOverlay,
-		{ className: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: closeOne },
+		{ key: "settings-window", className: `wg-set-over${closing ? " is-leaving" : ""}`, onClose: closeOne },
 		h(
 			"div",
 			{
