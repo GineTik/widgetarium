@@ -3271,3 +3271,36 @@ body.wg-tree-dragging * {
 }
 
 body.wg-tree-dragging .wg-tree-cell { pointer-events: none; }
+
+.wg-tree-band {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.wg-tree-cell.is-carried {
+	opacity: 0.4;
+	transform: scale(0.985);
+	transition:
+		opacity 140ms ease,
+		transform 140ms ease;
+}
+
+.wg-tree-aim {
+	position: fixed;
+	z-index: 20;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 22%, transparent);
+	pointer-events: none;
+}
+
+.wg-root.is-editing .wg-tree-cell { cursor: grab; }
+
+body.wg-tree-carrying,
+body.wg-tree-carrying * {
+	user-select: none !important;
+	cursor: grabbing !important;
+}
+
+body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
