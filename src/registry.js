@@ -2,7 +2,7 @@ import { createElement as h, Fragment } from "react";
 import * as react from "react";
 import * as reactDom from "react-dom";
 import { transform } from "sucrase";
-import { widgetarium, kitModule } from "./api.js";
+import { widgetarium, kitModule, emojiModule } from "./api.js";
 import { WIDGETS_DIR } from "./paths.js";
 
 const BASE_SCOPE = {
@@ -16,8 +16,10 @@ const BASE_SCOPE = {
 };
 
 function compile(source, filePath) {
+	// CONTEXT: sucrase strips types, it checks nothing — the contract is enforced at the call
+	const typed = /\.tsx?$/.test(String(filePath ?? ""));
 	return transform(source, {
-		transforms: ["jsx", "imports"],
+		transforms: typed ? ["typescript", "jsx", "imports"] : ["jsx", "imports"],
 		jsxPragma: "h",
 		jsxFragmentPragma: "Fragment",
 		production: true,
@@ -30,6 +32,7 @@ function createRequire(libs) {
 	const modules = {
 		widgetarium,
 		"widgetarium/kit": kitModule,
+		"widgetarium/kit/emojis": emojiModule,
 		react,
 		"react-dom": reactDom,
 		...Object.fromEntries(libs),
@@ -170,11 +173,14 @@ export class WidgetRegistry {
 		const manifestPath = `${folder}/manifest.json`;
 		if (!(await adapter.exists(manifestPath))) return;
 
-		const jsxPath = `${folder}/widget.jsx`;
-		const jsPath = `${folder}/widget.js`;
-		const isJsx = await adapter.exists(jsxPath);
-		const codePath = isJsx ? jsxPath : jsPath;
-		if (!isJsx && !(await adapter.exists(jsPath))) return;
+		let codePath = null;
+		for (const name of ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"]) {
+			if (await adapter.exists(`${folder}/${name}`)) {
+				codePath = `${folder}/${name}`;
+				break;
+			}
+		}
+		if (!codePath) return;
 
 		try {
 			const manifest = JSON.parse(await adapter.read(manifestPath));

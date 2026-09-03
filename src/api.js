@@ -11,10 +11,16 @@ import {
 } from "./dialog.js";
 import { useAction } from "./action.js";
 import { EditableTabs, toTabList } from "./editable-tabs.js";
-import { archivedColumnsFor, boardWriter, boardsToCreate, readBoardRecord, recordName } from "./board-record.js";
 import { applyTabStep, archivedOf, movesRows, movesSelection, rowNamed, tabsOf } from "./tab-rows.js";
 import { WidgetRoot, AppearanceOverride, useWidgetRounded, useBackgroundType, ROUNDED, BACKGROUND } from "./widget-root.js";
+import { action, arrayGateway, canDo, collectionGateway, soloGateway, valueGateway } from "./gateway/create";
+import { fieldOf, textOf } from "./gateway/match";
+import { flatRows, useData } from "./gateway/use-data";
+import { narrowed, normalizeWhere } from "./gateway/narrow";
+import { pickedValue } from "./gateway/refs.js";
+import { useNarrowed } from "./gateway/use-narrowed";
 import * as kitModule from "./kit.js";
+import * as emojiModule from "./emojis.js";
 
 const { Kit } = kitModule;
 
@@ -43,13 +49,22 @@ const core = {
 	BACKGROUND,
 	useAction,
 	createWidget,
+	action,
+	arrayGateway,
+	canDo,
+	fieldOf,
+	textOf,
+	collectionGateway,
+	soloGateway,
+	valueGateway,
+	useData,
+	flatRows,
+	narrowed,
+	normalizeWhere,
+	pickedValue,
+	useNarrowed,
 	EditableTabs,
 	toTabList,
-	readBoardRecord,
-	boardWriter,
-	boardsToCreate,
-	archivedColumnsFor,
-	recordName,
 	applyTabStep,
 	archivedOf,
 	movesRows,
@@ -61,5 +76,5 @@ const core = {
 // TRADE-OFF: the kit stays OUT of the core surface and is reached by its own specifier —
 // "widgetarium" is what a widget must have, "widgetarium/kit" is what it may take. `Kit` is
 // kept for <Kit.Button/> in JSX, where a capital is what marks a component.
-export { kitModule };
+export { kitModule, emojiModule };
 export const widgetarium = { ...core, Kit };

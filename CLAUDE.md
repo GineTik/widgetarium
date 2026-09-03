@@ -1,8 +1,18 @@
 # Widgetarium
 
 An Obsidian plugin: widget tiles on a grid inside a note, plus rules that substitute a widget for a
-line of text. `src/` is preact with `h()` hyperscript — **no JSX and no TypeScript there**; widgets
-under `widgets/` are `.jsx` compiled at runtime by sucrase.
+line of text. `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
+`src/gateway/` is TypeScript (`tsc --noEmit` gates it), the rest of `src/` is untyped JS that dies
+in place rather than being typed. Widgets under `widgets/` are `.tsx` compiled at runtime by
+sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
+
+**Every widget prop is a gateway.** A widget declares `props` in its manifest (`kind:
+"collection" | "value"`, `verbs` with `required`/`optional`); the engine resolves each to a
+`CollectionGateway`/`ValueGateway` from the binding the person chose — a vault folder or file, or a
+hardcoded value in the tile. Widgets read through `useData(gateway.list)` and write through verbs
+(`update({ ref, data })` — the ref names which, the adapter knows what it means); a verb nothing
+provides exists with `can() === {can:false, reason}`. Contract in `src/gateway/contract.ts`; old
+`sources` manifests still resolve via `was`/legacy fallback, per the lazy-migration law.
 
 ## The laws that cost the most to learn
 
@@ -27,10 +37,15 @@ meaning three different things, slot versus mount, and archived columns living i
 inputs from the parent and owns nothing. Without `gives` the child owns its own sources and settings.
 `docs/view-group.md` carries this; it replaced an earlier split between "slot" and "mount".
 
+**One widget points at another by ref, never by a shared name.** There is no context bus. A ref is
+`<tileId>/<propName>`; the board holds one registry of them (`src/gateway/refs.js`) and a where row
+carries `{ ref }` where a value would stand. A selection — which tab, which view, which card is open
+— is a box the engine owns over the very list it selects from, so a pick that names a row the list
+no longer holds is no pick at all. Full decision in `docs/prop-bindings.md`.
+
 **Declared is not rendered.** Six rounds shipped with every gate green and were rejected on sight.
-`WidgetHost` (`src/surface.js`) is the only component that re-renders when the context bus changes —
-a value sliced by the selection must be computed **inside it**. One level up gives a correct declared
-value and a stale screen.
+A value sliced by a selection must be read through its gateway **inside the widget that draws it**,
+with `useData`. One level up gives a correct declared value and a stale screen.
 
 **A markdown post-processor is reading mode only.** Live Preview is a different engine and needs a
 CodeMirror 6 editor extension. Reading view also caches rendered sections and unloads off-screen ones.
@@ -47,12 +62,38 @@ along with whatever depends on it — rather than ship it.
 suites resolve no cascade and lay nothing out, so a CSS claim proved only there is not proved.
 `test:dialog`, `test:view` and `test:drag` are timing-flaky — re-run alone before blaming a change.
 
+## The design direction: Material 3 Expressive and Apple
+
+**Two references, one job each.** Google's Material 3 Expressive and Apple's current system are what
+this plugin is measured against. Neither is copied as a look — a Material component dropped into an
+Obsidian plugin fights the host's theme and loses. What is taken is the practice, and the practice is
+the same on both sides: **maximalist, physical, answering.**
+
+- **Shape carries the accent, not only colour.** An element earns attention by having a form the ones
+  around it do not. The 35 outlines in `assets/shapes/` are the vocabulary; `node tools/fetch-shapes.mjs`
+  regenerates them. One unusual form per widget, on the thing the eye is looking for.
+- **An emoji is a drawing, not a character.** A typed emoji renders as whatever font the host has;
+  `<Emoji name="smiling-face-with-halo"/>` from `widgetarium/kit/emojis` renders the same everywhere.
+  The 129 Microsoft Fluent faces are the vocabulary — the Unicode group "Smileys & Emotion" up to the
+  monkeys, and nothing else. `node tools/fetch-emojis.mjs` regenerates `src/emoji-table.js`; the
+  licence sits in `assets/emojis/`. They cost 300kb of the bundle, so they hang off their own
+  specifier and no widget pays for them unless it asks.
+- **Big.** Large controls, large corners, generous spacing. A dense grid of small buttons is the
+  design this project is deliberately not.
+- **Motion is the answer to a press**, not decoration on load. Springy, interruptible, immediate;
+  a control that moves under the finger. Both references spend their budget here — so do we.
+- **A corner is never where the text goes.** Under a large radius the corner belongs to an icon or a
+  shape; text stays inside the safe box. A radius that eats a word is the radius, not the word.
+- **What is refused:** the `@material/web` runtime, Material's colour roles, its base components. They
+  arrive with their own tokens and a Shadow DOM, and this project's colours come from `--wg-kit-*`.
+
 ## House rules
 
 - All colours from `--wg-kit-*` tokens; no hardcoded colours. The kit's controls paint fill and corner
   on a `::before` — the element itself is `border-radius: 0` by design.
-- Comments only with the prefixes `TODO:`, `TRADE-OFF:`, `CONTEXT:`, fewest possible words. A
-  pre-edit hook blocks anything else.
+- Comments only with the prefixes `TODO:` and `TRADE-OFF:`, fewest possible words. `CONTEXT:` is
+  gone: a fact the reader needs belongs in a name. A hook blocks anything else, on edits and on
+  shell writes alike.
 - Every string is English; `npm run lint:lang` must pass. Never build a sentence by concatenation —
   author the whole sentence with a placeholder.
 - Early returns over nesting; no proxy variables; every new entity needs a consumer.

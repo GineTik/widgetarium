@@ -80,7 +80,7 @@ const check = (name, got, want) => {
 	const registry = new WidgetRegistry(vaultOf({ ...FILES, [`${ROOT}/@habit/probe/widget.jsx`]: `import "nowhere";\nexport default () => null;\n` }));
 	await registry.load();
 	const entry = registry.get("@habit/probe");
-	check("an import of something else is still refused", String(entry?.error ?? ""), 'Error: cannot import "nowhere" — a widget may only import widgetarium, widgetarium/kit, react, react-dom, @habit/lib');
+	check("an import of something else is still refused", String(entry?.error ?? ""), 'Error: cannot import "nowhere" — a widget may only import widgetarium, widgetarium/kit, widgetarium/kit/emojis, react, react-dom, @habit/lib');
 }
 
 {
@@ -177,8 +177,8 @@ const check = (name, got, want) => {
 	const { buildWidget } = await import("./.mjs-cache/registry.mjs");
 	// CONTEXT: the catalogue draws a widget nobody installed, so it compiles one straight off disk
 	const drawn = buildWidget({
-		code: readFileSync("widgets/@habit/heatmap/widget.jsx", "utf8"),
-		path: "widgets/@habit/heatmap/widget.jsx",
+		code: readFileSync("widgets/@habit/heatmap/widget.tsx", "utf8"),
+		path: "widgets/@habit/heatmap/widget.tsx",
 		lib: readFileSync("widgets/@habit/lib.js", "utf8"),
 		libPath: "widgets/@habit/lib.js",
 		scope: "@habit",

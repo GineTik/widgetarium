@@ -1,0 +1,13 @@
+The emoji drawings in src/emoji-table.js are Microsoft Fluent Emoji
+(https://github.com/microsoft/fluentui-emoji), Flat style, licensed under the
+MIT License, a copy of which sits beside this file.
+
+Which emojis are taken, and what each is named, comes from CLDR through
+emojibase-data (https://github.com/milesj/emojibase), also MIT.
+
+The pack is the Unicode group "Smileys & Emotion" up to and including the
+monkey faces — every face Fluent draws, and nothing else.
+
+Regenerate with: node tools/fetch-emojis.mjs
+
+Each body is the inside of an SVG drawn on viewBox="0 0 32 32".
