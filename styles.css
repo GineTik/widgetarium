@@ -3231,7 +3231,7 @@ pre:has(> .block-language-widgetarium),
 	position: absolute;
 	border-radius: 999px;
 	background: var(--background-modifier-border);
-	opacity: 0.55;
+	opacity: 0;
 	transition:
 		opacity 140ms ease,
 		background 140ms ease,
@@ -3277,6 +3277,9 @@ body.wg-tree-dragging .wg-tree-cell { pointer-events: none; }
 	flex-direction: column;
 	min-width: 0;
 }
+
+.wg-tree-band:hover .wg-tree-grip { opacity: 0.55; }
+.wg-root.is-editing .wg-tree-grip { opacity: 0.55; }
 
 .wg-tree-cell.is-carried {
 	opacity: 0.4;
