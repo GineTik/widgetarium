@@ -1,36 +1,67 @@
 import { canDo, createWidget, flatRows, useData, WidgetRoot } from "widgetarium";
-import type { CollectionGateway, CreateAction, ListAction, Ref, UpdateAction, VaultRecord } from "widgetarium";
+import type { Aka, CollectionGateway, CreateAction, Day, ListAction, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
+import { Emoji } from "widgetarium/kit/emojis";
 import { useEffect, useRef, useState } from "react";
-import { isoOf, shiftedBy, streakOf } from "@habit/lib";
+import { daysLogged, FLAME, isoOf, pressing, shiftedBy, streakOf } from "@habit/lib";
 
 const COLUMN_PX = 44;
 const RING_PX = 36;
+const SEAT_PX = 40;
 const CONNECTOR_PX = 12;
-const CARD_PAD_Y_PX = 10;
 
 const STYLE = `
 .habit-streak {
 	display: flex;
 	flex-direction: column;
-	justify-content: center;
-	padding: ${CARD_PAD_Y_PX}px 0;
+	justify-content: space-evenly;
 	overflow: hidden;
 }
 
-.hs-room {
-	width: 100%;
+.hs-top {
 	display: flex;
-	justify-content: center;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding-inline: calc(${CONNECTOR_PX}px + (var(--hs-column) - ${RING_PX}px) / 2);
+	height: 22px;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
 }
 
-.hs-card {
+.hs-title {
 	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+
+.hs-title > span {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.hs-count {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 6px;
+}
+
+.hs-count .hs-flame {
+	color: var(--interactive-accent);
+	flex: none;
+}
+
+.hs-count.is-cold,
+.hs-count.is-cold .hs-flame {
+	color: var(--text-faint);
 }
 
 .hs-rail {
 	display: flex;
+	width: 100%;
 	align-items: stretch;
 }
 
@@ -38,7 +69,7 @@ const STYLE = `
 	flex: none;
 	width: ${CONNECTOR_PX}px;
 	align-self: end;
-	height: ${RING_PX + 4}px;
+	height: ${SEAT_PX}px;
 	background: transparent;
 }
 
@@ -46,21 +77,26 @@ const STYLE = `
 	background: var(--wg-kit-accent-wash);
 }
 
-.hs-day {
+/* TRADE-OFF: doubled selector for (0,2,0) — the host paints bare buttons at (0,1,1) and outranks one class */
+.habit-streak .hs-day,
+.habit-streak .hs-day:hover {
 	flex: none;
-	width: ${COLUMN_PX}px;
+	width: var(--hs-column);
+	min-width: 0;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 4px;
 	padding: 0;
 	border: 0;
-	background: transparent;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
 	cursor: pointer;
 	color: var(--text-normal);
 }
 
-.hs-day[disabled] {
+.habit-streak .hs-day[disabled] {
 	cursor: default;
 }
 
@@ -77,18 +113,34 @@ const STYLE = `
 	grid-area: 1 / 1;
 }
 
-.hs-day:hover .hs-name,
+.hs-head > span {
+	transition: opacity 160ms ease, transform 160ms ease;
+}
+
 .hs-date {
-	display: none;
+	opacity: 0;
+	transform: translateY(5px);
+}
+
+.hs-day:hover .hs-name {
+	opacity: 0;
+	transform: translateY(-5px);
 }
 
 .hs-day:hover .hs-date {
-	display: block;
+	opacity: 1;
+	transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hs-head > span {
+		transition: none;
+	}
 }
 
 .hs-seat {
 	width: 100%;
-	height: ${RING_PX + 4}px;
+	height: ${SEAT_PX}px;
 	display: grid;
 	place-items: center;
 }
@@ -129,32 +181,8 @@ const STYLE = `
 .hs-flame {
 	fill: currentColor;
 }
-
-.hs-foot {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	height: 18px;
-	padding-inline-start: ${CONNECTOR_PX}px;
-	font-size: var(--font-ui-small, 14px);
-	font-weight: var(--font-semibold, 600);
-	color: var(--text-normal);
-}
-
-.hs-foot .hs-flame {
-	color: var(--interactive-accent);
-	flex: none;
-}
-
-.hs-foot.is-cold,
-.hs-foot.is-cold .hs-flame {
-	color: var(--text-faint);
-}
 `;
 
-
-const FLAME =
-	"M11.93 1.14C12.29 0.82 12.81 0.66 13.35 0.81C13.78 0.92 14.19 1.1 14.58 1.32C16.15 2.25 18.31 3.74 20.07 5.8C21.84 7.87 23.25 10.55 23.25 13.84C23.25 17.05 21.97 19.45 19.87 21.01C17.8 22.56 15 23.25 12 23.25C9 23.25 6.2 22.56 4.13 21.01C2.03 19.45 0.75 17.05 0.75 13.84C0.75 9.04 3.75 5.53 6.52 3.31C7.56 2.48 8.91 3.13 9.29 4.18C9.54 4.9 9.85 5.47 10.18 5.8C10.21 5.83 10.24 5.84 10.29 5.83C10.34 5.83 10.41 5.79 10.47 5.72C11.04 4.94 11.29 3.67 11.36 2.38C11.38 1.9 11.59 1.45 11.93 1.14ZM12.36 11.67C12.13 11.55 11.87 11.55 11.64 11.67C10.65 12.15 8 13.69 8 16.3C8 18.51 9.79 19.5 12 19.5C14.21 19.5 16 18.51 16 16.3C16 13.69 13.35 12.15 12.36 11.67Z";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const ONE_DAY = "{count} day";
@@ -166,11 +194,11 @@ function filled(sentence: string, values: Record<string, string>) {
 	return Object.entries(values).reduce((held, [name, value]) => held.replace(`{${name}}`, value), sentence);
 }
 
-const A_DAY_IN_TEXT = /\d{4}-\d{2}-\d{2}/;
-
-type DayNote = VaultRecord & { props?: Record<string, unknown> };
-
-type LoggedDay = DayNote & { ref: Ref };
+type DayNote = VaultRecord & {
+	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
+	date?: (Day & Aka<"created" | "day" | "when" | "on">) | null;
+	props?: Record<string, unknown>;
+};
 
 type Accesses = {
 	list: ListAction;
@@ -190,35 +218,12 @@ function weekdayOf(iso: string) {
 	return WEEKDAYS[new Date(Date.parse(`${iso}T00:00:00Z`)).getUTCDay()];
 }
 
-function writtenDay(held: unknown) {
-	if (held instanceof Date) return held.toISOString().slice(0, 10);
-	return A_DAY_IN_TEXT.exec(String(held ?? ""))?.[0] ?? null;
+function columnsAcrossFullWidth(railWidth: number) {
+	return Math.max(1, Math.floor(railWidth / COLUMN_PX));
 }
 
-function dayOfNote(note: DayNote, dateAnchorProp: string) {
-	const anchored = dateAnchorProp ? writtenDay(note.props?.[dateAnchorProp]) : null;
-	return anchored ?? writtenDay(note.name);
-}
-
-function isKept(note: DayNote, keptProp: string) {
-	const held = note.props?.[keptProp];
-	return held !== undefined && held !== null && held !== "" && held !== false;
-}
-
-function daysLogged(notes: LoggedDay[], dateAnchorProp: string, keptProp: string) {
-	const noteByDay = new Map<string, LoggedDay>();
-	const keptDays = new Set<string>();
-	for (const note of notes) {
-		const day = dayOfNote(note, dateAnchorProp);
-		if (!day) continue;
-		noteByDay.set(day, note);
-		if (isKept(note, keptProp)) keptDays.add(day);
-	}
-	return { noteByDay, keptDays };
-}
-
-function columnsAcross(roomWidth: number) {
-	return Math.max(1, Math.floor((roomWidth - 2 * CONNECTOR_PX) / COLUMN_PX));
+function columnWidth(railWidth: number, columns: number) {
+	return Math.max(RING_PX, (railWidth - 2 * CONNECTOR_PX) / columns);
 }
 
 function daysAround(today: string, count: number) {
@@ -249,22 +254,6 @@ function dayColumns(shown: string[], keptDays: Set<string>, today: string, canPr
 		const kept = keptDays.has(day);
 		return { day, kept, seat: seatClass(keptDays, day), ring: ringClass(day, kept, today), canPress };
 	});
-}
-
-type PressSetup = {
-	days: CollectionGateway<DayNote, Accesses>;
-	noteByDay: Map<string, LoggedDay>;
-	keptDays: Set<string>;
-	keptProp: string;
-	dateAnchorProp: string;
-};
-
-function pressing({ days, noteByDay, keptDays, keptProp, dateAnchorProp }: PressSetup) {
-	return async (day: string) => {
-		const found = noteByDay.get(day);
-		if (found) return days.update({ ref: found.ref, data: { props: { [keptProp]: keptDays.has(day) ? null : 1 } } });
-		return days.create({ name: day, props: { [keptProp]: 1, ...(dateAnchorProp ? { [dateAnchorProp]: day } : {}) } });
-	};
 }
 
 function useWidth(node: { current: HTMLElement | null }, fallback: number) {
@@ -308,50 +297,53 @@ function DayButton({ column, onPress }: { column: DayColumn; onPress: () => void
 	);
 }
 
-function Foot({ count }: { count: number }) {
+function Summary({ habitName, face, count }: { habitName: string; face: string; count: number }) {
 	return (
-		<div className={`hs-foot${count === 0 ? " is-cold" : ""}`}>
-			<Flame size={18} />
-			<span>{filled(count === 1 ? ONE_DAY : MANY_DAYS, { count: String(count) })}</span>
+		<div className="hs-top">
+			<div className="hs-title">
+				<Emoji name={face} size={18} />
+				<span>{habitName}</span>
+			</div>
+			<div className={`hs-count${count === 0 ? " is-cold" : ""}`}>
+				<Flame size={16} />
+				<span>{filled(count === 1 ? ONE_DAY : MANY_DAYS, { count: String(count) })}</span>
+			</div>
 		</div>
 	);
 }
 
-export default createWidget(function HabitStreak({
-	settings,
-	days,
-}: {
-	settings: any;
+type StreakProps = {
 	days: CollectionGateway<DayNote, Accesses>;
-}) {
-	const room = useRef<HTMLDivElement | null>(null);
-	const roomWidth = useWidth(room, 7 * COLUMN_PX + 2 * CONNECTOR_PX);
+	title: ValueGateway<string>;
+	emoji: ValueGateway<string>;
+};
+
+export default createWidget(function HabitStreak({ days, title, emoji }: StreakProps) {
+	const rail = useRef<HTMLDivElement | null>(null);
+	const railWidth = useWidth(rail, 7 * COLUMN_PX);
 	const today = isoOf(new Date());
 
-	const dateAnchorProp = String(settings.dateAnchorProp ?? "").trim();
-	const keptProp = String(settings.keptProp ?? "").trim() || "done";
 	const listed = useData(days.list);
-	const { noteByDay, keptDays } = daysLogged(flatRows(listed.rows), dateAnchorProp, keptProp);
+	const habitName = String(useData(title.get).data ?? "");
+	const face = String(useData(emoji.get).data ?? "");
+	const { noteByDay, keptDays } = daysLogged(flatRows(listed.rows));
 
-	const shown = daysAround(today, columnsAcross(roomWidth));
+	const shown = daysAround(today, columnsAcrossFullWidth(railWidth));
+	const columnPx = columnWidth(railWidth, shown.length);
 	const streak = streakOf([...keptDays].map((date) => ({ date })), { today });
-	const press = pressing({ days, noteByDay, keptDays, keptProp, dateAnchorProp });
+	const press = pressing({ days, noteByDay, keptDays });
 	const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-streak">
+		<WidgetRoot background="var(--wg-kit-fill)" className="habit-streak" style={{ "--hs-column": `${columnPx}px` }}>
 			<style>{STYLE}</style>
-			<div className="hs-room" ref={room}>
-				<div className="hs-card" style={{ width: shown.length * COLUMN_PX + 2 * CONNECTOR_PX }}>
-					<div className="hs-rail">
-						<i className={edgeClass(keptDays, shown[0], -1)} />
-						{columns.map((column) => (
-							<DayButton key={column.day} column={column} onPress={() => press(column.day)} />
-						))}
-						<i className={edgeClass(keptDays, shown[shown.length - 1], 1)} />
-					</div>
-					<Foot count={streak.current} />
-				</div>
+			<Summary habitName={habitName} face={face} count={streak.current} />
+			<div className="hs-rail" ref={rail}>
+				<i className={edgeClass(keptDays, shown[0], -1)} />
+				{columns.map((column) => (
+					<DayButton key={column.day} column={column} onPress={() => press(column.day)} />
+				))}
+				<i className={edgeClass(keptDays, shown[shown.length - 1], 1)} />
 			</div>
 		</WidgetRoot>
 	);

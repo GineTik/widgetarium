@@ -29,7 +29,9 @@ const { createElement: h, Fragment } = react;
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { widgetarium } = await import("./.mjs-cache/api.mjs");
 const kit = await import("./.mjs-cache/kit.mjs");
-const { collectionGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const emojis = await import("./.mjs-cache/emojis.mjs");
+const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 
 const WIDGET = "widgets/@habit/streak/widget.tsx";
 const MANIFEST = JSON.parse(fs.readFileSync("widgets/@habit/streak/manifest.json", "utf8"));
@@ -47,7 +49,7 @@ function compiled(file, source) {
 }
 
 function importing() {
-	const modules = { widgetarium, "widgetarium/kit": kit, react, ...Object.fromEntries(libs) };
+	const modules = { widgetarium, "widgetarium/kit": kit, "widgetarium/kit/emojis": emojis, react, ...Object.fromEntries(libs) };
 	return (name) => {
 		const found = modules[name];
 		if (!found) throw new Error(`cannot import "${name}"`);
@@ -74,6 +76,8 @@ function check(what, got, wanted) {
 }
 
 const TODAY = isoOf(new Date());
+const TITLE = "Meditation";
+const EMOJI = "smiling-face-with-halo";
 const written = [];
 let minted = 0;
 
@@ -107,18 +111,21 @@ function gatewayOver(notes, verbs = ["update", "create"]) {
 	const rows = rowsOver(notes);
 	const reads = { list: () => ({ rows, total: rows.length }), get: (ref) => rows.find((row) => row.ref === ref) ?? null };
 	minted += 1;
-	return collectionGateway({ id: `streak-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
+	const base = collectionGateway({ id: `streak-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
+	return mappedCollection(base, { needs: MANIFEST.props.days.needs });
 }
 
 const host = document.getElementById("host");
-const settled = () => new Promise((done) => setTimeout(done, 0));
+const settled = async () => {
+	for (let tick = 0; tick < 4; tick += 1) await new Promise((done) => setTimeout(done, 0));
+};
 
-async function draw(notes, settings = {}, verbs) {
+async function draw(notes, verbs, face = EMOJI) {
 	written.length = 0;
-	const filled = {};
-	for (const field of MANIFEST.settings) filled[field.key] = field.default;
 	render(null, host);
-	render(h(Streak, { settings: { ...filled, ...settings }, days: gatewayOver(notes, verbs) }), host);
+	const title = soloGateway(TITLE, {}, "streak-test/title");
+	const emoji = soloGateway(face, {}, `streak-test/emoji/${face}`);
+	render(h(Streak, { days: gatewayOver(notes, verbs), title, emoji }), host);
 	await settled();
 	return host;
 }
@@ -137,12 +144,14 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	await draw(RUN_NOTES);
 	check("an eight-cell tile draws eleven days", dayButtons().length, 11);
 	check("today sits in the middle, the odd column behind it", daysShown().indexOf(TODAY), 5);
+	check("the name and the emoji stand over the rail", host.querySelector(".hs-title").textContent, TITLE);
+	check("and the emoji is drawn, not typed", Boolean(host.querySelector(".hs-title .wg-kit-emoji")), true);
 }
 
 {
 	railWidth = LEAST;
 	await draw(RUN_NOTES);
-	check("the narrowest tile it allows draws three", dayButtons().length, 3);
+	check("the narrowest tile it allows draws four", dayButtons().length, 4);
 	check("and today is still one of them", daysShown().includes(TODAY), true);
 }
 
@@ -170,7 +179,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 		dayButtons().map((button) => button.querySelector(".hs-date").textContent),
 		daysShown().map((day) => String(Number(day.slice(8)))),
 	);
-	check("the footer counts the run", host.querySelector(".hs-foot").textContent, "4 days");
+	check("the header counts the run", host.querySelector(".hs-count").textContent, "4 days");
 }
 
 {
@@ -185,38 +194,51 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 {
 	railWidth = WIDE;
 	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
-	check("one kept day reads in the singular", host.querySelector(".hs-foot").textContent, "1 day");
+	check("one kept day reads in the singular", host.querySelector(".hs-count").textContent, "1 day");
+}
+
+{
+	railWidth = WIDE;
+	await draw(RUN_NOTES, ["update", "create"], "no-such-face");
+	check("an emoji nobody drew leaves the name standing alone", Boolean(host.querySelector(".hs-title .wg-kit-emoji")), false);
+	check("and the name is still written", host.querySelector(".hs-title").textContent, TITLE);
 }
 
 {
 	railWidth = WIDE;
 	await draw([]);
 	check("an empty folder still draws its days", dayButtons().length, 11);
-	check("and the footer goes cold", host.querySelector(".hs-foot").className.includes("is-cold"), true);
+	check("and the count goes cold", host.querySelector(".hs-count").className.includes("is-cold"), true);
 }
 
 {
 	railWidth = WIDE;
-	await draw([{ path: "Habits/2026-01-09.md", props: { created: `${TODAY}T09:00`, done: 1 } }], { dateAnchorProp: "created" });
-	check("the anchor property beats the file name", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	await draw([{ path: "Habits/2026-01-09.md", props: { created: `${TODAY}T09:00`, done: 1 } }]);
+	check("a date property the folder happens to call `created` answers the day need", Boolean(dayLabelled(`${TODAY}, kept`)), true);
 }
 
 {
 	railWidth = WIDE;
-	await draw([{ path: `Habits/${TODAY}.md`, props: { created: "2026-01-09", done: 1 } }]);
-	check("with no anchor property the file name is the day", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
+	check("a folder with no date property at all falls back to the file name", Boolean(dayLabelled(`${TODAY}, kept`)), true);
 }
 
 {
 	railWidth = WIDE;
-	await draw([{ path: "Habits/2026-01-09.md", props: { created: new Date(`${TODAY}T09:00:00Z`), done: 1 } }], { dateAnchorProp: "created" });
+	await draw([{ path: "Habits/2026-01-09.md", props: { created: new Date(`${TODAY}T09:00:00Z`), done: 1 } }]);
 	check("a property holding a real Date still lands on its day", Boolean(dayLabelled(`${TODAY}, kept`)), true);
 }
 
 {
 	railWidth = WIDE;
-	await draw([{ path: `Habits/${TODAY}.md`, props: { steps: 8420 } }], { keptProp: "steps" });
-	check("any value in the kept property counts, not only one", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	await draw([{ path: `Habits/${TODAY}.md`, props: { steps: 8420 } }]);
+	check("a folder counting steps answers the same need, and any value counts", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+}
+
+{
+	railWidth = WIDE;
+	await draw([{ path: `Habits/${TODAY}.md`, props: { steps: 8420, mood: 4 } }]);
+	check("and with two numbers to choose from, the aka list is what picks the right one", Boolean(dayLabelled(`${TODAY}, kept`)), true);
 }
 
 {
@@ -225,14 +247,6 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	dayLabelled(`${TODAY}, not kept`).click();
 	await settled();
 	check("pressing a day with no note creates one named for it", written, [{ verb: "create", name: TODAY, props: { done: 1 } }]);
-}
-
-{
-	railWidth = WIDE;
-	await draw(RUN_NOTES, { dateAnchorProp: "created" });
-	dayLabelled(`${TODAY}, not kept`).click();
-	await settled();
-	check("and it writes the anchor property when there is one", written, [{ verb: "create", name: TODAY, props: { done: 1, created: TODAY } }]);
 }
 
 {
@@ -246,7 +260,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 
 {
 	railWidth = WIDE;
-	await draw(RUN_NOTES, {}, []);
+	await draw(RUN_NOTES, []);
 	check("a folder nobody may write refuses the press", dayButtons().every((button) => button.disabled), true);
 }
 

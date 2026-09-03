@@ -52,7 +52,7 @@ async function bundle(source) {
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		inject: ["tools/fill-inject.js"],
-		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", obsidian: "./tools/obsidian-shim.js" },
+		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "widgetarium/kit/emojis": "./src/emojis.js", "@habit/lib": "./widgets/@habit/lib.js", obsidian: "./tools/obsidian-shim.js" },
 		logLevel: "warning",
 	});
 	return built.outputFiles[0].text;
@@ -147,6 +147,25 @@ async function ask(file, expression, settleMs, hover) {
 }
 
 // CONTEXT: Chrome resolves var() and calc() before this reads it, so these are the painted numbers
+const ROW_SCRIPT = `
+const host = document.getElementById("host");
+host.innerHTML = '<div class="wg-kit-side-list" style="width:170px">'
+  + '<div class="wg-kit-row is-pressable wg-kit-side-row wg-set-row">'
+  + '<span class="wg-kit-row-label">Value</span>'
+  + '<span class="wg-kit-row-value wg-kit-side-value">Editable tabs \\u00b7 Selected tab</span>'
+  + '</div></div>';
+`;
+
+const ROW_ASK = `(() => {
+	const label = document.querySelector(".wg-kit-row-label");
+	const value = document.querySelector(".wg-kit-side-value");
+	return {
+		labelWidthPx: Math.round(label.getBoundingClientRect().width),
+		labelSaid: label.textContent.trim(),
+		valueClipped: value.scrollWidth > value.clientWidth + 1,
+	};
+})()`;
+
 const SHADOW_READER = `
 function shadowLayers(value) {
 	if (!value || value === "none") return [];
@@ -367,7 +386,89 @@ const MOUNT_ASK = `(async () => {
 	};
 })()`;
 
-const [subScript, kitScript, mountScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE)]);
+const STREAK_RAIL_PX = 836;
+const STREAK_SLACK_PX = 830;
+const STREAK_TILE_PX = 120;
+
+const STREAK_PROBE = `
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
+import Widget from "./widgets/@habit/streak/widget.tsx";
+import { collectionGateway, soloGateway } from "./src/gateway/create";
+
+const kept = ["2026-08-31", "2026-09-01", "2026-09-02"];
+const rows = kept.map((day) => ({ ref: "Habits/" + day + ".md", value: { name: day, done: 1, date: day } }));
+const days = collectionGateway({
+	id: "paint/streak",
+	handlers: { list: () => ({ rows, total: rows.length }), get: (ref) => rows.find((row) => row.ref === ref) ?? null },
+});
+
+const host = document.getElementById("host");
+const tile = document.createElement("div");
+tile.className = "wg-tile-body";
+tile.style.width = "${STREAK_RAIL_PX}px";
+tile.style.height = "${STREAK_TILE_PX}px";
+tile.style.display = "grid";
+host.appendChild(tile);
+render(
+	h(Widget, {
+		days,
+		title: soloGateway("Meditation", {}, "paint/streak/title"),
+		emoji: soloGateway("smiling-face-with-halo", {}, "paint/streak/emoji"),
+	}),
+	tile,
+);
+`;
+
+const STREAK_ASK = `(async () => {
+	const settle = (ms) => new Promise((done) => setTimeout(done, ms));
+	const tile = document.querySelector(".wg-tile-body");
+	const measure = () => {
+		const rail = document.querySelector(".hs-rail");
+		const columns = [...document.querySelectorAll(".hs-day")];
+		const edges = [...document.querySelectorAll(".hs-edge")];
+		const railBox = rail.getBoundingClientRect();
+		const widths = columns.map((column) => column.getBoundingClientRect().width);
+		const paintedPx = [...edges, ...columns].reduce((total, node) => total + node.getBoundingClientRect().width, 0);
+		return {
+			railWidthPx: Math.round(railBox.width),
+			columns: columns.length,
+			widestColumnPx: Math.max(...widths),
+			narrowestColumnPx: Math.min(...widths),
+			unpaintedPx: Math.round(railBox.width - paintedPx),
+			firstColumnStartsAtPx: Math.round(columns[0].getBoundingClientRect().left - railBox.left),
+			lastColumnEndsAtPx: Math.round(railBox.right - columns[columns.length - 1].getBoundingClientRect().right),
+		};
+	};
+	const tight = measure();
+	tile.style.width = "${STREAK_SLACK_PX}px";
+	await settle(600);
+	const slack = measure();
+	const round = (value) => Math.round(value * 10) / 10;
+	const tileBox = document.querySelector(".habit-streak").getBoundingClientRect();
+	const titleBox = document.querySelector(".hs-top").getBoundingClientRect();
+	const railBox = document.querySelector(".hs-rail").getBoundingClientRect();
+	const rings = [...document.querySelectorAll(".hs-ring")];
+	const firstRing = rings[0].getBoundingClientRect();
+	const lastRing = rings[rings.length - 1].getBoundingClientRect();
+	return {
+		tight,
+		slack,
+		titleSaid: document.querySelector(".hs-title span").textContent,
+		emojiDrawn: Boolean(document.querySelector(".hs-title .wg-kit-emoji path")),
+		titleAboveRail: titleBox.bottom <= railBox.top,
+		tilePx: Math.round(tileBox.height),
+		abovePx: round(titleBox.top - tileBox.top),
+		betweenPx: round(railBox.top - titleBox.bottom),
+		belowPx: round(tileBox.bottom - railBox.bottom),
+		titleStartsAtPx: round(document.querySelector(".hs-title").getBoundingClientRect().left - tileBox.left),
+		firstRingStartsAtPx: round(firstRing.left - tileBox.left),
+		countEndsAtPx: round(tileBox.right - document.querySelector(".hs-count").getBoundingClientRect().right),
+		lastRingEndsAtPx: round(tileBox.right - lastRing.right),
+	};
+})()`
+
+const [subScript, kitScript, mountScript, streakScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(STREAK_PROBE)]);
 
 for (const theme of ["light", "dark"]) {
 	console.log(`\n— ${theme} —`);
@@ -398,6 +499,11 @@ for (const theme of ["light", "dark"]) {
 	check("a plain light card is still edgeless", kit.plainCard, "none");
 	check("and only a lifted card draws one", kit.liftedCardInsets, 1);
 
+	const row = await ask(pageFor(theme, ROW_SCRIPT, "row"), ROW_ASK, 1200);
+	check("a long value never squeezes the label off its own row", row.labelWidthPx > 0, true);
+	check("the label is read whole, not clipped to nothing", row.labelSaid, "Value");
+	check("the value gives way instead, and says so with an ellipsis", row.valueClipped, true);
+
 	const mount = await ask(pageFor(theme, mountScript, "mount"), MOUNT_ASK, 2500);
 	check("a mount row ends in two controls", mount.trailingCount, 2);
 	check("spaced the way the kit spaces adjacent controls", mount.gaps, [8]);
@@ -408,6 +514,24 @@ for (const theme of ["light", "dark"]) {
 	check("and it can be searched", mount.searchable, true);
 	check("no bare list of titles is left anywhere", mount.bareList, false);
 	check("a pick lands under its declared name, disambiguated", mount.names, ["Kanban", "Archived columns", "Archived columns 2", "Add a view"]);
+
+	const streak = await ask(pageFor(theme, streakScript, "streak"), STREAK_ASK, 2000);
+	check("the streak rail takes the whole tile", streak.tight.railWidthPx, STREAK_RAIL_PX);
+	check("and leaves no unpainted slack across it", [streak.tight.unpaintedPx, streak.slack.unpaintedPx], [0, 0]);
+	check("the days start one connector in, not on a centring margin", streak.tight.firstColumnStartsAtPx, 12);
+	check("and end one connector from the far side", streak.tight.lastColumnEndsAtPx, 12);
+	check("every column is the width of the next", streak.tight.widestColumnPx - streak.tight.narrowestColumnPx < 1, true);
+	check("a width that fitted eighteen days before now fits nineteen", streak.tight.columns, 19);
+	check("no column is squeezed under the ring it holds", streak.tight.narrowestColumnPx >= 36, true);
+	check("where a day is left over, the columns take the room instead of a margin", streak.slack.widestColumnPx > 44, true);
+	check("and they still fill the rail exactly", [streak.slack.columns, streak.slack.railWidthPx], [18, STREAK_SLACK_PX]);
+	check("the habit is named over the rail", [streak.titleSaid, streak.titleAboveRail], ["Meditation", true]);
+	check("beside a drawn emoji, not a typed one", streak.emojiDrawn, true);
+	console.log(`    gaps above/between/below: ${streak.abovePx} / ${streak.betweenPx} / ${streak.belowPx} in a ${streak.tilePx}px tile; name at ${streak.titleStartsAtPx} vs ring at ${streak.firstRingStartsAtPx}; count at ${streak.countEndsAtPx} vs ring at ${streak.lastRingEndsAtPx}`);
+	check("the tile is drawn at its own two-cell height", streak.tilePx, 120);
+	check("the row above the rail is spaced as evenly as the rail is below it", [streak.abovePx, streak.betweenPx], [streak.belowPx, streak.belowPx]);
+	check("the name starts where the first ring starts", Math.abs(streak.titleStartsAtPx - streak.firstRingStartsAtPx) <= 0.5, true);
+	check("and the run count ends where the last ring ends", Math.abs(streak.countEndsAtPx - streak.lastRingEndsAtPx) <= 0.5, true);
 }
 
 console.log(failed === 0 ? "\npaint: clean" : `\npaint: ${failed} failed`);
