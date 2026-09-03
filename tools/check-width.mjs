@@ -15,7 +15,7 @@ function widgetFiles(dir) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
 		const full = path.join(dir, entry.name);
 		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory())) found.push(...widgetFiles(full));
-		else if (entry.name === "widget.jsx") found.push(full);
+		else if (/^widget\.(jsx|tsx|js|ts)$/.test(entry.name)) found.push(full);
 	}
 	return found;
 }
