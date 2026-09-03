@@ -1,0 +1,9 @@
+The 35 shape outlines in shapes.json are Material Design shapes, ported to the
+web by material-shapes-ts (https://github.com/ruanspies/material-shapes-ts) from
+AndroidX Graphics Shapes. Both are licensed under the Apache License 2.0, a copy
+of which sits beside this file.
+
+Regenerate with: node tools/fetch-shapes.mjs
+
+Coordinates live in the normalized [0, 1] shape space, so a path renders at its
+native proportions inside viewBox="0 0 1 1".
