@@ -249,10 +249,10 @@ function edgeClass(keptDays: Set<string>, day: string, towards: number) {
 	return keptDays.has(day) && keptDays.has(shiftedBy(day, towards)) ? "hs-edge is-run" : "hs-edge";
 }
 
-function dayColumns(shown: string[], keptDays: Set<string>, today: string, canPress: boolean): DayColumn[] {
+function dayColumns(shown: string[], keptDays: Set<string>, today: string, canWrite: boolean): DayColumn[] {
 	return shown.map((day) => {
 		const kept = keptDays.has(day);
-		return { day, kept, seat: seatClass(keptDays, day), ring: ringClass(day, kept, today), canPress };
+		return { day, kept, seat: seatClass(keptDays, day), ring: ringClass(day, kept, today), canPress: canWrite && day <= today };
 	});
 }
 

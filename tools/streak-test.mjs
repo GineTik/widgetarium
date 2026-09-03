@@ -264,5 +264,29 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	check("a folder nobody may write refuses the press", dayButtons().every((button) => button.disabled), true);
 }
 
+{
+	railWidth = WIDE;
+	await draw(RUN_NOTES);
+	const pressable = (day) => !dayButtons()[daysShown().indexOf(day)].disabled;
+	check("a day that has not happened yet cannot be pressed", pressable(shiftedBy(TODAY, 1)), false);
+	check("nor any day after it", daysShown().filter((day) => day > TODAY).every((day) => !pressable(day)), true);
+	check("today can", pressable(TODAY), true);
+	check("and so can every day behind it", daysShown().filter((day) => day < TODAY).every(pressable), true);
+}
+
+{
+	railWidth = WIDE;
+	const AHEAD = shiftedBy(TODAY, 2);
+	await draw([...RUN_NOTES, { path: `Habits/${AHEAD}.md`, props: { done: 1 } }]);
+	const at = daysShown().indexOf(AHEAD);
+	check("a day marked ahead of time still draws its flame", Boolean(dayButtons()[at].querySelector(".hs-flame")), true);
+	check("and wears the same ring a kept day wears", dayButtons()[at].querySelector(".hs-ring").className, "hs-ring is-kept");
+	check("and its seat carries the same band", seatsShown()[at], "hs-seat is-run is-run-start is-run-end");
+	check("it is only the press that is refused", dayButtons()[at].disabled, true);
+	dayButtons()[at].click();
+	await settled();
+	check("so pressing it writes nothing", written, []);
+}
+
 console.log(failed ? `\n${failed} failed` : "\nthe streak holds");
 process.exit(failed ? 1 : 0);
