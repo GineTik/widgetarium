@@ -130,7 +130,7 @@ export function daysLogged(notes) {
 		const day = dayOfNote(note);
 		if (!day) continue;
 		noteByDay.set(day, note);
-		if (note.done !== undefined && note.done !== null) keptDays.add(day);
+		if (note.done != null) keptDays.add(day);
 	}
 	return { noteByDay, keptDays };
 }

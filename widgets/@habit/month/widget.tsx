@@ -7,11 +7,11 @@ import { daysLogged, FLAME, isoOf, pressing } from "@habit/lib";
 const ACROSS = 7;
 const MOST_WEEKS = 6;
 
-const NUMBER_SHARE = 0.56;
-const TUCK_SHARE = 0.08;
+const DAY_NUMBER_SHARE = 0.56;
+const NUMBER_GAP_SHARE = 0.08;
 const SEAT_SHARE = 1.16;
 const ROW_GAP_SHARE = 0.16;
-const WEEK_HEAD_SHARE = 0.52;
+const WEEKDAY_ROW_SHARE = 0.52;
 const COLUMN_FILL = 0.8;
 const FLAME_SHARE = 0.6;
 const SMALLEST_RING_PX = 9;
@@ -34,11 +34,11 @@ const STYLE = `
 	gap: var(--size-4-2, 8px);
 }
 
-.hm-back {
+.hm-flip {
 	transform: rotate(180deg);
 }
 
-.hm-name {
+.hm-title {
 	text-align: center;
 	font-size: max(11px, min(var(--font-ui-medium, 15px), calc(var(--hm-ring) * 0.62)));
 	font-weight: var(--font-semibold, 600);
@@ -59,9 +59,9 @@ const STYLE = `
 .hm-weekday {
 	display: grid;
 	place-items: center;
-	height: var(--hm-head);
+	height: var(--hm-weekday);
 	padding-bottom: calc(var(--hm-gap) / 2);
-	font-size: calc(var(--hm-head) * 0.72);
+	font-size: calc(var(--hm-weekday) * 0.72);
 	font-weight: var(--font-medium, 500);
 	line-height: 1;
 	color: var(--text-faint);
@@ -74,7 +74,7 @@ const STYLE = `
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	gap: var(--hm-tuck);
+	gap: var(--hm-number-gap);
 	padding: 0;
 	border: 0;
 	border-radius: 0;
@@ -88,10 +88,10 @@ const STYLE = `
 	cursor: default;
 }
 
-.hm-num {
-	height: var(--hm-num);
-	font-size: calc(var(--hm-num) * 0.74);
-	line-height: var(--hm-num);
+.hm-number {
+	height: var(--hm-number);
+	font-size: calc(var(--hm-number) * 0.74);
+	line-height: var(--hm-number);
 	font-weight: var(--font-medium, 500);
 	font-variant-numeric: tabular-nums;
 }
@@ -158,7 +158,6 @@ function filled(sentence: string, values: Record<string, string>) {
 type DayNote = VaultRecord & {
 	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
 	date?: (Day & Aka<"created" | "day" | "when" | "on">) | null;
-	props?: Record<string, unknown>;
 };
 
 type Accesses = {
@@ -167,11 +166,11 @@ type Accesses = {
 	create?: CreateAction;
 };
 
-type Box = { width: number; height: number };
+type Size = { width: number; height: number };
 
 type MonthDay = {
 	day: string;
-	date: number;
+	dayOfMonth: number;
 	isOutside: boolean;
 };
 
@@ -182,7 +181,7 @@ type DayCell = MonthDay & {
 	canPress: boolean;
 };
 
-function weeksOf(year: number, month: number, isWeekStartingMonday: boolean) {
+function daysInWholeWeeks(year: number, month: number, isWeekStartingMonday: boolean) {
 	const firstWeekday = new Date(year, month, 1).getDay();
 	const lead = isWeekStartingMonday ? (firstWeekday + 6) % 7 : firstWeekday;
 	const length = new Date(year, month + 1, 0).getDate();
@@ -190,27 +189,27 @@ function weeksOf(year: number, month: number, isWeekStartingMonday: boolean) {
 	const days: MonthDay[] = [];
 	for (let at = 0; at < span; at += 1) {
 		const when = new Date(year, month, at - lead + 1);
-		days.push({ day: isoOf(when), date: when.getDate(), isOutside: when.getMonth() !== month });
+		days.push({ day: isoOf(when), dayOfMonth: when.getDate(), isOutside: when.getMonth() !== month });
 	}
 	return days;
 }
 
 // TRADE-OFF: sized for the six weeks a month can need, never the five it often has — a ring resized by paging reads as breakage
-function ringFor({ width, height }: Box) {
-	const perWeek = NUMBER_SHARE + TUCK_SHARE + SEAT_SHARE + ROW_GAP_SHARE;
-	const tallest = height / (WEEK_HEAD_SHARE + ROW_GAP_SHARE / 2 + MOST_WEEKS * perWeek);
+function ringFor({ width, height }: Size) {
+	const perWeek = DAY_NUMBER_SHARE + NUMBER_GAP_SHARE + SEAT_SHARE + ROW_GAP_SHARE;
+	const tallest = height / (WEEKDAY_ROW_SHARE + ROW_GAP_SHARE / 2 + MOST_WEEKS * perWeek);
 	const widest = (width / ACROSS) * COLUMN_FILL;
 	return Math.max(SMALLEST_RING_PX, Math.min(LARGEST_RING_PX, tallest, widest));
 }
 
-function sizes(ring: number) {
+function sizesFor(ring: number) {
 	return {
 		"--hm-ring": `${ring}px`,
 		"--hm-seat": `${ring * SEAT_SHARE}px`,
-		"--hm-num": `${ring * NUMBER_SHARE}px`,
-		"--hm-tuck": `${ring * TUCK_SHARE}px`,
+		"--hm-number": `${ring * DAY_NUMBER_SHARE}px`,
+		"--hm-number-gap": `${ring * NUMBER_GAP_SHARE}px`,
 		"--hm-gap": `${ring * ROW_GAP_SHARE}px`,
-		"--hm-head": `${ring * WEEK_HEAD_SHARE}px`,
+		"--hm-weekday": `${ring * WEEKDAY_ROW_SHARE}px`,
 	};
 }
 
@@ -226,8 +225,7 @@ function ringClass(day: string, kept: boolean, today: string) {
 	return day === today ? "hm-ring is-today" : "hm-ring";
 }
 
-function dayCells(year: number, month: number, isWeekStartingMonday: boolean, keptDays: Set<string>, today: string, canPress: boolean): DayCell[] {
-	const days = weeksOf(year, month, isWeekStartingMonday);
+function cellsOver(days: MonthDay[], keptDays: Set<string>, today: string, canPress: boolean): DayCell[] {
 	const kept = days.map((each) => keptDays.has(each.day));
 	return days.map((each, at) => ({
 		...each,
@@ -238,7 +236,7 @@ function dayCells(year: number, month: number, isWeekStartingMonday: boolean, ke
 	}));
 }
 
-function useBox(node: { current: HTMLElement | null }, fallback: Box) {
+function useSize(node: { current: HTMLElement | null }, fallback: Size) {
 	const [box, setBox] = useState(fallback);
 	useEffect(() => {
 		const held = node.current;
@@ -258,7 +256,7 @@ function Flame({ size }: { size: number }) {
 	);
 }
 
-function DayButton({ cell, flame, onPress }: { cell: DayCell; flame: number; onPress: () => void }) {
+function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSize: number; onPress: () => void }) {
 	return (
 		<button
 			type="button"
@@ -268,9 +266,9 @@ function DayButton({ cell, flame, onPress }: { cell: DayCell; flame: number; onP
 			aria-label={filled(cell.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: cell.day })}
 			onClick={onPress}
 		>
-			<span className="hm-num">{cell.date}</span>
+			<span className="hm-number">{cell.dayOfMonth}</span>
 			<span className={cell.seat}>
-				<span className={cell.ring}>{cell.kept ? <Flame size={flame} /> : null}</span>
+				<span className={cell.ring}>{cell.kept ? <Flame size={flameSize} /> : null}</span>
 			</span>
 		</button>
 	);
@@ -278,7 +276,7 @@ function DayButton({ cell, flame, onPress }: { cell: DayCell; flame: number; onP
 
 export default createWidget(function HabitMonth({ settings, days }: { settings: Record<string, unknown>; days: CollectionGateway<DayNote, Accesses> }) {
 	const room = useRef<HTMLDivElement | null>(null);
-	const box = useBox(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
+	const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
 	const [shift, setShift] = useState(0);
 
 	const listed = useData(days.list);
@@ -287,20 +285,22 @@ export default createWidget(function HabitMonth({ settings, days }: { settings: 
 	const now = new Date();
 	const today = isoOf(now);
 	const shown = new Date(now.getFullYear(), now.getMonth() + shift, 1);
-	const isWeekStartingMonday = settings.isWeekStartingMonday !== false;
+	const isWeekStartingMonday = typeof settings.isWeekStartingMonday === "boolean" ? settings.isWeekStartingMonday : true;
 
 	const ring = ringFor(box);
+	const flameSize = Math.round(ring * FLAME_SHARE);
 	const press = pressing({ days, noteByDay, keptDays });
-	const cells = dayCells(shown.getFullYear(), shown.getMonth(), isWeekStartingMonday, keptDays, today, canDo(days.update) && canDo(days.create));
+	const month = daysInWholeWeeks(shown.getFullYear(), shown.getMonth(), isWeekStartingMonday);
+	const cells = cellsOver(month, keptDays, today, canDo(days.update) && canDo(days.create));
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-month" style={sizes(ring)}>
+		<WidgetRoot background="var(--wg-kit-fill)" className="habit-month" style={sizesFor(ring)}>
 			<style>{STYLE}</style>
 			<div className="hm-head">
 				<IconButton size="s" label="Previous month" onClick={() => setShift(shift - 1)}>
-					<Icon name="chevron" size={15} className="hm-back" />
+					<Icon name="chevron" size={15} className="hm-flip" />
 				</IconButton>
-				<span className="hm-name">{`${MONTHS[shown.getMonth()]} ${shown.getFullYear()}`}</span>
+				<span className="hm-title">{`${MONTHS[shown.getMonth()]} ${shown.getFullYear()}`}</span>
 				<IconButton size="s" label="Next month" onClick={() => setShift(shift + 1)}>
 					<Icon name="chevron" size={15} />
 				</IconButton>
@@ -312,7 +312,7 @@ export default createWidget(function HabitMonth({ settings, days }: { settings: 
 					</span>
 				))}
 				{cells.map((cell) => (
-					<DayButton key={cell.day} cell={cell} flame={Math.round(ring * FLAME_SHARE)} onPress={() => press(cell.day)} />
+					<DayButton key={cell.day} cell={cell} flameSize={flameSize} onPress={() => press(cell.day)} />
 				))}
 			</div>
 		</WidgetRoot>

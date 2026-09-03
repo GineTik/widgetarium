@@ -171,9 +171,10 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 
 {
 	await draw(RUN_NOTES);
-	check("every day of the month carries its own date", dayButtons().map((button) => button.querySelector(".hm-num").textContent).slice(0, 3).every((held) => /^\d+$/.test(held)), true);
+	check("every day of the month carries its own date", dayButtons().map((button) => button.querySelector(".hm-number").textContent).slice(0, 3).every((held) => /^\d+$/.test(held)), true);
 	check("the weekdays are named once, above the grid", [...host.querySelectorAll(".hm-weekday")].map((each) => each.textContent), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
 	check("and a week may start on Sunday instead", await draw(RUN_NOTES, { settings: { isWeekStartingMonday: false } }).then(() => host.querySelector(".hm-weekday").textContent), "Sun");
+	check("a setting left behind as anything but a boolean is no answer at all", await draw(RUN_NOTES, { settings: { isWeekStartingMonday: "false" } }).then(() => host.querySelector(".hm-weekday").textContent), "Mon");
 }
 
 {
@@ -212,14 +213,14 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	check("a folder nobody may write refuses the press", dayButtons().every((button) => button.disabled), true);
 }
 
-const SHARES = { num: 0.56, tuck: 0.08, seat: 1.16, gap: 0.16, head: 0.52 };
+const SHARES = { number: 0.56, numberGap: 0.08, seat: 1.16, gap: 0.16, weekday: 0.52 };
 const ringWanted = ({ width, height }) => {
-	const perWeek = SHARES.num + SHARES.tuck + SHARES.seat + SHARES.gap;
-	const tallest = height / (SHARES.head + SHARES.gap / 2 + 6 * perWeek);
+	const perWeek = SHARES.number + SHARES.numberGap + SHARES.seat + SHARES.gap;
+	const tallest = height / (SHARES.weekday + SHARES.gap / 2 + 6 * perWeek);
 	const widest = (width / 7) * 0.8;
 	return Math.max(9, Math.min(46, tallest, widest));
 };
-const stackedHeight = () => pxOf("--hm-head") + pxOf("--hm-gap") / 2 + 6 * (pxOf("--hm-num") + pxOf("--hm-tuck") + pxOf("--hm-seat") + pxOf("--hm-gap"));
+const stackedHeight = () => pxOf("--hm-weekday") + pxOf("--hm-gap") / 2 + 6 * (pxOf("--hm-number") + pxOf("--hm-number-gap") + pxOf("--hm-seat") + pxOf("--hm-gap"));
 
 for (const [name, box] of [
 	["the tile it opens at", { width: TILE(6) - 16, height: TILE(6) - 60 }],
@@ -234,11 +235,11 @@ for (const [name, box] of [
 	check(`${name}: and seven of them fit its width`, ring <= box.width / 7, true);
 	check(`${name}: the ring is the tighter of what the two sides allow`, Math.abs(ring - ringWanted(box)) < 0.01, true);
 	check(`${name}: every space is a share of the ring`, [
-		Math.abs(pxOf("--hm-num") - ring * SHARES.num) < 0.01,
-		Math.abs(pxOf("--hm-tuck") - ring * SHARES.tuck) < 0.01,
+		Math.abs(pxOf("--hm-number") - ring * SHARES.number) < 0.01,
+		Math.abs(pxOf("--hm-number-gap") - ring * SHARES.numberGap) < 0.01,
 		Math.abs(pxOf("--hm-seat") - ring * SHARES.seat) < 0.01,
 		Math.abs(pxOf("--hm-gap") - ring * SHARES.gap) < 0.01,
-		Math.abs(pxOf("--hm-head") - ring * SHARES.head) < 0.01,
+		Math.abs(pxOf("--hm-weekday") - ring * SHARES.weekday) < 0.01,
 	].every(Boolean), true);
 }
 
