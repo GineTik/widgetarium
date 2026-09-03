@@ -111,7 +111,7 @@ const check = (name, got, want) => {
 	const work = mkdtempSync(nodePath.join(tmpdir(), "wg-lib-"));
 	const copy = nodePath.join(work, "lib.mjs");
 	writeFileSync(copy, readFileSync("widgets/@habit/lib.js", "utf8"));
-	const { readLog, shapeOf, shiftedBy, streakOf, bucketOf, groupOf } = await import(`file://${copy}`);
+	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf, bucketOf, groupOf } = await import(`file://${copy}`);
 
 	const habits = [
 		{ path: "Habits/Exercise.md", name: "Exercise", props: { entries: ["2026-08-29", "2026-08-30", "2026-08-31"] } },
@@ -145,6 +145,31 @@ const check = (name, got, want) => {
 	check("weeks fold to the monday they start on", bucketOf(run, "week"), [{ label: "2026-08-24", value: 2 }, { label: "2026-08-31", value: 1 }]);
 	check("months to their own name", bucketOf(run, "month"), [{ label: "2026-08", value: 3 }]);
 	check("and a category count is by value, biggest first", groupOf([{ props: { tag: ["a", "b"] } }, { props: { tag: "a" } }], "tag"), [{ label: "a", value: 2 }, { label: "b", value: 1 }]);
+
+	const notes = [
+		{ ref: "Days/2026-08-29.md", name: "2026-08-29", done: 1 },
+		{ ref: "Days/2026-08-30.md", name: "2026-08-30", done: null },
+		{ ref: "Days/anything.md", name: "anything", date: "2026-08-31T09:00", done: 2 },
+		{ ref: "Days/notes.md", name: "notes", done: 1 },
+	];
+	const logged = daysLogged(notes);
+	check("a day note is found by the date in its name", logged.noteByDay.get("2026-08-29").ref, "Days/2026-08-29.md");
+	check("a date property outranks the name", logged.noteByDay.get("2026-08-31").ref, "Days/anything.md");
+	check("a note naming no day is no day", logged.noteByDay.has("notes"), false);
+	check("an emptied property is a day not kept", [...logged.keptDays].sort(), ["2026-08-29", "2026-08-31"]);
+
+	const written = [];
+	const days = {
+		update: (input) => written.push({ verb: "update", ...input }),
+		create: (draft) => written.push({ verb: "create", ...draft }),
+	};
+	const press = pressing({ days, ...logged });
+	await press("2026-08-29");
+	check("pressing a kept day empties its property", written.at(-1), { verb: "update", ref: "Days/2026-08-29.md", data: { done: null } });
+	await press("2026-08-30");
+	check("pressing a day that has a note but no mark fills it", written.at(-1), { verb: "update", ref: "Days/2026-08-30.md", data: { done: 1 } });
+	await press("2026-09-01");
+	check("and pressing a day with no note at all makes one named for it", written.at(-1), { verb: "create", name: "2026-09-01", props: { done: 1 } });
 }
 
 {
