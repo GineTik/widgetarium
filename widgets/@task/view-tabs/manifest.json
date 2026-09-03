@@ -80,5 +80,6 @@
 			"h": 1
 		}
 	},
-	"stackBelowPx": 120
+	"stackBelowPx": 120,
+	"tallestPx": 96
 }

@@ -124,5 +124,6 @@
 			}
 		}
 	},
-	"stackBelowPx": 140
+	"stackBelowPx": 140,
+	"tallestPx": 160
 }

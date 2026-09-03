@@ -165,5 +165,6 @@
 			}
 		}
 	},
-	"stackBelowPx": 320
+	"stackBelowPx": 320,
+	"tallestPx": 96
 }
