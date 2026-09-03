@@ -165,6 +165,16 @@ console.log("\n— the row of two either stands or stacks, and nothing else chan
 	check("and the kanban is last at every width", measured.widths.map((seen) => seen.rows.at(-1)), WIDTHS.map(() => ["board"]));
 }
 
+console.log("\n— the plugin's own surface draws a board that carries rows —");
+{
+	const seen = measured.surface;
+	check("the surface drew a tree, not a grid", seen.drawn, true);
+	check("four rows of one, because at 1194 the filter will not share with the tabs", seen.rows, [1, 1, 1, 1]);
+	check("every cell painted a widget, the dialog included", seen.painted, 5);
+	check("the dialog is drawn without taking a row", seen.overlays, 1);
+	check("and no row is wider than the board it sits in", seen.widest <= 1194.5, true);
+}
+
 console.log("\n— the ratio the person chose is the ratio drawn —");
 {
 	const wide = measured.widths.find((seen) => seen.width === 1728);

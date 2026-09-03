@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
-import { WidgetHost } from "../src/surface.js";
+import { WidgetHost, WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
 import { WidgetRegistry } from "../src/registry.js";
 import { createGatewayRefs, createViewCells } from "../src/gateway/refs.js";
@@ -106,17 +106,47 @@ function readOne(width) {
 
 const mount = document.querySelector(".wg-host");
 
-function draw() {
-	render(
-		WIDTHS.map((width) => boardNode(width)),
-		mount,
+const SURFACE_WIDTH = 1194;
+
+function surfaceNode() {
+	const laid = { ...BOARD, layout: TREE.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) }))), layouts: {} };
+	return h(
+		"div",
+		{ className: "wg-surface-probe", key: "surface", style: { width: `${SURFACE_WIDTH}px` } },
+		h(WidgetSurface, {
+			board: laid,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: SURFACE_WIDTH,
+			onChange: () => {},
+			onToggleEditing: () => {},
+			onWidth: () => {},
+		}),
 	);
+}
+
+function draw() {
+	render([...WIDTHS.map((width) => boardNode(width)), surfaceNode()], mount);
+}
+
+function readSurface() {
+	const root = document.querySelector(".wg-surface-probe .wg-tree");
+	if (!root) return { drawn: false, host: document.querySelector(".wg-surface-probe")?.innerHTML.slice(0, 600) ?? "" };
+	return {
+		drawn: true,
+		rows: [...root.querySelectorAll(".wg-tree-row")].map((node) => node.querySelectorAll(".wg-tree-cell").length),
+		painted: [...root.querySelectorAll(".wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
+		overlays: root.querySelectorAll(".wg-tree-overlay").length,
+		widest: Math.max(...[...root.querySelectorAll(".wg-tree-row")].map((node) => node.getBoundingClientRect().width)),
+	};
 }
 
 function report() {
 	const sink = document.getElementById("wg-measure");
 	try {
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), failures });
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: readSurface(), failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}
