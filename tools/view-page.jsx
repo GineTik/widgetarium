@@ -3,56 +3,14 @@ import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
 import { WidgetRegistry } from "../src/registry.js";
+import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 
 const FILES = JSON.parse(document.getElementById("wg-widgets").textContent);
 const BOARD = JSON.parse(document.getElementById("wg-board").textContent);
 const ROWS = JSON.parse(document.getElementById("wg-rows").textContent);
 
-function under(at) {
-	const prefix = `${at}/`;
-	return Object.keys(FILES).filter((key) => key.startsWith(prefix));
-}
-
-function folders(at) {
-	const seen = new Set();
-	for (const key of under(at)) {
-		const rest = key.slice(at.length + 1);
-		if (rest.includes("/")) seen.add(`${at}/${rest.split("/")[0]}`);
-	}
-	return [...seen];
-}
-
-function files(at) {
-	return under(at).filter((key) => !key.slice(at.length + 1).includes("/"));
-}
-
-const adapter = {
-	exists: async (at) => Object.prototype.hasOwnProperty.call(FILES, at) || folders(at).length > 0 || files(at).length > 0,
-	read: async (at) => FILES[at],
-	list: async (at) => ({ folders: folders(at), files: files(at) }),
-};
-
-const slot = {
-	canCreate: true,
-	canUpdate: true,
-	canRemove: true,
-	canSubscribe: false,
-	canDescribe: true,
-	list: async () => ({ rows: ROWS, total: ROWS.length }),
-	get: async (ref) => ROWS.find((row) => row.path === ref.path) ?? null,
-	describe: async () => [],
-	create: async () => null,
-	update: async () => null,
-	remove: async () => null,
-};
-
-const host = {
-	platform: "probe",
-	can: {},
-	slot: () => slot,
-	ui: { notify() {}, openNote() {} },
-	here: null,
-};
+const adapter = createFileTree(FILES);
+const host = createProbeHost(createRowSlot(ROWS));
 
 const failures = [];
 const warnings = [];
@@ -118,22 +76,44 @@ function read() {
 		drawn: drawn(),
 		kanbans: document.querySelectorAll(".orbi-kanban").length,
 		picker: document.querySelector(".orbi-view-tabs .ovt-pick") !== null,
+		strip: [...document.querySelectorAll(".wg-tabs .wg-tabs-tab")].map((node) => node.textContent.trim()),
+		filterGroups: [...document.querySelectorAll(".ofp-group-head")].map((node) => node.textContent.trim()),
+		groupStrip: [...document.querySelectorAll(".ovg-strip .wg-tabs-tab")].map((node) => node.textContent.trim()),
+		groupSelected: document.querySelector('.ovg-strip .wg-tabs-tab[aria-selected="true"]')?.textContent.trim() ?? null,
+		kinds: [...document.querySelectorAll('.wg-set-pop [role="tab"]')].map((node) => node.textContent.trim()),
+		popRows: [...document.querySelectorAll(".wg-set-pop .wg-set-row .wg-kit-row-label")].map((node) => node.textContent.trim()),
+		popNote: document.querySelector(".wg-set-pop.is-open:not(.is-exiting) .wg-set-pop-note")?.textContent.trim() ?? null,
+		popTitle: document.querySelector(".wg-set-pop .wg-set-pop-title")?.textContent.trim() ?? null,
+		popHint: document.querySelector(".wg-set-pop .wg-set-pop-hint")?.textContent.trim() ?? null,
+		popArea: document.querySelector(".wg-set-pop textarea")?.value ?? null,
+		popError: document.querySelector(".wg-set-pop .wg-set-pop-error")?.textContent.trim() ?? null,
+		applyOff: document.querySelector('.wg-set-pop button[disabled]')?.textContent.trim() ?? null,
+		popFields: [...document.querySelectorAll(".wg-set-pop input")].map((node) => node.placeholder || node.value),
 		tabLabel: document.querySelector(".orbi-view-tabs .ovt-pick .wg-kit-btn-label")?.textContent ?? null,
 		stray: document.querySelector(".ovg-stray")?.textContent ?? null,
 		probe: document.querySelector(".wg-probe-seen")?.textContent ?? null,
 		deaf: document.querySelector(".ovt-deaf")?.textContent ?? null,
 		deafClipped: clipped(document.querySelector(".ovt-deaf .wg-kit-btn-label") ?? document.querySelector(".ovt-deaf")),
 		hints: [...document.querySelectorAll(".wg-set-window .wg-kit-side-group")]
-			.filter((node) => node.querySelector(".wg-kit-side-label")?.textContent.trim() === "Settings")
+			.filter((node) => ["Settings", "Selection"].includes(node.querySelector(".wg-kit-side-label")?.textContent.trim()))
 			.map((node) => node.querySelector(".wg-kit-side-hint")?.textContent.trim() ?? null),
 		items: [...document.querySelectorAll(".wg-kit-pop-item")].map((node) => node.textContent.trim()),
 		tabItems: [...document.querySelectorAll(".orbi-view-tabs .wg-kit-pop-item")].map((node) => node.textContent.trim()),
-		rows: [...document.querySelectorAll(".wg-set-panel .wg-set-row .wg-kit-row-label")].map((node) => node.textContent.trim()),
+		rows: [...document.querySelectorAll(".wg-set-panel .wg-set-row .wg-kit-row-label")].filter((node) => !node.closest(".wg-set-pop")).map((node) => node.textContent.trim()),
+		popItems: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-pop-item")].map((node) => node.textContent.trim()),
+		popBoxes: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-side-group .wg-kit-pop-item .wg-set-pop-name")].map(
+			(node) => node.textContent.trim(),
+		),
+		popGroups: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-side-label")].map((node) => node.textContent.trim()),
+		popDraft: document.querySelector(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-field-input")?.value ?? null,
+		rowValues: [...document.querySelectorAll(".wg-set-panel .wg-set-row")].map(
+			(node) => `${node.querySelector(".wg-kit-row-label")?.textContent.trim()} = ${node.querySelector(".wg-set-path")?.textContent.trim() ?? ""}`,
+		),
 		painted: painted(),
 		writes,
 		context: window.wgContext ? window.wgContext.all() : null,
 		provider: window.wgContext ? { view: window.wgContext.providerOf("view"), views: window.wgContext.providerOf("views") } : null,
-		tiles: board.tiles.map((tile) => ({ id: tile.id, widget: tile.widget, settings: tile.settings ?? null, mounted: tile.mounted ?? null })),
+		tiles: board.tiles.map((tile) => ({ id: tile.id, widget: tile.widget, settings: tile.settings ?? null, props: tile.props ?? null, mounted: tile.mounted ?? null })),
 		layouts: Object.fromEntries(Object.entries(board.layouts).map(([columns, places]) => [columns, places.map((place) => `${place.id} ${place.x},${place.y} ${place.w}x${place.h}`)])),
 		failures,
 		warnings,
