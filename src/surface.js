@@ -22,7 +22,7 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { aimedAt, GAP_PX, innerOf, layTree, moved, resized, restacked, sameTarget, tallestOf, widthsOf } from "./tree.js";
+import { aimedAt, GAP_PX, innerOf, layTree, moved, partedBy, resized, restacked, sameTarget, tallestOf, widthsOf } from "./tree.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -678,45 +678,66 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 		window.addEventListener("pointerup", stop);
 	};
 
-	const lineFor = (target, bands, box) => {
-		if (target.kind === "beside") {
-			const band = bands.find((one) => one.from === target.row);
-			return { left: target.edge - 1, top: band.top, width: 2, height: band.rowBottom - band.top };
-		}
-		const above = bands.filter((one) => one.from < target.at).at(-1);
-		return { left: box.left, top: above ? above.rowBottom : bands[0].top, width: box.width, height: 2 };
-	};
-
 	const bandsNow = () =>
 		[...(rootRef.current?.querySelectorAll(".wg-tree-band") ?? [])].map((band) => {
 			const box = band.getBoundingClientRect();
 			const row = band.querySelector(".wg-tree-row").getBoundingClientRect();
 			return {
 				from: Number(band.dataset.row),
+				node: band,
+				left: box.left,
+				width: box.width,
 				top: box.top,
 				bottom: box.bottom,
 				rowBottom: row.bottom,
-				cells: [...band.querySelectorAll(".wg-tree-cell")].map((cell) => cell.getBoundingClientRect()),
+				cells: [...band.querySelectorAll(".wg-tree-cell")].map((cell) => {
+					const at = cell.getBoundingClientRect();
+					return { id: cell.dataset.cell, node: cell, left: at.left, right: at.right, top: at.top, width: at.width, height: at.height };
+				}),
 			};
 		});
+
+	const partAll = (bands, parted, held) => {
+		for (const band of bands) {
+			band.node.style.transform = parted.bands[band.from] ? `translateY(${parted.bands[band.from]}px)` : "";
+			for (const cell of band.cells) {
+				if (cell.id === held) continue;
+				cell.node.style.transform = parted.cells[cell.id] ? `translateX(${parted.cells[cell.id]}px)` : "";
+			}
+		}
+	};
+
+	const settleAll = (bands) => {
+		for (const band of bands) {
+			band.node.style.transform = "";
+			for (const cell of band.cells) cell.node.style.transform = "";
+		}
+	};
 
 	const carryFrom = (event) => {
 		const id = event.target.closest(".wg-tree-cell")?.dataset.cell;
 		if (!id || !editing || event.button !== 0) return;
 		event.preventDefault();
 		const bands = bandsNow();
-		const boardBox = rootRef.current.getBoundingClientRect();
+		const held = bands.flatMap((band) => band.cells).find((cell) => cell.id === id);
+		if (!held) return;
+		const grabbed = { x: event.clientX, y: event.clientY };
 		let target = null;
 		const move = (pointer) => {
+			held.node.style.transform = `translate(${pointer.clientX - grabbed.x}px, ${pointer.clientY - grabbed.y}px)`;
 			const aimed = aimedAt(bands, pointer.clientX, pointer.clientY);
 			if (sameTarget(aimed, target)) return;
 			target = aimed;
-			setCarried({ id, target, line: lineFor(aimed, bands, boardBox) });
+			const parted = partedBy(bands, target, held, GAP_PX);
+			partAll(bands, parted, id);
+			setCarried({ id, slot: parted.slot });
 		};
 		const stop = () => {
 			window.removeEventListener("pointermove", move);
 			window.removeEventListener("pointerup", stop);
 			document.body.classList.remove("wg-tree-carrying");
+			held.node.style.transform = "";
+			settleAll(bands);
 			dragRef.current = null;
 			setCarried(null);
 			if (target) commitLayout(moved(board.layout, id, target));
@@ -790,10 +811,10 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 				h(TreeCell, { cell: { id: tile.id, width: 0, height: null }, tile, definition: registry.get(tile.widget), shared, patchTile }),
 			),
 		),
-		carried?.line
+		carried?.slot
 			? h("div", {
-					className: "wg-tree-aim",
-					style: { left: `${carried.line.left}px`, top: `${carried.line.top}px`, width: `${carried.line.width}px`, height: `${carried.line.height}px` },
+					className: "wg-tree-slot",
+					style: { left: `${carried.slot.left}px`, top: `${carried.slot.top}px`, width: `${carried.slot.width}px`, height: `${carried.slot.height}px` },
 				})
 			: null,
 		layTree(asked, width, GAP_PX)
