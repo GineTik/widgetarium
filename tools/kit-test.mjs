@@ -202,6 +202,13 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 // and the other to a literal, so a theme without the ramp drove them apart.
 {
 	const fs = await import("node:fs");
+	const widgetSource = (id) => {
+		for (const ext of ["tsx", "ts", "jsx", "js"]) {
+			const at = `widgets/${id}/widget.${ext}`;
+			if (fs.existsSync(at)) return fs.readFileSync(at, "utf8");
+		}
+		throw new Error(`${id}: no widget source found`);
+	};
 	const tokens = fs.readFileSync("widgets/@task/tokens.css", "utf8");
 	check("the plate fill has ONE owner, so no second fallback can drift", /--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens), true);
 
@@ -209,11 +216,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const strip = fs.readFileSync("src/editable-tabs.js", "utf8");
 	check("the tab strip builds on the kit rather than restating it", /from "\.\/kit\.js"|wg-kit-/.test(strip), true);
 	check("the tab strip does not paint its own plate", /background:\s*var\(--orbi-plate\)/.test(strip), false);
-	check("and the widget holding it draws no strip of its own", /wg-kit-seg|role="tablist"/.test(fs.readFileSync("widgets/@core/editable-tabs/widget.jsx", "utf8")), false);
+	check("and the widget holding it draws no strip of its own", /wg-kit-seg|role="tablist"/.test(widgetSource("@core/editable-tabs")), false);
 
 	for (const id of ["@core/filter-panel", "@task/view-tabs"]) {
 		const name = id.slice(id.indexOf("/") + 1);
-		const src = fs.readFileSync(`widgets/${id}/widget.jsx`, "utf8");
+		const src = widgetSource(id);
 		// either form counts: the kit is importable as components AND wearable as classes
 		check(`${name} builds on the kit rather than restating it`, /widgetarium\/kit|wg-kit-/.test(src), true);
 		check(`${name} does not paint its own plate`, /background:\s*var\(--orbi-plate\)/.test(src), false);
@@ -327,7 +334,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 			{
 				className: "harness-pop",
 				trigger: h("button", { className: "harness-trigger" }, "Filter"),
-				open,
+				isOpen: open,
 				// a NEW identity every render, which is what the filter panel hands over
 				onOpenChange: (next) => setOpen(next),
 			},
@@ -450,7 +457,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const has = (name) => Boolean(pop()?.classList.contains(name));
 	const show = async (open) => {
-		render(h(Kit.Popover, { open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { isOpen: open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -554,8 +561,8 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const row = () => host.querySelector(".enter-trigger") ?? host.querySelector(".enter-ghost");
 	// CONTEXT: the seat is written in the layout effect, so it is gone by the first await
-	const open = (mark = "enter-trigger") => render(h(Kit.Popover, { open: true, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
-	const shut = (mark = "enter-trigger") => render(h(Kit.Popover, { open: false, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+	const open = (mark = "enter-trigger") => render(h(Kit.Popover, { isOpen: true, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+	const shut = (mark = "enter-trigger") => render(h(Kit.Popover, { isOpen: false, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 	const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 	const snap = () => {
 		const node = pop();
@@ -633,7 +640,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("the transition is left carrying the paint alone", drivenIn(growing).sort().join(" "), "background-color border-radius box-shadow");
 	check("the panel's own fill and edge arrive on it", `${growing.fill} | ${growing.edge}`, `${PANEL_FILL} | ${PANEL_EDGE}`);
 	check("and the corner travels to the panel's own", growing.radius, "");
-	check("the content fades in, held back to the peak", growing.innerTransition, `opacity ${contentMs}ms var(--wg-ease) ${contentDelayMs}ms`);
+	check("the content fades in while the panel grows", growing.innerTransition, `opacity ${contentMs}ms var(--wg-ease) ${contentDelayMs}ms`);
 	check("to fully visible, at true size", `${growing.innerFade}|${growing.innerScale}`, "1|");
 	check("THE TRIGGER IS STILL NOT TOUCHED", growing.rowTouched, "||||");
 
@@ -656,8 +663,9 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("ON BOTH AXES EQUALLY, whatever the seed underneath was", peak[0] === peak[1], true);
 	check("and it comes to rest at exactly 1", rest.join(" "), "1 1");
 	check("starting from the seed the panel was handed", seedStop, true);
-	// CONTEXT: a non-uniform scale squashes text, so the content may not be read above the peak
-	check("THE CONTENT IS HELD BACK PAST THE PEAK, never read while the scale is over 105%", contentDelayMs >= peakStop * growMs, true);
+	// CONTEXT: the seed's non-uniform squash lives in the first frames, so the hold covers only those
+	check("THE CONTENT IS HELD OFF THE RAW SEED, but starts inside the growth", contentDelayMs > 0 && contentDelayMs < peakStop * growMs, true);
+	check("AND IS FULLY READABLE BY THE TIME THE GROWTH SETTLES", contentDelayMs + contentMs <= growMs, true);
 	// TRADE-OFF: the SCHEDULE is parsed, not recomputed — a recomputed inequality cannot see a bad timer
 	const landsAt = new Function("GROW_MS", "CONTENT_MS", "CONTENT_DELAY_MS", "LAND_MARGIN_MS", `return ${/landPanel\(panel\), ([^)]+)\)/.exec(source)[1]};`)(growMs, contentMs, contentDelayMs, landMarginMs);
 	check("and the landing is scheduled past every curve", `${landsAt > growMs} ${landsAt > contentDelayMs + contentMs}`, "true true");
@@ -731,7 +739,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const pop = () => host.querySelector(".wg-kit-pop");
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const show = async (open, placement) => {
-		render(h(Kit.Popover, { open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(h(Kit.Popover, { isOpen: open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
 		await settle();
 	};
 
@@ -1045,7 +1053,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		"const pops = document.querySelector('.wg-pops');",
 		"const stamp = (node) => { const r = node.getBoundingClientRect(); const to = (n) => Math.round(n * 100) / 100; return to(r.width) + 'x' + to(r.height) + '@' + to(r.left) + ',' + to(r.top); };",
 		// TRADE-OFF: a WIDE trigger, because a narrow one hides a seed measured before the width floor lands
-		"render(h(Sidebar, null, h(SidebarGroup, null, h(Popover, { open: true, trigger: h(SidebarRow, { pressable: true, label: 'A settings row', value: 'Something' }) }, h(PopoverItem, {}, 'Rename')))), pops);",
+		"render(h(Sidebar, null, h(SidebarGroup, null, h(Popover, { isOpen: true, trigger: h(SidebarRow, { pressable: true, label: 'A settings row', value: 'Something' }) }, h(PopoverItem, {}, 'Rename')))), pops);",
 		"const wideTrigger = pops.querySelector('.wg-kit-side-row');",
 		"const widePanel = pops.querySelector('.wg-kit-pop');",
 		// CONTEXT: the seat is written in the layout effect, so frame zero is readable the moment render returns
@@ -1055,7 +1063,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		"const realFrame = window.requestAnimationFrame; const realTimer = window.setTimeout;",
 		"const frames = []; const timers = [];",
 		"window.requestAnimationFrame = (fn) => frames.push(fn); window.setTimeout = (fn, ms) => timers.push({ fn, ms });",
-		"render(h(Popover, { open: true, trigger: h(Button, null, 'Trigger') }, h(PopoverItem, {}, 'Rename')), pops2);",
+		"render(h(Popover, { isOpen: true, trigger: h(Button, null, 'Trigger') }, h(PopoverItem, {}, 'Rename')), pops2);",
 		"const popTrigger = pops2.querySelector('.wg-kit-btn');",
 		"const popPanel = pops2.querySelector('.wg-kit-pop');",
 		// CONTEXT: an inline read, never a rect — a rect here would flush the seat and hide a missing commit
@@ -1141,7 +1149,9 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("a sidebar pads itself the way a plate does", full.padding, "8px 8px");
 	check("and carries the plate's corner", full.radius, "22px");
 	check("it is a surface, not a hole in one", /^rgba\(0, 0, 0, 0\)$/.test(full.background), false);
-	check("and it ends at an edge a person can see", /inset/.test(full.edge) && /1px/.test(full.edge), true);
+	// CONTEXT: one lift under every sidebar, no rim around any — the edge is a shadow, never an inset ring
+	check("and it ends with a lift, not a rim", /inset/.test(full.edge), false);
+	check("and the lift is really there", full.edge !== "none" && full.edge !== "", true);
 
 	// CONTEXT: minimal used to clear the frame because a Plate wrapped it — the block, spelled twice
 	const frameOf = (side) => `${side.padding} | ${side.radius} | ${side.background} | ${side.edge}`;
@@ -1354,7 +1364,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const stage = dom.window.document.createElement("div");
 	dom.window.document.body.appendChild(stage);
 	let open = false;
-	const draw = () => render(h(Kit.SidebarSheet, { open, onOpen: (next) => { open = next; draw(); }, peekPx: 100, maxPx: 500 }, "body"), stage);
+	const draw = () => render(h(Kit.SidebarSheet, { isOpen: open, onOpen: (next) => { open = next; draw(); }, peekPx: 100, maxPx: 500 }, "body"), stage);
 	draw();
 
 	const sheet = () => stage.querySelector(".wg-kit-sheet");
