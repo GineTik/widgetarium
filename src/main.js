@@ -10,6 +10,7 @@ import { shieldFromEditor } from "./editor-shield.js";
 import { mountKeyFor } from "./mount-key.js";
 import { trace, traceSub, setTracing, tracing } from "./trace.js";
 import { findBlocks, replaceBlock } from "./block-writer.js";
+import { createShapeStore, shapesOf } from "./shapes.js";
 import { openCatalogue } from "./catalogue-dialog.js";
 import { createInstaller } from "./installer.js";
 import { openSubstitutions } from "./substitution-dialog.js";
@@ -61,7 +62,23 @@ export default class WidgetariumPlugin extends Plugin {
 		this.editing = false;
 		this.mounts = new Map();
 		this.registry = new WidgetRegistry(this.app);
+		this.shapeAnswers = {};
+		this.shapes = createShapeStore({
+			read: () => this.shapeAnswers,
+			write: (next) => {
+				this.shapeAnswers = next;
+				void this.saveShapes(next);
+			},
+		});
 		this.host = createHost(this.app, this);
+		if (typeof this.app.vault?.on === "function") {
+			this.registerEvent(
+				this.app.vault.on("rename", (file, was) => {
+					if (!file?.children) return;
+					this.shapes.follow(was, file.path);
+				}),
+			);
+		}
 
 		this.rules = [];
 
@@ -85,7 +102,9 @@ export default class WidgetariumPlugin extends Plugin {
 
 		await this.ensureFolders();
 		await this.registry.load();
-		this.rules = normalizeRules((await this.loadData())?.substitutions);
+		const stored = await this.loadData();
+		this.shapeAnswers = shapesOf(stored?.shapes);
+		this.rules = normalizeRules(stored?.substitutions);
 		traceSub("rules loaded", () => ({
 			rules: this.rules.length,
 			live: activeRules(this.rules).length,
@@ -191,6 +210,10 @@ export default class WidgetariumPlugin extends Plugin {
 				this.closeSubstitutions = null;
 			},
 		});
+	}
+
+	async saveShapes(next) {
+		await this.saveData({ ...((await this.loadData()) ?? {}), shapes: next });
 	}
 
 	async setRules(next) {
