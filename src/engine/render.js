@@ -1,25 +1,37 @@
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 
-// CONTEXT: a root may be created once per container, and unmounting loses it
 const roots = new WeakMap();
 
-// CONTEXT: React commits on a task, and every surface here measures the DOM on the next line
-function commit(root, tree) {
-	flushSync(() => root.render(tree));
+function rootFor(node) {
+	const root = roots.get(node) ?? createRoot(node);
+	roots.set(node, root);
+	return root;
+}
+
+function drop(node, take) {
+	const existing = roots.get(node);
+	if (!existing) return;
+	roots.delete(node);
+	take(existing);
 }
 
 export function render(tree, node) {
 	if (tree === null || tree === undefined) {
-		const existing = roots.get(node);
-		if (!existing) return;
-		roots.delete(node);
-		commit(existing, null);
-		existing.unmount();
+		drop(node, (root) => {
+			flushSync(() => root.render(null));
+			root.unmount();
+		});
 		return;
 	}
+	const root = rootFor(node);
+	flushSync(() => root.render(tree));
+}
 
-	const root = roots.get(node) ?? createRoot(node);
-	roots.set(node, root);
-	commit(root, tree);
+export function renderLater(tree, node) {
+	if (tree === null || tree === undefined) {
+		drop(node, (root) => queueMicrotask(() => root.unmount()));
+		return;
+	}
+	rootFor(node).render(tree);
 }

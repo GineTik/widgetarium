@@ -1,4 +1,4 @@
-import { render } from "./engine/render.js";
+import { renderLater } from "./engine/render.js";
 import { shieldFromEditor } from "./editor-shield.js";
 
 export function mountInto(anchor, className, onEscape) {
@@ -16,10 +16,10 @@ export function mountInto(anchor, className, onEscape) {
 	// CONTEXT: `node` is handed back so a caller can animate the mount out before disposing it
 	return {
 		node,
-		draw: (tree) => render(tree, node),
+		draw: (tree) => renderLater(tree, node),
 		dispose: () => {
 			if (onEscape) document.removeEventListener("keydown", onKey);
-			render(null, node);
+			renderLater(null, node);
 			node.remove();
 		},
 	};
