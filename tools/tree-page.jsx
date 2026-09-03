@@ -171,10 +171,14 @@ async function carryTile() {
 	firePointer("pointerdown", { x: box.left + 40, y: box.top + 40 }, held);
 	firePointer("pointermove", onto, window);
 	await settled();
-	const aimed = document.querySelectorAll(".wg-surface-probe .wg-tree-aim").length;
+	const aimed = document.querySelectorAll(".wg-surface-probe .wg-tree-slot").length;
 	const dimmed = document.querySelectorAll(".wg-surface-probe .wg-tree-cell.is-carried").length;
+	const lifted = getComputedStyle(held).transform;
+	const shifted = (nodes) => [...nodes].map((node) => getComputedStyle(node).transform).filter((one) => one !== "none").length;
+	const parted = shifted(document.querySelectorAll(".wg-surface-probe .wg-tree-band"));
+	const partedCells = shifted(document.querySelectorAll('.wg-surface-probe .wg-tree-cell:not([data-cell="board"])'));
 	firePointer("pointerup", onto, window);
-	return { before, gripShown, aimed, dimmed, after: rowsOfSurface(), writes: surfaceWrites };
+	return { before, gripShown, aimed, dimmed, lifted, parted, partedCells, after: rowsOfSurface(), writes: surfaceWrites };
 }
 
 function draw() {

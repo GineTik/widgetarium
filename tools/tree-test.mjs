@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, innerOf, moved, resized } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, innerOf, moved, partedBy, resized } = await import("./.mjs-cache/tree.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -263,6 +263,7 @@ console.log("\n— in reading mode a press on a tile carries nothing —");
 	check("no line was drawn", seen.aimed, 0);
 	check("nothing was dimmed", seen.dimmed, 0);
 	check("and no grip was showing either", seen.gripShown, 0);
+	check("and nothing parted", seen.parted + seen.partedCells, 0);
 	check("and the rows are exactly as they were", seen.after, seen.before);
 }
 
@@ -273,7 +274,10 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 	check("editing shows every grip at once", seen.gripShown, 0.55);
 	check("before the carry it stood alone on the last row", seen.before.at(-1), ["board"]);
 	check("a line was drawn where it would land", seen.aimed, 1);
-	check("and the tile being carried was dimmed", seen.dimmed, 1);
+	check("the tile being carried was marked as lifted", seen.dimmed, 1);
+	check("and it had actually left its slot", seen.lifted !== "none", true);
+	check("the tile it landed beside stepped aside", seen.partedCells, 1);
+	check("and no whole row had to move for it", seen.parted, 0);
 	check("after the drop it stands on the first row", seen.after[0].includes("board"), true);
 	check("and it left no empty row behind", seen.after.length, seen.before.length - 1);
 	check("the board was written a third time", seen.writes, 3);
@@ -291,6 +295,31 @@ console.log("\n— carrying a tile puts it where it was aimed, and closes the ro
 	check("it carries its own weight along", moved(rows, "c", { kind: "row", at: 0 })[0][0].ratio, 2);
 	check("a tile nobody is holding moves nothing", ids(moved(rows, "nobody", { kind: "row", at: 0 })), ids(rows));
 	check("and no target moves nothing either", ids(moved(rows, "a", null)), ids(rows));
+}
+
+console.log("\n— and the rest step aside by exactly the room the carried tile needs —");
+{
+	const bands = [
+		{ from: 0, left: 0, width: 1200, top: 0, bottom: 112, rowBottom: 100, cells: [{ id: "a", left: 0, right: 600 }, { id: "b", left: 612, right: 1200 }] },
+		{ from: 1, left: 0, width: 1200, top: 112, bottom: 324, rowBottom: 312, cells: [{ id: "c", left: 0, right: 1200 }] },
+	];
+	const carried = { id: "c", width: 300, height: 200 };
+
+	const beside = partedBy(bands, { kind: "beside", row: 0, at: 1 }, carried, 12);
+	check("only the tile after the landing steps aside", beside.cells, { b: 312 });
+	check("and it steps by the carried width plus the gap", beside.cells.b, 300 + 12);
+	check("no row moves for a landing inside one", beside.bands, {});
+	check("the slot sits on the edge it was aimed at", beside.slot.left, 612);
+	check("and is as tall as the row it joins", beside.slot.height, 100);
+
+	const asRow = partedBy(bands, { kind: "row", at: 1 }, carried, 12);
+	check("landing as a row pushes the rows below it down", asRow.bands, { 1: 212 });
+	check("and leaves the rows above alone", asRow.cells, {});
+	check("the slot runs the width of the board", asRow.slot.width, 1200);
+	check("and sits under the row it follows", asRow.slot.top, 112);
+
+	check("the carried tile never steps aside from itself", partedBy(bands, { kind: "beside", row: 1, at: 0 }, carried, 12).cells, {});
+	check("and with no target nothing moves at all", partedBy(bands, null, carried, 12), { cells: {}, bands: {}, slot: null });
 }
 
 console.log("\n— and the aim reads the pointer against the bands —");
