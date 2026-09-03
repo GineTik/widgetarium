@@ -24,61 +24,17 @@
 	"maxSize": {
 		"h": 1
 	},
-	"provides": [
-		"filters"
-	],
-	"sources": {
-		"tasks": {
-			"label": "Tasks",
-			"default": {
-				"path": "Orbitask/Tasks",
-				"filters": [
-					{
-						"prop": "board",
-						"op": "is",
-						"value": "@board"
-					}
-				]
-			}
-		}
-	},
-	"consumes": [
-		"board"
-	],
-	"settings": [
-		{
-			"key": "groups",
-			"type": "text",
-			"label": "Filter by — empty means the board's own property list",
-			"default": ""
-		},
-		{
-			"key": "openGroup",
-			"type": "text",
-			"label": "Open by default",
-			"default": ""
-		},
-		{
-			"key": "key",
-			"type": "text",
-			"label": "Writes to",
-			"default": "filters"
-		}
-	],
 	"preview": {
 		"size": {
 			"w": 3,
 			"h": 1
-		},
-		"context": {
-			"board": "Widgetarium"
 		},
 		"properties": [
 			"Status",
 			"Priority",
 			"Assignees"
 		],
-		"sources": {
+		"props": {
 			"tasks": {
 				"rows": [
 					{
@@ -109,6 +65,103 @@
 						]
 					}
 				]
+			}
+		}
+	},
+	"props": {
+		"tasks": {
+			"kind": "collection",
+			"label": "Tasks",
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"path": "Orbitask/Tasks",
+				"where": [
+					{
+						"prop": "board",
+						"op": "is",
+						"value": {
+							"wants": "@core/editable-tabs/selection"
+						}
+					}
+				]
+			}
+		},
+		"groups": {
+			"kind": "collection",
+			"label": "Filter by",
+			"hint": "The properties offered. Empty offers what the board names or the tasks carry.",
+			"item": {
+				"fields": [
+					{
+						"key": "prop",
+						"label": "Property",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "label",
+						"label": "Label",
+						"type": "text"
+					},
+					{
+						"key": "control",
+						"label": "Control",
+						"type": "text"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": []
+			}
+		},
+		"openGroup": {
+			"kind": "value",
+			"label": "Open by default",
+			"hint": "Whose choices unfold on opening. Name none and it opens folded.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": ""
+			}
+		},
+		"properties": {
+			"kind": "collection",
+			"label": "Board properties",
+			"hint": "The properties this board names. Empty offers what the tasks carry.",
+			"item": {
+				"fields": [
+					{
+						"key": "name",
+						"label": "Property",
+						"type": "text",
+						"required": true
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": []
+			}
+		},
+		"chosen": {
+			"kind": "value",
+			"shape": "conditions",
+			"label": "Chosen filters",
+			"hint": "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			},
+			"default": {
+				"from": "memory"
 			}
 		}
 	}

@@ -1,10 +1,8 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, textOf, useData, WidgetRoot } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "react";
 
 const CSS = `
-/* CONTEXT: a control fills the tile it was given — centred at intrinsic width it read as
-   a small thing lost in a hole, which is what the cell size was blamed for */
 .orbi-filter { justify-content: flex-start; align-items: stretch; }
 
 .orbi-filter .ofp-open { gap: var(--size-4-2, 8px); }
@@ -15,7 +13,6 @@ const CSS = `
 
 .orbi-filter .ofp-icon { width: 16px; height: 16px; flex: none; }
 
-/* CONTEXT: the kit hides the anchor while open, and visibility inherits */
 .orbi-filter .ofp-pop {
 	visibility: visible;
 	width: 320px;
@@ -32,7 +29,6 @@ const CSS = `
 
 .orbi-filter .ofp-group { display: flex; flex-direction: column; }
 
-/* CONTEXT: the suite's button reset skips the kit's subtree */
 .orbi-filter .ofp-group-head {
 	display: flex;
 	align-items: center;
@@ -55,7 +51,6 @@ const CSS = `
 	cursor: pointer;
 }
 
-/* CONTEXT: a plain button gets its corner from the host, so the fill rides the reset's pseudo */
 .orbi-filter .ofp-group-head::before { border-radius: var(--wg-kit-item); }
 .orbi-filter .ofp-group-head:hover::before { background: var(--background-modifier-hover); }
 
@@ -109,46 +104,46 @@ const CSS = `
 .orbi-filter .ofp-reset { flex: 1; }
 .orbi-filter .ofp-apply { flex: 2; }
 
-/* CONTEXT: the word is gone, the tile is not — the control keeps every cell it was given;
-   doubled root class so it outranks the kit's own padding without relying on file order */
 .orbi.orbi-filter .ofp-open.is-tight { justify-content: center; padding: 0; }
 `;
 
-// CONTEXT: "prop:control:Label", authored by the board
-function parseGroups(text) {
-	return String(text ?? "")
-		.split(",")
-		.map((entry) => entry.trim())
-		.filter(Boolean)
-		.map((entry) => {
-			const [prop, control = "checkbox", ...rest] = entry.split(":").map((part) => part.trim());
-			return { prop, control, label: rest.join(":") || prop };
-		});
-}
+const CHECKBOX = "checkbox";
+const RADIO = "radio";
+const PEOPLE = "people";
 
-// THE FIELDS ARE THE BOARD'S, the way the choices are the data's. Held as a colon-separated
-// string, the list had to be edited by hand every time a board gained a property — so a board
-// could name a property, the dialog could write it, and it was still not filterable.
+const PROP = "prop";
+const LABEL = "label";
+const CONTROL = "control";
+const RECORD_NAME = "name";
+
+type Held = Record<string, unknown> & { props?: Record<string, unknown> };
+type Group = { prop: string; control: string; label: string };
+type TaskRow = { ref: string; props?: Record<string, unknown> };
+type Chosen = Record<string, string | string[]>;
+
 const PEOPLE_NAMES = ["assignees", "members", "people", "owner", "owners"];
-// CONTEXT: bookkeeping, or a fact the board already shows — a title is unique, a board is the board
-// CONTEXT: status is the COLUMNS on a kanban, so filtering by it hides the board inside itself
 const NEVER_FILTERED = ["title", "board", "status", "deadline", "due"];
 // TRADE-OFF: a property nearly every note carries a DIFFERENT value for is an identifier, not a
 // filter — ticking it would leave one row, which is a search, and the bar has a search already
 const MOST_DISTINCT_SHARE = 0.75;
 
-// A NUMBER IS NOT A CATEGORY. The bar offers tick lists, and "checklistDone: 3" ticked against
-// "4" answers a question nobody asks — a number wants a range. Left in, the demo data's dead
-// counters (comments, files, a checklist nothing writes) all showed up as filters.
-function isCounted(rows, prop) {
+function controlFor(prop: string, named: string): string {
+	if (named === RADIO || named === PEOPLE || named === CHECKBOX) return named;
+	return PEOPLE_NAMES.includes(prop.toLowerCase()) ? PEOPLE : CHECKBOX;
+}
+
+function groupOf(held: Held): Group {
+	const prop = textOf(held, PROP) || textOf(held, RECORD_NAME);
+	return { prop, label: textOf(held, LABEL) || prop, control: controlFor(prop, textOf(held, CONTROL)) };
+}
+
+function isCounted(rows: TaskRow[], prop: string): boolean {
 	const values = valuesFor(rows, prop);
 	return values.length > 0 && values.every((value) => value !== "" && Number.isFinite(Number(value)));
 }
 
-// A BOARD THAT NAMES NOTHING STILL FILTERS. Falling back to an empty list left the bar with no
-// groups at all on every board authored before property lists existed — which is most of them.
-function groupsFromData(rows) {
-	const seen = new Map();
+function groupsFromData(rows: TaskRow[]): Group[] {
+	const seen = new Map<string, string>();
 	for (const row of rows) {
 		for (const key of Object.keys(row.props ?? {})) seen.set(key.toLowerCase(), key);
 	}
@@ -160,27 +155,20 @@ function groupsFromData(rows) {
 			return values.length > 1 && values.length <= Math.max(2, rows.length * MOST_DISTINCT_SHARE);
 		})
 		.sort()
-		.map((key) => ({
-			prop: key,
-			control: PEOPLE_NAMES.includes(key.toLowerCase()) ? "people" : "checkbox",
-			label: `${key.charAt(0).toUpperCase()}${key.slice(1)}`,
-		}));
+		.map((key) => ({ prop: key, control: controlFor(key, ""), label: `${key.charAt(0).toUpperCase()}${key.slice(1)}` }));
 }
 
-function groupsFromBoard(names, rows) {
+function groupsFromBoard(names: string[], rows: TaskRow[]): Group[] {
 	return names
 		.map((name) => {
 			const prop = keyCarrying(rows, name) ?? String(name).toLowerCase();
-			const control = PEOPLE_NAMES.includes(prop.toLowerCase()) ? "people" : "checkbox";
-			return { prop, control, label: String(name) };
+			return { prop, control: controlFor(prop, ""), label: String(name) };
 		})
-		// a property no note has ever carried offers nothing to tick, and an empty group is noise
 		.filter((group) => valuesFor(rows, group.prop).length > 0)
 		.filter((group) => !NEVER_FILTERED.includes(group.prop.toLowerCase()));
 }
 
-// CONTEXT: a board names "Assignees", a note spells "assignees" — the note's spelling is the key
-function keyCarrying(rows, name) {
+function keyCarrying(rows: TaskRow[], name: string): string | null {
 	const wanted = String(name).toLowerCase();
 	for (const row of rows) {
 		const found = Object.keys(row.props ?? {}).find((key) => key.toLowerCase() === wanted);
@@ -189,9 +177,8 @@ function keyCarrying(rows, name) {
 	return null;
 }
 
-// CONTEXT: the choices are the data's, never a list kept here
-function valuesFor(rows, prop) {
-	const seen = new Set();
+function valuesFor(rows: TaskRow[], prop: string): string[] {
+	const seen = new Set<string>();
 	for (const row of rows) {
 		const held = row.props?.[prop];
 		for (const value of Array.isArray(held) ? held : [held]) {
@@ -201,77 +188,76 @@ function valuesFor(rows, prop) {
 	return [...seen].sort();
 }
 
-function initialOf(value) {
+function initialOf(value: string): string {
 	return String(value ?? "?").trim().charAt(0).toUpperCase() || "?";
 }
 
 const TONES = ["is-accent", "is-ok", "is-warn", "is-err"];
 
 // TRADE-OFF: hashed, so there is no palette to maintain
-function toneOf(value) {
+function toneOf(value: string): string {
 	let sum = 0;
 	for (const letter of String(value)) sum += letter.charCodeAt(0);
 	return TONES[sum % TONES.length];
 }
 
-// CONTEXT: radio holds one string, checkbox an array
-function countOf(chosen) {
-	return Object.values(chosen ?? {}).reduce((total, values) => total + (Array.isArray(values) ? values.length : 1), 0);
+function countOf(chosen: Chosen): number {
+	return Object.values(chosen ?? {}).reduce((total: number, values) => total + (Array.isArray(values) ? values.length : 1), 0);
 }
 
-function dropped(chosen, prop) {
+function dropped(chosen: Chosen, prop: string): Chosen {
 	const { [prop]: gone, ...rest } = chosen;
 	return rest;
 }
 
-export default createWidget(function OrbiTaskFilter({ settings, data, board, context }) {
-	const rows = data?.tasks?.rows ?? [];
-	// TRADE-OFF: the setting still wins where somebody has written one — a board that wants a
+export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen, board }: any) {
+	const listed = useData(tasks.list);
+	const rows: TaskRow[] = flatRows(listed.rows);
+	// TRADE-OFF: a typed list still wins where somebody has written one — a board that wants a
 	// different order, a label of its own or a property nothing carries yet says so explicitly
-	const authored = parseGroups(settings.groups);
-	const fromBoard = groupsFromBoard(board?.properties ?? [], rows);
-	const groups = authored.length > 0 ? authored : fromBoard.length > 0 ? fromBoard : groupsFromData(rows);
-	// CONTEXT: two instances on one board need two keys
-	const key = String(settings.key || "filters");
-	const applied = context?.get(key) ?? {};
+	const authored = useData(groups.list).rows.map(({ value }: { value: Held }) => groupOf(value)).filter((group: Group) => group.prop !== "");
+	const named = useData(properties.list).rows.map(({ value }: { value: Held }) => textOf(value, "name") || textOf(value, RECORD_NAME)).filter(Boolean);
+	// TRADE-OFF: the board's own list still answers where the prop lists nothing — it is authored in the board file, not here
+	const fromBoard = groupsFromBoard(named.length > 0 ? named : board?.properties ?? [], rows);
+	const shownGroups = authored.length > 0 ? authored : fromBoard.length > 0 ? fromBoard : groupsFromData(rows);
+	const applied: Chosen = (useData(chosen.get).data as Chosen) ?? {};
 
 	const triggerRef = useRef(null);
-	// CONTEXT: the word goes only when the word does not fit, which only a measurement knows
-	const roomForWord = useRoomForLabel(triggerRef);
+	const hasRoomForWord = useRoomForLabel(triggerRef);
 
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	// TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
-	const [draft, setDraft] = useState(applied);
-	const [shown, setShown] = useState(settings.openGroup ?? "");
+	const [draft, setDraft] = useState<Chosen>(applied);
+	const unfolded = String(useData(openGroup.get).data ?? "");
+	const [pressed, setPressed] = useState<string | null>(null);
+	const shown = pressed ?? unfolded;
 
-	const change = (next) => {
-		if (next) {
-			setDraft(context?.get(key) ?? {});
-		}
+	const change = (next: boolean) => {
+		if (next) setDraft(applied);
 		setOpen(next);
 	};
 
-	const isChosen = (group, value) =>
-		group.control === "radio" ? draft[group.prop] === value : (draft[group.prop] ?? []).includes(value);
+	const isChosen = (group: Group, value: string) =>
+		group.control === RADIO ? draft[group.prop] === value : ((draft[group.prop] as string[]) ?? []).includes(value);
 
-	const toggle = (group, value) => {
-		if (group.control === "radio") {
+	const toggle = (group: Group, value: string) => {
+		if (group.control === RADIO) {
 			setDraft(draft[group.prop] === value ? dropped(draft, group.prop) : { ...draft, [group.prop]: value });
 			return;
 		}
-		const held = draft[group.prop] ?? [];
+		const held = (draft[group.prop] as string[]) ?? [];
 		const next = held.includes(value) ? held.filter((item) => item !== value) : [...held, value];
 		setDraft(next.length > 0 ? { ...draft, [group.prop]: next } : dropped(draft, group.prop));
 	};
 
 	const apply = () => {
-		context?.set(key, draft);
+		chosen.update(draft);
 		setOpen(false);
 	};
 
 	const reset = () => {
 		setDraft({});
-		context?.set(key, {});
+		chosen.update({});
 	};
 
 	const count = countOf(applied);
@@ -280,10 +266,10 @@ export default createWidget(function OrbiTaskFilter({ settings, data, board, con
 		<button
 			type="button"
 			ref={triggerRef}
-			className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${roomForWord ? "" : " is-tight"}`}
+			className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${hasRoomForWord ? "" : " is-tight"}`}
 		>
 			<Icon name="filter" className="ofp-icon" />
-			{roomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
+			{hasRoomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
 			{count > 0 ? <span className="wg-kit-count ofp-count">{count}</span> : null}
 		</button>
 	);
@@ -292,25 +278,25 @@ export default createWidget(function OrbiTaskFilter({ settings, data, board, con
 		<WidgetRoot className="orbi orbi-filter" defaultRounded="none" defaultBackgroundType="none">
 			<style>{CSS}</style>
 
-			<Popover className="ofp-pop" trigger={trigger} open={open} onOpenChange={change}>
+			<Popover className="ofp-pop" trigger={trigger} isOpen={isOpen} onOpenChange={change}>
 				<div className="ofp-panel">
 					<PopoverSearch placeholder="Keyword" hint="Narrows the choices below, not the board">
-						{(needle) =>
-							groups.map((group) => {
+						{(needle: string) =>
+							shownGroups.map((group: Group) => {
 								const values = valuesFor(rows, group.prop).filter((value) => needle === "" || value.toLowerCase().includes(needle));
-								const isOpen = shown === group.prop;
+								const isGroupOpen = shown === group.prop;
 								return (
 									<div className="ofp-group" key={group.prop}>
 										<button
 											type="button"
-											className={`ofp-group-head${isOpen ? " is-on" : ""}`}
-											onClick={() => setShown(isOpen ? "" : group.prop)}
+											className={`ofp-group-head${isGroupOpen ? " is-on" : ""}`}
+											onClick={() => setPressed(isGroupOpen ? "" : group.prop)}
 										>
 											<span>{group.label}</span>
 											<Icon name="chevron" className="ofp-chev" />
 										</button>
 
-										{isOpen
+										{isGroupOpen
 											? values.length === 0
 												? <p className="ofp-empty">Nothing to choose from yet.</p>
 												: values.map((value) => (
@@ -320,7 +306,7 @@ export default createWidget(function OrbiTaskFilter({ settings, data, board, con
 															checked={isChosen(group, value)}
 															onClick={() => toggle(group, value)}
 														>
-															{group.control === "people" ? <span className={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
+															{group.control === PEOPLE ? <span className={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
 															<span className="ofp-name">{value}</span>
 														</PopoverItem>
 												  ))

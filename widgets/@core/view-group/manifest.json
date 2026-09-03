@@ -21,20 +21,20 @@
 		"h": 8
 	},
 	"collapseBelowPx": 240,
-	"consumes": [
-		"view"
-	],
-	"provides": [
-		"views"
-	],
 	"mounts": {
 		"holds": {
 			"was": "views",
 			"label": "Views",
-			"hint": "Each view is a widget with a name of your own. Press a name to rename it.",
+			"hint": "Each view is a widget you name. Press a name to rename it.",
 			"default": [
-				{ "name": "Kanban", "widget": "@task/kanban-board" },
-				{ "name": "Archived columns", "widget": "@task/archived-columns" }
+				{
+					"name": "Kanban",
+					"widget": "@task/kanban-board"
+				},
+				{
+					"name": "Archived columns",
+					"widget": "@task/archived-columns"
+				}
 			]
 		}
 	},
@@ -42,6 +42,29 @@
 		"size": {
 			"w": 4,
 			"h": 3
+		}
+	},
+	"settings": [
+		{
+			"key": "isTabsShown",
+			"type": "boolean",
+			"label": "Show the tab row",
+			"design": true,
+			"default": true
+		}
+	],
+	"props": {
+		"selection": {
+			"kind": "value",
+			"label": "Shown view",
+			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
+			"of": "holds",
+			"field": "value",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			}
 		}
 	}
 }

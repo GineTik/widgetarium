@@ -25,41 +25,74 @@
 		"h": 1
 	},
 	"collapseBelowPx": 90,
-	"provides": [
-		"board",
-		"boards"
-	],
-	"settings": [
-		{
-			"key": "tabs",
-			"type": "text",
+	"props": {
+		"tabs": {
+			"kind": "collection",
 			"label": "Tabs",
-			"default": "Marketing Team, Ux Team"
-		},
-		{
-			"key": "activeTab",
-			"type": "text",
-			"label": "Selected tab",
-			"default": "Marketing Team"
-		},
-		{
-			"key": "archived",
-			"type": "text",
-			"label": "Archived tabs",
-			"default": ""
-		},
-		{
-			"key": "selectionKey",
-			"type": "text",
-			"label": "Selection key",
-			"default": "board"
-		}
-	],
-	"sources": {
-		"tasks": {
-			"label": "Tasks",
+			"hint": "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
+			"was": "records",
+			"item": {
+				"fields": [
+					{
+						"key": "name",
+						"label": "Label",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "board",
+						"label": "Value",
+						"type": "text"
+					},
+					{
+						"key": "archivedAt",
+						"label": "Archived at",
+						"type": "datetime"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional"
+			},
 			"default": {
-				"path": "Orbitask/Tasks"
+				"path": "Orbitask/Boards"
+			}
+		},
+		"label": {
+			"kind": "value",
+			"label": "Label field",
+			"hint": "Which field is written on a tab. Without it a note shows its own name.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "name"
+			}
+		},
+		"value": {
+			"kind": "value",
+			"label": "Value field",
+			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "board"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Selected tab",
+			"hint": "Which tab is picked, as a box. Bind another widget and the two move together.",
+			"of": "tabs",
+			"fieldFrom": "value",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "required"
 			}
 		}
 	},
@@ -68,13 +101,16 @@
 			"w": 5,
 			"h": 1
 		},
-		"settings": {
-			"tabs": "Widgetarium, Marketing Team",
-			"activeTab": "Widgetarium"
-		},
-		"sources": {
-			"tasks": {
-				"rows": []
+		"props": {
+			"tabs": {
+				"rows": [
+					{
+						"title": "Widgetarium"
+					},
+					{
+						"title": "Marketing Team"
+					}
+				]
 			}
 		}
 	}
