@@ -162,6 +162,7 @@ const settled = () => new Promise((done) => setTimeout(done, 30));
 
 async function carryTile() {
 	const before = rowsOfSurface();
+	const gripShown = Number(getComputedStyle(document.querySelector(".wg-surface-probe .wg-tree-grip")).opacity);
 	const held = document.querySelector('.wg-surface-probe .wg-tree-cell[data-cell="board"]');
 	if (!held) return { before, failed: "the kanban cell was not found" };
 	const box = held.getBoundingClientRect();
@@ -173,7 +174,7 @@ async function carryTile() {
 	const aimed = document.querySelectorAll(".wg-surface-probe .wg-tree-aim").length;
 	const dimmed = document.querySelectorAll(".wg-surface-probe .wg-tree-cell.is-carried").length;
 	firePointer("pointerup", onto, window);
-	return { before, aimed, dimmed, after: rowsOfSurface(), writes: surfaceWrites };
+	return { before, gripShown, rootClass: document.querySelector(".wg-surface-probe .wg-root")?.className ?? "no root", aimed, dimmed, after: rowsOfSurface(), writes: surfaceWrites };
 }
 
 function draw() {
@@ -191,6 +192,7 @@ function readSurface() {
 		overlays: root.querySelectorAll(".wg-tree-overlay").length,
 		widest: Math.max(...[...root.querySelectorAll(".wg-tree-row")].map((node) => node.getBoundingClientRect().width)),
 		across: root.querySelectorAll(".wg-tree-handle.is-across").length,
+		gripShown: Number(getComputedStyle(root.querySelector(".wg-tree-grip")).opacity),
 		along: root.querySelectorAll(".wg-tree-handle.is-along").length,
 		capped: root.querySelectorAll(".wg-tree-handle.is-along.is-capped").length,
 		alongWidth: Math.round(root.querySelector(".wg-tree-handle.is-along")?.getBoundingClientRect().width ?? 0),

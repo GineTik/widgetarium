@@ -80,7 +80,7 @@ const page = `<!doctype html><html><head><meta charset="utf-8">
 .wg-tree { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
 .wg-tree-row { display: flex; gap: 12px; align-items: stretch; }
 .wg-tree-cell { position: relative; min-width: 0; }
-.wg-host, .wg-host div { transition: none !important; animation: none !important; }</style>
+.wg-host, .wg-host * { transition: none !important; animation: none !important; }</style>
 </head><body><div class="wg-host"></div>
 <script id="wg-widgets" type="application/json">${inertJson(widgetFiles())}</script>
 <script id="wg-board" type="application/json">${JSON.stringify(board)}</script>
@@ -178,6 +178,7 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	check("the dialog is drawn without taking a row", seen.overlays, 1);
 	check("and no row is wider than the board it sits in", seen.widest <= 1600.5, true);
 	check("one grip stands between the two that share a row", seen.across, 1);
+	check("and it is invisible until its own gap is pointed at", seen.gripShown, 0);
 	check("one strip under each row, not one under each tile", seen.along, 3);
 	check("and it runs the whole line", seen.alongWidth, 1600);
 	check("no row is left without a strip, capped widgets or not", seen.capped, 0);
@@ -261,6 +262,7 @@ console.log("\n— in reading mode a press on a tile carries nothing —");
 	const seen = measured.whileReading;
 	check("no line was drawn", seen.aimed, 0);
 	check("nothing was dimmed", seen.dimmed, 0);
+	check("and no grip was showing either", seen.gripShown, 0);
 	check("and the rows are exactly as they were", seen.after, seen.before);
 }
 
@@ -268,6 +270,7 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 {
 	const seen = measured.carried;
 	check("the probe found the kanban", seen.failed ?? null, null);
+	check("editing shows every grip at once", seen.gripShown, 0.55);
 	check("before the carry it stood alone on the last row", seen.before.at(-1), ["board"]);
 	check("a line was drawn where it would land", seen.aimed, 1);
 	check("and the tile being carried was dimmed", seen.dimmed, 1);
