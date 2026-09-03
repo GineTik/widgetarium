@@ -22,7 +22,7 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { GAP_PX, innerOf, layTree, resized, restacked, widthsOf } from "./tree.js";
+import { GAP_PX, innerOf, layTree, resized, restacked, tallestOf, widthsOf } from "./tree.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -594,7 +594,7 @@ const Tile = memo(TileView, (before, after) => {
 function TreeCell({ cell, tile, definition, shared, patchTile }) {
 	const onPatch = (patch) => patchTile(tile.id, patch);
 	const patchProp = (name, patch) => onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
-	const style = { flex: `0 0 ${cell.width}px`, width: `${cell.width}px`, ...(cell.height ? { height: `${cell.height}px` } : {}) };
+	const style = { flex: `0 0 ${cell.width}px`, width: `${cell.width}px`, ...(cell.cap ? { maxHeight: `${cell.cap}px` } : {}) };
 	return h(
 		"div",
 		{ className: "wg-tile wg-tree-cell", style, "data-cell": cell.id },
@@ -617,7 +617,7 @@ function TreeCell({ cell, tile, definition, shared, patchTile }) {
 }
 
 const Cell = memo(TreeCell, (before, after) => {
-	const same = before.cell.width === after.cell.width && before.cell.height === after.cell.height && before.cell.id === after.cell.id;
+	const same = before.cell.width === after.cell.width && before.cell.cap === after.cell.cap && before.cell.id === after.cell.id;
 	return same && before.tile === after.tile && before.definition === after.definition && before.shared === after.shared;
 });
 
@@ -709,12 +709,10 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 		[host, scale, refs, cellFor, registry, board.properties, board.archivedColumns],
 	);
 
-	const withinCap = (cell) => (capOf(cell.id) && cell.height ? { ...cell, height: Math.min(cell.height, capOf(cell.id)) } : cell);
-	const asked = board.layout.map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...withinCap(cell), minPx: floorOf(cell.id) })));
+	const asked = board.layout.map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id), cap: capOf(cell.id) })));
 	const placed = new Set(asked.flat().map((cell) => cell.id));
 	const overlay = board.tiles.filter((tile) => !placed.has(tile.id));
 	const keep = (at) => (node) => (node ? rowsRef.current.set(at, node) : rowsRef.current.delete(at));
-	const isCapped = (row) => row.every((cell) => capOf(cell.id) > 0);
 
 	const rowNode = (row, at) =>
 		h(
@@ -722,7 +720,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 			{ key: `${row.from}-${at}` },
 			h(
 				"div",
-				{ className: "wg-tree-row", ref: keep(row.from) },
+				{ className: "wg-tree-row", ref: keep(row.from), style: tallestOf(row.cells) ? { height: `${tallestOf(row.cells)}px` } : undefined },
 				row.cells.flatMap((cell, index) => [
 					index > 0 && row.cells.length > 1
 						? h("div", { className: "wg-tree-handle is-across", key: `grip-${cell.id}`, onPointerDown: grabRatio(row.from, index - 1) }, h("i", { className: "wg-tree-grip" }))
@@ -732,7 +730,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, patchTi
 			),
 			h(
 				"div",
-				{ className: `wg-tree-handle is-along${isCapped(board.layout[row.from]) ? " is-capped" : ""}`, onPointerDown: grabHeight(row.from) },
+				{ className: "wg-tree-handle is-along", onPointerDown: grabHeight(row.from) },
 				h("i", { className: "wg-tree-grip" }),
 			),
 		);

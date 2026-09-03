@@ -3227,11 +3227,6 @@ pre:has(> .block-language-widgetarium),
 	cursor: row-resize;
 }
 
-.wg-tree-handle.is-capped {
-	cursor: default;
-	pointer-events: none;
-}
-
 .wg-tree-grip {
 	position: absolute;
 	border-radius: 999px;
@@ -3252,8 +3247,6 @@ pre:has(> .block-language-widgetarium),
 	width: 44px;
 	height: 3px;
 }
-
-.wg-tree-handle.is-capped .wg-tree-grip { opacity: 0; }
 
 .wg-tree-handle:hover { background: var(--background-modifier-hover); }
 
