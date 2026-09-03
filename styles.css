@@ -3182,7 +3182,6 @@ pre:has(> .block-language-widgetarium),
 .wg-tree {
 	display: flex;
 	flex-direction: column;
-	gap: var(--wg-tree-gap, 12px);
 	width: 100%;
 }
 
@@ -3205,50 +3204,77 @@ pre:has(> .block-language-widgetarium),
 	overflow: visible;
 }
 
-.wg-tree-grip {
-	position: absolute;
-	z-index: 4;
+.wg-tree-handle {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	touch-action: none;
 	border-radius: 999px;
 	background: transparent;
-	transition: background var(--wg-chrome-fade, 120ms) ease;
-	touch-action: none;
+	transition: background 140ms ease;
 }
 
-.wg-tree-grip::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	margin: auto;
-	border-radius: 999px;
-	background: var(--background-modifier-border);
-	opacity: 0;
-	transition: opacity var(--wg-chrome-fade, 120ms) ease;
-}
-
-.wg-tree-grip:hover::after,
-.wg-tree-grip:active::after { opacity: 1; }
-
-.wg-tree-row > .wg-tree-grip.is-across {
-	position: relative;
+.wg-tree-handle.is-across {
 	flex: 0 0 var(--wg-tree-gap, 12px);
 	align-self: stretch;
 	cursor: col-resize;
 }
 
-.wg-tree-grip.is-across::after {
-	width: 4px;
-	height: 36px;
-}
-
-.wg-tree-cell > .wg-tree-grip.is-along {
-	left: 0;
-	right: 0;
-	bottom: calc(var(--wg-tree-gap, 12px) / -2);
+.wg-tree-handle.is-along {
 	height: var(--wg-tree-gap, 12px);
+	width: 100%;
 	cursor: row-resize;
 }
 
-.wg-tree-grip.is-along::after {
-	width: 36px;
-	height: 4px;
+.wg-tree-handle.is-capped {
+	cursor: default;
+	pointer-events: none;
 }
+
+.wg-tree-grip {
+	position: absolute;
+	border-radius: 999px;
+	background: var(--background-modifier-border);
+	opacity: 0.55;
+	transition:
+		opacity 140ms ease,
+		background 140ms ease,
+		transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.wg-tree-handle.is-across .wg-tree-grip {
+	width: 3px;
+	height: 28px;
+}
+
+.wg-tree-handle.is-along .wg-tree-grip {
+	width: 44px;
+	height: 3px;
+}
+
+.wg-tree-handle.is-capped .wg-tree-grip { opacity: 0; }
+
+.wg-tree-handle:hover { background: var(--background-modifier-hover); }
+
+.wg-tree-handle:hover .wg-tree-grip {
+	opacity: 1;
+	background: var(--text-faint);
+}
+
+.wg-tree-handle.is-across:hover .wg-tree-grip { transform: scaleY(1.6); }
+.wg-tree-handle.is-along:hover .wg-tree-grip { transform: scaleX(1.35); }
+
+.wg-tree-handle:active { background: var(--background-modifier-active-hover, var(--background-modifier-hover)); }
+
+.wg-tree-handle:active .wg-tree-grip {
+	opacity: 1;
+	background: var(--interactive-accent);
+}
+
+body.wg-tree-dragging,
+body.wg-tree-dragging * {
+	user-select: none !important;
+}
+
+body.wg-tree-dragging .wg-tree-cell { pointer-events: none; }
