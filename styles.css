@@ -3278,7 +3278,6 @@ body.wg-tree-dragging .wg-tree-cell { pointer-events: none; }
 	min-width: 0;
 }
 
-.wg-tree-band:hover .wg-tree-grip { opacity: 0.55; }
 .wg-root.is-editing .wg-tree-grip { opacity: 0.55; }
 
 .wg-tree-cell.is-carried {
