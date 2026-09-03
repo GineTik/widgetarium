@@ -182,7 +182,7 @@ export function languageOf(link, asked) {
 }
 
 function LanguagePicker({ language, onPick }) {
-	const [open, setOpen] = useState(false);
+	const [isOpen, setOpen] = useState(false);
 	const choose = (next) => {
 		setOpen(false);
 		onPick(next);
@@ -190,7 +190,7 @@ function LanguagePicker({ language, onPick }) {
 
 	return (
 		<Popover
-			open={open}
+			isOpen={isOpen}
 			onOpenChange={setOpen}
 			placement="below"
 			trigger={
@@ -249,7 +249,7 @@ function CodeBlock({ content, reader, host, here, settings }) {
 	const [file, setFile] = useState({ text: "", failure: null, read: false });
 	const [shown, setShown] = useState(step);
 	const [asked, setAsked] = useState("");
-	const [copied, setCopied] = useState(false);
+	const [isCopied, setCopied] = useState(false);
 
 	useEffect(() => {
 		let live = true;
@@ -298,8 +298,8 @@ function CodeBlock({ content, reader, host, here, settings }) {
 			<style>{STYLE}</style>
 			<div className="wgc-bar wg-inline-shy">
 				<LanguagePicker language={language} onPick={pick} />
-				<IconButton size="s" variant="glass" label={copied ? "Copied" : "Copy"} onClick={copy}>
-					<Icon name={copied ? "tick" : "copy"} size={15} />
+				<IconButton size="s" variant="glass" label={isCopied ? "Copied" : "Copy"} onClick={copy}>
+					<Icon name={isCopied ? "tick" : "copy"} size={15} />
 				</IconButton>
 			</div>
 			{host?.can?.renderMarkdown ? (
