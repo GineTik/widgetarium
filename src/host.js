@@ -1,6 +1,7 @@
 import { TFile, TFolder, Notice, MarkdownRenderer, MarkdownRenderChild, Platform } from "obsidian";
 import { Dialog } from "./dialog.js";
-import { matches, valueOf } from "./engine/match.js";
+import { fieldsOf } from "./gateway/fields.js";
+import { isMatch, valueOf } from "./gateway/match.js";
 import { readBody, replaceBody } from "./block-writer.js";
 import { typeOf } from "./engine/record-type.js";
 import { readLink } from "./engine/link.js";
@@ -207,7 +208,7 @@ function createSlot(app, binding) {
 				},
 			);
 			for (const entry of duplicates) reported.add(entry.id);
-			const rows = sortRecords(held.filter((record) => matches(record, query.where)), query.sort);
+			const rows = sortRecords(held.filter((record) => isMatch(record, query.where)), query.sort);
 			const limited = query.limit ? rows.slice(0, query.limit) : rows;
 			return { rows: limited, total: rows.length, duplicates };
 		},
@@ -220,15 +221,7 @@ function createSlot(app, binding) {
 		},
 
 		async describe() {
-			const seen = new Map();
-			for (const record of readFolder()) {
-				for (const [key, value] of Object.entries(record.props)) {
-					const known = seen.get(key) ?? { prop: key, type: typeof value, values: new Set() };
-					if (typeof value === "string" && known.values.size < 24) known.values.add(value);
-					seen.set(key, known);
-				}
-			}
-			return [...seen.values()].map((entry) => ({ ...entry, values: [...entry.values] }));
+			return fieldsOf(readFolder());
 		},
 
 		subscribe(callback) {
@@ -250,7 +243,7 @@ function createSlot(app, binding) {
 
 	if (writable) {
 		slot.create = async (draft) => {
-			const title = draft.props?.title ?? draft.props?.name ?? "Untitled";
+			const title = draft.name ?? draft.props?.title ?? draft.props?.name ?? "Untitled";
 			const path = `${folderPath}/${slugify(title)}.md`;
 			// CONTEXT: vault.create refuses a path whose folder is not there, and the first record makes it
 			if (!(app.vault.getAbstractFileByPath(folderPath) instanceof TFolder)) await app.vault.createFolder(folderPath);
@@ -261,12 +254,20 @@ function createSlot(app, binding) {
 			return toRecord(app, file, draft.body === undefined ? undefined : readBody(await app.vault.read(file)));
 		};
 
+		const renamedTo = async (file, name) => {
+			const wanted = `${folderPath}/${slugify(name)}.md`;
+			if (wanted === file.path) return file;
+			await app.fileManager.renameFile(file, wanted);
+			return app.vault.getAbstractFileByPath(wanted) ?? file;
+		};
+
 		slot.update = async (ref, patch) => {
-			const file = app.vault.getAbstractFileByPath(ref.path);
-			if (!(file instanceof TFile)) return null;
+			const found = app.vault.getAbstractFileByPath(ref.path);
+			if (!(found instanceof TFile)) return null;
+			const file = patch.name === undefined ? found : await renamedTo(found, patch.name);
 			// CONTEXT: processFrontMatter restringifies the YAML — skip it for a body-only patch
 			// CONTEXT: a duplicate's loser is re-minted by the first write that reaches it, never on read
-			const remint = mustRemint(duplicateIds(readFolder()), ref.path);
+			const remint = mustRemint(duplicateIds(readFolder()), file.path);
 			if (patch.props || remint) {
 				await app.fileManager.processFrontMatter(file, (frontmatter) => {
 					Object.assign(frontmatter, patch.props ?? {});
@@ -275,7 +276,7 @@ function createSlot(app, binding) {
 			}
 			// CONTEXT: what LANDED, never what was asked — a refused write must not be reported
 			const body = patch.body === undefined ? undefined : await writeBody(app, file, patch.body);
-			await settled(app, file);
+			if (patch.props || remint || patch.body !== undefined) await settled(app, file);
 			return toRecord(app, file, body);
 		};
 
@@ -306,6 +307,8 @@ function createSlot(app, binding) {
 // CONTEXT: wikilinks resolve against the note they are written in, not the vault root
 export function createHost(app, plugin, notePath = "") {
 	return {
+		shapes: plugin?.shapes ?? null,
+
 		// which environment the widget is running in. The same widget runs on the web or on
 		// the desktop against a different host; this is the only thing it may branch on.
 		platform: "obsidian",
@@ -325,6 +328,27 @@ export function createHost(app, plugin, notePath = "") {
 
 		slot(binding) {
 			return createSlot(app, binding);
+		},
+
+		file(path) {
+			return noteHere(app, path);
+		},
+
+		// CONTEXT: one note's events, for a value gateway over a single file
+		watchFile(path, callback) {
+			const handler = (file) => {
+				if (file?.path === path) callback();
+			};
+			app.vault.on("modify", handler);
+			app.vault.on("delete", handler);
+			app.vault.on("rename", handler);
+			app.metadataCache.on("changed", handler);
+			return () => {
+				app.vault.off("modify", handler);
+				app.vault.off("delete", handler);
+				app.vault.off("rename", handler);
+				app.metadataCache.off("changed", handler);
+			};
 		},
 
 		query: {

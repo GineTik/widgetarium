@@ -5,6 +5,9 @@ import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
 import { refusedRead } from "./engine/read-file.js";
 import { settingDefaults } from "./engine/widget-settings.js";
+import { collectionGateway, soloGateway } from "./gateway/create";
+import { mappedCollection } from "./gateway/mapped";
+import { storedRows } from "./gateway/props.js";
 
 // A WIDGET DRAWN WITH NOBODY BEHIND IT. The catalogue shows a widget before it has a board, a
 // folder or a person's notes — so everything it would normally read comes from its own manifest,
@@ -33,41 +36,29 @@ function refuse(what) {
 	};
 }
 
-// TRADE-OFF: every action is present and answers false, rather than absent — a widget that asks
-// `canCreate` gets an answer, and one that calls create anyway gets a refusal instead of a crash
-export function previewData(manifest) {
-	const declared = manifest?.preview?.sources ?? {};
-	const data = {};
-	const actions = {};
-	for (const name of Object.keys(manifest?.sources ?? {})) {
-		const rows = (declared[name]?.rows ?? []).map(toRecord);
-		data[name] = { rows, total: rows.length, isLoading: false, failure: null };
-		actions[name] = {
-			canCreate: false,
-			canUpdate: false,
-			canRemove: false,
-			canOpen: false,
-			create: refuse("create a note"),
-			update: refuse("write a note"),
-			remove: refuse("remove a note"),
-			open: refuse("open a note"),
-			get: async (ref) => rows.find((row) => row.path === ref?.path) ?? null,
-		};
+// CONTEXT: a preview gateway lists what the manifest offers and refuses every write by omission
+export function previewGateways(manifest) {
+	const declared = manifest?.preview?.props ?? {};
+	const gateways = {};
+	for (const [name, spec] of Object.entries(manifest?.props ?? {})) {
+		const id = `preview/${manifest?.id ?? "widget"}/${name}`;
+		if (spec?.kind === "value") {
+			gateways[name] = soloGateway(declared[name]?.value ?? spec?.default?.value ?? null, {}, id);
+			continue;
+		}
+		const rows = declared[name]?.rows
+			? declared[name].rows.map(toRecord).map((record) => ({ ref: record.path, value: record }))
+			: storedRows(spec?.default?.value ?? []);
+		const listing = collectionGateway({
+			id,
+			handlers: {
+				list: (query) => ({ rows: query?.limit ? rows.slice(0, query.limit) : rows, total: rows.length }),
+				get: (ref) => rows.find((row) => row.ref === ref) ?? null,
+			},
+		});
+		gateways[name] = mappedCollection(listing, { needs: spec?.needs ?? {} });
 	}
-	return { data, actions };
-}
-
-// CONTEXT: local to this one preview, so two previews of one widget cannot collide over a key
-function previewContext(seed) {
-	const held = new Map(Object.entries(seed ?? {}));
-	return {
-		get: (key) => held.get(key),
-		set: () => false,
-		release: () => {},
-		offered: () => [...held.keys()],
-		claimedByAnother: () => false,
-		subscribe: () => () => {},
-	};
+	return gateways;
 }
 
 // CONTEXT: a picture of a widget still needs somewhere to BE — a passage when the preview is
@@ -119,14 +110,13 @@ export function previewSize(manifest, cell, gap) {
 // the props a widget needs to draw, with no board, no vault and no way back to either
 export function previewProps(definition, options) {
 	const manifest = definition?.manifest ?? {};
-	const { data, actions } = previewData(manifest);
 	const settings = settingDefaults(manifest);
 
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = options?.registry?.get(spec.default);
 		slots[name] = child?.component && !child.error
-			? (given) => h(child.component, { ...given, settings: {}, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host), context: previewContext() })
+			? (given) => h(child.component, { ...given, settings: {}, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host) })
 			: null;
 	}
 
@@ -135,6 +125,7 @@ export function previewProps(definition, options) {
 	const content = manifest.inline ? (manifest.preview?.content ?? manifest.title ?? "Sample text") : null;
 
 	return {
+		...previewGateways(manifest),
 		here: previewHere(content),
 		navigator: previewNavigator,
 		reader: previewReader(manifest),
@@ -143,14 +134,10 @@ export function previewProps(definition, options) {
 		size: { w: manifest.preview?.size?.w ?? 4, h: manifest.preview?.size?.h ?? 3, scale: 1, isCollapsed: false, collapse() {}, expand() {} },
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		host: previewHost(options?.host),
-		context: previewContext(manifest.preview?.context),
 		// CONTEXT: the sample world hears everything the widget offers, so it draws its working face
-		board: { properties: manifest.preview?.properties ?? [], archivedColumns: manifest.preview?.archivedColumns ?? [], consumes: manifest.provides ?? [] },
+		board: { properties: manifest.preview?.properties ?? [], archivedColumnsByBoard: manifest.preview?.archivedColumns ?? [] },
 		configureBoard: () => false,
 		configure: () => {},
-		data,
-		actions,
-		filters: {},
 		slots,
 		mounts: {},
 	};

@@ -5,18 +5,43 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { archivedColumnsOn, heldKey, heldTile, mountPatch, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
+import { heldKey, heldTile, mountPatch, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, propConfig, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
 import { pickWidget } from "./catalogue-dialog.js";
-import { createContext } from "./engine/context.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
 import { settingDefaults } from "./engine/widget-settings.js";
 import { NOWHERE } from "./engine/navigator-none.js";
 import { trace } from "./trace.js";
-import { useSource } from "./source.js";
+import { stableKey } from "./gateway/cache.js";
+import { arrayGateway } from "./gateway/create.js";
+import { folderGateway, fileGateway } from "./gateway/obsidian.js";
+import { createGatewayRefs, createViewCells, narrowedByRefs, refCollection, refOf, refValue, refsWithin, selectionGateway } from "./gateway/refs.js";
+import { bindingOf, hardcodeCollection, hardcodeValue, requestedVerbs, unmetVerbs } from "./gateway/props.js";
+import { mappedCollection } from "./gateway/mapped.js";
 import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
+import { isUnresolved, wiredTiles } from "./engine/wiring.js";
+
+// CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
+export const RESERVED_PROPS = new Set([
+	"settings",
+	"configure",
+	"configureMounts",
+	"pickWidget",
+	"board",
+	"configureBoard",
+	"size",
+	"fullscreen",
+	"host",
+	"here",
+	"navigator",
+	"slots",
+	"mounts",
+	"key",
+	"ref",
+	"children",
+]);
 
 const REM = 16;
 // how far a resize may travel past a limit before it stops giving entirely
@@ -54,53 +79,6 @@ class Boundary extends Component {
 	}
 }
 
-// A widget's source filter may name a context key with a leading @: `{ board: "@board" }`
-// resolves against the board's shared selection. That indirection is the whole binding —
-// the tabs widget writes "board", this one reads it, and neither knows the other exists.
-export function resolveFilter(rows, context) {
-	const out = [];
-	for (const row of rows ?? []) {
-		// { spread: "@filters" } becomes one clause per key the filter bar has set. Without
-		// it a widget would have to know in advance which properties are filterable, which
-		// is exactly the knowledge the filter bar reads off the data at runtime.
-		if (typeof row.spread === "string" && row.spread.startsWith("@")) {
-			const chosen = context.get(row.spread.slice(1));
-			if (chosen && typeof chosen === "object") {
-				for (const [prop, value] of Object.entries(chosen)) {
-					if (value === undefined || value === null || value === "") continue;
-					// A filter panel offers CHECKBOXES: three members ticked is one clause with
-					// three values, not three clauses that can never all be true at once.
-					if (Array.isArray(value)) {
-						if (value.length > 0) out.push({ prop, op: "in", value });
-						continue;
-					}
-					out.push({ prop, op: "is", value });
-				}
-			}
-			continue;
-		}
-
-		const value = row.value;
-		if (typeof value !== "string" || !value.startsWith("@")) {
-			out.push(row);
-			continue;
-		}
-		const key = value.slice(1);
-		const resolved = context.get(key);
-		// an unset selection must not become a clause matching the empty string, or the board
-		// would show nothing at all until something was picked
-		if (resolved === undefined || resolved === null || resolved === "") continue;
-		// CONTEXT: id first, name second — a note that still stores the name goes on matching
-		const aliases = context.get(`${key}Refs`);
-		if (Array.isArray(aliases) && aliases.length > 1) {
-			out.push({ ...row, op: "in", value: aliases });
-			continue;
-		}
-		out.push({ ...row, value: resolved });
-	}
-	return out;
-}
-
 // CONTEXT: a slot resolved with no board behind it — every caller still gets a boolean back
 function refuseBoardPatch() {
 	console.warn("Widgetarium: this widget was rendered without a board and cannot configure one");
@@ -110,7 +88,7 @@ function refuseBoardPatch() {
 // A slot is where the board says WHICH widget draws part of another one. The parent feeds
 // it — a card gets its row from the board — so a slotted widget has no source of its own; it
 // is a view handed data. That is what makes "replace this card" a setting, not a fork.
-export function resolveSlots(manifest, tile, registry, host, viewContext, boardAccess) {
+export function resolveSlots(manifest, tile, registry, host, boardAccess) {
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = registry.get(tile.slots?.[name]?.widget ?? spec.default);
@@ -127,10 +105,9 @@ export function resolveSlots(manifest, tile, registry, host, viewContext, boardA
 				host: viewHost(host),
 				here: host.here ?? null,
 				navigator: host.navigator ?? NOWHERE,
-				context: viewContext,
 				// the same shape a tile gets: one widget file must not read `board` two ways
 				// depending on whether the board placed it or another widget did
-				board: boardAccess?.board ?? { properties: [], consumes: [] },
+				board: boardAccess?.board ?? { properties: [] },
 				configureBoard: boardAccess?.configureBoard ?? refuseBoardPatch,
 			});
 	}
@@ -145,15 +122,16 @@ function MountedWidget({ name, was, widget, definition, tile, patchMounted, ...r
 		definition,
 		tile: child,
 		isMounted: true,
-		patchSource: (given, patch) =>
-			patchMounted(name, was, { sources: { ...child.sources, [given]: { ...(child.sources[given] ?? {}), ...patch } } }),
+		// TODO: mounted prop writes read the render's copy — thread a functional patch through rekeyed
+		patchProp: (given, patch) =>
+			patchMounted(name, was, { props: { ...child.props, [given]: resolvePatch(child.props?.[given] ?? {}, patch) } }),
 		patchMounted: (held, heldWas, patch) => patchMounted(name, was, { mounted: rekeyed(child.mounted, held, heldWas, patch) }),
 		onPatch: (patch) => patchMounted(name, was, patch),
 	});
 }
 
-function toKeys(value) {
-	return String(value ?? "").split(",").filter(Boolean);
+function resolvePatch(current, patch) {
+	return { ...current, ...(typeof patch === "function" ? patch(current) : patch) };
 }
 
 // CONTEXT: an id the registry could not resolve is still an entry — dropping it hid the gap
@@ -184,99 +162,138 @@ export function resolveMounts(manifest, settings, registry, mount) {
 	return mounts;
 }
 
-function WidgetHost({ definition, tile, place, host, scale, patchSource, context, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, boardArchivedColumns, boardConsumes, configureBoard }) {
+function mountsCollection(tile, name, entries) {
+	const rows = entries.map((entry) => ({ ref: entry.name, value: { name: entry.name, value: entry.name, widget: entry.id, hidden: entry.hidden } }));
+	return arrayGateway(() => rows, {}, `${refOf(tile.id, name)}?${stableKey(rows)}`);
+}
+
+export function whereOf(spec, config) {
+	return [...(spec?.default?.where ?? []), ...(config?.where ?? [])];
+}
+
+function mappingFor(spec, config, shapes, path) {
+	const needs = spec.needs ?? {};
+	if (Object.keys(needs).length === 0) return null;
+	return { needs, chosen: { ...shapes?.readShape(path), ...(config.map ?? {}) } };
+}
+
+function resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patchProp }) {
+	const config = propConfig(tile.props, name, spec);
+	const { kind, binding } = bindingOf(spec, config);
+	const requested = requestedVerbs(spec);
+	if (binding === "ref") return kind === "value" ? refValue(refs, config.ref) : refCollection(refs, config.ref);
+	if (binding === "memory") return cellFor(refOf(tile.id, name));
+	const declared = spec.default ?? {};
+	if (binding === "hardcode") {
+		const hardcodeSpec = {
+			id: `${tile.id}/${name}?${stableKey(config.value ?? declared.value)}`,
+			readValue: () => propsRef.current?.[name]?.value ?? declared.value,
+			mutateValue: (step) => patchProp(name, (held) => ({ value: step(held?.value ?? declared.value) })),
+			requested,
+		};
+		if (kind === "value") return hardcodeValue(hardcodeSpec);
+		return narrowedByRefs(hardcodeCollection(hardcodeSpec), whereOf(spec, config), refs);
+	}
+	const path = config.path || declared.path || "";
+	if (kind === "value") return fileGateway({ host, path, requested });
+	const baked = { sort: [...(declared.sort ?? []), ...(config.sort ?? [])] };
+	const base = folderGateway({ host, path, baked, requested });
+	const mapping = mappingFor(spec, config, host?.shapes, path);
+	return narrowedByRefs(mapping ? mappedCollection(base, mapping) : base, whereOf(spec, config), refs);
+}
+
+// TRADE-OFF: the list is read back through the registry rather than closed over, because a stable id keeps the cache attached across a write and only a live read then sees the row that write just made
+function resolveSelection({ name, spec, tile, refs, cellFor, config, gatewayFor }) {
+	if (config.ref) return refValue(refs, config.ref);
+	if (!gatewayFor(spec.of)) return null;
+	const key = refOf(tile.id, name);
+	const over = refOf(tile.id, spec.of);
+	const named = spec.fieldFrom ? () => gatewayFor(spec.fieldFrom)?.get() : spec.field ?? null;
+	return selectionGateway({
+		id: key,
+		memory: cellFor(key),
+		collection: refCollection(refs, over),
+		fieldName: named,
+		isFallbackToFirst: spec.fallback === "first",
+		watches: (listener) => refs.watch([over], listener),
+	});
+}
+
+function WidgetHost({ definition, tile, place, host, scale, patchProp, refs, cellFor, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, boardArchivedColumns, configureBoard }) {
 	const manifest = definition.manifest;
-	const [, setTick] = useState(0);
-	// CONTEXT: one INSTANCE, not one widget — two tiles of the same widget are two writers
-	const owner = `${manifest.id}@${tile.id}`;
 
-	// CONTEXT: a claim outliving its widget leaves the key unwritable for good
-	useEffect(() => () => context.release(owner), [context, owner]);
+	// CONTEXT: gateways read the tile through this ref, so a refetch sees the write that caused it
+	const propsRef = useRef(tile.props);
+	propsRef.current = tile.props ?? {};
 
-	// Re-render when the shared selection moves. A widget that PROVIDES needs this as much as
-	// one that consumes: the tab bar draws the active tab from the very key it writes, and
-	// without the subscription the click would land but the underline would not follow.
-	const touchesContext = (manifest.consumes ?? []).length > 0 || (manifest.provides ?? []).length > 0;
-	const drawnFrom = context.all();
-	useEffect(() => {
-		if (!touchesContext) return;
-		const stop = context.subscribe(() => setTick((count) => count + 1));
-		// CONTEXT: a value written while this tile was mounting reached no listener, and an equal set never resends it
-		if (context.all() !== drawnFrom) setTick((count) => count + 1);
-		return stop;
-	}, [context, touchesContext]);
+	const settings = { ...settingDefaults(definition.manifest), ...(tile.settings ?? {}) };
+	const mounts = resolveMounts(manifest, settings, registry, { tile, place, host, scale, refs, cellFor, registry, onCollapse, onExpand, patchMounted, boardProperties, boardArchivedColumns, configureBoard });
 
-	const sources = {};
-	for (const name of Object.keys(manifest.sources ?? {})) {
-		const declared = manifest.sources[name].default;
-		sources[name] = useSource({
-			host,
-			name,
-			config: tile.sources?.[name],
-			manifest: declared ? { ...declared, filters: resolveFilter(declared.filters, context) } : declared,
-			patchConfig: patchSource,
+	const gateways = {};
+	const gatewayFor = (name) => gateways[name] ?? null;
+	const unmet = [];
+	const declaredProps = Object.entries(manifest.props ?? {}).filter(([name]) => {
+		if (!RESERVED_PROPS.has(name)) return true;
+		console.warn(`Widgetarium: ${manifest.id} declares a prop named "${name}", which the host owns — skipped`);
+		return false;
+	});
+	for (const [name, entries] of Object.entries(mounts)) gateways[name] = mountsCollection(tile, name, entries);
+	for (const [name, spec] of declaredProps) {
+		if (spec.of) continue;
+		gateways[name] = resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patchProp });
+	}
+	for (const [name, spec] of declaredProps) {
+		if (!spec.of) continue;
+		gateways[name] = resolveSelection({ name, spec, tile, refs, cellFor, config: tile.props?.[name] ?? {}, gatewayFor });
+	}
+	for (const [name, spec] of declaredProps) {
+		unmet.push(...unmetVerbs(spec, gateways[name]).map((verb) => `${name}.${verb}`));
+	}
+
+	for (const [name, gateway] of Object.entries(gateways)) {
+		const spec = manifest.props?.[name] ?? manifest.mounts?.[name] ?? {};
+		const config = tile.props?.[name] ?? {};
+		const leansOn = spec.of
+			? [refOf(tile.id, spec.of), ...(spec.fieldFrom ? [refOf(tile.id, spec.fieldFrom)] : [])]
+			: [...(typeof config.ref === "string" ? [config.ref] : []), ...refsWithin(whereOf(spec, config))];
+		refs.put(refOf(tile.id, name), gateway, {
+			describes: {
+				tile: tile.id,
+				prop: name,
+				label: spec.label ?? name,
+				title: manifest.title ?? manifest.id,
+				kind: gateway?.kind ?? "collection",
+				shape: spec.shape ?? "value",
+			},
+			dependsOn: leansOn,
 		});
 	}
-
-	// The view gets DATA and INTENTS, never the store. Handing a widget the source object
-	// put the model inside the view: it held the vault slot, its bindings and its writer, so
-	// the same component could not run anywhere else. Now the engine owns the writing and
-	// the widget only says what it wants done.
-	const data = {};
-	const actions = {};
-	const filters = {};
-	for (const [name, source] of Object.entries(sources)) {
-		data[name] = { rows: source.data.rows, total: source.data.total, isLoading: source.data.isLoading, failure: source.data.failure ?? null, duplicates: source.data.duplicates ?? [] };
-		actions[name] = {
-			canCreate: source.canCreate,
-			canUpdate: source.canUpdate,
-			canRemove: source.canRemove,
-			canRepairIds: source.canRepairIds,
-			repairIds: () => source.repairIds(),
-			remove: (ref) => source.remove(ref),
-			create: (draft) => source.create(draft),
-			// CONTEXT: patch is { props } and/or { body }; the half not given is left alone
-			update: (ref, patch) => source.update(ref, patch),
-			// CONTEXT: rows carry no body — a widget that wants one asks for that record
-			get: (ref) => source.get(ref),
-			open: (ref) => source.openRecord(ref),
-		};
-		// only a filter UI needs these, and it needs them as data, not as a query engine
-		filters[name] = { list: source.filters.list, update: source.filters.update, describe: source.describe };
-	}
-
-	const viewContext = {
-		get: (key) => context.get(key),
-		set: (key, value) => context.set(key, value, owner),
-		offered: () => context.offered(),
-		// CONTEXT: a second writer of one key is refused, so a widget may ask before offering to write
-		claimedByAnother: (key) => {
-			const held = context.providerOf(key);
-			return Boolean(held) && held !== owner;
+	const registered = useRef([]);
+	registered.current = Object.entries(gateways).map(([name, gateway]) => [refOf(tile.id, name), gateway]);
+	useEffect(
+		() => () => {
+			for (const [ref, gateway] of registered.current) refs.drop(ref, gateway);
 		},
-	};
+		[refs],
+	);
 
 	// CONTEXT: a mount has no place, so folding one would fold the tile holding it
 	const fold = (verb, run) => () => {
 		if (!isMounted) return run?.(place.id);
-		console.warn(`Widgetarium: ${owner} is mounted and cannot ${verb} — a mount has no place of its own`);
+		console.warn(`Widgetarium: ${manifest.id} is mounted and cannot ${verb} — a mount has no place of its own`);
 	};
 
-	const settings = { ...settingDefaults(definition.manifest), ...(tile.settings ?? {}) };
 	// one object, handed to this widget and to anything it slots — the same board, and the
 	// same identity, so a child's memo does not see a new board every frame
-	// CONTEXT: sliced HERE, the one place that re-renders when the selection moves
-	// CONTEXT: the whole map travels too — the migration files each board's own list, not the shown one
 	const boardAccess = {
 		board: {
 			properties: boardProperties,
-			archivedColumns: archivedColumnsOn(boardArchivedColumns, context.get("board")),
 			archivedColumnsByBoard: boardArchivedColumns,
-			consumes: toKeys(boardConsumes),
 		},
 		configureBoard,
 	};
 	const props = {
+		...gateways,
 		settings,
 		// A widget may CHANGE its own settings — the columns a board shows are a setting, and a
 		// kanban with no way to add one had to fake it by creating a task with a new status and
@@ -289,7 +306,7 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		pickWidget: (options) => pickWidget(registry, host, options),
 		// CONTEXT: the BOARD's list, not this tile's — two widgets must read one list
 		board: boardAccess.board,
-		configureBoard,
+		configureBoard: boardAccess.configureBoard,
 		// A widget may ask to be narrower; it may not resize itself. The board owns places, so
 		// it is the board that writes the width and the board that remembers the one it came
 		// from — which is why reopening a panel returns to the width THIS screen had it at.
@@ -312,14 +329,17 @@ function WidgetHost({ definition, tile, place, host, scale, patchSource, context
 		here: host.here ?? null,
 		// CONTEXT: navigation is its own entity, never a gateway verb — data does not move people
 		navigator: host.navigator ?? NOWHERE,
-		// what this widget may read and write of the shared selection, and nothing else
-		context: viewContext,
-		data,
-		actions,
-		filters,
-		slots: resolveSlots(manifest, tile, registry, host, viewContext, boardAccess),
-		mounts: resolveMounts(manifest, settings, registry, { tile, place, host, scale, context, registry, onCollapse, onExpand, patchMounted, boardProperties, boardArchivedColumns, boardConsumes, configureBoard }),
+		slots: resolveSlots(manifest, tile, registry, host, boardAccess),
+		mounts,
 	};
+
+	// CONTEXT: mount-time match — a required verb nothing here provides is said, not discovered on click
+	if (unmet.length > 0) {
+		return h("div", { className: "wg-missing" }, [
+			h("b", { key: "what" }, "This widget cannot run here"),
+			h("span", { key: "why" }, `It needs ${unmet.join(", ")}, which this board does not provide.`),
+		]);
+	}
 
 	return h(definition.component, props);
 }
@@ -388,20 +408,20 @@ function icon(paths) {
 }
 
 function TileView(props) {
-	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, context, registry, boardProperties, boardArchivedColumns, boardConsumes, configureBoard } = props;
+	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, refs, cellFor, registry, boardProperties, boardArchivedColumns, configureBoard } = props;
 	const settingsShown = typeof settings === "string";
 
 	// built BEFORE the window that may hold it: the window is a hook and must run on every
 	// render, and it cannot be handed a widget declared further down the function
-	const patchSource = (name, patch) =>
-		onPatch({ sources: { ...(tile.sources ?? {}), [name]: { ...(tile.sources?.[name] ?? {}), ...patch } } });
+	const patchProp = (name, patch) =>
+		onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
 
 	const patchMounted = (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) });
 
 	const widget = h(
 		Boundary,
 		{ key: tile.widget },
-		h(WidgetHost, { definition, tile, place, host, scale, patchSource, patchMounted, context, registry, onCollapse, onExpand, onPatch, boardProperties, boardArchivedColumns, boardConsumes, configureBoard }),
+		h(WidgetHost, { definition, tile, place, host, scale, patchProp, patchMounted, refs, cellFor, registry, onCollapse, onExpand, onPatch, boardProperties, boardArchivedColumns, configureBoard }),
 	);
 
 	const settingsWindow = useSettingsWindow({
@@ -416,7 +436,7 @@ function TileView(props) {
 		host,
 		registry,
 		columns,
-		boardConsumes: toKeys(boardConsumes),
+		refs,
 		onPatch,
 		onDone: () => onCloseSettings(true),
 		onDismiss: () => onCloseSettings(false),
@@ -553,10 +573,9 @@ const Tile = memo(TileView, (before, after) => {
 	if (before.editing !== after.editing || before.isDragging !== after.isDragging) return false;
 	if (before.scale !== after.scale || before.live !== after.live || before.cell !== after.cell || before.gap !== after.gap) return false;
 	if (before.settings !== after.settings || before.columns !== after.columns || before.phone !== after.phone) return false;
-	if (before.context !== after.context) return false;
+	if (before.refs !== after.refs || before.cellFor !== after.cellFor) return false;
 	if (before.boardProperties !== after.boardProperties) return false;
 	if (before.boardArchivedColumns !== after.boardArchivedColumns) return false;
-	if (before.boardConsumes !== after.boardConsumes) return false;
 	// Whether this tile is the open one is a reason to redraw it. Left out, the chip was set
 	// open, the scrim appeared, and the tile itself was skipped — the board dimmed around a
 	// chip that never opened.
@@ -644,7 +663,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const [openedChip, setOpenedChip] = useState(null);
 	const [settingsTile, setSettingsTile] = useState(null);
 	const [closingTile, setClosingTile] = useState(null);
-	const [picking, setPicking] = useState(false);
+	const [isPicking, setPicking] = useState(false);
 	// CONTEXT: a new number every opening, so the window's own state is fresh without an effect
 	const sessionRef = useRef(0);
 	// The pointer's own geometry, in STATE rather than written onto the node. Written
@@ -670,7 +689,8 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	);
 
 	// CONTEXT: local to this viewer — two people on one board must filter without moving each other
-	const context = useMemo(() => createContext(board.context ?? {}), []);
+	const refs = useMemo(() => createGatewayRefs(), []);
+	const cellFor = useMemo(() => createViewCells(), []);
 
 	const boardShell = (children) =>
 		h(Board, {
@@ -770,19 +790,18 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const patchTile = (id, patch) => {
 		// CONTEXT: a memoised tile's write carries the render it was drawn in, not the board as it stands
 		const now = latestRef.current.board;
-		onChange({ ...now, tiles: now.tiles.map((tile) => (tile.id === id ? { ...tile, ...patch } : tile)) }, true);
+		// CONTEXT: a function patch reads the tile as it stands, so batched writes cannot eat each other
+		onChange({ ...now, tiles: now.tiles.map((tile) => (tile.id === id ? { ...tile, ...(typeof patch === "function" ? patch(tile) : patch) } : tile)) }, true);
 	};
 
 	// CONTEXT: `view` in a manifest is a widget declaring itself a nameable view
 	const viewTiles = (tiles) => tiles.filter((tile) => registry.get(tile.widget)?.manifest?.view);
 
 	// TRADE-OFF: the board folds it, not the widget — only the board can move a tile INTO a holder
-	const addHolder = (key) => {
-		const holder = registry
-			.list()
-			.find((entry) => (entry.manifest?.consumes ?? []).includes(key) && Object.keys(entry.manifest?.mounts ?? {}).length > 0);
+	const addHolder = () => {
+		const holder = registry.list().find((entry) => Object.keys(entry.manifest?.mounts ?? {}).length > 0);
 		if (!holder) {
-			console.warn(`Widgetarium: no installed widget holds "${key}"`);
+			console.warn("Widgetarium: no installed widget holds views");
 			return false;
 		}
 		const now = latestRef.current;
@@ -799,7 +818,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		];
 		const mounted = {};
 		for (const row of held) {
-			mounted[row.name] = { widget: row.widget, settings: row.tile.settings, sources: row.tile.sources, slots: row.tile.slots, mounted: row.tile.mounted };
+			mounted[row.name] = { widget: row.widget, settings: row.tile.settings, props: row.tile.props, slots: row.tile.slots, mounted: row.tile.mounted };
 		}
 		const id = `w${Math.random().toString(36).slice(2, 8)}`;
 		const gone = new Set(moved.map((tile) => tile.id));
@@ -816,7 +835,13 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		onChange(
 			{
 				...now.board,
-				tiles: [...now.board.tiles.filter((tile) => !gone.has(tile.id)), { id, widget: holder.manifest.id, settings: { [mountName]: rows }, sources: {}, mounted }],
+				tiles: wiredTiles(
+					[
+						...now.board.tiles.filter((tile) => !gone.has(tile.id)),
+						{ id, widget: holder.manifest.id, settings: { [mountName]: rows }, mounted },
+					],
+					registry,
+				),
 				layouts,
 			},
 			true,
@@ -825,7 +850,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	};
 
 	// TRADE-OFF: three keys wide — a widget patching the board could rewrite its tiles and layouts
-	const BOARD_KEYS = ["properties", "archivedColumns", "holder"];
+	const BOARD_KEYS = ["properties", "archivedColumns", "holder", "board"];
 	const configureBoard = (patch) => {
 		const refused = Object.keys(patch ?? {}).filter((key) => !BOARD_KEYS.includes(key));
 		if (refused.length > 0) {
@@ -833,12 +858,11 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 			return false;
 		}
 		// CONTEXT: a holder is a tile, so the intent is folded, not written as a field
-		if (patch.holder) return addHolder(patch.holder);
+		if (patch.holder) return addHolder();
 		// CONTEXT: the model's own normaliser, so no widget writes a list the file could not hold
 		const named = {};
 		if (patch.properties) named.properties = normalizeNames(patch.properties);
-		// CONTEXT: the selection is read at the click, not at the render that made the button
-		if (patch.archivedColumns) named.archivedColumns = withArchivedColumnsOn(latestRef.current.board.archivedColumns, context.get("board"), patch.archivedColumns);
+		if (patch.archivedColumns) named.archivedColumns = withArchivedColumnsOn(latestRef.current.board.archivedColumns, patch.board ?? "", patch.archivedColumns);
 		onChange({ ...latestRef.current.board, ...named }, true);
 		return true;
 	};
@@ -879,44 +903,24 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const countReaders = (folderPath) => {
 		if (!folderPath) return 0;
 		let found = 0;
-		const walk = (widget, sources) => {
-			const declared = registry.get(widget)?.manifest?.sources ?? {};
+		const walk = (widget, props) => {
+			const declared = registry.get(widget)?.manifest?.props ?? {};
 			for (const name of Object.keys(declared)) {
-				if ((sources?.[name]?.path || declared[name]?.default?.path || "") === folderPath) found += 1;
+				if ((props?.[name]?.path || declared[name]?.default?.path || "") === folderPath) found += 1;
 			}
 		};
 		const descend = (held) => {
 			for (const entry of Object.values(held ?? {})) {
-				walk(entry.widget, entry.sources);
+				walk(entry.widget, entry.props);
 				descend(entry.mounted);
 			}
 		};
 		for (const tile of board.tiles) {
-			walk(tile.widget, tile.sources);
+			walk(tile.widget, tile.props);
 			descend(tile.mounted);
 		}
 		return found;
 	};
-
-	// CONTEXT: a provider cannot see its readers, and a switcher steering nobody looked alive
-	const readKeys = () => {
-		const keys = new Set();
-		const walk = (widget) => {
-			for (const key of registry.get(widget)?.manifest?.consumes ?? []) keys.add(key);
-		};
-		const descend = (held) => {
-			for (const entry of Object.values(held ?? {})) {
-				walk(entry.widget);
-				descend(entry.mounted);
-			}
-		};
-		for (const tile of board.tiles) {
-			walk(tile.widget);
-			descend(tile.mounted);
-		}
-		return [...keys].sort().join(",");
-	};
-	const boardConsumes = readKeys();
 
 	// Removing a tile removes the TILE, not its place at this one width. Dropping only the
 	// place left it in board.tiles, so the next width derived it back and a widget deleted in
@@ -976,7 +980,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				// CONTEXT: a board carries more than tiles — rebuilt, it loses its mode and its
 				// property list, and that list is what the filter bar and the task dialog read
 				...now.board,
-				tiles: [...now.board.tiles, { id, widget: widgetId, settings: {}, sources: {} }],
+				tiles: wiredTiles([...now.board.tiles, { id, widget: widgetId, settings: {} }], registry),
 				layouts: {
 					...now.board.layouts,
 					[now.columns]: [...now.places, { id, x: 0, y: rowsOf(now.places), w: born.w, h: born.h }],
@@ -1183,7 +1187,8 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						onOpenSettings: openSettings,
 						onCloseSettings: closeSettings,
 						onResize: (patch) => resizeTile(place.id, patch),
-						context,
+						refs,
+						cellFor,
 						live: live?.id === place.id ? live : null,
 						scale: scaleOf(active),
 						definition: registry.get(tile.widget),
@@ -1203,7 +1208,6 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						onExpand: expandTile,
 						boardProperties: board.properties,
 						boardArchivedColumns: board.archivedColumns,
-						boardConsumes,
 						configureBoard,
 					});
 			  });
@@ -1280,7 +1284,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						),
 						// CONTEXT: addTile writes through onChange, so a pick made while the settings
 						// window is up lands in the draft with everything else it staged
-						picking
+						isPicking
 							? h(CatalogueDialog, {
 									key: "catalogue",
 									registry,
