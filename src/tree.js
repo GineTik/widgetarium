@@ -29,7 +29,7 @@ export function widthsOf(row, inner) {
 }
 
 function sized(cell, width) {
-	return { id: cell.id, width, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
+	return { id: cell.id, width, ratio: cell.ratio, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
 }
 
 export function resized(row, at, { boundaryPx, inner, isFree }) {

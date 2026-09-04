@@ -594,7 +594,7 @@ const Tile = memo(TileView, (before, after) => {
 function TreeCell({ cell, tile, definition, shared, patchTile }) {
 	const onPatch = (patch) => patchTile(tile.id, patch);
 	const patchProp = (name, patch) => onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
-	const style = { flex: `0 0 ${cell.width}px`, width: `${cell.width}px`, ...(cell.cap ? { maxHeight: `${cell.cap}px` } : {}) };
+	const style = { flexGrow: cell.ratio, flexShrink: 1, flexBasis: 0, minWidth: 0, ...(cell.cap ? { maxHeight: `${cell.cap}px` } : {}) };
 	return h(
 		"div",
 		{ className: `wg-tile wg-tree-cell${cell.carried ? " is-carried" : ""}`, style, "data-cell": cell.id },
@@ -617,7 +617,7 @@ function TreeCell({ cell, tile, definition, shared, patchTile }) {
 }
 
 const Cell = memo(TreeCell, (before, after) => {
-	const same = before.cell.width === after.cell.width && before.cell.cap === after.cell.cap && before.cell.id === after.cell.id && before.cell.carried === after.cell.carried;
+	const same = before.cell.ratio === after.cell.ratio && before.cell.cap === after.cell.cap && before.cell.id === after.cell.id && before.cell.carried === after.cell.carried;
 	return same && before.tile === after.tile && before.definition === after.definition && before.shared === after.shared;
 });
 
@@ -653,10 +653,8 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 			frame = 0;
 			node.style.height = `${tallestOf(latest)}px`;
 			if (cells.length < 2) return;
-			const widths = widthsOf(latest, inner);
 			cells.forEach((cell, index) => {
-				cell.style.flex = `0 0 ${widths[index]}px`;
-				cell.style.width = `${widths[index]}px`;
+				cell.style.flexGrow = latest[index].ratio;
 			});
 		};
 		const move = (moved) => {
