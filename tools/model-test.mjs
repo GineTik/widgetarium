@@ -446,6 +446,11 @@ check("rendering does not warn", onRender, 0);
 	check("and they round-trip as they were named", Object.keys(serializeBoard(normalizeBoard(regioned)).layout), ["left", "main", "right"]);
 	check("a sidebar without a main is no layout", "layout" in normalizeBoard({ tiles: [], layout: { left: [["a"]] }, layouts: {} }), false);
 	check("and a board that names only main is written as a bare list", Array.isArray(serializeBoard(laid).layout), true);
+
+	const sized = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: [["a"]], left: { width: 420, rows: [["a"]] } }, layouts: {} });
+	check("a sidebar keeps the width it was dragged to", sized.layout.left.width, 420);
+	check("and writes it back beside its rows", serializeBoard(sized).layout.left, { width: 420, rows: [[{ id: "a", ratio: 1 }]] });
+	check("a region with no width is written as a bare list of rows", serializeBoard(sized).layout.main, [[{ id: "a", ratio: 1 }]]);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");

@@ -135,6 +135,56 @@ function surfaceNode() {
 	);
 }
 
+const SIDES_WIDTH = 1400;
+
+const sidesBoard = {
+	...BOARD,
+	layout: {
+		left: { rows: [[{ id: "boards" }]] },
+		main: { rows: [[{ id: "board", height: 400 }]] },
+		right: { rows: [[{ id: "wynttpz" }]] },
+	},
+	layouts: {},
+};
+
+function sidesNode() {
+	return h(
+		"div",
+		{ className: "wg-sides-probe", key: "sides", style: { width: `${SIDES_WIDTH}px` } },
+		h(WidgetSurface, {
+			board: sidesBoard,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: SIDES_WIDTH,
+			onChange: () => {},
+			onToggleEditing: () => {},
+			onWidth: () => {},
+		}),
+	);
+}
+
+function readSides() {
+	const page = document.querySelector(".wg-sides-probe .wg-tree-page");
+	if (!page) return { drawn: false };
+	const columns = document.querySelector(".wg-sides-probe .wg-tree-columns");
+	const boxes = [...columns.querySelectorAll(":scope > .wg-tree-region")].map((node) => {
+		const at = node.getBoundingClientRect();
+		return { name: node.className.replace(/.*is-/, ""), left: Math.round(at.left), right: Math.round(at.right), top: Math.round(at.top), height: Math.round(at.height) };
+	});
+	const row = columns.getBoundingClientRect();
+	return {
+		drawn: true,
+		regions: boxes,
+		edges: columns.querySelectorAll(":scope > .wg-tree-handle.is-edge").length,
+		spans: Math.round(boxes.at(-1).right - boxes[0].left),
+		rowWidth: Math.round(row.width),
+		scrollWidth: page.scrollWidth,
+		clientWidth: page.clientWidth,
+	};
+}
+
 function dragGrip(grip, byX, byY) {
 	const box = grip.getBoundingClientRect();
 	return dragFrom(grip, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, byX, byY);
@@ -183,7 +233,7 @@ async function carryTile() {
 }
 
 function draw() {
-	render([...WIDTHS.map((width) => boardNode(width)), surfaceNode()], mount);
+	render([...WIDTHS.map((width) => boardNode(width)), surfaceNode(), sidesNode()], mount);
 }
 
 function readSurface() {
@@ -225,7 +275,7 @@ async function report() {
 		surfaceEditing = true;
 		draw();
 		const carried = await carryTile();
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides: readSides(), dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

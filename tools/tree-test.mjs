@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, columnsOf, GAP_PX, innerOf, MAIN_FLOOR_PX, moved, partedBy, resized, SIDEBAR_PX } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, columnsOf, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_SIDEBAR_PX, moved, partedBy, resized, SIDEBAR_PX, widenedRegion } = await import("./.mjs-cache/tree.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -283,6 +283,19 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 	check("the board was written a third time", seen.writes, 3);
 }
 
+console.log("\n— and the plugin draws those three regions without a pixel spare —");
+{
+	const seen = measured.sides;
+	check("the page drew its columns", seen.drawn, true);
+	check("three regions stand", seen.regions.map((one) => one.name), ["left", "main", "right"]);
+	check("with a handle in every gap between them", seen.edges, 2);
+	check("none of them overlaps the next", seen.regions.slice(1).every((one, at) => one.left >= seen.regions[at].right), true);
+	check("together they span the row exactly", seen.spans, seen.rowWidth);
+	check("and nothing overflows sideways", seen.scrollWidth <= seen.clientWidth + 1, true);
+	check("every region starts at the same top", new Set(seen.regions.map((one) => one.top)).size, 1);
+	check("and every one reaches the same bottom", new Set(seen.regions.map((one) => one.height)).size, 1);
+}
+
 console.log("\n— a board of three regions stands side by side while there is room —");
 {
 	const rows = [[{ id: "x", ratio: 1 }]];
@@ -306,6 +319,15 @@ console.log("\n— a board of three regions stands side by side while there is r
 	check("a board with no sidebars is one column", names(columnsOf({ main: { rows } }, 900, 8)), ["main"]);
 	check("and a board with no main stands nothing beside anything", columnsOf({ left: { rows } }, 1600, 8), { beside: [], stacked: ["left"] });
 	check("below the floor everything stacks", columnsOf(three, 300, 8).beside, []);
+
+	const widened = { left: { rows, width: 420 }, main: { rows }, right: { rows } };
+	check("a sidebar drawn at the width it carries", columnsOf(widened, 1600, 8).beside[0].width, 420);
+	check("and the main gives up exactly that", columnsOf(widened, 1600, 8).beside[1].width, 1600 - 8 - 420 - 8 - SIDEBAR_PX);
+
+	check("dragging a sidebar narrower stops at its own minimum", widenedRegion(three, "left", 40, 1600, 8), MIN_SIDEBAR_PX);
+	check("and wider stops where the main would fall under its floor", widenedRegion(three, "left", 2000, 1600, 8), 1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX);
+	check("between the two it lands where the pointer asked", widenedRegion(three, "left", 360, 1600, 8), 360);
+	check("the other sidebar is counted, not forgotten", widenedRegion({ left: { rows }, main: { rows } }, "left", 2000, 1600, 8), 1600 - 8 - MAIN_FLOOR_PX);
 }
 
 console.log("\n— carrying a tile puts it where it was aimed, and closes the row it left —");
