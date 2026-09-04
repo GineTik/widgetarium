@@ -823,6 +823,11 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 	);
 }
 
+function contentWidthOf(element) {
+	const style = getComputedStyle(element);
+	return element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+}
+
 function Board({ className, onWidth, children }) {
 	const rootRef = useRef(null);
 
@@ -840,7 +845,7 @@ function Board({ className, onWidth, children }) {
 		});
 		const observer = new ResizeObserver(([entry]) => watcher.measured(entry.contentRect.width));
 		observer.observe(element);
-		watcher.measured(element.clientWidth);
+		watcher.measured(contentWidthOf(element));
 		return () => {
 			observer.disconnect();
 			watcher.stop();
