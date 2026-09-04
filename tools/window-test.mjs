@@ -180,7 +180,7 @@ check("and they are the header, the panel and the zoom bar", arrival.blurred.sor
 console.log(`   the panel: sidebar ${arrival.panelIsSidebar} · padding ${arrival.panelPad} · corner ${arrival.panelRadius}`);
 check("the panel is the kit's sidebar block", arrival.panelIsSidebar, true);
 check("so its padding is the block's", arrival.panelPad, "8px");
-check("and its corner is the block's", arrival.panelRadius, "22px");
+check("and its corner is the block's", arrival.panelRadius, "14px");
 
 // CONTEXT: read part by part — a comma list whose first part is inset used to pass while casting whatever came after
 console.log("\n— exactly one edge per floating panel, and the only cast shadow is the panel's lift —");

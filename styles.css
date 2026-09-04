@@ -11,20 +11,20 @@
 	--wg-radius-xl: var(--radius-xl, 16px);
 	--wg-radius-full: 999px;
 
-	--wg-widget-radius-s: 1rem;
-	--wg-widget-radius-m: 1.5rem;
-	--wg-widget-radius-l: 1.875rem;
-	--wg-widget-radius-xl: 2.5rem;
+	--wg-widget-radius-s: 0.5rem;
+	--wg-widget-radius-m: 1rem;
+	--wg-widget-radius-l: 1.375rem;
+	--wg-widget-radius-xl: 2rem;
 	--wg-widget-radius-full: 999px;
-	--wg-widget-pad-surface: 16px;
-	--wg-widget-radius: var(--wg-widget-radius-l);
+	--wg-widget-pad-surface: 8px;
+	--wg-widget-radius: var(--wg-widget-radius-s);
 
 	/* The board is the plate widgets sit on. Nested-radius law: the outer corner
 	   equals the inner corner plus the padding between them, so the two stay
 	   concentric when either is retuned. --wg-board-pad is written by the host
 	   so padding and radius can never drift apart. */
-	--wg-board-pad: 1rem;
-	--wg-board-bg: transparent;
+	--wg-board-pad: 0.5rem;
+	--wg-root-head: 1.6rem;
 
 	/* Cast by a widget whose root declares fillType="shadow"; suppressed on a plated
 	   board, where the plate's tone already draws the edge.
@@ -32,7 +32,7 @@
 	   --wg-board-pad. Past that it is painted in Obsidian's box, not ours, and
 	   whatever clips there is not something we can turn off.
 	   tools/check-shadow.mjs fails the build if this stops holding. */
-	--wg-widget-shadow: 0 0.1875rem 0.875rem rgba(0, 0, 0, 0.08);
+	--wg-widget-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05);
 
 }
 
@@ -66,6 +66,8 @@ pre:has(> .block-language-widgetarium),
 	box-sizing: border-box;
 	--wg-card: var(--background-primary);
 	--wg-sunken: var(--background-modifier-hover);
+	--wg-cool-ink: color-mix(in srgb, var(--color-blue, #3b7fd4) 55%, var(--text-normal));
+	--wg-board-bg: color-mix(in srgb, var(--wg-cool-ink) 6.5%, var(--background-primary));
 	/* CONTEXT: a hairline is a step of the INK over whatever it lies on — the host's border token
 	   measured 1.03 against a raised panel in dark, which is no line at all */
 	--wg-line: color-mix(in srgb, var(--text-normal) 14%, transparent);
@@ -101,7 +103,7 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-standout-ink: color-mix(in srgb, var(--wg-kit-standout) 72%, var(--text-normal));
 
 	/* TRADE-OFF: our own radii because Obsidian stops at 16px and the look needs more */
-	--wg-kit-plate: 22px;
+	--wg-kit-plate: 14px;
 	--wg-kit-plate-pad: 8px;
 	--wg-kit-pill: 999px;
 	/* CONTEXT: concentric corners — an inner radius is the outer one minus the padding */
@@ -153,8 +155,8 @@ pre:has(> .block-language-widgetarium),
 	/* the grid drawn under the tiles while editing */
 	/* CONTEXT: a step of the INK, not a grey — a fixed near-white is a white grid in a dark vault */
 	/* CONTEXT: a third of the control's own step — closer and the grid meets it, and controls sink in */
-	--wg-cell-fill: color-mix(in srgb, var(--text-normal) 1.2%, var(--background-primary));
-	--wg-cell-radius: 8px;
+	--wg-cell-fill: color-mix(in srgb, var(--wg-cool-ink) 1.2%, var(--background-primary));
+	--wg-cell-radius: var(--wg-widget-radius);
 
 	/* Edit-mode chrome sits OUTSIDE the widget: the content pulls back, a dashed ring is
 	   drawn on the tile's own bounds, and the buttons straddle that ring. No pixel of the
@@ -190,7 +192,7 @@ pre:has(> .block-language-widgetarium),
 	   widget, and a handle has to look like it is on the frame */
 	--wg-grip-out: 0px;
 	position: relative;
-	padding-top: 1.6rem;
+	padding-top: var(--wg-root-head);
 	font-family: var(--font-interface);
 	color: var(--text-normal);
 	width: 100%;
@@ -254,9 +256,19 @@ pre:has(> .block-language-widgetarium),
 .wg-grid {
 	position: relative;
 	margin-inline: auto;
-	padding: var(--wg-board-pad);
+}
+
+.wg-board {
+	padding-inline: calc(var(--wg-board-pad) * 2);
+	padding-bottom: calc(var(--wg-board-pad) * 2);
+}
+
+.wg-board::before {
+	content: "";
+	position: absolute;
+	inset: var(--wg-board-pad);
+	z-index: 0;
 	background: var(--wg-board-bg);
-	/* resolved here, not on :root, so a per-board padding actually moves the corner */
 	border-radius: calc(var(--wg-widget-radius) + var(--wg-board-pad));
 }
 

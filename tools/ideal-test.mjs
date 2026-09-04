@@ -106,7 +106,7 @@ same("pill padding", px(ours, ".wg-kit-pill", "padding"), px(ref, ".pilltag", "p
 
 console.log("\n— the tokens —");
 const tok = (css, name) => (css.match(new RegExp(`\\n\\s*${name}:\\s*([^;]+);`)) ?? [])[1]?.trim() ?? null;
-same("plate radius", tok(ours, "--wg-kit-plate"), "22px");
+same("plate radius", tok(ours, "--wg-kit-plate"), "14px");
 same("plate padding (tight)", tok(ours, "--wg-kit-plate-pad"), "8px");
 // A FILL IS A RELATIONSHIP TO THE SURFACE, NEVER A POSITION ON A RAMP. The ramp belongs to the
 // vault's theme and its dark shape is not guaranteed: stock Obsidian rises through base-20, the

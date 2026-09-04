@@ -860,7 +860,7 @@ render(null, panel);
 	check("the block sits in the gutter, not straight in the grid", seen.inTheGutter, true);
 	check("and it never reaches the window's own edge", seen.leastAir >= 8, true);
 	check("it pads itself like every other sidebar", seen.padding, "8px");
-	check("carries the plate's corner", seen.radius, "22px");
+	check("carries the plate's corner", seen.radius, "14px");
 	// CONTEXT: in light the block's fill and the dialog's are the same white, so only the cast separates them
 	console.log(`   told apart by: ${seen.edge} · block ${seen.opaque} on dialog ${seen.ground}`);
 	check("carries no edge of its own", /inset/.test(seen.edge), false);

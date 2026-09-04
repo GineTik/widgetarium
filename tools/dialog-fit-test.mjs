@@ -133,7 +133,7 @@ check("it now spans the note's own width", Math.abs(narrow.plate.width - narrow.
 console.log("\n— it MOVES, it does not change —");
 check("the same corner", narrow.plateRadius, wide.plateRadius);
 check("the same fill", narrow.plateFill, wide.plateFill);
-check("the corner is the plate's 22px, not the dialog's own", wide.plateRadius, "22px");
+check("the corner is the plate's 14px, not the dialog's own", wide.plateRadius, "14px");
 
 // CONTEXT: it was a Plate wrapping a frameless sidebar — the same block twice, so the lift never arrived
 console.log(`\n— the properties block IS the kit's sidebar, and it lifts —`);

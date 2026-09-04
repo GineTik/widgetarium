@@ -1147,7 +1147,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const { full, lean, glass, sheet, sheetIsSidebar, fullDivider, leanDivider, bareDivider, rowsAreSiblings } = measured.sidebar;
 	console.log(`   a full sidebar: padding ${full.padding} · radius ${full.radius} · ${full.background} · ${full.edge}`);
 	check("a sidebar pads itself the way a plate does", full.padding, "8px 8px");
-	check("and carries the plate's corner", full.radius, "22px");
+	check("and carries the plate's corner", full.radius, "14px");
 	check("it is a surface, not a hole in one", /^rgba\(0, 0, 0, 0\)$/.test(full.background), false);
 	// CONTEXT: one lift under every sidebar, no rim around any — the edge is a shadow, never an inset ring
 	check("and it ends with a lift, not a rim", /inset/.test(full.edge), false);

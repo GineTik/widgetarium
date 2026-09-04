@@ -932,7 +932,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 
 	const boardShell = (children) =>
 		h(Board, {
-			className: `wg-root${editing ? " is-editing" : ""}${screen ? " is-screen" : ""}${isPage ? " is-page" : ""}`,
+			className: `wg-root wg-board${editing ? " is-editing" : ""}${screen ? " is-screen" : ""}${isPage ? " is-page" : ""}`,
 			onWidth: (value) => {
 				setWidth(value);
 				onWidth?.(value);
