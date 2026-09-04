@@ -240,10 +240,31 @@ function normalizeCell(cell) {
 	return { id, ratio: Number.isFinite(ratio) && ratio > 0 ? ratio : 1, ...(Number.isFinite(height) && height > 0 ? { height } : {}) };
 }
 
-function normalizeTree(rows) {
+function normalizeRows(rows) {
 	if (!Array.isArray(rows)) return null;
 	const laid = rows.map((row) => (Array.isArray(row) ? row : [row]).map(normalizeCell).filter(Boolean)).filter((row) => row.length > 0);
 	return laid.length > 0 ? laid : null;
+}
+
+export const REGIONS = ["left", "main", "right"];
+
+function normalizeTree(given) {
+	if (Array.isArray(given)) {
+		const main = normalizeRows(given);
+		return main ? { main } : null;
+	}
+	if (!given || typeof given !== "object") return null;
+	const laid = {};
+	for (const name of REGIONS) {
+		const rows = normalizeRows(given[name]);
+		if (rows) laid[name] = rows;
+	}
+	return laid.main ? laid : null;
+}
+
+function serializeTree(layout) {
+	const named = REGIONS.filter((name) => layout[name]);
+	return named.length === 1 && named[0] === "main" ? layout.main : Object.fromEntries(named.map((name) => [name, layout[name]]));
 }
 
 export function normalizeBoard(input, idOf = SAME_ID) {
@@ -330,7 +351,7 @@ export function serializeBoard(board) {
 		...(board.properties?.length ? { properties: board.properties } : {}),
 		// CONTEXT: an emptied list is still written — its absence is what hands the fact back to the tile
 		...(board.archivedColumns ? { archivedColumns: board.archivedColumns } : {}),
-		...(board.layout ? { layout: board.layout } : {}),
+		...(board.layout ? { layout: serializeTree(board.layout) } : {}),
 		layouts: Object.fromEntries(
 			authoredColumns(board).map((columns) => [
 				String(columns),
