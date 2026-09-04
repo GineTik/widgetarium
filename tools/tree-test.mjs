@@ -74,7 +74,7 @@ const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
 <style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
 <style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
-	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
+	--background-modifier-border: #e4e4e4; --background-modifier-hover: #ededed; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }
 .wg-host { display: flex; flex-direction: column; gap: 64px; align-items: flex-start; }
 .wg-host, .wg-host * { transition: none !important; animation: none !important; }</style>
@@ -286,6 +286,8 @@ console.log("\n— and the plugin draws those three regions without a pixel spar
 	check("the page drew its columns", seen.drawn, true);
 	check("three regions stand", seen.regions.map((one) => one.name), ["left", "main", "right"]);
 	check("with a handle in every gap between them", seen.edges, 2);
+	check("the strip paints no fill of its own", seen.edgeFill, "rgba(0, 0, 0, 0)");
+	check("and it can be grabbed the whole height of the column", seen.edgeReach, seen.regions[0].height);
 	check("none of them overlaps the next", seen.regions.slice(1).every((one, at) => one.left >= seen.regions[at].right), true);
 	check("together they span the row exactly", seen.spans, seen.rowWidth);
 	check("and nothing overflows sideways", seen.scrollWidth <= seen.clientWidth + 1, true);

@@ -178,6 +178,8 @@ function readSides() {
 		drawn: true,
 		regions: boxes,
 		edges: columns.querySelectorAll(":scope > .wg-tree-handle.is-edge").length,
+		edgeFill: getComputedStyle(columns.querySelector(".wg-tree-handle.is-edge")).backgroundColor,
+		edgeReach: Math.round(columns.querySelector(".wg-tree-handle.is-edge").getBoundingClientRect().height),
 		spans: Math.round(boxes.at(-1).right - boxes[0].left),
 		rowWidth: Math.round(row.width),
 		scrollWidth: page.scrollWidth,
