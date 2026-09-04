@@ -22,7 +22,7 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { aimedAt, GAP_PX, innerOf, layTree, moved, partedBy, resized, restacked, sameTarget, tallestOf, widthsOf } from "./tree.js";
+import { aimedAt, columnsOf, GAP_PX, innerOf, layTree, moved, partedBy, REGION_PAD_PX, resized, restacked, sameTarget, tallestOf, widthsOf } from "./tree.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -621,7 +621,7 @@ const Cell = memo(TreeCell, (before, after) => {
 	return same && before.tile === after.tile && before.definition === after.definition && before.shared === after.shared;
 });
 
-function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing, patchTile, commitLayout }) {
+function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, editing, patchTile, commitLayout }) {
 	const rootRef = useRef(null);
 	const rowsRef = useRef(new Map());
 	const dragRef = useRef(null);
@@ -670,7 +670,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 			window.removeEventListener("pointerup", stop);
 			document.body.classList.remove("wg-tree-dragging");
 			dragRef.current = null;
-			if (latest) commitLayout(board.layout.map((row, index) => (index === at ? latest : row)));
+			if (latest) commitLayout(rows.map((row, index) => (index === at ? latest : row)));
 		};
 		dragRef.current = { stop };
 		document.body.classList.add("wg-tree-dragging");
@@ -740,7 +740,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 			settleAll(bands);
 			dragRef.current = null;
 			setCarried(null);
-			if (target) commitLayout(moved(board.layout, id, target));
+			if (target) commitLayout(moved(rows, id, target));
 		};
 		dragRef.current = { stop };
 		document.body.classList.add("wg-tree-carrying");
@@ -753,13 +753,13 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 
 	const grabRatio = (at, boundary) => (event) =>
 		startDrag(event, at, (moved, box, down) => {
-			const inner = innerOf(board.layout[at].length, box.width, GAP_PX);
-			const held = widthsOf(board.layout[at], inner).slice(0, boundary + 1).reduce((sum, one) => sum + one, 0);
+			const inner = innerOf(rows[at].length, box.width, GAP_PX);
+			const held = widthsOf(rows[at], inner).slice(0, boundary + 1).reduce((sum, one) => sum + one, 0);
 			const grabbed = down.clientX - box.left - held;
-			return bare(resized(withFloors(board.layout[at]), boundary, { boundaryPx: moved.clientX - box.left - grabbed, inner, isFree: moved.shiftKey }));
+			return bare(resized(withFloors(rows[at]), boundary, { boundaryPx: moved.clientX - box.left - grabbed, inner, isFree: moved.shiftKey }));
 		});
 
-	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down) => restacked(board.layout[at], box.height + moved.clientY - down.clientY));
+	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down) => restacked(rows[at], box.height + moved.clientY - down.clientY));
 
 	const shared = useMemo(
 		() => ({
@@ -779,7 +779,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 		[host, scale, refs, cellFor, registry, board.properties, board.archivedColumns],
 	);
 
-	const asked = board.layout.map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id), cap: capOf(cell.id) })));
+	const asked = rows.map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id), cap: capOf(cell.id) })));
 	const placed = new Set(asked.flat().map((cell) => cell.id));
 	const overlay = board.tiles.filter((tile) => !placed.has(tile.id));
 	const keep = (at) => (node) => (node ? rowsRef.current.set(at, node) : rowsRef.current.delete(at));
@@ -820,6 +820,22 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 		layTree(asked, width, GAP_PX)
 			.filter((row) => row.cells.length > 0)
 			.map(rowNode),
+	);
+}
+
+function TreeBoard({ board, width, ...rest }) {
+	const { beside, stacked } = columnsOf(board.layout, width, GAP_PX);
+	const region = (name, given) =>
+		h(
+			"div",
+			{ className: `wg-tree-region is-${name}`, key: name, style: { flex: `0 0 ${given}px`, width: `${given}px` } },
+			h(TreeRegion, { ...rest, board, rows: board.layout[name], width: given - REGION_PAD_PX * 2, commitLayout: (rows) => rest.commitLayout({ ...board.layout, [name]: rows }) }),
+		);
+	return h(
+		"div",
+		{ className: "wg-tree-columns", style: { "--wg-tree-gap": `${GAP_PX}px` } },
+		beside.map((column) => region(column.name, column.width)),
+		stacked.map((name) => region(name, width)),
 	);
 }
 
