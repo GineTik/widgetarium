@@ -431,15 +431,21 @@ check("rendering does not warn", onRender, 0);
 
 	const rows = { tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }], layout: [[{ id: "a", ratio: 3 }, { id: "b" }], [{ id: "a", height: 640 }]], layouts: {} };
 	const laid = normalizeBoard(rows);
-	check("a cell keeps the ratio it was given", laid.layout[0][0], { id: "a", ratio: 3 });
-	check("a cell without one is worth the same as its neighbours", laid.layout[0][1], { id: "b", ratio: 1 });
-	check("a height survives", laid.layout[1][0], { id: "a", ratio: 1, height: 640 });
+	check("a cell keeps the ratio it was given", laid.layout.main[0][0], { id: "a", ratio: 3 });
+	check("a cell without one is worth the same as its neighbours", laid.layout.main[0][1], { id: "b", ratio: 1 });
+	check("a height survives", laid.layout.main[1][0], { id: "a", ratio: 1, height: 640 });
 
 	const shorthand = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: [["a"], [{ id: "" }]], layouts: {} });
-	check("a bare name is a cell", shorthand.layout, [[{ id: "a", ratio: 1 }]]);
+	check("a bare name is a cell", shorthand.layout.main, [[{ id: "a", ratio: 1 }]]);
 
-	check("rows round-trip through the file", serializeBoard(laid).layout, laid.layout);
+	check("rows round-trip through the file", serializeBoard(laid).layout, laid.layout.main);
 	check("and an empty list of rows is no list", "layout" in normalizeBoard({ tiles: [], layout: [], layouts: {} }), false);
+
+	const regioned = { tiles: [{ id: "a", widget: "w" }], layout: { left: [["a"]], main: [["a"]], right: [["a"]] }, layouts: {} };
+	check("a layout may name three regions", Object.keys(normalizeBoard(regioned).layout), ["left", "main", "right"]);
+	check("and they round-trip as they were named", Object.keys(serializeBoard(normalizeBoard(regioned)).layout), ["left", "main", "right"]);
+	check("a sidebar without a main is no layout", "layout" in normalizeBoard({ tiles: [], layout: { left: [["a"]] }, layouts: {} }), false);
+	check("and a board that names only main is written as a bare list", Array.isArray(serializeBoard(laid).layout), true);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");

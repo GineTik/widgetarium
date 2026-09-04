@@ -108,7 +108,8 @@ const mount = document.querySelector(".wg-host");
 
 const SURFACE_WIDTH = 1600;
 
-let surfaceBoard = { ...BOARD, layout: TREE.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) }))), layouts: {} };
+const asRows = (rows) => rows.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) })));
+let surfaceBoard = { ...BOARD, layout: { main: asRows(TREE) }, layouts: {} };
 let surfaceWrites = 0;
 let surfaceEditing = false;
 
@@ -196,6 +197,7 @@ function readSurface() {
 		painted: [...root.querySelectorAll(".wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
 		overlays: root.querySelectorAll(".wg-tree-overlay").length,
 		widest: Math.max(...[...root.querySelectorAll(".wg-tree-row")].map((node) => node.getBoundingClientRect().width)),
+		regions: document.querySelectorAll(".wg-surface-probe .wg-tree-region").length,
 		across: root.querySelectorAll(".wg-tree-handle.is-across").length,
 		gripShown: Number(getComputedStyle(root.querySelector(".wg-tree-grip")).opacity),
 		along: root.querySelectorAll(".wg-tree-handle.is-along").length,
@@ -205,7 +207,7 @@ function readSurface() {
 		firstCellHeight: Math.round(document.querySelector(".wg-surface-probe .wg-tree-row .wg-tree-cell")?.getBoundingClientRect().height ?? 0),
 		sharedRow: cellsOf([...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1)),
 		writes: surfaceWrites,
-		ratios: (surfaceBoard.layout.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
+		ratios: (surfaceBoard.layout.main.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
 	};
 }
 

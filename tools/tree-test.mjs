@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, GAP_PX, innerOf, moved, partedBy, resized } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, columnsOf, GAP_PX, innerOf, MAIN_FLOOR_PX, moved, partedBy, resized, SIDEBAR_PX } = await import("./.mjs-cache/tree.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -281,6 +281,31 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 	check("after the drop it stands on the first row", seen.after[0].includes("board"), true);
 	check("and it left no empty row behind", seen.after.length, seen.before.length - 1);
 	check("the board was written a third time", seen.writes, 3);
+}
+
+console.log("\n— a board of three regions stands side by side while there is room —");
+{
+	const rows = [[{ id: "x", ratio: 1 }]];
+	const three = { left: rows, main: rows, right: rows };
+	const names = (given) => given.beside.map((column) => column.name);
+	const wide = columnsOf(three, 1600, 8);
+
+	check("all three stand", names(wide), ["left", "main", "right"]);
+	check("a sidebar is the width its own constant names", wide.beside[0].width, SIDEBAR_PX);
+	check("and the main takes everything the sidebars left", wide.beside[1].width, 1600 - (8 + SIDEBAR_PX) * 2);
+	check("nothing had to be stacked", wide.stacked, []);
+
+	const narrow = columnsOf(three, SIDEBAR_PX * 2 + MAIN_FLOOR_PX, 8);
+	check("when the main would fall under its floor the right one goes first", names(narrow), ["left", "main"]);
+	check("and the one that went is stacked, not lost", narrow.stacked, ["right"]);
+
+	const tight = columnsOf(three, MAIN_FLOOR_PX + 100, 8);
+	check("tighter still, only the main stands", names(tight), ["main"]);
+	check("and both sidebars are stacked under it", tight.stacked, ["left", "right"]);
+
+	check("a board with no sidebars is one column", names(columnsOf({ main: rows }, 900, 8)), ["main"]);
+	check("and a board with no main stands nothing beside anything", columnsOf({ left: rows }, 1600, 8), { beside: [], stacked: ["left"] });
+	check("below the floor everything stacks", columnsOf(three, 300, 8).beside, []);
 }
 
 console.log("\n— carrying a tile puts it where it was aimed, and closes the row it left —");
