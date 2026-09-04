@@ -832,17 +832,11 @@ function TreeBoard({ board, width, ...rest }) {
 		const grabbed = event.clientX;
 		const node = pageRef.current?.querySelector(`.wg-tree-region.is-${name}`);
 		let latest = held;
-		let frame = 0;
-		const paint = () => {
-			frame = 0;
-			if (node) node.style.flexBasis = `${latest}px`;
-		};
 		const move = (pointer) => {
 			latest = widenedRegion(board.layout, name, held + (pointer.clientX - grabbed) * toward, width, GAP_PX);
-			if (!frame) frame = window.requestAnimationFrame(paint);
+			if (node) node.style.flexBasis = `${latest}px`;
 		};
 		const stop = () => {
-			window.cancelAnimationFrame(frame);
 			window.removeEventListener("pointermove", move);
 			window.removeEventListener("pointerup", stop);
 			document.body.classList.remove("wg-tree-dragging");
@@ -856,7 +850,7 @@ function TreeBoard({ board, width, ...rest }) {
 	const region = (name, given) =>
 		h(
 			"div",
-			{ className: `wg-tree-region is-${name}`, key: name, style: { flex: `0 0 ${given}px`, width: `${given}px` } },
+			{ className: `wg-tree-region is-${name}`, key: name, style: name === "main" ? { flex: "1 1 0", minWidth: 0 } : { flex: `0 0 ${given}px`, minWidth: 0 } },
 			h(TreeRegion, {
 				...rest,
 				board,
