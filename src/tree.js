@@ -1,6 +1,7 @@
 export const GAP_PX = 8;
 export const LADDER = 12;
 export const MIN_HEIGHT_PX = 80;
+const HAIR_PX = 0.5;
 
 // TODO: column groups inside a row — no board needs one yet
 export function layTree(rows, width, gap = GAP_PX) {
@@ -10,7 +11,7 @@ export function layTree(rows, width, gap = GAP_PX) {
 function laidRow(row, from, width, gap) {
 	const inner = innerOf(row.length, width, gap);
 	const widths = widthsOf(row, inner);
-	if (row.some((cell, at) => widths[at] < cell.minPx)) return row.map((cell) => ({ from, cells: [sized(cell, width)] }));
+	if (row.some((cell, at) => widths[at] + HAIR_PX < cell.minPx)) return row.map((cell) => ({ from, cells: [sized(cell, width)] }));
 	return [{ from, cells: row.map((cell, at) => sized(cell, widths[at])) }];
 }
 
