@@ -74,7 +74,7 @@ export function toneOf(table, value) {
 export const buttonClass = variants(
 	"wg-kit-btn",
 	{
-		variant: { accent: "is-accent", neutral: "", plain: "is-plain", danger: "is-danger" },
+		variant: { accent: "is-accent", neutral: "", ghost: "is-ghost", plain: "is-plain", danger: "is-danger" },
 		size: { l: "is-l", m: "is-m", s: "is-s" },
 		block: { true: "is-block" },
 	},
@@ -86,7 +86,7 @@ export const buttonClass = variants(
 export const iconButtonClass = variants(
 	"wg-kit-icon",
 	{
-		variant: { accent: "is-accent", neutral: "", glass: "wg-kit-glass" },
+		variant: { accent: "is-accent", neutral: "", ghost: "is-ghost", glass: "wg-kit-glass" },
 		size: { l: "is-l", m: "is-m", s: "is-s", xs: "is-xs" },
 	},
 	{ variant: "neutral", size: "m" },

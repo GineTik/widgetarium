@@ -1798,6 +1798,12 @@ body.theme-light :is(.wg-root, .wg-portal) {
 	--wg-kit-control-edge: none;
 }
 
+.wg-kit-btn.is-ghost::before,
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost::before { background: none; box-shadow: none; }
+
+.wg-kit-btn.is-ghost:hover::before,
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost:hover::before { background: var(--wg-kit-fill); }
+
 .wg-kit-switch::before { background: var(--wg-kit-fill); }
 
 .wg-kit-switch[aria-checked="true"]::before { background: var(--text-success); }
