@@ -77,9 +77,6 @@ const page = `<!doctype html><html><head><meta charset="utf-8">
 	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }
 .wg-host { display: flex; flex-direction: column; gap: 64px; align-items: flex-start; }
-.wg-tree { display: flex; flex-direction: column; gap: ${GAP_PX}px; overflow: hidden; }
-.wg-tree-row { display: flex; gap: ${GAP_PX}px; align-items: stretch; }
-.wg-tree-cell { position: relative; min-width: 0; }
 .wg-host, .wg-host * { transition: none !important; animation: none !important; }</style>
 </head><body><div class="wg-host"></div>
 <script id="wg-widgets" type="application/json">${inertJson(widgetFiles())}</script>
@@ -294,6 +291,19 @@ console.log("\n— and the plugin draws those three regions without a pixel spar
 	check("and nothing overflows sideways", seen.scrollWidth <= seen.clientWidth + 1, true);
 	check("every region starts at the same top", new Set(seen.regions.map((one) => one.top)).size, 1);
 	check("and every one reaches the same bottom", new Set(seen.regions.map((one) => one.height)).size, 1);
+}
+
+console.log("\n— and while a sidebar is being dragged the rest keep up with it —");
+{
+	const before = measured.sides;
+	const after = measured.widened;
+	const wideOf = (seen, name) => seen.regions.find((one) => one.name === name).right - seen.regions.find((one) => one.name === name).left;
+
+	check("the sidebar took the whole pull, while still held", wideOf(after, "left") - wideOf(before, "left"), 100);
+	check("the main gave up exactly that, while still held", wideOf(before, "main") - wideOf(after, "main"), 100);
+	check("the other sidebar was not touched", wideOf(after, "right"), wideOf(before, "right"));
+	check("and the three still span the row exactly", after.spans, after.rowWidth);
+	check("so nothing ran off the side", after.scrollWidth <= after.clientWidth + 1, true);
 }
 
 console.log("\n— a board of three regions stands side by side while there is room —");

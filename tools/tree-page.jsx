@@ -185,6 +185,18 @@ function readSides() {
 	};
 }
 
+function widenSidebar(byX) {
+	const edge = document.querySelector(".wg-sides-probe .wg-tree-handle.is-edge");
+	if (!edge) return { failed: "no edge to drag" };
+	const box = edge.getBoundingClientRect();
+	const from = { x: box.left + box.width / 2, y: box.top + 40 };
+	firePointer("pointerdown", from, edge);
+	firePointer("pointermove", { x: from.x + byX, y: from.y }, window);
+	const held = readSides();
+	firePointer("pointerup", { x: from.x + byX, y: from.y }, window);
+	return held;
+}
+
 function dragGrip(grip, byX, byY) {
 	const box = grip.getBoundingClientRect();
 	return dragFrom(grip, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, byX, byY);
@@ -275,7 +287,7 @@ async function report() {
 		surfaceEditing = true;
 		draw();
 		const carried = await carryTile();
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides: readSides(), dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides: readSides(), widened: widenSidebar(100), dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}
