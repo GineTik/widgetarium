@@ -248,23 +248,34 @@ function normalizeRows(rows) {
 
 export const REGIONS = ["left", "main", "right"];
 
+function normalizeRegion(given) {
+	const rows = normalizeRows(Array.isArray(given) ? given : given?.rows);
+	if (!rows) return null;
+	const width = Number(given?.width);
+	return Number.isFinite(width) && width > 0 ? { rows, width } : { rows };
+}
+
 function normalizeTree(given) {
 	if (Array.isArray(given)) {
-		const main = normalizeRows(given);
+		const main = normalizeRegion(given);
 		return main ? { main } : null;
 	}
 	if (!given || typeof given !== "object") return null;
 	const laid = {};
 	for (const name of REGIONS) {
-		const rows = normalizeRows(given[name]);
-		if (rows) laid[name] = rows;
+		const region = normalizeRegion(given[name]);
+		if (region) laid[name] = region;
 	}
 	return laid.main ? laid : null;
 }
 
+function serializeRegion(region) {
+	return region.width ? { width: region.width, rows: region.rows } : region.rows;
+}
+
 function serializeTree(layout) {
 	const named = REGIONS.filter((name) => layout[name]);
-	return named.length === 1 && named[0] === "main" ? layout.main : Object.fromEntries(named.map((name) => [name, layout[name]]));
+	return named.length === 1 && named[0] === "main" && !layout.main.width ? layout.main.rows : Object.fromEntries(named.map((name) => [name, serializeRegion(layout[name])]));
 }
 
 export function normalizeBoard(input, idOf = SAME_ID) {

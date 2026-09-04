@@ -829,7 +829,13 @@ function TreeBoard({ board, width, ...rest }) {
 		h(
 			"div",
 			{ className: `wg-tree-region is-${name}`, key: name, style: { flex: `0 0 ${given}px`, width: `${given}px` } },
-			h(TreeRegion, { ...rest, board, rows: board.layout[name], width: given - REGION_PAD_PX * 2, commitLayout: (rows) => rest.commitLayout({ ...board.layout, [name]: rows }) }),
+			h(TreeRegion, {
+				...rest,
+				board,
+				rows: board.layout[name].rows,
+				width: given - REGION_PAD_PX * 2,
+				commitLayout: (rows) => rest.commitLayout({ ...board.layout, [name]: { ...board.layout[name], rows } }),
+			}),
 		);
 	return h(
 		"div",

@@ -109,7 +109,7 @@ const mount = document.querySelector(".wg-host");
 const SURFACE_WIDTH = 1600;
 
 const asRows = (rows) => rows.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) })));
-let surfaceBoard = { ...BOARD, layout: { main: asRows(TREE) }, layouts: {} };
+let surfaceBoard = { ...BOARD, layout: { main: { rows: asRows(TREE) } }, layouts: {} };
 let surfaceWrites = 0;
 let surfaceEditing = false;
 
@@ -207,7 +207,7 @@ function readSurface() {
 		firstCellHeight: Math.round(document.querySelector(".wg-surface-probe .wg-tree-row .wg-tree-cell")?.getBoundingClientRect().height ?? 0),
 		sharedRow: cellsOf([...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1)),
 		writes: surfaceWrites,
-		ratios: (surfaceBoard.layout.main.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
+		ratios: (surfaceBoard.layout.main.rows.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
 	};
 }
 

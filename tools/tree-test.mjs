@@ -286,7 +286,7 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 console.log("\n— a board of three regions stands side by side while there is room —");
 {
 	const rows = [[{ id: "x", ratio: 1 }]];
-	const three = { left: rows, main: rows, right: rows };
+	const three = { left: { rows }, main: { rows }, right: { rows } };
 	const names = (given) => given.beside.map((column) => column.name);
 	const wide = columnsOf(three, 1600, 8);
 
@@ -303,8 +303,8 @@ console.log("\n— a board of three regions stands side by side while there is r
 	check("tighter still, only the main stands", names(tight), ["main"]);
 	check("and both sidebars are stacked under it", tight.stacked, ["left", "right"]);
 
-	check("a board with no sidebars is one column", names(columnsOf({ main: rows }, 900, 8)), ["main"]);
-	check("and a board with no main stands nothing beside anything", columnsOf({ left: rows }, 1600, 8), { beside: [], stacked: ["left"] });
+	check("a board with no sidebars is one column", names(columnsOf({ main: { rows } }, 900, 8)), ["main"]);
+	check("and a board with no main stands nothing beside anything", columnsOf({ left: { rows } }, 1600, 8), { beside: [], stacked: ["left"] });
 	check("below the floor everything stacks", columnsOf(three, 300, 8).beside, []);
 }
 

@@ -85,16 +85,21 @@ function besideIn(band, x) {
 	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
 }
 
+export function sidebarWidth(layout, name) {
+	return layout[name]?.width ?? SIDEBAR_PX;
+}
+
 export function columnsOf(layout, width, gap = GAP_PX) {
-	const named = REGIONS.filter((name) => layout[name]?.length > 0);
+	const named = REGIONS.filter((name) => layout[name]?.rows.length > 0);
 	if (!named.includes("main")) return { beside: [], stacked: named };
 	const sides = named.filter((name) => name !== "main");
 	for (const kept of [sides, sides.filter((name) => name !== "right"), []]) {
 		const shown = ["main", ...kept];
-		const room = width - (gap + SIDEBAR_PX) * kept.length;
+		const taken = kept.reduce((sum, name) => sum + gap + sidebarWidth(layout, name), 0);
+		const room = width - taken;
 		if (room < MAIN_FLOOR_PX) continue;
 		return {
-			beside: named.filter((name) => shown.includes(name)).map((name) => ({ name, width: name === "main" ? room : SIDEBAR_PX })),
+			beside: named.filter((name) => shown.includes(name)).map((name) => ({ name, width: name === "main" ? room : sidebarWidth(layout, name) })),
 			stacked: named.filter((name) => !shown.includes(name)),
 		};
 	}
