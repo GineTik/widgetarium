@@ -2,6 +2,10 @@ export const GAP_PX = 8;
 export const LADDER = 12;
 export const MIN_HEIGHT_PX = 80;
 const HAIR_PX = 0.5;
+export const SIDEBAR_PX = 280;
+export const REGION_PAD_PX = 8;
+export const MAIN_FLOOR_PX = 480;
+export const REGIONS = ["left", "main", "right"];
 
 // TODO: column groups inside a row — no board needs one yet
 export function layTree(rows, width, gap = GAP_PX) {
@@ -79,6 +83,22 @@ function besideIn(band, x) {
 	const cell = band.cells[at];
 	const isBefore = x < cell.left + (cell.right - cell.left) / 2;
 	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
+}
+
+export function columnsOf(layout, width, gap = GAP_PX) {
+	const named = REGIONS.filter((name) => layout[name]?.length > 0);
+	if (!named.includes("main")) return { beside: [], stacked: named };
+	const sides = named.filter((name) => name !== "main");
+	for (const kept of [sides, sides.filter((name) => name !== "right"), []]) {
+		const shown = ["main", ...kept];
+		const room = width - (gap + SIDEBAR_PX) * kept.length;
+		if (room < MAIN_FLOOR_PX) continue;
+		return {
+			beside: named.filter((name) => shown.includes(name)).map((name) => ({ name, width: name === "main" ? room : SIDEBAR_PX })),
+			stacked: named.filter((name) => !shown.includes(name)),
+		};
+	}
+	return { beside: [], stacked: named };
 }
 
 const NOTHING_MOVES = { cells: {}, bands: {}, slot: null };
