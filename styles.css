@@ -3217,9 +3217,7 @@ body.theme-light :is(.wg-root, .wg-portal) {
 	align-items: center;
 	justify-content: center;
 	touch-action: none;
-	border-radius: 999px;
-	background: transparent;
-	transition: background 140ms ease;
+	background: none;
 }
 
 .wg-tree-handle.is-across {
@@ -3255,8 +3253,6 @@ body.theme-light :is(.wg-root, .wg-portal) {
 	height: 3px;
 }
 
-.wg-tree-handle:hover { background: var(--background-modifier-hover); }
-
 .wg-tree-handle:hover .wg-tree-grip {
 	opacity: 1;
 	background: var(--text-faint);
@@ -3264,8 +3260,6 @@ body.theme-light :is(.wg-root, .wg-portal) {
 
 .wg-tree-handle.is-across:hover .wg-tree-grip { transform: scaleY(1.6); }
 .wg-tree-handle.is-along:hover .wg-tree-grip { transform: scaleX(1.35); }
-
-.wg-tree-handle:active { background: var(--background-modifier-active-hover, var(--background-modifier-hover)); }
 
 .wg-tree-handle:active .wg-tree-grip {
 	opacity: 1;
