@@ -12,7 +12,12 @@ const STYLE = `
 .orbi-view-tabs .ovt-pick .ovt-caret { transform: rotate(90deg); transition: transform var(--orbi-press) var(--orbi-ease); }
 .orbi-view-tabs .ovt-pick.is-open .ovt-caret { transform: rotate(-90deg); }
 
-.orbi-view-tabs .ovt-deaf { margin: auto 0; }
+.orbi-view-tabs { padding: 0; }
+.orbi.orbi-view-tabs .wg-kit-anchor { flex: 1; }
+.orbi.orbi-view-tabs .ovt-pick,
+.orbi.orbi-view-tabs .ovt-deaf { height: 100%; }
+.orbi.orbi-view-tabs .ovt-pick::before,
+.orbi.orbi-view-tabs .ovt-deaf::before { border-radius: var(--wg-widget-radius); }
 .orbi-view-tabs .ovt-deaf .wg-kit-btn-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `;
 
@@ -34,9 +39,9 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, conf
 
 	if (!listed.isLoading && rows.length === 0) {
 		return (
-			<WidgetRoot defaultRounded="none" className="orbi orbi-view-tabs" defaultBackgroundType="none">
+			<WidgetRoot className="orbi orbi-view-tabs">
 				<style>{STYLE}</style>
-				<Button block className="ovt-deaf" title={NO_GROUP} onClick={() => configureBoard?.({ holder: true })}>
+				<Button block variant="ghost" className="ovt-deaf" title={NO_GROUP} onClick={() => configureBoard?.({ holder: true })}>
 					<Icon name="plus" size={15} />
 					<ButtonLabel>Add a view group</ButtonLabel>
 				</Button>
@@ -45,7 +50,7 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, conf
 	}
 
 	const trigger = (
-		<Button block className={`ovt-pick${isOpen ? " is-open" : ""}`} aria-label="Change view">
+		<Button block variant="ghost" className={`ovt-pick${isOpen ? " is-open" : ""}`} aria-label="Change view">
 			<ButtonLabel>{active?.label ?? ""}</ButtonLabel>
 			<Icon name="chevron" size={15} className="ovt-caret" />
 		</Button>
@@ -57,7 +62,7 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, conf
 	};
 
 	return (
-		<WidgetRoot defaultRounded="none" className="orbi orbi-view-tabs" defaultBackgroundType="none">
+		<WidgetRoot className="orbi orbi-view-tabs">
 			<style>{STYLE}</style>
 			<Popover trigger={trigger} isOpen={isOpen} onOpenChange={setOpen}>
 				{rows.map((row) => (

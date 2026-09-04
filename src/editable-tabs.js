@@ -130,7 +130,7 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 			{
 				type: "button",
 				key: tab,
-				className: `wg-tabs-tab${editing === tab ? " is-editing" : ""}`,
+				className: `wg-kit-btn is-s${tab === selected ? "" : " is-ghost"} wg-tabs-tab${editing === tab ? " is-editing" : ""}`,
 				role: "tab",
 				"aria-selected": String(tab === selected),
 				// CONTEXT: the name is edited where it is read, not in a dialog
@@ -146,7 +146,7 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 
 	const menuTrigger = h(
 		"button",
-		{ type: "button", className: "wg-kit-icon is-s wg-tabs-more", title: "Tab actions", "aria-label": "Tab actions" },
+		{ type: "button", className: "wg-kit-icon is-s is-ghost wg-tabs-more", title: "Tab actions", "aria-label": "Tab actions" },
 		h(Icon, { name: "menu" }),
 	);
 

@@ -200,7 +200,7 @@ console.log("\n— and pulling the strip down makes the row taller, not the widg
 	const after = measured.stretched;
 	check("the row took the whole pull", after.firstRowHeight - before.firstRowHeight, 200);
 	check("the widget inside stayed on its ceiling", after.firstCellHeight, 96);
-	check("before the pull it sat at its own natural height", before.firstCellHeight, 46);
+	check("before the pull it sat at its own natural height", before.firstCellHeight, 58);
 	check("the board was written a second time", after.writes, 2);
 }
 
