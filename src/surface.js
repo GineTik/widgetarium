@@ -22,7 +22,7 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { aimedAt, columnsOf, GAP_PX, innerOf, layTree, moved, partedBy, REGION_PAD_PX, resized, restacked, sameTarget, tallestOf, widthsOf } from "./tree.js";
+import { aimedAt, columnsOf, GAP_PX, innerOf, layTree, moved, partedBy, REGION_PAD_PX, resized, restacked, sameTarget, sidebarWidth, tallestOf, widenedRegion, widthsOf } from "./tree.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -824,7 +824,37 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 }
 
 function TreeBoard({ board, width, ...rest }) {
+	const pageRef = useRef(null);
 	const { beside, stacked } = columnsOf(board.layout, width, GAP_PX);
+
+	const grabSidebar = (name, toward) => (event) => {
+		event.preventDefault();
+		event.stopPropagation();
+		const held = sidebarWidth(board.layout, name);
+		const grabbed = event.clientX;
+		const node = pageRef.current?.querySelector(`.wg-tree-region.is-${name}`);
+		let latest = held;
+		let frame = 0;
+		const paint = () => {
+			frame = 0;
+			if (node) node.style.flexBasis = `${latest}px`;
+		};
+		const move = (pointer) => {
+			latest = widenedRegion(board.layout, name, held + (pointer.clientX - grabbed) * toward, width, GAP_PX);
+			if (!frame) frame = window.requestAnimationFrame(paint);
+		};
+		const stop = () => {
+			window.cancelAnimationFrame(frame);
+			window.removeEventListener("pointermove", move);
+			window.removeEventListener("pointerup", stop);
+			document.body.classList.remove("wg-tree-dragging");
+			rest.commitLayout({ ...board.layout, [name]: { ...board.layout[name], width: latest } });
+		};
+		document.body.classList.add("wg-tree-dragging");
+		window.addEventListener("pointermove", move);
+		window.addEventListener("pointerup", stop);
+	};
+
 	const region = (name, given) =>
 		h(
 			"div",
@@ -837,10 +867,20 @@ function TreeBoard({ board, width, ...rest }) {
 				commitLayout: (rows) => rest.commitLayout({ ...board.layout, [name]: { ...board.layout[name], rows } }),
 			}),
 		);
+
+	const edge = (name, toward) =>
+		h("div", { className: "wg-tree-handle is-across is-edge", key: `edge-${name}`, onPointerDown: grabSidebar(name, toward) }, h("i", { className: "wg-tree-grip" }));
+
+	const standing = beside.flatMap((column, at) => {
+		const before = beside[at - 1];
+		const between = before && before.name !== "main" ? edge(before.name, 1) : before && column.name !== "main" ? edge(column.name, -1) : null;
+		return [between, region(column.name, column.width)];
+	});
+
 	return h(
 		"div",
-		{ className: "wg-tree-columns", style: { "--wg-tree-gap": `${GAP_PX}px` } },
-		beside.map((column) => region(column.name, column.width)),
+		{ className: "wg-tree-page", ref: pageRef, style: { "--wg-tree-gap": `${GAP_PX}px` } },
+		beside.length > 0 ? h("div", { className: "wg-tree-columns" }, standing) : null,
 		stacked.map((name) => region(name, width)),
 	);
 }

@@ -3331,10 +3331,16 @@ body.wg-tree-carrying * {
 
 body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 
+.wg-tree-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-tree-gap, 8px);
+	width: 100%;
+}
+
 .wg-tree-columns {
 	display: flex;
 	align-items: stretch;
-	gap: var(--wg-tree-gap, 8px);
 	flex-wrap: nowrap;
 	width: 100%;
 }
@@ -3344,6 +3350,11 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	box-sizing: border-box;
 	min-width: 0;
 	padding: 8px;
+}
+
+.wg-tree-handle.is-edge {
+	flex: 0 0 var(--wg-tree-gap, 8px);
+	align-self: stretch;
 }
 
 .wg-tree-region::before {
@@ -3360,4 +3371,4 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	z-index: 1;
 }
 
-.wg-board:has(.wg-tree-columns)::before { content: none; }
+.wg-board:has(.wg-tree-page)::before { content: none; }

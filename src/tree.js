@@ -85,6 +85,8 @@ function besideIn(band, x) {
 	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
 }
 
+export const MIN_SIDEBAR_PX = 200;
+
 export function sidebarWidth(layout, name) {
 	return layout[name]?.width ?? SIDEBAR_PX;
 }
@@ -104,6 +106,12 @@ export function columnsOf(layout, width, gap = GAP_PX) {
 		};
 	}
 	return { beside: [], stacked: named };
+}
+
+export function widenedRegion(layout, name, wantedPx, width, gap = GAP_PX) {
+	const other = REGIONS.filter((one) => one !== "main" && one !== name && layout[one]);
+	const taken = other.reduce((sum, one) => sum + gap + sidebarWidth(layout, one), 0);
+	return Math.round(Math.min(Math.max(wantedPx, MIN_SIDEBAR_PX), width - taken - gap - MAIN_FLOOR_PX));
 }
 
 const NOTHING_MOVES = { cells: {}, bands: {}, slot: null };
