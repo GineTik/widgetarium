@@ -1,6 +1,6 @@
 export const GAP_PX = 8;
 export const LADDER = 12;
-export const MIN_HEIGHT_PX = 80;
+export const MIN_HEIGHT_PX = 42;
 const HAIR_PX = 0.5;
 export const SIDEBAR_PX = 280;
 export const REGION_PAD_PX = 8;
