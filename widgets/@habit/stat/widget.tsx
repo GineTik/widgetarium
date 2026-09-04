@@ -85,7 +85,7 @@ export default createWidget(function HabitStat({ settings, habits }: any) {
 
 	if (!habit) {
 		return (
-			<WidgetRoot background="var(--wg-kit-fill)" className="habit-stat">
+			<WidgetRoot className="habit-stat">
 				<style>{STYLE}</style>
 				<span className="hs-cap">{CAPS[metric]}</span>
 				<span className="habit-sub">no habit named {settings.pick || "anything"}</span>
@@ -97,7 +97,7 @@ export default createWidget(function HabitStat({ settings, habits }: any) {
 	const reading = readingOf(metric, log, habit.props, period, today);
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-stat" style={habit.props?.color ? { "--habit-ink": habit.props.color } : undefined}>
+		<WidgetRoot className="habit-stat" style={habit.props?.color ? { "--habit-ink": habit.props.color } : undefined}>
 			<style>{STYLE}</style>
 			<span className="hs-cap">{`${CAPS[metric]} · ${habit.props?.title ?? habit.name}`}</span>
 			<span className="hs-value">

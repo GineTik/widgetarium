@@ -151,7 +151,7 @@ export default createWidget(function HabitHeatmap({ settings, log: source, navig
 
 	if (rows.length === 0) {
 		return (
-			<WidgetRoot background="var(--wg-kit-fill)" className="habit-heatmap">
+			<WidgetRoot className="habit-heatmap">
 				<style>{STYLE}</style>
 				<div className="hh-head">
 					<h3 className="hh-title">Heatmap</h3>
@@ -162,7 +162,7 @@ export default createWidget(function HabitHeatmap({ settings, log: source, navig
 	}
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-heatmap">
+		<WidgetRoot className="habit-heatmap">
 			<style>{STYLE}</style>
 			<div className="hh-head">
 				<h3 className="hh-title">{year}</h3>

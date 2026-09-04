@@ -93,7 +93,7 @@ export default createWidget(function HabitGrid({
 	const Row = slots?.row;
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-grid">
+		<WidgetRoot className="habit-grid">
 			<style>{STYLE}</style>
 			<div className="hg-head">
 				<h3 className="hg-title">Habits</h3>

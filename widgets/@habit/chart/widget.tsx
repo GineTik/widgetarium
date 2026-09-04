@@ -172,7 +172,7 @@ export default createWidget(function HabitChart({ settings, log: source }: any) 
 
 	if (parts.length === 0) {
 		return (
-			<WidgetRoot background="var(--wg-kit-fill)" className="habit-chart">
+			<WidgetRoot className="habit-chart">
 				<style>{STYLE}</style>
 				<p className="habit-empty">Nothing to draw yet — this folder holds no dated entries.</p>
 			</WidgetRoot>
@@ -180,7 +180,7 @@ export default createWidget(function HabitChart({ settings, log: source }: any) 
 	}
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-chart">
+		<WidgetRoot className="habit-chart">
 			<style>{STYLE}</style>
 			<div className="hc-head">
 				<h3 className="hc-title">{byCategory ? settings.prop || "tag" : `by ${settings.bucket || "week"}`}</h3>

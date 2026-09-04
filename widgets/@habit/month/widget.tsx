@@ -300,7 +300,7 @@ export default createWidget(function HabitMonth({ settings, days }: { settings: 
 	const cells = cellsOver(month, keptDays, today, canDo(days.update) && canDo(days.create));
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-month" style={sizesFor(ring)}>
+		<WidgetRoot className="habit-month" style={sizesFor(ring)}>
 			<style>{STYLE}</style>
 			<div className="hm-head">
 				<IconButton size="s" label="Previous month" onClick={() => setShift(shift - 1)}>

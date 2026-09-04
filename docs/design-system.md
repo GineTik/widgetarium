@@ -41,6 +41,7 @@ decision needs to be right.
 
 ```css
 .wg-root {
+	padding-top: 0;
 }
 ```
 
@@ -62,22 +63,20 @@ Class names are the contract; `src/kit.js` exports a component per class.
 	--wg-radius-xl: var(--radius-xl, 16px);
 	--wg-radius-full: 999px;
 
-	--wg-widget-radius-s: 1rem;
-	--wg-widget-radius-m: 1.5rem;
-	--wg-widget-radius-l: 1.875rem;
-	--wg-widget-radius-xl: 2.5rem;
+	--wg-widget-radius-s: 0.5rem;
+	--wg-widget-radius-m: 1rem;
+	--wg-widget-radius-l: 1.375rem;
+	--wg-widget-radius-xl: 2rem;
 	--wg-widget-radius-full: 999px;
-	--wg-widget-pad-surface: 16px;
-	--wg-widget-radius: var(--wg-widget-radius-l);
+	--wg-widget-pad-surface: 8px;
+	--wg-widget-radius: var(--wg-widget-radius-s);
 
 	/* The board is the plate widgets sit on. Nested-radius law: the outer corner
 	   equals the inner corner plus the padding between them, so the two stay
 	   concentric when either is retuned. --wg-board-pad is written by the host
 	   so padding and radius can never drift apart. */
-	--wg-board-pad: 1rem;
-	/* the plate is opt-in: by default a board is transparent and a widget that
-	   matches the page behind it separates itself with a shadow instead */
-	--wg-board-bg: transparent;
+	--wg-board-pad: 0.5rem;
+	--wg-root-head: 1.6rem;
 
 	/* Cast by a widget whose root declares fillType="shadow"; suppressed on a plated
 	   board, where the plate's tone already draws the edge.
@@ -85,7 +84,7 @@ Class names are the contract; `src/kit.js` exports a component per class.
 	   --wg-board-pad. Past that it is painted in Obsidian's box, not ours, and
 	   whatever clips there is not something we can turn off.
 	   tools/check-shadow.mjs fails the build if this stops holding. */
-	--wg-widget-shadow: 0 0.1875rem 0.875rem rgba(0, 0, 0, 0.08);
+	--wg-widget-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05);
 
 }
 
@@ -119,6 +118,8 @@ pre:has(> .block-language-widgetarium),
 	box-sizing: border-box;
 	--wg-card: var(--background-primary);
 	--wg-sunken: var(--background-modifier-hover);
+	--wg-cool-ink: color-mix(in srgb, var(--color-blue, #3b7fd4) 55%, var(--text-normal));
+	--wg-board-bg: color-mix(in srgb, var(--wg-cool-ink) 6.5%, var(--background-primary));
 	/* CONTEXT: a hairline is a step of the INK over whatever it lies on — the host's border token
 	   measured 1.03 against a raised panel in dark, which is no line at all */
 	--wg-line: color-mix(in srgb, var(--text-normal) 14%, transparent);
@@ -133,16 +134,28 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-fill-hover: color-mix(in srgb, var(--text-normal) 10.5%, var(--background-primary));
 	/* CONTEXT: a raised surface lifts — white is a no-op in light and a real step in dark */
 	--wg-kit-raise: color-mix(in srgb, #ffffff 12%, var(--background-primary));
-	/* CONTEXT: a card cannot lift above white, so on a light ground it is told apart by an edge */
+	/* CONTEXT: the hairline a lifted card and a quoted block are drawn with */
 	--wg-kit-card-edge: color-mix(in srgb, var(--text-normal) 9%, transparent);
 	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
 	--wg-kit-warning: var(--color-orange, #d9822b);
 	--wg-kit-success-wash: color-mix(in srgb, var(--text-success) 14%, var(--background-primary));
 	--wg-kit-warning-wash: color-mix(in srgb, var(--wg-kit-warning) 16%, var(--background-primary));
 	--wg-kit-error-wash: color-mix(in srgb, var(--text-error) 14%, var(--background-primary));
+	/* CONTEXT: the host ships text-grade tokens for success and error only; blue, teal and
+	   magenta arrive decoration-grade, so the ink mix is what makes them legible on their wash */
+	--wg-kit-info: var(--color-blue, #3b7fd4);
+	--wg-kit-note: var(--color-cyan, #17a2a0);
+	--wg-kit-standout: var(--color-pink, #d1477f);
+	--wg-kit-info-wash: color-mix(in srgb, var(--wg-kit-info) 14%, var(--background-primary));
+	--wg-kit-note-wash: color-mix(in srgb, var(--wg-kit-note) 14%, var(--background-primary));
+	--wg-kit-standout-wash: color-mix(in srgb, var(--wg-kit-standout) 14%, var(--background-primary));
+	/* CONTEXT: 72/28 toward the ink — it darkens on a light ground and lightens on a dark one */
+	--wg-kit-info-ink: color-mix(in srgb, var(--wg-kit-info) 72%, var(--text-normal));
+	--wg-kit-note-ink: color-mix(in srgb, var(--wg-kit-note) 72%, var(--text-normal));
+	--wg-kit-standout-ink: color-mix(in srgb, var(--wg-kit-standout) 72%, var(--text-normal));
 
 	/* TRADE-OFF: our own radii because Obsidian stops at 16px and the look needs more */
-	--wg-kit-plate: 22px;
+	--wg-kit-plate: 14px;
 	--wg-kit-plate-pad: 8px;
 	--wg-kit-pill: 999px;
 	/* CONTEXT: concentric corners — an inner radius is the outer one minus the padding */
@@ -150,6 +163,9 @@ pre:has(> .block-language-widgetarium),
 
 	--wg-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
 	--wg-ease: cubic-bezier(0.4, 0, 0.2, 1);
+	/* CONTEXT: back-loaded — holds near its start while the fall gets going, then opens sharply, so
+	   a panel spreads DURING the drop instead of stretching past its own size the way --wg-spring does */
+	--wg-spread: cubic-bezier(0.66, 0, 0.2, 1);
 	--wg-press: 120ms;
 	--wg-quick: 200ms;
 	--wg-grow: 320ms;
@@ -161,6 +177,27 @@ pre:has(> .block-language-widgetarium),
 	/* CONTEXT: inside glass there is no solid background to step from, so a group steps toward the ink */
 	--wg-kit-glass-group: color-mix(in srgb, var(--text-normal) 3.5%, var(--wg-kit-raise));
 	--wg-kit-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.06);
+	/* CONTEXT: measured — pure black moves a dark ground by 3 of 255, so the lift steps with the ink instead */
+	--wg-kit-lift-ink: color-mix(in srgb, var(--text-normal) 6%, transparent);
+	--wg-kit-lift-ink-soft: color-mix(in srgb, var(--text-normal) 8.5%, transparent);
+	/* CONTEXT: measured against prior art in the same probe — 3/5% laid 13 of 255 and read as nothing,
+	   the softest shipped floating shadows lay ~30, Material's elevation 1 lays 81 and is a drawn shape.
+
+	   THE SPREAD IS THE LOUD PART, NOT THE DARKNESS. Three verdicts, measured as ink — the summed
+	   dL* down the column below the block, on the light ground: 3/5% over 12px laid 17 and could
+	   not be seen at all; 7/10% over 20px laid 71 and was "too strong"; 6/8.5% over 20px laid 59
+	   and still "pulled the eye". Cutting the alpha walks straight back into invisible — 4.5/6%
+	   over 20px is dL* 6.3 light but 4.4 dark, and 3.6 was the value called nothing. So the peak
+	   holds and the AMBIENT LAYER'S REACH comes in instead: 20px -> 14px lays 42 of ink, 29% under
+	   the rejected 59, with dL* 8.4 light and 7.1 dark unmoved and both still over the floor of 7. */
+	--wg-kit-lift-drop: 5px;
+	--wg-kit-lift-blur: 14px;
+	--wg-kit-lift: 0 1px 2px var(--wg-kit-lift-ink), 0 var(--wg-kit-lift-drop) var(--wg-kit-lift-blur) var(--wg-kit-lift-ink-soft);
+	/* HOW FAR THE LIFT REACHES PAST THE BLOCK, so a box that clips can be handed exactly that much
+	   room instead of a guessed number. Half the blur on every side, plus the drop on the side it
+	   falls toward — the arithmetic tools/check-shadow.mjs already gates the board's shadow with.
+	   It is the WORST side, taken all round: retune the lift and the room follows it. */
+	--wg-kit-lift-room: calc(var(--wg-kit-lift-blur) / 2 + var(--wg-kit-lift-drop));
 
 	/* Declared HERE and not on :root. Obsidian hangs its theme variables on body, and
 	   :root is body's parent — a var() resolved up there sees none of them, computes to
@@ -170,8 +207,8 @@ pre:has(> .block-language-widgetarium),
 	/* the grid drawn under the tiles while editing */
 	/* CONTEXT: a step of the INK, not a grey — a fixed near-white is a white grid in a dark vault */
 	/* CONTEXT: a third of the control's own step — closer and the grid meets it, and controls sink in */
-	--wg-cell-fill: color-mix(in srgb, var(--text-normal) 1.2%, var(--background-primary));
-	--wg-cell-radius: 8px;
+	--wg-cell-fill: color-mix(in srgb, var(--wg-cool-ink) 1.2%, var(--background-primary));
+	--wg-cell-radius: var(--wg-widget-radius);
 
 	/* Edit-mode chrome sits OUTSIDE the widget: the content pulls back, a dashed ring is
 	   drawn on the tile's own bounds, and the buttons straddle that ring. No pixel of the
@@ -207,7 +244,7 @@ pre:has(> .block-language-widgetarium),
 	   widget, and a handle has to look like it is on the frame */
 	--wg-grip-out: 0px;
 	position: relative;
-	padding-top: 1.6rem;
+	padding-top: var(--wg-root-head);
 	font-family: var(--font-interface);
 	color: var(--text-normal);
 	width: 100%;
@@ -271,9 +308,19 @@ pre:has(> .block-language-widgetarium),
 .wg-grid {
 	position: relative;
 	margin-inline: auto;
-	padding: var(--wg-board-pad);
+}
+
+.wg-board {
+	padding-inline: calc(var(--wg-board-pad) * 2);
+	padding-bottom: calc(var(--wg-board-pad) * 2);
+}
+
+.wg-board::before {
+	content: "";
+	position: absolute;
+	inset: var(--wg-board-pad);
+	z-index: 0;
 	background: var(--wg-board-bg);
-	/* resolved here, not on :root, so a per-board padding actually moves the corner */
 	border-radius: calc(var(--wg-widget-radius) + var(--wg-board-pad));
 }
 
@@ -626,7 +673,10 @@ pre:has(> .block-language-widgetarium),
 	align-items: center;
 	justify-content: center;
 	padding: 4vh 4vw;
-	background: rgba(0, 0, 0, 0.45);
+	/* CONTEXT: a scrim separates, it does not darken the room — 0.45 read as a blackout */
+	/* CONTEXT: named, because the enter fades this in from transparent and must name what it fades to */
+	--wg-dialog-scrim: rgba(0, 0, 0, 0.22);
+	background: var(--wg-dialog-scrim);
 	outline: none;
 }
 
@@ -765,17 +815,19 @@ pre:has(> .block-language-widgetarium),
 	border-radius: var(--wg-widget-radius-full);
 }
 
-.wg-widget-root[data-fill="fill"],
-.wg-widget-root[data-fill="shadow"] {
-	background: var(--wg-surface-fill, var(--background-primary));
-}
-
-.wg-widget-root[data-fill="shadow"] {
+.wg-widget-root {
+	background: var(--wg-surface-fill, var(--wg-kit-raise));
 	box-shadow: var(--wg-widget-shadow);
+	padding: var(--wg-widget-pad);
 }
 
 .wg-widget-root[data-fill="none"] {
 	background: none;
+	box-shadow: none;
+}
+
+body.theme-light :is(.wg-root, .wg-portal) {
+	--wg-widget-shadow: none;
 }
 
 /* Rounding is the widget author's call, not a consequence of the background: a surface-less
@@ -785,14 +837,7 @@ pre:has(> .block-language-widgetarium),
 	border-radius: 0;
 }
 
-/* WHO PADS A WIDGET: the widget does — but with this number, not one of its own. Padding
-   only earns its keep when there is a surface for the content to sit inside; with no
-   background the same gap reads as the widget failing to reach its own edges. So the token
-   follows the background the widget ACTUALLY got, and a widget written as
-   `padding: var(--wg-widget-pad)` gains its inset the moment somebody turns a surface on.
-   Anything CSS cannot express reads the same fact through useBackgroundType(). */
-.wg-widget-root[data-fill="fill"],
-.wg-widget-root[data-fill="shadow"] {
+.wg-widget-root {
 	--wg-widget-pad: var(--wg-widget-pad-surface);
 }
 
@@ -940,6 +985,11 @@ pre:has(> .block-language-widgetarium),
 	stroke-linejoin: round;
 }
 
+.wg-kit-emoji {
+	flex: none;
+	display: block;
+}
+
 .wg-kit-btn {
 	font-family: inherit;
 	font-weight: var(--font-semibold, 600);
@@ -1006,6 +1056,8 @@ pre:has(> .block-language-widgetarium),
 
 .wg-kit-icon.is-s { width: 32px; height: 32px; }
 
+.wg-kit-icon.is-xs { width: 28px; height: 28px; }
+
 .wg-kit-icon.is-accent { color: var(--text-on-accent); }
 
 .wg-kit-glass {
@@ -1035,6 +1087,12 @@ pre:has(> .block-language-widgetarium),
 
 .wg-kit-pill.is-err { background: var(--wg-kit-error-wash); color: var(--text-error); }
 
+.wg-kit-pill.is-info { background: var(--wg-kit-info-wash); color: var(--wg-kit-info-ink); }
+
+.wg-kit-pill.is-note { background: var(--wg-kit-note-wash); color: var(--wg-kit-note-ink); }
+
+.wg-kit-pill.is-standout { background: var(--wg-kit-standout-wash); color: var(--wg-kit-standout-ink); }
+
 .wg-kit-count {
 	display: inline-flex;
 	align-items: center;
@@ -1049,36 +1107,45 @@ pre:has(> .block-language-widgetarium),
 	font-weight: var(--font-semibold, 600);
 }
 
-.wg-kit-plate {
-	background: var(--wg-kit-fill);
-	border-radius: var(--wg-kit-plate);
-	padding: var(--wg-kit-plate-pad);
+/* CONTEXT: the plate every surface is built from — fill, corner, padding and gap are what differ */
+.wg-kit-card {
+	--wg-kit-card-fill: var(--wg-kit-raise);
+	--wg-kit-card-corner: var(--wg-kit-item);
+	--wg-kit-card-pad: var(--size-4-4, 16px);
+	background: var(--wg-kit-card-fill);
+	border-radius: var(--wg-kit-card-corner);
+	padding: var(--wg-kit-card-pad);
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-2, 8px);
 }
 
-.wg-kit-card {
-	background: var(--wg-kit-raise);
-	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
-	border-radius: var(--wg-kit-item);
-	padding: var(--size-4-4, 16px);
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-2, 8px);
+/* CONTEXT: solid is a well sunk into its ground, so it carries neither the edge nor a lift */
+.wg-kit-card.is-solid {
+	--wg-kit-card-fill: var(--wg-kit-fill);
+	box-shadow: none;
+}
+
+/* CONTEXT: only a surface that floats over something casts */
+.wg-kit-card.is-lifted {
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge), var(--wg-kit-lift);
 }
 
 .wg-kit-card.is-selected { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+
+.wg-kit-plate {
+	--wg-kit-card-corner: var(--wg-kit-plate);
+	--wg-kit-card-pad: var(--wg-kit-plate-pad);
+}
 
 /* THE GROUPED LIST, from docs/reference/widgetarium-ui-kit.html:369-376. The GROUP is the filled
    surface and it clips: the first and last rows are cut into its corners, so no row is ever
    rounded on its own. */
 .wg-kit-list {
-	display: flex;
-	flex-direction: column;
+	--wg-kit-card-corner: var(--wg-kit-plate);
+	--wg-kit-card-pad: 0;
+	gap: 0;
 	width: 100%;
-	background: var(--wg-kit-fill);
-	border-radius: var(--wg-kit-plate);
 	overflow: hidden;
 }
 
@@ -1138,7 +1205,11 @@ pre:has(> .block-language-widgetarium),
 	font-weight: var(--font-medium, 500);
 }
 
+/* CONTEXT: the value slot holds the trailing CONTROLS too, so it spaces them the way a field does */
 .wg-kit-row-value {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
 	flex: none;
 	color: var(--text-muted);
 }
@@ -1254,11 +1325,14 @@ pre:has(> .block-language-widgetarium),
 	backdrop-filter: var(--wg-kit-glass-blur);
 	-webkit-backdrop-filter: var(--wg-kit-glass-blur);
 	box-shadow: var(--wg-kit-glass-edge);
+	/* CONTEXT: the exit folds into this corner — the enter writes its own middle inline */
 	transform-origin: top left;
 	opacity: 0;
 	pointer-events: none;
 	overflow: hidden;
-	min-width: 200px;
+	/* A PANEL IS NEVER NARROWER THAN WHAT IT OPENED FROM. Over the trigger, a narrow panel
+	   left the control sticking out from under it; 200 is the floor, the anchor is the rule. */
+	min-width: max(200px, var(--wg-kit-anchor-width, 200px));
 }
 
 .wg-kit-pop.is-open { opacity: 1; pointer-events: auto; }
@@ -1266,7 +1340,21 @@ pre:has(> .block-language-widgetarium),
 /* CONTEXT: it is folding back into the trigger — a press must not land on it on the way */
 .wg-kit-pop.is-exiting { pointer-events: none; }
 
-.wg-kit-pop-inner { padding: var(--size-4-2, 8px); display: flex; flex-direction: column; }
+/* THE PEAK IS AUTHORED, NOT SOLVED. A seed is the trigger's box over the panel's, so its two axes
+   differ; a cubic-bezier overshoot would then be a different percentage on each one. Stated as
+   keyframes the peak is 105% of the FINAL size on both axes whatever the seed, and it rests at 1. */
+@keyframes wg-kit-pop-bloom {
+	from { scale: var(--wg-kit-pop-seed-x, 1) var(--wg-kit-pop-seed-y, 1); }
+	60% { scale: 1.05 1.05; }
+	to { scale: 1 1; }
+}
+
+/* CONTEXT: the content is not counter-scaled — it only fades, so it carries no transform of its own */
+.wg-kit-pop-inner {
+	padding: var(--size-4-2, 8px);
+	display: flex;
+	flex-direction: column;
+}
 
 .wg-kit-pop-item {
 	display: flex;
@@ -1297,10 +1385,48 @@ pre:has(> .block-language-widgetarium),
 
 .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick { opacity: 1; }
 
+/* TRADE-OFF: the cap is the kit's, not one widget's — every popover list is as long as its data */
+.wg-kit-pop-scroll {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
 .wg-kit-pop-list {
 	display: flex;
 	flex-direction: column;
+	max-height: calc(var(--wg-kit-pop-rows, 10) * var(--wg-kit-pop-row, 34px));
+	overflow-y: auto;
+	scrollbar-width: none;
 }
+
+/* CONTEXT: what a native select shows at a capped end — the only sign that there is more */
+.wg-kit-pop-edge {
+	position: absolute;
+	left: 0;
+	right: 0;
+	height: 20px;
+	display: grid;
+	place-items: center;
+	color: var(--text-muted);
+	pointer-events: none;
+}
+
+.wg-kit-pop-edge.is-up {
+	top: 0;
+	background: linear-gradient(to bottom, var(--wg-kit-glass-panel), transparent);
+}
+
+.wg-kit-pop-edge.is-down {
+	bottom: 0;
+	background: linear-gradient(to top, var(--wg-kit-glass-panel), transparent);
+}
+
+/* CONTEXT: one chevron glyph, turned — the kit draws no second arrow for a second direction */
+.wg-kit-pop-edge.is-up .wg-kit-icon-glyph { transform: rotate(-90deg); }
+
+.wg-kit-pop-edge.is-down .wg-kit-icon-glyph { transform: rotate(90deg); }
 
 .wg-kit-pop-sep {
 	flex: none;
@@ -1310,8 +1436,6 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: the trigger's measured width, handed over rather than forced */
-.wg-kit-pop.is-below { min-width: var(--wg-kit-anchor-width, 200px); }
-
 .wg-kit-pop-search {
 	display: flex;
 	flex-direction: column;
@@ -1473,6 +1597,19 @@ pre:has(> .block-language-widgetarium),
 /* CONTEXT: a trailing newline draws no line box, and the caret would sit off the page */
 .wg-kit-md-mirror::after { content: "\A"; white-space: pre-wrap; }
 
+.wg-kit-code .wg-kit-md-text {
+	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+	font-family: var(--font-monospace, monospace);
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.5;
+}
+
+.wg-kit-code { min-height: 5.4em; border-radius: var(--wg-kit-item); }
+
+.wg-kit-code .wg-kit-md-mirror .is-key { color: var(--interactive-accent); }
+
+.wg-kit-code .wg-kit-md-mirror .is-note { color: var(--text-faint); }
+
 .wg-kit-md-mirror .is-heading { font-weight: var(--font-bold, 700); }
 
 .wg-kit-md-mirror .is-strong { font-weight: var(--font-semibold, 600); }
@@ -1590,20 +1727,26 @@ pre:has(> .block-language-widgetarium),
 	transition: background var(--wg-quick) var(--wg-ease);
 }
 
-/* the two that carry a resting fill, and only those */
+/* TRADE-OFF: only the RAISED fill carries the edge — grey, accent and wash already read as a
+   control against the surface they sit on. A variable, so the rule that paints that fill asks
+   for the edge beside it, and this one stays weak enough for :focus-visible to take it back. */
 .wg-kit-btn::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon::before { background: var(--wg-kit-fill); }
+:is(.wg-root, .wg-portal) .wg-kit-icon::before {
+	background: var(--wg-kit-fill);
+	box-shadow: var(--wg-kit-control-edge, none);
+}
 
 .wg-kit-btn:hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon:hover::before { background: var(--wg-kit-fill-hover); }
 
+/* CONTEXT: a coloured fill already reads as a control, and a hairline over it reads as a rim */
 .wg-kit-btn.is-accent::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent::before { background: var(--interactive-accent); }
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent::before { background: var(--interactive-accent); box-shadow: none; }
 
 .wg-kit-btn.is-accent:hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon.is-accent:hover::before { background: var(--interactive-accent-hover); }
 
-.wg-kit-btn.is-danger::before { background: var(--wg-kit-error-wash); }
+.wg-kit-btn.is-danger::before { background: var(--wg-kit-error-wash); box-shadow: none; }
 
 /* CONTEXT: blur and inset edge clip to their own box, so they follow the corner onto ::before */
 .wg-kit-btn.wg-kit-glass,
@@ -1622,7 +1765,7 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* TRANSPARENT MEANS TRANSPARENT, at rest AND on hover, where the wash still has to be round */
-.wg-kit-btn.is-plain::before { background: none; }
+.wg-kit-btn.is-plain::before { background: none; box-shadow: none; }
 
 .wg-kit-btn.is-plain:hover::before { background: var(--wg-kit-accent-wash); }
 
@@ -1641,11 +1784,19 @@ pre:has(> .block-language-widgetarium),
 /* MEASURED: a neutral control inside a group painted rgb(237,237,240) on rgb(237,237,240) — the
    group's fill IS the control's fill, so a trailing button vanished. It raises, the way a card
    raises off a plate. Two rules, so hover is not left to source order. */
+/* CONTEXT: raised is white in light, the foreground step in dark — the one fill needing a rim */
 .wg-kit-row .wg-kit-btn::before,
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon::before { background: var(--wg-kit-raise); }
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon::before {
+	background: var(--wg-kit-raise);
+	--wg-kit-control-edge: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
 
+/* CONTEXT: the rim belongs to the raised fill — a grey control carries no edge */
 .wg-kit-row .wg-kit-btn:hover::before,
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon:hover::before { background: var(--wg-kit-fill-hover); }
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon:hover::before {
+	background: var(--wg-kit-fill-hover);
+	--wg-kit-control-edge: none;
+}
 
 .wg-kit-switch::before { background: var(--wg-kit-fill); }
 
@@ -1662,7 +1813,1392 @@ pre:has(> .block-language-widgetarium),
 	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 
-.wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick {
+/* ═══════════════ THE SETTINGS WINDOW ═══════════════
+   The tile BECOMES the window: the same element, given a bigger box. No scale anywhere on the
+   way down to the widget, because a transformed ancestor re-parents every position:fixed
+   descendant and kills backdrop-filter — which would break the widget's own popovers AND the
+   glass on both floating panels. The playground is the whole window; the header, the settings
+   and the zoom bar float over it and the grid runs underneath all three. */
+/* THE SETTINGS WINDOW IS A DIALOG. Laid out inside the board it had no edge of its own, so it
+   read as part of the note it floated over — and the note went on scrolling behind it. */
+:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-set-over {
+	/* the window places itself by inset, so the overlay must not pad it inwards as well */
+	padding: 0;
+	display: block;
+	/* NO backdrop-filter HERE. An ancestor that carries one becomes a backdrop root, and every
+	   blur inside it then samples a flat surface: measured, the panel's own glass went from a
+	   stripe swing of 2 to 27 — thirteen times weaker — purely from this one line. */
+	background: color-mix(in srgb, var(--background-primary) 55%, rgba(0, 0, 0, 0.6));
+}
+
+:is(.wg-root, .wg-portal) .wg-set-window {
+	position: absolute;
+	background: var(--background-primary);
+	/* an EDGE, deliberately: the kit fills rather than outlines, but a window is the one thing
+	   that has to end somewhere a person can see it end */
+	border: 1px solid color-mix(in srgb, var(--text-normal) 22%, transparent);
+	border-radius: var(--wg-widget-radius);
+	box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.28);
+	outline: none;
+	/* the widget hangs off the window as you pan, so the window is what cuts it */
+	overflow: hidden;
+	animation: wg-set-rise var(--wg-grow) var(--wg-spring) both;
+}
+
+@keyframes wg-set-rise {
+	from {
+		opacity: 0;
+		transform: translateY(0.75rem) scale(0.985);
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-set-window.is-leaving,
+:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-set-over.is-leaving {
+	opacity: 0;
+	transition: opacity var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-body {
+	position: absolute;
+	z-index: 2;
+	pointer-events: none;
+}
+
+/* Below 1:1 the canvas is LOOK-ONLY: a press pans and a tap snaps to 1:1. Only at zoom 1,
+   where no transform exists, do presses reach the widget. */
+:is(.wg-root, .wg-portal) .wg-set-body.is-live {
+	pointer-events: auto;
+}
+
+/* CONTEXT: the grid is the canvas — the layer writes its own left/top/width/count and carries
+   the canvas scale, so the cells zoom and pan with the widget */
+:is(.wg-root, .wg-portal) .wg-set-cells {
+	position: absolute;
+	z-index: 0;
+	pointer-events: none;
+	display: grid;
+	grid-template-columns: repeat(var(--wg-set-across), var(--wg-cell));
+	grid-auto-rows: var(--wg-cell);
+	gap: var(--wg-gap);
+	transform-origin: top left;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-cells i {
+	background: var(--wg-cell-fill, rgba(127, 127, 127, 0.18));
+	border-radius: var(--wg-cell-radius, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pan {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	cursor: grab;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-look {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	cursor: zoom-in;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-chip {
+	position: absolute;
+	z-index: 2;
+}
+
+/* ── the chrome, which fades in after the box has landed ── */
+:is(.wg-root, .wg-portal) .wg-set-chrome {
+	position: absolute;
+	inset: 0;
+	z-index: 6;
+	pointer-events: none;
+	animation: wg-set-in var(--wg-quick) var(--wg-ease) 80ms both;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-chrome > * {
+	pointer-events: auto;
+}
+
+/* TRADE-OFF: the ease, not the spring — a panel folding away that bounces reads as indecision */
+:is(.wg-root, .wg-portal) .wg-set-chrome.is-leaving {
+	animation: none;
+	opacity: 0;
+	transition: opacity var(--wg-press) var(--wg-ease);
+}
+
+@keyframes wg-set-in {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+
+/* a capsule that hugs its content: a bar spanning the window reads as an opaque header */
+:is(.wg-root, .wg-portal) .wg-set-head {
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	width: max-content;
+	max-width: calc(100% - 320px);
+	height: 46px;
+	border-radius: var(--wg-kit-pill);
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 6px 0 16px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-crumbs {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+}
+
+/* a crumb is text that answers to a press, so it carries no button box of its own */
+:is(.wg-root, .wg-portal) .wg-set-crumb {
+	appearance: none;
+	background: none;
+	border: 0;
+	box-shadow: none;
+	padding: 0;
+	cursor: pointer;
+	color: var(--text-muted);
+	font-weight: var(--font-medium, 500);
+	font-size: var(--font-ui-small, 14px);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-crumb:hover {
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-crumb-sep {
+	color: var(--text-faint);
+	font-size: var(--font-ui-small, 14px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-here {
+	color: var(--text-normal);
+	font-weight: var(--font-semibold, 600);
+	font-size: var(--font-ui-small, 14px);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-head-right {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 8px;
+	white-space: nowrap;
+}
+
+/* no sidebar to leave room for, so the capsule may take the width it needs */
+:is(.wg-root, .wg-portal) .wg-set-head.is-sheet {
+	right: 16px;
+	max-width: none;
+}
+
+/* THE PANEL IS READ, not glanced at. It took --wg-kit-glass-tint, the thin fill meant for small
+   floating chrome, so the board showed through every row of it — measured at srgb 1 1 1 / 0.82.
+   A surface somebody reads takes the panel fill and a blur heavy enough to matter under it.
+   The panel itself is a kit sidebar now and takes that from .wg-kit-side.is-glass; the header
+   and the zoom bar are the two left asking for it by name.
+
+   AND WHAT IS LEFT ON THE PANEL IS WHERE IT HANGS AND THAT IT CLIPS — the padding, the corner,
+   the column and the lift are the block, so it stopped painting its own. */
+:is(.wg-root, .wg-portal) :is(.wg-set-head, .wg-set-bar).wg-kit-glass {
+	background: var(--wg-kit-glass-panel);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel {
+	position: absolute;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel.is-sheet {
+	padding-top: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-grip {
+	position: relative;
+	isolation: isolate;
+	flex: none;
+	width: 36px;
+	height: 4px;
+	margin: 2px auto 4px;
+	border: none;
+	padding: 0;
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-grip::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-pill);
+	background: var(--text-faint);
+	opacity: 0.4;
+}
+
+/* a flex child shrinks by default and a group clips, so an uncompressed column is the
+   difference between a trailing note and a trailing note cut in half */
+:is(.wg-root, .wg-portal) .wg-set-scroll {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	overflow-y: auto;
+	flex: 1;
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-scroll > * {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-foot {
+	flex: none;
+	padding: 4px 12px 0;
+	font-family: var(--font-monospace);
+	font-size: 11px;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-window .wg-set-fold {
+	position: absolute;
+}
+
+/* the tab bar sits ON glass, so it takes the panel's own group fill rather than a step from
+   a background that is not there */
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs {
+	flex: none;
+	display: flex;
+	width: 100%;
+	background: var(--wg-kit-glass-group);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs button {
+	flex: 1;
+	height: 30px;
+	font-size: var(--font-ui-smaller, 12px);
+	padding: 0 8px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs .wg-kit-seg-thumb {
+	box-shadow: none;
+}
+
+/* ── a group: the heading OUTSIDE, the block holding rows and nothing else ── */
+:is(.wg-root, .wg-portal) .wg-set-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-label {
+	padding: 0 16px;
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-under {
+	margin: 0;
+	padding: 0 16px;
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--text-faint);
+}
+
+/* TODO: fold into SidebarRow's own `sub` */
+:is(.wg-root, .wg-portal) .wg-set-two {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	white-space: normal;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-sub {
+	font-size: 11px;
+	font-weight: var(--font-medium, 500);
+	line-height: 1.45;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-sub.is-mono {
+	font-family: var(--font-monospace);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-path {
+	font-family: var(--font-monospace);
+	font-size: 11px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-chev {
+	transform: rotate(90deg);
+}
+
+/* ALWAYS VISIBLE. A parent selector that only appears on hover is one nobody finds. */
+:is(.wg-root, .wg-portal) .wg-set-enter {
 	opacity: 1;
+	visibility: visible;
+	flex: none;
+}
+
+/* ── the zoom bar ── */
+:is(.wg-root, .wg-portal) .wg-set-bar {
+	position: absolute;
+	left: 16px;
+	bottom: 16px;
+	max-width: calc(100% - 32px);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	border-radius: var(--wg-kit-pill);
+	padding: 4px;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar::-webkit-scrollbar {
+	display: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar > * {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button {
+	position: relative;
+	isolation: isolate;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	min-width: 28px;
+	padding: 0 8px;
+	border: none;
+	background: none;
+	box-shadow: none;
+	border-radius: 0;
+	font-family: inherit;
+	font-size: 11px;
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-pill);
+	background: none;
+	transition: background var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button:hover::before {
+	background: var(--background-modifier-hover);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button[aria-pressed="true"] {
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-bar button[aria-pressed="true"]::before {
+	background: var(--wg-kit-raise);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-div {
+	width: 1px;
+	height: 16px;
+	background: var(--wg-line);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-said {
+	padding: 0 8px;
+	font-size: 11px;
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+	white-space: nowrap;
+}
+
+/* ── the popover a value opens into ── */
+:is(.wg-root, .wg-portal) .wg-set-pop {
+	width: 264px;
+	max-width: calc(100vw - 32px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 60vh;
+	overflow-y: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-kind {
+	align-self: flex-start;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 2px var(--size-4-2, 8px) 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-title {
+	font-size: var(--font-ui-small, 13px);
+	font-weight: var(--font-medium, 500);
+	line-height: 1.3;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) :is(.wg-set-pop-hint, .wg-set-pop-note) {
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-note {
+	margin: 0;
+	padding: 2px var(--size-4-2, 8px) 6px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-side {
+	margin-left: auto;
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 55%;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-weight: var(--font-normal, 400);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-add {
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-error {
+	margin: 0;
+	padding: 2px var(--size-4-2, 8px);
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.45;
+	color: var(--text-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-top: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot + .wg-kit-side-group {
+	margin-top: var(--size-4-3, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot + .wg-set-pop-note {
+	padding-top: var(--size-4-3, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-ref .wg-kit-field-input,
+:is(.wg-root, .wg-portal) .wg-set-ref-unknown .wg-kit-field-input {
+	font-family: var(--font-monospace, monospace);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-ref .wg-kit-field-input {
+	color: var(--wg-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-ref-unknown .wg-kit-field-input {
+	color: var(--text-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot .wg-kit-btn:first-child {
+	flex: 1;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-foot .wg-kit-btn:last-child {
+	flex: 2;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* the slot row is a plain row that opens a catalogue, so the wrapper must not become a box */
+:is(.wg-root, .wg-portal) .wg-set-slot {
+	display: contents;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-set-window,
+	.wg-set-chrome {
+		transition: none;
+		animation: none;
+	}
+}
+
+/* ── THE CATALOGUE ──────────────────────────────────────────────────────────────────────
+   A SHOWCASE BOARD, not a grid of cards. One cell lattice at the board's own pitch, and
+   every widget lying on it at its real span — so how much room a widget takes is shown by
+   it taking that room. Widgets that are themselves boards bring their own frames; a card,
+   a stage and a footer around each of them repeated those frames nine times over, which is
+   what made the surface read as noise. All three are gone: lattice, picture, name. */
+/* ── THE CATALOGUE ──────────────────────────────────────────────────────────────────────
+   Cards, and inside each one the board's own lattice at the scale that card's span needs.
+   Laid on ONE shared lattice the widgets ran together — nothing said where one ended and
+   the next began — and a name band under each ate a whole row of cells to say so. */
+:is(.wg-root, .wg-portal) .wg-cat {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-4, 16px);
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-head {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	flex-wrap: wrap;
+}
+
+/* CONTEXT: the kit's field is 42 and its segmented 46, both pinned to the reference — so the
+   two are levelled HERE, on the one screen that puts them in a row, not in the kit */
+:is(.wg-root, .wg-portal) .wg-cat-search { flex: 1; min-width: 12rem; height: 46px; }
+
+:is(.wg-root, .wg-portal) .wg-cat-size { height: 46px; }
+:is(.wg-root, .wg-portal) .wg-cat-size.is-on { color: var(--interactive-accent); }
+
+:is(.wg-root, .wg-portal) .wg-cat-scroll {
+	overflow: auto;
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-grid {
+	/* MASONRY, NOT A GRID OF ROWS. Cards are one width and their own height, so a grid row is as
+	   tall as its tallest card and every shorter one leaves a hole under it. Columns fill top to
+	   bottom instead, and a full-width divider still spans them with column-span. */
+	columns: var(--wg-cat-columns, 3);
+	column-gap: var(--size-4-3, 12px);
+}
+
+/* CONTEXT: the kit's own card carries the ground and the edge; this adds only the layout */
+:is(.wg-root, .wg-portal) .wg-cat-tile {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-3, 6px);
+	padding: 10px;
+	/* THE CARD IS THE GREY ONE. It carries no edge: a border and a ground both drawing the same
+	   boundary is the boundary drawn twice. */
+	background: var(--wg-kit-fill);
+	box-shadow: none;
+	/* a column flows these, so the gap below is the card's own */
+	break-inside: avoid;
+	margin-bottom: var(--size-4-3, 12px);
+	cursor: pointer;
+	transition: box-shadow var(--wg-quick) var(--wg-ease), transform var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile:hover {
+	transform: translateY(-1px);
+	background: var(--wg-kit-fill-hover);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+
+/* THE STAGE IS THE PLAYGROUND: the page's own ground and the board's own cells, so a card shows
+   the widget standing where it would stand. The stage only CENTRES; the box below is what both
+   the lattice and the widget live in, which is the only way they can line up. */
+:is(.wg-root, .wg-portal) .wg-cat-stage {
+	display: grid;
+	place-items: center;
+	/* even air on every side — the name and the button moved down into the card's own grey, so
+	   nothing floats here any more and the stage owes the foot no room */
+	padding: 10px;
+	/* and the widget stands on the white one, inside it */
+	background: var(--background-primary);
+	border-radius: var(--wg-kit-item);
+}
+
+/* ONE BOX, ONE SCALE. Its size is the span in scaled pixels, so the last cell ends exactly at
+   its edge and the widget inside starts exactly on the first one. */
+:is(.wg-root, .wg-portal) .wg-cat-frame {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--wg-kit-item);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-frame .wg-cells {
+	grid-template-columns: repeat(var(--wg-cat-across), var(--wg-cell));
+}
+
+/* ONE FOG, ON EVERY CARD. This was the cut marker — drawn only where a widget overflowed the
+   span it was capped to — and a haze appearing on some cards and not others reads as a rendering
+   fault, not a treatment. Every widget now dissolves into the stage at its foot, which ends a
+   cut one honestly and a whole one softly, and the ground it fades to is the stage's own token,
+   so the dark theme fades to dark instead of smearing grey. Capped as a share of the frame so a
+   one-cell widget is edged, not swallowed. */
+:is(.wg-root, .wg-portal) .wg-cat-frame::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0;
+	height: min(44px, 35%);
+	z-index: 2;
+	pointer-events: none;
+	background: linear-gradient(to bottom, transparent, var(--background-primary));
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-scaled {
+	position: absolute;
+	inset: 0;
+	transform-origin: top left;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-pic {
+	position: absolute;
+	/* flush to the FRAME, which is the span itself — the air is the stage's padding, outside it */
+	inset: 0;
+	z-index: 1;
+	/* a preview is a picture: nothing inside it answers a pointer */
+	pointer-events: none;
+}
+
+/* A WIDGET TOO SMALL, OR TOO MUCH ITSELF, TO DRAW HERE. These lost their rules in a rewrite and
+   the mark ran straight into the line — a stand-in that reads as a bug is worse than none. */
+:is(.wg-root, .wg-portal) .wg-cat-stand {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-2-3, 6px);
+	width: 100%;
+	height: 100%;
+	padding: var(--size-4-3, 12px);
+	text-align: center;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-mark {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	background: var(--wg-kit-fill);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-line {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+	line-height: 1.4;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-stand.is-broken .wg-cat-line { color: var(--text-error); }
+
+
+
+/* THE CARD'S FOOT, NOT A PILL ON THE PICTURE. As glass it sat over the widget: it hid the bottom
+   of every preview and made the stage reserve 58px it never used for the widget. Laid in the grey
+   the card already has, it needs no tint, no blur and no edge of its own — the card is the ground,
+   and the row is one of its rows. */
+:is(.wg-root, .wg-portal) .wg-cat-foot {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	padding: 0 0 0 2px;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-said {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: baseline;
+	gap: 5px;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1.2;
+	color: var(--text-normal);
+}
+
+/* the size it will take on a board, in the board's own words — the kit's pill carries the rest */
+:is(.wg-root, .wg-portal) .wg-cat-span {
+	flex: none;
+	font-variant-numeric: tabular-nums;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-scope,
+:is(.wg-root, .wg-portal) .wg-cat-slash {
+	flex: none;
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.2;
+	color: var(--text-faint);
+}
+
+/* ONE BUTTON, ALWAYS THE SAME. Fetching a widget and placing one both land at the press, so a
+   second look for a second state would be a difference nobody waits through. */
+/* ONE BUTTON, ALWAYS THE SAME, and the kit paints it — its accent ground is a ::before, so a
+   background set here would be a second button wearing the same colour. */
+
+
+/* CONTEXT: the shop window's one sentence, on the card — no detail page exists to hold it yet */
+:is(.wg-root, .wg-portal) .wg-cat-what {
+	margin: 0;
+	padding: 0 2px 2px;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.4;
+	color: var(--text-muted);
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-lack {
+	margin: 0;
+	padding: 0 2px 2px;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+/* the divider spans the whole grid, so what is below it reads as a second list */
+:is(.wg-root, .wg-portal) .wg-cat-divide {
+	column-span: all;
+	margin: var(--size-4-2, 8px) 0 0;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-none {
+	margin: 0;
+	padding: var(--size-4-5, 20px);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small, 14px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal) .wg-cat-tile {
+		transition: none;
+	}
+
+	:is(.wg-root, .wg-portal) .wg-cat-tile:hover {
+		transform: none;
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
+	width: min(1040px, 100%);
+	max-height: 84vh;
+}
+
+/* CONTEXT: the slot picker opens OVER the settings window, which is a dialog on the same layer */
+:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-cat-over {
+	z-index: 2100;
+}
+
+/* the palette is one press now, not a row of every widget's name */
+.wg-palette-open {
+	font-weight: var(--font-semibold, 600);
+}
+
+/* ── substitutions: one dialog, the list on the left and the rule on the right ─────────── */
+
+:is(.wg-root, .wg-portal) .wg-dialog.wg-sub-dialog {
+	width: min(920px, 100%);
+	max-height: 84vh;
+	padding: 0;
+	gap: 0;
+}
+
+/* CONTEXT: the sidebar block reaches this corner, so the close sits on its head row, not on its border */
+:is(.wg-root, .wg-portal) .wg-dialog.wg-sub-dialog .wg-dialog-close {
+	top: 19px;
+	right: 20px;
+}
+
+.wg-sub-body {
+	display: grid;
+	/* the list sits on the RIGHT, so the editor is the first column and takes the room */
+	grid-template-columns: minmax(0, 1fr) 260px;
+	/* CONTEXT: with nothing in the list the grid collapsed to a strip — the dialog kept its width
+	   and lost its height, which read as a broken window rather than an empty one */
+	min-height: min(520px, 70vh);
+	flex: 1;
+}
+
+/* CONTEXT: the gutter that keeps the kit's sidebar block clear of the window's own edge */
+.wg-sub-side {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	padding: var(--size-4-3, 12px);
+	background: none;
+}
+
+.wg-sub-side-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: none;
+	/* CONTEXT: the dialog's own close sits over this corner, so the head stops short of it */
+	padding: 2px 40px 2px 8px;
+}
+
+.wg-sub-side-head b {
+	font-size: var(--font-ui-medium, 15px);
+	font-weight: var(--font-semibold, 600);
+}
+
+.wg-sub-side-head > :last-child {
+	margin-left: auto;
+}
+
+/* CONTEXT: the sidebar is this dialog's scrolling column, so it takes the height the grid gives it */
+.wg-sub-side .wg-sub-list {
+	flex: 1;
+	min-height: 0;
+}
+
+/* CONTEXT: the block holds its head still; only the rules scroll */
+.wg-sub-rules {
+	min-height: 0;
+	overflow-y: auto;
+}
+
+/* TRADE-OFF: the whole row dims, not a dot — one thing to read instead of two */
+.wg-sub-item.is-disabled {
+	opacity: 0.45;
+}
+
+.wg-sub-trg,
+.wg-sub-draft {
+	font-size: 11px;
+	font-family: var(--font-monospace);
+	color: var(--text-faint);
+}
+
+.wg-sub-draft {
+	font-family: inherit;
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-kit-warning);
+	background: var(--wg-kit-warning-wash);
+	border-radius: 4px;
+	padding: 0 5px;
+}
+
+.wg-sub-editor {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow-y: auto;
+	padding-bottom: 22px;
+}
+
+/* TRADE-OFF: air and a numbered label carry the order, because a plate per stage is the box.
+   The beat between two stages is three times the one inside a stage, so the groups come apart. */
+.wg-sub-step {
+	padding: 0 var(--size-4-4, 16px);
+	margin-top: var(--size-4-6, 24px);
+}
+
+/* TRADE-OFF: sentence case — uppercase over tracking reads heavier than the words it labels,
+   and a third of the words on this screen are labels */
+.wg-sub-step-label {
+	display: flex;
+	align-items: baseline;
+	gap: var(--size-4-2, 8px);
+	margin: 0 0 var(--size-4-2, 8px);
+	font-size: var(--font-ui-small, 13px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+}
+
+/* the number hangs in a column of its own, which is the column the content indents past */
+.wg-sub-step-no {
+	width: var(--size-4-3, 12px);
+	font-family: var(--font-monospace);
+	color: var(--interactive-accent);
+}
+
+/* TRADE-OFF: the content hangs off the number rather than standing behind a rail — the sample
+   in stage 3 already carries one, and two vertical lines down one column compete */
+.wg-sub-step-body {
+	padding-left: calc(var(--size-4-3, 12px) + var(--size-4-2, 8px));
+}
+
+.wg-sub-editor.is-empty {
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	color: var(--text-muted);
+}
+
+/* ONE BAND, TWO GROUPS: what the rule IS on the left — its name, whether it is on, whether it is
+   running — and what you may do to it on the right. Everything in it is the kit's 34px size, so the
+   pieces read as one row and not as four controls that happened to land beside each other. */
+.wg-sub-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 14px 16px 0;
+}
+
+.wg-sub-head .wg-sub-name {
+	max-width: 220px;
+}
+
+/* A BARE SWITCH SAYS NOTHING. The word and the control are one group, at the band's own height. */
+:is(.wg-root, .wg-portal) .wg-sub-power {
+	--wg-kit-card-corner: var(--wg-kit-pill);
+	--wg-kit-card-pad: 0 2px 0 var(--size-4-3, 12px);
+	flex: none;
+	flex-direction: row;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	height: 34px;
+}
+
+.wg-sub-power-word {
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+}
+
+.wg-sub-spacer {
+	flex: 1;
+}
+
+/* the status is a FACT about the rule, so it is the kit's pill — the same shape a size is */
+.wg-sub-state {
+	flex: none;
+}
+
+.wg-sub-words {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--font-ui-medium, 15px);
+	line-height: 1.9;
+}
+
+.wg-sub-trigger {
+	width: 90px;
+	font-family: var(--font-monospace);
+}
+
+.wg-sub-trigger.is-wide {
+	width: 260px;
+}
+
+.wg-sub-pick {
+	gap: 6px;
+}
+
+.wg-sub-caret {
+	transform: rotate(90deg);
+	opacity: 0.6;
+}
+
+.wg-sub-error {
+	margin-top: 10px;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-error);
+}
+
+.wg-sub-empty-list {
+	padding: 10px 12px;
+	font-size: var(--font-ui-small, 13px);
+	color: var(--text-muted);
+}
+
+.wg-sub-sample {
+	display: block;
+	width: 100%;
+	resize: vertical;
+	margin: 0 0 var(--size-4-3, 12px);
+	padding: 0 0 0 10px;
+	border: none;
+	border-left: 2px solid var(--wg-kit-card-edge);
+	border-radius: 0;
+	background: transparent;
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small, 13px);
+	line-height: 1.7;
+	outline: none;
+}
+
+/* CONTEXT: the rail answers the pointer in place of the "you write" that used to stand over it */
+.wg-sub-sample:hover {
+	border-left-color: var(--text-faint);
+}
+
+.wg-sub-sample:focus {
+	border-left-color: var(--interactive-accent);
+	box-shadow: none;
+}
+
+.wg-sub-out {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 10px;
+	border-radius: 10px;
+	background: var(--background-primary);
+}
+
+.wg-sub-plain {
+	margin: 0;
+	font-size: var(--font-ui-small, 13px);
+	color: var(--text-muted);
+}
+
+/* ── the substituted widget, as it sits inside a note ─────────────────────────────────── */
+
+.wg-inline-host {
+	margin: var(--size-4-2, 8px) 0;
+}
+
+/* CONTEXT: the host wears .wg-root to stand inside the kit's scope, and that band is the board's toolbar row */
+.wg-inline-host.wg-root {
+	padding-top: 0;
+}
+
+.wg-inline {
+	position: relative;
+}
+
+.wg-inline-view > * {
+	max-width: 100%;
+}
+
+/* CONTEXT: named through .wg-inline and the tag to outrank the kit's own anchor rule at (0,2,0) */
+.wg-inline > span.wg-inline-at {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 32px;
+	height: 32px;
+	z-index: 1;
+}
+
+/* CONTEXT: hover alone is unreachable by Tab and absent on a finger */
+.wg-inline-shy {
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+
+.wg-inline:hover .wg-inline-shy,
+.wg-inline:focus-within .wg-inline-shy {
+	opacity: 1;
+}
+
+.wg-inline.is-text .wg-inline-shy,
+.wg-inline.is-missing .wg-inline-shy {
+	opacity: 1;
+}
+
+@media (hover: none) {
+	.wg-inline-shy {
+		opacity: 1;
+	}
+}
+
+/* CONTEXT: the fill and the corner come from .wg-kit-icon's ::before — a background here is a square behind it */
+.wg-inline-more {
+	padding: 0;
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: 50%;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.wg-inline-more:hover {
+	color: var(--text-normal);
+}
+
+.wg-inline-settings:disabled {
+	color: var(--text-muted);
+	cursor: default;
+}
+
+.wg-inline-off {
+	margin-left: auto;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+.wg-inline-raw {
+	display: block;
+	padding: 8px 46px 8px 10px;
+	border-left: 2px solid var(--wg-kit-card-edge);
+	color: var(--text-muted);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small, 13px);
+	white-space: pre-wrap;
+}
+
+.wg-inline.is-missing {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+}
+
+.wg-inline-why {
+	flex: none;
+	font-size: 11px;
+	color: var(--wg-kit-warning);
+}
+
+/* the filter over one merged list — never a second look for the card itself */
+:is(.wg-root, .wg-portal) .wg-cat-shown {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go:disabled {
+	opacity: 0.55;
+	cursor: progress;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-lack.is-failure {
+	color: var(--text-error);
+}
+
+/* ── the sidebar, one component at two distances ──────────────────────────────────────── */
+
+/* CONTEXT: measured — the settings panel and the properties plate are both an 8px-padded, edged block */
+.wg-kit-side {
+	--wg-kit-card-fill: var(--background-primary);
+	--wg-kit-card-corner: var(--wg-kit-plate);
+	--wg-kit-card-pad: var(--wg-kit-plate-pad);
+	gap: var(--size-4-4, 16px);
+	box-sizing: border-box;
+	min-width: 0;
+}
+
+/* CONTEXT: a sidebar separates by its cast, never a drawn 1px edge */
+.wg-kit-side.is-lifted {
+	box-shadow: var(--wg-kit-lift);
+}
+
+/* CONTEXT: a sidebar is READ, so glass here is the dense panel fill, never the thin chrome tint */
+.wg-kit-side.is-glass {
+	--wg-kit-card-fill: var(--wg-kit-glass-panel);
+	backdrop-filter: var(--wg-kit-glass-blur);
+	-webkit-backdrop-filter: var(--wg-kit-glass-blur);
+}
+
+.wg-kit-side-group {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.wg-kit-side-label {
+	padding: 0 var(--size-4-4, 16px);
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+}
+
+.wg-kit-side-hint {
+	margin: 0;
+	padding: 0 var(--size-4-4, 16px);
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
+.wg-kit-side-sub {
+	font-size: 11px;
+	font-weight: var(--font-medium, 500);
+	line-height: 1.45;
+	color: var(--text-faint);
+}
+
+/* TRADE-OFF: the row lifts the label's nowrap, not each caller — 40px is the floor, not the ceiling */
+.wg-kit-side-row.is-two .wg-kit-row-label {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	/* CONTEXT: a folder path offers no break point, and one long word pushed the value off the row */
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+
+/* an empty value is a STATE of the row, not a colour each caller picks for itself */
+.wg-kit-side-row.is-unset .wg-kit-side-value,
+:is(.wg-root, .wg-portal) .wg-kit-side-row.is-unset .wg-kit-row-label,
+:is(.wg-root, .wg-portal) .wg-kit-side-row.is-unset .wg-kit-side-icon {
+	color: var(--text-faint);
+}
+
+/* TRADE-OFF: the value shrinks and clips so the label survives — flex: none on it ate the label whole */
+.wg-kit-side-row .wg-kit-side-value {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* TRADE-OFF: a wash on the group, not a lift off it — a floating shape hid the group it sits in */
+.wg-kit-side-row.is-selected::before {
+	background: var(--wg-kit-accent-wash);
+}
+
+/* CONTEXT: an unset row stays faint even when it is the one open, or empty stops reading as empty */
+.wg-kit-side-row.is-selected:not(.is-unset) .wg-kit-row-label {
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+.wg-kit-side-icon {
+	display: grid;
+	place-content: center;
+	flex: none;
+	/* FULL: the icon sits in a tile, the way the settings panel has always drawn it. It is a
+	   step of the ink over the group, never the accent — an accent tile on every row shouted. */
+	width: var(--size-4-6, 24px);
+	height: var(--size-4-6, 24px);
+	border-radius: var(--radius-m, 8px);
+	background: var(--wg-kit-fill-hover);
+	color: var(--text-muted);
+}
+
+/* THE HEIGHT IS THE COMPONENT'S, not a count of what the caller put in the row. A min-height
+   alone cannot deliver that: it cannot shrink a tile, so the two would part company again the
+   moment the number went under what an icon row measures. So the ROW IS BUILT to 40 — a 24px
+   tile between 8 and 8 — and the min-height only lifts a row that carries no tile to meet it. */
+.wg-kit-side-row {
+	min-height: 40px;
+	padding: var(--size-4-2, 8px) var(--size-4-4, 16px);
+}
+
+/* MINIMAL: no tile. At this size a filled square per row is most of the row. */
+.wg-kit-side.is-minimal .wg-kit-side-icon {
+	width: 20px;
+	height: 20px;
+	border-radius: 0;
+	background: none;
+	color: var(--text-faint);
+}
+
+/* MINIMAL: the same list read from closer in. Shorter rows, smaller type, tighter gutters —
+   and an icon on every row, which is what carries the meaning once the room is gone.
+   IT IS A DISTANCE, NOT A DIFFERENT BLOCK: the padding, the corner, the fill and the lift are
+   the same recipe. It used to drop all four because a Plate was wrapped around it — which was
+   the block written a second time by hand, so the wrapper went and this kept the block. */
+.wg-kit-side.is-minimal {
+	gap: var(--size-4-2, 8px);
+}
+
+.wg-kit-side.is-minimal .wg-kit-side-label {
+	padding: 0 var(--size-4-3, 12px);
+	font-size: 11px;
+}
+
+.wg-kit-side.is-minimal .wg-kit-side-hint {
+	padding: 0 var(--size-4-3, 12px);
+	font-size: 11px;
+}
+
+.wg-kit-side.is-minimal .wg-kit-side-row {
+	min-height: 34px;
+	padding: 0 var(--size-4-3, 12px);
+	gap: var(--size-4-2, 8px);
+	font-size: var(--font-ui-small, 14px);
+}
+
+/* CONTEXT: the minimal row has no vertical padding — two lines would sit on its edges */
+.wg-kit-side.is-minimal .wg-kit-side-row.is-two {
+	padding-top: var(--size-4-2, 8px);
+	padding-bottom: var(--size-4-2, 8px);
+}
+
+.wg-kit-card.wg-kit-side-list {
+	--wg-kit-card-fill: var(--wg-kit-glass-group);
+}
+
+/* CONTEXT: a sidebar group separates rows by its own fill, never by a rule between them */
+.wg-kit-side-list .wg-kit-row + .wg-kit-row::after {
+	content: none;
+}
+
+/* the sheet's spring: one overshoot on the way, and none of it when motion is turned down */
+.wg-kit-sheet {
+	transition: height 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	will-change: height;
+}
+
+.wg-kit-sheet.is-dragging {
+	transition: none;
+}
+
+.wg-kit-sheet {
+		transition: none;
+	}
+
+.wg-kit-sheet-grip {
+	flex: none;
+	align-self: center;
+	width: 56px;
+	height: 22px;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: grab;
+	touch-action: none;
+}
+
+.wg-kit-sheet-grip::before {
+	content: "";
+	display: block;
+	width: 44px;
+	height: 5px;
+	margin: 8px auto 0;
+	border-radius: 999px;
+	background: var(--wg-kit-fill-hover);
+}
+
+.wg-kit-sheet.is-dragging .wg-kit-sheet-grip {
+	cursor: grabbing;
 }
 ```

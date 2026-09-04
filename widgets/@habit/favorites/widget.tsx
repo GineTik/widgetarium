@@ -194,7 +194,7 @@ export default createWidget(function HabitFavorites({ settings, habits }: any) {
 	const shown = bars[at];
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-favorites">
+		<WidgetRoot className="habit-favorites">
 			<style>{STYLE}</style>
 			<h3 className="hf-title">Favourite habit</h3>
 

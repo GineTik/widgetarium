@@ -15,6 +15,7 @@ const STYLE = `
 	flex-direction: column;
 	justify-content: space-evenly;
 	overflow: hidden;
+	padding: 0;
 }
 
 .hs-top {
@@ -335,7 +336,7 @@ export default createWidget(function HabitStreak({ days, title, emoji }: StreakP
 	const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
 
 	return (
-		<WidgetRoot background="var(--wg-kit-fill)" className="habit-streak" style={{ "--hs-column": `${columnPx}px` }}>
+		<WidgetRoot className="habit-streak" style={{ "--hs-column": `${columnPx}px` }}>
 			<style>{STYLE}</style>
 			<Summary habitName={habitName} face={face} count={streak.current} />
 			<div className="hs-rail" ref={rail}>

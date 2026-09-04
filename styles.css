@@ -763,17 +763,19 @@ pre:has(> .block-language-widgetarium),
 	border-radius: var(--wg-widget-radius-full);
 }
 
-.wg-widget-root[data-fill="fill"],
-.wg-widget-root[data-fill="shadow"] {
-	background: var(--wg-surface-fill, var(--background-primary));
-}
-
-.wg-widget-root[data-fill="shadow"] {
+.wg-widget-root {
+	background: var(--wg-surface-fill, var(--wg-kit-raise));
 	box-shadow: var(--wg-widget-shadow);
+	padding: var(--wg-widget-pad);
 }
 
 .wg-widget-root[data-fill="none"] {
 	background: none;
+	box-shadow: none;
+}
+
+body.theme-light :is(.wg-root, .wg-portal) {
+	--wg-widget-shadow: none;
 }
 
 /* Rounding is the widget author's call, not a consequence of the background: a surface-less
@@ -783,14 +785,7 @@ pre:has(> .block-language-widgetarium),
 	border-radius: 0;
 }
 
-/* WHO PADS A WIDGET: the widget does — but with this number, not one of its own. Padding
-   only earns its keep when there is a surface for the content to sit inside; with no
-   background the same gap reads as the widget failing to reach its own edges. So the token
-   follows the background the widget ACTUALLY got, and a widget written as
-   `padding: var(--wg-widget-pad)` gains its inset the moment somebody turns a surface on.
-   Anything CSS cannot express reads the same fact through useBackgroundType(). */
-.wg-widget-root[data-fill="fill"],
-.wg-widget-root[data-fill="shadow"] {
+.wg-widget-root {
 	--wg-widget-pad: var(--wg-widget-pad-surface);
 }
 
