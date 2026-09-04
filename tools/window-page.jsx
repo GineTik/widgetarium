@@ -2,6 +2,7 @@ import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
+import { measureGrid } from "../src/paths.js";
 
 const WIDGET = "@probe/board";
 
@@ -41,7 +42,8 @@ if (staged === "phone") mount.style.width = "390px";
 // CONTEXT: a board taller than the screen is where the window used to run off the bottom
 const SPAN = { w: 12, h: staged === "tall" ? 20 : 8 };
 
-let board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: { 20: [{ id: "t1", x: 0, y: 0, w: SPAN.w, h: SPAN.h }] } });
+const declaredColumns = measureGrid(mount.clientWidth).columns;
+let board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: { [declaredColumns]: [{ id: "t1", x: 0, y: 0, w: SPAN.w, h: SPAN.h }] } });
 
 function draw() {
 	render(

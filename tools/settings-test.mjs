@@ -11,12 +11,14 @@ globalThis.ResizeObserver = class {
 	disconnect() {}
 };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
-Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1340 });
+let boardWidthPx = 1340;
+Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => boardWidthPx });
 
 buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
+boardWidthPx = 20 * GRID.cellPx + 19 * GRID.gapPx + 2 * GRID.padPx;
 const { CHROME, barPlacement, dialogBox, freeArea, openingScale, openingPan, clampPan } = await import("./.mjs-cache/settings-fit.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
 const { heldTile, normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
@@ -196,7 +198,7 @@ console.log("\n— and the panel writes what it draws —");
 				registry,
 				host,
 				editing: true,
-				initialWidth: 1340,
+				initialWidth: boardWidthPx,
 				onChange: (next) => {
 					board = next;
 					draw();
@@ -484,7 +486,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 				registry,
 				host,
 				editing: true,
-				initialWidth: 1340,
+				initialWidth: boardWidthPx,
 				onChange: (next) => {
 					board = next;
 					draw();
@@ -680,7 +682,7 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 				registry,
 				host,
 				editing: true,
-				initialWidth: 1340,
+				initialWidth: boardWidthPx,
 				onChange: (next) => {
 					board = next;
 					draw();
@@ -742,7 +744,7 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }, { id: "group", x: 9, y: 0, w: 9, h: 6 }] },
 	});
 	const mount = document.getElementById("host");
-	const draw = () => render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: 1340, onChange: (next) => { board = next; draw(); } }), mount);
+	const draw = () => render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: boardWidthPx, onChange: (next) => { board = next; draw(); } }), mount);
 	draw();
 	const tick = async () => {
 		for (let frame = 0; frame < 3; frame += 1) await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
@@ -797,7 +799,7 @@ console.log("\n— a prop renamed in the manifest still finds the folder the til
 		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] },
 	});
 	const mount = document.getElementById("host");
-	const draw = () => render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: 1340, onChange: (next) => { board = next; draw(); } }), mount);
+	const draw = () => render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: boardWidthPx, onChange: (next) => { board = next; draw(); } }), mount);
 	render(null, mount);
 	draw();
 	check("the gateway reads the folder stored under the old key", [asked.includes(CHOSEN), asked.includes(DECLARED)], [true, false]);

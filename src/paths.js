@@ -32,12 +32,12 @@ export const CLASSES = [
 // so there is always a number to draw against and a multiplier that says how far off it is.
 // A user-set scale later multiplies the same number and nothing else changes.
 export const GRID = {
-	padPx: 16,
+	padPx: 8,
 	minColumns: 3,
 	// CONTEXT: one cell is one medium control (42) plus one gutter (12) — at 66 a control
 	// filled two thirds of its cell and every 1x1 tile read as a button lost inside a hole
 	cellPx: 54,
-	gapPx: 12,
+	gapPx: 8,
 };
 
 // One scale for the whole board, and it only moves when the class does. Within a class
