@@ -191,6 +191,7 @@ function readSurface() {
 	const cellsOf = (row) => (row ? [...row.querySelectorAll(".wg-tree-cell")].map((node) => Math.round(node.getBoundingClientRect().width)) : []);
 	return {
 		drawn: true,
+		boardWidth: Math.round(root.getBoundingClientRect().width),
 		rows: [...root.querySelectorAll(".wg-tree-row")].map((node) => node.querySelectorAll(".wg-tree-cell").length),
 		painted: [...root.querySelectorAll(".wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
 		overlays: root.querySelectorAll(".wg-tree-overlay").length,

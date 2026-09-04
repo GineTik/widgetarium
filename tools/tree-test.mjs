@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, innerOf, moved, partedBy, resized } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, GAP_PX, innerOf, moved, partedBy, resized } = await import("./.mjs-cache/tree.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -77,8 +77,8 @@ const page = `<!doctype html><html><head><meta charset="utf-8">
 	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }
 .wg-host { display: flex; flex-direction: column; gap: 64px; align-items: flex-start; }
-.wg-tree { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-.wg-tree-row { display: flex; gap: 12px; align-items: stretch; }
+.wg-tree { display: flex; flex-direction: column; gap: ${GAP_PX}px; overflow: hidden; }
+.wg-tree-row { display: flex; gap: ${GAP_PX}px; align-items: stretch; }
 .wg-tree-cell { position: relative; min-width: 0; }
 .wg-host, .wg-host * { transition: none !important; animation: none !important; }</style>
 </head><body><div class="wg-host"></div>
@@ -176,13 +176,13 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	check("the tabs and the filter share a row, the kanban keeps its own", seen.rows, [1, 2, 1]);
 	check("every cell painted a widget, the dialog included", seen.painted, 5);
 	check("the dialog is drawn without taking a row", seen.overlays, 1);
-	check("and no row is wider than the board it sits in", seen.widest <= 1600.5, true);
+	check("and no row is wider than the board it sits in", seen.widest <= seen.boardWidth + 0.5, true);
 	check("one grip stands between the two that share a row", seen.across, 1);
 	check("and it is invisible until its own gap is pointed at", seen.gripShown, 0);
 	check("one strip under each row, not one under each tile", seen.along, 3);
-	check("and it runs the whole line", seen.alongWidth, 1600);
+	check("and it runs the whole line", seen.alongWidth, seen.boardWidth);
 	check("no row is left without a strip, capped widgets or not", seen.capped, 0);
-	check("the gap the grip fills is the gap the layout counted", seen.sharedRow[0] + seen.sharedRow[1] + 12, 1600);
+	check("the gap the grip fills is the gap the layout counted", seen.sharedRow[0] + seen.sharedRow[1] + GAP_PX, seen.boardWidth);
 }
 
 console.log("\n— and dragging that grip writes the board once —");
@@ -191,7 +191,7 @@ console.log("\n— and dragging that grip writes the board once —");
 	const after = measured.dragged;
 	check("the filter stops on the floor its manifest names, not where the pointer went", after.sharedRow[1], 320);
 	check("the tabs took exactly what the filter could give", after.sharedRow[0] - before.sharedRow[0], before.sharedRow[1] - 320);
-	check("the row is still as wide as it was", after.sharedRow[0] + after.sharedRow[1] + 12, 1600);
+	check("the row is still as wide as it was", after.sharedRow[0] + after.sharedRow[1] + GAP_PX, before.boardWidth);
 	check("the board was written once, on release", after.writes, 1);
 	check("the ratios in the file changed with it", after.ratios[0] > before.ratios[0], true);
 	check("and the row still weighs what it weighed", Math.round(after.ratios.reduce((sum, one) => sum + one, 0) * 100), Math.round(before.ratios.reduce((sum, one) => sum + one, 0) * 100));
@@ -227,7 +227,7 @@ console.log("\n— dragging the grip moves the boundary, and never past a floor 
 		{ id: "left", ratio: 1, minPx: 200 },
 		{ id: "right", ratio: 1, minPx: 200 },
 	];
-	const inner = innerOf(2, 1212);
+	const inner = innerOf(2, 1200 + GAP_PX);
 	const pxAt = (cells, at) => (inner * cells[at].ratio) / cells.reduce((sum, cell) => sum + cell.ratio, 0);
 
 	check("the row is 1200 wide once the gap is taken", inner, 1200);
@@ -252,7 +252,7 @@ console.log("\n— dragging the grip moves the boundary, and never past a floor 
 		{ id: "b", ratio: 1, minPx: 100 },
 		{ id: "c", ratio: 1, minPx: 100 },
 	];
-	const moved = resized(three, 0, { boundaryPx: 500, inner: innerOf(3, 1224), isFree: true });
+	const moved = resized(three, 0, { boundaryPx: 500, inner: innerOf(3, 1200 + 2 * GAP_PX), isFree: true });
 	check("a neighbour outside the pair does not move", moved[2].ratio, three[2].ratio);
 	check("and the row still weighs what it weighed", Math.round(moved.reduce((sum, cell) => sum + cell.ratio, 0) * 1000), 3000);
 }

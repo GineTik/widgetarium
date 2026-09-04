@@ -803,7 +803,7 @@ function TreeBoard({ board, width, registry, host, refs, cellFor, scale, editing
 
 	return h(
 		"div",
-		{ className: `wg-tree${carried ? " is-carrying" : ""}`, ref: rootRef },
+		{ className: `wg-tree${carried ? " is-carrying" : ""}`, ref: rootRef, style: { "--wg-tree-gap": `${GAP_PX}px` } },
 		overlay.map((tile) =>
 			h(
 				"div",

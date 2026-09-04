@@ -1,4 +1,4 @@
-export const GAP_PX = 12;
+export const GAP_PX = 8;
 export const LADDER = 12;
 export const MIN_HEIGHT_PX = 80;
 
