@@ -3333,9 +3333,9 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 
 .wg-tree-columns {
 	display: flex;
-	align-items: flex-start;
+	align-items: stretch;
 	gap: var(--wg-tree-gap, 8px);
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	width: 100%;
 }
 
