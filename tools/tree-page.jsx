@@ -137,7 +137,7 @@ function surfaceNode() {
 
 const SIDES_WIDTH = 1400;
 
-const sidesBoard = {
+let sidesBoard = {
 	...BOARD,
 	layout: {
 		left: { rows: [[{ id: "boards" }]] },
@@ -158,7 +158,10 @@ function sidesNode() {
 			editing: false,
 			screen: true,
 			initialWidth: SIDES_WIDTH,
-			onChange: () => {},
+			onChange: (next) => {
+				sidesBoard = next;
+				draw();
+			},
 			onToggleEditing: () => {},
 			onWidth: () => {},
 		}),
@@ -197,6 +200,48 @@ function widenSidebar(byX) {
 	const held = readSides();
 	firePointer("pointerup", { x: from.x + byX, y: from.y }, window);
 	return held;
+}
+
+async function squashRow(byY) {
+	const along = document.querySelector(".wg-surface-probe .wg-tree-handle.is-along");
+	if (!along) return { failed: "no strip to drag" };
+	const rowOf = () => Math.round(document.querySelector(".wg-surface-probe .wg-tree-row").getBoundingClientRect().height);
+	const box = along.getBoundingClientRect();
+	const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+	firePointer("pointerdown", from, along);
+	firePointer("pointermove", { x: from.x, y: from.y + byY }, window);
+	await settled();
+	const held = rowOf();
+	firePointer("pointerup", { x: from.x, y: from.y + byY }, window);
+	return { held, settled: rowOf() };
+}
+
+function pinchSidebar(byX) {
+	const edge = document.querySelector(".wg-sides-probe .wg-tree-handle.is-edge");
+	if (!edge) return { failed: "no edge to drag" };
+	const leftOf = () => Math.round(document.querySelector(".wg-sides-probe .wg-tree-region.is-left").getBoundingClientRect().width);
+	const box = edge.getBoundingClientRect();
+	const from = { x: box.left + box.width / 2, y: box.top + 40 };
+	firePointer("pointerdown", from, edge);
+	firePointer("pointermove", { x: from.x + byX, y: from.y }, window);
+	const held = leftOf();
+	firePointer("pointerup", { x: from.x + byX, y: from.y }, window);
+	return { held, settled: leftOf() };
+}
+
+function easeOf(className) {
+	const root = document.createElement("div");
+	root.className = "wg-root";
+	const probe = root.appendChild(document.createElement("div"));
+	probe.className = className;
+	document.body.appendChild(root);
+	const loose = getComputedStyle(probe);
+	const eased = { property: loose.transitionProperty, loose: loose.transitionDuration };
+	document.body.classList.add("wg-tree-dragging");
+	eased.held = getComputedStyle(probe).transitionDuration;
+	document.body.classList.remove("wg-tree-dragging");
+	root.remove();
+	return eased;
 }
 
 function dragGrip(grip, byX, byY) {
@@ -289,7 +334,12 @@ async function report() {
 		surfaceEditing = true;
 		draw();
 		const carried = await carryTile();
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides: readSides(), widened: widenSidebar(100), dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		const squashed = { first: await squashRow(-800), again: await squashRow(-800) };
+		const eases = { row: easeOf("wg-tree-row"), cell: easeOf("wg-tree-cell"), region: easeOf("wg-tree-region") };
+		const sides = readSides();
+		const widened = widenSidebar(100);
+		const pinched = pinchSidebar(-400);
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, squashed, eases, dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

@@ -8,9 +8,11 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, columnsOf, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_SIDEBAR_PX, moved, partedBy, resized, SIDEBAR_PX, widenedRegion } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, columnsOf, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, partedBy, resized, restacked, SIDEBAR_PX, widenedRegion } = await import("./.mjs-cache/tree.mjs");
+const { GIVE_PX } = await import("./.mjs-cache/give.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
+const TABS_CEILING_PX = JSON.parse(readFileSync("widgets/@core/editable-tabs/manifest.json", "utf8")).tallestPx;
 const FENCE = String.fromCharCode(96, 96, 96);
 
 function boardOf(at) {
@@ -194,13 +196,14 @@ console.log("\n— and dragging that grip writes the board once —");
 	check("and the row still weighs what it weighed", Math.round(after.ratios.reduce((sum, one) => sum + one, 0) * 100), Math.round(before.ratios.reduce((sum, one) => sum + one, 0) * 100));
 }
 
-console.log("\n— and pulling the strip down makes the row taller, not the widget —");
+console.log("\n— and pulling the strip down stops where the widget's own ceiling is —");
 {
 	const before = measured.dragged;
 	const after = measured.stretched;
-	check("the row took the whole pull", after.firstRowHeight - before.firstRowHeight, 200);
-	check("the widget inside stayed on its ceiling", after.firstCellHeight, 96);
-	check("before the pull it sat at its own natural height", before.firstCellHeight, 58);
+	check("a 200px pull moved the row nowhere", after.firstRowHeight - before.firstRowHeight, 0);
+	check("because the row already stood on the tabs' ceiling", after.firstRowHeight, TABS_CEILING_PX);
+	check("and the widget inside is still on it", after.firstCellHeight, TABS_CEILING_PX);
+	check("as it was before the pull", before.firstCellHeight, TABS_CEILING_PX);
 	check("the board was written a second time", after.writes, 2);
 }
 
@@ -252,6 +255,110 @@ console.log("\n— dragging the grip moves the boundary, and never past a floor 
 	const moved = resized(three, 0, { boundaryPx: 500, inner: innerOf(3, 1200 + 2 * GAP_PX), isFree: true });
 	check("a neighbour outside the pair does not move", moved[2].ratio, three[2].ratio);
 	check("and the row still weighs what it weighed", Math.round(moved.reduce((sum, cell) => sum + cell.ratio, 0) * 1000), 3000);
+}
+
+console.log("\n— past a limit the boundary keeps giving, less and less, and lands on the limit —");
+{
+	const row = [
+		{ id: "left", ratio: 1, minPx: 200 },
+		{ id: "right", ratio: 1, minPx: 200 },
+	];
+	const inner = innerOf(2, 1200 + GAP_PX);
+	const pxAt = (cells, at) => (inner * cells[at].ratio) / cells.reduce((sum, cell) => sum + cell.ratio, 0);
+	const heldAt = (px, give) => pxAt(resized(row, 0, { boundaryPx: px, inner, isFree: true, give }), 0);
+	const givenBy = (past) => 200 - heldAt(200 - past, true);
+
+	check("held 100 past its floor the cell is under it", heldAt(100, true) < 200, true);
+	check("but never by more than the give", heldAt(100, true) > 200 - GIVE_PX, true);
+	check("the second hundred of the pull buys less than the first", givenBy(200) - givenBy(100) < givenBy(100) - givenBy(0), true);
+	check("and the fourth less than the second", givenBy(400) - givenBy(300) < givenBy(200) - givenBy(100), true);
+	check("pulled to the end of the world it stops one give short of nowhere", Math.round(givenBy(100000)), GIVE_PX);
+	check("released, the cell lands on the floor itself", Math.round(heldAt(100, false)), 200);
+
+	check("pushed past the neighbour's floor it gives the other way", heldAt(1300, true) > 1000, true);
+	check("by no more than the give either", heldAt(1300, true) < 1000 + GIVE_PX, true);
+	check("and released it lands on the neighbour's floor", Math.round(heldAt(1300, false)), 1000);
+
+	const nameless = [
+		{ id: "left", ratio: 1, minPx: 0 },
+		{ id: "right", ratio: 1, minPx: 0 },
+	];
+	const emptied = resized(nameless, 0, { boundaryPx: 1400, inner, isFree: true, give: true });
+	check("a cell that names no floor is still never given away past nothing", pxAt(emptied, 1) >= 0, true);
+}
+
+console.log("\n— a row is as tall as the widgets in it allow, and no taller —");
+{
+	const capped = [{ id: "a", shortestPx: 84, tallestPx: 84 }];
+	check("pulled past the ceiling it lands on the ceiling", restacked(capped, 900)[0].height, 84);
+	check("squeezed under the floor it lands on the floor", restacked(capped, 10)[0].height, 84);
+	check("held past the ceiling it still gives", restacked(capped, 900, true)[0].height > 84, true);
+	check("by no more than the give", restacked(capped, 900, true)[0].height - 84 <= GIVE_PX, true);
+
+	const open = [{ id: "a", tallestPx: 84 }, { id: "b" }];
+	check("one widget that names no ceiling lifts the ceiling off the row", restacked(open, 900)[0].height, 900);
+
+	const both = [{ id: "a", tallestPx: 84 }, { id: "b", tallestPx: 160 }];
+	check("where every widget names one, the tallest of them is the row's", restacked(both, 900)[0].height, 160);
+
+	const upside = [{ id: "a", shortestPx: 200, tallestPx: 84 }];
+	check("a floor above a ceiling is still a floor", restacked(upside, 10)[0].height, 200);
+
+	const streak = JSON.parse(readFileSync("widgets/@habit/streak/manifest.json", "utf8"));
+	check("the habit streak pins itself to one height", [streak.shortestPx, streak.tallestPx], [110, 110]);
+}
+
+console.log("\n— and a row squeezed under its own floor answers the same way —");
+{
+	const row = [{ id: "one", ratio: 1 }];
+	check("squeezed under the floor it goes under it", restacked(row, 10, true)[0].height < MIN_HEIGHT_PX, true);
+	check("but never by more than the give", restacked(row, 10, true)[0].height > MIN_HEIGHT_PX - GIVE_PX, true);
+	check("released it lands on the floor", restacked(row, 10, false)[0].height, MIN_HEIGHT_PX);
+	check("and pulled taller it meets no ceiling at all", restacked(row, 900, true)[0].height, 900);
+}
+
+console.log("\n— and so does a sidebar at either end of its travel —");
+{
+	const rows = [[{ id: "x", ratio: 1 }]];
+	const three = { left: { rows }, main: { rows }, right: { rows } };
+	const widest = 1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX;
+	const heldAt = (px, give) => widenedRegion(three, "left", px, 1600, 8, give);
+
+	check("dragged under its minimum it goes under it", heldAt(40, true) < MIN_SIDEBAR_PX, true);
+	check("but never by more than the give", heldAt(40, true) > MIN_SIDEBAR_PX - GIVE_PX, true);
+	check("dragged past where the main breaks it goes past it", heldAt(2000, true) > widest, true);
+	check("by no more than the give either", heldAt(2000, true) - widest <= GIVE_PX, true);
+	check("released, either end lands on the limit", [heldAt(40, false), heldAt(2000, false)], [MIN_SIDEBAR_PX, widest]);
+	check("and between them the give changes nothing", heldAt(360, true), heldAt(360, false));
+}
+
+console.log("\n— and a row squeezed at the strip does the same on the real board —");
+{
+	const seen = measured.squashed;
+	check("the probe found the strip", seen.first.failed ?? null, null);
+	check("squeezed 800px under the floor the row is drawn under it", seen.first.held < MIN_HEIGHT_PX, true);
+	check("but never by more than the give", seen.first.held > MIN_HEIGHT_PX - GIVE_PX, true);
+	check("and on release it springs back to the floor", seen.first.settled, MIN_HEIGHT_PX);
+	check("squeezed again from the floor it gives again", seen.again.held < MIN_HEIGHT_PX, true);
+	check("and springs back a second time, with no new height to write", seen.again.settled, MIN_HEIGHT_PX);
+}
+
+console.log("\n— and the plugin's own sidebar squashes and springs back —");
+{
+	const seen = measured.pinched;
+	check("the probe found the edge", seen.failed ?? null, null);
+	check("dragged 400px under its minimum it is drawn under it", seen.held < MIN_SIDEBAR_PX, true);
+	check("but never by more than the give", seen.held > MIN_SIDEBAR_PX - GIVE_PX, true);
+	check("and on release it sits on the minimum exactly", seen.settled, MIN_SIDEBAR_PX);
+}
+
+console.log("\n— and the give is handed back with a transition, never during the drag —");
+{
+	const seen = measured.eases;
+	check("a row eases its height", [seen.row.property, seen.row.loose], ["height", "0.2s"]);
+	check("a cell eases its share of the row", [seen.cell.property, seen.cell.loose], ["flex-grow", "0.2s"]);
+	check("a region eases its width", [seen.region.property, seen.region.loose], ["flex-basis", "0.2s"]);
+	check("and none of the three eases while the pointer is down", [seen.row.held, seen.cell.held, seen.region.held], ["0s", "0s", "0s"]);
 }
 
 console.log("\n— in reading mode a press on a tile carries nothing —");
