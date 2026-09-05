@@ -16,7 +16,8 @@ export function buildMirror() {
 	return "./.mjs-cache";
 }
 
-const OBSIDIAN_STUB = `export class TAbstractFile {}
+const OBSIDIAN_STUB = `import { parse, stringify } from "yaml";
+export class TAbstractFile {}
 export class TFile extends TAbstractFile {}
 export class TFolder extends TAbstractFile {}
 export class Notice { constructor(message) { this.message = message; } }
@@ -63,8 +64,8 @@ export const MarkdownRenderer = {
 // installer its own doors, so nothing here should ever actually be reached
 export const setIcon = (parent, iconId) => { parent.dataset.icon = iconId; };
 export const requestUrl = () => { throw new Error("requestUrl is not stubbed"); };
-export const parseYaml = () => { throw new Error("parseYaml is not stubbed"); };
-export const stringifyYaml = () => { throw new Error("stringifyYaml is not stubbed"); };
+export const parseYaml = (text) => parse(text);
+export const stringifyYaml = (value) => stringify(value);
 `;
 
 function mirrored(source, isTs, toStub) {

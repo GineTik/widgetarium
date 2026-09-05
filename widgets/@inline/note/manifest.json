@@ -1,5 +1,6 @@
 {
 	"id": "@inline/note",
+	"api": 1,
 	"title": "Note",
 	"description": "A short block of text pinned in the middle of a note, marked in the accent colour.",
 	"keywords": [

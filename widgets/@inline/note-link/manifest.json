@@ -1,5 +1,6 @@
 {
 	"id": "@inline/note-link",
+	"api": 1,
 	"title": "Note link",
 	"description": "A rounded chip in the text that opens another note in the vault.",
 	"keywords": [

@@ -1,5 +1,6 @@
 {
 	"id": "@inline/reminder",
+	"api": 1,
 	"title": "Reminder",
 	"description": "A line of text with a tick beside it, for something that still has to be done.",
 	"keywords": [

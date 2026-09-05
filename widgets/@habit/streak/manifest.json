@@ -1,5 +1,6 @@
 {
 	"id": "@habit/streak",
+	"api": 1,
 	"title": "Habit streak",
 	"description": "The days around today as a run of rings, each one a press away from kept.",
 	"keywords": [

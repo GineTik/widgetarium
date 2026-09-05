@@ -1,5 +1,6 @@
 {
 	"id": "@task/task-card",
+	"api": 1,
 	"title": "Task card",
 	"description": "One task as a card: title, tags, priority, progress, deadline and who is on it.",
 	"keywords": [

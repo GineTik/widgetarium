@@ -1,5 +1,6 @@
 {
 	"id": "@habit/grid",
+	"api": 1,
 	"title": "Habit grid",
 	"description": "Every habit as a row of days you press to keep, with its streak beside it.",
 	"keywords": [

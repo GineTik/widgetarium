@@ -51,6 +51,13 @@ with `useData`. One level up gives a correct declared value and a stale screen.
 CodeMirror 6 editor extension. Reading view also caches rendered sections and unloads off-screen ones.
 Sources, quotes and the ranked causes are in `docs/research/post-processors-and-live-preview.md`.
 
+**Three versions, and only one of them is semver.** The plugin's `manifest.json` version is
+Obsidian's business. The two that cost are `v:` stamped into every block written, and `api:` in a
+widget manifest against the range the plugin holds. Both read a missing number as 1, and both
+REFUSE rather than guess: a block from a newer plugin is not mounted and therefore never written
+back, and a widget outside the range does not mount, install or draw. The numbers and the rule for
+raising each are in `docs/versioning.md`; they live in `src/version.js`.
+
 ## Verification
 
 **Falsification is the rule: a check that cannot be broken on purpose proves nothing.** For every

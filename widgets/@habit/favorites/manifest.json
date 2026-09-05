@@ -1,5 +1,6 @@
 {
 	"id": "@habit/favorites",
+	"api": 1,
 	"title": "Favorite habits",
 	"description": "Every habit as a column, the strongest one speaking for itself.",
 	"keywords": [

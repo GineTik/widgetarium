@@ -1,5 +1,6 @@
 {
 	"id": "@habit/habit-row",
+	"api": 1,
 	"title": "Habit row",
 	"description": "One habit as a name, its streak and a run of days you can press.",
 	"keywords": ["habit", "row", "streak", "dots", "days", "line", "entry", "tick", "check", "slot", "list"],

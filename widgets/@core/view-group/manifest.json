@@ -1,5 +1,6 @@
 {
 	"id": "@core/view-group",
+	"api": 1,
 	"title": "View group",
 	"description": "Holds several widgets in one place and draws only the one the view tabs select.",
 	"keywords": [

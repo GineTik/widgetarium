@@ -1,5 +1,6 @@
 {
 	"id": "@core/editable-tabs",
+	"api": 1,
 	"was": "@task/board-tabs",
 	"title": "Editable tabs",
 	"description": "A row of tabs you can rename, add to and archive; every widget under it reads the one you pick.",

@@ -18,6 +18,7 @@ import { normalizeRules, activeRules, ruleBlock } from "./substitution.js";
 import { substituteIn } from "./inline-render.js";
 import { createViewChrome } from "./view-chrome.js";
 import { foldableIn, isFolded, toggledFold } from "./tree.js";
+import { blockRefusal } from "./version.js";
 
 
 // a run of edits settles into one write; longer and an edit could be lost to a crash
@@ -25,7 +26,7 @@ const WRITE_SETTLE_MS = 400;
 const SCREEN_KEY = "widgetarium";
 
 // CONTEXT: an offer that cannot be drawn is a name; one that can is the widget itself
-function drawable(entry) {
+export function drawable(entry) {
 	if (!entry?.code) return entry;
 	try {
 		return { ...entry, component: buildWidget(entry) };
@@ -518,7 +519,13 @@ export default class WidgetariumPlugin extends Plugin {
 	renderBlock(source, element, context) {
 		let board;
 		try {
-			board = normalizeBoard(parseYaml(source) ?? [], (id) => this.registry.resolveId(id));
+			const parsed = parseYaml(source) ?? [];
+			const refusal = blockRefusal(parsed);
+			if (refusal) {
+				element.createEl("pre", { text: refusal });
+				return;
+			}
+			board = normalizeBoard(parsed, (id) => this.registry.resolveId(id));
 		} catch (failure) {
 			element.createEl("pre", { text: `Widgetarium: cannot read YAML — ${failure}` });
 			return;

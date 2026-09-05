@@ -1,5 +1,6 @@
 {
 	"id": "@task/kanban-board",
+	"api": 1,
 	"title": "Kanban board",
 	"description": "Draws tasks as cards in columns and moves them between columns by drag.",
 	"keywords": [

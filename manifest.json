@@ -1,7 +1,7 @@
 {
 	"id": "widgetarium",
 	"name": "Widgetarium",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"minAppVersion": "1.4.0",
 	"description": "Adaptive widget tiles on a dot grid: build working screens from your own notes.",
 	"author": "ds",

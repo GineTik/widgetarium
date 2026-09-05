@@ -1,5 +1,6 @@
 {
 	"id": "@habit/chart",
+	"api": 1,
 	"title": "Chart",
 	"description": "One widget, every chart: the same log drawn as an area, bars, a line or a pie.",
 	"keywords": [

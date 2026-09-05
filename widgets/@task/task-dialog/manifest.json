@@ -1,5 +1,6 @@
 {
 	"id": "@task/task-dialog",
+	"api": 1,
 	"title": "Task dialog",
 	"description": "Opens the selected task full size, to edit its fields, dates and notes.",
 	"keywords": [

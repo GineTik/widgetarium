@@ -1,5 +1,6 @@
 {
 	"id": "@core/filter-panel",
+	"api": 1,
 	"title": "Filter",
 	"description": "Narrows every widget bound to it by a task property, from one row of dropdowns.",
 	"keywords": [

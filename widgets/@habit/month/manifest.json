@@ -1,5 +1,6 @@
 {
 	"id": "@habit/month",
+	"api": 1,
 	"title": "Habit month",
 	"description": "The month as a grid of rings, each day a press away from kept.",
 	"keywords": [

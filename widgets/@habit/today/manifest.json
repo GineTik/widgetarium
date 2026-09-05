@@ -1,5 +1,6 @@
 {
 	"id": "@habit/today",
+	"api": 1,
 	"title": "Today",
 	"description": "Every habit with a mark for today, and the week behind it.",
 	"keywords": [

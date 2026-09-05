@@ -1,5 +1,6 @@
 {
 	"id": "@task/view-tabs",
+	"api": 1,
 	"title": "View tabs",
 	"description": "A row of tabs that picks which view a view group draws.",
 	"keywords": [

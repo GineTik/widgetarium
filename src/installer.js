@@ -2,6 +2,7 @@ import { ROOT, WIDGETS_DIR } from "./paths.js";
 import { readIndex } from "./engine/catalogue-index.js";
 import { readLock, lockEntry, withEntry, withoutEntry } from "./engine/widget-lock.js";
 import { commitUrl, folderFor, rawUrl, readRepository, treeUrl } from "./engine/github.js";
+import { apiRefusal } from "./version.js";
 
 export const INDEX_PATH = `${ROOT}/catalogue.json`;
 export const LOCK_PATH = `${ROOT}/widgets.lock.json`;
@@ -97,6 +98,8 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		const folder = folderFor(WIDGETS_DIR, manifest.id);
 		if (!folder) return refuse(`"${manifest.id}" is not a scoped widget id`);
 		if (!disk) return refuse("this build cannot read a folder outside the vault");
+		const refusal = apiRefusal(manifest);
+		if (refusal) return refuse(refusal);
 
 		const files = {};
 		for (const name of WIDGET_FILES) {
@@ -179,6 +182,8 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 				return refuse(`${NEEDED} did not come back as JSON`);
 			}
 			if (served.id !== manifest.id) return refuse(`the repository served "${served.id}" under "${manifest.id}"`);
+			const refusal = apiRefusal(served);
+			if (refusal) return refuse(refusal);
 
 			// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
 			await adapter.mkdir(scopeOf(folder));

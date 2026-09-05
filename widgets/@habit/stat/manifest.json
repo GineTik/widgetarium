@@ -1,5 +1,6 @@
 {
 	"id": "@habit/stat",
+	"api": 1,
 	"title": "Habit stat",
 	"description": "One number about a habit: its streak, its best, how often you keep it.",
 	"keywords": [

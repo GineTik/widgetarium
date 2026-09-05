@@ -3,6 +3,7 @@ import * as react from "react";
 import * as reactDom from "react-dom";
 import { transform } from "sucrase";
 import { widgetarium, kitModule, emojiModule } from "./api.js";
+import { apiRefusal } from "./version.js";
 import { WIDGETS_DIR } from "./paths.js";
 
 const BASE_SCOPE = {
@@ -58,7 +59,10 @@ function runModule(source, filePath, libs) {
 }
 
 // CONTEXT: a catalogue card draws the widget itself, so code nobody installed still has to run
-export function buildWidget({ code, path, lib, libPath, scope }) {
+export function buildWidget({ manifest, code, path, lib, libPath, scope }) {
+	const refusal = apiRefusal(manifest);
+	if (refusal) throw new Error(refusal);
+
 	const libs = new Map();
 	if (lib && scope) libs.set(`${scope}/lib`, runModule(lib, libPath, libs));
 	const shell = runModule(code, path, libs);
@@ -184,6 +188,14 @@ export class WidgetRegistry {
 
 		try {
 			const manifest = JSON.parse(await adapter.read(manifestPath));
+			for (const id of [].concat(manifest.was ?? [])) this.renamed.set(id, manifest.id);
+
+			const refusal = apiRefusal(manifest);
+			if (refusal) {
+				this.widgets.set(manifest.id, { manifest, error: new Error(refusal), folder });
+				return;
+			}
+
 			const shell = runModule(await adapter.read(codePath), codePath, this.libs);
 
 			const exported = shell.default ?? shell;
@@ -192,7 +204,6 @@ export class WidgetRegistry {
 			}
 
 			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder });
-			for (const id of [].concat(manifest.was ?? [])) this.renamed.set(id, manifest.id);
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
 			const id = folder.slice(WIDGETS_DIR.length + 1);

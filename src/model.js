@@ -1,4 +1,5 @@
 import { arrange, clampPlace } from "./layout.js";
+import { BLOCK_FORMAT } from "./version.js";
 
 // The pre-columns format named its layouts after device classes, and each name carried a
 // fixed column count, so the move to numeric keys is 1:1 and loses nothing. These are
@@ -366,6 +367,7 @@ export function serializeBoard(board) {
 		}
 	}
 	return {
+		v: BLOCK_FORMAT,
 		tiles: board.tiles.map(serializeTile),
 		// only authored counts reach the file: a derived layout is one render's worth of
 		// arithmetic, and writing it would mark a width the user never touched as theirs

@@ -1,5 +1,6 @@
 {
 	"id": "@habit/heatmap",
+	"api": 1,
 	"title": "Heatmap",
 	"description": "A year of squares: every day you kept a habit, in one glance.",
 	"keywords": [

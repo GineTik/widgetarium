@@ -1,5 +1,6 @@
 {
 	"id": "@task/archived-columns",
+	"api": 1,
 	"title": "Archived columns",
 	"description": "Lists the columns a board has put away, with the tasks still sitting in them.",
 	"keywords": [

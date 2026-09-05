@@ -1,5 +1,6 @@
 {
 	"id": "@inline/code-block",
+	"api": 1,
 	"title": "Code block",
 	"description": "Shows a file from the vault as code inside a note, a page of lines at a time.",
 	"keywords": [
