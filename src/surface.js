@@ -627,6 +627,7 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 	const tileOf = (id) => board.tiles.find((tile) => tile.id === id);
 	const floorOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.stackBelowPx ?? 0;
 	const capOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.tallestPx ?? 0;
+	const shortestOf = (id) => registry.get(tileOf(id)?.widget)?.manifest?.shortestPx ?? 0;
 
 	const startDrag = (event, at, read) => {
 		event.preventDefault();
@@ -742,7 +743,8 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 	};
 
 	const withFloors = (row) => row.map((cell) => ({ ...cell, minPx: floorOf(cell.id) }));
-	const bare = (row) => row.map(({ minPx, ...cell }) => cell);
+	const withHeights = (row) => row.map((cell) => ({ ...cell, shortestPx: shortestOf(cell.id), tallestPx: capOf(cell.id) }));
+	const bare = (row) => row.map(({ minPx, shortestPx, tallestPx, ...cell }) => cell);
 
 	const grabRatio = (at, boundary) => (event) =>
 		startDrag(event, at, (moved, box, down, give) => {
@@ -752,7 +754,7 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 			return bare(resized(withFloors(rows[at]), boundary, { boundaryPx: moved.clientX - box.left - grabbed, inner, isFree: moved.shiftKey, give }));
 		});
 
-	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down, give) => restacked(rows[at], box.height + moved.clientY - down.clientY, give));
+	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down, give) => bare(restacked(withHeights(rows[at]), box.height + moved.clientY - down.clientY, give)));
 
 	const shared = useMemo(
 		() => ({

@@ -389,6 +389,8 @@ const MOUNT_ASK = `(async () => {
 const STREAK_RAIL_PX = 836;
 const STREAK_SLACK_PX = 830;
 const STREAK_TILE_PX = 120;
+const STREAK_HEIGHT_PX = JSON.parse(readFileSync("widgets/@habit/streak/manifest.json", "utf8")).tallestPx;
+const STREAK_NATURAL_PX = 84;
 
 const STREAK_PROBE = `
 import { createElement as h } from "react";
@@ -451,7 +453,11 @@ const STREAK_ASK = `(async () => {
 	const rings = [...document.querySelectorAll(".hs-ring")];
 	const firstRing = rings[0].getBoundingClientRect();
 	const lastRing = rings[rings.length - 1].getBoundingClientRect();
+	tile.style.height = "auto";
+	await settle(80);
+	const naturalPx = Math.round(document.querySelector(".habit-streak").getBoundingClientRect().height);
 	return {
+		naturalPx,
 		tight,
 		slack,
 		titleSaid: document.querySelector(".hs-title span").textContent,
@@ -526,6 +532,8 @@ for (const theme of ["light", "dark"]) {
 	check("where a day is left over, the columns take the room instead of a margin", streak.slack.widestColumnPx > 44, true);
 	check("and they still fill the rail exactly", [streak.slack.columns, streak.slack.railWidthPx], [18, STREAK_SLACK_PX]);
 	check("the habit is named over the rail", [streak.titleSaid, streak.titleAboveRail], ["Meditation", true]);
+	check("the streak draws itself in one fixed height", streak.naturalPx, STREAK_NATURAL_PX);
+	check("and the tile it pins itself to has room for that", STREAK_HEIGHT_PX >= streak.naturalPx, true);
 	check("beside a drawn emoji, not a typed one", streak.emojiDrawn, true);
 	console.log(`    gaps above/between/below: ${streak.abovePx} / ${streak.betweenPx} / ${streak.belowPx} in a ${streak.tilePx}px tile; name at ${streak.titleStartsAtPx} vs ring at ${streak.firstRingStartsAtPx}; count at ${streak.countEndsAtPx} vs ring at ${streak.lastRingEndsAtPx}`);
 	check("the tile is drawn at its own two-cell height", streak.tilePx, 120);

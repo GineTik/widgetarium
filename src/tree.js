@@ -52,8 +52,18 @@ export function resized(row, at, { boundaryPx, inner, isFree, give }) {
 }
 
 export function restacked(row, wantedPx, give) {
-	const tall = Math.round(heldBetween(wantedPx, MIN_HEIGHT_PX, Infinity, give));
+	const floor = shortestOf(row);
+	const tall = Math.round(heldBetween(wantedPx, floor, Math.max(floor, tallestOfManifests(row)), give));
 	return row.map((cell) => ({ ...cell, height: tall }));
+}
+
+function shortestOf(row) {
+	return row.reduce((most, cell) => Math.max(most, cell.shortestPx ?? 0), MIN_HEIGHT_PX);
+}
+
+function tallestOfManifests(row) {
+	if (row.some((cell) => !cell.tallestPx)) return Infinity;
+	return row.reduce((most, cell) => Math.max(most, cell.tallestPx), 0);
 }
 
 export function tallestOf(row) {
