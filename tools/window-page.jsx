@@ -42,8 +42,13 @@ if (staged === "phone") mount.style.width = "390px";
 // CONTEXT: a board taller than the screen is where the window used to run off the bottom
 const SPAN = { w: 12, h: staged === "tall" ? 20 : 8 };
 
-const declaredColumns = measureGrid(mount.clientWidth).columns;
-let board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: { [declaredColumns]: [{ id: "t1", x: 0, y: 0, w: SPAN.w, h: SPAN.h }] } });
+let board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: {} });
+
+function keyLayoutTo(width) {
+	const columns = measureGrid(width).columns;
+	if (board.layouts[columns]) return;
+	board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: { [columns]: [{ id: "t1", x: 0, y: 0, w: SPAN.w, h: SPAN.h }] } });
+}
 
 function draw() {
 	render(
@@ -53,6 +58,11 @@ function draw() {
 			host,
 			editing: true,
 			initialWidth: mount.clientWidth,
+			onWidth: (width) => {
+				const had = Object.keys(board.layouts).length;
+				keyLayoutTo(width);
+				if (Object.keys(board.layouts).length !== had) draw();
+			},
 			onChange: (next) => {
 				board = next;
 				draw();
