@@ -3201,11 +3201,13 @@ body.theme-light :is(.wg-root, .wg-portal) {
 	display: flex;
 	align-items: stretch;
 	min-width: 0;
+	transition: height var(--wg-quick) var(--wg-ease);
 }
 
 .wg-tree-cell {
 	position: relative;
 	min-width: 0;
+	transition: flex-grow var(--wg-quick) var(--wg-ease);
 	overflow: hidden;
 }
 
@@ -3278,6 +3280,12 @@ body.wg-tree-dragging * {
 
 body.wg-tree-dragging .wg-tree-cell { pointer-events: none; }
 
+body.wg-tree-dragging .wg-tree-row,
+body.wg-tree-dragging .wg-tree-cell,
+body.wg-tree-dragging .wg-tree-region {
+	transition: none;
+}
+
 .wg-tree-band {
 	display: flex;
 	flex-direction: column;
@@ -3349,6 +3357,15 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	box-sizing: border-box;
 	min-width: 0;
 	padding: 8px;
+	transition: flex-basis var(--wg-quick) var(--wg-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-tree-row,
+	.wg-tree-cell,
+	.wg-tree-region {
+		transition: none;
+	}
 }
 
 .wg-tree-handle.is-edge {
