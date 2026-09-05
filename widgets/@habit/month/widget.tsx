@@ -108,24 +108,33 @@ const STYLE = `
 	width: 100%;
 	height: var(--hm-seat);
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	place-items: center;
 }
 
-.hm-seat.is-run {
+.hm-run {
+	grid-area: 1 / 1;
+	justify-self: stretch;
+	align-self: center;
+	height: calc(var(--hm-ring) + 2px);
 	background: var(--wg-kit-accent-wash);
 }
 
-.hm-seat.is-run-start {
+.hm-run.is-run-start {
+	margin-inline-start: calc(50% - var(--hm-ring) / 2 - 1px);
 	border-start-start-radius: 999px;
 	border-end-start-radius: 999px;
 }
 
-.hm-seat.is-run-end {
+.hm-run.is-run-end {
+	margin-inline-end: calc(50% - var(--hm-ring) / 2 - 1px);
 	border-start-end-radius: 999px;
 	border-end-end-radius: 999px;
 }
 
 .hm-ring {
+	grid-area: 1 / 1;
+	box-sizing: border-box;
 	width: var(--hm-ring);
 	height: var(--hm-ring);
 	display: grid;
@@ -180,7 +189,7 @@ type MonthDay = {
 
 type DayCell = MonthDay & {
 	kept: boolean;
-	seat: string;
+	run: string;
 	ring: string;
 	isAhead: boolean;
 	canPress: boolean;
@@ -218,11 +227,11 @@ function sizesFor(ring: number) {
 	};
 }
 
-function seatClass(kept: boolean[], at: number) {
-	if (!kept[at]) return "hm-seat";
+function runClass(kept: boolean[], at: number) {
+	if (!kept[at]) return "";
 	const opens = at % ACROSS !== 0 && kept[at - 1] ? "" : " is-run-start";
 	const closes = at % ACROSS !== ACROSS - 1 && kept[at + 1] ? "" : " is-run-end";
-	return `hm-seat is-run${opens}${closes}`;
+	return `hm-run${opens}${closes}`;
 }
 
 function ringClass(day: string, kept: boolean, today: string) {
@@ -235,7 +244,7 @@ function cellsOver(days: MonthDay[], keptDays: Set<string>, today: string, canWr
 	return days.map((each, at) => ({
 		...each,
 		kept: kept[at],
-		seat: seatClass(kept, at),
+		run: runClass(kept, at),
 		ring: ringClass(each.day, kept[at], today),
 		isAhead: each.day > today,
 		canPress: canWrite && each.day <= today,
@@ -273,7 +282,8 @@ function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSize: num
 			onClick={onPress}
 		>
 			<span className="hm-number">{cell.dayOfMonth}</span>
-			<span className={cell.seat}>
+			<span className="hm-seat">
+				{cell.run ? <span className={cell.run} /> : null}
 				<span className={cell.ring}>{cell.kept ? <Flame size={flameSize} /> : null}</span>
 			</span>
 		</button>

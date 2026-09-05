@@ -125,7 +125,7 @@ async function draw(notes, { verbs, settings = {} } = {}) {
 }
 
 const dayButtons = () => [...host.querySelectorAll(".hm-day")];
-const seatsShown = () => dayButtons().map((button) => button.querySelector(".hm-seat").className);
+const runsShown = () => dayButtons().map((button) => button.querySelector(".hm-run")?.className ?? "");
 const daysShown = () => dayButtons().map((button) => button.getAttribute("aria-label").split(",")[0]);
 const dayLabelled = (label) => dayButtons().find((button) => button.getAttribute("aria-label") === label);
 const roomStyle = () => host.querySelector(".habit-month").style;
@@ -150,11 +150,11 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 
 {
 	await draw(RUN_NOTES);
-	check("only the kept days carry the band", seatsShown().filter((held) => held.includes("is-run")).length, 3);
+	check("only the kept days carry the band", runsShown().filter(Boolean).length, 3);
 	const opens = daysShown().indexOf(KEPT_RUN[0]);
-	check("the band opens on the first day of the run", seatsShown()[opens].includes("is-run-start"), true);
-	check("and it does not open again inside the run", seatsShown()[opens + 1].includes("is-run-start"), false);
-	check("it closes on the last day of the run", seatsShown()[opens + 2].includes("is-run-end"), true);
+	check("the band opens on the first day of the run", runsShown()[opens].includes("is-run-start"), true);
+	check("and it does not open again inside the run", runsShown()[opens + 1].includes("is-run-start"), false);
+	check("it closes on the last day of the run", runsShown()[opens + 2].includes("is-run-end"), true);
 	check("a kept day wears the accent ring", dayButtons()[opens].querySelector(".hm-ring").className, "hm-ring is-kept");
 	check("and only a kept day carries the flame", dayButtons().filter((button) => button.querySelector(".hm-flame")).length, 3);
 	check("today wears its own ring", dayLabelled(`${TODAY}, not kept`)?.querySelector(".hm-ring").className, "hm-ring is-today");
@@ -163,7 +163,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 {
 	await draw([dayIn(4), dayIn(5), dayIn(6), dayIn(7)].map((day) => ({ path: `Habits/${day}.md`, props: { done: 1 } })));
 	const at = daysShown().indexOf(dayIn(4));
-	const across = seatsShown();
+	const across = runsShown();
 	const ends = across.map((held, index) => (held.includes("is-run-end") ? index : -1)).filter((index) => index >= at && index < at + 4);
 	check("a run crossing the week's end closes at the edge", ends.some((index) => index % 7 === 6), true);
 	check("and opens again on the next week's first day", across.filter((held, index) => index > at && index <= at + 3 && held.includes("is-run-start") && index % 7 === 0).length, 1);
@@ -181,7 +181,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	await draw([]);
 	check("an empty folder still draws the month", dayButtons().length % 7, 0);
 	check("and says nothing about a habit it could not find", host.querySelector(".habit-empty") === null, true);
-	check("nothing is kept", seatsShown().filter((held) => held.includes("is-run")).length, 0);
+	check("nothing is kept", runsShown().filter(Boolean).length, 0);
 }
 
 {

@@ -46,6 +46,25 @@ function clearances(root) {
 	let betweenRows = Infinity;
 	for (let at = 7; at < days.length; at += 1) betweenRows = Math.min(betweenRows, numbers[at].top - rings[at - 7].bottom);
 
+	let offRing = 0;
+	let offCell = 0;
+	let runs = 0;
+	for (const day of days) {
+		const run = day.querySelector(".hm-run");
+		if (!run) continue;
+		runs += 1;
+		const band = run.getBoundingClientRect();
+		const ring = day.querySelector(".hm-ring").getBoundingClientRect();
+		const seat = day.querySelector(".hm-seat").getBoundingClientRect();
+		offRing = Math.max(offRing, Math.abs(band.top - (ring.top - 1)), Math.abs(band.bottom - (ring.bottom + 1)));
+		const opens = run.classList.contains("is-run-start");
+		const closes = run.classList.contains("is-run-end");
+		const leftOff = Math.abs(band.left - (opens ? ring.left - 1 : seat.left));
+		const rightOff = Math.abs(band.right - (closes ? ring.right + 1 : seat.right));
+		offRing = Math.max(offRing, opens ? leftOff : 0, closes ? rightOff : 0);
+		offCell = Math.max(offCell, opens ? 0 : leftOff, closes ? 0 : rightOff);
+	}
+
 	const widest = days.reduce((held, day) => Math.max(held, day.getBoundingClientRect().right), 0);
 	const style = getComputedStyle(root.querySelector(".habit-month"));
 	return {
@@ -55,6 +74,9 @@ function clearances(root) {
 		underWeekday: Math.round(underWeekday * 100) / 100,
 		underNumber: Math.round(underNumber * 100) / 100,
 		betweenRows: Math.round(betweenRows * 100) / 100,
+		runs,
+		offRing: Math.round(offRing * 100) / 100,
+		offCell: Math.round(offCell * 100) / 100,
 		belowLastRing: Math.round((room.bottom - rings[rings.length - 1].bottom) * 100) / 100,
 		sideRoom: Math.round((room.right - widest) * 100) / 100,
 	};
@@ -167,6 +189,19 @@ for (const [what, of] of [
 	const worst = measured.reduce((held, tile) => (tile.sideRoom > held.sideRoom ? tile : held));
 	check("the days fill the tile's width, leaving no gutter", worst.sideRoom < 1, true);
 	console.log(`    widest gutter at ${worst.name}: ${worst.sideRoom}px`);
+}
+
+{
+	const worst = measured.reduce((held, tile) => (tile.offRing > held.offRing ? tile : held));
+	check("every tile drew a kept run", measured.every((tile) => tile.runs > 0), true);
+	check("a run edge clears its ring by a pixel, no more", worst.offRing < 0.55, true);
+	console.log(`    widest drift at ${worst.name}: ${worst.offRing}px`);
+}
+
+{
+	const worst = measured.reduce((held, tile) => (tile.offCell > held.offCell ? tile : held));
+	check("and inside a run it meets the next day at the cell edge", worst.offCell < 0.55, true);
+	console.log(`    widest drift at ${worst.name}: ${worst.offCell}px`);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nthe month keeps its distances");
