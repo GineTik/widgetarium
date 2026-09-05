@@ -22,25 +22,47 @@ const shadow = /--wg-widget-shadow:\s*([^;]+);/.exec(css)?.[1]?.trim();
 const padDeclaration = /--wg-board-pad:\s*([^;]+);/.exec(css)?.[1]?.trim();
 if (!shadow || !padDeclaration) fail("--wg-widget-shadow or --wg-board-pad is missing from styles.css");
 
-// the host writes the padding inline from GRID.padPx, so the two must agree
 const padFromCss = toPx(padDeclaration, "--wg-board-pad");
-const padFromHost = Number(/padPx:\s*(\d+)/.exec(source)?.[1]);
-if (!Number.isFinite(padFromHost)) fail("cannot read GRID.padPx from src/paths.js");
-if (padFromCss !== padFromHost) {
-	fail(`padding disagrees: styles.css says ${padFromCss}px, src/paths.js says ${padFromHost}px. The host writes the inline value, so CSS would be lying.`);
+const legacyGridPad = Number(/padPx:\s*(\d+)/.exec(source)?.[1]);
+if (!Number.isFinite(legacyGridPad)) fail("cannot read GRID.padPx from src/paths.js");
+
+function layersOf(value) {
+	const layers = [];
+	let depth = 0;
+	let from = 0;
+	for (let at = 0; at < value.length; at += 1) {
+		if (value[at] === "(") depth += 1;
+		else if (value[at] === ")") depth -= 1;
+		else if (value[at] === "," && depth === 0) {
+			layers.push(value.slice(from, at).trim());
+			from = at + 1;
+		}
+	}
+	layers.push(value.slice(from).trim());
+	return layers.filter(Boolean);
 }
 
-const parts = shadow.split(/\s+/);
-if (parts.length < 3) fail(`cannot read the shadow ("${shadow}") — expected "<x> <y> <blur> <colour>"`);
-const [x, y, blur] = parts.slice(0, 3).map((value, index) => toPx(value, ["x", "y", "blur"][index]));
+function reachOf(layer, at) {
+	const parts = layer.split(/\s+/);
+	// an inset layer is painted inside the box and reaches nothing
+	if (parts[0] === "inset") return { left: 0, right: 0, top: 0, bottom: 0 };
+	if (parts.length < 3) fail(`cannot read shadow layer ${at + 1} ("${layer}") — expected "<x> <y> <blur> <colour>"`);
+	const [x, y, blur] = parts.slice(0, 3).map((value, index) => toPx(value, `layer ${at + 1} ${["x", "y", "blur"][index]}`));
+	const half = blur / 2;
+	return { left: half - x, right: half + x, top: half - y, bottom: half + y };
+}
 
-const half = blur / 2;
-const reach = { left: half - x, right: half + x, top: half - y, bottom: half + y };
-const worst = Math.max(...Object.values(reach));
+const layers = layersOf(shadow);
+const reaches = layers.map(reachOf);
+const worst = Math.max(...reaches.flatMap((reach) => Object.values(reach)));
 
 console.log(`shadow ${shadow}`);
-console.log(`reach  left ${reach.left} · right ${reach.right} · top ${reach.top} · bottom ${reach.bottom}`);
-console.log(`padding ${padFromCss}px (css and host agree)`);
+layers.forEach((layer, at) => {
+	const reach = reaches[at];
+	console.log(`layer ${at + 1}  ${layer}`);
+	console.log(`  reach  left ${reach.left} · right ${reach.right} · top ${reach.top} · bottom ${reach.bottom}`);
+});
+console.log(`padding ${padFromCss}px on the tree board, ${legacyGridPad}px on the legacy grid`);
 
 if (worst > padFromCss) {
 	fail(

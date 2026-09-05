@@ -63,10 +63,10 @@ Class names are the contract; `src/kit.js` exports a component per class.
 	--wg-radius-xl: var(--radius-xl, 16px);
 	--wg-radius-full: 999px;
 
-	--wg-widget-radius-s: 0.5rem;
-	--wg-widget-radius-m: 1rem;
-	--wg-widget-radius-l: 1.375rem;
-	--wg-widget-radius-xl: 2rem;
+	--wg-widget-radius-s: 1rem;
+	--wg-widget-radius-m: 1.5rem;
+	--wg-widget-radius-l: 1.875rem;
+	--wg-widget-radius-xl: 2.5rem;
 	--wg-widget-radius-full: 999px;
 	--wg-widget-pad-surface: 8px;
 	--wg-widget-radius: var(--wg-widget-radius-s);
@@ -75,7 +75,7 @@ Class names are the contract; `src/kit.js` exports a component per class.
 	   equals the inner corner plus the padding between them, so the two stay
 	   concentric when either is retuned. --wg-board-pad is written by the host
 	   so padding and radius can never drift apart. */
-	--wg-board-pad: 0.5rem;
+	--wg-board-pad: 2rem;
 	--wg-root-head: 1.6rem;
 
 	/* Cast by a widget whose root declares fillType="shadow"; suppressed on a plated
@@ -84,7 +84,8 @@ Class names are the contract; `src/kit.js` exports a component per class.
 	   --wg-board-pad. Past that it is painted in Obsidian's box, not ours, and
 	   whatever clips there is not something we can turn off.
 	   tools/check-shadow.mjs fails the build if this stops holding. */
-	--wg-widget-shadow: 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05);
+	--wg-widget-shadow: 0 6px 47px rgba(0, 0, 0, 0.035), 0 4px 8px rgba(0, 0, 0, 0.005);
+	--wg-widget-edge: inset 0 0 0 1px color-mix(in srgb, var(--text-normal) 4%, transparent);
 
 }
 
@@ -118,8 +119,6 @@ pre:has(> .block-language-widgetarium),
 	box-sizing: border-box;
 	--wg-card: var(--background-primary);
 	--wg-sunken: var(--background-modifier-hover);
-	--wg-cool-ink: color-mix(in srgb, var(--color-blue, #3b7fd4) 55%, var(--text-normal));
-	--wg-board-bg: color-mix(in srgb, var(--wg-cool-ink) 6.5%, var(--background-primary));
 	/* CONTEXT: a hairline is a step of the INK over whatever it lies on — the host's border token
 	   measured 1.03 against a raised panel in dark, which is no line at all */
 	--wg-line: color-mix(in srgb, var(--text-normal) 14%, transparent);
@@ -207,7 +206,7 @@ pre:has(> .block-language-widgetarium),
 	/* the grid drawn under the tiles while editing */
 	/* CONTEXT: a step of the INK, not a grey — a fixed near-white is a white grid in a dark vault */
 	/* CONTEXT: a third of the control's own step — closer and the grid meets it, and controls sink in */
-	--wg-cell-fill: color-mix(in srgb, var(--wg-cool-ink) 1.2%, var(--background-primary));
+	--wg-cell-fill: color-mix(in srgb, var(--text-normal) 1.2%, var(--background-primary));
 	--wg-cell-radius: var(--wg-widget-radius);
 
 	/* Edit-mode chrome sits OUTSIDE the widget: the content pulls back, a dashed ring is
@@ -311,17 +310,8 @@ pre:has(> .block-language-widgetarium),
 }
 
 .wg-board {
-	padding-inline: calc(var(--wg-board-pad) * 2);
-	padding-bottom: calc(var(--wg-board-pad) * 2);
-}
-
-.wg-board::before {
-	content: "";
-	position: absolute;
-	inset: var(--wg-board-pad);
-	z-index: 0;
-	background: var(--wg-board-bg);
-	border-radius: calc(var(--wg-widget-radius) + var(--wg-board-pad));
+	padding-inline: var(--wg-board-pad);
+	padding-bottom: var(--wg-board-pad);
 }
 
 .wg-state {
@@ -817,17 +807,13 @@ pre:has(> .block-language-widgetarium),
 
 .wg-widget-root {
 	background: var(--wg-surface-fill, var(--wg-kit-raise));
-	box-shadow: var(--wg-widget-shadow);
+	box-shadow: var(--wg-widget-edge), var(--wg-widget-shadow);
 	padding: var(--wg-widget-pad);
 }
 
 .wg-widget-root[data-fill="none"] {
 	background: none;
 	box-shadow: none;
-}
-
-body.theme-light :is(.wg-root, .wg-portal) {
-	--wg-widget-shadow: none;
 }
 
 /* Rounding is the widget author's call, not a consequence of the background: a surface-less
