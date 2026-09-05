@@ -1698,6 +1698,15 @@ body.theme-light :is(.wg-root, .wg-portal) {
 	background: var(--wg-kit-fill-hover);
 	--wg-kit-control-edge: none;
 }
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-raised::before {
+	background: var(--wg-kit-raise);
+	--wg-kit-control-edge: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-raised:hover::before {
+	background: var(--wg-kit-fill-hover);
+	--wg-kit-control-edge: none;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-ghost::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost::before { background: none; box-shadow: none; }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-ghost:hover::before,

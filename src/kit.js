@@ -46,6 +46,8 @@ const GLYPHS = {
 	archive: '<rect x="3.8" y="4.3" width="12.4" height="3.6" rx="1.4"/><path d="M5.1 7.9v6.4a1.4 1.4 0 001.4 1.4h7a1.4 1.4 0 001.4-1.4V7.9"/><path d="M8.5 11.1h3"/>',
 	close: '<path d="M6.4 6.4l7.2 7.2M13.6 6.4l-7.2 7.2"/>',
 	widget: '<rect x="4" y="4" width="12" height="12" rx="3.4"/><path d="M7.4 8.2h5.2M7.4 11.6h3.2"/>',
+	"sidebar-left": '<rect x="3.4" y="4.2" width="13.2" height="11.6" rx="3.2"/><path d="M8.2 4.2v11.6"/>',
+	"sidebar-right": '<rect x="3.4" y="4.2" width="13.2" height="11.6" rx="3.2"/><path d="M11.8 4.2v11.6"/>',
 	copy: '<rect x="7.4" y="7.4" width="8.4" height="8.4" rx="2.4"/><path d="M12.6 4.2H6.6a2.4 2.4 0 00-2.4 2.4v6"/>',
 	link: '<path d="M8.5 11.5a2.8 2.8 0 000 4l.5.5a2.8 2.8 0 004 0l2.5-2.5a2.8 2.8 0 000-4l-.5-.5"/><path d="M11.5 8.5a2.8 2.8 0 000-4L11 4a2.8 2.8 0 00-4 0L4.5 6.5a2.8 2.8 0 000 4l.5.5"/>',
 };
@@ -86,7 +88,7 @@ export const buttonClass = variants(
 export const iconButtonClass = variants(
 	"wg-kit-icon",
 	{
-		variant: { accent: "is-accent", neutral: "", ghost: "is-ghost", glass: "wg-kit-glass" },
+		variant: { accent: "is-accent", neutral: "", raised: "is-raised", ghost: "is-ghost", glass: "wg-kit-glass" },
 		size: { l: "is-l", m: "is-m", s: "is-s", xs: "is-xs" },
 	},
 	{ variant: "neutral", size: "m" },
