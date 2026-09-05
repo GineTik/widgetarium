@@ -3348,10 +3348,36 @@ body.wg-tree-carrying * {
 body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 
 .wg-tree-page {
+	position: relative;
 	display: flex;
 	flex-direction: column;
 	gap: var(--wg-tree-gap, 8px);
 	width: 100%;
+}
+
+/* A folded sidebar is HIDDEN, never unmounted: every ref its widgets publish lives only as
+   long as they are on the tree, and dropping them empties the selections downstream. */
+.wg-tree-fold {
+	position: absolute;
+	top: 0;
+	left: -99999px;
+	visibility: hidden;
+	pointer-events: none;
+}
+
+.wg-region-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-tree-gap, 8px);
+	width: 100%;
+}
+
+.wg-region-bar-gap {
+	flex: 1 1 auto;
+}
+
+.wg-region-toggle {
+	flex: none;
 }
 
 .wg-tree-columns {

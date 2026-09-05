@@ -22,7 +22,9 @@ import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { aimedAt, columnsOf, GAP_PX, innerOf, layTree, moved, partedBy, REGION_PAD_PX, resized, restacked, sameTarget, sidebarWidth, tallestOf, widenedRegion, widthsOf } from "./tree.js";
+import { foldLabel } from "./fold-copy.js";
+import { Icon, IconButton } from "./kit.js";
+import { aimedAt, columnsOf, foldableIn, isFolded, toggledFold, GAP_PX, innerOf, layTree, moved, partedBy, REGION_GAP_PX, REGION_PAD_PX, resized, restacked, sameTarget, sidebarWidth, tallestOf, widenedRegion, widthsOf } from "./tree.js";
 import { resist } from "./give.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
@@ -820,7 +822,7 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 
 function TreeBoard({ board, width, ...rest }) {
 	const pageRef = useRef(null);
-	const { beside, stacked } = columnsOf(board.layout, width, GAP_PX);
+	const { beside, stacked } = columnsOf(board.layout, width, REGION_GAP_PX);
 
 	const grabSidebar = (name, toward) => (event) => {
 		event.preventDefault();
@@ -834,8 +836,8 @@ function TreeBoard({ board, width, ...rest }) {
 		};
 		const move = (pointer) => {
 			const wanted = held + (pointer.clientX - grabbed) * toward;
-			latest = widenedRegion(board.layout, name, wanted, width, GAP_PX, false);
-			paint(widenedRegion(board.layout, name, wanted, width, GAP_PX, true));
+			latest = widenedRegion(board.layout, name, wanted, width, REGION_GAP_PX, false);
+			paint(widenedRegion(board.layout, name, wanted, width, REGION_GAP_PX, true));
 		};
 		const stop = () => {
 			window.removeEventListener("pointermove", move);
@@ -865,6 +867,26 @@ function TreeBoard({ board, width, ...rest }) {
 	const edge = (name, toward) =>
 		h("div", { className: "wg-tree-handle is-across is-edge", key: `edge-${name}`, onPointerDown: grabSidebar(name, toward) }, h("i", { className: "wg-tree-grip" }));
 
+	const toggle = (name) =>
+		h(
+			IconButton,
+			{
+				variant: "raised",
+				size: "m",
+				className: `wg-region-toggle is-${name}`,
+				key: `toggle-${name}`,
+				label: foldLabel(name, isFolded(board.layout, name)),
+				"aria-pressed": String(!isFolded(board.layout, name)),
+				onPointerDown: (event) => event.stopPropagation(),
+				onClick: () => rest.commitLayout(toggledFold(board.layout, name)),
+			},
+			h(Icon, { name: `sidebar-${name}`, size: 20 }),
+		);
+
+	const foldable = foldableIn(board.layout);
+
+	const foldedAway = foldable.filter((name) => isFolded(board.layout, name));
+
 	const standing = beside.flatMap((column, at) => {
 		const before = beside[at - 1];
 		const between = before && before.name !== "main" ? edge(before.name, 1) : before && column.name !== "main" ? edge(column.name, -1) : null;
@@ -874,8 +896,18 @@ function TreeBoard({ board, width, ...rest }) {
 	return h(
 		"div",
 		{ className: "wg-tree-page", ref: pageRef, style: { "--wg-tree-gap": `${GAP_PX}px` } },
-		beside.length > 0 ? h("div", { className: "wg-tree-columns" }, standing) : null,
+		foldable.length > 0
+			? h(
+					"div",
+					{ className: "wg-region-bar" },
+					foldable.includes("left") ? toggle("left") : null,
+					h("span", { className: "wg-region-bar-gap" }),
+					foldable.includes("right") ? toggle("right") : null,
+				)
+			: null,
+		beside.length > 0 ? h("div", { className: "wg-tree-columns", style: { "--wg-tree-edge-gap": `${REGION_GAP_PX}px` } }, standing) : null,
 		stacked.map((name) => region(name, width)),
+		foldedAway.map((name) => h("div", { className: "wg-tree-fold", key: `folded-${name}`, "aria-hidden": "true" }, region(name, sidebarWidth(board.layout, name)))),
 	);
 }
 
@@ -934,7 +966,7 @@ function Page({ onClose, children }) {
 	return null;
 }
 
-export function WidgetSurface({ board: saved, registry, host, editing, onChange: save, onToggleEditing, screen, initialWidth = 0, onWidth }) {
+export function WidgetSurface({ board: saved, registry, host, editing, onChange: save, onToggleEditing, screen, initialWidth = 0, onWidth, onDrafting }) {
 	const dragRef = useRef(null);
 	const latestRef = useRef(null);
 
@@ -985,6 +1017,10 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	// CONTEXT: local to this viewer — two people on one board must filter without moving each other
 	const refs = useMemo(() => createGatewayRefs(), []);
 	const cellFor = useMemo(() => createViewCells(), []);
+
+	useEffect(() => {
+		onDrafting?.(staged !== null);
+	});
 
 	const boardShell = (children) =>
 		h(Board, {
