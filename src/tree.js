@@ -6,6 +6,7 @@ export const MIN_HEIGHT_PX = 42;
 const HAIR_PX = 0.5;
 export const SIDEBAR_PX = 280;
 export const REGION_PAD_PX = 8;
+export const REGION_GAP_PX = 16;
 export const MAIN_FLOOR_PX = 480;
 export const REGIONS = ["left", "main", "right"];
 
@@ -104,8 +105,20 @@ export function sidebarWidth(layout, name) {
 	return layout[name]?.width ?? SIDEBAR_PX;
 }
 
-export function columnsOf(layout, width, gap = GAP_PX) {
-	const named = REGIONS.filter((name) => layout[name]?.rows.length > 0);
+export function foldableIn(layout) {
+	return REGIONS.filter((name) => name !== "main" && layout?.[name]?.rows.length > 0);
+}
+
+export function isFolded(layout, name) {
+	return Boolean(layout?.[name]?.folded);
+}
+
+export function toggledFold(layout, name) {
+	return { ...layout, [name]: { ...layout[name], folded: !isFolded(layout, name) } };
+}
+
+export function columnsOf(layout, width, gap = REGION_GAP_PX) {
+	const named = REGIONS.filter((name) => layout[name]?.rows.length > 0 && !isFolded(layout, name));
 	if (!named.includes("main")) return { beside: [], stacked: named };
 	const sides = named.filter((name) => name !== "main");
 	for (const kept of [sides, sides.filter((name) => name !== "right"), []]) {
@@ -121,8 +134,8 @@ export function columnsOf(layout, width, gap = GAP_PX) {
 	return { beside: [], stacked: named };
 }
 
-export function widenedRegion(layout, name, wantedPx, width, gap = GAP_PX, give) {
-	const other = REGIONS.filter((one) => one !== "main" && one !== name && layout[one]);
+export function widenedRegion(layout, name, wantedPx, width, gap = REGION_GAP_PX, give) {
+	const other = REGIONS.filter((one) => one !== "main" && one !== name && layout[one] && !isFolded(layout, one));
 	const taken = other.reduce((sum, one) => sum + gap + sidebarWidth(layout, one), 0);
 	return Math.round(heldBetween(wantedPx, MIN_SIDEBAR_PX, width - taken - gap - MAIN_FLOOR_PX, give));
 }
