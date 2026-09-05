@@ -248,29 +248,38 @@ function normalizeRows(rows) {
 
 export const REGIONS = ["left", "main", "right"];
 
-function normalizeRegion(given) {
+function regionWidth(given) {
+	const width = Number(given?.width);
+	return Number.isFinite(width) && width > 0 ? { width } : {};
+}
+
+function regionFold(given, foldable) {
+	return foldable && (given?.folded === true || given?.collapsed === true) ? { folded: true } : {};
+}
+
+function normalizeRegion(given, foldable) {
 	const rows = normalizeRows(Array.isArray(given) ? given : given?.rows);
 	if (!rows) return null;
-	const width = Number(given?.width);
-	return Number.isFinite(width) && width > 0 ? { rows, width } : { rows };
+	return { rows, ...regionWidth(given), ...regionFold(given, foldable) };
 }
 
 function normalizeTree(given) {
 	if (Array.isArray(given)) {
-		const main = normalizeRegion(given);
+		const main = normalizeRegion(given, false);
 		return main ? { main } : null;
 	}
 	if (!given || typeof given !== "object") return null;
 	const laid = {};
 	for (const name of REGIONS) {
-		const region = normalizeRegion(given[name]);
+		const region = normalizeRegion(given[name], name !== "main");
 		if (region) laid[name] = region;
 	}
 	return laid.main ? laid : null;
 }
 
 function serializeRegion(region) {
-	return region.width ? { width: region.width, rows: region.rows } : region.rows;
+	if (!region.width && !region.folded) return region.rows;
+	return { ...(region.width ? { width: region.width } : {}), ...(region.folded ? { folded: true } : {}), rows: region.rows };
 }
 
 function serializeTree(layout) {
@@ -293,13 +302,15 @@ export function normalizeBoard(input, idOf = SAME_ID) {
 		}
 	}
 
+	const laidOut = normalizeTree(input?.layout);
+
 	return {
 		tiles: (input?.tiles ?? []).map((tile, index) => {
 			const seen = normalizeTile(tile, index, idOf);
 			return foldedOnce.has(seen.id) ? { ...seen, folded: true } : seen;
 		}),
 		layouts: normalizeLayouts(input?.layouts),
-		...(normalizeTree(input?.layout) ? { layout: normalizeTree(input.layout) } : {}),
+		...(laidOut ? { layout: laidOut } : {}),
 		// One board, two sizes. The mode is a fact about the board, so it lives in the file:
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".

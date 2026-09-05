@@ -6,6 +6,7 @@ buildMirror();
 const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, mountRows, mountSetting, rekeyed, uniqueName } = await import(
 	"./.mjs-cache/model.mjs"
 );
+const { BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
 
 let failed = 0;
 function check(name, got, want) {
@@ -417,10 +418,10 @@ check("rendering does not warn", onRender, 0);
 	check("a sibling record is not touched by the move", beside.Other, { widget: "@x/other" });
 
 	// AN UNEDITED NOTE MUST NOT MOVE. The record still keyed by a widget id round-trips as it is.
-	const untouched = { tiles: [{ id: "g", widget: "@x/group", settings: { views: "@x/kanban" }, mounted: { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
+	const untouched = { v: BLOCK_FORMAT, tiles: [{ id: "g", widget: "@x/group", settings: { views: "@x/kanban" }, mounted: { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
 	check("an old-shape board round-trips byte-identical", JSON.stringify(serializeBoard(normalizeBoard(untouched))), JSON.stringify(untouched));
 
-	const fresh = { tiles: [{ id: "g", widget: "@x/group", settings: { holds: [{ name: "Mine", widget: "@x/kanban" }] }, mounted: { Mine: { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
+	const fresh = { v: BLOCK_FORMAT, tiles: [{ id: "g", widget: "@x/group", settings: { holds: [{ name: "Mine", widget: "@x/kanban" }] }, mounted: { Mine: { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
 	check("and so does a new-shape one", JSON.stringify(serializeBoard(normalizeBoard(fresh))), JSON.stringify(fresh));
 }
 
@@ -451,6 +452,19 @@ check("rendering does not warn", onRender, 0);
 	check("a sidebar keeps the width it was dragged to", sized.layout.left.width, 420);
 	check("and writes it back beside its rows", serializeBoard(sized).layout.left, { width: 420, rows: [[{ id: "a", ratio: 1 }]] });
 	check("a region with no width is written as a bare list of rows", serializeBoard(sized).layout.main, [[{ id: "a", ratio: 1 }]]);
+
+	const shut = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: [["a"]], left: { folded: true, rows: [["a"]] } }, layouts: {} });
+	check("a sidebar remembers that it was folded", shut.layout.left.folded, true);
+	check("and the fold survives the file", serializeBoard(shut).layout.left, { folded: true, rows: [[{ id: "a", ratio: 1 }]] });
+	check("an open one says nothing about folding", "folded" in shut.layout.main, false);
+	check("and nothing about it reaches the file", serializeBoard(shut).layout.main, [[{ id: "a", ratio: 1 }]]);
+
+	const shutMain = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: { folded: true, rows: [["a"]] }, left: [["a"]] }, layouts: {} });
+	check("the main cannot be folded — a board with no main is no board", "folded" in shutMain.layout.main, false);
+	check("and asking for it is not written down either", serializeBoard(shutMain).layout.main, [[{ id: "a", ratio: 1 }]]);
+	check("a fold written as anything but true is not a fold", "folded" in normalizeBoard({ tiles: [], layout: { main: [["a"]], left: { folded: "yes", rows: [["a"]] } }, layouts: {} }).layout.left, false);
+	check("a note written under the old name still opens folded", normalizeBoard({ tiles: [], layout: { main: [["a"]], left: { collapsed: true, rows: [["a"]] } }, layouts: {} }).layout.left.folded, true);
+	check("and the next write spells it the new way", serializeBoard(normalizeBoard({ tiles: [], layout: { main: [["a"]], left: { collapsed: true, rows: [["a"]] } }, layouts: {} })).layout.left, { folded: true, rows: [[{ id: "a", ratio: 1 }]] });
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");
