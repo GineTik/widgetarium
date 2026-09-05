@@ -3,10 +3,7 @@ import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoom
 import { useRef, useState } from "react";
 
 const CSS = `
-.orbi-filter { justify-content: flex-start; align-items: stretch; padding: 0; }
-.orbi.orbi-filter .wg-kit-anchor { flex: 1; }
-.orbi.orbi-filter .ofp-open { height: 100%; }
-.orbi.orbi-filter .ofp-open::before { border-radius: var(--wg-widget-radius); }
+.orbi-filter { justify-content: flex-start; align-items: stretch; }
 
 .orbi-filter .ofp-open { gap: var(--size-4-2, 8px); }
 .orbi-filter .ofp-open.is-on { color: var(--interactive-accent); }
@@ -269,7 +266,7 @@ export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, 
 		<button
 			type="button"
 			ref={triggerRef}
-			className={`wg-kit-btn is-m is-block is-ghost ofp-open${count > 0 ? " is-on" : ""}${hasRoomForWord ? "" : " is-tight"}`}
+			className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${hasRoomForWord ? "" : " is-tight"}`}
 		>
 			<Icon name="filter" className="ofp-icon" />
 			{hasRoomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
@@ -278,7 +275,7 @@ export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, 
 	);
 
 	return (
-		<WidgetRoot className="orbi orbi-filter">
+		<WidgetRoot className="orbi orbi-filter" defaultRounded="none" defaultBackgroundType="none">
 			<style>{CSS}</style>
 
 			<Popover className="ofp-pop" trigger={trigger} isOpen={isOpen} onOpenChange={change}>

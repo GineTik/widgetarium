@@ -85,7 +85,7 @@ export default createWidget(function EditableTabsWidget({ tabs, label, value, se
 	};
 
 	return (
-		<WidgetRoot>
+		<WidgetRoot defaultBackgroundType="none">
 			<EditableTabs
 				tabs={names}
 				archived={archived}

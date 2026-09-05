@@ -650,7 +650,7 @@ export default createWidget(function KanbanBoard({ settings, slots, tasks, board
 
 	if (tasksData.isLoading && rows.length === 0) {
 		return (
-			<WidgetRoot className="orbi orbi-kanban">
+			<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
 				<style>{CSS}</style>
 				<p className="ok-empty">Loading tasks…</p>
 			</WidgetRoot>
@@ -658,7 +658,7 @@ export default createWidget(function KanbanBoard({ settings, slots, tasks, board
 	}
 
 	return (
-		<WidgetRoot className="orbi orbi-kanban">
+		<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
 			<style>{CSS}</style>
 			<div
 				className={`ok-board${reorder ? " is-dragging" : ""}`}
