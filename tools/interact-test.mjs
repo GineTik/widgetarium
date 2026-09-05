@@ -1015,7 +1015,7 @@ const pickView = async (name, id = "views") => {
 	const pluginApp = {
 		vault: { adapter: { ...adapter, mkdir: async () => {} }, getAbstractFileByPath: () => null },
 		metadataCache: { getFileCache: () => null, getFirstLinkpathDest: () => null },
-		workspace: { getLeavesOfType: () => [] },
+		workspace: { getLeavesOfType: () => [], on: () => ({}) },
 	};
 	const plugin = Object.assign(new WidgetariumPlugin(), {
 		app: pluginApp,
@@ -1042,6 +1042,35 @@ const pickView = async (name, id = "views") => {
 	check("and the host carries the kit's scope, or nothing in it is painted", note.querySelectorAll(".wg-inline-host.wg-root").length, 1);
 	note.remove();
 
+	const boardBlock = dom.window.document.createElement("div");
+	dom.window.document.body.appendChild(boardBlock);
+	const sided = normalizeBoard({
+		tiles: [{ id: "a", widget: "@inline/reminder" }],
+		layout: { left: { rows: [[{ id: "a" }]] }, main: { rows: [[{ id: "a" }]] } },
+		layouts: {},
+	});
+	plugin.mount(boardBlock, sided, () => {}, false, noteContext, "Orbitask/Board.md#0");
+	const boardMount = plugin.firstMountIn("Orbitask/Board.md");
+	check("the plugin can find the board a note carries", Boolean(boardMount), true);
+	check("and reads its foldable sidebars off it", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: false }]);
+
+	let synced = 0;
+	plugin.chrome = { sync: () => (synced += 1), stop: () => {} };
+	boardMount.commit(boardMount.state.board);
+	check("every write of the board refreshes the header buttons", synced, 1);
+
+	plugin.toggleRegion("Orbitask/Board.md", "left");
+	check("the header button folds the sidebar", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: true }]);
+	check("and that write refreshed the header too", synced, 2);
+
+	boardMount.drafting = true;
+	plugin.toggleRegion("Orbitask/Board.md", "left");
+	check("a fold asked for while a settings draft is open is refused, not written behind it", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: true }]);
+	boardMount.drafting = false;
+	plugin.toggleRegion("Orbitask/Board.md", "left");
+	check("and once the draft is gone the button works again", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: false }]);
+	boardBlock.remove();
+
 	// CONTEXT: Obsidian never reprocesses a note rendered before registration
 	const brokenPosts = [];
 	const broken = Object.assign(new WidgetariumPlugin(), {
@@ -1063,7 +1092,7 @@ const pickView = async (name, id = "views") => {
 	const openLeaf = { view: { previewMode: { rerender: (full) => asked.push(full) } } };
 	const startingPosts = [];
 	const starting = Object.assign(new WidgetariumPlugin(), {
-		app: { ...pluginApp, workspace: { getLeavesOfType: (kind) => (kind === "markdown" ? [openLeaf] : []) } },
+		app: { ...pluginApp, workspace: { getLeavesOfType: (kind) => (kind === "markdown" ? [openLeaf] : []), on: () => ({}) } },
 		manifest: { id: "widgetarium" },
 		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }] },
 		addCommand: () => {},

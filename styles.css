@@ -3380,6 +3380,11 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	flex: none;
 }
 
+.wg-view-action.is-active {
+	color: var(--icon-color-active);
+	background-color: var(--background-modifier-hover);
+}
+
 .wg-tree-columns {
 	display: flex;
 	align-items: stretch;

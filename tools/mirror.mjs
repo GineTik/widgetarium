@@ -23,6 +23,8 @@ export class Notice { constructor(message) { this.message = message; } }
 export class Plugin {
 	async loadData() { return this._data ?? null; }
 	async saveData(data) { this._data = data; }
+	register() {}
+	registerEvent() {}
 }
 export class Modal {}
 export class Setting {}
@@ -59,6 +61,7 @@ export const MarkdownRenderer = {
 };
 // CONTEXT: the real one takes { url } and answers { status, text, json } — a test hands the
 // installer its own doors, so nothing here should ever actually be reached
+export const setIcon = (parent, iconId) => { parent.dataset.icon = iconId; };
 export const requestUrl = () => { throw new Error("requestUrl is not stubbed"); };
 export const parseYaml = () => { throw new Error("parseYaml is not stubbed"); };
 export const stringifyYaml = () => { throw new Error("stringifyYaml is not stubbed"); };
