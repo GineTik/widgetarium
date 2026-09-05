@@ -168,6 +168,54 @@ function sidesNode() {
 	);
 }
 
+function readToggles() {
+	const page = document.querySelector(".wg-sides-probe .wg-tree-page");
+	const bar = page?.querySelector(":scope > .wg-region-bar");
+	if (!page || !bar) return { drawn: false };
+	const box = page.getBoundingClientRect();
+	const seen = (name) => {
+		const node = bar.querySelector(`:scope > .wg-region-toggle.is-${name}`);
+		if (!node) return null;
+		const at = node.getBoundingClientRect();
+		return {
+			shown: Number(getComputedStyle(node).opacity),
+			pressed: node.getAttribute("aria-pressed"),
+			label: node.getAttribute("aria-label"),
+			nearestCorner: Math.round(Math.min(Math.abs(at.left - box.left), Math.abs(box.right - at.right))),
+			fromTop: Math.round(at.top - box.top),
+			painted: node.querySelector("svg.wg-kit-icon-glyph") ? Math.round(node.querySelector("svg.wg-kit-icon-glyph").getBoundingClientRect().width) : 0,
+			face: getComputedStyle(node, "::before").backgroundColor,
+			rim: getComputedStyle(node, "::before").boxShadow,
+			fromKit: node.classList.contains("wg-kit-icon"),
+		};
+	};
+	const firstRow = document.querySelector(".wg-sides-probe .wg-tree-row");
+	return {
+		drawn: true,
+		left: seen("left"),
+		right: seen("right"),
+		barBottom: Math.round(bar.getBoundingClientRect().bottom),
+		firstRowTop: Math.round(firstRow ? firstRow.getBoundingClientRect().top : 0),
+		regions: [...page.querySelectorAll(".wg-tree-region")].map((node) => node.className.replace(/.*is-/, "")),
+	};
+}
+
+function readMounted() {
+	const probe = document.querySelector(".wg-sides-probe");
+	const cells = [...probe.querySelectorAll(".wg-tree-region.is-left .wg-tree-cell")];
+	return {
+		tiles: cells.map((node) => node.dataset.cell),
+		painted: cells.filter((node) => node.querySelector(".wg-tile-body")?.childElementCount > 0).length,
+	};
+}
+
+function pressToggle(name) {
+	const node = document.querySelector(`.wg-sides-probe .wg-region-bar > .wg-region-toggle.is-${name}`);
+	if (!node) return { failed: `no ${name} toggle to press` };
+	node.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+	return readSides();
+}
+
 function readSides() {
 	const page = document.querySelector(".wg-sides-probe .wg-tree-page");
 	if (!page) return { drawn: false };
@@ -339,7 +387,14 @@ async function report() {
 		const sides = readSides();
 		const widened = widenSidebar(100);
 		const pinched = pinchSidebar(-400);
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, squashed, eases, dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		const togglesOpen = readToggles();
+		const openSides = readSides();
+		const mountedOpen = readMounted();
+		const foldedLeft = pressToggle("left");
+		const mountedFolded = readMounted();
+		const togglesFolded = readToggles();
+		const unfoldedLeft = pressToggle("left");
+		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, squashed, eases, dragged, stretched, whileReading, carried, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

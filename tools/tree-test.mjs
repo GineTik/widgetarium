@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, columnsOf, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, partedBy, resized, restacked, SIDEBAR_PX, widenedRegion } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, columnsOf, foldableIn, isFolded, toggledFold, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, partedBy, resized, restacked, SIDEBAR_PX, widenedRegion } = await import("./.mjs-cache/tree.mjs");
 const { GIVE_PX } = await import("./.mjs-cache/give.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
@@ -447,7 +447,53 @@ console.log("\n— a board of three regions stands side by side while there is r
 	check("and wider stops where the main would fall under its floor", widenedRegion(three, "left", 2000, 1600, 8), 1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX);
 	check("between the two it lands where the pointer asked", widenedRegion(three, "left", 360, 1600, 8), 360);
 	check("the other sidebar is counted, not forgotten", widenedRegion({ left: { rows }, main: { rows } }, "left", 2000, 1600, 8), 1600 - 8 - MAIN_FLOOR_PX);
+
+	const folded = { left: { rows, folded: true }, main: { rows }, right: { rows } };
+	check("the fold reads off the region that carries it", [isFolded(folded, "left"), isFolded(folded, "right")], [true, false]);
+	check("and toggling one names the other unchanged", isFolded(toggledFold(folded, "left"), "left"), false);
+	check("toggling an open one folds it", isFolded(toggledFold(three, "right"), "right"), true);
+	check("and leaves every other region as it stood", toggledFold(three, "right").left, three.left);
+	check("a folded sidebar does not stand", names(columnsOf(folded, 1600, 8)), ["main", "right"]);
+	check("and it is not stacked under the board either — folded means gone", columnsOf(folded, 1600, 8).stacked, []);
+	check("the main takes back every pixel the folded one held", columnsOf(folded, 1600, 8).beside[0].width, 1600 - 8 - SIDEBAR_PX);
+	check("a folded sidebar is no longer counted against a drag", widenedRegion(folded, "right", 2000, 1600, 8), 1600 - 8 - MAIN_FLOOR_PX);
+	check("folding both leaves the main alone", names(columnsOf({ left: { rows, folded: true }, main: { rows }, right: { rows, folded: true } }, 1600, 8)), ["main"]);
+	check("folding one is what keeps the other standing when the board is narrow", names(columnsOf(folded, SIDEBAR_PX + MAIN_FLOOR_PX + 8, 8)), ["main", "right"]);
+	check("both sidebars are toggleable, the main is not", foldableIn(three), ["left", "right"]);
+	check("a folded sidebar still offers its toggle — nothing else would bring it back", foldableIn(folded), ["left", "right"]);
+	check("a region that holds no rows offers none", foldableIn({ main: { rows } }), []);
+	check("and a board with no tree at all offers none", foldableIn(undefined), []);
 }
+
+function toggleChecks() {
+	console.log("\n— the two toggles stand on the board's own bar and fold a sidebar away —");
+	const { togglesOpen, openSides, foldedLeft, togglesFolded, unfoldedLeft } = measured;
+	check("the board drew both toggles and nothing else", [togglesOpen.left, togglesOpen.right].map(Boolean), [true, true]);
+	if (!togglesOpen.left || !togglesOpen.right) return;
+	check("both stand on the board's own first line, not over a tile", [togglesOpen.left.fromTop, togglesOpen.right.fromTop], [0, 0]);
+	check("one sits at the left edge, the other at the right", [togglesOpen.left.nearestCorner, togglesOpen.right.nearestCorner], [0, 0]);
+	check("the bar ends where the first row begins", togglesOpen.barBottom <= togglesOpen.firstRowTop, true);
+	check("each drew a real icon, not an empty box", [togglesOpen.left.painted > 8, togglesOpen.right.painted > 8], [true, true]);
+	check("both are the kit's own control, not a hand-rolled one", [togglesOpen.left.fromKit, togglesOpen.right.fromKit], [true, true]);
+	check("each wears the raised face the kit reserves for white", togglesOpen.left.face, togglesOpen.right.face);
+	check("and that face carries a rim, which is what tells it from the page behind it", togglesOpen.left.rim.includes("inset"), true);
+	check("an open sidebar reads as pressed", [togglesOpen.left.pressed, togglesOpen.right.pressed], ["true", "true"]);
+	check("and both are visible with no pointer anywhere near them", [togglesOpen.left.shown, togglesOpen.right.shown], [1, 1]);
+	check("all three regions stand before the press", openSides.regions.map((one) => one.name), ["left", "main", "right"]);
+	check("pressing the left toggle takes the left region off the board", foldedLeft.regions.map((one) => one.name), ["main", "right"]);
+	check("the main grew by exactly what the sidebar held", foldedLeft.regions[0].right - foldedLeft.regions[0].left, openSides.regions[1].right - openSides.regions[1].left + (openSides.regions[1].left - openSides.regions[0].left));
+	check("the board still does not scroll sideways", foldedLeft.scrollWidth <= foldedLeft.clientWidth + 1, true);
+	check("the folded toggle stays on screen", togglesFolded.left.shown, 1);
+	check("it no longer reads as pressed", togglesFolded.left.pressed, "false");
+	check("and it still stands at the same edge", togglesFolded.left.nearestCorner, 0);
+	check("the other one was not touched", togglesFolded.right.pressed, "true");
+	check("a folded sidebar keeps its widgets mounted, or every ref they offer dies with them", measured.mountedFolded.tiles, measured.mountedOpen.tiles);
+	check("and they are still drawn, not emptied husks", measured.mountedFolded.painted, measured.mountedOpen.painted);
+	check("pressing it again brings the sidebar back", unfoldedLeft.regions.map((one) => one.name), ["left", "main", "right"]);
+	check("at the width it had before it went", unfoldedLeft.regions[0].right - unfoldedLeft.regions[0].left, openSides.regions[0].right - openSides.regions[0].left);
+}
+
+toggleChecks();
 
 console.log("\n— carrying a tile puts it where it was aimed, and closes the row it left —");
 {
