@@ -1,3 +1,5 @@
+import { heldBetween } from "./give.js";
+
 export const GAP_PX = 8;
 export const LADDER = 12;
 export const MIN_HEIGHT_PX = 42;
@@ -32,7 +34,7 @@ function sized(cell, width) {
 	return { id: cell.id, width, ratio: cell.ratio, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
 }
 
-export function resized(row, at, { boundaryPx, inner, isFree }) {
+export function resized(row, at, { boundaryPx, inner, isFree, give }) {
 	const total = row.reduce((sum, cell) => sum + cell.ratio, 0);
 	const widths = widthsOf(row, inner);
 	const before = widths.slice(0, at).reduce((sum, one) => sum + one, 0);
@@ -40,7 +42,8 @@ export function resized(row, at, { boundaryPx, inner, isFree }) {
 	const low = row[at].minPx ?? 0;
 	const high = Math.max(low, pair - (row[at + 1].minPx ?? 0));
 	const wanted = boundaryPx - before;
-	const held = Math.min(Math.max(isFree ? wanted : snapped(wanted, inner), low), high);
+	const asked = isFree ? wanted : snapped(wanted, inner);
+	const held = Math.min(Math.max(heldBetween(asked, low, high, give), 0), pair);
 	return row.map((cell, index) => {
 		if (index === at) return { ...cell, ratio: (held * total) / inner };
 		if (index === at + 1) return { ...cell, ratio: ((pair - held) * total) / inner };
@@ -48,8 +51,8 @@ export function resized(row, at, { boundaryPx, inner, isFree }) {
 	});
 }
 
-export function restacked(row, wantedPx) {
-	const tall = Math.max(MIN_HEIGHT_PX, Math.round(wantedPx));
+export function restacked(row, wantedPx, give) {
+	const tall = Math.round(heldBetween(wantedPx, MIN_HEIGHT_PX, Infinity, give));
 	return row.map((cell) => ({ ...cell, height: tall }));
 }
 
@@ -108,10 +111,10 @@ export function columnsOf(layout, width, gap = GAP_PX) {
 	return { beside: [], stacked: named };
 }
 
-export function widenedRegion(layout, name, wantedPx, width, gap = GAP_PX) {
+export function widenedRegion(layout, name, wantedPx, width, gap = GAP_PX, give) {
 	const other = REGIONS.filter((one) => one !== "main" && one !== name && layout[one]);
 	const taken = other.reduce((sum, one) => sum + gap + sidebarWidth(layout, one), 0);
-	return Math.round(Math.min(Math.max(wantedPx, MIN_SIDEBAR_PX), width - taken - gap - MAIN_FLOOR_PX));
+	return Math.round(heldBetween(wantedPx, MIN_SIDEBAR_PX, width - taken - gap - MAIN_FLOOR_PX, give));
 }
 
 const NOTHING_MOVES = { cells: {}, bands: {}, slot: null };

@@ -23,6 +23,7 @@ import { CatalogueDialog } from "./catalogue-dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
 import { aimedAt, columnsOf, GAP_PX, innerOf, layTree, moved, partedBy, REGION_PAD_PX, resized, restacked, sameTarget, sidebarWidth, tallestOf, widenedRegion, widthsOf } from "./tree.js";
+import { resist } from "./give.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -45,8 +46,6 @@ export const RESERVED_PROPS = new Set([
 ]);
 
 const REM = 16;
-// how far a resize may travel past a limit before it stops giving entirely
-const GIVE_PX = 22;
 // under this a board is not laid out yet, and its width is not a fact about the screen
 const MIN_BOARD_WIDTH_PX = 120;
 // CONTEXT: the window must be taller than the widget it frames, or it opens panned
@@ -353,10 +352,6 @@ function cellLayer(columns, rows) {
 	return h("div", { className: "wg-cells", key: "cells" }, cells);
 }
 
-// Past a limit the box keeps giving, but less and less — the further you pull, the less it
-// yields, so it reads as stretched rubber rather than a wall. Apple's own resizable widgets
-// do this: the box never simply stops under the finger, it just stops rewarding. The give
-// never reaches half a cell, so the size that lands is still the limit itself.
 // The grip Apple puts on a resizable control is an ARC with round ends, sitting astride the
 // widget's own corner: half the stroke outside the box, half in. Only an SVG stroke gives
 // round caps, so the shape cannot be a div with a border-radius. One path serves all four
@@ -385,12 +380,6 @@ function cornerArc() {
 		{ className: "wg-grip-arc", viewBox: `0 0 ${ARC_BOX} ${ARC_BOX}`, "aria-hidden": "true" },
 		h("path", { d: arcPath(), fill: "none", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" }),
 	);
-}
-
-function resist(wanted, low, high) {
-	if (wanted < low) return low - GIVE_PX * (1 - GIVE_PX / (GIVE_PX + (low - wanted)));
-	if (wanted > high) return high + GIVE_PX * (1 - GIVE_PX / (GIVE_PX + (wanted - high)));
-	return wanted;
 }
 
 const ICON_GEAR = [
@@ -648,17 +637,20 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 		const cells = [...node.querySelectorAll(":scope > .wg-tree-cell")];
 		const inner = innerOf(cells.length, box.width, GAP_PX);
 		let latest = null;
+		let shown = null;
 		let frame = 0;
 		const paint = () => {
 			frame = 0;
-			node.style.height = `${tallestOf(latest)}px`;
+			const tall = tallestOf(shown);
+			if (tall) node.style.height = `${tall}px`;
 			if (cells.length < 2) return;
 			cells.forEach((cell, index) => {
-				cell.style.flexGrow = latest[index].ratio;
+				cell.style.flexGrow = shown[index].ratio;
 			});
 		};
 		const move = (moved) => {
-			latest = read(moved, box, event);
+			latest = read(moved, box, event, false);
+			shown = read(moved, box, event, true);
 			if (frame) return;
 			frame = window.requestAnimationFrame(paint);
 		};
@@ -668,7 +660,10 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 			window.removeEventListener("pointerup", stop);
 			document.body.classList.remove("wg-tree-dragging");
 			dragRef.current = null;
-			if (latest) commitLayout(rows.map((row, index) => (index === at ? latest : row)));
+			if (!latest) return;
+			shown = latest;
+			paint();
+			commitLayout(rows.map((row, index) => (index === at ? latest : row)));
 		};
 		dragRef.current = { stop };
 		document.body.classList.add("wg-tree-dragging");
@@ -750,14 +745,14 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 	const bare = (row) => row.map(({ minPx, ...cell }) => cell);
 
 	const grabRatio = (at, boundary) => (event) =>
-		startDrag(event, at, (moved, box, down) => {
+		startDrag(event, at, (moved, box, down, give) => {
 			const inner = innerOf(rows[at].length, box.width, GAP_PX);
 			const held = widthsOf(rows[at], inner).slice(0, boundary + 1).reduce((sum, one) => sum + one, 0);
 			const grabbed = down.clientX - box.left - held;
-			return bare(resized(withFloors(rows[at]), boundary, { boundaryPx: moved.clientX - box.left - grabbed, inner, isFree: moved.shiftKey }));
+			return bare(resized(withFloors(rows[at]), boundary, { boundaryPx: moved.clientX - box.left - grabbed, inner, isFree: moved.shiftKey, give }));
 		});
 
-	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down) => restacked(rows[at], box.height + moved.clientY - down.clientY));
+	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down, give) => restacked(rows[at], box.height + moved.clientY - down.clientY, give));
 
 	const shared = useMemo(
 		() => ({
@@ -832,14 +827,19 @@ function TreeBoard({ board, width, ...rest }) {
 		const grabbed = event.clientX;
 		const node = pageRef.current?.querySelector(`.wg-tree-region.is-${name}`);
 		let latest = held;
+		const paint = (given) => {
+			if (node) node.style.flexBasis = `${given}px`;
+		};
 		const move = (pointer) => {
-			latest = widenedRegion(board.layout, name, held + (pointer.clientX - grabbed) * toward, width, GAP_PX);
-			if (node) node.style.flexBasis = `${latest}px`;
+			const wanted = held + (pointer.clientX - grabbed) * toward;
+			latest = widenedRegion(board.layout, name, wanted, width, GAP_PX, false);
+			paint(widenedRegion(board.layout, name, wanted, width, GAP_PX, true));
 		};
 		const stop = () => {
 			window.removeEventListener("pointermove", move);
 			window.removeEventListener("pointerup", stop);
 			document.body.classList.remove("wg-tree-dragging");
+			paint(latest);
 			rest.commitLayout({ ...board.layout, [name]: { ...board.layout[name], width: latest } });
 		};
 		document.body.classList.add("wg-tree-dragging");
