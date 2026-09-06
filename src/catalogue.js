@@ -8,6 +8,7 @@ import { previewProps, previewSize } from "./preview.js";
 import { spanToPixels } from "./layout.js";
 import { SizeGrid } from "./size-grid.js";
 import { classOf, GRID } from "./paths.js";
+import { TemplateGrid } from "./template-gallery.js";
 
 // CONTEXT: the entry point's own verb is the only thing a mode changes
 const VERBS = { browse: "Open", place: "Add", fill: "Use", text: "Use", mount: "Add" };
@@ -18,6 +19,19 @@ const SHOWN = [
 	{ value: "all", label: "All" },
 	{ value: "installed", label: "Installed" },
 ];
+
+// TRADE-OFF: one head over two lists — a second dialog would have to keep its own search in step
+const SHELVES = [
+	{ value: "widgets", label: "Widgets" },
+	{ value: "templates", label: "Templates" },
+];
+
+const TEMPLATE_CARD_TARGET_PX = 460;
+const MIN_TEMPLATE_COLUMNS = 1;
+
+const SEARCH_WIDGETS = "Search widgets";
+const SEARCH_TEMPLATES = "Search templates";
+const NO_TEMPLATE = "No template answers to that.";
 
 // TRADE-OFF: the typed strings are the state, so half a bound reads as "from 3", not as a gap
 export const NO_SIZE = { wFrom: "", wTo: "", hFrom: "", hTo: "" };
@@ -91,8 +105,8 @@ function clamp(value, low, high) {
 	return Math.max(low, Math.min(value, high));
 }
 
-export function measureCards(width) {
-	const columns = clamp(Math.round((width + GAP_PX) / (CARD_TARGET_PX + GAP_PX)), MIN_COLUMNS, MAX_COLUMNS);
+export function measureCards(width, target = CARD_TARGET_PX, fewest = MIN_COLUMNS) {
+	const columns = clamp(Math.round((width + GAP_PX) / (target + GAP_PX)), fewest, MAX_COLUMNS);
 	return { columns, columnPx: (width - (columns - 1) * GAP_PX) / columns };
 }
 
@@ -352,14 +366,18 @@ function useWidth(nodeRef) {
 
 // TRADE-OFF: the board's own cell class, so a second answer to "how big is a cell" cannot drift in
 
-export function Catalogue({ registry, host, mode = "browse", kind = "board", available = [], rank, onPick, onInstall }) {
+export function Catalogue({ registry, host, mode = "browse", kind = "board", available = [], templates = [], rank, onPick, onInstall, onUseTemplate }) {
 	const [keyword, setKeyword] = useState("");
 	const [showing, setShowing] = useState("all");
+	const [shelf, setShelf] = useState(mode === "template" ? "templates" : "widgets");
 	const [typedSize, setTypedSize] = useState(NO_SIZE);
 	const scrollRef = useRef(null);
 	const width = useWidth(scrollRef);
 	const cards = measureCards(Math.max(width, CARD_TARGET_PX));
+	const templateCards = measureCards(Math.max(width, TEMPLATE_CARD_TARGET_PX), TEMPLATE_CARD_TARGET_PX, MIN_TEMPLATE_COLUMNS);
 	const asked = keyword.trim() !== "";
+	const onShelf = mode === "template" || shelf === "templates";
+	const offersBoth = mode === "browse" && templates.length > 0;
 	// CONTEXT: an inline widget has no footprint, so the head does not offer to narrow by one
 	const bounds = sizeBounds(kind === "inline" ? NO_SIZE : typedSize);
 
@@ -386,6 +404,10 @@ export function Catalogue({ registry, host, mode = "browse", kind = "board", ava
 
 	const { placed, divide } = laidOut(shown);
 
+	const nameOf = (widget) => merged.find((entry) => entry.manifest?.id === widget)?.manifest?.title ?? widget;
+	const foundTemplates = asked ? rankSearch(keyword, templates).map((hit) => hit.record) : templates;
+	const empty = onShelf ? foundTemplates.length === 0 : shown.length === 0;
+
 	return h("div", { className: "wg-cat" }, [
 		h("header", { className: "wg-cat-head", key: "head" }, [
 			h(Field, {
@@ -393,19 +415,22 @@ export function Catalogue({ registry, host, mode = "browse", kind = "board", ava
 				block: true,
 				className: "wg-cat-search",
 				icon: h(Icon, { name: "search" }),
-				placeholder: "Search widgets",
+				placeholder: onShelf ? SEARCH_TEMPLATES : SEARCH_WIDGETS,
 				value: keyword,
 				onInput: (event) => setKeyword(event.target.value),
 			}),
-			h(Segmented, { key: "shown", className: "wg-cat-shown", items: SHOWN, value: showing, onChange: setShowing }),
-			kind === "inline"
+			offersBoth ? h(Segmented, { key: "shelf", className: "wg-cat-shelf", items: SHELVES, value: shelf, onChange: setShelf }) : null,
+			onShelf ? null : h(Segmented, { key: "shown", className: "wg-cat-shown", items: SHOWN, value: showing, onChange: setShowing }),
+			onShelf || kind === "inline"
 				? null
 				: h(SizeFilter, { key: "size", typed: typedSize, onTyped: setTypedSize, phone: width > 0 && classOf(width).name === "phone" }),
 		]),
 		h(
 			"div",
 			{ key: "scroll", ref: scrollRef, className: "wg-cat-scroll" },
-			width <= 0
+			onShelf
+				? h(TemplateGrid, { templates: foundTemplates, columns: templateCards.columns, nameOf, onUse: onUseTemplate })
+				: width <= 0
 				? null
 				: h(
 						"div",
@@ -428,6 +453,6 @@ export function Catalogue({ registry, host, mode = "browse", kind = "board", ava
 						}),
 				  ),
 		),
-		shown.length === 0 ? h("p", { className: "wg-cat-none", key: "none" }, "Nothing here answers to that.") : null,
+		empty ? h("p", { className: "wg-cat-none", key: "none" }, onShelf ? NO_TEMPLATE : "Nothing here answers to that.") : null,
 	]);
 }

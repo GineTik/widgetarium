@@ -11,9 +11,10 @@ const SAID = {
 	fill: { title: "Fill this slot", lead: "Pick the widget this slot draws for every row" },
 	text: { title: "Pick a widget", lead: "The widget this trigger draws, wherever the text appears" },
 	mount: { title: "Add a view", lead: "Pick a widget and it becomes a view with a name of your own" },
+	template: { title: "Templates", lead: "Pick one and it becomes a page, with every widget it stands on" },
 };
 
-export function CatalogueDialog({ registry, host, mode = "browse", kind = "board", available, rank, foot, onPick, onInstall, onClose }) {
+export function CatalogueDialog({ registry, host, mode = "browse", kind = "board", available, templates, rank, foot, onPick, onInstall, onUseTemplate, onClose }) {
 	const said = SAID[mode] ?? SAID.browse;
 	return h(
 		DialogOverlay,
@@ -24,7 +25,7 @@ export function CatalogueDialog({ registry, host, mode = "browse", kind = "board
 				h(DialogDescription, { key: "lead" }, said.lead),
 			]),
 			h(DialogClose, { key: "close", onClose }),
-			h(Catalogue, { key: "grid", registry, host, mode, kind, available, rank, onPick, onInstall }),
+			h(Catalogue, { key: "grid", registry, host, mode, kind, available, templates, rank, onPick, onInstall, onUseTemplate }),
 			foot ? h(DialogFooter, { key: "foot" }, foot) : null,
 		]),
 	);

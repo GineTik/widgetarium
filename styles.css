@@ -2300,7 +2300,8 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: the kit's own card carries the ground and the edge; this adds only the layout */
-:is(.wg-root, .wg-portal) .wg-cat-tile {
+:is(.wg-root, .wg-portal) .wg-cat-tile,
+:is(.wg-root, .wg-portal) .wg-tpl-tile {
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -2317,12 +2318,14 @@ pre:has(> .block-language-widgetarium),
 	transition: box-shadow var(--wg-quick) var(--wg-ease), transform var(--wg-quick) var(--wg-ease);
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-tile:hover {
+:is(.wg-root, .wg-portal) .wg-cat-tile:hover,
+:is(.wg-root, .wg-portal) .wg-tpl-tile:hover {
 	transform: translateY(-1px);
 	background: var(--wg-kit-fill-hover);
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-tile:focus-visible {
+:is(.wg-root, .wg-portal) .wg-cat-tile:focus-visible,
+:is(.wg-root, .wg-portal) .wg-tpl-tile:focus-visible {
 	outline: 2px solid var(--interactive-accent);
 	outline-offset: 2px;
 }
@@ -2425,7 +2428,8 @@ pre:has(> .block-language-widgetarium),
    of every preview and made the stage reserve 58px it never used for the widget. Laid in the grey
    the card already has, it needs no tint, no blur and no edge of its own — the card is the ground,
    and the row is one of its rows. */
-:is(.wg-root, .wg-portal) .wg-cat-foot {
+:is(.wg-root, .wg-portal) .wg-cat-foot,
+:is(.wg-root, .wg-portal) .wg-tpl-foot {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2, 8px);
@@ -2442,7 +2446,8 @@ pre:has(> .block-language-widgetarium),
 	white-space: nowrap;
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-name {
+:is(.wg-root, .wg-portal) .wg-cat-name,
+:is(.wg-root, .wg-portal) .wg-tpl-name {
 	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -2473,7 +2478,9 @@ pre:has(> .block-language-widgetarium),
 
 
 /* CONTEXT: the shop window's one sentence, on the card — no detail page exists to hold it yet */
-:is(.wg-root, .wg-portal) .wg-cat-what {
+:is(.wg-root, .wg-portal) .wg-cat-what,
+:is(.wg-root, .wg-portal) .wg-tpl-what,
+:is(.wg-root, .wg-portal) .wg-tpl-step {
 	margin: 0;
 	padding: 0 2px 2px;
 	font-size: var(--font-ui-smaller, 12px);
@@ -2508,14 +2515,89 @@ pre:has(> .block-language-widgetarium),
 }
 
 @media (prefers-reduced-motion: reduce) {
-	:is(.wg-root, .wg-portal) .wg-cat-tile {
+	:is(.wg-root, .wg-portal) .wg-cat-tile,
+	:is(.wg-root, .wg-portal) .wg-tpl-tile {
 		transition: none;
 	}
 
-	:is(.wg-root, .wg-portal) .wg-cat-tile:hover {
+	:is(.wg-root, .wg-portal) .wg-cat-tile:hover,
+	:is(.wg-root, .wg-portal) .wg-tpl-tile:hover {
 		transform: none;
 	}
 }
+
+:is(.wg-root, .wg-portal) .wg-cat-shelf {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-name {
+	flex: 1;
+	white-space: nowrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-step {
+	color: var(--interactive-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-grid {
+	columns: var(--wg-cat-columns, 3);
+	column-gap: var(--size-4-3, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-stage {
+	display: block;
+	padding: 10px;
+	border-radius: var(--wg-kit-item);
+	background: var(--background-primary);
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-sketch {
+	display: flex;
+	gap: 6px;
+	height: 180px;
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-region {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-region.is-main {
+	flex: 1 1 auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-region.is-left,
+:is(.wg-root, .wg-portal) .wg-tpl-region.is-right {
+	flex: 0 0 14%;
+	border-radius: var(--wg-kit-item);
+	border: 1px dashed var(--wg-kit-card-edge);
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-row {
+	display: flex;
+	gap: 6px;
+	flex-basis: 0;
+	min-height: 22px;
+}
+
+:is(.wg-root, .wg-portal) .wg-tpl-cell {
+	display: grid;
+	place-items: center;
+	flex-basis: 0;
+	min-width: 0;
+	padding: 0 6px;
+	border-radius: var(--wg-kit-item);
+	background: var(--wg-kit-fill-hover);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.2;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
 
 :is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
 	width: min(1040px, 100%);
