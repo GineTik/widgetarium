@@ -622,7 +622,7 @@ const Cell = memo(
 		before.shared === after.shared,
 );
 
-function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, editing, patchTile, commitLayout, region, regionsRef, carry, onCarry, overlay }) {
+function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, editing, patchTile, commitLayout, region, carry, onCarry, overlay }) {
 	const rootRef = useRef(null);
 	const dragRef = useRef(null);
 	const restingRef = useRef({});
@@ -759,15 +759,9 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 		]);
 	};
 
-	const holdRoot = (node) => {
-		rootRef.current = node;
-		if (node) regionsRef?.current?.set(region, node);
-		else regionsRef?.current?.delete(region);
-	};
-
 	return h(
 		"div",
-		{ className: "wg-tree", ref: holdRoot, "data-region": region, style: { "--wg-tree-gap": `${GAP_PX}px` } },
+		{ className: "wg-tree", ref: rootRef, "data-region": region, style: { "--wg-tree-gap": `${GAP_PX}px` } },
 		emptyRegion(),
 		overlay.map((tile) =>
 			h(
@@ -788,7 +782,7 @@ const GHOST_TALLEST_PX = 96;
 const GHOST_SHORTEST_PX = 44;
 const GHOST_WIDEST_PX = 260;
 const GHOST_NARROWEST_PX = 150;
-const DWELL_MS = 90;
+const DWELL_MS = 50;
 const LANDING_MS = 190;
 
 function scrollerOf(node) {
@@ -1037,15 +1031,21 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, ...rest }) {
 		window.addEventListener("pointerup", stop);
 	};
 
+	const holdColumn = (name) => (node) => (node ? regionsRef.current.set(name, node) : regionsRef.current.delete(name));
+
 	const region = (name, given) =>
 		h(
 			"div",
-			{ className: `wg-tree-region is-${name}`, key: name, style: name === "main" ? { flex: "1 1 0", minWidth: 0 } : { flex: `0 0 ${given}px`, minWidth: 0 } },
+			{
+				className: `wg-tree-region is-${name}`,
+				key: name,
+				ref: holdColumn(name),
+				style: name === "main" ? { flex: "1 1 0", minWidth: 0 } : { flex: `0 0 ${given}px`, minWidth: 0 },
+			},
 			h(TreeRegion, {
 				...rest,
 				board,
 				region: name,
-				regionsRef,
 				carry: carrying,
 				onCarry: carryFrom,
 				overlay: name === "main" ? unplaced : [],
