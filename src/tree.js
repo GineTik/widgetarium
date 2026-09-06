@@ -18,8 +18,9 @@ export function layTree(rows, width, gap = GAP_PX) {
 function laidRow(row, from, width, gap) {
 	const inner = innerOf(row.length, width, gap);
 	const widths = widthsOf(row, inner);
-	if (row.some((cell, at) => widths[at] + HAIR_PX < cell.minPx)) return row.map((cell) => ({ from, cells: [sized(cell, width)] }));
-	return [{ from, cells: row.map((cell, at) => sized(cell, widths[at])) }];
+	if (row.some((cell, at) => widths[at] + HAIR_PX < cell.minPx)) return row.map((cell) => ({ from, cells: [sized(cell, width, 1)] }));
+	const grows = growsOf(row);
+	return [{ from, cells: row.map((cell, at) => sized(cell, widths[at], grows[at])) }];
 }
 
 export function innerOf(cells, width, gap = GAP_PX) {
@@ -31,8 +32,12 @@ export function widthsOf(row, inner) {
 	return row.map((cell) => (inner * cell.ratio) / total);
 }
 
-function sized(cell, width) {
-	return { id: cell.id, width, ratio: cell.ratio, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
+export function growsOf(row) {
+	return widthsOf(row, 1);
+}
+
+function sized(cell, width, grow) {
+	return { id: cell.id, width, grow, ratio: cell.ratio, minPx: cell.minPx, cap: cell.cap ?? 0, height: cell.height ?? null };
 }
 
 export function resized(row, at, { boundaryPx, inner, isFree, give }) {
@@ -71,19 +76,46 @@ export function tallestOf(row) {
 	return row.reduce((most, cell) => Math.max(most, cell.height ?? 0), 0);
 }
 
+// TRADE-OFF: a row the target no longer names takes the cell as a row of its own; dropping it would lose the tile
+function opened(rows, fresh, target) {
+	if (target.kind === "row") return [...rows.slice(0, target.at), [fresh], ...rows.slice(target.at)];
+	if (!rows[target.row]) return [...rows, [fresh]];
+	return rows.map((row, index) => (index === target.row ? [...row.slice(0, target.at), fresh, ...row.slice(target.at)] : row));
+}
+
+export function withoutCell(rows, id) {
+	return rows.map((row) => row.filter((cell) => cell.id !== id)).filter((row) => row.length > 0);
+}
+
+export function rowIndexesAfterLeaving(rows, id) {
+	let gone = 0;
+	return rows.map((row, at) => {
+		if (row.some((cell) => cell.id !== id)) return at - gone;
+		gone += 1;
+		return null;
+	});
+}
+
 export function moved(rows, id, target) {
 	const held = rows.flat().find((cell) => cell.id === id);
 	if (!held || !target) return rows;
-	const fresh = { ...held };
-	const opened =
-		target.kind === "row"
-			? [...rows.slice(0, target.at), [fresh], ...rows.slice(target.at)]
-			: rows.map((row, index) => (index === target.row ? [...row.slice(0, target.at), fresh, ...row.slice(target.at)] : row));
-	return opened.map((row) => row.filter((cell) => cell === fresh || cell.id !== id)).filter((row) => row.length > 0);
+	return opened(withoutCell(rows, id), { ...held }, target);
+}
+
+export function carriedInto(layout, { id, from, to, target }) {
+	if (!target || !layout?.[from] || !layout?.[to]) return layout;
+	if (from === to) return { ...layout, [from]: { ...layout[from], rows: moved(layout[from].rows, id, target) } };
+	const held = layout[from].rows.flat().find((cell) => cell.id === id);
+	if (!held) return layout;
+	return {
+		...layout,
+		[from]: { ...layout[from], rows: withoutCell(layout[from].rows, id) },
+		[to]: { ...layout[to], rows: opened(withoutCell(layout[to].rows, id), { ...held }, target) },
+	};
 }
 
 export function aimedAt(bands, x, y) {
-	if (bands.length === 0) return null;
+	if (bands.length === 0) return { kind: "row", at: 0 };
 	if (y < bands[0].top) return { kind: "row", at: bands[0].from };
 	const band = bands.find((one) => y >= one.top && y <= one.bottom);
 	if (!band) return { kind: "row", at: bands[bands.length - 1].from + 1 };
@@ -93,10 +125,9 @@ export function aimedAt(bands, x, y) {
 
 function besideIn(band, x) {
 	const at = band.cells.findIndex((cell) => x <= cell.right);
-	if (at < 0) return { kind: "beside", row: band.from, at: band.cells.length, edge: band.cells.at(-1).right };
+	if (at < 0) return { kind: "beside", row: band.from, at: band.cells.length };
 	const cell = band.cells[at];
-	const isBefore = x < cell.left + (cell.right - cell.left) / 2;
-	return { kind: "beside", row: band.from, at: isBefore ? at : at + 1, edge: isBefore ? cell.left : cell.right };
+	return { kind: "beside", row: band.from, at: x < cell.left + (cell.right - cell.left) / 2 ? at : at + 1 };
 }
 
 export const MIN_SIDEBAR_PX = 200;
@@ -106,7 +137,15 @@ export function sidebarWidth(layout, name) {
 }
 
 export function foldableIn(layout) {
-	return REGIONS.filter((name) => name !== "main" && layout?.[name]?.rows.length > 0);
+	return REGIONS.filter((name) => name !== "main" && layout?.[name]);
+}
+
+export function occupiedLayout(layout) {
+	return Object.fromEntries(REGIONS.filter((name) => layout?.[name] && (name === "main" || layout[name].rows.length > 0)).map((name) => [name, layout[name]]));
+}
+
+export function shownLayout(layout, editing) {
+	return editing ? layout : occupiedLayout(layout);
 }
 
 export function isFolded(layout, name) {
@@ -118,7 +157,7 @@ export function toggledFold(layout, name) {
 }
 
 export function columnsOf(layout, width, gap = REGION_GAP_PX) {
-	const named = REGIONS.filter((name) => layout[name]?.rows.length > 0 && !isFolded(layout, name));
+	const named = REGIONS.filter((name) => layout[name] && !isFolded(layout, name));
 	if (!named.includes("main")) return { beside: [], stacked: named };
 	const sides = named.filter((name) => name !== "main");
 	for (const kept of [sides, sides.filter((name) => name !== "right"), []]) {
@@ -140,29 +179,8 @@ export function widenedRegion(layout, name, wantedPx, width, gap = REGION_GAP_PX
 	return Math.round(heldBetween(wantedPx, MIN_SIDEBAR_PX, width - taken - gap - MAIN_FLOOR_PX, give));
 }
 
-const NOTHING_MOVES = { cells: {}, bands: {}, slot: null };
-
-export function partedBy(bands, target, carried, gap = GAP_PX) {
-	if (!target || bands.length === 0) return NOTHING_MOVES;
-	if (target.kind !== "beside") return partedAsRow(bands, target, carried, gap);
-	const band = bands.find((one) => one.from === target.row);
-	return band ? partedBeside(band, target, carried, gap) : NOTHING_MOVES;
-}
-
-function partedBeside(band, target, carried, gap) {
-	const cells = {};
-	for (const [index, cell] of band.cells.entries()) if (index >= target.at && cell.id !== carried.id) cells[cell.id] = carried.width + gap;
-	const last = band.cells[band.cells.length - 1];
-	const left = target.at < band.cells.length ? band.cells[target.at].left : last.right + gap;
-	return { cells, bands: {}, slot: { left, top: band.top, width: carried.width, height: band.rowBottom - band.top } };
-}
-
-function partedAsRow(bands, target, carried, gap) {
-	const shifted = {};
-	for (const band of bands) if (band.from >= target.at) shifted[band.from] = carried.height + gap;
-	const above = bands.filter((one) => one.from < target.at).at(-1);
-	const top = above ? above.rowBottom + gap : bands[0].top;
-	return { cells: {}, bands: shifted, slot: { left: bands[0].left, top, width: bands[0].width, height: carried.height } };
+export function isUnder(box, pointer) {
+	return pointer.clientX >= box.left && pointer.clientX <= box.right && pointer.clientY >= box.top && pointer.clientY <= box.bottom;
 }
 
 export function sameTarget(one, other) {

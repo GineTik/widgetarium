@@ -3225,6 +3225,19 @@ pre:has(> .block-language-widgetarium),
 	content: none;
 }
 
+.wg-tree-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 96px;
+	flex: 1 1 auto;
+	border-radius: var(--wg-tile-radius, 20px);
+	box-shadow: inset 0 0 0 2px var(--background-modifier-border);
+	color: var(--text-muted);
+	font-size: 13px;
+	text-align: center;
+}
+
 .wg-tree-overlay {
 	position: absolute;
 	width: 0;
@@ -3308,19 +3321,12 @@ body.wg-tree-dragging .wg-tree-region {
 
 .wg-root.is-editing .wg-tree-grip { opacity: 0.55; }
 
-.wg-tree-slot {
-	position: fixed;
-	z-index: 8;
+.wg-tree-cell.is-stand-in {
 	border-radius: var(--wg-tile-radius, 20px);
 	background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
 	box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 42%, transparent);
 	pointer-events: none;
-	animation: wg-tree-land 180ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
-	transition:
-		left 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1),
-		top 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1),
-		width 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1),
-		height 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+	animation: wg-tree-land 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 @keyframes wg-tree-land {
@@ -3330,16 +3336,49 @@ body.wg-tree-dragging .wg-tree-region {
 	}
 }
 
-.wg-tree.is-carrying .wg-tree-band,
-.wg-tree.is-carrying .wg-tree-cell {
-	transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+.wg-tree-cell.is-stand-in::after {
+	content: none;
 }
 
-.wg-tree-cell.is-carried {
-	z-index: 12;
-	opacity: 0.92;
+.wg-tree-ghost {
+	position: absolute;
+	z-index: 30;
+	pointer-events: none;
+}
+
+.wg-tree-ghost-plate {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	padding: 0 16px;
+	box-sizing: border-box;
+	border-radius: var(--wg-tile-radius, 20px);
+	background: var(--background-primary);
 	box-shadow: var(--wg-tile-lift, 0 18px 40px rgba(0, 0, 0, 0.22));
-	transition: box-shadow 160ms ease;
+	color: var(--text-normal);
+	font-size: 14px;
+	text-align: center;
+	overflow: hidden;
+	animation: wg-tree-lift 220ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes wg-tree-lift {
+	from {
+		transform: scale(var(--wg-ghost-lifted-from, 1));
+		opacity: 0.95;
+	}
+	to {
+		transform: scale(1);
+		opacity: 0.72;
+	}
+}
+
+.wg-tree-ghost b {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .wg-root.is-editing .wg-tree-cell { cursor: grab; }
