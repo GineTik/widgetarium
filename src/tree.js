@@ -114,12 +114,21 @@ export function carriedInto(layout, { id, from, to, target }) {
 	};
 }
 
+export const ROW_EDGE_SHARE = 0.28;
+export const ROW_EDGE_CEILING_PX = 64;
+
 export function aimedAt(bands, x, y) {
 	if (bands.length === 0) return { kind: "row", at: 0 };
 	if (y < bands[0].top) return { kind: "row", at: bands[0].from };
 	const band = bands.find((one) => y >= one.top && y <= one.bottom);
 	if (!band) return { kind: "row", at: bands[bands.length - 1].from + 1 };
-	if (y > band.rowBottom) return { kind: "row", at: band.from + 1 };
+	return compassIn(band, x, y);
+}
+
+function compassIn(band, x, y) {
+	const edge = Math.min((band.rowBottom - band.top) * ROW_EDGE_SHARE, ROW_EDGE_CEILING_PX);
+	if (y < band.top + edge) return { kind: "row", at: band.from };
+	if (y > band.rowBottom - edge) return { kind: "row", at: band.from + 1 };
 	return besideIn(band, x);
 }
 
