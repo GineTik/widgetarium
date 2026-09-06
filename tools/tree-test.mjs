@@ -8,8 +8,9 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, columnsOf, foldableIn, isFolded, toggledFold, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, partedBy, resized, restacked, SIDEBAR_PX, widenedRegion } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, carriedInto, columnsOf, foldableIn, isFolded, toggledFold, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, rowIndexesAfterLeaving, occupiedLayout, resized, restacked, SIDEBAR_PX, widenedRegion, withoutCell } = await import("./.mjs-cache/tree.mjs");
 const { GIVE_PX } = await import("./.mjs-cache/give.mjs");
+const { millisecondsAcross } = await import("./.mjs-cache/flip.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const TABS_CEILING_PX = JSON.parse(readFileSync("widgets/@core/editable-tabs/manifest.json", "utf8")).tallestPx;
@@ -182,6 +183,7 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	check("and it runs the whole line", seen.alongWidth, seen.boardWidth);
 	check("no row is left without a strip, capped widgets or not", seen.capped, 0);
 	check("the gap the grip fills is the gap the layout counted", seen.sharedRow[0] + seen.sharedRow[1] + GAP_PX, seen.boardWidth);
+	check("a tile standing alone on a row takes the whole row", seen.loneRows, seen.loneRows.map(() => 0));
 }
 
 console.log("\n— and dragging that grip writes the board once —");
@@ -356,7 +358,7 @@ console.log("\n— and the give is handed back with a transition, never during t
 {
 	const seen = measured.eases;
 	check("a row eases its height", [seen.row.property, seen.row.loose], ["height", "0.2s"]);
-	check("a cell eases its share of the row", [seen.cell.property, seen.cell.loose], ["flex-grow", "0.2s"]);
+	check("a cell eases both the room it takes and the place it moves to", [seen.cell.property, seen.cell.loose], ["transform, flex-grow", "0.22s, 0.2s"]);
 	check("a region eases its width", [seen.region.property, seen.region.loose], ["flex-basis", "0.2s"]);
 	check("and none of the three eases while the pointer is down", [seen.row.held, seen.cell.held, seen.region.held], ["0s", "0s", "0s"]);
 }
@@ -364,10 +366,9 @@ console.log("\n— and the give is handed back with a transition, never during t
 console.log("\n— in reading mode a press on a tile carries nothing —");
 {
 	const seen = measured.whileReading;
-	check("no line was drawn", seen.aimed, 0);
-	check("nothing was dimmed", seen.dimmed, 0);
+	check("no stand-in was drawn", seen.standIns, 0);
+	check("and nothing was carried under the pointer", seen.ghosts, 0);
 	check("and no grip was showing either", seen.gripShown, 0);
-	check("and nothing parted", seen.parted + seen.partedCells, 0);
 	check("and the rows are exactly as they were", seen.after, seen.before);
 }
 
@@ -377,14 +378,22 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 	check("the probe found the kanban", seen.failed ?? null, null);
 	check("editing shows every grip at once", seen.gripShown, 0.55);
 	check("before the carry it stood alone on the last row", seen.before.at(-1), ["board"]);
-	check("a line was drawn where it would land", seen.aimed, 1);
-	check("the tile being carried was marked as lifted", seen.dimmed, 1);
-	check("and it had actually left its slot", seen.lifted !== "none", true);
-	check("the tile it landed beside stepped aside", seen.partedCells, 1);
-	check("and no whole row had to move for it", seen.parted, 0);
+	check("the row it will land in holds its place for it", seen.standIns, 1);
+	check("and one tile rides under the pointer", seen.ghosts, 1);
+	check("the plate is under the pointer, not beside it", seen.underPointer, true);
+	check("and it is a plate, not the whole widget", seen.plateSize?.[1] <= 96, true);
 	check("after the drop it stands on the first row", seen.after[0].includes("board"), true);
 	check("and it left no empty row behind", seen.after.length, seen.before.length - 1);
 	check("the board was written a third time", seen.writes, 3);
+}
+
+console.log("\n— and the place it held is the place it lands, to the pixel —");
+{
+	const seen = measured.carried;
+	const off = seen.lie ?? {};
+	check("the stand-in stands where the tile lands", [off.left, off.top], [0, 0]);
+	check("and is exactly as wide and as tall", [off.width, off.height], [0, 0]);
+	check("nothing was pushed outside the board while it was held", seen.spilled, []);
 }
 
 console.log("\n— and the plugin draws those three regions without a pixel spare —");
@@ -463,6 +472,12 @@ console.log("\n— a board of three regions stands side by side while there is r
 	check("a folded sidebar still offers its toggle — nothing else would bring it back", foldableIn(folded), ["left", "right"]);
 	check("a region that holds no rows offers none", foldableIn({ main: { rows } }), []);
 	check("and a board with no tree at all offers none", foldableIn(undefined), []);
+
+	const bare = { left: { rows: [] }, main: { rows: [] }, right: { rows: [] } };
+	check("an empty sidebar still stands, because nothing can be dropped where nothing is drawn", names(columnsOf(bare, 1600, 8)), ["left", "main", "right"]);
+	check("and it still offers its toggle", foldableIn(bare), ["left", "right"]);
+	check("reading a board only nobody is editing drops the empty sidebars", Object.keys(occupiedLayout(bare)), ["main"]);
+	check("and keeps the ones holding something", Object.keys(occupiedLayout({ ...bare, right: { rows } })), ["main", "right"]);
 }
 
 function toggleChecks() {
@@ -502,36 +517,52 @@ console.log("\n— carrying a tile puts it where it was aimed, and closes the ro
 
 	check("dropped as a row of its own it lands there", ids(moved(rows, "c", { kind: "row", at: 0 })), [["c"], ["a"], ["b"]]);
 	check("and the row it left keeps the rest", ids(moved(rows, "b", { kind: "row", at: 2 })), [["a"], ["c"], ["b"]]);
-	check("dropped beside a tile it joins that row", ids(moved(rows, "a", { kind: "beside", row: 1, at: 1 })), [["b", "a", "c"]]);
-	check("and the row it emptied is gone", moved(rows, "a", { kind: "beside", row: 1, at: 1 }).length, 1);
+	check("dropped beside a tile it joins that row", ids(moved(rows, "a", { kind: "beside", row: 0, at: 1 })), [["b", "a", "c"]]);
+	check("and the row it emptied is gone", moved(rows, "a", { kind: "beside", row: 0, at: 1 }).length, 1);
 	check("it carries its own weight along", moved(rows, "c", { kind: "row", at: 0 })[0][0].ratio, 2);
 	check("a tile nobody is holding moves nothing", ids(moved(rows, "nobody", { kind: "row", at: 0 })), ids(rows));
 	check("and no target moves nothing either", ids(moved(rows, "a", null)), ids(rows));
+
+	const layout = { left: { rows: [] }, main: { rows }, right: { rows: [] } };
+	const across = carriedInto(layout, { id: "c", from: "main", to: "right", target: { kind: "row", at: 0 } });
+	check("a tile carried into an empty sidebar arrives there", ids(across.right.rows), [["c"]]);
+	check("and leaves the region it came from", ids(across.main.rows), [["a"], ["b"]]);
+	check("it carries its weight across too", across.right.rows[0][0].ratio, 2);
+	check("carried back inside one region it is the same move as before", ids(carriedInto(layout, { id: "c", from: "main", to: "main", target: { kind: "row", at: 0 } }).main.rows), ids(moved(rows, "c", { kind: "row", at: 0 })));
+	check("a tile the source region does not hold moves nothing", carriedInto(layout, { id: "nobody", from: "main", to: "right", target: { kind: "row", at: 0 } }), layout);
+	check("and no target moves nothing either", carriedInto(layout, { id: "c", from: "main", to: "right", target: null }), layout);
+	check("a region with no rows still answers where a drop lands", aimedAt([], 40, 40), { kind: "row", at: 0 });
+	check("dropping beside nothing in an empty region opens the first row", ids(carriedInto(layout, { id: "c", from: "main", to: "left", target: { kind: "beside", row: 0, at: 0 } }).left.rows), [["c"]]);
+	check("a target naming a row that is gone keeps the tile rather than losing it", ids(carriedInto(layout, { id: "c", from: "main", to: "left", target: { kind: "beside", row: 9, at: 0 } }).left.rows), [["c"]]);
+	check("and within one region it is kept too", ids(moved(rows, "c", { kind: "beside", row: 9, at: 0 })), [["a"], ["b"], ["c"]]);
+	const doubled = { left: { rows: [[{ id: "c", ratio: 1 }]] }, main: { rows }, right: { rows: [] } };
+	check("a tile a hand-edited file put in two regions arrives once", ids(carriedInto(doubled, { id: "c", from: "main", to: "left", target: { kind: "row", at: 0 } }).left.rows), [["c"]]);
 }
 
-console.log("\n— and the rest step aside by exactly the room the carried tile needs —");
+console.log("\n— a target names a row in the board the carried tile has already left —");
 {
-	const bands = [
-		{ from: 0, left: 0, width: 1200, top: 0, bottom: 112, rowBottom: 100, cells: [{ id: "a", left: 0, right: 600 }, { id: "b", left: 612, right: 1200 }] },
-		{ from: 1, left: 0, width: 1200, top: 112, bottom: 324, rowBottom: 312, cells: [{ id: "c", left: 0, right: 1200 }] },
-	];
-	const carried = { id: "c", width: 300, height: 200 };
+	const rows = [[{ id: "a", ratio: 1 }], [{ id: "b", ratio: 1 }, { id: "c", ratio: 2 }], [{ id: "d", ratio: 1 }]];
+	const ids = (given) => given.map((row) => row.map((cell) => cell.id));
 
-	const beside = partedBy(bands, { kind: "beside", row: 0, at: 1 }, carried, 12);
-	check("only the tile after the landing steps aside", beside.cells, { b: 312 });
-	check("and it steps by the carried width plus the gap", beside.cells.b, 300 + 12);
-	check("no row moves for a landing inside one", beside.bands, {});
-	check("the slot sits on the edge it was aimed at", beside.slot.left, 612);
-	check("and is as tall as the row it joins", beside.slot.height, 100);
+	check("the row a lone tile leaves is gone, and the ones under it move up", rowIndexesAfterLeaving(rows, "a"), [null, 0, 1]);
+	check("a row it shared with another keeps its place", rowIndexesAfterLeaving(rows, "c"), [0, 1, 2]);
+	check("a tile no row holds renumbers nothing", rowIndexesAfterLeaving(rows, "nobody"), [0, 1, 2]);
+	check("and the rows themselves say the same", ids(withoutCell(rows, "a")), [["b", "c"], ["d"]]);
 
-	const asRow = partedBy(bands, { kind: "row", at: 1 }, carried, 12);
-	check("landing as a row pushes the rows below it down", asRow.bands, { 1: 212 });
-	check("and leaves the rows above alone", asRow.cells, {});
-	check("the slot runs the width of the board", asRow.slot.width, 1200);
-	check("and sits under the row it follows", asRow.slot.top, 112);
+	const layout = { left: { rows: [] }, main: { rows }, right: { rows: [] } };
+	const inside = carriedInto(layout, { id: "a", from: "main", to: "main", target: { kind: "row", at: 1 } });
+	const across = carriedInto({ ...layout, left: { rows: [[{ id: "z", ratio: 1 }]] } }, { id: "a", from: "main", to: "left", target: { kind: "row", at: 1 } });
+	check("row 1 means the same place inside one region", ids(inside.main.rows), [["b", "c"], ["a"], ["d"]]);
+	check("and across two", ids(across.left.rows), [["z"], ["a"]]);
+}
 
-	check("the carried tile never steps aside from itself", partedBy(bands, { kind: "beside", row: 1, at: 0 }, carried, 12).cells, {});
-	check("and with no target nothing moves at all", partedBy(bands, null, carried, 12), { cells: {}, bands: {}, slot: null });
+console.log("\n— a tile travels at a speed, so a long move is not a teleport —");
+{
+	check("a step takes the floor, however short it is", millisecondsAcross(4, 0), millisecondsAcross(0, 0));
+	check("twice as far takes longer", millisecondsAcross(800, 0) > millisecondsAcross(400, 0), true);
+	check("and the far side of a board still lands inside half a second", millisecondsAcross(4000, 0) <= 500, true);
+	check("a diagonal is measured as one distance, not two", millisecondsAcross(300, 400), millisecondsAcross(500, 0));
+	check("and nothing crawls: even the floor is under a fifth of a second", millisecondsAcross(0, 0) <= 200, true);
 }
 
 console.log("\n— and the aim reads the pointer against the bands —");
@@ -543,10 +574,37 @@ console.log("\n— and the aim reads the pointer against the bands —");
 	check("above everything it aims at the first row", aimedAt(bands, 300, -20), { kind: "row", at: 0 });
 	check("below everything it aims past the last", aimedAt(bands, 300, 900), { kind: "row", at: 2 });
 	check("in the strip under a row it makes a new row after it", aimedAt(bands, 300, 106), { kind: "row", at: 1 });
+	check("near the top of a row it opens a row above it", aimedAt(bands, 300, 8), { kind: "row", at: 0 });
+	check("near the bottom of a row it opens one below", aimedAt(bands, 300, 92), { kind: "row", at: 1 });
+	check("and the two edges together never eat the whole row", aimedAt(bands, 300, 50).kind, "beside");
+	check("a tall row keeps its edges to a reachable band, not to a quarter of itself", aimedAt([{ from: 0, top: 0, bottom: 900, rowBottom: 880, cells: [{ left: 0, right: 1200 }] }], 300, 200).kind, "beside");
 	check("in a tile's left half it goes before that tile", aimedAt(bands, 100, 50).at, 0);
 	check("in its right half it goes after", aimedAt(bands, 500, 50).at, 1);
-	check("and the line is drawn on the edge it chose", aimedAt(bands, 500, 50).edge, 600);
 	check("past the last tile it goes to the end of the row", aimedAt(bands, 1400, 50).at, 2);
+}
+
+console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from the main lands in it —");
+{
+	const { emptyOpen, carriedAcross, emptyResting } = measured;
+
+	check("the board draws at all", emptyOpen.drawn, true);
+	check("all three regions stand while the board is being laid out", emptyOpen.regions, ["left", "main", "right"]);
+	check("and each one names itself, so a carried tile can find it", emptyOpen.named, ["left", "main", "right"]);
+	check("the empty left is a zone with real room in it", emptyOpen.left?.height > 0 && emptyOpen.left?.width > 0, true);
+	check("and it says what it is for", emptyOpen.left?.text, "Drag a widget here");
+	check("the empty right is a zone too", emptyOpen.right?.height > 0 && emptyOpen.right?.width > 0, true);
+	check("a tile alone on a row fills it even while its share says half", emptyOpen.halfShare, 0);
+	check("a tree board offers the palette, or nothing could ever be added to it", emptyOpen.palette, 1);
+
+	check("aiming into the empty sidebar shows where the tile would land", carriedAcross.aimed, 1);
+	check("and a tile carrying no height of its own is stood in for at the height it had", carriedAcross.lie, { left: 0, top: 0, width: 0, height: 0 });
+	check("and releasing it puts the tile in that sidebar", carriedAcross.left, [["boards"]]);
+	check("the region it came from lets it go", carriedAcross.main, []);
+
+	check("with nobody laying the board out the sidebar that stayed empty is gone", emptyResting.regions.includes("right"), false);
+	check("and the one that received the carried tile stands", emptyResting.regions, ["left", "main"]);
+	check("no zone is drawn to a reader", emptyResting.left, null);
+	check("nor a palette", emptyResting.palette, 0);
 }
 
 if (measured.failures.length > 0) {
