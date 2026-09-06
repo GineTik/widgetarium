@@ -3202,7 +3202,9 @@ pre:has(> .block-language-widgetarium),
 .wg-tree-cell {
 	position: relative;
 	min-width: 0;
-	transition: flex-grow var(--wg-quick) var(--wg-ease);
+	transition:
+		transform var(--wg-move-ms, 220ms) cubic-bezier(0.2, 0, 0, 1),
+		flex-grow var(--wg-quick) var(--wg-ease);
 }
 
 .wg-tree-cell > .wg-tile-body {
