@@ -1,14 +1,8 @@
-import { execFileSync } from "node:child_process";
-import fs from "node:fs";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import { pathToFileURL } from "node:url";
-import esbuild from "esbuild";
 
-import { findBrowser, widgetFiles, WIDGETS_AT } from "./harness.mjs";
+import { stage, widgetFiles, WIDGETS_AT } from "./harness.mjs";
 
-export { widgetFiles, WIDGETS_AT };
+export { stage, widgetFiles, WIDGETS_AT };
 
 const PROBE = `import { createWidget, useData, WidgetRoot } from "widgetarium";
 export default createWidget(function Probe({ seen }) {
@@ -29,59 +23,6 @@ export function probeFiles() {
 		[`${WIDGETS_AT}/@probe/context/widget.jsx`]: PROBE,
 		[`${WIDGETS_AT}/@probe/context/manifest.json`]: JSON.stringify(PROBE_MANIFEST),
 	};
-}
-
-const ROWS = ["To Do", "Doing", "Done"].flatMap((status, at) =>
-	[1, 2].map((nth) => ({
-		path: `Orbitask/Tasks/${status}-${nth}.md`,
-		ref: { path: `Orbitask/Tasks/${status}-${nth}.md` },
-		name: `${status} ${nth}`,
-		props: { title: `${status} ${nth}`, status, order: at * 2 + nth },
-		meta: { created: 1, modified: 2 },
-		attachments: 0,
-	})),
-);
-
-export async function stage({ board, files, steps, editing }) {
-	const bundle = await esbuild.build({
-		entryPoints: ["tools/view-page.jsx"],
-		bundle: true,
-		write: false,
-		format: "iife",
-		platform: "browser",
-		target: "es2020",
-		jsxFactory: "h",
-		jsxFragment: "Fragment",
-		logLevel: "warning",
-	});
-
-	const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
-<style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
-	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
-	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }
-.wg-host { width: 1340px; }
-* { transition: none !important; animation: none !important; }</style>
-</head><body><div class="wg-host"></div>
-<script id="wg-widgets" type="application/json">${JSON.stringify(files ?? widgetFiles())}</script>
-<script id="wg-board" type="application/json">${JSON.stringify(board)}</script>
-<script id="wg-rows" type="application/json">${JSON.stringify(ROWS)}</script>
-<script id="wg-measure" type="application/json"></script>
-<script>window.wgSteps = ${JSON.stringify(steps ?? [])}; window.wgEditing = ${JSON.stringify(Boolean(editing))};</script>
-<script>${bundle.outputFiles[0].text}</script>
-</body></html>`;
-
-	const work = mkdtempSync(path.join(tmpdir(), "wg-view-"));
-	const file = path.join(work, "view.html");
-	writeFileSync(file, page);
-	const dom = execFileSync(
-		findBrowser("view"),
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1440,960", "--virtual-time-budget=9000", "--dump-dom", `file://${file}`],
-		{ encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
-	);
-	const found = /<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/.exec(dom);
-	if (!found || !found[1]) return { failure: "the page reported nothing", file };
-	return { ...JSON.parse(found[1]), file };
 }
 
 const KANBAN = "@task/kanban-board";
