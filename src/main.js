@@ -1,4 +1,4 @@
-import { Plugin, parseYaml, stringifyYaml, TFile, Notice, MarkdownRenderChild, Platform, requestUrl } from "obsidian";
+import { Plugin, parseYaml, stringifyYaml, TFile, TFolder, Notice, MarkdownRenderChild, Platform, requestUrl } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "./engine/render.js";
 import { WidgetSurface } from "./surface.js";
@@ -19,11 +19,15 @@ import { substituteIn } from "./inline-render.js";
 import { createViewChrome } from "./view-chrome.js";
 import { foldableIn, isFolded, toggledFold } from "./tree.js";
 import { blockRefusal } from "./version.js";
+import { createBoardNote, insertBoardAtCursor, isScreenNote } from "./board-note.js";
+import { TEMPLATES, missingWidgets, templateBoard } from "./templates.js";
 
 
 // a run of edits settles into one write; longer and an edit could be lost to a crash
 const WRITE_SETTLE_MS = 400;
-const SCREEN_KEY = "widgetarium";
+const BOARD_REFUSED = "Widgetarium: the board was not created — {reason}";
+const BOARD_NOT_INSERTED = "Widgetarium: this note has a code fence that was never closed, so there is nowhere safe to put a board. Close the fence and try again.";
+const WIDGET_NOT_OFFERED = "no catalogue offers {widget}, so this template cannot be built here";
 
 // CONTEXT: an offer that cannot be drawn is a name; one that can is the widget itself
 export function drawable(entry) {
@@ -147,6 +151,26 @@ export default class WidgetariumPlugin extends Plugin {
 		});
 
 		this.addCommand({
+			id: "create-board",
+			name: "Create board",
+			callback: () => this.createBoard(),
+		});
+
+		this.addCommand({
+			id: "create-board-from-template",
+			name: "Create board from template",
+			callback: () => this.showTemplates(),
+		});
+
+		this.addCommand({
+			id: "insert-board",
+			name: "Insert board here",
+			editorCallback: (editor) => this.insertBoard(editor),
+		});
+
+		this.registerEvent(this.app.workspace.on("file-menu", (menu, file) => this.offerBoardIn(menu, file)));
+
+		this.addCommand({
 			id: "reload-plugin",
 			name: "Reload plugin",
 			callback: async () => {
@@ -183,13 +207,31 @@ export default class WidgetariumPlugin extends Plugin {
 	// CONTEXT: the palette has no board under it, so browsing is the one mode whose press adds
 	// nothing anywhere — the detail page behind it is step 6 of docs/widget-catalogue.md
 	showCatalogue() {
+		return this.openCatalogueAs("browse");
+	}
+
+	showTemplates(folder) {
+		return this.openCatalogueAs("template", folder);
+	}
+
+	templateBuilderInto(folder) {
+		return async (template, onStep) => {
+			const done = await this.useTemplate(template, folder, onStep);
+			if (done.ok) this.closeCatalogue?.();
+			return done;
+		};
+	}
+
+	async openCatalogueAs(mode, folder) {
 		this.closeCatalogue?.();
 		this.closeCatalogue = openCatalogue({
 			registry: this.registry,
 			host: this.host,
-			mode: "browse",
+			mode,
 			available: this.available,
+			templates: TEMPLATES,
 			onInstall: (entry) => this.install(entry),
+			onUseTemplate: this.templateBuilderInto(folder),
 			onClose: () => {
 				this.closeCatalogue = null;
 			},
@@ -201,15 +243,45 @@ export default class WidgetariumPlugin extends Plugin {
 	async install(entry) {
 		const done = await this.installer.install(entry);
 		if (!done.ok) return done;
-		this.signature = await this.widgetSignature();
-		await this.registry.load();
-		this.available = (await this.installer.available()).map(drawable);
-		this.refresh();
+		await this.rereadWidgets();
 		new Notice(`Widgetarium: installed ${entry.manifest.id} at ${done.commit.slice(0, 7)}`);
 		return done;
 	}
 
-	showSubstitutions() {
+	async rereadWidgets() {
+		this.signature = await this.widgetSignature();
+		await this.registry.load();
+		this.available = (await this.installer.available()).map(drawable);
+		this.refresh();
+	}
+
+	// TRADE-OFF: the installer is driven directly rather than through install(), so a template standing on six widgets neither shows six notices nor rereads the registry six times
+	async fetchWidgetsFor(template, onStep) {
+		const wanted = [];
+		for (const id of missingWidgets(template, (held) => Boolean(this.registry.get(held)))) {
+			const offer = this.available.find((entry) => entry.manifest?.id === id);
+			if (!offer) return { ok: false, failure: WIDGET_NOT_OFFERED.replace("{widget}", id) };
+			wanted.push(offer);
+		}
+		const done = await this.installer.installEvery(wanted, onStep);
+		if (done.ok && wanted.length > 0) await this.rereadWidgets();
+		return done;
+	}
+
+	async useTemplate(template, folder, onStep) {
+		try {
+			const fetched = await this.fetchWidgetsFor(template, onStep);
+			if (!fetched.ok) return fetched;
+			onStep?.(null);
+			await createBoardNote(this.app, folder, { board: templateBoard(template), name: template.title });
+			return { ok: true, failure: null };
+		} catch (failure) {
+			console.error(failure);
+			return { ok: false, failure: String(failure?.message ?? failure) };
+		}
+	}
+
+	async showSubstitutions() {
 		this.closeSubstitutions?.();
 		this.closeSubstitutions = openSubstitutions({
 			rules: this.rules,
@@ -356,10 +428,54 @@ export default class WidgetariumPlugin extends Plugin {
 		}
 	}
 
-	toggleEditing() {
-		this.editing = !this.editing;
+	setEditing(on) {
+		if (this.editing === on) return;
+		this.editing = on;
 		this.refresh();
+	}
+
+	toggleEditing() {
+		this.setEditing(!this.editing);
 		new Notice(this.editing ? "Widgetarium: editing on" : "Widgetarium: editing off");
+	}
+
+	offerBoardIn(menu, file) {
+		if (!(file instanceof TFolder)) return;
+		menu.addItem((item) =>
+			item
+				.setTitle("New Widgetarium board")
+				.setIcon("layout-grid")
+				// TRADE-OFF: the section id is read off the menu's DOM, not the API; a wrong one only strands the item in its own group
+				.setSection("action-primary")
+				.onClick(() => this.createBoard(file)),
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle("New Widgetarium board from template")
+				.setIcon("layout-template")
+				.setSection("action-primary")
+				.onClick(() => this.showTemplates(file)),
+		);
+	}
+
+	async createBoard(folder) {
+		try {
+			const file = await createBoardNote(this.app, folder);
+			this.setEditing(true);
+			return file;
+		} catch (failure) {
+			console.error(failure);
+			new Notice(BOARD_REFUSED.replace("{reason}", String(failure?.message ?? failure)));
+			return null;
+		}
+	}
+
+	insertBoard(editor) {
+		if (!insertBoardAtCursor(editor)) {
+			new Notice(BOARD_NOT_INSERTED);
+			return;
+		}
+		this.setEditing(true);
 	}
 
 	refresh() {
@@ -513,7 +629,7 @@ export default class WidgetariumPlugin extends Plugin {
 	isScreen(sourcePath) {
 		const file = this.app.vault.getAbstractFileByPath(sourcePath);
 		if (!(file instanceof TFile)) return false;
-		return this.app.metadataCache.getFileCache(file)?.frontmatter?.[SCREEN_KEY] === "screen";
+		return isScreenNote(this.app.metadataCache.getFileCache(file)?.frontmatter);
 	}
 
 	renderBlock(source, element, context) {

@@ -193,6 +193,15 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			return { ok: true, id: manifest.id, commit, failure: null };
 		},
 
+		async installEvery(listed, onStep) {
+			for (const entry of listed) {
+				onStep?.(entry?.manifest?.id);
+				const done = await this.install(entry);
+				if (!done.ok) return done;
+			}
+			return { ok: true, failure: null };
+		},
+
 		async uninstall(id) {
 			const lock = await this.lock();
 			// CONTEXT: a widget nobody installed is one the person wrote — never ours to remove
