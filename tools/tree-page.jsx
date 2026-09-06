@@ -170,7 +170,7 @@ function sidesNode() {
 
 const EMPTY_WIDTH = 1400;
 
-let emptyBoard = normalizeBoard({ tiles: BOARD.tiles, layout: { left: [], main: [[{ id: "boards", ratio: 0.5 }]], right: [] } });
+let emptyBoard = normalizeBoard({ tiles: BOARD.tiles, layout: { left: [], main: [[{ id: "boards", ratio: 0.5 }], [{ id: "board", height: 400 }]], right: [] } });
 let emptyEditing = true;
 
 function emptyNode() {
@@ -434,6 +434,26 @@ async function carryTile() {
 	};
 }
 
+async function carryIntoSlack() {
+	const held = document.querySelector('.wg-empty-probe .wg-tree-region.is-main .wg-tree-cell[data-cell="board"]');
+	const column = document.querySelector(".wg-empty-probe .wg-tree-region.is-left");
+	if (!held || !column) return { failed: "no sidebar with room under its widgets" };
+	const box = held.getBoundingClientRect();
+	const side = column.getBoundingClientRect();
+	const drawn = column.querySelector(".wg-tree").getBoundingClientRect();
+	const slack = Math.round(side.bottom - drawn.bottom);
+	const aim = { x: side.left + side.width / 2, y: drawn.bottom + Math.min(slack / 2, 200) };
+	firePointer("pointerdown", { x: box.left + 40, y: box.top + 20 }, held);
+	firePointer("pointermove", aim, window);
+	await settled();
+	await settled();
+	const aimed = document.querySelectorAll(".wg-empty-probe .wg-tree-region.is-left .wg-tree-cell.is-stand-in").length;
+	firePointer("pointerup", aim, window);
+	await settled();
+	const ids = (rows) => rows.map((row) => row.map((cell) => cell.id));
+	return { slack, aimed, left: ids(emptyBoard.layout.left.rows), main: ids(emptyBoard.layout.main.rows) };
+}
+
 function draw() {
 	render([...WIDTHS.map((width) => boardNode(width)), surfaceNode(), sidesNode(), emptyNode()], mount);
 }
@@ -494,11 +514,12 @@ async function report() {
 		const unfoldedLeft = pressToggle("left");
 		const emptyOpen = readEmpty();
 		const carriedAcross = await carryIntoLeft();
+		const intoSlack = await carryIntoSlack();
 		emptyEditing = false;
 		draw();
 		await settled();
 		const emptyResting = readEmpty();
-		sink.textContent = JSON.stringify({ widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		sink.textContent = JSON.stringify({ intoSlack, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

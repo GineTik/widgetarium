@@ -387,6 +387,16 @@ console.log("\n— and carrying the kanban onto the first row moves it there —
 	check("the board was written a third time", seen.writes, 3);
 }
 
+console.log("\n— a sidebar answers the pointer everywhere, not only where its widgets reach —");
+{
+	const seen = measured.intoSlack;
+	check("the probe found a sidebar with room to spare", seen.failed ?? null, null);
+	check("and that room is real, not a rounding error", seen.slack > 100, true);
+	check("aiming into the bare part of the column shows where the tile would land", seen.aimed, 1);
+	check("and releasing it there puts the tile under the widget already standing there", seen.left, [["boards"], ["board"]]);
+	check("the region it came from is left empty", seen.main, []);
+}
+
 console.log("\n— and the place it held is the place it lands, to the pixel —");
 {
 	const seen = measured.carried;
@@ -599,7 +609,7 @@ console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from 
 	check("aiming into the empty sidebar shows where the tile would land", carriedAcross.aimed, 1);
 	check("and a tile carrying no height of its own is stood in for at the height it had", carriedAcross.lie, { left: 0, top: 0, width: 0, height: 0 });
 	check("and releasing it puts the tile in that sidebar", carriedAcross.left, [["boards"]]);
-	check("the region it came from lets it go", carriedAcross.main, []);
+	check("the region it came from lets it go", carriedAcross.main, [["board"]]);
 
 	check("with nobody laying the board out the sidebar that stayed empty is gone", emptyResting.regions.includes("right"), false);
 	check("and the one that received the carried tile stands", emptyResting.regions, ["left", "main"]);
