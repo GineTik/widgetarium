@@ -1237,9 +1237,50 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 
 	const commitLayout = (layout) => onChange({ ...(latestRef.current?.board ?? board), layout }, true);
 
+	const bornTile = (held, widgetId) => {
+		const id = `w${Math.random().toString(36).slice(2, 8)}`;
+		return { id, tiles: wiredTiles([...held, { id, widget: widgetId, settings: {} }], registry) };
+	};
+
+	const palette = (onPick, chips = []) =>
+		editing
+			? h("div", { className: "wg-palette", key: "palette" }, [
+					h("button", { className: "wg-chip wg-palette-open", key: "add", onClick: () => setPicking(true) }, "Add widget"),
+					...chips,
+					isPicking
+						? h(CatalogueDialog, {
+								key: "catalogue",
+								registry,
+								host,
+								mode: "place",
+								onPick: (widgetId) => {
+									onPick(widgetId);
+									setPicking(false);
+								},
+								onClose: () => setPicking(false),
+						  })
+						: null,
+			  ])
+			: null;
+
 	if (board.layout) {
-		const laid = boardShell(h(TreeBoard, { board, width, registry, host, refs, cellFor, scale: scaleOf(classOf(width)), editing, patchTile, commitLayout }));
-		return isPage ? h(Page, { onClose: () => toggleExpanded() }, laid) : laid;
+		const addTreeTile = (widgetId) => {
+			const now = latestRef.current?.board ?? board;
+			const { id, tiles } = bornTile(now.tiles, widgetId);
+			onChange(
+				{
+					...now,
+					tiles,
+					layout: { ...now.layout, main: { ...now.layout.main, rows: [...now.layout.main.rows, [{ id, ratio: 1 }]] } },
+				},
+				true,
+			);
+		};
+		const drawn = boardShell([
+			h(TreeBoard, { key: "tree", board, width, registry, host, refs, cellFor, scale: scaleOf(classOf(width)), editing, patchTile, commitLayout }),
+			palette(addTreeTile),
+		]);
+		return isPage ? h(Page, { onClose: () => toggleExpanded() }, drawn) : drawn;
 	}
 
 	// the class no longer picks a layout — the column count does. It survives only to say
@@ -1499,17 +1540,17 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 
 	const addTile = (widgetId) => {
 		const born = registry.get(widgetId)?.manifest?.defaultSize ?? { w: 3, h: 2 };
-		const id = `w${Math.random().toString(36).slice(2, 8)}`;
 		// The catalogue stays open while a person reads it, and the board can move underneath —
 		// a pick written from the render that opened it would put the board back as it was then.
 		// Every other writer here already reads the latest; this one did not.
 		const now = latestRef.current;
+		const { id, tiles } = bornTile(now.board.tiles, widgetId);
 		onChange(
 			{
 				// CONTEXT: a board carries more than tiles — rebuilt, it loses its mode and its
 				// property list, and that list is what the filter bar and the task dialog read
 				...now.board,
-				tiles: wiredTiles([...now.board.tiles, { id, widget: widgetId, settings: {} }], registry),
+				tiles,
 				layouts: {
 					...now.board.layouts,
 					[now.columns]: [...now.places, { id, x: 0, y: rowsOf(now.places), w: born.w, h: born.h }],
@@ -1789,45 +1830,21 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				},
 				[editing ? cellLayer(metrics.columns, boardRows) : null, scrim, h(Fragment, { key: "tiles" }, tiles)],
 			),
-			editing
-				? h("div", { className: "wg-palette", key: "palette" }, [
-						// TRADE-OFF: the catalogue draws every widget as it really looks, so the row of
-						// names it replaces is now one press — a name is not a picture of a widget
-						h(
-							"button",
-							{ className: "wg-chip wg-palette-open", key: "add", onClick: () => setPicking(true) },
-							"Add widget",
-						),
-						...hidden.map((tile) =>
-							h(
-								"button",
-								{
-									className: "wg-chip is-hidden",
-									key: `hidden-${tile.id}`,
-									title: "Not on this layout — click to place it here",
-									onClick: () =>
-										commit([...places, { id: tile.id, x: 0, y: rows, w: 3, h: 2 }]),
-								},
-								`↩ ${registry.get(tile.widget)?.manifest?.title ?? tile.widget}`,
-							),
-						),
-						// CONTEXT: addTile writes through onChange, so a pick made while the settings
-						// window is up lands in the draft with everything else it staged
-						isPicking
-							? h(CatalogueDialog, {
-									key: "catalogue",
-									registry,
-									host,
-									mode: "place",
-									onPick: (widgetId) => {
-										addTile(widgetId);
-										setPicking(false);
-									},
-									onClose: () => setPicking(false),
-							  })
-							: null,
-				  ])
-				: null,
+			palette(
+				addTile,
+				hidden.map((tile) =>
+					h(
+						"button",
+						{
+							className: "wg-chip is-hidden",
+							key: `hidden-${tile.id}`,
+							title: "Not on this layout — click to place it here",
+							onClick: () => commit([...places, { id: tile.id, x: 0, y: rows, w: 3, h: 2 }]),
+						},
+						`↩ ${registry.get(tile.widget)?.manifest?.title ?? tile.widget}`,
+					),
+				),
+			),
 	];
 
 	const surface = boardShell(content);
