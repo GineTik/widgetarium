@@ -158,6 +158,7 @@
 			"label": "Tasks",
 			"verbs": {
 				"list": "required",
+				"get": "optional",
 				"create": "optional",
 				"update": "optional",
 				"remove": "optional"
@@ -215,7 +216,7 @@
 		"opened": {
 			"kind": "value",
 			"label": "Opened task",
-			"hint": "Which card is open, as a box. Bind a task dialog and a card opens it.",
+			"hint": "Which card is open, as a box. The board draws it full size itself.",
 			"of": "tasks",
 			"verbs": {
 				"get": "required",

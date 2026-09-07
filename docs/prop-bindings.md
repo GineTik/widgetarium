@@ -162,8 +162,8 @@ naming something that is not there.
 - `@core/view-group` exposes `holds` as a read-only collection and declares `selection` over it.
 - `@core/filter-panel` declares `chosen`, a memory box; a widget narrows itself by pointing a
   `spread` row at it.
-- `@task/kanban-board` declares `selection` (which board) and `opened` (which card).
-- `@task/task-dialog` declares `opened`, normally bound by ref to the kanban's.
+- `@task/kanban-board` declares `selection` (which board) and `opened` (which card). It draws the
+  opened card itself, so nothing on the board binds to `opened` — the box is read where it is owned.
 
 ## In the settings window
 
