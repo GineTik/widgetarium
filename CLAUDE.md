@@ -33,6 +33,20 @@ archive, reorder, delete — are written **once** over rows, and each storage su
 `read()` / `write(rows)`. Two code paths for one operation is the disease that produced `views`
 meaning three different things, slot versus mount, and archived columns living in two places.
 
+**The grid is dead. A board is a tree.** A board's layout is `layout:` — three regions, `left`,
+`main` and `right`, each holding rows of cells with a `ratio` and a `height`. The old `layouts:` map
+of column counts to `{x, y, w, h}` places is **legacy**: no entrance may create one, no surface may
+offer one, and nothing new may be built on it. It still renders, and only so that the boards written
+before the move keep opening while they are being looked at — that is a development affordance, not a
+feature, and a person using the plugin must never reach it. Everything that produces a board — the
+create command, the insert command, the folder menu, a template, the catalogue — writes a tree.
+Reading still accepts `layouts:`, per the lazy-migration law; writing never emits a new one.
+
+**A region exists because it is declared, not because it holds something.** An empty `left` or
+`right` is a real region: it draws as a zone and a carried tile can be dropped into it. This is what
+lets a board be filled at all — a sidebar that appears only once something is in it can never receive
+the first thing. A new board is born with all three.
+
 **A fed slot cannot be entered; an unfed one can.** A slot whose manifest declares `gives` gets its
 inputs from the parent and owns nothing. Without `gives` the child owns its own sources and settings.
 `docs/view-group.md` carries this; it replaced an earlier split between "slot" and "mount".

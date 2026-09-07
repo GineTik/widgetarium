@@ -243,8 +243,7 @@ function normalizeCell(cell) {
 
 function normalizeRows(rows) {
 	if (!Array.isArray(rows)) return null;
-	const laid = rows.map((row) => (Array.isArray(row) ? row : [row]).map(normalizeCell).filter(Boolean)).filter((row) => row.length > 0);
-	return laid.length > 0 ? laid : null;
+	return rows.map((row) => (Array.isArray(row) ? row : [row]).map(normalizeCell).filter(Boolean)).filter((row) => row.length > 0);
 }
 
 export const REGIONS = ["left", "main", "right"];
@@ -264,18 +263,13 @@ function normalizeRegion(given, foldable) {
 	return { rows, ...regionWidth(given), ...regionFold(given, foldable) };
 }
 
+const EMPTY_REGION = { rows: [] };
+
 function normalizeTree(given) {
-	if (Array.isArray(given)) {
-		const main = normalizeRegion(given, false);
-		return main ? { main } : null;
-	}
 	if (!given || typeof given !== "object") return null;
-	const laid = {};
-	for (const name of REGIONS) {
-		const region = normalizeRegion(given[name], name !== "main");
-		if (region) laid[name] = region;
-	}
-	return laid.main ? laid : null;
+	const main = normalizeRegion(Array.isArray(given) ? given : given.main, false);
+	if (!main) return null;
+	return { left: normalizeRegion(given.left, true) ?? EMPTY_REGION, main, right: normalizeRegion(given.right, true) ?? EMPTY_REGION };
 }
 
 function serializeRegion(region) {
@@ -284,8 +278,7 @@ function serializeRegion(region) {
 }
 
 function serializeTree(layout) {
-	const named = REGIONS.filter((name) => layout[name]);
-	return named.length === 1 && named[0] === "main" && !layout.main.width ? layout.main.rows : Object.fromEntries(named.map((name) => [name, serializeRegion(layout[name])]));
+	return Object.fromEntries(REGIONS.filter((name) => layout[name]).map((name) => [name, serializeRegion(layout[name])]));
 }
 
 export function normalizeBoard(input, idOf = SAME_ID) {
@@ -376,8 +369,17 @@ export function serializeBoard(board) {
 		// CONTEXT: an emptied list is still written — its absence is what hands the fact back to the tile
 		...(board.archivedColumns ? { archivedColumns: board.archivedColumns } : {}),
 		...(board.layout ? { layout: serializeTree(board.layout) } : {}),
+		...serializeLegacyLayouts(board),
+	};
+}
+
+// TRADE-OFF: still written when a board has them, never created; a board born as a tree carries no trace of the grid
+function serializeLegacyLayouts(board) {
+	const authored = authoredColumns(board);
+	if (authored.length === 0) return {};
+	return {
 		layouts: Object.fromEntries(
-			authoredColumns(board).map((columns) => [
+			authored.map((columns) => [
 				String(columns),
 				{ places: board.layouts[columns].map((place) => ({ id: place.id, x: place.x, y: place.y, w: place.w, h: place.h, ...(place.wasW ? { wasW: place.wasW } : {}) })) },
 			]),

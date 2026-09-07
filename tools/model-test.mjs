@@ -439,14 +439,18 @@ check("rendering does not warn", onRender, 0);
 	const shorthand = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: [["a"], [{ id: "" }]], layouts: {} });
 	check("a bare name is a cell", shorthand.layout.main.rows, [[{ id: "a", ratio: 1 }]]);
 
-	check("rows round-trip through the file", serializeBoard(laid).layout, laid.layout.main.rows);
-	check("and an empty list of rows is no list", "layout" in normalizeBoard({ tiles: [], layout: [], layouts: {} }), false);
+	check("rows round-trip through the file", serializeBoard(laid).layout.main, laid.layout.main.rows);
+	check("a board that names only main is still born with its sidebars", Object.keys(laid.layout), ["left", "main", "right"]);
+	check("and those sidebars reach the file, so something can be dropped into them", serializeBoard(laid).layout, { left: [], main: laid.layout.main.rows, right: [] });
+	check("an empty list of rows is a region, not the absence of one", "layout" in normalizeBoard({ tiles: [], layout: [], layouts: {} }), true);
+	check("and that region holds no rows", normalizeBoard({ tiles: [], layout: [], layouts: {} }).layout.main.rows, []);
 
 	const regioned = { tiles: [{ id: "a", widget: "w" }], layout: { left: [["a"]], main: [["a"]], right: [["a"]] }, layouts: {} };
 	check("a layout may name three regions", Object.keys(normalizeBoard(regioned).layout), ["left", "main", "right"]);
 	check("and they round-trip as they were named", Object.keys(serializeBoard(normalizeBoard(regioned)).layout), ["left", "main", "right"]);
 	check("a sidebar without a main is no layout", "layout" in normalizeBoard({ tiles: [], layout: { left: [["a"]] }, layouts: {} }), false);
-	check("and a board that names only main is written as a bare list", Array.isArray(serializeBoard(laid).layout), true);
+	check("a grid-only board writes no layouts it did not have", "layouts" in serializeBoard(normalizeBoard({ tiles: [], layout: [], layouts: {} })), false);
+	check("and a board that has them keeps them", Object.keys(serializeBoard(normalizeBoard(grid)).layouts), ["12"]);
 
 	const sized = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: [["a"]], left: { width: 420, rows: [["a"]] } }, layouts: {} });
 	check("a sidebar keeps the width it was dragged to", sized.layout.left.width, 420);

@@ -17,7 +17,7 @@ import { openSubstitutions } from "./substitution-dialog.js";
 import { normalizeRules, activeRules, ruleBlock } from "./substitution.js";
 import { substituteIn } from "./inline-render.js";
 import { createViewChrome } from "./view-chrome.js";
-import { foldableIn, isFolded, toggledFold } from "./tree.js";
+import { foldableIn, isFolded, occupiedLayout, toggledFold } from "./tree.js";
 import { blockRefusal } from "./version.js";
 import { createBoardNote, insertBoardAtCursor, isScreenNote } from "./board-note.js";
 import { TEMPLATES, missingWidgets, templateBoard } from "./templates.js";
@@ -490,7 +490,7 @@ export default class WidgetariumPlugin extends Plugin {
 
 	foldableRegions(sourcePath) {
 		const layout = this.firstMountIn(sourcePath)?.state.board.layout;
-		return foldableIn(layout).map((name) => ({ name, folded: isFolded(layout, name) }));
+		return foldableIn(this.editing ? layout : occupiedLayout(layout)).map((name) => ({ name, folded: isFolded(layout, name) }));
 	}
 
 	// TODO: fold into the open draft instead of refusing, once the surface hands its writer out
