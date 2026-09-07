@@ -418,15 +418,7 @@ pre:has(> .block-language-widgetarium),
 	background: var(--wg-chrome-fill);
 	box-shadow: var(--wg-chrome-shadow);
 	overflow: hidden;
-	opacity: 0;
-	pointer-events: none;
 	transition: opacity var(--wg-chrome-fade) ease;
-}
-
-.wg-tile:hover .wg-tile-actions,
-.wg-tile.is-dragging .wg-tile-actions {
-	opacity: 1;
-	pointer-events: auto;
 }
 
 .wg-tile-actions button {

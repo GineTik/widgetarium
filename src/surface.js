@@ -20,11 +20,12 @@ import { bindingOf, hardcodeCollection, hardcodeValue, requestedVerbs, unmetVerb
 import { mappedCollection } from "./gateway/mapped.js";
 import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
+import { ConfirmDialog } from "./dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
 import { foldLabel } from "./fold-copy.js";
 import { Icon, IconButton } from "./kit.js";
-import { aimedAt, carriedInto, columnsOf, foldableIn, growsOf, isFolded, isUnder, toggledFold, GAP_PX, innerOf, layTree, REGIONS, REGION_GAP_PX, REGION_PAD_PX, resized, restacked, rowIndexesAfterLeaving, sameTarget, shownLayout, sidebarWidth, tallestOf, widenedRegion, widthsOf } from "./tree.js";
+import { aimedAt, carriedInto, columnsOf, foldableIn, growsOf, isFolded, isUnder, toggledFold, GAP_PX, innerOf, layTree, REGIONS, REGION_GAP_PX, REGION_PAD_PX, resized, restacked, rowIndexesAfterLeaving, sameTarget, shownLayout, sidebarWidth, tallestOf, widenedRegion, widthsOf, withoutCell, MIN_HEIGHT_PX, MIN_SIDEBAR_PX } from "./tree.js";
 import { movesFrom, playMoves, positionsWithin } from "./flip.js";
 import { resist } from "./give.js";
 
@@ -400,16 +401,20 @@ function icon(paths) {
 	);
 }
 
+function widgetPatchers(tile, onPatch) {
+	return {
+		patchProp: (name, patch) => onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } })),
+		patchMounted: (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) }),
+	};
+}
+
 function TileView(props) {
 	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, refs, cellFor, registry, boardProperties, boardArchivedColumns, configureBoard } = props;
 	const settingsShown = typeof settings === "string";
 
 	// built BEFORE the window that may hold it: the window is a hook and must run on every
 	// render, and it cannot be handed a widget declared further down the function
-	const patchProp = (name, patch) =>
-		onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
-
-	const patchMounted = (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) });
+	const { patchProp, patchMounted } = widgetPatchers(tile, onPatch);
 
 	const widget = h(
 		Boundary,
@@ -583,46 +588,56 @@ const Tile = memo(TileView, (before, after) => {
 	return true;
 });
 
-function TreeCell({ cell, tile, definition, shared, patchTile, standInPx }) {
+function tileActions(tileId, onOpenSettings, onRemove) {
+	return h("span", { className: "wg-tile-actions", key: "actions", onPointerDown: (event) => event.stopPropagation() }, [
+		h(
+			"button",
+			{ key: "settings", title: "Settings", "aria-label": "Settings", onClick: (event) => onOpenSettings?.(tileId, sizeOfCell(event.currentTarget)) },
+			icon(ICON_GEAR),
+		),
+		h("button", { key: "remove", title: "Remove", "aria-label": "Remove", onClick: () => onRemove?.(tileId) }, icon(ICON_TRASH)),
+	]);
+}
+
+function sizeOfCell(node) {
+	const at = node.closest(".wg-tree-cell")?.getBoundingClientRect();
+	return at ? { width: Math.round(at.width), height: Math.round(at.height) } : null;
+}
+
+function treeCellBody({ tile, definition, shared, cell, patchTile }) {
+	if (!definition) return h("div", { className: "wg-missing" }, h("b", null, "This widget is not installed"));
+	const onPatch = (patch) => patchTile(tile.id, patch);
+	return h(WidgetHost, {
+		...shared,
+		...widgetPatchers(tile, onPatch),
+		definition,
+		tile,
+		place: { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 },
+		onPatch,
+	});
+}
+
+function TreeCell(props) {
+	const { cell, tile, definition, shared, patchTile, standInPx, editing, settingsStandInPx, onOpenSettings, onRemove } = props;
 	const style = { flexGrow: cell.grow ?? 1, flexShrink: 1, flexBasis: 0, minWidth: 0, ...(cell.cap ? { maxHeight: `${cell.cap}px` } : {}) };
 	if (standInPx) return h("div", { className: "wg-tree-cell is-stand-in", style: { ...style, minHeight: `${standInPx}px` }, "data-cell": cell.id });
-	const onPatch = (patch) => patchTile(tile.id, patch);
-	const patchProp = (name, patch) => onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } }));
-	return h(
-		"div",
-		{ className: "wg-tile wg-tree-cell", style, "data-cell": cell.id },
-		h(
-			"div",
-			{ className: "wg-tile-body" },
-			definition
-				? h(WidgetHost, {
-						...shared,
-						definition,
-						tile,
-						place: { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 },
-						patchProp,
-						patchMounted: (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) }),
-						onPatch,
-					})
-				: h("div", { className: "wg-missing" }, h("b", null, "This widget is not installed")),
-		),
-	);
+	const shownInCell = settingsStandInPx ? h("div", { style: { minHeight: `${settingsStandInPx}px` } }) : treeCellBody({ tile, definition, shared, cell, patchTile });
+	return h("div", { className: "wg-tile wg-tree-cell", style, "data-cell": cell.id }, [
+		h("div", { className: "wg-tile-body", key: "body" }, shownInCell),
+		editing && !settingsStandInPx ? tileActions(tile.id, onOpenSettings, onRemove) : null,
+	]);
 }
+
+const CELL_SHAPE = ["grow", "width", "cap", "id"];
+const CELL_PROPS = ["standInPx", "editing", "settingsStandInPx", "tile", "definition", "shared"];
 
 const Cell = memo(
 	TreeCell,
-	(before, after) =>
-		before.cell.grow === after.cell.grow &&
-		before.cell.width === after.cell.width &&
-		before.cell.cap === after.cell.cap &&
-		before.cell.id === after.cell.id &&
-		before.standInPx === after.standInPx &&
-		before.tile === after.tile &&
-		before.definition === after.definition &&
-		before.shared === after.shared,
+	(before, after) => CELL_SHAPE.every((key) => before.cell[key] === after.cell[key]) && CELL_PROPS.every((key) => before[key] === after[key]),
 );
 
-function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, editing, patchTile, commitLayout, region, carry, onCarry, overlay }) {
+function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, patchTile, commitLayout, region, carry, onCarry, overlay }) {
+	const { registry } = shared;
 	const rootRef = useRef(null);
 	const dragRef = useRef(null);
 	const restingRef = useRef({});
@@ -703,24 +718,6 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 
 	const grabHeight = (at) => (event) => startDrag(event, at, (moved, box, down, give) => bare(restacked(withHeights(rows[at]), box.height + moved.clientY - down.clientY, give)));
 
-	const shared = useMemo(
-		() => ({
-			host,
-			scale,
-			refs,
-			cellFor,
-			registry,
-			onCollapse: () => {},
-			onExpand: () => {},
-			patchMounted: () => {},
-			isMounted: false,
-			boardProperties: board.properties,
-			boardArchivedColumns: board.archivedColumns,
-			configureBoard: refuseBoardPatch,
-		}),
-		[host, scale, refs, cellFor, registry, board.properties, board.archivedColumns],
-	);
-
 	const asked = rows.map((row) => row.filter((cell) => tileOf(cell.id)).map((cell) => ({ ...cell, minPx: floorOf(cell.id), cap: capOf(cell.id) })));
 	const standInPx = (id) => (carry?.id === id ? carry.height : 0);
 	const bandKey = (row) =>
@@ -744,7 +741,19 @@ function TreeRegion({ board, rows, width, registry, host, refs, cellFor, scale, 
 					index > 0 && row.cells.length > 1
 						? h("div", { className: "wg-tree-handle is-across", key: `grip-${cell.id}`, onPointerDown: grabRatio(row.from, index - 1) }, h("i", { className: "wg-tree-grip" }))
 						: null,
-					h(Cell, { key: cell.id, cell, tile: tileOf(cell.id), definition: registry.get(tileOf(cell.id).widget), shared, patchTile, standInPx: standInPx(cell.id) }),
+					h(Cell, {
+						key: cell.id,
+						cell,
+						tile: tileOf(cell.id),
+						definition: registry.get(tileOf(cell.id).widget),
+						shared,
+						patchTile,
+						standInPx: standInPx(cell.id),
+						editing,
+						settingsStandInPx: settingsId === cell.id ? Math.max(settingsStandInPx, 1) : 0,
+						onOpenSettings,
+						onRemove,
+					}),
 				]),
 			),
 			h("div", { className: "wg-tree-handle is-along", onPointerDown: grabHeight(row.from) }, h("i", { className: "wg-tree-grip" })),
@@ -862,7 +871,27 @@ function ghostFor(box, grabbed) {
 	};
 }
 
-function TreeBoard({ board, width, commitLayout: commitBoardLayout, ...rest }) {
+const TREE_PLACE = { x: 0, y: 0, w: 1, h: 1 };
+const UNMEASURED_CELL = { width: MIN_SIDEBAR_PX, height: MIN_HEIGHT_PX };
+
+function TreeSettings({ session, tile, canvasBox, shared, patchTile, frame }) {
+	const definition = shared.registry.get(tile.widget);
+	const drawn = treeCellBody({ tile, definition, shared, cell: { width: canvasBox.width }, patchTile });
+	const settingsWindow = useSettingsWindow({
+		...frame,
+		session,
+		definition,
+		tile,
+		canvasBox,
+		onPatch: (patch) => patchTile(tile.id, patch),
+		place: { ...TREE_PLACE, id: tile.id },
+		widget: h(Boundary, { key: tile.widget }, drawn),
+	});
+	return settingsWindow.dialog;
+}
+
+function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, patchTile }) {
+	const passed = { shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, patchTile };
 	const pageRef = useRef(null);
 	const regionsRef = useRef(new Map());
 	const carryRef = useRef(null);
@@ -870,7 +899,7 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, ...rest }) {
 	const [carry, setCarry] = useState(null);
 	const carrying = carry?.isLanding ? null : carry;
 	const drawn = carrying ? carriedInto(board.layout, carrying) : board.layout;
-	const laid = shownLayout(drawn, rest.editing);
+	const laid = shownLayout(drawn, editing);
 	const { beside, stacked } = columnsOf(laid, width, REGION_GAP_PX);
 	const placed = new Set(REGIONS.flatMap((name) => (board.layout?.[name]?.rows ?? []).flat().map((cell) => cell.id)));
 	const unplaced = board.tiles.filter((tile) => !placed.has(tile.id));
@@ -893,7 +922,7 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, ...rest }) {
 	const carryFrom = (event, from) => {
 		const node = event.target.closest(".wg-tree-cell");
 		const id = node?.dataset.cell;
-		if (!id || !rest.editing || event.button !== 0 || carryRef.current) return;
+		if (!id || !editing || event.button !== 0 || carryRef.current) return;
 		event.preventDefault();
 		const grabbed = { x: event.clientX, y: event.clientY };
 		const page = pageRef.current.getBoundingClientRect();
@@ -996,7 +1025,7 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, ...rest }) {
 	const ghost = () => {
 		if (!carry?.ghost) return null;
 		const tile = board.tiles.find((one) => one.id === carry.id);
-		const named = rest.registry.get(tile?.widget)?.manifest?.title ?? carry.id;
+		const named = shared.registry.get(tile?.widget)?.manifest?.title ?? carry.id;
 		return h(
 			"div",
 			{ className: "wg-tree-ghost", ref: ghostRef, key: "ghost", style: ghostBox(carry) },
@@ -1043,7 +1072,7 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, ...rest }) {
 				style: name === "main" ? { flex: "1 1 0", minWidth: 0 } : { flex: `0 0 ${given}px`, minWidth: 0 },
 			},
 			h(TreeRegion, {
-				...rest,
+				...passed,
 				board,
 				region: name,
 				carry: carrying,
@@ -1181,6 +1210,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const [openedChip, setOpenedChip] = useState(null);
 	const [settingsTile, setSettingsTile] = useState(null);
 	const [closingTile, setClosingTile] = useState(null);
+	const [removingId, setRemovingId] = useState(null);
 	const [isPicking, setPicking] = useState(false);
 	// CONTEXT: a new number every opening, so the window's own state is fresh without an effect
 	const sessionRef = useRef(0);
@@ -1209,6 +1239,24 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	// CONTEXT: local to this viewer — two people on one board must filter without moving each other
 	const refs = useMemo(() => createGatewayRefs(), []);
 	const cellFor = useMemo(() => createViewCells(), []);
+	const treeScale = scaleOf(classOf(Math.max(width, MIN_BOARD_WIDTH_PX)));
+	const shared = useMemo(
+		() => ({
+			host,
+			scale: treeScale,
+			refs,
+			cellFor,
+			registry,
+			onCollapse: () => {},
+			onExpand: () => {},
+			patchMounted: () => {},
+			isMounted: false,
+			boardProperties: board.properties,
+			boardArchivedColumns: board.archivedColumns,
+			configureBoard: refuseBoardPatch,
+		}),
+		[host, treeScale, refs, cellFor, registry, board.properties, board.archivedColumns],
+	);
 
 	useEffect(() => {
 		onDrafting?.(staged !== null);
@@ -1263,6 +1311,81 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 			  ])
 			: null;
 
+	const openSettings = (id, canvasBox = null) => {
+		sessionRef.current += 1;
+		setClosingTile(null);
+		// CONTEXT: the draft starts as what is saved, so the window opens on the board as it stands
+		setStaged(latestRef.current?.board ?? board);
+		setSettingsTile({ id, key: String(sessionRef.current), canvasBox });
+	};
+
+	// TRADE-OFF: the panels fade first and the box follows, per the kit's rule on panels that bounce
+	const closeSettings = (keep = false) => {
+		const held = settingsTile;
+		const draft = staged;
+		setSettingsTile(null);
+		setStaged(null);
+		// Done keeps the draft, anything else drops it — and dropping it is the whole point:
+		// a layout the person backed out of must not survive in the file.
+		if (keep && draft) save(draft, true);
+		if (!held) return;
+		setClosingTile(held);
+		window.setTimeout(() => setClosingTile((current) => (current === held ? null : current)), SETTINGS_FADE_MS);
+	};
+
+	// CONTEXT: the resolved folder, so a source falling back to its manifest still counts
+	const countReaders = (folderPath) => {
+		if (!folderPath) return 0;
+		let found = 0;
+		const walk = (widget, props) => {
+			const declared = registry.get(widget)?.manifest?.props ?? {};
+			for (const name of Object.keys(declared)) {
+				if ((props?.[name]?.path || declared[name]?.default?.path || "") === folderPath) found += 1;
+			}
+		};
+		const descend = (held) => {
+			for (const entry of Object.values(held ?? {})) {
+				walk(entry.widget, entry.props);
+				descend(entry.mounted);
+			}
+		};
+		for (const tile of board.tiles) {
+			walk(tile.widget, tile.props);
+			descend(tile.mounted);
+		}
+		return found;
+	};
+
+	// Removing a tile removes the TILE, not its place at this one width. Dropping only the
+	// place left it in board.tiles, so the next width derived it back and a widget deleted in
+	// the collapsed board reappeared expanded.
+	const removeTile = (id) => {
+		const now = latestRef.current?.board ?? board;
+		const layouts = {};
+		for (const [columns, layout] of Object.entries(now.layouts)) {
+			layouts[columns] = layout.filter((place) => place.id !== id);
+		}
+		const next = { ...now, tiles: now.tiles.filter((tile) => tile.id !== id), layouts };
+		if (now.layout) {
+			next.layout = Object.fromEntries(Object.entries(now.layout).map(([name, held]) => [name, { ...held, rows: withoutCell(held.rows, id) }]));
+		}
+		onChange(next, true);
+	};
+
+	const removalDialog = () =>
+		h(ConfirmDialog, {
+			key: "removal",
+			isOpen: removingId !== null,
+			title: "Remove this widget?",
+			description: "It leaves the board and its settings go with it.",
+			confirmLabel: "Remove",
+			onConfirm: () => {
+				removeTile(removingId);
+				setRemovingId(null);
+			},
+			onOpenChange: () => setRemovingId(null),
+		});
+
 	if (board.layout) {
 		const addTreeTile = (widgetId) => {
 			const now = latestRef.current?.board ?? board;
@@ -1276,8 +1399,48 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				true,
 			);
 		};
+		latestRef.current = { board };
+		const treeMetrics = measureGrid(width);
+		const held = settingsTile ?? closingTile;
+		const configured = held && board.tiles.find((tile) => tile.id === held.id);
+		const canvasBox = held?.canvasBox ?? UNMEASURED_CELL;
 		const drawn = boardShell([
-			h(TreeBoard, { key: "tree", board, width, registry, host, refs, cellFor, scale: scaleOf(classOf(width)), editing, patchTile, commitLayout }),
+			h(TreeBoard, {
+				key: "tree",
+				board,
+				width,
+				shared,
+				editing,
+				settingsId: held?.id ?? null,
+				settingsStandInPx: held ? canvasBox.height : 0,
+				onOpenSettings: openSettings,
+				onRemove: setRemovingId,
+				patchTile,
+				commitLayout,
+			}),
+			configured
+				? h(TreeSettings, {
+						key: "settings",
+						session: `${settingsTile ? "open" : "closing"}:${held.key}`,
+						tile: configured,
+						canvasBox,
+						shared,
+						patchTile,
+						frame: {
+							host,
+							registry,
+							refs,
+							cell: treeMetrics.cell,
+							gap: treeMetrics.gap,
+							phone: classOf(width).name === "phone",
+							columns: treeMetrics.columns,
+							countReaders,
+							onDone: () => closeSettings(true),
+							onDismiss: () => closeSettings(false),
+						},
+				  })
+				: null,
+			removalDialog(),
 			palette(addTreeTile),
 		]);
 		return isPage ? h(Page, { onClose: () => toggleExpanded() }, drawn) : drawn;
@@ -1437,28 +1600,6 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		return true;
 	};
 
-	const openSettings = (id) => {
-		sessionRef.current += 1;
-		setClosingTile(null);
-		// CONTEXT: the draft starts as what is saved, so the window opens on the board as it stands
-		setStaged(latestRef.current.board);
-		setSettingsTile({ id, key: String(sessionRef.current) });
-	};
-
-	// TRADE-OFF: the panels fade first and the box follows, per the kit's rule on panels that bounce
-	const closeSettings = (keep = false) => {
-		const held = settingsTile;
-		const draft = staged;
-		setSettingsTile(null);
-		setStaged(null);
-		// Done keeps the draft, anything else drops it — and dropping it is the whole point:
-		// a layout the person backed out of must not survive in the file.
-		if (keep && draft) save(draft, true);
-		if (!held) return;
-		setClosingTile(held);
-		window.setTimeout(() => setClosingTile((current) => (current === held ? null : current)), SETTINGS_FADE_MS);
-	};
-
 	// The size on the board is a PLACE, so the settings window asks the board to write it.
 	const resizeTile = (id, patch) => {
 		const now = latestRef.current;
@@ -1467,41 +1608,6 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		const manifest = manifestOf(id);
 		const after = clampPlace({ ...before, ...patch }, now.columns, manifest?.minSize, manifest?.maxSize);
 		commit(arrange(now.places.map((place) => (place.id === id ? after : place)), now.columns, { movedId: id }));
-	};
-
-	// CONTEXT: the resolved folder, so a source falling back to its manifest still counts
-	const countReaders = (folderPath) => {
-		if (!folderPath) return 0;
-		let found = 0;
-		const walk = (widget, props) => {
-			const declared = registry.get(widget)?.manifest?.props ?? {};
-			for (const name of Object.keys(declared)) {
-				if ((props?.[name]?.path || declared[name]?.default?.path || "") === folderPath) found += 1;
-			}
-		};
-		const descend = (held) => {
-			for (const entry of Object.values(held ?? {})) {
-				walk(entry.widget, entry.props);
-				descend(entry.mounted);
-			}
-		};
-		for (const tile of board.tiles) {
-			walk(tile.widget, tile.props);
-			descend(tile.mounted);
-		}
-		return found;
-	};
-
-	// Removing a tile removes the TILE, not its place at this one width. Dropping only the
-	// place left it in board.tiles, so the next width derived it back and a widget deleted in
-	// the collapsed board reappeared expanded.
-	const removeTile = (id) => {
-		const now = latestRef.current;
-		const layouts = {};
-		for (const [columns, layout] of Object.entries(now.board.layouts)) {
-			layouts[columns] = layout.filter((place) => place.id !== id);
-		}
-		onChange({ ...now.board, tiles: now.board.tiles.filter((tile) => tile.id !== id), layouts }, true);
 	};
 
 	// The board folds the intent: one writer for a place, and the width it came from is kept
@@ -1769,7 +1875,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						editing,
 						isDragging: dragRef.current?.id === place.id,
 						onDragStart: (event, mode, edge) => startDrag(event, mode, place, edge),
-						onRemove: () => removeTile(place.id),
+						onRemove: () => setRemovingId(place.id),
 						onPatch: (patch) => patchTile(place.id, patch),
 						onOpen: setOpenedChip,
 						opened: openedChip === place.id,
@@ -1830,6 +1936,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				},
 				[editing ? cellLayer(metrics.columns, boardRows) : null, scrim, h(Fragment, { key: "tiles" }, tiles)],
 			),
+			removalDialog(),
 			palette(
 				addTile,
 				hidden.map((tile) =>

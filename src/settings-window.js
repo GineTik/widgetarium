@@ -1102,33 +1102,38 @@ function dataGroups(state) {
 	return [group("no-data", "Data", h(Row, { className: "wg-set-row" }, h(RowLabel, null, "This widget declares no source")), null)];
 }
 
-function designGroups(state) {
-	const { place, columns, onResize, isCollapsed, onCollapse, onExpand } = state;
-	const own = settingRows(state, (field) => field.design === true);
+function sizeOnBoardGroup(state) {
+	const { place, columns, onResize } = state;
 	const sizeRow = (axis, label, cellsNow, apply) =>
 		editorPopover(state, `size:${axis}`, valueRow({ label, value: `${cellsNow} cells` }), textEditor(state, String(cellsNow), (typed) => apply(Number(typed))));
+	if (!onResize) return null;
+	return group(
+		"size",
+		"Size on the board",
+		[
+			sizeRow("w", "Width", place.w, (cellsWanted) => onResize({ w: clamp(Number.isFinite(cellsWanted) ? cellsWanted : place.w, 1, columns) })),
+			sizeRow("h", "Height", place.h, (cellsWanted) => onResize({ h: Math.max(1, Number.isFinite(cellsWanted) ? cellsWanted : place.h) })),
+		],
+		"The widget is drawn at the size it has on the board, so a change here is visible behind the panel.",
+	);
+}
 
-	return [
-		group(
-			"size",
-			"Size on the board",
-			[
-				sizeRow("w", "Width", place.w, (cellsWanted) => onResize({ w: clamp(Number.isFinite(cellsWanted) ? cellsWanted : place.w, 1, columns) })),
-				sizeRow("h", "Height", place.h, (cellsWanted) => onResize({ h: Math.max(1, Number.isFinite(cellsWanted) ? cellsWanted : place.h) })),
-			],
-			"The widget is drawn at the size it has on the board, so a change here is visible behind the panel.",
-		),
-		group(
-			"fold",
-			"Folded",
-			h(Row, { className: "wg-set-row" }, [
-				h(RowLabel, { key: "label" }, "Fold to one column"),
-				h(RowValue, { className: "wg-set-value", key: "value" }, h(Switch, { checked: isCollapsed, label: "Folded", onChange: (next) => (next ? onCollapse?.() : onExpand?.()) })),
-			]),
-			null,
-		),
-		own.length > 0 ? group("design:own", "This widget", own, null) : null,
-	].filter(Boolean);
+function foldGroup({ isCollapsed, onCollapse, onExpand }) {
+	if (!onCollapse) return null;
+	const switching = h(Switch, { checked: isCollapsed, label: "Folded", onChange: (next) => (next ? onCollapse() : onExpand()) });
+	return group(
+		"fold",
+		"Folded",
+		h(Row, { className: "wg-set-row" }, [h(RowLabel, { key: "label" }, "Fold to one column"), h(RowValue, { className: "wg-set-value", key: "value" }, switching)]),
+		null,
+	);
+}
+
+function designGroups(state) {
+	const own = settingRows(state, (field) => field.design === true);
+	const groups = [sizeOnBoardGroup(state), foldGroup(state), own.length > 0 ? group("design:own", "This widget", own, null) : null].filter(Boolean);
+	if (groups.length > 0) return groups;
+	return [group("no-design", "Design", h(Row, { className: "wg-set-row" }, h(RowLabel, null, "This widget is drawn at the size its row gives it")), null)];
 }
 
 function panelBody(state) {
@@ -1372,7 +1377,7 @@ const CHILD_TABS = TABS.filter((entry) => entry.value !== "design");
 const FRESH = { tab: "settings", zoom: null, pan: null, folded: false, narrow: false, sheetFull: false, openRow: null, draft: "", path: [] };
 
 export function useSettingsWindow(options) {
-	const { session, definition, tile, place, widget, cell, gap, phone, host, registry, columns, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders, refs } = options;
+	const { session, definition, tile, place, widget, canvasBox, cell, gap, phone, host, registry, columns, onDone, onDismiss, onResize, onCollapse, onExpand, countReaders, refs } = options;
 	const [phase, key] = String(session ?? "").split(":");
 	const open = phase === "open";
 	const closing = phase === "closing";
@@ -1424,7 +1429,7 @@ export function useSettingsWindow(options) {
 	};
 	const free = freeArea(windowBox, layout);
 
-	const wanted = { width: spanToPixels(place.w, cell, gap), height: spanToPixels(place.h, cell, gap) };
+	const wanted = canvasBox ?? { width: spanToPixels(place.w, cell, gap), height: spanToPixels(place.h, cell, gap) };
 	const canNarrow = typeof manifest.collapseBelowPx === "number";
 	const showingChip = canNarrow && narrow;
 	const canvas = showingChip ? { width: manifest.collapseBelowPx - 1, height: wanted.height } : wanted;
