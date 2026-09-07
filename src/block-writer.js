@@ -1,7 +1,10 @@
-const FENCE_OPEN = /^```+\s*widgetarium\s*$/;
-const FENCE_CLOSE = /^```+\s*$/;
+export const FENCE = "```";
+export const BLOCK_LANGUAGE = "widgetarium";
 
-export function findBlocks(lines) {
+const FENCE_OPEN = new RegExp(`^${FENCE}+\\s*${BLOCK_LANGUAGE}\\s*$`);
+const FENCE_CLOSE = new RegExp(`^${FENCE}+\\s*$`);
+
+function scanFences(lines) {
 	const blocks = [];
 	let start = -1;
 	for (let index = 0; index < lines.length; index += 1) {
@@ -12,7 +15,15 @@ export function findBlocks(lines) {
 			start = -1;
 		}
 	}
-	return blocks;
+	return { blocks, unclosed: start };
+}
+
+export function findBlocks(lines) {
+	return scanFences(lines).blocks;
+}
+
+export function unclosedBlockIn(lines) {
+	return scanFences(lines).unclosed;
 }
 
 export function replaceBlock(text, blockIndex, body, isValidBlock) {
