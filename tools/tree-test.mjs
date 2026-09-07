@@ -617,6 +617,54 @@ console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from 
 	check("nor a palette", emptyResting.palette, 0);
 }
 
+console.log("\n— a tile on a tree board carries the same two controls the grid tile has —");
+{
+	const { chromeEditing, chromeReading } = measured;
+	check("every cell on the board draws a settings control", chromeEditing.settings, chromeEditing.cells);
+	check("and a remove control beside it", chromeEditing.removes, chromeEditing.cells);
+	check("the pill is a real box, not a collapsed one", chromeEditing.pill?.held, true);
+	check("seated in the corner of the cell it belongs to", chromeEditing.pill?.within, true);
+	check("because the cell is what it is measured against", chromeEditing.pill?.seat, "absolute");
+	check("and it stands there without being pointed at", chromeEditing.pill?.shown, 1);
+	check("a reader is offered neither", [chromeReading.settings, chromeReading.removes], [0, 0]);
+	check("and the cells are all still there", chromeReading.cells, chromeEditing.cells);
+}
+
+console.log("\n— settings open the playground, and it offers nothing measured in cells —");
+{
+	const seen = measured.configured;
+	check("the probe found the control", seen.failed ?? null, null);
+	check("pressing it opens one window", seen.windows, 1);
+	check("the window is drawn at the size the cell had, not at a count of cells", seen.canvas, seen.box);
+	check("the widget is drawn there and not twice", seen.drawnInCell, 0);
+	check("and the cell it left keeps the height it had", seen.heldBox, seen.box);
+	check("closing the window takes it away", seen.closed, 0);
+	check("and puts the widget back in its cell", seen.backInCell > 0, true);
+	check("all three tabs are offered", seen.tabs, ["Settings", "Data", "Design"]);
+	check("and the Design tab counts no cells", seen.cells, 0);
+	check("because a tree cell has no width in cells to write", seen.rows.filter((text) => text.startsWith("Width") || text.startsWith("Height")), []);
+	check("nor a fold to one column", seen.rows.filter((text) => text.includes("Fold to one column")), []);
+}
+
+console.log("\n— and removing one asks first —");
+{
+	const seen = measured.removal;
+	check("the probe found the control", seen.failed ?? null, null);
+	check("pressing remove puts one dialog up", seen.asked.dialogs, 1);
+	check("it asks about the widget", seen.asked.title, "Remove this widget?");
+	check("and names the verb on the button", seen.asked.confirmLabel, "Remove");
+	check("nothing is gone while it is up", seen.asked.tiles.includes("views"), true);
+	check("cancelling takes the dialog away", seen.cancelled.dialogs, 0);
+	check("and leaves the tile where it was", seen.cancelled.tiles.includes("views"), true);
+	check("and writes nothing at all", seen.cancelled.writes, seen.asked.writes);
+	check("confirming drops the tile from the board", seen.gone.tiles.includes("views"), false);
+	check("and out of the rows the board draws", seen.gone.rows.flat().includes("views"), false);
+	check("and out of the rows the file holds", seen.gone.written.includes("views"), false);
+	check("while the ones it holds beside it stay written", seen.gone.written, seen.asked.written.filter((id) => id !== "views"));
+	check("leaving every other tile standing", seen.gone.tiles, seen.asked.tiles.filter((id) => id !== "views"));
+	check("in one write", seen.gone.writes - seen.cancelled.writes, 1);
+}
+
 if (measured.failures.length > 0) {
 	failed += measured.failures.length;
 	for (const failure of measured.failures) console.log(`!! the page logged: ${failure}`);

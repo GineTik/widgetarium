@@ -289,7 +289,7 @@ function readMounted() {
 function pressToggle(name) {
 	const node = document.querySelector(`.wg-sides-probe .wg-region-bar > .wg-region-toggle.is-${name}`);
 	if (!node) return { failed: `no ${name} toggle to press` };
-	node.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+	fireClick(node);
 	return readSides();
 }
 
@@ -394,6 +394,7 @@ function rowsOfSurface() {
 }
 
 const settled = () => new Promise((done) => setTimeout(done, 30));
+const faded = () => new Promise((done) => setTimeout(done, 320));
 
 async function carryTile() {
 	const before = rowsOfSurface();
@@ -453,6 +454,87 @@ async function carryIntoSlack() {
 	await settled();
 	const ids = (rows) => rows.map((row) => row.map((cell) => cell.id));
 	return { slack, aimed, left: ids(emptyBoard.layout.left.rows), main: ids(emptyBoard.layout.main.rows) };
+}
+
+const fireClick = (node) => Boolean(node) && node.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+
+function readChrome(scope) {
+	return {
+		cells: document.querySelectorAll(`${scope} .wg-tree-row .wg-tree-cell`).length,
+		settings: document.querySelectorAll(`${scope} .wg-tile-actions button[aria-label="Settings"]`).length,
+		removes: document.querySelectorAll(`${scope} .wg-tile-actions button[aria-label="Remove"]`).length,
+		pill: pillFit(document.querySelector(`${scope} .wg-tree-row .wg-tree-cell`)),
+	};
+}
+
+function pillFit(cell) {
+	const pill = cell?.querySelector(".wg-tile-actions");
+	if (!pill) return null;
+	const at = pill.getBoundingClientRect();
+	const box = cell.getBoundingClientRect();
+	return {
+		held: at.width > 0 && at.height > 0,
+		within: at.left >= box.left - 0.5 && at.right <= box.right + 0.5 && at.top >= box.top - 0.5,
+		seat: getComputedStyle(pill).position,
+		shown: Number(getComputedStyle(pill).opacity),
+	};
+}
+
+const tileIds = () => surfaceBoard.tiles.map((tile) => tile.id);
+const writtenTileIds = () => Object.values(surfaceBoard.layout).flatMap((region) => region.rows).flatMap((row) => row.map((cell) => cell.id));
+
+async function askRemoval(id) {
+	const control = document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"] .wg-tile-actions button[aria-label="Remove"]`);
+	if (!control) return { failed: "the tile carries no remove control" };
+	fireClick(control);
+	await settled();
+	const asked = {
+		dialogs: document.querySelectorAll(".wg-dialog-overlay .wg-dialog").length,
+		title: document.querySelector(".wg-dialog-title")?.textContent ?? "",
+		confirmLabel: document.querySelector(".wg-dialog-confirm")?.textContent ?? "",
+		rows: rowsOfSurface(),
+		written: writtenTileIds(),
+		tiles: tileIds(),
+		writes: surfaceWrites,
+	};
+	fireClick(document.querySelector(".wg-dialog-cancel"));
+	await faded();
+	const cancelled = { dialogs: document.querySelectorAll(".wg-dialog-overlay .wg-dialog").length, rows: rowsOfSurface(), written: writtenTileIds(), tiles: tileIds(), writes: surfaceWrites };
+	fireClick(document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"] .wg-tile-actions button[aria-label="Remove"]`));
+	await settled();
+	fireClick(document.querySelector(".wg-dialog-confirm"));
+	await faded();
+	return { asked, cancelled, gone: { dialogs: document.querySelectorAll(".wg-dialog-overlay .wg-dialog").length, rows: rowsOfSurface(), written: writtenTileIds(), tiles: tileIds(), writes: surfaceWrites } };
+}
+
+async function openTileSettings(id) {
+	const control = document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"] .wg-tile-actions button[aria-label="Settings"]`);
+	if (!control) return { failed: "the tile carries no settings control" };
+	const box = document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"]`).getBoundingClientRect();
+	fireClick(control);
+	await settled();
+	const windows = document.querySelectorAll(".wg-set-window").length;
+	const body = document.querySelector(".wg-set-body");
+	const canvas = body ? [body.offsetWidth, body.offsetHeight] : null;
+	const heldBox = document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"]`).getBoundingClientRect();
+	const tabs = [...document.querySelectorAll(".wg-set-panel .wg-kit-seg button")].map((node) => node.textContent.trim());
+	const design = tabs.indexOf("Design");
+	if (design >= 0) fireClick([...document.querySelectorAll(".wg-set-panel .wg-kit-seg button")][design]);
+	await settled();
+	const rows = [...document.querySelectorAll(".wg-set-panel .wg-kit-row")].map((node) => node.textContent);
+	const held = {
+		windows,
+		tabs,
+		rows,
+		canvas,
+		cells: rows.filter((text) => text.includes(" cells")).length,
+		drawnInCell: document.querySelectorAll(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"] .wg-widget-root`).length,
+		box: [Math.round(box.width), Math.round(box.height)],
+		heldBox: [Math.round(heldBox.width), Math.round(heldBox.height)],
+	};
+	fireClick(document.querySelector(".wg-set-chrome .wg-dialog-close"));
+	await faded();
+	return { ...held, closed: document.querySelectorAll(".wg-set-window").length, backInCell: document.querySelectorAll(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"] .wg-widget-root`).length };
 }
 
 function draw() {
@@ -516,11 +598,21 @@ async function report() {
 		const emptyOpen = readEmpty();
 		const carriedAcross = await carryIntoLeft();
 		const intoSlack = await carryIntoSlack();
+		const chromeEditing = readChrome(".wg-surface-probe");
+		surfaceEditing = false;
+		draw();
+		await settled();
+		const chromeReading = readChrome(".wg-surface-probe");
+		surfaceEditing = true;
+		draw();
+		await settled();
+		const configured = await openTileSettings("views");
+		const removal = await askRemoval("views");
 		emptyEditing = false;
 		draw();
 		await settled();
 		const emptyResting = readEmpty();
-		sink.textContent = JSON.stringify({ intoSlack, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		sink.textContent = JSON.stringify({ intoSlack, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, chromeEditing, chromeReading, configured, removal, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}
