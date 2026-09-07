@@ -156,15 +156,13 @@ const registry = new WidgetRegistry({ vault: { adapter } });
 await registry.load();
 
 const KANBAN = "@task/kanban-board";
-const DIALOG = "@task/task-dialog";
 
 let board = normalizeBoard({
 	tiles: [
 		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: FOLDER }, boards: { path: FOLDER } } },
-		{ id: "dialog", widget: DIALOG, props: { tasks: { path: FOLDER }, boards: { path: FOLDER }, opened: { from: "ref", ref: "board/opened" } } },
 	],
 	properties: ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"],
-	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }, { id: "dialog", x: 0, y: 10, w: 3, h: 1 }] } },
+	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }] } },
 });
 
 const root = dom.window.document.getElementById("host");
@@ -315,7 +313,7 @@ const openPath = vaultFiles(FOLDER).find((file) => (file.props.title ?? file.bas
 check("opening it reads ONE note's text, the one on screen", reads, [openPath]);
 
 console.log("\n— the list of properties belongs to the board —");
-check("the tile carries no list of its own", "properties" in board.tiles.find((tile) => tile.id === "dialog").settings, false);
+check("the tile carries no list of its own", "properties" in board.tiles.find((tile) => tile.id === "board").settings, false);
 check("the board carries it instead", board.properties, ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"]);
 
 console.log("\n— the plate is the BOARD's list, in the board's order —");
@@ -445,7 +443,7 @@ await typeName("Repo");
 check("a name it does not know says so too", body.querySelector(".otd-hint").textContent.includes("plain text"), true);
 naming.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 await settle();
-const dialogSettings = () => board.tiles.find((tile) => tile.id === "dialog").settings;
+const dialogSettings = () => board.tiles.find((tile) => tile.id === "board").settings;
 check("committing puts the name last on the board's list", board.properties.slice(-1)[0], "Repo");
 check("and it landed on the BOARD, not on the tile that wrote it", "properties" in dialogSettings(), false);
 check("the row lands unset", valueOf("Repo"), "");
@@ -587,10 +585,9 @@ render(null, root);
 let plain = normalizeBoard({
 	tiles: [
 		{ id: "board", widget: KANBAN, settings: { columns: "To Do" }, props: { tasks: { path: PLAIN }, boards: { path: PLAIN } } },
-		{ id: "dialog", widget: DIALOG, props: { tasks: { path: PLAIN }, boards: { path: PLAIN }, opened: { from: "ref", ref: "board/opened" } } },
 	],
 	properties: ["Status"],
-	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }, { id: "dialog", x: 0, y: 10, w: 3, h: 1 }] } },
+	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }] } },
 });
 const drawPlain = () =>
 	render(

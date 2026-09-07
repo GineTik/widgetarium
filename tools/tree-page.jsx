@@ -109,7 +109,8 @@ const mount = document.querySelector(".wg-host");
 const SURFACE_WIDTH = 1600;
 
 const asRows = (rows) => rows.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) })));
-let surfaceBoard = { ...BOARD, layout: { main: { rows: asRows(TREE) } }, layouts: {} };
+const UNPLACED_TILE = { id: "loose", widget: "@task/task-card" };
+let surfaceBoard = { ...BOARD, tiles: [...BOARD.tiles, UNPLACED_TILE], layout: { main: { rows: asRows(TREE) } }, layouts: {} };
 let surfaceWrites = 0;
 let surfaceEditing = false;
 

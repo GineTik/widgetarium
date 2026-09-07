@@ -27,13 +27,6 @@ tiles:
       card: "@task/task-card"
   - id: wynttpz
     widget: "@core/filter-panel"
-  - id: taskdialog
-    widget: "@task/task-dialog"
-    sources:
-      tasks:
-        path: Orbitask/Tasks
-        filters: []
-        sort: []
 mode: expanded
 layouts:
   "4":
@@ -58,11 +51,6 @@ layouts:
         y: 2
         w: 4
         h: 8
-      - id: taskdialog
-        x: 0
-        y: 0
-        w: 1
-        h: 1
   "5":
     places:
       - id: boards
@@ -85,11 +73,6 @@ layouts:
         y: 2
         w: 5
         h: 9
-      - id: taskdialog
-        x: 0
-        y: 11
-        w: 1
-        h: 1
   "6":
     places:
       - id: boards
@@ -112,11 +95,6 @@ layouts:
         y: 2
         w: 6
         h: 8
-      - id: taskdialog
-        x: 0
-        y: 0
-        w: 1
-        h: 1
   "8":
     places:
       - id: boards
@@ -138,11 +116,6 @@ layouts:
         x: 5
         y: 1
         w: 3
-        h: 1
-      - id: taskdialog
-        x: 0
-        y: 0
-        w: 1
         h: 1
   "9":
     places:
@@ -166,11 +139,6 @@ layouts:
         y: 2
         w: 8
         h: 8
-      - id: taskdialog
-        x: 0
-        y: 0
-        w: 1
-        h: 1
   "10":
     places:
       - id: views
@@ -192,11 +160,6 @@ layouts:
         x: 8
         y: 1
         w: 2
-        h: 1
-      - id: taskdialog
-        x: 0
-        y: 10
-        w: 1
         h: 1
   "11":
     places:
@@ -220,11 +183,6 @@ layouts:
         y: 2
         w: 11
         h: 13
-      - id: taskdialog
-        x: 0
-        y: 15
-        w: 1
-        h: 1
   "12":
     places:
       - id: boards
@@ -247,18 +205,8 @@ layouts:
         y: 2
         w: 12
         h: 12
-      - id: taskdialog
-        x: 0
-        y: 14
-        w: 1
-        h: 1
   "13":
     places:
-      - id: taskdialog
-        x: 0
-        y: 14
-        w: 1
-        h: 14
       - id: views
         x: 0
         y: 1
@@ -301,11 +249,6 @@ layouts:
         y: 3
         w: 13
         h: 8
-      - id: taskdialog
-        x: 0
-        y: 0
-        w: 1
-        h: 1
   "16":
     places:
       - id: boards
@@ -328,11 +271,6 @@ layouts:
         y: 1
         w: 16
         h: 10
-      - id: taskdialog
-        x: 0
-        y: 11
-        w: 1
-        h: 1
   "20":
     places:
       - id: boards
@@ -349,11 +287,6 @@ layouts:
         x: 17
         y: 1
         w: 3
-        h: 1
-      - id: taskdialog
-        x: 0
-        y: 0
-        w: 1
         h: 1
       - id: board
         x: 1

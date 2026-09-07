@@ -150,7 +150,6 @@ const READING_PLACES = [
 	{ id: "views", x: 4, y: 3, w: 16, h: 1 },
 	{ id: "filters", x: 4, y: 4, w: 16, h: 1 },
 	{ id: "board", x: 4, y: 5, w: 16, h: 10 },
-	{ id: "dialog", x: 0, y: 15, w: 3, h: 1 },
 ];
 
 let board = normalizeBoard({
@@ -176,7 +175,6 @@ let board = normalizeBoard({
 				},
 			},
 		},
-		{ id: "dialog", widget: "@task/task-dialog", props: { tasks: { path: FOLDER }, selection: { from: "ref", ref: "boards/selection" }, opened: { from: "ref", ref: "board/Kanban/opened" } } },
 	],
 	// CONTEXT: the filter bar reads this list — a property the board names is one it can filter by
 	properties: ["Status", "Priority", "Assignees"],
@@ -1309,7 +1307,7 @@ const pickView = async (name, id = "views") => {
 	const authored = parseYaml(lines.slice(fence.start + 1, fence.end).join("\n"));
 
 	check("the shipped board is stored in the pre-record shape", authored.tiles.find((tile) => tile.slots)?.slots, { card: "@task/task-card" });
-	check("and it holds the five widgets the owner placed", authored.tiles.map((tile) => tile.widget), ["@task/board-tabs", "@task/view-tabs", "@task/kanban-board", "@core/filter-panel", "@task/task-dialog"]);
+	check("and it holds the four widgets the owner placed", authored.tiles.map((tile) => tile.widget), ["@task/board-tabs", "@task/view-tabs", "@task/kanban-board", "@core/filter-panel"]);
 
 	const drawBoard = async (source) => {
 		const spare = dom.window.document.createElement("div");
@@ -1353,7 +1351,7 @@ const pickView = async (name, id = "views") => {
 	const oldElsewhere = await drawBoard(repointed("@nope/missing"));
 	const freshElsewhere = await drawBoard(repointed({ widget: "@nope/missing" }));
 
-	check("the old-shape board draws every tile the owner placed", old.tiles, ["board", "boards", "taskdialog", "views", "wynttpz"]);
+	check("the old-shape board draws every tile the owner placed", old.tiles, ["board", "boards", "views", "wynttpz"]);
 	check("a pick the registry cannot resolve draws a different page, so the pick is READ", oldElsewhere.html === old.html, false);
 	check("and the bare string is read exactly as the record is", freshElsewhere.html, oldElsewhere.html);
 	check("its fed slot draws real cards, so the slot is not merely declared", old.cards > 0, true);

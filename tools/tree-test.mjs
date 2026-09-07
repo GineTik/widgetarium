@@ -174,8 +174,8 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	const seen = measured.surface;
 	check("the surface drew a tree, not a grid", seen.drawn, true);
 	check("the tabs and the filter share a row, the kanban keeps its own", seen.rows, [1, 2, 1]);
-	check("every cell painted a widget, the dialog included", seen.painted, 5);
-	check("the dialog is drawn without taking a row", seen.overlays, 1);
+	check("every cell painted a widget, the unplaced one included", seen.painted, 5);
+	check("a tile no row names is drawn without taking a row", seen.overlays, 1);
 	check("and no row is wider than the board it sits in", seen.widest <= seen.boardWidth + 0.5, true);
 	check("one grip stands between the two that share a row", seen.across, 1);
 	check("and it is invisible until its own gap is pointed at", seen.gripShown, 0);

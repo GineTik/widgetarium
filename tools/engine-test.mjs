@@ -81,7 +81,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 				opened: { kind: "value", of: "tasks" },
 			},
 		},
-		"@task/task-dialog": { props: { opened: { kind: "value", wants: "@task/kanban-board/opened" } } },
+		"@probe/box-reader": { props: { opened: { kind: "value", wants: "@task/kanban-board/opened" } } },
 	};
 	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id] } : null) };
 
@@ -93,7 +93,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 			{ id: "boards", widget: "@core/editable-tabs" },
 			{ id: "filters", widget: "@core/filter-panel" },
 			{ id: "board", widget: "@task/kanban-board" },
-			{ id: "dialog", widget: "@task/task-dialog" },
+			{ id: "dialog", widget: "@probe/box-reader" },
 		],
 		registry,
 	);
@@ -123,7 +123,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		[
 			{ id: "boards", widget: "@core/editable-tabs" },
 			{ id: "group", widget: "@core/view-group", mounted: { Kanban: { widget: "@task/kanban-board" } } },
-			{ id: "dialog", widget: "@task/task-dialog" },
+			{ id: "dialog", widget: "@probe/box-reader" },
 		],
 		registry,
 	);

@@ -1,7 +1,7 @@
 import { render } from "../src/engine/render.js";
 import { arrayGateway, soloGateway } from "../src/gateway/create";
 import { createViewCells } from "../src/gateway/refs.js";
-import TaskDialog from "../widgets/@task/task-dialog/widget.tsx";
+import KanbanBoard from "../widgets/@task/kanban-board/widget.tsx";
 
 const task = {
 	path: "Orbitask/Tasks/replace-the-three-task-widgets.md",
@@ -52,8 +52,9 @@ const host = {
 };
 
 render(
-	<TaskDialog
-		settings={{ properties: "Status, Priority, Approval, Progress, Assignees, Deadline, Client", columns: "To Do, Doing, Done" }}
+	<KanbanBoard
+		settings={{ columns: "To Do, Doing, Done", groupBy: "status" }}
+		slots={{}}
 		tasks={tasks}
 		boards={boards}
 		selection={selection}

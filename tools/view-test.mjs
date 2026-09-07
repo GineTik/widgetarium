@@ -90,7 +90,6 @@ const STUCK = {
 		looseSwitcher,
 		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: "Orbitask/Tasks" } } },
 		{ id: "filters", widget: "@core/filter-panel" },
-		{ id: "taskdialog", widget: "@task/task-dialog", props: { tasks: { path: "Orbitask/Tasks" } } },
 	],
 	layouts: {
 		12: { places: [
@@ -98,13 +97,11 @@ const STUCK = {
 			{ id: "views", x: 0, y: 1, w: 9, h: 1 },
 			{ id: "filters", x: 9, y: 1, w: 3, h: 1 },
 			{ id: "board", x: 0, y: 2, w: 12, h: 12 },
-			{ id: "taskdialog", x: 0, y: 14, w: 1, h: 1 },
 		] },
 		20: { places: [
 			{ id: "boards", x: 1, y: 0, w: 19, h: 1 },
 			{ id: "views", x: 1, y: 1, w: 16, h: 1 },
 			{ id: "filters", x: 17, y: 1, w: 3, h: 1 },
-			{ id: "taskdialog", x: 0, y: 0, w: 1, h: 1 },
 			{ id: "board", x: 1, y: 2, w: 19, h: 11 },
 		] },
 	},

@@ -77,6 +77,7 @@ function read() {
 		kanbans: document.querySelectorAll(".orbi-kanban").length,
 		cards: [...document.querySelectorAll(".orbi-kanban .orbi-task-card-title")].map((node) => node.textContent.trim()),
 		picker: document.querySelector(".orbi-view-tabs .ovt-pick") !== null,
+		openedCard: document.querySelector(".orbi-task-dialog .otd-title")?.textContent.trim() ?? null,
 		strip: [...document.querySelectorAll(".wg-tabs .wg-tabs-tab")].map((node) => node.textContent.trim()),
 		filterGroups: [...document.querySelectorAll(".ofp-group-head")].map((node) => node.textContent.trim()),
 		groupStrip: [...document.querySelectorAll(".ovg-strip .wg-tabs-tab")].map((node) => node.textContent.trim()),

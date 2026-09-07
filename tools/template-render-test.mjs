@@ -15,7 +15,10 @@ function check(name, got, want) {
 const template = TEMPLATES[0];
 const staged = await stage({
 	board: serializeBoard(templateBoard(template)),
-	steps: [{ name: "filterOpened", click: ".ofp-open" }],
+	steps: [
+		{ name: "filterOpened", click: ".ofp-open" },
+		{ name: "cardPressed", click: ".orbi-kanban .ok-card-slot", saying: "Doing 1" },
+	],
 });
 const seen = staged.arrival;
 
@@ -30,6 +33,8 @@ check("the view picker stands beside it", seen.picker, true);
 check("the board strip drew a tab per board it read", seen.strip, TASK_ROWS.map((row) => row.name));
 check("and the kanban drew a card per task, through the slot the template names", seen.cards.sort(), TASK_ROWS.map((row) => row.props.title).sort());
 check("the filter drew a control the person can press", staged.filterOpened.pressed, true);
+check("no card is open on arrival", seen.openedCard, null);
+check("pressing a card opens it in the dialog the template stands beside the board", staged.cardPressed.openedCard, "Doing 1");
 check("nothing complained while it was drawn", seen.failures, []);
 check("and nothing was left unwired", seen.warnings, []);
 check("reading the page wrote nothing back to it", seen.writes, 0);
