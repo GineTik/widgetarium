@@ -8,7 +8,7 @@ import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
 import { normalizeBoard, serializeBoard } from "./model.js";
 import { shieldFromEditor } from "./editor-shield.js";
 import { mountKeyFor } from "./mount-key.js";
-import { trace, traceSub, setTracing, tracing } from "./trace.js";
+import { trace, traceSub, setTracing, tracing, measure, spentSoFar, forgetSpent } from "./trace.js";
 import { findBlocks, replaceBlock } from "./block-writer.js";
 import { createShapeStore, shapesOf } from "./shapes.js";
 import { openCatalogue } from "./catalogue-dialog.js";
@@ -25,7 +25,9 @@ import { TEMPLATES, missingWidgets, templateBoard } from "./templates.js";
 
 // a run of edits settles into one write; longer and an edit could be lost to a crash
 const WRITE_SETTLE_MS = 400;
+const WIDGET_POLL_MS = 1000;
 const BOARD_REFUSED = "Widgetarium: the board was not created — {reason}";
+const OFFERS_REFUSED = "Widgetarium: the widget catalogue could not be read — {reason}";
 const BOARD_NOT_INSERTED = "Widgetarium: this note has a code fence that was never closed, so there is nowhere safe to put a board. Close the fence and try again.";
 const WIDGET_NOT_OFFERED = "no catalogue offers {widget}, so this template cannot be built here";
 
@@ -66,6 +68,7 @@ export default class WidgetariumPlugin extends Plugin {
 	}
 
 	async onload() {
+		const startedAt = performance.now();
 		this.editing = false;
 		this.mounts = new Map();
 		this.registry = new WidgetRegistry(this.app);
@@ -95,6 +98,7 @@ export default class WidgetariumPlugin extends Plugin {
 		);
 
 		this.registerMarkdownPostProcessor((element, context) =>
+			measure("substitutions in a rendered section", () =>
 			substituteIn({
 				element,
 				context,
@@ -103,13 +107,13 @@ export default class WidgetariumPlugin extends Plugin {
 				app: this.app,
 				// CONTEXT: bound to the note, so a link a widget reads resolves the way one written there does
 				host: bindNote(this.host, context.sourcePath),
-			}),
+			})),
 		);
 		traceSub("post-processor registered", { rules: this.rules.length });
 
-		await this.ensureFolders();
-		await this.registry.load();
-		const stored = await this.loadData();
+		await measure("onload · ensureFolders", () => this.ensureFolders());
+		await measure("onload · registry.load", () => this.registry.load());
+		const stored = await measure("onload · loadData", () => this.loadData());
 		this.shapeAnswers = shapesOf(stored?.shapes);
 		this.rules = normalizeRules(stored?.substitutions);
 		traceSub("rules loaded", () => ({
@@ -119,18 +123,14 @@ export default class WidgetariumPlugin extends Plugin {
 			widgets: this.rules.map((rule) => rule.widget),
 		}));
 		// CONTEXT: the open note was drawn against an empty rule list while those awaits ran
-		this.rerenderNotes();
+		measure("onload · rerenderNotes", () => this.rerenderNotes());
 		this.installer = createInstaller({
 			adapter: this.app.vault.adapter,
 			fetchJson: (url) => requestUrl({ url }).then((answer) => answer.json),
 			fetchText: (url) => requestUrl({ url }).then((answer) => answer.text),
 			disk: diskDoor(),
 		});
-		this.available = (await this.installer.available()).map(drawable);
-
-		// .widgetarium is a dot folder, so the vault never emits events for it — poll instead
-		this.signature = await this.widgetSignature();
-		this.registerInterval(window.setInterval(() => this.pollWidgets(), 500));
+		if (await measure("onload · isAuthoringWidgetsHere", () => this.isAuthoringWidgetsHere())) await measure("onload · widgetSignature", () => this.watchWidgetFolder());
 
 		this.chrome = createViewChrome({
 			workspace: this.app.workspace,
@@ -197,15 +197,38 @@ export default class WidgetariumPlugin extends Plugin {
 			id: "reload-widgets",
 			name: "Reload widgets",
 			callback: async () => {
-				await this.registry.load();
+				await measure("registry.load on demand", () => this.registry.load());
 				this.refresh();
 				new Notice(`Widgetarium: ${this.registry.list().length} widgets`);
 			},
 		});
+
+		trace("onload done", { ms: Math.round(performance.now() - startedAt) });
 	}
 
 	// CONTEXT: the palette has no board under it, so browsing is the one mode whose press adds
 	// nothing anywhere — the detail page behind it is step 6 of docs/widget-catalogue.md
+	spent() {
+		console.table(spentSoFar());
+		return spentSoFar();
+	}
+
+	forgetSpent() {
+		forgetSpent();
+	}
+
+	// TRADE-OFF: every offer is compiled to draw its card, so it waits for somebody to look
+	async offers() {
+		try {
+			this.available ??= (await this.installer.available()).map(drawable);
+		} catch (failure) {
+			console.error(failure);
+			new Notice(OFFERS_REFUSED.replace("{reason}", String(failure?.message ?? failure)));
+			this.available = [];
+		}
+		return this.available;
+	}
+
 	showCatalogue() {
 		return this.openCatalogueAs("browse");
 	}
@@ -228,7 +251,7 @@ export default class WidgetariumPlugin extends Plugin {
 			registry: this.registry,
 			host: this.host,
 			mode,
-			available: this.available,
+			available: await this.offers(),
 			templates: TEMPLATES,
 			onInstall: (entry) => this.install(entry),
 			onUseTemplate: this.templateBuilderInto(folder),
@@ -251,15 +274,17 @@ export default class WidgetariumPlugin extends Plugin {
 	async rereadWidgets() {
 		this.signature = await this.widgetSignature();
 		await this.registry.load();
-		this.available = (await this.installer.available()).map(drawable);
+		this.available = null;
+		await this.offers();
 		this.refresh();
 	}
 
 	// TRADE-OFF: the installer is driven directly rather than through install(), so a template standing on six widgets neither shows six notices nor rereads the registry six times
 	async fetchWidgetsFor(template, onStep) {
+		const offers = await this.offers();
 		const wanted = [];
 		for (const id of missingWidgets(template, (held) => Boolean(this.registry.get(held)))) {
-			const offer = this.available.find((entry) => entry.manifest?.id === id);
+			const offer = offers.find((entry) => entry.manifest?.id === id);
 			if (!offer) return { ok: false, failure: WIDGET_NOT_OFFERED.replace("{widget}", id) };
 			wanted.push(offer);
 		}
@@ -287,7 +312,7 @@ export default class WidgetariumPlugin extends Plugin {
 			rules: this.rules,
 			registry: this.registry,
 			host: this.host,
-			available: this.available,
+			available: await this.offers(),
 			onInstall: (entry) => this.install(entry),
 			onChange: (next) => this.setRules(next),
 			onClose: () => {
@@ -375,20 +400,30 @@ export default class WidgetariumPlugin extends Plugin {
 		await this.app.vault.modify(file, next);
 	}
 
+	async isAuthoringWidgetsHere() {
+		return (await this.installer.folderSourcePaths()).length > 0;
+	}
+
+	// TRADE-OFF: a poll, because a dot folder emits no vault event; only an author here pays it
+	async watchWidgetFolder() {
+		this.signature = await this.widgetSignature();
+		this.registerInterval(window.setInterval(() => this.pollWidgets(), WIDGET_POLL_MS));
+	}
+
 	async widgetSignature() {
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return "";
 
-		const parts = [];
-		for (const scope of (await adapter.list(WIDGETS_DIR)).folders) {
-			for (const folder of (await adapter.list(scope)).folders) {
-				for (const file of (await adapter.list(folder)).files) {
-					const stat = await adapter.stat(file);
-					parts.push(`${file}:${stat?.mtime ?? 0}:${stat?.size ?? 0}`);
-				}
-			}
-		}
-		return parts.join("|");
+		const scopes = (await adapter.list(WIDGETS_DIR)).folders;
+		const folders = (await Promise.all(scopes.map((scope) => adapter.list(scope)))).flatMap((held) => held.folders);
+		const files = (await Promise.all(folders.map((folder) => adapter.list(folder)))).flatMap((held) => held.files);
+		const stamped = await Promise.all(
+			files.map(async (file) => {
+				const stat = await adapter.stat(file);
+				return `${file}:${stat?.mtime ?? 0}:${stat?.size ?? 0}`;
+			}),
+		);
+		return stamped.join("|");
 	}
 
 	async pollWidgets() {
@@ -558,6 +593,7 @@ export default class WidgetariumPlugin extends Plugin {
 		// the identity every widget compares against
 		const mount = { element, node, state: { board }, save, screen, width: 0, host: bindNote(this.host, context.sourcePath) };
 		mount.draw = () => {
+			measure("surface draw", () =>
 			render(
 				h(WidgetSurface, {
 					board: mount.state.board,
@@ -577,7 +613,7 @@ export default class WidgetariumPlugin extends Plugin {
 					},
 				}),
 				mount.node,
-			);
+			));
 		};
 		mount.commit = (next) => {
 			mount.state.board = next;
@@ -633,6 +669,10 @@ export default class WidgetariumPlugin extends Plugin {
 	}
 
 	renderBlock(source, element, context) {
+		return measure("renderBlock", () => this.drawBlock(source, element, context));
+	}
+
+	drawBlock(source, element, context) {
 		let board;
 		try {
 			const parsed = parseYaml(source) ?? [];

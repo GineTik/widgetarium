@@ -16,6 +16,11 @@ function scopeOf(folder) {
 	return folder.slice(0, folder.lastIndexOf("/"));
 }
 
+const isNamed = (held) => typeof held === "string" && held !== "";
+const namesARepository = (source) => isNamed(source?.repository);
+const namesAFolderOnThisMachine = (source) => !namesARepository(source) && isNamed(source?.path);
+const isReachableSource = (source) => namesARepository(source) || namesAFolderOnThisMachine(source);
+
 function refuse(failure) {
 	// CONTEXT: `@scope/name/manifest.json` is the shape both a folder and a repository hold
 	return { ok: false, failure };
@@ -36,6 +41,11 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 	};
 
 	const writeJson = (path, value) => adapter.write(path, `${JSON.stringify(value, null, "\t")}\n`);
+
+	const readCatalogue = async () => {
+		const raw = await readJson(INDEX_PATH, null);
+		return { raw, sources: (Array.isArray(raw?.sources) ? raw.sources : []).filter(isReachableSource) };
+	};
 
 	// CONTEXT: the card draws the widget, so its code travels with the offer, not only its name
 	async function codeAt(folder, scope) {
@@ -132,12 +142,26 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			return source.repository ? discoverRepository(source) : discoverFolder(source);
 		},
 
+		async folderSourcePaths() {
+			return (await readCatalogue()).sources.filter(namesAFolderOnThisMachine).map((source) => source.path);
+		},
+
+		// TRADE-OFF: one unreadable source is skipped rather than emptying the catalogue with it
+		async offersFrom(source) {
+			try {
+				return await this.discover(source);
+			} catch (failure) {
+				console.error(`[widgetarium] cannot read the source ${source.repository ?? source.path}`, failure);
+				return [];
+			}
+		},
+
 		async available() {
-			const raw = await readJson(INDEX_PATH, null);
+			const { raw, sources } = await readCatalogue();
 			const listed = readIndex(raw);
 			const found = [];
-			for (const source of Array.isArray(raw?.sources) ? raw.sources : []) {
-				found.push(...(await this.discover(source)));
+			for (const source of sources) {
+				found.push(...(await this.offersFrom(source)));
 			}
 			const known = new Set(listed.map((entry) => entry.manifest?.id));
 			return [...listed, ...found.filter((entry) => !known.has(entry.manifest?.id))];

@@ -45,6 +45,12 @@ function createRequire(libs) {
 	};
 }
 
+function componentIn(shell, at) {
+	const exported = shell.default ?? shell;
+	if (typeof exported !== "function") throw new Error(`${at}: the file must "export default createWidget(...)"`);
+	return exported;
+}
+
 // TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
 function runModule(source, filePath, libs) {
 	const code = compile(source, filePath);
@@ -65,10 +71,7 @@ export function buildWidget({ manifest, code, path, lib, libPath, scope }) {
 
 	const libs = new Map();
 	if (lib && scope) libs.set(`${scope}/lib`, runModule(lib, libPath, libs));
-	const shell = runModule(code, path, libs);
-	const exported = shell.default ?? shell;
-	if (typeof exported !== "function") throw new Error(`${path}: the file must "export default createWidget(...)"`);
-	return exported;
+	return componentIn(runModule(code, path, libs), path);
 }
 
 // CONTEXT: a widget declares that it may stand in text; claiming no tile size is what says
@@ -125,45 +128,63 @@ export class WidgetRegistry {
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
 
-		const scopes = (await adapter.list(WIDGETS_DIR)).folders;
+		const found = await this.readEverything(adapter);
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// second pass is cheaper than deciding an order between scopes that reference each other
-		for (const scope of scopes) await this.loadLib(adapter, scope);
-
-		for (const scope of scopes) {
-			// A family of widgets shares one palette, so the sheet belongs to the SCOPE folder,
-			// not to each widget. Without this the tokens file was never read at all and every
-			// widget referencing var(--orbi-*) rendered unpainted.
-			await this.loadStyles(adapter, `${scope}/tokens.css`, scope);
-			for (const folder of (await adapter.list(scope)).folders) {
-				await this.loadStyles(adapter, `${folder}/styles.css`, folder);
-				await this.loadOne(adapter, folder);
-			}
-		}
+		found.scopes.forEach((scope, at) => this.runLib(scope, found.libSources[at]));
+		found.sheets.forEach((sheet, at) => this.wearStyles(sheet.owner, found.sheetSources[at]));
+		found.folders.forEach((folder, at) => this.mountWidget(folder, found.widgetSources[at]));
 		return this.widgets;
 	}
 
-	// CONTEXT: the specifier is the scope's own name plus /lib — @habit/lib, beside @habit/heatmap
-	async loadLib(adapter, scope) {
-		const path = `${scope}/lib.js`;
-		if (!(await adapter.exists(path))) return;
+	// TRADE-OFF: every read is asked for at once and only the writing that follows is ordered, because a vault on iCloud or Dropbox answers each read in its own time and one after another was the whole start-up
+	async readEverything(adapter) {
+		const scopes = (await adapter.list(WIDGETS_DIR)).folders;
+		const foldersPerScope = await Promise.all(scopes.map((scope) => adapter.list(scope).then((held) => held.folders)));
+		const sheets = scopes.flatMap((scope, at) => [
+			{ owner: scope, path: `${scope}/tokens.css` },
+			...foldersPerScope[at].map((folder) => ({ owner: folder, path: `${folder}/styles.css` })),
+		]);
+		const folders = foldersPerScope.flat();
+		const [libSources, sheetSources, widgetSources] = await Promise.all([
+			Promise.all(scopes.map((scope) => this.readIfThere(adapter, `${scope}/lib.js`))),
+			Promise.all(sheets.map((sheet) => this.readIfThere(adapter, sheet.path))),
+			Promise.all(folders.map((folder) => this.readWidget(adapter, folder))),
+		]);
+		return { scopes, sheets, folders, libSources, sheetSources, widgetSources };
+	}
 
-		const name = `${scope.slice(WIDGETS_DIR.length + 1)}/lib`;
+	// TRADE-OFF: a read that fails comes back as a value rather than throwing, because one file mid-fetch on iCloud used to reject the whole Promise.all and the vault came up with no widgets at all
+	async readIfThere(adapter, path) {
 		try {
-			this.libs.set(name, runModule(await adapter.read(path), path, this.libs));
+			if (!(await adapter.exists(path))) return null;
+			return await adapter.read(path);
 		} catch (failure) {
-			// CONTEXT: a lib that will not load takes its widgets with it, so it must be named here
-			console.error(`[widgetarium] failed to load ${path}`, failure);
+			console.error(`[widgetarium] cannot read ${path}`, failure);
+			return null;
 		}
 	}
 
-	async loadStyles(adapter, cssPath, owner) {
-		if (!(await adapter.exists(cssPath))) return;
+	// CONTEXT: the specifier is the scope's own name plus /lib — @habit/lib, beside @habit/heatmap
+	runLib(scope, source) {
+		if (source === null) return;
+
+		const path = `${scope}/lib.js`;
+		const name = `${scope.slice(WIDGETS_DIR.length + 1)}/lib`;
+		try {
+			this.libs.set(name, runModule(source, path, this.libs));
+		} catch (failure) {
+			console.error(`[widgetarium] failed to load ${path}, and every widget importing it goes with it`, failure);
+		}
+	}
+
+	wearStyles(owner, source) {
+		if (source === null) return;
 
 		this.styles ??= new Map();
 		const element = document.createElement("style");
 		element.dataset.widgetarium = owner;
-		element.textContent = await adapter.read(cssPath);
+		element.textContent = source;
 		document.head.appendChild(element);
 		this.styles.set(owner, element);
 	}
@@ -173,21 +194,22 @@ export class WidgetRegistry {
 		this.styles?.clear();
 	}
 
-	async loadOne(adapter, folder) {
-		const manifestPath = `${folder}/manifest.json`;
-		if (!(await adapter.exists(manifestPath))) return;
+	async readWidget(adapter, folder) {
+		const manifest = await this.readIfThere(adapter, `${folder}/manifest.json`);
+		if (manifest === null) return null;
 
-		let codePath = null;
-		for (const name of ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"]) {
-			if (await adapter.exists(`${folder}/${name}`)) {
-				codePath = `${folder}/${name}`;
-				break;
-			}
-		}
-		if (!codePath) return;
+		const named = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"].map((name) => `${folder}/${name}`);
+		const sources = await Promise.all(named.map((path) => this.readIfThere(adapter, path)));
+		const at = sources.findIndex((source) => source !== null);
+		return at < 0 ? null : { manifest, code: sources[at], codePath: named[at] };
+	}
 
+	mountWidget(folder, held) {
+		if (held === null) return;
+
+		const { code, codePath } = held;
 		try {
-			const manifest = JSON.parse(await adapter.read(manifestPath));
+			const manifest = JSON.parse(held.manifest);
 			for (const id of [].concat(manifest.was ?? [])) this.renamed.set(id, manifest.id);
 
 			const refusal = apiRefusal(manifest);
@@ -196,13 +218,7 @@ export class WidgetRegistry {
 				return;
 			}
 
-			const shell = runModule(await adapter.read(codePath), codePath, this.libs);
-
-			const exported = shell.default ?? shell;
-			if (typeof exported !== "function") {
-				throw new Error(`${folder}: the file must "export default createWidget(...)"`);
-			}
-
+			const exported = componentIn(runModule(code, codePath, this.libs), folder);
 			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder });
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
