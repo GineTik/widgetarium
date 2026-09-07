@@ -42,6 +42,14 @@ export function mustRemint(duplicates, path) {
 	return (duplicates ?? []).some((entry) => entry.remints.includes(path));
 }
 
+// TRADE-OFF: forgotten here rather than re-detected, because the list() that follows a write reads a metadata cache that has not reparsed yet and would name the same record a loser all over again
+export function withoutRemint(duplicates, path) {
+	return (duplicates ?? [])
+		.map((entry) => ({ ...entry, remints: entry.remints.filter((held) => held !== path) }))
+		.filter((entry) => entry.remints.length > 0);
+}
+
+
 // CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
 const REPORT = "Widgetarium: {count} records claim the id {id}. {keeps} keeps it; the rest are re-minted on their next write.";
 

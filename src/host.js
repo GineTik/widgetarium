@@ -8,17 +8,53 @@ import { readLink } from "./engine/link.js";
 import { hostTypeOf } from "./engine/host-type.js";
 import { createConsole } from "./engine/host-console.js";
 import { readTarget, refusedRead } from "./engine/read-file.js";
-import { duplicateIds, mintId, mustRemint, readId, reportDuplicates, withId } from "./record-id.js";
+import { duplicateIds, mintId, mustRemint, readId, reportDuplicates, withId, withoutRemint } from "./record-id.js";
+
+const REPARSE_DEADLINE_MS = 2000;
+
+const intendedByPath = new Map();
+
+// TRADE-OFF: recorded before the write is attempted, not after, because a synced vault hands the file back only once it has fetched it and every reader would answer with the replaced value meanwhile
+function intendWrite(path, props) {
+	intendedByPath.set(path, { props, isStillInFlight: true, until: 0 });
+	return () => intendedByPath.delete(path);
+}
+
+function landWrite(path, props) {
+	intendedByPath.set(path, { props, isStillInFlight: false, until: Date.now() + REPARSE_DEADLINE_MS });
+}
+
+function carryIntentAcrossRename(was, now) {
+	const held = intendedByPath.get(was);
+	if (!held || was === now) return;
+	intendedByPath.delete(was);
+	intendedByPath.set(now, held);
+}
+
+const alreadyShows = (cached, written) =>
+	Object.keys(written).every((key) => JSON.stringify(cached?.[key]) === JSON.stringify(written[key]));
+
+// TRADE-OFF: held until the cache shows the write or the deadline passes, never on the identity of Obsidian's frontmatter object — nothing promises that object is replaced rather than edited in place
+function frontmatterOf(app, file, cache = app.metadataCache.getFileCache(file)) {
+	const cached = cache?.frontmatter;
+	const held = intendedByPath.get(file.path);
+	if (!held) return cached;
+	if (held.isStillInFlight) return held.props;
+	if (Date.now() < held.until && !alreadyShows(cached, held.props)) return held.props;
+	intendedByPath.delete(file.path);
+	return cached;
+}
 
 // TRADE-OFF: body absent on a listed record, present on a fetched one — twenty cards, no reads
 function toRecord(app, file, body) {
 	const cache = app.metadataCache.getFileCache(file);
+	const props = frontmatterOf(app, file, cache);
 	return {
 		path: file.path,
 		ref: { path: file.path },
-		props: { ...(cache?.frontmatter ?? {}) },
+		props: { ...(props ?? {}) },
 		// CONTEXT: the storage key never leaves this line — a widget sees record.id and nothing else
-		id: readId(cache?.frontmatter),
+		id: readId(props),
 		name: file.basename,
 		type: typeOf(file.path),
 		meta: { created: file.stat.ctime, modified: file.stat.mtime },
@@ -151,21 +187,6 @@ function slugify(text) {
 	return String(text ?? "Untitled").replace(/[\\/:*?"<>|#^[\]]/g, "").trim() || "Untitled";
 }
 
-function settled(app, file) {
-	return new Promise((resolve) => {
-		const done = (changed) => {
-			if (changed?.path !== file.path) return;
-			app.metadataCache.off("changed", done);
-			resolve();
-		};
-		app.metadataCache.on("changed", done);
-		window.setTimeout(() => {
-			app.metadataCache.off("changed", done);
-			resolve();
-		}, 800);
-	});
-}
-
 function createSlot(app, binding) {
 	const folderPath = binding?.path ?? "";
 	const writable = Boolean(folderPath);
@@ -187,6 +208,8 @@ function createSlot(app, binding) {
 
 	// CONTEXT: said once per id — list() re-runs on every vault event
 	const reported = new Set();
+	let duplicatesLastRead = null;
+	const duplicatesNow = () => duplicatesLastRead ?? duplicateIds(readFolder());
 
 	const slot = {
 		binding,
@@ -201,6 +224,7 @@ function createSlot(app, binding) {
 			const held = readFolder();
 			// CONTEXT: picking one of two records claiming an id in silence is forbidden
 			const duplicates = duplicateIds(held);
+			duplicatesLastRead = duplicates;
 			reportDuplicates(
 				duplicates.filter((entry) => !reported.has(entry.id)),
 				(said) => {
@@ -264,20 +288,31 @@ function createSlot(app, binding) {
 		slot.update = async (ref, patch) => {
 			const found = app.vault.getAbstractFileByPath(ref.path);
 			if (!(found instanceof TFile)) return null;
-			const file = patch.name === undefined ? found : await renamedTo(found, patch.name);
-			// CONTEXT: processFrontMatter restringifies the YAML — skip it for a body-only patch
-			// CONTEXT: a duplicate's loser is re-minted by the first write that reaches it, never on read
-			const remint = mustRemint(duplicateIds(readFolder()), file.path);
-			if (patch.props || remint) {
-				await app.fileManager.processFrontMatter(file, (frontmatter) => {
-					Object.assign(frontmatter, patch.props ?? {});
-					if (remint) Object.assign(frontmatter, withId(frontmatter, mintId()));
-				});
+			const remint = mustRemint(duplicatesNow(), found.path);
+			// TRADE-OFF: minted once and carried into the write, because minting again inside processFrontMatter meant readers spent the whole flight on an id the vault would never hold
+			const mintedId = remint ? mintId() : null;
+			const before = { ...(frontmatterOf(app, found) ?? {}) };
+			const wasAt = found.path;
+			let written = mintedId ? withId({ ...before, ...(patch.props ?? {}) }, mintedId) : { ...before, ...(patch.props ?? {}) };
+			const giveUpTheIntent = intendWrite(wasAt, written);
+			try {
+				const file = patch.name === undefined ? found : await renamedTo(found, patch.name);
+				carryIntentAcrossRename(wasAt, file.path);
+				if (patch.props || remint) {
+					await app.fileManager.processFrontMatter(file, (frontmatter) => {
+						Object.assign(frontmatter, patch.props ?? {});
+						if (mintedId) Object.assign(frontmatter, withId(frontmatter, mintedId));
+						written = { ...frontmatter };
+					});
+				}
+				if (remint) duplicatesLastRead = withoutRemint(duplicatesNow(), wasAt);
+				landWrite(file.path, written);
+				const bodyThatLanded = patch.body === undefined ? undefined : await writeBody(app, file, patch.body);
+				return toRecord(app, file, bodyThatLanded);
+			} catch (failure) {
+				giveUpTheIntent();
+				throw failure;
 			}
-			// CONTEXT: what LANDED, never what was asked — a refused write must not be reported
-			const body = patch.body === undefined ? undefined : await writeBody(app, file, patch.body);
-			if (patch.props || remint || patch.body !== undefined) await settled(app, file);
-			return toRecord(app, file, body);
 		};
 
 		// CONTEXT: the repair is a press — detection only reports
