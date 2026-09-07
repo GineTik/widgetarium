@@ -73,6 +73,7 @@ export function narrowedCollection<T>(
 		id: `${base.id}|where?${stableKey(rows)}`,
 		handlers: { ...delegatedVerbs(base as unknown as Record<string, unknown>), list },
 		subscribe: subscribe ?? base.subscribe,
+		announcesOwnWrites: false,
 	}) as CollectionGateway<T>;
 }
 

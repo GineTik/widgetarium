@@ -63,6 +63,7 @@ interface AssembleOptions {
 	handlers: HandlerMap;
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
+	announcesOwnWrites?: boolean;
 }
 
 type Subscribe = (listener: (event: GatewayEvent) => void) => Unsubscribe;
@@ -81,9 +82,10 @@ function combinedSubscribe(emitter: ReturnType<typeof createEmitter>, outer?: Su
 function buildVerb(options: AssembleOptions, verb: string, notify: () => void): Action<never, unknown> {
 	const held = options.handlers[verb];
 	if (!held) return refusedAction(`${options.id} has no "${verb}" — this source does not provide it`);
+	const announces = options.announcesOwnWrites !== false && !READ_VERBS.has(verb);
 	return withCan(async (input: never) => {
 		const result = await held(input);
-		if (!READ_VERBS.has(verb)) notify();
+		if (announces) notify();
 		return result;
 	}, () => ({ can: true }));
 }
@@ -109,6 +111,7 @@ export function collectionGateway<T>(options: {
 	handlers: HandlerMap;
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
+	announcesOwnWrites?: boolean;
 }): CollectionGateway<T> {
 	return assemble({ ...options, kind: "collection" }) as unknown as CollectionGateway<T>;
 }

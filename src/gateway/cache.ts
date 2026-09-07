@@ -44,6 +44,7 @@ interface CacheState {
 	entries: Map<string, CacheEntry>;
 	tracked: Map<string, Tracked>;
 	attached: Map<string, { count: number; stop: Unsubscribe }>;
+	awaitingRefetch: Set<string>;
 }
 
 const keyOf = (meta: ActionMeta, input: unknown) => `${meta.gatewayId}${KEY_GAP}${meta.verb}${KEY_GAP}${stableKey(input)}`;
@@ -72,11 +73,21 @@ function fetchNow(state: CacheState, key: string) {
 	);
 }
 
+// TRADE-OFF: one refetch per key per tick, because a single write reaches this through the wrapper's emitter and the base's alike, and each one used to re-read the whole folder
+function refetchOnceThisTick(state: CacheState, key: string) {
+	if (state.awaitingRefetch.has(key)) return;
+	state.awaitingRefetch.add(key);
+	queueMicrotask(() => {
+		state.awaitingRefetch.delete(key);
+		fetchNow(state, key);
+	});
+}
+
 function invalidate(state: CacheState, gatewayId: string) {
 	const prefix = `${gatewayId}${KEY_GAP}`;
 	for (const key of [...state.entries.keys()]) {
 		if (!key.startsWith(prefix)) continue;
-		if (state.tracked.get(key)?.listeners.size) fetchNow(state, key);
+		if (state.tracked.get(key)?.listeners.size) refetchOnceThisTick(state, key);
 		else state.entries.delete(key);
 	}
 }
@@ -129,7 +140,7 @@ function track(state: CacheState, { meta, input, run, listener }: TrackRequest):
 }
 
 export function createGatewayCache() {
-	const state: CacheState = { entries: new Map(), tracked: new Map(), attached: new Map() };
+	const state: CacheState = { entries: new Map(), tracked: new Map(), attached: new Map(), awaitingRefetch: new Set() };
 	return {
 		read: (meta: ActionMeta, input: unknown): CacheEntry => state.entries.get(keyOf(meta, input)) ?? NOT_LOADED,
 		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) => track(state, { meta, input, run, listener }),

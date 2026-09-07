@@ -160,5 +160,6 @@ export function mappedCollection<T>(base: CollectionGateway<T>, spec: MappingSpe
 		id: `${base.id}|needs?${stableKey({ needs: Object.keys(spec.needs), chosen: spec.chosen })}`,
 		handlers: mappedHandlers(base, spec, resolutionOf),
 		subscribe: base.subscribe,
+		announcesOwnWrites: false,
 	});
 }
