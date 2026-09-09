@@ -28,34 +28,35 @@ function amountOf(value) {
 }
 
 // CONTEXT: the two shipped formats — a note per habit holds an array, a note per day does not
-export function shapeOf(rows, field) {
-	return (rows ?? []).some((row) => Array.isArray(row?.props?.[field])) ? "habit" : "day";
+export function shapeOf(rows) {
+	return (rows ?? []).some((row) => Array.isArray(row?.days)) ? "habit" : "day";
 }
 
-function fromHabits(rows, field, pick) {
+function fromHabits(rows, pick) {
 	const log = [];
 	for (const row of rows) {
 		if (pick && row.name !== pick) continue;
-		for (const date of row.props?.[field] ?? []) {
+		for (const date of row.days ?? []) {
 			if (ISO.test(date)) log.push({ date, value: 1, path: row.path, name: row.name });
 		}
 	}
 	return log;
 }
 
-function fromDays(rows, field) {
+function fromDays(rows) {
 	const log = [];
 	for (const row of rows) {
-		if (!ISO.test(row.name ?? "")) continue;
-		const value = amountOf(row.props?.[field]);
-		if (value > 0) log.push({ date: row.name, value, path: row.path, name: row.name });
+		const day = dayOfNote(row);
+		if (!day) continue;
+		const value = amountOf(row.done);
+		if (value > 0) log.push({ date: day, value, path: row.path, name: row.name });
 	}
 	return log;
 }
 
-export function readLog(rows, { field = "entries", pick = "" } = {}) {
+export function readLog(rows, { pick = "" } = {}) {
 	const held = rows ?? [];
-	const log = shapeOf(held, field) === "habit" ? fromHabits(held, field, pick) : fromDays(held, field);
+	const log = shapeOf(held) === "habit" ? fromHabits(held, pick) : fromDays(held);
 	return log.sort((first, second) => (first.date < second.date ? -1 : first.date > second.date ? 1 : 0));
 }
 
@@ -79,35 +80,6 @@ export function streakOf(log, { maxGap = 0, today = "" } = {}) {
 		for (let at = days.length - 1; at > 0 && days[at] - days[at - 1] <= reach; at -= 1) current += 1;
 	}
 	return { current, best, last: isoOf(new Date(days[days.length - 1] * DAY_MS)) };
-}
-
-function labelOf(iso, span) {
-	if (span === "month") return iso.slice(0, 7);
-	if (span !== "week") return iso;
-	const monday = new Date(Date.parse(`${iso}T00:00:00Z`));
-	monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
-	return monday.toISOString().slice(0, 10);
-}
-
-export function bucketOf(log, span = "day") {
-	const totals = new Map();
-	for (const entry of log ?? []) {
-		const label = labelOf(entry.date, span);
-		totals.set(label, (totals.get(label) ?? 0) + entry.value);
-	}
-	return [...totals.entries()].sort().map(([label, value]) => ({ label, value }));
-}
-
-// CONTEXT: a pie needs categories, not an axis — so it counts rows, never a dated log
-export function groupOf(rows, prop) {
-	const totals = new Map();
-	for (const row of rows ?? []) {
-		for (const held of [].concat(row?.props?.[prop] ?? [])) {
-			const label = String(held ?? "").trim();
-			if (label) totals.set(label, (totals.get(label) ?? 0) + 1);
-		}
-	}
-	return [...totals.entries()].sort((first, second) => second[1] - first[1]).map(([label, value]) => ({ label, value }));
 }
 
 export const FLAME =

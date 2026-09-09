@@ -24,7 +24,6 @@
 	"include": [
 		"widgets/types/**/*.d.ts",
 		"tools/type-gate/**/*.ts",
-		"widgets/@habit/grid/widget.tsx",
 		"widgets/@habit/streak/widget.tsx",
 		"widgets/@habit/month/widget.tsx"
 	]

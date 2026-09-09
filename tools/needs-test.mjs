@@ -166,13 +166,15 @@ function folderStandIn(records, { canWrite = true } = {}) {
 }
 
 {
-	const manifest = JSON.parse(await readFile("widgets/@habit/grid/manifest.json", "utf8"));
-	const needs = manifest.props.habits.needs;
-	const rows = manifest.preview.props.habits.rows;
-	const { map, missing } = resolveNeeds(needs, fieldsOf(rows));
-	check("shipped: the grid's own preview rows answer every required need", missing.length === 0, JSON.stringify(missing));
-	check("shipped: the grid reads its days from the property the sample uses", map.days === "entries", JSON.stringify(map));
-	check("shipped: the grid no longer asks for its date property by hand", !manifest.settings.some((setting) => setting.key === "field"));
+	const { readdirSync } = await import("node:fs");
+	const scopes = readdirSync("widgets").filter((name) => name.startsWith("@"));
+	const shipped = scopes.flatMap((scope) => readdirSync(`widgets/${scope}`).filter((name) => !name.endsWith(".js") && !name.endsWith(".css")).map((name) => `widgets/${scope}/${name}/manifest.json`));
+	const declaring = [];
+	for (const path of shipped) {
+		const held = JSON.parse(await readFile(path, "utf8"));
+		if (held.settings !== undefined) declaring.push(held.id);
+	}
+	check("no shipped widget is tuned by a setting — every one of them is a prop", declaring.length === 0, declaring.join(", "));
 }
 
 {

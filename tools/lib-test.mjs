@@ -111,26 +111,26 @@ const check = (name, got, want) => {
 	const work = mkdtempSync(nodePath.join(tmpdir(), "wg-lib-"));
 	const copy = nodePath.join(work, "lib.mjs");
 	writeFileSync(copy, readFileSync("widgets/@habit/lib.js", "utf8"));
-	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf, bucketOf, groupOf } = await import(`file://${copy}`);
+	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf } = await import(`file://${copy}`);
 
 	const habits = [
-		{ path: "Habits/Exercise.md", name: "Exercise", props: { entries: ["2026-08-29", "2026-08-30", "2026-08-31"] } },
-		{ path: "Habits/Reading.md", name: "Reading", props: { entries: ["2026-08-31"] } },
+		{ path: "Habits/Exercise.md", name: "Exercise", days: ["2026-08-29", "2026-08-30", "2026-08-31"] },
+		{ path: "Habits/Reading.md", name: "Reading", days: ["2026-08-31"] },
 	];
 	const daily = [
-		{ path: "Daily/2026-08-29.md", name: "2026-08-29", props: { steps: 8420 } },
-		{ path: "Daily/2026-08-30.md", name: "2026-08-30", props: { steps: 0 } },
-		{ path: "Daily/2026-08-31.md", name: "2026-08-31", props: { steps: true } },
+		{ path: "Daily/2026-08-29.md", name: "2026-08-29", done: 8420 },
+		{ path: "Daily/2026-08-30.md", name: "2026-08-30", done: 0 },
+		{ path: "Daily/2026-08-31.md", name: "2026-08-31", done: true },
 	];
 
-	check("a note per habit is read as one", shapeOf(habits, "entries"), "habit");
-	check("a note per day as the other", shapeOf(daily, "steps"), "day");
-	check("every habit's dates come through", readLog(habits, { field: "entries" }).length, 4);
-	check("and one habit alone is pickable", readLog(habits, { field: "entries", pick: "Reading" }).map((entry) => entry.date), ["2026-08-31"]);
-	check("a day with nothing in it is not a day marked", readLog(daily, { field: "steps" }).map((entry) => entry.date), ["2026-08-29", "2026-08-31"]);
-	check("a tick counts as one", readLog(daily, { field: "steps" }).at(-1).value, 1);
+	check("a note per habit is read as one", shapeOf(habits), "habit");
+	check("a note per day as the other", shapeOf(daily), "day");
+	check("every habit's dates come through", readLog(habits).length, 4);
+	check("and one habit alone is pickable", readLog(habits, { pick: "Reading" }).map((entry) => entry.date), ["2026-08-31"]);
+	check("a day with nothing in it is not a day marked", readLog(daily).map((entry) => entry.date), ["2026-08-29", "2026-08-31"]);
+	check("a tick counts as one", readLog(daily).at(-1).value, 1);
 
-	const run = readLog(habits, { field: "entries", pick: "Exercise" });
+	const run = readLog(habits, { pick: "Exercise" });
 	check("a day shifted forward crosses the month end", shiftedBy("2026-08-31", 1), "2026-09-01");
 	check("and shifted back crosses it the other way", shiftedBy("2026-09-01", -1), "2026-08-31");
 	check("shifted by nothing is the same day", shiftedBy("2026-09-01", 0), "2026-09-01");
@@ -138,13 +138,9 @@ const check = (name, got, want) => {
 	check("three days in a row is a run of three", streakOf(run, { today: "2026-08-31" }).best, 3);
 	check("and it is alive the day after the last one", streakOf(run, { today: "2026-09-01" }).current, 3);
 	check("but not two days after", streakOf(run, { today: "2026-09-02" }).current, 0);
-	const gapped = readLog([{ name: "x", props: { entries: ["2026-08-01", "2026-08-03", "2026-08-04"] } }], {});
+	const gapped = readLog([{ name: "x", days: ["2026-08-01", "2026-08-03", "2026-08-04"] }]);
 	check("a missed day breaks a run when nothing forgives it", streakOf(gapped, { today: "2026-08-04" }).current, 2);
 	check("and does not when maxGap does", streakOf(gapped, { maxGap: 1, today: "2026-08-04" }).current, 3);
-
-	check("weeks fold to the monday they start on", bucketOf(run, "week"), [{ label: "2026-08-24", value: 2 }, { label: "2026-08-31", value: 1 }]);
-	check("months to their own name", bucketOf(run, "month"), [{ label: "2026-08", value: 3 }]);
-	check("and a category count is by value, biggest first", groupOf([{ props: { tag: ["a", "b"] } }, { props: { tag: "a" } }], "tag"), [{ label: "a", value: 2 }, { label: "b", value: 1 }]);
 
 	const notes = [
 		{ ref: "Days/2026-08-29.md", name: "2026-08-29", done: 1 },
