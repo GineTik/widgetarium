@@ -193,7 +193,7 @@ if (typeof resolveSlots === "function") {
 	const registry = {
 		get: (id) =>
 			id === "@task/task-card"
-				? { component: () => null, manifest: { settings: [{ key: "tone", default: "plain" }] } }
+				? { component: () => null, manifest: {} }
 				: null,
 	};
 	const manifest = { slots: { card: { of: "widget", default: "@task/task-card" } } };
@@ -204,7 +204,7 @@ if (typeof resolveSlots === "function") {
 	// the slot builds a vnode; preact calls the component later, so read the props off it
 	const node = bySpec.card({ task: { title: "Analyze Insights" } });
 	check("the parent's data reaches the slotted widget", node.props.task.title, "Analyze Insights");
-	check("and the child's own defaults are applied", node.props.settings.tone, "plain");
+	check("a fed slot is handed nothing of its own to tune", node.props.settings, undefined);
 	check("the child is handed the narrow host, not the store", Object.keys(node.props.host).sort(), ["can", "console", "platform", "type", "ui"]);
 
 	// CONTEXT: the model normalises both stored shapes, so the engine only ever meets the record

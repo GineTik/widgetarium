@@ -231,6 +231,20 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	check("operators: the two that share an operator are told apart by their value", gateway.conditionOfRow("text", { prop: "status", op: "exists", value: true })?.id === "filled");
 }
 
+{
+	const cache = gateway.createGatewayCache();
+	const held = gateway.hardcodeValue({ id: "typed", readValue: () => 14, mutateValue: () => {} });
+	const first = cache.read(held.get.meta, undefined);
+	check("first frame: a value kept in the tile is ready before anything subscribes", first.status === "ready" && first.data === 14, JSON.stringify(first));
+
+	const rows = gateway.hardcodeCollection({ id: "typed-rows", readValue: () => ["To Do", "Doing"], mutateValue: () => {} });
+	const listed = cache.read(rows.list.meta, undefined);
+	check("first frame: and so is a list kept in the tile", listed.status === "ready" && listed.data?.total === 2, JSON.stringify(listed));
+
+	const away = gateway.valueGateway({ id: "away", handlers: { get: async () => 14 } });
+	check("first frame: a source that has to go and look is still loading", cache.read(away.get.meta, undefined).status === "loading");
+}
+
 if (failed > 0) {
 	console.error(`gateway gate: ${failed} failed`);
 	process.exit(1);

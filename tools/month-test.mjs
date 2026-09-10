@@ -27,7 +27,7 @@ const { createElement: h, Fragment } = react;
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { widgetarium } = await import("./.mjs-cache/api.mjs");
 const kit = await import("./.mjs-cache/kit.mjs");
-const { collectionGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 
 const WIDGET = "widgets/@habit/month/widget.tsx";
@@ -116,10 +116,11 @@ const settled = async () => {
 	for (let tick = 0; tick < 4; tick += 1) await new Promise((done) => setTimeout(done, 0));
 };
 
-async function draw(notes, { verbs, settings = {} } = {}) {
+async function draw(notes, { verbs, fromMonday = true } = {}) {
 	written.length = 0;
 	render(null, host);
-	render(h(Month, { settings, days: gatewayOver(notes, verbs) }), host);
+	minted += 1;
+	render(h(Month, { isWeekStartingMonday: soloGateway(fromMonday, {}, `month-test/monday/${minted}`), days: gatewayOver(notes, verbs) }), host);
 	await settled();
 	return host;
 }
@@ -173,8 +174,8 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	await draw(RUN_NOTES);
 	check("every day of the month carries its own date", dayButtons().map((button) => button.querySelector(".hm-number").textContent).slice(0, 3).every((held) => /^\d+$/.test(held)), true);
 	check("the weekdays are named once, above the grid", [...host.querySelectorAll(".hm-weekday")].map((each) => each.textContent), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
-	check("and a week may start on Sunday instead", await draw(RUN_NOTES, { settings: { isWeekStartingMonday: false } }).then(() => host.querySelector(".hm-weekday").textContent), "Sun");
-	check("a setting left behind as anything but a boolean is no answer at all", await draw(RUN_NOTES, { settings: { isWeekStartingMonday: "false" } }).then(() => host.querySelector(".hm-weekday").textContent), "Mon");
+	check("and a week may start on Sunday instead", await draw(RUN_NOTES, { fromMonday: false }).then(() => host.querySelector(".hm-weekday").textContent), "Sun");
+	check("a value left behind as anything but a boolean is no answer at all", await draw(RUN_NOTES, { fromMonday: "false" }).then(() => host.querySelector(".hm-weekday").textContent), "Mon");
 }
 
 {

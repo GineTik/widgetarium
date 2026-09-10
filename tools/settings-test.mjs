@@ -25,6 +25,8 @@ const { heldTile, normalizeBoard, serializeBoard } = await import("./.mjs-cache/
 
 let failed = 0;
 
+const OPEN_POP = '.wg-kit-anchor[aria-expanded="true"] .wg-set-pop';
+
 // WHERE THE CONTROLS STAND WHILE THE SHEET MOVES. They were placed against the height the sheet
 // RESTS at, so the moment it was dragged it grew up through them.
 {
@@ -162,10 +164,12 @@ console.log("\n— and the panel writes what it draws —");
 		id: KANBAN_ID,
 		title: "Kanban board",
 		collapseBelowPx: 240,
-		settings: [{ key: "groupBy", type: "text", label: "Group tasks by", default: "status" }],
+
 		// CONTEXT: what the parent DECLARES it hands the slot — the shape src/fit.js ranks against
 		slots: { card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } } },
 		props: {
+			groupBy: { kind: "value", type: "text", label: "Group tasks by", verbs: { get: "required" }, default: { value: "status" } },
+			isCompact: { kind: "value", type: "boolean", label: "Compact rows", verbs: { get: "required" }, default: { value: false } },
 			tasks: { kind: "collection", label: "Tasks", verbs: { list: "required", create: "optional", update: "optional", remove: "optional" }, default: { path: "Orbitask/Tasks" } },
 			boards: { kind: "collection", label: "Boards", verbs: { list: "required", create: "optional", update: "optional", remove: "optional" } },
 		},
@@ -238,26 +242,34 @@ console.log("\n— and the panel writes what it draws —");
 	check("the panel is one glass sidebar", all(".wg-set-panel.wg-kit-side.is-glass").length, 1);
 	check("and there are exactly three glass surfaces", all(".wg-set-window .wg-kit-glass").length + all(".wg-set-window .wg-kit-side.is-glass").length, 3);
 
-	const settingRow = rowSaying("Group tasks by");
-	check("the setting is drawn with its value", Boolean(settingRow) && settingRow.textContent.includes("status"), true);
-	await press(settingRow);
-	const field = find(".wg-set-pop input");
+	const groupRow = rowSaying("Group tasks by");
+	check("the typed value is drawn with its value", Boolean(groupRow) && groupRow.textContent.includes("status"), true);
+	await press(groupRow);
+	const field = find(OPEN_POP + " input");
 	check("pressing it opens a popover with a field", Boolean(field), true);
 	field.value = "assignee";
 	field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
-	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+	await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 	// THE WINDOW IS A DRAFT. Everything edited here is visible at once and saved by Done —
 	// nothing reaches the board until then, so backing out really does back out.
-	check("the board on disk has not moved yet", board.tiles[0].settings.groupBy, undefined);
+	check("the board on disk has not moved yet", board.tiles[0].props.groupBy, undefined);
 	check("but the panel already draws the new value", rowSaying("Group tasks by")?.textContent.includes("assignee"), true);
 
+	const switchRow = rowSaying("Compact rows");
+	const switching = switchRow?.querySelector('.wg-set-switch [role="switch"]');
+	check("a boolean is a switch on its own row, not a field behind a press", Boolean(switching), true);
+	check("and it stands where the value the note holds says", switching?.getAttribute("aria-checked"), "false");
+	await press(switching);
+	check("flipping it writes the value into the draft", rowSaying("Compact rows")?.querySelector('[role="switch"]')?.getAttribute("aria-checked"), "true");
+	check("and it opened no popover to do it", Boolean(find(OPEN_POP + " input")), false);
+
 	await press(rowSaying("Tasks"));
-	const path = find(".wg-set-pop input");
+	const path = find(OPEN_POP + " input");
 	path.value = "Orbitask/Archive";
 	path.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
-	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+	await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 	check("the source folder is written to the draft", rowSaying("Tasks")?.textContent.includes("Orbitask/Archive"), true);
 
 	// THE SLOT PICKER IS THE CATALOGUE. What fills a slot is drawn on every row of the parent, so
@@ -332,11 +344,11 @@ console.log("\n— and the panel writes what it draws —");
 
 	await press(tab("Settings"));
 	await press(rowSaying("Tasks"));
-	const cleared = find(".wg-set-pop input");
+	const cleared = find(OPEN_POP + " input");
 	cleared.value = "";
 	cleared.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
-	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+	await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 	check("clearing it falls back to the widget's own default", rowSaying("Tasks")?.textContent.includes("Orbitask/Tasks"), true);
 	check("and the row says the difference out loud", Boolean(rowSaying("Tasks")?.classList.contains("is-unset")), true);
 	await press(tab("Data"));
@@ -346,11 +358,11 @@ console.log("\n— and the panel writes what it draws —");
 	check("the Design tab draws the size on the board", Boolean(rowSaying("Width")), true);
 	check("with the cells it has", rowSaying("Width")?.textContent.includes("12 cells"), true);
 	await press(rowSaying("Width"));
-	const wide = find(".wg-set-pop input");
+	const wide = find(OPEN_POP + " input");
 	wide.value = "6";
 	wide.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await tick();
-	await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+	await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 	check("changing it writes the place in the draft", rowSaying("Width")?.textContent.includes("6 cells"), true);
 	check("and the panel now says so", rowSaying("Width")?.textContent.includes("6 cells"), true);
 
@@ -378,7 +390,7 @@ console.log("\n— and the panel writes what it draws —");
 	check("pressing it again gives the widget back", find(".wg-set-body")?.style.visibility, "visible");
 
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
-	check("Done saves the setting", board.tiles[0].settings.groupBy, "assignee");
+	check("Done saves the typed value", board.tiles[0].props.groupBy.value, "assignee");
 	// the section cleared this field on purpose, and an empty own path is what falls back
 	check("and the cleared source, still cleared", board.tiles[0].props.tasks.path, "");
 	check("and the slot that was picked", board.tiles[0].slots.card.widget, OTHER_ID);
@@ -403,11 +415,11 @@ console.log("\n— and the panel writes what it draws —");
 		await press(find('.wg-tile-actions button[aria-label="Settings"]'));
 		await press(tab("Design"));
 		await press(rowSaying("Width"));
-		const narrower = find(".wg-set-pop input");
+		const narrower = find(OPEN_POP + " input");
 		narrower.value = "3";
 		narrower.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 		await tick();
-		await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+		await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 		check("the window shows the change while it is open", rowSaying("Width")?.textContent.includes("3 cells"), true);
 		check("and the board on disk has not moved", JSON.stringify(serializeBoard(board)), before);
 
@@ -438,21 +450,25 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 			title: "View group",
 			// CONTEXT: the mount name is `holds`; `views` is the key notes were written with before
 			mounts: { holds: { was: "views", label: "Views" } },
-			settings: [{ key: "views", type: "text", label: "Which views", default: `${KANBAN_ID}, ${ARCHIVE_ID}` }],
+			props: { views: { kind: "value", type: "text", label: "Which views", verbs: { get: "required" }, default: { value: `${KANBAN_ID}, ${ARCHIVE_ID}` } } },
 		},
 		[KANBAN_ID]: {
 			id: KANBAN_ID,
 			title: "Kanban board",
-			settings: [{ key: "groupBy", type: "text", label: "Group tasks by", default: "status" }],
-			props: { tasks: { kind: "collection", label: "Tasks", verbs: { list: "required" }, default: { path: "Orbitask/Tasks" } } },
+	
+			props: {
+				groupBy: { kind: "value", type: "text", label: "Group tasks by", verbs: { get: "required" }, default: { value: "status" } },
+			isCompact: { kind: "value", type: "boolean", label: "Compact rows", verbs: { get: "required" }, default: { value: false } },
+				tasks: { kind: "collection", label: "Tasks", verbs: { list: "required" }, default: { path: "Orbitask/Tasks" } },
+			},
 			// the card is FED a task, the panel is not — one manifest carries both kinds on purpose
 			slots: {
 				card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } },
 				panel: { of: "widget", default: PANEL_ID },
 			},
 		},
-		[ARCHIVE_ID]: { id: ARCHIVE_ID, title: "Archived columns", settings: [{ key: "since", type: "text", label: "Archived since", default: "2019" }] },
-		[PANEL_ID]: { id: PANEL_ID, title: "Side panel", settings: [{ key: "width", type: "text", label: "Panel width", default: "narrow" }] },
+		[ARCHIVE_ID]: { id: ARCHIVE_ID, title: "Archived columns", props: { since: { kind: "value", type: "text", label: "Archived since", verbs: { get: "required" }, default: { value: "2019" } } } },
+		[PANEL_ID]: { id: PANEL_ID, title: "Side panel", props: { width: { kind: "value", type: "text", label: "Panel width", verbs: { get: "required" }, default: { value: "narrow" } } } },
 		[CARD_ID]: { id: CARD_ID, title: "Task card" },
 	};
 	const Leaf = () => h("div", { className: "leaf" }, "leaf");
@@ -517,11 +533,11 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	const settingsButtons = () => all('.wg-tile-actions button[aria-label="Settings"]');
 	const typeInto = async (row, typed) => {
 		await press(row);
-		const field = find(".wg-set-pop input");
+		const field = find(OPEN_POP + " input");
 		field.value = typed;
 		field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 		await tick();
-		await press(all(".wg-set-pop button").find((button) => button.textContent.trim() === "Apply"));
+		await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 	};
 
 	await press(settingsButtons()[0]);
@@ -569,10 +585,10 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("with the Design tab back with it", all(".wg-set-panel .wg-kit-seg button").map((button) => button.textContent.trim()), ["Settings", "Data", "Design"]);
 
 	const beforeDone = JSON.stringify(serializeBoard(board));
-	check("and nothing has reached the board yet", board.tiles[0].mounted[KANBAN_VIEW]?.settings?.groupBy, undefined);
+	check("and nothing has reached the board yet", board.tiles[0].mounted[KANBAN_VIEW]?.props?.groupBy, undefined);
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
-	check("Done writes the child's edit into the child's record", board.tiles[0].mounted[KANBAN_VIEW].settings.groupBy, "assignee");
-	check("and the grandchild's into the grandchild's", board.tiles[0].mounted[KANBAN_VIEW].slots.panel.settings.width, "wide");
+	check("Done writes the child's edit into the child's record", board.tiles[0].mounted[KANBAN_VIEW].props.groupBy.value, "assignee");
+	check("and the grandchild's into the grandchild's", board.tiles[0].mounted[KANBAN_VIEW].slots.panel.props.width.value, "wide");
 	check("the record names the widget it holds", board.tiles[0].mounted[KANBAN_VIEW].slots.panel.widget, PANEL_ID);
 	check("and the row itself names the widget its name stands for", board.tiles[0].mounted[KANBAN_VIEW].widget, KANBAN_ID);
 	// NOTHING ELSE MOVES. The sibling view was seeded before any of this and must still be there.
@@ -588,8 +604,8 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	await press(rowSaying("Kanban board").querySelector(".wg-set-enter"));
 	await typeInto(rowSaying("Group tasks by"), "priority");
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
-	check("the second tile keeps its own edit", board.tiles[1].mounted[KANBAN_VIEW].settings.groupBy, "priority");
-	check("and the first tile's survives it", board.tiles[0].mounted[KANBAN_VIEW].settings.groupBy, "assignee");
+	check("the second tile keeps its own edit", board.tiles[1].mounted[KANBAN_VIEW].props.groupBy.value, "priority");
+	check("and the first tile's survives it", board.tiles[0].mounted[KANBAN_VIEW].props.groupBy.value, "assignee");
 	await new Promise((done) => setTimeout(done, 240));
 	await tick();
 
@@ -636,10 +652,10 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("and the row it collided with keeps its own name", all(".wg-set-panel .wg-kit-row").filter((row) => row.textContent.includes("Archived columns") && !row.textContent.includes("Archived columns 2")).length, 1);
 
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
-	const holds = board.tiles[0].settings.holds;
+	const holds = board.tiles[0].mounts.holds;
 	check("Done writes the new shape, a row per name", holds, [{ name: "Archived columns 2", widget: KANBAN_ID }, { name: "Archived columns", widget: ARCHIVE_ID }]);
 	check("and the setting's old key goes with it", "views" in board.tiles[0].settings, false);
-	check("the renamed row's record came with the name", board.tiles[0].mounted["Archived columns 2"]?.settings?.groupBy, "assignee");
+	check("the renamed row's record came with the name", board.tiles[0].mounted["Archived columns 2"]?.props?.groupBy?.value, "assignee");
 	check("and nothing is left behind under the old one", "Kanban board" in board.tiles[0].mounted, false);
 	// THE SIBLING NEVER MOVED. It was seeded under the widget-id key and nothing edited it, so
 	// the lazy migration must have left it exactly where it was.
@@ -658,10 +674,15 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 	// between the two renders is gone the moment the skipped tile speaks.
 	const configureBy = {};
 	const Probe = (props) => {
-		configureBy[props.settings.mark] = props.configure;
-		return h("div", { className: "leaf" }, props.settings.mark);
+		const tileId = String(props.note.id).split("/")[0];
+		configureBy[tileId] = props.note.update;
+		return h("div", { className: "leaf" }, tileId);
 	};
-	const manifest = { id: PROBE_ID, title: "Probe", settings: [{ key: "mark", type: "text", label: "Mark", default: "" }] };
+	const manifest = {
+		id: PROBE_ID,
+		title: "Probe",
+		props: { note: { kind: "value", type: "text", label: "Note", verbs: { get: "required", update: "optional" }, default: { value: "" } } },
+	};
 	// CONTEXT: one definition object, or every tile redraws and the memo is never exercised
 	const definition = { manifest, component: Probe };
 	const registry = { get: (id) => (id === PROBE_ID ? definition : null), list: () => [{ manifest }] };
@@ -669,8 +690,8 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 
 	let board = normalizeBoard({
 		tiles: [
-			{ id: "a", widget: PROBE_ID, settings: { mark: "a" } },
-			{ id: "b", widget: PROBE_ID, settings: { mark: "b" } },
+			{ id: "a", widget: PROBE_ID },
+			{ id: "b", widget: PROBE_ID },
 		],
 		layouts: { 20: [{ id: "a", x: 0, y: 0, w: 6, h: 4 }, { id: "b", x: 6, y: 0, w: 6, h: 4 }] },
 	});
@@ -707,15 +728,15 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 	const held = configureBy.a;
 	check("both tiles handed their widget a way to write", Boolean(configureBy.a) && Boolean(configureBy.b), true);
 
-	configureBy.b({ note: "from b" });
+	configureBy.b("from b");
 	await settle();
-	check("the second tile's write landed", board.tiles[1].settings.note, "from b");
+	check("the second tile's write landed", board.tiles[1].props.note.value, "from b");
 	check("and the first tile was skipped, or this proves nothing", configureBy.a === held, true);
 
-	configureBy.a({ note: "from a" });
+	configureBy.a("from a");
 	await settle();
-	check("the skipped tile's own write lands", board.tiles[0].settings.note, "from a");
-	check("and it does not put the other tile back", board.tiles[1].settings.note, "from b");
+	check("the skipped tile's own write lands", board.tiles[0].props.note.value, "from a");
+	check("and it does not put the other tile back", board.tiles[1].props.note.value, "from b");
 
 	render(null, mount);
 }
@@ -756,7 +777,7 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 
 	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
 	await press(document.querySelector(".wg-set-panel .wg-set-row"));
-	const notes = [...document.querySelectorAll(".wg-set-pop .wg-set-pop-note")].map((node) => node.textContent.trim());
+	const notes = [...document.querySelectorAll(OPEN_POP + " .wg-set-pop-note")].map((node) => node.textContent.trim());
 	check("a widget mounted under a NAME still counts as a reader of its folder", notes.includes("This folder is read by 2 widgets on this board."), true);
 	// CONTEXT: VACUOUS unless the count can be wrong — one reader must draw no hint at all
 	board = normalizeBoard({ tiles: [{ id: "alone", widget: READER_ID, props: { rows: { path: FOLDER } } }], layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] } });
@@ -767,8 +788,8 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 	check(
 		"and the only reader on a board is told nothing",
 		[
-			document.querySelector(".wg-set-pop .wg-set-pop-hint")?.textContent.trim() ?? null,
-			[...document.querySelectorAll(".wg-set-pop .wg-set-pop-note")].map((node) => node.textContent.trim()),
+			document.querySelector(OPEN_POP + " .wg-set-pop-hint")?.textContent.trim() ?? null,
+			[...document.querySelectorAll(OPEN_POP + " .wg-set-pop-note")].map((node) => node.textContent.trim()),
 		],
 		["Every note in the folder arrives as one item.", []],
 	);
@@ -814,7 +835,7 @@ console.log("\n— a prop renamed in the manifest still finds the folder the til
 	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
 	await press(document.querySelector(".wg-set-panel .wg-set-row"));
 	check("the window offers the folder that was chosen, not the declared one", document.querySelector(".wg-set-panel .wg-set-row").textContent.includes(CHOSEN), true);
-	await press([...document.querySelectorAll(".wg-set-pop button")].find((node) => node.textContent === "Apply"));
+	await press([...document.querySelectorAll(OPEN_POP + " button")].find((node) => node.textContent === "Apply"));
 	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
 	check("and the first write moves the record onto the new key", Object.keys(board.tiles[0].props ?? {}), ["days"]);
 	check("without losing the folder on the way", board.tiles[0].props.days.path, CHOSEN);

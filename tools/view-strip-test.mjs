@@ -78,9 +78,9 @@ function grouped({ holds = HOLDS, isTabsShown, switcher = false, view } = {}) {
 		{
 			id: "group",
 			widget: GROUP,
-			settings: isTabsShown === undefined ? { holds } : { holds, isTabsShown },
-			sources: {},
-			mounted: { Kanban: { widget: KANBAN, settings: { columns: "To Do, Doing" }, sources: { tasks: { path: TASKS }, boards: { path: BOARDS } } } },
+			settings: { holds },
+			props: isTabsShown === undefined ? {} : { isTabsShown: { from: "typed", value: isTabsShown } },
+			mounted: { Kanban: { widget: KANBAN, props: { columns: { from: "typed", value: [{ name: "To Do" }, { name: "Doing" }] } } } },
 		},
 	];
 	const places = [{ id: "group", x: 0, y: 0, w: 20, h: 10 }];
@@ -88,7 +88,6 @@ function grouped({ holds = HOLDS, isTabsShown, switcher = false, view } = {}) {
 		tiles.unshift({
 			id: "switch",
 			widget: SWITCHER,
-			settings: {},
 			props: { options: { from: "ref", ref: "group/holds" }, selection: { from: "ref", ref: "group/selection" } },
 		});
 		places.unshift({ id: "switch", x: 0, y: 0, w: 20, h: 1 });
@@ -161,9 +160,10 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	// CONTEXT: drawn again from the note, or the strip would read back what the test typed into it
 	await start(board);
 	check("renaming a tab renames the view", strip(), ["Planner", "Archived columns"]);
-	check("the note carries the new name", groupTile()?.settings?.holds?.[0], { name: "Planner", widget: KANBAN });
+	check("the note carries the new name", groupTile()?.mounts?.holds?.[0], { name: "Planner", widget: KANBAN });
+	check("and the list has left the settings field it used to live in", groupTile()?.settings?.holds, undefined);
 	check("the view's own record moved with it", Object.keys(groupTile()?.mounted ?? {}), ["Planner"]);
-	check("with the settings it had", groupTile()?.mounted?.Planner?.settings, { columns: "To Do, Doing" });
+	check("with the columns it had", groupTile()?.mounted?.Planner?.props?.columns?.value, [{ name: "To Do" }, { name: "Doing" }]);
 	check("and the view is still the one drawn", drawn(), "Kanban");
 }
 
@@ -171,7 +171,7 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 {
 	await menu("Add");
 	check("adding a tab adds a view", strip().length, 3);
-	check("which holds no widget yet", groupTile()?.settings?.holds?.[2]?.widget, "");
+	check("which holds no widget yet", groupTile()?.mounts?.holds?.[2]?.widget, "");
 	check("and says so where the view is drawn", all(".ovg-empty .ovg-fill").length, 1);
 	check("with nothing else drawn in its place", drawn(), "nothing");
 
@@ -181,9 +181,9 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 
 	const pick = dialogOn(".wg-cat-tile [aria-label]").find((node) => node.getAttribute("aria-label").includes("Archived columns"));
 	await click(pick.querySelector(".wg-cat-go") ?? pick);
-	check("picking a widget fills the tab", groupTile()?.settings?.holds?.[2]?.widget, ARCHIVED);
+	check("picking a widget fills the tab", groupTile()?.mounts?.holds?.[2]?.widget, ARCHIVED);
 	check("the catalogue closes behind it", dialogOn(".wg-cat-dialog").length, 0);
-	check("the name the tab was given is kept", groupTile()?.settings?.holds?.[2]?.name, "Untitled 1");
+	check("the name the tab was given is kept", groupTile()?.mounts?.holds?.[2]?.name, "Untitled 1");
 	check("and the widget is drawn in it", drawn(), "Archived columns");
 }
 
@@ -192,14 +192,14 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	await click(tab("Planner"));
 	await menu("Archive");
 	check("archiving takes the tab off the strip", strip().includes("Planner"), false);
-	check("the row is still in the note", groupTile()?.settings?.holds?.[0], { name: "Planner", widget: KANBAN, hidden: true });
-	check("and so is everything the view was set to", groupTile()?.mounted?.Planner?.settings, { columns: "To Do, Doing" });
+	check("the row is still in the note", groupTile()?.mounts?.holds?.[0], { name: "Planner", widget: KANBAN, hidden: true });
+	check("and so is everything the view was set to", groupTile()?.mounted?.Planner?.props?.columns?.value, [{ name: "To Do" }, { name: "Doing" }]);
 
 	await menu("Archived list");
 	await click([...dom.window.document.body.querySelectorAll(".wg-tabs-restore")].at(-1));
 	check("restoring puts the tab back", strip().includes("Planner"), true);
-	check("with nothing hidden in the note", groupTile()?.settings?.holds?.[0], { name: "Planner", widget: KANBAN });
-	check("and its settings untouched", groupTile()?.mounted?.Planner?.settings, { columns: "To Do, Doing" });
+	check("with nothing hidden in the note", groupTile()?.mounts?.holds?.[0], { name: "Planner", widget: KANBAN });
+	check("and its columns untouched", groupTile()?.mounted?.Planner?.props?.columns?.value, [{ name: "To Do" }, { name: "Doing" }]);
 }
 
 // CONTEXT: an archived view stays hidden even when the selection still names it

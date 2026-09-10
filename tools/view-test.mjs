@@ -426,7 +426,7 @@ async function gate() {
 	check("every step of the rename found something to press", RENAME.map((step) => renamed[step.name]?.pressed), RENAME.map(() => true));
 	check("the rename reaches the tab strip", renamed.done?.groupStrip, ["Planner", CHOSEN]);
 	const heldGroup = renamed.done?.tiles.find((tile) => tile.id === "group");
-	check("and the board is written in the new shape only", heldGroup?.settings, { holds: [{ name: "Planner", widget: KANBAN }, { name: CHOSEN, widget: ARCHIVED }] });
+	check("and the board is written in the new shape only", heldGroup?.mounts, { holds: [{ name: "Planner", widget: KANBAN }, { name: CHOSEN, widget: ARCHIVED }] });
 	check("the record follows the name it was renamed to", heldGroup?.mounted?.Planner?.props?.tasks?.path, "Orbitask/Tasks");
 	check("and nothing is left under the widget id it arrived as", Object.keys(heldGroup?.mounted ?? {}), ["Planner"]);
 	// THE COUNTER CAN MOVE, which is what makes the two zeros above mean anything
@@ -436,7 +436,7 @@ async function gate() {
 	const CLASH = RENAME.map((step) => (step.name === "typed" ? { ...step, type: CHOSEN } : step));
 	const clashed = await stage({ board: STRIPPED, files, editing: true, steps: CLASH });
 	check("a rename onto a taken name is disambiguated in the strip", clashed.done?.groupStrip, [`${CHOSEN} 2`, CHOSEN]);
-	check("and the row it collided with keeps its own name", clashed.done?.tiles.find((tile) => tile.id === "group")?.settings?.holds?.[1]?.name, CHOSEN);
+	check("and the row it collided with keeps its own name", clashed.done?.tiles.find((tile) => tile.id === "group")?.mounts?.holds?.[1]?.name, CHOSEN);
 
 	// AND THE GROUP STILL SWITCHES, on a real pick and on the setting alone
 	const after = await stage({ board: STRIPPED, files, editing: true, steps: [...RENAME, { name: "picked", click: ".ovg-strip .wg-tabs-tab", said: "Planner" }] });
@@ -460,11 +460,11 @@ async function gate() {
 	const born = pressed.held?.tiles.find((tile) => tile.widget === "@core/view-group");
 	check("the kanban MOVED into the group rather than being copied", pressed.held?.kanbans, 1);
 	check("and is gone from the board's own tiles", pressed.held?.tiles.map((tile) => tile.widget).includes(KANBAN), false);
-	check("the group holds it under its declared name, beside a second view", born?.settings?.holds, [
+	check("the group holds it under its declared name, beside a second view", born?.mounts?.holds, [
 		{ name: "Kanban", widget: KANBAN },
 		{ name: CHOSEN, widget: ARCHIVED },
 	]);
-	check("with the settings the loose tile had", born?.mounted?.Kanban?.settings, { columns: "To Do, Doing, Done" });
+	check("with the columns the loose tile had", born?.mounted?.Kanban?.settings, { columns: "To Do, Doing, Done" });
 	check("and the folder it read", born?.mounted?.Kanban?.props?.tasks?.path, "Orbitask/Tasks");
 	check("the group stands where the kanban stood, at every authored width", [pressed.held?.layouts["12"].at(-1), pressed.held?.layouts["20"].at(-1)], [
 		`${born?.id} 0,2 12x12`,

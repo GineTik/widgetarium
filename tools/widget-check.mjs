@@ -31,6 +31,7 @@ globalThis.ResizeObserver ??= class {
 // CONTEXT: the REAL kit, not a shim — a stub here would pass widgets the plugin cannot render
 buildMirror();
 const kit = await import("./.mjs-cache/kit.mjs");
+const { previewGateways } = await import("./.mjs-cache/preview.mjs");
 
 const api = {
 	createWidget: (component, meta) => {
@@ -116,11 +117,8 @@ for (const scope of scopes) {
 
 		try {
 			const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
-			const settings = {};
-			for (const field of manifest.settings ?? []) if (field.default !== undefined) settings[field.key] = field.default;
-
 			const component = load(folder);
-			const html = render(h(component, { settings, size: { w: 6, h: 10, scale: 1 }, host: { ui: {} } }));
+			const html = render(h(component, { ...previewGateways(manifest), size: { w: 6, h: 10, scale: 1 }, host: { ui: {} } }));
 
 			if (!html || html.length < 50) throw new Error("rendered almost nothing");
 			const hexes = [...new Set((fs.readFileSync(widgetFile(folder), "utf8").match(/#[0-9a-fA-F]{6}\b/g) ?? []))];

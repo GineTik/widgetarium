@@ -3,7 +3,7 @@ import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
 
-const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, mountRows, mountSetting, rekeyed, uniqueName } = await import(
+const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, keptRecords, mountRows, mountList, mountPatch, rekeyed, uniqueName } = await import(
 	"./.mjs-cache/model.mjs"
 );
 const { BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
@@ -244,7 +244,7 @@ check("rendering does not warn", onRender, 0);
 	};
 	const chosen = normalizeBoard(authored);
 	check("a slot choice survives normalising", chosen.tiles[0].slots.properties.widget, "@other/properties");
-	check("and it arrives as a record, like a mount", Object.keys(chosen.tiles[0].slots.properties).sort(), ["mounted", "props", "settings", "slots", "widget"]);
+	check("and it arrives as a record, like a mount", Object.keys(chosen.tiles[0].slots.properties).sort(), ["mounted", "mounts", "props", "settings", "slots", "widget"]);
 	// CONTEXT: a mount written before the record shape names its widget nowhere but the key
 	check("a mount written without a widget takes it off its key", chosen.tiles[0].mounted.body.widget, "body");
 
@@ -400,11 +400,24 @@ check("rendering does not warn", onRender, 0);
 
 // THE LAZY MIGRATION, BOTH HALVES. Reading takes the old key; writing emits only the new one.
 {
-	check("the setting's new key wins", mountSetting({ holds: "a", views: "b" }, "holds", { was: "views" }), "a");
-	check("its old key is read when the new one is absent", mountSetting({ views: "b" }, "holds", { was: "views" }), "b");
-	check("and the manifest's default when neither is there", mountSetting({}, "holds", { was: "views", default: "d" }), "d");
+	check("the mount's own field wins over the setting it used to live in", mountList({ mounts: { holds: "a" }, settings: { holds: "b" } }, "holds", { was: "views" }), "a");
+	check("the mount's new key wins", mountList({ mounts: { holds: "a", views: "b" } }, "holds", { was: "views" }), "a");
+	check("its old key is read when the new one is absent", mountList({ mounts: { views: "b" } }, "holds", { was: "views" }), "b");
+	check("a list still stored as a setting is read where it sits", mountList({ settings: { views: "b" } }, "holds", { was: "views" }), "b");
+	check("and the manifest's default when neither is there", mountList({}, "holds", { was: "views", default: "d" }), "d");
 	// CONTEXT: emptied deliberately is not the same as never set — `[]` must not fall back
-	check("an emptied list stays empty", mountSetting({ holds: [] }, "holds", { was: "views", default: "d" }), []);
+	check("an emptied list stays empty", mountList({ mounts: { holds: [] } }, "holds", { was: "views", default: "d" }), []);
+
+	const holder = { mounts: { holds: [{ name: "One", widget: "@x/a" }, { name: "Two", widget: "@x/b" }] }, mounted: { One: { widget: "@x/a" }, Two: { widget: "@x/b" } } };
+	const shorter = mountPatch(holder, "holds", [{ name: "One", widget: "@x/a" }]);
+	check("a row taken off the list takes its record with it", Object.keys(shorter.mounted), ["One"]);
+	check("and the same holds where the window writes it", Object.keys(keptRecords(holder.mounted, [{ name: "One" }])), ["One"]);
+	check("a record still on the widget-id key it arrived under is not swept away", Object.keys(keptRecords({ "@x/b": {} }, [{ name: "Two", was: "@x/b" }])), ["@x/b"]);
+	check("and the row itself is gone from the list", shorter.mounts.holds.map((row) => row.name), ["One"]);
+	const legacyHolder = { settings: { views: "@x/a" }, mounts: { views: [{ name: "One", widget: "@x/a" }] }, mounted: {} };
+	const onNewKey = mountPatch(legacyHolder, "holds", [{ name: "One", widget: "@x/a" }], "views");
+	check("the write moves the list onto the new key", Object.keys(onNewKey.mounts), ["holds"]);
+	check("and leaves neither old key behind", [Object.keys(onNewKey.settings), "views" in onNewKey.mounts], [[], false]);
 
 	const legacy = { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } };
 	check("a record is read where it sits", heldKey(legacy, "Kanban", "@x/kanban"), "@x/kanban");

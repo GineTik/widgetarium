@@ -753,7 +753,7 @@ const pickView = async (name, id = "views") => {
 
 {
 	// CONTEXT: one key in the vnode AND one persistence slot made two entries of one id collide
-	const twice = resolveMounts({ mounts: { holds: {} } }, { holds: `${KANBAN}, ${KANBAN}` }, registry, {});
+	const twice = resolveMounts({ mounts: { holds: {} } }, registry, { tile: { mounts: { holds: `${KANBAN}, ${KANBAN}` } } });
 	check("the same widget mounted twice is two names, not one repeated", twice.holds.map((entry) => entry.name), ["Kanban", "Kanban 2"]);
 	check(
 		"and the engine hands back what the registry knew, not a field of its own",
@@ -763,21 +763,21 @@ const pickView = async (name, id = "views") => {
 	check("a widget's own declaration comes through untouched", twice.holds[0].manifest.view, "Kanban");
 
 	// THE BOARD OWNS THE NAME: the same widget id, named twice, answers to what the board typed
-	const named = resolveMounts({ mounts: { holds: {} } }, { holds: [{ name: "Mine", widget: KANBAN }, { name: "Theirs", widget: KANBAN }] }, registry, {});
+	const named = resolveMounts({ mounts: { holds: {} } }, registry, { tile: { mounts: { holds: [{ name: "Mine", widget: KANBAN }, { name: "Theirs", widget: KANBAN }] } } });
 	check("a stored row answers to its own name", named.holds.map((entry) => entry.name), ["Mine", "Theirs"]);
 	check("and both still name the same widget", named.holds.map((entry) => entry.id), [KANBAN, KANBAN]);
 
 	// AN INVARIANT THAT ONLY RAN ON ADD IS THE APPSMITH BUG: two rows may never share a name,
 	// however the file came to say they do
-	const clashed = resolveMounts({ mounts: { holds: {} } }, { holds: [{ name: "Same", widget: KANBAN }, { name: "Same", widget: ARCHIVED }] }, registry, {});
+	const clashed = resolveMounts({ mounts: { holds: {} } }, registry, { tile: { mounts: { holds: [{ name: "Same", widget: KANBAN }, { name: "Same", widget: ARCHIVED }] } } });
 	check("a duplicate name in the file is disambiguated on read", clashed.holds.map((entry) => entry.name), ["Same", "Same 2"]);
 
 	// THE SETTING'S OWN OLD KEY. A note written before the rename still fills the mount.
-	const older = resolveMounts({ mounts: { holds: { was: "views" } } }, { views: `${KANBAN}, ${ARCHIVED}` }, registry, {});
+	const older = resolveMounts({ mounts: { holds: { was: "views" } } }, registry, { tile: { settings: { views: `${KANBAN}, ${ARCHIVED}` } } });
 	check("the setting's former key still fills the mount", older.holds.map((entry) => entry.name), ["Kanban", "Archived columns"]);
 	check("and each row carries the widget-id key its record still sits under", older.holds.map((entry) => entry.id), [KANBAN, ARCHIVED]);
 
-	const gone = resolveMounts({ mounts: { holds: {} } }, { holds: "@task/nowhere" }, registry, {});
+	const gone = resolveMounts({ mounts: { holds: {} } }, registry, { tile: { mounts: { holds: "@task/nowhere" } } });
 	check("an id that is not a widget is still an entry", gone.holds.map((entry) => entry.problem), ["not-found"]);
 	check("with nothing to draw", gone.holds[0].render, null);
 	check("and it is named off the id, because nothing else knows it", gone.holds.map((entry) => entry.name), ["@task/nowhere"]);

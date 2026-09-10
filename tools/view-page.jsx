@@ -115,7 +115,7 @@ function read() {
 		writes,
 		context: window.wgContext ? window.wgContext.all() : null,
 		provider: window.wgContext ? { view: window.wgContext.providerOf("view"), views: window.wgContext.providerOf("views") } : null,
-		tiles: board.tiles.map((tile) => ({ id: tile.id, widget: tile.widget, settings: tile.settings ?? null, props: tile.props ?? null, mounted: tile.mounted ?? null })),
+		tiles: board.tiles.map((tile) => ({ id: tile.id, widget: tile.widget, settings: tile.settings ?? null, mounts: tile.mounts ?? null, props: tile.props ?? null, mounted: tile.mounted ?? null })),
 		layouts: Object.fromEntries(Object.entries(board.layouts).map(([columns, places]) => [columns, places.map((place) => `${place.id} ${place.x},${place.y} ${place.w}x${place.h}`)])),
 		failures,
 		warnings,

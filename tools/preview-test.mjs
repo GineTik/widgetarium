@@ -55,11 +55,12 @@ check(
 console.log("\n— a widget with no source of its own still previews —");
 const cardProps = previewProps({ manifest: card }, {});
 // the LAW, not the copy: a pinned sample string turns every preview redesign into a test failure
-const sampled = card.preview.settings;
-const cardDefaults = Object.fromEntries((card.settings ?? []).map((field) => [field.key, field.default]));
-check("its settings come from the manifest's sample", cardProps.settings.title, sampled.title);
-check("over the manifest's own defaults", cardProps.settings.priority, sampled.priority);
-check("and the sample really overrides something", sampled.priority !== cardDefaults.priority, true);
+const sampled = card.preview.props.task.value;
+const cardDeclared = card.props.task.default.value;
+const cardTask = await cardProps.task.get();
+check("its value comes from the manifest's sample", cardTask.title, sampled.title);
+check("over the manifest's own default", cardTask.priority, sampled.priority);
+check("and the sample really overrides something", sampled.priority !== cardDeclared.priority, true);
 check("and it is handed no gateway it never declared", Object.keys(cardProps).filter((name) => name === "tasks"), []);
 
 console.log("\n— the sample world is local to the preview —");
@@ -99,7 +100,7 @@ check("and never carries the vault across", "app" in previewHost({ platform: "ob
 
 console.log("\n— it really draws —");
 const drawnRows = (await previewProps({ manifest: kanban }, {}).tasks.list()).total;
-const Leaf = ({ settings }) => h("div", { className: "leaf" }, `${settings.title ?? "?"} · ${drawnRows} rows`);
+const Leaf = () => h("div", { className: "leaf" }, `${drawnRows} rows`);
 const mount = dom.window.document.getElementById("host");
 render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);
 check("the widget is handed the sample rows", mount.textContent.includes("4 rows"), true);
