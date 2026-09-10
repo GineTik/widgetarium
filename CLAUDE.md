@@ -23,10 +23,26 @@ drawn litters the vault. Everything must work for records with no id yet: resolv
 path second. Duplicate ids come from **copies**, not from generation; the survivor is the one whose
 path sorts first, detection is on read, and the re-mint is a write, so it waits for one.
 
-**A list of named things is a gateway; one value is a setting.** `here` is a solo gateway with
-`get`/`update` and deliberately no `list` and no filters, because a solo thing needs no collection
-surface. Tabs, views, columns and boards are gateways. A folder path, a toggle, a number are
-settings.
+**There are no settings. Every prop is a gateway, primitives included.** A list of named things —
+tabs, views, columns, boards — is a `CollectionGateway`. A single thing is a `ValueGateway`, and when
+what it holds is a primitive the manifest names the type: `{ "kind": "value", "type": "number" }`,
+and `text` and `boolean` alike. The type is what the settings window draws the control from — a
+switch for a boolean, a plain field for a number or a text, JSON for anything else — and it is what
+lets a number typed into the tile be re-bound to another widget without touching the widget that
+reads it. `here` is a solo gateway with `get`/`update` and deliberately no `list` and no filters,
+because a solo thing needs no collection surface.
+
+**A value kept in the tile answers in the tick it is asked.** A gateway whose handlers touch no I/O
+declares `settlesNow`, and the cache settles it on the first read rather than a microtask later.
+Without it every number read through `useData` is `isLoading` on its first frame, and a number that
+lives in the tile itself blinks on every mount.
+
+**A setting a note still carries is read, never guessed at.** A prop that replaced one declares
+`wasSetting: true`, and only then does the engine read `tile.settings` for it; a prop that never was
+a setting ignores a stray key of the same name, which is what stops a folder binding being hijacked
+by yesterday's text. Where the old setting was a comma list and the prop is a collection, the prop
+also declares `rowsFromText: "<field>"`. Writing always emits the prop, and drops the setting key in
+the same write.
 
 **One law, three storages.** Where a list can live in more than one place, the verbs — add, rename,
 archive, reorder, delete — are written **once** over rows, and each storage supplies only
@@ -45,10 +61,16 @@ Reading still accepts `layouts:`, per the lazy-migration law; writing never emit
 **A region exists because it is declared, not because it holds something.** An empty `left` or
 `right` is a real region: it draws as a zone and a carried tile can be dropped into it. This is what
 lets a board be filled at all — a sidebar that appears only once something is in it can never receive
-the first thing. A new board is born with all three.
+the first thing. A new board is born with all three, and all three stand in reading mode too, so the
+two fold toggles are the board's own chrome and answer a press in either mode.
+
+**A widget is added where it will stand.** Every region ends, while the board is being edited, in a
+press that opens the catalogue and puts the pick on a row of its own in **that** region. There is no
+board-wide add: a press that named no region left the person guessing where the widget went. The
+grid's old palette survives only on the legacy `layouts:` path, which has no regions to name.
 
 **A fed slot cannot be entered; an unfed one can.** A slot whose manifest declares `gives` gets its
-inputs from the parent and owns nothing. Without `gives` the child owns its own sources and settings.
+inputs from the parent and owns nothing. Without `gives` the child owns its own props.
 `docs/view-group.md` carries this; it replaced an earlier split between "slot" and "mount".
 
 **One widget points at another by ref, never by a shared name.** There is no context bus. A ref is
@@ -119,5 +141,5 @@ the same on both sides: **maximalist, physical, answering.**
   author the whole sentence with a placeholder.
 - Early returns over nesting; no proxy variables; every new entity needs a consumer.
 - Migrations are **lazy**: reading accepts the old shape, writing emits the new one, and nothing bulk
-  rewrites the vault. A manifest's `was` carries the old name — for a setting, a mount and a widget id
-  alike.
+  rewrites the vault. A manifest's `was` carries the old name — for a prop, a mount and a widget id
+  alike; `wasSetting` carries the fact that the prop used to be a setting.
