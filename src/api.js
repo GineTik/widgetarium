@@ -19,6 +19,7 @@ import { flatRows, useData } from "./gateway/use-data";
 import { narrowed, normalizeWhere } from "./gateway/narrow";
 import { pickedValue } from "./gateway/refs.js";
 import { useNarrowed } from "./gateway/use-narrowed";
+import { useValue } from "./gateway/use-value";
 import * as kitModule from "./kit.js";
 import * as emojiModule from "./emojis.js";
 
@@ -63,6 +64,7 @@ const core = {
 	normalizeWhere,
 	pickedValue,
 	useNarrowed,
+	useValue,
 	EditableTabs,
 	toTabList,
 	applyTabStep,

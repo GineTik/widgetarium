@@ -27,7 +27,8 @@ const TASK_BOARD = {
 			{
 				id: "board",
 				widget: "@core/view-group",
-				settings: { isTabsShown: false, holds: [{ name: "Kanban", widget: "@task/kanban-board" }] },
+				props: { isTabsShown: { from: "typed", value: false } },
+				mounts: { holds: [{ name: "Kanban", widget: "@task/kanban-board" }] },
 				mounted: {
 					Kanban: {
 						widget: "@task/kanban-board",

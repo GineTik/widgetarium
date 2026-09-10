@@ -24,7 +24,7 @@ function normalizeHeld(input, keyWidget, idOf) {
 	const widget = heldWidget(input, keyWidget);
 	if (typeof widget !== "string" || widget === "") return null;
 	const held = typeof input === "object" && input !== null ? input : {};
-	return { widget: idOf(widget), settings: held.settings ?? {}, props: held.props ?? {}, slots: normalizeSlots(held.slots, idOf), mounted: normalizeMounted(held.mounted, idOf) };
+	return { widget: idOf(widget), settings: held.settings ?? {}, mounts: held.mounts ?? {}, props: held.props ?? {}, slots: normalizeSlots(held.slots, idOf), mounted: normalizeMounted(held.mounted, idOf) };
 }
 
 // CONTEXT: a mount key is the widget id, with #n on a repeat — a record written before this carries no widget
@@ -57,6 +57,7 @@ export function heldTile(holder, hold, key, widget) {
 		id: `${holder.id}/${key}`,
 		widget,
 		settings: held.settings ?? {},
+		mounts: held.mounts ?? {},
 		props: held.props ?? {},
 		slots: held.slots ?? {},
 		mounted: held.mounted ?? {},
@@ -101,8 +102,17 @@ export function heldKey(held, key, was) {
 	return !held?.[key] && was && held?.[was] ? was : key;
 }
 
-export function propConfig(props, key, spec) {
-	return props?.[heldKey(props, key, spec?.was)] ?? {};
+function settingBehind(tile, key, spec) {
+	if (!spec?.wasSetting) return undefined;
+	return underEitherKey(tile?.settings, key, spec.was);
+}
+
+export function propConfig(tile, key, spec) {
+	const props = tile?.props;
+	const held = props?.[heldKey(props, key, spec?.was)];
+	if (held) return held;
+	const value = settingBehind(tile, key, spec);
+	return value === undefined ? {} : { from: "typed", value };
 }
 
 // CONTEXT: the record moves onto its new key in the same write that changes it
@@ -111,9 +121,12 @@ export function rekeyed(held, key, was, patch) {
 	return { ...rest, [key]: { ...(held?.[key] ?? legacy ?? {}), ...patch } };
 }
 
-// CONTEXT: `was` is the setting's former key — a note written before the rename still fills the mount
-export function mountSetting(settings, name, spec) {
-	return settings?.[name] ?? settings?.[spec?.was] ?? spec?.default;
+function underEitherKey(held, name, was) {
+	return held?.[name] ?? (was ? held?.[was] : undefined);
+}
+
+export function mountList(tile, name, spec) {
+	return underEitherKey(tile?.mounts, name, spec?.was) ?? underEitherKey(tile?.settings, name, spec?.was) ?? spec?.default;
 }
 
 // CONTEXT: `was` is the widget-id key a note written before this still stores the record under
@@ -130,20 +143,46 @@ export function mountRows(value, nameFor) {
 }
 
 // CONTEXT: the rows and the records they key move in one write, or a rename orphans the settings
-export function mountPatch(tile, name, rows) {
-	let mounted = tile.mounted ?? {};
+export function storedMountRow(row) {
+	return { name: row.name, widget: row.widget ?? "", ...(row.hidden ? { hidden: true } : {}) };
+}
+
+function afterRenames(mounted, rows) {
+	let held = mounted ?? {};
 	for (const row of rows) {
-		if (!row.was || row.was === row.name || !mounted[row.was]) continue;
-		mounted = rekeyed(mounted, row.name, row.was, {});
+		if (!row.was || row.was === row.name || !held[row.was]) continue;
+		held = rekeyed(held, row.name, row.was, {});
 	}
+	return held;
+}
+
+export function keysStillNamed(rows) {
+	const kept = new Set();
+	for (const row of rows) {
+		kept.add(row.name);
+		if (row.was) kept.add(row.was);
+	}
+	return kept;
+}
+
+export function keptRecords(mounted, rows) {
+	const kept = keysStillNamed(rows);
+	return Object.fromEntries(Object.entries(mounted ?? {}).filter(([key]) => kept.has(key)));
+}
+
+export function mountPatch(tile, name, rows, was) {
 	const kept = new Set(rows.map((row) => row.name));
+	const moved = Object.entries(afterRenames(tile.mounted, rows));
 	return {
-		settings: {
-			...(tile.settings ?? {}),
-			[name]: rows.map((row) => ({ name: row.name, widget: row.widget ?? "", ...(row.hidden ? { hidden: true } : {}) })),
-		},
-		mounted: Object.fromEntries(Object.entries(mounted).filter(([key]) => kept.has(key))),
+		mounts: { ...withoutKey(tile.mounts, was), [name]: rows.map(storedMountRow) },
+		settings: withoutKey(withoutKey(tile.settings, was), name),
+		mounted: Object.fromEntries(moved.filter(([key]) => kept.has(key))),
 	};
+}
+
+export function withoutKey(held, key) {
+	const { [key]: dropped, ...rest } = held ?? {};
+	return rest;
 }
 
 // TRADE-OFF: a name alone, no stored type — the dialog anchors the control off the name
@@ -187,6 +226,7 @@ function normalizeTile(tile, index, idOf) {
 		id: tile.id ?? `w${index}`,
 		widget: idOf(tile.widget),
 		settings: tile.settings ?? {},
+		mounts: tile.mounts ?? {},
 		props: tile.props ?? {},
 		slots: normalizeSlots(tile.slots, idOf),
 		mounted: normalizeMounted(tile.mounted, idOf),
@@ -323,6 +363,7 @@ function serializeHeld(held) {
 	return {
 		widget: held.widget,
 		...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
+		...(Object.keys(held.mounts ?? {}).length ? { mounts: held.mounts } : {}),
 		...(Object.keys(held.props ?? {}).length ? { props: held.props } : {}),
 		...(slots ? { slots } : {}),
 		...(mounted ? { mounted } : {}),
@@ -343,6 +384,7 @@ function serializeTile(tile) {
 		widget: tile.widget,
 		...(tile.folded ? { folded: true } : {}),
 		...(Object.keys(tile.settings ?? {}).length ? { settings: tile.settings } : {}),
+		...(Object.keys(tile.mounts ?? {}).length ? { mounts: tile.mounts } : {}),
 		...(Object.keys(tile.props ?? {}).length ? { props: tile.props } : {}),
 		...(slots ? { slots } : {}),
 		...(mounted ? { mounted } : {}),

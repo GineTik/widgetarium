@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import { useEffect, useRef, useState } from "react";
 import { declaredName } from "./registry.js";
-import { heldKey, heldTile, mountRows, mountSetting, propConfig, rekeyed, uniqueName } from "./model.js";
+import { heldKey, heldTile, keptRecords, mountList, mountRows, propConfig, rekeyed, storedMountRow, uniqueName, withoutKey } from "./model.js";
 import { DialogClose, DialogOverlay } from "./dialog.js";
 import { parse as parseYaml } from "yaml";
 import { Button, CodeArea, Field, Icon, IconButton, List, Pill, Popover, PopoverItem, Row, RowBadge, RowLabel, RowValue, Segmented, Sidebar, SidebarGroup, SidebarRow, SidebarSheet, Switch } from "./kit.js";
@@ -77,7 +77,7 @@ function folderRead(spec, config) {
 }
 
 function vaultPathsOf(manifest, tile) {
-	const held = Object.entries(manifest?.props ?? {}).map(([name, spec]) => folderRead(spec, propConfig(tile?.props, name, spec)));
+	const held = Object.entries(manifest?.props ?? {}).map(([name, spec]) => folderRead(spec, propConfig(tile, name, spec)));
 	return [...new Set(held)].filter(Boolean).sort();
 }
 
@@ -218,38 +218,18 @@ function textEditor(state, fallback, onApply) {
 	]);
 }
 
-// CONTEXT: the bus wins for the life of the surface, so an edit must be SPOKEN onto it — a changed default alone moves nothing until reload
-function settingWrite(state, field, held) {
-	return (value) => {
-		state.onPatch({ settings: { ...held, [field.key]: value } });
-	};
-}
-
-function settingRows(state, wanted = (field) => !field.design) {
-	const { manifest, tile } = state;
-	const held = tile.settings ?? {};
-	return (manifest.settings ?? []).filter(wanted).map((field) => {
-		const label = field.label ?? field.key;
-		const write = settingWrite(state, field, held);
-		if (field.type === "boolean") {
-			return h(Row, { className: "wg-set-row", key: field.key }, [
-				h(RowLabel, { key: "label" }, label),
-				h(RowValue, { className: "wg-set-value", key: "value" }, h(Switch, { checked: Boolean(held[field.key] ?? field.default), onChange: write, label })),
-			]);
-		}
-		const value = shownValue(held[field.key], field.default);
-		const trigger = valueRow({ label, value: value ?? "Empty", unset: value === null });
-		const apply = (typed) => write(field.type === "number" ? Number(typed) : typed);
-		return editorPopover(state, `setting:${field.key}`, trigger, textEditor(state, field.default, apply));
-	});
-}
-
 function propConfigOf(state, key, spec) {
-	return propConfig(state.tile.props, key, spec);
+	return propConfig(state.tile, key, spec);
 }
 
-function writtenAsText(spec) {
-	return spec.kind === "value" && typeof spec.default?.value === "string";
+const PLAIN_TYPES = new Set(["text", "number", "boolean"]);
+
+function writtenPlainly(spec) {
+	return spec.kind === "value" && PLAIN_TYPES.has(spec.type);
+}
+
+function isSwitched(spec) {
+	return spec.kind === "value" && spec.type === "boolean";
 }
 
 const TYPED_HERE = "typed";
@@ -263,24 +243,32 @@ function kindItems(state, spec) {
 	const typed = { value: TYPED_HERE, label: "Typed here" };
 	const shared = (state.refs?.offered?.() ?? []).length > 0 ? [{ value: FROM_WIDGET, label: "From a widget" }] : [];
 	if (spec.of) return [{ value: OWN_BOX, label: "This widget's" }, ...shared];
-	if (writtenAsText(spec)) return [typed, ...shared];
+	if (writtenPlainly(spec)) return [typed, ...shared];
 	return [{ value: IN_VAULT, label: spec.kind === "value" ? "File" : "Folder" }, typed, ...shared];
 }
 
 function writtenText(spec, held) {
 	if (held === undefined) return "";
-	return writtenAsText(spec) ? String(held) : JSON.stringify(held);
+	return writtenPlainly(spec) ? String(held) : JSON.stringify(held);
 }
+
+const BLANK_OF_TYPE = { text: "", number: 0, boolean: false };
 
 function blankValue(spec) {
 	if (spec.default?.value !== undefined) return spec.default.value;
+	if (spec.type) return BLANK_OF_TYPE[spec.type] ?? "";
 	return spec.kind === "value" ? "" : [];
+}
+
+function typedAs(spec, typed) {
+	return spec.type === "number" ? Number(typed) : typed.trim();
 }
 
 // TRADE-OFF: not rekeyed() — that MERGES, and switching a prop to its own box writes a record with keys deliberately dropped
 function writeProp(state, key, spec, config) {
 	const kept = Object.entries(state.tile.props ?? {}).filter(([propName]) => propName !== spec?.was);
-	state.onPatch({ props: { ...Object.fromEntries(kept), [key]: config } });
+	const settings = withoutKey(withoutKey(state.tile.settings, spec?.was), key);
+	state.onPatch({ props: { ...Object.fromEntries(kept), [key]: config }, settings });
 }
 
 const KIND_OF_BINDING = { ref: FROM_WIDGET, box: OWN_BOX, hardcode: TYPED_HERE };
@@ -327,8 +315,8 @@ function kindNote(spec, binding) {
 function typedBody(state, key, spec, config) {
 	const shown = writtenText(spec, config.value ?? spec.default?.value);
 	const apply = (typed) => {
-		if (writtenAsText(spec)) {
-			writeProp(state, key, spec, { ...config, from: TYPED_HERE, value: typed.trim() });
+		if (writtenPlainly(spec)) {
+			writeProp(state, key, spec, { ...config, from: TYPED_HERE, value: typedAs(spec, typed) });
 			return;
 		}
 		let parsed;
@@ -349,7 +337,7 @@ function typedBody(state, key, spec, config) {
 			block: true,
 			key: "field",
 			value: state.draft ?? "",
-			placeholder: shown || (writtenAsText(spec) ? "A field name" : "A JSON value"),
+			placeholder: shown || (writtenPlainly(spec) ? "A value" : "A JSON value"),
 			onInput: (event) => state.setDraft(event.target.value),
 		}),
 		popoverFoot(state, () => state.setDraft(shown), apply),
@@ -554,7 +542,21 @@ function listedFields(spec, binding) {
 
 function typedLabel(spec, config) {
 	if (collectionFields(spec)) return "Typed here";
+	if (isSwitched(spec)) return heldBoolean(spec, config) ? "On" : "Off";
 	return writtenText(spec, config.value ?? spec.default?.value) || "Empty";
+}
+
+function heldBoolean(spec, config) {
+	return Boolean(config.value ?? spec.default?.value);
+}
+
+function switchedValue(state, key, spec, config) {
+	const flip = (next) => writeProp(state, key, spec, { ...config, from: TYPED_HERE, value: next });
+	return h(
+		"span",
+		{ className: "wg-set-switch", onClick: (event) => event.stopPropagation() },
+		h(Switch, { checked: heldBoolean(spec, config), label: spec.label ?? key, onChange: flip }),
+	);
 }
 
 function unpickedLabel(spec) {
@@ -574,16 +576,18 @@ function bindingBody(state, prop) {
 	if (binding === "ref") return refBody(state, key, spec, config);
 	if (binding === "box") return [];
 	if (binding !== "hardcode") return vaultBody(state, key, spec, config);
+	if (isSwitched(spec)) return [];
 	return listedFields(spec, binding) ? itemRows(state, key, spec, config) : typedBody(state, key, spec, config);
 }
 
 function propTrigger(state, prop) {
 	const { key, spec, config, binding } = prop;
+	const switched = isSwitched(spec) && binding === "hardcode";
 	return valueRow({
 		badge: h(Icon, { name: ICON_OF_BINDING[binding] ?? "folder" }),
 		label: spec.label ?? key,
-		value: h("span", { className: "wg-set-path" }, boundLabel(state, prop)),
-		unset: !config.path && config.value === undefined && !config.ref,
+		value: switched ? switchedValue(state, key, spec, config) : h("span", { className: "wg-set-path" }, boundLabel(state, prop)),
+		unset: !switched && !config.path && config.value === undefined && !config.ref,
 	});
 }
 
@@ -612,8 +616,12 @@ function boundProp(state, key, spec) {
 	return { key, spec, config, binding: bindingOf(spec, config).binding, path: config.path || spec.default?.path || "" };
 }
 
+function declaredProps(manifest, wanted) {
+	return Object.entries(manifest.props ?? {}).filter(([, spec]) => wanted(spec));
+}
+
 function propGroup(state) {
-	const declared = Object.entries(state.manifest.props ?? {});
+	const declared = declaredProps(state.manifest, (spec) => spec.design !== true);
 	if (declared.length === 0) return null;
 	const rows = declared.map(([key, spec]) => propRow(state, boundProp(state, key, spec)));
 	return group("props", declared.length > 1 ? "Sources" : "Source", rows, null);
@@ -703,40 +711,37 @@ function mountRow(state, rows, index, write, rename) {
 	return editorPopover(state, key, trigger, textEditor(state, row.name, apply), row.name);
 }
 
+function mountWrite(tile, name, spec, onPatch) {
+	return (next, moved) =>
+		onPatch({
+			mounts: { ...withoutKey(tile.mounts, spec?.was), [name]: next.map(storedMountRow) },
+			settings: withoutKey(withoutKey(tile.settings, spec?.was), name),
+			mounted: keptRecords(moved ?? tile.mounted, next),
+		});
+}
+
+function mountPicker(state, key, onPick) {
+	const trigger = h(Row, { pressable: true, className: "wg-set-row is-add", onClick: () => state.openEditor(key) }, [
+		h(Icon, { name: "plus" }),
+		h(RowLabel, { key: "label" }, "Add a view"),
+	]);
+	const dialog = h(CatalogueDialog, { key: "pick", registry: state.registry, host: state.host, mode: "mount", onPick, onClose: () => state.openEditor(null) });
+	return h("div", { className: "wg-set-slot", key: "add" }, [trigger, state.openRow === key ? dialog : null]);
+}
+
 // TRADE-OFF: no rank — a mount hands nothing down, so slotFit has no clause to weigh
 function mountGroups(state) {
 	const { manifest, tile, registry, host, onPatch } = state;
-	const held = tile.settings ?? {};
 	return Object.entries(manifest.mounts ?? {}).map(([name, spec]) => {
-		const rows = mountRows(mountSetting(held, name, spec), (id) => declaredName(registry, id));
+		const rows = mountRows(mountList(tile, name, spec), (id) => declaredName(registry, id));
 		// CONTEXT: the setting's old key goes in the same write, so the next read has one answer
-		const write = (next, moved) => {
-			const { [spec?.was]: dropped, ...rest } = held;
-			const settings = { ...rest, [name]: next.map((row) => ({ name: row.name, widget: row.widget })) };
-			onPatch(moved ? { settings, mounted: moved } : { settings });
-		};
+		const write = mountWrite(tile, name, spec, onPatch);
 		const add = (id) => {
 			write([...rows, { name: uniqueName(new Set(rows.map((row) => row.name)), declaredName(registry, id)), widget: id }]);
 			state.openEditor(null);
 		};
 		const key = `mount:${name}`;
-		const trigger = h(Row, { pressable: true, className: "wg-set-row is-add", onClick: () => state.openEditor(key) }, [
-			h(Icon, { name: "plus" }),
-			h(RowLabel, { key: "label" }, "Add a view"),
-		]);
-		const picker = h("div", { className: "wg-set-slot", key: "add" }, [
-			trigger,
-			state.openRow === key
-				? h(CatalogueDialog, {
-						key: "pick",
-						registry,
-						host,
-						mode: "mount",
-						onPick: add,
-						onClose: () => state.openEditor(null),
-				  })
-				: null,
-		]);
+		const picker = mountPicker(state, key, add);
 		// CONTEXT: the record sits under the old name, or still under the widget id it arrived as
 		const rename = (next, index) =>
 			write(next, movedRecord(tile.mounted, heldKey(tile.mounted, rows[index].name, rows[index].was), next[index].name));
@@ -1093,7 +1098,7 @@ function dataGroups(state) {
 				`can:${key}`,
 				`What ${label} can do`,
 				asked.map((verb) => reportRow(verb, titleCase(verb), said[verb] ?? `runs "${verb}" on this source`, isOn ? "On" : "Off", isOn)),
-				isHardcoded ? "The rows live in this widget's settings, so every verb is on." : isOn ? "All of these follow the binding. Clear it and they go off together." : "One empty field turns the rows grey.",
+				isHardcoded ? "The rows live in this tile, so every verb is on." : isOn ? "All of these follow the binding. Clear it and they go off together." : "One empty field turns the rows grey.",
 			),
 		);
 	}
@@ -1130,7 +1135,7 @@ function foldGroup({ isCollapsed, onCollapse, onExpand }) {
 }
 
 function designGroups(state) {
-	const own = settingRows(state, (field) => field.design === true);
+	const own = declaredProps(state.manifest, (spec) => spec.design === true).map(([key, spec]) => propRow(state, boundProp(state, key, spec)));
 	const groups = [sizeOnBoardGroup(state), foldGroup(state), own.length > 0 ? group("design:own", "This widget", own, null) : null].filter(Boolean);
 	if (groups.length > 0) return groups;
 	return [group("no-design", "Design", h(Row, { className: "wg-set-row" }, h(RowLabel, null, "This widget is drawn at the size its row gives it")), null)];
@@ -1141,7 +1146,6 @@ function panelBody(state) {
 	if (state.tab === "design") return designGroups(state);
 	return [
 		propGroup(state),
-		state.manifest.settings?.length ? group("settings", "Settings", settingRows(state), null) : null,
 		state.manifest.slots ? group("slots", "Slots", slotRows(state), "A hole this widget fills with another widget.") : null,
 		...mountGroups(state),
 	];
@@ -1330,11 +1334,6 @@ function panHandlers(state) {
 
 function startingDraft(key, here, place) {
 	const [kind, name] = String(key).split(":");
-	if (kind === "setting") {
-		const field = (here.manifest.settings ?? []).find((entry) => entry.key === name);
-		const held = here.tile.settings?.[name] ?? field?.default;
-		return held === undefined || held === null ? "" : String(held);
-	}
 	if (kind === "where") return "";
 	if (kind === "prop") {
 		const spec = here.manifest.props?.[name];
@@ -1342,7 +1341,7 @@ function startingDraft(key, here, place) {
 		if (bindingOf(spec, config).binding === "hardcode") {
 			const held = config.value ?? spec?.default?.value;
 			if (held === undefined) return "";
-			return writtenAsText(spec) ? String(held) : JSON.stringify(held);
+			return writtenText(spec, held);
 		}
 		return config.path ?? spec?.default?.path ?? "";
 	}

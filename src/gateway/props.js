@@ -53,18 +53,21 @@ function hardcodeWrites(write) {
 }
 
 // CONTEXT: every write is a mutator over the stored value as it stands — read-then-write races the tile
+function hardcodeReads(rowsNow) {
+	return {
+		list: (query) => applyQuery(rowsNow(), query),
+		get: (ref) => rowsNow().find((row) => row.ref === ref) ?? null,
+	};
+}
+
 export function hardcodeCollection({ id, readValue, mutateValue, requested = [] }) {
 	const rowsNow = () => storedRows(readValue());
 	const write = (step) => mutateValue((stored) => wrapRows(step(storedRows(stored))));
-
 	return collectionGateway({
 		id,
 		requested,
-		handlers: {
-			list: (query) => applyQuery(rowsNow(), query),
-			get: (ref) => rowsNow().find((row) => row.ref === ref) ?? null,
-			...hardcodeWrites(write),
-		},
+		settlesNow: true,
+		handlers: { ...hardcodeReads(rowsNow), ...hardcodeWrites(write) },
 	});
 }
 
@@ -72,6 +75,7 @@ export function hardcodeValue({ id, readValue, mutateValue, requested = [] }) {
 	return valueGateway({
 		id,
 		requested,
+		settlesNow: true,
 		handlers: {
 			get: () => readValue() ?? null,
 			update: (next) => {

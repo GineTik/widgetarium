@@ -139,10 +139,33 @@ function track(state: CacheState, { meta, input, run, listener }: TrackRequest):
 	return () => untrack(state, key, held, listener);
 }
 
+const isThenable = (held: unknown): boolean => typeof (held as { then?: unknown } | null)?.then === "function";
+
+function settleNow(state: CacheState, key: string, meta: ActionMeta, input: unknown): CacheEntry {
+	let data: unknown;
+	try {
+		data = (meta.readNow as NonNullable<ActionMeta["readNow"]>)(input);
+	} catch (failure: unknown) {
+		return { status: "failed", data: null, failure: failure instanceof Error ? failure.message : String(failure), version: 1 };
+	}
+	if (isThenable(data)) return NOT_LOADED;
+	const entry: CacheEntry = { status: "ready", data, failure: null, version: 1 };
+	state.entries.set(key, entry);
+	return entry;
+}
+
+function readEntry(state: CacheState, meta: ActionMeta, input: unknown): CacheEntry {
+	const key = keyOf(meta, input);
+	const held = state.entries.get(key);
+	if (held) return held;
+	if (!meta.readNow) return NOT_LOADED;
+	return settleNow(state, key, meta, input);
+}
+
 export function createGatewayCache() {
 	const state: CacheState = { entries: new Map(), tracked: new Map(), attached: new Map(), awaitingRefetch: new Set() };
 	return {
-		read: (meta: ActionMeta, input: unknown): CacheEntry => state.entries.get(keyOf(meta, input)) ?? NOT_LOADED,
+		read: (meta: ActionMeta, input: unknown): CacheEntry => readEntry(state, meta, input),
 		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) => track(state, { meta, input, run, listener }),
 		invalidate: (gatewayId: string) => invalidate(state, gatewayId),
 	};

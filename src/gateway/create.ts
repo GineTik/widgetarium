@@ -17,6 +17,7 @@ export interface ActionMeta {
 	gatewayId: string;
 	verb: string;
 	subscribe(listener: (event: GatewayEvent) => void): Unsubscribe;
+	readNow?: (input: unknown) => unknown;
 }
 
 type AnyHandler = (input: never) => MaybePromise<unknown>;
@@ -64,6 +65,7 @@ interface AssembleOptions {
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	announcesOwnWrites?: boolean;
+	settlesNow?: boolean;
 }
 
 type Subscribe = (listener: (event: GatewayEvent) => void) => Unsubscribe;
@@ -90,6 +92,12 @@ function buildVerb(options: AssembleOptions, verb: string, notify: () => void): 
 	}, () => ({ can: true }));
 }
 
+function readNowHandlerFor(options: AssembleOptions, verb: string): ((input: unknown) => unknown) | undefined {
+	const held = options.handlers[verb];
+	if (!options.settlesNow || !held || !READ_VERBS.has(verb)) return undefined;
+	return held as (input: unknown) => unknown;
+}
+
 function assemble(options: AssembleOptions): Record<string, unknown> {
 	const emitter = createEmitter();
 	const subscribe = combinedSubscribe(emitter, options.subscribe);
@@ -100,7 +108,7 @@ function assemble(options: AssembleOptions): Record<string, unknown> {
 	for (const verb of verbs) {
 		if (verb === "subscribe") continue;
 		const built = buildVerb(options, verb, () => emitter.notify({}));
-		(built as Action<never, unknown> & { meta: ActionMeta }).meta = { gatewayId: options.id, verb, subscribe };
+		(built as Action<never, unknown> & { meta: ActionMeta }).meta = { gatewayId: options.id, verb, subscribe, readNow: readNowHandlerFor(options, verb) };
 		gateway[verb] = built;
 	}
 	return gateway;
@@ -112,6 +120,7 @@ export function collectionGateway<T>(options: {
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	announcesOwnWrites?: boolean;
+	settlesNow?: boolean;
 }): CollectionGateway<T> {
 	return assemble({ ...options, kind: "collection" }) as unknown as CollectionGateway<T>;
 }
@@ -121,6 +130,7 @@ export function valueGateway<T>(options: {
 	handlers: HandlerMap;
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
+	settlesNow?: boolean;
 }): ValueGateway<T> {
 	return assemble({ ...options, kind: "value" }) as unknown as ValueGateway<T>;
 }
@@ -162,6 +172,7 @@ export function arrayGateway<T>(source: ArraySource<T>, handlers: HandlerMap = {
 	return collectionGateway<T>({
 		id: id ?? `array#${mintedArrays}`,
 		handlers: { ...arrayReads(source), ...handlers },
+		settlesNow: true,
 	});
 }
 
@@ -177,5 +188,6 @@ export function soloGateway<T>(
 	return valueGateway<T>({
 		id: id ?? `value#${mintedValues}`,
 		handlers: { get: () => readOne(), ...handlers },
+		settlesNow: true,
 	});
 }

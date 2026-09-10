@@ -5,11 +5,10 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { heldKey, heldTile, mountPatch, mountRows, mountSetting, placedIds, layoutFor, normalizeNames, propConfig, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
+import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, normalizeNames, propConfig, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
 import { pickWidget } from "./catalogue-dialog.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
-import { settingDefaults } from "./engine/widget-settings.js";
 import { NOWHERE } from "./engine/navigator-none.js";
 import { trace } from "./trace.js";
 import { stableKey } from "./gateway/cache.js";
@@ -31,8 +30,6 @@ import { resist } from "./give.js";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
-	"settings",
-	"configure",
 	"configureMounts",
 	"pickWidget",
 	"board",
@@ -100,11 +97,9 @@ export function resolveSlots(manifest, tile, registry, host, boardAccess) {
 			slots[name] = null;
 			continue;
 		}
-		const childDefaults = settingDefaults(child.manifest);
 		slots[name] = (given) =>
 			h(child.component, {
 				...given,
-				settings: { ...childDefaults, ...(given?.settings ?? {}) },
 				size: given?.size ?? { w: 1, h: 1, scale: 1 },
 				host: viewHost(host),
 				here: host.here ?? null,
@@ -156,11 +151,10 @@ function mountEntry(row, registry, mount) {
 	};
 }
 
-// CONTEXT: `was` on the spec is the setting's own former key, so an old note still fills the mount
-export function resolveMounts(manifest, settings, registry, mount) {
+export function resolveMounts(manifest, registry, mount) {
 	const mounts = {};
 	for (const [name, spec] of Object.entries(manifest.mounts ?? {})) {
-		const rows = mountRows(mountSetting(settings, name, spec), (id) => declaredName(registry, id));
+		const rows = mountRows(mountList(mount.tile, name, spec), (id) => declaredName(registry, id));
 		mounts[name] = rows.map((row) => mountEntry(row, registry, mount));
 	}
 	return mounts;
@@ -181,29 +175,41 @@ function mappingFor(spec, config, shapes, path) {
 	return { needs, chosen: { ...shapes?.readShape(path), ...(config.map ?? {}) } };
 }
 
-function resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patchProp }) {
-	const config = propConfig(tile.props, name, spec);
-	const { kind, binding } = bindingOf(spec, config);
-	const requested = requestedVerbs(spec);
-	if (binding === "ref") return kind === "value" ? refValue(refs, config.ref) : refCollection(refs, config.ref);
-	if (binding === "memory") return cellFor(refOf(tile.id, name));
+function typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, requested }) {
 	const declared = spec.default ?? {};
-	if (binding === "hardcode") {
-		const hardcodeSpec = {
-			id: `${tile.id}/${name}?${stableKey(config.value ?? declared.value)}`,
-			readValue: () => propsRef.current?.[name]?.value ?? declared.value,
-			mutateValue: (step) => patchProp(name, (held) => ({ value: step(held?.value ?? declared.value) })),
-			requested,
-		};
-		if (kind === "value") return hardcodeValue(hardcodeSpec);
-		return narrowedByRefs(hardcodeCollection(hardcodeSpec), whereOf(spec, config), refs);
-	}
-	const path = config.path || declared.path || "";
-	if (kind === "value") return fileGateway({ host, path, requested });
+	const asRendered = config.value ?? declared.value;
+	const held = {
+		id: `${tile.id}/${name}?${stableKey(asRendered)}`,
+		readValue: () => propConfig({ ...tile, props: propsRef.current }, name, spec).value ?? declared.value,
+		mutateValue: (step) => patchProp(name, (inFlight) => ({ value: step(inFlight?.value ?? asRendered) })),
+		requested,
+	};
+	if (spec.kind === "value") return hardcodeValue(held);
+	return narrowedByRefs(hardcodeCollection(held), whereOf(spec, config), refs);
+}
+
+function folderRows({ spec, host, config, refs, path, requested }) {
+	const declared = spec.default ?? {};
 	const baked = { sort: [...(declared.sort ?? []), ...(config.sort ?? [])] };
 	const base = folderGateway({ host, path, baked, requested });
 	const mapping = mappingFor(spec, config, host?.shapes, path);
 	return narrowedByRefs(mapping ? mappedCollection(base, mapping) : base, whereOf(spec, config), refs);
+}
+
+function vaultGateway({ spec, host, config, refs, kind, requested }) {
+	const path = config.path || spec.default?.path || "";
+	if (kind === "value") return fileGateway({ host, path, requested });
+	return folderRows({ spec, host, config, refs, path, requested });
+}
+
+function resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patchProp }) {
+	const config = propConfig(tile, name, spec);
+	const { kind, binding } = bindingOf(spec, config);
+	const requested = requestedVerbs(spec);
+	if (binding === "ref") return kind === "value" ? refValue(refs, config.ref) : refCollection(refs, config.ref);
+	if (binding === "memory") return cellFor(refOf(tile.id, name));
+	if (binding === "hardcode") return typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, requested });
+	return vaultGateway({ spec, host, config, refs, kind, requested });
 }
 
 // TRADE-OFF: the list is read back through the registry rather than closed over, because a stable id keeps the cache attached across a write and only a live read then sees the row that write just made
@@ -230,8 +236,7 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 	const propsRef = useRef(tile.props);
 	propsRef.current = tile.props ?? {};
 
-	const settings = { ...settingDefaults(definition.manifest), ...(tile.settings ?? {}) };
-	const mounts = resolveMounts(manifest, settings, registry, { tile, place, host, scale, refs, cellFor, registry, onCollapse, onExpand, patchMounted, boardProperties, boardArchivedColumns, configureBoard });
+	const mounts = resolveMounts(manifest, registry, { tile, place, host, scale, refs, cellFor, registry, onCollapse, onExpand, patchMounted, boardProperties, boardArchivedColumns, configureBoard });
 
 	const gateways = {};
 	const gatewayFor = (name) => gateways[name] ?? null;
@@ -298,12 +303,6 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 	};
 	const props = {
 		...gateways,
-		settings,
-		// A widget may CHANGE its own settings — the columns a board shows are a setting, and a
-		// kanban with no way to add one had to fake it by creating a task with a new status and
-		// letting the column appear as a side effect. The board still owns the tile; the widget
-		// states what it wants and the board writes it, exactly as with size and folding.
-		configure: (patch) => onPatch({ settings: { ...(tile.settings ?? {}), ...patch } }),
 		// CONTEXT: the list a mount holds and the records it keys are one write
 		configureMounts: (name, rows) => onPatch(mountPatch(tile, name, rows)),
 		// CONTEXT: the board's registry, never the widget's — an id comes back
@@ -1287,7 +1286,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 
 	const bornTile = (held, widgetId) => {
 		const id = `w${Math.random().toString(36).slice(2, 8)}`;
-		return { id, tiles: wiredTiles([...held, { id, widget: widgetId, settings: {} }], registry) };
+		return { id, tiles: wiredTiles([...held, { id, widget: widgetId }], registry) };
 	};
 
 	const palette = (onPick, chips = []) =>
@@ -1551,7 +1550,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		];
 		const mounted = {};
 		for (const row of held) {
-			mounted[row.name] = { widget: row.widget, settings: row.tile.settings, props: row.tile.props, slots: row.tile.slots, mounted: row.tile.mounted };
+			mounted[row.name] = { widget: row.widget, settings: row.tile.settings, mounts: row.tile.mounts, props: row.tile.props, slots: row.tile.slots, mounted: row.tile.mounted };
 		}
 		const id = `w${Math.random().toString(36).slice(2, 8)}`;
 		const gone = new Set(moved.map((tile) => tile.id));
@@ -1571,7 +1570,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				tiles: wiredTiles(
 					[
 						...now.board.tiles.filter((tile) => !gone.has(tile.id)),
-						{ id, widget: holder.manifest.id, settings: { [mountName]: rows }, mounted },
+						{ id, widget: holder.manifest.id, mounts: { [mountName]: rows }, mounted },
 					],
 					registry,
 				),

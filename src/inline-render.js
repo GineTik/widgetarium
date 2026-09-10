@@ -9,7 +9,7 @@ import { Icon, Popover, PopoverItem, cx, iconButtonClass } from "./kit.js";
 import { viewHost } from "./engine/view-host.js";
 import { NO_HOST } from "./engine/host-none.js";
 import { UNREADABLE, refusedRead } from "./engine/read-file.js";
-import { settingDefaults } from "./engine/widget-settings.js";
+import { previewGateways } from "./preview.js";
 
 const BLOCK_SELECTOR = "p, li";
 
@@ -83,11 +83,11 @@ export function InlineWidget({ definition, here, navigator, raw, host, reader })
 			"div",
 			{ key: "view", className: "wg-inline-view" },
 			h(definition.component, {
+				...previewGateways(definition.manifest),
 				here,
 				navigator,
 				reader: reader ?? UNREADABLE,
 				host: host ?? NO_HOST,
-				settings: settingDefaults(definition.manifest),
 				content: here.content,
 			}),
 		),

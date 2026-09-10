@@ -2029,6 +2029,11 @@ pre:has(> .block-language-widgetarium),
 	font-size: 11px;
 }
 
+:is(.wg-root, .wg-portal) .wg-set-switch {
+	display: inline-flex;
+	align-items: center;
+}
+
 :is(.wg-root, .wg-portal) .wg-set-chev {
 	transform: rotate(90deg);
 }

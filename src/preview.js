@@ -4,7 +4,6 @@ import { spanToPixels } from "./layout.js";
 import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
 import { refusedRead } from "./engine/read-file.js";
-import { settingDefaults } from "./engine/widget-settings.js";
 import { collectionGateway, soloGateway } from "./gateway/create";
 import { mappedCollection } from "./gateway/mapped";
 import { storedRows } from "./gateway/props.js";
@@ -110,18 +109,15 @@ export function previewSize(manifest, cell, gap) {
 // the props a widget needs to draw, with no board, no vault and no way back to either
 export function previewProps(definition, options) {
 	const manifest = definition?.manifest ?? {};
-	const settings = settingDefaults(manifest);
 
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = options?.registry?.get(spec.default);
 		slots[name] = child?.component && !child.error
-			? (given) => h(child.component, { ...given, settings: {}, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host) })
+			? (given) => h(child.component, { ...given, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host) })
 			: null;
 	}
 
-	// CONTEXT: an inline widget is drawn from the text its manifest offers, the way a board
-	// widget is drawn from the settings its manifest offers
 	const content = manifest.inline ? (manifest.preview?.content ?? manifest.title ?? "Sample text") : null;
 
 	return {
@@ -130,14 +126,12 @@ export function previewProps(definition, options) {
 		navigator: previewNavigator,
 		reader: previewReader(manifest),
 		content,
-		settings: { ...settings, ...(manifest.preview?.settings ?? {}) },
 		size: { w: manifest.preview?.size?.w ?? 4, h: manifest.preview?.size?.h ?? 3, scale: 1, isCollapsed: false, collapse() {}, expand() {} },
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		host: previewHost(options?.host),
 		// CONTEXT: the sample world hears everything the widget offers, so it draws its working face
 		board: { properties: manifest.preview?.properties ?? [], archivedColumnsByBoard: manifest.preview?.archivedColumns ?? [] },
 		configureBoard: () => false,
-		configure: () => {},
 		slots,
 		mounts: {},
 	};
