@@ -55,6 +55,17 @@ const written = { created: [], updated: [] };
 const notices = [];
 // note text lives here, so a body write never reaches the user's own vault
 const texts = new Map();
+const propsByPath = new Map();
+const vaultWatchers = new Map();
+const watch = (name, run) => {
+	if (!vaultWatchers.has(name)) vaultWatchers.set(name, new Set());
+	vaultWatchers.get(name).add(run);
+	return { name, run };
+};
+const unwatch = (name, run) => vaultWatchers.get(name)?.delete(run);
+const announce = (name, file) => {
+	for (const run of [...(vaultWatchers.get(name) ?? [])]) run(file);
+};
 
 function frontmatter(text) {
 	const found = /^---\n([\s\S]*?)\n---/.exec(text);
@@ -72,7 +83,9 @@ function vaultFiles(folder) {
 				extension: "md",
 				stat: { ctime: 1, mtime: 2 },
 			});
-			file.props = frontmatter(fs.readFileSync(path.join(VAULT, folder, name), "utf8"));
+			const at = `${folder}/${name}`;
+			if (!propsByPath.has(at)) propsByPath.set(at, frontmatter(fs.readFileSync(path.join(VAULT, folder, name), "utf8")));
+			file.props = propsByPath.get(at);
 			return file;
 		});
 }
@@ -100,13 +113,19 @@ const app = {
 			const next = edit(texts.get(file.path) ?? fs.readFileSync(path.join(VAULT, file.path), "utf8"));
 			texts.set(file.path, next);
 			written.updated.push({ path: file.path, text: next });
+			announce("modify", file);
 			return next;
 		},
-		on: () => ({}), off: () => {},
+		on: watch,
+		off: (held) => unwatch(held?.name, held?.run),
 	},
-	metadataCache: { getFileCache: (file) => ({ frontmatter: file.props }), on: () => {}, off: () => {} },
+	metadataCache: { getFileCache: (file) => ({ frontmatter: file.props }), on: watch, off: (held) => unwatch(held?.name, held?.run) },
 	fileManager: {
-		processFrontMatter: async (file, edit) => { edit(file.props); written.updated.push({ path: file.path, props: { ...file.props } }); },
+		processFrontMatter: async (file, edit) => {
+			edit(file.props);
+			written.updated.push({ path: file.path, props: { ...file.props } });
+			announce("changed", file);
+		},
 	},
 	workspace: { getLeaf: () => ({ openFile: async () => {} }) },
 };
@@ -378,8 +397,8 @@ check("it opens a panel", all(".orbi-filter .ofp-panel").length, 1);
 // THE BAR FOLLOWS THE BOARD. The field list used to be a colon-separated string in a setting,
 // so a board could name a property, the dialog could write it, and it was still not filterable.
 const groupHeads = all(".orbi-filter .ofp-group-head").map((node) => node.textContent.trim());
-check("the panel offers a group per property the board names", groupHeads, ["Priority", "Assignees"]);
-check("and drops Status even when the board names it, because the columns are the status", groupHeads.includes("Status"), false);
+check("the panel offers a group per property the notes carry", groupHeads, ["Approval", "Priority"]);
+check("and drops Status, because the columns are the status", groupHeads.includes("Status"), false);
 check("and it offers more than one", groupHeads.length > 1, true);
 
 // THE BAR IS THE KIT'S NOW. Four hand-drawn icons, a hand-rolled search field and a tick rule
@@ -425,7 +444,9 @@ const tabRowsOf = (id) => (board.tiles.find((tile) => tile.id === id)?.props?.ta
 const tabFieldOf = (row, field) => row?.props?.[field] ?? row?.[field];
 // CONTEXT: a mounted widget persists under the NAME the board gave it, not under its widget id
 const mountedOf = (id, key) => board.tiles.find((tile) => tile.id === id)?.mounted?.[key];
-const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
+const boardNote = (name) => vaultFiles("Orbitask/Boards").find((file) => file.props.board === name);
+const boardColumns = (name) => (boardNote(name)?.props?.columns ?? []).map((row) => row?.name ?? row);
+const boardArchived = (name) => (boardNote(name)?.props?.columns ?? []).filter((row) => row?.archivedAt).map((row) => row.name);
 
 {
 	const columnsBefore = all(".orbi-kanban .ok-list").length;
@@ -443,7 +464,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	await click(all(".orbi-kanban .ok-confirm")[0]);
 
 	check("a column was added", all(".orbi-kanban .ok-list").length, columnsBefore + 1);
-	check("and it is written in the tile's settings", String(kanbanSettings().columns ?? "").includes("Blocked"), true);
+	check("and it is written in the note the board keeps", boardColumns("Marketing Team").includes("Blocked"), true);
 	// THE LAZY MIGRATION, MEASURED ON A REAL EDIT. The board arrived with the record under the
 	// widget id; the first write moves it onto the name and takes the old key with it.
 	check("the edit lands under the board-owned name", Boolean(mountedOf("board", KANBAN_VIEW)), true);
@@ -466,14 +487,14 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	check("confirming archives it", all(".orbi-kanban .ok-list").length, columnsBefore);
 	// THE NAME STAYS AUTHORED. Archiving used to strike it out of `columns`, so a restore had to
 	// guess where the column went and appended it; keeping it is what makes the way back exact.
-	check("the name stays in the columns setting", String(kanbanSettings().columns ?? "").includes("Blocked"), true);
-	check("and lands in the archived list of the SELECTED board", board.archivedColumns, { "Marketing Team": ["Blocked"] });
-	check("which is what the note keeps", serializeBoard(board).archivedColumns, { "Marketing Team": ["Blocked"] });
-	check("the tile keeps no list of its own", kanbanSettings().archivedColumns, undefined);
+	check("the name stays authored on the board", boardColumns("Marketing Team").includes("Blocked"), true);
+	check("and it is the column itself that carries the archiving", boardArchived("Marketing Team"), ["Blocked"]);
+	check("the board block keeps no map of archived columns", serializeBoard(board).archivedColumns, undefined);
+	check("nor a second list on the tile", mountedOf("board", KANBAN_VIEW)?.props?.archivedColumns, undefined);
 
 	// A COLUMN WITH TASKS IS ARCHIVED TOO. Refusing was right while removal was permanent;
 	// archiving is reversible, so the count in the dialog is the warning instead.
-	const writesBefore = written.updated.length;
+	const writesBefore = written.updated.filter((entry) => entry.path.startsWith(FOLDER)).length;
 	const cardsBefore = cards();
 	const held = Number(listNamed("To Do").querySelector(".wg-kit-count").textContent.trim());
 	check("the column under test holds tasks", held > 0, true);
@@ -482,7 +503,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	await click(dialogButton("archive"));
 	check("a busy column is archived, not refused", all(".orbi-kanban .ok-list").length, columnsBefore - 1);
 	check("its tasks leave the view", cards(), cardsBefore - held);
-	check("and no note was rewritten", written.updated.length, writesBefore);
+	check("and no task was rewritten", written.updated.filter((entry) => entry.path.startsWith(FOLDER)).length, writesBefore);
 }
 
 // THE VIEW IS THE PROOF, NOT THE SETTING. The archived list lived in the kanban's own mount, and
@@ -499,9 +520,10 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 
 	await showView("Archived columns");
 	check("the archived view draws while the kanban does not", `${all(".orbi-archived-columns").length}|${all(".orbi-kanban").length}`, "1|0");
-	check("and it LISTS what was archived, drawn as rows", archivedNames(), ["Blocked", "To Do"]);
+	check("and it LISTS what was archived, in the order the board authored them", archivedNames(), ["To Do", "Blocked"]);
 
-	await click(archivedRows()[1].querySelector("button"));
+	const rowNamed = (name) => archivedRows().find((node) => node.querySelector(".wg-kit-row-label").textContent.trim() === name);
+	await click(rowNamed("To Do").querySelector("button"));
 	check("Restore takes the column off the list", archivedNames(), ["Blocked"]);
 
 	await showView("Kanban");
@@ -533,7 +555,7 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 
 	await click(firstBoard());
 	check("and the first board still lists only its own", archivedNames(), ["Blocked"]);
-	check("the note keeps one list per board", serializeBoard(board).archivedColumns, { "Marketing Team": ["Blocked"], "Ux Team": ["Done"] });
+	check("each board note keeps its own", [boardArchived("Marketing Team"), boardArchived("Ux Team")], [["Blocked"], ["Done"]]);
 
 	await click(otherBoard());
 	await click(archivedRows()[0].querySelector("button"));
@@ -594,8 +616,8 @@ const kanbanSettings = () => mountedOf("board", KANBAN_VIEW)?.settings ?? {};
 	// round trip — a 30ms settle is not a measurement of it
 	await new Promise((resolve) => setTimeout(resolve, 900));
 
-	check("the setting carries the new name", String(kanbanSettings().columns ?? "").includes("In progress"), true);
-	check("and the old one is gone from it", String(kanbanSettings().columns ?? "").includes("Doing"), false);
+	check("the board note carries the new name", boardColumns("Marketing Team").includes("In progress"), true);
+	check("and the old one is gone from it", boardColumns("Marketing Team").includes("Doing"), false);
 	check("every task that was in it was rewritten", written.updated.filter((entry) => entry.props.status === "In progress").length > 0, true);
 }
 
@@ -709,8 +731,9 @@ const pickView = async (name, id = "views") => {
 }
 
 {
-	// CONTEXT: one flat list is the shape written before it was keyed by board
-	board = groupBoard(`${KANBAN}, ${ARCHIVED}`, ["Blocked", "On hold"]);
+	propsByPath.set("Orbitask/Boards/Marketing Team.md", { board: "Marketing Team", columns: "To Do, Blocked, On hold", archivedColumns: "Blocked, On hold" });
+	folders.delete("Orbitask/Boards");
+	board = groupBoard(`${KANBAN}, ${ARCHIVED}`);
 	render(null, root);
 	await settle();
 	draw();
@@ -718,11 +741,12 @@ const pickView = async (name, id = "views") => {
 	await pickView("Archived columns");
 
 	const rows = () => all(".orbi-archived-columns .wg-kit-row .wg-kit-row-label").map((node) => node.textContent.trim());
-	check("a note written in yesterday's shape still lists its archived columns", rows(), ["Blocked", "On hold"]);
+	check("a board note written in yesterday's shape still lists its archived columns", rows(), ["Blocked", "On hold"]);
 
 	await click(all(".orbi-archived-columns .wg-kit-row button")[0]);
 	check("Restore reads it too", rows(), ["On hold"]);
-	check("and the write keys it to the selected board", serializeBoard(board).archivedColumns, { "Marketing Team": ["On hold"] });
+	check("and the write leaves the old key empty behind it", boardNote("Marketing Team").props.archivedColumns, []);
+	check("with the archiving carried on the column itself", boardArchived("Marketing Team"), ["On hold"]);
 }
 
 {
@@ -733,7 +757,7 @@ const pickView = async (name, id = "views") => {
 				id: "fallback",
 				widget: "@core/view-group",
 				settings: { views: `${KANBAN}, ${ARCHIVED}` },
-				mounted: { [KANBAN]: { settings: { columns: "To Do, Blocked", archivedColumns: "Blocked" } } },
+				mounted: { [KANBAN]: { settings: { columns: "To Do, Blocked", archivedColumns: "Blocked" }, props: { boards: { path: "Orbitask/Nowhere" } } } },
 			},
 		],
 		layouts: { 20: { places: [{ id: "fallback", x: 0, y: 0, w: 20, h: 10 }] } },
@@ -875,7 +899,7 @@ const pickView = async (name, id = "views") => {
 	check("a null entry does not take the whole board down", failure, null);
 	check("the tile that carried it survives", broken?.tiles.length, 2);
 	check("its null binding is carried as it stands", broken?.tiles[0].props.tasks, null);
-	check("and its null mount to an unconfigured one, named off its key", broken?.tiles[1].mounted["@foo"], { widget: "@foo", settings: {}, props: {}, slots: {}, mounted: {} });
+	check("and its null mount to an unconfigured one, named off its key", broken?.tiles[1].mounted["@foo"], { widget: "@foo", settings: {}, mounts: {}, props: {}, slots: {}, mounted: {} });
 }
 
 {
@@ -884,49 +908,47 @@ const pickView = async (name, id = "views") => {
 	// registered here rather than added to widgets/, because what is under test is what the
 	// ENGINE hands over, not what any product widget does with it.
 	const seen = [];
+	const PROBE_PROPS = {
+		notes: { kind: "collection", label: "Notes", verbs: { list: "required" }, default: { path: FOLDER } },
+		boards: {
+			kind: "collection",
+			label: "Boards",
+			verbs: { list: "required", update: "optional" },
+			default: { value: [{ name: "A", columns: [{ name: "To Do" }] }, { name: "B", columns: [{ name: "Backlog" }] }] },
+		},
+		chosen: { kind: "value", label: "Shown board", of: "boards", field: "name", fallback: "first", verbs: { get: "required", update: "required" } },
+		board: { kind: "value", label: "Board", picks: "chosen", of: "boards", verbs: { get: "required", update: "optional" } },
+	};
 	registry.widgets.set("@probe/board", {
-		manifest: { id: "@probe/board", title: "Probe", props: { notes: { kind: "collection", label: "Notes", verbs: { list: "required" }, default: { path: FOLDER } } } },
+		manifest: { id: "@probe/board", title: "Probe", props: PROBE_PROPS },
 		folder: "probe",
 		component: (given) => {
 			seen.push(given);
-			return h(
-				"button",
-				{
-					className: "probe-add",
-					onClick: () => given.configureBoard({ properties: [...(given.board?.properties ?? []), "Deadline"] }),
-				},
-				"add",
-			);
+			return h("button", { className: "probe-add" }, "add");
 		},
 	});
 	const last = () => seen[seen.length - 1];
+	const columnsNow = async () => (await last().board.get())?.columns?.map((column) => column.name);
 
 	board = normalizeBoard({
 		tiles: [{ id: "probe", widget: "@probe/board", props: { notes: { path: FOLDER } } }],
-		properties: ["Status", "Priority"],
 		layouts: { 20: { places: [{ id: "probe", x: 0, y: 0, w: 6, h: 3 }] } },
 	});
 	draw();
 	await settle();
 
-	check("a widget is handed the board's property list", last()?.board?.properties, ["Status", "Priority"]);
-	// the board itself is the model; a widget holding it could rewrite tiles and layouts
-	check("and not the board it came off", last()?.board?.tiles, undefined);
+	check("a widget asking for the row its selection names is handed that row", await columnsNow(), ["To Do"]);
+	check("the board is a gateway now, not a bag the host hands down", typeof last()?.board?.get, "function");
+	check("and the bus it replaced is gone from the props", [last().configureBoard, last().board.properties], [undefined, undefined]);
+	check("what a widget may still ask the board for is folding its views", typeof last().foldIntoGroup, "function");
 
-	await click(all("button.probe-add")[0]);
-	check("configureBoard writes the list back to the board", board.properties, ["Status", "Priority", "Deadline"]);
-	check("and the widget reads it back on the next render", last()?.board?.properties, ["Status", "Priority", "Deadline"]);
-
-	last().configureBoard({ properties: ["Status", "status", " Status "] });
+	await last().board.update({ columns: [{ name: "To Do" }, { name: "Added" }] });
 	await settle();
-	check("the same name twice is one property, whatever its case", board.properties, ["Status"]);
+	check("a write through it lands on the row that was picked", await columnsNow(), ["To Do", "Added"]);
 
-	warnings.length = 0;
-	const refused = last().configureBoard({ tiles: [], properties: ["Status"] });
+	await last().chosen.update("i1");
 	await settle();
-	check("a patch naming anything but properties is refused", refused, false);
-	check("and the widget is told which key it may not write", warnings.some((line) => /tiles/.test(line)), true);
-	check("the board is untouched by the refusal", [board.tiles.length, board.properties], [1, ["Status"]]);
+	check("and the board next door never heard of it", await columnsNow(), ["Backlog"]);
 
 	// A RECORD CARRIES NO BODY, so a widget could draw a note's properties and never its text.
 	// The rows a widget is handed stay bodyless — twenty cards, no file reads — and one note's
@@ -952,15 +974,14 @@ const pickView = async (name, id = "views") => {
 	seen.length = 0;
 	board = normalizeBoard({
 		tiles: [{ id: "group", widget: "@core/view-group", settings: { views: "@probe/board" } }],
-		properties: ["Status", "Priority"],
 		layouts: { 20: { places: [{ id: "group", x: 0, y: 0, w: 12, h: 8 }] } },
 	});
 	draw();
 	await settle();
-	check("a mounted widget reads the same board list", last()?.board?.properties, ["Status", "Priority"]);
-	last().configureBoard({ properties: ["Deadline"] });
+	check("a mounted widget resolves its own board the same way a tile does", await columnsNow(), ["To Do"]);
+	await last().board.update({ columns: [{ name: "To Do" }, { name: "From inside" }] });
 	await settle();
-	check("and can write it back from inside its holder", board.properties, ["Deadline"]);
+	check("and can write it back from inside its holder", await columnsNow(), ["To Do", "From inside"]);
 }
 
 
@@ -1050,7 +1071,10 @@ const pickView = async (name, id = "views") => {
 	plugin.mount(boardBlock, sided, () => {}, false, noteContext, "Orbitask/Board.md#0");
 	const boardMount = plugin.firstMountIn("Orbitask/Board.md");
 	check("the plugin can find the board a note carries", Boolean(boardMount), true);
-	check("and reads its foldable sidebars off it", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: false }]);
+	check("and offers both sidebars, the empty one included — a reader folds them too", plugin.foldableRegions("Orbitask/Board.md"), [
+		{ name: "left", folded: false },
+		{ name: "right", folded: false },
+	]);
 
 	let synced = 0;
 	plugin.chrome = { sync: () => (synced += 1), stop: () => {} };
@@ -1058,15 +1082,24 @@ const pickView = async (name, id = "views") => {
 	check("every write of the board refreshes the header buttons", synced, 1);
 
 	plugin.toggleRegion("Orbitask/Board.md", "left");
-	check("the header button folds the sidebar", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: true }]);
+	check("the header button folds the sidebar", plugin.foldableRegions("Orbitask/Board.md"), [
+		{ name: "left", folded: true },
+		{ name: "right", folded: false },
+	]);
 	check("and that write refreshed the header too", synced, 2);
 
 	boardMount.drafting = true;
 	plugin.toggleRegion("Orbitask/Board.md", "left");
-	check("a fold asked for while a settings draft is open is refused, not written behind it", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: true }]);
+	check("a fold asked for while a settings draft is open is refused, not written behind it", plugin.foldableRegions("Orbitask/Board.md"), [
+		{ name: "left", folded: true },
+		{ name: "right", folded: false },
+	]);
 	boardMount.drafting = false;
 	plugin.toggleRegion("Orbitask/Board.md", "left");
-	check("and once the draft is gone the button works again", plugin.foldableRegions("Orbitask/Board.md"), [{ name: "left", folded: false }]);
+	check("and once the draft is gone the button works again", plugin.foldableRegions("Orbitask/Board.md"), [
+		{ name: "left", folded: false },
+		{ name: "right", folded: false },
+	]);
 	boardBlock.remove();
 
 	// CONTEXT: Obsidian never reprocesses a note rendered before registration

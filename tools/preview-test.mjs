@@ -66,8 +66,8 @@ check("and it is handed no gateway it never declared", Object.keys(cardProps).fi
 console.log("\n— the sample world is local to the preview —");
 const boardProps = previewProps({ manifest: kanban }, {});
 check("a preview reaches no shared box", boardProps.context, undefined);
-check("and it may not configure a board", boardProps.configureBoard({ properties: [] }), false);
-check("the board list it reads is the sample's", boardProps.board.properties, ["Status", "Priority", "Assignees"]);
+check("and it may not fold the board's views into a group", boardProps.foldIntoGroup(), false);
+check("the board it reads is the sample's", (await boardProps.board.get()).properties, ["Status", "Priority", "Assignees"]);
 
 console.log("\n— the size is declared, so a tile knows what it is drawing —");
 const size = previewSize(kanban, GRID.cellPx, GRID.gapPx);

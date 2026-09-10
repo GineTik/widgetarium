@@ -213,6 +213,13 @@ const dialog = () => dom.window.document.body.querySelector(".wg-dialog");
 const dialogButton = (text) => [...dialog().querySelectorAll("button")].find((node) => node.textContent.trim().toLowerCase() === text);
 const pickBoard = (name) => byText(".wg-tabs .wg-tabs-tab", name);
 const fileProps = (name) => fileAt(`${BOARDS}/${name}.md`)?.props ?? null;
+const columnRows = (name) => {
+	const held = fileProps(name)?.columns;
+	if (typeof held === "string") return held.split(",").map((entry) => ({ name: entry.trim() }));
+	return Array.isArray(held) ? held.map((row) => (typeof row === "string" ? { name: row } : row)) : [];
+};
+const columnNames = (name) => columnRows(name).map((row) => row.name);
+const archivedNames = (name) => columnRows(name).filter((row) => row.archivedAt).map((row) => row.name);
 const boardWrites = () => written.updated.filter((made) => made.path.startsWith(BOARDS)).length;
 
 const addColumn = async (name) => {
@@ -248,7 +255,7 @@ check("and the second board's order is still its own", titles(), ["Backlog", "Sh
 await click(pickBoard("Marketing Team"));
 await addColumn("Blocked");
 check("the column is drawn on the board it was added to", titles(), ["To Do", "Doing", "Done", "Blocked"]);
-check("and it was written to that board's own record", String(fileProps("Marketing Team").columns), "To Do, Doing, Done, Blocked");
+check("and it was written to that board's own record", columnNames("Marketing Team"), ["To Do", "Doing", "Done", "Blocked"]);
 
 await click(pickBoard("Ux Team"));
 check("the other board does not show it", titles(), ["Backlog", "Shipping"]);
@@ -261,8 +268,8 @@ check("switching back finds the added column still there", titles(), ["To Do", "
 // 4. ARCHIVING IS PER BOARD TOO.
 await archiveColumn("Doing");
 check("the archived column leaves the board it was archived on", titles(), ["To Do", "Done", "Blocked"]);
-check("the record keeps its name, so a restore is exact", String(fileProps("Marketing Team").columns), "To Do, Doing, Done, Blocked");
-check("and lists it as archived", String(fileProps("Marketing Team").archivedColumns), "Doing");
+check("the record keeps its name, so a restore is exact", columnNames("Marketing Team"), ["To Do", "Doing", "Done", "Blocked"]);
+check("and the column itself carries the day it left", archivedNames("Marketing Team"), ["Doing"]);
 
 await click(pickBoard("Ux Team"));
 check("the other board is untouched by the archiving", titles(), ["Backlog", "Shipping"]);
@@ -298,13 +305,12 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 				},
 			}
 			],
-			archivedColumns: { "Marketing Team": ["Doing"], "Ux Team": ["Done"] },
 			layouts: { 20: { places: PLACES } },
 		}),
 	);
-	check("the map on the note still hides the column it archived", titles(), ["To Do", "Done"]);
+	check("a board with no record of its own draws what the tile carries", titles(), ["To Do", "Doing", "Done"]);
 	await click(pickBoard("Ux Team"));
-	check("and the next board over reads its own half", titles(), ["To Do", "Doing", "Backlog", "Shipping"]);
+	check("and the board next door draws the same list, plus whatever its tasks carry", titles(), ["To Do", "Doing", "Done", "Backlog", "Shipping"]);
 }
 
 // 6c. A COLUMN ARCHIVED BEFORE ANY RECORD EXISTED is named in the map and nowhere else, so
@@ -324,34 +330,33 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 				},
 			}
 			],
-			archivedColumns: { "Marketing Team": ["Paused"] },
 			layouts: { 20: { places: PLACES } },
 		}),
 	);
-	check("a column archived by the old map is not drawn", titles(), ["To Do", "Doing", "Done"]);
+	check("a board with nothing on file draws the columns the manifest names", titles(), ["To Do", "Doing", "Done"]);
 	await addColumn("Paused");
-	check("and naming it brings the column back", titles(), ["To Do", "Doing", "Done", "Paused"]);
+	check("and naming a column adds it to the list the tile holds", titles(), ["To Do", "Doing", "Done", "Paused"]);
 }
 
 // 8. ARCHIVING IS A DATE ON THE RECORD — it touches that record and no column data.
 {
 	await start(surfaceOverBoards(BOARDS));
 	await click(pickBoard("Marketing Team"));
-	const columnsBefore = String(fileProps("Marketing Team").columns);
+	const columnsBefore = columnNames("Marketing Team");
 	written.updated.length = 0;
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archive"));
 	check("archiving a tab takes it off the strip", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Ux Team"]);
 	check("the record it archived is the only one written", written.updated.map((made) => made.path), [`${BOARDS}/Marketing Team.md`]);
 	check("and it carries the day it was archived", typeof fileProps("Marketing Team").archivedAt, "string");
-	check("the board's columns were not touched", String(fileProps("Marketing Team").columns), columnsBefore);
+	check("the board's columns were not touched", columnNames("Marketing Team"), columnsBefore);
 
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archived list"));
 	await click([...dialog().querySelectorAll("button")].find((node) => node.textContent.trim() === "Restore"));
 	check("restoring puts the tab back", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()).sort(), ["Marketing Team", "Ux Team"]);
 	check("and the date it carried is gone", fileProps("Marketing Team").archivedAt, null);
-	check("with the columns still untouched", String(fileProps("Marketing Team").columns), columnsBefore);
+	check("with the columns still untouched", columnNames("Marketing Team"), columnsBefore);
 }
 
 check("nothing was refused along the way", warnings.filter((line) => line.includes("may not")), []);

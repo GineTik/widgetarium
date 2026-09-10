@@ -159,9 +159,15 @@ const KANBAN = "@task/kanban-board";
 
 let board = normalizeBoard({
 	tiles: [
-		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: FOLDER }, boards: { path: FOLDER } } },
+		{
+			id: "board",
+			widget: KANBAN,
+			props: {
+				tasks: { path: FOLDER },
+				boards: { path: "Orbitask/DialogBoards" },
+			},
+		},
 	],
-	properties: ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"],
 	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }] } },
 });
 
@@ -313,8 +319,8 @@ const openPath = vaultFiles(FOLDER).find((file) => (file.props.title ?? file.bas
 check("opening it reads ONE note's text, the one on screen", reads, [openPath]);
 
 console.log("\n— the list of properties belongs to the board —");
-check("the tile carries no list of its own", "properties" in board.tiles.find((tile) => tile.id === "board").settings, false);
-check("the board carries it instead", board.properties, ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"]);
+check("the tile carries no setting of its own", "properties" in board.tiles.find((tile) => tile.id === "board").settings, false);
+check("the board record carries it instead", rowNames(), ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"]);
 
 console.log("\n— the plate is the BOARD's list, in the board's order —");
 check("one row per name the board declares", rowNames(), ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"]);
@@ -416,7 +422,9 @@ check("AND PREVIEW HOLDS NO CARET — it is there to be read", [Boolean(editor()
 console.log("\n— the anchor ignores case, on the whole name and nothing less —");
 const listBecomes = async (properties) => {
 	// CONTEXT: through the model, so the list under test is one the file could actually hold
-	board = normalizeBoard({ ...board, properties });
+	const held = board.tiles.find((tile) => tile.id === "board");
+	const record = { columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }], properties };
+	board = normalizeBoard({ ...board, tiles: board.tiles.map((tile) => (tile === held ? { ...tile, props: { ...tile.props, boards: { path: "Orbitask/NoBoards" }, board: { value: record } } } : tile)) });
 	draw();
 	await settle();
 };
@@ -444,8 +452,9 @@ check("a name it does not know says so too", body.querySelector(".otd-hint").tex
 naming.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 await settle();
 const dialogSettings = () => board.tiles.find((tile) => tile.id === "board").settings;
-check("committing puts the name last on the board's list", board.properties.slice(-1)[0], "Repo");
-check("and it landed on the BOARD, not on the tile that wrote it", "properties" in dialogSettings(), false);
+const recordProperties = () => board.tiles.find((tile) => tile.id === "board").props.board.value.properties;
+check("committing puts the name last on the board's own list", recordProperties().slice(-1)[0], "Repo");
+check("and it landed on the board record, not on a setting of the tile", "properties" in dialogSettings(), false);
 check("the row lands unset", valueOf("Repo"), "");
 check("as text, because Repo is anchored to nothing", Boolean(rowNamed("Repo").querySelector("input.otd-text")), true);
 
@@ -584,9 +593,12 @@ console.log("\n— a body the file cannot hold is refused, and the dialog says s
 render(null, root);
 let plain = normalizeBoard({
 	tiles: [
-		{ id: "board", widget: KANBAN, settings: { columns: "To Do" }, props: { tasks: { path: PLAIN }, boards: { path: PLAIN } } },
+		{
+			id: "board",
+			widget: KANBAN,
+			props: { tasks: { path: PLAIN }, boards: { path: "Orbitask/NoBoards" }, board: { value: { columns: [{ name: "To Do" }], properties: ["Status"] } } },
+		},
 	],
-	properties: ["Status"],
 	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }] } },
 });
 const drawPlain = () =>

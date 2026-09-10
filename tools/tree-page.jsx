@@ -39,10 +39,8 @@ const SILENT_BOARD = {
 	onExpand: ignore,
 	onPatch: ignore,
 	patchMounted: ignore,
-	configureBoard: ignore,
+	foldIntoGroup: ignore,
 	isMounted: false,
-	boardProperties: [],
-	boardArchivedColumns: {},
 };
 
 const heightOf = (id) => TREE.flat().find((cell) => cell.id === id)?.height ?? null;

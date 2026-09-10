@@ -3,10 +3,11 @@ import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
 
-const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, keptRecords, mountRows, mountList, mountPatch, rekeyed, uniqueName } = await import(
+const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, keptRecords, mountRows, mountList, mountPatch, propConfig, rekeyed, uniqueName } = await import(
 	"./.mjs-cache/model.mjs"
 );
 const { BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
+const { storedRows } = await import("./.mjs-cache/gateway/props.mjs");
 
 let failed = 0;
 function check(name, got, want) {
@@ -305,36 +306,17 @@ check("rendering does not warn", onRender, 0);
 	const authored = {
 		tiles: [{ id: "card", widget: "w", slots: { properties: "@other/properties" }, mounted: { body: { settings: { zoom: 2 } } } }],
 		properties: ["Status", "Priority", "Progress", "Deadline", "Members"],
+		archivedColumns: { Marketing: ["Done"] },
 		layouts: { 12: { places: [{ id: "card", x: 0, y: 0, w: 4, h: 2 }] } },
 	};
 	const owned = normalizeBoard(authored);
-	check("the board's property list survives normalising", owned.properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
+	check("a property list in the block is no longer a fact about the board", owned.properties, undefined);
+	check("nor is a map of archived columns", owned.archivedColumns, undefined);
 
 	const written = serializeBoard(owned);
-	// CONTEXT: the comparison is order-sensitive, and the filter draws its rows in this order
-	check("the property list reaches the file, in order", written.properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
-	check("and reopening the file keeps that order", normalizeBoard(written).properties, ["Status", "Priority", "Progress", "Deadline", "Members"]);
-	// CONTEXT: VACUOUS until the two above are green — with no properties at either end it compares nothing
-	check("properties and mounts round-trip byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
-
-	// CONTEXT: VACUOUS until the list is written at all — nothing wrote the key before
-	const bare = serializeBoard(normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layouts: {} }));
-	check("a board that defines no properties gains no properties key", "properties" in bare, false);
-	check("but the list is still promised in memory", normalizeBoard({ tiles: [], layouts: {} }).properties, []);
-
-	// CONTEXT: a hand-edited file can carry a null here, and one bad entry must not lose the board
-	const damaged = normalizeBoard({
-		tiles: [{ id: "a", widget: "w" }],
-		properties: ["Status", null, 7, "", "   ", { name: "Deadline" }, ["Members"], "Client"],
-	});
-	check("a malformed property entry degrades alone", damaged.properties, ["Status", "Client"]);
-	check("and the board is still parsed", damaged.tiles[0].id, "a");
-	check("a properties that is not a list is harmless", normalizeBoard({ properties: "Status" }).properties, []);
-
-	// CONTEXT: the name IS the identity, and the anchors ignore case
-	const doubled = normalizeBoard({ properties: ["Deadline", "Members", "deadline", " Deadline ", "MEMBERS"] });
-	check("a repeated name is one property, whatever its case", doubled.properties, ["Deadline", "Members"]);
-	check("a padded name is trimmed", normalizeBoard({ properties: ["  Deadline  "] }).properties, ["Deadline"]);
+	check("and neither key is written back", ["properties" in written, "archivedColumns" in written], [false, false]);
+	check("what the block still carries round-trips byte-identical", JSON.stringify(serializeBoard(normalizeBoard(written))), JSON.stringify(written));
+	check("and the board is still parsed", owned.tiles[0].id, "card");
 }
 
 // CONTEXT: the normaliser promises the same shape whichever format it was given
@@ -342,7 +324,6 @@ check("rendering does not warn", onRender, 0);
 	const fromArray = normalizeBoard([{ id: "a", widget: "w", x: 0, y: 0, w: 3, h: 2 }]);
 	check("a bare array still lands on 12", authoredColumns(fromArray), [12]);
 	check("a bare array gets a mode", fromArray.mode, "collapsed");
-	check("a bare array gets a property list", fromArray.properties, []);
 }
 
 // A MOUNTED WIDGET'S SLOT PICK MUST REACH THE FILE TOO. mountedTile now carries `slots`, so the
@@ -418,6 +399,18 @@ check("rendering does not warn", onRender, 0);
 	const onNewKey = mountPatch(legacyHolder, "holds", [{ name: "One", widget: "@x/a" }], "views");
 	check("the write moves the list onto the new key", Object.keys(onNewKey.mounts), ["holds"]);
 	check("and leaves neither old key behind", [Object.keys(onNewKey.settings), "views" in onNewKey.mounts], [[], false]);
+
+	const tuned = { settings: { days: 30, columns: "To Do, Doing" }, props: {} };
+	const number = { kind: "value", type: "number", wasSetting: true };
+	check("a prop that says it replaced a setting reads the one the note still carries", propConfig(tuned, "days", number), { from: "typed", value: 30 });
+	check("a prop that never was one ignores a stray key of its own name", propConfig(tuned, "days", { kind: "value", type: "number" }), {});
+	check("the prop written on the tile wins over the setting behind it", propConfig({ ...tuned, props: { days: { from: "typed", value: 7 } } }, "days", number), { from: "typed", value: 7 });
+	const list = { kind: "collection", wasSetting: true, rowsFromText: "name" };
+	check("the setting behind a prop is handed over as it was written", propConfig(tuned, "columns", list), { from: "typed", value: "To Do, Doing" });
+	check("a comma list becomes rows under the field the prop names", storedRows("To Do, Doing", list).map((row) => row.value), [{ name: "To Do" }, { name: "Doing" }]);
+	check("bare names in a stored list become rows too", storedRows(["To Do", { name: "Doing" }], list).map((row) => row.value), [{ name: "To Do" }, { name: "Doing" }]);
+	check("and records are left as they were written", storedRows([{ name: "Done", archivedAt: "2026-09-01" }], list).map((row) => row.value), [{ name: "Done", archivedAt: "2026-09-01" }]);
+	check("without that field text names nothing", storedRows("To Do, Doing", { kind: "collection", wasSetting: true }), []);
 
 	const legacy = { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } };
 	check("a record is read where it sits", heldKey(legacy, "Kanban", "@x/kanban"), "@x/kanban");

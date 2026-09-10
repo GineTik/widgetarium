@@ -53,14 +53,14 @@ const host = {
 
 render(
 	<KanbanBoard
-		settings={{ columns: "To Do, Doing, Done", groupBy: "status" }}
+		board={soloGateway({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }, { update: () => null }, "dialog-fit-record")}
+		groupBy={soloGateway("status", {}, "dialog-fit-group")}
 		slots={{}}
 		tasks={tasks}
 		boards={boards}
 		selection={selection}
 		opened={opened}
 		host={host}
-		configure={() => {}}
 	/>,
 	document.querySelector(".wg-root"),
 );

@@ -3,7 +3,7 @@
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { createGatewayRefs, createViewCells, narrowedByRefs, refValue, selectionGateway } = await import("./.mjs-cache/gateway/refs.mjs");
+const { createGatewayRefs, createViewCells, narrowedByRefs, pickedGateway, refValue, selectionGateway } = await import("./.mjs-cache/gateway/refs.mjs");
 const { arrayGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { wiredTiles } = await import("./.mjs-cache/engine/wiring.mjs");
 const { mountKeyFor } = await import("./.mjs-cache/mount-key.mjs");
@@ -213,18 +213,11 @@ if (typeof resolveSlots === "function") {
 	const kept = resolveSlots(manifest, { slots: { card: { widget: "@task/task-card" } } }, registry, noHost, null);
 	check("and naming the same widget the manifest defaults to still resolves it", typeof kept.card, "function");
 
-	// ONE SHAPE, EVERY PATH. The registry resolves the same file whether the board placed it
-	// or another widget slotted it, so a widget written against props.board as a tile must not
-	// meet an undefined there as a slot — it crashed on the first property it read.
-	const access = { board: { properties: [{ key: "status" }] }, configureBoard: () => true };
-	const withBoard = resolveSlots(manifest, {}, registry, noHost, access)
-		.card({});
-	check("a slotted widget reads the board the same way a tile does", withBoard.props.board.properties[0].key, "status");
-	check("and it is the SAME board, not a copy", withBoard.props.board === access.board, true);
-	check("it may configure the board too", withBoard.props.configureBoard(), true);
+	const fold = () => true;
+	const withBoard = resolveSlots(manifest, {}, registry, noHost, fold).card({});
+	check("a slotted widget may fold the board's views the same way a tile does", withBoard.props.foldIntoGroup(), true);
 	const noBoard = bySpec.card({});
-	check("with no board behind it the shape still holds", noBoard.props.board, { properties: [] });
-	check("and the refusal is a boolean, not a missing function", noBoard.props.configureBoard(), false);
+	check("and with no board behind it the refusal is a boolean, not a missing function", noBoard.props.foldIntoGroup(), false);
 } else {
 	failed += 1;
 	console.log("!!  resolveSlots is not exported from surface.js — slots cannot be tested");
@@ -368,6 +361,65 @@ if (typeof resolveSlots === "function") {
 	check("the same clause negated keeps a task off nobody's list", isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon"] }]), true);
 	check("and takes off one that is on it", isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon", "Emma"] }]), false);
 	check("an empty choice excludes nobody", isMatch(task, [{ prop: "priority", op: "nin", value: [] }]), true);
+}
+
+{
+	const cellFor = createViewCells();
+	const rows = [
+		{ name: "Marketing", props: { board: "Marketing", columns: [{ name: "To Do" }] } },
+		{ name: "Ux", props: { board: "Ux", columns: [{ name: "Backlog" }] } },
+	];
+	const written = [];
+	const boards = arrayGateway(rows, { update: (patch) => written.push(patch) }, "boards");
+	const picked = cellFor("kanban/selection");
+	const selection = selectionGateway({ id: "kanban/selection", memory: picked, collection: boards, fieldName: "board", isFallbackToFirst: true });
+	const board = pickedGateway({ id: "kanban/board", chosen: selection, collection: boards, fieldName: "board", isFallbackToFirst: true });
+
+	check("a selection answers with the field it names", await selection.get(), "Marketing");
+	check("and the prop that picks by it answers with the whole record", (await board.get())?.props?.columns, [{ name: "To Do" }]);
+
+	await selection.update("i1");
+	check("moving the selection moves the record it picks", (await board.get())?.name, "Ux");
+
+	await board.update({ columns: [{ name: "Doing" }] });
+	check("and a write through it patches that row, not the tile", written, [{ ref: "i1", data: { columns: [{ name: "Doing" }] } }]);
+
+	const readOnly = pickedGateway({ id: "kanban/readOnly", chosen: selection, collection: arrayGateway(rows, {}, "frozen"), fieldName: "board", isFallbackToFirst: true });
+	check("a collection that refuses update makes the picked record read-only", readOnly.update.can().can, false);
+
+	const withArchived = arrayGateway(
+		[{ name: "Old", props: { board: "Old", archivedAt: "2026-09-09T09:30:42.630Z", columns: [{ name: "Gone" }] } }, ...rows],
+		{},
+		"boardsWithArchived",
+	);
+	const pickedNothing = cellFor("kanban/nothing-picked");
+	const standing = selectionGateway({ id: "kanban/standing", memory: pickedNothing, collection: withArchived, fieldName: "board", isFallbackToFirst: true });
+	check("a selection with nothing picked skips a row that was archived", await standing.get(), "Marketing");
+	const standingBoard = pickedGateway({ id: "kanban/standingBoard", chosen: standing, collection: withArchived, fieldName: "board", isFallbackToFirst: true });
+	check("and the record it picks is the first one still standing", (await standingBoard.get())?.props?.columns, [{ name: "To Do" }]);
+
+	const inTile = cellFor("kanban/board?tile");
+	await inTile.update({ columns: [{ name: "Solo" }] });
+	const untied = pickedGateway({ id: "kanban/untied", chosen: selection, collection: arrayGateway([], {}, "noBoards"), fieldName: "board", isFallbackToFirst: true, inTile });
+	check("with no record to pick the board is the one the tile holds", await untied.get(), { columns: [{ name: "Solo" }] });
+
+	await untied.update({ columns: [{ name: "Solo" }, { name: "Next" }] });
+	check("and a write lands in the tile, patched, not replaced", await inTile.get(), { columns: [{ name: "Solo" }, { name: "Next" }] });
+	check("the record still wins over the tile when there is one", (await board.get())?.name, "Ux");
+
+	const heldElsewhere = cellFor("kanban/board?elsewhere");
+	await heldElsewhere.update({ columns: [{ name: "Held" }] });
+	const missed = pickedGateway({
+		id: "kanban/missed",
+		chosen: { get: async () => "Nowhere", subscribe: () => () => {} },
+		collection: arrayGateway(rows, { update: (patch) => written.push(patch) }, "boardsAgain"),
+		fieldName: "board",
+		isFallbackToFirst: false,
+		inTile: heldElsewhere,
+	});
+	const refused = await missed.update({ columns: [{ name: "Lost" }] });
+	check("a write that names no row on a collection that holds some is refused, not diverted to the tile", refused, null);
+	check("and the tile it could have landed in is untouched", await heldElsewhere.get(), { columns: [{ name: "Held" }] });
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");
