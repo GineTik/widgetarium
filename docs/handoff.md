@@ -56,6 +56,8 @@ which of two records claiming one id keeps it. Proof: `npm run test:identity`, *
 falsified by 20 mutations**.
 
 - stored under `widgetarium.wgId`; the flat `wgId` is still read, nothing rewrites a vault
+- the `widgetarium` key itself is one object owned by `src/note-mark.js`; a screen note carries
+  `kind: screen` in it, beside the id, and a created board is born with both
 - exposed as `record.id` by the gateway (`src/host.js`, `toRecord`) — the storage key never leaves
   that line
 - minted on `slot.create` only. Drawing a board writes nothing, proved on a rendered board

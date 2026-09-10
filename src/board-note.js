@@ -1,9 +1,10 @@
 import { stringifyYaml } from "obsidian";
 import { normalizeBoard, serializeBoard, uniqueName } from "./model.js";
 import { BLOCK_LANGUAGE, FENCE, findBlocks, unclosedBlockIn } from "./block-writer.js";
+import { markOf, withMark } from "./note-mark.js";
+import { mintId, withId } from "./record-id.js";
 
-const SCREEN_KEY = "widgetarium";
-const SCREEN_VALUE = "screen";
+const SCREEN_KIND = "screen";
 const BOARD_NAME = "Board";
 
 function isBlank(line) {
@@ -11,7 +12,7 @@ function isBlank(line) {
 }
 
 export function isScreenNote(frontmatter) {
-	return frontmatter?.[SCREEN_KEY] === SCREEN_VALUE;
+	return markOf(frontmatter).kind === SCREEN_KIND;
 }
 
 const EMPTY_BOARD = { tiles: [], layout: { left: [], main: [], right: [] } };
@@ -24,8 +25,9 @@ export function boardBlock(board = EMPTY_BOARD) {
 	return `${FENCE}${BLOCK_LANGUAGE}\n${body}\n${FENCE}`;
 }
 
-export function boardNoteText(board = SCREEN_BOARD) {
-	return `---\n${stringifyYaml({ [SCREEN_KEY]: SCREEN_VALUE }).trimEnd()}\n---\n\n${boardBlock(board)}\n`;
+export function boardNoteText(board = SCREEN_BOARD, id = mintId()) {
+	const marked = withId(withMark({}, { kind: SCREEN_KIND }), id);
+	return `---\n${stringifyYaml(marked).trimEnd()}\n---\n\n${boardBlock(board)}\n`;
 }
 
 function caseBlindSet(names) {

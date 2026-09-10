@@ -20,7 +20,10 @@ const tasks = tasksGateway.list({ boardId: board.id })
 ```
 
 - stored in frontmatter under a namespaced key (`widgetarium` / `wgId`), so it reads as machine data
-  in Obsidian's Properties panel
+  in Obsidian's Properties panel. **That key is always an object**, owned by `src/note-mark.js` and
+  by nothing else — the id is one field in it, the note's `kind` another. The flat scalar
+  `widgetarium: screen` written before this is read as `{ kind: "screen" }` and rewritten only when
+  an explicit write reaches that note
 - exposed by the gateway as `record.id` — the storage key never leaks into widget code
 - **resolution is id first, name or path second.** That fallback is what lets an un-migrated vault
   work, and what lets a person hand-create a note without breaking a reference.

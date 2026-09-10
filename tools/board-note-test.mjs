@@ -4,6 +4,7 @@ import { buildMirror } from "./mirror.mjs";
 buildMirror();
 const { boardBlock, boardNoteText, boardPathIn, boardInsertAt, isScreenNote, createBoardNote, insertBoardAtCursor } = await import("./.mjs-cache/board-note.mjs");
 const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
+const { readId, withId } = await import("./.mjs-cache/record-id.mjs");
 const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
 const { blockRefusal, BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
 
@@ -24,6 +25,11 @@ const frontmatter = parseYaml(note.split("---\n")[1] ?? "");
 
 check("a created note reads as a screen", isScreenNote(frontmatter), true);
 check("a note without the mark is no screen", isScreenNote({ widgetarium: { wgId: "u1" } }), false);
+check("the flat mark written before the move still reads as a screen", isScreenNote({ widgetarium: "screen" }), true);
+check("a screen is born with an id, so a board can list every screen", Boolean(readId(frontmatter)), true);
+check("and the id sits beside the kind, not instead of it", frontmatter.widgetarium.kind, "screen");
+check("an id minted onto the flat mark keeps the screen", isScreenNote(withId({ widgetarium: "screen" }, "u2")), true);
+check("and that note now answers with the id", readId(withId({ widgetarium: "screen" }, "u2")), "u2");
 check("the note holds exactly one board", blocksIn(note).length, 1);
 
 const parsed = parseYaml(blocksIn(note)[0]);
@@ -96,10 +102,12 @@ const rootVault = fakeVault(root);
 const first = await createBoardNote(rootVault.doors);
 check("a board in the vault root is created at its bare name", first.path, "Board.md");
 check("the created board is opened", rootVault.opened, ["Board.md"]);
-check("what reached the vault is the note this module writes", first.text, note);
+const idIn = (text) => readId(parseYaml(text.split("---\n")[1] ?? ""));
+check("what reached the vault is the note this module writes", first.text, boardNoteText(undefined, idIn(first.text)));
 
 const second = await createBoardNote(rootVault.doors);
 check("a second board steps past the first", second.path, "Board 2.md");
+check("and carries an id of its own", idIn(second.text) === idIn(first.text), false);
 
 const shouty = { path: "Screens", isRoot: () => false, children: [{ name: "Board.MD" }] };
 check("a taken name is seen whatever its case", (await createBoardNote(fakeVault(shouty).doors)).path, "Screens/Board 2.md");

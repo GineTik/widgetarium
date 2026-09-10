@@ -1,19 +1,15 @@
-// CONTEXT: namespaced, so Obsidian's Properties panel reads it as machine data
-const NAMESPACE = "widgetarium";
+import { markOf, withMark } from "./note-mark.js";
+
 const KEY = "wgId";
 
 // CONTEXT: the flat key is accepted on read — nothing bulk-rewrites a vault here
 export function readId(props) {
-	const held = props?.[NAMESPACE];
-	const nested = typeof held === "object" && held !== null ? held[KEY] : undefined;
-	const id = nested ?? props?.[KEY];
+	const id = markOf(props)[KEY] ?? props?.[KEY];
 	return typeof id === "string" && id.trim() !== "" ? id.trim() : null;
 }
 
 export function withId(props, id) {
-	const held = props?.[NAMESPACE];
-	const nested = typeof held === "object" && held !== null ? held : {};
-	return { ...(props ?? {}), [NAMESPACE]: { ...nested, [KEY]: id } };
+	return withMark(props, { [KEY]: id });
 }
 
 export function mintId() {
