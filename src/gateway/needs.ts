@@ -11,6 +11,8 @@ export type Aka<Names extends string> = unknown;
 export interface VaultRecord {
 	path: string;
 	name: string;
+	props?: Record<string, unknown>;
+	[field: string]: unknown;
 }
 
 declare const suppliedByEngine: unique symbol;

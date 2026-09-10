@@ -776,7 +776,7 @@ function useBoxValues(refs, isOpen) {
 }
 
 function fieldsFor(state, spec, config) {
-	if (bindingOf(spec, config).binding === "hardcode") return fieldsOf(storedRows(config.value ?? spec.default?.value).map((row) => row.value));
+	if (bindingOf(spec, config).binding === "hardcode") return fieldsOf(storedRows(config.value ?? spec.default?.value, spec).map((row) => row.value));
 	return state.vaultFields?.[boundPath(spec, config)] ?? [];
 }
 

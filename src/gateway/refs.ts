@@ -275,6 +275,10 @@ function identityOf(row: Row<unknown>, named: string): unknown {
 	return aliases.length === 1 ? aliases[0] : aliases;
 }
 
+const isArchivedRow = (row: Row<unknown>): boolean => Boolean(fieldOf(row.value, "archivedAt"));
+
+const firstStandingRow = <T,>(rows: Row<T>[]): Row<T> | null => rows.find((row) => !isArchivedRow(row)) ?? null;
+
 async function rowAt<T>(collection: CollectionGateway<T>, chosen: unknown): Promise<Row<T> | null> {
 	if (!chosen) return null;
 	try {
@@ -294,7 +298,7 @@ export interface SelectionSpec<T> {
 }
 
 function selectionReader<T>({ memory, collection, fieldName, isFallbackToFirst }: SelectionSpec<T>) {
-	const firstRow = async () => (isFallbackToFirst ? (await collection.list()).rows[0] ?? null : null);
+	const firstRow = async () => (isFallbackToFirst ? firstStandingRow((await collection.list()).rows) : null);
 	return async () => {
 		const named = typeof fieldName === "function" ? await fieldName() : fieldName;
 		const chosen = await memory.get();
@@ -313,5 +317,63 @@ export function selectionGateway<T>(spec: SelectionSpec<T>): ValueGateway<unknow
 			remove: () => spec.memory.remove(),
 		},
 		subscribe: combined([spec.memory.subscribe as Subscribe, spec.collection.subscribe as Subscribe, spec.watches ?? null]),
+	});
+}
+
+function isRowNamed(row: Row<unknown>, named: string, want: string): boolean {
+	const held = identityOf(row, named);
+	const names = Array.isArray(held) ? held : [held];
+	return names.some((name) => String(name ?? "") === want);
+}
+
+export interface PickSpec<T> {
+	id: string;
+	chosen: ValueGateway<unknown>;
+	collection: CollectionGateway<T>;
+	fieldName: string | null | (() => Promise<unknown>);
+	isFallbackToFirst: boolean;
+	inTile?: ValueGateway<unknown> | null;
+	watches?: Subscribe | null;
+}
+
+function rowPicker<T>({ chosen, collection, fieldName, isFallbackToFirst }: PickSpec<T>) {
+	return async (): Promise<Row<T> | null> => {
+		const named = typeof fieldName === "function" ? await fieldName() : fieldName;
+		const want = pickedValue(await chosen.get());
+		const rows = (await collection.list()).rows;
+		const found = rows.find((row) => isRowNamed(row, String(named ?? ""), want));
+		return found ?? (isFallbackToFirst ? firstStandingRow(rows) : null);
+	};
+}
+
+const isHeldRecord = (held: unknown): held is Record<string, unknown> => typeof held === "object" && held !== null && !Array.isArray(held);
+
+function pickedWrites<T>(spec: PickSpec<T>, rowNow: () => Promise<Row<T> | null>): Record<string, (input: never) => unknown> {
+	const canWriteRow = spec.collection.update?.can().can === true;
+	const canWriteTile = spec.inTile?.update?.can().can === true;
+	if (!canWriteRow && !canWriteTile) return {};
+	return {
+		update: async (patch: never) => {
+			const row = canWriteRow ? await rowNow() : null;
+			if (row) return spec.collection.update({ ref: row.ref, data: patch as Partial<T> });
+			if (!canWriteTile || (await spec.collection.list()).total > 0) return null;
+			const held = await (spec.inTile as ValueGateway<unknown>).get();
+			return (spec.inTile as ValueGateway<unknown>).update({ ...(isHeldRecord(held) ? held : {}), ...(patch as Record<string, unknown>) });
+		},
+	};
+}
+
+export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown> {
+	const rowNow = rowPicker(spec);
+	return valueGateway<unknown>({
+		id: spec.id,
+		handlers: {
+			get: async () => {
+				const row = await rowNow();
+				return row ? row.value : (spec.inTile?.get() ?? null);
+			},
+			...pickedWrites(spec, rowNow),
+		},
+		subscribe: combined([spec.chosen.subscribe as Subscribe, spec.collection.subscribe as Subscribe, (spec.inTile?.subscribe ?? null) as Subscribe | null, spec.watches ?? null]),
 	});
 }

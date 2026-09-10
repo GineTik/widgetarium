@@ -47,7 +47,7 @@ export function previewGateways(manifest) {
 		}
 		const rows = declared[name]?.rows
 			? declared[name].rows.map(toRecord).map((record) => ({ ref: record.path, value: record }))
-			: storedRows(spec?.default?.value ?? []);
+			: storedRows(spec?.default?.value ?? [], spec);
 		const listing = collectionGateway({
 			id,
 			handlers: {
@@ -129,9 +129,7 @@ export function previewProps(definition, options) {
 		size: { w: manifest.preview?.size?.w ?? 4, h: manifest.preview?.size?.h ?? 3, scale: 1, isCollapsed: false, collapse() {}, expand() {} },
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		host: previewHost(options?.host),
-		// CONTEXT: the sample world hears everything the widget offers, so it draws its working face
-		board: { properties: manifest.preview?.properties ?? [], archivedColumnsByBoard: manifest.preview?.archivedColumns ?? [] },
-		configureBoard: () => false,
+		foldIntoGroup: () => false,
 		slots,
 		mounts: {},
 	};

@@ -2,9 +2,23 @@ import { applyQuery, collectionGateway, toRows, valueGateway } from "./create";
 
 const mintRef = () => `r${Math.random().toString(36).slice(2, 10)}`;
 
-// CONTEXT: stored rows are { id, value }; a raw value is yesterday's shape, read by index
-export function storedRows(stored) {
-	return toRows(Array.isArray(stored) ? stored : [], "id");
+const rowsFromText = (text, field) =>
+	String(text)
+		.split(",")
+		.map((entry) => entry.trim())
+		.filter(Boolean)
+		.map((name) => ({ [field]: name }));
+
+function configRows(stored, spec) {
+	const field = spec?.rowsFromText;
+	if (typeof stored === "string") return field ? rowsFromText(stored, field) : [];
+	if (!Array.isArray(stored)) return [];
+	if (!field) return stored;
+	return stored.map((entry) => (typeof entry === "string" ? { [field]: entry } : entry));
+}
+
+export function storedRows(stored, spec) {
+	return toRows(configRows(stored, spec), "id");
 }
 
 // TRADE-OFF: an index ref becomes the stored id — minting one on a read is a write nobody asked for
@@ -60,9 +74,9 @@ function hardcodeReads(rowsNow) {
 	};
 }
 
-export function hardcodeCollection({ id, readValue, mutateValue, requested = [] }) {
-	const rowsNow = () => storedRows(readValue());
-	const write = (step) => mutateValue((stored) => wrapRows(step(storedRows(stored))));
+export function hardcodeCollection({ id, readValue, mutateValue, requested = [], spec }) {
+	const rowsNow = () => storedRows(readValue(), spec);
+	const write = (step) => mutateValue((stored) => wrapRows(step(storedRows(stored, spec))));
 	return collectionGateway({
 		id,
 		requested,

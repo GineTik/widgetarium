@@ -67,10 +67,21 @@ function wiredProps(tile, manifest, standing) {
 	return wired.length === 0 ? null : { ...held, ...Object.fromEntries(wired) };
 }
 
+function wiredHeld(held, registry, standing) {
+	const props = wiredProps(held, registry.get(held.widget)?.manifest, standing);
+	const mounted = wiredMounted(held.mounted, registry, standing);
+	if (!props && !mounted) return held;
+	return { ...held, ...(props ? { props } : {}), ...(mounted ? { mounted } : {}) };
+}
+
+function wiredMounted(mounted, registry, standing) {
+	const entries = Object.entries(mounted ?? {});
+	if (entries.length === 0) return null;
+	const wired = entries.map(([name, held]) => [name, wiredHeld(held, registry, standing)]);
+	return wired.some(([name, held]) => held !== mounted[name]) ? Object.fromEntries(wired) : null;
+}
+
 export function wiredTiles(tiles, registry) {
 	const standing = tilesByWidget(tiles, (id) => registry.resolveId?.(id) ?? id);
-	return tiles.map((tile) => {
-		const props = wiredProps(tile, registry.get(tile.widget)?.manifest, standing);
-		return props ? { ...tile, props } : tile;
-	});
+	return tiles.map((tile) => wiredHeld(tile, registry, standing));
 }

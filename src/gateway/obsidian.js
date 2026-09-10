@@ -32,7 +32,8 @@ async function createOnSlot(slot, draft) {
 }
 
 async function updateOnSlot(slot, { ref, data }) {
-	const record = await slot.update({ path: ref }, { name: data?.name, props: data?.props, body: data?.body });
+	const { name, props, body, ...loose } = data ?? {};
+	const record = await slot.update({ path: ref }, { name, props: props ?? (Object.keys(loose).length > 0 ? loose : undefined), body });
 	return record ? toRow(record) : null;
 }
 

@@ -5,7 +5,7 @@ import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
-import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, normalizeNames, propConfig, rekeyed, uniqueName, withArchivedColumnsOn } from "./model.js";
+import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, propConfig, rekeyed, uniqueName } from "./model.js";
 import { pickWidget } from "./catalogue-dialog.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
@@ -14,7 +14,7 @@ import { trace } from "./trace.js";
 import { stableKey } from "./gateway/cache.js";
 import { arrayGateway } from "./gateway/create.js";
 import { folderGateway, fileGateway } from "./gateway/obsidian.js";
-import { createGatewayRefs, createViewCells, narrowedByRefs, refCollection, refOf, refValue, refsWithin, selectionGateway } from "./gateway/refs.js";
+import { createGatewayRefs, createViewCells, narrowedByRefs, pickedGateway, refCollection, refOf, refValue, refsWithin, selectionGateway } from "./gateway/refs.js";
 import { bindingOf, hardcodeCollection, hardcodeValue, requestedVerbs, unmetVerbs } from "./gateway/props.js";
 import { mappedCollection } from "./gateway/mapped.js";
 import { useSettingsWindow } from "./settings-window.js";
@@ -34,8 +34,7 @@ const EDIT_LABEL = { on: "Widgetarium: leave edit mode", off: "Widgetarium: ente
 export const RESERVED_PROPS = new Set([
 	"configureMounts",
 	"pickWidget",
-	"board",
-	"configureBoard",
+	"foldIntoGroup",
 	"size",
 	"fullscreen",
 	"host",
@@ -82,16 +81,15 @@ class Boundary extends Component {
 	}
 }
 
-// CONTEXT: a slot resolved with no board behind it — every caller still gets a boolean back
-function refuseBoardPatch() {
-	console.warn("Widgetarium: this widget was rendered without a board and cannot configure one");
+function refuseFold() {
+	console.warn("Widgetarium: this widget was rendered without a board and cannot fold its views into a group");
 	return false;
 }
 
 // A slot is where the board says WHICH widget draws part of another one. The parent feeds
 // it — a card gets its row from the board — so a slotted widget has no source of its own; it
 // is a view handed data. That is what makes "replace this card" a setting, not a fork.
-export function resolveSlots(manifest, tile, registry, host, boardAccess) {
+export function resolveSlots(manifest, tile, registry, host, foldIntoGroup) {
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = registry.get(tile.slots?.[name]?.widget ?? spec.default);
@@ -106,10 +104,7 @@ export function resolveSlots(manifest, tile, registry, host, boardAccess) {
 				host: viewHost(host),
 				here: host.here ?? null,
 				navigator: host.navigator ?? NOWHERE,
-				// the same shape a tile gets: one widget file must not read `board` two ways
-				// depending on whether the board placed it or another widget did
-				board: boardAccess?.board ?? { properties: [] },
-				configureBoard: boardAccess?.configureBoard ?? refuseBoardPatch,
+				foldIntoGroup: foldIntoGroup ?? refuseFold,
 			});
 	}
 	return slots;
@@ -185,6 +180,7 @@ function typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, req
 		readValue: () => propConfig({ ...tile, props: propsRef.current }, name, spec).value ?? declared.value,
 		mutateValue: (step) => patchProp(name, (inFlight) => ({ value: step(inFlight?.value ?? asRendered) })),
 		requested,
+		spec,
 	};
 	if (spec.kind === "value") return hardcodeValue(held);
 	return narrowedByRefs(hardcodeCollection(held), whereOf(spec, config), refs);
@@ -214,13 +210,17 @@ function resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patch
 	return vaultGateway({ spec, host, config, refs, kind, requested });
 }
 
+const readingOver = (over, refs) => ({ collection: refCollection(refs, over), watches: (listener) => refs.watch([over], listener) });
+
+const fieldNaming = (spec, gatewayFor) => (spec.fieldFrom ? () => gatewayFor(spec.fieldFrom)?.get() : spec.field ?? null);
+
 // TRADE-OFF: the list is read back through the registry rather than closed over, because a stable id keeps the cache attached across a write and only a live read then sees the row that write just made
 function resolveSelection({ name, spec, tile, refs, cellFor, config, gatewayFor }) {
 	if (config.ref) return refValue(refs, config.ref);
 	if (!gatewayFor(spec.of)) return null;
 	const key = refOf(tile.id, name);
 	const over = refOf(tile.id, spec.of);
-	const named = spec.fieldFrom ? () => gatewayFor(spec.fieldFrom)?.get() : spec.field ?? null;
+	const named = fieldNaming(spec, gatewayFor);
 	return selectionGateway({
 		id: key,
 		memory: cellFor(key),
@@ -231,14 +231,30 @@ function resolveSelection({ name, spec, tile, refs, cellFor, config, gatewayFor 
 	});
 }
 
-export function WidgetHost({ definition, tile, place, host, scale, patchProp, refs, cellFor, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, boardProperties, boardArchivedColumns, configureBoard }) {
+function resolvePickedRow({ name, spec, tile, refs, config, gatewayFor, manifest, propsRef, patchProp }) {
+	if (config.ref) return refValue(refs, config.ref);
+	const chosen = gatewayFor(spec.picks);
+	if (!chosen || !gatewayFor(spec.of)) return null;
+	const picking = manifest.props?.[spec.picks] ?? {};
+	const inTile = typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, requested: requestedVerbs(spec) });
+	return pickedGateway({
+		id: `${refOf(tile.id, name)}?${inTile.id}`,
+		chosen,
+		fieldName: fieldNaming(picking, gatewayFor),
+		isFallbackToFirst: (spec.fallback ?? picking.fallback) === "first",
+		inTile,
+		...readingOver(refOf(tile.id, spec.of), refs),
+	});
+}
+
+export function WidgetHost({ definition, tile, place, host, scale, patchProp, refs, cellFor, registry, onCollapse, onExpand, onPatch, patchMounted, isMounted, foldIntoGroup }) {
 	const manifest = definition.manifest;
 
 	// CONTEXT: gateways read the tile through this ref, so a refetch sees the write that caused it
 	const propsRef = useRef(tile.props);
 	propsRef.current = tile.props ?? {};
 
-	const mounts = resolveMounts(manifest, registry, { tile, place, host, scale, refs, cellFor, registry, onCollapse, onExpand, patchMounted, boardProperties, boardArchivedColumns, configureBoard });
+	const mounts = resolveMounts(manifest, registry, { tile, place, host, scale, refs, cellFor, registry, onCollapse, onExpand, patchMounted, foldIntoGroup });
 
 	const gateways = {};
 	const gatewayFor = (name) => gateways[name] ?? null;
@@ -254,8 +270,12 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 		gateways[name] = resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patchProp });
 	}
 	for (const [name, spec] of declaredProps) {
-		if (!spec.of) continue;
+		if (!spec.of || spec.picks) continue;
 		gateways[name] = resolveSelection({ name, spec, tile, refs, cellFor, config: tile.props?.[name] ?? {}, gatewayFor });
+	}
+	for (const [name, spec] of declaredProps) {
+		if (!spec.picks) continue;
+		gateways[name] = resolvePickedRow({ name, spec, tile, refs, config: propConfig(tile, name, spec), gatewayFor, manifest, propsRef, patchProp });
 	}
 	for (const [name, spec] of declaredProps) {
 		unmet.push(...unmetVerbs(spec, gateways[name]).map((verb) => `${name}.${verb}`));
@@ -265,7 +285,7 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 		const spec = manifest.props?.[name] ?? manifest.mounts?.[name] ?? {};
 		const config = tile.props?.[name] ?? {};
 		const leansOn = spec.of
-			? [refOf(tile.id, spec.of), ...(spec.fieldFrom ? [refOf(tile.id, spec.fieldFrom)] : [])]
+			? [refOf(tile.id, spec.of), ...(spec.fieldFrom ? [refOf(tile.id, spec.fieldFrom)] : []), ...(spec.picks ? [refOf(tile.id, spec.picks)] : [])]
 			: [...(typeof config.ref === "string" ? [config.ref] : []), ...refsWithin(whereOf(spec, config))];
 		refs.put(refOf(tile.id, name), gateway, {
 			describes: {
@@ -294,24 +314,14 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 		console.warn(`Widgetarium: ${manifest.id} is mounted and cannot ${verb} — a mount has no place of its own`);
 	};
 
-	// one object, handed to this widget and to anything it slots — the same board, and the
-	// same identity, so a child's memo does not see a new board every frame
-	const boardAccess = {
-		board: {
-			properties: boardProperties,
-			archivedColumnsByBoard: boardArchivedColumns,
-		},
-		configureBoard,
-	};
+	const foldOrRefuse = foldIntoGroup ?? refuseFold;
 	const props = {
 		...gateways,
 		// CONTEXT: the list a mount holds and the records it keys are one write
 		configureMounts: (name, rows) => onPatch(mountPatch(tile, name, rows)),
 		// CONTEXT: the board's registry, never the widget's — an id comes back
 		pickWidget: (options) => pickWidget(registry, host, options),
-		// CONTEXT: the BOARD's list, not this tile's — two widgets must read one list
-		board: boardAccess.board,
-		configureBoard: boardAccess.configureBoard,
+		foldIntoGroup: foldOrRefuse,
 		// A widget may ask to be narrower; it may not resize itself. The board owns places, so
 		// it is the board that writes the width and the board that remembers the one it came
 		// from — which is why reopening a panel returns to the width THIS screen had it at.
@@ -334,7 +344,7 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 		here: host.here ?? null,
 		// CONTEXT: navigation is its own entity, never a gateway verb — data does not move people
 		navigator: host.navigator ?? NOWHERE,
-		slots: resolveSlots(manifest, tile, registry, host, boardAccess),
+		slots: resolveSlots(manifest, tile, registry, host, foldOrRefuse),
 		mounts,
 	};
 
@@ -410,7 +420,7 @@ function widgetPatchers(tile, onPatch) {
 }
 
 function TileView(props) {
-	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, refs, cellFor, registry, boardProperties, boardArchivedColumns, configureBoard } = props;
+	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, refs, cellFor, registry, foldIntoGroup } = props;
 	const settingsShown = typeof settings === "string";
 
 	// built BEFORE the window that may hold it: the window is a hook and must run on every
@@ -420,7 +430,7 @@ function TileView(props) {
 	const widget = h(
 		Boundary,
 		{ key: tile.widget },
-		h(WidgetHost, { definition, tile, place, host, scale, patchProp, patchMounted, refs, cellFor, registry, onCollapse, onExpand, onPatch, boardProperties, boardArchivedColumns, configureBoard }),
+		h(WidgetHost, { definition, tile, place, host, scale, patchProp, patchMounted, refs, cellFor, registry, onCollapse, onExpand, onPatch, foldIntoGroup }),
 	);
 
 	const settingsWindow = useSettingsWindow({
@@ -573,8 +583,6 @@ const Tile = memo(TileView, (before, after) => {
 	if (before.scale !== after.scale || before.live !== after.live || before.cell !== after.cell || before.gap !== after.gap) return false;
 	if (before.settings !== after.settings || before.columns !== after.columns || before.phone !== after.phone) return false;
 	if (before.refs !== after.refs || before.cellFor !== after.cellFor) return false;
-	if (before.boardProperties !== after.boardProperties) return false;
-	if (before.boardArchivedColumns !== after.boardArchivedColumns) return false;
 	// Whether this tile is the open one is a reason to redraw it. Left out, the chip was set
 	// open, the scrim appeared, and the tile itself was skipped — the board dimmed around a
 	// chip that never opened.
@@ -1126,7 +1134,6 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, edit
 
 	const foldable = foldableIn(drawn);
 
-
 	const foldedAway = foldable.filter((name) => isFolded(board.layout, name));
 
 	const standing = beside.flatMap((column, at) => {
@@ -1272,11 +1279,9 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 			onExpand: () => {},
 			patchMounted: () => {},
 			isMounted: false,
-			boardProperties: board.properties,
-			boardArchivedColumns: board.archivedColumns,
-			configureBoard: refuseBoardPatch,
+			foldIntoGroup: refuseFold,
 		}),
-		[host, treeScale, refs, cellFor, registry, board.properties, board.archivedColumns],
+		[host, treeScale, refs, cellFor, registry],
 	);
 
 	useEffect(() => {
@@ -1606,23 +1611,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		return true;
 	};
 
-	// TRADE-OFF: three keys wide — a widget patching the board could rewrite its tiles and layouts
-	const BOARD_KEYS = ["properties", "archivedColumns", "holder", "board"];
-	const configureBoard = (patch) => {
-		const refused = Object.keys(patch ?? {}).filter((key) => !BOARD_KEYS.includes(key));
-		if (refused.length > 0) {
-			console.warn(`Widgetarium: a widget may configure the board's ${BOARD_KEYS.join(", ")}, not ${refused.join(", ")}`);
-			return false;
-		}
-		// CONTEXT: a holder is a tile, so the intent is folded, not written as a field
-		if (patch.holder) return addHolder();
-		// CONTEXT: the model's own normaliser, so no widget writes a list the file could not hold
-		const named = {};
-		if (patch.properties) named.properties = normalizeNames(patch.properties);
-		if (patch.archivedColumns) named.archivedColumns = withArchivedColumnsOn(latestRef.current.board.archivedColumns, patch.board ?? "", patch.archivedColumns);
-		onChange({ ...latestRef.current.board, ...named }, true);
-		return true;
-	};
+	const foldIntoGroup = () => addHolder();
 
 	// The size on the board is a PLACE, so the settings window asks the board to write it.
 	const resizeTile = (id, patch) => {
@@ -1906,9 +1895,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						board: boardBox,
 						onCollapse: collapseTile,
 						onExpand: expandTile,
-						boardProperties: board.properties,
-						boardArchivedColumns: board.archivedColumns,
-						configureBoard,
+						foldIntoGroup,
 					});
 			  });
 
