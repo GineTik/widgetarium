@@ -104,8 +104,8 @@ by its own one-row tile. Every board written before the group existed is in that
 manual repair leaves the board worse: placing a group from the catalogue gives it its own kanban
 while the loose one stays, so two boards are drawn at once and both write `columns`.
 
-So the switcher offers **Add a view group**, and the BOARD folds it — `configureBoard({ holder: {
-options: "holds", selection: "selection" } })`. A widget cannot do this: it owns no tiles. The board
+So the switcher offers **Add a view group**, and the BOARD folds it — `foldIntoGroup()`, a command
+the host hands down beside `pickWidget`. A widget cannot do this itself: it owns no tiles. The board
 finds the installed widget that has a mount, moves every tile whose manifest declares a `view` name
 into that mount with the settings, props and slots it already had, seats the group in the place it
 emptied at every authored width, fills the rest of the list from the mount's declared default so a

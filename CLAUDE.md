@@ -49,6 +49,14 @@ archive, reorder, delete — are written **once** over rows, and each storage su
 `read()` / `write(rows)`. Two code paths for one operation is the disease that produced `views`
 meaning three different things, slot versus mount, and archived columns living in two places.
 
+**A board is a record, and its columns are a field of it.** A widget that draws a board declares one
+prop — `{ "kind": "value", "picks": "<the selection prop>", "of": "<the collection>" }` — and the
+engine resolves it to the **row** that selection names, not to a field of that row. Archived is a
+field of the column (`archivedAt`), never a second list and never a map keyed by board name. A board
+with no note of its own answers from the tile, which is where `wasSettings` carries the props that
+used to hold those lists. There is no `board` bus and no `configureBoard`: the only board-wide
+command left is `foldIntoGroup`, because folding tiles into a group is an action, not data.
+
 **The grid is dead. A board is a tree.** A board's layout is `layout:` — three regions, `left`,
 `main` and `right`, each holding rows of cells with a `ratio` and a `height`. The old `layouts:` map
 of column counts to `{x, y, w, h}` places is **legacy**: no entrance may create one, no surface may

@@ -88,7 +88,7 @@ What is left is one question, and it is a TYPE question, which is why it waits f
 **A write that did not happen is currently indistinguishable from a write that was not asked
 for.** `update` returns `undefined` for the body both when a body write was refused and when the
 patch carried no body; `update` on a read-only source resolves to `null`, a third shape again;
-`configureBoard` and `context.set` return a boolean nobody is obliged to read. Every one of these
+`foldIntoGroup` returns a boolean nobody is obliged to read. Every one of these
 is the same failure the person sees as "I saved it and nothing happened".
 
 The `Action<Input>` shape above is where this is settled — `can` answers before the fact, and
