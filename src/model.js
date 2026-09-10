@@ -107,11 +107,21 @@ function settingBehind(tile, key, spec) {
 	return underEitherKey(tile?.settings, key, spec.was);
 }
 
+function storedBehind(tile, key) {
+	return tile?.props?.[key]?.value ?? underEitherKey(tile?.settings, key);
+}
+
+function fieldsBehind(tile, spec) {
+	const named = Object.entries(spec?.wasSettings ?? {}).map(([field, key]) => [field, storedBehind(tile, key)]);
+	const held = Object.fromEntries(named.filter(([, stored]) => stored !== undefined));
+	return Object.keys(held).length > 0 ? held : undefined;
+}
+
 export function propConfig(tile, key, spec) {
 	const props = tile?.props;
 	const held = props?.[heldKey(props, key, spec?.was)];
 	if (held) return held;
-	const value = settingBehind(tile, key, spec);
+	const value = fieldsBehind(tile, spec) ?? settingBehind(tile, key, spec);
 	return value === undefined ? {} : { from: "typed", value };
 }
 
@@ -183,42 +193,6 @@ export function mountPatch(tile, name, rows, was) {
 export function withoutKey(held, key) {
 	const { [key]: dropped, ...rest } = held ?? {};
 	return rest;
-}
-
-// TRADE-OFF: a name alone, no stored type — the dialog anchors the control off the name
-// CONTEXT: anchors ignore case, so two spellings are one property; the first spelling is kept
-export function normalizeNames(input) {
-	if (!Array.isArray(input)) return [];
-	const kept = [];
-	const claimed = new Set();
-	for (const entry of input) {
-		const name = typeof entry === "string" ? entry.trim() : "";
-		if (name === "" || claimed.has(name.toLowerCase())) continue;
-		claimed.add(name.toLowerCase());
-		kept.push(name);
-	}
-	return kept;
-}
-
-// CONTEXT: keyed by selected board; a bare array is yesterday's shape, kept as it was written
-export function normalizeArchivedColumns(input) {
-	if (Array.isArray(input)) return normalizeNames(input);
-	const byBoard = {};
-	for (const [selected, columns] of Object.entries(input ?? {})) byBoard[selected] = normalizeNames(columns);
-	return byBoard;
-}
-
-// CONTEXT: no board selected is its own key, so a note without a tab strip still keeps a list
-// CONTEXT: nothing back means no board claimed it — the kanban's own setting still answers
-export function archivedColumnsOn(archived, selected) {
-	if (Array.isArray(archived)) return archived;
-	return archived?.[selected ?? ""];
-}
-
-// TRADE-OFF: the first write drops the unkeyed list — it belonged to whichever board displayed it
-export function withArchivedColumnsOn(archived, selected, columns) {
-	const byBoard = archived && !Array.isArray(archived) ? archived : {};
-	return { ...byBoard, [selected ?? ""]: normalizeNames(columns) };
 }
 
 function normalizeTile(tile, index, idOf) {
@@ -349,10 +323,6 @@ export function normalizeBoard(input, idOf = SAME_ID) {
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".
 		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
-		properties: normalizeNames(input?.properties),
-		// CONTEXT: two views that never draw together must still read one list, so the board holds it
-		// CONTEXT: absent means no board has claimed it yet — the kanban's own setting still answers
-		...(input?.archivedColumns ? { archivedColumns: normalizeArchivedColumns(input.archivedColumns) } : {}),
 	};
 }
 
@@ -407,9 +377,6 @@ export function serializeBoard(board) {
 		// only authored counts reach the file: a derived layout is one render's worth of
 		// arithmetic, and writing it would mark a width the user never touched as theirs
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
-		...(board.properties?.length ? { properties: board.properties } : {}),
-		// CONTEXT: an emptied list is still written — its absence is what hands the fact back to the tile
-		...(board.archivedColumns ? { archivedColumns: board.archivedColumns } : {}),
 		...(board.layout ? { layout: serializeTree(board.layout) } : {}),
 		...serializeLegacyLayouts(board),
 	};
