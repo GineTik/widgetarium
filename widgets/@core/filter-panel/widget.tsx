@@ -210,15 +210,14 @@ function dropped(chosen: Chosen, prop: string): Chosen {
 	return rest;
 }
 
-export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen, board }: any) {
+export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen }: any) {
 	const listed = useData(tasks.list);
 	const rows: TaskRow[] = flatRows(listed.rows);
 	// TRADE-OFF: a typed list still wins where somebody has written one — a board that wants a
 	// different order, a label of its own or a property nothing carries yet says so explicitly
 	const authored = useData(groups.list).rows.map(({ value }: { value: Held }) => groupOf(value)).filter((group: Group) => group.prop !== "");
 	const named = useData(properties.list).rows.map(({ value }: { value: Held }) => textOf(value, "name") || textOf(value, RECORD_NAME)).filter(Boolean);
-	// TRADE-OFF: the board's own list still answers where the prop lists nothing — it is authored in the board file, not here
-	const fromBoard = groupsFromBoard(named.length > 0 ? named : board?.properties ?? [], rows);
+	const fromBoard = groupsFromBoard(named, rows);
 	const shownGroups = authored.length > 0 ? authored : fromBoard.length > 0 ? fromBoard : groupsFromData(rows);
 	const applied: Chosen = (useData(chosen.get).data as Chosen) ?? {};
 

@@ -1,5 +1,5 @@
 import { canDo, createWidget, WidgetRoot, ConfirmDialog, Dialog, DialogContent, flatRows, pickedValue, useData } from "widgetarium";
-import { archivedColumnsFor, boardWriter, readBoardRecord } from "@task/lib";
+import { archived, archivedColumnsOf, columnPatched, columnsOf, columnsWritten, propertiesOf, restored, shownColumnsOf } from "@task/lib";
 import {
 	APPROVAL_TONES,
 	Button,
@@ -1011,7 +1011,8 @@ function afterColumnMoves(authored, shown, from, to) {
 	const order = shown.filter((_, index) => index !== from);
 	order.splice(to, 0, shown[from]);
 	const moved = order[Symbol.iterator]();
-	return authored.map((name) => (shown.includes(name) ? moved.next().value : name));
+	const byName = new Map(authored.map((column) => [column.name, column]));
+	return authored.map((column) => (shown.includes(column.name) ? byName.get(moved.next().value) : column));
 }
 
 // CONTEXT: the first free number, so a column leaving does not hand out a name already in use
@@ -1833,7 +1834,7 @@ function valuesAcross(rows, name) {
 	return [...seen];
 }
 
-function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedRef, today, configureBoard, host, navigator }) {
+function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedRef, today, onAddProperty, host, navigator }) {
 	const canUpdate = canDo(tasks.update);
 	// TRADE-OFF: found in the list the board already holds — tasks.get would read the note again on every vault event
 	const task = rows.find((row) => row.ref === openedRef) ?? null;
@@ -1941,10 +1942,10 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 									/>
 								))}
 								</SidebarGroup>
-								{configureBoard ? (
+								{onAddProperty ? (
 									<AddProperty
 										taken={names}
-										onAdd={(name) => configureBoard({ properties: [...names, name] })}
+										onAdd={(name) => onAddProperty([...names, name])}
 									/>
 								) : null}
 							</Sidebar>
@@ -1955,37 +1956,24 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 	);
 }
 
-export default createWidget(function KanbanBoard({ settings, slots, tasks, boards, selection, opened, host, configure, board, configureBoard, navigator }: any) {
+export default createWidget(function KanbanBoard({ board, groupBy: grouping, slots, tasks, boards, selection, opened, host, navigator }: any) {
 	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
 	const today = useMemo(() => new Date(), []);
 	const onBoard = pickedValue(useData(selection.get).data);
 	const openedRef = useData(opened.get).data;
 	const tasksData = useData(tasks.list);
 	const boardsData = useData(boards.list);
-	const boardRows = useMemo(() => flatRows(boardsData.rows as RecordRow[]), [boardsData.rows]);
 	const allTasks = useMemo(() => flatRows(tasksData.rows as RecordRow[]), [tasksData.rows]);
-	// THE BOARD'S OWN RECORD. Its columns, their order and which of them are archived belong to
-	// the board, so a column added here cannot land on the board next door. A board with no file
-	// yet answers from the tile and the note, exactly as it did before.
-	const fromTheBoard = archivedColumnsFor(board?.archivedColumnsByBoard, onBoard, onBoard);
-	const record = readBoardRecord(boardRows, { name: onBoard }, {
-		columns: settings.columns,
-		archivedColumns: fromTheBoard.length > 0 ? fromTheBoard : settings.archivedColumns,
-	});
-	const archivedColumns = record.archivedColumns;
-	// CONTEXT: deduped, so a rendered index below the count IS the index in this list
-	// CONTEXT: an archived name stays authored, so restoring it is not a guess about where it belonged
-	// CONTEXT: a column archived before the record existed is named nowhere else
-	const authoredColumns = [...new Set([...record.columns, ...archivedColumns])];
-	// CONTEXT: the record once it has a file, the note until then — one writer either way
-	const saveColumns = boardWriter(record, boards, {
-		columns: (names: string[]) => configure?.({ columns: names.join(", ") }),
-		archivedColumns: (names: string[]) => configureBoard?.({ archivedColumns: names, board: onBoard }),
-	});
-	const shownColumns = authoredColumns.filter((name) => !archivedColumns.includes(name));
+	const record = useData(board.get).data;
+	const boardColumns = useMemo(() => columnsOf(record), [record]);
+	const archivedColumns = archivedColumnsOf(boardColumns);
+	const authoredColumns = boardColumns.map((column) => column.name);
+	const saveColumns = (columns) => board.update(columnsWritten(columns));
+	const canEditColumns = canDo(board.update);
+	const shownColumns = shownColumnsOf(boardColumns);
 	// CONTEXT: a board with no columns is not a board — the last one out leaves a fresh one behind
 	const columnNames = shownColumns.length > 0 ? shownColumns : [freeUntitled([...authoredColumns, ...archivedColumns])];
-	const groupBy = settings.groupBy || "status";
+	const groupBy = String(useData(grouping.get).data ?? "") || "status";
 	const rows = allTasks;
 	const canCreateTask = canDo(tasks.create);
 	const canUpdateTask = canDo(tasks.update);
@@ -2010,35 +1998,33 @@ export default createWidget(function KanbanBoard({ settings, slots, tasks, board
 		const trimmed = String(name ?? "").trim();
 		if (!trimmed || shownColumns.includes(trimmed)) return;
 		if (archivedColumns.includes(trimmed)) {
-			// CONTEXT: a column the old map archived is authored nowhere, so restoring has to author it
-			saveColumns({ archivedColumns: archivedColumns.filter((column) => column !== trimmed), columns: authoredColumns });
+			saveColumns(columnPatched(boardColumns, trimmed, restored));
 			return;
 		}
-		saveColumns({ columns: [...authoredColumns, trimmed] });
+		saveColumns([...boardColumns, { name: trimmed }]);
 	};
 
-	// CONTEXT: what files a task under a heading is the property in its note, so a rename must reach both
+	const columnsAfterRename = (was, name) =>
+		authoredColumns.includes(was) ? columnPatched(boardColumns, was, (column) => ({ ...column, name })) : [...boardColumns, { name }];
+
+	const refileTasksUnder = async (was, name) => {
+		if (!canUpdateTask) return;
+		for (const row of rows.filter((held) => (held.props?.[groupBy] ?? "") === was)) {
+			await tasks.update({ ref: row.ref, data: { props: { [groupBy]: name } } });
+		}
+	};
+
 	const renameList = async (was, next) => {
 		const name = String(next ?? "").trim();
 		if (!name || name === was) return;
-		if (columnNames.includes(name) || archivedColumns.includes(name)) {
-			host?.ui?.notify(`"${name}" is already a list`);
-			return;
-		}
-
-		const renamed = authoredColumns.includes(was)
-			? authoredColumns.map((column) => (column === was ? name : column))
-			: [...authoredColumns, name];
-		saveColumns({ columns: renamed });
-
-		const held = rows.filter((row) => (row.props?.[groupBy] ?? "") === was);
-		if (held.length === 0 || !canUpdateTask) return;
-		for (const row of held) await tasks.update({ ref: row.ref, data: { props: { [groupBy]: name } } });
+		if (columnNames.includes(name) || archivedColumns.includes(name)) return host?.ui?.notify(`"${name}" is already a list`);
+		saveColumns(columnsAfterRename(was, name));
+		await refileTasksUnder(was, name);
 	};
 
 	// CONTEXT: the one place a column leaves the board; nothing is unnamed, so a restore is lossless
 	const archiveList = (name) => {
-		saveColumns({ archivedColumns: [...archivedColumns, name] });
+		saveColumns(columnPatched(boardColumns, name, archived));
 		setArchiving(null);
 	};
 
@@ -2084,7 +2070,7 @@ export default createWidget(function KanbanBoard({ settings, slots, tasks, board
 	const dropColumn = () => {
 		if (!reorder) return;
 		if (reorder.to !== reorder.from) {
-			saveColumns({ columns: afterColumnMoves(authoredColumns, columnNames, reorder.from, reorder.to) });
+			saveColumns(afterColumnMoves(boardColumns, columnNames, reorder.from, reorder.to));
 		}
 		setReorder(null);
 	};
@@ -2150,17 +2136,17 @@ export default createWidget(function KanbanBoard({ settings, slots, tasks, board
 						dragging={dragging}
 						shift={shiftOf(index)}
 						placeholder={reorder?.from === index}
-						onGrab={configure && index < columnNames.length ? grabColumn(index) : undefined}
+						onGrab={canEditColumns && index < columnNames.length ? grabColumn(index) : undefined}
 						onRelease={() => setReorder(null)}
 						onAdd={(title) => addTask(column.title, title)}
-						onArchive={configure ? () => setArchiving(column.title) : undefined}
-						onRename={configure ? (next) => renameList(column.title, next) : undefined}
+						onArchive={canEditColumns ? () => setArchiving(column.title) : undefined}
+						onRename={canEditColumns ? (next) => renameList(column.title, next) : undefined}
 						onOpen={(row) => opened.update(row.ref)}
 						onDropTask={() => moveTask(column.title)}
 						opened={openedRef}
 					/>
 				))}
-				{configure ? <AddList onAdd={addList} /> : null}
+				{canEditColumns ? <AddList onAdd={addList} /> : null}
 				{canRepairIds ? (
 					<Plate asChild>
 						<button type="button" className="ok-add-list-rest ok-repair-ids" onClick={() => setRepairingIds(true)}>
@@ -2201,13 +2187,13 @@ export default createWidget(function KanbanBoard({ settings, slots, tasks, board
 			<TaskDialog
 				tasks={tasks}
 				rows={rows}
-				columns={record.columns}
-				properties={board?.properties}
+				columns={shownColumns}
+				properties={propertiesOf(record)}
 				onBoard={onBoard}
 				opened={opened}
 				openedRef={openedRef}
 				today={today}
-				configureBoard={configureBoard}
+				onAddProperty={canEditColumns ? (names) => board.update({ properties: names }) : null}
 				host={host}
 				navigator={navigator}
 			/>

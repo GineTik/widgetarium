@@ -1,12 +1,6 @@
-// A BOARD IS A RECORD IN A FILE. Its statuses, which of them are archived and the order they
-// sit in belong to the board, not to whichever kanban happened to draw it — a column added on
-// one board appeared on every board because "board" was only a name in a comma-joined string.
-//
-// This module is the domain conclusion and nothing else: a reference in, that board's record out. It
-// never writes. A widget that created a file because it was drawn would litter the vault on
-// the first note that opens.
+import { fieldOf } from "widgetarium";
 
-export function toTabList(value) {
+function toTabList(value) {
 	if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean);
 	return String(value ?? "")
 		.split(",")
@@ -14,55 +8,47 @@ export function toTabList(value) {
 		.filter(Boolean);
 }
 
-// CONTEXT: the title a person typed, the file name until they have
-function nameOf(row) {
-	return String(row?.props?.title ?? row?.name ?? "");
+function namedRows(held) {
+	if (typeof held === "string") return toTabList(held).map((name) => ({ name }));
+	if (!Array.isArray(held)) return [];
+	return held
+		.map((entry) => (typeof entry === "string" ? { name: entry } : entry))
+		.map((row) => ({ ...row, name: String(row?.name ?? "").trim() }))
+		.filter((row) => row.name !== "");
 }
 
-// CONTEXT: id first, name second — a record has an id only after an explicit action
-function isRecordOf(row, ref) {
-	if (row?.id && row.id === ref) return true;
-	return nameOf(row) === ref;
+export function columnsOf(board) {
+	const rows = namedRows(fieldOf(board, "columns"));
+	const archivedLongAgo = new Set(toTabList(fieldOf(board, "archivedColumns")));
+	const named = new Set(rows.map((row) => row.name));
+	const forgotten = [...archivedLongAgo].filter((name) => !named.has(name)).map((name) => ({ name }));
+	return [...rows, ...forgotten].map((row) => ({
+		name: row.name,
+		archivedAt: row.archivedAt ?? null,
+		isArchived: Boolean(row.archivedAt) || archivedLongAgo.has(row.name),
+	}));
 }
 
-function asRef(ref) {
-	if (typeof ref === "string") return ref;
-	return String(ref?.id ?? ref?.name ?? "");
-}
+export const shownColumnsOf = (columns) => columns.filter((column) => !column.isArchived).map((column) => column.name);
 
-// CONTEXT: nothing on file is not an error — the board answers from what the note still carries
-export function readBoardRecord(rows, ref, fallback) {
-	const wanted = asRef(ref);
-	const found = (rows ?? []).find((row) => isRecordOf(row, wanted));
-	const columns = toTabList(found?.props?.columns);
+export const archivedColumnsOf = (columns) => columns.filter((column) => column.isArchived).map((column) => column.name);
+
+const archivedStamp = (column) => column.archivedAt ?? new Date().toISOString();
+
+export const archived = (column) => ({ ...column, isArchived: true, archivedAt: archivedStamp(column) });
+
+export const restored = (column) => ({ ...column, isArchived: false, archivedAt: null });
+
+export const columnPatched = (columns, name, step) => columns.map((column) => (column.name === name ? step(column) : column));
+
+// TRADE-OFF: the old key is emptied, not dropped — processFrontMatter merges and cannot delete
+export function columnsWritten(columns) {
 	return {
-		name: found ? nameOf(found) : wanted,
-		id: found?.id ?? null,
-		path: found?.path ?? null,
-		isOnFile: Boolean(found),
-		columns: columns.length > 0 ? columns : toTabList(fallback?.columns),
-		archivedColumns: found ? toTabList(found.props?.archivedColumns) : toTabList(fallback?.archivedColumns),
+		columns: columns.map((column) => (column.isArchived ? { name: column.name, archivedAt: archivedStamp(column) } : { name: column.name })),
+		archivedColumns: [],
 	};
 }
 
-// CONTEXT: the note's map is keyed by board name; yesterday's flat list belonged to whoever displayed it
-export function archivedColumnsFor(held, name, displayed) {
-	if (Array.isArray(held)) return name === displayed ? toTabList(held) : [];
-	return toTabList(held?.[name]);
-}
-
-// ONE WRITER for a board's column facts. The record owns them the moment it has a file; a board
-// with no file yet still answers from the note, so nothing breaks before the boards are moved.
-export function boardWriter(record, boards, legacy) {
-	return (patch) => {
-		if (record.isOnFile && boards?.update?.can().can) {
-			const props = {};
-			if (patch.columns) props.columns = toTabList(patch.columns).join(", ");
-			if (patch.archivedColumns) props.archivedColumns = toTabList(patch.archivedColumns).join(", ");
-			return boards.update({ ref: record.path, data: { props } });
-		}
-		if (patch.columns) legacy?.columns?.(toTabList(patch.columns));
-		if (patch.archivedColumns) legacy?.archivedColumns?.(toTabList(patch.archivedColumns));
-		return undefined;
-	};
+export function propertiesOf(board) {
+	return toTabList(fieldOf(board, "properties"));
 }

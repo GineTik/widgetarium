@@ -24,7 +24,7 @@ function optionOf(ref: string, held: Held): Option {
 	return { ref, label, value: textOf(held, VALUE) || label };
 }
 
-export default createWidget(function OrbiTaskViewTabs({ options, selection, configureBoard }: any) {
+export default createWidget(function OrbiTaskViewTabs({ options, selection, foldIntoGroup }: any) {
 	const listed = useData(options.list);
 	const chosen = useData(selection.get).data;
 	const [isOpen, setOpen] = useState(false);
@@ -36,7 +36,7 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, conf
 		return (
 			<WidgetRoot defaultRounded="none" className="orbi orbi-view-tabs" defaultBackgroundType="none">
 				<style>{STYLE}</style>
-				<Button block className="ovt-deaf" title={NO_GROUP} onClick={() => configureBoard?.({ holder: true })}>
+				<Button block className="ovt-deaf" title={NO_GROUP} onClick={() => foldIntoGroup?.()}>
 					<Icon name="plus" size={15} />
 					<ButtonLabel>Add a view group</ButtonLabel>
 				</Button>

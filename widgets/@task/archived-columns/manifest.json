@@ -28,10 +28,22 @@
 			"w": 5,
 			"h": 4
 		},
-		"archivedColumns": [
-			"Blocked",
-			"On hold"
-		]
+		"props": {
+			"board": {
+				"value": {
+					"columns": [
+						{
+							"name": "Blocked",
+							"archivedAt": "2026-09-01"
+						},
+						{
+							"name": "On hold",
+							"archivedAt": "2026-09-01"
+						}
+					]
+				}
+			}
+		}
 	},
 	"props": {
 		"boards": {
@@ -56,6 +68,18 @@
 				"get": "required"
 			},
 			"wants": "@core/editable-tabs/selection"
+		},
+		"board": {
+			"kind": "value",
+			"label": "Board",
+			"hint": "The board whose archived columns are listed.",
+			"picks": "selection",
+			"of": "boards",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"wants": "@task/kanban-board/board"
 		}
 	}
 }
