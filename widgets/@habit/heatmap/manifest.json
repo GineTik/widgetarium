@@ -25,38 +25,6 @@
 		"h": 4
 	},
 	"collapseBelowPx": 320,
-	"settings": [
-		{
-			"key": "field",
-			"type": "text",
-			"label": "Property holding the dates, or the number to read",
-			"default": "entries"
-		},
-		{
-			"key": "pick",
-			"type": "text",
-			"label": "Which habit — empty means all of them",
-			"default": ""
-		},
-		{
-			"key": "year",
-			"type": "number",
-			"label": "Year, or 0 for this one",
-			"default": 0
-		},
-		{
-			"key": "isRound",
-			"type": "boolean",
-			"label": "Round cells instead of square",
-			"default": false
-		},
-		{
-			"key": "isWeekStartingMonday",
-			"type": "boolean",
-			"label": "Weeks start on Monday",
-			"default": true
-		}
-	],
 	"preview": {
 		"size": {
 			"w": 7,
@@ -229,6 +197,77 @@
 			},
 			"default": {
 				"path": "Habits"
+			},
+			"needs": {
+				"days": {
+					"type": "date",
+					"many": true,
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins"
+					]
+				},
+				"done": {
+					"type": "number",
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
+				}
+			}
+		},
+		"pick": {
+			"kind": "value",
+			"label": "Which habit",
+			"hint": "One habit only. Nothing picked draws all of them.",
+			"of": "log",
+			"field": "name",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			}
+		},
+		"year": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "number",
+			"label": "Year, or 0 for this one",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": 0
+			}
+		},
+		"isRound": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Round cells instead of square",
+			"design": true,
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": false
+			}
+		},
+		"isWeekStartingMonday": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Weeks start on Monday",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": true
 			}
 		}
 	}

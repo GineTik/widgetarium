@@ -45,15 +45,6 @@
 			"h": 3
 		}
 	},
-	"settings": [
-		{
-			"key": "isTabsShown",
-			"type": "boolean",
-			"label": "Show the tab row",
-			"design": true,
-			"default": true
-		}
-	],
 	"props": {
 		"selection": {
 			"kind": "value",
@@ -65,6 +56,19 @@
 			"verbs": {
 				"get": "required",
 				"update": "required"
+			}
+		},
+		"isTabsShown": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Show the tab row",
+			"design": true,
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": true
 			}
 		}
 	},

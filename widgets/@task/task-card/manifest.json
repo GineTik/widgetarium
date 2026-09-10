@@ -41,78 +41,68 @@
 			]
 		}
 	},
-	"settings": [
-		{
-			"key": "title",
-			"label": "Title",
-			"type": "text",
-			"default": "Design the onboarding flow"
-		},
-		{
-			"key": "tags",
-			"label": "Tags, comma separated",
-			"type": "text",
-			"default": "design, research"
-		},
-		{
-			"key": "tagTones",
-			"label": "Tag colours — tag: neutral, accent, success, warning, error, info, note or standout",
-			"type": "text",
-			"default": "design: warning, research: accent"
-		},
-		{
-			"key": "priority",
-			"label": "Priority — P1, P2, P3",
-			"type": "text",
-			"default": "P1"
-		},
-		{
-			"key": "status",
-			"label": "Status — approve, check, reject, review",
-			"type": "text",
-			"default": "approve"
-		},
-		{
-			"key": "progress",
-			"label": "Progress %",
-			"type": "number",
-			"default": 60
-		},
-		{
-			"key": "dueDate",
-			"label": "Deadline",
-			"type": "text",
-			"default": "12 Aug"
-		},
-		{
-			"key": "attachments",
-			"label": "Attachments",
-			"type": "number",
-			"default": 2
-		},
-		{
-			"key": "initials",
-			"label": "Assignee initials, comma separated",
-			"type": "text",
-			"default": "A, M, T"
-		}
-	],
 	"preview": {
 		"size": {
 			"w": 4,
 			"h": 2
 		},
-		"settings": {
-			"title": "Record the release notes",
-			"priority": "P3",
-			"status": "Approve",
-			"progress": 80,
-			"initials": "Dana Reid",
-			"dueDate": "4 Sep",
-			"attachments": 1,
-			"tags": "launch, notes",
-			"tagTones": "launch: accent"
+		"props": {
+			"task": {
+				"value": {
+					"title": "Record the release notes",
+					"tags": [
+						"launch",
+						"notes"
+					],
+					"tagTones": {
+						"launch": "accent"
+					},
+					"priority": "P3",
+					"status": "approve",
+					"progress": 80,
+					"due": "4 Sep",
+					"files": 1,
+					"initials": [
+						"Dana Reid"
+					]
+				}
+			}
 		}
 	},
-	"stackBelowPx": 220
+	"stackBelowPx": 220,
+	"props": {
+		"task": {
+			"kind": "value",
+			"label": "Task",
+			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"default": {
+				"from": "typed",
+				"value": {
+					"title": "Design the onboarding flow",
+					"tags": [
+						"design",
+						"research"
+					],
+					"tagTones": {
+						"design": "warning",
+						"research": "accent"
+					},
+					"priority": "P1",
+					"status": "approve",
+					"progress": 60,
+					"due": "12 Aug",
+					"files": 2,
+					"initials": [
+						"Alex Morgan",
+						"Mia Tan",
+						"Theo Ruiz"
+					]
+				}
+			}
+		}
+	}
 }

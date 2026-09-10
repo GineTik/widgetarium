@@ -1,4 +1,4 @@
-import { createWidget, WidgetRoot } from "widgetarium";
+import { createWidget, useValue, WidgetRoot } from "widgetarium";
 import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, cx, toneClass, toneOf } from "widgetarium/kit";
 
 // CONTEXT: the card IS the widget root, and .wg-widget-root[data-…] outweighs .wg-kit-card
@@ -239,19 +239,8 @@ function labelOf(status) {
 	return STATUS_LABELS[status.toLowerCase()] ?? status;
 }
 
-export default createWidget(function OrbiTaskCard({ settings, task }: any) {
-	// CONTEXT: the board hands down `task`; standing alone, the card has only its settings
-	const card = task ?? {
-		title: settings.title,
-		tags: settings.tags,
-		tagTones: settings.tagTones,
-		priority: settings.priority,
-		status: settings.status,
-		progress: settings.progress,
-		initials: settings.initials,
-		due: settings.dueDate,
-		files: settings.attachments,
-	};
+export default createWidget(function OrbiTaskCard({ task }: any) {
+	const card = useValue(task) ?? {};
 
 	const priority = has(card.priority) ? String(card.priority) : null;
 	const status = has(card.status) ? String(card.status) : null;

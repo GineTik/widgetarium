@@ -1,4 +1,4 @@
-import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 
 const STYLE = `
@@ -74,32 +74,33 @@ function readingOf(metric, log, habit, period, today) {
 	return { value: streak.current, unit: "days" };
 }
 
-export default createWidget(function HabitStat({ settings, habits }: any) {
+export default createWidget(function HabitStat({ pick, metric: asked, period: lookback, habits }: any) {
 	const listedRows = useData(habits.list);
 	const rows = flatRows(listedRows.rows);
-	const field = settings.field || "entries";
-	const habit = rows.find((row) => row.name === settings.pick) ?? rows[0];
+	const picked = pickedValue(useData(pick.get).data);
+	const habit = rows.find((row) => row.name === picked) ?? rows[0];
 	const today = isoOf(new Date());
-	const period = Math.max(1, Number(settings.period) || 30);
-	const metric = CAPS[settings.metric] ? settings.metric : "streak";
+	const period = Math.max(1, Number(useData(lookback.get).data) || 30);
+	const named = String(useData(asked.get).data ?? "");
+	const metric = CAPS[named] ? named : "streak";
 
 	if (!habit) {
 		return (
 			<WidgetRoot className="habit-stat">
 				<style>{STYLE}</style>
 				<span className="hs-cap">{CAPS[metric]}</span>
-				<span className="habit-sub">no habit named {settings.pick || "anything"}</span>
+				<span className="habit-sub">no habit named {picked || "anything"}</span>
 			</WidgetRoot>
 		);
 	}
 
-	const log = readLog([habit], { field, pick: habit.name });
-	const reading = readingOf(metric, log, habit.props, period, today);
+	const log = readLog([habit], { pick: habit.name });
+	const reading = readingOf(metric, log, habit, period, today);
 
 	return (
-		<WidgetRoot className="habit-stat" style={habit.props?.color ? { "--habit-ink": habit.props.color } : undefined}>
+		<WidgetRoot className="habit-stat" style={habit.color ? { "--habit-ink": habit.color } : undefined}>
 			<style>{STYLE}</style>
-			<span className="hs-cap">{`${CAPS[metric]} · ${habit.props?.title ?? habit.name}`}</span>
+			<span className="hs-cap">{`${CAPS[metric]} · ${habit.title ?? habit.name}`}</span>
 			<span className="hs-value">
 				{reading.value}
 				<span className="hs-unit">{reading.unit}</span>

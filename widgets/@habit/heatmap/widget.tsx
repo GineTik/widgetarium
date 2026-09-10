@@ -1,4 +1,4 @@
-import { flatRows, createWidget, useData, WidgetRoot } from "widgetarium";
+import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 
 const STYLE = `
@@ -132,22 +132,25 @@ function monthSpans(days) {
 	return spans;
 }
 
-export default createWidget(function HabitHeatmap({ settings, log: source, navigator }: any) {
+export default createWidget(function HabitHeatmap({ pick, year: shownYear, isRound, isWeekStartingMonday, log: source, navigator }: any) {
 	const listedRows = useData(source.list);
 	const rows = flatRows(listedRows.rows);
-	const log = readLog(rows, { field: settings.field, pick: settings.pick });
+	const picked = pickedValue(useData(pick.get).data);
+	const log = readLog(rows, { pick: picked });
 	const today = isoOf(new Date());
-	const year = Number(settings.year) > 0 ? Number(settings.year) : new Date().getFullYear();
+	const asked = Number(useData(shownYear.get).data);
+	const year = asked > 0 ? asked : new Date().getFullYear();
+	const isRoundCell = Boolean(useData(isRound.get).data);
 
 	const byDate = new Map();
 	for (const entry of log) byDate.set(entry.date, (byDate.get(entry.date) ?? 0) + entry.value);
 	const top = Math.max(...byDate.values(), 1);
 
-	const days = weeksOf(year, settings.isWeekStartingMonday !== false);
+	const days = weeksOf(year, useData(isWeekStartingMonday.get).data !== false);
 	const months = monthSpans(days);
 	const inYear = log.filter((entry) => entry.date.startsWith(String(year)));
 	const streak = streakOf(inYear, { maxGap: 0, today });
-	const named = settings.pick ? settings.pick : "every habit";
+	const named = picked || "every habit";
 
 	if (rows.length === 0) {
 		return (
@@ -181,7 +184,7 @@ export default createWidget(function HabitHeatmap({ settings, log: source, navig
 					const step = stepOf(value, top);
 					const marks = ["hh-cell"];
 					if (!iso) marks.push("is-outside");
-					if (settings.isRound) marks.push("is-round");
+					if (isRoundCell) marks.push("is-round");
 					if (step > 0) marks.push("is-done");
 					if (iso === today) marks.push("is-today");
 					return (

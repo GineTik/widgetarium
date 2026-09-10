@@ -122,6 +122,7 @@
 		},
 		"openGroup": {
 			"kind": "value",
+			"type": "text",
 			"label": "Open by default",
 			"hint": "Whose choices unfold on opening. Name none and it opens folded.",
 			"verbs": {

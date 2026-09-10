@@ -290,7 +290,7 @@ function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSize: num
 	);
 }
 
-export default createWidget(function HabitMonth({ settings, days }: { settings: Record<string, unknown>; days: CollectionGateway<DayNote, Accesses> }) {
+export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMonday, days }: { isWeekStartingMonday: any; days: CollectionGateway<DayNote, Accesses> }) {
 	const room = useRef<HTMLDivElement | null>(null);
 	const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
 	const [shift, setShift] = useState(0);
@@ -301,7 +301,8 @@ export default createWidget(function HabitMonth({ settings, days }: { settings: 
 	const now = new Date();
 	const today = isoOf(now);
 	const shown = new Date(now.getFullYear(), now.getMonth() + shift, 1);
-	const isWeekStartingMonday = typeof settings.isWeekStartingMonday === "boolean" ? settings.isWeekStartingMonday : true;
+	const heldStart = useData(fromMonday.get).data;
+	const isWeekStartingMonday = typeof heldStart === "boolean" ? heldStart : true;
 
 	const ring = ringFor(box);
 	const flameSize = Math.round(ring * FLAME_SHARE);

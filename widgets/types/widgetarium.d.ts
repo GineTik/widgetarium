@@ -38,6 +38,7 @@ export { action, arrayGateway, canDo, collectionGateway, soloGateway, valueGatew
 export { fieldOf, textOf } from "../../src/gateway/match";
 export { narrowed, normalizeWhere } from "../../src/gateway/narrow";
 export { useNarrowed } from "../../src/gateway/use-narrowed";
+export { useValue } from "../../src/gateway/use-value";
 
 export interface WidgetMeta {
 	id?: string;

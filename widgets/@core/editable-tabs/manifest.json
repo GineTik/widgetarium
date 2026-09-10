@@ -64,6 +64,7 @@
 		},
 		"label": {
 			"kind": "value",
+			"type": "text",
 			"label": "Label field",
 			"hint": "Which field is written on a tab. Without it a note shows its own name.",
 			"verbs": {
@@ -75,6 +76,7 @@
 		},
 		"value": {
 			"kind": "value",
+			"type": "text",
 			"label": "Value field",
 			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
 			"verbs": {

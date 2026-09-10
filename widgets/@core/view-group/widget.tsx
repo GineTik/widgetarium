@@ -73,14 +73,14 @@ function Unfilled({ onFill }) {
 // CONTEXT: the tile renders one view at a time and sizes nothing — the child gets the whole area
 type MountEntry = { name: string; id: string; hidden: boolean; problem: string | null; failure: string | null; render: (() => unknown) | null };
 
-export default createWidget(function OrbiTaskViewGroup({ settings, selection, mounts, configureMounts, pickWidget }: any) {
+export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection, mounts, configureMounts, pickWidget }: any) {
 	const held: MountEntry[] = mounts?.holds ?? [];
 	// CONTEXT: the strip does not own the list — the holds rows are its storage
 	const rows = held.map((entry) => ({ name: entry.name, widget: entry.id, hidden: entry.hidden }));
 	const tabs = tabsOf(rows);
 	const archived = archivedOf(rows);
 	const shown = held.filter((entry) => !entry.hidden);
-	const isStriped = settings.isTabsShown !== false && Boolean(configureMounts);
+	const isStriped = useData(isTabsShown.get).data !== false && Boolean(configureMounts);
 
 	const wanted = useData(selection.get).data;
 	const asked = shown.find((entry) => entry.name === wanted);

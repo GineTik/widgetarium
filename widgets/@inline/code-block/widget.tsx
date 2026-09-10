@@ -1,4 +1,4 @@
-import { createWidget } from "widgetarium";
+import { createWidget, useData } from "widgetarium";
 import { Button, Icon, IconButton, Popover, PopoverItem, PopoverSearch } from "widgetarium/kit";
 import { useEffect, useRef, useState } from "react";
 
@@ -241,10 +241,10 @@ function Refusal({ why }) {
 	);
 }
 
-function CodeBlock({ content, reader, host, here, settings }) {
+function CodeBlock({ content, reader, host, here, lines: linesShown, maxKilobytes }) {
 	const request = readRequest(content);
-	const step = Math.max(1, Number(settings?.lines ?? 30));
-	const maxBytes = Math.max(1, Number(settings?.maxKilobytes ?? 256)) * 1024;
+	const step = Math.max(1, Number(useData(linesShown.get).data ?? 30));
+	const maxBytes = Math.max(1, Number(useData(maxKilobytes.get).data ?? 256)) * 1024;
 
 	const [file, setFile] = useState({ text: "", failure: null, read: false });
 	const [shown, setShown] = useState(step);

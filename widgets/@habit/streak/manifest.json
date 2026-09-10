@@ -43,14 +43,38 @@
 			},
 			"days": {
 				"rows": [
-					{ "path": "Habits/2026-08-24.md", "done": 1 },
-					{ "path": "Habits/2026-08-25.md", "done": 1 },
-					{ "path": "Habits/2026-08-27.md", "done": 1 },
-					{ "path": "Habits/2026-08-28.md", "done": 1 },
-					{ "path": "Habits/2026-08-29.md", "done": 1 },
-					{ "path": "Habits/2026-08-30.md", "done": 1 },
-					{ "path": "Habits/2026-08-31.md", "done": 1 },
-					{ "path": "Habits/2026-09-01.md", "done": 1 }
+					{
+						"path": "Habits/2026-08-24.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-25.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-27.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-28.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-29.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-30.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-31.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-09-01.md",
+						"done": 1
+					}
 				]
 			}
 		}
@@ -71,16 +95,29 @@
 			"needs": {
 				"done": {
 					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
 				},
 				"date": {
 					"type": "date",
-					"aka": ["created", "day", "when", "on"]
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
 				}
 			}
 		},
 		"title": {
 			"kind": "value",
+			"type": "text",
 			"label": "Habit name",
 			"hint": "What is written beside the emoji. Type one here, or take it from another widget's value.",
 			"verbs": {
@@ -92,6 +129,7 @@
 		},
 		"emoji": {
 			"kind": "value",
+			"type": "text",
 			"label": "Emoji",
 			"hint": "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
 			"verbs": {
