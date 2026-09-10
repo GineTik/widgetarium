@@ -149,14 +149,6 @@ export function foldableIn(layout) {
 	return REGIONS.filter((name) => name !== "main" && layout?.[name]);
 }
 
-export function occupiedLayout(layout) {
-	return Object.fromEntries(REGIONS.filter((name) => layout?.[name] && (name === "main" || layout[name].rows.length > 0)).map((name) => [name, layout[name]]));
-}
-
-export function shownLayout(layout, editing) {
-	return editing ? layout : occupiedLayout(layout);
-}
-
 export function isFolded(layout, name) {
 	return Boolean(layout?.[name]?.folded);
 }

@@ -8,7 +8,7 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { aimedAt, carriedInto, columnsOf, foldableIn, isFolded, toggledFold, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, rowIndexesAfterLeaving, occupiedLayout, resized, restacked, SIDEBAR_PX, widenedRegion, withoutCell } = await import("./.mjs-cache/tree.mjs");
+const { aimedAt, carriedInto, columnsOf, foldableIn, isFolded, toggledFold, GAP_PX, innerOf, MAIN_FLOOR_PX, MIN_HEIGHT_PX, MIN_SIDEBAR_PX, moved, rowIndexesAfterLeaving, resized, restacked, SIDEBAR_PX, widenedRegion, withoutCell } = await import("./.mjs-cache/tree.mjs");
 const { GIVE_PX } = await import("./.mjs-cache/give.mjs");
 const { millisecondsAcross } = await import("./.mjs-cache/flip.mjs");
 
@@ -73,12 +73,26 @@ const bundle = await esbuild.build({
 	logLevel: "warning",
 });
 
+const HOST_BUTTON_PAINT_COPIED_VERBATIM = `button:not(.clickable-icon) {
+	color: var(--text-color);
+	background-color: var(--interactive-normal);
+	box-shadow: var(--input-shadow);
+}
+@media (hover: hover) {
+	button:hover {
+		background-color: var(--interactive-hover);
+		box-shadow: var(--input-shadow-hover);
+	}
+}`;
+
 const page = `<!doctype html><html><head><meta charset="utf-8">
+<style>${HOST_BUTTON_PAINT_COPIED_VERBATIM}</style>
 <style>${readFileSync("styles.css", "utf8")}</style>
 <style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
 <style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
 	--background-modifier-border: #e4e4e4; --background-modifier-hover: #ededed; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
-	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }
+	--text-on-accent: #fff; --interactive-accent: #6d4ee0; --text-color: #222; --interactive-normal: #e3e3e3;
+	--interactive-hover: #d8d8d8; --input-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); --input-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.14); }
 .wg-host { display: flex; flex-direction: column; gap: 64px; align-items: flex-start; }
 .wg-host, .wg-host * { transition: none !important; animation: none !important; }</style>
 </head><body><div class="wg-host"></div>
@@ -486,13 +500,11 @@ console.log("\n— a board of three regions stands side by side while there is r
 	const bare = { left: { rows: [] }, main: { rows: [] }, right: { rows: [] } };
 	check("an empty sidebar still stands, because nothing can be dropped where nothing is drawn", names(columnsOf(bare, 1600, 8)), ["left", "main", "right"]);
 	check("and it still offers its toggle", foldableIn(bare), ["left", "right"]);
-	check("reading a board only nobody is editing drops the empty sidebars", Object.keys(occupiedLayout(bare)), ["main"]);
-	check("and keeps the ones holding something", Object.keys(occupiedLayout({ ...bare, right: { rows } })), ["main", "right"]);
 }
 
 function toggleChecks() {
 	console.log("\n— the two toggles stand on the board's own bar and fold a sidebar away —");
-	const { togglesOpen, openSides, foldedLeft, togglesFolded, unfoldedLeft } = measured;
+	const { togglesOpen, openSides, foldedLeft, togglesFolded, unfoldedLeft, pressedEdit, soloBar } = measured;
 	check("the board drew both toggles and nothing else", [togglesOpen.left, togglesOpen.right].map(Boolean), [true, true]);
 	if (!togglesOpen.left || !togglesOpen.right) return;
 	check("both stand on the board's own first line, not over a tile", [togglesOpen.left.fromTop, togglesOpen.right.fromTop], [0, 0]);
@@ -512,6 +524,15 @@ function toggleChecks() {
 	check("it no longer reads as pressed", togglesFolded.left.pressed, "false");
 	check("and it still stands at the same edge", togglesFolded.left.nearestCorner, 0);
 	check("the other one was not touched", togglesFolded.right.pressed, "true");
+
+	check("the bar carries the edit toggle beside the folds", Boolean(togglesOpen.edit), true);
+	check("it stands on the board's own first line too", togglesOpen.edit.fromTop, 0);
+	check("and it is the kit's control, drawn with a real icon", [togglesOpen.edit.fromKit, togglesOpen.edit.painted > 8], [true, true]);
+	check("a reader is offered the way into edit mode", [pressedEdit.resting.board, pressedEdit.resting.pressed, pressedEdit.resting.label], [false, "false", "Widgetarium: enter edit mode"]);
+	check("pressing it puts the board in edit mode, and says so", [pressedEdit.on.board, pressedEdit.on.pressed, pressedEdit.on.label], [true, "true", "Widgetarium: leave edit mode"]);
+	check("and it is lit while it holds, not left looking like its neighbours", pressedEdit.on.face !== pressedEdit.resting.face, true);
+	check("pressing it again leaves edit mode", pressedEdit.off, pressedEdit.resting);
+	check("a board with no sidebar at all still carries the toggle", soloBar, { drawn: true, toggles: ["edit"] });
 	check("a folded sidebar keeps its widgets mounted, or every ref they offer dies with them", measured.mountedFolded.tiles, measured.mountedOpen.tiles);
 	check("and they are still drawn, not emptied husks", measured.mountedFolded.painted, measured.mountedOpen.painted);
 	check("pressing it again brings the sidebar back", unfoldedLeft.regions.map((one) => one.name), ["left", "main", "right"]);
@@ -595,26 +616,42 @@ console.log("\n— and the aim reads the pointer against the bands —");
 
 console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from the main lands in it —");
 {
-	const { emptyOpen, carriedAcross, emptyResting } = measured;
+	const { emptyOpen, carriedAcross, emptyResting, addedIntoRight } = measured;
 
 	check("the board draws at all", emptyOpen.drawn, true);
 	check("all three regions stand while the board is being laid out", emptyOpen.regions, ["left", "main", "right"]);
 	check("and each one names itself, so a carried tile can find it", emptyOpen.named, ["left", "main", "right"]);
 	check("the empty left is a zone with real room in it", emptyOpen.left?.height > 0 && emptyOpen.left?.width > 0, true);
-	check("and it says what it is for", emptyOpen.left?.text, "Drag a widget here");
+	check("and it says what pressing it does", emptyOpen.left?.text, "Add a widget");
+	check("it is a control, not a caption", emptyOpen.left?.tag, "button");
+	check("while the board is being laid out it is a solid ring, not a hint", [emptyOpen.left?.line, emptyOpen.left?.ring === "none"], ["none", false]);
 	check("the empty right is a zone too", emptyOpen.right?.height > 0 && emptyOpen.right?.width > 0, true);
 	check("a tile alone on a row fills it even while its share says half", emptyOpen.halfShare, 0);
-	check("a tree board offers the palette, or nothing could ever be added to it", emptyOpen.palette, 1);
+	check("every region ends in one, so a widget can be added where the eye is", emptyOpen.adds, ["left", "main", "right"]);
+	check("and in a region holding rows it is the last thing, not the first", emptyOpen.lastInRegion, "wg-tree-add");
+	check("the board no longer carries a press that names no region", emptyOpen.palette, 0);
 
 	check("aiming into the empty sidebar shows where the tile would land", carriedAcross.aimed, 1);
 	check("and a tile carrying no height of its own is stood in for at the height it had", carriedAcross.lie, { left: 0, top: 0, width: 0, height: 0 });
 	check("and releasing it puts the tile in that sidebar", carriedAcross.left, [["boards"]]);
 	check("the region it came from lets it go", carriedAcross.main, [["board"]]);
 
-	check("with nobody laying the board out the sidebar that stayed empty is gone", emptyResting.regions.includes("right"), false);
-	check("and the one that received the carried tile stands", emptyResting.regions, ["left", "main"]);
-	check("no zone is drawn to a reader", emptyResting.left, null);
-	check("nor a palette", emptyResting.palette, 0);
+	check("the sidebar that stayed empty still stands for a reader", emptyResting.regions, ["left", "main", "right"]);
+	check("no palette is drawn to a reader", emptyResting.palette, 0);
+	check("a region a reader finds empty says what it is waiting for", emptyResting.adds, emptyResting.bare);
+	check("and it is exactly the regions holding nothing", emptyResting.bare, ["main", "right"]);
+	check("a region holding rows offers a reader no press", emptyResting.left, null);
+	check("the reader's zone is a dashed hint, not the edit control's solid ring", [emptyResting.right?.line, emptyResting.right?.ring], ["dashed", "none"]);
+	check("and it is see-through, so it reads as room rather than as a tile", emptyResting.right?.fill, "rgba(0, 0, 0, 0)");
+	check("while the one offered to an editor keeps the fill the host paints on a button", emptyOpen.left?.fill, "rgb(227, 227, 227)");
+	check("a reader keeps the folds and the way into edit mode", emptyResting.toggles, ["left", "edit", "right"]);
+
+	check("the probe reached the catalogue", addedIntoRight.failed ?? null, null);
+	check("pressing a region's zone opens the catalogue", addedIntoRight.opened, 1);
+	check("and the pick adds one tile", addedIntoRight.born, 1);
+	check("on a row of its own in the region that was pressed", addedIntoRight.grew, 1);
+	check("the other two regions are left exactly as they were", addedIntoRight.untouched, ["left", "main"]);
+	check("and the catalogue closes behind the pick", addedIntoRight.dialogs, 0);
 }
 
 console.log("\n— a tile on a tree board carries the same two controls the grid tile has —");

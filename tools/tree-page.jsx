@@ -148,6 +148,8 @@ let sidesBoard = normalizeBoard({
 	layouts: {},
 });
 
+let sidesEditing = false;
+
 function sidesNode() {
 	return h(
 		"div",
@@ -156,14 +158,17 @@ function sidesNode() {
 			board: sidesBoard,
 			registry,
 			host,
-			editing: false,
+			editing: sidesEditing,
 			screen: true,
 			initialWidth: SIDES_WIDTH,
 			onChange: (next) => {
 				sidesBoard = next;
 				draw();
 			},
-			onToggleEditing: () => {},
+			onToggleEditing: () => {
+				sidesEditing = !sidesEditing;
+				draw();
+			},
 			onWidth: () => {},
 		}),
 	);
@@ -199,10 +204,19 @@ function readEmpty() {
 	const page = document.querySelector(".wg-empty-probe .wg-tree-page");
 	if (!page) return { drawn: false };
 	const zoneOf = (name) => {
-		const zone = document.querySelector(`.wg-empty-probe .wg-tree-region.is-${name} .wg-tree-empty`);
+		const zone = document.querySelector(`.wg-empty-probe .wg-tree-region.is-${name} .wg-tree-add`);
 		if (!zone) return null;
 		const at = zone.getBoundingClientRect();
-		return { width: Math.round(at.width), height: Math.round(at.height), text: zone.textContent };
+		const painted = getComputedStyle(zone);
+		return {
+			width: Math.round(at.width),
+			height: Math.round(at.height),
+			text: zone.textContent,
+			tag: zone.tagName.toLowerCase(),
+			line: painted.borderTopStyle,
+			fill: painted.backgroundColor,
+			ring: painted.boxShadow,
+		};
 	};
 	return {
 		drawn: true,
@@ -217,6 +231,41 @@ function readEmpty() {
 			return Math.round(cell.getBoundingClientRect().width - row.getBoundingClientRect().width);
 		})(),
 		palette: document.querySelectorAll(".wg-empty-probe .wg-palette-open").length,
+		adds: [...page.querySelectorAll(".wg-tree-region")].filter((node) => node.querySelector(".wg-tree-add")).map((node) => node.className.replace(/.*is-/, "")),
+		bare: [...page.querySelectorAll(".wg-tree-region")].filter((node) => node.querySelector(".wg-tree") && !node.querySelector(".wg-tree-band")).map((node) => node.className.replace(/.*is-/, "")),
+		lastInRegion: [...page.querySelectorAll(".wg-tree-region.is-main .wg-tree > *")].pop()?.className.split(" ")[0] ?? null,
+		toggles: [...(page.querySelector(":scope > .wg-region-bar")?.querySelectorAll(":scope > .wg-region-toggle") ?? [])].map((node) =>
+			node.className.replace(/.*wg-region-toggle is-/, "").split(" ")[0],
+		),
+	};
+}
+
+const rowsPerRegion = () => Object.fromEntries(["left", "main", "right"].map((name) => [name, emptyBoard.layout[name].rows.map((row) => row.map((cell) => cell.id))]));
+
+async function addIntoRegion(name) {
+	const zone = document.querySelector(`.wg-empty-probe .wg-tree-region.is-${name} .wg-tree-add`);
+	if (!zone) return { failed: `no add zone in ${name}` };
+	// TODO: drop the muting once a widget preview stops keying its rows by a path it has not got
+	const quiet = failures.length;
+	const before = rowsPerRegion();
+	const held = emptyBoard.tiles.length;
+	fireClick(zone);
+	await settled();
+	const opened = document.querySelectorAll(".wg-cat-dialog").length;
+	const card = document.querySelector(".wg-cat-dialog .wg-cat-tile");
+	if (!card) return { failed: "the catalogue never opened" };
+	fireClick(card);
+	await faded();
+	const after = rowsPerRegion();
+	failures.length = quiet;
+	return {
+		opened,
+		before,
+		after,
+		untouched: ["left", "main", "right"].filter((one) => one !== name && JSON.stringify(before[one]) === JSON.stringify(after[one])),
+		grew: after[name].length - before[name].length,
+		born: emptyBoard.tiles.length - held,
+		dialogs: document.querySelectorAll(".wg-cat-dialog").length,
 	};
 }
 
@@ -270,6 +319,7 @@ function readToggles() {
 	return {
 		drawn: true,
 		left: seen("left"),
+		edit: seen("edit"),
 		right: seen("right"),
 		barBottom: Math.round(bar.getBoundingClientRect().bottom),
 		firstRowTop: Math.round(firstRow ? firstRow.getBoundingClientRect().top : 0),
@@ -291,6 +341,31 @@ function pressToggle(name) {
 	if (!node) return { failed: `no ${name} toggle to press` };
 	fireClick(node);
 	return readSides();
+}
+
+function pressEdit() {
+	const at = () => document.querySelector(".wg-sides-probe .wg-region-bar > .wg-region-toggle.is-edit");
+	if (!at()) return { failed: "no edit toggle to press" };
+	const seen = () => ({
+		board: document.querySelector(".wg-sides-probe .wg-root").classList.contains("is-editing"),
+		pressed: at().getAttribute("aria-pressed"),
+		label: at().getAttribute("aria-label"),
+		face: getComputedStyle(at(), "::before").backgroundColor,
+	});
+	const resting = seen();
+	fireClick(at());
+	const on = seen();
+	fireClick(at());
+	return { resting, on, off: seen() };
+}
+
+function readSoloBar() {
+	const bar = document.querySelector(".wg-surface-probe .wg-tree-page > .wg-region-bar");
+	if (!bar) return { drawn: false };
+	return {
+		drawn: true,
+		toggles: [...bar.querySelectorAll(":scope > .wg-region-toggle")].map((node) => node.className.replace(/.*wg-region-toggle is-/, "").split(" ")[0]),
+	};
 }
 
 function readSides() {
@@ -595,6 +670,8 @@ async function report() {
 		const mountedFolded = readMounted();
 		const togglesFolded = readToggles();
 		const unfoldedLeft = pressToggle("left");
+		const pressedEdit = pressEdit();
+		const soloBar = readSoloBar();
 		const emptyOpen = readEmpty();
 		const carriedAcross = await carryIntoLeft();
 		const intoSlack = await carryIntoSlack();
@@ -612,7 +689,11 @@ async function report() {
 		draw();
 		await settled();
 		const emptyResting = readEmpty();
-		sink.textContent = JSON.stringify({ intoSlack, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, chromeEditing, chromeReading, configured, removal, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		emptyEditing = true;
+		draw();
+		await settled();
+		const addedIntoRight = await addIntoRegion("right");
+		sink.textContent = JSON.stringify({ intoSlack, addedIntoRight, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, pressedEdit, soloBar, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, chromeEditing, chromeReading, configured, removal, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

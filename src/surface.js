@@ -24,9 +24,11 @@ import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
 import { foldLabel } from "./fold-copy.js";
 import { Icon, IconButton } from "./kit.js";
-import { aimedAt, carriedInto, columnsOf, foldableIn, growsOf, isFolded, isUnder, toggledFold, GAP_PX, innerOf, layTree, REGIONS, REGION_GAP_PX, REGION_PAD_PX, resized, restacked, rowIndexesAfterLeaving, sameTarget, shownLayout, sidebarWidth, tallestOf, widenedRegion, widthsOf, withoutCell, MIN_HEIGHT_PX, MIN_SIDEBAR_PX } from "./tree.js";
+import { aimedAt, carriedInto, columnsOf, foldableIn, growsOf, isFolded, isUnder, toggledFold, GAP_PX, innerOf, layTree, REGIONS, REGION_GAP_PX, REGION_PAD_PX, resized, restacked, rowIndexesAfterLeaving, sameTarget, sidebarWidth, tallestOf, widenedRegion, widthsOf, withoutCell, MIN_HEIGHT_PX, MIN_SIDEBAR_PX } from "./tree.js";
 import { movesFrom, playMoves, positionsWithin } from "./flip.js";
 import { resist } from "./give.js";
+
+const EDIT_LABEL = { on: "Widgetarium: leave edit mode", off: "Widgetarium: enter edit mode" };
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -635,7 +637,7 @@ const Cell = memo(
 	(before, after) => CELL_SHAPE.every((key) => before.cell[key] === after.cell[key]) && CELL_PROPS.every((key) => before[key] === after[key]),
 );
 
-function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, patchTile, commitLayout, region, carry, onCarry, overlay }) {
+function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile, commitLayout, region, carry, onCarry, overlay }) {
 	const { registry } = shared;
 	const rootRef = useRef(null);
 	const dragRef = useRef(null);
@@ -758,19 +760,23 @@ function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsS
 			h("div", { className: "wg-tree-handle is-along", onPointerDown: grabHeight(row.from) }, h("i", { className: "wg-tree-grip" })),
 		);
 
-	const emptyRegion = () => {
-		if (asked.length > 0) return null;
-		if (editing) return h("div", { className: "wg-tree-empty", key: "empty" }, "Drag a widget here");
-		return h("div", { className: "wg-blank", key: "empty" }, [
-			h("b", { key: "title" }, "This board is empty"),
-			h("span", { key: "hint" }, "Turn on edit mode to add a widget."),
-		]);
-	};
+	const isEmpty = asked.length === 0;
+
+	const addZone = () =>
+		h(
+			"button",
+			{
+				className: `wg-tree-add${isEmpty ? " is-only" : ""}${editing ? "" : " is-quiet"}`,
+				key: "add",
+				type: "button",
+				onClick: () => onAdd(region),
+			},
+			[h(Icon, { key: "plus", name: "plus", size: 20 }), h("span", { key: "label" }, "Add a widget")],
+		);
 
 	return h(
 		"div",
 		{ className: "wg-tree", ref: rootRef, "data-region": region, style: { "--wg-tree-gap": `${GAP_PX}px` } },
-		emptyRegion(),
 		overlay.map((tile) =>
 			h(
 				"div",
@@ -781,6 +787,7 @@ function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsS
 		layTree(asked, width, GAP_PX)
 			.filter((row) => row.cells.length > 0)
 			.map(rowNode),
+		editing || isEmpty ? addZone() : null,
 	);
 }
 
@@ -889,8 +896,8 @@ function TreeSettings({ session, tile, canvasBox, shared, patchTile, frame }) {
 	return settingsWindow.dialog;
 }
 
-function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, patchTile }) {
-	const passed = { shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, patchTile };
+function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, editing, onToggleEditing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile }) {
+	const passed = { shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile };
 	const pageRef = useRef(null);
 	const regionsRef = useRef(new Map());
 	const carryRef = useRef(null);
@@ -898,8 +905,7 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, edit
 	const [carry, setCarry] = useState(null);
 	const carrying = carry?.isLanding ? null : carry;
 	const drawn = carrying ? carriedInto(board.layout, carrying) : board.layout;
-	const laid = shownLayout(drawn, editing);
-	const { beside, stacked } = columnsOf(laid, width, REGION_GAP_PX);
+	const { beside, stacked } = columnsOf(drawn, width, REGION_GAP_PX);
 	const placed = new Set(REGIONS.flatMap((name) => (board.layout?.[name]?.rows ?? []).flat().map((cell) => cell.id)));
 	const unplaced = board.tiles.filter((tile) => !placed.has(tile.id));
 
@@ -1102,7 +1108,24 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, edit
 			h(Icon, { name: `sidebar-${name}`, size: 20 }),
 		);
 
-	const foldable = foldableIn(laid);
+	const editToggle = () =>
+		h(
+			IconButton,
+			{
+				variant: editing ? "accent" : "raised",
+				size: "m",
+				className: "wg-region-toggle is-edit",
+				key: "toggle-editing",
+				label: editing ? EDIT_LABEL.on : EDIT_LABEL.off,
+				"aria-pressed": String(editing),
+				onPointerDown: (event) => event.stopPropagation(),
+				onClick: () => onToggleEditing?.(),
+			},
+			h(Icon, { name: "pencil", size: 20 }),
+		);
+
+	const foldable = foldableIn(drawn);
+
 
 	const foldedAway = foldable.filter((name) => isFolded(board.layout, name));
 
@@ -1115,15 +1138,14 @@ function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, edit
 	return h(
 		"div",
 		{ className: "wg-tree-page", ref: pageRef, style: { "--wg-tree-gap": `${GAP_PX}px` } },
-		foldable.length > 0
-			? h(
-					"div",
-					{ className: "wg-region-bar" },
-					foldable.includes("left") ? toggle("left") : null,
-					h("span", { className: "wg-region-bar-gap" }),
-					foldable.includes("right") ? toggle("right") : null,
-				)
-			: null,
+		h(
+			"div",
+			{ className: "wg-region-bar" },
+			foldable.includes("left") ? toggle("left") : null,
+			editToggle(),
+			h("span", { className: "wg-region-bar-gap" }),
+			foldable.includes("right") ? toggle("right") : null,
+		),
 		beside.length > 0 ? h("div", { className: "wg-tree-columns", style: { "--wg-tree-edge-gap": `${REGION_GAP_PX}px` } }, standing) : null,
 		stacked.map((name) => region(name, width)),
 		foldedAway.map((name) => h("div", { className: "wg-tree-fold", key: `folded-${name}`, "aria-hidden": "true" }, region(name, sidebarWidth(board.layout, name)))),
@@ -1210,7 +1232,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	const [settingsTile, setSettingsTile] = useState(null);
 	const [closingTile, setClosingTile] = useState(null);
 	const [removingId, setRemovingId] = useState(null);
-	const [isPicking, setPicking] = useState(false);
+	const [pickingInto, setPickingInto] = useState(null);
 	// CONTEXT: a new number every opening, so the window's own state is fresh without an effect
 	const sessionRef = useRef(0);
 	// The pointer's own geometry, in STATE rather than written onto the node. Written
@@ -1289,24 +1311,25 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		return { id, tiles: wiredTiles([...held, { id, widget: widgetId }], registry) };
 	};
 
+	const catalogue = (onPick) =>
+		h(CatalogueDialog, {
+			key: "catalogue",
+			registry,
+			host,
+			mode: "place",
+			onPick: (widgetId) => {
+				onPick(widgetId);
+				setPickingInto(null);
+			},
+			onClose: () => setPickingInto(null),
+		});
+
 	const palette = (onPick, chips = []) =>
 		editing
 			? h("div", { className: "wg-palette", key: "palette" }, [
-					h("button", { className: "wg-chip wg-palette-open", key: "add", onClick: () => setPicking(true) }, "Add widget"),
+					h("button", { className: "wg-chip wg-palette-open", key: "add", onClick: () => setPickingInto("grid") }, "Add widget"),
 					...chips,
-					isPicking
-						? h(CatalogueDialog, {
-								key: "catalogue",
-								registry,
-								host,
-								mode: "place",
-								onPick: (widgetId) => {
-									onPick(widgetId);
-									setPicking(false);
-								},
-								onClose: () => setPicking(false),
-						  })
-						: null,
+					pickingInto === "grid" ? catalogue(onPick) : null,
 			  ])
 			: null;
 
@@ -1386,14 +1409,14 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 		});
 
 	if (board.layout) {
-		const addTreeTile = (widgetId) => {
+		const addTreeTile = (widgetId, region) => {
 			const now = latestRef.current?.board ?? board;
 			const { id, tiles } = bornTile(now.tiles, widgetId);
 			onChange(
 				{
 					...now,
 					tiles,
-					layout: { ...now.layout, main: { ...now.layout.main, rows: [...now.layout.main.rows, [{ id, ratio: 1 }]] } },
+					layout: { ...now.layout, [region]: { ...now.layout[region], rows: [...now.layout[region].rows, [{ id, ratio: 1 }]] } },
 				},
 				true,
 			);
@@ -1410,10 +1433,12 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				width,
 				shared,
 				editing,
+				onToggleEditing,
 				settingsId: held?.id ?? null,
 				settingsStandInPx: held ? canvasBox.height : 0,
 				onOpenSettings: openSettings,
 				onRemove: setRemovingId,
+				onAdd: setPickingInto,
 				patchTile,
 				commitLayout,
 			}),
@@ -1440,7 +1465,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				  })
 				: null,
 			removalDialog(),
-			palette(addTreeTile),
+			REGIONS.includes(pickingInto) ? catalogue((widgetId) => addTreeTile(widgetId, pickingInto)) : null,
 		]);
 		return isPage ? h(Page, { onClose: () => toggleExpanded() }, drawn) : drawn;
 	}

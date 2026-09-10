@@ -16,8 +16,6 @@ import { createInstaller } from "./installer.js";
 import { openSubstitutions } from "./substitution-dialog.js";
 import { normalizeRules, activeRules, ruleBlock } from "./substitution.js";
 import { substituteIn } from "./inline-render.js";
-import { createViewChrome } from "./view-chrome.js";
-import { foldableIn, isFolded, occupiedLayout, toggledFold } from "./tree.js";
 import { blockRefusal } from "./version.js";
 import { createBoardNote, insertBoardAtCursor, isScreenNote } from "./board-note.js";
 import { TEMPLATES, missingWidgets, templateBoard } from "./templates.js";
@@ -131,15 +129,6 @@ export default class WidgetariumPlugin extends Plugin {
 			disk: diskDoor(),
 		});
 		if (await measure("onload · isAuthoringWidgetsHere", () => this.isAuthoringWidgetsHere())) await measure("onload · widgetSignature", () => this.watchWidgetFolder());
-
-		this.chrome = createViewChrome({
-			workspace: this.app.workspace,
-			regionsFor: (sourcePath) => this.foldableRegions(sourcePath),
-			onToggle: (sourcePath, name) => this.toggleRegion(sourcePath, name),
-		});
-		this.register(() => this.chrome.stop());
-		this.registerEvent(this.app.workspace.on("layout-change", () => this.chrome.sync()));
-		this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.chrome.sync()));
 
 		this.addRibbonIcon("layout-grid", "Widgetarium: edit mode", () => this.toggleEditing());
 		this.addRibbonIcon("replace", "Widgetarium: substitutions", () => this.showSubstitutions());
@@ -523,19 +512,6 @@ export default class WidgetariumPlugin extends Plugin {
 		return mine.sort((one, other) => (one.blockIndex ?? 0) - (other.blockIndex ?? 0))[0] ?? null;
 	}
 
-	foldableRegions(sourcePath) {
-		const layout = this.firstMountIn(sourcePath)?.state.board.layout;
-		return foldableIn(this.editing ? layout : occupiedLayout(layout)).map((name) => ({ name, folded: isFolded(layout, name) }));
-	}
-
-	// TODO: fold into the open draft instead of refusing, once the surface hands its writer out
-	toggleRegion(sourcePath, name) {
-		const mount = this.firstMountIn(sourcePath);
-		const board = mount?.state.board;
-		if (!board?.layout?.[name] || mount.drafting) return;
-		mount.commit({ ...board, layout: toggledFold(board.layout, name) });
-	}
-
 	// Keyed by BLOCK, never by element. Obsidian throws the element away and builds a new
 	// one after every write of ours, so a mount keyed by element was a brand-new mount each
 	// time: the surface remounted, its width and its drag state reset, and the board blinked
@@ -579,7 +555,6 @@ export default class WidgetariumPlugin extends Plugin {
 			existing.screen = screen;
 			existing.draw();
 			this.watch(existing, key, context);
-			this.chrome?.sync();
 			return existing;
 		}
 
@@ -619,13 +594,11 @@ export default class WidgetariumPlugin extends Plugin {
 			mount.state.board = next;
 			mount.draw();
 			mount.save(next);
-			this.chrome?.sync();
 		};
 
 		this.mounts.set(key, mount);
 		mount.draw();
 		this.watch(mount, key, context);
-		this.chrome?.sync();
 		return mount;
 	}
 
@@ -651,7 +624,6 @@ export default class WidgetariumPlugin extends Plugin {
 				if (!current || current.node.isConnected) return;
 				this.mounts.delete(key);
 				render(null, current.node);
-				this.chrome?.sync();
 			}, 0);
 		};
 		context.addChild(child);
