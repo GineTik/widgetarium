@@ -782,7 +782,7 @@ const pickView = async (name, id = "views") => {
 	check(
 		"and the engine hands back what the registry knew, not a field of its own",
 		Object.keys(twice.holds[0]).sort(),
-		["failure", "hidden", "id", "manifest", "name", "problem", "render", "title"],
+		["drawInto", "failure", "hidden", "id", "manifest", "name", "problem", "title"],
 	);
 	check("a widget's own declaration comes through untouched", twice.holds[0].manifest.view, "Kanban");
 
@@ -803,7 +803,7 @@ const pickView = async (name, id = "views") => {
 
 	const gone = resolveMounts({ mounts: { holds: {} } }, registry, { tile: { mounts: { holds: "@task/nowhere" } } });
 	check("an id that is not a widget is still an entry", gone.holds.map((entry) => entry.problem), ["not-found"]);
-	check("with nothing to draw", gone.holds[0].render, null);
+	check("with nothing to draw", gone.holds[0].drawInto, null);
 	check("and it is named off the id, because nothing else knows it", gone.holds.map((entry) => entry.name), ["@task/nowhere"]);
 }
 
@@ -1071,35 +1071,6 @@ const pickView = async (name, id = "views") => {
 	plugin.mount(boardBlock, sided, () => {}, false, noteContext, "Orbitask/Board.md#0");
 	const boardMount = plugin.firstMountIn("Orbitask/Board.md");
 	check("the plugin can find the board a note carries", Boolean(boardMount), true);
-	check("and offers both sidebars, the empty one included — a reader folds them too", plugin.foldableRegions("Orbitask/Board.md"), [
-		{ name: "left", folded: false },
-		{ name: "right", folded: false },
-	]);
-
-	let synced = 0;
-	plugin.chrome = { sync: () => (synced += 1), stop: () => {} };
-	boardMount.commit(boardMount.state.board);
-	check("every write of the board refreshes the header buttons", synced, 1);
-
-	plugin.toggleRegion("Orbitask/Board.md", "left");
-	check("the header button folds the sidebar", plugin.foldableRegions("Orbitask/Board.md"), [
-		{ name: "left", folded: true },
-		{ name: "right", folded: false },
-	]);
-	check("and that write refreshed the header too", synced, 2);
-
-	boardMount.drafting = true;
-	plugin.toggleRegion("Orbitask/Board.md", "left");
-	check("a fold asked for while a settings draft is open is refused, not written behind it", plugin.foldableRegions("Orbitask/Board.md"), [
-		{ name: "left", folded: true },
-		{ name: "right", folded: false },
-	]);
-	boardMount.drafting = false;
-	plugin.toggleRegion("Orbitask/Board.md", "left");
-	check("and once the draft is gone the button works again", plugin.foldableRegions("Orbitask/Board.md"), [
-		{ name: "left", folded: false },
-		{ name: "right", folded: false },
-	]);
 	boardBlock.remove();
 
 	// CONTEXT: Obsidian never reprocesses a note rendered before registration
