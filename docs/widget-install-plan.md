@@ -20,13 +20,13 @@ No behaviour change. Removes the two twins that every later stage would otherwis
 
 | File | Change |
 |---|---|
-| `src/engine/render.js` | `sessionAt(node)` returning `draw` / `release` over the existing `roots` WeakMap; the queued unmount checks the node was not claimed by a newer root; `renderLater` becomes module-private |
-| `src/portal.js` | `mountInto` calls `sessionAt` instead of holding its own pair |
+| `src/engine/render.js` | `leaseFor(node)` returning `draw` / `release` over the existing `roots` WeakMap; the release becomes a cancellable intent rather than a delete-now, unmount-later split; `drop` stays the one mutator that removes a root |
+| `src/portal.js` | `mountInto` calls `leaseFor` instead of holding its own pair |
 | `src/surface.js` | `isDrawable(definition)` used by both `mountEntry` and `resolveSlots` |
 
 **Checks**
 
-- `sessionAt` on the same node twice reuses one root — break by creating a root per call, the child's
+- `leaseFor` on the same node twice reuses one root — break by creating a root per call, the child's
   state resets.
 - `release()` then `draw()` on the same live element does not leave the node blank — break by
   removing the identity check in the queued unmount.

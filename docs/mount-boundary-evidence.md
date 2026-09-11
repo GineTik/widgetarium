@@ -15,8 +15,8 @@ Pinned to `feat/device-layouts`, lines read 2026-09-11. Line numbers rot — re-
 | `Boundary` that swallows a child crash today | `src/surface.js:65-82` |
 | Roots are keyed by node — what makes a redraw idempotent | `src/engine/render.js:4-10` |
 | `drop` deletes synchronously, unmounts in a microtask | `src/engine/render.js:12-17`, `:33` |
-| `renderLater` — its only importer today | `src/portal.js:1` |
-| The draw/dispose pair `sessionAt` absorbs | `src/portal.js:19-24` |
+| `leaseFor` — the one owner of a node's root, and `src/portal.js:1` its first consumer | `src/engine/render.js:44` |
+| The draw/dispose pair `leaseFor` absorbed | `src/portal.js:16-24` |
 | `refs.put` during render, `refs.drop` in cleanup | `src/surface.js:290`, `:304-309` |
 | `drop` guarded by identity | `src/gateway/refs.ts:72-79` |
 | The only read-decide-write over a gateway list | `src/gateway/refs.ts:352-364` — `pickedWrites` gates on `list().total > 0` |
