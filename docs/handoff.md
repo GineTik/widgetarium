@@ -86,7 +86,9 @@ Proof: `npm run test:strip`, **31 checks**, falsified by 22 mutations.
 
 - renaming a tab renames the view, and the view's own settings move with it
 - adding a tab makes an **empty** view; its placeholder press opens the catalogue through
-  `pickWidget` (`src/catalogue-dialog.js`) and the chosen widget fills the tab, keeping the name
+  `catalogue.open()` (`src/catalogue-dialog.js`) and the chosen widget fills the tab, keeping the
+  name. A host that answers `can.catalogue: false` hands down a catalogue whose `canOpen` is false,
+  and the placeholder says so instead of offering a press it cannot honour
 - archiving hides the tab; the row, the widget and its settings stay in the note, and Restore brings
   them back untouched
 - the group's **Design** tab carries `Show the tab row` — a manifest setting flagged `design: true`,

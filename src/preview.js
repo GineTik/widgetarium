@@ -3,6 +3,7 @@ import { viewHost } from "./engine/view-host.js";
 import { spanToPixels } from "./layout.js";
 import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
+import { NO_CATALOGUE } from "./engine/catalogue-none.js";
 import { refusedRead } from "./engine/read-file.js";
 import { collectionGateway, soloGateway } from "./gateway/create";
 import { mappedCollection } from "./gateway/mapped";
@@ -129,6 +130,7 @@ export function previewProps(definition, options) {
 		size: { w: manifest.preview?.size?.w ?? 4, h: manifest.preview?.size?.h ?? 3, scale: 1, isCollapsed: false, collapse() {}, expand() {} },
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		host: previewHost(options?.host),
+		catalogue: NO_CATALOGUE,
 		foldIntoGroup: () => false,
 		slots,
 		mounts: {},

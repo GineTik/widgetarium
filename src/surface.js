@@ -6,7 +6,7 @@ import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
 import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, propConfig, rekeyed, uniqueName } from "./model.js";
-import { pickWidget } from "./catalogue-dialog.js";
+import { widgetCatalogue } from "./catalogue-dialog.js";
 import { mountInto } from "./portal.js";
 import { viewHost } from "./engine/view-host.js";
 import { NOWHERE } from "./engine/navigator-none.js";
@@ -33,7 +33,7 @@ const EDIT_LABEL = { on: "Widgetarium: leave edit mode", off: "Widgetarium: ente
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
 	"configureMounts",
-	"pickWidget",
+	"catalogue",
 	"foldIntoGroup",
 	"size",
 	"fullscreen",
@@ -320,7 +320,7 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 		// CONTEXT: the list a mount holds and the records it keys are one write
 		configureMounts: (name, rows) => onPatch(mountPatch(tile, name, rows)),
 		// CONTEXT: the board's registry, never the widget's — an id comes back
-		pickWidget: (options) => pickWidget(registry, host, options),
+		catalogue: widgetCatalogue(registry, host),
 		foldIntoGroup: foldOrRefuse,
 		// A widget may ask to be narrower; it may not resize itself. The board owns places, so
 		// it is the board that writes the width and the board that remembers the one it came

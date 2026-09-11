@@ -1,7 +1,10 @@
 import { applyTabStep, archivedOf, createWidget, EditableTabs, movesRows, movesSelection, tabsOf, useData, WidgetRoot } from "widgetarium";
+import type { ConfigureMounts, MountEntry, ValueGateway, WidgetCatalogue } from "widgetarium";
 import { Button } from "widgetarium/kit";
 
 const GONE_FOR_GOOD = "The view goes for good, with the widget in it and everything it was set to. This cannot be undone.";
+const PICK_ONE = "Pick one and it fills this tab. The name stays yours.";
+const CATALOGUE_CLOSED = "The widget catalogue is switched off here, so this tab cannot be filled.";
 
 const STYLE = `
 .orbi-view-group {
@@ -46,7 +49,7 @@ const STYLE = `
 .ovg-fill { margin-top: var(--size-4-1, 4px); }
 `;
 
-function Missing({ entry }) {
+function Missing({ entry }: { entry: MountEntry }) {
 	return (
 		<div className="ovg-empty">
 			<b>{entry.problem === "failed" ? "This view failed to load" : "This view is not a widget"}</b>
@@ -58,22 +61,31 @@ function Missing({ entry }) {
 	);
 }
 
-function Unfilled({ onFill }) {
+function Unfilled({ catalogue, onFill }: { catalogue: WidgetCatalogue; onFill: () => void }) {
 	return (
 		<div className="ovg-empty">
 			<b>This view holds no widget yet</b>
-			<p className="ovg-empty-note">Pick one and it fills this tab. The name stays yours.</p>
-			<Button className="ovg-fill" size="s" variant="accent" onClick={onFill}>
-				Add widget
-			</Button>
+			<p className="ovg-empty-note">{catalogue.canOpen ? PICK_ONE : CATALOGUE_CLOSED}</p>
+			{catalogue.canOpen ? (
+				<Button className="ovg-fill" size="s" variant="accent" onClick={onFill}>
+					Add widget
+				</Button>
+			) : null}
 		</div>
 	);
 }
 
-// CONTEXT: the tile renders one view at a time and sizes nothing — the child gets the whole area
-type MountEntry = { name: string; id: string; hidden: boolean; problem: string | null; failure: string | null; render: (() => unknown) | null };
+type Step = { verb: string; name?: string; was?: string; selected?: string };
 
-export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection, mounts, configureMounts, pickWidget }: any) {
+type ViewGroupProps = {
+	isTabsShown: ValueGateway<boolean>;
+	selection: ValueGateway<unknown>;
+	mounts?: { holds?: MountEntry[] };
+	configureMounts?: ConfigureMounts;
+	catalogue: WidgetCatalogue;
+};
+
+export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection, mounts, configureMounts, catalogue }: ViewGroupProps) {
 	const held: MountEntry[] = mounts?.holds ?? [];
 	// CONTEXT: the strip does not own the list — the holds rows are its storage
 	const rows = held.map((entry) => ({ name: entry.name, widget: entry.id, hidden: entry.hidden }));
@@ -86,13 +98,13 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 	const asked = shown.find((entry) => entry.name === wanted);
 	const active = asked ?? shown[0];
 
-	const apply = (step) => {
-		if (movesSelection(step)) selection.update(step.selected);
+	const apply = (step: Step) => {
+		if (movesSelection(step)) selection.update(step.selected ?? "");
 		if (movesRows(step)) configureMounts?.("holds", applyTabStep(rows, step));
 	};
 
 	const fill = async () => {
-		const id = await pickWidget?.({ mode: "mount" });
+		const id = await catalogue.open({ mode: "mount" });
 		if (!id) return;
 		configureMounts?.("holds", rows.map((row) => (row.name === active.name ? { ...row, widget: id } : row)));
 	};
@@ -127,7 +139,7 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 		);
 	}
 
-	const body = active.problem === "empty" ? <Unfilled onFill={fill} /> : active.render ? active.render() : <Missing entry={active} />;
+	const body = active.problem === "empty" ? <Unfilled catalogue={catalogue} onFill={fill} /> : active.render ? active.render() : <Missing entry={active} />;
 	if (!isStriped && active.render) return body;
 
 	return (

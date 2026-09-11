@@ -2,6 +2,7 @@ import { createElement as h } from "react";
 import { render } from "./engine/render.js";
 import { Catalogue } from "./catalogue.js";
 import { DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogTitle } from "./dialog.js";
+import { NO_CATALOGUE } from "./engine/catalogue-none.js";
 
 // CONTEXT: one surface, three entry points — the mode is what the press means, and the words above
 // the grid are the only other thing that changes with it
@@ -32,7 +33,15 @@ export function CatalogueDialog({ registry, host, mode = "browse", kind = "board
 }
 
 // CONTEXT: a widget may ask for a widget, and only the board holds the registry to ask with
-export function pickWidget(registry, host, options = {}) {
+export function widgetCatalogue(registry, host) {
+	if (host?.can?.catalogue === false) return NO_CATALOGUE;
+	return {
+		canOpen: true,
+		open: (options) => pickWidget(registry, host, options),
+	};
+}
+
+function pickWidget(registry, host, options = {}) {
 	return new Promise((resolve) => {
 		// CONTEXT: closing is what settles it — a pick closes, and closing unpicked answers null
 		let picked = null;

@@ -352,6 +352,7 @@ export function createHost(app, plugin, notePath = "") {
 		type: hostTypeOf(Platform),
 
 		can: {
+			catalogue: true,
 			fullscreen: true,
 			subscribe: true,
 			network: true,

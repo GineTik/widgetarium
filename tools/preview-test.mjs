@@ -67,6 +67,8 @@ console.log("\n— the sample world is local to the preview —");
 const boardProps = previewProps({ manifest: kanban }, {});
 check("a preview reaches no shared box", boardProps.context, undefined);
 check("and it may not fold the board's views into a group", boardProps.foldIntoGroup(), false);
+check("nor open the catalogue it is being drawn inside", boardProps.catalogue.canOpen, false);
+check("and pressing that closed catalogue answers nothing", await boardProps.catalogue.open(), null);
 check("the board it reads is the sample's", (await boardProps.board.get()).properties, ["Status", "Priority", "Assignees"]);
 
 console.log("\n— the size is declared, so a tile knows what it is drawing —");
@@ -104,6 +106,13 @@ const Leaf = () => h("div", { className: "leaf" }, `${drawnRows} rows`);
 const mount = dom.window.document.getElementById("host");
 render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);
 check("the widget is handed the sample rows", mount.textContent.includes("4 rows"), true);
+
+console.log("\n— the catalogue is a switch, not a fact about the build —");
+const { widgetCatalogue } = await import("./.mjs-cache/catalogue-dialog.mjs");
+check("a host that says nothing about the catalogue keeps it open", widgetCatalogue({}, { can: {} }).canOpen, true);
+check("a host that allows it opens it", widgetCatalogue({}, { can: { catalogue: true } }).canOpen, true);
+check("a host that switches it off closes it", widgetCatalogue({}, { can: { catalogue: false } }).canOpen, false);
+check("and the closed one picks nothing rather than raising a dialog", await widgetCatalogue({}, { can: { catalogue: false } }).open(), null);
 
 console.log(failed ? `\n${failed} of ${checks.length} failed` : `\n${checks.length} checks: a preview reads its manifest and writes nothing`);
 process.exit(failed ? 1 : 0);
