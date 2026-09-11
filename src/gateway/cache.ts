@@ -40,10 +40,12 @@ interface Tracked {
 	ticket: number;
 }
 
+type Subscriber = ActionMeta["subscribe"];
+
 interface CacheState {
 	entries: Map<string, CacheEntry>;
 	tracked: Map<string, Tracked>;
-	attached: Map<string, { count: number; stop: Unsubscribe }>;
+	attached: Map<string, Map<Subscriber, { count: number; stop: Unsubscribe }>>;
 	awaitingRefetch: Set<string>;
 }
 
@@ -92,28 +94,33 @@ function invalidate(state: CacheState, gatewayId: string) {
 	}
 }
 
+// TRADE-OFF: keyed on the subscribe function too, not only gatewayId — two live gateways can share an id for a beat when one tile's board remounts before the outdoing one detaches
 function attach(state: CacheState, meta: ActionMeta) {
-	const held = state.attached.get(meta.gatewayId);
+	const bySubscriber = state.attached.get(meta.gatewayId) ?? new Map<Subscriber, { count: number; stop: Unsubscribe }>();
+	state.attached.set(meta.gatewayId, bySubscriber);
+	const held = bySubscriber.get(meta.subscribe);
 	if (held) {
 		held.count += 1;
 		return;
 	}
 	const stop = meta.subscribe(() => invalidate(state, meta.gatewayId));
-	state.attached.set(meta.gatewayId, { count: 1, stop });
+	bySubscriber.set(meta.subscribe, { count: 1, stop });
 }
 
-function detach(state: CacheState, gatewayId: string) {
-	const held = state.attached.get(gatewayId);
-	if (!held) return;
+function detach(state: CacheState, meta: ActionMeta) {
+	const bySubscriber = state.attached.get(meta.gatewayId);
+	const held = bySubscriber?.get(meta.subscribe);
+	if (!bySubscriber || !held) return;
 	held.count -= 1;
 	if (held.count > 0) return;
 	held.stop();
-	state.attached.delete(gatewayId);
+	bySubscriber.delete(meta.subscribe);
+	if (bySubscriber.size === 0) state.attached.delete(meta.gatewayId);
 }
 
-function untrack(state: CacheState, key: string, held: Tracked, listener: () => void) {
+function untrack(state: CacheState, key: string, held: Tracked, listener: () => void, meta: ActionMeta) {
 	held.listeners.delete(listener);
-	detach(state, held.meta.gatewayId);
+	detach(state, meta);
 	if (held.listeners.size > 0) return;
 	held.ticket += 1;
 	state.tracked.delete(key);
@@ -137,7 +144,7 @@ function track(state: CacheState, { meta, input, run, listener }: TrackRequest):
 	held.listeners.add(listener);
 	attach(state, meta);
 	if (nothingWasSubscribed || !state.entries.has(key)) fetchNow(state, key);
-	return () => untrack(state, key, held, listener);
+	return () => untrack(state, key, held, listener, meta);
 }
 
 const isThenable = (held: unknown): boolean => typeof (held as { then?: unknown } | null)?.then === "function";
