@@ -470,7 +470,14 @@ const OVERLAY_ASK = `(async () => {
 	const overlay = document.querySelector("[data-wg-overlay]");
 	const roots = [...document.querySelectorAll(".wg-widget-root")];
 	const overflowOf = (node) => getComputedStyle(node).overflowY;
+	const body = document.querySelector(".wg-tree-cell > .wg-tile-body");
+	const seamed = body?.querySelector(":scope > .wg-drawn > .wg-drawn > .wg-widget-root");
+	const boxOf = (node) => (node ? [Math.round(node.getBoundingClientRect().width), Math.round(node.getBoundingClientRect().height)] : null);
 	return {
+		seamDisplay: [...new Set([...document.querySelectorAll(".wg-drawn")].map((node) => getComputedStyle(node).display))],
+		tallEnoughToJudge: (boxOf(body)?.[1] ?? 0) > 100,
+		tileBox: boxOf(body),
+		widgetBox: boxOf(seamed),
 		opened: Boolean(overlay),
 		insideAMountedChild: Boolean(document.querySelector(".wg-mounted [data-wg-overlay]")),
 		holding: [...new Set(roots.filter((root) => overlay && root.contains(overlay)).map(overflowOf))],
@@ -616,6 +623,8 @@ for (const theme of ["light", "dark"]) {
 	check("a pick lands under its declared name, disambiguated", mount.names, ["Kanban", "Archived columns", "Archived columns 2", "Add a view"]);
 
 	const overlay = await ask(pageFor(theme, overlayScript, "overlay"), OVERLAY_ASK, 3000);
+	check("the element a tile is drawn into takes no box of its own", overlay.seamDisplay, ["contents"]);
+	check("so the widget still fills the tile it stands in", [overlay.widgetBox, overlay.tallEnoughToJudge], [overlay.tileBox, true]);
 	check("a panel opened inside a mounted child is an overlay the board can see", [overlay.opened, overlay.insideAMountedChild], [true, true]);
 	check("every widget root that holds it stops clipping", [overlay.holding, overlay.holdingCount > 1], [["visible"], true]);
 	check("while every root beside it keeps the clip the grid depends on", [overlay.beside, overlay.besideCount > 0], [["hidden"], true]);

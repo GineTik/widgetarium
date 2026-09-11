@@ -337,7 +337,7 @@ check("the widget itself is not drawn", all(".wg-tile-chip .wg-widget-root").len
 check("every tile is still on the board", all("[data-tile]").length, board.tiles.length);
 
 await click(chips[0].querySelector(".wg-narrow"));
-check("opening it draws the widget", all(".wg-tile-chip.is-open .wg-tile-body > .wg-widget-root").length, 1);
+check("opening it draws the widget", all(".wg-tile-chip.is-open .wg-tile-body .wg-drawn > .wg-widget-root").length, 1);
 check("and the board steps back behind a scrim", all(".wg-scrim").length, 1);
 
 // the opened panel is wider than the tile it grew from — otherwise opening changed nothing
@@ -767,7 +767,6 @@ const pickView = async (name, id = "views") => {
 	draw();
 	await settle();
 	// CONTEXT: the other titles are statuses the tasks carry, which the kanban draws as columns
-	console.log("PROBE", all(".orbi-kanban .ok-list-title").map((node) => node.textContent.trim()).join("|"), all(".orbi-archived-columns").length, all("[data-tile]").map((node) => node.getAttribute("data-tile")).join("|"));
 	check(
 		"a list on the tile still answers where no board has claimed one",
 		all('[data-tile="fallback"] .ok-list-title').map((node) => node.textContent.trim()).includes("Blocked"),
