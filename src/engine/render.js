@@ -2,8 +2,10 @@ import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 
 const roots = new WeakMap();
+const awaitingRelease = new WeakSet();
 
 function rootFor(node) {
+	awaitingRelease.delete(node);
 	const root = roots.get(node) ?? createRoot(node);
 	roots.set(node, root);
 	return root;
@@ -28,10 +30,29 @@ export function render(tree, node) {
 	flushSync(() => root.render(tree));
 }
 
-export function renderLater(tree, node) {
+function releaseLater(node) {
+	const root = roots.get(node);
+	if (!root) return;
+	awaitingRelease.add(node);
+	queueMicrotask(() => {
+		if (!awaitingRelease.delete(node)) return;
+		if (roots.get(node) !== root) return;
+		roots.delete(node);
+		root.unmount();
+	});
+}
+
+function renderLater(tree, node) {
 	if (tree === null || tree === undefined) {
-		drop(node, (root) => queueMicrotask(() => root.unmount()));
+		releaseLater(node);
 		return;
 	}
 	rootFor(node).render(tree);
+}
+
+export function sessionAt(node) {
+	return {
+		draw: (tree) => renderLater(tree, node),
+		release: () => releaseLater(node),
+	};
 }

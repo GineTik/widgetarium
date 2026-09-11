@@ -86,6 +86,10 @@ function refuseFold() {
 	return false;
 }
 
+function isDrawable(definition) {
+	return Boolean(definition?.component) && !definition.error;
+}
+
 // A slot is where the board says WHICH widget draws part of another one. The parent feeds
 // it — a card gets its row from the board — so a slotted widget has no source of its own; it
 // is a view handed data. That is what makes "replace this card" a setting, not a fork.
@@ -93,7 +97,7 @@ export function resolveSlots(manifest, tile, registry, host, foldIntoGroup) {
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = registry.get(tile.slots?.[name]?.widget ?? spec.default);
-		if (!child?.component || child.error) {
+		if (!isDrawable(child)) {
 			slots[name] = null;
 			continue;
 		}
@@ -133,7 +137,7 @@ function resolvePatch(current, patch) {
 // CONTEXT: an id the registry could not resolve is still an entry — dropping it hid the gap
 function mountEntry(row, registry, mount) {
 	const held = row.widget ? registry.get(row.widget) : null;
-	const drawable = Boolean(held?.component) && !held.error;
+	const drawable = isDrawable(held);
 	return {
 		name: row.name,
 		id: row.widget,
