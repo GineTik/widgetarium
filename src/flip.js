@@ -27,6 +27,7 @@ export function positionsWithin(root, selector, keyOf) {
 	const places = {};
 	for (const node of root.querySelectorAll(selector)) {
 		const at = node.getBoundingClientRect();
+		if (at.height === 0) continue;
 		places[keyOf(node)] = { left: at.left - origin.left, top: at.top - origin.top };
 	}
 	return places;
