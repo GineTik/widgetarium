@@ -718,7 +718,8 @@ pre:has(> .block-language-widgetarium),
 	overflow: hidden;
 }
 
-.wg-mounted {
+.wg-mounted,
+.wg-drawn {
 	display: contents;
 }
 

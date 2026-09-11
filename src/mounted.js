@@ -1,4 +1,16 @@
-import { createElement as h, useEffect, useRef } from "react";
+import { createElement as h, useEffect, useLayoutEffect, useRef } from "react";
+import { leaseFor } from "./engine/render.js";
+
+export function Drawn({ element, tree }) {
+	const node = useRef(null);
+
+	useLayoutEffect(() => {
+		if (element.parentElement !== node.current) node.current.appendChild(element);
+		leaseFor(element).draw(tree);
+	});
+
+	return h("div", { className: "wg-drawn", ref: node });
+}
 
 export function Mounted({ entry }) {
 	const node = useRef(null);

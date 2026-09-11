@@ -8,7 +8,9 @@ import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellS
 import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, propConfig, rekeyed, uniqueName } from "./model.js";
 import { widgetCatalogue } from "./catalogue-dialog.js";
 import { mountInto } from "./portal.js";
+import { Drawn } from "./mounted.js";
 import { leaseFor } from "./engine/render.js";
+import { createTileShells } from "./engine/tile-shells.js";
 import { viewHost } from "./engine/view-host.js";
 import { NOWHERE } from "./engine/navigator-none.js";
 import { trace } from "./trace.js";
@@ -157,6 +159,10 @@ function drawMounted(element, widget, child) {
 	const { draw, release } = leaseFor(element);
 	draw(h(Boundary, { key: widget }, child));
 	return release;
+}
+
+function drawnTile(shells, tile, child) {
+	return h(Drawn, { element: shells.shellFor(tile.id), tree: h(Boundary, { key: tile.widget }, child) });
 }
 
 export function resolveMounts(manifest, registry, mount) {
@@ -431,16 +437,16 @@ function widgetPatchers(tile, onPatch) {
 }
 
 function TileView(props) {
-	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, refs, cellFor, registry, foldIntoGroup } = props;
+	const { definition, tile, place, pixels, live, cell, gap, scale, host, editing, isDragging, onDragStart, onRemove, onPatch, onCollapse, onExpand, onOpen, opened, settings, onOpenSettings, onCloseSettings, onResize, columns, phone, countReaders, board, refs, cellFor, registry, shells, foldIntoGroup } = props;
 	const settingsShown = typeof settings === "string";
 
 	// built BEFORE the window that may hold it: the window is a hook and must run on every
 	// render, and it cannot be handed a widget declared further down the function
 	const { patchProp, patchMounted } = widgetPatchers(tile, onPatch);
 
-	const widget = h(
-		Boundary,
-		{ key: tile.widget },
+	const widget = drawnTile(
+		shells,
+		tile,
 		h(WidgetHost, { definition, tile, place, host, scale, patchProp, patchMounted, refs, cellFor, registry, onCollapse, onExpand, onPatch, foldIntoGroup }),
 	);
 
@@ -624,24 +630,28 @@ function sizeOfCell(node) {
 	return at ? { width: Math.round(at.width), height: Math.round(at.height) } : null;
 }
 
-function treeCellBody({ tile, definition, shared, cell, patchTile }) {
+function treeCellBody({ tile, definition, shared, shells, cell, patchTile }) {
 	if (!definition) return h("div", { className: "wg-missing" }, h("b", null, "This widget is not installed"));
 	const onPatch = (patch) => patchTile(tile.id, patch);
-	return h(WidgetHost, {
-		...shared,
-		...widgetPatchers(tile, onPatch),
-		definition,
+	return drawnTile(
+		shells,
 		tile,
-		place: { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 },
-		onPatch,
-	});
+		h(WidgetHost, {
+			...shared,
+			...widgetPatchers(tile, onPatch),
+			definition,
+			tile,
+			place: { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 },
+			onPatch,
+		}),
+	);
 }
 
 function TreeCell(props) {
-	const { cell, tile, definition, shared, patchTile, standInPx, editing, settingsStandInPx, onOpenSettings, onRemove } = props;
+	const { cell, tile, definition, shared, shells, patchTile, standInPx, editing, settingsStandInPx, onOpenSettings, onRemove } = props;
 	const style = { flexGrow: cell.grow ?? 1, flexShrink: 1, flexBasis: 0, minWidth: 0, ...(cell.cap ? { maxHeight: `${cell.cap}px` } : {}) };
 	if (standInPx) return h("div", { className: "wg-tree-cell is-stand-in", style: { ...style, minHeight: `${standInPx}px` }, "data-cell": cell.id });
-	const shownInCell = settingsStandInPx ? h("div", { style: { minHeight: `${settingsStandInPx}px` } }) : treeCellBody({ tile, definition, shared, cell, patchTile });
+	const shownInCell = settingsStandInPx ? h("div", { style: { minHeight: `${settingsStandInPx}px` } }) : treeCellBody({ tile, definition, shared, shells, cell, patchTile });
 	return h("div", { className: "wg-tile wg-tree-cell", style, "data-cell": cell.id }, [
 		h("div", { className: "wg-tile-body", key: "body" }, shownInCell),
 		editing && !settingsStandInPx ? tileActions(tile.id, onOpenSettings, onRemove) : null,
@@ -649,14 +659,14 @@ function TreeCell(props) {
 }
 
 const CELL_SHAPE = ["grow", "width", "cap", "id"];
-const CELL_PROPS = ["standInPx", "editing", "settingsStandInPx", "tile", "definition", "shared"];
+const CELL_PROPS = ["standInPx", "editing", "settingsStandInPx", "tile", "definition", "shared", "shells"];
 
 const Cell = memo(
 	TreeCell,
 	(before, after) => CELL_SHAPE.every((key) => before.cell[key] === after.cell[key]) && CELL_PROPS.every((key) => before[key] === after[key]),
 );
 
-function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile, commitLayout, region, carry, onCarry, overlay }) {
+function TreeRegion({ board, rows, width, shared, shells, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile, commitLayout, region, carry, onCarry, overlay }) {
 	const { registry } = shared;
 	const rootRef = useRef(null);
 	const dragRef = useRef(null);
@@ -767,6 +777,7 @@ function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsS
 						tile: tileOf(cell.id),
 						definition: registry.get(tileOf(cell.id).widget),
 						shared,
+						shells,
 						patchTile,
 						standInPx: standInPx(cell.id),
 						editing,
@@ -800,7 +811,7 @@ function TreeRegion({ board, rows, width, shared, editing, settingsId, settingsS
 			h(
 				"div",
 				{ className: "wg-tree-overlay", key: tile.id },
-				h(TreeCell, { cell: { id: tile.id, width: 0, height: null }, tile, definition: registry.get(tile.widget), shared, patchTile }),
+				h(TreeCell, { cell: { id: tile.id, width: 0, height: null }, tile, definition: registry.get(tile.widget), shared, shells, patchTile }),
 			),
 		),
 		layTree(asked, width, GAP_PX)
@@ -899,9 +910,8 @@ function ghostFor(box, grabbed) {
 const TREE_PLACE = { x: 0, y: 0, w: 1, h: 1 };
 const UNMEASURED_CELL = { width: MIN_SIDEBAR_PX, height: MIN_HEIGHT_PX };
 
-function TreeSettings({ session, tile, canvasBox, shared, patchTile, frame }) {
+function TreeSettings({ session, tile, canvasBox, shared, shells, patchTile, frame }) {
 	const definition = shared.registry.get(tile.widget);
-	const drawn = treeCellBody({ tile, definition, shared, cell: { width: canvasBox.width }, patchTile });
 	const settingsWindow = useSettingsWindow({
 		...frame,
 		session,
@@ -910,13 +920,13 @@ function TreeSettings({ session, tile, canvasBox, shared, patchTile, frame }) {
 		canvasBox,
 		onPatch: (patch) => patchTile(tile.id, patch),
 		place: { ...TREE_PLACE, id: tile.id },
-		widget: h(Boundary, { key: tile.widget }, drawn),
+		widget: treeCellBody({ tile, definition, shared, shells, cell: { width: canvasBox.width }, patchTile }),
 	});
 	return settingsWindow.dialog;
 }
 
-function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, editing, onToggleEditing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile }) {
-	const passed = { shared, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile };
+function TreeBoard({ board, width, commitLayout: commitBoardLayout, shared, shells, editing, onToggleEditing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile }) {
+	const passed = { shared, shells, editing, settingsId, settingsStandInPx, onOpenSettings, onRemove, onAdd, patchTile };
 	const pageRef = useRef(null);
 	const regionsRef = useRef(new Map());
 	const carryRef = useRef(null);
@@ -1278,6 +1288,11 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 	// CONTEXT: local to this viewer — two people on one board must filter without moving each other
 	const refs = useMemo(() => createGatewayRefs(), []);
 	const cellFor = useMemo(() => createViewCells(), []);
+	const shells = useMemo(() => createTileShells(), []);
+	useEffect(() => {
+		shells.keepOnly(board.tiles.map((tile) => tile.id));
+	});
+	useEffect(() => () => shells.keepOnly([]), [shells]);
 	const treeScale = scaleOf(classOf(Math.max(width, MIN_BOARD_WIDTH_PX)));
 	const shared = useMemo(
 		() => ({
@@ -1448,6 +1463,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 				board,
 				width,
 				shared,
+				shells,
 				editing,
 				onToggleEditing,
 				settingsId: held?.id ?? null,
@@ -1465,6 +1481,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						tile: configured,
 						canvasBox,
 						shared,
+						shells,
 						patchTile,
 						frame: {
 							host,
@@ -1889,6 +1906,7 @@ export function WidgetSurface({ board: saved, registry, host, editing, onChange:
 						onResize: (patch) => resizeTile(place.id, patch),
 						refs,
 						cellFor,
+						shells,
 						live: live?.id === place.id ? live : null,
 						scale: scaleOf(active),
 						definition: registry.get(tile.widget),
