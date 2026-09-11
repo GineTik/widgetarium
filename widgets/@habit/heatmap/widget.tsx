@@ -1,5 +1,7 @@
 import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
+import type { Aka, CollectionGateway, Day, ListAction, Navigation, ValueGateway, VaultRecord } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
+import type { LogEntry } from "@habit/lib";
 
 const STYLE = `
 .habit-heatmap {
@@ -98,14 +100,30 @@ const STYLE = `
 }
 `;
 
+type DayNote = VaultRecord & {
+	days?: (Day[] & Aka<"entries" | "dates" | "log" | "checkins">) | null;
+	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
+};
+
+type MonthSpan = { month: number; weeks: number };
+
+type HeatmapProps = {
+	log: CollectionGateway<DayNote, { list: ListAction }>;
+	pick: ValueGateway<unknown>;
+	year: ValueGateway<number>;
+	isRound: ValueGateway<boolean>;
+	isWeekStartingMonday: ValueGateway<boolean>;
+	navigator: Navigation;
+};
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const WEEK = 7;
 
 // CONTEXT: the grid is columns of weeks, so it must start on the weekday the year's first day fell
-function weeksOf(year, isWeekStartingMonday) {
+function weeksOf(year: number, isWeekStartingMonday: boolean): (string | null)[] {
 	const first = new Date(year, 0, 1);
 	const lead = isWeekStartingMonday ? (first.getDay() + 6) % 7 : first.getDay();
-	const days = [];
+	const days: (string | null)[] = [];
 	for (let at = 0; at < lead; at += 1) days.push(null);
 	for (const day = new Date(year, 0, 1); day.getFullYear() === year; day.setDate(day.getDate() + 1)) {
 		days.push(isoOf(day));
@@ -115,13 +133,13 @@ function weeksOf(year, isWeekStartingMonday) {
 }
 
 // CONTEXT: four steps is what GitHub reads as a scale — more shades stop being distinguishable
-function stepOf(value, top) {
+function stepOf(value: number, top: number): number {
 	if (value <= 0) return 0;
 	return Math.min(4, Math.ceil((value / Math.max(top, 1)) * 4));
 }
 
-function monthSpans(days) {
-	const spans = [];
+function monthSpans(days: (string | null)[]): MonthSpan[] {
+	const spans: MonthSpan[] = [];
 	for (let column = 0; column * WEEK < days.length; column += 1) {
 		const iso = days.slice(column * WEEK, column * WEEK + WEEK).find(Boolean);
 		const month = iso ? Number(iso.slice(5, 7)) - 1 : -1;
@@ -132,11 +150,11 @@ function monthSpans(days) {
 	return spans;
 }
 
-export default createWidget(function HabitHeatmap({ pick, year: shownYear, isRound, isWeekStartingMonday, log: source, navigator }: any) {
+export default createWidget(function HabitHeatmap({ pick, year: shownYear, isRound, isWeekStartingMonday, log: source, navigator }: HeatmapProps) {
 	const listedRows = useData(source.list);
 	const rows = flatRows(listedRows.rows);
 	const picked = pickedValue(useData(pick.get).data);
-	const log = readLog(rows, { pick: picked });
+	const log: LogEntry[] = readLog(rows, { pick: picked });
 	const today = isoOf(new Date());
 	const asked = Number(useData(shownYear.get).data);
 	const year = asked > 0 ? asked : new Date().getFullYear();

@@ -1,4 +1,5 @@
 import { createWidget } from "widgetarium";
+import type { InlineContent } from "widgetarium";
 
 const STYLE = `
 .wgi-reminder {
@@ -29,7 +30,7 @@ const STYLE = `
 }
 `;
 
-function Reminder({ content }) {
+function Reminder({ content }: InlineContent) {
 	return (
 		<div className="wgi-reminder">
 			<style>{STYLE}</style>

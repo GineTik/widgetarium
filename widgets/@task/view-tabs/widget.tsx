@@ -1,4 +1,5 @@
 import { createWidget, textOf, useData, WidgetRoot } from "widgetarium";
+import type { CollectionGateway, FoldIntoGroup, ListAction, ValueGateway } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
 import { useState } from "react";
 
@@ -24,7 +25,13 @@ function optionOf(ref: string, held: Held): Option {
 	return { ref, label, value: textOf(held, VALUE) || label };
 }
 
-export default createWidget(function OrbiTaskViewTabs({ options, selection, foldIntoGroup }: any) {
+type ViewTabsProps = {
+	options: CollectionGateway<Held, { list: ListAction }>;
+	selection: ValueGateway<unknown>;
+	foldIntoGroup?: FoldIntoGroup;
+};
+
+export default createWidget(function OrbiTaskViewTabs({ options, selection, foldIntoGroup }: ViewTabsProps) {
 	const listed = useData(options.list);
 	const chosen = useData(selection.get).data;
 	const [isOpen, setOpen] = useState(false);

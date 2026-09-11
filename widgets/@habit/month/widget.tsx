@@ -1,5 +1,5 @@
 import { canDo, createWidget, flatRows, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, CreateAction, Day, ListAction, UpdateAction, VaultRecord } from "widgetarium";
+import type { Aka, CollectionGateway, CreateAction, Day, ListAction, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
 import { useEffect, useRef, useState } from "react";
 import { Icon, IconButton } from "widgetarium/kit";
 import { daysLogged, FLAME, isoOf, pressing } from "@habit/lib";
@@ -290,7 +290,12 @@ function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSize: num
 	);
 }
 
-export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMonday, days }: { isWeekStartingMonday: any; days: CollectionGateway<DayNote, Accesses> }) {
+type MonthProps = {
+	days: CollectionGateway<DayNote, Accesses>;
+	isWeekStartingMonday: ValueGateway<boolean>;
+};
+
+export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMonday, days }: MonthProps) {
 	const room = useRef<HTMLDivElement | null>(null);
 	const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
 	const [shift, setShift] = useState(0);

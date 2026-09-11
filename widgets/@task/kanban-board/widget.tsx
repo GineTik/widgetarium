@@ -1,5 +1,6 @@
 import { canDo, createWidget, WidgetRoot, ConfirmDialog, Dialog, DialogContent, flatRows, pickedValue, useData } from "widgetarium";
 import { archived, archivedColumnsOf, columnPatched, columnsOf, columnsWritten, propertiesOf, restored, shownColumnsOf } from "@task/lib";
+import type { Board, BoardColumn } from "@task/lib";
 import {
 	APPROVAL_TONES,
 	Button,
@@ -29,8 +30,80 @@ import {
 	toneOf,
 } from "widgetarium/kit";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent, FormEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import type {
+	Action,
+	CollectionGateway,
+	CreateAction,
+	GetAction,
+	ListAction,
+	Navigation,
+	RemoveAction,
+	Slot,
+	UpdateAction,
+	ValueGateway,
+	ViewHost,
+} from "widgetarium";
 
-type RecordRow = { ref: string; value: { path?: string; props?: Record<string, any>; name?: string; attachments?: number } };
+type TaskRecord = {
+	path?: string;
+	name?: string;
+	props?: Record<string, unknown>;
+	attachments?: number;
+	body?: string;
+};
+
+type TaskRow = TaskRecord & { ref: string };
+
+type KanbanColumn = { title: string; rows: TaskRow[] };
+
+type Choice = { value: string; note?: string };
+
+type Anchor = {
+	kind: string;
+	icon: string;
+	word: string;
+	required?: boolean;
+	choices?: Choice[];
+	tones?: Record<string, string>;
+};
+
+type Tones = Record<string, string>;
+
+type Dragging = { row: TaskRow | null; pick: (row: TaskRow) => void; drop: () => void };
+
+type Reorder = { from: number; to: number; step: number; origin: number };
+
+type TagDrag = { at: number; list: string[]; isDragging: boolean };
+
+type RenderMarkdown = ViewHost["ui"]["renderMarkdown"];
+
+type TaskAccesses = {
+	list: ListAction;
+	get?: GetAction;
+	create?: CreateAction;
+	update?: UpdateAction;
+	remove?: RemoveAction;
+};
+
+type BoardAccesses = {
+	list?: ListAction;
+	create?: CreateAction;
+	update?: UpdateAction;
+	repairIds?: Action<void, number>;
+};
+
+type KanbanProps = {
+	tasks: CollectionGateway<TaskRecord, TaskAccesses>;
+	boards: CollectionGateway<Board, BoardAccesses>;
+	board: ValueGateway<Board>;
+	selection: ValueGateway<unknown>;
+	opened: ValueGateway<unknown>;
+	groupBy: ValueGateway<string>;
+	slots?: { card?: Slot<{ task: unknown }> };
+	host?: ViewHost;
+	navigator?: Navigation;
+};
 
 
 // CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
@@ -818,15 +891,34 @@ const CSS = `
 `;
 
 // TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
-function FallbackCard({ task }) {
+function FallbackCard({ task }: { task: CardFace }) {
 	return (
 		<Card className="ok-card">
-			<span className="ok-card-title">{task.title}</span>
+			<span className="ok-card-title">{String(task.title ?? "")}</span>
 		</Card>
 	);
 }
 
-function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, onOpen, onDropTask, onGrab, onRelease, shift, placeholder, canWrite, dragging, opened }) {
+type KanbanListProps = {
+	title: string;
+	rows: TaskRow[];
+	cards: CardFace[];
+	CardSlot?: Slot<{ task: CardFace }>;
+	onAdd?: (title: string) => void;
+	onArchive?: () => void;
+	onRename?: (name: string | null) => void;
+	onOpen?: (row: TaskRow) => void;
+	onDropTask?: () => void;
+	onGrab?: (event: DragEvent<HTMLElement>) => void;
+	onRelease?: () => void;
+	shift?: number;
+	placeholder?: boolean;
+	canWrite: boolean;
+	dragging: Dragging;
+	opened: unknown;
+};
+
+function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, onOpen, onDropTask, onGrab, onRelease, shift, placeholder, canWrite, dragging, opened }: KanbanListProps) {
 	const CardComponent = CardSlot ?? FallbackCard;
 	const [isOver, setOver] = useState(false);
 	// CONTEXT: a grip around an editable heading steals the drag that selects its text
@@ -836,13 +928,13 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 		<Plate
 			className={`ok-list${isOver ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
 			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
-			onDragOver={(event) => {
+			onDragOver={(event: DragEvent<HTMLElement>) => {
 				if (!dragging?.row) return;
 				event.preventDefault();
 				setOver(true);
 			}}
 			onDragLeave={() => setOver(false)}
-			onDrop={(event) => {
+			onDrop={(event: DragEvent<HTMLElement>) => {
 				event.preventDefault();
 				setOver(false);
 				onDropTask?.();
@@ -900,7 +992,7 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 
 // TRADE-OFF: the same shape as AddList, not the same component — a list is named in a plate of
 // its own, a task is named inside the column it will land in
-function AddTask({ onAdd }) {
+function AddTask({ onAdd }: { onAdd?: (title: string) => void }) {
 	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState("");
 
@@ -927,7 +1019,7 @@ function AddTask({ onAdd }) {
 				ref={(node) => node?.focus()}
 				placeholder="Enter task name..."
 				value={name}
-				onInput={(event) => setName(event.target.value)}
+				onInput={(event) => setName(event.currentTarget.value)}
 				onKeyDown={(event) => {
 					if (event.key === "Enter") confirm();
 					if (event.key === "Escape") setOpen(false);
@@ -945,7 +1037,7 @@ function AddTask({ onAdd }) {
 	);
 }
 
-function AddList({ onAdd }) {
+function AddList({ onAdd }: { onAdd?: (name: string) => void }) {
 	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState("");
 
@@ -975,7 +1067,7 @@ function AddList({ onAdd }) {
 				ref={(node) => node?.focus()}
 				placeholder="Enter list name..."
 				value={name}
-				onInput={(event) => setName(event.target.value)}
+				onInput={(event) => setName(event.currentTarget.value)}
 				onKeyDown={(event) => {
 					if (event.key === "Enter") confirm();
 					if (event.key === "Escape") setOpen(false);
@@ -995,28 +1087,32 @@ function AddList({ onAdd }) {
 
 // CONTEXT: columns are the values of ONE property — groupBy regroups the same rows
 // CONTEXT: a value a note names is a column of its own, so an archived one walks back unless refused
-function toColumns(rows, columnNames, groupBy, archived) {
-	const byName = new Map(columnNames.map((name) => [name, []]));
+function toColumns(rows: TaskRow[], columnNames: string[], groupBy: string, archived: string[]): KanbanColumn[] {
+	const byName = new Map<string, TaskRow[]>(columnNames.map((name) => [name, []]));
 	for (const row of rows) {
-		const value = row.props?.[groupBy] ?? columnNames[0];
+		const value = String(row.props?.[groupBy] ?? columnNames[0]);
 		if (archived.includes(value)) continue;
-		if (!byName.has(value)) byName.set(value, []);
-		byName.get(value).push(row);
+		const held = byName.get(value) ?? [];
+		byName.set(value, held);
+		held.push(row);
 	}
-	return [...byName.entries()].map(([title, items]) => ({ title, rows: items }));
+	return [...byName.entries()].map(([title, held]) => ({ title, rows: held }));
 }
 
 // CONTEXT: an archived name keeps its slot, so a restore returns the column to where it sat
-function afterColumnMoves(authored, shown, from, to) {
+function afterColumnMoves(authored: BoardColumn[], shown: string[], from: number, to: number) {
 	const order = shown.filter((_, index) => index !== from);
 	order.splice(to, 0, shown[from]);
 	const moved = order[Symbol.iterator]();
 	const byName = new Map(authored.map((column) => [column.name, column]));
-	return authored.map((column) => (shown.includes(column.name) ? byName.get(moved.next().value) : column));
+	return authored.map((column) => {
+		if (!shown.includes(column.name)) return column;
+		return byName.get(String(moved.next().value)) ?? column;
+	});
 }
 
 // CONTEXT: the first free number, so a column leaving does not hand out a name already in use
-function freeUntitled(taken) {
+function freeUntitled(taken: string[]) {
 	let index = 1;
 	while (taken.includes(`Untitled ${index}`)) index += 1;
 	return `Untitled ${index}`;
@@ -1026,7 +1122,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 // TRADE-OFF: the year only when it is not this one — a deadline this year reads as "31 Aug",
 // and one in another year has to say which, or the card is quietly wrong about a whole year
-function dateLabel(value, now) {
+function dateLabel(value: unknown, now: Date) {
 	const date = new Date(String(value));
 	if (Number.isNaN(date.getTime())) return String(value);
 	const day = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
@@ -1036,7 +1132,19 @@ function dateLabel(value, now) {
 // TRADE-OFF: nothing invented — an absent field must stay absent, or the card cannot tell it from a value
 // The strip carries FACTS THE NOTE HAS: the deadline it names and the files it embeds. Comments
 // and a checklist were drawn from properties nothing writes, so every card claimed 0 of each.
-function toCard(row, now) {
+type CardFace = {
+	title: unknown;
+	tags: string[];
+	tagTones: unknown;
+	priority: unknown;
+	status: unknown;
+	progress: unknown;
+	initials: string[];
+	due?: string;
+	files?: number;
+};
+
+function toCard(row: TaskRow, now: Date): CardFace {
 	const props = row.props ?? {};
 	// the DEADLINE, and nothing standing in for it — a note with no deadline shows no date
 	const deadline = props[keyFor(props, "deadline")];
@@ -1049,12 +1157,12 @@ function toCard(row, now) {
 		progress: props.progress,
 		initials: toTrimmedList(props.assignees),
 		due: deadline === undefined || deadline === null || deadline === "" ? undefined : dateLabel(deadline, now),
-		files: row.attachments > 0 ? row.attachments : undefined,
+		files: (row.attachments ?? 0) > 0 ? row.attachments : undefined,
 	};
 }
 
 // CONTEXT: paths copied from docs/reference/task-dialog.html, on its 16 grid
-const GLYPHS = {
+const GLYPHS: Record<string, string> = {
 	columns: '<rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/>',
 	task: '<rect x="2.6" y="2.2" width="10.8" height="11.6" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 8.1l1.8 1.8 3.2-3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
 	flag: '<path d="M4 14V2.6"/><path d="M4 3.4h8.4l-2 2.9 2 2.9H4"/>',
@@ -1074,7 +1182,7 @@ const GLYPHS = {
 	tick: '<path d="M3.4 8.4l3.2 3.2 6-6.6"/>',
 };
 
-function Glyph({ name, className }) {
+function Glyph({ name, className }: { name: string; className?: string }) {
 	return (
 		<svg
 			className={`otd-glyph${className ? ` ${className}` : ""}`}
@@ -1094,7 +1202,7 @@ const PRIORITY_CHOICES = [
 const APPROVAL_CHOICES = [{ value: "Review" }, { value: "Check" }, { value: "Approve" }, { value: "Reject" }];
 
 // CONTEXT: the name decides the control, for good — renaming re-anchors, on every task at once
-const ANCHORS = {
+const ANCHORS: Record<string, Anchor> = {
 	// CONTEXT: a task always sits in a column, so status is the one choice that cannot be emptied
 	status: { kind: "choice", icon: "columns", word: "one of the board's columns", required: true },
 	priority: { kind: "choice", icon: "flag", choices: PRIORITY_CHOICES, tones: PRIORITY_TONES, word: "a priority" },
@@ -1111,13 +1219,13 @@ const TEXT_ANCHOR = { kind: "text", icon: "lines", word: "plain text" };
 // CONTEXT: what a board that has never named a property shows, until the first Add writes one
 const STARTING_PROPERTIES = ["Status", "Priority", "Approval", "Progress", "Assignees", "Deadline"];
 
-function anchorOf(name) {
+function anchorOf(name: string): Anchor {
 	// CONTEXT: a property called "constructor" would otherwise reach Object's own prototype
 	const wanted = String(name ?? "").trim().toLowerCase();
 	return Object.hasOwn(ANCHORS, wanted) ? ANCHORS[wanted] : TEXT_ANCHOR;
 }
 
-function toTrimmedList(value) {
+function toTrimmedList(value: unknown): string[] {
 	if (Array.isArray(value)) return value.map((entry) => String(entry).trim()).filter(Boolean);
 	return String(value ?? "")
 		.split(",")
@@ -1126,23 +1234,23 @@ function toTrimmedList(value) {
 }
 
 // CONTEXT: names compare case-insensitively, and a note keeps the key it already spells
-function keyFor(props, name) {
+function keyFor(props: Record<string, unknown> | undefined, name: string): string {
 	const wanted = String(name ?? "").toLowerCase();
 	return Object.keys(props ?? {}).find((key) => key.toLowerCase() === wanted) ?? name;
 }
 
 // CONTEXT: the tone map is a fact about tags, kept apart from the list itself, which travels alone
-function toToneMap(value) {
-	return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+function toToneMap(value: unknown): Tones {
+	return value && typeof value === "object" && !Array.isArray(value) ? (value as Tones) : {};
 }
 
-function withoutTone(tones, tag) {
+function withoutTone(tones: Tones, tag: string): Tones {
 	const kept = { ...tones };
 	delete kept[tag];
 	return kept;
 }
 
-function isUnset(value) {
+function isUnset(value: unknown): boolean {
 	if (value === undefined || value === null || value === "") return true;
 	return Array.isArray(value) && value.length === 0;
 }
@@ -1150,26 +1258,26 @@ function isUnset(value) {
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})/;
 
 // TRADE-OFF: only ISO parses — anything else is shown verbatim rather than reinterpreted
-function toDate(value) {
+function toDate(value: unknown): Date | null {
 	if (value instanceof Date) return value;
 	const found = ISO_DATE.exec(String(value ?? ""));
 	if (!found) return null;
 	return new Date(Number(found[1]), Number(found[2]) - 1, Number(found[3]));
 }
 
-function isoOf(date) {
+function isoOf(date: Date): string {
 	const month = String(date.getMonth() + 1).padStart(2, "0");
 	const day = String(date.getDate()).padStart(2, "0");
 	return `${date.getFullYear()}-${month}-${day}`;
 }
 
-function fullDateLabel(value) {
+function fullDateLabel(value: unknown): string {
 	const date = toDate(value);
 	if (!date) return String(value ?? "");
 	return `${date.getDate()} ${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 }
 
-function nextMonday(today) {
+function nextMonday(today: Date): Date {
 	const ahead = (8 - today.getDay()) % 7 || 7;
 	return new Date(today.getFullYear(), today.getMonth(), today.getDate() + ahead);
 }
@@ -1182,13 +1290,13 @@ const AVATAR_TONES = [
 ];
 
 // CONTEXT: one person keeps one colour across every task, so the plate can be scanned
-function toneForPerson(name) {
+function toneForPerson(name: string) {
 	let hash = 0;
 	for (const letter of String(name)) hash = (hash * 31 + letter.charCodeAt(0)) % 100000;
 	return AVATAR_TONES[hash % AVATAR_TONES.length];
 }
 
-function initialsOf(name) {
+function initialsOf(name: string): string {
 	return String(name)
 		.trim()
 		.split(/\s+/)
@@ -1197,7 +1305,7 @@ function initialsOf(name) {
 		.join("");
 }
 
-function Avatar({ person }) {
+function Avatar({ person }: { person: string }) {
 	return (
 		<i className="otd-avatar" style={toneForPerson(person)} title={person}>
 			{initialsOf(person)}
@@ -1206,7 +1314,17 @@ function Avatar({ person }) {
 }
 
 // CONTEXT: the kit owns the row now — this is the same list as the settings panel, read closer
-function RowFrame({ anchor, name, unset, isOpen, children, asButton, onClick }) {
+type RowFrameProps = {
+	anchor: Anchor;
+	name: string;
+	unset: boolean;
+	children: ReactNode;
+	isOpen?: boolean;
+	asButton?: boolean;
+	onClick?: () => void;
+};
+
+function RowFrame({ anchor, name, unset, isOpen, children, asButton, onClick }: RowFrameProps) {
 	return (
 		<SidebarRow
 			as={asButton ? "button" : "div"}
@@ -1222,7 +1340,15 @@ function RowFrame({ anchor, name, unset, isOpen, children, asButton, onClick }) 
 	);
 }
 
-function ChoiceRow({ anchor, name, value, choices, onPick }) {
+type ChoiceRowProps = {
+	anchor: Anchor;
+	name: string;
+	value: unknown;
+	choices: Choice[];
+	onPick: (next: string) => void;
+};
+
+function ChoiceRow({ anchor, name, value, choices, onPick }: ChoiceRowProps) {
 	const [isOpen, setOpen] = useState(false);
 	const unset = isUnset(value);
 
@@ -1235,7 +1361,7 @@ function ChoiceRow({ anchor, name, value, choices, onPick }) {
 		</span>
 	);
 
-	const pick = (next) => {
+	const pick = (next: string) => {
 		setOpen(false);
 		onPick(next);
 	};
@@ -1273,7 +1399,7 @@ function ChoiceRow({ anchor, name, value, choices, onPick }) {
 	);
 }
 
-function ProgressRow({ anchor, name, value, onPick }) {
+function ProgressRow({ anchor, name, value, onPick }: { anchor: Anchor; name: string; value: unknown; onPick: (next: number) => void }) {
 	const number = Number(value);
 	return (
 		<RowFrame anchor={anchor} name={name} unset={isUnset(value)}>
@@ -1284,7 +1410,15 @@ function ProgressRow({ anchor, name, value, onPick }) {
 	);
 }
 
-function DeadlineRow({ anchor, name, value, today, onPick }) {
+type DeadlineRowProps = {
+	anchor: Anchor;
+	name: string;
+	value: unknown;
+	today: Date;
+	onPick: (next: string) => void;
+};
+
+function DeadlineRow({ anchor, name, value, today, onPick }: DeadlineRowProps) {
 	const [isOpen, setOpen] = useState(false);
 	const unset = isUnset(value);
 
@@ -1297,7 +1431,7 @@ function DeadlineRow({ anchor, name, value, today, onPick }) {
 		</span>
 	);
 
-	const pick = (date) => {
+	const pick = (date: Date | null) => {
 		setOpen(false);
 		onPick(date === null ? "" : isoOf(date));
 	};
@@ -1331,12 +1465,20 @@ function DeadlineRow({ anchor, name, value, today, onPick }) {
 	);
 }
 
-function MembersRow({ anchor, name, value, roster, onPick }) {
+type MembersRowProps = {
+	anchor: Anchor;
+	name: string;
+	value: unknown;
+	roster: string[];
+	onPick: (next: string[]) => void;
+};
+
+function MembersRow({ anchor, name, value, roster, onPick }: MembersRowProps) {
 	const [isOpen, setOpen] = useState(false);
 	const held = toTrimmedList(value);
 	const unset = held.length === 0;
 
-	const toggle = (person) => {
+	const toggle = (person: string) => {
 		onPick(held.includes(person) ? held.filter((entry) => entry !== person) : [...held, person]);
 	};
 
@@ -1368,7 +1510,7 @@ function MembersRow({ anchor, name, value, roster, onPick }) {
 			}
 		>
 			<PopoverSearch placeholder="Find a person">
-				{(needle) => [
+				{(needle: string) => [
 					...roster
 						.filter((person) => person.toLowerCase().includes(needle))
 						.map((person) => (
@@ -1390,7 +1532,7 @@ function MembersRow({ anchor, name, value, roster, onPick }) {
 }
 
 // TRADE-OFF: the row IS the field — no mode to enter, and nothing to save
-function TextRow({ anchor, name, value, onPick }) {
+function TextRow({ anchor, name, value, onPick }: { anchor: Anchor; name: string; value: unknown; onPick: (next: string) => void }) {
 	const [draft, setDraft] = useState(String(value ?? ""));
 
 	useEffect(() => {
@@ -1404,7 +1546,7 @@ function TextRow({ anchor, name, value, onPick }) {
 					className="otd-text"
 					placeholder="Empty"
 					value={draft}
-					onInput={(event) => setDraft(event.target.value)}
+					onInput={(event) => setDraft(event.currentTarget.value)}
 					onBlur={() => draft !== String(value ?? "") && onPick(draft)}
 					onKeyDown={(event) => {
 						if (event.key === "Enter") event.currentTarget.blur();
@@ -1419,11 +1561,20 @@ function TextRow({ anchor, name, value, onPick }) {
 	);
 }
 
-function PropertyRow({ name, props, columns, roster, today, onWrite }) {
+type PropertyRowProps = {
+	name: string;
+	props: Record<string, unknown>;
+	columns: string[];
+	roster: string[];
+	today: Date;
+	onWrite: (key: string, value: unknown) => void;
+};
+
+function PropertyRow({ name, props, columns, roster, today, onWrite }: PropertyRowProps) {
 	const anchor = anchorOf(name);
 	const key = keyFor(props, name);
 	const value = props?.[key];
-	const write = (next) => onWrite(key, next);
+	const write = (next: unknown) => onWrite(key, next);
 
 	if (anchor.kind === "choice") {
 		return (
@@ -1447,7 +1598,7 @@ function PropertyRow({ name, props, columns, roster, today, onWrite }) {
 }
 
 // CONTEXT: the anchor is announced while typing, before the name is committed
-function AddProperty({ taken, onAdd }) {
+function AddProperty({ taken, onAdd }: { taken: string[]; onAdd: (name: string) => void }) {
 	const [isOpen, setOpen] = useState(false);
 	const [draft, setDraft] = useState("");
 	const anchor = anchorOf(draft);
@@ -1477,7 +1628,7 @@ function AddProperty({ taken, onAdd }) {
 					size="s"
 					placeholder="Name it"
 					value={draft}
-					onInput={(event) => setDraft(event.target.value)}
+					onInput={(event: FormEvent<HTMLInputElement>) => setDraft(event.currentTarget.value)}
 				/>
 			</div>
 			<span className="otd-hint">
@@ -1495,12 +1646,12 @@ const DETAIL = "detail";
 
 const COPIED_SECONDS = 1.4;
 
-function glyphMarkup(name) {
+function glyphMarkup(name: string): string {
 	return `<svg class="otd-glyph" viewBox="0 0 16 16" aria-hidden="true">${GLYPHS[name]}</svg>`;
 }
 
 // TRADE-OFF: the kit's class function, not its component — preact does not own this markup
-function addCopyButton(block) {
+function addCopyButton(block: HTMLElement) {
 	const button = block.ownerDocument.createElement("button");
 	button.type = "button";
 	button.className = `${iconButtonClass({ size: "s" })} otd-copy`;
@@ -1508,7 +1659,7 @@ function addCopyButton(block) {
 	button.title = "Copy";
 	button.innerHTML = glyphMarkup("copy");
 
-	let settle = null;
+	let settle: ReturnType<typeof setTimeout> | undefined;
 	const copy = () => {
 		const text = (block.querySelector("code") ?? block).textContent ?? "";
 		block.ownerDocument.defaultView?.navigator?.clipboard?.writeText?.(text);
@@ -1529,13 +1680,14 @@ function addCopyButton(block) {
 }
 
 // CONTEXT: the host renders read mode, post-processors included; we own the element and nothing else
-function Preview({ markdown, render }) {
-	const holder = useRef(null);
+function Preview({ markdown, render }: { markdown: string; render?: RenderMarkdown }) {
+	const holder = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
 		const element = holder.current;
+		if (!element || !render) return undefined;
 		const stop = render(element, markdown);
-		const dressed = new Map();
+		const dressed = new Map<Element, () => void>();
 
 		const dress = () => {
 			for (const block of element.querySelectorAll("pre")) {
@@ -1564,7 +1716,16 @@ function Preview({ markdown, render }) {
 }
 
 // TRADE-OFF: fetched when the note opens — listing re-runs on every vault event, so rows carry no body
-function Description({ path, read, write, render, canPreview, canEdit }) {
+type DescriptionProps = {
+	path: string;
+	read: (given: { path: string }) => Promise<TaskRecord | null>;
+	write: (given: { path: string }, patch: { body: string }) => Promise<TaskRecord | null>;
+	render?: RenderMarkdown;
+	canPreview: boolean;
+	canEdit: boolean;
+};
+
+function Description({ path, read, write, render, canPreview, canEdit }: DescriptionProps) {
 	const [saved, setSaved] = useState("");
 	const [draft, setDraft] = useState("");
 	const [isRefused, setRefused] = useState(false);
@@ -1611,7 +1772,7 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 						]}
 						size="s"
 						value={mode}
-						onChange={(next) => {
+						onChange={(next: string) => {
 							setWanted(next);
 							setSwitched(true);
 						}}
@@ -1637,7 +1798,7 @@ function Description({ path, read, write, render, canPreview, canEdit }) {
 const TAP_SLOP_PX = 4;
 
 // CONTEXT: chips wrap, so the drop is the chip NEAREST the pointer, never the one under a column
-function dropIndex(boxes, x, y) {
+function dropIndex(boxes: DOMRect[], x: number, y: number): number {
 	let landed = -1;
 	let nearest = Infinity;
 	boxes.forEach((box, at) => {
@@ -1651,7 +1812,7 @@ function dropIndex(boxes, x, y) {
 	return landed;
 }
 
-function movedWithin(list, from, to) {
+function movedWithin(list: string[], from: number, to: number): string[] {
 	const next = [...list];
 	next.splice(to, 0, next.splice(from, 1)[0]);
 	return next;
@@ -1659,7 +1820,7 @@ function movedWithin(list, from, to) {
 
 // CONTEXT: a drag ends in a click, and the chip under it is a popover trigger
 function swallowNextClick() {
-	const swallow = (event) => {
+	const swallow = (event: Event) => {
 		event.stopPropagation();
 		event.preventDefault();
 		release();
@@ -1669,13 +1830,21 @@ function swallowNextClick() {
 	setTimeout(release, 0);
 }
 
-function TagChip({ tag, tone, held, onGrab, onSave }) {
+type TagChipProps = {
+	tag: string;
+	tone: string;
+	held: boolean;
+	onGrab: (event: ReactPointerEvent<HTMLButtonElement>) => void;
+	onSave: (name: string, tone: string) => void;
+};
+
+function TagChip({ tag, tone, held, onGrab, onSave }: TagChipProps) {
 	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState(tag);
 	const [picked, setPicked] = useState(tone);
 
 	// CONTEXT: the draft is the tag as it stands the moment the panel opens, never what was typed before
-	const show = (next) => {
+	const show = (next: boolean) => {
 		setOpen(next);
 		if (!next) return;
 		setName(tag);
@@ -1705,17 +1874,17 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 			}
 		>
 			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && save()}>
-				<Field block size="s" placeholder="Name it" value={name} onInput={(event) => setName(event.target.value)} />
+				<Field block size="s" placeholder="Name it" value={name} onInput={(event: FormEvent<HTMLInputElement>) => setName(event.currentTarget.value)} />
 			</div>
 			<div className="otd-tones">
-				{TONE_NAMES.map((each) => (
+				{TONE_NAMES.map((each: string) => (
 					<button
 						key={each}
 						type="button"
 						className={cx("otd-tone", toneClass(each), each === picked && "is-picked")}
 						aria-label={each}
 						title={each}
-						aria-pressed={String(each === picked)}
+						aria-pressed={each === picked}
 						onClick={() => setPicked(each)}
 					/>
 				))}
@@ -1732,31 +1901,38 @@ function TagChip({ tag, tone, held, onGrab, onSave }) {
 	);
 }
 
-function TagRow({ tags, tones, roster, onWrite }) {
+type TagRowProps = {
+	tags: string[];
+	tones: Tones;
+	roster: string[];
+	onWrite: (tags: string[], tones: Tones) => void;
+};
+
+function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
 	const [isOpen, setOpen] = useState(false);
-	const [dragged, setDragged] = useState(null);
-	const listRef = useRef(null);
+	const [dragged, setDragged] = useState<TagDrag | null>(null);
+	const listRef = useRef<HTMLDivElement | null>(null);
 	const shown = dragged?.list ?? tags;
 
-	const toggle = (tag) => {
+	const toggle = (tag: string) => {
 		if (!tags.includes(tag)) return onWrite([...tags, tag], tones);
 		onWrite(tags.filter((entry) => entry !== tag), withoutTone(tones, tag));
 	};
 
 	// CONTEXT: a rename moves the tone with the name, so the map never keeps a tag nobody wears
-	const save = (was, name, tone) => {
+	const save = (was: string, name: string, tone: string) => {
 		const wanted = name === "" ? was : name;
 		const next = [...new Set(tags.map((entry) => (entry === was ? wanted : entry)))];
 		const kept = withoutTone(tones, was);
 		onWrite(next, tone === "neutral" ? kept : { ...kept, [wanted]: tone });
 	};
 
-	const grab = (at) => (event) => {
+	const grab = (at: number) => (event: ReactPointerEvent<HTMLButtonElement>) => {
 		if (event.button) return;
 		const start = { x: event.clientX, y: event.clientY };
 		const drag = { at, list: tags, isDragging: false };
 
-		const move = (pointer) => {
+		const move = (pointer: PointerEvent) => {
 			const isPastTapSlop = Math.abs(pointer.clientX - start.x) > TAP_SLOP_PX || Math.abs(pointer.clientY - start.y) > TAP_SLOP_PX;
 			if (!drag.isDragging && !isPastTapSlop) return;
 			drag.isDragging = true;
@@ -1804,7 +1980,7 @@ function TagRow({ tags, tones, roster, onWrite }) {
 				}
 			>
 				<PopoverSearch placeholder="Find a tag">
-					{(needle) => [
+					{(needle: string) => [
 						...roster
 							.filter((tag) => tag.toLowerCase().includes(needle))
 							.map((tag) => (
@@ -1826,15 +2002,29 @@ function TagRow({ tags, tones, roster, onWrite }) {
 }
 
 // CONTEXT: gathered off the board's own notes — there is no roster anywhere else to read
-function valuesAcross(rows, name) {
-	const seen = new Set();
+function valuesAcross(rows: TaskRow[], name: string): string[] {
+	const seen = new Set<string>();
 	for (const row of rows) {
 		for (const entry of toTrimmedList(row.props?.[keyFor(row.props, name)])) seen.add(entry);
 	}
 	return [...seen];
 }
 
-function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedRef, today, onAddProperty, host, navigator }) {
+type TaskDialogProps = {
+	tasks: CollectionGateway<TaskRecord, TaskAccesses>;
+	rows: TaskRow[];
+	columns: string[];
+	properties: string[];
+	onBoard: string;
+	opened: ValueGateway<unknown>;
+	openedRef: unknown;
+	today: Date;
+	onAddProperty?: (names: string[]) => void;
+	host?: ViewHost;
+	navigator?: Navigation;
+};
+
+function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedRef, today, onAddProperty, host, navigator }: TaskDialogProps) {
 	const canUpdate = canDo(tasks.update);
 	// TRADE-OFF: found in the list the board already holds — tasks.get would read the note again on every vault event
 	const task = rows.find((row) => row.ref === openedRef) ?? null;
@@ -1844,21 +2034,22 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 	const people = useMemo(() => [...valuesAcross(rows, "members"), ...valuesAcross(rows, "assignees")], [rows]);
 	const tagRoster = useMemo(() => valuesAcross(rows, "tags"), [rows]);
 
-	const setProperties = (patch) => {
+	const setProperties = (patch: Record<string, unknown>) => {
 		if (!canUpdate || !task) return;
 		tasks.update({ ref: task.ref, data: { props: patch } });
 	};
 
-	const setProperty = (key, value) => setProperties({ [key]: value });
+	const setProperty = (key: string, value: unknown) => setProperties({ [key]: value });
+	const shownTitle = String(props.title ?? task?.name ?? "");
 
-	const rename = (title) => {
+	const rename = (title: string | null) => {
 		const wanted = String(title ?? "").trim();
-		if (wanted === "" || wanted === (props.title ?? task.name)) return;
+		if (!task || wanted === "" || wanted === (props.title ?? task.name)) return;
 		setProperty(keyFor(props, "title"), wanted);
 	};
 
 	return (
-		<Dialog isOpen={isOpen} onOpenChange={(next) => !next && opened.update(null)}>
+		<Dialog isOpen={isOpen} onOpenChange={(next: boolean) => !next && opened.update(null)}>
 				<DialogContent className="orbi orbi-task-dialog">
 					<div className="otd-top">
 						<span className="otd-where">
@@ -1871,7 +2062,7 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 								size="s"
 								label="Open the note"
 								title="Open the note"
-								onClick={() => navigator?.navigate?.(`/${task.ref}`)}
+								onClick={() => navigator?.navigate?.(`/${task?.ref ?? ""}`)}
 							>
 								<Glyph name="expand" />
 							</IconButton>
@@ -1893,13 +2084,13 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 										event.currentTarget.blur();
 									}
 									if (event.key === "Escape") {
-										event.currentTarget.textContent = props.title ?? task.name;
+										event.currentTarget.textContent = shownTitle;
 										event.currentTarget.blur();
 									}
 								}}
 								onBlur={(event) => rename(event.currentTarget.textContent)}
 							>
-								{props.title ?? task?.name ?? ""}
+								{shownTitle}
 							</h2>
 
 							<TagRow
@@ -1915,8 +2106,8 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 								<Description
 									key={task.ref}
 									path={task.ref}
-									read={(given) => tasks.get(given.path).then((row) => (row ? row.value : null))}
-									write={(given, patch) => tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))}
+									read={(given: { path: string }) => tasks.get(given.path).then((row) => (row ? row.value : null))}
+									write={(given: { path: string }, patch: { body: string }) => tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))}
 									render={host?.ui?.renderMarkdown}
 									canPreview={Boolean(host?.can?.renderMarkdown && host?.ui?.renderMarkdown)}
 									canEdit={canUpdate}
@@ -1956,19 +2147,19 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 	);
 }
 
-export default createWidget(function KanbanBoard({ board, groupBy: grouping, slots, tasks, boards, selection, opened, host, navigator }: any) {
+export default createWidget(function KanbanBoard({ board, groupBy: grouping, slots, tasks, boards, selection, opened, host, navigator }: KanbanProps) {
 	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
 	const today = useMemo(() => new Date(), []);
 	const onBoard = pickedValue(useData(selection.get).data);
 	const openedRef = useData(opened.get).data;
 	const tasksData = useData(tasks.list);
 	const boardsData = useData(boards.list);
-	const allTasks = useMemo(() => flatRows(tasksData.rows as RecordRow[]), [tasksData.rows]);
+	const allTasks: TaskRow[] = useMemo(() => flatRows(tasksData.rows), [tasksData.rows]);
 	const record = useData(board.get).data;
-	const boardColumns = useMemo(() => columnsOf(record), [record]);
+	const boardColumns: BoardColumn[] = useMemo(() => columnsOf(record), [record]);
 	const archivedColumns = archivedColumnsOf(boardColumns);
 	const authoredColumns = boardColumns.map((column) => column.name);
-	const saveColumns = (columns) => board.update(columnsWritten(columns));
+	const saveColumns = (columns: BoardColumn[]) => board.update(columnsWritten(columns));
 	const canEditColumns = canDo(board.update);
 	const shownColumns = shownColumnsOf(boardColumns);
 	// CONTEXT: a board with no columns is not a board — the last one out leaves a fresh one behind
@@ -1978,11 +2169,11 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 	const canCreateTask = canDo(tasks.create);
 	const canUpdateTask = canDo(tasks.update);
 	const columns = toColumns(rows, columnNames, groupBy, archivedColumns);
-	const [archiving, setArchiving] = useState(null);
+	const [archiving, setArchiving] = useState<string | null>(null);
 	const heldByArchiving = columns.find((column) => column.title === archiving)?.rows.length ?? 0;
 
 	// CONTEXT: found on the read and only reported — the re-mint is this press
-	const duplicates = (boardsData.data as { duplicates?: { remints: string[] }[] } | null)?.duplicates ?? [];
+	const duplicates = boardsData.data?.duplicates ?? [];
 	const remintCount = duplicates.reduce((count, entry) => count + entry.remints.length, 0);
 	const canRepairIds = canDo(boards.repairIds) && remintCount > 0;
 	const [isRepairingIds, setRepairingIds] = useState(false);
@@ -1994,7 +2185,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 
 	// CONTEXT: a column is a setting, not a task — adding one must not invent a note
 	// CONTEXT: naming an archived list is how it is restored, or the added one would never show
-	const addList = (name) => {
+	const addList = (name: string) => {
 		const trimmed = String(name ?? "").trim();
 		if (!trimmed || shownColumns.includes(trimmed)) return;
 		if (archivedColumns.includes(trimmed)) {
@@ -2004,17 +2195,17 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 		saveColumns([...boardColumns, { name: trimmed }]);
 	};
 
-	const columnsAfterRename = (was, name) =>
-		authoredColumns.includes(was) ? columnPatched(boardColumns, was, (column) => ({ ...column, name })) : [...boardColumns, { name }];
+	const columnsAfterRename = (was: string, name: string) =>
+		authoredColumns.includes(was) ? columnPatched(boardColumns, was, (column: BoardColumn) => ({ ...column, name })) : [...boardColumns, { name }];
 
-	const refileTasksUnder = async (was, name) => {
+	const refileTasksUnder = async (was: string, name: string) => {
 		if (!canUpdateTask) return;
 		for (const row of rows.filter((held) => (held.props?.[groupBy] ?? "") === was)) {
 			await tasks.update({ ref: row.ref, data: { props: { [groupBy]: name } } });
 		}
 	};
 
-	const renameList = async (was, next) => {
+	const renameList = async (was: string, next: string | null) => {
 		const name = String(next ?? "").trim();
 		if (!name || name === was) return;
 		if (columnNames.includes(name) || archivedColumns.includes(name)) return host?.ui?.notify(`"${name}" is already a list`);
@@ -2023,29 +2214,30 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 	};
 
 	// CONTEXT: the one place a column leaves the board; nothing is unnamed, so a restore is lossless
-	const archiveList = (name) => {
+	const archiveList = (name: string) => {
 		saveColumns(columnPatched(boardColumns, name, archived));
 		setArchiving(null);
 	};
 
 	// CONTEXT: a joined string, not the array — a fresh array every render notifies forever
-	const [carried, setCarried] = useState(null);
-	const dragging = {
+	const [carried, setCarried] = useState<TaskRow | null>(null);
+	const dragging: Dragging = {
 		row: carried,
-		pick: (row) => setCarried(row),
+		pick: (row: TaskRow) => setCarried(row),
 		drop: () => setCarried(null),
 	};
 
-	const boardRef = useRef(null);
-	const [reorder, setReorder] = useState(null);
+	const boardRef = useRef<HTMLDivElement | null>(null);
+	const [reorder, setReorder] = useState<Reorder | null>(null);
 
 	// TRADE-OFF: one step and one origin, not a rect per column — every column is the same width
-	const grabColumn = (from) => (event) => {
+	const grabColumn = (from: number) => (event: DragEvent<HTMLElement>) => {
 		const strip = boardRef.current;
+		if (!strip) return;
 		const lists = [...strip.querySelectorAll(".ok-list")];
 		const first = lists[0].getBoundingClientRect();
 		const carriedRect = lists[from].getBoundingClientRect();
-		event.dataTransfer?.setDragImage?.(lists[from], event.clientX - carriedRect.left, event.clientY - carriedRect.top);
+		event.dataTransfer?.setDragImage?.(lists[from] as Element, event.clientX - carriedRect.left, event.clientY - carriedRect.top);
 		const carrying = {
 			from,
 			to: from,
@@ -2057,10 +2249,11 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 	};
 
 	// CONTEXT: content coordinates, so scrolling the board mid-drag does not shift the aim
-	const aimColumn = (event) => {
+	const aimColumn = (event: DragEvent<HTMLElement>) => {
 		if (!reorder) return;
 		event.preventDefault();
 		const strip = boardRef.current;
+		if (!strip) return;
 		const x = event.clientX - strip.getBoundingClientRect().left + strip.scrollLeft;
 		const wanted = Math.floor((x - reorder.origin) / reorder.step);
 		const to = Math.max(0, Math.min(columnNames.length - 1, wanted));
@@ -2075,7 +2268,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 		setReorder(null);
 	};
 
-	const shiftOf = (index) => {
+	const shiftOf = (index: number) => {
 		if (!reorder) return undefined;
 		if (index === reorder.from) return (reorder.to - reorder.from) * reorder.step;
 		if (index > reorder.from && index <= reorder.to) return -reorder.step;
@@ -2083,7 +2276,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 		return 0;
 	};
 
-	const addTask = async (column, title) => {
+	const addTask = async (column: string, title: string) => {
 		if (!canCreateTask) return;
 		// CONTEXT: without an order of its own a new task sorts last by accident, and the first edit moves it
 		const lastOrder = rows.reduce((highest, row) => Math.max(highest, Number(row.props?.order) || 0), 0);
@@ -2100,7 +2293,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 	};
 
 	// CONTEXT: the vault's own subscription brings the board back updated
-	const moveTask = async (column) => {
+	const moveTask = async (column: string) => {
 		if (!carried || !canUpdateTask) return;
 		if ((carried.props?.[groupBy] ?? "") === column) return;
 		await tasks.update({ ref: carried.ref, data: { props: { [groupBy]: column } } });
@@ -2163,14 +2356,14 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 				className="ok-archive"
 				variant="accent"
 				confirmLabel={ARCHIVE}
-				title={ARCHIVE_TITLE.replace("{name}", archiving)}
+				title={ARCHIVE_TITLE.replace("{name}", archiving ?? "")}
 				description={
 					<>
 						The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
 						{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
 					</>
 				}
-				onConfirm={() => archiveList(archiving)}
+				onConfirm={() => archiveList(archiving ?? "")}
 			/>
 
 			<ConfirmDialog
@@ -2193,7 +2386,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 				opened={opened}
 				openedRef={openedRef}
 				today={today}
-				onAddProperty={canEditColumns ? (names) => board.update({ properties: names }) : null}
+				onAddProperty={canEditColumns ? (names: string[]) => board.update({ properties: names }) : undefined}
 				host={host}
 				navigator={navigator}
 			/>

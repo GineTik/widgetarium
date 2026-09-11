@@ -1,4 +1,5 @@
 import { canDo, createWidget, EditableTabs, fieldOf, textOf, useData, WidgetRoot } from "widgetarium";
+import type { CollectionGateway, CreateAction, ListAction, RemoveAction, UpdateAction, ValueGateway, ViewHost } from "widgetarium";
 
 const GONE_FOR_GOOD = "The tab and the record behind it go to the trash. Notes filed under it keep the value they carry.";
 const CANNOT_ADD = "This list does not take new tabs, so nothing was added.";
@@ -22,7 +23,22 @@ function identityOf(held: Held | null, field: string, label: string): string {
 	return textOf(held, field) || textOf(held, RECORD_ID) || label;
 }
 
-export default createWidget(function EditableTabsWidget({ tabs, label, value, selection, host }: any) {
+type Accesses = {
+	list: ListAction;
+	create?: CreateAction;
+	update?: UpdateAction;
+	remove?: RemoveAction;
+};
+
+type EditableTabsProps = {
+	tabs: CollectionGateway<Held, Accesses>;
+	label: ValueGateway<string>;
+	value: ValueGateway<string>;
+	selection: ValueGateway<unknown>;
+	host?: ViewHost;
+};
+
+export default createWidget(function EditableTabsWidget({ tabs, label, value, selection, host }: EditableTabsProps) {
 	const labelField = String(useData(label.get).data ?? "");
 	const key = String(useData(value.get).data ?? "");
 	const chosen = useData(selection.get).data;

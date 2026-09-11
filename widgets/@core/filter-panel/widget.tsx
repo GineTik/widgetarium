@@ -1,4 +1,5 @@
 import { flatRows, createWidget, textOf, useData, WidgetRoot } from "widgetarium";
+import type { CollectionGateway, ListAction, ValueGateway } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "react";
 
@@ -210,7 +211,17 @@ function dropped(chosen: Chosen, prop: string): Chosen {
 	return rest;
 }
 
-export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen }: any) {
+type Listed<T> = CollectionGateway<T, { list: ListAction }>;
+
+type FilterProps = {
+	tasks: Listed<Held>;
+	groups: Listed<Held>;
+	properties: Listed<Held>;
+	openGroup: ValueGateway<string>;
+	chosen: ValueGateway<Chosen>;
+};
+
+export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen }: FilterProps) {
 	const listed = useData(tasks.list);
 	const rows: TaskRow[] = flatRows(listed.rows);
 	// TRADE-OFF: a typed list still wins where somebody has written one — a board that wants a

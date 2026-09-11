@@ -1,5 +1,7 @@
 import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
+import type { Aka, CollectionGateway, Color, Day, ListAction, Text, ValueGateway, VaultRecord } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
+import type { LogEntry } from "@habit/lib";
 
 const STYLE = `
 .habit-stat {
@@ -53,7 +55,25 @@ const STYLE = `
 }
 `;
 
-const CAPS = {
+type Habit = VaultRecord & {
+	days?: (Day[] & Aka<"entries" | "dates" | "log" | "checkins">) | null;
+	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
+	title?: (Text & Aka<"name">) | null;
+	color?: (Color & Aka<"colour">) | null;
+	goal?: (number & Aka<"target">) | null;
+	maxGap?: (number & Aka<"max gap" | "grace">) | null;
+};
+
+type Reading = { value: number; unit: string; part?: number };
+
+type StatProps = {
+	habits: CollectionGateway<Habit, { list: ListAction }>;
+	pick: ValueGateway<unknown>;
+	metric: ValueGateway<string>;
+	period: ValueGateway<number>;
+};
+
+const CAPS: Record<string, string> = {
 	streak: "Streak",
 	best: "Best streak",
 	total: "Total check-ins",
@@ -62,7 +82,7 @@ const CAPS = {
 };
 
 // CONTEXT: a goal is a target in the note — `goal: 21` turns a habit into something with an end
-function readingOf(metric, log, habit, period, today) {
+function readingOf(metric: string, log: LogEntry[], habit: Habit, period: number, today: string): Reading {
 	const streak = streakOf(log, { maxGap: Number(habit?.maxGap ?? 0), today });
 	if (metric === "best") return { value: streak.best, unit: "days" };
 	if (metric === "total") return { value: log.length, unit: "days" };
@@ -74,7 +94,7 @@ function readingOf(metric, log, habit, period, today) {
 	return { value: streak.current, unit: "days" };
 }
 
-export default createWidget(function HabitStat({ pick, metric: asked, period: lookback, habits }: any) {
+export default createWidget(function HabitStat({ pick, metric: asked, period: lookback, habits }: StatProps) {
 	const listedRows = useData(habits.list);
 	const rows = flatRows(listedRows.rows);
 	const picked = pickedValue(useData(pick.get).data);

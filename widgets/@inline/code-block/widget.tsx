@@ -1,4 +1,5 @@
 import { createWidget, useData } from "widgetarium";
+import type { Here, InlineContent, PassageReader, PassageRecord, ValueGateway, ViewHost } from "widgetarium";
 import { Button, Icon, IconButton, Popover, PopoverItem, PopoverSearch } from "widgetarium/kit";
 import { useEffect, useRef, useState } from "react";
 
@@ -106,7 +107,7 @@ const STYLE = `
 `;
 
 // CONTEXT: a fence tag is a Prism language id, and only the extension can supply one
-const BY_EXTENSION = {
+const BY_EXTENSION: Record<string, string> = {
 	bash: "bash",
 	cc: "cpp",
 	cjs: "javascript",
@@ -155,19 +156,19 @@ const CONTROL_BYTES = /[\x00-\x08\x0e-\x1f]/;
 const TICK = String.fromCharCode(96);
 
 // TRADE-OFF: measured from the content, never fixed at three — a shorter fence closes early
-export function pickFence(text) {
+export function pickFence(text: unknown): string {
 	let longest = 0;
 	for (const [run] of String(text ?? "").matchAll(/`+/g)) longest = Math.max(longest, run.length);
 	return TICK.repeat(Math.max(3, longest + 1));
 }
 
 // CONTEXT: Obsidian forbids "|" in a file name, so it is the one safe separator
-export function readRequest(content) {
+export function readRequest(content: unknown): { link: string; language: string } {
 	const [named, ...rest] = String(content ?? "").split("|");
 	return { link: named.trim(), language: rest.join("|").trim() };
 }
 
-export function extensionOf(link) {
+export function extensionOf(link: unknown): string {
 	const text = String(link ?? "");
 	const name = text.slice(text.lastIndexOf("/") + 1);
 	const dot = name.lastIndexOf(".");
@@ -175,15 +176,15 @@ export function extensionOf(link) {
 }
 
 // TRADE-OFF: a hint falling through to the raw extension, never a gate — an unmapped .zig draws
-export function languageOf(link, asked) {
+export function languageOf(link: unknown, asked: string): string {
 	if (asked) return asked;
 	const extension = extensionOf(link);
 	return BY_EXTENSION[extension] ?? extension;
 }
 
-function LanguagePicker({ language, onPick }) {
+function LanguagePicker({ language, onPick }: { language: string; onPick: (next: string) => void }) {
 	const [isOpen, setOpen] = useState(false);
-	const choose = (next) => {
+	const choose = (next: string) => {
 		setOpen(false);
 		onPick(next);
 	};
@@ -201,7 +202,7 @@ function LanguagePicker({ language, onPick }) {
 			}
 		>
 			<PopoverSearch placeholder="Find a language">
-				{(needle) => [
+				{(needle: string) => [
 					...LANGUAGES.filter((name) => name.includes(needle)).map((name) => (
 						<PopoverItem key={name} checked={name === language} onClick={() => choose(name)}>
 							{name}
@@ -220,8 +221,8 @@ function LanguagePicker({ language, onPick }) {
 	);
 }
 
-function Painted({ host, markdown }) {
-	const node = useRef(null);
+function Painted({ host, markdown }: { host: ViewHost; markdown: string }) {
+	const node = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
 		if (!node.current) return undefined;
@@ -231,7 +232,7 @@ function Painted({ host, markdown }) {
 	return <div className="wgc-body" ref={node} />;
 }
 
-function Refusal({ why }) {
+function Refusal({ why }: { why: string }) {
 	return (
 		<div className="wgc-code is-failed">
 			<style>{STYLE}</style>
@@ -241,12 +242,20 @@ function Refusal({ why }) {
 	);
 }
 
-function CodeBlock({ content, reader, host, here, lines: linesShown, maxKilobytes }) {
+type CodeBlockProps = InlineContent & {
+	reader: PassageReader;
+	host?: ViewHost;
+	here?: Here<PassageRecord> | null;
+	lines: ValueGateway<number>;
+	maxKilobytes: ValueGateway<number>;
+};
+
+function CodeBlock({ content, reader, host, here, lines: linesShown, maxKilobytes }: CodeBlockProps) {
 	const request = readRequest(content);
 	const step = Math.max(1, Number(useData(linesShown.get).data ?? 30));
 	const maxBytes = Math.max(1, Number(useData(maxKilobytes.get).data ?? 256)) * 1024;
 
-	const [file, setFile] = useState({ text: "", failure: null, read: false });
+	const [file, setFile] = useState<{ text: string; failure: string | null; read: boolean }>({ text: "", failure: null, read: false });
 	const [shown, setShown] = useState(step);
 	const [asked, setAsked] = useState("");
 	const [isCopied, setCopied] = useState(false);
@@ -282,7 +291,7 @@ function CodeBlock({ content, reader, host, here, lines: linesShown, maxKilobyte
 	const fence = pickFence(body);
 
 	// CONTEXT: written back into the line, so a pick survives the next render
-	const pick = (next) => {
+	const pick = (next: string) => {
 		setAsked(next);
 		if (here?.canUpdate) here.update(`${request.link} | ${next}`);
 	};

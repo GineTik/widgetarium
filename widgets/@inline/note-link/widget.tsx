@@ -1,4 +1,5 @@
 import { createWidget } from "widgetarium";
+import type { InlineContent, Navigation } from "widgetarium";
 
 const STYLE = `
 .wgi-link {
@@ -34,7 +35,7 @@ const STYLE = `
 `;
 
 // CONTEXT: the widget that proves navigation is its own entity — no gateway verb opens a note
-function NoteLink({ content, navigator }) {
+function NoteLink({ content, navigator }: InlineContent & { navigator: Navigation }) {
 	const target = String(content ?? "").trim();
 	const found = navigator.resolve(target);
 	return (

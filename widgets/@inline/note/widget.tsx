@@ -1,4 +1,5 @@
 import { createWidget } from "widgetarium";
+import type { InlineContent } from "widgetarium";
 
 const STYLE = `
 .wgi-note {
@@ -15,7 +16,7 @@ const STYLE = `
 }
 `;
 
-function Note({ content }) {
+function Note({ content }: InlineContent) {
 	const lines = String(content ?? "").split("\n");
 	return (
 		<div className="wgi-note">

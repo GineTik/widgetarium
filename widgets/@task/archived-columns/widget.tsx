@@ -1,5 +1,7 @@
 import { createWidget, pickedValue, WidgetRoot, useData } from "widgetarium";
+import type { ValueGateway } from "widgetarium";
 import { archivedColumnsOf, columnPatched, columnsOf, columnsWritten, restored } from "@task/lib";
+import type { Board } from "@task/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 
 const STYLE = `
@@ -57,11 +59,16 @@ const STYLE = `
 `;
 
 // CONTEXT: archived BOARDS stay behind the tab strip's menu; this view holds columns only
-export default createWidget(function OrbiTaskArchivedColumns({ selection, board }: any) {
+type ArchivedColumnsProps = {
+	selection: ValueGateway<unknown>;
+	board: ValueGateway<Board>;
+};
+
+export default createWidget(function OrbiTaskArchivedColumns({ selection, board }: ArchivedColumnsProps) {
 	const onBoard = pickedValue(useData(selection.get).data);
 	const record = useData(board.get).data;
 	const columns = columnsOf(record);
-	const archived = archivedColumnsOf(columns);
+	const archived: string[] = archivedColumnsOf(columns);
 	const restore = (name: string) =>
 		board.update(columnsWritten(columnPatched(columns, name, restored)));
 

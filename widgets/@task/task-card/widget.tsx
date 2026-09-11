@@ -1,4 +1,6 @@
 import { createWidget, useValue, WidgetRoot } from "widgetarium";
+import type { ValueGateway } from "widgetarium";
+import type { ReactNode } from "react";
 import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, cx, toneClass, toneOf } from "widgetarium/kit";
 
 // CONTEXT: the card IS the widget root, and .wg-widget-root[data-…] outweighs .wg-kit-card
@@ -177,7 +179,7 @@ const CSS = `
 }
 `;
 
-const STATUS_LABELS = { approve: "Approve", check: "Check", reject: "Reject", review: "Review" };
+const STATUS_LABELS: Record<string, string> = { approve: "Approve", check: "Check", reject: "Reject", review: "Review" };
 
 // CONTEXT: four circles is 88px of a 256px row — a fifth pushed the dates off the card
 const AVATAR_CAP = 3;
@@ -189,7 +191,7 @@ const AVATAR_TONE_STYLES = [
 	{ background: "var(--wg-kit-warning-wash)", color: "var(--wg-kit-warning)" },
 ];
 
-function MetaItem({ icon, text }) {
+function MetaItem({ icon, text }: { icon: ReactNode; text: ReactNode }) {
 	return (
 		<span className="orbi-task-card-meta-item">
 			{icon}
@@ -198,14 +200,14 @@ function MetaItem({ icon, text }) {
 	);
 }
 
-function percentOf(value) {
+function percentOf(value: unknown): number {
 	const number = Number(value);
 	if (!Number.isFinite(number)) return 0;
 	return Math.max(0, Math.min(100, Math.round(number)));
 }
 
 // CONTEXT: the note holds a person, the card draws the letter — storing "A" leaked it into the filter
-function initialsOf(value) {
+function initialsOf(value: unknown): string[] {
 	const held = Array.isArray(value) ? value : String(value ?? "").split(",");
 	return held
 		.map((entry) => String(entry).trim())
@@ -213,15 +215,15 @@ function initialsOf(value) {
 		.map((name) => name.charAt(0).toUpperCase());
 }
 
-function toList(value) {
+function toList(value: unknown): string[] {
 	const held = Array.isArray(value) ? value : String(value ?? "").split(",");
 	return held.map((entry) => String(entry).trim()).filter(Boolean);
 }
 
 // CONTEXT: frontmatter hands over a map, a settings field a "tag: tone" list — both are the map
-function toToneMap(value) {
-	if (value && typeof value === "object" && !Array.isArray(value)) return value;
-	const map = {};
+function toToneMap(value: unknown): Record<string, string> {
+	if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
+	const map: Record<string, string> = {};
 	for (const entry of toList(value)) {
 		const at = entry.indexOf(":");
 		if (at > 0) map[entry.slice(0, at).trim()] = entry.slice(at + 1).trim();
@@ -230,17 +232,33 @@ function toToneMap(value) {
 }
 
 // CONTEXT: a field the note lacks is not drawn — defaults made every task render as the mock
-function has(value) {
+function has(value: unknown): boolean {
 	return value !== undefined && value !== null && value !== "";
 }
 
 // CONTEXT: notes write the value in either casing; the label is authored here in English
-function labelOf(status) {
+function labelOf(status: string): string {
 	return STATUS_LABELS[status.toLowerCase()] ?? status;
 }
 
-export default createWidget(function OrbiTaskCard({ task }: any) {
-	const card = useValue(task) ?? {};
+type Task = {
+	title?: string;
+	tags?: string[] | string;
+	tagTones?: Record<string, string> | string;
+	priority?: string;
+	status?: string;
+	progress?: number | string;
+	initials?: string[] | string;
+	due?: string;
+	files?: number | string;
+};
+
+type CardProps = {
+	task: ValueGateway<Task> | Task;
+};
+
+export default createWidget(function OrbiTaskCard({ task }: CardProps) {
+	const card: Task = useValue(task) ?? {};
 
 	const priority = has(card.priority) ? String(card.priority) : null;
 	const status = has(card.status) ? String(card.status) : null;
