@@ -19,6 +19,7 @@ export {
 	ConfirmDialog,
 } from "../src/dialog.js";
 export { useAction } from "../src/action.js";
+export { Mounted } from "../src/mounted.js";
 export { Kit } from "../src/kit.js";
 
 export function createWidget(component, meta) {

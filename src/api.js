@@ -12,6 +12,7 @@ import {
 import { useAction } from "./action.js";
 import { EditableTabs, toTabList } from "./editable-tabs.js";
 import { applyTabStep, archivedOf, movesRows, movesSelection, rowNamed, tabsOf } from "./tab-rows.js";
+import { Mounted } from "./mounted.js";
 import { WidgetRoot, AppearanceOverride, useWidgetRounded, useBackgroundType, ROUNDED, BACKGROUND } from "./widget-root.js";
 import { action, arrayGateway, canDo, collectionGateway, soloGateway, valueGateway } from "./gateway/create";
 import { fieldOf, textOf } from "./gateway/match";
@@ -42,6 +43,7 @@ const core = {
 	DialogFooter,
 	DialogClose,
 	ConfirmDialog,
+	Mounted,
 	WidgetRoot,
 	AppearanceOverride,
 	useWidgetRounded,

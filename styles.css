@@ -718,6 +718,10 @@ pre:has(> .block-language-widgetarium),
 	overflow: hidden;
 }
 
+.wg-mounted {
+	display: contents;
+}
+
 /* what the tile will become, shown while the pointer holds it */
 .wg-tile[data-size]::after {
 	content: attr(data-size);
@@ -869,7 +873,7 @@ pre:has(> .block-language-widgetarium),
 }
 
 .wg-tile:has([data-wg-overlay]) .wg-tile-body,
-.wg-tile:has([data-wg-overlay]) > .wg-tile-body > .wg-widget-root {
+.wg-widget-root:has([data-wg-overlay]) {
 	overflow: visible;
 }
 

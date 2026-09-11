@@ -48,6 +48,27 @@ The stored shape is the same; whether the record HOLDS anything is the consequen
 carries nothing but `widget`, so its record reads as one line and a diff on a real note stays
 small.
 
+### A mount is drawn into an element, never handed over as a node
+
+`MountEntry` carries `drawInto(element) => Release`. The child gets its own React root and its own
+`Boundary` inside it, so a view that throws leaves the holder and its tab strip standing instead of
+the tile's boundary eating the whole group.
+
+`drawInto` is idempotent — a second call for the same element redraws the child with fresh props
+rather than remounting it, which is what carries the child's state through an ordinary holder
+redraw. Whether there is anything to draw has one answer, `problem`; a holder branches on that and
+only ever calls `drawInto`.
+
+A React holder takes `Mounted` from `widgetarium`, and the key is required, because it is what makes
+a tab change a release rather than one root reconciled into another:
+
+```tsx
+<Mounted key={entry.name} entry={entry} />
+```
+
+A holder written in anything else calls `drawInto` and its `Release` itself. The decision, and what
+it does not buy, is in `docs/mount-boundary.md`.
+
 ### What the file still keeps apart
 
 `slots` and `mounted` remain two keys sharing one record shape, because the KEYS are different

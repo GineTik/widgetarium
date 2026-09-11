@@ -128,6 +128,7 @@ interface TrackRequest {
 
 function track(state: CacheState, { meta, input, run, listener }: TrackRequest): Unsubscribe {
 	const key = keyOf(meta, input);
+	const nothingWasSubscribed = !state.attached.has(meta.gatewayId);
 	const held = state.tracked.get(key) ?? { meta, run, input, listeners: new Set<() => void>(), ticket: 0 };
 	// CONTEXT: the freshest closure wins — a refetch must not read through a stale config
 	held.run = run;
@@ -135,7 +136,7 @@ function track(state: CacheState, { meta, input, run, listener }: TrackRequest):
 	state.tracked.set(key, held);
 	held.listeners.add(listener);
 	attach(state, meta);
-	if (!state.entries.has(key)) fetchNow(state, key);
+	if (nothingWasSubscribed || !state.entries.has(key)) fetchNow(state, key);
 	return () => untrack(state, key, held, listener);
 }
 

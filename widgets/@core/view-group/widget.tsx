@@ -1,4 +1,4 @@
-import { applyTabStep, archivedOf, createWidget, EditableTabs, movesRows, movesSelection, tabsOf, useData, WidgetRoot } from "widgetarium";
+import { applyTabStep, archivedOf, createWidget, EditableTabs, Mounted, movesRows, movesSelection, tabsOf, useData, WidgetRoot } from "widgetarium";
 import type { ConfigureMounts, MountEntry, ValueGateway, WidgetCatalogue } from "widgetarium";
 import { Button } from "widgetarium/kit";
 
@@ -75,6 +75,12 @@ function Unfilled({ catalogue, onFill }: { catalogue: WidgetCatalogue; onFill: (
 	);
 }
 
+function viewBody(entry: MountEntry, catalogue: WidgetCatalogue, onFill: () => void) {
+	if (!entry.problem) return <Mounted key={entry.name} entry={entry} />;
+	if (entry.problem === "empty") return <Unfilled catalogue={catalogue} onFill={onFill} />;
+	return <Missing entry={entry} />;
+}
+
 type Step = { verb: string; name?: string; was?: string; selected?: string };
 
 type ViewGroupProps = {
@@ -139,8 +145,8 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 		);
 	}
 
-	const body = active.problem === "empty" ? <Unfilled catalogue={catalogue} onFill={fill} /> : active.render ? active.render() : <Missing entry={active} />;
-	if (!isStriped && active.render) return body;
+	const body = viewBody(active, catalogue, fill);
+	if (!isStriped && !active.problem) return body;
 
 	return (
 		<WidgetRoot className="orbi orbi-view-group ovg-stack">

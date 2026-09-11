@@ -105,6 +105,8 @@ export interface MountRow {
 	was?: string;
 }
 
+export type Release = () => void;
+
 export interface MountEntry {
 	name: string;
 	id: string;
@@ -113,7 +115,7 @@ export interface MountEntry {
 	manifest: Record<string, unknown> | null;
 	problem: "failed" | "not-found" | "empty" | null;
 	failure: string | null;
-	render: (() => ReactNode) | null;
+	drawInto: ((element: HTMLElement) => Release) | null;
 }
 
 export type ConfigureMounts = (name: string, rows: MountRow[]) => void;
@@ -145,6 +147,7 @@ export declare const DialogDescription: any;
 export declare const DialogFooter: any;
 export declare const DialogClose: any;
 export declare const ConfirmDialog: any;
+export declare const Mounted: (props: { entry: MountEntry }) => ReactNode;
 export declare const WidgetRoot: any;
 export declare const AppearanceOverride: any;
 export declare const useWidgetRounded: any;

@@ -25,7 +25,7 @@ function collect(from, into, prefix) {
 		const full = path.join(from, name);
 		const key = `${prefix}/${name}`;
 		if (statSync(full).isDirectory()) collect(full, into, key);
-		else if (/\.(json|jsx|js|css)$/.test(name)) into[key] = readFileSync(full, "utf8");
+		else if (/\.(json|tsx|jsx|js|css)$/.test(name)) into[key] = readFileSync(full, "utf8");
 	}
 	return into;
 }
@@ -386,6 +386,100 @@ const MOUNT_ASK = `(async () => {
 	};
 })()`;
 
+const OVERLAY_PROBE = `
+import { createElement as h, useEffect, useState } from "react";
+import { render } from "./src/engine/render.js";
+import { WidgetSurface } from "./src/surface.js";
+import { WidgetRegistry } from "./src/registry.js";
+import { normalizeBoard } from "./src/model.js";
+
+const GROUP_ID = "@core/view-group";
+const KANBAN_ID = "@task/kanban-board";
+const FILES = window.__FILES__;
+const adapter = {
+	async exists(path) {
+		return Object.hasOwn(FILES, path) || Object.keys(FILES).some((key) => key.startsWith(path + "/"));
+	},
+	async list(path) {
+		const files = [];
+		const folders = new Set();
+		for (const key of Object.keys(FILES)) {
+			if (!key.startsWith(path + "/")) continue;
+			const rest = key.slice(path.length + 1);
+			const cut = rest.indexOf("/");
+			if (cut === -1) files.push(key);
+			else folders.add(path + "/" + rest.slice(0, cut));
+		}
+		return { files, folders: [...folders] };
+	},
+	async read(path) {
+		return FILES[path];
+	},
+};
+const ROWS = ["To Do", "Doing"].flatMap((status, at) =>
+	[1, 2].map((nth) => ({
+		path: "Orbitask/Tasks/" + status + "-" + nth + ".md",
+		ref: { path: "Orbitask/Tasks/" + status + "-" + nth + ".md" },
+		name: status + " " + nth,
+		props: { title: status + " " + nth, status, order: at * 2 + nth },
+		meta: { created: 1, modified: 2 },
+		attachments: 0,
+	})),
+);
+const slot = {
+	canCreate: false, canUpdate: false, canRemove: false, canSubscribe: false,
+	list: async () => ({ rows: ROWS, total: ROWS.length }),
+	describe: async () => [],
+};
+const host = { platform: "probe", can: {}, slot: () => slot, ui: { notify() {}, openNote() {} } };
+let board = normalizeBoard({
+	tiles: [
+		{
+			id: "t1",
+			widget: GROUP_ID,
+			mounts: { holds: [{ name: "Inner", widget: GROUP_ID }] },
+			mounted: { Inner: { widget: GROUP_ID, mounts: { holds: [{ name: "Kanban", widget: KANBAN_ID }] } } },
+		},
+	],
+	layout: { left: [], main: [[{ id: "t1", height: 560 }]], right: [] },
+});
+const node = document.getElementById("host");
+function Harness() {
+	const [registry, setRegistry] = useState(null);
+	useEffect(() => {
+		const loading = new WidgetRegistry({ vault: { adapter } });
+		loading.load().then(() => setRegistry(loading));
+	}, []);
+	if (!registry) return h("p", null, "Loading widgets");
+	return h(WidgetSurface, { board, registry, host, editing: false, initialWidth: 1240, onChange: (next) => { board = next; draw(); } });
+}
+function draw() {
+	render(h(Harness), node);
+}
+draw();
+const settle = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 160)));
+window.__PRESS__ = async (target) => {
+	target?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	await settle();
+};
+`;
+
+const OVERLAY_ASK = `(async () => {
+	await window.__PRESS__(document.querySelector(".wg-mounted .ovg-strip .wg-tabs-more"));
+	const overlay = document.querySelector("[data-wg-overlay]");
+	const roots = [...document.querySelectorAll(".wg-widget-root")];
+	const overflowOf = (node) => getComputedStyle(node).overflowY;
+	return {
+		opened: Boolean(overlay),
+		insideAMountedChild: Boolean(document.querySelector(".wg-mounted [data-wg-overlay]")),
+		holding: [...new Set(roots.filter((root) => overlay && root.contains(overlay)).map(overflowOf))],
+		holdingCount: roots.filter((root) => overlay && root.contains(overlay)).length,
+		beside: [...new Set(roots.filter((root) => !overlay || !root.contains(overlay)).map(overflowOf))],
+		besideCount: roots.filter((root) => !overlay || !root.contains(overlay)).length,
+	};
+})()`;
+
 const STREAK_RAIL_PX = 836;
 const STREAK_SLACK_PX = 830;
 const STREAK_TILE_PX = 120;
@@ -474,7 +568,7 @@ const STREAK_ASK = `(async () => {
 	};
 })()`
 
-const [subScript, kitScript, mountScript, streakScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(STREAK_PROBE)]);
+const [subScript, kitScript, mountScript, overlayScript, streakScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(OVERLAY_PROBE), bundle(STREAK_PROBE)]);
 
 for (const theme of ["light", "dark"]) {
 	console.log(`\n— ${theme} —`);
@@ -520,6 +614,11 @@ for (const theme of ["light", "dark"]) {
 	check("and it can be searched", mount.searchable, true);
 	check("no bare list of titles is left anywhere", mount.bareList, false);
 	check("a pick lands under its declared name, disambiguated", mount.names, ["Kanban", "Archived columns", "Archived columns 2", "Add a view"]);
+
+	const overlay = await ask(pageFor(theme, overlayScript, "overlay"), OVERLAY_ASK, 3000);
+	check("a panel opened inside a mounted child is an overlay the board can see", [overlay.opened, overlay.insideAMountedChild], [true, true]);
+	check("every widget root that holds it stops clipping", [overlay.holding, overlay.holdingCount > 1], [["visible"], true]);
+	check("while every root beside it keeps the clip the grid depends on", [overlay.beside, overlay.besideCount > 0], [["hidden"], true]);
 
 	const streak = await ask(pageFor(theme, streakScript, "streak"), STREAK_ASK, 2000);
 	check("the streak rail takes the whole tile", streak.tight.railWidthPx, STREAK_RAIL_PX);

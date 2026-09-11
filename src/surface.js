@@ -8,6 +8,7 @@ import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellS
 import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, propConfig, rekeyed, uniqueName } from "./model.js";
 import { widgetCatalogue } from "./catalogue-dialog.js";
 import { mountInto } from "./portal.js";
+import { leaseFor } from "./engine/render.js";
 import { viewHost } from "./engine/view-host.js";
 import { NOWHERE } from "./engine/navigator-none.js";
 import { trace } from "./trace.js";
@@ -75,8 +76,8 @@ class Boundary extends Component {
 	render() {
 		if (!this.state.failure) return this.props.children;
 		return h("div", { className: "wg-error" }, [
-			h("b", null, "Widget crashed"),
-			h("code", null, String(this.state.failure?.message ?? this.state.failure)),
+			h("b", { key: "what" }, "Widget crashed"),
+			h("code", { key: "why" }, String(this.state.failure?.message ?? this.state.failure)),
 		]);
 	}
 }
@@ -148,8 +149,14 @@ function mountEntry(row, registry, mount) {
 		manifest: held?.manifest ? { ...held.manifest } : null,
 		problem: drawable ? null : row.widget ? (held ? "failed" : "not-found") : "empty",
 		failure: held?.error ? String(held.error.message ?? held.error) : null,
-		render: drawable ? () => h(MountedWidget, { ...mount, key: row.name, name: row.name, was: row.was, widget: row.widget, definition: held }) : null,
+		drawInto: drawable ? (element) => drawMounted(element, row.widget, h(MountedWidget, { ...mount, name: row.name, was: row.was, widget: row.widget, definition: held })) : null,
 	};
+}
+
+function drawMounted(element, widget, child) {
+	const { draw, release } = leaseFor(element);
+	draw(h(Boundary, { key: widget }, child));
+	return release;
 }
 
 export function resolveMounts(manifest, registry, mount) {
