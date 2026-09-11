@@ -1,4 +1,4 @@
-import { sessionAt } from "./engine/render.js";
+import { leaseFor } from "./engine/render.js";
 import { shieldFromEditor } from "./editor-shield.js";
 
 export function mountInto(anchor, className, onEscape) {
@@ -13,7 +13,7 @@ export function mountInto(anchor, className, onEscape) {
 	const onKey = (event) => event.key === "Escape" && onEscape?.();
 	if (onEscape) document.addEventListener("keydown", onKey);
 
-	const { draw, release } = sessionAt(node);
+	const { draw, release } = leaseFor(node);
 
 	// CONTEXT: `node` is handed back so a caller can animate the mount out before disposing it
 	return {

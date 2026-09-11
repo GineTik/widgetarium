@@ -37,22 +37,14 @@ function releaseLater(node) {
 	queueMicrotask(() => {
 		if (!awaitingRelease.delete(node)) return;
 		if (roots.get(node) !== root) return;
-		roots.delete(node);
-		root.unmount();
+		drop(node, (existing) => existing.unmount());
 	});
 }
 
-function renderLater(tree, node) {
-	if (tree === null || tree === undefined) {
-		releaseLater(node);
-		return;
-	}
-	rootFor(node).render(tree);
-}
-
-export function sessionAt(node) {
+export function leaseFor(node) {
+	const release = () => releaseLater(node);
 	return {
-		draw: (tree) => renderLater(tree, node),
-		release: () => releaseLater(node),
+		draw: (tree) => (tree === null || tree === undefined ? release() : rootFor(node).render(tree)),
+		release,
 	};
 }
