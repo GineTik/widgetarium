@@ -8,3 +8,4 @@ tools/.mjs-cache/
 /data.json
 /export/
 /*.png
+.omc/
