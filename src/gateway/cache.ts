@@ -118,7 +118,14 @@ function detach(state: CacheState, meta: ActionMeta) {
 	if (bySubscriber.size === 0) state.attached.delete(meta.gatewayId);
 }
 
-function untrack(state: CacheState, key: string, held: Tracked, listener: () => void, meta: ActionMeta) {
+interface UntrackRequest {
+	key: string;
+	held: Tracked;
+	listener: () => void;
+	meta: ActionMeta;
+}
+
+function untrack(state: CacheState, { key, held, listener, meta }: UntrackRequest) {
 	held.listeners.delete(listener);
 	detach(state, meta);
 	if (held.listeners.size > 0) return;
@@ -144,7 +151,7 @@ function track(state: CacheState, { meta, input, run, listener }: TrackRequest):
 	held.listeners.add(listener);
 	attach(state, meta);
 	if (nothingWasSubscribed || !state.entries.has(key)) fetchNow(state, key);
-	return () => untrack(state, key, held, listener, meta);
+	return () => untrack(state, { key, held, listener, meta });
 }
 
 const isThenable = (held: unknown): boolean => typeof (held as { then?: unknown } | null)?.then === "function";

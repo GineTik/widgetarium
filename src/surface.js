@@ -633,18 +633,8 @@ function sizeOfCell(node) {
 function treeCellBody({ tile, definition, shared, shells, cell, patchTile }) {
 	if (!definition) return h("div", { className: "wg-missing" }, h("b", null, "This widget is not installed"));
 	const onPatch = (patch) => patchTile(tile.id, patch);
-	return drawnTile(
-		shells,
-		tile,
-		h(WidgetHost, {
-			...shared,
-			...widgetPatchers(tile, onPatch),
-			definition,
-			tile,
-			place: { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 },
-			onPatch,
-		}),
-	);
+	const place = { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 };
+	return drawnTile(shells, tile, h(WidgetHost, { ...shared, ...widgetPatchers(tile, onPatch), definition, tile, place, onPatch }));
 }
 
 function TreeCell(props) {
