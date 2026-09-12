@@ -8,7 +8,7 @@ function isHeld(record: unknown): record is Held {
 
 export function fieldOf(record: unknown, prop: string): unknown {
 	if (!isHeld(record) || !prop) return undefined;
-	const carried = record.props;
+	const carried = record["props"];
 	if (isHeld(carried) && carried[prop] !== undefined) return carried[prop];
 	return record[prop];
 }
@@ -20,7 +20,7 @@ export function textOf(record: unknown, prop: string): string {
 
 export function valueOf(record: unknown, prop: string): unknown {
 	if (!isHeld(record) || !prop) return undefined;
-	if (prop === "name" || prop === "title") return record.name ?? fieldOf(record, prop);
+	if (prop === "name" || prop === "title") return record["name"] ?? fieldOf(record, prop);
 	if (prop === "path" || prop === "type") return record[prop];
 	return fieldOf(record, prop);
 }

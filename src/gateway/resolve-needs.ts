@@ -40,13 +40,15 @@ function namedExactly(fields: readonly FieldReport[], names: readonly string[], 
 
 function namedPlainly(fields: readonly FieldReport[], names: readonly string[], declared: DeclaredNeed): FieldReport | null {
 	const wanted = new Set(names.map(plainly));
-	const found = fields.filter((field) => wanted.has(plainly(field.prop)) && fits(field, declared));
-	return found.length === 1 ? found[0] : null;
+	const [only, andMore] = fields.filter((field) => wanted.has(plainly(field.prop)) && fits(field, declared));
+	if (!only || andMore) return null;
+	return only;
 }
 
 function theOnlyFieldThatFits(fields: readonly FieldReport[], declared: DeclaredNeed): FieldReport | null {
-	const found = fields.filter((field) => fits(field, declared));
-	return found.length === 1 ? found[0] : null;
+	const [only, andMore] = fields.filter((field) => fits(field, declared));
+	if (!only || andMore) return null;
+	return only;
 }
 
 function namedFor(need: string, declared: DeclaredNeed, fields: readonly FieldReport[]): string | null {
@@ -82,5 +84,5 @@ export function resolveNeeds(needs: DeclaredNeeds, fields: readonly FieldReport[
 	const map = resolvedByName(needs, fields, chosen);
 	resolvedByType(needs, fields, map);
 	const unresolved = Object.keys(needs).filter((need) => !map[need]);
-	return { map, unresolved, missing: unresolved.filter((need) => needs[need].required) };
+	return { map, unresolved, missing: unresolved.filter((need) => needs[need]?.required) };
 }

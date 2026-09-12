@@ -56,7 +56,7 @@ export function conditionById(type: FieldType, id: string): ConditionKind | null
 export function conditionOfRow(type: FieldType, row: FilterRow): ConditionKind | null {
 	const held = conditionsFor(type).filter((kind) => kind.op === (row.op ?? "is"));
 	if (held.length < 2) return held[0] ?? null;
-	return held.find((kind) => kind.takes !== "none" || kind.fixed === row.value) ?? held[0];
+	return held.find((kind) => kind.takes !== "none" || kind.fixed === row.value) ?? held[0] ?? null;
 }
 
 export function rowFor(prop: string, kind: ConditionKind, value: unknown): FilterRow {

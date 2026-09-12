@@ -18,7 +18,7 @@ function isRecord(held: unknown): held is Record<string, unknown> {
 
 function fieldsIn(record: unknown): Record<string, unknown> {
 	if (!isRecord(record)) return {};
-	const carried = record.props;
+	const carried = record["props"];
 	return isRecord(carried) ? carried : record;
 }
 
@@ -43,8 +43,9 @@ interface Seen {
 }
 
 function heldBySeen(seen: Seen): FieldType {
-	if (seen.countsAs.size !== 1) return "text";
-	return [...seen.countsAs][0];
+	const [only, andMore] = [...seen.countsAs];
+	if (!only || andMore) return "text";
+	return only;
 }
 
 function typeOfSeen(seen: Seen): FieldType {

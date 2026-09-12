@@ -65,7 +65,9 @@ function renamedClauses<T extends FilterRow | SortRow>(
 
 function renamedQuery(query: Query | void, needs: DeclaredNeeds, map: Record<string, string>): Query {
 	const asked = query ?? {};
-	return { ...asked, where: renamedClauses(asked.where, needs, map), sort: renamedClauses(asked.sort, needs, map) };
+	const where = renamedClauses(asked.where, needs, map);
+	const sort = renamedClauses(asked.sort, needs, map);
+	return { ...asked, ...(where ? { where } : {}), ...(sort ? { sort } : {}) };
 }
 
 function renamedPatch(data: unknown, needs: DeclaredNeeds, map: Record<string, string>): unknown {
@@ -89,7 +91,7 @@ export interface MappingSpec {
 }
 
 async function fieldsBehind(base: CollectionGateway<unknown>): Promise<FieldReport[]> {
-	const describe = (base as unknown as Held).describe as (() => Promise<FieldReport[]>) & { can(): { can: boolean } };
+	const describe = (base as unknown as Held)["describe"] as (() => Promise<FieldReport[]>) & { can(): { can: boolean } };
 	if (typeof describe === "function" && describe.can().can) return describe();
 	const listed = await base.list();
 	return fieldsOf(listed.rows.map((row) => row.value));
