@@ -1,5 +1,6 @@
 import { createElement as h } from "react";
 import { viewHost } from "./engine/view-host.js";
+import { reactClash } from "./fit.js";
 import { spanToPixels } from "./layout.js";
 import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
@@ -114,7 +115,8 @@ export function previewProps(definition, options) {
 	const slots = {};
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = options?.registry?.get(spec.default);
-		slots[name] = child?.component && !child.error
+		const drawable = child?.component && !child.error && !reactClash(definition?.react, child.react);
+		slots[name] = drawable
 			? (given) => h(child.component, { ...given, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host) })
 			: null;
 	}

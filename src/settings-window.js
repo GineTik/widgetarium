@@ -10,7 +10,7 @@ import { bindingOf, storedRows } from "./gateway/props.js";
 import { fieldsOf } from "./gateway/fields.js";
 import { boxNamed, matchesNeedle, referenceIn, referenceText, widgetsOffering } from "./ref-draft.js";
 import { conditionOfRow, conditionsFor, rowFor } from "./gateway/operators.js";
-import { slotFit } from "./fit.js";
+import { reactClash, slotFit } from "./fit.js";
 import { spanToPixels } from "./layout.js";
 import { CHROME, barPlacement, clampPan, dialogBox, freeArea, openingPan, openingScale } from "./settings-fit.js";
 
@@ -633,12 +633,19 @@ function propGroup(state) {
 function slotRows(state) {
 	const { manifest, tile, registry, host, onPatch } = state;
 	const picks = tile.slots ?? {};
+	const parentReact = registry.get(manifest.id)?.react;
+	const clashWith = (id) => reactClash(parentReact, registry.get(id)?.react);
 	return Object.entries(manifest.slots ?? {}).map(([name, spec]) => {
 		const chosen = picks[name]?.widget ?? spec.default ?? "";
 		const held = registry.get(chosen);
 		const key = `slot:${name}`;
 		// CONTEXT: a new widget in the slot is a new record — the old one's settings are not its
 		const write = (id) => {
+			const clash = clashWith(id);
+			if (clash) {
+				state.host?.ui?.notify(clash);
+				return;
+			}
 			const { [name]: dropped, ...rest } = picks;
 			onPatch({ slots: id ? { ...picks, [name]: { widget: id } } : rest });
 			state.openEditor(null);
@@ -662,7 +669,7 @@ function slotRows(state) {
 						registry,
 						host,
 						mode: "fill",
-						rank: (candidate) => slotFit(candidate, spec.gives),
+						rank: (candidate) => slotFit(candidate, spec.gives, clashWith(candidate.id)),
 						foot: spec.default
 							? h(Button, { size: "s", onClick: () => write(null) }, "Back to the widget's default")
 							: null,

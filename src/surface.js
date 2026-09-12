@@ -6,9 +6,11 @@ import { createWidthWatcher } from "./width-gate.js";
 import { isTooNarrow, openedBox, wantedBox } from "./chip.js";
 import { arrange, clampPlace, FOLDED_COLUMNS, rowsOf, toPixels, toCells, toCellSpan, spanToPixels, hoverScale } from "./layout.js";
 import { heldKey, heldTile, mountList, mountPatch, mountRows, placedIds, layoutFor, propConfig, rekeyed, uniqueName } from "./model.js";
+import { crashBoundary } from "./crash-boundary.js";
+import { reactClash } from "./fit.js";
 import { widgetCatalogue } from "./catalogue-dialog.js";
 import { mountInto } from "./portal.js";
-import { DrawnInShell } from "./mounted.js";
+import { DrawnInShell, drawnWidget } from "./mounted.js";
 import { leaseFor } from "./engine/render.js";
 import { createTileShells } from "./engine/tile-shells.js";
 import { viewHost } from "./engine/view-host.js";
@@ -65,24 +67,7 @@ function initialOf(name) {
 
 const EDGES = ["n", "s", "w", "e", "nw", "ne", "sw", "se"];
 
-class Boundary extends Component {
-	state = { failure: null };
-
-	static getDerivedStateFromError(failure) {
-		// the message alone names no file; without the stack a crash inside a widget costs a
-		// bisect to locate
-		console.error("Widgetarium: widget crashed", failure);
-		return { failure };
-	}
-
-	render() {
-		if (!this.state.failure) return this.props.children;
-		return h("div", { className: "wg-error" }, [
-			h("b", { key: "what" }, "Widget crashed"),
-			h("code", { key: "why" }, String(this.state.failure?.message ?? this.state.failure)),
-		]);
-	}
-}
+const Boundary = crashBoundary(h, Component);
 
 function refuseFold() {
 	console.warn("Widgetarium: this widget was rendered without a board and cannot fold its views into a group");
@@ -96,12 +81,26 @@ function isDrawable(definition) {
 // A slot is where the board says WHICH widget draws part of another one. The parent feeds
 // it — a card gets its row from the board — so a slotted widget has no source of its own; it
 // is a view handed data. That is what makes "replace this card" a setting, not a fork.
+function refusedSlot(said) {
+	return h("div", { className: "wg-missing" }, [
+		h("b", { key: "what" }, "This slot cannot be filled by that widget"),
+		h("span", { key: "why" }, said),
+	]);
+}
+
 export function resolveSlots(manifest, tile, registry, host, foldIntoGroup) {
 	const slots = {};
+	const parentReact = registry.get(manifest.id)?.react;
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = registry.get(tile.slots?.[name]?.widget ?? spec.default);
 		if (!isDrawable(child)) {
 			slots[name] = null;
+			continue;
+		}
+		const clash = reactClash(parentReact, child.react);
+		if (clash) {
+			console.error(`Widgetarium: ${clash}`);
+			slots[name] = () => refusedSlot(clash);
 			continue;
 		}
 		slots[name] = (given) =>
@@ -377,7 +376,7 @@ export function WidgetHost({ definition, tile, place, host, scale, patchProp, re
 		]);
 	}
 
-	return h(definition.component, props);
+	return drawnWidget(definition, props);
 }
 
 // the empty grid is real elements, so colour and radius come from tokens rather than

@@ -26,8 +26,13 @@ export function modulePath(key) {
 	return `${moduleFolder(key)}/index.js`;
 }
 
+const KEPT_OUTSIDE_A_BUNDLE = ["react", "react-dom"];
+export const HELD_BY_THE_ENGINE = ["widgetarium", "widgetarium/kit", "widgetarium/kit/emojis"];
+
 export function facadeUrl(name, range) {
-	return `${ESM_HOST}/${name}@${encodeURIComponent(range)}?bundle&external=react,react-dom`;
+	const outside = KEPT_OUTSIDE_A_BUNDLE.filter((held) => held !== name);
+	const asked = outside.length > 0 ? `?bundle&external=${outside.join(",")}` : "?bundle";
+	return `${ESM_HOST}/${name}@${encodeURIComponent(range)}${asked}`;
 }
 
 export function realPathIn(facade) {
@@ -79,6 +84,7 @@ export function createModuleSpace({ adapter, fetchText }) {
 
 	async function resolveKey(name, range) {
 		if (!SAFE_NAME.test(String(name ?? ""))) return refuse(`"${name}" is not a package name`);
+		if (HELD_BY_THE_ENGINE.includes(name)) return refuse(`"${name}" is what the plugin itself hands a widget, so nothing may be installed under that name`);
 		if (!SAFE_RANGE.test(String(range ?? ""))) return refuse(`"${name}" asks for "${range}", which is not a version`);
 
 		const realPath = realPathIn(await fetchText(facadeUrl(name, range)));

@@ -3,8 +3,50 @@ import esbuild from "esbuild";
 
 const SUPPLIED_BY_ELECTRON_AT_RUNTIME = ["obsidian", "electron", "node:fs/promises", "node:path"];
 
+const HELD_BY_THE_ONE_CORE = /^\.\/(cache|create|narrow|emoji-table\.js)$/;
+
+function coreProvides() {
+	return {
+		name: "widgetarium-core-provides",
+		setup(build) {
+			build.onResolve({ filter: HELD_BY_THE_ONE_CORE }, () => ({ path: "widgetarium/core", external: true }));
+		},
+	};
+}
+
+export function surfaceOptions({ minify = false } = {}) {
+	return {
+		entryPoints: ["src/widget-api.js"],
+		bundle: true,
+		write: false,
+		format: "cjs",
+		platform: "browser",
+		target: "es2020",
+		external: ["react", "react-dom", "react-dom/client", "widgetarium/core"],
+		plugins: [coreProvides()],
+		jsxFactory: "h",
+		jsxFragment: "Fragment",
+		minify,
+		logLevel: "warning",
+	};
+}
+
+function surfaceSource({ minify }) {
+	return {
+		name: "widgetarium-surface-source",
+		setup(build) {
+			build.onResolve({ filter: /^widgetarium:surface$/ }, (found) => ({ path: found.path, namespace: "wg-surface" }));
+			build.onLoad({ filter: /.*/, namespace: "wg-surface" }, async () => {
+				const built = await esbuild.build(surfaceOptions({ minify }));
+				return { contents: `export const REACT_SURFACE_SOURCE = ${JSON.stringify(built.outputFiles[0].text)};`, loader: "js" };
+			});
+		},
+	};
+}
+
 export function bundleOptions({ outfile = "main.js", minify = false, sourcemap = false } = {}) {
 	return {
+		plugins: [surfaceSource({ minify })],
 		entryPoints: ["src/main.js"],
 		bundle: true,
 		outfile,

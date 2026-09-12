@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 
 const DECLARATION = "widgets/types/widgetarium.d.ts";
-const MODULE = "src/api.js";
+const HALVES = [
+	["src/api-core.js", "coreSurface"],
+	["src/widget-api.js", "reactSurface"],
+];
+const MODULE = HALVES.map(([path]) => path).join(" + ");
 
 function reExportedNames(source) {
 	const names = new Set();
@@ -20,20 +24,20 @@ function declaredNames(source) {
 	return names;
 }
 
-function coreLiteral(source) {
-	const found = source.match(/const core = \{([\s\S]*?)\n\};/);
-	if (!found) throw new Error(`${MODULE}: the core object literal was not found — this check reads it by shape`);
+function surfaceLiteral(source, held, at) {
+	const found = source.match(new RegExp(`const ${held} = \\{([\\s\\S]*?)\\n\\};`));
+	if (!found) throw new Error(`${at}: the ${held} object literal was not found — this check reads it by shape`);
 	return found[1];
 }
 
-function runtimeNames(source) {
-	const names = new Set(
-		coreLiteral(source)
-			.split(",")
-			.map((entry) => entry.trim())
-			.filter(Boolean),
-	);
-	if (/export const widgetarium = \{ \.\.\.core, Kit \}/.test(source)) names.add("Kit");
+function runtimeNames() {
+	const names = new Set();
+	for (const [at, held] of HALVES) {
+		for (const entry of surfaceLiteral(readFileSync(at, "utf8"), held, at).split(",")) {
+			const name = entry.trim().split(":")[0].trim();
+			if (name) names.add(name);
+		}
+	}
 	return names;
 }
 
@@ -43,7 +47,7 @@ function driftBetween(runtime, declared) {
 	return [...missing, ...stale];
 }
 
-const runtime = runtimeNames(readFileSync(MODULE, "utf8"));
+const runtime = runtimeNames();
 const drifted = driftBetween(runtime, declaredNames(readFileSync(DECLARATION, "utf8")));
 
 for (const line of drifted) console.log(`fail  ${line}`);

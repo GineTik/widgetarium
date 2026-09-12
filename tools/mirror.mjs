@@ -13,6 +13,7 @@ export function buildMirror() {
 	// could not be imported at all, so every test reimplemented it — and then proved a
 	// reimplementation instead of the code that ships.
 	fs.writeFileSync(path.join(cache, "obsidian.mjs"), OBSIDIAN_STUB);
+	fs.writeFileSync(path.join(cache, "surface-source.mjs"), "export const REACT_SURFACE_SOURCE = null;\n");
 	return "./.mjs-cache";
 }
 
@@ -71,6 +72,7 @@ export const stringifyYaml = (value) => stringify(value);
 function mirrored(source, isTs, toStub) {
 	const read = fs.readFileSync(source, "utf8");
 	return (isTs ? transform(read, { transforms: ["typescript"], filePath: source }).code : read)
+		.replace(/from "widgetarium:surface"/g, `from "${toStub.replace("obsidian.mjs", "surface-source.mjs")}"`)
 		.replace(/from "(\.\.?\/[\w./-]+)\.js"/g, 'from "$1.mjs"')
 		// CONTEXT: TS sources import without an extension; node needs the mirror's .mjs spelled out
 		.replace(/from "(\.\.?\/[\w./-]+)"/g, (whole, specifier) => (specifier.endsWith(".mjs") || specifier.endsWith(".css") ? whole : `from "${specifier}.mjs"`))

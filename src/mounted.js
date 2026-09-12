@@ -12,6 +12,12 @@ export function DrawnInShell({ shell, tree }) {
 	return h("div", { className: "wg-drawn", ref: node });
 }
 
+export function drawnWidget(definition, props) {
+	if (!definition.draw) return h(definition.component, props);
+	const entry = { name: definition.manifest?.id, drawInto: (element) => definition.draw(element, definition.component, props) };
+	return h(Mounted, { entry });
+}
+
 export function Mounted({ entry }) {
 	const node = useRef(null);
 	const release = useRef(null);

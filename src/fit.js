@@ -23,7 +23,13 @@ function missingFrom(accepts, gives) {
 // TRADE-OFF: RANK, never filter. `gives` is what the parent DECLARES, and the object it builds at
 // runtime drifts from that on the next edit of either file — so a hard filter turns normal drift
 // into "my widget vanished and nothing said why", which is the worst failure a picker has.
-export function slotFit(manifest, gives) {
+export function reactClash(parent, child) {
+	if (!parent || !child || parent.instance === child.instance) return null;
+	return `This widget draws with React ${parent.version} and that one with React ${child.version}. A slot draws inside its parent, so both must be one React.`;
+}
+
+export function slotFit(manifest, gives, clash = null) {
+	if (clash) return { order: SHORT, lacks: clash };
 	// CONTEXT: silence on either side is not a misfit — most widgets declare nothing yet, and a
 	// list that called them all misfits would teach the reader to ignore the divider
 	if (!gives || Object.keys(gives).length === 0) return { order: UNDECLARED, lacks: null };

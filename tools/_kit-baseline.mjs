@@ -109,7 +109,8 @@ check("every piece is reachable from one object", surface.filter((name) => !Kit[
 
 // THE TWO SPECIFIERS, and what each one is FOR. A widget must have "widgetarium"; it may
 // take "widgetarium/kit". Proving them through the host's own resolver, not by reading api.js.
-const { widgetarium, kitModule } = await import("./.mjs-cache/api.mjs");
+const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { api: widgetarium, kit: kitModule } = ENGINE_SCOPE;
 check('import { Kit } from "widgetarium" — for <Kit.Button/> in JSX', widgetarium.Kit === Kit, true);
 check('import { Button } from "widgetarium/kit" — flat, and it says where it came from', kitModule.Button === Kit.Button, true);
 check("every piece is reachable from the subpath", surface.filter((name) => kitModule[name] !== Kit[name]).join(", ") || 0, 0);

@@ -4,6 +4,7 @@ import { boardWidgets, inlineWidgets } from "./registry.js";
 import { isInstalled, mergeCatalogue } from "./engine/catalogue-index.js";
 import { Button, Card, Field, Icon, IconButton, Pill, Popover, Segmented } from "./kit.js";
 import { rankSearch } from "./engine/search.js";
+import { drawnWidget } from "./mounted.js";
 import { previewProps, previewSize } from "./preview.js";
 import { spanToPixels } from "./layout.js";
 import { SizeGrid } from "./size-grid.js";
@@ -195,7 +196,7 @@ function Preview({ definition, registry, host, tile }) {
 					transform: `scale(${tile.scale})`,
 				},
 			},
-			h(definition.component, previewProps(definition, { registry, host })),
+			drawnWidget(definition, previewProps(definition, { registry, host })),
 		),
 	);
 }

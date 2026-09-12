@@ -1,5 +1,6 @@
 import { createElement as h } from "react";
 import { render } from "./engine/render.js";
+import { drawnWidget } from "./mounted.js";
 import { useState } from "react";
 import { MarkdownRenderChild } from "obsidian";
 import { activeRules, matchLines, renderSpan } from "./substitution.js";
@@ -82,7 +83,7 @@ export function InlineWidget({ definition, here, navigator, raw, host, reader })
 		h(
 			"div",
 			{ key: "view", className: "wg-inline-view" },
-			h(definition.component, {
+			drawnWidget(definition, {
 				...previewGateways(definition.manifest),
 				here,
 				navigator,

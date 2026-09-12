@@ -1,21 +1,24 @@
-import { createElement as h, Fragment } from "react";
 import * as react from "react";
 import * as reactDom from "react-dom";
-import { widgetarium, kitModule, emojiModule } from "./api.js";
+import * as coreModule from "./api-core.js";
+import { coreSurface } from "./api-core.js";
+import { reactSurface, kit, emojis } from "./widget-api.js";
 import { apiRefusal } from "./version.js";
 import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
 import { EMPTY_LOCK, readLock, modulesByWidget, buildIsCurrent } from "./engine/widget-lock.js";
 import { BUILD_FILE, SOURCE_FILES, compileWidget } from "./engine/widget-build.js";
 
-const BASE_SCOPE = {
-	h,
-	Fragment,
-	kitModule,
-	useState: react.useState,
-	useEffect: react.useEffect,
-	useMemo: react.useMemo,
-	useRef: react.useRef,
-};
+function injectedGlobals(scope) {
+	return {
+		h: scope.react.createElement,
+		Fragment: scope.react.Fragment,
+		kitModule: scope.kit,
+		useState: scope.react.useState,
+		useEffect: scope.react.useEffect,
+		useMemo: scope.react.useMemo,
+		useRef: scope.react.useRef,
+	};
+}
 
 function parsedLock(text) {
 	try {
@@ -26,20 +29,47 @@ function parsedLock(text) {
 }
 
 // CONTEXT: the specifier is the contract with widget authors; what stands behind it is not
-function createRequire(libs, packages) {
+function createRequire(libs, packages, scope) {
 	const modules = {
-		widgetarium,
-		"widgetarium/kit": kitModule,
-		"widgetarium/kit/emojis": emojiModule,
-		react,
-		"react-dom": reactDom,
+		widgetarium: scope.api,
+		"widgetarium/kit": scope.kit,
+		"widgetarium/kit/emojis": scope.emojis,
+		react: scope.react,
+		"react-dom": scope.reactDom,
 		...Object.fromEntries(libs),
 	};
 	return (name) => {
-		const found = modules[name] ?? packages?.take(name);
+		const found = packages?.take(name) ?? modules[name];
 		if (!found) throw new Error(`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`);
 		return found;
 	};
+}
+
+export const ENGINE_SCOPE = {
+	instance: "the plugin's own",
+	react,
+	reactDom,
+	api: { ...coreSurface, ...reactSurface },
+	kit,
+	emojis,
+	draw: null,
+};
+
+function surfaceExports(source, ownReact, ownReactDom) {
+	const shell = { exports: {} };
+	const take = { react: ownReact, "react-dom": ownReactDom, "react-dom/client": ownReactDom, "widgetarium/core": coreModule };
+	new Function("require", "module", "exports", source)((name) => take[name], shell, shell.exports);
+	return shell.exports;
+}
+
+function foreignScope(source, ownReact, ownReactDom) {
+	const said = `React ${ownReact.version}`;
+	if (!source) throw new Error(`this build carries no widget surface, so a widget cannot bring ${said}`);
+	if (!ownReactDom) throw new Error(`a widget asking for ${said} must declare react-dom beside it`);
+	if (typeof ownReactDom.createRoot !== "function") throw new Error(`the react-dom beside ${said} provides no createRoot`);
+
+	const built = surfaceExports(source, ownReact, ownReactDom);
+	return { instance: ownReact, react: ownReact, reactDom: ownReactDom, api: { ...coreSurface, ...built.reactSurface }, kit: built.kit, emojis: built.emojis, draw: built.drawWidget };
 }
 
 function componentIn(shell, at) {
@@ -48,20 +78,21 @@ function componentIn(shell, at) {
 	return exported;
 }
 
-function runCode(code, libs, packages) {
+function runCode(code, libs, packages, scope = ENGINE_SCOPE) {
 	const shell = { exports: {} };
-	new Function("require", "module", "exports", ...Object.keys(BASE_SCOPE), code)(
-		createRequire(libs, packages),
+	const globals = injectedGlobals(scope);
+	new Function("require", "module", "exports", ...Object.keys(globals), code)(
+		createRequire(libs, packages, scope),
 		shell,
 		shell.exports,
-		...Object.values(BASE_SCOPE),
+		...Object.values(globals),
 	);
 	return shell.exports;
 }
 
 // TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
-function runModule(source, filePath, libs, packages) {
-	return runCode(compileWidget(source, filePath), libs, packages);
+function runModule(source, filePath, libs, packages, scope) {
+	return runCode(compileWidget(source, filePath), libs, packages, scope);
 }
 
 // CONTEXT: a catalogue card draws the widget itself, so code nobody installed still has to run
@@ -97,8 +128,10 @@ export function declaredName(registry, id) {
 }
 
 export class WidgetRegistry {
-	constructor(app) {
+	constructor(app, surfaceSource = null) {
 		this.app = app;
+		this.surfaceSource = surfaceSource;
+		this.scopes = new Map();
 		this.widgets = new Map();
 		// CONTEXT: a manifest's `was` is the id it shipped under — read there, write here
 		this.renamed = new Map();
@@ -129,6 +162,7 @@ export class WidgetRegistry {
 		this.libs.clear();
 		this.packages.clear();
 		this.packagesByWidget.clear();
+		this.scopes.clear();
 		this.dropStyles();
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
@@ -172,16 +206,50 @@ export class WidgetRegistry {
 		for (const [id, named] of modulesByWidget(lock)) this.packagesByWidget.set(id, named);
 	}
 
-	packagesFor(id) {
+	packagesFor(id, scope) {
 		const wanted = this.packagesByWidget.get(id) ?? new Map();
-		return { names: [...wanted.keys()], take: (name) => this.runPackage(wanted.get(name)) };
+		return { names: [...wanted.keys()], take: (name) => this.runPackage(wanted.get(name), scope) };
 	}
 
-	runPackage(key) {
+	// TRADE-OFF: a package is run once per React, not once — a bundle importing react must get the same one its widget did, and a shared copy handed the second React the first one's hooks
+	heldPackage(key) {
 		const held = key ? this.packages.get(key) : null;
 		if (!held) return null;
-		held.exports ??= runModule(held.source, held.path, this.libs);
-		return held.exports;
+		held.exports ??= new Map();
+		return held;
+	}
+
+	runPackage(key, scope) {
+		const held = this.heldPackage(key);
+		if (!held) return null;
+		if (!held.exports.has(scope.react)) held.exports.set(scope.react, runModule(held.source, held.path, this.libs, null, scope));
+		return held.exports.get(scope.react);
+	}
+
+	// TRADE-OFF: the scope's own React is written into the memo, because the widget resolves react through the same table as everything else and would otherwise run a second copy of the one it was built from
+	rememberPackage(key, scope, exports) {
+		this.heldPackage(key)?.exports.set(scope.react, exports);
+	}
+
+	buildScope(reactKey, reactDomKey) {
+		const ownReact = this.runPackage(reactKey, ENGINE_SCOPE);
+		const ownReactDom = this.runPackage(reactDomKey, { ...ENGINE_SCOPE, react: ownReact });
+		const made = foreignScope(this.surfaceSource, ownReact, ownReactDom);
+		this.rememberPackage(reactKey, made, ownReact);
+		this.rememberPackage(reactDomKey, made, ownReactDom);
+		return made;
+	}
+
+	scopeFor(id) {
+		const wanted = this.packagesByWidget.get(id) ?? new Map();
+		const reactKey = wanted.get("react");
+		if (!reactKey) return ENGINE_SCOPE;
+
+		const standing = this.scopes.get(reactKey);
+		if (standing) return standing;
+		const made = this.buildScope(reactKey, wanted.get("react-dom"));
+		this.scopes.set(reactKey, made);
+		return made;
 	}
 
 	// TRADE-OFF: a read that fails comes back as a value rather than throwing, because one file mid-fetch on iCloud used to reject the whole Promise.all and the vault came up with no widgets at all
@@ -253,8 +321,9 @@ export class WidgetRegistry {
 				return;
 			}
 
-			const exported = componentIn(runCode(this.codeToRun(manifest.id, held, folder), this.libs, this.packagesFor(manifest.id)), folder);
-			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder });
+			const scope = this.scopeFor(manifest.id);
+			const exported = componentIn(runCode(this.codeToRun(manifest.id, held, folder), this.libs, this.packagesFor(manifest.id, scope), scope), folder);
+			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder, react: { instance: scope.instance, version: scope.react.version }, draw: scope.draw });
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
 			const id = folder.slice(WIDGETS_DIR.length + 1);

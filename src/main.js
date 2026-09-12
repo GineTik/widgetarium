@@ -3,6 +3,7 @@ import { createElement as h } from "react";
 import { render } from "./engine/render.js";
 import { WidgetSurface } from "./surface.js";
 import { WidgetRegistry, buildWidget } from "./registry.js";
+import { REACT_SURFACE_SOURCE } from "widgetarium:surface";
 import { createHost, bindNote } from "./host.js";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
 import { normalizeBoard, serializeBoard } from "./model.js";
@@ -69,7 +70,7 @@ export default class WidgetariumPlugin extends Plugin {
 		const startedAt = performance.now();
 		this.editing = false;
 		this.mounts = new Map();
-		this.registry = new WidgetRegistry(this.app);
+		this.registry = new WidgetRegistry(this.app, REACT_SURFACE_SOURCE);
 		this.shapeAnswers = {};
 		this.shapes = createShapeStore({
 			read: () => this.shapeAnswers,
