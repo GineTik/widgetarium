@@ -173,12 +173,7 @@ export default createWidget(function MetricTotal(props: MetricProps) {
 		},
 		periods: {
 			label: "Periods",
-			item: {
-				fields: [
-					{ key: "label", label: "Name", type: "text" },
-					{ key: "days", label: "Days", type: "number" },
-				],
-			},
+			item: { fields: [{ key: "label", label: "Name", type: "text" }, { key: "days", label: "Days", type: "number" }] },
 			default: {
 				value: [
 					{ id: "p30", label: "Past 30 days", days: 30 },
@@ -245,21 +240,11 @@ function AddDialog({ isOpen, onOpenChange, form, onSave }: { isOpen: boolean; on
 					<div className="mt-form-side">
 						<span className="mt-form-label">Amount</span>
 						<span className="mt-sign">
-							<Segmented items={SIGNS} value={draft.sign} onChange={(next: string) => form.onDraft({ ...draft, sign: next })} />
+							<Segmented items={SIGNS} value={draft.sign} onChange={(sign: string) => form.onDraft({ ...draft, sign })} />
 						</span>
-						<Field
-							className="mt-amount"
-							value={draft.amount}
-							placeholder="0"
-							onInput={(event: FormEvent<HTMLInputElement>) => form.onDraft({ ...draft, amount: event.currentTarget.value })}
-						/>
+						<Field className="mt-amount" value={draft.amount} placeholder="0" onInput={(event: FormEvent<HTMLInputElement>) => form.onDraft({ ...draft, amount: event.currentTarget.value })} />
 						<span className="mt-form-label">Note</span>
-						<textarea
-							className="mt-note"
-							value={draft.note}
-							placeholder="Optional"
-							onInput={(event: FormEvent<HTMLTextAreaElement>) => form.onDraft({ ...draft, note: event.currentTarget.value })}
-						/>
+						<textarea className="mt-note" value={draft.note} placeholder="Optional" onInput={(event: FormEvent<HTMLTextAreaElement>) => form.onDraft({ ...draft, note: event.currentTarget.value })} />
 						{form.failure ? <span className="mt-left-out">{form.failure}</span> : null}
 					</div>
 				</div>
