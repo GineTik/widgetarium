@@ -6,13 +6,24 @@ line of text. `src/` is React with `h()` hyperscript — **no JSX there**; the g
 in place rather than being typed. Widgets under `widgets/` are `.tsx` compiled at runtime by
 sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
 
-**Every widget prop is a gateway.** A widget declares `props` in its manifest (`kind:
-"collection" | "value"`, `verbs` with `required`/`optional`); the engine resolves each to a
-`CollectionGateway`/`ValueGateway` from the binding the person chose — a vault folder or file, or a
-hardcoded value in the tile. Widgets read through `useData(gateway.list)` and write through verbs
-(`update({ ref, data })` — the ref names which, the adapter knows what it means); a verb nothing
-provides exists with `can() === {can:false, reason}`. Contract in `src/gateway/contract.ts`; old
-`sources` manifests still resolve via `was`/legacy fallback, per the lazy-migration law.
+**Every widget prop is a gateway.** A widget declares `props` in the second argument of
+`createWidget`, beside the component that reads them (`kind: "collection" | "value"`, `verbs` with
+`required`/`optional`); the engine resolves each to a `CollectionGateway`/`ValueGateway` from the
+binding the person chose — a vault folder or file, or a hardcoded value in the tile. Widgets read
+through `useData(gateway.list)` and write through verbs (`update({ ref, data })` — the ref names
+which, the adapter knows what it means); a verb nothing provides exists with `can() === {can:false,
+reason}`. Contract in `src/gateway/contract.ts`; a manifest that still carries `props` is still read
+and still answered, and old `sources` manifests still resolve via `was`/legacy fallback, per the
+lazy-migration law.
+
+**`manifest.json` is the catalogue's card, not the widget's declaration.** It carries what the engine
+must know *before* it runs any code: `id`, `title`, `description`, `keywords`, `preview`, the sizing
+(`defaultSize`, `maxSize`, `collapseBelowPx`, `stackBelowPx`, `tallestPx`), `inline`, `slots`,
+`mounts`, `api`, `was`, `view`. A folder holding nothing but `widget.tsx` installs and draws; the
+record is derived at publish by `tools/publish.mjs`, which reads the imports for `dependencies` and
+the `createWidget` declaration for `props`. `tools/widget-props.json` pins every shipped widget's
+resolved props, so losing an `aka` or a `wasSetting` in a move goes red by name — regenerate it with
+`node tools/widget-props.mjs` when a prop change is intended.
 
 ## The laws that cost the most to learn
 
