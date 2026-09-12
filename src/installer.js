@@ -1,11 +1,12 @@
-import { ROOT, WIDGETS_DIR } from "./paths.js";
+import { ROOT, WIDGETS_DIR, LOCK_PATH } from "./paths.js";
 import { readIndex } from "./engine/catalogue-index.js";
-import { readLock, lockEntry, withEntry, withoutEntry } from "./engine/widget-lock.js";
+import { readLock, lockEntry, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
+import { createModuleSpace, declaredDependencies } from "./engine/modules.js";
 import { commitUrl, folderFor, rawUrl, readRepository, treeUrl } from "./engine/github.js";
 import { apiRefusal } from "./version.js";
 
 export const INDEX_PATH = `${ROOT}/catalogue.json`;
-export const LOCK_PATH = `${ROOT}/widgets.lock.json`;
+export { LOCK_PATH };
 
 const NEEDED = "manifest.json";
 // CONTEXT: a widget travels with its own sheet; a lib and a palette belong to the whole scope
@@ -30,6 +31,8 @@ function refuse(failure) {
 // fetchJson and fetchText are the only two doors, and a test drives them itself.
 // CONTEXT: the vault IS the installed set, so a folder source is a path on the machine, not in it
 export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
+	const space = createModuleSpace({ adapter, fetchText });
+
 	const readJson = async (path, fallback) => {
 		if (!(await adapter.exists(path))) return fallback;
 		try {
@@ -57,6 +60,16 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		const libAt = `${scope}/lib.js`;
 		if (await disk.exists(libAt)) Object.assign(held, { lib: await disk.read(libAt), libPath: libAt, scope: scope.slice(scope.lastIndexOf("/") + 1) });
 		return held;
+	}
+
+	async function withDependencies(lock, id, manifest) {
+		let held = lock;
+		for (const [name, range] of declaredDependencies(manifest)) {
+			const found = await space.take(held, name, range);
+			if (!found.ok) return { ok: false, lock: held, failure: found.failure };
+			held = withModule(held, id, found);
+		}
+		return { ok: true, lock: held, failure: null };
 	}
 
 	async function discoverFolder(source) {
@@ -118,6 +131,9 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		}
 		if (!files[NEEDED]) return refuse(`${listed.from.folder} holds no ${NEEDED}`);
 
+		const resolved = await withDependencies(readLock(await readJson(LOCK_PATH, null)), manifest.id, manifest);
+		if (!resolved.ok) return refuse(resolved.failure);
+
 		// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
 		await adapter.mkdir(scopeOf(folder));
 		await adapter.mkdir(folder);
@@ -129,8 +145,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			if (await disk.exists(at)) await adapter.write(`${scopeOf(folder)}/${name}`, await disk.read(at));
 		}
 
-		const held = readLock(await readJson(LOCK_PATH, null));
-		await writeJson(LOCK_PATH, withEntry(held, manifest.id, lockEntry({ source: listed.origin, commit: "local", files })));
+		await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: listed.origin, commit: "local", files })));
 		return { ok: true, id: manifest.id, commit: "local", failure: null };
 	}
 
@@ -209,11 +224,14 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			const refusal = apiRefusal(served);
 			if (refusal) return refuse(refusal);
 
+			const resolved = await withDependencies(await this.lock(), manifest.id, served);
+			if (!resolved.ok) return refuse(resolved.failure);
+
 			// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
 			await adapter.mkdir(scopeOf(folder));
 			await adapter.mkdir(folder);
 			for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
-			await writeJson(LOCK_PATH, withEntry(await this.lock(), manifest.id, lockEntry({ source: manifest.repository, commit, files })));
+			await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: manifest.repository, commit, files })));
 			return { ok: true, id: manifest.id, commit, failure: null };
 		},
 
@@ -236,7 +254,10 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 				if (await adapter.exists(`${folder}/${name}`)) await adapter.remove(`${folder}/${name}`);
 			}
 			if (await adapter.exists(folder)) await adapter.rmdir(folder, true);
-			await writeJson(LOCK_PATH, withoutEntry(lock, id));
+
+			const released = releaseModules(lock, id);
+			for (const key of released.collected) await space.collect(key);
+			await writeJson(LOCK_PATH, withoutEntry(released.lock, id));
 			return { ok: true, id, failure: null };
 		},
 	};

@@ -1,6 +1,7 @@
 export const ROOT = ".widgetarium";
 export const WIDGETS_DIR = `${ROOT}/widgets`;
 export const COMPONENTS_DIR = `${ROOT}/components`;
+export const LOCK_PATH = `${ROOT}/widgets.lock.json`;
 
 // three authored layouts, each with a fixed column count.
 // the cell is always square and grows with the board, so a layout scales without reflowing.
