@@ -8,6 +8,10 @@ export type {
 	GatewayEvent,
 	GatewayRef,
 	Patch,
+	PrimitiveType,
+	PropKind,
+	PropSpec,
+	PropSpecs,
 	Query,
 	Ref,
 	Row,
@@ -16,6 +20,7 @@ export type {
 	Unsubscribe,
 	ValueGateway,
 	ValueOps,
+	VerbNeed,
 } from "../../src/gateway/contract";
 
 export type {
@@ -41,6 +46,7 @@ export { useNarrowed } from "../../src/gateway/use-narrowed";
 export { useValue } from "../../src/gateway/use-value";
 
 import type { ReactNode } from "react";
+import type { PropSpecs } from "../../src/gateway/contract";
 import type { VaultRecord } from "../../src/gateway/needs";
 
 export interface HostConsole {
@@ -133,6 +139,7 @@ export interface WidgetMeta {
 	id?: string;
 	title?: string;
 	inline?: boolean;
+	props?: PropSpecs;
 }
 
 export declare function createWidget<Props>(component: (props: Props) => any, meta?: WidgetMeta): (props: Props) => any;

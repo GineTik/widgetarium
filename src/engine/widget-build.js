@@ -2,6 +2,7 @@ import { transform } from "sucrase";
 
 export const BUILD_FILE = "widget.js";
 export const SOURCE_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
+export const SHEET_FILES = ["widget.css", "styles.css"];
 
 export function compileWidget(source, filePath) {
 	const typed = /\.tsx?$/.test(String(filePath ?? ""));

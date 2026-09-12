@@ -96,3 +96,27 @@ export type ValueGateway<T, Ops extends OpMap = Record<never, never>> = GatewayB
 
 export const COLLECTION_VERBS = ["list", "get", "create", "update", "remove"] as const;
 export const VALUE_VERBS = ["get", "update", "remove"] as const;
+
+export type PropKind = "collection" | "value";
+export type PrimitiveType = "text" | "number" | "boolean";
+export type VerbNeed = "required" | "optional";
+
+export interface PropSpec {
+	kind: PropKind;
+	type?: PrimitiveType;
+	label?: string;
+	hint?: string;
+	of?: string;
+	picks?: string;
+	field?: string;
+	fallback?: string;
+	wants?: string;
+	was?: string;
+	wasSetting?: boolean;
+	wasSettings?: Record<string, string>;
+	rowsFromText?: string;
+	verbs?: Record<string, VerbNeed>;
+	default?: unknown;
+}
+
+export type PropSpecs = Record<string, PropSpec>;

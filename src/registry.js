@@ -6,7 +6,9 @@ import { reactSurface, kit, emojis } from "./widget-api.js";
 import { apiRefusal } from "./version.js";
 import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
 import { EMPTY_LOCK, readLock, modulesByWidget, buildIsCurrent } from "./engine/widget-lock.js";
-import { BUILD_FILE, SOURCE_FILES, compileWidget } from "./engine/widget-build.js";
+import { BUILD_FILE, SHEET_FILES, SOURCE_FILES, compileWidget } from "./engine/widget-build.js";
+import { RECORD_FILE, readRecord, recordUnderItsDeclaration } from "./engine/catalogue-index.js";
+import { idOfFolder } from "./engine/github.js";
 
 function injectedGlobals(scope) {
 	return {
@@ -173,7 +175,7 @@ export class WidgetRegistry {
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// second pass is cheaper than deciding an order between scopes that reference each other
 		found.scopes.forEach((scope, at) => this.runLib(scope, found.libSources[at]));
-		found.sheets.forEach((sheet, at) => this.wearStyles(sheet.owner, found.sheetSources[at]));
+		this.wearEverySheet(found.sheets, found.sheetSources);
 		found.folders.forEach((folder, at) => this.mountWidget(folder, found.widgetSources[at]));
 		return this.widgets;
 	}
@@ -184,7 +186,7 @@ export class WidgetRegistry {
 		const foldersPerScope = await Promise.all(scopes.map((scope) => adapter.list(scope).then((held) => held.folders)));
 		const sheets = scopes.flatMap((scope, at) => [
 			{ owner: scope, path: `${scope}/tokens.css` },
-			...foldersPerScope[at].map((folder) => ({ owner: folder, path: `${folder}/styles.css` })),
+			...foldersPerScope[at].flatMap((folder) => SHEET_FILES.map((name) => ({ owner: folder, path: `${folder}/${name}` }))),
 		]);
 		const folders = foldersPerScope.flat();
 		const [libSources, sheetSources, widgetSources, lockText] = await Promise.all([
@@ -276,6 +278,15 @@ export class WidgetRegistry {
 		}
 	}
 
+	wearEverySheet(sheets, sources) {
+		const worn = new Set();
+		sheets.forEach((sheet, at) => {
+			if (sources[at] === null || worn.has(sheet.owner)) return;
+			worn.add(sheet.owner);
+			this.wearStyles(sheet.owner, sources[at]);
+		});
+	}
+
 	wearStyles(owner, source) {
 		if (source === null) return;
 
@@ -293,14 +304,11 @@ export class WidgetRegistry {
 	}
 
 	async readWidget(adapter, folder) {
-		const manifest = await this.readIfThere(adapter, `${folder}/manifest.json`);
-		if (manifest === null) return null;
-
-		const sources = await Promise.all(SOURCE_FILES.map((name) => this.readIfThere(adapter, `${folder}/${name}`)));
+		const [record, ...sources] = await Promise.all([`${folder}/${RECORD_FILE}`, ...SOURCE_FILES.map((name) => `${folder}/${name}`)].map((path) => this.readIfThere(adapter, path)));
 		const at = sources.findIndex((source) => source !== null);
 		if (at < 0) return null;
 		const name = SOURCE_FILES[at];
-		return { manifest, name, code: sources[at], build: name === BUILD_FILE ? null : sources[SOURCE_FILES.indexOf(BUILD_FILE)] };
+		return { record, name, code: sources[at], build: name === BUILD_FILE ? null : sources[SOURCE_FILES.indexOf(BUILD_FILE)] };
 	}
 
 	codeToRun(id, held, folder) {
@@ -312,18 +320,20 @@ export class WidgetRegistry {
 		if (held === null) return;
 
 		try {
-			const manifest = JSON.parse(held.manifest);
-			for (const id of [].concat(manifest.was ?? [])) this.renamed.set(id, manifest.id);
+			const record = readRecord(JSON.parse(held.record), idOfFolder(folder));
+			if (!record.id) return;
 
-			const refusal = apiRefusal(manifest);
+			for (const id of [].concat(record.was ?? [])) this.renamed.set(id, record.id);
+
+			const refusal = apiRefusal(record);
 			if (refusal) {
-				this.widgets.set(manifest.id, { manifest, error: new Error(refusal), folder });
+				this.widgets.set(record.id, { manifest: record, error: new Error(refusal), folder });
 				return;
 			}
 
-			const scope = this.scopeFor(manifest.id);
-			const exported = componentIn(runCode(this.codeToRun(manifest.id, held, folder), this.libs, this.packagesFor(manifest.id, scope), scope), folder);
-			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder, react: { instance: scope.instance, version: scope.react.version }, draw: scope.draw });
+			const scope = this.scopeFor(record.id);
+			const exported = componentIn(runCode(this.codeToRun(record.id, held, folder), this.libs, this.packagesFor(record.id, scope), scope), folder);
+			this.widgets.set(record.id, { manifest: recordUnderItsDeclaration(record, exported.meta), component: exported, folder, react: { instance: scope.instance, version: scope.react.version }, draw: scope.draw });
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
 			const id = folder.slice(WIDGETS_DIR.length + 1);

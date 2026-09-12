@@ -20,3 +20,10 @@ export function folderFor(root, id) {
 	const [scope, name] = String(id ?? "").split("/");
 	return scope && name ? `${root}/${scope}/${name}` : null;
 }
+
+export function idOfFolder(folder) {
+	const parts = String(folder ?? "").split("/");
+	const name = parts.pop() ?? "";
+	const scope = parts.pop() ?? "";
+	return scope.startsWith("@") && name ? `${scope}/${name}` : "";
+}

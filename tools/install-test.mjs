@@ -104,8 +104,14 @@ const noRepo = await installer.install({ manifest: { id: "@demo/x" } });
 check("an entry naming no repository is refused", noRepo.failure, "this entry names no repository to fetch from");
 const unscoped = await installer.install({ manifest: { id: "clock", repository: "https://github.com/acme/widgets" } });
 check("an unscoped id is refused before any fetch", unscoped.failure, '"clock" is not a scoped widget id');
-const noManifest = await installer.install({ manifest: { id: "@demo/y", repository: "https://github.com/acme/widgets", files: ["widget.jsx"] } });
-check("an entry that does not list its manifest is refused", noManifest.failure, "the entry does not list manifest.json");
+const noSource = await installer.install({ manifest: { id: "@demo/y", repository: "https://github.com/acme/widgets", files: ["manifest.json"] } });
+check("an entry listing no widget source is refused", noSource.failure, "the entry lists no widget source");
+
+const bareVault = fakeVault();
+const bareInstaller = createInstaller({ adapter: bareVault, ...network(SERVED) });
+const bareDone = await bareInstaller.install({ manifest: { ...listed[0].manifest, files: ["widget.jsx"] } });
+check("a widget served as nothing but its source installs", [bareDone.ok, bareDone.failure], [true, null]);
+check("and no record is invented beside it", [...bareVault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(), [".widgetarium/widgets/@demo/clock/widget.js", ".widgetarium/widgets/@demo/clock/widget.jsx"]);
 
 const offline = createInstaller({ adapter: fakeVault(), ...network({}) });
 const lost = await offline.install(listed[0]);
@@ -151,7 +157,7 @@ check("the scope comes along with it", [shelf.files.has(".widgetarium/widgets/@h
 check("and the lock records where it came from", (await shelved.lock()).widgets["@habit/heatmap"].source, "/repo/widgets");
 
 const bare = await shelved.install({ manifest: { id: "@habit/ghost" }, from: { folder: "/repo/widgets/@habit/ghost" } });
-check("a folder that holds no manifest is refused", bare.failure, "/repo/widgets/@habit/ghost holds no manifest.json");
+check("a folder that holds no widget source is refused", bare.failure, "/repo/widgets/@habit/ghost holds no widget source");
 
 const noDoor = createInstaller({ adapter: fakeVault(), ...network({}) });
 check("a build with no door to the machine offers no folder source", (await noDoor.discover({ path: "/repo/widgets" })).length, 0);
