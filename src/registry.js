@@ -1,11 +1,11 @@
 import { createElement as h, Fragment } from "react";
 import * as react from "react";
 import * as reactDom from "react-dom";
-import { transform } from "sucrase";
 import { widgetarium, kitModule, emojiModule } from "./api.js";
 import { apiRefusal } from "./version.js";
 import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
-import { EMPTY_LOCK, readLock, modulesByWidget } from "./engine/widget-lock.js";
+import { EMPTY_LOCK, readLock, modulesByWidget, buildIsCurrent } from "./engine/widget-lock.js";
+import { BUILD_FILE, SOURCE_FILES, compileWidget } from "./engine/widget-build.js";
 
 const BASE_SCOPE = {
 	h,
@@ -16,18 +16,6 @@ const BASE_SCOPE = {
 	useMemo: react.useMemo,
 	useRef: react.useRef,
 };
-
-function compile(source, filePath) {
-	// CONTEXT: sucrase strips types, it checks nothing — the contract is enforced at the call
-	const typed = /\.tsx?$/.test(String(filePath ?? ""));
-	return transform(source, {
-		transforms: typed ? ["typescript", "jsx", "imports"] : ["jsx", "imports"],
-		jsxPragma: "h",
-		jsxFragmentPragma: "Fragment",
-		production: true,
-		filePath,
-	}).code;
-}
 
 function parsedLock(text) {
 	try {
@@ -60,9 +48,7 @@ function componentIn(shell, at) {
 	return exported;
 }
 
-// TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
-function runModule(source, filePath, libs, packages) {
-	const code = compile(source, filePath);
+function runCode(code, libs, packages) {
 	const shell = { exports: {} };
 	new Function("require", "module", "exports", ...Object.keys(BASE_SCOPE), code)(
 		createRequire(libs, packages),
@@ -71,6 +57,11 @@ function runModule(source, filePath, libs, packages) {
 		...Object.values(BASE_SCOPE),
 	);
 	return shell.exports;
+}
+
+// TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
+function runModule(source, filePath, libs, packages) {
+	return runCode(compileWidget(source, filePath), libs, packages);
 }
 
 // CONTEXT: a catalogue card draws the widget itself, so code nobody installed still has to run
@@ -115,6 +106,7 @@ export class WidgetRegistry {
 		this.libs = new Map();
 		this.packages = new Map();
 		this.packagesByWidget = new Map();
+		this.lock = EMPTY_LOCK;
 	}
 
 	// CONTEXT: the one place an id is made current, so a board saved after a read carries the new one
@@ -142,7 +134,8 @@ export class WidgetRegistry {
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
 
 		const found = await this.readEverything(adapter);
-		await this.readPackages(adapter, found.lockText);
+		this.lock = parsedLock(found.lockText);
+		await this.readPackages(adapter, this.lock);
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// second pass is cheaper than deciding an order between scopes that reference each other
 		found.scopes.forEach((scope, at) => this.runLib(scope, found.libSources[at]));
@@ -169,8 +162,7 @@ export class WidgetRegistry {
 		return { scopes, sheets, folders, libSources, sheetSources, widgetSources, lockText };
 	}
 
-	async readPackages(adapter, lockText) {
-		const lock = parsedLock(lockText);
+	async readPackages(adapter, lock) {
 		const written = Object.entries(lock.modules).map(([key, entry]) => ({ key, path: entry.path }));
 		const sources = await Promise.all(written.map((each) => this.readIfThere(adapter, each.path)));
 		written.forEach((each, at) => {
@@ -236,16 +228,21 @@ export class WidgetRegistry {
 		const manifest = await this.readIfThere(adapter, `${folder}/manifest.json`);
 		if (manifest === null) return null;
 
-		const named = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"].map((name) => `${folder}/${name}`);
-		const sources = await Promise.all(named.map((path) => this.readIfThere(adapter, path)));
+		const sources = await Promise.all(SOURCE_FILES.map((name) => this.readIfThere(adapter, `${folder}/${name}`)));
 		const at = sources.findIndex((source) => source !== null);
-		return at < 0 ? null : { manifest, code: sources[at], codePath: named[at] };
+		if (at < 0) return null;
+		const name = SOURCE_FILES[at];
+		return { manifest, name, code: sources[at], build: name === BUILD_FILE ? null : sources[SOURCE_FILES.indexOf(BUILD_FILE)] };
+	}
+
+	codeToRun(id, held, folder) {
+		if (held.build !== null && buildIsCurrent(this.lock.widgets[id], held.name, held.code)) return held.build;
+		return compileWidget(held.code, `${folder}/${held.name}`);
 	}
 
 	mountWidget(folder, held) {
 		if (held === null) return;
 
-		const { code, codePath } = held;
 		try {
 			const manifest = JSON.parse(held.manifest);
 			for (const id of [].concat(manifest.was ?? [])) this.renamed.set(id, manifest.id);
@@ -256,7 +253,7 @@ export class WidgetRegistry {
 				return;
 			}
 
-			const exported = componentIn(runModule(code, codePath, this.libs, this.packagesFor(manifest.id)), folder);
+			const exported = componentIn(runCode(this.codeToRun(manifest.id, held, folder), this.libs, this.packagesFor(manifest.id)), folder);
 			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder });
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);

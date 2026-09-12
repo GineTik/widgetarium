@@ -2,6 +2,7 @@ import { ROOT, WIDGETS_DIR, LOCK_PATH } from "./paths.js";
 import { readIndex } from "./engine/catalogue-index.js";
 import { readLock, lockEntry, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
 import { createModuleSpace, declaredDependencies } from "./engine/modules.js";
+import { BUILD_FILE, SOURCE_FILES, compileWidget, sourceFileIn } from "./engine/widget-build.js";
 import { commitUrl, folderFor, rawUrl, readRepository, treeUrl } from "./engine/github.js";
 import { apiRefusal } from "./version.js";
 
@@ -10,11 +11,21 @@ export { LOCK_PATH };
 
 const NEEDED = "manifest.json";
 // CONTEXT: a widget travels with its own sheet; a lib and a palette belong to the whole scope
-const WIDGET_FILES = ["manifest.json", "widget.tsx", "widget.ts", "widget.jsx", "widget.js", "styles.css"];
+const WIDGET_FILES = [NEEDED, ...SOURCE_FILES, "styles.css"];
 const SCOPE_FILES = ["lib.js", "tokens.css"];
 
 function scopeOf(folder) {
 	return folder.slice(0, folder.lastIndexOf("/"));
+}
+
+function buildOf(files, folder) {
+	const from = sourceFileIn(files);
+	if (!from) return { ok: true, from: null, code: null, failure: null };
+	try {
+		return { ok: true, from, code: compileWidget(files[from], `${folder}/${from}`), failure: null };
+	} catch (failure) {
+		return { ok: false, from: null, code: null, failure: `${from} did not compile: ${String(failure?.message ?? failure)}` };
+	}
 }
 
 const isNamed = (held) => typeof held === "string" && held !== "";
@@ -53,13 +64,20 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 	// CONTEXT: the card draws the widget, so its code travels with the offer, not only its name
 	async function codeAt(folder, scope) {
 		const held = {};
-		for (const name of ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"]) {
+		for (const name of SOURCE_FILES) {
 			const at = `${folder}/${name}`;
 			if (!held.code && (await disk.exists(at))) Object.assign(held, { code: await disk.read(at), path: at });
 		}
 		const libAt = `${scope}/lib.js`;
 		if (await disk.exists(libAt)) Object.assign(held, { lib: await disk.read(libAt), libPath: libAt, scope: scope.slice(scope.lastIndexOf("/") + 1) });
 		return held;
+	}
+
+	async function writeWidget(folder, files, built) {
+		await adapter.mkdir(scopeOf(folder));
+		await adapter.mkdir(folder);
+		for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
+		if (built.from) await adapter.write(`${folder}/${BUILD_FILE}`, built.code);
 	}
 
 	async function withDependencies(lock, id, manifest) {
@@ -131,13 +149,13 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		}
 		if (!files[NEEDED]) return refuse(`${listed.from.folder} holds no ${NEEDED}`);
 
+		const built = buildOf(files, folder);
+		if (!built.ok) return refuse(built.failure);
+
 		const resolved = await withDependencies(readLock(await readJson(LOCK_PATH, null)), manifest.id, manifest);
 		if (!resolved.ok) return refuse(resolved.failure);
 
-		// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
-		await adapter.mkdir(scopeOf(folder));
-		await adapter.mkdir(folder);
-		for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
+		await writeWidget(folder, files, built);
 
 		// CONTEXT: a widget importing its scope's lib is broken without it, so the scope comes along
 		for (const name of SCOPE_FILES) {
@@ -145,7 +163,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			if (await disk.exists(at)) await adapter.write(`${scopeOf(folder)}/${name}`, await disk.read(at));
 		}
 
-		await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: listed.origin, commit: "local", files })));
+		await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: listed.origin, commit: "local", files, builtFrom: built.from })));
 		return { ok: true, id: manifest.id, commit: "local", failure: null };
 	}
 
@@ -224,14 +242,14 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			const refusal = apiRefusal(served);
 			if (refusal) return refuse(refusal);
 
+			const built = buildOf(files, folder);
+			if (!built.ok) return refuse(built.failure);
+
 			const resolved = await withDependencies(await this.lock(), manifest.id, served);
 			if (!resolved.ok) return refuse(resolved.failure);
 
-			// CONTEXT: mkdir makes ONE folder, so a scope nobody has installed into yet comes first
-			await adapter.mkdir(scopeOf(folder));
-			await adapter.mkdir(folder);
-			for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
-			await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: manifest.repository, commit, files })));
+			await writeWidget(folder, files, built);
+			await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: manifest.repository, commit, files, builtFrom: built.from })));
 			return { ok: true, id: manifest.id, commit, failure: null };
 		},
 

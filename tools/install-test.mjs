@@ -2,6 +2,7 @@
 // handed in, so a test drives them itself and every refusal is a value, never a thrown error.
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
+import { fakeVault } from "./fake-vault.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "PointerEvent", "Event", "MutationObserver"]) {
@@ -68,37 +69,6 @@ check("a missing file reads as edited, not as unchanged", isEdited(entry, {}), t
 check("an entry goes in and comes out", Object.keys(withoutEntry(withEntry(readLock(null), "@demo/clock", entry), "@demo/clock").widgets), []);
 
 // ── the installer, driven by a fake vault and a fake network ─────────────────────────────
-function fakeVault() {
-	const files = new Map();
-	return {
-		files,
-		exists: async (path) => files.has(path) || [...files.keys()].some((held) => held.startsWith(`${path}/`)),
-		read: async (path) => files.get(path),
-		write: async function (path, text) {
-			const parent = path.slice(0, path.lastIndexOf("/"));
-			if (parent.includes("/") && !this.made.has(parent)) throw new Error(`no such folder: ${parent}`);
-			files.set(path, text);
-		},
-		made: new Set(),
-		// CONTEXT: Obsidian's mkdir makes ONE folder — a stand-in that makes any path hides that
-		mkdir: async function (path) { this.made.add(path); },
-		list: async (path) => {
-			const under = `${path}/`;
-			const folders = new Set();
-			const found = [];
-			for (const held of files.keys()) {
-				if (!held.startsWith(under)) continue;
-				const rest = held.slice(under.length);
-				const cut = rest.indexOf("/");
-				if (cut === -1) found.push(held);
-				else folders.add(under + rest.slice(0, cut));
-			}
-			return { files: found, folders: [...folders] };
-		},
-		remove: async (path) => { files.delete(path); },
-		rmdir: async (path) => { for (const held of [...files.keys()]) if (held.startsWith(`${path}/`)) files.delete(held); },
-	};
-}
 
 const SERVED = {
 	"https://api.github.com/repos/acme/widgets/commits/main": { sha: "abc1234567" },
@@ -117,7 +87,7 @@ const installer = createInstaller({ adapter: vault, ...network(SERVED) });
 check("the installer reads the index off disk", (await installer.available()).map((entry) => entry.manifest.id), ["@demo/clock", "@task/task-card"]);
 const done = await installer.install(listed[0]);
 check("installing answers with the commit it resolved", [done.ok, done.commit], [true, "abc1234567"]);
-check("and writes the files where the registry looks", [...vault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(), [".widgetarium/widgets/@demo/clock/manifest.json", ".widgetarium/widgets/@demo/clock/widget.jsx"]);
+check("and writes the files where the registry looks, the build beside the source", [...vault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(), [".widgetarium/widgets/@demo/clock/manifest.json", ".widgetarium/widgets/@demo/clock/widget.js", ".widgetarium/widgets/@demo/clock/widget.jsx"]);
 check("the lock pins that commit, not the ref", (await installer.lock()).widgets["@demo/clock"].commit, "abc1234567");
 check("and records a hash for every file it took", Object.keys((await installer.lock()).widgets["@demo/clock"].files).sort(), ["manifest.json", "widget.jsx"]);
 
@@ -175,7 +145,7 @@ check("a folder with no manifest is not a widget", onShelf.length, 1);
 
 const copied = await shelved.install(onShelf[0]);
 check("installing from a folder needs no network", [copied.ok, copied.commit], [true, "local"]);
-check("and puts the widget where the registry looks", [...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@habit/heatmap")).sort(), [".widgetarium/widgets/@habit/heatmap/manifest.json", ".widgetarium/widgets/@habit/heatmap/widget.jsx"]);
+check("and puts the widget where the registry looks", [...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@habit/heatmap")).sort(), [".widgetarium/widgets/@habit/heatmap/manifest.json", ".widgetarium/widgets/@habit/heatmap/widget.js", ".widgetarium/widgets/@habit/heatmap/widget.jsx"]);
 // A WIDGET IMPORTING ITS SCOPE'S LIB IS BROKEN WITHOUT IT
 check("the scope comes along with it", [shelf.files.has(".widgetarium/widgets/@habit/lib.js"), shelf.files.has(".widgetarium/widgets/@habit/tokens.css")], [true, true]);
 check("and the lock records where it came from", (await shelved.lock()).widgets["@habit/heatmap"].source, "/repo/widgets");

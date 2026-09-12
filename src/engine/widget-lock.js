@@ -12,10 +12,15 @@ export function readLock(raw) {
 	return { version: 1, widgets: { ...widgets }, modules: { ...modules } };
 }
 
-export function lockEntry({ source, commit, files }) {
+export function lockEntry({ source, commit, files, builtFrom }) {
 	const hashes = {};
 	for (const [name, text] of Object.entries(files ?? {})) hashes[name] = contentHash(text);
-	return { source: String(source ?? ""), commit: String(commit ?? ""), files: hashes };
+	return { source: String(source ?? ""), commit: String(commit ?? ""), files: hashes, build: builtFrom ? { from: builtFrom } : null };
+}
+
+export function buildIsCurrent(entry, name, source) {
+	if (entry?.build?.from !== name) return false;
+	return contentHash(source) === entry.files?.[name];
 }
 
 export function withEntry(lock, id, entry) {

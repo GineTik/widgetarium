@@ -4,9 +4,9 @@ import fsp from "node:fs/promises";
 import os from "node:os";
 import nodePath from "node:path";
 import vm from "node:vm";
-import { transform } from "sucrase";
 import { bundleOptions } from "../build.mjs";
 import { NO_PLUGIN, TASK_NEEDS, catalogueAdapter, countingDisk, fakeTaskVault } from "./perf-fixture.mjs";
+import { fakeVault } from "./fake-vault.mjs";
 
 const { createHost } = await import("./.mjs-cache/host.mjs");
 const { folderGateway } = await import("./.mjs-cache/gateway/obsidian.mjs");
@@ -14,6 +14,10 @@ const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 const { narrowed } = await import("./.mjs-cache/gateway/narrow.mjs");
 const { gatewayCache } = await import("./.mjs-cache/gateway/cache.mjs");
 const { createInstaller, INDEX_PATH } = await import("./.mjs-cache/installer.mjs");
+const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
+const { WIDGETS_DIR, LOCK_PATH } = await import("./.mjs-cache/paths.mjs");
+const { BUILD_FILE, compileWidget } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { lockEntry, withEntry, readLock } = await import("./.mjs-cache/engine/widget-lock.mjs");
 
 const NOTES = Number(process.env.N ?? 200);
 const WIDGET_SOURCE = process.env.WG_WIDGET_SOURCE ?? nodePath.resolve("widgets");
@@ -78,27 +82,45 @@ function widgetSources(at, found = []) {
 	return found;
 }
 
-const compileWidget = ({ code, path: at }) =>
-	transform(code, {
-		transforms: /\.tsx?$/.test(at) ? ["typescript", "jsx", "imports"] : ["jsx", "imports"],
-		jsxPragma: "h",
-		jsxFragmentPragma: "Fragment",
-		production: true,
-		filePath: at,
-	}).code;
+const INSTALLED = "@perf/one";
+const INSTALLED_FOLDER = `${WIDGETS_DIR}/@perf/one`;
+const SOURCE_SAYS = `import { createWidget } from "widgetarium";
+export default createWidget(function One() {
+	const said: string = "the source was compiled at startup";
+	return <b>{said}</b>;
+});
+`;
 
-function reportWidgetCompile() {
+function vaultHoldingAnInstalledWidget() {
+	const vault = fakeVault();
+	const files = { "manifest.json": JSON.stringify({ id: INSTALLED, title: "One" }), "widget.tsx": SOURCE_SAYS };
+	for (const [name, text] of Object.entries(files)) vault.files.set(`${INSTALLED_FOLDER}/${name}`, text);
+	vault.files.set(`${INSTALLED_FOLDER}/${BUILD_FILE}`, `module.exports.default = function One() { return h("b", null, "the stored build ran"); };\n`);
+	const entry = lockEntry({ source: "local", commit: "local", files, builtFrom: "widget.tsx" });
+	vault.files.set(LOCK_PATH, JSON.stringify(withEntry(readLock(null), INSTALLED, entry)));
+	return vault;
+}
+
+async function passesPerInstalledWidget() {
+	const registry = new WidgetRegistry({ vault: { adapter: vaultHoldingAnInstalledWidget() } });
+	await registry.load();
+	const drawn = registry.get(INSTALLED)?.component?.({})?.props?.children;
+	if (drawn === "the stored build ran") return "0 — an installed widget runs the build stored at install";
+	return `1 per widget — registry.load compiles the source (${drawn ?? "the widget did not load at all"})`;
+}
+
+async function reportWidgetCompile() {
 	heading("2 · widget compile at startup");
 	const sources = widgetSources(WIDGET_SOURCE);
-	compileWidget(sources[0]);
+	compileWidget(sources[0].code, sources[0].path);
 	const at = performance.now();
-	for (const source of sources) compileWidget(source);
+	for (const source of sources) compileWidget(source.code, source.path);
 	const once = performance.now() - at;
 
-	const compilesCatalogueAtStartup = onloadBody().includes("drawable");
 	row("widget modules", `${sources.length}, ${(sources.reduce((sum, one) => sum + one.code.length, 0) / 1024).toFixed(0)} kB`);
 	row("sucrase, one pass", `${once.toFixed(0)} ms`);
-	row("passes on the startup path", compilesCatalogueAtStartup ? "2 — registry.load AND the catalogue" : "1 — the catalogue waits to be opened");
+	row("passes on the startup path", await passesPerInstalledWidget());
+	row("the catalogue", onloadBody().includes("drawable") ? "compiles every offer at startup too" : "waits to be opened");
 }
 
 async function reportCatalogueWalk() {
@@ -211,7 +233,7 @@ async function reportPollGate() {
 }
 
 await reportBundles();
-reportWidgetCompile();
+await reportWidgetCompile();
 await reportCatalogueWalk();
 await reportCardMove();
 await reportFirstPaint();

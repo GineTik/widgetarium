@@ -1,5 +1,6 @@
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
+import { fakeVault } from "./fake-vault.mjs";
 
 buildMirror();
 
@@ -54,36 +55,6 @@ check("releasing one of the two collects nothing", afterOne.collected, []);
 check("and leaves the other pointing", afterOne.lock.modules[KEY].widgets, ["@task/board"]);
 check("releasing the last one collects the version", releaseModules(afterOne.lock, "@task/board").collected, [KEY]);
 
-function fakeVault() {
-	const files = new Map();
-	return {
-		files,
-		exists: async (path) => files.has(path) || [...files.keys()].some((held) => held.startsWith(`${path}/`)),
-		read: async (path) => files.get(path),
-		write: async function (path, text) {
-			const parent = path.slice(0, path.lastIndexOf("/"));
-			if (parent.includes("/") && !this.made.has(parent)) throw new Error(`no such folder: ${parent}`);
-			files.set(path, text);
-		},
-		made: new Set(),
-		mkdir: async function (path) { this.made.add(path); },
-		list: async (path) => {
-			const under = `${path}/`;
-			const folders = new Set();
-			const found = [];
-			for (const held of files.keys()) {
-				if (!held.startsWith(under)) continue;
-				const rest = held.slice(under.length);
-				const cut = rest.indexOf("/");
-				if (cut === -1) found.push(held);
-				else folders.add(under + rest.slice(0, cut));
-			}
-			return { files: found, folders: [...folders] };
-		},
-		remove: async (path) => { files.delete(path); },
-		rmdir: async (path) => { for (const held of [...files.keys()]) if (held.startsWith(`${path}/`)) files.delete(held); },
-	};
-}
 
 const widgetSource = (name) => `import { createWidget } from "widgetarium";
 import { useDraggable } from "${PACKAGE}";
