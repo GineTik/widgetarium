@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    a { color: #6d4ee0; } a:hover { color: #5a3fc0; }
+    .room { position: relative; width: 390px; height: 844px; background: #f6f6f6; box-sizing: border-box; overflow: hidden; }
+    .scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.22); display: flex; align-items: stretch; padding: 12px; box-sizing: border-box; }
+    .dialog { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding: 16px; box-sizing: border-box; background: #ffffff; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(34, 34, 34, 0.12); overflow: hidden; }
+    .close { position: absolute; top: 20px; right: 16px; width: 32px; height: 32px; border-radius: 999px; background: #f2f2f2; display: flex; align-items: center; justify-content: center; color: #222222; }
+    .open { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; height: 42px; padding: 0 20px; border-radius: 999px; background: #f2f2f2; font-size: 14px; font-weight: 600; color: #222222; }
+    .main { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+    .head { display: flex; flex-wrap: wrap; gap: 12px; }
+    .ident { display: flex; align-items: center; gap: 8px; flex: 1 1 100%; }
+    .name { display: flex; align-items: center; flex: 1 1 auto; height: 42px; padding: 0 16px; box-sizing: border-box; border-radius: 999px; background: #f2f2f2; font-size: 14px; font-weight: 600; color: #222222; }
+    .pill { display: inline-flex; align-items: center; flex: none; padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .pill.is-live { background: #e1f0e7; color: #1f8a4c; }
+    .pill.is-draft { background: #f7ede1; color: #d9822b; }
+    .pill.is-off { background: #f2f2f2; color: #707070; }
+    .acts { display: flex; align-items: center; gap: 8px; flex: 1 1 100%; }
+    .power { display: flex; align-items: center; gap: 8px; flex: none; height: 42px; padding: 0 6px 0 16px; box-sizing: border-box; border-radius: 999px; background: #f2f2f2; }
+    .power-word { font-size: 14px; font-weight: 600; color: #707070; }
+    .switch { position: relative; width: 34px; height: 20px; flex: none; border-radius: 999px; background: #3f9160; }
+    .knob { position: absolute; top: 2px; left: 16px; width: 16px; height: 16px; border-radius: 999px; background: #ffffff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 20px; border-radius: 999px; background: #f2f2f2; font-size: 14px; font-weight: 600; color: #222222; }
+    .btn.is-quiet { color: #a8a8a8; margin-left: auto; }
+    .steps { display: flex; flex-direction: column; gap: 8px; }
+    .step { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: #ffffff; box-shadow: inset 0 0 0 1px rgba(34, 34, 34, 0.09); }
+    .step-label { display: flex; align-items: center; gap: 12px; margin: 0; }
+    .step-no { display: flex; align-items: center; justify-content: center; flex: none; width: 28px; height: 28px; border-radius: 999px; background: #edeafb; color: #6d4ee0; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 14px; font-weight: 600; }
+    .step-said { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .step-name { margin: 0; font-size: 14px; font-weight: 600; color: #222222; }
+    .step-hint { margin: 0; font-size: 12px; line-height: 1.4; color: #707070; }
+    .seg { display: flex; padding: 4px; border-radius: 999px; background: #f2f2f2; }
+    .seg span { display: inline-flex; align-items: center; justify-content: center; flex: 1; height: 38px; border-radius: 999px; font-size: 14px; font-weight: 500; color: #707070; }
+    .seg span.is-on { background: #ffffff; color: #222222; font-weight: 600; box-shadow: 0 1px 2px rgba(34, 34, 34, 0.06), 0 3px 8px rgba(34, 34, 34, 0.06); }
+    .words { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 16px; line-height: 1.6; }
+    .word { color: #707070; }
+    .blank { display: inline-flex; align-items: center; height: 42px; width: 104px; padding: 0 16px; box-sizing: border-box; border-radius: 999px; background: #f2f2f2; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 14px; color: #222222; }
+    .pick { display: inline-flex; align-items: center; gap: 6px; height: 42px; padding: 0 20px; border-radius: 999px; background: #f2f2f2; font-size: 14px; font-weight: 600; color: #222222; }
+    .example { display: flex; flex-direction: column; gap: 8px; }
+    .sample { padding: 12px 16px; border-radius: 14px; background: #f2f2f2; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 14px; line-height: 1.7; color: #222222; }
+    .arrow { align-self: center; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: #a0a0a0; }
+    .out { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: #ffffff; box-shadow: inset 0 0 0 1px rgba(34, 34, 34, 0.09); }
+    .code { display: flex; flex-direction: column; padding: 12px 14px; border-radius: 8px; background: #f2f2f2; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.75; color: #222222; }
+    .code-line { display: flex; gap: 14px; }
+    .code-no { color: #a0a0a0; width: 14px; text-align: right; flex: none; }
+    .sheet-over { position: absolute; inset: 0; z-index: 3; display: flex; align-items: flex-end; background: rgba(0, 0, 0, 0.22); }
+    .sheet { box-sizing: border-box; width: 100%; max-height: 80%; display: flex; flex-direction: column; gap: 16px; padding: 8px; background: #ffffff; border-radius: 16px 16px 0 0; box-shadow: 0 1px 2px rgba(34, 34, 34, 0.06), 0 5px 14px rgba(34, 34, 34, 0.085); }
+    .side-head { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
+    .side-title { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; color: #222222; }
+    .side-lead { margin: 0; font-size: 12px; line-height: 1.45; color: #707070; }
+    .group { display: flex; flex-direction: column; gap: 6px; }
+    .group-label { padding: 0 16px; font-size: 12px; font-weight: 500; color: #a0a0a0; }
+    .list { display: flex; flex-direction: column; background: #f6f6f6; border-radius: 14px; overflow: hidden; }
+    .row { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; box-sizing: border-box; }
+    .row.is-selected { background: #edeafb; }
+    .row.is-off { opacity: 0.5; }
+    .row-said { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+    .row-name { font-size: 14px; font-weight: 500; color: #222222; }
+    .row.is-selected .row-name { font-weight: 600; }
+    .row-trg { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: #a0a0a0; }
+    .new-row { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; box-sizing: border-box; background: #f6f6f6; border-radius: 14px; }
+    .new-mark { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: none; border-radius: 8px; background: #ededed; color: #707070; }
+    .new-said { font-size: 14px; font-weight: 600; color: #222222; }
+  </style>
+</helmet>
+<div class="room">
+  <div class="scrim">
+    <div class="dialog">
+      <div class="close">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.4 6.4l7.2 7.2M13.6 6.4l-7.2 7.2"></path></svg>
+      </div>
+      <span class="open">
+        <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4.6 6.3h10.8M4.6 10h10.8M4.6 13.7h10.8"></path></svg>
+        Substitutions
+      </span>
+      <div class="main">
+        <div class="head">
+          <div class="ident">
+            <div class="name">Code</div>
+            <span class="pill is-live">Live</span>
+          </div>
+          <div class="acts">
+            <div class="power">
+              <span class="power-word">Enabled</span>
+              <span class="switch"><span class="knob"></span></span>
+            </div>
+            <span class="btn">Delete</span>
+            <span class="btn is-quiet">Save</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="step-label">
+              <span class="step-no">1</span>
+              <span class="step-said">
+                <h4 class="step-name">How it matches</h4>
+                <p class="step-hint">One line, a block between two markers, or an expression</p>
+              </span>
+            </div>
+            <span class="seg"><span class="is-on">Line</span><span>Wrapped</span><span>Regex</span></span>
+          </div>
+          <div class="step">
+            <div class="step-label">
+              <span class="step-no">2</span>
+              <span class="step-said">
+                <h4 class="step-name">The rule</h4>
+                <p class="step-hint">The trigger you write, and the widget that stands in for it</p>
+              </span>
+            </div>
+            <div class="words">
+              <span class="word">When a line starts with</span>
+              <span class="blank">!code</span>
+              <span class="word">draw it with</span>
+              <span class="pick">Code block
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="transform: rotate(90deg); opacity: 0.6"><path d="M8.25 5.5l4.5 4.5-4.5 4.5"></path></svg>
+              </span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-label">
+              <span class="step-no">3</span>
+              <span class="step-said">
+                <h4 class="step-name">The result</h4>
+                <p class="step-hint">Write a line here and see what the note draws</p>
+              </span>
+            </div>
+            <div class="example">
+              <div class="sample">!code main.py</div>
+              <span class="arrow">
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="transform: rotate(90deg)"><path d="M8.25 5.5l4.5 4.5-4.5 4.5"></path></svg>
+              </span>
+              <div class="out">
+                <div class="code">
+                  <span class="code-line"><span class="code-no">1</span><span>import sys</span></span>
+                  <span class="code-line"><span class="code-no">2</span><span>def main(argv):</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-over">
+        <div class="sheet">
+          <div class="side-head">
+            <h2 class="side-title">Substitutions</h2>
+            <p class="side-lead">A trigger you write in a note, and the widget it draws instead</p>
+          </div>
+          <div class="group">
+            <span class="group-label">Rules</span>
+            <div class="list">
+              <div class="row is-selected">
+                <div class="row-said">
+                  <span class="row-name">Code</span>
+                  <span class="row-trg">!code</span>
+                </div>
+              </div>
+              <div class="row">
+                <div class="row-said">
+                  <span class="row-name">Reminder</span>
+                  <span class="row-trg">!</span>
+                </div>
+              </div>
+              <div class="row is-off">
+                <div class="row-said">
+                  <span class="row-name">Note</span>
+                  <span class="row-trg">::: … :::</span>
+                </div>
+                <span class="pill is-off">Off</span>
+              </div>
+              <div class="row">
+                <div class="row-said">
+                  <span class="row-name">Timecode</span>
+                  <span class="row-trg">regex</span>
+                </div>
+                <span class="pill is-draft">Draft</span>
+              </div>
+            </div>
+          </div>
+          <div class="new-row">
+            <span class="new-mark">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 4.9v10.2M4.9 10h10.2"></path></svg>
+            </span>
+            <span class="new-said">New substitution</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
