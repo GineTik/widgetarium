@@ -35,7 +35,8 @@ const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/cr
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 
 const WIDGET = "widgets/@habit/streak/widget.tsx";
-const MANIFEST = JSON.parse(fs.readFileSync("widgets/@habit/streak/manifest.json", "utf8"));
+const { propsOfEveryShippedWidget } = await import("./widget-props.mjs");
+const DECLARED = (await propsOfEveryShippedWidget())["@habit/streak"];
 
 const libs = new Map();
 
@@ -113,7 +114,7 @@ function gatewayOver(notes, verbs = ["update", "create"]) {
 	const reads = { list: () => ({ rows, total: rows.length }), get: (ref) => rows.find((row) => row.ref === ref) ?? null };
 	minted += 1;
 	const base = collectionGateway({ id: `streak-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
-	return mappedCollection(base, { needs: MANIFEST.props.days.needs });
+	return mappedCollection(base, { needs: DECLARED.days.needs });
 }
 
 const host = document.getElementById("host");

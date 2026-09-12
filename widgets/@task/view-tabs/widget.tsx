@@ -75,4 +75,31 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, fold
 			</Popover>
 		</WidgetRoot>
 	);
+}, {
+	props: {
+		options: {
+			kind: "collection",
+			label: "Options",
+			hint: "Every option is a record. Bind a view group and it offers the views it holds.",
+			item: {
+				fields: [
+					{ key: "label", label: "Label", type: "text", required: true },
+					{ key: "value", label: "Value", type: "text" },
+				],
+			},
+			verbs: { list: "required" },
+			default: { value: [{ label: "Kanban", value: "Kanban" }, { label: "Archived columns", value: "Archived columns" }] },
+			wants: "@core/view-group/holds",
+		},
+		selection: {
+			kind: "value",
+			label: "Picked option",
+			hint: "Which option is picked. Bind the view group's own box and the two move together.",
+			of: "options",
+			field: "value",
+			fallback: "first",
+			verbs: { get: "required", update: "required" },
+			wants: "@core/view-group/selection",
+		},
+	},
 });

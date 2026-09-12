@@ -339,4 +339,26 @@ export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMond
 			</div>
 		</WidgetRoot>
 	);
+}, {
+	props: {
+		days: {
+			kind: "collection",
+			label: "Days",
+			was: "habits",
+			verbs: { list: "required", update: "optional", create: "optional" },
+			default: { path: "Habits" },
+			needs: {
+				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
+				date: { type: "date", aka: ["created", "day", "when", "on"] },
+			},
+		},
+		isWeekStartingMonday: {
+			kind: "value",
+			wasSetting: true,
+			type: "boolean",
+			label: "Weeks start on Monday",
+			verbs: { get: "required" },
+			default: { value: true },
+		},
+	},
 });

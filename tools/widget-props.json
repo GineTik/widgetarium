@@ -1,0 +1,755 @@
+{
+	"@core/editable-tabs": {
+		"tabs": {
+			"kind": "collection",
+			"label": "Tabs",
+			"hint": "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
+			"was": "records",
+			"item": {
+				"fields": [
+					{
+						"key": "name",
+						"label": "Label",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "board",
+						"label": "Value",
+						"type": "text"
+					},
+					{
+						"key": "archivedAt",
+						"label": "Archived at",
+						"type": "datetime"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Boards"
+			}
+		},
+		"label": {
+			"kind": "value",
+			"type": "text",
+			"label": "Label field",
+			"hint": "Which field is written on a tab. Without it a note shows its own name.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "name"
+			}
+		},
+		"value": {
+			"kind": "value",
+			"type": "text",
+			"label": "Value field",
+			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "board"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Selected tab",
+			"hint": "Which tab is picked, as a box. Bind another widget and the two move together.",
+			"of": "tabs",
+			"fieldFrom": "value",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			}
+		}
+	},
+	"@core/filter-panel": {
+		"tasks": {
+			"kind": "collection",
+			"label": "Tasks",
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"path": "Orbitask/Tasks",
+				"where": [
+					{
+						"prop": "board",
+						"op": "is",
+						"value": {
+							"wants": "@core/editable-tabs/selection"
+						}
+					}
+				]
+			}
+		},
+		"groups": {
+			"kind": "collection",
+			"label": "Filter by",
+			"hint": "The properties offered. Empty offers what the board names or the tasks carry.",
+			"item": {
+				"fields": [
+					{
+						"key": "prop",
+						"label": "Property",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "label",
+						"label": "Label",
+						"type": "text"
+					},
+					{
+						"key": "control",
+						"label": "Control",
+						"type": "text"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": []
+			}
+		},
+		"openGroup": {
+			"kind": "value",
+			"type": "text",
+			"label": "Open by default",
+			"hint": "Whose choices unfold on opening. Name none and it opens folded.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": ""
+			}
+		},
+		"properties": {
+			"kind": "collection",
+			"label": "Board properties",
+			"hint": "The properties this board names. Empty offers what the tasks carry.",
+			"item": {
+				"fields": [
+					{
+						"key": "name",
+						"label": "Property",
+						"type": "text",
+						"required": true
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": []
+			}
+		},
+		"chosen": {
+			"kind": "value",
+			"shape": "conditions",
+			"label": "Chosen filters",
+			"hint": "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			},
+			"default": {
+				"from": "memory"
+			}
+		}
+	},
+	"@core/view-group": {
+		"selection": {
+			"kind": "value",
+			"label": "Shown view",
+			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
+			"of": "holds",
+			"field": "value",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			}
+		},
+		"isTabsShown": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Show the tab row",
+			"design": true,
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"@habit/heatmap": {
+		"log": {
+			"kind": "collection",
+			"label": "Log",
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"path": "Habits"
+			},
+			"needs": {
+				"days": {
+					"type": "date",
+					"many": true,
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins"
+					]
+				},
+				"done": {
+					"type": "number",
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
+				}
+			}
+		},
+		"pick": {
+			"kind": "value",
+			"label": "Which habit",
+			"hint": "One habit only. Nothing picked draws all of them.",
+			"of": "log",
+			"field": "name",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			}
+		},
+		"year": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "number",
+			"label": "Year, or 0 for this one",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": 0
+			}
+		},
+		"isRound": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Round cells instead of square",
+			"design": true,
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": false
+			}
+		},
+		"isWeekStartingMonday": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Weeks start on Monday",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"@habit/month": {
+		"days": {
+			"kind": "collection",
+			"label": "Days",
+			"was": "habits",
+			"verbs": {
+				"list": "required",
+				"update": "optional",
+				"create": "optional"
+			},
+			"default": {
+				"path": "Habits"
+			},
+			"needs": {
+				"done": {
+					"type": "number",
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
+				},
+				"date": {
+					"type": "date",
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
+				}
+			}
+		},
+		"isWeekStartingMonday": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "boolean",
+			"label": "Weeks start on Monday",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"@habit/stat": {
+		"habits": {
+			"kind": "collection",
+			"label": "Habits",
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"path": "Habits"
+			},
+			"needs": {
+				"days": {
+					"type": "date",
+					"many": true,
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins"
+					]
+				},
+				"done": {
+					"type": "number",
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
+				},
+				"title": {
+					"type": "text",
+					"aka": [
+						"name"
+					]
+				},
+				"color": {
+					"type": "text",
+					"aka": [
+						"colour"
+					]
+				},
+				"goal": {
+					"type": "number",
+					"aka": [
+						"target"
+					]
+				},
+				"maxGap": {
+					"type": "number",
+					"aka": [
+						"max gap",
+						"grace"
+					]
+				}
+			}
+		},
+		"pick": {
+			"kind": "value",
+			"label": "Which habit",
+			"hint": "The habit this number is about.",
+			"of": "habits",
+			"field": "name",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			}
+		},
+		"metric": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "text",
+			"label": "streak · best · total · rate · goal",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "streak"
+			}
+		},
+		"period": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "number",
+			"label": "Days the rate looks back over",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": 30
+			}
+		}
+	},
+	"@habit/streak": {
+		"days": {
+			"kind": "collection",
+			"label": "Days",
+			"was": "habits",
+			"verbs": {
+				"list": "required",
+				"update": "optional",
+				"create": "optional"
+			},
+			"default": {
+				"path": "Habits"
+			},
+			"needs": {
+				"done": {
+					"type": "number",
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
+				},
+				"date": {
+					"type": "date",
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
+				}
+			}
+		},
+		"title": {
+			"kind": "value",
+			"type": "text",
+			"label": "Habit name",
+			"hint": "What is written beside the emoji. Type one here, or take it from another widget's value.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "Habit"
+			}
+		},
+		"emoji": {
+			"kind": "value",
+			"type": "text",
+			"label": "Emoji",
+			"hint": "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "smiling-face-with-halo"
+			}
+		}
+	},
+	"@inline/code-block": {
+		"lines": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "number",
+			"label": "Lines shown at first, and added by each press",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": 30
+			}
+		},
+		"maxKilobytes": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "number",
+			"label": "Largest file that may be shown, in KB",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": 256
+			}
+		}
+	},
+	"@inline/note": null,
+	"@inline/note-link": null,
+	"@inline/reminder": null,
+	"@task/archived-columns": {
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"verbs": {
+				"list": "optional",
+				"update": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Boards"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Shown board",
+			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"verbs": {
+				"get": "required"
+			},
+			"wants": "@core/editable-tabs/selection"
+		},
+		"board": {
+			"kind": "value",
+			"label": "Board",
+			"hint": "The board whose archived columns are listed.",
+			"picks": "selection",
+			"of": "boards",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"wants": "@task/kanban-board/board"
+		}
+	},
+	"@task/kanban-board": {
+		"tasks": {
+			"kind": "collection",
+			"label": "Tasks",
+			"verbs": {
+				"list": "required",
+				"get": "optional",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Tasks",
+				"sort": [
+					{
+						"prop": "order",
+						"dir": "asc"
+					}
+				],
+				"where": [
+					{
+						"prop": "board",
+						"op": "is",
+						"value": {
+							"wants": "@core/editable-tabs/selection"
+						}
+					},
+					{
+						"spread": {
+							"wants": "@core/filter-panel/chosen"
+						}
+					}
+				]
+			}
+		},
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"verbs": {
+				"list": "optional",
+				"create": "optional",
+				"update": "optional",
+				"repairIds": "optional"
+			},
+			"default": {
+				"path": "Orbitask/Boards"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Shown board",
+			"hint": "Which board this draws. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"wants": "@core/editable-tabs/selection"
+		},
+		"board": {
+			"kind": "value",
+			"label": "Board",
+			"hint": "The board this draws: its columns, their order and which of them are archived.",
+			"picks": "selection",
+			"of": "boards",
+			"wasSettings": {
+				"columns": "columns",
+				"archivedColumns": "archivedColumns"
+			},
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"default": {
+				"value": {
+					"columns": [
+						{
+							"name": "To Do"
+						},
+						{
+							"name": "Doing"
+						},
+						{
+							"name": "Done"
+						}
+					]
+				}
+			}
+		},
+		"opened": {
+			"kind": "value",
+			"label": "Opened task",
+			"hint": "Which card is open, as a box. The board draws it full size itself.",
+			"of": "tasks",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			}
+		},
+		"groupBy": {
+			"kind": "value",
+			"wasSetting": true,
+			"type": "text",
+			"label": "Group tasks by property",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "status"
+			}
+		}
+	},
+	"@task/task-card": {
+		"task": {
+			"kind": "value",
+			"label": "Task",
+			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"default": {
+				"from": "typed",
+				"value": {
+					"title": "Design the onboarding flow",
+					"tags": [
+						"design",
+						"research"
+					],
+					"tagTones": {
+						"design": "warning",
+						"research": "accent"
+					},
+					"priority": "P1",
+					"status": "approve",
+					"progress": 60,
+					"due": "12 Aug",
+					"files": 2,
+					"initials": [
+						"Alex Morgan",
+						"Mia Tan",
+						"Theo Ruiz"
+					]
+				}
+			}
+		}
+	},
+	"@task/view-tabs": {
+		"options": {
+			"kind": "collection",
+			"label": "Options",
+			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
+			"item": {
+				"fields": [
+					{
+						"key": "label",
+						"label": "Label",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "value",
+						"label": "Value",
+						"type": "text"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": [
+					{
+						"label": "Kanban",
+						"value": "Kanban"
+					},
+					{
+						"label": "Archived columns",
+						"value": "Archived columns"
+					}
+				]
+			},
+			"wants": "@core/view-group/holds"
+		},
+		"selection": {
+			"kind": "value",
+			"label": "Picked option",
+			"hint": "Which option is picked. Bind the view group's own box and the two move together.",
+			"of": "options",
+			"field": "value",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "required"
+			},
+			"wants": "@core/view-group/selection"
+		}
+	}
+}

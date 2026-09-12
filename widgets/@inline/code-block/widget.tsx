@@ -328,4 +328,26 @@ function CodeBlock({ content, reader, host, here, lines: linesShown, maxKilobyte
 	);
 }
 
-export default createWidget(CodeBlock, { id: "@inline/code-block", title: "Code block", inline: true });
+export default createWidget(CodeBlock, {
+	id: "@inline/code-block",
+	title: "Code block",
+	inline: true,
+	props: {
+		lines: {
+			kind: "value",
+			wasSetting: true,
+			type: "number",
+			label: "Lines shown at first, and added by each press",
+			verbs: { get: "required" },
+			default: { value: 30 },
+		},
+		maxKilobytes: {
+			kind: "value",
+			wasSetting: true,
+			type: "number",
+			label: "Largest file that may be shown, in KB",
+			verbs: { get: "required" },
+			default: { value: 256 },
+		},
+	},
+});

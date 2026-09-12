@@ -155,4 +155,25 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 			<div className="ovg-held">{body}</div>
 		</WidgetRoot>
 	);
+}, {
+	props: {
+		selection: {
+			kind: "value",
+			label: "Shown view",
+			hint: "Which held widget is drawn. Bind a switcher and the two move together.",
+			of: "holds",
+			field: "value",
+			fallback: "first",
+			verbs: { get: "required", update: "required" },
+		},
+		isTabsShown: {
+			kind: "value",
+			wasSetting: true,
+			type: "boolean",
+			label: "Show the tab row",
+			design: true,
+			verbs: { get: "required" },
+			default: { value: true },
+		},
+	},
 });

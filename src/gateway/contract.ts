@@ -1,4 +1,5 @@
 import type { DefaultVerbs, ResolvedOps } from "./needs";
+import type { DeclaredNeeds } from "./resolve-needs";
 
 export type Ref = string;
 
@@ -101,6 +102,17 @@ export type PropKind = "collection" | "value";
 export type PrimitiveType = "text" | "number" | "boolean";
 export type VerbNeed = "required" | "optional";
 
+export interface ItemField {
+	key: string;
+	label?: string;
+	type?: string;
+	required?: boolean;
+}
+
+export interface ItemShape {
+	fields: ItemField[];
+}
+
 export interface PropSpec {
 	kind: PropKind;
 	type?: PrimitiveType;
@@ -109,7 +121,12 @@ export interface PropSpec {
 	of?: string;
 	picks?: string;
 	field?: string;
+	fieldFrom?: string;
 	fallback?: string;
+	shape?: string;
+	design?: boolean;
+	item?: ItemShape;
+	needs?: DeclaredNeeds;
 	wants?: string;
 	was?: string;
 	wasSetting?: boolean;

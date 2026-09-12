@@ -1,5 +1,6 @@
 import esbuild from "esbuild";
 import { readFile } from "node:fs/promises";
+import { propsOfEveryShippedWidget } from "./widget-props.mjs";
 
 const built = await esbuild.build({
 	stdin: {
@@ -179,7 +180,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const manifest = JSON.parse(await readFile("widgets/@habit/streak/manifest.json", "utf8"));
-	const needs = manifest.props.days.needs;
+	const needs = (await propsOfEveryShippedWidget())["@habit/streak"].days.needs;
 	const rows = manifest.preview.props.days.rows;
 	const { map } = resolveNeeds(needs, fieldsOf(rows));
 	check("shipped: the streak names no property through a setting at all", manifest.settings === undefined, JSON.stringify(manifest.settings));

@@ -16,7 +16,7 @@ const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { previewProps, previewGateways, previewSize, previewReader, previewHost } = await import("./.mjs-cache/preview.mjs");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
-const { readFileSync } = await import("node:fs");
+const { manifestOfEveryShippedWidget } = await import("./widget-props.mjs");
 
 let failed = 0;
 const checks = [];
@@ -27,8 +27,9 @@ function check(label, got, want) {
 	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
 }
 
-const kanban = JSON.parse(readFileSync("widgets/@task/kanban-board/manifest.json", "utf8"));
-const card = JSON.parse(readFileSync("widgets/@task/task-card/manifest.json", "utf8"));
+const shipped = await manifestOfEveryShippedWidget();
+const kanban = shipped["@task/kanban-board"];
+const card = shipped["@task/task-card"];
 
 console.log("— the data a preview draws comes from the manifest —\n");
 const gateways = previewGateways(kanban);
@@ -80,7 +81,7 @@ const fallback = previewSize({ defaultSize: { w: 3, h: 1 } }, GRID.cellPx, GRID.
 check("and falls back to the size the widget takes on a board", [fallback.w, fallback.h], [3, 1]);
 
 console.log("\n— a widget that reads a file reads the manifest's, and nothing else —");
-const codeBlock = JSON.parse(readFileSync("widgets/@inline/code-block/manifest.json", "utf8"));
+const codeBlock = shipped["@inline/code-block"];
 const reading = previewReader(codeBlock);
 const fromManifest = await reading.read("main.py");
 check("the file the manifest declares is answered", fromManifest.ok, true);

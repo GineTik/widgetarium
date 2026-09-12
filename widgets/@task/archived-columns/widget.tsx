@@ -108,4 +108,32 @@ export default createWidget(function OrbiTaskArchivedColumns({ selection, board 
 			)}
 		</WidgetRoot>
 	);
+}, {
+	props: {
+		boards: {
+			kind: "collection",
+			label: "Boards",
+			verbs: { list: "optional", update: "optional" },
+			default: { path: "Orbitask/Boards" },
+		},
+		selection: {
+			kind: "value",
+			label: "Shown board",
+			hint: "Whose archived columns are listed. Bind a tab strip and the two move together.",
+			of: "boards",
+			field: "board",
+			fallback: "first",
+			verbs: { get: "required" },
+			wants: "@core/editable-tabs/selection",
+		},
+		board: {
+			kind: "value",
+			label: "Board",
+			hint: "The board whose archived columns are listed.",
+			picks: "selection",
+			of: "boards",
+			verbs: { get: "required", update: "optional" },
+			wants: "@task/kanban-board/board",
+		},
+	},
 });

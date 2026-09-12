@@ -329,4 +329,27 @@ export default createWidget(function OrbiTaskCard({ task }: CardProps) {
 			) : null}
 		</WidgetRoot>
 	);
+}, {
+	props: {
+		task: {
+			kind: "value",
+			label: "Task",
+			hint: "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
+			verbs: { get: "required", update: "optional" },
+			default: {
+				from: "typed",
+				value: {
+					title: "Design the onboarding flow",
+					tags: ["design", "research"],
+					tagTones: { design: "warning", research: "accent" },
+					priority: "P1",
+					status: "approve",
+					progress: 60,
+					due: "12 Aug",
+					files: 2,
+					initials: ["Alex Morgan", "Mia Tan", "Theo Ruiz"],
+				},
+			},
+		},
+	},
 });

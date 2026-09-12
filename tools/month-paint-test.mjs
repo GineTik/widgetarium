@@ -22,9 +22,10 @@ const PAGE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
 import { previewProps } from "./src/preview.js";
+import { recordUnderItsDeclaration } from "./src/engine/catalogue-index.js";
 import Widget from "./${FOLDER}/widget.tsx";
 
-const manifest = ${readFileSync(path.join(FOLDER, "manifest.json"), "utf8")};
+const manifest = recordUnderItsDeclaration(${readFileSync(path.join(FOLDER, "manifest.json"), "utf8")}, Widget.meta);
 
 for (const box of document.querySelectorAll(".wg-root")) {
 	render(h(Widget, previewProps({ manifest, component: Widget }, {})), box);

@@ -32,6 +32,7 @@ globalThis.ResizeObserver ??= class {
 buildMirror();
 const kit = await import("./.mjs-cache/kit.mjs");
 const { previewGateways } = await import("./.mjs-cache/preview.mjs");
+const { recordUnderItsDeclaration } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 
 const api = {
 	createWidget: (component, meta) => {
@@ -116,8 +117,9 @@ for (const scope of scopes) {
 		if (!widgetFile(folder)) continue;
 
 		try {
-			const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
+			const record = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 			const component = load(folder);
+			const manifest = recordUnderItsDeclaration(record, component.meta);
 			const html = render(h(component, { ...previewGateways(manifest), size: { w: 6, h: 10, scale: 1 }, host: { ui: {} } }));
 
 			if (!html || html.length < 50) throw new Error("rendered almost nothing");
