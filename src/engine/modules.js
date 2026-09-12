@@ -48,6 +48,13 @@ export function declaredDependencies(manifest) {
 	return Object.entries(held).map(([name, range]) => [name, String(range ?? "")]);
 }
 
+async function heldOnDisk(adapter, lock, key) {
+	const held = lock?.modules?.[key];
+	if (!held) return null;
+	if (!(await adapter.exists(modulePath(key)))) return null;
+	return { ok: true, key, path: modulePath(key), hash: held.hash, failure: null };
+}
+
 export function createModuleSpace({ adapter, fetchText }) {
 	const refuse = (failure) => ({ ok: false, key: null, path: null, hash: null, failure });
 
@@ -86,9 +93,7 @@ export function createModuleSpace({ adapter, fetchText }) {
 				const found = await resolveKey(name, range);
 				if (!found.ok) return found;
 
-				const held = lock?.modules?.[found.key];
-				if (held && (await adapter.exists(modulePath(found.key)))) return { ok: true, key: found.key, path: modulePath(found.key), hash: held.hash, failure: null };
-				return await download(found.key, found.realPath);
+				return (await heldOnDisk(adapter, lock, found.key)) ?? (await download(found.key, found.realPath));
 			} catch (failure) {
 				return refuse(`cannot fetch "${name}@${range}": ${String(failure?.message ?? failure)}`);
 			}
