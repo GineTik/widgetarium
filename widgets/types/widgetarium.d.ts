@@ -109,7 +109,7 @@ export type Release = () => void;
 
 export interface MountEntry {
 	name: string;
-	id: string;
+	id?: string;
 	hidden: boolean;
 	title: string;
 	manifest: Record<string, unknown> | null;

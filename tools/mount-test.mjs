@@ -8,6 +8,7 @@ const GROUP = "@core/view-group";
 const COUNTER = "@probe/counter";
 const CRASHER = "@probe/crasher";
 const VALUE = "@probe/value";
+const TITLES = "@probe/titles";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
@@ -85,12 +86,30 @@ function Value({ value }) {
 	return h("div", { className: "probe-value" }, String(useData(value.get).data ?? "nothing"));
 }
 
+function Titles({ mounts }) {
+	return h(
+		"div",
+		{ className: "probe-titles" },
+		(mounts?.holds ?? []).map((entry) => h("i", { key: entry.name, "data-problem": String(entry.problem) }, String(entry.title ?? ""))),
+	);
+}
+
 registry.widgets.set(COUNTER, { manifest: { id: COUNTER, api: 1, title: "Counter" }, component: Counter });
 registry.widgets.set(CRASHER, { manifest: { id: CRASHER, api: 1, title: "Crasher" }, component: Crasher });
 registry.widgets.set(VALUE, {
 	manifest: { id: VALUE, api: 1, title: "Value", props: { value: { kind: "value", type: "number", verbs: { get: "required" } } } },
 	component: Value,
 });
+
+registry.widgets.set(TITLES, {
+	manifest: { id: TITLES, api: 1, title: "Titles", mounts: { holds: { label: "Holds" } } },
+	component: Titles,
+});
+
+const UNFILLED = {
+	tiles: [{ id: "titles", widget: TITLES, mounts: { holds: [{ name: "Unfilled" }] } }],
+	layout: { left: [], main: [[{ id: "titles", height: 120 }]], right: [] },
+};
 
 const VIEWS = {
 	tiles: [
@@ -208,6 +227,13 @@ console.log("\n— a mounted child registers in the board's refs —");
 await start(BOUND);
 check("the mounted child draws the value its own tile holds", all(".probe-value")[0]?.textContent, "42");
 check("and a tile bound to that child's prop reads the same one", all('[data-cell="reader"] .probe-value')[0]?.textContent, "42");
+
+console.log("\n— an unfilled view still has something to draw —");
+
+await start(UNFILLED);
+const unfilled = () => all(".probe-titles i");
+check("a mount row with no widget is the empty branch a holder is told to check", unfilled().map((node) => node.getAttribute("data-problem")), ["empty"]);
+check("and it still hands the holder a title to draw", unfilled().map((node) => node.textContent), ["Unfilled"]);
 
 console.log("\n— a holder that drives the seam itself —");
 

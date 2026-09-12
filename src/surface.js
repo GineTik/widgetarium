@@ -146,7 +146,7 @@ function mountEntry(row, registry, mount) {
 		id: row.widget,
 		// CONTEXT: archived is hidden, never gone — the record and its settings stay put
 		hidden: row.hidden === true,
-		title: held?.manifest?.title ?? row.widget,
+		title: held?.manifest?.title || row.widget || row.name,
 		// CONTEXT: the child's own declaration — what a holder matches on is the holder's business
 		manifest: held?.manifest ? { ...held.manifest } : null,
 		problem: drawable ? null : row.widget ? (held ? "failed" : "not-found") : "empty",
