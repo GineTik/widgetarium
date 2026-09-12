@@ -1,0 +1,14 @@
+node_modules
+main.js
+data.json
+package-lock.json
+export
+assets
+.obsidian
+.tasks
+.omc
+src/emoji-table.js
+tools/fixture
+tools/fixture-boards
+tools/fixture-react
+tools/fixture-records

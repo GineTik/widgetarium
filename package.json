@@ -8,7 +8,12 @@
 		"prod": "node build.mjs --prod",
 		"install-vault": "node build.mjs --prod && node install.mjs",
 		"dev": "node build.mjs && node install.mjs",
-		"lint:lang": "node tools/lint-language.mjs src styles.css manifest.json tools install.mjs build.mjs",
+		"lint:lang": "node tools/lint-language.mjs src widgets styles.css manifest.json tools install.mjs build.mjs",
+		"lint:code": "node tools/lint-code.mjs",
+		"lint": "npm run lint:lang && npm run lint:code",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"format:watch": "node tools/format-watch.mjs",
 		"hooks": "git config core.hooksPath .githooks",
 		"test:lib": "node tools/lib-test.mjs",
 		"test:streak": "node tools/streak-test.mjs",
@@ -84,9 +89,11 @@
 	"license": "ISC",
 	"type": "commonjs",
 	"devDependencies": {
+		"@babel/parser": "^8.0.5",
 		"@types/react": "^19.2.18",
 		"esbuild": "^0.23.0",
 		"jsdom": "^29.1.1",
+		"prettier": "^3.9.6",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {

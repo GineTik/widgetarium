@@ -1,6 +1,21 @@
 #!/bin/sh
-node tools/lint-language.mjs src styles.css manifest.json tools install.mjs build.mjs || {
+node tools/lint-language.mjs src widgets styles.css manifest.json tools install.mjs build.mjs || {
 	echo ""
 	echo "commit blocked: English only. Fix the lines above."
+	exit 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+echo "$staged" | xargs npx prettier --ignore-unknown --write >/dev/null 2>&1
+echo "$staged" | xargs git add
+
+sources=$(echo "$staged" | grep -E '^(src|widgets)/.*\.(js|jsx|ts|tsx|mjs)$')
+[ -z "$sources" ] && exit 0
+
+echo "$sources" | xargs node tools/lint-code.mjs || {
+	echo ""
+	echo "commit blocked: the code above breaks a house rule. Fix it, do not weaken the rule."
 	exit 1
 }
