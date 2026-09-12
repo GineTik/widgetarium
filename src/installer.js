@@ -225,7 +225,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			return readLock(await readJson(LOCK_PATH, null));
 		},
 
-		async install(listed) {
+		async install(listed, onStep) {
 			const manifest = listed?.manifest ?? {};
 			if (listed?.from?.folder) return copyIn(listed);
 
@@ -243,8 +243,10 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			try {
 				commit = String((await fetchJson(commitUrl(repository, manifest.ref)))?.sha ?? "");
 				if (!commit) return refuse("the repository named no commit for that ref");
-				for (const name of wanted) {
+				onStep?.({ done: 0, total: wanted.length });
+				for (const [at, name] of wanted.entries()) {
 					files[name] = await fetchText(rawUrl(repository, commit, `${manifest.path ?? folder}/${name}`));
+					onStep?.({ done: at + 1, total: wanted.length });
 				}
 			} catch (failure) {
 				return refuse(String(failure?.message ?? failure));
