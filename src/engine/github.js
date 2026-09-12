@@ -16,9 +16,18 @@ export function treeUrl(repository, commit) {
 	return `https://api.github.com/repos/${repository.owner}/${repository.repo}/git/trees/${commit}?recursive=1`;
 }
 
-export function folderFor(root, id) {
+export function scopedName(id) {
 	const [scope, name] = String(id ?? "").split("/");
-	return scope && name ? `${root}/${scope}/${name}` : null;
+	return scope && name ? `${scope}/${name}` : null;
+}
+
+export function folderFor(root, id) {
+	const named = scopedName(id);
+	return named ? `${root}/${named}` : null;
+}
+
+export function scopeRefusal(id) {
+	return scopedName(id) ? null : `"${id}" is not a scoped widget id`;
 }
 
 export function idOfFolder(folder) {

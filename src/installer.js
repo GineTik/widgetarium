@@ -1,21 +1,13 @@
 import { ROOT, WIDGETS_DIR, LOCK_PATH } from "./paths.js";
-import { RECORD_FILE, readIndex, readRecord } from "./engine/catalogue-index.js";
+import { readIndex } from "./engine/catalogue-index.js";
 import { readLock, lockEntry, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
 import { createModuleSpace, declaredDependencies } from "./engine/modules.js";
-import { BUILD_FILE, SHEET_FILES, SOURCE_FILES, compileWidget, sourceFileIn } from "./engine/widget-build.js";
-import { commitUrl, folderFor, idOfFolder, rawUrl, readRepository, treeUrl } from "./engine/github.js";
-import { apiRefusal } from "./version.js";
+import { BUILD_FILE, compileWidget, sourceFileIn } from "./engine/widget-build.js";
+import { createWidgetSource, scopeOf } from "./engine/widget-source.js";
+import { folderFor } from "./engine/github.js";
 
 export const INDEX_PATH = `${ROOT}/catalogue.json`;
 export { LOCK_PATH };
-
-// CONTEXT: a widget travels with its own sheet; a lib and a palette belong to the whole scope
-const WIDGET_FILES = [RECORD_FILE, ...SOURCE_FILES, ...SHEET_FILES];
-const SCOPE_FILES = ["lib.js", "tokens.css"];
-
-function scopeOf(folder) {
-	return folder.slice(0, folder.lastIndexOf("/"));
-}
 
 function buildOf(files, folder) {
 	const from = sourceFileIn(files);
@@ -23,21 +15,13 @@ function buildOf(files, folder) {
 	try {
 		return { ok: true, from, code: compileWidget(files[from], `${folder}/${from}`), failure: null };
 	} catch (failure) {
-		return { ok: false, from: null, code: null, failure: `${from} did not compile: ${String(failure?.message ?? failure)}` };
+		return {
+			ok: false,
+			from: null,
+			code: null,
+			failure: `${from} did not compile: ${String(failure?.message ?? failure)}`,
+		};
 	}
-}
-
-function recordServedUnder(files, promised) {
-	if (files[RECORD_FILE] === undefined) return { ok: true, record: readRecord(promised, promised.id), failure: null };
-
-	let parsed;
-	try {
-		parsed = JSON.parse(files[RECORD_FILE]);
-	} catch {
-		return { ok: false, record: null, failure: `${RECORD_FILE} did not come back as JSON` };
-	}
-	if (parsed?.id !== promised.id) return { ok: false, record: null, failure: `the repository served "${parsed?.id}" under "${promised.id}"` };
-	return { ok: true, record: readRecord(parsed, promised.id), failure: null };
 }
 
 const isNamed = (held) => typeof held === "string" && held !== "";
@@ -46,7 +30,6 @@ const namesAFolderOnThisMachine = (source) => !namesARepository(source) && isNam
 const isReachableSource = (source) => namesARepository(source) || namesAFolderOnThisMachine(source);
 
 function refuse(failure) {
-	// CONTEXT: `@scope/name/manifest.json` is the shape both a folder and a repository hold
 	return { ok: false, failure };
 }
 
@@ -55,6 +38,7 @@ function refuse(failure) {
 // CONTEXT: the vault IS the installed set, so a folder source is a path on the machine, not in it
 export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 	const space = createModuleSpace({ adapter, fetchText });
+	const widgets = createWidgetSource({ fetchJson, fetchText, disk });
 
 	const readJson = async (path, fallback) => {
 		if (!(await adapter.exists(path))) return fallback;
@@ -73,25 +57,15 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		return { raw, sources: (Array.isArray(raw?.sources) ? raw.sources : []).filter(isReachableSource) };
 	};
 
-	// CONTEXT: the card draws the widget, so its code travels with the offer, not only its name
-	async function codeAt(folder, scope) {
-		const held = {};
-		for (const name of SOURCE_FILES) {
-			const at = `${folder}/${name}`;
-			if (!held.code && (await disk.exists(at))) Object.assign(held, { code: await disk.read(at), path: at });
-		}
-		if (!held.code) return held;
-
-		const libAt = `${scope}/lib.js`;
-		if (await disk.exists(libAt)) Object.assign(held, { lib: await disk.read(libAt), libPath: libAt, scope: scope.slice(scope.lastIndexOf("/") + 1) });
-		return held;
-	}
-
 	async function writeWidget(folder, files, built) {
 		await adapter.mkdir(scopeOf(folder));
 		await adapter.mkdir(folder);
 		for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
 		if (built.from) await adapter.write(`${folder}/${BUILD_FILE}`, built.code);
+	}
+
+	async function writeWhatTheScopeShares(folder, scope) {
+		for (const [name, text] of Object.entries(scope)) await adapter.write(`${scopeOf(folder)}/${name}`, text);
 	}
 
 	async function withDependencies(lock, id, manifest) {
@@ -104,96 +78,11 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		return { ok: true, lock: held, failure: null };
 	}
 
-	async function recordAt(folder) {
-		const at = `${folder}/${RECORD_FILE}`;
-		if (!(await disk.exists(at))) return readRecord(null, idOfFolder(folder));
-		try {
-			return readRecord(JSON.parse(await disk.read(at)), idOfFolder(folder));
-		} catch (failure) {
-			console.error(`[widgetarium] cannot read ${at}`, failure);
-			return null;
-		}
-	}
-
-	async function discoverFolder(source) {
-		// CONTEXT: reading a folder outside the vault is a desktop power; a phone has no such door
-		if (!disk || !(await disk.exists(source.path))) return [];
-		const found = [];
-		for (const scope of await disk.folders(source.path)) {
-			for (const folder of await disk.folders(scope)) {
-				const held = await codeAt(folder, scope);
-				if (!held.code) continue;
-				const manifest = await recordAt(folder);
-				if (manifest?.id) found.push({ manifest, installed: false, origin: source.path, from: { folder }, ...held });
-			}
-		}
-		return found;
-	}
-
-	async function discoverRepository(source) {
-		const repository = readRepository(source.repository);
-		if (!repository) return [];
-		try {
-			const commit = String((await fetchJson(commitUrl(repository, source.ref)))?.sha ?? "");
-			if (!commit) return [];
-			const under = source.path ? `${source.path}/` : "";
-			const tree = (await fetchJson(treeUrl(repository, commit)))?.tree ?? [];
-			const found = [];
-			for (const node of tree) {
-				if (!node?.path?.startsWith(under) || !node.path.endsWith(`/${RECORD_FILE}`)) continue;
-				const folder = node.path.slice(0, -RECORD_FILE.length - 1);
-				const manifest = JSON.parse(await fetchText(rawUrl(repository, commit, node.path)));
-				if (manifest?.id) {
-					found.push({ manifest: { ...manifest, repository: source.repository, ref: source.ref, path: folder }, installed: false, origin: source.repository });
-				}
-			}
-			return found;
-		} catch (failure) {
-			console.error(`[widgetarium] cannot read ${source.repository}`, failure);
-			return [];
-		}
-	}
-
-	// CONTEXT: a folder source is on the machine, so installing it is a copy INTO the vault
-	async function copyIn(listed) {
-		const manifest = listed.manifest ?? {};
-		const folder = folderFor(WIDGETS_DIR, manifest.id);
-		if (!folder) return refuse(`"${manifest.id}" is not a scoped widget id`);
-		if (!disk) return refuse("this build cannot read a folder outside the vault");
-		const refusal = apiRefusal(manifest);
-		if (refusal) return refuse(refusal);
-
-		const files = {};
-		for (const name of WIDGET_FILES) {
-			const at = `${listed.from.folder}/${name}`;
-			if (await disk.exists(at)) files[name] = await disk.read(at);
-		}
-		if (!sourceFileIn(files)) return refuse(`${listed.from.folder} holds no widget source`);
-
-		const built = buildOf(files, folder);
-		if (!built.ok) return refuse(built.failure);
-
-		const resolved = await withDependencies(readLock(await readJson(LOCK_PATH, null)), manifest.id, manifest);
-		if (!resolved.ok) return refuse(resolved.failure);
-
-		await writeWidget(folder, files, built);
-
-		// CONTEXT: a widget importing its scope's lib is broken without it, so the scope comes along
-		for (const name of SCOPE_FILES) {
-			const at = `${scopeOf(listed.from.folder)}/${name}`;
-			if (await disk.exists(at)) await adapter.write(`${scopeOf(folder)}/${name}`, await disk.read(at));
-		}
-
-		await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: listed.origin, commit: "local", files, builtFrom: built.from })));
-		return { ok: true, id: manifest.id, commit: "local", failure: null };
-	}
-
 	return {
 		// A SOURCE IS A PLACE, NOT A LIST: name a folder or a repository and the widgets in it are
 		// found by reading it, so adding a widget never means editing an index by hand.
 		async discover(source) {
-			if (!source?.path && !source?.repository) return [];
-			return source.repository ? discoverRepository(source) : discoverFolder(source);
+			return widgets.offersFrom(source);
 		},
 
 		async folderSourcePaths() {
@@ -226,46 +115,29 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 		},
 
 		async install(listed, onStep) {
-			const manifest = listed?.manifest ?? {};
-			if (listed?.from?.folder) return copyIn(listed);
+			const held = await widgets.filesOf(listed, onStep);
+			if (!held.ok) return refuse(held.failure);
 
-			const repository = readRepository(manifest.repository);
-			if (!repository) return refuse("this entry names no repository to fetch from");
-
-			const folder = folderFor(WIDGETS_DIR, manifest.id);
-			if (!folder) return refuse(`"${manifest.id}" is not a scoped widget id`);
-
-			const wanted = Array.isArray(manifest.files) && manifest.files.length > 0 ? manifest.files : WIDGET_FILES;
-			if (!SOURCE_FILES.some((name) => wanted.includes(name))) return refuse("the entry lists no widget source");
-
-			let commit;
-			const files = {};
-			try {
-				commit = String((await fetchJson(commitUrl(repository, manifest.ref)))?.sha ?? "");
-				if (!commit) return refuse("the repository named no commit for that ref");
-				onStep?.({ done: 0, total: wanted.length });
-				for (const [at, name] of wanted.entries()) {
-					files[name] = await fetchText(rawUrl(repository, commit, `${manifest.path ?? folder}/${name}`));
-					onStep?.({ done: at + 1, total: wanted.length });
-				}
-			} catch (failure) {
-				return refuse(String(failure?.message ?? failure));
-			}
-
-			const served = recordServedUnder(files, manifest);
-			if (!served.ok) return refuse(served.failure);
-			const refusal = apiRefusal(served.record);
-			if (refusal) return refuse(refusal);
-
-			const built = buildOf(files, folder);
+			const id = held.record.id;
+			const folder = folderFor(WIDGETS_DIR, id);
+			const built = buildOf(held.files, folder);
 			if (!built.ok) return refuse(built.failure);
 
-			const resolved = await withDependencies(await this.lock(), manifest.id, served.record);
+			const resolved = await withDependencies(await this.lock(), id, held.record);
 			if (!resolved.ok) return refuse(resolved.failure);
 
-			await writeWidget(folder, files, built);
-			await writeJson(LOCK_PATH, withEntry(resolved.lock, manifest.id, lockEntry({ source: manifest.repository, commit, files, builtFrom: built.from })));
-			return { ok: true, id: manifest.id, commit, failure: null };
+			await writeWidget(folder, held.files, built);
+			await writeWhatTheScopeShares(folder, held.scope);
+			const from = listed?.origin ?? listed?.manifest?.repository;
+			await writeJson(
+				LOCK_PATH,
+				withEntry(
+					resolved.lock,
+					id,
+					lockEntry({ source: from, commit: held.commit, files: held.files, builtFrom: built.from }),
+				),
+			);
+			return { ok: true, id, commit: held.commit, failure: null };
 		},
 
 		async installEvery(listed, onStep) {
