@@ -52,6 +52,8 @@ function updateStoredRow(write, { ref, data }) {
 	return next;
 }
 
+const withMintedRef = (row) => (row?.ref ? row : { ...row, ref: mintRef() });
+
 function hardcodeWrites(write) {
 	return {
 		create: (draft) => {
@@ -62,6 +64,9 @@ function hardcodeWrites(write) {
 		update: (input) => updateStoredRow(write, input),
 		remove: (ref) => {
 			write((rows) => rows.filter((row) => row.ref !== ref));
+		},
+		replace: (rows) => {
+			write(() => (rows ?? []).map(withMintedRef));
 		},
 	};
 }
