@@ -4,6 +4,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { buildWidgets } from "./mirror.mjs";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const BROWSERS = [
 	process.env.WG_CHROME,
@@ -26,7 +28,7 @@ export function findBrowser(gate) {
 
 export const WIDGETS_AT = ".widgetarium/widgets";
 
-export function widgetFiles(from = "widgets") {
+export function widgetFiles(from = buildWidgets()) {
 	const found = {};
 	const walk = (at, to) => {
 		for (const entry of fs.readdirSync(at, { withFileTypes: true })) {
@@ -106,6 +108,7 @@ export async function bundleOf(entry) {
 	const built = await esbuild.build({
 		entryPoints: [entry],
 		bundle: true,
+		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
 		platform: "browser",
@@ -121,6 +124,7 @@ export async function stage({ board, files, steps, editing, rows }) {
 	const bundle = await esbuild.build({
 		entryPoints: ["tools/view-page.jsx"],
 		bundle: true,
+		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
 		platform: "browser",

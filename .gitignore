@@ -9,3 +9,4 @@ tools/.mjs-cache/
 /export/
 /*.png
 .omc/
+tools/.widgets-published/
