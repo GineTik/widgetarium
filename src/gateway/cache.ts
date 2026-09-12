@@ -33,7 +33,6 @@ export function stableKey(input: unknown): string {
 type Runner = (input: unknown) => Promise<unknown>;
 
 interface Tracked {
-	meta: ActionMeta;
 	run: Runner;
 	input: unknown;
 	listeners: Set<() => void>;
@@ -109,8 +108,9 @@ function attach(state: CacheState, meta: ActionMeta) {
 
 function detach(state: CacheState, meta: ActionMeta) {
 	const bySubscriber = state.attached.get(meta.gatewayId);
-	const held = bySubscriber?.get(meta.subscribe);
-	if (!bySubscriber || !held) return;
+	if (!bySubscriber) return;
+	const held = bySubscriber.get(meta.subscribe);
+	if (!held) return;
 	held.count -= 1;
 	if (held.count > 0) return;
 	held.stop();
@@ -143,7 +143,7 @@ interface TrackRequest {
 function track(state: CacheState, { meta, input, run, listener }: TrackRequest): Unsubscribe {
 	const key = keyOf(meta, input);
 	const nothingWasSubscribed = !state.attached.has(meta.gatewayId);
-	const held = state.tracked.get(key) ?? { meta, run, input, listeners: new Set<() => void>(), ticket: 0 };
+	const held = state.tracked.get(key) ?? { run, input, listeners: new Set<() => void>(), ticket: 0 };
 	// CONTEXT: the freshest closure wins — a refetch must not read through a stale config
 	held.run = run;
 	held.input = input;
