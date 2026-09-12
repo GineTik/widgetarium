@@ -1,12 +1,12 @@
 import { createElement as h, useEffect, useLayoutEffect, useRef } from "react";
 import { leaseFor } from "./engine/render.js";
 
-export function Drawn({ element, tree }) {
+export function DrawnInShell({ shell, tree }) {
 	const node = useRef(null);
 
 	useLayoutEffect(() => {
-		if (element.parentElement !== node.current) node.current.appendChild(element);
-		leaseFor(element).draw(tree);
+		if (shell.parentElement !== node.current) node.current.appendChild(shell);
+		leaseFor(shell).draw(tree);
 	});
 
 	return h("div", { className: "wg-drawn", ref: node });
