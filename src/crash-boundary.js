@@ -1,3 +1,10 @@
+function crashNotice(h, failure) {
+	return h("div", { className: "wg-error" }, [
+		h("b", { key: "what" }, "Widget crashed"),
+		h("code", { key: "why" }, String(failure?.message ?? failure)),
+	]);
+}
+
 export function crashBoundary(h, Component) {
 	return class CrashBoundary extends Component {
 		state = { failure: null };
@@ -9,10 +16,7 @@ export function crashBoundary(h, Component) {
 
 		render() {
 			if (!this.state.failure) return this.props.children;
-			return h("div", { className: "wg-error" }, [
-				h("b", { key: "what" }, "Widget crashed"),
-				h("code", { key: "why" }, String(this.state.failure?.message ?? this.state.failure)),
-			]);
+			return crashNotice(h, this.state.failure);
 		}
 	};
 }

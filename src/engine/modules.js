@@ -60,6 +60,13 @@ async function heldOnDisk(adapter, lock, key) {
 	return { ok: true, key, path: modulePath(key), hash: held.hash, failure: null };
 }
 
+function unaskableFor(name, range) {
+	if (!SAFE_NAME.test(String(name ?? ""))) return `"${name}" is not a package name`;
+	if (HELD_BY_THE_ENGINE.includes(name)) return `"${name}" is what the plugin itself hands a widget, so nothing may be installed under that name`;
+	if (!SAFE_RANGE.test(String(range ?? ""))) return `"${name}" asks for "${range}", which is not a version`;
+	return null;
+}
+
 export function createModuleSpace({ adapter, fetchText }) {
 	const refuse = (failure) => ({ ok: false, key: null, path: null, hash: null, failure });
 
@@ -83,9 +90,8 @@ export function createModuleSpace({ adapter, fetchText }) {
 	}
 
 	async function resolveKey(name, range) {
-		if (!SAFE_NAME.test(String(name ?? ""))) return refuse(`"${name}" is not a package name`);
-		if (HELD_BY_THE_ENGINE.includes(name)) return refuse(`"${name}" is what the plugin itself hands a widget, so nothing may be installed under that name`);
-		if (!SAFE_RANGE.test(String(range ?? ""))) return refuse(`"${name}" asks for "${range}", which is not a version`);
+		const unaskable = unaskableFor(name, range);
+		if (unaskable) return refuse(unaskable);
 
 		const realPath = realPathIn(await fetchText(facadeUrl(name, range)));
 		const version = versionIn(realPath, name);
