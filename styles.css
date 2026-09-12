@@ -2273,25 +2273,12 @@ pre:has(> .block-language-widgetarium),
    Laid on ONE shared lattice the widgets ran together — nothing said where one ended and
    the next began — and a name band under each ate a whole row of cells to say so. */
 :is(.wg-root, .wg-portal) .wg-cat {
+	position: relative;
 	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-4, 16px);
+	gap: var(--size-4-3, 12px);
+	flex: 1;
 	min-height: 0;
 }
-
-:is(.wg-root, .wg-portal) .wg-cat-head {
-	display: flex;
-	align-items: center;
-	gap: var(--size-4-3, 12px);
-	flex-wrap: wrap;
-}
-
-/* CONTEXT: the kit's field is 42 and its segmented 46, both pinned to the reference — so the
-   two are levelled HERE, on the one screen that puts them in a row, not in the kit */
-:is(.wg-root, .wg-portal) .wg-cat-search { flex: 1; min-width: 12rem; height: 46px; }
-
-:is(.wg-root, .wg-portal) .wg-cat-size { height: 46px; }
-:is(.wg-root, .wg-portal) .wg-cat-size.is-on { color: var(--interactive-accent); }
 
 :is(.wg-root, .wg-portal) .wg-cat-scroll {
 	overflow: auto;
@@ -2464,12 +2451,6 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-normal);
 }
 
-/* the size it will take on a board, in the board's own words — the kit's pill carries the rest */
-:is(.wg-root, .wg-portal) .wg-cat-span {
-	flex: none;
-	font-variant-numeric: tabular-nums;
-}
-
 :is(.wg-root, .wg-portal) .wg-cat-scope,
 :is(.wg-root, .wg-portal) .wg-cat-slash {
 	flex: none;
@@ -2607,7 +2588,7 @@ pre:has(> .block-language-widgetarium),
 
 
 :is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
-	width: min(1040px, 100%);
+	width: min(1240px, 100%);
 	max-height: 84vh;
 }
 
@@ -3107,10 +3088,6 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* the filter over one merged list — never a second look for the card itself */
-:is(.wg-root, .wg-portal) .wg-cat-shown {
-	flex: none;
-}
-
 :is(.wg-root, .wg-portal) .wg-cat-go:disabled {
 	opacity: 0.55;
 	cursor: progress;
@@ -3330,81 +3307,6 @@ pre:has(> .block-language-widgetarium),
 	transform: translateY(8px);
 }
 
-
-/* THE SIZE GRID. Four number fields asked a person to type what they can point at; this is the
-   spreadsheet table-picker, two presses wide, and it grows when the reach runs out of room. */
-/* CONTEXT: min-content is the grid's own track sum, so the sentence wraps instead of setting the width */
-:is(.wg-root, .wg-portal) .wg-size-pick {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-3, 12px);
-	width: min-content;
-}
-
-:is(.wg-root, .wg-portal) .wg-size-grid {
-	--wg-size-cell: 18px;
-	--wg-size-gap: 2px;
-	display: grid;
-	grid-template-columns: repeat(var(--wg-size-across, 12), var(--wg-size-cell));
-	gap: var(--wg-size-gap);
-}
-
-/* CONTEXT: a finger, not a pointer — the same grid at the size a thumb can land on */
-:is(.wg-root, .wg-portal) .wg-size-grid.is-phone {
-	--wg-size-cell: 26px;
-	--wg-size-gap: 3px;
-}
-
-/* the kit's own pattern: the element is a rectangle and the ::before carries fill and corner */
-:is(.wg-root, .wg-portal) .wg-size-cell {
-	position: relative;
-	isolation: isolate;
-	appearance: none;
-	border: none;
-	padding: 0;
-	background: none;
-	border-radius: 0;
-	box-shadow: none;
-	outline: none;
-	width: var(--wg-size-cell);
-	height: var(--wg-size-cell);
-	cursor: pointer;
-}
-
-:is(.wg-root, .wg-portal) .wg-size-cell::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	border-radius: 3px;
-	background: var(--wg-kit-fill);
-	transition: background var(--wg-quick) var(--wg-ease);
-}
-
-:is(.wg-root, .wg-portal) .wg-size-cell:hover::before { background: var(--wg-kit-fill-hover); }
-:is(.wg-root, .wg-portal) .wg-size-cell.is-near::before { background: var(--wg-kit-accent-wash); }
-:is(.wg-root, .wg-portal) .wg-size-cell.is-on::before { background: var(--interactive-accent); }
-:is(.wg-root, .wg-portal) .wg-size-cell:focus-visible::before { box-shadow: 0 0 0 2px var(--interactive-accent); }
-
-/* CONTEXT: the tallest of the three sentences, so the foot does not jump as the state changes */
-:is(.wg-root, .wg-portal) .wg-size-said {
-	margin: 0;
-	min-height: 2.6em;
-	font-size: var(--font-ui-smaller, 12px);
-	line-height: 1.3;
-	color: var(--text-muted);
-}
-
-:is(.wg-root, .wg-portal) .wg-size-foot {
-	display: flex;
-	gap: var(--size-4-2, 8px);
-}
-
-:is(.wg-root, .wg-portal) .wg-size-foot .wg-kit-btn {
-	flex: 1;
-	padding: 0;
-	min-width: 0;
-}
 
 .wg-tree {
 	display: flex;
@@ -3710,3 +3612,346 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	z-index: 1;
 }
 
+
+:is(.wg-root, .wg-portal) .wg-cat-side {
+	box-sizing: border-box;
+	width: 288px;
+	flex: none;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-side-head {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: none;
+	padding: 0 var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-side-title {
+	margin: 0;
+	font-size: var(--font-ui-medium, 15px);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1.3;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-side-lead {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-side-foot {
+	margin-top: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-main {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3, 12px);
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-top {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	flex: none;
+	padding-right: 40px;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-count {
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-facet-search {
+	margin: 0 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-packs {
+	max-height: 176px;
+	overflow-y: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 0 var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tag {
+	height: 28px;
+	padding: 0 var(--size-4-3, 12px);
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-pack-mark {
+	font-size: 11px;
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.wg-cat-go.is-install::before {
+	background: var(--text-success);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.wg-cat-go.is-update::before {
+	background: var(--wg-kit-warning);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.wg-cat-go.is-failed::before {
+	background: var(--wg-kit-error-wash);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.wg-cat-go.is-busy::before {
+	background: var(--wg-kit-fill);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.is-install,
+:is(.wg-root, .wg-portal) .wg-cat-go.is-update {
+	color: var(--text-on-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.is-failed {
+	color: var(--text-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-go.wg-cat-go.is-busy:disabled {
+	opacity: 1;
+	cursor: progress;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-ring {
+	position: absolute;
+	inset: 0;
+	transform: rotate(-90deg);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-ring-track {
+	fill: none;
+	stroke: var(--wg-kit-accent-wash);
+	stroke-width: 3;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-ring-arc {
+	fill: none;
+	stroke: var(--interactive-accent);
+	stroke-width: 3;
+	stroke-linecap: round;
+	transition: stroke-dashoffset var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-ring.is-waiting {
+	animation: wg-cat-spin 900ms linear infinite;
+}
+
+@keyframes wg-cat-spin {
+	to {
+		transform: rotate(270deg);
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-stop {
+	width: 9px;
+	height: 9px;
+	border-radius: 2px;
+	background: var(--interactive-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-menu {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	z-index: 1;
+	opacity: 0;
+	transition: opacity var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tile:hover .wg-cat-menu,
+:is(.wg-root, .wg-portal) .wg-cat-tile:focus-within .wg-cat-menu {
+	opacity: 1;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-step {
+	margin: 0;
+	padding: 0 2px 2px;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.3;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat.is-phone {
+	flex-direction: column;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat.is-phone .wg-cat-top {
+	padding-right: 0;
+	flex-wrap: wrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet {
+	position: absolute;
+	z-index: 4;
+	box-sizing: border-box;
+	overflow: hidden;
+	padding-top: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet-head {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	flex: none;
+	padding: 0 var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet-head .wg-cat-side-title {
+	flex: 1;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-4, 16px);
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet-done {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-clear {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) :is(.wg-cat-show, .wg-cat-pack).is-selected .wg-kit-side-icon {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-show.is-update .wg-kit-side-icon {
+	background: var(--wg-kit-warning-wash);
+	color: var(--wg-kit-warning);
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-show.is-update.is-selected .wg-kit-side-icon {
+	background: var(--wg-kit-warning);
+	color: var(--text-on-accent);
+}
+
+@media (max-width: 767px) {
+	:is(.wg-root, .wg-portal) .wg-dialog-overlay.wg-cat-over {
+		padding: 0;
+	}
+
+	:is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
+		box-sizing: border-box;
+		width: 100%;
+		height: 100%;
+		max-height: 100%;
+		border-radius: 0;
+		padding: var(--size-4-3, 12px);
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-doc {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-4, 16px);
+	max-width: 740px;
+	padding: 0 var(--size-4-2, 8px) var(--size-4-4, 16px);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body {
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.55;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body h1 {
+	margin: 0 0 8px;
+	font-size: 22px;
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body h2 {
+	margin: 20px 0 8px;
+	font-size: var(--font-ui-medium, 15px);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body p,
+:is(.wg-root, .wg-portal) .wg-doc-body li {
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body pre {
+	padding: 14px 16px;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+	overflow-x: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-plain {
+	margin: 0;
+	white-space: pre-wrap;
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.55;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-action {
+	align-self: flex-start;
+	text-decoration: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-next {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	padding: 12px 16px;
+	border: none;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+	cursor: pointer;
+	text-align: left;
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-next-said {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-next-lead {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-next-name {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-source {
+	font-family: var(--font-monospace, monospace);
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+}

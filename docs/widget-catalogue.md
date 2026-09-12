@@ -446,3 +446,36 @@ rest, and installing still runs somebody's code in the plugin's own realm.
 and removing it is not the catalogue's to do.
 
 Still open from §9: the index fetch, update-with-diff, and the detail page.
+
+---
+
+## What changed, 2026-09-12
+
+**The head row is gone; the filters are a sidebar.** Search, the state list (All / Installed /
+Update ready), packs and tags all stand in one column — the kit's own `wg-kit-side`, the block the
+settings panel is built from. Packs and tags each carry their own search and cap their own height,
+because a catalogue fed by other people's registries will hold hundreds of both and a wrapping row
+of controls cannot grow. The dialog's title moved into that column, so the sidebar runs the full
+height of the window and the shelf switch (Widgets / Templates) moved to the content's own head.
+
+**The span badge and the size filter are gone with the grid.** `4×2` was the lattice's word for a
+widget's footprint, and a board is a tree of regions now — the badge said nothing true, and a filter
+over cell spans narrowed by a number nothing writes any more. Packs and tags replaced both.
+
+**INSTALLED IS NOW A STATE WORTH DRAWING — §"What is built, 2026-08-30" is superseded on this
+point.** The old law held while everything was local and a press cost nothing; with registries and
+updates it hid the only thing a person wants to know before pressing. One button still, one press
+still, but five answers: accent plus (here, adding it is free), green download (somebody else's
+code, fetched at a pinned commit), a progress ring counting files written of files promised, orange
+refresh (the index offers a newer commit than the lock records), and a red retry beside the failure
+it printed on its own card. The update state is a disagreement between the lock and the offer, never
+a flag anything writes down — `updateOffered` in `src/catalogue.js`.
+
+**The docs are pages, and a page is a file.** `docs/catalogue/*.md` is bundled as text at build
+(`TEXT_LOADERS` in `build.mjs`) and drawn through the host's own markdown renderer, so a page cannot
+go stale against the plugin reading it and is edited by a commit. Entering the docs swaps the
+sidebar for the contents; `tools/docs-test.mjs` holds the file, the letter and both doors.
+
+**Publishing is a registry and, for now, an email.** An author's public repository carries
+`widgetarium-registry.json` and an MIT licence, and the page about it opens a prefilled letter. There
+is no server: the registries ship inside the plugin and a new one is added by hand between releases.

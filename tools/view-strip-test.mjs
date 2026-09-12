@@ -177,7 +177,7 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 
 	await click(all(".ovg-empty .ovg-fill")[0]);
 	check("the press opens the catalogue", dialogOn(".wg-cat-dialog").length, 1);
-	check("which says what the press means", dialogOn(".wg-cat-dialog .wg-dialog-title")[0]?.textContent.trim(), "Add a view");
+	check("which says what the press means", dialogOn(".wg-cat-dialog .wg-cat-side-title")[0]?.textContent.trim(), "Add a view");
 
 	const pick = dialogOn(".wg-cat-tile [aria-label]").find((node) => node.getAttribute("aria-label").includes("Archived columns"));
 	await click(pick.querySelector(".wg-cat-go") ?? pick);

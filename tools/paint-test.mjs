@@ -1,4 +1,5 @@
 // CONTEXT: jsdom lays nothing out and resolves no cascade, so every check here runs in real Chrome
+import { TEXT_LOADERS } from "../build.mjs";
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -45,6 +46,7 @@ async function bundle(source) {
 	const built = await esbuild.build({
 		stdin: { contents: source, resolveDir: ROOT, loader: "jsx", sourcefile: "probe.jsx" },
 		bundle: true,
+		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
 		platform: "browser",
@@ -52,15 +54,16 @@ async function bundle(source) {
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		inject: ["tools/fill-inject.js"],
-		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "widgetarium/kit/emojis": "./src/emojis.js", "@habit/lib": "./widgets/@habit/lib.js", obsidian: "./tools/obsidian-shim.js" },
+		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "widgetarium/kit/emojis": "./src/emojis.js", "@habit/lib": "./widgets/@habit/lib.js", "@rank/lib": "./widgets/@rank/lib.js", obsidian: "./tools/obsidian-shim.js" },
 		logLevel: "warning",
 	});
 	return built.outputFiles[0].text;
 }
 
-function pageFor(theme, script, name) {
+function pageFor(theme, script, name, sheets = []) {
 	const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
+<style>${sheets.map((at) => readFileSync(at, "utf8")).join("\n")}</style>
 <style>body { margin: 0; ${THEMES[theme]}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	--font-text: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -76,12 +79,12 @@ function pageFor(theme, script, name) {
 
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
-async function openChrome(file) {
+async function openChrome(file, windowSize = "1280,900") {
 	const port = 9300 + Math.floor(Math.random() * 500);
 	const profile = mkdtempSync(path.join(tmpdir(), "wg-paint-profile-"));
 	const chrome = spawn(
 		CHROME,
-		["--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1280,900",
+		["--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", `--window-size=${windowSize}`,
 			`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `file://${file}`],
 		{ stdio: ["ignore", "ignore", "ignore"] },
 	);
@@ -97,8 +100,8 @@ async function openChrome(file) {
 	throw new Error("chrome never opened a page target");
 }
 
-async function ask(file, expression, settleMs, hover) {
-	const { chrome, socketUrl } = await openChrome(file);
+async function ask(file, expression, settleMs, hover, windowSize) {
+	const { chrome, socketUrl } = await openChrome(file, windowSize);
 	const socket = new WebSocket(socketUrl);
 	await new Promise((done, fail) => {
 		socket.addEventListener("open", done, { once: true });
@@ -575,7 +578,134 @@ const STREAK_ASK = `(async () => {
 	};
 })()`
 
-const [subScript, kitScript, mountScript, overlayScript, streakScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(OVERLAY_PROBE), bundle(STREAK_PROBE)]);
+const RAIL_CONTRAST_FLOOR = 4.5;
+const RANK_SHEETS = ["widgets/@rank/tokens.css", "widgets/@rank/tier-list/widget.css"];
+
+const RANK_PROBE = `
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
+import Widget from "./widgets/@rank/tier-list/widget.tsx";
+import { TONE_NAMES } from "./src/kit.js";
+import { collectionGateway, soloGateway } from "./src/gateway/create";
+
+const tierRows = TONE_NAMES.map((tone, at) => ({ ref: "t" + at, value: { label: tone, tone, order: at + 1 } }));
+const cardRows = TONE_NAMES.map((tone, at) => ({ ref: "c" + at, value: { name: "Card " + at, tier: tone, order: at + 1 } }));
+const listing = (rows, id) => collectionGateway({
+	id,
+	settlesNow: true,
+	handlers: { list: () => ({ rows, total: rows.length }), get: (ref) => rows.find((row) => row.ref === ref) ?? null },
+});
+
+const host = document.getElementById("host");
+const tile = document.createElement("div");
+tile.className = "wg-tile-body";
+tile.style.width = "560px";
+tile.style.height = "420px";
+tile.style.display = "grid";
+host.appendChild(tile);
+render(
+	h(Widget, {
+		tiers: listing(tierRows, "paint/rank/tiers"),
+		cards: listing(cardRows, "paint/rank/cards"),
+		title: soloGateway("Tones", {}, "paint/rank/title"),
+		cardSize: soloGateway(48, {}, "paint/rank/size"),
+	}),
+	tile,
+);
+`;
+
+const RANK_ASK = `(async () => {
+	await new Promise((done) => setTimeout(done, 120));
+	const channel = (part) => (part <= 0.03928 ? part / 12.92 : Math.pow((part + 0.055) / 1.055, 2.4));
+	const unitsOf = (painted) => {
+		const parts = (painted.match(/[\\d.]+/g) ?? []).map(Number).slice(0, 3);
+		return painted.startsWith("color(") ? parts : parts.map((held) => held / 255);
+	};
+	const luminance = (painted) => {
+		const [red, green, blue] = unitsOf(painted).map(channel);
+		return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+	};
+	const contrast = (one, other) => {
+		const first = luminance(one);
+		const second = luminance(other);
+		return Math.round(((Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05)) * 100) / 100;
+	};
+	const rails = [...document.querySelectorAll(".wr-rail")].map((rail) => {
+		const painted = getComputedStyle(rail);
+		const label = getComputedStyle(rail.querySelector(".wr-rail-label"));
+		return { tone: rail.querySelector(".wr-rail-label").textContent, ratio: contrast(painted.backgroundColor, label.color), fill: painted.backgroundColor };
+	});
+	const rack = document.querySelector(".wr-rack");
+	const fog = document.querySelector(".wr-fog");
+	const topNow = () => Number(getComputedStyle(fog).getPropertyValue("--wr-fog-top"));
+	const bottomNow = () => Number(getComputedStyle(fog).getPropertyValue("--wr-fog-bottom"));
+	const atRest = { top: topNow(), bottom: bottomNow(), scrollTop: rack.scrollTop };
+	rack.scrollTop = 200;
+	rack.dispatchEvent(new Event("scroll"));
+	await new Promise((done) => setTimeout(done, 60));
+	return {
+		rails,
+		distinctFills: new Set(rails.map((rail) => rail.fill)).size,
+		atRest,
+		fogAtRest: atRest.top,
+		fogUnderTheTray: atRest.bottom,
+		fogScrolled: topNow(),
+		scrolls: rack.scrollHeight > rack.clientHeight,
+		trayBelowRack: document.querySelector(".wr-tray").getBoundingClientRect().top >= rack.getBoundingClientRect().bottom - 1,
+	};
+})()`;
+
+const CATALOGUE_PROBE = `
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
+import { CatalogueDialog } from "./src/catalogue-dialog.js";
+
+const definition = {
+	manifest: { id: "@demo/clock", title: "Clock", defaultSize: { w: 3, h: 2 }, keywords: ["clock", "time"], description: "A clock." },
+	component: () => h("div", { className: "probe-inside", contentEditable: "true" }, "type here"),
+};
+const registry = { list: () => [definition], get: () => definition };
+
+render(
+	h(CatalogueDialog, {
+		registry,
+		host: null,
+		mode: "browse",
+		available: [],
+		onPick: () => {},
+		onInstall: async () => ({ ok: true }),
+		onClose: () => {},
+	}),
+	document.getElementById("host"),
+);
+`;
+
+const CATALOGUE_ASK = `(() => {
+	const dialog = document.querySelector(".wg-cat-dialog");
+	const box = dialog.getBoundingClientRect();
+	const pic = document.querySelector(".wg-cat-pic");
+	const inside = document.querySelector(".probe-inside");
+	const sheet = document.querySelector(".wg-cat-sheet");
+	const grip = document.querySelector(".wg-cat-sheet .wg-kit-sheet-grip");
+	const at = inside?.getBoundingClientRect();
+	return {
+		viewport: [innerWidth, innerHeight],
+		dialog: [Math.round(box.width), Math.round(box.height)],
+		corner: getComputedStyle(dialog).borderTopLeftRadius,
+		inert: getComputedStyle(pic).pointerEvents,
+		hitsTheWidget: at ? document.elementFromPoint(at.left + at.width / 2, at.top + at.height / 2)?.closest(".probe-inside") !== null : null,
+		takesTheCaret: (() => {
+			inside?.focus();
+			return document.activeElement === inside;
+		})(),
+		sidebars: document.querySelectorAll(".wg-cat-side").length,
+		sheetFromBottomPx: sheet ? Math.round(innerHeight - sheet.getBoundingClientRect().bottom) : null,
+		sheetWidthPx: sheet ? Math.round(sheet.getBoundingClientRect().width) : null,
+		gripPaintsAHandle: grip ? getComputedStyle(grip, "::before").width : null,
+	};
+})()`;
+
+const [subScript, kitScript, mountScript, overlayScript, streakScript, rankScript, catalogueScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(OVERLAY_PROBE), bundle(STREAK_PROBE), bundle(RANK_PROBE), bundle(CATALOGUE_PROBE)]);
 
 for (const theme of ["light", "dark"]) {
 	console.log(`\n— ${theme} —`);
@@ -648,6 +778,35 @@ for (const theme of ["light", "dark"]) {
 	check("the row above the rail is spaced as evenly as the rail is below it", [streak.abovePx, streak.betweenPx], [streak.belowPx, streak.belowPx]);
 	check("the name starts where the first ring starts", Math.abs(streak.titleStartsAtPx - streak.firstRingStartsAtPx) <= 0.5, true);
 	check("and the run count ends where the last ring ends", Math.abs(streak.countEndsAtPx - streak.lastRingEndsAtPx) <= 0.5, true);
+
+	const rank = await ask(pageFor(theme, rankScript, "rank", RANK_SHEETS), RANK_ASK, 2000);
+	console.log(`    rails: ${rank.rails.map((rail) => `${rail.tone} ${rail.ratio}`).join(", ")}`);
+	console.log(`    fog at rest: ${JSON.stringify(rank.atRest)}`);
+	check("every tone paints a rail its own letter can be read on", rank.rails.filter((rail) => rail.ratio < RAIL_CONTRAST_FLOOR), []);
+	check("and all eight are told apart by colour", [rank.rails.length, rank.distinctFills], [8, 8]);
+	check("a rack with more rows than room scrolls inside the tile", rank.scrolls, true);
+	check("its fog is off while nothing has scrolled past", rank.fogAtRest, 0);
+	check("and comes in once something has", rank.fogScrolled, 1);
+	check("the other end is already in, because there is more below", rank.fogUnderTheTray, 1);
+	check("the tray stays under the rack rather than scrolling away with it", rank.trayBelowRack, true);
+
+	const wide = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500);
+	check("on a window with room the catalogue is a dialog, not the screen", wide.dialog[1] < wide.viewport[1], true);
+	check("and it stands on its own corner", wide.corner, "16px");
+	check("its filters are a column beside the cards", wide.sidebars, 1);
+	check("with no sheet, because nothing is folded away", wide.sheetFromBottomPx, null);
+	check("a card's preview takes no press at all", wide.inert, "none");
+	check("so a pointer over a widget that would take typing reaches the card instead", wide.hitsTheWidget, false);
+	check("and neither can the caret land in it, which is how a preview was typed into", wide.takesTheCaret, false);
+
+	const narrow = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500, null, "420,760");
+	check("on a phone's window the dialog is the whole screen", narrow.dialog, narrow.viewport);
+	check("with no corner left to round", narrow.corner, "0px");
+	check("the column is gone", narrow.sidebars, 0);
+	check("and the filters are a sheet standing off the bottom edge", narrow.sheetFromBottomPx, 24);
+	check("as wide as the screen, less the window's gutter and its own", narrow.sheetWidthPx, narrow.viewport[0] - 48);
+	check("carrying the kit's own grip to drag it by", narrow.gripPaintsAHandle, "44px");
+	check("and the preview stays inert there too", narrow.inert, "none");
 }
 
 console.log(failed === 0 ? "\npaint: clean" : `\npaint: ${failed} failed`);

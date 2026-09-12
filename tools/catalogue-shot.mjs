@@ -62,7 +62,7 @@ export default createWidget(function Throwing() {
 const bundle = await bundleOf("tools/catalogue-page.jsx");
 
 const SAID = {
-	browse: ["Widgets", "Every widget installed in this vault, drawn as it really looks"],
+	browse: ["Widgets", "Every widget this vault can draw, shown as it really looks"],
 	place: ["Add a widget", "Pick one and it lands on this board"],
 	fill: ["Fill this slot", "Pick the widget this slot draws for every row"],
 };
@@ -110,9 +110,9 @@ for (const [index, theme] of ["light", "dark"].entries()) {
 		broken += 1;
 		console.error(`${theme}: ${seen.floating} feet sit inside a stage, floating on the widget instead of below it`);
 	}
-	if (seen.shown !== 2) {
+	if (seen.shown !== 3) {
 		broken += 1;
-		console.error(`${theme}: the header offers ${seen.shown} lists to switch between, wants 2`);
+		console.error(`${theme}: the sidebar offers ${seen.shown} lists to narrow by, wants 3`);
 	}
 	if (seen.cells) {
 		broken += 1;

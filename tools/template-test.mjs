@@ -158,7 +158,7 @@ all(".wg-cat-shelf button")[1].dispatchEvent(new dom.window.MouseEvent("click", 
 await settle();
 check("the templates shelf draws a card per template", all(".wg-tpl-tile").length, TEMPLATES.length);
 check("named after the template", all(".wg-tpl-name").map((node) => node.textContent), TEMPLATES.map((one) => one.title));
-check("with nothing left to narrow by size or by installed", [all(".wg-cat-shown").length, all(".wg-cat-size").length], [0, 0]);
+check("with nothing left to narrow a widget by", [all(".wg-cat-facet").length, all(".wg-cat-show").length], [0, 0]);
 check("the card draws the page's own tree, not a widget", all(".wg-tpl-region").map((node) => node.className.split("is-")[1]), ["left", "main", "right"]);
 check("labelled with the widgets that stand in it", all(".wg-tpl-cell").map((node) => node.textContent), ["@core/editable-tabs", "@core/filter-panel", "@task/view-tabs", "@task/kanban-board"]);
 

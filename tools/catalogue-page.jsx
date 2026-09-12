@@ -106,7 +106,7 @@ setTimeout(() => {
 		// THE FOOT IS THE CARD'S, NOT THE STAGE'S. Over the picture it cost the stage 58px of
 		// padding it kept from the widget; a foot found inside a stage is that pill back again.
 		floating: document.querySelectorAll(".wg-cat-stage .wg-cat-foot").length,
-		shown: document.querySelectorAll(".wg-cat-shown button").length,
+		shown: document.querySelectorAll(".wg-cat-show").length,
 		// CONTEXT: the kit paints a control's corner and fill on ::before by design, so the
 		// element itself is square and measuring IT says nothing
 		round: [...document.querySelectorAll(".wg-cat-go")].filter((node) => {

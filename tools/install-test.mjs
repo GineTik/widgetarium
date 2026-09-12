@@ -175,21 +175,31 @@ check("a widget the person wrote is never ours to remove", mine.failure, "that w
 // ── the toggle, over one merged list ─────────────────────────────────────────────────────
 const definition = (id, title) => ({ manifest: { id, title, defaultSize: { w: 3, h: 2 } }, component: () => h("div", null, title) });
 const registry = { list: () => [definition("@task/task-card", "Task card")], get: (id) => (id === "@task/task-card" ? definition(id, "Task card") : null) };
-const offered = readIndex({ widgets: [{ id: "@demo/clock", title: "Clock", repository: "https://github.com/acme/widgets", defaultSize: { w: 3, h: 2 } }] });
+const offered = readIndex({ widgets: [{ id: "@demo/clock", title: "Clock", repository: "https://github.com/acme/widgets", defaultSize: { w: 3, h: 2 } }, { id: "@task/task-card", title: "Task card", commit: "2222222222", repository: "https://github.com/acme/widgets", defaultSize: { w: 3, h: 2 } }] });
 
 const panel = dom.window.document.getElementById("host");
 const picked = [];
 const installs = [];
 let answer = { ok: true };
-const draw = () =>
+let settleInstall = null;
+let stepTo = null;
+const draw = (lock = null) =>
 	render(
 		h(Catalogue, {
 			registry,
 			host: null,
 			mode: "place",
 			available: offered,
+			lock,
 			onPick: (id) => picked.push(id),
-			onInstall: async (entry) => { installs.push(entry.manifest.id); return answer; },
+			onInstall: async (entry, onStep) => {
+				installs.push(entry.manifest.id);
+				stepTo = onStep;
+				if (!settleInstall) return answer;
+				return new Promise((resolve) => {
+					settleInstall = resolve;
+				});
+			},
 		}),
 		panel,
 	);
@@ -198,37 +208,121 @@ await settle();
 
 const all = (selector) => [...panel.querySelectorAll(selector)];
 const named = (title) => all(".wg-cat-tile").find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
-const tabs = all(".wg-cat-shown button");
+const names = () => all(".wg-cat-name").map((node) => node.textContent).sort();
+const press = (node) => node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+const labelled = (selector) => all(selector).map((node) => node.querySelector(".wg-kit-row-label").textContent);
+const packRow = (name) => all(".wg-cat-pack").find((node) => node.querySelector(".wg-kit-row-label").textContent === name);
+const typeInto = (input, value) => {
+	Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value").set.call(input, value);
+	input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+};
 
-check("the catalogue offers both a filtered and a full list", tabs.map((node) => node.textContent), ["All", "Installed"]);
-check("and starts on the full one", all(".wg-cat-tile").length, 2);
-check("which carries what the vault has and what the index offers", all(".wg-cat-name").map((node) => node.textContent).sort(), ["Clock", "Task card"]);
+check("the sidebar offers the three lists one merged catalogue can answer", labelled(".wg-cat-show"), ["All widgets", "Installed", "Update ready"]);
+check("each counted from that one list", all(".wg-cat-show").map((node) => node.querySelector(".wg-kit-side-value").textContent), ["2", "1", "0"]);
+check("and it starts on the full one", all(".wg-cat-tile").length, 2);
+check("which carries what the vault has and what the index offers", names(), ["Clock", "Task card"]);
 
-// CONTEXT: the card must not betray which of the two it is — that was the rejected distinction
-const shapeOf = (tile) => `${tile.className}|${tile.getAttribute("aria-label")}|${[...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic")).length}`;
-check("an offered widget's card looks exactly like an installed one's", shapeOf(named("Clock")).replace("Clock", "X"), shapeOf(named("Task card")).replace("Task card", "X"));
+check("a widget the vault has wears the add", named("Task card").dataset.state, "add");
+check("one that must be fetched wears the install", named("Clock").dataset.state, "install");
+check("and the button carries that state too", named("Clock").querySelector(".wg-cat-go").className.includes("is-install"), true);
+check("the two buttons are not the same", named("Clock").querySelector(".wg-cat-go").className === named("Task card").querySelector(".wg-cat-go").className, false);
 
-tabs[1].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+press(panel.querySelector(".wg-cat-show.is-installed"));
 await settle();
-check("Installed narrows to what the vault actually has", all(".wg-cat-name").map((node) => node.textContent), ["Task card"]);
-tabs[0].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+check("Installed narrows to what the vault actually has", names(), ["Task card"]);
+press(panel.querySelector(".wg-cat-show.is-all"));
 await settle();
 check("and All brings the rest back", all(".wg-cat-tile").length, 2);
 
-named("Task card").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+check("the packs are the ids' own halves, counted", labelled(".wg-cat-pack"), ["@demo", "@task"]);
+press(packRow("@demo"));
+await settle();
+check("pressing a pack narrows the catalogue to it", names(), ["Clock"]);
+press(packRow("@demo"));
+await settle();
+check("and pressing it again lets the rest back in", all(".wg-cat-tile").length, 2);
+
+typeInto(panel.querySelectorAll(".wg-cat-facet-search input")[0], "task");
+await settle();
+check("the packs have a search of their own", labelled(".wg-cat-pack"), ["@task"]);
+check("which narrows the packs and not the widgets", all(".wg-cat-tile").length, 2);
+typeInto(panel.querySelectorAll(".wg-cat-facet-search input")[0], "");
+await settle();
+
+press(named("Task card"));
 await settle();
 check("pressing one the vault has picks it and fetches nothing", [picked, installs], [["@task/task-card"], []]);
 
-named("Clock").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+settleInstall = () => {};
+press(named("Clock"));
 await settle();
-check("pressing one it does not have fetches it first", installs, ["@demo/clock"]);
-check("and then picks it, on the same press", picked, ["@task/task-card", "@demo/clock"]);
+check("a press that fetches turns the button into a ring", Boolean(named("Clock").querySelector(".wg-cat-ring")), true);
+check("and the ring waits until a file count arrives", named("Clock").querySelector(".wg-cat-ring").className.baseVal.includes("is-waiting"), true);
+stepTo({ done: 1, total: 3 });
+await settle();
+check("the card counts the files as they land", named("Clock").querySelector(".wg-cat-step").textContent, "Writing 1 of 3 files");
+check("and the ring is measured now", named("Clock").querySelector(".wg-cat-ring").className.baseVal.includes("is-waiting"), false);
+const held = settleInstall;
+settleInstall = null;
+held({ ok: true });
+await settle();
+check("a finished fetch picks it, on the same press", picked, ["@task/task-card", "@demo/clock"]);
+check("and the counting line is gone", named("Clock").querySelector(".wg-cat-step"), null);
 
 answer = { ok: false, failure: "the repository answered 404" };
-named("Clock").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+press(named("Clock"));
 await settle();
 check("a fetch that failed says so on the card", named("Clock").querySelector(".wg-cat-lack.is-failure")?.textContent, "the repository answered 404");
-check("and picks nothing", picked, ["@task/task-card", "@demo/clock"]);
+check("and the button becomes the retry", named("Clock").dataset.state, "failed");
+check("while nothing was picked", picked, ["@task/task-card", "@demo/clock"]);
+
+render(null, panel);
+draw({ widgets: { "@task/task-card": { commit: "1111111111" } } });
+await settle();
+check("a locked commit the index disagrees with is an update", named("Task card").dataset.state, "update");
+check("which the card reads back", named("Task card").querySelector(".wg-cat-step").textContent, "1111111 here · 2222222 out");
+check("and the Update ready list counts it", panel.querySelector(".wg-cat-show.is-update .wg-kit-side-value").textContent, "1");
+
+render(null, panel);
+
+const TAGGED = ["tabs", "board", "kanban", "habit", "streak", "chart", "calendar", "filter", "inline"];
+const manyTags = {
+	list: () => [
+		{ manifest: { id: "@task/task-card", title: "Task card", defaultSize: { w: 3, h: 2 }, keywords: TAGGED }, component: () => h("div", null, "Task card") },
+		{ manifest: { id: "@core/filter", title: "Filter", defaultSize: { w: 3, h: 1 }, keywords: ["filter"] }, component: () => h("div", null, "Filter") },
+	],
+	get: () => null,
+};
+
+Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 420 });
+Object.defineProperty(dom.window.HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 720 });
+render(h(Catalogue, { registry: manyTags, host: null, mode: "place", available: [], onPick: () => {}, onInstall: async () => ({ ok: true }) }), panel);
+await settle();
+
+check("at a phone's width the column becomes a sheet", [all(".wg-cat-side").length, all(".wg-cat-sheet").length], [0, 1]);
+check("and the sheet is the kit's own, with the grip that drags it", Boolean(panel.querySelector(".wg-cat-sheet .wg-kit-sheet-grip")), true);
+const sheet = panel.querySelector(".wg-cat-sheet");
+const peeking = sheet.style.height;
+sheet.querySelector(".wg-kit-sheet-grip").dispatchEvent(new dom.window.PointerEvent("pointerdown", { bubbles: true, clientY: 600 }));
+sheet.querySelector(".wg-kit-sheet-grip").dispatchEvent(new dom.window.PointerEvent("pointerup", { bubbles: true, clientY: 600 }));
+await settle();
+check("a press on the grip raises it", panel.querySelector(".wg-cat-sheet").style.height !== peeking, true);
+check("and the filters stand inside it", Boolean(panel.querySelector(".wg-cat-sheet .wg-cat-show")), true);
+
+check("nine tags are capped to one row and a count of the rest", all(".wg-cat-tag").map((node) => node.textContent), ["filter", "board", "calendar", "chart", "habit", "inline", "+3"]);
+press(panel.querySelector(".wg-cat-more-tags"));
+await settle();
+check("pressing that count shows every tag", all(".wg-cat-tag").length, TAGGED.length);
+
+check("nothing offers to clear while nothing is narrowed", panel.querySelector(".wg-cat-clear"), null);
+press(all(".wg-cat-tag").find((node) => node.textContent === "kanban"));
+await settle();
+check("a chosen tag narrows the catalogue", all(".wg-cat-tile").length, 1);
+check("and offers to clear what it narrowed", Boolean(panel.querySelector(".wg-cat-clear")), true);
+press(panel.querySelector(".wg-cat-clear"));
+await settle();
+check("Clear all puts every widget back", all(".wg-cat-tile").length, 2);
+check("and stops offering itself", panel.querySelector(".wg-cat-clear"), null);
 
 render(null, panel);
 console.log(failed === 0 ? "\ninstall: clean" : `\ninstall: ${failed} failed`);

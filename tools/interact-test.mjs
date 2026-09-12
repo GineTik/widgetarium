@@ -1212,7 +1212,7 @@ const pickView = async (name, id = "views") => {
 	const onGrid = named("Task card");
 	check("a card names the widget", Boolean(onGrid), true);
 	check("and says the span the manifest declares", onGrid.getAttribute("data-span"), `${declared.w}x${declared.h}`);
-	check("in words a person reads", onGrid.querySelector(".wg-cat-span").textContent, `${declared.w}\u00d7${declared.h}`);
+	check("and prints no span badge beside the name", onGrid.querySelector(".wg-cat-span"), null);
 	check("and the card says which pack it came from, in one line with the name", onGrid.querySelector(".wg-cat-said").textContent, "@task/Task card");
 
 	// INSTALLED IS NOT A STATE WORTH DRAWING. Fetching a widget and placing one both land at the
@@ -1227,23 +1227,21 @@ const pickView = async (name, id = "views") => {
 	// the stage and below it, and the exact class name is what proves it dropped the glass.
 	check("which is laid in the card's grey right after the stage, wearing no glass", stageOf(onGrid).nextElementSibling?.className, "wg-cat-foot");
 	const shapeOf = (tile) => `${tile.className}|${tile.getAttribute("aria-label")}|${chromeButtons(tile).length}`;
-	const wasInstalled = shapeOf(onGrid);
+	const wasInstalled = onGrid.dataset.state;
 	registry.get("@task/task-card").installed = false;
-	registry.get("@task/board-tabs").update = true;
 	draw();
 	await settle();
 	const renamed = (title) => [...grid().querySelectorAll(".wg-cat-tile")].find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
-	check("a widget the vault does not have looks exactly like one it has", shapeOf(renamed("Task card")), wasInstalled);
-	check("and its press still says Add, not Install", renamed("Task card").getAttribute("aria-label").startsWith("Add "), true);
-	check("nothing marks one with a newer version either", renamed("Editable tabs").querySelectorAll(".wg-cat-badge").length, 0);
+	check("a widget the vault has wears the add", wasInstalled, "add");
+	check("and one it has to fetch wears the install instead", renamed("Task card").dataset.state, "install");
+	check("while the press still says Add, because it is still one press", renamed("Task card").getAttribute("aria-label").startsWith("Add "), true);
 	delete registry.get("@task/task-card").installed;
-	delete registry.get("@task/board-tabs").update;
 	draw();
 	await settle();
 
 	// THE SELECTION STRIP WAS REJECTED. Nothing sits under the board — the card's own glass strip
 	// carries everything the strips used to.
-	check("nothing sits under the showcase board", grid().querySelector(".wg-cat").lastElementChild.className, "wg-cat-scroll");
+	check("nothing sits under the showcase board", grid().querySelector(".wg-cat-main").lastElementChild.className, "wg-cat-scroll");
 	// WHAT IS FORBIDDEN IS THE GLOBAL STRIP — one bar at the foot of the panel naming whatever is
 	// selected. A card's own identity row is not that: it belongs to the card and travels with it.
 	check("no global strip names a selection", grid().querySelector(":scope > .wg-cat-bar"), null);

@@ -313,10 +313,10 @@ console.log("\n— and the panel writes what it draws —");
 	check("with more than one span among them, or this proves nothing", new Set(drawn.map((tile) => tile.getAttribute("data-span"))).size > 1, true);
 	// CONTEXT: these fixtures declare no preview, so the span falls back to the board size
 	check("and the span shown is the size the manifest declares", card.getAttribute("data-span"), `${fitting.defaultSize.w}x${fitting.defaultSize.h}`);
-	check("said in words on the card", card.querySelector(".wg-cat-span").textContent, `${fitting.defaultSize.w}\u00d7${fitting.defaultSize.h}`);
+	check("and no span badge is printed beside the name", card.querySelector(".wg-cat-span"), null);
 	check("every candidate carries one button and no state mark", drawn.every((tile) => [...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic")).length === 1 && tile.querySelectorAll(".wg-cat-badge").length === 0), true);
 	check("and the press says the same word on every one", new Set(drawn.map((tile) => tile.getAttribute("aria-label").split(" ")[0])).size, 1);
-	check("nothing sits under the list of candidates", find(".wg-cat-dialog .wg-cat").lastElementChild.className, "wg-cat-scroll");
+	check("nothing sits under the list of candidates", find(".wg-cat-dialog .wg-cat-main").lastElementChild.className, "wg-cat-scroll");
 	check("and no global strip names a selection", find(".wg-cat-dialog > .wg-cat-bar"), null);
 
 	const pick = all(".wg-cat-dialog .wg-cat-tile").find((tile) => tile.textContent.includes("Compact card"));

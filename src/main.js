@@ -243,7 +243,9 @@ export default class WidgetariumPlugin extends Plugin {
 			mode,
 			available: await this.offers(),
 			templates: TEMPLATES,
-			onInstall: (entry) => this.install(entry),
+			lock: await this.installer.lock(),
+			onInstall: (entry, onStep) => this.install(entry, onStep),
+			onUninstall: (id) => this.uninstall(id),
 			onUseTemplate: this.templateBuilderInto(folder),
 			onClose: () => {
 				this.closeCatalogue = null;
@@ -253,11 +255,22 @@ export default class WidgetariumPlugin extends Plugin {
 
 	// CONTEXT: fetching runs somebody's code in this plugin's own realm, so it is pinned to the
 	// commit it resolved to and nothing here ever re-fetches on its own
-	async install(entry) {
-		const done = await this.installer.install(entry);
+	async install(entry, onStep) {
+		const done = await this.installer.install(entry, onStep);
 		if (!done.ok) return done;
 		await this.rereadWidgets();
 		new Notice(`Widgetarium: installed ${entry.manifest.id} at ${done.commit.slice(0, 7)}`);
+		return done;
+	}
+
+	async uninstall(id) {
+		const done = await this.installer.uninstall(id);
+		if (!done.ok) {
+			new Notice(`Widgetarium: ${id} was not removed — ${done.failure}`);
+			return done;
+		}
+		await this.rereadWidgets();
+		new Notice(`Widgetarium: removed ${id}`);
 		return done;
 	}
 
