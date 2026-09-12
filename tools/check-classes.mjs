@@ -12,7 +12,8 @@ function widgetFiles(dir) {
 	const found = [];
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
 		const full = path.join(dir, entry.name);
-		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory())) found.push(...widgetFiles(full));
+		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory()))
+			found.push(...widgetFiles(full));
 		else if (/^widget\.(jsx|tsx|js|ts)$/.test(entry.name)) found.push(full);
 	}
 	return found;
@@ -22,7 +23,9 @@ function widgetFiles(dir) {
 const ENGINE = new Set(["orbi", "wg-widget-root"]);
 
 // CONTEXT: a widget built on the kit carries kit classes, whose rules live in the plugin sheet
-for (const [, name] of (fs.existsSync("styles.css") ? fs.readFileSync("styles.css", "utf8") : "").matchAll(/\.([a-z][\w-]*)/g)) {
+for (const [, name] of (fs.existsSync("styles.css") ? fs.readFileSync("styles.css", "utf8") : "").matchAll(
+	/\.([a-z][\w-]*)/g,
+)) {
 	ENGINE.add(name);
 }
 
@@ -33,11 +36,23 @@ function scopeSheet(file) {
 	return fs.existsSync(sheet) ? fs.readFileSync(sheet, "utf8") : "";
 }
 
+// TODO: read these from src/engine/widget-build.js once tools can import it as an ES module
+const SHEET_FILES = ["widget.css", "styles.css"];
+
+function ownSheets(file) {
+	const folder = path.dirname(file);
+	return SHEET_FILES.map((name) => path.join(folder, name))
+		.filter((sheet) => fs.existsSync(sheet))
+		.map((sheet) => fs.readFileSync(sheet, "utf8"))
+		.join("\n");
+}
+
 for (const root of roots) {
 	for (const file of widgetFiles(root)) {
 		const text = fs.readFileSync(file, "utf8");
 		const styled = new Set();
-		for (const [, name] of `${text}\n${scopeSheet(file)}`.matchAll(/\.([a-z][\w-]*)/g)) styled.add(name);
+		for (const [, name] of `${text}\n${scopeSheet(file)}\n${ownSheets(file)}`.matchAll(/\.([a-z][\w-]*)/g))
+			styled.add(name);
 
 		const used = new Set();
 		// Only LITERAL words count. Everything inside ${...} is JavaScript — variable names,
