@@ -121,17 +121,33 @@ The engine keeps its own React for its own chrome. A widget's `react` resolves f
 
 | File | Change |
 |---|---|
-| `src/api.js` | split: gateways, cache and refs stay one instance per vault; hooks, kit and `createWidget` resolve per the widget's React |
-| `build.mjs` | React leaves the widget-facing surface of the bundle |
-| `src/registry.js` | `react` resolves through the same table as everything else, no special case |
+| `src/api-core.js` | new — the framework-free half, ONE instance: gateways, `gatewayCache`, refs, tab rows |
+| `src/widget-api.js` | new — the per-React half, built as its own bundle with `react`, `react-dom` and `widgetarium/core` provided from outside; also owns `drawWidget`, the root a foreign React draws into |
+| `src/api.js` | gone; `registry.js` composes the two halves into `widgetarium` |
+| `build.mjs` | `surfaceOptions()` builds that second bundle and a plugin embeds its text under `widgetarium:surface` |
+| `src/registry.js` | `react` resolves through the same table as everything else; a widget declaring one gets a scope of its own, and a package is run once per React |
+| `src/mounted.js` | `drawnWidget` — the one place that decides whether a widget goes in the tree or into an element of its own; `surface.js`, `catalogue.js` and `inline-render.js` all call it |
+| `src/crash-boundary.js` | new — the boundary as a factory over `h` and `Component`, because each React needs its own class |
+| `src/fit.js` | `reactClash` — the one place that says a slot may not cross a React |
 
-**Checks**
+**Checks** — `npm run test:react`
 
 - Two widgets on different React majors draw on one board — break by pointing both at one instance,
   one of them throws on a hook.
 - `gatewayCache` is one object no matter how many React versions are loaded — break by moving the
   cache into the per-React surface, a write in one widget stops reaching the other.
-- Filling a slot across a major is refused at the point of choosing, with both versions named.
+- Filling a slot across a React is refused at the point of choosing, with both versions named. What
+  the refusal compares is the INSTANCE, not the major: two instances of one version clash just as
+  hard, and comparing versions is a check with another road to the same state.
+- A widget declaring no React runs on the engine's — break by dropping the fallback, every installed
+  widget goes with it.
+- The surface asks `widgetarium/core` for nothing the core does not export, and the emoji drawings
+  stay behind that boundary — the two ends of the one-core rule are written in two files, so a
+  detector stands between them.
+
+The widget-facing surface is 39 kB with React and the core provided, and 536 kB carrying its own —
+that is what React leaving it is worth. The engine keeps its React for its own chrome, so the plugin
+bundle does not shrink; it grows by the 39 kB the surface text costs.
 
 ---
 
