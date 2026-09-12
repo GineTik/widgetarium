@@ -54,7 +54,7 @@ async function bundle(source) {
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		inject: ["tools/fill-inject.js"],
-		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "widgetarium/kit/emojis": "./src/emojis.js", "@habit/lib": "./widgets/@habit/lib.js", "@rank/lib": "./widgets/@rank/lib.js", obsidian: "./tools/obsidian-shim.js" },
+		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "widgetarium/kit/emojis": "./src/emojis.js", "@habit/lib": "./widgets/@habit/lib.js", "@rank/lib": "./widgets/@rank/lib.js", "@default/lib": "./widgets/@default/lib.js", obsidian: "./tools/obsidian-shim.js" },
 		logLevel: "warning",
 	});
 	return built.outputFiles[0].text;
@@ -705,7 +705,80 @@ const CATALOGUE_ASK = `(() => {
 	};
 })()`;
 
-const [subScript, kitScript, mountScript, overlayScript, streakScript, rankScript, catalogueScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(OVERLAY_PROBE), bundle(STREAK_PROBE), bundle(RANK_PROBE), bundle(CATALOGUE_PROBE)]);
+const METRIC_SHEETS = ["widgets/@default/tokens.css", "widgets/@default/metric-total/widget.css"];
+
+const METRIC_PROBE = `
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
+import Widget from "./widgets/@default/metric-total/widget.tsx";
+import { collectionGateway, soloGateway } from "./src/gateway/create";
+
+const recordRows = [
+	{ ref: "r0", value: { path: "Metrics/a.md", name: "a", date: "2026-09-10", amount: 120 } },
+	{ ref: "r1", value: { path: "Metrics/b.md", name: "b", date: "2026-09-11", amount: 180 } },
+];
+const periodRows = [{ ref: "p7", value: { label: "Past 7 days", days: 7 } }];
+const listing = (rows, id) => collectionGateway({
+	id,
+	settlesNow: true,
+	handlers: {
+		list: () => ({ rows, total: rows.length }),
+		get: (ref) => rows.find((row) => row.ref === ref) ?? null,
+		create: () => null,
+		remove: () => undefined,
+	},
+});
+
+const host = document.getElementById("host");
+const tile = document.createElement("div");
+tile.className = "wg-tile-body";
+tile.style.width = "700px";
+tile.style.height = "420px";
+tile.style.display = "grid";
+host.appendChild(tile);
+render(
+	h(Widget, {
+		records: listing(recordRows, "paint/metric/records"),
+		title: soloGateway("Total orders", {}, "paint/metric/title"),
+		unit: soloGateway("orders", {}, "paint/metric/unit"),
+		rising: soloGateway("good", {}, "paint/metric/rising"),
+		periods: listing(periodRows, "paint/metric/periods"),
+		periodPick: soloGateway("Past 7 days", {}, "paint/metric/pick"),
+		period: soloGateway({ label: "Past 7 days", days: 7 }, {}, "paint/metric/period"),
+		view: soloGateway("curve", {}, "paint/metric/view"),
+	}),
+	tile,
+);
+`;
+
+const METRIC_ASK = `(async () => {
+	const settle = () => new Promise((done) => setTimeout(done, 140));
+	const opener = [...document.querySelectorAll(".mt-foot .wg-kit-btn")][0];
+	opener.click();
+	await settle();
+
+	const dialog = document.querySelector(".wg-dialog");
+	const note = document.querySelector(".mt-note");
+	const amount = document.querySelector(".mt-amount .wg-kit-field-input");
+	const signs = [...document.querySelectorAll(".mt-sign .wg-kit-seg button")].map((button) => button.textContent.trim());
+
+	const typed = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+	typed.call(amount, "7");
+	amount.dispatchEvent(new Event("input", { bubbles: true }));
+	await settle();
+
+	return {
+		dialogCorner: dialog ? getComputedStyle(dialog).borderTopLeftRadius : null,
+		dialogFill: dialog ? getComputedStyle(dialog).backgroundColor : null,
+		noteTag: note ? note.tagName : null,
+		noteTallerThanAField: note ? Math.round(note.getBoundingClientRect().height) : 0,
+		signs,
+		amountReadsBack: amount.value,
+		unitBesideTheAmount: document.querySelector(".mt-form-side .wg-kit-field-unit") !== null,
+	};
+})()`;
+
+const [subScript, kitScript, mountScript, overlayScript, streakScript, rankScript, metricScript, catalogueScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(OVERLAY_PROBE), bundle(STREAK_PROBE), bundle(RANK_PROBE), bundle(METRIC_PROBE), bundle(CATALOGUE_PROBE)]);
 
 for (const theme of ["light", "dark"]) {
 	console.log(`\n— ${theme} —`);
@@ -789,6 +862,14 @@ for (const theme of ["light", "dark"]) {
 	check("and comes in once something has", rank.fogScrolled, 1);
 	check("the other end is already in, because there is more below", rank.fogUnderTheTray, 1);
 	check("the tray stays under the rack rather than scrolling away with it", rank.trayBelowRack, true);
+
+	const metric = await ask(pageFor(theme, metricScript, "metric", METRIC_SHEETS), METRIC_ASK, 2000);
+	console.log(`    add window: corner ${metric.dialogCorner}, note <${metric.noteTag}> ${metric.noteTallerThanAField}px, signs ${metric.signs.join("/")}`);
+	check("the add window stands on the dialog's own corner, not the widget's square one", metric.dialogCorner !== "0px", true);
+	check("the note is a text area a sentence fits in, not a one-line field", [metric.noteTag, metric.noteTallerThanAField > 60], ["TEXTAREA", true]);
+	check("the sign is the two-way toggle the design asked for", metric.signs, ["Add", "Subtract"]);
+	check("nothing is written beside the amount", metric.unitBesideTheAmount, false);
+	check("typing a number into the amount reads back as that number", metric.amountReadsBack, "7");
 
 	const wide = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500);
 	check("on a window with room the catalogue is a dialog, not the screen", wide.dialog[1] < wide.viewport[1], true);
