@@ -1,0 +1,68 @@
+{
+	"id": "@rank/tier-list",
+	"api": 1,
+	"title": "Tier list",
+	"description": "Cards dragged into named rows, best at the top, with everything unranked waiting in a tray.",
+	"keywords": [
+		"tier",
+		"tierlist",
+		"rank",
+		"ranking",
+		"rate",
+		"rating",
+		"compare",
+		"order",
+		"best",
+		"worst",
+		"vote",
+		"poll",
+		"favourites",
+		"drag",
+		"drop",
+		"grade",
+		"s tier"
+	],
+	"defaultSize": {
+		"w": 12,
+		"h": 9
+	},
+	"collapseBelowPx": 280,
+	"stackBelowPx": 420,
+	"shortestPx": 220,
+	"preview": {
+		"size": {
+			"w": 7,
+			"h": 6
+		},
+		"props": {
+			"title": {
+				"value": "Comfort food"
+			},
+			"cardSize": {
+				"value": 48
+			},
+			"tiers": {
+				"rows": [
+					{ "label": "S", "tone": "error", "order": 1 },
+					{ "label": "A", "tone": "warning", "order": 2 },
+					{ "label": "B", "tone": "standout", "order": 3 },
+					{ "label": "C", "tone": "success", "order": 4 }
+				]
+			},
+			"cards": {
+				"rows": [
+					{ "name": "Pizza", "tier": "S", "order": 1 },
+					{ "name": "Ramen", "tier": "S", "order": 2 },
+					{ "name": "Dumplings", "tier": "S", "order": 3 },
+					{ "name": "Tacos", "tier": "A", "order": 4 },
+					{ "name": "Sushi", "tier": "A", "order": 5 },
+					{ "name": "Burger", "tier": "B", "order": 6 },
+					{ "name": "Pancakes", "tier": "C", "order": 7 },
+					{ "name": "Falafel" },
+					{ "name": "Pierogi" },
+					{ "name": "Ice cream" }
+				]
+			}
+		}
+	}
+}

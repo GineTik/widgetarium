@@ -101,6 +101,11 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-note-ink: color-mix(in srgb, var(--wg-kit-note) 72%, var(--text-normal));
 	--wg-kit-standout-ink: color-mix(in srgb, var(--wg-kit-standout) 72%, var(--text-normal));
 
+	--wg-kit-neutral: var(--text-muted);
+	--wg-kit-accent: var(--interactive-accent);
+	--wg-kit-success: var(--text-success);
+	--wg-kit-error: var(--text-error);
+
 	/* TRADE-OFF: our own radii because Obsidian stops at 16px and the look needs more */
 	--wg-kit-plate: 14px;
 	--wg-kit-plate-pad: 8px;
