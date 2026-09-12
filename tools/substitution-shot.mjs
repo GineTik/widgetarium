@@ -19,7 +19,7 @@ function collect(from, into, prefix) {
 		const full = path.join(from, entry);
 		const key = `${prefix}/${entry}`;
 		if (statSync(full).isDirectory()) collect(full, into, key);
-		else if (/\.(json|jsx|js|css)$/.test(entry)) into[key] = readFileSync(full, "utf8");
+		else if (/\.(json|tsx|ts|jsx|js|css|md)$/.test(entry)) into[key] = readFileSync(full, "utf8");
 	}
 	return into;
 }

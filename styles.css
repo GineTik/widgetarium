@@ -2621,257 +2621,388 @@ pre:has(> .block-language-widgetarium),
 	font-weight: var(--font-semibold, 600);
 }
 
-/* ── substitutions: one dialog, the list on the left and the rule on the right ─────────── */
-
 :is(.wg-root, .wg-portal) .wg-dialog.wg-sub-dialog {
-	width: min(920px, 100%);
-	max-height: 84vh;
-	padding: 0;
-	gap: 0;
+	width: min(1040px, 100%);
+	max-height: 86vh;
 }
 
-/* CONTEXT: the sidebar block reaches this corner, so the close sits on its head row, not on its border */
 :is(.wg-root, .wg-portal) .wg-dialog.wg-sub-dialog .wg-dialog-close {
-	top: 19px;
-	right: 20px;
+	top: 23px;
+	right: 18px;
 }
 
-.wg-sub-body {
-	display: grid;
-	/* the list sits on the RIGHT, so the editor is the first column and takes the room */
-	grid-template-columns: minmax(0, 1fr) 260px;
-	/* CONTEXT: with nothing in the list the grid collapsed to a strip — the dialog kept its width
-	   and lost its height, which read as a broken window rather than an empty one */
-	min-height: min(520px, 70vh);
+:is(.wg-root, .wg-portal) .wg-sub {
+	position: relative;
+	display: flex;
+	gap: var(--size-4-3, 12px);
 	flex: 1;
-}
-
-/* CONTEXT: the gutter that keeps the kit's sidebar block clear of the window's own edge */
-.wg-sub-side {
-	display: flex;
-	flex-direction: column;
 	min-height: 0;
-	padding: var(--size-4-3, 12px);
-	background: none;
 }
 
-.wg-sub-side-head {
-	display: flex;
-	align-items: center;
-	gap: 8px;
+:is(.wg-root, .wg-portal) .wg-sub-side {
+	box-sizing: border-box;
+	width: 272px;
 	flex: none;
-	/* CONTEXT: the dialog's own close sits over this corner, so the head stops short of it */
-	padding: 2px 40px 2px 8px;
-}
-
-.wg-sub-side-head b {
-	font-size: var(--font-ui-medium, 15px);
-	font-weight: var(--font-semibold, 600);
-}
-
-.wg-sub-side-head > :last-child {
-	margin-left: auto;
-}
-
-/* CONTEXT: the sidebar is this dialog's scrolling column, so it takes the height the grid gives it */
-.wg-sub-side .wg-sub-list {
-	flex: 1;
-	min-height: 0;
-}
-
-/* CONTEXT: the block holds its head still; only the rules scroll */
-.wg-sub-rules {
-	min-height: 0;
 	overflow-y: auto;
 }
 
-/* TRADE-OFF: the whole row dims, not a dot — one thing to read instead of two */
-.wg-sub-item.is-disabled {
-	opacity: 0.45;
+:is(.wg-root, .wg-portal) .wg-sub-side-head {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: none;
+	padding: 0 var(--size-4-2, 8px);
 }
 
-.wg-sub-trg,
-.wg-sub-draft {
-	font-size: 11px;
+:is(.wg-root, .wg-portal) .wg-sub-side-title {
+	margin: 0;
+	font-size: var(--font-ui-medium, 15px);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1.3;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-side-lead {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-side-foot {
+	margin-top: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-rules {
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-item.is-disabled {
+	opacity: 0.5;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-trg {
 	font-family: var(--font-monospace);
+	font-size: 11px;
 	color: var(--text-faint);
 }
 
-.wg-sub-draft {
-	font-family: inherit;
-	font-weight: var(--font-semibold, 600);
-	color: var(--wg-kit-warning);
-	background: var(--wg-kit-warning-wash);
-	border-radius: 4px;
-	padding: 0 5px;
+:is(.wg-root, .wg-portal) .wg-sub-mark {
+	flex: none;
+	font-size: 11px;
 }
 
-.wg-sub-editor {
+:is(.wg-root, .wg-portal) .wg-sub-new .wg-kit-row-label {
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-empty-list {
+	padding: var(--size-4-2, 8px) var(--size-4-4, 16px);
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-main {
 	display: flex;
 	flex-direction: column;
+	gap: var(--size-4-3, 12px);
+	flex: 1;
+	min-width: 0;
 	min-height: 0;
-	overflow-y: auto;
-	padding-bottom: 22px;
 }
 
-/* TRADE-OFF: air and a numbered label carry the order, because a plate per stage is the box.
-   The beat between two stages is three times the one inside a stage, so the groups come apart. */
-.wg-sub-step {
-	padding: 0 var(--size-4-4, 16px);
-	margin-top: var(--size-4-6, 24px);
-}
-
-/* TRADE-OFF: sentence case — uppercase over tracking reads heavier than the words it labels,
-   and a third of the words on this screen are labels */
-.wg-sub-step-label {
+:is(.wg-root, .wg-portal) .wg-sub-editor {
 	display: flex;
-	align-items: baseline;
+	flex-direction: column;
+	gap: var(--size-4-3, 12px);
+	flex: 1;
+	min-height: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-head {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	flex: none;
+	flex-wrap: wrap;
+	padding-right: 44px;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-ident {
+	display: flex;
+	align-items: center;
 	gap: var(--size-4-2, 8px);
-	margin: 0 0 var(--size-4-2, 8px);
-	font-size: var(--font-ui-small, 13px);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-name {
+	flex: 0 1 240px;
 	font-weight: var(--font-semibold, 600);
-	color: var(--text-muted);
+	color: var(--text-normal);
 }
 
-/* the number hangs in a column of its own, which is the column the content indents past */
-.wg-sub-step-no {
-	width: var(--size-4-3, 12px);
-	font-family: var(--font-monospace);
-	color: var(--interactive-accent);
+:is(.wg-root, .wg-portal) .wg-sub-state {
+	flex: none;
 }
 
-/* TRADE-OFF: the content hangs off the number rather than standing behind a rail — the sample
-   in stage 3 already carries one, and two vertical lines down one column compete */
-.wg-sub-step-body {
-	padding-left: calc(var(--size-4-3, 12px) + var(--size-4-2, 8px));
-}
-
-.wg-sub-editor.is-empty {
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	color: var(--text-muted);
-}
-
-/* ONE BAND, TWO GROUPS: what the rule IS on the left — its name, whether it is on, whether it is
-   running — and what you may do to it on the right. Everything in it is the kit's 34px size, so the
-   pieces read as one row and not as four controls that happened to land beside each other. */
-.wg-sub-head {
+:is(.wg-root, .wg-portal) .wg-sub-acts {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 14px 16px 0;
+	gap: var(--size-4-2, 8px);
+	margin-left: auto;
 }
 
-.wg-sub-head .wg-sub-name {
-	max-width: 220px;
-}
-
-/* A BARE SWITCH SAYS NOTHING. The word and the control are one group, at the band's own height. */
 :is(.wg-root, .wg-portal) .wg-sub-power {
 	--wg-kit-card-corner: var(--wg-kit-pill);
-	--wg-kit-card-pad: 0 2px 0 var(--size-4-3, 12px);
+	--wg-kit-card-pad: 0 6px 0 var(--size-4-4, 16px);
 	flex: none;
 	flex-direction: row;
 	align-items: center;
 	gap: var(--size-4-2, 8px);
-	height: 34px;
+	height: 42px;
 }
 
-.wg-sub-power-word {
-	font-size: var(--font-ui-smaller, 12px);
+:is(.wg-root, .wg-portal) .wg-sub-power-word {
+	font-size: var(--font-ui-small, 14px);
 	font-weight: var(--font-semibold, 600);
 	color: var(--text-muted);
 }
 
-.wg-sub-spacer {
-	flex: 1;
+:is(.wg-root, .wg-portal) .wg-sub-steps {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
+	min-height: 0;
+	overflow-y: auto;
+	padding-right: 2px;
 }
 
-/* the status is a FACT about the rule, so it is the kit's pill — the same shape a size is */
-.wg-sub-state {
+:is(.wg-root, .wg-portal) .wg-sub-step {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3, 12px);
 	flex: none;
+	padding: var(--size-4-4, 16px);
+	border-radius: var(--wg-widget-radius);
+	background: var(--background-primary);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
 }
 
-.wg-sub-words {
+:is(.wg-root, .wg-portal) .wg-sub-step-label {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	margin: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-step-no {
+	display: grid;
+	place-content: center;
+	flex: none;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-accent-wash);
+	color: var(--interactive-accent);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-step-said {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-step-name {
+	margin: 0;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-step-hint {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.4;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-step-body {
+	padding-left: calc(28px + var(--size-4-3, 12px));
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-words {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
+	gap: var(--size-4-2, 8px);
 	font-size: var(--font-ui-medium, 15px);
-	line-height: 1.9;
+	line-height: 1.6;
 }
 
-.wg-sub-trigger {
-	width: 90px;
+:is(.wg-root, .wg-portal) .wg-sub-word {
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-trigger {
+	width: 104px;
 	font-family: var(--font-monospace);
+	color: var(--text-normal);
 }
 
-.wg-sub-trigger.is-wide {
-	width: 260px;
+:is(.wg-root, .wg-portal) .wg-sub-trigger.is-wide {
+	width: 280px;
 }
 
-.wg-sub-pick {
+:is(.wg-root, .wg-portal) .wg-sub-pick {
 	gap: 6px;
 }
 
-.wg-sub-caret {
+:is(.wg-root, .wg-portal) .wg-sub-pick.is-unset {
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-caret {
 	transform: rotate(90deg);
 	opacity: 0.6;
 }
 
-.wg-sub-error {
-	margin-top: 10px;
-	font-size: var(--font-ui-smaller, 12px);
+:is(.wg-root, .wg-portal) .wg-sub-error {
+	margin: var(--size-4-2, 8px) 0 0;
+	font-size: var(--font-ui-small, 14px);
 	color: var(--text-error);
 }
 
-.wg-sub-empty-list {
-	padding: 10px 12px;
-	font-size: var(--font-ui-small, 13px);
-	color: var(--text-muted);
+:is(.wg-root, .wg-portal) .wg-sub-example {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
 }
 
-.wg-sub-sample {
+:is(.wg-root, .wg-portal) .wg-sub-sample {
 	display: block;
+	box-sizing: border-box;
 	width: 100%;
 	resize: vertical;
-	margin: 0 0 var(--size-4-3, 12px);
-	padding: 0 0 0 10px;
+	margin: 0;
+	padding: var(--size-4-3, 12px) var(--size-4-4, 16px);
 	border: none;
-	border-left: 2px solid var(--wg-kit-card-edge);
-	border-radius: 0;
-	background: transparent;
-	color: var(--text-muted);
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+	color: var(--text-normal);
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-small, 13px);
 	line-height: 1.7;
 	outline: none;
-}
-
-/* CONTEXT: the rail answers the pointer in place of the "you write" that used to stand over it */
-.wg-sub-sample:hover {
-	border-left-color: var(--text-faint);
-}
-
-.wg-sub-sample:focus {
-	border-left-color: var(--interactive-accent);
 	box-shadow: none;
 }
 
-.wg-sub-out {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-	padding: 10px;
-	border-radius: 10px;
-	background: var(--background-primary);
+:is(.wg-root, .wg-portal) .wg-sub-sample:hover {
+	background: var(--wg-kit-fill-hover);
 }
 
-.wg-sub-plain {
+:is(.wg-root, .wg-portal) .wg-sub-sample:focus {
+	box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-arrow {
+	display: grid;
+	place-content: center;
+	align-self: center;
+	flex: none;
+	width: 24px;
+	height: 24px;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-arrow svg {
+	transform: rotate(90deg);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-out {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
+	padding: var(--size-4-3, 12px);
+	border-radius: var(--wg-kit-plate);
+	background: var(--background-primary);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-plain {
 	margin: 0;
 	font-size: var(--font-ui-small, 13px);
 	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-editor.is-empty {
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-4, 16px);
+	text-align: center;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-empty-mark {
+	display: grid;
+	place-content: center;
+	width: 64px;
+	height: 64px;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-accent-wash);
+	color: var(--interactive-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-empty-lead {
+	margin: 0;
+	font-size: var(--font-ui-medium, 15px);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-sub.is-phone {
+	flex-direction: column;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-open {
+	align-self: flex-start;
+	flex: none;
+	margin-right: 44px;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub.is-phone .wg-sub-head {
+	padding-right: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub.is-phone .wg-sub-ident,
+:is(.wg-root, .wg-portal) .wg-sub.is-phone .wg-sub-acts {
+	flex: 1 1 100%;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub.is-phone .wg-sub-name {
+	flex: 1 1 auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub.is-phone .wg-sub-step-body {
+	padding-left: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-sheet-over {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	display: flex;
+	align-items: flex-end;
+	background: var(--wg-dialog-scrim, rgba(0, 0, 0, 0.22));
+}
+
+:is(.wg-root, .wg-portal) .wg-sub-sheet {
+	box-sizing: border-box;
+	width: 100%;
+	max-height: 80%;
+	overflow-y: auto;
+	border-radius: var(--wg-widget-radius) var(--wg-widget-radius) 0 0;
 }
 
 /* ── the substituted widget, as it sits inside a note ─────────────────────────────────── */

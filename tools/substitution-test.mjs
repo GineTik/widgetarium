@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 
@@ -25,7 +26,8 @@ const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { matchLines, normalizeRules, newRule, ruleError, activeRules } = await import("./.mjs-cache/substitution.mjs");
 const { sampleFromPattern } = await import("./.mjs-cache/regex-sample.mjs");
 const { substituteIn, passageHere } = await import("./.mjs-cache/inline-render.mjs");
-const { SubstitutionDialog, defaultSample, triggerLabel } = await import("./.mjs-cache/substitution-dialog.mjs");
+const { SubstitutionDialog } = await import("./.mjs-cache/substitution-dialog.mjs");
+const { defaultSample, triggerLabel } = await import("./.mjs-cache/substitution-say.mjs");
 const { WidgetRegistry, boardWidgets, inlineWidgets } = await import("./.mjs-cache/registry.mjs");
 const { createHost, bindNote } = await import("./.mjs-cache/host.mjs");
 const { typeOf } = await import("./.mjs-cache/engine/record-type.mjs");
@@ -567,53 +569,49 @@ await settle();
 const at = (selector) => dom.window.document.querySelector(selector);
 const all = (selector) => [...dom.window.document.querySelectorAll(selector)];
 
-check("the sidebar lists every rule", all(".wg-sub-item .wg-kit-row-label").map((node) => node.textContent), ["Reminder", "Note"]);
-// THE LIST SITS ON THE RIGHT, and it is the same sidebar the settings panel is built from —
-// its New is a plus at the head, not a button at the foot the way Add property is.
-const bodyKids = [...at(".wg-sub-body").children].map((node) => node.className.split(" ")[0]);
-check("the editor comes first and the list sits to its right", bodyKids, ["wg-sub-editor", "wg-sub-side"]);
+const nameOn = (row) => row.querySelector(".wg-kit-row-label").childNodes[0].textContent;
+
+check("the sidebar lists every rule", all(".wg-sub-item").map(nameOn), ["Reminder", "Note"]);
+check("the list sits on the left and the rule being written takes the room", [...at(".wg-sub").children].map((node) => (node.classList.contains("wg-sub-list") ? "wg-sub-list" : node.className.split(" ")[0])), ["wg-sub-list", "wg-sub-main"]);
 check("the rules are rows of the kit's sidebar", all(".wg-sub-item.wg-kit-side-row").length, 2);
 check("and each is a real button, so a keyboard reaches it", all(".wg-sub-item").map((node) => node.tagName), ["BUTTON", "BUTTON"]);
 check("held in one group, the way every sidebar holds its values", all(".wg-sub-list .wg-kit-side-list .wg-sub-item").length, 2);
-check("New is a plus at the head of the list", Boolean(at(".wg-sub-side-head .wg-kit-icon")), true);
-check("and nothing sits at its foot", all(".wg-sub-side .wg-kit-btn").length, 0);
-// CONTEXT: a title outside the block leaves it a pill floating in an empty column
+check("New is a row at the foot of the list, not a press beside the window's close", Boolean(at(".wg-sub-side-foot .wg-sub-new")), true);
+check("and nothing floats over the block's own corner", all(".wg-sub-list .wg-kit-icon").length, 0);
 check("the title sits inside the sidebar block", Boolean(at(".wg-sub-list.wg-kit-side > .wg-sub-side-head")), true);
-check("and the rules are the one group under it", all(".wg-sub-list > .wg-sub-rules .wg-sub-item").length, 2);
-check("the first rule is the one open", at(".wg-sub-item.is-selected .wg-kit-row-label").textContent, "Reminder");
+check("under a line saying what a substitution is", Boolean(at(".wg-sub-side-head .wg-sub-side-lead")), true);
+check("and the rules are the one group under it", all(".wg-sub-list .wg-sub-rules .wg-sub-item").length, 2);
+check("every row carries the trigger it answers to", all(".wg-sub-item .wg-sub-trg").map((node) => node.textContent), ["!", "::: … :::"]);
+check("the first rule is the one open", nameOn(at(".wg-sub-item.is-selected")), "Reminder");
 check("its sentence is the one for its mode", at(".wg-sub-words").textContent.startsWith("When a line starts with"), true);
 check("the chosen widget is named on the button", at(".wg-sub-pick").textContent.includes("Reminder"), true);
 check("the sample shows the rule working", at(".wg-sub-out .wgi-reminder-text")?.textContent, "call Olena before Friday");
-// FIVE PIECES OF CHROME TEXT FOR THREE STAGES was a third of the words on the screen. The stage
-// is named already, so what you write and what you see are the two things in it, unlabelled.
-check("the last stage is the line you write and what it draws, and nothing said over either", [...at(".wg-sub-example").children].map((node) => node.className), ["wg-sub-sample", "wg-sub-out"]);
-check("so the editor says only the three stage names", all(".wg-sub-editor .wg-sub-step-label").length, 3);
+check("the last stage is the line you write, the turn, and what it draws", [...at(".wg-sub-example").children].map((node) => node.className), ["wg-sub-sample", "wg-sub-arrow", "wg-sub-out"]);
+check("so the editor says only the three stage names", all(".wg-sub-editor .wg-sub-step-name").length, 3);
 check("and every stage keeps its content in one block of its own", all(".wg-sub-step").map((node) => [...node.children].map((kid) => kid.className).join("+")), ["wg-sub-step-label+wg-sub-step-body", "wg-sub-step-label+wg-sub-step-body", "wg-sub-step-label+wg-sub-step-body"]);
 
-const steps = all(".wg-sub-editor > .wg-sub-step");
+const steps = all(".wg-sub-steps > .wg-sub-step");
 check("the editor is three stages, one after another", steps.length, 3);
 check("each is numbered in the order it is read", steps.map((node) => node.querySelector(".wg-sub-step-no")?.textContent), ["1", "2", "3"]);
-check("and named for what it asks", steps.map((node) => node.querySelector(".wg-sub-step-label")?.textContent), ["1How it matches", "2The rule", "3The result"]);
+check("and named for what it asks", steps.map((node) => node.querySelector(".wg-sub-step-name")?.textContent), ["How it matches", "The rule", "The result"]);
+check("each name carries the line that says what the stage wants", steps.every((node) => (node.querySelector(".wg-sub-step-hint")?.textContent ?? "").length > 0), true);
 check("the modes are the first stage", Boolean(steps[0].querySelector(".wg-sub-tabs")), true);
 check("the sentence is the second", Boolean(steps[1].querySelector(".wg-sub-words")), true);
 check("what it draws is the third", Boolean(steps[2].querySelector(".wg-sub-example")), true);
-// CONTEXT: a name, a switch and two buttons are chrome, not a stage of the reading
 check("the head is not one of them", steps.some((node) => node.querySelector(".wg-sub-name")), false);
+check("and it stands outside the column that scrolls", Boolean(at(".wg-sub-editor > .wg-sub-head")), true);
 
 check("no status dot rides the rows", all(".wg-sub-dot").length, 0);
 check("nor a tile where one sat", all(".wg-sub-item .wg-kit-side-icon").length, 0);
 check("an enabled rule reads at full strength", all(".wg-sub-item.is-disabled").length, 0);
-// THE HEAD IS ONE BAND WITH TWO GROUPS: what the rule IS, then what you may do to it. Two accent
-// controls beside each other is two things claiming to be the one to press.
-check("the head carries exactly one accent action", all(".wg-sub-head .wg-kit-btn.is-accent").length, 1);
-check("and it is Save", at(".wg-sub-head .wg-kit-btn.is-accent").textContent, "Save");
-// CONTEXT: is-plain paints its label with the accent, which is what made Delete read as a second Save
+check("a running rule is not marked in the list, because nothing is wrong with it", all(".wg-sub-item.is-selected .wg-sub-mark").length, 0);
+check("a saved rule offers nothing to save", at(".wg-sub-save").disabled, true);
+check("so the head spends no accent on it", all(".wg-sub-head .wg-kit-btn.is-accent").length, 0);
 check("Delete is not painted with the accent", all(".wg-sub-head .wg-kit-btn.is-plain").length, 0);
-check("it is the neutral one beside it", at(".wg-sub-head .wg-kit-btn:not(.is-accent)").textContent, "Delete");
+check("it is the neutral one beside Save", at(".wg-sub-delete").textContent, "Delete");
 check("the switch is not left bare — it is a named group", at(".wg-sub-power")?.textContent, "Enabled");
 check("and the group is the kit's own solid plate", at(".wg-sub-power")?.classList.contains("wg-kit-card"), true);
 check("with the switch inside it", Boolean(at(".wg-sub-power .wg-kit-switch")), true);
-// THE STATUS IS A FACT, so it is the kit's pill — and the fact is the one substitution.js checks
 check("the status reads as a pill, not as a line of chrome text", at(".wg-sub-state")?.classList.contains("wg-kit-pill"), true);
 check("a rule that is running says so", at(".wg-sub-state").textContent, "Live");
 
@@ -622,22 +620,23 @@ await settle();
 check("switching a rule off is answered in the list", held[0].enabled, false);
 check("by the row itself, not by a marker on it", at(".wg-sub-item.is-selected").classList.contains("is-disabled"), true);
 check("and only that row", all(".wg-sub-item.is-disabled").length, 1);
-// AN EDIT IS NOT LIVE UNTIL IT IS SAVED, so the head says the FIRST reason the rule is not running
-// and not the one just touched — the substitution is still working in the note until Save is pressed
 check("a flipped switch leaves an unsaved edit, and the head says that", at(".wg-sub-state").textContent, "Draft");
-at(".wg-sub-head .wg-kit-btn.is-accent").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+check("now there is something to save, and Save is the one accent in the head", all(".wg-sub-head .wg-kit-btn.is-accent").map((node) => node.textContent), ["Save"]);
+check("the list carries the same word", at(".wg-sub-item.is-selected .wg-sub-mark").textContent, "Draft");
+at(".wg-sub-save").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("saved, the head says the rule is switched off", at(".wg-sub-state").textContent, "Off");
+check("and Save goes quiet again", at(".wg-sub-save").disabled, true);
 at(".wg-sub-head .wg-kit-switch").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("switching it back on brings the row back", all(".wg-sub-item.is-disabled").length, 0);
-at(".wg-sub-head .wg-kit-btn.is-accent").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+at(".wg-sub-save").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("and saved again it is running", at(".wg-sub-state").textContent, "Live");
 
 all(".wg-sub-item")[1].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
-check("picking another rule opens it", at(".wg-sub-item.is-selected .wg-kit-row-label").textContent, "Note");
+check("picking another rule opens it", nameOn(at(".wg-sub-item.is-selected")), "Note");
 check("and its sentence changes with it", at(".wg-sub-words").textContent.startsWith("When a block opens with"), true);
 check("a capsule sentence names both ends", at(".wg-sub-words").textContent.includes("and closes with"), true);
 
@@ -647,21 +646,21 @@ tabs[2].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("switching to regex rewrites the sentence", at(".wg-sub-words").textContent.startsWith("When a line matches"), true);
 check("a rule with no expression yet says what is missing", at(".wg-sub-error")?.textContent, "Write an expression");
-check("and cannot be saved while it is missing", at(".wg-sub-editor .wg-kit-btn.is-accent").disabled, true);
+check("and cannot be saved while it is missing", at(".wg-sub-save").disabled, true);
+check("nor is the accent spent on a press that would be refused", all(".wg-sub-head .wg-kit-btn.is-accent").length, 0);
 check("and the head says it is not running either", at(".wg-sub-state").textContent, "Not valid");
 
 check("changing anything marks the rule a draft", held[1].draft, true);
-check("a draft is flagged in the list", at(".wg-sub-item.is-selected .wg-sub-draft")?.textContent, "draft");
+check("a rule that cannot run is flagged in the list", at(".wg-sub-item.is-selected .wg-sub-mark")?.textContent, "Not valid");
 check("and a draft does not reach a note", matchLines([":::", "one", ":::"], held).length, 0);
 
 tabs[1].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
-at(".wg-sub-editor .wg-kit-btn.is-accent").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+at(".wg-sub-save").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("saving clears the draft", held[1].draft, false);
 check("and the rule reaches notes again", matchLines([":::", "one", ":::"], held).length, 1);
 
-// ── the widget is picked from the catalogue, not from a list ─────────────────────────────
 all(".wg-sub-item")[0].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 at(".wg-sub-pick").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
@@ -672,8 +671,6 @@ const offered = [...shelf.querySelectorAll(".wg-cat-tile")];
 check("and it offers exactly the widgets that stand in text", offered.length, inlineWidgets(registry.list()).length);
 check("drawn from the text their manifests offer", shelf.querySelector(".wgi-reminder-text")?.textContent, "call Olena before Friday");
 check("with no lattice behind them, because text has no grid", shelf.querySelectorAll(".wg-cells").length, 0);
-check("and no span, because they do not take cells", shelf.querySelectorAll(".wg-cat-span").length, 0);
-// CONTEXT: the card's own buttons, not the widget's — a preview may draw buttons of its own
 const chromeButtons = (tile) => [...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic"));
 check("every card still carries one button of its own", offered.every((tile) => chromeButtons(tile).length === 1), true);
 
@@ -684,14 +681,13 @@ check("picking one writes it into the rule", held[0].widget, "@inline/note");
 check("and closes the catalogue behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
 
 const before = held.length;
-at(".wg-sub-side-head .wg-kit-icon").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+at(".wg-sub-new").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("New adds a rule", held.length, before + 1);
-check("and opens it", at(".wg-sub-item.is-selected .wg-kit-row-label").textContent, "Untitled");
+check("and opens it", nameOn(at(".wg-sub-item.is-selected")), "Untitled");
 
 render(null, panel);
 
-// CONTEXT: jsdom lays nothing out, and the block's air to the window edge is geometry
 {
 	const { execFileSync } = await import("node:child_process");
 	const { mkdtempSync, readdirSync, statSync, writeFileSync } = await import("node:fs");
@@ -724,7 +720,7 @@ render(null, panel);
 			const full = path.join(from, name);
 			const key = `${prefix}/${name}`;
 			if (statSync(full).isDirectory()) collect(full, into, key);
-			else if (/\.(json|jsx|js|css)$/.test(name)) into[key] = fs.readFileSync(full, "utf8");
+			else if (/\.(json|tsx|ts|jsx|js|css|md)$/.test(name)) into[key] = fs.readFileSync(full, "utf8");
 		}
 		return into;
 	};
@@ -732,6 +728,7 @@ render(null, panel);
 	const built = await esbuild.build({
 		entryPoints: ["tools/substitution-page.jsx"],
 		bundle: true,
+		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
 		platform: "browser",
@@ -744,88 +741,80 @@ render(null, panel);
 	});
 
 	const probe = `setTimeout(() => {
-		const side = document.querySelector(".wg-sub-side");
-		const block = document.querySelector(".wg-sub-list");
-		const dialog = document.querySelector(".wg-sub-dialog");
-		const rows = [...document.querySelectorAll(".wg-sub-item")];
-		const clear = (a, b) => ({ left: Math.round(a.left - b.left), right: Math.round(b.right - a.right), top: Math.round(a.top - b.top), bottom: Math.round(b.bottom - a.bottom) });
-		const air = clear(block.getBoundingClientRect(), dialog.getBoundingClientRect());
-		const style = getComputedStyle(block);
-		const steps = [...document.querySelectorAll(".wg-sub-step")];
 		const box = (node) => node.getBoundingClientRect();
-		const example = getComputedStyle(document.querySelector(".wg-sub-example"));
-		const dimmed = document.querySelector(".wg-sub-item.is-disabled");
-		const lit = document.querySelector(".wg-sub-item:not(.is-disabled)");
+		const seen = (selector) => document.querySelector(selector);
+		const every = (selector) => [...document.querySelectorAll(selector)];
+		const style = (node, pseudo) => getComputedStyle(node, pseudo ?? null);
+		const clear = (a, b) => ({ left: Math.round(a.left - b.left), right: Math.round(b.right - a.right), top: Math.round(a.top - b.top), bottom: Math.round(b.bottom - a.bottom) });
+		const block = seen(".wg-sub-list");
+		const dialog = seen(".wg-sub-dialog");
+		const steps = every(".wg-sub-step");
+		const rows = every(".wg-sub-item");
+		const newRow = seen(".wg-sub-new");
+		const head = seen(".wg-sub-head");
+		const save = seen(".wg-sub-save");
+		const badge = seen(".wg-sub-step-no");
+		const label = seen(".wg-sub-step-label");
+		const bodyFirst = seen(".wg-sub-step-body > *");
+		const sample = seen(".wg-sub-sample");
+		const arrow = seen(".wg-sub-arrow");
+		const out = seen(".wg-sub-out");
+		const sheet = seen(".wg-sub-sheet");
+		const room = seen(".wg-sub");
+		const dimmed = seen(".wg-sub-item.is-disabled");
+		const lit = seen(".wg-sub-item:not(.is-disabled)");
+		const air = block ? clear(box(block), box(dialog)) : null;
+		const parts = head ? [...head.children].filter((node) => box(node).width > 0) : [];
+		const inkProbe = document.createElement("span");
+		inkProbe.style.color = "var(--interactive-accent)";
+		document.body.appendChild(inkProbe);
+		const accentInk = style(inkProbe).color;
+		inkProbe.remove();
 		document.getElementById("wg-measure").textContent = JSON.stringify({
+			hasSide: Boolean(seen(".wg-sub-side")),
+			hasOpen: Boolean(seen(".wg-sub-open")),
 			air,
-			leastAir: Math.min(air.left, air.right, air.top, air.bottom),
-			edge: style.boxShadow,
-			radius: style.borderTopLeftRadius,
-			padding: style.paddingTop,
-			opaque: style.backgroundColor,
-			ground: getComputedStyle(dialog).backgroundColor,
-			inTheGutter: block.parentElement === side && side.parentElement.classList.contains("wg-sub-body"),
-			rows: document.querySelectorAll(".wg-sub-item").length,
-			adjacentRows: document.querySelectorAll(".wg-sub-item + .wg-sub-item").length,
-			divider: getComputedStyle(rows[1], "::after").content,
-			overlay: getComputedStyle(document.querySelector(".wg-dialog-overlay")).backgroundColor,
-			newRule: Math.round(document.querySelector(".wg-sub-side-head .wg-kit-icon").getBoundingClientRect().width),
-			close: Math.round(document.querySelector(".wg-dialog-close").getBoundingClientRect().width),
+			leastAir: air ? Math.min(air.left, air.right, air.top, air.bottom) : null,
+			blockPad: block ? style(block).paddingTop : null,
+			blockRadius: block ? style(block).borderTopLeftRadius : null,
+			blockFill: block ? style(block).backgroundColor : null,
+			blockShadow: block ? style(block).boxShadow : null,
+			dialogFill: style(dialog).backgroundColor,
+			rows: rows.length,
+			adjacentRows: every(".wg-sub-item + .wg-sub-item").length,
+			divider: rows[1] ? style(rows[1], "::after").content : null,
+			overlay: style(seen(".wg-dialog-overlay")).backgroundColor,
+			newUnderRows: newRow && rows.length ? Math.round(box(newRow).top - box(rows[rows.length - 1]).bottom) : null,
 			steps: steps.length,
-			stepLefts: steps.map((node) => Math.round(box(node.querySelector(".wg-sub-step-label")).left)),
-			stepGaps: steps.slice(1).map((node, index) => Math.round(box(node).top - box(steps[index]).bottom)),
-			// where the stage's own content lands, not where its box starts — the indent is padding
-			stepIndents: steps.map((node) => Math.round(box(node.querySelector(".wg-sub-step-body > *")).left - box(node.querySelector(".wg-sub-step-label")).left)),
-			// the number and the gap after it ARE the hanging column, so the indent is read off them
-			stepHang: (() => {
-				const label = document.querySelector(".wg-sub-step-label");
-				return Math.round(label.querySelector(".wg-sub-step-no").getBoundingClientRect().width + parseFloat(getComputedStyle(label).columnGap));
-			})(),
-			insideStep: Math.round(box(document.querySelector(".wg-sub-step-body")).top - box(document.querySelector(".wg-sub-step-label")).bottom),
-			stepCase: getComputedStyle(document.querySelector(".wg-sub-step-label")).textTransform,
-			stepTracking: getComputedStyle(document.querySelector(".wg-sub-step-label")).letterSpacing,
-			headGap: Math.round(box(steps[0]).top - box(document.querySelector(".wg-sub-head")).bottom),
-			headRule: getComputedStyle(document.querySelector(".wg-sub-head")).borderBottomWidth,
-			head: (() => {
-				const probe = document.createElement("span");
-				probe.style.color = "var(--interactive-accent)";
-				document.querySelector(".wg-sub-head").appendChild(probe);
-				const accentInk = getComputedStyle(probe).color;
-				probe.remove();
-				const parts = [...document.querySelectorAll(".wg-sub-head > *")].filter((node) => node.getBoundingClientRect().width > 0);
-				const del = document.querySelector(".wg-sub-head .wg-kit-btn:not(.is-accent)");
-				const save = document.querySelector(".wg-sub-head .wg-kit-btn.is-accent");
-				const power = document.querySelector(".wg-sub-power");
-				const state = document.querySelector(".wg-sub-state");
-				return {
-					accentInk,
-					order: parts.map((node) => [...node.classList].find((name) => name.startsWith("wg-sub-")) ?? node.className),
-					centres: parts.map((node) => Math.round((box(node).top + box(node).bottom) / 2)),
-					accents: document.querySelectorAll(".wg-sub-head .wg-kit-btn.is-accent").length,
-					deleteSays: del.textContent,
-					deleteInk: getComputedStyle(del).color,
-					deleteFill: getComputedStyle(del, "::before").backgroundColor,
-					neutralFill: getComputedStyle(document.querySelector(".wg-sub-pick"), "::before").backgroundColor,
-					saveFill: getComputedStyle(save, "::before").backgroundColor,
-					powerSays: power.textContent,
-					powerFill: getComputedStyle(power).backgroundColor,
-					powerHeight: Math.round(box(power).height),
-					powerHoldsSwitch: Boolean(power.querySelector(".wg-kit-switch")),
-					stateSays: state.textContent,
-					stateIsPill: state.classList.contains("wg-kit-pill"),
-					stateFill: getComputedStyle(state).backgroundColor,
-					controlHeights: [document.querySelector(".wg-sub-name"), power, del, save].map((node) => Math.round(box(node).height)),
-				};
-			})(),
-			exampleGround: example.backgroundColor,
-			exampleRule: example.borderTopWidth,
-			exampleRadius: example.borderBottomLeftRadius,
-			numeral: getComputedStyle(document.querySelector(".wg-sub-step-no")).color,
-			stepWord: getComputedStyle(document.querySelector(".wg-sub-step-label")).color,
-			marked: Boolean(dimmed),
-			dimmedRow: dimmed ? Number(getComputedStyle(dimmed).opacity) : 1,
-			litRow: Number(getComputedStyle(lit).opacity),
-			dots: document.querySelectorAll(".wg-sub-dot").length,
+			stepGaps: steps.slice(1).map((node, at) => Math.round(box(node).top - box(steps[at]).bottom)),
+			stepFill: steps[0] ? style(steps[0]).backgroundColor : null,
+			stepShadow: steps[0] ? style(steps[0]).boxShadow : null,
+			stepRadius: steps[0] ? style(steps[0]).borderTopLeftRadius : null,
+			badgeBox: badge ? [Math.round(box(badge).width), Math.round(box(badge).height)] : null,
+			badgeRadius: badge ? style(badge).borderTopLeftRadius : null,
+			badgeFill: badge ? style(badge).backgroundColor : null,
+			badgeInk: badge ? style(badge).color : null,
+			accentInk,
+			hang: badge && label ? Math.round(box(badge).width + parseFloat(style(label).columnGap)) : null,
+			indent: bodyFirst && label ? Math.round(box(bodyFirst).left - box(label).left) : null,
+			headParts: parts.map((node) => node.className.split(" ")[0]),
+			headCentres: parts.map((node) => Math.round((box(node).top + box(node).bottom) / 2)),
+			controlHeights: [seen(".wg-sub-name"), seen(".wg-sub-power"), seen(".wg-sub-delete"), save].filter(Boolean).map((node) => Math.round(box(node).height)),
+			saveDisabled: save ? save.disabled : null,
+			saveFill: save ? style(save, "::before").backgroundColor : null,
+			neutralFill: seen(".wg-sub-delete") ? style(seen(".wg-sub-delete"), "::before").backgroundColor : null,
+			stepsScroll: seen(".wg-sub-steps") ? style(seen(".wg-sub-steps")).overflowY : null,
+			headInScroll: Boolean(seen(".wg-sub-steps .wg-sub-head")),
+			sampleFill: sample ? style(sample).backgroundColor : null,
+			outFill: out ? style(out).backgroundColor : null,
+			noteFill: style(document.body).getPropertyValue("--background-primary"),
+			arrowBetween: sample && out && arrow ? box(sample).bottom <= box(arrow).top + 1 && box(arrow).bottom <= box(out).top + 1 : null,
+			closeClear: save ? Math.round(box(seen(".wg-dialog-close")).left - box(save).right) : null,
+			sheetSpill: sheet && room ? Math.round(box(sheet).width - box(room).width) : null,
+			sheetAtFoot: sheet && room ? Math.round(box(room).bottom - box(sheet).bottom) : null,
+			dimmedRow: dimmed ? Number(style(dimmed).opacity) : null,
+			litRow: lit ? Number(style(lit).opacity) : null,
+			dots: every(".wg-sub-dot").length,
 		});
 	}, 1500);`;
 
@@ -843,95 +832,86 @@ render(null, panel);
 			+ `<script>${built.outputFiles[0].text}</script><script>${probe}</script></body></html>`,
 	);
 
-	const dumped = execFileSync(
-		browser,
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1280,820", "--virtual-time-budget=9000", "--dump-dom", `file://${file}`],
-		{ encoding: "utf8", maxBuffer: 96 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
-	);
-	const raw = dumped.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
-	if (!raw) {
-		console.error(`substitution gate: the page never reported — file://${file}`);
-		process.exit(1);
-	}
-	const seen = JSON.parse(raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
-	if (process.env.WG_DEBUG) console.log(JSON.stringify(seen, null, 1));
+	const lookAt = (query, width, height) => {
+		const dumped = execFileSync(
+			browser,
+			["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", `--window-size=${width},${height}`, "--virtual-time-budget=9000", "--dump-dom", `file://${file}${query}`],
+			{ encoding: "utf8", maxBuffer: 96 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+		);
+		const raw = dumped.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
+		if (!raw) {
+			console.error(`substitution gate: the page never reported at ${width}px — file://${file}${query}`);
+			process.exit(1);
+		}
+		return JSON.parse(raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
+	};
 
-	console.log(`\n   the block: air ${JSON.stringify(seen.air)} · padding ${seen.padding} · radius ${seen.radius} · ${seen.opaque}`);
-	check("the block sits in the gutter, not straight in the grid", seen.inTheGutter, true);
-	check("and it never reaches the window's own edge", seen.leastAir >= 8, true);
-	check("it pads itself like every other sidebar", seen.padding, "8px");
-	check("carries the plate's corner", seen.radius, "14px");
-	// CONTEXT: in light the block's fill and the dialog's are the same white, so only the cast separates them
-	console.log(`   told apart by: ${seen.edge} · block ${seen.opaque} on dialog ${seen.ground}`);
-	check("carries no edge of its own", /inset/.test(seen.edge), false);
-	check("and is told apart by a cast that reaches past it", seen.edge !== "none" && /\dpx/.test(seen.edge), true);
-	check("and is a surface rather than a hole", /^rgba\(0, 0, 0, 0\)$/.test(seen.opaque), false);
-	check("its rows are adjacent, so a divider could be drawn", seen.adjacentRows, seen.rows - 1);
-	check("and none is", seen.divider, "none");
-	// CONTEXT: a scrim separates, it does not black out the room
-	check("the scrim behind it is light", Number(/[\d.]+\)$/.exec(seen.overlay)?.[0].slice(0, -1) ?? 1) <= 0.3, true);
+	const wide = lookAt("", 1280, 860);
+	const narrow = lookAt("?case=live&open=list", 430, 900);
+	if (process.env.WG_DEBUG) console.log(JSON.stringify({ wide, narrow }, null, 1));
 
-	// MEASURED: both were 32, and the accent one still read as the bigger of the two — a filled disc
-	// swells beside a ghost one. So it steps DOWN one, and the pair is a range, not a coincidence.
-	console.log(`   the head's two controls: new ${seen.newRule}px · close ${seen.close}px`);
-	check("the new-rule button is smaller than the close it sits beside", seen.newRule < seen.close, true);
-	check("by one step of the kit's scale, not by an eyeballed width", seen.close - seen.newRule, 4);
+	console.log(`\n   the block: air ${JSON.stringify(wide.air)} · padding ${wide.blockPad} · radius ${wide.blockRadius} · ${wide.blockFill}`);
+	check("the block never reaches the window's own edge", wide.leastAir >= 8, true);
+	check("it pads itself like every other sidebar", wide.blockPad, "8px");
+	check("carries the plate's corner", wide.blockRadius, "14px");
+	check("carries no edge of its own", /inset/.test(wide.blockShadow), false);
+	check("and is told apart by a cast that reaches past it", wide.blockShadow !== "none" && /\dpx/.test(wide.blockShadow), true);
+	check("and is a surface rather than a hole", /^rgba\(0, 0, 0, 0\)$/.test(wide.blockFill), false);
+	check("its rows are adjacent, so a divider could be drawn", wide.adjacentRows, wide.rows - 1);
+	check("and none is", wide.divider, "none");
+	check("the scrim behind it is light", Number(/[\d.]+\)$/.exec(wide.overlay)?.[0].slice(0, -1) ?? 1) <= 0.3, true);
+	console.log(`   New sits ${wide.newUnderRows}px under the last rule, at the foot of the block`);
+	check("New is the last thing in the list, under every rule", wide.newUnderRows > 0, true);
 
-	console.log(`\n   the three stages: gaps ${JSON.stringify(seen.stepGaps)} · head ${seen.headGap}px · one gutter at ${seen.stepLefts[0]}px`);
-	check("the page is three stages deep", seen.steps, 3);
-	check("their labels hang on one gutter", new Set(seen.stepLefts).size, 1);
-	// A STAGE HAS TO OWN ITS CONTENT. Every line starting on the same left edge read as one column
-	// of text, so the number hangs out to the left and everything the stage holds starts past it.
-	console.log(`   bound to their numbers: indents ${JSON.stringify(seen.stepIndents)} against a ${seen.stepHang}px hang · ${seen.insideStep}px inside a stage`);
-	check("every stage's content starts under its name, not under its number", new Set(seen.stepIndents).size, 1);
-	check("and that step in is the number's own column, not a number picked by eye", seen.stepIndents[0], seen.stepHang);
-	check("a stage stands nearer its own label than the next stage does", seen.stepGaps[0] >= seen.insideStep * 2, true);
-	// CONTEXT: caps over tracking read heavier than the words they label, and a third of the words
-	// on this screen are labels
-	check("the labels are not shouted in caps", seen.stepCase, "none");
-	check("nor spaced out", seen.stepTracking, "normal");
-	// CONTEXT: air is all that separates them, so one equal gap carries the whole beat
-	check("held apart by air, the same amount every time", new Set(seen.stepGaps).size, 1);
-	check("and it is air you can see", seen.stepGaps[0] >= 18, true);
-	check("the head hands over on the same beat", seen.headGap, seen.stepGaps[0]);
-	check("the number is not the colour of the words beside it", seen.numeral === seen.stepWord, false);
+	console.log(`\n   the three stages: gaps ${JSON.stringify(wide.stepGaps)} · ${wide.stepFill} on the window's ${wide.dialogFill} · corner ${wide.stepRadius}`);
+	check("the page is three stages deep", wide.steps, 3);
+	check("held apart by air, the same amount every time", new Set(wide.stepGaps).size, 1);
+	check("and it is air you can see", wide.stepGaps[0] >= 8, true);
+	check("a stage is a surface, not a hole in the window", /^rgba\(0, 0, 0, 0\)$/.test(wide.stepFill), false);
+	check("told apart from the window by a fill or an edge", wide.stepFill !== wide.dialogFill || /inset/.test(wide.stepShadow), true);
+	check("and cornered, because it is a card", parseFloat(wide.stepRadius) >= 12, true);
 
-	// THE HEAD IS ONE BAND, TWO GROUPS. Its objection was three separate ones: two accent controls
-	// beside each other, a switch with no word on it, and a status set as though it were a label.
-	const head = seen.head;
-	console.log(`\n   the head: ${head.order.join(" · ")}`);
-	console.log(`   Delete ${head.deleteFill} ink ${head.deleteInk} · Save ${head.saveFill} · the accent is ${head.accentInk}`);
-	check("what the rule is comes first, what you may do to it last", head.order, ["wg-sub-name", "wg-sub-power", "wg-sub-state", "wg-sub-spacer", "wg-kit-btn is-s", "wg-kit-btn is-accent is-s"]);
-	check("every piece of it stands on one line", new Set(head.centres).size, 1);
-	check("and the controls are one size, so they read as a row", new Set(head.controlHeights).size, 1);
-	check("only one control in the head is the accent one", head.accents, 1);
-	check("Save's fill IS the accent", head.saveFill, head.accentInk);
-	check("Delete is the grey one beside it", head.deleteSays, "Delete");
-	check("its label is not painted with the accent", head.deleteInk === head.accentInk, false);
-	check("and its fill is the grey every neutral control carries", head.deleteFill, head.neutralFill);
-	check("nor is it a hole where a button should be", /^rgba\(0, 0, 0, 0\)$/.test(head.deleteFill), false);
-	console.log(`   the switch: "${head.powerSays}" in a ${head.powerHeight}px group on ${head.powerFill}`);
-	check("the switch is not left bare — the word is in the group with it", head.powerSays, "Enabled");
-	check("which really holds the switch", head.powerHoldsSwitch, true);
-	check("and the group is a surface, not a gap around a control", /^rgba\(0, 0, 0, 0\)$/.test(head.powerFill), false);
-	console.log(`   the status: "${head.stateSays}" on ${head.stateFill}`);
-	check("the status is a pill, the way a size is", head.stateIsPill, true);
-	check("and it says whether the rule is running", ["Live", "Off", "Draft", "Not valid"].includes(head.stateSays), true);
-	check("on a ground of its own, so it is not read as a label", /^rgba\(0, 0, 0, 0\)$/.test(head.stateFill), false);
+	console.log(`   the number: ${JSON.stringify(wide.badgeBox)} radius ${wide.badgeRadius} on ${wide.badgeFill}, ink ${wide.badgeInk} against the accent ${wide.accentInk}`);
+	check("the number rides a shape of its own", wide.badgeBox[0], wide.badgeBox[1]);
+	check("a round one", parseFloat(wide.badgeRadius) >= wide.badgeBox[0] / 2, true);
+	check("filled, not left as bare type", /^rgba\(0, 0, 0, 0\)$/.test(wide.badgeFill), false);
+	check("and it is the accent that is spent on it", wide.badgeInk, wide.accentInk);
+	console.log(`   the stage's content starts ${wide.indent}px in, against a ${wide.hang}px shape and gap`);
+	check("a stage's content starts under its name, past the number's own column", wide.indent, wide.hang);
 
-	console.log(`   the result: ground ${seen.exampleGround} · rule ${seen.exampleRule} · head rule ${seen.headRule}`);
-	check("the head hands over without drawing a line", seen.headRule, "0px");
-	check("the result is not a plate of its own", seen.exampleGround, "rgba(0, 0, 0, 0)");
-	check("nor fenced off above", seen.exampleRule, "0px");
-	check("nor cornered like a card", seen.exampleRadius, "0px");
+	console.log(`\n   the head: ${wide.headParts.join(" · ")} · heights ${JSON.stringify(wide.controlHeights)}`);
+	check("what the rule is comes first, what you may do to it second", wide.headParts, ["wg-sub-ident", "wg-sub-acts"]);
+	check("both stand on one line", new Set(wide.headCentres).size, 1);
+	check("and the controls are one size, so they read as a row", new Set(wide.controlHeights).size, 1);
+	check("the head holds still while the stages scroll", wide.stepsScroll, "auto");
+	check("so Save is reachable from anywhere in the rule", wide.headInScroll, false);
+	console.log(`   Save on a saved rule: disabled ${wide.saveDisabled} · ${wide.saveFill} against the neutral ${wide.neutralFill}`);
+	check("a saved rule offers nothing to save", wide.saveDisabled, true);
+	check("and Save is not painted with the accent while it refuses a press", wide.saveFill === wide.accentInk, false);
+	check("it is the grey every neutral control carries", wide.saveFill, wide.neutralFill);
+	console.log(`   the window's close clears Save by ${wide.closeClear}px`);
+	check("the close stands clear of the head's own controls", wide.closeClear >= 0, true);
 
-	console.log(`   the list: lit ${seen.litRow} · dimmed ${seen.dimmedRow} · dots ${seen.dots}`);
-	check("no dot is left in the list", seen.dots, 0);
-	check("the list still knows which rule is off", seen.marked, true);
-	check("a live rule is at full strength", seen.litRow, 1);
-	check("a switched-off one is turned down", seen.dimmedRow < seen.litRow, true);
-	// CONTEXT: 0.8 still read as on beside its neighbours — the drop has to be a step, not a nuance
-	check("far enough down to be seen across the list", seen.dimmedRow <= 0.6, true);
+	console.log(`\n   the result: written on ${wide.sampleFill}, drawn on ${wide.outFill}`);
+	check("what you write and what it draws are two surfaces", wide.sampleFill === wide.outFill, false);
+	check("and the turn between them is drawn", wide.arrowBetween, true);
+
+	console.log(`   the list: lit ${wide.litRow} · dimmed ${wide.dimmedRow} · dots ${wide.dots}`);
+	check("no dot is left in the list", wide.dots, 0);
+	check("a live rule is at full strength", wide.litRow, 1);
+	check("a switched-off one is turned down", wide.dimmedRow < wide.litRow, true);
+	check("far enough down to be seen across the list", wide.dimmedRow <= 0.6, true);
+
+	console.log(`\n   on a phone: sidebar ${narrow.hasSide} · a press to open the list ${narrow.hasOpen} · head parts ${JSON.stringify(narrow.headCentres)}`);
+	check("a phone is too narrow for a column beside the rule, so none is drawn", narrow.hasSide, false);
+	check("the list is a press instead", narrow.hasOpen, true);
+	check("and the head stacks rather than running off the screen", narrow.headCentres.length > 1 && new Set(narrow.headCentres).size, 2);
+	console.log(`   the sheet: ${narrow.sheetSpill}px wider than the room, ${narrow.sheetAtFoot}px off its foot`);
+	check("the list comes up as a sheet on the room's full width", narrow.sheetSpill, 0);
+	check("resting on its foot", narrow.sheetAtFoot, 0);
+	check("and it is the same block the sidebar draws, padded the same way", narrow.blockPad, wide.blockPad);
+	check("wearing the window's own corner where it meets the screen", narrow.blockRadius, "16px");
+	check("the stages lose the number's column, because a phone has no room to spare", narrow.indent, 0);
 }
 
 // TRADE-OFF: a live browser over --dump-dom — virtual time never ticks the animation clock
@@ -964,6 +944,7 @@ render(null, panel);
 	const built = await esbuild.build({
 		entryPoints: ["tools/inline-page.jsx"],
 		bundle: true,
+		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
 		platform: "browser",
