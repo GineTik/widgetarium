@@ -2,6 +2,7 @@ import { flatRows, createWidget, textOf, useData, WidgetRoot } from "widgetarium
 import type { CollectionGateway, ListAction, ValueGateway } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "react";
+import type { Ref } from "react";
 
 const CSS = `
 .orbi-filter { justify-content: flex-start; align-items: stretch; }
@@ -221,117 +222,160 @@ type FilterProps = {
 	chosen: ValueGateway<Chosen>;
 };
 
-export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen }: FilterProps) {
-	const listed = useData(tasks.list);
-	const rows: TaskRow[] = flatRows(listed.rows);
-	// TRADE-OFF: a typed list still wins where somebody has written one — a board that wants a
-	// different order, a label of its own or a property nothing carries yet says so explicitly
-	const authored = useData(groups.list).rows.map(({ value }: { value: Held }) => groupOf(value)).filter((group: Group) => group.prop !== "");
-	const named = useData(properties.list).rows.map(({ value }: { value: Held }) => textOf(value, "name") || textOf(value, RECORD_NAME)).filter(Boolean);
-	const fromBoard = groupsFromBoard(named, rows);
-	const shownGroups = authored.length > 0 ? authored : fromBoard.length > 0 ? fromBoard : groupsFromData(rows);
-	const applied: Chosen = (useData(chosen.get).data as Chosen) ?? {};
+// TRADE-OFF: an authored list outranks a derived one — a board may want its own order and labels
+function groupsShown(authored: Group[], fromBoard: Group[], rows: TaskRow[]): Group[] {
+	if (authored.length > 0) return authored;
+	if (fromBoard.length > 0) return fromBoard;
+	return groupsFromData(rows);
+}
 
-	const triggerRef = useRef(null);
-	const hasRoomForWord = useRoomForLabel(triggerRef);
-
+// TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
+function useChosenDraft(applied: Chosen, chosen: ValueGateway<Chosen>) {
 	const [isOpen, setOpen] = useState(false);
-	// TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
 	const [draft, setDraft] = useState<Chosen>(applied);
-	const unfolded = String(useData(openGroup.get).data ?? "");
-	const [pressed, setPressed] = useState<string | null>(null);
-	const shown = pressed ?? unfolded;
 
-	const change = (next: boolean) => {
-		if (next) setDraft(applied);
-		setOpen(next);
+	const draftAfterRadio = (group: Group, value: string) => {
+		if (draft[group.prop] === value) return dropped(draft, group.prop);
+		return { ...draft, [group.prop]: value };
 	};
 
-	const isChosen = (group: Group, value: string) =>
-		group.control === RADIO ? draft[group.prop] === value : ((draft[group.prop] as string[]) ?? []).includes(value);
-
-	const toggle = (group: Group, value: string) => {
-		if (group.control === RADIO) {
-			setDraft(draft[group.prop] === value ? dropped(draft, group.prop) : { ...draft, [group.prop]: value });
-			return;
-		}
+	const draftAfterCheck = (group: Group, value: string) => {
 		const held = (draft[group.prop] as string[]) ?? [];
 		const next = held.includes(value) ? held.filter((item) => item !== value) : [...held, value];
-		setDraft(next.length > 0 ? { ...draft, [group.prop]: next } : dropped(draft, group.prop));
+		if (next.length === 0) return dropped(draft, group.prop);
+		return { ...draft, [group.prop]: next };
 	};
 
-	const apply = () => {
-		chosen.update(draft);
-		setOpen(false);
+	return {
+		isOpen,
+		change: (next: boolean) => {
+			if (next) setDraft(applied);
+			setOpen(next);
+		},
+		isChosen: (group: Group, value: string) => {
+			if (group.control === RADIO) return draft[group.prop] === value;
+			return ((draft[group.prop] as string[]) ?? []).includes(value);
+		},
+		toggle: (group: Group, value: string) => {
+			if (group.control === RADIO) return setDraft(draftAfterRadio(group, value));
+			setDraft(draftAfterCheck(group, value));
+		},
+		apply: () => {
+			chosen.update(draft);
+			setOpen(false);
+		},
+		reset: () => {
+			setDraft({});
+			chosen.update({});
+		},
 	};
+}
 
-	const reset = () => {
-		setDraft({});
-		chosen.update({});
-	};
+type GroupValuesProps = {
+	group: Group;
+	values: string[];
+	isChosen: (group: Group, value: string) => boolean;
+	onToggle: (group: Group, value: string) => void;
+};
 
-	const count = countOf(applied);
+function GroupValues({ group, values, isChosen, onToggle }: GroupValuesProps) {
+	if (values.length === 0) return <p className="ofp-empty">Nothing to choose from yet.</p>;
+	return values.map((value) => (
+		<PopoverItem key={value} className="ofp-option" checked={isChosen(group, value)} onClick={() => onToggle(group, value)}>
+			{group.control === PEOPLE ? <span className={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
+			<span className="ofp-name">{value}</span>
+		</PopoverItem>
+	));
+}
 
-	const trigger = (
-		<button
-			type="button"
-			ref={triggerRef}
-			className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${hasRoomForWord ? "" : " is-tight"}`}
-		>
+type FilterGroupProps = GroupValuesProps & { isUnfolded: boolean; onUnfold: (prop: string) => void };
+
+function FilterGroup({ group, values, isUnfolded, onUnfold, isChosen, onToggle }: FilterGroupProps) {
+	return (
+		<div className="ofp-group">
+			<button type="button" className={`ofp-group-head${isUnfolded ? " is-on" : ""}`} onClick={() => onUnfold(isUnfolded ? "" : group.prop)}>
+				<span>{group.label}</span>
+				<Icon name="chevron" className="ofp-chev" />
+			</button>
+			{isUnfolded ? <GroupValues group={group} values={values} isChosen={isChosen} onToggle={onToggle} /> : null}
+		</div>
+	);
+}
+
+type GroupListProps = {
+	groups: Group[];
+	rows: TaskRow[];
+	needle: string;
+	unfolded: string;
+	onUnfold: (prop: string) => void;
+	picking: ReturnType<typeof useChosenDraft>;
+};
+
+function GroupList({ groups, rows, needle, unfolded, onUnfold, picking }: GroupListProps) {
+	const matching = (value: string) => needle === "" || value.toLowerCase().includes(needle);
+	return groups.map((group: Group) => (
+		<FilterGroup
+			key={group.prop}
+			group={group}
+			values={valuesFor(rows, group.prop).filter(matching)}
+			isUnfolded={unfolded === group.prop}
+			onUnfold={onUnfold}
+			isChosen={picking.isChosen}
+			onToggle={picking.toggle}
+		/>
+	));
+}
+
+type FilterTriggerProps = { triggerRef: Ref<HTMLButtonElement>; count: number; hasRoomForWord: boolean };
+
+function FilterTrigger({ triggerRef, count, hasRoomForWord }: FilterTriggerProps) {
+	return (
+		<button type="button" ref={triggerRef} className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${hasRoomForWord ? "" : " is-tight"}`}>
 			<Icon name="filter" className="ofp-icon" />
 			{hasRoomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
 			{count > 0 ? <span className="wg-kit-count ofp-count">{count}</span> : null}
 		</button>
 	);
+}
+
+export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen }: FilterProps) {
+	const listed = useData(tasks.list);
+	const rows: TaskRow[] = flatRows(listed.rows);
+	const authored = useData(groups.list).rows.map(({ value }: { value: Held }) => groupOf(value)).filter((group: Group) => group.prop !== "");
+	const named = useData(properties.list).rows.map(({ value }: { value: Held }) => textOf(value, "name") || textOf(value, RECORD_NAME)).filter(Boolean);
+	const shownGroups = groupsShown(authored, groupsFromBoard(named, rows), rows);
+	const applied: Chosen = (useData(chosen.get).data as Chosen) ?? {};
+
+	const triggerRef = useRef<HTMLButtonElement | null>(null);
+	const hasRoomForWord = useRoomForLabel(triggerRef);
+
+	const picking = useChosenDraft(applied, chosen);
+	const unfolded = String(useData(openGroup.get).data ?? "");
+	const [pressed, setPressed] = useState<string | null>(null);
+	const shown = pressed ?? unfolded;
 
 	return (
 		<WidgetRoot className="orbi orbi-filter" defaultRounded="none" defaultBackgroundType="none">
 			<style>{CSS}</style>
 
-			<Popover className="ofp-pop" trigger={trigger} isOpen={isOpen} onOpenChange={change}>
+			<Popover
+				className="ofp-pop"
+				trigger={<FilterTrigger triggerRef={triggerRef} count={countOf(applied)} hasRoomForWord={hasRoomForWord} />}
+				isOpen={picking.isOpen}
+				onOpenChange={picking.change}
+			>
 				<div className="ofp-panel">
 					<PopoverSearch placeholder="Keyword" hint="Narrows the choices below, not the board">
-						{(needle: string) =>
-							shownGroups.map((group: Group) => {
-								const values = valuesFor(rows, group.prop).filter((value) => needle === "" || value.toLowerCase().includes(needle));
-								const isGroupOpen = shown === group.prop;
-								return (
-									<div className="ofp-group" key={group.prop}>
-										<button
-											type="button"
-											className={`ofp-group-head${isGroupOpen ? " is-on" : ""}`}
-											onClick={() => setPressed(isGroupOpen ? "" : group.prop)}
-										>
-											<span>{group.label}</span>
-											<Icon name="chevron" className="ofp-chev" />
-										</button>
-
-										{isGroupOpen
-											? values.length === 0
-												? <p className="ofp-empty">Nothing to choose from yet.</p>
-												: values.map((value) => (
-														<PopoverItem
-															key={value}
-															className="ofp-option"
-															checked={isChosen(group, value)}
-															onClick={() => toggle(group, value)}
-														>
-															{group.control === PEOPLE ? <span className={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
-															<span className="ofp-name">{value}</span>
-														</PopoverItem>
-												  ))
-											: null}
-									</div>
-								);
-							})
-						}
+						{(needle: string) => (
+							<GroupList groups={shownGroups} rows={rows} needle={needle} unfolded={shown} onUnfold={setPressed} picking={picking} />
+						)}
 					</PopoverSearch>
 
 					<div className="ofp-foot">
-						<Button className="ofp-reset" onClick={reset}>
+						<Button className="ofp-reset" onClick={picking.reset}>
 							Reset
 						</Button>
-						<Button className="ofp-apply" variant="accent" onClick={apply}>
+						<Button className="ofp-apply" variant="accent" onClick={picking.apply}>
 							Apply
 						</Button>
 					</div>
