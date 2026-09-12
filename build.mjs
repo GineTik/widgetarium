@@ -1,6 +1,8 @@
 import { execFileSync } from "node:child_process";
 import esbuild from "esbuild";
 
+export const TEXT_LOADERS = { ".md": "text" };
+
 const SUPPLIED_BY_ELECTRON_AT_RUNTIME = ["obsidian", "electron", "node:fs/promises", "node:path"];
 
 const HELD_BY_THE_ONE_CORE = /^\.\/(cache|create|narrow|emoji-table\.js)$/;
@@ -38,7 +40,10 @@ function surfaceSource({ minify }) {
 			build.onResolve({ filter: /^widgetarium:surface$/ }, (found) => ({ path: found.path, namespace: "wg-surface" }));
 			build.onLoad({ filter: /.*/, namespace: "wg-surface" }, async () => {
 				const built = await esbuild.build(surfaceOptions({ minify }));
-				return { contents: `export const REACT_SURFACE_SOURCE = ${JSON.stringify(built.outputFiles[0].text)};`, loader: "js" };
+				return {
+					contents: `export const REACT_SURFACE_SOURCE = ${JSON.stringify(built.outputFiles[0].text)};`,
+					loader: "js",
+				};
 			});
 		},
 	};
@@ -54,6 +59,7 @@ export function bundleOptions({ outfile = "main.js", minify = false, sourcemap =
 		platform: "browser",
 		target: "es2020",
 		external: SUPPLIED_BY_ELECTRON_AT_RUNTIME,
+		loader: TEXT_LOADERS,
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		sourcemap,

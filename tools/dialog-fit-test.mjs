@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const BROWSERS = [
 	process.env.WG_CHROME,
@@ -29,6 +30,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-dialog-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/dialog-fit-page.jsx"],
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -36,7 +38,11 @@ const bundle = await esbuild.build({
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	inject: ["tools/fill-inject.js"],
-	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "@task/lib": "./widgets/@task/lib.js" },
+	alias: {
+		widgetarium: "./tools/fill-shim.js",
+		"widgetarium/kit": "./src/kit.js",
+		"@task/lib": "./widgets/@task/lib.js",
+	},
 	logLevel: "warning",
 });
 
@@ -68,8 +74,22 @@ writeFileSync(file, page);
 function measureAt(width, height) {
 	const dom = execFileSync(
 		browser(),
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--force-prefers-reduced-motion", `--window-size=${width},${height}`, "--virtual-time-budget=4000", "--dump-dom", `file://${file}`],
-		{ encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-prefers-reduced-motion",
+			`--window-size=${width},${height}`,
+			"--virtual-time-budget=4000",
+			"--dump-dom",
+			`file://${file}`,
+		],
+		{
+			encoding: "utf8",
+			maxBuffer: 64 * 1024 * 1024,
+			stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"],
+		},
 	);
 	const payload = dom.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
 	if (!payload) {
@@ -119,7 +139,10 @@ check("and the dialog is exactly as wide as it declares", wide.dialog.width, 980
 
 // CONTEXT: getBoundingClientRect reports the painted box, offsetWidth the laid-out one
 console.log("\n— and every number here is layout, not a frame of the enter —");
-for (const [where, seen] of [["wide", wide], ["narrow", narrow]]) {
+for (const [where, seen] of [
+	["wide", wide],
+	["narrow", narrow],
+]) {
 	check(`${where}: the dialog's painted box is its laid-out box`, seen.dialog.width, seen.dialogLaidOut);
 	check(`${where}: and so is the plate's`, seen.plate.width, seen.plateLaidOut);
 	check(`${where}: with nothing of a gesture left on it`, seen.dialogPainted, "none none none 1");
@@ -146,7 +169,10 @@ check("at the narrow width too", narrow.plateCast.length, wide.plateCast.length)
 // CONTEXT: the reach is read off the lift the block actually carries, never off a number typed
 // here — a shadow that is retuned must move the room with it, not quietly outgrow it
 function reach(shadow) {
-	const layers = shadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter((part) => !part.includes("inset"));
+	const layers = shadow
+		.split(/,(?![^(]*\))/)
+		.map((part) => part.trim())
+		.filter((part) => !part.includes("inset"));
 	const lengths = (layer) => [...layer.matchAll(/(-?[\d.]+)px/g)].map((found) => Number(found[1]));
 	let down = 0;
 	let up = 0;
@@ -164,12 +190,19 @@ function reach(shadow) {
 }
 
 const room = reach(wide.plateLift);
-console.log(`\n— and it is not cut off: the lift reaches ${room.side}px aside, ${room.down}px below, ${room.up}px above —`);
-for (const [where, seen] of [["wide", wide], ["narrow", narrow]]) {
+console.log(
+	`\n— and it is not cut off: the lift reaches ${room.side}px aside, ${room.down}px below, ${room.up}px above —`,
+);
+for (const [where, seen] of [
+	["wide", wide],
+	["narrow", narrow],
+]) {
 	for (const clip of seen.plateClips) {
 		// the box that holds the block owes it the reach; the ones outside it owe only a whole box
 		const owed = clip.holds === "the block" ? room : { down: 0, up: 0, side: 0 };
-		console.log(`   ${where}: .${clip.name} holds ${clip.holds} with ${clip.left}/${clip.right} aside, ${clip.top} above, ${clip.bottom} below`);
+		console.log(
+			`   ${where}: .${clip.name} holds ${clip.holds} with ${clip.left}/${clip.right} aside, ${clip.top} above, ${clip.bottom} below`,
+		);
 		check(`${where}: .${clip.name} leaves ${clip.holds} room below`, clip.bottom >= owed.down, true);
 		check(`${where}: .${clip.name} leaves it room to the right`, clip.right >= owed.side, true);
 		check(`${where}: .${clip.name} leaves it room to the left`, clip.left >= owed.side, true);
@@ -177,39 +210,84 @@ for (const [where, seen] of [["wide", wide], ["narrow", narrow]]) {
 	}
 }
 check("the box the block stands in is the scrolling one", wide.plateClips[0].name, "otd-body");
-check("and the body is one of the boxes that clips it", wide.plateClips.some((clip) => clip.name === "otd-body"), true);
-check("as is the dialog, which is what keeps the corner", wide.plateClips.some((clip) => clip.name.includes("dialog")), true);
+check(
+	"and the body is one of the boxes that clips it",
+	wide.plateClips.some((clip) => clip.name === "otd-body"),
+	true,
+);
+check(
+	"as is the dialog, which is what keeps the corner",
+	wide.plateClips.some((clip) => clip.name.includes("dialog")),
+	true,
+);
 
 console.log("\n— the rows do not reflow: name left, value right, at either width —");
-for (const [where, seen] of [["wide", wide], ["narrow", narrow]]) {
+for (const [where, seen] of [
+	["wide", wide],
+	["narrow", narrow],
+]) {
 	check(`${where}: the name and the value are on one line`, Math.abs(seen.rowName.top - seen.rowValue.top) <= 8, true);
 	// CONTEXT: 12 is the kit row's own gutter, measured — the old blob started at the padding
 	check(`${where}: the row starts hard left, with its icon`, seen.rowLead.left - seen.row.left <= 14, true);
-	check(`${where}: and the name follows the icon`, seen.rowName.left > seen.rowLead.left && seen.rowName.left - seen.rowLead.right <= 14, true);
+	check(
+		`${where}: and the name follows the icon`,
+		seen.rowName.left > seen.rowLead.left && seen.rowName.left - seen.rowLead.right <= 14,
+		true,
+	);
 	check(`${where}: the value is hard right`, seen.row.right - seen.rowValue.right <= 14, true);
-	check(`${where}: a pressed row carries an edge, since it cannot be lighter than the panel`, seen.openRow.edge.includes("inset"), true);
+	check(
+		`${where}: a pressed row carries an edge, since it cannot be lighter than the panel`,
+		seen.openRow.edge.includes("inset"),
+		true,
+	);
 }
 
 console.log("\n— wide content is cut where the column ends, and scrolls to show the rest —");
-for (const [where, seen] of [["wide", wide], ["narrow", narrow]]) {
+for (const [where, seen] of [
+	["wide", wide],
+	["narrow", narrow],
+]) {
 	for (const kind of ["code", "table", "diagram"]) {
-		check(`${where}: the ${kind} is cut at the column, never drawn over what stands beside it`, seen[kind].right <= seen.md.right, true);
+		check(
+			`${where}: the ${kind} is cut at the column, never drawn over what stands beside it`,
+			seen[kind].right <= seen.md.right,
+			true,
+		);
 		check(`${where}: and the ${kind} scrolls sideways to show the rest`, seen[kind].scrolls, true);
 	}
 }
 check("wide: the column ends exactly where the plate begins", wide.md.right <= wide.plate.left, true);
 check("wide: so a block is cut a whole sidebar short of the dialog", wide.dialog.right - wide.md.right >= 300, true);
-check("narrow: nothing stands beside it, so it carries on to the dialog's own edge", narrow.dialog.right - narrow.md.right <= 24, true);
+check(
+	"narrow: nothing stands beside it, so it carries on to the dialog's own edge",
+	narrow.dialog.right - narrow.md.right <= 24,
+	true,
+);
 
 console.log("\n— the copy button stands in the block's own corner —");
-check("inside the block it copies", wide.copy.right <= wide.codeBlock.right && wide.copy.top >= wide.codeBlock.top, true);
-check("with the code padded clear of it, so no line ever runs underneath", wide.copy.left >= wide.code.right - wide.codePadRight, true);
+check(
+	"inside the block it copies",
+	wide.copy.right <= wide.codeBlock.right && wide.copy.top >= wide.codeBlock.top,
+	true,
+);
+check(
+	"with the code padded clear of it, so no line ever runs underneath",
+	wide.copy.left >= wide.code.right - wide.codePadRight,
+	true,
+);
 
 console.log("\n— and nothing overflows the page sideways —");
-for (const [where, seen] of [["wide", wide], ["narrow", narrow]]) {
+for (const [where, seen] of [
+	["wide", wide],
+	["narrow", narrow],
+]) {
 	check(`${where}: the page does not scroll sideways`, seen.pageScrollWidth <= seen.pageClientWidth, true);
 	check(`${where}: the dialog is inside the window`, seen.dialog.right <= seen.window, true);
 }
 
-console.log(failed ? `\n${failed} measurements the design did not ask for` : "\nthe plate sits beside the note, and drops below it");
+console.log(
+	failed
+		? `\n${failed} measurements the design did not ask for`
+		: "\nthe plate sits beside the note, and drops below it",
+);
 process.exit(failed ? 1 : 0);

@@ -1,10 +1,24 @@
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
+import { TEXT_LOADERS } from "../build.mjs";
 
 buildMirror();
 
-const dom = new JSDOM("<!doctype html><body><div id=\"host\"></div></body>", { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent", "KeyboardEvent", "TransitionEvent"]) {
+const dom = new JSDOM('<!doctype html><body><div id="host"></div></body>', { pretendToBeVisual: true });
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+	"KeyboardEvent",
+	"TransitionEvent",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 // jsdom has no ResizeObserver and lays nothing out; the kit must survive both
@@ -15,7 +29,18 @@ globalThis.ResizeObserver = class {
 
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, cardClass, sidebarClass, toneClass, variants, cx } = await import("./.mjs-cache/kit.mjs");
+const {
+	Kit,
+	APPROVAL_TONES,
+	PRIORITY_TONES,
+	TONE_NAMES,
+	buttonClass,
+	cardClass,
+	sidebarClass,
+	toneClass,
+	variants,
+	cx,
+} = await import("./.mjs-cache/kit.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
 // has finished listening. Wait for the frame rather than guessing at a sleep.
@@ -47,9 +72,21 @@ function show(value) {
 // A WIDGET MAY SKIP THE COMPONENTS ENTIRELY. The class builders are the kit's real surface;
 // the components are a convenience over them.
 check("a default button", buttonClass({}), "wg-kit-btn is-m");
-check("accent, large, full width", buttonClass({ variant: "accent", size: "l", block: true }), "wg-kit-btn is-accent is-l is-block");
-check("a caller's own class survives", buttonClass({ variant: "plain", className: "mine" }), "wg-kit-btn is-plain is-m mine");
-check("variants() builds a widget's OWN component too", variants("x", { tone: { hot: "is-hot" } })({ tone: "hot" }), "x is-hot");
+check(
+	"accent, large, full width",
+	buttonClass({ variant: "accent", size: "l", block: true }),
+	"wg-kit-btn is-accent is-l is-block",
+);
+check(
+	"a caller's own class survives",
+	buttonClass({ variant: "plain", className: "mine" }),
+	"wg-kit-btn is-plain is-m mine",
+);
+check(
+	"variants() builds a widget's OWN component too",
+	variants("x", { tone: { hot: "is-hot" } })({ tone: "hot" }),
+	"x is-hot",
+);
 check("cx drops the falsy and flattens", cx("a", false, ["b", null], "c"), "a b c");
 
 // A CARD IS THE PLATE EVERY SURFACE IS BUILT FROM, so the pieces built on it must SAY so in their
@@ -58,7 +95,11 @@ check("a card is the light plate by default", cardClass({}), "wg-kit-card");
 check("solid is the grey well", cardClass({ variant: "solid" }), "wg-kit-card is-solid");
 check("and the lift is asked for, never inherited", cardClass({ lift: true }), "wg-kit-card is-lifted");
 check("a sidebar IS a light card that lifts", sidebarClass({}), "wg-kit-side wg-kit-card is-lifted");
-check("a glass sidebar is the same card", sidebarClass({ surface: "glass" }), "wg-kit-side wg-kit-card is-lifted is-glass");
+check(
+	"a glass sidebar is the same card",
+	sidebarClass({ surface: "glass" }),
+	"wg-kit-side wg-kit-card is-lifted is-glass",
+);
 check("a plate is a solid card", Kit.plateClass({}), "wg-kit-plate wg-kit-card is-solid");
 check("and so is the grouped list a sidebar group is made of", Kit.listClass({}), "wg-kit-list wg-kit-card is-solid");
 
@@ -67,7 +108,10 @@ check("and so is the grouped list a sidebar group is made of", Kit.listClass({})
 const classes = TONE_NAMES.map(toneClass);
 check("every tone has a class of its own", new Set(classes).size, classes.length);
 check("a tone the kit never had is the neutral one", toneClass("chartreuse"), toneClass("neutral"));
-for (const [table, name] of [[PRIORITY_TONES, "PRIORITY_TONES"], [APPROVAL_TONES, "APPROVAL_TONES"]]) {
+for (const [table, name] of [
+	[PRIORITY_TONES, "PRIORITY_TONES"],
+	[APPROVAL_TONES, "APPROVAL_TONES"],
+]) {
 	const strays = Object.entries(table).filter(([, tone]) => !TONE_NAMES.includes(tone));
 	check(`${name} still names tones the kit has`, strays.map(([key, tone]) => `${key}->${tone}`).join(", ") || 0, 0);
 }
@@ -78,61 +122,156 @@ check("the quiet button is the kit's neutral", buttonClass({ variant: "neutral",
 const host = document.getElementById("host");
 render(h(Kit.Button, { variant: "accent", size: "l" }, "Create"), host);
 check("Button renders a real button", host.querySelector("button.wg-kit-btn.is-accent.is-l")?.textContent, "Create");
-check("type=button, so it never submits a form it lands in", host.querySelector("button").getAttribute("type"), "button");
+check(
+	"type=button, so it never submits a form it lands in",
+	host.querySelector("button").getAttribute("type"),
+	"button",
+);
 
 // AN ICON THE KIT DOES NOT KNOW RENDERS NOTHING AT ALL — no error, no box, an empty button.
 render(h(Kit.Icon, { name: "dots" }), host);
 check("the three-dot menu has a glyph", host.querySelectorAll("svg.wg-kit-icon-glyph circle").length, 3);
 // the glyph is STROKED, so a radius over half the stroke width leaves a hole and the dots read as rings
-check("and they are dots, not rings", [...host.querySelectorAll("circle")].every((dot) => parseFloat(dot.getAttribute("r")) <= 0.9), true);
+check(
+	"and they are dots, not rings",
+	[...host.querySelectorAll("circle")].every((dot) => parseFloat(dot.getAttribute("r")) <= 0.9),
+	true,
+);
 
 render(h(Kit.Button, { asChild: true, variant: "plain" }, h("a", { href: "#x" }, "Go")), host);
-check("asChild pours the button onto somebody else's element", host.querySelector("a")?.getAttribute("class"), "wg-kit-btn is-plain is-m");
+check(
+	"asChild pours the button onto somebody else's element",
+	host.querySelector("a")?.getAttribute("class"),
+	"wg-kit-btn is-plain is-m",
+);
 check("and keeps that element's own props", host.querySelector("a")?.getAttribute("href"), "#x");
 
-render(h(Kit.Segmented, { items: [{ value: "a", label: "A" }, { value: "b", label: "B" }], value: "b" }), host);
+render(
+	h(Kit.Segmented, {
+		items: [
+			{ value: "a", label: "A" },
+			{ value: "b", label: "B" },
+		],
+		value: "b",
+	}),
+	host,
+);
 check("Segmented marks exactly one tab", host.querySelectorAll('[aria-selected="true"]').length, 1);
 check("and it is the one asked for", host.querySelector('[aria-selected="true"]').textContent, "B");
 // THE THUMB MUST NOT BE DRAWN ON A GUESS. jsdom reports every width as zero, which is what a
 // widget looks like before its first layout — the thumb has to stay hidden, not collapse.
-check("with no layout yet, the thumb is hidden rather than wrong", host.querySelector(".wg-kit-seg-thumb").style.opacity, "0");
+check(
+	"with no layout yet, the thumb is hidden rather than wrong",
+	host.querySelector(".wg-kit-seg-thumb").style.opacity,
+	"0",
+);
 delete globalThis.ResizeObserver;
 render(h(Kit.Segmented, { items: [{ value: "a", label: "A" }], value: "a" }), host);
 check("and a host without ResizeObserver still renders", Boolean(host.querySelector(".wg-kit-seg")), true);
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 
-render(h(Kit.Popover, { trigger: h(Kit.IconButton, { label: "More" }, "…") }, h(Kit.PopoverItem, { checked: true }, "Rename")), host);
+render(
+	h(
+		Kit.Popover,
+		{ trigger: h(Kit.IconButton, { label: "More" }, "…") },
+		h(Kit.PopoverItem, { checked: true }, "Rename"),
+	),
+	host,
+);
 check("Popover renders its trigger", host.querySelector(".wg-kit-icon")?.getAttribute("aria-label"), "More");
 check("and starts closed", host.querySelector(".wg-kit-pop")?.classList.contains("is-open"), false);
 host.querySelector(".wg-kit-anchor").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 await settle();
 check("pressing the trigger opens it", host.querySelector(".wg-kit-pop")?.classList.contains("is-open"), true);
 // CONTEXT: a real kit control, so the law is proved on what a caller actually hands over
-check("the trigger LEAVES at once, because the panel is it now", host.querySelector(".wg-kit-anchor").style.visibility, "hidden");
+check(
+	"the trigger LEAVES at once, because the panel is it now",
+	host.querySelector(".wg-kit-anchor").style.visibility,
+	"hidden",
+);
 check("and is never touched on the way out", host.querySelector(".wg-kit-icon").style.scale, "");
 check("the panel is anchored, not centred", host.querySelector(".wg-kit-pop").style.left !== "", true);
 // jsdom runs no transitions, so the exit is ended the way a browser ends it
-const endExit = (panel) => panel.dispatchEvent(new TransitionEvent("transitionend", { bubbles: true, propertyName: "transform" }));
+const endExit = (panel) =>
+	panel.dispatchEvent(new TransitionEvent("transitionend", { bubbles: true, propertyName: "transform" }));
 
 document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
 await settle();
 // THE PANEL MUST OUTLIVE `open`. Preact drops `is-open` the instant the prop turns false, and a
 // panel that is already hidden cannot animate — which is why closing used to be a disappearance.
-check("Escape STARTS the exit, it does not end it", host.querySelector(".wg-kit-pop")?.classList.contains("is-exiting"), true);
-check("the panel is still on screen while it folds", host.querySelector(".wg-kit-pop")?.classList.contains("is-open"), true);
+check(
+	"Escape STARTS the exit, it does not end it",
+	host.querySelector(".wg-kit-pop")?.classList.contains("is-exiting"),
+	true,
+);
+check(
+	"the panel is still on screen while it folds",
+	host.querySelector(".wg-kit-pop")?.classList.contains("is-open"),
+	true,
+);
 check("and the trigger stays away until it has", host.querySelector(".wg-kit-anchor").style.visibility, "hidden");
 endExit(host.querySelector(".wg-kit-pop"));
 await settle();
 check("when the fold ends the panel is gone", host.querySelector(".wg-kit-pop")?.classList.contains("is-open"), false);
 check("and the trigger comes back exactly then", host.querySelector(".wg-kit-anchor").style.visibility, "");
-check("UNTOUCHED, as it was throughout", `${host.querySelector(".wg-kit-icon").style.scale}|${host.querySelector(".wg-kit-icon").style.opacity}`, "|");
+check(
+	"UNTOUCHED, as it was throughout",
+	`${host.querySelector(".wg-kit-icon").style.scale}|${host.querySelector(".wg-kit-icon").style.opacity}`,
+	"|",
+);
 
 let flipped = null;
-render(h(Kit.Switch, { checked: false, onChange: (value) => { flipped = value; }, label: "Live" }), host);
+render(
+	h(Kit.Switch, {
+		checked: false,
+		onChange: (value) => {
+			flipped = value;
+		},
+		label: "Live",
+	}),
+	host,
+);
 host.querySelector(".wg-kit-switch").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 check("Switch reports the new value rather than holding one", flipped, true);
 
-const surface = ["Button", "IconButton", "Pill", "Count", "Plate", "Card", "Row", "List", "RowBadge", "RowLabel", "RowValue", "Segmented", "Popover", "PopoverItem", "PopoverSearch", "PopoverSeparator", "Calendar", "Progress", "MarkdownEditor", "Switch", "cx", "variants", "toneClass", "TONE_NAMES", "buttonClass", "iconButtonClass", "pillClass", "plateClass", "cardClass", "rowClass", "listClass", "glassClass", "sidebarClass"];
+const surface = [
+	"Button",
+	"IconButton",
+	"Pill",
+	"Count",
+	"Plate",
+	"Card",
+	"Row",
+	"List",
+	"RowBadge",
+	"RowLabel",
+	"RowValue",
+	"Segmented",
+	"Popover",
+	"PopoverItem",
+	"PopoverSearch",
+	"PopoverSeparator",
+	"Calendar",
+	"Progress",
+	"MarkdownEditor",
+	"Switch",
+	"cx",
+	"variants",
+	"toneClass",
+	"TONE_NAMES",
+	"buttonClass",
+	"iconButtonClass",
+	"pillClass",
+	"plateClass",
+	"cardClass",
+	"rowClass",
+	"listClass",
+	"glassClass",
+	"sidebarClass",
+];
 check("every piece is reachable from one object", surface.filter((name) => !Kit[name]).join(", ") || 0, 0);
 
 // THE TWO SPECIFIERS, and what each one is FOR. A widget must have "widgetarium"; it may
@@ -140,11 +279,27 @@ check("every piece is reachable from one object", surface.filter((name) => !Kit[
 const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
 const { api: widgetarium, kit: kitModule } = ENGINE_SCOPE;
 check('import { Kit } from "widgetarium" — for <Kit.Button/> in JSX', widgetarium.Kit === Kit, true);
-check('import { Button } from "widgetarium/kit" — flat, and it says where it came from', kitModule.Button === Kit.Button, true);
-check("every piece is reachable from the subpath", surface.filter((name) => kitModule[name] !== Kit[name]).join(", ") || 0, 0);
-check("the core is still whole", ["createWidget", "WidgetRoot", "Dialog", "useAction"].filter((name) => !widgetarium[name]).join(", ") || 0, 0);
+check(
+	'import { Button } from "widgetarium/kit" — flat, and it says where it came from',
+	kitModule.Button === Kit.Button,
+	true,
+);
+check(
+	"every piece is reachable from the subpath",
+	surface.filter((name) => kitModule[name] !== Kit[name]).join(", ") || 0,
+	0,
+);
+check(
+	"the core is still whole",
+	["createWidget", "WidgetRoot", "Dialog", "useAction"].filter((name) => !widgetarium[name]).join(", ") || 0,
+	0,
+);
 // THE KIT IS OPTIONAL, so it must not be sitting in the core surface pretending otherwise
-check("the kit does not leak into the core namespace", surface.filter((name) => name !== "cx" && name !== "variants" && widgetarium[name]).join(", ") || 0, 0);
+check(
+	"the kit does not leak into the core namespace",
+	surface.filter((name) => name !== "cx" && name !== "variants" && widgetarium[name]).join(", ") || 0,
+	0,
+);
 
 // THE MEASURING HOOK MUST NOT DRIVE ITSELF. jsdom lays nothing out, so every rect is zero and
 // the measure returns early — which is why a render loop that froze the real app passed here.
@@ -181,7 +336,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	await settle();
 	await settle();
 	check("a derived list does not send the thumb into a render loop", renders < 10, true);
-	check("the thumb lands on the selected tab", host.querySelector(".wg-kit-seg-thumb").style.transform, "translateX(104px)");
+	check(
+		"the thumb lands on the selected tab",
+		host.querySelector(".wg-kit-seg-thumb").style.transform,
+		"translateX(104px)",
+	);
 
 	// THE PADDING MUST NOT MOVE IT. An absolute child is offset from the padding box, whose left
 	// edge is the inner BORDER edge — subtracting the padding pushed the thumb out of the capsule.
@@ -192,7 +351,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	render(h(Bar, {}), host);
 	await settle();
 	await settle();
-	check("and a padded container does not push it out", host.querySelector(".wg-kit-seg-thumb").style.transform, "translateX(104px)");
+	check(
+		"and a padded container does not push it out",
+		host.querySelector(".wg-kit-seg-thumb").style.transform,
+		"translateX(104px)",
+	);
 	globalThis.getComputedStyle = realStyle;
 	render(null, host);
 	Element.prototype.getBoundingClientRect = was;
@@ -211,13 +374,21 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		throw new Error(`${id}: no widget source found`);
 	};
 	const tokens = fs.readFileSync("widgets/@task/tokens.css", "utf8");
-	check("the plate fill has ONE owner, so no second fallback can drift", /--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens), true);
+	check(
+		"the plate fill has ONE owner, so no second fallback can drift",
+		/--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens),
+		true,
+	);
 
 	// CONTEXT: the tab strip left the widget for src/editable-tabs.js, so that is where it is checked
 	const strip = fs.readFileSync("src/editable-tabs.js", "utf8");
 	check("the tab strip builds on the kit rather than restating it", /from "\.\/kit\.js"|wg-kit-/.test(strip), true);
 	check("the tab strip does not paint its own plate", /background:\s*var\(--orbi-plate\)/.test(strip), false);
-	check("and the widget holding it draws no strip of its own", /wg-kit-seg|role="tablist"/.test(widgetSource("@core/editable-tabs")), false);
+	check(
+		"and the widget holding it draws no strip of its own",
+		/wg-kit-seg|role="tablist"/.test(widgetSource("@core/editable-tabs")),
+		false,
+	);
 
 	for (const id of ["@core/filter-panel", "@task/view-tabs"]) {
 		const name = id.slice(id.indexOf("/") + 1);
@@ -238,7 +409,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 
 	const steps = [];
 	function Strip() {
-		const [held, setHeld] = useState({ tabs: ["Marketing Team"], archived: ["Ux Team", "Sales"], selected: "Marketing Team" });
+		const [held, setHeld] = useState({
+			tabs: ["Marketing Team"],
+			archived: ["Ux Team", "Sales"],
+			selected: "Marketing Team",
+		});
 		return h(EditableTabs, {
 			...held,
 			onChange: (step) => {
@@ -263,7 +438,14 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	await press(inBody(".wg-kit-pop-item").find((item) => item.textContent.includes("Archived list")));
 
 	check("the archived list draws a row per archived tab", names(), ["Ux Team", "Sales"]);
-	check("and every row draws a Restore beside a Delete", rows().map((row) => [...row.querySelectorAll("button")].map((node) => node.textContent.trim())), [["Restore", "Delete"], ["Restore", "Delete"]]);
+	check(
+		"and every row draws a Restore beside a Delete",
+		rows().map((row) => [...row.querySelectorAll("button")].map((node) => node.textContent.trim())),
+		[
+			["Restore", "Delete"],
+			["Restore", "Delete"],
+		],
+	);
 
 	await press(rows()[0].querySelector(".wg-tabs-delete"));
 	check("pressing Delete asks first", Boolean(confirm()), true);
@@ -279,12 +461,27 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	await press(rows()[0].querySelector(".wg-tabs-delete"));
 	await press(confirm().querySelector(".wg-dialog-confirm"));
 	check("confirming takes the entry off the list", names(), ["Sales"]);
-	check("and hands the caller the whole archive after it", steps.at(-1), { verb: "delete", tabs: ["Marketing Team"], archived: ["Sales"], selected: "Marketing Team", name: "Ux Team", was: null });
-	check("the strip itself is untouched", [...host.querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim()), ["Marketing Team"]);
+	check("and hands the caller the whole archive after it", steps.at(-1), {
+		verb: "delete",
+		tabs: ["Marketing Team"],
+		archived: ["Sales"],
+		selected: "Marketing Team",
+		name: "Ux Team",
+		was: null,
+	});
+	check(
+		"the strip itself is untouched",
+		[...host.querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim()),
+		["Marketing Team"],
+	);
 
 	await press(rows()[0].querySelector(".wg-tabs-restore"));
 	check("Restore still empties the list", names(), []);
-	check("by putting the tab back on the strip", [...host.querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim()), ["Marketing Team", "Sales"]);
+	check(
+		"by putting the tab back on the strip",
+		[...host.querySelectorAll(".wg-tabs-tab")].map((node) => node.textContent.trim()),
+		["Marketing Team", "Sales"],
+	);
 
 	render(null, host);
 	for (const stray of inBody(".wg-dialog-overlay")) stray.remove();
@@ -384,7 +581,10 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	await flush();
 	check("PEN AND TOUCH CLOSE IT — pointerdown alone, no mousedown", isOpen(), false);
 	// CONTEXT: an outside press is the one close nobody can repair by pressing the row again
-	const folded = () => { const node = host.querySelector(".harness-trigger"); return `${node.style.scale}|${node.style.opacity}`; };
+	const folded = () => {
+		const node = host.querySelector(".harness-trigger");
+		return `${node.style.scale}|${node.style.opacity}`;
+	};
 	check("AND HAND THE ROW BACK WHOLE, never leaving it folded", folded(), "|");
 
 	await openIt();
@@ -434,12 +634,25 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 
 	// jsdom lays nothing out, and a fold measured from zeroes is a fold of NaN
 	const wasRect = Element.prototype.getBoundingClientRect;
-	const box = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+	const box = (left, top, width, height) => ({
+		left,
+		top,
+		width,
+		height,
+		right: left + width,
+		bottom: top + height,
+		x: left,
+		y: top,
+	});
 	// CONTEXT: a measurement forces a style flush, and a browser starts or misses transitions there
 	const flushes = [];
 	Element.prototype.getBoundingClientRect = function () {
 		if (this.classList.contains("wg-kit-pop")) {
-			flushes.push({ open: this.classList.contains("is-open"), opacity: this.style.opacity, transition: this.style.transition });
+			flushes.push({
+				open: this.classList.contains("is-open"),
+				opacity: this.style.opacity,
+				transition: this.style.transition,
+			});
 			return box(0, 0, 240, 180);
 		}
 		if (this.classList.contains("wg-kit-anchor")) return box(40, 60, 100, 40);
@@ -458,7 +671,14 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const has = (name) => Boolean(pop()?.classList.contains(name));
 	const show = async (open) => {
-		render(h(Kit.Popover, { isOpen: open, trigger: h("button", { className: "exit-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(
+			h(
+				Kit.Popover,
+				{ isOpen: open, trigger: h("button", { className: "exit-trigger" }, "T") },
+				h(Kit.PopoverItem, {}, "Rename"),
+			),
+			host,
+		);
 		await settle();
 	};
 
@@ -468,7 +688,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("the enter has landed, leaving the opacity to the stylesheet", pop().style.opacity, "");
 	flushes.length = 0;
 	await show(false);
-	check("the exit folds the panel back onto the trigger", /^translate\(40px, 60px\) scale\(0\.41/.test(pop().style.transform), true);
+	check(
+		"the exit folds the panel back onto the trigger",
+		/^translate\(40px, 60px\) scale\(0\.41/.test(pop().style.transform),
+		true,
+	);
 	// A RADIUS IS SCALED BY THE TRANSFORM: the trigger's real 20px corner, divided by the scale it
 	// is about to be multiplied by, per axis — or the panel squares off as it shrinks.
 	check("AND THE RADIUS TRAVELS WITH IT", Math.round(parseFloat(pop().style.borderRadius)), 48);
@@ -500,7 +724,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("and the panel is open again", has("is-open"), true);
 	check("the trigger is hidden again, not stuck visible", anchor().style.visibility, "hidden");
 	check("nothing of the fold is left on the panel", pop().style.opacity, "");
-	check("the exit's pinned box is released, and the enter never pins one", `${pop().style.width}|${pop().style.height}`, "|");
+	check(
+		"the exit's pinned box is released, and the enter never pins one",
+		`${pop().style.width}|${pop().style.height}`,
+		"|",
+	);
 	check("and its content is fading IN again, not out", pop().firstElementChild.style.opacity, "1");
 	endExit(pop());
 	await settle();
@@ -536,7 +764,16 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	render(null, host);
 
 	const wasRect = Element.prototype.getBoundingClientRect;
-	const box = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+	const box = (left, top, width, height) => ({
+		left,
+		top,
+		width,
+		height,
+		right: left + width,
+		bottom: top + height,
+		x: left,
+		y: top,
+	});
 	Element.prototype.getBoundingClientRect = function () {
 		if (this.classList.contains("wg-kit-pop")) return box(0, 0, 240, 180);
 		if (this.classList.contains("wg-kit-anchor")) return box(40, 60, 100, 40);
@@ -549,9 +786,17 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const PANEL_EDGE = "inset 0 0 0 1px rgba(0, 0, 0, 0.12)";
 	const realStyle = globalThis.getComputedStyle;
 	globalThis.getComputedStyle = (node, pseudo) => {
-		const base = { ...realStyle(node), borderRadius: pseudo ? "999px" : "0px", borderLeftWidth: "0px", borderTopWidth: "0px", backgroundColor: "rgba(0, 0, 0, 0)", boxShadow: "none" };
+		const base = {
+			...realStyle(node),
+			borderRadius: pseudo ? "999px" : "0px",
+			borderLeftWidth: "0px",
+			borderTopWidth: "0px",
+			backgroundColor: "rgba(0, 0, 0, 0)",
+			boxShadow: "none",
+		};
 		if (node.classList?.contains("wg-kit-pop")) return { ...base, backgroundColor: PANEL_FILL, boxShadow: PANEL_EDGE };
-		if (node.classList?.contains("enter-trigger")) return { ...base, backgroundColor: ROW_FILL, borderTopWidth: "1px", borderTopColor: ROW_EDGE };
+		if (node.classList?.contains("enter-trigger"))
+			return { ...base, backgroundColor: ROW_FILL, borderTopWidth: "1px", borderTopColor: ROW_EDGE };
 		// CONTEXT: the kit's own controls are bare and paint their fill on ::before
 		if (node.classList?.contains("enter-ghost")) return pseudo ? { ...base, backgroundColor: ROW_FILL } : base;
 		return base;
@@ -562,8 +807,24 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const row = () => host.querySelector(".enter-trigger") ?? host.querySelector(".enter-ghost");
 	// CONTEXT: the seat is written in the layout effect, so it is gone by the first await
-	const open = (mark = "enter-trigger") => render(h(Kit.Popover, { isOpen: true, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
-	const shut = (mark = "enter-trigger") => render(h(Kit.Popover, { isOpen: false, trigger: h("button", { className: mark }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+	const open = (mark = "enter-trigger") =>
+		render(
+			h(
+				Kit.Popover,
+				{ isOpen: true, trigger: h("button", { className: mark }, "T") },
+				h(Kit.PopoverItem, {}, "Rename"),
+			),
+			host,
+		);
+	const shut = (mark = "enter-trigger") =>
+		render(
+			h(
+				Kit.Popover,
+				{ isOpen: false, trigger: h("button", { className: mark }, "T") },
+				h(Kit.PopoverItem, {}, "Rename"),
+			),
+			host,
+		);
 	const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 	const snap = () => {
 		const node = pop();
@@ -618,14 +879,28 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const landed = snap();
 	const beats = [seated, growing, landed];
 	console.log(`   the enter: seed ${seated.scale} out of the trigger's box, about ${seated.origin}`);
-	console.log(`              -> ${growing.motion}, paint on ${drivenIn(growing).join(" ")} -> land ${landed.scale || "auto"}`);
+	console.log(
+		`              -> ${growing.motion}, paint on ${drivenIn(growing).join(" ")} -> land ${landed.scale || "auto"}`,
+	);
 
 	// CONTEXT: a 100x40 trigger under a 240x180 panel — the seed is one box over the other, per axis
 	check("THE SEED IS THE TRIGGER'S BOX OVER THE PANEL'S", seated.scale, `${100 / 240} ${40 / 180}`);
-	check("and the two axes DIFFER, because a button and a panel share no aspect", numbers(seated.scale)[0] === numbers(seated.scale)[1], false);
-	check("handed to the keyframes, which is the only place the seed can be read", seated.seed, `${100 / 240}|${40 / 180}`);
+	check(
+		"and the two axes DIFFER, because a button and a panel share no aspect",
+		numbers(seated.scale)[0] === numbers(seated.scale)[1],
+		false,
+	);
+	check(
+		"handed to the keyframes, which is the only place the seed can be read",
+		seated.seed,
+		`${100 / 240}|${40 / 180}`,
+	);
 	check("it grows out of the corner it meets the trigger on", seated.origin, "left top");
-	check("wearing the row's corner, divided per axis by the scale it is multiplied by", seated.radius, `${20 / (100 / 240)}px / ${20 / (40 / 180)}px`);
+	check(
+		"wearing the row's corner, divided per axis by the scale it is multiplied by",
+		seated.radius,
+		`${20 / (100 / 240)}px / ${20 / (40 / 180)}px`,
+	);
 	check("THE COLOUR COMES OUT OF THE TRIGGER, not out of the panel", seated.fill, ROW_FILL);
 	check("and so does the edge, so no border exists from frame one", seated.edge, `inset 0 0 0 1px ${ROW_EDGE}`);
 	check("neither is the panel's own yet", `${seated.fill === PANEL_FILL} ${seated.edge === PANEL_EDGE}`, "false false");
@@ -636,18 +911,46 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 
 	check("ONE ANIMATION CARRIES THE WHOLE GROWTH", growing.motion, `wg-kit-pop-bloom ${growMs}ms var(--wg-ease) both`);
 	check("and the inline seed is handed over to it, so the two cannot disagree", growing.scale, "");
-	check("SCALING IS THE ONLY THING THAT MOVES: no position, no laid-out box", `${growing.translate}|${growing.width}|${growing.height}|${growing.floor}`, "|||");
-	check("so position cannot pass the resting point — there is none to pass", beats.map((state) => state.translate).join(""), "");
-	check("the transition is left carrying the paint alone", drivenIn(growing).sort().join(" "), "background-color border-radius box-shadow");
-	check("the panel's own fill and edge arrive on it", `${growing.fill} | ${growing.edge}`, `${PANEL_FILL} | ${PANEL_EDGE}`);
+	check(
+		"SCALING IS THE ONLY THING THAT MOVES: no position, no laid-out box",
+		`${growing.translate}|${growing.width}|${growing.height}|${growing.floor}`,
+		"|||",
+	);
+	check(
+		"so position cannot pass the resting point — there is none to pass",
+		beats.map((state) => state.translate).join(""),
+		"",
+	);
+	check(
+		"the transition is left carrying the paint alone",
+		drivenIn(growing).sort().join(" "),
+		"background-color border-radius box-shadow",
+	);
+	check(
+		"the panel's own fill and edge arrive on it",
+		`${growing.fill} | ${growing.edge}`,
+		`${PANEL_FILL} | ${PANEL_EDGE}`,
+	);
 	check("and the corner travels to the panel's own", growing.radius, "");
-	check("the content fades in while the panel grows", growing.innerTransition, `opacity ${contentMs}ms var(--wg-ease) ${contentDelayMs}ms`);
+	check(
+		"the content fades in while the panel grows",
+		growing.innerTransition,
+		`opacity ${contentMs}ms var(--wg-ease) ${contentDelayMs}ms`,
+	);
 	check("to fully visible, at true size", `${growing.innerFade}|${growing.innerScale}`, "1|");
 	check("THE TRIGGER IS STILL NOT TOUCHED", growing.rowTouched, "||||");
 
-	check("it ends with nothing of its own left on it", `${landed.scale}|${landed.motion}|${landed.origin}|${landed.seed}`, "||||");
+	check(
+		"it ends with nothing of its own left on it",
+		`${landed.scale}|${landed.motion}|${landed.origin}|${landed.seed}`,
+		"||||",
+	);
 	check("and its paint handed back to the stylesheet", `${landed.fill}|${landed.edge}`, "|");
-	check("the box was never pinned, so a list that filters can still resize it", beats.map((state) => `${state.width}${state.height}${state.floor}`).join(""), "");
+	check(
+		"the box was never pinned, so a list that filters can still resize it",
+		beats.map((state) => `${state.width}${state.height}${state.floor}`).join(""),
+		"",
+	);
 	check("AND THE CONTENT IS NEVER COUNTER-SCALED, at any beat", beats.map((state) => state.innerScale).join(""), "");
 	check("nor the trigger touched, at any beat", beats.map((state) => state.rowTouched).join(""), "||||||||||||");
 
@@ -659,17 +962,33 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const peak = stopAt(`${peakStop * 100}%`);
 	const rest = stopAt("to");
 	const seedStop = /from \{ scale: var\(--wg-kit-pop-seed-x, 1\) var\(--wg-kit-pop-seed-y, 1\); \}/.test(frames);
-	console.log(`   the curve: seed -> ${peak.join(" ")} at ${peakStop * 100}% (${peakStop * growMs}ms) -> ${rest.join(" ")}`);
+	console.log(
+		`   the curve: seed -> ${peak.join(" ")} at ${peakStop * 100}% (${peakStop * growMs}ms) -> ${rest.join(" ")}`,
+	);
 	check("0% -> 105% -> 100%: THE PEAK IS 105% OF THE FINAL SIZE", peak.join(" "), "1.05 1.05");
 	check("ON BOTH AXES EQUALLY, whatever the seed underneath was", peak[0] === peak[1], true);
 	check("and it comes to rest at exactly 1", rest.join(" "), "1 1");
 	check("starting from the seed the panel was handed", seedStop, true);
 	// CONTEXT: the seed's non-uniform squash lives in the first frames, so the hold covers only those
-	check("THE CONTENT IS HELD OFF THE RAW SEED, but starts inside the growth", contentDelayMs > 0 && contentDelayMs < peakStop * growMs, true);
+	check(
+		"THE CONTENT IS HELD OFF THE RAW SEED, but starts inside the growth",
+		contentDelayMs > 0 && contentDelayMs < peakStop * growMs,
+		true,
+	);
 	check("AND IS FULLY READABLE BY THE TIME THE GROWTH SETTLES", contentDelayMs + contentMs <= growMs, true);
 	// TRADE-OFF: the SCHEDULE is parsed, not recomputed — a recomputed inequality cannot see a bad timer
-	const landsAt = new Function("GROW_MS", "CONTENT_MS", "CONTENT_DELAY_MS", "LAND_MARGIN_MS", `return ${/landPanel\(panel\), ([^)]+)\)/.exec(source)[1]};`)(growMs, contentMs, contentDelayMs, landMarginMs);
-	check("and the landing is scheduled past every curve", `${landsAt > growMs} ${landsAt > contentDelayMs + contentMs}`, "true true");
+	const landsAt = new Function(
+		"GROW_MS",
+		"CONTENT_MS",
+		"CONTENT_DELAY_MS",
+		"LAND_MARGIN_MS",
+		`return ${/landPanel\(panel\), ([^)]+)\)/.exec(source)[1]};`,
+	)(growMs, contentMs, contentDelayMs, landMarginMs);
+	check(
+		"and the landing is scheduled past every curve",
+		`${landsAt > growMs} ${landsAt > contentDelayMs + contentMs}`,
+		"true true",
+	);
 
 	// CONTEXT: a panel that opens the other way must grow the other way, or it slides out of nowhere
 	render(null, host);
@@ -695,7 +1014,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("and the seed with it", pop().style.getPropertyValue("--wg-kit-pop-seed-x"), "");
 	endExit(pop());
 	await settle();
-	check("after the close the trigger is back, and was never altered", `${anchor().style.visibility}|${snap().rowTouched}`, "|||||");
+	check(
+		"after the close the trigger is back, and was never altered",
+		`${anchor().style.visibility}|${snap().rowTouched}`,
+		"|||||",
+	);
 
 	// CONTEXT: reduced motion returns before the seat, so there is no movement to skip a beat of
 	render(null, host);
@@ -728,19 +1051,39 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	render(null, host);
 
 	const wasRect = Element.prototype.getBoundingClientRect;
-	const box = (left, top, width, height) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top });
+	const box = (left, top, width, height) => ({
+		left,
+		top,
+		width,
+		height,
+		right: left + width,
+		bottom: top + height,
+		x: left,
+		y: top,
+	});
 	Element.prototype.getBoundingClientRect = function () {
 		if (this.classList.contains("wg-kit-pop")) return box(0, 0, 240, 180);
 		if (this.classList.contains("wg-kit-anchor")) return box(40, 60, 100, 40);
 		return box(0, 0, 0, 0);
 	};
 	const realStyle = globalThis.getComputedStyle;
-	globalThis.getComputedStyle = (node, pseudo) => ({ ...realStyle(node), borderRadius: pseudo ? "999px" : "0px", borderLeftWidth: "0px" });
+	globalThis.getComputedStyle = (node, pseudo) => ({
+		...realStyle(node),
+		borderRadius: pseudo ? "999px" : "0px",
+		borderLeftWidth: "0px",
+	});
 
 	const pop = () => host.querySelector(".wg-kit-pop");
 	const anchor = () => host.querySelector(".wg-kit-anchor");
 	const show = async (open, placement) => {
-		render(h(Kit.Popover, { isOpen: open, placement, trigger: h("button", { className: "place-trigger" }, "T") }, h(Kit.PopoverItem, {}, "Rename")), host);
+		render(
+			h(
+				Kit.Popover,
+				{ isOpen: open, placement, trigger: h("button", { className: "place-trigger" }, "T") },
+				h(Kit.PopoverItem, {}, "Rename"),
+			),
+			host,
+		);
 		await settle();
 	};
 
@@ -755,12 +1098,20 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("BELOW puts the panel under the trigger", pop().style.top, "106px");
 	check("and lines it up with the trigger's left edge", pop().style.left, "40px");
 	check("THE TRIGGER STAYS ON SCREEN", anchor().style.visibility, "");
-	check("AND IS NEVER TOUCHED, whichever way the panel opens", `${host.querySelector(".place-trigger").style.scale}|${host.querySelector(".place-trigger").style.opacity}`, "|");
+	check(
+		"AND IS NEVER TOUCHED, whichever way the panel opens",
+		`${host.querySelector(".place-trigger").style.scale}|${host.querySelector(".place-trigger").style.opacity}`,
+		"|",
+	);
 	check("the panel says which placement it is, so a caller can style it", pop().classList.contains("is-below"), true);
 	check("the trigger's width is handed to the CSS", pop().style.getPropertyValue("--wg-kit-anchor-width"), "100px");
 
 	await show(false, "below");
-	check("the exit still folds back onto the trigger", /^translate\(40px, 60px\) scale\(0\.41/.test(pop().style.transform), true);
+	check(
+		"the exit still folds back onto the trigger",
+		/^translate\(40px, 60px\) scale\(0\.41/.test(pop().style.transform),
+		true,
+	);
 	check("and the radius still travels with it", Math.round(parseFloat(pop().style.borderRadius)), 48);
 	check("the trigger was never hidden, so there is nothing to give back", anchor().style.visibility, "");
 	endExit(pop());
@@ -793,10 +1144,18 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		host,
 	);
 
-	check("the search field is the kit's own Field", Boolean(host.querySelector(".wg-kit-pop-search .wg-kit-field")), true);
+	check(
+		"the search field is the kit's own Field",
+		Boolean(host.querySelector(".wg-kit-pop-search .wg-kit-field")),
+		true,
+	);
 	check("with a search glyph in it", Boolean(host.querySelector(".wg-kit-pop-search .wg-kit-icon-glyph")), true);
 	check("its placeholder is the caller's", host.querySelector("input").getAttribute("placeholder"), "Find a person");
-	check("the hint says what is being narrowed", host.querySelector(".wg-kit-pop-search-hint")?.textContent, "Narrows the choices below, not the board");
+	check(
+		"the hint says what is being narrowed",
+		host.querySelector(".wg-kit-pop-search-hint")?.textContent,
+		"Narrows the choices below, not the board",
+	);
 	check("every choice is shown before anything is typed", host.querySelectorAll(".wg-kit-pop-item").length, 3);
 	check("and the needle starts empty", seen[seen.length - 1], "");
 
@@ -823,10 +1182,15 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		render(
 			h(Kit.Calendar, {
 				month,
-				onMonthChange: (next) => { month = next; draw(); },
+				onMonthChange: (next) => {
+					month = next;
+					draw();
+				},
 				selected: new Date(2026, 8, 12),
 				today: new Date(2026, 8, 3),
-				onSelect: (date) => { picked = date; },
+				onSelect: (date) => {
+					picked = date;
+				},
 				...extra,
 			}),
 			host,
@@ -841,10 +1205,18 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("the picked day is marked once", host.querySelectorAll(".wg-kit-cal-day.is-picked").length, 1);
 	check("and it is the twelfth", host.querySelector(".wg-kit-cal-day.is-picked").textContent, "12");
 	check("today is marked", host.querySelectorAll(".wg-kit-cal-day.is-today").length, 1);
-	check("the days that belong to the neighbouring months say so", host.querySelectorAll(".wg-kit-cal-day.is-outside").length, 12);
+	check(
+		"the days that belong to the neighbouring months say so",
+		host.querySelectorAll(".wg-kit-cal-day.is-outside").length,
+		12,
+	);
 
 	host.querySelectorAll(".wg-kit-cal-day")[8].dispatchEvent(new MouseEvent("click", { bubbles: true }));
-	check("pressing a day reports a real date", picked instanceof Date ? `${picked.getFullYear()}-${picked.getMonth()}-${picked.getDate()}` : picked, "2026-8-8");
+	check(
+		"pressing a day reports a real date",
+		picked instanceof Date ? `${picked.getFullYear()}-${picked.getMonth()}-${picked.getDate()}` : picked,
+		"2026-8-8",
+	);
 
 	host.querySelector('[aria-label="Next month"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 	await settle();
@@ -852,10 +1224,14 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	host.querySelector('[aria-label="Previous month"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 	host.querySelector('[aria-label="Previous month"]').dispatchEvent(new MouseEvent("click", { bubbles: true }));
 	await settle();
-	check("and back across the year without arithmetic bugs", host.querySelector(".wg-kit-cal-month").textContent, "August 2026");
+	check(
+		"and back across the year without arithmetic bugs",
+		host.querySelector(".wg-kit-cal-month").textContent,
+		"August 2026",
+	);
 
 	month = new Date(2026, 8, 1);
-	draw({ renderDay: (day) => (day.outside ? "" : ROMAN[day.date.getDate()] ?? day.date.getDate()) });
+	draw({ renderDay: (day) => (day.outside ? "" : (ROMAN[day.date.getDate()] ?? day.date.getDate())) });
 	check("THE DAY CELL IS THE CALLER'S TO DRAW", host.querySelectorAll(".wg-kit-cal-day")[1].textContent, "I");
 	check("and the kit still owns the state on it", host.querySelectorAll(".wg-kit-cal-day.is-picked").length, 1);
 
@@ -869,15 +1245,31 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 
 	const wasRect = Element.prototype.getBoundingClientRect;
 	Element.prototype.getBoundingClientRect = function () {
-		if (this.classList.contains("wg-kit-progress-track")) return { left: 100, top: 0, width: 200, height: 6, right: 300, bottom: 6, x: 100, y: 0 };
+		if (this.classList.contains("wg-kit-progress-track"))
+			return { left: 100, top: 0, width: 200, height: 6, right: 300, bottom: 6, x: 100, y: 0 };
 		return { left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0, x: 0, y: 0 };
 	};
 
 	let value = 65;
-	const draw = () => render(h(Kit.Progress, { value, label: "Progress", onChange: (next) => { value = next; draw(); } }), host);
+	const draw = () =>
+		render(
+			h(Kit.Progress, {
+				value,
+				label: "Progress",
+				onChange: (next) => {
+					value = next;
+					draw();
+				},
+			}),
+			host,
+		);
 	draw();
 
-	check("the track carries the value so the plate reads at a glance", host.querySelector(".wg-kit-progress-fill").style.width, "65%");
+	check(
+		"the track carries the value so the plate reads at a glance",
+		host.querySelector(".wg-kit-progress-fill").style.width,
+		"65%",
+	);
 	check("the knob sits on it", host.querySelector(".wg-kit-progress-knob").style.left, "65%");
 	check("and the digits are there for the exact one", host.querySelector(".wg-kit-progress-num").textContent, "65%");
 	check("it announces itself as what it is", host.querySelector(".wg-kit-progress").getAttribute("role"), "slider");
@@ -921,9 +1313,18 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const host = document.getElementById("host");
 	render(null, host);
 
-	const NOTE = "## Why one surface\n\nRead the same **frontmatter** and drew it three *different* ways.\n\n`properties: Status, Priority`\n\nSee [[Property anchoring]] #orbitask\n";
+	const NOTE =
+		"## Why one surface\n\nRead the same **frontmatter** and drew it three *different* ways.\n\n`properties: Status, Priority`\n\nSee [[Property anchoring]] #orbitask\n";
 	let typed = null;
-	render(h(Kit.MarkdownEditor, { value: NOTE, onInput: (next) => { typed = next; } }), host);
+	render(
+		h(Kit.MarkdownEditor, {
+			value: NOTE,
+			onInput: (next) => {
+				typed = next;
+			},
+		}),
+		host,
+	);
 
 	const mirror = host.querySelector(".wg-kit-md-mirror");
 	const input = host.querySelector("textarea.wg-kit-md-input");
@@ -975,9 +1376,35 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		process.exit(1);
 	}
 
-	const NOTE = "## Why one surface\\n\\nThree widgets read the same **frontmatter** separately and drew the same status three *different* ways, which is a long enough sentence that it has to wrap more than once inside a narrow column.\\n\\nSee [[Property anchoring]] #orbitask\\n";
-	const PROPS = ["fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "wordSpacing", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "borderTopWidth", "borderRightWidth", "borderBottomWidth", "borderLeftWidth", "whiteSpace", "overflowWrap", "wordBreak", "tabSize", "textIndent", "textTransform", "boxSizing", "direction"];
-	const DESC = "a new note lands in Orbitask/Tasks and keeps the folder it came from, which is long enough to have to wrap over several lines inside a narrow panel";
+	const NOTE =
+		"## Why one surface\\n\\nThree widgets read the same **frontmatter** separately and drew the same status three *different* ways, which is a long enough sentence that it has to wrap more than once inside a narrow column.\\n\\nSee [[Property anchoring]] #orbitask\\n";
+	const PROPS = [
+		"fontFamily",
+		"fontSize",
+		"fontWeight",
+		"fontStyle",
+		"lineHeight",
+		"letterSpacing",
+		"wordSpacing",
+		"paddingTop",
+		"paddingRight",
+		"paddingBottom",
+		"paddingLeft",
+		"borderTopWidth",
+		"borderRightWidth",
+		"borderBottomWidth",
+		"borderLeftWidth",
+		"whiteSpace",
+		"overflowWrap",
+		"wordBreak",
+		"tabSize",
+		"textIndent",
+		"textTransform",
+		"boxSizing",
+		"direction",
+	];
+	const DESC =
+		"a new note lands in Orbitask/Tasks and keeps the folder it came from, which is long enough to have to wrap over several lines inside a narrow panel";
 	const UNBROKEN = "Averylongsettingnamenobodycanbreakanywhere";
 	const UNBROKEN_PATH = "Orbitask/Tasks/Archive/Another-Very-Long-Folder-Segment-With-No-Spaces-At-All";
 
@@ -1045,10 +1472,11 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		"const readTwo = (side) => { const rows = [...two.querySelectorAll(side + ' .wg-kit-side-row')]; const [bare, sub] = rows; const label = sub.querySelector('.wg-kit-row-label'); const note = sub.querySelector('.wg-kit-side-sub'); const pad = (row) => { const s = getComputedStyle(row); return round(parseFloat(s.paddingTop)) + ' ' + round(parseFloat(s.paddingBottom)); }; return { bareHeight: round(bare.getBoundingClientRect().height), subHeight: round(sub.getBoundingClientRect().height), barePad: pad(bare), subPad: pad(sub), name: nameRect(label), note: rectOf(note), noteLine: round(parseFloat(getComputedStyle(note).lineHeight)), noteColour: getComputedStyle(note).color, nameColour: getComputedStyle(label).color, noteFont: getComputedStyle(note).fontSize, labelFits: label.scrollWidth <= label.clientWidth + 1 && label.scrollHeight <= label.clientHeight + 1, noteFits: note.scrollWidth <= note.clientWidth + 1, noteText: note.textContent, isTwo: sub.classList.contains('is-two'), bareIsTwo: bare.classList.contains('is-two'), bareValue: round(bare.querySelector('.wg-kit-side-value').getBoundingClientRect().right), subValue: round(sub.querySelector('.wg-kit-side-value').getBoundingClientRect().right) }; };",
 		"const swatch = document.createElement('span'); swatch.style.color = 'var(--text-faint)'; two.appendChild(swatch);",
 		"const panel = document.querySelector('.wg-panel');",
-		"render(h(Sidebar, { className: 'wg-set-panel' }, h(SidebarGroup, { className: 'wg-set-group' }, h(Row, { className: 'wg-set-row' }, [h(RowLabel, { className: 'wg-set-two', key: 'label' }, ['Create', h('span', { className: 'wg-set-sub', key: 'sub' }, DESC)]), h(RowValue, { className: 'wg-set-value', key: 'value' }, 'On')]))), panel);", 
-		"const panelLong = document.querySelector('.wg-panel-long');", 
+		"render(h(Sidebar, { className: 'wg-set-panel' }, h(SidebarGroup, { className: 'wg-set-group' }, h(Row, { className: 'wg-set-row' }, [h(RowLabel, { className: 'wg-set-two', key: 'label' }, ['Create', h('span', { className: 'wg-set-sub', key: 'sub' }, DESC)]), h(RowValue, { className: 'wg-set-value', key: 'value' }, 'On')]))), panel);",
+		"const panelLong = document.querySelector('.wg-panel-long');",
 		"render(h(Sidebar, { className: 'wg-set-panel' }, h(SidebarGroup, { className: 'wg-set-group' }, h(Row, { className: 'wg-set-row' }, [h(RowLabel, { className: 'wg-set-two', key: 'label' }, [UNBROKEN, h('span', { className: 'wg-set-sub', key: 'sub' }, UNBROKEN_PATH)]), h(RowValue, { className: 'wg-set-value', key: 'value' }, 'On')]))), panelLong);",
-		"{ const row = panel.querySelector('.wg-set-row'); const label = panel.querySelector('.wg-set-two'); const note = panel.querySelector('.wg-set-sub'); payload.setTwo = { height: round(row.getBoundingClientRect().height), name: nameRect(label), note: rectOf(note), noteOver: round(rectOf(note).right - label.getBoundingClientRect().right), noteLine: round(parseFloat(getComputedStyle(note).lineHeight)), fits: label.scrollWidth <= label.clientWidth + 1, valueRight: round(panel.querySelector('.wg-set-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; }", "{ const label = panelLong.querySelector('.wg-set-two'); const row = panelLong.querySelector('.wg-set-row'); payload.setLong = { nameOver: round(nameRect(label).right - label.getBoundingClientRect().right), valueRight: round(panelLong.querySelector('.wg-set-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; }",
+		"{ const row = panel.querySelector('.wg-set-row'); const label = panel.querySelector('.wg-set-two'); const note = panel.querySelector('.wg-set-sub'); payload.setTwo = { height: round(row.getBoundingClientRect().height), name: nameRect(label), note: rectOf(note), noteOver: round(rectOf(note).right - label.getBoundingClientRect().right), noteLine: round(parseFloat(getComputedStyle(note).lineHeight)), fits: label.scrollWidth <= label.clientWidth + 1, valueRight: round(panel.querySelector('.wg-set-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; }",
+		"{ const label = panelLong.querySelector('.wg-set-two'); const row = panelLong.querySelector('.wg-set-row'); payload.setLong = { nameOver: round(nameRect(label).right - label.getBoundingClientRect().right), valueRight: round(panelLong.querySelector('.wg-set-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; }",
 		"const unbroken = (side) => { const row = [...two.querySelectorAll(side + ' .wg-kit-side-row')][2]; const label = row.querySelector('.wg-kit-row-label'); const note = row.querySelector('.wg-kit-side-sub'); const edge = round(label.getBoundingClientRect().right); return { nameOver: round(nameRect(label).right - edge), noteOver: round(rectOf(note).right - edge), valueRight: round(row.querySelector('.wg-kit-side-value').getBoundingClientRect().right), rowRight: round(row.getBoundingClientRect().right) }; };",
 		"payload.twoLine = { full: readTwo('.wg-kit-side:not(.is-minimal)'), lean: readTwo('.wg-kit-side.is-minimal'), unbroken: unbroken('.wg-kit-side:not(.is-minimal)'), faint: getComputedStyle(swatch).color };",
 		"const pops = document.querySelector('.wg-pops');",
@@ -1085,6 +1513,7 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const built = await esbuild.build({
 		stdin: { contents: entry, resolveDir: process.cwd(), sourcefile: "mirror-page.js", loader: "js" },
 		bundle: true,
+		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
 		platform: "browser",
@@ -1096,29 +1525,41 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const file = nodePath.join(work, "mirror.html");
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>`
-			+ `<style>:root { --text-normal: #222; --text-muted: #707070; --text-faint: #ababab; --background-primary: #fff; --interactive-accent: #6d4ee0; --font-interface: -apple-system, "Segoe UI", sans-serif; --font-ui-small: 14px; --size-4-4: 16px; }`
-			+ `body { margin: 0; } .wg-root { width: 380px; }</style>`
-			+ `</head><body><div class="wg-root"></div><div class="wg-root wg-sides" style="width:300px"></div>`
-			+ `<div class="wg-root wg-ground-light" style="width:300px;padding:20px;background:var(--wg-kit-raise)"></div>`
-			+ `<div class="wg-root wg-ground-dark" style="width:300px;padding:20px;background:var(--wg-kit-raise);--background-primary:#1e1e1e;--text-normal:#dadada"></div>`
-			+ `<div class="wg-root wg-picked" style="width:300px"></div>`
-			+ `<div class="wg-root wg-heights" style="width:300px"></div>`
-			+ `<div class="wg-root wg-two" style="width:300px"></div>`
-			+ `<div class="wg-root wg-panel" style="width:300px"></div>`
-			+ `<div class="wg-root wg-panel-long" style="width:300px"></div>`
-			+ `<div class="wg-root wg-pops" style="width:300px"></div>`
-			+ `<div class="wg-root wg-pops2" style="width:300px"></div>`
-			+ `<div class="wg-root wg-cards" style="width:300px"></div>`
-			+ `<script id="wg-measure" type="application/json"></script>`
-			+ `<script>window.__errs = []; addEventListener("error", (e) => { window.__errs.push(e.message + " @ " + e.lineno); document.getElementById("wg-measure").textContent = JSON.stringify({ pageError: window.__errs }); });</script>`
-			+ `<script>${built.outputFiles[0].text}</script></body></html>`,
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>` +
+			`<style>:root { --text-normal: #222; --text-muted: #707070; --text-faint: #ababab; --background-primary: #fff; --interactive-accent: #6d4ee0; --font-interface: -apple-system, "Segoe UI", sans-serif; --font-ui-small: 14px; --size-4-4: 16px; }` +
+			`body { margin: 0; } .wg-root { width: 380px; }</style>` +
+			`</head><body><div class="wg-root"></div><div class="wg-root wg-sides" style="width:300px"></div>` +
+			`<div class="wg-root wg-ground-light" style="width:300px;padding:20px;background:var(--wg-kit-raise)"></div>` +
+			`<div class="wg-root wg-ground-dark" style="width:300px;padding:20px;background:var(--wg-kit-raise);--background-primary:#1e1e1e;--text-normal:#dadada"></div>` +
+			`<div class="wg-root wg-picked" style="width:300px"></div>` +
+			`<div class="wg-root wg-heights" style="width:300px"></div>` +
+			`<div class="wg-root wg-two" style="width:300px"></div>` +
+			`<div class="wg-root wg-panel" style="width:300px"></div>` +
+			`<div class="wg-root wg-panel-long" style="width:300px"></div>` +
+			`<div class="wg-root wg-pops" style="width:300px"></div>` +
+			`<div class="wg-root wg-pops2" style="width:300px"></div>` +
+			`<div class="wg-root wg-cards" style="width:300px"></div>` +
+			`<script id="wg-measure" type="application/json"></script>` +
+			`<script>window.__errs = []; addEventListener("error", (e) => { window.__errs.push(e.message + " @ " + e.lineno); document.getElementById("wg-measure").textContent = JSON.stringify({ pageError: window.__errs }); });</script>` +
+			`<script>${built.outputFiles[0].text}</script></body></html>`,
 	);
 
 	const dumped = execFileSync(
 		browser,
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--virtual-time-budget=4000", "--dump-dom", `file://${file}`],
-		{ encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--virtual-time-budget=4000",
+			"--dump-dom",
+			`file://${file}`,
+		],
+		{
+			encoding: "utf8",
+			maxBuffer: 64 * 1024 * 1024,
+			stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"],
+		},
 	);
 	const raw = dumped.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
 	if (!raw) {
@@ -1135,8 +1576,16 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const measured = JSON.parse(raw.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">"));
 
 	const drifted = PROPS.filter((name) => measured.mirrorStyle[name] !== measured.inputStyle[name]);
-	check("EVERY METRIC MATCHES, or the characters separate", drifted.map((name) => `${name} ${measured.mirrorStyle[name]} vs ${measured.inputStyle[name]}`).join(" | ") || 0, 0);
-	check("the two boxes sit exactly on each other", JSON.stringify(measured.inputBox), JSON.stringify(measured.mirrorBox));
+	check(
+		"EVERY METRIC MATCHES, or the characters separate",
+		drifted.map((name) => `${name} ${measured.mirrorStyle[name]} vs ${measured.inputStyle[name]}`).join(" | ") || 0,
+		0,
+	);
+	check(
+		"the two boxes sit exactly on each other",
+		JSON.stringify(measured.inputBox),
+		JSON.stringify(measured.mirrorBox),
+	);
 	check("AND WRAP AT THE SAME POINTS", measured.inputScroll, measured.mirrorScroll);
 	// TRADE-OFF: one scroller, so there is no pair of scroll offsets to keep in step
 	check("the textarea never scrolls on its own", measured.inputOverflow, "hidden");
@@ -1145,7 +1594,8 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("but the caret is not", measured.inputCaret === "rgba(0, 0, 0, 0)", false);
 
 	// CONTEXT: measured — the settings panel and the properties plate are both 8px-padded edged blocks
-	const { full, lean, glass, sheet, sheetIsSidebar, fullDivider, leanDivider, bareDivider, rowsAreSiblings } = measured.sidebar;
+	const { full, lean, glass, sheet, sheetIsSidebar, fullDivider, leanDivider, bareDivider, rowsAreSiblings } =
+		measured.sidebar;
 	console.log(`   a full sidebar: padding ${full.padding} · radius ${full.radius} · ${full.background} · ${full.edge}`);
 	check("a sidebar pads itself the way a plate does", full.padding, "8px 8px");
 	check("and carries the plate's corner", full.radius, "14px");
@@ -1156,17 +1606,35 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 
 	// CONTEXT: minimal used to clear the frame because a Plate wrapped it — the block, spelled twice
 	const frameOf = (side) => `${side.padding} | ${side.radius} | ${side.background} | ${side.edge}`;
-	console.log(`   a minimal sidebar: padding ${lean.padding} · radius ${lean.radius} · gap ${lean.gap} against the full one's ${full.gap}`);
+	console.log(
+		`   a minimal sidebar: padding ${lean.padding} · radius ${lean.radius} · gap ${lean.gap} against the full one's ${full.gap}`,
+	);
 	check("a minimal sidebar is the SAME block", frameOf(lean), frameOf(full));
 	check("and differs only in how tight it is", parseFloat(lean.gap) < parseFloat(full.gap), true);
 
 	// CONTEXT: glass is what the block is MADE OF — the playground panel floats over a board
 	console.log(`   a glass sidebar: ${glass.background} · ${glass.blur} · ${glass.edge}`);
-	check("a glass sidebar keeps the block's padding and corner", `${glass.padding} | ${glass.radius}`, `${full.padding} | ${full.radius}`);
-	check("it is blurred, because it floats over something", /blur\(/.test(glass.blur) && /saturate/.test(glass.blur), true);
+	check(
+		"a glass sidebar keeps the block's padding and corner",
+		`${glass.padding} | ${glass.radius}`,
+		`${full.padding} | ${full.radius}`,
+	);
+	check(
+		"it is blurred, because it floats over something",
+		/blur\(/.test(glass.blur) && /saturate/.test(glass.blur),
+		true,
+	);
 	// CONTEXT: a sidebar is READ — the thin chrome tint showed the board through every row of it
-	check("its fill is dense enough to read on", Number(/\/\s*([\d.]+)\s*\)/.exec(glass.background)?.[1] ?? 1) >= 0.9, true);
-	check("and it still casts the lift", glass.edge.split(/,(?![^(]*\))/).filter((part) => !part.includes("inset")).length > 0, true);
+	check(
+		"its fill is dense enough to read on",
+		Number(/\/\s*([\d.]+)\s*\)/.exec(glass.background)?.[1] ?? 1) >= 0.9,
+		true,
+	);
+	check(
+		"and it still casts the lift",
+		glass.edge.split(/,(?![^(]*\))/).filter((part) => !part.includes("inset")).length > 0,
+		true,
+	);
 
 	// CONTEXT: a sheet is a sidebar that follows the finger, so it wears the block, not a copy
 	check("a sheet IS a sidebar", sheetIsSidebar, true);
@@ -1175,27 +1643,53 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	// THE BLOCK IS ONE COMPONENT NOW, so the pieces built on it must be MADE of it and not merely
 	// resemble it — a plate, a grouped list and a panel were the same rules written out four times.
 	const cardSeen = measured.cards;
-	console.log(`   a tile ${cardSeen.tile.fill} · a solid card ${cardSeen.solid.fill} · a neutral control ${cardSeen.greyControl}`);
+	console.log(
+		`   a tile ${cardSeen.tile.fill} · a solid card ${cardSeen.solid.fill} · a neutral control ${cardSeen.greyControl}`,
+	);
 	check("the sidebar wears the card, it does not merely look like one", measured.sidebar.fullIsCard, true);
 	check("a solid card is the grey a neutral control is filled with", cardSeen.solid.fill, cardSeen.greyControl);
 	check("and being a well, it carries no edge and no cast", `${cardSeen.solid.edge} ${cardSeen.solid.cast}`, "none 0");
-	check("a plain light card carries no edge — the lift is the only thing that draws one", `${cardSeen.tile.edge} | ${/inset/.test(cardSeen.lifted.edge)}`, "none | true");
+	check(
+		"a plain light card carries no edge — the lift is the only thing that draws one",
+		`${cardSeen.tile.edge} | ${/inset/.test(cardSeen.lifted.edge)}`,
+		"none | true",
+	);
 	check("but it does not float unless it is asked to", cardSeen.tile.cast, 0);
 	check("asked, it casts", cardSeen.lifted.cast > 0, true);
 	// CONTEXT: the lift is the ONLY difference — a variant that also moved the fill would be a second block
-	check("and the lift is the only thing it changes", `${cardSeen.lifted.fill} ${cardSeen.lifted.corner} ${cardSeen.lifted.pad}`, `${cardSeen.tile.fill} ${cardSeen.tile.corner} ${cardSeen.tile.pad}`);
-	check("a plate is that solid card, at the plate's own size", `${cardSeen.plate.fill} ${cardSeen.plate.edge}`, `${cardSeen.solid.fill} ${cardSeen.solid.edge}`);
-	check("and a grouped list is one with no padding of its own", `${cardSeen.list.fill} ${cardSeen.list.pad}`, `${cardSeen.solid.fill} 0px`);
+	check(
+		"and the lift is the only thing it changes",
+		`${cardSeen.lifted.fill} ${cardSeen.lifted.corner} ${cardSeen.lifted.pad}`,
+		`${cardSeen.tile.fill} ${cardSeen.tile.corner} ${cardSeen.tile.pad}`,
+	);
+	check(
+		"a plate is that solid card, at the plate's own size",
+		`${cardSeen.plate.fill} ${cardSeen.plate.edge}`,
+		`${cardSeen.solid.fill} ${cardSeen.solid.edge}`,
+	);
+	check(
+		"and a grouped list is one with no padding of its own",
+		`${cardSeen.list.fill} ${cardSeen.list.pad}`,
+		`${cardSeen.solid.fill} 0px`,
+	);
 	// MEASURED: the group inside a panel steps toward the INK, the plain list steps off the page —
 	// the two greys are near neighbours but not one colour, so the card cannot be told they are
-	check("a sidebar group's grey is its own, not the plain list's", cardSeen.list.fill === measured.sidebar.groupFill, false);
+	check(
+		"a sidebar group's grey is its own, not the plain list's",
+		cardSeen.list.fill === measured.sidebar.groupFill,
+		false,
+	);
 
 	// CONTEXT: the row being edited is a sidebar state, not a look each screen paints for itself
 	const { marks, states, washes, labels } = measured.picked;
 	console.log(`   a picked row: ${washes[1]} against ${washes[0]} · ${labels[1]}`);
 	check("a row nobody picked carries no mark", marks, [null, "true", "true", null]);
 	check("and the kit's own state is what says which", states, [false, true, true, false]);
-	check("the picked row is washed, the others are not", `${washes[0] === washes[3]} ${washes[0] !== washes[1]}`, "true true");
+	check(
+		"the picked row is washed, the others are not",
+		`${washes[0] === washes[3]} ${washes[0] !== washes[1]}`,
+		"true true",
+	);
 	check("its wash is a step on the group, not a hole", /^rgba\(0, 0, 0, 0\)$/.test(washes[1]), false);
 	check("its label steps up out of the list", labels[0] === labels[1], false);
 	// CONTEXT: picking an empty row must not make it read as filled
@@ -1203,52 +1697,95 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 
 	// A ROW'S HEIGHT IS THE COMPONENT'S, NOT A COUNT OF WHAT THE CALLER PUT IN IT. Two lists of
 	// the same rows read as two different components the moment one of them carries icons.
-	console.log(`   a full row: ${measured.rowHeights.full.join(" / ")}px · a minimal one: ${measured.rowHeights.lean.join(" / ")}px`);
-	check("A SIDEBAR ROW IS THE SAME HEIGHT WITH AN ICON AND WITHOUT ONE", measured.rowHeights.full[0], measured.rowHeights.full[1]);
+	console.log(
+		`   a full row: ${measured.rowHeights.full.join(" / ")}px · a minimal one: ${measured.rowHeights.lean.join(" / ")}px`,
+	);
+	check(
+		"A SIDEBAR ROW IS THE SAME HEIGHT WITH AN ICON AND WITHOUT ONE",
+		measured.rowHeights.full[0],
+		measured.rowHeights.full[1],
+	);
 	check("and it is the height the settings panel already draws", measured.rowHeights.full[0], 40);
 	// CONTEXT: the two are only the same height because the ROW ADDS UP to it — a min-height cannot
 	// shrink a tile, so a number that does not match the build leaves the icon rows behind
 	const rowBuild = measured.rowBuild;
 	console.log(`   built from: ${rowBuild.top} + ${rowBuild.tile} tile + ${rowBuild.bottom}`);
-	check("the tile and the row's padding add up to that height", rowBuild.top + rowBuild.tile + rowBuild.bottom, measured.rowHeights.full[0]);
+	check(
+		"the tile and the row's padding add up to that height",
+		rowBuild.top + rowBuild.tile + rowBuild.bottom,
+		measured.rowHeights.full[0],
+	);
 	check("the minimal row keeps its own, shorter height", measured.rowHeights.lean.join(" "), "34 34");
 
 	// CONTEXT: that floor is not a ceiling — a row with a description grows by the lines it wraps to
-	for (const [mode, floor] of [["full", 40], ["lean", 34]]) {
+	for (const [mode, floor] of [
+		["full", 40],
+		["lean", 34],
+	]) {
 		const seen = measured.twoLine[mode];
-		console.log(`   a ${mode} two-line row: ${seen.bareHeight} -> ${seen.subHeight}px · note ${seen.note.height}px over ${seen.noteLine}px lines · ${seen.noteColour}`);
+		console.log(
+			`   a ${mode} two-line row: ${seen.bareHeight} -> ${seen.subHeight}px · note ${seen.note.height}px over ${seen.noteLine}px lines · ${seen.noteColour}`,
+		);
 		check(`a ${mode} row with a name only keeps the floor`, seen.bareHeight, floor);
-		check(`${mode}: only the row with a description is marked two-line`, `${seen.bareIsTwo} ${seen.isTwo}`, "false true");
+		check(
+			`${mode}: only the row with a description is marked two-line`,
+			`${seen.bareIsTwo} ${seen.isTwo}`,
+			"false true",
+		);
 		check(`a ${mode} row with a description is taller than that`, seen.subHeight > seen.bareHeight, true);
 		const [padTop, padBottom] = seen.subPad.split(" ").map(Number);
-		check(`${mode}: its height IS the two lines plus the padding`, Math.round(seen.subHeight), Math.round(padTop + padBottom + seen.name.height + 1 + seen.note.height));
+		check(
+			`${mode}: its height IS the two lines plus the padding`,
+			Math.round(seen.subHeight),
+			Math.round(padTop + padBottom + seen.name.height + 1 + seen.note.height),
+		);
 		check(`${mode}: the note really did wrap`, seen.note.height > seen.noteLine * 1.5, true);
 		check(`${mode}: the name and the note are not on the same line`, seen.note.top >= seen.name.bottom, true);
 		check(`${mode}: nothing is clipped, so no ellipsis is drawn`, `${seen.labelFits} ${seen.noteFits}`, "true true");
 		check(`${mode}: the note is the whole sentence`, seen.noteText, DESC);
-		check(`${mode}: the note is muted and the name is not`, `${seen.noteColour === measured.twoLine.faint} ${seen.nameColour === seen.noteColour}`, "true false");
+		check(
+			`${mode}: the note is muted and the name is not`,
+			`${seen.noteColour === measured.twoLine.faint} ${seen.nameColour === seen.noteColour}`,
+			"true false",
+		);
 		check(`${mode}: and it is the smaller type`, seen.noteFont, "11px");
 		// TRADE-OFF: the value is centred, not first-line aligned — it answers the row, not the name
 		check(`${mode}: the value still ends hard right`, seen.subValue, seen.bareValue);
 	}
 	// CONTEXT: full pads 8/8 already, so only the minimal row has to find room it never had
-	check("a full row needs no extra padding to hold two lines", measured.twoLine.full.subPad, measured.twoLine.full.barePad);
-	check("the minimal row finds the room it had none of", `${measured.twoLine.lean.barePad} -> ${measured.twoLine.lean.subPad}`, "0 0 -> 8 8");
+	check(
+		"a full row needs no extra padding to hold two lines",
+		measured.twoLine.full.subPad,
+		measured.twoLine.full.barePad,
+	);
+	check(
+		"the minimal row finds the room it had none of",
+		`${measured.twoLine.lean.barePad} -> ${measured.twoLine.lean.subPad}`,
+		"0 0 -> 8 8",
+	);
 
 	// CONTEXT: a folder path and a long setting name have no space to break at
 	const unbroken = measured.twoLine.unbroken;
-	console.log(`   unbroken text runs past its label by ${unbroken.nameOver}px (name) and ${unbroken.noteOver}px (path)`);
+	console.log(
+		`   unbroken text runs past its label by ${unbroken.nameOver}px (name) and ${unbroken.noteOver}px (path)`,
+	);
 	check("a name that cannot break anywhere still fits its row", unbroken.nameOver <= 1, true);
 	check("and so does a path with no spaces in it", unbroken.noteOver <= 1, true);
 	check("neither pushes the value off the row", unbroken.valueRight < unbroken.rowRight, true);
 
 	// CONTEXT: the settings panel spells its own two-line row, and its rule hung off a class nothing emits
 	const setTwo = measured.setTwo;
-	console.log(`   a settings two-line row: ${setTwo.height}px · note ${setTwo.note.height}px · value ends at ${setTwo.valueRight} of ${setTwo.rowRight}`);
+	console.log(
+		`   a settings two-line row: ${setTwo.height}px · note ${setTwo.note.height}px · value ends at ${setTwo.valueRight} of ${setTwo.rowRight}`,
+	);
 	check("the settings panel's description sits under its name too", setTwo.note.top >= setTwo.name.bottom, true);
 	check("and that row grew to hold it", setTwo.height > 40, true);
 	check("its description does not run past the label either", setTwo.noteOver <= 1, true);
-	check("and it wraps over several lines rather than being cut at one", setTwo.note.height > setTwo.noteLine * 1.5, true);
+	check(
+		"and it wraps over several lines rather than being cut at one",
+		setTwo.note.height > setTwo.noteLine * 1.5,
+		true,
+	);
 	check("and its value did not get pushed off the row", setTwo.valueRight < setTwo.rowRight, true);
 	console.log(`   the settings unbroken name runs past its label by ${measured.setLong.nameOver}px`);
 	check("a settings name that cannot break still fits its row", measured.setLong.nameOver <= 1, true);
@@ -1264,9 +1801,21 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	check("NO SIZE STEP AT FRAME ZERO: the panel IS the trigger's rendered rect", seam.panel, seam.trigger);
 	// CONTEXT: this trigger is wider than the panel's 200px floor, so a stale measurement shows up here
 	check("even where the trigger is what sets the panel's width", Number(seam.trigger.split("x")[0]) > 200, true);
-	check("THE GROWTH REALLY RUNS — an assigned value would list nothing", grow.panel.includes("wg-kit-pop-bloom:running"), true);
-	check("and the paint really interpolates, it does not jump", `${grow.panel.some((one) => one.startsWith("background-color"))} ${grow.panel.some((one) => one.startsWith("border-top-left-radius"))}`, "true true");
-	check("THE TRIGGER HAS NOTHING RUNNING ON IT, and nothing written to it", `${grow.trigger.length} ${grow.touched}`, "0 ||");
+	check(
+		"THE GROWTH REALLY RUNS — an assigned value would list nothing",
+		grow.panel.includes("wg-kit-pop-bloom:running"),
+		true,
+	);
+	check(
+		"and the paint really interpolates, it does not jump",
+		`${grow.panel.some((one) => one.startsWith("background-color"))} ${grow.panel.some((one) => one.startsWith("border-top-left-radius"))}`,
+		"true true",
+	);
+	check(
+		"THE TRIGGER HAS NOTHING RUNNING ON IT, and nothing written to it",
+		`${grow.trigger.length} ${grow.touched}`,
+		"0 ||",
+	);
 	check("SCALING IS THE ONLY THING THAT MOVES: no box, no position", grow.pinned, "||");
 	// CONTEXT: seeked by hand, because the clock is frozen — these are the values the eye would get
 	check("SEEKED IN THE BROWSER, THE GROWTH STARTS AT THE SEED", curve.start, measured.popSeed);
@@ -1313,7 +1862,10 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		return linear > 0.008856 ? 116 * Math.cbrt(linear) - 16 : 903.3 * linear;
 	};
 	const BLOCK = { left: 60, width: 200, height: 120, slot: 300, top: 60 };
-	const GROUNDS = { light: "--background-primary:#ffffff;--text-normal:#222222;", dark: "--background-primary:#1e1e1e;--text-normal:#dadada;" };
+	const GROUNDS = {
+		light: "--background-primary:#ffffff;--text-normal:#222222;",
+		dark: "--background-primary:#1e1e1e;--text-normal:#dadada;",
+	};
 	// CONTEXT: the panel is a glass sidebar, so the surface it is made of is shot on the same grounds
 	const SURFACES = { solid: undefined, glass: "glass" };
 	const SLOTS = Object.keys(GROUNDS).flatMap((theme) => Object.keys(SURFACES).map((surface) => ({ theme, surface })));
@@ -1321,21 +1873,33 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const liftFile = nodePath.join(work, "lift.html");
 	writeFileSync(
 		liftFile,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>`
-			+ `<style>html, body { margin: 0; padding: 0; } body { width: 400px; height: ${pageHeight}px; }`
-			+ `.wg-ground { position: absolute; left: 0; width: 400px; height: ${BLOCK.slot}px; background: var(--wg-kit-raise); }`
-			+ `.wg-ground .wg-kit-side { position: absolute; left: ${BLOCK.left}px; top: ${BLOCK.top}px; width: ${BLOCK.width}px; height: ${BLOCK.height}px; }</style>`
-			+ `</head><body>`
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>` +
+			`<style>html, body { margin: 0; padding: 0; } body { width: 400px; height: ${pageHeight}px; }` +
+			`.wg-ground { position: absolute; left: 0; width: 400px; height: ${BLOCK.slot}px; background: var(--wg-kit-raise); }` +
+			`.wg-ground .wg-kit-side { position: absolute; left: ${BLOCK.left}px; top: ${BLOCK.top}px; width: ${BLOCK.width}px; height: ${BLOCK.height}px; }</style>` +
+			`</head><body>` +
 			// CONTEXT: a custom property is computed where it is declared, so the ground carries BOTH
 			// the theme and .wg-root — on body, --wg-kit-raise would resolve once, against nothing
-			+ SLOTS.map(({ theme, surface }, at) => `<div class="wg-root wg-ground" style="top:${at * BLOCK.slot}px;${GROUNDS[theme]}"><div class="${sidebarClass({ surface: SURFACES[surface] })}"></div></div>`).join("")
-			+ `</body></html>`,
+			SLOTS.map(
+				({ theme, surface }, at) =>
+					`<div class="wg-root wg-ground" style="top:${at * BLOCK.slot}px;${GROUNDS[theme]}"><div class="${sidebarClass({ surface: SURFACES[surface] })}"></div></div>`,
+			).join("") +
+			`</body></html>`,
 	);
 	const liftPng = nodePath.join(work, "lift.png");
 	execFileSync(
 		browser,
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=1",
-			`--window-size=400,${pageHeight}`, "--virtual-time-budget=4000", `--screenshot=${liftPng}`, `file://${liftFile}`],
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-device-scale-factor=1",
+			`--window-size=400,${pageHeight}`,
+			"--virtual-time-budget=4000",
+			`--screenshot=${liftPng}`,
+			`file://${liftFile}`,
+		],
 		{ stdio: "ignore" },
 	);
 
@@ -1343,15 +1907,24 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 		const theme = `${slot.surface} sidebar on a ${slot.theme}`;
 		const edge = at * BLOCK.slot + BLOCK.top + BLOCK.height;
 		const column = JSON.parse(
-			execFileSync("/usr/bin/python3", ["tools/png-column.py", liftPng, String(BLOCK.left + 100), String(edge), String(edge + 80)], { encoding: "utf8" }),
+			execFileSync(
+				"/usr/bin/python3",
+				["tools/png-column.py", liftPng, String(BLOCK.left + 100), String(edge), String(edge + 80)],
+				{ encoding: "utf8" },
+			),
 		);
 		const ground = column[column.length - 1];
-		const extreme = column.reduce((far, value) => (Math.abs(value - ground) > Math.abs(far - ground) ? value : far), ground);
+		const extreme = column.reduce(
+			(far, value) => (Math.abs(value - ground) > Math.abs(far - ground) ? value : far),
+			ground,
+		);
 		const step = Math.round((extreme - ground) * 10) / 10;
 		const seen = Math.round(Math.abs(lightness(extreme) - lightness(ground)) * 10) / 10;
 		const reach = column.findIndex((value) => Math.abs(value - ground) < 0.5);
 		const ink = Math.round(column.reduce((sum, value) => sum + Math.abs(lightness(value) - lightness(ground)), 0));
-		console.log(`   the lift on a ${theme} ground: ${ground} → ${extreme}, a step of ${step} — ${seen} of L* — over ${reach}px — ${ink} of ink`);
+		console.log(
+			`   the lift on a ${theme} ground: ${ground} → ${extreme}, a step of ${step} — ${seen} of L* — over ${reach}px — ${ink} of ink`,
+		);
 		check(`${theme}: the lift is there to be seen, not merely present`, seen >= LIFT_SEEN, true);
 		check(`${theme}: and it never shouts — it is separation, not elevation`, seen <= LIFT_SHOUTS, true);
 		check(`${theme}: it stays a halo under the block, not a band beside it`, reach > 0 && reach <= LIFT_REACH_PX, true);
@@ -1365,7 +1938,23 @@ check("the kit does not leak into the core namespace", surface.filter((name) => 
 	const stage = dom.window.document.createElement("div");
 	dom.window.document.body.appendChild(stage);
 	let open = false;
-	const draw = () => render(h(Kit.SidebarSheet, { isOpen: open, onOpen: (next) => { open = next; draw(); }, peekPx: 100, maxPx: 500 }, "body"), stage);
+	const draw = () =>
+		render(
+			h(
+				Kit.SidebarSheet,
+				{
+					isOpen: open,
+					onOpen: (next) => {
+						open = next;
+						draw();
+					},
+					peekPx: 100,
+					maxPx: 500,
+				},
+				"body",
+			),
+			stage,
+		);
 	draw();
 
 	const sheet = () => stage.querySelector(".wg-kit-sheet");

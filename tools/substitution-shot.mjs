@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
+import { TEXT_LOADERS } from "../build.mjs";
 
 buildMirror();
 const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
@@ -28,6 +29,7 @@ const files = collect("widgets", {}, WIDGETS_DIR);
 const bundle = await esbuild.build({
 	entryPoints: ["tools/substitution-page.jsx"],
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -35,7 +37,11 @@ const bundle = await esbuild.build({
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	inject: ["tools/fill-inject.js"],
-	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", obsidian: "./tools/obsidian-shim.js" },
+	alias: {
+		widgetarium: "./tools/fill-shim.js",
+		"widgetarium/kit": "./src/kit.js",
+		obsidian: "./tools/obsidian-shim.js",
+	},
 	logLevel: "warning",
 });
 
@@ -65,8 +71,17 @@ for (const theme of ["light", "dark"]) {
 	const out = path.resolve(`substitutions-${theme}.png`);
 	execFileSync(
 		CHROME,
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=2",
-			"--window-size=1280,820", "--virtual-time-budget=9000", `--screenshot=${out}`, `file://${file}`],
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-device-scale-factor=2",
+			"--window-size=1280,820",
+			"--virtual-time-budget=9000",
+			`--screenshot=${out}`,
+			`file://${file}`,
+		],
 		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
 	);
 	console.log(`${theme} -> ${out}`);

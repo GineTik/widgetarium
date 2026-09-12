@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-dlg-"));
@@ -11,6 +12,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-dlg-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/dialog-fit-page.jsx"],
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -51,8 +53,17 @@ setTimeout(() => document.querySelector(".otd-tag")?.click(), 4000);</script>
 	const out = path.resolve(`dialog-${theme}.png`);
 	execFileSync(
 		CHROME,
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=2",
-			"--window-size=1280,900", "--virtual-time-budget=10000", `--screenshot=${out}`, `file://${file}`],
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-device-scale-factor=2",
+			"--window-size=1280,900",
+			"--virtual-time-budget=10000",
+			`--screenshot=${out}`,
+			`file://${file}`,
+		],
 		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
 	);
 	console.log(`${theme} -> ${out}`);

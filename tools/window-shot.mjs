@@ -4,18 +4,29 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-shot-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/window-page.jsx"],
-	bundle: true, write: false, format: "iife", platform: "browser", target: "es2020",
-	jsxFactory: "h", jsxFragment: "Fragment", logLevel: "warning",
+	bundle: true,
+	loader: TEXT_LOADERS,
+	write: false,
+	format: "iife",
+	platform: "browser",
+	target: "es2020",
+	jsxFactory: "h",
+	jsxFragment: "Fragment",
+	logLevel: "warning",
 });
 const source = readFileSync("tools/window-test.mjs", "utf8");
-const head = source.slice(source.indexOf("const page = `") + "const page = `".length, source.indexOf("</html>`") + "</html>".length);
+const head = source.slice(
+	source.indexOf("const page = `") + "const page = `".length,
+	source.indexOf("</html>`") + "</html>".length,
+);
 const html = head
-	.replace("${readFileSync(\"styles.css\", \"utf8\")}", readFileSync("styles.css", "utf8"))
+	.replace('${readFileSync("styles.css", "utf8")}', readFileSync("styles.css", "utf8"))
 	.replace("${bundle.outputFiles[0].text}", bundle.outputFiles[0].text);
 // CONTEXT: the gate's own page is authored light, so dark is the same page with the tokens swapped
 const DARK = `body { background: #1e1e1e; color: #dadada;
@@ -28,8 +39,19 @@ for (const theme of ["light", "dark"]) {
 	const file = path.join(work, `${theme}.html`);
 	writeFileSync(file, theme === "dark" ? html.replace("</head>", `<style>${DARK}</style></head>`) : html);
 	const out = path.resolve(process.argv[2] ?? `window-${theme}.png`);
-	execFileSync(CHROME, ["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars",
-		"--window-size=1440,960", "--virtual-time-budget=9000", `--screenshot=${out}`, `file://${file}`],
-		{ stdio: "ignore" });
+	execFileSync(
+		CHROME,
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--window-size=1440,960",
+			"--virtual-time-budget=9000",
+			`--screenshot=${out}`,
+			`file://${file}`,
+		],
+		{ stdio: "ignore" },
+	);
 	console.log(`${theme} -> ${out}`);
 }

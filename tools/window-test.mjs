@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const BROWSERS = [
 	process.env.WG_CHROME,
@@ -28,6 +29,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-window-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/window-page.jsx"],
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -56,8 +58,21 @@ writeFileSync(file, page);
 function stage(hash) {
 	const dom = execFileSync(
 		browser(),
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1440,960", "--virtual-time-budget=9000", "--dump-dom", `file://${file}${hash}`],
-		{ encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--window-size=1440,960",
+			"--virtual-time-budget=9000",
+			"--dump-dom",
+			`file://${file}${hash}`,
+		],
+		{
+			encoding: "utf8",
+			maxBuffer: 64 * 1024 * 1024,
+			stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"],
+		},
 	);
 	const payload = dom.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
 	if (!payload) {
@@ -111,7 +126,9 @@ function round(value) {
 }
 
 console.log("— the widget arrives whole, clear of both floating panels —\n");
-console.log(`   measured: window ${Math.round(arrival.windowBox.width)}x${Math.round(arrival.windowBox.height)}, widget ${Math.round(arrival.widgetBox.width)}x${Math.round(arrival.widgetBox.height)} at ${arrival.said}`);
+console.log(
+	`   measured: window ${Math.round(arrival.windowBox.width)}x${Math.round(arrival.windowBox.height)}, widget ${Math.round(arrival.widgetBox.width)}x${Math.round(arrival.widgetBox.height)} at ${arrival.said}`,
+);
 check("nothing of it is under the settings panel", arrival.widgetUnderPanel, false);
 check("nothing of it is under the header", arrival.widgetUnderHead, false);
 check("and the panel really is to the right of it", arrival.panelBox.left >= arrival.widgetBox.right, true);
@@ -124,14 +141,28 @@ check("the window clips what pans past its edge", arrival.panelOverflow, "hidden
 // spanToPixels(w) * s wide, and its corner sits on a cell corner — so a widget said to be
 // 12 x 8 covers twelve cells by eight, and a person can count them at any zoom.
 console.log("\n— the grid is part of the canvas: it zooms, it pans, and the widget sits on it —");
-for (const [when, seen] of [["at arrival", arrival], ["after a pan", panned], ["zoomed out", zoomed], ["at the zoom floor", floor], ["back at 1:1", live]]) {
+for (const [when, seen] of [
+	["at arrival", arrival],
+	["after a pan", panned],
+	["zoomed out", zoomed],
+	["at the zoom floor", floor],
+	["back at 1:1", live],
+]) {
 	const { grid, scale, cellPx, gapPx, span, widgetBox } = seen;
 	const pitchPx = cellPx + gapPx;
-	console.log(`\n   ${when}: scale ${round(scale)} · cell ${round(grid.cellPx)}px (want ${round(cellPx * scale)}) · pitch ${round(grid.pitchPx)}px (want ${round(pitchPx * scale)})`);
-	console.log(`   widget ${round(widgetBox.width)}x${round(widgetBox.height)} = ${round(grid.cellsAcross)} x ${round(grid.cellsDown)} cells, corner ${round(grid.offLatticeX)}/${round(grid.offLatticeY)}px off the lattice`);
+	console.log(
+		`\n   ${when}: scale ${round(scale)} · cell ${round(grid.cellPx)}px (want ${round(cellPx * scale)}) · pitch ${round(grid.pitchPx)}px (want ${round(pitchPx * scale)})`,
+	);
+	console.log(
+		`   widget ${round(widgetBox.width)}x${round(widgetBox.height)} = ${round(grid.cellsAcross)} x ${round(grid.cellsDown)} cells, corner ${round(grid.offLatticeX)}/${round(grid.offLatticeY)}px off the lattice`,
+	);
 	near(`${when}: one cell measures cellPx x scale`, grid.cellPx, cellPx * scale);
 	near(`${when}: one pitch measures (cell + gap) x scale`, grid.pitchPx, pitchPx * scale);
-	near(`${when}: the widget measures spanToPixels(w) x scale`, widgetBox.width, (span.w * cellPx + (span.w - 1) * gapPx) * scale);
+	near(
+		`${when}: the widget measures spanToPixels(w) x scale`,
+		widgetBox.width,
+		(span.w * cellPx + (span.w - 1) * gapPx) * scale,
+	);
 	near(`${when}: its corner sits on a cell corner`, grid.offLatticeX, 0);
 	near(`${when}: on both axes`, grid.offLatticeY, 0);
 	near(`${when}: and it spans exactly ${span.w} cells across`, grid.cellsAcross, span.w, 0.02);
@@ -151,10 +182,16 @@ for (const [theme, read] of Object.entries(levels)) {
 	const card = level(read["--wg-kit-raise"], canvas);
 	const gridStep = Math.abs(canvas - ground);
 	const controlStep = Math.abs(canvas - control);
-	console.log(`\n   ${theme}: canvas ${round(canvas)} · grid ${round(ground)} (step ${round(gridStep)}) · control ${round(control)} (step ${round(controlStep)}) · card ${round(card)}`);
+	console.log(
+		`\n   ${theme}: canvas ${round(canvas)} · grid ${round(ground)} (step ${round(gridStep)}) · control ${round(control)} (step ${round(controlStep)}) · card ${round(card)}`,
+	);
 	check(`${theme}: the grid is a third of a step, not a whole one`, gridStep * 2 < controlStep, true);
 	check(`${theme}: so the canvas still reads as the ground`, gridStep < 6, true);
-	check(`${theme}: and a card lifts clear of the control it stands on`, Math.abs(card - control) >= controlStep * 0.8, true);
+	check(
+		`${theme}: and a card lifts clear of the control it stands on`,
+		Math.abs(card - control) >= controlStep * 0.8,
+		true,
+	);
 }
 check("the window's own ground is the canvas colour", arrival.canvasFill, levels.light["--background-primary"]);
 
@@ -174,10 +211,16 @@ const alphaOf = (colour) => Number(/\/\s*([\d.]+)\s*\)/.exec(String(colour))?.[1
 console.log(`   the panel's own fill is ${arrival.panelFill}`);
 check("the panel is dense enough to read on", alphaOf(arrival.panelFill) >= 0.9, true);
 check("three floating surfaces carry the blur", arrival.blurred.length, 3);
-check("and they are the header, the panel and the zoom bar", arrival.blurred.sort().join(" "), "aside.wg-kit-side.wg-kit-card.is-lifted.is-glass.wg-set-panel div.wg-set-bar.wg-kit-glass div.wg-set-head.wg-kit-glass");
+check(
+	"and they are the header, the panel and the zoom bar",
+	arrival.blurred.sort().join(" "),
+	"aside.wg-kit-side.wg-kit-card.is-lifted.is-glass.wg-set-panel div.wg-set-bar.wg-kit-glass div.wg-set-head.wg-kit-glass",
+);
 
 // CONTEXT: the panel wrote its own padding, corner and fill, so it missed what the block gained
-console.log(`   the panel: sidebar ${arrival.panelIsSidebar} · padding ${arrival.panelPad} · corner ${arrival.panelRadius}`);
+console.log(
+	`   the panel: sidebar ${arrival.panelIsSidebar} · padding ${arrival.panelPad} · corner ${arrival.panelRadius}`,
+);
 check("the panel is the kit's sidebar block", arrival.panelIsSidebar, true);
 check("so its padding is the block's", arrival.panelPad, "8px");
 check("and its corner is the block's", arrival.panelRadius, "14px");
@@ -185,17 +228,43 @@ check("and its corner is the block's", arrival.panelRadius, "14px");
 // CONTEXT: read part by part — a comma list whose first part is inset used to pass while casting whatever came after
 console.log("\n— exactly one edge per floating panel, and the only cast shadow is the panel's lift —");
 const cast = arrival.shadowed.filter((entry) => entry.cast.length > 0);
-console.log(`   ${cast.length} element(s) cast beyond their own box: ${cast.map((entry) => `${entry.name} (${entry.cast.length})`).join(" | ") || "none"}`);
-check("nothing inside the settings panel carries an edge", arrival.shadowed.filter((entry) => entry.inside).map((entry) => entry.name).join(" | ") || 0, 0);
-check("the panel casts the lift the kit gives every sidebar", cast.some((entry) => entry.isPanel), true);
-check("and it is the only thing in the window that casts anything", cast.filter((entry) => !entry.isPanel).map((entry) => entry.name).join(" | ") || 0, 0);
+console.log(
+	`   ${cast.length} element(s) cast beyond their own box: ${cast.map((entry) => `${entry.name} (${entry.cast.length})`).join(" | ") || "none"}`,
+);
+check(
+	"nothing inside the settings panel carries an edge",
+	arrival.shadowed
+		.filter((entry) => entry.inside)
+		.map((entry) => entry.name)
+		.join(" | ") || 0,
+	0,
+);
+check(
+	"the panel casts the lift the kit gives every sidebar",
+	cast.some((entry) => entry.isPanel),
+	true,
+);
+check(
+	"and it is the only thing in the window that casts anything",
+	cast
+		.filter((entry) => !entry.isPanel)
+		.map((entry) => entry.name)
+		.join(" | ") || 0,
+	0,
+);
 
 console.log("\n— a group on glass is a fill, and it is opaque —");
 check("the group is not the panel's own colour", arrival.listFill !== arrival.panelFill, true);
-check("and it is opaque, because it carries 11px text", /^(rgb\(|color\()/.test(arrival.listFill) && !arrival.listFill.includes("0)"), true);
+check(
+	"and it is opaque, because it carries 11px text",
+	/^(rgb\(|color\()/.test(arrival.listFill) && !arrival.listFill.includes("0)"),
+	true,
+);
 
 console.log("\n— and 1:1 is the only place a transform does not exist —");
-console.log(`   measured: arrival ${arrival.canvasTransform}, zoomed out ${zoomed.canvasTransform}, back at 1:1 ${live.canvasTransform}`);
+console.log(
+	`   measured: arrival ${arrival.canvasTransform}, zoomed out ${zoomed.canvasTransform}, back at 1:1 ${live.canvasTransform}`,
+);
 check("zooming out puts a transform on the canvas", zoomed.canvasTransform.startsWith("matrix("), true);
 check("so the canvas goes look-only behind a shield", zoomed.hasLookShield, true);
 check("and the tile stops saying it is live", zoomed.liveAtOpen, false);
@@ -208,14 +277,18 @@ check("and the glass is still glass", blurPx(live.panelBlur) >= 24, true);
 // than the viewport, so the window's height is the room, never the board's own height.
 const tall = stage("#tall").arrival;
 console.log("\n— the window fits the screen, however tall the board under it is —");
-console.log(`   measured: viewport ${tall.innerHeight}px · board tile ${tall.span.w}x${tall.span.h} · window ${Math.round(tall.windowBox.height)}px, bottom at ${Math.round(tall.windowBox.bottom)}`);
+console.log(
+	`   measured: viewport ${tall.innerHeight}px · board tile ${tall.span.w}x${tall.span.h} · window ${Math.round(tall.windowBox.height)}px, bottom at ${Math.round(tall.windowBox.bottom)}`,
+);
 check("the window is no taller than the screen", tall.windowBox.height <= tall.innerHeight, true);
 check("and its bottom edge is on the screen", tall.windowBox.bottom <= tall.innerHeight, true);
 
 console.log("\n— and it reads as a window: an edge, the screen held, nothing scrolling behind —");
 {
 	const frame = arrival.frame;
-	console.log(`   border ${frame.borderWidthPx}px ${frame.borderColour} · covers ${Math.round(frame.coverage * 100)}% of the screen · body overflow "${frame.bodyOverflow}"`);
+	console.log(
+		`   border ${frame.borderWidthPx}px ${frame.borderColour} · covers ${Math.round(frame.coverage * 100)}% of the screen · body overflow "${frame.bodyOverflow}"`,
+	);
 	check("the window carries an edge of its own", frame.borderWidthPx >= 1, true);
 	check("and the edge is painted, not transparent", /rgba\(\s*0,\s*0,\s*0,\s*0\s*\)/.test(frame.borderColour), false);
 	check("it is not inside the board any more", frame.insideBoard, false);
@@ -227,7 +300,9 @@ console.log("\n— and it reads as a window: an edge, the screen held, nothing s
 console.log("\n— the wheel drives the playground, and a pinch zooms about the pointer —");
 {
 	const { beforeWheel, wheelPanned, pinchedOut, pinchedIn, before, overPanel } = wheel;
-	console.log(`   pan: corner ${round(beforeWheel.corner.x)},${round(beforeWheel.corner.y)} -> ${round(wheelPanned.corner.x)},${round(wheelPanned.corner.y)}`);
+	console.log(
+		`   pan: corner ${round(beforeWheel.corner.x)},${round(beforeWheel.corner.y)} -> ${round(wheelPanned.corner.x)},${round(wheelPanned.corner.y)}`,
+	);
 	console.log(`   pinch: ${beforeWheel.said} -> ${pinchedOut.said} -> ${pinchedIn.said}`);
 
 	check("a plain wheel moves the canvas left", wheelPanned.corner.x < beforeWheel.corner.x, true);
@@ -245,7 +320,9 @@ console.log("\n— the wheel drives the playground, and a pinch zooms about the 
 	const held = (seen) => ({ x: (400 - seen.corner.x) / seen.scale, y: (300 - seen.corner.y) / seen.scale });
 	const was = held(beforeWheel === wheelPanned ? beforeWheel : wheelPanned);
 	const now = held(pinchedOut);
-	console.log(`   the point under the cursor: ${round(was.x)},${round(was.y)} -> ${round(now.x)},${round(now.y)} in canvas coordinates`);
+	console.log(
+		`   the point under the cursor: ${round(was.x)},${round(was.y)} -> ${round(now.x)},${round(now.y)} in canvas coordinates`,
+	);
 	near("the pinch keeps the point under the cursor still", now.x, was.x, 0.1);
 	near("on both axes", now.y, was.y, 0.1);
 
@@ -254,7 +331,10 @@ console.log("\n— the wheel drives the playground, and a pinch zooms about the 
 }
 
 function level(colour, fallback) {
-	const numbers = String(colour).match(/[\d.]+/g)?.map(Number) ?? [];
+	const numbers =
+		String(colour)
+			.match(/[\d.]+/g)
+			?.map(Number) ?? [];
 	if (numbers.length < 3) return NaN;
 	const scale = String(colour).startsWith("color(") ? 255 : 1;
 	const [red, green, blue] = numbers.slice(0, 3).map((value) => value * scale);
@@ -264,5 +344,9 @@ function level(colour, fallback) {
 	return fallback === null || alpha === 1 ? own : own * alpha + fallback * (1 - alpha);
 }
 
-console.log(failed ? `\n${failed} things the window does not do` : "\nthe window arrives clear, carries its grid through every zoom and fits the screen");
+console.log(
+	failed
+		? `\n${failed} things the window does not do`
+		: "\nthe window arrives clear, carries its grid through every zoom and fits the screen",
+);
 process.exit(failed ? 1 : 0);

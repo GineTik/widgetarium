@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
+import { TEXT_LOADERS } from "../build.mjs";
 
 buildMirror();
 const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
@@ -34,8 +35,15 @@ function collect(from, into, prefix) {
 const files = collect("widgets", {}, WIDGETS_DIR);
 const bundle = await esbuild.build({
 	entryPoints: ["tools/catalogue-page.jsx"],
-	bundle: true, write: false, format: "iife", platform: "browser", target: "es2020",
-	jsxFactory: "h", jsxFragment: "Fragment", logLevel: "warning",
+	bundle: true,
+	loader: TEXT_LOADERS,
+	write: false,
+	format: "iife",
+	platform: "browser",
+	target: "es2020",
+	jsxFactory: "h",
+	jsxFragment: "Fragment",
+	logLevel: "warning",
 });
 
 const LIGHT = `--background-primary:#ffffff;--background-secondary:#f6f6f6;--background-modifier-border:#e4e4e4;
@@ -68,14 +76,36 @@ for (const [variant, title, said] of VARIANTS) {
 	const file = path.join(work, `${variant}.html`);
 	writeFileSync(file, pageFor(variant, title, said));
 	const out = path.resolve(into, `card-${variant}.png`);
-	execFileSync(CHROME, ["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars",
-		"--force-device-scale-factor=2", "--window-size=1280,1240", "--virtual-time-budget=12000",
-		`--screenshot=${out}`, `file://${file}`], { stdio: ["ignore", "pipe", "ignore"] });
+	execFileSync(
+		CHROME,
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-device-scale-factor=2",
+			"--window-size=1280,1240",
+			"--virtual-time-budget=12000",
+			`--screenshot=${out}`,
+			`file://${file}`,
+		],
+		{ stdio: ["ignore", "pipe", "ignore"] },
+	);
 
 	// a photograph of nothing is the failure this harness exists to prevent
-	const dom = execFileSync(CHROME, ["--headless", "--disable-gpu", "--no-sandbox",
-		"--window-size=1280,1240", "--virtual-time-budget=12000", "--dump-dom", `file://${file}`],
-		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+	const dom = execFileSync(
+		CHROME,
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--window-size=1280,1240",
+			"--virtual-time-budget=12000",
+			"--dump-dom",
+			`file://${file}`,
+		],
+		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+	);
 	const tiles = (dom.match(/wg-cat-tile/g) ?? []).length;
 	if (tiles === 0) {
 		console.error(`${variant}: the page drew no tiles`);

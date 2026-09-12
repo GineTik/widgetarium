@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const ROOT = process.cwd();
@@ -86,7 +87,11 @@ function clearances(root) {
 window.__measure = () => [...document.querySelectorAll(".wg-root")].map(clearances);
 `;
 
-const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", obsidian: "./tools/obsidian-shim.js" };
+const alias = {
+	widgetarium: "./tools/fill-shim.js",
+	"widgetarium/kit": "./src/kit.js",
+	obsidian: "./tools/obsidian-shim.js",
+};
 for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("@"))) {
 	const lib = path.join("widgets", scope, "lib.js");
 	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;
@@ -95,6 +100,7 @@ for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("
 const bundle = await esbuild.build({
 	stdin: { contents: PAGE, resolveDir: ROOT, sourcefile: "month-paint.jsx", loader: "jsx" },
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -118,7 +124,10 @@ const tiles = [];
 for (const across of WIDTHS) for (const down of HEIGHTS) tiles.push([`${across}x${down}`, tile(across), tile(down)]);
 
 const boxes = tiles
-	.map(([name, width, height]) => `<div class="wg-root" data-name="${name}" style="width:${width}px;height:${height}px"></div>`)
+	.map(
+		([name, width, height]) =>
+			`<div class="wg-root" data-name="${name}" style="width:${width}px;height:${height}px"></div>`,
+	)
 	.join("");
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
@@ -141,7 +150,16 @@ writeFileSync(file, page);
 const dumped = path.join(work, "dom.txt");
 execFileSync(
 	CHROME,
-	["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1700,1500", "--virtual-time-budget=6000", "--dump-dom", `file://${file}`],
+	[
+		"--headless",
+		"--disable-gpu",
+		"--no-sandbox",
+		"--hide-scrollbars",
+		"--window-size=1700,1500",
+		"--virtual-time-budget=6000",
+		"--dump-dom",
+		`file://${file}`,
+	],
 	{ encoding: "utf8", stdio: ["ignore", openSync(dumped, "w"), "ignore"] },
 );
 
@@ -150,7 +168,11 @@ if (!said) {
 	console.error("the page never reported its measurements");
 	process.exit(1);
 }
-const reported = said[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+const reported = said[1]
+	.replace(/&quot;/g, '"')
+	.replace(/&amp;/g, "&")
+	.replace(/&lt;/g, "<")
+	.replace(/&gt;/g, ">");
 if (reported.startsWith("!")) {
 	console.error(`the page threw: ${reported.slice(1)}`);
 	process.exit(1);
@@ -160,13 +182,23 @@ let failed = 0;
 function check(what, got, wanted) {
 	const ok = JSON.stringify(got) === JSON.stringify(wanted);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`,
+	);
 }
 
 const measured = JSON.parse(reported);
 check("every tile drew a month", measured.length, tiles.length);
-check("and every one drew whole weeks of it", measured.every((tile) => tile.days % 7 === 0 && tile.days >= 28), true);
-check("a taller tile draws a bigger ring than a short one", measured.find((tile) => tile.name === "4x11").ring > measured.find((tile) => tile.name === "4x4").ring, true);
+check(
+	"and every one drew whole weeks of it",
+	measured.every((tile) => tile.days % 7 === 0 && tile.days >= 28),
+	true,
+);
+check(
+	"a taller tile draws a bigger ring than a short one",
+	measured.find((tile) => tile.name === "4x11").ring > measured.find((tile) => tile.name === "4x4").ring,
+	true,
+);
 
 const tightest = (of) => measured.reduce((held, tile) => (tile[of] < held[of] ? tile : held));
 
@@ -194,7 +226,11 @@ for (const [what, of] of [
 
 {
 	const worst = measured.reduce((held, tile) => (tile.offRing > held.offRing ? tile : held));
-	check("every tile drew a kept run", measured.every((tile) => tile.runs > 0), true);
+	check(
+		"every tile drew a kept run",
+		measured.every((tile) => tile.runs > 0),
+		true,
+	);
 	check("a run edge clears its ring by a pixel, no more", worst.offRing < 0.55, true);
 	console.log(`    widest drift at ${worst.name}: ${worst.offRing}px`);
 }

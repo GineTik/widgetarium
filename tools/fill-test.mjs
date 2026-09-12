@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
+import { TEXT_LOADERS } from "../build.mjs";
 
 buildMirror();
 const { GRID } = await import("./.mjs-cache/paths.mjs");
@@ -37,6 +38,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-fill-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/fill-page.jsx"],
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -60,8 +62,20 @@ writeFileSync(file, page);
 
 const dom = execFileSync(
 	browser(),
-	["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--virtual-time-budget=4000", "--dump-dom", `file://${file}`],
-	{ encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+	[
+		"--headless",
+		"--disable-gpu",
+		"--no-sandbox",
+		"--hide-scrollbars",
+		"--virtual-time-budget=4000",
+		"--dump-dom",
+		`file://${file}`,
+	],
+	{
+		encoding: "utf8",
+		maxBuffer: 64 * 1024 * 1024,
+		stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"],
+	},
 );
 
 const payload = dom.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
@@ -105,7 +119,15 @@ const cellsWide = (cells) => spanToPixels(cells, GRID.cellPx, GRID.gapPx);
 
 console.log("— a control is as wide as the cells it was given —\n");
 
-for (const name of ["view-tabs, 3 cells, short label", "view-tabs, 2 cells, over-long label", "view-tabs, 1 cell, over-long label", "view-tabs, 13 cells, over-long label", "filter, 3 cells", "filter, 2 cells", "filter, 1 cell"]) {
+for (const name of [
+	"view-tabs, 3 cells, short label",
+	"view-tabs, 2 cells, over-long label",
+	"view-tabs, 1 cell, over-long label",
+	"view-tabs, 13 cells, over-long label",
+	"filter, 3 cells",
+	"filter, 2 cells",
+	"filter, 1 cell",
+]) {
 	const entry = byName.get(name);
 	if (!entry) {
 		failed += 1;
@@ -149,7 +171,9 @@ console.log("\n— the label goes only when the label does not fit —");
 	const three = byName.get("filter, 3 cells");
 	const two = byName.get("filter, 2 cells");
 	const one = byName.get("filter, 1 cell");
-	console.log(`   measured: the whole control wants ${Math.round(three.controlNatural)}px with its word, ${Math.round(one.controlNatural)}px without`);
+	console.log(
+		`   measured: the whole control wants ${Math.round(three.controlNatural)}px with its word, ${Math.round(one.controlNatural)}px without`,
+	);
 	check("at 3 cells the word is drawn", Boolean(three.label), true);
 	check("at 2 cells it still fits, so it stays", Boolean(two.label), true);
 	check("at 1 cell it cannot, so it goes", Boolean(one.label), false);
@@ -166,7 +190,11 @@ console.log("\n— a widget that cannot use the height says so, and the grip sto
 	check("a drag past it is refused", clampPlace(dragged, 20, undefined, control.maxSize).h, 1);
 	check("and the width it says nothing about is untouched", clampPlace(dragged, 20, undefined, control.maxSize).w, 6);
 	check("a widget declaring nothing is stretched as far as asked", clampPlace(dragged, 20).h, 5);
-	check("a place already inside its bound is the same object", clampPlace({ id: "a", x: 0, y: 0, w: 2, h: 1 }, 20, undefined, { h: 1 }).h, 1);
+	check(
+		"a place already inside its bound is the same object",
+		clampPlace({ id: "a", x: 0, y: 0, w: 2, h: 1 }, 20, undefined, { h: 1 }).h,
+		1,
+	);
 }
 
 console.log(failed ? `\n${failed} widths the person did not ask for` : "\nevery control fills the tile it was given");

@@ -4,6 +4,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import { TEXT_LOADERS } from "../build.mjs";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const ID = process.argv[2];
@@ -27,7 +28,8 @@ for (const field of manifest.settings ?? []) if (field.default !== undefined) se
 
 // CONTEXT: the manifest's own preview rows — the same sample the catalogue card draws from
 const data = {};
-for (const [name, given] of Object.entries(manifest.preview?.sources ?? {})) data[name] = { rows: given.rows ?? [], isLoading: false };
+for (const [name, given] of Object.entries(manifest.preview?.sources ?? {}))
+	data[name] = { rows: given.rows ?? [], isLoading: false };
 
 // CONTEXT: the board paints nothing behind a tile — WidgetRoot's own fill is the whole surface
 // CONTEXT: a lib is reached by its scope name, so every scope that has one becomes an alias
@@ -39,7 +41,9 @@ for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("
 
 // CONTEXT: a fed slot is what the board fills from the manifest default — a shot without it draws a hole
 const slots = Object.entries(manifest.slots ?? {});
-const slotImports = slots.map(([name, spec], at) => `import Slot${at} from "./${widgetFile(path.join("widgets", spec.default))}";`).join("\n");
+const slotImports = slots
+	.map(([name, spec], at) => `import Slot${at} from "./${widgetFile(path.join("widgets", spec.default))}";`)
+	.join("\n");
 const slotMap = `{ ${slots.map(([name], at) => `${name}: Slot${at}`).join(", ")} }`;
 
 const PAGE = `
@@ -62,6 +66,7 @@ render(
 const bundle = await esbuild.build({
 	stdin: { contents: PAGE, resolveDir: process.cwd(), sourcefile: "shot.jsx", loader: "jsx" },
 	bundle: true,
+	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",
 	platform: "browser",
@@ -105,8 +110,17 @@ ${fs.existsSync(scopeSheet) ? `<style>${fs.readFileSync(scopeSheet, "utf8")}</st
 	fs.mkdirSync(path.dirname(out), { recursive: true });
 	execFileSync(
 		CHROME,
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=2",
-			`--window-size=${WIDTH + 48},${HEIGHT + 48}`, "--virtual-time-budget=4000", `--screenshot=${out}`, `file://${file}`],
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-device-scale-factor=2",
+			`--window-size=${WIDTH + 48},${HEIGHT + 48}`,
+			"--virtual-time-budget=4000",
+			`--screenshot=${out}`,
+			`file://${file}`,
+		],
 		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
 	);
 	console.log(`${theme} -> ${out}`);
