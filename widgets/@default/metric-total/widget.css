@@ -246,11 +246,21 @@
 	color: var(--text-faint);
 }
 
-.mt-amount {
+.mt-amount .wg-kit-field-input {
 	font-size: 22px;
 	font-weight: var(--font-semibold, 600);
 	letter-spacing: -0.02em;
 	font-variant-numeric: tabular-nums;
+}
+
+.mt-sign,
+.mt-sign .wg-kit-seg {
+	display: flex;
+	width: 100%;
+}
+
+.mt-sign .wg-kit-seg button {
+	flex: 1;
 }
 
 .mt-form-label {

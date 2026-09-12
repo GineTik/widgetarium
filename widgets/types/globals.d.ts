@@ -104,7 +104,7 @@ declare module "@default/lib" {
 	export function platesOf(summary: MetricSummary): MetricPlate[];
 	export function leftOutLine(summary: MetricSummary): string;
 	export function tipShare(hovered: number, count: number): number;
-	export function emptyDraft(today: string): { date: string; amount: string; note: string };
+	export function emptyDraft(today: string): { date: string; sign: string; amount: string; note: string };
 	export function dateOf(iso: string): Date;
 }
 

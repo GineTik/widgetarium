@@ -1,7 +1,7 @@
 import { canDo, createWidget, Dialog, DialogContent, DialogClose, DialogFooter, DialogHeader, DialogTitle, DialogDescription, flatRows, pickedValue, useData, WidgetRoot } from "widgetarium";
 import type { Aka, CollectionGateway, CreateAction, Day, GetAction, ListAction, RemoveAction, Text, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
 import { useState } from "react";
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { Button, ButtonLabel, Calendar, Field, Icon, IconButton, Popover, PopoverItem, Segmented } from "widgetarium/kit";
 import { amountOf, areaUnder, barsOf, baselineOf, dateOf, dayOfRecord, emptyDraft, formatCompact, formatPercent, formatSigned, isoOf, leftOutLine, pathThrough, platesOf, readableDay, spotsOf, summarize, tipShare, writeDraft } from "@default/lib";
 import type { ChartBox, MetricPoint, MetricSpan, MetricSummary } from "@default/lib";
@@ -32,9 +32,9 @@ type MetricProps = {
 	view: ValueGateway<string, { get: GetAction; update?: UpdateAction }>;
 };
 
-type Draft = { date: string; amount: string; note: string };
+type Draft = { date: string; sign: string; amount: string; note: string };
 
-type Form = { today: string; unit: string; draft: Draft; onDraft: (next: Draft) => void; failure: string };
+type Form = { today: string; draft: Draft; onDraft: (next: Draft) => void; failure: string };
 
 export default createWidget(function MetricTotal(props: MetricProps) {
 	const [isAdding, setAdding] = useState(false);
@@ -46,7 +46,7 @@ export default createWidget(function MetricTotal(props: MetricProps) {
 	const [draft, setDraft] = useState(() => emptyDraft(today));
 	const read = useReading(props, today);
 	const point = read.summary.points[hovered];
-	const form: Form = { today, unit: read.unit, draft, onDraft: setDraft, failure };
+	const form: Form = { today, draft, onDraft: setDraft, failure };
 
 	const save = async () => {
 		const refusal = await writeDraft(props.records, draft);
@@ -234,7 +234,7 @@ function AddDialog({ isOpen, onOpenChange, form, onSave }: { isOpen: boolean; on
 
 	return (
 		<Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-			<DialogContent className="wg-metric" width="34rem">
+			<DialogContent className="wg-metric-ink" width="34rem">
 				<DialogClose />
 				<DialogHeader>
 					<DialogTitle>Add a record</DialogTitle>
@@ -244,9 +244,22 @@ function AddDialog({ isOpen, onOpenChange, form, onSave }: { isOpen: boolean; on
 					<Calendar selected={dateOf(draft.date)} today={dateOf(form.today)} onSelect={(when: Date) => form.onDraft({ ...draft, date: isoOf(when) })} />
 					<div className="mt-form-side">
 						<span className="mt-form-label">Amount</span>
-						<Field value={draft.amount} placeholder={form.unit || "How much"} onInput={(next: string) => form.onDraft({ ...draft, amount: next })} />
+						<span className="mt-sign">
+							<Segmented items={SIGNS} value={draft.sign} onChange={(next: string) => form.onDraft({ ...draft, sign: next })} />
+						</span>
+						<Field
+							className="mt-amount"
+							value={draft.amount}
+							placeholder="0"
+							onInput={(event: FormEvent<HTMLInputElement>) => form.onDraft({ ...draft, amount: event.currentTarget.value })}
+						/>
 						<span className="mt-form-label">Note</span>
-						<Field value={draft.note} placeholder="Optional" onInput={(next: string) => form.onDraft({ ...draft, note: next })} />
+						<textarea
+							className="mt-note"
+							value={draft.note}
+							placeholder="Optional"
+							onInput={(event: FormEvent<HTMLTextAreaElement>) => form.onDraft({ ...draft, note: event.currentTarget.value })}
+						/>
 						{form.failure ? <span className="mt-left-out">{form.failure}</span> : null}
 					</div>
 				</div>
@@ -269,7 +282,7 @@ function RecordsDialog({ isOpen, onOpenChange, rows, summary, onRemove }: { isOp
 
 	return (
 		<Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-			<DialogContent className="wg-metric" width="34rem">
+			<DialogContent className="wg-metric-ink" width="34rem">
 				<DialogClose />
 				<DialogHeader>
 					<DialogTitle>All records</DialogTitle>
@@ -382,6 +395,11 @@ function drawnCurve(points: MetricPoint[], span: MetricSpan) {
 const CHART_BOX: ChartBox = { width: 560, height: 440, headRoom: 44, barShare: 0.66, bleed: 24 };
 const CHART_INSET = 26;
 const DEFAULT_DAYS = 30;
+
+const SIGNS = [
+	{ value: "add", label: "Add" },
+	{ value: "subtract", label: "Subtract" },
+];
 
 const TONE_TURNS = { up: "0deg", down: "180deg", flat: "90deg" };
 const VIEWS = [

@@ -35,9 +35,10 @@ export function summarize(records, days, today, rising) {
 }
 
 export async function writeDraft(records, draft) {
-	const amount = Number(draft.amount);
-	if (draft.amount.trim() === "" || !Number.isFinite(amount)) return AMOUNT_IS_NOT_A_NUMBER;
+	const typed = Number(draft.amount);
+	if (draft.amount.trim() === "" || !Number.isFinite(typed)) return AMOUNT_IS_NOT_A_NUMBER;
 
+	const amount = draft.sign === "subtract" ? -Math.abs(typed) : Math.abs(typed);
 	const written = { date: draft.date, amount, note: draft.note };
 	const name = `${draft.date} ${keyOf(written)}`;
 	// TODO: drop the second shape once a create maps an unresolved need to its own name
@@ -150,7 +151,7 @@ export function shiftedBy(iso, days) {
 }
 
 export function emptyDraft(today) {
-	return { date: today, amount: "", note: "" };
+	return { date: today, sign: "add", amount: "", note: "" };
 }
 
 export function dateOf(iso) {
