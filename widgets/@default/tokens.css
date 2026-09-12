@@ -1,0 +1,21 @@
+.wg-metric,
+.wg-metric-ink {
+	--wg-metric-up: var(--text-success);
+	--wg-metric-down: var(--text-error);
+	--wg-metric-flat: var(--text-muted);
+	--wg-metric-tone: var(--wg-metric-flat);
+	--wg-metric-plate: color-mix(in srgb, var(--text-normal) 4.5%, transparent);
+	/* TRADE-OFF: lighter than the kit's 40px glass — a plate lying ON the chart must let the curve tint it, and 40 flattened the colour to grey */
+	--wg-metric-plate-blur: blur(22px) saturate(150%);
+	--wg-metric-dot: color-mix(in srgb, var(--text-normal) 11%, transparent);
+}
+
+.wg-metric[data-tone="up"],
+.wg-metric-ink[data-tone="up"] {
+	--wg-metric-tone: var(--wg-metric-up);
+}
+
+.wg-metric[data-tone="down"],
+.wg-metric-ink[data-tone="down"] {
+	--wg-metric-tone: var(--wg-metric-down);
+}

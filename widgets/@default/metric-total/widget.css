@@ -1,0 +1,292 @@
+.wg-metric {
+	position: relative;
+	overflow: hidden;
+	border-radius: inherit;
+}
+
+.mt-chart {
+	position: absolute;
+	inset: 0 0 0 26%;
+}
+
+.mt-chart svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.mt-dot {
+	fill: var(--wg-metric-dot);
+}
+
+.mt-content {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	gap: var(--size-4-3, 12px);
+	padding: var(--size-4-3, 12px) var(--size-4-4, 16px);
+	pointer-events: none;
+}
+
+.mt-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2, 8px);
+	pointer-events: auto;
+}
+
+.mt-head-side {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	min-width: 0;
+}
+
+.mt-title {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mt-trend {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-metric-tone);
+	white-space: nowrap;
+}
+
+.mt-arrow {
+	transform: rotate(var(--wg-metric-turn, 0deg));
+}
+
+.mt-total {
+	font-size: clamp(34px, 13cqw, 76px);
+	font-weight: var(--font-medium, 500);
+	line-height: 0.92;
+	letter-spacing: -0.04em;
+	font-variant-numeric: tabular-nums;
+}
+
+.mt-plates {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--size-4-2, 8px);
+	width: min(236px, 46cqw);
+}
+
+.mt-plate {
+	aspect-ratio: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: var(--size-4-3, 12px) var(--size-4-3, 12px) 10px;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-metric-plate);
+	backdrop-filter: var(--wg-metric-plate-blur);
+	-webkit-backdrop-filter: var(--wg-metric-plate-blur);
+}
+
+.mt-plate-value {
+	font-size: clamp(17px, 5cqw, 30px);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1;
+	letter-spacing: -0.03em;
+	font-variant-numeric: tabular-nums;
+}
+
+.mt-plate.is-tone .mt-plate-value {
+	color: var(--wg-metric-tone);
+}
+
+.mt-plate-label {
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-muted);
+}
+
+.mt-foot {
+	margin-top: auto;
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	pointer-events: auto;
+}
+
+.mt-tip {
+	position: absolute;
+	z-index: 2;
+	padding: 9px 14px;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-raise);
+	box-shadow: var(--wg-kit-lift);
+	pointer-events: none;
+	white-space: nowrap;
+}
+
+.mt-tip-value {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+}
+
+.mt-tip-day {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+.mt-empty {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2, 8px);
+	height: 100%;
+	padding: var(--size-4-4, 16px);
+	text-align: center;
+}
+
+.mt-empty-note {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+	max-width: 34ch;
+}
+
+.mt-seg,
+.mt-period,
+.mt-plate.is-wide,
+.mt-add-label {
+	display: none;
+}
+
+.mt-rows {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	overflow: auto;
+	max-height: 42vh;
+}
+
+.mt-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	padding: 6px 6px 6px var(--size-4-3, 12px);
+	border-radius: var(--wg-kit-item);
+	background: var(--wg-kit-fill);
+}
+
+.mt-row-day {
+	width: 11ch;
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	font-variant-numeric: tabular-nums;
+}
+
+.mt-row-note {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mt-row-amount {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	font-variant-numeric: tabular-nums;
+	color: var(--wg-metric-tone);
+}
+
+.mt-left-out {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--wg-kit-warning);
+}
+
+.mt-form {
+	display: flex;
+	gap: var(--size-4-3, 12px);
+	align-items: stretch;
+}
+
+.mt-form-side {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
+	width: 14rem;
+}
+
+.mt-note {
+	flex: 1 1 auto;
+	min-height: 7rem;
+	padding: 13px 18px;
+	border: none;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.45;
+	resize: none;
+	outline: none;
+	box-shadow: none;
+}
+
+.mt-note::placeholder {
+	color: var(--text-faint);
+}
+
+.mt-amount {
+	font-size: 22px;
+	font-weight: var(--font-semibold, 600);
+	letter-spacing: -0.02em;
+	font-variant-numeric: tabular-nums;
+}
+
+.mt-form-label {
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+	padding-inline-start: 4px;
+}
+
+.wg-metric-ink .wg-kit-cal {
+	flex: 1 1 auto;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+}
+
+.wg-metric-ink .wg-kit-cal-day {
+	height: auto;
+	aspect-ratio: 1;
+}
+
+@container widget (min-width: 400px) {
+	.mt-seg,
+	.mt-period,
+	.mt-add-label {
+		display: inline-flex;
+	}
+}
+
+@container widget (min-width: 620px) {
+	.mt-plate.is-wide {
+		display: flex;
+	}
+}
+
+@container widget (max-width: 300px) {
+	.mt-plates {
+		display: none;
+	}
+}

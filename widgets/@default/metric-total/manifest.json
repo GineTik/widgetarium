@@ -1,0 +1,100 @@
+{
+	"id": "@default/metric-total",
+	"api": 1,
+	"title": "Metric total",
+	"description": "One number over a folder of records, with the days behind it as a curve or as bars.",
+	"keywords": [
+		"metric",
+		"total",
+		"chart",
+		"curve",
+		"bars",
+		"trend",
+		"records",
+		"tracker",
+		"count",
+		"sum",
+		"period",
+		"analytics"
+	],
+	"defaultSize": {
+		"w": 11,
+		"h": 6
+	},
+	"collapseBelowPx": 240,
+	"stackBelowPx": 420,
+	"shortestPx": 240,
+	"preview": {
+		"size": {
+			"w": 11,
+			"h": 6
+		},
+		"props": {
+			"title": {
+				"value": "Total orders"
+			},
+			"unit": {
+				"value": "orders"
+			},
+			"records": {
+				"rows": [
+					{
+						"path": "Metrics/2026-08-20.md",
+						"date": "2026-08-20",
+						"amount": 100
+					},
+					{
+						"path": "Metrics/2026-08-23.md",
+						"date": "2026-08-23",
+						"amount": 115
+					},
+					{
+						"path": "Metrics/2026-08-26.md",
+						"date": "2026-08-26",
+						"amount": 120
+					},
+					{
+						"path": "Metrics/2026-08-29.md",
+						"date": "2026-08-29",
+						"amount": 110
+					},
+					{
+						"path": "Metrics/2026-09-01.md",
+						"date": "2026-09-01",
+						"amount": 178
+					},
+					{
+						"path": "Metrics/2026-09-03.md",
+						"date": "2026-09-03",
+						"amount": 180
+					},
+					{
+						"path": "Metrics/2026-09-05.md",
+						"date": "2026-09-05",
+						"amount": 205
+					},
+					{
+						"path": "Metrics/2026-09-07.md",
+						"date": "2026-09-07",
+						"amount": 185
+					},
+					{
+						"path": "Metrics/2026-09-09.md",
+						"date": "2026-09-09",
+						"amount": 166
+					},
+					{
+						"path": "Metrics/2026-09-11.md",
+						"date": "2026-09-11",
+						"amount": 181
+					},
+					{
+						"path": "Metrics/2026-09-12.md",
+						"date": "2026-09-12",
+						"amount": 168
+					}
+				]
+			}
+		}
+	}
+}

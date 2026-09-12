@@ -32,6 +32,8 @@ const GLYPHS = {
 	fold: '<path d="M11.75 5.5l-4.5 4.5 4.5 4.5"/>',
 	search: '<circle cx="9.25" cy="9.25" r="4.75"/><path d="M12.9 12.9l3.35 3.35"/>',
 	filter: '<path d="M3.6 5.4h12.8l-4.9 5.7v4.5l-3-1.7v-2.8z"/>',
+	curve: '<path d="M3.6 13.2l3.5-4.3 3 2.6 3.2-4.6 3.1 3"/>',
+	bars: '<path d="M5 14.4V9.8M10 14.4V5.6M15 14.4v-2.9"/>',
 	plus: '<path d="M10 4.9v10.2M4.9 10h10.2"/>',
 	"arrow-up": '<path d="M10 15.4V5.5M5.7 9.8L10 5.5l4.3 4.3"/>',
 	download: '<path d="M10 4.6v7.6M6.4 8.8L10 12.4l3.6-3.6"/><path d="M4.9 15.4h10.2"/>',
