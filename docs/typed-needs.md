@@ -51,7 +51,7 @@ export default createWidget(function HabitGrid({ habits }: { habits: CollectionG
 
 `?` carries one meaning in both halves: **the widget survives without it.**
 
-`Aka<Names extends string> = unknown`, so `Day[] & Aka<…>` **is** `Day[]` to the checker and to the
+`Aka<_Names extends string> = unknown`, so `Day[] & Aka<…>` **is** `Day[]` to the checker and to the
 widget. It costs nothing at runtime and changes no type. The build reads the syntax, not the
 resolved type.
 

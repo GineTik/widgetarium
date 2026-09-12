@@ -1,5 +1,5 @@
 import { createWidget, useValue, WidgetRoot } from "widgetarium";
-import type { ValueGateway } from "widgetarium";
+import type { GetAction, UpdateAction, ValueGateway } from "widgetarium";
 import type { ReactNode } from "react";
 import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, cx, toneClass, toneOf } from "widgetarium/kit";
 
@@ -254,7 +254,7 @@ type Task = {
 };
 
 type CardProps = {
-	task: ValueGateway<Task> | Task;
+	task: ValueGateway<Task, { get: GetAction; update?: UpdateAction }> | Task;
 };
 
 export default createWidget(function OrbiTaskCard({ task }: CardProps) {
@@ -332,10 +332,8 @@ export default createWidget(function OrbiTaskCard({ task }: CardProps) {
 }, {
 	props: {
 		task: {
-			kind: "value",
 			label: "Task",
 			hint: "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
-			verbs: { get: "required", update: "optional" },
 			default: {
 				from: "typed",
 				value: {

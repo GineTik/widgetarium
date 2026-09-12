@@ -1,5 +1,5 @@
 import { canDo, createWidget, EditableTabs, fieldOf, textOf, useData, WidgetRoot } from "widgetarium";
-import type { CollectionGateway, CreateAction, ListAction, RemoveAction, UpdateAction, ValueGateway, ViewHost } from "widgetarium";
+import type { CollectionGateway, CreateAction, GetAction, ListAction, RemoveAction, UpdateAction, ValueGateway, ViewHost } from "widgetarium";
 
 const GONE_FOR_GOOD = "The tab and the record behind it go to the trash. Notes filed under it keep the value they carry.";
 const CANNOT_ADD = "This list does not take new tabs, so nothing was added.";
@@ -34,7 +34,7 @@ type EditableTabsProps = {
 	tabs: CollectionGateway<Held, Accesses>;
 	label: ValueGateway<string>;
 	value: ValueGateway<string>;
-	selection: ValueGateway<unknown>;
+	selection: ValueGateway<unknown, { get: GetAction; update: UpdateAction }>;
 	host?: ViewHost;
 };
 
@@ -115,7 +115,6 @@ export default createWidget(function EditableTabsWidget({ tabs, label, value, se
 }, {
 	props: {
 		tabs: {
-			kind: "collection",
 			label: "Tabs",
 			hint: "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
 			was: "records",
@@ -126,33 +125,26 @@ export default createWidget(function EditableTabsWidget({ tabs, label, value, se
 					{ key: "archivedAt", label: "Archived at", type: "datetime" },
 				],
 			},
-			verbs: { list: "required", create: "optional", update: "optional", remove: "optional" },
 			default: { path: "Orbitask/Boards" },
 		},
 		label: {
-			kind: "value",
 			type: "text",
 			label: "Label field",
 			hint: "Which field is written on a tab. Without it a note shows its own name.",
-			verbs: { get: "required" },
 			default: { value: "name" },
 		},
 		value: {
-			kind: "value",
 			type: "text",
 			label: "Value field",
 			hint: "What a tab hands down, and what files a note under it. Without it the label stands in.",
-			verbs: { get: "required" },
 			default: { value: "board" },
 		},
 		selection: {
-			kind: "value",
 			label: "Selected tab",
 			hint: "Which tab is picked, as a box. Bind another widget and the two move together.",
 			of: "tabs",
 			fieldFrom: "value",
 			fallback: "first",
-			verbs: { get: "required", update: "required" },
 		},
 	},
 });

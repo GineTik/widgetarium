@@ -1,5 +1,5 @@
 import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, Color, Day, ListAction, Text, ValueGateway, VaultRecord } from "widgetarium";
+import type { Aka, CollectionGateway, Color, Day, GetAction, ListAction, Text, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 import type { LogEntry } from "@habit/lib";
 
@@ -68,7 +68,7 @@ type Reading = { value: number; unit: string; part?: number };
 
 type StatProps = {
 	habits: CollectionGateway<Habit, { list: ListAction }>;
-	pick: ValueGateway<unknown>;
+	pick: ValueGateway<unknown, { get: GetAction; update?: UpdateAction }>;
 	metric: ValueGateway<string>;
 	period: ValueGateway<number>;
 };
@@ -135,42 +135,26 @@ export default createWidget(function HabitStat({ pick, metric: asked, period: lo
 }, {
 	props: {
 		habits: {
-			kind: "collection",
 			label: "Habits",
-			verbs: { list: "required" },
 			default: { path: "Habits" },
-			needs: {
-				days: { type: "date", many: true, aka: ["entries", "dates", "log", "checkins"] },
-				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
-				title: { type: "text", aka: ["name"] },
-				color: { type: "text", aka: ["colour"] },
-				goal: { type: "number", aka: ["target"] },
-				maxGap: { type: "number", aka: ["max gap", "grace"] },
-			},
 		},
 		pick: {
-			kind: "value",
 			label: "Which habit",
 			hint: "The habit this number is about.",
 			of: "habits",
 			field: "name",
 			fallback: "first",
-			verbs: { get: "required", update: "optional" },
 		},
 		metric: {
-			kind: "value",
 			wasSetting: true,
 			type: "text",
 			label: "streak · best · total · rate · goal",
-			verbs: { get: "required" },
 			default: { value: "streak" },
 		},
 		period: {
-			kind: "value",
 			wasSetting: true,
 			type: "number",
 			label: "Days the rate looks back over",
-			verbs: { get: "required" },
 			default: { value: 30 },
 		},
 	},

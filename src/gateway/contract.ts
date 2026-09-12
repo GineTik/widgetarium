@@ -1,4 +1,4 @@
-import type { DefaultVerbs, ResolvedOps } from "./needs";
+import type { DefaultValueVerbs, DefaultVerbs, ResolvedOps, ResolvedValueOps } from "./needs";
 import type { DeclaredNeeds } from "./resolve-needs";
 
 export type Ref = string;
@@ -84,16 +84,13 @@ export interface GatewayBase {
 	subscribe(listener: (event: GatewayEvent) => void): Unsubscribe;
 }
 
-export type OpMap = Record<string, Action<never, unknown>>;
-
 export type CollectionGateway<T, Wanted = DefaultVerbs> = GatewayBase & {
 	readonly kind: "collection";
 } & ResolvedOps<T, Wanted>;
 
-export type ValueGateway<T, Ops extends OpMap = Record<never, never>> = GatewayBase & {
+export type ValueGateway<T, Wanted = DefaultValueVerbs> = GatewayBase & {
 	readonly kind: "value";
-} & ValueOps<T> &
-	Ops;
+} & ResolvedValueOps<T, Wanted>;
 
 export const COLLECTION_VERBS = ["list", "get", "create", "update", "remove"] as const;
 export const VALUE_VERBS = ["get", "update", "remove"] as const;
@@ -137,3 +134,9 @@ export interface PropSpec {
 }
 
 export type PropSpecs = Record<string, PropSpec>;
+
+type DerivedFromTheType = "kind" | "verbs" | "needs";
+
+export type DeclaredPropSpec = Omit<PropSpec, DerivedFromTheType> & Partial<Pick<PropSpec, DerivedFromTheType>>;
+
+export type DeclaredPropSpecs = Record<string, DeclaredPropSpec>;

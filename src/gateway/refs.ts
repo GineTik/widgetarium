@@ -1,4 +1,5 @@
 import type { CollectionGateway, FilterRow, GatewayBase, GatewayEvent, Ref, Row, Unsubscribe, ValueGateway } from "./contract";
+import type { EveryValueVerb } from "./needs";
 import { collectionGateway, valueGateway } from "./create";
 import { fieldOf } from "./match";
 import type { Narrowing } from "./narrow";
@@ -124,10 +125,10 @@ async function read(state: RefsState, ref: Ref): Promise<unknown> {
 		console.warn(`Widgetarium: "${ref}" reads its own answer back — the loop is cut here`);
 		return null;
 	}
-	return (gateway as unknown as ValueGateway<unknown>).get();
+	return (gateway as unknown as ValueGateway<unknown, EveryValueVerb>).get();
 }
 
-function memoryCell(key: string): ValueGateway<unknown> {
+function memoryCell(key: string): ValueGateway<unknown, EveryValueVerb> {
 	const cell: { value: unknown } = { value: null };
 	return valueGateway<unknown>({
 		id: `memory:${key}`,
@@ -144,11 +145,11 @@ function memoryCell(key: string): ValueGateway<unknown> {
 	});
 }
 
-export function createViewCells(): (key: string) => ValueGateway<unknown> {
-	const cells = new Map<string, ValueGateway<unknown>>();
+export function createViewCells(): (key: string) => ValueGateway<unknown, EveryValueVerb> {
+	const cells = new Map<string, ValueGateway<unknown, EveryValueVerb>>();
 	return (key) => {
 		if (!cells.has(key)) cells.set(key, memoryCell(key));
-		return cells.get(key) as ValueGateway<unknown>;
+		return cells.get(key) as ValueGateway<unknown, EveryValueVerb>;
 	};
 }
 
@@ -197,6 +198,7 @@ function spreadClauses(chosen: unknown, by: Ref): FilterRow[] {
 function clausesOn(row: FilterRow, chosen: unknown, by: Ref): FilterRow[] {
 	if (isEmpty(chosen)) return [];
 	if (!Array.isArray(chosen)) return [{ ...row, value: chosen, by }];
+	if (!row.prop) return [{ op: "in", value: chosen, by }];
 	return [{ prop: row.prop, op: "in", value: chosen, by }];
 }
 
@@ -226,8 +228,8 @@ export function narrowedByRefs<T>(base: CollectionGateway<T>, rows: FilterRow[] 
 	);
 }
 
-export function refValue(refs: GatewayRefs, ref: Ref, id?: string): ValueGateway<unknown> {
-	const target = () => refs.get(ref) as unknown as ValueGateway<unknown> | null;
+export function refValue(refs: GatewayRefs, ref: Ref, id?: string): ValueGateway<unknown, EveryValueVerb> {
+	const target = () => refs.get(ref) as unknown as ValueGateway<unknown, EveryValueVerb> | null;
 	return valueGateway<unknown>({
 		id: id ?? `ref:${ref}`,
 		handlers: {
@@ -239,7 +241,7 @@ export function refValue(refs: GatewayRefs, ref: Ref, id?: string): ValueGateway
 	});
 }
 
-const COLLECTION_WRITES = ["create", "update", "remove", "repairIds"] as const;
+const COLLECTION_WRITES = ["create", "update", "remove", "replace", "repairIds"] as const;
 
 type WriteVerb = { (input: never): Promise<unknown>; can(): { can: boolean } };
 
@@ -290,7 +292,7 @@ async function rowAt<T>(collection: CollectionGateway<T>, chosen: unknown): Prom
 
 export interface SelectionSpec<T> {
 	id: string;
-	memory: ValueGateway<unknown>;
+	memory: ValueGateway<unknown, EveryValueVerb>;
 	collection: CollectionGateway<T>;
 	fieldName: string | null | (() => Promise<unknown>);
 	isFallbackToFirst: boolean;
@@ -308,7 +310,7 @@ function selectionReader<T>({ memory, collection, fieldName, isFallbackToFirst }
 	};
 }
 
-export function selectionGateway<T>(spec: SelectionSpec<T>): ValueGateway<unknown> {
+export function selectionGateway<T>(spec: SelectionSpec<T>): ValueGateway<unknown, EveryValueVerb> {
 	return valueGateway<unknown>({
 		id: spec.id,
 		handlers: {
@@ -328,11 +330,11 @@ function isRowNamed(row: Row<unknown>, named: string, want: string): boolean {
 
 export interface PickSpec<T> {
 	id: string;
-	chosen: ValueGateway<unknown>;
+	chosen: ValueGateway<unknown, EveryValueVerb>;
 	collection: CollectionGateway<T>;
 	fieldName: string | null | (() => Promise<unknown>);
 	isFallbackToFirst: boolean;
-	inTile?: ValueGateway<unknown> | null;
+	inTile?: ValueGateway<unknown, EveryValueVerb> | null;
 	watches?: Subscribe | null;
 }
 
@@ -357,13 +359,13 @@ function pickedWrites<T>(spec: PickSpec<T>, rowNow: () => Promise<Row<T> | null>
 			const row = canWriteRow ? await rowNow() : null;
 			if (row) return spec.collection.update({ ref: row.ref, data: patch as Partial<T> });
 			if (!canWriteTile || (await spec.collection.list()).total > 0) return null;
-			const held = await (spec.inTile as ValueGateway<unknown>).get();
-			return (spec.inTile as ValueGateway<unknown>).update({ ...(isHeldRecord(held) ? held : {}), ...(patch as Record<string, unknown>) });
+			const held = await (spec.inTile as ValueGateway<unknown, EveryValueVerb>).get();
+			return (spec.inTile as ValueGateway<unknown, EveryValueVerb>).update({ ...(isHeldRecord(held) ? held : {}), ...(patch as Record<string, unknown>) });
 		},
 	};
 }
 
-export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown> {
+export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown, EveryValueVerb> {
 	const rowNow = rowPicker(spec);
 	return valueGateway<unknown>({
 		id: spec.id,

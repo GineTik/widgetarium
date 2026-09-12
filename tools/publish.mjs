@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildMirror } from "./mirror.mjs";
+import { propsFromTypes } from "./props-from-types.mjs";
 
 buildMirror();
 const { RECORD_FILE, readRecord, recordUnderItsDeclaration } = await import("./.mjs-cache/engine/catalogue-index.mjs");
@@ -119,7 +120,7 @@ export async function publishWidget({ folder, files, lockfile, askEsm }) {
 	if (unservable) return refuse(unservable);
 
 	const sheet = SHEET_FILES.map((name) => files[name]).find((text) => typeof text === "string") ?? null;
-	const declaredCard = recordUnderItsDeclaration(card, declared);
+	const declaredCard = recordUnderItsDeclaration(card, declared, propsFromTypes(files[from], `${folder}/${from}`));
 	const record = {
 		...declaredCard,
 		files: [from, ...(sheet === null ? [] : [PUBLISHED_SHEET])],

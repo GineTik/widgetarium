@@ -4,8 +4,44 @@
 import fs from "node:fs";
 import path from "node:path";
 import { transform } from "sucrase";
+import { recordUnderItsTypes } from "./props-from-types.mjs";
+
+const PUBLISHED_WIDGETS = path.join("tools", ".widgets-published");
+let published = null;
+
+function publishInto(from, to) {
+	fs.mkdirSync(to, { recursive: true });
+	for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+		const source = path.join(from, entry.name);
+		if (entry.isDirectory()) publishInto(source, path.join(to, entry.name));
+		else if (entry.name !== "manifest.json") fs.copyFileSync(source, path.join(to, entry.name));
+	}
+	writeRecordIn(from, to);
+}
+
+function writeRecordIn(from, to) {
+	const at = path.join(from, "widget.tsx");
+	if (!fs.existsSync(at)) return;
+	const card = path.join(from, "manifest.json");
+	const held = fs.existsSync(card) ? JSON.parse(fs.readFileSync(card, "utf8")) : {};
+	fs.writeFileSync(
+		path.join(to, "manifest.json"),
+		`${JSON.stringify(recordUnderItsTypes(held, fs.readFileSync(at, "utf8"), at), null, "\t")}\n`,
+	);
+}
+
+export function buildWidgets() {
+	if (published) return published;
+
+	const to = path.join(process.cwd(), PUBLISHED_WIDGETS);
+	fs.rmSync(to, { recursive: true, force: true });
+	publishInto("widgets", to);
+	published = to;
+	return to;
+}
 
 export function buildMirror() {
+	buildWidgets();
 	const cache = path.join(process.cwd(), "tools", ".mjs-cache");
 	fs.rmSync(cache, { recursive: true, force: true });
 	copyTree("src", cache);
@@ -69,14 +105,25 @@ export const parseYaml = (text) => parse(text);
 export const stringifyYaml = (value) => stringify(value);
 `;
 
+function withTextImports(code, source) {
+	return code.replace(/import (\w+) from "([^"]+\.md)";/g, (whole, name, specifier) => {
+		const at = path.resolve(path.dirname(source), specifier);
+		return `const ${name} = ${JSON.stringify(fs.readFileSync(at, "utf8"))};`;
+	});
+}
+
 function mirrored(source, isTs, toStub) {
 	const read = fs.readFileSync(source, "utf8");
-	return (isTs ? transform(read, { transforms: ["typescript"], filePath: source }).code : read)
-		.replace(/from "widgetarium:surface"/g, `from "${toStub.replace("obsidian.mjs", "surface-source.mjs")}"`)
-		.replace(/from "(\.\.?\/[\w./-]+)\.js"/g, 'from "$1.mjs"')
-		// CONTEXT: TS sources import without an extension; node needs the mirror's .mjs spelled out
-		.replace(/from "(\.\.?\/[\w./-]+)"/g, (whole, specifier) => (specifier.endsWith(".mjs") || specifier.endsWith(".css") ? whole : `from "${specifier}.mjs"`))
-		.replace(/from "obsidian"/g, `from "${toStub}"`);
+	return (
+		withTextImports(isTs ? transform(read, { transforms: ["typescript"], filePath: source }).code : read, source)
+			.replace(/from "widgetarium:surface"/g, `from "${toStub.replace("obsidian.mjs", "surface-source.mjs")}"`)
+			.replace(/from "(\.\.?\/[\w./-]+)\.js"/g, 'from "$1.mjs"')
+			// CONTEXT: TS sources import without an extension; node needs the mirror's .mjs spelled out
+			.replace(/from "(\.\.?\/[\w./-]+)"/g, (whole, specifier) =>
+				specifier.endsWith(".mjs") || specifier.endsWith(".css") ? whole : `from "${specifier}.mjs"`,
+			)
+			.replace(/from "obsidian"/g, `from "${toStub}"`)
+	);
 }
 
 function copyTree(from, to) {
@@ -89,7 +136,10 @@ function copyTree(from, to) {
 		}
 		const isTs = entry.name.endsWith(".ts");
 		if (!entry.name.endsWith(".js") && !isTs) continue;
-		const depth = path.relative(path.join(process.cwd(), "tools", ".mjs-cache"), to).split(path.sep).filter(Boolean).length;
+		const depth = path
+			.relative(path.join(process.cwd(), "tools", ".mjs-cache"), to)
+			.split(path.sep)
+			.filter(Boolean).length;
 		const toStub = depth === 0 ? "./obsidian.mjs" : `${"../".repeat(depth)}obsidian.mjs`;
 		fs.writeFileSync(path.join(to, entry.name.replace(/\.(js|ts)$/, ".mjs")), mirrored(source, isTs, toStub));
 	}

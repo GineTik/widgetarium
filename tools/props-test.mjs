@@ -62,7 +62,7 @@ const DECLARING = {
 	[`${WIDGETS_AT}/@old/dial/widget.tsx`]: `import { createWidget } from "widgetarium";
 export default createWidget(function Dial() {
 	return <b>dial</b>;
-}, { props: { minutes: { kind: "value", type: "number", label: "Minutes", verbs: { get: "required" } } } });
+}, { props: { hours: { label: "Hours kept" }, minutes: { kind: "value", type: "number", label: "Minutes", verbs: { get: "required" } } } });
 `,
 };
 
@@ -72,8 +72,15 @@ check(
 );
 
 check(
-	"a declaration in the code replaces the props a manifest still carries",
-	differences({ minutes: { kind: "value", type: "number", label: "Minutes", verbs: { get: "required" } } }, (await propsAsTheEngineResolvesThem(DECLARING))["@old/dial"], ["@old/dial"]),
+	"a declaration in the code stands over the props the record carries, key by key",
+	differences(
+		{
+			hours: { kind: "value", type: "number", label: "Hours kept", verbs: { get: "required" } },
+			minutes: { kind: "value", type: "number", label: "Minutes", verbs: { get: "required" } },
+		},
+		(await propsAsTheEngineResolvesThem(DECLARING))["@old/dial"],
+		["@old/dial"],
+	),
 );
 
 console.log(failed ? `props gate: ${failed} of ${checks} checks red` : `props gate: clean, ${checks} checks`);

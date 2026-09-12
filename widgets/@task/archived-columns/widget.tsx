@@ -1,5 +1,5 @@
 import { createWidget, pickedValue, WidgetRoot, useData } from "widgetarium";
-import type { ValueGateway } from "widgetarium";
+import type { CollectionGateway, GetAction, ListAction, UpdateAction, ValueGateway } from "widgetarium";
 import { archivedColumnsOf, columnPatched, columnsOf, columnsWritten, restored } from "@task/lib";
 import type { Board } from "@task/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
@@ -60,8 +60,9 @@ const STYLE = `
 
 // CONTEXT: archived BOARDS stay behind the tab strip's menu; this view holds columns only
 type ArchivedColumnsProps = {
+	boards: CollectionGateway<Board, { list?: ListAction; update?: UpdateAction }>;
 	selection: ValueGateway<unknown>;
-	board: ValueGateway<Board>;
+	board: ValueGateway<Board, { get: GetAction; update?: UpdateAction }>;
 };
 
 export default createWidget(function OrbiTaskArchivedColumns({ selection, board }: ArchivedColumnsProps) {
@@ -111,28 +112,22 @@ export default createWidget(function OrbiTaskArchivedColumns({ selection, board 
 }, {
 	props: {
 		boards: {
-			kind: "collection",
 			label: "Boards",
-			verbs: { list: "optional", update: "optional" },
 			default: { path: "Orbitask/Boards" },
 		},
 		selection: {
-			kind: "value",
 			label: "Shown board",
 			hint: "Whose archived columns are listed. Bind a tab strip and the two move together.",
 			of: "boards",
 			field: "board",
 			fallback: "first",
-			verbs: { get: "required" },
 			wants: "@core/editable-tabs/selection",
 		},
 		board: {
-			kind: "value",
 			label: "Board",
 			hint: "The board whose archived columns are listed.",
 			picks: "selection",
 			of: "boards",
-			verbs: { get: "required", update: "optional" },
 			wants: "@task/kanban-board/board",
 		},
 	},

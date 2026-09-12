@@ -11,6 +11,7 @@ import type {
 	ValueGateway,
 } from "./contract";
 import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
+import type { EveryValueVerb } from "./needs";
 import { isMatch, sortedRows } from "./match";
 
 export interface ActionMeta {
@@ -108,7 +109,8 @@ function assemble(options: AssembleOptions): Record<string, unknown> {
 	for (const verb of verbs) {
 		if (verb === "subscribe") continue;
 		const built = buildVerb(options, verb, () => emitter.notify({}));
-		(built as Action<never, unknown> & { meta: ActionMeta }).meta = { gatewayId: options.id, verb, subscribe, readNow: readNowHandlerFor(options, verb) };
+		const readNow = readNowHandlerFor(options, verb);
+		(built as Action<never, unknown> & { meta: ActionMeta }).meta = { gatewayId: options.id, verb, subscribe, ...(readNow ? { readNow } : {}) };
 		gateway[verb] = built;
 	}
 	return gateway;
@@ -131,8 +133,8 @@ export function valueGateway<T>(options: {
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	settlesNow?: boolean;
-}): ValueGateway<T> {
-	return assemble({ ...options, kind: "value" }) as unknown as ValueGateway<T>;
+}): ValueGateway<T, EveryValueVerb> {
+	return assemble({ ...options, kind: "value" }) as unknown as ValueGateway<T, EveryValueVerb>;
 }
 
 function isWrapped(entry: unknown, key: string): boolean {
@@ -182,7 +184,7 @@ export function soloGateway<T>(
 	source: T | null | (() => T | null),
 	handlers: HandlerMap = {},
 	id?: string,
-): ValueGateway<T> {
+): ValueGateway<T, EveryValueVerb> {
 	mintedValues += 1;
 	const readOne = typeof source === "function" ? (source as () => T | null) : () => source;
 	return valueGateway<T>({

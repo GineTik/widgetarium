@@ -1,5 +1,5 @@
 import { applyTabStep, archivedOf, createWidget, EditableTabs, Mounted, movesRows, movesSelection, tabsOf, useData, WidgetRoot } from "widgetarium";
-import type { ConfigureMounts, MountEntry, ValueGateway, WidgetCatalogue } from "widgetarium";
+import type { ConfigureMounts, GetAction, MountEntry, MountRow, UpdateAction, ValueGateway, WidgetCatalogue } from "widgetarium";
 import { Button } from "widgetarium/kit";
 
 const GONE_FOR_GOOD = "The view goes for good, with the widget in it and everything it was set to. This cannot be undone.";
@@ -81,11 +81,16 @@ function viewBody(entry: MountEntry, catalogue: WidgetCatalogue, onFill: () => v
 	return <Missing entry={entry} />;
 }
 
+function rowOf(entry: MountEntry): MountRow {
+	if (!entry.id) return { name: entry.name, hidden: entry.hidden };
+	return { name: entry.name, widget: entry.id, hidden: entry.hidden };
+}
+
 type Step = { verb: string; name?: string; was?: string; selected?: string };
 
 type ViewGroupProps = {
 	isTabsShown: ValueGateway<boolean>;
-	selection: ValueGateway<unknown>;
+	selection: ValueGateway<unknown, { get: GetAction; update: UpdateAction }>;
 	mounts?: { holds?: MountEntry[] };
 	configureMounts?: ConfigureMounts;
 	catalogue: WidgetCatalogue;
@@ -94,7 +99,7 @@ type ViewGroupProps = {
 export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection, mounts, configureMounts, catalogue }: ViewGroupProps) {
 	const held: MountEntry[] = mounts?.holds ?? [];
 	// CONTEXT: the strip does not own the list — the holds rows are its storage
-	const rows = held.map((entry) => ({ name: entry.name, widget: entry.id, hidden: entry.hidden }));
+	const rows = held.map(rowOf);
 	const tabs = tabsOf(rows);
 	const archived = archivedOf(rows);
 	const shown = held.filter((entry) => !entry.hidden);
@@ -107,12 +112,6 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 	const apply = (step: Step) => {
 		if (movesSelection(step)) selection.update(step.selected ?? "");
 		if (movesRows(step)) configureMounts?.("holds", applyTabStep(rows, step));
-	};
-
-	const fill = async () => {
-		const id = await catalogue.open({ mode: "mount" });
-		if (!id) return;
-		configureMounts?.("holds", rows.map((row) => (row.name === active.name ? { ...row, widget: id } : row)));
 	};
 
 	const strip = isStriped
@@ -145,6 +144,12 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 		);
 	}
 
+	const fill = async () => {
+		const id = await catalogue.open({ mode: "mount" });
+		if (!id) return;
+		configureMounts?.("holds", rows.map((row) => (row.name === active.name ? { ...row, widget: id } : row)));
+	};
+
 	const body = viewBody(active, catalogue, fill);
 	if (!isStriped && !active.problem) return body;
 
@@ -158,21 +163,17 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 }, {
 	props: {
 		selection: {
-			kind: "value",
 			label: "Shown view",
 			hint: "Which held widget is drawn. Bind a switcher and the two move together.",
 			of: "holds",
 			field: "value",
 			fallback: "first",
-			verbs: { get: "required", update: "required" },
 		},
 		isTabsShown: {
-			kind: "value",
 			wasSetting: true,
 			type: "boolean",
 			label: "Show the tab row",
 			design: true,
-			verbs: { get: "required" },
 			default: { value: true },
 		},
 	},

@@ -197,6 +197,159 @@
 			}
 		}
 	},
+	"@default/metric-total": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"verbs": {
+				"list": "required",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional"
+			},
+			"default": {
+				"path": "Metrics"
+			},
+			"needs": {
+				"amount": {
+					"type": "number",
+					"aka": [
+						"value",
+						"count",
+						"total",
+						"sum",
+						"qty",
+						"delta"
+					]
+				},
+				"date": {
+					"type": "date",
+					"aka": [
+						"day",
+						"when",
+						"on",
+						"created"
+					]
+				},
+				"note": {
+					"type": "text",
+					"aka": [
+						"label",
+						"comment",
+						"memo",
+						"description"
+					]
+				}
+			}
+		},
+		"title": {
+			"kind": "value",
+			"type": "text",
+			"label": "Title",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "Total"
+			}
+		},
+		"unit": {
+			"kind": "value",
+			"type": "text",
+			"label": "Unit",
+			"hint": "What one record counts. It is written after the number in the chart's tooltip.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": ""
+			}
+		},
+		"rising": {
+			"kind": "value",
+			"type": "text",
+			"label": "good · bad · neither",
+			"hint": "Whether a rising number is a good thing. Spending that climbs is not green.",
+			"verbs": {
+				"get": "required"
+			},
+			"default": {
+				"value": "good"
+			}
+		},
+		"periods": {
+			"kind": "collection",
+			"label": "Periods",
+			"item": {
+				"fields": [
+					{
+						"key": "label",
+						"label": "Name",
+						"type": "text"
+					},
+					{
+						"key": "days",
+						"label": "Days",
+						"type": "number"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required"
+			},
+			"default": {
+				"value": [
+					{
+						"id": "p30",
+						"label": "Past 30 days",
+						"days": 30
+					},
+					{
+						"id": "p14",
+						"label": "Past 14 days",
+						"days": 14
+					},
+					{
+						"id": "p7",
+						"label": "Past 7 days",
+						"days": 7
+					}
+				]
+			}
+		},
+		"periodPick": {
+			"kind": "value",
+			"label": "Which period",
+			"of": "periods",
+			"field": "label",
+			"fallback": "first",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			}
+		},
+		"period": {
+			"kind": "value",
+			"label": "Period",
+			"picks": "periodPick",
+			"of": "periods",
+			"verbs": {
+				"get": "required"
+			}
+		},
+		"view": {
+			"kind": "value",
+			"type": "text",
+			"label": "curve · bars",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"default": {
+				"value": "curve"
+			}
+		}
+	},
 	"@habit/heatmap": {
 		"log": {
 			"kind": "collection",
@@ -515,6 +668,187 @@
 	"@inline/note": null,
 	"@inline/note-link": null,
 	"@inline/reminder": null,
+	"@rank/tier-list": {
+		"cards": {
+			"kind": "collection",
+			"label": "Cards",
+			"hint": "The things being ranked. A folder of notes, or a list typed into the tile.",
+			"item": {
+				"fields": [
+					{
+						"key": "name",
+						"label": "Name",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "tier",
+						"label": "Row",
+						"type": "text"
+					},
+					{
+						"key": "order",
+						"label": "Order",
+						"type": "number"
+					},
+					{
+						"key": "picture",
+						"label": "Picture",
+						"type": "text"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional",
+				"replace": "optional"
+			},
+			"default": {
+				"value": []
+			},
+			"needs": {
+				"tier": {
+					"type": "text",
+					"aka": [
+						"rank",
+						"grade",
+						"bucket"
+					]
+				},
+				"order": {
+					"type": "number",
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
+				},
+				"picture": {
+					"type": "text",
+					"aka": [
+						"image",
+						"avatar",
+						"cover",
+						"icon"
+					]
+				}
+			}
+		},
+		"tiers": {
+			"kind": "collection",
+			"label": "Rows",
+			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
+			"item": {
+				"fields": [
+					{
+						"key": "label",
+						"label": "Name",
+						"type": "text",
+						"required": true
+					},
+					{
+						"key": "tone",
+						"label": "Colour",
+						"type": "text"
+					},
+					{
+						"key": "order",
+						"label": "Order",
+						"type": "number"
+					}
+				]
+			},
+			"verbs": {
+				"list": "required",
+				"create": "optional",
+				"update": "optional",
+				"remove": "optional",
+				"replace": "optional"
+			},
+			"default": {
+				"value": [
+					{
+						"label": "S",
+						"tone": "error",
+						"order": 1
+					},
+					{
+						"label": "A",
+						"tone": "warning",
+						"order": 2
+					},
+					{
+						"label": "B",
+						"tone": "standout",
+						"order": 3
+					},
+					{
+						"label": "C",
+						"tone": "success",
+						"order": 4
+					},
+					{
+						"label": "D",
+						"tone": "info",
+						"order": 5
+					}
+				]
+			},
+			"needs": {
+				"label": {
+					"type": "text",
+					"aka": [
+						"name",
+						"title",
+						"tier"
+					]
+				},
+				"tone": {
+					"type": "text",
+					"aka": [
+						"colour",
+						"color"
+					]
+				},
+				"order": {
+					"type": "number",
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
+				}
+			}
+		},
+		"title": {
+			"kind": "value",
+			"type": "text",
+			"label": "Title",
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"default": {
+				"value": "Tier list"
+			}
+		},
+		"cardSize": {
+			"kind": "value",
+			"type": "number",
+			"label": "Card size",
+			"hint": "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
+			"design": true,
+			"verbs": {
+				"get": "required",
+				"update": "optional"
+			},
+			"default": {
+				"value": 64
+			}
+		}
+	},
 	"@task/archived-columns": {
 		"boards": {
 			"kind": "collection",

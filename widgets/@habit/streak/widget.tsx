@@ -246,7 +246,8 @@ function ringClass(day: string, kept: boolean, today: string) {
 	return day === today ? "hs-ring is-today" : "hs-ring";
 }
 
-function edgeClass(keptDays: Set<string>, day: string, towards: number) {
+function edgeClass(keptDays: Set<string>, day: string | undefined, towards: number) {
+	if (!day) return "hs-edge";
 	return keptDays.has(day) && keptDays.has(shiftedBy(day, towards)) ? "hs-edge is-run" : "hs-edge";
 }
 
@@ -262,7 +263,9 @@ function useWidth(node: { current: HTMLElement | null }, fallback: number) {
 	useEffect(() => {
 		const held = node.current;
 		if (!held || typeof ResizeObserver !== "function") return undefined;
-		const watcher = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+		const watcher = new ResizeObserver(([entry]) => {
+			if (entry) setWidth(entry.contentRect.width);
+		});
 		watcher.observe(held);
 		return () => watcher.disconnect();
 	}, []);
@@ -351,30 +354,20 @@ export default createWidget(function HabitStreak({ days, title, emoji }: StreakP
 }, {
 	props: {
 		days: {
-			kind: "collection",
 			label: "Days",
 			was: "habits",
-			verbs: { list: "required", update: "optional", create: "optional" },
 			default: { path: "Habits" },
-			needs: {
-				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
-				date: { type: "date", aka: ["created", "day", "when", "on"] },
-			},
 		},
 		title: {
-			kind: "value",
 			type: "text",
 			label: "Habit name",
 			hint: "What is written beside the emoji. Type one here, or take it from another widget's value.",
-			verbs: { get: "required" },
 			default: { value: "Habit" },
 		},
 		emoji: {
-			kind: "value",
 			type: "text",
 			label: "Emoji",
 			hint: "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
-			verbs: { get: "required" },
 			default: { value: "smiling-face-with-halo" },
 		},
 	},

@@ -9,8 +9,23 @@ export function readRecord(raw, idOfItsFolder) {
 	return { ...held, id: named, title: held.title ?? named };
 }
 
-export function recordUnderItsDeclaration(record, declared) {
-	return { ...record, ...(declared ?? {}), id: record.id };
+const PROP_KEYS = ["kind", "wasSetting", "shape", "type", "label", "hint", "was", "picks", "of", "field", "fieldFrom", "fallback", "design", "item", "wasSettings", "rowsFromText", "verbs", "default", "needs", "wants"];
+
+function specInOneOrder(spec) {
+	const written = Object.keys(spec);
+	const ordered = [...PROP_KEYS.filter((key) => written.includes(key)), ...written.filter((key) => !PROP_KEYS.includes(key))];
+	return Object.fromEntries(ordered.map((key) => [key, spec[key]]));
+}
+
+function propsUnderDeclaration(derived, declared) {
+	if (!derived && !declared) return null;
+	const names = [...new Set([...Object.keys(declared ?? {}), ...Object.keys(derived ?? {})])];
+	return Object.fromEntries(names.map((name) => [name, specInOneOrder({ ...derived?.[name], ...declared?.[name] })]));
+}
+
+export function recordUnderItsDeclaration(record, declared, derived = null) {
+	const props = propsUnderDeclaration(derived ?? record?.props ?? null, declared?.props ?? null);
+	return { ...record, ...(declared ?? {}), id: record.id, ...(props ? { props } : {}) };
 }
 
 export function readIndex(raw) {

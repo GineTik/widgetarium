@@ -241,14 +241,17 @@ function ringClass(day: string, kept: boolean, today: string) {
 
 function cellsOver(days: MonthDay[], keptDays: Set<string>, today: string, canWrite: boolean): DayCell[] {
 	const kept = days.map((each) => keptDays.has(each.day));
-	return days.map((each, at) => ({
-		...each,
-		kept: kept[at],
-		run: runClass(kept, at),
-		ring: ringClass(each.day, kept[at], today),
-		isAhead: each.day > today,
-		canPress: canWrite && each.day <= today,
-	}));
+	return days.map((each, at) => {
+		const isKept = keptDays.has(each.day);
+		return {
+			...each,
+			kept: isKept,
+			run: runClass(kept, at),
+			ring: ringClass(each.day, isKept, today),
+			isAhead: each.day > today,
+			canPress: canWrite && each.day <= today,
+		};
+	});
 }
 
 function useSize(node: { current: HTMLElement | null }, fallback: Size) {
@@ -256,7 +259,9 @@ function useSize(node: { current: HTMLElement | null }, fallback: Size) {
 	useEffect(() => {
 		const held = node.current;
 		if (!held || typeof ResizeObserver !== "function") return undefined;
-		const watcher = new ResizeObserver(([entry]) => setBox({ width: entry.contentRect.width, height: entry.contentRect.height }));
+		const watcher = new ResizeObserver(([entry]) => {
+			if (entry) setBox({ width: entry.contentRect.width, height: entry.contentRect.height });
+		});
 		watcher.observe(held);
 		return () => watcher.disconnect();
 	}, []);
@@ -342,22 +347,14 @@ export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMond
 }, {
 	props: {
 		days: {
-			kind: "collection",
 			label: "Days",
 			was: "habits",
-			verbs: { list: "required", update: "optional", create: "optional" },
 			default: { path: "Habits" },
-			needs: {
-				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
-				date: { type: "date", aka: ["created", "day", "when", "on"] },
-			},
 		},
 		isWeekStartingMonday: {
-			kind: "value",
 			wasSetting: true,
 			type: "boolean",
 			label: "Weeks start on Monday",
-			verbs: { get: "required" },
 			default: { value: true },
 		},
 	},

@@ -96,9 +96,9 @@ type BoardAccesses = {
 type KanbanProps = {
 	tasks: CollectionGateway<TaskRecord, TaskAccesses>;
 	boards: CollectionGateway<Board, BoardAccesses>;
-	board: ValueGateway<Board>;
-	selection: ValueGateway<unknown>;
-	opened: ValueGateway<unknown>;
+	board: ValueGateway<Board, { get: GetAction; update?: UpdateAction }>;
+	selection: ValueGateway<unknown, { get: GetAction; update?: UpdateAction }>;
+	opened: ValueGateway<unknown, { get: GetAction; update: UpdateAction }>;
 	groupBy: ValueGateway<string>;
 	slots?: { card?: Slot<{ task: unknown }> };
 	host?: ViewHost;
@@ -903,15 +903,15 @@ type KanbanListProps = {
 	title: string;
 	rows: TaskRow[];
 	cards: CardFace[];
-	CardSlot?: Slot<{ task: CardFace }>;
+	CardSlot: Slot<{ task: CardFace }>;
 	onAdd?: (title: string) => void;
-	onArchive?: () => void;
-	onRename?: (name: string | null) => void;
+	onArchive?: (() => void) | undefined;
+	onRename?: ((name: string | null) => void) | undefined;
 	onOpen?: (row: TaskRow) => void;
 	onDropTask?: () => void;
-	onGrab?: (event: DragEvent<HTMLElement>) => void;
+	onGrab?: ((event: DragEvent<HTMLElement>) => void) | undefined;
 	onRelease?: () => void;
-	shift?: number;
+	shift?: number | undefined;
 	placeholder?: boolean;
 	canWrite: boolean;
 	dragging: Dragging;
@@ -972,33 +972,37 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 				) : null}
 			</div>
 
-			{cards.map((task, index) => (
-				<div
-					key={rows[index]?.ref ?? index}
-					className={`ok-card-slot${rows[index]?.ref === opened ? " is-open" : ""}`}
-					draggable={canWrite}
-					onDragStart={() => dragging?.pick(rows[index])}
-					onDragEnd={() => dragging?.drop()}
-					onClick={() => onOpen?.(rows[index])}
-				>
-					<CardComponent task={task} />
-				</div>
-			))}
+			{cards.map((task, index) => {
+				const row = rows[index];
+				if (!row) return null;
+				return (
+					<div
+						key={row.ref}
+						className={`ok-card-slot${row.ref === opened ? " is-open" : ""}`}
+						draggable={canWrite}
+						onDragStart={() => dragging?.pick(row)}
+						onDragEnd={() => dragging?.drop()}
+						onClick={() => onOpen?.(row)}
+					>
+						<CardComponent task={task} />
+					</div>
+				);
+			})}
 
-			{canWrite ? <AddTask onAdd={onAdd} /> : null}
+			{canWrite && onAdd ? <AddTask onAdd={onAdd} /> : null}
 		</Plate>
 	);
 }
 
 // TRADE-OFF: the same shape as AddList, not the same component — a list is named in a plate of
 // its own, a task is named inside the column it will land in
-function AddTask({ onAdd }: { onAdd?: (title: string) => void }) {
+function AddTask({ onAdd }: { onAdd: (title: string) => void }) {
 	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState("");
 
 	const confirm = () => {
 		const trimmed = name.trim();
-		if (trimmed) onAdd?.(trimmed);
+		if (trimmed) onAdd(trimmed);
 		setName("");
 		setOpen(false);
 	};
@@ -1101,8 +1105,10 @@ function toColumns(rows: TaskRow[], columnNames: string[], groupBy: string, arch
 
 // CONTEXT: an archived name keeps its slot, so a restore returns the column to where it sat
 function afterColumnMoves(authored: BoardColumn[], shown: string[], from: number, to: number) {
+	const moving = shown[from];
+	if (!moving) return authored;
 	const order = shown.filter((_, index) => index !== from);
-	order.splice(to, 0, shown[from]);
+	order.splice(to, 0, moving);
 	const moved = order[Symbol.iterator]();
 	const byName = new Map(authored.map((column) => [column.name, column]));
 	return authored.map((column) => {
@@ -1144,6 +1150,16 @@ type CardFace = {
 	files?: number;
 };
 
+function dueOf(deadline: unknown, now: Date): { due?: string } {
+	if (deadline === undefined || deadline === null || deadline === "") return {};
+	return { due: dateLabel(deadline, now) };
+}
+
+function filesOf(attachments: number | undefined): { files?: number } {
+	if (!attachments || attachments <= 0) return {};
+	return { files: attachments };
+}
+
 function toCard(row: TaskRow, now: Date): CardFace {
 	const props = row.props ?? {};
 	// the DEADLINE, and nothing standing in for it — a note with no deadline shows no date
@@ -1156,8 +1172,8 @@ function toCard(row: TaskRow, now: Date): CardFace {
 		status: props.approval,
 		progress: props.progress,
 		initials: toTrimmedList(props.assignees),
-		due: deadline === undefined || deadline === null || deadline === "" ? undefined : dateLabel(deadline, now),
-		files: (row.attachments ?? 0) > 0 ? row.attachments : undefined,
+		...dueOf(deadline, now),
+		...filesOf(row.attachments),
 	};
 }
 
@@ -1188,7 +1204,7 @@ function Glyph({ name, className }: { name: string; className?: string }) {
 			className={`otd-glyph${className ? ` ${className}` : ""}`}
 			viewBox="0 0 16 16"
 			aria-hidden="true"
-			dangerouslySetInnerHTML={{ __html: GLYPHS[name] }}
+			dangerouslySetInnerHTML={{ __html: GLYPHS[name] ?? "" }}
 		/>
 	);
 }
@@ -1222,7 +1238,8 @@ const STARTING_PROPERTIES = ["Status", "Priority", "Approval", "Progress", "Assi
 function anchorOf(name: string): Anchor {
 	// CONTEXT: a property called "constructor" would otherwise reach Object's own prototype
 	const wanted = String(name ?? "").trim().toLowerCase();
-	return Object.hasOwn(ANCHORS, wanted) ? ANCHORS[wanted] : TEXT_ANCHOR;
+	if (!Object.hasOwn(ANCHORS, wanted)) return TEXT_ANCHOR;
+	return ANCHORS[wanted] ?? TEXT_ANCHOR;
 }
 
 function toTrimmedList(value: unknown): string[] {
@@ -1680,7 +1697,7 @@ function addCopyButton(block: HTMLElement) {
 }
 
 // CONTEXT: the host renders read mode, post-processors included; we own the element and nothing else
-function Preview({ markdown, render }: { markdown: string; render?: RenderMarkdown }) {
+function Preview({ markdown, render }: { markdown: string; render?: RenderMarkdown | undefined }) {
 	const holder = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
@@ -1720,7 +1737,7 @@ type DescriptionProps = {
 	path: string;
 	read: (given: { path: string }) => Promise<TaskRecord | null>;
 	write: (given: { path: string }, patch: { body: string }) => Promise<TaskRecord | null>;
-	render?: RenderMarkdown;
+	render?: RenderMarkdown | undefined;
 	canPreview: boolean;
 	canEdit: boolean;
 };
@@ -1814,7 +1831,9 @@ function dropIndex(boxes: DOMRect[], x: number, y: number): number {
 
 function movedWithin(list: string[], from: number, to: number): string[] {
 	const next = [...list];
-	next.splice(to, 0, next.splice(from, 1)[0]);
+	const [moving] = next.splice(from, 1);
+	if (!moving) return list;
+	next.splice(to, 0, moving);
 	return next;
 }
 
@@ -2016,12 +2035,12 @@ type TaskDialogProps = {
 	columns: string[];
 	properties: string[];
 	onBoard: string;
-	opened: ValueGateway<unknown>;
+	opened: ValueGateway<unknown, { get: GetAction; update: UpdateAction }>;
 	openedRef: unknown;
 	today: Date;
-	onAddProperty?: (names: string[]) => void;
-	host?: ViewHost;
-	navigator?: Navigation;
+	onAddProperty?: ((names: string[]) => void) | undefined;
+	host?: ViewHost | undefined;
+	navigator?: Navigation | undefined;
 };
 
 function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedRef, today, onAddProperty, host, navigator }: TaskDialogProps) {
@@ -2235,9 +2254,12 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 		const strip = boardRef.current;
 		if (!strip) return;
 		const lists = [...strip.querySelectorAll(".ok-list")];
-		const first = lists[0].getBoundingClientRect();
-		const carriedRect = lists[from].getBoundingClientRect();
-		event.dataTransfer?.setDragImage?.(lists[from] as Element, event.clientX - carriedRect.left, event.clientY - carriedRect.top);
+		const [firstList] = lists;
+		const carriedList = lists[from];
+		if (!firstList || !carriedList) return;
+		const first = firstList.getBoundingClientRect();
+		const carriedRect = carriedList.getBoundingClientRect();
+		event.dataTransfer?.setDragImage?.(carriedList, event.clientX - carriedRect.left, event.clientY - carriedRect.top);
 		const carrying = {
 			from,
 			to: from,
@@ -2324,7 +2346,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 						title={column.title}
 						rows={column.rows}
 						cards={column.rows.map((row) => toCard(row, today))}
-						CardSlot={slots?.card}
+						CardSlot={slots?.card ?? null}
 						canWrite={canCreateTask}
 						dragging={dragging}
 						shift={shiftOf(index)}
@@ -2395,9 +2417,7 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 }, {
 	props: {
 		tasks: {
-			kind: "collection",
 			label: "Tasks",
-			verbs: { list: "required", get: "optional", create: "optional", update: "optional", remove: "optional" },
 			default: {
 				path: "Orbitask/Tasks",
 				sort: [{ prop: "order", dir: "asc" }],
@@ -2408,44 +2428,34 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 			},
 		},
 		boards: {
-			kind: "collection",
 			label: "Boards",
-			verbs: { list: "optional", create: "optional", update: "optional", repairIds: "optional" },
 			default: { path: "Orbitask/Boards" },
 		},
 		selection: {
-			kind: "value",
 			label: "Shown board",
 			hint: "Which board this draws. Bind a tab strip and the two move together.",
 			of: "boards",
 			field: "board",
 			fallback: "first",
-			verbs: { get: "required", update: "optional" },
 			wants: "@core/editable-tabs/selection",
 		},
 		board: {
-			kind: "value",
 			label: "Board",
 			hint: "The board this draws: its columns, their order and which of them are archived.",
 			picks: "selection",
 			of: "boards",
 			wasSettings: { columns: "columns", archivedColumns: "archivedColumns" },
-			verbs: { get: "required", update: "optional" },
 			default: { value: { columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] } },
 		},
 		opened: {
-			kind: "value",
 			label: "Opened task",
 			hint: "Which card is open, as a box. The board draws it full size itself.",
 			of: "tasks",
-			verbs: { get: "required", update: "required" },
 		},
 		groupBy: {
-			kind: "value",
 			wasSetting: true,
 			type: "text",
 			label: "Group tasks by property",
-			verbs: { get: "required" },
 			default: { value: "status" },
 		},
 	},

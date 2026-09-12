@@ -46,7 +46,7 @@ export { useNarrowed } from "../../src/gateway/use-narrowed";
 export { useValue } from "../../src/gateway/use-value";
 
 import type { ReactNode } from "react";
-import type { PropSpecs } from "../../src/gateway/contract";
+import type { DeclaredPropSpecs } from "../../src/gateway/contract";
 import type { VaultRecord } from "../../src/gateway/needs";
 
 export interface HostConsole {
@@ -139,7 +139,7 @@ export interface WidgetMeta {
 	id?: string;
 	title?: string;
 	inline?: boolean;
-	props?: PropSpecs;
+	props?: DeclaredPropSpecs;
 }
 
 export declare function createWidget<Props>(component: (props: Props) => any, meta?: WidgetMeta): (props: Props) => any;

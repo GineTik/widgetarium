@@ -164,7 +164,7 @@ export function pickFence(text: unknown): string {
 
 // CONTEXT: Obsidian forbids "|" in a file name, so it is the one safe separator
 export function readRequest(content: unknown): { link: string; language: string } {
-	const [named, ...rest] = String(content ?? "").split("|");
+	const [named = "", ...rest] = String(content ?? "").split("|");
 	return { link: named.trim(), language: rest.join("|").trim() };
 }
 
@@ -334,19 +334,15 @@ export default createWidget(CodeBlock, {
 	inline: true,
 	props: {
 		lines: {
-			kind: "value",
 			wasSetting: true,
 			type: "number",
 			label: "Lines shown at first, and added by each press",
-			verbs: { get: "required" },
 			default: { value: 30 },
 		},
 		maxKilobytes: {
-			kind: "value",
 			wasSetting: true,
 			type: "number",
 			label: "Largest file that may be shown, in KB",
-			verbs: { get: "required" },
 			default: { value: 256 },
 		},
 	},

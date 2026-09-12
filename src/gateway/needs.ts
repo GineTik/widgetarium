@@ -1,12 +1,12 @@
-import type { Action, CollectionOps } from "./contract";
+import type { Action, CollectionOps, ValueOps } from "./contract";
 
 // TRADE-OFF: an alias erases to string so the checker allows a Text where a Day is wanted; the build reads the written name
 export type Day = string;
 export type Text = string;
 export type Color = string;
 
-// TRADE-OFF: Names is read by the build off the syntax, never by the checker, so the alias is transparent on purpose
-export type Aka<Names extends string> = unknown;
+// TRADE-OFF: the build reads the name off the syntax and the checker never does, so the parameter stands unused
+export type Aka<_Names extends string> = unknown;
 
 export interface VaultRecord {
 	path: string;
@@ -35,17 +35,31 @@ export interface DefaultVerbs {
 	remove: RemoveAction;
 }
 
-type SuppliedAction<T, EngineName, DeclaredAs> = EngineName extends keyof CollectionOps<T>
+export interface DefaultValueVerbs {
+	get: GetAction;
+}
+
+export interface EveryValueVerb {
+	get: GetAction;
+	update: UpdateAction;
+	remove: RemoveAction;
+}
+
+type SuppliedAction<Supplies, EngineName, DeclaredAs> = EngineName extends keyof Supplies
 	? DeclaredAs extends EngineName
-		? CollectionOps<T>[EngineName]
+		? Supplies[EngineName]
 		: never
 	: never;
 
 // TRADE-OFF: an interface never satisfies Record<string, …>, so a wrong slot is refused per property instead of by a constraint
-export type ResolvedOps<T, Wanted> = {
+type ResolvedAgainst<Supplies, Wanted> = {
 	-readonly [DeclaredAs in keyof Wanted]-?: NonNullable<Wanted[DeclaredAs]> extends EngineSupplied<infer EngineName>
-		? SuppliedAction<T, EngineName, DeclaredAs>
+		? SuppliedAction<Supplies, EngineName, DeclaredAs>
 		: NonNullable<Wanted[DeclaredAs]> extends Action<never, unknown>
 			? NonNullable<Wanted[DeclaredAs]>
 			: never;
 };
+
+export type ResolvedOps<T, Wanted> = ResolvedAgainst<CollectionOps<T>, Wanted>;
+
+export type ResolvedValueOps<T, Wanted> = ResolvedAgainst<ValueOps<T>, Wanted>;

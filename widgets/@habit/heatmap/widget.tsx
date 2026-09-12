@@ -1,5 +1,5 @@
 import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, Day, ListAction, Navigation, ValueGateway, VaultRecord } from "widgetarium";
+import type { Aka, CollectionGateway, Day, GetAction, ListAction, Navigation, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 import type { LogEntry } from "@habit/lib";
 
@@ -109,7 +109,7 @@ type MonthSpan = { month: number; weeks: number };
 
 type HeatmapProps = {
 	log: CollectionGateway<DayNote, { list: ListAction }>;
-	pick: ValueGateway<unknown>;
+	pick: ValueGateway<unknown, { get: GetAction; update?: UpdateAction }>;
 	year: ValueGateway<number>;
 	isRound: ValueGateway<boolean>;
 	isWeekStartingMonday: ValueGateway<boolean>;
@@ -234,46 +234,32 @@ export default createWidget(function HabitHeatmap({ pick, year: shownYear, isRou
 }, {
 	props: {
 		log: {
-			kind: "collection",
 			label: "Log",
-			verbs: { list: "required" },
 			default: { path: "Habits" },
-			needs: {
-				days: { type: "date", many: true, aka: ["entries", "dates", "log", "checkins"] },
-				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
-			},
 		},
 		pick: {
-			kind: "value",
 			label: "Which habit",
 			hint: "One habit only. Nothing picked draws all of them.",
 			of: "log",
 			field: "name",
-			verbs: { get: "required", update: "optional" },
 		},
 		year: {
-			kind: "value",
 			wasSetting: true,
 			type: "number",
 			label: "Year, or 0 for this one",
-			verbs: { get: "required" },
 			default: { value: 0 },
 		},
 		isRound: {
-			kind: "value",
 			wasSetting: true,
 			type: "boolean",
 			label: "Round cells instead of square",
 			design: true,
-			verbs: { get: "required" },
 			default: { value: false },
 		},
 		isWeekStartingMonday: {
-			kind: "value",
 			wasSetting: true,
 			type: "boolean",
 			label: "Weeks start on Monday",
-			verbs: { get: "required" },
 			default: { value: true },
 		},
 	},

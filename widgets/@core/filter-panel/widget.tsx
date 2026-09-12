@@ -1,5 +1,5 @@
 import { flatRows, createWidget, textOf, useData, WidgetRoot } from "widgetarium";
-import type { CollectionGateway, ListAction, ValueGateway } from "widgetarium";
+import type { CollectionGateway, GetAction, ListAction, UpdateAction, ValueGateway } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "react";
 
@@ -193,13 +193,15 @@ function initialOf(value: string): string {
 	return String(value ?? "?").trim().charAt(0).toUpperCase() || "?";
 }
 
-const TONES = ["is-accent", "is-ok", "is-warn", "is-err"];
+const FIRST_TONE = "is-accent";
+
+const TONES = [FIRST_TONE, "is-ok", "is-warn", "is-err"];
 
 // TRADE-OFF: hashed, so there is no palette to maintain
 function toneOf(value: string): string {
 	let sum = 0;
 	for (const letter of String(value)) sum += letter.charCodeAt(0);
-	return TONES[sum % TONES.length];
+	return TONES[sum % TONES.length] ?? FIRST_TONE;
 }
 
 function countOf(chosen: Chosen): number {
@@ -218,7 +220,7 @@ type FilterProps = {
 	groups: Listed<Held>;
 	properties: Listed<Held>;
 	openGroup: ValueGateway<string>;
-	chosen: ValueGateway<Chosen>;
+	chosen: ValueGateway<Chosen, { get: GetAction; update: UpdateAction }>;
 };
 
 export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, properties, chosen }: FilterProps) {
@@ -342,16 +344,13 @@ export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, 
 }, {
 	props: {
 		tasks: {
-			kind: "collection",
 			label: "Tasks",
-			verbs: { list: "required" },
 			default: {
 				path: "Orbitask/Tasks",
 				where: [{ prop: "board", op: "is", value: { wants: "@core/editable-tabs/selection" } }],
 			},
 		},
 		groups: {
-			kind: "collection",
 			label: "Filter by",
 			hint: "The properties offered. Empty offers what the board names or the tasks carry.",
 			item: {
@@ -361,31 +360,24 @@ export default createWidget(function OrbiTaskFilter({ tasks, groups, openGroup, 
 					{ key: "control", label: "Control", type: "text" },
 				],
 			},
-			verbs: { list: "required" },
 			default: { value: [] },
 		},
 		openGroup: {
-			kind: "value",
 			type: "text",
 			label: "Open by default",
 			hint: "Whose choices unfold on opening. Name none and it opens folded.",
-			verbs: { get: "required" },
 			default: { value: "" },
 		},
 		properties: {
-			kind: "collection",
 			label: "Board properties",
 			hint: "The properties this board names. Empty offers what the tasks carry.",
 			item: { fields: [{ key: "name", label: "Property", type: "text", required: true }] },
-			verbs: { list: "required" },
 			default: { value: [] },
 		},
 		chosen: {
-			kind: "value",
 			shape: "conditions",
 			label: "Chosen filters",
 			hint: "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
-			verbs: { get: "required", update: "required" },
 			default: { from: "memory" },
 		},
 	},

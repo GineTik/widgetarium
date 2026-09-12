@@ -1,5 +1,5 @@
 import { createWidget, textOf, useData, WidgetRoot } from "widgetarium";
-import type { CollectionGateway, FoldIntoGroup, ListAction, ValueGateway } from "widgetarium";
+import type { CollectionGateway, FoldIntoGroup, GetAction, ListAction, UpdateAction, ValueGateway } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
 import { useState } from "react";
 
@@ -27,7 +27,7 @@ function optionOf(ref: string, held: Held): Option {
 
 type ViewTabsProps = {
 	options: CollectionGateway<Held, { list: ListAction }>;
-	selection: ValueGateway<unknown>;
+	selection: ValueGateway<unknown, { get: GetAction; update: UpdateAction }>;
 	foldIntoGroup?: FoldIntoGroup;
 };
 
@@ -78,7 +78,6 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, fold
 }, {
 	props: {
 		options: {
-			kind: "collection",
 			label: "Options",
 			hint: "Every option is a record. Bind a view group and it offers the views it holds.",
 			item: {
@@ -87,18 +86,15 @@ export default createWidget(function OrbiTaskViewTabs({ options, selection, fold
 					{ key: "value", label: "Value", type: "text" },
 				],
 			},
-			verbs: { list: "required" },
 			default: { value: [{ label: "Kanban", value: "Kanban" }, { label: "Archived columns", value: "Archived columns" }] },
 			wants: "@core/view-group/holds",
 		},
 		selection: {
-			kind: "value",
 			label: "Picked option",
 			hint: "Which option is picked. Bind the view group's own box and the two move together.",
 			of: "options",
 			field: "value",
 			fallback: "first",
-			verbs: { get: "required", update: "required" },
 			wants: "@core/view-group/selection",
 		},
 	},
