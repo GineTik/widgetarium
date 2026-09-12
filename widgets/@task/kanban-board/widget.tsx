@@ -30,7 +30,7 @@ import {
 	toneOf,
 } from "widgetarium/kit";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent, FormEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react";
+import type { DragEvent, FormEvent, KeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
 import type {
 	Action,
 	CollectionGateway,
@@ -918,8 +918,81 @@ type KanbanListProps = {
 	opened: unknown;
 };
 
+function blurOnEnterRestoreOnEscape(original: string) {
+	return (event: KeyboardEvent<HTMLElement>) => {
+		if (event.key === "Enter") {
+			event.preventDefault();
+			event.currentTarget.blur();
+		}
+		if (event.key === "Escape") {
+			event.currentTarget.textContent = original;
+			event.currentTarget.blur();
+		}
+	};
+}
+
+const focusWhenItAppears = (node: HTMLInputElement | null) => node?.focus();
+
+type ListHeadProps = {
+	title: string;
+	count: number;
+	onArchive?: () => void;
+	onRename?: (name: string | null) => void;
+	onRenaming: (isRenaming: boolean) => void;
+};
+
+function ListHead({ title, count, onArchive, onRename, onRenaming }: ListHeadProps) {
+	return (
+		<>
+			<span
+				className="ok-list-title"
+				contentEditable={onRename ? "true" : undefined}
+				suppressContentEditableWarning
+				onFocus={() => onRenaming(true)}
+				onKeyDown={blurOnEnterRestoreOnEscape(title)}
+				onBlur={(event) => {
+					onRenaming(false);
+					onRename?.(event.currentTarget.textContent);
+				}}
+			>
+				{title}
+			</span>
+			<Count>{count}</Count>
+			{onArchive ? (
+				<button type="button" className="ok-list-remove" title={`Archive ${title}`} onClick={onArchive}>
+					<Icon name="archive" size={15} />
+				</button>
+			) : null}
+		</>
+	);
+}
+
+type ListCardsProps = {
+	rows: TaskRow[];
+	cards: CardFace[];
+	CardComponent: NonNullable<Slot<{ task: CardFace }>>;
+	canWrite: boolean;
+	dragging: Dragging;
+	opened: unknown;
+	onOpen?: (row: TaskRow) => void;
+};
+
+function ListCards({ rows, cards, CardComponent, canWrite, dragging, opened, onOpen }: ListCardsProps) {
+	return cards.map((task, index) => (
+		<div
+			key={rows[index]?.ref ?? index}
+			className={`ok-card-slot${rows[index]?.ref === opened ? " is-open" : ""}`}
+			draggable={canWrite}
+			onDragStart={() => dragging?.pick(rows[index])}
+			onDragEnd={() => dragging?.drop()}
+			onClick={() => onOpen?.(rows[index])}
+		>
+			<CardComponent task={task} />
+		</div>
+	));
+}
+
 function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, onOpen, onDropTask, onGrab, onRelease, shift, placeholder, canWrite, dragging, opened }: KanbanListProps) {
-	const CardComponent = CardSlot ?? FallbackCard;
 	const [isOver, setOver] = useState(false);
 	// CONTEXT: a grip around an editable heading steals the drag that selects its text
 	const [isRenaming, setRenaming] = useState(false);
@@ -941,58 +1014,25 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 			}}
 		>
 			<div className="ok-list-head" draggable={Boolean(onGrab) && !isRenaming} onDragStart={onGrab} onDragEnd={onRelease}>
-				<span
-					className="ok-list-title"
-					// CONTEXT: the lowercase attribute — a property some engines never mirror back is unreadable
-					contentEditable={onRename ? "true" : undefined}
-					suppressContentEditableWarning
-					onFocus={() => setRenaming(true)}
-					onKeyDown={(event) => {
-						if (event.key === "Enter") {
-							event.preventDefault();
-							event.currentTarget.blur();
-						}
-						if (event.key === "Escape") {
-							event.currentTarget.textContent = title;
-							event.currentTarget.blur();
-						}
-					}}
-					onBlur={(event) => {
-						setRenaming(false);
-						onRename?.(event.currentTarget.textContent);
-					}}
-				>
-					{title}
-				</span>
-				<Count>{rows.length}</Count>
-				{onArchive ? (
-					<button type="button" className="ok-list-remove" title={`Archive ${title}`} onClick={onArchive}>
-						<Icon name="archive" size={15} />
-					</button>
-				) : null}
+				<ListHead title={title} count={rows.length} onArchive={onArchive} onRename={onRename} onRenaming={setRenaming} />
 			</div>
 
-			{cards.map((task, index) => (
-				<div
-					key={rows[index]?.ref ?? index}
-					className={`ok-card-slot${rows[index]?.ref === opened ? " is-open" : ""}`}
-					draggable={canWrite}
-					onDragStart={() => dragging?.pick(rows[index])}
-					onDragEnd={() => dragging?.drop()}
-					onClick={() => onOpen?.(rows[index])}
-				>
-					<CardComponent task={task} />
-				</div>
-			))}
+			<ListCards
+				rows={rows}
+				cards={cards}
+				CardComponent={CardSlot ?? FallbackCard}
+				canWrite={canWrite}
+				dragging={dragging}
+				opened={opened}
+				onOpen={onOpen}
+			/>
 
 			{canWrite ? <AddTask onAdd={onAdd} /> : null}
 		</Plate>
 	);
 }
 
-// TRADE-OFF: the same shape as AddList, not the same component — a list is named in a plate of
-// its own, a task is named inside the column it will land in
-function AddTask({ onAdd }: { onAdd?: (title: string) => void }) {
+function useNameEntry(onAdd?: (name: string) => void) {
 	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState("");
 
@@ -1003,9 +1043,43 @@ function AddTask({ onAdd }: { onAdd?: (title: string) => void }) {
 		setOpen(false);
 	};
 
-	if (!isOpen) {
+	return {
+		isOpen,
+		open: () => setOpen(true),
+		close: () => setOpen(false),
+		confirm,
+		fieldProps: {
+			ref: focusWhenItAppears,
+			value: name,
+			onInput: (event: FormEvent<HTMLInputElement>) => setName(event.currentTarget.value),
+			onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
+				if (event.key === "Enter") confirm();
+				if (event.key === "Escape") setOpen(false);
+			},
+		},
+	};
+}
+
+function NameEntryActions({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+	return (
+		<div className="ok-add-list-actions">
+			<Button className="ok-cancel" size="s" onClick={onCancel}>
+				Cancel
+			</Button>
+			<Button className="ok-confirm" size="s" variant="accent" onClick={onConfirm}>
+				Add
+			</Button>
+		</div>
+	);
+}
+
+// TRADE-OFF: the same shape as AddList, not the same component — a task is named inside its column
+function AddTask({ onAdd }: { onAdd?: (title: string) => void }) {
+	const entry = useNameEntry(onAdd);
+
+	if (!entry.isOpen) {
 		return (
-			<button type="button" className="ok-add-task" onClick={() => setOpen(true)}>
+			<button type="button" className="ok-add-task" onClick={entry.open}>
 				<Icon name="plus" size={16} />
 				<span>Add new task</span>
 			</button>
@@ -1014,37 +1088,19 @@ function AddTask({ onAdd }: { onAdd?: (title: string) => void }) {
 
 	return (
 		<div className="ok-add-task-open">
-			<input
-				className="ok-task-name"
-				ref={(node) => node?.focus()}
-				placeholder="Enter task name..."
-				value={name}
-				onInput={(event) => setName(event.currentTarget.value)}
-				onKeyDown={(event) => {
-					if (event.key === "Enter") confirm();
-					if (event.key === "Escape") setOpen(false);
-				}}
-			/>
-			<div className="ok-add-list-actions">
-				<Button className="ok-cancel" size="s" onClick={() => setOpen(false)}>
-					Cancel
-				</Button>
-				<Button className="ok-confirm" size="s" variant="accent" onClick={confirm}>
-					Add
-				</Button>
-			</div>
+			<input className="ok-task-name" placeholder="Enter task name..." {...entry.fieldProps} />
+			<NameEntryActions onCancel={entry.close} onConfirm={entry.confirm} />
 		</div>
 	);
 }
 
 function AddList({ onAdd }: { onAdd?: (name: string) => void }) {
-	const [isOpen, setOpen] = useState(false);
-	const [name, setName] = useState("");
+	const entry = useNameEntry(onAdd);
 
-	if (!isOpen) {
+	if (!entry.isOpen) {
 		return (
 			<Plate asChild>
-				<button type="button" className="ok-add-list-rest" onClick={() => setOpen(true)}>
+				<button type="button" className="ok-add-list-rest" onClick={entry.open}>
 					<Icon name="plus" size={16} />
 					<span>Add List</span>
 				</button>
@@ -1052,35 +1108,10 @@ function AddList({ onAdd }: { onAdd?: (name: string) => void }) {
 		);
 	}
 
-	const confirm = () => {
-		const trimmed = name.trim();
-		if (trimmed) onAdd?.(trimmed);
-		setName("");
-		setOpen(false);
-	};
-
 	return (
 		<Plate className="ok-add-list">
-			<input
-				className="ok-list-name"
-				// CONTEXT: the field appeared because it was asked for; a click to reach it is one step too many
-				ref={(node) => node?.focus()}
-				placeholder="Enter list name..."
-				value={name}
-				onInput={(event) => setName(event.currentTarget.value)}
-				onKeyDown={(event) => {
-					if (event.key === "Enter") confirm();
-					if (event.key === "Escape") setOpen(false);
-				}}
-			/>
-			<div className="ok-add-list-actions">
-				<Button className="ok-cancel" size="s" onClick={() => setOpen(false)}>
-					Cancel
-				</Button>
-				<Button className="ok-confirm" size="s" variant="accent" onClick={confirm}>
-					Add
-				</Button>
-			</div>
+			<input className="ok-list-name" placeholder="Enter list name..." {...entry.fieldProps} />
+			<NameEntryActions onCancel={entry.close} onConfirm={entry.confirm} />
 		</Plate>
 	);
 }
@@ -1473,6 +1504,53 @@ type MembersRowProps = {
 	onPick: (next: string[]) => void;
 };
 
+type RosterPickerProps = {
+	placeholder: string;
+	roster: string[];
+	isChosen: (entry: string) => boolean;
+	onPick: (entry: string) => void;
+	label: (entry: string) => ReactNode;
+	addLabel: (typed: string) => ReactNode;
+};
+
+function RosterPicker({ placeholder, roster, isChosen, onPick, label, addLabel }: RosterPickerProps) {
+	return (
+		<PopoverSearch placeholder={placeholder}>
+			{(needle: string) => [
+				...roster
+					.filter((entry) => entry.toLowerCase().includes(needle))
+					.map((entry) => (
+						<PopoverItem key={entry} checked={isChosen(entry)} onClick={() => onPick(entry)}>
+							{label(entry)}
+						</PopoverItem>
+					)),
+				needle !== "" && !roster.some((entry) => entry.toLowerCase() === needle) ? (
+					<PopoverItem key="add" onClick={() => onPick(needle)}>
+						<Glyph name="plus" />
+						{addLabel(needle)}
+					</PopoverItem>
+				) : null,
+			]}
+		</PopoverSearch>
+	);
+}
+
+function MembersValue({ held }: { held: string[] }) {
+	if (held.length === 0) return <span className="otd-value is-empty">Empty</span>;
+	return (
+		<span className="otd-value">
+			<span className="otd-avatars">
+				{held.map((person) => (
+					<Avatar key={person} person={person} />
+				))}
+				<i className="otd-avatar otd-avatar-add">
+					<Glyph name="plus" />
+				</i>
+			</span>
+		</span>
+	);
+}
+
 function MembersRow({ anchor, name, value, roster, onPick }: MembersRowProps) {
 	const [isOpen, setOpen] = useState(false);
 	const held = toTrimmedList(value);
@@ -1482,51 +1560,29 @@ function MembersRow({ anchor, name, value, roster, onPick }: MembersRowProps) {
 		onPick(held.includes(person) ? held.filter((entry) => entry !== person) : [...held, person]);
 	};
 
-	const shown = (
-		<span className={`otd-value${unset ? " is-empty" : ""}`}>
-			{unset ? (
-				"Empty"
-			) : (
-				<span className="otd-avatars">
-					{held.map((person) => (
-						<Avatar key={person} person={person} />
-					))}
-					<i className="otd-avatar otd-avatar-add">
-						<Glyph name="plus" />
-					</i>
-				</span>
-			)}
-		</span>
-	);
-
 	return (
 		<Popover
 			isOpen={isOpen}
 			onOpenChange={setOpen}
 			trigger={
 				<RowFrame anchor={anchor} name={name} unset={unset} isOpen={isOpen} asButton>
-					{shown}
+					<MembersValue held={held} />
 				</RowFrame>
 			}
 		>
-			<PopoverSearch placeholder="Find a person">
-				{(needle: string) => [
-					...roster
-						.filter((person) => person.toLowerCase().includes(needle))
-						.map((person) => (
-							<PopoverItem key={person} checked={held.includes(person)} onClick={() => toggle(person)}>
-								<Avatar person={person} />
-								{person}
-							</PopoverItem>
-						)),
-					needle !== "" && !roster.some((person) => person.toLowerCase() === needle) ? (
-						<PopoverItem key="add" onClick={() => toggle(needle)}>
-							<Glyph name="plus" />
-							{needle}
-						</PopoverItem>
-					) : null,
-				]}
-			</PopoverSearch>
+			<RosterPicker
+				placeholder="Find a person"
+				roster={roster}
+				isChosen={(person) => held.includes(person)}
+				onPick={toggle}
+				label={(person) => (
+					<>
+						<Avatar person={person} />
+						{person}
+					</>
+				)}
+				addLabel={(typed) => typed}
+			/>
 		</Popover>
 	);
 }
@@ -1725,13 +1781,10 @@ type DescriptionProps = {
 	canEdit: boolean;
 };
 
-function Description({ path, read, write, render, canPreview, canEdit }: DescriptionProps) {
+function useNoteBody({ path, read, write }: Pick<DescriptionProps, "path" | "read" | "write">) {
 	const [saved, setSaved] = useState("");
 	const [draft, setDraft] = useState("");
 	const [isRefused, setRefused] = useState(false);
-	const [wanted, setWanted] = useState(PREVIEW);
-	// CONTEXT: the caret is only handed over to somebody who ASKED for the editor, never on first paint
-	const [isSwitched, setSwitched] = useState(false);
 
 	useEffect(() => {
 		let alive = true;
@@ -1746,10 +1799,6 @@ function Description({ path, read, write, render, canPreview, canEdit }: Descrip
 		};
 	}, [path]);
 
-	const offered = [canPreview ? PREVIEW : null, canEdit ? DETAIL : null].filter(Boolean);
-	if (offered.length === 0) return null;
-	const mode = offered.includes(wanted) ? wanted : offered[0];
-
 	const save = async () => {
 		if (draft === saved) return;
 		const record = await write({ path }, { body: draft });
@@ -1760,35 +1809,70 @@ function Description({ path, read, write, render, canPreview, canEdit }: Descrip
 		setDraft(record.body);
 	};
 
+	return { draft, setDraft, isRefused, save };
+}
+
+function DescriptionHead({ offered, mode, onChange }: { offered: string[]; mode: string; onChange: (next: string) => void }) {
 	return (
-		<div className="otd-desc" onBlur={save}>
-			<div className="otd-desc-head">
-				<span className="otd-cap">Description</span>
-				{offered.length > 1 ? (
-					<Segmented
-						items={[
-							{ value: PREVIEW, label: [<Glyph key="glyph" name="eye" />, "Preview"] },
-							{ value: DETAIL, label: [<Glyph key="glyph" name="brackets" />, "Detail"] },
-						]}
-						size="s"
-						value={mode}
-						onChange={(next: string) => {
-							setWanted(next);
-							setSwitched(true);
-						}}
-					/>
-				) : null}
-			</div>
-			{isRefused ? (
-				<p className="otd-refused">
-					<Glyph name="alert" />
-					Not saved. This would turn the note's first line into its properties.
-				</p>
+		<div className="otd-desc-head">
+			<span className="otd-cap">Description</span>
+			{offered.length > 1 ? (
+				<Segmented
+					items={[
+						{ value: PREVIEW, label: [<Glyph key="glyph" name="eye" />, "Preview"] },
+						{ value: DETAIL, label: [<Glyph key="glyph" name="brackets" />, "Detail"] },
+					]}
+					size="s"
+					value={mode}
+					onChange={onChange}
+				/>
 			) : null}
+		</div>
+	);
+}
+
+function RefusedNotice({ isRefused }: { isRefused: boolean }) {
+	if (!isRefused) return null;
+	return (
+		<p className="otd-refused">
+			<Glyph name="alert" />
+			Not saved. This would turn the note's first line into its properties.
+		</p>
+	);
+}
+
+function modesOffered(canPreview: boolean, canEdit: boolean): string[] {
+	const offered: string[] = [];
+	if (canPreview) offered.push(PREVIEW);
+	if (canEdit) offered.push(DETAIL);
+	return offered;
+}
+
+function Description({ path, read, write, render, canPreview, canEdit }: DescriptionProps) {
+	const [wanted, setWanted] = useState(PREVIEW);
+	// CONTEXT: the caret is only handed over to somebody who ASKED for the editor, never on first paint
+	const [isSwitched, setSwitched] = useState(false);
+	const body = useNoteBody({ path, read, write });
+
+	const offered = modesOffered(canPreview, canEdit);
+	if (offered.length === 0) return null;
+	const mode = offered.includes(wanted) ? wanted : offered[0];
+
+	return (
+		<div className="otd-desc" onBlur={body.save}>
+			<DescriptionHead
+				offered={offered}
+				mode={mode}
+				onChange={(next: string) => {
+					setWanted(next);
+					setSwitched(true);
+				}}
+			/>
+			<RefusedNotice isRefused={body.isRefused} />
 			{mode === PREVIEW ? (
-				<Preview markdown={draft} render={render} />
+				<Preview markdown={body.draft} render={render} />
 			) : (
-				<MarkdownEditor className="otd-editor" value={draft} placeholder="Say what this is" onInput={setDraft} focusAtStart={isSwitched} />
+				<MarkdownEditor className="otd-editor" value={body.draft} placeholder="Say what this is" onInput={body.setDraft} focusAtStart={isSwitched} />
 			)}
 		</div>
 	);
@@ -1873,31 +1957,54 @@ function TagChip({ tag, tone, held, onGrab, onSave }: TagChipProps) {
 				</Pill>
 			}
 		>
-			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && save()}>
-				<Field block size="s" placeholder="Name it" value={name} onInput={(event: FormEvent<HTMLInputElement>) => setName(event.currentTarget.value)} />
+			<TagEditor name={name} picked={picked} onName={setName} onPick={setPicked} onCancel={() => setOpen(false)} onSave={save} />
+		</Popover>
+	);
+}
+
+function TonePicker({ picked, onPick }: { picked: string; onPick: (tone: string) => void }) {
+	return (
+		<div className="otd-tones">
+			{TONE_NAMES.map((each: string) => (
+				<button
+					key={each}
+					type="button"
+					className={cx("otd-tone", toneClass(each), each === picked && "is-picked")}
+					aria-label={each}
+					title={each}
+					aria-pressed={each === picked}
+					onClick={() => onPick(each)}
+				/>
+			))}
+		</div>
+	);
+}
+
+type TagEditorProps = {
+	name: string;
+	picked: string;
+	onName: (name: string) => void;
+	onPick: (tone: string) => void;
+	onCancel: () => void;
+	onSave: () => void;
+};
+
+function TagEditor({ name, picked, onName, onPick, onCancel, onSave }: TagEditorProps) {
+	return (
+		<>
+			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && onSave()}>
+				<Field block size="s" placeholder="Name it" value={name} onInput={(event: FormEvent<HTMLInputElement>) => onName(event.currentTarget.value)} />
 			</div>
-			<div className="otd-tones">
-				{TONE_NAMES.map((each: string) => (
-					<button
-						key={each}
-						type="button"
-						className={cx("otd-tone", toneClass(each), each === picked && "is-picked")}
-						aria-label={each}
-						title={each}
-						aria-pressed={each === picked}
-						onClick={() => setPicked(each)}
-					/>
-				))}
-			</div>
+			<TonePicker picked={picked} onPick={onPick} />
 			<div className="otd-pop-actions">
-				<Button size="s" variant="neutral" onClick={() => setOpen(false)}>
+				<Button size="s" variant="neutral" onClick={onCancel}>
 					Cancel
 				</Button>
-				<Button size="s" variant="accent" block onClick={save}>
+				<Button size="s" variant="accent" block onClick={onSave}>
 					Save
 				</Button>
 			</div>
-		</Popover>
+		</>
 	);
 }
 
@@ -1908,24 +2015,8 @@ type TagRowProps = {
 	onWrite: (tags: string[], tones: Tones) => void;
 };
 
-function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
-	const [isOpen, setOpen] = useState(false);
+function useTagReorder(tags: string[], tones: Tones, onWrite: TagRowProps["onWrite"], listRef: RefObject<HTMLDivElement | null>) {
 	const [dragged, setDragged] = useState<TagDrag | null>(null);
-	const listRef = useRef<HTMLDivElement | null>(null);
-	const shown = dragged?.list ?? tags;
-
-	const toggle = (tag: string) => {
-		if (!tags.includes(tag)) return onWrite([...tags, tag], tones);
-		onWrite(tags.filter((entry) => entry !== tag), withoutTone(tones, tag));
-	};
-
-	// CONTEXT: a rename moves the tone with the name, so the map never keeps a tag nobody wears
-	const save = (was: string, name: string, tone: string) => {
-		const wanted = name === "" ? was : name;
-		const next = [...new Set(tags.map((entry) => (entry === was ? wanted : entry)))];
-		const kept = withoutTone(tones, was);
-		onWrite(next, tone === "neutral" ? kept : { ...kept, [wanted]: tone });
-	};
 
 	const grab = (at: number) => (event: ReactPointerEvent<HTMLButtonElement>) => {
 		if (event.button) return;
@@ -1957,6 +2048,28 @@ function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
 		window.addEventListener("pointerup", stop);
 	};
 
+	return { dragged, grab };
+}
+
+function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
+	const [isOpen, setOpen] = useState(false);
+	const listRef = useRef<HTMLDivElement | null>(null);
+	const { dragged, grab } = useTagReorder(tags, tones, onWrite, listRef);
+	const shown = dragged?.list ?? tags;
+
+	const toggle = (tag: string) => {
+		if (!tags.includes(tag)) return onWrite([...tags, tag], tones);
+		onWrite(tags.filter((entry) => entry !== tag), withoutTone(tones, tag));
+	};
+
+	// CONTEXT: a rename moves the tone with the name, so the map never keeps a tag nobody wears
+	const save = (was: string, name: string, tone: string) => {
+		const wanted = name === "" ? was : name;
+		const next = [...new Set(tags.map((entry) => (entry === was ? wanted : entry)))];
+		const kept = withoutTone(tones, was);
+		onWrite(next, tone === "neutral" ? kept : { ...kept, [wanted]: tone });
+	};
+
 	return (
 		<div className="otd-tags" ref={listRef}>
 			{shown.map((tag, at) => (
@@ -1979,23 +2092,14 @@ function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
 					</button>
 				}
 			>
-				<PopoverSearch placeholder="Find a tag">
-					{(needle: string) => [
-						...roster
-							.filter((tag) => tag.toLowerCase().includes(needle))
-							.map((tag) => (
-								<PopoverItem key={tag} checked={tags.includes(tag)} onClick={() => toggle(tag)}>
-									{`#${tag}`}
-								</PopoverItem>
-							)),
-						needle !== "" && !roster.some((tag) => tag.toLowerCase() === needle) ? (
-							<PopoverItem key="add" onClick={() => toggle(needle)}>
-								<Glyph name="plus" />
-								{`#${needle}`}
-							</PopoverItem>
-						) : null,
-					]}
-				</PopoverSearch>
+				<RosterPicker
+					placeholder="Find a tag"
+					roster={roster}
+					isChosen={(tag) => tags.includes(tag)}
+					onPick={toggle}
+					label={(tag) => `#${tag}`}
+					addLabel={(typed) => `#${typed}`}
+				/>
 			</Popover>
 		</div>
 	);
@@ -2029,7 +2133,7 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 	// TRADE-OFF: found in the list the board already holds — tasks.get would read the note again on every vault event
 	const task = rows.find((row) => row.ref === openedRef) ?? null;
 	const isOpen = Boolean(openedRef) && Boolean(task);
-	const names = properties?.length ? properties : STARTING_PROPERTIES;
+	const names = propertyNames(properties);
 	const props = task?.props ?? {};
 	const people = useMemo(() => [...valuesAcross(rows, "members"), ...valuesAcross(rows, "assignees")], [rows]);
 	const tagRoster = useMemo(() => valuesAcross(rows, "tags"), [rows]);
@@ -2040,58 +2144,15 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 	};
 
 	const setProperty = (key: string, value: unknown) => setProperties({ [key]: value });
-	const shownTitle = String(props.title ?? task?.name ?? "");
-
-	const rename = (title: string | null) => {
-		const wanted = String(title ?? "").trim();
-		if (!task || wanted === "" || wanted === (props.title ?? task.name)) return;
-		setProperty(keyFor(props, "title"), wanted);
-	};
 
 	return (
 		<Dialog isOpen={isOpen} onOpenChange={(next: boolean) => !next && opened.update(null)}>
 				<DialogContent className="orbi orbi-task-dialog">
-					<div className="otd-top">
-						<span className="otd-where">
-							<Glyph name="task" />
-							Card
-							{onBoard ? ` · ${onBoard}` : ""}
-						</span>
-						<div className="otd-corner">
-							<IconButton
-								size="s"
-								label="Open the note"
-								title="Open the note"
-								onClick={() => navigator?.navigate?.(`/${task?.ref ?? ""}`)}
-							>
-								<Glyph name="expand" />
-							</IconButton>
-							<IconButton size="s" label="Close" title="Close" onClick={() => opened.update(null)}>
-								<Glyph name="close" />
-							</IconButton>
-						</div>
-					</div>
+					<DialogTop onBoard={onBoard} taskRef={task?.ref ?? ""} navigator={navigator} onClose={() => opened.update(null)} />
 
 					<div className="otd-body">
 						<div className="otd-left">
-							<h2
-								className="otd-title"
-								contentEditable={canUpdate ? "true" : undefined}
-								suppressContentEditableWarning
-								onKeyDown={(event) => {
-									if (event.key === "Enter") {
-										event.preventDefault();
-										event.currentTarget.blur();
-									}
-									if (event.key === "Escape") {
-										event.currentTarget.textContent = shownTitle;
-										event.currentTarget.blur();
-									}
-								}}
-								onBlur={(event) => rename(event.currentTarget.textContent)}
-							>
-								{shownTitle}
-							</h2>
+							<TaskTitle task={task} props={props} canUpdate={canUpdate} onWrite={setProperty} />
 
 							<TagRow
 								tags={toTrimmedList(props[keyFor(props, "tags")])}
@@ -2102,44 +2163,19 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 								}
 							/>
 
-							{task && tasks.get.can().can ? (
-								<Description
-									key={task.ref}
-									path={task.ref}
-									read={(given: { path: string }) => tasks.get(given.path).then((row) => (row ? row.value : null))}
-									write={(given: { path: string }, patch: { body: string }) => tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))}
-									render={host?.ui?.renderMarkdown}
-									canPreview={Boolean(host?.can?.renderMarkdown && host?.ui?.renderMarkdown)}
-									canEdit={canUpdate}
-								/>
-							) : null}
+							<TaskNotes task={task} tasks={tasks} host={host} canEdit={canUpdate} />
 						</div>
 
 						<aside className="otd-right">
-							<Sidebar mode="minimal" className="otd-props">
-								<div className="otd-plate-head">
-									<h4>Properties</h4>
-								</div>
-								<SidebarGroup>
-								{names.map((name) => (
-									<PropertyRow
-										key={name}
-										name={name}
-										props={props}
-										columns={columns}
-										roster={people}
-										today={today}
-										onWrite={setProperty}
-									/>
-								))}
-								</SidebarGroup>
-								{onAddProperty ? (
-									<AddProperty
-										taken={names}
-										onAdd={(name) => onAddProperty([...names, name])}
-									/>
-								) : null}
-							</Sidebar>
+							<PropertiesPane
+								names={names}
+								props={props}
+								columns={columns}
+								roster={people}
+								today={today}
+								onWrite={setProperty}
+								onAddProperty={onAddProperty}
+							/>
 						</aside>
 					</div>
 				</DialogContent>
@@ -2147,91 +2183,177 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 	);
 }
 
-export default createWidget(function KanbanBoard({ board, groupBy: grouping, slots, tasks, boards, selection, opened, host, navigator }: KanbanProps) {
-	// CONTEXT: one clock for the whole board, so two cards cannot disagree about which year it is
-	const today = useMemo(() => new Date(), []);
-	const onBoard = pickedValue(useData(selection.get).data);
-	const openedRef = useData(opened.get).data;
+function propertyNames(properties: TaskDialogProps["properties"]): string[] {
+	if (properties?.length) return properties;
+	return STARTING_PROPERTIES;
+}
+
+type TaskTitleProps = {
+	task: TaskRow | null;
+	props: Record<string, unknown>;
+	canUpdate: boolean;
+	onWrite: (key: string, value: unknown) => void;
+};
+
+function TaskTitle({ task, props, canUpdate, onWrite }: TaskTitleProps) {
+	const shown = String(props.title ?? task?.name ?? "");
+
+	const rename = (title: string | null) => {
+		const wanted = String(title ?? "").trim();
+		if (!task || wanted === "" || wanted === (props.title ?? task.name)) return;
+		onWrite(keyFor(props, "title"), wanted);
+	};
+
+	return (
+		<h2
+			className="otd-title"
+			contentEditable={canUpdate ? "true" : undefined}
+			suppressContentEditableWarning
+			onKeyDown={blurOnEnterRestoreOnEscape(shown)}
+			onBlur={(event) => rename(event.currentTarget.textContent)}
+		>
+			{shown}
+		</h2>
+	);
+}
+
+type TaskNotesProps = {
+	task: TaskRow | null;
+	tasks: TaskDialogProps["tasks"];
+	host: TaskDialogProps["host"];
+	canEdit: boolean;
+};
+
+function TaskNotes({ task, tasks, host, canEdit }: TaskNotesProps) {
+	if (!task || !tasks.get.can().can) return null;
+	const render = host?.ui?.renderMarkdown;
+	return (
+		<Description
+			key={task.ref}
+			path={task.ref}
+			read={(given: { path: string }) => tasks.get(given.path).then((row) => (row ? row.value : null))}
+			write={(given: { path: string }, patch: { body: string }) => tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))}
+			render={render}
+			canPreview={Boolean(host?.can?.renderMarkdown && render)}
+			canEdit={canEdit}
+		/>
+	);
+}
+
+type DialogTopProps = {
+	onBoard: unknown;
+	taskRef: string;
+	navigator?: TaskDialogProps["navigator"];
+	onClose: () => void;
+};
+
+function DialogTop({ onBoard, taskRef, navigator, onClose }: DialogTopProps) {
+	return (
+		<div className="otd-top">
+			<span className="otd-where">
+				<Glyph name="task" />
+				Card
+				{onBoard ? ` · ${onBoard}` : ""}
+			</span>
+			<div className="otd-corner">
+				<IconButton size="s" label="Open the note" title="Open the note" onClick={() => navigator?.navigate?.(`/${taskRef}`)}>
+					<Glyph name="expand" />
+				</IconButton>
+				<IconButton size="s" label="Close" title="Close" onClick={onClose}>
+					<Glyph name="close" />
+				</IconButton>
+			</div>
+		</div>
+	);
+}
+
+type PropertiesPaneProps = {
+	names: string[];
+	props: Record<string, unknown>;
+	columns: string[];
+	roster: string[];
+	today: Date;
+	onWrite: (key: string, value: unknown) => void;
+	onAddProperty?: (names: string[]) => void;
+};
+
+function PropertiesPane({ names, props, columns, roster, today, onWrite, onAddProperty }: PropertiesPaneProps) {
+	return (
+		<Sidebar mode="minimal" className="otd-props">
+			<div className="otd-plate-head">
+				<h4>Properties</h4>
+			</div>
+			<SidebarGroup>
+				{names.map((name) => (
+					<PropertyRow key={name} name={name} props={props} columns={columns} roster={roster} today={today} onWrite={onWrite} />
+				))}
+			</SidebarGroup>
+			{onAddProperty ? <AddProperty taken={names} onAdd={(name) => onAddProperty([...names, name])} /> : null}
+		</Sidebar>
+	);
+}
+
+type BoardReadsGiven = Pick<KanbanProps, "selection" | "opened" | "tasks" | "board"> & { grouping: KanbanProps["groupBy"] };
+
+function useBoardReads({ selection, opened, tasks, board, grouping }: BoardReadsGiven) {
+	const todayForEveryCard = useMemo(() => new Date(), []);
 	const tasksData = useData(tasks.list);
-	const boardsData = useData(boards.list);
-	const allTasks: TaskRow[] = useMemo(() => flatRows(tasksData.rows), [tasksData.rows]);
-	const record = useData(board.get).data;
+	const rows: TaskRow[] = useMemo(() => flatRows(tasksData.rows), [tasksData.rows]);
+
+	return {
+		tasksData,
+		rows,
+		today: todayForEveryCard,
+		onBoard: pickedValue(useData(selection.get).data),
+		openedRef: useData(opened.get).data,
+		record: useData(board.get).data,
+		groupBy: String(useData(grouping.get).data ?? "") || "status",
+	};
+}
+
+function shownOrOneFreshColumn(shownColumns: string[], taken: string[]): string[] {
+	if (shownColumns.length > 0) return shownColumns;
+	return [freeUntitled(taken)];
+}
+
+function useBoardColumns(board: KanbanProps["board"], record: Board | null) {
 	const boardColumns: BoardColumn[] = useMemo(() => columnsOf(record), [record]);
 	const archivedColumns = archivedColumnsOf(boardColumns);
 	const authoredColumns = boardColumns.map((column) => column.name);
-	const saveColumns = (columns: BoardColumn[]) => board.update(columnsWritten(columns));
-	const canEditColumns = canDo(board.update);
 	const shownColumns = shownColumnsOf(boardColumns);
-	// CONTEXT: a board with no columns is not a board — the last one out leaves a fresh one behind
-	const columnNames = shownColumns.length > 0 ? shownColumns : [freeUntitled([...authoredColumns, ...archivedColumns])];
-	const groupBy = String(useData(grouping.get).data ?? "") || "status";
-	const rows = allTasks;
-	const canCreateTask = canDo(tasks.create);
-	const canUpdateTask = canDo(tasks.update);
-	const columns = toColumns(rows, columnNames, groupBy, archivedColumns);
-	const [archiving, setArchiving] = useState<string | null>(null);
-	const heldByArchiving = columns.find((column) => column.title === archiving)?.rows.length ?? 0;
+	const columnNames = shownOrOneFreshColumn(shownColumns, [...authoredColumns, ...archivedColumns]);
+	const save = (columns: BoardColumn[]) => board.update(columnsWritten(columns));
 
-	// CONTEXT: found on the read and only reported — the re-mint is this press
-	const duplicates = boardsData.data?.duplicates ?? [];
-	const remintCount = duplicates.reduce((count, entry) => count + entry.remints.length, 0);
-	const canRepairIds = canDo(boards.repairIds) && remintCount > 0;
-	const [isRepairingIds, setRepairingIds] = useState(false);
-
-	const repairIds = async () => {
-		setRepairingIds(false);
-		await boards.repairIds();
+	const columnsAfterRename = (was: string, name: string) => {
+		if (authoredColumns.includes(was)) return columnPatched(boardColumns, was, (column: BoardColumn) => ({ ...column, name }));
+		return [...boardColumns, { name }];
 	};
 
-	// CONTEXT: a column is a setting, not a task — adding one must not invent a note
-	// CONTEXT: naming an archived list is how it is restored, or the added one would never show
-	const addList = (name: string) => {
-		const trimmed = String(name ?? "").trim();
-		if (!trimmed || shownColumns.includes(trimmed)) return;
-		if (archivedColumns.includes(trimmed)) {
-			saveColumns(columnPatched(boardColumns, trimmed, restored));
-			return;
-		}
-		saveColumns([...boardColumns, { name: trimmed }]);
+	return {
+		boardColumns,
+		archivedColumns,
+		shownColumns,
+		columnNames,
+		canEdit: canDo(board.update),
+		save,
+		isNameTaken: (name: string) => columnNames.includes(name) || archivedColumns.includes(name),
+		add: (name: string) => {
+			const trimmed = String(name ?? "").trim();
+			if (!trimmed || shownColumns.includes(trimmed)) return;
+			if (archivedColumns.includes(trimmed)) return save(columnPatched(boardColumns, trimmed, restored));
+			save([...boardColumns, { name: trimmed }]);
+		},
+		rename: (was: string, name: string) => save(columnsAfterRename(was, name)),
+		archive: (name: string) => save(columnPatched(boardColumns, name, archived)),
 	};
+}
 
-	const columnsAfterRename = (was: string, name: string) =>
-		authoredColumns.includes(was) ? columnPatched(boardColumns, was, (column: BoardColumn) => ({ ...column, name })) : [...boardColumns, { name }];
-
-	const refileTasksUnder = async (was: string, name: string) => {
-		if (!canUpdateTask) return;
-		for (const row of rows.filter((held) => (held.props?.[groupBy] ?? "") === was)) {
-			await tasks.update({ ref: row.ref, data: { props: { [groupBy]: name } } });
-		}
-	};
-
-	const renameList = async (was: string, next: string | null) => {
-		const name = String(next ?? "").trim();
-		if (!name || name === was) return;
-		if (columnNames.includes(name) || archivedColumns.includes(name)) return host?.ui?.notify(`"${name}" is already a list`);
-		saveColumns(columnsAfterRename(was, name));
-		await refileTasksUnder(was, name);
-	};
-
-	// CONTEXT: the one place a column leaves the board; nothing is unnamed, so a restore is lossless
-	const archiveList = (name: string) => {
-		saveColumns(columnPatched(boardColumns, name, archived));
-		setArchiving(null);
-	};
-
-	// CONTEXT: a joined string, not the array — a fresh array every render notifies forever
-	const [carried, setCarried] = useState<TaskRow | null>(null);
-	const dragging: Dragging = {
-		row: carried,
-		pick: (row: TaskRow) => setCarried(row),
-		drop: () => setCarried(null),
-	};
-
+function useColumnReorder(columnNames: string[], boardColumns: BoardColumn[], save: (columns: BoardColumn[]) => void) {
 	const boardRef = useRef<HTMLDivElement | null>(null);
 	const [reorder, setReorder] = useState<Reorder | null>(null);
 
 	// TRADE-OFF: one step and one origin, not a rect per column — every column is the same width
-	const grabColumn = (from: number) => (event: DragEvent<HTMLElement>) => {
+	const grab = (from: number) => (event: DragEvent<HTMLElement>) => {
 		const strip = boardRef.current;
 		if (!strip) return;
 		const lists = [...strip.querySelectorAll(".ok-list")];
@@ -2244,12 +2366,10 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 			step: lists[1] ? lists[1].getBoundingClientRect().left - first.left : first.width,
 			origin: first.left - strip.getBoundingClientRect().left + strip.scrollLeft,
 		};
-		// CONTEXT: the browser paints the drag image after this handler, so the column empties a frame later
 		requestAnimationFrame(() => setReorder(carrying));
 	};
 
-	// CONTEXT: content coordinates, so scrolling the board mid-drag does not shift the aim
-	const aimColumn = (event: DragEvent<HTMLElement>) => {
+	const aim = (event: DragEvent<HTMLElement>) => {
 		if (!reorder) return;
 		event.preventDefault();
 		const strip = boardRef.current;
@@ -2260,14 +2380,6 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 		if (to !== reorder.to) setReorder({ ...reorder, to });
 	};
 
-	const dropColumn = () => {
-		if (!reorder) return;
-		if (reorder.to !== reorder.from) {
-			saveColumns(afterColumnMoves(boardColumns, columnNames, reorder.from, reorder.to));
-		}
-		setReorder(null);
-	};
-
 	const shiftOf = (index: number) => {
 		if (!reorder) return undefined;
 		if (index === reorder.from) return (reorder.to - reorder.from) * reorder.step;
@@ -2276,117 +2388,303 @@ export default createWidget(function KanbanBoard({ board, groupBy: grouping, slo
 		return 0;
 	};
 
-	const addTask = async (column: string, title: string) => {
-		if (!canCreateTask) return;
-		// CONTEXT: without an order of its own a new task sorts last by accident, and the first edit moves it
-		const lastOrder = rows.reduce((highest, row) => Math.max(highest, Number(row.props?.order) || 0), 0);
-		await tasks.create({
-			props: {
-				title,
-				[groupBy]: column,
-				board: onBoard,
-				order: lastOrder + 1,
-				progress: 0,
-				priority: "P2",
-			},
-		});
+	return {
+		boardRef,
+		isReordering: reorder !== null,
+		carriedFrom: reorder?.from,
+		grab,
+		aim,
+		shiftOf,
+		release: () => setReorder(null),
+		drop: () => {
+			if (!reorder) return;
+			if (reorder.to !== reorder.from) save(afterColumnMoves(boardColumns, columnNames, reorder.from, reorder.to));
+			setReorder(null);
+		},
 	};
+}
 
-	// CONTEXT: the vault's own subscription brings the board back updated
-	const moveTask = async (column: string) => {
-		if (!carried || !canUpdateTask) return;
-		if ((carried.props?.[groupBy] ?? "") === column) return;
-		await tasks.update({ ref: carried.ref, data: { props: { [groupBy]: column } } });
-		setCarried(null);
+function useIdRepair(boards: KanbanProps["boards"]) {
+	const duplicatesFoundOnRead = useData(boards.list).data?.duplicates ?? [];
+	const remintCount = duplicatesFoundOnRead.reduce((count, entry) => count + entry.remints.length, 0);
+	const [isAsking, setAsking] = useState(false);
+
+	return {
+		remintCount,
+		canRepair: canDo(boards.repairIds) && remintCount > 0,
+		isAsking,
+		ask: () => setAsking(true),
+		dismiss: () => setAsking(false),
+		repair: async () => {
+			setAsking(false);
+			await boards.repairIds();
+		},
 	};
+}
 
-	if (tasksData.isLoading && rows.length === 0) {
-		return (
-			<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
-				<style>{CSS}</style>
-				<p className="ok-empty">Loading tasks…</p>
-			</WidgetRoot>
-		);
-	}
+type TaskWritesGiven = {
+	tasks: KanbanProps["tasks"];
+	rows: TaskRow[];
+	groupBy: string;
+	onBoard: unknown;
+	carried: TaskRow | null;
+	onMoved: () => void;
+};
+
+function useTaskWrites({ tasks, rows, groupBy, onBoard, carried, onMoved }: TaskWritesGiven) {
+	const canCreate = canDo(tasks.create);
+	const canUpdate = canDo(tasks.update);
+	const orderAfterLast = () => rows.reduce((highest, row) => Math.max(highest, Number(row.props?.order) || 0), 0) + 1;
+
+	return {
+		canCreate,
+		add: async (column: string, title: string) => {
+			if (!canCreate) return;
+			await tasks.create({
+				props: { title, [groupBy]: column, board: onBoard, order: orderAfterLast(), progress: 0, priority: "P2" },
+			});
+		},
+		refileUnder: async (was: string, name: string) => {
+			if (!canUpdate) return;
+			for (const row of rows.filter((held) => (held.props?.[groupBy] ?? "") === was)) {
+				await tasks.update({ ref: row.ref, data: { props: { [groupBy]: name } } });
+			}
+		},
+		moveCarriedTo: async (column: string) => {
+			if (!carried || !canUpdate) return;
+			if ((carried.props?.[groupBy] ?? "") === column) return;
+			await tasks.update({ ref: carried.ref, data: { props: { [groupBy]: column } } });
+			onMoved();
+		},
+	};
+}
+
+function useCarriedTask() {
+	const [carried, setCarried] = useState<TaskRow | null>(null);
+	const dragging: Dragging = {
+		row: carried,
+		pick: (row: TaskRow) => setCarried(row),
+		drop: () => setCarried(null),
+	};
+	return { carried, dragging, release: () => setCarried(null) };
+}
+
+type ListRenameGiven = {
+	lists: ReturnType<typeof useBoardColumns>;
+	writing: ReturnType<typeof useTaskWrites>;
+	host: KanbanProps["host"];
+};
+
+function useListRename({ lists, writing, host }: ListRenameGiven) {
+	return async (was: string, next: string | null) => {
+		const name = String(next ?? "").trim();
+		if (!name || name === was) return;
+		if (lists.isNameTaken(name)) return host?.ui?.notify(`"${name}" is already a list`);
+		lists.rename(was, name);
+		await writing.refileUnder(was, name);
+	};
+}
+
+type BoardDialogsProps = {
+	archiving: string | null;
+	onArchivingChange: (name: string | null) => void;
+	heldByArchiving: number;
+	reading: ReturnType<typeof useBoardReads>;
+	lists: ReturnType<typeof useBoardColumns>;
+	repairing: ReturnType<typeof useIdRepair>;
+	board: KanbanProps["board"];
+	tasks: KanbanProps["tasks"];
+	opened: KanbanProps["opened"];
+	host: KanbanProps["host"];
+	navigator: KanbanProps["navigator"];
+};
+
+function BoardDialogs({ archiving, onArchivingChange, heldByArchiving, reading, lists, repairing, board, tasks, opened, host, navigator }: BoardDialogsProps) {
+	return (
+		<>
+			<ArchiveAsk
+				archiving={archiving}
+				heldByArchiving={heldByArchiving}
+				groupBy={reading.groupBy}
+				onDismiss={() => onArchivingChange(null)}
+				onConfirm={() => {
+					lists.archive(archiving ?? "");
+					onArchivingChange(null);
+				}}
+			/>
+
+			<RepairIdsAsk repairing={repairing} />
+
+			<TaskDialog
+				tasks={tasks}
+				rows={reading.rows}
+				columns={lists.shownColumns}
+				properties={propertiesOf(reading.record)}
+				onBoard={reading.onBoard}
+				opened={opened}
+				openedRef={reading.openedRef}
+				today={reading.today}
+				onAddProperty={lists.canEdit ? (names: string[]) => board.update({ properties: names }) : undefined}
+				host={host}
+				navigator={navigator}
+			/>
+		</>
+	);
+}
+
+function LoadingBoard() {
+	return (
+		<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
+			<style>{CSS}</style>
+			<p className="ok-empty">Loading tasks…</p>
+		</WidgetRoot>
+	);
+}
+
+type BoardStripProps = {
+	columns: KanbanColumn[];
+	today: Date;
+	CardSlot?: Slot<{ task: CardFace }>;
+	openedRef: unknown;
+	lists: ReturnType<typeof useBoardColumns>;
+	reordering: ReturnType<typeof useColumnReorder>;
+	carrying: ReturnType<typeof useCarriedTask>;
+	writing: ReturnType<typeof useTaskWrites>;
+	repairing: ReturnType<typeof useIdRepair>;
+	onOpen: (row: TaskRow) => void;
+	onArchive: (title: string) => void;
+	onRename: (title: string, next: string | null) => void;
+};
+
+function BoardStrip({ columns, today, CardSlot, openedRef, lists, reordering, carrying, writing, repairing, onOpen, onArchive, onRename }: BoardStripProps) {
+	return (
+		<div
+			className={`ok-board${reordering.isReordering ? " is-dragging" : ""}`}
+			ref={reordering.boardRef}
+			onDragOver={reordering.aim}
+			onDrop={reordering.drop}
+		>
+			{columns.map((column, index) => (
+				<KanbanList
+					key={column.title}
+					title={column.title}
+					rows={column.rows}
+					cards={column.rows.map((row) => toCard(row, today))}
+					CardSlot={CardSlot}
+					canWrite={writing.canCreate}
+					dragging={carrying.dragging}
+					shift={reordering.shiftOf(index)}
+					placeholder={reordering.carriedFrom === index}
+					onGrab={lists.canEdit && index < lists.columnNames.length ? reordering.grab(index) : undefined}
+					onRelease={reordering.release}
+					onAdd={(title) => writing.add(column.title, title)}
+					onArchive={lists.canEdit ? () => onArchive(column.title) : undefined}
+					onRename={lists.canEdit ? (next) => onRename(column.title, next) : undefined}
+					onOpen={onOpen}
+					onDropTask={() => writing.moveCarriedTo(column.title)}
+					opened={openedRef}
+				/>
+			))}
+			{lists.canEdit ? <AddList onAdd={lists.add} /> : null}
+			{repairing.canRepair ? (
+				<Plate asChild>
+					<button type="button" className="ok-add-list-rest ok-repair-ids" onClick={repairing.ask}>
+						<Icon name="folder" size={16} />
+						<span>{REPAIR_BOARDS}</span>
+					</button>
+				</Plate>
+			) : null}
+		</div>
+	);
+}
+
+type ArchiveAskProps = {
+	archiving: string | null;
+	heldByArchiving: number;
+	groupBy: string;
+	onDismiss: () => void;
+	onConfirm: () => void;
+};
+
+function ArchiveAsk({ archiving, heldByArchiving, groupBy, onDismiss, onConfirm }: ArchiveAskProps) {
+	return (
+		<ConfirmDialog
+			isOpen={Boolean(archiving)}
+			onOpenChange={onDismiss}
+			className="ok-archive"
+			variant="accent"
+			confirmLabel={ARCHIVE}
+			title={ARCHIVE_TITLE.replace("{name}", archiving ?? "")}
+			description={
+				<>
+					The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
+					{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
+				</>
+			}
+			onConfirm={onConfirm}
+		/>
+	);
+}
+
+function RepairIdsAsk({ repairing }: { repairing: ReturnType<typeof useIdRepair> }) {
+	return (
+		<ConfirmDialog
+			isOpen={repairing.isAsking}
+			onOpenChange={repairing.dismiss}
+			className="ok-repair-ids-ask"
+			variant="accent"
+			confirmLabel={REPAIR}
+			title={REPAIR_TITLE}
+			description={repairing.remintCount === 1 ? REPAIR_ONE : REPAIR_MANY.replace("{count}", String(repairing.remintCount))}
+			onConfirm={repairing.repair}
+		/>
+	);
+}
+
+export default createWidget(function KanbanBoard({ board, groupBy: grouping, slots, tasks, boards, selection, opened, host, navigator }: KanbanProps) {
+	const reading = useBoardReads({ selection, opened, tasks, board, grouping });
+	const { rows, today, onBoard, openedRef, record, groupBy } = reading;
+
+	const lists = useBoardColumns(board, record);
+	const reordering = useColumnReorder(lists.columnNames, lists.boardColumns, lists.save);
+	const repairing = useIdRepair(boards);
+	const carrying = useCarriedTask();
+	const writing = useTaskWrites({ tasks, rows, groupBy, onBoard, carried: carrying.carried, onMoved: carrying.release });
+
+	const columns = toColumns(rows, lists.columnNames, groupBy, lists.archivedColumns);
+	const [archiving, setArchiving] = useState<string | null>(null);
+	const renameList = useListRename({ lists, writing, host });
+
+	if (reading.tasksData.isLoading && rows.length === 0) return <LoadingBoard />;
 
 	return (
 		<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
 			<style>{CSS}</style>
-			<div
-				className={`ok-board${reorder ? " is-dragging" : ""}`}
-				ref={boardRef}
-				onDragOver={aimColumn}
-				onDrop={dropColumn}
-			>
-				{columns.map((column, index) => (
-					<KanbanList
-						key={column.title}
-						title={column.title}
-						rows={column.rows}
-						cards={column.rows.map((row) => toCard(row, today))}
-						CardSlot={slots?.card}
-						canWrite={canCreateTask}
-						dragging={dragging}
-						shift={shiftOf(index)}
-						placeholder={reorder?.from === index}
-						onGrab={canEditColumns && index < columnNames.length ? grabColumn(index) : undefined}
-						onRelease={() => setReorder(null)}
-						onAdd={(title) => addTask(column.title, title)}
-						onArchive={canEditColumns ? () => setArchiving(column.title) : undefined}
-						onRename={canEditColumns ? (next) => renameList(column.title, next) : undefined}
-						onOpen={(row) => opened.update(row.ref)}
-						onDropTask={() => moveTask(column.title)}
-						opened={openedRef}
-					/>
-				))}
-				{canEditColumns ? <AddList onAdd={addList} /> : null}
-				{canRepairIds ? (
-					<Plate asChild>
-						<button type="button" className="ok-add-list-rest ok-repair-ids" onClick={() => setRepairingIds(true)}>
-							<Icon name="folder" size={16} />
-							<span>{REPAIR_BOARDS}</span>
-						</button>
-					</Plate>
-				) : null}
-			</div>
-
-			<ConfirmDialog
-				isOpen={Boolean(archiving)}
-				onOpenChange={() => setArchiving(null)}
-				className="ok-archive"
-				variant="accent"
-				confirmLabel={ARCHIVE}
-				title={ARCHIVE_TITLE.replace("{name}", archiving ?? "")}
-				description={
-					<>
-						The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
-						{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
-					</>
-				}
-				onConfirm={() => archiveList(archiving ?? "")}
-			/>
-
-			<ConfirmDialog
-				isOpen={isRepairingIds}
-				onOpenChange={() => setRepairingIds(false)}
-				className="ok-repair-ids-ask"
-				variant="accent"
-				confirmLabel={REPAIR}
-				title={REPAIR_TITLE}
-				description={remintCount === 1 ? REPAIR_ONE : REPAIR_MANY.replace("{count}", String(remintCount))}
-				onConfirm={repairIds}
-			/>
-
-			<TaskDialog
-				tasks={tasks}
-				rows={rows}
-				columns={shownColumns}
-				properties={propertiesOf(record)}
-				onBoard={onBoard}
-				opened={opened}
-				openedRef={openedRef}
+			<BoardStrip
+				columns={columns}
 				today={today}
-				onAddProperty={canEditColumns ? (names: string[]) => board.update({ properties: names }) : undefined}
+				CardSlot={slots?.card}
+				openedRef={openedRef}
+				lists={lists}
+				reordering={reordering}
+				carrying={carrying}
+				writing={writing}
+				repairing={repairing}
+				onOpen={(row) => opened.update(row.ref)}
+				onArchive={setArchiving}
+				onRename={renameList}
+			/>
+
+			<BoardDialogs
+				archiving={archiving}
+				onArchivingChange={setArchiving}
+				heldByArchiving={columns.find((column) => column.title === archiving)?.rows.length ?? 0}
+				reading={reading}
+				lists={lists}
+				repairing={repairing}
+				board={board}
+				tasks={tasks}
+				opened={opened}
 				host={host}
 				navigator={navigator}
 			/>
