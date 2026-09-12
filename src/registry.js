@@ -4,7 +4,8 @@ import * as reactDom from "react-dom";
 import { transform } from "sucrase";
 import { widgetarium, kitModule, emojiModule } from "./api.js";
 import { apiRefusal } from "./version.js";
-import { WIDGETS_DIR } from "./paths.js";
+import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
+import { EMPTY_LOCK, readLock, modulesByWidget } from "./engine/widget-lock.js";
 
 const BASE_SCOPE = {
 	h,
@@ -28,8 +29,16 @@ function compile(source, filePath) {
 	}).code;
 }
 
+function parsedLock(text) {
+	try {
+		return readLock(JSON.parse(text));
+	} catch {
+		return EMPTY_LOCK;
+	}
+}
+
 // CONTEXT: the specifier is the contract with widget authors; what stands behind it is not
-function createRequire(libs) {
+function createRequire(libs, packages) {
 	const modules = {
 		widgetarium,
 		"widgetarium/kit": kitModule,
@@ -39,8 +48,8 @@ function createRequire(libs) {
 		...Object.fromEntries(libs),
 	};
 	return (name) => {
-		const found = modules[name];
-		if (!found) throw new Error(`cannot import "${name}" — a widget may only import ${Object.keys(modules).join(", ")}`);
+		const found = modules[name] ?? packages?.take(name);
+		if (!found) throw new Error(`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`);
 		return found;
 	};
 }
@@ -52,11 +61,11 @@ function componentIn(shell, at) {
 }
 
 // TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
-function runModule(source, filePath, libs) {
+function runModule(source, filePath, libs, packages) {
 	const code = compile(source, filePath);
 	const shell = { exports: {} };
 	new Function("require", "module", "exports", ...Object.keys(BASE_SCOPE), code)(
-		createRequire(libs),
+		createRequire(libs, packages),
 		shell,
 		shell.exports,
 		...Object.values(BASE_SCOPE),
@@ -104,6 +113,8 @@ export class WidgetRegistry {
 		this.renamed = new Map();
 		// CONTEXT: one shared module per scope, so four widgets cannot hold four copies of one rule
 		this.libs = new Map();
+		this.packages = new Map();
+		this.packagesByWidget = new Map();
 	}
 
 	// CONTEXT: the one place an id is made current, so a board saved after a read carries the new one
@@ -124,11 +135,14 @@ export class WidgetRegistry {
 		this.widgets.clear();
 		this.renamed.clear();
 		this.libs.clear();
+		this.packages.clear();
+		this.packagesByWidget.clear();
 		this.dropStyles();
 		const adapter = this.app.vault.adapter;
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
 
 		const found = await this.readEverything(adapter);
+		await this.readPackages(adapter, found.lockText);
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// second pass is cheaper than deciding an order between scopes that reference each other
 		found.scopes.forEach((scope, at) => this.runLib(scope, found.libSources[at]));
@@ -146,12 +160,36 @@ export class WidgetRegistry {
 			...foldersPerScope[at].map((folder) => ({ owner: folder, path: `${folder}/styles.css` })),
 		]);
 		const folders = foldersPerScope.flat();
-		const [libSources, sheetSources, widgetSources] = await Promise.all([
+		const [libSources, sheetSources, widgetSources, lockText] = await Promise.all([
 			Promise.all(scopes.map((scope) => this.readIfThere(adapter, `${scope}/lib.js`))),
 			Promise.all(sheets.map((sheet) => this.readIfThere(adapter, sheet.path))),
 			Promise.all(folders.map((folder) => this.readWidget(adapter, folder))),
+			this.readIfThere(adapter, LOCK_PATH),
 		]);
-		return { scopes, sheets, folders, libSources, sheetSources, widgetSources };
+		return { scopes, sheets, folders, libSources, sheetSources, widgetSources, lockText };
+	}
+
+	async readPackages(adapter, lockText) {
+		const lock = parsedLock(lockText);
+		const written = Object.entries(lock.modules).map(([key, entry]) => ({ key, path: entry.path }));
+		const sources = await Promise.all(written.map((each) => this.readIfThere(adapter, each.path)));
+		written.forEach((each, at) => {
+			if (sources[at] === null) return;
+			this.packages.set(each.key, { path: each.path, source: sources[at] });
+		});
+		for (const [id, named] of modulesByWidget(lock)) this.packagesByWidget.set(id, named);
+	}
+
+	packagesFor(id) {
+		const wanted = this.packagesByWidget.get(id) ?? new Map();
+		return { names: [...wanted.keys()], take: (name) => this.runPackage(wanted.get(name)) };
+	}
+
+	runPackage(key) {
+		const held = key ? this.packages.get(key) : null;
+		if (!held) return null;
+		held.exports ??= runModule(held.source, held.path, this.libs);
+		return held.exports;
 	}
 
 	// TRADE-OFF: a read that fails comes back as a value rather than throwing, because one file mid-fetch on iCloud used to reject the whole Promise.all and the vault came up with no widgets at all
@@ -218,7 +256,7 @@ export class WidgetRegistry {
 				return;
 			}
 
-			const exported = componentIn(runModule(code, codePath, this.libs), folder);
+			const exported = componentIn(runModule(code, codePath, this.libs, this.packagesFor(manifest.id)), folder);
 			this.widgets.set(manifest.id, { manifest: { ...exported.meta, ...manifest }, component: exported, folder });
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
