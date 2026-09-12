@@ -300,6 +300,33 @@ type MonthProps = {
 	isWeekStartingMonday: ValueGateway<boolean>;
 };
 
+function weekStartsMonday(held: unknown): boolean {
+	if (typeof held === "boolean") return held;
+	return true;
+}
+
+function MonthHead({ shown, onShift }: { shown: Date; onShift: (by: number) => void }) {
+	return (
+		<div className="hm-head">
+			<IconButton size="s" label="Previous month" onClick={() => onShift(-1)}>
+				<Icon name="chevron" size={15} className="hm-flip" />
+			</IconButton>
+			<span className="hm-title">{`${MONTHS[shown.getMonth()]} ${shown.getFullYear()}`}</span>
+			<IconButton size="s" label="Next month" onClick={() => onShift(1)}>
+				<Icon name="chevron" size={15} />
+			</IconButton>
+		</div>
+	);
+}
+
+function WeekdayNames({ isWeekStartingMonday }: { isWeekStartingMonday: boolean }) {
+	return (isWeekStartingMonday ? FROM_MONDAY : FROM_SUNDAY).map((name) => (
+		<span className="hm-weekday" key={name}>
+			{name}
+		</span>
+	));
+}
+
 export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMonday, days }: MonthProps) {
 	const room = useRef<HTMLDivElement | null>(null);
 	const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
@@ -311,11 +338,9 @@ export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMond
 	const now = new Date();
 	const today = isoOf(now);
 	const shown = new Date(now.getFullYear(), now.getMonth() + shift, 1);
-	const heldStart = useData(fromMonday.get).data;
-	const isWeekStartingMonday = typeof heldStart === "boolean" ? heldStart : true;
+	const isWeekStartingMonday = weekStartsMonday(useData(fromMonday.get).data);
 
 	const ring = ringFor(box);
-	const flameSize = Math.round(ring * FLAME_SHARE);
 	const press = pressing({ days, noteByDay, keptDays });
 	const month = daysInWholeWeeks(shown.getFullYear(), shown.getMonth(), isWeekStartingMonday);
 	const cells = cellsOver(month, keptDays, today, canDo(days.update) && canDo(days.create));
@@ -323,23 +348,11 @@ export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMond
 	return (
 		<WidgetRoot className="habit-month" style={sizesFor(ring)}>
 			<style>{STYLE}</style>
-			<div className="hm-head">
-				<IconButton size="s" label="Previous month" onClick={() => setShift(shift - 1)}>
-					<Icon name="chevron" size={15} className="hm-flip" />
-				</IconButton>
-				<span className="hm-title">{`${MONTHS[shown.getMonth()]} ${shown.getFullYear()}`}</span>
-				<IconButton size="s" label="Next month" onClick={() => setShift(shift + 1)}>
-					<Icon name="chevron" size={15} />
-				</IconButton>
-			</div>
+			<MonthHead shown={shown} onShift={(by) => setShift(shift + by)} />
 			<div className="hm-room" ref={room}>
-				{(isWeekStartingMonday ? FROM_MONDAY : FROM_SUNDAY).map((name) => (
-					<span className="hm-weekday" key={name}>
-						{name}
-					</span>
-				))}
+				<WeekdayNames isWeekStartingMonday={isWeekStartingMonday} />
 				{cells.map((cell) => (
-					<DayButton key={cell.day} cell={cell} flameSize={flameSize} onPress={() => press(cell.day)} />
+					<DayButton key={cell.day} cell={cell} flameSize={Math.round(ring * FLAME_SHARE)} onPress={() => press(cell.day)} />
 				))}
 			</div>
 		</WidgetRoot>
