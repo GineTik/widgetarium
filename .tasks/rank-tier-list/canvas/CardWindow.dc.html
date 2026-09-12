@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+    a { color: #6d4ee0; } a:hover { color: #5a3fc0; }
+    .dlg { border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 14px; position: relative; }
+    .title { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+    .desc { font-size: 13px; line-height: 1.5; }
+    .field { height: 46px; border-radius: 999px; display: flex; align-items: center; padding: 0 18px; font-size: 13.5px; border: 0; width: 100%; font-family: inherit; outline: none; box-sizing: border-box; }
+    .field:focus { box-shadow: inset 0 0 0 2px #6d4ee0; }
+    .foot { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn { height: 42px; padding: 0 20px; border: 0; border-radius: 999px; font: 600 14px/1 inherit; cursor: pointer; }
+    .close { position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border: 0; border-radius: 999px; display: grid; place-items: center; cursor: pointer; }
+    .face { position: relative; width: 88px; height: 88px; border-radius: 8px; display: grid; place-items: center; font-size: 30px; font-weight: 700; overflow: hidden; }
+    .face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .sweep::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 70%); transform: translateX(-100%); animation: sweep 1.2s ease-in-out infinite; }
+    @keyframes sweep { to { transform: translateX(100%); } }
+    @media (prefers-reduced-motion: reduce) { .sweep::after { animation: none; opacity: 0.3; } }
+    .flag { position: absolute; right: 4px; bottom: 4px; width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; }
+    .chip { border: 0; border-radius: 999px; height: 30px; padding: 0 13px; font: 500 12px/1 inherit; cursor: pointer; }
+    .state { font-size: 11.5px; font-weight: 600; }
+  </style>
+</helmet>
+
+<div style="padding: 24px; display: flex; flex-direction: column; gap: 14px; width: 620px; background: {{ t.stage }}">
+
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 15px; font-weight: 650; color: {{ t.ink }}">The card window previews what it is about to draw</span>
+    <span style="font-size: 12px; line-height: 1.5; color: {{ t.muted }}">Type into Picture and the tile beside it goes through the same states the board will: empty, pending, loaded, did-not-load. Try the three samples — the first two resolve, anything else fails, which is exactly what a wrong address does in the vault.</span>
+  </div>
+
+  <div class="dlg" style="background: {{ t.panel }}; box-shadow: inset 0 0 0 1px {{ t.edge }}">
+    <button class="close" style="background: {{ t.fill }}; color: {{ t.ink }}">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l8 8M14 6l-8 8"/></svg>
+    </button>
+
+    <div style="display: flex; flex-direction: column; gap: 6px; padding-right: 40px">
+      <span class="title" style="color: {{ t.ink }}">Edit this card</span>
+      <span class="desc" style="color: {{ t.muted }}">A web address, an attachment in this vault, or emoji: followed by a face name. Left empty, the card draws its letters.</span>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: flex-start">
+
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; flex: 0 0 auto">
+        <sc-if value="{{ isLoaded }}" hint-placeholder-val="{{ true }}">
+          <span class="face" style="background: {{ t.panel }}; box-shadow: inset 0 0 0 1px {{ t.edge }}">
+            <img src="{{ src }}" alt="">
+          </span>
+        </sc-if>
+        <sc-if value="{{ isPending }}" hint-placeholder-val="{{ false }}">
+          <span class="face sweep" style="background: {{ t.faceBg }}; color: {{ t.facePale }}; box-shadow: inset 0 0 0 1px {{ t.edge }}">{{ letters }}</span>
+        </sc-if>
+        <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+          <span class="face" style="background: {{ t.faceBg }}; color: {{ t.faceInk }}; box-shadow: inset 0 0 0 1px {{ t.edge }}">{{ letters }}</span>
+        </sc-if>
+        <sc-if value="{{ isFailed }}" hint-placeholder-val="{{ false }}">
+          <span class="face" style="background: {{ t.faceBg }}; color: {{ t.faceInk }}; box-shadow: inset 0 0 0 1px {{ t.edge }}">{{ letters }}
+            <i class="flag" style="background: {{ t.panel }}; box-shadow: inset 0 0 0 1px {{ t.edge }}">
+              <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="{{ t.bad }}" stroke-width="2.2" stroke-linecap="round"><path d="M10 5.5v5.4M10 14.2v.2"/></svg>
+            </i>
+          </span>
+        </sc-if>
+        <span class="state" style="color: {{ t.stateInk }}">{{ stateSaid }}</span>
+      </div>
+
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <input class="field" style="background: {{ t.fill }}; color: {{ t.ink }}" value="{{ name }}" onInput="{{ onName }}" placeholder="Name">
+        <input class="field" style="background: {{ t.fill }}; color: {{ t.ink }}; font-size: 12px" value="{{ picture }}" onInput="{{ onPicture }}" placeholder="Picture">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <button class="chip" style="background: {{ t.fill }}; color: {{ t.ink }}" onClick="{{ pickWeb }}">a web address</button>
+          <button class="chip" style="background: {{ t.fill }}; color: {{ t.ink }}" onClick="{{ pickVault }}">a file in the vault</button>
+          <button class="chip" style="background: {{ t.fill }}; color: {{ t.ink }}" onClick="{{ pickNone }}">leave it empty</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn" style="background: {{ t.danger }}; color: {{ t.dangerInk }}">Remove</button>
+      <button class="btn" style="background: {{ t.fill }}; color: {{ t.ink }}">Cancel</button>
+      <button class="btn" style="background: {{ t.accent }}; color: #ffffff">Save</button>
+    </div>
+  </div>
+
+  <div style="border-radius: 12px; padding: 14px; background: {{ t.panel }}; box-shadow: inset 0 0 0 1px {{ t.edge }}; display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 12px; font-weight: 600; color: {{ t.ink }}">The same tile, wherever it is drawn</span>
+    <span style="font-size: 11.5px; line-height: 1.5; color: {{ t.muted }}">One function decides what a face is — letters, a drawn emoji, a file in the vault, or an address — and one component draws the four states from it. The window and the board call the same one, so a card can never look settled here and pending there.</span>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"dark":{"editor":"boolean","default":false,"section":"Theme"}}'>
+const WEB = "https://api.dicebear.com/9.x/shapes/svg?seed=Pizza";
+const VAULT = "Attachments/hades.png";
+
+const KNOWN = [
+	{ mark: "seed=Pizza", file: "shapes-Pizza.svg" },
+	{ mark: "seed=Iris", file: "team-Iris.svg" },
+	{ mark: "hades", file: "bottts-Hades.svg" },
+];
+
+const LIGHT = {
+	stage: "#f6f6f6", panel: "#ffffff", fill: "#f3f3f3", ink: "#222222", muted: "#707070",
+	edge: "rgba(34,34,34,0.09)", faceBg: "#e9cecb", faceInk: "#893128", facePale: "rgba(137,49,40,0.45)",
+	accent: "#6d4ee0", danger: "#f7e2e0", dangerInk: "#9c3125", bad: "#b23a48", stateInk: "#8a8a8a",
+};
+
+const DARK = {
+	stage: "#1e1e1e", panel: "#393939", fill: "#4a4a4a", ink: "#dadada", muted: "#a8a8a8",
+	edge: "rgba(218,218,218,0.12)", faceBg: "#624a48", faceInk: "#f0b5ae", facePale: "rgba(240,181,174,0.45)",
+	accent: "#8b6cef", danger: "#533634", dangerInk: "#eb958a", bad: "#eb958a", stateInk: "#999999",
+};
+
+const SAID = { empty: "Empty · letters", pending: "Pending", loaded: "Loaded", failed: "Did not load" };
+
+function lettersOf(name) {
+	const words = String(name || "").split(/[\s_-]+/).filter(Boolean);
+	if (words.length === 0) return "?";
+	if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+	return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+function fileFor(picture) {
+	const found = KNOWN.find((known) => String(picture).indexOf(known.mark) !== -1);
+	return found ? found.file : "";
+}
+
+class Component extends DCLogic {
+	constructor(props) {
+		super(props);
+		this.state = { name: "Pizza", picture: WEB, status: "loaded", src: "shapes-Pizza.svg" };
+		this.timer = null;
+	}
+
+	componentWillUnmount() {
+		clearTimeout(this.timer);
+	}
+
+	load(picture) {
+		clearTimeout(this.timer);
+		if (!String(picture).trim()) {
+			this.setState({ picture: picture, status: "empty", src: "" });
+			return;
+		}
+		this.setState({ picture: picture, status: "pending", src: "" });
+		this.timer = setTimeout(() => {
+			const file = fileFor(picture);
+			this.setState({ status: file ? "loaded" : "failed", src: file });
+		}, 900);
+	}
+
+	renderVals() {
+		const status = this.state.status;
+		return {
+			t: this.props.dark ? DARK : LIGHT,
+			name: this.state.name,
+			picture: this.state.picture,
+			letters: lettersOf(this.state.name),
+			src: this.state.src,
+			isEmpty: status === "empty",
+			isPending: status === "pending",
+			isLoaded: status === "loaded",
+			isFailed: status === "failed",
+			stateSaid: SAID[status],
+			onName: (event) => this.setState({ name: event.target.value }),
+			onPicture: (event) => this.load(event.target.value),
+			pickWeb: () => this.load(WEB),
+			pickVault: () => this.load(VAULT),
+			pickNone: () => this.load(""),
+		};
+	}
+}
+</script>
+</body>
+</html>

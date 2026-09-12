@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+    a { color: #6d4ee0; } a:hover { color: #5a3fc0; }
+    .tile { background: #ffffff; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(34,34,34,0.09); padding: 0 12px; display: flex; flex-direction: column; height: 360px; }
+    .rail { flex: 0 0 64px; display: grid; place-items: center; border-radius: 14px; color: #ffffff; font-size: 18px; font-weight: 700; }
+    .pen { flex: 1; border-radius: 14px; background: #f3f3f3; }
+    .row { display: flex; gap: 6px; align-items: stretch; height: 68px; flex: 0 0 auto; }
+    .btn { height: 42px; padding: 0 20px; border: 0; border-radius: 999px; font: 600 14px/1 inherit; cursor: pointer; }
+    .face { width: 46px; height: 46px; border-radius: 6px; display: grid; place-items: center; font-size: 15px; font-weight: 700; box-shadow: inset 0 0 0 1px rgba(34,34,34,0.09); }
+  </style>
+</helmet>
+
+<div style="background: #f6f6f6; padding: 24px; display: flex; flex-direction: column; gap: 14px; width: 660px">
+
+  <div style="display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 15px; font-weight: 650; color: #222222">Presets stands in one place at a time</span>
+    <span style="font-size: 12px; line-height: 1.5; color: #707070">It is the invitation while the tile is empty, so it sits where the eye already is. Once there are cards it becomes a replace, and moves to the head beside Reset. Neither state shows it twice.</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 11px; font-weight: 600; color: #707070">nothing ranked yet</span>
+      <div class="tile">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 0 10px">
+          <span style="font-size: 14px; font-weight: 600; color: #222222">Tier list</span>
+          <span style="font-size: 11px; font-weight: 600; color: #222222; background: #f3f3f3; border-radius: 999px; padding: 3px 8px">0</span>
+        </div>
+        <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; min-height: 0; overflow: hidden; align-content: flex-start">
+          <div class="row"><div class="rail" style="background: #893128">S</div><div class="pen"></div></div>
+          <div class="row"><div class="rail" style="background: #996028">A</div><div class="pen"></div></div>
+          <div class="row"><div class="rail" style="background: #943a5e">B</div><div class="pen"></div></div>
+        </div>
+        <div style="background: #f3f3f3; border-radius: 14px; padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; align-items: center">
+          <span style="font-size: 12.5px; line-height: 1.45; color: #5e5e5e; text-align: center; max-width: 30ch">Nothing to rank yet. Add a card, or start from a preset.</span>
+          <div style="display: flex; gap: 8px">
+            <button class="btn" style="background: #ffffff; color: #222222">Add a card</button>
+            <button class="btn" style="background: #6d4ee0; color: #ffffff">Presets</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 11px; font-weight: 600; color: #707070">something to replace</span>
+      <div class="tile">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 0 10px">
+          <span style="font-size: 14px; font-weight: 600; color: #222222">Tier list</span>
+          <span style="font-size: 11px; font-weight: 600; color: #222222; background: #f3f3f3; border-radius: 999px; padding: 3px 8px">6</span>
+          <div style="margin-left: auto; display: flex; gap: 8px">
+            <button style="height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: #f3f3f3; color: #222222; font: 600 14px/1 inherit; cursor: pointer">Presets</button>
+            <button style="height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: #f3f3f3; color: #222222; font: 600 14px/1 inherit; cursor: pointer">Reset</button>
+          </div>
+        </div>
+        <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; min-height: 0; overflow: hidden; align-content: flex-start">
+          <div class="row">
+            <div class="rail" style="background: #893128">S</div>
+            <div class="pen" style="display: flex; gap: 6px; padding: 8px; flex: 1">
+              <div class="face" style="background: #e9cecb; color: #893128">PZ</div>
+              <div class="face" style="background: #eedccb; color: #996028">RM</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="rail" style="background: #996028">A</div>
+            <div class="pen" style="display: flex; gap: 6px; padding: 8px; flex: 1">
+              <div class="face" style="background: #cedced; color: #325e96">TC</div>
+            </div>
+          </div>
+        </div>
+        <div style="background: #f3f3f3; border-radius: 14px; padding: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 0 2px">
+            <span style="font-size: 12px; font-weight: 600; color: #5e5e5e">Unranked</span>
+            <span style="font-size: 11px; font-weight: 600; color: #222222; background: #ffffff; border-radius: 999px; padding: 3px 8px">0</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <button style="width: 64px; height: 82px; display: grid; place-items: center; border: 1px dashed rgba(34,34,34,0.26); border-radius: 6px; background: none; color: #5e5e5e; cursor: pointer" aria-label="Add a card">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 4.9v10.2M4.9 10h10.2"/></svg>
+            </button>
+            <span style="font-size: 12px; line-height: 1.45; color: #8a8a8a">Everything is ranked. Drag a card back here to unrank it.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
