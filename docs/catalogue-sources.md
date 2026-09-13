@@ -4,9 +4,27 @@
 
 ## TL;DR
 
-`catalogue.json` names **sources** — a folder or a repository — and the widgets in one are
-found by reading it. A folder source is a path on the machine, so installing from it is a copy
-into the vault and needs no network. The old `{ widgets: [...] }` index still reads; nothing migrates.
+A **source** is a folder or a repository, and the widgets in one are found by reading it. A folder
+source is a path on the machine, so installing from it is a copy into the vault and needs no network.
+Sources come from three homes and merge into one list; the old `{ widgets: [...] }` index still
+reads, and nothing migrates.
+
+## Three homes, one list
+
+| home                                        | who owns it | when it changes                              |
+| ------------------------------------------- | ----------- | -------------------------------------------- |
+| `src/registries.js`, bundled into `main.js` | the curator | a release of the plugin                      |
+| `registries` in the plugin's `data.json`    | the person  | they add one, and an update never touches it |
+| `.widgetarium/catalogue.json` in the vault  | legacy      | read, never written                          |
+
+`sourcesOf` (`src/sources.js`) is the one place they merge, **nearest the person first**: where two
+sources offer one widget id, the one they added themselves wins over what shipped, and a source
+named twice is read once. Identity is the path, or the repository with its ref and folder.
+
+**The shipped list is a module, not a file beside `main.js`.** Obsidian carries `main.js`,
+`manifest.json` and `styles.css` and nothing else, so a list that must arrive with a release has to
+be inside the bundle — which is also why the person's own registries cannot live there, and live in
+`data.json` instead.
 
 ## The shape
 
@@ -84,6 +102,9 @@ so the manifest that comes back is compared to the id that was promised **before
 A folder source needs no such check: nothing crossed a network to get there.
 
 ## Open
+
+**No entrance writes a registry.** `data.json` holds them and the installer reads them, but nothing
+in the app adds one — that is a field and a press, and it is the next step.
 
 **Refresh.** `available()` is read once at load. A widget added to a staging folder while
 Obsidian is open does not appear until the plugin reloads. The registry polls its own folder

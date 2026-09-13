@@ -41,7 +41,13 @@ export function readIndex(raw) {
 
 export function mergeCatalogue(installed, available) {
 	const known = new Set(installed.map((entry) => entry.manifest?.id));
-	return [...installed, ...available.filter((entry) => !known.has(entry.manifest?.id))];
+	const held = [...installed];
+	for (const entry of available) {
+		if (known.has(entry.manifest?.id)) continue;
+		known.add(entry.manifest?.id);
+		held.push(entry);
+	}
+	return held;
 }
 
 export function isInstalled(entry) {

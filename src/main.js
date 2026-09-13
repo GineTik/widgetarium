@@ -128,6 +128,7 @@ export default class WidgetariumPlugin extends Plugin {
 			fetchJson: (url) => requestUrl({ url }).then((answer) => answer.json),
 			fetchText: (url) => requestUrl({ url }).then((answer) => answer.text),
 			disk: diskDoor(),
+			readAdded: () => this.addedRegistries(),
 		});
 		if (await measure("onload · isAuthoringWidgetsHere", () => this.isAuthoringWidgetsHere())) await measure("onload · widgetSignature", () => this.watchWidgetFolder());
 
@@ -326,6 +327,11 @@ export default class WidgetariumPlugin extends Plugin {
 
 	async saveShapes(next) {
 		await this.saveData({ ...((await this.loadData()) ?? {}), shapes: next });
+	}
+
+	async addedRegistries() {
+		const stored = (await this.loadData())?.registries;
+		return Array.isArray(stored) ? stored : [];
 	}
 
 	async setRules(next) {

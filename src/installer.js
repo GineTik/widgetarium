@@ -1,10 +1,12 @@
 import { ROOT, WIDGETS_DIR, LOCK_PATH } from "./paths.js";
-import { readIndex } from "./engine/catalogue-index.js";
+import { mergeCatalogue, readIndex } from "./engine/catalogue-index.js";
 import { readLock, lockEntry, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
 import { createModuleSpace, declaredDependencies } from "./engine/modules.js";
 import { BUILD_FILE, compileWidget, sourceFileIn } from "./engine/widget-build.js";
 import { createWidgetSource, scopeOf } from "./engine/widget-source.js";
 import { folderFor } from "./engine/github.js";
+import { namesAFolderOnThisMachine, sourcesOf } from "./sources.js";
+import { SHIPPED_SOURCES } from "./registries.js";
 
 export const INDEX_PATH = `${ROOT}/catalogue.json`;
 export { LOCK_PATH };
@@ -24,19 +26,18 @@ function buildOf(files, folder) {
 	}
 }
 
-const isNamed = (held) => typeof held === "string" && held !== "";
-const namesARepository = (source) => isNamed(source?.repository);
-const namesAFolderOnThisMachine = (source) => !namesARepository(source) && isNamed(source?.path);
-const isReachableSource = (source) => namesARepository(source) || namesAFolderOnThisMachine(source);
-
 function refuse(failure) {
 	return { ok: false, failure };
 }
 
-// EVERYTHING THAT REACHES OUT IS HANDED IN, so the whole flow is provable without a network:
-// fetchJson and fetchText are the only two doors, and a test drives them itself.
-// CONTEXT: the vault IS the installed set, so a folder source is a path on the machine, not in it
-export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
+export function createInstaller({
+	adapter,
+	fetchJson,
+	fetchText,
+	disk,
+	readAdded = async () => [],
+	shipped = SHIPPED_SOURCES,
+}) {
 	const space = createModuleSpace({ adapter, fetchText });
 	const widgets = createWidgetSource({ fetchJson, fetchText, disk });
 
@@ -53,8 +54,8 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 	const writeJson = (path, value) => adapter.write(path, `${JSON.stringify(value, null, "\t")}\n`);
 
 	const readCatalogue = async () => {
-		const raw = await readJson(INDEX_PATH, null);
-		return { raw, sources: (Array.isArray(raw?.sources) ? raw.sources : []).filter(isReachableSource) };
+		const legacy = await readJson(INDEX_PATH, null);
+		return { raw: legacy, sources: sourcesOf({ added: await readAdded(), legacy, shipped }) };
 	};
 
 	async function writeWidget(folder, files, built) {
@@ -106,8 +107,7 @@ export function createInstaller({ adapter, fetchJson, fetchText, disk }) {
 			for (const source of sources) {
 				found.push(...(await this.offersFrom(source)));
 			}
-			const known = new Set(listed.map((entry) => entry.manifest?.id));
-			return [...listed, ...found.filter((entry) => !known.has(entry.manifest?.id))];
+			return mergeCatalogue(listed, found);
 		},
 
 		async lock() {
