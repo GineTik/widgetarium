@@ -9,11 +9,35 @@ export function readRecord(raw, idOfItsFolder) {
 	return { ...held, id: named, title: held.title ?? named };
 }
 
-const PROP_KEYS = ["kind", "wasSetting", "shape", "type", "label", "hint", "was", "picks", "of", "field", "fieldFrom", "fallback", "design", "item", "wasSettings", "rowsFromText", "verbs", "default", "needs", "wants"];
+const PROP_KEYS = [
+	"kind",
+	"wasSetting",
+	"shape",
+	"type",
+	"label",
+	"hint",
+	"was",
+	"picks",
+	"of",
+	"field",
+	"fieldFrom",
+	"fallback",
+	"design",
+	"item",
+	"wasSettings",
+	"rowsFromText",
+	"verbs",
+	"default",
+	"needs",
+	"wants",
+];
 
 function specInOneOrder(spec) {
 	const written = Object.keys(spec);
-	const ordered = [...PROP_KEYS.filter((key) => written.includes(key)), ...written.filter((key) => !PROP_KEYS.includes(key))];
+	const ordered = [
+		...PROP_KEYS.filter((key) => written.includes(key)),
+		...written.filter((key) => !PROP_KEYS.includes(key)),
+	];
 	return Object.fromEntries(ordered.map((key) => [key, spec[key]]));
 }
 
@@ -28,15 +52,17 @@ export function recordUnderItsDeclaration(record, declared, derived = null) {
 	return { ...record, ...(declared ?? {}), id: record.id, ...(props ? { props } : {}) };
 }
 
+export function hasStringId(entry) {
+	return Boolean(entry) && typeof entry.id === "string" && entry.id !== "";
+}
+
 export function readIndex(raw) {
 	const listed = Array.isArray(raw?.widgets) ? raw.widgets : [];
-	return listed
-		.filter((entry) => entry && typeof entry.id === "string" && entry.id)
-		.map((entry) => ({
-			manifest: readRecord(entry, entry.id),
-			installed: false,
-			origin: entry.repository ?? "index",
-		}));
+	return listed.filter(hasStringId).map((entry) => ({
+		manifest: readRecord(entry, entry.id),
+		installed: false,
+		origin: entry.repository ?? "index",
+	}));
 }
 
 export function mergeCatalogue(installed, available) {

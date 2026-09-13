@@ -124,5 +124,136 @@ const offeredOnce = await installerOver({ sources: [{ path: OTHER_FOLDER }] }, s
 same("two sources offering one widget id answer once", offeredOnce.length, 1);
 same("and the one nearer the person is the answer", offeredOnce[0]?.origin, GOOD_FOLDER);
 
+const { createWidgetSource } = await import("./.mjs-cache/engine/widget-source.mjs");
+const { REGISTRY_FORMAT } = await import("./.mjs-cache/version.mjs");
+
+const REPOSITORY = "https://github.com/acme/widgets";
+const SHA = "abc1234567";
+const raw = `https://raw.githubusercontent.com/acme/widgets/${SHA}`;
+const CLOCK_CARD = JSON.stringify({ id: "@demo/clock", title: "Clock from the manifest", keywords: ["time"] });
+
+const repositoryServing = (served) =>
+	createWidgetSource({
+		fetchJson: async (url) => answerFrom(served, url),
+		fetchText: async (url) => answerFrom(served, url),
+		disk: null,
+	});
+
+function answerFrom(served, url) {
+	if (!(url in served)) throw new Error(`404 ${url}`);
+	return served[url];
+}
+
+const withRegistry = (registry) => ({
+	[`https://api.github.com/repos/acme/widgets/commits/main`]: { sha: SHA },
+	[`${raw}/widgetarium-registry.json`]: JSON.stringify(registry),
+	[`${raw}/widgets/@demo/clock/manifest.json`]: CLOCK_CARD,
+});
+
+const ONE_ROW = {
+	name: "Clocks and counters",
+	author: "@you",
+	widgets: [{ id: "@demo/clock", title: "Clock", path: "widgets/@demo/clock", files: ["widget.tsx", "widget.css"] }],
+};
+
+const askedFor = { repository: REPOSITORY, ref: "main" };
+const offersOf = (served) => repositoryServing(served).offersFrom(askedFor);
+
+console.log("\na registry file is what a repository offers");
+const fromRegistry = await offersOf(withRegistry(ONE_ROW));
+same(
+	"the rows of the registry are the offers",
+	fromRegistry.map((entry) => entry.manifest.id),
+	["@demo/clock"],
+);
+same("the files the row names are carried, so the install knows what to fetch", fromRegistry[0]?.manifest.files, [
+	"widget.tsx",
+	"widget.css",
+]);
+same("the widget's own manifest fills the card", fromRegistry[0]?.manifest.keywords, ["time"]);
+same("and the folder the row names is where it is fetched from", fromRegistry[0]?.manifest.path, "widgets/@demo/clock");
+
+console.log("\nthe offer carries the commit it was read at");
+same("a repository offer names its commit", fromRegistry[0]?.commit, SHA);
+same(
+	"a widget whose manifest is missing is still offered from its row alone",
+	(await offersOf({ ...withRegistry(ONE_ROW), [`${raw}/widgets/@demo/clock/manifest.json`]: undefined }))[0]?.manifest
+		.title,
+	"Clock",
+);
+
+console.log("\nthe registry declares a format, and a newer one is refused whole");
+same("a registry with no format is read as the oldest", (await offersOf(withRegistry({ ...ONE_ROW }))).length, 1);
+same(
+	"a registry written for a newer plugin offers nothing",
+	(await offersOf(withRegistry({ ...ONE_ROW, registry: REGISTRY_FORMAT + 1 }))).length,
+	0,
+);
+same(
+	"a format that is not a version number offers nothing",
+	(await offersOf(withRegistry({ ...ONE_ROW, registry: "two" }))).length,
+	0,
+);
+same(
+	"the format this plugin writes is read",
+	(await offersOf(withRegistry({ ...ONE_ROW, registry: REGISTRY_FORMAT }))).length,
+	1,
+);
+
+console.log("\na repository with no registry file is read the way it always was");
+const TREE_ONLY = {
+	[`https://api.github.com/repos/acme/widgets/commits/main`]: { sha: SHA },
+	[`https://api.github.com/repos/acme/widgets/git/trees/${SHA}?recursive=1`]: {
+		tree: [{ path: "widgets/@demo/clock/manifest.json" }],
+	},
+	[`${raw}/widgets/@demo/clock/manifest.json`]: CLOCK_CARD,
+};
+const fromTree = await repositoryServing(TREE_ONLY).offersFrom({
+	repository: REPOSITORY,
+	ref: "main",
+	path: "widgets",
+});
+same(
+	"the tree still answers when no registry is there",
+	fromTree.map((entry) => entry.manifest.id),
+	["@demo/clock"],
+);
+same("and that offer names its commit too", fromTree[0]?.commit, SHA);
+
+console.log("\na row names a place inside its own repository, and nothing else");
+const rowNaming = (held) => ({ ...ONE_ROW, widgets: [{ ...ONE_ROW.widgets[0], ...held }] });
+const idsOffered = async (held) => (await offersOf(withRegistry(rowNaming(held)))).map((entry) => entry.manifest.id);
+
+same("a path stepping out of the repository is refused", await idsOffered({ path: "../../other/repo/widget" }), []);
+same("a path starting at the root is refused", await idsOffered({ path: "/etc/passwd" }), []);
+same("a path that is a URL of its own is refused", await idsOffered({ path: "https://evil.example/x" }), []);
+same("a path with a backslash is refused", await idsOffered({ path: "widgets\\@demo\\clock" }), []);
+same("a dot segment inside the path is refused", await idsOffered({ path: "widgets/../../@evil/miner" }), []);
+same("a file name carrying a folder is refused", await idsOffered({ files: ["../../../../evil.js"] }), []);
+same("a file name that is a dot is refused", await idsOffered({ files: [".."] }), []);
+same("an ordinary nested path is still offered", await idsOffered({ path: "packs/widgets/@demo/clock" }), [
+	"@demo/clock",
+]);
+
+console.log("\nand the install refuses the same, wherever the entry came from");
+const installRefusing = (manifest) =>
+	repositoryServing(withRegistry(ONE_ROW))
+		.filesOf({ manifest: { repository: REPOSITORY, ref: "main", ...manifest } })
+		.then((held) => held.failure);
+same(
+	"a path out of the repository never reaches a fetch",
+	await installRefusing({ id: "@demo/clock", path: "../../elsewhere" }),
+	'"../../elsewhere" is not a place inside the repository',
+);
+same(
+	"a file name that would be written outside the widget folder never reaches a fetch",
+	await installRefusing({ id: "@demo/clock", path: "widgets/@demo/clock", files: ["../../../evil.js"] }),
+	'"../../../evil.js" is not a file name a widget folder can hold',
+);
+
+console.log("\na registry that is not a registry says so rather than emptying the source");
+same("a registry that is a list offers nothing", (await offersOf(withRegistry([]))).length, 0);
+same("a registry that is a number offers nothing", (await offersOf(withRegistry(42))).length, 0);
+
 console.log(wrong === 0 ? "\nsource gate: clean" : `\nsource gate: ${wrong} wrong`);
 process.exit(wrong === 0 ? 0 : 1);

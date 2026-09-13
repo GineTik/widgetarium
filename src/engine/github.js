@@ -16,6 +16,16 @@ export function treeUrl(repository, commit) {
 	return `https://api.github.com/repos/${repository.owner}/${repository.repo}/git/trees/${commit}?recursive=1`;
 }
 
+const STEPS_OUT_OR_IN_FROM_THE_ROOT = /(^|\/)\.\.?(\/|$)|^\/|^[a-z][a-z0-9+.-]*:|\\/i;
+
+export function isCleanRepositoryPath(path) {
+	return typeof path === "string" && path !== "" && !STEPS_OUT_OR_IN_FROM_THE_ROOT.test(path);
+}
+
+export function isBareFileName(name) {
+	return typeof name === "string" && name !== "" && !/[\\/]/.test(name) && name !== "." && name !== "..";
+}
+
 export function scopedName(id) {
 	const [scope, name] = String(id ?? "").split("/");
 	return scope && name ? `${scope}/${name}` : null;

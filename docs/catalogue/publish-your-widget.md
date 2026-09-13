@@ -26,16 +26,25 @@ your-widgets/
 
 ```jsonc
 {
+	"registry": 1,
 	"name": "Clocks and counters",
 	"author": "@you",
 	"widgets": [
-		{ "id": "@you/clock", "title": "Clock", "path": "widgets/@you/clock", "files": ["widget.tsx", "widget.css"] }
-	]
+		{ "id": "@you/clock", "title": "Clock", "path": "widgets/@you/clock", "files": ["widget.tsx", "widget.css"] },
+	],
 }
 ```
 
+`registry` is the shape of this file. Leave it out and it is read as 1, which is what it is today;
+a registry declaring a number higher than the reader's plugin offers **nothing at all** rather than
+the rows it happened to understand, because a row it cannot read may be the one saying which files
+a widget is.
+
 `id` is the widget's own id and its first half is your pack — the row a person filters by in the
-catalogue. `path` is the folder inside the repository; `files` is what is taken from it.
+catalogue. `path` is the folder inside the repository; `files` is what is taken from it. Anything
+else a card shows — the description, the keywords, the preview, the sizing — comes from the
+widget's own `manifest.json`, read from the folder `path` names, so the registry never carries a
+second copy of it.
 
 The registry lists folders, never code. When somebody presses Install, the repository's ref is
 resolved to a commit once, every file is taken at that commit, and both the commit and a hash per

@@ -30,10 +30,10 @@ be inside the bundle — which is also why the person's own registries cannot li
 
 ```json
 {
-  "sources": [
-    { "path": "/Users/me/Projects/widgetarium/widgets" },
-    { "repository": "https://github.com/owner/repo", "ref": "main", "path": "widgets" }
-  ]
+	"sources": [
+		{ "path": "/Users/me/Projects/widgetarium/widgets" },
+		{ "repository": "https://github.com/owner/repo", "ref": "main", "path": "widgets" }
+	]
 }
 ```
 
@@ -50,13 +50,25 @@ The index required an entry per widget, written by hand. A widget that existed w
 until somebody remembered to list it, and the list drifted from the folder on the next commit.
 Reading the place removes the second copy of a fact the folder already carries.
 
-## Three storages, one law
+## Four storages, one law
 
-| source | discovery | install |
-|---|---|---|
-| folder on the machine | `fs` over `@scope/name`, desktop only | copy into the vault, no network |
-| repository | the commit's tree, filtered to `manifest.json` | fetch each file at that commit |
-| index entry (old) | none — the entry IS the declaration | fetch, as before |
+| source                     | discovery                                                 | install                                       |
+| -------------------------- | --------------------------------------------------------- | --------------------------------------------- |
+| folder on the machine      | `fs` over `@scope/name`, desktop only                     | copy into the vault, no network               |
+| repository with a registry | `widgetarium-registry.json` at the root names the folders | fetch the files its row names, at that commit |
+| repository without one     | the commit's tree, filtered to `manifest.json`            | fetch each file at that commit                |
+| index entry (old)          | none — the entry IS the declaration                       | fetch, as before                              |
+
+**A registry says which folders; the widget's own manifest says what the card shows.** The row
+carries `id`, `path` and `files` — what the install needs — and everything descriptive is read from
+`path/manifest.json`, so nothing is written twice. A row whose manifest is missing still draws from
+the row alone. The registry declares its own format, and one written for a newer plugin offers
+nothing rather than half of itself — `docs/versioning.md`.
+
+**Every offer names the commit it was read at**, which is the whole of update detection: the lock
+records the commit a widget was installed from, and a disagreement between the two is what paints
+the update state. A folder source answers `local`, which agrees with the lock it wrote and so never
+claims an update.
 
 `available()` is the one place that merges them, and **local always wins**: a widget somebody
 wrote this morning is never replaced by a source entry sharing its id.
