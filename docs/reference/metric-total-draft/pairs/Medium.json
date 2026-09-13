@@ -1,0 +1,125 @@
+{
+	"size": [
+		540,
+		380
+	],
+	"design": "docs/reference/metric-total-draft/Medium.dc.html",
+	"parts": {
+		"root": {
+			"design": ".tile",
+			"impl": "[data-part=\"root\"]"
+		},
+		"surface": {
+			"design": ".surface",
+			"impl": "[data-part=\"surface\"]"
+		},
+		"chart": {
+			"design": ".chart",
+			"impl": "[data-part=\"chart\"]"
+		},
+		"content": {
+			"design": ".content",
+			"impl": "[data-part=\"content\"]"
+		},
+		"head": {
+			"design": ".head",
+			"impl": "[data-part=\"head\"]"
+		},
+		"head-left": {
+			"design": ".head-left",
+			"impl": "[data-part=\"head-left\"]"
+		},
+		"head-right": {
+			"design": ".head-right",
+			"impl": "[data-part=\"head-right\"]"
+		},
+		"title": {
+			"design": ".title",
+			"impl": "[data-part=\"title\"]"
+		},
+		"seg": {
+			"design": ".seg",
+			"impl": ".mt3-seg"
+		},
+		"seg-thumb": {
+			"design": ".seg-thumb",
+			"impl": ".mt3-seg .wg-kit-seg-thumb"
+		},
+		"seg-curve": {
+			"design": ".seg button:nth-of-type(1)",
+			"impl": ".mt3-seg button:nth-of-type(1)"
+		},
+		"seg-bars": {
+			"design": ".seg button:nth-of-type(2)",
+			"impl": ".mt3-seg button:nth-of-type(2)"
+		},
+		"trend": {
+			"design": ".trend",
+			"impl": "[data-part=\"trend\"]"
+		},
+		"trend-arrow": {
+			"design": ".trend svg",
+			"impl": "[data-part=\"trend-arrow\"]"
+		},
+		"period": {
+			"design": ".period",
+			"impl": "[data-part=\"period\"]"
+		},
+		"period-caret": {
+			"design": ".period svg",
+			"impl": "[data-part=\"period-caret\"]"
+		},
+		"total": {
+			"design": ".headline",
+			"impl": "[data-part=\"total\"]"
+		},
+		"plates": {
+			"design": ".plates",
+			"impl": "[data-part=\"plates\"]"
+		},
+		"plate-today": {
+			"design": ".plates > .plate:nth-child(1)",
+			"impl": "[data-part=\"plate-today\"]"
+		},
+		"plate-today-value": {
+			"design": ".plates > .plate:nth-child(1) > .plate-value",
+			"impl": "[data-part=\"plate-today-value\"]"
+		},
+		"plate-today-label": {
+			"design": ".plates > .plate:nth-child(1) > .plate-label",
+			"impl": "[data-part=\"plate-today-label\"]"
+		},
+		"plate-peak": {
+			"design": ".plates > .plate:nth-child(2)",
+			"impl": "[data-part=\"plate-peak\"]"
+		},
+		"plate-peak-value": {
+			"design": ".plates > .plate:nth-child(2) > .plate-value",
+			"impl": "[data-part=\"plate-peak-value\"]"
+		},
+		"plate-peak-label": {
+			"design": ".plates > .plate:nth-child(2) > .plate-label",
+			"impl": "[data-part=\"plate-peak-label\"]"
+		},
+		"foot": {
+			"design": ".foot",
+			"impl": "[data-part=\"foot\"]"
+		},
+		"add": {
+			"design": ".btn",
+			"impl": "[data-part=\"add\"]"
+		},
+		"add-icon": {
+			"design": ".btn svg",
+			"impl": "[data-part=\"add-icon\"]"
+		},
+		"open-list": {
+			"design": ".icon-btn",
+			"impl": "[data-part=\"open-list\"]"
+		},
+		"open-list-icon": {
+			"design": ".icon-btn svg",
+			"impl": "[data-part=\"open-list-icon\"]"
+		}
+	}
+}

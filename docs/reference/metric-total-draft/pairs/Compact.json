@@ -1,0 +1,93 @@
+{
+	"size": [
+		900,
+		420
+	],
+	"design": "docs/reference/metric-total-draft/Compact.dc.html",
+	"parts": {
+		"root": {
+			"design": ".stage > .tile:nth-of-type(1)",
+			"impl": "[data-part=\"root\"]"
+		},
+		"surface": {
+			"design": ".stage > .tile:nth-of-type(1) > .surface",
+			"impl": "[data-part=\"surface\"]"
+		},
+		"chart": {
+			"design": ".stage > .tile:nth-of-type(1) .chart",
+			"impl": "[data-part=\"chart\"]"
+		},
+		"content": {
+			"design": ".stage > .tile:nth-of-type(1) .content",
+			"impl": "[data-part=\"content\"]"
+		},
+		"head": {
+			"design": ".stage > .tile:nth-of-type(1) .head",
+			"impl": "[data-part=\"head\"]"
+		},
+		"title": {
+			"design": ".stage > .tile:nth-of-type(1) .title",
+			"impl": "[data-part=\"title\"]"
+		},
+		"trend": {
+			"design": ".stage > .tile:nth-of-type(1) .trend",
+			"impl": "[data-part=\"trend\"]"
+		},
+		"trend-arrow": {
+			"design": ".stage > .tile:nth-of-type(1) .trend svg",
+			"impl": "[data-part=\"trend-arrow\"]"
+		},
+		"total": {
+			"design": ".stage > .tile:nth-of-type(1) .headline",
+			"impl": "[data-part=\"total\"]"
+		},
+		"plates": {
+			"design": ".stage > .tile:nth-of-type(1) .plates",
+			"impl": "[data-part=\"plates\"]"
+		},
+		"plate-today": {
+			"design": ".stage > .tile:nth-of-type(1) .plates > .plate:nth-child(1)",
+			"impl": "[data-part=\"plate-today\"]"
+		},
+		"plate-today-value": {
+			"design": ".stage > .tile:nth-of-type(1) .plates > .plate:nth-child(1) > .plate-value",
+			"impl": "[data-part=\"plate-today-value\"]"
+		},
+		"plate-today-label": {
+			"design": ".stage > .tile:nth-of-type(1) .plates > .plate:nth-child(1) > .plate-label",
+			"impl": "[data-part=\"plate-today-label\"]"
+		},
+		"plate-peak": {
+			"design": ".stage > .tile:nth-of-type(1) .plates > .plate:nth-child(2)",
+			"impl": "[data-part=\"plate-peak\"]"
+		},
+		"plate-peak-value": {
+			"design": ".stage > .tile:nth-of-type(1) .plates > .plate:nth-child(2) > .plate-value",
+			"impl": "[data-part=\"plate-peak-value\"]"
+		},
+		"plate-peak-label": {
+			"design": ".stage > .tile:nth-of-type(1) .plates > .plate:nth-child(2) > .plate-label",
+			"impl": "[data-part=\"plate-peak-label\"]"
+		},
+		"foot": {
+			"design": ".stage > .tile:nth-of-type(1) .foot",
+			"impl": "[data-part=\"foot\"]"
+		},
+		"add": {
+			"design": ".stage > .tile:nth-of-type(1) .btn",
+			"impl": "[data-part=\"add\"]"
+		},
+		"add-icon": {
+			"design": ".stage > .tile:nth-of-type(1) .btn svg",
+			"impl": "[data-part=\"add-icon\"]"
+		},
+		"open-list": {
+			"design": ".stage > .tile:nth-of-type(1) .icon-btn",
+			"impl": "[data-part=\"open-list\"]"
+		},
+		"open-list-icon": {
+			"design": ".stage > .tile:nth-of-type(1) .icon-btn svg",
+			"impl": "[data-part=\"open-list-icon\"]"
+		}
+	}
+}

@@ -1,0 +1,129 @@
+{
+	"size": [
+		660,
+		700
+	],
+	"design": "docs/reference/metric-total-draft/AddRecord.dc.html",
+	"parts": {
+		"add-dialog": {
+			"design": ".dialog",
+			"impl": ".mt3-add-dialog"
+		},
+		"add-close": {
+			"design": ".close",
+			"impl": "[data-part=\"add-close\"]"
+		},
+		"add-close-icon": {
+			"design": ".close svg",
+			"impl": "[data-part=\"add-close-icon\"]"
+		},
+		"add-head": {
+			"design": ".head",
+			"impl": "[data-part=\"add-head\"]"
+		},
+		"add-title": {
+			"design": ".dialog-title",
+			"impl": "[data-part=\"add-title\"]"
+		},
+		"add-desc": {
+			"design": ".dialog-desc",
+			"impl": "[data-part=\"add-desc\"]"
+		},
+		"add-body": {
+			"design": ".row",
+			"impl": "[data-part=\"add-body\"]"
+		},
+		"calendar": {
+			"design": ".cal",
+			"impl": ".mt3-calendar"
+		},
+		"cal-head": {
+			"design": ".cal-head",
+			"impl": ".mt3-calendar .wg-kit-cal-head"
+		},
+		"cal-month": {
+			"design": ".cal-month",
+			"impl": ".mt3-calendar .wg-kit-cal-month"
+		},
+		"cal-prev": {
+			"design": ".cal-head button:nth-of-type(1)",
+			"impl": ".mt3-calendar .wg-kit-cal-head button:nth-of-type(1)"
+		},
+		"cal-next": {
+			"design": ".cal-head button:nth-of-type(2)",
+			"impl": ".mt3-calendar .wg-kit-cal-head button:nth-of-type(2)"
+		},
+		"cal-grid": {
+			"design": ".cal-grid",
+			"impl": ".mt3-calendar .wg-kit-cal-grid"
+		},
+		"cal-weekday": {
+			"design": ".cal-grid span:nth-of-type(1)",
+			"impl": ".mt3-calendar .wg-kit-cal-grid span:nth-of-type(1)"
+		},
+		"cal-day": {
+			"design": ".cal-grid button:nth-of-type(2)",
+			"impl": ".mt3-calendar .wg-kit-cal-grid button:nth-of-type(2)"
+		},
+		"cal-day-outside": {
+			"design": ".cal-grid button:nth-of-type(1)",
+			"impl": ".mt3-calendar .wg-kit-cal-grid button:nth-of-type(1)"
+		},
+		"cal-day-picked": {
+			"design": ".cal-day.is-picked",
+			"impl": ".mt3-calendar .wg-kit-cal-day.is-picked"
+		},
+		"add-side": {
+			"design": ".side",
+			"impl": "[data-part=\"add-side\"]"
+		},
+		"label-amount": {
+			"design": ".side > span:nth-of-type(1)",
+			"impl": "[data-part=\"label-amount\"]"
+		},
+		"sign": {
+			"design": ".sign",
+			"impl": ".mt3-sign"
+		},
+		"sign-thumb": {
+			"design": ".sign-thumb",
+			"impl": ".mt3-sign .wg-kit-seg-thumb"
+		},
+		"sign-add": {
+			"design": ".sign button:nth-of-type(1)",
+			"impl": ".mt3-sign button:nth-of-type(1)"
+		},
+		"sign-subtract": {
+			"design": ".sign button:nth-of-type(2)",
+			"impl": ".mt3-sign button:nth-of-type(2)"
+		},
+		"amount": {
+			"design": ".side > .field:not(.is-area)",
+			"impl": ".mt3-amount"
+		},
+		"amount-unit": {
+			"design": ".field-unit",
+			"impl": "[data-part=\"amount-unit\"]"
+		},
+		"label-note": {
+			"design": ".side > span:nth-of-type(2)",
+			"impl": "[data-part=\"label-note\"]"
+		},
+		"note": {
+			"design": ".field.is-area",
+			"impl": ".mt3-note"
+		},
+		"add-foot": {
+			"design": ".foot",
+			"impl": "[data-part=\"add-foot\"]"
+		},
+		"cancel": {
+			"design": ".foot .btn:not(.is-accent)",
+			"impl": "[data-part=\"cancel\"]"
+		},
+		"confirm": {
+			"design": ".btn.is-accent",
+			"impl": "[data-part=\"confirm\"]"
+		}
+	}
+}
