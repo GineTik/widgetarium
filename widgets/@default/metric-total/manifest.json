@@ -1,100 +1,28 @@
 {
 	"id": "@default/metric-total",
 	"api": 1,
+	"was": ["@default/metric-total-v2", "@default/metric-total-v3"],
 	"title": "Metric total",
-	"description": "One number over a folder of records, with the days behind it as a curve or as bars.",
+	"description": "A running total over a window, the curve or bars behind it, and the day's own reading.",
 	"keywords": [
 		"metric",
 		"total",
+		"sum",
 		"chart",
 		"curve",
 		"bars",
+		"sparkline",
 		"trend",
 		"records",
-		"tracker",
-		"count",
-		"sum",
+		"amount",
 		"period",
-		"analytics"
+		"number"
 	],
 	"defaultSize": {
-		"w": 11,
-		"h": 6
+		"w": 7,
+		"h": 4
 	},
-	"collapseBelowPx": 240,
-	"stackBelowPx": 420,
-	"shortestPx": 240,
-	"preview": {
-		"size": {
-			"w": 11,
-			"h": 6
-		},
-		"props": {
-			"title": {
-				"value": "Total orders"
-			},
-			"unit": {
-				"value": "orders"
-			},
-			"records": {
-				"rows": [
-					{
-						"path": "Metrics/2026-08-20.md",
-						"date": "2026-08-20",
-						"amount": 100
-					},
-					{
-						"path": "Metrics/2026-08-23.md",
-						"date": "2026-08-23",
-						"amount": 115
-					},
-					{
-						"path": "Metrics/2026-08-26.md",
-						"date": "2026-08-26",
-						"amount": 120
-					},
-					{
-						"path": "Metrics/2026-08-29.md",
-						"date": "2026-08-29",
-						"amount": 110
-					},
-					{
-						"path": "Metrics/2026-09-01.md",
-						"date": "2026-09-01",
-						"amount": 178
-					},
-					{
-						"path": "Metrics/2026-09-03.md",
-						"date": "2026-09-03",
-						"amount": 180
-					},
-					{
-						"path": "Metrics/2026-09-05.md",
-						"date": "2026-09-05",
-						"amount": 205
-					},
-					{
-						"path": "Metrics/2026-09-07.md",
-						"date": "2026-09-07",
-						"amount": 185
-					},
-					{
-						"path": "Metrics/2026-09-09.md",
-						"date": "2026-09-09",
-						"amount": 166
-					},
-					{
-						"path": "Metrics/2026-09-11.md",
-						"date": "2026-09-11",
-						"amount": 181
-					},
-					{
-						"path": "Metrics/2026-09-12.md",
-						"date": "2026-09-12",
-						"amount": 168
-					}
-				]
-			}
-		}
+	"maxSize": {
+		"h": 4
 	}
 }

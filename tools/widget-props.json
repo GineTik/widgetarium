@@ -201,6 +201,7 @@
 		"records": {
 			"kind": "collection",
 			"label": "Records",
+			"hint": "One note per reading. Each carries a date and an amount.",
 			"verbs": {
 				"list": "required",
 				"create": "optional",
@@ -213,39 +214,23 @@
 			"needs": {
 				"amount": {
 					"type": "number",
-					"aka": [
-						"value",
-						"count",
-						"total",
-						"sum",
-						"qty",
-						"delta"
-					]
+					"aka": ["value", "count", "total", "kept", "score", "done"]
 				},
 				"date": {
 					"type": "date",
-					"aka": [
-						"day",
-						"when",
-						"on",
-						"created"
-					]
+					"aka": ["created", "day", "when", "on"]
 				},
 				"note": {
 					"type": "text",
-					"aka": [
-						"label",
-						"comment",
-						"memo",
-						"description"
-					]
+					"aka": ["text", "comment", "description", "body"]
 				}
 			}
 		},
 		"title": {
 			"kind": "value",
+			"wasSetting": true,
 			"type": "text",
-			"label": "Title",
+			"label": "What the number is",
 			"verbs": {
 				"get": "required"
 			},
@@ -255,9 +240,9 @@
 		},
 		"unit": {
 			"kind": "value",
+			"wasSetting": true,
 			"type": "text",
-			"label": "Unit",
-			"hint": "What one record counts. It is written after the number in the chart's tooltip.",
+			"label": "Unit the amounts are in",
 			"verbs": {
 				"get": "required"
 			},
@@ -267,9 +252,10 @@
 		},
 		"rising": {
 			"kind": "value",
+			"wasSetting": true,
 			"type": "text",
-			"label": "good · bad · neither",
-			"hint": "Whether a rising number is a good thing. Spending that climbs is not green.",
+			"label": "good · bad",
+			"hint": "Whether a rise reads as good or as bad.",
 			"verbs": {
 				"get": "required"
 			},
@@ -280,17 +266,20 @@
 		"periods": {
 			"kind": "collection",
 			"label": "Periods",
+			"hint": "Every window the card can read over.",
 			"item": {
 				"fields": [
 					{
 						"key": "label",
-						"label": "Name",
-						"type": "text"
+						"label": "Label",
+						"type": "text",
+						"required": true
 					},
 					{
 						"key": "days",
 						"label": "Days",
-						"type": "number"
+						"type": "number",
+						"required": true
 					}
 				]
 			},
@@ -300,26 +289,23 @@
 			"default": {
 				"value": [
 					{
-						"id": "p30",
+						"label": "Past 7 days",
+						"days": 7
+					},
+					{
 						"label": "Past 30 days",
 						"days": 30
 					},
 					{
-						"id": "p14",
-						"label": "Past 14 days",
-						"days": 14
-					},
-					{
-						"id": "p7",
-						"label": "Past 7 days",
-						"days": 7
+						"label": "Past 90 days",
+						"days": 90
 					}
 				]
 			}
 		},
 		"periodPick": {
 			"kind": "value",
-			"label": "Which period",
+			"label": "Picked period",
 			"of": "periods",
 			"field": "label",
 			"fallback": "first",
@@ -330,7 +316,7 @@
 		},
 		"period": {
 			"kind": "value",
-			"label": "Period",
+			"label": "The period",
 			"picks": "periodPick",
 			"of": "periods",
 			"verbs": {
@@ -339,6 +325,7 @@
 		},
 		"view": {
 			"kind": "value",
+			"wasSetting": true,
 			"type": "text",
 			"label": "curve · bars",
 			"verbs": {
@@ -364,23 +351,11 @@
 				"days": {
 					"type": "date",
 					"many": true,
-					"aka": [
-						"entries",
-						"dates",
-						"log",
-						"checkins"
-					]
+					"aka": ["entries", "dates", "log", "checkins"]
 				},
 				"done": {
 					"type": "number",
-					"aka": [
-						"kept",
-						"value",
-						"count",
-						"steps",
-						"amount",
-						"score"
-					]
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				}
 			}
 		},
@@ -449,23 +424,11 @@
 			"needs": {
 				"done": {
 					"type": "number",
-					"aka": [
-						"kept",
-						"value",
-						"count",
-						"steps",
-						"amount",
-						"score"
-					]
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				},
 				"date": {
 					"type": "date",
-					"aka": [
-						"created",
-						"day",
-						"when",
-						"on"
-					]
+					"aka": ["created", "day", "when", "on"]
 				}
 			}
 		},
@@ -496,48 +459,27 @@
 				"days": {
 					"type": "date",
 					"many": true,
-					"aka": [
-						"entries",
-						"dates",
-						"log",
-						"checkins"
-					]
+					"aka": ["entries", "dates", "log", "checkins"]
 				},
 				"done": {
 					"type": "number",
-					"aka": [
-						"kept",
-						"value",
-						"count",
-						"steps",
-						"amount",
-						"score"
-					]
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				},
 				"title": {
 					"type": "text",
-					"aka": [
-						"name"
-					]
+					"aka": ["name"]
 				},
 				"color": {
 					"type": "text",
-					"aka": [
-						"colour"
-					]
+					"aka": ["colour"]
 				},
 				"goal": {
 					"type": "number",
-					"aka": [
-						"target"
-					]
+					"aka": ["target"]
 				},
 				"maxGap": {
 					"type": "number",
-					"aka": [
-						"max gap",
-						"grace"
-					]
+					"aka": ["max gap", "grace"]
 				}
 			}
 		},
@@ -594,23 +536,11 @@
 			"needs": {
 				"done": {
 					"type": "number",
-					"aka": [
-						"kept",
-						"value",
-						"count",
-						"steps",
-						"amount",
-						"score"
-					]
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				},
 				"date": {
 					"type": "date",
-					"aka": [
-						"created",
-						"day",
-						"when",
-						"on"
-					]
+					"aka": ["created", "day", "when", "on"]
 				}
 			}
 		},
@@ -711,28 +641,15 @@
 			"needs": {
 				"tier": {
 					"type": "text",
-					"aka": [
-						"rank",
-						"grade",
-						"bucket"
-					]
+					"aka": ["rank", "grade", "bucket"]
 				},
 				"order": {
 					"type": "number",
-					"aka": [
-						"position",
-						"sort",
-						"index"
-					]
+					"aka": ["position", "sort", "index"]
 				},
 				"picture": {
 					"type": "text",
-					"aka": [
-						"image",
-						"avatar",
-						"cover",
-						"icon"
-					]
+					"aka": ["image", "avatar", "cover", "icon"]
 				}
 			}
 		},
@@ -799,26 +716,15 @@
 			"needs": {
 				"label": {
 					"type": "text",
-					"aka": [
-						"name",
-						"title",
-						"tier"
-					]
+					"aka": ["name", "title", "tier"]
 				},
 				"tone": {
 					"type": "text",
-					"aka": [
-						"colour",
-						"color"
-					]
+					"aka": ["colour", "color"]
 				},
 				"order": {
 					"type": "number",
-					"aka": [
-						"position",
-						"sort",
-						"index"
-					]
+					"aka": ["position", "sort", "index"]
 				}
 			}
 		},
@@ -1013,10 +919,7 @@
 				"from": "typed",
 				"value": {
 					"title": "Design the onboarding flow",
-					"tags": [
-						"design",
-						"research"
-					],
+					"tags": ["design", "research"],
 					"tagTones": {
 						"design": "warning",
 						"research": "accent"
@@ -1026,11 +929,7 @@
 					"progress": 60,
 					"due": "12 Aug",
 					"files": 2,
-					"initials": [
-						"Alex Morgan",
-						"Mia Tan",
-						"Theo Ruiz"
-					]
+					"initials": ["Alex Morgan", "Mia Tan", "Theo Ruiz"]
 				}
 			}
 		}
