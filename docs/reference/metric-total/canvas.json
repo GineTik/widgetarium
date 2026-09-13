@@ -1,0 +1,103 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 900,
+      "h": 560,
+      "title": "Card — curve"
+    },
+    {
+      "file": "Bars.dc.html",
+      "x": 1020,
+      "y": 0,
+      "w": 900,
+      "h": 560,
+      "title": "Card — bars, dark"
+    },
+    {
+      "file": "ToneUp.dc.html",
+      "x": 2040,
+      "y": 0,
+      "w": 600,
+      "h": 440,
+      "title": "Tone — rising"
+    },
+    {
+      "file": "ToneFlat.dc.html",
+      "x": 0,
+      "y": 720,
+      "w": 600,
+      "h": 440,
+      "title": "Tone — steady"
+    },
+    {
+      "file": "ToneDown.dc.html",
+      "x": 720,
+      "y": 720,
+      "w": 600,
+      "h": 440,
+      "title": "Tone — falling"
+    },
+    {
+      "file": "WideRung.dc.html",
+      "x": 1440,
+      "y": 720,
+      "w": 780,
+      "h": 500,
+      "title": "Ladder — four plates"
+    },
+    {
+      "file": "Medium.dc.html",
+      "x": 0,
+      "y": 1380,
+      "w": 580,
+      "h": 440,
+      "title": "Ladder — two plates"
+    },
+    {
+      "file": "Compact.dc.html",
+      "x": 700,
+      "y": 1380,
+      "w": 440,
+      "h": 420,
+      "title": "Ladder — no toggle"
+    },
+    {
+      "file": "Tiny.dc.html",
+      "x": 1260,
+      "y": 1380,
+      "w": 350,
+      "h": 380,
+      "title": "Ladder — plates gone"
+    },
+    {
+      "file": "Empty.dc.html",
+      "x": 0,
+      "y": 1980,
+      "w": 600,
+      "h": 440,
+      "title": "Nothing bound yet"
+    },
+    {
+      "file": "AddRecord.dc.html",
+      "x": 720,
+      "y": 1980,
+      "w": 700,
+      "h": 560,
+      "title": "Add a record"
+    },
+    {
+      "file": "RecordList.dc.html",
+      "x": 1540,
+      "y": 1980,
+      "w": 700,
+      "h": 640,
+      "title": "All records"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
