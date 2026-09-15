@@ -1,4 +1,5 @@
 // CONTEXT: jsdom lays nothing out and resolves no cascade, so every check here runs in real Chrome
+import { THEMES } from "./host-themes.mjs";
 import { TEXT_LOADERS } from "../build.mjs";
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
@@ -18,7 +19,9 @@ let failed = 0;
 function check(name, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 function collect(from, into, prefix) {
@@ -33,15 +36,6 @@ function collect(from, into, prefix) {
 
 const files = collect("widgets", {}, WIDGETS_DIR);
 
-const THEMES = {
-	light: `--background-primary:#ffffff;--background-secondary:#f6f6f6;--background-modifier-border:#e4e4e4;
-		--background-modifier-hover:rgba(0,0,0,0.05);--text-normal:#222222;--text-muted:#707070;--text-faint:#a0a0a0;
-		--text-on-accent:#ffffff;--text-error:#c0392b;--text-success:#1f8a4c;--interactive-accent:#6d4ee0;`,
-	dark: `--background-primary:#1e1e1e;--background-secondary:#161616;--background-modifier-border:#333333;
-		--background-modifier-hover:rgba(255,255,255,0.07);--text-normal:#dadada;--text-muted:#999999;--text-faint:#6b6b6b;
-		--text-on-accent:#ffffff;--text-error:#e06c5f;--text-success:#4ec97f;--interactive-accent:#8b6cef;`,
-};
-
 async function bundle(source) {
 	const built = await esbuild.build({
 		stdin: { contents: source, resolveDir: ROOT, loader: "jsx", sourcefile: "probe.jsx" },
@@ -54,7 +48,15 @@ async function bundle(source) {
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		inject: ["tools/fill-inject.js"],
-		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", "widgetarium/kit/emojis": "./src/emojis.js", "@habit/lib": "./widgets/@habit/lib.js", "@rank/lib": "./widgets/@rank/lib.js", "@default/lib": "./widgets/@default/lib.js", obsidian: "./tools/obsidian-shim.js" },
+		alias: {
+			widgetarium: "./tools/fill-shim.js",
+			"widgetarium/kit": "./src/kit.js",
+			"widgetarium/kit/emojis": "./src/emojis.js",
+			"@habit/lib": "./widgets/@habit/lib.js",
+			"@rank/lib": "./widgets/@rank/lib.js",
+			"@default/lib": "./widgets/@default/lib.js",
+			obsidian: "./tools/obsidian-shim.js",
+		},
 		logLevel: "warning",
 	});
 	return built.outputFiles[0].text;
@@ -84,8 +86,16 @@ async function openChrome(file, windowSize = "1280,900") {
 	const profile = mkdtempSync(path.join(tmpdir(), "wg-paint-profile-"));
 	const chrome = spawn(
 		CHROME,
-		["--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", `--window-size=${windowSize}`,
-			`--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, `file://${file}`],
+		[
+			"--headless=new",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			`--window-size=${windowSize}`,
+			`--remote-debugging-port=${port}`,
+			`--user-data-dir=${profile}`,
+			`file://${file}`,
+		],
 		{ stdio: ["ignore", "ignore", "ignore"] },
 	);
 	for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -141,7 +151,9 @@ async function ask(file, expression, settleMs, hover, windowSize) {
 	// CONTEXT: React reports a render failure as a window error event, so the page holds it, not the throw
 	if (reply.result?.exceptionDetails) {
 		const onPage = await send("Runtime.evaluate", { expression: "window.__err || ''", returnByValue: true });
-		why = onPage.result?.result?.value || JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails);
+		why =
+			onPage.result?.result?.value ||
+			JSON.stringify(reply.result.exceptionDetails.exception ?? reply.result.exceptionDetails);
 	}
 	socket.close();
 	chrome.kill();
@@ -287,7 +299,7 @@ let board = normalizeBoard({
 });
 const node = document.getElementById("host");
 function draw() {
-	render(h(WidgetSurface, { board, registry, host, editing: true, initialWidth: 1240, onChange: (next) => { board = next; draw(); } }), node);
+	render(h(WidgetSurface, { board, boardNode: node, registry, host, editing: true, initialWidth: 1240, onChange: (next) => { board = next; draw(); } }), node);
 }
 draw();
 const settle = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 140)));
@@ -454,7 +466,7 @@ function Harness() {
 		loading.load().then(() => setRegistry(loading));
 	}, []);
 	if (!registry) return h("p", null, "Loading widgets");
-	return h(WidgetSurface, { board, registry, host, editing: false, initialWidth: 1240, onChange: (next) => { board = next; draw(); } });
+	return h(WidgetSurface, { board, boardNode: node, registry, host, editing: false, initialWidth: 1240, onChange: (next) => { board = next; draw(); } });
 }
 function draw() {
 	render(h(Harness), node);
@@ -576,7 +588,7 @@ const STREAK_ASK = `(async () => {
 		countEndsAtPx: round(tileBox.right - document.querySelector(".hs-count").getBoundingClientRect().right),
 		lastRingEndsAtPx: round(tileBox.right - lastRing.right),
 	};
-})()`
+})()`;
 
 const RAIL_CONTRAST_FLOOR = 4.5;
 const RANK_SHEETS = ["widgets/@rank/tokens.css", "widgets/@rank/tier-list/widget.css"];
@@ -661,7 +673,7 @@ import { render } from "./src/engine/render.js";
 import { CatalogueDialog } from "./src/catalogue-dialog.js";
 
 const definition = {
-	manifest: { id: "@demo/clock", title: "Clock", defaultSize: { w: 3, h: 2 }, keywords: ["clock", "time"], description: "A clock." },
+	manifest: { id: "@demo/clock", title: "Clock", defaultSize: { w: 3, h: 2 }, keywords: ["clock", "time", "hours", "zone", "tick", "watch", "dial", "alarm"], description: "A clock." },
 	component: () => h("div", { className: "probe-inside", contentEditable: "true" }, "type here"),
 };
 const registry = { list: () => [definition], get: () => definition };
@@ -679,6 +691,39 @@ render(
 	document.getElementById("host"),
 );
 `;
+
+const GUTTER_ASK = `(async () => {
+	const frame = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+	const side = document.querySelector(".wg-cat-side");
+	const search = document.querySelector(".wg-cat-side .wg-cat-search");
+	const facet = document.querySelector(".wg-cat-facet-search");
+	const packs = document.querySelector(".wg-cat-packs");
+	const tags = document.querySelector(".wg-cat-tags");
+	const row = document.querySelector(".wg-cat-tag-row");
+	const count = document.querySelector(".wg-cat-more-tags");
+	const sideBox = side.getBoundingClientRect();
+	const searchBox = search.getBoundingClientRect();
+	const gutters = [Math.round(searchBox.left - sideBox.left), Math.round(sideBox.right - searchBox.right)];
+	const alignment = Math.round(facet.getBoundingClientRect().left - packs.getBoundingClientRect().left);
+	const tagsHtml = tags.outerHTML.slice(0, 180);
+	const tagsAreOneRow = Math.round(tags.getBoundingClientRect().height);
+	const tagRowScrolls = getComputedStyle(row).overflowX;
+	const countIsPressable = count ? count.tagName : null;
+	document.querySelector(".wg-cat-open-docs").click();
+	await frame();
+	const next = document.querySelector(".wg-doc-next");
+	const padding = next ? getComputedStyle(next) : null;
+	return {
+		gutters,
+		alignment,
+		tagsHtml,
+		tagsAreOneRow,
+		tagRowScrolls,
+		countIsPressable,
+		nextPadding: padding ? [padding.paddingTop, padding.paddingBottom].join("/") : null,
+		nextIsTallEnough: next ? Math.round(next.getBoundingClientRect().height) >= 64 : null,
+	};
+})()`;
 
 const CATALOGUE_ASK = `(() => {
 	const dialog = document.querySelector(".wg-cat-dialog");
@@ -702,6 +747,7 @@ const CATALOGUE_ASK = `(() => {
 		sheetFromBottomPx: sheet ? Math.round(innerHeight - sheet.getBoundingClientRect().bottom) : null,
 		sheetWidthPx: sheet ? Math.round(sheet.getBoundingClientRect().width) : null,
 		gripPaintsAHandle: grip ? getComputedStyle(grip, "::before").width : null,
+		gripWearsABox: grip ? [getComputedStyle(grip).boxShadow, getComputedStyle(grip).backgroundColor].join(" ") : null,
 	};
 })()`;
 
@@ -749,14 +795,17 @@ render(
 	}),
 	tile,
 );
+setTimeout(() => document.querySelector(".mt-foot .wg-kit-btn")?.click(), 200);
 `;
+
+const METRIC_HOVER_ASK = `(() => {
+	const note = document.querySelector(".mt-note");
+	const painted = getComputedStyle(note);
+	return { fill: painted.backgroundColor, edge: painted.boxShadow, rested: getComputedStyle(document.querySelector(".mt-form-side .wg-kit-field")).backgroundColor };
+})()`;
 
 const METRIC_ASK = `(async () => {
 	const settle = () => new Promise((done) => setTimeout(done, 140));
-	const opener = [...document.querySelectorAll(".mt-foot .wg-kit-btn")][0];
-	opener.click();
-	await settle();
-
 	const dialog = document.querySelector(".wg-dialog");
 	const note = document.querySelector(".mt-note");
 	const amount = document.querySelector(".mt-amount .wg-kit-field-input");
@@ -768,6 +817,11 @@ const METRIC_ASK = `(async () => {
 	await settle();
 
 	return {
+		periodInk: getComputedStyle(document.querySelector(".mt-period")).color,
+		mutedInk: getComputedStyle(document.querySelector(".mt-title")).color,
+		accentInk: getComputedStyle(document.documentElement).getPropertyValue("--interactive-accent").trim(),
+		platesAcross: document.querySelectorAll(".mt-plate").length,
+		platesDrawn: [...document.querySelectorAll(".mt-plate")].filter((plate) => getComputedStyle(plate).display !== "none").length,
 		dialogCorner: dialog ? getComputedStyle(dialog).borderTopLeftRadius : null,
 		dialogFill: dialog ? getComputedStyle(dialog).backgroundColor : null,
 		noteTag: note ? note.tagName : null,
@@ -778,7 +832,41 @@ const METRIC_ASK = `(async () => {
 	};
 })()`;
 
-const [subScript, kitScript, mountScript, overlayScript, streakScript, rankScript, metricScript, catalogueScript] = await Promise.all([bundle(SUB_PROBE), bundle(KIT_PROBE), bundle(MOUNT_PROBE), bundle(OVERLAY_PROBE), bundle(STREAK_PROBE), bundle(RANK_PROBE), bundle(METRIC_PROBE), bundle(CATALOGUE_PROBE)]);
+const DRAWER_SCRIPT = `document.getElementById("host").innerHTML =
+	'<div class="wg-drawer-over is-open">' +
+	'<div class="wg-drawer-scrim"></div>' +
+	'<div class="wg-drawer is-left" style="--wg-drawer-width: 280px"><div class="wg-tree-region is-left"></div></div>' +
+	'</div><div id="raised" style="background: var(--wg-kit-raise)"></div>';`;
+
+const DRAWER_ASK = `(() => {
+	const over = document.querySelector(".wg-drawer-over");
+	const panel = document.querySelector(".wg-drawer");
+	const overBox = over.getBoundingClientRect();
+	const panelBox = panel.getBoundingClientRect();
+	const painted = getComputedStyle(panel);
+	return {
+		lies: getComputedStyle(over).position,
+		coversTheWindow: [Math.round(overBox.width) === window.innerWidth, Math.round(overBox.height) === window.innerHeight],
+		fromTopToBottom: [Math.round(panelBox.top), Math.round(window.innerHeight - panelBox.bottom)],
+		widthPx: Math.round(panelBox.width),
+		outerCorner: painted.borderTopLeftRadius,
+		innerCorner: painted.borderTopRightRadius,
+		scrimInk: getComputedStyle(document.querySelector(".wg-drawer-scrim")).backgroundColor,
+		fillIsTheRaisedOne: painted.backgroundColor === getComputedStyle(document.getElementById("raised")).backgroundColor,
+	};
+})()`;
+
+const [subScript, kitScript, mountScript, overlayScript, streakScript, rankScript, metricScript, catalogueScript] =
+	await Promise.all([
+		bundle(SUB_PROBE),
+		bundle(KIT_PROBE),
+		bundle(MOUNT_PROBE),
+		bundle(OVERLAY_PROBE),
+		bundle(STREAK_PROBE),
+		bundle(RANK_PROBE),
+		bundle(METRIC_PROBE),
+		bundle(CATALOGUE_PROBE),
+	]);
 
 for (const theme of ["light", "dark"]) {
 	console.log(`\n— ${theme} —`);
@@ -789,8 +877,22 @@ for (const theme of ["light", "dark"]) {
 	check("its cast is the kit lift, both layers", side.layers, 2);
 	check("and that cast paints beside the block, as every sidebar's does", side.reachesSideways, true);
 
+	const drawer = await ask(pageFor(theme, DRAWER_SCRIPT, "drawer"), DRAWER_ASK, 600);
+	check("a drawer lies over the app, not inside the note", drawer.lies, "fixed");
+	check("and it covers the whole window", drawer.coversTheWindow, [true, true]);
+	check("its panel runs from the top of the screen to the bottom", drawer.fromTopToBottom, [0, 0]);
+	check("at the width the region carries", drawer.widthPx, 280);
+	check("the corner against the screen edge is square", drawer.outerCorner, "0px");
+	check("and only the one facing the board is round", drawer.innerCorner, "16px");
+	check("the scrim separates without blacking the room out", drawer.scrimInk, "rgba(0, 0, 0, 0.22)");
+	check("the panel is the raised surface, not a colour of its own", drawer.fillIsTheRaisedOne, true);
+
 	const kit = await ask(pageFor(theme, kitScript, "kit"), KIT_ASK, 1200);
-	check("a raised control carries a hairline on the ::before that owns its corner", kit.rowButton, { edges: 1, widthPx: 1, inkAlpha: 0.09 });
+	check("a raised control carries a hairline on the ::before that owns its corner", kit.rowButton, {
+		edges: 1,
+		widthPx: 1,
+		inkAlpha: 0.09,
+	});
 
 	const hovered = await ask(pageFor(theme, kitScript, "kit"), KIT_HOVER_ASK, 1200, "#row-button");
 	check("the pointer turns a raised control's fill grey", hovered.hoveredFill, hovered.hoverFill);
@@ -800,7 +902,11 @@ for (const theme of ["light", "dark"]) {
 	check("and the control that carries it is the RAISED one, not a colour we guessed", kit.rowButtonIsRaised, true);
 	check("a grey neutral button has none", kit.neutralButton, null);
 	check("nor has a grey neutral icon button", kit.neutralIcon, null);
-	check("and that grey is the kit fill, a step away from the raised one", [kit.neutralIsTheGreyFill, kit.raisedIsNotTheGreyFill], [true, true]);
+	check(
+		"and that grey is the kit fill, a step away from the raised one",
+		[kit.neutralIsTheGreyFill, kit.raisedIsNotTheGreyFill],
+		[true, true],
+	);
 	check("an accent button has none, because its fill already says control", kit.accentButton, null);
 	check("nor has a danger one", kit.dangerButton, null);
 	check("nor has a plain one", kit.plainButton, null);
@@ -819,43 +925,98 @@ for (const theme of ["light", "dark"]) {
 	check("spaced the way the kit spaces adjacent controls", mount.gaps, [8]);
 	check("adding a view opens the catalogue", mount.opened, true);
 	check("which says what the press means", mount.said, "Add a view");
-	check("it offers the widgets that can stand on their own", mount.offered, ["Archived columns", "Kanban board", "View group"]);
+	check("it offers the widgets that can stand on their own", mount.offered, [
+		"Archived columns",
+		"Kanban board",
+		"View group",
+	]);
 	check("drawing each as the widget it is", mount.everyCardDrawsTheWidget, true);
 	check("and it can be searched", mount.searchable, true);
 	check("no bare list of titles is left anywhere", mount.bareList, false);
-	check("a pick lands under its declared name, disambiguated", mount.names, ["Kanban", "Archived columns", "Archived columns 2", "Add a view"]);
+	check("a pick lands under its declared name, disambiguated", mount.names, [
+		"Kanban",
+		"Archived columns",
+		"Archived columns 2",
+		"Add a view",
+	]);
 
 	const overlay = await ask(pageFor(theme, overlayScript, "overlay"), OVERLAY_ASK, 3000);
 	check("the element a tile is drawn into takes no box of its own", overlay.seamDisplay, ["contents"]);
-	check("so the widget still fills the tile it stands in", [overlay.widgetBox, overlay.tallEnoughToJudge], [overlay.tileBox, true]);
-	check("a panel opened inside a mounted child is an overlay the board can see", [overlay.opened, overlay.insideAMountedChild], [true, true]);
-	check("every widget root that holds it stops clipping", [overlay.holding, overlay.holdingCount > 1], [["visible"], true]);
-	check("while every root beside it keeps the clip the grid depends on", [overlay.beside, overlay.besideCount > 0], [["hidden"], true]);
+	check(
+		"so the widget still fills the tile it stands in",
+		[overlay.widgetBox, overlay.tallEnoughToJudge],
+		[overlay.tileBox, true],
+	);
+	check(
+		"a panel opened inside a mounted child is an overlay the board can see",
+		[overlay.opened, overlay.insideAMountedChild],
+		[true, true],
+	);
+	check(
+		"every widget root that holds it stops clipping",
+		[overlay.holding, overlay.holdingCount > 1],
+		[["visible"], true],
+	);
+	check(
+		"while every root beside it keeps the clip the grid depends on",
+		[overlay.beside, overlay.besideCount > 0],
+		[["hidden"], true],
+	);
 
 	const streak = await ask(pageFor(theme, streakScript, "streak"), STREAK_ASK, 2000);
 	check("the streak rail takes the whole tile", streak.tight.railWidthPx, STREAK_RAIL_PX);
 	check("and leaves no unpainted slack across it", [streak.tight.unpaintedPx, streak.slack.unpaintedPx], [0, 0]);
 	check("the days start one connector in, not on a centring margin", streak.tight.firstColumnStartsAtPx, 12);
 	check("and end one connector from the far side", streak.tight.lastColumnEndsAtPx, 12);
-	check("every column is the width of the next", streak.tight.widestColumnPx - streak.tight.narrowestColumnPx < 1, true);
+	check(
+		"every column is the width of the next",
+		streak.tight.widestColumnPx - streak.tight.narrowestColumnPx < 1,
+		true,
+	);
 	check("a width that fitted eighteen days before now fits nineteen", streak.tight.columns, 19);
 	check("no column is squeezed under the ring it holds", streak.tight.narrowestColumnPx >= 36, true);
-	check("where a day is left over, the columns take the room instead of a margin", streak.slack.widestColumnPx > 44, true);
-	check("and they still fill the rail exactly", [streak.slack.columns, streak.slack.railWidthPx], [18, STREAK_SLACK_PX]);
+	check(
+		"where a day is left over, the columns take the room instead of a margin",
+		streak.slack.widestColumnPx > 44,
+		true,
+	);
+	check(
+		"and they still fill the rail exactly",
+		[streak.slack.columns, streak.slack.railWidthPx],
+		[18, STREAK_SLACK_PX],
+	);
 	check("the habit is named over the rail", [streak.titleSaid, streak.titleAboveRail], ["Meditation", true]);
 	check("the streak draws itself in one fixed height", streak.naturalPx, STREAK_NATURAL_PX);
 	check("and the tile it pins itself to has room for that", STREAK_HEIGHT_PX >= streak.naturalPx, true);
 	check("beside a drawn emoji, not a typed one", streak.emojiDrawn, true);
-	console.log(`    gaps above/between/below: ${streak.abovePx} / ${streak.betweenPx} / ${streak.belowPx} in a ${streak.tilePx}px tile; name at ${streak.titleStartsAtPx} vs ring at ${streak.firstRingStartsAtPx}; count at ${streak.countEndsAtPx} vs ring at ${streak.lastRingEndsAtPx}`);
+	console.log(
+		`    gaps above/between/below: ${streak.abovePx} / ${streak.betweenPx} / ${streak.belowPx} in a ${streak.tilePx}px tile; name at ${streak.titleStartsAtPx} vs ring at ${streak.firstRingStartsAtPx}; count at ${streak.countEndsAtPx} vs ring at ${streak.lastRingEndsAtPx}`,
+	);
 	check("the tile is drawn at its own two-cell height", streak.tilePx, 120);
-	check("the row above the rail is spaced as evenly as the rail is below it", [streak.abovePx, streak.betweenPx], [streak.belowPx, streak.belowPx]);
-	check("the name starts where the first ring starts", Math.abs(streak.titleStartsAtPx - streak.firstRingStartsAtPx) <= 0.5, true);
-	check("and the run count ends where the last ring ends", Math.abs(streak.countEndsAtPx - streak.lastRingEndsAtPx) <= 0.5, true);
+	check(
+		"the row above the rail is spaced as evenly as the rail is below it",
+		[streak.abovePx, streak.betweenPx],
+		[streak.belowPx, streak.belowPx],
+	);
+	check(
+		"the name starts where the first ring starts",
+		Math.abs(streak.titleStartsAtPx - streak.firstRingStartsAtPx) <= 0.5,
+		true,
+	);
+	check(
+		"and the run count ends where the last ring ends",
+		Math.abs(streak.countEndsAtPx - streak.lastRingEndsAtPx) <= 0.5,
+		true,
+	);
 
 	const rank = await ask(pageFor(theme, rankScript, "rank", RANK_SHEETS), RANK_ASK, 2000);
 	console.log(`    rails: ${rank.rails.map((rail) => `${rail.tone} ${rail.ratio}`).join(", ")}`);
 	console.log(`    fog at rest: ${JSON.stringify(rank.atRest)}`);
-	check("every tone paints a rail its own letter can be read on", rank.rails.filter((rail) => rail.ratio < RAIL_CONTRAST_FLOOR), []);
+	check(
+		"every tone paints a rail its own letter can be read on",
+		rank.rails.filter((rail) => rail.ratio < RAIL_CONTRAST_FLOOR),
+		[],
+	);
 	check("and all eight are told apart by colour", [rank.rails.length, rank.distinctFills], [8, 8]);
 	check("a rack with more rows than room scrolls inside the tile", rank.scrolls, true);
 	check("its fog is off while nothing has scrolled past", rank.fogAtRest, 0);
@@ -864,12 +1025,38 @@ for (const theme of ["light", "dark"]) {
 	check("the tray stays under the rack rather than scrolling away with it", rank.trayBelowRack, true);
 
 	const metric = await ask(pageFor(theme, metricScript, "metric", METRIC_SHEETS), METRIC_ASK, 2000);
-	console.log(`    add window: corner ${metric.dialogCorner}, note <${metric.noteTag}> ${metric.noteTallerThanAField}px, signs ${metric.signs.join("/")}`);
-	check("the add window stands on the dialog's own corner, not the widget's square one", metric.dialogCorner !== "0px", true);
-	check("the note is a text area a sentence fits in, not a one-line field", [metric.noteTag, metric.noteTallerThanAField > 60], ["TEXTAREA", true]);
+	console.log(
+		`    add window: corner ${metric.dialogCorner}, note <${metric.noteTag}> ${metric.noteTallerThanAField}px, signs ${metric.signs.join("/")}`,
+	);
+	check(
+		"the add window stands on the dialog's own corner, not the widget's square one",
+		metric.dialogCorner !== "0px",
+		true,
+	);
+	check(
+		"the note is a text area a sentence fits in, not a one-line field",
+		[metric.noteTag, metric.noteTallerThanAField > 60],
+		["TEXTAREA", true],
+	);
 	check("the sign is the two-way toggle the design asked for", metric.signs, ["Add", "Subtract"]);
 	check("nothing is written beside the amount", metric.unitBesideTheAmount, false);
 	check("typing a number into the amount reads back as that number", metric.amountReadsBack, "7");
+	console.log(`    period ink ${metric.periodInk}, plates ${metric.platesDrawn} of ${metric.platesAcross}`);
+	check(
+		"the period is not painted the accent the kit's plain button hands it",
+		metric.periodInk === metric.accentInk,
+		false,
+	);
+
+	const hoveredNote = await ask(
+		pageFor(theme, metricScript, "metric", METRIC_SHEETS),
+		METRIC_HOVER_ASK,
+		2000,
+		".mt-note",
+	);
+	console.log(`    note under the pointer: ${hoveredNote.fill}, edge ${hoveredNote.edge}`);
+	check("a pointer over the note does not repaint it the host's way", hoveredNote.fill, hoveredNote.rested);
+	check("and draws it no edge of its own", hoveredNote.edge, "none");
 
 	const wide = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500);
 	check("on a window with room the catalogue is a dialog, not the screen", wide.dialog[1] < wide.viewport[1], true);
@@ -880,13 +1067,31 @@ for (const theme of ["light", "dark"]) {
 	check("so a pointer over a widget that would take typing reaches the card instead", wide.hitsTheWidget, false);
 	check("and neither can the caret land in it, which is how a preview was typed into", wide.takesTheCaret, false);
 
+	const gutters = await ask(pageFor(theme, catalogueScript, "catalogue"), GUTTER_ASK, 1500);
+	console.log(
+		`    side gutters ${gutters.gutters.join(" / ")} · facet offset ${gutters.alignment} · tags ${gutters.tagsAreOneRow}px · next ${gutters.nextPadding}`,
+	);
+	console.log(`    tags markup: ${gutters.tagsHtml}`);
+	check("the column's search stands in the same gutter on both sides", gutters.gutters[0], gutters.gutters[1]);
+	check("a group's own search lines up with the list under it", gutters.alignment, 0);
+	check("the tags never grow past one row", gutters.tagsAreOneRow, 28);
+	check("that row scrolls sideways instead", gutters.tagRowScrolls, "auto");
+	check(
+		"and the count of what is left over is text, not a press into an endless list",
+		gutters.countIsPressable,
+		"SPAN",
+	);
+	check("the page's Next row is padded on every side", gutters.nextPadding, "16px/16px");
+	check("so it is a row a finger can take", gutters.nextIsTallEnough, true);
+
 	const narrow = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500, null, "420,760");
 	check("on a phone's window the dialog is the whole screen", narrow.dialog, narrow.viewport);
 	check("with no corner left to round", narrow.corner, "0px");
 	check("the column is gone", narrow.sidebars, 0);
-	check("and the filters are a sheet standing off the bottom edge", narrow.sheetFromBottomPx, 24);
-	check("as wide as the screen, less the window's gutter and its own", narrow.sheetWidthPx, narrow.viewport[0] - 48);
+	check("and the filters are a sheet sitting on the bottom edge itself", narrow.sheetFromBottomPx, 0);
+	check("as wide as the whole screen", narrow.sheetWidthPx, narrow.viewport[0]);
 	check("carrying the kit's own grip to drag it by", narrow.gripPaintsAHandle, "44px");
+	check("a bare handle, with no box drawn around it", narrow.gripWearsABox, "none rgba(0, 0, 0, 0)");
 	check("and the preview stays inert there too", narrow.inert, "none");
 }
 

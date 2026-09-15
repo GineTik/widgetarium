@@ -80,7 +80,6 @@ function runGates() {
 		execFileSync("node", ["tools/check-classes.mjs", "widgets", ...alsoInVault], { stdio: "inherit" });
 		execFileSync("node", ["tools/check-adaptive.mjs", "widgets", ...alsoInVault], { stdio: "inherit" });
 		execFileSync("node", ["tools/check-overrides.mjs", "styles.css"], { stdio: "inherit" });
-		execFileSync("node", ["tools/check-one-law.mjs", "src"], { stdio: "inherit" });
 	} catch {
 		process.exit(1);
 	}

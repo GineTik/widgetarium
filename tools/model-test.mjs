@@ -3,11 +3,17 @@ import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
 
-const { normalizeBoard, serializeBoard, authoredColumns, sourceColumnsFor, layoutFor, placedIds, heldKey, keptRecords, mountRows, mountList, mountPatch, propConfig, rekeyed, uniqueName } = await import(
+const { normalizeBoard, serializeBoard, placedIds, heldKey, keptRecords, mountRows, mountList, mountPatch, propConfig, rekeyed, uniqueName } = await import(
 	"./.mjs-cache/model.mjs"
 );
+const { leavesOf, nodeAt } = await import("./.mjs-cache/tree.mjs");
 const { BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
 const { storedRows } = await import("./.mjs-cache/gateway/props.mjs");
+
+const THREE_REGIONS = (of) => ({
+	dir: "row",
+	of: [{ dir: "column", foldable: true, of: [] }, { dir: "column", keep: true, of }, { dir: "column", foldable: true, of: [] }],
+});
 
 let failed = 0;
 function check(name, got, want) {
@@ -15,35 +21,6 @@ function check(name, got, want) {
 	if (!ok) failed += 1;
 	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
 }
-
-const legacy = {
-	tiles: [{ id: "a", widget: "w" }],
-	layouts: { phone: [{ id: "a", x: 0, y: 0, w: 4, h: 6 }], tablet: [{ id: "a", x: 2, y: 0, w: 6, h: 6 }], desktop: [] },
-};
-const board = normalizeBoard(legacy);
-
-check("named layouts migrate to their column counts", authoredColumns(board), [4, 12]);
-check("an empty named layout does not become authored", board.layouts[20], undefined);
-check("coordinates survive the migration", board.layouts[4], [{ id: "a", x: 0, y: 0, w: 4, h: 6 }]);
-check("a bare array lands on 12", authoredColumns(normalizeBoard([{ id: "a", x: 0, y: 0, w: 3, h: 2 }])), [12]);
-
-check("below the midpoint derives from the smaller", sourceColumnsFor(board, 6), 4);
-check("above the midpoint derives from the larger", sourceColumnsFor(board, 9), 12);
-check("a tie goes to the larger", sourceColumnsFor(board, 8), 12);
-check("an authored count is its own source", sourceColumnsFor(board, 4), 4);
-
-check("only authored counts are written", Object.keys(serializeBoard(board).layouts), ["4", "12"]);
-check("an authored width reports itself authored", layoutFor(board, 4).isAuthored, true);
-check("a derived width reports itself derived", layoutFor(board, 8).isAuthored, false);
-
-// INVARIANT: a derived place always fits the column count it was derived for
-const overflowing = [];
-for (let columns = 3; columns <= 45; columns += 1) {
-	for (const place of layoutFor(board, columns).places) {
-		if (place.x + place.w > columns) overflowing.push(`${columns}:${place.id}`);
-	}
-}
-check("no derived place overflows, 3 to 45 columns", overflowing, []);
 
 const { measureGrid } = await import("./.mjs-cache/paths.mjs");
 
@@ -92,143 +69,6 @@ const phone = measureGrid(390);
 check("a phone's cell is still a tap target", phone.cell >= TAP_TARGET_PX, true);
 console.log(`--  a 390px phone: ${phone.columns} columns, cell ${phone.cell.toFixed(1)}px, scale ${(phone.scale * 100).toFixed(1)}%`);
 
-// A TILE STAYS WHERE IT WAS PUT. Rising to the first free row used to be automatic, so a board
-// rearranged itself whenever anything above it moved. Closing a hole is now the Auto-fit
-// button's job, and nobody else's.
-const gappy = normalizeBoard({
-	tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }],
-	layouts: { 12: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 0, y: 9, w: 4, h: 2 }] } },
-});
-check("a vertical hole is left alone", layoutFor(gappy, 12).places.map((place) => place.y), [0, 9]);
-
-const sideBySide = normalizeBoard({
-	tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }],
-	layouts: { 12: { places: [{ id: "a", x: 0, y: 4, w: 4, h: 2 }, { id: "b", x: 6, y: 7, w: 4, h: 2 }] } },
-});
-check("neighbours in free columns keep their rows", layoutFor(sideBySide, 12).places.map((place) => place.y), [4, 7]);
-
-const { arrange } = await import("./.mjs-cache/layout.mjs");
-const column = [{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 0, y: 2, w: 4, h: 2 }];
-const dropped = arrange(column.map((place) => (place.id === "a" ? { ...place, y: 4 } : place)), 12, { movedId: "a" });
-check("a dragged tile keeps the row it was dropped on", dropped.find((place) => place.id === "a").y, 4);
-check("the tile it passed does not move", dropped.find((place) => place.id === "b").y, 2);
-const afterRead = arrange(dropped, 12, { reading: true });
-check("the next read changes nothing", afterRead.map((place) => `${place.id}${place.y}`), ["a4", "b2"]);
-
-// two tiles landing on the same cell is the ONE thing reading still fixes
-const stacked = arrange([{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 0, y: 1, w: 4, h: 2 }], 12, { reading: true });
-check("an overlap in the file is pushed down, once", stacked.find((place) => place.id === "b").y, 2);
-
-// AUTO-FIT is the deliberate act: everything grows into whatever is free
-const roomy = arrange([{ id: "a", x: 0, y: 0, w: 4, h: 2 }, { id: "b", x: 6, y: 0, w: 4, h: 2 }], 12, { autoFit: true });
-check("auto-fit leaves no free column", roomy.reduce((sum, place) => sum + place.w, 0), 12);
-check("auto-fit does not move a tile off its row", roomy.map((place) => place.y), [0, 0]);
-check("reading is idempotent", JSON.stringify(arrange(afterRead, 12, { reading: true })), JSON.stringify(afterRead));
-
-// REGRESSION: a size was converted with the position formula, so the step from 3 to 4
-// cells landed at 70% of the way instead of half
-const { toCellSpan } = await import("./.mjs-cache/layout.mjs");
-const CELL = 67.1;
-const GAP = 16;
-const spanOf = (cells) => cells * CELL + (cells - 1) * GAP;
-const exact = [1, 2, 3, 4, 6, 9].map((cells) => toCellSpan(spanOf(cells), CELL, GAP));
-check("an exact span reads back as itself", exact, [1, 2, 3, 4, 6, 9]);
-const halfway = spanOf(3) + (CELL + GAP) / 2;
-check("the step falls at the halfway point", toCellSpan(halfway + 1, CELL, GAP), 4);
-check("just under halfway stays put", toCellSpan(halfway - 1, CELL, GAP), 3);
-check("a size never reads as zero cells", toCellSpan(0, CELL, GAP), 1);
-
-// THE LAW: the board never refuses a width. Derivation scales down as far as the board goes,
-// and the widget answers with a compact design or a chip — a minimum was a wall the layout
-// could not route around, and its only answer was to drop a tile to the next row.
-const wide = normalizeBoard({
-	tiles: [{ id: "hero", widget: "w" }],
-	layouts: { 20: { places: [{ id: "hero", x: 0, y: 0, w: 9, h: 7 }] } },
-});
-const derivedWidths = [12, 8, 6, 4].map((columns) => layoutFor(wide, columns).places[0].w);
-check("derivation scales all the way down", derivedWidths, [5, 4, 3, 2]);
-check("and every step stays on the board", derivedWidths.every((w) => w >= 1), true);
-
-const cramped = layoutFor(wide, 3, () => ({})).places[0];
-check("a one-tile row still fills the board", [cramped.w, cramped.x + cramped.w <= 3], [1, true]);
-
-// GROWTH: everything shares a shrink, but a folded tile is not handed columns back when the
-// window widens — that is what folded means, and forgetting it sprang the sidebar open.
-const folded = normalizeBoard({
-	tiles: [{ id: "panel", widget: "w", folded: true }, { id: "board", widget: "w" }],
-	layouts: { 10: { places: [{ id: "panel", x: 0, y: 0, w: 1, h: 8 }, { id: "board", x: 1, y: 0, w: 9, h: 8 }] } },
-});
-const declares = (id) => ({ growth: id === "panel" ? "keep" : "fill" });
-const grown = layoutFor(folded, 20, declares).places;
-check("a folded panel does not grow with the board", grown.find((place) => place.id === "panel").w, 1);
-check("and the tile beside it takes the room", grown.find((place) => place.id === "board").w, 19);
-
-// INVARIANT: no path may put a place outside the board — not derivation, not an authored
-// layout, not a widget whose declared minimum is wider than the board itself
-const crowded = normalizeBoard({
-	tiles: [{ id: "big", widget: "w" }, { id: "small", widget: "w" }],
-	layouts: { 20: { places: [{ id: "big", x: 0, y: 0, w: 14, h: 6 }, { id: "small", x: 14, y: 0, w: 6, h: 3 }] } },
-});
-const demanding = (id) => ({ defaultSize: id === "big" ? { w: 8, h: 4 } : { w: 3, h: 2 } });
-const escaped = [];
-for (let columns = 1; columns <= 45; columns += 1) {
-	for (const place of layoutFor(crowded, columns, demanding).places) {
-		if (place.x + place.w > columns || place.w < 1) escaped.push(`${columns}:${place.id}`);
-	}
-}
-check("nothing escapes the board, 1 to 45 columns", escaped, []);
-
-// the hidden-widget tray reads placedIds, which asks for the layout WITHOUT limits: the
-// sizes differ there, so the ids had better not
-const withLimits = new Set(layoutFor(crowded, 6, demanding).places.map((place) => place.id));
-check("placedIds sees the same tiles with or without limits", [...placedIds(crowded, 6)].sort(), [...withLimits].sort());
-
-// a layout written under a class name instead of a column count is dropped on save; it
-// must be loud, because silently losing an added widget is how that bug hid
-const warned = [];
-const realWarn = console.warn;
-console.warn = (message) => warned.push(message);
-const stray = { tiles: [], layouts: { 12: [], desktop: [{ id: "a", x: 0, y: 0, w: 1, h: 1 }] } };
-serializeBoard(stray);
-const onSave = warned.length;
-warned.length = 0;
-// the read path runs every render and must stay silent
-layoutFor(stray, 9);
-authoredColumns(stray);
-const onRender = warned.length;
-console.warn = realWarn;
-check("saving a non-numeric layout key warns", onSave, 1);
-check("rendering does not warn", onRender, 0);
-
-
-// REGRESSION: settling and READING were made one operation, and the arrangement a person made
-// was re-flowed on every render. Once a tile had been nudged the next render nudged it again,
-// and the whole board walked itself into a single vertical column.
-{
-	const arranged = normalizeBoard({
-		tiles: [
-			{ id: "panel", widget: "w" },
-			{ id: "tabs", widget: "w" },
-			{ id: "board", widget: "w" },
-		],
-		layouts: {
-			17: {
-				places: [
-					{ id: "panel", x: 0, y: 0, w: 2, h: 11 },
-					{ id: "tabs", x: 2, y: 0, w: 15, h: 1 },
-					{ id: "board", x: 2, y: 1, w: 15, h: 10 },
-				],
-			},
-		},
-	});
-
-	const once = layoutFor(arranged, 17).places;
-	const twice = layoutFor({ ...arranged, layouts: { 17: once } }, 17).places;
-	check("reading an authored layout returns it unchanged", once, arranged.layouts[17]);
-	check("and reading it again changes nothing either", twice, once);
-	check("every tile stays on the row its author put it on", once.map((place) => place.y), [0, 0, 1]);
-	check("and nothing was pushed into a column", new Set(once.map((place) => place.y)).size, 2);
-}
 
 // CONTEXT: surface.js resolveSlots reads tile.slots[name] — the person's pick of widget per slot
 {
@@ -322,7 +162,7 @@ check("rendering does not warn", onRender, 0);
 // CONTEXT: the normaliser promises the same shape whichever format it was given
 {
 	const fromArray = normalizeBoard([{ id: "a", widget: "w", x: 0, y: 0, w: 3, h: 2 }]);
-	check("a bare array still lands on 12", authoredColumns(fromArray), [12]);
+	check("a bare array is read as places and laid out", leavesOf(fromArray.layout).map((leaf) => leaf.id), ["a"]);
 	check("a bare array gets a mode", fromArray.mode, "collapsed");
 }
 
@@ -424,57 +264,70 @@ check("rendering does not warn", onRender, 0);
 	check("a sibling record is not touched by the move", beside.Other, { widget: "@x/other" });
 
 	// AN UNEDITED NOTE MUST NOT MOVE. The record still keyed by a widget id round-trips as it is.
-	const untouched = { v: BLOCK_FORMAT, tiles: [{ id: "g", widget: "@x/group", settings: { views: "@x/kanban" }, mounted: { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
+	const untouched = { v: BLOCK_FORMAT, tiles: [{ id: "g", widget: "@x/group", settings: { views: "@x/kanban" }, mounted: { "@x/kanban": { widget: "@x/kanban", settings: { a: 1 } } } }], layout: THREE_REGIONS([{ id: "g" }]) };
 	check("an old-shape board round-trips byte-identical", JSON.stringify(serializeBoard(normalizeBoard(untouched))), JSON.stringify(untouched));
 
-	const fresh = { v: BLOCK_FORMAT, tiles: [{ id: "g", widget: "@x/group", settings: { holds: [{ name: "Mine", widget: "@x/kanban" }] }, mounted: { Mine: { widget: "@x/kanban", settings: { a: 1 } } } }], layouts: { 12: { places: [{ id: "g", x: 0, y: 0, w: 4, h: 2 }] } } };
+	const fresh = { v: BLOCK_FORMAT, tiles: [{ id: "g", widget: "@x/group", settings: { holds: [{ name: "Mine", widget: "@x/kanban" }] }, mounted: { Mine: { widget: "@x/kanban", settings: { a: 1 } } } }], layout: THREE_REGIONS([{ id: "g" }]) };
 	check("and so does a new-shape one", JSON.stringify(serializeBoard(normalizeBoard(fresh))), JSON.stringify(fresh));
 }
 
+
 {
-	console.log("\n— a board laid in rows —");
-	const grid = { tiles: [{ id: "a", widget: "w" }], layouts: { 12: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 2 }] } } };
-	check("a board with no rows carries no layout at all", "layout" in normalizeBoard(grid), false);
+	console.log("\n— a board laid as a tree —");
+	const tiles = [{ id: "a", widget: "w" }, { id: "b", widget: "w" }, { id: "c", widget: "w" }];
 
-	const rows = { tiles: [{ id: "a", widget: "w" }, { id: "b", widget: "w" }], layout: [[{ id: "a", ratio: 3 }, { id: "b" }], [{ id: "a", height: 640 }]], layouts: {} };
-	const laid = normalizeBoard(rows);
-	check("a cell keeps the ratio it was given", laid.layout.main.rows[0][0], { id: "a", ratio: 3 });
-	check("a cell without one is worth the same as its neighbours", laid.layout.main.rows[0][1], { id: "b", ratio: 1 });
-	check("a height survives", laid.layout.main.rows[1][0], { id: "a", ratio: 1, height: 640 });
+	const regioned = normalizeBoard({ tiles, layout: { left: [], main: [[{ id: "a", ratio: 3 }, { id: "b" }], [{ id: "c", height: 640 }]], right: [] } });
+	check("the root is a row", [regioned.layout.dir, regioned.layout.of.length], ["row", 3]);
+	check("the three regions arrive as columns", regioned.layout.of.map((box) => box.dir), ["column", "column", "column"]);
+	check("the middle one is the one that must stand", regioned.layout.of.map((box) => box.keep === true), [false, true, false]);
+	check("and the two beside it are the ones that fold", regioned.layout.of.map((box) => box.foldable === true), [true, false, true]);
+	check("a row of two cells is a row box", nodeAt(regioned.layout, [1, 0]).dir, "row");
+	check("and it keeps the ratios it was given", nodeAt(regioned.layout, [1, 0]).of, [{ id: "a", ratio: 3 }, { id: "b", ratio: 1 }]);
+	check("a row of one cell is the cell itself", nodeAt(regioned.layout, [1, 1]), { id: "c", ratio: 1, height: 640 });
+	check("every leaf knows its path", leavesOf(regioned.layout).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`), ["a@1/0/0", "b@1/0/1", "c@1/1"]);
 
-	const shorthand = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: [["a"], [{ id: "" }]], layouts: {} });
-	check("a bare name is a cell", shorthand.layout.main.rows, [[{ id: "a", ratio: 1 }]]);
+	const nested = { dir: "row", of: [{ id: "a", ratio: 2 }, { dir: "column", of: [{ id: "b" }, { id: "c", height: 200 }] }] };
+	const deep = normalizeBoard({ tiles, layout: { dir: "row", of: [{ dir: "column", keep: true, of: [nested] }] } });
+	check("a column inside a row is read", nodeAt(deep.layout, [0, 0, 1]).dir, "column");
+	check("and its two cells are where they were put", leavesOf(deep.layout).map((leaf) => leaf.path.join("/")), ["0/0/0", "0/0/1/0", "0/0/1/1"]);
+	check("the nested tree round-trips byte-identical", JSON.stringify(serializeBoard(normalizeBoard(serializeBoard(deep)))), JSON.stringify(serializeBoard(deep)));
+	check("a ratio of one is not written down", serializeBoard(deep).layout.of[0].of[0].of[1].of[0], { id: "b" });
+	check("a height is", serializeBoard(deep).layout.of[0].of[0].of[1].of[1], { id: "c", height: 200 });
 
-	check("rows round-trip through the file", serializeBoard(laid).layout.main, laid.layout.main.rows);
-	check("a board that names only main is still born with its sidebars", Object.keys(laid.layout), ["left", "main", "right"]);
-	check("and those sidebars reach the file, so something can be dropped into them", serializeBoard(laid).layout, { left: [], main: laid.layout.main.rows, right: [] });
-	check("an empty list of rows is a region, not the absence of one", "layout" in normalizeBoard({ tiles: [], layout: [], layouts: {} }), true);
-	check("and that region holds no rows", normalizeBoard({ tiles: [], layout: [], layouts: {} }).layout.main.rows, []);
+	const grid = normalizeBoard({
+		tiles,
+		layouts: {
+			12: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 1 }] },
+			20: { places: [{ id: "a", x: 0, y: 0, w: 6, h: 2 }, { id: "b", x: 6, y: 0, w: 14, h: 2 }, { id: "c", x: 0, y: 2, w: 20, h: 8 }] },
+		},
+	});
+	check("a grid board is read as a tree", grid.layout.dir, "row");
+	check("the widest authored width is the one taken", leavesOf(grid.layout).map((leaf) => leaf.id), ["a", "b", "c"]);
+	check("places sharing a row become one row box", nodeAt(grid.layout, [1, 0]).of.map((cell) => cell.id), ["a", "b"]);
+	check("a place's width becomes its ratio", nodeAt(grid.layout, [1, 0]).of.map((cell) => cell.ratio), [6, 14]);
+	check("a place's height becomes pixels", nodeAt(grid.layout, [1, 1]).height, 8 * 62 - 8);
+	check("and nothing of the grid is written back", "layouts" in serializeBoard(grid), false);
 
-	const regioned = { tiles: [{ id: "a", widget: "w" }], layout: { left: [["a"]], main: [["a"]], right: [["a"]] }, layouts: {} };
-	check("a layout may name three regions", Object.keys(normalizeBoard(regioned).layout), ["left", "main", "right"]);
-	check("and they round-trip as they were named", Object.keys(serializeBoard(normalizeBoard(regioned)).layout), ["left", "main", "right"]);
-	check("a sidebar without a main is no layout", "layout" in normalizeBoard({ tiles: [], layout: { left: [["a"]] }, layouts: {} }), false);
-	check("a grid-only board writes no layouts it did not have", "layouts" in serializeBoard(normalizeBoard({ tiles: [], layout: [], layouts: {} })), false);
-	check("and a board that has them keeps them", Object.keys(serializeBoard(normalizeBoard(grid)).layouts), ["12"]);
+	const stray = normalizeBoard({ tiles, layouts: { 20: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 2 }] } } });
+	check("a tile the grid never placed still lands on the board", leavesOf(stray.layout).map((leaf) => leaf.id), ["a", "b", "c"]);
 
-	const sized = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: [["a"]], left: { width: 420, rows: [["a"]] } }, layouts: {} });
-	check("a sidebar keeps the width it was dragged to", sized.layout.left.width, 420);
-	check("and writes it back beside its rows", serializeBoard(sized).layout.left, { width: 420, rows: [[{ id: "a", ratio: 1 }]] });
-	check("a region with no width is written as a bare list of rows", serializeBoard(sized).layout.main, [[{ id: "a", ratio: 1 }]]);
+	const bare = normalizeBoard({ tiles: [] });
+	check("a board with no layout at all is born with three regions", bare.layout.of.length, 3);
+	check("an empty region is a region, not the absence of one", serializeBoard(bare).layout.of[0], { dir: "column", foldable: true, of: [] });
 
-	const shut = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: [["a"]], left: { folded: true, rows: [["a"]] } }, layouts: {} });
-	check("a sidebar remembers that it was folded", shut.layout.left.folded, true);
-	check("and the fold survives the file", serializeBoard(shut).layout.left, { folded: true, rows: [[{ id: "a", ratio: 1 }]] });
-	check("an open one says nothing about folding", "folded" in shut.layout.main, false);
-	check("and nothing about it reaches the file", serializeBoard(shut).layout.main, [[{ id: "a", ratio: 1 }]]);
+	const junk = normalizeBoard({ tiles, layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: "" }, 7, null, { of: [] }, { id: "a" }] }] } });
+	check("a node that is neither a leaf nor a box is dropped", leavesOf(junk.layout).map((leaf) => leaf.id), ["a"]);
+	check("and an undeclared box with nothing in it goes with it", nodeAt(junk.layout, [0]).of.length, 1);
 
-	const shutMain = normalizeBoard({ tiles: [{ id: "a", widget: "w" }], layout: { main: { folded: true, rows: [["a"]] }, left: [["a"]] }, layouts: {} });
-	check("the main cannot be folded — a board with no main is no board", "folded" in shutMain.layout.main, false);
-	check("and asking for it is not written down either", serializeBoard(shutMain).layout.main, [[{ id: "a", ratio: 1 }]]);
-	check("a fold written as anything but true is not a fold", "folded" in normalizeBoard({ tiles: [], layout: { main: [["a"]], left: { folded: "yes", rows: [["a"]] } }, layouts: {} }).layout.left, false);
-	check("a note written under the old name still opens folded", normalizeBoard({ tiles: [], layout: { main: [["a"]], left: { collapsed: true, rows: [["a"]] } }, layouts: {} }).layout.left.folded, true);
-	check("and the next write spells it the new way", serializeBoard(normalizeBoard({ tiles: [], layout: { main: [["a"]], left: { collapsed: true, rows: [["a"]] } }, layouts: {} })).layout.left, { folded: true, rows: [[{ id: "a", ratio: 1 }]] });
+	const lonely = normalizeBoard({ tiles, layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ dir: "row", ratio: 5, of: [{ id: "a" }] }] }] } });
+	check("a box left holding one child collapses into it", nodeAt(lonely.layout, [0, 0]), { id: "a", ratio: 5 });
+
+	const sized = normalizeBoard({ tiles, layout: { left: { width: 420, collapsed: true, rows: [["a"]] }, main: [["b"]] } });
+	check("a sidebar keeps the width it was dragged to", nodeAt(sized.layout, [0]).width, 420);
+	check("and the fold it was left in, under its old name", nodeAt(sized.layout, [0]).folded, true);
+	check("a box that cannot fold is not read as folded", "folded" in nodeAt(sized.layout, [1]), false);
+	check("the whole side box reaches the file", serializeBoard(sized).layout.of[0], { dir: "column", width: 420, foldable: true, folded: true, of: [{ id: "a" }] });
+	check("a fold written as anything but true is no fold", "folded" in normalizeBoard({ tiles, layout: { left: { folded: "yes", rows: [["a"]] }, main: [] } }).layout.of[0], false);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");

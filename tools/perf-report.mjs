@@ -16,7 +16,7 @@ const { gatewayCache } = await import("./.mjs-cache/gateway/cache.mjs");
 const { createInstaller, INDEX_PATH } = await import("./.mjs-cache/installer.mjs");
 const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
 const { WIDGETS_DIR, LOCK_PATH } = await import("./.mjs-cache/paths.mjs");
-const { BUILD_FILE, compileWidget } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { builtCodePath, compileWidget } = await import("./.mjs-cache/engine/widget-build.mjs");
 const { lockEntry, withEntry, readLock } = await import("./.mjs-cache/engine/widget-lock.mjs");
 
 const NOTES = Number(process.env.N ?? 200);
@@ -95,8 +95,8 @@ function vaultHoldingAnInstalledWidget() {
 	const vault = fakeVault();
 	const files = { "manifest.json": JSON.stringify({ id: INSTALLED, title: "One" }), "widget.tsx": SOURCE_SAYS };
 	for (const [name, text] of Object.entries(files)) vault.files.set(`${INSTALLED_FOLDER}/${name}`, text);
-	vault.files.set(`${INSTALLED_FOLDER}/${BUILD_FILE}`, `module.exports.default = function One() { return h("b", null, "the stored build ran"); };\n`);
-	const entry = lockEntry({ source: "local", commit: "local", files, builtFrom: "widget.tsx" });
+	vault.files.set(builtCodePath(INSTALLED_FOLDER), `module.exports.default = function One() { return h("b", null, "the stored build ran"); };\n`);
+	const entry = lockEntry({ source: "local", commit: "local", files, build: { from: "widget.tsx", inputs: { "widget.tsx": SOURCE_SAYS } } });
 	vault.files.set(LOCK_PATH, JSON.stringify(withEntry(readLock(null), INSTALLED, entry)));
 	return vault;
 }

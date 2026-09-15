@@ -957,11 +957,11 @@ check(
 	// TRADE-OFF: the peak is READ OFF the keyframes, because that is where it is authored
 	const css = (await import("node:fs")).readFileSync("styles.css", "utf8");
 	const frames = /@keyframes wg-kit-pop-bloom \{([\s\S]*?)\n\}/.exec(css)[1];
-	const stopAt = (label) => numbers(new RegExp(`${label} \\{ scale: ([^;]+);`).exec(frames)[1]);
-	const peakStop = Number(/(\d+)% \{ scale:/.exec(frames)[1]) / 100;
+	const stopAt = (label) => numbers(new RegExp(`${label}\\s*\\{\\s*scale:\\s*([^;]+);`).exec(frames)[1]);
+	const peakStop = Number(/(\d+)%\s*\{\s*scale:/.exec(frames)[1]) / 100;
 	const peak = stopAt(`${peakStop * 100}%`);
 	const rest = stopAt("to");
-	const seedStop = /from \{ scale: var\(--wg-kit-pop-seed-x, 1\) var\(--wg-kit-pop-seed-y, 1\); \}/.test(frames);
+	const seedStop = /from\s*\{\s*scale:\s*var\(--wg-kit-pop-seed-x,\s*1\)\s*var\(--wg-kit-pop-seed-y,\s*1\);\s*\}/.test(frames);
 	console.log(
 		`   the curve: seed -> ${peak.join(" ")} at ${peakStop * 100}% (${peakStop * growMs}ms) -> ${rest.join(" ")}`,
 	);

@@ -6,7 +6,7 @@ import { WidgetRegistry, buildWidget } from "./registry.js";
 import { REACT_SURFACE_SOURCE } from "widgetarium:surface";
 import { createHost, bindNote } from "./host.js";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
-import { normalizeBoard, serializeBoard } from "./model.js";
+import { normalizeBoard, placedIds, serializeBoard } from "./model.js";
 import { shieldFromEditor } from "./editor-shield.js";
 import { mountKeyFor } from "./mount-key.js";
 import { trace, traceSub, setTracing, tracing, measure, spentSoFar, forgetSpent } from "./trace.js";
@@ -391,7 +391,8 @@ export default class WidgetariumPlugin extends Plugin {
 	async writeBlock(job) {
 		trace("write", {
 			block: `${job.sourcePath}#${job.blockIndex}`,
-			layouts: Object.keys(job.board.layouts).join(","),
+			tiles: job.board.tiles.length,
+			placed: placedIds(job.board).size,
 		});
 		const file = this.app.vault.getAbstractFileByPath(job.sourcePath);
 		if (!(file instanceof TFile)) return;
@@ -442,7 +443,7 @@ export default class WidgetariumPlugin extends Plugin {
 			const signature = await this.widgetSignature();
 			if (signature !== this.signature) {
 				this.signature = signature;
-				await this.registry.load();
+					await this.registry.load();
 				this.refresh();
 			}
 		} finally {
@@ -592,6 +593,7 @@ export default class WidgetariumPlugin extends Plugin {
 			render(
 				h(WidgetSurface, {
 					board: mount.state.board,
+					boardNode: mount.node,
 					registry: this.registry,
 					host: mount.host,
 					editing: this.editing,

@@ -12,7 +12,7 @@ import { TEXT_LOADERS } from "../build.mjs";
 
 buildMirror();
 const { GRID } = await import("./.mjs-cache/paths.mjs");
-const { spanToPixels } = await import("./.mjs-cache/layout.mjs");
+const { spanToPixels } = await import("./.mjs-cache/paths.mjs");
 
 const BROWSERS = [
 	process.env.WG_CHROME,
@@ -178,23 +178,6 @@ console.log("\n— the label goes only when the label does not fit —");
 	check("at 2 cells it still fits, so it stays", Boolean(two.label), true);
 	check("at 1 cell it cannot, so it goes", Boolean(one.label), false);
 	check("and the control is still one cell wide", Math.round(one.control?.width ?? -1), cellsWide(1));
-}
-
-console.log("\n— a widget that cannot use the height says so, and the grip stops —");
-{
-	const { clampPlace } = await import("./.mjs-cache/layout.mjs");
-	const control = JSON.parse(readFileSync("widgets/@task/view-tabs/manifest.json", "utf8"));
-	const dragged = { id: "tabs", x: 0, y: 0, w: 6, h: 5 };
-
-	check("the manifest declares a maximum height", control.maxSize?.h, 1);
-	check("a drag past it is refused", clampPlace(dragged, 20, undefined, control.maxSize).h, 1);
-	check("and the width it says nothing about is untouched", clampPlace(dragged, 20, undefined, control.maxSize).w, 6);
-	check("a widget declaring nothing is stretched as far as asked", clampPlace(dragged, 20).h, 5);
-	check(
-		"a place already inside its bound is the same object",
-		clampPlace({ id: "a", x: 0, y: 0, w: 2, h: 1 }, 20, undefined, { h: 1 }).h,
-		1,
-	);
 }
 
 console.log(failed ? `\n${failed} widths the person did not ask for` : "\nevery control fills the tile it was given");

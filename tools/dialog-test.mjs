@@ -175,6 +175,7 @@ const root = dom.window.document.getElementById("host");
 const draw = () =>
 	render(
 		h(WidgetSurface, {
+			boardNode: root,
 			board, registry, host, editing: false, screen: true, initialWidth: 1280,
 			onChange: (next) => { board = next; draw(); },
 			onToggleEditing: () => {}, onWidth: () => {},
@@ -604,6 +605,7 @@ let plain = normalizeBoard({
 const drawPlain = () =>
 	render(
 		h(WidgetSurface, {
+			boardNode: root,
 			board: plain, registry, host, editing: false, screen: true, initialWidth: 1280,
 			onChange: (next) => { plain = next; drawPlain(); },
 			onToggleEditing: () => {}, onWidth: () => {},
@@ -664,6 +666,7 @@ console.log("\n— a description nobody switched to keeps its hands off the care
 	render(null, root);
 	render(
 		h(WidgetSurface, {
+			boardNode: root,
 			board: plain, registry, host: editOnly, editing: false, screen: true, initialWidth: 1280,
 			onChange: () => {}, onToggleEditing: () => {}, onWidth: () => {},
 		}),

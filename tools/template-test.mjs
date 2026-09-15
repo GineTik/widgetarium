@@ -4,17 +4,36 @@ import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "PointerEvent", "Event", "MutationObserver"]) {
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"PointerEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
 buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { TEMPLATES, templateWidgets, missingWidgets, templateBoard, templateSketch } = await import("./.mjs-cache/templates.mjs");
+const { TEMPLATES, templateWidgets, missingWidgets, templateBoard, templateSketch } =
+	await import("./.mjs-cache/templates.mjs");
 const { boardNoteText } = await import("./.mjs-cache/board-note.mjs");
 const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
 const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
@@ -25,7 +44,9 @@ let failed = 0;
 function check(name, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
 
@@ -40,7 +61,10 @@ function everyTileIn(one) {
 			walk(Object.entries(tile.mounted ?? {}), id);
 		}
 	};
-	walk(one.board.tiles.map((tile) => [tile.id, tile]), null);
+	walk(
+		one.board.tiles.map((tile) => [tile.id, tile]),
+		null,
+	);
 	return out;
 }
 
@@ -57,10 +81,26 @@ check("the template names every widget it stands on, mounted and slotted alike",
 	"@task/task-card",
 	"@task/view-tabs",
 ]);
-check("a vault holding none of them is asked for all of them", missingWidgets(template, () => false).length, templateWidgets(template).length);
-check("a vault holding all of them is asked for nothing", missingWidgets(template, () => true), []);
-check("and only what it lacks", missingWidgets(template, (id) => id !== "@task/task-card"), ["@task/task-card"]);
-check("every widget it names is one this repository actually ships", templateWidgets(template).filter((id) => !fs.existsSync(`widgets/${id}/manifest.json`)), []);
+check(
+	"a vault holding none of them is asked for all of them",
+	missingWidgets(template, () => false).length,
+	templateWidgets(template).length,
+);
+check(
+	"a vault holding all of them is asked for nothing",
+	missingWidgets(template, () => true),
+	[],
+);
+check(
+	"and only what it lacks",
+	missingWidgets(template, (id) => id !== "@task/task-card"),
+	["@task/task-card"],
+);
+check(
+	"every widget it names is one this repository actually ships",
+	templateWidgets(template).filter((id) => !fs.existsSync(`widgets/${id}/manifest.json`)),
+	[],
+);
 
 function wantsIn(manifest) {
 	const found = [];
@@ -101,12 +141,28 @@ check("and no ref it writes points at a tile the template does not hold", dangli
 
 const board = templateBoard(template);
 const cells = templateSketch(template).flatMap((region) => region.rows.flat());
-check("the board is born with all three regions", Object.keys(board.layout), ["left", "main", "right"]);
-check("both sidebars are born empty", [board.layout.left.rows.length, board.layout.right.rows.length], [0, 0]);
-check("every cell in the tree names a tile the board holds", cells.filter((cell) => !board.tiles.some((tile) => tile.id === cell.id)), []);
-check("and every tile the board holds stands in the tree", board.tiles.filter((tile) => !cells.some((cell) => cell.id === tile.id)), []);
-check("a cell of a one-view holder is named after the view it draws", cells.find((cell) => cell.id === "board").widget, "@task/kanban-board");
-check("and every cell of the sketch names the widget standing in it", cells.filter((cell) => !cell.widget), []);
+check("the board is born with all three regions", board.layout.of.length, 3);
+check("both sidebars are born empty", [board.layout.of[0].of.length, board.layout.of[2].of.length], [0, 0]);
+check(
+	"every cell in the tree names a tile the board holds",
+	cells.filter((cell) => !board.tiles.some((tile) => tile.id === cell.id)),
+	[],
+);
+check(
+	"and every tile the board holds stands in the tree",
+	board.tiles.filter((tile) => !cells.some((cell) => cell.id === tile.id)),
+	[],
+);
+check(
+	"a cell of a one-view holder is named after the view it draws",
+	cells.find((cell) => cell.id === "board").widget,
+	"@task/kanban-board",
+);
+check(
+	"and every cell of the sketch names the widget standing in it",
+	cells.filter((cell) => !cell.widget),
+	[],
+);
 
 const note = boardNoteText(board);
 const lines = note.split("\n");
@@ -116,14 +172,24 @@ const written = parseYaml(blocks[0]);
 check("the board is written in the format this plugin reads", blockRefusal(written), null);
 check("it is a tree, never a grid", "layouts" in written, false);
 check("and it opens as a page, because a template is a whole screen", written.mode, "expanded");
-check("every tile survives the write", written.tiles.map((tile) => tile.id), ["boards", "filter", "views", "board"]);
+check(
+	"every tile survives the write",
+	written.tiles.map((tile) => tile.id),
+	["boards", "filter", "views", "board"],
+);
 check("the mounted kanban survives it too", written.tiles[3].mounted.Kanban.widget, "@task/kanban-board");
 check("with the card slot it draws through", written.tiles[3].mounted.Kanban.slots.card.widget, "@task/task-card");
 check("and the refs it was authored with", written.tiles[3].mounted.Kanban.props.selection.ref, "boards/selection");
 check("reading it back changes nothing", serializeBoard(normalizeBoard(written)), written);
 
-const definition = (id, title) => ({ manifest: { id, title, defaultSize: { w: 3, h: 2 } }, component: () => h("div", null, title) });
-const registry = { list: () => [definition("@task/task-card", "Task card")], get: (id) => (id === "@task/task-card" ? definition(id, "Task card") : null) };
+const definition = (id, title) => ({
+	manifest: { id, title, defaultSize: { w: 3, h: 2 } },
+	component: () => h("div", null, title),
+});
+const registry = {
+	list: () => [definition("@task/task-card", "Task card")],
+	get: (id) => (id === "@task/task-card" ? definition(id, "Task card") : null),
+};
 
 const panel = dom.window.document.getElementById("host");
 const used = [];
@@ -151,29 +217,53 @@ const draw = (mode) =>
 draw("browse");
 await settle();
 const all = (selector) => [...panel.querySelectorAll(selector)];
-check("browsing offers both shelves", all(".wg-cat-shelf button").map((node) => node.textContent), ["Widgets", "Templates"]);
+check(
+	"browsing offers both shelves",
+	all(".wg-cat-shelf button").map((node) => node.textContent),
+	["Widgets", "Templates"],
+);
 check("and opens on the widgets", all(".wg-tpl-tile").length, 0);
 
 all(".wg-cat-shelf button")[1].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("the templates shelf draws a card per template", all(".wg-tpl-tile").length, TEMPLATES.length);
-check("named after the template", all(".wg-tpl-name").map((node) => node.textContent), TEMPLATES.map((one) => one.title));
+check(
+	"named after the template",
+	all(".wg-tpl-name").map((node) => node.textContent),
+	TEMPLATES.map((one) => one.title),
+);
 check("with nothing left to narrow a widget by", [all(".wg-cat-facet").length, all(".wg-cat-show").length], [0, 0]);
-check("the card draws the page's own tree, not a widget", all(".wg-tpl-region").map((node) => node.className.split("is-")[1]), ["left", "main", "right"]);
-check("labelled with the widgets that stand in it", all(".wg-tpl-cell").map((node) => node.textContent), ["@core/editable-tabs", "@core/filter-panel", "@task/view-tabs", "@task/kanban-board"]);
+check(
+	"the card draws the page's own tree, not a widget",
+	all(".wg-tpl-region").map((node) => node.className.split("is-")[1]),
+	["left", "main", "right"],
+);
+check(
+	"labelled with the widgets that stand in it",
+	all(".wg-tpl-cell").map((node) => node.textContent),
+	["@core/editable-tabs", "@core/filter-panel", "@task/view-tabs", "@task/kanban-board"],
+);
 
 panel.querySelector(".wg-tpl-tile").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 await settle();
 check("pressing a card asks for that template", used, [template.id]);
 check("and says which widget it is fetching while it waits", steps, ["Installing @core/editable-tabs…"]);
-check("a template that was built leaves no complaint on the card", panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure"), null);
+check(
+	"a template that was built leaves no complaint on the card",
+	panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure"),
+	null,
+);
 
 answer = { ok: false, failure: "the repository answered 404" };
 panel.querySelector(".wg-tpl-tile").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 await settle();
-check("one that could not be built says why, where it was pressed", panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure")?.textContent, "the repository answered 404");
+check(
+	"one that could not be built says why, where it was pressed",
+	panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure")?.textContent,
+	"the repository answered 404",
+);
 
 render(null, panel);
 draw("template");

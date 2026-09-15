@@ -129,10 +129,10 @@ await registry.load();
 const warnings = [];
 console.warn = (...parts) => warnings.push(parts.map((part) => String(part)).join(" "));
 
-const PLACES = [
-	{ id: "boards", x: 0, y: 0, w: 20, h: 1 },
-	{ id: "board", x: 0, y: 1, w: 20, h: 10 },
-];
+const ONE_REGION = {
+	dir: "row",
+	of: [{ dir: "column", keep: true, of: [{ id: "boards", height: 56 }, { id: "board", height: 640 }] }],
+};
 
 const named = (tabs) => tabs.map((name) => ({ name }));
 const PICKED = "boards/selection";
@@ -151,7 +151,7 @@ function surfaceOverBoards(boardsPath) {
 				},
 			},
 		],
-		layouts: { 20: { places: PLACES } },
+		layout: ONE_REGION,
 	});
 }
 
@@ -169,7 +169,7 @@ function surfaceBoard(boardsPath, tabs = ["Marketing Team", "Ux Team"]) {
 				},
 			},
 		],
-		layouts: { 20: { places: PLACES } },
+		layout: ONE_REGION,
 	});
 }
 
@@ -178,6 +178,7 @@ const root = dom.window.document.getElementById("host");
 const draw = () =>
 	render(
 		h(WidgetSurface, {
+			boardNode: root,
 			board, registry, host, editing: false, screen: true, initialWidth: 1280,
 			onChange: (next) => { board = next; draw(); },
 			onToggleEditing: () => {}, onWidth: () => {},
@@ -305,7 +306,7 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 				},
 			}
 			],
-			layouts: { 20: { places: PLACES } },
+			layout: ONE_REGION,
 		}),
 	);
 	check("a board with no record of its own draws what the tile carries", titles(), ["To Do", "Doing", "Done"]);
@@ -330,7 +331,7 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 				},
 			}
 			],
-			layouts: { 20: { places: PLACES } },
+			layout: ONE_REGION,
 		}),
 	);
 	check("a board with nothing on file draws the columns the manifest names", titles(), ["To Do", "Doing", "Done"]);

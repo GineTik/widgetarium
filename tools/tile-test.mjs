@@ -107,10 +107,6 @@ const TREE = {
 	tiles: TILES,
 	layout: { left: [], main: [[{ id: "good", height: 200 }], [{ id: "boom", height: 200 }]], right: [] },
 };
-const LEGACY = {
-	tiles: TILES,
-	layouts: { 20: { places: [{ id: "good", x: 0, y: 0, w: 10, h: 4 }, { id: "boom", x: 10, y: 0, w: 10, h: 4 }] } },
-};
 const TREE_WITHOUT_THE_COUNTER = {
 	tiles: [{ id: "boom", widget: CRASHER }],
 	layout: { left: [], main: [[{ id: "boom", height: 200 }]], right: [] },
@@ -122,6 +118,7 @@ const root = dom.window.document.getElementById("host");
 const draw = () =>
 	render(
 		h(WidgetSurface, {
+			boardNode: root,
 			board, registry, host, editing, screen: true, initialWidth: 1280,
 			onChange: (next) => { board = next; draw(); },
 			onToggleEditing: () => {}, onWidth: () => {},
@@ -167,11 +164,6 @@ check("the crash is named in the cell the tile stood in", all('[data-cell="boom"
 check("and the tile beside it is drawn", countIn('[data-cell="good"]'), "0");
 check("with the board still holding both cells", all(".wg-tree-cell").length, 2);
 
-await start(LEGACY);
-check("the same holds where the board is still a grid of places", all('[data-tile="boom"] .wg-error').length, 1);
-check("and the tile beside it is drawn", countIn('[data-tile="good"]'), "0");
-check("with the board still holding both tiles", all("[data-tile]").length, 2);
-
 console.log("\n— a board redraw is a redraw, not a remount —");
 
 await start(TREE);
@@ -189,24 +181,24 @@ check("the tile counts a press of its own", countIn('[data-cell="good"]'), "1");
 
 console.log("\n— the settings window borrows the widget, it does not make a second one —");
 
-await start(LEGACY, true);
-await click(bumpIn('[data-tile="good"]'));
-check("the tile counts a press on the board", countIn('[data-tile="good"]'), "1");
+await start(TREE, true);
+await click(bumpIn('[data-cell="good"]'));
+check("the tile counts a press on the board", countIn('[data-cell="good"]'), "1");
 {
-	const held = shellIn('[data-tile="good"]');
-	const gear = () => everywhere('[data-tile="good"] .wg-tile-actions button[aria-label="Settings"]')[0];
+	const held = shellIn('[data-cell="good"]');
+	const gear = () => everywhere('[data-cell="good"] .wg-tile-actions button[aria-label="Settings"]')[0];
 	check("an editing tile offers its settings", Boolean(gear()), true);
 	await click(gear());
 	check("the window draws the widget on its own canvas", everywhere(".wg-set-body .probe-counter").length, 1);
 	check("carrying the count it had on the board", countIn(".wg-set-body"), "1");
 	check("it is the very element the tile was drawing", shellIn(".wg-set-body") === held, true);
-	check("and the tile body it came from stands empty", everywhere('[data-tile="good"] .wg-tile-body .probe-counter').length, 0);
+	check("and the tile body it came from stands empty", everywhere('[data-cell="good"] .wg-tile-body .probe-counter').length, 0);
 
 	const done = everywhere(".wg-set-head button").find((node) => node.textContent.trim() === "Done");
 	check("the window offers to be closed", Boolean(done), true);
 	await click(done, 300);
-	check("closing hands the same widget back to the tile", countIn('[data-tile="good"]'), "1");
-	check("as the same element again", shellIn('[data-tile="good"]') === held, true);
+	check("closing hands the same widget back to the tile", countIn('[data-cell="good"]'), "1");
+	check("as the same element again", shellIn('[data-cell="good"]') === held, true);
 	check("and the canvas is gone with the window", everywhere(".wg-set-body").length, 0);
 }
 

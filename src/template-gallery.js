@@ -1,7 +1,8 @@
 import { createElement as h, useState } from "react";
 import { Card, Icon, IconButton } from "./kit.js";
-import { tallestOf } from "./tree.js";
 import { templateSketch } from "./templates.js";
+
+const tallestOf = (row) => row.reduce((most, cell) => Math.max(most, cell.height ?? 0), 0);
 
 const CREATE_LABEL = "Create a page from {template}";
 const INSTALLING = "Installing {widget}…";

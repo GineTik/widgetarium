@@ -34,7 +34,6 @@
 	   tools/check-shadow.mjs fails the build if this stops holding. */
 	--wg-widget-shadow: 0 6px 47px rgba(0, 0, 0, 0.035), 0 4px 8px rgba(0, 0, 0, 0.005);
 	--wg-widget-edge: inset 0 0 0 1px color-mix(in srgb, var(--text-normal) 4%, transparent);
-
 }
 
 .block-language-widgetarium,
@@ -60,8 +59,6 @@ pre:has(> .block-language-widgetarium),
 /* a widget draws its own shadow well outside its tile, so nothing on the way up may clip */
 .wg-root,
 .wg-grid,
-
-
 .wg-root,
 .wg-portal {
 	box-sizing: border-box;
@@ -122,6 +119,8 @@ pre:has(> .block-language-widgetarium),
 	--wg-quick: 200ms;
 	--wg-grow: 320ms;
 
+	--wg-overlay-scrim: rgba(0, 0, 0, 0.22);
+
 	--wg-kit-glass-tint: color-mix(in srgb, var(--background-primary) 82%, transparent);
 	--wg-kit-glass-panel: color-mix(in srgb, var(--wg-kit-raise) 94%, transparent);
 	--wg-kit-glass-blur: blur(40px) saturate(180%);
@@ -144,7 +143,8 @@ pre:has(> .block-language-widgetarium),
 	   the rejected 59, with dL* 8.4 light and 7.1 dark unmoved and both still over the floor of 7. */
 	--wg-kit-lift-drop: 5px;
 	--wg-kit-lift-blur: 14px;
-	--wg-kit-lift: 0 1px 2px var(--wg-kit-lift-ink), 0 var(--wg-kit-lift-drop) var(--wg-kit-lift-blur) var(--wg-kit-lift-ink-soft);
+	--wg-kit-lift:
+		0 1px 2px var(--wg-kit-lift-ink), 0 var(--wg-kit-lift-drop) var(--wg-kit-lift-blur) var(--wg-kit-lift-ink-soft);
 	/* HOW FAR THE LIFT REACHES PAST THE BLOCK, so a box that clips can be handed exactly that much
 	   room instead of a guessed number. Half the blur on every side, plus the drop on the side it
 	   falls toward — the arithmetic tools/check-shadow.mjs already gates the board's shadow with.
@@ -186,8 +186,8 @@ pre:has(> .block-language-widgetarium),
 	/* A single shadow puts all its darkness in one narrow band and the edge reads as a cut.
 	   Stacked, each layer wider and fainter than the last, the falloff is gradual — the same
 	   trick a real penumbra plays. */
-	--wg-chrome-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.035), 0 2px 5px rgba(0, 0, 0, 0.03),
-		0 5px 14px rgba(0, 0, 0, 0.022);
+	--wg-chrome-shadow:
+		0 0.5px 1.5px rgba(0, 0, 0, 0.035), 0 2px 5px rgba(0, 0, 0, 0.03), 0 5px 14px rgba(0, 0, 0, 0.022);
 
 	/* the resize grip */
 	--wg-grip-fill: var(--bases-table-border-color);
@@ -200,46 +200,6 @@ pre:has(> .block-language-widgetarium),
 	font-family: var(--font-interface);
 	color: var(--text-normal);
 	width: 100%;
-}
-
-.wg-toolbar {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	z-index: 51;
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	opacity: 0;
-	transition: opacity 120ms ease;
-}
-
-.wg-root:hover .wg-toolbar,
-.wg-root.is-editing .wg-toolbar,
-.wg-root.is-page .wg-toolbar {
-	opacity: 1;
-}
-
-.wg-tool {
-	background: var(--wg-sunken) !important;
-	border: none !important;
-	box-shadow: none !important;
-	border-radius: var(--wg-radius-full) !important;
-	padding: 3px 12px !important;
-	font-size: 12px;
-	line-height: 18px;
-	color: var(--wg-muted);
-	cursor: pointer;
-}
-
-.wg-tool:hover {
-	color: var(--text-normal);
-}
-
-.wg-root.is-editing .wg-tool:first-child {
-	background: var(--wg-accent) !important;
-	color: var(--wg-on-accent);
 }
 
 .wg-page {
@@ -267,61 +227,6 @@ pre:has(> .block-language-widgetarium),
 	padding-bottom: var(--wg-board-pad);
 }
 
-.wg-state {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.4rem;
-	padding: 0.2rem 0.55rem;
-	border-radius: var(--wg-radius-full);
-	background: var(--background-modifier-hover);
-	font-size: 0.72rem;
-	color: var(--text-muted);
-	white-space: nowrap;
-}
-
-.wg-state b {
-	color: var(--text-normal);
-	font-weight: 600;
-}
-
-.wg-state.is-authored {
-	background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
-}
-
-.wg-state-reset {
-	border: 0;
-	padding: 0 0.2rem;
-	background: none;
-	box-shadow: none;
-	color: var(--text-muted);
-	font: inherit;
-	cursor: pointer;
-	text-decoration: underline;
-}
-
-.wg-state-reset:hover {
-	color: var(--text-normal);
-}
-
-.wg-cells {
-	position: absolute;
-	/* the tile origin is the padding box, so the cells share it — no inset */
-	inset: 0;
-	z-index: 0;
-	pointer-events: none;
-	display: grid;
-	grid-template-columns: repeat(var(--wg-columns), var(--wg-cell));
-	grid-auto-rows: var(--wg-cell);
-	gap: var(--wg-gap);
-}
-
-.wg-cells i {
-	/* the token is an override, not a dependency: a cell must still draw if the
-	   :root block is missing or overridden by a theme */
-	background: var(--wg-cell-fill, rgba(127, 127, 127, 0.18));
-	border-radius: var(--wg-cell-radius, 8px);
-}
-
 .wg-root.is-screen .wg-grid {
 	min-height: calc(100vh - 12rem);
 }
@@ -331,7 +236,9 @@ pre:has(> .block-language-widgetarium),
 	z-index: 1;
 	top: 0;
 	left: 0;
-	transition: transform 170ms cubic-bezier(0.2, 0, 0, 1), width 170ms cubic-bezier(0.2, 0, 0, 1),
+	transition:
+		transform 170ms cubic-bezier(0.2, 0, 0, 1),
+		width 170ms cubic-bezier(0.2, 0, 0, 1),
 		height 170ms cubic-bezier(0.2, 0, 0, 1);
 	display: flex;
 	flex-direction: column;
@@ -462,144 +369,6 @@ pre:has(> .block-language-widgetarium),
 	pointer-events: none;
 }
 
-/* The grip sits ASTRIDE the widget's edge, half of it outside the box, the way Apple's
-   resizable controls do — a grip drawn inside the widget reads as decoration on the
-   content, not as a handle on the frame. Corners are an arc with round ends, which only
-   an SVG stroke can draw; sides are the straight case of the same shape. */
-.wg-grip {
-	position: absolute;
-	z-index: 2;
-	touch-action: none;
-	opacity: 0;
-	transition: opacity 120ms ease;
-}
-
-.wg-tile:hover .wg-grip,
-.wg-tile.is-dragging .wg-grip {
-	opacity: var(--wg-grip-opacity);
-}
-
-.wg-grip-arc {
-	position: absolute;
-	inset: 0;
-	overflow: visible;
-}
-
-.wg-grip-arc path {
-	stroke: var(--wg-grip-fill);
-	stroke-width: 7;
-	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
-}
-
-/* sides: the same stroke, straight — a capsule centred on the edge */
-.wg-grip-n,
-.wg-grip-s,
-.wg-grip-w,
-.wg-grip-e {
-	background: var(--wg-grip-fill);
-	border-radius: 999px;
-	box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
-.wg-grip-n,
-.wg-grip-s {
-	left: 50%;
-	width: 34px;
-	height: 7px;
-	margin-left: -17px;
-	cursor: ns-resize;
-}
-
-.wg-grip-n {
-	top: calc(var(--wg-grip-out) * -1 - 3px);
-}
-
-.wg-grip-s {
-	bottom: calc(var(--wg-grip-out) * -1 - 3px);
-}
-
-.wg-grip-w,
-.wg-grip-e {
-	top: 50%;
-	width: 7px;
-	height: 34px;
-	margin-top: -17px;
-	cursor: ew-resize;
-}
-
-.wg-grip-w {
-	left: calc(var(--wg-grip-out) * -1 - 3px);
-}
-
-.wg-grip-e {
-	right: calc(var(--wg-grip-out) * -1 - 3px);
-}
-
-/* corners: one arc, flipped into each corner so its centre of curvature lands on the
-   widget's own — verified: SE (14,14), NE (14,30), NW (30,30), SW (30,14) */
-.wg-grip-nw,
-.wg-grip-ne,
-.wg-grip-sw,
-.wg-grip-se {
-	/* the arc follows the widget's own corner, so its box has to track that radius: the
-	   path is drawn for a radius of 30 inside a box of 44, and that ratio is what scales.
-	   The stroke does not scale with it — a bigger corner must not mean a fatter grip. */
-	width: calc(var(--wg-widget-radius) * 44 / 30);
-	height: calc(var(--wg-widget-radius) * 44 / 30);
-}
-
-.wg-grip-se {
-	right: calc(var(--wg-grip-out) * -1);
-	bottom: calc(var(--wg-grip-out) * -1);
-	cursor: nwse-resize;
-}
-
-.wg-grip-ne {
-	right: calc(var(--wg-grip-out) * -1);
-	top: calc(var(--wg-grip-out) * -1);
-	cursor: nesw-resize;
-	transform: scaleY(-1);
-}
-
-.wg-grip-nw {
-	left: calc(var(--wg-grip-out) * -1);
-	top: calc(var(--wg-grip-out) * -1);
-	cursor: nwse-resize;
-	transform: scale(-1, -1);
-}
-
-.wg-grip-sw {
-	left: calc(var(--wg-grip-out) * -1);
-	bottom: calc(var(--wg-grip-out) * -1);
-	cursor: nesw-resize;
-	transform: scaleX(-1);
-}
-
-.wg-palette {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 8px;
-	margin-top: 14px;
-	font-size: 12px;
-	color: var(--wg-muted);
-}
-
-.wg-chip {
-	background: var(--wg-sunken) !important;
-	border: none !important;
-	box-shadow: none !important;
-	border-radius: var(--wg-radius-full) !important;
-	padding: 5px 12px !important;
-	font-size: 12px;
-	color: var(--text-normal);
-	cursor: pointer;
-}
-
-.wg-chip:hover {
-	background: var(--background-modifier-active-hover) !important;
-}
-
 .wg-dialog-overlay {
 	position: fixed;
 	inset: 0;
@@ -610,7 +379,7 @@ pre:has(> .block-language-widgetarium),
 	padding: 4vh 4vw;
 	/* CONTEXT: a scrim separates, it does not darken the room — 0.45 read as a blackout */
 	/* CONTEXT: named, because the enter fades this in from transparent and must name what it fades to */
-	--wg-dialog-scrim: rgba(0, 0, 0, 0.22);
+	--wg-dialog-scrim: var(--wg-overlay-scrim);
 	background: var(--wg-dialog-scrim);
 	outline: none;
 }
@@ -680,7 +449,6 @@ pre:has(> .block-language-widgetarium),
 	z-index: 1;
 }
 
-
 .wg-dialog-trigger > span {
 	cursor: pointer;
 }
@@ -700,7 +468,6 @@ pre:has(> .block-language-widgetarium),
 	background: var(--background-primary);
 	box-shadow: inset 0 0 0 1px var(--wg-line);
 }
-
 
 /* The widget root decides how the widget sits on the board: its corner and how it
    separates itself from what is behind. The tile stays paintless so a shadow can
@@ -745,8 +512,6 @@ pre:has(> .block-language-widgetarium),
 	pointer-events: none;
 }
 
-
-
 .wg-widget-root[data-rounded="base"] {
 	border-radius: var(--wg-widget-radius);
 }
@@ -783,14 +548,6 @@ pre:has(> .block-language-widgetarium),
 
 /* a plate separates by tone, so elevation on top of it is noise */
 
-.wg-toolbar-gap {
-	flex: 1;
-}
-
-
-
-
-
 .wg-blank {
 	position: absolute;
 	inset: 0;
@@ -804,19 +561,10 @@ pre:has(> .block-language-widgetarium),
 	text-align: center;
 }
 
-.wg-chip.is-hidden {
-	opacity: 0.65;
-}
-
-
 /* ── A tile too narrow to be itself ─────────────────────────────────────────────────────
    Priority+ : what does not fit hides behind an "open" rather than breaking the row.
    Container transform : the chip does not summon a panel beside itself, it BECOMES one,
    growing from where it already sits so the connection between the two is never broken. */
-.wg-tile-chip.is-open {
-	/* above the scrim, and above every other tile it is now covering */
-	z-index: 30;
-}
 
 /* NOT .wg-chip — that name was already the board's own, for the "Add widget" palette, and it
    carries !important rules that quietly won: a 999px radius turned this into a lozenge. The
@@ -894,8 +642,12 @@ pre:has(> .block-language-widgetarium),
 }
 
 @keyframes wg-scrim-in {
-	from { opacity: 0; }
-	to { opacity: 0.55; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 0.55;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -941,16 +693,43 @@ pre:has(> .block-language-widgetarium),
 	transition: transform var(--wg-press) var(--wg-ease);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-btn:active { transform: scale(0.955); }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-l { font-size: var(--font-ui-medium, 16px); padding: 0 var(--size-4-6, 24px); height: 52px; }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-m { font-size: var(--font-ui-small, 14px); padding: 0 var(--size-4-5, 20px); height: 42px; }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-s { font-size: var(--font-ui-small, 14px); padding: 0 var(--size-4-4, 16px); height: 34px; }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-block { width: 100%; }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-accent { color: var(--text-on-accent); }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-plain { color: var(--interactive-accent); }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-danger { color: var(--text-error); }
-:is(.wg-root, .wg-portal) .wg-kit-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
-:is(.wg-root, .wg-portal) .wg-kit-btn[disabled]:active { transform: none; }
+:is(.wg-root, .wg-portal) .wg-kit-btn:active {
+	transform: scale(0.955);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-l {
+	font-size: var(--font-ui-medium, 16px);
+	padding: 0 var(--size-4-6, 24px);
+	height: 52px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-m {
+	font-size: var(--font-ui-small, 14px);
+	padding: 0 var(--size-4-5, 20px);
+	height: 42px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-s {
+	font-size: var(--font-ui-small, 14px);
+	padding: 0 var(--size-4-4, 16px);
+	height: 34px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-block {
+	width: 100%;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-accent {
+	color: var(--text-on-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-plain {
+	color: var(--interactive-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-danger {
+	color: var(--text-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn[disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn[disabled]:active {
+	transform: none;
+}
 
 /* CONTEXT: min-width 0 is what lets a flex item shrink below its text, so the label clips
    instead of the button overflowing its tile and taking the chevron off the edge */
@@ -975,12 +754,28 @@ pre:has(> .block-language-widgetarium),
 	transition: transform var(--wg-press) var(--wg-ease);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-icon:active { transform: scale(0.955); }
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-l { width: 52px; height: 52px; }
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-m { width: 42px; height: 42px; }
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-s { width: 32px; height: 32px; }
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-xs { width: 28px; height: 28px; }
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent { color: var(--text-on-accent); }
+:is(.wg-root, .wg-portal) .wg-kit-icon:active {
+	transform: scale(0.955);
+}
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-l {
+	width: 52px;
+	height: 52px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-m {
+	width: 42px;
+	height: 42px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-s {
+	width: 32px;
+	height: 32px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-xs {
+	width: 28px;
+	height: 28px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent {
+	color: var(--text-on-accent);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-glass {
 	background: var(--wg-kit-glass-tint);
@@ -1001,13 +796,34 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-accent { background: var(--interactive-accent); color: var(--text-on-accent); }
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-ok { background: var(--wg-kit-success-wash); color: var(--text-success); }
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-warn { background: var(--wg-kit-warning-wash); color: var(--wg-kit-warning); }
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-err { background: var(--wg-kit-error-wash); color: var(--text-error); }
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-info { background: var(--wg-kit-info-wash); color: var(--wg-kit-info-ink); }
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-note { background: var(--wg-kit-note-wash); color: var(--wg-kit-note-ink); }
-:is(.wg-root, .wg-portal) .wg-kit-pill.is-standout { background: var(--wg-kit-standout-wash); color: var(--wg-kit-standout-ink); }
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-accent {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-ok {
+	background: var(--wg-kit-success-wash);
+	color: var(--text-success);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-warn {
+	background: var(--wg-kit-warning-wash);
+	color: var(--wg-kit-warning);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-err {
+	background: var(--wg-kit-error-wash);
+	color: var(--text-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-info {
+	background: var(--wg-kit-info-wash);
+	color: var(--wg-kit-info-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-note {
+	background: var(--wg-kit-note-wash);
+	color: var(--wg-kit-note-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-standout {
+	background: var(--wg-kit-standout-wash);
+	color: var(--wg-kit-standout-ink);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-count {
 	display: inline-flex;
@@ -1044,10 +860,14 @@ pre:has(> .block-language-widgetarium),
 
 /* CONTEXT: only a surface that floats over something casts */
 :is(.wg-root, .wg-portal) .wg-kit-card.is-lifted {
-	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge), var(--wg-kit-lift);
+	box-shadow:
+		inset 0 0 0 1px var(--wg-kit-card-edge),
+		var(--wg-kit-lift);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-card.is-selected { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+:is(.wg-root, .wg-portal) .wg-kit-card.is-selected {
+	box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-plate {
 	--wg-kit-card-corner: var(--wg-kit-plate);
@@ -1098,7 +918,9 @@ pre:has(> .block-language-widgetarium),
 	background: var(--wg-line);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-row.is-pressable { cursor: pointer; }
+:is(.wg-root, .wg-portal) .wg-kit-row.is-pressable {
+	cursor: pointer;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-row-badge {
 	display: grid;
@@ -1147,9 +969,17 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-field.is-s { height: 34px; padding: 0 var(--size-4-3, 12px); }
-:is(.wg-root, .wg-portal) .wg-kit-field.is-block { width: 100%; }
-:is(.wg-root, .wg-portal) .wg-kit-field svg { flex: none; }
+:is(.wg-root, .wg-portal) .wg-kit-field.is-s {
+	height: 34px;
+	padding: 0 var(--size-4-3, 12px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-field.is-block {
+	box-sizing: border-box;
+	width: 100%;
+}
+:is(.wg-root, .wg-portal) .wg-kit-field svg {
+	flex: none;
+}
 
 /* CONTEXT: Obsidian paints its own input at (0,1,1), so the reset needs two classes to win */
 :is(.wg-root, .wg-portal) .wg-kit-field input.wg-kit-field-input {
@@ -1169,7 +999,9 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-normal);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-field input.wg-kit-field-input::placeholder { color: var(--text-faint); }
+:is(.wg-root, .wg-portal) .wg-kit-field input.wg-kit-field-input::placeholder {
+	color: var(--text-faint);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-seg {
 	display: inline-flex;
@@ -1183,7 +1015,9 @@ pre:has(> .block-language-widgetarium),
 	scrollbar-width: none;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-seg::-webkit-scrollbar { display: none; }
+:is(.wg-root, .wg-portal) .wg-kit-seg::-webkit-scrollbar {
+	display: none;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-seg button {
 	flex: none;
@@ -1202,11 +1036,28 @@ pre:has(> .block-language-widgetarium),
 	transition: color var(--wg-quick) var(--wg-ease);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-seg button[aria-selected="true"] { color: var(--text-normal); font-weight: var(--font-semibold, 600); }
-:is(.wg-root, .wg-portal) .wg-kit-seg.is-l button { height: 46px; font-size: var(--font-ui-medium, 16px); padding: 0 var(--size-4-5, 20px); }
-:is(.wg-root, .wg-portal) .wg-kit-seg.is-s { padding: 2px; }
-:is(.wg-root, .wg-portal) .wg-kit-seg.is-s button { height: 24px; font-size: var(--font-ui-smaller, 12px); padding: 0 var(--size-4-2, 8px); gap: var(--size-2-2, 4px); }
-:is(.wg-root, .wg-portal) .wg-kit-seg.is-s .wg-kit-seg-thumb { top: 2px; bottom: 2px; }
+:is(.wg-root, .wg-portal) .wg-kit-seg button[aria-selected="true"] {
+	color: var(--text-normal);
+	font-weight: var(--font-semibold, 600);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-l button {
+	height: 46px;
+	font-size: var(--font-ui-medium, 16px);
+	padding: 0 var(--size-4-5, 20px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-s {
+	padding: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-s button {
+	height: 24px;
+	font-size: var(--font-ui-smaller, 12px);
+	padding: 0 var(--size-4-2, 8px);
+	gap: var(--size-2-2, 4px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-s .wg-kit-seg-thumb {
+	top: 2px;
+	bottom: 2px;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-seg-thumb {
 	position: absolute;
@@ -1217,13 +1068,18 @@ pre:has(> .block-language-widgetarium),
 	background: var(--wg-kit-raise);
 	border-radius: var(--wg-kit-pill);
 	box-shadow: var(--wg-kit-shadow);
-	transition: transform var(--wg-grow) var(--wg-spring), width var(--wg-grow) var(--wg-spring);
+	transition:
+		transform var(--wg-grow) var(--wg-spring),
+		width var(--wg-grow) var(--wg-spring);
 	z-index: 0;
 }
 
 /* CONTEXT: the anchor stands between the tile and the trigger, so it must pass both the
    width it is given and the permission to shrink */
-:is(.wg-root, .wg-portal) .wg-kit-anchor { display: inline-flex; min-width: 0; }
+:is(.wg-root, .wg-portal) .wg-kit-anchor {
+	display: inline-flex;
+	min-width: 0;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-pop {
 	/* CONTEXT: the anchor is hidden while open and the panel lives inside it, so it must opt back in */
@@ -1245,16 +1101,27 @@ pre:has(> .block-language-widgetarium),
 	min-width: max(200px, var(--wg-kit-anchor-width, 200px));
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-pop.is-open { opacity: 1; pointer-events: auto; }
+:is(.wg-root, .wg-portal) .wg-kit-pop.is-open {
+	opacity: 1;
+	pointer-events: auto;
+}
 /* CONTEXT: it is folding back into the trigger — a press must not land on it on the way */
-:is(.wg-root, .wg-portal) .wg-kit-pop.is-exiting { pointer-events: none; }
+:is(.wg-root, .wg-portal) .wg-kit-pop.is-exiting {
+	pointer-events: none;
+}
 /* THE PEAK IS AUTHORED, NOT SOLVED. A seed is the trigger's box over the panel's, so its two axes
    differ; a cubic-bezier overshoot would then be a different percentage on each one. Stated as
    keyframes the peak is 105% of the FINAL size on both axes whatever the seed, and it rests at 1. */
 @keyframes wg-kit-pop-bloom {
-	from { scale: var(--wg-kit-pop-seed-x, 1) var(--wg-kit-pop-seed-y, 1); }
-	60% { scale: 1.05 1.05; }
-	to { scale: 1 1; }
+	from {
+		scale: var(--wg-kit-pop-seed-x, 1) var(--wg-kit-pop-seed-y, 1);
+	}
+	60% {
+		scale: 1.05 1.05;
+	}
+	to {
+		scale: 1 1;
+	}
 }
 
 /* CONTEXT: the content is not counter-scaled — it only fades, so it carries no transform of its own */
@@ -1291,7 +1158,9 @@ pre:has(> .block-language-widgetarium),
 	opacity: 0;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick { opacity: 1; }
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick {
+	opacity: 1;
+}
 
 /* TRADE-OFF: the cap is the kit's, not one widget's — every popover list is as long as its data */
 :is(.wg-root, .wg-portal) .wg-kit-pop-scroll {
@@ -1332,8 +1201,12 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: one chevron glyph, turned — the kit draws no second arrow for a second direction */
-:is(.wg-root, .wg-portal) .wg-kit-pop-edge.is-up .wg-kit-icon-glyph { transform: rotate(-90deg); }
-:is(.wg-root, .wg-portal) .wg-kit-pop-edge.is-down .wg-kit-icon-glyph { transform: rotate(90deg); }
+:is(.wg-root, .wg-portal) .wg-kit-pop-edge.is-up .wg-kit-icon-glyph {
+	transform: rotate(-90deg);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pop-edge.is-down .wg-kit-icon-glyph {
+	transform: rotate(90deg);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-sep {
 	flex: none;
@@ -1352,8 +1225,12 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: inside glass there is no solid ground to step from */
-:is(.wg-root, .wg-portal) .wg-kit-pop-search .wg-kit-pop-search-field { background: var(--wg-kit-glass-group); }
-:is(.wg-root, .wg-portal) .wg-kit-pop-search .wg-kit-pop-search-field:focus-within { box-shadow: inset 0 0 0 2px var(--interactive-accent); }
+:is(.wg-root, .wg-portal) .wg-kit-pop-search .wg-kit-pop-search-field {
+	background: var(--wg-kit-glass-group);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pop-search .wg-kit-pop-search-field:focus-within {
+	box-shadow: inset 0 0 0 2px var(--interactive-accent);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-search-hint {
 	padding: 0 var(--size-4-2, 8px);
@@ -1407,10 +1284,20 @@ pre:has(> .block-language-widgetarium),
 	cursor: pointer;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-outside { color: var(--text-faint); opacity: 0.45; }
-:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-today { color: var(--interactive-accent); font-weight: var(--font-semibold, 600); }
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-outside {
+	color: var(--text-faint);
+	opacity: 0.45;
+}
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-today {
+	color: var(--interactive-accent);
+	font-weight: var(--font-semibold, 600);
+}
 /* CONTEXT: a day can be today AND picked — the doubled class says which wins, not the file order */
-:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked { color: var(--text-on-accent); font-weight: var(--font-semibold, 600); opacity: 1; }
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked {
+	color: var(--text-on-accent);
+	font-weight: var(--font-semibold, 600);
+	opacity: 1;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-progress {
 	display: flex;
@@ -1446,12 +1333,19 @@ pre:has(> .block-language-widgetarium),
 	height: 16px;
 	border-radius: var(--wg-kit-pill);
 	background: var(--wg-kit-raise);
-	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), var(--wg-kit-glass-edge);
+	box-shadow:
+		0 1px 4px rgba(0, 0, 0, 0.22),
+		var(--wg-kit-glass-edge);
 	transform: translate(-50%, -50%);
-	transition: width var(--wg-press) var(--wg-ease), height var(--wg-press) var(--wg-ease);
+	transition:
+		width var(--wg-press) var(--wg-ease),
+		height var(--wg-press) var(--wg-ease);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-progress.is-grabbed .wg-kit-progress-knob { width: 20px; height: 20px; }
+:is(.wg-root, .wg-portal) .wg-kit-progress.is-grabbed .wg-kit-progress-knob {
+	width: 20px;
+	height: 20px;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-progress-num {
 	flex: none;
@@ -1461,9 +1355,14 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-normal);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-progress.is-grabbed .wg-kit-progress-num { color: var(--interactive-accent); font-weight: var(--font-semibold, 600); }
+:is(.wg-root, .wg-portal) .wg-kit-progress.is-grabbed .wg-kit-progress-num {
+	color: var(--interactive-accent);
+	font-weight: var(--font-semibold, 600);
+}
 
-:is(.wg-root, .wg-portal) .wg-kit-progress:focus-visible .wg-kit-progress-track { box-shadow: 0 0 0 2px var(--interactive-accent); }
+:is(.wg-root, .wg-portal) .wg-kit-progress:focus-visible .wg-kit-progress-track {
+	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
 
 /* TRADE-OFF: one scroller for both, so there is no pair of scroll offsets to keep in step */
 :is(.wg-root, .wg-portal) .wg-kit-md {
@@ -1473,7 +1372,9 @@ pre:has(> .block-language-widgetarium),
 	border-radius: var(--wg-kit-plate);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-md-page { position: relative; }
+:is(.wg-root, .wg-portal) .wg-kit-md-page {
+	position: relative;
+}
 
 /* CONTEXT: every metric deciding where a character lands, declared once for mirror and textarea */
 :is(.wg-root, .wg-portal) .wg-kit-md-text {
@@ -1497,9 +1398,14 @@ pre:has(> .block-language-widgetarium),
 	direction: ltr;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-md-mirror { color: var(--text-normal); }
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror {
+	color: var(--text-normal);
+}
 /* CONTEXT: a trailing newline draws no line box, and the caret would sit off the page */
-:is(.wg-root, .wg-portal) .wg-kit-md-mirror::after { content: "\A"; white-space: pre-wrap; }
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror::after {
+	content: "\A";
+	white-space: pre-wrap;
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-code .wg-kit-md-text {
 	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
@@ -1508,14 +1414,29 @@ pre:has(> .block-language-widgetarium),
 	line-height: 1.5;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-code { min-height: 5.4em; border-radius: var(--wg-kit-item); }
-:is(.wg-root, .wg-portal) .wg-kit-code .wg-kit-md-mirror .is-key { color: var(--interactive-accent); }
-:is(.wg-root, .wg-portal) .wg-kit-code .wg-kit-md-mirror .is-note { color: var(--text-faint); }
+:is(.wg-root, .wg-portal) .wg-kit-code {
+	min-height: 5.4em;
+	border-radius: var(--wg-kit-item);
+}
+:is(.wg-root, .wg-portal) .wg-kit-code .wg-kit-md-mirror .is-key {
+	color: var(--interactive-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-code .wg-kit-md-mirror .is-note {
+	color: var(--text-faint);
+}
 
-:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-heading { font-weight: var(--font-bold, 700); }
-:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-strong { font-weight: var(--font-semibold, 600); }
-:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-em { font-style: italic; }
-:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-link { color: var(--interactive-accent); }
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-heading {
+	font-weight: var(--font-bold, 700);
+}
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-strong {
+	font-weight: var(--font-semibold, 600);
+}
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-em {
+	font-style: italic;
+}
+:is(.wg-root, .wg-portal) .wg-kit-md-mirror .is-link {
+	color: var(--interactive-accent);
+}
 
 /* CONTEXT: Obsidian paints its own textarea, so the reset needs two classes to win */
 :is(.wg-root, .wg-portal) textarea.wg-kit-md-input {
@@ -1534,8 +1455,12 @@ pre:has(> .block-language-widgetarium),
 	caret-color: var(--text-normal);
 }
 
-:is(.wg-root, .wg-portal) textarea.wg-kit-md-input::selection { background: color-mix(in srgb, var(--interactive-accent) 30%, transparent); }
-:is(.wg-root, .wg-portal) textarea.wg-kit-md-input::placeholder { color: var(--text-faint); }
+:is(.wg-root, .wg-portal) textarea.wg-kit-md-input::selection {
+	background: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
+}
+:is(.wg-root, .wg-portal) textarea.wg-kit-md-input::placeholder {
+	color: var(--text-faint);
+}
 
 :is(.wg-root, .wg-portal) .wg-kit-switch {
 	position: relative;
@@ -1561,7 +1486,9 @@ pre:has(> .block-language-widgetarium),
 	transition: transform var(--wg-grow) var(--wg-spring);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-switch[aria-checked="true"]::after { transform: translateX(20px); }
+:is(.wg-root, .wg-portal) .wg-kit-switch[aria-checked="true"]::after {
+	transform: translateX(20px);
+}
 
 @media (prefers-reduced-motion: reduce) {
 	.wg-kit-btn,
@@ -1635,14 +1562,24 @@ pre:has(> .block-language-widgetarium),
 	box-shadow: var(--wg-kit-control-edge, none);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn:hover::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon:hover::before { background: var(--wg-kit-fill-hover); }
+:is(.wg-root, .wg-portal) .wg-kit-icon:hover::before {
+	background: var(--wg-kit-fill-hover);
+}
 
 /* CONTEXT: a coloured fill already reads as a control, and a hairline over it reads as a rim */
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-accent::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent::before { background: var(--interactive-accent); box-shadow: none; }
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent::before {
+	background: var(--interactive-accent);
+	box-shadow: none;
+}
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-accent:hover::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent:hover::before { background: var(--interactive-accent-hover); }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-danger::before { background: var(--wg-kit-error-wash); box-shadow: none; }
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-accent:hover::before {
+	background: var(--interactive-accent-hover);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-danger::before {
+	background: var(--wg-kit-error-wash);
+	box-shadow: none;
+}
 
 /* CONTEXT: blur and inset edge clip to their own box, so they follow the corner onto ::before */
 :is(.wg-root, .wg-portal) .wg-kit-btn.wg-kit-glass,
@@ -1661,15 +1598,32 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* TRANSPARENT MEANS TRANSPARENT, at rest AND on hover, where the wash still has to be round */
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-plain::before { background: none; box-shadow: none; }
-:is(.wg-root, .wg-portal) .wg-kit-btn.is-plain:hover::before { background: var(--wg-kit-accent-wash); }
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-plain::before {
+	background: none;
+	box-shadow: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-plain:hover::before {
+	background: var(--wg-kit-accent-wash);
+}
 
-:is(.wg-root, .wg-portal) .wg-kit-pop-item::before { border-radius: var(--wg-kit-item); }
-:is(.wg-root, .wg-portal) .wg-kit-cal-day:hover::before { background: var(--background-modifier-hover); }
-:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked::before { background: var(--interactive-accent); }
-:is(.wg-root, .wg-portal) .wg-kit-row::before { border-radius: 0; }
-:is(.wg-root, .wg-portal) .wg-kit-pop-item:hover::before { background: var(--background-modifier-hover); }
-:is(.wg-root, .wg-portal) .wg-kit-row.is-pressable:hover::before { background: var(--background-modifier-hover); }
+:is(.wg-root, .wg-portal) .wg-kit-pop-item::before {
+	border-radius: var(--wg-kit-item);
+}
+:is(.wg-root, .wg-portal) .wg-kit-cal-day:hover::before {
+	background: var(--background-modifier-hover);
+}
+:is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked::before {
+	background: var(--interactive-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-row::before {
+	border-radius: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-pop-item:hover::before {
+	background: var(--background-modifier-hover);
+}
+:is(.wg-root, .wg-portal) .wg-kit-row.is-pressable:hover::before {
+	background: var(--background-modifier-hover);
+}
 
 /* MEASURED: a neutral control inside a group painted rgb(237,237,240) on rgb(237,237,240) — the
    group's fill IS the control's fill, so a trailing button vanished. It raises, the way a card
@@ -1696,12 +1650,21 @@ pre:has(> .block-language-widgetarium),
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-ghost::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost::before { background: none; box-shadow: none; }
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost::before {
+	background: none;
+	box-shadow: none;
+}
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-ghost:hover::before,
-:is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost:hover::before { background: var(--wg-kit-fill); }
+:is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost:hover::before {
+	background: var(--wg-kit-fill);
+}
 
-:is(.wg-root, .wg-portal) .wg-kit-switch::before { background: var(--wg-kit-fill); }
-:is(.wg-root, .wg-portal) .wg-kit-switch[aria-checked="true"]::before { background: var(--text-success); }
+:is(.wg-root, .wg-portal) .wg-kit-switch::before {
+	background: var(--wg-kit-fill);
+}
+:is(.wg-root, .wg-portal) .wg-kit-switch[aria-checked="true"]::before {
+	background: var(--text-success);
+}
 
 /* CONTEXT: last, so a glass or accent ::before cannot overwrite the ring with its own shadow */
 :is(.wg-root, .wg-portal) .wg-kit-btn:focus-visible::before,
@@ -1829,8 +1792,12 @@ pre:has(> .block-language-widgetarium),
 }
 
 @keyframes wg-set-in {
-	from { opacity: 0; }
-	to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* a capsule that hugs its content: a bar spanning the window reads as an opaque header */
@@ -2275,7 +2242,7 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-cat {
 	position: relative;
 	display: flex;
-	gap: var(--size-4-3, 12px);
+	gap: var(--size-4-6, 24px);
 	flex: 1;
 	min-height: 0;
 }
@@ -2309,7 +2276,9 @@ pre:has(> .block-language-widgetarium),
 	break-inside: avoid;
 	margin-bottom: var(--size-4-3, 12px);
 	cursor: pointer;
-	transition: box-shadow var(--wg-quick) var(--wg-ease), transform var(--wg-quick) var(--wg-ease);
+	transition:
+		box-shadow var(--wg-quick) var(--wg-ease),
+		transform var(--wg-quick) var(--wg-ease);
 }
 
 :is(.wg-root, .wg-portal) .wg-cat-tile:hover,
@@ -2381,6 +2350,14 @@ pre:has(> .block-language-widgetarium),
 	pointer-events: none;
 }
 
+/* TRADE-OFF: contain rather than fill — a shot whose aspect ever drifts from the frame gets letterboxed, never stretched */
+:is(.wg-root, .wg-portal) .wg-cat-shot {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
 /* A WIDGET TOO SMALL, OR TOO MUCH ITSELF, TO DRAW HERE. These lost their rules in a rewrite and
    the mark ran straight into the line — a stand-in that reads as a bug is worse than none. */
 :is(.wg-root, .wg-portal) .wg-cat-stand {
@@ -2414,9 +2391,9 @@ pre:has(> .block-language-widgetarium),
 	line-height: 1.4;
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-stand.is-broken .wg-cat-line { color: var(--text-error); }
-
-
+:is(.wg-root, .wg-portal) .wg-cat-stand.is-broken .wg-cat-line {
+	color: var(--text-error);
+}
 
 /* THE CARD'S FOOT, NOT A PILL ON THE PICTURE. As glass it sat over the widget: it hid the bottom
    of every preview and made the stage reserve 58px it never used for the widget. Laid in the grey
@@ -2463,7 +2440,6 @@ pre:has(> .block-language-widgetarium),
    second look for a second state would be a difference nobody waits through. */
 /* ONE BUTTON, ALWAYS THE SAME, and the kit paints it — its accent ground is a ::before, so a
    background set here would be a second button wearing the same colour. */
-
 
 /* CONTEXT: the shop window's one sentence, on the card — no detail page exists to hold it yet */
 :is(.wg-root, .wg-portal) .wg-cat-what,
@@ -2585,7 +2561,6 @@ pre:has(> .block-language-widgetarium),
 	white-space: nowrap;
 	text-overflow: ellipsis;
 }
-
 
 :is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
 	width: min(1240px, 100%);
@@ -3307,11 +3282,14 @@ pre:has(> .block-language-widgetarium),
 	transform: translateY(8px);
 }
 
-
 .wg-tree {
 	display: flex;
 	flex-direction: column;
-	width: 100%;
+	min-width: 0;
+}
+
+.wg-tree-region-body {
+	display: contents;
 }
 
 .wg-tree-row {
@@ -3447,8 +3425,12 @@ pre:has(> .block-language-widgetarium),
 	background: var(--text-faint);
 }
 
-.wg-tree-handle.is-across:hover .wg-tree-grip { transform: scaleY(1.6); }
-.wg-tree-handle.is-along:hover .wg-tree-grip { transform: scaleX(1.35); }
+.wg-tree-handle.is-across:hover .wg-tree-grip {
+	transform: scaleY(1.6);
+}
+.wg-tree-handle.is-along:hover .wg-tree-grip {
+	transform: scaleX(1.35);
+}
 
 .wg-tree-handle:active .wg-tree-grip {
 	opacity: 1;
@@ -3460,7 +3442,9 @@ body.wg-tree-dragging * {
 	user-select: none !important;
 }
 
-body.wg-tree-dragging .wg-tree-cell { pointer-events: none; }
+body.wg-tree-dragging .wg-tree-cell {
+	pointer-events: none;
+}
 
 body.wg-tree-dragging .wg-tree-row,
 body.wg-tree-dragging .wg-tree-cell,
@@ -3474,7 +3458,9 @@ body.wg-tree-dragging .wg-tree-region {
 	min-width: 0;
 }
 
-.wg-root.is-editing .wg-tree-grip { opacity: 0.55; }
+.wg-root.is-editing .wg-tree-grip {
+	opacity: 0.55;
+}
 
 .wg-tree-cell.is-stand-in {
 	border-radius: var(--wg-tile-radius, 20px);
@@ -3536,7 +3522,9 @@ body.wg-tree-dragging .wg-tree-region {
 	text-overflow: ellipsis;
 }
 
-.wg-root.is-editing .wg-tree-cell { cursor: grab; }
+.wg-root.is-editing .wg-tree-cell {
+	cursor: grab;
+}
 
 body.wg-tree-carrying,
 body.wg-tree-carrying * {
@@ -3544,7 +3532,9 @@ body.wg-tree-carrying * {
 	cursor: grabbing !important;
 }
 
-body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
+body.wg-tree-carrying .wg-tile-body {
+	pointer-events: none;
+}
 
 .wg-tree-page {
 	position: relative;
@@ -3687,6 +3677,18 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	flex: none;
 	overflow-x: hidden;
 	overflow-y: auto;
+	scrollbar-width: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-side::-webkit-scrollbar,
+:is(.wg-root, .wg-portal) .wg-cat-packs::-webkit-scrollbar,
+:is(.wg-root, .wg-portal) .wg-cat-tag-row::-webkit-scrollbar {
+	display: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-side > *,
+:is(.wg-root, .wg-portal) .wg-cat-sheet-body > * {
+	flex: none;
 }
 
 :is(.wg-root, .wg-portal) .wg-cat-side-head {
@@ -3739,23 +3741,41 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	font-variant-numeric: tabular-nums;
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-facet-search {
-	margin: 0 4px;
-}
-
 :is(.wg-root, .wg-portal) .wg-cat-packs {
 	max-height: 176px;
 	overflow-y: auto;
+	scrollbar-width: none;
 }
 
 :is(.wg-root, .wg-portal) .wg-cat-tags {
 	display: flex;
-	flex-wrap: wrap;
+	align-items: center;
 	gap: 6px;
-	padding: 0 var(--size-4-2, 8px);
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-tag {
+:is(.wg-root, .wg-portal) .wg-cat-tag-row {
+	display: flex;
+	gap: 6px;
+	flex: 1;
+	min-width: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-more-tags {
+	display: inline-flex;
+	align-items: center;
+	flex: none;
+	height: 28px;
+	padding: 0 var(--size-4-2, 8px);
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+	font-variant-numeric: tabular-nums;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-tag.wg-cat-tag {
+	flex: none;
 	height: 28px;
 	padding: 0 var(--size-4-3, 12px);
 	font-size: var(--font-ui-smaller, 12px);
@@ -3838,20 +3858,6 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	background: var(--interactive-accent);
 }
 
-:is(.wg-root, .wg-portal) .wg-cat-menu {
-	position: absolute;
-	top: 16px;
-	right: 16px;
-	z-index: 1;
-	opacity: 0;
-	transition: opacity var(--wg-quick) var(--wg-ease);
-}
-
-:is(.wg-root, .wg-portal) .wg-cat-tile:hover .wg-cat-menu,
-:is(.wg-root, .wg-portal) .wg-cat-tile:focus-within .wg-cat-menu {
-	opacity: 1;
-}
-
 :is(.wg-root, .wg-portal) .wg-cat-step {
 	margin: 0;
 	padding: 0 2px 2px;
@@ -3872,9 +3878,34 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 :is(.wg-root, .wg-portal) .wg-cat-sheet {
 	position: absolute;
 	z-index: 4;
+	left: calc(var(--wg-cat-pad, 0px) * -1);
+	right: calc(var(--wg-cat-pad, 0px) * -1);
+	bottom: calc(var(--wg-cat-pad, 0px) * -1);
 	box-sizing: border-box;
 	overflow: hidden;
 	padding-top: 4px;
+	border-radius: var(--wg-widget-radius-m, 24px) var(--wg-widget-radius-m, 24px) 0 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet:not(.is-open) {
+	pointer-events: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-sheet .wg-kit-sheet-grip {
+	box-shadow: none;
+	background: none;
+	pointer-events: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-scrim {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	background: var(--wg-dialog-scrim, rgba(0, 0, 0, 0.22));
+}
+
+:is(.wg-root, .wg-portal) .wg-cat-filters.is-on {
+	color: var(--interactive-accent);
 }
 
 :is(.wg-root, .wg-portal) .wg-cat-sheet-head {
@@ -3928,12 +3959,13 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	}
 
 	:is(.wg-root, .wg-portal) .wg-dialog.wg-cat-dialog {
+		--wg-cat-pad: var(--size-4-2, 8px);
 		box-sizing: border-box;
 		width: 100%;
 		height: 100%;
 		max-height: 100%;
 		border-radius: 0;
-		padding: var(--size-4-3, 12px);
+		padding: var(--wg-cat-pad);
 	}
 }
 
@@ -3969,10 +4001,33 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 }
 
 :is(.wg-root, .wg-portal) .wg-doc-body pre {
-	padding: 14px 16px;
+	position: relative;
+	margin: 0 0 12px;
+	padding: 16px 18px;
 	border-radius: var(--wg-kit-plate);
 	background: var(--wg-kit-fill);
 	overflow-x: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body pre > .copy-code-button {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: none;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-raise);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	color: var(--text-muted);
+	opacity: 0;
+	transition: opacity var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-body pre:hover > .copy-code-button,
+:is(.wg-root, .wg-portal) .wg-doc-body pre > .copy-code-button:focus-visible {
+	opacity: 1;
 }
 
 :is(.wg-root, .wg-portal) .wg-doc-plain {
@@ -3989,15 +4044,22 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 }
 
 :is(.wg-root, .wg-portal) .wg-doc-next {
+	box-sizing: border-box;
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-3, 12px);
-	padding: 12px 16px;
+	min-height: 64px;
+	padding: var(--size-4-4, 16px);
 	border: none;
 	border-radius: var(--wg-kit-plate);
 	background: var(--wg-kit-fill);
+	color: var(--text-normal);
 	cursor: pointer;
 	text-align: left;
+}
+
+:is(.wg-root, .wg-portal) .wg-doc-next:hover {
+	background: var(--wg-kit-fill-hover);
 }
 
 :is(.wg-root, .wg-portal) .wg-doc-next-said {

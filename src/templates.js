@@ -1,4 +1,5 @@
-import { normalizeBoard, REGIONS } from "./model.js";
+import { normalizeBoard } from "./model.js";
+import { isBox, keptAt, sideOf } from "./tree.js";
 
 const TASK_BOARD = {
 	id: "task-board",
@@ -92,8 +93,16 @@ function widgetStandingAt(template, cellId) {
 	return held.length === 1 ? held[0].widget : tile.widget;
 }
 
+function cellsIn(node, template) {
+	if (isBox(node)) return node.of.flatMap((child) => cellsIn(child, template));
+	return [{ ...node, widget: widgetStandingAt(template, node.id) }];
+}
+
 export function templateSketch(template) {
 	const { layout } = templateBoard(template);
-	const drawn = (row) => row.map((cell) => ({ ...cell, widget: widgetStandingAt(template, cell.id) }));
-	return REGIONS.map((name) => ({ name, rows: layout[name].rows.map(drawn) }));
+	const keep = keptAt(layout);
+	return layout.of.map((region, at) => ({
+		name: at === keep ? "main" : sideOf(layout, at),
+		rows: (region.of ?? []).map((child) => cellsIn(child, template)),
+	}));
 }

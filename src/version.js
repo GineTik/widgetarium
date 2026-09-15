@@ -1,4 +1,4 @@
-export const BLOCK_FORMAT = 1;
+export const BLOCK_FORMAT = 2;
 export const WIDGET_API = 1;
 export const MIN_WIDGET_API = 1;
 export const REGISTRY_FORMAT = 1;

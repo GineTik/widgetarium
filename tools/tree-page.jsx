@@ -1,12 +1,12 @@
 import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
 import { WidgetHost, WidgetSurface } from "../src/surface.js";
-import { normalizeBoard } from "../src/model.js";
+import { normalizeBoard, serializeBoard } from "../src/model.js";
 import { WidgetRegistry } from "../src/registry.js";
 import { createGatewayRefs, createViewCells } from "../src/gateway/refs.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 import { classOf, scaleOf } from "../src/paths.js";
-import { GAP_PX, layTree } from "../src/tree.js";
+import { GAP_PX, isBox, laid, leavesOf } from "../src/tree.js";
 
 const FILES = JSON.parse(document.getElementById("wg-widgets").textContent);
 const BOARD = JSON.parse(document.getElementById("wg-board").textContent);
@@ -44,6 +44,11 @@ const SILENT_BOARD = {
 };
 
 const heightOf = (id) => TREE.flat().find((cell) => cell.id === id)?.height ?? null;
+const askOf = (id) => ({ minPx: TREE.flat().find((cell) => cell.id === id)?.minPx ?? 0 });
+const asNode = (row) => (row.length === 1 ? row[0] : { dir: "row", of: row });
+const PROBE_TREE = { dir: "column", of: TREE.map(asNode) };
+const idsOfRow = (node) => (isBox(node) ? node.of.map((cell) => cell.id) : [node.id]);
+const rowsOfRegion = (box) => box.of.map(idsOfRow);
 
 function widgetProps(cell, width, wiring) {
 	const tile = tileOf(cell.id);
@@ -64,20 +69,35 @@ function cellNode(cell, width, wiring) {
 	return h("div", attrs, h("div", { className: "wg-tile-body" }, bodyNode(cell, width, wiring)));
 }
 
-function rowNode(row, at, width, wiring) {
-	return h("div", { className: "wg-tree-row", key: at }, row.cells.map((cell) => cellNode(cell, width, wiring)));
+function laidNode(node, width, wiring) {
+	if (node.kind === "leaf") return cellNode(node, width, wiring);
+	return h(
+		"div",
+		{ className: node.dir === "column" ? "wg-tree" : "wg-tree-row", key: node.path.join("/") },
+		node.of.map((child) => laidNode(child, width, wiring)),
+	);
 }
 
 function boardNode(width) {
 	const wiring = { refs: createGatewayRefs(), cellFor: createViewCells() };
 	const attrs = { className: "wg-root wg-tree", key: width, style: { width: `${width}px` }, "data-width": width };
-	return h("div", attrs, layTree(TREE, width, GAP_PX).map((row, at) => rowNode(row, at, width, wiring)));
+	return h("div", attrs, laid(PROBE_TREE, width, { ask: askOf, gap: GAP_PX }).of.map((child) => laidNode(child, width, wiring)));
 }
 
 function boxOf(node) {
 	if (!node) return null;
 	const rect = node.getBoundingClientRect();
 	return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
+}
+
+function rowsUnder(node) {
+	return [...node.children].flatMap((child) => {
+		if (child.classList.contains("wg-tree-cell")) return [[child.dataset.tile ?? child.dataset.cell]];
+		if (child.classList.contains("wg-tree-row"))
+			return [[...child.querySelectorAll(".wg-tree-cell")].map((one) => one.dataset.tile ?? one.dataset.cell)];
+		if (child.classList.contains("wg-tree") || child.classList.contains("wg-tree-band")) return rowsUnder(child);
+		return [];
+	});
 }
 
 function readOne(width) {
@@ -94,7 +114,7 @@ function readOne(width) {
 	}));
 	return {
 		width,
-		rows: [...root.querySelectorAll(".wg-tree-row")].map((node) => [...node.querySelectorAll(".wg-tree-cell")].map((one) => one.dataset.tile)),
+		rows: rowsUnder(root),
 		board: boxOf(root),
 		scrollWidth: root.scrollWidth,
 		clientWidth: root.clientWidth,
@@ -108,7 +128,11 @@ const SURFACE_WIDTH = 1600;
 
 const asRows = (rows) => rows.map((row) => row.map((cell) => ({ id: cell.id, ratio: cell.ratio, ...(cell.height ? { height: cell.height } : {}) })));
 const UNPLACED_TILE = { id: "loose", widget: "@task/task-card" };
-let surfaceBoard = { ...BOARD, tiles: [...BOARD.tiles, UNPLACED_TILE], layout: { main: { rows: asRows(TREE) } }, layouts: {} };
+let surfaceBoard = normalizeBoard({
+	...BOARD,
+	tiles: [...BOARD.tiles, UNPLACED_TILE],
+	layout: { dir: "row", of: [{ dir: "column", keep: true, of: asRows(TREE).map(asNode) }] },
+});
 let surfaceWrites = 0;
 let surfaceEditing = false;
 
@@ -172,6 +196,150 @@ function sidesNode() {
 	);
 }
 
+const NESTED_WIDTH = 1200;
+
+const NESTED_LAYOUT = {
+	dir: "row",
+	of: [
+		{
+			dir: "column",
+			keep: true,
+			of: [
+				{ id: "boards", height: 56 },
+				{
+					dir: "row",
+					of: [
+						{ id: "board", ratio: 2, height: 420 },
+						{ dir: "column", of: [{ id: "views", height: 180 }, { id: "wynttpz", height: 220 }] },
+					],
+				},
+			],
+		},
+	],
+};
+
+let nestedBoard = normalizeBoard({ tiles: BOARD.tiles, layout: NESTED_LAYOUT });
+let nestedWrites = 0;
+
+function nestedNode() {
+	return h(
+		"div",
+		{ className: "wg-nested-probe", key: "nested", style: { width: `${NESTED_WIDTH}px` } },
+		h(WidgetSurface, {
+			board: nestedBoard,
+			registry,
+			host,
+			editing: true,
+			screen: true,
+			initialWidth: NESTED_WIDTH,
+			onChange: (next) => {
+				nestedWrites += 1;
+				nestedBoard = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
+		}),
+	);
+}
+
+function readNested() {
+	const region = document.querySelector(".wg-nested-probe .wg-tree-region.is-main .wg-tree");
+	if (!region) return { drawn: false };
+	const boxAt = (path) => boxOf(document.querySelector(`.wg-nested-probe [data-path="${path}"]`));
+	const cellAt = (id) => boxOf(document.querySelector(`.wg-nested-probe .wg-tree-cell[data-cell="${id}"]`));
+	const column = boxAt("0/1/1");
+	const row = boxAt("0/1");
+	const painted = (id) =>
+		document.querySelector(`.wg-nested-probe .wg-tree-cell[data-cell="${id}"] .wg-tile-body`)?.childElementCount ?? 0;
+	return {
+		drawn: true,
+		rows: rowsUnder(region),
+		dirs: [...document.querySelectorAll(".wg-nested-probe [data-dir]")].map((node) => `${node.dataset.path}:${node.dataset.dir}`),
+		painted: ["boards", "board", "views", "wynttpz"].map(painted),
+		stacked: [Math.round(cellAt("views").left - cellAt("wynttpz").left), Math.round(cellAt("views").bottom <= cellAt("wynttpz").top ? 1 : 0)],
+		beside: Math.round(cellAt("board").right) <= Math.round(column.left) ? 1 : 0,
+		shares: [Math.round(cellAt("board").width), Math.round(column.width)],
+		withinRow: column.top >= row.top - 0.5 && column.bottom <= row.bottom + 0.5,
+		spare: Math.round(row.width - cellAt("board").width - column.width),
+		written: JSON.stringify(serializeBoard(nestedBoard).layout),
+	};
+}
+
+function dragNestedGrips() {
+	const row = document.querySelector('.wg-nested-probe [data-path="0/1"]');
+	const across = row?.querySelector(":scope > .wg-tree-handle.is-across");
+	const nest = document.querySelector('.wg-nested-probe [data-path="0/1/1"]');
+	const along = nest?.querySelector(":scope > .wg-tree-band > .wg-tree-handle.is-along");
+	if (!across || !along) return { failed: "the nested box carries no grips" };
+	const widthOf = (id) => Math.round(document.querySelector(`.wg-nested-probe [data-cell="${id}"]`).getBoundingClientRect().width);
+	const heightOf = (id) => Math.round(document.querySelector(`.wg-nested-probe [data-cell="${id}"]`).getBoundingClientRect().height);
+	const before = { board: widthOf("board"), views: heightOf("views"), writes: nestedWrites };
+
+	const acrossBox = across.getBoundingClientRect();
+	firePointer("pointerdown", { x: acrossBox.left + acrossBox.width / 2, y: acrossBox.top + 40 }, across);
+	firePointer("pointermove", { x: acrossBox.left + acrossBox.width / 2 - 200, y: acrossBox.top + 40 }, window);
+	const heldWidth = widthOf("board");
+	firePointer("pointerup", { x: acrossBox.left + acrossBox.width / 2 - 200, y: acrossBox.top + 40 }, window);
+
+	const alongBox = along.getBoundingClientRect();
+	firePointer("pointerdown", { x: alongBox.left + alongBox.width / 2, y: alongBox.top + alongBox.height / 2 }, along);
+	firePointer("pointermove", { x: alongBox.left + alongBox.width / 2, y: alongBox.top + alongBox.height / 2 + 120 }, window);
+	const heldHeight = heightOf("views");
+	firePointer("pointerup", { x: alongBox.left + alongBox.width / 2, y: alongBox.top + alongBox.height / 2 + 120 }, window);
+
+	return {
+		before,
+		heldWidth,
+		heldHeight,
+		after: { board: widthOf("board"), views: heightOf("views"), writes: nestedWrites },
+		ratios: nestedBoard.layout.of[0].of[1].of.map((child) => Math.round(child.ratio * 100) / 100),
+		nestedHeight: nestedBoard.layout.of[0].of[1].of[1].of[0].height,
+	};
+}
+
+async function carryIntoNest() {
+	const held = document.querySelector('.wg-nested-probe .wg-tree-cell[data-cell="boards"]');
+	const onto = document.querySelector('.wg-nested-probe .wg-tree-cell[data-cell="wynttpz"]');
+	if (!held || !onto) return { failed: "the nested column was not drawn" };
+	const box = held.getBoundingClientRect();
+	const seat = onto.getBoundingClientRect();
+	const aim = { x: seat.left + seat.width / 2, y: seat.top + 6 };
+	firePointer("pointerdown", { x: box.left + 20, y: box.top + 20 }, held);
+	firePointer("pointermove", aim, window);
+	await settled();
+	const nest = () => [...document.querySelectorAll('.wg-nested-probe [data-dir="column"]')].at(-1);
+	const aimed = nest().querySelectorAll(".wg-tree-cell.is-stand-in").length;
+	firePointer("pointerup", aim, window);
+	await settled();
+	return {
+		aimed,
+		leaves: leavesOf(nestedBoard.layout).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`),
+		inNest: [...nest().querySelectorAll(".wg-tree-cell")].map((node) => node.dataset.cell),
+	};
+}
+
+async function carryOutOfNest() {
+	const held = document.querySelector('.wg-nested-probe .wg-tree-cell[data-cell="views"]');
+	const onto = document.querySelector('.wg-nested-probe .wg-tree-cell[data-cell="boards"]');
+	if (!held || !onto) return { failed: "the nested column was not drawn" };
+	const box = held.getBoundingClientRect();
+	const seat = onto.getBoundingClientRect();
+	const aim = { x: seat.left + 8, y: seat.top + seat.height / 2 };
+	firePointer("pointerdown", { x: box.left + 20, y: box.top + 20 }, held);
+	firePointer("pointermove", aim, window);
+	await settled();
+	const aimed = document.querySelectorAll(".wg-nested-probe .wg-tree-cell.is-stand-in").length;
+	firePointer("pointerup", aim, window);
+	await settled();
+	return {
+		aimed,
+		rows: rowsUnder(document.querySelector(".wg-nested-probe .wg-tree-region.is-main .wg-tree")),
+		leaves: leavesOf(nestedBoard.layout).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`),
+		writes: nestedWrites,
+	};
+}
+
 const EMPTY_WIDTH = 1400;
 
 let emptyBoard = normalizeBoard({ tiles: BOARD.tiles, layout: { left: [], main: [[{ id: "boards", ratio: 0.5 }], [{ id: "board", height: 400 }]], right: [] } });
@@ -223,10 +391,10 @@ function readEmpty() {
 		left: zoneOf("left"),
 		right: zoneOf("right"),
 		halfShare: (() => {
-			const row = document.querySelector(".wg-empty-probe .wg-tree-region.is-main .wg-tree-row");
-			if (!row) return null;
-			const cell = row.querySelector(".wg-tree-cell");
-			return Math.round(cell.getBoundingClientRect().width - row.getBoundingClientRect().width);
+			const column = document.querySelector(".wg-empty-probe .wg-tree-region.is-main .wg-tree");
+			const cell = column?.querySelector(".wg-tree-cell[data-path]");
+			if (!cell) return null;
+			return Math.round(cell.getBoundingClientRect().width - column.getBoundingClientRect().width);
 		})(),
 		palette: document.querySelectorAll(".wg-empty-probe .wg-palette-open").length,
 		adds: [...page.querySelectorAll(".wg-tree-region")].filter((node) => node.querySelector(".wg-tree-add")).map((node) => node.className.replace(/.*is-/, "")),
@@ -238,7 +406,8 @@ function readEmpty() {
 	};
 }
 
-const rowsPerRegion = () => Object.fromEntries(["left", "main", "right"].map((name) => [name, emptyBoard.layout[name].rows.map((row) => row.map((cell) => cell.id))]));
+const REGION_NAMES = ["left", "main", "right"];
+const rowsPerRegion = () => Object.fromEntries(REGION_NAMES.map((name, at) => [name, rowsOfRegion(emptyBoard.layout.of[at])]));
 
 async function addIntoRegion(name) {
 	const zone = document.querySelector(`.wg-empty-probe .wg-tree-region.is-${name} .wg-tree-add`);
@@ -270,7 +439,7 @@ async function addIntoRegion(name) {
 async function carryIntoLeft() {
 	const cellOf = () => document.querySelector('.wg-empty-probe .wg-tree-cell[data-cell="boards"]');
 	const held = cellOf();
-	const zone = document.querySelector('.wg-empty-probe .wg-tree-region.is-left [data-region="left"]');
+	const zone = document.querySelector('.wg-empty-probe .wg-tree-region[data-region="0"]');
 	if (!held || !zone) return { failed: "nothing to carry, or nowhere to carry it to" };
 	const box = held.getBoundingClientRect();
 	const onto = zone.getBoundingClientRect();
@@ -283,12 +452,11 @@ async function carryIntoLeft() {
 	await settled();
 	const landed = boxOf(cellOf());
 	const off = (key) => (standIn && landed ? Math.round(landed[key] - standIn[key]) : null);
-	const ids = (rows) => rows.map((row) => row.map((cell) => cell.id));
 	return {
 		aimed: standIn ? 1 : 0,
 		lie: { left: off("left"), top: off("top"), width: off("width"), height: off("height") },
-		left: ids(emptyBoard.layout.left.rows),
-		main: ids(emptyBoard.layout.main.rows),
+		left: rowsOfRegion(emptyBoard.layout.of[0]),
+		main: rowsOfRegion(emptyBoard.layout.of[1]),
 	};
 }
 
@@ -313,7 +481,7 @@ function readToggles() {
 			fromKit: node.classList.contains("wg-kit-icon"),
 		};
 	};
-	const firstRow = document.querySelector(".wg-sides-probe .wg-tree-row");
+	const firstRow = document.querySelector(".wg-sides-probe .wg-tree-cell[data-path]");
 	return {
 		drawn: true,
 		left: seen("left"),
@@ -403,7 +571,7 @@ function widenSidebar(byX) {
 async function squashRow(byY) {
 	const along = document.querySelector(".wg-surface-probe .wg-tree-handle.is-along");
 	if (!along) return { failed: "no strip to drag" };
-	const rowOf = () => Math.round(document.querySelector(".wg-surface-probe .wg-tree-row").getBoundingClientRect().height);
+	const rowOf = () => Math.round(along.parentElement.firstElementChild.getBoundingClientRect().height);
 	const box = along.getBoundingClientRect();
 	const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
 	firePointer("pointerdown", from, along);
@@ -462,8 +630,7 @@ function dragFrom(node, from, byX, byY) {
 }
 
 function rowsOfSurface() {
-	const root = document.querySelector(".wg-surface-probe .wg-tree");
-	return [...root.querySelectorAll(".wg-tree-row")].map((row) => [...row.querySelectorAll(".wg-tree-cell")].map((cell) => cell.dataset.cell));
+	return rowsUnder(document.querySelector(".wg-surface-probe .wg-tree"));
 }
 
 const settled = () => new Promise((done) => setTimeout(done, 30));
@@ -476,9 +643,8 @@ async function carryTile() {
 	const held = cellOf();
 	if (!held) return { before, failed: "the kanban cell was not found" };
 	const box = held.getBoundingClientRect();
-	const treeBox = boxOf(document.querySelector(".wg-surface-probe .wg-tree"));
-	const first = document.querySelector(".wg-surface-probe .wg-tree-row").getBoundingClientRect();
-	const onto = { x: first.left + 20, y: first.top + first.height / 2 };
+	const first = document.querySelector(".wg-surface-probe .wg-tree-cell[data-path]").getBoundingClientRect();
+	const onto = { x: first.left + 8, y: first.top + first.height / 2 };
 	firePointer("pointerdown", { x: box.left + 40, y: box.top + 40 }, held);
 	firePointer("pointermove", onto, window);
 	await settled();
@@ -487,6 +653,7 @@ async function carryTile() {
 	const plate = boxOf(document.querySelector(".wg-surface-probe .wg-tree-ghost-plate"));
 	const underPointer = plate ? onto.x >= plate.left && onto.x <= plate.right && onto.y >= plate.top && onto.y <= plate.bottom : false;
 	const plateSize = plate ? [Math.round(plate.width), Math.round(plate.height)] : null;
+	const treeBox = boxOf(document.querySelector(".wg-surface-probe .wg-tree"));
 	const spilled = [...document.querySelectorAll(".wg-surface-probe .wg-tree-cell")]
 		.map((node) => ({ id: node.dataset.cell, at: boxOf(node) }))
 		.filter((one) => one.at.width > 0 && (one.at.right > treeBox.right + 1 || one.at.bottom > treeBox.bottom + 1))
@@ -525,18 +692,17 @@ async function carryIntoSlack() {
 	const aimed = document.querySelectorAll(".wg-empty-probe .wg-tree-region.is-left .wg-tree-cell.is-stand-in").length;
 	firePointer("pointerup", aim, window);
 	await settled();
-	const ids = (rows) => rows.map((row) => row.map((cell) => cell.id));
-	return { slack, aimed, left: ids(emptyBoard.layout.left.rows), main: ids(emptyBoard.layout.main.rows) };
+	return { slack, aimed, left: rowsOfRegion(emptyBoard.layout.of[0]), main: rowsOfRegion(emptyBoard.layout.of[1]) };
 }
 
 const fireClick = (node) => Boolean(node) && node.dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
 
 function readChrome(scope) {
 	return {
-		cells: document.querySelectorAll(`${scope} .wg-tree-row .wg-tree-cell`).length,
+		cells: document.querySelectorAll(`${scope} .wg-tree-cell[data-path]`).length,
 		settings: document.querySelectorAll(`${scope} .wg-tile-actions button[aria-label="Settings"]`).length,
 		removes: document.querySelectorAll(`${scope} .wg-tile-actions button[aria-label="Remove"]`).length,
-		pill: pillFit(document.querySelector(`${scope} .wg-tree-row .wg-tree-cell`)),
+		pill: pillFit(document.querySelector(`${scope} .wg-tree-cell[data-path]`)),
 	};
 }
 
@@ -554,7 +720,7 @@ function pillFit(cell) {
 }
 
 const tileIds = () => surfaceBoard.tiles.map((tile) => tile.id);
-const writtenTileIds = () => Object.values(surfaceBoard.layout).flatMap((region) => region.rows).flatMap((row) => row.map((cell) => cell.id));
+const writtenTileIds = () => leavesOf(surfaceBoard.layout).map((leaf) => leaf.id);
 
 async function askRemoval(id) {
 	const control = document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${id}"] .wg-tile-actions button[aria-label="Remove"]`);
@@ -611,7 +777,7 @@ async function openTileSettings(id) {
 }
 
 function draw() {
-	render([...WIDTHS.map((width) => boardNode(width)), surfaceNode(), sidesNode(), emptyNode()], mount);
+	render([...WIDTHS.map((width) => boardNode(width)), surfaceNode(), sidesNode(), emptyNode(), nestedNode()], mount);
 }
 
 function readSurface() {
@@ -621,24 +787,33 @@ function readSurface() {
 	return {
 		drawn: true,
 		boardWidth: Math.round(root.getBoundingClientRect().width),
-		rows: [...root.querySelectorAll(".wg-tree-row")].map((node) => node.querySelectorAll(".wg-tree-cell").length),
-		painted: [...root.querySelectorAll(".wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
-		overlays: root.querySelectorAll(".wg-tree-overlay").length,
-		widest: Math.max(...[...root.querySelectorAll(".wg-tree-row")].map((node) => node.getBoundingClientRect().width)),
+		rows: rowsUnder(root).map((row) => row.length),
+		painted: [...document.querySelectorAll(".wg-surface-probe .wg-tree-cell .wg-tile-body")].filter((node) => node.childElementCount > 0).length,
+		overlays: document.querySelectorAll(".wg-surface-probe .wg-tree-overlay").length,
+		widest: Math.max(...[...root.children].map((node) => node.getBoundingClientRect().width)),
 		regions: document.querySelectorAll(".wg-surface-probe .wg-tree-region").length,
 		across: root.querySelectorAll(".wg-tree-handle.is-across").length,
 		gripShown: Number(getComputedStyle(root.querySelector(".wg-tree-grip")).opacity),
 		along: root.querySelectorAll(".wg-tree-handle.is-along").length,
 		capped: root.querySelectorAll(".wg-tree-handle.is-along.is-capped").length,
 		alongWidth: Math.round(root.querySelector(".wg-tree-handle.is-along")?.getBoundingClientRect().width ?? 0),
-		firstRowHeight: Math.round(document.querySelector(".wg-surface-probe .wg-tree-row")?.getBoundingClientRect().height ?? 0),
-		firstCellHeight: Math.round(document.querySelector(".wg-surface-probe .wg-tree-row .wg-tree-cell")?.getBoundingClientRect().height ?? 0),
+		firstRowHeight: Math.round(root.querySelector(".wg-tree-band")?.firstElementChild?.getBoundingClientRect().height ?? 0),
+		firstCellHeight: Math.round(root.querySelector(".wg-tree-cell[data-path]")?.getBoundingClientRect().height ?? 0),
 		sharedRow: cellsOf([...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1)),
-		loneRows: [...root.querySelectorAll(".wg-tree-row")]
+		loneRows: [...root.querySelectorAll(".wg-tree-band")]
 			.filter((node) => node.querySelectorAll(".wg-tree-cell").length === 1)
-			.map((node) => Math.round(node.querySelector(".wg-tree-cell").getBoundingClientRect().width - node.getBoundingClientRect().width)),
+			.map((node) => Math.round(node.querySelector(".wg-tree-cell").getBoundingClientRect().width - root.getBoundingClientRect().width)),
 		writes: surfaceWrites,
-		ratios: (surfaceBoard.layout.main.rows.find((row) => row.length > 1) ?? []).map((cell) => cell.ratio),
+		declaredHeights: TREE.flat()
+			.filter((cell) => cell.height)
+			.map((cell) => ({
+				id: cell.id,
+				wanted: cell.height,
+				drawn: Math.round(
+					document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${cell.id}"]`)?.getBoundingClientRect().height ?? 0,
+				),
+			})),
+		ratios: (surfaceBoard.layout.of[0].of.find(isBox)?.of ?? []).map((cell) => cell.ratio),
 	};
 }
 
@@ -691,7 +866,11 @@ async function report() {
 		draw();
 		await settled();
 		const addedIntoRight = await addIntoRegion("right");
-		sink.textContent = JSON.stringify({ intoSlack, addedIntoRight, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, pressedEdit, soloBar, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, chromeEditing, chromeReading, configured, removal, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
+		const nested = readNested();
+		const nestedGrips = dragNestedGrips();
+		const intoNest = await carryIntoNest();
+		const unnested = await carryOutOfNest();
+		sink.textContent = JSON.stringify({ nested, nestedGrips, intoNest, unnested, intoSlack, addedIntoRight, widths: WIDTHS.map(readOne), surface: before, sides, widened, pinched, togglesOpen, openSides, mountedOpen, mountedFolded, foldedLeft, togglesFolded, unfoldedLeft, pressedEdit, soloBar, squashed, eases, dragged, stretched, whileReading, carried, emptyOpen, carriedAcross, emptyResting, chromeEditing, chromeReading, configured, removal, whileHeld: { across: writesWhileAcross, along: writesWhileAlong }, failures });
 	} catch (failure) {
 		sink.textContent = JSON.stringify({ failure: String(failure && failure.stack) });
 	}

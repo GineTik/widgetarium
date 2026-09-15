@@ -3,7 +3,7 @@ import { arrayGateway, soloGateway } from "../src/gateway/create";
 import { createGatewayRefs, createViewCells, selectionGateway } from "../src/gateway/refs.js";
 import ViewTabs from "../widgets/@task/view-tabs/widget.tsx";
 import FilterPanel from "../widgets/@core/filter-panel/widget.tsx";
-import { spanToPixels } from "../src/layout.js";
+import { spanToPixels } from "../src/paths.js";
 import { GRID } from "../src/paths.js";
 
 const emptyTasks = arrayGateway([], {}, "fill-tasks");

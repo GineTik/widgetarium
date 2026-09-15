@@ -1,16 +1,10 @@
-import { arrange, clampPlace } from "./layout.js";
+import { COLUMN, isBox, leavesOf, pixelHeight, pruned, ROW } from "./tree.js";
 import { BLOCK_FORMAT } from "./version.js";
 
-// The pre-columns format named its layouts after device classes, and each name carried a
-// fixed column count, so the move to numeric keys is 1:1 and loses nothing. These are
-// FROZEN history, not the live config: retuning the grid must not rewrite what an old
-// file meant when it was saved.
-const LEGACY_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
-const LEGACY_BARE_ARRAY_COLUMNS = 12;
+const LEGACY_CLASS_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
 
 // CONTEXT: a board read without a registry cannot know a widget was renamed, and keeps what it has
 const SAME_ID = (id) => id;
-
 
 // CONTEXT: a slot used to persist as the widget id alone, a mount as a record keyed by that id
 function heldWidget(input, keyWidget) {
@@ -24,7 +18,14 @@ function normalizeHeld(input, keyWidget, idOf) {
 	const widget = heldWidget(input, keyWidget);
 	if (typeof widget !== "string" || widget === "") return null;
 	const held = typeof input === "object" && input !== null ? input : {};
-	return { widget: idOf(widget), settings: held.settings ?? {}, mounts: held.mounts ?? {}, props: held.props ?? {}, slots: normalizeSlots(held.slots, idOf), mounted: normalizeMounted(held.mounted, idOf) };
+	return {
+		widget: idOf(widget),
+		settings: held.settings ?? {},
+		mounts: held.mounts ?? {},
+		props: held.props ?? {},
+		slots: normalizeSlots(held.slots, idOf),
+		mounted: normalizeMounted(held.mounted, idOf),
+	};
 }
 
 // CONTEXT: a mount key is the widget id, with #n on a repeat — a record written before this carries no widget
@@ -77,11 +78,17 @@ export function mountKeys(ids) {
 // CONTEXT: the old shape is a comma list of widget ids, the new one substitution's { name, widget }
 function rowsOf(value) {
 	const list = Array.isArray(value) ? value : String(value ?? "").split(",");
-	return list
-		.map((entry) => (typeof entry === "string" ? { name: "", widget: entry, hidden: false } : { name: String(entry?.name ?? ""), widget: String(entry?.widget ?? ""), hidden: entry?.hidden === true }))
-		.map((row) => ({ name: row.name.trim(), widget: row.widget.trim(), hidden: row.hidden }))
-		// CONTEXT: a named row with no widget yet is a view waiting to be filled
-		.filter((row) => row.widget !== "" || row.name !== "");
+	return (
+		list
+			.map((entry) =>
+				typeof entry === "string"
+					? { name: "", widget: entry, hidden: false }
+					: { name: String(entry?.name ?? ""), widget: String(entry?.widget ?? ""), hidden: entry?.hidden === true },
+			)
+			.map((row) => ({ name: row.name.trim(), widget: row.widget.trim(), hidden: row.hidden }))
+			// CONTEXT: a named row with no widget yet is a view waiting to be filled
+			.filter((row) => row.widget !== "" || row.name !== "")
+	);
 }
 
 // CONTEXT: run on every READ as well as on rename, so no stored name can shadow another
@@ -136,7 +143,9 @@ function underEitherKey(held, name, was) {
 }
 
 export function mountList(tile, name, spec) {
-	return underEitherKey(tile?.mounts, name, spec?.was) ?? underEitherKey(tile?.settings, name, spec?.was) ?? spec?.default;
+	return (
+		underEitherKey(tile?.mounts, name, spec?.was) ?? underEitherKey(tile?.settings, name, spec?.was) ?? spec?.default
+	);
 }
 
 // CONTEXT: `was` is the widget-id key a note written before this still stores the record under
@@ -211,114 +220,156 @@ function normalizeTile(tile, index, idOf) {
 	};
 }
 
-function normalizePlace(place, index) {
+function positiveNumber(given) {
+	const value = Number(given);
+	return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function normalizeLeaf(input) {
+	const id = typeof input === "string" ? input : input?.id;
+	if (typeof id !== "string" || id === "") return null;
+	const ratio = positiveNumber(input?.ratio);
+	const height = positiveNumber(input?.height);
+	return { id, ratio: ratio ?? 1, ...(height ? { height } : {}) };
+}
+
+const DIRECTIONS = new Set([ROW, COLUMN]);
+
+function boxFlags(input) {
+	const width = positiveNumber(input.width);
+	const ratio = positiveNumber(input.ratio);
+	const height = positiveNumber(input.height);
+	const foldable = input.foldable === true;
 	return {
-		id: place.id ?? `w${index}`,
-		x: place.x ?? 0,
-		y: place.y ?? 0,
-		w: place.w ?? 3,
-		h: place.h ?? 2,
-		// The width a folded tile goes back to. It belongs to the PLACE, not the tile: folded
-		// is one fact about the widget, but how wide it was is a fact about this screen — a
-		// panel folded on a phone must not decide what it reopens to on a desktop.
-		// restoreW is what this field was called before folded moved onto the tile
-		...(place.wasW ?? place.restoreW ? { wasW: place.wasW ?? place.restoreW } : {}),
+		...(ratio ? { ratio } : {}),
+		...(height ? { height } : {}),
+		...(width ? { width } : {}),
+		...(input.keep === true ? { keep: true } : {}),
+		...(foldable ? { foldable: true } : {}),
+		...(foldable && (input.folded === true || input.collapsed === true) ? { folded: true } : {}),
+		...(input.scroll === true ? { scroll: true } : {}),
+		...(typeof input.name === "string" && input.name !== "" ? { name: input.name } : {}),
 	};
 }
 
-function readEntry(value) {
-	const places = Array.isArray(value) ? value : (value?.places ?? []);
-	return places.map(normalizePlace);
+function normalizeNode(input) {
+	if (!isBox(input)) return normalizeLeaf(input);
+	const of = input.of.map(normalizeNode).filter(Boolean);
+	return { dir: DIRECTIONS.has(input.dir) ? input.dir : COLUMN, of, ...boxFlags(input) };
 }
 
-// An absent layout and an empty one are different: an empty AUTHORED layout means "this
-// width is deliberately blank", while absence means "derive it". Dropping empties on the
-// way in is what lets a freshly migrated board derive instead of arriving blank three times.
-function normalizeLayouts(input) {
-	const layouts = {};
-	for (const [key, value] of Object.entries(input ?? {})) {
-		const columns = LEGACY_COLUMNS[key] ?? Number(key);
-		if (!Number.isFinite(columns) || columns < 1) continue;
-		const places = readEntry(value);
-		if (places.length === 0) continue;
-		layouts[columns] = places;
-	}
-	return layouts;
+function rowNode(cells) {
+	return cells.length === 1 ? cells[0] : { dir: ROW, of: cells };
 }
 
-// CONTEXT: `idOf` is the registry's rename table — a note naming an old id is read, and saved, as the new one
-function normalizeCell(cell) {
-	const id = typeof cell === "string" ? cell : cell?.id;
-	if (typeof id !== "string" || id === "") return null;
-	const ratio = Number(cell?.ratio);
-	const height = Number(cell?.height);
-	return { id, ratio: Number.isFinite(ratio) && ratio > 0 ? ratio : 1, ...(Number.isFinite(height) && height > 0 ? { height } : {}) };
-}
-
-function normalizeRows(rows) {
+function nodesFromRows(rows) {
 	if (!Array.isArray(rows)) return null;
-	return rows.map((row) => (Array.isArray(row) ? row : [row]).map(normalizeCell).filter(Boolean)).filter((row) => row.length > 0);
+	return rows
+		.map((row) => (Array.isArray(row) ? row : [row]).map(normalizeLeaf).filter(Boolean))
+		.filter((cells) => cells.length > 0)
+		.map(rowNode);
 }
 
-export const REGIONS = ["left", "main", "right"];
-
-function regionWidth(given) {
-	const width = Number(given?.width);
-	return Number.isFinite(width) && width > 0 ? { width } : {};
+function regionBox(given, flags) {
+	const of = nodesFromRows(Array.isArray(given) ? given : given?.rows);
+	if (!of) return null;
+	return { dir: COLUMN, of, ...boxFlags({ ...(Array.isArray(given) ? {} : (given ?? {})), ...flags }) };
 }
 
-function regionFold(given, foldable) {
-	return foldable && (given?.folded === true || given?.collapsed === true) ? { folded: true } : {};
+const SIDE_FLAGS = { foldable: true };
+const KEPT_FLAGS = { keep: true };
+
+function sideBox(given) {
+	return regionBox(given, SIDE_FLAGS) ?? { dir: COLUMN, of: [], foldable: true };
 }
 
-function normalizeRegion(given, foldable) {
-	const rows = normalizeRows(Array.isArray(given) ? given : given?.rows);
-	if (!rows) return null;
-	return { rows, ...regionWidth(given), ...regionFold(given, foldable) };
-}
-
-const EMPTY_REGION = { rows: [] };
-
-function normalizeTree(given) {
+function rootFromRegions(given) {
 	if (!given || typeof given !== "object") return null;
-	const main = normalizeRegion(Array.isArray(given) ? given : given.main, false);
-	if (!main) return null;
-	return { left: normalizeRegion(given.left, true) ?? EMPTY_REGION, main, right: normalizeRegion(given.right, true) ?? EMPTY_REGION };
+	const kept = regionBox(Array.isArray(given) ? given : given.main, KEPT_FLAGS);
+	if (!kept) return null;
+	return { dir: ROW, of: [sideBox(given.left), kept, sideBox(given.right)] };
 }
 
-function serializeRegion(region) {
-	if (!region.width && !region.folded) return region.rows;
-	return { ...(region.width ? { width: region.width } : {}), ...(region.folded ? { folded: true } : {}), rows: region.rows };
+function placesOf(value) {
+	const places = Array.isArray(value) ? value : (value?.places ?? []);
+	return places
+		.filter((place) => typeof place?.id === "string" && place.id !== "")
+		.map((place) => ({
+			id: place.id,
+			x: Number(place.x) || 0,
+			y: Number(place.y) || 0,
+			w: Number(place.w) || 3,
+			h: Number(place.h) || 2,
+		}));
 }
 
-function serializeTree(layout) {
-	return Object.fromEntries(REGIONS.filter((name) => layout[name]).map((name) => [name, serializeRegion(layout[name])]));
+function widestPlaces(layouts) {
+	let widest = null;
+	let places = [];
+	for (const [key, value] of Object.entries(layouts ?? {})) {
+		const columns = LEGACY_CLASS_COLUMNS[key] ?? Number(key);
+		const held = placesOf(value);
+		if (!Number.isFinite(columns) || held.length === 0 || (widest !== null && columns <= widest)) continue;
+		widest = columns;
+		places = held;
+	}
+	return places;
 }
+
+function bandsOfPlaces(places) {
+	const sorted = [...places].sort((one, other) => one.y - other.y || one.x - other.x);
+	const bands = [];
+	for (const place of sorted) {
+		const last = bands[bands.length - 1];
+		if (last && last[0].y === place.y) last.push(place);
+		else bands.push([place]);
+	}
+	return bands;
+}
+
+// TRADE-OFF: the grid's widest authored width is the one read and the rest are dropped, because a tree holds one arrangement and the widest is the one that was laid out by hand rather than derived
+function rootFromPlaces(layouts, tiles) {
+	const places = widestPlaces(layouts);
+	if (places.length === 0) return null;
+	const seated = new Set(places.map((place) => place.id));
+	const rows = bandsOfPlaces(places).map((band) =>
+		rowNode(band.map((place) => ({ id: place.id, ratio: place.w, height: pixelHeight(place.h) }))),
+	);
+	const spare = tiles.filter((tile) => !seated.has(tile.id)).map((tile) => ({ id: tile.id, ratio: 1 }));
+	return { dir: ROW, of: [sideBox(null), { dir: COLUMN, of: [...rows, ...spare], keep: true }, sideBox(null)] };
+}
+
+function emptyRoot() {
+	return { dir: ROW, of: [sideBox(null), { dir: COLUMN, of: [], keep: true }, sideBox(null)] };
+}
+
+function normalizeLayout(input, tiles) {
+	const given = input?.layout;
+	const laidOut = isBox(given) ? normalizeNode(given) : rootFromRegions(given);
+	const root = laidOut ?? rootFromPlaces(input?.layouts, tiles) ?? emptyRoot();
+	return pruned(root);
+}
+
+function serializeNode(node) {
+	if (!isBox(node))
+		return {
+			id: node.id,
+			...(node.ratio === 1 ? {} : { ratio: node.ratio }),
+			...(node.height ? { height: node.height } : {}),
+		};
+	const { dir, of, ...flags } = node;
+	return { dir, ...flags, of: of.map(serializeNode) };
+}
+
+const LEGACY_BARE_ARRAY = 12;
 
 export function normalizeBoard(input, idOf = SAME_ID) {
-	// CONTEXT: entries are tiles AND places at once; delegating keeps one promised shape
-	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY_COLUMNS]: input } }, idOf);
-	// LEGACY: folded used to live on the place, once per layout, under the name restoreW. A
-	// file written then still opens, and its panel is still folded — read off whichever layout
-	// recorded it, because the fact was always about the tile.
-	const foldedOnce = new Set();
-	for (const layout of Object.values(input?.layouts ?? {})) {
-		// the RAW entry: normalizePlace has already dropped the field by the time it runs
-		const raw = Array.isArray(layout) ? layout : (layout?.places ?? []);
-		for (const place of raw) {
-			if (place?.restoreW) foldedOnce.add(place.id);
-		}
-	}
-
-	const laidOut = normalizeTree(input?.layout);
-
+	// TRADE-OFF: a bare array is read as tiles AND places at once, which is what the oldest files hold; delegating keeps one promised shape
+	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY]: input } }, idOf);
+	const tiles = (input?.tiles ?? []).map((tile, index) => normalizeTile(tile, index, idOf));
 	return {
-		tiles: (input?.tiles ?? []).map((tile, index) => {
-			const seen = normalizeTile(tile, index, idOf);
-			return foldedOnce.has(seen.id) ? { ...seen, folded: true } : seen;
-		}),
-		layouts: normalizeLayouts(input?.layouts),
-		...(laidOut ? { layout: laidOut } : {}),
+		tiles,
+		layout: normalizeLayout(input, tiles),
 		// One board, two sizes. The mode is a fact about the board, so it lives in the file:
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".
@@ -362,101 +413,18 @@ function serializeTile(tile) {
 }
 
 export function serializeBoard(board) {
-	// The warning lives HERE and not in authoredColumns, which runs on every render: this
-	// is the one place a key that is not a column count actually loses data. A layout
-	// written under the old class name is dropped on save, which is how an added widget
-	// once vanished without a sound.
-	for (const key of Object.keys(board.layouts)) {
-		if (!Number.isFinite(Number(key))) {
-			console.warn(`Widgetarium: layout key "${key}" is not a column count and was not saved`);
-		}
-	}
 	return {
 		v: BLOCK_FORMAT,
 		tiles: board.tiles.map(serializeTile),
-		// only authored counts reach the file: a derived layout is one render's worth of
-		// arithmetic, and writing it would mark a width the user never touched as theirs
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
-		...(board.layout ? { layout: serializeTree(board.layout) } : {}),
-		...serializeLegacyLayouts(board),
+		layout: serializeNode(board.layout),
 	};
-}
-
-// TRADE-OFF: still written when a board has them, never created; a board born as a tree carries no trace of the grid
-function serializeLegacyLayouts(board) {
-	const authored = authoredColumns(board);
-	if (authored.length === 0) return {};
-	return {
-		layouts: Object.fromEntries(
-			authored.map((columns) => [
-				String(columns),
-				{ places: board.layouts[columns].map((place) => ({ id: place.id, x: place.x, y: place.y, w: place.w, h: place.h, ...(place.wasW ? { wasW: place.wasW } : {}) })) },
-			]),
-		),
-	};
-}
-
-export function authoredColumns(board) {
-	return Object.keys(board.layouts)
-		.map(Number)
-		.filter(Number.isFinite)
-		.sort((left, right) => left - right);
-}
-
-// nearest authored count by column distance; a tie goes to the LARGER, because shrinking a
-// layout has somewhere to give — minimum sizes, then a wrapped row — and growing has nothing
-// to fill with. The seam therefore lands midway between two authored counts, the width the
-// user sits at least often, and one edit there removes it for good.
-export function sourceColumnsFor(board, columns) {
-	const authored = authoredColumns(board);
-	if (authored.length === 0) return null;
-	let best = authored[0];
-	for (const candidate of authored) {
-		const gap = Math.abs(candidate - columns);
-		const bestGap = Math.abs(best - columns);
-		if (gap < bestGap || (gap === bestGap && candidate > best)) best = candidate;
-	}
-	return best;
-}
-
-// What a widget declares, by tile id — where it is born and whether it grows. Threaded in
-// rather than read here, because the model must not know the registry exists. Neither answer
-// can make a layout impossible, which is the whole point of replacing the old limits.
-export function layoutFor(board, columns, declaredBy = () => ({})) {
-	const growthOf = (place) => declaredBy(place.id ?? place)?.growth ?? "fill";
-	const own = board.layouts[columns];
-	if (own) {
-		const places = own.map((place) => clampPlace(place, columns));
-		return { places: arrange(seatAll(board, places, columns, declaredBy), columns, { reading: true }), isAuthored: true };
-	}
-
-	const source = sourceColumnsFor(board, columns);
-	const derived = source === null ? [] : arrange(board.layouts[source], columns, { scaleFrom: source, growthOf });
-	return { places: arrange(seatAll(board, derived, columns, declaredBy), columns, { reading: true }), isAuthored: false };
-}
-
-// ONE board, whatever the width. A tile added at one column count had a place only there, so
-// a narrower or wider screen dropped it entirely and the two read as different boards. A tile
-// exists on the board or it does not; where it sits is per width, whether it sits is not.
-function seatAll(board, places, columns, declaredBy) {
-	const seated = new Set(places.map((place) => place.id));
-	const missing = board.tiles.filter((tile) => !seated.has(tile.id));
-	if (missing.length === 0) return places;
-
-	let row = places.reduce((lowest, place) => Math.max(lowest, place.y + place.h), 0);
-	const added = missing.map((tile) => {
-		const born = declaredBy(tile.id)?.defaultSize ?? { w: 3, h: 2 };
-		const place = clampPlace({ id: tile.id, x: 0, y: row, w: born.w ?? 3, h: born.h ?? 2 }, columns);
-		row += place.h;
-		return place;
-	});
-	return [...places, ...added];
 }
 
 export function tileById(board, id) {
 	return board.tiles.find((tile) => tile.id === id) ?? null;
 }
 
-export function placedIds(board, columns) {
-	return new Set(layoutFor(board, columns).places.map((place) => place.id));
+export function placedIds(board) {
+	return new Set(leavesOf(board.layout).map((leaf) => leaf.id));
 }

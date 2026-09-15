@@ -30,6 +30,8 @@ function render(tag, props, resolvedClass) {
 const GLYPHS = {
 	chevron: '<path d="M8.25 5.5l4.5 4.5-4.5 4.5"/>',
 	fold: '<path d="M11.75 5.5l-4.5 4.5 4.5 4.5"/>',
+	expand: '<path d="M11.8 4.6h3.6v3.6"/><path d="M8.2 15.4H4.6v-3.6"/><path d="M15.4 4.6l-4.4 4.4M4.6 15.4l4.4-4.4"/>',
+	collapse: '<path d="M15 9.2h-3.6V5.6"/><path d="M5 10.8h3.6v3.6"/><path d="M11.4 9.2l4-4M8.6 10.8l-4 4"/>',
 	search: '<circle cx="9.25" cy="9.25" r="4.75"/><path d="M12.9 12.9l3.35 3.35"/>',
 	filter: '<path d="M3.6 5.4h12.8l-4.9 5.7v4.5l-3-1.7v-2.8z"/>',
 	curve: '<path d="M3.6 13.2l3.5-4.3 3 2.6 3.2-4.6 3.1 3"/>',
@@ -200,7 +202,21 @@ export function Sidebar({ as = "div", ...props }) {
 // read as a thing with weight rather than a box being resized.
 const SHEET_COMMIT = 0.4;
 
-export function SidebarSheet({ as = "div", mode, surface, isOpen, onOpen, onHeight, peekPx = 220, maxPx = 640, grip = "Raise the sheet", className: cls, style, children, ...rest }) {
+export function SidebarSheet({
+	as = "div",
+	mode,
+	surface,
+	isOpen,
+	onOpen,
+	onHeight,
+	peekPx = 220,
+	maxPx = 640,
+	grip = "Raise the sheet",
+	className: cls,
+	style,
+	children,
+	...rest
+}) {
 	const [dragged, setDragged] = useState(null);
 	const from = useRef(null);
 	const latest = useRef(0);
@@ -271,7 +287,22 @@ export function SidebarGroup({ label, hint, children, className: cls }) {
 
 // TRADE-OFF: one row for both sizes, and `unset` is a state rather than a colour a caller picks —
 // three files had each spelled "this property is empty" their own way
-export function SidebarRow({ as = "div", icon, label, sub, value, after, children, unset, isOpen, selected, pressable, onClick, className: cls, ...rest }) {
+export function SidebarRow({
+	as = "div",
+	icon,
+	label,
+	sub,
+	value,
+	after,
+	children,
+	unset,
+	isOpen,
+	selected,
+	pressable,
+	onClick,
+	className: cls,
+	...rest
+}) {
 	const shown = value ?? children;
 	// TRADE-OFF: the row owns its TAG, because a settings row is read and a property row is
 	// pressed — and a pressable div is a button a keyboard cannot reach
@@ -284,14 +315,28 @@ export function SidebarRow({ as = "div", icon, label, sub, value, after, childre
 			// CONTEXT: aria-current is how a list says which of its rows is the one being read
 			"aria-current": selected ? "true" : undefined,
 			// CONTEXT: is-two is the row's own state — the height law reads it, not the caller's markup
-			className: cx(rowClass({ pressable: pressable || as === "button" }), "wg-kit-side-row", sub && "is-two", unset && "is-unset", isOpen && "is-open", selected && "is-selected", cls),
+			className: cx(
+				rowClass({ pressable: pressable || as === "button" }),
+				"wg-kit-side-row",
+				sub && "is-two",
+				unset && "is-unset",
+				isOpen && "is-open",
+				selected && "is-selected",
+				cls,
+			),
 		},
 		[
 			// CONTEXT: a glyph, never RowBadge — a badge is a FILLED marker, and putting an icon in
 			// one painted every property row with an accent tile
 			icon ? h("span", { className: "wg-kit-side-icon", key: "icon" }, icon) : null,
-			h(RowLabel, { key: "label" }, sub ? [label, h("span", { className: "wg-kit-side-sub", key: "sub" }, sub)] : label),
-			shown === undefined || shown === null ? null : h(RowValue, { className: "wg-kit-side-value", key: "value" }, shown),
+			h(
+				RowLabel,
+				{ key: "label" },
+				sub ? [label, h("span", { className: "wg-kit-side-sub", key: "sub" }, sub)] : label,
+			),
+			shown === undefined || shown === null
+				? null
+				: h(RowValue, { className: "wg-kit-side-value", key: "value" }, shown),
 			after ?? null,
 		],
 	);
@@ -329,7 +374,9 @@ export function useSegmentedThumb(value, items) {
 			const borderLeftPx = parseFloat(getComputedStyle(list).borderLeftWidth) || 0;
 			const left = activeRect.left - listRect.left - borderLeftPx + list.scrollLeft;
 			// the same numbers must keep the same object, or every measure schedules a render
-			setThumb((was) => (was && was.left === left && was.width === activeRect.width ? was : { left, width: activeRect.width }));
+			setThumb((was) =>
+				was && was.left === left && was.width === activeRect.width ? was : { left, width: activeRect.width },
+			);
 		};
 		measure();
 		if (typeof ResizeObserver !== "function") return;
@@ -383,7 +430,11 @@ export function useRoomForLabel(controlRef) {
 	return isFitting;
 }
 
-export const fieldClass = variants("wg-kit-field", { size: { m: "", s: "is-s" }, block: { true: "is-block" } }, { size: "m" });
+export const fieldClass = variants(
+	"wg-kit-field",
+	{ size: { m: "", s: "is-s" }, block: { true: "is-block" } },
+	{ size: "m" },
+);
 
 // TRADE-OFF: the field owns its <input> rather than taking children — three widgets had each
 // re-reset Obsidian's input styling by hand, and each got a different subset of it right
@@ -423,12 +474,7 @@ function yamlLine(line, at) {
 	const note = cut === -1 ? "" : line.slice(cut);
 	const named = /^(\s*)([\w.$-]+)(:)([\s\S]*)$/.exec(said);
 	const out = named
-		? [
-				named[1],
-				h("span", { className: "is-key", key: `k${at}` }, named[2]),
-				named[3],
-				named[4],
-		  ]
+		? [named[1], h("span", { className: "is-key", key: `k${at}` }, named[2]), named[3], named[4]]
 		: [said];
 	if (note) out.push(h("span", { className: "is-note", key: `n${at}` }, note));
 	return out;
@@ -436,10 +482,12 @@ function yamlLine(line, at) {
 
 function yamlSpans(text) {
 	const out = [];
-	String(text ?? "").split("\n").forEach((line, at) => {
-		if (at > 0) out.push("\n");
-		out.push(...yamlLine(line, at));
-	});
+	String(text ?? "")
+		.split("\n")
+		.forEach((line, at) => {
+			if (at > 0) out.push("\n");
+			out.push(...yamlLine(line, at));
+		});
 	return out;
 }
 
@@ -621,7 +669,9 @@ function edgeOf(skin) {
 function skinPaint(node, pseudo) {
 	const skin = getComputedStyle(node, pseudo);
 	const paint = { background: skin.backgroundColor || "", edge: edgeOf(skin) };
-	const bare = paint.edge === "none" && (!paint.background || paint.background === "transparent" || /,\s*0\)\s*$/.test(paint.background));
+	const bare =
+		paint.edge === "none" &&
+		(!paint.background || paint.background === "transparent" || /,\s*0\)\s*$/.test(paint.background));
 	return bare ? null : paint;
 }
 
@@ -648,7 +698,9 @@ function wearPaint(panel, paint) {
 
 // CONTEXT: the scale is a keyframed animation, so only the paint is left for a transition to carry
 function enterTransition() {
-	return ["border-radius", "background-color", "box-shadow"].map((name) => `${name} ${GROW_MS}ms var(--wg-ease)`).join(", ");
+	return ["border-radius", "background-color", "box-shadow"]
+		.map((name) => `${name} ${GROW_MS}ms var(--wg-ease)`)
+		.join(", ");
 }
 
 function contentTransition() {
@@ -736,7 +788,8 @@ function exitPanel(panel, anchor, done) {
 		inner.style.transition = "opacity var(--wg-quick) var(--wg-ease)";
 		inner.style.opacity = "0";
 	}
-	panel.style.transition = "transform var(--wg-quick) var(--wg-ease), border-radius var(--wg-quick) var(--wg-ease), opacity var(--wg-press) var(--wg-ease) 80ms";
+	panel.style.transition =
+		"transform var(--wg-quick) var(--wg-ease), border-radius var(--wg-quick) var(--wg-ease), opacity var(--wg-press) var(--wg-ease) 80ms";
 	panel.style.opacity = "0";
 	fold(panel, anchor);
 
@@ -865,7 +918,13 @@ export function Popover({ trigger, children, isOpen: isOpenAsked, onOpenChange, 
 			{
 				id,
 				ref: panelRef,
-				className: cx("wg-kit-pop", where.panelClass, (isOpen || isExiting) && "is-open", isExiting && "is-exiting", cls),
+				className: cx(
+					"wg-kit-pop",
+					where.panelClass,
+					(isOpen || isExiting) && "is-open",
+					isExiting && "is-exiting",
+					cls,
+				),
 				role: "dialog",
 				// CONTEXT: a tile is a stacking context, so styles.css lifts the one holding this
 				"data-wg-overlay": shown ? "" : undefined,
@@ -953,7 +1012,20 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }) {
 	);
 }
 
-const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTH_NAMES = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
+];
 // CONTEXT: Monday first, the way the design draws it
 const WEEKDAY_INITIALS = ["M", "T", "W", "T", "F", "S", "S"];
 // TRADE-OFF: always six rows, so the panel does not change height between two months
@@ -967,7 +1039,11 @@ function startOfCalendar(year, month) {
 
 function sameDay(one, other) {
 	if (!one || !other) return false;
-	return one.getFullYear() === other.getFullYear() && one.getMonth() === other.getMonth() && one.getDate() === other.getDate();
+	return (
+		one.getFullYear() === other.getFullYear() &&
+		one.getMonth() === other.getMonth() &&
+		one.getDate() === other.getDate()
+	);
 }
 
 // TRADE-OFF: the kit owns the month and the state on a cell, never what the cell says
@@ -988,14 +1064,24 @@ export function Calendar({ month, onMonthChange, selected, today, onSelect, rend
 	const cells = [];
 	for (let offset = 0; offset < CALENDAR_CELLS; offset += 1) {
 		const date = new Date(first.getFullYear(), first.getMonth(), first.getDate() + offset);
-		const day = { date, outside: date.getMonth() !== index, today: sameDay(date, now), selected: sameDay(date, selected) };
+		const day = {
+			date,
+			outside: date.getMonth() !== index,
+			today: sameDay(date, now),
+			selected: sameDay(date, selected),
+		};
 		cells.push(
 			h(
 				"button",
 				{
 					type: "button",
 					key: `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
-					className: cx("wg-kit-cal-day", day.outside && "is-outside", day.today && "is-today", day.selected && "is-picked"),
+					className: cx(
+						"wg-kit-cal-day",
+						day.outside && "is-outside",
+						day.today && "is-today",
+						day.selected && "is-picked",
+					),
 					"aria-pressed": String(day.selected),
 					onClick: () => onSelect?.(date),
 				},
@@ -1105,7 +1191,8 @@ export function Progress({ value = 0, onChange, label, className: cls }) {
 
 const HEADING_LINE = /^#{1,6}\s/;
 // CONTEXT: reading B — a backticked span is consumed so its markers stay plain, and takes no class
-const INLINE = /(`[^`\n]*`)|(\[\[[^\]\n]*\]\])|(\[[^\]\n]*\]\([^)\n]*\))|(\*\*[^*\n]+\*\*|__[^_\n]+__)|(\*[^*\n]+\*|_[^_\n]+_)/g;
+const INLINE =
+	/(`[^`\n]*`)|(\[\[[^\]\n]*\]\])|(\[[^\]\n]*\]\([^)\n]*\))|(\*\*[^*\n]+\*\*|__[^_\n]+__)|(\*[^*\n]+\*|_[^_\n]+_)/g;
 const INLINE_CLASSES = [null, "is-link", "is-link", "is-strong", "is-em"];
 
 function markLine(line) {
@@ -1126,10 +1213,12 @@ function markLine(line) {
 
 function markdownSpans(text) {
 	const out = [];
-	String(text ?? "").split("\n").forEach((line, at) => {
-		if (at > 0) out.push("\n");
-		out.push(...markLine(line));
-	});
+	String(text ?? "")
+		.split("\n")
+		.forEach((line, at) => {
+			if (at > 0) out.push("\n");
+			out.push(...markLine(line));
+		});
 	return out;
 }
 

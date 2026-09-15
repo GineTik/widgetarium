@@ -37,10 +37,11 @@ check("the board is written in the format this plugin reads", blockRefusal(parse
 check("the board declares the current format", parsed.v, BLOCK_FORMAT);
 check("the board opens with no tiles", normalizeBoard(parsed).tiles.length, 0);
 check("a new board is a tree, never a grid", "layouts" in parsed, false);
-check("and it is born with all three regions, so the first widget has somewhere to go", Object.keys(parsed.layout), ["left", "main", "right"]);
-check("every one of them starts empty", Object.values(parsed.layout), [[], [], []]);
-check("the tree survives being read back", Object.keys(normalizeBoard(parsed).layout), ["left", "main", "right"]);
-check("the board authors no grid layout", Object.keys(normalizeBoard(parsed).layouts), []);
+check("and it is born with all three regions, so the first widget has somewhere to go", parsed.layout.of.length, 3);
+check("every one of them starts empty", parsed.layout.of.map((box) => box.of), [[], [], []]);
+check("one of the three is the one that may not be folded away", parsed.layout.of.map((box) => Boolean(box.keep)), [false, true, false]);
+check("the tree survives being read back", normalizeBoard(parsed).layout.of.length, 3);
+check("the board authors no grid layout", "layouts" in normalizeBoard(parsed), false);
 
 check("the first board takes the plain name", boardPathIn("Screens", []), "Screens/Board.md");
 check("a taken name is stepped past", boardPathIn("Screens", ["Board", "Board 2"]), "Screens/Board 3.md");
@@ -66,7 +67,7 @@ check("inserting into a bare note leaves one board", blocksIn(inserted(held, 2))
 
 const beside = `${note}Tail`.split("\n");
 check("inserting after a board leaves two", blocksIn(inserted(beside, beside.length - 1)).length, 2);
-const insideBlock = beside.findIndex((line) => line.trim() === "main: []");
+const insideBlock = beside.findIndex((line) => line.trim() === "dir: row");
 check("the cursor inside a board is a line of that board", insideBlock > 0, true);
 check("inserting from inside a board does not nest one in the other", blocksIn(inserted(beside, insideBlock)).length, 2);
 check("and the board the cursor sat in is left whole", blockRefusal(parseYaml(blocksIn(inserted(beside, insideBlock))[0])), null);

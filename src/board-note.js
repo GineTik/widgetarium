@@ -15,7 +15,7 @@ export function isScreenNote(frontmatter) {
 	return markOf(frontmatter).kind === SCREEN_KIND;
 }
 
-const EMPTY_BOARD = { tiles: [], layout: { left: [], main: [], right: [] } };
+const EMPTY_BOARD = { tiles: [] };
 
 // TRADE-OFF: a note whose whole point is the board opens as a page; a board dropped into somebody's prose is a block in it, and takes no screen
 const SCREEN_BOARD = { ...EMPTY_BOARD, mode: "expanded" };

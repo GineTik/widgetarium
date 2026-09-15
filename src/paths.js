@@ -73,3 +73,7 @@ export function measureGrid(availableWidth) {
 		boardWidth: inner,
 	};
 }
+
+export function spanToPixels(cells, cell, gap) {
+	return cells * cell + (cells - 1) * gap;
+}

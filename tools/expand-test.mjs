@@ -93,6 +93,7 @@ const isExpanded = () => board.mode === "expanded";
 const draw = () =>
 	render(
 		h(WidgetSurface, {
+			boardNode: mount.element,
 			board: board, registry, host, editing: false, screen: false, initialWidth: 1280,
 			onChange: (next) => { board = next; draw(); },
 			onToggleEditing: () => {}, onWidth: () => {},
@@ -102,12 +103,18 @@ const draw = () =>
 
 draw();
 await settle();
-const expandButton = [...dom.window.document.querySelectorAll(".wg-tool")].find((node) => node.textContent === "Expand");
+const expandButton = dom.window.document.querySelector(".wg-region-toggle.is-page");
 check("there is an expand control", Boolean(expandButton), true);
 expandButton.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("pressing it expands", isExpanded(), true);
 check("and the page is mounted", dom.window.document.querySelectorAll(".wg-page").length, 1);
+check(
+	"the page stands in the pane the board stands in, never over the whole app",
+	dom.window.document.querySelector(".wg-page").parentElement.className,
+	"view-content",
+);
+check("and nothing of ours hangs off the body", [...dom.window.document.body.children].map((node) => node.className), ["view-content"]);
 
 // REGRESSION: CodeMirror rebuilds the block element, preact remounts, and expansion used to
 // be a hook — so it reset to false and the board collapsed on any click in the note.
@@ -121,7 +128,21 @@ await settle();
 check("a rebuilt block element stays expanded", isExpanded(), true);
 check("and the page is still there", dom.window.document.querySelectorAll(".wg-page").length, 1);
 
-const collapse = [...dom.window.document.querySelectorAll(".wg-tool")].find((node) => node.textContent === "Collapse");
+const pagesBefore = dom.window.document.querySelectorAll(".wg-page").length;
+const standingInNoPane = dom.window.document.createElement("div");
+render(
+	h(WidgetSurface, {
+		board: { ...board, mode: "expanded" }, boardNode: standingInNoPane, registry, host, editing: false, screen: false, initialWidth: 1280,
+		onChange: () => {}, onToggleEditing: () => {}, onWidth: () => {},
+	}),
+	standingInNoPane,
+);
+await settle();
+check("a board drawn before it stands in a pane opens no page over the app", dom.window.document.querySelectorAll(".wg-page").length, pagesBefore);
+check("and draws in the block instead", standingInNoPane.querySelectorAll(".wg-board").length, 1);
+render(null, standingInNoPane);
+
+const collapse = dom.window.document.querySelector(".wg-region-toggle.is-page");
 check("the control now offers collapse", Boolean(collapse), true);
 collapse.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
