@@ -37,7 +37,10 @@ const OPERATIONS: Record<string, (left: unknown, right: unknown) => boolean> = {
 	ne: (left, right) => left !== right,
 	in: (left, right) => meets(left, right),
 	nin: (left, right) => !meets(left, right),
-	contains: (left, right) => String(left ?? "").toLowerCase().includes(String(right).toLowerCase()),
+	contains: (left, right) =>
+		String(left ?? "")
+			.toLowerCase()
+			.includes(String(right).toLowerCase()),
 	gt: (left, right) => (left as number) > (right as number),
 	lt: (left, right) => (left as number) < (right as number),
 	exists: (left, right) => (right === false ? left == null : left != null),

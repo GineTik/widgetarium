@@ -66,7 +66,6 @@ export interface CollectionOps<T> {
 	remove: Action<Ref, void>;
 }
 
-
 export interface ValueOps<T> {
 	get: Action<void, T | null>;
 	update: Action<T, T | null>;

@@ -1,5 +1,14 @@
 import { canDo, createWidget, flatRows, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, CreateAction, Day, ListAction, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
+import type {
+	Aka,
+	CollectionGateway,
+	CreateAction,
+	Day,
+	ListAction,
+	UpdateAction,
+	ValueGateway,
+	VaultRecord,
+} from "widgetarium";
 import { Emoji } from "widgetarium/kit/emojis";
 import { useEffect, useRef, useState } from "react";
 import { daysLogged, FLAME, isoOf, pressing, shiftedBy, streakOf } from "@habit/lib";
@@ -184,7 +193,6 @@ const STYLE = `
 }
 `;
 
-
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const ONE_DAY = "{count} day";
 const MANY_DAYS = "{count} days";
@@ -254,7 +262,13 @@ function edgeClass(keptDays: Set<string>, day: string | undefined, towards: numb
 function dayColumns(shown: string[], keptDays: Set<string>, today: string, canWrite: boolean): DayColumn[] {
 	return shown.map((day) => {
 		const kept = keptDays.has(day);
-		return { day, kept, seat: seatClass(keptDays, day), ring: ringClass(day, kept, today), canPress: canWrite && day <= today };
+		return {
+			day,
+			kept,
+			seat: seatClass(keptDays, day),
+			ring: ringClass(day, kept, today),
+			canPress: canWrite && day <= today,
+		};
 	});
 }
 
@@ -322,53 +336,59 @@ type StreakProps = {
 	emoji: ValueGateway<string>;
 };
 
-export default createWidget(function HabitStreak({ days, title, emoji }: StreakProps) {
-	const rail = useRef<HTMLDivElement | null>(null);
-	const railWidth = useWidth(rail, 7 * COLUMN_PX);
-	const today = isoOf(new Date());
+export default createWidget(
+	function HabitStreak({ days, title, emoji }: StreakProps) {
+		const rail = useRef<HTMLDivElement | null>(null);
+		const railWidth = useWidth(rail, 7 * COLUMN_PX);
+		const today = isoOf(new Date());
 
-	const listed = useData(days.list);
-	const habitName = String(useData(title.get).data ?? "");
-	const face = String(useData(emoji.get).data ?? "");
-	const { noteByDay, keptDays } = daysLogged(flatRows(listed.rows));
+		const listed = useData(days.list);
+		const habitName = String(useData(title.get).data ?? "");
+		const face = String(useData(emoji.get).data ?? "");
+		const { noteByDay, keptDays } = daysLogged(flatRows(listed.rows));
 
-	const shown = daysAround(today, columnsAcrossFullWidth(railWidth));
-	const columnPx = columnWidth(railWidth, shown.length);
-	const streak = streakOf([...keptDays].map((date) => ({ date })), { today });
-	const press = pressing({ days, noteByDay, keptDays });
-	const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
+		const shown = daysAround(today, columnsAcrossFullWidth(railWidth));
+		const columnPx = columnWidth(railWidth, shown.length);
+		const streak = streakOf(
+			[...keptDays].map((date) => ({ date })),
+			{ today },
+		);
+		const press = pressing({ days, noteByDay, keptDays });
+		const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
 
-	return (
-		<WidgetRoot className="habit-streak" style={{ "--hs-column": `${columnPx}px` }}>
-			<style>{STYLE}</style>
-			<Summary habitName={habitName} face={face} count={streak.current} />
-			<div className="hs-rail" ref={rail}>
-				<i className={edgeClass(keptDays, shown[0], -1)} />
-				{columns.map((column) => (
-					<DayButton key={column.day} column={column} onPress={() => press(column.day)} />
-				))}
-				<i className={edgeClass(keptDays, shown[shown.length - 1], 1)} />
-			</div>
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		days: {
-			label: "Days",
-			was: "habits",
-			default: { path: "Habits" },
-		},
-		title: {
-			type: "text",
-			label: "Habit name",
-			hint: "What is written beside the emoji. Type one here, or take it from another widget's value.",
-			default: { value: "Habit" },
-		},
-		emoji: {
-			type: "text",
-			label: "Emoji",
-			hint: "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
-			default: { value: "smiling-face-with-halo" },
+		return (
+			<WidgetRoot className="habit-streak" style={{ "--hs-column": `${columnPx}px` }}>
+				<style>{STYLE}</style>
+				<Summary habitName={habitName} face={face} count={streak.current} />
+				<div className="hs-rail" ref={rail}>
+					<i className={edgeClass(keptDays, shown[0], -1)} />
+					{columns.map((column) => (
+						<DayButton key={column.day} column={column} onPress={() => press(column.day)} />
+					))}
+					<i className={edgeClass(keptDays, shown[shown.length - 1], 1)} />
+				</div>
+			</WidgetRoot>
+		);
+	},
+	{
+		props: {
+			days: {
+				label: "Days",
+				was: "habits",
+				default: { path: "Habits" },
+			},
+			title: {
+				type: "text",
+				label: "Habit name",
+				hint: "What is written beside the emoji. Type one here, or take it from another widget's value.",
+				default: { value: "Habit" },
+			},
+			emoji: {
+				type: "text",
+				label: "Emoji",
+				hint: "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
+				default: { value: "smiling-face-with-halo" },
+			},
 		},
 	},
-});
+);

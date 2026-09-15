@@ -1,5 +1,16 @@
 import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, Color, Day, GetAction, ListAction, Text, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
+import type {
+	Aka,
+	CollectionGateway,
+	Color,
+	Day,
+	GetAction,
+	ListAction,
+	Text,
+	UpdateAction,
+	ValueGateway,
+	VaultRecord,
+} from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 import type { LogEntry } from "@habit/lib";
 
@@ -89,73 +100,80 @@ function readingOf(metric: string, log: LogEntry[], habit: Habit, period: number
 	if (metric === "rate") return { value: Math.round((log.length / Math.max(period, 1)) * 100), unit: "%" };
 	if (metric === "goal") {
 		const goal = Number(habit?.goal ?? 0);
-		return { value: streak.current, unit: goal > 0 ? `of ${goal} days` : "days", part: goal > 0 ? Math.min(1, streak.current / goal) : 0 };
+		return {
+			value: streak.current,
+			unit: goal > 0 ? `of ${goal} days` : "days",
+			part: goal > 0 ? Math.min(1, streak.current / goal) : 0,
+		};
 	}
 	return { value: streak.current, unit: "days" };
 }
 
-export default createWidget(function HabitStat({ pick, metric: asked, period: lookback, habits }: StatProps) {
-	const listedRows = useData(habits.list);
-	const rows = flatRows(listedRows.rows);
-	const picked = pickedValue(useData(pick.get).data);
-	const habit = rows.find((row) => row.name === picked) ?? rows[0];
-	const today = isoOf(new Date());
-	const period = Math.max(1, Number(useData(lookback.get).data) || 30);
-	const named = String(useData(asked.get).data ?? "");
-	const metric = CAPS[named] ? named : "streak";
+export default createWidget(
+	function HabitStat({ pick, metric: asked, period: lookback, habits }: StatProps) {
+		const listedRows = useData(habits.list);
+		const rows = flatRows(listedRows.rows);
+		const picked = pickedValue(useData(pick.get).data);
+		const habit = rows.find((row) => row.name === picked) ?? rows[0];
+		const today = isoOf(new Date());
+		const period = Math.max(1, Number(useData(lookback.get).data) || 30);
+		const named = String(useData(asked.get).data ?? "");
+		const metric = CAPS[named] ? named : "streak";
 
-	if (!habit) {
+		if (!habit) {
+			return (
+				<WidgetRoot className="habit-stat">
+					<style>{STYLE}</style>
+					<span className="hs-cap">{CAPS[metric]}</span>
+					<span className="habit-sub">no habit named {picked || "anything"}</span>
+				</WidgetRoot>
+			);
+		}
+
+		const log = readLog([habit], { pick: habit.name });
+		const reading = readingOf(metric, log, habit, period, today);
+
 		return (
-			<WidgetRoot className="habit-stat">
+			<WidgetRoot className="habit-stat" style={habit.color ? { "--habit-ink": habit.color } : undefined}>
 				<style>{STYLE}</style>
-				<span className="hs-cap">{CAPS[metric]}</span>
-				<span className="habit-sub">no habit named {picked || "anything"}</span>
+				<span className="hs-cap">{`${CAPS[metric]} · ${habit.title ?? habit.name}`}</span>
+				<span className="hs-value">
+					{reading.value}
+					<span className="hs-unit">{reading.unit}</span>
+				</span>
+				{reading.part === undefined ? null : (
+					<span className="hs-bar">
+						<i className="hs-fill" style={{ width: `${Math.round(reading.part * 100)}%` }} />
+					</span>
+				)}
 			</WidgetRoot>
 		);
-	}
-
-	const log = readLog([habit], { pick: habit.name });
-	const reading = readingOf(metric, log, habit, period, today);
-
-	return (
-		<WidgetRoot className="habit-stat" style={habit.color ? { "--habit-ink": habit.color } : undefined}>
-			<style>{STYLE}</style>
-			<span className="hs-cap">{`${CAPS[metric]} · ${habit.title ?? habit.name}`}</span>
-			<span className="hs-value">
-				{reading.value}
-				<span className="hs-unit">{reading.unit}</span>
-			</span>
-			{reading.part === undefined ? null : (
-				<span className="hs-bar">
-					<i className="hs-fill" style={{ width: `${Math.round(reading.part * 100)}%` }} />
-				</span>
-			)}
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		habits: {
-			label: "Habits",
-			default: { path: "Habits" },
-		},
-		pick: {
-			label: "Which habit",
-			hint: "The habit this number is about.",
-			of: "habits",
-			field: "name",
-			fallback: "first",
-		},
-		metric: {
-			wasSetting: true,
-			type: "text",
-			label: "streak · best · total · rate · goal",
-			default: { value: "streak" },
-		},
-		period: {
-			wasSetting: true,
-			type: "number",
-			label: "Days the rate looks back over",
-			default: { value: 30 },
+	},
+	{
+		props: {
+			habits: {
+				label: "Habits",
+				default: { path: "Habits" },
+			},
+			pick: {
+				label: "Which habit",
+				hint: "The habit this number is about.",
+				of: "habits",
+				field: "name",
+				fallback: "first",
+			},
+			metric: {
+				wasSetting: true,
+				type: "text",
+				label: "streak · best · total · rate · goal",
+				default: { value: "streak" },
+			},
+			period: {
+				wasSetting: true,
+				type: "number",
+				label: "Days the rate looks back over",
+				default: { value: 30 },
+			},
 		},
 	},
-});
+);

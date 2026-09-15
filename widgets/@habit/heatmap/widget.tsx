@@ -1,5 +1,15 @@
 import { flatRows, createWidget, pickedValue, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, Day, GetAction, ListAction, Navigation, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
+import type {
+	Aka,
+	CollectionGateway,
+	Day,
+	GetAction,
+	ListAction,
+	Navigation,
+	UpdateAction,
+	ValueGateway,
+	VaultRecord,
+} from "widgetarium";
 import { isoOf, readLog, streakOf } from "@habit/lib";
 import type { LogEntry } from "@habit/lib";
 
@@ -150,117 +160,127 @@ function monthSpans(days: (string | null)[]): MonthSpan[] {
 	return spans;
 }
 
-export default createWidget(function HabitHeatmap({ pick, year: shownYear, isRound, isWeekStartingMonday, log: source, navigator }: HeatmapProps) {
-	const listedRows = useData(source.list);
-	const rows = flatRows(listedRows.rows);
-	const picked = pickedValue(useData(pick.get).data);
-	const log: LogEntry[] = readLog(rows, { pick: picked });
-	const today = isoOf(new Date());
-	const asked = Number(useData(shownYear.get).data);
-	const year = asked > 0 ? asked : new Date().getFullYear();
-	const isRoundCell = Boolean(useData(isRound.get).data);
+export default createWidget(
+	function HabitHeatmap({
+		pick,
+		year: shownYear,
+		isRound,
+		isWeekStartingMonday,
+		log: source,
+		navigator,
+	}: HeatmapProps) {
+		const listedRows = useData(source.list);
+		const rows = flatRows(listedRows.rows);
+		const picked = pickedValue(useData(pick.get).data);
+		const log: LogEntry[] = readLog(rows, { pick: picked });
+		const today = isoOf(new Date());
+		const asked = Number(useData(shownYear.get).data);
+		const year = asked > 0 ? asked : new Date().getFullYear();
+		const isRoundCell = Boolean(useData(isRound.get).data);
 
-	const byDate = new Map();
-	for (const entry of log) byDate.set(entry.date, (byDate.get(entry.date) ?? 0) + entry.value);
-	const top = Math.max(...byDate.values(), 1);
+		const byDate = new Map();
+		for (const entry of log) byDate.set(entry.date, (byDate.get(entry.date) ?? 0) + entry.value);
+		const top = Math.max(...byDate.values(), 1);
 
-	const days = weeksOf(year, useData(isWeekStartingMonday.get).data !== false);
-	const months = monthSpans(days);
-	const inYear = log.filter((entry) => entry.date.startsWith(String(year)));
-	const streak = streakOf(inYear, { maxGap: 0, today });
-	const named = picked || "every habit";
+		const days = weeksOf(year, useData(isWeekStartingMonday.get).data !== false);
+		const months = monthSpans(days);
+		const inYear = log.filter((entry) => entry.date.startsWith(String(year)));
+		const streak = streakOf(inYear, { maxGap: 0, today });
+		const named = picked || "every habit";
 
-	if (rows.length === 0) {
+		if (rows.length === 0) {
+			return (
+				<WidgetRoot className="habit-heatmap">
+					<style>{STYLE}</style>
+					<div className="hh-head">
+						<h3 className="hh-title">Heatmap</h3>
+					</div>
+					<p className="hh-empty">Point this widget at a folder of habit notes, or a folder of daily notes.</p>
+				</WidgetRoot>
+			);
+		}
+
 		return (
 			<WidgetRoot className="habit-heatmap">
 				<style>{STYLE}</style>
 				<div className="hh-head">
-					<h3 className="hh-title">Heatmap</h3>
+					<h3 className="hh-title">{year}</h3>
+					<span className="hh-note">{named}</span>
 				</div>
-				<p className="hh-empty">Point this widget at a folder of habit notes, or a folder of daily notes.</p>
+				<div className="hh-months" style={{ gridTemplateColumns: months.map((span) => `${span.weeks}fr`).join(" ") }}>
+					{months.map((span, at) => (
+						<span className="hh-month" key={at}>
+							{span.month >= 0 && span.weeks > 1 ? MONTHS[span.month] : ""}
+						</span>
+					))}
+				</div>
+				<div className="hh-grid">
+					{days.map((iso, at) => {
+						const value = iso ? (byDate.get(iso) ?? 0) : 0;
+						const step = stepOf(value, top);
+						const marks = ["hh-cell"];
+						if (!iso) marks.push("is-outside");
+						if (isRoundCell) marks.push("is-round");
+						if (step > 0) marks.push("is-done");
+						if (iso === today) marks.push("is-today");
+						return (
+							<button
+								type="button"
+								key={at}
+								className={marks.join(" ")}
+								style={step > 0 ? { opacity: 0.25 + step * 0.1875 } : undefined}
+								title={iso ? `${iso} — ${value || "nothing"}` : ""}
+								disabled={!iso || step === 0}
+								onClick={() => navigator?.navigate?.(log.find((entry) => entry.date === iso)?.path ?? "")}
+							/>
+						);
+					})}
+				</div>
+				<div className="hh-foot">
+					<span>
+						<b>{inYear.length}</b> days marked
+					</span>
+					<span>
+						streak <b>{streak.current}</b>
+					</span>
+					<span>
+						best <b>{streak.best}</b>
+					</span>
+				</div>
 			</WidgetRoot>
 		);
-	}
-
-	return (
-		<WidgetRoot className="habit-heatmap">
-			<style>{STYLE}</style>
-			<div className="hh-head">
-				<h3 className="hh-title">{year}</h3>
-				<span className="hh-note">{named}</span>
-			</div>
-			<div className="hh-months" style={{ gridTemplateColumns: months.map((span) => `${span.weeks}fr`).join(" ") }}>
-				{months.map((span, at) => (
-					<span className="hh-month" key={at}>
-						{span.month >= 0 && span.weeks > 1 ? MONTHS[span.month] : ""}
-					</span>
-				))}
-			</div>
-			<div className="hh-grid">
-				{days.map((iso, at) => {
-					const value = iso ? (byDate.get(iso) ?? 0) : 0;
-					const step = stepOf(value, top);
-					const marks = ["hh-cell"];
-					if (!iso) marks.push("is-outside");
-					if (isRoundCell) marks.push("is-round");
-					if (step > 0) marks.push("is-done");
-					if (iso === today) marks.push("is-today");
-					return (
-						<button
-							type="button"
-							key={at}
-							className={marks.join(" ")}
-							style={step > 0 ? { opacity: 0.25 + step * 0.1875 } : undefined}
-							title={iso ? `${iso} — ${value || "nothing"}` : ""}
-							disabled={!iso || step === 0}
-							onClick={() => navigator?.navigate?.(log.find((entry) => entry.date === iso)?.path ?? "")}
-						/>
-					);
-				})}
-			</div>
-			<div className="hh-foot">
-				<span>
-					<b>{inYear.length}</b> days marked
-				</span>
-				<span>
-					streak <b>{streak.current}</b>
-				</span>
-				<span>
-					best <b>{streak.best}</b>
-				</span>
-			</div>
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		log: {
-			label: "Log",
-			default: { path: "Habits" },
-		},
-		pick: {
-			label: "Which habit",
-			hint: "One habit only. Nothing picked draws all of them.",
-			of: "log",
-			field: "name",
-		},
-		year: {
-			wasSetting: true,
-			type: "number",
-			label: "Year, or 0 for this one",
-			default: { value: 0 },
-		},
-		isRound: {
-			wasSetting: true,
-			type: "boolean",
-			label: "Round cells instead of square",
-			design: true,
-			default: { value: false },
-		},
-		isWeekStartingMonday: {
-			wasSetting: true,
-			type: "boolean",
-			label: "Weeks start on Monday",
-			default: { value: true },
+	},
+	{
+		props: {
+			log: {
+				label: "Log",
+				default: { path: "Habits" },
+			},
+			pick: {
+				label: "Which habit",
+				hint: "One habit only. Nothing picked draws all of them.",
+				of: "log",
+				field: "name",
+			},
+			year: {
+				wasSetting: true,
+				type: "number",
+				label: "Year, or 0 for this one",
+				default: { value: 0 },
+			},
+			isRound: {
+				wasSetting: true,
+				type: "boolean",
+				label: "Round cells instead of square",
+				design: true,
+				default: { value: false },
+			},
+			isWeekStartingMonday: {
+				wasSetting: true,
+				type: "boolean",
+				label: "Weeks start on Monday",
+				default: { value: true },
+			},
 		},
 	},
-});
+);

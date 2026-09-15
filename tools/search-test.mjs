@@ -9,7 +9,9 @@ let failed = 0;
 function check(name, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 // CONTEXT: the shipped manifests themselves, so the shop window is what this gate reads
@@ -22,7 +24,12 @@ function shippedWidgets() {
 			const file = `${folder}/${name}/manifest.json`;
 			if (!fs.existsSync(file)) continue;
 			const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
-			found.push({ id: manifest.id, title: manifest.title, keywords: manifest.keywords, description: manifest.description });
+			found.push({
+				id: manifest.id,
+				title: manifest.title,
+				keywords: manifest.keywords,
+				description: manifest.description,
+			});
 		}
 	}
 	return found;
@@ -32,9 +39,21 @@ const SHIPPED = shippedWidgets();
 const firstFor = (query) => rankSearch(query, SHIPPED)[0]?.record.id ?? null;
 const reaches = (query, id) => rankSearch(query, SHIPPED).some((hit) => hit.record.id === id);
 
-check("every shipped widget carries a description", SHIPPED.filter((one) => !one.description).map((one) => one.id), []);
-check("every shipped widget carries keywords", SHIPPED.filter((one) => !(one.keywords?.length > 0)).map((one) => one.id), []);
-check("the fields are searched in one declared order", DEFAULT_FIELDS.map((field) => field.key), ["title", "id", "keywords", "description"]);
+check(
+	"every shipped widget carries a description",
+	SHIPPED.filter((one) => !one.description).map((one) => one.id),
+	[],
+);
+check(
+	"every shipped widget carries keywords",
+	SHIPPED.filter((one) => !(one.keywords?.length > 0)).map((one) => one.id),
+	[],
+);
+check(
+	"the fields are searched in one declared order",
+	DEFAULT_FIELDS.map((field) => field.key),
+	["title", "id", "keywords", "description"],
+);
 
 check("an id folds into the words it is made of", fold("@Task/Task-Card"), "task task card");
 check("case folds", fold("KANBAN Board"), "kanban board");
@@ -79,12 +98,30 @@ check("a transposed pair finds the board", firstFor("kabnan"), "@task/kanban-boa
 check("a wrong letter finds the reminder", firstFor("reminber"), "@inline/reminder");
 check("two stray letters do not reach the board at all", reaches("kanbanxy", "@task/kanban-board"), false);
 
-const ROWS = [{ id: "z", title: "Zebra" }, { id: "a", title: "Apple" }];
-check("an empty query hands the list back in the order it came", rankSearch("", ROWS).map((hit) => hit.record.id), ["z", "a"]);
-check("whitespace alone is the same", rankSearch("   ", ROWS).map((hit) => hit.record.id), ["z", "a"]);
-check("with every score zero, so a caller sorting by it moves nothing", rankSearch("", ROWS).map((hit) => hit.score), [0, 0]);
+const ROWS = [
+	{ id: "z", title: "Zebra" },
+	{ id: "a", title: "Apple" },
+];
+check(
+	"an empty query hands the list back in the order it came",
+	rankSearch("", ROWS).map((hit) => hit.record.id),
+	["z", "a"],
+);
+check(
+	"whitespace alone is the same",
+	rankSearch("   ", ROWS).map((hit) => hit.record.id),
+	["z", "a"],
+);
+check(
+	"with every score zero, so a caller sorting by it moves nothing",
+	rankSearch("", ROWS).map((hit) => hit.score),
+	[0, 0],
+);
 check("and it drops nobody", rankSearch("", SHIPPED).length, SHIPPED.length);
 
-
-console.log(failed === 0 ? `\nsearch: ${SHIPPED.length} shipped widgets, every check green` : `\nsearch: ${failed} check(s) failed`);
+console.log(
+	failed === 0
+		? `\nsearch: ${SHIPPED.length} shipped widgets, every check green`
+		: `\nsearch: ${failed} check(s) failed`,
+);
 process.exit(failed === 0 ? 0 : 1);

@@ -1,5 +1,24 @@
-import { canDo, createWidget, WidgetRoot, ConfirmDialog, Dialog, DialogContent, flatRows, pickedValue, useData } from "widgetarium";
-import { archived, archivedColumnsOf, columnPatched, columnsOf, columnsWritten, propertiesOf, restored, shownColumnsOf } from "@task/lib";
+import {
+	canDo,
+	createWidget,
+	WidgetRoot,
+	ConfirmDialog,
+	Dialog,
+	DialogContent,
+	flatRows,
+	pickedValue,
+	useData,
+} from "widgetarium";
+import {
+	archived,
+	archivedColumnsOf,
+	columnPatched,
+	columnsOf,
+	columnsWritten,
+	propertiesOf,
+	restored,
+	shownColumnsOf,
+} from "@task/lib";
 import type { Board, BoardColumn } from "@task/lib";
 import {
 	APPROVAL_TONES,
@@ -30,7 +49,14 @@ import {
 	toneOf,
 } from "widgetarium/kit";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent, FormEvent, KeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
+import type {
+	DragEvent,
+	FormEvent,
+	KeyboardEvent,
+	PointerEvent as ReactPointerEvent,
+	ReactNode,
+	RefObject,
+} from "react";
 import type {
 	Action,
 	CollectionGateway,
@@ -105,14 +131,15 @@ type KanbanProps = {
 	navigator?: Navigation;
 };
 
-
 // CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
 const ARCHIVE_TITLE = "Archive {name}?";
 const ARCHIVE = "Archive";
 const REPAIR_BOARDS = "Repair duplicate ids";
 const REPAIR_TITLE = "Repair duplicate ids?";
-const REPAIR_ONE = "One board shares its id with another. The board whose path sorts first keeps it; the other is given a new one. Nothing else in either note changes.";
-const REPAIR_MANY = "{count} boards share an id with another. In each pair the board whose path sorts first keeps it; the other is given a new one. Nothing else in either note changes.";
+const REPAIR_ONE =
+	"One board shares its id with another. The board whose path sorts first keeps it; the other is given a new one. Nothing else in either note changes.";
+const REPAIR_MANY =
+	"{count} boards share an id with another. In each pair the board whose path sorts first keeps it; the other is given a new one. Nothing else in either note changes.";
 const REPAIR = "Repair";
 
 const CSS = `
@@ -996,7 +1023,24 @@ function ListCards({ rows, cards, CardComponent, canWrite, dragging, opened, onO
 	});
 }
 
-function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, onOpen, onDropTask, onGrab, onRelease, shift, placeholder, canWrite, dragging, opened }: KanbanListProps) {
+function KanbanList({
+	title,
+	rows,
+	cards,
+	CardSlot,
+	onAdd,
+	onArchive,
+	onRename,
+	onOpen,
+	onDropTask,
+	onGrab,
+	onRelease,
+	shift,
+	placeholder,
+	canWrite,
+	dragging,
+	opened,
+}: KanbanListProps) {
 	const [isOver, setOver] = useState(false);
 	// CONTEXT: a grip around an editable heading steals the drag that selects its text
 	const [isRenaming, setRenaming] = useState(false);
@@ -1017,8 +1061,19 @@ function KanbanList({ title, rows, cards, CardSlot, onAdd, onArchive, onRename, 
 				onDropTask?.();
 			}}
 		>
-			<div className="ok-list-head" draggable={Boolean(onGrab) && !isRenaming} onDragStart={onGrab} onDragEnd={onRelease}>
-				<ListHead title={title} count={rows.length} onArchive={onArchive} onRename={onRename} onRenaming={setRenaming} />
+			<div
+				className="ok-list-head"
+				draggable={Boolean(onGrab) && !isRenaming}
+				onDragStart={onGrab}
+				onDragEnd={onRelease}
+			>
+				<ListHead
+					title={title}
+					count={rows.length}
+					onArchive={onArchive}
+					onRename={onRename}
+					onRenaming={setRenaming}
+				/>
 			</div>
 
 			<ListCards
@@ -1210,15 +1265,18 @@ function toCard(row: TaskRow, now: Date): CardFace {
 
 // CONTEXT: paths copied from docs/reference/task-dialog.html, on its 16 grid
 const GLYPHS: Record<string, string> = {
-	columns: '<rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/>',
+	columns:
+		'<rect x="2.4" y="2.8" width="4" height="10.4" rx="1.3"/><rect x="9.6" y="2.8" width="4" height="6.6" rx="1.3"/>',
 	task: '<rect x="2.6" y="2.2" width="10.8" height="11.6" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 8.1l1.8 1.8 3.2-3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
 	flag: '<path d="M4 14V2.6"/><path d="M4 3.4h8.4l-2 2.9 2 2.9H4"/>',
 	seal: '<circle cx="8" cy="8" r="5.4"/><path d="M5.6 8.2l1.7 1.7 3.2-3.5"/>',
 	gauge: '<path d="M2.6 11.2a5.4 5.4 0 0 1 10.8 0"/><path d="M8 11.2l2.8-2.9"/>',
 	calendar: '<rect x="2.4" y="3.4" width="11.2" height="10.2" rx="2.2"/><path d="M2.4 6.6h11.2M5.6 2v3M10.4 2v3"/>',
-	people: '<circle cx="6.2" cy="6" r="2.4"/><path d="M2.3 13c.5-2.2 2-3.3 3.9-3.3s3.4 1.1 3.9 3.3"/><path d="M11 4.1a2.2 2.2 0 0 1 0 4.2"/>',
+	people:
+		'<circle cx="6.2" cy="6" r="2.4"/><path d="M2.3 13c.5-2.2 2-3.3 3.9-3.3s3.4 1.1 3.9 3.3"/><path d="M11 4.1a2.2 2.2 0 0 1 0 4.2"/>',
 	lines: '<path d="M3 4.4h10M3 8h10M3 11.6h5.6"/>',
-	expand: '<path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/>',
+	expand:
+		'<path d="M9.6 2.6h3.8v3.8"/><path d="M6.4 13.4H2.6V9.6"/><path d="M13.4 2.6L9.2 6.8"/><path d="M2.6 13.4l4.2-4.2"/>',
 	close: '<path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/>',
 	caret: '<path d="M4.4 6.4L8 10l3.6-3.6"/>',
 	eye: '<path d="M1.6 8S4 3.6 8 3.6 14.4 8 14.4 8 12 12.4 8 12.4 1.6 8 1.6 8z"/><circle cx="8" cy="8" r="1.9"/>',
@@ -1268,7 +1326,9 @@ const STARTING_PROPERTIES = ["Status", "Priority", "Approval", "Progress", "Assi
 
 function anchorOf(name: string): Anchor {
 	// CONTEXT: a property called "constructor" would otherwise reach Object's own prototype
-	const wanted = String(name ?? "").trim().toLowerCase();
+	const wanted = String(name ?? "")
+		.trim()
+		.toLowerCase();
 	if (!Object.hasOwn(ANCHORS, wanted)) return TEXT_ANCHOR;
 	return ANCHORS[wanted] ?? TEXT_ANCHOR;
 }
@@ -1434,20 +1494,30 @@ function ChoiceRow({ anchor, name, value, choices, onPick }: ChoiceRowProps) {
 					{choice.note ? <span className="otd-item-note">{choice.note}</span> : null}
 				</PopoverItem>
 			))}
-{anchor.required ? null : (
+			{anchor.required ? null : (
 				<>
-								<PopoverSeparator />
-				<PopoverItem onClick={() => pick("")}>
-					<Glyph name="close" />
-					Clear
-				</PopoverItem>
+					<PopoverSeparator />
+					<PopoverItem onClick={() => pick("")}>
+						<Glyph name="close" />
+						Clear
+					</PopoverItem>
 				</>
 			)}
 		</Popover>
 	);
 }
 
-function ProgressRow({ anchor, name, value, onPick }: { anchor: Anchor; name: string; value: unknown; onPick: (next: number) => void }) {
+function ProgressRow({
+	anchor,
+	name,
+	value,
+	onPick,
+}: {
+	anchor: Anchor;
+	name: string;
+	value: unknown;
+	onPick: (next: number) => void;
+}) {
 	const number = Number(value);
 	return (
 		<RowFrame anchor={anchor} name={name} unset={isUnset(value)}>
@@ -1605,7 +1675,17 @@ function MembersRow({ anchor, name, value, roster, onPick }: MembersRowProps) {
 }
 
 // TRADE-OFF: the row IS the field — no mode to enter, and nothing to save
-function TextRow({ anchor, name, value, onPick }: { anchor: Anchor; name: string; value: unknown; onPick: (next: string) => void }) {
+function TextRow({
+	anchor,
+	name,
+	value,
+	onPick,
+}: {
+	anchor: Anchor;
+	name: string;
+	value: unknown;
+	onPick: (next: string) => void;
+}) {
 	const [draft, setDraft] = useState(String(value ?? ""));
 
 	useEffect(() => {
@@ -1829,7 +1909,15 @@ function useNoteBody({ path, read, write }: Pick<DescriptionProps, "path" | "rea
 	return { draft, setDraft, isRefused, save };
 }
 
-function DescriptionHead({ offered, mode, onChange }: { offered: string[]; mode: string; onChange: (next: string) => void }) {
+function DescriptionHead({
+	offered,
+	mode,
+	onChange,
+}: {
+	offered: string[];
+	mode: string;
+	onChange: (next: string) => void;
+}) {
 	return (
 		<div className="otd-desc-head">
 			<span className="otd-cap">Description</span>
@@ -1890,7 +1978,13 @@ function Description({ path, read, write, render, canPreview, canEdit }: Descrip
 			{mode === PREVIEW ? (
 				<Preview markdown={body.draft} render={render} />
 			) : (
-				<MarkdownEditor className="otd-editor" value={body.draft} placeholder="Say what this is" onInput={body.setDraft} focusAtStart={isSwitched} />
+				<MarkdownEditor
+					className="otd-editor"
+					value={body.draft}
+					placeholder="Say what this is"
+					onInput={body.setDraft}
+					focusAtStart={isSwitched}
+				/>
 			)}
 		</div>
 	);
@@ -1977,7 +2071,14 @@ function TagChip({ tag, tone, held, onGrab, onSave }: TagChipProps) {
 				</Pill>
 			}
 		>
-			<TagEditor name={name} picked={picked} onName={setName} onPick={setPicked} onCancel={() => setOpen(false)} onSave={save} />
+			<TagEditor
+				name={name}
+				picked={picked}
+				onName={setName}
+				onPick={setPicked}
+				onCancel={() => setOpen(false)}
+				onSave={save}
+			/>
 		</Popover>
 	);
 }
@@ -2013,7 +2114,13 @@ function TagEditor({ name, picked, onName, onPick, onCancel, onSave }: TagEditor
 	return (
 		<>
 			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && onSave()}>
-				<Field block size="s" placeholder="Name it" value={name} onInput={(event: FormEvent<HTMLInputElement>) => onName(event.currentTarget.value)} />
+				<Field
+					block
+					size="s"
+					placeholder="Name it"
+					value={name}
+					onInput={(event: FormEvent<HTMLInputElement>) => onName(event.currentTarget.value)}
+				/>
 			</div>
 			<TonePicker picked={picked} onPick={onPick} />
 			<div className="otd-pop-actions">
@@ -2035,7 +2142,12 @@ type TagRowProps = {
 	onWrite: (tags: string[], tones: Tones) => void;
 };
 
-function useTagReorder(tags: string[], tones: Tones, onWrite: TagRowProps["onWrite"], listRef: RefObject<HTMLDivElement | null>) {
+function useTagReorder(
+	tags: string[],
+	tones: Tones,
+	onWrite: TagRowProps["onWrite"],
+	listRef: RefObject<HTMLDivElement | null>,
+) {
 	const [dragged, setDragged] = useState<TagDrag | null>(null);
 
 	const grab = (at: number) => (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -2044,10 +2156,13 @@ function useTagReorder(tags: string[], tones: Tones, onWrite: TagRowProps["onWri
 		const drag = { at, list: tags, isDragging: false };
 
 		const move = (pointer: PointerEvent) => {
-			const isPastTapSlop = Math.abs(pointer.clientX - start.x) > TAP_SLOP_PX || Math.abs(pointer.clientY - start.y) > TAP_SLOP_PX;
+			const isPastTapSlop =
+				Math.abs(pointer.clientX - start.x) > TAP_SLOP_PX || Math.abs(pointer.clientY - start.y) > TAP_SLOP_PX;
 			if (!drag.isDragging && !isPastTapSlop) return;
 			drag.isDragging = true;
-			const boxes = [...(listRef.current?.querySelectorAll(".otd-tag") ?? [])].map((node) => node.getBoundingClientRect());
+			const boxes = [...(listRef.current?.querySelectorAll(".otd-tag") ?? [])].map((node) =>
+				node.getBoundingClientRect(),
+			);
 			const to = dropIndex(boxes, pointer.clientX, pointer.clientY);
 			if (to < 0 || to === drag.at) return setDragged({ ...drag });
 			drag.list = movedWithin(drag.list, drag.at, to);
@@ -2079,7 +2194,10 @@ function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
 
 	const toggle = (tag: string) => {
 		if (!tags.includes(tag)) return onWrite([...tags, tag], tones);
-		onWrite(tags.filter((entry) => entry !== tag), withoutTone(tones, tag));
+		onWrite(
+			tags.filter((entry) => entry !== tag),
+			withoutTone(tones, tag),
+		);
 	};
 
 	// CONTEXT: a rename moves the tone with the name, so the map never keeps a tag nobody wears
@@ -2148,7 +2266,19 @@ type TaskDialogProps = {
 	navigator?: Navigation | undefined;
 };
 
-function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedRef, today, onAddProperty, host, navigator }: TaskDialogProps) {
+function TaskDialog({
+	tasks,
+	rows,
+	columns,
+	properties,
+	onBoard,
+	opened,
+	openedRef,
+	today,
+	onAddProperty,
+	host,
+	navigator,
+}: TaskDialogProps) {
 	const canUpdate = canDo(tasks.update);
 	// TRADE-OFF: found in the list the board already holds — tasks.get would read the note again on every vault event
 	const task = rows.find((row) => row.ref === openedRef) ?? null;
@@ -2167,38 +2297,43 @@ function TaskDialog({ tasks, rows, columns, properties, onBoard, opened, openedR
 
 	return (
 		<Dialog isOpen={isOpen} onOpenChange={(next: boolean) => !next && opened.update(null)}>
-				<DialogContent className="orbi orbi-task-dialog">
-					<DialogTop onBoard={onBoard} taskRef={task?.ref ?? ""} navigator={navigator} onClose={() => opened.update(null)} />
+			<DialogContent className="orbi orbi-task-dialog">
+				<DialogTop
+					onBoard={onBoard}
+					taskRef={task?.ref ?? ""}
+					navigator={navigator}
+					onClose={() => opened.update(null)}
+				/>
 
-					<div className="otd-body">
-						<div className="otd-left">
-							<TaskTitle task={task} props={props} canUpdate={canUpdate} onWrite={setProperty} />
+				<div className="otd-body">
+					<div className="otd-left">
+						<TaskTitle task={task} props={props} canUpdate={canUpdate} onWrite={setProperty} />
 
-							<TagRow
-								tags={toTrimmedList(props[keyFor(props, "tags")])}
-								tones={toToneMap(props[keyFor(props, "tagTones")])}
-								roster={tagRoster}
-								onWrite={(next, tones) =>
-									setProperties({ [keyFor(props, "tags")]: next, [keyFor(props, "tagTones")]: tones })
-								}
-							/>
+						<TagRow
+							tags={toTrimmedList(props[keyFor(props, "tags")])}
+							tones={toToneMap(props[keyFor(props, "tagTones")])}
+							roster={tagRoster}
+							onWrite={(next, tones) =>
+								setProperties({ [keyFor(props, "tags")]: next, [keyFor(props, "tagTones")]: tones })
+							}
+						/>
 
-							<TaskNotes task={task} tasks={tasks} host={host} canEdit={canUpdate} />
-						</div>
-
-						<aside className="otd-right">
-							<PropertiesPane
-								names={names}
-								props={props}
-								columns={columns}
-								roster={people}
-								today={today}
-								onWrite={setProperty}
-								onAddProperty={onAddProperty}
-							/>
-						</aside>
+						<TaskNotes task={task} tasks={tasks} host={host} canEdit={canUpdate} />
 					</div>
-				</DialogContent>
+
+					<aside className="otd-right">
+						<PropertiesPane
+							names={names}
+							props={props}
+							columns={columns}
+							roster={people}
+							today={today}
+							onWrite={setProperty}
+							onAddProperty={onAddProperty}
+						/>
+					</aside>
+				</div>
+			</DialogContent>
 		</Dialog>
 	);
 }
@@ -2252,7 +2387,9 @@ function TaskNotes({ task, tasks, host, canEdit }: TaskNotesProps) {
 			key={task.ref}
 			path={task.ref}
 			read={(given: { path: string }) => tasks.get(given.path).then((row) => (row ? row.value : null))}
-			write={(given: { path: string }, patch: { body: string }) => tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))}
+			write={(given: { path: string }, patch: { body: string }) =>
+				tasks.update({ ref: given.path, data: patch }).then((row) => (row ? row.value : null))
+			}
 			render={render}
 			canPreview={Boolean(host?.can?.renderMarkdown && render)}
 			canEdit={canEdit}
@@ -2276,7 +2413,12 @@ function DialogTop({ onBoard, taskRef, navigator, onClose }: DialogTopProps) {
 				{onBoard ? ` · ${onBoard}` : ""}
 			</span>
 			<div className="otd-corner">
-				<IconButton size="s" label="Open the note" title="Open the note" onClick={() => navigator?.navigate?.(`/${taskRef}`)}>
+				<IconButton
+					size="s"
+					label="Open the note"
+					title="Open the note"
+					onClick={() => navigator?.navigate?.(`/${taskRef}`)}
+				>
 					<Glyph name="expand" />
 				</IconButton>
 				<IconButton size="s" label="Close" title="Close" onClick={onClose}>
@@ -2305,7 +2447,15 @@ function PropertiesPane({ names, props, columns, roster, today, onWrite, onAddPr
 			</div>
 			<SidebarGroup>
 				{names.map((name) => (
-					<PropertyRow key={name} name={name} props={props} columns={columns} roster={roster} today={today} onWrite={onWrite} />
+					<PropertyRow
+						key={name}
+						name={name}
+						props={props}
+						columns={columns}
+						roster={roster}
+						today={today}
+						onWrite={onWrite}
+					/>
 				))}
 			</SidebarGroup>
 			{onAddProperty ? <AddProperty taken={names} onAdd={(name) => onAddProperty([...names, name])} /> : null}
@@ -2313,7 +2463,9 @@ function PropertiesPane({ names, props, columns, roster, today, onWrite, onAddPr
 	);
 }
 
-type BoardReadsGiven = Pick<KanbanProps, "selection" | "opened" | "tasks" | "board"> & { grouping: KanbanProps["groupBy"] };
+type BoardReadsGiven = Pick<KanbanProps, "selection" | "opened" | "tasks" | "board"> & {
+	grouping: KanbanProps["groupBy"];
+};
 
 function useBoardReads({ selection, opened, tasks, board, grouping }: BoardReadsGiven) {
 	const todayForEveryCard = useMemo(() => new Date(), []);
@@ -2345,7 +2497,8 @@ function useBoardColumns(board: KanbanProps["board"], record: Board | null) {
 	const save = (columns: BoardColumn[]) => board.update(columnsWritten(columns));
 
 	const columnsAfterRename = (was: string, name: string) => {
-		if (authoredColumns.includes(was)) return columnPatched(boardColumns, was, (column: BoardColumn) => ({ ...column, name }));
+		if (authoredColumns.includes(was))
+			return columnPatched(boardColumns, was, (column: BoardColumn) => ({ ...column, name }));
 		return [...boardColumns, { name }];
 	};
 
@@ -2525,7 +2678,19 @@ type BoardDialogsProps = {
 	navigator: KanbanProps["navigator"];
 };
 
-function BoardDialogs({ archiving, onArchivingChange, heldByArchiving, reading, lists, repairing, board, tasks, opened, host, navigator }: BoardDialogsProps) {
+function BoardDialogs({
+	archiving,
+	onArchivingChange,
+	heldByArchiving,
+	reading,
+	lists,
+	repairing,
+	board,
+	tasks,
+	opened,
+	host,
+	navigator,
+}: BoardDialogsProps) {
 	return (
 		<>
 			<ArchiveAsk
@@ -2582,7 +2747,20 @@ type BoardStripProps = {
 	onRename: (title: string, next: string | null) => void;
 };
 
-function BoardStrip({ columns, today, CardSlot, openedRef, lists, reordering, carrying, writing, repairing, onOpen, onArchive, onRename }: BoardStripProps) {
+function BoardStrip({
+	columns,
+	today,
+	CardSlot,
+	openedRef,
+	lists,
+	reordering,
+	carrying,
+	writing,
+	repairing,
+	onOpen,
+	onArchive,
+	onRename,
+}: BoardStripProps) {
 	return (
 		<div
 			className={`ok-board${reordering.isReordering ? " is-dragging" : ""}`}
@@ -2643,8 +2821,8 @@ function ArchiveAsk({ archiving, heldByArchiving, groupBy, onDismiss, onConfirm 
 			title={ARCHIVE_TITLE.replace("{name}", archiving ?? "")}
 			description={
 				<>
-					The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their{" "}
-					{groupBy} property, so nothing in the notes changes and restoring the list brings them all back.
+					The list leaves the board. Its {heldByArchiving} task{heldByArchiving === 1 ? "" : "s"} keep their {groupBy}{" "}
+					property, so nothing in the notes changes and restoring the list brings them all back.
 				</>
 			}
 			onConfirm={onConfirm}
@@ -2661,104 +2839,126 @@ function RepairIdsAsk({ repairing }: { repairing: ReturnType<typeof useIdRepair>
 			variant="accent"
 			confirmLabel={REPAIR}
 			title={REPAIR_TITLE}
-			description={repairing.remintCount === 1 ? REPAIR_ONE : REPAIR_MANY.replace("{count}", String(repairing.remintCount))}
+			description={
+				repairing.remintCount === 1 ? REPAIR_ONE : REPAIR_MANY.replace("{count}", String(repairing.remintCount))
+			}
 			onConfirm={repairing.repair}
 		/>
 	);
 }
 
-export default createWidget(function KanbanBoard({ board, groupBy: grouping, slots, tasks, boards, selection, opened, host, navigator }: KanbanProps) {
-	const reading = useBoardReads({ selection, opened, tasks, board, grouping });
-	const { rows, today, onBoard, openedRef, record, groupBy } = reading;
+export default createWidget(
+	function KanbanBoard({
+		board,
+		groupBy: grouping,
+		slots,
+		tasks,
+		boards,
+		selection,
+		opened,
+		host,
+		navigator,
+	}: KanbanProps) {
+		const reading = useBoardReads({ selection, opened, tasks, board, grouping });
+		const { rows, today, onBoard, openedRef, record, groupBy } = reading;
 
-	const lists = useBoardColumns(board, record);
-	const reordering = useColumnReorder(lists.columnNames, lists.boardColumns, lists.save);
-	const repairing = useIdRepair(boards);
-	const carrying = useCarriedTask();
-	const writing = useTaskWrites({ tasks, rows, groupBy, onBoard, carried: carrying.carried, onMoved: carrying.release });
+		const lists = useBoardColumns(board, record);
+		const reordering = useColumnReorder(lists.columnNames, lists.boardColumns, lists.save);
+		const repairing = useIdRepair(boards);
+		const carrying = useCarriedTask();
+		const writing = useTaskWrites({
+			tasks,
+			rows,
+			groupBy,
+			onBoard,
+			carried: carrying.carried,
+			onMoved: carrying.release,
+		});
 
-	const columns = toColumns(rows, lists.columnNames, groupBy, lists.archivedColumns);
-	const [archiving, setArchiving] = useState<string | null>(null);
-	const renameList = useListRename({ lists, writing, host });
+		const columns = toColumns(rows, lists.columnNames, groupBy, lists.archivedColumns);
+		const [archiving, setArchiving] = useState<string | null>(null);
+		const renameList = useListRename({ lists, writing, host });
 
-	if (reading.tasksData.isLoading && rows.length === 0) return <LoadingBoard />;
+		if (reading.tasksData.isLoading && rows.length === 0) return <LoadingBoard />;
 
-	return (
-		<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
-			<style>{CSS}</style>
-			<BoardStrip
-				columns={columns}
-				today={today}
-				CardSlot={slots?.card ?? null}
-				openedRef={openedRef}
-				lists={lists}
-				reordering={reordering}
-				carrying={carrying}
-				writing={writing}
-				repairing={repairing}
-				onOpen={(row) => opened.update(row.ref)}
-				onArchive={setArchiving}
-				onRename={renameList}
-			/>
+		return (
+			<WidgetRoot className="orbi orbi-kanban" defaultBackgroundType="none">
+				<style>{CSS}</style>
+				<BoardStrip
+					columns={columns}
+					today={today}
+					CardSlot={slots?.card ?? null}
+					openedRef={openedRef}
+					lists={lists}
+					reordering={reordering}
+					carrying={carrying}
+					writing={writing}
+					repairing={repairing}
+					onOpen={(row) => opened.update(row.ref)}
+					onArchive={setArchiving}
+					onRename={renameList}
+				/>
 
-			<BoardDialogs
-				archiving={archiving}
-				onArchivingChange={setArchiving}
-				heldByArchiving={columns.find((column) => column.title === archiving)?.rows.length ?? 0}
-				reading={reading}
-				lists={lists}
-				repairing={repairing}
-				board={board}
-				tasks={tasks}
-				opened={opened}
-				host={host}
-				navigator={navigator}
-			/>
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		tasks: {
-			label: "Tasks",
-			default: {
-				path: "Orbitask/Tasks",
-				sort: [{ prop: "order", dir: "asc" }],
-				where: [
-					{ prop: "board", op: "is", value: { wants: "@core/editable-tabs/selection" } },
-					{ spread: { wants: "@core/filter-panel/chosen" } },
-				],
+				<BoardDialogs
+					archiving={archiving}
+					onArchivingChange={setArchiving}
+					heldByArchiving={columns.find((column) => column.title === archiving)?.rows.length ?? 0}
+					reading={reading}
+					lists={lists}
+					repairing={repairing}
+					board={board}
+					tasks={tasks}
+					opened={opened}
+					host={host}
+					navigator={navigator}
+				/>
+			</WidgetRoot>
+		);
+	},
+	{
+		props: {
+			tasks: {
+				label: "Tasks",
+				default: {
+					path: "Orbitask/Tasks",
+					sort: [{ prop: "order", dir: "asc" }],
+					where: [
+						{ prop: "board", op: "is", value: { wants: "@core/editable-tabs/selection" } },
+						{ spread: { wants: "@core/filter-panel/chosen" } },
+					],
+				},
+			},
+			boards: {
+				label: "Boards",
+				default: { path: "Orbitask/Boards" },
+			},
+			selection: {
+				label: "Shown board",
+				hint: "Which board this draws. Bind a tab strip and the two move together.",
+				of: "boards",
+				field: "board",
+				fallback: "first",
+				wants: "@core/editable-tabs/selection",
+			},
+			board: {
+				label: "Board",
+				hint: "The board this draws: its columns, their order and which of them are archived.",
+				picks: "selection",
+				of: "boards",
+				wasSettings: { columns: "columns", archivedColumns: "archivedColumns" },
+				default: { value: { columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] } },
+			},
+			opened: {
+				label: "Opened task",
+				hint: "Which card is open, as a box. The board draws it full size itself.",
+				of: "tasks",
+			},
+			groupBy: {
+				wasSetting: true,
+				type: "text",
+				label: "Group tasks by property",
+				default: { value: "status" },
 			},
 		},
-		boards: {
-			label: "Boards",
-			default: { path: "Orbitask/Boards" },
-		},
-		selection: {
-			label: "Shown board",
-			hint: "Which board this draws. Bind a tab strip and the two move together.",
-			of: "boards",
-			field: "board",
-			fallback: "first",
-			wants: "@core/editable-tabs/selection",
-		},
-		board: {
-			label: "Board",
-			hint: "The board this draws: its columns, their order and which of them are archived.",
-			picks: "selection",
-			of: "boards",
-			wasSettings: { columns: "columns", archivedColumns: "archivedColumns" },
-			default: { value: { columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] } },
-		},
-		opened: {
-			label: "Opened task",
-			hint: "Which card is open, as a box. The board draws it full size itself.",
-			of: "tasks",
-		},
-		groupBy: {
-			wasSetting: true,
-			type: "text",
-			label: "Group tasks by property",
-			default: { value: "status" },
-		},
 	},
-});
+);

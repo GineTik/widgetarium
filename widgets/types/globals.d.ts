@@ -44,11 +44,19 @@ declare module "@rank/lib" {
 	export function rackOf<T, C>(
 		tierRows: Held<T>[],
 		cardRows: Held<C>[],
-	): { tiers: Held<T>[]; rack: { row: Held<T>; label: string; tone: string; cards: Held<C>[] }[]; tray: Held<C>[]; orphans: Held<C>[]; ranked: number };
+	): {
+		tiers: Held<T>[];
+		rack: { row: Held<T>; label: string; tone: string; cards: Held<C>[] }[];
+		tray: Held<C>[];
+		orphans: Held<C>[];
+		ranked: number;
+	};
 
 	export function placedAt<T extends { ref: string }>(rows: T[], moved: T, at: number): T[];
 	export function orderBetween(above: { value: unknown } | null, below: { value: unknown } | null): number | null;
-	export function renumbered<T extends { ref: string; value: unknown }>(rows: T[]): { ref: string; value: { order: number } & Record<string, unknown> }[];
+	export function renumbered<T extends { ref: string; value: unknown }>(
+		rows: T[],
+	): { ref: string; value: { order: number } & Record<string, unknown> }[];
 }
 
 declare module "@default/lib" {
@@ -100,7 +108,10 @@ declare module "@default/lib" {
 	export function spotsOf(points: readonly MetricPoint[], span: MetricSpan, box: ChartBox): { x: number; y: number }[];
 	export function barsOf(points: readonly MetricPoint[], span: MetricSpan, box: ChartBox): MetricBar[];
 	export function baselineOf(span: MetricSpan, box: ChartBox): number;
-	export function writeDraft(records: RecordWriter, draft: { date: string; amount: string; note: string }): Promise<string>;
+	export function writeDraft(
+		records: RecordWriter,
+		draft: { date: string; amount: string; note: string },
+	): Promise<string>;
 	export function platesOf(summary: MetricSummary): MetricPlate[];
 	export function leftOutLine(summary: MetricSummary): string;
 	export function tipShare(hovered: number, count: number): number;
@@ -131,7 +142,10 @@ declare module "@habit/lib" {
 	export function shiftedBy(iso: string, days: number): string;
 	export function shapeOf(rows: HabitNote[] | null | undefined): "habit" | "day";
 	export function readLog(rows: HabitNote[] | null | undefined, options?: { pick?: string }): LogEntry[];
-	export function streakOf(log: { date: string }[] | null | undefined, options?: { maxGap?: number; today?: string }): Streak;
+	export function streakOf(
+		log: { date: string }[] | null | undefined,
+		options?: { maxGap?: number; today?: string },
+	): Streak;
 
 	export function daysLogged(notes: HabitNote[] | null | undefined): {
 		noteByDay: Map<string, HabitNote>;
@@ -167,5 +181,9 @@ declare module "@task/lib" {
 
 	export const archived: (column: BoardColumn) => BoardColumn;
 	export const restored: (column: BoardColumn) => BoardColumn;
-	export const columnPatched: (columns: BoardColumn[], name: string, step: (column: BoardColumn) => BoardColumn) => BoardColumn[];
+	export const columnPatched: (
+		columns: BoardColumn[],
+		name: string,
+		step: (column: BoardColumn) => BoardColumn,
+	) => BoardColumn[];
 }

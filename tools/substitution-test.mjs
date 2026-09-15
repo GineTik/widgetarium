@@ -11,11 +11,31 @@ const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 // CONTEXT: jsdom overwrites globalThis.Event, and node's own WebSocket rejects a foreign one
 const NODE_EVENT = globalThis.Event;
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "PointerEvent", "Event", "MutationObserver"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"PointerEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 // CONTEXT: the catalogue draws nothing at zero width, and jsdom lays nothing out
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
@@ -45,14 +65,22 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
 function check(name, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 const adapter = {
 	exists: async (p) => fs.existsSync(path.join(VAULT, p)),
 	list: async (p) => {
 		const names = fs.readdirSync(path.join(VAULT, p));
-		const kind = (name) => { try { return fs.statSync(path.join(VAULT, p, name)); } catch { return null; } };
+		const kind = (name) => {
+			try {
+				return fs.statSync(path.join(VAULT, p, name));
+			} catch {
+				return null;
+			}
+		};
 		return {
 			folders: names.filter((name) => kind(name)?.isDirectory()).map((name) => `${p}/${name}`),
 			files: names.filter((name) => kind(name)?.isFile()).map((name) => `${p}/${name}`),
@@ -67,50 +95,132 @@ await registry.load();
 
 // ── the rules themselves ─────────────────────────────────────────────────────────────────
 const line = normalizeRules([{ id: "r1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }])[0];
-const wrapped = normalizeRules([{ id: "r2", name: "Note", mode: "wrapped", open: ":::", close: ":::", widget: "@inline/note" }])[0];
-const expression = normalizeRules([{ id: "r3", name: "Time", mode: "regex", pattern: "^@(\\d{1,2}:\\d{2})\\s+(.+)$", widget: "@inline/reminder" }])[0];
+const wrapped = normalizeRules([
+	{ id: "r2", name: "Note", mode: "wrapped", open: ":::", close: ":::", widget: "@inline/note" },
+])[0];
+const expression = normalizeRules([
+	{ id: "r3", name: "Time", mode: "regex", pattern: "^@(\\d{1,2}:\\d{2})\\s+(.+)$", widget: "@inline/reminder" },
+])[0];
 
-check("a widget that declares itself inline is offered for text", inlineWidgets(registry.list()).map((entry) => entry.manifest.id).sort(), ["@inline/code-block", "@inline/note", "@inline/note-link", "@inline/reminder"]);
-check("and one that claims no tile size is never offered for a board", boardWidgets(registry.list()).some((entry) => entry.manifest.id.startsWith("@inline/")), false);
-check("a widget that claims both would be offered in both", boardWidgets([{ manifest: { id: "x", inline: true, defaultSize: { w: 2, h: 1 } } }]).length, 1);
-check("what makes a widget inline is the declaration, not the folder it sits in", inlineWidgets([{ manifest: { id: "@task/quote", inline: true } }, { manifest: { id: "@inline/impostor" } }]).map((entry) => entry.manifest.id), ["@task/quote"]);
-check("a broken widget keeps its place in the board catalogue", boardWidgets([{ manifest: { id: "broken" }, error: new Error("x") }]).length, 1);
+check(
+	"a widget that declares itself inline is offered for text",
+	inlineWidgets(registry.list())
+		.map((entry) => entry.manifest.id)
+		.sort(),
+	["@inline/code-block", "@inline/note", "@inline/note-link", "@inline/reminder"],
+);
+check(
+	"and one that claims no tile size is never offered for a board",
+	boardWidgets(registry.list()).some((entry) => entry.manifest.id.startsWith("@inline/")),
+	false,
+);
+check(
+	"a widget that claims both would be offered in both",
+	boardWidgets([{ manifest: { id: "x", inline: true, defaultSize: { w: 2, h: 1 } } }]).length,
+	1,
+);
+check(
+	"what makes a widget inline is the declaration, not the folder it sits in",
+	inlineWidgets([{ manifest: { id: "@task/quote", inline: true } }, { manifest: { id: "@inline/impostor" } }]).map(
+		(entry) => entry.manifest.id,
+	),
+	["@task/quote"],
+);
+check(
+	"a broken widget keeps its place in the board catalogue",
+	boardWidgets([{ manifest: { id: "broken" }, error: new Error("x") }]).length,
+	1,
+);
 
-check("a line trigger takes the rest of its line", matchLines(["! call Olena"], [line]).map((span) => span.content), ["call Olena"]);
+check(
+	"a line trigger takes the rest of its line",
+	matchLines(["! call Olena"], [line]).map((span) => span.content),
+	["call Olena"],
+);
 check("a line without the trigger is left alone", matchLines(["call Olena"], [line]).length, 0);
-check("only the triggered line is taken", matchLines(["plain", "! call", "plain"], [line]).map((span) => [span.from, span.to]), [[1, 1]]);
+check(
+	"only the triggered line is taken",
+	matchLines(["plain", "! call", "plain"], [line]).map((span) => [span.from, span.to]),
+	[[1, 1]],
+);
 
-check("a capsule takes what is between its markers", matchLines([":::", "one", "two", ":::"], [wrapped]).map((span) => span.content), ["one\ntwo"]);
-check("a capsule spans from opener to closer", matchLines([":::", "one", ":::"], [wrapped]).map((span) => [span.from, span.to]), [[0, 2]]);
+check(
+	"a capsule takes what is between its markers",
+	matchLines([":::", "one", "two", ":::"], [wrapped]).map((span) => span.content),
+	["one\ntwo"],
+);
+check(
+	"a capsule spans from opener to closer",
+	matchLines([":::", "one", ":::"], [wrapped]).map((span) => [span.from, span.to]),
+	[[0, 2]],
+);
 check("an unclosed capsule matches nothing", matchLines([":::", "one"], [wrapped]).length, 0);
 
-check("an expression hands over its first group", matchLines(["@14:30 standup"], [expression]).map((span) => span.content), ["14:30"]);
-check("an expression with no group hands over the whole match", matchLines(["x9x"], normalizeRules([{ mode: "regex", pattern: "\\d", widget: "@inline/reminder" }])).map((span) => span.content), ["9"]);
+check(
+	"an expression hands over its first group",
+	matchLines(["@14:30 standup"], [expression]).map((span) => span.content),
+	["14:30"],
+);
+check(
+	"an expression with no group hands over the whole match",
+	matchLines(["x9x"], normalizeRules([{ mode: "regex", pattern: "\\d", widget: "@inline/reminder" }])).map(
+		(span) => span.content,
+	),
+	["9"],
+);
 check("a line the expression does not match is left alone", matchLines(["at 14:30 standup"], [expression]).length, 0);
 
 check("a rule with no widget is refused", ruleError({ ...line, widget: "" }), "Pick a widget");
 check("a rule with no trigger is refused", ruleError({ ...line, open: "" }), "Write a trigger");
 check("a capsule with no closer is refused", ruleError({ ...wrapped, close: "" }), "Write a closing trigger");
-check("an unreadable expression is refused", ruleError({ ...expression, pattern: "(((" }), "That expression cannot be read");
+check(
+	"an unreadable expression is refused",
+	ruleError({ ...expression, pattern: "(((" }),
+	"That expression cannot be read",
+);
 check("a refused rule never substitutes", matchLines(["! call"], [{ ...line, widget: "" }]).length, 0);
 check("a draft never substitutes", matchLines(["! call"], [{ ...line, draft: true }]).length, 0);
 check("a rule switched off never substitutes", matchLines(["! call"], [{ ...line, enabled: false }]).length, 0);
-check("only usable rules are active", activeRules([line, { ...wrapped, draft: true }]).map((rule) => rule.id), ["r1"]);
+check(
+	"only usable rules are active",
+	activeRules([line, { ...wrapped, draft: true }]).map((rule) => rule.id),
+	["r1"],
+);
 
 const both = [line, normalizeRules([{ id: "r9", mode: "line", open: "!", widget: "@inline/note" }])[0]];
-check("the first rule listed wins a line two rules claim", matchLines(["! call"], both).map((span) => span.rule.id), ["r1"]);
+check(
+	"the first rule listed wins a line two rules claim",
+	matchLines(["! call"], both).map((span) => span.rule.id),
+	["r1"],
+);
 
 check("a new rule is born a draft", newRule([]).draft, true);
 check("a new rule takes an id nobody holds", newRule([{ id: "sub-1" }]).id, "sub-2");
 
 // ── the generated example ────────────────────────────────────────────────────────────────
-check("an expression becomes a line a person can read", sampleFromPattern("^@(\\d{1,2}:\\d{2})\\s+(.+)$"), "@11:11 text");
-check("a generated line really matches its own expression", new RegExp("^@(\\d{1,2}:\\d{2})\\s+(.+)$").test(sampleFromPattern("^@(\\d{1,2}:\\d{2})\\s+(.+)$")), true);
+check(
+	"an expression becomes a line a person can read",
+	sampleFromPattern("^@(\\d{1,2}:\\d{2})\\s+(.+)$"),
+	"@11:11 text",
+);
+check(
+	"a generated line really matches its own expression",
+	new RegExp("^@(\\d{1,2}:\\d{2})\\s+(.+)$").test(sampleFromPattern("^@(\\d{1,2}:\\d{2})\\s+(.+)$")),
+	true,
+);
 check("an alternation takes its first branch", sampleFromPattern("^\\[(x| )\\]\\s(.+)$"), "[x] text");
 check("an unreadable expression generates nothing", sampleFromPattern("((("), null);
 check("the capsule sample carries both markers", defaultSample(wrapped).split("\n").at(-1), ":::");
-check("the example is a line the chosen widget can draw", defaultSample({ mode: "line", open: "!code" }, registry.get("@inline/code-block")), "!code main.py");
-check("and a widget offering no sample still gets one", defaultSample(line, registry.get("@inline/reminder")).startsWith("! "), true);
+check(
+	"the example is a line the chosen widget can draw",
+	defaultSample({ mode: "line", open: "!code" }, registry.get("@inline/code-block")),
+	"!code main.py",
+);
+check(
+	"and a widget offering no sample still gets one",
+	defaultSample(line, registry.get("@inline/reminder")).startsWith("! "),
+	true,
+);
 check("the sidebar names a capsule by both its ends", triggerLabel(wrapped), "::: … :::");
 
 // ── the note, substituted ────────────────────────────────────────────────────────────────
@@ -126,7 +236,11 @@ const NOTE = "Orbitask/Board.md";
 const SOURCE = ["intro", "! call Olena before Friday", "outro"].join("\n");
 const files = new Map();
 function fakeFile(path, text) {
-	const file = Object.assign(new TFile(), { path, basename: path.split("/").pop().replace(/\.md$/, ""), stat: { ctime: 0, mtime: 0, size: text.length } });
+	const file = Object.assign(new TFile(), {
+		path,
+		basename: path.split("/").pop().replace(/\.md$/, ""),
+		stat: { ctime: 0, mtime: 0, size: text.length },
+	});
 	files.set(path, { file, text });
 	return file;
 }
@@ -154,12 +268,17 @@ const app = {
 		getAbstractFileByPath: (path) => files.get(path)?.file ?? null,
 		read: async (file) => files.get(file.path).text,
 		cachedRead: async (file) => files.get(file.path).text,
-		modify: async (file, text) => { files.get(file.path).text = text; },
-		process: async (file, change) => { files.get(file.path).text = change(files.get(file.path).text); },
+		modify: async (file, text) => {
+			files.get(file.path).text = text;
+		},
+		process: async (file, change) => {
+			files.get(file.path).text = change(files.get(file.path).text);
+		},
 	},
 	metadataCache: {
 		getFileCache: () => ({ frontmatter: { board: "Marketing" }, embeds: [] }),
-		getFirstLinkpathDest: (target) => files.get(`Orbitask/${target}`)?.file ?? files.get(`Orbitask/${target}.md`)?.file ?? null,
+		getFirstLinkpathDest: (target) =>
+			files.get(`Orbitask/${target}`)?.file ?? files.get(`Orbitask/${target}.md`)?.file ?? null,
 	},
 	workspace: { getLeaf: () => ({ openFile: (file) => opened.push(file.path) }) },
 };
@@ -173,9 +292,17 @@ const substitute = (element, rules) => substituteIn({ element, context, rules, r
 
 const one = noteWith("<p>! call Olena before Friday</p>");
 check("a whole paragraph that matches is replaced", substitute(one, [line]), 1);
-check("the paragraph itself is gone, not wrapped around the widget", one.querySelectorAll("p.wgi-note-line, p").length, 0);
+check(
+	"the paragraph itself is gone, not wrapped around the widget",
+	one.querySelectorAll("p.wgi-note-line, p").length,
+	0,
+);
 check("the widget the rule names is what got drawn", one.querySelectorAll(".wgi-reminder").length, 1);
-check("the widget was handed the text after the trigger", one.querySelector(".wgi-reminder-text").textContent, "call Olena before Friday");
+check(
+	"the widget was handed the text after the trigger",
+	one.querySelector(".wgi-reminder-text").textContent,
+	"call Olena before Friday",
+);
 
 // CONTEXT: Obsidian hands the paragraph itself as often as a wrapper around it
 const bare = noteWith("<p>! call Olena before Friday</p>").querySelector("p");
@@ -185,34 +312,50 @@ check("which is still where Obsidian put it, not replaced out of the note", bare
 
 const mixed = noteWith("<p>before<br>! call Olena<br>after</p>");
 check("one line inside a paragraph is replaced", substitute(mixed, [line]), 1);
-const kept = [...mixed.querySelector("p").childNodes].filter((node) => node.nodeType === 3).map((node) => node.textContent);
+const kept = [...mixed.querySelector("p").childNodes]
+	.filter((node) => node.nodeType === 3)
+	.map((node) => node.textContent);
 check("the lines around it stay, in the order they were written", kept, ["before", "after"]);
 check("and the widget sits between them", mixed.querySelectorAll("p .wgi-reminder").length, 1);
 
 const capsule = noteWith("<p>:::<br>one<br>two<br>:::</p>");
 check("a capsule inside one paragraph is replaced", substitute(capsule, [wrapped]), 1);
-check("every line between the markers reaches the widget", [...capsule.querySelectorAll(".wgi-note-line")].map((node) => node.textContent), ["one", "two"]);
+check(
+	"every line between the markers reaches the widget",
+	[...capsule.querySelectorAll(".wgi-note-line")].map((node) => node.textContent),
+	["one", "two"],
+);
 
 const fenced = noteWith("<pre><code>! call Olena</code></pre>");
 check("a trigger inside a code block is not a trigger", substitute(fenced, [line]), 0);
 
 const quoted = noteWith("<p><code>! call Olena</code> is how you write it</p>");
 check("a trigger a person quoted as code does not fire", substitute(quoted, [line]), 0);
-check("and the quoted line is left exactly as it was", quoted.querySelector("p").textContent, "! call Olena is how you write it");
+check(
+	"and the quoted line is left exactly as it was",
+	quoted.querySelector("p").textContent,
+	"! call Olena is how you write it",
+);
 
 const boarded = noteWith('<div class="wg-mount"><p>! call Olena</p></div>');
 check("a trigger inside a board is left to the board", substitute(boarded, [line]), 0);
 
 const missing = noteWith("<p>! call Olena</p>");
 substitute(missing, [{ ...line, widget: "@inline/nothing" }]);
-check("a rule naming a widget nobody installed still shows the text", missing.querySelector(".wg-inline-raw")?.textContent, "! call Olena");
+check(
+	"a rule naming a widget nobody installed still shows the text",
+	missing.querySelector(".wg-inline-raw")?.textContent,
+	"! call Olena",
+);
 check("and says why there is no widget", missing.querySelector(".wg-inline-why")?.textContent, "widget not installed");
 
 // CONTEXT: every kit rule and --wg-kit-* token is hung on these scopes, so a host outside them is unpainted
 const styleSheet = fs.readFileSync("styles.css", "utf8");
 const kitScopes = [
 	...new Set(
-		[...styleSheet.matchAll(/:is\(([^)]*)\)\s+\.wg-kit-/g)].flatMap((found) => found[1].split(",").map((one) => one.trim())),
+		[...styleSheet.matchAll(/:is\(([^)]*)\)\s+\.wg-kit-/g)].flatMap((found) =>
+			found[1].split(",").map((one) => one.trim()),
+		),
 	),
 ];
 check("the kit hangs its rules on scopes, not on the page", kitScopes, [".wg-root", ".wg-portal"]);
@@ -220,15 +363,27 @@ check("the kit hangs its rules on scopes, not on the page", kitScopes, [".wg-roo
 const painted = noteWith("<p>! call Olena before Friday</p>");
 substitute(painted, [line]);
 const inlineHost = painted.querySelector(".wg-inline-host");
-check("an inline host carries one of those scopes itself", kitScopes.filter((scope) => inlineHost.matches(scope)), [".wg-root"]);
+check(
+	"an inline host carries one of those scopes itself",
+	kitScopes.filter((scope) => inlineHost.matches(scope)),
+	[".wg-root"],
+);
 const toggle = inlineHost.querySelector(".wg-kit-icon");
 check("its toggle is a kit control", Boolean(toggle), true);
-check("and it stands where the kit's own selector reaches it", kitScopes.some((scope) => Boolean(toggle.closest(scope))), true);
+check(
+	"and it stands where the kit's own selector reaches it",
+	kitScopes.some((scope) => Boolean(toggle.closest(scope))),
+	true,
+);
 
 // CONTEXT: the scope that carries the kit also lays out a board, toolbar band and all
 const boardScope = /\n\.wg-root,[\s\S]*?\n\}/.exec(styleSheet)?.[0] ?? "";
 check("the board scope reserves a band for its own toolbar", /\n\tpadding-top:/.test(boardScope), true);
-check("and a host in a note, which has no toolbar, takes that band back", /\.wg-inline-host\.wg-root\s*\{[^}]*padding-top:\s*0/.test(styleSheet), true);
+check(
+	"and a host in a note, which has no toolbar, takes that band back",
+	/\.wg-inline-host\.wg-root\s*\{[^}]*padding-top:\s*0/.test(styleSheet),
+	true,
+);
 
 const { setTracing, tracing, traceSub } = await import("./.mjs-cache/trace.mjs");
 const SUB_TAG = "[widgetarium:sub]";
@@ -236,7 +391,8 @@ const SUB_TAG = "[widgetarium:sub]";
 function logged(on, work) {
 	const said = [];
 	const real = console.log;
-	console.log = (...parts) => said.push(parts.map((part) => (typeof part === "string" ? part : JSON.stringify(part))).join(" "));
+	console.log = (...parts) =>
+		said.push(parts.map((part) => (typeof part === "string" ? part : JSON.stringify(part))).join(" "));
 	setTracing(on);
 	try {
 		return { answer: work(), lines: said.filter((entry) => entry.startsWith(SUB_TAG)) };
@@ -262,14 +418,22 @@ const loud = logged(true, () => substitute(loudNote, [line]));
 check("with the log off the console hears nothing at all", quiet.lines.length, 0);
 // CONTEXT: React's useId counts per root, so the id differs between two mounts of one tree
 const normalizeIds = (html) => html.replace(/_r_[0-9a-z]+_/g, "_id_");
-check("and with it on the same run draws exactly the same thing", normalizeIds(loudNote.innerHTML), normalizeIds(quietHtml));
+check(
+	"and with it on the same run draws exactly the same thing",
+	normalizeIds(loudNote.innerHTML),
+	normalizeIds(quietHtml),
+);
 check("and answers the same count either way", [quiet.answer, loud.answer], [1, 1]);
 
 const emptyNote = noteWith("<p>nothing to see here</p>");
 const nothing = logged(true, () => substitute(emptyNote, [line]));
 check("a run that draws nothing still says it started", countOf(nothing.lines, "process"), 1);
 check("and still says how it ended", countOf(nothing.lines, "process done"), 1);
-check("and the ending is honest about the nothing", [nothing.answer, detailOf(nothing.lines, "process done").drawn], [0, 0]);
+check(
+	"and the ending is honest about the nothing",
+	[nothing.answer, detailOf(nothing.lines, "process done").drawn],
+	[0, 0],
+);
 check("while still owning up to the block it did look at", detailOf(nothing.lines, "process done").seen, 1);
 check("a block it looked at and passed over reports no match", detailOf(nothing.lines, "block considered").matched, []);
 check("and carries the line it tested", detailOf(nothing.lines, "block considered").tested, ["nothing to see here"]);
@@ -281,8 +445,16 @@ check("and it counted the rules it was handed", detailOf(ruleless.lines, "proces
 
 const manyNote = noteWith("<p>! one<br>plain<br>! two</p>");
 const many = logged(true, () => substitute(manyNote, [line]));
-check("the count it answers is the number of hosts it really built", many.answer, manyNote.querySelectorAll(".wg-inline-host").length);
-check("and the closing line carries that same number", detailOf(many.lines, "process done").drawn, manyNote.querySelectorAll(".wg-inline-host").length);
+check(
+	"the count it answers is the number of hosts it really built",
+	many.answer,
+	manyNote.querySelectorAll(".wg-inline-host").length,
+);
+check(
+	"and the closing line carries that same number",
+	detailOf(many.lines, "process done").drawn,
+	manyNote.querySelectorAll(".wg-inline-host").length,
+);
 check("one intent line per host", countOf(many.lines, "substitute"), 2);
 check("and one outcome line per host", countOf(many.lines, "substituted"), 2);
 check("the outcome says the widget was found", detailOf(many.lines, "substituted").resolved, true);
@@ -290,11 +462,19 @@ check("and names the host it made", detailOf(many.lines, "substituted").host, "d
 
 const uninstalledNote = noteWith("<p>! call Olena</p>");
 const uninstalled = logged(true, () => substitute(uninstalledNote, [{ ...line, widget: "@inline/nothing" }]));
-check("a widget nobody installed is reported missing, not silently", detailOf(uninstalled.lines, "substituted").resolved, false);
+check(
+	"a widget nobody installed is reported missing, not silently",
+	detailOf(uninstalled.lines, "substituted").resolved,
+	false,
+);
 
 const guardedNote = noteWith('<div class="wg-mount"><p>! call Olena</p></div>');
 const guarded = logged(true, () => substitute(guardedNote, [line]));
-check("a skipped block names the guard that caught it", detailOf(guarded.lines, "block skipped").why, "inside .wg-mount");
+check(
+	"a skipped block names the guard that caught it",
+	detailOf(guarded.lines, "block skipped").why,
+	"inside .wg-mount",
+);
 check("and a guarded run sees no blocks at all", detailOf(guarded.lines, "process done").seen, 0);
 
 const longNote = noteWith(`<p>! ${"x".repeat(200)}</p>`);
@@ -327,10 +507,18 @@ check("the second is what the toggle used to do", entries[1]?.textContent ?? nul
 await tap(entries[0]);
 check("pressing the disabled one changes nothing", collapsible.querySelectorAll(".wgi-reminder").length, 1);
 await tap(entries[1]);
-check("pressing the source entry brings the source line back", collapsible.querySelector(".wg-inline-raw")?.textContent, "! call Olena before Friday");
+check(
+	"pressing the source entry brings the source line back",
+	collapsible.querySelector(".wg-inline-raw")?.textContent,
+	"! call Olena before Friday",
+);
 check("and the widget is gone while the text is showing", collapsible.querySelectorAll(".wgi-reminder").length, 0);
 await openMenu(collapsible);
-check("and the entry now offers the way back", collapsible.querySelector(".wg-inline-source")?.textContent ?? null, "Show the widget");
+check(
+	"and the entry now offers the way back",
+	collapsible.querySelector(".wg-inline-source")?.textContent ?? null,
+	"Show the widget",
+);
 await tap(collapsible.querySelector(".wg-inline-source"));
 check("pressing it again brings the widget back", collapsible.querySelectorAll(".wgi-reminder").length, 1);
 
@@ -338,7 +526,11 @@ const capsuleText = noteWith("<p>:::<br>one<br>:::</p>");
 substitute(capsuleText, [wrapped]);
 await openMenu(capsuleText);
 await tap(capsuleText.querySelector(".wg-inline-source"));
-check("a capsule comes back with its markers, not just its middle", capsuleText.querySelector(".wg-inline-raw")?.textContent ?? null, ":::\none\n:::");
+check(
+	"a capsule comes back with its markers, not just its middle",
+	capsuleText.querySelector(".wg-inline-raw")?.textContent ?? null,
+	":::\none\n:::",
+);
 
 // ── the Obsidian API, which is the whole point of an inline widget ───────────────────────
 check("a rooted link is read against the root", readLink("/Folder/Note"), { rooted: true, path: "Folder/Note" });
@@ -361,7 +553,11 @@ check("and asks it to open one", opened.at(-1), NOTE);
 
 const unknown = noteWith("<p>-> Nowhere</p>");
 substitute(unknown, normalizeRules([{ mode: "line", open: "->", widget: "@inline/note-link" }]));
-check("a note that is not there says so instead of pretending", unknown.querySelector(".wgi-link-state").textContent, "not in this vault");
+check(
+	"a note that is not there says so instead of pretending",
+	unknown.querySelector(".wgi-link-state").textContent,
+	"not in this vault",
+);
 
 // ── here: one record, no list, and it can write itself back ──────────────────────────────
 check("a board widget stands in an entry", host.here.of, "entry");
@@ -369,18 +565,50 @@ check("an entry carries no body until it is fetched", host.here.content, null);
 check("and fetching one brings the body with it", (await host.here.get()).content, SOURCE);
 check("an entry knows what kind of thing it is", (await host.here.get()).type, "markdown");
 
-const passage = passageHere({ app, sourcePath: NOTE, rawLines: ["! call Olena before Friday"], rule: line, content: "call Olena before Friday", section: { text: SOURCE, lineStart: 0, lineEnd: 2 } });
+const passage = passageHere({
+	app,
+	sourcePath: NOTE,
+	rawLines: ["! call Olena before Friday"],
+	rule: line,
+	content: "call Olena before Friday",
+	section: { text: SOURCE, lineStart: 0, lineEnd: 2 },
+});
 check("an inline widget stands in a passage", passage.of, "passage");
 check("a passage carries its text straight away", passage.content, "call Olena before Friday");
 check("a passage can be written back", passage.canUpdate, true);
-check("writing it puts the trigger back on", (await passage.update("call Olena on Monday")) && files.get(NOTE).text.split("\n")[1], "! call Olena on Monday");
-check("and leaves the lines around it alone", files.get(NOTE).text.split("\n").filter((row, at) => at !== 1), ["intro", "outro"]);
+check(
+	"writing it puts the trigger back on",
+	(await passage.update("call Olena on Monday")) && files.get(NOTE).text.split("\n")[1],
+	"! call Olena on Monday",
+);
+check(
+	"and leaves the lines around it alone",
+	files
+		.get(NOTE)
+		.text.split("\n")
+		.filter((row, at) => at !== 1),
+	["intro", "outro"],
+);
 
-const fromExpression = passageHere({ app, sourcePath: NOTE, rawLines: ["@14:30 standup"], rule: expression, content: "14:30", section: { text: "@14:30 standup", lineStart: 0, lineEnd: 0 } });
+const fromExpression = passageHere({
+	app,
+	sourcePath: NOTE,
+	rawLines: ["@14:30 standup"],
+	rule: expression,
+	content: "14:30",
+	section: { text: "@14:30 standup", lineStart: 0, lineEnd: 0 },
+});
 check("a passage an expression matched cannot be written back", fromExpression.canUpdate, false);
 check("and refuses rather than guessing how to spell the trigger", await fromExpression.update("15:00"), false);
 
-const unlocatable = passageHere({ app, sourcePath: NOTE, rawLines: ["! not in this note"], rule: line, content: "x", section: { text: SOURCE, lineStart: 0, lineEnd: 2 } });
+const unlocatable = passageHere({
+	app,
+	sourcePath: NOTE,
+	rawLines: ["! not in this note"],
+	rule: line,
+	content: "x",
+	section: { text: SOURCE, lineStart: 0, lineEnd: 2 },
+});
 check("a passage nobody can find is not written", unlocatable.canUpdate, false);
 
 check("lines found once report where", findLines(["a", "b", "c"], ["b"]), 1);
@@ -391,7 +619,9 @@ check("replacing a run keeps what surrounds it", replaceLines(["a", "b", "c"], 1
 
 // ── a file becomes a code block ──────────────────────────────────────────────────────────
 const TICKS = "```";
-const codeRule = normalizeRules([{ id: "r4", name: "Code", mode: "line", open: "!code", widget: "@inline/code-block" }])[0];
+const codeRule = normalizeRules([
+	{ id: "r4", name: "Code", mode: "line", open: "!code", widget: "@inline/code-block" },
+])[0];
 // CONTEXT: a widget that reads a file paints a frame after the read lands, not with it
 const paint = async () => {
 	for (let frame = 0; frame < 3; frame += 1) await settle();
@@ -401,7 +631,11 @@ const press = async (node) => {
 	await paint();
 };
 
-check("a walk out of the vault is refused before anything is opened", readTarget("../../etc/passwd").failure, "../../etc/passwd is outside the vault");
+check(
+	"a walk out of the vault is refused before anything is opened",
+	readTarget("../../etc/passwd").failure,
+	"../../etc/passwd is outside the vault",
+);
 check("and so is a home directory", readTarget("~/Documents/keys.txt").ok, false);
 check("and so is a drive letter", readTarget("C:/Windows/system.ini").ok, false);
 check("nothing named is nothing to read", readTarget("   ").ok, false);
@@ -409,18 +643,42 @@ check("an ordinary link passes, trimmed", readTarget("  main.py  ").link, "main.
 
 check("the reader hands over what the file holds", (await host.reader.read("main.py")).text.split("\n")[0], "print(1)");
 check("and says where it read it", (await host.reader.read("main.py")).path, "Orbitask/main.py");
-check("a file that is not there is refused, never empty", (await host.reader.read("gone.py")).failure, "gone.py is not in this vault");
-check("a folder is refused as a folder", (await host.reader.read("/Orbitask/Tasks")).failure, "Orbitask/Tasks is a folder, not a file");
+check(
+	"a file that is not there is refused, never empty",
+	(await host.reader.read("gone.py")).failure,
+	"gone.py is not in this vault",
+);
+check(
+	"a folder is refused as a folder",
+	(await host.reader.read("/Orbitask/Tasks")).failure,
+	"Orbitask/Tasks is a folder, not a file",
+);
 check("a file over the cap is refused", (await host.reader.read("huge.log", { maxBytes: 1024 })).ok, false);
-check("and the refusal names the number", /over the 1 KB limit/.test((await host.reader.read("huge.log", { maxBytes: 1024 })).failure), true);
+check(
+	"and the refusal names the number",
+	/over the 1 KB limit/.test((await host.reader.read("huge.log", { maxBytes: 1024 })).failure),
+	true,
+);
 check("a refused read still carries a text, so nobody reads undefined", (await host.reader.read("gone.py")).text, "");
 check("a host with nothing to read still answers", (await UNREADABLE.read("main.py")).ok, false);
 
 const scoped = passageReader(host.reader, "!code main.py");
 check("a widget may read the file its own passage names", (await scoped.read("main.py")).ok, true);
-check("and may not read one nobody wrote there", (await scoped.read("Plain/Notes.md")).failure, "Plain/Notes.md is not named here");
-check("a preview reads only the files its manifest declares", (await previewReader(registry.get("@inline/code-block").manifest).read("main.py")).ok, true);
-check("and refuses anything else, so browsing cannot open a vault", (await previewReader({}).read("main.py")).ok, false);
+check(
+	"and may not read one nobody wrote there",
+	(await scoped.read("Plain/Notes.md")).failure,
+	"Plain/Notes.md is not named here",
+);
+check(
+	"a preview reads only the files its manifest declares",
+	(await previewReader(registry.get("@inline/code-block").manifest).read("main.py")).ok,
+	true,
+);
+check(
+	"and refuses anything else, so browsing cannot open a vault",
+	(await previewReader({}).read("main.py")).ok,
+	false,
+);
 
 const shownCode = noteWith("<p>!code main.py</p>");
 substitute(shownCode, [codeRule]);
@@ -428,8 +686,16 @@ await paint();
 const drawn = () => shownCode.querySelector(".wgc-body pre code")?.textContent.trim() ?? "";
 check("the file is drawn as a code block", drawn().startsWith("print(1)"), true);
 check("thirty lines to begin with, which is the manifest's number", drawn().split("\n").length, 30);
-check("and the rest is offered rather than hidden", shownCode.querySelector(".wgc-left")?.textContent ?? "", "15 lines left");
-check("the extension chose the language", String(MarkdownRenderer.calls.at(-1)?.markdown ?? "").split("\n")[0], `${TICKS}python`);
+check(
+	"and the rest is offered rather than hidden",
+	shownCode.querySelector(".wgc-left")?.textContent ?? "",
+	"15 lines left",
+);
+check(
+	"the extension chose the language",
+	String(MarkdownRenderer.calls.at(-1)?.markdown ?? "").split("\n")[0],
+	`${TICKS}python`,
+);
 const more = shownCode.querySelector(".wgc-more button");
 check("a control offers the rest, thirty at a time", more?.textContent, "Show 30 more");
 if (more) await press(more);
@@ -447,78 +713,162 @@ check("markdown is not excluded — someone wants to see the source", fencey.que
 const binary = noteWith("<p>!code photo.png</p>");
 substitute(binary, [codeRule]);
 await paint();
-check("a picture is refused by its extension", binary.querySelector(".wgc-why")?.textContent ?? "", "a .png file is not text");
+check(
+	"a picture is refused by its extension",
+	binary.querySelector(".wgc-why")?.textContent ?? "",
+	"a .png file is not text",
+);
 check("and nothing of it was drawn", binary.querySelectorAll(".wgc-body").length, 0);
 
 const disguised = noteWith("<p>!code blob.dat</p>");
 substitute(disguised, [codeRule]);
 await paint();
-check("a binary nobody deny-listed is caught by its bytes", /reads as binary/.test(disguised.querySelector(".wgc-why")?.textContent ?? ""), true);
+check(
+	"a binary nobody deny-listed is caught by its bytes",
+	/reads as binary/.test(disguised.querySelector(".wgc-why")?.textContent ?? ""),
+	true,
+);
 
 const absent = noteWith("<p>!code gone.py</p>");
 substitute(absent, [codeRule]);
 await paint();
-check("a file that is not there says so instead of drawing nothing", absent.querySelector(".wgc-why")?.textContent ?? "", "gone.py is not in this vault");
+check(
+	"a file that is not there says so instead of drawing nothing",
+	absent.querySelector(".wgc-why")?.textContent ?? "",
+	"gone.py is not in this vault",
+);
 
 const oversize = noteWith("<p>!code huge.log</p>");
 substitute(oversize, [codeRule]);
 await paint();
-check("a file over the manifest's cap refuses, naming it", /over the 256 KB limit/.test(oversize.querySelector(".wgc-why")?.textContent ?? ""), true);
+check(
+	"a file over the manifest's cap refuses, naming it",
+	/over the 256 KB limit/.test(oversize.querySelector(".wgc-why")?.textContent ?? ""),
+	true,
+);
 
 const custom = noteWith("<p>!code notes.conf</p>");
 substitute(custom, [codeRule]);
 await paint();
-check("an extension nobody mapped falls through to itself", custom.querySelector(".wgc-lang")?.textContent.trim() ?? "", "conf");
+check(
+	"an extension nobody mapped falls through to itself",
+	custom.querySelector(".wgc-lang")?.textContent.trim() ?? "",
+	"conf",
+);
 await press(custom.querySelector(".wgc-lang"));
 const needle = custom.querySelector(".wg-kit-pop-search-field input");
 check("the language list is searchable", Boolean(needle), true);
 needle.value = "zigzag";
 needle.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 await paint();
-const offer = [...custom.querySelectorAll(".wg-kit-pop-item")].find((node) => node.textContent.includes("Use custom language"));
+const offer = [...custom.querySelectorAll(".wg-kit-pop-item")].find((node) =>
+	node.textContent.includes("Use custom language"),
+);
 check("a language nobody listed is offered anyway", Boolean(offer), true);
 await press(offer);
-check("and it reaches the fence exactly as typed", String(MarkdownRenderer.calls.at(-1)?.markdown ?? "").split("\n")[0], `${TICKS}zigzag`);
-check("a custom language is used and forgotten, never added to the list", [...custom.querySelectorAll(".wg-kit-pop-item")].filter((node) => node.textContent.trim() === "zigzag").length, 0);
+check(
+	"and it reaches the fence exactly as typed",
+	String(MarkdownRenderer.calls.at(-1)?.markdown ?? "").split("\n")[0],
+	`${TICKS}zigzag`,
+);
+check(
+	"a custom language is used and forgotten, never added to the list",
+	[...custom.querySelectorAll(".wg-kit-pop-item")].filter((node) => node.textContent.trim() === "zigzag").length,
+	0,
+);
 
-const wroteLanguage = passageHere({ app, sourcePath: "Orbitask/Code.md", rawLines: ["!code main.py"], rule: codeRule, content: "main.py", section: { text: "!code main.py", lineStart: 0, lineEnd: 0 } });
-check("a picked language is written back into the line", (await wroteLanguage.update("main.py | zig")) && files.get("Orbitask/Code.md").text, "!code main.py | zig");
+const wroteLanguage = passageHere({
+	app,
+	sourcePath: "Orbitask/Code.md",
+	rawLines: ["!code main.py"],
+	rule: codeRule,
+	content: "main.py",
+	section: { text: "!code main.py", lineStart: 0, lineEnd: 0 },
+});
+check(
+	"a picked language is written back into the line",
+	(await wroteLanguage.update("main.py | zig")) && files.get("Orbitask/Code.md").text,
+	"!code main.py | zig",
+);
 
 const sheet = fs.readFileSync("styles.css", "utf8");
 const codeSheet = shownCode.querySelector(".wgc-code style")?.textContent ?? "";
 const ruleOf = (css, selector) => new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
-const valueOf = (css, selector, property) => new RegExp(`${property}\\s*:\\s*([^;]+)`).exec(ruleOf(css, selector))?.[1].trim() ?? "";
+const valueOf = (css, selector, property) =>
+	new RegExp(`${property}\\s*:\\s*([^;]+)`).exec(ruleOf(css, selector))?.[1].trim() ?? "";
 
-check("the container draws no border of its own", /box-shadow|border(?!-radius)/.test(ruleOf(codeSheet, ".wgc-code") || "box-shadow"), false);
+check(
+	"the container draws no border of its own",
+	/box-shadow|border(?!-radius)/.test(ruleOf(codeSheet, ".wgc-code") || "box-shadow"),
+	false,
+);
 
 const theirCopy = shownCode.querySelector(".wgc-body pre .copy-code-button");
 check("Obsidian's own renderer puts a copy button in the block it drew", Boolean(theirCopy), true);
-check("and the widget hides it, so ours is the only copy control", theirCopy && window.getComputedStyle(theirCopy).display, "none");
+check(
+	"and the widget hides it, so ours is the only copy control",
+	theirCopy && window.getComputedStyle(theirCopy).display,
+	"none",
+);
 
 const controls = [...shownCode.querySelectorAll(".wgc-bar button")].filter((node) => !node.closest(".wg-kit-pop"));
 controls.push(shownCode.querySelector(".wg-inline-more"));
 check("three controls, and no fourth", controls.length, 3);
-check("every one of them is the kit's glass button", controls.every((node) => node?.classList.contains("wg-kit-glass") && (node.classList.contains("wg-kit-btn") || node.classList.contains("wg-kit-icon"))), true);
+check(
+	"every one of them is the kit's glass button",
+	controls.every(
+		(node) =>
+			node?.classList.contains("wg-kit-glass") &&
+			(node.classList.contains("wg-kit-btn") || node.classList.contains("wg-kit-icon")),
+	),
+	true,
+);
 check("the language is the one that says a word", controls[0].textContent.trim(), "python");
 check("copy is an icon, not the word", controls[1].textContent.trim(), "");
 check("which still says what it does", controls[1].getAttribute("aria-label"), "Copy");
-check("the third is three dots, and says so", [controls[2].getAttribute("aria-label"), controls[2].querySelectorAll("circle").length], ["More", 3]);
+check(
+	"the third is three dots, and says so",
+	[controls[2].getAttribute("aria-label"), controls[2].querySelectorAll("circle").length],
+	["More", 3],
+);
 // CONTEXT: the menu is the note's own, drawn at the top right — the row must end before its box
 const reserved = parseInt(valueOf(codeSheet, ".wgc-bar", "padding").split(/\s+/)[1], 10);
-const menuBox = parseInt(valueOf(sheet, ".wg-inline > span.wg-inline-at", "right"), 10) + parseInt(valueOf(sheet, ".wg-inline > span.wg-inline-at", "width"), 10);
-check("the menu is taken out of the flow and put in the corner", valueOf(sheet, ".wg-inline > span.wg-inline-at", "position"), "absolute");
+const menuBox =
+	parseInt(valueOf(sheet, ".wg-inline > span.wg-inline-at", "right"), 10) +
+	parseInt(valueOf(sheet, ".wg-inline > span.wg-inline-at", "width"), 10);
+check(
+	"the menu is taken out of the flow and put in the corner",
+	valueOf(sheet, ".wg-inline > span.wg-inline-at", "position"),
+	"absolute",
+);
 check("the row reserves the menu's box, so the three read as one group", reserved >= menuBox, true);
 
 // CONTEXT: every one of the three wears the same reveal class, so one law covers all three
 const shy = [...shownCode.querySelectorAll(".wg-inline-shy")];
 check("the controls are carried by one shy element each, never a rule per control", shy.length, 2);
-check("the bar of two is one of them", shy.some((node) => node.classList.contains("wgc-bar")), true);
-check("and the corner menu is the other", shy.some((node) => node.classList.contains("wg-inline-at")), true);
+check(
+	"the bar of two is one of them",
+	shy.some((node) => node.classList.contains("wgc-bar")),
+	true,
+);
+check(
+	"and the corner menu is the other",
+	shy.some((node) => node.classList.contains("wg-inline-at")),
+	true,
+);
 check("the widget no longer forces the corner control open", /wg-inline-(toggle|more|shy)/.test(codeSheet), false);
-check("the fade is declared once, on the shy class itself", /opacity:\s*0;[\s\S]*?transition:\s*opacity/.test(ruleOf(sheet, ".wg-inline-shy")), true);
+check(
+	"the fade is declared once, on the shy class itself",
+	/opacity:\s*0;[\s\S]*?transition:\s*opacity/.test(ruleOf(sheet, ".wg-inline-shy")),
+	true,
+);
 
 const listRule = ruleOf(sheet, ".wg-kit-pop-list");
-check("the popover list is capped and scrolls", /max-height/.test(listRule) && /overflow-y:\s*auto/.test(listRule), true);
+check(
+	"the popover list is capped and scrolls",
+	/max-height/.test(listRule) && /overflow-y:\s*auto/.test(listRule),
+	true,
+);
 check("at ten rows", Number(/--wg-kit-pop-rows,\s*(\d+)/.exec(listRule)?.[1]), 10);
 
 await press(custom.querySelector(".wgc-lang"));
@@ -526,12 +876,18 @@ const list = custom.querySelector(".wg-kit-pop-list");
 check("and the list sits in a box that can carry the edges", Boolean(list?.closest(".wg-kit-pop-scroll")), true);
 // CONTEXT: jsdom lays nothing out, so the metrics a scroll reports are handed over here
 const scrolledTo = async (top) => {
-	for (const [name, value] of [["scrollTop", top], ["clientHeight", 340], ["scrollHeight", 1600]]) {
+	for (const [name, value] of [
+		["scrollTop", top],
+		["clientHeight", 340],
+		["scrollHeight", 1600],
+	]) {
 		Object.defineProperty(list, name, { configurable: true, value });
 	}
 	list.dispatchEvent(new dom.window.Event("scroll", { bubbles: true }));
 	await paint();
-	return [...custom.querySelectorAll(".wg-kit-pop-edge")].map((node) => (node.classList.contains("is-up") ? "up" : "down"));
+	return [...custom.querySelectorAll(".wg-kit-pop-edge")].map((node) =>
+		node.classList.contains("is-up") ? "up" : "down",
+	);
 };
 check("at the top, one chevron says there is more below", await scrolledTo(0), ["down"]);
 check("in the middle, both ends say so", await scrolledTo(700), ["up", "down"]);
@@ -540,7 +896,12 @@ check("at the end, only what is above is left", await scrolledTo(1260), ["up"]);
 // ── what kind of thing a record is ───────────────────────────────────────────────────────
 check("a note is markdown", typeOf("Folder/Note.md"), "markdown");
 check("a drawing is not just another note", typeOf("Folder/Sketch.excalidraw.md"), "excalidraw");
-check("every picture format answers the same", ["a.png", "b.JPG", "c.webp", "d.svg"].map(typeOf), ["image", "image", "image", "image"]);
+check("every picture format answers the same", ["a.png", "b.JPG", "c.webp", "d.svg"].map(typeOf), [
+	"image",
+	"image",
+	"image",
+	"image",
+]);
 check("a format nobody listed answers with itself", typeOf("a.docx"), "docx");
 check("something with no extension is a folder", typeOf("Folder"), "folder");
 
@@ -572,39 +933,97 @@ const all = (selector) => [...dom.window.document.querySelectorAll(selector)];
 const nameOn = (row) => row.querySelector(".wg-kit-row-label").childNodes[0].textContent;
 
 check("the sidebar lists every rule", all(".wg-sub-item").map(nameOn), ["Reminder", "Note"]);
-check("the list sits on the left and the rule being written takes the room", [...at(".wg-sub").children].map((node) => (node.classList.contains("wg-sub-list") ? "wg-sub-list" : node.className.split(" ")[0])), ["wg-sub-list", "wg-sub-main"]);
+check(
+	"the list sits on the left and the rule being written takes the room",
+	[...at(".wg-sub").children].map((node) =>
+		node.classList.contains("wg-sub-list") ? "wg-sub-list" : node.className.split(" ")[0],
+	),
+	["wg-sub-list", "wg-sub-main"],
+);
 check("the rules are rows of the kit's sidebar", all(".wg-sub-item.wg-kit-side-row").length, 2);
-check("and each is a real button, so a keyboard reaches it", all(".wg-sub-item").map((node) => node.tagName), ["BUTTON", "BUTTON"]);
-check("held in one group, the way every sidebar holds its values", all(".wg-sub-list .wg-kit-side-list .wg-sub-item").length, 2);
-check("New is a row at the foot of the list, not a press beside the window's close", Boolean(at(".wg-sub-side-foot .wg-sub-new")), true);
+check(
+	"and each is a real button, so a keyboard reaches it",
+	all(".wg-sub-item").map((node) => node.tagName),
+	["BUTTON", "BUTTON"],
+);
+check(
+	"held in one group, the way every sidebar holds its values",
+	all(".wg-sub-list .wg-kit-side-list .wg-sub-item").length,
+	2,
+);
+check(
+	"New is a row at the foot of the list, not a press beside the window's close",
+	Boolean(at(".wg-sub-side-foot .wg-sub-new")),
+	true,
+);
 check("and nothing floats over the block's own corner", all(".wg-sub-list .wg-kit-icon").length, 0);
 check("the title sits inside the sidebar block", Boolean(at(".wg-sub-list.wg-kit-side > .wg-sub-side-head")), true);
 check("under a line saying what a substitution is", Boolean(at(".wg-sub-side-head .wg-sub-side-lead")), true);
 check("and the rules are the one group under it", all(".wg-sub-list .wg-sub-rules .wg-sub-item").length, 2);
-check("every row carries the trigger it answers to", all(".wg-sub-item .wg-sub-trg").map((node) => node.textContent), ["!", "::: … :::"]);
+check(
+	"every row carries the trigger it answers to",
+	all(".wg-sub-item .wg-sub-trg").map((node) => node.textContent),
+	["!", "::: … :::"],
+);
 check("the first rule is the one open", nameOn(at(".wg-sub-item.is-selected")), "Reminder");
-check("its sentence is the one for its mode", at(".wg-sub-words").textContent.startsWith("When a line starts with"), true);
+check(
+	"its sentence is the one for its mode",
+	at(".wg-sub-words").textContent.startsWith("When a line starts with"),
+	true,
+);
 check("the chosen widget is named on the button", at(".wg-sub-pick").textContent.includes("Reminder"), true);
-check("the sample shows the rule working", at(".wg-sub-out .wgi-reminder-text")?.textContent, "call Olena before Friday");
-check("the last stage is the line you write, the turn, and what it draws", [...at(".wg-sub-example").children].map((node) => node.className), ["wg-sub-sample", "wg-sub-arrow", "wg-sub-out"]);
+check(
+	"the sample shows the rule working",
+	at(".wg-sub-out .wgi-reminder-text")?.textContent,
+	"call Olena before Friday",
+);
+check(
+	"the last stage is the line you write, the turn, and what it draws",
+	[...at(".wg-sub-example").children].map((node) => node.className),
+	["wg-sub-sample", "wg-sub-arrow", "wg-sub-out"],
+);
 check("so the editor says only the three stage names", all(".wg-sub-editor .wg-sub-step-name").length, 3);
-check("and every stage keeps its content in one block of its own", all(".wg-sub-step").map((node) => [...node.children].map((kid) => kid.className).join("+")), ["wg-sub-step-label+wg-sub-step-body", "wg-sub-step-label+wg-sub-step-body", "wg-sub-step-label+wg-sub-step-body"]);
+check(
+	"and every stage keeps its content in one block of its own",
+	all(".wg-sub-step").map((node) => [...node.children].map((kid) => kid.className).join("+")),
+	["wg-sub-step-label+wg-sub-step-body", "wg-sub-step-label+wg-sub-step-body", "wg-sub-step-label+wg-sub-step-body"],
+);
 
 const steps = all(".wg-sub-steps > .wg-sub-step");
 check("the editor is three stages, one after another", steps.length, 3);
-check("each is numbered in the order it is read", steps.map((node) => node.querySelector(".wg-sub-step-no")?.textContent), ["1", "2", "3"]);
-check("and named for what it asks", steps.map((node) => node.querySelector(".wg-sub-step-name")?.textContent), ["How it matches", "The rule", "The result"]);
-check("each name carries the line that says what the stage wants", steps.every((node) => (node.querySelector(".wg-sub-step-hint")?.textContent ?? "").length > 0), true);
+check(
+	"each is numbered in the order it is read",
+	steps.map((node) => node.querySelector(".wg-sub-step-no")?.textContent),
+	["1", "2", "3"],
+);
+check(
+	"and named for what it asks",
+	steps.map((node) => node.querySelector(".wg-sub-step-name")?.textContent),
+	["How it matches", "The rule", "The result"],
+);
+check(
+	"each name carries the line that says what the stage wants",
+	steps.every((node) => (node.querySelector(".wg-sub-step-hint")?.textContent ?? "").length > 0),
+	true,
+);
 check("the modes are the first stage", Boolean(steps[0].querySelector(".wg-sub-tabs")), true);
 check("the sentence is the second", Boolean(steps[1].querySelector(".wg-sub-words")), true);
 check("what it draws is the third", Boolean(steps[2].querySelector(".wg-sub-example")), true);
-check("the head is not one of them", steps.some((node) => node.querySelector(".wg-sub-name")), false);
+check(
+	"the head is not one of them",
+	steps.some((node) => node.querySelector(".wg-sub-name")),
+	false,
+);
 check("and it stands outside the column that scrolls", Boolean(at(".wg-sub-editor > .wg-sub-head")), true);
 
 check("no status dot rides the rows", all(".wg-sub-dot").length, 0);
 check("nor a tile where one sat", all(".wg-sub-item .wg-kit-side-icon").length, 0);
 check("an enabled rule reads at full strength", all(".wg-sub-item.is-disabled").length, 0);
-check("a running rule is not marked in the list, because nothing is wrong with it", all(".wg-sub-item.is-selected .wg-sub-mark").length, 0);
+check(
+	"a running rule is not marked in the list, because nothing is wrong with it",
+	all(".wg-sub-item.is-selected .wg-sub-mark").length,
+	0,
+);
 check("a saved rule offers nothing to save", at(".wg-sub-save").disabled, true);
 check("so the head spends no accent on it", all(".wg-sub-head .wg-kit-btn.is-accent").length, 0);
 check("Delete is not painted with the accent", all(".wg-sub-head .wg-kit-btn.is-plain").length, 0);
@@ -612,16 +1031,28 @@ check("it is the neutral one beside Save", at(".wg-sub-delete").textContent, "De
 check("the switch is not left bare — it is a named group", at(".wg-sub-power")?.textContent, "Enabled");
 check("and the group is the kit's own solid plate", at(".wg-sub-power")?.classList.contains("wg-kit-card"), true);
 check("with the switch inside it", Boolean(at(".wg-sub-power .wg-kit-switch")), true);
-check("the status reads as a pill, not as a line of chrome text", at(".wg-sub-state")?.classList.contains("wg-kit-pill"), true);
+check(
+	"the status reads as a pill, not as a line of chrome text",
+	at(".wg-sub-state")?.classList.contains("wg-kit-pill"),
+	true,
+);
 check("a rule that is running says so", at(".wg-sub-state").textContent, "Live");
 
 at(".wg-sub-head .wg-kit-switch").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("switching a rule off is answered in the list", held[0].enabled, false);
-check("by the row itself, not by a marker on it", at(".wg-sub-item.is-selected").classList.contains("is-disabled"), true);
+check(
+	"by the row itself, not by a marker on it",
+	at(".wg-sub-item.is-selected").classList.contains("is-disabled"),
+	true,
+);
 check("and only that row", all(".wg-sub-item.is-disabled").length, 1);
 check("a flipped switch leaves an unsaved edit, and the head says that", at(".wg-sub-state").textContent, "Draft");
-check("now there is something to save, and Save is the one accent in the head", all(".wg-sub-head .wg-kit-btn.is-accent").map((node) => node.textContent), ["Save"]);
+check(
+	"now there is something to save, and Save is the one accent in the head",
+	all(".wg-sub-head .wg-kit-btn.is-accent").map((node) => node.textContent),
+	["Save"],
+);
 check("the list carries the same word", at(".wg-sub-item.is-selected .wg-sub-mark").textContent, "Draft");
 at(".wg-sub-save").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
@@ -641,17 +1072,29 @@ check("and its sentence changes with it", at(".wg-sub-words").textContent.starts
 check("a capsule sentence names both ends", at(".wg-sub-words").textContent.includes("and closes with"), true);
 
 const tabs = all(".wg-sub-tabs button");
-check("there are three modes to choose from", tabs.map((node) => node.textContent), ["Line", "Wrapped", "Regex"]);
+check(
+	"there are three modes to choose from",
+	tabs.map((node) => node.textContent),
+	["Line", "Wrapped", "Regex"],
+);
 tabs[2].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
-check("switching to regex rewrites the sentence", at(".wg-sub-words").textContent.startsWith("When a line matches"), true);
+check(
+	"switching to regex rewrites the sentence",
+	at(".wg-sub-words").textContent.startsWith("When a line matches"),
+	true,
+);
 check("a rule with no expression yet says what is missing", at(".wg-sub-error")?.textContent, "Write an expression");
 check("and cannot be saved while it is missing", at(".wg-sub-save").disabled, true);
 check("nor is the accent spent on a press that would be refused", all(".wg-sub-head .wg-kit-btn.is-accent").length, 0);
 check("and the head says it is not running either", at(".wg-sub-state").textContent, "Not valid");
 
 check("changing anything marks the rule a draft", held[1].draft, true);
-check("a rule that cannot run is flagged in the list", at(".wg-sub-item.is-selected .wg-sub-mark")?.textContent, "Not valid");
+check(
+	"a rule that cannot run is flagged in the list",
+	at(".wg-sub-item.is-selected .wg-sub-mark")?.textContent,
+	"Not valid",
+);
 check("and a draft does not reach a note", matchLines([":::", "one", ":::"], held).length, 0);
 
 tabs[1].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
@@ -669,10 +1112,18 @@ const shelf = dom.window.document.body.querySelector(".wg-cat-dialog");
 check("choosing a widget opens the catalogue", Boolean(shelf), true);
 const offered = [...shelf.querySelectorAll(".wg-cat-tile")];
 check("and it offers exactly the widgets that stand in text", offered.length, inlineWidgets(registry.list()).length);
-check("drawn from the text their manifests offer", shelf.querySelector(".wgi-reminder-text")?.textContent, "call Olena before Friday");
+check(
+	"drawn from the text their manifests offer",
+	shelf.querySelector(".wgi-reminder-text")?.textContent,
+	"call Olena before Friday",
+);
 check("with no lattice behind them, because text has no grid", shelf.querySelectorAll(".wg-cells").length, 0);
 const chromeButtons = (tile) => [...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic"));
-check("every card still carries one button of its own", offered.every((tile) => chromeButtons(tile).length === 1), true);
+check(
+	"every card still carries one button of its own",
+	offered.every((tile) => chromeButtons(tile).length === 1),
+	true,
+);
 
 const noted = offered.find((tile) => tile.querySelector(".wg-cat-name").textContent === "Note");
 noted.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
@@ -736,7 +1187,11 @@ render(null, panel);
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		inject: ["tools/fill-inject.js"],
-		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", obsidian: "./tools/obsidian-shim.js" },
+		alias: {
+			widgetarium: "./tools/fill-shim.js",
+			"widgetarium/kit": "./src/kit.js",
+			obsidian: "./tools/obsidian-shim.js",
+		},
 		logLevel: "warning",
 	});
 
@@ -822,21 +1277,34 @@ render(null, panel);
 	const file = path.join(work, "look.html");
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${fs.readFileSync("styles.css", "utf8")}</style>`
-			+ `<style>body { margin: 0; --background-primary: #fff; --background-secondary: #f6f6f6; --background-modifier-border: #e4e4e4;`
-			+ ` --background-modifier-hover: rgba(0,0,0,0.05); --text-normal: #222; --text-muted: #707070; --text-faint: #a0a0a0;`
-			+ ` --text-on-accent: #fff; --text-error: #c0392b; --text-success: #1f8a4c; --interactive-accent: #6d4ee0;`
-			+ ` font-family: -apple-system, "Segoe UI", sans-serif; background: var(--background-secondary); }</style>`
-			+ `</head><body class="wg-root"><div id="host"></div><script id="wg-measure" type="application/json"></script>`
-			+ `<script>window.__FILES__=${JSON.stringify(collect("widgets", {}, WIDGETS_DIR))};</script>`
-			+ `<script>${built.outputFiles[0].text}</script><script>${probe}</script></body></html>`,
+		`<!doctype html><html><head><meta charset="utf-8"><style>${fs.readFileSync("styles.css", "utf8")}</style>` +
+			`<style>body { margin: 0; --background-primary: #fff; --background-secondary: #f6f6f6; --background-modifier-border: #e4e4e4;` +
+			` --background-modifier-hover: rgba(0,0,0,0.05); --text-normal: #222; --text-muted: #707070; --text-faint: #a0a0a0;` +
+			` --text-on-accent: #fff; --text-error: #c0392b; --text-success: #1f8a4c; --interactive-accent: #6d4ee0;` +
+			` font-family: -apple-system, "Segoe UI", sans-serif; background: var(--background-secondary); }</style>` +
+			`</head><body class="wg-root"><div id="host"></div><script id="wg-measure" type="application/json"></script>` +
+			`<script>window.__FILES__=${JSON.stringify(collect("widgets", {}, WIDGETS_DIR))};</script>` +
+			`<script>${built.outputFiles[0].text}</script><script>${probe}</script></body></html>`,
 	);
 
 	const lookAt = (query, width, height) => {
 		const dumped = execFileSync(
 			browser,
-			["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", `--window-size=${width},${height}`, "--virtual-time-budget=9000", "--dump-dom", `file://${file}${query}`],
-			{ encoding: "utf8", maxBuffer: 96 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+			[
+				"--headless",
+				"--disable-gpu",
+				"--no-sandbox",
+				"--hide-scrollbars",
+				`--window-size=${width},${height}`,
+				"--virtual-time-budget=9000",
+				"--dump-dom",
+				`file://${file}${query}`,
+			],
+			{
+				encoding: "utf8",
+				maxBuffer: 96 * 1024 * 1024,
+				stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"],
+			},
 		);
 		const raw = dumped.match(/<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/)?.[1];
 		if (!raw) {
@@ -850,12 +1318,18 @@ render(null, panel);
 	const narrow = lookAt("?case=live&open=list", 430, 900);
 	if (process.env.WG_DEBUG) console.log(JSON.stringify({ wide, narrow }, null, 1));
 
-	console.log(`\n   the block: air ${JSON.stringify(wide.air)} · padding ${wide.blockPad} · radius ${wide.blockRadius} · ${wide.blockFill}`);
+	console.log(
+		`\n   the block: air ${JSON.stringify(wide.air)} · padding ${wide.blockPad} · radius ${wide.blockRadius} · ${wide.blockFill}`,
+	);
 	check("the block never reaches the window's own edge", wide.leastAir >= 8, true);
 	check("it pads itself like every other sidebar", wide.blockPad, "8px");
 	check("carries the plate's corner", wide.blockRadius, "14px");
 	check("carries no edge of its own", /inset/.test(wide.blockShadow), false);
-	check("and is told apart by a cast that reaches past it", wide.blockShadow !== "none" && /\dpx/.test(wide.blockShadow), true);
+	check(
+		"and is told apart by a cast that reaches past it",
+		wide.blockShadow !== "none" && /\dpx/.test(wide.blockShadow),
+		true,
+	);
 	check("and is a surface rather than a hole", /^rgba\(0, 0, 0, 0\)$/.test(wide.blockFill), false);
 	check("its rows are adjacent, so a divider could be drawn", wide.adjacentRows, wide.rows - 1);
 	check("and none is", wide.divider, "none");
@@ -863,15 +1337,23 @@ render(null, panel);
 	console.log(`   New sits ${wide.newUnderRows}px under the last rule, at the foot of the block`);
 	check("New is the last thing in the list, under every rule", wide.newUnderRows > 0, true);
 
-	console.log(`\n   the three stages: gaps ${JSON.stringify(wide.stepGaps)} · ${wide.stepFill} on the window's ${wide.dialogFill} · corner ${wide.stepRadius}`);
+	console.log(
+		`\n   the three stages: gaps ${JSON.stringify(wide.stepGaps)} · ${wide.stepFill} on the window's ${wide.dialogFill} · corner ${wide.stepRadius}`,
+	);
 	check("the page is three stages deep", wide.steps, 3);
 	check("held apart by air, the same amount every time", new Set(wide.stepGaps).size, 1);
 	check("and it is air you can see", wide.stepGaps[0] >= 8, true);
 	check("a stage is a surface, not a hole in the window", /^rgba\(0, 0, 0, 0\)$/.test(wide.stepFill), false);
-	check("told apart from the window by a fill or an edge", wide.stepFill !== wide.dialogFill || /inset/.test(wide.stepShadow), true);
+	check(
+		"told apart from the window by a fill or an edge",
+		wide.stepFill !== wide.dialogFill || /inset/.test(wide.stepShadow),
+		true,
+	);
 	check("and cornered, because it is a card", parseFloat(wide.stepRadius) >= 12, true);
 
-	console.log(`   the number: ${JSON.stringify(wide.badgeBox)} radius ${wide.badgeRadius} on ${wide.badgeFill}, ink ${wide.badgeInk} against the accent ${wide.accentInk}`);
+	console.log(
+		`   the number: ${JSON.stringify(wide.badgeBox)} radius ${wide.badgeRadius} on ${wide.badgeFill}, ink ${wide.badgeInk} against the accent ${wide.accentInk}`,
+	);
 	check("the number rides a shape of its own", wide.badgeBox[0], wide.badgeBox[1]);
 	check("a round one", parseFloat(wide.badgeRadius) >= wide.badgeBox[0] / 2, true);
 	check("filled, not left as bare type", /^rgba\(0, 0, 0, 0\)$/.test(wide.badgeFill), false);
@@ -885,7 +1367,9 @@ render(null, panel);
 	check("and the controls are one size, so they read as a row", new Set(wide.controlHeights).size, 1);
 	check("the head holds still while the stages scroll", wide.stepsScroll, "auto");
 	check("so Save is reachable from anywhere in the rule", wide.headInScroll, false);
-	console.log(`   Save on a saved rule: disabled ${wide.saveDisabled} · ${wide.saveFill} against the neutral ${wide.neutralFill}`);
+	console.log(
+		`   Save on a saved rule: disabled ${wide.saveDisabled} · ${wide.saveFill} against the neutral ${wide.neutralFill}`,
+	);
 	check("a saved rule offers nothing to save", wide.saveDisabled, true);
 	check("and Save is not painted with the accent while it refuses a press", wide.saveFill === wide.accentInk, false);
 	check("it is the grey every neutral control carries", wide.saveFill, wide.neutralFill);
@@ -902,10 +1386,16 @@ render(null, panel);
 	check("a switched-off one is turned down", wide.dimmedRow < wide.litRow, true);
 	check("far enough down to be seen across the list", wide.dimmedRow <= 0.6, true);
 
-	console.log(`\n   on a phone: sidebar ${narrow.hasSide} · a press to open the list ${narrow.hasOpen} · head parts ${JSON.stringify(narrow.headCentres)}`);
+	console.log(
+		`\n   on a phone: sidebar ${narrow.hasSide} · a press to open the list ${narrow.hasOpen} · head parts ${JSON.stringify(narrow.headCentres)}`,
+	);
 	check("a phone is too narrow for a column beside the rule, so none is drawn", narrow.hasSide, false);
 	check("the list is a press instead", narrow.hasOpen, true);
-	check("and the head stacks rather than running off the screen", narrow.headCentres.length > 1 && new Set(narrow.headCentres).size, 2);
+	check(
+		"and the head stacks rather than running off the screen",
+		narrow.headCentres.length > 1 && new Set(narrow.headCentres).size,
+		2,
+	);
 	console.log(`   the sheet: ${narrow.sheetSpill}px wider than the room, ${narrow.sheetAtFoot}px off its foot`);
 	check("the list comes up as a sheet on the room's full width", narrow.sheetSpill, 0);
 	check("resting on its foot", narrow.sheetAtFoot, 0);
@@ -928,14 +1418,16 @@ render(null, panel);
 		"/Applications/Chromium.app/Contents/MacOS/Chromium",
 		"/usr/bin/google-chrome",
 		"/usr/bin/chromium",
-	].filter(Boolean).find((candidate) => {
-		try {
-			execFileSync(candidate, ["--version"], { stdio: "ignore" });
-			return true;
-		} catch {
-			return false;
-		}
-	});
+	]
+		.filter(Boolean)
+		.find((candidate) => {
+			try {
+				execFileSync(candidate, ["--version"], { stdio: "ignore" });
+				return true;
+			} catch {
+				return false;
+			}
+		});
 	if (!browser) {
 		console.error("inline gate: no Chrome found — set WG_CHROME to a Chromium binary");
 		process.exit(1);
@@ -952,7 +1444,11 @@ render(null, panel);
 		jsxFactory: "h",
 		jsxFragment: "Fragment",
 		inject: ["tools/fill-inject.js"],
-		alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js", obsidian: "./tools/obsidian-shim.js" },
+		alias: {
+			widgetarium: "./tools/fill-shim.js",
+			"widgetarium/kit": "./src/kit.js",
+			obsidian: "./tools/obsidian-shim.js",
+		},
 		loader: { ".json": "json" },
 		logLevel: "warning",
 	});
@@ -993,20 +1489,31 @@ render(null, panel);
 	const file = nodePath.join(work, "inline.html");
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8">`
-		+ `<style>${readFileSync("styles.css", "utf8")}</style><style>${OBSIDIAN}</style>`
-		+ `<style>#note { width: 640px; padding: 24px; }</style></head>`
-		+ `<body><button id="before">before</button>`
-		+ `<div class="markdown-preview-view markdown-rendered" id="note"></div>`
-		+ `<script>${built.outputFiles[0].text}</script></body></html>`,
+		`<!doctype html><html><head><meta charset="utf-8">` +
+			`<style>${readFileSync("styles.css", "utf8")}</style><style>${OBSIDIAN}</style>` +
+			`<style>#note { width: 640px; padding: 24px; }</style></head>` +
+			`<body><button id="before">before</button>` +
+			`<div class="markdown-preview-view markdown-rendered" id="note"></div>` +
+			`<script>${built.outputFiles[0].text}</script></body></html>`,
 	);
 
 	const profile = mkdtempSync(nodePath.join(tmpdir(), "wg-cdp-"));
-	const chrome = spawn(browser, [
-		"--headless=new", "--disable-gpu", "--no-sandbox", "--hide-scrollbars",
-		"--no-first-run", "--no-default-browser-check", "--window-size=900,800",
-		`--user-data-dir=${profile}`, "--remote-debugging-port=0", `file://${file}`,
-	], { stdio: ["ignore", "pipe", "pipe"] });
+	const chrome = spawn(
+		browser,
+		[
+			"--headless=new",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--no-first-run",
+			"--no-default-browser-check",
+			"--window-size=900,800",
+			`--user-data-dir=${profile}`,
+			"--remote-debugging-port=0",
+			`file://${file}`,
+		],
+		{ stdio: ["ignore", "pipe", "pipe"] },
+	);
 
 	const rest = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 	const portFile = nodePath.join(profile, "DevToolsActivePort");
@@ -1044,14 +1551,16 @@ render(null, panel);
 		waiting.delete(message.id);
 		message.error ? reject(new Error(JSON.stringify(message.error))) : resolve(message.result);
 	};
-	const send = (method, params = {}) => new Promise((resolve, reject) => {
-		call += 1;
-		waiting.set(call, { resolve, reject });
-		socket.send(JSON.stringify({ id: call, method, params }));
-	});
+	const send = (method, params = {}) =>
+		new Promise((resolve, reject) => {
+			call += 1;
+			waiting.set(call, { resolve, reject });
+			socket.send(JSON.stringify({ id: call, method, params }));
+		});
 	const ask = async (expression, awaitPromise = true) => {
 		const answer = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise });
-		if (answer.exceptionDetails) throw new Error(answer.exceptionDetails.exception?.description ?? answer.exceptionDetails.text);
+		if (answer.exceptionDetails)
+			throw new Error(answer.exceptionDetails.exception?.description ?? answer.exceptionDetails.text);
 		return answer.result.value;
 	};
 	const moveTo = (x, y) => send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y, buttons: 0 });
@@ -1063,15 +1572,23 @@ render(null, panel);
 	};
 	const pressTab = async () => {
 		for (const type of ["rawKeyDown", "keyUp"]) {
-			await send("Input.dispatchKeyEvent", { type, windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9, key: "Tab", code: "Tab" });
+			await send("Input.dispatchKeyEvent", {
+				type,
+				windowsVirtualKeyCode: 9,
+				nativeVirtualKeyCode: 9,
+				key: "Tab",
+				code: "Tab",
+			});
 		}
 		await rest(60);
 	};
-	const opacities = () => ask(`({
+	const opacities = () =>
+		ask(`({
 		bar: getComputedStyle(document.querySelector(".wgc-bar")).opacity,
 		menu: getComputedStyle(document.querySelector(".wg-inline-at")).opacity,
 	})`);
-	const centreOf = (selector) => ask(`(() => {
+	const centreOf = (selector) =>
+		ask(`(() => {
 		const box = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
 		return [Math.round(box.left + box.width / 2), Math.round(box.top + box.height / 2)];
 	})()`);
@@ -1079,7 +1596,9 @@ render(null, panel);
 	let painted = false;
 	for (let tries = 0; tries < 60 && !painted; tries += 1) {
 		await rest(100);
-		painted = await ask(`Boolean(document.querySelector(".wgc-body pre code") && document.querySelector(".wg-inline-more"))`);
+		painted = await ask(
+			`Boolean(document.querySelector(".wgc-body pre code") && document.querySelector(".wg-inline-more"))`,
+		);
 	}
 	if (!painted) {
 		socket.close();
@@ -1103,7 +1622,9 @@ render(null, panel);
 			indent: +(line.left - bar.getBoundingClientRect().left).toFixed(2),
 		};
 	})()`);
-	console.log(`   the first line: "${drawn.firstWords}" · ${drawn.gapAboveFirstLine}px under the row · indented ${drawn.indent}px`);
+	console.log(
+		`   the first line: "${drawn.firstWords}" · ${drawn.gapAboveFirstLine}px under the row · indented ${drawn.indent}px`,
+	);
 	check("the file's own first line is the block's first line", drawn.startsWithNewline, false);
 	// CONTEXT: 4px is the inline box's half-leading, which no padding can take away
 	check("and it sits at the top of the block, not a line down", drawn.gapAboveFirstLine <= 5, true);
@@ -1113,7 +1634,8 @@ render(null, panel);
 	console.log(`   at rest: bar ${asleep.bar} · menu ${asleep.menu}`);
 	check("at rest every control is transparent", [asleep.bar, asleep.menu], ["0", "0"]);
 
-	await ask(`(() => {
+	await ask(
+		`(() => {
 		window.__samples = [];
 		const bar = document.querySelector(".wgc-bar");
 		const from = performance.now();
@@ -1122,7 +1644,9 @@ render(null, panel);
 			if (performance.now() - from < 300) requestAnimationFrame(tick);
 		};
 		requestAnimationFrame(tick);
-	})()`, false);
+	})()`,
+		false,
+	);
 	const middle = await centreOf(".wgc-code");
 	await moveTo(middle[0], middle[1]);
 	await rest(600);
@@ -1133,7 +1657,11 @@ render(null, panel);
 	check("hovering the block brings every control up", [awake.bar, awake.menu], ["1", "1"]);
 	// CONTEXT: an instant change has no frame between 0 and 1 and no animation to find
 	check("and it fades, rather than appearing", midFlight.length >= 3, true);
-	check("driven by a transition the browser is really running", samples.some(([value, running]) => running > 0 && value < 0.98), true);
+	check(
+		"driven by a transition the browser is really running",
+		samples.some(([value, running]) => running > 0 && value < 0.98),
+		true,
+	);
 
 	await moveTo(5, 5);
 	await rest(400);
@@ -1144,14 +1672,24 @@ render(null, panel);
 	const walk = [];
 	for (let step = 0; step < 3; step += 1) {
 		await pressTab();
-		walk.push(await ask(`(() => {
+		walk.push(
+			await ask(`(() => {
 			const node = document.activeElement;
 			return { what: node.className, opacity: getComputedStyle(document.querySelector(".wg-inline-at")).opacity };
-		})()`));
+		})()`),
+		);
 	}
 	console.log(`   Tab reaches: ${walk.map((stop) => stop.what.split(" ")[0]).join(" → ")}`);
-	check("Tab walks into the controls without a pointer", walk.map((stop) => /wgc-lang|wg-kit-icon|wg-inline-more/.test(stop.what)), [true, true, true]);
-	check("and the three-dot menu is one of them", walk.some((stop) => /wg-inline-more/.test(stop.what)), true);
+	check(
+		"Tab walks into the controls without a pointer",
+		walk.map((stop) => /wgc-lang|wg-kit-icon|wg-inline-more/.test(stop.what)),
+		[true, true, true],
+	);
+	check(
+		"and the three-dot menu is one of them",
+		walk.some((stop) => /wg-inline-more/.test(stop.what)),
+		true,
+	);
 	check("a control the keyboard has reached is a control that can be seen", walk.at(-1).opacity, "1");
 
 	await ask(`document.activeElement.blur()`);
@@ -1166,7 +1704,11 @@ render(null, panel);
 	})`);
 	console.log(`   on a finger: (hover: none) ${touched.noHover} · bar ${touched.bar} · menu ${touched.menu}`);
 	check("a phone really answers (hover: none), or the next line proves nothing", touched.noHover, true);
-	check("and there the controls never hide, because nothing can hover them out", [touched.bar, touched.menu], ["1", "1"]);
+	check(
+		"and there the controls never hide, because nothing can hover them out",
+		[touched.bar, touched.menu],
+		["1", "1"],
+	);
 	await send("Emulation.clearDeviceMetricsOverride");
 	await send("Emulation.setTouchEmulationEnabled", { enabled: false });
 	await rest(300);
@@ -1178,14 +1720,24 @@ render(null, panel);
 		const items = [...document.querySelectorAll(".wg-kit-pop.is-open .wg-kit-pop-item")];
 		return { entries: items.map((node) => node.textContent), disabled: items.map((node) => node.disabled) };
 	})()`);
-	console.log(`   the menu: ${opened.entries.map((text, at) => `${text}${opened.disabled[at] ? " (off)" : ""}`).join(" · ")}`);
+	console.log(
+		`   the menu: ${opened.entries.map((text, at) => `${text}${opened.disabled[at] ? " (off)" : ""}`).join(" · ")}`,
+	);
 	check("the three dots open a menu of exactly two entries", opened.entries.length, 2);
-	check("the first is the playground, and it is off", [opened.entries[0].startsWith("Settings"), opened.disabled[0]], [true, true]);
+	check(
+		"the first is the playground, and it is off",
+		[opened.entries[0].startsWith("Settings"), opened.disabled[0]],
+		[true, true],
+	);
 	check("the second says what it does", opened.entries[1], "Show the source");
 
 	const settingsAt = await centreOf(".wg-inline-settings");
 	await clickAt(settingsAt[0], settingsAt[1]);
-	check("pressing the one that is off leaves the widget alone", await ask(`Boolean(document.querySelector(".wgc-code"))`), true);
+	check(
+		"pressing the one that is off leaves the widget alone",
+		await ask(`Boolean(document.querySelector(".wgc-code"))`),
+		true,
+	);
 
 	if (!(await ask(`Boolean(document.querySelector(".wg-kit-pop.is-open"))`))) {
 		const again = await centreOf(".wg-inline-more");

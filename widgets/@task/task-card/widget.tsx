@@ -179,7 +179,12 @@ const CSS = `
 }
 `;
 
-const STATUS_LABELS: Record<string, string> = { approve: "Approve", check: "Check", reject: "Reject", review: "Review" };
+const STATUS_LABELS: Record<string, string> = {
+	approve: "Approve",
+	check: "Check",
+	reject: "Reject",
+	review: "Review",
+};
 
 // CONTEXT: four circles is 88px of a 256px row — a fifth pushed the dates off the card
 const AVATAR_CAP = 3;
@@ -297,7 +302,11 @@ function Avatars({ initials }: { initials: string[] }) {
 	return (
 		<span className="orbi-task-card-avatars">
 			{shown.map((initial, index) => (
-				<i key={`${initial}-${index}`} className="orbi-task-card-avatar" style={AVATAR_TONE_STYLES[index % AVATAR_TONE_STYLES.length]}>
+				<i
+					key={`${initial}-${index}`}
+					className="orbi-task-card-avatar"
+					style={AVATAR_TONE_STYLES[index % AVATAR_TONE_STYLES.length]}
+				>
 					{initial}
 				</i>
 			))}
@@ -330,47 +339,50 @@ function shownText(value: unknown): string | null {
 	return String(value);
 }
 
-export default createWidget(function OrbiTaskCard({ task }: CardProps) {
-	const card: Task = useValue(task) ?? {};
-	const initials = initialsOf(card.initials);
+export default createWidget(
+	function OrbiTaskCard({ task }: CardProps) {
+		const card: Task = useValue(task) ?? {};
+		const initials = initialsOf(card.initials);
 
-	return (
-		<WidgetRoot className="orbi wg-kit-card orbi-task-card">
-			<style>{CSS}</style>
+		return (
+			<WidgetRoot className="orbi wg-kit-card orbi-task-card">
+				<style>{CSS}</style>
 
-			<TagStripes tags={toList(card.tags)} tones={toToneMap(card.tagTones)} />
+				<TagStripes tags={toList(card.tags)} tones={toToneMap(card.tagTones)} />
 
-			<div className="orbi-task-card-head">
-				<div className="orbi-task-card-titlebox">
-					<h4 className="orbi-task-card-title">{card.title ?? "Untitled"}</h4>
+				<div className="orbi-task-card-head">
+					<div className="orbi-task-card-titlebox">
+						<h4 className="orbi-task-card-title">{card.title ?? "Untitled"}</h4>
+					</div>
+					<Badges priority={shownText(card.priority)} status={shownText(card.status)} />
 				</div>
-				<Badges priority={shownText(card.priority)} status={shownText(card.status)} />
-			</div>
 
-			<ProgressTrack progress={shownProgress(card.progress)} />
+				<ProgressTrack progress={shownProgress(card.progress)} />
 
-			<MetaRow due={card.due} files={card.files} initials={initials} />
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		task: {
-			label: "Task",
-			hint: "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
-			default: {
-				from: "typed",
-				value: {
-					title: "Design the onboarding flow",
-					tags: ["design", "research"],
-					tagTones: { design: "warning", research: "accent" },
-					priority: "P1",
-					status: "approve",
-					progress: 60,
-					due: "12 Aug",
-					files: 2,
-					initials: ["Alex Morgan", "Mia Tan", "Theo Ruiz"],
+				<MetaRow due={card.due} files={card.files} initials={initials} />
+			</WidgetRoot>
+		);
+	},
+	{
+		props: {
+			task: {
+				label: "Task",
+				hint: "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
+				default: {
+					from: "typed",
+					value: {
+						title: "Design the onboarding flow",
+						tags: ["design", "research"],
+						tagTones: { design: "warning", research: "accent" },
+						priority: "P1",
+						status: "approve",
+						progress: 60,
+						due: "12 Aug",
+						files: 2,
+						initials: ["Alex Morgan", "Mia Tan", "Theo Ruiz"],
+					},
 				},
 			},
 		},
 	},
-});
+);

@@ -1,8 +1,28 @@
-import { applyTabStep, archivedOf, createWidget, EditableTabs, Mounted, movesRows, movesSelection, tabsOf, useData, WidgetRoot } from "widgetarium";
-import type { ConfigureMounts, GetAction, MountEntry, MountRow, UpdateAction, ValueGateway, WidgetCatalogue } from "widgetarium";
+import {
+	applyTabStep,
+	archivedOf,
+	createWidget,
+	EditableTabs,
+	Mounted,
+	movesRows,
+	movesSelection,
+	tabsOf,
+	useData,
+	WidgetRoot,
+} from "widgetarium";
+import type {
+	ConfigureMounts,
+	GetAction,
+	MountEntry,
+	MountRow,
+	UpdateAction,
+	ValueGateway,
+	WidgetCatalogue,
+} from "widgetarium";
 import { Button } from "widgetarium/kit";
 
-const GONE_FOR_GOOD = "The view goes for good, with the widget in it and everything it was set to. This cannot be undone.";
+const GONE_FOR_GOOD =
+	"The view goes for good, with the widget in it and everything it was set to. This cannot be undone.";
 const PICK_ONE = "Pick one and it fills this tab. The name stays yours.";
 const CATALOGUE_CLOSED = "The widget catalogue is switched off here, so this tab cannot be filled.";
 
@@ -96,26 +116,26 @@ type ViewGroupProps = {
 	catalogue: WidgetCatalogue;
 };
 
-export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection, mounts, configureMounts, catalogue }: ViewGroupProps) {
-	const held: MountEntry[] = mounts?.holds ?? [];
-	// CONTEXT: the strip does not own the list — the holds rows are its storage
-	const rows = held.map(rowOf);
-	const tabs = tabsOf(rows);
-	const archived = archivedOf(rows);
-	const shown = held.filter((entry) => !entry.hidden);
-	const isStriped = useData(isTabsShown.get).data !== false && Boolean(configureMounts);
+export default createWidget(
+	function OrbiTaskViewGroup({ isTabsShown, selection, mounts, configureMounts, catalogue }: ViewGroupProps) {
+		const held: MountEntry[] = mounts?.holds ?? [];
+		// CONTEXT: the strip does not own the list — the holds rows are its storage
+		const rows = held.map(rowOf);
+		const tabs = tabsOf(rows);
+		const archived = archivedOf(rows);
+		const shown = held.filter((entry) => !entry.hidden);
+		const isStriped = useData(isTabsShown.get).data !== false && Boolean(configureMounts);
 
-	const wanted = useData(selection.get).data;
-	const asked = shown.find((entry) => entry.name === wanted);
-	const active = asked ?? shown[0];
+		const wanted = useData(selection.get).data;
+		const asked = shown.find((entry) => entry.name === wanted);
+		const active = asked ?? shown[0];
 
-	const apply = (step: Step) => {
-		if (movesSelection(step)) selection.update(step.selected ?? "");
-		if (movesRows(step)) configureMounts?.("holds", applyTabStep(rows, step));
-	};
+		const apply = (step: Step) => {
+			if (movesSelection(step)) selection.update(step.selected ?? "");
+			if (movesRows(step)) configureMounts?.("holds", applyTabStep(rows, step));
+		};
 
-	const strip = isStriped
-		? (
+		const strip = isStriped ? (
 			<EditableTabs
 				className="ovg-strip"
 				tabs={tabs}
@@ -124,57 +144,61 @@ export default createWidget(function OrbiTaskViewGroup({ isTabsShown, selection,
 				onChange={apply}
 				deleteWarning={GONE_FOR_GOOD}
 			/>
-		)
-		: null;
+		) : null;
 
-	if (!active) {
+		if (!active) {
+			return (
+				<WidgetRoot className="orbi orbi-view-group ovg-stack">
+					<style>{STYLE}</style>
+					{strip}
+					<div className="ovg-held orbi-view-group">
+						<div className="ovg-empty">
+							<b>This group holds no views</b>
+							<p className="ovg-empty-note">
+								Add the widgets it should hold in its Views setting, and give each one a name.
+							</p>
+						</div>
+					</div>
+				</WidgetRoot>
+			);
+		}
+
+		const fill = async () => {
+			const id = await catalogue.open({ mode: "mount" });
+			if (!id) return;
+			configureMounts?.(
+				"holds",
+				rows.map((row) => (row.name === active.name ? { ...row, widget: id } : row)),
+			);
+		};
+
+		const body = viewBody(active, catalogue, fill);
+		if (!isStriped && !active.problem) return body;
+
 		return (
 			<WidgetRoot className="orbi orbi-view-group ovg-stack">
 				<style>{STYLE}</style>
 				{strip}
-				<div className="ovg-held orbi-view-group">
-					<div className="ovg-empty">
-						<b>This group holds no views</b>
-						<p className="ovg-empty-note">
-							Add the widgets it should hold in its Views setting, and give each one a name.
-						</p>
-					</div>
-				</div>
+				<div className="ovg-held">{body}</div>
 			</WidgetRoot>
 		);
-	}
-
-	const fill = async () => {
-		const id = await catalogue.open({ mode: "mount" });
-		if (!id) return;
-		configureMounts?.("holds", rows.map((row) => (row.name === active.name ? { ...row, widget: id } : row)));
-	};
-
-	const body = viewBody(active, catalogue, fill);
-	if (!isStriped && !active.problem) return body;
-
-	return (
-		<WidgetRoot className="orbi orbi-view-group ovg-stack">
-			<style>{STYLE}</style>
-			{strip}
-			<div className="ovg-held">{body}</div>
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		selection: {
-			label: "Shown view",
-			hint: "Which held widget is drawn. Bind a switcher and the two move together.",
-			of: "holds",
-			field: "value",
-			fallback: "first",
-		},
-		isTabsShown: {
-			wasSetting: true,
-			type: "boolean",
-			label: "Show the tab row",
-			design: true,
-			default: { value: true },
+	},
+	{
+		props: {
+			selection: {
+				label: "Shown view",
+				hint: "Which held widget is drawn. Bind a switcher and the two move together.",
+				of: "holds",
+				field: "value",
+				fallback: "first",
+			},
+			isTabsShown: {
+				wasSetting: true,
+				type: "boolean",
+				label: "Show the tab row",
+				design: true,
+				default: { value: true },
+			},
 		},
 	},
-});
+);

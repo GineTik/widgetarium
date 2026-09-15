@@ -14,15 +14,15 @@ commit in a lockfile, and nothing updates itself.
 
 ## 1. What already exists, and what the catalogue may not rebuild
 
-| the thing | where | what it means here |
-|---|---|---|
-| `WidgetRegistry.load()` | `src/registry.js` | the installed list ALREADY exists — polled every 500ms, compiled, keyed by manifest id |
-| a load failure is an entry | `registry.js:loadOne` catch | a widget that will not compile is `{ manifest, error }`, not an absence |
+| the thing                      | where                                        | what it means here                                                                           |
+| ------------------------------ | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `WidgetRegistry.load()`        | `src/registry.js`                            | the installed list ALREADY exists — polled every 500ms, compiled, keyed by manifest id       |
+| a load failure is an entry     | `registry.js:loadOne` catch                  | a widget that will not compile is `{ manifest, error }`, not an absence                      |
 | live widget scaled in a dialog | `src/settings-window.js` + `settings-fit.js` | `transform: scale(n)` on the widget's own box, pan, zoom, a 0.7 floor with a measured reason |
-| `viewHost(host)` | `src/engine/view-host.js` | a widget sees `platform`, `can`, `ui.notify`, `ui.renderMarkdown`. Nothing else |
-| `collapseBelowPx` → chip | `src/chip.js` | a widget too narrow to be itself already knows how to draw a stand-in |
-| the palette | `surface.js:1137` | today's "add widget": a row of text chips over `registry.list()` |
-| the slot dropdown | `settings-window.js:213` | today's slot picking: every widget in the registry, unfiltered, by title |
+| `viewHost(host)`               | `src/engine/view-host.js`                    | a widget sees `platform`, `can`, `ui.notify`, `ui.renderMarkdown`. Nothing else              |
+| `collapseBelowPx` → chip       | `src/chip.js`                                | a widget too narrow to be itself already knows how to draw a stand-in                        |
+| the palette                    | `surface.js:1137`                            | today's "add widget": a row of text chips over `registry.list()`                             |
+| the slot dropdown              | `settings-window.js:213`                     | today's slot picking: every widget in the registry, unfiltered, by title                     |
 
 The catalogue replaces the last two and reuses the first four. **It builds no second inventory.**
 The registry is the installed list; the remote index is a second list that merges into it by
@@ -193,11 +193,11 @@ advisory from day one, not after the first complaint.
 **Decision: the fast path is the default press, and it differs per mode. The detail page is never
 the primary press.**
 
-| opened as | primary press does | dialog? |
-|---|---|---|
-| `place` (palette, command palette) | adds the tile at `defaultSize`, closes | no |
-| `slot` (from a slot row) | fills the slot, closes | no |
-| any mode, widget NOT installed | opens the install dialog | yes, once |
+| opened as                          | primary press does                     | dialog?   |
+| ---------------------------------- | -------------------------------------- | --------- |
+| `place` (palette, command palette) | adds the tile at `defaultSize`, closes | no        |
+| `slot` (from a slot row)           | fills the slot, closes                 | no        |
+| any mode, widget NOT installed     | opens the install dialog               | yes, once |
 
 The conflict the user felt is real but it is not "fast vs detailed" — it is **"when does a press
 cost something"**. Adding a tile is free and reversible. Fetching and running someone's code is
@@ -346,18 +346,18 @@ that works.
 
 ```jsonc
 {
-  "readme": "README.md",
-  "repository": "https://github.com/…",
-  "links": { "home": "…", "support": "…" },
-  "author": { "name": "…", "url": "…" },
+	"readme": "README.md",
+	"repository": "https://github.com/…",
+	"links": { "home": "…", "support": "…" },
+	"author": { "name": "…", "url": "…" },
 
-  "preview": {
-    "size": { "w": 6, "h": 4 },
-    "sources": { "tasks": { "rows": [ /* records, shape of the source's record type */ ] } },
-    "context": { "board": "Marketing Team" }
-  },
+	"preview": {
+		"size": { "w": 6, "h": 4 },
+		"sources": { "tasks": { "rows": [/* records, shape of the source's record type */] } },
+		"context": { "board": "Marketing Team" },
+	},
 
-  "accepts": { "task": { "required": ["title"], "optional": ["status", "due"] } }
+	"accepts": { "task": { "required": ["title"], "optional": ["status", "due"] } },
 }
 ```
 
@@ -421,11 +421,19 @@ Steps 0–4 stand, and step 5 is built except the fetch of the index itself.
 absent index simply means All and Installed show the same list. Its shape:
 
 ```jsonc
-{ "widgets": [
-  { "id": "@demo/clock", "title": "Clock",
-    "repository": "https://github.com/acme/widgets", "ref": "main",
-    "path": "widgets/@demo/clock", "files": ["manifest.json", "widget.jsx"],
-    "defaultSize": { "w": 3, "h": 2 } } ] }
+{
+	"widgets": [
+		{
+			"id": "@demo/clock",
+			"title": "Clock",
+			"repository": "https://github.com/acme/widgets",
+			"ref": "main",
+			"path": "widgets/@demo/clock",
+			"files": ["manifest.json", "widget.jsx"],
+			"defaultSize": { "w": 3, "h": 2 },
+		},
+	],
+}
 ```
 
 No sample file ships, because no curated repository exists yet and an index pointing at nothing

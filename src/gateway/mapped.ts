@@ -91,7 +91,9 @@ export interface MappingSpec {
 }
 
 async function fieldsBehind(base: CollectionGateway<unknown>): Promise<FieldReport[]> {
-	const describe = (base as unknown as Held)["describe"] as (() => Promise<FieldReport[]>) & { can(): { can: boolean } };
+	const describe = (base as unknown as Held)["describe"] as (() => Promise<FieldReport[]>) & {
+		can(): { can: boolean };
+	};
 	if (typeof describe === "function" && describe.can().can) return describe();
 	const listed = await base.list();
 	return fieldsOf(listed.rows.map((row) => row.value));
@@ -115,7 +117,10 @@ function readsRows<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionO
 	return async (query: Query | void): Promise<RowsResult<T>> => {
 		const { map } = await resolutionOf();
 		const listed = await base.list(renamedQuery(query, spec.needs, map) as Query);
-		return { ...listed, rows: listed.rows.map((row) => ({ ...row, value: renamedValue(row.value, spec.needs, map) as T })) };
+		return {
+			...listed,
+			rows: listed.rows.map((row) => ({ ...row, value: renamedValue(row.value, spec.needs, map) as T })),
+		};
 	};
 }
 
@@ -141,7 +146,11 @@ function createsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolution
 	};
 }
 
-function mappedHandlers<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading): Record<string, Handler> {
+function mappedHandlers<T>(
+	base: CollectionGateway<T>,
+	spec: MappingSpec,
+	resolutionOf: Reading,
+): Record<string, Handler> {
 	const mapped: Record<string, unknown> = {
 		get: readsOne(base, spec, resolutionOf),
 		update: writesOne(base, spec, resolutionOf),

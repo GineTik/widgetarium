@@ -39,7 +39,12 @@ export function dependenciesFrom(names, lockfile) {
 	const dependencies = {};
 	for (const name of names) {
 		const version = lockfile?.packages?.[`node_modules/${name}`]?.version;
-		if (!version) return { ok: false, dependencies: null, failure: `"${name}" is imported by the widget, and the lockfile pins no version for it` };
+		if (!version)
+			return {
+				ok: false,
+				dependencies: null,
+				failure: `"${name}" is imported by the widget, and the lockfile pins no version for it`,
+			};
 		dependencies[name] = `^${version}`;
 	}
 	return { ok: true, dependencies, failure: null };

@@ -12,3 +12,5 @@ tools/fixture
 tools/fixture-boards
 tools/fixture-react
 tools/fixture-records
+.design
+docs/reference

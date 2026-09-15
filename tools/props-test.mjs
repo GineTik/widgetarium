@@ -26,7 +26,10 @@ check(
 );
 
 for (const [id, wanted] of Object.entries(frozen)) {
-	check(`${id}: the engine resolves the props it was declaring before they moved`, differences(wanted, resolved[id] ?? null, [id]));
+	check(
+		`${id}: the engine resolves the props it was declaring before they moved`,
+		differences(wanted, resolved[id] ?? null, [id]),
+	);
 }
 
 function manifestsStillDeclaringProps() {
@@ -35,7 +38,8 @@ function manifestsStillDeclaringProps() {
 		for (const folder of fs.readdirSync(path.join("widgets", scope))) {
 			const at = path.join("widgets", scope, folder, "manifest.json");
 			if (!fs.existsSync(at)) continue;
-			if (JSON.parse(fs.readFileSync(at, "utf8")).props) found.push(`${at}: props belong beside the component that reads them`);
+			if (JSON.parse(fs.readFileSync(at, "utf8")).props)
+				found.push(`${at}: props belong beside the component that reads them`);
 		}
 	}
 	return found;
@@ -68,7 +72,11 @@ export default createWidget(function Dial() {
 
 check(
 	"a vault whose manifest still carries props keeps answering with them",
-	differences({ hours: { kind: "value", type: "number", label: "Hours", verbs: { get: "required" } } }, (await propsAsTheEngineResolvesThem(MANIFEST_ONLY))["@old/dial"], ["@old/dial"]),
+	differences(
+		{ hours: { kind: "value", type: "number", label: "Hours", verbs: { get: "required" } } },
+		(await propsAsTheEngineResolvesThem(MANIFEST_ONLY))["@old/dial"],
+		["@old/dial"],
+	),
 );
 
 check(
