@@ -1,0 +1,443 @@
+findings:
+  - id: F-001
+    round: 1
+    snapshot: snap-1
+    reviewer: conditional-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 157
+    claim: "sharedWidths guards widthsOf/growsOf with free.length > 0, but both already answer [] for an empty array — the guard duplicates the callee's own guarantee"
+    scope: hunk
+  - id: F-002
+    round: 1
+    snapshot: snap-1
+    reviewer: conditional-reviewer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 1157
+    claim: "edgeBetween tests `before` twice for the same fact; one guard clause up front flattens it"
+    scope: hunk
+  - id: F-003
+    round: 1
+    snapshot: snap-1
+    reviewer: conditional-reviewer
+    severity: minor
+    status: in_progress
+    file: src/gateway/refs.ts
+    line: 427
+    claim: "canWriteEither in pickedGateway re-derives the very pair pickedWrites already holds — one conclusion written in two places; canDo in create.ts is the project's own helper and has no caller at all"
+    scope: hunk
+  - id: F-004
+    round: 1
+    snapshot: snap-1
+    reviewer: typed-api-boundary-reviewer
+    severity: major
+    status: in_progress
+    file: src/gateway/create.ts
+    line: 92
+    claim: "buildVerb refuses before it reads options.cans, so a can() declared for a verb with no handler is silently dropped and the caller gets the generic reason instead of the authored one"
+    scope: hunk
+  - id: F-005
+    round: 1
+    snapshot: snap-1
+    reviewer: typed-api-boundary-reviewer
+    severity: major
+    status: in_progress
+    file: src/gateway/refs.ts
+    line: 291
+    claim: "the late-bound write handler casts refs.get(ref)[verb] to WriteVerb with no runtime narrowing: a published gateway whose update is present but not callable throws a raw TypeError instead of the NOTHING_PUBLISHED refusal this handler exists to give"
+    scope: hunk
+  - id: F-006
+    round: 1
+    snapshot: snap-1
+    reviewer: typed-api-boundary-reviewer
+    severity: minor
+    status: in_progress
+    file: src/gateway/refs.ts
+    line: 408
+    claim: "`if (!spec.collection.update && !spec.inTile?.update)` can never be true on its collection half — CollectionGateway always carries an update action — so the guard reads as protecting both sides while testing only the tile"
+    scope: hunk
+  - id: F-007
+    round: 1
+    snapshot: snap-1
+    reviewer: duplication-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 384
+    claim: "widenedBox re-derives roomLeftBy's own reduce three lines below the named version"
+    scope: hunk
+  - id: F-008
+    round: 1
+    snapshot: snap-1
+    reviewer: duplication-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 113
+    claim: "floorOf, shortestIn and tallestIn are one tree walk with the read field swapped; a fourth manifest limit would be written as a fourth copy"
+    scope: hunk
+  - id: F-009
+    round: 1
+    snapshot: snap-1
+    reviewer: principles-reviewer
+    severity: major
+    status: in_progress
+    file: src/gateway/refs.ts
+    line: 402
+    claim: "principle 3 and 10: pickedGateway's can(update) says true when either side can write, while the handler holds a third condition can() knows nothing about and returns null on it — the same silent no-op this change fixed one level up in delegatedWrites"
+    scope: hunk
+  - id: F-010
+    round: 1
+    snapshot: snap-1
+    reviewer: duplication-reviewer
+    severity: critical
+    status: fixed
+    fixed_by: session, before the batch
+    file: src/main.js
+    line: 395
+    claim: "writeBlock's trace read job.board.layouts, a field normalizeBoard no longer returns, so Object.keys(undefined) threw on every block write and no board could be saved in Obsidian"
+    scope: outside
+  - id: F-011
+    round: 1
+    snapshot: snap-1
+    reviewer: principles-reviewer
+    severity: major
+    status: in_progress
+    file: src/surface.js
+    line: 1295
+    claim: "principle 4: a note whose root box carries no keep child is a legal shape (columnsOf answers `alone`), but the overlay is hung on `at === keep` only, so with keep === -1 every tile the tree does not name goes unmounted and the refs it publishes die"
+    scope: hunk
+  - id: F-012
+    round: 1
+    snapshot: snap-1
+    reviewer: principles-reviewer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 1559
+    claim: "principle 5: commitLayout takes a finished tree computed from a root read at render or at pointer-down, and a carry lives seconds; the transition belongs inside the write — commitLayout((held) => movedInto(held, id, target))"
+    scope: hunk
+  - id: F-013
+    round: 1
+    snapshot: snap-1
+    reviewer: principles-reviewer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 1664
+    claim: "principle 10: addTileInto returns silently when the box the catalogue was opened from is gone — the person's pick dies with no log, no notice and no reason"
+    scope: hunk
+  - id: F-014
+    round: 1
+    snapshot: snap-1
+    reviewer: principles-reviewer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 1654
+    claim: "principle 2: a fresh tile id is minted in two places — bornTile and an inline `w${Math.random()}` in foldIntoGroup"
+    scope: hunk
+  - id: F-015
+    round: 1
+    snapshot: snap-1
+    reviewer: principles-reviewer
+    severity: nit
+    status: deferred
+    file: src/model.js
+    line: 300
+    claim: "pixelHeight re-derives cells to pixels, which spanToPixels in paths.js already owns and this diff moved there"
+    scope: hunk
+  - id: F-016
+    round: 1
+    snapshot: snap-1
+    reviewer: flow-optimizer
+    severity: major
+    status: in_progress
+    file: src/surface.js
+    line: 1279
+    claim: "TreeRegion is handed root: drawn — the carry PREVIEW tree — and its ratio and height grips commit withRatios/withHeight against it, so a resize during a carry writes the uncommitted preview as truth; every other writer commits against board.layout"
+    scope: hunk
+  - id: F-017
+    round: 1
+    snapshot: snap-1
+    reviewer: flow-optimizer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 1624
+    claim: "removeTile, foldIntoGroup and addTileInto each re-derive `latestRef.current?.board ?? board` and build their own onChange, so the stale-board guard is copy-pasted four times and commitLayout is not the single writer it claims to be"
+    scope: hunk
+  - id: F-018
+    round: 1
+    snapshot: snap-1
+    reviewer: flow-optimizer
+    severity: minor
+    status: in_progress
+    file: src/model.js
+    line: 300
+    claim: "pixelHeight puts cells-to-pixels arithmetic in the data model and drags GRID into model.js; it belongs in tree.js, which owns layout arithmetic"
+    scope: hunk
+  - id: F-019
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: major
+    status: in_progress
+    file: src/tree.js
+    line: 280
+    claim: "`at` means a sibling index everywhere in tree.js except the drag-aiming functions, where it means a pointer coordinate — and aimedAt turns one into the other three lines apart"
+    scope: hunk
+  - id: F-020
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: major
+    status: in_progress
+    file: src/surface.js
+    line: 786
+    claim: "`held` names six unrelated shapes in surface.js, including both context bags; the tree-render bag is built as `held` and the board bag as `chrome`, while every receiving function calls its parameter `held`"
+    scope: hunk
+  - id: F-021
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: major
+    status: in_progress
+    file: src/surface.js
+    line: 770
+    claim: "useDroppedDrag and useDroppedCarry fire on unmount, not on a drop — and `drop` is this feature's own word for the pointer being released"
+    scope: hunk
+  - id: F-022
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 126
+    claim: "heightHeld and widenedBox do the same clamping job under two incompatible name shapes, and heightHeld reads as a getter for a stored value"
+    scope: hunk
+  - id: F-023
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 113
+    claim: "shortestIn and tallestIn carry an `In` suffix where the file's convention for a value derived from a node is `Of` (floorOf, heightOf, sideOf, limitsOf)"
+    scope: hunk
+  - id: F-024
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 69
+    claim: "survives and carriedFar are the only booleans in the diff without the is/has prefix the rest of it keeps"
+    scope: hunk
+  - id: F-025
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 1405
+    claim: "heldRowsFor returns { rows, mounted } and widestPlaces returns { columns, places } — both names promise less than they hand back"
+    scope: hunk
+  - id: F-026
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: minor
+    status: in_progress
+    file: src/model.js
+    line: 300
+    claim: "pixelHeight(cells) takes a row span, while `cells` names a collection of tiles everywhere else in this codebase"
+    scope: hunk
+  - id: F-027
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: minor
+    status: in_progress
+    file: src/surface.js
+    line: 607
+    claim: "heldPointer reads as a noun but drives a whole drag gesture to completion"
+    scope: hunk
+  - id: F-028
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: nit
+    status: deferred
+    file: src/model.js
+    line: 248
+    claim: "rowNode promises a row box and hands back a bare leaf for a single cell"
+    scope: hunk
+  - id: F-029
+    round: 1
+    snapshot: snap-1
+    reviewer: naming-reviewer
+    severity: nit
+    status: deferred
+    file: src/tree.js
+    line: 168
+    claim: "deeper says the result is further along, not that it extends the descent path"
+    scope: hunk
+  - id: F-030
+    round: 1
+    snapshot: snap-1
+    reviewer: dead-code-reviewer
+    severity: minor
+    status: in_progress
+    file: styles.css
+    line: 260
+    claim: "the grid's chrome still ships as CSS nothing can match: .wg-grid, .wg-cells, .wg-toolbar, .wg-tool, .wg-toolbar-gap, .wg-state, .wg-state-reset, .wg-grip and its eight edges, .wg-grip-arc, .wg-palette, .wg-chip and its variants, .wg-tile-chip.is-open — every emitter was deleted with the grid"
+    scope: hunk
+  - id: F-031
+    round: 1
+    snapshot: snap-1
+    reviewer: dead-code-reviewer
+    severity: minor
+    status: in_progress
+    file: src/tree.js
+    line: 19
+    claim: "isLeaf, ROW_EDGE_SHARE and ROW_EDGE_CEILING_PX are exported and imported by nobody (verified including .mjs and .jsx: SIDEBAR_PX, MAIN_FLOOR_PX and DRAWER_MAX_PX do have a test consumer and keep their export; tree-page's heightOf is its own local, not this one)"
+    scope: hunk
+  - id: F-032
+    round: 1
+    snapshot: snap-1
+    reviewer: dead-code-reviewer
+    severity: minor
+    status: deferred
+    file: src/surface.js
+    line: 1521
+    claim: "size.collapse() and size.expand() are handed to every widget as hardcoded no-ops now that the grid's foldTile is gone — a widget-facing contract decision, already flagged by the TODO in tools/interact-test.mjs, not a fix to make inside this change"
+    scope: hunk
+  - id: F-033
+    round: 1
+    snapshot: snap-1
+    reviewer: dead-code-reviewer
+    severity: nit
+    status: out_of_scope
+    file: styles.css
+    line: 2562
+    claim: "`.wg-cat-frame .wg-cells` matches nothing in the catalogue either, but it predates this change"
+    scope: outside
+  - id: F-034
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: critical
+    status: fixed
+    fixed_by: session, in the main tree — insertedAt answers null, movedInto refuses the whole move, layoutWithHolder seats the holder in the first real box and addTileInto checks isBox; four new checks in tree-test and view-test, each shown to go red on a deliberate break and restored md5-identical
+    file: src/tree.js
+    line: 57
+    claim: "insertedAt returns the tree it was GIVEN when the target path is not a box, and movedInto passes the tree whose carried leaf is already the GONE sentinel — so a `beside` drop onto a root child that is a leaf DELETES the carried tile; the wrap branch has this guard, the beside branch has none. Two entrances: a hand-edited layout whose root child is a leaf, and layoutWithHolder's Math.max(keptAt, 0) retarget on a board with no keep box, which also drops every folded view tile. addTileInto has the sibling gap: `if (!box) return` accepts a leaf and then reads box.of.length"
+    scope: hunk
+  - id: F-035
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: minor
+    status: open
+    file: src/surface.js
+    line: 972
+    claim: "drop targets are measured once at lift while the preview reflows the board under the pointer, so after the first aim the geometry the pointer is judged against is stale — the same design the old region carry had, now with more places to be wrong"
+    scope: hunk
+  - id: F-036
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: major
+    status: open
+    file: src/surface.js
+    line: 1334
+    claim: "a board with no keep box renders through `alone.map((at) => region(at, width))`, and because `at === keep` is false for keep === -1 the region gets `flex: 0 0 <board width>px` inside a column container, where flex-basis is the HEIGHT — every region becomes as tall as the board is wide"
+    scope: hunk
+  - id: F-037
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: major
+    status: open
+    file: src/tree.js
+    line: 366
+    claim: "columnsOf floats any root child that cannot stand, but regionBar only draws a toggle for foldableIn — so a non-foldable extra root child, or a second keep box, becomes a drawer with no handle and its widgets are unreachable"
+    scope: hunk
+  - id: F-038
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: minor
+    status: open
+    file: src/model.js
+    line: 316
+    claim: "rootFromPlaces builds its leaves inline instead of through normalizeLeaf, so a corrupt grid place with w: -1 becomes ratio: -1, widthsOf divides by a total of 0 and the row is laid out at Infinity for one render"
+    scope: hunk
+  - id: F-039
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: minor
+    status: open
+    file: src/model.js
+    line: 338
+    claim: "ratio: 0 is written (serializeNode omits only ratio === 1) and read back as 1 (positiveNumber rejects 0), so a column dragged fully closed springs back on reload — reachable without a hand edit, because resized clamps to minPx ?? 0"
+    scope: hunk
+  - id: F-040
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: minor
+    status: open
+    file: src/model.js
+    line: 338
+    claim: "serializeNode spreads every flag, so folded: false lands in the note on each unfold — the read side ignores it, but a fold/unfold pair dirties the file with a key the format does not need"
+    scope: hunk
+  - id: F-041
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: minor
+    status: open
+    file: src/model.js
+    line: 280
+    claim: "placesOf never checks a place's id against tiles, so a place naming a tile the board does not hold becomes a leaf forever: cellElement draws nothing, bandElement still emits a band and a height grip, and the row still gives it a ratio share"
+    scope: hunk
+  - id: F-042
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: minor
+    status: open
+    file: src/gateway/refs.ts
+    line: 301
+    claim: "refCollection still takes a first-render snapshot for its id, and that id is the gateway cache key — a proxy built before the ref was published keeps `ref:<ref>?` for life while one built after carries the target's id"
+    scope: hunk
+  - id: F-043
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: nit
+    status: deferred
+    file: src/tree.js
+    line: 44
+    claim: "two leaves can share an id (a YAML alias produces it without typing the id twice) and nothing detects it: pathOfLeaf, withoutLeaf and flyGhostHome all take the first"
+    scope: hunk
+  - id: F-044
+    round: 1
+    snapshot: snap-1
+    reviewer: edge-case-reviewer
+    severity: nit
+    status: deferred
+    file: src/model.js
+    line: 215
+    claim: "a height bigger than the screen is accepted on read and applied unchanged; the only clamp, heightHeld, runs while a grip is dragged"
+    scope: hunk
