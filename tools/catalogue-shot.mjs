@@ -73,7 +73,7 @@ function pageFor(theme, mode) {
 		theme,
 		title,
 		lead,
-		body: `<script>window.__FILES__=${JSON.stringify(files)};window.__MODE__=${JSON.stringify(mode)};window.__SLOT__=${JSON.stringify(SLOT)};</script>\n<script>${bundle}</script>`,
+		body: `<script>window.__FILES__=${JSON.stringify(files)};window.__MODE__=${JSON.stringify(mode)};window.__SLOT__=${JSON.stringify(SLOT)};window.__SHOTS_AT__=${JSON.stringify(`file://${path.resolve(SOURCE)}`)};window.__WIDGETS_DIR__=${JSON.stringify(WIDGETS_DIR)};</script>\n<script>${bundle}</script>`,
 	});
 }
 
@@ -95,6 +95,14 @@ for (const [index, theme] of ["light", "dark"].entries()) {
 	if (failures) {
 		broken += 1;
 		console.error(`${theme}: the page reported\n${failures}`);
+	}
+	if (seen.shotsLoaded !== seen.tiles || seen.shotsAsked !== seen.tiles) {
+		broken += 1;
+		console.error(`${theme}: ${seen.shotsLoaded} of ${seen.shotsAsked} shots loaded across ${seen.tiles} tiles`);
+	}
+	if (seen.shotThemes?.length !== 1 || seen.shotThemes[0] !== `shot-${theme}.png`) {
+		broken += 1;
+		console.error(`${theme}: the cards drew ${JSON.stringify(seen.shotThemes)}, wants only shot-${theme}.png`);
 	}
 	if (!seen.tiles) {
 		broken += 1;

@@ -86,7 +86,7 @@ body { margin: 0; padding: 28px 32px; ${THEMES[theme]}
 	${HOST_TOKENS} }
 ${WHOLE_SCROLL}
 ${HARNESS_CHROME}
-</style></head><body class="wg-root">
+</style></head><body class="wg-root theme-${theme}">
 <div class="harness-top"><h1>${title}</h1><span>${lead}</span></div>
 <div id="host"></div><pre id="boom" class="harness-boom"></pre><pre id="count" hidden></pre>
 ${body}

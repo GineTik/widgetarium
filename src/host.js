@@ -362,6 +362,10 @@ export function createHost(app, plugin, notePath = "") {
 		// CONTEXT: `systemRun` was declared here and read by nobody — console.can.run owns it now
 		console: createConsole(hostTypeOf(Platform), window.require?.bind(window), app.vault.adapter?.basePath),
 
+		resourcePathOf(path) {
+			return app.vault.adapter?.getResourcePath?.(path) ?? null;
+		},
+
 		slot(binding) {
 			return createSlot(app, binding);
 		},

@@ -59,7 +59,12 @@ function Harness() {
 
 	return h(Catalogue, {
 		registry,
-		host: { platform: "obsidian", can: {}, ui: { notify() {}, renderMarkdown: () => () => {} } },
+		host: {
+			platform: "obsidian",
+			can: {},
+			ui: { notify() {}, renderMarkdown: () => () => {} },
+			resourcePathOf: (at) => `${window.__SHOTS_AT__}${at.slice(window.__WIDGETS_DIR__.length)}`,
+		},
 		mode: MODE,
 		rank: gives ? (manifest) => slotFit(manifest, gives) : undefined,
 		onPick: () => {},
@@ -138,6 +143,11 @@ setTimeout(() => {
 		lacks: document.querySelectorAll(".wg-cat-lack").length,
 		divides: document.querySelectorAll(".wg-cat-divide").length,
 		live: document.querySelectorAll(".wg-cat-frame").length,
+		shotsAsked: document.querySelectorAll(".wg-cat-shot").length,
+		shotsLoaded: [...document.querySelectorAll(".wg-cat-shot")].filter((node) => node.naturalWidth).length,
+		shotThemes: [
+			...new Set([...document.querySelectorAll(".wg-cat-shot")].map((node) => node.src.slice(node.src.lastIndexOf("shot-")))),
+		],
 		// THE FOG IS ON EVERY CARD, AND IT ENDS IN THE GROUND BEHIND IT. Painted only where a widget
 		// overflowed, a haze on some cards and not others reads as a fault; painted to a hardcoded
 		// white it is a grey smear on the dark theme. Both are measured here, in both themes: the

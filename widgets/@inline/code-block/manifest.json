@@ -26,6 +26,9 @@
 		"content": "main.py",
 		"files": {
 			"main.py": "import sys\n\n\ndef main(argv):\n    if not argv:\n        print(\"nothing to do\")\n        return 0\n    for name in argv:\n        print(f\"hello, {name}\")\n    return 0\n\n\nif __name__ == \"__main__\":\n    sys.exit(main(sys.argv[1:]))\n"
+		},
+		"shot": {
+			"of": "253967223"
 		}
 	}
 }

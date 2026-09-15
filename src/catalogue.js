@@ -2,6 +2,7 @@ import { createElement as h, Component } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { boardWidgets, inlineWidgets } from "./registry.js";
 import { isInstalled, mergeCatalogue } from "./engine/catalogue-index.js";
+import { WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS } from "./engine/widget-source.js";
 import {
 	Button,
 	Card,
@@ -19,8 +20,9 @@ import {
 import { rankSearch } from "./engine/search.js";
 import { drawnWidget } from "./mounted.js";
 import { previewProps, previewSize } from "./preview.js";
-import { spanToPixels } from "./layout.js";
-import { classOf, GRID } from "./paths.js";
+import { shotUrl, themeNow } from "./engine/shot.js";
+
+import { classOf, GRID, spanToPixels } from "./paths.js";
 import { TemplateGrid } from "./template-gallery.js";
 import { DOC_PAGES, docPage, pagesMatching } from "./docs.js";
 import { DocsPage } from "./docs-page.js";
@@ -76,13 +78,13 @@ const DOCUMENTATION = "Documentation";
 const BACK_TO_WIDGETS = "Back to widgets";
 const FILTERS = "Filters";
 const ADD_TO_BOARD = "Add to the board";
-const UNINSTALL = "Uninstall";
 const SHEET_DONE = "Show {count} widgets";
 const CLEAR_ALL = "Clear all";
 const MORE_TAGS = "+{count}";
 const TAGS_SHOWN = 6;
-const SHEET_PEEK_PX = 96;
-const SHEET_PAD_PX = 12;
+const SHEET_SHUT_PX = 0;
+const SHEET_LEAST_PX = 360;
+const SHEET_SHARE = 0.76;
 const COUNTED = "{count} widgets";
 const WRITING = "Writing {done} of {total} files";
 const FETCHING = "Fetching";
@@ -180,6 +182,7 @@ export function facetsOf(entries) {
 export function updateOffered(manifest, offer, lock) {
 	const here = lock?.widgets?.[manifest?.id]?.commit;
 	const there = offer?.manifest?.commit ?? offer?.commit ?? null;
+	if (here === WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS) return null;
 	if (!here || !there || here === there) return null;
 	return { here: String(here).slice(0, 7), there: String(there).slice(0, 7) };
 }
@@ -229,14 +232,28 @@ function Standin({ manifest, line, tone }) {
 	]);
 }
 
-function Preview({ definition, registry, host, tile }) {
+function Preview({ definition, registry, host, tile, entry }) {
 	const manifest = definition.manifest ?? {};
+	const [isShotFailed, setShotFailed] = useState(false);
+	const shown = isShotFailed ? null : shotUrl(entry, themeNow(), host);
 
 	if (definition.error) {
 		return h(Standin, { manifest, tone: "broken", line: "This widget does not load" });
 	}
 	if (manifest.preview?.instead) {
 		return h(Standin, { manifest, line: manifest.preview.instead });
+	}
+	if (shown) {
+		return h("img", {
+			className: "wg-cat-shot",
+			src: shown,
+			alt: manifest.title ?? manifest.id,
+			width: Math.round(tile.frameWidth),
+			height: Math.round(tile.frameHeight),
+			loading: "lazy",
+			decoding: "async",
+			onError: () => setShotFailed(true),
+		});
 	}
 	if (!definition.component) {
 		return h(Standin, { manifest, line: "Not installed yet" });
@@ -329,7 +346,7 @@ function useInstallPress({ entry, mode, onPick, onInstall }) {
 		setBusy(true);
 		setFailure(null);
 		setStep(null);
-		const done = await onInstall?.(entry.definition, setStep);
+		const done = await onInstall?.(entry.offer ?? entry.definition, setStep);
 		setBusy(false);
 		setStep(null);
 		if (!done?.ok) return setFailure(done?.failure ?? COULD_NOT_FETCH);
@@ -339,38 +356,7 @@ function useInstallPress({ entry, mode, onPick, onInstall }) {
 	return { state, step, failure, press };
 }
 
-function tileActions({ entry, state, mode, onPick, onUninstall }) {
-	const id = entry.manifest?.id;
-	const placeable = state !== "add" && state !== "busy";
-	return [
-		placeable ? { key: "add", label: ADD_TO_BOARD, run: () => onPick?.(id, mode) } : null,
-		entry.installed && onUninstall ? { key: "remove", label: UNINSTALL, run: () => onUninstall(id) } : null,
-	].filter(Boolean);
-}
-
-function TileMenu({ actions, name }) {
-	if (actions.length === 0) return null;
-	const trigger = h(
-		IconButton,
-		{ className: "wg-cat-more", variant: "raised", size: "xs", label: `${name} actions`, onClick: (event) => event.stopPropagation() },
-		h(Icon, { name: "dots", size: 14 }),
-	);
-	const item = (action) =>
-		h(
-			PopoverItem,
-			{
-				key: action.key,
-				onClick: (event) => {
-					event.stopPropagation();
-					action.run();
-				},
-			},
-			action.label,
-		);
-	return h("div", { className: "wg-cat-menu" }, h(Popover, { placement: "below", trigger }, actions.map(item)));
-}
-
-function TileStage({ definition, registry, host, tile }) {
+function TileStage({ definition, registry, host, tile, entry }) {
 	const lattice = { "--wg-cell": `${tile.cell}px`, "--wg-gap": `${tile.gap}px`, "--wg-cat-across": tile.w };
 	const frame = { width: `${Math.round(tile.frameWidth)}px`, height: `${Math.round(tile.frameHeight)}px` };
 	return h(
@@ -379,7 +365,7 @@ function TileStage({ definition, registry, host, tile }) {
 		h(
 			"div",
 			{ className: "wg-cat-frame", style: frame },
-			h("div", { className: "wg-cat-pic", inert: true }, h(Preview, { definition, registry, host, tile })),
+			h("div", { className: "wg-cat-pic", inert: true }, h(Preview, { definition, registry, host, tile, entry })),
 		),
 	);
 }
@@ -395,8 +381,12 @@ function TileName({ manifest }) {
 function TileLines({ entry, state, step, failure, lacks }) {
 	const description = entry.manifest?.description;
 	return [
-		state === "busy" ? h("p", { className: "wg-cat-step", key: "step" }, step?.total > 0 ? said(WRITING, step) : FETCHING) : null,
-		state !== "busy" && entry.update ? h("p", { className: "wg-cat-step", key: "update" }, said(OUTDATED, entry.update)) : null,
+		state === "busy"
+			? h("p", { className: "wg-cat-step", key: "step" }, step?.total > 0 ? said(WRITING, step) : FETCHING)
+			: null,
+		state !== "busy" && entry.update
+			? h("p", { className: "wg-cat-step", key: "update" }, said(OUTDATED, entry.update))
+			: null,
 		// TRADE-OFF: the sentence lives on the card, because there is no detail page to hold it
 		description ? h("p", { className: "wg-cat-what", key: "what" }, description) : null,
 		failure ? h("p", { className: "wg-cat-lack is-failure", key: "failure" }, failure) : null,
@@ -404,7 +394,7 @@ function TileLines({ entry, state, step, failure, lacks }) {
 	];
 }
 
-function Tile({ entry, tile, registry, host, mode, lacks, onPick, onInstall, onUninstall }) {
+function Tile({ entry, tile, registry, host, mode, lacks, onPick, onInstall }) {
 	const manifest = entry.manifest ?? {};
 	const name = shortName(manifest);
 	const press = `${VERBS[mode] ?? VERBS.browse} ${name}`;
@@ -425,8 +415,7 @@ function Tile({ entry, tile, registry, host, mode, lacks, onPick, onInstall, onU
 				onKeyDown: (event) => (event.key === "Enter" || event.key === " ") && run(),
 			},
 			[
-				h(TileMenu, { key: "menu", name, actions: tileActions({ entry, state, mode, onPick, onUninstall }) }),
-				h(TileStage, { key: "stage", definition: entry.definition, registry, host, tile }),
+				h(TileStage, { key: "stage", definition: entry.definition, registry, host, tile, entry }),
 				h("div", { className: "wg-cat-foot", key: "foot" }, [
 					h(TileName, { key: "said", manifest }),
 					h(CardAction, { key: "go", state, step, label: press, onPress: run }),
@@ -477,12 +466,10 @@ function Facets({
 	onPackQuery,
 	tagQuery,
 	onTagQuery,
-	allTags,
-	onAllTags,
 }) {
 	const packs = facetsMatching(facets.packs, packQuery);
 	const tags = facetsMatching(facets.tags, tagQuery);
-	const chips = allTags ? tags : tags.slice(0, TAGS_SHOWN);
+	const chips = tags.slice(0, TAGS_SHOWN);
 	const rest = tags.length - chips.length;
 
 	return [
@@ -529,26 +516,24 @@ function Facets({
 			FacetGroup,
 			{ key: "tags", label: TAGS, placeholder: SEARCH_TAGS, query: tagQuery, onQuery: onTagQuery },
 			h("div", { className: "wg-cat-tags", key: "chips" }, [
-				...chips.map((facet) =>
-					h(
-						Button,
-						{
-							key: facet.name,
-							className: tag === facet.name ? "wg-cat-tag is-on" : "wg-cat-tag",
-							size: "s",
-							variant: tag === facet.name ? "accent" : "neutral",
-							onClick: () => onTag(tag === facet.name ? null : facet.name),
-						},
-						facet.name,
+				h(
+					"div",
+					{ className: "wg-cat-tag-row", key: "row" },
+					chips.map((facet) =>
+						h(
+							Button,
+							{
+								key: facet.name,
+								className: tag === facet.name ? "wg-cat-tag is-on" : "wg-cat-tag",
+								size: "s",
+								variant: tag === facet.name ? "accent" : "neutral",
+								onClick: () => onTag(tag === facet.name ? null : facet.name),
+							},
+							facet.name,
+						),
 					),
 				),
-				rest > 0
-					? h(
-							Button,
-							{ key: "more", className: "wg-cat-tag wg-cat-more-tags", size: "s", onClick: () => onAllTags(true) },
-							said(MORE_TAGS, { count: rest }),
-						)
-					: null,
+				rest > 0 ? h("span", { key: "more", className: "wg-cat-more-tags" }, said(MORE_TAGS, { count: rest })) : null,
 			]),
 		),
 	];
@@ -586,6 +571,7 @@ export function Catalogue({
 	lock = null,
 	onPick,
 	onInstall,
+	// TODO: no entrance since the card menu went — uninstall needs one of its own
 	onUninstall,
 	onUseTemplate,
 }) {
@@ -598,8 +584,6 @@ export function Catalogue({
 	const [shelf, setShelf] = useState(mode === "template" ? "templates" : "widgets");
 	const [page, setPage] = useState(null);
 	const [isSheetOpen, setSheetOpen] = useState(false);
-	const [allTags, setAllTags] = useState(false);
-	const [sheetHeight, setSheetHeight] = useState(SHEET_PEEK_PX);
 	const rootRef = useRef(null);
 	const scrollRef = useRef(null);
 	const width = useWidth(scrollRef);
@@ -628,14 +612,16 @@ export function Catalogue({
 		const held = kind === "inline" ? inlineWidgets(registry.list()) : boardWidgets(registry.list());
 		const offered = kind === "inline" ? available.filter((entry) => entry.manifest?.inline === true) : available;
 		const offers = new Map(offered.map((entry) => [entry.manifest?.id, entry]));
-		return mergeCatalogue(held, offered).map((definition) => ({
-			definition,
-			manifest: definition.manifest ?? {},
-			installed: isInstalled(definition),
-			update: isInstalled(definition)
-				? updateOffered(definition.manifest, offers.get(definition.manifest?.id), lock)
-				: null,
-		}));
+		return mergeCatalogue(held, offered).map((definition) => {
+			const offer = offers.get(definition.manifest?.id) ?? null;
+			return {
+				definition,
+				offer,
+				manifest: definition.manifest ?? {},
+				installed: isInstalled(definition),
+				update: isInstalled(definition) ? updateOffered(definition.manifest, offer, lock) : null,
+			};
+		});
 	}, [registry, available, kind, lock]);
 
 	const counts = {
@@ -694,8 +680,6 @@ export function Catalogue({
 		onPackQuery: setPackQuery,
 		tagQuery,
 		onTagQuery: setTagQuery,
-		allTags,
-		onAllTags: setAllTags,
 	});
 
 	const head = h("div", { className: "wg-cat-side-head", key: "head" }, [
@@ -771,7 +755,6 @@ export function Catalogue({
 								lacks: entry.fit?.lacks ?? null,
 								onPick,
 								onInstall,
-								onUninstall,
 							});
 							if (index !== divide) return [card];
 							return [h("p", { className: "wg-cat-divide", key: "divide" }, SHORT_LABEL), card];
@@ -786,6 +769,18 @@ export function Catalogue({
 			page
 				? null
 				: h("div", { className: "wg-cat-top", key: "top" }, [
+						phone && !onShelf
+							? h(
+									Button,
+									{
+										key: "filters",
+										className: narrowed ? "wg-cat-filters is-on" : "wg-cat-filters",
+										size: "s",
+										onClick: () => setSheetOpen(true),
+									},
+									[h(Icon, { name: "filter", key: "mark", size: 15 }), h("span", { key: "said" }, FILTERS)],
+								)
+							: null,
 						offersBoth
 							? h(Segmented, {
 									key: "shelf",
@@ -801,7 +796,11 @@ export function Catalogue({
 							said(COUNTED, { count: onShelf ? foundTemplates.length : found.length }),
 						),
 						narrowed && !phone
-							? h(Button, { key: "clear", className: "wg-cat-clear", variant: "plain", size: "s", onClick: clearAll }, CLEAR_ALL)
+							? h(
+									Button,
+									{ key: "clear", className: "wg-cat-clear", variant: "plain", size: "s", onClick: clearAll },
+									CLEAR_ALL,
+								)
 							: null,
 					]),
 			h(
@@ -810,7 +809,6 @@ export function Catalogue({
 					key: "scroll",
 					ref: scrollRef,
 					className: "wg-cat-scroll",
-					style: phone && !page && !onShelf ? { paddingBottom: `${sheetHeight + SHEET_PAD_PX}px` } : undefined,
 				},
 				body,
 			),
@@ -818,6 +816,9 @@ export function Catalogue({
 				? h("p", { className: "wg-cat-none", key: "none" }, onShelf ? NO_TEMPLATE : NOTHING_ANSWERS)
 				: null,
 		]),
+		phone && isSheetOpen && !page && !onShelf
+			? h("div", { className: "wg-cat-scrim", key: "scrim", onClick: () => setSheetOpen(false) })
+			: null,
 		phone && !page && !onShelf
 			? h(
 					SidebarSheet,
@@ -825,20 +826,22 @@ export function Catalogue({
 						as: "aside",
 						key: "sheet",
 						surface: "glass",
-						className: "wg-cat-sheet",
+						className: isSheetOpen ? "wg-cat-sheet is-open" : "wg-cat-sheet",
 						isOpen: isSheetOpen,
 						onOpen: setSheetOpen,
-						peekPx: SHEET_PEEK_PX,
-						maxPx: Math.max(SHEET_PEEK_PX, roomHeight - 2 * SHEET_PAD_PX),
-						onHeight: setSheetHeight,
+						peekPx: SHEET_SHUT_PX,
+						maxPx: Math.max(SHEET_LEAST_PX, Math.round(roomHeight * SHEET_SHARE)),
 						grip: FILTERS,
-						style: { left: `${SHEET_PAD_PX}px`, right: `${SHEET_PAD_PX}px`, bottom: `${SHEET_PAD_PX}px` },
 					},
 					[
 						h("div", { className: "wg-cat-sheet-head", key: "head" }, [
 							h("h2", { className: "wg-cat-side-title", key: "title" }, FILTERS),
 							narrowed
-								? h(Button, { key: "clear", className: "wg-cat-clear", variant: "plain", size: "s", onClick: clearAll }, CLEAR_ALL)
+								? h(
+										Button,
+										{ key: "clear", className: "wg-cat-clear", variant: "plain", size: "s", onClick: clearAll },
+										CLEAR_ALL,
+									)
 								: null,
 						]),
 						h("div", { className: "wg-cat-sheet-body", key: "body" }, facetPanel),

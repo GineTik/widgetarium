@@ -43,26 +43,79 @@
 			},
 			"tiers": {
 				"rows": [
-					{ "label": "S", "tone": "error", "order": 1 },
-					{ "label": "A", "tone": "warning", "order": 2 },
-					{ "label": "B", "tone": "standout", "order": 3 },
-					{ "label": "C", "tone": "success", "order": 4 }
+					{
+						"label": "S",
+						"tone": "error",
+						"order": 1
+					},
+					{
+						"label": "A",
+						"tone": "warning",
+						"order": 2
+					},
+					{
+						"label": "B",
+						"tone": "standout",
+						"order": 3
+					},
+					{
+						"label": "C",
+						"tone": "success",
+						"order": 4
+					}
 				]
 			},
 			"cards": {
 				"rows": [
-					{ "name": "Pizza", "tier": "S", "order": 1 },
-					{ "name": "Ramen", "tier": "S", "order": 2 },
-					{ "name": "Dumplings", "tier": "S", "order": 3 },
-					{ "name": "Tacos", "tier": "A", "order": 4 },
-					{ "name": "Sushi", "tier": "A", "order": 5 },
-					{ "name": "Burger", "tier": "B", "order": 6 },
-					{ "name": "Pancakes", "tier": "C", "order": 7 },
-					{ "name": "Falafel" },
-					{ "name": "Pierogi" },
-					{ "name": "Ice cream" }
+					{
+						"name": "Pizza",
+						"tier": "S",
+						"order": 1
+					},
+					{
+						"name": "Ramen",
+						"tier": "S",
+						"order": 2
+					},
+					{
+						"name": "Dumplings",
+						"tier": "S",
+						"order": 3
+					},
+					{
+						"name": "Tacos",
+						"tier": "A",
+						"order": 4
+					},
+					{
+						"name": "Sushi",
+						"tier": "A",
+						"order": 5
+					},
+					{
+						"name": "Burger",
+						"tier": "B",
+						"order": 6
+					},
+					{
+						"name": "Pancakes",
+						"tier": "C",
+						"order": 7
+					},
+					{
+						"name": "Falafel"
+					},
+					{
+						"name": "Pierogi"
+					},
+					{
+						"name": "Ice cream"
+					}
 				]
 			}
+		},
+		"shot": {
+			"of": "115520328"
 		}
 	}
 }

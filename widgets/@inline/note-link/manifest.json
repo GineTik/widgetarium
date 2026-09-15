@@ -22,6 +22,9 @@
 			"w": 6,
 			"h": 2
 		},
-		"content": "Board"
+		"content": "Board",
+		"shot": {
+			"of": "973396447"
+		}
 	}
 }
