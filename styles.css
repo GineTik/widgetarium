@@ -3607,11 +3607,79 @@ body.wg-tree-carrying .wg-tile-body { pointer-events: none; }
 	align-self: stretch;
 }
 
-.wg-tree-region > .wg-tree {
+.wg-tree-region > .wg-tree-region-body > .wg-tree {
 	position: relative;
 	z-index: 1;
 }
 
+.wg-drawer-over {
+	position: fixed;
+	inset: 0;
+	z-index: 2000;
+	visibility: hidden;
+	transition: visibility 0s linear var(--wg-quick);
+}
+
+.wg-drawer-over.is-open {
+	visibility: visible;
+	transition: visibility 0s;
+}
+
+.wg-drawer-scrim {
+	position: absolute;
+	inset: 0;
+	background: var(--wg-overlay-scrim);
+	opacity: 0;
+	transition: opacity var(--wg-quick) var(--wg-ease);
+}
+
+.wg-drawer-over.is-open .wg-drawer-scrim {
+	opacity: 1;
+}
+
+.wg-drawer {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	width: var(--wg-drawer-width, 320px);
+	overflow: auto;
+	background: var(--wg-kit-raise);
+	box-shadow: var(--wg-kit-glass-edge);
+	opacity: 0;
+	scale: 0.9;
+	transition:
+		scale var(--wg-quick) var(--wg-ease),
+		opacity var(--wg-quick) var(--wg-ease);
+}
+
+.wg-drawer.is-left {
+	left: 0;
+	border-radius: 0 var(--wg-widget-radius) var(--wg-widget-radius) 0;
+}
+
+.wg-drawer.is-right {
+	right: 0;
+	border-radius: var(--wg-widget-radius) 0 0 var(--wg-widget-radius);
+}
+
+.wg-drawer-over.is-open .wg-drawer {
+	opacity: 1;
+	scale: 1;
+	transition:
+		scale var(--wg-grow) var(--wg-spring),
+		opacity var(--wg-quick) var(--wg-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-drawer,
+	.wg-drawer-scrim,
+	.wg-drawer-over.is-open .wg-drawer {
+		transition: none;
+	}
+}
 
 :is(.wg-root, .wg-portal) .wg-cat-side {
 	box-sizing: border-box;
