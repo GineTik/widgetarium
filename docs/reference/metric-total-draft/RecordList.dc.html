@@ -1,0 +1,323 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script src="./support.js"></script>
+	</head>
+	<body>
+		<x-dc>
+			<helmet>
+				<style>
+					body {
+						margin: 0;
+						font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter var", sans-serif;
+					}
+					a {
+						color: #8b6cef;
+					}
+					a:hover {
+						color: #a189f3;
+					}
+
+					.stage {
+						--ground: #1e1e1e;
+						--ink: #dadada;
+						--accent: #8b6cef;
+						--up: #4ec97f;
+						--down: #e06c5f;
+						--warn: #d9822b;
+						--wg-kit-fill: color-mix(in srgb, var(--ink) 5.5%, var(--ground));
+						--wg-kit-raise: color-mix(in srgb, #ffffff 12%, var(--ground));
+						--wg-kit-card-edge: color-mix(in srgb, var(--ink) 9%, transparent);
+						--hairline: color-mix(in srgb, var(--ink) 10%, transparent);
+						--muted: color-mix(in srgb, var(--ink) 58%, var(--ground));
+						--faint: color-mix(in srgb, var(--ink) 38%, var(--ground));
+						box-sizing: border-box;
+						width: 660px;
+						height: 620px;
+						padding: 30px 50px;
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						background: rgba(0, 0, 0, 0.32);
+						color: var(--ink);
+					}
+					.stage * {
+						box-sizing: border-box;
+					}
+
+					.dialog {
+						position: relative;
+						display: flex;
+						flex-direction: column;
+						gap: 14px;
+						width: 100%;
+						padding: 18px;
+						border-radius: 16px;
+						background: var(--wg-kit-raise);
+						box-shadow:
+							inset 0 0 0 1px var(--wg-kit-card-edge),
+							0 24px 60px rgba(0, 0, 0, 0.45);
+					}
+
+					.close {
+						position: absolute;
+						top: 10px;
+						right: 10px;
+						width: 28px;
+						height: 28px;
+						display: inline-flex;
+						align-items: center;
+						justify-content: center;
+						border: none;
+						border-radius: 999px;
+						background: var(--wg-kit-fill);
+						color: var(--ink);
+						cursor: pointer;
+					}
+
+					.head {
+						display: flex;
+						flex-direction: column;
+						gap: 4px;
+						padding-right: 32px;
+					}
+					.dialog-title {
+						margin: 0;
+						font-size: 15px;
+						font-weight: 600;
+						line-height: 1.3;
+					}
+					.dialog-desc {
+						margin: 0;
+						font-size: 13px;
+						line-height: 1.45;
+						color: var(--muted);
+					}
+
+					.list {
+						display: flex;
+						flex-direction: column;
+						border-radius: 14px;
+						background: var(--wg-kit-fill);
+						overflow: hidden;
+					}
+					.row {
+						display: flex;
+						align-items: center;
+						gap: 12px;
+						height: 52px;
+						padding: 0 8px 0 14px;
+						box-shadow: inset 0 -1px 0 var(--hairline);
+					}
+					.row:last-child {
+						box-shadow: none;
+					}
+					.row-date {
+						width: 92px;
+						font-size: 13px;
+						font-weight: 500;
+						font-variant-numeric: tabular-nums;
+					}
+					.row-note {
+						flex: 1 1 auto;
+						min-width: 0;
+						font-size: 13px;
+						color: var(--muted);
+						overflow: hidden;
+						text-overflow: ellipsis;
+						white-space: nowrap;
+					}
+					.row-amount {
+						font-size: 15px;
+						font-weight: 600;
+						font-variant-numeric: tabular-nums;
+						letter-spacing: -0.01em;
+					}
+					.row-amount.is-up {
+						color: var(--up);
+					}
+					.row-amount.is-down {
+						color: var(--down);
+					}
+					.row-actions {
+						display: flex;
+						gap: 4px;
+					}
+					.row-btn {
+						width: 30px;
+						height: 30px;
+						display: inline-flex;
+						align-items: center;
+						justify-content: center;
+						border: none;
+						border-radius: 999px;
+						background: var(--wg-kit-raise);
+						box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+						color: var(--ink);
+						cursor: pointer;
+					}
+
+					.warning {
+						display: flex;
+						align-items: center;
+						gap: 10px;
+						padding: 10px 14px;
+						border-radius: 14px;
+						background: color-mix(in srgb, var(--warn) 16%, var(--ground));
+						color: var(--warn);
+						font-size: 13px;
+						font-weight: 500;
+					}
+
+					.foot {
+						display: flex;
+						align-items: center;
+						gap: 8px;
+					}
+					.foot-count {
+						margin-right: auto;
+						font-size: 12px;
+						color: var(--faint);
+					}
+					.btn {
+						display: inline-flex;
+						align-items: center;
+						gap: 8px;
+						height: 36px;
+						padding: 0 18px 0 14px;
+						border: none;
+						border-radius: 999px;
+						background: var(--accent);
+						color: #ffffff;
+						font: inherit;
+						font-size: 14px;
+						font-weight: 600;
+						cursor: pointer;
+					}
+				</style>
+			</helmet>
+
+			<div class="stage">
+				<div class="dialog">
+					<button type="button" class="close" aria-label="Close">
+						<svg
+							width="16"
+							height="16"
+							viewBox="0 0 20 20"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.8"
+							stroke-linecap="round"
+						>
+							<path d="M6.4 6.4l7.2 7.2M13.6 6.4l-7.2 7.2"></path>
+						</svg>
+					</button>
+
+					<div class="head">
+						<h2 class="dialog-title">All records</h2>
+						<p class="dialog-desc">Newest first. Editing one redraws the card behind this window.</p>
+					</div>
+
+					<div class="list">
+						<sc-for list="{{rows}}" as="row" hint-placeholder-count="6">
+							<div class="row">
+								<span class="row-date">{{row.date}}</span>
+								<span class="row-note">{{row.note}}</span>
+								<span class="{{row.style}}">{{row.amount}}</span>
+								<span class="row-actions">
+									<button type="button" class="row-btn" aria-label="Edit">
+										<svg
+											width="15"
+											height="15"
+											viewBox="0 0 20 20"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.6"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
+											<path d="M4.6 15.4l1-3.7 7.4-7.4 2.7 2.7-7.4 7.4z"></path>
+										</svg>
+									</button>
+									<button type="button" class="row-btn" aria-label="Delete">
+										<svg
+											width="15"
+											height="15"
+											viewBox="0 0 20 20"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.6"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
+											<path d="M4.8 6.4h10.4M8.2 6.4V4.9h3.6v1.5M6.4 6.4l0.7 8.4h5.8l0.7-8.4"></path>
+										</svg>
+									</button>
+								</span>
+							</div>
+						</sc-for>
+					</div>
+
+					<div class="warning">
+						<svg
+							width="17"
+							height="17"
+							viewBox="0 0 20 20"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.7"
+							stroke-linecap="round"
+						>
+							<path d="M10 3.6L17 16H3z"></path>
+							<path d="M10 8.4v3.2M10 13.6v0.4"></path>
+						</svg>
+						2 records carry no date and stand outside every number on the card
+					</div>
+
+					<div class="foot">
+						<span class="foot-count">19 records · Metrics</span>
+						<button type="button" class="btn">
+							<svg
+								width="17"
+								height="17"
+								viewBox="0 0 20 20"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+							>
+								<path d="M10 4.9v10.2M4.9 10h10.2"></path>
+							</svg>
+							Add record
+						</button>
+					</div>
+				</div>
+			</div>
+		</x-dc>
+
+		<script data-dc-script data-props='{"$preview": {"width": 660, "height": 620}}'>
+			const RECORDS = [
+				{ date: "12 Sep", note: "Evening batch", amount: 4 },
+				{ date: "11 Sep", note: "Wholesale", amount: 166 },
+				{ date: "08 Sep", note: "Refund", amount: -9 },
+				{ date: "08 Sep", note: "", amount: 162 },
+				{ date: "05 Sep", note: "Market stall", amount: 188 },
+				{ date: "02 Sep", note: "", amount: 195 },
+			];
+
+			class Component extends DCLogic {
+				renderVals() {
+					return {
+						rows: RECORDS.map((record) => ({
+							date: record.date,
+							note: record.note || "—",
+							amount: record.amount >= 0 ? `+${record.amount}` : `−${Math.abs(record.amount)}`,
+							style: record.amount >= 0 ? "row-amount is-up" : "row-amount is-down",
+						})),
+					};
+				}
+			}
+		</script>
+	</body>
+</html>

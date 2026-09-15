@@ -1,0 +1,134 @@
+{
+	"artboards": [
+		{
+			"file": "Main.dc.html",
+			"x": 0,
+			"y": 0,
+			"w": 900,
+			"h": 560,
+			"title": "Card — curve"
+		},
+		{
+			"file": "Bars.dc.html",
+			"x": 980,
+			"y": 0,
+			"w": 900,
+			"h": 560,
+			"title": "Card — bars, dark"
+		},
+		{
+			"file": "Compact.dc.html",
+			"x": 0,
+			"y": 700,
+			"w": 900,
+			"h": 420,
+			"title": "Three tones, narrow tile"
+		},
+		{
+			"file": "Medium.dc.html",
+			"x": 980,
+			"y": 700,
+			"w": 540,
+			"h": 380,
+			"title": "Card — middle size"
+		},
+		{
+			"file": "AddRecord.dc.html",
+			"x": 0,
+			"y": 1260,
+			"w": 660,
+			"h": 510,
+			"title": "Add a record"
+		},
+		{
+			"file": "RecordList.dc.html",
+			"x": 740,
+			"y": 1260,
+			"w": 660,
+			"h": 620,
+			"title": "All records"
+		}
+	],
+	"annotations": [
+		{
+			"id": "frame",
+			"x": -360,
+			"y": 0,
+			"w": 300,
+			"text": "The tile is the plugin's own frame, not the reference's.\n16px radius, 8px pad, --wg-kit-raise fill, the widget shadow.\nThe inner surface takes 8px — outer minus pad, the concentric law."
+		},
+		{
+			"id": "plates",
+			"x": -360,
+			"y": 200,
+			"w": 300,
+			"text": "The four numbers are a 2x2 grid of squares, not a row of chips: they are what fills the space the headline leaves, so they are sized to be read.\nThe reference's bottom strip is gone — the chart runs to the surface's own bottom edge."
+		},
+		{
+			"id": "glass",
+			"x": -360,
+			"y": 420,
+			"w": 300,
+			"text": "A plate over the chart is the kit's grey fill made transparent — 6.5% of the ink over 22px of blur, no white and no rim.\nThe curve under it tints the plate instead of being covered by it."
+		},
+		{
+			"id": "ink",
+			"x": -360,
+			"y": 640,
+			"w": 300,
+			"text": "Both the dots and the curve fade out to the left rather than ending.\nDots are 11% of the ink at r=1 on a 14px grid — the reference's own numbers.\nThe stroke reaches full tone only past the middle of the chart."
+		},
+		{
+			"id": "toggle",
+			"x": 1960,
+			"y": 0,
+			"w": 300,
+			"text": "The curve/bars toggle is the kit's Segmented at size s.\nBoth glyphs are in the kit — src/kit.js, curve and bars — drawn from the same paths as here.\nThe period is a popover trigger, not a select."
+		},
+		{
+			"id": "bars-note",
+			"x": 1960,
+			"y": 190,
+			"w": 300,
+			"text": "Bars sit on the same scale as the curve and are clipped flat at the bottom, so the rounded top is the only corner that shows.\nThe hovered bar takes full tone; the rest fade down and, to the left, out."
+		},
+		{
+			"id": "compact-note",
+			"x": -360,
+			"y": 880,
+			"w": 300,
+			"text": "As the tile narrows the grid drops to two plates — avg goes first, then low — and the Add button loses its label before the list button goes."
+		},
+		{
+			"id": "dialog-note",
+			"x": -360,
+			"y": 1260,
+			"w": 300,
+			"text": "Both windows are the kit's Dialog: 16px corner, the raise fill, the hairline edge, no cast shadow.\nThe calendar's cells are square, so a picked day is a circle and the month fills the window's height instead of leaving a band under it."
+		},
+		{
+			"id": "list-note",
+			"x": 1440,
+			"y": 1260,
+			"w": 300,
+			"text": "Editing or deleting a row redraws the card behind the window.\nRecords with no date are counted out loud rather than dropped in silence."
+		},
+		{
+			"id": "ladder",
+			"x": 1580,
+			"y": 700,
+			"w": 320,
+			"text": "What goes, and in what order, as the tile narrows:\n\n620px and up — four plates as a 2x2, the toggle, the period written out, Add with its label.\n400 to 620 — two plates, the toggle stays, the period shortens to 30d.\nunder 400 — two plates, no toggle, no period, Add is an icon.\nunder 300 — no plates at all: the headline and the line behind it.\n\nThe order is what each number is worth when there is no room: today never goes, because it is the only one that answers whether the press landed. peak is the series in one number. avg is already derivable from the headline and the period, so it goes first; low goes next."
+		},
+		{
+			"id": "toggle-small",
+			"x": 1580,
+			"y": 1010,
+			"w": 320,
+			"text": "The toggle goes before the period on purpose. Under 400px the chart is a sparkline — bars and a curve draw the same picture at that width, so the choice between them is decoration, not a control."
+		}
+	],
+	"launch": {
+		"view": "canvas"
+	}
+}

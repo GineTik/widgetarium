@@ -1,24 +1,109 @@
 {
-  "pages": [
-    { "id": "page-1", "name": "Mac density" },
-    { "id": "page-2", "name": "States" }
-  ],
-  "artboards": [
-    { "file": "Mac.dc.html", "x": 0, "y": 0, "w": 900, "h": 620, "title": "Mac density — proposal", "page": "page-1" },
-    { "file": "Main.dc.html", "x": 1020, "y": 0, "w": 1000, "h": 700, "title": "What we have now", "page": "page-1" },
-    { "file": "Draft.dc.html", "x": 0, "y": 0, "w": 1000, "h": 700, "title": "Draft", "page": "page-2" },
-    { "file": "Off.dc.html", "x": 1100, "y": 0, "w": 1000, "h": 700, "title": "Off", "page": "page-2" },
-    { "file": "NotValid.dc.html", "x": 0, "y": 840, "w": 1000, "h": 700, "title": "Not valid", "page": "page-2" },
-    { "file": "Empty.dc.html", "x": 1100, "y": 840, "w": 1000, "h": 440, "title": "Nothing yet", "page": "page-2" },
-    { "file": "Result.dc.html", "x": 1100, "y": 1420, "w": 1060, "h": 440, "title": "The result, three ways", "page": "page-2" },
-    { "file": "Phone.dc.html", "x": 0, "y": 1680, "w": 390, "h": 844, "title": "Phone", "page": "page-2" },
-    { "file": "PhoneList.dc.html", "x": 490, "y": 1680, "w": 390, "h": 844, "title": "Phone, the list", "page": "page-2" }
-  ],
-  "annotations": [
-    { "id": "why-tablet", "x": 0, "y": -260, "w": 900, "text": "Why ours reads as a tablet and System Settings reads as a Mac — six numbers, not a feeling:\n1. Type: ours 14–16px, macOS 13px / 11px secondary.\n2. Controls: ours 42px tall, macOS 22px — 42 is a finger target, and that alone makes a window look like an iPad.\n3. Corners: ours 999px pills everywhere, macOS 6px on controls and 10px on groups.\n4. Rows: ours 40px with two lines, macOS 30px with one.\n5. Separation: ours draws a box per thing, macOS puts things in ONE grouped card and separates rows with a hairline.\n6. Accent: ours spends it on badges and fills, macOS spends it on the selected row and the default button, nothing else.", "page": "page-1" },
-    { "id": "mac-note", "x": 0, "y": 660, "w": 900, "text": "This frame is the same window at that scale: 13px type, 22px controls, 6px corners, 30px rows, three stages folded into two grouped cards. Nothing was removed — only the density changed.", "page": "page-1" },
-    { "id": "cost", "x": 1020, "y": 740, "w": 1000, "text": "The cost, honestly: this is a kit decision, not a substitutions decision. --wg-kit-* sets 42px controls and pill corners for every surface in the plugin, and CLAUDE.md currently says the opposite in writing (\"Big. Large controls, large corners\"). Changing it means retuning the tokens, updating every surface, and rewriting that paragraph.", "page": "page-1" },
-    { "id": "result-note", "x": 1100, "y": 1300, "w": 1060, "text": "Three ways to show the turn from text to widget without a box inside a box. A is in the Live frame now.", "page": "page-2" }
-  ],
-  "launch": { "view": "canvas", "page": "page-1" }
+	"pages": [
+		{ "id": "page-1", "name": "Density" },
+		{ "id": "page-2", "name": "States" }
+	],
+	"artboards": [
+		{
+			"file": "DenseA.dc.html",
+			"x": 0,
+			"y": 0,
+			"w": 900,
+			"h": 560,
+			"title": "A — the same window, one step down",
+			"page": "page-1"
+		},
+		{
+			"file": "DenseB.dc.html",
+			"x": 1000,
+			"y": 0,
+			"w": 900,
+			"h": 560,
+			"title": "B — two columns, the result gets the room",
+			"page": "page-1"
+		},
+		{
+			"file": "DenseC.dc.html",
+			"x": 2000,
+			"y": 0,
+			"w": 900,
+			"h": 560,
+			"title": "C — the rule is one band, the note is the window",
+			"page": "page-1"
+		},
+		{
+			"file": "Main.dc.html",
+			"x": 0,
+			"y": 760,
+			"w": 1000,
+			"h": 700,
+			"title": "What we have now, for scale",
+			"page": "page-1"
+		},
+		{ "file": "Draft.dc.html", "x": 0, "y": 0, "w": 1000, "h": 700, "title": "Draft", "page": "page-2" },
+		{ "file": "Off.dc.html", "x": 1100, "y": 0, "w": 1000, "h": 700, "title": "Off", "page": "page-2" },
+		{ "file": "NotValid.dc.html", "x": 0, "y": 840, "w": 1000, "h": 700, "title": "Not valid", "page": "page-2" },
+		{ "file": "Empty.dc.html", "x": 1100, "y": 840, "w": 1000, "h": 440, "title": "Nothing yet", "page": "page-2" },
+		{
+			"file": "Result.dc.html",
+			"x": 1100,
+			"y": 1420,
+			"w": 1060,
+			"h": 440,
+			"title": "The result, three ways",
+			"page": "page-2"
+		},
+		{ "file": "Phone.dc.html", "x": 0, "y": 1680, "w": 390, "h": 844, "title": "Phone", "page": "page-2" },
+		{
+			"file": "PhoneList.dc.html",
+			"x": 490,
+			"y": 1680,
+			"w": 390,
+			"h": 844,
+			"title": "Phone, the list",
+			"page": "page-2"
+		}
+	],
+	"annotations": [
+		{
+			"id": "density-brief",
+			"x": 0,
+			"y": -230,
+			"w": 900,
+			"text": "Same kit, one step tighter — nothing here is a new component.\nControls 42 → 34 (the kit's own size s). Rows 40 → 34 (the kit's minimal sidebar). Text 16 → 14. Badges 28 → 22. Gaps 12 → 8. Window 1040 → 900.\nPills, fills, accent wash, the lifted block and the soft shadows all stay exactly as they are."
+		},
+		{
+			"id": "a-note",
+			"x": 0,
+			"y": 600,
+			"w": 900,
+			"text": "A — the stack you already have, only denser. Delete became an icon so the head holds one line. Least risk, least change.",
+			"page": "page-1"
+		},
+		{
+			"id": "b-note",
+			"x": 1000,
+			"y": 600,
+			"w": 900,
+			"text": "B — a desktop has width, so match and rule sit side by side and the result takes the whole row underneath. The preview finally shows more than three lines.",
+			"page": "page-1"
+		},
+		{
+			"id": "c-note",
+			"x": 2000,
+			"y": 600,
+			"w": 900,
+			"text": "C — the whole rule collapses into one band and the rest of the window is the note. Fewest boxes, most preview; the numbered stages go away, which is the thing to argue about.",
+			"page": "page-1"
+		},
+		{
+			"id": "result-note",
+			"x": 1100,
+			"y": 1300,
+			"w": 1060,
+			"text": "Three ways to show the turn from text to widget without a box inside a box. A is in the Live frame now.",
+			"page": "page-2"
+		}
+	],
+	"launch": { "view": "canvas", "page": "page-1" }
 }

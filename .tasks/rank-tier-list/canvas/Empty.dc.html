@@ -10,7 +10,7 @@
   <style>
     body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
     a { color: #6d4ee0; } a:hover { color: #5a3fc0; }
-    .tile { background: #ffffff; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(34,34,34,0.09); padding: 0 12px; display: flex; flex-direction: column; height: 360px; }
+    .tile { background: #ffffff; border-radius: 16px; box-shadow: inset 0 0 0 1px rgba(34,34,34,0.09); padding: 0 12px; display: flex; flex-direction: column; height: 450px; }
     .rail { flex: 0 0 64px; display: grid; place-items: center; border-radius: 14px; color: #ffffff; font-size: 18px; font-weight: 700; }
     .pen { flex: 1; border-radius: 14px; background: #f3f3f3; }
     .row { display: flex; gap: 6px; align-items: stretch; height: 68px; flex: 0 0 auto; }
@@ -35,10 +35,13 @@
           <span style="font-size: 14px; font-weight: 600; color: #222222">Tier list</span>
           <span style="font-size: 11px; font-weight: 600; color: #222222; background: #f3f3f3; border-radius: 999px; padding: 3px 8px">0</span>
         </div>
-        <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; min-height: 0; overflow: hidden; align-content: flex-start">
-          <div class="row"><div class="rail" style="background: #893128">S</div><div class="pen"></div></div>
-          <div class="row"><div class="rail" style="background: #996028">A</div><div class="pen"></div></div>
-          <div class="row"><div class="rail" style="background: #943a5e">B</div><div class="pen"></div></div>
+        <div style="flex: 1 1 auto; min-height: 0; position: relative; display: flex">
+          <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; min-height: 0; overflow: hidden; align-content: flex-start">
+            <div class="row"><div class="rail" style="background: #893128">S</div><div class="pen"></div></div>
+            <div class="row"><div class="rail" style="background: #996028">A</div><div class="pen"></div></div>
+            <div class="row"><div class="rail" style="background: #943a5e">B</div><div class="pen"></div></div>
+          </div>
+          <div style="position: absolute; inset: auto 0 0; height: 34px; pointer-events: none; background: linear-gradient(to top, #ffffff, rgba(255,255,255,0))"></div>
         </div>
         <div style="background: #f3f3f3; border-radius: 14px; padding: 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; align-items: center">
           <span style="font-size: 12.5px; line-height: 1.45; color: #5e5e5e; text-align: center; max-width: 30ch">Nothing to rank yet. Add a card, or start from a preset.</span>
@@ -61,7 +64,8 @@
             <button style="height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: #f3f3f3; color: #222222; font: 600 14px/1 inherit; cursor: pointer">Reset</button>
           </div>
         </div>
-        <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; min-height: 0; overflow: hidden; align-content: flex-start">
+        <div style="flex: 1 1 auto; min-height: 0; position: relative; display: flex">
+        <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; min-height: 0; overflow: hidden; align-content: flex-start">
           <div class="row">
             <div class="rail" style="background: #893128">S</div>
             <div class="pen" style="display: flex; gap: 6px; padding: 8px; flex: 1">
@@ -75,6 +79,8 @@
               <div class="face" style="background: #cedced; color: #325e96">TC</div>
             </div>
           </div>
+        </div>
+          <div style="position: absolute; inset: auto 0 0; height: 34px; pointer-events: none; background: linear-gradient(to top, #ffffff, rgba(255,255,255,0))"></div>
         </div>
         <div style="background: #f3f3f3; border-radius: 14px; padding: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px">
           <div style="display: flex; align-items: center; gap: 8px; padding: 0 2px">
