@@ -1,7 +1,7 @@
 # Widgetarium
 
-An Obsidian plugin: widget tiles on a grid inside a note, plus rules that substitute a widget for a
-line of text. `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
+An Obsidian plugin: widget tiles in a nested layout inside a note, plus rules that substitute a
+widget for a line of text. `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
 `src/gateway/` is TypeScript (`tsc --noEmit` gates it), the rest of `src/` is untyped JS that dies
 in place rather than being typed. Widgets under `widgets/` are `.tsx` compiled at runtime by
 sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
@@ -68,25 +68,61 @@ with no note of its own answers from the tile, which is where `wasSettings` carr
 used to hold those lists. There is no `board` bus and no `configureBoard`: the only board-wide
 command left is `foldIntoGroup`, because folding tiles into a group is an action, not data.
 
-**The grid is dead. A board is a tree.** A board's layout is `layout:` — three regions, `left`,
-`main` and `right`, each holding rows of cells with a `ratio` and a `height`. The old `layouts:` map
-of column counts to `{x, y, w, h}` places is **legacy**: no entrance may create one, no surface may
-offer one, and nothing new may be built on it. It still renders, and only so that the boards written
-before the move keep opening while they are being looked at — that is a development affordance, not a
-feature, and a person using the plugin must never reach it. Everything that produces a board — the
-create command, the insert command, the folder menu, a template, the catalogue — writes a tree.
-Reading still accepts `layouts:`, per the lazy-migration law; writing never emits a new one.
+**The grid is gone, and a board is one recursive tree.** `layout:` is a **node**, and a node is one
+of two things: a **leaf** — a tile, `{ id, ratio, height }` — or a **box** — `{ dir: "row" | "column",
+of: [...] }` carrying the same `ratio` and `height` plus `width`, `keep`, `foldable`, `folded` and
+`scroll`. A box nests to any depth, which is the whole point: `[[A], [B, [C over D]]]` is
+expressible, and the three named regions were not able to say it. Full decision in
+`docs/board-tree.md`.
 
-**A region exists because it is declared, not because it holds something.** An empty `left` or
-`right` is a real region: it draws as a zone and a carried tile can be dropped into it. This is what
-lets a board be filled at all — a sidebar that appears only once something is in it can never receive
-the first thing. A new board is born with all three, and all three stand in reading mode too, so the
-two fold toggles are the board's own chrome and answer a press in either mode.
+**Behaviour lives on a property, never on a name.** The root is a row of three boxes and the middle
+one carries `keep: true`, the two beside it `foldable: true` — that is all `left`, `main` and `right`
+ever meant. Nothing outside `normalizeBoard` may compare a node to a name; a box is addressed by its
+**path**, an array of indexes from the root, and `sideOf` turns a path into the word an icon and a
+label need, which is presentation and nothing else.
 
-**A widget is added where it will stand.** Every region ends, while the board is being edited, in a
-press that opens the catalogue and puts the pick on a row of its own in **that** region. There is no
-board-wide add: a press that named no region left the person guessing where the widget went. The
-grid's old palette survives only on the legacy `layouts:` path, which has no regions to name.
+**Both older shapes are read once and never written again.** A note carrying `layout: { left, main,
+right }` becomes the root row at `normalizeBoard`, and a note carrying only the grid's `layouts:` map
+of `{x, y, w, h}` places is read too — the widest authored width, its places sorted by `y` then `x`,
+grouped into rows, `w` as the ratio and `h` as pixels — so a board laid out in the grid opens looking
+like itself and is rewritten as a tree by the first edit. Nothing renders, offers or emits a grid:
+`src/layout.js` and its arithmetic are deleted, and a board written as a tree declares `v: 2`, which
+is what stops an older plugin from silently flattening it.
+
+**A region that cannot stand leaves the note and covers the whole app.** `columnsOf` answers where
+every child of the **root** is, and it answers in four words: `beside`, `floating`, `hidden`,
+`alone`, each naming an index. A box nested deeper never floats — it stacks, because a drawer over
+the window has no place inside another box. Below
+`MAIN_FLOOR_PX` a sidebar is never a row under the main one — it becomes a drawer on the layer the
+dialog already owns: a portal into `document.body`, `fixed` over the whole Obsidian window, the same
+`--wg-overlay-scrim`, `--wg-kit-raise` with an edge and no cast shadow, growing from the point that
+was pressed. Its widgets stay mounted while it is shut, because refs live only while the widget is on
+the tree. **Whether a floating region is open is a fact about this screen, not about the note**: it
+lives in the board's own state, `folded:` keeps governing only the docked case, and a resize that
+gives the region its place back never writes anything.
+
+**There is no line between regions.** The board is drawn inside a note, under Obsidian's own chrome,
+so a border between two root boxes has neither a top nor a bottom to reach — it dies in the middle
+of the page. The gutter is the boundary, and it is `REGION_GAP_PX` wide.
+
+**A box exists because it is declared, not because it holds something.** An empty `foldable` box is a
+real region: it draws as a zone, a carried tile can be dropped into it, and the pointer is answered
+across the whole column rather than only where its widgets reach. This is what lets a board be filled
+at all — a sidebar that appears only once something is in it can never receive the first thing. A new
+board is born with all three, and all three stand in reading mode too, so the fold toggles, the edit
+toggle and the page toggle are the board's own chrome and answer a press in either mode.
+
+**A widget is added where it will stand.** Every column box ends, while the board is being edited, in
+a press that opens the catalogue and puts the pick at the end of **that** box. There is no board-wide
+add: a press that named no box left the person guessing where the widget went.
+
+**A tile is carried to a path, and the drop says what it means.** A carry measures every box and leaf
+on the board, takes the deepest one under the pointer, and reads the pointer against it: along the
+parent's own direction the tile becomes a **sibling** at that index, and across the grain it **wraps**
+the node it landed on in a new box of the axis it was aimed at. That is how nesting is made by hand,
+and it is why the drop needs no gesture of its own. Removing a tile, or carrying the last one out of
+a box, prunes the box — unless the box declares something, because a declared empty box is a region
+and a region stays.
 
 **A fed slot cannot be entered; an unfed one can.** A slot whose manifest declares `gives` gets its
 inputs from the parent and owns nothing. Without `gives` the child owns its own props.
@@ -113,6 +149,24 @@ REFUSE rather than guess: a block from a newer plugin is not mounted and therefo
 back, and a widget outside the range does not mount, install or draw. The numbers and the rule for
 raising each are in `docs/versioning.md`; they live in `src/version.js`.
 
+**The build is the engine's, and it runs on the person's machine.** A widget folder holds only what
+its author wrote; everything the engine makes lands in `build/` beside it — `widget.js` from the TSX,
+`widget.css` when the sheet asked to be compiled — and a vault wears the built sheet in place of the
+author's. `tools/publish.mjs` is the author's check that it all builds, not the thing that builds it.
+What is built is a fact of its own: `lock.builds[id]` names the source, the compiler and a hash per
+input, separately from `lock.widgets[id]`, which only means installed from a repository. At load and
+at every widget-folder change the engine asks each folder whether the files its build was made from
+are still the files on disk, and rebuilds the ones that answer no — which is why an edit in a
+symlinked scope shows with no install. `node tools/build-vault.mjs` runs that same pass from the
+terminal.
+
+**Tailwind is asked for in CSS and answered at build time.** A `widget.css` opening with
+`@import "tailwindcss"` is compiled by the real `tailwindcss` package, fetched into the vault's module
+space like any other dependency and never loaded to draw anything. The theme is CSS too — `@theme`
+over `--wg-kit-*`, in the widget's sheet or in a scope file it imports — so the configuration lives
+outside the widget. Preflight is never imported: it restyles the host's own elements, and a sheet that
+asks for it is refused by name. A widget whose styling needs this declares `api: 2`.
+
 ## Verification
 
 **Falsification is the rule: a check that cannot be broken on purpose proves nothing.** For every
@@ -122,7 +176,7 @@ along with whatever depends on it — rather than ship it.
 
 `npm run test:paint` drives real headless Chrome and reads **resolved** computed values; the jsdom
 suites resolve no cascade and lay nothing out, so a CSS claim proved only there is not proved.
-`test:dialog`, `test:view` and `test:drag` are timing-flaky — re-run alone before blaming a change.
+`test:dialog`, `test:view` and `test:tree` are timing-flaky — re-run alone before blaming a change.
 
 ## The design direction: Material 3 Expressive and Apple
 
@@ -148,6 +202,34 @@ the same on both sides: **maximalist, physical, answering.**
   shape; text stays inside the safe box. A radius that eats a word is the radius, not the word.
 - **What is refused:** the `@material/web` runtime, Material's colour roles, its base components. They
   arrive with their own tokens and a Shadow DOM, and this project's colours come from `--wg-kit-*`.
+
+## A widget change is not done until the vault has it
+
+**Every widget change is two steps: build, then put it in the vault.** A green test suite is not a
+change a person can see. Nothing in the repo reaches Obsidian on its own, and the two halves fail
+differently, so both must be done and both must be checked.
+
+```bash
+npm run dev            # build + install: the plugin as a symlink, for working
+npm run install-vault  # build --prod + install: a production copy, for using
+```
+
+**The engine is copied, the widgets are symlinked — except where they are not.** `install.mjs` copies
+`main.js`, `styles.css` and `manifest.json` into `.obsidian/plugins/widgetarium`, so a change to `src/`
+that was never installed leaves the vault running yesterday's engine. Under `.widgetarium/widgets` each
+scope is normally a symlink back to this repo, and for those a widget edit is live with no install at
+all. **A scope that is a real directory is a published copy and is frozen** — edits to the repo never
+reach it. `@default` is such a copy today, made when the vault needed records carrying derived props.
+Check before believing an edit landed:
+
+```bash
+ls -la "$WG_VAULT/.widgetarium/widgets"
+```
+
+**A new widget is invisible until it is put there.** Adding a folder under `widgets/` changes nothing
+in the vault: a symlinked scope picks up a new folder inside it, a copied scope does not, and a new
+scope exists nowhere until it is linked or published. When a change does not show, look here first —
+before re-reading the code, before blaming the cache, and before reloading the plugin a third time.
 
 ## House rules
 
