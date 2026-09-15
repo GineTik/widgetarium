@@ -111,6 +111,17 @@ export function createModuleSpace({ adapter, fetchText }) {
 			}
 		},
 
+		async takeAsset(key, name) {
+			if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(String(name ?? ""))) throw new Error(`"${name}" is not a file a package can serve`);
+			const at = `${moduleFolder(key)}/${name}`;
+			if (await adapter.exists(at)) return adapter.read(at);
+
+			const text = await fetchText(`${ESM_HOST}/${key}/${name}`);
+			await makeFolders(key);
+			await adapter.write(at, text);
+			return text;
+		},
+
 		async collect(key) {
 			const folder = moduleFolder(key);
 			if (await adapter.exists(folder)) await adapter.rmdir(folder, true);

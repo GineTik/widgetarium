@@ -131,6 +131,7 @@ export default class WidgetariumPlugin extends Plugin {
 			readAdded: () => this.addedRegistries(),
 		});
 		if (await measure("onload · isAuthoringWidgetsHere", () => this.isAuthoringWidgetsHere())) await measure("onload · widgetSignature", () => this.watchWidgetFolder());
+		this.rebuildWidgets().catch((failure) => console.error("[widgetarium] the drifted builds could not be made", failure));
 
 		this.addRibbonIcon("layout-grid", "Widgetarium: edit mode", () => this.toggleEditing());
 		this.addRibbonIcon("replace", "Widgetarium: substitutions", () => this.showSubstitutions());
@@ -443,12 +444,22 @@ export default class WidgetariumPlugin extends Plugin {
 			const signature = await this.widgetSignature();
 			if (signature !== this.signature) {
 				this.signature = signature;
-					await this.registry.load();
+				await this.rebuildWidgets();
+				await this.registry.load();
 				this.refresh();
 			}
 		} finally {
 			this.isPolling = false;
 		}
+	}
+
+	async rebuildWidgets() {
+		const done = await this.installer.rebuildDrifted();
+		if (done.rebuilt.length > 0) {
+			await this.registry.load();
+			this.refresh();
+		}
+		if (done.failures.length > 0) new Notice(`Widgetarium: ${done.failures.map((each) => each.id).join(", ")} did not build — the console says why`);
 	}
 
 	onunload() {

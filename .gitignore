@@ -10,3 +10,4 @@ tools/.mjs-cache/
 /*.png
 .omc/
 tools/.widgets-published/
+widgets/*/*/build/

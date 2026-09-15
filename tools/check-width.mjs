@@ -6,19 +6,11 @@
 // by giving it fewer cells. It never says so by declining the width it was given.
 import fs from "node:fs";
 import path from "node:path";
+import { widgetFiles } from "./widget-files.mjs";
 
 const roots = process.argv.slice(2).filter((root) => fs.existsSync(root));
 const offences = [];
 
-function widgetFiles(dir) {
-	const found = [];
-	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-		const full = path.join(dir, entry.name);
-		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory())) found.push(...widgetFiles(full));
-		else if (/^widget\.(jsx|tsx|js|ts)$/.test(entry.name)) found.push(full);
-	}
-	return found;
-}
 
 for (const root of roots) {
 	for (const file of widgetFiles(root)) {

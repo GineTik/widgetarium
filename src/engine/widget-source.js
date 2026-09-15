@@ -12,11 +12,17 @@ import {
 	treeUrl,
 } from "./github.js";
 import { REGISTRY_FILE, readRegistry } from "./registry-file.js";
+import { contentHash } from "./content-hash.js";
 import { apiRefusal } from "../version.js";
 
 export const WIDGET_FILES = [RECORD_FILE, ...SOURCE_FILES, ...SHEET_FILES];
-export const SCOPE_FILES = ["lib.js", "tokens.css"];
-export const LOCAL_COMMIT = "local";
+export const SCOPE_FILES = ["lib.js", "tokens.css", "theme.css"];
+export const WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS = "local";
+
+export function stampOf(files) {
+	const held = Object.keys(files ?? {}).sort();
+	return contentHash(held.map((name) => `${name}:${files[name]}`).join("\n"));
+}
 
 export function scopeOf(folder) {
 	return folder.slice(0, folder.lastIndexOf("/"));
@@ -49,7 +55,7 @@ async function offersInFolder({ disk }, source) {
 					manifest,
 					installed: false,
 					origin: source.path,
-					commit: LOCAL_COMMIT,
+					commit: stampOf(await filesUnder(disk, folder, WIDGET_FILES)),
 					from: { folder },
 					...held,
 				});
@@ -170,7 +176,7 @@ async function fromFolder({ disk }, listed) {
 	if (!sourceFileIn(files)) return refuse(`${folder} holds no widget source`);
 
 	const scope = await filesUnder(disk, scopeOf(folder), SCOPE_FILES);
-	return answered({ files, scope, record: readRecord(listed.manifest, idOfFolder(folder)), commit: LOCAL_COMMIT });
+	return answered({ files, scope, record: readRecord(listed.manifest, idOfFolder(folder)), commit: stampOf(files) });
 }
 
 async function filesUnder(disk, folder, names) {

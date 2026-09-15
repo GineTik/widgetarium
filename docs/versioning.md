@@ -60,6 +60,12 @@ would make an old board unreadable is not a version bump, it is a migration, and
   key). Widgets built against the old number keep running.
 - **`MIN_WIDGET_API`** — only when something the old contract promised is actually gone. This
   breaks third-party widgets and is the expensive one.
+
+  `WIDGET_API` is **2** since the engine builds a widget's stylesheet: a `widget.css` that opens
+  with `@import "tailwindcss"` is compiled at install into `build/widget.css`, and that sheet is
+  what a vault wears. A widget whose styling depends on it declares `api: 2`, so a plugin that
+  would draw it unstyled refuses to mount it instead. A widget that styles itself by hand needs
+  nothing and stays at 1.
 - **`REGISTRY_FORMAT`** — when a key changes what an existing key means, or a new key must be
   understood for the rows to be read correctly. A key an old reader ignores costs nothing. It is
   the expensive one for authors: every registry written for the new number goes dark on every

@@ -1,5 +1,5 @@
 export const BLOCK_FORMAT = 2;
-export const WIDGET_API = 1;
+export const WIDGET_API = 2;
 export const MIN_WIDGET_API = 1;
 export const REGISTRY_FORMAT = 1;
 

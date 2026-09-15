@@ -5,8 +5,10 @@ import { coreSurface } from "./api-core.js";
 import { reactSurface, kit, emojis } from "./widget-api.js";
 import { apiRefusal } from "./version.js";
 import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
-import { EMPTY_LOCK, readLock, modulesByWidget, buildIsCurrent } from "./engine/widget-lock.js";
-import { BUILD_FILE, SHEET_FILES, SOURCE_FILES, compileWidget } from "./engine/widget-build.js";
+import { EMPTY_LOCK, readLock, modulesByWidget, buildMatchesSource } from "./engine/widget-lock.js";
+
+import { BUILD_FILE, SHEET_FILES, SOURCE_FILES, builtCodePath, builtSheetPath, compileWidget } from "./engine/widget-build.js";
+import { moduleFromCompiled } from "./engine/compiled-module.js";
 import { RECORD_FILE, readRecord, recordUnderItsDeclaration } from "./engine/catalogue-index.js";
 import { idOfFolder } from "./engine/github.js";
 
@@ -58,10 +60,8 @@ export const ENGINE_SCOPE = {
 };
 
 function surfaceExports(source, ownReact, ownReactDom) {
-	const shell = { exports: {} };
 	const take = { react: ownReact, "react-dom": ownReactDom, "react-dom/client": ownReactDom, "widgetarium/core": coreModule };
-	new Function("require", "module", "exports", source)((name) => take[name], shell, shell.exports);
-	return shell.exports;
+	return moduleFromCompiled(source, { require: (name) => take[name] });
 }
 
 function foreignScope(source, ownReact, ownReactDom) {
@@ -81,15 +81,7 @@ function componentIn(shell, at) {
 }
 
 function runCode(code, libs, packages, scope = ENGINE_SCOPE) {
-	const shell = { exports: {} };
-	const globals = injectedGlobals(scope);
-	new Function("require", "module", "exports", ...Object.keys(globals), code)(
-		createRequire(libs, packages, scope),
-		shell,
-		shell.exports,
-		...Object.values(globals),
-	);
-	return shell.exports;
+	return moduleFromCompiled(code, { require: createRequire(libs, packages, scope), globals: injectedGlobals(scope) });
 }
 
 // TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
@@ -186,7 +178,10 @@ export class WidgetRegistry {
 		const foldersPerScope = await Promise.all(scopes.map((scope) => adapter.list(scope).then((held) => held.folders)));
 		const sheets = scopes.flatMap((scope, at) => [
 			{ owner: scope, path: `${scope}/tokens.css` },
-			...foldersPerScope[at].flatMap((folder) => SHEET_FILES.map((name) => ({ owner: folder, path: `${folder}/${name}` }))),
+			...foldersPerScope[at].flatMap((folder) => [
+				{ owner: folder, path: builtSheetPath(folder) },
+				...SHEET_FILES.map((name) => ({ owner: folder, path: `${folder}/${name}` })),
+			]),
 		]);
 		const folders = foldersPerScope.flat();
 		const [libSources, sheetSources, widgetSources, lockText] = await Promise.all([
@@ -304,15 +299,16 @@ export class WidgetRegistry {
 	}
 
 	async readWidget(adapter, folder) {
-		const [record, ...sources] = await Promise.all([`${folder}/${RECORD_FILE}`, ...SOURCE_FILES.map((name) => `${folder}/${name}`)].map((path) => this.readIfThere(adapter, path)));
+		const [record, built, ...sources] = await Promise.all([`${folder}/${RECORD_FILE}`, builtCodePath(folder), ...SOURCE_FILES.map((name) => `${folder}/${name}`)].map((path) => this.readIfThere(adapter, path)));
 		const at = sources.findIndex((source) => source !== null);
 		if (at < 0) return null;
 		const name = SOURCE_FILES[at];
-		return { record, name, code: sources[at], build: name === BUILD_FILE ? null : sources[SOURCE_FILES.indexOf(BUILD_FILE)] };
+		const builtBeforeTheFolderExisted = name === BUILD_FILE ? null : sources[SOURCE_FILES.indexOf(BUILD_FILE)];
+		return { record, name, code: sources[at], build: built ?? builtBeforeTheFolderExisted };
 	}
 
 	codeToRun(id, held, folder) {
-		if (held.build !== null && buildIsCurrent(this.lock.widgets[id], held.name, held.code)) return held.build;
+		if (held.build !== null && buildMatchesSource(this.lock.builds[id], `${folder}/${held.name}`, held.code)) return held.build;
 		return compileWidget(held.code, `${folder}/${held.name}`);
 	}
 

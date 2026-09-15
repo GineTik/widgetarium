@@ -38,7 +38,7 @@ const { readIndex, mergeCatalogue, isInstalled } = await import("./.mjs-cache/en
 const { readLock, lockEntry, withEntry, withoutEntry, isEdited } = await import("./.mjs-cache/engine/widget-lock.mjs");
 const { readRepository, commitUrl, rawUrl, folderFor } = await import("./.mjs-cache/engine/github.mjs");
 const { createInstaller, INDEX_PATH, LOCK_PATH } = await import("./.mjs-cache/installer.mjs");
-const { Catalogue } = await import("./.mjs-cache/catalogue.mjs");
+const { Catalogue, updateOffered } = await import("./.mjs-cache/catalogue.mjs");
 
 let failed = 0;
 function check(name, got, want) {
@@ -174,11 +174,11 @@ check(
 const done = await installer.install(listed[0]);
 check("installing answers with the commit it resolved", [done.ok, done.commit], [true, "abc1234567"]);
 check(
-	"and writes the files where the registry looks, the build beside the source",
+	"and writes the files where the registry looks, the build in its own folder",
 	[...vault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(),
 	[
+		".widgetarium/widgets/@demo/clock/build/widget.js",
 		".widgetarium/widgets/@demo/clock/manifest.json",
-		".widgetarium/widgets/@demo/clock/widget.js",
 		".widgetarium/widgets/@demo/clock/widget.jsx",
 	],
 );
@@ -225,7 +225,7 @@ check("a widget served as nothing but its source installs", [bareDone.ok, bareDo
 check(
 	"and no record is invented beside it",
 	[...bareVault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(),
-	[".widgetarium/widgets/@demo/clock/widget.js", ".widgetarium/widgets/@demo/clock/widget.jsx"],
+	[".widgetarium/widgets/@demo/clock/build/widget.js", ".widgetarium/widgets/@demo/clock/widget.jsx"],
 );
 
 const offline = createInstaller({ adapter: fakeVault(), ...network({}) });
@@ -277,13 +277,24 @@ check("and the scope lib it cannot run without", [typeof onShelf[0].lib, onShelf
 check("a folder with no manifest is not a widget", onShelf.length, 1);
 
 const copied = await shelved.install(onShelf[0]);
-check("installing from a folder needs no network", [copied.ok, copied.commit], [true, "local"]);
+check("installing from a folder needs no network", copied.ok, true);
+check("and what it records instead of a commit is a stamp of the files", copied.commit, onShelf[0].commit);
+
+shelf.files.set("/repo/widgets/@habit/heatmap/widget.jsx", "export default () => null; // one line more");
+const offeredAgain = (await shelved.discover({ path: "/repo/widgets" }))[0];
+check("a folder whose widget changed offers a different stamp", offeredAgain.commit === onShelf[0].commit, false);
+check("and that is what tells the catalogue an update is out", updateOffered(offeredAgain.manifest, offeredAgain, await shelved.lock()), {
+	here: String(copied.commit).slice(0, 7),
+	there: String(offeredAgain.commit).slice(0, 7),
+});
+shelf.files.set("/repo/widgets/@habit/heatmap/widget.jsx", "export default () => null;");
+check("and the same files offer the same stamp again", (await shelved.discover({ path: "/repo/widgets" }))[0].commit, onShelf[0].commit);
 check(
 	"and puts the widget where the registry looks",
 	[...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@habit/heatmap")).sort(),
 	[
+		".widgetarium/widgets/@habit/heatmap/build/widget.js",
 		".widgetarium/widgets/@habit/heatmap/manifest.json",
-		".widgetarium/widgets/@habit/heatmap/widget.js",
 		".widgetarium/widgets/@habit/heatmap/widget.jsx",
 	],
 );
@@ -368,6 +379,7 @@ const offered = readIndex({
 const panel = dom.window.document.getElementById("host");
 const picked = [];
 const installs = [];
+const handedOver = [];
 let answer = { ok: true };
 let settleInstall = null;
 let stepTo = null;
@@ -382,6 +394,7 @@ const draw = (lock = null) =>
 			onPick: (id) => picked.push(id),
 			onInstall: async (entry, onStep) => {
 				installs.push(entry.manifest.id);
+				handedOver.push(entry);
 				stepTo = onStep;
 				if (!settleInstall) return answer;
 				return new Promise((resolve) => {
@@ -513,6 +526,24 @@ check(
 	"and the Update ready list counts it",
 	panel.querySelector(".wg-cat-show.is-update .wg-kit-side-value").textContent,
 	"1",
+);
+
+const wasInstalled = installs.length;
+press(named("Task card").querySelector(".wg-cat-go"));
+await settle();
+const handed = handedOver.at(-1);
+check("pressing Update hands over the offer, which is the only thing that knows where to fetch from", [handed?.manifest?.id, handed?.manifest?.commit], ["@task/task-card", "2222222222"]);
+check("and not the vault's own definition, which names no source at all", "component" in (handed ?? {}), false);
+check("and it was one press, one install", installs.length, wasInstalled + 1);
+
+render(null, panel);
+draw({ widgets: { "@task/task-card": { commit: "local" } } });
+await settle();
+check("a widget installed from a folder before stamps existed offers no update", named("Task card").dataset.state, "add");
+check(
+	"and nothing counts it as one",
+	panel.querySelector(".wg-cat-show.is-update .wg-kit-side-value").textContent,
+	"0",
 );
 
 render(null, panel);

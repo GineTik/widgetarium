@@ -1,30 +1,15 @@
 import { ROOT, WIDGETS_DIR, LOCK_PATH } from "./paths.js";
 import { mergeCatalogue, readIndex } from "./engine/catalogue-index.js";
-import { readLock, lockEntry, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
+import { readLock, lockEntry, withBuild, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
 import { createModuleSpace, declaredDependencies } from "./engine/modules.js";
-import { BUILD_FILE, compileWidget, sourceFileIn } from "./engine/widget-build.js";
+import { createBuilder } from "./engine/builder.js";
 import { createWidgetSource, scopeOf } from "./engine/widget-source.js";
-import { folderFor } from "./engine/github.js";
+import { folderFor, idOfFolder } from "./engine/github.js";
 import { namesAFolderOnThisMachine, sourcesOf } from "./sources.js";
 import { SHIPPED_SOURCES } from "./registries.js";
 
 export const INDEX_PATH = `${ROOT}/catalogue.json`;
 export { LOCK_PATH };
-
-function buildOf(files, folder) {
-	const from = sourceFileIn(files);
-	if (!from) return { ok: true, from: null, code: null, failure: null };
-	try {
-		return { ok: true, from, code: compileWidget(files[from], `${folder}/${from}`), failure: null };
-	} catch (failure) {
-		return {
-			ok: false,
-			from: null,
-			code: null,
-			failure: `${from} did not compile: ${String(failure?.message ?? failure)}`,
-		};
-	}
-}
 
 function refuse(failure) {
 	return { ok: false, failure };
@@ -40,6 +25,7 @@ export function createInstaller({
 }) {
 	const space = createModuleSpace({ adapter, fetchText });
 	const widgets = createWidgetSource({ fetchJson, fetchText, disk });
+	const builder = createBuilder({ adapter, space });
 
 	const readJson = async (path, fallback) => {
 		if (!(await adapter.exists(path))) return fallback;
@@ -58,15 +44,38 @@ export function createInstaller({
 		return { raw: legacy, sources: sourcesOf({ added: await readAdded(), legacy, shipped }) };
 	};
 
-	async function writeWidget(folder, files, built) {
+	async function writeWidget(folder, files, made) {
 		await adapter.mkdir(scopeOf(folder));
 		await adapter.mkdir(folder);
 		for (const [name, text] of Object.entries(files)) await adapter.write(`${folder}/${name}`, text);
-		if (built.from) await adapter.write(`${folder}/${BUILD_FILE}`, built.code);
+		if (made.built.from) await builder.writeBuild(folder, made.built, made.css);
+	}
+
+	function whatTheScopeIsAboutToGet(folder, scope) {
+		const held = {};
+		for (const [name, text] of Object.entries(scope ?? {})) held[`${scopeOf(folder)}/${name}`] = text;
+		return held;
 	}
 
 	async function writeWhatTheScopeShares(folder, scope) {
 		for (const [name, text] of Object.entries(scope)) await adapter.write(`${scopeOf(folder)}/${name}`, text);
+	}
+
+	async function everyWidgetFolder() {
+		const found = [];
+		for (const scope of (await adapter.list(WIDGETS_DIR)).folders) found.push(...(await adapter.list(scope)).folders);
+		return found;
+	}
+
+	async function rebuiltIfDrifted(lock, folder) {
+		const id = idOfFolder(folder);
+		if (!id) return null;
+
+		const files = await builder.sourceAndSheetsAt(folder);
+		if (files === null) return null;
+		if (await builder.isCurrent(lock.builds[id] ?? null, folder, files)) return null;
+
+		return { id, ...(await builder.rebuild(lock, id, folder, files)) };
 	}
 
 	async function withDependencies(lock, id, manifest) {
@@ -114,29 +123,49 @@ export function createInstaller({
 			return readLock(await readJson(LOCK_PATH, null));
 		},
 
+		async rebuildDrifted() {
+			if (!(await adapter.exists(WIDGETS_DIR))) return { rebuilt: [], failures: [] };
+
+			let lock = await this.lock();
+			const rebuilt = [];
+			const failures = [];
+			for (const folder of await everyWidgetFolder()) {
+				const made = await rebuiltIfDrifted(lock, folder);
+				if (made === null) continue;
+				if (!made.ok) failures.push({ id: made.id, failure: made.failure });
+				else {
+					lock = made.lock;
+					rebuilt.push(made.id);
+				}
+			}
+			if (rebuilt.length > 0) await writeJson(LOCK_PATH, lock);
+			for (const each of failures) console.error(`[widgetarium] ${each.id} did not build: ${each.failure}`);
+			return { rebuilt, failures };
+		},
+
 		async install(listed, onStep) {
 			const held = await widgets.filesOf(listed, onStep);
 			if (!held.ok) return refuse(held.failure);
 
 			const id = held.record.id;
 			const folder = folderFor(WIDGETS_DIR, id);
-			const built = buildOf(held.files, folder);
-			if (!built.ok) return refuse(built.failure);
-
 			const resolved = await withDependencies(await this.lock(), id, held.record);
 			if (!resolved.ok) return refuse(resolved.failure);
 
-			await writeWidget(folder, held.files, built);
+			const made = await builder.make({
+				lock: resolved.lock,
+				id,
+				folder,
+				files: held.files,
+				aboutToBeWritten: whatTheScopeIsAboutToGet(folder, held.scope),
+			});
+			if (!made.ok) return refuse(made.failure);
+
+			await writeWidget(folder, held.files, made);
 			await writeWhatTheScopeShares(folder, held.scope);
 			const from = listed?.origin ?? listed?.manifest?.repository;
-			await writeJson(
-				LOCK_PATH,
-				withEntry(
-					resolved.lock,
-					id,
-					lockEntry({ source: from, commit: held.commit, files: held.files, builtFrom: built.from }),
-				),
-			);
+			const written = withEntry(made.lock, id, lockEntry({ source: from, commit: held.commit, files: held.files }));
+			await writeJson(LOCK_PATH, withBuild(written, id, made.record));
 			return { ok: true, id, commit: held.commit, failure: null };
 		},
 

@@ -1,8 +1,22 @@
 import { transform } from "sucrase";
 
+const BUILD_DIR = "build";
 export const BUILD_FILE = "widget.js";
+const BUILT_SHEET = "widget.css";
 export const SOURCE_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
 export const SHEET_FILES = ["widget.css", "styles.css"];
+
+export function buildFolder(folder) {
+	return `${folder}/${BUILD_DIR}`;
+}
+
+export function builtCodePath(folder) {
+	return `${buildFolder(folder)}/${BUILD_FILE}`;
+}
+
+export function builtSheetPath(folder) {
+	return `${buildFolder(folder)}/${BUILT_SHEET}`;
+}
 
 export function compileWidget(source, filePath) {
 	const typed = /\.tsx?$/.test(String(filePath ?? ""));
@@ -15,7 +29,6 @@ export function compileWidget(source, filePath) {
 	}).code;
 }
 
-// TRADE-OFF: a source named like the build is left uncompiled, because one file cannot be both
 export function sourceFileIn(files) {
-	return SOURCE_FILES.find((name) => name !== BUILD_FILE && typeof files?.[name] === "string") ?? null;
+	return SOURCE_FILES.find((name) => typeof files?.[name] === "string") ?? null;
 }

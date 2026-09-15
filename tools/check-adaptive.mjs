@@ -8,19 +8,11 @@
 //   .orbi-sidebar__add                 (0,1,0)   adaptive — never wins
 import fs from "node:fs";
 import path from "node:path";
+import { widgetFiles } from "./widget-files.mjs";
 
 const roots = process.argv.slice(2).filter((root) => fs.existsSync(root));
 const offences = [];
 
-function widgetFiles(dir) {
-	const found = [];
-	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-		const full = path.join(dir, entry.name);
-		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory())) found.push(...widgetFiles(full));
-		else if (/^widget\.(jsx|tsx|js|ts)$/.test(entry.name)) found.push(full);
-	}
-	return found;
-}
 
 // classes, attributes and pseudo-classes all weigh the same; elements are a tie-break we do
 // not need, because widget CSS is written in classes
