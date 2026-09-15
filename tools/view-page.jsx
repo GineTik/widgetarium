@@ -2,6 +2,7 @@ import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
+import { leavesOf } from "../src/tree.js";
 import { WidgetRegistry } from "../src/registry.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 
@@ -32,6 +33,7 @@ let writes = 0;
 function draw() {
 	render(
 		h(WidgetSurface, {
+			boardNode: mount,
 			board,
 			registry,
 			host,
@@ -52,7 +54,7 @@ function draw() {
 
 // CONTEXT: two boards render the same or they do not — the whole grid, not a field of it
 function painted() {
-	const html = document.querySelector(".wg-grid")?.innerHTML ?? "";
+	const html = document.querySelector(".wg-tree-page")?.innerHTML ?? "";
 	let hash = 0;
 	for (let at = 0; at < html.length; at += 1) hash = (hash * 131 + html.charCodeAt(at)) % 1000000007;
 	return `${html.length}:${hash}`;
@@ -116,7 +118,7 @@ function read() {
 		context: window.wgContext ? window.wgContext.all() : null,
 		provider: window.wgContext ? { view: window.wgContext.providerOf("view"), views: window.wgContext.providerOf("views") } : null,
 		tiles: board.tiles.map((tile) => ({ id: tile.id, widget: tile.widget, settings: tile.settings ?? null, mounts: tile.mounts ?? null, props: tile.props ?? null, mounted: tile.mounted ?? null })),
-		layouts: Object.fromEntries(Object.entries(board.layouts).map(([columns, places]) => [columns, places.map((place) => `${place.id} ${place.x},${place.y} ${place.w}x${place.h}`)])),
+		layout: leavesOf(board.layout).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`),
 		failures,
 		warnings,
 	};

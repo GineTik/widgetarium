@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
-import { measureGrid } from "../src/paths.js";
+import { GRID, measureGrid } from "../src/paths.js";
 
 const WIDGET = "@probe/board";
 
@@ -42,27 +42,22 @@ if (staged === "phone") mount.style.width = "390px";
 // CONTEXT: a board taller than the screen is where the window used to run off the bottom
 const SPAN = { w: 12, h: staged === "tall" ? 20 : 8 };
 
-let board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: {} });
+const TILE_HEIGHT_PX = SPAN.h * (GRID.cellPx + GRID.gapPx) - GRID.gapPx;
 
-function keyLayoutTo(width) {
-	const columns = measureGrid(width).columns;
-	if (board.layouts[columns]) return;
-	board = normalizeBoard({ tiles: [{ id: "t1", widget: WIDGET }], layouts: { [columns]: [{ id: "t1", x: 0, y: 0, w: SPAN.w, h: SPAN.h }] } });
-}
+let board = normalizeBoard({
+	tiles: [{ id: "t1", widget: WIDGET }],
+	layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: "t1", height: TILE_HEIGHT_PX }] }] },
+});
 
 function draw() {
 	render(
 		h(WidgetSurface, {
+			boardNode: mount,
 			board,
 			registry,
 			host,
 			editing: true,
 			initialWidth: mount.clientWidth,
-			onWidth: (width) => {
-				const had = Object.keys(board.layouts).length;
-				keyLayoutTo(width);
-				if (Object.keys(board.layouts).length !== had) draw();
-			},
 			onChange: (next) => {
 				board = next;
 				draw();
@@ -174,7 +169,12 @@ function read() {
 	const headBox = boxOf(head);
 	const widgetBox = boxOf(body);
 	const windowBox = boxOf(window_);
-	const boardStyle = getComputedStyle(mount.querySelector(".wg-grid"));
+	const tileBox = boxOf(mount.querySelector(".wg-tree-cell"));
+	const boardNode = mount.querySelector(".wg-board");
+	const boardPad = getComputedStyle(boardNode);
+	const boardMetrics = measureGrid(
+		boardNode.clientWidth - parseFloat(boardPad.paddingLeft) - parseFloat(boardPad.paddingRight),
+	);
 
 	// CONTEXT: a box-shadow is a comma list, and only the parts carrying "inset" stay inside the box
 	const castOf = (shadow) => shadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter((part) => !part.includes("inset"));
@@ -200,8 +200,9 @@ function read() {
 		barBox: boxOf(bar),
 		widgetBox,
 		span: SPAN,
-		cellPx: parseFloat(boardStyle.getPropertyValue("--wg-cell")),
-		gapPx: parseFloat(boardStyle.getPropertyValue("--wg-gap")),
+		tileBox,
+		cellPx: boardMetrics.cell,
+		gapPx: boardMetrics.gap,
 		scale: scaleOfCanvas(body),
 		grid: gridOf(window_, widgetBox),
 		innerHeight: window.innerHeight,

@@ -13,7 +13,18 @@ fields and asks about only the ones it cannot resolve.
 
 ```ts
 import { createWidget, useData } from "widgetarium";
-import type { Action, Aka, CollectionGateway, Color, Day, ListAction, Ref, RemoveAction, Text, UpdateAction } from "widgetarium";
+import type {
+	Action,
+	Aka,
+	CollectionGateway,
+	Color,
+	Day,
+	ListAction,
+	Ref,
+	RemoveAction,
+	Text,
+	UpdateAction,
+} from "widgetarium";
 
 type Habit = {
 	days: Day[] & Aka<"entries" | "dates" | "log" | "checkins">;
@@ -35,19 +46,19 @@ export default createWidget(function HabitGrid({ habits }: { habits: CollectionG
 });
 ```
 
-| written | read as |
-|---|---|
-| a property | a need |
-| `?` | optional — the widget draws without it |
-| no `?` | required — an unresolved one is the tile's one question |
-| `Day`, `Text`, `Color`, `number`, `boolean` | the type the field picker filters by |
-| `T[]` | many |
-| `Aka<"a" \| "b">` | the names this need answers to |
-| `CollectionGateway<T, Accesses>` | the gateway, and the verbs the widget reaches it through |
-| `ListAction` … `RemoveAction` | the engine's own verb — its signature comes from `T`, never written by hand |
-| `Action<I, O>` | a verb beyond the standard five, its signature written here |
-| a verb without `?` | a binding that cannot do it may not host this widget |
-| a verb with `?` | the widget mounts anyway and asks `can()` before drawing the control |
+| written                                     | read as                                                                     |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| a property                                  | a need                                                                      |
+| `?`                                         | optional — the widget draws without it                                      |
+| no `?`                                      | required — an unresolved one is the tile's one question                     |
+| `Day`, `Text`, `Color`, `number`, `boolean` | the type the field picker filters by                                        |
+| `T[]`                                       | many                                                                        |
+| `Aka<"a" \| "b">`                           | the names this need answers to                                              |
+| `CollectionGateway<T, Accesses>`            | the gateway, and the verbs the widget reaches it through                    |
+| `ListAction` … `RemoveAction`               | the engine's own verb — its signature comes from `T`, never written by hand |
+| `Action<I, O>`                              | a verb beyond the standard five, its signature written here                 |
+| a verb without `?`                          | a binding that cannot do it may not host this widget                        |
+| a verb with `?`                             | the widget mounts anyway and asks `can()` before drawing the control        |
 
 `?` carries one meaning in both halves: **the widget survives without it.**
 
@@ -86,13 +97,13 @@ records themselves. Obsidian's own registry — `.obsidian/types.json`, reachabl
 `app.metadataTypeManager` — supplies what a property was declared as. A need is resolved against
 both:
 
-| step | rule | example |
-|---|---|---|
-| 1 | exact name | `days` → `days` |
-| 2 | `was` — the need's own previous name | the lazy-migration law |
-| 3 | `Aka`, then fuzzy over those names | `days` → `entries` |
-| 4 | the sole field of the required type | one `Day[]` in the folder, so it is the one |
-| 5 | otherwise, unresolved | the tile asks, once |
+| step | rule                                 | example                                     |
+| ---- | ------------------------------------ | ------------------------------------------- |
+| 1    | exact name                           | `days` → `days`                             |
+| 2    | `was` — the need's own previous name | the lazy-migration law                      |
+| 3    | `Aka`, then fuzzy over those names   | `days` → `entries`                          |
+| 4    | the sole field of the required type  | one `Day[]` in the folder, so it is the one |
+| 5    | otherwise, unresolved                | the tile asks, once                         |
 
 Steps 1–4 are silent and are **never written down**. Only an answer to step 5 is stored, and it is
 stored per folder, not per tile:

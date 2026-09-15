@@ -11,7 +11,7 @@ import { fieldsOf } from "./gateway/fields.js";
 import { boxNamed, matchesNeedle, referenceIn, referenceText, widgetsOffering } from "./ref-draft.js";
 import { conditionOfRow, conditionsFor, rowFor } from "./gateway/operators.js";
 import { reactClash, slotFit } from "./fit.js";
-import { spanToPixels } from "./layout.js";
+import { spanToPixels } from "./paths.js";
 import { CHROME, barPlacement, clampPan, dialogBox, freeArea, openingPan, openingScale } from "./settings-fit.js";
 
 const TABS = [

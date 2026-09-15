@@ -3,7 +3,7 @@ import { TEXT_LOADERS } from "../build.mjs";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/cache"; export * from "./src/gateway/props.js"; export * from "./src/gateway/narrow"; export * from "./src/gateway/match"; export * from "./src/gateway/fields"; export * from "./src/gateway/operators";`,
+		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/refs"; export * from "./src/gateway/cache"; export * from "./src/gateway/props.js"; export * from "./src/gateway/narrow"; export * from "./src/gateway/match"; export * from "./src/gateway/fields"; export * from "./src/gateway/operators";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},
@@ -418,6 +418,107 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		"first frame: a source that has to go and look is still loading",
 		cache.read(away.get.meta, undefined).status === "loading",
 	);
+}
+
+
+{
+	const board = { name: "Marketing" };
+	const rowsOf = (all) => ({ rows: all.map((value, at) => ({ ref: `r${at}`, value })), total: all.length });
+	const written = [];
+	const pickedOver = ({ all, chosen, canWriteRows, inTile }) =>
+		gateway.pickedGateway({
+			id: "board/board",
+			chosen: gateway.valueGateway({ id: "chosen", handlers: { get: async () => chosen } }),
+			collection: gateway.collectionGateway({
+				id: "boards",
+				handlers: {
+					list: async () => rowsOf(all),
+					...(canWriteRows ? { update: async (given) => written.push(given) } : {}),
+				},
+			}),
+			fieldName: "name",
+			isFallbackToFirst: false,
+			inTile,
+		});
+
+	const named = pickedOver({ all: [board], chosen: "Marketing", canWriteRows: true });
+	check("a picked row says it can be written", named.update.can().can === true);
+	await named.update({ columns: ["To Do"] });
+	check("and the write lands on the row the selection names", written.at(-1)?.ref === "r0", JSON.stringify(written.at(-1)));
+
+	const lost = pickedOver({ all: [board], chosen: "A board that left", canWriteRows: true });
+	check("a selection naming no row still reports it can be written, because a row is writable", lost.update.can().can === true);
+	const refusal = await lost.update({ columns: [] }).then(
+		() => null,
+		(failure) => String(failure.message),
+	);
+	check("but the write itself refuses out loud instead of answering nothing", Boolean(refusal), JSON.stringify(refusal));
+	check("naming what it could not write to", refusal?.includes("Neither"), JSON.stringify(refusal));
+
+	const kept = [];
+	const inTile = gateway.valueGateway({
+		id: "in-tile",
+		handlers: { get: async () => ({ columns: [] }), update: async (given) => kept.push(given) },
+	});
+	const beside = pickedOver({ all: [board], chosen: "A board that left", canWriteRows: true, inTile });
+	check("a tile behind the selection does not make a missing row writable", beside.update.can().can === true);
+	const said = await beside.update({ columns: ["Blocked"] }).then(
+		() => null,
+		(failure) => String(failure.message),
+	);
+	check("the write refuses rather than quietly writing into the tile instead", Boolean(said), JSON.stringify(said));
+	check("and says the collection is not empty, so the tile is not what a write means here", said?.includes("not empty"), JSON.stringify(said));
+	check("with nothing written anywhere", kept.length === 0 && written.length === 1, JSON.stringify({ kept, written }));
+
+	const alone = pickedOver({ all: [], chosen: "Anything", canWriteRows: true, inTile });
+	await alone.update({ columns: ["To Do"] });
+	check("but an empty collection does mean the tile, and the write lands there", kept.length === 1, JSON.stringify(kept));
+
+	const refs = gateway.createGatewayRefs();
+	const later = gateway.pickedGateway({
+		id: "board/late",
+		chosen: gateway.valueGateway({ id: "chosen", handlers: { get: async () => "Marketing" } }),
+		collection: gateway.refCollection(refs, "boards/rows"),
+		fieldName: "name",
+		isFallbackToFirst: false,
+	});
+	check("a pick over a ref nothing has published yet says it cannot be written", later.update.can().can === false);
+	refs.put(
+		"boards/rows",
+		gateway.collectionGateway({
+			id: "published",
+			handlers: { list: async () => rowsOf([board]), update: async (given) => written.push(given) },
+		}),
+	);
+	check("and the same gateway can be written the moment the ref arrives", later.update.can().can === true);
+	await later.update({ columns: ["Doing"] });
+	check("with the write landing on the row, not nowhere", written.at(-1)?.ref === "r0", JSON.stringify(written.at(-1)));
+
+	const malformed = gateway.createGatewayRefs();
+	const overRef = gateway.refCollection(malformed, "boards/rows");
+	malformed.put("boards/rows", { id: "hand-rolled", kind: "collection", subscribe: () => () => {}, update: "not a verb" });
+	check("a published gateway whose verb is not callable is refused, not trusted", overRef.update.can().can === false);
+	const said2 = await overRef.update({ ref: "r0", data: {} }).then(
+		() => null,
+		(failure) => String(failure.message),
+	);
+	check("and calling it anyway says nothing is published there", said2?.includes("Nothing is published"), JSON.stringify(said2));
+
+	const bare = gateway.createGatewayRefs();
+	const overBare = gateway.refCollection(bare, "boards/rows");
+	bare.put("boards/rows", { id: "bare", kind: "collection", subscribe: () => () => {}, update: () => undefined });
+	const asked = (() => {
+		try {
+			return overBare.update.can();
+		} catch (failure) {
+			return { threw: String(failure.message) };
+		}
+	})();
+	check("a verb that is a function but answers no can() is refused rather than asked", asked.can === false, JSON.stringify(asked));
+
+	const nowhere = pickedOver({ all: [board], chosen: "Marketing", canWriteRows: false });
+	check("with neither a writable row nor a tile behind it, it says so before it is pressed", nowhere.update.can().can === false);
+	check("and says why", nowhere.update.can().reason?.includes("Neither"), JSON.stringify(nowhere.update.can()));
 }
 
 if (failed > 0) {

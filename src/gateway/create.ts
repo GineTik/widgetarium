@@ -36,11 +36,17 @@ export function canDo(verb?: { can(): CanResult } | null): boolean {
 }
 
 export function action<I, O>(run: (input: I) => MaybePromise<O>): Action<I, O> {
-	return withCan((input: I) => Promise.resolve(run(input)), () => ({ can: true }));
+	return withCan(
+		(input: I) => Promise.resolve(run(input)),
+		() => ({ can: true }),
+	);
 }
 
 function refusedAction<I, O>(reason: string): Action<I, O> {
-	return withCan<I, O>(() => Promise.reject(new Error(reason)), () => ({ can: false, reason }));
+	return withCan<I, O>(
+		() => Promise.reject(new Error(reason)),
+		() => ({ can: false, reason }),
+	);
 }
 
 function createEmitter() {
@@ -63,6 +69,7 @@ interface AssembleOptions {
 	id: string;
 	kind: "collection" | "value";
 	handlers: HandlerMap;
+	cans?: Record<string, () => CanResult>;
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	announcesOwnWrites?: boolean;
@@ -84,13 +91,16 @@ function combinedSubscribe(emitter: ReturnType<typeof createEmitter>, outer?: Su
 
 function buildVerb(options: AssembleOptions, verb: string, notify: () => void): Action<never, unknown> {
 	const held = options.handlers[verb];
-	if (!held) return refusedAction(`${options.id} has no "${verb}" — this source does not provide it`);
+	if (!held) return refusedAction(refusalOf(options, verb));
 	const announces = options.announcesOwnWrites !== false && !READ_VERBS.has(verb);
-	return withCan(async (input: never) => {
-		const result = await held(input);
-		if (announces) notify();
-		return result;
-	}, () => ({ can: true }));
+	return withCan(
+		async (input: never) => {
+			const result = await held(input);
+			if (announces) notify();
+			return result;
+		},
+		options.cans?.[verb] ?? (() => ({ can: true })),
+	);
 }
 
 function readNowHandlerFor(options: AssembleOptions, verb: string): ((input: unknown) => unknown) | undefined {
@@ -110,7 +120,12 @@ function assemble(options: AssembleOptions): Record<string, unknown> {
 		if (verb === "subscribe") continue;
 		const built = buildVerb(options, verb, () => emitter.notify({}));
 		const readNow = readNowHandlerFor(options, verb);
-		(built as Action<never, unknown> & { meta: ActionMeta }).meta = { gatewayId: options.id, verb, subscribe, ...(readNow ? { readNow } : {}) };
+		(built as Action<never, unknown> & { meta: ActionMeta }).meta = {
+			gatewayId: options.id,
+			verb,
+			subscribe,
+			...(readNow ? { readNow } : {}),
+		};
 		gateway[verb] = built;
 	}
 	return gateway;
@@ -119,6 +134,7 @@ function assemble(options: AssembleOptions): Record<string, unknown> {
 export function collectionGateway<T>(options: {
 	id: string;
 	handlers: HandlerMap;
+	cans?: Record<string, () => CanResult>;
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	announcesOwnWrites?: boolean;
@@ -130,6 +146,7 @@ export function collectionGateway<T>(options: {
 export function valueGateway<T>(options: {
 	id: string;
 	handlers: HandlerMap;
+	cans?: Record<string, () => CanResult>;
 	requested?: string[];
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	settlesNow?: boolean;
@@ -192,4 +209,11 @@ export function soloGateway<T>(
 		handlers: { get: () => readOne(), ...handlers },
 		settlesNow: true,
 	});
+}
+
+// TRADE-OFF: a can() authored for a verb nothing implements is the reason the author wanted heard, so it outranks the generic one
+function refusalOf(options: AssembleOptions, verb: string): string {
+	const declared = options.cans?.[verb]?.();
+	if (declared?.can === false && declared.reason) return declared.reason;
+	return `${options.id} has no "${verb}" — this source does not provide it`;
 }

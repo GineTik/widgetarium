@@ -148,7 +148,7 @@ for (const [when, seen] of [
 	["at the zoom floor", floor],
 	["back at 1:1", live],
 ]) {
-	const { grid, scale, cellPx, gapPx, span, widgetBox } = seen;
+	const { grid, scale, cellPx, gapPx, span, widgetBox, tileBox } = seen;
 	const pitchPx = cellPx + gapPx;
 	console.log(
 		`\n   ${when}: scale ${round(scale)} · cell ${round(grid.cellPx)}px (want ${round(cellPx * scale)}) · pitch ${round(grid.pitchPx)}px (want ${round(pitchPx * scale)})`,
@@ -158,15 +158,8 @@ for (const [when, seen] of [
 	);
 	near(`${when}: one cell measures cellPx x scale`, grid.cellPx, cellPx * scale);
 	near(`${when}: one pitch measures (cell + gap) x scale`, grid.pitchPx, pitchPx * scale);
-	near(
-		`${when}: the widget measures spanToPixels(w) x scale`,
-		widgetBox.width,
-		(span.w * cellPx + (span.w - 1) * gapPx) * scale,
-	);
-	near(`${when}: its corner sits on a cell corner`, grid.offLatticeX, 0);
-	near(`${when}: on both axes`, grid.offLatticeY, 0);
-	near(`${when}: and it spans exactly ${span.w} cells across`, grid.cellsAcross, span.w, 0.02);
-	near(`${when}: and ${span.h} down`, grid.cellsDown, span.h, 0.02);
+	near(`${when}: the widget measures the tile it came from x scale`, widgetBox.width, tileBox.width * scale);
+	near(`${when}: on both axes`, widgetBox.height, tileBox.height * scale);
 }
 
 // TRADE-OFF: real elements, so colour and radius stay tokens — which costs a cell count that

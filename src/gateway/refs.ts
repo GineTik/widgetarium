@@ -1,6 +1,16 @@
-import type { CollectionGateway, FilterRow, GatewayBase, GatewayEvent, Ref, Row, Unsubscribe, ValueGateway } from "./contract";
+import type {
+	CanResult,
+	CollectionGateway,
+	FilterRow,
+	GatewayBase,
+	GatewayEvent,
+	Ref,
+	Row,
+	Unsubscribe,
+	ValueGateway,
+} from "./contract";
 import type { EveryValueVerb } from "./needs";
-import { collectionGateway, valueGateway } from "./create";
+import { canDo, collectionGateway, valueGateway } from "./create";
 import { fieldOf } from "./match";
 import type { Narrowing } from "./narrow";
 import { isEmpty, narrowedCollection, normalizeWhere } from "./narrow";
@@ -61,7 +71,12 @@ function notify(state: RefsState) {
 	});
 }
 
-function put(state: RefsState, ref: Ref, gateway: AnyGateway | null, told?: { describes?: RefDescription; dependsOn?: Ref[] }) {
+function put(
+	state: RefsState,
+	ref: Ref,
+	gateway: AnyGateway | null,
+	told?: { describes?: RefDescription; dependsOn?: Ref[] },
+) {
 	const before = state.held.get(ref);
 	if (gateway) state.held.set(ref, gateway);
 	else state.held.delete(ref);
@@ -154,7 +169,13 @@ export function createViewCells(): (key: string) => ValueGateway<unknown, EveryV
 }
 
 export function createGatewayRefs(): GatewayRefs {
-	const state: RefsState = { held: new Map(), described: new Map(), listeners: new Set(), depends: new Map(), isQueued: false };
+	const state: RefsState = {
+		held: new Map(),
+		described: new Map(),
+		listeners: new Set(),
+		depends: new Map(),
+		isQueued: false,
+	};
 	return {
 		put: (ref, gateway, told) => put(state, ref, gateway, told),
 		drop: (ref, gateway) => drop(state, ref, gateway),
@@ -170,7 +191,12 @@ export function createGatewayRefs(): GatewayRefs {
 }
 
 function isUnwired(held: unknown): boolean {
-	return typeof held === "object" && held !== null && typeof (held as { wants?: unknown }).wants === "string" && typeof (held as { ref?: unknown }).ref !== "string";
+	return (
+		typeof held === "object" &&
+		held !== null &&
+		typeof (held as { wants?: unknown }).wants === "string" &&
+		typeof (held as { ref?: unknown }).ref !== "string"
+	);
 }
 
 function refIn(row: FilterRow | null | undefined): Ref | null {
@@ -182,7 +208,8 @@ export function refsWithin(rows: FilterRow[] | null | undefined): Ref[] {
 	return (rows ?? []).map(refIn).filter(Boolean) as Ref[];
 }
 
-const NOT_A_NARROWING = 'Widgetarium: "{ref}" answered with something no condition can be made of, so it narrows nothing.';
+const NOT_A_NARROWING =
+	'Widgetarium: "{ref}" answered with something no condition can be made of, so it narrows nothing.';
 
 function isNarrowing(chosen: unknown): chosen is Narrowing {
 	return Array.isArray(chosen) || (typeof chosen === "object" && chosen !== null);
@@ -217,14 +244,21 @@ export async function resolveWhere(rows: FilterRow[], refs: GatewayRefs): Promis
 	return out;
 }
 
-export function narrowedByRefs<T>(base: CollectionGateway<T>, rows: FilterRow[] | null | undefined, refs: GatewayRefs): CollectionGateway<T> {
+export function narrowedByRefs<T>(
+	base: CollectionGateway<T>,
+	rows: FilterRow[] | null | undefined,
+	refs: GatewayRefs,
+): CollectionGateway<T> {
 	const held = rows ?? [];
 	const named = refsWithin(held);
 	return narrowedCollection<T>(
 		base,
 		held,
 		(asked) => resolveWhere(asked, refs),
-		combined([base.subscribe, named.length > 0 ? ((listener) => refs.watch(named, listener as () => void)) as Subscribe : null]),
+		combined([
+			base.subscribe,
+			named.length > 0 ? (((listener) => refs.watch(named, listener as () => void)) as Subscribe) : null,
+		]),
 	);
 }
 
@@ -243,27 +277,43 @@ export function refValue(refs: GatewayRefs, ref: Ref, id?: string): ValueGateway
 
 const COLLECTION_WRITES = ["create", "update", "remove", "replace", "repairIds"] as const;
 
-type WriteVerb = { (input: never): Promise<unknown>; can(): { can: boolean } };
+type WriteVerb = { (input: never): Promise<unknown>; can(): CanResult };
 
-function delegatedWrites(refs: GatewayRefs, ref: Ref, target: AnyGateway | null) {
+const NOTHING_PUBLISHED = "Nothing is published at {ref} yet, so it cannot be written to.";
+
+function delegatedWrites(refs: GatewayRefs, ref: Ref) {
 	const handlers: Record<string, (input: never) => unknown> = {};
+	const cans: Record<string, () => CanResult> = {};
+	const refused = { can: false as const, reason: NOTHING_PUBLISHED.replace("{ref}", ref) };
 	for (const verb of COLLECTION_WRITES) {
-		const held = target?.[verb] as WriteVerb | undefined;
-		if (held?.can?.().can !== true) continue;
-		handlers[verb] = (input: never) => (refs.get(ref)?.[verb] as WriteVerb | undefined)?.(input) ?? null;
+		const live = (): WriteVerb | null => {
+			const held = refs.get(ref)?.[verb];
+			return typeof held === "function" ? (held as WriteVerb) : null;
+		};
+		handlers[verb] = (input: never) => {
+			const held = live();
+			if (!held) throw new Error(refused.reason);
+			return held(input);
+		};
+		cans[verb] = () => {
+			const held = live();
+			return held && typeof held.can === "function" ? held.can() : refused;
+		};
 	}
-	return handlers;
+	return { handlers, cans };
 }
 
 export function refCollection<T>(refs: GatewayRefs, ref: Ref): CollectionGateway<T> {
 	const target = refs.get(ref);
 	const held = () => refs.get(ref) as unknown as CollectionGateway<T> | null;
+	const writes = delegatedWrites(refs, ref);
 	return collectionGateway<T>({
 		id: `ref:${ref}?${target?.id ?? ""}`,
+		cans: writes.cans,
 		handlers: {
 			list: (query: never) => held()?.list?.(query) ?? { rows: [], total: 0 },
 			get: (given: never) => held()?.get?.(given) ?? null,
-			...delegatedWrites(refs, ref, target),
+			...writes.handlers,
 		},
 		subscribe: (listener) => refs.watch([ref], listener as () => void),
 	});
@@ -279,7 +329,7 @@ function identityOf(row: Row<unknown>, named: string): unknown {
 
 const isArchivedRow = (row: Row<unknown>): boolean => Boolean(fieldOf(row.value, "archivedAt"));
 
-const firstStandingRow = <T,>(rows: Row<T>[]): Row<T> | null => rows.find((row) => !isArchivedRow(row)) ?? null;
+const firstStandingRow = <T>(rows: Row<T>[]): Row<T> | null => rows.find((row) => !isArchivedRow(row)) ?? null;
 
 async function rowAt<T>(collection: CollectionGateway<T>, chosen: unknown): Promise<Row<T> | null> {
 	if (!chosen) return null;
@@ -318,7 +368,11 @@ export function selectionGateway<T>(spec: SelectionSpec<T>): ValueGateway<unknow
 			update: (ref: unknown) => spec.memory.update(ref),
 			remove: () => spec.memory.remove(),
 		},
-		subscribe: combined([spec.memory.subscribe as Subscribe, spec.collection.subscribe as Subscribe, spec.watches ?? null]),
+		subscribe: combined([
+			spec.memory.subscribe as Subscribe,
+			spec.collection.subscribe as Subscribe,
+			spec.watches ?? null,
+		]),
 	});
 }
 
@@ -348,34 +402,67 @@ function rowPicker<T>({ chosen, collection, fieldName, isFallbackToFirst }: Pick
 	};
 }
 
-const isHeldRecord = (held: unknown): held is Record<string, unknown> => typeof held === "object" && held !== null && !Array.isArray(held);
+const isHeldRecord = (held: unknown): held is Record<string, unknown> =>
+	typeof held === "object" && held !== null && !Array.isArray(held);
 
-function pickedWrites<T>(spec: PickSpec<T>, rowNow: () => Promise<Row<T> | null>): Record<string, (input: never) => unknown> {
-	const canWriteRow = spec.collection.update?.can().can === true;
-	const canWriteTile = spec.inTile?.update?.can().can === true;
-	if (!canWriteRow && !canWriteTile) return {};
-	return {
-		update: async (patch: never) => {
-			const row = canWriteRow ? await rowNow() : null;
-			if (row) return spec.collection.update({ ref: row.ref, data: patch as Partial<T> });
-			if (!canWriteTile || (await spec.collection.list()).total > 0) return null;
-			const held = await (spec.inTile as ValueGateway<unknown, EveryValueVerb>).get();
-			return (spec.inTile as ValueGateway<unknown, EveryValueVerb>).update({ ...(isHeldRecord(held) ? held : {}), ...(patch as Record<string, unknown>) });
-		},
-	};
+const NOTHING_TO_WRITE = "Neither the row this names nor the tile behind it can be written to.";
+const NO_ROW_OF_ITS_OWN =
+	"This names no row of the collection, and the collection is not empty, so the tile behind it is not what a write means here.";
+
+type Cell = ValueGateway<unknown, EveryValueVerb>;
+type WriteHome<T> = { row: Row<T> } | { cell: Cell } | { refused: string };
+
+interface WriteHomeAnswer<T> {
+	can(): CanResult;
+	found(): Promise<WriteHome<T>>;
 }
 
 export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown, EveryValueVerb> {
 	const rowNow = rowPicker(spec);
+	const home = writeHomeOf(spec, rowNow);
 	return valueGateway<unknown>({
 		id: spec.id,
+		cans: { update: home.can },
 		handlers: {
 			get: async () => {
 				const row = await rowNow();
 				return row ? row.value : (spec.inTile?.get() ?? null);
 			},
-			...pickedWrites(spec, rowNow),
+			...pickedWrites(spec, home),
 		},
-		subscribe: combined([spec.chosen.subscribe as Subscribe, spec.collection.subscribe as Subscribe, (spec.inTile?.subscribe ?? null) as Subscribe | null, spec.watches ?? null]),
+		subscribe: combined([
+			spec.chosen.subscribe as Subscribe,
+			spec.collection.subscribe as Subscribe,
+			(spec.inTile?.subscribe ?? null) as Subscribe | null,
+			spec.watches ?? null,
+		]),
 	});
+}
+
+// TRADE-OFF: can() is synchronous and cannot ask whether a row was found, so it answers only whether a side could ever be written and `found` carries the rest as a refusal the write throws
+function writeHomeOf<T>(spec: PickSpec<T>, rowNow: () => Promise<Row<T> | null>): WriteHomeAnswer<T> {
+	const toRow = () => canDo(spec.collection.update);
+	const toCell = () => canDo(spec.inTile?.update);
+	return {
+		can: (): CanResult => (toRow() || toCell() ? { can: true } : { can: false, reason: NOTHING_TO_WRITE }),
+		found: async (): Promise<WriteHome<T>> => {
+			const row = toRow() ? await rowNow() : null;
+			if (row) return { row };
+			if (!toCell()) return { refused: NOTHING_TO_WRITE };
+			if ((await spec.collection.list()).total > 0) return { refused: NO_ROW_OF_ITS_OWN };
+			return { cell: spec.inTile as Cell };
+		},
+	};
+}
+
+async function writtenInto<T>(spec: PickSpec<T>, home: WriteHome<T>, patch: never): Promise<unknown> {
+	if ("refused" in home) throw new Error(home.refused);
+	if ("row" in home) return spec.collection.update({ ref: home.row.ref, data: patch as Partial<T> });
+	const held = await home.cell.get();
+	return home.cell.update({ ...(isHeldRecord(held) ? held : {}), ...(patch as Record<string, unknown>) });
+}
+
+// TRADE-OFF: the verb always exists and `cans.update` carries the live answer, because deciding at construction whether a write has anywhere to go is what made a ref-picked write silently do nothing on the first render
+function pickedWrites<T>(spec: PickSpec<T>, home: WriteHomeAnswer<T>): Record<string, (input: never) => unknown> {
+	return { update: async (patch: never) => writtenInto(spec, await home.found(), patch) };
 }

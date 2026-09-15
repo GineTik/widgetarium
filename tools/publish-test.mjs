@@ -111,7 +111,7 @@ check("and the folder is what names it", offered[0].manifest.title, ID);
 
 const copied = await shelved.install(offered[0]);
 check("a folder holding nothing but its source installs", [copied.ok, copied.failure], [true, null]);
-check("and lands as source and build, with no record invented beside them", [...shelf.files.keys()].filter((at) => at.startsWith(INSTALLED)).sort(), [`${INSTALLED}/widget.js`, `${INSTALLED}/widget.tsx`]);
+check("and lands as source and build, with no record invented beside them", [...shelf.files.keys()].filter((at) => at.startsWith(INSTALLED)).sort(), [`${INSTALLED}/build/widget.js`, `${INSTALLED}/widget.tsx`]);
 check("and it draws", (await loadedFrom(shelf))?.component({}).props.children, "only a source");
 
 check("a widget's sheet is published under the widget's own name", PUBLISHED_SHEET, "widget.css");

@@ -33,19 +33,14 @@ const boundSwitcher = { id: "views", widget: "@task/view-tabs", props: { options
 const looseSwitcher = { id: "views", widget: "@task/view-tabs", props: { options: { value: [] } } };
 const probeOn = (ref) => ({ id: "probe", widget: "@probe/context", props: { seen: { from: "ref", ref } } });
 
-function places(held) {
-	return { 20: { places: [
-		{ id: "boards", x: 0, y: 0, w: 16, h: 1 },
-		{ id: "views", x: 0, y: 1, w: 16, h: 1 },
-		{ id: held, x: 0, y: 2, w: 16, h: 10 },
-	] } };
+const kept = (of) => ({ dir: "row", of: [{ dir: "column", keep: true, of }] });
+
+function rowsOver(held) {
+	return kept([{ id: "boards", height: 56 }, { id: "views", height: 56 }, { id: held, height: 620 }]);
 }
 
-function placesAlone(held) {
-	return { 20: { places: [
-		{ id: "boards", x: 0, y: 0, w: 16, h: 1 },
-		{ id: held, x: 0, y: 1, w: 16, h: 11 },
-	] } };
+function rowsAlone(held) {
+	return kept([{ id: "boards", height: 56 }, { id: held, height: 680 }]);
 }
 
 // CONTEXT: board is consumed only INSIDE the group's mounts, which is what proves the descent
@@ -55,7 +50,7 @@ const GROUPED = {
 		boundSwitcher,
 		{ id: "group", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` }, mounted: { [KANBAN]: { props: { tasks: { path: "Orbitask/Tasks" } } } } },
 	],
-	layouts: places("group"),
+	layout: rowsOver("group"),
 };
 
 const STRIPPED = {
@@ -63,7 +58,7 @@ const STRIPPED = {
 		{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "One" }, { name: "Two" }] } } },
 		{ id: "group", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` }, mounted: { [KANBAN]: { props: { tasks: { path: "Orbitask/Tasks" } } } } },
 	],
-	layouts: placesAlone("group"),
+	layout: rowsAlone("group"),
 };
 
 const LOOSE = {
@@ -72,15 +67,13 @@ const LOOSE = {
 		looseSwitcher,
 		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: "Orbitask/Tasks" } } },
 	],
-	layouts: places("board"),
+	layout: rowsOver("board"),
 };
 
-function narrowed(board, id, w) {
-	const layouts = {};
-	for (const [columns, layout] of Object.entries(board.layouts)) {
-		layouts[columns] = { places: layout.places.map((place) => (place.id === id ? { ...place, w } : place)) };
-	}
-	return { ...board, layouts };
+function narrowed(board, id, ratio) {
+	const narrowIn = (node) =>
+		Array.isArray(node?.of) ? { ...node, of: node.of.map(narrowIn) } : node?.id === id ? { ...node, ratio } : node;
+	return { ...board, layout: narrowIn(board.layout) };
 }
 
 // CONTEXT: the shape a real board arrived in — tabs, a bare kanban, a filter panel, a dialog
@@ -91,24 +84,15 @@ const STUCK = {
 		{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: "Orbitask/Tasks" } } },
 		{ id: "filters", widget: "@core/filter-panel" },
 	],
-	layouts: {
-		12: { places: [
-			{ id: "boards", x: 0, y: 0, w: 12, h: 1 },
-			{ id: "views", x: 0, y: 1, w: 9, h: 1 },
-			{ id: "filters", x: 9, y: 1, w: 3, h: 1 },
-			{ id: "board", x: 0, y: 2, w: 12, h: 12 },
-		] },
-		20: { places: [
-			{ id: "boards", x: 1, y: 0, w: 19, h: 1 },
-			{ id: "views", x: 1, y: 1, w: 16, h: 1 },
-			{ id: "filters", x: 17, y: 1, w: 3, h: 1 },
-			{ id: "board", x: 1, y: 2, w: 19, h: 11 },
-		] },
-	},
+	layout: kept([
+		{ id: "boards", height: 56 },
+		{ dir: "row", of: [{ id: "views", ratio: 16 }, { id: "filters", ratio: 4 }], height: 56 },
+		{ id: "board", height: 640 },
+	]),
 };
 
 const SETTINGS_STEP = { name: "settings", within: ".orbi-view-tabs", click: '.wg-tile-actions button[aria-label="Settings"]' };
-const BOARD_SETTINGS_STEP = { name: "boardSettings", within: '[data-tile="boards"]', click: '.wg-tile-actions button[aria-label="Settings"]' };
+const BOARD_SETTINGS_STEP = { name: "boardSettings", within: '[data-cell="boards"]', click: '.wg-tile-actions button[aria-label="Settings"]' };
 const CLOSE_STEP = { name: "closed", click: '.wg-set-head button[aria-label="Close without keeping the changes"]' };
 const editRow = (saying, type) => [
 	{ name: "rowOpen", click: ".wg-set-panel .wg-set-row", saying },
@@ -150,7 +134,7 @@ async function gate() {
 			{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "One", board: "one" }] } } },
 			probeOn("boards/selection"),
 		],
-		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }, { id: "probe", x: 0, y: 1, w: 16, h: 1 }] } },
+		layout: kept([{ id: "boards", height: 56 }, { id: "probe", height: 56 }]),
 	};
 	const TYPE_AN_ITEM = [
 		BOARD_SETTINGS_STEP,
@@ -217,7 +201,7 @@ async function gate() {
 
 	const BOUND = {
 		tiles: [{ id: "boards", widget: "@task/board-tabs", props: { tabs: { path: "Orbitask/Boards" } } }],
-		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }] } },
+		layout: kept([{ id: "boards", height: 56 }]),
 	};
 	const SWITCH_KIND = [
 		BOARD_SETTINGS_STEP,
@@ -268,13 +252,13 @@ async function gate() {
 			},
 			probeOn("filters/chosen"),
 		],
-		layouts: { 20: { places: [{ id: "filters", x: 0, y: 0, w: 4, h: 1 }, { id: "probe", x: 4, y: 0, w: 16, h: 1 }] } },
+		layout: kept([{ dir: "row", of: [{ id: "filters", ratio: 4 }, { id: "probe", ratio: 16 }], height: 56 }]),
 	};
 	const NARROW_BY = [
 		{ name: "opened", click: ".ofp-open" },
 		{ name: "ticked", click: ".ofp-option", saying: "Doing" },
 		{ name: "applied", click: ".ofp-apply" },
-		{ name: "settings", within: '[data-tile="filters"]', click: '.wg-tile-actions button[aria-label="Settings"]' },
+		{ name: "settings", within: '[data-cell="filters"]', click: '.wg-tile-actions button[aria-label="Settings"]' },
 	];
 	const narrowing = await stage({ board: FILTERED, files: { ...files, ...probeFiles() }, editing: true, steps: NARROW_BY });
 	check("every step of narrowing the board found something to press", NARROW_BY.map((step) => narrowing[step.name]?.pressed), NARROW_BY.map(() => true));
@@ -288,10 +272,10 @@ async function gate() {
 			{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "One", board: "one" }, { name: "Two", board: "two" }] } } },
 			{ id: "board", widget: KANBAN, settings: { columns: "To Do, Doing, Done" }, props: { tasks: { path: "Orbitask/Tasks" } } },
 		],
-		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }, { id: "board", x: 0, y: 1, w: 16, h: 10 }] } },
+		layout: kept([{ id: "boards", height: 56 }, { id: "board", height: 620 }]),
 	};
 	const DATA_TAB = { name: "data", click: '.wg-set-window [role="tab"]', said: "Data" };
-	const KANBAN_SETTINGS = { name: "settings", within: '[data-tile="board"]', click: '.wg-tile-actions button[aria-label="Settings"]' };
+	const KANBAN_SETTINGS = { name: "settings", within: '[data-cell="board"]', click: '.wg-tile-actions button[aria-label="Settings"]' };
 	const BUILD_A_CONDITION = [
 		KANBAN_SETTINGS,
 		DATA_TAB,
@@ -350,7 +334,7 @@ async function gate() {
 			...NARROWED.tiles,
 			{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: "Orbitask/Tasks" }, groups: { value: [{ prop: "status", label: "Stage" }] } } },
 		],
-		layouts: { 20: { places: [...NARROWED.layouts[20].places, { id: "filters", x: 16, y: 0, w: 4, h: 1 }] } },
+		layout: kept([...NARROWED.layout.of[0].of, { id: "filters", height: 56 }]),
 	};
 	const SPREAD_A_FILTER = [
 		KANBAN_SETTINGS,
@@ -381,7 +365,7 @@ async function gate() {
 				mounted: { Kanban: { widget: KANBAN, props: { tasks: { path: "Orbitask/Tasks" } } } },
 			},
 		],
-		layouts: places("group"),
+		layout: rowsOver("group"),
 	};
 
 	const fresh = await stage({ board: NEW_SHAPE, files, editing: true, steps: [{ name: "opened", click: ".orbi-view-tabs .ovt-pick" }] });
@@ -397,7 +381,7 @@ async function gate() {
 			GROUPED.tiles[0],
 			{ id: "group", widget: "@core/view-group", settings: { views: `${KANBAN}, ${KANBAN}` } },
 		],
-		layouts: placesAlone("group"),
+		layout: rowsAlone("group"),
 	};
 	const doubled = await stage({ board: twice, files, editing: true, steps: [{ name: "picked", click: ".ovg-strip .wg-tabs-tab", said: "Kanban 2" }] });
 	check("two mounts of one widget are two names, not one twice", doubled.arrival?.groupStrip, ["Kanban", "Kanban 2"]);
@@ -410,7 +394,7 @@ async function gate() {
 			GROUPED.tiles[0],
 			{ id: "group", widget: "@core/view-group", settings: { views: "@core/filter-panel" } },
 		],
-		layouts: placesAlone("group"),
+		layout: rowsAlone("group"),
 	};
 	const plain = await stage({ board: untitled, files, editing: true });
 	check("a widget declaring no view name is still offered under one", plain.arrival?.groupStrip, ["Filter"]);
@@ -418,7 +402,7 @@ async function gate() {
 	// RENAMING, PRESSED THROUGH. Settings, the row, the field, Apply, Done — then the strip.
 	const RENAME = [
 		// CONTEXT: the group renders its child's root, not its own, so the TILE is what names it
-		{ name: "settings", within: '[data-tile="group"]', click: '.wg-tile-actions button[aria-label="Settings"]' },
+		{ name: "settings", within: '[data-cell="group"]', click: '.wg-tile-actions button[aria-label="Settings"]' },
 		...editRow(KANBAN, "Planner"),
 	];
 	const renamed = await stage({ board: STRIPPED, files, editing: true, steps: RENAME });
@@ -466,11 +450,23 @@ async function gate() {
 	]);
 	check("with the columns the loose tile had", born?.mounted?.Kanban?.settings, { columns: "To Do, Doing, Done" });
 	check("and the folder it read", born?.mounted?.Kanban?.props?.tasks?.path, "Orbitask/Tasks");
-	check("the group stands where the kanban stood, at every authored width", [pressed.held?.layouts["12"].at(-1), pressed.held?.layouts["20"].at(-1)], [
-		`${born?.id} 0,2 12x12`,
-		`${born?.id} 1,2 19x11`,
+	check("the group stands where the kanban stood, on its own row", pressed.held?.layout.at(-1), `${born?.id}@0/2`);
+	check("and nothing is left holding the tile it swallowed", (pressed.held?.layout ?? []).filter((leaf) => leaf.startsWith("board@")), []);
+	const NO_KEPT_BOX = {
+		...STUCK,
+		layout: { dir: "row", of: [{ id: "boards", height: 56 }, { dir: "column", of: [STUCK.layout.of[0].of[1]] }] },
+	};
+	const keptless = await stage({ board: NO_KEPT_BOX, files, editing: true, steps: [{ name: "held", click: ".orbi-view-tabs .ovt-deaf" }] });
+	const keptlessGroup = keptless.held?.tiles.find((tile) => tile.widget === "@core/view-group");
+	check("a board whose root names no box to keep still folds its views into a group", Boolean(keptlessGroup), true);
+	check("and the group is placed in the first box that can hold it, never in a leaf", keptless.held?.layout.at(-1), `${keptlessGroup?.id}@1/2`);
+	check("beside every tile that was already standing", keptless.held?.layout, [
+		"boards@0",
+		"views@1/0",
+		"filters@1/1",
+		`${keptlessGroup?.id}@1/2`,
 	]);
-	check("and no width was left holding the tile it swallowed", Object.values(pressed.held?.layouts ?? {}).flat().filter((place) => place.startsWith("board ")), []);
+
 	check("the strip now offers both views", pressed.opened?.tabItems, ["Kanban", CHOSEN]);
 	check("picking the second one draws it and puts the kanban away", [pressed.picked?.drawn, pressed.picked?.kanbans], [[CHOSEN], 0]);
 	check("picking back brings the kanban again", [pressed.back?.drawn, pressed.back?.kanbans], [["Kanban"], 1]);

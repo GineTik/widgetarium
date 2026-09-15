@@ -1,8 +1,19 @@
-import { canDo, createWidget, flatRows, useData, WidgetRoot } from "widgetarium";
-import type { Aka, CollectionGateway, CreateAction, Day, ListAction, UpdateAction, ValueGateway, VaultRecord } from "widgetarium";
+import { canDo, createWidget, flatRows, pickedValue, useData, WidgetRoot } from "widgetarium";
+import type {
+	Aka,
+	CollectionGateway,
+	CreateAction,
+	Day,
+	GetAction,
+	ListAction,
+	Text,
+	UpdateAction,
+	ValueGateway,
+	VaultRecord,
+} from "widgetarium";
 import { useEffect, useRef, useState } from "react";
 import { Icon, IconButton } from "widgetarium/kit";
-import { daysLogged, FLAME, isoOf, pressing } from "@habit/lib";
+import { daysLogged, FLAME, isoOf, pressing, shapeOf } from "@habit/lib";
 
 const ACROSS = 7;
 const MOST_WEEKS = 6;
@@ -36,6 +47,22 @@ const STYLE = `
 
 .hm-flip {
 	transform: rotate(180deg);
+}
+
+.hm-mid {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	min-width: 0;
+}
+
+.hm-note {
+	max-width: 100%;
+	font-size: max(10px, min(var(--font-ui-smaller, 12px), calc(var(--hm-ring) * 0.46)));
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .hm-title {
@@ -158,9 +185,24 @@ const STYLE = `
 }
 `;
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTHS = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
+];
 const FROM_MONDAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const FROM_SUNDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const A_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const NOTHING_TRACKED = "No habit here yet";
 const A_KEPT_DAY = "{date}, kept";
 const AN_OPEN_DAY = "{date}, not kept";
 
@@ -169,8 +211,10 @@ function filled(sentence: string, values: Record<string, string>) {
 }
 
 type DayNote = VaultRecord & {
+	days?: (Day[] & Aka<"entries" | "dates" | "log" | "checkins">) | null;
 	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
 	date?: (Day & Aka<"created" | "day" | "when" | "on">) | null;
+	title?: (Text & Aka<"name">) | null;
 };
 
 type Accesses = {
@@ -297,21 +341,51 @@ function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSize: num
 
 type MonthProps = {
 	days: CollectionGateway<DayNote, Accesses>;
+	pick: ValueGateway<unknown, { get: GetAction; update?: UpdateAction }>;
 	isWeekStartingMonday: ValueGateway<boolean>;
 };
+
+function keptDaysOf(habit?: DayNote) {
+	const held = Array.isArray(habit?.days) ? habit.days : [];
+	const listed = held.map((entry) => String(entry ?? "").slice(0, 10));
+	return new Set(listed.filter((entry) => A_DAY.test(entry)));
+}
+
+function pressingHabit(days: CollectionGateway<DayNote, Accesses>, habit: DayNote | undefined, kept: Set<string>) {
+	return async (day: string) => {
+		if (!habit) return undefined;
+		const held = new Set(kept);
+		if (held.has(day)) held.delete(day);
+		else held.add(day);
+		return days.update({ ref: habit.ref, data: { days: [...held].sort() } });
+	};
+}
+
+function habitNamed(rows: DayNote[], picked: string) {
+	return rows.find((row) => String(row.name ?? "") === picked) ?? rows[0];
+}
+
+function captionOf(isPerHabit: boolean, habit?: DayNote) {
+	if (!isPerHabit) return "";
+	if (!habit) return NOTHING_TRACKED;
+	return String(habit.title ?? habit.name ?? "");
+}
 
 function weekStartsMonday(held: unknown): boolean {
 	if (typeof held === "boolean") return held;
 	return true;
 }
 
-function MonthHead({ shown, onShift }: { shown: Date; onShift: (by: number) => void }) {
+function MonthHead({ shown, caption, onShift }: { shown: Date; caption: string; onShift: (by: number) => void }) {
 	return (
 		<div className="hm-head">
 			<IconButton size="s" label="Previous month" onClick={() => onShift(-1)}>
 				<Icon name="chevron" size={15} className="hm-flip" />
 			</IconButton>
-			<span className="hm-title">{`${MONTHS[shown.getMonth()]} ${shown.getFullYear()}`}</span>
+			<span className="hm-mid">
+				<span className="hm-title">{`${MONTHS[shown.getMonth()]} ${shown.getFullYear()}`}</span>
+				{caption === "" ? null : <span className="hm-note">{caption}</span>}
+			</span>
 			<IconButton size="s" label="Next month" onClick={() => onShift(1)}>
 				<Icon name="chevron" size={15} />
 			</IconButton>
@@ -327,48 +401,76 @@ function WeekdayNames({ isWeekStartingMonday }: { isWeekStartingMonday: boolean 
 	));
 }
 
-export default createWidget(function HabitMonth({ isWeekStartingMonday: fromMonday, days }: MonthProps) {
-	const room = useRef<HTMLDivElement | null>(null);
-	const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
-	const [shift, setShift] = useState(0);
+export default createWidget(
+	function HabitMonth({ isWeekStartingMonday: fromMonday, days, pick }: MonthProps) {
+		const room = useRef<HTMLDivElement | null>(null);
+		const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
+		const [shift, setShift] = useState(0);
 
-	const listed = useData(days.list);
-	const { noteByDay, keptDays } = daysLogged(flatRows(listed.rows));
+		const listed = useData(days.list);
+		const rows = flatRows(listed.rows) as DayNote[];
+		const picked = String(pickedValue(useData(pick.get).data) ?? "");
+		const isPerHabit = shapeOf(rows) === "habit";
+		const habit = isPerHabit ? habitNamed(rows, picked) : undefined;
+		const logged = daysLogged(rows);
+		const keptDays = isPerHabit ? keptDaysOf(habit) : logged.keptDays;
 
-	const now = new Date();
-	const today = isoOf(now);
-	const shown = new Date(now.getFullYear(), now.getMonth() + shift, 1);
-	const isWeekStartingMonday = weekStartsMonday(useData(fromMonday.get).data);
+		const now = new Date();
+		const today = isoOf(now);
+		const shown = new Date(now.getFullYear(), now.getMonth() + shift, 1);
+		const isWeekStartingMonday = weekStartsMonday(useData(fromMonday.get).data);
 
-	const ring = ringFor(box);
-	const press = pressing({ days, noteByDay, keptDays });
-	const month = daysInWholeWeeks(shown.getFullYear(), shown.getMonth(), isWeekStartingMonday);
-	const cells = cellsOver(month, keptDays, today, canDo(days.update) && canDo(days.create));
+		const ring = ringFor(box);
+		const press = isPerHabit
+			? pressingHabit(days, habit, keptDays)
+			: pressing({ days, noteByDay: logged.noteByDay, keptDays });
+		const canWrite = isPerHabit ? canDo(days.update) && habit !== undefined : canDo(days.update) && canDo(days.create);
+		const month = daysInWholeWeeks(shown.getFullYear(), shown.getMonth(), isWeekStartingMonday);
+		const cells = cellsOver(month, keptDays, today, canWrite);
 
-	return (
-		<WidgetRoot className="habit-month" style={sizesFor(ring)}>
-			<style>{STYLE}</style>
-			<MonthHead shown={shown} onShift={(by) => setShift(shift + by)} />
-			<div className="hm-room" ref={room}>
-				<WeekdayNames isWeekStartingMonday={isWeekStartingMonday} />
-				{cells.map((cell) => (
-					<DayButton key={cell.day} cell={cell} flameSize={Math.round(ring * FLAME_SHARE)} onPress={() => press(cell.day)} />
-				))}
-			</div>
-		</WidgetRoot>
-	);
-}, {
-	props: {
-		days: {
-			label: "Days",
-			was: "habits",
-			default: { path: "Habits" },
-		},
-		isWeekStartingMonday: {
-			wasSetting: true,
-			type: "boolean",
-			label: "Weeks start on Monday",
-			default: { value: true },
+		return (
+			<WidgetRoot className="habit-month" style={sizesFor(ring)}>
+				<style>{STYLE}</style>
+				<MonthHead
+					shown={shown}
+					caption={captionOf(isPerHabit, habit)}
+					onShift={(by) => setShift(shift + by)}
+				/>
+				<div className="hm-room" ref={room}>
+					<WeekdayNames isWeekStartingMonday={isWeekStartingMonday} />
+					{cells.map((cell) => (
+						<DayButton
+							key={cell.day}
+							cell={cell}
+							flameSize={Math.round(ring * FLAME_SHARE)}
+							onPress={() => press(cell.day)}
+						/>
+					))}
+				</div>
+			</WidgetRoot>
+		);
+	},
+	{
+		props: {
+			days: {
+				label: "Days",
+				was: "habits",
+				hint: "A folder of habit notes, or a folder of day notes for a single habit.",
+				default: { path: "Habits" },
+			},
+			pick: {
+				label: "Which habit",
+				hint: "The habit this grid writes into. Bind it to a habit list and the month follows what the list picks.",
+				of: "days",
+				field: "name",
+				fallback: "first",
+			},
+			isWeekStartingMonday: {
+				wasSetting: true,
+				type: "boolean",
+				label: "Weeks start on Monday",
+				default: { value: true },
+			},
 		},
 	},
-});
+);

@@ -27,10 +27,15 @@ function namesOf(need: string, declared: DeclaredNeed): string[] {
 // TRADE-OFF: a need for many takes a field that holds one, and a field whose other values are junk, because coercion drops them; a need for one refuses a list rather than picking from it
 function fits(field: FieldReport, declared: DeclaredNeed): boolean {
 	if (declared.many) return field.typesSeen.includes(declared.type);
-	return !field.many && field.elementType === declared.type;
+	if (field.many) return false;
+	return declared.type === "text" || field.elementType === declared.type;
 }
 
-function namedExactly(fields: readonly FieldReport[], names: readonly string[], declared: DeclaredNeed): FieldReport | null {
+function namedExactly(
+	fields: readonly FieldReport[],
+	names: readonly string[],
+	declared: DeclaredNeed,
+): FieldReport | null {
 	for (const name of names) {
 		const found = fields.find((field) => field.prop === name && fits(field, declared));
 		if (found) return found;
@@ -38,7 +43,11 @@ function namedExactly(fields: readonly FieldReport[], names: readonly string[], 
 	return null;
 }
 
-function namedPlainly(fields: readonly FieldReport[], names: readonly string[], declared: DeclaredNeed): FieldReport | null {
+function namedPlainly(
+	fields: readonly FieldReport[],
+	names: readonly string[],
+	declared: DeclaredNeed,
+): FieldReport | null {
 	const wanted = new Set(names.map(plainly));
 	const [only, andMore] = fields.filter((field) => wanted.has(plainly(field.prop)) && fits(field, declared));
 	if (!only || andMore) return null;
@@ -56,7 +65,11 @@ function namedFor(need: string, declared: DeclaredNeed, fields: readonly FieldRe
 	return (namedExactly(fields, names, declared) ?? namedPlainly(fields, names, declared))?.prop ?? null;
 }
 
-function resolvedByName(needs: DeclaredNeeds, fields: readonly FieldReport[], chosen: ChosenProps): Record<string, string> {
+function resolvedByName(
+	needs: DeclaredNeeds,
+	fields: readonly FieldReport[],
+	chosen: ChosenProps,
+): Record<string, string> {
 	const map: Record<string, string> = {};
 	for (const [need, declared] of Object.entries(needs)) {
 		const picked = chosen[need] ?? namedFor(need, declared, fields);
@@ -80,7 +93,11 @@ function resolvedByType(needs: DeclaredNeeds, fields: readonly FieldReport[], ma
 }
 
 // TRADE-OFF: one property answers at most one need — without that, a lone text field is claimed by every text need at once
-export function resolveNeeds(needs: DeclaredNeeds, fields: readonly FieldReport[], chosen: ChosenProps = {}): Resolution {
+export function resolveNeeds(
+	needs: DeclaredNeeds,
+	fields: readonly FieldReport[],
+	chosen: ChosenProps = {},
+): Resolution {
 	const map = resolvedByName(needs, fields, chosen);
 	resolvedByType(needs, fields, map);
 	const unresolved = Object.keys(needs).filter((need) => !map[need]);

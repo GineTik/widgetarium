@@ -1,12 +1,13 @@
 import { createElement as h } from "react";
 import { viewHost } from "./engine/view-host.js";
 import { reactClash } from "./fit.js";
-import { spanToPixels } from "./layout.js";
+import { spanToPixels } from "./paths.js";
 import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
 import { NO_CATALOGUE } from "./engine/catalogue-none.js";
 import { refusedRead } from "./engine/read-file.js";
 import { collectionGateway, soloGateway } from "./gateway/create";
+import { pickedGateway, selectionGateway } from "./gateway/refs";
 import { mappedCollection } from "./gateway/mapped";
 import { storedRows } from "./gateway/props.js";
 
@@ -15,10 +16,12 @@ import { storedRows } from "./gateway/props.js";
 // and everything it would normally write is refused. Browsing must not be able to touch a vault.
 
 // CONTEXT: the shape src/host.js hands a widget, built from a plain object instead of a file
+// TRADE-OFF: needs comes from the types at publish, so nothing flattens props here and a widget reading a bare field would see nothing
 function toRecord(row, index) {
 	const path = row.path ?? `preview/${index + 1}.md`;
 	const { path: given, body, ...props } = row;
 	return {
+		...props,
 		path,
 		ref: { path },
 		props,
@@ -37,28 +40,95 @@ function refuse(what) {
 	};
 }
 
+const previewPropId = (manifest, name) => `preview/${manifest?.id ?? "widget"}/${name}`;
+
+const shapeOfSeed = (seeded) =>
+	Array.isArray(seeded?.rows) ? "collection" : seeded?.value === undefined ? null : "value";
+
+const MARKS_A_SINGLE_VALUE = ["picks", "of", "type"];
+
+const shapeOfSpec = (spec) =>
+	MARKS_A_SINGLE_VALUE.some((mark) => spec?.[mark]) || spec?.kind === "value" ? "value" : null;
+
+const shapeOfDefault = (spec) =>
+	spec?.default?.value === undefined ? null : Array.isArray(spec.default.value) ? "collection" : "value";
+
+// TRADE-OFF: kind comes from the types at publish, so a folder-read widget carries none and the seed's shape answers instead
+function isSingleValueProp(seeded, spec) {
+	return (shapeOfSeed(seeded) ?? shapeOfSpec(spec) ?? shapeOfDefault(spec)) === "value";
+}
+
+const seededValue = (seeded, spec) => seeded?.value ?? spec?.default?.value ?? null;
+
+function seededRows(seeded, spec) {
+	if (!Array.isArray(seeded?.rows)) return storedRows(spec?.default?.value ?? [], spec);
+	return seeded.rows.map(toRecord).map((record) => ({ ref: record.path, value: record }));
+}
+
 // CONTEXT: a preview gateway lists what the manifest offers and refuses every write by omission
+function heldCollection(id, rows, spec) {
+	const listing = collectionGateway({
+		id,
+		handlers: {
+			list: (query) => ({ rows: query?.limit ? rows.slice(0, query.limit) : rows, total: rows.length }),
+			get: (ref) => rows.find((row) => row.ref === ref) ?? null,
+		},
+	});
+	return mappedCollection(listing, { needs: spec?.needs ?? {} });
+}
+
+function heldByTheManifest(manifest, name, spec) {
+	const seeded = manifest?.preview?.props?.[name];
+	const id = previewPropId(manifest, name);
+	if (isSingleValueProp(seeded, spec)) return soloGateway(seededValue(seeded, spec), {}, id);
+	return heldCollection(id, seededRows(seeded, spec), spec);
+}
+
+const fieldNameFor = (spec, gatewayFor) =>
+	spec?.fieldFrom ? () => gatewayFor(spec.fieldFrom)?.get() ?? null : (spec?.field ?? null);
+
+function selectionOverFirst(manifest, name, spec, gatewayFor) {
+	return selectionGateway({
+		id: previewPropId(manifest, name),
+		memory: heldByTheManifest(manifest, name, { kind: "value" }),
+		collection: gatewayFor(spec.of),
+		fieldName: fieldNameFor(spec, gatewayFor),
+		isFallbackToFirst: spec.fallback === "first",
+	});
+}
+
+function rowPickedBySelection(manifest, name, spec, gatewayFor) {
+	const picking = manifest?.props?.[spec.picks] ?? {};
+	return pickedGateway({
+		id: previewPropId(manifest, name),
+		chosen: gatewayFor(spec.picks),
+		collection: gatewayFor(spec.of),
+		fieldName: fieldNameFor(picking, gatewayFor),
+		isFallbackToFirst: (spec.fallback ?? picking.fallback) === "first",
+		inTile: heldByTheManifest(manifest, name, spec),
+	});
+}
+
+const resolvesASelection = (spec, gatewayFor) => Boolean(spec?.of) && !spec?.picks && Boolean(gatewayFor(spec.of));
+
+const resolvesAPickedRow = (spec, gatewayFor) =>
+	Boolean(spec?.picks) && Boolean(gatewayFor(spec.picks)) && Boolean(gatewayFor(spec.of));
+
 export function previewGateways(manifest) {
-	const declared = manifest?.preview?.props ?? {};
+	const props = Object.entries(manifest?.props ?? {});
 	const gateways = {};
-	for (const [name, spec] of Object.entries(manifest?.props ?? {})) {
-		const id = `preview/${manifest?.id ?? "widget"}/${name}`;
-		if (spec?.kind === "value") {
-			gateways[name] = soloGateway(declared[name]?.value ?? spec?.default?.value ?? null, {}, id);
-			continue;
-		}
-		const rows = declared[name]?.rows
-			? declared[name].rows.map(toRecord).map((record) => ({ ref: record.path, value: record }))
-			: storedRows(spec?.default?.value ?? [], spec);
-		const listing = collectionGateway({
-			id,
-			handlers: {
-				list: (query) => ({ rows: query?.limit ? rows.slice(0, query.limit) : rows, total: rows.length }),
-				get: (ref) => rows.find((row) => row.ref === ref) ?? null,
-			},
-		});
-		gateways[name] = mappedCollection(listing, { needs: spec?.needs ?? {} });
+	const gatewayFor = (name) => gateways[name] ?? null;
+
+	for (const [name, spec] of props) gateways[name] = heldByTheManifest(manifest, name, spec);
+
+	for (const [name, spec] of props) {
+		if (resolvesASelection(spec, gatewayFor)) gateways[name] = selectionOverFirst(manifest, name, spec, gatewayFor);
 	}
+
+	for (const [name, spec] of props) {
+		if (resolvesAPickedRow(spec, gatewayFor)) gateways[name] = rowPickedBySelection(manifest, name, spec, gatewayFor);
+	}
+
 	return gateways;
 }
 

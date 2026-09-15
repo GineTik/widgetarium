@@ -275,5 +275,31 @@ function folderStandIn(records, { canWrite = true } = {}) {
 	check("shipped: and its own preview rows answer the kept need", map.done === "done", JSON.stringify(map));
 }
 
+{
+	const noteAndItsNeighbours = [
+		{ props: { date: "2026-09-12", amount: 123, note: "12345", widgetarium: { wgId: "f8fb1240" } } },
+	];
+	const fields = gateway.fieldsOf(noteAndItsNeighbours);
+	const offered = fields.map((field) => field.prop);
+	const needs = {
+		amount: { type: "number", aka: ["value"] },
+		date: { type: "date", aka: ["day"] },
+		note: { type: "text", aka: ["label"] },
+	};
+	const { map } = gateway.resolveNeeds(needs, fields);
+
+	check(
+		"a property holding an object is offered to nothing",
+		offered.includes("widgetarium") === false,
+		offered.join(","),
+	);
+	check("a note that reads as a number still answers a need for text", map.note, "note");
+	check(
+		"and nothing lands on the plugin's own bookkeeping",
+		Object.values(map).includes("widgetarium") === false,
+		JSON.stringify(map),
+	);
+}
+
 console.log(failed ? `needs gate: ${failed} failure(s)` : "needs gate: clean");
 process.exit(failed ? 1 : 0);

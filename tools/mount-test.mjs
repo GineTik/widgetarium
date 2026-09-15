@@ -140,6 +140,7 @@ const root = dom.window.document.getElementById("host");
 const draw = () =>
 	render(
 		h(WidgetSurface, {
+			boardNode: root,
 			board, registry, host, editing: false, screen: true, initialWidth: 1280,
 			onChange: (next) => { board = next; draw(); },
 			onToggleEditing: () => {}, onWidth: () => {},

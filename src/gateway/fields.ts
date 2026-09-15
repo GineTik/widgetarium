@@ -66,6 +66,7 @@ function note(seen: Seen, held: unknown) {
 		return;
 	}
 	if (held === undefined || held === null || held === "") return;
+	if (isRecord(held) && !(held instanceof Date)) return;
 	seen.countsAs.add(countAs(held));
 	if (seen.values.size < VALUES_KEPT) seen.values.add(String(held));
 }
@@ -75,12 +76,18 @@ export function fieldsOf(records: readonly unknown[]): FieldReport[] {
 	const held = new Map<string, Seen>();
 	for (const record of records) {
 		for (const [prop, value] of Object.entries(fieldsIn(record))) {
-			const seen = held.get(prop) ?? { prop, values: new Set<string>(), holdsList: false, countsAs: new Set<FieldType>() };
+			const seen = held.get(prop) ?? {
+				prop,
+				values: new Set<string>(),
+				holdsList: false,
+				countsAs: new Set<FieldType>(),
+			};
 			note(seen, value);
 			held.set(prop, seen);
 		}
 	}
 	return [...held.values()]
+		.filter((seen) => seen.countsAs.size > 0 || seen.holdsList)
 		.map((seen) => ({
 			prop: seen.prop,
 			type: typeOfSeen(seen),

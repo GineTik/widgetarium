@@ -417,8 +417,12 @@ if (typeof resolveSlots === "function") {
 		isFallbackToFirst: false,
 		inTile: heldElsewhere,
 	});
-	const refused = await missed.update({ columns: [{ name: "Lost" }] });
-	check("a write that names no row on a collection that holds some is refused, not diverted to the tile", refused, null);
+	const refused = await missed.update({ columns: [{ name: "Lost" }] }).then(
+		() => null,
+		(failure) => String(failure.message),
+	);
+	check("a write that names no row on a collection that holds some is refused, not diverted to the tile", Boolean(refused), true);
+	check("and the refusal says why instead of answering nothing at all", refused?.includes("not empty"), true);
 	check("and the tile it could have landed in is untouched", await heldElsewhere.get(), { columns: [{ name: "Held" }] });
 }
 
