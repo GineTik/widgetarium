@@ -50,7 +50,12 @@ const GLYPHS = {
 	// CONTEXT: r below half the 1.8 stroke, or the stroke leaves a hole and the dots read as rings
 	dots: '<circle cx="10" cy="5.2" r="0.8"/><circle cx="10" cy="10" r="0.8"/><circle cx="10" cy="14.8" r="0.8"/>',
 	menu: '<path d="M4.6 6.3h10.8M4.6 10h10.8M4.6 13.7h10.8"/>',
-	archive: '<rect x="3.8" y="4.3" width="12.4" height="3.6" rx="1.4"/><path d="M5.1 7.9v6.4a1.4 1.4 0 001.4 1.4h7a1.4 1.4 0 001.4-1.4V7.9"/><path d="M8.5 11.1h3"/>',
+	terminal: '<rect x="3.6" y="4.4" width="12.8" height="11.2" rx="2.6"/><path d="M6.6 8.4l2.2 2.1-2.2 2.1M10.6 12.8h3"/>',
+	gear: '<circle cx="10" cy="10" r="2.5"/><path d="M10 3.6v1.5M10 14.9v1.5M16.4 10h-1.5M5.1 10H3.6M14.53 5.47l-1.06 1.06M6.53 13.47l-1.06 1.06M14.53 14.53l-1.06-1.06M6.53 6.53L5.47 5.47"/>',
+	stop: '<rect x="6" y="6" width="8" height="8" rx="2.2"/>',
+	sparkle: '<path d="M10 3.8l1.6 3.9 3.9 1.6-3.9 1.6-1.6 3.9-1.6-3.9L4.5 9.3l3.9-1.6z"/>',
+	archive:
+		'<rect x="3.8" y="4.3" width="12.4" height="3.6" rx="1.4"/><path d="M5.1 7.9v6.4a1.4 1.4 0 001.4 1.4h7a1.4 1.4 0 001.4-1.4V7.9"/><path d="M8.5 11.1h3"/>',
 	close: '<path d="M6.4 6.4l7.2 7.2M13.6 6.4l-7.2 7.2"/>',
 	widget: '<rect x="4" y="4" width="12" height="12" rx="3.4"/><path d="M7.4 8.2h5.2M7.4 11.6h3.2"/>',
 	"sidebar-left": '<rect x="3.4" y="4.2" width="13.2" height="11.6" rx="3.2"/><path d="M8.2 4.2v11.6"/>',

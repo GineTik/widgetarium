@@ -40,7 +40,7 @@ export function buildWidgets() {
 	return to;
 }
 
-export function buildMirror() {
+export function buildMirror({ widgetsCli = null } = {}) {
 	buildWidgets();
 	const cache = path.join(process.cwd(), "tools", ".mjs-cache");
 	fs.rmSync(cache, { recursive: true, force: true });
@@ -50,6 +50,10 @@ export function buildMirror() {
 	// reimplementation instead of the code that ships.
 	fs.writeFileSync(path.join(cache, "obsidian.mjs"), OBSIDIAN_STUB);
 	fs.writeFileSync(path.join(cache, "surface-source.mjs"), "export const REACT_SURFACE_SOURCE = null;\n");
+	fs.writeFileSync(
+		path.join(cache, "widgets-cli-source.mjs"),
+		`export default ${JSON.stringify(widgetsCli ?? fs.readFileSync(path.join("src", "ai", "widgets-cli.mjs"), "utf8"))};\n`,
+	);
 	return "./.mjs-cache";
 }
 
@@ -65,6 +69,8 @@ export class Plugin {
 	registerEvent() {}
 }
 export class Modal {}
+export class ItemView { constructor(leaf) { this.leaf = leaf; } }
+export class PluginSettingTab { constructor(app, plugin) { this.app = app; this.plugin = plugin; } }
 export class Setting {}
 export class MarkdownRenderChild { constructor(containerEl) { this.containerEl = containerEl; } }
 // CONTEXT: the real one carries these flags; a stand-in that omitted them made every build desktop
@@ -117,6 +123,7 @@ function mirrored(source, isTs, toStub) {
 	return (
 		withTextImports(isTs ? transform(read, { transforms: ["typescript"], filePath: source }).code : read, source)
 			.replace(/from "widgetarium:surface"/g, `from "${toStub.replace("obsidian.mjs", "surface-source.mjs")}"`)
+			.replace(/from "widgetarium:widgets-cli"/g, `from "${toStub.replace("obsidian.mjs", "widgets-cli-source.mjs")}"`)
 			.replace(/from "(\.\.?\/[\w./-]+)\.js"/g, 'from "$1.mjs"')
 			// CONTEXT: TS sources import without an extension; node needs the mirror's .mjs spelled out
 			.replace(/from "(\.\.?\/[\w./-]+)"/g, (whole, specifier) =>

@@ -3,7 +3,46 @@ import esbuild from "esbuild";
 
 export const TEXT_LOADERS = { ".md": "text" };
 
-const SUPPLIED_BY_ELECTRON_AT_RUNTIME = ["obsidian", "electron", "node:fs/promises", "node:path"];
+const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
+const WIDGETS_CLI_SOURCE = "src/ai/widgets-cli.mjs";
+
+export async function widgetsCliBundle() {
+	const built = await esbuild.build({
+		entryPoints: [WIDGETS_CLI_SOURCE],
+		bundle: true,
+		write: false,
+		format: "esm",
+		platform: "node",
+		target: "node18",
+		charset: "utf8",
+		external: ["node:fs/promises", "node:path", "node:url", "node:module"],
+		// TRADE-OFF: a banner, because esbuild's own require shim throws for a dependency that still reaches for one
+		banner: {
+			js: 'import { createRequire as __needs } from "node:module";\nconst require = __needs(import.meta.url);',
+		},
+		logLevel: "warning",
+	});
+	return built.outputFiles[0].text;
+}
+
+function widgetsCliSource() {
+	return {
+		name: "widgetarium-widgets-cli",
+		setup(build) {
+			build.onResolve({ filter: new RegExp(`^${WIDGETS_CLI_SPECIFIER}$`) }, (found) => ({
+				path: found.path,
+				namespace: "wg-cli",
+			}));
+			build.onLoad({ filter: /.*/, namespace: "wg-cli" }, async () => ({
+				contents: `export default ${JSON.stringify(await widgetsCliBundle())};`,
+				loader: "js",
+				watchFiles: [WIDGETS_CLI_SOURCE],
+			}));
+		},
+	};
+}
+
+const SUPPLIED_BY_ELECTRON_AT_RUNTIME = ["obsidian", "electron", "node:fs/promises", "node:path", "node:child_process"];
 
 const HELD_BY_THE_ONE_CORE = /^\.\/(cache|create|narrow|emoji-table\.js)$/;
 
@@ -51,7 +90,7 @@ function surfaceSource({ minify }) {
 
 export function bundleOptions({ outfile = "main.js", minify = false, sourcemap = false } = {}) {
 	return {
-		plugins: [surfaceSource({ minify })],
+		plugins: [surfaceSource({ minify }), widgetsCliSource()],
 		entryPoints: ["src/main.js"],
 		bundle: true,
 		outfile,

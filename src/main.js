@@ -20,6 +20,9 @@ import { substituteIn } from "./inline-render.js";
 import { blockRefusal } from "./version.js";
 import { createBoardNote, insertBoardAtCursor, isScreenNote } from "./board-note.js";
 import { TEMPLATES, missingWidgets, templateBoard } from "./templates.js";
+import { createAssistant } from "./ai/assistant.js";
+import { AI_VIEW_TYPE, AssistantView } from "./ai/view.js";
+import { WidgetariumSettingTab } from "./ai/settings-tab.js";
 
 
 // a run of edits settles into one write; longer and an edit could be lost to a crash
@@ -133,8 +136,38 @@ export default class WidgetariumPlugin extends Plugin {
 		if (await measure("onload · isAuthoringWidgetsHere", () => this.isAuthoringWidgetsHere())) await measure("onload · widgetSignature", () => this.watchWidgetFolder());
 		this.rebuildWidgets().catch((failure) => console.error("[widgetarium] the drifted builds could not be made", failure));
 
+		this.assistant = createAssistant(this.app, this);
+		this.registerView(AI_VIEW_TYPE, (leaf) => new AssistantView(leaf, this.assistant));
+		this.addSettingTab(new WidgetariumSettingTab(this.app, this));
+		this.assistant.layAgentFiles().catch((failure) => console.error("[widgetarium] the agent handbook was not written", failure));
+		this.assistant.restore().catch((failure) => console.error("[widgetarium] the last conversation could not be read back", failure));
+		this.app.workspace.onLayoutReady(() => this.showAssistant(false));
+		this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.redrawAssistant()));
+
 		this.addRibbonIcon("layout-grid", "Widgetarium: edit mode", () => this.toggleEditing());
 		this.addRibbonIcon("replace", "Widgetarium: substitutions", () => this.showSubstitutions());
+		this.addRibbonIcon("sparkles", "Widgetarium: ask the assistant", () => this.showAssistant());
+
+		this.addCommand({
+			id: "open-assistant",
+			name: "Open the assistant",
+			callback: () => this.showAssistant(),
+		});
+
+		this.addCommand({
+			id: "clear-assistant-context",
+			name: "Clear the assistant's context",
+			callback: () => {
+				this.assistant.forgetContext();
+				new Notice("Widgetarium: the assistant forgot this conversation");
+			},
+		});
+
+		this.addCommand({
+			id: "configure-providers",
+			name: "Configure AI providers",
+			callback: () => this.assistant.openProviders(),
+		});
 
 		this.addCommand({
 			id: "toggle-edit",
@@ -219,6 +252,18 @@ export default class WidgetariumPlugin extends Plugin {
 			this.available = [];
 		}
 		return this.available;
+	}
+
+	async showAssistant(reveal = true) {
+		const held = this.app.workspace.getLeavesOfType(AI_VIEW_TYPE);
+		const leaf = held[0] ?? this.app.workspace.getRightLeaf(false);
+		if (!leaf) return;
+		if (held.length === 0) await leaf.setViewState({ type: AI_VIEW_TYPE, active: false });
+		if (reveal) this.app.workspace.revealLeaf(leaf);
+	}
+
+	redrawAssistant() {
+		for (const leaf of this.app.workspace.getLeavesOfType(AI_VIEW_TYPE)) leaf.view?.draw?.();
 	}
 
 	showCatalogue() {
@@ -469,6 +514,7 @@ export default class WidgetariumPlugin extends Plugin {
 		// the catalogue is portalled onto <body>, so it outlives the plugin unless taken down
 		this.closeCatalogue?.();
 		this.closeSubstitutions?.();
+		this.assistant?.close();
 		// the widget stylesheets live in document.head and outlive the plugin unless dropped
 		this.registry?.dropStyles?.();
 		// a held-back write must not die with the plugin

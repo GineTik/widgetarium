@@ -4085,3 +4085,667 @@ body.wg-tree-carrying .wg-tile-body {
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--text-faint);
 }
+
+.wg-ai-host {
+	height: 100%;
+	padding: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai {
+	--wg-ai-gutter: 5px;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	min-height: 0;
+	gap: 8px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: var(--wg-ai-gutter) var(--wg-ai-gutter) 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-title {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-who {
+	flex: 1;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 4px var(--wg-ai-gutter);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-turn {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	align-items: flex-start;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-turn.is-mine {
+	align-items: flex-end;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said {
+	max-width: 92%;
+	padding: 0 4px;
+	border-radius: 16px;
+	background: none;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown {
+	width: 100%;
+	max-width: 100%;
+	white-space: normal;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tail {
+	margin: 0;
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.55;
+	color: var(--text-normal);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown > :first-child {
+	margin-top: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown > :last-child {
+	margin-bottom: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown p {
+	margin: 0 0 8px;
+	line-height: 1.55;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown :is(h1, h2, h3, h4, h5, h6) {
+	margin: 14px 0 6px;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1.3;
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown :is(ul, ol) {
+	margin: 0 0 8px;
+	padding-left: 20px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown li {
+	margin: 2px 0;
+	line-height: 1.5;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown pre {
+	margin: 0 0 8px;
+	padding: 10px 12px;
+	border-radius: 12px;
+	background: var(--wg-kit-fill);
+	overflow-x: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown :not(pre) > code {
+	padding: 1px 5px;
+	border-radius: 6px;
+	background: var(--wg-kit-fill);
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown blockquote {
+	margin: 0 0 8px;
+	padding: 2px 0 2px 12px;
+	border-left: 2px solid var(--wg-kit-card-edge);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown table {
+	display: block;
+	width: 100%;
+	margin: 0 0 8px;
+	overflow-x: auto;
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown img {
+	max-width: 100%;
+	border-radius: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown hr {
+	margin: 12px 0;
+	border: none;
+	border-top: 1px solid var(--wg-kit-card-edge);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-said.is-markdown .copy-code-button {
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-turn.is-mine .wg-ai-said {
+	padding: 10px 12px;
+	background: var(--background-primary);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	width: 100%;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px;
+	border: none;
+	background: none;
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-head:hover {
+	color: var(--text-normal);
+	background: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-marks {
+	display: flex;
+	align-items: center;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	margin-right: -6px;
+	border-radius: 8px;
+	background: var(--background-primary);
+	/* TRADE-OFF: the edge is spelled out rather than taken from --wg-kit-control-edge, because that token is `none` in some themes and `none` inside a shadow list voids the whole declaration */
+	/* TRADE-OFF: the shadow falls leftward, along the overlap, because a downward drop separates nothing between chips that sit side by side */
+	box-shadow:
+		inset 0 0 0 1px var(--wg-kit-card-edge),
+		-2px 0 4px -1px var(--wg-kit-lift-ink-soft);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-mark:nth-child(odd) {
+	rotate: 7deg;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-mark:nth-child(even) {
+	rotate: -7deg;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-said {
+	margin-left: 6px;
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-failed {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-turn-mark {
+	transition: rotate 180ms ease;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-turn-mark.is-open {
+	rotate: 90deg;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-tools-list {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	padding-left: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-rail {
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	flex: none;
+	width: 24px;
+	padding-top: 5px;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call:not(:last-child) .wg-ai-call-rail {
+	background: linear-gradient(var(--wg-kit-card-edge), var(--wg-kit-card-edge)) no-repeat center top 24px / 1.5px
+		calc(100% - 24px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call.is-failed .wg-ai-call-rail {
+	color: var(--text-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-body {
+	flex: 1;
+	min-width: 0;
+	padding-bottom: 6px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-head {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 0;
+	border: none;
+	background: none;
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-head:disabled {
+	cursor: default;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-head:hover {
+	color: var(--text-normal);
+	background: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-name {
+	font-size: var(--font-ui-smaller, 12px);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-hint {
+	margin: 0;
+	font-family: var(--font-monospace, monospace);
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-open {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 6px;
+	padding: 10px;
+	border-radius: 12px;
+	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-part {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-part-label {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-call-part-said {
+	margin: 0;
+	max-height: 200px;
+	overflow: auto;
+	font-family: var(--font-monospace, monospace);
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.45;
+	color: var(--text-normal);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-busy {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	align-items: center;
+	gap: 1px 8px;
+	padding: 2px 2px 6px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-busy-mark {
+	grid-row: 1 / span 2;
+	align-self: start;
+	margin-top: 2px;
+	color: var(--text-muted);
+	animation: wg-ai-thinking 1500ms ease-in-out infinite;
+}
+
+@keyframes wg-ai-thinking {
+	0%,
+	100% {
+		opacity: 0.55;
+		transform: scale(0.82) rotate(0deg);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1) rotate(90deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal) .wg-ai-busy-mark {
+		animation: none;
+		opacity: 0.7;
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-busy-said {
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-busy-warn {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-failure {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	border-radius: 16px;
+	background: var(--wg-kit-error-wash);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-failure .wg-kit-btn::before {
+	background: var(--background-primary);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-failure .wg-kit-btn:hover::before {
+	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-failure-said {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-normal);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-empty {
+	margin: auto;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 24px 16px;
+	text-align: center;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-empty-lead {
+	margin: 0;
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-empty-said {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.5;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-composer {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 4px var(--wg-ai-gutter) var(--wg-ai-gutter);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-risk {
+	margin: 0;
+	padding: 0 4px;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.4;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-well {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	cursor: text;
+	padding: 10px 6px 6px 12px;
+	border: 1px solid var(--wg-kit-card-edge);
+	border-radius: 16px;
+	background: var(--background-primary);
+	box-shadow: none;
+	transition: border-color 140ms ease;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-well:focus-within {
+	border-color: var(--wg-kit-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-box {
+	min-height: 24px;
+	max-height: 120px;
+	resize: none;
+	padding: 0 6px 0 0;
+	border: none;
+	background: none;
+	box-shadow: none;
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: var(--font-ui-small, 14px);
+	line-height: 1.6;
+	overflow-y: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-box,
+:is(.wg-root, .wg-portal) .wg-ai-box:hover,
+:is(.wg-root, .wg-portal) .wg-ai-box:focus,
+:is(.wg-root, .wg-portal) .wg-ai-box:focus-visible,
+:is(.wg-root, .wg-portal) .wg-ai-box:active {
+	background: transparent;
+	border: none;
+	outline: none;
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding-top: 6px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-target {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: var(--wg-kit-fill);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-target.is-unset {
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-bar button:disabled {
+	cursor: default;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-bar button:disabled::before,
+:is(.wg-root, .wg-portal) .wg-ai-bar button:disabled:hover::before {
+	background: var(--wg-kit-fill-hover);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-head .wg-kit-icon::before {
+	background: var(--background-primary);
+	box-shadow: var(--wg-kit-control-edge, none);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-head .wg-kit-icon:hover::before {
+	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-target-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-window {
+	width: min(680px, 92vw);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-window-title {
+	margin: 0;
+	font-size: var(--font-ui-large, 18px);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-window-lead {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.5;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-pane {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-kind {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-field-label {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 10px 12px;
+	border-radius: var(--wg-kit-card-corner, 16px);
+	background: var(--wg-kit-plate);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-preview-label {
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-preview-said {
+	font-family: var(--font-monospace, monospace);
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-normal);
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-preview-help {
+	font-family: var(--font-monospace, monospace);
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-changed {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	color: var(--wg-kit-warning);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-actions {
+	display: flex;
+	gap: 8px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-choice {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 10px 12px;
+	border-radius: var(--wg-kit-card-corner, 16px);
+	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-choice-head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-choice-label {
+	font-size: var(--font-ui-small, 14px);
+	color: var(--text-normal);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-choice-hint {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.5;
+	color: var(--text-muted);
+}
