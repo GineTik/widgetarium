@@ -32,14 +32,14 @@ export function refusedReading(asked) {
 }
 
 function narrowed(entries, options) {
-	return entries.filter((entry) => {
-		if (options.source === "installed" && !entry.installed) return false;
-		if (options.source === "offered" && entry.installed) return false;
-		if (typeof options.pack === "string" && entry.pack !== options.pack) return false;
-		if (typeof options.tag === "string" && !namesTag(entry, options.tag)) return false;
-		if (typeof options.search === "string" && !matches(entry, options.search)) return false;
-		return true;
-	});
+	const asked = [
+		options.source === "installed" && ((entry) => entry.installed),
+		options.source === "offered" && ((entry) => !entry.installed),
+		typeof options.pack === "string" && ((entry) => entry.pack === options.pack),
+		typeof options.tag === "string" && ((entry) => namesTag(entry, options.tag)),
+		typeof options.search === "string" && ((entry) => matches(entry, options.search)),
+	].filter(Boolean);
+	return entries.filter((entry) => asked.every((keep) => keep(entry)));
 }
 
 function namesTag(entry, tag) {
@@ -47,60 +47,53 @@ function namesTag(entry, tag) {
 }
 
 function scoredEntry(entry, card, options) {
-	const reasons = [];
 	const readings = readingsIn(card);
-	let score = needsScore(neededTypes(options.needs), typesIn(card), reasons);
-	if (typeof options.role === "string") {
-		const same = card?.role === options.role;
-		score += same ? SCORE_ROLE : 0;
-		reasons.push(same ? `role ${card.role}` : `role ${card?.role ?? "none"}, not ${options.role}`);
-	}
-	if (typeof options.reading === "string") {
-		const same = readings.has(options.reading);
-		score += same ? SCORE_READING : 0;
-		reasons.push(same ? `reads as ${options.reading}` : `reads as ${[...readings].join(", ") || "nothing"}`);
-	}
-	const said = typeof options.about === "string" ? options.about : options.search;
-	if (typeof said === "string" && matches(entry, said)) {
-		score += SCORE_ABOUT;
-		reasons.push(`named for ${said}`);
-	}
+	const types = typesIn(card);
+	const scored = [
+		...neededTypes(options.needs).map((type) => needScore(type, types)),
+		roleScore(card, options.role),
+		readingScore(readings, options.reading),
+		aboutScore(entry, options),
+	].filter(Boolean);
 	return {
 		...entry,
 		role: card?.role ?? entry.role ?? null,
 		installed: Boolean(entry.installed),
 		reads: [...readings],
 		wraps: [...new Set([...readings].map(wrapOf))],
-		score,
-		why: reasons,
+		score: scored.reduce((sum, one) => sum + one.score, 0),
+		why: scored.map((one) => one.reason),
 	};
 }
 
-function needsScore(needed, types, reasons) {
-	let score = 0;
-	for (const type of needed) {
-		if (types.has(type)) {
-			score += SCORE_NEEDS_EXACT;
-			reasons.push(`holds ${type}`);
-		} else if (types.has(WILDCARD_FIELD_TYPE)) {
-			score += SCORE_NEEDS_COMPATIBLE;
-			reasons.push(`no ${type}, but a text field can carry it`);
-		} else {
-			reasons.push(`no field for ${type}`);
-		}
-	}
-	return score;
+function roleScore(card, asked) {
+	if (typeof asked !== "string") return null;
+	if (card?.role === asked) return { score: SCORE_ROLE, reason: `role ${card.role}` };
+	return { score: 0, reason: `role ${card?.role ?? "none"}, not ${asked}` };
+}
+
+function readingScore(readings, asked) {
+	if (typeof asked !== "string") return null;
+	if (readings.has(asked)) return { score: SCORE_READING, reason: `reads as ${asked}` };
+	return { score: 0, reason: `reads as ${[...readings].join(", ") || "nothing"}` };
+}
+
+function aboutScore(entry, options) {
+	const said = typeof options.about === "string" ? options.about : options.search;
+	if (typeof said !== "string" || !matches(entry, said)) return null;
+	return { score: SCORE_ABOUT, reason: `named for ${said}` };
+}
+
+function needScore(type, types) {
+	if (types.has(type)) return { score: SCORE_NEEDS_EXACT, reason: `holds ${type}` };
+	if (types.has(WILDCARD_FIELD_TYPE))
+		return { score: SCORE_NEEDS_COMPATIBLE, reason: `no ${type}, but a text field can carry it` };
+	return { score: 0, reason: `no field for ${type}` };
 }
 
 function typesIn(card) {
-	const held = new Set();
-	for (const prop of Object.values(card?.props ?? {})) {
-		if (typeof prop?.type === "string") held.add(prop.type);
-		for (const field of Object.values(prop?.describes ?? {})) {
-			if (typeof field?.type === "string") held.add(field.type);
-		}
-	}
-	return held;
+	const stated = Object.values(card?.props ?? {}).flatMap((prop) => [prop, ...Object.values(prop?.describes ?? {})]);
+	return new Set(stated.map((one) => one?.type).filter((type) => typeof type === "string"));
 }
 
 function readingsIn(card) {

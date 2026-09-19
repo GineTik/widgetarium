@@ -340,22 +340,33 @@ function missing(id) {
 	return 1;
 }
 
+const COMMANDS = {
+	find: { run: (argument, options) => findRanked(options) },
+	list: { run: (argument, options) => findRanked(options) },
+	packs: { run: (argument, options) => packs(options) },
+	sources: { run: (argument, options) => sources(options) },
+	install: { asks: "widget", run: (argument, options) => runInstall(argument, options) },
+	check: { asks: "widget", run: (argument, options) => runCheck(argument, options) },
+	show: { asks: "widget", run: (argument, options) => show(argument, options) },
+	source: { asks: "widget", run: (argument) => source(argument) },
+	layout: { asks: "note", run: (argument, options) => layout(argument, options) },
+	surfaces: { asks: "note", run: (argument, options) => surfaces(argument, options) },
+	lint: { asks: "note", run: (argument, options) => lint(argument, options) },
+};
+
+function ranCommand(command, argument, options) {
+	const named = Object.hasOwn(COMMANDS, String(command)) ? COMMANDS[command] : null;
+	if (named === null) {
+		console.log(HELP);
+		return command === undefined || command === "help" ? 0 : 1;
+	}
+	if (named.asks === undefined || argument) return named.run(argument, options);
+	return named.asks === "note" ? missingNote() : missing(String(argument));
+}
+
 const options = optionsIn(process.argv.slice(2));
 const [command, argument] = options._;
 
-const ran = await (async () => {
-	if (command === "find" || command === "list") return findRanked(options);
-	if (command === "install") return argument ? runInstall(argument, options) : missing(String(argument));
-	if (command === "check") return argument ? runCheck(argument, options) : missing(String(argument));
-	if (command === "show") return argument ? show(argument, options) : missing(String(argument));
-	if (command === "source") return argument ? source(argument) : missing(String(argument));
-	if (command === "packs") return packs(options);
-	if (command === "sources") return sources(options);
-	if (command === "layout") return argument ? layout(argument, options) : missingNote();
-	if (command === "surfaces") return argument ? surfaces(argument, options) : missingNote();
-	if (command === "lint") return argument ? lint(argument, options) : missingNote();
-	console.log(HELP);
-	return command === undefined || command === "help" ? 0 : 1;
-})();
+const ran = await ranCommand(command, argument, options);
 
 process.exit(typeof ran === "number" ? ran : 0);
