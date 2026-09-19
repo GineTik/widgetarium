@@ -1,39 +1,53 @@
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parse } from "yaml";
-import { normalizeBoard } from "../model.js";
-import { columnsOf, isBox, keptAt, laid, sideOf, GAP_PX, REGION_PAD_PX } from "../tree.js";
-import { GRID } from "../paths.js";
+import { boardOfNote } from "./board-note.mjs";
+import { lintOfNote } from "./lint-command.mjs";
+import { surfacesOfNote } from "./surfaces-command.mjs";
+import { columnsOf, isBox, keptAt, laidRegion, sideOf } from "../tree.js";
+import { cardIn } from "./entries.mjs";
+import { filesIn, foldersIn, readJson } from "./vault-files.mjs";
+import { installWidget } from "./install-command.mjs";
+import { offeredBySource } from "./offered.mjs";
+import { surfaceNamesIn } from "./widget-surface.mjs";
+import { rankedWidgets, refusedReading, READING_KINDS } from "./find-command.mjs";
+import { checkWidget, saidWidgetCheck, WIDGET_CHECK_RULES } from "../widget-check.js";
+import { GRID, LOCK_PATH } from "../paths.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VAULT = resolve(HERE, "..", "..");
 const WIDGETS_DIR = join(VAULT, ".widgetarium", "widgets");
 const INDEX_PATH = join(VAULT, ".widgetarium", "catalogue.json");
 const PLUGIN_DATA = join(VAULT, ".obsidian", "plugins", "widgetarium", "data.json");
-const REGISTRY_FILE = "widgetarium-registry.json";
-const FENCE = "```";
-const BOARD_LANGUAGE = "widgetarium";
 const DEFAULT_BOARD_WIDTH = 1400;
 
 // TODO: import idOfFolder, readRegistry and mergeCatalogue from the engine too, now that this script is bundled
 const SOURCE_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
+const STYLE_FILES = ["widget.css"];
 const STEPS_OUT_OF_THE_REPOSITORY = /^\/|(^|\/)\.\.(\/|$)/;
-
-const LARGEST_PAGE = 100;
-const DEFAULT_PAGE = 20;
 
 const HELP = `widgets — the Widgetarium catalogue, for the agent
 
-  node widgets.mjs list [options]       every widget this vault can draw or install
+  node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
+  node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
   node widgets.mjs show <id>            one widget's manifest and the files it is made of
+  node widgets.mjs check <id>           a widget's own colours, type, paging and manifest, rule by rule
   node widgets.mjs source <id>          print a widget's component source
   node widgets.mjs packs                the packs, and how many widgets each holds
   node widgets.mjs sources              the catalogue sources this vault reads
   node widgets.mjs layout <note>        the measured layout of a board, region by region
+  node widgets.mjs surfaces <note>      which surface every group should wear, law by law, and why
+  node widgets.mjs lint <note>          every value, field and nesting in the layout that is not valid
 
-Options for list:
-  --search <words>    match id, title, description or keywords
+Options for find, none of them a filter — every widget comes back, ranked, with its reasons:
+  --role <role>       the role the hole asks for
+  --reading <kind>    ${READING_KINDS}
+
+What check names: ${WIDGET_CHECK_RULES.join(", ")}
+  --needs <types>     comma-separated field types the data holds, as describes names them
+  --about <words>     the subject; this one only lifts a widget's score, it never hides one
+
+  --search <words>    keep only widgets matching these words
   --tag <keyword>     keep only widgets carrying this keyword
   --pack <@pack>      keep only widgets in this pack
   --source <where>    installed | offered | all            (default: all)
@@ -62,50 +76,6 @@ function optionsIn(argv) {
 	return held;
 }
 
-async function readJson(at, fallback) {
-	try {
-		return JSON.parse(await readFile(at, "utf8"));
-	} catch {
-		return fallback;
-	}
-}
-
-// TRADE-OFF: a Dirent describes the link, never its target, so a linked scope has to be stat-ed to be seen at all
-async function pointsAt(at, kind) {
-	try {
-		const held = await stat(at);
-		return kind === "folder" ? held.isDirectory() : held.isFile();
-	} catch {
-		return false;
-	}
-}
-
-async function readdirOf(at) {
-	try {
-		return await readdir(at, { withFileTypes: true });
-	} catch {
-		return [];
-	}
-}
-
-async function foldersIn(at) {
-	const found = [];
-	for (const entry of await readdirOf(at)) {
-		const full = join(at, entry.name);
-		if (entry.isDirectory() || (entry.isSymbolicLink() && (await pointsAt(full, "folder")))) found.push(full);
-	}
-	return found;
-}
-
-async function filesIn(at) {
-	const found = [];
-	for (const entry of await readdirOf(at)) {
-		if (entry.isFile() || (entry.isSymbolicLink() && (await pointsAt(join(at, entry.name), "file"))))
-			found.push(entry.name);
-	}
-	return found;
-}
-
 function idOfFolder(folder) {
 	const parts = folder.split(/[\\/]/);
 	const scope = parts[parts.length - 2] ?? "";
@@ -124,6 +94,7 @@ function cardFrom(raw, id, extra) {
 		keywords: Array.isArray(raw?.keywords) ? raw.keywords.map(String) : [],
 		defaultSize: raw?.defaultSize ?? null,
 		api: Number.isInteger(raw?.api) ? raw.api : 1,
+		role: typeof raw?.role === "string" ? raw.role : null,
 		...extra,
 	};
 }
@@ -134,17 +105,12 @@ async function installedWidgets() {
 		for (const folder of await foldersIn(scope)) {
 			const files = await filesIn(folder);
 			if (!files.some((name) => SOURCE_FILES.includes(name))) continue;
-			const manifest = await readJson(join(folder, "manifest.json"), {});
+			const manifest = (await cardIn(folder)) ?? {};
 			const id = typeof manifest.id === "string" && manifest.id !== "" ? manifest.id : idOfFolder(folder);
 			found.push(cardFrom(manifest, id, { installed: true, folder, files }));
 		}
 	}
 	return found;
-}
-
-function repositoryIn(url) {
-	const found = String(url ?? "").match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-	return found ? { owner: found[1], repo: found[2] } : null;
 }
 
 async function configuredSources() {
@@ -155,24 +121,6 @@ async function configuredSources() {
 		...(Array.isArray(index?.sources) ? index.sources : []),
 	];
 	return listed.filter((source) => source?.repository || source?.path);
-}
-
-async function rowsFromRegistry(source) {
-	const repository = repositoryIn(source.repository);
-	if (!repository) return [];
-	const url = `https://raw.githubusercontent.com/${repository.owner}/${repository.repo}/${source.ref ?? "HEAD"}/${REGISTRY_FILE}`;
-	try {
-		const answer = await fetch(url);
-		if (!answer.ok) return [];
-		const parsed = JSON.parse(await answer.text());
-		return (Array.isArray(parsed.widgets) ? parsed.widgets : [])
-			.filter((row) => typeof row?.id === "string" && row.id !== "")
-			.map((row) =>
-				cardFrom(row, row.id, { installed: false, origin: source.repository, path: pathInsideTheRepository(row.path) }),
-			);
-	} catch {
-		return [];
-	}
 }
 
 async function offeredWidgets() {
@@ -187,9 +135,7 @@ async function offeredWidgets() {
 			}),
 		);
 	const fetched = [];
-	for (const source of await configuredSources()) {
-		if (source.repository) fetched.push(...(await rowsFromRegistry(source)));
-	}
+	for (const source of await configuredSources()) fetched.push(...(await offeredBySource(source, cardFrom)));
 	return [...listed, ...fetched];
 }
 
@@ -202,73 +148,86 @@ function merged(installed, offered) {
 	return [...held.values()].sort((one, other) => one.id.localeCompare(other.id));
 }
 
-function matches(entry, asked) {
-	const said = `${entry.id} ${entry.title} ${entry.description} ${(entry.keywords ?? []).join(" ")}`.toLowerCase();
-	return asked
-		.toLowerCase()
-		.split(/\s+/)
-		.filter(Boolean)
-		.every((word) => said.includes(word));
-}
-
-function filtersAskedFor(options) {
-	return [
-		[options.source === "installed", (entry) => entry.installed],
-		[options.source === "offered", (entry) => !entry.installed],
-		[typeof options.pack === "string", (entry) => entry.pack === options.pack],
-		[
-			typeof options.tag === "string",
-			(entry) => entry.keywords.some((word) => word.toLowerCase() === String(options.tag).toLowerCase()),
-		],
-		[typeof options.search === "string", (entry) => matches(entry, options.search)],
-	]
-		.filter(([asked]) => asked)
-		.map(([, keep]) => keep);
-}
-
-function kept(entries, options) {
-	return filtersAskedFor(options).reduce((held, keep) => held.filter(keep), entries);
-}
-
-function windowOf(options) {
-	const offset = Math.max(0, Number(options.offset) || 0);
-	const asked = Number(options.limit);
-	const limit = Number.isFinite(asked) && asked > 0 ? Math.min(LARGEST_PAGE, Math.floor(asked)) : DEFAULT_PAGE;
-	return { offset, limit };
-}
-
 function say(options, value, lines) {
 	console.log(options.text ? lines : JSON.stringify(value, null, "\t"));
 }
 
-async function list(options) {
-	const entries = kept(merged(await installedWidgets(), await offeredWidgets()), options);
-	const { offset, limit } = windowOf(options);
-	const page = entries.slice(offset, offset + limit);
-	const value = { total: entries.length, offset, limit, widgets: page };
-	const lines = [
-		`${entries.length} widgets, showing ${page.length} from ${offset}`,
-		...page.map((entry) => `${entry.installed ? "installed" : "offered  "}  ${entry.id.padEnd(30)} ${entry.title}`),
-	].join("\n");
-	say(options, value, lines);
+async function findRanked(options) {
+	const refusal = refusedReading(options.reading);
+	if (refusal) {
+		console.error(refusal);
+		return 1;
+	}
+	const entries = merged(await installedWidgets(), await offeredWidgets());
+	const { value, text } = await rankedWidgets(entries, options);
+	say(options, value, text);
+	return 0;
 }
 
-async function find(id) {
+async function runInstall(id, options) {
+	const entry = await entryById(id);
+	if (!entry) return missing(id);
+	const done = await installWidget(entry, { widgetsDir: WIDGETS_DIR, lockPath: join(VAULT, LOCK_PATH) }).catch(
+		(thrown) => ({
+			failure: `${id} could not be installed: ${thrown?.message ?? thrown}. The lock says it was left unfinished, so installing it again is safe.`,
+		}),
+	);
+	if (done.failure) {
+		console.error(done.failure);
+		return 1;
+	}
+	say(options, { widget: id, at: done.at, files: done.files }, `${id} installed: ${done.files.join(", ")}`);
+	return 0;
+}
+
+async function runCheck(id, options) {
+	const entry = await entryById(id);
+	if (!entry) return missing(id);
+	const surface = await surfaceNamesIn(join(WIDGETS_DIR, "types"));
+	if (surface === null) {
+		console.error(
+			`${WIDGETS_DIR}/types holds no widgetarium.d.ts, so the rule that catches a crash at draw time cannot run and no widget can be called clean. Let the plugin load once; it lays the types beside the widgets.`,
+		);
+		return 1;
+	}
+	const found = checkWidget({
+		id,
+		source: await joinedFiles(entry, SOURCE_FILES),
+		styles: await joinedFiles(entry, STYLE_FILES),
+		card: await cardOf(entry),
+		surface,
+	});
+	say(options, { widget: id, clean: found.length === 0, findings: found }, saidWidgetCheck(found));
+	return found.length === 0 ? 0 : 1;
+}
+
+async function joinedFiles(entry, wanted) {
+	const named = (entry.files ?? []).filter((name) => wanted.includes(name));
+	const texts = [];
+	for (const name of named) texts.push(await readFile(join(entry.folder, name), "utf8").catch(() => ""));
+	return texts.join("\n");
+}
+
+async function cardOf(entry) {
+	return await cardIn(entry.folder);
+}
+
+async function entryById(id) {
 	const all = merged(await installedWidgets(), await offeredWidgets());
 	return all.find((entry) => entry.id === id) ?? null;
 }
 
 async function show(id, options) {
-	const entry = await find(id);
+	const entry = await entryById(id);
 	if (!entry) return missing(id);
-	const manifest = entry.folder ? await readJson(join(entry.folder, "manifest.json"), null) : null;
+	const manifest = await cardIn(entry.folder);
 	const value = { ...entry, manifest };
 	say(options, value, `${entry.id} — ${entry.title}\n${entry.description}\nfiles: ${(entry.files ?? []).join(", ")}`);
 	return 0;
 }
 
 async function source(id) {
-	const entry = await find(id);
+	const entry = await entryById(id);
 	if (!entry) return missing(id);
 	if (!entry.folder) {
 		console.error(`${id} is offered but not installed here, so it has no source on this machine.`);
@@ -313,54 +272,53 @@ function missingNote() {
 	return 1;
 }
 
-function boardIn(text) {
-	const after = text.split(`${FENCE}${BOARD_LANGUAGE}`)[1];
-	if (after === undefined) return null;
-	try {
-		return normalizeBoard(parse(after.split(FENCE)[0]));
-	} catch {
-		return null;
-	}
-}
-
 function drawnNode(node, depth) {
 	const pad = "  ".repeat(depth);
+	const worn = node.surface ? ` \u00b7 ${node.surface}` : "";
 	if (!isBox(node)) {
 		const tall = node.height ? ` ${node.height}px tall` : "";
-		return `${pad}${node.id}${tall} \u00b7 ${Math.round(node.width)}px wide`;
+		return `${pad}${node.id}${tall} \u00b7 ${Math.round(node.width)}px wide${worn}`;
 	}
-	const said = `${pad}${node.dir}${node.isStacked ? " (stacked)" : ""} \u00b7 ${Math.round(node.width)}px`;
+	const said = `${pad}${node.dir}${node.isStacked ? " (stacked)" : ""} \u00b7 ${Math.round(node.width)}px \u00b7 gaps drawn ${
+		node.of
+			.slice(0, -1)
+			.map((child) => `${Math.round(child.gapAfter)}px`)
+			.join(", ") || "none"
+	}${worn}`;
 	return [said, ...node.of.map((child) => drawnNode(child, depth + 1))].join("\n");
 }
 
+async function surfaces(at, options) {
+	const found = await surfacesOfNote(VAULT, at, await installedWidgets());
+	if (found === null) return 1;
+	say(options, found.value, found.text);
+	return 0;
+}
+
+async function lint(at, options) {
+	const found = await lintOfNote(VAULT, at, await installedWidgets());
+	if (found !== null) say(options, found.value, found.text);
+	return found?.value.valid ? 0 : 1;
+}
+
 async function layout(at, options) {
-	const note = await readFile(join(VAULT, at), "utf8").catch(() => null);
-	if (note === null) {
-		console.error(`There is no note at ${at}.`);
-		return 1;
-	}
-	const board = boardIn(note);
-	if (board === null) {
-		console.error(`${at} holds no Widgetarium board that can be read.`);
-		return 1;
-	}
+	const board = await boardOfNote(VAULT, at);
+	if (board === null) return 1;
 
 	const width = Number(options.width) || DEFAULT_BOARD_WIDTH;
 	const root = board.layout;
 	const keep = keptAt(root);
 	const where = columnsOf(root, width);
+	const cards = await installedWidgets();
+	const widgetOf = (id) => board.tiles.find((tile) => tile.id === id)?.widget;
+	const ask = (id) => ({ widget: widgetOf(id), role: cards.find((card) => card.id === widgetOf(id))?.role });
 	const nameOf = (index) => (index === keep ? "main" : sideOf(root, index));
 	const named = (index) => `${nameOf(index)}[${index}]`;
 
 	const tree = [];
 	for (const column of where.beside) {
 		tree.push(named(column.at));
-		tree.push(
-			drawnNode(
-				laid(root.of[column.at], column.width - REGION_PAD_PX * 2, { ask: () => ({}), gap: GAP_PX, path: [column.at] }),
-				1,
-			),
-		);
+		tree.push(drawnNode(laidRegion(root, column.at, column.width, { ask }).node, 1));
 	}
 
 	const head = [
@@ -378,7 +336,7 @@ async function layout(at, options) {
 }
 
 function missing(id) {
-	console.error(`No widget is called ${id}. Run "list" to see what there is.`);
+	console.error(`No widget is called ${id}. Run "find" to see what there is.`);
 	return 1;
 }
 
@@ -386,12 +344,16 @@ const options = optionsIn(process.argv.slice(2));
 const [command, argument] = options._;
 
 const ran = await (async () => {
-	if (command === "list") return list(options);
+	if (command === "find" || command === "list") return findRanked(options);
+	if (command === "install") return argument ? runInstall(argument, options) : missing(String(argument));
+	if (command === "check") return argument ? runCheck(argument, options) : missing(String(argument));
 	if (command === "show") return argument ? show(argument, options) : missing(String(argument));
 	if (command === "source") return argument ? source(argument) : missing(String(argument));
 	if (command === "packs") return packs(options);
 	if (command === "sources") return sources(options);
 	if (command === "layout") return argument ? layout(argument, options) : missingNote();
+	if (command === "surfaces") return argument ? surfaces(argument, options) : missingNote();
+	if (command === "lint") return argument ? lint(argument, options) : missingNote();
 	console.log(HELP);
 	return command === undefined || command === "help" ? 0 : 1;
 })();

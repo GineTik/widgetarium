@@ -1,52 +1,91 @@
 # The Widgetarium handbook
 
-You are building screens inside somebody's Obsidian vault. This handbook is the contract. Read the
-page you need before you write, and read the plugin source when a page leaves a question open.
+You build screens inside somebody's Obsidian vault. A page here answers the question, or the question
+does not need answering to place the widget.
 
-| Page | What it settles |
-| --- | --- |
-| [board.md](board.md) | The note, the board block, the YAML, the layout tree, how a tile is placed and bound |
-| [screen.md](screen.md) | How to compose several widgets into a screen somebody would keep using |
-| [patterns/](patterns/README.md) | The layout pattern catalogue — what shape of information each layout suits |
-| [widget.md](widget.md) | What a widget is, its manifest, its props, how to write one, how it appears |
-| [catalogue.md](catalogue.md) | Finding and installing widgets with the catalogue tool |
-| [components.md](components.md) | Sourcing components from published registries instead of drawing them |
-| [design.md](design.md) | The tokens, the shapes, the motion, the rules a screen is judged against |
+| Page                            | What it settles                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| [board.md](board.md)            | The note, the board block, the YAML, the layout tree, how a tile is placed and bound |
+| [screen.md](screen.md)          | How to compose several widgets into a screen                                         |
+| [surfaces.md](surfaces.md)      | Roles, the five surfaces, what a plate goes around, how they nest, the gaps          |
+| [patterns/](patterns/README.md) | The layout pattern catalogue                                                         |
+| [widget.md](widget.md)          | What a widget is, its manifest, its props, how to write one                          |
+| [catalogue.md](catalogue.md)    | Finding and installing widgets                                                       |
+| [components.md](components.md)  | Sourcing components from published registries                                        |
+| [design.md](design.md)          | Tokens, shapes, motion                                                               |
 
-## The six laws
+## The laws
 
-**1. One widget at a time, in front of the person.** Place a widget, save the note, let them see it
-appear. Then the next. A screen assembled in silence and written at the end is a failure even when
-the result is identical: the person cannot steer what they cannot watch.
+Numbered in the order you obey them. 1 to 3 govern the first minute and are the ones that get broken.
 
-**2. Search before you write.** Every build starts with `node .widgetarium/bin/widgets.mjs list
---search <words>`. A widget that exists beats one you write, always.
+**1. Say what you are doing, in one line, before every action.** Name the thing and the reason:
+_reading the pattern catalogue to pick the shell_. Silence is scored as a failure on its own.
 
-**2a. Name the pattern before you place a tile.** Take it from [patterns/](patterns/README.md), say
-which product you took the layout from, and say what each region is for. A screen you cannot name is
-a pile of widgets. See [screen.md](screen.md).
+**2. Place before you understand.** The first widget stands on the board before you open a second
+handbook page. If you cannot place anything yet, say what is missing and ask.
 
-**3. Research the domain before you design it.** A kanban board, a Trello clone, a habit tracker, a
-CRM — each has a shape that real products settled on. Find out what that shape is. Never design an
-interface from imagination when the products people already use are one search away.
+**3. One widget at a time, in front of the person.** Place, save, let them see it appear. Then the
+next.
 
-**4. A component comes from a registry before it comes from your hands.** See
-[components.md](components.md). Drawing one yourself is the last resort.
+**4. Search the catalogue before you write anything.** One way in:
 
-**5. Colours, radii and type come from `--wg-kit-*` tokens.** A hardcoded colour is a defect and a
-build gate rejects it.
+```bash
+widgets.mjs find --role <role> --reading <kind> --needs <types> --about <words>
+```
 
-**6. Nothing is done until it is on the board and drawing.** A widget written but not placed, a tile
-placed but not bound to real notes, a prop left on its default — none of those are finished work.
+It scores every widget against the hole and the fields the person's notes hold, and prints why each
+ranked where it did. Nothing is filtered out — a near neighbour with different controls is a good
+answer. `--reading` takes `sequence`, `comparison`, `table`, `cross`, `field`. `--pack`, `--tag`,
+`--source` narrow it. Called with nothing, it is the whole catalogue.
 
-**7. Measure before you claim done.** `node .widgetarium/bin/widgets.mjs layout <note>` prints the
-real width of every region and tile. Read it. A tile at 1384px that needed 700 is visible there in
-one line, and so is a region you declared and left empty.
+**It is the whole catalogue, not the vault.** Every row says whether it is here: `have` is installed,
+`GET ` is offered by a source and one command away. A row you want is taken with
+`widgets.mjs install <id>`, and writing a widget because the vault happened not to hold one is the
+mistake this line exists to stop.
 
-## What you must never do
+**5. Name the pattern before you place a tile.** Take it from [patterns/](patterns/README.md), say
+which product the layout came from, say what each region is for.
 
-- Never delete a person's notes, or rewrite a note that is not the board you were asked to build.
-- Never write into `.obsidian/` other than reading the plugin source.
-- Never leave a board block holding YAML that does not parse. The note stops rendering and the
-  person sees an error where their screen was.
-- Never bump `v:` in a board block. The plugin writes it; you copy what is there.
+**6. What is in the vault is the research. Never search the web while building.** If the catalogue
+has no row for what you need, build without it and say so in one line.
+
+**7. Never read the plugin source to answer what a handbook page answers.** Open it only with a
+defect in front of you and a page that does not cover it, and say which page failed you.
+
+**8. A component comes from a registry before it comes from your hands.** See
+[components.md](components.md), and read it when you are about to draw one.
+
+**9. Colours, radii and type come from `--wg-kit-*` tokens.** A hardcoded colour is a defect.
+
+**9a. A widget you wrote is checked before it is placed.** `widgets.mjs check <id>` exits 1 while
+anything is wrong:
+
+| Finding       | What it means                                                                                                                                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **colour**    | A colour written by hand. The person's theme repaints a token and cannot repaint your hex.                                                                                                                                     |
+| **type**      | A `font-family` or `font-size` written by hand. Type comes from the host through the kit.                                                                                                                                      |
+| **unbounded** | Rows drawn from a `list` read with no `limit`. Everything that draws rows paginates from the first row. An aggregate that needs more says how many, in its own source.                                                         |
+| **role**      | A manifest naming none. No surface law can judge it, so it wears nothing.                                                                                                                                                      |
+| **reaches**   | A name imported from `widgetarium` that its surface does not carry. Crashes the widget the moment it draws.                                                                                                                    |
+| **heading**   | An `h1` or `h2` drawn inside a widget whose role is not `text`. A screen and a region are titled by a markdown node standing beside the widget, so a title drawn in here lands inside the plate and the board cannot space it. |
+
+**10. Lint every save.** `widgets.mjs lint <note> --text` exits 1 until the layout is valid. Never
+leave a board that does not lint clean.
+
+**11. Ask the surfaces tool before you call a screen done.** `widgets.mjs surfaces <note> --text`
+gives every group its verdict and the law that decided it. Write the advised `surface` into the note,
+lint, run it again — advice changes once a group is carded. Overrule it only with a reason you say in
+one sentence, in the chat. When in doubt, no surface.
+
+**12. Measure before you claim done.** `widgets.mjs layout <note>` prints the real width of every
+region and tile.
+
+**13. Nothing is done until it is on the board and drawing.** Written but not placed, placed but not
+bound, a prop left on its default — none of those are finished.
+
+## Never
+
+- Delete a person's notes, or rewrite a note that is not the board you were asked to build.
+- Write into `.obsidian/`. Read the plugin source there only under law 7.
+- Leave a board block holding YAML that does not parse. The note stops rendering.
+- Bump `v:` in a board block. The plugin writes it; you copy what is there.
