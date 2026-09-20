@@ -25,7 +25,6 @@ import {
 	APPROVAL_TONES,
 	Button,
 	Calendar,
-	Card,
 	Count,
 	Field,
 	Icon,
@@ -33,13 +32,13 @@ import {
 	MarkdownEditor,
 	PRIORITY_TONES,
 	Pill,
-	Plate,
 	Popover,
 	PopoverItem,
 	PopoverSearch,
 	PopoverSeparator,
 	Progress,
 	Segmented,
+	Surface,
 	Sidebar,
 	SidebarGroup,
 	SidebarRow,
@@ -126,7 +125,6 @@ const CSS = `
 	color: var(--text-faint);
 }
 
-/* CONTEXT: the kit plate carries fill, radius and pad; the reference's tight gap is 6px */
 /* CONTEXT: the reference's 268 plus 10% — a two-line title and four circles need the room */
 .orbi-kanban .ok-list {
 	flex: 0 0 296px;
@@ -150,7 +148,6 @@ const CSS = `
    the pointer is over, and the aim then oscillates between two neighbours */
 .orbi-kanban .ok-board.is-dragging .ok-list { transition: transform var(--orbi-quick) var(--orbi-ease); }
 
-/* CONTEXT: the plate's own fill and radius ARE the landing block; hidden children keep its size */
 .orbi-kanban .ok-list.is-placeholder > * { visibility: hidden; }
 
 .ok-list-title {
@@ -243,9 +240,6 @@ const CSS = `
 .orbi-kanban .ok-task-name::placeholder { color: var(--text-faint); }
 .orbi-kanban .ok-add-task:hover::before { background: var(--background-modifier-hover); }
 
-/* CONTEXT: drawn only when the card slot holds no widget; the kit card carries fill and radius */
-.orbi-kanban .ok-card { padding: var(--size-4-3, 12px); }
-
 .ok-card-title {
 	min-width: 0;
 	font-size: var(--font-ui-small, 14px);
@@ -255,8 +249,6 @@ const CSS = `
 }
 
 /* TRADE-OFF: the plate shape at rest, so the place a new list lands is already drawn */
-/* CONTEXT: Plate puts a kit class on this button, which excludes it from the suite's reset —
-   so the plate's own fill and corner are re-laid on ::before, out of the host's reach. */
 .orbi-kanban .ok-add-list-rest {
 	position: relative;
 	isolation: isolate;
@@ -282,8 +274,6 @@ const CSS = `
 	position: absolute;
 	inset: 0;
 	z-index: -1;
-	border-radius: var(--wg-kit-plate);
-	background: var(--wg-kit-fill);
 }
 
 .orbi-kanban .ok-add-list-rest:hover { color: var(--text-normal); }
@@ -657,9 +647,6 @@ const CSS = `
 	align-items: center;
 	gap: var(--size-4-2, 8px);
 	margin: 0;
-	padding: var(--size-2-3, 6px) var(--size-4-3, 12px);
-	border-radius: var(--wg-kit-item);
-	background: var(--wg-kit-warning-wash);
 	font-size: var(--font-ui-smaller, 12px);
 	line-height: 1.45;
 	color: var(--wg-kit-warning);
@@ -892,9 +879,9 @@ const CSS = `
 // TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
 function FallbackCard({ task }: { task: CardFace }) {
 	return (
-		<Card className="ok-card">
+		<Surface type="group">
 			<span className="ok-card-title">{String(task.title ?? "")}</span>
-		</Card>
+		</Surface>
 	);
 }
 
@@ -1018,7 +1005,8 @@ function KanbanList({
 	const [isRenaming, setRenaming] = useState(false);
 
 	return (
-		<Plate
+		<Surface
+			type="group"
 			className={`ok-list${isOver ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
 			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
 			onDragOver={(event: DragEvent<HTMLElement>) => {
@@ -1059,7 +1047,7 @@ function KanbanList({
 			/>
 
 			{canWrite && onAdd ? <AddTask onAdd={onAdd} /> : null}
-		</Plate>
+		</Surface>
 	);
 }
 
@@ -1130,20 +1118,20 @@ function AddList({ onAdd }: { onAdd: (name: string) => void }) {
 
 	if (!entry.isOpen) {
 		return (
-			<Plate asChild>
+			<Surface type="group" asChild>
 				<button type="button" className="ok-add-list-rest" onClick={entry.open}>
 					<Icon name="plus" size={16} />
 					<span>Add List</span>
 				</button>
-			</Plate>
+			</Surface>
 		);
 	}
 
 	return (
-		<Plate className="ok-add-list">
+		<Surface type="group" className="ok-add-list">
 			<input className="ok-list-name" placeholder="Enter list name..." {...entry.fieldProps} />
 			<NameEntryActions onCancel={entry.close} onConfirm={entry.confirm} />
-		</Plate>
+		</Surface>
 	);
 }
 
@@ -1911,10 +1899,12 @@ function DescriptionHead({
 function RefusedNotice({ isRefused }: { isRefused: boolean }) {
 	if (!isRefused) return null;
 	return (
-		<p className="otd-refused">
-			<Glyph name="alert" />
-			Not saved. This would turn the note's first line into its properties.
-		</p>
+		<Surface type="group" tone="warning" asChild>
+			<p className="otd-refused">
+				<Glyph name="alert" />
+				Not saved. This would turn the note's first line into its properties.
+			</p>
+		</Surface>
 	);
 }
 
@@ -2763,12 +2753,12 @@ function BoardStrip({
 			))}
 			{lists.canEdit ? <AddList onAdd={lists.add} /> : null}
 			{repairing.canRepair ? (
-				<Plate asChild>
+				<Surface type="group" asChild>
 					<button type="button" className="ok-add-list-rest ok-repair-ids" onClick={repairing.ask}>
 						<Icon name="folder" size={16} />
 						<span>{REPAIR_BOARDS}</span>
 					</button>
-				</Plate>
+				</Surface>
 			) : null}
 		</div>
 	);

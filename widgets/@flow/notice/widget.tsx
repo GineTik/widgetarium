@@ -1,5 +1,5 @@
 import { canDo, createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Button, Icon, cx } from "widgetarium/kit";
+import { Button, Icon, Surface } from "widgetarium/kit";
 
 const CSS = `
 .flow-notice {
@@ -9,45 +9,12 @@ const CSS = `
 	min-width: 0;
 }
 
-.flow-notice.is-toned {
-	padding: var(--wg-kit-plate-pad);
-	border-radius: var(--wg-kit-item);
-}
-
-.flow-notice.is-info {
-	background: var(--wg-kit-info-wash);
-}
-
-.flow-notice.is-success {
-	background: var(--wg-kit-success-wash);
-}
-
-.flow-notice.is-warning {
-	background: var(--wg-kit-warning-wash);
-}
-
-.flow-notice.is-error {
-	background: var(--wg-kit-error-wash);
-}
-
 .flow-notice-icon {
 	color: var(--text-muted);
 }
 
-.flow-notice.is-info .flow-notice-icon {
-	color: var(--wg-kit-info-ink);
-}
-
-.flow-notice.is-success .flow-notice-icon {
-	color: var(--wg-kit-success-ink);
-}
-
-.flow-notice.is-warning .flow-notice-icon {
-	color: var(--wg-kit-warning-ink);
-}
-
-.flow-notice.is-error .flow-notice-icon {
-	color: var(--wg-kit-error-ink);
+.wg-kit-tone .flow-notice-icon {
+	color: inherit;
 }
 
 .flow-notice-said {
@@ -103,19 +70,13 @@ const CSS = `
 }
 `;
 
-const TONE_CLASSES = {
-	neutral: "",
-	info: "is-info",
-	success: "is-success",
-	warning: "is-warning",
-	error: "is-error",
-};
+const TONES = ["neutral", "info", "success", "warning", "error"] as const;
 
-type Tone = keyof typeof TONE_CLASSES;
+type Tone = (typeof TONES)[number];
 
 function toneNamed(said: unknown): Tone {
-	const named = String(said ?? "").toLowerCase();
-	return Object.hasOwn(TONE_CLASSES, named) ? (named as Tone) : "neutral";
+	const named = String(said ?? "").toLowerCase() as Tone;
+	return TONES.includes(named) ? named : "neutral";
 }
 
 export const manifest = defineManifest({
@@ -194,7 +155,7 @@ export default createWidget(manifest, ({ title, body, icon, tone, action, presse
 	const isPressed = useData(pressed.get).data === true;
 
 	return (
-		<div className={cx("flow-notice", toned !== "neutral" && "is-toned", TONE_CLASSES[toned])}>
+		<Surface type={toned === "neutral" ? "none" : "group"} tone={toned} className="flow-notice">
 			<style>{CSS}</style>
 			{glyph ? <Icon name={glyph} size={20} className="flow-notice-icon" /> : null}
 			<div className="flow-notice-said">
@@ -216,6 +177,6 @@ export default createWidget(manifest, ({ title, body, icon, tone, action, presse
 					{label}
 				</Button>
 			) : null}
-		</div>
+		</Surface>
 	);
 });

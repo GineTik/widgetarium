@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Icon } from "widgetarium/kit";
+import { Icon, Surface } from "widgetarium/kit";
 import type { Navigation, ViewHost } from "widgetarium";
 
 const CSS = `
@@ -45,9 +45,6 @@ const CSS = `
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--wg-gap-parts);
-	padding: var(--wg-kit-plate-pad);
-	border-radius: var(--wg-kit-item);
-	background: var(--wg-kit-fill);
 	color: var(--text-muted);
 	min-width: 0;
 }
@@ -121,11 +118,11 @@ function RenderedMarkdown({ host, markdown }: { host: ViewHost; markdown: string
 
 function MissingImage({ said, alt }: { said: string; alt: string }) {
 	return (
-		<div className="flow-report-figure-missing" data-part="missing">
+		<Surface type="group" className="flow-report-figure-missing" data-part="missing">
 			<Icon name="image-off" size={20} />
 			<span className="flow-report-figure-missing-said">{said}</span>
 			{alt ? <span className="flow-report-figure-missing-alt">{alt}</span> : null}
-		</div>
+		</Surface>
 	);
 }
 

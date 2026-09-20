@@ -1,13 +1,11 @@
 import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
 import type { ViewHost } from "widgetarium";
-import { Button, Icon, IconButton, Popover, PopoverItem, PopoverSearch } from "widgetarium/kit";
+import { Button, Icon, IconButton, Popover, PopoverItem, PopoverSearch, Surface } from "widgetarium/kit";
 import { useEffect, useRef, useState } from "react";
 
 const STYLE = `
 .wgc-code {
 	position: relative;
-	border-radius: var(--wg-kit-plate, 22px);
-	background: var(--wg-kit-fill, var(--background-secondary));
 	overflow: hidden;
 }
 
@@ -91,7 +89,6 @@ const STYLE = `
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
-	padding: 12px 16px;
 }
 
 .wgc-what {
@@ -313,11 +310,11 @@ function Painted({ host, markdown }: { host: ViewHost; markdown: string }) {
 
 function Refusal({ why }: { why: string }) {
 	return (
-		<div className="wgc-code is-failed">
+		<Surface type="group" className="wgc-code is-failed">
 			<style>{STYLE}</style>
 			<span className="wgc-what">This file cannot be shown as code</span>
 			<span className="wgc-why">{why}</span>
-		</div>
+		</Surface>
 	);
 }
 
@@ -417,7 +414,7 @@ export default createWidget(manifest, ({ content, reader, host, here, lines: lin
 	};
 
 	return (
-		<div className="wgc-code">
+		<Surface type="group" className="wgc-code">
 			<style>{STYLE}</style>
 			<div className="wgc-bar wg-inline-shy">
 				<LanguagePicker language={language} onPick={pick} />
@@ -438,6 +435,6 @@ export default createWidget(manifest, ({ content, reader, host, here, lines: lin
 					<span className="wgc-left">{`${left} lines left`}</span>
 				</div>
 			) : null}
-		</div>
+		</Surface>
 	);
 });

@@ -1,11 +1,9 @@
 import { createWidget, defineManifest } from "widgetarium";
+import { Surface } from "widgetarium/kit";
 
 const STYLE = `
 .wgi-note {
-	border-left: 3px solid var(--interactive-accent);
-	border-radius: 0 8px 8px 0;
-	background: var(--background-secondary);
-	padding: 10px 14px;
+	border-left: 3px solid var(--wg-kit-accent);
 }
 
 .wgi-note-line {
@@ -31,13 +29,13 @@ export const manifest = defineManifest({
 export default createWidget(manifest, ({ content }) => {
 	const lines = String(content ?? "").split("\n");
 	return (
-		<div className="wgi-note">
+		<Surface type="group" className="wgi-note">
 			<style>{STYLE}</style>
 			{lines.map((line, at) => (
 				<p key={at} className="wgi-note-line">
 					{line}
 				</p>
 			))}
-		</div>
+		</Surface>
 	);
 });

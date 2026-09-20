@@ -1,14 +1,11 @@
 import { createWidget, defineManifest } from "widgetarium";
+import { Surface } from "widgetarium/kit";
 
 const STYLE = `
 .wgi-reminder {
 	display: flex;
 	align-items: flex-start;
-	gap: 10px;
-	padding: 10px 12px;
-	border-radius: 8px;
-	border: 1px solid var(--background-modifier-border);
-	background: var(--background-primary);
+	gap: var(--wg-gap-parts);
 }
 
 .wgi-reminder-mark {
@@ -52,10 +49,10 @@ export const manifest = defineManifest({
 
 export default createWidget(manifest, ({ content }) => {
 	return (
-		<div className="wgi-reminder">
+		<Surface type="group" className="wgi-reminder">
 			<style>{STYLE}</style>
 			<span className="wgi-reminder-mark">!</span>
 			<span className="wgi-reminder-text">{content}</span>
-		</div>
+		</Surface>
 	);
 });
