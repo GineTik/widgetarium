@@ -21,18 +21,7 @@ export function baseNamed(name) {
 	if (!held)
 		return { refusal: `${name} is not a base a screen starts from. The ones that are: ${LAYOUT_NAMES.join(", ")}.` };
 	const board = skeletonOf(name, (raw) => serializeBoard(normalizeBoard(raw)));
-	return {
-		value: board,
-		text: [
-			`${name} — ${held.suits}`,
-			`holds: ${held.holds}`,
-			regionLines(held),
-			"",
-			sectionLines(held),
-			"",
-			placeLines(board),
-		].join("\n"),
-	};
+	return { value: board, text: baseText(name, held, board) };
 }
 
 export function cardLayoutNamed(name) {
@@ -49,6 +38,18 @@ export function cardLayoutNamed(name) {
 			...card.parts.map((part) => `  ${part.place.padEnd(9)} asks for ${part.asks}`),
 		].join("\n"),
 	};
+}
+
+function baseText(name, held, board) {
+	return [
+		`${name} — ${held.suits}`,
+		`holds: ${held.holds}`,
+		regionLines(held),
+		"",
+		sectionLines(held),
+		"",
+		placeLines(board),
+	].join("\n");
 }
 
 function regionLines(held) {

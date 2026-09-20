@@ -375,6 +375,12 @@ const COMMANDS = {
 	lint: { asks: "note", run: (argument, options) => lint(argument, options) },
 };
 
+const MISSING_ARGUMENT = {
+	note: () => missingNote(),
+	base: () => missingBase(),
+	widget: (argument) => missing(String(argument)),
+};
+
 function ranCommand(command, argument, options) {
 	const named = Object.hasOwn(COMMANDS, String(command)) ? COMMANDS[command] : null;
 	if (named === null) {
@@ -382,9 +388,7 @@ function ranCommand(command, argument, options) {
 		return command === undefined || command === "help" ? 0 : 1;
 	}
 	if (named.asks === undefined || argument) return named.run(argument, options);
-	if (named.asks === "note") return missingNote();
-	if (named.asks === "base") return missingBase();
-	return missing(String(argument));
+	return MISSING_ARGUMENT[named.asks](argument);
 }
 
 const options = optionsIn(process.argv.slice(2));

@@ -354,7 +354,7 @@ export function skeletonOf(name, asBoard) {
 
 export function sectionsOf(node, found = []) {
 	for (const child of node?.of ?? []) {
-		if (child.heading) found.push({ name: child.heading, role: child.role ?? null, purpose: child.purpose ?? null });
+		if (child.heading) found.push(sectionRow(child));
 		sectionsOf(child, found);
 	}
 	return found;
@@ -381,6 +381,10 @@ export function baseMismatch(name, root) {
 		return `the board says ${name}, which cuts the page into ${asked.length} regions, and this one has ${standing.length}`;
 	const wrong = asked.flatMap((region, at) => miscast(region, standing[at], at));
 	return wrong.length > 0 ? `the board says ${name}, but ${wrong.join("; ")}` : null;
+}
+
+function sectionRow(child) {
+	return { name: child.heading, role: child.role ?? null, purpose: child.purpose ?? null };
 }
 
 function miscast(asked, standing, at) {
