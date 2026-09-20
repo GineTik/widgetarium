@@ -27,6 +27,7 @@
 		{ "name": "streak" },
 		{ "name": "table" },
 		{ "name": "task-card" },
+		{ "name": "text-line" },
 		{ "name": "tier-list" },
 		{ "name": "toggle" },
 		{ "name": "underline-tabs" },
@@ -48,7 +49,6 @@
 		{ "id": "@flow/report" },
 		{ "id": "@flow/report-figure" },
 		{ "id": "@flow/session-tail" },
-		{ "id": "@flow/text-line" },
 
 		{ "id": "@media/album-cover" },
 		{ "id": "@media/album-grid" },

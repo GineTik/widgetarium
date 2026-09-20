@@ -2,40 +2,40 @@ import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
 import { cx } from "widgetarium/kit";
 
 const CSS = `
-.flow-text-line {
+.wgi-text-line {
 	margin: 0;
 	min-width: 0;
 }
 
-.flow-text-line:not(.is-heading).is-label {
+.wgi-text-line:not(.is-heading).is-label {
 	font-size: var(--font-ui-small, 14px);
 	font-weight: var(--font-semibold, 600);
 }
 
-.flow-text-line:not(.is-heading).is-value {
+.wgi-text-line:not(.is-heading).is-value {
 	font-size: var(--font-ui-medium, 15px);
 }
 
-.flow-text-line:not(.is-heading).is-caption {
+.wgi-text-line:not(.is-heading).is-caption {
 	font-size: var(--font-ui-smaller, 12px);
 }
 
-.flow-text-line.is-label {
+.wgi-text-line.is-label {
 	color: var(--text-muted);
 }
 
-.flow-text-line.is-value {
+.wgi-text-line.is-value {
 	color: var(--text-normal);
 }
 
-.flow-text-line.is-caption {
+.wgi-text-line.is-caption {
 	color: var(--text-faint);
 }
 
-.flow-text-line.is-clamped {
+.wgi-text-line.is-clamped {
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
-	-webkit-line-clamp: var(--flow-line-clamp);
+	-webkit-line-clamp: var(--wgi-line-clamp);
 	overflow: hidden;
 }
 `;
@@ -45,16 +45,6 @@ const TONE_CLASSES = { label: "is-label", value: "is-value", caption: "is-captio
 type Tone = keyof typeof TONE_CLASSES;
 
 const LINE_TAGS = ["p", "h1", "h2", "h3"] as const;
-
-function toneNamed(said: unknown): Tone {
-	const named = String(said ?? "").toLowerCase();
-	return Object.hasOwn(TONE_CLASSES, named) ? (named as Tone) : "value";
-}
-
-function countOf(held: unknown): number {
-	const number = Math.trunc(Number(held));
-	return Number.isFinite(number) && number > 0 ? number : 0;
-}
 
 export const manifest = defineManifest({
 	title: "Text line",
@@ -101,13 +91,13 @@ export default createWidget(manifest, ({ text, tone, heading, lines }) => {
 	if (said === "") return null;
 
 	const Line = LINE_TAGS[level] ?? "p";
-	const style = clamped > 0 ? ({ "--flow-line-clamp": String(clamped) } as Record<string, string>) : undefined;
+	const style = clamped > 0 ? ({ "--wgi-line-clamp": String(clamped) } as Record<string, string>) : undefined;
 
 	return (
 		<>
 			<style>{CSS}</style>
 			<Line
-				className={cx("flow-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
+				className={cx("wgi-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
 				style={style}
 			>
 				{said}
@@ -115,3 +105,13 @@ export default createWidget(manifest, ({ text, tone, heading, lines }) => {
 		</>
 	);
 });
+
+function toneNamed(said: unknown): Tone {
+	const named = String(said ?? "").toLowerCase();
+	return Object.hasOwn(TONE_CLASSES, named) ? (named as Tone) : "value";
+}
+
+function countOf(held: unknown): number {
+	const number = Math.trunc(Number(held));
+	return Number.isFinite(number) && number > 0 ? number : 0;
+}
