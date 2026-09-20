@@ -1,6 +1,6 @@
 import { arrangedHeights, normalizeBoard } from "./model.js";
 import { nestingFindings } from "./surface-laws.js";
-import { emptyColumnsOf, patternMismatch } from "./patterns.js";
+import { baseMismatch, emptyColumnsOf } from "./layouts.js";
 import { ROLES, SLOT_SURFACES } from "./surface-roles.js";
 import { COLLAPSES, APART, TOGGLES, NO_SURFACE, SIDES, SURFACES, SWAP } from "./tree.js";
 
@@ -44,14 +44,14 @@ export function lintBoard(raw, roleOfWidget = () => null) {
 	return [
 		...errors,
 		...tiles.flatMap(slotFindings),
-		...patternFindings(raw),
+		...baseFindings(raw),
 		...nesting.map((one) => finding(one.path, `law ${one.law}: ${one.reason}`)),
 	];
 }
 
-function patternFindings(raw) {
-	if (raw.pattern === undefined || raw.pattern === null) return [];
-	const wrong = patternMismatch(raw.pattern, raw.layout);
+function baseFindings(raw) {
+	if (raw.base === undefined || raw.base === null) return [];
+	const wrong = baseMismatch(raw.base, raw.layout);
 	const empty = emptyColumnsOf(raw.layout);
 	const started = empty.length < (raw.layout?.of ?? []).length;
 	return [
@@ -60,7 +60,7 @@ function patternFindings(raw) {
 			? empty.map((at) =>
 					finding(
 						[at],
-						`the board says ${raw.pattern} and this column is still empty while the ones beside it hold widgets`,
+						`the board says ${raw.base} and this region is still empty while the ones beside it hold widgets`,
 					),
 				)
 			: []),

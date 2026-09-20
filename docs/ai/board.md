@@ -19,7 +19,8 @@ A board inside prose is a different thing and that is what a note **without** `k
   also its folder under `.widgetarium/widgets/`, optionally with the commit it was made with:
   `"@you/clock@<commit>"`. Keep it as written.
 - `layout` says where each tile stands. **A tile in `tiles` but not in `layout` is not drawn.**
-- `pattern:` names the shell, so `lint` can hold what you built against what you declared.
+- `base:` names the base the screen started from, so `lint` can hold what you built against what you
+  declared. Reshape the tree freely; keep the key honest or drop it.
 
 A whole board is in [examples.md](examples.md).
 
@@ -67,6 +68,12 @@ can drop a tile into it. Do not delete the empty sides.
 
 **There is no field for spacing, and none for corners.** Both follow the tree. A box exists where a
 surface, a heading or a turn of direction makes a group visible.
+
+**A heading is a tile, never a field.** `name` labels a swap box's tab and a collapsed box's drawer
+and is drawn nowhere else, so a section is titled by standing a `role: text` tile first in its
+column — `@default/text-line` with `heading: 1` for the page, `2` for a section, `0` and
+`tone: caption` for the line under it. That tile is what `lint` reads when it asks whether a column
+has a heading, and it is what a base arrives carrying.
 
 An older note may hold `layout: { left, main, right }` or a `layouts:` map of `{x, y, w, h}`. Both
 are read and converted on the first write. Never author either.

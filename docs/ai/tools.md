@@ -11,7 +11,8 @@
 | `source <id>`      | its source, to read before copying anything from it                      |
 | `install <id>`     | writes it and its scope's shared files into the vault                    |
 | `check <id>`       | six defects in a widget you wrote; exits 1 while any stands              |
-| `pattern <name>`   | a shell's skeleton, regions already carrying role, purpose and surface   |
+| `bases`            | every base a screen can start from                                       |
+| `base <name>`      | one base: its regions, its sections, ready to write into a note          |
 | `card <name>`      | a card layout: what it wears alone and among peers, and the parts it has |
 | `layout <note>`    | the real width of every region and tile on a drawn board                 |
 | `lint <note>`      | what is wrong with the board; exits 1 until it is valid                  |
@@ -33,17 +34,25 @@ draws. `install <id>` is still there for taking one before you place it, but you
 Writing a widget because the vault happened not to hold one is the mistake this command exists to
 stop.
 
-## Taking a shell
+## Taking a base
 
 ```bash
-node {tool} pattern list-detail
+node {tool} base workspace
 ```
 
-`sidebar-and-content`, `nested-sidebars`, `list-detail`, `three-pane`, `supporting-pane`,
-`full-bleed`. It hands back the skeleton with every region's role, purpose and surface, and the board
-keeps `pattern:`, so `lint` catches a region count that does not match, a region holding the wrong
-role, and a declared region left empty. Naming a shell in the chat and building something else is
-what this replaces.
+`node {tool} bases` lists them all. Today: `page`, `page-composed`, `workspace`, `split`, `surface`,
+`three-pane`, `supporting-pane`, `journal`, `analytics`, `library`, `gallery`, `atlas`, `showcase`, `notebook`, `drill`.
+
+It hands back a whole page: every region with its role, purpose and surface, its sections in several
+shapes, and every line of text already written into a `@default/text-line` tile — the page title,
+the line under it, a heading and a caption over each section. The only thing it leaves out is the
+widgets, and it prints every empty place and what that place is for. The board keeps `base:`, so
+`lint` catches a region count that does not match, a region holding the wrong role, and a declared
+region left empty.
+
+A base is where a screen starts, not what it must stay. Reshape the tree the moment the design asks
+for something else; keep `base:` honest or drop it. Naming a shell in the chat and building something
+else is what this replaces.
 
 ## Taking a card
 

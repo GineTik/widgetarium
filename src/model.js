@@ -497,7 +497,7 @@ export function normalizeBoard(input, idOf = SAME_ID, nameOf = SAME_ID, roleOf =
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".
 		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
-		...(typeof input?.pattern === "string" && input.pattern !== "" ? { pattern: input.pattern } : {}),
+		...(typeof input?.base === "string" && input.base !== "" ? { base: input.base } : {}),
 	};
 }
 
@@ -542,7 +542,7 @@ export function serializeBoard(board) {
 		v: BLOCK_FORMAT,
 		tiles: board.tiles.map(serializeTile),
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
-		...(board.pattern ? { pattern: board.pattern } : {}),
+		...(board.base ? { base: board.base } : {}),
 		layout: serializeNode(board.layout),
 	};
 }

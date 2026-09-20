@@ -15,7 +15,7 @@ widgetarium: { kind: screen }
 
 ```widgetarium
 v: 2
-pattern: three-pane
+base: three-pane
 tiles:
   - id: nav
     widget: "@default/icon-list"
@@ -160,7 +160,7 @@ widgetarium: { kind: screen }
 
 ```widgetarium
 v: 2
-pattern: supporting-pane
+base: supporting-pane
 tiles:
   - id: tabs
     widget: "@default/underline-tabs"

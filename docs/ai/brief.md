@@ -89,11 +89,24 @@ seeded notes in the vault; stage 2 leaves the design in **its own note**, never 
 a screen note holds the board and nothing above it. A stage whose output lives only in the chat is a
 stage the next session repeats from nothing.
 
-**6. Take the shell, do not only name it.**
+**6. Every screen starts from a base, and you take it rather than name it.**
 
 ```bash
-node {tool} pattern list-detail
+node {tool} bases
+node {tool} base workspace
 ```
+
+A base is a **finished page with the widgets left out**. It arrives with its regions and their
+roles, its sidebars, its sections in several shapes — a band, a row of cards, a strip of figures, a
+list beside the one thing open — and **every line of text already written and placed as a
+`@default/text-line` tile**: the page title, the line under it, and a heading and a caption over each
+section. What it leaves empty is the places a widget goes, each saying what it is for.
+
+So you never build the page. You fill it: put a widget in a place, duplicate a place when you need
+another of the same, and rewrite the text tiles to say what this screen's words are. It is a
+starting point, not a cage — reshape the tree the moment the design asks for something else. A new
+screen, or one with nothing on it yet, begins here. A screen that already holds widgets is continued
+from the base it declares.
 
 **7. The vault is the research. Never search the web while building.**
 

@@ -58,7 +58,7 @@ node .widgetarium/bin/widgets.mjs show @default/table
 node .widgetarium/bin/widgets.mjs lint <note> --text
 ```
 
-Also `install <id>`, `check <id>`, `pattern <name>`, `card <name>`, `layout <note>` and
+Also `install <id>`, `check <id>`, `base <name>`, `card <name>`, `layout <note>` and
 `surfaces <note> --text`. Tell them which one answers their question and what its output will mean.
 
 ## What usually goes wrong
