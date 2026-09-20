@@ -33,12 +33,20 @@ console.log(`the note takes ${ICLOUD_FETCH_MS} ms to fetch, the way an evicted i
 
 	const board = await slot.list();
 	const seenAfterMs = performance.now() - at;
-	check("the board already draws the card in its new column", board.rows.find((row) => row.path === files[0].path).props.status, "done");
+	check(
+		"the board already draws the card in its new column",
+		board.rows.find((row) => row.path === files[0].path).props.status,
+		"done",
+	);
 	claim(`without waiting for the fetch → ${seenAfterMs.toFixed(0)} ms`, seenAfterMs < PROMPT_MS);
 
 	const landed = await moving;
 	check("and the write reports the same when it lands", landed.props.status, "done");
-	check("the board still agrees afterwards", (await slot.list()).rows.find((row) => row.path === files[0].path).props.status, "done");
+	check(
+		"the board still agrees afterwards",
+		(await slot.list()).rows.find((row) => row.path === files[0].path).props.status,
+		"done",
+	);
 }
 
 console.log("\na write that fails puts the card back where it was");
@@ -50,9 +58,16 @@ console.log("\na write that fails puts the card back where it was");
 	const slot = slotOver(app);
 	await slot.list();
 
-	const refused = await slot.update({ path: files[0].path }, { props: { status: "done" } }).then(() => null, (failure) => failure);
+	const refused = await slot.update({ path: files[0].path }, { props: { status: "done" } }).then(
+		() => null,
+		(failure) => failure,
+	);
 	claim(`update() reports the failure → ${refused?.message}`, refused instanceof Error);
-	check("and the board is back on the old value", (await slot.list()).rows.find((row) => row.path === files[0].path).props.status, "todo");
+	check(
+		"and the board is back on the old value",
+		(await slot.list()).rows.find((row) => row.path === files[0].path).props.status,
+		"todo",
+	);
 }
 
 console.log(wrong === 0 ? "\nslow storage gate: clean" : `\nslow storage gate: ${wrong} wrong`);

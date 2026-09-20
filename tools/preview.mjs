@@ -15,7 +15,20 @@ const VAULT = "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
 const WIDGETS = path.join(VAULT, ".widgetarium/widgets");
 const OUT = process.argv[2];
 
-const VOID = new Set(["br", "hr", "img", "input", "path", "circle", "stop", "use", "rect", "line", "ellipse", "polygon"]);
+const VOID = new Set([
+	"br",
+	"hr",
+	"img",
+	"input",
+	"path",
+	"circle",
+	"stop",
+	"use",
+	"rect",
+	"line",
+	"ellipse",
+	"polygon",
+]);
 
 function styleString(value) {
 	if (typeof value === "string") return value;
@@ -41,20 +54,32 @@ function renderNode(node) {
 	let inner = "";
 	for (const [key, value] of Object.entries(props ?? {})) {
 		if (key === "children") continue;
-		if (key === "dangerouslySetInnerHTML") { inner = value.__html; continue; }
+		if (key === "dangerouslySetInnerHTML") {
+			inner = value.__html;
+			continue;
+		}
 		if (typeof value === "function" || value === false || value == null) continue;
 		const name = key === "className" ? "class" : key;
 		attributes.push(` ${name}="${key === "style" ? styleString(value) : String(value).replace(/"/g, "&quot;")}"`);
 	}
 	if (type === "style") return `<style>${props.children}</style>`;
 	const body = inner || renderNode(props?.children);
-	return VOID.has(type) && !body ? `<${type}${attributes.join("")} />` : `<${type}${attributes.join("")}>${body}</${type}>`;
+	return VOID.has(type) && !body
+		? `<${type}${attributes.join("")} />`
+		: `<${type}${attributes.join("")}>${body}</${type}>`;
 }
 
 function createRequire(scope) {
 	const modules = {
 		widgetarium: scope.widgetarium,
-		react: { createElement: scope.h, Fragment: scope.Fragment, useState: scope.useState, useEffect: scope.useEffect, useMemo: scope.useMemo, useRef: scope.useRef },
+		react: {
+			createElement: scope.h,
+			Fragment: scope.Fragment,
+			useState: scope.useState,
+			useEffect: scope.useEffect,
+			useMemo: scope.useMemo,
+			useRef: scope.useRef,
+		},
 	};
 	return (name) => {
 		const found = modules[name];
@@ -109,17 +134,29 @@ function buildWidget(folder, manifest, bindings, size = { w: 7, h: 6 }) {
 					const left = a.props[seed.prop] ?? a.name;
 					const right = b.props[seed.prop] ?? b.name;
 					return (left > right ? 1 : left < right ? -1 : 0) * (seed.dir === "desc" ? -1 : 1);
-			  })
+				})
 			: rows;
 		sources[key] = {
 			name: key,
 			binding: { path: bindings?.[key] ?? "" },
 			data: { rows: sorted, total: sorted.length, isLoading: false },
-			filters: { list: spec.default?.filters ?? [], update: () => ({ appliedFilters: [], rejectedFilters: [] }), canFilterBy: () => true },
-			sort: { list: spec.default?.sort ?? [], update: () => ({ appliedSort: [], rejectedSort: [] }), canSortBy: () => true },
+			filters: {
+				list: spec.default?.filters ?? [],
+				update: () => ({ appliedFilters: [], rejectedFilters: [] }),
+				canFilterBy: () => true,
+			},
+			sort: {
+				list: spec.default?.sort ?? [],
+				update: () => ({ appliedSort: [], rejectedSort: [] }),
+				canSortBy: () => true,
+			},
 			window: { list: { offset: 0, limit: 0 }, update: () => {} },
-			canCreate: true, canUpdate: true, canRemove: true,
-			openRecord: () => {}, update: async () => null, create: async () => null,
+			canCreate: true,
+			canUpdate: true,
+			canRemove: true,
+			openRecord: () => {},
+			update: async () => null,
+			create: async () => null,
 		};
 	}
 
@@ -137,7 +174,28 @@ function buildWidget(folder, manifest, bindings, size = { w: 7, h: 6 }) {
 		...actions,
 	};
 
-	const api = { createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, ConfirmDialog: () => null, DialogOverlay: () => null, DialogContent: (p) => h('div', { className: 'wg-dialog' }, p.children), DialogClose: () => null, DialogHeader: (p) => h('div', null, p.children), DialogTitle: (p) => h('h2', null, p.children), DialogDescription: (p) => h('p', null, p.children), DialogFooter: (p) => h('div', null, p.children), useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
+	const api = {
+		createWidget: (component, meta) => {
+			if (meta) component.meta = meta;
+			return component;
+		},
+		Dialog: () => null,
+		ConfirmDialog: () => null,
+		DialogOverlay: () => null,
+		DialogContent: (p) => h("div", { className: "wg-dialog" }, p.children),
+		DialogClose: () => null,
+		DialogHeader: (p) => h("div", null, p.children),
+		DialogTitle: (p) => h("h2", null, p.children),
+		DialogDescription: (p) => h("p", null, p.children),
+		DialogFooter: (p) => h("div", null, p.children),
+		useAction: (action) => ({
+			...action,
+			run: async () => {},
+			runIfCan: async () => ({ isBlocked: false }),
+			isLoading: false,
+			error: null,
+		}),
+	};
 
 	const scope = {
 		widgetarium: api,
@@ -163,7 +221,14 @@ const LAYOUT = [
 	{ id: "@core/palette", x: 0, y: 0, w: 4, h: 4 },
 	{ id: "@wallet/balance", x: 4, y: 0, w: 7, h: 6 },
 	{ id: "@wallet/notice", x: 0, y: 4, w: 4, h: 2 },
-	{ id: "@wallet/transactions", x: 0, y: 6, w: 5, h: 8, bind: { transactions: "Widgetarium Demo/Wallet/Transactions" } },
+	{
+		id: "@wallet/transactions",
+		x: 0,
+		y: 6,
+		w: 5,
+		h: 8,
+		bind: { transactions: "Widgetarium Demo/Wallet/Transactions" },
+	},
 	{ id: "@wallet/quick-send", x: 5, y: 6, w: 6, h: 4, bind: { contacts: "Widgetarium Demo/Wallet/Contacts" } },
 ];
 
@@ -177,9 +242,9 @@ const tiles = LAYOUT.map((entry) => {
 	const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 	const width = entry.w * CELL + (entry.w - 1) * GAP;
 	const height = entry.h * CELL + (entry.h - 1) * GAP;
-	const scale = CELL / 40;  // one board scale, as the host now does
+	const scale = CELL / 40; // one board scale, as the host now does
 	const { component, props } = buildWidget(folder, manifest, entry.bind, { w: entry.w, h: entry.h, scale });
-	
+
 	const left = entry.x * (CELL + GAP);
 	const top = entry.y * (CELL + GAP);
 	return `<div class="wg-tile" style="transform:translate3d(${left}px,${top}px,0);width:${width}px;height:${height}px;font-size:${(scale * 16).toFixed(3)}px"><div class="wg-tile-body">${renderNode(h(component, props))}</div></div>`;

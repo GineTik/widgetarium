@@ -11,7 +11,6 @@ export type {
 	PrimitiveType,
 	PropKind,
 	PropSpec,
-	PropSpecs,
 	Query,
 	Ref,
 	Row,
@@ -37,8 +36,33 @@ export type {
 	VaultRecord,
 } from "../../src/gateway/needs";
 
-export type { DataState } from "../../src/gateway/use-data";
-export { flatRows, useData } from "../../src/gateway/use-data";
+export type {
+	Control,
+	CollectionGatewayOf,
+	CustomVerb,
+	Describes,
+	FieldDescription,
+	GatewayOf,
+	HeldBy,
+	Manifest,
+	ManifestCard,
+	ManifestInput,
+	Migration,
+	Prop,
+	PropInput,
+	PropSpec as ManifestProp,
+	PropsOf,
+	RecordRef,
+	StandardVerb,
+	TileConfigOf,
+	ValueGatewayOf,
+	WrittenBy,
+	WritesRow,
+} from "../../src/gateway/manifest";
+export { defineManifest, defineProp, migration, verb } from "../../src/gateway/manifest";
+
+export type { DataState, Listed } from "../../src/gateway/use-data";
+export { useData } from "../../src/gateway/use-data";
 export { action, arrayGateway, canDo, collectionGateway, soloGateway, valueGateway } from "../../src/gateway/create";
 export { fieldOf, textOf } from "../../src/gateway/match";
 export { narrowed, normalizeWhere } from "../../src/gateway/narrow";
@@ -47,6 +71,7 @@ export { useValue } from "../../src/gateway/use-value";
 
 import type { ReactNode } from "react";
 import type { DeclaredPropSpecs } from "../../src/gateway/contract";
+import type { Manifest, PropsOf } from "../../src/gateway/manifest";
 import type { VaultRecord } from "../../src/gateway/needs";
 
 export interface HostConsole {
@@ -66,10 +91,12 @@ export interface ViewHost {
 	};
 }
 
+export type NavigationTarget = "self" | "blank";
+
 export interface Navigation {
 	canNavigate: boolean;
 	resolve(link: string): string | null;
-	navigate(link: string): boolean;
+	navigate(link: string, options?: { target?: NavigationTarget }): boolean;
 }
 
 export interface ReadAnswer {
@@ -133,7 +160,20 @@ export interface WidgetCatalogue {
 
 export type FoldIntoGroup = () => boolean;
 
-export type Slot<Given> = ((given: Given) => ReactNode) | null;
+export interface WidgetHostProps {
+	host: ViewHost;
+	here: Here | null;
+	navigator: Navigation;
+	catalogue: WidgetCatalogue;
+	foldIntoGroup: FoldIntoGroup;
+	mounts: Record<string, MountEntry[]>;
+	configureMounts: ConfigureMounts;
+	slots: Record<string, Slot<any>>;
+	size: { w: number; h: number; scale: number; isCollapsed: boolean; collapse(): void; expand(): void };
+}
+
+export type Slot<Given> =
+	(((given: Given) => ReactNode) & { surface: "fill" | "outline" | "raise" | "none"; isCard: boolean }) | null;
 
 export interface WidgetMeta {
 	id?: string;
@@ -142,6 +182,19 @@ export interface WidgetMeta {
 	props?: DeclaredPropSpecs;
 }
 
+export type WidgetProps<M> = PropsOf<M> & HostPropsOf<M>;
+
+type InlineOf<M> = M extends Manifest<any, infer Inline> ? Inline : undefined;
+
+export type HostPropsOf<M> = [InlineOf<M>] extends [true]
+	? Omit<WidgetHostProps, "here"> & InlineContent & { here: Here<PassageRecord> | null; reader: PassageReader }
+	: WidgetHostProps;
+
+export declare function createWidget<M extends Manifest<any, any>>(
+	manifest: M,
+	component: (props: PropsOf<M> & HostPropsOf<M>) => any,
+): (props: PropsOf<M> & HostPropsOf<M>) => any;
+// TODO: remove this overload once every shipped widget declares defineManifest
 export declare function createWidget<Props>(component: (props: Props) => any, meta?: WidgetMeta): (props: Props) => any;
 
 // TODO: type the React surface of the api module — these are widget-facing components, not gateways

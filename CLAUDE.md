@@ -6,11 +6,35 @@ widget for a line of text. `src/` is React with `h()` hyperscript — **no JSX t
 in place rather than being typed. Widgets under `widgets/` are `.tsx` compiled at runtime by
 sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
 
-**The handbook written for the in-app agent is your handbook too.** `docs/ai/` (start at
-`docs/ai/README.md`) and `docs/patterns/` are what the plugin lays into a vault for the assistant,
-and they are the shortest true description of how a board, a widget, its manifest, its roles and its
-surfaces work. Read the page that covers a change before touching the code, and keep it true in the
-same change: a law that changed in code and not there is a law the next agent breaks.
+**The handbook written for the in-app agent is your handbook too.** `docs/ai/` is the whole of it:
+`brief.md` is the prompt, `board.md`, `surfaces.md` and `examples.md` go into the agent's context in
+full, `widget.md` and `tools.md` are laid on disk and read when needed, and `chat-brief.md` is the
+prompt a provider that cannot edit gets instead. `examples.md` is the one that does the work — whole
+boards with a surface on every node, because the agent copies a screen far more reliably than it
+applies a rule. Read the page that covers a change before touching the code, and keep it true in the
+same change: a law that changed in code and not there is a law the next agent breaks. Why the shapes
+are what they are lives in `docs/decisions.md`.
+
+**A screen is built in three stages, and the order is the law.** `brief.md` holds them. Stage 1 is
+the domain: the record shapes the screen must show, one folder per kind, seeded with real rows, and
+the fields the domain needs rather than only the ones the vault happens to hold. Stage 2 is the
+design in words, region by region, and **the form is chosen there** — a board of tiles is one answer
+to "how should this be shown", a page of prose, a single full-bleed widget or a deck are others, and
+the data picks none of them. Stage 3 is the screen: search the catalogue for what fits the design,
+write a widget for everything that does not, place, bind, surface, lint, measure. Measured before
+the order was written down: the board that came out of starting at stage 3 had five of seven tiles
+on their defaults and one surface on nine nodes, and `lint` called it valid. **The catalogue is not
+the ceiling on the design** — the old wording, "write a widget only when nothing fits", made it one.
+
+**A screen note holds the board and nothing above it, and the board claims the window.** Two
+defects hid behind each other here. `kind: screen` painted nothing at all: its only rule,
+`.wg-root.is-screen .wg-grid`, aimed at a class no file has rendered since the grid became a tree,
+so the flag the handbook documents was dead CSS. And the first version of stage 2 told the agent to
+leave its design write-up in the note it was building — which put 41 and 43 lines of prose in front
+of two screens before anyone noticed. The rule now lives on the root and on `.wg-tree-page`, is
+measured in real Chrome by `tools/tree-test.mjs` against the viewport, and the design goes in a note
+of its own. `is-page` stays a separate thing: `mode: expanded` changes the board's padding, a screen
+only claims height, and conflating them moved every drag measurement in the tree gate.
 
 **A widget describes itself with one value in its own file.** `export const manifest =
 defineManifest({ ... })` beside the component, and `export default createWidget(manifest, Component)`,
@@ -71,6 +95,30 @@ The engine resolves each prop to a gateway from the binding the person chose —
 file, a value kept in the tile, or another tile's ref. Widgets read through `useData(gateway.list)`
 and write through verbs; every verb is asked through `can()`. The manifest carries no id, no version
 and no api: the id is the folder, the version is the commit, the api is stamped by the build.
+**A surface is written by whoever places the node, and nothing lays one for you.** `main.js` no
+longer hands `normalizeBoard` a `roleOf`, so `withDefaultSurfaces` in `src/surface-default.js` does
+not run on a drawn board: it survives behind that switch, with `tools/surface-default-test.mjs` as
+its only caller. Measured before the switch was thrown, by `tools/surface-probe.mjs` over three real
+screens: the writer wrote `apart` on navigation columns and **nothing else**, because `wantsWriting`
+requires `isBox(node)` and a tile is a leaf; `surfaceVerdicts` meanwhile advised `group` on every one
+of those tiles. Two paths, disagreeing, neither reproducing the reference design — which is why the
+agent now decides. `tools/surface-shapes.mjs` holds the other half of the finding: a box takes a
+plate only when it has sibling boxes, because `decided()` refuses a box that stands alone in its
+parent. **The agent gives every node its surface as it places it**, guided by `docs/ai/surfaces.md`;
+`widgets.mjs surfaces` reads a **drawn** board back and says which plates look wrong beside each
+other, and is never a source of surfaces to write.
+
+**A pattern is data, and the board remembers which one it is.** `src/patterns.js` holds the six
+shells that cut a page into regions, each region carrying its `role`, `purpose`, `surface` and
+whether it is kept or collapses, beside the board width the full form needs. `widgets.mjs pattern
+<name>` hands that skeleton over with the surfaces already on the nodes, so the pattern writes them
+into the note rather than competing with the laws at draw time — `regionSurfaceOf` still reads the
+node, and a board with no pattern still falls to D1. `pattern:` survives `normalizeBoard` and
+`serializeBoard`, which is what lets `lint` hold a built screen against what was declared: a region
+count that does not match, a region holding the wrong role, a declared region left empty. A pattern
+named only in the chat was thrown away, and that is why the same request produced a different screen
+every time.
+
 **The agent sees the whole catalogue, not the vault.** `widgets.mjs find` merges what is installed
 with what every configured source offers, and `src/engine/registry-file.js` is the one reader of a
 registry — a source naming a `path` on this machine is read off disk, one naming a `repository` is
@@ -120,8 +168,25 @@ plugin and runs as `widgets.mjs check <id>`, exiting 1 while anything is
 wrong — the agent's own gate, not a repository one. `tools/lint-code.mjs` stays what it was: this
 project's utility over `src` and `widgets`, and it knows nothing about colours.
 
-**A default is a value kept in the tile, never a path.** `defineManifest` refuses a default naming a
-vault folder or file: a widget touches a person's notes only through a binding the person made.
+**A default is a value kept in the tile, never a path. This is a security law, not a style one.**
+A default is static data the widget ships with: strings, numbers, booleans, arrays, plain objects.
+Nothing in it may name a file or a folder.
+
+The reason is what a path in a default would buy an author. A widget whose default points at the
+vault is reading a person's notes **before they have chosen anything** — and a widget declaring a
+destructive verb could then delete files on first render, with no binding made, no consent given and
+nothing to undo. The person names the path in the settings window, and only then does the widget
+touch anything. That order is the whole protection, and a default naming a path removes it.
+
+`defineManifest` refuses it: `carriesKey` in `src/gateway/manifest.ts` walks a default to any depth
+and refuses `path` in an object, in an array's rows, or nested inside either. `ref` is refused the
+same way, because a row's address is minted by the engine. Measured before the walk was added — the
+two checks used to be mirror images of each other's holes: `path` was caught only on a plain object,
+`ref` only on array rows, and neither looked one level down.
+
+**A widget that renames its way around this is refused too.** `filePath`, `at`, `file` or any other
+spelling of the same thing is the same defect; the name heuristic is what the engine can enforce, not
+what the law means. A widget shipping a path-shaped default does not reach the catalogue.
 
 **A tile's verbs are switched on by the person.** A binding carries `allow: [verbs]`; binding a folder
 in the settings window writes the widget's `writes` there, and the Data tab switches each one off and
@@ -140,7 +205,7 @@ note naming a commit the vault lacks offers to install that version.
 
 ## The laws that cost the most to learn
 
-**A record's identity is an id, not its name.** Full decision in `docs/record-identity.md`. A UUID in
+**A record's identity is an id, not its name.** Full decision in `docs/decisions.md`. A UUID in
 frontmatter under a namespaced key, exposed as `record.id`; stored references use it, names are
 labels. **Assigned only on an explicit action, never on render** — a gateway that writes while being
 drawn litters the vault. Everything must work for records with no id yet: resolve id first, name or
@@ -183,7 +248,7 @@ of two things: a **leaf** — a tile, `{ id, ratio, height }` — or a **box** �
 of: [...] }` carrying the same `ratio` plus `width`, `keep`, `collapse`, `folded` and
 `scroll`. A box nests to any depth, which is the whole point: `[[A], [B, [C over D]]]` is
 expressible, and the three named regions were not able to say it. Full decision in
-`docs/board-tree.md`.
+`docs/decisions.md`.
 
 **A height belongs to the widgets, never to a box.** A box is as tall as what it holds, which is
 what lets a row stack without spilling over the boxes below it. A grip resizes the line above it, so
@@ -201,20 +266,23 @@ archive, restore and delete of a view are the tab-rows law applied to the box's 
 lands as a sibling of a swap child — a drop names nothing — so it falls through to the view on
 screen and wraps. `@default/view-group` is read into a swap box that keeps the group's id, its mounted
 records become tiles, and the box answers to the widget id in wiring so a switcher that `wants` the
-group finds it. Full decision in `docs/board-tree.md`.
+group finds it. Full decision in `docs/decisions.md`.
 
 **A background belongs to a group, not to a widget.** The engine draws every widget's root — its
 container query, size and clipping — and a widget draws no background on its own; `WidgetRoot`
 survives only as a bare element for widgets written before. Any node may wear `surface: group |
-object | item | apart | none`, named for what the node **is** rather than for how it is painted, so a
+object | apart | none`, named for what the node **is** rather than for how it is painted, so a
 design system may repaint any of them without the name lying: a `group` is several things answering
-one question, an `item` is one member of a set lying on its group, an `object` is a thing lifted off
-the page that a person acts in, and `apart` is a boundary with no plate. An `item` stands only on a
-`group`. The older words are read once at `normalizeBoard` through `SURFACE_WAS` and never written
-again. A
+one question, an `object` is a thing lifted off the page that a person acts in, and `apart` is a
+boundary with no plate. **A `group` takes its colour from what it stands on** — grey on the page,
+raised on another group — so the white card on a grey plate is not a fourth name to choose, and the
+only CSS that decides it is `[data-surface="group"] [data-surface="group"]`. `item` was that fourth
+name, and it is read once at `normalizeBoard` through `SURFACE_WAS` beside `fill`, `outline`, `raise`
+and `divider`, then never written again. A
 slot wears one too: the manifest's `slots.<name>.surface` is the default, a tile's `slots.<name>.surface`
 the pick, and `surfacedSlot` wraps every item the slot draws in that plate, so the widget in a slot
-draws no background either — a kanban's `task-card` lies in a `raise` its manifest names. A prop the
+draws no background either — a kanban's `task-card` lies in the `group` its manifest names, raised
+because the column under it is a group already. A prop the
 parent does not feed a slotted widget arrives as a gateway over its declared default (`slotDefaults`),
 and a list is read a page at a time with `{ offset, limit }` (`pageOf`), which is how `@default/feed` loads
 ten more each time its end comes into view. A widget names its
@@ -304,13 +372,13 @@ and a region stays.
 
 **A fed slot cannot be entered; an unfed one can.** A slot whose manifest declares `gives` gets its
 inputs from the parent and owns nothing. Without `gives` the child owns its own props.
-`docs/view-group.md` carries this; it replaced an earlier split between "slot" and "mount".
+`docs/decisions.md` carries this; it replaced an earlier split between "slot" and "mount".
 
 **One widget points at another by ref, never by a shared name.** There is no context bus. A ref is
 `<tileId>/<propName>`; the board holds one registry of them (`src/gateway/refs.js`) and a where row
 carries `{ ref }` where a value would stand. A selection — which tab, which view, which card is open
 — is a box the engine owns over the very list it selects from, so a pick that names a row the list
-no longer holds is no pick at all. Full decision in `docs/prop-bindings.md`.
+no longer holds is no pick at all. Full decision in `docs/decisions.md`.
 
 **Declared is not rendered.** Six rounds shipped with every gate green and were rejected on sight.
 A value sliced by a selection must be read through its gateway **inside the widget that draws it**,
@@ -318,14 +386,14 @@ with `useData`. One level up gives a correct declared value and a stale screen.
 
 **A markdown post-processor is reading mode only.** Live Preview is a different engine and needs a
 CodeMirror 6 editor extension. Reading view also caches rendered sections and unloads off-screen ones.
-Sources, quotes and the ranked causes are in `docs/research/post-processors-and-live-preview.md`.
+Sources, quotes and the ranked causes are in `docs/decisions.md`.
 
 **Three versions, and only one of them is semver.** The plugin's `manifest.json` version is
 Obsidian's business. The two that cost are `v:` stamped into every block written, and `api:` in a
 widget manifest against the range the plugin holds. Both read a missing number as 1, and both
 REFUSE rather than guess: a block from a newer plugin is not mounted and therefore never written
 back, and a widget outside the range does not mount, install or draw. The numbers and the rule for
-raising each are in `docs/versioning.md`; they live in `src/version.js`.
+raising each are in `docs/decisions.md`; they live in `src/version.js`.
 
 **The build is the engine's, and it runs on the person's machine.** A widget folder holds only what
 its author wrote; everything the engine makes lands in `build/` beside it — `widget.js` from the TSX,
@@ -437,8 +505,9 @@ before re-reading the code, before blaming the cache, and before reloading the p
 - Comments only with the prefixes `TODO:` and `TRADE-OFF:`, fewest possible words. `CONTEXT:` is
   gone: a fact the reader needs belongs in a name. A hook blocks anything else, on edits and on
   shell writes alike.
-- Every string is English; `npm run lint:lang` must pass. Never build a sentence by concatenation —
-  author the whole sentence with a placeholder.
+- **Everything written in this repository is English.** Code, strings, comments, commit messages,
+  documentation, a `.md` anywhere in the tree. `npm run lint:lang` must pass. Never build a sentence
+  by concatenation — author the whole sentence with a placeholder.
 - Early returns over nesting; no proxy variables; every new entity needs a consumer.
 - Migrations are **lazy**: reading accepts the old shape, writing emits the new one, and nothing bulk
   rewrites the vault. A prop's `was` carries every name it had. Until the first release this law is

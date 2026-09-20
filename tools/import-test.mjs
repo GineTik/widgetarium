@@ -10,7 +10,10 @@ const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
 buildMirror();

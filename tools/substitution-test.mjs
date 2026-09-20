@@ -93,13 +93,15 @@ const adapter = {
 const registry = new WidgetRegistry({ vault: { adapter } });
 await registry.load();
 
+const INLINE_ONLY = new Set(["@default/code-block", "@default/note", "@default/note-link", "@default/reminder"]);
+
 // ── the rules themselves ─────────────────────────────────────────────────────────────────
-const line = normalizeRules([{ id: "r1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }])[0];
+const line = normalizeRules([{ id: "r1", name: "Reminder", mode: "line", open: "!", widget: "@default/reminder" }])[0];
 const wrapped = normalizeRules([
-	{ id: "r2", name: "Note", mode: "wrapped", open: ":::", close: ":::", widget: "@inline/note" },
+	{ id: "r2", name: "Note", mode: "wrapped", open: ":::", close: ":::", widget: "@default/note" },
 ])[0];
 const expression = normalizeRules([
-	{ id: "r3", name: "Time", mode: "regex", pattern: "^@(\\d{1,2}:\\d{2})\\s+(.+)$", widget: "@inline/reminder" },
+	{ id: "r3", name: "Time", mode: "regex", pattern: "^@(\\d{1,2}:\\d{2})\\s+(.+)$", widget: "@default/reminder" },
 ])[0];
 
 check(
@@ -107,11 +109,11 @@ check(
 	inlineWidgets(registry.list())
 		.map((entry) => entry.manifest.id)
 		.sort(),
-	["@inline/code-block", "@inline/note", "@inline/note-link", "@inline/reminder"],
+	[...INLINE_ONLY].sort(),
 );
 check(
 	"and one that claims no tile size is never offered for a board",
-	boardWidgets(registry.list()).some((entry) => entry.manifest.id.startsWith("@inline/")),
+	boardWidgets(registry.list()).some((entry) => INLINE_ONLY.has(entry.manifest.id)),
 	false,
 );
 check(
@@ -163,7 +165,7 @@ check(
 );
 check(
 	"an expression with no group hands over the whole match",
-	matchLines(["x9x"], normalizeRules([{ mode: "regex", pattern: "\\d", widget: "@inline/reminder" }])).map(
+	matchLines(["x9x"], normalizeRules([{ mode: "regex", pattern: "\\d", widget: "@default/reminder" }])).map(
 		(span) => span.content,
 	),
 	["9"],
@@ -187,7 +189,7 @@ check(
 	["r1"],
 );
 
-const both = [line, normalizeRules([{ id: "r9", mode: "line", open: "!", widget: "@inline/note" }])[0]];
+const both = [line, normalizeRules([{ id: "r9", mode: "line", open: "!", widget: "@default/note" }])[0]];
 check(
 	"the first rule listed wins a line two rules claim",
 	matchLines(["! call"], both).map((span) => span.rule.id),
@@ -213,12 +215,12 @@ check("an unreadable expression generates nothing", sampleFromPattern("((("), nu
 check("the capsule sample carries both markers", defaultSample(wrapped).split("\n").at(-1), ":::");
 check(
 	"the example is a line the chosen widget can draw",
-	defaultSample({ mode: "line", open: "!code" }, registry.get("@inline/code-block")),
+	defaultSample({ mode: "line", open: "!code" }, registry.get("@default/code-block")),
 	"!code main.py",
 );
 check(
 	"and a widget offering no sample still gets one",
-	defaultSample(line, registry.get("@inline/reminder")).startsWith("! "),
+	defaultSample(line, registry.get("@default/reminder")).startsWith("! "),
 	true,
 );
 check("the sidebar names a capsule by both its ends", triggerLabel(wrapped), "::: … :::");
@@ -263,6 +265,7 @@ fakeFile("Orbitask/huge.log", "x".repeat(300 * 1024));
 fakeFile("Orbitask/Code.md", "!code main.py");
 
 const opened = [];
+const leavesAsked = [];
 const app = {
 	vault: {
 		getAbstractFileByPath: (path) => files.get(path)?.file ?? null,
@@ -280,7 +283,12 @@ const app = {
 		getFirstLinkpathDest: (target) =>
 			files.get(`Orbitask/${target}`)?.file ?? files.get(`Orbitask/${target}.md`)?.file ?? null,
 	},
-	workspace: { getLeaf: () => ({ openFile: (file) => opened.push(file.path) }) },
+	workspace: {
+		getLeaf: (kind) => {
+			leavesAsked.push(kind);
+			return { openFile: (file) => opened.push(file.path) };
+		},
+	},
 };
 const host = bindNote(createHost(app, { addChild() {}, removeChild() {} }), NOTE);
 const context = {
@@ -543,16 +551,31 @@ check("and by a rooted one, extension or not", host.navigator.resolve("/Orbitask
 check("a link to nothing resolves to nothing", host.navigator.resolve("/Nowhere"), null);
 check("navigating opens the note", host.navigator.navigate("/Orbitask/Board") && opened.at(-1), NOTE);
 check("navigating nowhere refuses instead of opening something else", host.navigator.navigate("/Nowhere"), false);
+check(
+	"a plain navigation replaces the tab it is in",
+	[host.navigator.navigate("/Orbitask/Board"), leavesAsked.at(-1)],
+	[true, false],
+);
+check(
+	"a blank target opens a new tab",
+	host.navigator.navigate("/Orbitask/Board", { target: "blank" }) && leavesAsked.at(-1),
+	"tab",
+);
+check(
+	"a target nobody knows is refused, not guessed",
+	host.navigator.navigate("/Orbitask/Board", { target: "_top" }),
+	false,
+);
 
 const linked = noteWith("<p>-> Board</p>");
-substitute(linked, normalizeRules([{ mode: "line", open: "->", widget: "@inline/note-link" }]));
+substitute(linked, normalizeRules([{ mode: "line", open: "->", widget: "@default/note-link" }]));
 check("a widget asks the navigator whether a note exists", linked.querySelector(".wgi-link-state").textContent, "open");
 linked.querySelector(".wgi-link").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 check("and asks it to open one", opened.at(-1), NOTE);
 
 const unknown = noteWith("<p>-> Nowhere</p>");
-substitute(unknown, normalizeRules([{ mode: "line", open: "->", widget: "@inline/note-link" }]));
+substitute(unknown, normalizeRules([{ mode: "line", open: "->", widget: "@default/note-link" }]));
 check(
 	"a note that is not there says so instead of pretending",
 	unknown.querySelector(".wgi-link-state").textContent,
@@ -620,7 +643,7 @@ check("replacing a run keeps what surrounds it", replaceLines(["a", "b", "c"], 1
 // ── a file becomes a code block ──────────────────────────────────────────────────────────
 const TICKS = "```";
 const codeRule = normalizeRules([
-	{ id: "r4", name: "Code", mode: "line", open: "!code", widget: "@inline/code-block" },
+	{ id: "r4", name: "Code", mode: "line", open: "!code", widget: "@default/code-block" },
 ])[0];
 // CONTEXT: a widget that reads a file paints a frame after the read lands, not with it
 const paint = async () => {
@@ -671,7 +694,7 @@ check(
 );
 check(
 	"a preview reads only the files its manifest declares",
-	(await previewReader(registry.get("@inline/code-block").manifest).read("main.py")).ok,
+	(await previewReader(registry.get("@default/code-block").manifest).read("main.py")).ok,
 	true,
 );
 check(
@@ -1128,7 +1151,7 @@ check(
 const noted = offered.find((tile) => tile.querySelector(".wg-cat-name").textContent === "Note");
 noted.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
-check("picking one writes it into the rule", held[0].widget, "@inline/note");
+check("picking one writes it into the rule", held[0].widget, "@default/note");
 check("and closes the catalogue behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
 
 const before = held.length;

@@ -1,5 +1,28 @@
-import { COLUMN, isBox, leavesOf, pixelHeight, pruned, ROW } from "./tree.js";
+import {
+	ADAPTIVE,
+	ALWAYS,
+	COLLAPSES,
+	DRAWER,
+	TOGGLES,
+	COLUMN,
+	APART,
+	handedDown,
+	isBox,
+	leavesOf,
+	pathOfLeaf,
+	pixelHeight,
+	pruned,
+	replacedAt,
+	ROW,
+	SIDES,
+	SURFACES,
+	SURFACE_WAS,
+	SWAP,
+} from "./tree.js";
 import { BLOCK_FORMAT } from "./version.js";
+import { widgetKeyOf } from "./engine/widget-ref.js";
+import { isKnownRole, SLOT_SURFACES } from "./surface-roles.js";
+import { withDefaultSurfaces } from "./surface-default.js";
 
 const LEGACY_CLASS_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
 
@@ -39,13 +62,17 @@ function normalizeMounted(input, idOf = SAME_ID) {
 	return result;
 }
 
+const isHeldProps = (props) => typeof props === "object" && props !== null && Object.keys(props).length > 0;
+
 // CONTEXT: a slot key is a manifest name and names no widget, so a nameless pick is no pick
 function normalizeSlots(input, idOf = SAME_ID) {
 	if (typeof input !== "object" || input === null) return {};
 	const result = {};
 	for (const [name, held] of Object.entries(input)) {
 		const record = normalizeHeld(held, null, idOf);
-		if (record) result[name] = record;
+		const worn = SLOT_SURFACES.includes(held?.surface) ? { surface: held.surface } : null;
+		const set = isHeldProps(held?.props) ? { props: held.props } : null;
+		if (record || worn || set) result[name] = { ...set, ...record, ...worn };
 	}
 	return result;
 }
@@ -109,27 +136,13 @@ export function heldKey(held, key, was) {
 	return !held?.[key] && was && held?.[was] ? was : key;
 }
 
-function settingBehind(tile, key, spec) {
-	if (!spec?.wasSetting) return undefined;
-	return underEitherKey(tile?.settings, key, spec.was);
-}
-
-function storedBehind(tile, key) {
-	return tile?.props?.[key]?.value ?? underEitherKey(tile?.settings, key);
-}
-
-function fieldsBehind(tile, spec) {
-	const named = Object.entries(spec?.wasSettings ?? {}).map(([field, key]) => [field, storedBehind(tile, key)]);
-	const held = Object.fromEntries(named.filter(([, stored]) => stored !== undefined));
-	return Object.keys(held).length > 0 ? held : undefined;
+function propKeyHeld(props, key, was) {
+	if (props?.[key]) return key;
+	return [].concat(was ?? []).find((old) => props?.[old]) ?? key;
 }
 
 export function propConfig(tile, key, spec) {
-	const props = tile?.props;
-	const held = props?.[heldKey(props, key, spec?.was)];
-	if (held) return held;
-	const value = fieldsBehind(tile, spec) ?? settingBehind(tile, key, spec);
-	return value === undefined ? {} : { from: "typed", value };
+	return tile?.props?.[propKeyHeld(tile?.props, key, spec?.aka)] ?? {};
 }
 
 // CONTEXT: the record moves onto its new key in the same write that changes it
@@ -225,37 +238,79 @@ function positiveNumber(given) {
 	return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function slotFlags(input) {
+	const name = typeof input?.name === "string" && input.name !== "" ? input.name : null;
+	return { ...(name ? { name } : {}), ...(input?.hidden === true ? { hidden: true } : {}), ...surfaceFields(input) };
+}
+
+function surfaceFields(input) {
+	const said = SURFACE_WAS[input?.surface] ?? input?.surface;
+	const surface = SURFACES.includes(said) ? said : null;
+	if (!surface) return {};
+	const side = surface === APART && SIDES.includes(input.side) ? input.side : null;
+	return { surface, ...(side ? { side } : {}) };
+}
+
 function normalizeLeaf(input) {
 	const id = typeof input === "string" ? input : input?.id;
 	if (typeof id !== "string" || id === "") return null;
 	const ratio = positiveNumber(input?.ratio);
-	const height = positiveNumber(input?.height);
-	return { id, ratio: ratio ?? 1, ...(height ? { height } : {}) };
+	return { id, ratio: ratio ?? 1, ...sizesOf(input), ...slotFlags(input) };
 }
 
-const DIRECTIONS = new Set([ROW, COLUMN]);
+function sizesOf(input) {
+	const height = positiveNumber(input?.height);
+	const heights = arrangedHeights(input?.heights);
+	return { ...(height ? { height } : {}), ...(heights ? { heights } : {}) };
+}
+
+export function arrangedHeights(input) {
+	if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+	const kept = Object.entries(input)
+		.filter(([across]) => Number.isInteger(Number(across)) && Number(across) >= 1)
+		.map(([across, px]) => [String(Number(across)), positiveNumber(px)])
+		.filter(([, px]) => px);
+	return kept.length > 0 ? Object.fromEntries(kept) : null;
+}
+
+const DIRECTIONS = new Set([ROW, COLUMN, SWAP]);
+
+function collapseFrom(input) {
+	const given = typeof input.collapse === "string" ? { into: input.collapse } : (input.collapse ?? {});
+	const into = COLLAPSES.includes(given.into) ? given.into : null;
+	const toggle = TOGGLES.includes(given.toggle) ? given.toggle : null;
+	if (input.foldable === true) return { into: into ?? DRAWER, toggle: toggle ?? ALWAYS };
+	return into ? { into, toggle: toggle ?? ADAPTIVE } : null;
+}
 
 function boxFlags(input) {
 	const width = positiveNumber(input.width);
+	const measure = positiveNumber(input.measure);
 	const ratio = positiveNumber(input.ratio);
-	const height = positiveNumber(input.height);
-	const foldable = input.foldable === true;
+	const collapse = collapseFrom(input);
 	return {
 		...(ratio ? { ratio } : {}),
-		...(height ? { height } : {}),
 		...(width ? { width } : {}),
+		...(measure ? { measure } : {}),
 		...(input.keep === true ? { keep: true } : {}),
-		...(foldable ? { foldable: true } : {}),
-		...(foldable && (input.folded === true || input.collapsed === true) ? { folded: true } : {}),
+		...(collapse ? { collapse } : {}),
+		...(collapse?.toggle === ALWAYS && (input.folded === true || input.collapsed === true) ? { folded: true } : {}),
+		...(typeof input.trigger === "string" && input.trigger.includes("/") ? { trigger: input.trigger } : {}),
 		...(input.scroll === true ? { scroll: true } : {}),
-		...(typeof input.name === "string" && input.name !== "" ? { name: input.name } : {}),
+		...(typeof input.id === "string" && input.id !== "" ? { id: input.id } : {}),
+		...(input.strip === false ? { strip: false } : {}),
+		...(isKnownRole(input.role) ? { role: input.role } : {}),
+		...(typeof input.purpose === "string" && input.purpose.trim() !== "" ? { purpose: input.purpose.trim() } : {}),
+		...slotFlags(input),
 	};
 }
 
 function normalizeNode(input) {
 	if (!isBox(input)) return normalizeLeaf(input);
 	const of = input.of.map(normalizeNode).filter(Boolean);
-	return { dir: DIRECTIONS.has(input.dir) ? input.dir : COLUMN, of, ...boxFlags(input) };
+	const box = { dir: DIRECTIONS.has(input.dir) ? input.dir : COLUMN, of, ...boxFlags(input) };
+	const height = positiveNumber(input.height);
+	return height ? handedDown(box, height) : box;
 }
 
 function rowNode(cells) {
@@ -276,11 +331,11 @@ function regionBox(given, flags) {
 	return { dir: COLUMN, of, ...boxFlags({ ...(Array.isArray(given) ? {} : (given ?? {})), ...flags }) };
 }
 
-const SIDE_FLAGS = { foldable: true };
+const SIDE_FLAGS = { collapse: { into: DRAWER, toggle: ALWAYS } };
 const KEPT_FLAGS = { keep: true };
 
 function sideBox(given) {
-	return regionBox(given, SIDE_FLAGS) ?? { dir: COLUMN, of: [], foldable: true };
+	return regionBox(given, SIDE_FLAGS) ?? { dir: COLUMN, of: [], ...SIDE_FLAGS };
 }
 
 function rootFromRegions(given) {
@@ -356,24 +411,93 @@ function serializeNode(node) {
 			id: node.id,
 			...(node.ratio === 1 ? {} : { ratio: node.ratio }),
 			...(node.height ? { height: node.height } : {}),
+			...(node.heights ? { heights: node.heights } : {}),
+			...slotFlags(node),
 		};
 	const { dir, of, ...flags } = node;
 	return { dir, ...flags, of: of.map(serializeNode) };
 }
 
+// TRADE-OFF: a swap box answers to the id of the widget it replaced, because every switcher shipped says `wants: "@default/view-group/holds"` and a box is not a widget to rename
+export const VIEW_GROUP = "@default/view-group";
+const GROUP_HELD = { was: "views" };
+
+const isStripShown = (tile) => (tile.props?.isTabsShown?.value ?? tile.settings?.isTabsShown) !== false;
+
+function viewsOfGroup(tile, taken, nameOf) {
+	return mountRows(mountList(tile, "holds", GROUP_HELD), nameOf).map((row) => {
+		const record = tile.mounted[row.name] ?? (row.was ? tile.mounted[row.was] : null) ?? null;
+		return {
+			name: row.name,
+			hidden: row.hidden,
+			widget: record?.widget ?? row.widget,
+			record,
+			id: uniqueName(taken, `${tile.id}:${row.name}`),
+		};
+	});
+}
+
+function nodeOfView(view) {
+	const slot = { name: view.name, ...(view.hidden ? { hidden: true } : {}) };
+	if (view.widget === "") return { dir: COLUMN, of: [], ...slot };
+	return { id: view.id, ratio: 1, ...slot };
+}
+
+function tileOfView(view) {
+	return {
+		id: view.id,
+		widget: view.widget,
+		settings: view.record?.settings ?? {},
+		mounts: view.record?.mounts ?? {},
+		props: view.record?.props ?? {},
+		slots: view.record?.slots ?? {},
+		mounted: view.record?.mounted ?? {},
+	};
+}
+
+function swapFromGroup(tile, views) {
+	return {
+		dir: SWAP,
+		id: tile.id,
+		...(isStripShown(tile) ? {} : { strip: false }),
+		of: views.map(nodeOfView),
+	};
+}
+
+// TRADE-OFF: a group is read into a swap box on every read and never written back as a tile, because a view that holds its own widget's settings inside a mount cannot be carried, resized or bound like the tile it always was
+function swapsFromGroups(board, nameOf) {
+	const groups = board.tiles.filter(
+		(tile) => widgetKeyOf(tile.widget) === VIEW_GROUP && pathOfLeaf(board.layout, tile.id),
+	);
+	if (groups.length === 0) return board;
+	const taken = new Set(board.tiles.map((tile) => tile.id));
+	const born = [];
+	let layout = board.layout;
+	for (const group of groups) {
+		const views = viewsOfGroup(group, taken, nameOf);
+		layout = replacedAt(layout, pathOfLeaf(layout, group.id), swapFromGroup(group, views));
+		born.push(...views.filter((view) => view.widget !== "").map(tileOfView));
+	}
+	const gone = new Set(groups.map((tile) => tile.id));
+	return { tiles: [...board.tiles.filter((tile) => !gone.has(tile.id)), ...born], layout: pruned(layout) };
+}
+
 const LEGACY_BARE_ARRAY = 12;
 
-export function normalizeBoard(input, idOf = SAME_ID) {
+export function normalizeBoard(input, idOf = SAME_ID, nameOf = SAME_ID, roleOf = null) {
 	// TRADE-OFF: a bare array is read as tiles AND places at once, which is what the oldest files hold; delegating keeps one promised shape
-	if (Array.isArray(input)) return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY]: input } }, idOf);
-	const tiles = (input?.tiles ?? []).map((tile, index) => normalizeTile(tile, index, idOf));
+	if (Array.isArray(input))
+		return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY]: input } }, idOf, nameOf, roleOf);
+	const read = (input?.tiles ?? []).map((tile, index) => normalizeTile(tile, index, idOf));
+	const { tiles, layout } = swapsFromGroups({ tiles: read, layout: normalizeLayout(input, read) }, nameOf);
 	return {
 		tiles,
-		layout: normalizeLayout(input, tiles),
+		layout: roleOf ? withDefaultSurfaces({ layout, tiles, roleOf }) : layout,
 		// One board, two sizes. The mode is a fact about the board, so it lives in the file:
 		// held in a hook it was lost to every re-render the editor caused, which read as
 		// "any keystroke collapses the page".
 		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
+		...(typeof input?.pattern === "string" && input.pattern !== "" ? { pattern: input.pattern } : {}),
 	};
 }
 
@@ -382,7 +506,8 @@ function serializeHeld(held) {
 	const slots = serializeHolders(held.slots);
 	const mounted = serializeHolders(held.mounted);
 	return {
-		widget: held.widget,
+		...(held.widget ? { widget: held.widget } : {}),
+		...(held.surface ? { surface: held.surface } : {}),
 		...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
 		...(Object.keys(held.mounts ?? {}).length ? { mounts: held.mounts } : {}),
 		...(Object.keys(held.props ?? {}).length ? { props: held.props } : {}),
@@ -417,6 +542,7 @@ export function serializeBoard(board) {
 		v: BLOCK_FORMAT,
 		tiles: board.tiles.map(serializeTile),
 		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
+		...(board.pattern ? { pattern: board.pattern } : {}),
 		layout: serializeNode(board.layout),
 	};
 }

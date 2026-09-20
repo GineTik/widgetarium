@@ -1,0 +1,72 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Flight row",
+	"description": "One piece of work in flight: where it stands, what it is doing, how long it has been going.",
+	"keywords": [
+		"flight",
+		"row",
+		"run",
+		"job",
+		"task",
+		"status",
+		"stage",
+		"branch",
+		"project",
+		"elapsed",
+		"activity",
+		"agent",
+		"pipeline",
+		"build"
+	],
+	"role": "detail",
+	"size": {
+		"collapseBelowPx": 160,
+		"stackBelowPx": 420
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 1
+		},
+		"props": {
+			"flight": {
+				"value": {
+					"title": "Rewrite the board tree reader",
+					"status": "running",
+					"stage": "build",
+					"project": "widgetarium",
+					"branch": "unsafe-dev",
+					"activity": "compiling widgets",
+					"elapsed": "12m",
+					"who": "Dana Reid"
+				}
+			}
+		}
+	},
+	"props": {
+		"flight": {
+			"kind": "value",
+			"control": "json",
+			"label": "Flight",
+			"hint": "The work this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "Rewrite the board tree reader",
+					"status": "running",
+					"stage": "build",
+					"project": "widgetarium",
+					"branch": "unsafe-dev",
+					"activity": "compiling widgets",
+					"elapsed": "12m",
+					"who": "Dana Reid"
+				}
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

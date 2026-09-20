@@ -16,7 +16,9 @@ function SketchRow({ row, nameOf }) {
 	return h(
 		"div",
 		{ className: "wg-tpl-row", style: { flexGrow: tallestOf(row) } },
-		row.map((cell) => h("span", { key: cell.id, className: "wg-tpl-cell", style: { flexGrow: cell.ratio } }, nameOf(cell.widget))),
+		row.map((cell) =>
+			h("span", { key: cell.id, className: "wg-tpl-cell", style: { flexGrow: cell.ratio } }, nameOf(cell.widget)),
+		),
 	);
 }
 
@@ -42,7 +44,7 @@ function useBuild(template, onUse) {
 		if (state.isBusy) return;
 		setState({ ...IDLE, isBusy: true });
 		const done = await onUse?.(template, (step) => setState((held) => ({ ...held, step })));
-		setState({ ...IDLE, failure: done?.ok ? null : done?.failure ?? REFUSED });
+		setState({ ...IDLE, failure: done?.ok ? null : (done?.failure ?? REFUSED) });
 	};
 	return { ...state, press };
 }
@@ -54,7 +56,14 @@ function CreateButton({ template, isBusy, press }) {
 	};
 	return h(
 		IconButton,
-		{ className: "wg-cat-go", variant: "accent", size: "s", label: labelFor(template), disabled: isBusy, onClick: take },
+		{
+			className: "wg-cat-go",
+			variant: "accent",
+			size: "s",
+			label: labelFor(template),
+			disabled: isBusy,
+			onClick: take,
+		},
 		h(Icon, { name: "plus", size: 15 }),
 	);
 }
@@ -79,12 +88,16 @@ function cardHandle(template, press) {
 
 function TemplateCard({ template, nameOf, onUse }) {
 	const { step, isBusy, failure, press } = useBuild(template, onUse);
-	return h(Card, { asChild: true, className: "wg-tpl-tile" }, h("article", cardHandle(template, press), [
-		h("div", { className: "wg-tpl-stage", key: "stage" }, h(Sketch, { template, nameOf })),
-		h(TemplateFoot, { key: "foot", template, isBusy, press }),
-		h("p", { className: "wg-tpl-what", key: "what" }, template.description),
-		h(TemplateNote, { key: "note", isBusy, step, failure }),
-	]));
+	return h(
+		Card,
+		{ asChild: true, className: "wg-tpl-tile" },
+		h("article", cardHandle(template, press), [
+			h("div", { className: "wg-tpl-stage", key: "stage" }, h(Sketch, { template, nameOf })),
+			h(TemplateFoot, { key: "foot", template, isBusy, press }),
+			h("p", { className: "wg-tpl-what", key: "what" }, template.description),
+			h(TemplateNote, { key: "note", isBusy, step, failure }),
+		]),
+	);
 }
 
 export function TemplateGrid({ templates, columns, nameOf, onUse }) {

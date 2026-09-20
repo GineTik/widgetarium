@@ -60,7 +60,13 @@ export function measure(what, run) {
 
 export function spentSoFar() {
 	return [...spent.entries()]
-		.map(([what, held]) => ({ what, calls: held.calls, totalMs: Math.round(held.ms), worstMs: Math.round(held.worstMs), eachMs: Number((held.ms / held.calls).toFixed(2)) }))
+		.map(([what, held]) => ({
+			what,
+			calls: held.calls,
+			totalMs: Math.round(held.ms),
+			worstMs: Math.round(held.worstMs),
+			eachMs: Number((held.ms / held.calls).toFixed(2)),
+		}))
 		.sort((one, other) => other.totalMs - one.totalMs);
 }
 

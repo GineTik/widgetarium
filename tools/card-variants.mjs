@@ -14,7 +14,7 @@ const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-var-"));
-const NOT_INSTALLED = ["@core/view-group", "@task/archived-columns"];
+const NOT_INSTALLED = ["@default/view-group", "@default/archived-columns"];
 const VARIANTS = [
 	["bleed", "A · full bleed", "the picture is the tile, the name sits under it"],
 	["framed", "B · framed", "a white card, the preview inset on its own ground"],

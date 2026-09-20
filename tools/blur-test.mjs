@@ -21,15 +21,34 @@ body { margin: 0; --background-primary: #ffffff; --background-secondary: #f6f6f6
 
 function shotOf(name, inner) {
 	const file = path.join(work, `${name}.html`);
-	writeFileSync(file, `<!doctype html><html><head><meta charset="utf-8">${HEAD}</head><body class="wg-root"><div class="stripes"></div>${inner}</body></html>`);
+	writeFileSync(
+		file,
+		`<!doctype html><html><head><meta charset="utf-8">${HEAD}</head><body class="wg-root"><div class="stripes"></div>${inner}</body></html>`,
+	);
 	const png = path.join(work, `${name}.png`);
-	execFileSync(CHROME, ["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars",
-		"--window-size=600,600", "--virtual-time-budget=4000", `--screenshot=${png}`, `file://${file}`], { stdio: "ignore" });
+	execFileSync(
+		CHROME,
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--window-size=600,600",
+			"--virtual-time-budget=4000",
+			`--screenshot=${png}`,
+			`file://${file}`,
+		],
+		{ stdio: "ignore" },
+	);
 	return png;
 }
 
 const swingAt = (png, y, x0, x1) =>
-	Number(execFileSync("/usr/bin/python3", ["tools/png-band.py", png, String(y), String(x0), String(x1)], { encoding: "utf8" }).trim());
+	Number(
+		execFileSync("/usr/bin/python3", ["tools/png-band.py", png, String(y), String(x0), String(x1)], {
+			encoding: "utf8",
+		}).trim(),
+	);
 
 // three pages, one band: bare stripes, glass on its own, and glass inside the window's overlay
 const bare = shotOf("bare", "");
@@ -67,12 +86,18 @@ const check = (label, got, want) => {
 	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${show(got)}, want ${show(want)}`}`);
 };
 
-console.log(`   stripes swing ${bareSwing} bare · ${aloneSwing} under glass alone · ${windowSwing} under glass in the window\n`);
+console.log(
+	`   stripes swing ${bareSwing} bare · ${aloneSwing} under glass alone · ${windowSwing} under glass in the window\n`,
+);
 check("the stripes are hard with nothing over them", bareSwing > 200, true);
 check("glass on its own really softens them", aloneSwing < bareSwing / 3, true);
 // THE ONE THAT MATTERS: the panel lives inside the settings window, and that is where a person
 // reads it. Blur that only works in isolation is blur nobody ever sees.
 check("and it still softens them inside the settings window", windowSwing < bareSwing / 3, true);
 
-console.log(failed ? `\n${failed} — the glass is not blurring what a person actually looks at` : "\nthe glass really blurs what is behind it");
+console.log(
+	failed
+		? `\n${failed} — the glass is not blurring what a person actually looks at`
+		: "\nthe glass really blurs what is behind it",
+);
 process.exit(failed ? 1 : 0);

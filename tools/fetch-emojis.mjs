@@ -122,7 +122,10 @@ for (let start = 0; start < drawn.length; start += AT_ONCE) {
 
 const lines = Object.entries(table).map(([name, body]) => `\t${JSON.stringify(name)}: ${JSON.stringify(body)},`);
 mkdirSync(path.dirname(TABLE_FILE), { recursive: true });
-writeFileSync(TABLE_FILE, `export const EMOJI_VIEW_BOX = ${JSON.stringify(VIEW_BOX)};\n\nexport const EMOJI_TABLE = {\n${lines.join("\n")}\n};\n`);
+writeFileSync(
+	TABLE_FILE,
+	`export const EMOJI_VIEW_BOX = ${JSON.stringify(VIEW_BOX)};\n\nexport const EMOJI_TABLE = {\n${lines.join("\n")}\n};\n`,
+);
 
 mkdirSync(NOTICE_DIR, { recursive: true });
 writeFileSync(path.join(NOTICE_DIR, "LICENSE"), MIT);

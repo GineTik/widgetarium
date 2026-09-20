@@ -1,172 +1,159 @@
 # Writing a widget
 
-## The folder
+Only when `find` offers nothing close. A near neighbour with different controls beats a new widget.
 
-A widget is a folder in the vault. One file is enough.
+## The folder
 
 ```
 .widgetarium/widgets/@you/clock/widget.tsx
 ```
 
-The path names the widget: `@you/clock` is its id and `@you` is the pack it is filed under. Save the
-file and the widget appears — nothing to publish, no plugin reload, no build step of your own. The
-engine compiles the TSX itself and writes what it made into `build/` beside your file. Never write
-or edit anything in `build/`.
+The path names it: `@you/clock` is the id, `@you` the scope. Save and it appears — no publish, no
+reload. The engine compiles the TSX into `build/` beside your file. **Never write anything in
+`build/`.** A scope may also hold `lib.js`, `tokens.css` and `theme.css`, shared by its widgets.
+Beside the scopes the plugin lays `tsconfig.json` and `types/` — written, never edited, and what
+makes an editor type every prop from the manifest instead of handing you `any`.
 
-A scope (the `@you` folder) can also hold `lib.js`, `tokens.css` and `theme.css`, shared by every
-widget in it.
-
-## The component
+## The manifest is one value in the file
 
 ```tsx
-import { createWidget, useData } from "widgetarium";
-import { Card, Button } from "widgetarium/kit";
-import type { CollectionGateway, ListAction, ValueGateway, VaultRecord } from "widgetarium";
+import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
+import type { VaultRecord } from "widgetarium";
 
 type Entry = VaultRecord & { title?: string | null; done?: boolean | null };
 
-type Props = {
-	entries: CollectionGateway<Entry, { list: ListAction; update?: UpdateAction }>;
-	heading: ValueGateway<string>;
-};
+export const manifest = defineManifest({
+	title: "Checklist",
+	description: "The entries still to do, ticked off where they stand.",
+	keywords: ["checklist", "todo", "tasks"],
+	role: "collection",
+	size: { collapseBelowPx: 200, stackBelowPx: 320 },
+	props: {
+		entries: defineProp<Entry[]>()({
+			hint: "One note per entry.",
+			default: [],
+			writes: ["update"],
+			describes: { title: "Title", done: { label: "Done", type: "boolean" } },
+		}),
+		heading: defineProp<string>()({ default: "To do" }),
+	},
+});
 
-function Checklist({ entries, heading }: Props) {
-	const rows = useData(entries.list).rows;
+export default createWidget(manifest, ({ entries, heading }) => {
+	const { data } = useData(entries.list);
 	const said = String(useData(heading.get).data ?? "");
 	return (
-		<Card>
+		<>
 			<h3>{said}</h3>
-			{rows.map((row) => (
-				<div key={row.ref}>{row.value.title}</div>
+			{data.map((entry) => (
+				<div key={entry.ref}>{entry.title}</div>
 			))}
-		</Card>
+		</>
 	);
-}
-
-export default createWidget(Checklist, {
-	title: "Checklist",
-	props: {
-		entries: {
-			kind: "collection",
-			label: "Entries",
-			hint: "One note per entry.",
-			verbs: { list: "required", update: "optional" },
-			default: { path: "Tasks" },
-		},
-		heading: {
-			kind: "value",
-			type: "text",
-			label: "Heading",
-			verbs: { get: "required" },
-			default: { value: "To do" },
-		},
-	},
 });
 ```
 
-TypeScript in a widget is **stripped, never checked**. The contract holds through the manifest, the
-prop declaration and `can()` — not through the compiler. Types are there to help you read it.
+**The type a prop holds is what it is.** An array is a collection, anything else a value. The
+component takes props anonymously and annotates nothing — it is typed from the manifest.
+
+**The two parentheses are what pays for that.** TypeScript stops inferring once a type argument is
+written by hand, so the type goes in the first call and everything read literally — `writes` above
+all — in the second. No wrapper can hide this.
+
+**Never write a gateway type a second time.** `WidgetProps<typeof manifest>` is the whole set: every
+prop plus what the engine hands over (`host`, `here`, `navigator`, `slots`, and `content` for an
+inline widget).
 
 ## Props are gateways, all of them
 
-There are no settings. A prop is either a `CollectionGateway` over a list of things or a
-`ValueGateway` over one thing, and the person binds it to a folder, a file, a typed value or another
-tile's prop. A primitive is a gateway too — `{ kind: "value", type: "number" }` — and that is what
-lets a number typed into one tile be re-bound to another widget later.
+There are no settings. A prop is a collection over a list or a value over one thing, bound by the
+person to a folder, a file, a typed value or another tile's prop.
 
-What a prop declaration may carry:
+| Written                                         | Is                                                   |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `defineProp<Entry[]>()({ default: [] })`        | a list of rows                                       |
+| `defineProp<string>()`, `<number>`, `<boolean>` | a primitive: a field, a number field or a switch     |
+| `control: "text" \| "emoji" \| "icon"`          | the same primitive drawn otherwise                   |
+| `defineProp<Shape>()({ default: {...} })`       | any other value, edited as JSON                      |
+| `keep: "screen"`                                | a fact about this screen that never reaches the note |
+| `picks: "selection", of: "tabs"`                | the row that pick names                              |
 
-| Key | Means |
-| --- | --- |
-| `kind` | `"collection"` or `"value"`. A collection prop may omit it. |
-| `type` | For a value prop: `text`, `number`, `boolean`, `datetime`. The settings window draws its control from this. |
-| `label`, `hint` | What the settings window shows a person. Whole sentences, English. |
-| `verbs` | `{ list: "required", create: "optional", ... }`. A verb nothing provides still exists, with `can() === { can: false, reason }`. |
-| `item.fields` | For a collection: the fields a row has, so the settings window can edit typed rows. |
-| `default` | `{ path: "Folder" }` for a vault binding, `{ value: ... }` for a typed one. |
-| `of` / `picks` / `field` | A selection over another prop, and the row that selection names. |
-| `was` | The name this prop used to have. |
-| `wasSetting: true` | This prop replaced a setting, so `tile.settings` is read for it. |
-| `rowsFromText` | The old setting was a comma list; name the field its entries become. |
+| Key             | Means                                                                                                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `label`, `hint` | what the settings window shows; `label` is read off the key when not written                                                                                                         |
+| `writes`        | only what the widget changes: `["create", "update"]`, or `{ archive: verb<Input>() }` for its own. Reads are always there. A verb missing here does not exist                        |
+| `default`       | the value itself                                                                                                                                                                     |
+| `describes`     | for a collection: the row's fields. A string is a label; an object may carry `label`, `type`, `required`, `aka`. **A field matches a note's properties exactly when it names `aka`** |
+| `where`, `sort` | conditions and order the widget always reads through; a condition may `wants` another widget's prop                                                                                  |
+| `aka`           | every name this prop had before, newest last                                                                                                                                         |
 
-Read them through `useData`:
+**A default never names a file or a folder, at any depth, under any spelling. This is a security
+law.** A path in a default would let a widget read a person's notes before they chose anything, or
+delete files on first render. `defineManifest` refuses `path` or `ref` in an object, in an array's
+rows, or nested inside either, and renaming the field is not a fix.
+
+A prop added after the first release must carry a default. A row type may not spell `ref` as a plain
+string — `ref` is the address the engine mints.
+
+## Reading and writing
 
 ```tsx
-const { rows } = useData(entries.list);      // a collection
-const { data } = useData(heading.get);       // a value
-await entries.update({ ref, data: { done: true } });
+const { data, total } = useData(entries.list); // data is always an array
+const page = useData(entries.list, { offset: 20, limit: 10 });
+const { data } = useData(heading.get); // a value
+if (canDo(entries.update)) await entries.update({ ref, data: { done: true } });
 ```
 
 **Read the gateway inside the widget that draws it.** Reading a level up and passing the value down
-gives a correct value and a stale screen — the classic failure in this codebase.
+gives a correct value and a stale screen.
 
-A gateway whose handlers touch no I/O declares `settlesNow`, so a value living in the tile answers in
-the tick it is asked instead of blinking `isLoading` on its first frame. The engine does this for
-typed bindings; you get it for free.
+**Everything that draws rows paginates.** A list read with no `limit` stops at a hundred rows and the
+screen is silently short. An aggregate that needs more says how many in its own source.
 
-## One widget pointing at another
+## Spacing inside a widget
 
-There is no context bus. A ref is `<tileId>/<propName>`, the board holds one registry of them, and a
-prop bound `{ from: ref, ref: "w1/tabs" }` reads through the gateway that tile exposes. A selection —
-which tab, which view, which card is open — is a box the engine owns over the very list it selects
-from, so a pick naming a row the list no longer holds is no pick at all.
+Never write a gap as a number. The engine sets three variables on every cell:
 
-## The manifest
+| Variable              | Between                                                             |
+| --------------------- | ------------------------------------------------------------------- |
+| `var(--wg-gap-items)` | bare items of a list, the sections of the widget                    |
+| `var(--wg-gap-parts)` | the parts of one item: a title and its value, an icon and its label |
+| `var(--wg-gap-cards)` | items that each wear a plate                                        |
 
-`manifest.json` is the catalogue's card. It carries what the engine must know **before** it runs any
-of your code. A folder with nothing but `widget.tsx` installs and draws; the record is derived at
-publish time.
+`SlotList` from `widgetarium/kit` draws what a slot holds and picks the right one itself.
 
-```json
-{
-	"id": "@you/clock",
-	"api": 2,
-	"title": "Clock",
-	"description": "The time where you are, and where the people you work with are.",
-	"keywords": ["clock", "time", "zone", "hours"],
-	"defaultSize": { "w": 6, "h": 3 },
-	"maxSize": { "h": 4 },
-	"collapseBelowPx": 90,
-	"stackBelowPx": 220,
-	"tallestPx": 42,
-	"inline": false,
-	"was": "@you/clock-v1"
-}
-```
+## A missing picture
 
-- `id` is the folder path and the identity. `was` carries a previous id so old boards keep working.
-- `api` is the widget API this widget needs. `2` is what a widget using Tailwind in its sheet
-  declares. A widget outside the plugin's range does not mount, install or draw.
-- `title`, `description`, `keywords` are what the catalogue searches and shows. Write them for
-  somebody scanning a grid of cards.
-- `defaultSize` is in grid cells. One cell is one medium control.
-- `collapseBelowPx`, `stackBelowPx`, `tallestPx` are the responsive ladder — the widths at which the
-  widget must give up detail, stack, and the height it must never exceed.
-- `preview` carries the sample props the catalogue card draws with. A card with no preview is a
-  worse card.
+`<PlaceholderMark seed={album.title}/>` from `widgetarium/kit` — never an empty box, never a broken
+image. One of twelve forms in one of seven tone washes, chosen by hashing the seed, so the same album
+wears the same mark forever and on every machine. It fills what it stands in and takes that plate's
+corner; `size={24}` makes it an avatar. `shape` and `tone` name one outright when the thing already
+has a colour. It is `aria-hidden` — the label beside it is what a screen reader reads. No seed is the
+empty seed: one mark, shared by everything nameless.
 
-## What makes a widget draw at all
+**Draw no background, border or shadow on your root.** The engine draws the root — container query,
+size, clipping — and the board decides the plate. Paint one only when it is the content itself.
 
-1. The folder is under `.widgetarium/widgets/<scope>/<name>/` and holds `widget.tsx`.
-2. `export default createWidget(Component, { title, props })`.
-3. Its `api` is inside the plugin's range.
-4. Every prop whose `verbs` mark a verb `required` has a binding that provides it. A required verb
-   the binding refuses means the widget does not mount — and the tile says so rather than going
-   blank.
-5. It is named in a board's `tiles` **and** placed in that board's `layout`.
+## The rest of the manifest
 
-If a widget is not appearing, walk those five in order before touching anything else.
+- `title`, `description`, `keywords` — what the catalogue searches. `description` is the one question
+  the widget answers.
+- `role` — required. Without one the widget is never given a surface.
+- `slots` — the holes other widgets fill:
+  `card: { of: "widget", default: "@default/task-card", surface: "group", gives: { ... } }`.
+- `size: { collapseBelowPx, stackBelowPx, tallestPx, shortestPx }` — the responsive ladder, in
+  pixels. Below `collapseBelowPx` the widget must be legible with less; below `stackBelowPx` its row
+  becomes a column. Use `useNarrowed`, never a media query.
+- `preview` — sample props the catalogue card draws with.
+- `inline: true` — a widget that stands in text; it is handed `content` and `reader`.
+- `migrate` — `migration({ from: { ...old props }, run })` for a change tiles cannot follow alone.
 
-## Adaptive behaviour
-
-A widget is measured, not guessed at. Below `collapseBelowPx` it must be legible with less; below
-`stackBelowPx` its row becomes a column. Use `useNarrowed` and the widget's own measured width
-rather than a media query — a widget lives in a tile, not in a viewport, and the window's width says
-nothing about the tile's.
+`manifest.generated.json` beside the widget is the same manifest written out for a catalogue that has
+not run the code. Never edit it.
 
 ## Before you say it is done
 
-- It draws on the board with real vault data bound, not with typed defaults.
-- It survives an empty collection and a failed read with something a person can read, not a blank.
-- No hardcoded colour, radius or font — see [design.md](design.md).
-- Its `keywords` would find it if somebody searched for what it does.
+- `check <id>` exits 0.
+- It draws with real vault data bound, not typed defaults.
+- It survives an empty collection and a failed read with something readable.
+- Its `keywords` would find it.

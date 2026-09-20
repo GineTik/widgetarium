@@ -52,7 +52,7 @@ const bundle = await esbuild.build({
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
+<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
 <style>body { margin: 0; font-family: -apple-system, "Segoe UI", sans-serif; }</style>
 </head><body><div class="wg-root"></div><script id="wg-measure" type="application/json"></script>
 <script>${bundle.outputFiles[0].text}</script></body></html>`;

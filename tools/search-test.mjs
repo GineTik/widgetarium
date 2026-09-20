@@ -21,11 +21,11 @@ function shippedWidgets() {
 		const folder = `widgets/${scope}`;
 		if (!fs.statSync(folder).isDirectory()) continue;
 		for (const name of fs.readdirSync(folder)) {
-			const file = `${folder}/${name}/manifest.json`;
+			const file = `${folder}/${name}/manifest.generated.json`;
 			if (!fs.existsSync(file)) continue;
 			const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
 			found.push({
-				id: manifest.id,
+				id: `${scope}/${name}`,
 				title: manifest.title,
 				keywords: manifest.keywords,
 				description: manifest.description,
@@ -59,11 +59,11 @@ check("an id folds into the words it is made of", fold("@Task/Task-Card"), "task
 check("case folds", fold("KANBAN Board"), "kanban board");
 check("accents fold", fold("Café Ünicode!"), "cafe unicode");
 check("nothing but punctuation folds to nothing", fold("  --/-- "), "");
-check("two words find the widget whose id spells them", firstFor("task card"), "@task/task-card");
-check("and shouting it with a slash finds the same one", firstFor("  TASK/CARD  "), "@task/task-card");
+check("two words find the widget whose id spells them", firstFor("task card"), "@default/task-card");
+check("and shouting it with a slash finds the same one", firstFor("  TASK/CARD  "), "@default/task-card");
 
-check("the kanban board is what 'kanban' means", firstFor("kanban"), "@task/kanban-board");
-check("a keyword nobody wrote into a title still finds its widget", firstFor("swimlane"), "@task/kanban-board");
+check("the kanban board is what 'kanban' means", firstFor("kanban"), "@default/kanban-board");
+check("a keyword nobody wrote into a title still finds its widget", firstFor("swimlane"), "@default/kanban-board");
 check("a word in no manifest at all finds nothing", rankSearch("zzqq", SHIPPED).length, 0);
 
 // CONTEXT: one word planted in three fields — the only way a field weight can be read alone
@@ -92,11 +92,11 @@ check(
 	["whole", "start", "late", "scattered"],
 );
 
-check("a dropped letter finds the board", firstFor("knbn"), "@task/kanban-board");
-check("a wrong letter finds the board", firstFor("kanbam"), "@task/kanban-board");
-check("a transposed pair finds the board", firstFor("kabnan"), "@task/kanban-board");
-check("a wrong letter finds the reminder", firstFor("reminber"), "@inline/reminder");
-check("two stray letters do not reach the board at all", reaches("kanbanxy", "@task/kanban-board"), false);
+check("a dropped letter finds the board", firstFor("knbn"), "@default/kanban-board");
+check("a wrong letter finds the board", firstFor("kanbam"), "@default/kanban-board");
+check("a transposed pair finds the board", firstFor("kabnan"), "@default/kanban-board");
+check("a wrong letter finds the reminder", firstFor("reminber"), "@default/reminder");
+check("two stray letters do not reach the board at all", reaches("kanbanxy", "@default/kanban-board"), false);
 
 const ROWS = [
 	{ id: "z", title: "Zebra" },

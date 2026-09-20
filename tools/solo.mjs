@@ -15,7 +15,20 @@ const VAULT = "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
 const WIDGETS = path.join(VAULT, ".widgetarium/widgets");
 const OUT = process.argv[2];
 
-const VOID = new Set(["br", "hr", "img", "input", "path", "circle", "stop", "use", "rect", "line", "ellipse", "polygon"]);
+const VOID = new Set([
+	"br",
+	"hr",
+	"img",
+	"input",
+	"path",
+	"circle",
+	"stop",
+	"use",
+	"rect",
+	"line",
+	"ellipse",
+	"polygon",
+]);
 
 function styleString(value) {
 	if (typeof value === "string") return value;
@@ -41,20 +54,32 @@ function renderNode(node) {
 	let inner = "";
 	for (const [key, value] of Object.entries(props ?? {})) {
 		if (key === "children") continue;
-		if (key === "dangerouslySetInnerHTML") { inner = value.__html; continue; }
+		if (key === "dangerouslySetInnerHTML") {
+			inner = value.__html;
+			continue;
+		}
 		if (typeof value === "function" || value === false || value == null) continue;
 		const name = key === "className" ? "class" : key;
 		attributes.push(` ${name}="${key === "style" ? styleString(value) : String(value).replace(/"/g, "&quot;")}"`);
 	}
 	if (type === "style") return `<style>${props.children}</style>`;
 	const body = inner || renderNode(props?.children);
-	return VOID.has(type) && !body ? `<${type}${attributes.join("")} />` : `<${type}${attributes.join("")}>${body}</${type}>`;
+	return VOID.has(type) && !body
+		? `<${type}${attributes.join("")} />`
+		: `<${type}${attributes.join("")}>${body}</${type}>`;
 }
 
 function createRequire(scope) {
 	const modules = {
 		widgetarium: scope.widgetarium,
-		react: { createElement: scope.h, Fragment: scope.Fragment, useState: scope.useState, useEffect: scope.useEffect, useMemo: scope.useMemo, useRef: scope.useRef },
+		react: {
+			createElement: scope.h,
+			Fragment: scope.Fragment,
+			useState: scope.useState,
+			useEffect: scope.useEffect,
+			useMemo: scope.useMemo,
+			useRef: scope.useRef,
+		},
 	};
 	return (name) => {
 		const found = modules[name];
@@ -109,17 +134,29 @@ function buildWidget(folder, manifest, bindings) {
 					const left = a.props[seed.prop] ?? a.name;
 					const right = b.props[seed.prop] ?? b.name;
 					return (left > right ? 1 : left < right ? -1 : 0) * (seed.dir === "desc" ? -1 : 1);
-			  })
+				})
 			: rows;
 		sources[key] = {
 			name: key,
 			binding: { path: bindings?.[key] ?? "" },
 			data: { rows: sorted, total: sorted.length, isLoading: false },
-			filters: { list: spec.default?.filters ?? [], update: () => ({ appliedFilters: [], rejectedFilters: [] }), canFilterBy: () => true },
-			sort: { list: spec.default?.sort ?? [], update: () => ({ appliedSort: [], rejectedSort: [] }), canSortBy: () => true },
+			filters: {
+				list: spec.default?.filters ?? [],
+				update: () => ({ appliedFilters: [], rejectedFilters: [] }),
+				canFilterBy: () => true,
+			},
+			sort: {
+				list: spec.default?.sort ?? [],
+				update: () => ({ appliedSort: [], rejectedSort: [] }),
+				canSortBy: () => true,
+			},
 			window: { list: { offset: 0, limit: 0 }, update: () => {} },
-			canCreate: true, canUpdate: true, canRemove: true,
-			openRecord: () => {}, update: async () => null, create: async () => null,
+			canCreate: true,
+			canUpdate: true,
+			canRemove: true,
+			openRecord: () => {},
+			update: async () => null,
+			create: async () => null,
 		};
 	}
 
@@ -137,7 +174,38 @@ function buildWidget(folder, manifest, bindings) {
 		...actions,
 	};
 
-	const api = { DialogOverlay: () => null, DialogContent: (p) => h('div', { className: 'wg-dialog' }, p.children), DialogClose: () => null, WidgetRoot: (props) => h('div', { className: 'wg-widget-root ' + (props.className || ''), 'data-rounded': props.roundedType || 'base', 'data-fill': props.fillType || 'fill' }, props.children), createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, ConfirmDialog: () => null, DialogHeader: (p) => h('div', null, p.children), DialogTitle: (p) => h('h2', null, p.children), DialogDescription: (p) => h('p', null, p.children), DialogFooter: (p) => h('div', null, p.children), useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
+	const api = {
+		DialogOverlay: () => null,
+		DialogContent: (p) => h("div", { className: "wg-dialog" }, p.children),
+		DialogClose: () => null,
+		WidgetRoot: (props) =>
+			h(
+				"div",
+				{
+					className: "wg-widget-root " + (props.className || ""),
+					"data-rounded": props.roundedType || "base",
+					"data-fill": props.fillType || "fill",
+				},
+				props.children,
+			),
+		createWidget: (component, meta) => {
+			if (meta) component.meta = meta;
+			return component;
+		},
+		Dialog: () => null,
+		ConfirmDialog: () => null,
+		DialogHeader: (p) => h("div", null, p.children),
+		DialogTitle: (p) => h("h2", null, p.children),
+		DialogDescription: (p) => h("p", null, p.children),
+		DialogFooter: (p) => h("div", null, p.children),
+		useAction: (action) => ({
+			...action,
+			run: async () => {},
+			runIfCan: async () => ({ isBlocked: false }),
+			isLoading: false,
+			error: null,
+		}),
+	};
 
 	const scope = {
 		widgetarium: api,
@@ -166,7 +234,14 @@ const LAYOUT_GRID = [
 	{ id: "@wallet/quick-send", x: 0, y: 6, w: 7, h: 4, bind: { contacts: "Widgetarium Demo/Wallet/Contacts" } },
 	{ id: "@wallet/period", x: 0, y: 10, w: 7, h: 1 },
 	{ id: "@wallet/notice", x: 7, y: 0, w: 5, h: 2 },
-	{ id: "@wallet/transactions", x: 7, y: 2, w: 5, h: 8, bind: { transactions: "Widgetarium Demo/Wallet/Transactions" } },
+	{
+		id: "@wallet/transactions",
+		x: 7,
+		y: 2,
+		w: 5,
+		h: 8,
+		bind: { transactions: "Widgetarium Demo/Wallet/Transactions" },
+	},
 ];
 
 const SOLO = [

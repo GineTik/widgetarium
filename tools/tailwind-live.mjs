@@ -19,7 +19,9 @@ function check(name, got, want) {
 	checks += 1;
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 const INSTALLED = `${WIDGETS_DIR}/@demo/clock`;
@@ -91,5 +93,7 @@ check("the compiler is a module the vault holds", typeof compiler, "string");
 check("and the build records which compiler made it", lock.builds["@demo/clock"].compiler, compiler);
 check("and it is not loaded to draw the widget", lock.widgets["@demo/clock"].files.hasOwnProperty(compiler), false);
 
-console.log(`\n${failed === 0 ? `tailwind against the real package: clean (${checks} checks, ${Date.now() - started}ms)` : `tailwind against the real package: ${failed} failed`}`);
+console.log(
+	`\n${failed === 0 ? `tailwind against the real package: clean (${checks} checks, ${Date.now() - started}ms)` : `tailwind against the real package: ${failed} failed`}`,
+);
 process.exit(failed === 0 ? 0 : 1);

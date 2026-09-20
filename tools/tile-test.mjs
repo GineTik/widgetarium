@@ -7,11 +7,30 @@ const VAULT = "tools/fixture-records";
 const COUNTER = "@probe/counter";
 const CRASHER = "@probe/crasher";
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
@@ -30,7 +49,13 @@ const adapter = {
 	exists: async (target) => fs.existsSync(path.join(VAULT, target)),
 	list: async (target) => {
 		const names = fs.readdirSync(path.join(VAULT, target));
-		const kind = (name) => { try { return fs.statSync(path.join(VAULT, target, name)); } catch { return null; } };
+		const kind = (name) => {
+			try {
+				return fs.statSync(path.join(VAULT, target, name));
+			} catch {
+				return null;
+			}
+		};
 		return {
 			folders: names.filter((name) => kind(name)?.isDirectory()).map((name) => `${target}/${name}`),
 			files: names.filter((name) => kind(name)?.isFile()).map((name) => `${target}/${name}`),
@@ -43,7 +68,8 @@ const adapter = {
 const app = {
 	vault: {
 		getAbstractFileByPath: () => null,
-		create: async () => Object.assign(new TFile(), { path: "made.md", basename: "made", extension: "md", stat: { ctime: 1, mtime: 1 } }),
+		create: async () =>
+			Object.assign(new TFile(), { path: "made.md", basename: "made", extension: "md", stat: { ctime: 1, mtime: 1 } }),
 		createFolder: async () => {},
 		cachedRead: async () => "",
 		read: async () => "",
@@ -102,7 +128,10 @@ registry.widgets.set(COUNTER, { manifest: { id: COUNTER, api: 1, title: "Counter
 registry.widgets.set(CRASHER, { manifest: { id: CRASHER, api: 1, title: "Crasher" }, component: Crasher });
 registry.widgets.set(OPENER, { manifest: OPENER_MANIFEST, component: Opener });
 
-const TILES = [{ id: "good", widget: COUNTER }, { id: "boom", widget: CRASHER }];
+const TILES = [
+	{ id: "good", widget: COUNTER },
+	{ id: "boom", widget: CRASHER },
+];
 const TREE = {
 	tiles: TILES,
 	layout: { left: [], main: [[{ id: "good", height: 200 }], [{ id: "boom", height: 200 }]], right: [] },
@@ -119,9 +148,18 @@ const draw = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board, registry, host, editing, screen: true, initialWidth: 1280,
-			onChange: (next) => { board = next; draw(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board,
+			registry,
+			host,
+			editing,
+			screen: true,
+			initialWidth: 1280,
+			onChange: (next) => {
+				board = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -143,13 +181,18 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 const surface = () => dom.window.document.querySelector(".wg-page") ?? root;
 const all = (selector) => [...surface().querySelectorAll(selector)];
 const everywhere = (selector) => [...dom.window.document.querySelectorAll(selector)];
-const click = async (node, times = 40) => { node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await settle(times); };
+const click = async (node, times = 40) => {
+	node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+	await settle(times);
+};
 const countIn = (within) => everywhere(`${within} .probe-counter b`)[0]?.textContent ?? "gone";
 const bumpIn = (within) => everywhere(`${within} .probe-counter button`)[0];
 const shellIn = (within) => everywhere(`${within} .wg-drawn > .wg-drawn`)[0] ?? null;
@@ -175,8 +218,16 @@ check("the tile counts a press of its own", countIn('[data-cell="good"]'), "1");
 	draw();
 	await settle();
 	check("an ordinary board redraw keeps the tile's state", countIn('[data-cell="good"]'), "1");
-	check("because it was drawn into the element it already had", Boolean(held) && shellIn('[data-cell="good"]') === held, true);
-	check("and drew it there once, not beside the copy it had", everywhere('[data-cell="good"] .probe-counter').length, 1);
+	check(
+		"because it was drawn into the element it already had",
+		Boolean(held) && shellIn('[data-cell="good"]') === held,
+		true,
+	);
+	check(
+		"and drew it there once, not beside the copy it had",
+		everywhere('[data-cell="good"] .probe-counter').length,
+		1,
+	);
 }
 
 console.log("\n— the settings window borrows the widget, it does not make a second one —");
@@ -192,7 +243,11 @@ check("the tile counts a press on the board", countIn('[data-cell="good"]'), "1"
 	check("the window draws the widget on its own canvas", everywhere(".wg-set-body .probe-counter").length, 1);
 	check("carrying the count it had on the board", countIn(".wg-set-body"), "1");
 	check("it is the very element the tile was drawing", shellIn(".wg-set-body") === held, true);
-	check("and the tile body it came from stands empty", everywhere('[data-cell="good"] .wg-tile-body .probe-counter').length, 0);
+	check(
+		"and the tile body it came from stands empty",
+		everywhere('[data-cell="good"] .wg-tile-body .probe-counter').length,
+		0,
+	);
 
 	const done = everywhere(".wg-set-head button").find((node) => node.textContent.trim() === "Done");
 	check("the window offers to be closed", Boolean(done), true);
@@ -267,7 +322,11 @@ console.log("\n— a cell the widget has not landed in yet is not a resting plac
 	check("so the widgets landing in it slide nothing", Object.keys(movesFrom(beforeTheyLand, afterTheyLand)), []);
 }
 
-check("and nothing was logged but the crash the board asked for", said.filter((line) => !/^\(node:\d+\)|the tile fell over|Crasher/.test(line)), []);
+check(
+	"and nothing was logged but the crash the board asked for",
+	said.filter((line) => !/^\(node:\d+\)|the tile fell over|Crasher/.test(line)),
+	[],
+);
 
 console.log(failed === 0 ? "\nthe tile boundary holds" : `\ntile: ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

@@ -65,13 +65,16 @@ export function createAssistant(app, plugin) {
 	async function briefNow() {
 		const held = await settings.state();
 		return briefFor({
-			vaultPath,
-			pluginPath,
-			widgetsPath: `${vaultPath}/${WIDGETS_DIR}`,
-			handbookPath: `${vaultPath}/${HANDBOOK_DIR}`,
-			toolPath: `${vaultPath}/${TOOL_PATH}`,
+			paths: {
+				vault: vaultPath,
+				plugin: pluginPath,
+				widgets: `${vaultPath}/${WIDGETS_DIR}`,
+				handbook: `${vaultPath}/${HANDBOOK_DIR}`,
+				tool: `${vaultPath}/${TOOL_PATH}`,
+			},
 			note: await noteNow(),
 			publishWidgets: held.publishWidgets,
+			canEdit: held.provider?.canEdit !== false,
 		});
 	}
 

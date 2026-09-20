@@ -32,11 +32,14 @@ function reportOn(theme, seen, failures) {
 	const wrong = [];
 	if (failures) wrong.push(`the page reported\n${failures}`);
 	if (seen.cards !== TEMPLATES.length) wrong.push(`${seen.cards} cards drawn, wants ${TEMPLATES.length}`);
-	if (seen.shelf?.join(",") !== "Widgets,Templates") wrong.push(`the head offers ${seen.shelf?.join(", ")} to switch between`);
+	if (seen.shelf?.join(",") !== "Widgets,Templates")
+		wrong.push(`the head offers ${seen.shelf?.join(", ")} to switch between`);
 	if (seen.narrowers !== 0) wrong.push(`${seen.narrowers} widget narrowers are still drawn over the templates`);
 	if (seen.clipped?.length) wrong.push(`${seen.clipped.length} labels are cut off — ${seen.clipped.join(", ")}`);
-	if (seen.rows?.some((tall) => tall < 22)) wrong.push(`a row of the sketch is drawn ${Math.min(...seen.rows)}px tall, under its own floor`);
-	if (seen.buttonGap === null || seen.buttonGap > 2) wrong.push(`the create button stops ${seen.buttonGap}px short of the card's edge, so it sits beside the name`);
+	if (seen.rows?.some((tall) => tall < 22))
+		wrong.push(`a row of the sketch is drawn ${Math.min(...seen.rows)}px tall, under its own floor`);
+	if (seen.buttonGap === null || seen.buttonGap > 2)
+		wrong.push(`the create button stops ${seen.buttonGap}px short of the card's edge, so it sits beside the name`);
 	for (const said of wrong) console.error(`${theme}: ${said}`);
 	return wrong.length;
 }
@@ -51,10 +54,14 @@ for (const [index, theme] of ["light", "dark"].entries()) {
 	shoot(file, [`--screenshot=${out}`], SIZE);
 	const dom = shoot(file, ["--dump-dom"], SIZE);
 	const failures = /<pre id="boom"[^>]*>([\s\S]*?)<\/pre>/.exec(dom)?.[1]?.trim() ?? "";
-	const seen = JSON.parse((/<pre id="count"[^>]*>([\s\S]*?)<\/pre>/.exec(dom)?.[1] ?? "").replace(/&quot;/g, '"') || "{}");
+	const seen = JSON.parse(
+		(/<pre id="count"[^>]*>([\s\S]*?)<\/pre>/.exec(dom)?.[1] ?? "").replace(/&quot;/g, '"') || "{}",
+	);
 
 	broken += reportOn(theme, seen, failures);
-	console.log(`${theme}: ${seen.cards} cards, regions ${seen.regions?.join("/")}, rows ${seen.rows?.join("/")}, ${seen.buttonGap}px of foot right of the create button, labels ${seen.labels?.join(" | ")}  ->  ${out}`);
+	console.log(
+		`${theme}: ${seen.cards} cards, regions ${seen.regions?.join("/")}, rows ${seen.rows?.join("/")}, ${seen.buttonGap}px of foot right of the create button, labels ${seen.labels?.join(" | ")}  ->  ${out}`,
+	);
 }
 
 process.exit(broken === 0 ? 0 : 1);

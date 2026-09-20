@@ -2,7 +2,8 @@ import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { boardBlock, boardNoteText, boardPathIn, boardInsertAt, isScreenNote, createBoardNote, insertBoardAtCursor } = await import("./.mjs-cache/board-note.mjs");
+const { boardBlock, boardNoteText, boardPathIn, boardInsertAt, isScreenNote, createBoardNote, insertBoardAtCursor } =
+	await import("./.mjs-cache/board-note.mjs");
 const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
 const { readId, withId } = await import("./.mjs-cache/record-id.mjs");
 const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
@@ -12,7 +13,9 @@ let failed = 0;
 function check(name, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 function blocksIn(text) {
@@ -38,8 +41,16 @@ check("the board declares the current format", parsed.v, BLOCK_FORMAT);
 check("the board opens with no tiles", normalizeBoard(parsed).tiles.length, 0);
 check("a new board is a tree, never a grid", "layouts" in parsed, false);
 check("and it is born with all three regions, so the first widget has somewhere to go", parsed.layout.of.length, 3);
-check("every one of them starts empty", parsed.layout.of.map((box) => box.of), [[], [], []]);
-check("one of the three is the one that may not be folded away", parsed.layout.of.map((box) => Boolean(box.keep)), [false, true, false]);
+check(
+	"every one of them starts empty",
+	parsed.layout.of.map((box) => box.of),
+	[[], [], []],
+);
+check(
+	"one of the three is the one that may not be folded away",
+	parsed.layout.of.map((box) => Boolean(box.keep)),
+	[false, true, false],
+);
 check("the tree survives being read back", normalizeBoard(parsed).layout.of.length, 3);
 check("the board authors no grid layout", "layouts" in normalizeBoard(parsed), false);
 
@@ -69,17 +80,30 @@ const beside = `${note}Tail`.split("\n");
 check("inserting after a board leaves two", blocksIn(inserted(beside, beside.length - 1)).length, 2);
 const insideBlock = beside.findIndex((line) => line.trim() === "dir: row");
 check("the cursor inside a board is a line of that board", insideBlock > 0, true);
-check("inserting from inside a board does not nest one in the other", blocksIn(inserted(beside, insideBlock)).length, 2);
-check("and the board the cursor sat in is left whole", blockRefusal(parseYaml(blocksIn(inserted(beside, insideBlock))[0])), null);
+check(
+	"inserting from inside a board does not nest one in the other",
+	blocksIn(inserted(beside, insideBlock)).length,
+	2,
+);
+check(
+	"and the board the cursor sat in is left whole",
+	blockRefusal(parseYaml(blocksIn(inserted(beside, insideBlock))[0])),
+	null,
+);
 check("an inserted board is still readable", blockRefusal(parseYaml(blocksIn(inserted(held, 2))[0])), null);
 check("a created board opens as a page, because the note is the board", parsed.mode, "expanded");
 check("one dropped into somebody's prose takes no screen", parseYaml(blocksIn(inserted(held, 2))[0]).mode, undefined);
-check("and is otherwise the very board a created note holds", blocksIn(inserted(held, 2))[0], blocksIn(note)[0].split("\nmode: expanded").join(""));
+check(
+	"and is otherwise the very board a created note holds",
+	blocksIn(inserted(held, 2))[0],
+	blocksIn(note)[0].split("\nmode: expanded").join(""),
+);
 check("the block is fenced as widgetarium", boardBlock().split("\n")[0], "```widgetarium");
 
 function fakeCreate(folder, written) {
 	return async (path, text) => {
-		if (written.some((file) => file.path.toLowerCase() === path.toLowerCase())) throw new Error(`File already exists: ${path}`);
+		if (written.some((file) => file.path.toLowerCase() === path.toLowerCase()))
+			throw new Error(`File already exists: ${path}`);
 		const file = { path, text, name: path.split("/").pop() };
 		written.push(file);
 		folder.children.push(file);
@@ -111,11 +135,19 @@ check("a second board steps past the first", second.path, "Board 2.md");
 check("and carries an id of its own", idIn(second.text) === idIn(first.text), false);
 
 const shouty = { path: "Screens", isRoot: () => false, children: [{ name: "Board.MD" }] };
-check("a taken name is seen whatever its case", (await createBoardNote(fakeVault(shouty).doors)).path, "Screens/Board 2.md");
+check(
+	"a taken name is seen whatever its case",
+	(await createBoardNote(fakeVault(shouty).doors)).path,
+	"Screens/Board 2.md",
+);
 
 const chosen = { path: "Screens", isRoot: () => false, children: [] };
 const chosenVault = fakeVault(root);
-check("a chosen folder wins over the default one", (await createBoardNote(chosenVault.doors, chosen)).path, "Screens/Board.md");
+check(
+	"a chosen folder wins over the default one",
+	(await createBoardNote(chosenVault.doors, chosen)).path,
+	"Screens/Board.md",
+);
 
 function fakeEditor(text, line) {
 	const lines = text.split("\n");
@@ -135,7 +167,9 @@ insertBoardAtCursor(editor);
 check("the editor ends up holding one board", blocksIn(editor.text()).length, 1);
 check("the board the editor holds is readable", blockRefusal(parseYaml(blocksIn(editor.text())[0])), null);
 check("no line of the note was lost", editor.text().includes("Some line") && editor.text().includes("tail"), true);
-check("the cursor lands past the board", editor.cursors, [3 + boardInsertAt("# Notes\n\nSome line\ntail".split("\n"), 2).text.split("\n").length - 1]);
+check("the cursor lands past the board", editor.cursors, [
+	3 + boardInsertAt("# Notes\n\nSome line\ntail".split("\n"), 2).text.split("\n").length - 1,
+]);
 
 const atEnd = fakeEditor("only line", 0);
 insertBoardAtCursor(atEnd);

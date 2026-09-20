@@ -44,18 +44,26 @@ function typeOf(value) {
 
 export function differences(wanted, got, at = []) {
 	const said = at.join(" › ");
-	if (typeOf(wanted) !== typeOf(got)) return [`${said}: expected ${JSON.stringify(wanted)}, engine answers ${JSON.stringify(got)}`];
+	if (typeOf(wanted) !== typeOf(got))
+		return [`${said}: expected ${JSON.stringify(wanted)}, engine answers ${JSON.stringify(got)}`];
 	if (typeOf(wanted) === "array") return arrayDifferences(wanted, got, at);
-	if (typeOf(wanted) !== "object") return wanted === got ? [] : [`${said}: expected ${JSON.stringify(wanted)}, engine answers ${JSON.stringify(got)}`];
+	if (typeOf(wanted) !== "object")
+		return wanted === got ? [] : [`${said}: expected ${JSON.stringify(wanted)}, engine answers ${JSON.stringify(got)}`];
 
 	const keys = [...new Set([...Object.keys(wanted), ...Object.keys(got)])];
-	const ordered = Object.keys(wanted).join(",") === Object.keys(got).join(",") ? [] : [`${said}: keys are declared in the order ${Object.keys(got).join(", ")}, expected ${Object.keys(wanted).join(", ")}`];
+	const ordered =
+		Object.keys(wanted).join(",") === Object.keys(got).join(",")
+			? []
+			: [
+					`${said}: keys are declared in the order ${Object.keys(got).join(", ")}, expected ${Object.keys(wanted).join(", ")}`,
+				];
 	return [...ordered, ...keys.flatMap((key) => keyDifference(wanted, got, key, at))];
 }
 
 function keyDifference(wanted, got, key, at) {
 	if (!(key in got)) return [`${[...at, key].join(" › ")}: missing — the engine no longer answers it`];
-	if (!(key in wanted)) return [`${[...at, key].join(" › ")}: unexpected — the engine answers ${JSON.stringify(got[key])}`];
+	if (!(key in wanted))
+		return [`${[...at, key].join(" › ")}: unexpected — the engine answers ${JSON.stringify(got[key])}`];
 	return differences(wanted[key], got[key], [...at, key]);
 }
 

@@ -4,17 +4,36 @@ import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 
 const VAULT = "tools/fixture-records";
-const GROUP = "@core/view-group";
+const HOLDER = "@probe/holder";
 const COUNTER = "@probe/counter";
 const CRASHER = "@probe/crasher";
 const VALUE = "@probe/value";
 const TITLES = "@probe/titles";
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
@@ -33,7 +52,13 @@ const adapter = {
 	exists: async (target) => fs.existsSync(path.join(VAULT, target)),
 	list: async (target) => {
 		const names = fs.readdirSync(path.join(VAULT, target));
-		const kind = (name) => { try { return fs.statSync(path.join(VAULT, target, name)); } catch { return null; } };
+		const kind = (name) => {
+			try {
+				return fs.statSync(path.join(VAULT, target, name));
+			} catch {
+				return null;
+			}
+		};
 		return {
 			folders: names.filter((name) => kind(name)?.isDirectory()).map((name) => `${target}/${name}`),
 			files: names.filter((name) => kind(name)?.isFile()).map((name) => `${target}/${name}`),
@@ -46,7 +71,8 @@ const adapter = {
 const app = {
 	vault: {
 		getAbstractFileByPath: () => null,
-		create: async () => Object.assign(new TFile(), { path: "made.md", basename: "made", extension: "md", stat: { ctime: 1, mtime: 1 } }),
+		create: async () =>
+			Object.assign(new TFile(), { path: "made.md", basename: "made", extension: "md", stat: { ctime: 1, mtime: 1 } }),
 		createFolder: async () => {},
 		cachedRead: async () => "",
 		read: async () => "",
@@ -90,15 +116,43 @@ function Titles({ mounts }) {
 	return h(
 		"div",
 		{ className: "probe-titles" },
-		(mounts?.holds ?? []).map((entry) => h("i", { key: entry.name, "data-problem": String(entry.problem) }, String(entry.title ?? ""))),
+		(mounts?.holds ?? []).map((entry) =>
+			h("i", { key: entry.name, "data-problem": String(entry.problem) }, String(entry.title ?? "")),
+		),
 	);
 }
 
 registry.widgets.set(COUNTER, { manifest: { id: COUNTER, api: 1, title: "Counter" }, component: Counter });
 registry.widgets.set(CRASHER, { manifest: { id: CRASHER, api: 1, title: "Crasher" }, component: Crasher });
 registry.widgets.set(VALUE, {
-	manifest: { id: VALUE, api: 1, title: "Value", props: { value: { kind: "value", type: "number", verbs: { get: "required" } } } },
+	manifest: {
+		id: VALUE,
+		api: 1,
+		title: "Value",
+		props: { value: { kind: "value", type: "number", verbs: { get: "required" } } },
+	},
 	component: Value,
+});
+
+function Holder({ mounts }) {
+	const held = mounts?.holds ?? [];
+	const [shown, setShown] = useState("");
+	const active = held.find((entry) => entry.name === shown) ?? held[0];
+	return h("div", { className: "probe-holder" }, [
+		h(
+			"div",
+			{ key: "strip", className: "probe-strip" },
+			held.map((entry) =>
+				h("button", { key: entry.name, className: "probe-tab", onClick: () => setShown(entry.name) }, entry.name),
+			),
+		),
+		active ? h(Mounted, { key: active.name, entry: active }) : null,
+	]);
+}
+
+registry.widgets.set(HOLDER, {
+	manifest: { id: HOLDER, api: 1, title: "Holder", mounts: { holds: { label: "Holds" } } },
+	component: Holder,
 });
 
 registry.widgets.set(TITLES, {
@@ -115,8 +169,14 @@ const VIEWS = {
 	tiles: [
 		{
 			id: "group",
-			widget: GROUP,
-			mounts: { holds: [{ name: "One", widget: COUNTER }, { name: "Two", widget: COUNTER }, { name: "Boom", widget: CRASHER }] },
+			widget: HOLDER,
+			mounts: {
+				holds: [
+					{ name: "One", widget: COUNTER },
+					{ name: "Two", widget: COUNTER },
+					{ name: "Boom", widget: CRASHER },
+				],
+			},
 		},
 	],
 	layout: { left: [], main: [[{ id: "group", height: 420 }]], right: [] },
@@ -126,7 +186,7 @@ const BOUND = {
 	tiles: [
 		{
 			id: "group",
-			widget: GROUP,
+			widget: HOLDER,
 			mounts: { holds: [{ name: "Source", widget: VALUE }] },
 			mounted: { Source: { widget: VALUE, props: { value: { from: "typed", value: 42 } } } },
 		},
@@ -141,9 +201,18 @@ const draw = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board, registry, host, editing: false, screen: true, initialWidth: 1280,
-			onChange: (next) => { board = next; draw(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: 1280,
+			onChange: (next) => {
+				board = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -164,14 +233,19 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 const surface = () => dom.window.document.querySelector(".wg-page") ?? root;
 const all = (selector) => [...surface().querySelectorAll(selector)];
-const click = async (node) => { node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await settle(); };
-const tabs = () => all(".ovg-strip .wg-tabs-tab").map((node) => node.textContent.trim());
-const tab = (name) => all(".ovg-strip .wg-tabs-tab").find((node) => node.textContent.trim() === name);
+const click = async (node) => {
+	node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+	await settle();
+};
+const tabs = () => all(".probe-strip .probe-tab").map((node) => node.textContent.trim());
+const tab = (name) => all(".probe-strip .probe-tab").find((node) => node.textContent.trim() === name);
 const counter = () => all(".probe-counter b")[0]?.textContent ?? "gone";
 const seam = () => all(".wg-mounted")[0] ?? null;
 
@@ -181,7 +255,7 @@ console.error = (...parts) => said.push(parts.map((part) => String(part)).join("
 console.log("— a holder redraw is a redraw, not a remount —");
 
 await start(VIEWS);
-check("the group draws a tab for every view it holds", tabs(), ["One", "Two", "Boom"]);
+check("the holder draws a tab for every view it holds", tabs(), ["One", "Two", "Boom"]);
 check("and draws the first of them", counter(), "0");
 
 await click(all(".probe-counter button")[0]);
@@ -212,9 +286,9 @@ await start(VIEWS);
 await click(tab("Boom"));
 check("a view that throws leaves the tab strip standing", tabs(), ["One", "Two", "Boom"]);
 check("the crash is named inside the seam the child was drawn into", all(".wg-mounted .wg-error").length, 1);
-check("and the group is still what the cell draws", all(".wg-tree-cell .orbi-view-group").length, 1);
+check("and the holder is still what the cell draws", all(".wg-tree-cell .probe-holder").length, 1);
 await click(tab("One"));
-check("so the group still answers a press afterwards", counter(), "0");
+check("so the holder still answers a press afterwards", counter(), "0");
 
 await click(tab("Boom"));
 board.tiles[0].mounts.holds[2].widget = COUNTER;
@@ -227,14 +301,26 @@ console.log("\n— a mounted child registers in the board's refs —");
 
 await start(BOUND);
 check("the mounted child draws the value its own tile holds", all(".probe-value")[0]?.textContent, "42");
-check("and a tile bound to that child's prop reads the same one", all('[data-cell="reader"] .probe-value')[0]?.textContent, "42");
+check(
+	"and a tile bound to that child's prop reads the same one",
+	all('[data-cell="reader"] .probe-value')[0]?.textContent,
+	"42",
+);
 
 console.log("\n— an unfilled view still has something to draw —");
 
 await start(UNFILLED);
 const unfilled = () => all(".probe-titles i");
-check("a mount row with no widget is the empty branch a holder is told to check", unfilled().map((node) => node.getAttribute("data-problem")), ["empty"]);
-check("and it still hands the holder a title to draw", unfilled().map((node) => node.textContent), ["Unfilled"]);
+check(
+	"a mount row with no widget is the empty branch a holder is told to check",
+	unfilled().map((node) => node.getAttribute("data-problem")),
+	["empty"],
+);
+check(
+	"and it still hands the holder a title to draw",
+	unfilled().map((node) => node.textContent),
+	["Unfilled"],
+);
 
 console.log("\n— a holder that drives the seam itself —");
 
@@ -255,12 +341,20 @@ console.log("\n— a holder that drives the seam itself —");
 	await settle();
 	check("an entry that stops being drawable releases the root it was given", lives.released - before, 1);
 	check("and says so where the widget stood", spare.querySelectorAll(".wg-missing").length, 1);
-	check("naming the entry and what the holder should have branched on", said.some((line) => line.includes('"Loose"') && line.includes("entry.problem")), true);
+	check(
+		"naming the entry and what the holder should have branched on",
+		said.some((line) => line.includes('"Loose"') && line.includes("entry.problem")),
+		true,
+	);
 	render(null, spare);
 	spare.remove();
 }
 
-check("and nothing was logged but the crash the board asked for", said.filter((line) => !/the child fell over|Crasher|nothing to draw/.test(line)), []);
+check(
+	"and nothing was logged but the crash the board asked for",
+	said.filter((line) => !/the child fell over|Crasher|nothing to draw/.test(line)),
+	[],
+);
 
 console.log(failed === 0 ? "\nthe seam holds" : `\nmount: ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

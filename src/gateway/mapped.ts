@@ -1,5 +1,5 @@
 import type { CollectionGateway, FilterRow, Query, Row, RowsResult, SortRow } from "./contract";
-import { collectionGateway } from "./create";
+import { collectionGateway, valueIn } from "./create";
 import { fieldsOf, isBoolean, isDay, isNumber } from "./fields";
 import type { FieldReport } from "./fields";
 import { fieldOf } from "./match";
@@ -26,7 +26,7 @@ function asBoolean(value: unknown): boolean | null {
 	return value === true || value === "true";
 }
 
-function coercedOne(value: unknown, type: string): unknown {
+export function coercedOne(value: unknown, type: string): unknown {
 	if (value === undefined || value === null || value === "") return null;
 	if (type === "date") return asDay(value);
 	if (type === "number") return asNumber(value);
@@ -96,7 +96,7 @@ async function fieldsBehind(base: CollectionGateway<unknown>): Promise<FieldRepo
 	};
 	if (typeof describe === "function" && describe.can().can) return describe();
 	const listed = await base.list();
-	return fieldsOf(listed.rows.map((row) => row.value));
+	return fieldsOf(listed.rows.map(valueIn));
 }
 
 // TRADE-OFF: the resolution is remembered for the life of the gateway, so a property added after the first read is seen on the next mount rather than at once
@@ -119,7 +119,9 @@ function readsRows<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionO
 		const listed = await base.list(renamedQuery(query, spec.needs, map) as Query);
 		return {
 			...listed,
-			rows: listed.rows.map((row) => ({ ...row, value: renamedValue(row.value, spec.needs, map) as T })),
+			rows: listed.rows.map(
+				(row) => ({ ...(renamedValue(valueIn(row), spec.needs, map) as object), ref: row.ref }) as Row<T>,
+			),
 		};
 	};
 }
@@ -128,7 +130,7 @@ function readsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf
 	return async (ref: string): Promise<Row<T> | null> => {
 		const { map } = await resolutionOf();
 		const found = await base.get(ref);
-		return found ? { ...found, value: renamedValue(found.value, spec.needs, map) as T } : null;
+		return found ? ({ ...(renamedValue(valueIn(found), spec.needs, map) as object), ref: found.ref } as Row<T>) : null;
 	};
 }
 

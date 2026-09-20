@@ -70,10 +70,43 @@ export default createWidget(function Dial() {
 `,
 };
 
+const SYMLINKED = {
+	[`${WIDGETS_AT}/@old/tabs/manifest.json`]: JSON.stringify({ id: "@old/tabs", api: 1, title: "Tabs" }),
+	[`${WIDGETS_AT}/@old/tabs/widget.tsx`]: `import { createWidget } from "widgetarium";
+export default createWidget(function Tabs() {
+	return <b>tabs</b>;
+}, { props: { tabs: { label: "Tabs", default: { value: [] } }, label: { type: "line", label: "Label field", default: { value: "name" } } } });
+`,
+};
+
+check(
+	"a widget read straight from its folder, with no kind written, still resolves a line as a value",
+	differences(
+		{
+			tabs: {
+				kind: "collection",
+				label: "Tabs",
+				writes: ["list", "get", "create", "update", "remove"],
+				default: { rows: [] },
+			},
+			label: {
+				kind: "value",
+				control: "line",
+				type: "line",
+				label: "Label field",
+				writes: ["get"],
+				default: { value: "name" },
+			},
+		},
+		(await propsAsTheEngineResolvesThem(SYMLINKED))["@old/tabs"],
+		["@old/tabs"],
+	),
+);
+
 check(
 	"a vault whose manifest still carries props keeps answering with them",
 	differences(
-		{ hours: { kind: "value", type: "number", label: "Hours", verbs: { get: "required" } } },
+		{ hours: { kind: "value", control: "number", type: "number", label: "Hours", writes: ["get"] } },
 		(await propsAsTheEngineResolvesThem(MANIFEST_ONLY))["@old/dial"],
 		["@old/dial"],
 	),
@@ -83,8 +116,8 @@ check(
 	"a declaration in the code stands over the props the record carries, key by key",
 	differences(
 		{
-			hours: { kind: "value", type: "number", label: "Hours kept", verbs: { get: "required" } },
-			minutes: { kind: "value", type: "number", label: "Minutes", verbs: { get: "required" } },
+			hours: { kind: "value", control: "number", type: "number", label: "Hours kept", writes: ["get"] },
+			minutes: { kind: "value", control: "number", type: "number", label: "Minutes", writes: ["get"] },
 		},
 		(await propsAsTheEngineResolvesThem(DECLARING))["@old/dial"],
 		["@old/dial"],

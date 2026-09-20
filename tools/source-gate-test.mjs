@@ -4,8 +4,16 @@ const { createInstaller, INDEX_PATH } = await import("./.mjs-cache/installer.mjs
 
 const GOOD_FOLDER = "/tmp/good-widgets";
 
+const ON_THE_GOOD_FOLDER = new Set([
+	GOOD_FOLDER,
+	`${GOOD_FOLDER}/@a`,
+	`${GOOD_FOLDER}/@a/b`,
+	`${GOOD_FOLDER}/@a/b/manifest.json`,
+	`${GOOD_FOLDER}/@a/b/widget.jsx`,
+]);
+
 const oneWidgetOnDisk = {
-	exists: async (at) => at.startsWith(GOOD_FOLDER),
+	exists: async (at) => ON_THE_GOOD_FOLDER.has(at),
 	read: async () => JSON.stringify({ id: "@a/b", title: "B", api: 1 }),
 	folders: async (at) => (at === GOOD_FOLDER ? [`${GOOD_FOLDER}/@a`] : [`${GOOD_FOLDER}/@a/b`]),
 };
@@ -113,8 +121,17 @@ same(
 );
 
 const OTHER_FOLDER = "/tmp/other-widgets";
+const ON_EITHER_FOLDER = new Set(
+	[GOOD_FOLDER, OTHER_FOLDER].flatMap((root) => [
+		root,
+		`${root}/@a`,
+		`${root}/@a/b`,
+		`${root}/@a/b/manifest.json`,
+		`${root}/@a/b/widget.jsx`,
+	]),
+);
 const sameWidgetInTwoFolders = {
-	exists: async (at) => at.startsWith(GOOD_FOLDER) || at.startsWith(OTHER_FOLDER),
+	exists: async (at) => ON_EITHER_FOLDER.has(at),
 	read: async () => JSON.stringify({ id: "@a/b", title: "B", api: 1 }),
 	folders: async (at) => (at === GOOD_FOLDER || at === OTHER_FOLDER ? [`${at}/@a`] : [`${at}/b`]),
 };
@@ -254,6 +271,62 @@ same(
 console.log("\na registry that is not a registry says so rather than emptying the source");
 same("a registry that is a list offers nothing", (await offersOf(withRegistry([]))).length, 0);
 same("a registry that is a number offers nothing", (await offersOf(withRegistry(42))).length, 0);
+
+console.log("\na folder source reads a registry the same way a repository does");
+
+const LIBRARY = "/tmp/library";
+const TWO_WIDGETS = ["one", "two"];
+
+const filesOfTheLibrary = (registryText) =>
+	new Map([
+		...TWO_WIDGETS.flatMap((name) => [
+			[`${LIBRARY}/@lib/${name}/manifest.json`, JSON.stringify({ id: `@lib/${name}`, title: name, api: 1 })],
+			[`${LIBRARY}/@lib/${name}/widget.jsx`, "export default () => null;"],
+		]),
+		...(registryText === null ? [] : [[`${LIBRARY}/widgetarium-registry.json`, registryText]]),
+	]);
+
+const foldersOfTheLibrary = () =>
+	new Map([
+		[LIBRARY, [`${LIBRARY}/@lib`]],
+		[`${LIBRARY}/@lib`, TWO_WIDGETS.map((name) => `${LIBRARY}/@lib/${name}`)],
+		...TWO_WIDGETS.map((name) => [`${LIBRARY}/@lib/${name}`, []]),
+	]);
+
+function libraryHolding(registryText) {
+	const files = filesOfTheLibrary(registryText);
+	const folders = foldersOfTheLibrary();
+	return {
+		exists: async (at) => files.has(at) || folders.has(at),
+		read: async (at) => files.get(at),
+		folders: async (at) => folders.get(at) ?? [],
+	};
+}
+
+const libraryOffers = async (registryText) =>
+	(await installerOver({ sources: [{ path: LIBRARY }] }, libraryHolding(registryText)).available())
+		.map((entry) => entry.manifest.id)
+		.sort();
+
+same("a folder with no registry offers every widget folder under it", await libraryOffers(null), [
+	"@lib/one",
+	"@lib/two",
+]);
+same(
+	"a registry naming one of them offers only that one",
+	await libraryOffers(JSON.stringify({ registry: 1, scope: "@lib", widgets: [{ name: "one" }] })),
+	["@lib/one"],
+);
+same(
+	"a registry written for a newer plugin offers nothing rather than half of itself",
+	await libraryOffers(JSON.stringify({ registry: REGISTRY_FORMAT + 1, scope: "@lib", widgets: [{ name: "one" }] })),
+	[],
+);
+same(
+	"a row naming a folder that holds no widget is skipped, and the rest still answer",
+	await libraryOffers(JSON.stringify({ registry: 1, scope: "@lib", widgets: [{ name: "one" }, { name: "gone" }] })),
+	["@lib/one"],
+);
 
 console.log(wrong === 0 ? "\nsource gate: clean" : `\nsource gate: ${wrong} wrong`);
 process.exit(wrong === 0 ? 0 : 1);

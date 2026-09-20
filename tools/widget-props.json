@@ -1,136 +1,243 @@
 {
-	"@core/editable-tabs": {
+	"@default/archived-columns": {
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"writes": ["list", "get", "update"],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Shown board",
+			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"writes": ["get"],
+			"wants": "@default/editable-tabs/selection"
+		},
+		"board": {
+			"kind": "value",
+			"control": "row",
+			"label": "Board",
+			"hint": "The board whose archived columns are listed.",
+			"picks": "selection",
+			"of": "boards",
+			"writes": ["get", "update"],
+			"wants": "@default/kanban-board/board"
+		}
+	},
+	"@default/breakdown-bars": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The notes to split up.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"groupBy": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Group by",
+			"hint": "Write folder to split by the folder a note sits in, or the name of a property to split by its value.",
+			"writes": ["get"],
+			"default": {
+				"value": "folder"
+			}
+		},
+		"shownAtFirst": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Bars shown at first",
+			"hint": "How many of the biggest groups get a bar before anything is pressed.",
+			"aka": ["shown"],
+			"writes": ["get"],
+			"default": {
+				"value": 8
+			}
+		},
+		"step": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Bars added by a press",
+			"hint": "How many more bars each press of Show more draws.",
+			"writes": ["get"],
+			"default": {
+				"value": 8
+			}
+		},
+		"showMoreButton": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Show more button",
+			"hint": "Whether a press may draw past the first bars. Without it the rest are summed into one line.",
+			"writes": ["get"],
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"@default/code-block": {
+		"lines": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Lines shown at first, and added by each press",
+			"writes": ["get"],
+			"default": {
+				"value": 30
+			}
+		},
+		"maxKilobytes": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Largest file that may be shown, in KB",
+			"writes": ["get"],
+			"default": {
+				"value": 256
+			}
+		}
+	},
+	"@default/editable-tabs": {
 		"tabs": {
 			"kind": "collection",
 			"label": "Tabs",
 			"hint": "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
-			"was": "records",
-			"item": {
-				"fields": [
-					{
-						"key": "name",
-						"label": "Label",
-						"type": "text",
-						"required": true
-					},
-					{
-						"key": "board",
-						"label": "Value",
-						"type": "text"
-					},
-					{
-						"key": "archivedAt",
-						"label": "Archived at",
-						"type": "datetime"
-					}
-				]
-			},
-			"verbs": {
-				"list": "required",
-				"create": "optional",
-				"update": "optional",
-				"remove": "optional"
+			"aka": ["records"],
+			"writes": ["list", "get", "create", "update", "remove"],
+			"describes": {
+				"name": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"board": {
+					"label": "Value",
+					"type": "text"
+				},
+				"archivedAt": {
+					"label": "Archived at",
+					"type": "datetime"
+				}
 			},
 			"default": {
-				"path": "Orbitask/Boards"
+				"rows": []
 			}
 		},
 		"label": {
 			"kind": "value",
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "Label field",
 			"hint": "Which field is written on a tab. Without it a note shows its own name.",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": "name"
 			}
 		},
 		"value": {
 			"kind": "value",
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "Value field",
 			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": "board"
 			}
 		},
 		"selection": {
 			"kind": "value",
+			"control": "pick",
 			"label": "Selected tab",
 			"hint": "Which tab is picked, as a box. Bind another widget and the two move together.",
 			"of": "tabs",
 			"fieldFrom": "value",
 			"fallback": "first",
-			"verbs": {
-				"get": "required",
-				"update": "required"
+			"writes": ["get", "update"]
+		}
+	},
+	"@default/feed": {
+		"items": {
+			"kind": "collection",
+			"label": "Items",
+			"hint": "The records the feed draws, one after another, newest first when the source is sorted that way.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Items per load",
+			"hint": "How many more are drawn each time the end of the feed comes into view.",
+			"writes": ["get"],
+			"default": {
+				"value": 10
 			}
 		}
 	},
-	"@core/filter-panel": {
+	"@default/filter-panel": {
 		"tasks": {
 			"kind": "collection",
 			"label": "Tasks",
-			"verbs": {
-				"list": "required"
-			},
-			"default": {
-				"path": "Orbitask/Tasks",
-				"where": [
-					{
-						"prop": "board",
-						"op": "is",
-						"value": {
-							"wants": "@core/editable-tabs/selection"
-						}
+			"writes": ["list", "get"],
+			"where": [
+				{
+					"prop": "board",
+					"op": "is",
+					"value": {
+						"wants": "@default/editable-tabs/selection"
 					}
-				]
+				}
+			],
+			"default": {
+				"rows": []
 			}
 		},
 		"groups": {
 			"kind": "collection",
 			"label": "Filter by",
 			"hint": "The properties offered. Empty offers what the board names or the tasks carry.",
-			"item": {
-				"fields": [
-					{
-						"key": "prop",
-						"label": "Property",
-						"type": "text",
-						"required": true
-					},
-					{
-						"key": "label",
-						"label": "Label",
-						"type": "text"
-					},
-					{
-						"key": "control",
-						"label": "Control",
-						"type": "text"
-					}
-				]
-			},
-			"verbs": {
-				"list": "required"
+			"writes": ["list", "get"],
+			"describes": {
+				"prop": {
+					"label": "Property",
+					"type": "text",
+					"required": true
+				},
+				"label": {
+					"label": "Label",
+					"type": "text"
+				},
+				"control": {
+					"label": "Control",
+					"type": "text"
+				}
 			},
 			"default": {
-				"value": []
+				"rows": []
 			}
 		},
 		"openGroup": {
 			"kind": "value",
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "Open by default",
 			"hint": "Whose choices unfold on opening. Name none and it opens folded.",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
@@ -139,61 +246,371 @@
 			"kind": "collection",
 			"label": "Board properties",
 			"hint": "The properties this board names. Empty offers what the tasks carry.",
-			"item": {
-				"fields": [
-					{
-						"key": "name",
-						"label": "Property",
-						"type": "text",
-						"required": true
-					}
-				]
-			},
-			"verbs": {
-				"list": "required"
+			"writes": ["list", "get"],
+			"describes": {
+				"name": {
+					"label": "Property",
+					"type": "text",
+					"required": true
+				}
 			},
 			"default": {
-				"value": []
+				"rows": []
 			}
 		},
 		"chosen": {
 			"kind": "value",
-			"shape": "conditions",
+			"control": "memory",
 			"label": "Chosen filters",
 			"hint": "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
-			"verbs": {
-				"get": "required",
-				"update": "required"
-			},
+			"shape": "conditions",
+			"writes": ["get", "update"],
 			"default": {
-				"from": "memory"
+				"from": "memory",
+				"value": {}
 			}
 		}
 	},
-	"@core/view-group": {
-		"selection": {
-			"kind": "value",
-			"label": "Shown view",
-			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
-			"of": "holds",
-			"field": "value",
-			"fallback": "first",
-			"verbs": {
-				"get": "required",
-				"update": "required"
-			}
-		},
-		"isTabsShown": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "boolean",
-			"label": "Show the tab row",
-			"design": true,
-			"verbs": {
-				"get": "required"
+	"@default/heatmap": {
+		"log": {
+			"kind": "collection",
+			"label": "Log",
+			"writes": ["list", "get"],
+			"describes": {
+				"days": {
+					"type": "date",
+					"many": true,
+					"aka": ["entries", "dates", "log", "checkins"]
+				},
+				"done": {
+					"type": "number",
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+				}
 			},
 			"default": {
+				"rows": []
+			}
+		},
+		"pick": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Which habit",
+			"hint": "One habit only. Nothing picked draws all of them.",
+			"of": "log",
+			"field": "name",
+			"writes": ["get"]
+		},
+		"year": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Year, or 0 for this one",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		},
+		"isRound": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Round cells instead of square",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"isWeekStartingMonday": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Weeks start on Monday",
+			"writes": ["get"],
+			"default": {
 				"value": true
+			}
+		}
+	},
+	"@default/icon-list": {
+		"entries": {
+			"kind": "collection",
+			"label": "Lines",
+			"hint": "One line per point. Each carries its own icon and colour, and reads as markdown.",
+			"writes": ["list", "get"],
+			"describes": {
+				"text": {
+					"label": "Text",
+					"hint": "The line itself, as markdown: **bold**, `code`, a [[link]] and the rest all draw.",
+					"type": "text",
+					"required": true,
+					"aka": ["body", "line", "description"]
+				},
+				"icon": {
+					"label": "Icon",
+					"hint": "The icon inside the disc, under the name the icon picker gives it — tick, close, alarm-clock. A name nothing answers to draws a dot.",
+					"type": "line",
+					"aka": ["glyph", "symbol"]
+				},
+				"tone": {
+					"label": "Colour",
+					"hint": "The colour behind the icon: neutral, accent, success, warning, error, info, note, standout or highlight. Any other word draws neutral.",
+					"type": "line",
+					"aka": ["colour", "color", "status"]
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"icon": "tick",
+						"tone": "success",
+						"text": "**A list — yes.** More columns visible, more rows in view."
+					},
+					{
+						"icon": "close",
+						"tone": "error",
+						"text": "**Prose — no.** Past ~75 characters the eye loses the next line."
+					}
+				]
+			}
+		},
+		"numbered": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Number the lines",
+			"hint": "Off, every line shows its own icon. On, the discs count the lines instead — 1, 2, 3 — and keep their colours.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"solid": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Fill the discs",
+			"hint": "Off, a disc wears a pale wash of its colour. On, it is filled with the colour itself and the icon or number turns white.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
+	"@default/kanban-board": {
+		"tasks": {
+			"kind": "collection",
+			"label": "Tasks",
+			"writes": ["list", "get", "create", "update", "remove"],
+			"where": [
+				{
+					"prop": "board",
+					"op": "is",
+					"value": {
+						"wants": "@default/editable-tabs/selection"
+					}
+				},
+				{
+					"spread": {
+						"wants": "@default/filter-panel/chosen"
+					}
+				}
+			],
+			"sort": [
+				{
+					"prop": "order",
+					"dir": "asc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"writes": ["list", "get", "create", "update", "repairIds"],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Shown board",
+			"hint": "Which board this draws. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"writes": ["get", "update"],
+			"wants": "@default/editable-tabs/selection"
+		},
+		"board": {
+			"kind": "value",
+			"control": "row",
+			"label": "Board",
+			"hint": "The board this draws: its columns, their order and which of them are archived.",
+			"picks": "selection",
+			"of": "boards",
+			"writes": ["get", "update"],
+			"default": {
+				"value": {
+					"columns": [
+						{
+							"name": "To Do"
+						},
+						{
+							"name": "Doing"
+						},
+						{
+							"name": "Done"
+						}
+					]
+				}
+			}
+		},
+		"opened": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Opened task",
+			"hint": "Which card is open, as a box. The board draws it full size itself.",
+			"of": "tasks",
+			"writes": ["get", "update"]
+		},
+		"groupBy": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Group tasks by property",
+			"writes": ["get"],
+			"default": {
+				"value": "status"
+			}
+		}
+	},
+	"@default/list": {
+		"rows": {
+			"kind": "collection",
+			"label": "Rows",
+			"hint": "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
+			"writes": ["list", "get", "update"],
+			"default": {
+				"rows": []
+			}
+		},
+		"handedAs": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Handed as",
+			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes commit.",
+			"writes": ["get"],
+			"default": {
+				"value": "task"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected row",
+			"hint": "Which row is picked. A detail tile reading the same collection follows it.",
+			"of": "rows",
+			"writes": ["get", "update"]
+		},
+		"filter": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Filter",
+			"hint": "Only rows whose filtered field holds these words are listed. Bind a search field and the two move together.",
+			"writes": ["get", "update"],
+			"default": {
+				"value": ""
+			},
+			"wants": "@default/search-input/value"
+		},
+		"filterField": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Filtered field",
+			"hint": "The field the filter is matched in.",
+			"writes": ["get"],
+			"default": {
+				"value": "title"
+			}
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Rows per page",
+			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
+			"writes": ["get"],
+			"default": {
+				"value": 20
+			}
+		},
+		"heading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "A line above the rows. Left empty, none is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		}
+	},
+	"@default/log-stat": {
+		"habits": {
+			"kind": "collection",
+			"label": "Logs",
+			"writes": ["list", "get", "create", "update", "remove"],
+			"default": {
+				"path": "Habits"
+			}
+		},
+		"pick": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Which log",
+			"hint": "The log this number is about.",
+			"of": "habits",
+			"field": "name",
+			"fallback": "first",
+			"writes": ["get", "update"]
+		},
+		"metric": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "streak · best · total · rate · goal",
+			"writes": ["get"],
+			"default": {
+				"value": "streak"
+			}
+		},
+		"period": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Days the rate looks back over",
+			"writes": ["get"],
+			"default": {
+				"value": 30
+			}
+		},
+		"look": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Look: default · stat1",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": "default"
 			}
 		}
 	},
@@ -202,16 +619,8 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "One note per reading. Each carries a date and an amount.",
-			"verbs": {
-				"list": "required",
-				"create": "optional",
-				"update": "optional",
-				"remove": "optional"
-			},
-			"default": {
-				"path": "Metrics"
-			},
-			"needs": {
+			"writes": ["list", "get", "create", "update", "remove"],
+			"describes": {
 				"amount": {
 					"type": "number",
 					"aka": ["value", "count", "total", "kept", "score", "done"]
@@ -224,41 +633,38 @@
 					"type": "text",
 					"aka": ["text", "comment", "description", "body"]
 				}
+			},
+			"default": {
+				"rows": []
 			}
 		},
 		"title": {
 			"kind": "value",
-			"wasSetting": true,
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "What the number is",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": "Total"
 			}
 		},
 		"unit": {
 			"kind": "value",
-			"wasSetting": true,
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "Unit the amounts are in",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
 		"rising": {
 			"kind": "value",
-			"wasSetting": true,
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "good · bad",
 			"hint": "Whether a rise reads as good or as bad.",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": "good"
 			}
@@ -267,27 +673,21 @@
 			"kind": "collection",
 			"label": "Periods",
 			"hint": "Every window the card can read over.",
-			"item": {
-				"fields": [
-					{
-						"key": "label",
-						"label": "Label",
-						"type": "text",
-						"required": true
-					},
-					{
-						"key": "days",
-						"label": "Days",
-						"type": "number",
-						"required": true
-					}
-				]
-			},
-			"verbs": {
-				"list": "required"
+			"writes": ["list", "get"],
+			"describes": {
+				"label": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"days": {
+					"label": "Days",
+					"type": "number",
+					"required": true
+				}
 			},
 			"default": {
-				"value": [
+				"rows": [
 					{
 						"label": "Past 7 days",
 						"days": 7
@@ -305,123 +705,45 @@
 		},
 		"periodPick": {
 			"kind": "value",
+			"control": "pick",
 			"label": "Picked period",
 			"of": "periods",
 			"field": "label",
 			"fallback": "first",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			}
+			"writes": ["get", "update"]
 		},
 		"period": {
 			"kind": "value",
+			"control": "row",
 			"label": "The period",
 			"picks": "periodPick",
 			"of": "periods",
-			"verbs": {
-				"get": "required"
-			}
+			"writes": ["get"]
 		},
 		"view": {
 			"kind": "value",
-			"wasSetting": true,
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "curve · bars",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
+			"writes": ["get", "update"],
 			"default": {
 				"value": "curve"
 			}
 		}
 	},
-	"@habit/heatmap": {
-		"log": {
+	"@default/month": {
+		"days": {
 			"kind": "collection",
-			"label": "Log",
-			"verbs": {
-				"list": "required"
-			},
-			"default": {
-				"path": "Habits"
-			},
-			"needs": {
+			"label": "Days",
+			"hint": "A folder of habit notes, or a folder of day notes for a single habit.",
+			"aka": ["habits"],
+			"writes": ["list", "get", "update", "create"],
+			"describes": {
 				"days": {
 					"type": "date",
 					"many": true,
 					"aka": ["entries", "dates", "log", "checkins"]
 				},
-				"done": {
-					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
-				}
-			}
-		},
-		"pick": {
-			"kind": "value",
-			"label": "Which habit",
-			"hint": "One habit only. Nothing picked draws all of them.",
-			"of": "log",
-			"field": "name",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			}
-		},
-		"year": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "number",
-			"label": "Year, or 0 for this one",
-			"verbs": {
-				"get": "required"
-			},
-			"default": {
-				"value": 0
-			}
-		},
-		"isRound": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "boolean",
-			"label": "Round cells instead of square",
-			"design": true,
-			"verbs": {
-				"get": "required"
-			},
-			"default": {
-				"value": false
-			}
-		},
-		"isWeekStartingMonday": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "boolean",
-			"label": "Weeks start on Monday",
-			"verbs": {
-				"get": "required"
-			},
-			"default": {
-				"value": true
-			}
-		}
-	},
-	"@habit/month": {
-		"days": {
-			"kind": "collection",
-			"label": "Days",
-			"was": "habits",
-			"verbs": {
-				"list": "required",
-				"update": "optional",
-				"create": "optional"
-			},
-			"default": {
-				"path": "Habits"
-			},
-			"needs": {
 				"done": {
 					"type": "number",
 					"aka": ["kept", "value", "count", "steps", "amount", "score"]
@@ -429,111 +751,207 @@
 				"date": {
 					"type": "date",
 					"aka": ["created", "day", "when", "on"]
-				}
-			}
-		},
-		"isWeekStartingMonday": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "boolean",
-			"label": "Weeks start on Monday",
-			"verbs": {
-				"get": "required"
-			},
-			"default": {
-				"value": true
-			}
-		}
-	},
-	"@habit/stat": {
-		"habits": {
-			"kind": "collection",
-			"label": "Habits",
-			"verbs": {
-				"list": "required"
-			},
-			"default": {
-				"path": "Habits"
-			},
-			"needs": {
-				"days": {
-					"type": "date",
-					"many": true,
-					"aka": ["entries", "dates", "log", "checkins"]
-				},
-				"done": {
-					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				},
 				"title": {
 					"type": "text",
 					"aka": ["name"]
-				},
-				"color": {
-					"type": "text",
-					"aka": ["colour"]
-				},
-				"goal": {
-					"type": "number",
-					"aka": ["target"]
-				},
-				"maxGap": {
-					"type": "number",
-					"aka": ["max gap", "grace"]
 				}
+			},
+			"default": {
+				"rows": []
 			}
 		},
 		"pick": {
 			"kind": "value",
+			"control": "pick",
 			"label": "Which habit",
-			"hint": "The habit this number is about.",
-			"of": "habits",
+			"hint": "The habit this grid writes into. Bind it to a habit list and the month follows what the list picks.",
+			"of": "days",
 			"field": "name",
 			"fallback": "first",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			}
+			"writes": ["get"]
 		},
-		"metric": {
+		"isWeekStartingMonday": {
 			"kind": "value",
-			"wasSetting": true,
-			"type": "text",
-			"label": "streak · best · total · rate · goal",
-			"verbs": {
-				"get": "required"
-			},
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Weeks start on Monday",
+			"writes": ["get"],
 			"default": {
-				"value": "streak"
-			}
-		},
-		"period": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "number",
-			"label": "Days the rate looks back over",
-			"verbs": {
-				"get": "required"
-			},
-			"default": {
-				"value": 30
+				"value": true
 			}
 		}
 	},
-	"@habit/streak": {
+	"@default/note": {},
+	"@default/note-link": {},
+	"@default/obsidian-markdown-preview": {
+		"source": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Source",
+			"hint": "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"collapsible": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Collapse long text",
+			"hint": "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"collapsedHeight": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Collapsed height, in pixels",
+			"hint": "How much of long text shows before Show more is pressed.",
+			"writes": ["get"],
+			"default": {
+				"value": 240
+			}
+		},
+		"step": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Show more step, in pixels",
+			"hint": "How much each press of Show more opens. 0 opens all of it at once.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"@default/property-coverage": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The notes whose properties are counted.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"shownAtFirst": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Properties shown at first",
+			"hint": "How many of the most used properties get a row before anything is pressed.",
+			"aka": ["shown"],
+			"writes": ["get"],
+			"default": {
+				"value": 10
+			}
+		},
+		"step": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Properties added by a press",
+			"hint": "How many more rows each press of Show more draws.",
+			"writes": ["get"],
+			"default": {
+				"value": 10
+			}
+		},
+		"showMoreButton": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Show more button",
+			"hint": "Whether a press may draw past the first rows. Without it the rest are named as a count.",
+			"writes": ["get"],
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"@default/reminder": {},
+	"@default/search-input": {
+		"value": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Query",
+			"hint": "What is typed. Bind another widget to it and it filters as you type.",
+			"writes": ["get", "update"],
+			"default": {
+				"value": ""
+			}
+		},
+		"placeholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Placeholder",
+			"hint": "Shown while nothing is typed.",
+			"writes": ["get"],
+			"default": {
+				"value": "Search"
+			}
+		}
+	},
+	"@default/segmented-switch": {
+		"options": {
+			"kind": "collection",
+			"label": "Options",
+			"hint": "Every choice is a record. Bind a view box and it offers the views it holds.",
+			"writes": ["list", "get"],
+			"describes": {
+				"label": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"value": {
+					"label": "Value",
+					"type": "text"
+				},
+				"hidden": {
+					"label": "Hidden",
+					"type": "boolean"
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"label": "Git tree"
+					},
+					{
+						"label": "Report"
+					}
+				]
+			},
+			"wants": "@default/view-group/holds"
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Shown choice",
+			"hint": "Which choice is shown. Bind the view box's own selection and the two move together.",
+			"of": "options",
+			"field": "value",
+			"fallback": "first",
+			"writes": ["get", "update"],
+			"wants": "@default/view-group/selection"
+		}
+	},
+	"@default/streak": {
 		"days": {
 			"kind": "collection",
 			"label": "Days",
-			"was": "habits",
-			"verbs": {
-				"list": "required",
-				"update": "optional",
-				"create": "optional"
-			},
-			"default": {
-				"path": "Habits"
-			},
-			"needs": {
+			"aka": ["habits"],
+			"writes": ["list", "get", "update", "create"],
+			"describes": {
 				"done": {
 					"type": "number",
 					"aka": ["kept", "value", "count", "steps", "amount", "score"]
@@ -542,150 +960,189 @@
 					"type": "date",
 					"aka": ["created", "day", "when", "on"]
 				}
+			},
+			"default": {
+				"rows": []
 			}
 		},
 		"title": {
 			"kind": "value",
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "Habit name",
 			"hint": "What is written beside the emoji. Type one here, or take it from another widget's value.",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": "Habit"
 			}
 		},
 		"emoji": {
 			"kind": "value",
-			"type": "text",
+			"control": "emoji",
+			"type": "line",
 			"label": "Emoji",
 			"hint": "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
-			"verbs": {
-				"get": "required"
-			},
+			"writes": ["get"],
 			"default": {
 				"value": "smiling-face-with-halo"
 			}
 		}
 	},
-	"@inline/code-block": {
-		"lines": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "number",
-			"label": "Lines shown at first, and added by each press",
-			"verbs": {
-				"get": "required"
-			},
+	"@default/table": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The notes the table draws, one row each. A value reading emoji:<name> or icon:<name> is drawn as that emoji or icon, with any words after it beside it.",
+			"writes": ["list", "get"],
 			"default": {
-				"value": 30
+				"rows": []
 			}
 		},
-		"maxKilobytes": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "number",
-			"label": "Largest file that may be shown, in KB",
-			"verbs": {
-				"get": "required"
+		"columns": {
+			"kind": "collection",
+			"label": "Columns",
+			"hint": "Which properties get a column, in the order they are listed. Left empty, every property the records carry gets one.",
+			"writes": ["list", "get"],
+			"describes": {
+				"property": {
+					"label": "Property"
+				},
+				"label": {
+					"label": "Label"
+				}
 			},
 			"default": {
-				"value": 256
+				"rows": []
+			}
+		},
+		"rowTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Row title property",
+			"hint": "The property drawn in the bare first column that names each row. Left empty, the table has no such column.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"yesNo": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Yes and no",
+			"hint": "Whether a true or false value is drawn as Yes or No.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"rowsAtFirst": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Rows shown at first",
+			"hint": "How many records get a row before Show more is pressed. Each press draws that many again.",
+			"writes": ["get"],
+			"default": {
+				"value": 50
+			}
+		},
+		"fadeEdges": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Fade the scrolling edges",
+			"hint": "Whether an edge the table carries on past dissolves, so there is something to say it scrolls.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": true
 			}
 		}
 	},
-	"@inline/note": null,
-	"@inline/note-link": null,
-	"@inline/reminder": null,
-	"@rank/tier-list": {
+	"@default/task-card": {
+		"task": {
+			"kind": "value",
+			"control": "json",
+			"label": "Task",
+			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
+			"writes": ["get", "update"],
+			"default": {
+				"value": {
+					"title": "Design the onboarding flow",
+					"tags": ["design", "research"],
+					"tagTones": {
+						"design": "warning",
+						"research": "accent"
+					},
+					"priority": "P1",
+					"status": "approve",
+					"progress": 60,
+					"due": "12 Aug",
+					"files": 2,
+					"initials": ["Alex Morgan", "Mia Tan", "Theo Ruiz"]
+				}
+			}
+		}
+	},
+	"@default/tier-list": {
 		"cards": {
 			"kind": "collection",
 			"label": "Cards",
 			"hint": "The things being ranked. A folder of notes, or a list typed into the tile.",
-			"item": {
-				"fields": [
-					{
-						"key": "name",
-						"label": "Name",
-						"type": "text",
-						"required": true
-					},
-					{
-						"key": "tier",
-						"label": "Row",
-						"type": "text"
-					},
-					{
-						"key": "order",
-						"label": "Order",
-						"type": "number"
-					},
-					{
-						"key": "picture",
-						"label": "Picture",
-						"type": "text"
-					}
-				]
-			},
-			"verbs": {
-				"list": "required",
-				"create": "optional",
-				"update": "optional",
-				"remove": "optional",
-				"replace": "optional"
-			},
-			"default": {
-				"value": []
-			},
-			"needs": {
+			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"describes": {
+				"name": {
+					"label": "Name",
+					"type": "text",
+					"required": true
+				},
 				"tier": {
+					"label": "Row",
 					"type": "text",
 					"aka": ["rank", "grade", "bucket"]
 				},
 				"order": {
+					"label": "Order",
 					"type": "number",
 					"aka": ["position", "sort", "index"]
 				},
 				"picture": {
+					"label": "Picture",
 					"type": "text",
 					"aka": ["image", "avatar", "cover", "icon"]
 				}
+			},
+			"default": {
+				"rows": []
 			}
 		},
 		"tiers": {
 			"kind": "collection",
 			"label": "Rows",
 			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
-			"item": {
-				"fields": [
-					{
-						"key": "label",
-						"label": "Name",
-						"type": "text",
-						"required": true
-					},
-					{
-						"key": "tone",
-						"label": "Colour",
-						"type": "text"
-					},
-					{
-						"key": "order",
-						"label": "Order",
-						"type": "number"
-					}
-				]
-			},
-			"verbs": {
-				"list": "required",
-				"create": "optional",
-				"update": "optional",
-				"remove": "optional",
-				"replace": "optional"
+			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"describes": {
+				"label": {
+					"label": "Name",
+					"type": "text",
+					"required": true,
+					"aka": ["name", "title", "tier"]
+				},
+				"tone": {
+					"label": "Colour",
+					"type": "text",
+					"aka": ["colour", "color"]
+				},
+				"order": {
+					"label": "Order",
+					"type": "number",
+					"aka": ["position", "sort", "index"]
+				}
 			},
 			"default": {
-				"value": [
+				"rows": [
 					{
 						"label": "S",
 						"tone": "error",
@@ -712,253 +1169,156 @@
 						"order": 5
 					}
 				]
-			},
-			"needs": {
-				"label": {
-					"type": "text",
-					"aka": ["name", "title", "tier"]
-				},
-				"tone": {
-					"type": "text",
-					"aka": ["colour", "color"]
-				},
-				"order": {
-					"type": "number",
-					"aka": ["position", "sort", "index"]
-				}
 			}
 		},
 		"title": {
 			"kind": "value",
-			"type": "text",
+			"control": "line",
+			"type": "line",
 			"label": "Title",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
+			"writes": ["get", "update"],
 			"default": {
 				"value": "Tier list"
 			}
 		},
 		"cardSize": {
 			"kind": "value",
+			"control": "number",
 			"type": "number",
 			"label": "Card size",
 			"hint": "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
 			"design": true,
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
+			"writes": ["get", "update"],
 			"default": {
 				"value": 64
 			}
 		}
 	},
-	"@task/archived-columns": {
-		"boards": {
-			"kind": "collection",
-			"label": "Boards",
-			"verbs": {
-				"list": "optional",
-				"update": "optional"
-			},
+	"@default/toggle": {
+		"open": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Open",
+			"hint": "Whether the box this opens is open. A box names it as its trigger, and reads it.",
+			"writes": ["get", "update"],
 			"default": {
-				"path": "Orbitask/Boards"
+				"from": "memory",
+				"value": false
 			}
 		},
-		"selection": {
+		"icon": {
 			"kind": "value",
-			"label": "Shown board",
-			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
-			"of": "boards",
-			"field": "board",
-			"fallback": "first",
-			"verbs": {
-				"get": "required"
-			},
-			"wants": "@core/editable-tabs/selection"
+			"control": "icon",
+			"type": "line",
+			"label": "Icon",
+			"hint": "The icon drawn on the button, picked off the grid: the kit's own glyphs and all of Lucide.",
+			"writes": ["get"],
+			"default": {
+				"value": "menu"
+			}
 		},
-		"board": {
+		"label": {
 			"kind": "value",
-			"label": "Board",
-			"hint": "The board whose archived columns are listed.",
-			"picks": "selection",
-			"of": "boards",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
-			"wants": "@task/kanban-board/board"
+			"control": "line",
+			"type": "line",
+			"label": "Label",
+			"hint": "What a screen reader says the button does.",
+			"writes": ["get"],
+			"default": {
+				"value": "Open the panel"
+			}
 		}
 	},
-	"@task/kanban-board": {
-		"tasks": {
+	"@default/underline-tabs": {
+		"options": {
 			"kind": "collection",
-			"label": "Tasks",
-			"verbs": {
-				"list": "required",
-				"get": "optional",
-				"create": "optional",
-				"update": "optional",
-				"remove": "optional"
+			"label": "Options",
+			"hint": "Every section is a record. Bind a view box and it offers the views it holds.",
+			"writes": ["list", "get"],
+			"describes": {
+				"label": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"value": {
+					"label": "Value",
+					"type": "text"
+				},
+				"hidden": {
+					"label": "Hidden",
+					"type": "boolean"
+				}
 			},
 			"default": {
-				"path": "Orbitask/Tasks",
-				"sort": [
+				"rows": [
 					{
-						"prop": "order",
-						"dir": "asc"
-					}
-				],
-				"where": [
-					{
-						"prop": "board",
-						"op": "is",
-						"value": {
-							"wants": "@core/editable-tabs/selection"
-						}
+						"label": "Summary"
 					},
 					{
-						"spread": {
-							"wants": "@core/filter-panel/chosen"
-						}
+						"label": "Plan"
+					},
+					{
+						"label": "Implementation"
 					}
 				]
-			}
-		},
-		"boards": {
-			"kind": "collection",
-			"label": "Boards",
-			"verbs": {
-				"list": "optional",
-				"create": "optional",
-				"update": "optional",
-				"repairIds": "optional"
 			},
-			"default": {
-				"path": "Orbitask/Boards"
-			}
+			"wants": "@default/view-group/holds"
 		},
 		"selection": {
 			"kind": "value",
-			"label": "Shown board",
-			"hint": "Which board this draws. Bind a tab strip and the two move together.",
-			"of": "boards",
-			"field": "board",
+			"control": "pick",
+			"label": "Open section",
+			"hint": "Which section is open. Bind the view box's own selection and the two move together.",
+			"of": "options",
+			"field": "value",
 			"fallback": "first",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
-			"wants": "@core/editable-tabs/selection"
-		},
-		"board": {
+			"writes": ["get", "update"],
+			"wants": "@default/view-group/selection"
+		}
+	},
+	"@default/view-group": {
+		"selection": {
 			"kind": "value",
-			"label": "Board",
-			"hint": "The board this draws: its columns, their order and which of them are archived.",
-			"picks": "selection",
-			"of": "boards",
-			"wasSettings": {
-				"columns": "columns",
-				"archivedColumns": "archivedColumns"
-			},
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
+			"control": "pick",
+			"label": "Shown view",
+			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
+			"of": "holds",
+			"field": "value",
+			"fallback": "first",
+			"writes": ["get", "update"]
+		},
+		"isTabsShown": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Show the tab row",
+			"design": true,
+			"writes": ["get"],
 			"default": {
-				"value": {
-					"columns": [
-						{
-							"name": "To Do"
-						},
-						{
-							"name": "Doing"
-						},
-						{
-							"name": "Done"
-						}
-					]
-				}
-			}
-		},
-		"opened": {
-			"kind": "value",
-			"label": "Opened task",
-			"hint": "Which card is open, as a box. The board draws it full size itself.",
-			"of": "tasks",
-			"verbs": {
-				"get": "required",
-				"update": "required"
-			}
-		},
-		"groupBy": {
-			"kind": "value",
-			"wasSetting": true,
-			"type": "text",
-			"label": "Group tasks by property",
-			"verbs": {
-				"get": "required"
-			},
-			"default": {
-				"value": "status"
+				"value": true
 			}
 		}
 	},
-	"@task/task-card": {
-		"task": {
-			"kind": "value",
-			"label": "Task",
-			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
-			"verbs": {
-				"get": "required",
-				"update": "optional"
-			},
-			"default": {
-				"from": "typed",
-				"value": {
-					"title": "Design the onboarding flow",
-					"tags": ["design", "research"],
-					"tagTones": {
-						"design": "warning",
-						"research": "accent"
-					},
-					"priority": "P1",
-					"status": "approve",
-					"progress": 60,
-					"due": "12 Aug",
-					"files": 2,
-					"initials": ["Alex Morgan", "Mia Tan", "Theo Ruiz"]
-				}
-			}
-		}
-	},
-	"@task/view-tabs": {
+	"@default/view-tabs": {
 		"options": {
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
-			"item": {
-				"fields": [
-					{
-						"key": "label",
-						"label": "Label",
-						"type": "text",
-						"required": true
-					},
-					{
-						"key": "value",
-						"label": "Value",
-						"type": "text"
-					}
-				]
-			},
-			"verbs": {
-				"list": "required"
+			"writes": ["list", "get"],
+			"describes": {
+				"label": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"value": {
+					"label": "Value",
+					"type": "text"
+				}
 			},
 			"default": {
-				"value": [
+				"rows": [
 					{
 						"label": "Kanban",
 						"value": "Kanban"
@@ -969,20 +1329,1113 @@
 					}
 				]
 			},
-			"wants": "@core/view-group/holds"
+			"wants": "@default/view-group/holds"
 		},
 		"selection": {
 			"kind": "value",
+			"control": "pick",
 			"label": "Picked option",
 			"hint": "Which option is picked. Bind the view group's own box and the two move together.",
 			"of": "options",
 			"field": "value",
 			"fallback": "first",
-			"verbs": {
-				"get": "required",
-				"update": "required"
+			"writes": ["get", "update"],
+			"wants": "@default/view-group/selection"
+		}
+	},
+	"@flow/commit-row": {
+		"commit": {
+			"kind": "value",
+			"control": "json",
+			"label": "Commit",
+			"hint": "The commit this row draws. Held in a tree it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"sha": "70a3c80f42",
+					"subject": "feat(catalogue): let the agent see the whole catalogue instead of only what the vault happens to hold",
+					"at": "2026-09-16",
+					"files": 21,
+					"added": 903,
+					"removed": 412,
+					"parents": ["83ab3d2e71"]
+				}
+			}
+		}
+	},
+	"@flow/file-list": {
+		"files": {
+			"kind": "collection",
+			"label": "Files",
+			"hint": "One record per file the change touched. Bind a commit list beside this one and the two move together.",
+			"writes": ["list", "get"],
+			"describes": {
+				"path": {
+					"label": "Path",
+					"type": "line",
+					"aka": ["file", "filename", "filePath"]
+				},
+				"added": {
+					"label": "Lines added",
+					"type": "number",
+					"aka": ["insertions", "additions"]
+				},
+				"removed": {
+					"label": "Lines removed",
+					"type": "number",
+					"aka": ["deletions", "removals"]
+				},
+				"change": {
+					"label": "Change",
+					"type": "line",
+					"aka": ["status", "kind", "changeType"]
+				},
+				"from": {
+					"label": "Renamed from",
+					"type": "line",
+					"aka": ["oldPath", "previousPath", "renamedFrom"]
+				},
+				"commit": {
+					"label": "Commit",
+					"type": "line",
+					"aka": ["sha", "revision", "hash"]
+				}
 			},
-			"wants": "@core/view-group/selection"
+			"where": [
+				{
+					"prop": "commit",
+					"op": "is",
+					"value": {
+						"wants": "@flow/git-tree/selection"
+					}
+				}
+			],
+			"sort": [
+				{
+					"prop": "path",
+					"dir": "asc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected file",
+			"hint": "Which file is picked. A diff standing beside this list binds to it and follows every press.",
+			"of": "files",
+			"writes": ["get", "update"],
+			"default": {
+				"value": null
+			}
+		},
+		"heading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "The words standing before the count. Left empty, only the count is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": "Files touched"
+			}
+		},
+		"shownFiles": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Files shown",
+			"hint": "How many rows are read at once, and how many more each press adds.",
+			"writes": ["get"],
+			"default": {
+				"value": 200
+			}
+		}
+	},
+	"@flow/file-row": {
+		"file": {
+			"kind": "value",
+			"control": "json",
+			"label": "File",
+			"hint": "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"filePath": "src/engine/catalogue-index.js",
+					"change": "modified",
+					"added": 128,
+					"removed": 44
+				}
+			}
+		}
+	},
+	"@flow/flight-row": {
+		"flight": {
+			"kind": "value",
+			"control": "json",
+			"label": "Flight",
+			"hint": "The work this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "Rewrite the board tree reader",
+					"status": "running",
+					"stage": "build",
+					"project": "widgetarium",
+					"branch": "unsafe-dev",
+					"activity": "compiling widgets",
+					"elapsed": "12m",
+					"who": "Dana Reid"
+				}
+			}
+		}
+	},
+	"@flow/git-tree": {
+		"commits": {
+			"kind": "collection",
+			"label": "Commits",
+			"hint": "The commit records written for this branch, newest first. Only the sha and its parents are drawn.",
+			"writes": ["list", "get"],
+			"describes": {
+				"sha": {
+					"label": "Commit",
+					"aka": ["hash", "commit", "revision"]
+				},
+				"parents": {
+					"label": "Parents",
+					"many": true,
+					"aka": ["parent", "parentShas", "ancestors"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"branch": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Branch",
+			"hint": "The name of the branch these commits are on. Left empty, no name is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"shownCommits": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Commits shown",
+			"hint": "How many of the newest commits the graph spans.",
+			"writes": ["get"],
+			"default": {
+				"value": 40
+			}
+		}
+	},
+	"@flow/in-flight": {
+		"flights": {
+			"kind": "collection",
+			"label": "Flights",
+			"hint": "One record per piece of work in flight. The newest start is drawn first.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "line",
+					"aka": ["summary", "headline"]
+				},
+				"status": {
+					"label": "Status",
+					"type": "line",
+					"aka": ["state", "result"]
+				},
+				"stage": {
+					"label": "Stage",
+					"type": "line",
+					"aka": ["phase", "step"]
+				},
+				"project": {
+					"label": "Project",
+					"type": "line",
+					"aka": ["repo", "repository"]
+				},
+				"branch": {
+					"label": "Branch",
+					"type": "line",
+					"aka": ["head", "gitBranch"]
+				},
+				"activity": {
+					"label": "Activity",
+					"type": "line",
+					"aka": ["doing", "detail"]
+				},
+				"startedAt": {
+					"label": "Started at",
+					"type": "datetime",
+					"aka": ["started", "since", "begun"]
+				},
+				"elapsed": {
+					"label": "Elapsed",
+					"type": "line",
+					"aka": ["duration", "runtime"]
+				},
+				"who": {
+					"label": "Who",
+					"type": "line",
+					"aka": ["owner", "assignee", "agent"]
+				}
+			},
+			"sort": [
+				{
+					"prop": "startedAt",
+					"dir": "desc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected flight",
+			"hint": "Which row is picked. A detail tile that picks from the same list follows it.",
+			"of": "flights",
+			"writes": ["get", "update"]
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Rows per page",
+			"hint": "How many rows are read at once, and how many more each press adds.",
+			"writes": ["get"],
+			"default": {
+				"value": 12
+			}
+		}
+	},
+	"@flow/log-line": {
+		"entry": {
+			"kind": "value",
+			"control": "json",
+			"label": "Entry",
+			"hint": "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"at": "14:32:07",
+					"text": "Session started.",
+					"tone": "neutral"
+				}
+			}
+		}
+	},
+	"@flow/notice": {
+		"title": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title",
+			"hint": "The one line a person reads first. Left empty, the notice says it has nothing to report.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"body": {
+			"kind": "value",
+			"control": "text",
+			"type": "text",
+			"label": "Body",
+			"hint": "The sentence under the title, for what the title could not hold.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"icon": {
+			"kind": "value",
+			"control": "icon",
+			"type": "line",
+			"label": "Icon",
+			"hint": "The glyph beside the text, picked off the grid. Left empty, no icon is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"tone": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Tone",
+			"hint": "One of neutral, info, success, warning or error. Neutral draws no background of its own.",
+			"writes": ["get"],
+			"default": {
+				"value": "neutral"
+			}
+		},
+		"action": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Action",
+			"hint": "What the button says. Left empty, the notice carries no button.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"pressed": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Pressed",
+			"hint": "Whether the action has been pressed. A box names it as its trigger, or another tile reads it by ref.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		}
+	},
+	"@flow/plan-qa": {
+		"questions": {
+			"kind": "collection",
+			"label": "Questions",
+			"hint": "One record per question asked, each carrying the options offered, the answer chosen and the reason for it.",
+			"writes": ["list", "get"],
+			"describes": {
+				"question": {
+					"label": "Question",
+					"hint": "The question that was asked, in full.",
+					"type": "text",
+					"required": true,
+					"aka": ["asked", "prompt", "ask"]
+				},
+				"options": {
+					"label": "Options",
+					"hint": "Every option that was offered, as a list or separated by commas.",
+					"type": "text",
+					"many": true,
+					"aka": ["choices", "alternatives", "offered"]
+				},
+				"answer": {
+					"label": "Answer",
+					"hint": "The option that was chosen. An answer naming none of them is drawn beside them, not dropped.",
+					"type": "line",
+					"aka": ["chosen", "decision", "picked"]
+				},
+				"reason": {
+					"label": "Reason",
+					"hint": "Why that answer won.",
+					"type": "text",
+					"aka": ["why", "rationale", "because"]
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"question": "Where does the loading threshold live?",
+						"options": ["one engine constant", "per widget", "per binding"],
+						"answer": "one engine constant",
+						"reason": "One number a person can find and change, instead of three settings nobody tunes."
+					},
+					{
+						"question": "How many rows does a list hand over when nothing asked for a number?",
+						"options": ["all of them", "ten"],
+						"answer": "a hundred",
+						"reason": "Enough to fill a screen twice, few enough that a vault of a thousand notes cannot take the frame with it."
+					}
+				]
+			}
+		}
+	},
+	"@flow/project-card": {
+		"project": {
+			"kind": "value",
+			"control": "json",
+			"label": "Project",
+			"hint": "The project this card draws. Held in a grid it is handed down; standing alone it is the one bound here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"mark": "🧭",
+					"name": "Harbour",
+					"repository": "~/Projects/harbour",
+					"open": 4,
+					"doing": 1,
+					"done": 27,
+					"touched": "2026-09-11"
+				}
+			}
+		}
+	},
+	"@flow/project-grid": {
+		"projects": {
+			"kind": "collection",
+			"label": "Projects",
+			"hint": "One note per project. Bind the folder they live in.",
+			"writes": ["list", "get"],
+			"describes": {
+				"mark": {
+					"label": "Mark",
+					"type": "line",
+					"aka": ["emoji", "icon", "symbol"]
+				},
+				"repository": {
+					"label": "Repository",
+					"type": "line",
+					"aka": ["repo", "git", "source", "folder"]
+				},
+				"open": {
+					"label": "Open",
+					"type": "number",
+					"aka": ["todo", "backlog", "waiting"]
+				},
+				"doing": {
+					"label": "Doing",
+					"type": "number",
+					"aka": ["active", "wip", "inProgress"]
+				},
+				"done": {
+					"label": "Done",
+					"type": "number",
+					"aka": ["closed", "finished", "complete"]
+				},
+				"touched": {
+					"label": "Touched",
+					"type": "date",
+					"aka": ["updated", "modified", "lastTouched", "changed"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected project",
+			"hint": "The project the pressed card names. Bind a task list or a docs tree to it and they follow the press.",
+			"of": "projects",
+			"field": "name",
+			"fallback": "first",
+			"writes": ["get", "update"]
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Projects per load",
+			"hint": "How many cards are drawn before the rest are asked for.",
+			"writes": ["get"],
+			"default": {
+				"value": 12
+			}
+		}
+	},
+	"@flow/qa-block": {
+		"asked": {
+			"kind": "value",
+			"control": "json",
+			"label": "Question",
+			"hint": "The question, the options it offered, the answer that was chosen and the reason for it. Standing in a record it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"question": "Where does the loading threshold live?",
+					"options": ["one engine constant", "per widget", "per binding"],
+					"answer": "one engine constant",
+					"reason": "One number a person can find and change, instead of three settings nobody tunes."
+				}
+			}
+		}
+	},
+	"@flow/report": {
+		"body": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Report",
+			"hint": "The prose of the report, typed here or bound to a note. Headings, lists and links work as they do in a note.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"figures": {
+			"kind": "collection",
+			"label": "Figures",
+			"hint": "One record per figure, each drawn by the widget in the figure slot.",
+			"writes": ["list", "get"],
+			"describes": {
+				"caption": {
+					"label": "Caption",
+					"type": "text",
+					"aka": ["title", "label", "legend"]
+				},
+				"image": {
+					"label": "Image",
+					"type": "text",
+					"aka": ["picture", "screenshot", "file", "shot"]
+				},
+				"alt": {
+					"label": "Alt text",
+					"type": "text",
+					"aka": ["alt-text", "description"]
+				},
+				"drawing": {
+					"label": "Drawing",
+					"type": "text",
+					"aka": ["diagram", "chart", "sketch"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"testPlan": {
+			"kind": "collection",
+			"label": "Test plan",
+			"hint": "One record per step: what to press, and what should happen when it is pressed.",
+			"writes": ["list", "get"],
+			"describes": {
+				"step": {
+					"label": "Step",
+					"type": "text",
+					"aka": ["name", "title", "case", "action"]
+				},
+				"expect": {
+					"label": "What should happen",
+					"type": "text",
+					"aka": ["expected", "result", "outcome"]
+				},
+				"done": {
+					"label": "Checked",
+					"type": "boolean",
+					"aka": ["complete", "passed", "verified"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"fixes": {
+			"kind": "collection",
+			"label": "What was fixed",
+			"hint": "One record per fix, with the file it was made in.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Fix",
+					"type": "text",
+					"aka": ["name", "summary", "what"]
+				},
+				"where": {
+					"label": "Where",
+					"type": "text",
+					"aka": ["file", "path", "location"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"measure": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Reading width, in characters",
+			"hint": "How wide the prose is allowed to run. A figure ignores it and takes the whole tile.",
+			"writes": ["get"],
+			"default": {
+				"value": 68
+			}
+		},
+		"stepsPerPage": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Test steps per page",
+			"hint": "How many steps of the test plan are drawn at once.",
+			"writes": ["get"],
+			"default": {
+				"value": 8
+			}
+		}
+	},
+	"@flow/report-figure": {
+		"source": {
+			"kind": "value",
+			"control": "json",
+			"label": "Figure",
+			"hint": "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
+			"writes": ["get"],
+			"default": {
+				"value": {}
+			}
+		}
+	},
+	"@flow/session-tail": {
+		"lines": {
+			"kind": "collection",
+			"label": "Lines",
+			"hint": "The log this draws, newest first. Each row is one line: when it was written, what it says, how it went.",
+			"writes": ["list", "get"],
+			"describes": {
+				"at": {
+					"label": "Time",
+					"type": "text",
+					"aka": ["time", "timestamp", "when", "ts", "date"]
+				},
+				"text": {
+					"label": "Text",
+					"type": "text",
+					"aka": ["line", "message", "body", "content", "output"]
+				},
+				"tone": {
+					"label": "Tone",
+					"type": "text",
+					"aka": ["level", "kind", "severity", "status", "result"]
+				}
+			},
+			"sort": [
+				{
+					"prop": "at",
+					"dir": "desc"
+				}
+			],
+			"default": {
+				"rows": [
+					{
+						"at": "14:32:09",
+						"text": "wrote widgets/@flow/log-line/widget.tsx",
+						"tone": "accent"
+					},
+					{
+						"at": "14:32:04",
+						"text": "tsc --noEmit: no errors",
+						"tone": "success"
+					},
+					{
+						"at": "14:31:52",
+						"text": "Session started.",
+						"tone": "neutral"
+					}
+				]
+			}
+		},
+		"linesKept": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Lines kept",
+			"hint": "How many of the newest lines are held on screen. Older ones stay in the source and are counted, not drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": 200
+			}
+		},
+		"following": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Follow the newest line",
+			"hint": "Whether the view sticks to the end. It lets go when the reader scrolls away and takes hold again on a press.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": true
+			}
+		}
+	},
+	"@flow/text-line": {
+		"text": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Text",
+			"hint": "The line itself. Left empty, the widget draws nothing at all.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"tone": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Tone",
+			"hint": "One of label, value or caption. It decides the weight and the ink, never the plate.",
+			"writes": ["get"],
+			"default": {
+				"value": "value"
+			}
+		},
+		"heading": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Heading level",
+			"hint": "Zero draws a plain line. One, two or three draw the line as a heading of that level.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		},
+		"lines": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Lines",
+			"hint": "How many lines the text may take before it is cut. Zero lets it run as long as it is.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"@media/album-cover": {
+		"album": {
+			"kind": "value",
+			"control": "json",
+			"label": "Album",
+			"hint": "The album this cover draws. Held in a shelf it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "In Rainbows",
+					"artist": "Radiohead",
+					"tracks": 10
+				}
+			}
+		},
+		"beside": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Art beside the text",
+			"hint": "On, the art stands on the leading edge with the title and artist beside it rather than beneath.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
+	"@media/album-grid": {
+		"albums": {
+			"kind": "collection",
+			"label": "Albums",
+			"hint": "The records the shelf draws, one cell each.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "text",
+					"aka": ["album", "name"]
+				},
+				"artist": {
+					"label": "Artist",
+					"type": "text",
+					"aka": ["band", "performer", "by"]
+				},
+				"cover": {
+					"label": "Cover",
+					"type": "text",
+					"aka": ["art", "artwork", "image", "sleeve"]
+				},
+				"tracks": {
+					"label": "Tracks",
+					"type": "number",
+					"aka": ["trackCount", "songs", "length"]
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"title": "Kind of Blue",
+						"artist": "Miles Davis",
+						"tracks": 5
+					},
+					{
+						"title": "In Rainbows",
+						"artist": "Radiohead",
+						"tracks": 10
+					},
+					{
+						"title": "Blue Train",
+						"artist": "John Coltrane",
+						"tracks": 5
+					},
+					{
+						"title": "Rumours",
+						"artist": "Fleetwood Mac",
+						"tracks": 11
+					},
+					{
+						"title": "Selected Ambient Works 85-92",
+						"artist": "Aphex Twin"
+					},
+					{
+						"title": "Unmarked tape",
+						"tracks": 3
+					}
+				]
+			}
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Albums per load",
+			"hint": "How many more are drawn each time the end of the shelf comes into view.",
+			"writes": ["get"],
+			"default": {
+				"value": 24
+			}
+		}
+	},
+	"@media/player": {
+		"tracks": {
+			"kind": "collection",
+			"label": "Tracks",
+			"hint": "The queue. One note per track, in the order the bound folder is sorted.",
+			"writes": ["list", "get", "update"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "text",
+					"aka": ["track", "song", "heading"]
+				},
+				"artist": {
+					"label": "Artist",
+					"type": "text",
+					"aka": ["performer", "band", "author", "by"]
+				},
+				"album": {
+					"label": "Album",
+					"type": "text",
+					"aka": ["release", "record"]
+				},
+				"cover": {
+					"label": "Cover",
+					"type": "text",
+					"aka": ["art", "artwork", "image", "thumbnail", "picture"]
+				},
+				"duration": {
+					"label": "Duration",
+					"type": "number",
+					"aka": ["length", "runtime", "seconds"]
+				},
+				"favourite": {
+					"label": "Favourite",
+					"type": "boolean",
+					"aka": ["favorite", "loved", "starred", "liked"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"playing": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Playing",
+			"hint": "Which track is loaded. Bind a queue beside it and the two move together.",
+			"of": "tracks",
+			"writes": ["get", "update"],
+			"default": {
+				"value": ""
+			}
+		},
+		"isPlaying": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Playing state",
+			"hint": "Whether the transport stands at play or at pause.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"position": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Position",
+			"hint": "How far into the track the transport stands, in seconds.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": 0
+			}
+		},
+		"volume": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Volume",
+			"hint": "The level the transport is set to, from nothing to full.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": 70
+			}
+		},
+		"isShuffled": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Shuffle",
+			"hint": "Whether the next track is the one after this or one drawn at random.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"repeat": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Repeat",
+			"hint": "What the end of the queue does: stop, start again, or hold on this track.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": "off"
+			}
+		}
+	},
+	"@media/track-list": {
+		"tracks": {
+			"kind": "collection",
+			"label": "Tracks",
+			"hint": "The notes this list draws, one row each. Every field may be missing — a folder of loose recordings is the normal case.",
+			"writes": ["list", "get", "update"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "text",
+					"aka": ["name", "track", "song"]
+				},
+				"artist": {
+					"label": "Artist",
+					"type": "text",
+					"aka": ["artists", "performer", "by"]
+				},
+				"album": {
+					"label": "Album",
+					"type": "text",
+					"aka": ["record", "release"]
+				},
+				"addedAt": {
+					"label": "Added",
+					"type": "date",
+					"aka": ["added", "dateAdded", "created"]
+				},
+				"duration": {
+					"label": "Duration",
+					"type": "text",
+					"aka": ["length", "time", "runtime"]
+				},
+				"favourite": {
+					"label": "Favourite",
+					"type": "boolean",
+					"aka": ["favorite", "liked", "starred", "loved"]
+				}
+			},
+			"sort": [
+				{
+					"prop": "addedAt",
+					"dir": "desc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected track",
+			"hint": "Which track is picked. A player bound to this plays whatever the list picks.",
+			"of": "tracks",
+			"writes": ["get", "update"]
+		},
+		"playing": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Playing track",
+			"hint": "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
+			"of": "tracks",
+			"writes": ["get"],
+			"wants": "@media/player/playing"
+		},
+		"filter": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Filter",
+			"hint": "Only tracks whose title holds these words are listed. Bind a search field and the two move together.",
+			"writes": ["get", "update"],
+			"default": {
+				"value": ""
+			},
+			"wants": "@default/search-input/value"
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Tracks per page",
+			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
+			"writes": ["get"],
+			"default": {
+				"value": 50
+			}
+		}
+	},
+	"@media/track-row": {
+		"track": {
+			"kind": "value",
+			"control": "json",
+			"label": "Track",
+			"hint": "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"writes": ["get", "update"],
+			"default": {
+				"value": {
+					"title": "Weightless",
+					"artist": "Marconi Union",
+					"album": "Ambient Transmissions",
+					"addedAt": "2026-02-11",
+					"duration": 488,
+					"favourite": false
+				}
+			}
+		},
+		"position": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Place in the list",
+			"hint": "The number drawn where the equaliser stands while the track is playing.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		},
+		"isPlaying": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Playing",
+			"hint": "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
 		}
 	}
 }

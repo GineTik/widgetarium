@@ -4,7 +4,20 @@ import { transform } from "sucrase";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent", "Event", "MutationObserver"]) {
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
@@ -30,10 +43,11 @@ const { api: widgetarium } = ENGINE_SCOPE;
 const kit = await import("./.mjs-cache/kit.mjs");
 const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
+const { needsOf } = await import("./.mjs-cache/gateway/props.mjs");
 
-const WIDGET = "widgets/@habit/month/widget.tsx";
+const WIDGET = "widgets/@default/month/widget.tsx";
 const { propsOfEveryShippedWidget } = await import("./widget-props.mjs");
-const DECLARED = (await propsOfEveryShippedWidget())["@habit/month"];
+const DECLARED = (await propsOfEveryShippedWidget())["@default/month"];
 
 const libs = new Map();
 
@@ -63,15 +77,17 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@habit/lib", run("widgets/@habit/lib.js"));
-const { isoOf } = libs.get("@habit/lib");
+libs.set("@default/lib", run("widgets/@default/lib.js"));
+const { isoOf } = libs.get("@default/lib");
 const Month = run(WIDGET).default;
 
 let failed = 0;
 function check(what, got, wanted) {
 	const ok = JSON.stringify(got) === JSON.stringify(wanted);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "ok  " : "FAIL"} ${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`);
+	console.log(
+		`${ok ? "ok  " : "FAIL"} ${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`,
+	);
 }
 
 const NOW = new Date();
@@ -107,10 +123,13 @@ function writesOver(rows, verbs) {
 
 function gatewayOver(notes, verbs = ["update", "create"]) {
 	const rows = rowsOver(notes);
-	const reads = { list: () => ({ rows, total: rows.length }), get: (ref) => rows.find((row) => row.ref === ref) ?? null };
+	const reads = {
+		list: () => ({ rows, total: rows.length }),
+		get: (ref) => rows.find((row) => row.ref === ref) ?? null,
+	};
 	minted += 1;
 	const base = collectionGateway({ id: `month-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
-	return mappedCollection(base, { needs: DECLARED.days.needs });
+	return mappedCollection(base, { needs: needsOf(DECLARED.days) });
 }
 
 const host = document.getElementById("host");
@@ -122,7 +141,13 @@ async function draw(notes, { verbs, fromMonday = true } = {}) {
 	written.length = 0;
 	render(null, host);
 	minted += 1;
-	render(h(Month, { isWeekStartingMonday: soloGateway(fromMonday, {}, `month-test/monday/${minted}`), days: gatewayOver(notes, verbs) }), host);
+	render(
+		h(Month, {
+			isWeekStartingMonday: soloGateway(fromMonday, {}, `month-test/monday/${minted}`),
+			days: gatewayOver(notes, verbs),
+		}),
+		host,
+	);
 	await settled();
 	return host;
 }
@@ -145,8 +170,12 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 {
 	await draw(RUN_NOTES);
 	const drawn = dayButtons().length;
-	check("a month is drawn as whole weeks", drawn % 7, 0);
-	check("and never fewer than the days it holds", drawn >= new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0).getDate(), true);
+	check("a month is always drawn as six whole weeks", drawn, 42);
+	check(
+		"and never fewer than the days it holds",
+		drawn >= new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0).getDate(),
+		true,
+	);
 	check("today is one of them", daysShown().includes(TODAY), true);
 	check("the first day drawn starts a week", daysShown().indexOf(dayIn(0)) < 7, true);
 }
@@ -159,25 +188,63 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	check("and it does not open again inside the run", runsShown()[opens + 1].includes("is-run-start"), false);
 	check("it closes on the last day of the run", runsShown()[opens + 2].includes("is-run-end"), true);
 	check("a kept day wears the accent ring", dayButtons()[opens].querySelector(".hm-ring").className, "hm-ring is-kept");
-	check("and only a kept day carries the flame", dayButtons().filter((button) => button.querySelector(".hm-flame")).length, 3);
-	check("today wears its own ring", dayLabelled(`${TODAY}, not kept`)?.querySelector(".hm-ring").className, "hm-ring is-today");
+	check(
+		"and only a kept day carries the flame",
+		dayButtons().filter((button) => button.querySelector(".hm-flame")).length,
+		3,
+	);
+	check(
+		"today wears its own ring",
+		dayLabelled(`${TODAY}, not kept`)?.querySelector(".hm-ring").className,
+		"hm-ring is-today",
+	);
 }
 
 {
 	await draw([dayIn(4), dayIn(5), dayIn(6), dayIn(7)].map((day) => ({ path: `Habits/${day}.md`, props: { done: 1 } })));
 	const at = daysShown().indexOf(dayIn(4));
 	const across = runsShown();
-	const ends = across.map((held, index) => (held.includes("is-run-end") ? index : -1)).filter((index) => index >= at && index < at + 4);
-	check("a run crossing the week's end closes at the edge", ends.some((index) => index % 7 === 6), true);
-	check("and opens again on the next week's first day", across.filter((held, index) => index > at && index <= at + 3 && held.includes("is-run-start") && index % 7 === 0).length, 1);
+	const ends = across
+		.map((held, index) => (held.includes("is-run-end") ? index : -1))
+		.filter((index) => index >= at && index < at + 4);
+	check(
+		"a run crossing the week's end closes at the edge",
+		ends.some((index) => index % 7 === 6),
+		true,
+	);
+	check(
+		"and opens again on the next week's first day",
+		across.filter((held, index) => index > at && index <= at + 3 && held.includes("is-run-start") && index % 7 === 0)
+			.length,
+		1,
+	);
 }
 
 {
 	await draw(RUN_NOTES);
-	check("every day of the month carries its own date", dayButtons().map((button) => button.querySelector(".hm-number").textContent).slice(0, 3).every((held) => /^\d+$/.test(held)), true);
-	check("the weekdays are named once, above the grid", [...host.querySelectorAll(".hm-weekday")].map((each) => each.textContent), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
-	check("and a week may start on Sunday instead", await draw(RUN_NOTES, { fromMonday: false }).then(() => host.querySelector(".hm-weekday").textContent), "Sun");
-	check("a value left behind as anything but a boolean is no answer at all", await draw(RUN_NOTES, { fromMonday: "false" }).then(() => host.querySelector(".hm-weekday").textContent), "Mon");
+	check(
+		"every day of the month carries its own date",
+		dayButtons()
+			.map((button) => button.querySelector(".hm-number").textContent)
+			.slice(0, 3)
+			.every((held) => /^\d+$/.test(held)),
+		true,
+	);
+	check(
+		"the weekdays are named once, above the grid",
+		[...host.querySelectorAll(".hm-weekday")].map((each) => each.textContent),
+		["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+	);
+	check(
+		"and a week may start on Sunday instead",
+		await draw(RUN_NOTES, { fromMonday: false }).then(() => host.querySelector(".hm-weekday").textContent),
+		"Sun",
+	);
+	check(
+		"a value left behind as anything but a boolean is no answer at all",
+		await draw(RUN_NOTES, { fromMonday: "false" }).then(() => host.querySelector(".hm-weekday").textContent),
+		"Mon",
+	);
 }
 
 {
@@ -189,36 +256,64 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 
 {
 	await draw([{ path: "Habits/2026-01-09.md", props: { created: `${TODAY}T09:00`, done: 1 } }]);
-	check("a date property the folder happens to call `created` answers the day need", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	check(
+		"a date property the folder happens to call `created` answers the day need",
+		Boolean(dayLabelled(`${TODAY}, kept`)),
+		true,
+	);
 }
 
 {
 	await draw([{ path: `Habits/${TODAY}.md`, props: { steps: 8420 } }]);
-	check("a folder counting steps answers the same need, and any value counts", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	check(
+		"a folder counting steps answers the same need, and any value counts",
+		Boolean(dayLabelled(`${TODAY}, kept`)),
+		true,
+	);
 }
 
 {
 	await draw(RUN_NOTES);
 	dayLabelled(`${TODAY}, not kept`)?.click();
 	await settled();
-	check("pressing a day with no note creates one named for it", written, [{ verb: "create", name: TODAY, props: { done: 1 } }]);
+	check("pressing a day with no note creates one named for it", written, [
+		{ verb: "create", name: TODAY, props: { done: 1 } },
+	]);
 }
 
 {
 	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
 	dayLabelled(`${TODAY}, kept`).click();
 	await settled();
-	check("pressing a kept day empties the property", written, [{ verb: "update", ref: `Habits/${TODAY}.md`, data: { props: { done: null } } }]);
+	check("pressing a kept day empties the property", written, [
+		{ verb: "update", ref: `Habits/${TODAY}.md`, data: { props: { done: null } } },
+	]);
 }
 
 {
 	await draw(RUN_NOTES);
 	const behind = dayButtons().filter((button) => daysShown()[dayButtons().indexOf(button)] <= TODAY);
 	const ahead = dayButtons().filter((button) => daysShown()[dayButtons().indexOf(button)] > TODAY);
-	check("a day still to come takes no press", ahead.every((button) => button.disabled), true);
-	check("and says so on its face", ahead.every((button) => button.className.includes("is-ahead")), true);
-	check("today and every day behind it takes one", behind.every((button) => !button.disabled), true);
-	check("and none of them is dimmed for it", behind.every((button) => !button.className.includes("is-ahead")), true);
+	check(
+		"a day still to come takes no press",
+		ahead.every((button) => button.disabled),
+		true,
+	);
+	check(
+		"and says so on its face",
+		ahead.every((button) => button.className.includes("is-ahead")),
+		true,
+	);
+	check(
+		"today and every day behind it takes one",
+		behind.every((button) => !button.disabled),
+		true,
+	);
+	check(
+		"and none of them is dimmed for it",
+		behind.every((button) => !button.className.includes("is-ahead")),
+		true,
+	);
 	check("there is a day of each kind to have judged", ahead.length > 0 && behind.length > 0, true);
 }
 
@@ -227,32 +322,62 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	host.querySelector('[aria-label="Previous month"]').click();
 	await settled();
 	const shown = daysShown();
-	const outsideAndBehind = dayButtons().filter((button, at) => button.className.includes("is-outside") && shown[at] <= TODAY);
-	check("a day of the month before still takes a press", dayButtons().filter((button, at) => shown[at] <= TODAY).every((button) => !button.disabled), true);
-	check("and so does one only visiting from a neighbouring month", outsideAndBehind.length > 0 && outsideAndBehind.every((button) => !button.disabled), true);
-	check("while a day this grid borrows from the month ahead is still ahead", dayButtons().filter((button, at) => shown[at] > TODAY).every((button) => button.disabled), true);
+	const outsideAndBehind = dayButtons().filter(
+		(button, at) => button.className.includes("is-outside") && shown[at] <= TODAY,
+	);
+	check(
+		"a day of the month before still takes a press",
+		dayButtons()
+			.filter((button, at) => shown[at] <= TODAY)
+			.every((button) => !button.disabled),
+		true,
+	);
+	check(
+		"and so does one only visiting from a neighbouring month",
+		outsideAndBehind.length > 0 && outsideAndBehind.every((button) => !button.disabled),
+		true,
+	);
+	check(
+		"while a day this grid borrows from the month ahead is still ahead",
+		dayButtons()
+			.filter((button, at) => shown[at] > TODAY)
+			.every((button) => button.disabled),
+		true,
+	);
 }
 
 {
 	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
 	host.querySelector('[aria-label="Next month"]').click();
 	await settled();
-	check("and no day of the month ahead takes one", dayButtons().every((button) => button.disabled), true);
+	check(
+		"and no day of the month ahead takes one",
+		dayButtons().every((button) => button.disabled),
+		true,
+	);
 }
 
 {
 	await draw(RUN_NOTES, { verbs: [] });
-	check("a folder nobody may write refuses the press", dayButtons().every((button) => button.disabled), true);
+	check(
+		"a folder nobody may write refuses the press",
+		dayButtons().every((button) => button.disabled),
+		true,
+	);
 }
 
-const SHARES = { number: 0.56, numberGap: 0.2, seat: 1.16, gap: 0.16, weekday: 0.52 };
+const SHARES = { number: 0.56, numberGap: 0.12, seat: 1.16, gap: 0.36, weekday: 0.52, weekdayGap: 0.5 };
 const ringWanted = ({ width, height }) => {
-	const perWeek = SHARES.number + SHARES.numberGap + SHARES.seat + SHARES.gap;
-	const tallest = height / (SHARES.weekday + SHARES.gap / 2 + 6 * perWeek);
-	const widest = (width / 7) * 0.8;
+	const perWeek = SHARES.number + SHARES.numberGap + SHARES.seat;
+	const tallest = height / (SHARES.weekday + SHARES.weekdayGap + 6 * perWeek + 5 * SHARES.gap);
+	const widest = (width / 7) * 0.8 - 2;
 	return Math.max(9, Math.min(46, tallest, widest));
 };
-const stackedHeight = () => pxOf("--hm-weekday") + pxOf("--hm-gap") / 2 + 6 * (pxOf("--hm-number") + pxOf("--hm-number-gap") + pxOf("--hm-seat") + pxOf("--hm-gap"));
+const stackedHeight = () =>
+	pxOf("--hm-weekday") +
+	pxOf("--hm-weekday-gap") +
+	6 * (pxOf("--hm-number") + pxOf("--hm-number-gap") + pxOf("--hm-seat")) +
+	5 * pxOf("--hm-gap");
 
 for (const [name, box] of [
 	["the tile it opens at", { width: TILE(6) - 16, height: TILE(6) - 60 }],
@@ -266,13 +391,18 @@ for (const [name, box] of [
 	check(`${name}: six weeks of rings still fit its height`, stackedHeight() <= box.height + 0.5, true);
 	check(`${name}: and seven of them fit its width`, ring <= box.width / 7, true);
 	check(`${name}: the ring is the tighter of what the two sides allow`, Math.abs(ring - ringWanted(box)) < 0.01, true);
-	check(`${name}: every space is a share of the ring`, [
-		Math.abs(pxOf("--hm-number") - ring * SHARES.number) < 0.01,
-		Math.abs(pxOf("--hm-number-gap") - ring * SHARES.numberGap) < 0.01,
-		Math.abs(pxOf("--hm-seat") - ring * SHARES.seat) < 0.01,
-		Math.abs(pxOf("--hm-gap") - ring * SHARES.gap) < 0.01,
-		Math.abs(pxOf("--hm-weekday") - ring * SHARES.weekday) < 0.01,
-	].every(Boolean), true);
+	check(
+		`${name}: every space is a share of the ring`,
+		[
+			Math.abs(pxOf("--hm-number") - ring * SHARES.number) < 0.01,
+			Math.abs(pxOf("--hm-number-gap") - ring * SHARES.numberGap) < 0.01,
+			Math.abs(pxOf("--hm-seat") - ring * SHARES.seat) < 0.01,
+			Math.abs(pxOf("--hm-gap") - ring * SHARES.gap) < 0.01,
+			Math.abs(pxOf("--hm-weekday") - ring * SHARES.weekday) < 0.01,
+			Math.abs(pxOf("--hm-weekday-gap") - ring * SHARES.weekdayGap) < 0.01,
+		].every(Boolean),
+		true,
+	);
 }
 
 {

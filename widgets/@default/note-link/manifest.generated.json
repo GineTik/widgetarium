@@ -1,0 +1,35 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Note link",
+	"description": "A rounded chip in the text that opens another note in the vault.",
+	"keywords": [
+		"link",
+		"note",
+		"chip",
+		"open",
+		"jump",
+		"reference",
+		"wikilink",
+		"navigate",
+		"shortcut",
+		"pill",
+		"button"
+	],
+	"inline": true,
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 2
+		},
+		"content": "Board",
+		"shot": {
+			"of": "973396447"
+		}
+	},
+	"props": {},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

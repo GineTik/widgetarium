@@ -1,4 +1,6 @@
-export type FieldType = "text" | "number" | "date" | "list" | "boolean";
+export const FIELD_TYPES = ["text", "number", "date", "list", "boolean"] as const;
+
+export type FieldType = (typeof FIELD_TYPES)[number];
 
 export interface FieldReport {
 	prop: string;

@@ -8,9 +8,11 @@ assets
 .tasks
 .omc
 src/emoji-table.js
+src/icon-table.js
 tools/fixture
 tools/fixture-boards
 tools/fixture-react
 tools/fixture-records
 .design
 docs/reference
+docs-backup/

@@ -52,8 +52,6 @@ async function bundle(source) {
 			widgetarium: "./tools/fill-shim.js",
 			"widgetarium/kit": "./src/kit.js",
 			"widgetarium/kit/emojis": "./src/emojis.js",
-			"@habit/lib": "./widgets/@habit/lib.js",
-			"@rank/lib": "./widgets/@rank/lib.js",
 			"@default/lib": "./widgets/@default/lib.js",
 			obsidian: "./tools/obsidian-shim.js",
 		},
@@ -181,6 +179,24 @@ const ROW_ASK = `(() => {
 	};
 })()`;
 
+const CROWDED_POP_SCRIPT = `
+const host = document.getElementById("host");
+host.innerHTML = '<div class="wg-set-pop-body" style="width:264px;max-height:240px">'
+  + '<div class="wg-set-pop-head"><span class="wg-set-pop-title">Source</span><span class="wg-set-pop-hint">The markdown to draw, typed here or bound to a note.</span></div>'
+  + '<div class="wg-kit-seg is-s wg-set-pop-kind" role="tablist"><button aria-selected="true">Typed here</button><button>From a widget</button></div>'
+  + '<textarea style="height:600px"></textarea>'
+  + '</div>';
+`;
+
+const CROWDED_POP_ASK = `(() => {
+	const body = document.querySelector(".wg-set-pop-body");
+	const kind = document.querySelector(".wg-kit-seg");
+	return {
+		kindHeightPx: Math.round(kind.getBoundingClientRect().height),
+		bodyScrolls: body.scrollHeight > body.clientHeight,
+	};
+})()`;
+
 const SHADOW_READER = `
 function shadowLayers(value) {
 	if (!value || value === "none") return [];
@@ -225,7 +241,7 @@ const adapter = {
 		return FILES[path];
 	},
 };
-const START = normalizeRules([{ id: "sub-0", name: "Code", mode: "line", open: "!code", widget: "@inline/code-block" }]);
+const START = normalizeRules([{ id: "sub-0", name: "Code", mode: "line", open: "!code", widget: "@default/code-block" }]);
 function Harness() {
 	const [registry, setRegistry] = useState(null);
 	const [rules, setRules] = useState(START);
@@ -242,7 +258,9 @@ render(h(Harness), document.getElementById("host"));
 const KIT_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
-import { Button, Card, Icon, IconButton, List, Row } from "./src/kit.js";
+import { Button, Card, Icon, IconButton, List, PlaceholderMark, Row, markOf } from "./src/kit.js";
+const MARK_SEED = "Kind of Blue";
+const marked = (id, props) => h("div", { key: id, id }, h(PlaceholderMark, { seed: MARK_SEED, ...props }));
 render(
 	h("div", { style: { padding: "40px", display: "flex", flexDirection: "column", gap: "24px", alignItems: "flex-start" } }, [
 		h("div", { key: "controls", style: { display: "flex", gap: "24px", alignItems: "center" } }, [
@@ -265,6 +283,14 @@ render(
 		h("div", { key: "raise", id: "raise-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-raise)" } }),
 		h("div", { key: "fill", id: "fill-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill)" } }),
 		h("div", { key: "hover", id: "hover-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill-hover)" } }),
+		h("div", { key: "marks", style: { display: "flex", gap: "24px", alignItems: "center" } }, [
+			marked("mark-cover", { size: 240 }),
+			marked("mark-avatar", { size: 24 }),
+			marked("mark-named", { size: 48, shape: "ring", tone: "info" }),
+		]),
+		h("div", { key: "seededwash", id: "seeded-wash-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-" + markOf(MARK_SEED).tone + "-wash)" } }),
+		h("div", { key: "seededink", id: "seeded-ink-swatch", style: { width: "8px", height: "8px", color: "var(--wg-kit-" + markOf(MARK_SEED).tone + ")" } }),
+		h("div", { key: "namedwash", id: "named-wash-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-info-wash)" } }),
 	]),
 	document.getElementById("host"),
 );
@@ -276,10 +302,10 @@ import { render } from "./src/engine/render.js";
 import { WidgetSurface } from "./src/surface.js";
 import { normalizeBoard } from "./src/model.js";
 
-const GROUP_ID = "@core/view-group";
-const KANBAN_ID = "@task/kanban-board";
-const ARCHIVE_ID = "@task/archived-columns";
-const INLINE_ID = "@inline/reminder";
+const GROUP_ID = "@default/view-group";
+const KANBAN_ID = "@default/kanban-board";
+const ARCHIVE_ID = "@default/archived-columns";
+const INLINE_ID = "@default/reminder";
 const shelf = {
 	[GROUP_ID]: { id: GROUP_ID, title: "View group", mounts: { holds: { label: "Views" } } },
 	[KANBAN_ID]: { id: KANBAN_ID, title: "Kanban board", defaultSize: { w: 6, h: 4 } },
@@ -334,6 +360,17 @@ const KIT_ASK = `(() => {
 	};
 	const fillOf = (id) => getComputedStyle(document.getElementById(id), "::before").backgroundColor;
 	const swatchOf = (id) => getComputedStyle(document.getElementById(id)).backgroundColor;
+	const markAt = (id) => {
+		const worn = document.querySelector("#" + id + " .wg-kit-mark");
+		const form = worn.querySelector("svg").getBoundingClientRect();
+		return {
+			field: getComputedStyle(worn).backgroundColor,
+			formInk: getComputedStyle(worn.querySelector("path")).fill,
+			share: Math.round((form.width / worn.getBoundingClientRect().width) * 100),
+			path: worn.querySelector("path").getAttribute("d"),
+			hidden: worn.getAttribute("aria-hidden"),
+		};
+	};
 	const ringOf = (id) => {
 		const control = document.getElementById(id);
 		control.focus();
@@ -356,6 +393,13 @@ const KIT_ASK = `(() => {
 		focusRing: ringOf("row-button"),
 		plainCard: getComputedStyle(document.getElementById("plain-card")).boxShadow,
 		liftedCardInsets: shadowLayers(getComputedStyle(document.getElementById("lifted-card")).boxShadow).filter((layer) => layer.inset).length,
+		markField: markAt("mark-cover").field === swatchOf("seeded-wash-swatch"),
+		markFieldIsPainted: markAt("mark-cover").field !== "rgba(0, 0, 0, 0)",
+		markForm: markAt("mark-cover").formInk === getComputedStyle(document.getElementById("seeded-ink-swatch")).color,
+		markNamedField: markAt("mark-named").field === swatchOf("named-wash-swatch"),
+		markShare: ["mark-cover", "mark-avatar", "mark-named"].map((id) => markAt(id).share),
+		markSameFormAtBothEnds: markAt("mark-cover").path === markAt("mark-avatar").path,
+		markIsDecorative: markAt("mark-cover").hidden,
 	};
 })()`;
 
@@ -408,8 +452,8 @@ import { WidgetSurface } from "./src/surface.js";
 import { WidgetRegistry } from "./src/registry.js";
 import { normalizeBoard } from "./src/model.js";
 
-const GROUP_ID = "@core/view-group";
-const KANBAN_ID = "@task/kanban-board";
+const GROUP_ID = "@default/view-group";
+const KANBAN_ID = "@default/kanban-board";
 const FILES = window.__FILES__;
 const adapter = {
 	async exists(path) {
@@ -505,13 +549,14 @@ const OVERLAY_ASK = `(async () => {
 const STREAK_RAIL_PX = 836;
 const STREAK_SLACK_PX = 830;
 const STREAK_TILE_PX = 120;
-const STREAK_HEIGHT_PX = JSON.parse(readFileSync("widgets/@habit/streak/manifest.json", "utf8")).tallestPx;
+const STREAK_HEIGHT_PX = JSON.parse(readFileSync("widgets/@default/streak/manifest.generated.json", "utf8")).size
+	.tallestPx;
 const STREAK_NATURAL_PX = 84;
 
 const STREAK_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
-import Widget from "./widgets/@habit/streak/widget.tsx";
+import Widget from "./widgets/@default/streak/widget.tsx";
 import { collectionGateway, soloGateway } from "./src/gateway/create";
 
 const kept = ["2026-08-31", "2026-09-01", "2026-09-02"];
@@ -591,12 +636,12 @@ const STREAK_ASK = `(async () => {
 })()`;
 
 const RAIL_CONTRAST_FLOOR = 4.5;
-const RANK_SHEETS = ["widgets/@rank/tokens.css", "widgets/@rank/tier-list/widget.css"];
+const RANK_SHEETS = ["widgets/@default/tokens.css", "widgets/@default/tier-list/widget.css"];
 
 const RANK_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
-import Widget from "./widgets/@rank/tier-list/widget.tsx";
+import Widget from "./widgets/@default/tier-list/widget.tsx";
 import { TONE_NAMES } from "./src/kit.js";
 import { collectionGateway, soloGateway } from "./src/gateway/create";
 
@@ -914,6 +959,18 @@ for (const theme of ["light", "dark"]) {
 	check("the focus ring outranks the edge it lands on", kit.focusRing, { layers: 1, inset: false, spreadPx: 2 });
 	check("a plain light card is still edgeless", kit.plainCard, "none");
 	check("and only a lifted card draws one", kit.liftedCardInsets, 1);
+
+	check("a seeded mark stands on a field, not on nothing", kit.markFieldIsPainted, true);
+	check("and that field is the wash its seeded tone names", kit.markField, true);
+	check("its form is inked by the same tone", kit.markForm, true);
+	check("a tone asked for by name is painted too", kit.markNamedField, true);
+	check("the form is the same share of the box at a cover, an avatar and between", kit.markShare, [56, 56, 56]);
+	check("and it is the same form at both ends, not a second drawing", kit.markSameFormAtBothEnds, true);
+	check("the mark says nothing to a screen reader", kit.markIsDecorative, "true");
+
+	const crowded = await ask(pageFor(theme, CROWDED_POP_SCRIPT, "crowded-pop"), CROWDED_POP_ASK, 1200);
+	check("a tall field under the kind switch leaves the switch its own height", crowded.kindHeightPx, 28);
+	check("the popover scrolls instead of squeezing what it holds", crowded.bodyScrolls, true);
 
 	const row = await ask(pageFor(theme, ROW_SCRIPT, "row"), ROW_ASK, 1200);
 	check("a long value never squeezes the label off its own row", row.labelWidthPx > 0, true);

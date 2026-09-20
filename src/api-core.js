@@ -1,17 +1,22 @@
 import { action, arrayGateway, canDo, collectionGateway, soloGateway, valueGateway } from "./gateway/create";
+import { defineManifest, defineProp, migration, verb } from "./gateway/manifest";
 import { fieldOf, textOf } from "./gateway/match";
-import { flatRows } from "./gateway/use-data";
 import { narrowed, normalizeWhere } from "./gateway/narrow";
 import { pickedValue } from "./gateway/refs.js";
 import { applyTabStep, archivedOf, movesRows, movesSelection, rowNamed, tabsOf } from "./tab-rows.js";
-import { ROUNDED, BACKGROUND } from "./widget-root.js";
+import { BACKGROUND, ROUNDED } from "./widget-root.js";
 
 export { gatewayCache, stableKey } from "./gateway/cache";
 export { soloGateway } from "./gateway/create";
 export { narrowed } from "./gateway/narrow";
 export { EMOJI_TABLE, EMOJI_VIEW_BOX } from "./emoji-table.js";
+export { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "./icon-table.js";
 
 export const coreSurface = {
+	defineManifest,
+	defineProp,
+	verb,
+	migration,
 	action,
 	arrayGateway,
 	collectionGateway,
@@ -20,7 +25,6 @@ export const coreSurface = {
 	canDo,
 	fieldOf,
 	textOf,
-	flatRows,
 	narrowed,
 	normalizeWhere,
 	pickedValue,

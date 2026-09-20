@@ -97,8 +97,15 @@ export function shoot(file, extra, { width, height }) {
 	return execFileSync(
 		findBrowser("shot"),
 		[
-			"--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=2",
-			`--window-size=${width},${height}`, "--virtual-time-budget=12000", ...extra, `file://${file}`,
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--force-device-scale-factor=2",
+			`--window-size=${width},${height}`,
+			"--virtual-time-budget=12000",
+			...extra,
+			`file://${file}`,
 		],
 		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 },
 	);
@@ -155,8 +162,21 @@ ${STILL}</style>
 	writeFileSync(file, page);
 	const dom = execFileSync(
 		findBrowser("view"),
-		["--headless", "--disable-gpu", "--no-sandbox", "--hide-scrollbars", "--window-size=1440,960", "--virtual-time-budget=9000", "--dump-dom", `file://${file}`],
-		{ encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"] },
+		[
+			"--headless",
+			"--disable-gpu",
+			"--no-sandbox",
+			"--hide-scrollbars",
+			"--window-size=1440,960",
+			"--virtual-time-budget=9000",
+			"--dump-dom",
+			`file://${file}`,
+		],
+		{
+			encoding: "utf8",
+			maxBuffer: 64 * 1024 * 1024,
+			stdio: ["ignore", "pipe", process.env.WG_DEBUG ? "inherit" : "ignore"],
+		},
 	);
 	const found = /<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/.exec(dom);
 	if (!found || !found[1]) return { failure: "the page reported nothing", file };

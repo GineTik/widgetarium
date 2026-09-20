@@ -1,0 +1,187 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Player",
+	"description": "The track playing now, with its cover, its transport and the queue it steps through.",
+	"keywords": [
+		"player",
+		"audio",
+		"music",
+		"track",
+		"song",
+		"playlist",
+		"queue",
+		"transport",
+		"play",
+		"pause",
+		"seek",
+		"shuffle",
+		"repeat",
+		"volume",
+		"favourite",
+		"podcast"
+	],
+	"role": "composer",
+	"size": {
+		"collapseBelowPx": 240,
+		"stackBelowPx": 280,
+		"shortestPx": 108,
+		"tallestPx": 220
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 2
+		},
+		"props": {
+			"tracks": {
+				"rows": [
+					{
+						"path": "Music/Riverbed.md",
+						"name": "Riverbed",
+						"artist": "Hana Okabe",
+						"duration": 231,
+						"favourite": true
+					},
+					{
+						"path": "Music/Low Tide.md",
+						"name": "Low Tide",
+						"artist": "Hana Okabe",
+						"duration": 198
+					},
+					{
+						"path": "Music/Glasshouse.md",
+						"name": "Glasshouse",
+						"artist": "Vera Nilsen",
+						"duration": 274
+					}
+				]
+			},
+			"playing": {
+				"value": "i0"
+			},
+			"isPlaying": {
+				"value": true
+			},
+			"position": {
+				"value": 74
+			},
+			"volume": {
+				"value": 70
+			}
+		}
+	},
+	"props": {
+		"tracks": {
+			"kind": "collection",
+			"label": "Tracks",
+			"hint": "The queue. One note per track, in the order the bound folder is sorted.",
+			"writes": ["list", "get", "update"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "text",
+					"aka": ["track", "song", "heading"]
+				},
+				"artist": {
+					"label": "Artist",
+					"type": "text",
+					"aka": ["performer", "band", "author", "by"]
+				},
+				"album": {
+					"label": "Album",
+					"type": "text",
+					"aka": ["release", "record"]
+				},
+				"cover": {
+					"label": "Cover",
+					"type": "text",
+					"aka": ["art", "artwork", "image", "thumbnail", "picture"]
+				},
+				"duration": {
+					"label": "Duration",
+					"type": "number",
+					"aka": ["length", "runtime", "seconds"]
+				},
+				"favourite": {
+					"label": "Favourite",
+					"type": "boolean",
+					"aka": ["favorite", "loved", "starred", "liked"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"playing": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Playing",
+			"hint": "Which track is loaded. Bind a queue beside it and the two move together.",
+			"of": "tracks",
+			"writes": ["get", "update"],
+			"default": {
+				"value": ""
+			}
+		},
+		"isPlaying": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Playing state",
+			"hint": "Whether the transport stands at play or at pause.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"position": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Position",
+			"hint": "How far into the track the transport stands, in seconds.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": 0
+			}
+		},
+		"volume": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Volume",
+			"hint": "The level the transport is set to, from nothing to full.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": 70
+			}
+		},
+		"isShuffled": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Shuffle",
+			"hint": "Whether the next track is the one after this or one drawn at random.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"repeat": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Repeat",
+			"hint": "What the end of the queue does: stop, start again, or hold on this track.",
+			"writes": ["get", "update"],
+			"default": {
+				"from": "memory",
+				"value": "off"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

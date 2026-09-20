@@ -7,7 +7,7 @@ function spokenEmoji(name) {
 }
 
 export function Emoji({ name, size = 20, className: cls, label }) {
-	const body = EMOJI_TABLE[name];
+	const body = Object.hasOwn(EMOJI_TABLE, name) ? EMOJI_TABLE[name] : null;
 	if (!body) {
 		if (name) console.warn(`Widgetarium: no emoji is drawn under the name "${name}"`);
 		return null;

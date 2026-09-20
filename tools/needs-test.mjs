@@ -5,7 +5,7 @@ import { TEXT_LOADERS } from "../build.mjs";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/fields"; export * from "./src/gateway/resolve-needs"; export * from "./src/gateway/mapped";`,
+		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/fields"; export * from "./src/gateway/resolve-needs"; export * from "./src/gateway/mapped"; export { needsOf } from "./src/gateway/props.js";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},
@@ -116,7 +116,7 @@ const resolveNeeds = gateway.resolveNeeds;
 }
 
 function folderStandIn(records, { canWrite = true } = {}) {
-	const held = records.map((record) => ({ ref: record.path, value: record }));
+	const held = records.map((record) => ({ ...record, ref: record.path }));
 	const written = [];
 	const handlers = {
 		list: (query) => gateway.applyQuery(held, query),
@@ -136,7 +136,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 	const { gateway: base } = folderStandIn(HABITS);
 	const mapped = gateway.mappedCollection(base, { needs: { ...NEEDS, colour: { type: "text" } } });
 	const listed = await mapped.list();
-	const first = listed.rows[0].value;
+	const first = listed.rows[0];
 	check(
 		"mapped: the widget reads the need, never the property",
 		Array.isArray(first.days) && first.days.length === 2,
@@ -155,7 +155,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 	const listed = await mapped.list();
 	check(
 		"coercion: one day where many were declared arrives wrapped",
-		JSON.stringify(listed.rows[0].value.days) === '["2026-08-01"]',
+		JSON.stringify(listed.rows[0].days) === '["2026-08-01"]',
 	);
 }
 
@@ -167,7 +167,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 	const listed = await mapped.list();
 	check(
 		"coercion: a value that will not convert is dropped, not drawn",
-		JSON.stringify(listed.rows[0].value.days) === '["2026-08-01"]',
+		JSON.stringify(listed.rows[0].days) === '["2026-08-01"]',
 	);
 }
 
@@ -242,17 +242,18 @@ function folderStandIn(records, { canWrite = true } = {}) {
 }
 
 {
-	const { readdirSync } = await import("node:fs");
+	const { existsSync, readdirSync } = await import("node:fs");
 	const scopes = readdirSync("widgets").filter((name) => name.startsWith("@"));
 	const shipped = scopes.flatMap((scope) =>
 		readdirSync(`widgets/${scope}`)
 			.filter((name) => !name.endsWith(".js") && !name.endsWith(".css"))
-			.map((name) => `widgets/${scope}/${name}/manifest.json`),
+			.map((name) => `widgets/${scope}/${name}/manifest.generated.json`)
+			.filter((path) => existsSync(path)),
 	);
 	const declaring = [];
 	for (const path of shipped) {
 		const held = JSON.parse(await readFile(path, "utf8"));
-		if (held.settings !== undefined) declaring.push(held.id);
+		if (held.settings !== undefined) declaring.push(path);
 	}
 	check(
 		"no shipped widget is tuned by a setting — every one of them is a prop",
@@ -262,8 +263,8 @@ function folderStandIn(records, { canWrite = true } = {}) {
 }
 
 {
-	const manifest = JSON.parse(await readFile("widgets/@habit/streak/manifest.json", "utf8"));
-	const needs = (await propsOfEveryShippedWidget())["@habit/streak"].days.needs;
+	const manifest = JSON.parse(await readFile("widgets/@default/streak/manifest.generated.json", "utf8"));
+	const needs = gateway.needsOf((await propsOfEveryShippedWidget())["@default/streak"].days);
 	const rows = manifest.preview.props.days.rows;
 	const { map } = resolveNeeds(needs, fieldsOf(rows));
 	check(

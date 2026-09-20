@@ -45,6 +45,20 @@ export function replaceBlock(text, blockIndex, body, isValidBlock) {
 	return next;
 }
 
+// TRADE-OFF: replaceCode is Obsidian's unpublished method Bases writes through; the file write stays as the fallback
+export function writeInEditor(editorBlock, body) {
+	if (typeof editorBlock?.replaceCode !== "function") return false;
+	const code = body.trimEnd();
+	if (code.split("\n").some((line) => FENCE_CLOSE.test(line.trim()))) return false;
+	try {
+		editorBlock.replaceCode(code);
+	} catch (failure) {
+		console.error("[widgetarium] the editor refused the board, so the file is written instead", failure);
+		return false;
+	}
+	return blockHolds(editorBlock.section(), code);
+}
+
 const FRONTMATTER_FENCE = /^---\s*$/;
 
 // CONTEXT: frontmatter only when the FIRST line opens it; an unclosed fence is body
@@ -71,4 +85,11 @@ export function replaceBody(text, body) {
 	if (bodyStart(nextLines) !== start) return null;
 	if (nextLines.slice(0, start).join("\n") !== lines.slice(0, start).join("\n")) return null;
 	return next;
+}
+
+function blockHolds(section, code) {
+	if (!section) return false;
+	const lines = section.text.split("\n");
+	const block = findBlocks(lines).find((found) => found.start === section.lineStart);
+	return block !== undefined && lines.slice(block.start + 1, block.end).join("\n") === code;
 }

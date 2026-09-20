@@ -1,7 +1,7 @@
 import { TFile, TFolder, Notice, MarkdownRenderer, MarkdownRenderChild, Platform } from "obsidian";
 import { Dialog } from "./dialog.js";
 import { fieldsOf } from "./gateway/fields.js";
-import { isMatch, valueOf } from "./gateway/match.js";
+import { isMatch, pageOf, valueOf } from "./gateway/match.js";
 import { readBody, replaceBody } from "./block-writer.js";
 import { typeOf } from "./engine/record-type.js";
 import { readLink } from "./engine/link.js";
@@ -85,16 +85,23 @@ function findByLink(app, from, link) {
 
 // NAVIGATION IS NOT DATA. The gateway answers what exists; this one takes a person somewhere,
 // and it is the only thing in a widget's hands that can.
+const LEAF_OF_TARGET = { self: false, blank: "tab" };
+
 function createNavigator(app, from) {
 	const find = (link) => findByLink(app, from, link);
 
 	return {
 		canNavigate: true,
 		resolve: (link) => find(link)?.path ?? null,
-		navigate: (link) => {
+		navigate: (link, { target = "self" } = {}) => {
+			const leaf = LEAF_OF_TARGET[target];
+			if (leaf === undefined) {
+				console.error(`[widgetarium] navigate refused: "${target}" is not a target, only self or blank`);
+				return false;
+			}
 			const file = find(link);
 			if (!(file instanceof TFile)) return false;
-			app.workspace.getLeaf(false).openFile(file);
+			app.workspace.getLeaf(leaf).openFile(file);
 			return true;
 		},
 	};
@@ -116,7 +123,11 @@ function createReader(app, from) {
 			const bytes = found.stat?.size ?? 0;
 			const cap = Number(options.maxBytes ?? 0);
 			if (cap > 0 && bytes > cap) {
-				return refusedRead(`${found.path} is ${Math.round(bytes / 1024)} KB, over the ${Math.round(cap / 1024)} KB limit`, found.path, bytes);
+				return refusedRead(
+					`${found.path} is ${Math.round(bytes / 1024)} KB, over the ${Math.round(cap / 1024)} KB limit`,
+					found.path,
+					bytes,
+				);
 			}
 			return { ok: true, text: await app.vault.cachedRead(found), path: found.path, bytes, failure: null };
 		},
@@ -176,7 +187,9 @@ function stringifyFrontmatter(props) {
 		if (typeof value === "string") return `${key}: ${JSON.stringify(value)}`;
 		// CONTEXT: one level deep is all this emits — the namespace around an id
 		if (value && typeof value === "object") {
-			return [`${key}:`, ...Object.entries(value).map(([held, inner]) => `  ${held}: ${JSON.stringify(inner)}`)].join("\n");
+			return [`${key}:`, ...Object.entries(value).map(([held, inner]) => `  ${held}: ${JSON.stringify(inner)}`)].join(
+				"\n",
+			);
 		}
 		return `${key}: ${value}`;
 	});
@@ -184,7 +197,11 @@ function stringifyFrontmatter(props) {
 }
 
 function slugify(text) {
-	return String(text ?? "Untitled").replace(/[\\/:*?"<>|#^[\]]/g, "").trim() || "Untitled";
+	return (
+		String(text ?? "Untitled")
+			.replace(/[\\/:*?"<>|#^[\]]/g, "")
+			.trim() || "Untitled"
+	);
 }
 
 function createSlot(app, binding) {
@@ -232,9 +249,11 @@ function createSlot(app, binding) {
 				},
 			);
 			for (const entry of duplicates) reported.add(entry.id);
-			const rows = sortRecords(held.filter((record) => isMatch(record, query.where)), query.sort);
-			const limited = query.limit ? rows.slice(0, query.limit) : rows;
-			return { rows: limited, total: rows.length, duplicates };
+			const rows = sortRecords(
+				held.filter((record) => isMatch(record, query.where)),
+				query.sort,
+			);
+			return { rows: pageOf(rows, query), total: rows.length, duplicates };
 		},
 
 		// TRADE-OFF: one note, so the read belongs here and never in list()
@@ -293,7 +312,9 @@ function createSlot(app, binding) {
 			const mintedId = remint ? mintId() : null;
 			const before = { ...(frontmatterOf(app, found) ?? {}) };
 			const wasAt = found.path;
-			let written = mintedId ? withId({ ...before, ...(patch.props ?? {}) }, mintedId) : { ...before, ...(patch.props ?? {}) };
+			let written = mintedId
+				? withId({ ...before, ...(patch.props ?? {}) }, mintedId)
+				: { ...before, ...(patch.props ?? {}) };
 			const giveUpTheIntent = intendWrite(wasAt, written);
 			try {
 				const file = patch.name === undefined ? found : await renamedTo(found, patch.name);
@@ -323,7 +344,9 @@ function createSlot(app, binding) {
 				for (const path of entry.remints) {
 					const file = app.vault.getAbstractFileByPath(path);
 					if (!(file instanceof TFile)) continue;
-					await app.fileManager.processFrontMatter(file, (frontmatter) => Object.assign(frontmatter, withId(frontmatter, mintId())));
+					await app.fileManager.processFrontMatter(file, (frontmatter) =>
+						Object.assign(frontmatter, withId(frontmatter, mintId())),
+					);
 					minted += 1;
 				}
 			}
@@ -343,6 +366,7 @@ function createSlot(app, binding) {
 export function createHost(app, plugin, notePath = "") {
 	return {
 		shapes: plugin?.shapes ?? null,
+		installWidgetAt: plugin?.installAt ? (ref) => plugin.installAt(ref) : null,
 
 		// which environment the widget is running in. The same widget runs on the web or on
 		// the desktop against a different host; this is the only thing it may branch on.
@@ -372,6 +396,14 @@ export function createHost(app, plugin, notePath = "") {
 
 		file(path) {
 			return noteHere(app, path);
+		},
+
+		propertiesOf(path) {
+			const file = app.vault.getAbstractFileByPath(path);
+			if (!(file instanceof TFile)) return [];
+			return Object.keys(frontmatterOf(app, file) ?? {})
+				.filter((name) => name !== "position")
+				.sort();
 		},
 
 		// CONTEXT: one note's events, for a value gateway over a single file
@@ -446,12 +478,14 @@ export function bindNote(host, notePath) {
 	if (!notePath) return host;
 	return {
 		...host,
+		notePath,
 		here: noteHere(host.app, notePath),
 		navigator: createNavigator(host.app, notePath),
 		reader: createReader(host.app, notePath),
 		ui: {
 			...host.ui,
-			renderMarkdown: (element, markdown, sourcePath = notePath) => host.ui.renderMarkdown(element, markdown, sourcePath),
+			renderMarkdown: (element, markdown, sourcePath = notePath) =>
+				host.ui.renderMarkdown(element, markdown, sourcePath),
 		},
 	};
 }

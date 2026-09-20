@@ -18,6 +18,8 @@ for (const key of [
 	"KeyboardEvent",
 	"MouseEvent",
 	"Event",
+	"MutationObserver",
+	"NodeFilter",
 ]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
@@ -201,10 +203,10 @@ console.log("\n— a mounted widget can record which widget fills its slot —")
 	const parent = {
 		id: "group",
 		mounted: {
-			kanban: { widget: "@task/kanban-board", settings: { a: 1 }, slots: { card: { widget: "@other/card" } } },
+			kanban: { widget: "@default/kanban-board", settings: { a: 1 }, slots: { card: { widget: "@other/card" } } },
 		},
 	};
-	const child = heldTile(parent, "mounted", "kanban", "@task/kanban-board");
+	const child = heldTile(parent, "mounted", "kanban", "@default/kanban-board");
 	check("the child carries the slot pick", child.slots?.card?.widget, "@other/card");
 	check(
 		"and a mount that never picked one carries an empty table",
@@ -221,8 +223,8 @@ console.log("\n— a mounted widget can record which widget fills its slot —")
 
 console.log("\n— and the panel writes what it draws —");
 {
-	const KANBAN_ID = "@task/kanban-board";
-	const CARD_ID = "@task/task-card";
+	const KANBAN_ID = "@default/kanban-board";
+	const CARD_ID = "@default/task-card";
 	const OTHER_ID = "@other/compact-card";
 
 	const manifest = {
@@ -235,28 +237,28 @@ console.log("\n— and the panel writes what it draws —");
 		props: {
 			groupBy: {
 				kind: "value",
-				type: "text",
+				type: "line",
 				label: "Group tasks by",
-				verbs: { get: "required" },
+				writes: ["get"],
 				default: { value: "status" },
 			},
 			isCompact: {
 				kind: "value",
 				type: "boolean",
 				label: "Compact rows",
-				verbs: { get: "required" },
+				writes: ["get"],
 				default: { value: false },
 			},
 			tasks: {
 				kind: "collection",
 				label: "Tasks",
-				verbs: { list: "required", create: "optional", update: "optional", remove: "optional" },
+				writes: ["list", "create", "update", "remove"],
 				default: { path: "Orbitask/Tasks" },
 			},
 			boards: {
 				kind: "collection",
 				label: "Boards",
-				verbs: { list: "required", create: "optional", update: "optional", remove: "optional" },
+				writes: ["list", "create", "update", "remove"],
 			},
 		},
 	};
@@ -330,8 +332,18 @@ console.log("\n— and the panel writes what it draws —");
 
 	const CELL_BOX = { width: span(6), height: span(8) };
 	dom.window.Element.prototype.getBoundingClientRect = function boxOfCell() {
-		if (!this.classList?.contains("wg-tree-cell")) return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
-		return { left: 0, top: 0, right: CELL_BOX.width, bottom: CELL_BOX.height, width: CELL_BOX.width, height: CELL_BOX.height, x: 0, y: 0 };
+		if (!this.classList?.contains("wg-tree-cell"))
+			return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
+		return {
+			left: 0,
+			top: 0,
+			right: CELL_BOX.width,
+			bottom: CELL_BOX.height,
+			width: CELL_BOX.width,
+			height: CELL_BOX.height,
+			x: 0,
+			y: 0,
+		};
 	};
 
 	check("the tile draws a settings control", Boolean(find('.wg-tile-actions button[aria-label="Settings"]')), true);
@@ -354,6 +366,11 @@ console.log("\n— and the panel writes what it draws —");
 
 	const groupRow = rowSaying("Group tasks by");
 	check("the typed value is drawn with its value", Boolean(groupRow) && groupRow.textContent.includes("status"), true);
+	check(
+		"a source row wears no glyph, because every one of them wore the same one",
+		["Group tasks by", "Tasks", "Boards"].map((said) => Boolean(rowSaying(said)?.querySelector(".wg-kit-side-icon"))),
+		[false, false, false],
+	);
 	await press(groupRow);
 	const field = find(OPEN_POP + " input");
 	check("pressing it opens a popover with a field", Boolean(field), true);
@@ -493,6 +510,21 @@ console.log("\n— and the panel writes what it draws —");
 	check("picking it closes the catalogue", Boolean(find(".wg-cat-dialog")), false);
 	check("the pick is written to the draft", rowSaying("Card")?.textContent.includes(OTHER_ID), true);
 
+	check(
+		"the slot says what it wears, nothing until someone picks",
+		rowSaying("Surface")?.textContent.includes("None"),
+		true,
+	);
+	await press(rowSaying("Surface"));
+	const raise = all(`${OPEN_POP} .wg-kit-pop-item`).find((item) => item.textContent.trim() === "Group");
+	check(
+		"its surfaces are the slot's own list",
+		all(`${OPEN_POP} .wg-kit-pop-item`).map((item) => item.textContent.trim()),
+		["Group", "Object", "None"],
+	);
+	await press(raise);
+	check("a picked surface is drawn on the row", rowSaying("Surface")?.textContent.includes("Group"), true);
+
 	const tab = (name) => all(".wg-set-panel .wg-kit-seg button").find((button) => button.textContent.trim() === name);
 	await press(tab("Data"));
 	const canRow = (name) => all(".wg-set-panel .wg-kit-row").find((row) => row.textContent.startsWith(name));
@@ -501,8 +533,21 @@ console.log("\n— and the panel writes what it draws —");
 		canRow("Create")?.textContent.includes("Orbitask/Archive"),
 		true,
 	);
-	check("and says it is on, because the folder is set", canRow("Create")?.textContent.endsWith("On"), true);
-	check("Remove is reported too", canRow("Remove")?.textContent.endsWith("On"), true);
+	const switchOf = (name) => canRow(name)?.querySelector('[role="switch"]');
+	check(
+		"and binding the folder switched on every verb the widget uses",
+		switchOf("Create")?.getAttribute("aria-checked"),
+		"true",
+	);
+	check("Remove is reported too", switchOf("Remove")?.getAttribute("aria-checked"), "true");
+	await press(switchOf("Remove"));
+	check(
+		"switching a verb off draws it off, and only that verb",
+		[switchOf("Remove")?.getAttribute("aria-checked"), switchOf("Create")?.getAttribute("aria-checked")],
+		["false", "true"],
+	);
+	await press(switchOf("Remove"));
+	check("and switching it back on draws it on again", switchOf("Remove")?.getAttribute("aria-checked"), "true");
 
 	// CONTEXT: the kit took the row, so the class the old list rules were scoped under is never drawn
 	check("nothing in the window draws a .wg-set-list", all(".wg-set-list").length, 0);
@@ -513,7 +558,7 @@ console.log("\n— and the panel writes what it draws —");
 	const boards = groupSaying("What Boards can do");
 	check(
 		"a source with no folder reports every action off together",
-		[...boards.querySelectorAll(".wg-kit-row")].every((row) => row.textContent.endsWith("Off")),
+		[...boards.querySelectorAll('[role="switch"]')].every((toggle) => toggle.getAttribute("aria-checked") === "false"),
 		true,
 	);
 	check("and says why, once, above them", boards.querySelector(".wg-kit-row")?.textContent.includes("nowhere"), true);
@@ -581,7 +626,7 @@ console.log("\n— and the panel writes what it draws —");
 	check(
 		"and it survives a save, as a record",
 		JSON.stringify(serializeBoard(board).tiles[0].slots.card),
-		JSON.stringify({ widget: OTHER_ID }),
+		JSON.stringify({ widget: OTHER_ID, surface: "group" }),
 	);
 	check("Done fades the panels first", Boolean(find(".wg-set-chrome.is-leaving")), true);
 	check("and the box is still open while they go", Boolean(find(".wg-set-window")), true);
@@ -610,7 +655,11 @@ console.log("\n— and the panel writes what it draws —");
 		elsewhere.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 		await tick();
 		await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
-		check("the window shows the change while it is open", rowSaying("Tasks")?.textContent.includes("Orbitask/Elsewhere"), true);
+		check(
+			"the window shows the change while it is open",
+			rowSaying("Tasks")?.textContent.includes("Orbitask/Elsewhere"),
+			true,
+		);
 		check("and the board on disk has not moved", JSON.stringify(serializeBoard(board)), before);
 
 		await press(find(".wg-set-head .wg-kit-icon"));
@@ -625,10 +674,10 @@ console.log("\n— and the panel writes what it draws —");
 
 console.log("\n— an unfed child is a level of its own, and the trail is the way back —");
 {
-	const GROUP_ID = "@core/view-group";
-	const KANBAN_ID = "@task/kanban-board";
-	const ARCHIVE_ID = "@task/archived-columns";
-	const CARD_ID = "@task/task-card";
+	const GROUP_ID = "@probe/holder";
+	const KANBAN_ID = "@default/kanban-board";
+	const ARCHIVE_ID = "@default/archived-columns";
+	const CARD_ID = "@default/task-card";
 	const PANEL_ID = "@task/side-panel";
 
 	// CONTEXT: `views` is BOTH the mount name and the setting that fills it — resolveMounts pairs them
@@ -637,15 +686,15 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	const shelf = {
 		[GROUP_ID]: {
 			id: GROUP_ID,
-			title: "View group",
+			title: "View holder",
 			// CONTEXT: the mount name is `holds`; `views` is the key notes were written with before
 			mounts: { holds: { was: "views", label: "Views" } },
 			props: {
 				views: {
 					kind: "value",
-					type: "text",
+					type: "line",
 					label: "Which views",
-					verbs: { get: "required" },
+					writes: ["get"],
 					default: { value: `${KANBAN_ID}, ${ARCHIVE_ID}` },
 				},
 			},
@@ -657,19 +706,19 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 			props: {
 				groupBy: {
 					kind: "value",
-					type: "text",
+					type: "line",
 					label: "Group tasks by",
-					verbs: { get: "required" },
+					writes: ["get"],
 					default: { value: "status" },
 				},
 				isCompact: {
 					kind: "value",
 					type: "boolean",
 					label: "Compact rows",
-					verbs: { get: "required" },
+					writes: ["get"],
 					default: { value: false },
 				},
-				tasks: { kind: "collection", label: "Tasks", verbs: { list: "required" }, default: { path: "Orbitask/Tasks" } },
+				tasks: { kind: "collection", label: "Tasks", writes: ["list"], default: { path: "Orbitask/Tasks" } },
 			},
 			// the card is FED a task, the panel is not — one manifest carries both kinds on purpose
 			slots: {
@@ -683,9 +732,9 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 			props: {
 				since: {
 					kind: "value",
-					type: "text",
+					type: "line",
 					label: "Archived since",
-					verbs: { get: "required" },
+					writes: ["get"],
 					default: { value: "2019" },
 				},
 			},
@@ -696,14 +745,21 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 			props: {
 				width: {
 					kind: "value",
-					type: "text",
+					type: "line",
 					label: "Panel width",
-					verbs: { get: "required" },
+					writes: ["get"],
 					default: { value: "narrow" },
 				},
 			},
 		},
-		[CARD_ID]: { id: CARD_ID, title: "Task card" },
+		[CARD_ID]: {
+			id: CARD_ID,
+			title: "Task card",
+			props: {
+				task: { kind: "value", label: "The task", writes: ["get"] },
+				lines: { kind: "value", type: "line", label: "Lines shown", writes: ["get"], default: { value: "3" } },
+			},
+		},
 	};
 	const Leaf = () => h("div", { className: "leaf" }, "leaf");
 	const registry = {
@@ -786,7 +842,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	};
 
 	await press(settingsButtons()[0]);
-	check("the window opens on the tile's own widget", here(), "View group");
+	check("the window opens on the tile's own widget", here(), "View holder");
 	check("and one crumb is no trail", trail(), []);
 
 	const viewRow = rowSaying("Kanban board");
@@ -801,7 +857,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 
 	await press(viewRow.querySelector(".wg-set-enter"));
 	check("pressing it names the child, not the parent", here(), "Kanban board");
-	check("and the parent becomes the crumb behind it", trail(), ["View group"]);
+	check("and the parent becomes the crumb behind it", trail(), ["View holder"]);
 	check("the child's own setting is drawn", Boolean(rowSaying("Group tasks by")), true);
 	check("and the parent's is gone from the panel", Boolean(rowSaying("Which views")), false);
 	check("the child's own source is drawn too", Boolean(rowSaying("Tasks")), true);
@@ -815,11 +871,16 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 
 	const cardRow = rowSaying("Card");
 	check("a slot the parent feeds says what it is fed", cardRow?.textContent.includes("Fed task"), true);
+	check("and offers a way in to what it is not fed", Boolean(cardRow?.querySelector(".wg-set-enter")), true);
+	await press(cardRow.querySelector(".wg-set-enter"));
+	check("inside, the card's own setting is drawn", Boolean(rowSaying("Lines shown")), true);
 	check(
-		"and offers no way in, because there is nothing inside it",
-		Boolean(cardRow?.querySelector(".wg-set-enter")),
+		"and the prop the parent feeds is not, because nobody but the parent sets it",
+		Boolean(rowSaying("The task")),
 		false,
 	);
+	await typeInto(rowSaying("Lines shown"), "6");
+	await escape();
 	const panelRow = rowSaying("Panel");
 	check("a slot it does not feed offers one", Boolean(panelRow?.querySelector(".wg-set-enter")), true);
 
@@ -828,7 +889,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 
 	await press(panelRow.querySelector(".wg-set-enter"));
 	check("a child of the child opens too", here(), "Side panel");
-	check("and the trail is two deep", trail(), ["View group", "Kanban board"]);
+	check("and the trail is two deep", trail(), ["View holder", "Kanban board"]);
 	check("drawing the grandchild's own setting", Boolean(rowSaying("Panel width")), true);
 	await typeInto(rowSaying("Panel width"), "wide");
 
@@ -837,7 +898,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("and the window is still up", Boolean(find(".wg-set-window")), true);
 
 	await press(all(".wg-set-crumbs .wg-set-crumb")[0]);
-	check("pressing the first crumb returns to the parent", here(), "View group");
+	check("pressing the first crumb returns to the parent", here(), "View holder");
 	check("and the parent's own setting is back", Boolean(rowSaying("Which views")), true);
 	check(
 		"with the Design tab back with it",
@@ -859,6 +920,11 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 		"wide",
 	);
 	check("the record names the widget it holds", board.tiles[0].mounted[KANBAN_VIEW].slots.panel.widget, PANEL_ID);
+	check(
+		"a fed slot's own setting lands in that slot's record",
+		board.tiles[0].mounted[KANBAN_VIEW].slots.card?.props?.lines?.value,
+		"6",
+	);
 	check(
 		"and the row itself names the widget its name stands for",
 		board.tiles[0].mounted[KANBAN_VIEW].widget,
@@ -888,7 +954,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	await press(rowSaying("Panel").querySelector(".wg-set-enter"));
 	check("three levels deep", trail().length, 2);
 	await escape();
-	check("one rung", trail(), ["View group"]);
+	check("one rung", trail(), ["View holder"]);
 	await escape();
 	check("another", trail(), []);
 	check("and the window is still open at the root", Boolean(find(".wg-set-window")), true);
@@ -974,9 +1040,9 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 		props: {
 			note: {
 				kind: "value",
-				type: "text",
+				type: "line",
 				label: "Note",
-				verbs: { get: "required", update: "optional" },
+				writes: ["get", "update"],
 				default: { value: "" },
 			},
 		},
@@ -1056,7 +1122,7 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 		[READER_ID]: {
 			id: READER_ID,
 			title: "Reader",
-			props: { rows: { kind: "collection", label: "Rows", verbs: { list: "required" }, default: { path: FOLDER } } },
+			props: { rows: { kind: "collection", label: "Rows", writes: ["list"], default: { path: FOLDER } } },
 		},
 		[GROUP_ID]: { id: GROUP_ID, title: "Group", mounts: { holds: {} } },
 	};
@@ -1161,8 +1227,8 @@ console.log("\n— a prop renamed in the manifest still finds the folder the til
 				days: {
 					kind: "collection",
 					label: "Days",
-					was: "rows",
-					verbs: { list: "required" },
+					aka: ["rows"],
+					writes: ["list"],
 					default: { path: DECLARED },
 				},
 			},
@@ -1240,6 +1306,476 @@ console.log("\n— a prop renamed in the manifest still finds the folder the til
 	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
 	check("and the first write moves the record onto the new key", Object.keys(board.tiles[0].props ?? {}), ["days"]);
 	check("without losing the folder on the way", board.tiles[0].props.days.path, CHOSEN);
+
+	render(null, mount);
+}
+
+console.log("\n— a line is typed into a field, a text into an area that keeps its lines —");
+{
+	const WRITER_ID = "@test/writer";
+	const shelf = {
+		[WRITER_ID]: {
+			id: WRITER_ID,
+			title: "Writer",
+			props: {
+				title: { kind: "value", type: "line", label: "Title", writes: ["get"], default: { value: "" } },
+				body: { kind: "value", type: "text", label: "Body", writes: ["get"], default: { value: "" } },
+			},
+		},
+	};
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
+	const registry = {
+		get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
+		list: () => Object.values(shelf).map((manifest) => ({ manifest })),
+	};
+	const host = { platform: "test", can: {}, slot: () => null, ui: { notify() {}, openNote() {} } };
+	let board = normalizeBoard({
+		tiles: [
+			{
+				id: "writer",
+				widget: WRITER_ID,
+				props: { title: { from: "typed", value: "Hi" }, body: { from: "typed", value: "# Hi" } },
+			},
+		],
+		layouts: { 20: [{ id: "writer", x: 0, y: 0, w: 9, h: 6 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				boardNode: mount,
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: boardWidthPx,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1)
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	const rowSaying = (text) =>
+		[...document.querySelectorAll(".wg-set-panel .wg-kit-row")].find((row) => row.textContent.includes(text));
+	const openControlCounts = () => ({
+		inputs: document.querySelectorAll(OPEN_POP + " input.wg-kit-field-input").length,
+		areas: document.querySelectorAll(OPEN_POP + " textarea.wg-kit-field-area").length,
+	});
+
+	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
+	await press(rowSaying("Title"));
+	check("a line opens a one-line field", openControlCounts(), { inputs: 1, areas: 0 });
+
+	await press(rowSaying("Body"));
+	check("a text opens an area instead", openControlCounts(), { inputs: 0, areas: 1 });
+
+	const area = document.querySelector(OPEN_POP + " textarea.wg-kit-field-area");
+	const typed = "# Hi\n\nTwo paragraphs.";
+	Object.getOwnPropertyDescriptor(dom.window.HTMLTextAreaElement.prototype, "value").set.call(area, typed);
+	area.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+	await tick();
+	await press([...document.querySelectorAll(OPEN_POP + " button")].find((node) => node.textContent === "Apply"));
+	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
+	check("and what was typed in the area keeps its line breaks", board.tiles[0].props.body.value, typed);
+
+	render(null, mount);
+}
+
+console.log("\n— a text reads a note: its content, its name, or one of its properties —");
+{
+	const READER_ID = "@test/note-reader";
+	const shelf = {
+		[READER_ID]: {
+			id: READER_ID,
+			title: "Note reader",
+			props: { body: { kind: "value", type: "text", label: "Body", writes: ["get"], default: { value: "" } } },
+		},
+	};
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
+	const registry = {
+		get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
+		list: () => Object.values(shelf).map((manifest) => ({ manifest })),
+	};
+	const app = { vault: { getAllLoadedFiles: () => [{ path: "Habits.md" }] } };
+	const propertiesOf = (path) => (path === "Habits.md" ? ["status"] : []);
+	const host = {
+		platform: "test",
+		app,
+		propertiesOf,
+		can: {},
+		slot: () => null,
+		file: () => null,
+		ui: { notify() {}, openNote() {} },
+	};
+	let board = normalizeBoard({
+		tiles: [{ id: "reader", widget: READER_ID, props: { body: { from: "typed", value: "# Hi" } } }],
+		layouts: { 20: [{ id: "reader", x: 0, y: 0, w: 9, h: 6 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				boardNode: mount,
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: boardWidthPx,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1)
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	const popButton = (text) =>
+		[...document.querySelectorAll(OPEN_POP + " button")].find((node) => node.textContent === text);
+
+	await press([...document.querySelectorAll('.wg-tile-actions button[aria-label="Settings"]')][0]);
+	await press(
+		[...document.querySelectorAll(".wg-set-panel .wg-kit-row")].find((row) => row.textContent.includes("Body")),
+	);
+	check("a text is offered a file, beside typing it", Boolean(popButton("File")), true);
+
+	await press(popButton("File"));
+	await press(popButton("Habits.md"));
+	check(
+		"the parts offered are content, name and the note's own properties",
+		["Content", "Name", "status"].map((label) => Boolean(popButton(label))),
+		[true, true, true],
+	);
+	check("picking the note reads its content", popButton("Content").getAttribute("aria-checked"), "true");
+
+	await press(popButton("status"));
+	check(
+		"and the row says which part of which note",
+		document.querySelector(".wg-set-panel").textContent.includes("status of Habits.md"),
+		true,
+	);
+	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
+	check(
+		"picking a property binds that property of that note",
+		["from", "path", "field"].map((name) => board.tiles[0].props.body[name]),
+		["vault", "Habits.md", "status"],
+	);
+	check("the field survives the board being written", serializeBoard(board).tiles[0].props.body.field, "status");
+
+	render(null, mount);
+}
+
+console.log("\n— an emoji and an icon are picked off a grid, never typed —");
+{
+	const BADGE_ID = "@probe/badge";
+	const manifest = {
+		id: BADGE_ID,
+		title: "Badge",
+		props: {
+			mood: {
+				kind: "value",
+				type: "line",
+				control: "emoji",
+				label: "Mood",
+				writes: ["get"],
+				default: { value: "smiling-face-with-halo" },
+			},
+			glyph: {
+				kind: "value",
+				type: "line",
+				control: "icon",
+				label: "Glyph",
+				writes: ["get"],
+				default: { value: "menu" },
+			},
+		},
+	};
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
+	const registry = {
+		get: (id) => (id === BADGE_ID ? { manifest, component: Leaf } : null),
+		list: () => [{ manifest }],
+	};
+	const host = { platform: "test", can: {}, slot: () => null, file: () => null, ui: { notify() {}, openNote() {} } };
+	let board = normalizeBoard({
+		tiles: [{ id: "badge", widget: BADGE_ID }],
+		layouts: { 20: [{ id: "badge", x: 0, y: 0, w: 6, h: 4 }] },
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				boardNode: mount,
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: boardWidthPx,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1)
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	const all = (selector) => [...document.querySelectorAll(selector)];
+	const rowSaying = (text) => all(".wg-set-panel .wg-kit-row").find((row) => row.textContent.includes(text));
+	const tiles = () => all(OPEN_POP + " .wg-set-glyph");
+	const named = (name) => tiles().find((tile) => tile.getAttribute("aria-label") === name);
+	const searchFor = async (typed) => {
+		const field = document.querySelector(OPEN_POP + " .wg-set-glyphs input");
+		field.value = typed;
+		field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
+		await tick();
+	};
+
+	await press(all('.wg-tile-actions button[aria-label="Settings"]')[0]);
+
+	const moodRow = rowSaying("Mood");
+	check(
+		"the row draws the emoji it holds, not its name alone",
+		Boolean(moodRow?.querySelector(".wg-set-picked .wg-kit-emoji")),
+		true,
+	);
+	check(
+		"and says which one it is",
+		moodRow?.querySelector(".wg-set-picked .wg-set-path")?.textContent,
+		"smiling-face-with-halo",
+	);
+
+	await press(moodRow);
+	check(
+		"pressing it opens a grid rather than a line to type into",
+		[tiles().length > 0, Boolean(document.querySelector(OPEN_POP + " .wg-kit-field-input[placeholder='A value']"))],
+		[true, false],
+	);
+	check(
+		"every tile draws its emoji",
+		tiles().every((tile) => Boolean(tile.querySelector(".wg-kit-emoji"))),
+		true,
+	);
+	check("the one it already holds stands out", named("smiling-face-with-halo")?.getAttribute("aria-pressed"), "true");
+
+	await searchFor("crying cat");
+	check(
+		"searching takes the rest away",
+		tiles().map((tile) => tile.getAttribute("aria-label")),
+		["crying-cat"],
+	);
+
+	await press(named("crying-cat"));
+	check(
+		"picking one writes its name into the draft",
+		board.tiles[0].props?.mood?.value ?? "not written yet",
+		"not written yet",
+	);
+	check(
+		"and the panel already draws it",
+		rowSaying("Mood")?.querySelector(".wg-set-picked .wg-set-path")?.textContent,
+		"crying-cat",
+	);
+	check("the picker closes on the pick", tiles().length, 0);
+
+	const glyphRow = rowSaying("Glyph");
+	await press(glyphRow);
+	check("an icon prop opens the same grid", tiles().length > 0, true);
+	check("the kit's own glyphs are offered first", tiles()[0]?.getAttribute("aria-label"), "chevron");
+
+	await searchFor("anchor");
+	check(
+		"and lucide's are offered beside them",
+		tiles()
+			.map((tile) => tile.getAttribute("aria-label"))
+			.includes("anchor"),
+		true,
+	);
+
+	await press(named("anchor"));
+	const drawn = rowSaying("Glyph")?.querySelector(".wg-set-picked svg");
+	check(
+		"picking a lucide icon draws it on lucide's own grid",
+		[drawn?.getAttribute("viewBox"), drawn?.classList.contains("is-lucide")],
+		["0 0 24 24", true],
+	);
+
+	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	check(
+		"Done writes both picks to the board",
+		[board.tiles[0].props.mood.value, board.tiles[0].props.glyph.value],
+		["crying-cat", "anchor"],
+	);
+	check(
+		"and each is kept as a typed value, not a path",
+		[board.tiles[0].props.mood.from, board.tiles[0].props.glyph.from],
+		["typed", "typed"],
+	);
+
+	render(null, mount);
+}
+
+console.log("\n— a surface is picked in the Design tab, and only the ones the laws leave standing —");
+{
+	const CARD_ID = "@probe/card";
+	const manifest = { id: CARD_ID, title: "Card", role: "indicator", props: {} };
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
+	const registry = { get: (id) => (id === CARD_ID ? { manifest, component: Leaf } : null), list: () => [{ manifest }] };
+	const host = { platform: "test", can: {}, slot: () => null, file: () => null, ui: { notify() {}, openNote() {} } };
+	let board = normalizeBoard({
+		v: 2,
+		tiles: [
+			{ id: "a", widget: CARD_ID },
+			{ id: "b", widget: CARD_ID },
+		],
+		layout: {
+			dir: "row",
+			of: [
+				{
+					dir: "column",
+					keep: true,
+					of: [
+						{
+							dir: "column",
+							surface: "group",
+							role: "indicators",
+							purpose: "How the week is going",
+							of: [
+								{ id: "a", height: 200 },
+								{ id: "b", height: 200 },
+							],
+						},
+					],
+				},
+			],
+		},
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				boardNode: mount,
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: boardWidthPx,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1)
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	const all = (selector) => [...document.querySelectorAll(selector)];
+	const rowSaying = (text) => all(".wg-set-panel .wg-kit-row").find((row) => row.textContent.includes(text));
+	const tab = (name) => all(".wg-set-panel .wg-kit-seg button").find((button) => button.textContent.trim() === name);
+	const picks = () => all(OPEN_POP + " .wg-set-pop-body > .wg-kit-pop-item");
+	const labelOf = (row) => row.querySelector(".wg-set-pop-name")?.textContent?.trim() ?? "";
+	const named = (label) => picks().find((row) => labelOf(row) === label);
+	const subOf = (label) => named(label)?.querySelector(".wg-kit-pop-sub")?.textContent;
+	const leafAt = (which) => board.layout.of[0].of[0].of[which];
+
+	await press(all('.wg-tile-actions button[aria-label="Settings"]')[0]);
+	await press(tab("Design"));
+	check("the Design tab draws a Surface row", Boolean(rowSaying("Surface")), true);
+	check("and it says what the widget wears now", rowSaying("Surface")?.textContent.includes("None"), true);
+
+	await press(rowSaying("Surface"));
+	check("every surface is listed, none silently left out", picks().map(labelOf), ["Group", "Object", "Apart", "None"]);
+	check(
+		"they are the kit's own popover items, not a list this window drew itself",
+		[picks().length, all(OPEN_POP + " .wg-set-pop-body > p").length],
+		[4, 0],
+	);
+	check(
+		"each carries its sentence inside the item, not beside it",
+		picks().every((row) => Boolean(row.querySelector(".wg-kit-pop-sub"))),
+		true,
+	);
+	check("an object may not stand inside a group, so it cannot be pressed", named("Object")?.disabled, true);
+	check(
+		"and the reason is said on the row itself, in words rather than a law's letter",
+		subOf("Object"),
+		"An object may not stand inside a group.",
+	);
+	check(
+		"what the laws leave standing is pressable",
+		["Group", "Apart", "None"].map((label) => named(label)?.disabled),
+		[false, false, false],
+	);
+
+	await press(named("Group"));
+	check("picking one is drawn on the row at once", rowSaying("Surface")?.textContent.includes("Group"), true);
+	check("and a plate asks for no side", Boolean(rowSaying("Side")), false);
+
+	await press(rowSaying("Surface"));
+	await press(named("Apart"));
+	check("a divider may stand anywhere", rowSaying("Surface")?.textContent.includes("Apart"), true);
+	check("and only then is a side asked for", Boolean(rowSaying("Side")), true);
+
+	await press(rowSaying("Side"));
+	await press(named("Start"));
+	check("the side stands on its own row", rowSaying("Side")?.textContent.includes("Start"), true);
+
+	await press(rowSaying("Surface"));
+	await press(named("None"));
+	check("taking the surface off takes its side row with it", Boolean(rowSaying("Side")), false);
+
+	await press(rowSaying("Surface"));
+	await press(named("Group"));
+	check("nothing has reached the board while the window is open", leafAt(0).surface, undefined);
+
+	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	check(
+		"Done writes the surface onto the node, not onto the tile",
+		[leafAt(0).surface, board.tiles[0].surface],
+		["group", undefined],
+	);
+
+	await tick();
+	await tick();
+	await press(all('.wg-tile-actions button[aria-label="Settings"]')[1]);
+	await tick();
+	await press(tab("Design"));
+	await press(rowSaying("Surface"));
+	check(
+		"now the second child may not be plated too, because then the plate around them would say nothing",
+		[named("Group")?.disabled, subOf("Group")?.includes("wears a plate of its own")],
+		[true, true],
+	);
 
 	render(null, mount);
 }

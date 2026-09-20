@@ -1,0 +1,1934 @@
+<title>Widget Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+	/* -- layer 1 . the vault's, standing in with Obsidian's defaults ----------- */
+	:root {
+		--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+		--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+		--color-base-35: #dadada; --color-base-40: #bdbdbd; --color-base-50: #ababab;
+		--color-base-60: #707070; --color-base-70: #5c5c5c; --color-base-100: #222222;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(0,0,0,0.05);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #c0392b; --text-success: #1f8a4c;
+		--interactive-accent: #6d4ee0; --interactive-accent-hover: #5b3ecb;
+		--color-orange: #d9822b;
+		--font-interface: "Inter", -apple-system, system-ui, sans-serif;
+		--font-monospace: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+		--font-ui-smaller: 12px; --font-ui-small: 14px; --font-ui-medium: 16px; --font-ui-large: 20px;
+		--font-medium: 500; --font-semibold: 600; --font-bold: 700;
+		--line-height-tight: 1.25; --line-height-normal: 1.5;
+		--radius-s: 4px; --radius-m: 8px; --radius-l: 12px; --radius-xl: 16px;
+		--size-2-1: 2px; --size-2-2: 4px; --size-2-3: 6px;
+		--size-4-1: 4px; --size-4-2: 8px; --size-4-3: 12px; --size-4-4: 16px;
+		--size-4-5: 20px; --size-4-6: 24px; --size-4-8: 32px; --size-4-12: 48px; --size-4-16: 64px;
+		color-scheme: light;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme="light"]) {
+			--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+			--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+			--color-base-35: #3d3f48; --color-base-40: #4e505a; --color-base-50: #7b7e89;
+			--color-base-60: #9ea1ac; --color-base-70: #c3c6ce; --color-base-100: #edeef1;
+			--background-modifier-hover: rgba(255,255,255,0.06);
+			--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+			--text-error: #ef7a6d; --text-success: #56c98a; --color-orange: #e0a45c;
+			color-scheme: dark;
+		}
+	}
+
+	:root[data-theme="dark"] {
+		--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+		--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+		--color-base-35: #3d3f48; --color-base-40: #4e505a; --color-base-50: #7b7e89;
+		--color-base-60: #9ea1ac; --color-base-70: #c3c6ce; --color-base-100: #edeef1;
+		--background-modifier-hover: rgba(255,255,255,0.06);
+		--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+		--text-error: #ef7a6d; --text-success: #56c98a; --color-orange: #e0a45c;
+		color-scheme: dark;
+	}
+
+	/* A custom property is substituted where it is DECLARED, so the specimens compared side
+	   by side carry their own layer 1 AND their own layer 2. */
+	.theme-light {
+		--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+		--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+		--color-base-35: #dadada; --color-base-40: #bdbdbd; --color-base-50: #ababab;
+		--color-base-60: #707070; --color-base-70: #5c5c5c; --color-base-100: #222222;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(0,0,0,0.05);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #c0392b; --text-success: #1f8a4c;
+		--interactive-accent: #6d4ee0; --interactive-accent-hover: #5b3ecb;
+		--color-orange: #d9822b;
+		color-scheme: light;
+	}
+	.theme-dark {
+		--color-base-00: #1b1c20; --color-base-05: #1f2025; --color-base-10: #24262c;
+		--color-base-20: #14151a; --color-base-25: #2b2d34; --color-base-30: #33353d;
+		--color-base-35: #3d3f48; --color-base-40: #4e505a; --color-base-50: #7b7e89;
+		--color-base-60: #9ea1ac; --color-base-70: #c3c6ce; --color-base-100: #edeef1;
+		--background-primary: var(--color-base-00);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(255,255,255,0.06);
+		--text-normal: var(--color-base-100); --text-muted: var(--color-base-60); --text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff; --text-error: #ef7a6d; --text-success: #56c98a;
+		--interactive-accent: #7c5cf0; --interactive-accent-hover: #8f74f5;
+		--color-orange: #e0a45c;
+		color-scheme: dark;
+	}
+
+	/* -- layer 2 . the kit, copied from styles.css so the page paints what the plugin does.
+	   --wg-raise is the recent rebase: white is a no-op in light and a real step in dark,
+	   so a floating panel LIFTS in dark instead of matching the note. */
+	:root, .theme-light, .theme-dark {
+		--wg-canvas: var(--background-secondary);
+		--wg-surface: var(--background-primary);
+		--wg-raise: color-mix(in srgb, #ffffff 12%, var(--background-primary));
+		--wg-fill: color-mix(in srgb, var(--text-normal) 7%, var(--background-primary));
+		--wg-fill-hover: color-mix(in srgb, var(--text-normal) 12%, var(--background-primary));
+		--wg-line: color-mix(in srgb, var(--text-normal) 14%, transparent);
+		--wg-ink: var(--text-normal); --wg-ink-muted: var(--text-muted); --wg-ink-faint: var(--text-faint);
+		--wg-accent: var(--interactive-accent); --wg-accent-hover: var(--interactive-accent-hover);
+		--wg-on-accent: var(--text-on-accent);
+		--wg-accent-wash: color-mix(in srgb, var(--wg-accent) 12%, var(--background-primary));
+		--wg-success: var(--text-success); --wg-error: var(--text-error); --wg-warning: var(--color-orange);
+		--wg-success-wash: color-mix(in srgb, var(--wg-success) 14%, var(--background-primary));
+		--wg-error-wash: color-mix(in srgb, var(--wg-error) 14%, var(--background-primary));
+		--wg-warning-wash: color-mix(in srgb, var(--wg-warning) 16%, var(--background-primary));
+		--wg-radius-tile: 22px; --wg-radius-card: 28px; --wg-radius-pill: 999px;
+		--wg-plate-pad: 8px;
+		--wg-radius-item: calc(var(--wg-radius-tile) - var(--wg-plate-pad));
+		--wg-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+		--wg-ease: cubic-bezier(0.4, 0, 0.2, 1);
+		--wg-dur-press: 120ms; --wg-dur-s: 200ms; --wg-dur-m: 320ms;
+		--wg-press-scale: 0.955;
+
+		/* the kit's glass, verbatim from styles.css:104-107 */
+		--wg-glass-tint: color-mix(in srgb, var(--background-primary) 42%, transparent);
+		--wg-glass-panel: color-mix(in srgb, var(--wg-raise) 78%, transparent);
+		--wg-glass-blur: blur(24px) saturate(180%);
+		--wg-glass-edge: inset 0 0 0 1px color-mix(in srgb, var(--wg-ink) 12%, transparent);
+		/* NO EDGE AND NO SHADOW INSIDE ANYTHING. Law one of the kit: a surface is a FILL, and
+		   a line only ever divides two rows of one group. The single exception is
+		   --wg-glass-edge on the OUTERMOST floating panel, because a translucent surface over
+		   moving content dissolves into it without one. Nothing that panel contains gets a
+		   second edge: if two surfaces looked alike and wanted a border, one had the wrong fill. */
+		/* A GROUP ON GLASS. --wg-fill is a step from --background-primary, and inside a
+		   translucent panel there is no solid background to step from -- over a white canvas
+		   the panel and the fill are both white and the group vanishes. So the group steps
+		   toward the INK instead, from the panel's own raised colour: darker in light,
+		   lighter in dark, a constant step either way. Opaque, because it carries text. */
+		--wg-glass-group: color-mix(in srgb, var(--wg-ink) 6%, var(--wg-raise));
+
+		/* the board's own numbers, from src/paths.js GRID */
+		--cell: 54px; --gap: 12px; --pitch: 66px;
+	}
+
+	.theme-light, .theme-dark { background: var(--wg-canvas); color: var(--wg-ink); }
+
+	/* -- page shell ------------------------------------------------------------ */
+	*, *::before, *::after { box-sizing: border-box; }
+	button { border: none; background: none; font: inherit; color: inherit; padding: 0; margin: 0; appearance: none; -webkit-appearance: none; }
+	body {
+		background: var(--wg-canvas); color: var(--wg-ink);
+		font-family: var(--font-interface); font-size: var(--font-ui-medium);
+		line-height: var(--line-height-normal); -webkit-font-smoothing: antialiased; margin: 0;
+	}
+	p { margin: 0; }
+	code, .mono { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); }
+	*:focus-visible { outline: 2px solid var(--wg-accent); outline-offset: 3px; border-radius: var(--radius-m); }
+
+	.sheet { max-width: 1240px; margin: 0 auto; padding: 0 var(--size-4-5) var(--size-4-16); display: flex; flex-direction: column; gap: var(--size-4-12); }
+	.masthead { padding: var(--size-4-16) 0 0; display: flex; flex-direction: column; gap: var(--size-4-4); }
+	.masthead h1 { font-size: clamp(34px, 5.5vw, 54px); font-weight: var(--font-bold); letter-spacing: -0.03em; line-height: 1.03; margin: 0; text-wrap: balance; }
+	.lede { max-width: 66ch; color: var(--wg-ink-muted); font-size: 17px; }
+	.lede strong { color: var(--wg-ink); font-weight: var(--font-semibold); }
+
+	section { display: flex; flex-direction: column; gap: var(--size-4-5); }
+	.head { display: flex; flex-direction: column; gap: var(--size-2-2); }
+	.head h2 { font-size: 28px; font-weight: var(--font-semibold); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+	.head h3 { font-size: var(--font-ui-large); font-weight: var(--font-semibold); letter-spacing: -0.01em; margin: 0; }
+	.note { font-size: var(--font-ui-small); color: var(--wg-ink-muted); max-width: 68ch; }
+	.note b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.note code, .open code, .lede code, .cost code, .why code { background: var(--wg-fill); border-radius: var(--radius-s); padding: 1px 5px; }
+
+	/* THE PLAIN LABEL. It replaces the kit's mono, tracked, uppercase caption: same job,
+	   said in the page's own voice instead of shouted in a second typeface. */
+	.lbl { font-size: var(--font-ui-smaller); font-weight: var(--font-medium); color: var(--wg-ink-faint); }
+	.lbl.step { color: var(--wg-accent); }
+
+	.scrollx { overflow-x: auto; padding-bottom: var(--size-4-2); }
+	.stack { display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.pressable { transition: transform var(--wg-dur-press) var(--wg-ease), background var(--wg-dur-s) var(--wg-ease), color var(--wg-dur-s) var(--wg-ease); }
+	.pressable:active { transform: scale(var(--wg-press-scale)); }
+	@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } .pressable:active { transform: none; } }
+
+	/* -- kit atoms ------------------------------------------------------------- */
+	.btn { font-weight: var(--font-semibold); line-height: 1; cursor: pointer; border-radius: var(--wg-radius-pill); display: inline-flex; align-items: center; justify-content: center; gap: var(--size-4-2); background: var(--wg-fill); color: var(--wg-ink); }
+	.btn-m { font-size: var(--font-ui-small); padding: 0 var(--size-4-5); height: 42px; }
+	.btn-s { font-size: var(--font-ui-small); padding: 0 var(--size-4-4); height: 34px; }
+	.btn:hover { background: var(--wg-fill-hover); }
+	.btn-accent { background: var(--wg-accent); color: var(--wg-on-accent); }
+	.btn-accent:hover { background: var(--wg-accent-hover); }
+	.btn-plain { background: transparent; color: var(--wg-accent); }
+	.btn-plain:hover { background: var(--wg-accent-wash); }
+
+	.iconbtn { border-radius: var(--wg-radius-pill); display: inline-flex; align-items: center; justify-content: center; background: var(--wg-fill); color: var(--wg-ink-muted); cursor: pointer; flex: none; }
+	.iconbtn-xs { width: 26px; height: 26px; }
+	.iconbtn-s { width: 32px; height: 32px; }
+	.iconbtn:hover { background: var(--wg-fill-hover); color: var(--wg-ink); }
+
+	.pilltag { display: inline-flex; align-items: center; gap: var(--size-2-2); border-radius: var(--wg-radius-pill); padding: 3px var(--size-4-3); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); background: var(--wg-fill); color: var(--wg-ink-muted); white-space: nowrap; }
+	.pilltag.err { background: var(--wg-error-wash); color: var(--wg-error); }
+	.pilltag.warn { background: var(--wg-warning-wash); color: var(--wg-warning); }
+	.pilltag.ok { background: var(--wg-success-wash); color: var(--wg-success); }
+	.pilltag.accent { background: var(--wg-accent-wash); color: var(--wg-accent); }
+	.pilltag.tiny { font-size: 10px; padding: 2px var(--size-2-3); }
+
+	.icon { width: 16px; height: 16px; flex: none; }
+	.icon path, .icon circle, .icon rect, .icon line { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+	/* ==========================================================================
+	   THE GROUPED LIST -- styles.css:1045. The GROUP is the filled surface and it
+	   CLIPS: the first and last rows are cut into its corners, so no row is ever
+	   rounded on its own. The hairline is on the row's ::after, because ::before
+	   is the hover ground every kit control paints on, and it is INSET past the
+	   badge so the line starts under the label.
+	   ========================================================================== */
+	.list { display: flex; flex-direction: column; width: 100%; background: var(--wg-surface); border-radius: var(--wg-radius-tile); overflow: hidden; }
+	/* Inside a glass panel the group is structure, not a second floating object: it takes
+	   the panel's own group fill and NO edge. An edge is what made these read as cards. */
+	.list.on-glass { background: var(--wg-glass-group); box-shadow: none; }
+
+	/* A GROUP'S HEADING SITS OUTSIDE THE BLOCK, as macOS System Settings does it: small,
+	   muted, indented to the block's own text column. The block then holds rows and nothing
+	   else -- and with no heading inside it, there is nothing to divide it from, which is
+	   half the lines gone before we start. The footnote goes outside for the same reason. */
+	.group { display: flex; flex-direction: column; gap: var(--size-2-3); position: relative; }
+	.group > .lbl { padding: 0 var(--size-4-4); }
+	.group > .lbl .n { color: var(--wg-ink-faint); font-weight: var(--font-medium); }
+	.group > .lbl .n::before { content: "\00b7"; padding: 0 var(--size-2-2); }
+	.under { padding: 0 var(--size-4-4); font-size: 11px; color: var(--wg-ink-faint); line-height: 1.45; }
+	.under b { color: var(--wg-ink-muted); font-weight: var(--font-semibold); }
+	.under a { color: var(--wg-accent); text-decoration: none; font-weight: var(--font-medium); cursor: pointer; }
+
+	.row {
+		--hairline: var(--size-4-4);
+		position: relative; isolation: isolate; box-sizing: border-box;
+		display: flex; align-items: center; gap: var(--size-4-3); width: 100%;
+		padding: var(--size-4-3) var(--size-4-4);
+		border: none; background: none; font-family: inherit;
+		font-size: var(--font-ui-small); color: var(--wg-ink); text-align: left;
+	}
+	/* padding + badge + gap: the inset that reads as iOS and not as a table */
+	.row:has(.badge) { --hairline: calc(var(--size-4-4) + 30px + var(--size-4-3)); }
+	/* a row is a control, so it never paints its own background: the ground is ::before */
+	.row::before { content: ""; position: absolute; inset: 0; z-index: -1; background: none; transition: background var(--wg-dur-s) var(--wg-ease); }
+	/* THE ONLY LINE. Opt-in, because a group holding two or three unlike controls is
+	   already separated by its fill and its spacing -- lines pushed in there read as stuffy.
+	   .divided is for a genuine list of like rows, which is the macOS pattern. */
+	.list.divided .row + .row::after { content: ""; position: absolute; top: 0; left: var(--hairline); right: 0; height: 1px; background: var(--wg-line); }
+	.row.press { cursor: pointer; }
+	.row.press:hover::before { background: var(--background-modifier-hover); }
+	.row.tall { padding-top: var(--size-4-2); padding-bottom: var(--size-4-2); }
+
+	.badge { display: grid; place-content: center; flex: none; width: 30px; height: 30px; border-radius: var(--radius-m); background: var(--wg-accent); color: var(--wg-on-accent); }
+	.badge.quiet { background: var(--wg-fill-hover); color: var(--wg-ink-muted); }
+	.badge.ok { background: var(--wg-success-wash); color: var(--wg-success); }
+	.badge.off { background: var(--wg-fill-hover); color: var(--wg-ink-faint); }
+	.badge.grab { background: none; color: var(--wg-ink-faint); cursor: grab; }
+
+	.rlabel { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: var(--font-medium); }
+	.rlabel.two { display: flex; flex-direction: column; gap: 1px; white-space: normal; overflow: visible; }
+	.rlabel.two > .line { display: flex; align-items: center; gap: var(--size-4-2); }
+	.rlabel .sub { font-size: 11px; color: var(--wg-ink-faint); font-weight: var(--font-medium); }
+	.rlabel .sub.mono { font-family: var(--font-monospace); }
+	.rvalue { flex: none; display: inline-flex; align-items: center; gap: var(--size-4-2); color: var(--wg-ink); font-weight: var(--font-medium); }
+	.rvalue.muted { color: var(--wg-ink-muted); }
+	.rvalue.unset { color: var(--wg-ink-faint); }
+	.rvalue .path { font-family: var(--font-monospace); font-size: 11px; }
+	.row.is-unset .rlabel { color: var(--wg-ink-faint); }
+	.row > .chev { flex: none; color: var(--wg-ink-faint); width: 14px; height: 14px; }
+	/* the group's own fill IS the neutral button's fill, so a control inside a row raises */
+	.row .iconbtn { background: var(--wg-raise); }
+	.row .iconbtn:hover { background: var(--wg-fill-hover); }
+	.row.add { color: var(--wg-ink-muted); font-weight: var(--font-medium); }
+	.row.add:hover { color: var(--wg-ink); }
+	/* mid-edit: the row lifts off the group onto the panel's own surface */
+
+	/* -- glass . one rule, the kit's, and it casts nothing --------------------- */
+	.glass { background: var(--wg-glass-panel); backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur); box-shadow: var(--wg-glass-edge); }
+
+	.pop { border-radius: var(--wg-radius-tile); background: var(--wg-glass-panel); backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur); box-shadow: var(--wg-glass-edge); overflow: hidden; min-width: 216px; }
+	.pop-inner { padding: var(--size-4-2); display: flex; flex-direction: column; }
+	.pop-item { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-2) var(--size-4-3); border-radius: var(--radius-l); cursor: pointer; font-size: var(--font-ui-small); font-weight: var(--font-medium); text-align: left; width: 100%; }
+	.pop-item:hover { background: var(--background-modifier-hover); }
+	.pop-item .tickmark { margin-left: auto; color: var(--wg-accent); opacity: 0; }
+	.pop-item[aria-checked="true"] .tickmark { opacity: 1; }
+	.pop-sep { height: 1px; background: var(--wg-line); margin: var(--size-2-2) var(--size-4-3); }
+	.pop-field { display: flex; align-items: center; gap: var(--size-4-2); background: var(--wg-surface); border-radius: var(--wg-radius-pill); padding: 0 var(--size-4-3); height: 36px; margin: var(--size-2-3) var(--size-2-3) var(--size-4-2); font-size: var(--font-ui-small); box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	/* the kit takes the TRIGGER'S place (showPop hides the anchor and grows from its
+	   corner), so the panel starts where the row was rather than beside it */
+	.pop-anchored { position: absolute; z-index: 8; left: 0; right: 0; }
+	.pop-foot { display: flex; align-items: center; gap: var(--size-4-2); padding: var(--size-4-2) var(--size-2-3) var(--size-2-3); }
+	.pop-foot .btn { flex: 1; }
+	.pop-foot .btn:last-child { flex: 2; }
+	.pop-field .ph { color: var(--wg-ink-faint); }
+	.pop-item .pname { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+	/* -- page furniture -------------------------------------------------------- */
+	.frame { display: flex; flex-direction: column; gap: var(--size-4-2); }
+	.stage { background: var(--wg-canvas); border-radius: var(--wg-radius-card); padding: var(--size-4-5); }
+	.theme-light .stage, .theme-dark .stage { background: var(--wg-canvas); }
+	.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--size-4-4); align-items: start; }
+	.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--size-4-3); align-items: start; }
+	.panel { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-5); display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.panel h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); display: flex; align-items: center; gap: var(--size-4-2); }
+	.panel h4 .lbl, .panel h4 .verdict { margin-left: auto; }
+	.panel .why { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); line-height: 1.55; }
+	.panel .why b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.callout { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-4) var(--size-4-5); display: flex; gap: var(--size-4-3); align-items: flex-start; font-size: var(--font-ui-small); color: var(--wg-ink-muted); line-height: 1.55; }
+	.callout .icon { margin-top: 2px; color: var(--wg-accent); width: 18px; height: 18px; }
+	.callout b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.callout.warn .icon { color: var(--wg-warning); }
+	.callout.pick { background: var(--wg-accent-wash); }
+	.flow { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); line-height: 1.75; color: var(--wg-ink-muted); background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-5); overflow-x: auto; white-space: pre; }
+	.flow b { color: var(--wg-ink); font-weight: var(--font-medium); }
+	.flow em { color: var(--wg-accent); font-style: normal; }
+	.flow i { color: var(--wg-ink-faint); font-style: normal; }
+	.opens { display: flex; flex-direction: column; gap: var(--size-2-3); }
+	.open { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-3) var(--size-4-4); display: flex; gap: var(--size-4-3); align-items: baseline; font-size: var(--font-ui-small); color: var(--wg-ink-muted); line-height: 1.55; }
+	.open b { color: var(--wg-ink); font-weight: var(--font-semibold); flex: none; min-width: 196px; }
+	.opt { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-4) var(--size-4-5); display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.opt h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); display: flex; align-items: center; gap: var(--size-4-2); }
+	.opt .verdict { margin-left: auto; }
+	.opt .cost { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); line-height: 1.55; }
+	.opt .cost b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.opt-demo { background: var(--wg-canvas); border-radius: var(--wg-radius-tile); height: 128px; position: relative; overflow: hidden; }
+
+	/* ==========================================================================
+	   THE WINDOW. One surface: the playground, edge to edge. The header and the
+	   sidebar FLOAT on it -- the grid runs underneath both and does not stop.
+	   ========================================================================== */
+	.win { position: relative; background: var(--wg-surface); border-radius: var(--wg-radius-card); overflow: hidden; }
+	.win-cells { position: absolute; top: -22px; left: -26px; right: -20px; bottom: -20px; display: grid; grid-template-columns: repeat(auto-fill, var(--cell)); grid-auto-rows: var(--cell); gap: var(--gap); pointer-events: none; }
+	.win-cells i { display: block; border-radius: var(--radius-m); background: color-mix(in srgb, var(--wg-ink) 5%, transparent); }
+
+	.wgt { position: absolute; background: var(--wg-surface); border-radius: var(--wg-radius-tile); overflow: hidden; display: flex; flex-direction: column; }
+	/* the one accent ring left: it marks the PLACE a widget occupies on the grid, in the
+	   re-root figure where the target is a 4x2 card inside a much larger canvas. It is the
+	   kit's selection vocabulary (.wg-kit-card.is-selected), not a separating border. */
+	.wgt.place { box-shadow: 0 0 0 2px var(--wg-accent); }
+
+	/* a capsule that hugs its content -- a bar spanning the window reads as a strip in a
+	   costume, and it is the width that made the glass look like an opaque header */
+	.win-head { position: absolute; z-index: 6; left: var(--size-4-4); top: var(--size-4-4); width: max-content; max-width: calc(100% - var(--size-4-8)); height: 46px; border-radius: var(--wg-radius-pill); display: flex; align-items: center; gap: var(--size-4-3); padding: 0 var(--size-2-3) 0 var(--size-4-4); }
+	.win-head .right { margin-left: var(--size-4-2); display: flex; align-items: center; gap: var(--size-2-3); }
+	.win-side { position: absolute; z-index: 6; right: var(--size-4-4); top: var(--size-4-4); bottom: var(--size-4-4); width: 288px; border-radius: var(--wg-radius-card); padding: var(--size-4-2); display: flex; flex-direction: column; gap: var(--size-4-2); overflow: hidden; }
+	/* a flex child shrinks by default, and a .list clips -- so an uncompressed group is
+	   the difference between a trailing note and a trailing note cut in half */
+	.win-side-scroll { display: flex; flex-direction: column; gap: var(--size-4-4); overflow-y: auto; flex: 1; min-height: 0; }
+	.win-side-scroll > * { flex: none; }
+	.ph-sheet > * { flex: none; }
+	.win-foot { display: flex; align-items: center; padding: var(--size-2-2) var(--size-4-3) 0; }
+	.win-foot .lbl { font-family: var(--font-monospace); font-size: 11px; }
+
+	.crumbs { display: flex; align-items: center; gap: var(--size-2-2); font-size: var(--font-ui-smaller); color: var(--wg-ink-faint); min-width: 0; }
+	.crumbs button { display: inline-flex; align-items: center; gap: var(--size-2-2); padding: 3px var(--size-2-3); border-radius: var(--wg-radius-pill); cursor: pointer; color: var(--wg-ink-faint); font-size: var(--font-ui-smaller); font-weight: var(--font-medium); }
+	.crumbs button:hover { background: var(--background-modifier-hover); color: var(--wg-ink); }
+	.crumbs .here { color: var(--wg-ink); font-weight: var(--font-semibold); font-size: var(--font-ui-small); }
+	.crumbs .sep { color: var(--wg-ink-faint); }
+
+	.tabbar { display: flex; background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 3px; flex: none; }
+	.win-side .tabbar, .ph-sheet .tabbar, .dside .tabbar { background: var(--wg-glass-group); }
+	.win-side .tabbar button[aria-selected="true"], .ph-sheet .tabbar button[aria-selected="true"] { background: var(--wg-raise); box-shadow: none; }
+	.tabbar button { flex: 1; font-size: var(--font-ui-smaller); font-weight: var(--font-medium); color: var(--wg-ink-muted); border-radius: var(--wg-radius-pill); height: 30px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: color var(--wg-dur-s) var(--wg-ease); }
+	.tabbar button[aria-selected="true"] { color: var(--wg-ink); font-weight: var(--font-semibold); background: var(--wg-raise); }
+
+	.win-bar { position: absolute; z-index: 6; left: var(--size-4-4); bottom: var(--size-4-4); display: flex; align-items: center; gap: var(--size-2-3); border-radius: var(--wg-radius-pill); padding: var(--size-2-2); }
+	.win-bar button { display: inline-flex; align-items: center; justify-content: center; height: 28px; min-width: 28px; padding: 0 var(--size-4-2); border-radius: var(--wg-radius-pill); font-size: 11px; font-weight: var(--font-semibold); color: var(--wg-ink-muted); cursor: pointer; }
+	.win-bar button:hover { background: var(--background-modifier-hover); color: var(--wg-ink); }
+	.win-bar button[aria-pressed="true"] { background: var(--wg-raise); color: var(--wg-ink); }
+	.win-bar .div { width: 1px; height: 16px; background: var(--wg-line); }
+	.win-bar .said { padding: 0 var(--size-4-2); font-size: 11px; color: var(--wg-ink-faint); font-weight: var(--font-medium); }
+
+	/* the measured rectangle, drawn where the page has to show what fit is computed against */
+	.freebox { position: absolute; z-index: 5; border-radius: var(--wg-radius-tile); box-shadow: inset 0 0 0 1.6px var(--wg-accent); pointer-events: none; }
+	.freetag { position: absolute; z-index: 7; font-size: 10px; font-weight: 600; color: var(--wg-accent); }
+
+	/* -- the kanban drawn inside the widget ------------------------------------ */
+	.kb { font-size: var(--font-ui-small); display: flex; flex-direction: column; height: 100%; }
+	.kb-top { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-3) var(--size-4-4); }
+	.kb-top h5 { margin: 0; font-size: var(--font-ui-medium); font-weight: var(--font-semibold); letter-spacing: -0.01em; }
+	.kb-top .right { margin-left: auto; display: flex; align-items: center; gap: var(--size-4-2); }
+	.kb-cols { display: flex; gap: var(--size-4-2); padding: 0 var(--size-4-3) var(--size-4-3); flex: 1; min-height: 0; }
+	.kcol { flex: 1; background: var(--wg-fill); border-radius: var(--wg-radius-tile); padding: var(--wg-plate-pad); display: flex; flex-direction: column; gap: var(--size-2-3); min-width: 0; }
+	.kcol-head { display: flex; align-items: center; gap: var(--size-4-2); padding: var(--size-2-2) var(--size-4-2); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); }
+	.kcol-head .n { margin-left: auto; color: var(--wg-ink-faint); font-weight: var(--font-medium); }
+	.kcol.new { box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.kcard { background: var(--wg-surface); border-radius: var(--wg-radius-item); padding: var(--size-4-2) var(--size-4-3); display: flex; flex-direction: column; gap: var(--size-2-3); }
+	.kcard .t { font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); line-height: 1.3; }
+	.kcard .m { display: flex; align-items: center; gap: var(--size-2-3); }
+	.kghost { border-radius: var(--wg-radius-item); background: var(--background-modifier-hover); height: 46px; }
+	.avatars { display: flex; align-items: center; flex: none; }
+	.avatar { width: 22px; height: 22px; border-radius: var(--wg-radius-pill); display: grid; place-content: center; font-size: 10px; font-weight: var(--font-semibold); box-shadow: 0 0 0 2px var(--wg-surface); margin-left: -5px; flex: none; }
+	.avatar:first-child { margin-left: 0; }
+	.av-a { background: var(--wg-accent-wash); color: var(--wg-accent); }
+	.av-b { background: var(--wg-success-wash); color: var(--wg-success); }
+	.av-c { background: var(--wg-warning-wash); color: var(--wg-warning); }
+
+	/* -- the motion, drawn as frames ------------------------------------------- */
+	.seq { display: flex; gap: var(--size-4-3); min-width: 1180px; }
+	.seqcard { flex: 1; display: flex; flex-direction: column; gap: var(--size-4-2); }
+	.mini { position: relative; background: var(--wg-canvas); border-radius: var(--wg-radius-tile); height: 158px; overflow: hidden; }
+	.mini .dim { position: absolute; inset: 0; background: rgba(0,0,0,0.28); opacity: 0; }
+	.mini.lit .dim { opacity: 1; }
+	.mtile { position: absolute; background: var(--wg-surface); border-radius: 10px; display: flex; flex-direction: column; gap: 3px; padding: 6px; overflow: hidden; }
+	.mtile .bar { height: 4px; border-radius: 999px; background: var(--wg-fill-hover); }
+	.mtile .bar.w6 { width: 60%; } .mtile .bar.w4 { width: 40%; } .mtile .bar.w8 { width: 80%; }
+	.mtile.hero { z-index: 3; }
+	.mtile .gear { position: absolute; top: 4px; right: 4px; width: 14px; height: 14px; border-radius: 999px; background: var(--wg-fill); color: var(--wg-ink-muted); display: grid; place-content: center; }
+	.mtile .gear .icon { width: 9px; height: 9px; }
+	.mtile .gear.pressed { background: var(--wg-accent); color: var(--wg-on-accent); transform: scale(0.955); }
+	.mtile .side { position: absolute; top: 6px; right: 6px; bottom: 6px; width: 62px; border-radius: 8px; background: var(--wg-fill); display: flex; flex-direction: column; gap: 4px; padding: 5px; }
+	.mtile .side .r { height: 7px; border-radius: 999px; background: var(--wg-surface); }
+	.mtile .side .r.tabs { background: var(--wg-fill-hover); height: 11px; }
+	.seqcard .why { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); line-height: 1.5; }
+	.seqcard .why b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+
+	/* -- live demo -------------------------------------------------------------- */
+	.demo { position: relative; background: var(--wg-canvas); border-radius: var(--wg-radius-tile); height: 300px; overflow: hidden; }
+	.demo .dim { position: absolute; inset: 0; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity var(--wg-dur-m) var(--wg-ease); z-index: 2; }
+	.demo.open .dim { opacity: 1; }
+	.dtile { position: absolute; top: 0; left: 0; background: var(--wg-surface); border-radius: var(--wg-radius-tile); overflow: hidden; display: flex; flex-direction: column; padding: var(--size-4-2); gap: var(--size-2-3); }
+	.dtile .bar { height: 6px; border-radius: 999px; background: var(--wg-fill-hover); }
+	.dtile .bar.w6 { width: 60%; } .dtile .bar.w4 { width: 40%; }
+	/* THE BOX MOVES, NOT A SCALE -- transform + width + height, as styles.css:287 already
+	   does for a tile. A scaled ancestor would break every fixed-position popover inside
+	   the widget AND the backdrop-filter on both floating panels. */
+	.dtile.travels { transition: transform var(--wg-dur-m) var(--wg-spring), width var(--wg-dur-m) var(--wg-spring), height var(--wg-dur-m) var(--wg-spring), border-radius var(--wg-dur-m) var(--wg-spring); z-index: 3; }
+	.demo.open .dtile.travels { border-radius: var(--wg-radius-card); }
+	.dtile .gear { position: absolute; top: 8px; right: 8px; z-index: 2; }
+	.dtile .dside { position: absolute; top: var(--size-4-2); right: var(--size-4-2); bottom: var(--size-4-2); width: 172px; border-radius: var(--wg-radius-tile); padding: var(--size-4-2); display: flex; flex-direction: column; gap: var(--size-4-2); opacity: 0; pointer-events: none; transition: opacity var(--wg-dur-s) var(--wg-ease); }
+	.demo.open .dtile .dside { opacity: 1; pointer-events: auto; transition-delay: 80ms; }
+	.dside .r { height: 26px; border-radius: var(--wg-radius-item); background: var(--wg-glass-group); }
+
+	/* -- phone ------------------------------------------------------------------ */
+	.phone { width: 340px; flex: none; }
+	.phone-win { position: relative; height: 560px; background: var(--wg-surface); border-radius: var(--wg-radius-card); overflow: hidden; }
+	.ph-head { position: absolute; z-index: 6; left: var(--size-4-2); right: var(--size-4-2); top: var(--size-4-2); height: 40px; border-radius: var(--wg-radius-pill); display: flex; align-items: center; gap: var(--size-4-2); padding: 0 var(--size-2-3) 0 var(--size-4-3); }
+	.ph-sheet { position: absolute; z-index: 6; left: var(--size-4-2); right: var(--size-4-2); bottom: var(--size-4-2); border-radius: var(--wg-radius-card); padding: var(--size-4-2); display: flex; flex-direction: column; gap: var(--size-4-3); }
+	.ph-grip { width: 36px; height: 4px; border-radius: 999px; background: var(--wg-ink-faint); opacity: 0.4; margin: 2px auto var(--size-2-2); }
+	.ph-bar { position: absolute; z-index: 5; left: var(--size-4-2); border-radius: var(--wg-radius-pill); padding: var(--size-2-2); display: flex; gap: var(--size-2-3); }
+	.ph-bar button { height: 26px; min-width: 26px; padding: 0 var(--size-4-2); border-radius: var(--wg-radius-pill); font-size: 11px; font-weight: var(--font-semibold); color: var(--wg-ink-muted); display: inline-flex; align-items: center; justify-content: center; }
+	.ph-bar button[aria-pressed="true"] { background: var(--wg-raise); color: var(--wg-ink); }
+
+	.pairthemes { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--size-4-3); }
+	.pairthemes > div { border-radius: var(--wg-radius-card); padding: var(--size-4-4); display: flex; flex-direction: column; gap: var(--size-4-3); }
+
+	@media (max-width: 1080px) {
+		.win-head { right: var(--size-4-4); }
+		.win-side { position: static; width: auto; margin-top: 78px; }
+		.stage { padding: var(--size-4-3); }
+	}
+	@media (max-width: 640px) {
+		.sheet { padding: 0 var(--size-4-4) var(--size-4-12); gap: var(--size-4-8); }
+		.open { flex-direction: column; gap: var(--size-2-2); }
+		.open b { min-width: 0; }
+	}
+</style>
+
+<div class="sheet">
+
+	<header class="masthead">
+		<span class="lbl">Widgetarium proposal &#183; 29 August 2026</span>
+		<h1>Widget settings</h1>
+		<p class="lede">Today the panel is <code>position: absolute; inset: 0</code> over the tile &#8212; it <strong>covers the widget you are configuring</strong> (<code>styles.css:564</code>). This proposes the opposite. Press settings and <strong>the widget itself grows out of its tile</strong> into a window that is <strong>all playground</strong>: a white canvas carrying the board's grid, running edge to edge. The header and the settings are two <strong>floating glass panels</strong> over that canvas, and the widget pans underneath them. One surface, two panels, no regions, and nothing casts a shadow.</p>
+	</header>
+
+	<!-- ============================ THE MOTION ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">The motion</span>
+			<h2>The tile becomes the window</h2>
+			<p class="note">Not a dialog on an overlay. The <b>same tile element</b> is given a bigger box and animated into it, so the widget inside is never unmounted and never re&#8209;created &#8212; it keeps the rows it had fetched, the column it was scrolled to and the popover it had open. The board dims behind it; nothing else moves.</p>
+		</div>
+
+		<div class="scrollx">
+			<div class="seq">
+
+				<div class="seqcard">
+					<span class="lbl step">1 &#183; At rest</span>
+					<div class="mini">
+						<div class="mtile" style="left: 8px; top: 10px; width: 64px; height: 58px;"><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span></div>
+						<div class="mtile hero" style="left: 78px; top: 10px; width: 82px; height: 86px;">
+							<span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span>
+							<span class="gear"><svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3M12.5 12.5l-1.3-1.3M4.8 4.8L3.5 3.5"/></svg></span>
+						</div>
+						<div class="mtile" style="left: 8px; top: 76px; width: 64px; height: 62px;"><span class="bar w4"></span><span class="bar w8"></span></div>
+						<div class="mtile" style="left: 166px; top: 10px; width: 46px; height: 128px;"><span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span></div>
+						<div class="dim"></div>
+					</div>
+					<p class="why">Editing mode. The tile carries <b>two</b> controls in its corner &#8212; settings and remove &#8212; exactly the pair <code>surface.js</code> draws today.</p>
+				</div>
+
+				<div class="seqcard">
+					<span class="lbl step">2 &#183; The press</span>
+					<div class="mini">
+						<div class="mtile" style="left: 8px; top: 10px; width: 64px; height: 58px;"><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span></div>
+						<div class="mtile hero" style="left: 78px; top: 10px; width: 82px; height: 86px;">
+							<span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span>
+							<span class="gear pressed"><svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3M12.5 12.5l-1.3-1.3M4.8 4.8L3.5 3.5"/></svg></span>
+						</div>
+						<div class="mtile" style="left: 8px; top: 76px; width: 64px; height: 62px;"><span class="bar w4"></span><span class="bar w8"></span></div>
+						<div class="mtile" style="left: 166px; top: 10px; width: 46px; height: 128px;"><span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span></div>
+						<div class="dim"></div>
+					</div>
+					<p class="why">The gear answers under the finger &#8212; <code>scale(0.955)</code> over <code>--wg-dur-press</code>. Nothing else has happened yet.</p>
+				</div>
+
+				<div class="seqcard">
+					<span class="lbl step">3 &#183; Growing</span>
+					<div class="mini lit">
+						<div class="mtile" style="left: 8px; top: 10px; width: 64px; height: 58px;"><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span></div>
+						<div class="mtile" style="left: 8px; top: 76px; width: 64px; height: 62px;"><span class="bar w4"></span><span class="bar w8"></span></div>
+						<div class="mtile" style="left: 166px; top: 10px; width: 46px; height: 128px;"><span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span></div>
+						<div class="dim"></div>
+						<div class="mtile hero" style="left: 40px; top: 16px; width: 132px; height: 110px; z-index: 4;">
+							<span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span>
+						</div>
+					</div>
+					<p class="why">Mid&#8209;flight, at roughly 45%. The widget is <b>still the widget</b> &#8212; it is re&#8209;laying itself out into a wider box, not being stretched by a scale.</p>
+				</div>
+
+				<div class="seqcard">
+					<span class="lbl step">4 &#183; Landed</span>
+					<div class="mini lit">
+						<div class="mtile" style="left: 8px; top: 10px; width: 64px; height: 58px;"><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span></div>
+						<div class="mtile" style="left: 8px; top: 76px; width: 64px; height: 62px;"><span class="bar w4"></span><span class="bar w8"></span></div>
+						<div class="dim"></div>
+						<div class="mtile hero" style="left: 8px; top: 8px; right: 8px; width: auto; height: 138px; z-index: 4;">
+							<span class="bar" style="width: 34%"></span><span class="bar" style="width: 46%"></span><span class="bar" style="width: 30%"></span><span class="bar" style="width: 44%"></span>
+							<span class="side">
+								<span class="r tabs"></span><span class="r"></span><span class="r"></span><span class="r"></span>
+							</span>
+						</div>
+					</div>
+					<p class="why">The box has stopped, and the widget has been placed at the scale that fits the <b>free area</b>. Only now do the panels <b>fade</b> in &#8212; opacity on <code>--wg-ease</code>, delayed 80&nbsp;ms, the beat the kit's popover uses for <code>.pop-inner</code>.</p>
+				</div>
+
+				<div class="seqcard">
+					<span class="lbl step">5 &#183; Back</span>
+					<div class="mini">
+						<div class="mtile" style="left: 8px; top: 10px; width: 64px; height: 58px;"><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span></div>
+						<div class="mtile hero" style="left: 78px; top: 10px; width: 82px; height: 86px;">
+							<span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span><span class="bar w4"></span>
+							<span class="gear"><svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3M12.5 12.5l-1.3-1.3M4.8 4.8L3.5 3.5"/></svg></span>
+						</div>
+						<div class="mtile" style="left: 8px; top: 76px; width: 64px; height: 62px;"><span class="bar w4"></span><span class="bar w8"></span></div>
+						<div class="mtile" style="left: 166px; top: 10px; width: 46px; height: 128px;"><span class="bar w8"></span><span class="bar w6"></span><span class="bar w8"></span></div>
+						<div class="dim"></div>
+					</div>
+					<p class="why">The panels fade first, then the box returns on <code>--wg-ease</code>, not the spring. The kit's rule: <b>a panel folding away that bounces reads as indecision.</b></p>
+				</div>
+
+			</div>
+		</div>
+
+		<div class="grid3">
+			<div class="panel">
+				<h4>The tile's own box transition<span class="lbl">reused</span></h4>
+				<p class="why"><code>styles.css:287</code> already transitions a tile's <b>transform, width and height</b>. That is the whole mechanism &#8212; the settings grow is the same transition given a bigger target. Two changes proposed: <b>320&nbsp;ms on <code>--wg-spring</code></b> instead of 170&nbsp;ms on a private curve, because this box travels much further than a resize does and should overshoot once on the way out.</p>
+			</div>
+			<div class="panel">
+				<h4>Where it lands<span class="lbl">reused</span></h4>
+				<p class="why"><code>chip.js</code> already answers this for a too&#8209;narrow tile: <code>openedBox()</code> centres the target on the tile it grew from and pushes it back inside the board with an 8&nbsp;px margin, so a tile against the left wall opens to the right. The settings window wants a bigger <code>wantedBox()</code> &#8212; nearly the whole board &#8212; and nothing else changes.</p>
+			</div>
+			<div class="panel">
+				<h4>Above the dim<span class="lbl">reused</span></h4>
+				<p class="why"><code>.wg-tile-chip.is-open</code> takes <code>z-index: 30</code>, above the board's scrim and above every tile it now covers (<code>styles.css:819</code>). The settings window is the same state under a different name. The dim is the <b>board's</b>, not the app's &#8212; the note around it stays readable and scrollable.</p>
+			</div>
+		</div>
+
+		<div class="callout warn">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M8 6.4v3.2M8 11.8v.1"/><path d="M7 2.4L1.5 12.4a1.1 1.1 0 0 0 1 1.7h11a1.1 1.1 0 0 0 1-1.7L9 2.4a1.1 1.1 0 0 0-2 0z"/></svg>
+			<p><b>Not the kit's popover FLIP, and this decides more than the motion.</b> The kit grows a popover by <b>scaling</b> it from the trigger's rectangle (<code>showPop</code>, with the per&#8209;axis radius correction in <code>startRadius</code>). Right for a menu, wrong here: a transformed ancestor silently re&#8209;parents every <code>position: fixed</code> descendant to itself and kills <code>backdrop-filter</code> &#8212; the kit's own source says so, above <code>placePop</code>. In this window that breaks <b>both</b>: the widget's popovers, and the glass on the two floating panels. <b>So the window animates its box, and the same rule decides how the canvas zooms.</b></p>
+		</div>
+
+		<div class="frame">
+			<span class="lbl">Press the gear &#8212; the tile below really does travel; nothing is swapped out</span>
+			<div class="stage">
+				<div class="demo" id="demo" data-pad="10">
+					<div class="dtile" style="width: 128px; height: 92px; transform: translate3d(12px, 12px, 0);"><span class="bar w6"></span><span class="bar w4"></span><span class="bar w6"></span></div>
+					<div class="dtile" style="width: 128px; height: 88px; transform: translate3d(12px, 112px, 0);"><span class="bar w4"></span><span class="bar w6"></span></div>
+					<div class="dtile" style="width: 150px; height: 188px; transform: translate3d(490px, 12px, 0);"><span class="bar w6"></span><span class="bar w4"></span><span class="bar w6"></span><span class="bar w4"></span></div>
+					<div class="dim"></div>
+					<div class="dtile travels" id="demotile" data-x="148" data-y="12" data-w="330" data-h="188" style="width: 330px; height: 188px; transform: translate3d(148px, 12px, 0);">
+						<button class="iconbtn iconbtn-s gear pressable" id="demogear" aria-label="Settings">
+							<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.6v1.8M8 12.6v1.8M14.4 8h-1.8M3.4 8H1.6M12.5 3.5l-1.3 1.3M4.8 11.2l-1.3 1.3M12.5 12.5l-1.3-1.3M4.8 4.8L3.5 3.5"/></svg>
+						</button>
+						<span class="bar w6"></span><span class="bar w4"></span><span class="bar w6"></span><span class="bar w4"></span><span class="bar w6"></span>
+						<div class="dside glass">
+							<div class="tabbar"><button aria-selected="true">Settings</button><button aria-selected="false">Data</button></div>
+							<span class="r"></span><span class="r"></span><span class="r"></span>
+							<button class="btn btn-s btn-plain pressable" id="democlose" style="margin-top: auto;">Done</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<p class="note">The four tiles are one DOM element each. Opening changes <b>one element's width, height and transform</b> &#8212; the widget inside it is the same node the whole way. That is the claim the design rests on, and it is cheap because it is what the board already does.</p>
+		</div>
+	</section>
+
+	<!-- ============================ THE WINDOW ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">The arrangement</span>
+			<h2>One surface, two floating panels</h2>
+			<p class="note">The playground is not a column beside a sidebar &#8212; it is the <b>whole window</b>: a white canvas carrying the board's own grid at the board's own cell size (54&nbsp;px cells, 12&nbsp;px gaps, from <code>paths.js GRID</code>). The header hangs over it. The settings hang over it. <b>The grid does not stop where a panel begins.</b> Shown in its <b>opening state</b>: the widget has landed whole inside the free area, clear of both panels, and the person takes over from there. Mid&#8209;change, too: <b>Columns</b> is open &#8212; the panel has taken the row's place, as the kit's popover does &#8212; and ticking <b>Review</b> has put a fourth column in the widget behind it.</p>
+		</div>
+
+		<div class="stage">
+			<div class="win" style="height: 660px;">
+				<div class="win-cells">
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+				</div>
+
+				<div class="wgt" style="left: 46px; top: 83px; width: 780px; height: 516px;">
+					<div class="kb">
+						<div class="kb-top">
+							<h5>Marketing Tasks</h5>
+							<span class="pilltag tiny">24 tasks</span>
+							<div class="right">
+								<span class="avatars"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span><span class="avatar av-c">AL</span></span>
+								<button class="btn btn-s btn-accent pressable"><svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>New task</button>
+							</div>
+						</div>
+						<div class="kb-cols">
+							<div class="kcol">
+								<div class="kcol-head">To Do<span class="n">6</span></div>
+								<div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span><span class="lbl" style="margin-left:auto">12 Sep</span></span></div>
+								<div class="kcard"><span class="t">Ship the kit as a package</span><span class="m"><span class="pilltag tiny">P3</span><span class="lbl" style="margin-left:auto">18 Sep</span></span></div>
+								<div class="kcard"><span class="t">Audit the source paths</span><span class="m"><span class="pilltag warn tiny">P2</span><span class="lbl" style="margin-left:auto">21 Sep</span></span></div>
+								<div class="kghost"></div>
+							</div>
+							<div class="kcol">
+								<div class="kcol-head">Doing<span class="n">3</span></div>
+								<div class="kcard"><span class="t">Replace the three task widgets</span><span class="m"><span class="pilltag err tiny">P1</span><span class="avatars" style="margin-left:auto"><span class="avatar av-a">DS</span></span></span></div>
+								<div class="kcard"><span class="t">Board&#8209;level named paths</span><span class="m"><span class="pilltag warn tiny">P2</span><span class="lbl" style="margin-left:auto">65%</span></span></div>
+								<div class="kghost"></div>
+							</div>
+							<div class="kcol new">
+								<div class="kcol-head">Review<span class="n">0</span></div>
+								<div class="kghost"></div>
+								<div class="kghost"></div>
+							</div>
+							<div class="kcol">
+								<div class="kcol-head">Done<span class="n">15</span></div>
+								<div class="kcard"><span class="t">Mounts resolve their own sources</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div>
+								<div class="kcard"><span class="t">Release a claim on unmount</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div>
+								<div class="kghost"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="win-head glass">
+					<div class="crumbs"><span class="here">OrbiTask &#183; Kanban board</span></div>
+					<div class="right">
+						<span class="pilltag tiny">12 &#215; 8</span>
+						<button class="btn btn-s btn-plain pressable">Done</button>
+					</div>
+				</div>
+
+				<aside class="win-side glass">
+					<div class="tabbar">
+						<button aria-selected="true">Settings</button>
+						<button aria-selected="false">Data</button>
+						<button aria-selected="false">Design</button>
+					</div>
+
+					<div class="win-side-scroll">
+						<div class="group">
+							<span class="lbl">Source</span>
+							<div class="list on-glass">
+
+							<button class="row press">
+								<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><path d="M1.8 12.6V4.2a1 1 0 0 1 1-1h3l1.4 1.7h6a1 1 0 0 1 1 1v6.7a1 1 0 0 1-1 1h-10.4a1 1 0 0 1-1-1z"/></svg></span>
+								<span class="rlabel">Tasks</span>
+								<span class="rvalue muted"><span class="path">Orbitask/Tasks</span></span>
+								<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+						
+							</div>
+							<p class="under"><b>3 widgets on this board read this folder.</b> <a>Link them</a> and it becomes one name they all point at.</p>
+						</div>
+						<div class="group">
+							<span class="lbl">Slots</span>
+							<div class="list on-glass">
+
+							<button class="row press">
+								<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="11.2" height="10.4" rx="2.2"/><path d="M2.4 6.4h11.2"/></svg></span>
+								<span class="rlabel">Card</span>
+								<span class="rvalue muted">Task card</span>
+								<svg class="icon chev" viewBox="0 0 16 16" style="transform: rotate(-90deg)"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+						
+							</div>
+							<p class="under">Pressing the arrow re&#8209;roots the window onto the card.</p>
+						</div>
+						<div class="group">
+							<span class="lbl">Settings</span>
+							<div class="list on-glass">
+
+							<button class="row press">
+								<span class="rlabel">Columns</span>
+								<span class="rvalue"><span class="pilltag tiny">4</span></span>
+								<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+							<button class="row press">
+								<span class="rlabel">Group tasks by</span>
+								<span class="rvalue muted"><span class="path">status</span></span>
+								<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+							<button class="row press is-unset">
+								<span class="rlabel">Archived columns</span>
+								<span class="rvalue unset">Empty</span>
+								<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+						
+							</div>
+						</div>
+					</div>
+					<div class="win-foot"><span class="lbl">@orbitask/kanban-board</span></div>
+				</aside>
+
+				<div class="pop" style="position: absolute; z-index: 8; left: 864px; top: 371px; width: 272px;">
+					<div class="pop-inner">
+						<div class="pop-field"><svg class="icon" viewBox="0 0 16 16" style="color: var(--wg-ink-faint)"><circle cx="7.4" cy="7.4" r="4.6"/><path d="M11 11l2.8 2.8"/></svg><span class="ph">Keyword</span></div>
+						<button class="pop-item" aria-checked="true"><span class="pname">To Do</span><svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						<button class="pop-item" aria-checked="true"><span class="pname">Doing</span><svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						<button class="pop-item" aria-checked="true"><span class="pname">Review</span><svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						<button class="pop-item" aria-checked="true"><span class="pname">Done</span><svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+						<div class="pop-foot">
+							<button class="btn btn-s pressable">Reset</button>
+							<button class="btn btn-s btn-accent pressable">Apply</button>
+						</div>
+					</div>
+				</div>
+				<div class="win-bar glass">
+					<button aria-pressed="true">Fit</button>
+					<button aria-pressed="false">1:1</button>
+					<span class="div"></span>
+					<button aria-label="Zoom out"><svg class="icon" viewBox="0 0 16 16"><path d="M4 8h8"/></svg></button>
+					<button aria-label="Zoom in"><svg class="icon" viewBox="0 0 16 16"><path d="M8 4v8M4 8h8"/></svg></button>
+					<span class="said">100%</span>
+					<span class="div"></span>
+					<button>Narrow</button>
+					<span class="div"></span>
+					<button aria-label="Fold the settings away"><svg class="icon" viewBox="0 0 16 16"><path d="M10 4l-4 4 4 4"/><path d="M13 3v10"/></svg></button>
+				</div>
+			</div>
+		</div>
+
+		<div class="grid3">
+			<div class="panel">
+				<h4>The widget is told its real place<span class="lbl">not the window's size</span></h4>
+				<p class="why">It still receives <code>size.w = 12, size.h = 8</code> and the same <code>scale</code> the board gave it, because it is standing on the same grid at the same cell size. It therefore looks <b>exactly</b> as it does on the board. That is the point of drawing the grid rather than a blank sheet &#8212; and it is why changing the size in the Design tab is worth watching.</p>
+			</div>
+			<div class="panel">
+				<h4>Every group is a grouped list<span class="lbl">the kit's</span></h4>
+				<p class="why"><b>The heading sits outside the block</b>, small and muted, as macOS System Settings does it &#8212; so the block holds rows and nothing else, and there is no heading in there to divide from. The footnote goes outside too. Inside, a hairline appears <b>only between rows of a genuine list</b>: the four abilities, the filters, the views. A group of two or three unlike controls gets none &#8212; the fill and the spacing already separate them, and a line pushed in there is what makes a panel feel stuffy. <b>Add a filter</b> is a trailing row inside the block, never a button below it.</p>
+			</div>
+			<div class="panel">
+				<h4>The header, against the macOS one<span class="lbl">what changed</span></h4>
+				<p class="why">macOS puts the blur behind a <b>full&#8209;width</b> title and toolbar pinned to the window's top edge, and it earns it because content scrolls <b>up</b> past it on one axis. Here the canvas moves on <b>two</b> axes and has no top edge to scroll from, so a full&#8209;width bar would subtract a band across the entire window from the free area on every open. The capsule does the same job for less: content still passes under it &#8212; drawn in the glass section, a column going beneath it &#8212; and the blur still separates the title from what is travelling behind. <b>The material is unchanged; only the width is.</b> If you want the macOS proportion, widening it back is one property and costs about 40&nbsp;px of canvas height.</p>
+			</div>
+			<div class="panel">
+				<h4>One panel, because one edge<span class="lbl">the choice</span></h4>
+				<p class="why">The settings could equally be two or three floating groups. They are <b>one</b> panel because the only legitimate edge on this window is the hairline that stops a translucent surface dissolving into the moving content behind it &#8212; and every extra floating thing would need its own. One panel means <b>one</b> edge, and everything inside it separated by fill: the panel's material, then a group's fill on it, then rows that are not surfaces at all and carry a single hairline between them.</p>
+			</div>
+			<div class="panel">
+				<h4>Remove is not in this window<span class="lbl">a call</span></h4>
+				<p class="why">The tile keeps both controls; the header keeps only <b>Done</b>. Removing acts on the <b>board</b>, not on the configuration, and a bin beside a close control in one small capsule is the one mis&#8209;press you cannot undo. If it must be here it goes alone at the foot of the last tab.</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================ THE OPENING POSITION ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">The opening position</span>
+			<h2>The fit is measured against the free area, not the window</h2>
+			<p class="note">When the window opens, the scale is chosen so the <b>whole widget lands inside the part of the canvas that is actually visible</b> &#8212; left of the sidebar, below the header &#8212; without sliding under either. Measuring against the whole window instead would tuck part of the widget under a panel the instant it appeared, which is the one thing the opening state must not do. From there the person takes over with the zoom controls.</p>
+		</div>
+
+		<div class="scrollx">
+			<div style="display: flex; gap: var(--size-4-3); min-width: 1180px;">
+
+				<div class="frame" style="flex: 1;">
+					<span class="lbl step">Measured against the window &#8212; wrong</span>
+					<div class="win" style="height: 230px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 80px; top: 40px; width: 230px; height: 150px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div></div></div></div></div>
+						<div class="freebox" style="left: 10px; top: 10px; right: 10px; bottom: 10px;"></div>
+						<span class="freetag" style="left: 16px; bottom: 14px;">measured: the whole window</span>
+						<div class="win-head glass" style="left: 10px; top: 10px; right: 140px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div><aside class="win-side glass" style="right: 10px; top: 10px; bottom: 10px; width: 120px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button>
+	</div>
+</div>
+</aside>
+					</div>
+					<p class="note" style="font-size: var(--font-ui-smaller);">It fits the rectangle it was given, and a third of it opens underneath the panels. The person's first act is to undo the arrival.</p>
+				</div>
+
+				<div class="frame" style="flex: 1;">
+					<span class="lbl step">Measured against the free area &#8212; right</span>
+					<div class="win" style="height: 230px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 15px; top: 63px; width: 230px; height: 150px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div></div></div></div></div>
+						<div class="freebox" style="left: 10px; top: 56px; width: 240px; height: 164px;"></div>
+						<span class="freetag" style="left: 14px; top: 218px;">measured: left of the sidebar, below the header</span>
+						<div class="win-head glass" style="left: 10px; top: 10px; right: 140px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div><aside class="win-side glass" style="right: 10px; top: 10px; bottom: 10px; width: 120px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button>
+	</div>
+</div>
+</aside>
+					</div>
+					<p class="note" style="font-size: var(--font-ui-smaller);">Whole, clear of both panels, and the grid still runs under them. Nothing is hidden at the moment of arrival.</p>
+				</div>
+
+				<div class="frame" style="flex: 1;">
+					<span class="lbl step">Too large even for the free area</span>
+					<div class="win" style="height: 230px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 20px; top: 62px; width: 330px; height: 150px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div></div><div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Claims</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div></div></div></div>
+						<div class="win-head glass" style="left: 10px; top: 10px; right: 140px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div><aside class="win-side glass" style="right: 10px; top: 10px; bottom: 10px; width: 120px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button>
+	</div>
+</div>
+</aside>
+						<div class="win-bar glass" style="left: 10px; bottom: 10px; padding: 3px;">
+							<button aria-pressed="true">Fit</button><button aria-pressed="false">1:1</button>
+							<span class="said">70% &#183; panned to the top left</span>
+						</div>
+					</div>
+					<p class="note" style="font-size: var(--font-ui-smaller);">Below the floor the window stops zooming and starts <b>panned</b> instead. Zooming further is then a deliberate press, and the bar says the number.</p>
+				</div>
+
+			</div>
+		</div>
+
+		<div class="flow"><b>THE OPENING SCALE</b>
+
+  free    = window &#8722; the header's rectangle &#8722; the sidebar's rectangle &#8722; the zoom bar's band
+            &#8722; one cell of margin
+  fit     = min(1, free.width / widget.width, free.height / widget.height)
+  <em>open</em>    = max(fit, <em>0.7</em>)
+
+  if open &gt; fit   the widget is larger than the floor allows: do not zoom past it.
+                 start <em>panned to the widget's top-left corner</em>, inside free, and say so in the bar.
+  folding the sidebar away grows <i>free</i>, so Fit recomputes and the number in the bar moves.
+
+  <i>0.7 is a legibility floor, not a taste: the smallest type the kit authors is 12px, and at 0.7</i>
+  <i>that renders at 8.4px &#8212; the point below which the picture stops answering "does this look right".</i></div>
+
+		<div class="grid2">
+			<div class="callout">
+				<svg class="icon" viewBox="0 0 16 16"><path d="M2.6 8h10.8M9.6 4.4L13.4 8l-3.8 3.6"/></svg>
+				<p><b>When it already fits, <code>fit</code> is 1 and the window opens at 1:1</b> &#8212; which is most desktop cases, including the 12&#215;8 kanban above. So the rule has no cost in the common case: it only bites when the widget is genuinely larger than the space, and then it does the arithmetic the person would otherwise do by hand.</p>
+			</div>
+			<div class="callout warn">
+				<svg class="icon" viewBox="0 0 16 16"><path d="M8 6.4v3.2M8 11.8v.1"/><path d="M7 2.4L1.5 12.4a1.1 1.1 0 0 0 1 1.7h11a1.1 1.1 0 0 0 1-1.7L9 2.4a1.1 1.1 0 0 0-2 0z"/></svg>
+				<p><b>The floor is the honest part.</b> A 20&#8209;column widget is 1308&nbsp;px wide; in a 850&nbsp;px free area that is 0.65, and at 0.65 the card titles are 7.8&nbsp;px. Zooming there would produce a picture nobody can judge and call it a preview. Starting panned at 0.7 admits the truth: <b>this widget does not fit, here is its top left, move around it.</b></p>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================ THE GLASS ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">The glass</span>
+			<h2>Why the panels are blurred, drawn where it matters</h2>
+			<p class="note">A blurred panel over an empty grid proves nothing &#8212; there is nothing behind it to blur. The state the blur exists for is <b>this one</b>: the widget travels under the chrome as you pan, so cards, coloured pills and titles slide beneath the sidebar and beneath the header. Keeping the settings readable over content that is moving is the whole job.</p>
+		</div>
+
+		<div class="grid2">
+			<div class="frame">
+				<span class="lbl">A card half under the sidebar, half out</span>
+				<div class="win" style="height: 250px;">
+					<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					</div>
+					<div class="wgt" style="left: 392px; top: 56px; width: 330px; height: 182px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div><div class="kcard"><span class="t">Ship the kit</span><span class="m"><span class="pilltag  tiny">P3</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Board-level named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div><div class="kcard"><span class="t">Replace the widgets</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Mounts resolve sources</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div></div></div></div>
+					<div class="win-head glass" style="left: 12px; top: 12px; right: 184px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">OrbiTask &#183; Kanban board</span></div><div class="right"><span class="pilltag tiny">12 &#215; 8</span></div></div>
+					<aside class="win-side glass" style="right: 12px; top: 12px; bottom: 12px; width: 160px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button><button class="row press"><span class="rlabel">Group by</span></button>
+	</div>
+</div>
+</aside>
+				</div>
+			</div>
+			<div class="frame">
+				<span class="lbl">A column passing under the header</span>
+				<div class="win" style="height: 250px;">
+					<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					</div>
+					<div class="wgt" style="left: 30px; top: 20px; width: 400px; height: 200px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div><div class="kcard"><span class="t">Ship the kit</span><span class="m"><span class="pilltag  tiny">P3</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Board-level named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div><div class="kcard"><span class="t">Replace the widgets</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Mounts resolve sources</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div></div></div></div>
+					<div class="win-head glass" style="left: 12px; top: 12px; right: 184px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">OrbiTask &#183; Kanban board</span></div><div class="right"><span class="pilltag tiny">12 &#215; 8</span></div></div>
+					<aside class="win-side glass" style="right: 12px; top: 12px; bottom: 12px; width: 160px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button><button class="row press"><span class="rlabel">Group by</span></button>
+	</div>
+</div>
+</aside>
+				</div>
+			</div>
+		</div>
+
+		<div class="grid3">
+			<div class="panel">
+				<h4>The blur is the part that earns its place<span class="lbl">over content</span></h4>
+				<p class="why"><code>blur(24px) saturate(180%)</code> turns a passing card into a wash instead of a razor line of unrelated contrast crossing your settings. The saturation is what keeps a red P1 reading as a warm smear rather than as grey mud, so the panel still tells you <b>something is under here and it is moving</b> &#8212; which is the feedback that makes panning legible.</p>
+			</div>
+			<div class="panel">
+				<h4>The tint is a no&#8209;op in light, a real step in dark<span class="lbl">arithmetic</span></h4>
+				<p class="why"><code>--wg-glass-panel</code> is <code>color-mix(--wg-raise 78%, transparent)</code>, and <code>--wg-raise</code> is <code>#ffffff 12%</code> over the note's background. In a light vault that is white into white &#8212; deliberately, because the raise exists to <b>lift a panel in dark</b>. So in dark the sidebar visibly rises off the canvas with nothing added; in light it does not, and the next card is why that is survivable.</p>
+			</div>
+			<div class="panel">
+				<h4>The hairline never fails<span class="lbl">any theme</span></h4>
+				<p class="why"><code>--wg-glass-edge</code> is <code>inset 0 0 0 1px</code> of the <b>ink</b> at 12%, not of a background colour. An ink step survives a white canvas, a dark one and a themed one alike, which is why it is the one part of the recipe that holds everywhere &#8212; and why no drop shadow is needed to make a panel read as floating.</p>
+			</div>
+		</div>
+
+		<div class="callout pick">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg>
+			<p><b>One panel, and the groups inside it are structure &#8212; which needs a fill the kit did not have.</b> A grouped list normally takes <code>--wg-fill</code>, a small step from <code>--background-primary</code>. Inside a translucent panel <b>there is no solid background to step from</b>: over a white canvas the panel and the fill are both white, the group loses its edge against the panel, and what is left is three cards floating independently &#8212; which is the thing that stopped it reading as our system. So a group on glass steps toward the <b>ink</b> instead, from the panel's own raised colour: <code>--wg-glass-group = color-mix(--wg-ink 6%, --wg-raise)</code>. Darker in light, lighter in dark, a constant step either way, and <b>opaque</b>, because it carries text and a 22% ghost of a passing card behind an 11&nbsp;px label is dirty (a 78% tint over a glyph is about <code>#c7c7c7</code>, 1.55:1). The panel keeps its real job &#8212; <b>the frame and the gutters between the groups</b>, where the widget shows through and tells you it is still moving under there.</p>
+		</div>
+
+		<div class="callout">
+			<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M8 5.2v3.4M8 10.8v.1"/></svg>
+			<p><b>One edge on the whole window, and no shadow anywhere.</b> The kit's first law is <b>fill, never outline</b> &#8212; a surface is told apart by what it is filled with, and a line only ever divides two rows of one group. So the panel carries <code>--wg-glass-edge</code> and <b>nothing inside it carries a second one</b>: the group is a different fill on the panel, a row is not a surface at all, and the only line in the sidebar is the hairline between two rows. A widget on the canvas is told from the canvas by the <b>grid it covers</b>, not by a ring. Where an earlier draft of this page reached for a border, the honest reading was that one of the two surfaces had the wrong fill &#8212; and that is what got fixed, not the border weight.</p>
+		</div>
+	</section>
+
+	<!-- ============================ THE WIDGET UNDERNEATH ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Panning</span>
+			<h2>The widget slides under, but it cannot hide</h2>
+			<p class="note">Part of the widget going under a panel is not a defect &#8212; it is how you reach the far edge of something wider than the free area, and it is the state the blur exists for. What would be a defect is losing it. So the pan is <b>clamped</b>, and the clamp is stated against the panels rather than against the window.</p>
+		</div>
+
+		<div class="scrollx">
+			<div style="display: flex; gap: var(--size-4-3); min-width: 1180px;">
+
+				<div class="frame" style="flex: 1;">
+					<span class="lbl step">Panned &#8212; the far edge is reachable</span>
+					<div class="win" style="height: 250px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: -140px; top: 62px; width: 330px; height: 160px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div></div><div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div></div></div></div>
+						<div class="win-head glass" style="left: 10px; top: 10px; right: 140px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div><aside class="win-side glass" style="right: 10px; top: 10px; bottom: 10px; width: 120px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span></button>
+	</div>
+</div>
+</aside>
+					</div>
+					<p class="note" style="font-size: var(--font-ui-smaller);">The left half has gone off the window entirely. Legal &#8212; the clamp is about the panels, not the edges.</p>
+				</div>
+
+				<div class="frame" style="flex: 1;">
+					<span class="lbl step">At the clamp &#8212; one cell always stays out</span>
+					<div class="win" style="height: 250px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 84px; top: 62px; width: 330px; height: 160px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div></div><div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div></div></div></div>
+						<div class="freebox" style="left: 84px; top: 56px; width: 54px; height: 54px; border-radius: var(--radius-m);"></div>
+						<span class="freetag" style="left: 84px; top: 38px;">one cell, never covered</span>
+						<div class="win-head glass" style="left: 10px; top: 10px; right: 140px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div><aside class="win-side glass" style="right: 10px; top: 10px; bottom: 10px; width: 120px; padding: var(--size-2-3);"><div class="tabbar"><button aria-selected="true">Settings</button></div><div class="group">
+	<div class="list on-glass">
+<button class="row press"><span class="rlabel">Tasks</span></button><button class="row press"><span class="rlabel">Columns</span></button>
+	</div>
+</div>
+</aside>
+					</div>
+					<p class="note" style="font-size: var(--font-ui-smaller);">Pan stops while one full cell of the widget is still outside both panels. It can never be hidden, and there is no state you cannot pan out of.</p>
+				</div>
+
+				<div class="frame" style="flex: 1;">
+					<span class="lbl step">Folded &#8212; the escape that costs one press</span>
+					<div class="win" style="height: 250px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 84px; top: 62px; width: 330px; height: 160px;"><div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div></div><div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div></div></div></div>
+						<div class="win-head glass" style="left: 10px; top: 10px; right: 58px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div>
+						<button class="iconbtn iconbtn-s glass" style="position: absolute; z-index: 6; right: 10px; top: 10px; width: 38px; height: 38px; background: var(--wg-glass-panel);" aria-label="Bring the settings back">
+							<svg class="icon" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4"/><path d="M3 3v10"/></svg>
+						</button>
+					</div>
+					<p class="note" style="font-size: var(--font-ui-smaller);">The sidebar folds to a capsule at the right edge. The free area grows, Fit recomputes, and the clamp relaxes with it.</p>
+				</div>
+
+			</div>
+		</div>
+
+		<div class="flow"><b>THE PAN CLAMP</b>
+
+  pannable        = the widget's box grown by one cell on every side
+  <em>and</em>             at least one whole cell of the widget stays outside the <em>sidebar's</em> rectangle
+  <em>and</em>             at least one whole cell of the widget stays outside the <em>header's</em> rectangle
+  when folded     the sidebar's rectangle becomes the fold capsule, so the clamp all but disappears
+
+  <i>stated against the PANELS, not the window: a widget hanging off the left edge is still visible,</i>
+  <i>and one under an opaque panel is not. One cell, because it is the unit the board already thinks in.</i></div>
+	</section>
+
+	<!-- ============================ FITTING ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Fitting a large widget</span>
+			<h2>Three ways, and one of them breaks the widget</h2>
+			<p class="note">You gave three, and leaned toward the third. All three are drawn, because the reason to reject the first two is not taste in either case.</p>
+		</div>
+
+		<div class="grid3">
+			<div class="opt">
+				<h4>1 &#183; Shrink to its minimum<span class="pilltag err verdict">Shows the wrong thing</span></h4>
+				<div class="opt-demo" style="display: grid; place-items: center;">
+					<div style="width: 84px; height: 84px; border-radius: var(--wg-radius-tile); background: var(--wg-surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+						<span style="width: 26px; height: 26px; border-radius: 999px; background: var(--wg-fill); color: var(--wg-ink-muted); display: grid; place-content: center; font-size: 13px; font-weight: 600;">K</span>
+						<span class="lbl">Open</span>
+					</div>
+				</div>
+				<p class="cost">Not a risk &#8212; a certainty, and the code says so. The kanban declares <code>collapseBelowPx: 240</code>, and below that width the board does not draw a small kanban, it draws <b>a chip</b> (<code>chip.js</code>). "Shrink it to its minimum" therefore previews the widget <b>refusing to be itself</b>. It survives as the <b>Narrow</b> button: a deliberate check on the chip state, never a default.</p>
+			</div>
+
+			<div class="opt">
+				<h4>2 &#183; CSS scale<span class="pilltag warn verdict">Breaks the panels too</span></h4>
+				<div class="opt-demo" style="display: grid; place-items: center;">
+					<div style="width: 200px; height: 122px; transform: scale(0.55); background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+						<span style="height: 8px; width: 60%; border-radius: 999px; background: var(--wg-fill-hover);"></span>
+						<span style="height: 8px; width: 80%; border-radius: 999px; background: var(--wg-fill-hover);"></span>
+						<span style="height: 8px; width: 45%; border-radius: 999px; background: var(--wg-fill-hover);"></span>
+					</div>
+				</div>
+				<p class="cost">The layout is untouched, which is the attraction. Two costs, and the second is not about legibility: <b>a transformed ancestor re&#8209;parents every <code>position: fixed</code> descendant to itself and disables <code>backdrop-filter</code></b>. In this window that hits twice &#8212; the widget's popovers land wrong, and the two floating panels stop being glass. At 0.55 a 42&nbsp;px control is also 23&nbsp;px, under any published touch target.</p>
+			</div>
+
+			<div class="opt">
+				<h4>3 &#183; Pan and zoom, like a canvas<span class="pilltag ok verdict">Recommended</span></h4>
+				<div class="opt-demo" style="position: relative;">
+					<div style="position: absolute; left: 14px; top: 12px; width: 210px; height: 104px; background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: 10px; display: flex; gap: 6px;">
+						<span style="flex:1; border-radius: 10px; background: var(--wg-fill);"></span>
+						<span style="flex:1; border-radius: 10px; background: var(--wg-fill);"></span>
+						<span style="flex:1; border-radius: 10px; background: var(--wg-fill);"></span>
+					</div>
+					<div style="position: absolute; right: 10px; bottom: 10px;" class="pilltag tiny">1:1</div>
+				</div>
+				<p class="cost">The widget keeps its real size and the person moves around it. Right &#8212; but only with the rule below attached, because a zoom <b>is</b> a transform and inherits option 2's defect at every zoom except one.</p>
+			</div>
+		</div>
+
+		<div class="callout pick">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg>
+			<p><b>Take 3, arrive at the free&#8209;area fit, and let 1 and 2 be buttons rather than modes &#8212; your combination of 1 and 3, held apart by one rule.</b> <b>While the zoom is not 1:1 the canvas is look&#8209;only</b>: a press pans, and a press on the widget snaps to 1:1 centred on what you touched. So the widget is only ever <b>interactive at zoom 1</b>, where no transform exists, where its popovers land correctly and where the glass is still glass. Everything below 1:1 is a picture you are reading, not a thing you are using &#8212; which is exactly what an arrival state should be. <b>Narrow</b> is option 1 as a button; the broken combination is unreachable.</p>
+		</div>
+
+		<div class="flow"><b>CANVAS STATES</b>
+
+  <em>Fit</em>     zoom = open   <i>look-only</i>   the arrival. whole widget inside the free area, pan to move, press to enter
+  <em>1:1</em>     zoom = 1      <i>live</i>        real size, real controls, glass intact, pan clamped to one cell
+  <em>Narrow</em>  zoom = 1      <i>live</i>        width forced to collapseBelowPx &#8212; the chip, on purpose
+
+  <i>a press inside the widget at Fit does not reach the widget: it snaps to 1:1 first</i></div>
+	</section>
+
+	<!-- ============================ PHONE ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">The small screen</span>
+			<h2>On a phone the second panel goes to the bottom</h2>
+			<p class="note">Two panels floating over a canvas is a desktop idea. At 375&nbsp;px a 288&nbsp;px sidebar is <b>77% of the screen</b> &#8212; it stops being a floating panel and becomes the window with a sliver of canvas beside it. So the arrangement survives but the second panel moves: it becomes a <b>floating sheet at the bottom</b> with two heights, and the canvas still runs edge to edge under both.</p>
+		</div>
+
+		<div class="scrollx">
+			<div style="display: flex; gap: var(--size-4-4); align-items: flex-start; min-width: 1120px;">
+
+				<div class="phone">
+					<span class="lbl">Peek &#8212; the arrival, the widget clear of both</span>
+					<div class="phone-win" style="margin-top: var(--size-4-2);">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 20px; top: 74px; width: 430px; height: 330px;"><div class="kb"><div class="kb-top"><h5>Marketing Tasks</h5><span class="pilltag tiny">24</span></div><div class="kb-cols"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div><div class="kghost"></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div><div class="kghost"></div></div><div class="kcol new"><div class="kcol-head">Review<span class="n">0</span></div><div class="kcard"><span class="t">Audit the paths</span><span class="m"><span class="pilltag  tiny">P3</span></span></div><div class="kghost"></div></div></div></div></div>
+						<div class="ph-head glass"><div class="crumbs"><span class="here">Kanban board</span></div><button class="btn btn-s btn-plain pressable" style="margin-left:auto">Done</button></div>
+						<div class="ph-bar glass" style="bottom: 168px;">
+							<button aria-pressed="true">Fit</button><button aria-pressed="false">1:1</button><button>Narrow</button>
+						</div>
+						<div class="ph-sheet glass">
+							<span class="ph-grip"></span>
+							<div class="tabbar"><button aria-selected="true">Settings</button><button aria-selected="false">Data</button><button aria-selected="false">Design</button></div>
+							<div class="group">
+								<div class="list on-glass">
+
+								<button class="row press">
+									<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><path d="M1.8 12.6V4.2a1 1 0 0 1 1-1h3l1.4 1.7h6a1 1 0 0 1 1 1v6.7a1 1 0 0 1-1 1h-10.4a1 1 0 0 1-1-1z"/></svg></span>
+									<span class="rlabel">Tasks</span>
+									<span class="rvalue muted"><span class="path">Orbitask/Tasks</span></span>
+									<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+								</button>
+							
+								</div>
+							</div>
+					</div>
+					</div>
+				</div>
+
+				<div class="phone">
+					<span class="lbl">Full &#8212; dragged up, the canvas still shows above it</span>
+					<div class="phone-win" style="margin-top: var(--size-4-2);">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 20px; top: 74px; width: 430px; height: 330px;"><div class="kb"><div class="kb-top"><h5>Marketing Tasks</h5><span class="pilltag tiny">24</span></div><div class="kb-cols"><div class="kcol"><div class="kcol-head">To Do<span class="n">6</span></div><div class="kcard"><span class="t">Rewrite the filter panel</span><span class="m"><span class="pilltag err tiny">P1</span></span></div><div class="kghost"></div></div><div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag warn tiny">P2</span></span></div><div class="kghost"></div></div><div class="kcol new"><div class="kcol-head">Review<span class="n">0</span></div><div class="kcard"><span class="t">Audit the paths</span><span class="m"><span class="pilltag  tiny">P3</span></span></div><div class="kghost"></div></div></div></div></div>
+						<div class="ph-head glass"><div class="crumbs"><span class="here">Kanban board</span></div><button class="btn btn-s btn-plain pressable" style="margin-left:auto">Done</button></div>
+						<div class="ph-sheet glass" style="top: 152px;">
+							<span class="ph-grip"></span>
+							<div class="tabbar"><button aria-selected="true">Settings</button><button aria-selected="false">Data</button><button aria-selected="false">Design</button></div>
+							<div class="group">
+								<span class="lbl">Source</span>
+								<div class="list on-glass">
+
+								<button class="row press">
+									<span class="rlabel">Tasks</span>
+									<span class="rvalue muted"><span class="path">Orbitask/Tasks</span></span>
+									<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+								</button>
+							
+								</div>
+								<p class="under"><b>3 widgets read this folder.</b> <a>Link them</a></p>
+							</div>
+						<div class="group">
+							<span class="lbl">Settings</span>
+							<div class="list on-glass">
+
+								<button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span><svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+								<button class="row press"><span class="rlabel">Group by</span><span class="rvalue muted"><span class="path">status</span></span><svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+								<button class="row press is-unset"><span class="rlabel">Archived columns</span><span class="rvalue unset">Empty</span><svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+							
+							</div>
+						</div>
+					</div>
+					</div>
+				</div>
+
+				<div class="stack" style="max-width: 400px;">
+					<div class="panel">
+						<h4>What changes, and what does not<span class="lbl">phone</span></h4>
+						<p class="why"><b>The free area is measured the same way</b> &#8212; window minus the header, minus the sheet at its <b>peek</b> height. So the arrival rule is unchanged; only the rectangle it subtracts moves from the right edge to the bottom.</p>
+						<p class="why"><b>The clamp turns vertical.</b> One cell must stay in the band between the header and the peek line. Dragging the sheet up is allowed to cover the widget completely: that is a gesture you are holding, and letting go returns it.</p>
+						<p class="why"><b>The zoom bar rides on the sheet's edge</b> and moves with it, so the two things that want the bottom&#8209;left corner never collide.</p>
+					</div>
+					<div class="callout warn">
+						<svg class="icon" viewBox="0 0 16 16"><path d="M8 6.4v3.2M8 11.8v.1"/><path d="M7 2.4L1.5 12.4a1.1 1.1 0 0 0 1 1.7h11a1.1 1.1 0 0 0 1-1.7L9 2.4a1.1 1.1 0 0 0-2 0z"/></svg>
+						<p><b>A phone is where the blur matters most and costs most.</b> The screen is small, so the widget is nearly always under the sheet &#8212; the case the blur exists for. It is also where <code>backdrop-filter</code> is most expensive to composite. If a frame budget ever forces the choice, drop the blur and keep the hairline and the opaque plates: the panel still reads, it just stops feeling like it floats.</p>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================ SOURCES ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Sources</span>
+			<h2>A source is one folder, and that is the whole visible control</h2>
+			<p class="note">Everything a source is comes from one string. <code>useSource</code> builds its binding as <code>config.path || manifest.path || ""</code> (<code>source.js:38</code>), the host turns that into a slot whose <code>writable</code> is simply <code>Boolean(folderPath)</code> (<code>host.js:64</code>), and a created note lands at <code>&lt;folderPath&gt;/&lt;title&gt;.md</code> (<code>host.js:125</code>). Reading and writing are the same path because they are the same field.</p>
+		</div>
+
+		<div class="grid3">
+			<div class="stack">
+				<span class="lbl">Set</span>
+				<div class="group">
+					<div class="list">
+
+					<button class="row press">
+						<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><path d="M1.8 12.6V4.2a1 1 0 0 1 1-1h3l1.4 1.7h6a1 1 0 0 1 1 1v6.7a1 1 0 0 1-1 1h-10.4a1 1 0 0 1-1-1z"/></svg></span>
+						<span class="rlabel">Tasks</span>
+						<span class="rvalue muted"><span class="path">Orbitask/Tasks</span></span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+					<p class="under">24 notes &#183; reading and writing &#183; <b>3 widgets share it</b></p>
+				</div>
+		</div>
+
+			<div class="stack">
+				<span class="lbl">Not set, falling back to the widget's default</span>
+				<div class="group">
+					<div class="list">
+
+					<button class="row press is-unset">
+						<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><path d="M1.8 12.6V4.2a1 1 0 0 1 1-1h3l1.4 1.7h6a1 1 0 0 1 1 1v6.7a1 1 0 0 1-1 1h-10.4a1 1 0 0 1-1-1z"/></svg></span>
+						<span class="rlabel">Tasks</span>
+						<span class="rvalue unset"><span class="path">Orbitask/Tasks</span></span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+					<p class="under">Not set. Using the widget's own default, greyed so the difference is visible &#8212; nothing has been written to the board file.</p>
+				</div>
+		</div>
+
+			<div class="stack">
+				<span class="lbl">Not set, and no default either</span>
+				<div class="group">
+					<div class="list">
+
+					<button class="row press is-unset">
+						<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><path d="M1.8 12.6V4.2a1 1 0 0 1 1-1h3l1.4 1.7h6a1 1 0 0 1 1 1v6.7a1 1 0 0 1-1 1h-10.4a1 1 0 0 1-1-1z"/></svg></span>
+						<span class="rlabel">Tasks</span>
+						<span class="rvalue unset">Pick a folder</span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+					<p class="under"><b>Empty, not broken.</b> An empty path is legal: the source lists nothing and <b>can do nothing</b> &#8212; create, update and remove all read false. The widget shows its own empty state; the panel says why.</p>
+				</div>
+		</div>
+		</div>
+
+		<div class="grid2">
+			<div class="stack">
+				<span class="lbl">Behind the path &#8212; the Data tab, for the same source</span>
+				<div class="group">
+					<span class="lbl">Filters <span class="n">Orbitask/Tasks</span></span>
+					<div class="list divided">
+
+					<div class="row">
+						<span class="rlabel two">board is @board<span class="sub">from the widget</span></span>
+						<span class="rvalue"><span class="pilltag tiny">Fixed</span></span>
+					</div>
+					<div class="row">
+						<span class="rlabel two">everything the filter bar has set<span class="sub mono">spread @filters</span></span>
+						<span class="rvalue"><span class="pilltag tiny">Fixed</span></span>
+					</div>
+					<div class="row">
+						<span class="rlabel two">status is not archived<span class="sub">yours</span></span>
+						<span class="rvalue"><button class="iconbtn iconbtn-xs pressable" aria-label="Remove"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button></span>
+					</div>
+					<button class="row press add">
+						<svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>
+						<span class="rlabel">Add a filter</span>
+					</button>
+				
+					</div>
+					<p class="under">These filters decide <b>which data arrives</b>. A widget outside this one &#8212; a filter panel, the board tabs &#8212; can narrow it further, but never widen it.</p>
+				</div>
+				<div class="group">
+					<span class="lbl">Sort and window</span>
+					<div class="list">
+
+					<button class="row press">
+						<span class="rlabel">order</span>
+						<span class="rvalue muted">Ascending</span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+					<button class="row press">
+						<span class="rlabel">Skip</span>
+						<span class="rvalue muted">0</span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+					<button class="row press is-unset">
+						<span class="rlabel">Show at most</span>
+						<span class="rvalue unset">All of them</span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+				</div>
+		</div>
+
+			<div class="stack">
+				<div class="panel">
+					<h4>Why a filter can be locked<span class="lbl">from the manifest</span></h4>
+					<p class="why">A row marked <b>Fixed</b> is the widget's own declaration, and <code>source.js</code> refuses an edit to it and returns a reason (<code>{ reason: "fixed" }</code>). The kanban's <code>board is @board</code> is one of these: unfix it and the board tabs stop working. So the panel shows it rather than hiding it, and shows it as a plain row with no chevron rather than as a control that silently fails.</p>
+				</div>
+				<div class="panel">
+					<h4>Why the <code>@</code> rows read as sentences<span class="lbl">a call I made</span></h4>
+					<p class="why">In the file these are <code>{ prop: "board", op: "is", value: "@board" }</code> and <code>{ spread: "@filters" }</code>. Drawn literally, the second is unreadable to anyone who has not read <code>resolveFilter</code>. So each row is a sentence with its raw form beneath it in the row's own sub&#8209;line &#8212; the sentence for reading, the mono so it is still findable in the board file.</p>
+				</div>
+				<div class="panel">
+					<h4>Window is not persisted today<span class="lbl">honest gap</span></h4>
+					<p class="why"><code>useSource</code> holds the window in <code>useState</code> and nothing writes it to the tile. Drawn here because the tab is where it belongs; building it means one more key in <code>sources[name]</code> alongside <code>filters</code> and <code>sort</code>.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================ ACTIONS ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Actions</span>
+			<h2>Not a second list. What this source can already do</h2>
+			<p class="note">There is no action to configure. For every source the engine derives a matching set &#8212; <code>create</code>, <code>update</code>, <code>open</code>, and the three <code>can&#8230;</code> flags that gate them (<code>surface.js:267&#8211;276</code>) &#8212; and all three flags are the same boolean: whether the folder path is non&#8209;empty. So the panel does not offer a list to edit. It <b>reports</b>, in the same grouped list as everything else, and it reports one path's consequences.</p>
+		</div>
+
+		<div class="grid2">
+			<div class="group">
+				<span class="lbl">What Tasks can do <span class="n">Orbitask/Tasks</span></span>
+				<div class="list divided">
+
+				<div class="row">
+					<span class="badge ok"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span>
+					<span class="rlabel two">Create<span class="sub">a new note lands in Orbitask/Tasks</span></span>
+					<span class="rvalue muted">On</span>
+				</div>
+				<div class="row">
+					<span class="badge ok"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span>
+					<span class="rlabel two">Update<span class="sub">writes frontmatter on the note it came from</span></span>
+					<span class="rvalue muted">On</span>
+				</div>
+				<div class="row">
+					<span class="badge ok"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span>
+					<span class="rlabel two">Open<span class="sub">opens the note in a pane</span></span>
+					<span class="rvalue muted">On</span>
+				</div>
+				<div class="row">
+					<span class="badge ok"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></span>
+					<span class="rlabel two">Remove<span class="sub">moves the note to the vault's trash</span></span>
+					<span class="rvalue muted">On</span>
+				</div>
+			
+				</div>
+				<p class="under">All four follow the folder. Clear the path and all four go off together &#8212; there is no state where this widget reads here and writes there.</p>
+			</div>
+			<div class="group">
+				<span class="lbl">What Boards can do <span class="n">not set</span></span>
+				<div class="list divided">
+
+				<div class="row">
+					<span class="badge off"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></span>
+					<span class="rlabel two">Create<span class="sub">nowhere to put it</span></span>
+					<span class="rvalue unset">Off</span>
+				</div>
+				<div class="row">
+					<span class="badge off"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></span>
+					<span class="rlabel two">Update<span class="sub">no note to write to</span></span>
+					<span class="rvalue unset">Off</span>
+				</div>
+				<div class="row">
+					<span class="badge off"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></span>
+					<span class="rlabel two">Open<span class="sub">nothing listed</span></span>
+					<span class="rvalue unset">Off</span>
+				</div>
+			
+				</div>
+				<p class="under">This is the whole "not set" story for actions: <b>one empty field turns the rows grey</b>, and the reason is the row above them, not a separate diagnosis.</p>
+			</div>
+	</div>
+
+		<div class="callout warn">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M8 6.4v3.2M8 11.8v.1"/><path d="M7 2.4L1.5 12.4a1.1 1.1 0 0 0 1 1.7h11a1.1 1.1 0 0 0 1-1.7L9 2.4a1.1 1.1 0 0 0-2 0z"/></svg>
+			<p><b>Should a source be able to write somewhere other than it reads? My answer is no, and the cost is specific.</b> A second <code>writePath</code> would buy exactly <b>one</b> verb. <code>update</code> and <code>remove</code> act on a <code>ref.path</code> that came off a row the source already listed, so they can only ever touch the read folder &#8212; a write path is meaningless to them. Only <code>create</code> could honour it, and then it would break its own feedback: the folder watcher subscribes with <code>file.path.startsWith(folderPath)</code>, so a note created elsewhere never comes back through the list and <b>pressing "New task" would visibly do nothing</b>. If a widget really needs a second destination, that destination is a <b>second source</b> with its own path &#8212; the manifest's <code>sources</code> is already a map, so this costs one manifest key and no new concept.</p>
+		</div>
+	</section>
+
+	<!-- ============================ SLOTS ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Slots</span>
+			<h2>A fixed set, and an open list</h2>
+			<p class="note">Two shapes, and the difference is not cosmetic. A <b>slot</b> is a template hole: the parent resolves the data and hands it down, so the child has no sources and no settings of its own &#8212; only its identity is configurable. A <b>mount</b> is a nested tile minus geometry: it goes through its own <code>WidgetHost</code>, resolves its own sources and keeps its own settings. The panel offers <b>different things</b> for the two, and both are one grouped list.</p>
+		</div>
+
+		<div class="grid2">
+
+			<div class="stack">
+				<span class="lbl">Fixed set &#8212; the kanban declares one slot, called card</span>
+				<div class="group">
+					<span class="lbl">Slots</span>
+					<div class="pop pop-anchored" style="top: 26px;">
+						<div class="pop-inner">
+							<button class="pop-item" aria-checked="true"><span class="pname">OrbiTask &#183; Task card</span><svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<button class="pop-item" aria-checked="false"><span class="pname">OrbiTask &#183; Compact card</span><svg class="icon tickmark" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg></button>
+							<div class="pop-sep"></div>
+							<button class="pop-item" style="color: var(--wg-ink-muted)"><span class="pname">Back to the widget's default</span></button>
+						</div>
+					</div>
+					<div class="list">
+
+					<button class="row press">
+						<span class="badge quiet"><svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="11.2" height="10.4" rx="2.2"/><path d="M2.4 6.4h11.2"/></svg></span>
+						<span class="rlabel">Card</span>
+						<span class="rvalue muted">Task card</span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+					<p class="under">A fixed set cannot grow or shrink &#8212; the widget declares its holes and the number of rows is the number of holes. There is nothing to add and nothing to reorder, so the group has no trailing add row.</p>
+				</div>
+		</div>
+
+			<div class="stack">
+				<span class="lbl">Open list &#8212; a view group's views, in order</span>
+				<div class="group">
+					<span class="lbl">Views <span class="n">3</span></span>
+					<div class="list divided">
+
+
+					<div class="row">
+						<span class="badge grab"><svg class="icon" viewBox="0 0 16 16"><path d="M6 4.4h.01M10 4.4h.01M6 8h.01M10 8h.01M6 11.6h.01M10 11.6h.01" stroke-width="2.2"/></svg></span>
+						<span class="rlabel two">Kanban<span class="sub mono">@orbitask/kanban-board</span></span>
+						<span class="rvalue">
+							<button class="iconbtn iconbtn-xs pressable" aria-label="Open its settings"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px;transform:rotate(-90deg)"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+							<button class="iconbtn iconbtn-xs pressable" aria-label="Remove"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+						</span>
+					</div>
+
+					<div class="row">
+						<span class="badge grab"><svg class="icon" viewBox="0 0 16 16"><path d="M6 4.4h.01M10 4.4h.01M6 8h.01M10 8h.01M6 11.6h.01M10 11.6h.01" stroke-width="2.2"/></svg></span>
+						<span class="rlabel two"><span class="line">Kanban <span class="pilltag tiny accent">2nd copy</span></span><span class="sub mono">@orbitask/kanban-board#2</span></span>
+						<span class="rvalue">
+							<button class="iconbtn iconbtn-xs pressable" aria-label="Open its settings"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px;transform:rotate(-90deg)"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+							<button class="iconbtn iconbtn-xs pressable" aria-label="Remove"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+						</span>
+					</div>
+
+					<div class="row">
+						<span class="badge grab"><svg class="icon" viewBox="0 0 16 16"><path d="M6 4.4h.01M10 4.4h.01M6 8h.01M10 8h.01M6 11.6h.01M10 11.6h.01" stroke-width="2.2"/></svg></span>
+						<span class="rlabel two">Archived columns<span class="sub mono">@orbitask/archived-columns</span></span>
+						<span class="rvalue">
+							<button class="iconbtn iconbtn-xs pressable" aria-label="Open its settings"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px;transform:rotate(-90deg)"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+							<button class="iconbtn iconbtn-xs pressable" aria-label="Remove"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button>
+						</span>
+					</div>
+
+					<div class="row is-unset">
+						<span class="badge off"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M8 6v3M8 10.6v.1"/><circle cx="8" cy="8" r="5.6"/></svg></span>
+						<span class="rlabel two">Timeline<span class="sub mono">@orbitask/timeline</span></span>
+						<span class="rvalue"><span class="pilltag err tiny">Not installed</span></span>
+					</div>
+
+					<button class="row press add">
+						<svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>
+						<span class="rlabel">Add a view</span>
+					</button>
+				
+					</div>
+					<p class="under">The same widget twice is legal and already handled: <code>resolveMounts</code> gives the second copy the slot id <code>&#8230;#2</code>, so it keeps <b>its own settings and its own sources</b>. The list is therefore keyed by slot, not by widget, and the copy is labelled or the two rows are indistinguishable.</p>
+				</div>
+		</div>
+		</div>
+
+		<div class="callout">
+			<svg class="icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.6"/><path d="M8 5.2v3.4M8 10.8v.1"/></svg>
+			<p><b>A missing widget stays in the list.</b> <code>mountEntry</code> already keeps an id the registry could not resolve, and distinguishes "never a widget" from "failed to load". Dropping the row would silently shorten the list and lose the setting; the row stays inside the group, marked, and can be removed on purpose.</p>
+		</div>
+
+		<div class="head" style="padding-top: var(--size-4-4);">
+			<span class="lbl">Nesting</span>
+			<h3>The window never opens a second window. It re&#8209;roots.</h3>
+			<p class="note">This is the answer to the regress. There is exactly <b>one</b> settings window on screen, ever. Pressing the arrow on a slot or a mount does not open a child panel &#8212; it <b>swaps what the canvas is showing</b> and pushes one crumb into the floating header. Going back is pressing the crumb. A panel inside a panel cannot happen because the second panel does not exist.</p>
+		</div>
+
+		<div class="stage">
+			<div class="win" style="height: 320px;">
+				<div class="win-cells">
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+					<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+				</div>
+
+				<div class="wgt place" style="left: 300px; top: 106px; width: 252px; height: 120px; background: none;">
+					<div class="kcard" style="margin: 8px; flex: 1; box-shadow: none;">
+						<span class="t" style="font-size: 14px">Replace the three task widgets with one dialog</span>
+						<span class="m"><span class="pilltag err tiny">P1</span><span class="pilltag tiny">65%</span><span class="avatars" style="margin-left:auto"><span class="avatar av-a">DS</span><span class="avatar av-b">MK</span></span></span>
+					</div>
+				</div>
+
+				<div class="win-head glass">
+					<div class="crumbs">
+						<button><svg class="icon" viewBox="0 0 16 16" style="width:13px;height:13px"><path d="M9.6 4.4L6 8l3.6 3.6"/></svg>View group</button>
+						<span class="sep">&#8250;</span>
+						<button>Kanban</button>
+						<span class="sep">&#8250;</span>
+						<span class="here">Task card</span>
+					</div>
+					<div class="right">
+						<span class="pilltag tiny">4 &#215; 2</span>
+						<button class="btn btn-s btn-plain pressable">Done</button>
+					</div>
+				</div>
+
+				<aside class="win-side glass">
+					<div class="tabbar">
+						<button aria-selected="true">Settings</button>
+						<button aria-selected="false">Data</button>
+						<button aria-selected="false">Design</button>
+					</div>
+					<div class="win-side-scroll">
+						<div class="group">
+							<span class="lbl">Which widget</span>
+							<div class="list on-glass">
+
+							<button class="row press">
+								<span class="rlabel">Card</span>
+								<span class="rvalue muted">Task card</span>
+								<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+						
+							</div>
+							<p class="under"><b>The trail stops here.</b> A slotted widget is handed its data by its parent &#8212; <code>resolveSlots</code> renders it directly, not through a <code>WidgetHost</code> &#8212; so it has no sources of its own, no settings of its own and no slots to descend into. Choosing which widget fills the hole is the only fact there is.</p>
+						</div>
+					<div class="group">
+						<span class="lbl">Preview data</span>
+						<div class="list on-glass">
+
+							<button class="row press">
+								<span class="rlabel">Row</span>
+								<span class="rvalue muted">First task in Doing</span>
+								<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+							</button>
+						
+						</div>
+						<p class="under">Which real row the canvas draws it with. It changes the picture only &#8212; nothing is saved.</p>
+					</div>
+				</div>
+					<div class="win-foot"><span class="lbl">@orbitask/task-card</span></div>
+				</aside>
+
+				<div class="win-bar glass">
+					<button aria-pressed="true">Fit</button><button aria-pressed="false">1:1</button>
+					<span class="said">100%</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="flow"><b>WHERE THE TRAIL CAN GO</b>
+
+  <b>Tile</b>  <i>View group</i>
+    &#9500;&#9472;&#8594; <b>mount</b>  <i>Kanban</i>            <em>own WidgetHost</em>  settings, sources, slots, mounts &#8212; keeps going
+    &#9474;      &#9492;&#9472;&#8594; <b>slot</b>  <i>Task card</i>    <em>no WidgetHost</em>   identity only &#8212; <em>stops</em>
+    &#9492;&#9472;&#8594; <b>mount</b>  <i>Archived columns</i>   <em>own WidgetHost</em>  no sources declared &#8212; keeps going, has little to say
+
+  <i>a mount may hold mounts, so depth is not bounded by the data model (normalizeMounted recurses).</i>
+  <i>it is bounded by the canvas: the trail keeps going while the target can still be drawn at 1:1.</i></div>
+
+		<div class="grid2">
+			<div class="callout">
+				<svg class="icon" viewBox="0 0 16 16"><rect x="2.4" y="2.8" width="11.2" height="10.4" rx="2.2"/><path d="M2.4 6.4h11.2"/></svg>
+				<p><b>The bound, stated as a rule rather than a number.</b> The trail descends while the canvas can still <b>draw the thing being edited at 1:1 inside the free area</b> &#8212; the same measurement the opening state uses. A mount inside a mount is a region of a region, still drawable. One level deeper it is a smear, and there the row stops offering the arrow and offers <b>"Edit on its own"</b> instead, which makes that widget the canvas's root and clears the crumbs. Nothing dead&#8209;ends, and the limit is the same thing the reader can see.</p>
+			</div>
+			<div class="callout warn">
+				<svg class="icon" viewBox="0 0 16 16"><path d="M8 6.4v3.2M8 11.8v.1"/><path d="M7 2.4L1.5 12.4a1.1 1.1 0 0 0 1 1.7h11a1.1 1.1 0 0 0 1-1.7L9 2.4a1.1 1.1 0 0 0-2 0z"/></svg>
+				<p><b>In practice today the trail is at most two steps</b>, because the view group is the only widget in the vault that mounts anything and the kanban is the only one with a slot. The rule matters anyway: it is what stops the third mount holder from turning this into a stack of dialogs.</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================ THE HARD QUESTION ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">The hard question</span>
+			<h2>Several sources, one folder, one place to change it</h2>
+			<p class="note">You reached for a constant &#8212; one endpoint list, reused everywhere. Before designing that, the fear has to be split, because <b>half of it the architecture already answers and half of it is real.</b></p>
+		</div>
+
+		<div class="grid2">
+			<div class="panel">
+				<h4>Not real &#8212; the folder in three places inside one widget<span class="pilltag ok verdict">Answered</span></h4>
+				<p class="why">The worry was that a source needs a folder, then the action needs one, then the slot needs one. None of that is true. <b>Actions are derived from the source</b> and share its single boolean; <b>a slotted child has no sources at all</b>. Changing the kanban's folder changes what it reads, where a new task is created, whether the create button is even enabled, and what every card in it is drawn from &#8212; from one field. The design's job here is only to <b>show</b> that, which is why the Actions rows report and do not edit.</p>
+			</div>
+			<div class="panel">
+				<h4>Real &#8212; several widgets on one board over one folder<span class="pilltag warn verdict">Needs a mechanism</span></h4>
+				<p class="why">Count it on the board this page draws. The board tabs declare a <code>tasks</code> source at <code>Orbitask/Tasks</code>. The filter panel declares one. The kanban declares one, and it is <b>mounted</b>, so it resolves it through its own host rather than inheriting anything. That is <b>three separate strings holding the same fact</b>, and a mount holder with five views would be seven. Move the folder and the board half&#8209;breaks, quietly, in whichever widget you forgot.</p>
+			</div>
+		</div>
+
+		<div class="flow"><b>BOARD &#183; Widgetarium</b>
+  <b>tile</b> board-tabs      source <em>tasks</em>  &#8594; <i>Orbitask/Tasks</i>
+  <b>tile</b> filter-panel    source <em>tasks</em>  &#8594; <i>Orbitask/Tasks</i>
+  <b>tile</b> page-header     <i>no sources</i>
+  <b>tile</b> view-group      <i>no sources of its own</i>
+        &#9500;&#9472;&#9472;&#8594; <b>mount</b> kanban-board       source <em>tasks</em>  &#8594; <i>Orbitask/Tasks</i>
+        &#9492;&#9472;&#9472;&#8594; <b>mount</b> archived-columns   <i>no sources</i>
+              &#9492;&#9472;&#9472;&#8594; <b>slot</b> task-card      <i>handed its row &#8212; no source, ever</i>
+
+  <i>three strings, one fact &#8212; and the slot contributes none, which is why slots are not part of this problem</i></div>
+
+		<div class="grid3">
+			<div class="opt">
+				<h4>A board&#8209;level named path<span class="pilltag ok verdict">Take this</span></h4>
+				<p class="cost">The board file grows a <code>sources</code> table beside the <code>context</code> table it already has, and a source's path may be a name: <code>@tasks</code>. One string, one edit, every reader follows. <b>Cost:</b> one resolution step in <code>useSource</code>, and a second place to look when a path is wrong &#8212; paid off by showing the resolved folder under the name, always.</p>
+			</div>
+			<div class="opt">
+				<h4>The outer widget passes it down<span class="pilltag err verdict">No</span></h4>
+				<p class="cost">It fails twice. It contradicts what a mount <b>is</b> &#8212; resolving its own sources through its own host is the entire reason mounts exist rather than slots &#8212; so it would turn every mount into a slot. And it does not even cover the case: the board tabs and the filter panel are <b>siblings</b> of the group, not children of it, so two of the three strings are out of its reach.</p>
+			</div>
+			<div class="opt">
+				<h4>Reuse <code>context</code> for it<span class="pilltag err verdict">No</span></h4>
+				<p class="cost">Tempting, because the <code>@</code> indirection already exists there and <code>resolveFilter</code> already substitutes it. But context is a <b>runtime selection</b> with a single owning widget, subscribed to and re&#8209;rendered on change. A folder is not a selection: nothing should be able to write it while the board is running, and no widget should own it. Same syntax, different table, resolved when the source binds rather than every frame.</p>
+			</div>
+		</div>
+
+		<div class="callout pick">
+			<svg class="icon" viewBox="0 0 16 16"><path d="M3.4 8.4l3 3 6.2-6.8"/></svg>
+			<p><b>And the constant is never something you have to learn first.</b> Every path row stays a plain folder picker. The panel simply <b>tells the truth it already knows</b> &#8212; "3 widgets on this board read this folder" &#8212; and offers <b>Link them</b>. Pressing it creates the named path, rewrites all three to point at the name, and from then on each row shows the name with the real folder in its sub&#8209;line. <b>Unlink</b> writes the literal path back everywhere and the name disappears. Nobody is asked to design an endpoint list up front; you get one by pressing the sentence that was already telling you the problem.</p>
+		</div>
+
+		<div class="grid2">
+			<div class="stack">
+				<span class="lbl">Before &#8212; the group names the duplication</span>
+				<div class="group">
+					<div class="list">
+
+					<button class="row press">
+						<span class="rlabel">Tasks</span>
+						<span class="rvalue muted"><span class="path">Orbitask/Tasks</span></span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+					<p class="under"><b>3 widgets on this board read this folder.</b> <a>Link them</a> and it becomes one name they all point at.</p>
+				</div>
+		</div>
+			<div class="stack">
+				<span class="lbl">After &#8212; one name, the folder still visible</span>
+				<div class="group">
+					<div class="list">
+
+					<button class="row press">
+						<span class="rlabel two">Tasks<span class="sub mono">Orbitask/Tasks</span></span>
+						<span class="rvalue"><span class="pilltag accent tiny">@tasks</span></span>
+						<svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg>
+					</button>
+				
+					</div>
+					<p class="under">Shared with <b>Board tabs</b> and <b>Filter</b>. <a>Edit the board's paths</a> &#183; <a>Unlink this one</a></p>
+				</div>
+		</div>
+		</div>
+
+		<div class="grid2">
+			<div class="group">
+				<span class="lbl">Board paths <span class="n">Widgetarium</span></span>
+				<div class="list divided">
+
+				<div class="row">
+					<span class="rlabel two">@tasks<span class="sub mono">Orbitask/Tasks</span></span>
+					<span class="rvalue"><span class="pilltag tiny">3 widgets</span><button class="iconbtn iconbtn-xs pressable" aria-label="Edit"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M11 2.6l2.4 2.4-8 8-3 .6.6-3z"/></svg></button></span>
+				</div>
+				<div class="row">
+					<span class="rlabel two">@people<span class="sub mono">Orbitask/People</span></span>
+					<span class="rvalue"><span class="pilltag tiny">1 widget</span><button class="iconbtn iconbtn-xs pressable" aria-label="Edit"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M11 2.6l2.4 2.4-8 8-3 .6.6-3z"/></svg></button></span>
+				</div>
+				<div class="row is-unset">
+					<span class="rlabel two">@archive<span class="sub mono">Orbitask/Archive</span></span>
+					<span class="rvalue unset">Used by nothing<button class="iconbtn iconbtn-xs pressable" aria-label="Remove"><svg class="icon" viewBox="0 0 16 16" style="width:12px;height:12px"><path d="M4.4 4.4l7.2 7.2M11.6 4.4l-7.2 7.2"/></svg></button></span>
+				</div>
+				<button class="row press add">
+					<svg class="icon" viewBox="0 0 16 16"><path d="M8 3.6v8.8M3.6 8h8.8"/></svg>
+					<span class="rlabel">Add a path</span>
+				</button>
+			
+				</div>
+				<p class="under">A name nothing uses is shown as such rather than tidied away &#8212; it is how you notice the last widget that used it was deleted.</p>
+			</div>
+		<div class="stack">
+				<div class="panel">
+					<h4>Why it is a table and not a setting<span class="lbl">the shape</span></h4>
+					<p class="why">The board file already carries <code>context</code>, a flat map that is not any tile's property. <code>sources</code> sits beside it, is written only by this list, and is read at bind time. One writer, one reader, and a name that resolves to nothing is a <b>visible</b> failure &#8212; the row shows the name in the error wash and the abilities go off, exactly as an empty path does.</p>
+				</div>
+				<div class="panel">
+					<h4>What it does not solve<span class="lbl">honest</span></h4>
+					<p class="why">A name is per board. Two boards over the same folder still hold two strings, and that is <b>correct</b>: boards are the unit a person copies, moves and shares, and a vault&#8209;wide constant would make copying a board carry an invisible dependency. If vault&#8209;wide names are ever wanted, they are a different feature with a different owner.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============================ THEMES ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Both themes, at once</span>
+			<h2>It holds either way round &#8212; and dark is where the glass wakes up</h2>
+			<p class="note">The same window in both, with a card passing under the sidebar in each. In light the panel's tint is a no&#8209;op and the hairline is carrying it; in dark <code>--wg-raise</code> is a real step, so the panel visibly <b>lifts</b> off the canvas with nothing added. The grid squares are 5% of the ink and invert on their own. Neither casts a shadow.</p>
+		</div>
+
+		<div class="pairthemes">
+				<div class="theme-light">
+					<span class="lbl">Light</span>
+					<div class="win" style="height: 250px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 190px; top: 64px; width: 320px; height: 160px;">
+							<div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);">
+								<div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div>
+								<div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div>
+							</div></div>
+						</div>
+						<div class="win-head glass" style="left: 12px; top: 12px; right: 184px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div>
+						<aside class="win-side glass" style="right: 12px; top: 12px; bottom: 12px; width: 160px; padding: var(--size-2-3);">
+							<div class="tabbar"><button aria-selected="true">Settings</button></div>
+							<div class="group">
+								<div class="list on-glass">
+
+								<button class="row press"><span class="rlabel">Tasks</span><svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+								<button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button>
+								<button class="row press is-unset"><span class="rlabel">Archived</span><span class="rvalue unset">Empty</span></button>
+							
+								</div>
+							</div>
+					</aside>
+					</div>
+				</div>
+
+				<div class="theme-dark">
+					<span class="lbl">Dark</span>
+					<div class="win" style="height: 250px;">
+						<div class="win-cells" style="grid-template-columns: repeat(auto-fill, var(--cell));">
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+						</div>
+						<div class="wgt" style="left: 190px; top: 64px; width: 320px; height: 160px;">
+							<div class="kb"><div class="kb-cols" style="padding: var(--size-4-2);">
+								<div class="kcol"><div class="kcol-head">Doing<span class="n">3</span></div><div class="kcard"><span class="t">Named paths</span><span class="m"><span class="pilltag err tiny">P1</span></span></div></div>
+								<div class="kcol"><div class="kcol-head">Done<span class="n">15</span></div><div class="kcard"><span class="t">Release a claim</span><span class="m"><span class="pilltag ok tiny">Done</span></span></div></div>
+							</div></div>
+						</div>
+						<div class="win-head glass" style="left: 12px; top: 12px; right: 184px; height: 38px; padding: 0 var(--size-4-3);"><div class="crumbs"><span class="here">Kanban board</span></div></div>
+						<aside class="win-side glass" style="right: 12px; top: 12px; bottom: 12px; width: 160px; padding: var(--size-2-3);">
+							<div class="tabbar"><button aria-selected="true">Settings</button></div>
+							<div class="group">
+								<div class="list on-glass">
+
+								<button class="row press"><span class="rlabel">Tasks</span><svg class="icon chev" viewBox="0 0 16 16"><path d="M4.4 6.4L8 10l3.6-3.6"/></svg></button>
+								<button class="row press"><span class="rlabel">Columns</span><span class="rvalue"><span class="pilltag tiny">4</span></span></button>
+								<button class="row press is-unset"><span class="rlabel">Archived</span><span class="rvalue unset">Empty</span></button>
+							
+								</div>
+							</div>
+					</aside>
+					</div>
+				</div>
+
+		</div>
+	</section>
+
+	<!-- ============================ WHAT THE CODE NEEDS ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Before this can be built</span>
+			<h2>Three things the model does not carry yet</h2>
+			<p class="note">Found while reading the code this page draws an interface for. None is large; all three are load&#8209;bearing for the window above.</p>
+		</div>
+
+		<div class="opens">
+			<div class="open"><b>A slot's choice is never saved</b><span><code>resolveSlots</code> reads <code>tile.slots?.[name]</code>, but <code>normalizeTile</code> does not normalise a <code>slots</code> key and <code>serializeBoard</code> does not write one. So the Slots row above can be pressed, will work until the board is saved, and will then come back as the widget's default. One key in each of the two functions, alongside <code>settings</code> and <code>sources</code>.</span></div>
+			<div class="open"><b>The window is state, not settings</b><span><code>useSource</code> keeps <code>offset</code> and <code>limit</code> in <code>useState</code>, seeded from the manifest. The Data tab draws them as settings, which means they need a home in <code>sources[name]</code> beside <code>filters</code> and <code>sort</code>.</span></div>
+			<div class="open"><b>An open mount list wants an array, not a string</b><span>The views setting is a comma&#8209;separated <code>text</code> field today, and <code>idsOf</code> already accepts an array as well as a string. Reordering by dragging writes an array; the string form stays readable for a hand&#8209;edited board, so both paths keep working with no migration.</span></div>
+		</div>
+	</section>
+
+	<!-- ============================ CALLS ============================ -->
+	<section>
+		<div class="head">
+			<span class="lbl">Before you say yes</span>
+			<h2>Calls I made that you did not specify</h2>
+			<p class="note">Each of these is a decision the brief left open. They are drawn above rather than left blank, so the page is honest about what it proposes &#8212; and any of them can go the other way without touching the rest.</p>
+		</div>
+
+		<div class="opens">
+			<div class="open"><b>The tabs are Settings / Data / Design</b><span>You proposed Default / Advanced / Design. "Default" and "Advanced" name a <b>difficulty</b>, and the split is not difficulty &#8212; it is one path everybody touches versus the query behind it that almost nobody does. Your words fit the same three tabs unchanged if you prefer them.</span></div>
+			<div class="open"><b>Actions have no tab of their own</b><span>They live in the Data tab as a grouped list under the source that produced them. Giving them a tab would say they are a thing you configure, which is the exact belief the code contradicts.</span></div>
+			<div class="open"><b>Headings sit outside their block</b><span>The macOS System Settings pattern: small muted text above the filled group, the group holding rows only. It removed the divider that used to sit under a heading &#8212; a line that existed only to repair a structure that should not have been built that way &#8212; and most of the other lines with it.</span></div>
+			<div class="open"><b>Hairlines are opt-in, not default</b><span>Only a genuine list of like rows gets them: the four abilities, the filter clauses, the views, the board paths. A group of two or three unlike controls gets none. If that ever makes two rows hard to tell apart, the answer is a different fill, not the line back.</span></div>
+			<div class="open"><b>The value pickers are the filter panel's popover</b><span>Press a row and a panel takes its place with the choices in it, a keyword field, and Reset / Apply &#8212; the shape <code>widgets/@orbitask/filter-panel</code> already ships, on the kit's <code>Popover</code>. The earlier inline expansion is gone, and with it the row that changed material when it opened.</span></div>
+			<div class="open"><b>The header is a capsule, not a full-width bar</b><span>Same blur, same hairline, less canvas taken. macOS can afford the full width because its content scrolls on one axis past a fixed top edge; this canvas pans on two and has no such edge. Widening it back is one property.</span></div>
+			<div class="open"><b>Exactly one edge exists, on the panel</b><span>Law one is <b>fill, never outline</b>. An earlier draft of this page had the panel outlined, each group inside it outlined, and rows divided inside those &#8212; three edges stacked. All of them are gone except <code>--wg-glass-edge</code> on the outermost floating panel, which a translucent surface over moving content genuinely needs. Where a border was doing the separating, the fix was the fill underneath it, not a thinner line.</span></div>
+			<div class="open"><b>A group on glass gets a new token</b><span>The kit had no fill calibrated against a translucent surface. <code>--wg-glass-group</code> is <code>color-mix(--wg-ink 6%, --wg-raise)</code> &#8212; a step toward the ink from the panel's own colour, so it holds in both themes and over any canvas. It belongs in <code>styles.css</code> beside the other three glass tokens if this is approved. The percentage is the arguable part; that it must step from the ink and not from a background is not.</span></div>
+			<div class="open"><b>Text never sits on the glass</b><span>The floating panels are glass; every grouped list inside them is opaque <code>--wg-raise</code>. The arithmetic is in the glass section: a 78% tint over a glyph is a 1.55:1 ghost, fine behind a 14&nbsp;px label, dirty behind an 11&nbsp;px one.</span></div>
+			<div class="open"><b>The header stops short of the sidebar</b><span>Two floating panels that tile the top&#8209;right corner, rather than one bar running the full width behind the other. The Apple Maps alternative &#8212; a small title capsule left, a controls capsule right &#8212; is equally defensible and gives back more canvas.</span></div>
+			<div class="open"><b>The legibility floor is 0.7</b><span>You did not name one, and the fit arithmetic needs one or a wide widget opens at a scale nobody can read. 0.7 puts the kit's smallest 12&nbsp;px type at 8.4&nbsp;px. Below it the window starts <b>panned</b> instead, and says so in the bar. The number is arguable; that there must be one is not.</span></div>
+			<div class="open"><b>The canvas is look&#8209;only below 1:1</b><span>The strongest call on the page. It costs the ability to press a control in a zoomed&#8209;out widget; it buys a canvas where popovers, blurs and touch targets are never broken, and makes "press to go 1:1" one obvious gesture rather than a mode to find.</span></div>
+			<div class="open"><b>The pan clamp is one cell, stated against the panels</b><span>Not against the window: a widget hanging off the left edge is still visible, one under an opaque panel is not. One cell is the smallest unit the board itself thinks in, so it needs no new number.</span></div>
+			<div class="open"><b>The sidebar folds to a capsule</b><span>An escape that costs one control in the zoom bar. Without it there is no way to see the whole of a widget that exactly fills the free area, and folding also grows the free area so Fit recomputes.</span></div>
+			<div class="open"><b>Remove stays on the tile, not in the header</b><span>Removing acts on the board, not on the configuration, and a bin beside a Done control in one small capsule is the one mis&#8209;press you cannot undo. If it must be here it goes alone at the foot of the last tab.</span></div>
+			<div class="open"><b>The phone gets a bottom sheet, not a sidebar</b><span>A right&#8209;hand panel and a 375&nbsp;px screen cannot both exist. The idea survives &#8212; one canvas, floating chrome &#8212; but the second panel moves to where a thumb is, the free area is measured against the sheet's peek height, and the clamp turns vertical.</span></div>
+			<div class="open"><b>The grow is 320&nbsp;ms on the spring</b><span>The tile transition is 170&nbsp;ms on a private curve today, tuned for a resize of a few cells. This box crosses the board, so it takes <code>--wg-dur-m</code> and <code>--wg-spring</code> &#8212; and closing takes <code>--wg-ease</code>, per the kit's rule about panels that bounce shut.</span></div>
+			<div class="open"><b>"Link them" is offered, never required</b><span>The alternative was to make board paths a first&#8209;class thing you set up before adding widgets &#8212; a concept tax charged to everybody to solve a problem some boards never have. The promotion gesture charges only the boards that have it.</span></div>
+			<div class="open"><b>Board paths are per board</b><span>Not per vault. A board is the unit that gets copied and shared, and a vault&#8209;wide constant would make a copied board depend on something invisible that travelled with it.</span></div>
+			<div class="open"><b>Uppercase captions are gone</b><span>You asked for it and I took it further than the three you named: every mono, tracked, uppercase label on this page &#8212; section eyebrows and popover headers included &#8212; is plain sentence case in the interface font. Nothing is shouted.</span></div>
+			<div class="open"><b>The second copy of a mounted widget is labelled</b><span><code>resolveMounts</code> makes it <code>&#8230;#2</code> and it keeps its own settings. Two identical rows would be a trap, so the copy carries a marker. What it should say instead of "2nd copy" is yours &#8212; it could equally be the view's own name once views are nameable.</span></div>
+		</div>
+	</section>
+
+</div>
+
+<script>
+(function () {
+	"use strict";
+
+	// THE LIVE MOTION. One element changes width, height and transform; nothing is swapped
+	// out and nothing is scaled -- the same arithmetic the board already runs when a chip
+	// opens (chip.js openedBox), and the same reason: a scaled ancestor would re-parent every
+	// fixed-position popover inside the widget and kill the panels' backdrop-filter.
+	var demo = document.getElementById("demo");
+	var tile = document.getElementById("demotile");
+	var gear = document.getElementById("demogear");
+	var done = document.getElementById("democlose");
+
+	if (demo && tile && gear && done) {
+		var rest = {
+			x: Number(tile.dataset.x),
+			y: Number(tile.dataset.y),
+			w: Number(tile.dataset.w),
+			h: Number(tile.dataset.h)
+		};
+
+		var put = function (box) {
+			tile.style.width = box.w + "px";
+			tile.style.height = box.h + "px";
+			tile.style.transform = "translate3d(" + box.x + "px," + box.y + "px,0)";
+		};
+
+		var open = function () {
+			var pad = Number(demo.dataset.pad) || 10;
+			demo.classList.add("open");
+			put({ x: pad, y: pad, w: demo.clientWidth - pad * 2, h: demo.clientHeight - pad * 2 });
+		};
+
+		var close = function () {
+			demo.classList.remove("open");
+			put(rest);
+		};
+
+		gear.addEventListener("click", function (event) {
+			event.stopPropagation();
+			if (demo.classList.contains("open")) close();
+			else open();
+		});
+		done.addEventListener("click", function (event) {
+			event.stopPropagation();
+			close();
+		});
+		document.addEventListener("keydown", function (event) {
+			if (event.key === "Escape") close();
+		});
+	}
+
+	// the tab capsules on the page are drawings, but a capsule that does not answer a press
+	// reads as broken rather than as a picture
+	var bars = document.querySelectorAll(".tabbar");
+	for (var index = 0; index < bars.length; index += 1) {
+		(function (bar) {
+			bar.addEventListener("click", function (event) {
+				var pressed = event.target.closest("button");
+				if (!pressed || !bar.contains(pressed)) return;
+				var all = bar.querySelectorAll("button");
+				for (var n = 0; n < all.length; n += 1) all[n].setAttribute("aria-selected", String(all[n] === pressed));
+			});
+		})(bars[index]);
+	}
+})();
+</script>

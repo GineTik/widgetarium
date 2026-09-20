@@ -32,7 +32,7 @@ globalThis.ResizeObserver ??= class {
 buildMirror();
 const kit = await import("./.mjs-cache/kit.mjs");
 const { previewGateways } = await import("./.mjs-cache/preview.mjs");
-const { recordUnderItsDeclaration } = await import("./.mjs-cache/engine/catalogue-index.mjs");
+const { manifestOf } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 
 const api = {
 	createWidget: (component, meta) => {
@@ -73,7 +73,12 @@ function run(file, source) {
 		filePath: file,
 	}).code;
 
-	const modules = { widgetarium: api, "widgetarium/kit": kit, react: { createElement: h, Fragment, ...hooks }, ...Object.fromEntries(libs) };
+	const modules = {
+		widgetarium: api,
+		"widgetarium/kit": kit,
+		react: { createElement: h, Fragment, ...hooks },
+		...Object.fromEntries(libs),
+	};
 	const shell = { exports: {} };
 	new Function("require", "module", "exports", "h", "Fragment", code)(
 		(name) => {
@@ -119,12 +124,16 @@ for (const scope of scopes) {
 		try {
 			const record = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 			const component = load(folder);
-			const manifest = recordUnderItsDeclaration(record, component.meta);
-			const html = render(h(component, { ...previewGateways(manifest), size: { w: 6, h: 10, scale: 1 }, host: { ui: {} } }));
+			const manifest = manifestOf(record, component);
+			const html = render(
+				h(component, { ...previewGateways(manifest), size: { w: 6, h: 10, scale: 1 }, host: { ui: {} } }),
+			);
 
 			if (!html || html.length < 50) throw new Error("rendered almost nothing");
-			const hexes = [...new Set((fs.readFileSync(widgetFile(folder), "utf8").match(/#[0-9a-fA-F]{6}\b/g) ?? []))];
-			console.log(`OK  ${scope}/${name} — ${html.length} chars, ${hexes.length} raw hex ${hexes.length ? `(${hexes.join(" ")})` : ""}`);
+			const hexes = [...new Set(fs.readFileSync(widgetFile(folder), "utf8").match(/#[0-9a-fA-F]{6}\b/g) ?? [])];
+			console.log(
+				`OK  ${scope}/${name} — ${html.length} chars, ${hexes.length} raw hex ${hexes.length ? `(${hexes.join(" ")})` : ""}`,
+			);
 		} catch (failure) {
 			failed += 1;
 			console.log(`!!  ${scope}/${name} — ${failure.message}`);

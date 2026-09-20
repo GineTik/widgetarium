@@ -9,15 +9,15 @@ declare module "react-dom" {
 // TODO: type the kit; every import through widgetarium/kit is any until then
 declare module "widgetarium/kit";
 declare module "widgetarium/kit/emojis";
-declare module "@core/lib";
-declare module "@inline/lib";
 
-declare module "@rank/lib" {
+declare module "@default/lib" {
+	import type { CollectionGateway } from "widgetarium";
+
 	export type RankTier = { label: string; tone?: string; order?: number };
 
 	export type RankCard = { name: string; tier?: string; order?: number; picture?: string };
 
-	export type Held<T> = { ref: string; value: T };
+	export type Held<T> = T & { ref: string };
 
 	export type Picture =
 		| { kind: "letters"; letters: string }
@@ -53,13 +53,12 @@ declare module "@rank/lib" {
 	};
 
 	export function placedAt<T extends { ref: string }>(rows: T[], moved: T, at: number): T[];
-	export function orderBetween(above: { value: unknown } | null, below: { value: unknown } | null): number | null;
-	export function renumbered<T extends { ref: string; value: unknown }>(
-		rows: T[],
-	): { ref: string; value: { order: number } & Record<string, unknown> }[];
-}
+	export function orderBetween(
+		above: { order?: number | null } | null,
+		below: { order?: number | null } | null,
+	): number | null;
+	export function renumbered<T extends { ref: string }>(rows: T[]): (T & { order: number })[];
 
-declare module "@default/lib" {
 	export type MetricPoint = { day: string; value: number; isLogged: boolean };
 
 	export type MetricTone = "up" | "down" | "flat";
@@ -117,10 +116,6 @@ declare module "@default/lib" {
 	export function tipShare(hovered: number, count: number): number;
 	export function emptyDraft(today: string): { date: string; sign: string; amount: string; note: string };
 	export function dateOf(iso: string): Date;
-}
-
-declare module "@habit/lib" {
-	import type { CollectionGateway } from "widgetarium";
 
 	export type HabitNote = {
 		ref?: string;
@@ -137,9 +132,8 @@ declare module "@habit/lib" {
 
 	export const FLAME: string;
 
-	export function isoOf(date: Date): string;
 	export function dayOf(iso: string): number;
-	export function shiftedBy(iso: string, days: number): string;
+	export function leadDaysOf(firstWeekday: number, isWeekStartingMonday: boolean): number;
 	export function shapeOf(rows: HabitNote[] | null | undefined): "habit" | "day";
 	export function readLog(rows: HabitNote[] | null | undefined, options?: { pick?: string }): LogEntry[];
 	export function streakOf(
@@ -157,9 +151,7 @@ declare module "@habit/lib" {
 		noteByDay: Map<string, HabitNote>;
 		keptDays: Set<string>;
 	}): (day: string) => Promise<unknown>;
-}
 
-declare module "@task/lib" {
 	export type BoardColumn = { name: string; archivedAt?: string | null; isArchived?: boolean };
 
 	export type Board = {
@@ -186,4 +178,13 @@ declare module "@task/lib" {
 		name: string,
 		step: (column: BoardColumn) => BoardColumn,
 	) => BoardColumn[];
+
+	export const COUNTED_CEILING: number;
+	export function countedFirstLine(total: number | null | undefined): string | null;
+	export function askedCount(data: unknown, fallback: number): number;
+
+	export const EMOJI_PREFIX: string;
+	export const ICON_PREFIX: string;
+	export function heldValues(record: unknown): Record<string, unknown>;
+	export function heldProperties(record: unknown): Record<string, unknown>;
 }

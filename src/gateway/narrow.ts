@@ -34,7 +34,8 @@ function clausesFor(prop: string, value: unknown, by?: string): FilterRow[] {
 export function normalizeWhere(where: Narrowing, by?: string): FilterRow[] {
 	if (!where) return [];
 	const marked = by === undefined ? {} : { by };
-	if (Array.isArray(where)) return where.filter((row) => row && !isEmpty(row.value ?? row.spread)).map((row) => ({ ...marked, ...row }));
+	if (Array.isArray(where))
+		return where.filter((row) => row && !isEmpty(row.value ?? row.spread)).map((row) => ({ ...marked, ...row }));
 	return Object.entries(where).flatMap(([prop, value]) => clausesFor(prop, value, by));
 }
 

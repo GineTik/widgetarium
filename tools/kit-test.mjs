@@ -34,6 +34,10 @@ const {
 	APPROVAL_TONES,
 	PRIORITY_TONES,
 	TONE_NAMES,
+	MARK_SHAPE_NAMES,
+	MARK_TONE_NAMES,
+	PlaceholderMark,
+	markOf,
 	buttonClass,
 	cardClass,
 	sidebarClass,
@@ -258,6 +262,10 @@ const surface = [
 	"Progress",
 	"MarkdownEditor",
 	"Switch",
+	"PlaceholderMark",
+	"markOf",
+	"MARK_SHAPE_NAMES",
+	"MARK_TONE_NAMES",
 	"cx",
 	"variants",
 	"toneClass",
@@ -373,7 +381,7 @@ check(
 		}
 		throw new Error(`${id}: no widget source found`);
 	};
-	const tokens = fs.readFileSync("widgets/@task/tokens.css", "utf8");
+	const tokens = fs.readFileSync("widgets/@default/tokens.css", "utf8");
 	check(
 		"the plate fill has ONE owner, so no second fallback can drift",
 		/--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens),
@@ -386,11 +394,11 @@ check(
 	check("the tab strip does not paint its own plate", /background:\s*var\(--orbi-plate\)/.test(strip), false);
 	check(
 		"and the widget holding it draws no strip of its own",
-		/wg-kit-seg|role="tablist"/.test(widgetSource("@core/editable-tabs")),
+		/wg-kit-seg|role="tablist"/.test(widgetSource("@default/editable-tabs")),
 		false,
 	);
 
-	for (const id of ["@core/filter-panel", "@task/view-tabs"]) {
+	for (const id of ["@default/filter-panel", "@default/view-tabs"]) {
 		const name = id.slice(id.indexOf("/") + 1);
 		const src = widgetSource(id);
 		// either form counts: the kit is importable as components AND wearable as classes
@@ -961,7 +969,9 @@ check(
 	const peakStop = Number(/(\d+)%\s*\{\s*scale:/.exec(frames)[1]) / 100;
 	const peak = stopAt(`${peakStop * 100}%`);
 	const rest = stopAt("to");
-	const seedStop = /from\s*\{\s*scale:\s*var\(--wg-kit-pop-seed-x,\s*1\)\s*var\(--wg-kit-pop-seed-y,\s*1\);\s*\}/.test(frames);
+	const seedStop = /from\s*\{\s*scale:\s*var\(--wg-kit-pop-seed-x,\s*1\)\s*var\(--wg-kit-pop-seed-y,\s*1\);\s*\}/.test(
+		frames,
+	);
 	console.log(
 		`   the curve: seed -> ${peak.join(" ")} at ${peakStop * 100}% (${peakStop * growMs}ms) -> ${rest.join(" ")}`,
 	);
@@ -1123,7 +1133,7 @@ check(
 	render(null, host);
 }
 
-// CONTEXT: widgets/@core/filter-panel builds this by hand today
+// CONTEXT: widgets/@default/filter-panel builds this by hand today
 {
 	const host = document.getElementById("host");
 	render(null, host);
@@ -1987,6 +1997,185 @@ check(
 	await at("pointerdown", 300);
 	await at("pointerup", 300);
 	check("a press that never moved still toggles it", open, true);
+
+	render(null, stage);
+	stage.remove();
+}
+
+{
+	const stage = dom.window.document.createElement("div");
+	dom.window.document.body.appendChild(stage);
+	const drawnBy = (name) => {
+		render(h(Kit.Icon, { name }), stage);
+		const svg = stage.querySelector("svg");
+		return svg ? svg.getAttribute("viewBox") : null;
+	};
+
+	render(h(Kit.PopoverItem, { checked: false, onClick: () => {} }, "Plain"), stage);
+	check(
+		"a popover item is one line unless it is given a second",
+		Boolean(stage.querySelector(".wg-kit-pop-sub")),
+		false,
+	);
+
+	render(h(Kit.PopoverItem, { checked: true, sub: "What it draws.", onClick: () => {} }, "Told"), stage);
+	check(
+		"a sentence handed to it stands under the label, inside the item",
+		[stage.querySelector(".wg-kit-pop-sub")?.textContent, Boolean(stage.querySelector(".wg-kit-pop-item.is-two"))],
+		["What it draws.", true],
+	);
+
+	check("a name the kit draws itself is drawn on the kit's grid", drawnBy("menu"), "0 0 20 20");
+	check("a name only lucide draws is drawn on lucide's", drawnBy("anchor"), "0 0 24 24");
+	check(
+		"and it says so, so the stroke can be scaled to it",
+		stage.querySelector("svg")?.classList.contains("is-lucide"),
+		true,
+	);
+	check("a name nobody draws draws nothing", drawnBy("no-such-icon-anywhere"), null);
+	check(
+		"nor does a name every object answers to, which no table ever held",
+		["constructor", "hasOwnProperty", "toString", "valueOf", "__proto__"].map(drawnBy),
+		[null, null, null, null, null],
+	);
+
+	render(null, stage);
+	stage.remove();
+}
+
+{
+	const stage = dom.window.document.createElement("div");
+	dom.window.document.body.appendChild(stage);
+	const drawn = (props) => {
+		render(h(PlaceholderMark, props), stage);
+		const worn = stage.querySelector(".wg-kit-mark");
+		return {
+			classes: worn ? worn.className.split(" ") : [],
+			hidden: worn ? worn.getAttribute("aria-hidden") : null,
+			width: worn ? worn.style.width : null,
+			d: stage.querySelector("path")?.getAttribute("d") ?? null,
+		};
+	};
+	const said = (mark) => `${mark.shape}/${mark.tone}`;
+
+	const repeated = new Set();
+	for (let again = 0; again < 1000; again += 1) repeated.add(said(markOf("Kind of Blue")));
+	check("a seed hashed a thousand times comes back the one mark", [...repeated], ["quatrefoil/warning"]);
+	check("and a different seed disagrees", said(markOf("In Rainbows")) !== said(markOf("Kind of Blue")), true);
+	check("as do two seeds a character apart", said(markOf("Album 1")) !== said(markOf("Album 2")), true);
+
+	const PEOPLE = [
+		"Ada Lovelace",
+		"Miles Davis",
+		"Grace Hopper",
+		"Jonny Greenwood",
+		"Nina Simone",
+		"Kurt Godel",
+		"Alan Kay",
+		"Barbara Liskov",
+		"Sofia Gubaidulina",
+		"Rich Hickey",
+		"Leslie Lamport",
+		"Joni Mitchell",
+		"Hedy Lamarr",
+		"Brian Eno",
+	];
+	const ALBUMS = [
+		"Kind of Blue",
+		"In Rainbows",
+		"Blue",
+		"Music for Airports",
+		"Spirit of Eden",
+		"Pet Sounds",
+		"Remain in Light",
+		"Selected Ambient Works",
+		"Loveless",
+		"OK Computer",
+		"The Koln Concert",
+		"Blonde",
+		"Bitches Brew",
+		"Talk Talk",
+	];
+	const PROJECTS = [
+		"widgetarium",
+		"brairhealth",
+		"shido-app",
+		"Obsidian Plugins",
+		"Second Brain",
+		"Q4 Planning",
+		"Home Renovation",
+		"Thesis",
+		"Invoices 2026",
+		"Reading List",
+		"Garden",
+		"Taxes",
+		"Trip to Japan",
+		"Band Practice",
+	];
+	const seeds = [
+		...new Set([
+			...PEOPLE,
+			...ALBUMS,
+			...PROJECTS,
+			...PROJECTS.flatMap((project) => ALBUMS.map((album) => `Projects/${project}/${album}.md`)),
+			...PEOPLE.flatMap((person) => PROJECTS.map((project) => `${person} - ${project}`)),
+		]),
+	];
+	const marks = seeds.map(markOf);
+	const countedBy = (pick) => {
+		const counted = new Map();
+		for (const mark of marks) counted.set(pick(mark), (counted.get(pick(mark)) ?? 0) + 1);
+		return counted;
+	};
+	const evenly = (counted, names) => {
+		const fair = seeds.length / names.length;
+		const counts = names.map((name) => counted.get(name) ?? 0);
+		return [Math.min(...counts) >= fair / 2, Math.max(...counts) <= fair * 2];
+	};
+	const shapes = countedBy((mark) => mark.shape);
+	const tones = countedBy((mark) => mark.tone);
+
+	check("the corpus is wide enough to measure a spread over", seeds.length, 434);
+	check("every shape in the vocabulary is drawn by it", shapes.size, MARK_SHAPE_NAMES.length);
+	check("every tone too", tones.size, MARK_TONE_NAMES.length);
+	check("no shape is starved, none hogs", evenly(shapes, MARK_SHAPE_NAMES), [true, true]);
+	check("no tone is starved, none hogs", evenly(tones, MARK_TONE_NAMES), [true, true]);
+	check("and the pairs reach nearly the whole vocabulary", new Set(marks.map(said)).size, 83);
+
+	check(
+		"no seed at all is the empty seed, and it is one mark rather than a new one each time",
+		[markOf(), markOf(null), markOf(undefined)].map(said),
+		[said(markOf("")), said(markOf("")), said(markOf(""))],
+	);
+
+	check("a mark is decorative, so the caller carries the label", drawn({ seed: "Blue" }).hidden, "true");
+	check("it is painted by the kit's own tone plate", drawn({ seed: "Blue" }).classes, [
+		"wg-kit-mark",
+		"wg-kit-tone",
+		toneClass(markOf("Blue").tone),
+	]);
+	check("it fills what it stands in unless it is given a size", drawn({ seed: "Blue" }).width, "100%");
+	check("a size makes it an avatar", drawn({ seed: "Blue", size: 24 }).width, "24px");
+	check(
+		"a seeded mark draws the very shape its seed names",
+		drawn({ seed: "Blue" }).d,
+		drawn({ seed: "Blue", shape: markOf("Blue").shape }).d,
+	);
+	check(
+		"every name in the vocabulary draws a form of its own",
+		new Set(MARK_SHAPE_NAMES.map((shape) => drawn({ seed: "Blue", shape }).d)).size,
+		MARK_SHAPE_NAMES.length,
+	);
+	check(
+		"an asked tone outranks the seeded one",
+		drawn({ seed: "Blue", tone: "error" }).classes.includes("is-err"),
+		true,
+	);
+	check(
+		"a shape no table holds falls back to the seed's, prototype keys included",
+		["constructor", "__proto__", "toString", "no-such-shape"].map((shape) => drawn({ seed: "Blue", shape }).d),
+		Array(4).fill(drawn({ seed: "Blue" }).d),
+	);
 
 	render(null, stage);
 	stage.remove();

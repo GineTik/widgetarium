@@ -15,7 +15,8 @@ const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Content
 const work = mkdtempSync(path.join(tmpdir(), "wg-ladder-"));
 
 const THEMES = {
-	light: "--background-primary:#ffffff;--background-secondary:#f6f6f6;--text-normal:#222222;--text-muted:#707070;--text-faint:#ababab;--interactive-accent:#6d4ee0;--background-modifier-border:#e4e4e4;--text-success:#1f8a4c;--text-error:#c0392b;--text-on-accent:#ffffff;",
+	light:
+		"--background-primary:#ffffff;--background-secondary:#f6f6f6;--text-normal:#222222;--text-muted:#707070;--text-faint:#ababab;--interactive-accent:#6d4ee0;--background-modifier-border:#e4e4e4;--text-success:#1f8a4c;--text-error:#c0392b;--text-on-accent:#ffffff;",
 	dark: "--background-primary:#1e1e1e;--background-secondary:#262626;--text-normal:#dadada;--text-muted:#999999;--text-faint:#666666;--interactive-accent:#8b6ef0;--background-modifier-border:#333333;--text-success:#4ec97f;--text-error:#e06c5f;--text-on-accent:#ffffff;",
 };
 
@@ -35,7 +36,9 @@ const SURFACES = [
 
 function levels(theme) {
 	const file = path.join(work, `${theme}.html`);
-	writeFileSync(file, `<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>
+	writeFileSync(
+		file,
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>
 <style>body{margin:0;${THEMES[theme]}}</style></head><body class="wg-root"><pre id="out"></pre><script>
 window.addEventListener('load',()=>{
 	const probe=(value)=>{const node=document.createElement('div');node.style.cssText='width:10px;height:10px;background:'+value;
@@ -54,8 +57,13 @@ window.addEventListener('load',()=>{
 	out.textContent=JSON.stringify(Object.assign(
 		Object.fromEntries(rows.map(([name,value])=>[name,Math.round(lum(probe(value))*10)/10])),
 		{tones:Object.fromEntries(tones.map(([name,cls])=>[name,pill(cls)]))}));
-});</script></body></html>`);
-	const dom = execFileSync(CHROME, ["--headless", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=3000", "--dump-dom", `file://${file}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+});</script></body></html>`,
+	);
+	const dom = execFileSync(
+		CHROME,
+		["--headless", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=3000", "--dump-dom", `file://${file}`],
+		{ encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+	);
 	return JSON.parse(/<pre id="out">(.*?)<\/pre>/s.exec(dom)[1].replace(/&quot;/g, '"'));
 }
 
@@ -64,7 +72,9 @@ window.addEventListener('load',()=>{
 const GROUND = { light: 255, dark: 30 };
 
 function paint(colour, ground) {
-	const parts = String(colour).match(/[\d.]+/g).map(Number);
+	const parts = String(colour)
+		.match(/[\d.]+/g)
+		.map(Number);
 	const scale = String(colour).startsWith("color(") ? 255 : 1;
 	const alpha = parts.length > 3 ? parts[3] : 1;
 	return parts.slice(0, 3).map((channel) => channel * scale * alpha + ground * (1 - alpha));
@@ -118,14 +128,26 @@ for (const theme of ["light", "dark"]) {
 	const seen = levels(theme);
 	const gap = (a, b) => Math.abs(seen[a] - seen[b]);
 	console.log(`\n— ${theme} —`);
-	console.log(`   page ${seen.page} · grid ${seen.grid} · column ${seen.column} · card ${seen.card} · in a dialog ${seen.inDialog} · hover ${seen.hover}`);
-	console.log(`   steps: page→column ${Math.round(gap("page", "column") * 10) / 10} · column→card ${Math.round(gap("column", "card") * 10) / 10} · column→hover ${Math.round(gap("column", "hover") * 10) / 10}`);
+	console.log(
+		`   page ${seen.page} · grid ${seen.grid} · column ${seen.column} · card ${seen.card} · in a dialog ${seen.inDialog} · hover ${seen.hover}`,
+	);
+	console.log(
+		`   steps: page→column ${Math.round(gap("page", "column") * 10) / 10} · column→card ${Math.round(gap("column", "card") * 10) / 10} · column→hover ${Math.round(gap("column", "hover") * 10) / 10}`,
+	);
 
 	check(`${theme}: a container separates from the ground it sits on`, gap("page", "column") >= 10, true);
 	// a card cannot lift above white, so on a light ground the edge is what carries the step
-	check(`${theme}: a card separates from the container it sits in`, Math.max(gap("column", "card"), gap("column", "cardEdge")) >= 8, true);
+	check(
+		`${theme}: a card separates from the container it sits in`,
+		Math.max(gap("column", "card"), gap("column", "cardEdge")) >= 8,
+		true,
+	);
 	check(`${theme}: hover clears the surface it lifts from`, gap("column", "hover") >= 8, true);
-	check(`${theme}: the grid stays under a third of the container's step`, seen.grid !== undefined && gap("page", "grid") * 3 <= gap("page", "column") * 2 + 1, true);
+	check(
+		`${theme}: the grid stays under a third of the container's step`,
+		seen.grid !== undefined && gap("page", "grid") * 3 <= gap("page", "column") * 2 + 1,
+		true,
+	);
 	// THE ENTANGLEMENT THIS GATE EXISTS FOR: a plate inside a dialog and a column on the board
 	// were one token, so neither could be tuned without ruining the other.
 	check(`${theme}: a surface inside a dialog is not the board's own container`, gap("inDialog", "column") >= 3, true);
@@ -133,21 +155,36 @@ for (const theme of ["light", "dark"]) {
 	// SIX TAGS ON ONE CARD IS THE JOB. Two washes can be near-identical and still read apart,
 	// because the INK is what carries the hue — so a pair counts as told apart when either end is.
 	const painted = Object.fromEntries(
-		Object.entries(seen.tones).map(([name, [fill, ink]]) => [name, { fill: paint(fill, GROUND[theme]), ink: paint(ink, GROUND[theme]) }]),
+		Object.entries(seen.tones).map(([name, [fill, ink]]) => [
+			name,
+			{ fill: paint(fill, GROUND[theme]), ink: paint(ink, GROUND[theme]) },
+		]),
 	);
 	const closest = pairs(Object.keys(painted))
 		.map(([one, other]) => ({
 			pair: `${one}/${other}`,
-			gap: Math.round(Math.max(apart(painted[one].fill, painted[other].fill), apart(painted[one].ink, painted[other].ink))),
+			gap: Math.round(
+				Math.max(apart(painted[one].fill, painted[other].fill), apart(painted[one].ink, painted[other].ink)),
+			),
 		}))
 		.sort((a, b) => a.gap - b.gap)[0];
 	const faintest = Object.entries(painted)
 		.map(([name, { fill, ink }]) => ({ tone: name, ratio: Math.round(contrast(ink, fill) * 100) / 100 }))
 		.sort((a, b) => a.ratio - b.ratio)[0];
 
-	console.log(`   tones: ${Object.keys(painted).length} · closest ${closest.pair} ${closest.gap} · faintest ${faintest.tone} ${faintest.ratio}`);
-	check(`${theme}: no two tones read alike — ${closest.pair} is ${closest.gap} apart`, closest.gap >= TONES_APART, true);
-	check(`${theme}: a tone's own label stays legible on it — ${faintest.tone} at ${faintest.ratio}`, faintest.ratio >= TONE_LEGIBLE, true);
+	console.log(
+		`   tones: ${Object.keys(painted).length} · closest ${closest.pair} ${closest.gap} · faintest ${faintest.tone} ${faintest.ratio}`,
+	);
+	check(
+		`${theme}: no two tones read alike — ${closest.pair} is ${closest.gap} apart`,
+		closest.gap >= TONES_APART,
+		true,
+	);
+	check(
+		`${theme}: a tone's own label stays legible on it — ${faintest.tone} at ${faintest.ratio}`,
+		faintest.ratio >= TONE_LEGIBLE,
+		true,
+	);
 }
 
 console.log(failed ? `\n${failed} — the ladder has flattened` : "\nevery surface steps clear of the one under it");

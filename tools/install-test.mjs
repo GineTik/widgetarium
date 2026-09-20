@@ -72,7 +72,7 @@ const INDEX = {
 			files: ["manifest.json", "widget.jsx"],
 			defaultSize: { w: 3, h: 2 },
 		},
-		{ id: "@task/task-card", title: "Impostor", repository: "https://github.com/acme/widgets" },
+		{ id: "@default/task-card", title: "Impostor", repository: "https://github.com/acme/widgets" },
 		{ title: "nameless" },
 	],
 };
@@ -80,7 +80,7 @@ const listed = readIndex(INDEX);
 check(
 	"an entry with no id is not an entry",
 	listed.map((entry) => entry.manifest.id),
-	["@demo/clock", "@task/task-card"],
+	["@demo/clock", "@default/task-card"],
 );
 check(
 	"everything the index offers is marked not installed",
@@ -89,7 +89,9 @@ check(
 );
 check(
 	"a local widget wins over an index entry of the same id",
-	mergeCatalogue([{ manifest: { id: "@task/task-card", title: "Mine" } }], listed).map((entry) => entry.manifest.title),
+	mergeCatalogue([{ manifest: { id: "@default/task-card", title: "Mine" } }], listed).map(
+		(entry) => entry.manifest.title,
+	),
 	["Mine", "Clock"],
 );
 check("and the index still brings what the vault does not have", mergeCatalogue([], listed).length, 2);
@@ -169,7 +171,7 @@ const installer = createInstaller({ adapter: vault, ...network(SERVED) });
 check(
 	"the installer reads the index off disk",
 	(await installer.available()).map((entry) => entry.manifest.id),
-	["@demo/clock", "@task/task-card"],
+	["@demo/clock", "@default/task-card"],
 );
 const done = await installer.install(listed[0]);
 check("installing answers with the commit it resolved", [done.ok, done.commit], [true, "abc1234567"]);
@@ -238,10 +240,10 @@ check(
 
 // ── A SOURCE IS A PLACE: name a folder and the widgets in it are found by reading it ─────
 const shelf = fakeVault();
-shelf.files.set("/repo/widgets/@habit/lib.js", "export const RATE = 21;");
-shelf.files.set("/repo/widgets/@habit/tokens.css", ".habit-dot { }");
-shelf.files.set("/repo/widgets/@habit/heatmap/manifest.json", '{"id":"@habit/heatmap","title":"Heatmap"}');
-shelf.files.set("/repo/widgets/@habit/heatmap/widget.jsx", "export default () => null;");
+shelf.files.set("/repo/widgets/@default/lib.js", "export const RATE = 21;");
+shelf.files.set("/repo/widgets/@default/tokens.css", ".habit-dot { }");
+shelf.files.set("/repo/widgets/@default/heatmap/manifest.json", '{"id":"@default/heatmap","title":"Heatmap"}');
+shelf.files.set("/repo/widgets/@default/heatmap/widget.jsx", "export default () => null;");
 shelf.files.set("/repo/widgets/@habit/nothing/readme.md", "not a widget");
 shelf.files.set(INDEX_PATH, JSON.stringify({ sources: [{ path: "/repo/widgets" }] }));
 
@@ -264,49 +266,60 @@ const onShelf = await shelved.available();
 check(
 	"a folder source is read, not listed by hand",
 	onShelf.map((entry) => entry.manifest.id),
-	["@habit/heatmap"],
+	["@default/heatmap"],
 );
 check("and what it offers is not installed", onShelf[0].installed, false);
 // A CARD DRAWS THE WIDGET, INSTALLED OR NOT: the code has to travel with the offer
 check(
 	"an offer carries the code its card will draw",
 	[typeof onShelf[0].code, onShelf[0].path],
-	["string", "/repo/widgets/@habit/heatmap/widget.jsx"],
+	["string", "/repo/widgets/@default/heatmap/widget.jsx"],
 );
-check("and the scope lib it cannot run without", [typeof onShelf[0].lib, onShelf[0].scope], ["string", "@habit"]);
+check("and the scope lib it cannot run without", [typeof onShelf[0].lib, onShelf[0].scope], ["string", "@default"]);
 check("a folder with no manifest is not a widget", onShelf.length, 1);
 
 const copied = await shelved.install(onShelf[0]);
 check("installing from a folder needs no network", copied.ok, true);
 check("and what it records instead of a commit is a stamp of the files", copied.commit, onShelf[0].commit);
 
-shelf.files.set("/repo/widgets/@habit/heatmap/widget.jsx", "export default () => null; // one line more");
+shelf.files.set("/repo/widgets/@default/heatmap/widget.jsx", "export default () => null; // one line more");
 const offeredAgain = (await shelved.discover({ path: "/repo/widgets" }))[0];
 check("a folder whose widget changed offers a different stamp", offeredAgain.commit === onShelf[0].commit, false);
-check("and that is what tells the catalogue an update is out", updateOffered(offeredAgain.manifest, offeredAgain, await shelved.lock()), {
-	here: String(copied.commit).slice(0, 7),
-	there: String(offeredAgain.commit).slice(0, 7),
-});
-shelf.files.set("/repo/widgets/@habit/heatmap/widget.jsx", "export default () => null;");
-check("and the same files offer the same stamp again", (await shelved.discover({ path: "/repo/widgets" }))[0].commit, onShelf[0].commit);
+check(
+	"and that is what tells the catalogue an update is out",
+	updateOffered(offeredAgain.manifest, offeredAgain, await shelved.lock()),
+	{
+		here: String(copied.commit).slice(0, 7),
+		there: String(offeredAgain.commit).slice(0, 7),
+	},
+);
+shelf.files.set("/repo/widgets/@default/heatmap/widget.jsx", "export default () => null;");
+check(
+	"and the same files offer the same stamp again",
+	(await shelved.discover({ path: "/repo/widgets" }))[0].commit,
+	onShelf[0].commit,
+);
 check(
 	"and puts the widget where the registry looks",
-	[...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@habit/heatmap")).sort(),
+	[...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@default/heatmap")).sort(),
 	[
-		".widgetarium/widgets/@habit/heatmap/build/widget.js",
-		".widgetarium/widgets/@habit/heatmap/manifest.json",
-		".widgetarium/widgets/@habit/heatmap/widget.jsx",
+		".widgetarium/widgets/@default/heatmap/build/widget.js",
+		".widgetarium/widgets/@default/heatmap/manifest.json",
+		".widgetarium/widgets/@default/heatmap/widget.jsx",
 	],
 );
 // A WIDGET IMPORTING ITS SCOPE'S LIB IS BROKEN WITHOUT IT
 check(
 	"the scope comes along with it",
-	[shelf.files.has(".widgetarium/widgets/@habit/lib.js"), shelf.files.has(".widgetarium/widgets/@habit/tokens.css")],
+	[
+		shelf.files.has(".widgetarium/widgets/@default/lib.js"),
+		shelf.files.has(".widgetarium/widgets/@default/tokens.css"),
+	],
 	[true, true],
 );
 check(
 	"and the lock records where it came from",
-	(await shelved.lock()).widgets["@habit/heatmap"].source,
+	(await shelved.lock()).widgets["@default/heatmap"].source,
 	"/repo/widgets",
 );
 
@@ -327,8 +340,8 @@ check(
 	0,
 );
 const refusedCopy = await noDoor.install({
-	manifest: { id: "@habit/heatmap" },
-	from: { folder: "/repo/widgets/@habit/heatmap" },
+	manifest: { id: "@default/heatmap" },
+	from: { folder: "/repo/widgets/@default/heatmap" },
 });
 check(
 	"and refuses to install from one, rather than writing nothing quietly",
@@ -346,7 +359,7 @@ check(
 check("and the lock entry too", Object.keys((await installer.lock()).widgets), []);
 // CONTEXT: caught on purpose — a refusal that throws must read as a wrong VALUE, not as a crash
 const mine = await installer
-	.uninstall("@task/task-card")
+	.uninstall("@default/task-card")
 	.catch((failure) => ({ threw: String(failure?.message ?? failure) }));
 check(
 	"a widget the person wrote is never ours to remove",
@@ -360,14 +373,14 @@ const definition = (id, title) => ({
 	component: () => h("div", null, title),
 });
 const registry = {
-	list: () => [definition("@task/task-card", "Task card")],
-	get: (id) => (id === "@task/task-card" ? definition(id, "Task card") : null),
+	list: () => [definition("@default/task-card", "Task card")],
+	get: (id) => (id === "@default/task-card" ? definition(id, "Task card") : null),
 };
 const offered = readIndex({
 	widgets: [
 		{ id: "@demo/clock", title: "Clock", repository: "https://github.com/acme/widgets", defaultSize: { w: 3, h: 2 } },
 		{
-			id: "@task/task-card",
+			id: "@default/task-card",
 			title: "Task card",
 			commit: "2222222222",
 			repository: "https://github.com/acme/widgets",
@@ -455,7 +468,7 @@ press(panel.querySelector(".wg-cat-show.is-all"));
 await settle();
 check("and All brings the rest back", all(".wg-cat-tile").length, 2);
 
-check("the packs are the ids' own halves, counted", labelled(".wg-cat-pack"), ["@demo", "@task"]);
+check("the packs are the ids' own halves, counted", labelled(".wg-cat-pack"), ["@default", "@demo"]);
 press(packRow("@demo"));
 await settle();
 check("pressing a pack narrows the catalogue to it", names(), ["Clock"]);
@@ -463,16 +476,16 @@ press(packRow("@demo"));
 await settle();
 check("and pressing it again lets the rest back in", all(".wg-cat-tile").length, 2);
 
-typeInto(panel.querySelectorAll(".wg-cat-facet-search input")[0], "task");
+typeInto(panel.querySelectorAll(".wg-cat-facet-search input")[0], "default");
 await settle();
-check("the packs have a search of their own", labelled(".wg-cat-pack"), ["@task"]);
+check("the packs have a search of their own", labelled(".wg-cat-pack"), ["@default"]);
 check("which narrows the packs and not the widgets", all(".wg-cat-tile").length, 2);
 typeInto(panel.querySelectorAll(".wg-cat-facet-search input")[0], "");
 await settle();
 
 press(named("Task card"));
 await settle();
-check("pressing one the vault has picks it and fetches nothing", [picked, installs], [["@task/task-card"], []]);
+check("pressing one the vault has picks it and fetches nothing", [picked, installs], [["@default/task-card"], []]);
 
 settleInstall = () => {};
 press(named("Clock"));
@@ -499,7 +512,7 @@ const held = settleInstall;
 settleInstall = null;
 held({ ok: true });
 await settle();
-check("a finished fetch picks it, on the same press", picked, ["@task/task-card", "@demo/clock"]);
+check("a finished fetch picks it, on the same press", picked, ["@default/task-card", "@demo/clock"]);
 check("and the counting line is gone", named("Clock").querySelector(".wg-cat-step"), null);
 
 answer = { ok: false, failure: "the repository answered 404" };
@@ -511,10 +524,10 @@ check(
 	"the repository answered 404",
 );
 check("and the button becomes the retry", named("Clock").dataset.state, "failed");
-check("while nothing was picked", picked, ["@task/task-card", "@demo/clock"]);
+check("while nothing was picked", picked, ["@default/task-card", "@demo/clock"]);
 
 render(null, panel);
-draw({ widgets: { "@task/task-card": { commit: "1111111111" } } });
+draw({ widgets: { "@default/task-card": { commit: "1111111111" } } });
 await settle();
 check("a locked commit the index disagrees with is an update", named("Task card").dataset.state, "update");
 check(
@@ -532,14 +545,22 @@ const wasInstalled = installs.length;
 press(named("Task card").querySelector(".wg-cat-go"));
 await settle();
 const handed = handedOver.at(-1);
-check("pressing Update hands over the offer, which is the only thing that knows where to fetch from", [handed?.manifest?.id, handed?.manifest?.commit], ["@task/task-card", "2222222222"]);
+check(
+	"pressing Update hands over the offer, which is the only thing that knows where to fetch from",
+	[handed?.manifest?.id, handed?.manifest?.commit],
+	["@default/task-card", "2222222222"],
+);
 check("and not the vault's own definition, which names no source at all", "component" in (handed ?? {}), false);
 check("and it was one press, one install", installs.length, wasInstalled + 1);
 
 render(null, panel);
-draw({ widgets: { "@task/task-card": { commit: "local" } } });
+draw({ widgets: { "@default/task-card": { commit: "local" } } });
 await settle();
-check("a widget installed from a folder before stamps existed offers no update", named("Task card").dataset.state, "add");
+check(
+	"a widget installed from a folder before stamps existed offers no update",
+	named("Task card").dataset.state,
+	"add",
+);
 check(
 	"and nothing counts it as one",
 	panel.querySelector(".wg-cat-show.is-update .wg-kit-side-value").textContent,
@@ -550,7 +571,7 @@ render(null, panel);
 
 const commitOnTheOfferItself = [
 	{
-		manifest: { id: "@task/task-card", title: "Task card", defaultSize: { w: 3, h: 2 } },
+		manifest: { id: "@default/task-card", title: "Task card", defaultSize: { w: 3, h: 2 } },
 		installed: false,
 		origin: "https://github.com/acme/widgets",
 		commit: "3333333333",
@@ -562,7 +583,7 @@ render(
 		host: null,
 		mode: "place",
 		available: commitOnTheOfferItself,
-		lock: { widgets: { "@task/task-card": { commit: "1111111111" } } },
+		lock: { widgets: { "@default/task-card": { commit: "1111111111" } } },
 		onPick: () => {},
 		onInstall: async () => ({ ok: true }),
 	}),
@@ -583,7 +604,7 @@ const TAGGED = ["tabs", "board", "kanban", "habit", "streak", "chart", "calendar
 const manyTags = {
 	list: () => [
 		{
-			manifest: { id: "@task/task-card", title: "Task card", defaultSize: { w: 3, h: 2 }, keywords: TAGGED },
+			manifest: { id: "@default/task-card", title: "Task card", defaultSize: { w: 3, h: 2 }, keywords: TAGGED },
 			component: () => h("div", null, "Task card"),
 		},
 		{
@@ -673,5 +694,44 @@ check("Clear all puts every widget back", all(".wg-cat-tile").length, 2);
 check("and stops offering itself", panel.querySelector(".wg-cat-clear"), null);
 
 render(null, panel);
+
+const { openCatalogue } = await import("./.mjs-cache/catalogue-dialog.mjs");
+
+const inTheVault = [definition("@default/task-card", "Task card")];
+const growingRegistry = {
+	list: () => inTheVault,
+	get: (id) => inTheVault.find((entry) => entry.manifest.id === id) ?? null,
+};
+const body = dom.window.document.body;
+const inDialog = (title) =>
+	[...body.querySelectorAll(".wg-cat-tile")].find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
+
+const shown = openCatalogue({
+	registry: growingRegistry,
+	host: null,
+	mode: "place",
+	available: offered,
+	lock: { widgets: {} },
+	onPick: () => {},
+	onInstall: async () => ({ ok: true }),
+	onClose: () => {},
+});
+await settle();
+check("a widget the vault lacks opens as one to install", inDialog("Clock")?.dataset.state, "install");
+
+inTheVault.push(definition("@demo/clock", "Clock"));
+shown.redraw({ lock: { widgets: { "@demo/clock": { commit: "abc1234" } } } });
+await settle();
+check(
+	"and the same open catalogue shows it installed once it is, with no reopening",
+	inDialog("Clock")?.dataset.state,
+	"add",
+);
+check("the one beside it is untouched", inDialog("Task card")?.dataset.state, "add");
+
+shown.close();
+await settle();
+check("closing the redrawn catalogue takes it off the page", body.querySelector(".wg-cat-tile"), null);
+
 console.log(failed === 0 ? "\ninstall: clean" : `\ninstall: ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

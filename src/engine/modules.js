@@ -28,6 +28,7 @@ export function modulePath(key) {
 
 const KEPT_OUTSIDE_A_BUNDLE = ["react", "react-dom"];
 export const HELD_BY_THE_ENGINE = ["widgetarium", "widgetarium/kit", "widgetarium/kit/emojis"];
+export const ANSWERED_BY_THE_ENGINE = [...HELD_BY_THE_ENGINE, ...KEPT_OUTSIDE_A_BUNDLE];
 
 export function facadeUrl(name, range) {
 	const outside = KEPT_OUTSIDE_A_BUNDLE.filter((held) => held !== name);
@@ -62,7 +63,8 @@ async function heldOnDisk(adapter, lock, key) {
 
 function unaskableFor(name, range) {
 	if (!SAFE_NAME.test(String(name ?? ""))) return `"${name}" is not a package name`;
-	if (HELD_BY_THE_ENGINE.includes(name)) return `"${name}" is what the plugin itself hands a widget, so nothing may be installed under that name`;
+	if (HELD_BY_THE_ENGINE.includes(name))
+		return `"${name}" is what the plugin itself hands a widget, so nothing may be installed under that name`;
 	if (!SAFE_RANGE.test(String(range ?? ""))) return `"${name}" asks for "${range}", which is not a version`;
 	return null;
 }
@@ -95,7 +97,8 @@ export function createModuleSpace({ adapter, fetchText }) {
 
 		const realPath = realPathIn(await fetchText(facadeUrl(name, range)));
 		const version = versionIn(realPath, name);
-		if (!version || !SAFE_VERSION.test(version)) return refuse(`esm.sh answered "${name}@${range}" with something that is not that package`);
+		if (!version || !SAFE_VERSION.test(version))
+			return refuse(`esm.sh answered "${name}@${range}" with something that is not that package`);
 		return { ok: true, key: keyFor(name, version), realPath, failure: null };
 	}
 
@@ -112,7 +115,8 @@ export function createModuleSpace({ adapter, fetchText }) {
 		},
 
 		async takeAsset(key, name) {
-			if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(String(name ?? ""))) throw new Error(`"${name}" is not a file a package can serve`);
+			if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(String(name ?? "")))
+				throw new Error(`"${name}" is not a file a package can serve`);
 			const at = `${moduleFolder(key)}/${name}`;
 			if (await adapter.exists(at)) return adapter.read(at);
 

@@ -4,17 +4,37 @@ import path from "node:path";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
+const EVERY_VERB = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
 const VAULT = "tools/fixture-records";
 const TASKS = "Orbitask/Tasks";
 const BOARDS = "Orbitask/Boards";
 const COPIES = "Orbitask/Copies";
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
@@ -32,7 +52,13 @@ const adapter = {
 	exists: async (target) => fs.existsSync(path.join(VAULT, target)),
 	list: async (target) => {
 		const names = fs.readdirSync(path.join(VAULT, target));
-		const kind = (name) => { try { return fs.statSync(path.join(VAULT, target, name)); } catch { return null; } };
+		const kind = (name) => {
+			try {
+				return fs.statSync(path.join(VAULT, target, name));
+			} catch {
+				return null;
+			}
+		};
 		return {
 			folders: names.filter((name) => kind(name)?.isDirectory()).map((name) => `${target}/${name}`),
 			files: names.filter((name) => kind(name)?.isFile()).map((name) => `${target}/${name}`),
@@ -67,7 +93,9 @@ function folderAt(target) {
 			const children = fs
 				.readdirSync(path.join(VAULT, target))
 				.filter((name) => name.endsWith(".md"))
-				.map((name) => noteAt(`${target}/${name}`, frontmatter(fs.readFileSync(path.join(VAULT, target, name), "utf8"))));
+				.map((name) =>
+					noteAt(`${target}/${name}`, frontmatter(fs.readFileSync(path.join(VAULT, target, name), "utf8"))),
+				);
 			folders.set(target, Object.assign(new TFolder(), { path: target, children }));
 		} catch {
 			folders.set(target, null);
@@ -82,9 +110,18 @@ function fileAt(target) {
 }
 
 const watchers = new Map();
-const watch = (name, listener) => { watchers.set(name, [...(watchers.get(name) ?? []), listener]); return {}; };
-const unwatch = (name, listener) => watchers.set(name, (watchers.get(name) ?? []).filter((held) => held !== listener));
-const fire = (name, file) => { for (const listener of [...(watchers.get(name) ?? [])]) listener(file); };
+const watch = (name, listener) => {
+	watchers.set(name, [...(watchers.get(name) ?? []), listener]);
+	return {};
+};
+const unwatch = (name, listener) =>
+	watchers.set(
+		name,
+		(watchers.get(name) ?? []).filter((held) => held !== listener),
+	);
+const fire = (name, file) => {
+	for (const listener of [...(watchers.get(name) ?? [])]) listener(file);
+};
 
 const app = {
 	vault: {
@@ -142,13 +179,13 @@ const PICKED = "boards/selection";
 function surfaceOver(folder) {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { path: folder } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { allow: EVERY_VERB, path: folder } } },
 			{
 				id: "board",
-				widget: "@task/kanban-board",
+				widget: "@default/kanban-board",
 				props: {
-					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { path: folder },
+					tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { allow: EVERY_VERB, path: folder },
 					selection: { from: "ref", ref: PICKED },
 				},
 			},
@@ -163,9 +200,18 @@ const draw = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board, registry, host, editing: false, screen: true, initialWidth: 1280,
-			onChange: (next) => { board = next; draw(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: 1280,
+			onChange: (next) => {
+				board = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -186,16 +232,23 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 const surface = () => dom.window.document.querySelector(".wg-page") ?? root;
 const all = (selector) => [...surface().querySelectorAll(selector)];
 const titles = () => all(".orbi-kanban .ok-list-title").map((node) => node.textContent.trim());
-const byText = (selector, text) => all(selector).find((node) => node.textContent.trim().toLowerCase() === text.toLowerCase());
-const click = async (node) => { node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await settle(); };
+const byText = (selector, text) =>
+	all(selector).find((node) => node.textContent.trim().toLowerCase() === text.toLowerCase());
+const click = async (node) => {
+	node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+	await settle();
+};
 const dialog = () => dom.window.document.body.querySelector(".wg-dialog");
-const dialogButton = (text) => [...dialog().querySelectorAll("button")].find((node) => node.textContent.trim().toLowerCase() === text);
+const dialogButton = (text) =>
+	[...dialog().querySelectorAll("button")].find((node) => node.textContent.trim().toLowerCase() === text);
 const tab = (name) => byText(".wg-tabs .wg-tabs-tab", name);
 const tabNames = () => all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim());
 const menu = async (item) => {
@@ -226,11 +279,21 @@ check("and holds the task filed under that name", holds("On the board with no id
 	named.textContent = "Alpha One";
 	named.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 	await settle();
-	check("the note itself is renamed, and only it", written.renamed, [{ from: `${BOARDS}/Alpha.md`, to: `${BOARDS}/Alpha One.md` }]);
+	check("the note itself is renamed, and only it", written.renamed, [
+		{ from: `${BOARDS}/Alpha.md`, to: `${BOARDS}/Alpha One.md` },
+	]);
 	check("with no property written to carry the name", wrote(BOARDS), []);
 	check("the strip shows the new name", tabNames(), ["Alpha One", "Beta"]);
-	check("no task note was rewritten to follow the name", wrote(TASKS).map((made) => made.path), []);
-	check("the task filed by the id was never opened", written.updated.some((made) => made.path === `${TASKS}/filed-by-id.md`), false);
+	check(
+		"no task note was rewritten to follow the name",
+		wrote(TASKS).map((made) => made.path),
+		[],
+	);
+	check(
+		"the task filed by the id was never opened",
+		written.updated.some((made) => made.path === `${TASKS}/filed-by-id.md`),
+		false,
+	);
 	check("the task filed by the id is still on the board", holds("Filed by id"), 1);
 	check("and the one that stored the old name is not, because a name was never its filing", holds("Filed by name"), 0);
 }
@@ -265,8 +328,16 @@ check("and holds the task filed under that name", holds("On the board with no id
 	await click(dialogButton("repair"));
 	check("exactly one record was re-minted", written.updated.length, 1);
 	check("and it is the one whose path sorts second", written.updated[0].path, `${COPIES}/Copy of Alpha.md`);
-	check("the record that sorts first kept the id it had", readId(fileAt(`${COPIES}/Alpha.md`).props), "copied-2222-2222-2222");
-	check("the other was given a different one", readId(fileAt(`${COPIES}/Copy of Alpha.md`).props) === "copied-2222-2222-2222", false);
+	check(
+		"the record that sorts first kept the id it had",
+		readId(fileAt(`${COPIES}/Alpha.md`).props),
+		"copied-2222-2222-2222",
+	);
+	check(
+		"the other was given a different one",
+		readId(fileAt(`${COPIES}/Copy of Alpha.md`).props) === "copied-2222-2222-2222",
+		false,
+	);
 	check("which is still an id", Boolean(readId(fileAt(`${COPIES}/Copy of Alpha.md`).props)), true);
 	check("and the repair is not offered again", all(".orbi-kanban .ok-repair-ids").length, 0);
 }

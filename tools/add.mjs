@@ -7,7 +7,7 @@ import { widgetDependenciesIn } from "./publish.mjs";
 import { rangesAgree } from "./version-range.mjs";
 
 buildMirror();
-const { RECORD_FILE } = await import("./.mjs-cache/engine/catalogue-index.mjs");
+const { RECORD_FILES } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 const { createWidgetSource } = await import("./.mjs-cache/engine/widget-source.mjs");
 const { scopedName } = await import("./.mjs-cache/engine/github.mjs");
 const { declaredDependencies } = await import("./.mjs-cache/engine/modules.mjs");
@@ -107,7 +107,7 @@ function clashBetweenWidgets(name, held, other) {
 async function writeIntoProject(project, widget) {
 	const folder = `${project.folder}/${scopedName(widget.id)}`;
 	for (const [name, text] of Object.entries(widget.files)) {
-		if (name !== RECORD_FILE) await project.write(`${folder}/${name}`, text);
+		if (!RECORD_FILES.includes(name)) await project.write(`${folder}/${name}`, text);
 	}
 	const scope = widget.id.slice(0, widget.id.indexOf("/"));
 	for (const [name, text] of Object.entries(widget.scope ?? {}))

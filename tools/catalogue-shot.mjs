@@ -13,7 +13,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-cat-"));
 const SOURCE = "widgets";
 const SIZE = { width: Number(process.env.WG_WIDTH ?? 1280), height: Number(process.env.WG_HEIGHT ?? 1240) };
 // the only slot two shipped widgets actually share, so fill mode is photographed against real data
-const SLOT = { parent: "@task/kanban-board", name: "card" };
+const SLOT = { parent: "@default/kanban-board", name: "card" };
 
 function collect(from, into, prefix) {
 	for (const entry of readdirSync(from)) {
@@ -112,7 +112,9 @@ for (const [index, theme] of ["light", "dark"].entries()) {
 	// rejected, so a photograph showing one is the failure this catches.
 	if (seen.tiles !== seen.captions || seen.tiles !== seen.feet || seen.tiles !== seen.buttons || seen.badges !== 0) {
 		broken += 1;
-		console.error(`${theme}: ${seen.tiles} tiles carry ${seen.captions} names, ${seen.feet} feet, ${seen.buttons} buttons and ${seen.badges} badges`);
+		console.error(
+			`${theme}: ${seen.tiles} tiles carry ${seen.captions} names, ${seen.feet} feet, ${seen.buttons} buttons and ${seen.badges} badges`,
+		);
 	}
 	if (seen.floating) {
 		broken += 1;
@@ -152,7 +154,9 @@ for (const [index, theme] of ["light", "dark"].entries()) {
 			`fog ${seen.fog?.tall ?? "-"} to ${seen.fog?.ground ?? "-"}, ` +
 			`${seen.lacks ?? 0} short of the slot, ${seen.divides ?? 0} dividers  ->  ${out}`,
 	);
-	if (process.env.WG_FIT) for (const row of seen.over ?? []) console.log(`   ${row.name.padEnd(20)} span ${row.span} at ${row.at} box ${row.box} wants ${row.wants}`);
+	if (process.env.WG_FIT)
+		for (const row of seen.over ?? [])
+			console.log(`   ${row.name.padEnd(20)} span ${row.span} at ${row.at} box ${row.box} wants ${row.wants}`);
 }
 
 process.exit(broken ? 1 : 0);

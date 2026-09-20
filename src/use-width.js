@@ -6,7 +6,12 @@ export function useBox(nodeRef) {
 	useEffect(() => {
 		const node = nodeRef.current;
 		if (!node) return undefined;
-		const read = () => setBox((held) => (held.width === node.clientWidth && held.height === node.clientHeight ? held : { width: node.clientWidth, height: node.clientHeight }));
+		const read = () =>
+			setBox((held) =>
+				held.width === node.clientWidth && held.height === node.clientHeight
+					? held
+					: { width: node.clientWidth, height: node.clientHeight },
+			);
 		read();
 		const watch = new ResizeObserver(read);
 		watch.observe(node);

@@ -41,7 +41,6 @@ export function createWidthGate({ minimum, now = () => Date.now() } = {}) {
 	};
 }
 
-
 // The measuring side: every frame goes in, and only a settled width comes out.
 export function createWidthWatcher({ minimum, onWidth, schedule, cancel, now }) {
 	const accepts = createWidthGate({ minimum, now });

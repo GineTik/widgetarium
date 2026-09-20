@@ -8,7 +8,11 @@ const { createInstaller } = await import("./.mjs-cache/installer.mjs");
 const VAULT = process.env.WG_VAULT ?? `${process.env.HOME}/Documents/Obsidian/Personal/Personal`;
 
 const at = (held) => path.join(VAULT, held);
-const isThere = (held) => fs.access(at(held)).then(() => true, () => false);
+const isThere = (held) =>
+	fs.access(at(held)).then(
+		() => true,
+		() => false,
+	);
 
 const adapter = {
 	exists: isThere,
@@ -48,9 +52,13 @@ const lock = await installer.lock();
 
 for (const id of done.rebuilt) {
 	const record = lock.builds[id];
-	console.log(`built  ${id}  from ${record.from}${record.compiler ? ` with ${record.compiler}` : ""}, ${Object.keys(record.inputs).length} input(s) hashed`);
+	console.log(
+		`built  ${id}  from ${record.from}${record.compiler ? ` with ${record.compiler}` : ""}, ${Object.keys(record.inputs).length} input(s) hashed`,
+	);
 }
 for (const each of done.failures) console.log(`!!     ${each.id}: ${each.failure}`);
 
-console.log(`\n${done.rebuilt.length} built, ${done.failures.length} refused, ${Object.keys(lock.builds).length} recorded in the lock — ${Date.now() - started}ms`);
+console.log(
+	`\n${done.rebuilt.length} built, ${done.failures.length} refused, ${Object.keys(lock.builds).length} recorded in the lock — ${Date.now() - started}ms`,
+);
 process.exit(done.failures.length === 0 ? 0 : 1);

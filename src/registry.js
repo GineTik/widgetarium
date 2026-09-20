@@ -3,13 +3,29 @@ import * as reactDom from "react-dom";
 import * as coreModule from "./api-core.js";
 import { coreSurface } from "./api-core.js";
 import { reactSurface, kit, emojis } from "./widget-api.js";
-import { apiRefusal } from "./version.js";
+import { apiRefusal, WIDGET_API } from "./version.js";
 import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
-import { EMPTY_LOCK, readLock, modulesByWidget, buildMatchesSource } from "./engine/widget-lock.js";
+import {
+	EMPTY_LOCK,
+	INSTALL_PENDING,
+	readLock,
+	modulesByWidget,
+	buildMatchesSource,
+	commitsOf,
+} from "./engine/widget-lock.js";
+import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
+import { WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS } from "./engine/widget-source.js";
 
-import { BUILD_FILE, SHEET_FILES, SOURCE_FILES, builtCodePath, builtSheetPath, compileWidget } from "./engine/widget-build.js";
+import {
+	BUILD_FILE,
+	SHEET_FILES,
+	SOURCE_FILES,
+	builtCodePath,
+	builtSheetPath,
+	compileWidget,
+} from "./engine/widget-build.js";
 import { moduleFromCompiled } from "./engine/compiled-module.js";
-import { RECORD_FILE, readRecord, recordUnderItsDeclaration } from "./engine/catalogue-index.js";
+import { LEGACY_RECORD_FILE, RECORD_FILE, manifestOf, readRecord } from "./engine/catalogue-index.js";
 import { idOfFolder } from "./engine/github.js";
 
 function injectedGlobals(scope) {
@@ -32,10 +48,26 @@ function parsedLock(text) {
 	}
 }
 
+const INSTALL_UNFINISHED = "{widget} did not finish installing, so it is not run — install it again from the catalogue";
+const EXPORT_MISSING =
+	'this widget calls "{name}" from "widgetarium", which this Widgetarium (widget API {api}) does not provide — update the plugin';
+const MODULE_INTEROP_KEYS = new Set(["__esModule", "default", "then"]);
+
+function refusingMissingExports(api) {
+	return new Proxy(api, {
+		get(held, name) {
+			if (typeof name !== "string" || name in held || MODULE_INTEROP_KEYS.has(name)) return held[name];
+			return () => {
+				throw new Error(EXPORT_MISSING.replace("{name}", name).replace("{api}", String(WIDGET_API)));
+			};
+		},
+	});
+}
+
 // CONTEXT: the specifier is the contract with widget authors; what stands behind it is not
 function createRequire(libs, packages, scope) {
 	const modules = {
-		widgetarium: scope.api,
+		widgetarium: refusingMissingExports(scope.api),
 		"widgetarium/kit": scope.kit,
 		"widgetarium/kit/emojis": scope.emojis,
 		react: scope.react,
@@ -44,7 +76,10 @@ function createRequire(libs, packages, scope) {
 	};
 	return (name) => {
 		const found = packages?.take(name) ?? modules[name];
-		if (!found) throw new Error(`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`);
+		if (!found)
+			throw new Error(
+				`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`,
+			);
 		return found;
 	};
 }
@@ -60,7 +95,12 @@ export const ENGINE_SCOPE = {
 };
 
 function surfaceExports(source, ownReact, ownReactDom) {
-	const take = { react: ownReact, "react-dom": ownReactDom, "react-dom/client": ownReactDom, "widgetarium/core": coreModule };
+	const take = {
+		react: ownReact,
+		"react-dom": ownReactDom,
+		"react-dom/client": ownReactDom,
+		"widgetarium/core": coreModule,
+	};
 	return moduleFromCompiled(source, { require: (name) => take[name] });
 }
 
@@ -68,10 +108,19 @@ function foreignScope(source, ownReact, ownReactDom) {
 	const said = `React ${ownReact.version}`;
 	if (!source) throw new Error(`this build carries no widget surface, so a widget cannot bring ${said}`);
 	if (!ownReactDom) throw new Error(`a widget asking for ${said} must declare react-dom beside it`);
-	if (typeof ownReactDom.createRoot !== "function") throw new Error(`the react-dom beside ${said} provides no createRoot`);
+	if (typeof ownReactDom.createRoot !== "function")
+		throw new Error(`the react-dom beside ${said} provides no createRoot`);
 
 	const built = surfaceExports(source, ownReact, ownReactDom);
-	return { instance: ownReact, react: ownReact, reactDom: ownReactDom, api: { ...coreSurface, ...built.reactSurface }, kit: built.kit, emojis: built.emojis, draw: built.drawWidget };
+	return {
+		instance: ownReact,
+		react: ownReact,
+		reactDom: ownReactDom,
+		api: { ...coreSurface, ...built.reactSurface },
+		kit: built.kit,
+		emojis: built.emojis,
+		draw: built.drawWidget,
+	};
 }
 
 function componentIn(shell, at) {
@@ -139,7 +188,29 @@ export class WidgetRegistry {
 	// CONTEXT: the one place an id is made current, so a board saved after a read carries the new one
 	resolveId(id) {
 		if (this.widgets.has(id)) return id;
+		const key = widgetKeyOf(id);
+		const generation = generationOf(id);
+		if (generation) return this.generationHolding(key, generation) ?? id;
+		if (this.widgets.has(key)) return key;
 		return this.renamed.get(id) ?? id;
+	}
+
+	generationHolding(key, generation) {
+		const holding = ([id, entry]) =>
+			widgetKeyOf(id) === key && commitsOf(entry).includes(generation) && this.widgets.has(id);
+		return Object.entries(this.lock.widgets).find(holding)?.[0] ?? null;
+	}
+
+	generationsOf(key) {
+		const order = Object.keys(this.lock.widgets);
+		return [...this.widgets.keys()]
+			.filter((id) => widgetKeyOf(id) === key)
+			.sort((one, other) => order.indexOf(one) - order.indexOf(other));
+	}
+
+	tileRefOf(id) {
+		const [first] = commitsOf(this.lock.widgets[id]);
+		return first && first !== WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS ? widgetRef(widgetKeyOf(id), first) : id;
 	}
 
 	list() {
@@ -219,7 +290,8 @@ export class WidgetRegistry {
 	runPackage(key, scope) {
 		const held = this.heldPackage(key);
 		if (!held) return null;
-		if (!held.exports.has(scope.react)) held.exports.set(scope.react, runModule(held.source, held.path, this.libs, null, scope));
+		if (!held.exports.has(scope.react))
+			held.exports.set(scope.react, runModule(held.source, held.path, this.libs, null, scope));
 		return held.exports.get(scope.react);
 	}
 
@@ -260,7 +332,7 @@ export class WidgetRegistry {
 		}
 	}
 
-	// CONTEXT: the specifier is the scope's own name plus /lib — @habit/lib, beside @habit/heatmap
+	// CONTEXT: the specifier is the scope's own name plus /lib — @default/lib, beside @default/heatmap
 	runLib(scope, source) {
 		if (source === null) return;
 
@@ -299,16 +371,24 @@ export class WidgetRegistry {
 	}
 
 	async readWidget(adapter, folder) {
-		const [record, built, ...sources] = await Promise.all([`${folder}/${RECORD_FILE}`, builtCodePath(folder), ...SOURCE_FILES.map((name) => `${folder}/${name}`)].map((path) => this.readIfThere(adapter, path)));
+		const [card, legacyCard, built, ...sources] = await Promise.all(
+			[
+				`${folder}/${RECORD_FILE}`,
+				`${folder}/${LEGACY_RECORD_FILE}`,
+				builtCodePath(folder),
+				...SOURCE_FILES.map((name) => `${folder}/${name}`),
+			].map((path) => this.readIfThere(adapter, path)),
+		);
 		const at = sources.findIndex((source) => source !== null);
 		if (at < 0) return null;
 		const name = SOURCE_FILES[at];
 		const builtBeforeTheFolderExisted = name === BUILD_FILE ? null : sources[SOURCE_FILES.indexOf(BUILD_FILE)];
-		return { record, name, code: sources[at], build: built ?? builtBeforeTheFolderExisted };
+		return { record: card ?? legacyCard, name, code: sources[at], build: built ?? builtBeforeTheFolderExisted };
 	}
 
 	codeToRun(id, held, folder) {
-		if (held.build !== null && buildMatchesSource(this.lock.builds[id], `${folder}/${held.name}`, held.code)) return held.build;
+		if (held.build !== null && buildMatchesSource(this.lock.builds[id], `${folder}/${held.name}`, held.code))
+			return held.build;
 		return compileWidget(held.code, `${folder}/${held.name}`);
 	}
 
@@ -321,15 +401,27 @@ export class WidgetRegistry {
 
 			for (const id of [].concat(record.was ?? [])) this.renamed.set(id, record.id);
 
-			const refusal = apiRefusal(record);
+			const refusal =
+				this.lock.widgets[record.id]?.state === INSTALL_PENDING
+					? INSTALL_UNFINISHED.replace("{widget}", record.id)
+					: apiRefusal(record);
 			if (refusal) {
 				this.widgets.set(record.id, { manifest: record, error: new Error(refusal), folder });
 				return;
 			}
 
 			const scope = this.scopeFor(record.id);
-			const exported = componentIn(runCode(this.codeToRun(record.id, held, folder), this.libs, this.packagesFor(record.id, scope), scope), folder);
-			this.widgets.set(record.id, { manifest: recordUnderItsDeclaration(record, exported.meta), component: exported, folder, react: { instance: scope.instance, version: scope.react.version }, draw: scope.draw });
+			const exported = componentIn(
+				runCode(this.codeToRun(record.id, held, folder), this.libs, this.packagesFor(record.id, scope), scope),
+				folder,
+			);
+			this.widgets.set(record.id, {
+				manifest: manifestOf(record, exported),
+				component: exported,
+				folder,
+				react: { instance: scope.instance, version: scope.react.version },
+				draw: scope.draw,
+			});
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
 			const id = folder.slice(WIDGETS_DIR.length + 1);

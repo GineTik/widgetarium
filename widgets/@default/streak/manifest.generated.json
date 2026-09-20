@@ -1,0 +1,114 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Habit streak",
+	"description": "The days around today as a run of rings, each one a press away from kept.",
+	"keywords": ["streak", "days", "row", "week", "run", "fire", "flame", "daily", "habit", "tracker", "keep", "press"],
+	"role": "indicator",
+	"size": {
+		"collapseBelowPx": 170,
+		"stackBelowPx": 260,
+		"tallestPx": 110,
+		"shortestPx": 110
+	},
+	"preview": {
+		"size": {
+			"w": 8,
+			"h": 2
+		},
+		"props": {
+			"title": {
+				"value": "Meditation"
+			},
+			"emoji": {
+				"value": "smiling-face-with-halo"
+			},
+			"days": {
+				"rows": [
+					{
+						"path": "Habits/2026-08-24.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-25.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-27.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-28.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-29.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-30.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-08-31.md",
+						"done": 1
+					},
+					{
+						"path": "Habits/2026-09-01.md",
+						"done": 1
+					}
+				]
+			}
+		},
+		"shot": {
+			"of": "499947623"
+		}
+	},
+	"props": {
+		"days": {
+			"kind": "collection",
+			"label": "Days",
+			"aka": ["habits"],
+			"writes": ["list", "get", "update", "create"],
+			"describes": {
+				"done": {
+					"type": "number",
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+				},
+				"date": {
+					"type": "date",
+					"aka": ["created", "day", "when", "on"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"title": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Habit name",
+			"hint": "What is written beside the emoji. Type one here, or take it from another widget's value.",
+			"writes": ["get"],
+			"default": {
+				"value": "Habit"
+			}
+		},
+		"emoji": {
+			"kind": "value",
+			"control": "emoji",
+			"type": "line",
+			"label": "Emoji",
+			"hint": "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
+			"writes": ["get"],
+			"default": {
+				"value": "smiling-face-with-halo"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

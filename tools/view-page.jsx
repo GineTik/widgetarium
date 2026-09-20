@@ -2,8 +2,8 @@ import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
 import { WidgetSurface } from "../src/surface.js";
 import { normalizeBoard } from "../src/model.js";
-import { leavesOf } from "../src/tree.js";
-import { WidgetRegistry } from "../src/registry.js";
+import { leavesOf, swapBoxes } from "../src/tree.js";
+import { declaredName, WidgetRegistry } from "../src/registry.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 
 const FILES = JSON.parse(document.getElementById("wg-widgets").textContent);
@@ -15,18 +15,24 @@ const host = createProbeHost(createRowSlot(ROWS));
 
 const failures = [];
 const warnings = [];
-console.error = ((was) => (...parts) => {
-	failures.push(parts.map((part) => String(part?.stack ?? part)).join(" "));
-	was(...parts);
-})(console.error);
-console.warn = ((was) => (...parts) => {
-	warnings.push(parts.map((part) => String(part)).join(" "));
-	was(...parts);
-})(console.warn);
+console.error = (
+	(was) =>
+	(...parts) => {
+		failures.push(parts.map((part) => String(part?.stack ?? part)).join(" "));
+		was(...parts);
+	}
+)(console.error);
+console.warn = (
+	(was) =>
+	(...parts) => {
+		warnings.push(parts.map((part) => String(part)).join(" "));
+		was(...parts);
+	}
+)(console.warn);
 
 const mount = document.querySelector(".wg-host");
 const registry = new WidgetRegistry({ vault: { adapter } });
-let board = normalizeBoard(BOARD);
+let board = null;
 // CONTEXT: a note is rewritten when its owner edits it — reading one must move nothing
 let writes = 0;
 
@@ -60,11 +66,13 @@ function painted() {
 	return `${html.length}:${hash}`;
 }
 
+const onScreen = (selector) => [...document.querySelectorAll(selector)].filter((node) => !node.closest("[hidden]"));
+
 // CONTEXT: the view on screen is read off the painted root class, never off a setting
 function drawn() {
 	const seen = [];
-	if (document.querySelector(".orbi-kanban")) seen.push("Kanban");
-	if (document.querySelector(".orbi-archived-columns")) seen.push("Archived columns");
+	if (onScreen(".orbi-kanban").length > 0) seen.push("Kanban");
+	if (onScreen(".orbi-archived-columns").length > 0) seen.push("Archived columns");
 	return seen;
 }
 
@@ -76,22 +84,29 @@ function clipped(node) {
 function read() {
 	return {
 		drawn: drawn(),
-		kanbans: document.querySelectorAll(".orbi-kanban").length,
-		cards: [...document.querySelectorAll(".orbi-kanban .orbi-task-card-title")].map((node) => node.textContent.trim()),
+		kanbans: onScreen(".orbi-kanban").length,
+		mountedViews: document.querySelectorAll(".orbi-kanban, .orbi-archived-columns").length,
+		cards: onScreen(".orbi-kanban .orbi-task-card-title").map((node) => node.textContent.trim()),
 		picker: document.querySelector(".orbi-view-tabs .ovt-pick") !== null,
 		openedCard: document.querySelector(".orbi-task-dialog .otd-title")?.textContent.trim() ?? null,
 		strip: [...document.querySelectorAll(".wg-tabs .wg-tabs-tab")].map((node) => node.textContent.trim()),
 		filterGroups: [...document.querySelectorAll(".ofp-group-head")].map((node) => node.textContent.trim()),
-		groupStrip: [...document.querySelectorAll(".ovg-strip .wg-tabs-tab")].map((node) => node.textContent.trim()),
-		groupSelected: document.querySelector('.ovg-strip .wg-tabs-tab[aria-selected="true"]')?.textContent.trim() ?? null,
+		groupStrip: [...document.querySelectorAll(".wg-tree-swap-strip .wg-tabs-tab")].map((node) =>
+			node.textContent.trim(),
+		),
+		groupSelected:
+			document.querySelector('.wg-tree-swap-strip .wg-tabs-tab[aria-selected="true"]')?.textContent.trim() ?? null,
 		kinds: [...document.querySelectorAll('.wg-set-pop [role="tab"]')].map((node) => node.textContent.trim()),
-		popRows: [...document.querySelectorAll(".wg-set-pop .wg-set-row .wg-kit-row-label")].map((node) => node.textContent.trim()),
-		popNote: document.querySelector(".wg-set-pop.is-open:not(.is-exiting) .wg-set-pop-note")?.textContent.trim() ?? null,
+		popRows: [...document.querySelectorAll(".wg-set-pop .wg-set-row .wg-kit-row-label")].map((node) =>
+			node.textContent.trim(),
+		),
+		popNote:
+			document.querySelector(".wg-set-pop.is-open:not(.is-exiting) .wg-set-pop-note")?.textContent.trim() ?? null,
 		popTitle: document.querySelector(".wg-set-pop .wg-set-pop-title")?.textContent.trim() ?? null,
 		popHint: document.querySelector(".wg-set-pop .wg-set-pop-hint")?.textContent.trim() ?? null,
 		popArea: document.querySelector(".wg-set-pop textarea")?.value ?? null,
 		popError: document.querySelector(".wg-set-pop .wg-set-pop-error")?.textContent.trim() ?? null,
-		applyOff: document.querySelector('.wg-set-pop button[disabled]')?.textContent.trim() ?? null,
+		applyOff: document.querySelector(".wg-set-pop button[disabled]")?.textContent.trim() ?? null,
 		popFields: [...document.querySelectorAll(".wg-set-pop input")].map((node) => node.placeholder || node.value),
 		tabLabel: document.querySelector(".orbi-view-tabs .ovt-pick .wg-kit-btn-label")?.textContent ?? null,
 		stray: document.querySelector(".ovg-stray")?.textContent ?? null,
@@ -99,26 +114,51 @@ function read() {
 		deaf: document.querySelector(".ovt-deaf")?.textContent ?? null,
 		deafClipped: clipped(document.querySelector(".ovt-deaf .wg-kit-btn-label") ?? document.querySelector(".ovt-deaf")),
 		hints: [...document.querySelectorAll(".wg-set-window .wg-kit-side-group")]
-			.filter((node) => ["Settings", "Selection"].includes(node.querySelector(".wg-kit-side-label")?.textContent.trim()))
+			.filter((node) =>
+				["Settings", "Selection"].includes(node.querySelector(".wg-kit-side-label")?.textContent.trim()),
+			)
 			.map((node) => node.querySelector(".wg-kit-side-hint")?.textContent.trim() ?? null),
 		items: [...document.querySelectorAll(".wg-kit-pop-item")].map((node) => node.textContent.trim()),
 		tabItems: [...document.querySelectorAll(".orbi-view-tabs .wg-kit-pop-item")].map((node) => node.textContent.trim()),
-		rows: [...document.querySelectorAll(".wg-set-panel .wg-set-row .wg-kit-row-label")].filter((node) => !node.closest(".wg-set-pop")).map((node) => node.textContent.trim()),
-		popItems: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-pop-item")].map((node) => node.textContent.trim()),
-		popBoxes: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-side-group .wg-kit-pop-item .wg-set-pop-name")].map(
-			(node) => node.textContent.trim(),
+		rows: [...document.querySelectorAll(".wg-set-panel .wg-set-row .wg-kit-row-label")]
+			.filter((node) => !node.closest(".wg-set-pop"))
+			.map((node) => node.textContent.trim()),
+		popItems: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-pop-item")].map((node) =>
+			node.textContent.trim(),
 		),
-		popGroups: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-side-label")].map((node) => node.textContent.trim()),
+		popBoxes: [
+			...document.querySelectorAll(
+				".wg-set-pop.is-open:not(.is-exiting) .wg-kit-side-group .wg-kit-pop-item .wg-set-pop-name",
+			),
+		].map((node) => node.textContent.trim()),
+		popGroups: [...document.querySelectorAll(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-side-label")].map((node) =>
+			node.textContent.trim(),
+		),
 		popDraft: document.querySelector(".wg-set-pop.is-open:not(.is-exiting) .wg-kit-field-input")?.value ?? null,
 		rowValues: [...document.querySelectorAll(".wg-set-panel .wg-set-row")].map(
-			(node) => `${node.querySelector(".wg-kit-row-label")?.textContent.trim()} = ${node.querySelector(".wg-set-path")?.textContent.trim() ?? ""}`,
+			(node) =>
+				`${node.querySelector(".wg-kit-row-label")?.textContent.trim()} = ${node.querySelector(".wg-set-path")?.textContent.trim() ?? ""}`,
 		),
 		painted: painted(),
 		writes,
 		context: window.wgContext ? window.wgContext.all() : null,
-		provider: window.wgContext ? { view: window.wgContext.providerOf("view"), views: window.wgContext.providerOf("views") } : null,
-		tiles: board.tiles.map((tile) => ({ id: tile.id, widget: tile.widget, settings: tile.settings ?? null, mounts: tile.mounts ?? null, props: tile.props ?? null, mounted: tile.mounted ?? null })),
+		provider: window.wgContext
+			? { view: window.wgContext.providerOf("view"), views: window.wgContext.providerOf("views") }
+			: null,
+		tiles: board.tiles.map((tile) => ({
+			id: tile.id,
+			widget: tile.widget,
+			settings: tile.settings ?? null,
+			mounts: tile.mounts ?? null,
+			props: tile.props ?? null,
+			mounted: tile.mounted ?? null,
+		})),
 		layout: leavesOf(board.layout).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`),
+		holds: swapBoxes(board.layout).map(({ box }) => ({
+			id: box.id ?? null,
+			of: box.of.map((child) => ({ name: child.name ?? null, id: child.id ?? null, hidden: child.hidden === true })),
+		})),
+		addZones: document.querySelectorAll(".wg-tree-add").length,
 		failures,
 		warnings,
 	};
@@ -137,6 +177,11 @@ function press(step) {
 	const named = (one) => (step.said ? one.textContent.trim() === step.said : one.textContent.includes(step.saying));
 	const node = step.said || step.saying ? nodes.find(named) : nodes[0];
 	if (!node) return false;
+	if (typeof step.type === "string" && node.isContentEditable) {
+		node.textContent = step.type;
+		node.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+		return true;
+	}
 	// CONTEXT: renaming is typing, and preact reads the value off the input event, not off the DOM
 	if (typeof step.type === "string") {
 		node.value = step.type;
@@ -155,6 +200,11 @@ function rest(run) {
 }
 
 async function walk() {
+	board = normalizeBoard(
+		BOARD,
+		(id) => id,
+		(id) => declaredName(registry, id),
+	);
 	draw();
 	await rest(() => {});
 	const seen = { arrival: read() };

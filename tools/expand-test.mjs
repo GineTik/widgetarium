@@ -3,18 +3,37 @@
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+	"MutationObserver",
+	"NodeFilter",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
 buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { WidgetRoot, useWidgetRounded, useBackgroundType } = await import("./.mjs-cache/widget-root.mjs");
+const { WidgetRoot } = await import("./.mjs-cache/widget-root.mjs");
+const { drawWidget } = await import("./.mjs-cache/widget-api.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
 const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
 const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
@@ -27,65 +46,77 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
-// 1. rounding is the author's call, not a consequence of the background
 const probe = dom.window.document.createElement("div");
-render(h(WidgetRoot, { defaultBackgroundType: "none", defaultRounded: "base" }, "x"), probe);
-check("a surface-less widget keeps the rounding it asked for", probe.firstChild.getAttribute("data-rounded"), "base");
-render(h(WidgetRoot, { defaultBackgroundType: "none", defaultRounded: "none" }, "x"), probe);
-check("and drops it only when it says so", probe.firstChild.getAttribute("data-rounded"), "none");
-render(h(WidgetRoot, { defaultBackgroundType: "fill", defaultRounded: "none" }, "x"), probe);
-check("square corners are allowed WITH a surface too", [probe.firstChild.getAttribute("data-rounded"), probe.firstChild.getAttribute("data-fill")], ["none", "fill"]);
-render(h(WidgetRoot, {}, "x"), probe);
-check("the defaults are base and fill", [probe.firstChild.getAttribute("data-rounded"), probe.firstChild.getAttribute("data-fill")], ["base", "fill"]);
-
-// a widget reads what it ACTUALLY got, which is how it adapts its own padding
-function Reader() {
-	return h("i", { "data-rounded": useWidgetRounded(), "data-background": useBackgroundType() });
-}
-render(h(WidgetRoot, { defaultRounded: "none", defaultBackgroundType: "shadow" }, h(Reader, null)), probe);
-const reader = probe.querySelector("i");
-check("the hooks report the effective appearance", [reader.getAttribute("data-rounded"), reader.getAttribute("data-background")], ["none", "shadow"]);
-
-// REGRESSION: a widget nested in another one — a card in the board's slot — used to inherit
-// the OUTER widget's appearance. The kanban is drawn with no surface, so every card inside it
-// came out transparent and square: the white cards went grey and the corners went flat.
-render(
-	h(
-		WidgetRoot,
-		{ className: "outer", defaultBackgroundType: "none", defaultRounded: "none" },
-		h(WidgetRoot, { className: "inner", defaultBackgroundType: "fill", defaultRounded: "base" }, "x"),
-	),
-	probe,
+render(h(WidgetRoot, { className: "legacy", defaultBackgroundType: "fill", defaultRounded: "full" }, "x"), probe);
+check(
+	"an installed widget that still wraps itself in WidgetRoot gets a bare element, no plate and no corner",
+	[
+		probe.firstChild.className,
+		probe.firstChild.getAttribute("data-fill"),
+		probe.firstChild.getAttribute("data-rounded"),
+	],
+	["legacy", null, null],
 );
-const inner = probe.querySelector(".inner");
-check("a nested widget keeps its OWN surface", inner.getAttribute("data-fill"), "fill");
-check("and its own rounding", inner.getAttribute("data-rounded"), "base");
-check("while the outer one keeps its", probe.querySelector(".outer").getAttribute("data-fill"), "none");
 
-// and the hooks inside the nested widget report the nested widget's answer, not the outer's
-function Deep() {
-	return h("i", { "data-background": useBackgroundType(), "data-rounded": useWidgetRounded() });
+const { useWidgetRounded, useBackgroundType, AppearanceOverride, ROUNDED, BACKGROUND } =
+	await import("./.mjs-cache/widget-root.mjs");
+function OldWidget() {
+	return h(
+		AppearanceOverride,
+		null,
+		h("i", { "data-read": `${useWidgetRounded()} ${useBackgroundType()} ${ROUNDED.length} ${BACKGROUND.length}` }),
+	);
 }
-render(
-	h(
-		WidgetRoot,
-		{ className: "outer", defaultBackgroundType: "none", defaultRounded: "none" },
-		h(WidgetRoot, { className: "inner", defaultBackgroundType: "shadow", defaultRounded: "full" }, h(Deep, null)),
-	),
-	probe,
+render(h(OldWidget, null), probe);
+check(
+	"a widget still calling the old appearance hooks draws instead of crashing",
+	probe.querySelector("i")?.getAttribute("data-read"),
+	"base none 3 1",
 );
-const deep = probe.querySelector("i");
-check("inside a card, the card's answer is the true one", [deep.getAttribute("data-background"), deep.getAttribute("data-rounded")], ["shadow", "full"]);
+
+const drawnInto = dom.window.document.createElement("div");
+drawWidget(drawnInto, () => h("section", { className: "own-root" }, "x"), {});
+await settle();
+check(
+	"the engine draws the widget root around what the widget returns",
+	Boolean(drawnInto.querySelector(".wg-widget-root .own-root")),
+	true,
+);
 
 // 2. expansion survives the element being rebuilt beneath it
-const registry = new WidgetRegistry({ vault: { adapter: { exists: async () => false, list: async () => ({ folders: [], files: [] }), read: async () => "", stat: async () => ({ mtime: 1, size: 1 }) } } });
+const registry = new WidgetRegistry({
+	vault: {
+		adapter: {
+			exists: async () => false,
+			list: async () => ({ folders: [], files: [] }),
+			read: async () => "",
+			stat: async () => ({ mtime: 1, size: 1 }),
+		},
+	},
+});
 await registry.load();
 
 let board = normalizeBoard({ tiles: [], layouts: {} });
-const host = { platform: "test", can: {}, slot: () => ({ binding: {}, canCreate: false, canUpdate: false, canRemove: false, canSubscribe: false, list: async () => ({ rows: [], total: 0 }), describe: async () => [], subscribe: () => () => {} }), ui: { notify() {} } };
+const host = {
+	platform: "test",
+	can: {},
+	slot: () => ({
+		binding: {},
+		canCreate: false,
+		canUpdate: false,
+		canRemove: false,
+		canSubscribe: false,
+		list: async () => ({ rows: [], total: 0 }),
+		describe: async () => [],
+		subscribe: () => () => {},
+	}),
+	ui: { notify() {} },
+};
 
 // expansion is written in the board, exactly as main.js persists it
 const mount = { element: dom.window.document.getElementById("host") };
@@ -94,27 +125,41 @@ const draw = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: mount.element,
-			board: board, registry, host, editing: false, screen: false, initialWidth: 1280,
-			onChange: (next) => { board = next; draw(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board: board,
+			registry,
+			host,
+			editing: false,
+			screen: false,
+			initialWidth: 1280,
+			onChange: (next) => {
+				board = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		mount.element,
 	);
 
+board = { ...board, mode: "expanded" };
 draw();
 await settle();
-const expandButton = dom.window.document.querySelector(".wg-region-toggle.is-page");
-check("there is an expand control", Boolean(expandButton), true);
-expandButton.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-await settle();
-check("pressing it expands", isExpanded(), true);
-check("and the page is mounted", dom.window.document.querySelectorAll(".wg-page").length, 1);
+check(
+	"the board carries no control of its own to expand or collapse it",
+	dom.window.document.querySelectorAll(".wg-region-toggle, .wg-region-bar").length,
+	0,
+);
+check("a board written expanded mounts its page", dom.window.document.querySelectorAll(".wg-page").length, 1);
 check(
 	"the page stands in the pane the board stands in, never over the whole app",
 	dom.window.document.querySelector(".wg-page").parentElement.className,
 	"view-content",
 );
-check("and nothing of ours hangs off the body", [...dom.window.document.body.children].map((node) => node.className), ["view-content"]);
+check(
+	"and nothing of ours hangs off the body",
+	[...dom.window.document.body.children].map((node) => node.className),
+	["view-content"],
+);
 
 // REGRESSION: CodeMirror rebuilds the block element, preact remounts, and expansion used to
 // be a hook — so it reset to false and the board collapsed on any click in the note.
@@ -132,21 +177,27 @@ const pagesBefore = dom.window.document.querySelectorAll(".wg-page").length;
 const standingInNoPane = dom.window.document.createElement("div");
 render(
 	h(WidgetSurface, {
-		board: { ...board, mode: "expanded" }, boardNode: standingInNoPane, registry, host, editing: false, screen: false, initialWidth: 1280,
-		onChange: () => {}, onToggleEditing: () => {}, onWidth: () => {},
+		board: { ...board, mode: "expanded" },
+		boardNode: standingInNoPane,
+		registry,
+		host,
+		editing: false,
+		screen: false,
+		initialWidth: 1280,
+		onChange: () => {},
+		onToggleEditing: () => {},
+		onWidth: () => {},
 	}),
 	standingInNoPane,
 );
 await settle();
-check("a board drawn before it stands in a pane opens no page over the app", dom.window.document.querySelectorAll(".wg-page").length, pagesBefore);
+check(
+	"a board drawn before it stands in a pane opens no page over the app",
+	dom.window.document.querySelectorAll(".wg-page").length,
+	pagesBefore,
+);
 check("and draws in the block instead", standingInNoPane.querySelectorAll(".wg-board").length, 1);
 render(null, standingInNoPane);
-
-const collapse = dom.window.document.querySelector(".wg-region-toggle.is-page");
-check("the control now offers collapse", Boolean(collapse), true);
-collapse.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-await settle();
-check("and pressing it collapses", isExpanded(), false);
 
 // 3. the expanded page carries its own shield, since it lives outside the code block
 board = { ...board, mode: "expanded" };

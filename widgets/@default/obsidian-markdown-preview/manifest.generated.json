@@ -1,0 +1,98 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Obsidian markdown preview",
+	"description": "Text drawn the way Obsidian draws a note: a page or section title, an explanation the screen does not give on its own, a list, a whole note. It shows text and never edits it.",
+	"keywords": [
+		"caption",
+		"collapse",
+		"description",
+		"document",
+		"embed",
+		"explanation",
+		"file",
+		"header",
+		"heading",
+		"label",
+		"markdown",
+		"note",
+		"page",
+		"paragraph",
+		"preview",
+		"read",
+		"render",
+		"section",
+		"show more",
+		"subtitle",
+		"text",
+		"title"
+	],
+	"role": "text",
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 4
+		},
+		"props": {
+			"source": {
+				"value": "# Weekly review\n\nWhat moved, what stalled, and **one thing** for next week.\n\n- [x] Inbox to zero\n- [ ] Plan Monday\n- [ ] Call the printer\n\n## Notes\n\nThe launch slipped a week, and nobody minded.\n\nNext week is for the pricing page."
+			},
+			"collapsible": {
+				"value": true
+			},
+			"collapsedHeight": {
+				"value": 180
+			}
+		}
+	},
+	"props": {
+		"source": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Source",
+			"hint": "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"collapsible": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Collapse long text",
+			"hint": "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"collapsedHeight": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Collapsed height, in pixels",
+			"hint": "How much of long text shows before Show more is pressed.",
+			"writes": ["get"],
+			"default": {
+				"value": 240
+			}
+		},
+		"step": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Show more step, in pixels",
+			"hint": "How much each press of Show more opens. 0 opens all of it at once.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

@@ -5,15 +5,36 @@ import path from "node:path";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
+const EVERY_VERB = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const FOLDER = "Orbitask/Tasks";
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "FocusEvent", "Event", "MutationObserver"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"FocusEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
@@ -32,7 +53,13 @@ const adapter = {
 	exists: async (p) => fs.existsSync(path.join(VAULT, p)),
 	list: async (p) => {
 		const names = fs.readdirSync(path.join(VAULT, p));
-		const kind = (name) => { try { return fs.statSync(path.join(VAULT, p, name)); } catch { return null; } };
+		const kind = (name) => {
+			try {
+				return fs.statSync(path.join(VAULT, p, name));
+			} catch {
+				return null;
+			}
+		};
 		return {
 			folders: names.filter((name) => kind(name)?.isDirectory()).map((name) => `${p}/${name}`),
 			files: names.filter((name) => kind(name)?.isFile()).map((name) => `${p}/${name}`),
@@ -87,7 +114,11 @@ function vaultFiles(folder) {
 	return fs
 		.readdirSync(path.join(VAULT, folder))
 		.filter((name) => name.endsWith(".md"))
-		.map((name) => fileAt(`${folder}/${name}`, () => withoutDates(frontmatter(fs.readFileSync(path.join(VAULT, folder, name), "utf8")))));
+		.map((name) =>
+			fileAt(`${folder}/${name}`, () =>
+				withoutDates(frontmatter(fs.readFileSync(path.join(VAULT, folder, name), "utf8"))),
+			),
+		);
 }
 
 // CONTEXT: what each note embeds, the way Obsidian's own cache reports it
@@ -109,8 +140,11 @@ const app = {
 				return vaultFiles(folder).find((file) => file.path === target) ?? null;
 			}
 			if (!folders.has(target)) {
-				try { folders.set(target, Object.assign(new TFolder(), { path: target, children: vaultFiles(target) })); }
-				catch { folders.set(target, null); }
+				try {
+					folders.set(target, Object.assign(new TFolder(), { path: target, children: vaultFiles(target) }));
+				} catch {
+					folders.set(target, null);
+				}
 			}
 			return folders.get(target);
 		},
@@ -126,7 +160,8 @@ const app = {
 			setTimeout(() => announce(file), 0);
 			return next;
 		},
-		on: () => ({}), off: () => {},
+		on: () => ({}),
+		off: () => {},
 	},
 	metadataCache: {
 		getFileCache: (file) => ({ frontmatter: file.props, embeds: embedsBy.get(file.path) ?? [] }),
@@ -155,7 +190,7 @@ const host = { ...realHost, ui: { ...realHost.ui, notify: () => {} } };
 const registry = new WidgetRegistry({ vault: { adapter } });
 await registry.load();
 
-const KANBAN = "@task/kanban-board";
+const KANBAN = "@default/kanban-board";
 
 let board = normalizeBoard({
 	tiles: [
@@ -163,8 +198,8 @@ let board = normalizeBoard({
 			id: "board",
 			widget: KANBAN,
 			props: {
-				tasks: { path: FOLDER },
-				boards: { path: "Orbitask/DialogBoards" },
+				tasks: { allow: EVERY_VERB, path: FOLDER },
+				boards: { allow: EVERY_VERB, path: "Orbitask/DialogBoards" },
 			},
 		},
 	],
@@ -176,9 +211,18 @@ const draw = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board, registry, host, editing: false, screen: true, initialWidth: 1280,
-			onChange: (next) => { board = next; draw(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: 1280,
+			onChange: (next) => {
+				board = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -193,25 +237,35 @@ const check = (label, got, want) => {
 	checks += 1;
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 const body = dom.window.document.body;
 const dialog = () => body.querySelector(".orbi-task-dialog");
 const all = (selector) => [...(dialog()?.querySelectorAll(selector) ?? [])];
-const click = async (node) => { node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await settle(); };
+const click = async (node) => {
+	node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+	await settle();
+};
 const cards = () => [...root.querySelectorAll(".orbi-kanban .ok-card-slot")];
-const rowNamed = (name) => all(".otd-row").find((node) => node.querySelector(".wg-kit-row-label")?.textContent.trim() === name);
+const rowNamed = (name) =>
+	all(".otd-row").find((node) => node.querySelector(".wg-kit-row-label")?.textContent.trim() === name);
 const rowNames = () => all(".otd-row .wg-kit-row-label").map((node) => node.textContent.trim());
 const valueOf = (name) => rowNamed(name)?.querySelector(".otd-value")?.textContent.trim();
 // CONTEXT: a dismissed panel keeps is-open while it folds away, and jsdom ends no transition
 const panel = () => body.querySelector(".wg-kit-pop.is-open:not(.is-exiting)");
 const items = () => [...(panel()?.querySelectorAll(".wg-kit-pop-item") ?? [])];
-const itemNamed = (text) => items().find((node) => node.textContent.trim().toLowerCase().startsWith(text.toLowerCase()));
+const itemNamed = (text) =>
+	items().find((node) => node.textContent.trim().toLowerCase().startsWith(text.toLowerCase()));
 const openRow = async (name) => click(rowNamed(name));
 const modes = () => [...(dialog()?.querySelectorAll(".otd-desc-head .wg-kit-seg button") ?? [])];
 const modeNamed = (label) => modes().find((node) => node.textContent.trim() === label);
-const chosenMode = () => modes().find((node) => node.getAttribute("aria-selected") === "true")?.textContent.trim();
+const chosenMode = () =>
+	modes()
+		.find((node) => node.getAttribute("aria-selected") === "true")
+		?.textContent.trim();
 const editor = () => dialog()?.querySelector("textarea.wg-kit-md-input");
 const focused = () => dom.window.document.activeElement;
 const mirror = () => dialog()?.querySelector(".wg-kit-md-mirror");
@@ -227,7 +281,8 @@ const leaveBody = async () => {
 	await settle(80);
 };
 const wroteLast = () => written[written.length - 1] ?? { props: {} };
-const toneOfPill = (name) => (rowNamed(name).querySelector(".wg-kit-pill")?.className ?? "").replace("wg-kit-pill", "").trim();
+const toneOfPill = (name) =>
+	(rowNamed(name).querySelector(".wg-kit-pill")?.className ?? "").replace("wg-kit-pill", "").trim();
 
 draw();
 await settle();
@@ -241,8 +296,10 @@ console.log("\n— the strip under a card carries facts the note HAS, and nothin
 	// Every card used to claim a comment count and a checklist, read off properties nothing in
 	// this app ever writes — so every card said "0 comments, 0/5 done" about features that do
 	// not exist. A strip that reports absent things is worse than no strip.
-	const strip = (node) => [...node.querySelectorAll(".orbi-task-card-meta .orbi-task-card-meta-item")].map((item) => item.textContent.trim());
-	const named = (title) => cards().find((node) => node.querySelector(".orbi-task-card-title")?.textContent.trim() === title);
+	const strip = (node) =>
+		[...node.querySelectorAll(".orbi-task-card-meta .orbi-task-card-meta-item")].map((item) => item.textContent.trim());
+	const named = (title) =>
+		cards().find((node) => node.querySelector(".orbi-task-card-title")?.textContent.trim() === title);
 
 	const DATED = "Design the onboarding flow";
 	const datedPath = `${FOLDER}/design-the-onboarding-flow.md`;
@@ -272,7 +329,11 @@ console.log("\n— the strip under a card carries facts the note HAS, and nothin
 	check("a deadline in another year says which year", strip(named(DATED))[0], "4 Jan 2027");
 	await setProps({ Deadline: "2026-08-31" });
 
-	check("no checklist, because there is no checklist", strip(named(DATED)).some((text) => /^\d+\/\d+$/.test(text)), false);
+	check(
+		"no checklist, because there is no checklist",
+		strip(named(DATED)).some((text) => /^\d+\/\d+$/.test(text)),
+		false,
+	);
 	check("no comment count, because there are no comments", strip(named(DATED)).length, 1);
 
 	embedsBy.set(datedPath, [{ link: "a.png" }, { link: "b.pdf" }]);
@@ -306,30 +367,62 @@ console.log("\n— the strip under a card carries facts the note HAS, and nothin
 	check("and the note is left exactly as this section found it", fileAt(datedPath, () => ({})).props, was);
 }
 
-
-
 const first = cards()[0];
 const openedCard = first.textContent.trim();
 await click(first);
 check("pressing a card opens the dialog", Boolean(dialog()), true);
-check("and it carries that note's own title", openedCard.includes(dialog().querySelector(".otd-title").textContent.trim()), true);
-check("the strip says what the window is", dialog().querySelector(".otd-where").textContent.trim().startsWith("Card"), true);
-check("and which board the task sits on", dialog().querySelector(".otd-where").textContent.includes("Marketing Team"), true);
+check(
+	"and it carries that note's own title",
+	openedCard.includes(dialog().querySelector(".otd-title").textContent.trim()),
+	true,
+);
+check(
+	"the strip says what the window is",
+	dialog().querySelector(".otd-where").textContent.trim().startsWith("Card"),
+	true,
+);
+check(
+	"and which board the task sits on",
+	dialog().querySelector(".otd-where").textContent.includes("Marketing Team"),
+	true,
+);
 const shownTitle = dialog().querySelector(".otd-title").textContent.trim();
 const openPath = vaultFiles(FOLDER).find((file) => (file.props.title ?? file.basename) === shownTitle).path;
 check("opening it reads ONE note's text, the one on screen", reads, [openPath]);
 
 console.log("\n— the list of properties belongs to the board —");
-check("the tile carries no setting of its own", "properties" in board.tiles.find((tile) => tile.id === "board").settings, false);
-check("the board record carries it instead", rowNames(), ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"]);
+check(
+	"the tile carries no setting of its own",
+	"properties" in board.tiles.find((tile) => tile.id === "board").settings,
+	false,
+);
+check("the board record carries it instead", rowNames(), [
+	"Status",
+	"Priority",
+	"Progress",
+	"Assignees",
+	"Deadline",
+	"Client",
+]);
 
 console.log("\n— the plate is the BOARD's list, in the board's order —");
-check("one row per name the board declares", rowNames(), ["Status", "Priority", "Progress", "Assignees", "Deadline", "Client"]);
+check("one row per name the board declares", rowNames(), [
+	"Status",
+	"Priority",
+	"Progress",
+	"Assignees",
+	"Deadline",
+	"Client",
+]);
 
 // THE SIDEBAR'S SHAPE, both halves of it corrected by hand once already: an icon is a glyph and
 // never the kit's filled badge, and the grey group holds the VALUES — not the heading above them.
 check("a property row's icon is a glyph, not a filled badge", all(".otd-row .wg-kit-row-badge").length, 0);
-check("and every row carries one", all(".otd-row").length > 0 && all(".otd-row").every((node) => node.querySelector(".wg-kit-side-icon")), true);
+check(
+	"and every row carries one",
+	all(".otd-row").length > 0 && all(".otd-row").every((node) => node.querySelector(".wg-kit-side-icon")),
+	true,
+);
 check("the group holds the values", Boolean(dialog().querySelector(".otd-props .wg-kit-side-list .otd-row")), true);
 check("and the heading sits outside it", Boolean(dialog().querySelector(".wg-kit-side-list .otd-plate-head")), false);
 check("a name no note has ever carried is still a row", Boolean(rowNamed("Deadline")), true);
@@ -347,20 +440,42 @@ check("and a text row is the field, not a button", rowNamed("Client").tagName, "
 
 console.log("\n— Status is the one anchor whose values are not fixed —");
 await openRow("Status");
-check("pressing it offers the board's own columns", items().map((node) => node.textContent.trim()).slice(0, 3), ["To Do", "Doing", "Done"]);
-check("with the column this task is in ticked", items().filter((node) => node.getAttribute("aria-checked") === "true").length, 1);
+check(
+	"pressing it offers the board's own columns",
+	items()
+		.map((node) => node.textContent.trim())
+		.slice(0, 3),
+	["To Do", "Doing", "Done"],
+);
+check(
+	"with the column this task is in ticked",
+	items().filter((node) => node.getAttribute("aria-checked") === "true").length,
+	1,
+);
 // CONTEXT: a task always sits in a column, so status is the one choice with nothing to clear to
-check("and no way to empty it, because a task is always in some column", items().some((node) => node.textContent.trim() === "Clear"), false);
+check(
+	"and no way to empty it, because a task is always in some column",
+	items().some((node) => node.textContent.trim() === "Clear"),
+	false,
+);
 await click(itemNamed("To Do"));
 check("picking one writes the note", wroteLast().props.status, "To Do");
 check("under the key the note already spells", "status" in wroteLast().props, true);
 check("and the row follows", String(valueOf("Status")).startsWith("To Do"), true);
 await openRow("Priority");
-check("a choice that can be emptied still offers it", items().some((node) => node.textContent.trim() === "Clear"), true);
+check(
+	"a choice that can be emptied still offers it",
+	items().some((node) => node.textContent.trim() === "Clear"),
+	true,
+);
 await click(rowNamed("Priority"));
 
 console.log("\n— filling an unset row is what creates it on the note —");
-check("the note carries no deadline of any spelling", Object.keys(wroteLast().props).some((key) => key.toLowerCase() === "deadline"), false);
+check(
+	"the note carries no deadline of any spelling",
+	Object.keys(wroteLast().props).some((key) => key.toLowerCase() === "deadline"),
+	false,
+);
 await openRow("Deadline");
 check("the date anchor opens a calendar", Boolean(panel().querySelector(".wg-kit-cal-grid")), true);
 check("with Today and Next Monday under it", [itemNamed("Today"), itemNamed("Next Monday")].every(Boolean), true);
@@ -396,7 +511,11 @@ check("leaving the field writes it", wroteLast().props.Client, "Internal");
 console.log("\n— the description: the note's own text, in the two modes it is worth reading in —");
 const wasOnDisk = textOf(held.get(openPath));
 const bodyOnDisk = readBody(wasOnDisk);
-check("the description offers both modes", modes().map((node) => node.textContent.trim()), ["Preview", "Detail"]);
+check(
+	"the description offers both modes",
+	modes().map((node) => node.textContent.trim()),
+	["Preview", "Detail"],
+);
 check("and opens on the one that reads", chosenMode(), "Preview");
 check("preview is Obsidian's own rendering, not ours", Boolean(drawn()), true);
 check("handed the note's body", drawn().markdown, bodyOnDisk);
@@ -415,17 +534,39 @@ check("a link takes the accent", Boolean(mirror().querySelector(".is-link")), tr
 
 await leaveBody();
 check("leaving the editor writes the body", readBody(texts.get(openPath)), EDITED);
-check("and the note's properties are left exactly as they were", texts.get(openPath).startsWith(wasOnDisk.slice(0, wasOnDisk.length - bodyOnDisk.length)), true);
+check(
+	"and the note's properties are left exactly as they were",
+	texts.get(openPath).startsWith(wasOnDisk.slice(0, wasOnDisk.length - bodyOnDisk.length)),
+	true,
+);
 await click(modeNamed("Preview"));
 check("preview draws what was just saved", drawn().markdown, EDITED);
-check("AND PREVIEW HOLDS NO CARET — it is there to be read", [Boolean(editor()), focused()?.tagName === "TEXTAREA"], [false, false]);
+check(
+	"AND PREVIEW HOLDS NO CARET — it is there to be read",
+	[Boolean(editor()), focused()?.tagName === "TEXTAREA"],
+	[false, false],
+);
 
 console.log("\n— the anchor ignores case, on the whole name and nothing less —");
 const listBecomes = async (properties) => {
 	// CONTEXT: through the model, so the list under test is one the file could actually hold
 	const held = board.tiles.find((tile) => tile.id === "board");
 	const record = { columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }], properties };
-	board = normalizeBoard({ ...board, tiles: board.tiles.map((tile) => (tile === held ? { ...tile, props: { ...tile.props, boards: { path: "Orbitask/NoBoards" }, board: { value: record } } } : tile)) });
+	board = normalizeBoard({
+		...board,
+		tiles: board.tiles.map((tile) =>
+			tile === held
+				? {
+						...tile,
+						props: {
+							...tile.props,
+							boards: { allow: EVERY_VERB, path: "Orbitask/NoBoards" },
+							board: { value: record },
+						},
+					}
+				: tile,
+		),
+	});
 	draw();
 	await settle();
 };
@@ -447,7 +588,11 @@ const typeName = async (name) => {
 	await settle();
 };
 await typeName("Deadline");
-check("and says what the name will make, while it is typed", body.querySelector(".otd-hint").textContent.includes("a date"), true);
+check(
+	"and says what the name will make, while it is typed",
+	body.querySelector(".otd-hint").textContent.includes("a date"),
+	true,
+);
 await typeName("Repo");
 check("a name it does not know says so too", body.querySelector(".otd-hint").textContent.includes("plain text"), true);
 naming.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
@@ -473,7 +618,6 @@ await click(dialog().querySelector(".otd-corner button:last-child"));
 check("close leaves nothing behind", Boolean(dialog()), false);
 await click(cards()[1]);
 check("and pressing the SAME card again opens it once more", Boolean(dialog()), true);
-
 
 console.log("\n— a tag carries its own colour, and the chip is where both are changed —");
 {
@@ -503,7 +647,8 @@ console.log("\n— a tag carries its own colour, and the chip is where both are 
 		await settle();
 		dom.window.dispatchEvent(pointer("pointerup", toX));
 	};
-	const chipPanel = () => body.querySelector(".wg-kit-pop.is-open:not(.is-exiting) .otd-tones")?.closest(".wg-kit-pop") ?? null;
+	const chipPanel = () =>
+		body.querySelector(".wg-kit-pop.is-open:not(.is-exiting) .otd-tones")?.closest(".wg-kit-pop") ?? null;
 
 	check("the note's tags are worn in the order it lists them", worn(), ["#design", "#onboarding"]);
 	check("each chip carries the tone the map gives it", chips().map(toneOfChip), ["is-err", ""]);
@@ -513,13 +658,19 @@ console.log("\n— a tag carries its own colour, and the chip is where both are 
 	check("pressing a chip opens its own panel instead of taking it off", Boolean(chipPanel()), true);
 	check("the tag is still worn", worn().includes("#design"), true);
 	check("the panel offers every tone the kit has", chipPanel().querySelectorAll(".otd-tone").length, TONE_NAMES.length);
-	check("with the tag's own already picked", chipPanel().querySelector(".otd-tone.is-picked")?.getAttribute("aria-label"), "error");
+	check(
+		"with the tag's own already picked",
+		chipPanel().querySelector(".otd-tone.is-picked")?.getAttribute("aria-label"),
+		"error",
+	);
 
 	const naming = () => chipPanel().querySelector(".otd-pop-field input");
 	naming().value = "product-design";
 	naming().dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await settle();
-	await click([...chipPanel().querySelectorAll(".otd-tone")].find((node) => node.getAttribute("aria-label") === "success"));
+	await click(
+		[...chipPanel().querySelectorAll(".otd-tone")].find((node) => node.getAttribute("aria-label") === "success"),
+	);
 	const beforeSave = written.length;
 	await click([...chipPanel().querySelectorAll(".wg-kit-btn")].find((node) => node.textContent.trim() === "Save"));
 	check("saving writes the new name into the list, in place", wroteLast().props.tags, ["product-design", "onboarding"]);
@@ -528,7 +679,9 @@ console.log("\n— a tag carries its own colour, and the chip is where both are 
 	check("the chip follows", worn(), ["#product-design", "#onboarding"]);
 
 	await click(chips()[0]);
-	await click([...chipPanel().querySelectorAll(".otd-tone")].find((node) => node.getAttribute("aria-label") === "neutral"));
+	await click(
+		[...chipPanel().querySelectorAll(".otd-tone")].find((node) => node.getAttribute("aria-label") === "neutral"),
+	);
 	await click([...chipPanel().querySelectorAll(".wg-kit-btn")].find((node) => node.textContent.trim() === "Save"));
 	check("grey is no entry at all, not an entry saying grey", wroteLast().props.tagTones, {});
 
@@ -572,11 +725,23 @@ console.log("\n— a code block is carried away, not retyped —");
 	await click(modeNamed("Preview"));
 	await settle();
 	check("the block the renderer produced carries a copy button", copiers().length, 1);
-	check("it is the kit's own icon button, at the small size", copiers()[0].className.includes("wg-kit-icon is-s"), true);
-	check("standing inside the block it copies", copiers()[0].closest("pre")?.querySelector("code")?.textContent.trim(), "npm run build");
+	check(
+		"it is the kit's own icon button, at the small size",
+		copiers()[0].className.includes("wg-kit-icon is-s"),
+		true,
+	);
+	check(
+		"standing inside the block it copies",
+		copiers()[0].closest("pre")?.querySelector("code")?.textContent.trim(),
+		"npm run build",
+	);
 
 	let carried = null;
-	dom.window.navigator.clipboard = { writeText: (text) => { carried = text; } };
+	dom.window.navigator.clipboard = {
+		writeText: (text) => {
+			carried = text;
+		},
+	};
 	await click(copiers()[0]);
 	check("pressing it hands over the code and nothing else", carried.trim(), "npm run build");
 	check("and says so", Boolean(copiers()[0].querySelector("svg")), true);
@@ -597,7 +762,11 @@ let plain = normalizeBoard({
 		{
 			id: "board",
 			widget: KANBAN,
-			props: { tasks: { path: PLAIN }, boards: { path: "Orbitask/NoBoards" }, board: { value: { columns: [{ name: "To Do" }], properties: ["Status"] } } },
+			props: {
+				tasks: { allow: EVERY_VERB, path: PLAIN },
+				boards: { allow: EVERY_VERB, path: "Orbitask/NoBoards" },
+				board: { value: { columns: [{ name: "To Do" }], properties: ["Status"] } },
+			},
 		},
 	],
 	layouts: { 20: { places: [{ id: "board", x: 0, y: 0, w: 20, h: 10 }] } },
@@ -606,9 +775,18 @@ const drawPlain = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board: plain, registry, host, editing: false, screen: true, initialWidth: 1280,
-			onChange: (next) => { plain = next; drawPlain(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board: plain,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: 1280,
+			onChange: (next) => {
+				plain = next;
+				drawPlain();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -647,15 +825,25 @@ console.log("\n— a tag comes off where it is worn, and Enter takes the first m
 	// one thing a search field is supposed to save.
 	field.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 	await settle();
-	check("Enter applies the first match", tags().some((text) => text.startsWith("#urgent")), true);
+	check(
+		"Enter applies the first match",
+		tags().some((text) => text.startsWith("#urgent")),
+		true,
+	);
 
 	// CONTEXT: with the cross gone, unticking the tag in its own panel is how it comes off
 	const before = tags().length;
 	await click(dialog().querySelector(".otd-tag-add"));
-	await click([...tagPanel().querySelectorAll(".wg-kit-pop-item")].find((node) => node.textContent.trim() === "#urgent"));
+	await click(
+		[...tagPanel().querySelectorAll(".wg-kit-pop-item")].find((node) => node.textContent.trim() === "#urgent"),
+	);
 	check("unticking it takes the tag off", tags().length, before - 1);
 	const written_ = wroteLast().props.tags ?? [];
-	check("and the note no longer names it", (Array.isArray(written_) ? written_ : String(written_).split(",")).includes("urgent"), false);
+	check(
+		"and the note no longer names it",
+		(Array.isArray(written_) ? written_ : String(written_).split(",")).includes("urgent"),
+		false,
+	);
 	check("its colour leaves with it", "urgent" in (wroteLast().props.tagTones ?? {}), false);
 }
 
@@ -667,8 +855,15 @@ console.log("\n— a description nobody switched to keeps its hands off the care
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board: plain, registry, host: editOnly, editing: false, screen: true, initialWidth: 1280,
-			onChange: () => {}, onToggleEditing: () => {}, onWidth: () => {},
+			board: plain,
+			registry,
+			host: editOnly,
+			editing: false,
+			screen: true,
+			initialWidth: 1280,
+			onChange: () => {},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -700,20 +895,31 @@ console.log("\n— the window falls out of the place that was pressed —");
 	Date.now = () => realNow.call(Date) + skewMs;
 
 	const frame = () => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
-	const press = (node, x, y) => node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX: x, clientY: y, detail: 1 }));
+	const press = (node, x, y) =>
+		node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true, clientX: x, clientY: y, detail: 1 }));
 	// CONTEXT: Enter on a button fires a click reporting detail 0 at the screen corner
 	const keyPress = (node) => node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-	const shotOf = (panel) => (!panel ? { ...BARE } : {
-		origin: panel.style.transformOrigin,
-		translate: panel.style.translate,
-		scale: panel.style.scale,
-		opacity: panel.style.opacity,
-		transition: panel.style.transition,
-	});
+	const shotOf = (panel) =>
+		!panel
+			? { ...BARE }
+			: {
+					origin: panel.style.transformOrigin,
+					translate: panel.style.translate,
+					scale: panel.style.scale,
+					opacity: panel.style.opacity,
+					transition: panel.style.transition,
+				};
 	const BARE = { origin: "", translate: "", scale: "", opacity: "", transition: "" };
 	// CONTEXT: a beat that never came must not read as the bare panel the last beat leaves
-	const MISSED = { origin: "no beat", translate: "no beat", scale: "no beat", opacity: "no beat", transition: "no beat" };
-	const endFold = (panel) => panel.dispatchEvent(new dom.window.TransitionEvent("transitionend", { bubbles: true, propertyName: "scale" }));
+	const MISSED = {
+		origin: "no beat",
+		translate: "no beat",
+		scale: "no beat",
+		opacity: "no beat",
+		transition: "no beat",
+	};
+	const endFold = (panel) =>
+		panel.dispatchEvent(new dom.window.TransitionEvent("transitionend", { bubbles: true, propertyName: "scale" }));
 	const shutDown = async () => {
 		if (!dialog()) return;
 		press(dialog().querySelector(".otd-corner button:last-child"), 900, 90);
@@ -772,10 +978,24 @@ console.log("\n— the window falls out of the place that was pressed —");
 
 	// CONTEXT: one number for both axes keeps the shape exactly; the widest step is a tenth
 	const scales = trace.map((shot) => shot.style.scale).filter(Boolean);
-	check("every beat scales both axes by one number", scales.map((value) => value.trim().split(/\s+/).length), [1, 1, 1]);
-	const shapes = scales.map((value) => Math.round(((BOX.width * Number(value)) / (BOX.height * Number(value))) * 10000) / 10000);
-	check("so the window keeps its shape at every beat", shapes, [Math.round((BOX.width / BOX.height) * 10000) / 10000, Math.round((BOX.width / BOX.height) * 10000) / 10000, Math.round((BOX.width / BOX.height) * 10000) / 10000]);
-	check("and the widest step from its own size is a tenth", Math.round(Math.max(...scales.map((value) => Math.abs(1 - Number(value)))) * 1000) / 1000, 0.1);
+	check(
+		"every beat scales both axes by one number",
+		scales.map((value) => value.trim().split(/\s+/).length),
+		[1, 1, 1],
+	);
+	const shapes = scales.map(
+		(value) => Math.round(((BOX.width * Number(value)) / (BOX.height * Number(value))) * 10000) / 10000,
+	);
+	check("so the window keeps its shape at every beat", shapes, [
+		Math.round((BOX.width / BOX.height) * 10000) / 10000,
+		Math.round((BOX.width / BOX.height) * 10000) / 10000,
+		Math.round((BOX.width / BOX.height) * 10000) / 10000,
+	]);
+	check(
+		"and the widest step from its own size is a tenth",
+		Math.round(Math.max(...scales.map((value) => Math.abs(1 - Number(value)))) * 1000) / 1000,
+		0.1,
+	);
 
 	console.log("\n— and it goes back the way it came —");
 	flushes.length = 0;
@@ -792,7 +1012,11 @@ console.log("\n— the window falls out of the place that was pressed —");
 	// CONTEXT: a measurement commits the style, so an implicit opacity 1 would land untransitioned
 	check("the fold measures the window before it folds it", flushes.length > 0, true);
 	check("SO IT HOLDS THE OPACITY UP BEFORE MEASURING", flushes[0]?.opacity, "1");
-	check("because opacity is not in the curve still in force there", /opacity/.test(flushes[0]?.transition ?? ""), false);
+	check(
+		"because opacity is not in the curve still in force there",
+		/opacity/.test(flushes[0]?.transition ?? ""),
+		false,
+	);
 
 	check("the window is still there while it folds", Boolean(dialog()), true);
 	if (dialog()) endFold(dialog());
@@ -806,8 +1030,16 @@ console.log("\n— the window falls out of the place that was pressed —");
 	keyPress(cards()[1]);
 	await new Promise((resolve) => setTimeout(resolve, 60));
 	clearInterval(centred);
-	check("a keyboard click is not a place on screen, so the press is not remembered", (trace[0] ?? { style: MISSED }).style.origin, "50% 50%");
-	check("and the stale press it stands next to is not borrowed", (trace[0] ?? { style: MISSED }).style.translate, "0px 0px");
+	check(
+		"a keyboard click is not a place on screen, so the press is not remembered",
+		(trace[0] ?? { style: MISSED }).style.origin,
+		"50% 50%",
+	);
+	check(
+		"and the stale press it stands next to is not borrowed",
+		(trace[0] ?? { style: MISSED }).style.translate,
+		"0px 0px",
+	);
 	check("it still arrives at nine tenths", (trace[0] ?? { style: MISSED }).style.scale, "0.9");
 	flushes.length = 0;
 	press(dialog().querySelector(".otd-corner button:last-child"), 900, 90);
@@ -817,7 +1049,16 @@ console.log("\n— the window falls out of the place that was pressed —");
 
 	console.log("\n— reduced motion is given the end of the gesture, not the gesture —");
 	const wasMedia = dom.window.matchMedia;
-	dom.window.matchMedia = (query) => ({ matches: /prefers-reduced-motion/.test(query), media: query, onchange: null, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false });
+	dom.window.matchMedia = (query) => ({
+		matches: /prefers-reduced-motion/.test(query),
+		media: query,
+		onchange: null,
+		addListener() {},
+		removeListener() {},
+		addEventListener() {},
+		removeEventListener() {},
+		dispatchEvent: () => false,
+	});
 	press(cards()[1], 400, 500);
 	await settle();
 	check("the window is simply there, with nothing painted on it", shotOf(dialog()), BARE);

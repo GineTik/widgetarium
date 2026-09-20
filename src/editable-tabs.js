@@ -1,6 +1,14 @@
 import { createElement as h, useState } from "react";
 import { Button, Icon, List, Popover, PopoverItem, PopoverSeparator, Row, RowLabel, useSegmentedThumb } from "./kit.js";
-import { ConfirmDialog, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "./dialog.js";
+import {
+	ConfirmDialog,
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+	DialogClose,
+} from "./dialog.js";
 
 // CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
 const NAME_TAKEN = 'A tab named "{name}" is already here.';
@@ -75,7 +83,8 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 		step("archive", { tabs: next.tabs, selected: next.selected, archived: [...archived, tab], name: tab });
 	};
 
-	const restore = (tab) => step("restore", { tabs: [...tabs, tab], archived: archived.filter((name) => name !== tab), name: tab });
+	const restore = (tab) =>
+		step("restore", { tabs: [...tabs, tab], archived: archived.filter((name) => name !== tab), name: tab });
 
 	const remove = (tab) => {
 		setDeleting("");
@@ -88,11 +97,16 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 		act();
 	};
 
-	const rename = (was, next) => {
-		const name = String(next ?? "").trim();
+	// TRADE-OFF: the node is handed in so a refused name can be put back on screen, because React keeps no text it did not write and the typed one would stand under a name nothing answers to
+	const rename = (was, node) => {
+		const name = String(node?.textContent ?? "").trim();
+		const putBack = () => {
+			if (node) node.textContent = was;
+		};
 		setEditing("");
-		if (!name || name === was) return;
+		if (!name || name === was) return putBack();
 		if (tabs.includes(name) || archived.includes(name)) {
+			putBack();
 			onRefuse?.(fill(NAME_TAKEN, name));
 			return;
 		}
@@ -116,7 +130,7 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 		if (editing !== tab) return;
 		if (event.key === "Enter") {
 			event.preventDefault();
-			rename(tab, event.currentTarget.textContent);
+			rename(tab, event.currentTarget);
 		}
 		if (event.key === "Escape") {
 			event.currentTarget.textContent = tab;
@@ -138,7 +152,7 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 				suppressContentEditableWarning: true,
 				onClick: () => (editing === tab ? null : step("select", { selected: tab, name: tab })),
 				onKeyDown: (event) => onTabKey(event, tab),
-				onBlur: (event) => (editing === tab ? rename(tab, event.currentTarget.textContent) : null),
+				onBlur: (event) => (editing === tab ? rename(tab, event.currentTarget) : null),
 				ref: (node) => takeCaret(node, tab),
 			},
 			tab,
@@ -146,23 +160,51 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 
 	const menuTrigger = h(
 		"button",
-		{ type: "button", className: "wg-kit-icon is-s is-ghost wg-tabs-more", title: "Tab actions", "aria-label": "Tab actions" },
+		{
+			type: "button",
+			className: "wg-kit-icon is-s is-ghost wg-tabs-more",
+			title: "Tab actions",
+			"aria-label": "Tab actions",
+		},
 		h(Icon, { name: "menu" }),
 	);
 
 	const menu = h(Popover, { key: "menu", trigger: menuTrigger, isOpen: isMenuOpen, onOpenChange: setMenuOpen }, [
-		h(PopoverItem, { key: "rename", onClick: pick(() => setEditing(selected)) }, [h(Icon, { key: "i", name: "pencil", size: 15 }), "Rename"]),
+		h(PopoverItem, { key: "rename", onClick: pick(() => setEditing(selected)) }, [
+			h(Icon, { key: "i", name: "pencil", size: 15 }),
+			"Rename",
+		]),
 		h(PopoverItem, { key: "add", onClick: pick(add) }, [h(Icon, { key: "i", name: "plus", size: 15 }), "Add"]),
-		h(PopoverItem, { key: "archive", onClick: pick(() => archive(selected)) }, [h(Icon, { key: "i", name: "archive", size: 15 }), "Archive"]),
+		h(PopoverItem, { key: "archive", onClick: pick(() => archive(selected)) }, [
+			h(Icon, { key: "i", name: "archive", size: 15 }),
+			"Archive",
+		]),
 		h(PopoverSeparator, { key: "sep" }),
-		h(PopoverItem, { key: "list", onClick: pick(() => setArchiveShown(true)) }, [h(Icon, { key: "i", name: "folder", size: 15 }), "Archived list"]),
+		h(PopoverItem, { key: "list", onClick: pick(() => setArchiveShown(true)) }, [
+			h(Icon, { key: "i", name: "folder", size: 15 }),
+			"Archived list",
+		]),
 	]);
 
 	const archivedRow = (tab) =>
 		h(Row, { key: tab }, [
 			h(RowLabel, { key: "name" }, tab),
-			h(Button, { key: "restore", size: "s", className: "wg-tabs-act wg-tabs-restore", onClick: () => restore(tab) }, "Restore"),
-			h(Button, { key: "delete", size: "s", variant: "danger", className: "wg-tabs-act wg-tabs-delete", onClick: () => setDeleting(tab) }, "Delete"),
+			h(
+				Button,
+				{ key: "restore", size: "s", className: "wg-tabs-act wg-tabs-restore", onClick: () => restore(tab) },
+				"Restore",
+			),
+			h(
+				Button,
+				{
+					key: "delete",
+					size: "s",
+					variant: "danger",
+					className: "wg-tabs-act wg-tabs-delete",
+					onClick: () => setDeleting(tab),
+				},
+				"Delete",
+			),
 		]);
 
 	const archiveDialog = h(
@@ -172,12 +214,18 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 			h(DialogClose, { key: "close" }),
 			h(DialogHeader, { key: "head" }, [
 				h(DialogTitle, { key: "title" }, "Archived list"),
-				h(DialogDescription, { key: "desc" }, "Restore brings a tab back exactly as it was. Delete removes it for good."),
+				h(
+					DialogDescription,
+					{ key: "desc" },
+					"Restore brings a tab back exactly as it was. Delete removes it for good.",
+				),
 			]),
 			h(
 				"div",
 				{ key: "body", className: "wg-dialog-body" },
-				archived.length === 0 ? h("p", { className: "wg-tabs-empty" }, "Nothing is archived.") : h(List, null, archived.map(archivedRow)),
+				archived.length === 0
+					? h("p", { className: "wg-tabs-empty" }, "Nothing is archived.")
+					: h(List, null, archived.map(archivedRow)),
 			),
 		]),
 	);
@@ -195,7 +243,10 @@ export function EditableTabs({ tabs, archived, selected, onChange, onRefuse, del
 
 	return h("div", { className: className ? `wg-tabs ${className}` : "wg-tabs" }, [
 		h("style", { key: "style" }, STYLE),
-		h("div", { key: "strip", className: "wg-kit-seg", ref: listRef, role: "tablist" }, [h("span", { key: "thumb", ...thumbProps }), ...tabs.map(tabButton)]),
+		h("div", { key: "strip", className: "wg-kit-seg", ref: listRef, role: "tablist" }, [
+			h("span", { key: "thumb", ...thumbProps }),
+			...tabs.map(tabButton),
+		]),
 		menu,
 		archiveDialog,
 		confirmDialog,

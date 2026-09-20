@@ -93,7 +93,9 @@ setTimeout(() => {
 		drawn: Boolean(frame),
 		box: frame ? [frame.clientWidth, frame.clientHeight] : null,
 		frameAt: framedAt ? [Math.round(framedAt.left), Math.round(framedAt.top)] : null,
-		rootAt: rooted ? [Math.round(rooted.left), Math.round(rooted.top), Math.round(rooted.width), Math.round(rooted.height)] : null,
+		rootAt: rooted
+			? [Math.round(rooted.left), Math.round(rooted.top), Math.round(rooted.width), Math.round(rooted.height)]
+			: null,
 		letters: drew.replace(/\s+/g, "").length,
 		said: drew.slice(0, 160),
 	});

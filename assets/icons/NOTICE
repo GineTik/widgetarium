@@ -1,0 +1,11 @@
+The icon drawings in src/icon-table.js are Lucide
+(https://github.com/lucide-icons/lucide), licensed under the ISC License, a copy
+of which sits beside this file.
+
+The whole set is taken, at the version named in tools/fetch-icons.mjs. What each
+icon is named, and the words it also answers to, come from the same package.
+
+Regenerate with: node tools/fetch-icons.mjs
+
+Each body is the inside of an SVG drawn on viewBox="0 0 24 24", stroked with
+currentColor and carrying no fill of its own.

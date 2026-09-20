@@ -1,7 +1,7 @@
 // THE IDEAL IS A FILE, AND THIS COMPARES US TO IT. docs/reference/orbitask-converted.html is the
 // accepted design; every number below is read out of it at run time rather than copied here, so
 // the day the reference changes this fails instead of quietly going stale.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 const ref = readFileSync("docs/reference/orbitask-converted.html", "utf8");
 // CONTEXT: the approved design for the parts the task dialog is built from
@@ -14,9 +14,11 @@ const widgetSourceAt = (folder) => {
 	}
 	return "";
 };
-const ours = readFileSync("styles.css", "utf8") + readFileSync("widgets/@task/tokens.css", "utf8")
-	+ readdirSync("widgets/@task").filter((n) => !n.endsWith(".css"))
-		.map((n) => widgetSourceAt(`widgets/@task/${n}`)).join("\n");
+const WIDGETS_THE_ORBITASK_DESIGN_COVERS = ["archived-columns", "kanban-board", "task-card", "view-tabs"];
+const ours =
+	readFileSync("styles.css", "utf8") +
+	readFileSync("widgets/@default/tokens.css", "utf8") +
+	WIDGETS_THE_ORBITASK_DESIGN_COVERS.map((n) => widgetSourceAt(`widgets/@default/${n}`)).join("\n");
 
 // PULL ONE DECLARATION OUT OF THE BASE RULE. Taking the first rule whose selector merely ENDS
 // with the class read a variant instead: adding `.wg-kit-seg.is-s .wg-kit-seg-thumb` above the
@@ -26,15 +28,22 @@ const decl = (css, selector, prop) => {
 	const rules = [...css.matchAll(new RegExp(`([^{}]*)\\${selector}\\s*\\{([^}]*)\\}`, "g"))];
 	if (rules.length === 0) return null;
 	const base = rules.reduce((fewest, rule) =>
-		(rule[1].match(/\./g) ?? []).length < (fewest[1].match(/\./g) ?? []).length ? rule : fewest);
+		(rule[1].match(/\./g) ?? []).length < (fewest[1].match(/\./g) ?? []).length ? rule : fewest,
+	);
 	const m = base[2].match(new RegExp(`(?:^|;|\\n)\\s*${prop}\\s*:\\s*([^;}]+)`));
 	return m ? m[1].trim() : null;
 };
 const px = (css, sel, prop) => {
 	const raw = decl(css, sel, prop);
 	if (!raw) return null;
-	const named = { "var(--size-4-2)": "8px", "var(--size-4-3)": "12px", "var(--size-4-4)": "16px",
-		"var(--size-4-5)": "20px", "var(--size-2-3)": "6px", "var(--wg-radius-pill)": "999px" };
+	const named = {
+		"var(--size-4-2)": "8px",
+		"var(--size-4-3)": "12px",
+		"var(--size-4-4)": "16px",
+		"var(--size-4-5)": "20px",
+		"var(--size-2-3)": "6px",
+		"var(--wg-radius-pill)": "999px",
+	};
 	// a var() with a fallback is the SAME value, just safer — compare the variable, not the spelling
 	const bare = raw.replace(/var\((--[\w-]+),[^)]*\)/g, "var($1)");
 	return named[bare] ?? bare;
@@ -138,8 +147,14 @@ same("the raise actually lifts", raisePercent > 0, true);
 // colour becomes the darkest thing in the control — elevation read backwards, which the shipping
 // kit did on stock Obsidian. Measured on the recorded dark ramp: --background-primary lands 1.204
 // BELOW its own fill, --wg-kit-raise 1.190 above it. Every surface that sits on a fill takes it.
-for (const needle of [".wg-kit-card", ".wg-kit-seg-thumb", ".wg-kit-count", ".wg-kit-switch::after",
-	".wg-kit-row .wg-kit-btn::before", ".wg-kit-row .wg-kit-icon::before"]) {
+for (const needle of [
+	".wg-kit-card",
+	".wg-kit-seg-thumb",
+	".wg-kit-count",
+	".wg-kit-switch::after",
+	".wg-kit-row .wg-kit-btn::before",
+	".wg-kit-row .wg-kit-icon::before",
+]) {
 	same(`${needle} takes the raise`, backgroundsOf(needle).join(" | ") || "nothing", "var(--wg-kit-raise)");
 }
 
@@ -151,7 +166,12 @@ for (const needle of [".wg-kit-card", ".wg-kit-seg-thumb", ".wg-kit-count", ".wg
 }
 
 console.log("\n— things the ideal has that we must not have lost —");
-for (const [what, needle] of [["the 28px avatar", "28px"], ["its -8px overlap", "-8px"], ["the 6px progress bar", "6px"], ["the 32px stripe", "32px"]]) {
+for (const [what, needle] of [
+	["the 28px avatar", "28px"],
+	["its -8px overlap", "-8px"],
+	["the 6px progress bar", "6px"],
+	["the 32px stripe", "32px"],
+]) {
 	const ok = ours.includes(needle);
 	if (!ok) bad += 1;
 	console.log(`${ok ? "OK " : "!! "} ${what}`);
@@ -161,7 +181,15 @@ for (const [what, needle] of [["the 28px avatar", "28px"], ["its -8px overlap", 
 // that still sets `background` on the ELEMENT paints a square behind the round pseudo. That is
 // how an accent tile, a switch and every hover state came back square.
 {
-	const painted = [".wg-kit-btn", ".wg-kit-icon", ".wg-kit-pop-item", ".wg-kit-seg button", ".wg-kit-switch", ".wg-kit-row", ".wg-kit-cal-day"];
+	const painted = [
+		".wg-kit-btn",
+		".wg-kit-icon",
+		".wg-kit-pop-item",
+		".wg-kit-seg button",
+		".wg-kit-switch",
+		".wg-kit-row",
+		".wg-kit-cal-day",
+	];
 	const offenders = [];
 	for (const [index, line] of ours.split("\n").entries()) {
 		if (!/\bbackground\s*:/.test(line) || /::before/.test(line)) continue;
@@ -214,10 +242,18 @@ for (const [what, needle] of [["the 28px avatar", "28px"], ["its -8px overlap", 
 console.log("\n— docs/reference/task-dialog.html, the parts the dialog is built from —");
 same("progress track height", px(ours, ".wg-kit-progress-track", "height"), px(dialogRef, ".pbar", "height"));
 same("knob at rest", px(ours, ".wg-kit-progress-knob", "width"), px(dialogRef, ".pbar .knob", "width"));
-same("knob while it is held", px(ours, ".wg-kit-progress.is-grabbed .wg-kit-progress-knob", "width"), px(dialogRef, ".pbar .knob.grabbed", "width"));
+same(
+	"knob while it is held",
+	px(ours, ".wg-kit-progress.is-grabbed .wg-kit-progress-knob", "width"),
+	px(dialogRef, ".pbar .knob.grabbed", "width"),
+);
 same("calendar day cell", px(ours, ".wg-kit-cal-day", "height"), px(dialogRef, ".cal-grid button", "height"));
 same("the raw text's line height", px(ours, ".wg-kit-md-text", "line-height"), px(dialogRef, ".raw", "line-height"));
-same("and its wrapping, which is what the mirror must match", px(ours, ".wg-kit-md-text", "white-space"), px(dialogRef, ".raw", "white-space"));
+same(
+	"and its wrapping, which is what the mirror must match",
+	px(ours, ".wg-kit-md-text", "white-space"),
+	px(dialogRef, ".raw", "white-space"),
+);
 
 // CONTEXT: a floating panel is separated by its edge and the blur, never by a cast shadow
 {
@@ -229,7 +265,8 @@ same("and its wrapping, which is what the mirror must match", px(ours, ".wg-kit-
 		const selectors = splitSelectors(block.slice(0, brace));
 		if (!selectors.some((selector) => floating.some((name) => selector.endsWith(name)))) continue;
 		const declared = block.slice(brace + 1).match(/(?:^|;|\n)\s*box-shadow\s*:\s*([^;}]+)/);
-		if (declared && !/inset|glass-edge|none/.test(declared[1])) offenders.push(`${selectors.join(", ")} → ${declared[1].trim()}`);
+		if (declared && !/inset|glass-edge|none/.test(declared[1]))
+			offenders.push(`${selectors.join(", ")} → ${declared[1].trim()}`);
 	}
 	same("no floating panel drops a shadow", offenders.join(" | ") || 0, 0);
 	same("the popover is separated by its edge", px(ours, ".wg-kit-pop", "box-shadow"), "var(--wg-kit-glass-edge)");

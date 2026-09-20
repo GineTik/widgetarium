@@ -70,7 +70,14 @@ function draw() {
 function boxOf(node) {
 	if (!node) return null;
 	const rect = node.getBoundingClientRect();
-	return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
+	return {
+		left: rect.left,
+		top: rect.top,
+		right: rect.right,
+		bottom: rect.bottom,
+		width: rect.width,
+		height: rect.height,
+	};
 }
 
 function overlaps(one, other) {
@@ -79,7 +86,10 @@ function overlaps(one, other) {
 }
 
 function nameOf(node) {
-	return `${node.tagName.toLowerCase()}.${String(node.className.baseVal ?? node.className).trim().split(/\s+/).join(".")}`;
+	return `${node.tagName.toLowerCase()}.${String(node.className.baseVal ?? node.className)
+		.trim()
+		.split(/\s+/)
+		.join(".")}`;
 }
 
 // how far a point sits from the nearest lattice line, which is zero when it sits on one
@@ -177,7 +187,11 @@ function read() {
 	);
 
 	// CONTEXT: a box-shadow is a comma list, and only the parts carrying "inset" stay inside the box
-	const castOf = (shadow) => shadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter((part) => !part.includes("inset"));
+	const castOf = (shadow) =>
+		shadow
+			.split(/,(?![^(]*\))/)
+			.map((part) => part.trim())
+			.filter((part) => !part.includes("inset"));
 
 	const blurred = [];
 	const shadowed = [];
@@ -187,7 +201,13 @@ function read() {
 		if (style.opacity === "0" || style.visibility === "hidden") continue;
 		if (style.backdropFilter && style.backdropFilter !== "none") blurred.push(nameOf(node));
 		if (style.boxShadow && style.boxShadow !== "none") {
-			shadowed.push({ name: nameOf(node), shadow: style.boxShadow, cast: castOf(style.boxShadow), isPanel: node === panel, inside: Boolean(panel && panel.contains(node) && node !== panel) });
+			shadowed.push({
+				name: nameOf(node),
+				shadow: style.boxShadow,
+				cast: castOf(style.boxShadow),
+				isPanel: node === panel,
+				inside: Boolean(panel && panel.contains(node) && node !== panel),
+			});
 		}
 	}
 
@@ -257,8 +277,12 @@ function panBy(dx, dy) {
 	const rect = node.getBoundingClientRect();
 	const from = { clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2 };
 	node.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, ...from }));
-	window.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: from.clientX + dx, clientY: from.clientY + dy }));
-	window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: from.clientX + dx, clientY: from.clientY + dy }));
+	window.dispatchEvent(
+		new PointerEvent("pointermove", { bubbles: true, clientX: from.clientX + dx, clientY: from.clientY + dy }),
+	);
+	window.dispatchEvent(
+		new PointerEvent("pointerup", { bubbles: true, clientX: from.clientX + dx, clientY: from.clientY + dy }),
+	);
 }
 
 // a trackpad pinch reaches the page as a wheel event carrying ctrlKey — there is no separate
@@ -301,7 +325,8 @@ setTimeout(async () => {
 		await step(() => {});
 		const arrival = read();
 		const levels = { light: levelsUnder(LIGHT), dark: levelsUnder(DARK) };
-		if (staged === "fold") await step(() => document.querySelector('.wg-set-bar button[aria-label="Fold the settings away"]')?.click());
+		if (staged === "fold")
+			await step(() => document.querySelector('.wg-set-bar button[aria-label="Fold the settings away"]')?.click());
 		if (staged) return report({ arrival, panned: arrival, zoomed: arrival, floor: arrival, live: arrival, levels });
 		await step(() => panBy(37, 23));
 		const panned = read();
@@ -339,7 +364,15 @@ setTimeout(async () => {
 		);
 		const overPanel = read();
 
-		report({ arrival, panned, zoomed, floor, live, levels, wheel: { beforeWheel, wheelPanned, pinchedOut, pinchedIn, before, overPanel } });
+		report({
+			arrival,
+			panned,
+			zoomed,
+			floor,
+			live,
+			levels,
+			wheel: { beforeWheel, wheelPanned, pinchedOut, pinchedIn, before, overPanel },
+		});
 	} catch (failure) {
 		report({ failure: String(failure && failure.stack) });
 	}

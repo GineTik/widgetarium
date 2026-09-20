@@ -7,26 +7,33 @@ widgetarium: screen
 ```widgetarium
 tiles:
   - id: boards
-    widget: "@task/board-tabs"
-    settings:
-      tabs: Widgetarium, Marketing Team, Ux Team
-      activeTab: Widgetarium
-      archived: Untitled 1, Untitled 2, Test
+    widget: "@default/editable-tabs"
+    props:
+      tabs:
+        from: vault
+        path: Orbitask/Boards
+        allow: [list, create, update, remove]
   - id: views
-    widget: "@task/view-tabs"
+    widget: "@default/view-tabs"
   - id: board
-    widget: "@task/kanban-board"
-    settings:
-      columns: To Do, Doing, Done
-    sources:
+    widget: "@default/kanban-board"
+    props:
       tasks:
+        from: vault
         path: Orbitask/Tasks
-        filters: []
-        sort: []
+        allow: [list, get, create, update, remove]
+      boards:
+        from: vault
+        path: Orbitask/Boards
+        allow: [list, create, update, repairIds]
     slots:
-      card: "@task/task-card"
+      card: "@default/task-card"
   - id: wynttpz
-    widget: "@core/filter-panel"
+    widget: "@default/filter-panel"
+    props:
+      tasks:
+        from: vault
+        path: Orbitask/Tasks
 mode: expanded
 layouts:
   "4":

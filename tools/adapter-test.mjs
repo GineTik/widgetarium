@@ -40,12 +40,21 @@ const folder = Object.assign(new TFolder(), { path: FOLDER, children: files });
 const written = [];
 // the note text, so a body read and a body write have something to work on that is not the
 // user's own vault
-const texts = new Map(files.map((file) => [file.path, fs.readFileSync(path.join(VAULT, FOLDER, file.name ?? file.path.split("/").pop()), "utf8")]));
+const texts = new Map(
+	files.map((file) => [
+		file.path,
+		fs.readFileSync(path.join(VAULT, FOLDER, file.name ?? file.path.split("/").pop()), "utf8"),
+	]),
+);
 
 const app = {
 	vault: {
-		getAbstractFileByPath: (target) => (target === FOLDER ? folder : files.find((file) => file.path === target) ?? null),
-		create: async (target, body) => { written.push({ target, body }); return files[0]; },
+		getAbstractFileByPath: (target) =>
+			target === FOLDER ? folder : (files.find((file) => file.path === target) ?? null),
+		create: async (target, body) => {
+			written.push({ target, body });
+			return files[0];
+		},
 		cachedRead: async (file) => texts.get(file.path) ?? "",
 		// Vault.process is the queued read-modify-write the app ships; the stand-in keeps the
 		// same contract — the callback sees the text and its return value becomes the file.
@@ -55,14 +64,19 @@ const app = {
 			written.push({ target: file.path, text: next });
 			return next;
 		},
-		on: () => ({}), off: () => {},
+		on: () => ({}),
+		off: () => {},
 	},
 	metadataCache: {
 		getFileCache: (file) => ({ frontmatter: file.props }),
-		on: () => {}, off: () => {},
+		on: () => {},
+		off: () => {},
 	},
 	fileManager: {
-		processFrontMatter: async (file, edit) => { edit(file.props); written.push({ target: file.path, props: { ...file.props } }); },
+		processFrontMatter: async (file, edit) => {
+			edit(file.props);
+			written.push({ target: file.path, props: { ...file.props } });
+		},
 	},
 	workspace: { getLeaf: () => ({ openFile: async () => {} }) },
 };
@@ -71,7 +85,11 @@ const app = {
 const children = [];
 const plugin = {
 	registerEvent: () => {},
-	addChild: (child) => { children.push(child); child.loaded = true; return child; },
+	addChild: (child) => {
+		children.push(child);
+		child.loaded = true;
+		return child;
+	},
 	removeChild: (child) => {
 		// CONTEXT: Obsidian is not asked twice — a child it no longer holds is a fault, not a no-op
 		if (!children.includes(child)) throw new Error("removeChild called for a child the plugin does not hold");
@@ -87,7 +105,9 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 // REGRESSION: the adapter called matches() and valueOf() without importing either, so list()
@@ -104,25 +124,44 @@ const sorted = await slot.list({ sort: [{ prop: "order", dir: "asc" }] });
 check("sorting by a property does not throw", sorted.rows.length, files.length);
 const orders = sorted.rows.map((row) => row.props.order);
 const numbered = orders.filter((value) => value !== undefined);
-check("and it really is ascending", numbered.every((value, index) => index === 0 || numbered[index - 1] <= value), true);
+check(
+	"and it really is ascending",
+	numbered.every((value, index) => index === 0 || numbered[index - 1] <= value),
+	true,
+);
 // REGRESSION: a note created without the property used to land wherever the sort left it
-check("a note missing the property sorts last", orders.slice(numbered.length).every((value) => value === undefined), true);
+check(
+	"a note missing the property sorts last",
+	orders.slice(numbered.length).every((value) => value === undefined),
+	true,
+);
 
 const marketing = await slot.list({ where: [{ prop: "board", op: "is", value: "Marketing Team" }] });
-check("filtering by a property narrows the list", marketing.rows.length > 0 && marketing.rows.length < files.length, true);
-check("and every row really carries it", marketing.rows.every((row) => row.props.board === "Marketing Team"), true);
+check(
+	"filtering by a property narrows the list",
+	marketing.rows.length > 0 && marketing.rows.length < files.length,
+	true,
+);
+check(
+	"and every row really carries it",
+	marketing.rows.every((row) => row.props.board === "Marketing Team"),
+	true,
+);
 
 const one = await slot.list({ where: [{ prop: "path", op: "is", value: files[0].path }] });
 check("filtering by path finds exactly one note", one.rows.length, 1);
 
 check("the folder is writable", [slot.canCreate, slot.canUpdate], [true, true]);
 await slot.update({ path: files[0].path }, { props: { status: "Done" } });
-check("an update reaches the vault", written.some((entry) => entry.props?.status === "Done"), true);
+check(
+	"an update reaches the vault",
+	written.some((entry) => entry.props?.status === "Done"),
+	true,
+);
 
 const empty = host.slot({ kind: "folder", path: "" });
 check("an unbound slot is read-only", empty.canCreate, false);
 check("and it lists nothing rather than throwing", (await empty.list({})).rows.length, 0);
-
 
 // A RECORD CARRIES NO BODY, so a widget could see a note's properties and never its text.
 // Lazily: listing twenty cards must not cost twenty file reads, and opening one costs one.
@@ -142,7 +181,10 @@ check("a path that is not a note fetches nothing", await slot.get({ path: "Orbit
 	// reformats the frontmatter loses properties nobody edited.
 	const target = { path: files[1].path };
 	const before = texts.get(target.path);
-	const head = before.split("\n").slice(0, before.split("\n").indexOf("---", 1) + 1).join("\n");
+	const head = before
+		.split("\n")
+		.slice(0, before.split("\n").indexOf("---", 1) + 1)
+		.join("\n");
 
 	const saved = await slot.update(target, { body: "Rewritten by a widget.\n" });
 	check("a body write reaches the vault", texts.get(target.path).includes("Rewritten by a widget."), true);
@@ -175,8 +217,16 @@ check("the host declares it can render markdown", host.can.renderMarkdown, true)
 	check("what stood in the element before is gone", element.textContent, "# Hello");
 	// the ORDER is the whole point: verified against the shipped runtime, where render is
 	// render(app, markdown, el, sourcePath, component)
-	check("the renderer is called with app, markdown, element, sourcePath", [call.app === app, call.markdown, call.el === element, call.sourcePath], [true, "# Hello", true, "Orbitask/Tasks/a.md"]);
-	check("and a component, or Obsidian leaks what it registered inside", call.component instanceof MarkdownRenderChild, true);
+	check(
+		"the renderer is called with app, markdown, element, sourcePath",
+		[call.app === app, call.markdown, call.el === element, call.sourcePath],
+		[true, "# Hello", true, "Orbitask/Tasks/a.md"],
+	);
+	check(
+		"and a component, or Obsidian leaks what it registered inside",
+		call.component instanceof MarkdownRenderChild,
+		true,
+	);
 	check("the component is loaded by the plugin that owns it", children.includes(call.component), true);
 	check("and letting go unloads it", (stop(), children.includes(call.component)), false);
 	check("a host that renders markdown says so through can, not by guessing", typeof host.ui.renderMarkdown, "function");

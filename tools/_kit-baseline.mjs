@@ -319,14 +319,14 @@ check(
 // and the other to a literal, so a theme without the ramp drove them apart.
 {
 	const fs = await import("node:fs");
-	const tokens = fs.readFileSync("widgets/@task/tokens.css", "utf8");
+	const tokens = fs.readFileSync("widgets/@default/tokens.css", "utf8");
 	check(
 		"the plate fill has ONE owner, so no second fallback can drift",
 		/--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens),
 		true,
 	);
 
-	for (const id of ["@task/board-tabs", "@core/filter-panel", "@task/view-tabs"]) {
+	for (const id of ["@task/board-tabs", "@default/filter-panel", "@default/view-tabs"]) {
 		const name = id.slice(id.indexOf("/") + 1);
 		const src = fs.readFileSync(`widgets/${id}/widget.jsx`, "utf8");
 		// either form counts: the kit is importable as components AND wearable as classes
@@ -646,7 +646,7 @@ check(
 	render(null, host);
 }
 
-// CONTEXT: widgets/@core/filter-panel builds this by hand today
+// CONTEXT: widgets/@default/filter-panel builds this by hand today
 {
 	const host = document.getElementById("host");
 	render(null, host);

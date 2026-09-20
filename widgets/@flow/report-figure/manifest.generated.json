@@ -1,0 +1,54 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Report figure",
+	"description": "One figure of a report: the picture this vault holds or the drawing written beside it, with the caption under it.",
+	"keywords": [
+		"figure",
+		"image",
+		"picture",
+		"screenshot",
+		"diagram",
+		"drawing",
+		"illustration",
+		"caption",
+		"evidence",
+		"report",
+		"media"
+	],
+	"role": "media",
+	"size": {
+		"collapseBelowPx": 160,
+		"stackBelowPx": 260
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 3
+		},
+		"props": {
+			"source": {
+				"value": {
+					"caption": "The drop wrapped the leaf it landed on, which is how a column is made by hand.",
+					"drawing": "```\n┌────────┬─────────────┐\n│  pane  │    card     │\n└────────┴─────────────┘\n```"
+				}
+			}
+		}
+	},
+	"props": {
+		"source": {
+			"kind": "value",
+			"control": "json",
+			"label": "Figure",
+			"hint": "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
+			"writes": ["get"],
+			"default": {
+				"value": {}
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

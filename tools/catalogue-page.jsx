@@ -91,14 +91,21 @@ setTimeout(() => {
 		const pic = tile.querySelector(".wg-cat-pic");
 		const name = tile.querySelector(".wg-cat-name").textContent;
 		const box = tile.getBoundingClientRect();
-		over.push({ name, at: [Math.round(box.left), Math.round(box.top), Math.round(box.width), Math.round(box.height)], span: tile.getAttribute("data-span"), box: frame ? [frame.clientWidth, frame.clientHeight] : null, wants: inner ? [inner.scrollWidth, inner.scrollHeight] : null });
+		over.push({
+			name,
+			at: [Math.round(box.left), Math.round(box.top), Math.round(box.width), Math.round(box.height)],
+			span: tile.getAttribute("data-span"),
+			box: frame ? [frame.clientWidth, frame.clientHeight] : null,
+			wants: inner ? [inner.scrollWidth, inner.scrollHeight] : null,
+		});
 		// CONTEXT: the declared span is read back off the drawn box, which is the only proof it landed
 		// the card CAPS a long span, so what must hold is that the stage is a whole number of
 		// cells — never that it equals the widget's own, which may be larger than the cap
 		const stage = tile.querySelector(".wg-cat-frame");
 		const wide = spanOn(stage, stage.clientWidth);
 		const tall = spanOn(stage, stage.clientHeight);
-		if (!(wide >= 1 && tall >= 1)) offGrid.push({ name, declared: tile.getAttribute("data-span"), drawn: `${wide}x${tall}` });
+		if (!(wide >= 1 && tall >= 1))
+			offGrid.push({ name, declared: tile.getAttribute("data-span"), drawn: `${wide}x${tall}` });
 	}
 
 	document.getElementById("count").textContent = JSON.stringify({
@@ -146,20 +153,29 @@ setTimeout(() => {
 		shotsAsked: document.querySelectorAll(".wg-cat-shot").length,
 		shotsLoaded: [...document.querySelectorAll(".wg-cat-shot")].filter((node) => node.naturalWidth).length,
 		shotThemes: [
-			...new Set([...document.querySelectorAll(".wg-cat-shot")].map((node) => node.src.slice(node.src.lastIndexOf("shot-")))),
+			...new Set(
+				[...document.querySelectorAll(".wg-cat-shot")].map((node) => node.src.slice(node.src.lastIndexOf("shot-"))),
+			),
 		],
 		// THE FOG IS ON EVERY CARD, AND IT ENDS IN THE GROUND BEHIND IT. Painted only where a widget
 		// overflowed, a haze on some cards and not others reads as a fault; painted to a hardcoded
 		// white it is a grey smear on the dark theme. Both are measured here, in both themes: the
 		// gradient's last stop must be the colour the stage is actually painted.
-		fogged: [...document.querySelectorAll(".wg-cat-frame")].filter((node) => getComputedStyle(node, "::after").content !== "none").length,
+		fogged: [...document.querySelectorAll(".wg-cat-frame")].filter(
+			(node) => getComputedStyle(node, "::after").content !== "none",
+		).length,
 		fog: (() => {
 			const frame = document.querySelector(".wg-cat-frame");
 			const stage = document.querySelector(".wg-cat-stage");
 			if (!frame || !stage) return null;
 			const painted = getComputedStyle(frame, "::after");
 			const ground = getComputedStyle(stage).backgroundColor;
-			return { ground, ends: painted.backgroundImage.includes(ground), said: painted.backgroundImage, tall: painted.height };
+			return {
+				ground,
+				ends: painted.backgroundImage.includes(ground),
+				said: painted.backgroundImage,
+				tall: painted.height,
+			};
 		})(),
 		stands: document.querySelectorAll(".wg-cat-stand").length,
 		contained: document.querySelectorAll(".wg-cat-stand.is-broken").length,

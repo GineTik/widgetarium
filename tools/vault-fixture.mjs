@@ -15,7 +15,10 @@ const leavesIn = (files, at) => under(files, at).filter((key) => !key.slice(at.l
 
 export function createFileTree(files) {
 	return {
-		exists: async (at) => Object.prototype.hasOwnProperty.call(files, at) || foldersIn(files, at).length > 0 || leavesIn(files, at).length > 0,
+		exists: async (at) =>
+			Object.prototype.hasOwnProperty.call(files, at) ||
+			foldersIn(files, at).length > 0 ||
+			leavesIn(files, at).length > 0,
 		read: async (at) => files[at],
 		list: async (at) => ({ folders: foldersIn(files, at), files: leavesIn(files, at) }),
 	};

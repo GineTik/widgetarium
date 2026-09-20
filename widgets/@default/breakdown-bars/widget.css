@@ -1,0 +1,9 @@
+.breakdown-track {
+	height: 8px;
+	background: var(--wg-kit-plate);
+}
+
+.breakdown-fill {
+	height: 8px;
+	background: var(--wg-kit-accent);
+}

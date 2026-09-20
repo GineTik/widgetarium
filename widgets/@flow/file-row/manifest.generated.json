@@ -1,0 +1,64 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "File row",
+	"description": "One file a change touched: what happened to it, its path, and the lines it gained and lost.",
+	"keywords": [
+		"file",
+		"row",
+		"diff",
+		"path",
+		"git",
+		"change",
+		"added",
+		"removed",
+		"insertions",
+		"deletions",
+		"rename",
+		"binary",
+		"review"
+	],
+	"role": "detail",
+	"size": {
+		"collapseBelowPx": 40,
+		"stackBelowPx": 220
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"file": {
+				"value": {
+					"filePath": "src/gateway/manifest.ts",
+					"from": "src/manifest.ts",
+					"change": "renamed",
+					"added": 46,
+					"removed": 12
+				}
+			}
+		}
+	},
+	"props": {
+		"file": {
+			"kind": "value",
+			"control": "json",
+			"label": "File",
+			"hint": "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"filePath": "src/engine/catalogue-index.js",
+					"change": "modified",
+					"added": 128,
+					"removed": 44
+				}
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

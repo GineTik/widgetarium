@@ -14,17 +14,18 @@ const {
 	columnsOf,
 	drawerWidth,
 	DRAWER_MAX_PX,
-	foldableIn,
 	heldHeight,
 	isFolded,
 	keptAt,
 	insertedAt,
+	laid,
 	leavesOf,
 	movedInto,
 	nodeAt,
 	sameTarget,
 	toggledFold,
 	GAP_PX,
+	STEP_PX,
 	innerOf,
 	MAIN_FLOOR_PX,
 	MIN_HEIGHT_PX,
@@ -32,12 +33,19 @@ const {
 	resized,
 	SIDEBAR_PX,
 	widenedBox,
+	withHeight,
 	withoutLeaf,
 } = await import("./.mjs-cache/tree.mjs");
 
 const ONE_CELL = [{ id: "x", ratio: 1 }];
 const rootOf = (of) => ({ dir: "row", of });
-const side = (of = ONE_CELL, flags = {}) => ({ dir: "column", foldable: true, ...(Array.isArray(of) ? {} : of), of: Array.isArray(of) ? of : ONE_CELL, ...flags });
+const side = (of = ONE_CELL, flags = {}) => ({
+	dir: "column",
+	collapse: { into: "drawer", toggle: "always" },
+	...(Array.isArray(of) ? {} : of),
+	of: Array.isArray(of) ? of : ONE_CELL,
+	...flags,
+});
 const kept = (of = ONE_CELL) => ({ dir: "column", keep: true, of });
 const THREE = rootOf([side(), kept(), side()]);
 const sideName = (at) => (at === 1 ? "main" : at === 0 ? "left" : "right");
@@ -45,7 +53,8 @@ const { GIVE_PX } = await import("./.mjs-cache/give.mjs");
 const { millisecondsAcross } = await import("./.mjs-cache/flip.mjs");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
-const TABS_CEILING_PX = JSON.parse(readFileSync("widgets/@core/editable-tabs/manifest.json", "utf8")).tallestPx;
+const TABS_CEILING_PX = JSON.parse(readFileSync("widgets/@default/editable-tabs/manifest.generated.json", "utf8")).size
+	.tallestPx;
 const FENCE = String.fromCharCode(96, 96, 96);
 
 function boardOf(at) {
@@ -121,7 +130,7 @@ const HOST_BUTTON_PAINT_COPIED_VERBATIM = `button:not(.clickable-icon) {
 const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${HOST_BUTTON_PAINT_COPIED_VERBATIM}</style>
 <style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
+<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
 <style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
 	--background-modifier-border: #e4e4e4; --background-modifier-hover: #ededed; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; --text-color: #222; --interactive-normal: #e3e3e3;
@@ -269,7 +278,7 @@ console.log("\n— the plugin's own surface draws a board that carries rows —"
 	check("no row is left without a strip, capped widgets or not", seen.capped, 0);
 	check(
 		"the gap the grip fills is the gap the layout counted",
-		seen.sharedRow[0] + seen.sharedRow[1] + GAP_PX,
+		seen.sharedRow[0] + seen.sharedRow[1] + STEP_PX[1],
 		seen.boardWidth,
 	);
 	check(
@@ -294,7 +303,7 @@ console.log("\n— and dragging that grip writes the board once —");
 		after.sharedRow[0] - before.sharedRow[0],
 		before.sharedRow[1] - 320,
 	);
-	check("the row is still as wide as it was", after.sharedRow[0] + after.sharedRow[1] + GAP_PX, before.boardWidth);
+	check("the row is still as wide as it was", after.sharedRow[0] + after.sharedRow[1] + STEP_PX[1], before.boardWidth);
 	check("the board was written once, on release", after.writes, 1);
 	check("the ratios in the file changed with it", after.ratios[0] > before.ratios[0], true);
 	check(
@@ -410,15 +419,27 @@ console.log("\n— a node is as tall as the widgets in it allow, and no taller �
 	const cell = { id: "a", ratio: 1 };
 	check("pulled past the ceiling it lands on the ceiling", heldHeight(cell, { wantedPx: 900, ask: capped }), 84);
 	check("squeezed under the floor it lands on the floor", heldHeight(cell, { wantedPx: 10, ask: capped }), 84);
-	check("held past the ceiling it still gives", heldHeight(cell, { wantedPx: 900, ask: capped, give: true }) > 84, true);
+	check(
+		"held past the ceiling it still gives",
+		heldHeight(cell, { wantedPx: 900, ask: capped, give: true }) > 84,
+		true,
+	);
 	check("by no more than the give", heldHeight(cell, { wantedPx: 900, ask: capped, give: true }) - 84 <= GIVE_PX, true);
 
 	const row = { dir: "row", of: [{ id: "a" }, { id: "b" }] };
 	const open = asking({ a: { tallestPx: 84 } });
-	check("one widget that names no ceiling lifts the ceiling off the row", heldHeight(row, { wantedPx: 900, ask: open }), 900);
+	check(
+		"one widget that names no ceiling lifts the ceiling off the row",
+		heldHeight(row, { wantedPx: 900, ask: open }),
+		900,
+	);
 
 	const both = asking({ a: { tallestPx: 84 }, b: { tallestPx: 160 } });
-	check("where every widget names one, the tallest of them is the row's", heldHeight(row, { wantedPx: 900, ask: both }), 160);
+	check(
+		"where every widget names one, the tallest of them is the row's",
+		heldHeight(row, { wantedPx: 900, ask: both }),
+		160,
+	);
 
 	const upside = asking({ a: { shortestPx: 200, tallestPx: 84 } });
 	check("a floor above a ceiling is still a floor", heldHeight(cell, { wantedPx: 10, ask: upside }), 200);
@@ -426,18 +447,236 @@ console.log("\n— a node is as tall as the widgets in it allow, and no taller �
 	const deep = { dir: "column", of: [{ id: "a" }, { dir: "row", of: [{ id: "b" }] }] };
 	check("a ceiling is read through every level of the tree", heldHeight(deep, { wantedPx: 900, ask: both }), 160);
 
-	const streak = JSON.parse(readFileSync("widgets/@habit/streak/manifest.json", "utf8"));
-	check("the habit streak pins itself to one height", [streak.shortestPx, streak.tallestPx], [110, 110]);
+	const streak = JSON.parse(readFileSync("widgets/@default/streak/manifest.generated.json", "utf8"));
+	check("the habit streak pins itself to one height", [streak.size.shortestPx, streak.size.tallestPx], [110, 110]);
+}
+
+console.log("\n— a height belongs to the widgets, never to the box around them —");
+{
+	const ask = () => ({ minPx: 260 });
+	const four = { dir: "row", of: ["a", "b", "c", "d"].map((id) => ({ id, height: 86 })) };
+	const narrow = laid(four, 700, { ask });
+	check("a row too narrow for four is drawn as a column", [narrow.dir, narrow.isStacked], ["column", true]);
+	check("with no height to squeeze them into", narrow.height ?? null, null);
+	check(
+		"and every widget keeps the height it was given",
+		narrow.of.map((one) => one.height),
+		[86, 86, 86, 86],
+	);
+	check("wide, the row draws no height of its own either", laid(four, 1400, { ask }).height ?? null, null);
+}
+
+console.log("\n— resizing a box resizes the widgets in it —");
+{
+	const nothing = () => ({});
+	const nest = {
+		dir: "row",
+		of: [
+			{ id: "a", height: 100 },
+			{
+				dir: "column",
+				of: [
+					{ id: "b", height: 40 },
+					{ id: "c", height: 52 },
+				],
+			},
+		],
+	};
+	const nestDrawn = {
+		"": { heightPx: 100, dir: "row" },
+		0: { heightPx: 100 },
+		1: { heightPx: 100, dir: "column" },
+		"1/0": { heightPx: 40 },
+		"1/1": { heightPx: 52 },
+	};
+	const grown = withHeight(nest, [], 200, { drawnAs: nestDrawn, ask: nothing });
+	check("a row gives every widget in it the same new height", grown.of[0].height, 200);
+	check(
+		"and a column inside it shares its growth by the heights it had",
+		grown.of[1].of.map((one) => one.height),
+		[83, 109],
+	);
+	check("a box keeps no height of its own", [grown.height, grown.of[1].height], [undefined, undefined]);
+
+	const column = {
+		dir: "column",
+		of: [
+			{ id: "a", height: 100 },
+			{ id: "b", height: 300 },
+		],
+	};
+	const columnDrawn = { "": { heightPx: 408, dir: "column" }, 0: { heightPx: 100 }, 1: { heightPx: 300 } };
+	const shrunk = withHeight({ dir: "row", of: [column] }, [0], 208, {
+		drawnAs: { 0: columnDrawn[""], "0/0": columnDrawn[0], "0/1": columnDrawn[1] },
+		ask: nothing,
+	});
+	check(
+		"a column shrinks every widget in the same proportion",
+		shrunk.of[0].of.map((one) => one.height),
+		[50, 150],
+	);
+
+	const floored = withHeight(column, [], 100, { drawnAs: columnDrawn, ask: nothing });
+	check("and no widget goes under its floor to pay for it", floored.of[0].height, MIN_HEIGHT_PX);
+
+	const pair = {
+		dir: "row",
+		of: [
+			{ id: "a", height: 100 },
+			{ id: "b", height: 100 },
+		],
+	};
+	const stackedDrawn = {
+		"": { heightPx: 208, dir: "column" },
+		0: { heightPx: 100, across: "1" },
+		1: { heightPx: 100, across: "1" },
+	};
+	const tallStack = withHeight(pair, [], 308, { drawnAs: stackedDrawn, ask: nothing });
+	check(
+		"a row drawn stacked still gives every widget one height, kept for one across",
+		tallStack.of.map((one) => one.heights),
+		[{ 1: 150 }, { 1: 150 }],
+	);
+
+	const uneven = {
+		dir: "row",
+		of: [
+			{ id: "a", height: 100 },
+			{ id: "b", height: 300 },
+		],
+	};
+	const unevenDrawn = { "": { heightPx: 300, dir: "row" }, 0: { heightPx: 100 }, 1: { heightPx: 300 } };
+	check(
+		"a row of uneven widgets gives them all one height when it is resized",
+		withHeight(uneven, [], 200, { drawnAs: unevenDrawn, ask: nothing }).of.map((one) => one.height),
+		[200, 200],
+	);
+
+	const views = {
+		dir: "swap",
+		id: "v",
+		of: [
+			{ id: "shown", height: 200 },
+			{ id: "away", height: 250, hidden: true },
+		],
+	};
+	const viewsDrawn = { "": { heightPx: 240, dir: "swap" }, 0: { heightPx: 200 }, 1: { heightPx: 0 } };
+	const pulled = withHeight(views, [], 340, { drawnAs: viewsDrawn, ask: nothing });
+	check(
+		"a swap grows the view on screen and leaves the others as they were",
+		pulled.of.map((one) => one.height),
+		[300, 250],
+	);
+
+	check(
+		"a row squeezed past nothing still lands every widget on its floor",
+		withHeight(pair, [], -600, {
+			drawnAs: { "": { heightPx: 100, dir: "row" }, 0: { heightPx: 100 }, 1: { heightPx: 100 } },
+			ask: nothing,
+		}).of.map((one) => one.height),
+		[MIN_HEIGHT_PX, MIN_HEIGHT_PX],
+	);
+	check(
+		"a widget resized alone takes the height asked",
+		withHeight(column, [1], 250, { drawnAs: {}, ask: nothing }).of[1].height,
+		250,
+	);
+}
+
+console.log("\n— a widget keeps one height for each arrangement its row is drawn in —");
+{
+	const ask = () => ({ minPx: 260 });
+	const nothing = () => ({});
+	const four = {
+		dir: "row",
+		of: [
+			{ id: "a", height: 86, heights: { 1: 180 } },
+			{ id: "b", height: 86, heights: { 2: 140 } },
+			{ id: "c", height: 86 },
+			{ id: "d", height: 86 },
+		],
+	};
+	check(
+		"a row standing whole reads height",
+		laid(four, 1400, { ask }).of.map((one) => one.height),
+		[86, 86, 86, 86],
+	);
+	check(
+		"stacked, each reads its height for one across, else the nearest wider, else height",
+		laid(four, 700, { ask }).of.map((one) => one.height),
+		[180, 140, 86, 86],
+	);
+	check(
+		"and says how many stand across",
+		laid(four, 700, { ask }).of.map((one) => one.across),
+		[1, 1, 1, 1],
+	);
+
+	const whileStacked = withHeight(four, [0], 240, { drawnAs: { 0: { heightPx: 180, across: "1" } }, ask: nothing })
+		.of[0];
+	check(
+		"resized while stacked it writes that arrangement and leaves height alone",
+		[whileStacked.height, whileStacked.heights],
+		[86, { 1: 240 }],
+	);
+	const whileWhole = withHeight(four, [0], 120, { drawnAs: { 0: { heightPx: 86 } }, ask: nothing }).of[0];
+	check(
+		"resized in the whole row it writes height and keeps the others",
+		[whileWhole.height, whileWhole.heights],
+		[120, { 1: 180 }],
+	);
+
+	const board = {
+		dir: "row",
+		of: [
+			{ dir: "column", of: [{ id: "a", height: 90, heights: { 1: 200 } }, { id: "x" }] },
+			{ dir: "column", of: [{ id: "b" }] },
+		],
+	};
+	const elsewhere = movedInto(board, "a", { kind: "sibling", box: [1], at: 1 });
+	check(
+		"carried into another box it keeps height and drops the arrangements that box never had",
+		nodeAt(elsewhere, [1, 1]),
+		{ id: "a", height: 90 },
+	);
+	const reordered = movedInto(board, "a", { kind: "sibling", box: [0], at: 2 });
+	check("moved within its own box it keeps them", nodeAt(reordered, [0, 1]).heights, { 1: 200 });
+}
+
+console.log("\n— a gap stands between two siblings, never after the last —");
+{
+	const ask = () => ({ minPx: 260 });
+	const narrow = laid({ dir: "column", of: [{ dir: "row", of: [{ id: "a" }, { id: "b" }] }, { id: "c" }] }, 400, {
+		ask,
+	});
+	check(
+		"inside a stacked row only the widget with a sibling below leaves a gap",
+		narrow.of[0].of.map((one) => one.gapAfter > 0),
+		[true, false],
+	);
+	check("and a column's own last child leaves none", narrow.of[1].gapAfter, 0);
 }
 
 console.log("\n— and a node squeezed under its own floor answers the same way —");
 {
 	const nothing = () => ({});
 	const cell = { id: "one", ratio: 1 };
-	check("squeezed under the floor it goes under it", heldHeight(cell, { wantedPx: 10, ask: nothing, give: true }) < MIN_HEIGHT_PX, true);
-	check("but never by more than the give", heldHeight(cell, { wantedPx: 10, ask: nothing, give: true }) > MIN_HEIGHT_PX - GIVE_PX, true);
+	check(
+		"squeezed under the floor it goes under it",
+		heldHeight(cell, { wantedPx: 10, ask: nothing, give: true }) < MIN_HEIGHT_PX,
+		true,
+	);
+	check(
+		"but never by more than the give",
+		heldHeight(cell, { wantedPx: 10, ask: nothing, give: true }) > MIN_HEIGHT_PX - GIVE_PX,
+		true,
+	);
 	check("released it lands on the floor", heldHeight(cell, { wantedPx: 10, ask: nothing, give: false }), MIN_HEIGHT_PX);
-	check("and pulled taller it meets no ceiling at all", heldHeight(cell, { wantedPx: 900, ask: nothing, give: true }), 900);
+	check(
+		"and pulled taller it meets no ceiling at all",
+		heldHeight(cell, { wantedPx: 900, ask: nothing, give: true }),
+		900,
+	);
 }
 
 console.log("\n— and so does a sidebar at either end of its travel —");
@@ -476,18 +715,13 @@ console.log("\n— and the plugin's own sidebar squashes and springs back —");
 console.log("\n— and the give is handed back with a transition, never during the drag —");
 {
 	const seen = measured.eases;
-	check("a row eases its height", [seen.row.property, seen.row.loose], ["height", "0.2s"]);
 	check(
-		"a cell eases both the room it takes and the place it moves to",
+		"a cell eases the room it takes, the place it moves to and its height",
 		[seen.cell.property, seen.cell.loose],
-		["transform, flex-grow", "0.22s, 0.2s"],
+		["transform, flex-grow, height", "0.22s, 0.2s, 0.2s"],
 	);
 	check("a region eases its width", [seen.region.property, seen.region.loose], ["flex-basis", "0.2s"]);
-	check(
-		"and none of the three eases while the pointer is down",
-		[seen.row.held, seen.cell.held, seen.region.held],
-		["0s", "0s", "0s"],
-	);
+	check("and neither eases while the pointer is down", [seen.cell.held, seen.region.held], ["0s", "0s"]);
 }
 
 console.log("\n— in reading mode a press on a tile carries nothing —");
@@ -611,13 +845,21 @@ console.log("\n— a board of three regions stands side by side while there is r
 		1600 - 8 - 420 - 8 - SIDEBAR_PX,
 	);
 
-	check("dragging a sidebar narrower stops at its own minimum", widenedBox(THREE, 0, { wantedPx: 40, width: 1600, gap: 8 }), MIN_SIDEBAR_PX);
+	check(
+		"dragging a sidebar narrower stops at its own minimum",
+		widenedBox(THREE, 0, { wantedPx: 40, width: 1600, gap: 8 }),
+		MIN_SIDEBAR_PX,
+	);
 	check(
 		"and wider stops where the main would fall under its floor",
 		widenedBox(THREE, 0, { wantedPx: 2000, width: 1600, gap: 8 }),
 		1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX,
 	);
-	check("between the two it lands where the pointer asked", widenedBox(THREE, 0, { wantedPx: 360, width: 1600, gap: 8 }), 360);
+	check(
+		"between the two it lands where the pointer asked",
+		widenedBox(THREE, 0, { wantedPx: 360, width: 1600, gap: 8 }),
+		360,
+	);
 	check(
 		"the other sidebar is counted, not forgotten",
 		widenedBox(rootOf([side(), kept()]), 0, { wantedPx: 2000, width: 1600, gap: 8 }),
@@ -639,7 +881,11 @@ console.log("\n— a board of three regions stands side by side while there is r
 		hidden: [0],
 		alone: [],
 	});
-	check("a drawer takes its width from the screen, not from the width the region was dragged to", drawerWidth(390), 320);
+	check(
+		"a drawer takes its width from the screen, not from the width the region was dragged to",
+		drawerWidth(390),
+		320,
+	);
 	check("a wider phone gets a wider drawer, still the same share", drawerWidth(430), 353);
 	check("and a tablet stops at the ceiling instead of eating the screen", drawerWidth(834), DRAWER_MAX_PX);
 	check("as does a desktop", drawerWidth(1728), DRAWER_MAX_PX);
@@ -657,7 +903,11 @@ console.log("\n— a board of three regions stands side by side while there is r
 		columnsOf(folded, 1600, 8).beside[0].width,
 		1600 - 8 - SIDEBAR_PX,
 	);
-	check("a folded sidebar is no longer counted against a drag", widenedBox(folded, 2, { wantedPx: 2000, width: 1600, gap: 8 }), 1600 - 8 - MAIN_FLOOR_PX);
+	check(
+		"a folded sidebar is no longer counted against a drag",
+		widenedBox(folded, 2, { wantedPx: 2000, width: 1600, gap: 8 }),
+		1600 - 8 - MAIN_FLOOR_PX,
+	);
 	check(
 		"folding both leaves the main alone",
 		sides(columnsOf(rootOf([side({ folded: true }), kept(), side({ folded: true })]), 1600, 8)),
@@ -668,9 +918,6 @@ console.log("\n— a board of three regions stands side by side while there is r
 		sides(columnsOf(folded, SIDEBAR_PX + MAIN_FLOOR_PX + 8, 8)),
 		["main", "right"],
 	);
-	check("both sidebars are toggleable, the main is not", foldableIn(THREE), [0, 2]);
-	check("a folded sidebar still offers its toggle — nothing else would bring it back", foldableIn(folded), [0, 2]);
-	check("a region that holds no rows offers none", foldableIn(rootOf([kept()])), []);
 
 	const bare = rootOf([side([]), kept([]), side([])]);
 	check(
@@ -678,115 +925,62 @@ console.log("\n— a board of three regions stands side by side while there is r
 		sides(columnsOf(bare, 1600, 8)),
 		["left", "main", "right"],
 	);
-	check("and it still offers its toggle", foldableIn(bare), [0, 2]);
 	check("a box that keeps the board standing is the one the sides are measured from", keptAt(THREE), 1);
 }
 
-function toggleChecks() {
-	console.log("\n— the two toggles stand on the board's own bar and fold a sidebar away —");
-	const { togglesOpen, openSides, foldedLeft, togglesFolded, unfoldedLeft, pressedEdit, soloBar } = measured;
-	check("the board drew both toggles and nothing else", [togglesOpen.left, togglesOpen.right].map(Boolean), [
-		true,
-		true,
+function chromeChecks() {
+	console.log("\n— the board draws no bar of its own, and its regions toggled always are offered to the header —");
+	const { chromeless, openSides, foldedLeft, unfoldedLeft, soloChrome } = measured;
+	const HIDE_LEFT = { key: "box:collapse:0/open", isOn: true, title: "Hide the left panel" };
+	const SHOW_LEFT = { key: "box:collapse:0/open", isOn: false, title: "Show the left panel" };
+	const HIDE_RIGHT = { key: "box:collapse:2/open", isOn: true, title: "Hide the right panel" };
+	check("the board with sidebars draws no bar and no toggle", chromeless.chrome, 0);
+	check("so its first region starts at the top of the page", chromeless.regionFromTop, 0);
+	check("a board with no sidebar draws none either", soloChrome, 0);
+	check("while both sidebars stand, the header is offered each of them as on", chromeless.actions, [
+		HIDE_LEFT,
+		HIDE_RIGHT,
 	]);
-	if (!togglesOpen.left || !togglesOpen.right) return;
-	check(
-		"both stand on the board's own first line, not over a tile",
-		[togglesOpen.left.fromTop, togglesOpen.right.fromTop],
-		[0, 0],
-	);
-	check(
-		"one sits at the left edge, the other at the right",
-		[togglesOpen.left.nearestCorner, togglesOpen.right.nearestCorner],
-		[0, 0],
-	);
-	check("the bar ends where the first row begins", togglesOpen.barBottom <= togglesOpen.firstRowTop, true);
-	check(
-		"each drew a real icon, not an empty box",
-		[togglesOpen.left.painted > 8, togglesOpen.right.painted > 8],
-		[true, true],
-	);
-	check(
-		"both are the kit's own control, not a hand-rolled one",
-		[togglesOpen.left.fromKit, togglesOpen.right.fromKit],
-		[true, true],
-	);
-	check("each wears the raised face the kit reserves for white", togglesOpen.left.face, togglesOpen.right.face);
-	check(
-		"and that face carries a rim, which is what tells it from the page behind it",
-		togglesOpen.left.rim.includes("inset"),
-		true,
-	);
-	check("an open sidebar reads as pressed", [togglesOpen.left.pressed, togglesOpen.right.pressed], ["true", "true"]);
-	check(
-		"and both are visible with no pointer anywhere near them",
-		[togglesOpen.left.shown, togglesOpen.right.shown],
-		[1, 1],
-	);
 	check(
 		"all three regions stand before the press",
 		openSides.regions.map((one) => one.name),
 		["left", "main", "right"],
 	);
+	check("pressing the left action writes it folded", foldedLeft.folded, true);
 	check(
-		"pressing the left toggle takes the left region off the board",
-		foldedLeft.regions.map((one) => one.name),
+		"and takes the left region off the board",
+		foldedLeft.regions?.map((one) => one.name),
 		["main", "right"],
 	);
+	if (!foldedLeft.regions) return;
 	check(
 		"the main grew by exactly what the sidebar held",
 		foldedLeft.regions[0].right - foldedLeft.regions[0].left,
 		openSides.regions[1].right - openSides.regions[1].left + (openSides.regions[1].left - openSides.regions[0].left),
 	);
 	check("the board still does not scroll sideways", foldedLeft.scrollWidth <= foldedLeft.clientWidth + 1, true);
-	check("the folded toggle stays on screen", togglesFolded.left.shown, 1);
-	check("it no longer reads as pressed", togglesFolded.left.pressed, "false");
-	check("and it still stands at the same edge", togglesFolded.left.nearestCorner, 0);
-	check("the other one was not touched", togglesFolded.right.pressed, "true");
-
-	check("the bar carries the edit toggle beside the folds", Boolean(togglesOpen.edit), true);
-	check("it stands on the board's own first line too", togglesOpen.edit.fromTop, 0);
-	check(
-		"and it is the kit's control, drawn with a real icon",
-		[togglesOpen.edit.fromKit, togglesOpen.edit.painted > 8],
-		[true, true],
-	);
-	check(
-		"a reader is offered the way into edit mode",
-		[pressedEdit.resting.board, pressedEdit.resting.pressed, pressedEdit.resting.label],
-		[false, "false", "Widgetarium: enter edit mode"],
-	);
-	check(
-		"pressing it puts the board in edit mode, and says so",
-		[pressedEdit.on.board, pressedEdit.on.pressed, pressedEdit.on.label],
-		[true, "true", "Widgetarium: leave edit mode"],
-	);
-	check(
-		"and it is lit while it holds, not left looking like its neighbours",
-		pressedEdit.on.face !== pressedEdit.resting.face,
-		true,
-	);
-	check("pressing it again leaves edit mode", pressedEdit.off, pressedEdit.resting);
-	check("a board with no sidebar at all still carries the toggle", soloBar, { drawn: true, toggles: ["edit", "page"] });
+	check("the same action now reads off, and the right one is untouched", foldedLeft.actions, [SHOW_LEFT, HIDE_RIGHT]);
 	check(
 		"a folded sidebar keeps its widgets mounted, or every ref they offer dies with them",
 		measured.mountedFolded.tiles,
 		measured.mountedOpen.tiles,
 	);
 	check("and they are still drawn, not emptied husks", measured.mountedFolded.painted, measured.mountedOpen.painted);
+	check("pressing it again writes the region unfolded", unfoldedLeft.folded, false);
 	check(
-		"pressing it again brings the sidebar back",
-		unfoldedLeft.regions.map((one) => one.name),
+		"and brings the sidebar back",
+		unfoldedLeft.regions?.map((one) => one.name),
 		["left", "main", "right"],
 	);
 	check(
 		"at the width it had before it went",
-		unfoldedLeft.regions[0].right - unfoldedLeft.regions[0].left,
+		unfoldedLeft.regions ? unfoldedLeft.regions[0].right - unfoldedLeft.regions[0].left : null,
 		openSides.regions[0].right - openSides.regions[0].left,
 	);
+	check("and the action reads on again", unfoldedLeft.actions, [HIDE_LEFT, HIDE_RIGHT]);
 }
 
-toggleChecks();
+chromeChecks();
 
 console.log("\n— carrying a tile puts it where it was aimed, and prunes what it left —");
 {
@@ -810,38 +1004,79 @@ console.log("\n— carrying a tile puts it where it was aimed, and prunes what i
 		"a@0/1",
 		"c@0/2",
 	]);
-	check("and the box it emptied is gone with it", nodeAt(movedInto(board, "a", { kind: "beside", box: [1], at: 1 }), [0]).dir, "row");
+	check(
+		"and the box it emptied is gone with it",
+		nodeAt(movedInto(board, "a", { kind: "beside", box: [1], at: 1 }), [0]).dir,
+		"row",
+	);
 	check("dropped at the head of a box it stands first", at(movedInto(board, "c", { kind: "beside", box: [], at: 0 })), [
 		"c@0",
 		"a@1",
 		"b@2",
 	]);
-	check("a box left holding one tile becomes that tile", nodeAt(movedInto(board, "c", { kind: "beside", box: [], at: 0 }), [2]).id, "b");
-	check("it carries its own weight along", nodeAt(movedInto(board, "c", { kind: "beside", box: [], at: 0 }), [0]).ratio, 2);
-	check("a tile nobody is holding moves nothing", at(movedInto(board, "nobody", { kind: "beside", box: [], at: 0 })), at(board));
+	check(
+		"a box left holding one tile becomes that tile",
+		nodeAt(movedInto(board, "c", { kind: "beside", box: [], at: 0 }), [2]).id,
+		"b",
+	);
+	check(
+		"it carries its own weight along",
+		nodeAt(movedInto(board, "c", { kind: "beside", box: [], at: 0 }), [0]).ratio,
+		2,
+	);
+	check(
+		"a tile nobody is holding moves nothing",
+		at(movedInto(board, "nobody", { kind: "beside", box: [], at: 0 })),
+		at(board),
+	);
 	check("and no target moves nothing either", at(movedInto(board, "a", null)), at(board));
 
 	const wrapped = movedInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "after" });
 	check("aimed across the grain it wraps the tile it landed on", at(wrapped), ["b@0/0/0", "a@0/0/1", "c@0/1"]);
 	check("in a box of the direction it was aimed at", nodeAt(wrapped, [0, 0]).dir, "column");
 	check("which takes over the slot's own share", nodeAt(wrapped, [0, 0]).ratio, 1);
-	check("and dropped before, it stands first", at(movedInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "before" })), [
-		"a@0/0/0",
-		"b@0/0/1",
-		"c@0/1",
-	]);
-	check("wrapping the very tile being carried moves nothing", at(movedInto(board, "a", { kind: "wrap", path: [0], axis: "row", side: "after" })), at(board));
+	check(
+		"and dropped before, it stands first",
+		at(movedInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "before" })),
+		["a@0/0/0", "b@0/0/1", "c@0/1"],
+	);
+	check(
+		"wrapping the very tile being carried moves nothing",
+		at(movedInto(board, "a", { kind: "wrap", path: [0], axis: "row", side: "after" })),
+		at(board),
+	);
 
-	const region = rootOf([side([]), kept([{ id: "a", ratio: 1 }, { id: "b", ratio: 1 }]), side([])]);
+	const region = rootOf([
+		side([]),
+		kept([
+			{ id: "a", ratio: 1 },
+			{ id: "b", ratio: 1 },
+		]),
+		side([]),
+	]);
 	const across = movedInto(region, "a", { kind: "beside", box: [0], at: 0 });
 	check("a tile carried into an empty sidebar arrives there", at(across), ["a@0/0", "b@1/0"]);
 	check("and the region it came from keeps the rest", nodeAt(across, [1]).of.length, 1);
-	check("a region emptied by the carry is still a region", nodeAt(movedInto(region, "a", { kind: "beside", box: [2], at: 0 }), [1]).keep, true);
-	const leafAside = { dir: "row", of: [{ id: "a", ratio: 1 }, { dir: "column", keep: true, of: [{ id: "M", ratio: 1 }] }] };
+	check(
+		"a region emptied by the carry is still a region",
+		nodeAt(movedInto(region, "a", { kind: "beside", box: [2], at: 0 }), [1]).keep,
+		true,
+	);
+	const leafAside = {
+		dir: "row",
+		of: [
+			{ id: "a", ratio: 1 },
+			{ dir: "column", keep: true, of: [{ id: "M", ratio: 1 }] },
+		],
+	};
 	const ontoLeaf = movedInto(leafAside, "M", { kind: "beside", box: [0], at: 0 });
 	check("a drop aimed at a path that holds no box keeps the tile it was carrying", at(ontoLeaf), at(leafAside));
 	check("and the board comes back untouched, not half-emptied", JSON.stringify(ontoLeaf), JSON.stringify(leafAside));
-	check("a box that cannot take a tile says so rather than answering with the tree it was given", insertedAt(leafAside, [0], 0, { id: "x" }), null);
+	check(
+		"a box that cannot take a tile says so rather than answering with the tree it was given",
+		insertedAt(leafAside, [0], 0, { id: "x" }),
+		null,
+	);
 
 	check("a tile taken off the board leaves no empty box behind", at(withoutLeaf(board, "a")), ["b@0/0", "c@0/1"]);
 	check("and taking the last of a box takes the box", at(withoutLeaf(withoutLeaf(board, "b"), "c")), ["a@0"]);
@@ -892,9 +1127,17 @@ console.log("\n— and the aim reads the pointer against the boxes it is over �
 	check("the deepest box under the pointer is the one that answers", aimedAt(spots, 300, 50).box, [0]);
 	check("an empty box answers with its only slot", aimedAt([spots[0]], 300, 50), { kind: "beside", box: [], at: 0 });
 	check("and a pointer over nothing aims at nothing", aimedAt(spots, 300, 900), null);
-	check("two aims at the same slot are the same aim", sameTarget(aimedAt(spots, 200, 50), aimedAt(spots, 100, 50)), true);
+	check(
+		"two aims at the same slot are the same aim",
+		sameTarget(aimedAt(spots, 200, 50), aimedAt(spots, 100, 50)),
+		true,
+	);
 	check("and two at different slots are not", sameTarget(aimedAt(spots, 200, 50), aimedAt(spots, 400, 50)), false);
-	check("a wrap and a drop beside are never the same aim", sameTarget(aimedAt(spots, 300, 6), aimedAt(spots, 300, 50)), false);
+	check(
+		"a wrap and a drop beside are never the same aim",
+		sameTarget(aimedAt(spots, 300, 6), aimedAt(spots, 300, 50)),
+		false,
+	);
 }
 
 console.log("\n— a tile travels at a speed, so a long move is not a teleport —");
@@ -961,7 +1204,7 @@ console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from 
 		emptyOpen.left?.fill,
 		"rgb(227, 227, 227)",
 	);
-	check("a reader keeps the folds, the way into edit mode and the way to a page", emptyResting.toggles, ["left", "edit", "page", "right"]);
+	check("a reader's board draws no chrome of its own either", emptyResting.chrome, 0);
 
 	check("the probe reached the catalogue", addedIntoRight.failed ?? null, null);
 	check("pressing a region's zone opens the catalogue", addedIntoRight.opened, 1);
@@ -973,6 +1216,23 @@ console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from 
 
 console.log("\n— a column inside a row: the thing the three regions could not say —");
 {
+	const stacked = measured.stacked;
+	check("a row carrying an old height is drawn", stacked.drawn, true);
+	check("too narrow for two, it is drawn as a column", stacked.dir, "column");
+	check("each widget in it stands at the height the row had", stacked.heights, [86, 86]);
+	check("the row ends where its last widget ends", stacked.rowBottom, stacked.lastBottom);
+	check("a stacked row draws no grip of its own under it", stacked.rowGrips, 0);
+	check("every widget in it says it stands one across, a divider's axis beside it included", stacked.standsAcross, [
+		"1",
+		"1",
+	]);
+	check("its last widget's grip is there, taking no room", stacked.lastGrip, [1, 0]);
+	check(
+		"and the widget below it starts under the last of them rather than over it",
+		stacked.boardTop >= stacked.lastBottom,
+		true,
+	);
+
 	const seen = measured.nested;
 	const after = measured.unnested;
 	check("the board drew at all", seen.drawn, true);
@@ -983,7 +1243,7 @@ console.log("\n— a column inside a row: the thing the three regions could not 
 	check("the wide tile stands beside them, not over them", seen.beside, 1);
 	check("the column is inside the row it belongs to", seen.withinRow, true);
 	check("two to one, within a pixel", Math.abs(seen.shares[0] / seen.shares[1] - 2) < 0.02, true);
-	check("and the gap between them is the gap the layout counted", seen.spare, GAP_PX);
+	check("and the gap between them is the step of a row one box under its region", seen.spare, STEP_PX[1]);
 	check("the nesting survives being written back", JSON.parse(seen.written), {
 		dir: "row",
 		of: [
@@ -996,7 +1256,13 @@ console.log("\n— a column inside a row: the thing the three regions could not 
 						dir: "row",
 						of: [
 							{ id: "board", ratio: 2, height: 420 },
-							{ dir: "column", of: [{ id: "views", height: 180 }, { id: "wynttpz", height: 220 }] },
+							{
+								dir: "column",
+								of: [
+									{ id: "views", height: 180 },
+									{ id: "wynttpz", height: 220 },
+								],
+							},
 						],
 					},
 				],
@@ -1025,9 +1291,14 @@ console.log("\n— a column inside a row: the thing the three regions could not 
 	check("and every tile is still on the board", after.rows[0], ["board", "views", "boards", "wynttpz"]);
 	check("with one write per press and not one more", after.writes, 4);
 
+	const fill = measured.screenFill;
+	check("a screen board is on the page at all", fill.failed ?? null, null);
+	check("a screen board claims the window height less the host's chrome", fill.root, fill.viewport - 192);
+	check("and the tree inside it claims the same, so the regions reach the bottom", fill.page, fill.root);
+
 	const grips = measured.nestedGrips;
 	check("the nested box carries grips of its own", grips.failed ?? null, null);
-	check("dragging the grip inside the nested row moves the boundary while it is held", grips.heldWidth, 541);
+	check("dragging the grip inside the nested row moves the boundary while it is held", grips.heldWidth, 536);
 	check("and it does not jump back on release", grips.after.board, grips.heldWidth);
 	check("the ratios it wrote are the two it holds, and they still weigh three", grips.ratios, [1.46, 1.54]);
 	check("the strip inside the nested column writes a height", grips.nestedHeight, 96);
@@ -1103,6 +1374,12 @@ if (measured.failures.length > 0) {
 	failed += measured.failures.length;
 	for (const failure of measured.failures) console.log(`!! the page logged: ${failure}`);
 }
+
+const heldToAMeasure = laid({ dir: "column", measure: 720, of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
+const filling = laid({ dir: "column", of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
+check("a box declaring a measure carries it into the laid node", heldToAMeasure.measure, 720);
+check("a box declaring none carries none", filling.measure, undefined);
+check("a measure never changes how wide the box is laid", [heldToAMeasure.width, filling.width], [1400, 1400]);
 
 console.log(failed ? `\n${failed} widths the tree got wrong` : "\nfour widgets, five widths, nothing vanished");
 process.exit(failed ? 1 : 0);

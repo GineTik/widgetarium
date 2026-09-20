@@ -22,7 +22,10 @@ render(
 		registry,
 		host: { platform: "obsidian", can: {}, ui: { notify() {}, renderMarkdown: () => () => {} } },
 		mode: "browse",
-		available: Object.entries(TITLES).map(([id, title]) => ({ manifest: { id, title, defaultSize: { w: 3, h: 2 } }, installed: false })),
+		available: Object.entries(TITLES).map(([id, title]) => ({
+			manifest: { id, title, defaultSize: { w: 3, h: 2 } },
+			installed: false,
+		})),
 		templates: TEMPLATES,
 		onUseTemplate: async () => ({ ok: true }),
 	}),
@@ -39,7 +42,9 @@ setTimeout(() => {
 			regions: regions.map((node) => Math.round(node.getBoundingClientRect().width)),
 			labels: cells.map((node) => node.textContent),
 			clipped: cells.filter((node) => node.scrollWidth > node.clientWidth + 1).map((node) => node.textContent),
-			rows: [...document.querySelectorAll(".wg-tpl-row")].map((node) => Math.round(node.getBoundingClientRect().height)),
+			rows: [...document.querySelectorAll(".wg-tpl-row")].map((node) =>
+				Math.round(node.getBoundingClientRect().height),
+			),
 			shelf: [...document.querySelectorAll(".wg-cat-shelf button")].map((node) => node.textContent),
 			narrowers: document.querySelectorAll(".wg-cat-shown, .wg-cat-size").length,
 			buttonGap: (() => {

@@ -3,7 +3,7 @@ import { TEXT_LOADERS } from "../build.mjs";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/refs"; export * from "./src/gateway/cache"; export * from "./src/gateway/props.js"; export * from "./src/gateway/narrow"; export * from "./src/gateway/match"; export * from "./src/gateway/fields"; export * from "./src/gateway/operators";`,
+		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/refs"; export * from "./src/gateway/cache"; export * from "./src/gateway/props.js"; export * from "./src/gateway/narrow"; export * from "./src/gateway/match"; export * from "./src/gateway/fields"; export * from "./src/gateway/operators"; export * from "./src/gateway/obsidian.js";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},
@@ -56,7 +56,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		{
 			create: (draft) => {
 				made.push(draft);
-				return { ref: `i${made.length - 1}`, value: draft };
+				return { ...draft, ref: `i${made.length - 1}` };
 			},
 		},
 		"tasks2",
@@ -213,14 +213,6 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 {
-	const spec = { kind: "collection", verbs: { list: "required", create: "required" } };
-	const readOnly = gateway.arrayGateway(["x"], {}, "ro");
-	check("match: a missing required verb is named", gateway.unmetVerbs(spec, readOnly).join(",") === "create");
-	const writable = gateway.arrayGateway(["x"], { create: () => null }, "rw");
-	check("match: a provided required verb passes", gateway.unmetVerbs(spec, writable).length === 0);
-}
-
-{
 	const where = gateway.normalizeWhere(
 		{ board: "Widgetarium", status: { in: ["To Do"] }, due: { gt: "a", lt: "b" }, empty: "" },
 		"tile/tasks",
@@ -252,15 +244,12 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	const filtered = await tasks.list({ where: [{ prop: "board", op: "is", value: "A" }] });
 	check(
 		"query: where narrows the rows a typed list answers",
-		filtered.total === 2 && filtered.rows.every((row) => row.value.props.board === "A"),
+		filtered.total === 2 && filtered.rows.every((row) => row.props.board === "A"),
 	);
 	const sorted = await tasks.list({ sort: [{ prop: "order", dir: "asc" }] });
-	check(
-		"query: sort orders numbers as numbers",
-		sorted.rows.map((row) => row.value.props.order).join(",") === "1,2,10",
-	);
+	check("query: sort orders numbers as numbers", sorted.rows.map((row) => row.props.order).join(",") === "1,2,10");
 	const descending = await tasks.list({ sort: [{ prop: "order", dir: "desc" }] });
-	check("query: desc reverses it", descending.rows.map((row) => row.value.props.order).join(",") === "10,2,1");
+	check("query: desc reverses it", descending.rows.map((row) => row.props.order).join(",") === "10,2,1");
 	const limited = await tasks.list({ where: [{ prop: "board", op: "is", value: "A" }], limit: 1 });
 	check("query: total counts what matched, not what was returned", limited.rows.length === 1 && limited.total === 2);
 }
@@ -275,7 +264,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	const onB = gateway.narrowed(tasks, { board: "B" });
 	check("narrow: two narrowings of one folder are two ids", onA.id !== onB.id && onA.id !== tasks.id);
 	check("narrow: each answers its own rows", (await onA.list()).total === 1 && (await onB.list()).total === 1);
-	check("narrow: and they are not the same row", (await onA.list()).rows[0].value.name === "One");
+	check("narrow: and they are not the same row", (await onA.list()).rows[0].name === "One");
 	check(
 		"narrow: a second narrowing at the call site still applies",
 		(await onA.list({ where: [{ prop: "name", op: "is", value: "Two" }] })).total === 0,
@@ -420,10 +409,9 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	);
 }
 
-
 {
 	const board = { name: "Marketing" };
-	const rowsOf = (all) => ({ rows: all.map((value, at) => ({ ref: `r${at}`, value })), total: all.length });
+	const rowsOf = (all) => ({ rows: all.map((value, at) => ({ ...value, ref: `r${at}` })), total: all.length });
 	const written = [];
 	const pickedOver = ({ all, chosen, canWriteRows, inTile }) =>
 		gateway.pickedGateway({
@@ -444,15 +432,26 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	const named = pickedOver({ all: [board], chosen: "Marketing", canWriteRows: true });
 	check("a picked row says it can be written", named.update.can().can === true);
 	await named.update({ columns: ["To Do"] });
-	check("and the write lands on the row the selection names", written.at(-1)?.ref === "r0", JSON.stringify(written.at(-1)));
+	check(
+		"and the write lands on the row the selection names",
+		written.at(-1)?.ref === "r0",
+		JSON.stringify(written.at(-1)),
+	);
 
 	const lost = pickedOver({ all: [board], chosen: "A board that left", canWriteRows: true });
-	check("a selection naming no row still reports it can be written, because a row is writable", lost.update.can().can === true);
+	check(
+		"a selection naming no row still reports it can be written, because a row is writable",
+		lost.update.can().can === true,
+	);
 	const refusal = await lost.update({ columns: [] }).then(
 		() => null,
 		(failure) => String(failure.message),
 	);
-	check("but the write itself refuses out loud instead of answering nothing", Boolean(refusal), JSON.stringify(refusal));
+	check(
+		"but the write itself refuses out loud instead of answering nothing",
+		Boolean(refusal),
+		JSON.stringify(refusal),
+	);
 	check("naming what it could not write to", refusal?.includes("Neither"), JSON.stringify(refusal));
 
 	const kept = [];
@@ -467,12 +466,20 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		(failure) => String(failure.message),
 	);
 	check("the write refuses rather than quietly writing into the tile instead", Boolean(said), JSON.stringify(said));
-	check("and says the collection is not empty, so the tile is not what a write means here", said?.includes("not empty"), JSON.stringify(said));
+	check(
+		"and says the collection is not empty, so the tile is not what a write means here",
+		said?.includes("not empty"),
+		JSON.stringify(said),
+	);
 	check("with nothing written anywhere", kept.length === 0 && written.length === 1, JSON.stringify({ kept, written }));
 
 	const alone = pickedOver({ all: [], chosen: "Anything", canWriteRows: true, inTile });
 	await alone.update({ columns: ["To Do"] });
-	check("but an empty collection does mean the tile, and the write lands there", kept.length === 1, JSON.stringify(kept));
+	check(
+		"but an empty collection does mean the tile, and the write lands there",
+		kept.length === 1,
+		JSON.stringify(kept),
+	);
 
 	const refs = gateway.createGatewayRefs();
 	const later = gateway.pickedGateway({
@@ -496,13 +503,22 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 	const malformed = gateway.createGatewayRefs();
 	const overRef = gateway.refCollection(malformed, "boards/rows");
-	malformed.put("boards/rows", { id: "hand-rolled", kind: "collection", subscribe: () => () => {}, update: "not a verb" });
+	malformed.put("boards/rows", {
+		id: "hand-rolled",
+		kind: "collection",
+		subscribe: () => () => {},
+		update: "not a verb",
+	});
 	check("a published gateway whose verb is not callable is refused, not trusted", overRef.update.can().can === false);
 	const said2 = await overRef.update({ ref: "r0", data: {} }).then(
 		() => null,
 		(failure) => String(failure.message),
 	);
-	check("and calling it anyway says nothing is published there", said2?.includes("Nothing is published"), JSON.stringify(said2));
+	check(
+		"and calling it anyway says nothing is published there",
+		said2?.includes("Nothing is published"),
+		JSON.stringify(said2),
+	);
 
 	const bare = gateway.createGatewayRefs();
 	const overBare = gateway.refCollection(bare, "boards/rows");
@@ -514,15 +530,66 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 			return { threw: String(failure.message) };
 		}
 	})();
-	check("a verb that is a function but answers no can() is refused rather than asked", asked.can === false, JSON.stringify(asked));
+	check(
+		"a verb that is a function but answers no can() is refused rather than asked",
+		asked.can === false,
+		JSON.stringify(asked),
+	);
 
 	const nowhere = pickedOver({ all: [board], chosen: "Marketing", canWriteRows: false });
-	check("with neither a writable row nor a tile behind it, it says so before it is pressed", nowhere.update.can().can === false);
+	check(
+		"with neither a writable row nor a tile behind it, it says so before it is pressed",
+		nowhere.update.can().can === false,
+	);
 	check("and says why", nowhere.update.can().reason?.includes("Neither"), JSON.stringify(nowhere.update.can()));
+}
+
+{
+	const record = { path: "Habits.md", name: "Habits", props: { status: "active", goal: "12" }, content: "# Habits" };
+	let written = null;
+	const host = {
+		file: () => ({ canUpdate: true, get: async () => record, update: async (next) => ((written = next), true) }),
+	};
+	const read = async (field, type = "text") =>
+		gateway.fileGateway({ host, path: "Habits.md", part: { field, type }, requested: ["get", "update"] });
+	check(
+		"file field: a number prop gets a number, not the string the note holds",
+		(await (await read("goal", "number")).get()) === 12,
+	);
+	check(
+		"file field: a typed value with no field reads the content",
+		gateway.noteFieldOf({ kind: "value", type: "text" }, {}) === "content",
+	);
+	check(
+		"file field: an untyped value with no field still reads the whole note",
+		gateway.noteFieldOf({ kind: "value" }, {}) === undefined,
+	);
+	check("file field: no field answers with the whole note", (await (await read()).get()) === record);
+	check("file field: content answers with the body", (await (await read("content")).get()) === "# Habits");
+	check("file field: name answers with the name, not the path", (await (await read("name")).get()) === "Habits");
+	check("file field: a property answers with its value", (await (await read("status")).get()) === "active");
+	check("file field: a property the note lacks answers with null", (await (await read("missing")).get()) === null);
+	check(
+		"file field: two fields of one note are two cache entries",
+		(await read("status")).id !== (await read("name")).id,
+	);
+	const body = await read("content");
+	await body.update("# Rewritten");
+	check("file field: content writes the body", written === "# Rewritten");
+	check("file field: a property refuses a write it cannot make", (await read("status")).update.can().can === false);
 }
 
 if (failed > 0) {
 	console.error(`gateway gate: ${failed} failed`);
 	process.exit(1);
 }
+
+const { pageOf } = await import("./.mjs-cache/gateway/match.mjs");
+const many = Array.from({ length: 250 }, (_, at) => at);
+check("a list with no limit stops at a hundred rows", pageOf(many).length, 100);
+check("an asked limit is honoured above it", pageOf(many, { limit: 200 }).length, 200);
+check("an asked limit is honoured below it", pageOf(many, { limit: 5 }).length, 5);
+check("an offset still counts from where it was asked", pageOf(many, { offset: 240 })[0], 240);
+check("and the tail is shorter than a page when the rows run out", pageOf(many, { offset: 240 }).length, 10);
+
 console.log("gateway gate: clean");

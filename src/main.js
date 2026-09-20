@@ -1,8 +1,13 @@
 import { Plugin, parseYaml, stringifyYaml, TFile, TFolder, Notice, MarkdownRenderChild, Platform, requestUrl } from "obsidian";
+import { createHeaderActions } from "./header-actions.js";
+
+const EDIT_TITLE = { on: "Leave Widgetarium edit mode", off: "Edit the Widgetarium board" };
 import { createElement as h } from "react";
 import { render } from "./engine/render.js";
 import { WidgetSurface } from "./surface.js";
-import { WidgetRegistry, buildWidget } from "./registry.js";
+import { WidgetRegistry, buildWidget, declaredName } from "./registry.js";
+import { sourceFileIn } from "./engine/widget-build.js";
+import { scopeOf } from "./engine/widget-source.js";
 import { REACT_SURFACE_SOURCE } from "widgetarium:surface";
 import { createHost, bindNote } from "./host.js";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "./paths.js";
@@ -10,7 +15,7 @@ import { normalizeBoard, placedIds, serializeBoard } from "./model.js";
 import { shieldFromEditor } from "./editor-shield.js";
 import { mountKeyFor } from "./mount-key.js";
 import { trace, traceSub, setTracing, tracing, measure, spentSoFar, forgetSpent } from "./trace.js";
-import { findBlocks, replaceBlock } from "./block-writer.js";
+import { findBlocks, replaceBlock, writeInEditor } from "./block-writer.js";
 import { createShapeStore, shapesOf } from "./shapes.js";
 import { openCatalogue } from "./catalogue-dialog.js";
 import { createInstaller } from "./installer.js";
@@ -19,7 +24,8 @@ import { normalizeRules, activeRules, ruleBlock } from "./substitution.js";
 import { substituteIn } from "./inline-render.js";
 import { blockRefusal } from "./version.js";
 import { createBoardNote, insertBoardAtCursor, isScreenNote } from "./board-note.js";
-import { TEMPLATES, missingWidgets, templateBoard } from "./templates.js";
+import { TEMPLATES, templateBoard, templateWidgets, widgetsNamedBy } from "./templates.js";
+import { createWantedWidgets } from "./engine/widgets-wanted.js";
 import { createAssistant } from "./ai/assistant.js";
 import { AI_VIEW_TYPE, AssistantView } from "./ai/view.js";
 import { WidgetariumSettingTab } from "./ai/settings-tab.js";
@@ -31,7 +37,31 @@ const WIDGET_POLL_MS = 1000;
 const BOARD_REFUSED = "Widgetarium: the board was not created — {reason}";
 const OFFERS_REFUSED = "Widgetarium: the widget catalogue could not be read — {reason}";
 const BOARD_NOT_INSERTED = "Widgetarium: this note has a code fence that was never closed, so there is nowhere safe to put a board. Close the fence and try again.";
-const WIDGET_NOT_OFFERED = "no catalogue offers {widget}, so this template cannot be built here";
+const CARD_NOT_COMPARED = "[widgetarium] the card of {widget} could not be compared with its code, so the install goes on without that check:";
+
+function declaredManifestOf(held) {
+	const name = sourceFileIn(held.files);
+	const scope = scopeOf(held.record.id);
+	try {
+		const component = buildWidget({
+			manifest: held.record,
+			code: held.files[name],
+			path: `${held.record.id}/${name}`,
+			lib: held.scope?.["lib.js"],
+			libPath: `${scope}/lib.js`,
+			scope,
+		});
+		return component.manifest ?? null;
+	} catch (failure) {
+		console.warn(CARD_NOT_COMPARED.replace("{widget}", held.record.id), failure);
+		return null;
+	}
+}
+
+const INSTALLED_AT = "Widgetarium: installed {widget} at {commit}";
+const INSTALLED_BESIDE = "Widgetarium: {widget} at {commit} changed what its tiles hold, so it was installed beside the version they use";
+const INSTALL_AT_REFUSED = "Widgetarium: {widget} was not installed — {why}";
+const WIDGETS_FETCHED = "Widgetarium: fetched {widgets}";
 
 // CONTEXT: an offer that cannot be drawn is a name; one that can is the widget itself
 export function drawable(entry) {
@@ -73,6 +103,18 @@ export default class WidgetariumPlugin extends Plugin {
 		const startedAt = performance.now();
 		this.editing = false;
 		this.mounts = new Map();
+		this.header = createHeaderActions({
+			app: this.app,
+			mounts: () => this.mounts.values(),
+			editAction: () => ({
+				key: "edit",
+				icon: "pencil",
+				title: this.editing ? EDIT_TITLE.on : EDIT_TITLE.off,
+				isOn: this.editing,
+				press: () => this.toggleEditing(),
+			}),
+		});
+		this.registerEvent(this.app.workspace.on("layout-change", () => this.header.sync()));
 		this.registry = new WidgetRegistry(this.app, REACT_SURFACE_SOURCE);
 		this.shapeAnswers = {};
 		this.shapes = createShapeStore({
@@ -124,15 +166,21 @@ export default class WidgetariumPlugin extends Plugin {
 			blocked: this.rules.filter(ruleBlock).map((rule) => `${rule.id} (${ruleBlock(rule)})`),
 			widgets: this.rules.map((rule) => rule.widget),
 		}));
-		// CONTEXT: the open note was drawn against an empty rule list while those awaits ran
-		measure("onload · rerenderNotes", () => this.rerenderNotes());
 		this.installer = createInstaller({
 			adapter: this.app.vault.adapter,
 			fetchJson: (url) => requestUrl({ url }).then((answer) => answer.json),
 			fetchText: (url) => requestUrl({ url }).then((answer) => answer.text),
 			disk: diskDoor(),
 			readAdded: () => this.addedRegistries(),
+			declaredIn: declaredManifestOf,
 		});
+		this.wanted = createWantedWidgets({
+			isHeld: (id) => Boolean(this.registry.get(id)),
+			installOne: async (id) => this.installer.installAt(id, await this.offers()),
+			reread: () => this.rereadWidgets(),
+			onInstalled: (ids) => new Notice(WIDGETS_FETCHED.replace("{widgets}", ids.join(", "))),
+		});
+		measure("onload · rerenderNotes", () => this.rerenderNotes());
 		if (await measure("onload · isAuthoringWidgetsHere", () => this.isAuthoringWidgetsHere())) await measure("onload · widgetSignature", () => this.watchWidgetFolder());
 		this.rebuildWidgets().catch((failure) => console.error("[widgetarium] the drifted builds could not be made", failure));
 
@@ -277,14 +325,14 @@ export default class WidgetariumPlugin extends Plugin {
 	templateBuilderInto(folder) {
 		return async (template, onStep) => {
 			const done = await this.useTemplate(template, folder, onStep);
-			if (done.ok) this.closeCatalogue?.();
+			if (done.ok) this.catalogue?.close();
 			return done;
 		};
 	}
 
 	async openCatalogueAs(mode, folder) {
-		this.closeCatalogue?.();
-		this.closeCatalogue = openCatalogue({
+		this.catalogue?.close();
+		this.catalogue = openCatalogue({
 			registry: this.registry,
 			host: this.host,
 			mode,
@@ -295,7 +343,7 @@ export default class WidgetariumPlugin extends Plugin {
 			onUninstall: (id) => this.uninstall(id),
 			onUseTemplate: this.templateBuilderInto(folder),
 			onClose: () => {
-				this.closeCatalogue = null;
+				this.catalogue = null;
 			},
 		});
 	}
@@ -306,7 +354,18 @@ export default class WidgetariumPlugin extends Plugin {
 		const done = await this.installer.install(entry, onStep);
 		if (!done.ok) return done;
 		await this.rereadWidgets();
-		new Notice(`Widgetarium: installed ${entry.manifest.id} at ${done.commit.slice(0, 7)}`);
+		const said = done.isNewGeneration ? INSTALLED_BESIDE : INSTALLED_AT;
+		new Notice(said.replace("{widget}", entry.manifest.id).replace("{commit}", done.commit.slice(0, 7)));
+		return done;
+	}
+
+	async installAt(ref) {
+		const done = await this.installer.installAt(ref, await this.offers());
+		if (!done.ok) {
+			new Notice(INSTALL_AT_REFUSED.replace("{widget}", ref).replace("{why}", done.failure));
+			return done;
+		}
+		await this.rereadWidgets();
 		return done;
 	}
 
@@ -325,22 +384,17 @@ export default class WidgetariumPlugin extends Plugin {
 		this.signature = await this.widgetSignature();
 		await this.registry.load();
 		this.available = null;
-		await this.offers();
+		const available = await this.offers();
+		this.catalogue?.redraw({ available, lock: await this.installer.lock() });
 		this.refresh();
 	}
 
 	// TRADE-OFF: the installer is driven directly rather than through install(), so a template standing on six widgets neither shows six notices nor rereads the registry six times
 	async fetchWidgetsFor(template, onStep) {
-		const offers = await this.offers();
-		const wanted = [];
-		for (const id of missingWidgets(template, (held) => Boolean(this.registry.get(held)))) {
-			const offer = offers.find((entry) => entry.manifest?.id === id);
-			if (!offer) return { ok: false, failure: WIDGET_NOT_OFFERED.replace("{widget}", id) };
-			wanted.push(offer);
-		}
-		const done = await this.installer.installEvery(wanted, onStep);
-		if (done.ok && wanted.length > 0) await this.rereadWidgets();
-		return done;
+		const named = templateWidgets(template);
+		await this.wanted.want(named, onStep);
+		const failure = named.map((id) => (this.registry.get(id) ? null : this.wanted.refusalOf(id))).find(Boolean);
+		return failure ? { ok: false, failure } : { ok: true, failure: null };
 	}
 
 	async useTemplate(template, folder, onStep) {
@@ -401,14 +455,11 @@ export default class WidgetariumPlugin extends Plugin {
 		traceSub("rerender open notes done", { leaves: leaves.length });
 	}
 
-	queueWrite(sourcePath, blockIndex, board) {
+	queueWrite(sourcePath, blockIndex, board, editorBlock) {
 		if (blockIndex < 0) return;
 		this.pending ??= new Map();
-		this.pending.set(`${sourcePath}#${blockIndex}`, { sourcePath, blockIndex, board });
+		this.pending.set(`${sourcePath}#${blockIndex}`, { sourcePath, blockIndex, board, editorBlock });
 
-		// Held back briefly on purpose. Every write makes Obsidian rebuild the block, and a
-		// rebuild throws the element away — so writing on each commit meant a rebuild in the
-		// middle of a run of edits. A burst now leaves one write behind it.
 		clearTimeout(this.writeTimer);
 		this.writeTimer = setTimeout(() => {
 			this.writing ??= Promise.resolve();
@@ -428,6 +479,8 @@ export default class WidgetariumPlugin extends Plugin {
 		for (const [key, job] of jobs) {
 			try {
 				await this.writeBlock(job);
+			} catch (failure) {
+				console.error(`[widgetarium] the board in ${key} was not written`, failure);
 			} finally {
 				this.inFlight.delete(key);
 			}
@@ -435,25 +488,30 @@ export default class WidgetariumPlugin extends Plugin {
 	}
 
 	async writeBlock(job) {
-		trace("write", {
-			block: `${job.sourcePath}#${job.blockIndex}`,
-			tiles: job.board.tiles.length,
-			placed: placedIds(job.board).size,
-		});
-		const file = this.app.vault.getAbstractFileByPath(job.sourcePath);
-		if (!(file instanceof TFile)) return;
-
-		const text = await this.app.vault.read(file);
+		const block = `${job.sourcePath}#${job.blockIndex}`;
 		const body = stringifyYaml(serializeBoard(job.board));
-		const next = replaceBlock(text, job.blockIndex, body, (written) => {
-			const parsed = parseYaml(written);
-			return Boolean(parsed?.tiles) && parsed.tiles.length === job.board.tiles.length;
-		});
-		if (next === null) {
-			console.error("[widgetarium] write cancelled: block not found or the result would be malformed");
+		const holdsEveryTile = (written) => parseYaml(written)?.tiles?.length === job.board.tiles.length;
+		if (!holdsEveryTile(body)) {
+			console.error(`[widgetarium] write to ${block} cancelled: the serialized board lost tiles`);
 			return;
 		}
-		await this.app.vault.modify(file, next);
+		const through = writeInEditor(job.editorBlock, body) ? "editor" : "file";
+		trace("write", { block, tiles: job.board.tiles.length, placed: placedIds(job.board).size, through });
+		if (through === "file") await this.writeFileBlock(job, body, holdsEveryTile);
+	}
+
+	async writeFileBlock(job, body, holdsEveryTile) {
+		const file = this.app.vault.getAbstractFileByPath(job.sourcePath);
+		if (!(file instanceof TFile)) {
+			console.error(`[widgetarium] write cancelled: ${job.sourcePath} is no longer a note`);
+			return;
+		}
+		await this.app.vault.process(file, (text) => {
+			const next = replaceBlock(text, job.blockIndex, body, holdsEveryTile);
+			if (next !== null) return next;
+			console.error(`[widgetarium] write to ${job.sourcePath}#${job.blockIndex} cancelled: block not found or the result would be malformed`);
+			return text;
+		});
 	}
 
 	async isAuthoringWidgetsHere() {
@@ -512,7 +570,7 @@ export default class WidgetariumPlugin extends Plugin {
 		// handed render() a string and left every surface mounted
 		clearTimeout(this.writeTimer);
 		// the catalogue is portalled onto <body>, so it outlives the plugin unless taken down
-		this.closeCatalogue?.();
+		this.catalogue?.close();
 		this.closeSubstitutions?.();
 		this.assistant?.close();
 		// the widget stylesheets live in document.head and outlive the plugin unless dropped
@@ -520,6 +578,7 @@ export default class WidgetariumPlugin extends Plugin {
 		// a held-back write must not die with the plugin
 		if (this.pending?.size) this.flushWrites().catch((failure) => console.error(failure));
 		for (const mount of this.mounts.values()) render(null, mount.element);
+		this.header.clear();
 		this.mounts.clear();
 	}
 
@@ -534,6 +593,7 @@ export default class WidgetariumPlugin extends Plugin {
 		if (this.editing === on) return;
 		this.editing = on;
 		this.refresh();
+		this.header.sync();
 	}
 
 	toggleEditing() {
@@ -639,7 +699,7 @@ export default class WidgetariumPlugin extends Plugin {
 		// our own node inside Obsidian's element: the element is theirs and is replaced, the
 		// node is ours and is not
 		const node = element.ownerDocument.createElement("div");
-		node.className = "wg-mount";
+		node.className = "wg-mount interactive-child";
 		element.appendChild(node);
 
 		// bound ONCE per mount, not per draw: a fresh host object every frame would change
@@ -654,7 +714,7 @@ export default class WidgetariumPlugin extends Plugin {
 					registry: this.registry,
 					host: mount.host,
 					editing: this.editing,
-					onToggleEditing: () => this.toggleEditing(),
+					onActions: (actions) => this.header.hold(mount, actions),
 					screen: mount.screen,
 					// handed back so a rebuilt element starts at the width the old one had
 					initialWidth: mount.width,
@@ -703,6 +763,7 @@ export default class WidgetariumPlugin extends Plugin {
 				if (!current || current.node.isConnected) return;
 				this.mounts.delete(key);
 				render(null, current.node);
+				this.header.sync();
 			}, 0);
 		};
 		context.addChild(child);
@@ -732,11 +793,17 @@ export default class WidgetariumPlugin extends Plugin {
 				element.createEl("pre", { text: refusal });
 				return;
 			}
-			board = normalizeBoard(parsed, (id) => this.registry.resolveId(id));
+			board = normalizeBoard(
+				parsed,
+				(id) => this.registry.resolveId(id),
+				(id) => declaredName(this.registry, id),
+			);
 		} catch (failure) {
 			element.createEl("pre", { text: `Widgetarium: cannot read YAML — ${failure}` });
 			return;
 		}
+
+		this.wanted?.want(widgetsNamedBy(board.tiles));
 
 		const info = context.getSectionInfo(element);
 		const blockIndex = info
@@ -757,7 +824,10 @@ export default class WidgetariumPlugin extends Plugin {
 
 		const save = (next) => {
 			if (writeIndex === undefined) return;
-			this.queueWrite(context.sourcePath, writeIndex, next);
+			this.queueWrite(context.sourcePath, writeIndex, next, {
+				replaceCode: context.replaceCode,
+				section: () => context.getSectionInfo(element),
+			});
 		};
 
 		const mounted = this.mount(element, board, save, this.isScreen(context.sourcePath), context, blockKey);

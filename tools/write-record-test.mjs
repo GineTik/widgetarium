@@ -33,7 +33,11 @@ console.log("a write is visible to every reader before Obsidian reparses the not
 	check("update() reports the status it wrote", moved.props.status, "done");
 	check("and keeps the fields it did not name", moved.props.title, "Task 0");
 	check("get() agrees at once", (await slot.get({ path: files[0].path })).props.status, "done");
-	check("the LIST the board draws agrees at once", (await slot.list()).rows.find((row) => row.path === files[0].path).props.status, "done");
+	check(
+		"the LIST the board draws agrees at once",
+		(await slot.list()).rows.find((row) => row.path === files[0].path).props.status,
+		"done",
+	);
 	claim(`update() did not wait for the cache → ${blockedFor.toFixed(0)} ms`, blockedFor < 50);
 
 	app.metadataCache.emit(files[0]);

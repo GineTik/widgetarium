@@ -58,7 +58,7 @@ function pickWidget(registry, host, options = {}) {
 	return new Promise((resolve) => {
 		// CONTEXT: closing is what settles it — a pick closes, and closing unpicked answers null
 		let picked = null;
-		const close = openCatalogue({
+		const { close } = openCatalogue({
 			registry,
 			host,
 			mode: options.mode ?? "mount",
@@ -76,10 +76,18 @@ function pickWidget(registry, host, options = {}) {
 // a holder that is never attached, because the dialog portals its overlay onto <body> by itself
 export function openCatalogue(options) {
 	const node = document.createElement("div");
+	let shown = options;
 	const close = () => {
 		render(null, node);
-		options.onClose?.();
+		shown.onClose?.();
 	};
-	render(h(CatalogueDialog, { ...options, onClose: close }), node);
-	return close;
+	const draw = () => render(h(CatalogueDialog, { ...shown, onClose: close }), node);
+	draw();
+	return {
+		close,
+		redraw: (fresh) => {
+			shown = { ...shown, ...fresh };
+			draw();
+		},
+	};
 }

@@ -78,7 +78,7 @@ export function openSubstitutions(options) {
 }
 
 function pickInlineWidget({ registry, host, available, onInstall, onPick }) {
-	const close = openCatalogue({
+	const { close } = openCatalogue({
 		registry,
 		host,
 		mode: "text",

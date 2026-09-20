@@ -23,5 +23,5 @@
 			"widgetarium": ["./widgets/types/widgetarium.d.ts"]
 		}
 	},
-	"include": ["widgets/types/**/*.d.ts", "tools/type-gate/**/*.ts", "widgets/**/*.tsx"]
+	"include": ["widgets/types/**/*.d.ts", "tools/type-gate/**/*.ts", "tools/type-gate/*.tsx", "widgets/**/*.tsx"]
 }

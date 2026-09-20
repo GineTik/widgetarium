@@ -36,7 +36,7 @@ const THEMES = {
 for (const theme of ["light", "dark"]) {
 	const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
+<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
 <style>body { margin: 0; ${THEMES[theme]}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	--font-text: "Helvetica Neue", Helvetica, Arial, sans-serif;

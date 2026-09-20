@@ -1,6 +1,26 @@
 import { ROOT, WIDGETS_DIR, LOCK_PATH } from "./paths.js";
-import { mergeCatalogue, readIndex } from "./engine/catalogue-index.js";
-import { readLock, lockEntry, withBuild, withEntry, withModule, withoutEntry, releaseModules } from "./engine/widget-lock.js";
+import {
+	LEGACY_RECORD_FILE,
+	RECORD_FILE,
+	cardOf,
+	firstDifferingCardKey,
+	mergeCatalogue,
+	readIndex,
+	recordIn,
+} from "./engine/catalogue-index.js";
+import { compatibility } from "./engine/compatibility.js";
+import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
+import {
+	INSTALL_PENDING,
+	commitsOf,
+	readLock,
+	lockEntry,
+	withBuild,
+	withEntry,
+	withModule,
+	withoutEntry,
+	releaseModules,
+} from "./engine/widget-lock.js";
 import { createModuleSpace, declaredDependencies } from "./engine/modules.js";
 import { createBuilder } from "./engine/builder.js";
 import { createWidgetSource, scopeOf } from "./engine/widget-source.js";
@@ -10,6 +30,8 @@ import { SHIPPED_SOURCES } from "./registries.js";
 
 export const INDEX_PATH = `${ROOT}/catalogue.json`;
 export { LOCK_PATH };
+
+const CARD_DIFFERS = "{widget}'s card says one thing about {key} and its code another, so it was not installed";
 
 function refuse(failure) {
 	return { ok: false, failure };
@@ -22,6 +44,7 @@ export function createInstaller({
 	disk,
 	readAdded = async () => [],
 	shipped = SHIPPED_SOURCES,
+	declaredIn = null,
 }) {
 	const space = createModuleSpace({ adapter, fetchText });
 	const widgets = createWidgetSource({ fetchJson, fetchText, disk });
@@ -76,6 +99,95 @@ export function createInstaller({
 		if (await builder.isCurrent(lock.builds[id] ?? null, folder, files)) return null;
 
 		return { id, ...(await builder.rebuild(lock, id, folder, files)) };
+	}
+
+	async function installedCard(id) {
+		const folder = folderFor(WIDGETS_DIR, id);
+		return (
+			(await readJson(`${folder}/${RECORD_FILE}`, null)) ?? (await readJson(`${folder}/${LEGACY_RECORD_FILE}`, null))
+		);
+	}
+
+	function servedCard(files) {
+		try {
+			return JSON.parse(recordIn(files) ?? "null");
+		} catch {
+			return null;
+		}
+	}
+
+	const generationsIn = (lock, key) => Object.keys(lock.widgets).filter((id) => widgetKeyOf(id) === key);
+
+	async function placementForUpdate(lock, key, held) {
+		const newest = generationsIn(lock, key).at(-1);
+		if (!newest) return { id: key, commits: [], isAbsorbed: false, isNewGeneration: false };
+		const verdict = compatibility(await installedCard(newest), servedCard(held.files));
+		if (verdict.isCompatible)
+			return { id: newest, commits: commitsOf(lock.widgets[newest]), isAbsorbed: true, isNewGeneration: false };
+		return { id: widgetRef(key, held.commit), commits: [], isAbsorbed: false, isNewGeneration: true };
+	}
+
+	async function placementForSharedCommit(lock, key, held) {
+		const written = servedCard(held.files);
+		for (const id of generationsIn(lock, key)) {
+			if (compatibility(written, await installedCard(id)).isCompatible)
+				return { id, commits: commitsOf(lock.widgets[id]), isAbsorbed: true, isNewGeneration: false };
+		}
+		const isNewGeneration = generationsIn(lock, key).length > 0;
+		return { id: isNewGeneration ? widgetRef(key, held.commit) : key, commits: [], isAbsorbed: false, isNewGeneration };
+	}
+
+	async function cardMismatchIn(held) {
+		const served = servedCard(held.files);
+		if (!served || !declaredIn) return null;
+		const declared = await declaredIn(held);
+		const differs = declared ? firstDifferingCardKey(cardOf(declared, served.api), served) : null;
+		return differs ? CARD_DIFFERS.replace("{widget}", held.record.id).replace("{key}", differs) : null;
+	}
+
+	async function absorbCommit(lock, id, commit) {
+		const entry = lock.widgets[id];
+		await writeJson(LOCK_PATH, withEntry(lock, id, { ...entry, commits: [...new Set([...commitsOf(entry), commit])] }));
+		return { ok: true, id, commit, isNewGeneration: false, failure: null };
+	}
+
+	async function madeFor(lock, id, held) {
+		const resolved = await withDependencies(lock, id, held.record);
+		if (!resolved.ok) return resolved;
+		const folder = folderFor(WIDGETS_DIR, id);
+		return builder.make({
+			lock: resolved.lock,
+			id,
+			folder,
+			files: held.files,
+			aboutToBeWritten: whatTheScopeIsAboutToGet(folder, held.scope),
+		});
+	}
+
+	async function writeGeneration({ listed, held, placed, made }) {
+		const id = placed.id;
+		const folder = folderFor(WIDGETS_DIR, id);
+		const source = listed?.origin ?? listed?.manifest?.repository;
+		const described = {
+			source,
+			commit: held.commit,
+			files: held.files,
+			path: listed?.manifest?.path ?? null,
+			commits: placed.commits,
+		};
+		await writeJson(LOCK_PATH, withEntry(made.lock, id, lockEntry({ ...described, state: INSTALL_PENDING })));
+		await writeWidget(folder, held.files, made);
+		await writeWhatTheScopeShares(folder, held.scope);
+		await writeJson(LOCK_PATH, withBuild(withEntry(made.lock, id, lockEntry(described)), id, made.record));
+	}
+
+	async function installPlaced(listed, held, placed) {
+		const mismatch = await cardMismatchIn(held);
+		if (mismatch) return refuse(mismatch);
+		const made = await madeFor(readLock(await readJson(LOCK_PATH, null)), placed.id, held);
+		if (!made.ok) return refuse(made.failure);
+		await writeGeneration({ listed, held, placed, made });
+		return { ok: true, id: placed.id, commit: held.commit, isNewGeneration: placed.isNewGeneration, failure: null };
 	}
 
 	async function withDependencies(lock, id, manifest) {
@@ -146,27 +258,19 @@ export function createInstaller({
 		async install(listed, onStep) {
 			const held = await widgets.filesOf(listed, onStep);
 			if (!held.ok) return refuse(held.failure);
+			return installPlaced(listed, held, await placementForUpdate(await this.lock(), held.record.id, held));
+		},
 
-			const id = held.record.id;
-			const folder = folderFor(WIDGETS_DIR, id);
-			const resolved = await withDependencies(await this.lock(), id, held.record);
-			if (!resolved.ok) return refuse(resolved.failure);
-
-			const made = await builder.make({
-				lock: resolved.lock,
-				id,
-				folder,
-				files: held.files,
-				aboutToBeWritten: whatTheScopeIsAboutToGet(folder, held.scope),
-			});
-			if (!made.ok) return refuse(made.failure);
-
-			await writeWidget(folder, held.files, made);
-			await writeWhatTheScopeShares(folder, held.scope);
-			const from = listed?.origin ?? listed?.manifest?.repository;
-			const written = withEntry(made.lock, id, lockEntry({ source: from, commit: held.commit, files: held.files }));
-			await writeJson(LOCK_PATH, withBuild(written, id, made.record));
-			return { ok: true, id, commit: held.commit, failure: null };
+		async installAt(ref, offers) {
+			const key = widgetKeyOf(ref);
+			const offer = offers.find((entry) => entry.manifest?.id === key);
+			if (!offer) return refuse(`no source this vault reads offers ${key}`);
+			const listed = { ...offer, manifest: { ...offer.manifest, ref: generationOf(ref) } };
+			const held = await widgets.filesOf(listed);
+			if (!held.ok) return refuse(held.failure);
+			const lock = await this.lock();
+			const placed = await placementForSharedCommit(lock, key, held);
+			return placed.isAbsorbed ? absorbCommit(lock, placed.id, held.commit) : installPlaced(listed, held, placed);
 		},
 
 		async installEvery(listed, onStep) {

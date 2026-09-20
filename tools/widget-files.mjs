@@ -11,7 +11,8 @@ export function widgetFiles(dir) {
 		if (entry.name === BUILT_INTO) continue;
 
 		const full = path.join(dir, entry.name);
-		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory())) found.push(...widgetFiles(full));
+		if (entry.isDirectory() || (entry.isSymbolicLink() && fs.statSync(full).isDirectory()))
+			found.push(...widgetFiles(full));
 		else if (A_WIDGET_SOURCE.test(entry.name)) found.push(full);
 	}
 	return found;

@@ -4,8 +4,7 @@ export interface DeclaredNeed {
 	type: FieldType;
 	many?: boolean;
 	required?: boolean;
-	aka?: string[];
-	was?: string;
+	aka?: readonly string[];
 }
 
 export type DeclaredNeeds = Record<string, DeclaredNeed>;
@@ -21,7 +20,7 @@ export interface Resolution {
 const plainly = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 function namesOf(need: string, declared: DeclaredNeed): string[] {
-	return [need, ...(declared.was ? [declared.was] : []), ...(declared.aka ?? [])];
+	return [need, ...(declared.aka ?? [])];
 }
 
 // TRADE-OFF: a need for many takes a field that holds one, and a field whose other values are junk, because coercion drops them; a need for one refuses a list rather than picking from it

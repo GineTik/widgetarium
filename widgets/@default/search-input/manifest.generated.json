@@ -1,0 +1,47 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Search input",
+	"description": "A search field whose text is a value other widgets can read.",
+	"keywords": ["search", "input", "query", "filter", "find", "field", "text"],
+	"role": "control",
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 1
+		},
+		"props": {
+			"placeholder": {
+				"value": "Search widgets"
+			}
+		}
+	},
+	"props": {
+		"value": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Query",
+			"hint": "What is typed. Bind another widget to it and it filters as you type.",
+			"writes": ["get", "update"],
+			"default": {
+				"value": ""
+			}
+		},
+		"placeholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Placeholder",
+			"hint": "Shown while nothing is typed.",
+			"writes": ["get"],
+			"default": {
+				"value": "Search"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

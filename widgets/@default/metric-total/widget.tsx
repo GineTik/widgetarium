@@ -1,16 +1,16 @@
 import {
-	canDo,
-	createWidget,
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-	flatRows,
+	canDo,
+	createWidget,
+	defineManifest,
+	defineProp,
 	pickedValue,
 	useData,
-	WidgetRoot,
 } from "widgetarium";
 import {
 	Button,
@@ -27,23 +27,12 @@ import {
 	Segmented,
 	useSegmentedThumb,
 } from "widgetarium/kit";
-import type {
-	Aka,
-	CollectionGateway,
-	CreateAction,
-	Day,
-	GetAction,
-	ListAction,
-	RemoveAction,
-	Text,
-	UpdateAction,
-	ValueGateway,
-	VaultRecord,
-	ViewHost,
-} from "widgetarium";
+import type { Aka, Day, Text, VaultRecord } from "widgetarium";
 import { dayOfRecord } from "@default/lib";
 import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { useId, useLayoutEffect, useRef, useState } from "react";
+
+const ALL_RECORDS = 5000;
 
 type MetricRecord = VaultRecord & {
 	amount?: (number & Aka<"value" | "count" | "total" | "kept" | "score" | "done">) | null;
@@ -52,21 +41,6 @@ type MetricRecord = VaultRecord & {
 };
 
 type PeriodRow = { label?: Text | null; days?: number | null };
-
-type MetricProps = {
-	records: CollectionGateway<
-		MetricRecord,
-		{ list: ListAction; create?: CreateAction; update?: UpdateAction; remove?: RemoveAction }
-	>;
-	title: ValueGateway<string>;
-	unit: ValueGateway<string>;
-	rising: ValueGateway<string>;
-	periods: CollectionGateway<PeriodRow, { list: ListAction }>;
-	periodPick: ValueGateway<unknown, { get: GetAction; update?: UpdateAction }>;
-	period: ValueGateway<PeriodRow, { get: GetAction }>;
-	view: ValueGateway<string, { get: GetAction; update?: UpdateAction }>;
-	host?: ViewHost;
-};
 
 type Tone = "up" | "down" | "flat";
 type Band = "wide" | "mid" | "narrow" | "floor";
@@ -907,202 +881,253 @@ function ListDialog({ listed, count, folder, undated, allowed, onClose, onAdd, o
 
 const emptyDraft = (day: string): Draft => ({ ref: null, day, sign: "add", amount: "", note: "" });
 
-export default createWidget(
-	function MetricTotal({ records, title, unit, rising, periods, periodPick, period, view, host }: MetricProps) {
-		const surfaceRef = useRef<HTMLDivElement | null>(null);
-		const band = useBand(surfaceRef);
-		const ids = useId().replace(/:/g, "");
-
-		const kept = flatRows(useData(records.list).rows);
-		const periodRows = flatRows(useData(periods.list).rows);
-		const shown = String(useData(title.get).data ?? "");
-		const unitSaid = String(useData(unit.get).data ?? "");
-		const risingSaid = String(useData(rising.get).data ?? "good");
-		const picked = String(pickedValue(useData(periodPick.get).data) ?? "");
-		const held = useData(period.get).data;
-		const viewing = String(useData(view.get).data ?? "curve");
-
-		const today = isoFrom(new Date());
-		const days = Math.max(1, Number(held?.days ?? DEFAULT_DAYS));
-		const label = String(held?.label ?? picked);
-		const summary = summarize(kept, days, today, risingSaid);
-
-		const allowed: Allowed = {
-			canAdd: canDo(records.create),
-			canEdit: canDo(records.update),
-			canDelete: canDo(records.remove),
-		};
-
-		const [hovered, setHovered] = useState<Hovered | null>(null);
-		const [asked, setAsked] = useState<string | null>(null);
-		const [draft, setDraft] = useState<Draft>(() => emptyDraft(today));
-
-		const listed: Listed[] = kept
-			.filter((record) => dayOfRecord(record))
-			.map((record) => ({
-				ref: record.ref,
-				day: dayOfRecord(record) ?? today,
-				note: String(record.note ?? ""),
-				amount: amountOf(record),
-			}))
-			.sort((here, there) => (here.day < there.day ? 1 : -1));
-
-		const openAdd = () => {
-			setDraft(emptyDraft(today));
-			setAsked("add");
-		};
-
-		const editRow = (row: Listed) => {
-			setDraft({
-				ref: row.ref,
-				day: row.day,
-				sign: row.amount < 0 ? "subtract" : "add",
-				amount: String(Math.abs(row.amount)),
-				note: row.note,
-			});
-			setAsked("add");
-		};
-
-		const wrote = async (write: Promise<unknown>, said: string) => {
-			try {
-				await write;
-				return true;
-			} catch (failure) {
-				host?.ui?.notify(said);
-				console.error(`${WHO_FAILED} ${said}`, failure);
-				return false;
-			}
-		};
-
-		const confirmDraft = async () => {
-			const amount = Number(draft.amount);
-			if (!Number.isFinite(amount)) return;
-			const signed = draft.sign === "subtract" ? -Math.abs(amount) : Math.abs(amount);
-			const data = { date: draft.day, amount: signed, note: draft.note };
-			const write = draft.ref ? records.update({ ref: draft.ref, data }) : records.create(data);
-			if (await wrote(write, CANNOT_WRITE)) setAsked(null);
-		};
-
-		const point = hovered ? summary.balance[hovered.at] : undefined;
-
-		return (
-			<WidgetRoot data-part="root" className="mt3-root wg-metric" data-tone={summary.tone}>
-				<div data-part="surface" className="mt3-surface" ref={surfaceRef}>
-					<Chart
-						points={summary.balance}
-						days={days}
-						from={shiftedBy(today, 1 - days)}
-						view={viewing}
-						band={band}
-						ids={ids}
-						hovered={hovered}
-						onHover={setHovered}
-					/>
-					{point && hovered ? <Tip point={point} unit={unitSaid} left={hovered.left} /> : null}
-					<div data-part="content" className="mt3-content">
-						<Head
-							title={shown}
-							summary={summary}
-							label={label}
-							days={days}
-							view={viewing}
-							rows={periodRows.map((row) => ({ ref: row.ref, label: String(row.label ?? "") }))}
-							onView={(next) => void wrote(view.update(next), CANNOT_KEEP_VIEW)}
-							onPeriod={(next) => void wrote(periodPick.update(next), CANNOT_KEEP_PERIOD)}
-						/>
-						<div data-part="total" className="mt3-headline">
-							{compactOf(summary.total)}
-						</div>
-						<Plates summary={summary} />
-						<Foot band={band} canAdd={allowed.canAdd} onAdd={openAdd} onList={() => setAsked("list")} />
-					</div>
-				</div>
-				{asked === "add" ? (
-					<AddDialog
-						draft={draft}
-						unit={unitSaid}
-						today={today}
-						onDraft={setDraft}
-						onClose={() => setAsked(null)}
-						onConfirm={confirmDraft}
-					/>
-				) : null}
-				{asked === "list" ? (
-					<ListDialog
-						listed={listed}
-						count={kept.length}
-						folder={folderSaid(kept[0]?.path)}
-						undated={summary.undated}
-						allowed={allowed}
-						onClose={() => setAsked(null)}
-						onAdd={openAdd}
-						onEdit={editRow}
-						onDelete={(ref) => void wrote(records.remove(ref), CANNOT_DELETE)}
-					/>
-				) : null}
-			</WidgetRoot>
-		);
-	},
-	{
+export const manifest = defineManifest({
+	title: "Metric total",
+	description: "A running total over a window, the curve or bars behind it, and the day's own reading.",
+	keywords: [
+		"metric",
+		"total",
+		"sum",
+		"chart",
+		"curve",
+		"bars",
+		"sparkline",
+		"trend",
+		"records",
+		"amount",
+		"period",
+		"number",
+	],
+	role: "indicator",
+	preview: {
+		shot: { of: "218794189" },
+		size: { w: 6, h: 5 },
 		props: {
+			title: { value: "Revenue" },
+			unit: { value: "$" },
 			records: {
-				label: "Records",
-				hint: "One note per reading. Each carries a date and an amount.",
-				default: { path: "Metrics" },
-			},
-			title: {
-				wasSetting: true,
-				type: "text",
-				label: "What the number is",
-				default: { value: "Total" },
-			},
-			unit: {
-				wasSetting: true,
-				type: "text",
-				label: "Unit the amounts are in",
-				default: { value: "" },
-			},
-			rising: {
-				wasSetting: true,
-				type: "text",
-				label: "good · bad",
-				hint: "Whether a rise reads as good or as bad.",
-				default: { value: "good" },
-			},
-			periods: {
-				label: "Periods",
-				hint: "Every window the card can read over.",
-				item: {
-					fields: [
-						{ key: "label", label: "Label", type: "text", required: true },
-						{ key: "days", label: "Days", type: "number", required: true },
-					],
-				},
-				default: {
-					value: [
-						{ label: "Past 7 days", days: 7 },
-						{ label: "Past 30 days", days: 30 },
-						{ label: "Past 90 days", days: 90 },
-					],
-				},
-			},
-			periodPick: {
-				label: "Picked period",
-				of: "periods",
-				field: "label",
-				fallback: "first",
-			},
-			period: {
-				label: "The period",
-				picks: "periodPick",
-				of: "periods",
-			},
-			view: {
-				wasSetting: true,
-				type: "text",
-				label: "curve · bars",
-				default: { value: "curve" },
+				rows: [
+					{ path: "Metrics/2026-08-25-1.md", date: "2026-08-25", amount: 40, note: "Client retainer" },
+					{ path: "Metrics/2026-08-25-2.md", date: "2026-08-25", amount: -12, note: "Hosting" },
+					{ path: "Metrics/2026-08-26-3.md", date: "2026-08-26", amount: -15, note: "Design tools" },
+					{ path: "Metrics/2026-08-27-4.md", date: "2026-08-27", amount: 30, note: "Workshop fee" },
+					{ path: "Metrics/2026-08-28-5.md", date: "2026-08-28", amount: 20, note: "Late invoice" },
+					{ path: "Metrics/2026-08-28-6.md", date: "2026-08-28", amount: -8, note: "Domain renewal" },
+					{ path: "Metrics/2026-08-29-7.md", date: "2026-08-29", amount: -25, note: "Contractor day" },
+					{ path: "Metrics/2026-08-30-8.md", date: "2026-08-30", amount: 35, note: "Consulting call" },
+					{ path: "Metrics/2026-08-31-9.md", date: "2026-08-31", amount: 45, note: "Retainer top up" },
+					{ path: "Metrics/2026-09-01-10.md", date: "2026-09-01", amount: -20, note: "Office rent" },
+					{ path: "Metrics/2026-09-02-11.md", date: "2026-09-02", amount: 30, note: "Template sale" },
+					{ path: "Metrics/2026-09-02-12.md", date: "2026-09-02", amount: 14, note: "Template sale" },
+					{ path: "Metrics/2026-09-03-13.md", date: "2026-09-03", amount: 15, note: "Support hours" },
+					{ path: "Metrics/2026-09-04-14.md", date: "2026-09-04", amount: -35, note: "Hardware" },
+					{ path: "Metrics/2026-09-05-15.md", date: "2026-09-05", amount: 25, note: "Audit session" },
+					{ path: "Metrics/2026-09-06-16.md", date: "2026-09-06", amount: 20, note: "Template sale" },
+					{ path: "Metrics/2026-09-07-17.md", date: "2026-09-07", amount: 60, note: "Onboarding project" },
+					{ path: "Metrics/2026-09-07-18.md", date: "2026-09-07", amount: -18, note: "Travel" },
+					{ path: "Metrics/2026-09-08-19.md", date: "2026-09-08", amount: -20, note: "Subscriptions" },
+					{ path: "Metrics/2026-09-09-20.md", date: "2026-09-09", amount: 75, note: "Second milestone" },
+					{ path: "Metrics/2026-09-09-21.md", date: "2026-09-09", amount: 22, note: "Template sale" },
+					{ path: "Metrics/2026-09-10-22.md", date: "2026-09-10", amount: 40, note: "Review session" },
+					{ path: "Metrics/2026-09-11-23.md", date: "2026-09-11", amount: -30, note: "Contractor day" },
+					{ path: "Metrics/2026-09-12-24.md", date: "2026-09-12", amount: 85, note: "Final milestone" },
+					{ path: "Metrics/2026-09-12-25.md", date: "2026-09-12", amount: 18, note: "Template sale" },
+					{ path: "Metrics/2026-09-13-26.md", date: "2026-09-13", amount: 55, note: "New retainer" },
+					{ path: "Metrics/2026-09-13-27.md", date: "2026-09-13", amount: 26, note: "Template sale" },
+				],
 			},
 		},
 	},
-);
+	props: {
+		records: defineProp<MetricRecord[]>()({
+			label: "Records",
+			hint: "One note per reading. Each carries a date and an amount.",
+			default: [],
+			writes: ["create", "update", "remove"],
+			describes: {
+				amount: { type: "number", aka: ["value", "count", "total", "kept", "score", "done"] },
+				date: { type: "date", aka: ["created", "day", "when", "on"] },
+				note: { type: "text", aka: ["text", "comment", "description", "body"] },
+			},
+		}),
+		title: defineProp<string>()({
+			label: "What the number is",
+			default: "Total",
+		}),
+		unit: defineProp<string>()({
+			label: "Unit the amounts are in",
+			default: "",
+		}),
+		rising: defineProp<string>()({
+			label: "good · bad",
+			hint: "Whether a rise reads as good or as bad.",
+			default: "good",
+		}),
+		periods: defineProp<PeriodRow[]>()({
+			label: "Periods",
+			hint: "Every window the card can read over.",
+			default: [
+				{ label: "Past 7 days", days: 7 },
+				{ label: "Past 30 days", days: 30 },
+				{ label: "Past 90 days", days: 90 },
+			],
+			describes: {
+				label: { label: "Label", type: "text", required: true },
+				days: { label: "Days", type: "number", required: true },
+			},
+		}),
+		periodPick: defineProp<string>()({
+			label: "Picked period",
+			of: "periods",
+			field: "label",
+			fallback: "first",
+			writes: ["update"],
+		}),
+		period: defineProp<PeriodRow>()({
+			label: "The period",
+			picks: "periodPick",
+			of: "periods",
+		}),
+		view: defineProp<string>()({
+			label: "curve · bars",
+			default: "curve",
+			writes: ["update"],
+		}),
+	},
+});
+
+export default createWidget(manifest, ({ records, title, unit, rising, periods, periodPick, period, view, host }) => {
+	const surfaceRef = useRef<HTMLDivElement | null>(null);
+	const band = useBand(surfaceRef);
+	const ids = useId().replace(/:/g, "");
+
+	const kept = useData(records.list, { limit: ALL_RECORDS }).data;
+	const periodRows = useData(periods.list, { limit: ALL_RECORDS }).data;
+	const shown = String(useData(title.get).data ?? "");
+	const unitSaid = String(useData(unit.get).data ?? "");
+	const risingSaid = String(useData(rising.get).data ?? "good");
+	const picked = String(pickedValue(useData(periodPick.get).data) ?? "");
+	const held = useData(period.get).data;
+	const viewing = String(useData(view.get).data ?? "curve");
+
+	const today = isoFrom(new Date());
+	const days = Math.max(1, Number(held?.days ?? DEFAULT_DAYS));
+	const label = String(held?.label ?? picked);
+	const summary = summarize(kept, days, today, risingSaid);
+
+	const allowed: Allowed = {
+		canAdd: canDo(records.create),
+		canEdit: canDo(records.update),
+		canDelete: canDo(records.remove),
+	};
+
+	const [hovered, setHovered] = useState<Hovered | null>(null);
+	const [asked, setAsked] = useState<string | null>(null);
+	const [draft, setDraft] = useState<Draft>(() => emptyDraft(today));
+
+	const listed: Listed[] = kept
+		.filter((record) => dayOfRecord(record))
+		.map((record) => ({
+			ref: record.ref,
+			day: dayOfRecord(record) ?? today,
+			note: String(record.note ?? ""),
+			amount: amountOf(record),
+		}))
+		.sort((here, there) => (here.day < there.day ? 1 : -1));
+
+	const openAdd = () => {
+		setDraft(emptyDraft(today));
+		setAsked("add");
+	};
+
+	const editRow = (row: Listed) => {
+		setDraft({
+			ref: row.ref,
+			day: row.day,
+			sign: row.amount < 0 ? "subtract" : "add",
+			amount: String(Math.abs(row.amount)),
+			note: row.note,
+		});
+		setAsked("add");
+	};
+
+	const wrote = async (write: Promise<unknown>, said: string) => {
+		try {
+			await write;
+			return true;
+		} catch (failure) {
+			host?.ui?.notify(said);
+			console.error(`${WHO_FAILED} ${said}`, failure);
+			return false;
+		}
+	};
+
+	const confirmDraft = async () => {
+		const amount = Number(draft.amount);
+		if (!Number.isFinite(amount)) return;
+		const signed = draft.sign === "subtract" ? -Math.abs(amount) : Math.abs(amount);
+		const data = { date: draft.day, amount: signed, note: draft.note };
+		const write = draft.ref ? records.update({ ref: draft.ref, data }) : records.create(data);
+		if (await wrote(write, CANNOT_WRITE)) setAsked(null);
+	};
+
+	const point = hovered ? summary.balance[hovered.at] : undefined;
+
+	return (
+		<div data-part="root" className="mt3-root wg-metric" data-tone={summary.tone}>
+			<div data-part="surface" className="mt3-surface" ref={surfaceRef}>
+				<Chart
+					points={summary.balance}
+					days={days}
+					from={shiftedBy(today, 1 - days)}
+					view={viewing}
+					band={band}
+					ids={ids}
+					hovered={hovered}
+					onHover={setHovered}
+				/>
+				{point && hovered ? <Tip point={point} unit={unitSaid} left={hovered.left} /> : null}
+				<div data-part="content" className="mt3-content">
+					<Head
+						title={shown}
+						summary={summary}
+						label={label}
+						days={days}
+						view={viewing}
+						rows={periodRows.map((row) => ({ ref: row.ref, label: String(row.label ?? "") }))}
+						onView={(next) => void wrote(view.update(next), CANNOT_KEEP_VIEW)}
+						onPeriod={(next) => void wrote(periodPick.update(next), CANNOT_KEEP_PERIOD)}
+					/>
+					<div data-part="total" className="mt3-headline">
+						{compactOf(summary.total)}
+					</div>
+					<Plates summary={summary} />
+					<Foot band={band} canAdd={allowed.canAdd} onAdd={openAdd} onList={() => setAsked("list")} />
+				</div>
+			</div>
+			{asked === "add" ? (
+				<AddDialog
+					draft={draft}
+					unit={unitSaid}
+					today={today}
+					onDraft={setDraft}
+					onClose={() => setAsked(null)}
+					onConfirm={confirmDraft}
+				/>
+			) : null}
+			{asked === "list" ? (
+				<ListDialog
+					listed={listed}
+					count={kept.length}
+					folder={folderSaid(kept[0]?.path)}
+					undated={summary.undated}
+					allowed={allowed}
+					onClose={() => setAsked(null)}
+					onAdd={openAdd}
+					onEdit={editRow}
+					onDelete={(ref) => void wrote(records.remove(ref), CANNOT_DELETE)}
+				/>
+			) : null}
+		</div>
+	);
+});

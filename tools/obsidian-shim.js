@@ -11,4 +11,5 @@ export class MarkdownRenderChild {
 }
 export const MarkdownRenderer = { render: async () => {} };
 export const Platform = { isDesktopApp: true, isMobileApp: false, isMobile: false };
+export const setIcon = () => {};
 export const requestUrl = async () => ({ status: 0, text: "", json: null });

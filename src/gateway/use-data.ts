@@ -1,19 +1,16 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import type { Action, Ref, Row } from "./contract";
+import type { Action, DuplicateIdReport, Row } from "./contract";
 import type { ActionMeta } from "./create";
 import { gatewayCache, stableKey } from "./cache";
 
+export type Listed<O> = O extends { rows: infer Rows } ? Rows : O | null;
+
 export interface DataState<O> {
-	data: O | null;
-	rows: O extends { rows: Row<infer V>[] } ? Row<V>[] : never[];
+	data: Listed<O>;
 	total: number | null;
+	duplicates: DuplicateIdReport[];
 	isLoading: boolean;
 	failure: string | null;
-}
-
-// CONTEXT: a record widget reads its fields beside the ref that names it back to the gateway
-export function flatRows<T extends object>(rows: readonly Row<T>[]): (T & { ref: Ref })[] {
-	return rows.map(({ ref, value }) => ({ ...value, ref }));
 }
 
 function metaOf(read: unknown): ActionMeta {
@@ -22,12 +19,15 @@ function metaOf(read: unknown): ActionMeta {
 	return meta;
 }
 
-function toDataState<O>(entry: { status: string; data: unknown; failure: string | null }): DataState<O> {
-	const held = entry.data as { rows?: Row<unknown>[]; total?: number } | null;
+function toDataState<O>(
+	entry: { status: string; data: unknown; failure: string | null },
+	listed: boolean,
+): DataState<O> {
+	const held = entry.data as { rows?: Row<unknown>[]; total?: number; duplicates?: DuplicateIdReport[] } | null;
 	return {
-		data: entry.data as O | null,
-		rows: (held?.rows ?? []) as DataState<O>["rows"],
+		data: (listed ? (held?.rows ?? []) : entry.data) as Listed<O>,
 		total: held?.total ?? null,
+		duplicates: held?.duplicates ?? [],
 		isLoading: entry.status === "loading",
 		failure: entry.failure,
 	};
@@ -38,10 +38,11 @@ export function useData<I, O>(read: Action<I, O>, input?: I): DataState<O> {
 	const inputKey = stableKey(input);
 
 	const subscribe = useCallback(
-		(listener: () => void) => gatewayCache.subscribe(meta, input, read as (given: unknown) => Promise<unknown>, listener),
+		(listener: () => void) =>
+			gatewayCache.subscribe(meta, input, read as (given: unknown) => Promise<unknown>, listener),
 		[meta.gatewayId, meta.verb, inputKey],
 	);
 	const entry = useSyncExternalStore(subscribe, () => gatewayCache.read(meta, input));
 
-	return useMemo(() => toDataState<O>(entry), [entry]);
+	return useMemo(() => toDataState<O>(entry, meta.verb === "list"), [entry, meta.verb]);
 }

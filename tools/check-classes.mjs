@@ -9,7 +9,6 @@ import { widgetFiles } from "./widget-files.mjs";
 const roots = process.argv.slice(2).filter((root) => fs.existsSync(root));
 const offences = [];
 
-
 // classes the engine owns, plus state classes a rule may only ever mention as a suffix
 const ENGINE = new Set(["orbi", "wg-widget-root"]);
 
@@ -66,6 +65,15 @@ for (const root of roots) {
 			}
 		}
 
+		const quotedAnywhereInAClassNameExpression = new Set();
+		for (const [, expression] of text.matchAll(/\bclass(?:Name)?=\{([^}]*)\}/g)) {
+			for (const [, a, b, c] of expression.matchAll(/"([^"]*)"|'([^']*)'|`([^`]*)`/g)) {
+				for (const word of (a ?? b ?? c ?? "").split(/\s+/)) {
+					if (/^[a-z][\w-]*$/.test(word)) quotedAnywhereInAClassNameExpression.add(word);
+				}
+			}
+		}
+
 		// A state class is assigned through a variable as often as inline — `const state = active
 		// ? " is-active" : ""` — and no regex will follow that. Every quoted is-*/has-* token in
 		// the file counts as used: this gate is here to catch a MISNAMED element class, not to
@@ -87,7 +95,7 @@ for (const root of roots) {
 		// they are the ones most likely to be aimed at a name somebody renamed.
 		for (const [, block] of text.matchAll(/@container[^{]*\{([\s\S]*?)\n\}/g)) {
 			for (const [, name] of block.matchAll(/\.([a-z][\w-]*)/g)) {
-				if (used.has(name) || ENGINE.has(name)) continue;
+				if (used.has(name) || quotedAnywhereInAClassNameExpression.has(name) || ENGINE.has(name)) continue;
 				offences.push(`${file} — @container rule targets ".${name}", which the markup never uses`);
 			}
 		}

@@ -7,10 +7,9 @@ import { buildMirror } from "./mirror.mjs";
 const VAULT = "tools/fixture-records";
 const TASKS = "Orbitask/Tasks";
 const BOARDS = "Orbitask/Boards";
-const KANBAN = "@task/kanban-board";
-const ARCHIVED = "@task/archived-columns";
-const GROUP = "@core/view-group";
-const SWITCHER = "@task/view-tabs";
+const KANBAN = "@default/kanban-board";
+const ARCHIVED = "@default/archived-columns";
+const SWITCHER = "@default/view-tabs";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
 	pretendToBeVisual: true,
@@ -45,6 +44,7 @@ const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
 const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
 const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
+const { swapBoxes } = await import("./.mjs-cache/tree.mjs");
 const { createHost } = await import("./.mjs-cache/host.mjs");
 const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
 
@@ -99,35 +99,37 @@ const HOLDS = [
 	{ name: "Archived columns", widget: ARCHIVED },
 ];
 
-function grouped({ holds = HOLDS, isTabsShown, switcher = false, view } = {}) {
-	const tiles = [
-		{
-			id: "group",
-			widget: GROUP,
-			settings: { holds },
-			props: isTabsShown === undefined ? {} : { isTabsShown: { from: "typed", value: isTabsShown } },
-			mounted: {
-				Kanban: {
-					widget: KANBAN,
-					props: { columns: { from: "typed", value: [{ name: "To Do" }, { name: "Doing" }] } },
-				},
-			},
-		},
-	];
-	const places = [{ id: "group", x: 0, y: 0, w: 20, h: 10 }];
+const COLUMNS = { columns: { from: "typed", value: [{ name: "To Do" }, { name: "Doing" }] } };
+const tileIdOf = (name) => `v:${name}`;
+
+function viewNode(held) {
+	const slot = { name: held.name, ...(held.hidden ? { hidden: true } : {}) };
+	if (!held.widget) return { dir: "column", of: [], ...slot };
+	return { id: tileIdOf(held.name), ...slot };
+}
+
+function swapped({ holds = HOLDS, strip, switcher = false } = {}) {
+	const tiles = holds
+		.filter((held) => held.widget)
+		.map((held) => ({
+			id: tileIdOf(held.name),
+			widget: held.widget,
+			...(held.widget === KANBAN ? { props: COLUMNS } : {}),
+		}));
+	const box = { dir: "swap", id: "group", ...(strip === undefined ? {} : { strip }), of: holds.map(viewNode) };
+	const rows = [box];
 	if (switcher) {
 		tiles.unshift({
 			id: "switch",
 			widget: SWITCHER,
 			props: { options: { from: "ref", ref: "group/holds" }, selection: { from: "ref", ref: "group/selection" } },
 		});
-		places.unshift({ id: "switch", x: 0, y: 0, w: 20, h: 1 });
-		places[1] = { id: "group", x: 0, y: 1, w: 20, h: 9 };
+		rows.unshift({ id: "switch", height: 56 });
 	}
-	return normalizeBoard({ tiles, layouts: { 20: { places } } });
+	return normalizeBoard({ v: 2, tiles, layout: { dir: "row", of: [{ dir: "column", keep: true, of: rows }] } });
 }
 
-let board = grouped();
+let board = swapped();
 const root = dom.window.document.getElementById("host");
 const draw = () =>
 	render(
@@ -178,20 +180,27 @@ const click = async (node) => {
 	node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 	await settle();
 };
-const strip = () => all(".ovg-strip .wg-tabs-tab").map((node) => node.textContent.trim());
-const tab = (name) => byText(".ovg-strip .wg-tabs-tab", name);
+const strip = () => all(".wg-tree-swap-strip .wg-tabs-tab").map((node) => node.textContent.trim());
+const tab = (name) => byText(".wg-tree-swap-strip .wg-tabs-tab", name);
 const menu = async (item) => {
-	await click(all(".ovg-strip .wg-tabs-more")[0]);
-	await click(byText(".ovg-strip .wg-kit-pop-item", item));
+	await click(all(".wg-tree-swap-strip .wg-tabs-more")[0]);
+	await click(byText(".wg-tree-swap-strip .wg-kit-pop-item", item));
 };
+const onScreen = (selector) => all(selector).filter((node) => !node.closest("[hidden]"));
 const drawn = () =>
-	all(".orbi-kanban").length > 0 ? "Kanban" : all(".orbi-archived-columns").length > 0 ? "Archived columns" : "nothing";
+	onScreen(".orbi-kanban").length > 0
+		? "Kanban"
+		: onScreen(".orbi-archived-columns").length > 0
+			? "Archived columns"
+			: "nothing";
 const dialogOn = (selector) => [...dom.window.document.body.querySelectorAll(selector)];
-const groupTile = () => board.tiles.find((tile) => tile.id === "group");
+const viewBox = () => swapBoxes(board.layout)[0]?.box ?? null;
+const viewsIn = () => viewBox()?.of.map((child) => ({ name: child.name, ...(child.hidden ? { hidden: true } : {}) }));
+const tileNamed = (name) => board.tiles.find((tile) => tile.id === tileIdOf(name));
 
-await start(grouped());
+await start(swapped());
 
-check("the group draws a tab for every view it holds", strip(), ["Kanban", "Archived columns"]);
+check("the box draws a tab for every view it holds", strip(), ["Kanban", "Archived columns"]);
 check("and draws the first of them", drawn(), "Kanban");
 await click(tab("Archived columns"));
 check("pressing a tab draws that view", drawn(), "Archived columns");
@@ -208,10 +217,9 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	// CONTEXT: drawn again from the note, or the strip would read back what the test typed into it
 	await start(board);
 	check("renaming a tab renames the view", strip(), ["Planner", "Archived columns"]);
-	check("the note carries the new name", groupTile()?.mounts?.holds?.[0], { name: "Planner", widget: KANBAN });
-	check("and the list has left the settings field it used to live in", groupTile()?.settings?.holds, undefined);
-	check("the view's own record moved with it", Object.keys(groupTile()?.mounted ?? {}), ["Planner"]);
-	check("with the columns it had", groupTile()?.mounted?.Planner?.props?.columns?.value, [
+	check("the note carries the new name", viewsIn(), [{ name: "Planner" }, { name: "Archived columns" }]);
+	check("the tile under it never moved", viewBox()?.of[0]?.id, tileIdOf("Kanban"));
+	check("so the columns it was set to are untouched", tileNamed("Kanban")?.props?.columns?.value, [
 		{ name: "To Do" },
 		{ name: "Doing" },
 	]);
@@ -222,25 +230,21 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 {
 	await menu("Add");
 	check("adding a tab adds a view", strip().length, 3);
-	check("which holds no widget yet", groupTile()?.mounts?.holds?.[2]?.widget, "");
-	check("and says so where the view is drawn", all(".ovg-empty .ovg-fill").length, 1);
+	check("which is a box holding nothing yet", viewBox()?.of[2], { dir: "column", of: [], name: "Untitled 1" });
+	check("and offers the press that fills it", onScreen(".wg-tree-swap-held .wg-tree-add").length, 1);
 	check("with nothing else drawn in its place", drawn(), "nothing");
 
-	await click(all(".ovg-empty .ovg-fill")[0]);
+	await click(onScreen(".wg-tree-swap-held .wg-tree-add")[0]);
 	check("the press opens the catalogue", dialogOn(".wg-cat-dialog").length, 1);
-	check(
-		"which says what the press means",
-		dialogOn(".wg-cat-dialog .wg-cat-side-title")[0]?.textContent.trim(),
-		"Add a view",
-	);
 
 	const pick = dialogOn(".wg-cat-tile [aria-label]").find((node) =>
 		node.getAttribute("aria-label").includes("Archived columns"),
 	);
 	await click(pick.querySelector(".wg-cat-go") ?? pick);
-	check("picking a widget fills the tab", groupTile()?.mounts?.holds?.[2]?.widget, ARCHIVED);
+	check("picking a widget fills the view with a tile of its own", board.tiles.at(-1)?.widget, ARCHIVED);
+	check("standing inside the view that was added", viewBox()?.of[2]?.of[0]?.id, board.tiles.at(-1)?.id);
 	check("the catalogue closes behind it", dialogOn(".wg-cat-dialog").length, 0);
-	check("the name the tab was given is kept", groupTile()?.mounts?.holds?.[2]?.name, "Untitled 1");
+	check("the name the tab was given is kept", viewBox()?.of[2]?.name, "Untitled 1");
 	check("and the widget is drawn in it", drawn(), "Archived columns");
 }
 
@@ -249,12 +253,8 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	await click(tab("Planner"));
 	await menu("Archive");
 	check("archiving takes the tab off the strip", strip().includes("Planner"), false);
-	check("the row is still in the note", groupTile()?.mounts?.holds?.[0], {
-		name: "Planner",
-		widget: KANBAN,
-		hidden: true,
-	});
-	check("and so is everything the view was set to", groupTile()?.mounted?.Planner?.props?.columns?.value, [
+	check("the view is still in the note, hidden", viewsIn()?.[0], { name: "Planner", hidden: true });
+	check("and so is everything the view was set to", tileNamed("Kanban")?.props?.columns?.value, [
 		{ name: "To Do" },
 		{ name: "Doing" },
 	]);
@@ -262,8 +262,8 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	await menu("Archived list");
 	await click([...dom.window.document.body.querySelectorAll(".wg-tabs-restore")].at(-1));
 	check("restoring puts the tab back", strip().includes("Planner"), true);
-	check("with nothing hidden in the note", groupTile()?.mounts?.holds?.[0], { name: "Planner", widget: KANBAN });
-	check("and its columns untouched", groupTile()?.mounted?.Planner?.props?.columns?.value, [
+	check("with nothing hidden in the note", viewsIn()?.[0], { name: "Planner" });
+	check("and its columns untouched", tileNamed("Kanban")?.props?.columns?.value, [
 		{ name: "To Do" },
 		{ name: "Doing" },
 	]);
@@ -272,12 +272,11 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 // CONTEXT: an archived view stays hidden even when the selection still names it
 {
 	await start(
-		grouped({
+		swapped({
 			holds: [
-				{ name: "Planner", widget: KANBAN, hidden: true },
+				{ name: "Kanban", widget: KANBAN, hidden: true },
 				{ name: "Archived columns", widget: ARCHIVED },
 			],
-			view: "Planner",
 		}),
 	);
 	check("an archived view is not drawn, though the selection names it", drawn(), "Archived columns");
@@ -286,20 +285,20 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 
 // CONTEXT: hide, not disable — the group must still be drivable from outside
 {
-	await start(grouped({ isTabsShown: false }));
-	check("the switch hides the strip", all(".ovg-strip").length, 0);
-	check("and the group still draws its view", drawn(), "Kanban");
+	await start(swapped({ strip: false }));
+	check("the switch hides the strip", all(".wg-tree-swap-strip").length, 0);
+	check("and the box still draws its view", drawn(), "Kanban");
 }
 
 {
 	said.length = 0;
-	await start(grouped({ switcher: true, isTabsShown: false }));
-	check("the group hands its strip to the switcher outside", all(".ovg-strip").length, 0);
+	await start(swapped({ switcher: true, strip: false }));
+	check("the box hands its strip to the switcher outside", all(".wg-tree-swap-strip").length, 0);
 	check("and it opens on the view the shared box names", drawn(), "Kanban");
 	await click(all(".orbi-view-tabs .ovt-pick")[0]);
 	const offered = [...dom.window.document.querySelectorAll(".orbi-view-tabs .wg-kit-pop-item")];
 	check(
-		"the switcher offers what the group holds",
+		"the switcher offers what the box holds",
 		offered.map((node) => node.textContent.trim()),
 		["Kanban", "Archived columns"],
 	);

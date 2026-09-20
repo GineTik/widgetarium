@@ -5,16 +5,34 @@ import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent", "Event"]) {
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+	"NodeFilter",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
 buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { previewProps, previewGateways, previewSize, previewReader, previewHost } = await import("./.mjs-cache/preview.mjs");
+const { previewProps, previewGateways, previewSize, previewReader, previewHost } =
+	await import("./.mjs-cache/preview.mjs");
 const { GRID } = await import("./.mjs-cache/paths.mjs");
 const { manifestOfEveryShippedWidget } = await import("./widget-props.mjs");
 
@@ -24,18 +42,20 @@ function check(label, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
 	checks.push(label);
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 const shipped = await manifestOfEveryShippedWidget();
-const kanban = shipped["@task/kanban-board"];
-const card = shipped["@task/task-card"];
+const kanban = shipped["@default/kanban-board"];
+const card = shipped["@default/task-card"];
 
 console.log("— the data a preview draws comes from the manifest —\n");
 const gateways = previewGateways(kanban);
 const listed = await gateways.tasks.list();
 check("the prop the widget declares is answered", listed.total, kanban.preview.props.tasks.rows.length);
-check("and the rows carry the widget's own property names", listed.rows[0].value.props.title, "Design the onboarding flow");
+check("and the rows carry the widget's own property names", listed.rows[0].props.title, "Design the onboarding flow");
 check("each row is a record, with a ref of its own", listed.rows[0].ref, "preview/1.md");
 
 console.log("\n— and every way back to the vault is shut —");
@@ -44,12 +64,18 @@ check("it cannot update", gateways.tasks.update.can().can, false);
 check("it cannot remove", gateways.tasks.remove.can().can, false);
 check(
 	"calling one anyway is refused, not a crash",
-	await gateways.tasks.create({ props: {} }).then(() => "made", () => "refused"),
+	await gateways.tasks.create({ props: {} }).then(
+		() => "made",
+		() => "refused",
+	),
 	"refused",
 );
 check(
 	"and update the same",
-	await gateways.tasks.update({ ref: "preview/1.md", data: {} }).then(() => "made", () => "refused"),
+	await gateways.tasks.update({ ref: "preview/1.md", data: {} }).then(
+		() => "made",
+		() => "refused",
+	),
 	"refused",
 );
 
@@ -62,7 +88,11 @@ const cardTask = await cardProps.task.get();
 check("its value comes from the manifest's sample", cardTask.title, sampled.title);
 check("over the manifest's own default", cardTask.priority, sampled.priority);
 check("and the sample really overrides something", sampled.priority !== cardDeclared.priority, true);
-check("and it is handed no gateway it never declared", Object.keys(cardProps).filter((name) => name === "tasks"), []);
+check(
+	"and it is handed no gateway it never declared",
+	Object.keys(cardProps).filter((name) => name === "tasks"),
+	[],
+);
 
 console.log("\n— the sample world is local to the preview —");
 const boardProps = previewProps({ manifest: kanban }, {});
@@ -70,7 +100,11 @@ check("a preview reaches no shared box", boardProps.context, undefined);
 check("and it may not fold the board's views into a group", boardProps.foldIntoGroup(), false);
 check("nor open the catalogue it is being drawn inside", boardProps.catalogue.canOpen, false);
 check("and pressing that closed catalogue answers nothing", await boardProps.catalogue.open(), null);
-check("the board it reads is the sample's", (await boardProps.board.get()).properties, ["Status", "Priority", "Assignees"]);
+check("the board it reads is the sample's", (await boardProps.board.get()).properties, [
+	"Status",
+	"Priority",
+	"Assignees",
+]);
 
 console.log("\n— the size is declared, so a tile knows what it is drawing —");
 const size = previewSize(kanban, GRID.cellPx, GRID.gapPx);
@@ -81,7 +115,7 @@ const fallback = previewSize({ defaultSize: { w: 3, h: 1 } }, GRID.cellPx, GRID.
 check("and falls back to the size the widget takes on a board", [fallback.w, fallback.h], [3, 1]);
 
 console.log("\n— a widget that reads a file reads the manifest's, and nothing else —");
-const codeBlock = shipped["@inline/code-block"];
+const codeBlock = shipped["@default/code-block"];
 const reading = previewReader(codeBlock);
 const fromManifest = await reading.read("main.py");
 check("the file the manifest declares is answered", fromManifest.ok, true);
@@ -91,15 +125,41 @@ check("a file it never declared is refused", stolen.ok, false);
 check("and the refusal says it is a preview, not a vault", /not in this preview/.test(stolen.failure), true);
 check("a refused read still answers with a text", stolen.text, "");
 check("a manifest declaring no files reads nothing at all", (await previewReader({}).read("main.py")).ok, false);
-check("and the widget is handed one, so it never reaches around for a vault", typeof previewProps({ manifest: codeBlock }, {}).reader.read, "function");
+check(
+	"and the widget is handed one, so it never reaches around for a vault",
+	typeof previewProps({ manifest: codeBlock }, {}).reader.read,
+	"function",
+);
 
 console.log("\n— and an environment that can do nothing says so —");
 const bare = previewHost(null);
 check("it claims no capability", Object.keys(bare.can), []);
 check("so a widget asking whether it may render markdown is told no", Boolean(bare.can.renderMarkdown), false);
 check("its console refuses to run anything", (await bare.console.run("ls")).ok, false);
-check("but a real host behind it is passed through, narrowed", previewHost({ platform: "obsidian", type: "obsidian-desktop", can: { renderMarkdown: true }, console: null, ui: { notify() {}, renderMarkdown() {} } }).can.renderMarkdown, true);
-check("and never carries the vault across", "app" in previewHost({ platform: "obsidian", type: "x", can: {}, console: null, ui: { notify() {}, renderMarkdown() {} }, app: {} }), false);
+check(
+	"but a real host behind it is passed through, narrowed",
+	previewHost({
+		platform: "obsidian",
+		type: "obsidian-desktop",
+		can: { renderMarkdown: true },
+		console: null,
+		ui: { notify() {}, renderMarkdown() {} },
+	}).can.renderMarkdown,
+	true,
+);
+check(
+	"and never carries the vault across",
+	"app" in
+		previewHost({
+			platform: "obsidian",
+			type: "x",
+			can: {},
+			console: null,
+			ui: { notify() {}, renderMarkdown() {} },
+			app: {},
+		}),
+	false,
+);
 
 console.log("\n— it really draws —");
 const drawnRows = (await previewProps({ manifest: kanban }, {}).tasks.list()).total;
@@ -113,7 +173,15 @@ const { widgetCatalogue } = await import("./.mjs-cache/catalogue-dialog.mjs");
 check("a host that says nothing about the catalogue keeps it open", widgetCatalogue({}, { can: {} }).canOpen, true);
 check("a host that allows it opens it", widgetCatalogue({}, { can: { catalogue: true } }).canOpen, true);
 check("a host that switches it off closes it", widgetCatalogue({}, { can: { catalogue: false } }).canOpen, false);
-check("and the closed one picks nothing rather than raising a dialog", await widgetCatalogue({}, { can: { catalogue: false } }).open(), null);
+check(
+	"and the closed one picks nothing rather than raising a dialog",
+	await widgetCatalogue({}, { can: { catalogue: false } }).open(),
+	null,
+);
 
-console.log(failed ? `\n${failed} of ${checks.length} failed` : `\n${checks.length} checks: a preview reads its manifest and writes nothing`);
+console.log(
+	failed
+		? `\n${failed} of ${checks.length} failed`
+		: `\n${checks.length} checks: a preview reads its manifest and writes nothing`,
+);
 process.exit(failed ? 1 : 0);

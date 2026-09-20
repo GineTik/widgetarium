@@ -42,7 +42,7 @@ export function streakOf(days) {
 }
 `;
 
-const WIDGET = `import { streakOf, RATE } from "@habit/lib";
+const WIDGET = `import { streakOf, RATE } from "@default/lib";
 import { createWidget } from "widgetarium";
 export default createWidget(function Probe({ days = [] }) {
 	return h("b", null, streakOf(days) + "/" + RATE);
@@ -50,7 +50,7 @@ export default createWidget(function Probe({ days = [] }) {
 `;
 
 const FILES = {
-	[`${ROOT}/@habit/lib.js`]: LIB,
+	[`${ROOT}/@default/lib.js`]: LIB,
 	[`${ROOT}/@habit/probe/manifest.json`]: JSON.stringify({ id: "@habit/probe", title: "Probe" }),
 	[`${ROOT}/@habit/probe/widget.jsx`]: WIDGET,
 };
@@ -61,7 +61,9 @@ const check = (name, got, want) => {
 	checks += 1;
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 };
 
 {
@@ -71,33 +73,55 @@ const check = (name, got, want) => {
 
 	check("the widget beside a lib still loads", Boolean(entry?.component), true);
 	check("and nothing failed on the way", entry?.error ?? null, null);
-	check("the lib is served under the scope's own name", registry.libs.has("@habit/lib"), true);
-	check("its exports are what the file exported", Object.keys(registry.libs.get("@habit/lib")).sort(), ["RATE", "streakOf"]);
+	check("the lib is served under the scope's own name", registry.libs.has("@default/lib"), true);
+	check("its exports are what the file exported", Object.keys(registry.libs.get("@default/lib")).sort(), [
+		"RATE",
+		"streakOf",
+	]);
 	check("and what the widget draws came from it", entry.component({ days: ["a", "b", "c"] }).props.children, "3/21");
 }
 
 {
-	const registry = new WidgetRegistry(vaultOf({ ...FILES, [`${ROOT}/@habit/probe/widget.jsx`]: `import "nowhere";\nexport default () => null;\n` }));
+	const registry = new WidgetRegistry(
+		vaultOf({ ...FILES, [`${ROOT}/@habit/probe/widget.jsx`]: `import "nowhere";\nexport default () => null;\n` }),
+	);
 	await registry.load();
 	const entry = registry.get("@habit/probe");
-	check("an import of something else is still refused", String(entry?.error ?? ""), 'Error: cannot import "nowhere" — a widget may only import widgetarium, widgetarium/kit, widgetarium/kit/emojis, react, react-dom, @habit/lib');
+	check(
+		"an import of something else is still refused",
+		String(entry?.error ?? ""),
+		'Error: cannot import "nowhere" — a widget may only import widgetarium, widgetarium/kit, widgetarium/kit/emojis, react, react-dom, @default/lib',
+	);
 }
 
 {
 	const said = [];
 	const wasError = console.error;
 	console.error = (...parts) => said.push(parts.join(" "));
-	const registry = new WidgetRegistry(vaultOf({ ...FILES, [`${ROOT}/@habit/lib.js`]: "export const broken = (" }));
+	const registry = new WidgetRegistry(vaultOf({ ...FILES, [`${ROOT}/@default/lib.js`]: "export const broken = (" }));
 	await registry.load();
 	console.error = wasError;
 
-	check("a lib that will not parse is reported", said.some((line) => line.includes("@habit/lib.js")), true);
-	check("and it is not served", registry.libs.has("@habit/lib"), false);
-	check("so the widget that wanted it fails by name", String(registry.get("@habit/probe")?.error ?? "").includes("@habit/lib"), true);
+	check(
+		"a lib that will not parse is reported",
+		said.some((line) => line.includes("@default/lib.js")),
+		true,
+	);
+	check("and it is not served", registry.libs.has("@default/lib"), false);
+	check(
+		"so the widget that wanted it fails by name",
+		String(registry.get("@habit/probe")?.error ?? "").includes("@default/lib"),
+		true,
+	);
 }
 
 {
-	const registry = new WidgetRegistry(vaultOf({ [`${ROOT}/@task/probe/manifest.json`]: JSON.stringify({ id: "@task/probe" }), [`${ROOT}/@task/probe/widget.jsx`]: "export default () => null;" }));
+	const registry = new WidgetRegistry(
+		vaultOf({
+			[`${ROOT}/@task/probe/manifest.json`]: JSON.stringify({ id: "@task/probe" }),
+			[`${ROOT}/@task/probe/widget.jsx`]: "export default () => null;",
+		}),
+	);
 	await registry.load();
 	check("a scope with no lib loads exactly as before", Boolean(registry.get("@task/probe")?.component), true);
 	check("and serves none", registry.libs.size, 0);
@@ -110,7 +134,13 @@ const check = (name, got, want) => {
 	const nodePath = await import("node:path");
 	const work = mkdtempSync(nodePath.join(tmpdir(), "wg-lib-"));
 	const copy = nodePath.join(work, "lib.mjs");
-	writeFileSync(copy, readFileSync("widgets/@habit/lib.js", "utf8"));
+	const mirrorAt = nodePath.resolve("tools/.mjs-cache");
+	writeFileSync(
+		copy,
+		readFileSync("widgets/@default/lib.js", "utf8")
+			.replace('from "widgetarium/kit"', `from "file://${mirrorAt}/kit.mjs"`)
+			.replace('from "widgetarium"', `from "file://${mirrorAt}/gateway/match.mjs"`),
+	);
 	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf } = await import(`file://${copy}`);
 
 	const habits = [
@@ -126,8 +156,16 @@ const check = (name, got, want) => {
 	check("a note per habit is read as one", shapeOf(habits), "habit");
 	check("a note per day as the other", shapeOf(daily), "day");
 	check("every habit's dates come through", readLog(habits).length, 4);
-	check("and one habit alone is pickable", readLog(habits, { pick: "Reading" }).map((entry) => entry.date), ["2026-08-31"]);
-	check("a day with nothing in it is not a day marked", readLog(daily).map((entry) => entry.date), ["2026-08-29", "2026-08-31"]);
+	check(
+		"and one habit alone is pickable",
+		readLog(habits, { pick: "Reading" }).map((entry) => entry.date),
+		["2026-08-31"],
+	);
+	check(
+		"a day with nothing in it is not a day marked",
+		readLog(daily).map((entry) => entry.date),
+		["2026-08-29", "2026-08-31"],
+	);
 	check("a tick counts as one", readLog(daily).at(-1).value, 1);
 
 	const run = readLog(habits, { pick: "Exercise" });
@@ -161,11 +199,23 @@ const check = (name, got, want) => {
 	};
 	const press = pressing({ days, ...logged });
 	await press("2026-08-29");
-	check("pressing a kept day empties its property", written.at(-1), { verb: "update", ref: "Days/2026-08-29.md", data: { done: null } });
+	check("pressing a kept day empties its property", written.at(-1), {
+		verb: "update",
+		ref: "Days/2026-08-29.md",
+		data: { done: null },
+	});
 	await press("2026-08-30");
-	check("pressing a day that has a note but no mark fills it", written.at(-1), { verb: "update", ref: "Days/2026-08-30.md", data: { done: 1 } });
+	check("pressing a day that has a note but no mark fills it", written.at(-1), {
+		verb: "update",
+		ref: "Days/2026-08-30.md",
+		data: { done: 1 },
+	});
 	await press("2026-09-01");
-	check("and pressing a day with no note at all makes one named for it", written.at(-1), { verb: "create", name: "2026-09-01", props: { done: 1 } });
+	check("and pressing a day with no note at all makes one named for it", written.at(-1), {
+		verb: "create",
+		name: "2026-09-01",
+		props: { done: 1 },
+	});
 }
 
 {
@@ -173,11 +223,11 @@ const check = (name, got, want) => {
 	const { buildWidget } = await import("./.mjs-cache/registry.mjs");
 	// CONTEXT: the catalogue draws a widget nobody installed, so it compiles one straight off disk
 	const drawn = buildWidget({
-		code: readFileSync("widgets/@habit/heatmap/widget.tsx", "utf8"),
-		path: "widgets/@habit/heatmap/widget.tsx",
-		lib: readFileSync("widgets/@habit/lib.js", "utf8"),
-		libPath: "widgets/@habit/lib.js",
-		scope: "@habit",
+		code: readFileSync("widgets/@default/heatmap/widget.tsx", "utf8"),
+		path: "widgets/@default/heatmap/widget.tsx",
+		lib: readFileSync("widgets/@default/lib.js", "utf8"),
+		libPath: "widgets/@default/lib.js",
+		scope: "@default",
 	});
 	check("a widget is built from files nobody installed", typeof drawn, "function");
 
@@ -187,7 +237,11 @@ const check = (name, got, want) => {
 	} catch (failure) {
 		refused = String(failure.message);
 	}
-	check("and one exporting no component says so", refused, 'nowhere/widget.jsx: the file must "export default createWidget(...)"');
+	check(
+		"and one exporting no component says so",
+		refused,
+		'nowhere/widget.jsx: the file must "export default createWidget(...)"',
+	);
 }
 
 console.log(`\n${failed === 0 ? `lib gate: clean (${checks} checks)` : `lib gate: ${failed} failed`}`);

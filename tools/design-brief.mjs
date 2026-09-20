@@ -9,8 +9,9 @@ const css = readFileSync("styles.css", "utf8");
 // the token block: everything declared on the root, comments and all, because the comments carry
 // the measurements that make a value non-negotiable
 const tokens = /\.wg-root\s*\{([\s\S]*?)\n\}/.exec(css);
-const kitRules = [...css.matchAll(/(\/\*[\s\S]*?\*\/\s*)?:is\(\.wg-root, \.wg-portal\) (\.wg-kit-[^{]*)\{([^}]*)\}/g)]
-	.map((rule) => `${(rule[1] ?? "").trim()}\n.${rule[2].trim().slice(1)} {${rule[3]}}`.trim());
+const kitRules = [
+	...css.matchAll(/(\/\*[\s\S]*?\*\/\s*)?:is\(\.wg-root, \.wg-portal\) (\.wg-kit-[^{]*)\{([^}]*)\}/g),
+].map((rule) => `${(rule[1] ?? "").trim()}\n.${rule[2].trim().slice(1)} {${rule[3]}}`.trim());
 
 const LAWS = `# Widgetarium design system
 

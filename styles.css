@@ -16,7 +16,6 @@
 	--wg-widget-radius-l: 1.875rem;
 	--wg-widget-radius-xl: 2.5rem;
 	--wg-widget-radius-full: 999px;
-	--wg-widget-pad-surface: 8px;
 	--wg-widget-radius: var(--wg-widget-radius-s);
 
 	/* The board is the plate widgets sit on. Nested-radius law: the outer corner
@@ -24,16 +23,8 @@
 	   concentric when either is retuned. --wg-board-pad is written by the host
 	   so padding and radius can never drift apart. */
 	--wg-board-pad: 2rem;
+	--wg-screen-chrome: 12rem;
 	--wg-root-head: 1.6rem;
-
-	/* Cast by a widget whose root declares fillType="shadow"; suppressed on a plated
-	   board, where the plate's tone already draws the edge.
-	   INVARIANT: the shadow's reach — blur/2 plus the offset — must stay inside
-	   --wg-board-pad. Past that it is painted in Obsidian's box, not ours, and
-	   whatever clips there is not something we can turn off.
-	   tools/check-shadow.mjs fails the build if this stops holding. */
-	--wg-widget-shadow: 0 6px 47px rgba(0, 0, 0, 0.035), 0 4px 8px rgba(0, 0, 0, 0.005);
-	--wg-widget-edge: inset 0 0 0 1px color-mix(in srgb, var(--text-normal) 4%, transparent);
 }
 
 .block-language-widgetarium,
@@ -80,6 +71,12 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-raise: color-mix(in srgb, #ffffff 12%, var(--background-primary));
 	/* CONTEXT: the hairline a lifted card and a quoted block are drawn with */
 	--wg-kit-card-edge: color-mix(in srgb, var(--text-normal) 9%, transparent);
+	--wg-kit-group-fill: color-mix(in srgb, var(--text-normal) 3%, transparent);
+	--wg-kit-group-raise: var(--wg-kit-raise);
+	--wg-kit-group-edge: var(--wg-kit-card-edge);
+	--wg-kit-group-shadow: 0 1px 2px color-mix(in srgb, var(--text-normal) 6%, transparent);
+	--wg-kit-group-line: color-mix(in srgb, var(--text-normal) 7%, transparent);
+	--wg-group-pad: 16px;
 	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
 	--wg-kit-warning: var(--color-orange, #d9822b);
 	--wg-kit-success-wash: color-mix(in srgb, var(--text-success) 14%, var(--background-primary));
@@ -90,13 +87,23 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-info: var(--color-blue, #3b7fd4);
 	--wg-kit-note: var(--color-cyan, #17a2a0);
 	--wg-kit-standout: var(--color-pink, #d1477f);
+	/* TRADE-OFF: the host's yellow is a marker pen and unreadable as ink, so the token is already
+	   turned toward gold — the hue region between orange and green was the last one left free */
+	--wg-kit-highlight: var(--color-yellow, #b08900);
 	--wg-kit-info-wash: color-mix(in srgb, var(--wg-kit-info) 14%, var(--background-primary));
 	--wg-kit-note-wash: color-mix(in srgb, var(--wg-kit-note) 14%, var(--background-primary));
 	--wg-kit-standout-wash: color-mix(in srgb, var(--wg-kit-standout) 14%, var(--background-primary));
+	--wg-kit-highlight-wash: color-mix(in srgb, var(--wg-kit-highlight) 22%, var(--background-primary));
 	/* CONTEXT: 72/28 toward the ink — it darkens on a light ground and lightens on a dark one */
 	--wg-kit-info-ink: color-mix(in srgb, var(--wg-kit-info) 72%, var(--text-normal));
 	--wg-kit-note-ink: color-mix(in srgb, var(--wg-kit-note) 72%, var(--text-normal));
 	--wg-kit-standout-ink: color-mix(in srgb, var(--wg-kit-standout) 72%, var(--text-normal));
+	--wg-kit-highlight-ink: color-mix(in srgb, var(--wg-kit-highlight) 72%, var(--text-normal));
+	--wg-kit-neutral-ink: color-mix(in srgb, var(--wg-kit-neutral) 72%, var(--text-normal));
+	--wg-kit-accent-ink: color-mix(in srgb, var(--wg-kit-accent) 72%, var(--text-normal));
+	--wg-kit-success-ink: color-mix(in srgb, var(--wg-kit-success) 72%, var(--text-normal));
+	--wg-kit-warning-ink: color-mix(in srgb, var(--wg-kit-warning) 72%, var(--text-normal));
+	--wg-kit-error-ink: color-mix(in srgb, var(--wg-kit-error) 72%, var(--text-normal));
 
 	--wg-kit-neutral: var(--text-muted);
 	--wg-kit-accent: var(--interactive-accent);
@@ -211,10 +218,23 @@ pre:has(> .block-language-widgetarium),
 }
 
 .wg-root.is-page {
+	--wg-page-pad-bottom: 1rem;
+	display: flex;
+	flex-direction: column;
 	overflow: visible;
 	min-height: 100%;
-	padding: 1.6rem 1rem 1rem;
+	padding: 1.6rem 0.5rem var(--wg-page-pad-bottom);
 	background: var(--background-primary);
+}
+
+.wg-root.is-page > .wg-tree-page,
+.wg-root.is-page > .wg-tree-page > .wg-tree-columns {
+	flex: 1 1 auto;
+}
+
+.wg-root.is-page > .wg-tree-page > .wg-tree-columns > .wg-tree-region[data-surface="apart"]::before {
+	top: -100vh;
+	bottom: calc(-1 * var(--wg-page-pad-bottom));
 }
 
 .wg-grid {
@@ -227,8 +247,10 @@ pre:has(> .block-language-widgetarium),
 	padding-bottom: var(--wg-board-pad);
 }
 
-.wg-root.is-screen .wg-grid {
-	min-height: calc(100vh - 12rem);
+.wg-root.is-screen,
+.wg-root.is-screen > .wg-tree-page,
+.wg-root.is-screen > .wg-tree-page > .wg-tree-columns {
+	min-height: calc(100vh - var(--wg-screen-chrome));
 }
 
 .wg-tile {
@@ -464,14 +486,32 @@ pre:has(> .block-language-widgetarium),
 	color: var(--wg-muted);
 }
 
+.wg-missing-id {
+	margin: 0;
+	opacity: 0.8;
+	overflow-wrap: anywhere;
+}
+
+.wg-missing-install {
+	align-self: flex-start;
+}
+
+.wg-newer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	font-family: var(--font-interface);
+	font-size: 12px;
+	color: var(--wg-muted);
+}
+
 .wg-tile-missing {
 	background: var(--background-primary);
 	box-shadow: inset 0 0 0 1px var(--wg-line);
 }
 
-/* The widget root decides how the widget sits on the board: its corner and how it
-   separates itself from what is behind. The tile stays paintless so a shadow can
-   leave it, and the board can still overrule elevation. */
 .wg-widget-root {
 	/* THE WIDGET ANSWERS FOR ITS OWN BOX. A media query asks how wide the SCREEN is, which a
 	   widget in a tile cannot use — two tiles of different widths on one screen would style
@@ -512,41 +552,14 @@ pre:has(> .block-language-widgetarium),
 	pointer-events: none;
 }
 
-.wg-widget-root[data-rounded="base"] {
-	border-radius: var(--wg-widget-radius);
+.wg-widget-root > * {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 0;
+	box-sizing: border-box;
 }
-
-.wg-widget-root[data-rounded="full"] {
-	border-radius: var(--wg-widget-radius-full);
-}
-
-.wg-widget-root {
-	background: var(--wg-surface-fill, var(--wg-kit-raise));
-	box-shadow: var(--wg-widget-edge), var(--wg-widget-shadow);
-	padding: var(--wg-widget-pad);
-}
-
-.wg-widget-root[data-fill="none"] {
-	background: none;
-	box-shadow: none;
-}
-
-/* Rounding is the widget author's call, not a consequence of the background: a surface-less
-   widget may still want a rounded hit area, and one WITH a surface may want square corners.
-   The two were coupled for a day and it took the choice away from the author. */
-.wg-widget-root[data-rounded="none"] {
-	border-radius: 0;
-}
-
-.wg-widget-root {
-	--wg-widget-pad: var(--wg-widget-pad-surface);
-}
-
-.wg-widget-root[data-fill="none"] {
-	--wg-widget-pad: 0px;
-}
-
-/* a plate separates by tone, so elevation on top of it is noise */
 
 .wg-blank {
 	position: absolute;
@@ -665,12 +678,17 @@ pre:has(> .block-language-widgetarium),
    enough to beat any one-class kit rule and repaint its radius. Scoping every kit rule to the
    roots it already lives in makes it (0,2,0) and settles the fight without !important. */
 :is(.wg-root, .wg-portal) .wg-kit-icon-glyph {
+	--wg-icon-grid: 20;
 	flex: none;
 	fill: none;
 	stroke: currentColor;
-	stroke-width: 1.8;
+	stroke-width: calc(1.8 * var(--wg-icon-grid) / 20);
 	stroke-linecap: round;
 	stroke-linejoin: round;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-icon-glyph.is-lucide {
+	--wg-icon-grid: 24;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-emoji {
@@ -823,6 +841,93 @@ pre:has(> .block-language-widgetarium),
 :is(.wg-root, .wg-portal) .wg-kit-pill.is-standout {
 	background: var(--wg-kit-standout-wash);
 	color: var(--wg-kit-standout-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-highlight {
+	background: var(--wg-kit-highlight-wash);
+	color: var(--wg-kit-highlight-ink);
+}
+
+/* TRADE-OFF: the wash under every tone, accent included, where the pill fills accent solid — a
+   mark worn beside text is read AS text, and a solid plate behind one line shouts over the line */
+:is(.wg-root, .wg-portal) .wg-kit-tone {
+	background: var(--wg-kit-fill);
+	color: var(--wg-kit-neutral);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-accent {
+	background: var(--wg-kit-accent-wash);
+	color: var(--wg-kit-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-ok {
+	background: var(--wg-kit-success-wash);
+	color: var(--wg-kit-success);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-warn {
+	background: var(--wg-kit-warning-wash);
+	color: var(--wg-kit-warning);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-err {
+	background: var(--wg-kit-error-wash);
+	color: var(--wg-kit-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-info {
+	background: var(--wg-kit-info-wash);
+	color: var(--wg-kit-info-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-note {
+	background: var(--wg-kit-note-wash);
+	color: var(--wg-kit-note-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-standout {
+	background: var(--wg-kit-standout-wash);
+	color: var(--wg-kit-standout-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-highlight {
+	background: var(--wg-kit-highlight-wash);
+	color: var(--wg-kit-highlight-ink);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid {
+	background: var(--wg-kit-neutral-ink);
+	color: var(--background-primary);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-accent {
+	background: var(--wg-kit-accent-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-ok {
+	background: var(--wg-kit-success-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-warn {
+	background: var(--wg-kit-warning-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-err {
+	background: var(--wg-kit-error-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-info {
+	background: var(--wg-kit-info-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-note {
+	background: var(--wg-kit-note-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-standout {
+	background: var(--wg-kit-standout-ink);
+}
+:is(.wg-root, .wg-portal) .wg-kit-tone.is-solid.is-highlight {
+	background: var(--wg-kit-highlight-ink);
+}
+
+/* TRADE-OFF: the form is a share of the box, not a size — the same mark is an avatar at 24px and a
+   cover at 240px, and a stroke or a px would break at one end or the other */
+:is(.wg-root, .wg-portal) .wg-kit-mark {
+	display: grid;
+	flex: none;
+	place-items: center;
+	overflow: hidden;
+	border-radius: inherit;
+}
+:is(.wg-root, .wg-portal) .wg-kit-mark > svg {
+	width: 56%;
+	height: 56%;
+	fill: currentColor;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-count {
@@ -982,7 +1087,7 @@ pre:has(> .block-language-widgetarium),
 }
 
 /* CONTEXT: Obsidian paints its own input at (0,1,1), so the reset needs two classes to win */
-:is(.wg-root, .wg-portal) .wg-kit-field input.wg-kit-field-input {
+:is(.wg-root, .wg-portal) .wg-kit-field :is(input.wg-kit-field-input, textarea.wg-kit-field-area) {
 	flex: 1 1 auto;
 	min-width: 0;
 	width: 100%;
@@ -999,8 +1104,21 @@ pre:has(> .block-language-widgetarium),
 	color: var(--text-normal);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-field input.wg-kit-field-input::placeholder {
+:is(.wg-root, .wg-portal) .wg-kit-field :is(input.wg-kit-field-input, textarea.wg-kit-field-area)::placeholder {
 	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-field.is-area {
+	align-items: stretch;
+	height: auto;
+	padding: var(--size-4-3, 12px) var(--size-4-4, 16px);
+	border-radius: var(--wg-kit-plate);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-field textarea.wg-kit-field-area {
+	min-height: 3lh;
+	resize: vertical;
+	line-height: var(--line-height-normal, 1.5);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-seg {
@@ -1012,6 +1130,7 @@ pre:has(> .block-language-widgetarium),
 	max-width: 100%;
 	overflow-x: auto;
 	overflow-y: hidden;
+	min-height: fit-content;
 	scrollbar-width: none;
 }
 
@@ -1147,6 +1266,34 @@ pre:has(> .block-language-widgetarium),
 	font-weight: var(--font-medium, 500);
 	color: var(--text-normal);
 	text-align: left;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-item.is-two {
+	align-items: flex-start;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-said {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-sub {
+	font-size: 11px;
+	font-weight: var(--font-normal, 400);
+	line-height: 1.45;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[disabled] {
+	cursor: not-allowed;
+	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[disabled] .wg-kit-pop-sub {
+	color: var(--text-error);
 }
 
 /* CONTEXT: a 1px item in a column flex box is shrunk away without flex: none */
@@ -2115,6 +2262,10 @@ pre:has(> .block-language-widgetarium),
 	overflow-y: auto;
 }
 
+:is(.wg-root, .wg-portal) .wg-set-pop-body > * {
+	flex: none;
+}
+
 :is(.wg-root, .wg-portal) .wg-set-pop-kind {
 	align-self: flex-start;
 }
@@ -2206,6 +2357,71 @@ pre:has(> .block-language-widgetarium),
 
 :is(.wg-root, .wg-portal) .wg-set-pop-name {
 	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-glyphs {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-glyph-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+	gap: 4px;
+	max-height: 264px;
+	overflow-y: auto;
+	scrollbar-width: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-glyph {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 1;
+	padding: 0;
+	border: none;
+	border-radius: var(--wg-kit-item);
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	transition:
+		background 120ms ease,
+		transform 120ms ease;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-glyph:hover {
+	background: var(--wg-kit-fill-hover);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-glyph:active {
+	transform: scale(0.88);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-glyph[aria-pressed="true"] {
+	background: var(--wg-kit-accent-wash);
+	color: var(--wg-kit-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-set-picked {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	min-width: 0;
+	color: var(--text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-side-row:has(.wg-set-picked) .wg-kit-row-label {
+	flex-shrink: 0;
+	max-width: 50%;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-picked .wg-set-path {
 	min-width: 0;
 	overflow: hidden;
 	white-space: nowrap;
@@ -3296,7 +3512,29 @@ pre:has(> .block-language-widgetarium),
 	display: flex;
 	align-items: stretch;
 	min-width: 0;
-	transition: height var(--wg-quick) var(--wg-ease);
+}
+
+.wg-tree-swap {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-tree-gap, 8px);
+	min-width: 0;
+}
+
+.wg-tree-swap-strip {
+	flex: none;
+}
+
+.wg-tree-swap-held {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 0;
+}
+
+.wg-tree-swap-held[hidden] {
+	display: none;
 }
 
 .wg-tree-cell {
@@ -3304,25 +3542,12 @@ pre:has(> .block-language-widgetarium),
 	min-width: 0;
 	transition:
 		transform var(--wg-move-ms, 220ms) cubic-bezier(0.2, 0, 0, 1),
-		flex-grow var(--wg-quick) var(--wg-ease);
+		flex-grow var(--wg-quick) var(--wg-ease),
+		height var(--wg-quick) var(--wg-ease);
 }
 
 .wg-tree-cell > .wg-tile-body {
 	overflow: hidden;
-}
-
-.wg-tree-cell::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	border-radius: var(--wg-widget-radius);
-	box-shadow: var(--wg-widget-shadow);
-	pointer-events: none;
-}
-
-.wg-tree-cell:has(.wg-widget-root[data-fill="none"])::after {
-	content: none;
 }
 
 /* TRADE-OFF: the editing zone wears the host's own button paint — beating
@@ -3399,6 +3624,16 @@ pre:has(> .block-language-widgetarium),
 	cursor: row-resize;
 }
 
+.wg-tree-handle.is-along.is-last {
+	z-index: 2;
+}
+
+.wg-tree-handle.is-along.is-last::before {
+	content: "";
+	position: absolute;
+	inset: -6px 0;
+}
+
 .wg-tree-grip {
 	position: absolute;
 	border-radius: 999px;
@@ -3446,7 +3681,6 @@ body.wg-tree-dragging .wg-tree-cell {
 	pointer-events: none;
 }
 
-body.wg-tree-dragging .wg-tree-row,
 body.wg-tree-dragging .wg-tree-cell,
 body.wg-tree-dragging .wg-tree-region {
 	transition: none;
@@ -3554,21 +3788,6 @@ body.wg-tree-carrying .wg-tile-body {
 	pointer-events: none;
 }
 
-.wg-region-bar {
-	display: flex;
-	align-items: center;
-	gap: var(--wg-tree-gap, 8px);
-	width: 100%;
-}
-
-.wg-region-bar-gap {
-	flex: 1 1 auto;
-}
-
-.wg-region-toggle {
-	flex: none;
-}
-
 .wg-tree-columns {
 	display: flex;
 	align-items: stretch;
@@ -3585,7 +3804,6 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.wg-tree-row,
 	.wg-tree-cell,
 	.wg-tree-region {
 		transition: none;
@@ -3595,6 +3813,101 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-tree-handle.is-edge {
 	flex: 0 0 var(--wg-tree-edge-gap, 16px);
 	align-self: stretch;
+}
+
+.wg-tree-page [data-surface],
+.wg-slot[data-surface] {
+	position: relative;
+	box-sizing: border-box;
+}
+
+.wg-tree-page [data-surface="group"],
+.wg-tree-page [data-surface="object"] {
+	padding: var(--wg-group-pad);
+	border-radius: var(--wg-plate-corner);
+}
+
+.wg-tree-page [data-surface="group"],
+.wg-slot[data-surface="group"] {
+	background: var(--wg-kit-group-fill);
+}
+
+:is(.wg-root, .wg-portal) [data-surface="group"] [data-surface="group"] {
+	background: var(--wg-kit-group-raise);
+}
+
+.wg-tree-page [data-surface="object"],
+.wg-slot[data-surface="object"] {
+	background: var(--wg-kit-group-raise);
+	box-shadow:
+		inset 0 0 0 1px var(--wg-kit-group-edge),
+		var(--wg-kit-group-shadow);
+}
+
+.wg-slot[data-surface] {
+	padding: var(--wg-group-pad);
+	border-radius: var(--wg-slot-corner, var(--wg-kit-plate));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-slot-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-slot-list[data-cards] {
+	gap: var(--wg-gap-cards);
+}
+
+.wg-tree-page [data-surface="apart"]::before {
+	content: "";
+	position: absolute;
+	z-index: 2;
+	background: var(--wg-kit-group-line);
+	pointer-events: none;
+}
+
+.wg-tree-page [data-surface="apart"][data-across="row"]::before {
+	top: calc(-1 * var(--wg-divider-before, 0px));
+	bottom: calc(-1 * var(--wg-divider-after, 0px));
+	width: 1px;
+}
+
+.wg-tree-page [data-surface="apart"][data-across="row"][data-side="end"]::before {
+	right: calc(-1 * var(--wg-divider-half, 4px) - 0.5px);
+}
+
+.wg-tree-page [data-surface="apart"][data-across="row"][data-side="start"]::before {
+	left: calc(-1 * var(--wg-divider-half, 4px) - 0.5px);
+}
+
+.wg-tree-page [data-surface="apart"][data-across="column"]::before {
+	left: calc(-1 * var(--wg-divider-before, 0px));
+	right: calc(-1 * var(--wg-divider-after, 0px));
+	height: 1px;
+}
+
+.wg-tree-page [data-surface="apart"][data-across="column"][data-side="end"]::before {
+	bottom: calc(-1 * var(--wg-divider-half, 4px) - 0.5px);
+}
+
+.wg-tree-page [data-surface="apart"][data-across="column"][data-side="start"]::before {
+	top: calc(-1 * var(--wg-divider-half, 4px) - 0.5px);
+}
+
+.wg-tree-region[data-surface="apart"]::before {
+	top: 0;
+	bottom: 0;
+	width: 1px;
+}
+
+.wg-tree-region[data-surface="apart"][data-side="end"]::before {
+	right: calc(var(--wg-tree-edge-gap) / -2 - 0.5px);
+}
+
+.wg-tree-region[data-surface="apart"][data-side="start"]::before {
+	left: calc(var(--wg-tree-edge-gap) / -2 - 0.5px);
 }
 
 .wg-tree-region > .wg-tree-region-body > .wg-tree {
@@ -3653,6 +3966,28 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-drawer.is-right {
 	right: 0;
 	border-radius: var(--wg-widget-radius) 0 0 var(--wg-widget-radius);
+}
+
+.wg-drawer.is-sheet {
+	top: auto;
+	left: 0;
+	right: 0;
+	width: auto;
+	max-height: 80vh;
+	border-radius: var(--wg-widget-radius) var(--wg-widget-radius) 0 0;
+}
+
+.wg-drawer.is-menu {
+	top: var(--wg-menu-top, 56px);
+	left: var(--wg-menu-left, 8px);
+	bottom: auto;
+	max-height: 70vh;
+	border-radius: var(--wg-widget-radius);
+}
+
+.wg-collapsed-body {
+	box-sizing: border-box;
+	padding: 8px;
 }
 
 .wg-drawer-over.is-open .wg-drawer {

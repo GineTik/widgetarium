@@ -32,11 +32,11 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configu
 buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { TEMPLATES, templateWidgets, missingWidgets, templateBoard, templateSketch } =
-	await import("./.mjs-cache/templates.mjs");
+const { TEMPLATES, templateWidgets, templateBoard, templateSketch } = await import("./.mjs-cache/templates.mjs");
 const { boardNoteText } = await import("./.mjs-cache/board-note.mjs");
 const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { normalizeBoard, serializeBoard, VIEW_GROUP } = await import("./.mjs-cache/model.mjs");
+const { swapBoxes } = await import("./.mjs-cache/tree.mjs");
 const { blockRefusal } = await import("./.mjs-cache/version.mjs");
 const { Catalogue } = await import("./.mjs-cache/catalogue.mjs");
 
@@ -69,36 +69,23 @@ function everyTileIn(one) {
 }
 
 const tiles = everyTileIn(template);
-const standing = new Map(tiles.map((tile) => [tile.widget, tile.id]));
-const manifestOf = (id) => JSON.parse(fs.readFileSync(`widgets/${id}/manifest.json`, "utf8"));
+const boxes = swapBoxes(templateBoard(template).layout).map(({ box }) => box);
+const standing = new Map([...boxes.map((box) => [VIEW_GROUP, box.id]), ...tiles.map((tile) => [tile.widget, tile.id])]);
+const standsAt = (ref) =>
+	[...tiles.map((tile) => tile.id), ...boxes.map((box) => box.id)].some((id) => ref.startsWith(`${id}/`));
+const manifestOf = (id) => JSON.parse(fs.readFileSync(`widgets/${id}/manifest.generated.json`, "utf8"));
 
 check("the shelf offers at least one template", TEMPLATES.length > 0, true);
 check("the template names every widget it stands on, mounted and slotted alike", templateWidgets(template).sort(), [
-	"@core/editable-tabs",
-	"@core/filter-panel",
-	"@core/view-group",
-	"@task/kanban-board",
-	"@task/task-card",
-	"@task/view-tabs",
+	"@default/editable-tabs",
+	"@default/filter-panel",
+	"@default/kanban-board",
+	"@default/task-card",
+	"@default/view-tabs",
 ]);
 check(
-	"a vault holding none of them is asked for all of them",
-	missingWidgets(template, () => false).length,
-	templateWidgets(template).length,
-);
-check(
-	"a vault holding all of them is asked for nothing",
-	missingWidgets(template, () => true),
-	[],
-);
-check(
-	"and only what it lacks",
-	missingWidgets(template, (id) => id !== "@task/task-card"),
-	["@task/task-card"],
-);
-check(
 	"every widget it names is one this repository actually ships",
-	templateWidgets(template).filter((id) => !fs.existsSync(`widgets/${id}/manifest.json`)),
+	templateWidgets(template).filter((id) => !fs.existsSync(`widgets/${id}/manifest.generated.json`)),
 	[],
 );
 
@@ -132,7 +119,7 @@ for (const tile of tiles) {
 	}
 	for (const prop of Object.keys(tile.props)) {
 		for (const ref of refsAuthored(tile, prop)) {
-			if (!tiles.some((held) => ref.startsWith(`${held.id}/`))) dangling.push(`${tile.id}.${prop} -> ${ref}`);
+			if (!standsAt(ref)) dangling.push(`${tile.id}.${prop} -> ${ref}`);
 		}
 	}
 }
@@ -154,9 +141,9 @@ check(
 	[],
 );
 check(
-	"a cell of a one-view holder is named after the view it draws",
-	cells.find((cell) => cell.id === "board").widget,
-	"@task/kanban-board",
+	"the view a swap box holds is a tile of the board's own",
+	cells.find((cell) => cell.id === "kanban").widget,
+	"@default/kanban-board",
 );
 check(
 	"and every cell of the sketch names the widget standing in it",
@@ -175,11 +162,16 @@ check("and it opens as a page, because a template is a whole screen", written.mo
 check(
 	"every tile survives the write",
 	written.tiles.map((tile) => tile.id),
-	["boards", "filter", "views", "board"],
+	["boards", "filter", "views", "kanban"],
 );
-check("the mounted kanban survives it too", written.tiles[3].mounted.Kanban.widget, "@task/kanban-board");
-check("with the card slot it draws through", written.tiles[3].mounted.Kanban.slots.card.widget, "@task/task-card");
-check("and the refs it was authored with", written.tiles[3].mounted.Kanban.props.selection.ref, "boards/selection");
+check("the kanban is a tile of its own, standing in the swap box", written.layout.of[1].of[1], {
+	dir: "swap",
+	id: "board",
+	strip: false,
+	of: [{ id: "kanban", height: 640, name: "Kanban" }],
+});
+check("with the card slot it draws through", written.tiles[3].slots.card.widget, "@default/task-card");
+check("and the refs it was authored with", written.tiles[3].props.selection.ref, "boards/selection");
 check("reading it back changes nothing", serializeBoard(normalizeBoard(written)), written);
 
 const definition = (id, title) => ({
@@ -187,8 +179,8 @@ const definition = (id, title) => ({
 	component: () => h("div", null, title),
 });
 const registry = {
-	list: () => [definition("@task/task-card", "Task card")],
-	get: (id) => (id === "@task/task-card" ? definition(id, "Task card") : null),
+	list: () => [definition("@default/task-card", "Task card")],
+	get: (id) => (id === "@default/task-card" ? definition(id, "Task card") : null),
 };
 
 const panel = dom.window.document.getElementById("host");
@@ -205,7 +197,7 @@ const draw = (mode) =>
 			templates: TEMPLATES,
 			onUseTemplate: async (one, onStep) => {
 				used.push(one.id);
-				onStep("@core/editable-tabs");
+				onStep("@default/editable-tabs");
 				await settle();
 				steps.push(panel.querySelector(".wg-tpl-step")?.textContent ?? null);
 				return answer;
@@ -241,14 +233,14 @@ check(
 check(
 	"labelled with the widgets that stand in it",
 	all(".wg-tpl-cell").map((node) => node.textContent),
-	["@core/editable-tabs", "@core/filter-panel", "@task/view-tabs", "@task/kanban-board"],
+	["@default/editable-tabs", "@default/filter-panel", "@default/view-tabs", "@default/kanban-board"],
 );
 
 panel.querySelector(".wg-tpl-tile").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
 await settle();
 check("pressing a card asks for that template", used, [template.id]);
-check("and says which widget it is fetching while it waits", steps, ["Installing @core/editable-tabs…"]);
+check("and says which widget it is fetching while it waits", steps, ["Installing @default/editable-tabs…"]);
 check(
 	"a template that was built leaves no complaint on the card",
 	panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure"),

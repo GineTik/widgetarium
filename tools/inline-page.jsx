@@ -1,11 +1,11 @@
 import { createElement as h } from "react";
 import { render } from "../src/engine/render.js";
 import { InlineWidget, HOST_CLASS } from "../src/inline-render.js";
-import { recordUnderItsDeclaration } from "../src/engine/catalogue-index.js";
-import CodeBlock from "../widgets/@inline/code-block/widget.tsx";
-import record from "../widgets/@inline/code-block/manifest.json";
+import { manifestOf } from "../src/engine/catalogue-index.js";
+import CodeBlock from "../widgets/@default/code-block/widget.tsx";
+import record from "../widgets/@default/code-block/manifest.generated.json";
 
-const manifest = recordUnderItsDeclaration(record, CodeBlock.meta);
+const manifest = manifestOf(record, CodeBlock);
 const FILE = manifest.preview.files["main.py"];
 
 // CONTEXT: Obsidian's fence markup — pre > code.language-x, value plus one newline, copy button appended

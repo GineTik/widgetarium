@@ -8,6 +8,8 @@ import { columnsOf, isBox, keptAt, laidRegion, sideOf } from "../tree.js";
 import { cardIn } from "./entries.mjs";
 import { filesIn, foldersIn, readJson } from "./vault-files.mjs";
 import { installWidget } from "./install-command.mjs";
+import { normalizeBoard, serializeBoard } from "../model.js";
+import { CARD_NAMES, cardNamed, cardNode, PATTERN_NAMES, patternNamed, skeletonOf } from "../patterns.js";
 import { offeredBySource } from "./offered.mjs";
 import { surfaceNamesIn } from "./widget-surface.mjs";
 import { rankedWidgets, refusedReading, READING_KINDS } from "./find-command.mjs";
@@ -30,6 +32,8 @@ const HELP = `widgets — the Widgetarium catalogue, for the agent
 
   node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
   node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
+  node widgets.mjs pattern <name>       the skeleton a pattern cuts, regions and surfaces already on it
+  node widgets.mjs card <name>          one card's parts and the plate it wears, ready to put in a region
   node widgets.mjs show <id>            one widget's manifest and the files it is made of
   node widgets.mjs check <id>           a widget's own colours, type, paging and manifest, rule by rule
   node widgets.mjs source <id>          print a widget's component source
@@ -161,6 +165,43 @@ async function findRanked(options) {
 	const entries = merged(await installedWidgets(), await offeredWidgets());
 	const { value, text } = await rankedWidgets(entries, options);
 	say(options, value, text);
+	return 0;
+}
+
+function runCard(name, options) {
+	const card = cardNamed(name);
+	if (!card) {
+		console.error(`${name} is not a card layout. The ones there are: ${CARD_NAMES.join(", ")}.`);
+		return 1;
+	}
+	const alone = cardNode(name);
+	const amongPeers = cardNode(name, { amongPeers: true });
+	const said = [
+		`${name} — ${card.suits}`,
+		`standing alone it wears ${alone.surface ?? "nothing"}, among peers of its kind ${amongPeers.surface ?? "nothing"}`,
+		"every part stands bare on that one plate; a part that wears a plate of its own is what law N2 refuses",
+		...card.parts.map((part) => `  ${part.place.padEnd(9)} asks for ${part.asks}`),
+	].join("\n");
+	say(options, { card: name, alone, amongPeers, parts: card.parts }, said);
+	return 0;
+}
+
+function runPattern(name, options) {
+	const pattern = patternNamed(name);
+	if (!pattern) {
+		console.error(`${name} is not a pattern that cuts a page. The ones that do: ${PATTERN_NAMES.join(", ")}.`);
+		return 1;
+	}
+	const skeleton = skeletonOf(name, (raw) => serializeBoard(normalizeBoard(raw)));
+	const said = [
+		`${name} — ${pattern.suits}`,
+		`${pattern.layout.of.length} columns, needs ${pattern.needsPx}px of board width`,
+		...pattern.layout.of.map(
+			(box, at) =>
+				`  ${at}  ${box.role.padEnd(12)} ${box.keep ? "keep" : "side"}  ${box.surface ?? "none"}  ${box.purpose}`,
+		),
+	].join("\n");
+	say(options, skeleton, said);
 	return 0;
 }
 
@@ -345,6 +386,8 @@ const COMMANDS = {
 	list: { run: (argument, options) => findRanked(options) },
 	packs: { run: (argument, options) => packs(options) },
 	sources: { run: (argument, options) => sources(options) },
+	pattern: { run: (argument, options) => runPattern(argument, options) },
+	card: { run: (argument, options) => runCard(argument, options) },
 	install: { asks: "widget", run: (argument, options) => runInstall(argument, options) },
 	check: { asks: "widget", run: (argument, options) => runCheck(argument, options) },
 	show: { asks: "widget", run: (argument, options) => show(argument, options) },

@@ -1,0 +1,180 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "File list",
+	"description": "The files a change touched, each with what happened to it and how many lines it gained and lost.",
+	"keywords": [
+		"files",
+		"diff",
+		"changed",
+		"touched",
+		"git",
+		"commit",
+		"review",
+		"stat",
+		"insertions",
+		"deletions",
+		"paths",
+		"list",
+		"rename"
+	],
+	"role": "collection",
+	"size": {
+		"collapseBelowPx": 160,
+		"stackBelowPx": 260
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 4
+		},
+		"props": {
+			"heading": {
+				"value": "Files touched"
+			},
+			"files": {
+				"rows": [
+					{
+						"path": "src/gateway/manifest.ts",
+						"change": "modified",
+						"added": 46,
+						"removed": 12,
+						"commit": "748628d1c0"
+					},
+					{
+						"path": "src/engine/registry-file.js",
+						"change": "added",
+						"added": 214,
+						"removed": 0,
+						"commit": "748628d1c0"
+					},
+					{
+						"path": "src/ai/vault-files.mjs",
+						"from": "src/ai/disk.mjs",
+						"change": "renamed",
+						"added": 8,
+						"removed": 3,
+						"commit": "748628d1c0"
+					},
+					{
+						"path": "assets/shapes/pill-outline.png",
+						"change": "binary",
+						"commit": "748628d1c0"
+					},
+					{
+						"path": "src/layout.js",
+						"change": "deleted",
+						"added": 0,
+						"removed": 311,
+						"commit": "748628d1c0"
+					}
+				]
+			}
+		}
+	},
+	"slots": {
+		"file": {
+			"of": "widget",
+			"default": "@flow/file-row",
+			"surface": "group",
+			"gives": {
+				"file": ["path", "added", "removed", "change", "from"]
+			}
+		}
+	},
+	"props": {
+		"files": {
+			"kind": "collection",
+			"label": "Files",
+			"hint": "One record per file the change touched. Bind a commit list beside this one and the two move together.",
+			"writes": ["list", "get"],
+			"describes": {
+				"path": {
+					"label": "Path",
+					"type": "line",
+					"aka": ["file", "filename", "filePath"]
+				},
+				"added": {
+					"label": "Lines added",
+					"type": "number",
+					"aka": ["insertions", "additions"]
+				},
+				"removed": {
+					"label": "Lines removed",
+					"type": "number",
+					"aka": ["deletions", "removals"]
+				},
+				"change": {
+					"label": "Change",
+					"type": "line",
+					"aka": ["status", "kind", "changeType"]
+				},
+				"from": {
+					"label": "Renamed from",
+					"type": "line",
+					"aka": ["oldPath", "previousPath", "renamedFrom"]
+				},
+				"commit": {
+					"label": "Commit",
+					"type": "line",
+					"aka": ["sha", "revision", "hash"]
+				}
+			},
+			"where": [
+				{
+					"prop": "commit",
+					"op": "is",
+					"value": {
+						"wants": "@flow/git-tree/selection"
+					}
+				}
+			],
+			"sort": [
+				{
+					"prop": "path",
+					"dir": "asc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected file",
+			"hint": "Which file is picked. A diff standing beside this list binds to it and follows every press.",
+			"of": "files",
+			"writes": ["get", "update"],
+			"default": {
+				"value": null
+			}
+		},
+		"heading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "The words standing before the count. Left empty, only the count is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": "Files touched"
+			}
+		},
+		"shownFiles": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Files shown",
+			"hint": "How many rows are read at once, and how many more each press adds.",
+			"writes": ["get"],
+			"default": {
+				"value": 200
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": ["@flow/file-row"]
+}

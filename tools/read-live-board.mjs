@@ -35,5 +35,7 @@ console.log(
 );
 for (const column of beside) {
 	console.log(`  ${said(column.at)}`);
-	console.log(drawn(laid(root.of[column.at], column.width - REGION_PAD_PX * 2, { ask, gap: GAP_PX, path: [column.at] }), 2));
+	console.log(
+		drawn(laid(root.of[column.at], column.width - REGION_PAD_PX * 2, { ask, gap: GAP_PX, path: [column.at] }), 2),
+	);
 }

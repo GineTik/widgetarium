@@ -1,7 +1,7 @@
 import { render } from "../src/engine/render.js";
 import { arrayGateway, soloGateway } from "../src/gateway/create";
 import { createViewCells } from "../src/gateway/refs.js";
-import KanbanBoard from "../widgets/@task/kanban-board/widget.tsx";
+import KanbanBoard from "../widgets/@default/kanban-board/widget.tsx";
 
 const task = {
 	path: "Orbitask/Tasks/replace-the-three-task-widgets.md",
@@ -32,7 +32,8 @@ const tasks = arrayGateway(
 );
 
 // CONTEXT: a stand-in for Obsidian's renderer — the wide blocks are what this page measures
-const WIDE_CODE = "const aLineOfCodeFarWiderThanTheColumnItSitsIn = somethingElseEntirelyTooLongToFit(1, 2, 3, 4, 5, 6);";
+const WIDE_CODE =
+	"const aLineOfCodeFarWiderThanTheColumnItSitsIn = somethingElseEntirelyTooLongToFit(1, 2, 3, 4, 5, 6);";
 const host = {
 	can: { renderMarkdown: true },
 	ui: {
@@ -53,7 +54,11 @@ const host = {
 
 render(
 	<KanbanBoard
-		board={soloGateway({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }, { update: () => null }, "dialog-fit-record")}
+		board={soloGateway(
+			{ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] },
+			{ update: () => null },
+			"dialog-fit-record",
+		)}
 		groupBy={soloGateway("status", {}, "dialog-fit-group")}
 		slots={{}}
 		tasks={tasks}
@@ -67,7 +72,14 @@ render(
 
 const box = (node) => {
 	const rect = node.getBoundingClientRect();
-	return { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom), width: Math.round(rect.width), height: Math.round(rect.height) };
+	return {
+		left: Math.round(rect.left),
+		right: Math.round(rect.right),
+		top: Math.round(rect.top),
+		bottom: Math.round(rect.bottom),
+		width: Math.round(rect.width),
+		height: Math.round(rect.height),
+	};
 };
 
 function measure() {
@@ -75,20 +87,26 @@ function measure() {
 	if (!dialog) return { failure: "the dialog never rendered" };
 	const left = dialog.querySelector(".otd-left");
 	const plate = dialog.querySelector(".otd-props");
-	const row = [...dialog.querySelectorAll(".otd-row")].find((node) => node.querySelector(".wg-kit-row-label").textContent.trim() === "Priority");
+	const row = [...dialog.querySelectorAll(".otd-row")].find(
+		(node) => node.querySelector(".wg-kit-row-label").textContent.trim() === "Priority",
+	);
 	const style = getComputedStyle(plate);
 	const code = dialog.querySelector(".otd-md pre");
 	const table = dialog.querySelector(".otd-md table");
 	const diagram = dialog.querySelector(".otd-md .mermaid");
 	// CONTEXT: a null here reads as a crash three lines later, naming nothing
-	const missing = Object.entries({ left, plate, row, code, table, diagram }).filter(([, node]) => !node).map(([name]) => name);
+	const missing = Object.entries({ left, plate, row, code, table, diagram })
+		.filter(([, node]) => !node)
+		.map(([name]) => name);
 	if (missing.length) return { failure: `never rendered: ${missing.join(", ")}` };
 	// CONTEXT: a box with overflow visible reports the same scrollWidth and scrolls nothing
 	const scroller = (node) => ({
 		...box(node),
 		clipped: getComputedStyle(node).overflowX !== "visible",
 		scrolls: getComputedStyle(node).overflowX !== "visible" && node.scrollWidth > node.clientWidth + 1,
-		spill: Math.round(Math.max(...[...node.querySelectorAll("*"), node].map((child) => child.getBoundingClientRect().right))),
+		spill: Math.round(
+			Math.max(...[...node.querySelectorAll("*"), node].map((child) => child.getBoundingClientRect().right)),
+		),
 	});
 	return {
 		code: scroller(code.querySelector("code")),
@@ -97,7 +115,9 @@ function measure() {
 		codePadRight: Math.round(parseFloat(getComputedStyle(code.querySelector("code")).paddingRight)),
 		table: scroller(table),
 		diagram: scroller(diagram),
-		wideRight: Math.round(Math.max(...[...dialog.querySelectorAll(".otd-md *")].map((node) => node.getBoundingClientRect().right))),
+		wideRight: Math.round(
+			Math.max(...[...dialog.querySelectorAll(".otd-md *")].map((node) => node.getBoundingClientRect().right)),
+		),
 		md: box(dialog.querySelector(".otd-md")),
 		window: window.innerWidth,
 		dialog: box(dialog),
@@ -115,7 +135,10 @@ function measure() {
 		// CONTEXT: the properties block IS the kit sidebar — a Plate around it was the block spelled twice
 		plateIsSidebar: plate.classList.contains("wg-kit-side"),
 		plateWraps: Boolean(plate.querySelector(".wg-kit-side") || plate.closest(".wg-kit-plate")),
-		plateCast: style.boxShadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter((part) => !part.includes("inset")),
+		plateCast: style.boxShadow
+			.split(/,(?![^(]*\))/)
+			.map((part) => part.trim())
+			.filter((part) => !part.includes("inset")),
 		plateLift: style.boxShadow,
 		// A SCROLL BOX CUTS ITS CHILDREN'S SHADOWS AT ITS OWN EDGE. Every ancestor that clips is
 		// listed with the room it leaves the block on each side.
@@ -135,7 +158,9 @@ function measure() {
 				const left = held.left - clip.left - border("Left") + node.scrollLeft;
 				const top = held.top - clip.top - border("Top") + node.scrollTop;
 				found.push({
-					name: String(node.className || node.tagName).split(" ").pop(),
+					name: String(node.className || node.tagName)
+						.split(" ")
+						.pop(),
 					holds,
 					left: Math.round(left),
 					top: Math.round(top),

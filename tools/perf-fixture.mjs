@@ -5,7 +5,12 @@ buildMirror();
 
 const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
 
-export const TASK_NEEDS = { title: { type: "text" }, status: { type: "text" }, order: { type: "number" }, board: { type: "text" } };
+export const TASK_NEEDS = {
+	title: { type: "text" },
+	status: { type: "text" },
+	order: { type: "number" },
+	board: { type: "text" },
+};
 const STATUSES = ["todo", "doing", "done"];
 const NOTE_TEXT = "---\ntitle: x\n---\nbody";
 
@@ -103,7 +108,10 @@ export function countingDisk(fsp, nodePath, counters) {
 	return {
 		exists: (at) => {
 			counters.exists += 1;
-			return fsp.access(at).then(() => true, () => false);
+			return fsp.access(at).then(
+				() => true,
+				() => false,
+			);
 		},
 		read: (at) => {
 			counters.read += 1;
@@ -112,7 +120,9 @@ export function countingDisk(fsp, nodePath, counters) {
 		folders: async (at) => {
 			counters.folders += 1;
 			const held = await fsp.readdir(at, { withFileTypes: true });
-			return held.filter((entry) => entry.isDirectory() || entry.isSymbolicLink()).map((entry) => nodePath.join(at, entry.name));
+			return held
+				.filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
+				.map((entry) => nodePath.join(at, entry.name));
 		},
 	};
 }

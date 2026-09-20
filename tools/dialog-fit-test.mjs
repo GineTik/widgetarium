@@ -41,14 +41,14 @@ const bundle = await esbuild.build({
 	alias: {
 		widgetarium: "./tools/fill-shim.js",
 		"widgetarium/kit": "./src/kit.js",
-		"@task/lib": "./widgets/@task/lib.js",
+		"@default/lib": "./widgets/@default/lib.js",
 	},
 	logLevel: "warning",
 });
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@task/tokens.css", "utf8")}</style>
+<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
 <style>body {
 	margin: 0;
 	/* CONTEXT: the host's colour tokens, undefined here until a colour was measured — every fill

@@ -17,19 +17,20 @@ const tile = (cells) => cells * CELL_PX + (cells - 1) * GAP_PX;
 const WIDTHS = [4, 5, 6, 8, 10, 13];
 const HEIGHTS = [4, 5, 6, 8, 11];
 
-const FOLDER = "widgets/@habit/month";
+const FOLDER = "widgets/@default/month";
 
 const PAGE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
 import { previewProps } from "./src/preview.js";
-import { recordUnderItsDeclaration } from "./src/engine/catalogue-index.js";
+import { rootedWidget } from "./src/widget-root.js";
+import { manifestOf } from "./src/engine/catalogue-index.js";
 import Widget from "./${FOLDER}/widget.tsx";
 
-const manifest = recordUnderItsDeclaration(${readFileSync(path.join(FOLDER, "manifest.json"), "utf8")}, Widget.meta);
+const manifest = manifestOf(${readFileSync(path.join(FOLDER, "manifest.json"), "utf8")}, Widget);
 
 for (const box of document.querySelectorAll(".wg-root")) {
-	render(h(Widget, previewProps({ manifest, component: Widget }, {})), box);
+	render(rootedWidget(h(Widget, previewProps({ manifest, component: Widget }, {}))), box);
 }
 
 function clearances(root) {
@@ -67,7 +68,10 @@ function clearances(root) {
 		offCell = Math.max(offCell, opens ? 0 : leftOff, closes ? 0 : rightOff);
 	}
 
-	const widest = days.reduce((held, day) => Math.max(held, day.getBoundingClientRect().right), 0);
+	const leftmost = rings.reduce((held, ring) => Math.min(held, ring.left), Infinity);
+	const rightmost = rings.reduce((held, ring) => Math.max(held, ring.right), 0);
+	const weekdayRow = root.querySelector(".hm-weekdays").getBoundingClientRect();
+	const firstDay = days[0].getBoundingClientRect();
 	const style = getComputedStyle(root.querySelector(".habit-month"));
 	return {
 		name: root.dataset.name,
@@ -80,7 +84,8 @@ function clearances(root) {
 		offRing: Math.round(offRing * 100) / 100,
 		offCell: Math.round(offCell * 100) / 100,
 		belowLastRing: Math.round((room.bottom - rings[rings.length - 1].bottom) * 100) / 100,
-		sideRoom: Math.round((room.right - widest) * 100) / 100,
+		sideRoom: Math.round(Math.max(Math.abs(leftmost - room.left), Math.abs(room.right - rightmost)) * 100) / 100,
+		underWeekdayRow: Math.round((firstDay.top - weekdayRow.bottom) * 100) / 100,
 	};
 }
 
@@ -117,7 +122,7 @@ const THEME = `--background-primary:#ffffff;--background-secondary:#f6f6f6;--bac
 	--text-on-accent:#ffffff;--interactive-accent:#6d4ee0;`;
 
 // TRADE-OFF: a stand-in for the host's own button and text rules, which this page cannot read from a running Obsidian
-const HOST_RULES = `button { font-size: var(--font-ui-small, 14px); line-height: var(--line-height-tight, 1.3); min-height: var(--input-height, 30px); padding: var(--size-4-1, 4px) var(--size-4-3, 12px); }
+const HOST_RULES = `button { height: var(--input-height, 30px); font-size: var(--font-ui-small, 14px); line-height: var(--line-height-tight, 1.3); min-height: var(--input-height, 30px); padding: var(--size-4-1, 4px) var(--size-4-3, 12px); }
 	p, span { line-height: var(--line-height-normal, 1.5); }`;
 
 const tiles = [];
@@ -132,7 +137,7 @@ const boxes = tiles
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@habit/tokens.css", "utf8")}</style>
+<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
 <style>${HOST_RULES}</style>
 <style>body { margin: 0; padding: 8px; ${THEME}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -190,8 +195,8 @@ function check(what, got, wanted) {
 const measured = JSON.parse(reported);
 check("every tile drew a month", measured.length, tiles.length);
 check(
-	"and every one drew whole weeks of it",
-	measured.every((tile) => tile.days % 7 === 0 && tile.days >= 28),
+	"and every one drew six whole weeks of it, whatever the month",
+	measured.every((tile) => tile.days === 42),
 	true,
 );
 check(
@@ -220,8 +225,14 @@ for (const [what, of] of [
 
 {
 	const worst = measured.reduce((held, tile) => (tile.sideRoom > held.sideRoom ? tile : held));
-	check("the days fill the tile's width, leaving no gutter", worst.sideRoom < 1, true);
+	check("the outer rings stand at the tile's edges, leaving no gutter", worst.sideRoom < 1.5, true);
 	console.log(`    widest gutter at ${worst.name}: ${worst.sideRoom}px`);
+}
+
+{
+	const worst = tightest("underWeekdayRow");
+	check("the weekday row is a row of its own, above the first week", worst.underWeekdayRow >= 0, true);
+	console.log(`    tightest at ${worst.name}: ${worst.underWeekdayRow}px`);
 }
 
 {

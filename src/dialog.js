@@ -125,10 +125,12 @@ function enterDialog(node) {
 		overlay.style.transition = `background-color ${GROW_MS}ms var(--wg-ease)`;
 		overlay.style.backgroundColor = "var(--wg-dialog-scrim)";
 		growDialog(panel);
-		beats.push(setTimeout(() => {
-			settleDialog(panel);
-			beats.push(setTimeout(() => restDialog(overlay, panel), SETTLE_MS));
-		}, GROW_MS));
+		beats.push(
+			setTimeout(() => {
+				settleDialog(panel);
+				beats.push(setTimeout(() => restDialog(overlay, panel), SETTLE_MS));
+			}, GROW_MS),
+		);
 	};
 	const frame = requestAnimationFrame(start);
 	const waited = setTimeout(start, GROW_WAIT_MS);
@@ -320,7 +322,16 @@ export function Dialog({ isOpen: isOpenAsked, onOpenChange, onClose, trigger, ch
 const CANCEL = "Cancel";
 
 // CONTEXT: one shape for every ask-before-it-is-gone — the caller owns the words and the verb
-export function ConfirmDialog({ isOpen, title, description, confirmLabel, variant = "danger", onConfirm, onOpenChange, className }) {
+export function ConfirmDialog({
+	isOpen,
+	title,
+	description,
+	confirmLabel,
+	variant = "danger",
+	onConfirm,
+	onOpenChange,
+	className,
+}) {
 	return h(
 		Dialog,
 		{ isOpen, onOpenChange },
@@ -331,8 +342,16 @@ export function ConfirmDialog({ isOpen, title, description, confirmLabel, varian
 				h(DialogDescription, { key: "desc" }, description),
 			]),
 			h(DialogFooter, { key: "foot" }, [
-				h(Button, { key: "cancel", size: "s", className: "wg-dialog-cancel", onClick: () => onOpenChange?.(false) }, CANCEL),
-				h(Button, { key: "confirm", size: "s", variant, className: "wg-dialog-confirm", onClick: onConfirm }, confirmLabel),
+				h(
+					Button,
+					{ key: "cancel", size: "s", className: "wg-dialog-cancel", onClick: () => onOpenChange?.(false) },
+					CANCEL,
+				),
+				h(
+					Button,
+					{ key: "confirm", size: "s", variant, className: "wg-dialog-confirm", onClick: onConfirm },
+					confirmLabel,
+				),
 			]),
 		]),
 	);

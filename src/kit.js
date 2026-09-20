@@ -1,5 +1,6 @@
 import { Fragment, createElement as h, cloneElement, Children } from "react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "./icon-table.js";
 
 export function cx(...parts) {
 	return parts.flat(Infinity).filter(Boolean).join(" ");
@@ -50,7 +51,8 @@ const GLYPHS = {
 	// CONTEXT: r below half the 1.8 stroke, or the stroke leaves a hole and the dots read as rings
 	dots: '<circle cx="10" cy="5.2" r="0.8"/><circle cx="10" cy="10" r="0.8"/><circle cx="10" cy="14.8" r="0.8"/>',
 	menu: '<path d="M4.6 6.3h10.8M4.6 10h10.8M4.6 13.7h10.8"/>',
-	terminal: '<rect x="3.6" y="4.4" width="12.8" height="11.2" rx="2.6"/><path d="M6.6 8.4l2.2 2.1-2.2 2.1M10.6 12.8h3"/>',
+	terminal:
+		'<rect x="3.6" y="4.4" width="12.8" height="11.2" rx="2.6"/><path d="M6.6 8.4l2.2 2.1-2.2 2.1M10.6 12.8h3"/>',
 	gear: '<circle cx="10" cy="10" r="2.5"/><path d="M10 3.6v1.5M10 14.9v1.5M16.4 10h-1.5M5.1 10H3.6M14.53 5.47l-1.06 1.06M6.53 13.47l-1.06 1.06M14.53 14.53l-1.06-1.06M6.53 6.53L5.47 5.47"/>',
 	stop: '<rect x="6" y="6" width="8" height="8" rx="2.2"/>',
 	sparkle: '<path d="M10 3.8l1.6 3.9 3.9 1.6-3.9 1.6-1.6 3.9-1.6-3.9L4.5 9.3l3.9-1.6z"/>',
@@ -61,19 +63,40 @@ const GLYPHS = {
 	"sidebar-left": '<rect x="3.4" y="4.2" width="13.2" height="11.6" rx="3.2"/><path d="M8.2 4.2v11.6"/>',
 	"sidebar-right": '<rect x="3.4" y="4.2" width="13.2" height="11.6" rx="3.2"/><path d="M11.8 4.2v11.6"/>',
 	copy: '<rect x="7.4" y="7.4" width="8.4" height="8.4" rx="2.4"/><path d="M12.6 4.2H6.6a2.4 2.4 0 00-2.4 2.4v6"/>',
+	"open-tab":
+		'<path d="M9 4.6H6.4a1.8 1.8 0 00-1.8 1.8v7.2a1.8 1.8 0 001.8 1.8h7.2a1.8 1.8 0 001.8-1.8V11"/><path d="M11.8 4.6h3.6v3.6M15.4 4.6L9.6 10.4"/>',
 	link: '<path d="M8.5 11.5a2.8 2.8 0 000 4l.5.5a2.8 2.8 0 004 0l2.5-2.5a2.8 2.8 0 000-4l-.5-.5"/><path d="M11.5 8.5a2.8 2.8 0 000-4L11 4a2.8 2.8 0 00-4 0L4.5 6.5a2.8 2.8 0 000 4l.5.5"/>',
 };
 
-export function Icon({ name, size = 16, className: cls }) {
-	const glyph = GLYPHS[name];
-	if (!glyph) return null;
+const KIT_VIEW_BOX = "0 0 20 20";
+
+function iconOf(name) {
+	if (Object.hasOwn(GLYPHS, name)) return { body: GLYPHS[name], viewBox: KIT_VIEW_BOX, isLucide: false };
+	if (Object.hasOwn(ICON_TABLE, name)) return { body: ICON_TABLE[name], viewBox: ICON_VIEW_BOX, isLucide: true };
+	return null;
+}
+
+const offeredIcon = (name) => ({ name, words: ICON_WORDS[name] ?? "" });
+
+let everyIconOffered = null;
+
+export function offeredIcons() {
+	everyIconOffered ??= Object.keys(GLYPHS)
+		.concat(Object.keys(ICON_TABLE).filter((name) => !Object.hasOwn(GLYPHS, name)))
+		.map(offeredIcon);
+	return everyIconOffered;
+}
+
+export function Icon({ name, fallback, size = 16, className: cls }) {
+	const drawn = iconOf(name) ?? (fallback ? iconOf(fallback) : null);
+	if (!drawn) return null;
 	return h("svg", {
-		className: cx("wg-kit-icon-glyph", cls),
-		viewBox: "0 0 20 20",
+		className: cx("wg-kit-icon-glyph", drawn.isLucide && "is-lucide", cls),
+		viewBox: drawn.viewBox,
 		width: size,
 		height: size,
 		"aria-hidden": "true",
-		dangerouslySetInnerHTML: { __html: glyph },
+		dangerouslySetInnerHTML: { __html: drawn.body },
 	});
 }
 
@@ -118,6 +141,7 @@ const TONE_CLASSES = {
 	info: "is-info",
 	note: "is-note",
 	standout: "is-standout",
+	highlight: "is-highlight",
 };
 
 // TRADE-OFF: names, not classes — a picker must not know that "success" is spelled is-ok
@@ -128,6 +152,78 @@ export function toneClass(tone) {
 }
 
 export const pillClass = variants("wg-kit-pill", { tone: TONE_CLASSES }, { tone: "neutral" });
+
+const MARK_VIEW_BOX = "0 0 48 48";
+
+const MARK_SHAPES = {
+	disc: "M24 6a18 18 0 1 0 0 36 18 18 0 0 0 0-36Z",
+	ring: "M24 6a18 18 0 1 0 0 36 18 18 0 0 0 0-36Zm0 11a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z",
+	diamond: "M24 5 43 24 24 43 5 24Z",
+	triangle: "M24 6 42 40 6 40Z",
+	hexagon: "M24 5 40.4 14.5v19L24 43 7.6 33.5v-19Z",
+	squircle: "M15 6h18a9 9 0 0 1 9 9v18a9 9 0 0 1-9 9H15a9 9 0 0 1-9-9V15a9 9 0 0 1 9-9Z",
+	arch: "M6 42V24a18 18 0 0 1 36 0v18Z",
+	quarter: "M6 42V6h36a36 36 0 0 1-36 36Z",
+	cross: "M19 6h10v13h13v10H29v13H19V29H6V19h13Z",
+	star: "M24 5c1.6 10.2 7.8 16.4 18 18-10.2 1.6-16.4 7.8-18 18-1.6-10.2-7.8-16.4-18-18 10.2-1.6 16.4-7.8 18-18Z",
+	capsule: "M15 14h18a10 10 0 0 1 0 20H15a10 10 0 0 1 0-20Z",
+	quatrefoil:
+		"M24 6a9 9 0 0 1 9 9 9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1-9-9 9 9 0 0 1 9-9 9 9 0 0 1 9-9Z",
+};
+
+export const MARK_SHAPE_NAMES = Object.keys(MARK_SHAPES);
+
+// TRADE-OFF: no error and no neutral — red reads as a failed load, grey as no mark at all
+export const MARK_TONE_NAMES = TONE_NAMES.filter((name) => name !== "error" && name !== "neutral");
+
+const SHAPE_STREAM = 0x9e3779b9;
+const TONE_STREAM = 0x85ebca6b;
+
+export function markOf(seed) {
+	const hash = hashOf(String(seed ?? ""));
+	return {
+		shape: pickedFrom(MARK_SHAPE_NAMES, stirred(hash ^ SHAPE_STREAM)),
+		tone: pickedFrom(MARK_TONE_NAMES, stirred(hash ^ TONE_STREAM)),
+	};
+}
+
+export function PlaceholderMark({ seed, shape, tone, size = "100%", className: cls }) {
+	const held = markOf(seed);
+	return h(
+		"span",
+		{
+			className: cx("wg-kit-mark", "wg-kit-tone", toneClass(tone ?? held.tone), cls),
+			style: { width: size, height: size },
+			"aria-hidden": "true",
+		},
+		h(
+			"svg",
+			{ viewBox: MARK_VIEW_BOX, focusable: "false" },
+			h("path", { d: pathOf(shape) ?? pathOf(held.shape), fillRule: "evenodd" }),
+		),
+	);
+}
+
+function pathOf(name) {
+	return Object.hasOwn(MARK_SHAPES, name) ? MARK_SHAPES[name] : null;
+}
+
+function hashOf(text) {
+	let held = 2166136261;
+	for (let at = 0; at < text.length; at += 1) held = Math.imul(held ^ text.charCodeAt(at), 16777619);
+	return held >>> 0;
+}
+
+// TRADE-OFF: FNV alone left neighbouring seeds sharing low bits; murmur3's avalanche unpicks them
+function stirred(held) {
+	const once = Math.imul(held ^ (held >>> 16), 2246822507);
+	const twice = Math.imul(once ^ (once >>> 13), 3266489909);
+	return (twice ^ (twice >>> 16)) >>> 0;
+}
+
+function pickedFrom(held, at) {
+	return held[at % held.length];
+}
 
 // CONTEXT: the plate every surface is built from — light stands on the page, solid is the grey well
 // TRADE-OFF: the lift is asked for, never inherited — a Card is a tile far oftener than a panel
@@ -162,6 +258,15 @@ export function Plate(props) {
 
 export function Card(props) {
 	return render("div", props, cardClass(props));
+}
+
+export function SlotList({ slot: Drawn, rows = [], give, keyOf, className: cls, children }) {
+	if (!Drawn) return null;
+	return h(
+		"div",
+		{ className: cx("wg-kit-slot-list", cls), "data-cards": Drawn.isCard ? "" : undefined },
+		children ?? rows.map((row, at) => h(Drawn, { key: keyOf ? keyOf(row) : at, ...give(row) })),
+	);
 }
 
 // CONTEXT: the group carries the corner and clips the rows into it, so the row has none
@@ -448,14 +553,26 @@ export const fieldClass = variants(
 // in a search field and there was no error anywhere to say why.
 const FIELD_LOOK = ["size", "block", "className"];
 
+function withoutFieldLook(props) {
+	const behaviour = { ...props };
+	for (const name of FIELD_LOOK) delete behaviour[name];
+	return behaviour;
+}
+
 export function Field({ icon, value, onInput, placeholder, type = "text", ...rest }) {
-	const forInput = { ...rest };
-	for (const name of FIELD_LOOK) delete forInput[name];
 	return h(
 		"label",
 		{ className: fieldClass(rest) },
 		icon,
-		h("input", { ...forInput, className: "wg-kit-field-input", type, value, placeholder, onInput }),
+		h("input", { ...withoutFieldLook(rest), className: "wg-kit-field-input", type, value, placeholder, onInput }),
+	);
+}
+
+export function TextArea({ value, onInput, placeholder, ...rest }) {
+	return h(
+		"label",
+		{ className: cx(fieldClass(rest), "is-area") },
+		h("textarea", { ...withoutFieldLook(rest), className: "wg-kit-field-area", rows: 4, value, placeholder, onInput }),
 	);
 }
 
@@ -939,16 +1056,23 @@ export function Popover({ trigger, children, isOpen: isOpenAsked, onOpenChange, 
 	);
 }
 
-export function PopoverItem({ checked, children, ...rest }) {
+export function PopoverItem({ checked, sub, children, ...rest }) {
 	return h(
 		"button",
 		{
 			type: "button",
 			...rest,
 			"aria-checked": checked === undefined ? undefined : String(checked),
-			className: cx("wg-kit-pop-item", rest.className),
+			className: cx("wg-kit-pop-item", sub && "is-two", rest.className),
 		},
-		children,
+		sub === undefined
+			? children
+			: h(
+					"span",
+					{ className: "wg-kit-pop-said" },
+					children,
+					h("span", { className: "wg-kit-pop-sub", key: "sub" }, sub),
+				),
 		checked === undefined ? null : h(Icon, { name: "tick", className: "wg-kit-pop-tick" }),
 	);
 }
@@ -1284,14 +1408,20 @@ export const Kit = {
 	Count,
 	Plate,
 	Card,
+	SlotList,
 	List,
 	Row,
 	RowBadge,
 	RowLabel,
 	RowValue,
 	Field,
+	TextArea,
 	fieldClass,
 	Icon,
+	PlaceholderMark,
+	markOf,
+	MARK_SHAPE_NAMES,
+	MARK_TONE_NAMES,
 	PRIORITY_TONES,
 	APPROVAL_TONES,
 	TONE_NAMES,

@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
+import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -33,6 +34,9 @@ const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { Catalogue } = await import("./.mjs-cache/catalogue.mjs");
 const { DOC_PAGES, pageAfter, pagesMatching } = await import("./.mjs-cache/docs.mjs");
+const { SURFACES } = await import("./.mjs-cache/tree.mjs");
+const { ROLES } = await import("./.mjs-cache/surface-roles.mjs");
+const { lintBoard } = await import("./.mjs-cache/board-lint.mjs");
 
 let failed = 0;
 function check(name, got, want) {
@@ -106,7 +110,7 @@ const definition = (id, title) => ({
 	manifest: { id, title, defaultSize: { w: 3, h: 2 }, keywords: ["tabs"] },
 	component: () => h("div", null, title),
 });
-const registry = { list: () => [definition("@task/task-card", "Task card")], get: () => null };
+const registry = { list: () => [definition("@default/task-card", "Task card")], get: () => null };
 
 const panel = dom.window.document.getElementById("host");
 render(
@@ -195,5 +199,120 @@ check(
 );
 
 render(null, panel);
+
+const CHAT_BRIEF = fs.readFileSync("docs/ai/chat-brief.md", "utf8");
+const BOARD = fs.readFileSync("docs/ai/board.md", "utf8");
+const SURFACES_PAGE = fs.readFileSync("docs/ai/surfaces.md", "utf8");
+const EXAMPLES = fs.readFileSync("docs/ai/examples.md", "utf8");
+
+const named = (text, word) => new RegExp("`" + word + "`").test(text);
+
+check(
+	"every surface the engine holds is named on the surfaces page",
+	SURFACES.filter((surface) => !named(SURFACES_PAGE, surface)),
+	[],
+);
+check(
+	"and the page names no surface the engine dropped",
+	["item", "raise", "fill", "outline", "divider"].filter((gone) => named(SURFACES_PAGE, gone)),
+	[],
+);
+check(
+	"no example writes a surface the engine would refuse",
+	[...EXAMPLES.matchAll(/surface: ([a-z]+)/g)].map((found) => found[1]).filter((said) => !SURFACES.includes(said)),
+	[],
+);
+check(
+	"and every role an example declares is one the engine knows",
+	[...EXAMPLES.matchAll(/role: ([a-z]+)/g)].map((found) => found[1]).filter((said) => !ROLES.includes(said)),
+	[],
+);
+
+const boardsIn = (text) => [...text.matchAll(/```widgetarium\n([\s\S]*?)```/g)].map((found) => parseYaml(found[1]));
+
+const cardOf = (id) => JSON.parse(fs.readFileSync(`widgets/${id}/manifest.generated.json`, "utf8"));
+const leavesIn = (node) => (node?.of ? node.of.flatMap(leavesIn) : node?.id ? [node.id] : []);
+
+const boards = boardsIn(EXAMPLES);
+check("the examples page holds whole boards", boards.length >= 3, true);
+check(
+	"every widget an example names is one this repo ships",
+	boards.flatMap((board) => board.tiles.map((tile) => tile.widget)).filter((id) => !fs.existsSync(`widgets/${id}`)),
+	[],
+);
+check(
+	"every prop an example binds is one its widget declares",
+	boards.flatMap((board) =>
+		board.tiles.flatMap((tile) =>
+			Object.keys(tile.props ?? {})
+				.filter((name) => !Object.hasOwn(cardOf(tile.widget).props ?? {}, name))
+				.map((name) => `${tile.widget} has no ${name}`),
+		),
+	),
+	[],
+);
+check(
+	"every ref an example writes points at a tile and a prop that exist",
+	boards.flatMap((board) =>
+		board.tiles.flatMap((tile) =>
+			Object.values(tile.props ?? {})
+				.filter((bound) => bound?.from === "ref")
+				.map((bound) => bound.ref)
+				.filter((ref) => {
+					const [said, prop] = String(ref).split("/");
+					const target = board.tiles.find((one) => one.id === said);
+					return !target || !Object.hasOwn(cardOf(target.widget).props ?? {}, prop);
+				}),
+		),
+	),
+	[],
+);
+check(
+	"every tile an example declares is placed, and every leaf names a tile",
+	boards.flatMap((board) => {
+		const placed = leavesIn(board.layout);
+		const held = board.tiles.map((tile) => tile.id);
+		return [
+			...held.filter((id) => !placed.includes(id)).map((id) => `${id} is never placed`),
+			...placed.filter((id) => !held.includes(id)).map((id) => `${id} stands in no tiles list`),
+		];
+	}),
+	[],
+);
+
+const CARDS_ON_DISK = fs
+	.readdirSync("widgets")
+	.filter((scope) => scope.startsWith("@"))
+	.flatMap((scope) =>
+		fs
+			.readdirSync(`widgets/${scope}`)
+			.filter((name) => fs.existsSync(`widgets/${scope}/${name}/manifest.generated.json`))
+			.map((name) => ({
+				id: `${scope}/${name}`,
+				role: JSON.parse(fs.readFileSync(`widgets/${scope}/${name}/manifest.generated.json`, "utf8")).role ?? null,
+			})),
+	);
+
+const roleOf = (widget) => CARDS_ON_DISK.find((card) => card.id === widget)?.role ?? null;
+const linted = boards.flatMap((board, at) =>
+	lintBoard(board, roleOf).map((one) => `Example ${at + 1} ${one.path.join("/") || "root"}: ${one.message}`),
+);
+check("every example passes the linter the agent must pass", linted, []);
+
+const RESTATED_IN_THE_CHAT_BRIEF = [
+	["the spacing steps", "16px one box down, 8px deeper", SURFACES_PAGE, "16px one box down, 8px deeper"],
+	["a board of typed tiles", "is a mock-up, not a screen", BOARD, "is a mock-up, not a screen"],
+	["the vault binding", "from: vault", BOARD, "from: vault"],
+	["the ref binding", "from: ref", BOARD, "from: ref"],
+	["the lint command", "lint <note> --text", BOARD, "lint"],
+];
+
+const unwrapped = (text) => text.replace(/\s+/g, " ");
+
+for (const [what, said, owner, ownersWords] of RESTATED_IN_THE_CHAT_BRIEF) {
+	check(`${what}: the chat brief a talking model holds still says it`, unwrapped(CHAT_BRIEF).includes(said), true);
+	check(`${what}: and the handbook page that owns it still does`, unwrapped(owner).includes(ownersWords), true);
+}
+
 console.log(failed === 0 ? "\ndocs: clean" : `\ndocs: ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

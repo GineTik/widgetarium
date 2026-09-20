@@ -3,7 +3,17 @@ import { memo } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { classOf, measureGrid, scaleOf } from "./paths.js";
 import { createWidthWatcher } from "./width-gate.js";
-import { heldKey, heldTile, mountList, mountPatch, mountRows, propConfig, rekeyed, uniqueName } from "./model.js";
+import {
+	heldKey,
+	heldTile,
+	mountList,
+	mountPatch,
+	mountRows,
+	propConfig,
+	rekeyed,
+	uniqueName,
+	VIEW_GROUP,
+} from "./model.js";
 import { crashBoundary } from "./crash-boundary.js";
 import { reactClash } from "./fit.js";
 import { widgetCatalogue } from "./catalogue-dialog.js";
@@ -15,8 +25,8 @@ import { viewHost } from "./engine/view-host.js";
 import { NOWHERE } from "./engine/navigator-none.js";
 import { trace } from "./trace.js";
 import { stableKey } from "./gateway/cache.js";
-import { arrayGateway } from "./gateway/create.js";
-import { folderGateway, fileGateway } from "./gateway/obsidian.js";
+import { arrayGateway, valueGateway } from "./gateway/create.js";
+import { folderGateway, fileGateway, noteFieldOf } from "./gateway/obsidian.js";
 import {
 	createGatewayRefs,
 	createViewCells,
@@ -28,59 +38,117 @@ import {
 	refsWithin,
 	selectionGateway,
 } from "./gateway/refs.js";
-import { bindingOf, hardcodeCollection, hardcodeValue, requestedVerbs, unmetVerbs } from "./gateway/props.js";
+import {
+	allowedVerbs,
+	bindingOf,
+	declaredOf,
+	hardcodeCollection,
+	hardcodeValue,
+	needsOf,
+	requestedVerbs,
+	typedIn,
+	typedKeyOf,
+	withinAllowed,
+} from "./gateway/props.js";
 import { mappedCollection } from "./gateway/mapped.js";
+import { statGateway } from "./gateway/stats.js";
 import { useSettingsWindow } from "./settings-window.js";
 import { CatalogueDialog } from "./catalogue-dialog.js";
 import { ConfirmDialog } from "./dialog.js";
 import { declaredName } from "./registry.js";
 import { isUnresolved, wiredTiles } from "./engine/wiring.js";
-import { foldLabel } from "./fold-copy.js";
-import { RegionDrawer, useShutDrawerWhenTheRegionStands } from "./drawer.js";
-import { Icon, IconButton } from "./kit.js";
+import { RegionDrawer } from "./drawer.js";
+import { Button, Icon, IconButton } from "./kit.js";
+import { compatibility, movedTileProps } from "./engine/compatibility.js";
+import { generationOf, widgetKeyOf } from "./engine/widget-ref.js";
+import { EditableTabs } from "./editable-tabs.js";
+import { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "./tab-rows.js";
 import {
 	aimedAt,
 	columnsOf,
 	COLUMN,
-	drawerWidth,
 	floorOf,
-	foldableIn,
 	growsOf,
-	heldHeight,
+	holdsOf,
 	isFolded,
 	keptAt,
-	laid,
+	laidRegion,
 	leavesOf,
 	movedInto,
 	nodeAt,
 	pathOfLeaf,
+	pruned,
 	replacedAt,
 	sameTarget,
+	shownIn,
 	sidebarWidth,
+	swapBoxes,
 	sideOf,
+	SWAP,
 	toggledFold,
+	togglesUnder,
+	isAlwaysToggled,
+	toggledFoldAt,
+	HIDE,
+	DRAWER,
+	MENU,
+	SHEET,
+	openKeyOf,
+	overlayWidthOf,
+	regionCollapseOf,
 	widenedBox,
 	widthsOf,
 	withHeight,
+	withHolds,
 	withoutLeaf,
 	withRatios,
 	withWidth,
 	GAP_PX,
-	innerOf,
+	gapVarsOf,
+	innerWidthOf,
 	insertedAt,
+	insetOf,
 	isBox,
+	isPainted,
+	levelAt,
+	NO_SURFACE,
 	REGION_GAP_PX,
-	REGION_PAD_PX,
 	resized,
 	ROW,
 	MIN_HEIGHT_PX,
 	MIN_SIDEBAR_PX,
+	pathKey,
+	byPath,
 } from "./tree.js";
 import { movesFrom, playMoves, positionsWithin } from "./flip.js";
+import { useMeasuredSurfaces } from "./surface-measure.js";
+import { slotSurfaceOf } from "./surface-roles.js";
+import { saidRefusal, surfaceChoicesAt, wornSurfaceAt } from "./surface-laws.js";
+import { surfacedSlot } from "./widget-root.js";
+import { useContentInsets } from "./content-insets.js";
 
-const EDIT_LABEL = { on: "Widgetarium: leave edit mode", off: "Widgetarium: enter edit mode" };
-const PAGE_LABEL = { on: "Widgetarium: collapse the board back into the note", off: "Widgetarium: open the board as a page" };
-const NO_BOX_FOR_THE_HOLDER = "Widgetarium: this board holds no box the view group could stand in, so nothing was folded.";
+const SHOW_NAMED = "Show {name}";
+const HIDE_NAMED = "Hide {name}";
+const HIDE_UNNAMED = {
+	left: "Hide the left panel",
+	right: "Hide the right panel",
+	[SHEET]: "Hide the bottom panel",
+	[MENU]: "Hide the menu",
+};
+const SHOW_UNNAMED = {
+	left: "Show the left panel",
+	right: "Show the right panel",
+	[SHEET]: "Show the bottom panel",
+	[MENU]: "Show the menu",
+};
+const ICON_OF_LOOK = { left: "panel-left", right: "panel-right", [SHEET]: "panel-bottom", [MENU]: "menu" };
+const NO_BOX_FOR_THE_VIEWS = "Widgetarium: this board holds no box the views could stand in, so nothing was folded.";
+const NO_VIEWS_TO_FOLD =
+	"Widgetarium: this board holds no widget that names itself a view, so there was nothing to fold.";
+const SEAT = "wg-seat";
+const INSTALL_THAT_VERSION = "Install the version this board was made with";
+const NEWER_GENERATION = "A newer {widget} is installed; this tile still uses the version it was made with.";
+const MOVE_TO_NEWER = "Move this tile to it";
 
 // CONTEXT: the fixed prop names WidgetHost owns — a manifest prop may not shadow one
 export const RESERVED_PROPS = new Set([
@@ -127,11 +195,12 @@ function refusedSlot(said) {
 	]);
 }
 
-export function resolveSlots(manifest, tile, registry, host, foldIntoGroup) {
+export function resolveSlots({ manifest, tile, registry, host, foldIntoGroup, gatewaysOf }) {
 	const slots = {};
 	const parentReact = registry.get(manifest.id)?.react;
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
-		const child = registry.get(tile.slots?.[name]?.widget ?? spec.default);
+		const widget = tile.slots?.[name]?.widget ?? spec.default;
+		const child = registry.get(widget);
 		if (!isDrawable(child)) {
 			slots[name] = null;
 			continue;
@@ -142,8 +211,10 @@ export function resolveSlots(manifest, tile, registry, host, foldIntoGroup) {
 			slots[name] = () => refusedSlot(clash);
 			continue;
 		}
-		slots[name] = (given) =>
+		const unfed = gatewaysOf(child.manifest, name, widget);
+		const draw = (given) =>
 			h(child.component, {
+				...unfed,
 				...given,
 				size: given?.size ?? { w: 1, h: 1, scale: 1 },
 				host: viewHost(host),
@@ -151,6 +222,8 @@ export function resolveSlots(manifest, tile, registry, host, foldIntoGroup) {
 				navigator: host.navigator ?? NOWHERE,
 				foldIntoGroup: foldIntoGroup ?? refuseFold,
 			});
+		const surface = slotSurfaceOf(spec, tile.slots?.[name]);
+		slots[name] = surfacedSlot(draw, { surface, isCard: isPainted({ surface }) });
 	}
 	return slots;
 }
@@ -233,22 +306,23 @@ function mountsCollection(tile, name, entries) {
 }
 
 export function whereOf(spec, config) {
-	return [...(spec?.default?.where ?? []), ...(config?.where ?? [])];
+	return [...(spec?.where ?? []), ...(config?.where ?? [])];
 }
 
 function mappingFor(spec, config, shapes, path) {
-	const needs = spec.needs ?? {};
+	const needs = needsOf(spec);
 	if (Object.keys(needs).length === 0) return null;
 	return { needs, chosen: { ...shapes?.readShape(path), ...(config.map ?? {}) } };
 }
 
 function typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, requested }) {
-	const declared = spec.default ?? {};
-	const asRendered = config.value ?? declared.value;
+	const declared = declaredOf(spec);
+	const asRendered = typedIn(spec, config) ?? declared;
 	const held = {
 		id: `${tile.id}/${name}?${stableKey(asRendered)}`,
-		readValue: () => propConfig({ ...tile, props: propsRef.current }, name, spec).value ?? declared.value,
-		mutateValue: (step) => patchProp(name, (inFlight) => ({ value: step(inFlight?.value ?? asRendered) })),
+		readValue: () => typedIn(spec, propConfig({ ...tile, props: propsRef.current }, name, spec)) ?? declared,
+		mutateValue: (step) =>
+			patchProp(name, (inFlight) => ({ [typedKeyOf(spec)]: step(typedIn(spec, inFlight) ?? asRendered) })),
 		requested,
 		spec,
 	};
@@ -257,8 +331,7 @@ function typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, req
 }
 
 function folderRows({ spec, host, config, refs, path, requested }) {
-	const declared = spec.default ?? {};
-	const baked = { sort: [...(declared.sort ?? []), ...(config.sort ?? [])] };
+	const baked = { sort: [...(spec.sort ?? []), ...(config.sort ?? [])] };
 	const base = folderGateway({ host, path, baked, requested });
 	const mapping = mappingFor(spec, config, host?.shapes, path);
 	return narrowedByRefs(mapping ? mappedCollection(base, mapping) : base, whereOf(spec, config), refs);
@@ -266,8 +339,27 @@ function folderRows({ spec, host, config, refs, path, requested }) {
 
 function vaultGateway({ spec, host, config, refs, kind, requested }) {
 	const path = config.path || spec.default?.path || "";
-	if (kind === "value") return fileGateway({ host, path, requested });
+	if (kind === "value")
+		return fileGateway({ host, path, part: { field: noteFieldOf(spec, config), type: spec.type }, requested });
 	return folderRows({ spec, host, config, refs, path, requested });
+}
+
+function slotGateways({ childManifest, tile, name, widget, host, refs, cellFor, onPatch }) {
+	const held = heldTile(tile, "slots", name, widget);
+	const propsRef = { current: held.props };
+	const patchProp = (prop, patch) =>
+		onPatch({
+			slots: rekeyed(tile.slots, name, undefined, {
+				props: { ...held.props, [prop]: resolvePatch(held.props?.[prop] ?? {}, patch) },
+			}),
+		});
+	const plain = Object.entries(childManifest?.props ?? {}).filter(([, spec]) => !spec.of && !spec.picks);
+	return Object.fromEntries(
+		plain.map(([prop, spec]) => [
+			prop,
+			resolveGateway({ name: prop, spec, tile: held, host, refs, cellFor, propsRef, patchProp }),
+		]),
+	);
 }
 
 function resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patchProp }) {
@@ -276,8 +368,15 @@ function resolveGateway({ name, spec, tile, host, refs, cellFor, propsRef, patch
 	const requested = requestedVerbs(spec);
 	if (binding === "ref") return kind === "value" ? refValue(refs, config.ref) : refCollection(refs, config.ref);
 	if (binding === "memory") return cellFor(refOf(tile.id, name));
-	if (binding === "hardcode") return typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, requested });
-	return vaultGateway({ spec, host, config, refs, kind, requested });
+	if (binding === "stat")
+		return statGateway(
+			folderRows({ spec: {}, host, config, refs, path: config.path ?? "", requested: ["list"] }),
+			config,
+		);
+	const allowed = allowedVerbs(spec, config, binding);
+	if (binding === "hardcode")
+		return withinAllowed(typedGateway({ name, spec, tile, config, refs, propsRef, patchProp, requested }), allowed);
+	return withinAllowed(vaultGateway({ spec, host, config, refs, kind, requested }), allowed);
 }
 
 const readingOver = (over, refs) => ({
@@ -360,7 +459,6 @@ export function WidgetHost({
 
 	const gateways = {};
 	const gatewayFor = (name) => gateways[name] ?? null;
-	const unmet = [];
 	const declaredProps = Object.entries(manifest.props ?? {}).filter(([name]) => {
 		if (!RESERVED_PROPS.has(name)) return true;
 		console.warn(`Widgetarium: ${manifest.id} declares a prop named "${name}", which the host owns — skipped`);
@@ -396,9 +494,6 @@ export function WidgetHost({
 			propsRef,
 			patchProp,
 		});
-	}
-	for (const [name, spec] of declaredProps) {
-		unmet.push(...unmetVerbs(spec, gateways[name]).map((verb) => `${name}.${verb}`));
 	}
 
 	for (const [name, gateway] of Object.entries(gateways)) {
@@ -465,17 +560,17 @@ export function WidgetHost({
 		here: host.here ?? null,
 		// CONTEXT: navigation is its own entity, never a gateway verb — data does not move people
 		navigator: host.navigator ?? NOWHERE,
-		slots: resolveSlots(manifest, tile, registry, host, foldOrRefuse),
+		slots: resolveSlots({
+			manifest,
+			tile,
+			registry,
+			host,
+			foldIntoGroup: foldOrRefuse,
+			gatewaysOf: (childManifest, name, widget) =>
+				slotGateways({ childManifest, tile, name, widget, host, refs, cellFor, onPatch }),
+		}),
 		mounts,
 	};
-
-	// CONTEXT: mount-time match — a required verb nothing here provides is said, not discovered on click
-	if (unmet.length > 0) {
-		return h("div", { className: "wg-missing" }, [
-			h("b", { key: "what" }, "This widget cannot run here"),
-			h("span", { key: "why" }, `It needs ${unmet.join(", ")}, which this board does not provide.`),
-		]);
-	}
 
 	return drawnWidget(definition, props);
 }
@@ -509,7 +604,6 @@ function widgetPatchers(tile, onPatch) {
 	};
 }
 
-
 function tileActions(tileId, onOpenSettings, onRemove) {
 	return h(
 		"span",
@@ -539,20 +633,65 @@ function sizeOfCell(node) {
 	return at ? { width: Math.round(at.width), height: Math.round(at.height) } : null;
 }
 
-function treeCellBody({ tile, definition, shared, cell, patchTile }) {
-	if (!definition) return h("div", { className: "wg-missing" }, h("b", null, "This widget is not installed"));
+function missingTile(tile, host) {
+	return h("div", { className: "wg-missing" }, [
+		h("b", { key: "said" }, "This widget is not installed"),
+		h("p", { key: "named", className: "wg-missing-id" }, tile.widget),
+		generationOf(tile.widget) && host?.installWidgetAt
+			? h(
+					Button,
+					{
+						key: "install",
+						size: "s",
+						className: "wg-missing-install",
+						onClick: () => host.installWidgetAt(tile.widget),
+					},
+					INSTALL_THAT_VERSION,
+				)
+			: null,
+	]);
+}
+
+function newerGenerationFor(registry, tile) {
+	const held = registry.resolveId?.(tile.widget);
+	const newest = registry.generationsOf?.(widgetKeyOf(tile.widget)).at(-1);
+	if (!held || !newest || newest === held) return null;
+	const verdict = compatibility(registry.get(held)?.manifest, registry.get(newest)?.manifest);
+	return verdict.canMoveTiles ? { newest, verdict } : null;
+}
+
+function movedToNewer(registry, tile, newer) {
+	return (now) =>
+		now.widget === tile.widget
+			? { widget: registry.tileRefOf(newer.newest), props: movedTileProps(now.props, newer.verdict) }
+			: {};
+}
+
+function newerGenerationNote(registry, tile, patchTile) {
+	const newer = newerGenerationFor(registry, tile);
+	if (!newer) return null;
+	return h("div", { className: "wg-newer", key: "newer" }, [
+		h("span", { key: "said" }, NEWER_GENERATION.replace("{widget}", widgetKeyOf(tile.widget))),
+		h(
+			Button,
+			{ key: "move", size: "s", onClick: () => patchTile(tile.id, movedToNewer(registry, tile, newer)) },
+			MOVE_TO_NEWER,
+		),
+	]);
+}
+
+function treeCellBody({ tile, definition, shared, cell, patchTile, editing }) {
+	if (!definition) return missingTile(tile, shared.host);
 	const onPatch = (patch) => patchTile(tile.id, patch);
 	const place = { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 };
-	return drawnTile(
+	const drawn = drawnTile(
 		shared.shells,
 		tile,
 		h(WidgetHost, { ...shared, ...widgetPatchers(tile, onPatch), definition, tile, place, onPatch }),
 	);
+	const note = editing ? newerGenerationNote(shared.registry, tile, patchTile) : null;
+	return note ? [note, drawn] : drawn;
 }
-function pathKey(path) {
-	return path.join("/");
-}
-
 function pathFrom(key) {
 	return key === "" ? [] : key.split("/").map(Number);
 }
@@ -568,14 +707,47 @@ function styleOfNode(node) {
 		minWidth: 0,
 		...(node.height ? { height: `${node.height}px` } : {}),
 		...(node.cap ? { maxHeight: `${node.cap}px` } : {}),
+		...(node.measure ? { maxInlineSize: `${node.measure}px`, marginInline: "auto", inlineSize: "100%" } : {}),
+		...(node.kind === "box" ? { "--wg-tree-gap": `${node.gap}px` } : {}),
+		...(node.kind === "leaf" ? gapVarsOf(node.level) : {}),
+		...dividerReach(node),
+		...plateVars(node),
 	};
+}
+
+function plateVars(plate) {
+	if (!plate?.corner) return {};
+	return {
+		"--wg-plate-corner": `${plate.corner}px`,
+		"--wg-kit-plate": `${plate.kitPlate}px`,
+		"--wg-kit-item": `${plate.kitItem}px`,
+	};
+}
+
+function dividerReach(node) {
+	if (!node.dividerAxis) return {};
+	return {
+		"--wg-divider-before": `${node.dividerBefore ?? 0}px`,
+		"--wg-divider-after": `${node.dividerAfter ?? 0}px`,
+		"--wg-divider-half": `${node.dividerHalf}px`,
+	};
+}
+
+function surfaceAttrs(node) {
+	if (!node.surface || node.surface === NO_SURFACE) return {};
+	const across = node.dividerAxis ? { "data-across": node.dividerAxis, "data-side": node.side } : {};
+	return { "data-surface": node.surface, ...across };
 }
 
 function TreeCell(props) {
 	const { cell, tile, definition, shared, patchTile, standInPx, editing, settingsStandInPx, onOpenSettings, onRemove } =
 		props;
 	const style = styleOfNode(cell);
-	const at = { "data-cell": cell.id, ...(cell.path ? { "data-path": pathKey(cell.path) } : {}) };
+	const at = {
+		"data-cell": cell.id,
+		...(cell.path ? { "data-path": pathKey(cell.path) } : {}),
+		...(cell.across ? { "data-stands-across": cell.across } : {}),
+	};
 	if (standInPx)
 		return h("div", {
 			className: "wg-tree-cell is-stand-in",
@@ -584,14 +756,31 @@ function TreeCell(props) {
 		});
 	const shownInCell = settingsStandInPx
 		? h("div", { style: { minHeight: `${settingsStandInPx}px` } })
-		: treeCellBody({ tile, definition, shared, cell, patchTile });
-	return h("div", { className: "wg-tile wg-tree-cell", style, ...at }, [
+		: treeCellBody({ tile, definition, shared, cell, patchTile, editing });
+	return h("div", { className: "wg-tile wg-tree-cell", style, ...at, ...surfaceAttrs(cell) }, [
 		h("div", { className: "wg-tile-body", key: "body" }, shownInCell),
 		editing && !settingsStandInPx ? tileActions(tile.id, onOpenSettings, onRemove) : null,
 	]);
 }
 
-const CELL_SHAPE = ["grow", "basis", "basisPx", "width", "height", "cap", "id"];
+const CELL_SHAPE = [
+	"grow",
+	"basis",
+	"basisPx",
+	"width",
+	"height",
+	"cap",
+	"id",
+	"surface",
+	"side",
+	"dividerAxis",
+	"dividerBefore",
+	"dividerAfter",
+	"dividerHalf",
+	"gapAfter",
+	"corner",
+	"level",
+];
 const CELL_PROPS = ["standInPx", "editing", "settingsStandInPx", "tile", "definition", "shared"];
 
 const Cell = memo(
@@ -644,13 +833,15 @@ function ratioRecipe({ drawn, ask, event, boxPath, at }) {
 	const rowNode = event.currentTarget.parentElement;
 	const box = rowNode.getBoundingClientRect();
 	const cells = [...rowNode.children].filter((one) => !one.classList.contains("wg-tree-handle"));
-	const children = withFloors(nodeAt(drawn, boxPath).of, ask);
-	const inner = innerOf(children.length, box.width, GAP_PX);
+	const row = nodeAt(drawn, boxPath);
+	const children = withFloors(row.of, ask);
+	const inner = innerWidthOf(row, box.width - 2 * insetOf(row), { level: levelAt(drawn, boxPath), ask });
 	const held = widthsOf(children, inner)
 		.slice(0, at + 1)
 		.reduce((sum, one) => sum + one, 0);
-	const grabbed = event.clientX - box.left - held;
-	const boundaryOf = (moved) => moved.clientX - box.left - grabbed;
+	const start = box.left + insetOf(row);
+	const grabbed = event.clientX - start - held;
+	const boundaryOf = (moved) => moved.clientX - start - grabbed;
 	return {
 		read: (moved, give) =>
 			resized(children, at, { boundaryPx: boundaryOf(moved), inner, isFree: moved.shiftKey, give }).map(
@@ -660,30 +851,52 @@ function ratioRecipe({ drawn, ask, event, boxPath, at }) {
 	};
 }
 
-function heightRecipe({ drawn, ask, event, path }) {
-	const shown = event.currentTarget.parentElement.firstElementChild;
-	const box = shown.getBoundingClientRect();
-	const held = nodeAt(drawn, path);
+function drawnHeightsWithin(grabbed) {
+	return byPath(grabbed, (node) => ({
+		heightPx: node.getBoundingClientRect().height,
+		dir: node.dataset.dir,
+		across: node.dataset.standsAcross,
+	}));
+}
+
+function paintLeafHeights(grabbed, resizedTree, path) {
+	for (const leaf of leavesOf(nodeAt(resizedTree, path), path)) {
+		const selector = `.wg-tree-cell[data-path="${pathKey(leaf.path)}"]`;
+		const cell = grabbed.matches(selector) ? grabbed : grabbed.querySelector(selector);
+		if (cell) cell.style.height = `${nodeAt(resizedTree, leaf.path).height}px`;
+	}
+}
+
+function heightRecipe({ drawn, ask, event, path, commitLayout }) {
+	const grabbed = event.currentTarget.parentElement.firstElementChild;
+	const drawnAs = drawnHeightsWithin(grabbed);
+	const startPx = grabbed.getBoundingClientRect().height;
 	return {
-		read: (moved, give) => heldHeight(held, { wantedPx: box.height + moved.clientY - event.clientY, ask, give }),
-		paint: (height) => {
-			shown.style.height = `${height}px`;
-		},
+		read: (moved, give) => ({ wantedPx: startPx + moved.clientY - event.clientY, give }),
+		paint: ({ wantedPx, give }) =>
+			paintLeafHeights(grabbed, withHeight(drawn, path, wantedPx, { drawnAs, ask, give }), path),
+		commit: ({ wantedPx }) => commitLayout((held) => withHeight(held, path, wantedPx, { drawnAs, ask })),
 	};
 }
 
-function grip(className, onPointerDown, key) {
-	return h("div", { className: `wg-tree-handle ${className}`, key, onPointerDown }, h("i", { className: "wg-tree-grip" }));
+function grip(className, onPointerDown, { key, style }) {
+	return h(
+		"div",
+		{ className: `wg-tree-handle ${className}`, key, onPointerDown, style },
+		h("i", { className: "wg-tree-grip" }),
+	);
 }
 
-function addZone(path, isOnly, draw) {
+function addZone(column, draw) {
+	const isOnly = column.of.length === 0;
 	return h(
 		"button",
 		{
 			className: `wg-tree-add${isOnly ? " is-only" : ""}${draw.editing ? "" : " is-quiet"}`,
 			key: "add",
 			type: "button",
-			onClick: () => draw.onAdd(path),
+			style: isOnly ? undefined : { marginTop: `${column.gap}px` },
+			onClick: () => draw.onAdd(column.path),
 		},
 		[h(Icon, { key: "plus", name: "plus", size: 20 }), h("span", { key: "label" }, "Add a widget")],
 	);
@@ -711,9 +924,14 @@ function rowElement(row, draw) {
 	const key = pathKey(row.path);
 	return h(
 		"div",
-		{ className: "wg-tree-row", key, "data-path": key, "data-dir": ROW, style: styleOfNode(row) },
+		{ className: "wg-tree-row", key, "data-path": key, "data-dir": ROW, style: styleOfNode(row), ...surfaceAttrs(row) },
 		row.of.flatMap((child, at) => [
-			at > 0 ? grip("is-across", draw.grabRatio(row.path, at - 1), `grip-${pathKey(child.path)}`) : null,
+			at > 0 && !row.hasCollapsed
+				? grip("is-across", draw.grabRatio(row.path, at - 1), {
+						key: `grip-${pathKey(child.path)}`,
+						style: { flex: `0 0 ${row.of[at - 1].gapAfter}px` },
+					})
+				: null,
 			nodeElement(child, draw),
 		]),
 	);
@@ -722,21 +940,145 @@ function rowElement(row, draw) {
 function bandElement(child, draw) {
 	return h("div", { className: "wg-tree-band", key: pathKey(child.path) }, [
 		nodeElement(child, draw),
-		grip("is-along", draw.grabHeight(child.path), "along"),
+		alongElement(child, draw),
 	]);
+}
+
+function alongElement(child, draw) {
+	const style = { height: `${child.gapAfter}px` };
+	if (child.kind === "box" && child.dir !== ROW) return h("div", { key: "along", style });
+	return grip(`is-along${child.gapAfter === 0 ? " is-last" : ""}`, draw.grabHeight(child.path), {
+		key: "along",
+		style,
+	});
 }
 
 function columnElement(column, draw) {
 	const key = pathKey(column.path);
 	const isEmpty = column.of.length === 0;
-	return h("div", { className: "wg-tree", key, "data-path": key, "data-dir": COLUMN, style: styleOfNode(column) }, [
-		...column.of.map((child) => bandElement(child, draw)),
-		draw.editing || isEmpty ? addZone(column.path, isEmpty, draw) : null,
+	const attrs = { className: "wg-tree", key, "data-path": key, "data-dir": COLUMN, style: styleOfNode(column) };
+	return h("div", { ...attrs, ...surfaceAttrs(column) }, [
+		...column.of.map((child) =>
+			child.kind === "collapsed" ? collapsedElement(child, draw) : bandElement(child, draw),
+		),
+		draw.editing || isEmpty ? addZone(column, draw) : null,
 	]);
 }
 
+const VIEW_GONE_FOR_GOOD =
+	"The view goes for good, with the widgets in it and everything they were set to. This cannot be undone.";
+
+function holdsCollection(ref, rows) {
+	const held = rows.map((row) => ({
+		ref: row.name,
+		value: { name: row.name, value: row.name, hidden: Boolean(row.hidden) },
+	}));
+	return arrayGateway(() => held, {}, `${ref}?${stableKey(held)}`);
+}
+
+function useCellValue(cell) {
+	const [held, setHeld] = useState(null);
+	useEffect(() => {
+		let isReading = true;
+		const reread = () =>
+			Promise.resolve(cell.get()).then((value) => {
+				if (isReading) setHeld(value ?? null);
+			});
+		reread();
+		const stop = cell.subscribe(reread);
+		return () => {
+			isReading = false;
+			stop();
+		};
+	}, [cell]);
+	return held;
+}
+
+// TRADE-OFF: a box with no id publishes nothing and keeps its pick under its path, because binding to a place rather than to an identity is what a moved box would silently break
+function swapRefs(swap) {
+	if (!swap.id) return { holds: null, selection: `swap:${pathKey(swap.path)}/selection` };
+	return { holds: refOf(swap.id, "holds"), selection: refOf(swap.id, "selection") };
+}
+
+// TRADE-OFF: each box publishes a wrapper of its own over the shared cell, because a drop is matched by identity and a box leaving after its replacement arrived would otherwise take the replacement's selection with it
+function ownedSelection(cell) {
+	return valueGateway({
+		id: cell.id,
+		handlers: {
+			get: () => cell.get(),
+			update: (next) => cell.update(next),
+			remove: () => cell.remove(),
+		},
+		subscribe: (listener) => cell.subscribe(listener),
+	});
+}
+
+function describedSwap(swap, prop, kind) {
+	return { tile: swap.id, prop, label: prop === "holds" ? "Views" : "Shown view", title: "View box", kind };
+}
+
+function SwapBox({ swap, draw }) {
+	const { refs, cellFor } = draw.shared;
+	const rows = holdsOf(swap);
+	const named = swapRefs(swap);
+	const cell = cellFor(named.selection);
+	const shown = shownIn(rows, useCellValue(cell));
+	const shownAt = rows.findIndex((row) => row.name === shown);
+	const holds = useMemo(() => holdsCollection(named.holds ?? named.selection, rows), [named.holds, stableKey(rows)]);
+	const selection = useMemo(() => ownedSelection(cell), [cell]);
+
+	if (named.holds) {
+		refs.put(named.holds, holds, { describes: describedSwap(swap, "holds", "collection") });
+		refs.put(named.selection, selection, { describes: describedSwap(swap, "selection", "value") });
+	}
+	const published = useRef([]);
+	published.current = named.holds
+		? [
+				[named.holds, holds],
+				[named.selection, selection],
+			]
+		: [];
+	useEffect(
+		() => () => {
+			for (const [ref, gateway] of published.current) refs.drop(ref, gateway);
+		},
+		[refs],
+	);
+
+	const apply = (step) => {
+		if (movesSelection(step)) cell.update(step.selected ?? "");
+		if (movesRows(step)) draw.commitHolds(swap.path, applyTabStep(rows, step));
+	};
+
+	const key = pathKey(swap.path);
+	return h(
+		"div",
+		{ className: "wg-tree-swap", "data-path": key, "data-dir": SWAP, style: styleOfNode(swap), ...surfaceAttrs(swap) },
+		swap.strip
+			? h(EditableTabs, {
+					key: "strip",
+					className: "wg-tree-swap-strip",
+					tabs: tabsOf(rows),
+					archived: archivedOf(rows),
+					selected: shown ?? "",
+					onChange: apply,
+					deleteWarning: VIEW_GONE_FOR_GOOD,
+				})
+			: null,
+		swap.of.map((child, at) =>
+			h(
+				"div",
+				{ className: "wg-tree-swap-held", key: pathKey(child.path), hidden: at !== shownAt },
+				nodeElement(child, draw),
+			),
+		),
+	);
+}
+
 function nodeElement(node, draw) {
+	if (node.kind === "collapsed") return collapsedElement(node, draw);
 	if (node.kind === "leaf") return cellElement(node, draw);
+	if (node.dir === SWAP) return h(SwapBox, { key: pathKey(node.path), swap: node, draw });
 	return node.dir === COLUMN ? columnElement(node, draw) : rowElement(node, draw);
 }
 
@@ -754,13 +1096,16 @@ function overlayElement(tile, draw) {
 	);
 }
 
-function useSettledCells(rootRef, dragRef) {
+// TRADE-OFF: a gap that moved because a widget's content was measured snaps into place, because motion answers a press and nobody pressed anything
+function useSettledCells(rootRef, dragRef, insets) {
 	const restingRef = useRef({});
+	const measuredRef = useRef(insets);
 	useLayoutEffect(() => {
 		dragRef.current?.repaint();
 		const now = positionsWithin(rootRef.current, ".wg-tree-cell", (node) => node.dataset.cell);
-		const moves = movesFrom(restingRef.current, now);
+		const moves = measuredRef.current === insets ? movesFrom(restingRef.current, now) : {};
 		restingRef.current = now;
+		measuredRef.current = insets;
 		playMoves(rootRef.current, moves, (root, id) => root.querySelector(`.wg-tree-cell[data-cell="${id}"]`));
 	});
 }
@@ -776,11 +1121,11 @@ function useStopOnUnmount(gestureRef) {
 }
 
 // TRADE-OFF: `drawn` is the carry PREVIEW and is read for geometry only, because the grips measure the tree on screen; every commit goes out as a transform for the writer to apply to the board as it stands
-function TreeRegion({ drawn, node, commitLayout, ask, onCarry, overlay, ...rest }) {
+function TreeRegion({ drawn, node, commitLayout, ask, insets, onCarry, overlay, ...rest }) {
 	const rootRef = useRef(null);
 	const dragRef = useRef(null);
 	useStopOnUnmount(dragRef);
-	useSettledCells(rootRef, dragRef);
+	useSettledCells(rootRef, dragRef, insets);
 
 	const draw = {
 		...rest,
@@ -790,10 +1135,7 @@ function TreeRegion({ drawn, node, commitLayout, ask, onCarry, overlay, ...rest 
 				commit: (ratios) => commitLayout((held) => withRatios(held, boxPath, ratios)),
 			}),
 		grabHeight: (path) => (event) =>
-			dragUntilDropped(dragRef, event, {
-				...heightRecipe({ drawn, ask, event, path }),
-				commit: (height) => commitLayout((held) => withHeight(held, path, height)),
-			}),
+			dragUntilDropped(dragRef, event, heightRecipe({ drawn, ask, event, path, commitLayout })),
 	};
 
 	return h(
@@ -831,6 +1173,8 @@ const spotBox = (node) => {
 	return { left: at.left, top: at.top, right: at.right, bottom: at.bottom };
 };
 
+const standsOnScreen = (spot) => spot.box.right > spot.box.left && spot.box.bottom > spot.box.top;
+
 // TRADE-OFF: the region element is a spot of its own over the same path as the box inside it, so the bare part of a column below its widgets still answers the pointer
 function spotsUnder(node, carriedId) {
 	const inside = [...node.querySelectorAll("[data-path]")]
@@ -840,7 +1184,8 @@ function spotsUnder(node, carriedId) {
 			kind: one.dataset.cell === undefined ? "box" : "leaf",
 			dir: one.dataset.dir ?? null,
 			box: spotBox(one),
-		}));
+		}))
+		.filter(standsOnScreen);
 	if (node.dataset.region === undefined) return inside;
 	return [
 		...inside,
@@ -900,11 +1245,11 @@ function ghostFor(box, grabbed) {
 
 const DECLARED_SIZES = { minPx: "stackBelowPx", cap: "tallestPx", shortestPx: "shortestPx", tallestPx: "tallestPx" };
 
-function askOf(manifestOf) {
+function askOf({ widgetOf, manifestOf, insets }) {
 	return (id) => {
 		const manifest = manifestOf(id) ?? {};
 		const held = Object.entries(DECLARED_SIZES).map(([name, declared]) => [name, manifest[declared] ?? 0]);
-		return Object.fromEntries(held);
+		return { ...Object.fromEntries(held), widget: widgetOf(id), role: manifest.role, insets: insets[id] };
 	};
 }
 
@@ -1060,7 +1405,25 @@ function useLandingGhost(carry, setCarry, { pageRef, ghostRef }) {
 const TREE_PLACE = { x: 0, y: 0, w: 1, h: 1 };
 const UNMEASURED_CELL = { width: MIN_SIDEBAR_PX, height: MIN_HEIGHT_PX };
 
-function TreeSettings({ session, tile, canvasBox, shared, patchTile, frame }) {
+function surfaceOfTile(layout, id, commitLayout, host) {
+	const path = pathOfLeaf(layout, id);
+	if (!path) return null;
+	const node = nodeAt(layout, path);
+	const wear = (surface, side) =>
+		commitLayout((now) => {
+			const { layout: next, refusal } = wornSurfaceAt(now, path, surface, side);
+			if (refusal) host?.ui?.notify?.(saidRefusal(refusal));
+			return next;
+		});
+	return {
+		now: node?.surface ?? NO_SURFACE,
+		side: node?.side ?? null,
+		choices: () => surfaceChoicesAt(layout, path),
+		wear,
+	};
+}
+
+function TreeSettings({ session, tile, canvasBox, shared, patchTile, layout, commitLayout, frame }) {
 	const definition = shared.registry.get(tile.widget);
 	const settingsWindow = useSettingsWindow({
 		...frame,
@@ -1069,74 +1432,49 @@ function TreeSettings({ session, tile, canvasBox, shared, patchTile, frame }) {
 		tile,
 		canvasBox,
 		onPatch: (patch) => patchTile(tile.id, patch),
+		surface: surfaceOfTile(layout, tile.id, commitLayout, frame.host),
 		place: { ...TREE_PLACE, id: tile.id },
 		widget: treeCellBody({ tile, definition, shared, cell: { width: canvasBox.width }, patchTile }),
 	});
 	return settingsWindow.dialog;
 }
 
-function foldToggle(at, chrome) {
-	const side = sideOf(chrome.drawn, at);
-	const isShown = chrome.isShown(at);
+function regionSurfaceAttrs(worn) {
+	return worn.surface === NO_SURFACE ? {} : { "data-surface": worn.surface, "data-side": worn.side };
+}
+
+const lookOf = (into, side) => (into === DRAWER ? side : into);
+
+function toggleTitle(name, look, isOn) {
+	if (name) return (isOn ? HIDE_NAMED : SHOW_NAMED).replace("{name}", name);
+	return (isOn ? HIDE_UNNAMED : SHOW_UNNAMED)[look];
+}
+
+function boxAction({ openKey, look, name, isOn, press }) {
+	return { key: `box:${openKey}`, icon: ICON_OF_LOOK[look], title: toggleTitle(name, look, isOn), isOn, press };
+}
+
+function CollapsedPanel({ openKey, look, width, shared, pressAt, children }) {
+	const cell = useMemo(() => shared.cellFor(openKey), [shared, openKey]);
+	const isOpen = useCellValue(cell) === true;
+	useEffect(() => () => void cell.update(false), [cell]);
 	return h(
-		IconButton,
-		{
-			variant: "raised",
-			size: "m",
-			className: `wg-region-toggle is-${side}`,
-			key: `toggle-${at}`,
-			label: foldLabel(side, !isShown),
-			"aria-pressed": String(isShown),
-			onPointerDown: (event) => event.stopPropagation(),
-			onClick: chrome.pressToggle(at),
-		},
-		h(Icon, { name: `sidebar-${side}`, size: 20 }),
+		RegionDrawer,
+		{ name: look, isOpen, pressAt: isOpen ? pressAt(openKey) : null, width, onClose: () => cell.update(false) },
+		children,
 	);
 }
 
-function barToggle({ className, key, label, isOn, variant, icon, onPress }) {
+function collapsedElement(node, draw) {
+	const key = `collapsed-${pathKey(node.path)}`;
+	const body = h("div", { className: "wg-collapsed-body" }, nodeElement(node.node, draw));
+	if (node.into === HIDE) return h("div", { className: "wg-tree-fold", key, "aria-hidden": "true" }, body);
+	const look = lookOf(node.into, node.side);
+	const width = overlayWidthOf(node.into, window.innerWidth);
 	return h(
-		IconButton,
-		{
-			variant,
-			size: "m",
-			className,
-			key,
-			label,
-			"aria-pressed": String(isOn),
-			onPointerDown: (event) => event.stopPropagation(),
-			onClick: () => onPress?.(),
-		},
-		h(Icon, { name: icon, size: 20 }),
-	);
-}
-
-function regionBar(chrome) {
-	const foldable = foldableIn(chrome.drawn);
-	return h(
-		"div",
-		{ className: "wg-region-bar" },
-		foldable.filter((at) => at < chrome.keep).map((at) => foldToggle(at, chrome)),
-		barToggle({
-			className: "wg-region-toggle is-edit",
-			key: "toggle-editing",
-			label: chrome.editing ? EDIT_LABEL.on : EDIT_LABEL.off,
-			isOn: chrome.editing,
-			variant: chrome.editing ? "accent" : "raised",
-			icon: "pencil",
-			onPress: chrome.onToggleEditing,
-		}),
-		barToggle({
-			className: "wg-region-toggle is-page",
-			key: "toggle-page",
-			label: chrome.isPage ? PAGE_LABEL.on : PAGE_LABEL.off,
-			isOn: chrome.isPage,
-			variant: "raised",
-			icon: chrome.isPage ? "collapse" : "expand",
-			onPress: chrome.onTogglePage,
-		}),
-		h("span", { className: "wg-region-bar-gap" }),
-		foldable.filter((at) => at > chrome.keep).map((at) => foldToggle(at, chrome)),
+		CollapsedPanel,
+		{ key, openKey: node.openKey, look, width, shared: draw.shared, pressAt: draw.pressAt },
+		body,
 	);
 }
 
@@ -1170,37 +1508,119 @@ function foldedAside(at, chrome) {
 	);
 }
 
-function drawerOver(at, chrome) {
-	const isOpen = chrome.opened?.at === at;
+function regionOverlay(at, chrome) {
+	const into = regionCollapseOf(chrome.drawn, at);
+	if (into === HIDE) return foldedAside(at, chrome);
+	const look = lookOf(into, sideOf(chrome.drawn, at));
+	const width = overlayWidthOf(into, window.innerWidth);
 	return h(
-		RegionDrawer,
+		CollapsedPanel,
 		{
 			key: `drawer-${at}`,
-			name: sideOf(chrome.drawn, at),
-			isOpen,
-			pressAt: isOpen ? { x: chrome.opened.x, y: chrome.opened.y } : null,
-			width: chrome.drawerPx,
-			onClose: chrome.shutDrawer,
+			openKey: openKeyOf(chrome.drawn.of[at], [at]),
+			look,
+			width,
+			shared: chrome.shared,
+			pressAt: chrome.pressAt,
 		},
-		chrome.region(at, chrome.drawerPx, true),
+		chrome.region(at, width, true),
 	);
+}
+
+function triggerPoint(openKey) {
+	const tile = openKey.split("/")[0];
+	const cell = document.querySelector(`.wg-tree-cell[data-cell="${CSS.escape(tile)}"]`);
+	if (!cell) return null;
+	const box = cell.getBoundingClientRect();
+	return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+}
+
+function floatingAction(at, chrome) {
+	const node = chrome.drawn.of[at];
+	const into = regionCollapseOf(chrome.drawn, at);
+	if (node.trigger || into === HIDE) return null;
+	const openKey = openKeyOf(node, [at]);
+	return boxAction({
+		openKey,
+		look: lookOf(into, sideOf(chrome.drawn, at)),
+		name: node.name ?? node.purpose,
+		isOn: chrome.open.has(openKey),
+		press: (point) => chrome.toggleOpen(openKey, point),
+	});
+}
+
+function dockedAction(at, chrome) {
+	const node = chrome.drawn.of[at];
+	if (at === chrome.keep || !isAlwaysToggled(node) || node.trigger) return null;
+	return boxAction({
+		openKey: openKeyOf(node, [at]),
+		look: sideOf(chrome.drawn, at),
+		name: node.name ?? node.purpose,
+		isOn: !isFolded(chrome.root, at),
+		press: () => chrome.commitLayout((held) => toggledFold(held, at)),
+	});
+}
+
+function nestedAction(toggle, chrome) {
+	if (toggle.hasTrigger) return null;
+	const foldAt = () => chrome.commitLayout((held) => toggledFoldAt(held, toggle.path));
+	if (toggle.kind === "box")
+		return boxAction({ openKey: toggle.openKey, look: toggle.side, name: toggle.label, isOn: true, press: foldAt });
+	if (toggle.isFolded)
+		return boxAction({ openKey: toggle.openKey, look: toggle.side, name: toggle.name, isOn: false, press: foldAt });
+	if (toggle.into === HIDE) return null;
+	return boxAction({
+		openKey: toggle.openKey,
+		look: lookOf(toggle.into, toggle.side),
+		name: toggle.name,
+		isOn: chrome.open.has(toggle.openKey),
+		press: (point) => chrome.toggleOpen(toggle.openKey, point),
+	});
+}
+
+function useOpenKeys(keys, cellFor) {
+	const [open, setOpen] = useState(() => new Set());
+	const joined = keys.join("\n");
+	useEffect(() => {
+		let isReading = true;
+		const cells = keys.map((key) => [key, cellFor(key)]);
+		const reread = () =>
+			Promise.all(
+				cells.map(([key, cell]) => Promise.resolve(cell.get()).then((value) => (value === true ? key : null))),
+			).then((held) => {
+				if (isReading) setOpen(new Set(held.filter(Boolean)));
+			});
+		reread();
+		const stops = cells.map(([, cell]) => cell.subscribe(reread));
+		return () => {
+			isReading = false;
+			for (const stop of stops) stop();
+		};
+	}, [joined, cellFor]);
+	return open;
+}
+
+function useHeaderActions(actions, onActions) {
+	useEffect(() => {
+		onActions?.(actions);
+	});
+	useEffect(() => () => onActions?.([]), []);
 }
 
 function TreeBoard({
 	board,
 	width,
 	commitLayout,
+	commitHolds,
 	shared,
 	editing,
-	onToggleEditing,
 	settingsId,
 	settingsStandInPx,
 	onOpenSettings,
 	onRemove,
 	onAdd,
 	patchTile,
-	isPage,
-	onTogglePage,
+	onActions,
 }) {
 	const { registry } = shared;
 	const pageRef = useRef(null);
@@ -1209,20 +1629,17 @@ function TreeBoard({
 	const ghostRef = useRef(null);
 	const sidebarRef = useRef(null);
 	const [carry, setCarry] = useState(null);
-	const [openedDrawer, setOpenedDrawer] = useState(null);
+	const pressedRef = useRef(new Map());
 	const carrying = carry?.isLanding ? null : carry;
 	const root = board.layout;
 	const drawn = carrying ? movedInto(root, carrying.id, carrying.target) : root;
 	const { beside, floating, hidden, alone } = columnsOf(drawn, width, REGION_GAP_PX);
-	const opened = floating.includes(openedDrawer?.at) ? openedDrawer : null;
-	useShutDrawerWhenTheRegionStands(
-		openedDrawer === null ? null : String(openedDrawer.at),
-		floating.includes(openedDrawer?.at),
-		() => setOpenedDrawer(null),
-	);
 	const tileOf = (id) => board.tiles.find((tile) => tile.id === id);
-	const manifestOf = (id) => registry.get(tileOf(id)?.widget)?.manifest;
-	const ask = askOf(manifestOf);
+	const widgetOf = (id) => tileOf(id)?.widget;
+	const manifestOf = (id) => registry.get(widgetOf(id))?.manifest;
+	const [insets, setInsets] = useState({});
+	useContentInsets(pageRef, setInsets);
+	const ask = askOf({ widgetOf, manifestOf, insets });
 	const placed = new Set(leavesOf(root).map((leaf) => leaf.id));
 	const unplaced = board.tiles.filter((tile) => !placed.has(tile.id));
 	const keep = keptAt(drawn);
@@ -1232,6 +1649,8 @@ function TreeBoard({
 
 	useStopOnUnmount(carryRef);
 	useLandingGhost(carry, setCarry, { pageRef, ghostRef });
+	const everyRegionRef = useRef(new Map());
+	useMeasuredSurfaces(pageRef, shared.host, everyRegionRef);
 
 	const carryFrom = (event) => {
 		const id = event.target.closest(".wg-tree-cell")?.dataset.cell;
@@ -1262,19 +1681,44 @@ function TreeBoard({
 			? regionsRef.current.set(at, node)
 			: regionsRef.current.delete(at);
 
-	const region = (at, given, isFloating = false) =>
-		h(
+	const pressAt = (openKey) => pressedRef.current.get(openKey) ?? triggerPoint(openKey);
+
+	const toggleOpen = (openKey, point) => {
+		pressedRef.current.set(openKey, point);
+		const cell = shared.cellFor(openKey);
+		return Promise.resolve(cell.get()).then((isOpen) => cell.update(isOpen !== true));
+	};
+
+	const laidCache = new Map();
+	const placedOf = (at, given, isFloating) => {
+		const key = `${at}:${given}:${isFloating}`;
+		if (!laidCache.has(key))
+			laidCache.set(key, laidRegion(drawn, at, given, { ask, isFloating, viewportPx: window.innerWidth }));
+		return laidCache.get(key);
+	};
+
+	const region = (at, given, isFloating = false) => {
+		const placed = placedOf(at, given, isFloating);
+		return h(
 			"div",
 			{
 				className: `wg-tree-region ${regionClass(at)}`,
 				key: at,
 				"data-region": at,
-				ref: holdColumn(at),
-				style: at === keep || isFloating ? { flex: "1 1 0", minWidth: 0 } : { flex: `0 0 ${given}px`, minWidth: 0 },
+				ref: (node) => {
+					holdColumn(at)(node);
+					if (node) everyRegionRef.current.set(`${at}:${isFloating}`, node);
+					else everyRegionRef.current.delete(`${at}:${isFloating}`);
+				},
+				...regionSurfaceAttrs(placed.worn),
+				style: {
+					...(at === keep || isFloating ? { flex: "1 1 0", minWidth: 0 } : { flex: `0 0 ${given}px`, minWidth: 0 }),
+					...plateVars(placed.plate),
+				},
 			},
 			h(TreeRegion, {
 				drawn,
-				node: laid(nodeAt(drawn, [at]), given - REGION_PAD_PX * 2, { ask, path: [at] }),
+				node: placed.node,
 				shared,
 				editing,
 				settingsId,
@@ -1284,42 +1728,42 @@ function TreeBoard({
 				onAdd,
 				patchTile,
 				commitLayout,
+				commitHolds,
 				ask,
+				insets,
 				tileOf,
+				pressAt,
 				carry: carrying,
 				onCarry: carryFrom,
 				overlay: at === overlayAt ? unplaced : [],
 			}),
 		);
-
-	const isShown = (at) => (floating.includes(at) ? opened?.at === at : !isFolded(root, at));
-
-	const pressToggle = (at) => (event) => {
-		if (!floating.includes(at)) return commitLayout((held) => toggledFold(held, at));
-		setOpenedDrawer(opened?.at === at ? null : { at, x: event.clientX, y: event.clientY });
 	};
 
-	const chrome = {
-		root,
-		drawn,
-		keep,
-		editing,
-		isPage,
-		onToggleEditing,
-		onTogglePage,
-		opened,
-		isShown,
-		pressToggle,
-		region,
-		grabSidebar,
-		drawerPx: drawerWidth(window.innerWidth),
-		shutDrawer: () => setOpenedDrawer(null),
-	};
+	const standing = [
+		...beside.map((column) => placedOf(column.at, column.width, false)),
+		...alone.map((at) => placedOf(at, width, false)),
+	];
+	const toggles = standing.flatMap((placed) => togglesUnder(placed.node));
+	const openable = [
+		...floating.map((at) => openKeyOf(drawn.of[at], [at])),
+		...toggles.filter((toggle) => toggle.kind === "collapsed").map((toggle) => toggle.openKey),
+	];
+	const open = useOpenKeys(openable, shared.cellFor);
+	const chrome = { root, drawn, keep, shared, region, grabSidebar, commitLayout, pressAt, toggleOpen, open };
+	const actions = [
+		...drawn.of.map((child, at) => (floating.includes(at) ? floatingAction(at, chrome) : dockedAction(at, chrome))),
+		...toggles.map((toggle) => nestedAction(toggle, chrome)),
+	].filter(Boolean);
+	useHeaderActions(actions, onActions);
 
 	return h(
 		"div",
-		{ className: "wg-tree-page", ref: pageRef, style: { "--wg-tree-gap": `${GAP_PX}px` } },
-		regionBar(chrome),
+		{
+			className: "wg-tree-page",
+			ref: pageRef,
+			style: { "--wg-tree-gap": `${GAP_PX}px`, ...gapVarsOf(1) },
+		},
 		beside.length > 0
 			? h(
 					"div",
@@ -1328,7 +1772,7 @@ function TreeBoard({
 				)
 			: null,
 		alone.map((at) => region(at, width)),
-		floating.map((at) => drawerOver(at, chrome)),
+		floating.map((at) => regionOverlay(at, chrome)),
 		hidden.map((at) => foldedAside(at, chrome)),
 		ghostElement(carry, manifestOf(carry?.id)?.title ?? carry?.id, ghostRef),
 	);
@@ -1368,9 +1812,9 @@ function Board({ className, onWidth, children }) {
 
 // the expanded board is its own render root: moving the node would make preact
 // fight us for it, and any re-render would snap it back into the note
-function Page({ boardNode, onClose, children }) {
+function Page({ boardNode, children }) {
 	const pane = boardNode?.closest(PANE_SELECTOR);
-	const pageRef = usePageIn(pane, onClose);
+	const pageRef = usePageIn(pane);
 
 	useEffect(() => {
 		pageRef.current?.draw(children);
@@ -1381,37 +1825,12 @@ function Page({ boardNode, onClose, children }) {
 
 const viewTiles = (tiles, registry) => tiles.filter((tile) => registry.get(tile.widget)?.manifest?.view);
 
-function namedViewRows(moved, registry, taken) {
-	return moved.map((tile) => ({
-		name: uniqueName(taken, declaredName(registry, tile.widget)),
-		widget: tile.widget,
-		tile,
-	}));
-}
-
-const recordOfTile = (tile) => ({
-	widget: tile.widget,
-	settings: tile.settings,
-	mounts: tile.mounts,
-	props: tile.props,
-	slots: tile.slots,
-	mounted: tile.mounted,
-});
-
-function rowsAndMounted({ holder, mountName, moved, registry }) {
-	const taken = new Set();
-	const held = namedViewRows(moved, registry, taken);
-	const owned = new Set(moved.map((tile) => tile.widget));
-	const spare = mountRows(holder.manifest.mounts[mountName]?.default ?? [], (id) => declaredName(registry, id)).filter(
-		(row) => !owned.has(row.widget),
-	);
-	return {
-		rows: [
-			...held.map((row) => ({ name: row.name, widget: row.widget })),
-			...spare.map((row) => ({ name: uniqueName(taken, row.name), widget: row.widget })),
-		],
-		mounted: Object.fromEntries(held.map((row) => [row.name, recordOfTile(row.tile)])),
-	};
+function boardWithHolds(board, path, rows) {
+	const layout = withHolds(board.layout, path, rows);
+	const kept = new Set(leavesOf(layout).map((leaf) => leaf.id));
+	const gone = leavesOf(nodeAt(board.layout, path)).filter((leaf) => !kept.has(leaf.id));
+	const dropped = new Set(gone.map((leaf) => leaf.id));
+	return { ...board, tiles: board.tiles.filter((tile) => !dropped.has(tile.id)), layout };
 }
 
 function firstBoxIn(root) {
@@ -1419,28 +1838,34 @@ function firstBoxIn(root) {
 	return at < 0 ? null : [at];
 }
 
-// TRADE-OFF: the board folds the views in, not the widget — only the board can move a tile INTO a holder
-function layoutWithHolder(layout, moved, id) {
-	const stood = moved.map((tile) => pathOfLeaf(layout, tile.id)).find(Boolean);
-	const standing = stood ? replacedAt(layout, stood, { ...nodeAt(layout, stood), id }) : layout;
-	const emptied = moved.reduce((held, tile) => withoutLeaf(held, tile.id), standing);
-	if (stood) return emptied;
-	const keep = keptAt(emptied) >= 0 ? [keptAt(emptied)] : firstBoxIn(emptied);
-	const seated = keep === null ? null : insertedAt(emptied, keep, nodeAt(emptied, keep).of.length, { id, ratio: 1 });
+function seatedBeside(layout, box) {
+	const keep = keptAt(layout) >= 0 ? [keptAt(layout)] : firstBoxIn(layout);
+	const seated = keep === null ? null : insertedAt(layout, keep, nodeAt(layout, keep).of.length, box);
 	if (seated) return seated;
-	console.warn(NO_BOX_FOR_THE_HOLDER);
+	console.warn(NO_BOX_FOR_THE_VIEWS);
 	return layout;
 }
 
-function boardWithHolder({ board, holder, moved, id, registry }) {
-	const mountName = Object.keys(holder.manifest.mounts)[0];
-	const { rows, mounted } = rowsAndMounted({ holder, mountName, moved, registry });
-	const gone = new Set(moved.map((tile) => tile.id));
-	const born = { id, widget: holder.manifest.id, mounts: { [mountName]: rows }, mounted };
+// TRADE-OFF: the tile standing first is marked before the others are taken out, because pruning moves every path behind it and the seat has to survive that
+function layoutWithSwap(layout, moved, box) {
+	const stood = moved.map((tile) => pathOfLeaf(layout, tile.id)).find(Boolean);
+	if (!stood) return seatedBeside(layout, box);
+	const emptied = moved.reduce((held, tile) => withoutLeaf(held, tile.id), replacedAt(layout, stood, { id: SEAT }));
+	const seat = pathOfLeaf(emptied, SEAT);
+	return seat ? pruned(replacedAt(emptied, seat, box)) : seatedBeside(emptied, box);
+}
+
+const swapsStanding = (layout) =>
+	swapBoxes(layout)
+		.filter((held) => held.box.id)
+		.map((held) => ({ widget: VIEW_GROUP, id: held.box.id }));
+
+function swapOfViews(moved, registry, id) {
+	const taken = new Set();
 	return {
-		...board,
-		tiles: wiredTiles([...board.tiles.filter((tile) => !gone.has(tile.id)), born], registry),
-		layout: layoutWithHolder(board.layout, moved, id),
+		dir: SWAP,
+		id,
+		of: moved.map((tile) => ({ id: tile.id, ratio: 1, name: uniqueName(taken, declaredName(registry, tile.widget)) })),
 	};
 }
 
@@ -1456,7 +1881,7 @@ export function WidgetSurface({
 	host,
 	editing,
 	onChange: save,
-	onToggleEditing,
+	onActions,
 	screen,
 	initialWidth = 0,
 	onWidth,
@@ -1475,10 +1900,7 @@ export function WidgetSurface({
 	// seeded from the last measurement of the previous element: Obsidian rebuilds the block
 	// after a write, and starting from zero again cost a blank frame every time
 	const [width, setWidth] = useState(initialWidth);
-	// The mode is written in the block, so it survives every re-render the editor causes —
-	// and a page opens in the state it was left in.
 	const isPage = board.mode === "expanded";
-	const toggleExpanded = () => onChange({ ...board, mode: isPage ? "collapsed" : "expanded" }, true);
 	const [preview, setPreview] = useState(null);
 	const [openedChip, setOpenedChip] = useState(null);
 	const [settingsTile, setSettingsTile] = useState(null);
@@ -1553,8 +1975,7 @@ export function WidgetSurface({
 	// Every hook is above this line, so the early return is safe. Nothing below may run on an
 	// unmeasured width: measureGrid(0) returns a NEGATIVE cell, and latestRef would then hold
 	// a phantom column count for the next commit to author.
-	if (width < MIN_BOARD_WIDTH_PX)
-		return isPage ? h(Page, { boardNode, onClose: () => toggleExpanded() }, boardShell(null)) : boardShell(null);
+	if (width < MIN_BOARD_WIDTH_PX) return isPage ? h(Page, { boardNode }, boardShell(null)) : boardShell(null);
 
 	const boardAsItStands = () => latestRef.current?.board ?? board;
 
@@ -1566,14 +1987,18 @@ export function WidgetSurface({
 
 	const commitLayout = (change) => commitBoard((now) => ({ ...now, layout: change(now.layout) }));
 
+	// TRADE-OFF: the rows and the tiles under them move in one write, because a deleted view whose tiles stayed on the board would keep drawing them in the overlay nobody can see
+	const commitHolds = (path, rows) => commitBoard((now) => boardWithHolds(now, path, rows));
+
 	const patchTile = (id, patch) => {
 		const patched = (tile) => ({ ...tile, ...(typeof patch === "function" ? patch(tile) : patch) });
 		commitBoard((now) => ({ ...now, tiles: now.tiles.map((tile) => (tile.id === id ? patched(tile) : tile)) }));
 	};
 
-	const bornTile = (held, widgetId) => {
+	const bornTile = (now, widgetId) => {
 		const id = bornTileId();
-		return { id, tiles: wiredTiles([...held, { id, widget: widgetId }], registry) };
+		const widget = registry.tileRefOf?.(widgetId) ?? widgetId;
+		return { id, tiles: wiredTiles([...now.tiles, { id, widget }], registry, swapsStanding(now.layout)) };
 	};
 
 	const catalogue = (onPick) =>
@@ -1655,15 +2080,16 @@ export function WidgetSurface({
 		});
 
 	const foldIntoGroup = () => {
-		const holder = registry.list().find((entry) => Object.keys(entry.manifest?.mounts ?? {}).length > 0);
-		if (!holder) {
-			console.warn("Widgetarium: no installed widget holds views");
-			return false;
-		}
-		commitBoard((now) =>
-			boardWithHolder({ board: now, holder, moved: viewTiles(now.tiles, registry), id: bornTileId(), registry }),
-		);
-		return true;
+		let folded = false;
+		commitBoard((now) => {
+			const moved = viewTiles(now.tiles, registry);
+			if (moved.length === 0) return null;
+			folded = true;
+			const layout = layoutWithSwap(now.layout, moved, swapOfViews(moved, registry, bornTileId()));
+			return { ...now, tiles: wiredTiles(now.tiles, registry, swapsStanding(layout)), layout };
+		});
+		if (!folded) console.warn(NO_VIEWS_TO_FOLD);
+		return folded;
 	};
 
 	foldRef.current = foldIntoGroup;
@@ -1675,7 +2101,7 @@ export function WidgetSurface({
 				console.warn(NO_BOX_TO_ADD_INTO.replace("{path}", pathKey(path)));
 				return null;
 			}
-			const { id, tiles } = bornTile(now.tiles, widgetId);
+			const { id, tiles } = bornTile(now, widgetId);
 			return { ...now, tiles, layout: insertedAt(now.layout, path, box.of.length, { id, ratio: 1 }) };
 		});
 
@@ -1691,7 +2117,6 @@ export function WidgetSurface({
 			width,
 			shared,
 			editing,
-			onToggleEditing,
 			settingsId: held?.id ?? null,
 			settingsStandInPx: held ? canvasBox.height : 0,
 			onOpenSettings: openSettings,
@@ -1699,8 +2124,8 @@ export function WidgetSurface({
 			onAdd: setPickingInto,
 			patchTile,
 			commitLayout,
-			isPage,
-			onTogglePage: toggleExpanded,
+			commitHolds,
+			onActions,
 		}),
 		configured
 			? h(TreeSettings, {
@@ -1710,6 +2135,8 @@ export function WidgetSurface({
 					canvasBox,
 					shared,
 					patchTile,
+					layout: board.layout,
+					commitLayout,
 					frame: {
 						host,
 						registry,
@@ -1727,15 +2154,15 @@ export function WidgetSurface({
 		removalDialog(),
 		Array.isArray(pickingInto) ? catalogue((widgetId) => addTileInto(widgetId, pickingInto)) : null,
 	]);
-	return isPage ? h(Page, { boardNode, onClose: () => toggleExpanded() }, drawn) : drawn;
+	return isPage ? h(Page, { boardNode }, drawn) : drawn;
 }
 
-function usePageIn(pane, onClose) {
+function usePageIn(pane) {
 	const pageRef = useRef(null);
 
 	useEffect(() => {
 		if (!pane) return trace("page stays in the block", { reason: "the board's own node stands in no pane yet" });
-		const stood = standPageIn(pane, onClose);
+		const stood = standPageIn(pane);
 		pageRef.current = stood.page;
 		return () => {
 			stood.leave();
@@ -1746,10 +2173,10 @@ function usePageIn(pane, onClose) {
 	return pageRef;
 }
 
-function standPageIn(pane, onClose) {
+function standPageIn(pane) {
 	const wasStatic = getComputedStyle(pane).position === "static";
 	if (wasStatic) pane.style.position = "relative";
-	const page = mountInto(pane, "wg-page", onClose);
+	const page = mountInto(pane, "wg-page");
 	return {
 		page,
 		leave: () => {

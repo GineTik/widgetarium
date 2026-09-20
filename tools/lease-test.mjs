@@ -1,8 +1,22 @@
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 
-const dom = new JSDOM("<!doctype html><body><div id=kept></div><div id=reclaimed></div><div id=closed></div><div id=nulled></div><div id=untouched></div></body>", { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent"]) {
+const dom = new JSDOM(
+	"<!doctype html><body><div id=kept></div><div id=reclaimed></div><div id=closed></div><div id=nulled></div><div id=untouched></div></body>",
+	{ pretendToBeVisual: true },
+);
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
@@ -18,7 +32,9 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 let births = 0;
@@ -61,7 +77,11 @@ await settle();
 nulling.draw(null);
 await Promise.resolve();
 await Promise.resolve();
-check("a draw of nothing releases the node in the beat a release does, not renders nothing into it", nulled.textContent, "");
+check(
+	"a draw of nothing releases the node in the beat a release does, not renders nothing into it",
+	nulled.textContent,
+	"",
+);
 
 const untouched = document.getElementById("untouched");
 let queued = 0;

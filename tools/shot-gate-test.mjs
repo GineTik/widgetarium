@@ -49,7 +49,11 @@ for (const { id, folder } of widgetFolders()) {
 	}
 
 	const now = shotInputHash(folder);
-	check(`${id}: the shot was taken from the widget as it stands`, now === declared, `declares ${declared}, inputs hash ${now}`);
+	check(
+		`${id}: the shot was taken from the widget as it stands`,
+		now === declared,
+		`declares ${declared}, inputs hash ${now}`,
+	);
 }
 
 console.log(

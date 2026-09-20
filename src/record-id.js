@@ -45,9 +45,9 @@ export function withoutRemint(duplicates, path) {
 		.filter((entry) => entry.remints.length > 0);
 }
 
-
 // CONTEXT: authored whole, filled by replace — a built sentence cannot be reordered
-const REPORT = "Widgetarium: {count} records claim the id {id}. {keeps} keeps it; the rest are re-minted on their next write.";
+const REPORT =
+	"Widgetarium: {count} records claim the id {id}. {keeps} keeps it; the rest are re-minted on their next write.";
 
 export function reportDuplicates(duplicates, said) {
 	for (const entry of duplicates) {

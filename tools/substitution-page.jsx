@@ -28,15 +28,15 @@ const adapter = {
 	},
 };
 
-const CODE = { id: "sub-0", name: "Code", mode: "line", open: "!code", widget: "@inline/code-block" };
-const REMINDER = { id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" };
+const CODE = { id: "sub-0", name: "Code", mode: "line", open: "!code", widget: "@default/code-block" };
+const REMINDER = { id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@default/reminder" };
 const NOTE = {
 	id: "sub-2",
 	name: "Note",
 	mode: "wrapped",
 	open: ":::",
 	close: ":::",
-	widget: "@inline/note",
+	widget: "@default/note",
 	enabled: false,
 };
 const TIMECODE = {
@@ -44,10 +44,10 @@ const TIMECODE = {
 	name: "Timecode",
 	mode: "regex",
 	pattern: "^@(\\d{1,2}:\\d{2})\\s+(.+)$",
-	widget: "@inline/reminder",
+	widget: "@default/reminder",
 	draft: true,
 };
-const BROKEN = { id: "sub-4", name: "Timecode", mode: "regex", pattern: "", widget: "@inline/reminder", draft: true };
+const BROKEN = { id: "sub-4", name: "Timecode", mode: "regex", pattern: "", widget: "@default/reminder", draft: true };
 
 const CASES = {
 	live: [CODE, REMINDER, NOTE, TIMECODE],

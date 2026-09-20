@@ -1,0 +1,97 @@
+{
+	"size": [
+		660,
+		700
+	],
+	"design": "docs/reference/metric-total-draft/RecordList.dc.html",
+	"parts": {
+		"list-dialog": {
+			"design": ".dialog",
+			"impl": ".mt3-list-dialog"
+		},
+		"list-close": {
+			"design": ".close",
+			"impl": "[data-part=\"list-close\"]"
+		},
+		"list-close-icon": {
+			"design": ".close svg",
+			"impl": "[data-part=\"list-close-icon\"]"
+		},
+		"list-head": {
+			"design": ".head",
+			"impl": "[data-part=\"list-head\"]"
+		},
+		"list-title": {
+			"design": ".dialog-title",
+			"impl": "[data-part=\"list-title\"]"
+		},
+		"list-desc": {
+			"design": ".dialog-desc",
+			"impl": "[data-part=\"list-desc\"]"
+		},
+		"records": {
+			"design": ".list",
+			"impl": "[data-part=\"records\"]"
+		},
+		"record": {
+			"design": ".list > .row:nth-child(1)",
+			"impl": "[data-part=\"record\"]"
+		},
+		"record-date": {
+			"design": ".list > .row:nth-child(1) > .row-date",
+			"impl": "[data-part=\"record-date\"]"
+		},
+		"record-note": {
+			"design": ".list > .row:nth-child(1) > .row-note",
+			"impl": "[data-part=\"record-note\"]"
+		},
+		"record-amount": {
+			"design": ".list > .row:nth-child(1) > .row-amount",
+			"impl": "[data-part=\"record-amount\"]"
+		},
+		"record-actions": {
+			"design": ".list > .row:nth-child(1) > .row-actions",
+			"impl": "[data-part=\"record-actions\"]"
+		},
+		"record-edit": {
+			"design": ".list > .row:nth-child(1) .row-btn:nth-of-type(1)",
+			"impl": "[data-part=\"record-edit\"]"
+		},
+		"record-delete": {
+			"design": ".list > .row:nth-child(1) .row-btn:nth-of-type(2)",
+			"impl": "[data-part=\"record-delete\"]"
+		},
+		"record-last": {
+			"design": ".list > .row:last-child",
+			"impl": "[data-part=\"record-last\"]"
+		},
+		"record-down": {
+			"design": ".row-amount.is-down",
+			"impl": "[data-part=\"record-down\"]"
+		},
+		"undated": {
+			"design": ".warning",
+			"impl": "[data-part=\"undated\"]"
+		},
+		"undated-icon": {
+			"design": ".warning svg",
+			"impl": "[data-part=\"undated-icon\"]"
+		},
+		"list-foot": {
+			"design": ".foot",
+			"impl": "[data-part=\"list-foot\"]"
+		},
+		"list-count": {
+			"design": ".foot-count",
+			"impl": "[data-part=\"list-count\"]"
+		},
+		"list-add": {
+			"design": ".foot .btn",
+			"impl": "[data-part=\"list-add\"]"
+		},
+		"list-add-icon": {
+			"design": ".foot .btn svg",
+			"impl": "[data-part=\"list-add-icon\"]"
+		}
+	}
+}

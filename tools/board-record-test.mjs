@@ -7,6 +7,7 @@ import path from "node:path";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
+const EVERY_VERB = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
 const VAULT = "tools/fixture-boards";
 const TASKS = "Orbitask/Tasks";
@@ -15,11 +16,30 @@ const NOWHERE = "Orbitask/NotYetMoved";
 const NOWHERE_STILL = "Orbitask/StillNotMoved";
 const NEVER_MOVED = "Orbitask/NeverMoved";
 
-const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "KeyboardEvent", "MouseEvent", "Event", "MutationObserver"]) {
+const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
+	pretendToBeVisual: true,
+});
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"KeyboardEvent",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
-globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+globalThis.ResizeObserver = class {
+	observe() {}
+	disconnect() {}
+};
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
@@ -36,7 +56,13 @@ const adapter = {
 	exists: async (target) => fs.existsSync(path.join(VAULT, target)),
 	list: async (target) => {
 		const names = fs.readdirSync(path.join(VAULT, target));
-		const kind = (name) => { try { return fs.statSync(path.join(VAULT, target, name)); } catch { return null; } };
+		const kind = (name) => {
+			try {
+				return fs.statSync(path.join(VAULT, target, name));
+			} catch {
+				return null;
+			}
+		};
 		return {
 			folders: names.filter((name) => kind(name)?.isDirectory()).map((name) => `${target}/${name}`),
 			files: names.filter((name) => kind(name)?.isFile()).map((name) => `${target}/${name}`),
@@ -71,7 +97,9 @@ function folderAt(target) {
 			const children = fs
 				.readdirSync(path.join(VAULT, target))
 				.filter((name) => name.endsWith(".md"))
-				.map((name) => noteAt(`${target}/${name}`, frontmatter(fs.readFileSync(path.join(VAULT, target, name), "utf8"))));
+				.map((name) =>
+					noteAt(`${target}/${name}`, frontmatter(fs.readFileSync(path.join(VAULT, target, name), "utf8"))),
+				);
 			folders.set(target, Object.assign(new TFolder(), { path: target, children }));
 		} catch {
 			folders.set(target, null);
@@ -86,9 +114,18 @@ function fileAt(target) {
 }
 
 const watchers = new Map();
-const watch = (name, listener) => { watchers.set(name, [...(watchers.get(name) ?? []), listener]); return {}; };
-const unwatch = (name, listener) => watchers.set(name, (watchers.get(name) ?? []).filter((held) => held !== listener));
-const fire = (name, file) => { for (const listener of [...(watchers.get(name) ?? [])]) listener(file); };
+const watch = (name, listener) => {
+	watchers.set(name, [...(watchers.get(name) ?? []), listener]);
+	return {};
+};
+const unwatch = (name, listener) =>
+	watchers.set(
+		name,
+		(watchers.get(name) ?? []).filter((held) => held !== listener),
+	);
+const fire = (name, file) => {
+	for (const listener of [...(watchers.get(name) ?? [])]) listener(file);
+};
 
 const app = {
 	vault: {
@@ -131,7 +168,16 @@ console.warn = (...parts) => warnings.push(parts.map((part) => String(part)).joi
 
 const ONE_REGION = {
 	dir: "row",
-	of: [{ dir: "column", keep: true, of: [{ id: "boards", height: 56 }, { id: "board", height: 640 }] }],
+	of: [
+		{
+			dir: "column",
+			keep: true,
+			of: [
+				{ id: "boards", height: 56 },
+				{ id: "board", height: 640 },
+			],
+		},
+	],
 };
 
 const named = (tabs) => tabs.map((name) => ({ name }));
@@ -140,13 +186,13 @@ const PICKED = "boards/selection";
 function surfaceOverBoards(boardsPath) {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { path: boardsPath } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { allow: EVERY_VERB, path: boardsPath } } },
 			{
 				id: "board",
-				widget: "@task/kanban-board",
+				widget: "@default/kanban-board",
 				props: {
-					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { path: boardsPath },
+					tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { allow: EVERY_VERB, path: boardsPath },
 					selection: { from: "ref", ref: PICKED },
 				},
 			},
@@ -158,13 +204,13 @@ function surfaceOverBoards(boardsPath) {
 function surfaceBoard(boardsPath, tabs = ["Marketing Team", "Ux Team"]) {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: named(tabs) } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: named(tabs) } } },
 			{
 				id: "board",
-				widget: "@task/kanban-board",
+				widget: "@default/kanban-board",
 				props: {
-					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { path: boardsPath },
+					tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+					boards: { allow: EVERY_VERB, path: boardsPath },
 					selection: { from: "ref", ref: PICKED },
 				},
 			},
@@ -179,9 +225,18 @@ const draw = () =>
 	render(
 		h(WidgetSurface, {
 			boardNode: root,
-			board, registry, host, editing: false, screen: true, initialWidth: 1280,
-			onChange: (next) => { board = next; draw(); },
-			onToggleEditing: () => {}, onWidth: () => {},
+			board,
+			registry,
+			host,
+			editing: false,
+			screen: true,
+			initialWidth: 1280,
+			onChange: (next) => {
+				board = next;
+				draw();
+			},
+			onToggleEditing: () => {},
+			onWidth: () => {},
 		}),
 		root,
 	);
@@ -202,16 +257,23 @@ let failed = 0;
 const check = (label, got, want) => {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? ` — ${JSON.stringify(got)}` : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(want)}`}`,
+	);
 };
 
 const surface = () => dom.window.document.querySelector(".wg-page") ?? root;
 const all = (selector) => [...surface().querySelectorAll(selector)];
 const titles = () => all(".orbi-kanban .ok-list-title").map((node) => node.textContent.trim());
-const byText = (selector, text) => all(selector).find((node) => node.textContent.trim().toLowerCase() === text.toLowerCase());
-const click = async (node) => { node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true })); await settle(); };
+const byText = (selector, text) =>
+	all(selector).find((node) => node.textContent.trim().toLowerCase() === text.toLowerCase());
+const click = async (node) => {
+	node.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+	await settle();
+};
 const dialog = () => dom.window.document.body.querySelector(".wg-dialog");
-const dialogButton = (text) => [...dialog().querySelectorAll("button")].find((node) => node.textContent.trim().toLowerCase() === text);
+const dialogButton = (text) =>
+	[...dialog().querySelectorAll("button")].find((node) => node.textContent.trim().toLowerCase() === text);
 const pickBoard = (name) => byText(".wg-tabs .wg-tabs-tab", name);
 const fileProps = (name) => fileAt(`${BOARDS}/${name}.md`)?.props ?? null;
 const columnRows = (name) => {
@@ -220,7 +282,10 @@ const columnRows = (name) => {
 	return Array.isArray(held) ? held.map((row) => (typeof row === "string" ? { name: row } : row)) : [];
 };
 const columnNames = (name) => columnRows(name).map((row) => row.name);
-const archivedNames = (name) => columnRows(name).filter((row) => row.archivedAt).map((row) => row.name);
+const archivedNames = (name) =>
+	columnRows(name)
+		.filter((row) => row.archivedAt)
+		.map((row) => row.name);
 const boardWrites = () => written.updated.filter((made) => made.path.startsWith(BOARDS)).length;
 
 const addColumn = async (name) => {
@@ -256,12 +321,21 @@ check("and the second board's order is still its own", titles(), ["Backlog", "Sh
 await click(pickBoard("Marketing Team"));
 await addColumn("Blocked");
 check("the column is drawn on the board it was added to", titles(), ["To Do", "Doing", "Done", "Blocked"]);
-check("and it was written to that board's own record", columnNames("Marketing Team"), ["To Do", "Doing", "Done", "Blocked"]);
+check("and it was written to that board's own record", columnNames("Marketing Team"), [
+	"To Do",
+	"Doing",
+	"Done",
+	"Blocked",
+]);
 
 await click(pickBoard("Ux Team"));
 check("the other board does not show it", titles(), ["Backlog", "Shipping"]);
 check("and its record was never touched", String(fileProps("Ux Team").columns), "Backlog, Shipping");
-check("the note itself holds no shared column list", board.tiles.find((tile) => tile.id === "board").settings.columns, undefined);
+check(
+	"the note itself holds no shared column list",
+	board.tiles.find((tile) => tile.id === "board").settings.columns,
+	undefined,
+);
 
 await click(pickBoard("Marketing Team"));
 check("switching back finds the added column still there", titles(), ["To Do", "Doing", "Done", "Blocked"]);
@@ -269,7 +343,12 @@ check("switching back finds the added column still there", titles(), ["To Do", "
 // 4. ARCHIVING IS PER BOARD TOO.
 await archiveColumn("Doing");
 check("the archived column leaves the board it was archived on", titles(), ["To Do", "Done", "Blocked"]);
-check("the record keeps its name, so a restore is exact", columnNames("Marketing Team"), ["To Do", "Doing", "Done", "Blocked"]);
+check("the record keeps its name, so a restore is exact", columnNames("Marketing Team"), [
+	"To Do",
+	"Doing",
+	"Done",
+	"Blocked",
+]);
 check("and the column itself carries the day it left", archivedNames("Marketing Team"), ["Doing"]);
 
 await click(pickBoard("Ux Team"));
@@ -285,7 +364,11 @@ check("and the record's archived list is empty again", String(fileProps("Marketi
 await start(surfaceBoard(NOWHERE));
 check("with no record on file the board still draws", all(".orbi-kanban").length, 1);
 check("from the columns the tile carries", titles(), ["To Do", "Doing", "Done"]);
-check("and the strip still lists its tabs", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Marketing Team", "Ux Team"]);
+check(
+	"and the strip still lists its tabs",
+	all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()),
+	["Marketing Team", "Ux Team"],
+);
 await click(pickBoard("Ux Team"));
 check("switching board still works from the old string", all(".orbi-kanban").length, 1);
 
@@ -295,23 +378,33 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	await start(
 		normalizeBoard({
 			tiles: [
-				{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: named(["Marketing Team", "Ux Team"]) } } },
 				{
-				id: "board",
-				widget: "@task/kanban-board",
-				props: {
-					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { path: NOWHERE_STILL },
-					selection: { from: "ref", ref: PICKED },
+					id: "boards",
+					widget: "@default/editable-tabs",
+					props: { tabs: { rows: named(["Marketing Team", "Ux Team"]) } },
 				},
-			}
+				{
+					id: "board",
+					widget: "@default/kanban-board",
+					props: {
+						tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+						boards: { allow: EVERY_VERB, path: NOWHERE_STILL },
+						selection: { from: "ref", ref: PICKED },
+					},
+				},
 			],
 			layout: ONE_REGION,
 		}),
 	);
 	check("a board with no record of its own draws what the tile carries", titles(), ["To Do", "Doing", "Done"]);
 	await click(pickBoard("Ux Team"));
-	check("and the board next door draws the same list, plus whatever its tasks carry", titles(), ["To Do", "Doing", "Done", "Backlog", "Shipping"]);
+	check("and the board next door draws the same list, plus whatever its tasks carry", titles(), [
+		"To Do",
+		"Doing",
+		"Done",
+		"Backlog",
+		"Shipping",
+	]);
 }
 
 // 6c. A COLUMN ARCHIVED BEFORE ANY RECORD EXISTED is named in the map and nowhere else, so
@@ -320,16 +413,20 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	await start(
 		normalizeBoard({
 			tiles: [
-				{ id: "boards", widget: "@core/editable-tabs", props: { tabs: { value: named(["Marketing Team", "Ux Team"]) } } },
 				{
-				id: "board",
-				widget: "@task/kanban-board",
-				props: {
-					tasks: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { path: NEVER_MOVED },
-					selection: { from: "ref", ref: PICKED },
+					id: "boards",
+					widget: "@default/editable-tabs",
+					props: { tabs: { rows: named(["Marketing Team", "Ux Team"]) } },
 				},
-			}
+				{
+					id: "board",
+					widget: "@default/kanban-board",
+					props: {
+						tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+						boards: { allow: EVERY_VERB, path: NEVER_MOVED },
+						selection: { from: "ref", ref: PICKED },
+					},
+				},
 			],
 			layout: ONE_REGION,
 		}),
@@ -347,20 +444,38 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 	written.updated.length = 0;
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archive"));
-	check("archiving a tab takes it off the strip", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()), ["Ux Team"]);
-	check("the record it archived is the only one written", written.updated.map((made) => made.path), [`${BOARDS}/Marketing Team.md`]);
+	check(
+		"archiving a tab takes it off the strip",
+		all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()),
+		["Ux Team"],
+	);
+	check(
+		"the record it archived is the only one written",
+		written.updated.map((made) => made.path),
+		[`${BOARDS}/Marketing Team.md`],
+	);
 	check("and it carries the day it was archived", typeof fileProps("Marketing Team").archivedAt, "string");
 	check("the board's columns were not touched", columnNames("Marketing Team"), columnsBefore);
 
 	await click(all(".wg-tabs .wg-tabs-more")[0]);
 	await click(byText(".wg-tabs .wg-kit-pop-item", "Archived list"));
 	await click([...dialog().querySelectorAll("button")].find((node) => node.textContent.trim() === "Restore"));
-	check("restoring puts the tab back", all(".wg-tabs .wg-tabs-tab").map((node) => node.textContent.trim()).sort(), ["Marketing Team", "Ux Team"]);
+	check(
+		"restoring puts the tab back",
+		all(".wg-tabs .wg-tabs-tab")
+			.map((node) => node.textContent.trim())
+			.sort(),
+		["Marketing Team", "Ux Team"],
+	);
 	check("and the date it carried is gone", fileProps("Marketing Team").archivedAt, null);
 	check("with the columns still untouched", columnNames("Marketing Team"), columnsBefore);
 }
 
-check("nothing was refused along the way", warnings.filter((line) => line.includes("may not")), []);
+check(
+	"nothing was refused along the way",
+	warnings.filter((line) => line.includes("may not")),
+	[],
+);
 
 console.log(failed === 0 ? "\nboard record: all checks passed" : `\nboard record: ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

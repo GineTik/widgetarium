@@ -23,7 +23,12 @@ function buildRead(record) {
 
 export function readLock(raw) {
 	const parsed = asObject(raw);
-	return { version: 1, widgets: { ...asObject(parsed.widgets) }, modules: { ...asObject(parsed.modules) }, builds: buildsIn(parsed) };
+	return {
+		version: 1,
+		widgets: { ...asObject(parsed.widgets) },
+		modules: { ...asObject(parsed.modules) },
+		builds: buildsIn(parsed),
+	};
 }
 
 function hashesOf(texts) {
@@ -32,8 +37,24 @@ function hashesOf(texts) {
 	return hashes;
 }
 
-export function lockEntry({ source, commit, files }) {
-	return { source: String(source ?? ""), commit: String(commit ?? ""), files: hashesOf(files) };
+export function commitsOf(entry) {
+	if (Array.isArray(entry?.commits)) return entry.commits;
+	return entry?.commit ? [entry.commit] : [];
+}
+
+export const INSTALL_PENDING = "pending";
+export const INSTALLED = "installed";
+
+export function lockEntry({ source, commit, files, path = null, commits = [], state = INSTALLED }) {
+	const absorbed = [...new Set([...commits, String(commit ?? "")])].filter(Boolean);
+	return {
+		source: String(source ?? ""),
+		path,
+		commit: String(commit ?? ""),
+		commits: absorbed,
+		files: hashesOf(files),
+		state,
+	};
 }
 
 export function buildRecord({ from, compiler, inputs }) {
@@ -51,7 +72,13 @@ export function buildIsCurrent(record, inputs) {
 }
 
 function lockWith(lock, changed) {
-	return { version: 1, widgets: { ...lock.widgets }, modules: { ...lock.modules }, builds: { ...lock.builds }, ...changed };
+	return {
+		version: 1,
+		widgets: { ...lock.widgets },
+		modules: { ...lock.modules },
+		builds: { ...lock.builds },
+		...changed,
+	};
 }
 
 export function withEntry(lock, id, entry) {

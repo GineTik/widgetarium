@@ -1,0 +1,202 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Report",
+	"description": "What an agent did once it finished: the prose at reading width, the figures beside it, the test plan and the list of what was fixed.",
+	"keywords": [
+		"report",
+		"summary",
+		"handoff",
+		"write-up",
+		"findings",
+		"result",
+		"test plan",
+		"fixes",
+		"changelog",
+		"review",
+		"agent",
+		"figures"
+	],
+	"role": "detail",
+	"size": {
+		"collapseBelowPx": 240,
+		"stackBelowPx": 420
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 6
+		},
+		"props": {
+			"body": {
+				"value": "The board now reads a drop as a path, so a tile carried across the grain wraps the node it landed on.\n\nThe measure held: prose stays at reading width while a figure takes the whole column."
+			},
+			"figures": {
+				"rows": [
+					{
+						"caption": "A tile carried across the grain wraps the leaf under the pointer.",
+						"drawing": "```\n[ A ]   [ B ]\n  └── dropped across ──┐\n[ A ]   [ B over C ]\n```"
+					}
+				]
+			},
+			"testPlan": {
+				"rows": [
+					{
+						"step": "Carry a tile onto a leaf from the side.",
+						"expect": "A new row box holds both.",
+						"done": true
+					},
+					{
+						"step": "Carry the last tile out of a box.",
+						"expect": "The box is pruned.",
+						"done": true
+					},
+					{
+						"step": "Narrow the tile under the reading width.",
+						"expect": "The figure is the column wide.",
+						"done": false
+					}
+				]
+			},
+			"fixes": {
+				"rows": [
+					{
+						"title": "A drop across the grain wrapped the parent, not the leaf.",
+						"where": "src/tree.js"
+					},
+					{
+						"title": "An empty declared box was pruned with the rest.",
+						"where": "src/board-note.js"
+					}
+				]
+			}
+		}
+	},
+	"slots": {
+		"figure": {
+			"of": "widget",
+			"default": "@flow/report-figure",
+			"surface": "none",
+			"gives": {
+				"source": ["caption", "image", "alt", "drawing"]
+			}
+		}
+	},
+	"props": {
+		"body": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Report",
+			"hint": "The prose of the report, typed here or bound to a note. Headings, lists and links work as they do in a note.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"figures": {
+			"kind": "collection",
+			"label": "Figures",
+			"hint": "One record per figure, each drawn by the widget in the figure slot.",
+			"writes": ["list", "get"],
+			"describes": {
+				"caption": {
+					"label": "Caption",
+					"type": "text",
+					"aka": ["title", "label", "legend"]
+				},
+				"image": {
+					"label": "Image",
+					"type": "text",
+					"aka": ["picture", "screenshot", "file", "shot"]
+				},
+				"alt": {
+					"label": "Alt text",
+					"type": "text",
+					"aka": ["alt-text", "description"]
+				},
+				"drawing": {
+					"label": "Drawing",
+					"type": "text",
+					"aka": ["diagram", "chart", "sketch"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"testPlan": {
+			"kind": "collection",
+			"label": "Test plan",
+			"hint": "One record per step: what to press, and what should happen when it is pressed.",
+			"writes": ["list", "get"],
+			"describes": {
+				"step": {
+					"label": "Step",
+					"type": "text",
+					"aka": ["name", "title", "case", "action"]
+				},
+				"expect": {
+					"label": "What should happen",
+					"type": "text",
+					"aka": ["expected", "result", "outcome"]
+				},
+				"done": {
+					"label": "Checked",
+					"type": "boolean",
+					"aka": ["complete", "passed", "verified"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"fixes": {
+			"kind": "collection",
+			"label": "What was fixed",
+			"hint": "One record per fix, with the file it was made in.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Fix",
+					"type": "text",
+					"aka": ["name", "summary", "what"]
+				},
+				"where": {
+					"label": "Where",
+					"type": "text",
+					"aka": ["file", "path", "location"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"measure": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Reading width, in characters",
+			"hint": "How wide the prose is allowed to run. A figure ignores it and takes the whole tile.",
+			"writes": ["get"],
+			"default": {
+				"value": 68
+			}
+		},
+		"stepsPerPage": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Test steps per page",
+			"hint": "How many steps of the test plan are drawn at once.",
+			"writes": ["get"],
+			"default": {
+				"value": 8
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": ["@flow/report-figure"]
+}

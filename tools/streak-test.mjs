@@ -4,7 +4,20 @@ import { transform } from "sucrase";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent", "Event", "MutationObserver"]) {
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
@@ -33,10 +46,11 @@ const kit = await import("./.mjs-cache/kit.mjs");
 const emojis = await import("./.mjs-cache/emojis.mjs");
 const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
+const { needsOf } = await import("./.mjs-cache/gateway/props.mjs");
 
-const WIDGET = "widgets/@habit/streak/widget.tsx";
+const WIDGET = "widgets/@default/streak/widget.tsx";
 const { propsOfEveryShippedWidget } = await import("./widget-props.mjs");
-const DECLARED = (await propsOfEveryShippedWidget())["@habit/streak"];
+const DECLARED = (await propsOfEveryShippedWidget())["@default/streak"];
 
 const libs = new Map();
 
@@ -51,7 +65,13 @@ function compiled(file, source) {
 }
 
 function importing() {
-	const modules = { widgetarium, "widgetarium/kit": kit, "widgetarium/kit/emojis": emojis, react, ...Object.fromEntries(libs) };
+	const modules = {
+		widgetarium,
+		"widgetarium/kit": kit,
+		"widgetarium/kit/emojis": emojis,
+		react,
+		...Object.fromEntries(libs),
+	};
 	return (name) => {
 		const found = modules[name];
 		if (!found) throw new Error(`cannot import "${name}"`);
@@ -66,15 +86,17 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@habit/lib", run("widgets/@habit/lib.js"));
-const { isoOf, shiftedBy } = libs.get("@habit/lib");
+libs.set("@default/lib", run("widgets/@default/lib.js"));
+const { isoOf, shiftedBy } = libs.get("@default/lib");
 const Streak = run(WIDGET).default;
 
 let failed = 0;
 function check(what, got, wanted) {
 	const ok = JSON.stringify(got) === JSON.stringify(wanted);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "ok  " : "FAIL"} ${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`);
+	console.log(
+		`${ok ? "ok  " : "FAIL"} ${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`,
+	);
 }
 
 const TODAY = isoOf(new Date());
@@ -111,10 +133,13 @@ function writesOver(rows, verbs) {
 
 function gatewayOver(notes, verbs = ["update", "create"]) {
 	const rows = rowsOver(notes);
-	const reads = { list: () => ({ rows, total: rows.length }), get: (ref) => rows.find((row) => row.ref === ref) ?? null };
+	const reads = {
+		list: () => ({ rows, total: rows.length }),
+		get: (ref) => rows.find((row) => row.ref === ref) ?? null,
+	};
 	minted += 1;
 	const base = collectionGateway({ id: `streak-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
-	return mappedCollection(base, { needs: DECLARED.days.needs });
+	return mappedCollection(base, { needs: needsOf(DECLARED.days) });
 }
 
 const host = document.getElementById("host");
@@ -167,15 +192,27 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	check("and it does not open again inside the run", seats[opens + 1].includes("is-run-start"), false);
 	check("it closes on the last day of the run", seats[opens + 3].includes("is-run-end"), true);
 	check("a kept day wears the accent ring", dayButtons()[opens].querySelector(".hs-ring").className, "hs-ring is-kept");
-	check("and only a kept day carries the flame", dayButtons().filter((button) => button.querySelector(".hs-flame")).length, 4);
-	check("the day after the run is today, ringed and unbanded", dayButtons()[opens + 4].querySelector(".hs-ring").className, "hs-ring is-today");
+	check(
+		"and only a kept day carries the flame",
+		dayButtons().filter((button) => button.querySelector(".hs-flame")).length,
+		4,
+	);
+	check(
+		"the day after the run is today, ringed and unbanded",
+		dayButtons()[opens + 4].querySelector(".hs-ring").className,
+		"hs-ring is-today",
+	);
 	check("and today's seat carries no band", seats[opens + 4], "hs-seat");
 }
 
 {
 	railWidth = WIDE;
 	await draw(RUN_NOTES);
-	check("the weekday shown is two letters", namesShown().every((name) => name.length === 2), true);
+	check(
+		"the weekday shown is two letters",
+		namesShown().every((name) => name.length === 2),
+		true,
+	);
 	check(
 		"and every day also carries its own date, for the hover",
 		dayButtons().map((button) => button.querySelector(".hs-date").textContent),
@@ -202,7 +239,11 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 {
 	railWidth = WIDE;
 	await draw(RUN_NOTES, ["update", "create"], "no-such-face");
-	check("an emoji nobody drew leaves the name standing alone", Boolean(host.querySelector(".hs-title .wg-kit-emoji")), false);
+	check(
+		"an emoji nobody drew leaves the name standing alone",
+		Boolean(host.querySelector(".hs-title .wg-kit-emoji")),
+		false,
+	);
 	check("and the name is still written", host.querySelector(".hs-title").textContent, TITLE);
 }
 
@@ -216,13 +257,21 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 {
 	railWidth = WIDE;
 	await draw([{ path: "Habits/2026-01-09.md", props: { created: `${TODAY}T09:00`, done: 1 } }]);
-	check("a date property the folder happens to call `created` answers the day need", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	check(
+		"a date property the folder happens to call `created` answers the day need",
+		Boolean(dayLabelled(`${TODAY}, kept`)),
+		true,
+	);
 }
 
 {
 	railWidth = WIDE;
 	await draw([{ path: `Habits/${TODAY}.md`, props: { done: 1 } }]);
-	check("a folder with no date property at all falls back to the file name", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	check(
+		"a folder with no date property at all falls back to the file name",
+		Boolean(dayLabelled(`${TODAY}, kept`)),
+		true,
+	);
 }
 
 {
@@ -234,13 +283,21 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 {
 	railWidth = WIDE;
 	await draw([{ path: `Habits/${TODAY}.md`, props: { steps: 8420 } }]);
-	check("a folder counting steps answers the same need, and any value counts", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	check(
+		"a folder counting steps answers the same need, and any value counts",
+		Boolean(dayLabelled(`${TODAY}, kept`)),
+		true,
+	);
 }
 
 {
 	railWidth = WIDE;
 	await draw([{ path: `Habits/${TODAY}.md`, props: { steps: 8420, mood: 4 } }]);
-	check("and with two numbers to choose from, the aka list is what picks the right one", Boolean(dayLabelled(`${TODAY}, kept`)), true);
+	check(
+		"and with two numbers to choose from, the aka list is what picks the right one",
+		Boolean(dayLabelled(`${TODAY}, kept`)),
+		true,
+	);
 }
 
 {
@@ -248,7 +305,9 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	await draw(RUN_NOTES);
 	dayLabelled(`${TODAY}, not kept`).click();
 	await settled();
-	check("pressing a day with no note creates one named for it", written, [{ verb: "create", name: TODAY, props: { done: 1 } }]);
+	check("pressing a day with no note creates one named for it", written, [
+		{ verb: "create", name: TODAY, props: { done: 1 } },
+	]);
 }
 
 {
@@ -257,13 +316,19 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	const kept = KEPT_RUN[3];
 	dayLabelled(`${kept}, kept`).click();
 	await settled();
-	check("pressing a kept day empties the property", written, [{ verb: "update", ref: `Habits/${kept}.md`, data: { props: { done: null } } }]);
+	check("pressing a kept day empties the property", written, [
+		{ verb: "update", ref: `Habits/${kept}.md`, data: { props: { done: null } } },
+	]);
 }
 
 {
 	railWidth = WIDE;
 	await draw(RUN_NOTES, []);
-	check("a folder nobody may write refuses the press", dayButtons().every((button) => button.disabled), true);
+	check(
+		"a folder nobody may write refuses the press",
+		dayButtons().every((button) => button.disabled),
+		true,
+	);
 }
 
 {
@@ -271,9 +336,21 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	await draw(RUN_NOTES);
 	const pressable = (day) => !dayButtons()[daysShown().indexOf(day)].disabled;
 	check("a day that has not happened yet cannot be pressed", pressable(shiftedBy(TODAY, 1)), false);
-	check("nor any day after it", daysShown().filter((day) => day > TODAY).every((day) => !pressable(day)), true);
+	check(
+		"nor any day after it",
+		daysShown()
+			.filter((day) => day > TODAY)
+			.every((day) => !pressable(day)),
+		true,
+	);
 	check("today can", pressable(TODAY), true);
-	check("and so can every day behind it", daysShown().filter((day) => day < TODAY).every(pressable), true);
+	check(
+		"and so can every day behind it",
+		daysShown()
+			.filter((day) => day < TODAY)
+			.every(pressable),
+		true,
+	);
 }
 
 {
@@ -282,7 +359,11 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	await draw([...RUN_NOTES, { path: `Habits/${AHEAD}.md`, props: { done: 1 } }]);
 	const at = daysShown().indexOf(AHEAD);
 	check("a day marked ahead of time still draws its flame", Boolean(dayButtons()[at].querySelector(".hs-flame")), true);
-	check("and wears the same ring a kept day wears", dayButtons()[at].querySelector(".hs-ring").className, "hs-ring is-kept");
+	check(
+		"and wears the same ring a kept day wears",
+		dayButtons()[at].querySelector(".hs-ring").className,
+		"hs-ring is-kept",
+	);
 	check("and its seat carries the same band", seatsShown()[at], "hs-seat is-run is-run-start is-run-end");
 	check("it is only the press that is refused", dayButtons()[at].disabled, true);
 	dayButtons()[at].click();

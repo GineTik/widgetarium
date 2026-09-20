@@ -1,13 +1,14 @@
 import { collectionGateway, valueGateway } from "./create";
 import { stableKey } from "./cache";
+import { coercedOne } from "./mapped";
 
-const toRow = (record) => ({ ref: record.path, value: record });
+const toRow = (record) => ({ ...record, ref: record.path });
 
 function bakedQuery(baked, query) {
 	const asked = query ?? {};
 	const where = [...(baked.where ?? []), ...(asked.where ?? [])];
-	const sort = asked.sort?.length ? asked.sort : baked.sort ?? [];
-	return { where, sort, limit: asked.limit };
+	const sort = asked.sort?.length ? asked.sort : (baked.sort ?? []);
+	return { where, sort, offset: asked.offset, limit: asked.limit };
 }
 
 function folderReads(slot, baked) {
@@ -33,7 +34,10 @@ async function createOnSlot(slot, draft) {
 
 async function updateOnSlot(slot, { ref, data }) {
 	const { name, props, body, ...loose } = data ?? {};
-	const record = await slot.update({ path: ref }, { name, props: props ?? (Object.keys(loose).length > 0 ? loose : undefined), body });
+	const record = await slot.update(
+		{ path: ref },
+		{ name, props: props ?? (Object.keys(loose).length > 0 ? loose : undefined), body },
+	);
 	return record ? toRow(record) : null;
 }
 
@@ -59,14 +63,42 @@ export function folderGateway({ host, path, baked = {}, requested = [] }) {
 	});
 }
 
-export function fileGateway({ host, path, requested = [] }) {
-	const solo = host.file?.(path);
-	const handlers = {};
-	if (solo) handlers.get = () => solo.get();
-	if (solo?.canUpdate) handlers.update = (content) => solo.update(content);
+export const NOTE_CONTENT = "content";
+export const NOTE_NAME = "name";
+
+const NOTE_PARTS = {
+	[NOTE_CONTENT]: (record) => record.content,
+	[NOTE_NAME]: (record) => record.name,
+};
+
+export function noteFieldOf(spec, config) {
+	if (spec?.kind !== "value" || !spec.type) return config?.field;
+	return config?.field ?? NOTE_CONTENT;
+}
+
+function partOfNote(record, field) {
+	return Object.hasOwn(NOTE_PARTS, field) ? NOTE_PARTS[field](record) : record.props?.[field];
+}
+
+export function fieldOfNote(record, field, type) {
+	if (!record || !field) return record;
+	return coercedOne(partOfNote(record, field), type);
+}
+
+function noteHandlers(solo, field, type) {
+	if (!solo) return {};
+	const get = async () => fieldOfNote(await solo.get(), field, type);
+	// TODO: write a name or a property back — only the body has a writer on one note
+	if (!solo.canUpdate || (field && field !== NOTE_CONTENT)) return { get };
+	return { get, update: (content) => solo.update(content) };
+}
+
+export function fileGateway({ host, path, part = {}, requested = [] }) {
+	const { field, type } = part;
+	const handlers = noteHandlers(host.file?.(path), field, type);
 
 	return valueGateway({
-		id: `file:${path}`,
+		id: field ? `file:${path}#${field}` : `file:${path}`,
 		handlers,
 		requested,
 		subscribe: host.watchFile ? (listener) => host.watchFile(path, () => listener({ refs: [path] })) : undefined,

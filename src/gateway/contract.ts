@@ -3,10 +3,7 @@ import type { DeclaredNeeds } from "./resolve-needs";
 
 export type Ref = string;
 
-export interface Row<T> {
-	ref: Ref;
-	value: T;
-}
+export type Row<T> = T & { ref: Ref };
 
 export type CanResult = { can: true } | { can: false; reason: string };
 
@@ -37,6 +34,7 @@ export interface SortRow {
 export interface Query {
 	where?: FilterRow[];
 	sort?: SortRow[];
+	offset?: number;
 	limit?: number;
 }
 
@@ -95,7 +93,7 @@ export const COLLECTION_VERBS = ["list", "get", "create", "update", "remove"] as
 export const VALUE_VERBS = ["get", "update", "remove"] as const;
 
 export type PropKind = "collection" | "value";
-export type PrimitiveType = "text" | "number" | "boolean";
+export type PrimitiveType = "line" | "text" | "number" | "boolean";
 export type VerbNeed = "required" | "optional";
 
 export interface ItemField {
@@ -131,8 +129,6 @@ export interface PropSpec {
 	verbs?: Record<string, VerbNeed>;
 	default?: unknown;
 }
-
-export type PropSpecs = Record<string, PropSpec>;
 
 type DerivedFromTheType = "kind" | "verbs" | "needs";
 

@@ -37,7 +37,7 @@ const TALKING = {
 		{ role: "user", text: "Build me a morning board: today's tasks, a habit streak and a scratchpad.", calls: [] },
 		{
 			role: "agent",
-			text: "Found three widgets. Placing the tab strip first.\n\nPlaced @core/editable-tabs at the top. Next: the task list.",
+			text: "Found three widgets. Placing the tab strip first.\n\nPlaced @default/editable-tabs at the top. Next: the task list.",
 			calls: [
 				{
 					ref: "t1",

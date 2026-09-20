@@ -1,0 +1,1694 @@
+<title>Widgetarium UI Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+	/* ═══════════════════════════════════════════════════════════════════════════
+	   LAYER 1 — OBSIDIAN'S. Inside the app these come from the vault's theme; the
+	   values here are Obsidian's own defaults so the page renders outside it.
+	   We never name a colour, a size or a radius that Obsidian already names.
+	   ═══════════════════════════════════════════════════════════════════════════ */
+	:root {
+		--color-base-00: #ffffff;
+		--color-base-05: #fafafa;
+		--color-base-10: #f5f6f8;
+		--color-base-20: #ededf0;
+		--color-base-25: #e6e6ea;
+		--color-base-30: #dcdce1;
+		--color-base-35: #d0d0d6;
+		--color-base-40: #bcbcc4;
+		--color-base-50: #9a9aa4;
+		--color-base-60: #70707a;
+		--color-base-70: #4a4a54;
+		--color-base-100: #1b1b20;
+
+		--background-primary: var(--color-base-00);
+		--background-primary-alt: var(--color-base-10);
+		--background-secondary: var(--color-base-20);
+		--background-modifier-border: var(--color-base-30);
+		--background-modifier-hover: rgba(0, 0, 0, 0.05);
+		--background-modifier-active-hover: rgba(0, 0, 0, 0.09);
+
+		--text-normal: var(--color-base-100);
+		--text-muted: var(--color-base-60);
+		--text-faint: var(--color-base-50);
+		--text-on-accent: #ffffff;
+		--text-error: #c0392b;
+		--text-success: #1f8a4c;
+
+		--interactive-normal: var(--color-base-20);
+		--interactive-hover: var(--color-base-25);
+		--interactive-accent: #6d4ee0;
+		--interactive-accent-hover: #5b3ecb;
+
+		--color-orange: #d9822b;
+
+		--font-interface: "Inter", -apple-system, system-ui, sans-serif;
+		--font-monospace: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+		--font-ui-smaller: 12px;
+		--font-ui-small: 14px;
+		--font-ui-medium: 16px;
+		--font-ui-large: 20px;
+		--font-medium: 500;
+		--font-semibold: 600;
+		--font-bold: 700;
+		--line-height-tight: 1.25;
+		--line-height-normal: 1.5;
+
+		--radius-s: 4px;
+		--radius-m: 8px;
+		--radius-l: 12px;
+		--radius-xl: 16px;
+
+		--size-2-1: 2px;
+		--size-2-2: 4px;
+		--size-2-3: 6px;
+		--size-4-1: 4px;
+		--size-4-2: 8px;
+		--size-4-3: 12px;
+		--size-4-4: 16px;
+		--size-4-5: 20px;
+		--size-4-6: 24px;
+		--size-4-8: 32px;
+		--size-4-12: 48px;
+		--size-4-16: 64px;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		:root:not([data-theme="light"]) {
+			--color-base-00: #1b1c20;
+			--color-base-05: #1f2025;
+			--color-base-10: #24262c;
+			--color-base-20: #14151a;
+			--color-base-25: #2b2d34;
+			--color-base-30: #33353d;
+			--color-base-35: #3d3f48;
+			--color-base-40: #4e505a;
+			--color-base-50: #7b7e89;
+			--color-base-60: #9ea1ac;
+			--color-base-70: #c3c6ce;
+			--color-base-100: #edeef1;
+			--background-modifier-hover: rgba(255, 255, 255, 0.06);
+			--background-modifier-active-hover: rgba(255, 255, 255, 0.11);
+			--interactive-normal: var(--color-base-10);
+			--interactive-hover: var(--color-base-25);
+			--interactive-accent: #7c5cf0;
+			--interactive-accent-hover: #8f74f5;
+			--text-error: #ef7a6d;
+			--text-success: #56c98a;
+			--color-orange: #e0a45c;
+		}
+	}
+
+	:root[data-theme="dark"] {
+		--color-base-00: #1b1c20;
+		--color-base-05: #1f2025;
+		--color-base-10: #24262c;
+		--color-base-20: #14151a;
+		--color-base-25: #2b2d34;
+		--color-base-30: #33353d;
+		--color-base-35: #3d3f48;
+		--color-base-40: #4e505a;
+		--color-base-50: #7b7e89;
+		--color-base-60: #9ea1ac;
+		--color-base-70: #c3c6ce;
+		--color-base-100: #edeef1;
+		--background-modifier-hover: rgba(255, 255, 255, 0.06);
+		--background-modifier-active-hover: rgba(255, 255, 255, 0.11);
+		--interactive-normal: var(--color-base-10);
+		--interactive-hover: var(--color-base-25);
+		--interactive-accent: #7c5cf0;
+		--interactive-accent-hover: #8f74f5;
+		--text-error: #ef7a6d;
+		--text-success: #56c98a;
+		--color-orange: #e0a45c;
+	}
+
+	/* ═══════════════════════════════════════════════════════════════════════════
+	   LAYER 2 — OURS. Only what Obsidian has no name for, and every one derived
+	   from layer 1 so a vault's theme reaches the whole kit for free.
+	   ═══════════════════════════════════════════════════════════════════════════ */
+	:root {
+		/* SURFACES — a fill, never a border. Three levels and no more. */
+		--wg-canvas: var(--background-secondary);
+		--wg-surface: var(--background-primary);
+		/* one step lighter than --interactive-normal, chosen by looking at both */
+		--wg-fill: var(--color-base-10);
+		--wg-fill-hover: var(--color-base-20);
+		--wg-hairline: var(--background-modifier-border);
+
+		--wg-ink: var(--text-normal);
+		--wg-ink-muted: var(--text-muted);
+		--wg-ink-faint: var(--text-faint);
+
+		--wg-accent: var(--interactive-accent);
+		--wg-accent-hover: var(--interactive-accent-hover);
+		--wg-on-accent: var(--text-on-accent);
+		--wg-accent-wash: color-mix(in srgb, var(--wg-accent) 12%, var(--background-primary));
+
+		/* STATUS — three, named for what they mean. Obsidian ships success and error;
+		   it has no warning token, so that one is ours, mixed from --color-orange. */
+		--wg-success: var(--text-success);
+		--wg-error: var(--text-error);
+		--wg-warning: var(--color-orange);
+		--wg-success-wash: color-mix(in srgb, var(--wg-success) 14%, var(--background-primary));
+		--wg-error-wash: color-mix(in srgb, var(--wg-error) 14%, var(--background-primary));
+		--wg-warning-wash: color-mix(in srgb, var(--wg-warning) 16%, var(--background-primary));
+
+		/* RADII — Obsidian stops at 16px and the look needs more, so the two big ones
+		   are ours. Every button is a capsule; that is the whole silhouette. */
+		--wg-radius-control: var(--radius-l);
+		--wg-radius-tile: 22px;
+		--wg-radius-card: 28px;
+		--wg-radius-pill: 999px;
+
+		/* GRID — cells, and every widget-button is a whole number of them */
+		--wg-cell: 76px;
+		--wg-gap: var(--size-4-3);
+
+		/* MOTION — one spring for anything that GROWS, one ease for anything that merely
+		   changes, and a press that answers under the finger. The spring carries past 100%
+		   and settles back: that overshoot is the whole difference between a thing that
+		   springs open and a thing that slides open. Closing uses the ease — a panel folding
+		   away that bounces reads as indecision. */
+		--wg-spring: cubic-bezier(0.34, 1.42, 0.64, 1);
+		--wg-ease: cubic-bezier(0.4, 0, 0.2, 1);
+		--wg-dur-press: 120ms;
+		--wg-dur-s: 200ms;
+		--wg-dur-m: 320ms;
+		--wg-dur-l: 480ms;
+		--wg-press-scale: 0.955;
+		--wg-slider-fill: 50%;
+
+		/* GLASS — a material, not a component. Any surface can take it, and these three
+		   tokens are the whole of it. The tint must be weak or there is nothing to see
+		   through; the edge is what stops it dissolving into whatever is behind. */
+		--wg-glass-tint: color-mix(in srgb, var(--wg-surface) 42%, transparent);
+		/* heavier, for a surface that has to be read through rather than looked at */
+		--wg-glass-panel: color-mix(in srgb, var(--wg-raise) 78%, transparent);
+		--wg-glass-blur: blur(24px) saturate(180%);
+		--wg-glass-edge: inset 0 0 0 1px color-mix(in srgb, var(--wg-ink) 12%, transparent);
+		/* inside glass there is no solid ground to step from, so a group steps toward the ink */
+		--wg-glass-group: color-mix(in srgb, var(--wg-ink) 6%, var(--wg-raise));
+
+		/* RAISE — the fourth surface, and the only one that means ABOVE. White is a no-op in
+		   light and a real step in dark, so one expression lifts a panel in both themes. */
+		--wg-raise: color-mix(in srgb, #ffffff 12%, var(--background-primary));
+
+		--wg-shadow-s: 0 1px 3px rgba(0, 0, 0, 0.06), 0 6px 16px rgba(0, 0, 0, 0.06);
+	}
+
+	/* ═══════════════ page shell ═══════════════ */
+
+	body {
+		background: var(--wg-canvas);
+		color: var(--wg-ink);
+		font-family: var(--font-interface);
+		font-size: var(--font-ui-medium);
+		line-height: var(--line-height-normal);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	/* A BUTTON ARRIVES WITH A BORDER, A BACKGROUND AND ITS OWN FONT. Every component here is
+	   built on one, so the reset comes first — the outline around the tiles was the browser's,
+	   not ours, which is exactly why a CSS search for "border" could not find it. */
+	button { border: none; background: none; font: inherit; color: inherit; padding: 0; margin: 0; -webkit-appearance: none; appearance: none; }
+
+	.sheet { max-width: 1040px; margin: 0 auto; padding: 0 var(--size-4-5) var(--size-4-16); display: flex; flex-direction: column; gap: var(--size-4-12); }
+	p { margin: 0; }
+	code, .mono { font-family: var(--font-monospace); font-size: var(--font-ui-smaller); }
+	*:focus-visible { outline: 2px solid var(--wg-accent); outline-offset: 3px; border-radius: var(--radius-m); }
+
+	.masthead { padding: var(--size-4-16) 0 0; display: flex; flex-direction: column; gap: var(--size-4-4); }
+	.eyebrow { font-family: var(--font-monospace); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.masthead h1 { font-size: clamp(34px, 5.5vw, 56px); font-weight: var(--font-bold); letter-spacing: -0.03em; line-height: 1.02; margin: 0; }
+	.lede { max-width: 60ch; color: var(--wg-ink-muted); font-size: 17px; }
+	.lede strong { color: var(--wg-ink); font-weight: var(--font-semibold); }
+
+	.laws { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--size-4-3); }
+	.laws div { background: var(--wg-surface); border-radius: var(--wg-radius-tile); padding: var(--size-4-4); display: flex; flex-direction: column; gap: var(--size-2-3); }
+	.laws b { font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.laws span { font-size: var(--font-ui-small); color: var(--wg-ink-muted); }
+
+	section { display: flex; flex-direction: column; gap: var(--size-4-5); }
+	.head { display: flex; flex-direction: column; gap: var(--size-2-2); }
+	.head h2 { font-size: 28px; font-weight: var(--font-semibold); letter-spacing: -0.02em; margin: 0; }
+
+	.group { background: var(--wg-surface); border-radius: var(--wg-radius-card); padding: var(--size-4-6); display: flex; flex-direction: column; gap: var(--size-4-5); }
+	.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--size-4-3); }
+	.row.top { align-items: flex-start; }
+	.cap { font-family: var(--font-monospace); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-ink-faint); }
+	.note { font-size: var(--font-ui-small); color: var(--wg-ink-muted); max-width: 62ch; }
+	.note b { color: var(--wg-ink); font-weight: var(--font-semibold); }
+	.divide { height: 1px; background: var(--wg-hairline); margin: var(--size-2-2) 0; }
+
+	/* ═══════════════ foundations ═══════════════ */
+
+	.ramp { display: grid; grid-template-columns: repeat(auto-fit, minmax(66px, 1fr)); gap: var(--size-4-1); width: 100%; }
+	.ramp div { display: flex; flex-direction: column; gap: var(--size-2-2); }
+	.ramp i { height: 52px; border-radius: var(--radius-m); display: block; }
+	.ramp code { color: var(--wg-ink-faint); font-size: 10px; }
+
+	.chips { display: flex; flex-wrap: wrap; gap: var(--size-4-2); }
+	.token { display: flex; align-items: center; gap: var(--size-4-2); background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: var(--size-2-3) var(--size-4-3); font-family: var(--font-monospace); font-size: 11px; color: var(--wg-ink-muted); }
+	.token i { width: 16px; height: 16px; border-radius: var(--wg-radius-pill); display: block; }
+
+	.scale { display: flex; align-items: flex-end; gap: var(--size-4-4); flex-wrap: wrap; }
+	.scale div { display: flex; flex-direction: column; align-items: center; gap: var(--size-2-2); }
+	.scale i { display: block; background: var(--wg-accent-wash); }
+	.scale code { color: var(--wg-ink-faint); font-size: 10px; }
+
+	.typerow { display: flex; align-items: baseline; gap: var(--size-4-4); }
+	.typerow code { color: var(--wg-ink-faint); margin-left: auto; }
+
+	/* ═══════════════ THE PRESS — everything answers under the finger ═══════════ */
+
+	.pressable {
+		transition: transform var(--wg-dur-press) var(--wg-ease), background var(--wg-dur-s) var(--wg-ease), color var(--wg-dur-s) var(--wg-ease), box-shadow var(--wg-dur-s) var(--wg-ease);
+		will-change: transform;
+	}
+	.pressable:active { transform: scale(var(--wg-press-scale)); }
+
+	/* ═══════════════ BUTTON — a capsule, three sizes, four intents ═══════════ */
+
+	.btn {
+		font-family: inherit; font-weight: var(--font-semibold); line-height: 1;
+		border: none; cursor: pointer; border-radius: var(--wg-radius-pill);
+		display: inline-flex; align-items: center; justify-content: center; gap: var(--size-4-2);
+		color: var(--wg-ink);
+	}
+	.btn-l { font-size: var(--font-ui-medium); padding: 0 var(--size-4-6); height: 52px; }
+	.btn-m { font-size: var(--font-ui-small); padding: 0 var(--size-4-5); height: 42px; }
+	.btn-s { font-size: var(--font-ui-small); padding: 0 var(--size-4-4); height: 34px; }
+	.btn-block { width: 100%; }
+	.btn-accent { color: var(--wg-on-accent); }
+	.btn-plain { color: var(--wg-accent); }
+	.btn-danger { color: var(--wg-error); }
+	.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+	.btn[disabled]:active { transform: none; }
+
+	/* ═══════════════ ICON BUTTON — a circle; glass only over something ═══════ */
+
+	.iconbtn {
+		border: none; cursor: pointer; border-radius: var(--wg-radius-pill);
+		display: inline-flex; align-items: center; justify-content: center;
+		color: var(--wg-ink); flex: none;
+	}
+	.iconbtn-l { width: 52px; height: 52px; }
+	.iconbtn-m { width: 42px; height: 42px; }
+	.iconbtn-s { width: 32px; height: 32px; }
+	.iconbtn-accent { color: var(--wg-on-accent); }
+	/* THE ONE GLASS RULE. Put it on anything: an icon button, a bar, a card, a group. */
+	.glass {
+		background: var(--wg-glass-tint);
+		backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur);
+		box-shadow: var(--wg-glass-edge);
+	}
+	.glass-on-dark { --wg-glass-tint: rgba(255, 255, 255, 0.2); --wg-glass-edge: inset 0 0 0 1px rgba(255, 255, 255, 0.28); color: #fff; }
+
+	.photo {
+		border-radius: var(--wg-radius-tile); padding: var(--size-4-4);
+		background: linear-gradient(135deg, #f0a33c 0%, #e0576b 42%, #7b4ee0 100%);
+		display: flex; justify-content: space-between; align-items: flex-start; gap: var(--size-4-3);
+		min-height: 132px; flex: 1 1 260px;
+	}
+
+	/* ═══════════════ WIDGET BUTTON — a whole number of cells ═════════════════ */
+
+	.cells { display: grid; grid-template-columns: repeat(4, var(--wg-cell)); gap: var(--wg-gap); }
+	.wbtn {
+		border: none; cursor: pointer; font-family: inherit;
+		color: var(--wg-ink);
+		border-radius: var(--wg-radius-tile);
+		display: flex; flex-direction: column; align-items: center; justify-content: center;
+		gap: var(--size-4-1); padding: var(--size-4-2);
+		font-size: var(--font-ui-smaller); font-weight: var(--font-semibold);
+	}
+	.wbtn-accent { color: var(--wg-on-accent); }
+	.wbtn span { text-align: center; line-height: var(--line-height-tight); }
+	.w1 { grid-column: span 1; } .w2 { grid-column: span 2; } .w3 { grid-column: span 3; } .w4 { grid-column: span 4; }
+	.h1 { height: var(--wg-cell); } .h2 { height: calc(var(--wg-cell) * 2 + var(--wg-gap)); }
+	.wbtn.wide { flex-direction: row; gap: var(--size-4-2); font-size: var(--font-ui-small); }
+
+	/* ═══════════════ CONTROLS ═══════════════ */
+
+	.segmented { display: inline-flex; background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 3px; gap: 2px; position: relative; }
+	.segmented button { font-family: inherit; font-size: var(--font-ui-small); font-weight: var(--font-medium); border: none; color: var(--wg-ink-muted); border-radius: var(--wg-radius-pill); padding: var(--size-2-3) var(--size-4-4); cursor: pointer; position: relative; z-index: 1; transition: color var(--wg-dur-s) var(--wg-ease); }
+	.segmented button[aria-selected="true"] { color: var(--wg-ink); }
+	.seg-thumb { position: absolute; top: 3px; bottom: 3px; background: var(--wg-surface); border-radius: var(--wg-radius-pill); box-shadow: var(--wg-shadow-s); transition: transform var(--wg-dur-m) var(--wg-spring), width var(--wg-dur-m) var(--wg-spring); z-index: 0; }
+
+	.switch { position: relative; width: 50px; height: 30px; border-radius: var(--wg-radius-pill); cursor: pointer; border: none; padding: 0; flex: none; }
+	.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: var(--wg-radius-pill); background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform var(--wg-dur-m) var(--wg-spring), width var(--wg-dur-press) var(--wg-ease); }
+	.switch[aria-checked="true"]::after { transform: translateX(20px); }
+	.switch:active::after { width: 30px; }
+	.switch[aria-checked="true"]:active::after { transform: translateX(14px); }
+
+	.slider { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: none; cursor: pointer; }
+	/* A THIN LINE WITH A KNOB ON IT. The track was as tall as a button, which made the knob
+	   look like a hole punched in it. */
+	.slider::-webkit-slider-runnable-track { height: 6px; border-radius: var(--wg-radius-pill); background: linear-gradient(var(--wg-accent), var(--wg-accent)) no-repeat, var(--wg-fill); background-size: var(--wg-slider-fill) 100%; }
+	.slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -8px; border-radius: var(--wg-radius-pill); background: var(--wg-surface); box-shadow: 0 1px 4px rgba(0,0,0,0.22), var(--wg-glass-edge); transition: transform var(--wg-dur-press) var(--wg-ease); }
+	.slider:active::-webkit-slider-thumb { transform: scale(1.22); }
+	.slider::-moz-range-track { height: 6px; border-radius: var(--wg-radius-pill); background: var(--wg-fill); }
+	.slider::-moz-range-progress { height: 6px; border-radius: var(--wg-radius-pill); background: var(--wg-accent); }
+	.slider::-moz-range-thumb { width: 22px; height: 22px; border: none; border-radius: var(--wg-radius-pill); background: var(--wg-surface); box-shadow: 0 1px 4px rgba(0,0,0,0.22); }
+
+	.stepper { display: inline-flex; align-items: center; background: var(--wg-fill); border-radius: var(--wg-radius-pill); }
+	.stepper button { font-family: inherit; border: none; color: var(--wg-ink); width: 42px; height: 42px; cursor: pointer; font-size: 18px; border-radius: var(--wg-radius-pill); }
+	.stepper span { min-width: 40px; text-align: center; font-variant-numeric: tabular-nums; font-weight: var(--font-semibold); font-size: var(--font-ui-small); }
+	.stepper i { width: 1px; height: 20px; background: var(--wg-hairline); }
+
+	.search { display: flex; align-items: center; gap: var(--size-4-2); background: var(--wg-fill); border-radius: var(--wg-radius-pill); padding: 0 var(--size-4-4); height: 42px; width: 100%; max-width: 320px; }
+	.search input { border: none; background: none; outline: none; font-family: inherit; font-size: var(--font-ui-small); color: var(--wg-ink); width: 100%; }
+	.search input::placeholder { color: var(--wg-ink-faint); }
+
+	.field { background: var(--wg-fill); border-radius: var(--wg-radius-control); padding: var(--size-4-2) var(--size-4-4); display: flex; flex-direction: column; gap: 2px; min-width: 200px; flex: 1 1 200px; transition: box-shadow var(--wg-dur-s) var(--wg-ease); }
+	.field label { font-size: 11px; color: var(--wg-ink-faint); font-weight: var(--font-medium); }
+	.field input { border: none; background: none; outline: none; font-family: inherit; font-size: var(--font-ui-small); color: var(--wg-ink); }
+	.field:focus-within { box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.field.bad { background: var(--wg-error-wash); }
+	.field.bad label { color: var(--wg-error); }
+
+	/* GROUPED LIST — the shape every reference uses for settings */
+	.list { background: var(--wg-fill); border-radius: var(--wg-radius-tile); overflow: hidden; width: 100%; max-width: 420px; }
+	.li { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-3) var(--size-4-4); cursor: pointer; position: relative; transition: background var(--wg-dur-s) var(--wg-ease); }
+	.li:hover { background: var(--background-modifier-hover); }
+	.li + .li::before { content: ""; position: absolute; top: 0; left: calc(var(--size-4-4) + 30px + var(--size-4-3)); right: 0; height: 1px; background: var(--wg-hairline); }
+	.li .badge-icon { width: 30px; height: 30px; border-radius: var(--radius-m); display: grid; place-content: center; color: #fff; flex: none; }
+	.li .label { font-size: var(--font-ui-small); font-weight: var(--font-medium); }
+	.li .value { margin-left: auto; font-size: var(--font-ui-small); color: var(--wg-ink-faint); }
+	.li .chev { color: var(--wg-ink-faint); flex: none; }
+
+	/* ═══════════════ SURFACES ═══════════════ */
+
+	.tile { border-radius: var(--wg-radius-tile); padding: var(--size-4-4); display: flex; flex-direction: column; gap: var(--size-4-2); cursor: pointer; }
+	.tile h4 { margin: 0; font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.tile p { font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); }
+	.tile.accent { color: var(--wg-on-accent); }
+	.tile.accent p { color: rgba(255, 255, 255, 0.78); }
+
+	.notice { display: flex; align-items: center; gap: var(--size-4-3); border-radius: var(--wg-radius-tile); padding: var(--size-4-3) var(--size-4-4); font-size: var(--font-ui-small); width: 100%; }
+	.notice.ok { background: var(--wg-success-wash); color: var(--wg-success); }
+	.notice.warn { background: var(--wg-warning-wash); color: var(--wg-warning); }
+	.notice.err { background: var(--wg-error-wash); color: var(--wg-error); }
+	.notice b { font-weight: var(--font-semibold); }
+
+	.pilltag { display: inline-flex; align-items: center; gap: var(--size-2-2); border-radius: var(--wg-radius-pill); padding: var(--size-2-2) var(--size-4-3); font-size: var(--font-ui-smaller); font-weight: var(--font-semibold); background: var(--wg-fill); color: var(--wg-ink-muted); }
+	.pilltag.ok { background: var(--wg-success-wash); color: var(--wg-success); }
+	.pilltag.warn { background: var(--wg-warning-wash); color: var(--wg-warning); }
+	.pilltag.err { background: var(--wg-error-wash); color: var(--wg-error); }
+	.pilltag.accent { background: var(--wg-accent); color: var(--wg-on-accent); }
+
+	/* ═══════════════ THE SHEET — grows out of the thing you pressed ══════════ */
+
+	.scrim { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity var(--wg-dur-m) var(--wg-ease); z-index: 40; }
+	.scrim.on { opacity: 1; pointer-events: auto; }
+	.sheet-wrap { position: fixed; inset: 0; display: grid; place-items: center; padding: var(--size-4-5); pointer-events: none; z-index: 41; }
+	/* MEASURED: over the scrim, glass read (227,227,229) against its own (240,240,240) plate —
+	   a raised surface rendering DARKER than what it sits on. It is an opaque raised fill with a
+	   hairline edge now: (255,255,255) over 240, and no shadow, like every other floating surface. */
+	.sheet-card { background: var(--wg-raise); border-radius: var(--wg-radius-card); box-shadow: var(--wg-glass-edge); width: min(440px, 100%); max-height: 82vh; overflow: hidden; transform-origin: top left; opacity: 0; pointer-events: none; display: flex; flex-direction: column; }
+	.sheet-card.on { opacity: 1; pointer-events: auto; }
+	.sheet-card header { display: flex; align-items: center; justify-content: space-between; gap: var(--size-4-3); padding: var(--size-4-5) var(--size-4-5) var(--size-4-3); }
+	.sheet-card header h3 { margin: 0; font-size: var(--font-ui-large); font-weight: var(--font-semibold); letter-spacing: -0.01em; }
+	.sheet-body { padding: 0 var(--size-4-5) var(--size-2-2); display: flex; flex-direction: column; gap: var(--size-4-3); overflow-y: auto; overflow-x: hidden; }
+	.sheet-body .row { flex-wrap: wrap; }
+	.sheet-foot { padding: var(--size-4-5); display: flex; gap: var(--size-4-2); }
+	.sheet-content { transition: opacity var(--wg-dur-s) var(--wg-ease); }
+
+
+	/* ═══════════════ EXPERIMENTS ═══════════════ */
+
+	/* one step lighter: the fill moves from base-20 to base-10, and nothing else changes */
+	.lighter {
+		--wg-fill: var(--color-base-10);
+		--wg-fill-hover: var(--color-base-20);
+	}
+	.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--size-4-4); }
+	.compare > div { display: flex; flex-direction: column; gap: var(--size-4-3); }
+
+	/* glass, off the photograph: it needs something behind it, and these show how little */
+	.glass-bed { border-radius: var(--wg-radius-tile); padding: var(--size-4-4); display: flex; align-items: center; gap: var(--size-4-3); min-height: 92px; }
+	.bed-surface { background: var(--wg-surface); }
+	.bed-fill { background: var(--wg-fill); }
+	.bed-accent { background: var(--wg-accent); }
+	.bed-text { position: relative; background: var(--wg-surface); overflow: hidden; }
+	.bed-text .behind { position: absolute; inset: var(--size-4-3); font-size: var(--font-ui-small); color: var(--wg-ink-muted); line-height: 1.35; }
+	.bed-text .glasscard, .bed-text .iconbtn { position: relative; }
+
+	.glasscard { border-radius: var(--wg-radius-pill); padding: var(--size-4-3) var(--size-4-4); font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+
+
+
+	/* ═══════════════ POPOVER — the control BECOMES the surface ═══════════════
+	   Not a dialog. The thing you pressed leaves, the panel takes its exact place and
+	   grows only as far as its own content needs, anchored where the control stood.
+	   Any trigger works: an icon button, a field, a whole tile. */
+	.pop {
+		position: fixed; z-index: 60;
+		border-radius: var(--wg-radius-tile);
+		/* A MENU IS NOT A CARD WITH A SHADOW. It is a pane of glass with a thin edge —
+		   the edge does the separating, the blur does the rest, and no shadow is cast.
+		   The tint is heavier than plain glass because a menu still has to be read. */
+		background: var(--wg-glass-panel);
+		backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur);
+		box-shadow: var(--wg-glass-edge);
+		transform-origin: top left; opacity: 0; pointer-events: none;
+		overflow: hidden; min-width: 200px;
+	}
+	.pop.on { opacity: 1; pointer-events: auto; }
+	.pop-inner { padding: var(--size-4-2); display: flex; flex-direction: column; transition: opacity var(--wg-dur-s) var(--wg-ease); }
+	.pop-item { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-2) var(--size-4-3); border-radius: var(--radius-l); cursor: pointer; font-size: var(--font-ui-small); font-weight: var(--font-medium); text-align: left; width: 100%; }
+	.pop-item .tick { margin-left: auto; color: var(--wg-accent); opacity: 0; }
+	.pop-item[aria-checked="true"] .tick { opacity: 1; }
+	.pop-item.danger { color: var(--wg-error); }
+	.pop-sep { height: 1px; background: var(--wg-hairline); margin: var(--size-2-2) var(--size-4-3); }
+	.pop-head { padding: var(--size-4-3) var(--size-4-3) var(--size-4-2); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wg-ink-faint); font-family: var(--font-monospace); }
+	.pop-wide { min-width: 280px; }
+	.pop-row { display: flex; align-items: center; gap: var(--size-4-3); padding: var(--size-4-2) var(--size-4-3); }
+	.pop-row .label { font-size: var(--font-ui-small); font-weight: var(--font-medium); }
+
+	/* the select trigger: a capsule that shows the current value */
+	.selectbtn { display: inline-flex; align-items: center; gap: var(--size-4-2); border-radius: var(--wg-radius-pill); height: 42px; padding: 0 var(--size-4-3) 0 var(--size-4-4); cursor: pointer; font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.selectbtn .caret { color: var(--wg-ink-faint); }
+
+	/* PLACEMENT — the same panel, two origins. `over` is the fold above: the trigger leaves and
+	   the panel takes its rectangle. `below` hangs it under a trigger that stays on screen, flips
+	   above when there is no room, and may take the trigger's MEASURED width — only the kit has
+	   measured it, so the kit hands it down as a custom property rather than forcing it. */
+	.pop.below { min-width: var(--wg-anchor-width, 200px); }
+
+	/* SEARCH INSIDE THE PANEL — a keyword field that narrows the choices under it, not the board */
+	.pop-search { display: flex; flex-direction: column; gap: var(--size-2-2); padding: var(--size-2-2) var(--size-2-2) var(--size-4-2); }
+	.pop-search .search { background: var(--wg-glass-group); height: 34px; max-width: none; }
+	.pop-search .search:focus-within { box-shadow: inset 0 0 0 2px var(--wg-accent); }
+	.pop-search-hint { padding: 0 var(--size-4-2); font-size: var(--font-ui-smaller); color: var(--wg-ink-muted); }
+	.pop-empty { padding: var(--size-4-3) var(--size-4-3) var(--size-4-4); font-size: var(--font-ui-small); color: var(--wg-ink-faint); }
+	/* a display value beats [hidden], so the narrowed-away rows have to be told again */
+	.pop-item[hidden], .pop-empty[hidden] { display: none; }
+
+	/* CALENDAR — the kit owns the month and the state on a cell, never what the cell SAYS */
+	.cal { display: flex; flex-direction: column; padding: var(--size-2-3) var(--size-4-2) var(--size-4-2); }
+	.cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--size-4-2); padding: var(--size-2-2) var(--size-2-3) var(--size-4-2); }
+	.cal-month { font-size: var(--font-ui-small); font-weight: var(--font-semibold); }
+	.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+	.cal-weekday { text-align: center; padding-bottom: var(--size-2-2); font-family: var(--font-monospace); font-size: 9px; letter-spacing: 0.06em; color: var(--wg-ink-faint); }
+	.cal-day { height: 28px; padding: 0; font-family: inherit; font-size: var(--font-ui-smaller); font-variant-numeric: tabular-nums; color: var(--wg-ink-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+	.cal-day.off { color: var(--wg-ink-faint); opacity: 0.45; }
+	.cal-day.today { color: var(--wg-accent); font-weight: var(--font-semibold); }
+	/* a day can be today AND picked — the doubled class says which wins, not the file order */
+	.cal-day.picked.picked { color: var(--wg-on-accent); font-weight: var(--font-semibold); opacity: 1; }
+	/* what renderDay put in the cell: a dot rail, drawn by the CALLER, not by the kit */
+	.cal-dots { display: flex; gap: 2px; height: 3px; }
+	.cal-dots i { width: 3px; height: 3px; border-radius: var(--wg-radius-pill); background: currentColor; display: block; }
+	.cal-roman { font-variant-numeric: normal; font-family: var(--font-monospace); font-size: 9px; letter-spacing: 0.02em; }
+
+	/* PROGRESS — a track and the digits, not a stepper: the plate is skimmed more than it is set */
+	.progress { display: flex; align-items: center; gap: var(--size-4-2); min-width: 0; outline: none; touch-action: none; }
+	.progress-track { position: relative; flex: 1 1 auto; min-width: 64px; height: 6px; border-radius: var(--wg-radius-pill); background: var(--wg-fill-hover); cursor: pointer; }
+	.progress-fill { display: block; height: 100%; border-radius: var(--wg-radius-pill); background: var(--wg-accent); }
+	/* a knob is not a floating surface — this is the same lift the slider thumb above carries */
+	.progress-knob { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: var(--wg-radius-pill); background: var(--wg-raise); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), var(--wg-glass-edge); transform: translate(-50%, -50%); transition: width var(--wg-dur-press) var(--wg-ease), height var(--wg-dur-press) var(--wg-ease); }
+	.progress.grabbed .progress-knob { width: 20px; height: 20px; }
+	.progress-num { flex: none; font-size: var(--font-ui-small); font-weight: var(--font-medium); font-variant-numeric: tabular-nums; }
+	.progress.grabbed .progress-num { color: var(--wg-accent); font-weight: var(--font-semibold); }
+	.progress:focus-visible .progress-track { box-shadow: 0 0 0 2px var(--wg-accent); }
+
+	/* MARKDOWN — a transparent textarea over a styled mirror. One scroller for both, so there is
+	   no pair of scroll offsets to keep in step, and every metric that decides where a character
+	   lands is declared ONCE and inherited by the two of them. */
+	.md { position: relative; overflow-y: auto; background: var(--wg-fill); border-radius: var(--wg-radius-tile); max-height: 260px; flex: 1 1 320px; }
+	.md-page { position: relative; }
+	.md-text { margin: 0; border: 0; padding: var(--size-4-4); font-family: var(--font-interface); font-size: var(--font-ui-small); font-weight: 400; font-style: normal; line-height: 1.62; letter-spacing: normal; word-spacing: normal; text-indent: 0; text-transform: none; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; tab-size: 2; box-sizing: border-box; direction: ltr; }
+	.md-mirror { color: var(--wg-ink); }
+	/* a trailing newline draws no line box, and the caret would sit off the page */
+	.md-mirror::after { content: "\A"; white-space: pre-wrap; }
+	.md-mirror .is-heading { font-weight: var(--font-bold); }
+	.md-mirror .is-strong { font-weight: var(--font-semibold); }
+	.md-mirror .is-em { font-style: italic; }
+	.md-mirror .is-link { color: var(--wg-accent); }
+	textarea.md-input { position: absolute; inset: 0; width: 100%; height: 100%; -webkit-appearance: none; appearance: none; background: none; border-radius: 0; box-shadow: none; outline: none; resize: none; overflow: hidden; color: transparent; caret-color: var(--wg-ink); }
+	textarea.md-input::selection { background: color-mix(in srgb, var(--wg-accent) 30%, transparent); }
+
+	/* HOW A PART IS CALLED — the kit is a component, so the page has to be able to show one */
+	.code { background: var(--wg-fill); border-radius: var(--wg-radius-tile); padding: var(--size-4-3) var(--size-4-4); margin: 0; overflow-x: auto; width: 100%; }
+	.code code { display: block; font-family: var(--font-monospace); font-size: var(--font-ui-smaller); line-height: 1.7; color: var(--wg-ink-muted); white-space: pre; }
+	.code b { color: var(--wg-ink); font-weight: var(--font-medium); }
+
+	/* a specimen that must be seen open, and cannot be pressed to get there */
+	.pop.parked { position: static; opacity: 1; pointer-events: auto; min-width: 0; width: min(300px, 100%); flex: none; }
+
+	/* ═══════════════ GROUP BUTTON — separate entity, one capsule, many buttons ═ */
+	.group-btn { display: inline-flex; background: var(--wg-fill); border-radius: var(--wg-radius-pill); overflow: hidden; }
+	.group-btn.stack { flex-direction: column; border-radius: var(--wg-radius-tile); }
+	.group-btn button { width: 46px; height: 46px; display: grid; place-content: center; cursor: pointer; color: var(--wg-ink); position: relative; transition: transform var(--wg-dur-press) var(--wg-ease); }
+	.group-btn button:active { transform: scale(0.9); }
+	/* CONTEXT: ::before is the fill layer now, so the divider moved to ::after */
+	.group-btn button + button::after { content: ""; position: absolute; background: var(--wg-hairline); }
+	.group-btn:not(.stack) button + button::after { left: 0; top: 25%; bottom: 25%; width: 1px; }
+	.group-btn.stack button + button::after { top: 0; left: 20%; right: 20%; height: 1px; }
+	.group-btn button[aria-pressed="true"] { color: var(--wg-accent); }
+	.map-bed { border-radius: var(--wg-radius-tile); padding: var(--size-4-4); background: linear-gradient(150deg, #cfe3d0 0%, #e8e2cc 45%, #a9d4e8 100%); display: flex; gap: var(--size-4-3); align-items: flex-start; flex: 1 1 260px; min-height: 150px; }
+
+	.icon { width: 18px; height: 18px; flex: none; }
+	.icon path, .icon circle, .icon rect, .icon line { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+	.icon.filled path { fill: currentColor; stroke: none; }
+
+	@media (max-width: 640px) {
+		.sheet { padding: 0 var(--size-4-4) var(--size-4-12); gap: var(--size-4-8); }
+		.group { padding: var(--size-4-4); border-radius: var(--wg-radius-tile); }
+		.cells { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		*, .pressable, .seg-thumb, .switch::after,
+		.btn::before, .iconbtn::before, .pop-item::before, .segmented button::before, .switch::before,
+		.wbtn::before, .tile::before, .selectbtn::before, .group-btn button::before, .stepper button::before,
+		.cal-day::before, .progress-knob { transition: none !important; animation: none !important; }
+		.pressable:active { transform: none; }
+	}
+
+	/* ═══════════════════════════════════════════════════════════════════════════
+	   THE FILL MOVED OFF THE BUTTON. In the real app a button's radius came back
+	   square no matter how specific the rule got — the host and the theme both
+	   style `button`, and one of them wins outright. A pseudo-element is not a
+	   button, so nothing out there has a rule for it. The button paints nothing;
+	   ::before carries the fill and the corner, and the label rides above it.
+	   The base ::before is TRANSPARENT: a fill is something a variant asks for,
+	   so a plain button cannot inherit one by accident.
+	   ═══════════════════════════════════════════════════════════════════════════ */
+	.btn, .iconbtn, .pop-item, .segmented button, .switch,
+	.wbtn, .tile, .selectbtn, .group-btn button, .stepper button, .cal-day {
+		position: relative;
+		isolation: isolate;
+		background: none;
+		border-radius: 0;
+	}
+
+	.btn::before, .iconbtn::before, .pop-item::before,
+	.segmented button::before, .switch::before,
+	.wbtn::before, .tile::before, .selectbtn::before,
+	.group-btn button::before, .stepper button::before, .cal-day::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		border-radius: var(--wg-radius-pill);
+		background: none;
+		transition: background var(--wg-dur-s) var(--wg-ease);
+	}
+
+	.btn::before, .iconbtn::before { background: var(--wg-fill); }
+	.btn:hover::before, .iconbtn:hover::before { background: var(--wg-fill-hover); }
+	.btn-accent::before, .iconbtn-accent::before { background: var(--wg-accent); }
+	.btn-accent:hover::before, .iconbtn-accent:hover::before { background: var(--wg-accent-hover); }
+	.btn-danger::before { background: var(--wg-error-wash); }
+	.btn-danger:hover::before { background: color-mix(in srgb, var(--wg-error) 22%, var(--background-primary)); }
+	/* CONTEXT: blur and inset edge clip to their own box, so they follow the corner onto ::before */
+	.btn.glass, .iconbtn.glass {
+		backdrop-filter: none; -webkit-backdrop-filter: none;
+		box-shadow: none;
+	}
+	.btn.glass::before, .iconbtn.glass::before {
+		backdrop-filter: var(--wg-glass-blur); -webkit-backdrop-filter: var(--wg-glass-blur);
+		box-shadow: var(--wg-glass-edge);
+	}
+	.btn.glass::before, .iconbtn.glass::before { background: var(--wg-glass-tint); }
+	.iconbtn.glass:hover::before { background: color-mix(in srgb, var(--wg-surface) 58%, transparent); }
+
+	/* transparent means transparent — at rest, and round on hover */
+	.btn-plain::before { background: none; }
+	.btn-plain:hover::before { background: var(--wg-accent-wash); }
+
+	.pop-item::before { border-radius: var(--radius-l); }
+	.wbtn::before, .tile::before { border-radius: var(--wg-radius-tile); }
+	.wbtn::before, .tile::before, .selectbtn::before { background: var(--wg-fill); }
+	.wbtn:hover::before, .selectbtn:hover::before { background: var(--wg-fill-hover); }
+	.wbtn-accent::before, .tile.accent::before { background: var(--wg-accent); }
+	.wbtn-accent:hover::before { background: var(--wg-accent-hover); }
+	.group-btn button:hover::before { background: var(--background-modifier-hover); }
+	/* the group's own capsule and the stepper's own capsule still carry the fill, so their
+	   members stay transparent — a member that painted a pill would break the shared shape */
+	.group-btn button::before, .stepper button::before { border-radius: 0; }
+	.pop-item:hover::before { background: var(--wg-fill); }
+	.cal-day:hover::before { background: var(--background-modifier-hover); }
+	.cal-day.picked.picked::before { background: var(--wg-accent); }
+	.switch::before { background: var(--wg-fill); }
+	.switch[aria-checked="true"]::before { background: var(--wg-success); }
+
+	/* the real Obsidian light ramp — the stand-ins here had a blue bias and ran dark */
+	:root {
+		--color-base-00: #ffffff; --color-base-05: #fcfcfc; --color-base-10: #fafafa;
+		--color-base-20: #f6f6f6; --color-base-25: #efefef; --color-base-30: #e4e4e4;
+		--color-base-35: #dadada; --color-base-40: #bdbdbd; --color-base-50: #ababab;
+		--color-base-60: #707070; --color-base-70: #5c5c5c; --color-base-100: #222222;
+	}
+
+</style>
+
+<div class="sheet">
+
+	<header class="masthead">
+		<span class="eyebrow">Widgetarium &#183; design system &#183; 29 August 2026</span>
+		<h1>Widgetarium UI Kit</h1>
+		<p class="lede">Built from the references, not from what the plugin happens to draw today. <strong>Filled surfaces, no borders. Every button a capsule. Grey plus one accent, and three status colours that mean something.</strong> Colours, type and spacing come from the vault's own theme by their real Obsidian names; only the two large radii, the cell and the motion are ours, because Obsidian has no word for them.</p>
+		<div class="laws">
+			<div><b>Fill, never outline</b><span>A surface is a fill. A line only ever divides two rows inside one group.</span></div>
+			<div><b>Everything answers</b><span>Press anything and it moves under the finger, on one spring.</span></div>
+			<div><b>Two button families</b><span>A capsule for actions, a whole number of cells for a widget.</span></div>
+			<div><b>Grey plus one</b><span>The accent is the vault's. Colour otherwise means success, warning or error.</span></div>
+		</div>
+	</header>
+
+	<!-- ═══════════ FOUNDATIONS ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 1 &#8212; the vault's</span><h2>Foundations</h2></div>
+
+		<div class="group">
+			<span class="cap">Grey &#8212; Obsidian's own ramp, so it inverts with the theme</span>
+			<div class="ramp">
+				<div><i style="background: var(--color-base-00)"></i><code>base-00</code></div>
+				<div><i style="background: var(--color-base-05)"></i><code>base-05</code></div>
+				<div><i style="background: var(--color-base-10)"></i><code>base-10</code></div>
+				<div><i style="background: var(--color-base-20)"></i><code>base-20</code></div>
+				<div><i style="background: var(--color-base-25)"></i><code>base-25</code></div>
+				<div><i style="background: var(--color-base-30)"></i><code>base-30</code></div>
+				<div><i style="background: var(--color-base-35)"></i><code>base-35</code></div>
+				<div><i style="background: var(--color-base-40)"></i><code>base-40</code></div>
+				<div><i style="background: var(--color-base-50)"></i><code>base-50</code></div>
+				<div><i style="background: var(--color-base-60)"></i><code>base-60</code></div>
+				<div><i style="background: var(--color-base-70)"></i><code>base-70</code></div>
+				<div><i style="background: var(--color-base-100)"></i><code>base-100</code></div>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">The only colours that are not grey</span>
+			<div class="chips">
+				<span class="token"><i style="background: var(--wg-accent)"></i>--interactive-accent</span>
+				<span class="token"><i style="background: var(--wg-success)"></i>--wg-success &#183; from --text-success</span>
+				<span class="token"><i style="background: var(--wg-warning)"></i>--wg-warning &#183; ours, no Obsidian token exists</span>
+				<span class="token"><i style="background: var(--wg-error)"></i>--wg-error &#183; from --text-error</span>
+			</div>
+			<p class="note">Three surfaces and no more: <b>canvas</b> is the note, <b>surface</b> is a card standing on it, <b>fill</b> is any control. Each is one Obsidian variable, so a theme moves all three together.</p>
+
+			<div class="divide"></div>
+			<span class="cap">Radius &#8212; capsules for controls, ours for the big shapes</span>
+			<div class="scale">
+				<div><i style="width: 52px; height: 52px; border-radius: var(--radius-m)"></i><code>--radius-m 8</code></div>
+				<div><i style="width: 52px; height: 52px; border-radius: var(--radius-l)"></i><code>--radius-l 12</code></div>
+				<div><i style="width: 52px; height: 52px; border-radius: var(--wg-radius-tile)"></i><code>tile 22 &#183; ours</code></div>
+				<div><i style="width: 52px; height: 52px; border-radius: var(--wg-radius-card)"></i><code>card 28 &#183; ours</code></div>
+				<div><i style="width: 86px; height: 42px; border-radius: var(--wg-radius-pill)"></i><code>pill 999</code></div>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">Spacing &#8212; Obsidian's four-pixel grid, nothing invented</span>
+			<div class="scale">
+				<div><i style="width: var(--size-4-1); height: 26px"></i><code>4</code></div>
+				<div><i style="width: var(--size-4-2); height: 26px"></i><code>8</code></div>
+				<div><i style="width: var(--size-4-3); height: 26px"></i><code>12</code></div>
+				<div><i style="width: var(--size-4-4); height: 26px"></i><code>16</code></div>
+				<div><i style="width: var(--size-4-5); height: 26px"></i><code>20</code></div>
+				<div><i style="width: var(--size-4-6); height: 26px"></i><code>24</code></div>
+				<div><i style="width: var(--size-4-8); height: 26px"></i><code>32</code></div>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">Type</span>
+			<div class="typerow"><span style="font-size: var(--font-ui-large); font-weight: var(--font-semibold)">Title</span><code>--font-ui-large &#183; semibold</code></div>
+			<div class="typerow"><span style="font-size: var(--font-ui-medium)">Body</span><code>--font-ui-medium</code></div>
+			<div class="typerow"><span style="font-size: var(--font-ui-small); font-weight: var(--font-medium)">Label and control text</span><code>--font-ui-small &#183; medium</code></div>
+			<div class="typerow"><span style="font-size: var(--font-ui-smaller); color: var(--wg-ink-muted)">Caption</span><code>--font-ui-smaller &#183; --text-muted</code></div>
+
+			<div class="divide"></div>
+			<span class="cap">Motion &#8212; one spring, one ease, one press</span>
+			<div class="chips">
+				<span class="token">--wg-spring cubic-bezier(.32,.72,0,1)</span>
+				<span class="token">--wg-ease cubic-bezier(.4,0,.2,1)</span>
+				<span class="token">press 120ms &#183; scale .955</span>
+				<span class="token">s 200 &#183; m 320 &#183; l 480</span>
+			</div>
+			<p class="note">The spring is for anything that <b>grows</b> &#8212; a sheet opening, a thumb sliding. The ease is for anything that merely <b>changes</b> &#8212; a colour, an opacity. Nothing uses a third curve.</p>
+		</div>
+	</section>
+
+	<!-- ═══════════ BUTTONS ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Buttons</h2></div>
+
+		<div class="group">
+			<span class="cap">Capsule &#183; three sizes</span>
+			<div class="row">
+				<button class="btn btn-accent btn-l pressable">Create</button>
+				<button class="btn btn-accent btn-m pressable">Continue</button>
+				<button class="btn btn-accent btn-s pressable">Add</button>
+			</div>
+
+			<span class="cap">Capsule &#183; four intents</span>
+			<div class="row">
+				<button class="btn btn-accent btn-m pressable">Accent</button>
+				<button class="btn btn-m pressable">Neutral</button>
+				<button class="btn btn-plain btn-m pressable">Plain</button>
+				<button class="btn btn-danger btn-m pressable">Delete</button>
+				<button class="btn btn-m pressable" disabled>Disabled</button>
+			</div>
+
+			<span class="cap">Full width &#8212; the shape a sheet ends with</span>
+			<button class="btn btn-accent btn-l btn-block pressable">Create</button>
+
+			<div class="divide"></div>
+			<span class="cap">Icon button &#183; a circle, three sizes</span>
+			<div class="row">
+				<button class="iconbtn iconbtn-l iconbtn-accent pressable"><svg class="icon" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12"/></svg></button>
+				<button class="iconbtn iconbtn-m pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.6"/><path d="M13 13l3.5 3.5"/></svg></button>
+				<button class="iconbtn iconbtn-s pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.2" class="dot"/><circle cx="10" cy="10" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/></svg></button>
+			</div>
+
+			<span class="cap">Glass &#8212; only over something worth blurring</span>
+			<div class="row">
+				<div class="photo">
+					<button class="iconbtn iconbtn-m glass glass-on-dark pressable"><svg class="icon" viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg></button>
+					<button class="iconbtn iconbtn-m glass glass-on-dark pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/></svg></button>
+				</div>
+				<p class="note">On a flat note background there is nothing behind the glass, so it reads as a smudge. <b>The default is a solid fill;</b> glass is the variant you reach for when a widget paints its own image or gradient underneath.</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- ═══════════ WIDGET BUTTONS ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Widget buttons</h2></div>
+
+		<div class="group">
+			<p class="note">A second family, and the one the board is built from: <b>a whole number of cells</b>, never a size in pixels. Icon and label centred, so the same component reads at 1&#215;1 and at 4&#215;2.</p>
+			<div class="cells">
+				<button class="wbtn w1 h1 pressable"><svg class="icon" viewBox="0 0 20 20"><path d="M10 4v12M4 10h12"/></svg></button>
+				<button class="wbtn w1 h1 pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.6"/><path d="M13 13l3.5 3.5"/></svg></button>
+				<button class="wbtn w2 h1 wide pressable"><svg class="icon" viewBox="0 0 20 20"><path d="M3 5h14M3 10h9M3 15h5"/></svg><span>Sort</span></button>
+
+				<button class="wbtn w2 h2 wbtn-accent pressable"><svg class="icon" viewBox="0 0 20 20" style="width: 26px; height: 26px"><path d="M10 4v12M4 10h12"/></svg><span>New item</span></button>
+				<button class="wbtn w1 h1 pressable"><svg class="icon" viewBox="0 0 20 20"><path d="M4 5h12l-4.6 5.4V16l-2.8-1.6v-3z"/></svg></button>
+				<button class="wbtn w1 h1 pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="10" cy="7" r="2.8"/><path d="M4 16c0-3 2.7-4.6 6-4.6s6 1.6 6 4.6"/></svg></button>
+
+				<button class="wbtn w2 h1 wide pressable"><svg class="icon" viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="12" rx="2.5"/><path d="M3 8h14"/></svg><span>Calendar</span></button>
+
+				<button class="wbtn w4 h1 wide pressable"><svg class="icon" viewBox="0 0 20 20"><rect x="3" y="3" width="6" height="6" rx="2"/><rect x="11" y="3" width="6" height="6" rx="2"/><rect x="3" y="11" width="6" height="6" rx="2"/><rect x="11" y="11" width="6" height="6" rx="2"/></svg><span>Four cells wide, one tall</span></button>
+			</div>
+			<div class="chips">
+				<span class="token">1&#215;1</span><span class="token">2&#215;1</span><span class="token">2&#215;2</span><span class="token">4&#215;1</span>
+				<span class="token">--wg-cell 76px</span><span class="token">--wg-gap 12px</span>
+			</div>
+		</div>
+	</section>
+
+	<!-- ═══════════ CONTROLS ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Controls</h2></div>
+
+		<div class="group">
+			<span class="cap">Segmented &#8212; the thumb springs, the labels only fade</span>
+			<div class="row">
+				<div class="segmented" id="seg">
+					<span class="seg-thumb"></span>
+					<button aria-selected="true">Day</button>
+					<button aria-selected="false">Week</button>
+					<button aria-selected="false">Month</button>
+					<button aria-selected="false">Year</button>
+				</div>
+			</div>
+
+			<span class="cap">Switch, slider, stepper</span>
+			<div class="row">
+				<button class="switch" role="switch" aria-checked="true"></button>
+				<button class="switch" role="switch" aria-checked="false"></button>
+				<input class="slider" type="range" min="0" max="100" value="62" style="--wg-slider-fill: 62%; max-width: 240px;">
+				<div class="stepper">
+					<button class="pressable" data-step="-1">&#8722;</button><i></i><span id="count">3</span><i></i><button class="pressable" data-step="1">+</button>
+				</div>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">Progress &#183; a track, a knob and the number, on one line</span>
+			<div class="row top">
+				<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: var(--size-4-3);">
+					<div class="progress" id="prog-a" role="slider" tabindex="0" aria-label="Progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="65">
+						<span class="progress-track"><i class="progress-fill" style="width: 65%"></i><span class="progress-knob" style="left: 65%"></span></span>
+						<span class="progress-num">65%</span>
+					</div>
+					<span class="cap">Mid-drag &#183; the knob swells, the digits take the accent</span>
+					<div class="progress grabbed" role="slider" aria-label="Progress, mid-drag" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80">
+						<span class="progress-track"><i class="progress-fill" style="width: 80%"></i><span class="progress-knob" style="left: 80%"></span></span>
+						<span class="progress-num">80%</span>
+					</div>
+				</div>
+				<p class="note" style="flex: 1 1 240px;">Drag the first one, or focus it and type. It answers <b>arrows</b> by one, <b>PageUp / PageDown</b> by ten, <b>Home / End</b> to either end, and a <b>pointer drag</b> anywhere on the track &#8212; the press does not have to start on the knob. The number is tabular, so it does not shuffle its own width as it counts.</p>
+			</div>
+			<pre class="code"><code>&lt;<b>Progress</b> value={done} onChange={setDone} label="Progress" /&gt;</code></pre>
+			<p class="note">A track and the digits, <b>not a stepper</b>: a plate carrying eight properties is skimmed far more often than it is set, and a row of &#8722;&nbsp;65&nbsp;+ reads as a form. The percentage is clamped and rounded inside the component, so a caller cannot hand it 103.</p>
+
+			<div class="divide"></div>
+			<span class="cap">Text entry</span>
+			<div class="row top">
+				<div class="search"><svg class="icon" viewBox="0 0 20 20" style="color: var(--wg-ink-faint)"><circle cx="9" cy="9" r="5.6"/><path d="M13 13l3.5 3.5"/></svg><input placeholder="Search"></div>
+				<div class="field"><label>Label</label><input value="A value"></div>
+				<div class="field bad"><label>Needs a number</label><input value="abc"></div>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">Grouped list &#8212; icon, label, value, chevron, hairlines inside</span>
+			<div class="list">
+				<div class="li"><span class="badge-icon" style="background: var(--wg-accent)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2"/></svg></span><span class="label">First option</span><span class="value">On</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+				<div class="li"><span class="badge-icon" style="background: var(--wg-success)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></span><span class="label">Second option</span><span class="value">Enabled</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+				<div class="li"><span class="badge-icon" style="background: var(--wg-warning)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M10 5v6M10 14v.5"/></svg></span><span class="label">Third option</span><span class="value">Two</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+				<div class="li"><span class="badge-icon" style="background: var(--color-base-50)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><rect x="4" y="4" width="12" height="12" rx="3"/></svg></span><span class="label">Fourth option</span><span class="value">Off</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">Tags and status</span>
+			<div class="row">
+				<span class="pilltag accent">Selected</span>
+				<span class="pilltag">Neutral</span>
+				<span class="pilltag ok">Success</span>
+				<span class="pilltag warn">Warning</span>
+				<span class="pilltag err">Error</span>
+			</div>
+			<div class="notice ok"><svg class="icon" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9"/></svg><span><b>Saved.</b> Everything is where you left it.</span></div>
+			<div class="notice warn"><svg class="icon" viewBox="0 0 20 20"><path d="M10 5v6M10 14v.5"/></svg><span><b>Not empty.</b> Move what is inside before removing it.</span></div>
+			<div class="notice err"><svg class="icon" viewBox="0 0 20 20"><path d="M6 6l8 8M14 6l-8 8"/></svg><span><b>Could not read that folder.</b> Check the path and try again.</span></div>
+		</div>
+	</section>
+
+	<!-- ═══════════ SURFACES AND MOTION ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Surfaces, and how one becomes a sheet</h2></div>
+
+		<div class="group">
+			<p class="note">Press a tile. The sheet does not appear over it &#8212; <b>it is the tile, grown</b>: the panel starts at that tile's exact rectangle and radius and springs out to full size, then collapses back into it. Nothing fades in from the middle of the screen.</p>
+			<div class="cells" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));">
+				<button class="tile pressable" data-sheet><h4>First tile</h4><p>Press to open</p></button>
+				<button class="tile accent pressable" data-sheet><h4>Second tile</h4><p>Also opens</p></button>
+				<button class="tile pressable" data-sheet><h4>Third tile</h4><p>And this one</p></button>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">The dialog casts no shadow &#183; measured, not preferred</span>
+			<p class="note">The panel above used to sit on <code>--wg-shadow-l</code>. Sampled over the overlay's scrim it read <b>(227,&#8239;227,&#8239;229)</b> against its own <b>(240,&#8239;240,&#8239;240)</b> plate &#8212; <b>a raised surface rendering darker than the thing it sits on</b>, which is elevation backwards. It is an opaque raised fill with a hairline edge now, measured at <b>(255,&#8239;255,&#8239;255)</b> over 240.</p>
+			<p class="note"><b>Glass was rejected here specifically.</b> A blur needs something behind it worth blurring, and a uniform scrim gives it nothing &#8212; the same result the four beds at the bottom of this page show. So the dialog takes the fourth surface instead: <code>--wg-raise</code>, white mixed into the background, which is a no-op in light and a real step in dark. <b>This is the kit's own law applied</b>, not an exception written for the dialog: a floating surface is told apart by its edge, never by a cast shadow, and <code>--wg-shadow-l</code> no longer exists.</p>
+		</div>
+	</section>
+
+
+	<!-- ═══════════ POPOVER ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Popover &#8212; the control becomes the surface</h2></div>
+
+		<div class="group">
+			<p class="note"><b>Not a dialog.</b> A dialog is its own thing, centred, over a scrim. A popover is the control you pressed: it leaves, the panel takes its exact rectangle, and grows only as far as its own content needs &#8212; <b>staying where the control stood</b>. The same mechanism drives a menu, a select and a whole tile, because the trigger is just an element.</p>
+
+			<span class="cap">A menu, from a round button</span>
+			<div class="row">
+				<button class="iconbtn iconbtn-m pressable" data-pop="pop-menu" aria-label="More"><svg class="icon" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="15.5" cy="10" r="1.4"/></svg></button>
+				<span class="note" style="flex: 1 1 220px;">Press it. The circle is what becomes the menu.</span>
+			</div>
+
+			<span class="cap">A select, from a capsule</span>
+			<div class="row">
+				<button class="selectbtn pressable" data-pop="pop-select"><span id="select-value">Second option</span><svg class="icon caret" viewBox="0 0 20 20" style="width:14px;height:14px"><path d="M5 8l5 5 5-5"/></svg></button>
+			</div>
+
+			<span class="cap">And from a whole tile &#8212; the trigger is just an element</span>
+			<div class="cells" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));">
+				<button class="tile pressable" data-pop="pop-panel"><h4>A tile</h4><p>Also becomes one</p></button>
+			</div>
+
+			<div class="divide"></div>
+			<span class="cap">Placement &#183; two origins, one panel</span>
+			<p class="note">The fold above is <code>over</code>, and it is still the default: the trigger leaves and the panel takes its exact rectangle. <code>below</code> is the second origin &#8212; the panel hangs under a trigger that <b>stays on screen</b>, six pixels down, and flips above itself when the bottom of the window is too close. <b>Press both. The difference is the whole point,</b> and it is not a difference a screenshot can carry.</p>
+			<div class="row top">
+				<div style="flex: 1 1 240px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--size-4-2);">
+					<span class="cap">over &#183; the control becomes the panel</span>
+					<button class="selectbtn pressable" data-pop="pop-place-over" style="min-width: 248px; justify-content: space-between;"><span>Second option</span><svg class="icon caret" viewBox="0 0 20 20" style="width:14px;height:14px"><path d="M5 8l5 5 5-5"/></svg></button>
+				</div>
+				<div style="flex: 1 1 240px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--size-4-2);">
+					<span class="cap">below &#183; the control stays, the panel hangs off it</span>
+					<button class="selectbtn pressable" data-pop="pop-place-below" style="min-width: 248px; justify-content: space-between;" data-place="below"><span>Second option</span><svg class="icon caret" viewBox="0 0 20 20" style="width:14px;height:14px"><path d="M5 8l5 5 5-5"/></svg></button>
+				</div>
+			</div>
+			<pre class="code"><code>&lt;<b>Popover</b> placement="below" trigger={&lt;Button&gt;{value}&lt;/Button&gt;}&gt;
+	{options.map((name) =&gt; (
+		&lt;<b>PopoverItem</b> checked={name === value} onClick={() =&gt; pick(name)}&gt;{name}&lt;/PopoverItem&gt;
+	))}
+&lt;/Popover&gt;</code></pre>
+			<p class="note">A <code>below</code> panel is <b>at least as wide as its trigger</b>. Only the kit has measured that trigger, so it hands the number down as <code>--wg-anchor-width</code> and the stylesheet reads it as a <code>min-width</code> &#8212; a width offered, not forced, so a panel whose contents need more still takes more. Both placements fold out of, and back into, the trigger's rectangle: the origin changes, the motion does not.</p>
+
+			<div class="divide"></div>
+			<span class="cap">A keyword field in the panel &#183; PopoverSearch</span>
+			<p class="note">When a menu is long enough that reading it is work, the panel grows a field at the top. <b>It narrows the choices under it, never the board</b> &#8212; nothing outside the panel notices it was typed in, and it empties when the panel closes.</p>
+			<div class="row top">
+				<div style="flex: 1 1 220px; display: flex; flex-direction: column; align-items: flex-start; gap: var(--size-4-2);">
+					<span class="cap">Press it, then type</span>
+					<button class="selectbtn pressable" data-pop="pop-search" data-place="below"><span>Assign to&#8230;</span><svg class="icon caret" viewBox="0 0 20 20" style="width:14px;height:14px"><path d="M5 8l5 5 5-5"/></svg></button>
+				</div>
+				<p class="note" style="flex: 1 1 260px;">The component owns one thing: the field, and the trimmed lower-case needle it hands down. <b>Who counts as a match is the caller's rule</b> &#8212; a name here, but a path, a tag, an alias or a fuzzy score somewhere else, and none of that belongs in a kit part. The hint line under the field is the caller's too.</p>
+			</div>
+			<pre class="code"><code>&lt;Popover placement="below" trigger={trigger}&gt;
+	&lt;<b>PopoverSearch</b> placeholder="Find a person" hint="Name or initials"&gt;
+		{(<b>needle</b>) =&gt; people
+			.filter((one) =&gt; one.name.toLowerCase().includes(needle))
+			.map((one) =&gt; &lt;PopoverItem key={one.id}&gt;{one.name}&lt;/PopoverItem&gt;)}
+	&lt;/PopoverSearch&gt;
+&lt;/Popover&gt;</code></pre>
+		</div>
+	</section>
+
+	<!-- ═══════════ CALENDAR ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Calendar &#8212; the seam is the day&#8217;s content</h2></div>
+
+		<div class="group">
+			<p class="note">The kit owns the month, the six-row grid that keeps the panel one height all year, and the three states a cell can be in &#8212; <b>outside</b>, <b>today</b>, <b>selected</b>. It does not own what the cell says. <code>renderDay({date, outside, today, selected})</code> returns the cell&#8217;s <b>children</b>, so a caller can hang anything off a day without the kit learning a word about deadlines, habits or bookings.</p>
+
+			<div class="row top" style="align-items: stretch;">
+				<div style="display: flex; flex-direction: column; gap: var(--size-4-2); flex: 0 1 300px; min-width: 0;">
+					<span class="cap">No renderDay &#183; the date, which is the default</span>
+					<div class="pop parked"><div class="cal" id="cal-plain"></div></div>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: var(--size-4-2); flex: 0 1 300px; min-width: 0;">
+					<span class="cap">renderDay &#183; a number and the day&#8217;s dots</span>
+					<div class="pop parked"><div class="cal" id="cal-dots"></div></div>
+				</div>
+				<div style="display: flex; flex-direction: column; gap: var(--size-4-2); flex: 0 1 300px; min-width: 0;">
+					<span class="cap">renderDay &#183; roman numerals, to prove the seam is real</span>
+					<div class="pop parked"><div class="cal" id="cal-roman"></div></div>
+				</div>
+			</div>
+			<p class="note">Press any day in any of the three. The middle one is the reason the seam exists: <b>the dots are the caller&#8217;s</b>, drawn from the caller&#8217;s own data, and the kit never learns they are there. The third is deliberately silly &#8212; if roman numerals fit through the same hole, so does anything.</p>
+			<pre class="code"><code>&lt;<b>Calendar</b>
+	selected={due}
+	onSelect={setDue}
+	<b>renderDay</b>={({ date, today }) =&gt; (
+		&lt;&gt;
+			{date.getDate()}
+			&lt;span class="cal-dots"&gt;{dotsFor(date).map(() =&gt; &lt;i /&gt;)}&lt;/span&gt;
+		&lt;/&gt;
+	)}
+/&gt;</code></pre>
+
+			<div class="divide"></div>
+			<span class="cap">And the shortcuts are not a calendar feature</span>
+			<div class="row top">
+				<div class="pop parked" style="width: min(272px, 100%);">
+					<div class="cal" id="cal-shortcuts"></div>
+					<div class="pop-inner" style="padding-top: 0;">
+						<div class="pop-sep"></div>
+						<button class="pop-item">Today<span style="margin-left: auto; color: var(--wg-ink-faint); font-size: var(--font-ui-smaller);">29 Aug</span></button>
+						<button class="pop-item">Next Monday<span style="margin-left: auto; color: var(--wg-ink-faint); font-size: var(--font-ui-smaller);">31 Aug</span></button>
+					</div>
+				</div>
+				<p class="note" style="flex: 1 1 280px;">&#8220;Today&#8221; and &#8220;Next Monday&#8221; account for most dates anybody sets, and they are <b>ordinary <code>PopoverItem</code>s under a <code>PopoverSeparator</code></b> &#8212; composed at the call site, in the panel, beside the calendar. Not a <code>shortcuts</code> prop, not a <code>showToday</code> boolean. <b>That composability is the thing being demonstrated:</b> the next screen that needs &#8220;End of sprint&#8221; adds one more button and asks the kit for nothing.</p>
+			</div>
+			<pre class="code"><code>&lt;Popover placement="below" trigger={&lt;Row&gt;{shown}&lt;/Row&gt;}&gt;
+	&lt;Calendar selected={due} onSelect={setDue} /&gt;
+	&lt;<b>PopoverSeparator</b> /&gt;
+	&lt;<b>PopoverItem</b> onClick={() =&gt; setDue(today)}&gt;Today&lt;/PopoverItem&gt;
+	&lt;<b>PopoverItem</b> onClick={() =&gt; setDue(nextMonday)}&gt;Next Monday&lt;/PopoverItem&gt;
+&lt;/Popover&gt;</code></pre>
+		</div>
+	</section>
+
+	<!-- ═══════════ MARKDOWN EDITOR ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Markdown editor &#8212; raw text, made readable</h2></div>
+
+		<div class="group">
+			<p class="note"><b>This is Detail mode</b>, one half of a pair. <b>Preview</b> is Obsidian&#8217;s own rendering &#8212; read mode, plugins&#8217; output included, and not ours to reimplement. <b>Detail</b> is the raw note in a plain text box with <b>every marker still on screen</b>: hashtags stay hashtags, <code>[[links]]</code> keep their brackets, <code>**bold**</code> keeps its asterisks. Weight and colour do all the work and nothing moves, hides or re-wraps. It is deliberately <b>not</b> live preview.</p>
+
+			<div class="row top">
+				<div class="md" id="md-live"><div class="md-page">
+					<div class="md-text md-mirror" aria-hidden="true"></div>
+					<textarea class="md-text md-input" spellcheck="true"># Ship the picker
+
+The **deadline** row opens a calendar, and the *shortcuts*
+sit under it as plain items. See [[task-dialog]] and the
+[kit page](widgetarium-ui-kit.html) for the rest.
+
+Inline `code` keeps its backticks and stays plain.
+
+#orbitask #kit</textarea>
+				</div></div>
+				<p class="note" style="flex: 1 1 260px;">Type in it. Links take the accent, headings and bold markup go bold, italics go italic, and <b>inline code is left plain on purpose</b> &#8212; colouring it would be a fourth rule nobody asked for, and a backticked span is consumed first precisely so the markers inside it stay ordinary text. A hashtag is left alone for the same reason: the tags have their own row elsewhere.</p>
+			</div>
+			<pre class="code"><code>&lt;<b>MarkdownEditor</b> value={body} onInput={setBody} placeholder="Notes" /&gt;</code></pre>
+			<p class="note"><b>The implementation is a transparent textarea over a styled mirror.</b> There are no elements inside a <code>&lt;textarea&gt;</code>, only characters, so coloured-but-plain text is always either this or a <code>contenteditable</code>. The mirror holds the spans and the colour; the textarea sits on top with <code>color: transparent</code> and a visible caret, and native editing &#8212; selection, undo, spellcheck, the OS&#8217;s own text menu &#8212; is kept intact. <b>The cost is that the two must agree on every metric that decides where a character lands</b>, so padding, font, line-height, letter-spacing, wrapping and tab-size are declared once on <code>.md-text</code> and inherited by both. They also share one scroller, so there is no pair of scroll offsets to keep in step.</p>
+		</div>
+	</section>
+
+	<!-- ═══════════ GROUP BUTTON ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Layer 2 &#8212; the kit</span><h2>Group button</h2></div>
+
+		<div class="group">
+			<p class="note">A separate entity again: several buttons living in <b>one capsule</b>, divided by a hairline rather than by a gap. Horizontal or stacked, solid or glass &#8212; the glass one is what sits over a map.</p>
+			<div class="row">
+				<div class="group-btn">
+					<button class="pressable" aria-label="Back"><svg class="icon" viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg></button>
+					<button class="pressable" aria-label="Forward"><svg class="icon" viewBox="0 0 20 20"><path d="M8 4l6 6-6 6"/></svg></button>
+				</div>
+				<div class="group-btn">
+					<button class="pressable" aria-pressed="true" aria-label="One"><svg class="icon" viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" rx="4"/></svg></button>
+					<button class="pressable" aria-label="Two"><svg class="icon" viewBox="0 0 20 20"><rect x="3" y="3" width="6" height="14" rx="2"/><rect x="11" y="3" width="6" height="14" rx="2"/></svg></button>
+					<button class="pressable" aria-label="Three"><svg class="icon" viewBox="0 0 20 20"><path d="M4 6h12M4 10h12M4 14h8"/></svg></button>
+				</div>
+				<div class="map-bed">
+					<div class="group-btn stack glass">
+						<button class="pressable" aria-label="Layers"><svg class="icon" viewBox="0 0 20 20"><path d="M10 3l7 4-7 4-7-4z"/><path d="M3 11l7 4 7-4"/></svg></button>
+						<button class="pressable" aria-label="Locate"><svg class="icon" viewBox="0 0 20 20"><path d="M17 3L3 9l6 2 2 6z"/></svg></button>
+					</div>
+					<div class="group-btn stack glass">
+						<button class="pressable" aria-label="In"><svg class="icon" viewBox="0 0 20 20"><path d="M10 5v10M5 10h10"/></svg></button>
+						<button class="pressable" aria-label="Out"><svg class="icon" viewBox="0 0 20 20"><path d="M5 10h10"/></svg></button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ═══════════ EXPERIMENTS ═══════════ -->
+	<section>
+		<div class="head"><span class="eyebrow">Experiments</span><h2>Two things to look at, not decisions</h2></div>
+
+		<div class="group">
+			<span class="cap">One step lighter &#8212; the fill moves from base-20 to base-10</span>
+			<div class="compare">
+				<div>
+					<span class="cap">Now &#183; --interactive-normal</span>
+					<button class="btn btn-m pressable">Neutral</button>
+					<div class="list" style="max-width: none;">
+						<div class="li"><span class="badge-icon" style="background: var(--wg-accent)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><circle cx="10" cy="10" r="3"/></svg></span><span class="label">An option</span><span class="value">On</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+						<div class="li"><span class="badge-icon" style="background: var(--color-base-50)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><rect x="4" y="4" width="12" height="12" rx="3"/></svg></span><span class="label">Another</span><span class="value">Off</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+					</div>
+					<div class="segmented"><span class="seg-thumb" style="width: 62px; transform: translateX(0)"></span><button aria-selected="true">Day</button><button aria-selected="false">Week</button></div>
+				</div>
+				<div class="lighter">
+					<span class="cap">Lighter &#183; --color-base-10</span>
+					<button class="btn btn-m pressable">Neutral</button>
+					<div class="list" style="max-width: none;">
+						<div class="li"><span class="badge-icon" style="background: var(--wg-accent)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><circle cx="10" cy="10" r="3"/></svg></span><span class="label">An option</span><span class="value">On</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+						<div class="li"><span class="badge-icon" style="background: var(--color-base-50)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><rect x="4" y="4" width="12" height="12" rx="3"/></svg></span><span class="label">Another</span><span class="value">Off</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+					</div>
+					<div class="segmented"><span class="seg-thumb" style="width: 62px; transform: translateX(0)"></span><button aria-selected="true">Day</button><button aria-selected="false">Week</button></div>
+				</div>
+			</div>
+			<p class="note">One token changes and the whole kit follows. <b>The trade is contrast:</b> lighter reads calmer on a white note, and the control stops separating from a card that is also near-white.</p>
+
+			<div class="divide"></div>
+			<span class="cap">Glass off the photograph &#8212; the same material on four beds</span>
+			<div class="compare">
+				<div class="glass-bed bed-surface">
+					<span class="glasscard glass">On a card</span>
+					<button class="iconbtn iconbtn-m glass pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/></svg></button>
+				</div>
+				<div class="glass-bed bed-fill">
+					<span class="glasscard glass">On a fill</span>
+					<button class="iconbtn iconbtn-m glass pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/></svg></button>
+				</div>
+				<div class="glass-bed bed-accent">
+					<span class="glasscard" style="color: var(--wg-on-accent)">On the accent</span>
+					<button class="iconbtn iconbtn-m glass glass-on-dark pressable"><svg class="icon" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.3"/><circle cx="10" cy="10" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/></svg></button>
+				</div>
+				<div class="glass-bed bed-text">
+					<span class="behind">Text running underneath, which is the only case on a plain note where there is anything for the blur to work on &#8212; the letters smear and the panel reads as frosted rather than as a grey box.</span>
+					<span class="glasscard glass">Over text</span>
+				</div>
+			</div>
+			<p class="note"><b>The honest result:</b> on a flat card or a flat fill the blur has nothing to blur, so glass collapses into a translucent grey &#8212; the inset hairline is doing all the work, and a plain fill would look better. It earns its place over the accent, over an image, and over text. Everywhere else it is a costlier way to draw a lighter box.</p>
+		</div>
+	</section>
+
+</div>
+
+
+<div class="pop" id="pop-menu"><div class="pop-inner">
+	<button class="pop-item">Rename</button>
+	<button class="pop-item">Duplicate</button>
+	<button class="pop-item">Move to&#8230;</button>
+	<div class="pop-sep"></div>
+	<button class="pop-item danger">Delete</button>
+</div></div>
+
+<div class="pop" id="pop-select"><div class="pop-inner">
+	<div class="pop-head">Choose one</div>
+	<button class="pop-item" data-value="First option" aria-checked="false">First option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" data-value="Second option" aria-checked="true">Second option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" data-value="Third option" aria-checked="false">Third option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+</div></div>
+
+<div class="pop pop-wide" id="pop-panel"><div class="pop-inner">
+	<div class="pop-head">Anything fits</div>
+	<div class="pop-row"><span class="label">A switch</span><button class="switch" role="switch" aria-checked="true" style="margin-left:auto"></button></div>
+	<div class="pop-row"><span class="label">A slider</span><input class="slider" type="range" min="0" max="100" value="40" style="--wg-slider-fill: 40%"></div>
+	<div class="pop-row"><span class="pilltag accent">Selected</span><span class="pilltag ok">Success</span></div>
+	<div class="pop-row"><button class="btn btn-accent btn-m btn-block pressable">Confirm</button></div>
+</div></div>
+
+<div class="pop" id="pop-place-over"><div class="pop-inner">
+	<button class="pop-item" aria-checked="false">First option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" aria-checked="true">Second option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" aria-checked="false">Third option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+</div></div>
+
+<div class="pop" id="pop-place-below"><div class="pop-inner">
+	<button class="pop-item" aria-checked="false">First option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" aria-checked="true">Second option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+	<button class="pop-item" aria-checked="false">Third option<svg class="icon tick" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M4 10.5l4 4 8-9"/></svg></button>
+</div></div>
+
+<!-- the field and the choices share ONE .pop-inner: PopoverSearch returns a fragment, so the
+     panel has a single content box and a single thing to fade on the way out -->
+<div class="pop" id="pop-search"><div class="pop-inner" data-haystack>
+	<div class="pop-search">
+		<div class="search"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px;color: var(--wg-ink-faint)"><circle cx="9" cy="9" r="5.4"/><path d="M13 13l3.5 3.5"/></svg><input placeholder="Find a person" data-needle></div>
+		<span class="pop-search-hint">Name or initials</span>
+	</div>
+	<button class="pop-item">Ada Lovelace</button>
+	<button class="pop-item">Barbara Liskov</button>
+	<button class="pop-item">Grace Hopper</button>
+	<button class="pop-item">Karen Sparck Jones</button>
+	<button class="pop-item">Margaret Hamilton</button>
+	<span class="pop-empty" data-empty hidden>Nobody by that name.</span>
+</div></div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet-wrap">
+	<div class="sheet-card" id="sheetcard" role="dialog" aria-modal="true" aria-label="Panel">
+		<div class="sheet-content" id="sheetcontent">
+			<header>
+				<h3>Panel</h3>
+				<button class="iconbtn iconbtn-s pressable" id="sheetclose" aria-label="Close"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M6 6l8 8M14 6l-8 8"/></svg></button>
+			</header>
+			<div class="sheet-body">
+				<p class="note">The same components, in the surface they grew into. Nothing here knows what the widget is for.</p>
+				<div class="list">
+					<div class="li"><span class="badge-icon" style="background: var(--wg-accent)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><circle cx="10" cy="10" r="3"/></svg></span><span class="label">An option</span><span class="value">On</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+					<div class="li"><span class="badge-icon" style="background: var(--color-base-50)"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><rect x="4" y="4" width="12" height="12" rx="3"/></svg></span><span class="label">Another option</span><span class="value">Off</span><svg class="icon chev" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></div>
+				</div>
+				<div class="row"><span class="pilltag accent">Selected</span><span class="pilltag">Neutral</span><span class="pilltag ok">Success</span></div>
+			</div>
+			<div class="sheet-foot">
+				<button class="btn btn-l btn-block pressable" id="sheetcancel">Cancel</button>
+				<button class="btn btn-accent btn-l btn-block pressable">Confirm</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+(function () {
+	"use strict";
+	const reduced = Boolean(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+	// ---- segmented control: the thumb is one element that springs between slots ----
+	const seg = document.getElementById("seg");
+	if (seg) {
+		const thumb = seg.querySelector(".seg-thumb");
+		const move = (button) => {
+			thumb.style.width = button.offsetWidth + "px";
+			thumb.style.transform = "translateX(" + (button.offsetLeft - 3) + "px)";
+		};
+		seg.addEventListener("click", (event) => {
+			const button = event.target.closest("button");
+			if (!button) return;
+			for (const other of seg.querySelectorAll("button")) other.setAttribute("aria-selected", String(other === button));
+			move(button);
+		});
+		requestAnimationFrame(() => move(seg.querySelector('[aria-selected="true"]')));
+	}
+
+	for (const toggle of document.querySelectorAll(".switch")) {
+		toggle.addEventListener("click", () => toggle.setAttribute("aria-checked", toggle.getAttribute("aria-checked") === "true" ? "false" : "true"));
+	}
+	for (const slider of document.querySelectorAll(".slider")) {
+		slider.addEventListener("input", () => slider.style.setProperty("--wg-slider-fill", slider.value + "%"));
+	}
+	const count = document.getElementById("count");
+	for (const step of document.querySelectorAll("[data-step]")) {
+		step.addEventListener("click", () => { count.textContent = Math.max(0, Number(count.textContent) + Number(step.dataset.step)); });
+	}
+
+
+	// ---- THE POPOVER --------------------------------------------------------------
+	// Same arithmetic as the dialog, one different intent: the trigger LEAVES, because
+	// here the control really is the thing that became the panel. It is anchored under
+	// the trigger, never centred, and it is only as big as its own content.
+	let openPop = null;
+	let popTrigger = null;
+
+	// PLACE IT IN TWO PASSES, because we do not own the page this runs in. A "fixed" element
+	// is only relative to the viewport while NO ancestor has a transform, a filter, a
+	// backdrop-filter, contain or will-change — any one of those silently makes it relative to
+	// that ancestor instead, and the popover lands somewhere down the page. So: park it at
+	// 0,0, ask the browser where 0,0 actually IS, and correct by that offset. Then it does not
+	// matter what wraps us.
+	// TWO ORIGINS, ONE PANEL. A table rather than a second function, because only the origin and
+	// the trigger's fate differ: `over` puts the panel where the control was and takes the
+	// control away; `below` hangs it under a control that stays. Each placement also says where
+	// it goes when it does not fit — over flips to the trigger's far corner, below flips above.
+	const ANCHOR_GAP = 6;
+	const PLACEMENTS = {
+		over: {
+			hides: true,
+			origin: (rect) => ({ left: rect.left, top: rect.top }),
+			flipped: (rect, zero) => ({ left: rect.right - zero.width, top: rect.bottom - zero.height }),
+		},
+		below: {
+			hides: false,
+			origin: (rect) => ({ left: rect.left, top: rect.bottom + ANCHOR_GAP }),
+			flipped: (rect, zero) => ({ left: rect.right - zero.width, top: rect.top - ANCHOR_GAP - zero.height }),
+		},
+	};
+
+	function placePop(pop, rect, place) {
+		pop.style.transition = "none";
+		pop.style.transform = "none";
+		pop.style.left = "0px";
+		pop.style.top = "0px";
+		pop.classList.add("on");
+		const zero = pop.getBoundingClientRect();
+		const margin = 8;
+		// IT TAKES THE TRIGGER'S PLACE. Anchoring under the trigger made a panel that appears
+		// beside a button; the control is supposed to BECOME the panel, so the panel starts at
+		// the control's own corner and grows out of it. That is `over`, and it is still the
+		// default; `below` is the case where the trigger has to stay legible while you choose.
+		const wanted = place.origin(rect, zero);
+		const away = place.flipped(rect, zero);
+		let left = wanted.left;
+		let top = wanted.top;
+		if (left + zero.width > window.innerWidth - margin) left = Math.max(margin, away.left);
+		if (top + zero.height > window.innerHeight - margin) top = Math.max(margin, away.top);
+		pop.style.left = (left - zero.left) + "px";
+		pop.style.top = (top - zero.top) + "px";
+		// ONLY WE HAVE MEASURED THE TRIGGER, and a menu under a row usually wants to match it.
+		// Handed down as a min-width, so a panel that needs more still takes more.
+		pop.style.setProperty("--wg-anchor-width", rect.width + "px");
+		return { left, top, width: zero.width, height: zero.height };
+	}
+
+	// A RADIUS IS SCALED BY THE TRANSFORM, LIKE EVERYTHING ELSE. Handing the panel the
+	// trigger's 999px and then shrinking it to a fifth left about four pixels of rounding on
+	// screen — which is why it started as a square and rounded off on the way out. So the
+	// radius has to be divided by the scale it is about to be multiplied by, per axis, and the
+	// trigger's own radius has to be clamped first: 999px on a 42px circle is really 21px.
+	// THE CORNER LIVES ON ::before NOW, so that is where the radius has to be read from —
+	// asking the button gives 0, and the panel starts as a square and rounds off on the way out.
+	function startRadius(trigger, box, rect) {
+		const own = parseFloat(getComputedStyle(trigger).borderRadius) || 0;
+		const painted = parseFloat(getComputedStyle(trigger, "::before").borderRadius) || 0;
+		const raw = Math.max(own, painted);
+		const real = Math.min(raw, Math.min(rect.width, rect.height) / 2);
+		const scaleX = rect.width / box.width;
+		const scaleY = rect.height / box.height;
+		return (real / scaleX).toFixed(1) + "px / " + (real / scaleY).toFixed(1) + "px";
+	}
+
+	function showPop(trigger) {
+		const pop = document.getElementById(trigger.dataset.pop);
+		if (!pop) return;
+		if (openPop) hidePop(true);
+		popTrigger = trigger;
+		openPop = pop;
+		// before anything is measured — a panel that resets its own contents changes its own height
+		pop.dispatchEvent(new CustomEvent("wg-reset"));
+		const place = PLACEMENTS[trigger.dataset.place] || PLACEMENTS.over;
+		pop.classList.toggle("below", place === PLACEMENTS.below);
+		const rect = trigger.getBoundingClientRect();
+		const box = placePop(pop, rect, place);
+		const inner = pop.querySelector(".pop-inner");
+		if (place.hides) trigger.style.visibility = "hidden";
+		if (reduced) return;
+		inner.style.transition = "none";
+		inner.style.opacity = "0";
+		pop.style.transform = "translate(" + (rect.left - box.left) + "px," + (rect.top - box.top) + "px) scale(" + (rect.width / box.width) + "," + (rect.height / box.height) + ")";
+		pop.style.borderRadius = startRadius(trigger, box, rect);
+		requestAnimationFrame(() => {
+			pop.style.transition = "transform var(--wg-dur-m) var(--wg-spring), border-radius var(--wg-dur-m) var(--wg-spring)";
+			inner.style.transition = "opacity var(--wg-dur-s) var(--wg-ease) 60ms";
+			pop.style.transform = "none";
+			pop.style.borderRadius = "";
+			inner.style.opacity = "1";
+		});
+	}
+
+	function hidePop(instant) {
+		if (!openPop) return;
+		const pop = openPop;
+		const trigger = popTrigger;
+		const inner = pop.querySelector(".pop-inner");
+		openPop = null;
+		popTrigger = null;
+		if (reduced || instant) { pop.classList.remove("on"); trigger.style.visibility = ""; return; }
+		const rect = trigger.getBoundingClientRect();
+		const box = pop.getBoundingClientRect();
+		pop.style.transition = "transform var(--wg-dur-s) var(--wg-ease), border-radius var(--wg-dur-s) var(--wg-ease), opacity var(--wg-dur-press) var(--wg-ease) 120ms";
+		inner.style.transition = "opacity var(--wg-dur-press) var(--wg-ease)";
+		inner.style.opacity = "0";
+		pop.style.transform = "translate(" + (rect.left - box.left) + "px," + (rect.top - box.top) + "px) scale(" + (rect.width / box.width) + "," + (rect.height / box.height) + ")";
+		pop.style.borderRadius = startRadius(trigger, box, rect);
+		pop.classList.remove("on");
+		window.setTimeout(() => { trigger.style.visibility = ""; }, 200);
+	}
+
+	for (const trigger of document.querySelectorAll("[data-pop]")) {
+		trigger.addEventListener("click", (event) => { event.stopPropagation(); showPop(trigger); });
+	}
+	document.addEventListener("click", (event) => { if (openPop && !openPop.contains(event.target)) hidePop(); });
+	document.addEventListener("keydown", (event) => { if (event.key === "Escape") hidePop(); });
+
+	const selectValue = document.getElementById("select-value");
+	for (const item of document.querySelectorAll("#pop-select .pop-item")) {
+		item.addEventListener("click", () => {
+			for (const other of document.querySelectorAll("#pop-select .pop-item")) other.setAttribute("aria-checked", String(other === item));
+			selectValue.textContent = item.dataset.value;
+			hidePop();
+		});
+	}
+	for (const item of document.querySelectorAll("#pop-menu .pop-item")) item.addEventListener("click", () => hidePop());
+	for (const panel of document.querySelectorAll("#pop-place-over, #pop-place-below")) {
+		panel.addEventListener("click", (event) => {
+			const item = event.target.closest(".pop-item");
+			if (!item) return;
+			for (const other of panel.querySelectorAll(".pop-item")) other.setAttribute("aria-checked", String(other === item));
+			hidePop();
+		});
+	}
+
+	// ---- THE KEYWORD FIELD ---------------------------------------------------------
+	// It hands down a trimmed, lower-cased needle and nothing else. WHO MATCHES IS THE
+	// CALLER'S RULE — here, a name that contains it; elsewhere a path, a tag or a score.
+	// Nothing outside this panel is filtered, which is the whole distinction from a board filter.
+	const searchPanel = document.getElementById("pop-search");
+	if (searchPanel) {
+		const field = searchPanel.querySelector("[data-needle]");
+		const empty = searchPanel.querySelector("[data-empty]");
+		const choices = Array.from(searchPanel.querySelectorAll(".pop-item"));
+		const narrow = () => {
+			const needle = field.value.trim().toLowerCase();
+			let shown = 0;
+			for (const choice of choices) {
+				const matches = choice.textContent.toLowerCase().includes(needle);
+				choice.hidden = !matches;
+				if (matches) shown += 1;
+			}
+			empty.hidden = shown > 0;
+		};
+		field.addEventListener("input", narrow);
+		// it empties with the panel: a needle that survived the close would filter the NEXT press
+		searchPanel.addEventListener("wg-reset", () => { field.value = ""; narrow(); });
+		for (const choice of choices) choice.addEventListener("click", () => hidePop());
+	}
+	// the listener belongs to the GROUP, not to the member that happens to be chosen —
+	// binding it to [aria-pressed] left every other button in the group dead
+	for (const group of document.querySelectorAll(".group-btn")) {
+		if (!group.querySelector("[aria-pressed]")) continue;
+		group.addEventListener("click", (event) => {
+			const button = event.target.closest("button");
+			if (!button || !group.contains(button)) return;
+			for (const other of group.querySelectorAll("button")) other.removeAttribute("aria-pressed");
+			button.setAttribute("aria-pressed", "true");
+		});
+	}
+
+	// ---- THE CALENDAR --------------------------------------------------------------
+	// The kit owns the month, the six fixed rows and the three states a cell can be in. It does
+	// NOT own what the cell says: renderDay is handed {date, outside, today, selected} and gives
+	// back the cell's children. Everything below the seam is the caller's, including the dots.
+	const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+	const WEEKDAY_INITIALS = ["M", "T", "W", "T", "F", "S", "S"];
+	// always six rows, so the panel does not change height between two months
+	const CALENDAR_CELLS = 42;
+	const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI", "XXVII", "XXVIII", "XXIX", "XXX", "XXXI"];
+
+	function startOfCalendar(year, month) {
+		const first = new Date(year, month, 1);
+		const lead = (first.getDay() + 6) % 7;
+		return new Date(year, month, 1 - lead);
+	}
+
+	function sameDay(one, other) {
+		if (!one || !other) return false;
+		return one.getFullYear() === other.getFullYear() && one.getMonth() === other.getMonth() && one.getDate() === other.getDate();
+	}
+
+	function calendar(host, renderDay) {
+		// the page's own date, so all three cell states are on screen at rest: 29 August is
+		// today, 24 August is selected, and the days spilling in from July and September are outside
+		const today = new Date(2026, 7, 29);
+		let shown = new Date(2026, 7, 1);
+		let selected = new Date(2026, 7, 24);
+
+		const step = (by) => { shown = new Date(shown.getFullYear(), shown.getMonth() + by, 1); draw(); };
+
+		function draw() {
+			const year = shown.getFullYear();
+			const index = shown.getMonth();
+			const first = startOfCalendar(year, index);
+			host.replaceChildren();
+
+			const head = document.createElement("div");
+			head.className = "cal-head";
+			head.innerHTML = '<button class="iconbtn iconbtn-s pressable" aria-label="Previous month" data-by="-1"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M12 5l-5 5 5 5"/></svg></button>'
+				+ '<span class="cal-month">' + MONTH_NAMES[index] + " " + year + "</span>"
+				+ '<button class="iconbtn iconbtn-s pressable" aria-label="Next month" data-by="1"><svg class="icon" viewBox="0 0 20 20" style="width:15px;height:15px"><path d="M8 5l5 5-5 5"/></svg></button>';
+			for (const button of head.querySelectorAll("[data-by]")) {
+				button.addEventListener("click", () => step(Number(button.dataset.by)));
+			}
+			host.append(head);
+
+			const grid = document.createElement("div");
+			grid.className = "cal-grid";
+			WEEKDAY_INITIALS.forEach((initial) => {
+				const cell = document.createElement("span");
+				cell.className = "cal-weekday";
+				cell.textContent = initial;
+				grid.append(cell);
+			});
+
+			for (let offset = 0; offset < CALENDAR_CELLS; offset += 1) {
+				const date = new Date(first.getFullYear(), first.getMonth(), first.getDate() + offset);
+				const day = { date: date, outside: date.getMonth() !== index, today: sameDay(date, today), selected: sameDay(date, selected) };
+				const cell = document.createElement("button");
+				cell.type = "button";
+				cell.className = "cal-day" + (day.outside ? " off" : "") + (day.today ? " today" : "") + (day.selected ? " picked" : "");
+				cell.setAttribute("aria-pressed", String(day.selected));
+				// THE SEAM. The kit put the classes on; the caller fills the inside.
+				cell.append(renderDay ? renderDay(day) : String(date.getDate()));
+				cell.addEventListener("click", () => { selected = date; draw(); });
+				grid.append(cell);
+			}
+			host.append(grid);
+		}
+
+		draw();
+	}
+
+	function dotsFor(date) {
+		// stand-in for the caller's own data — three dots on a multiple of three, one on a Friday
+		const many = date.getDate() % 3 === 0 ? 3 : (date.getDay() === 5 ? 1 : 0);
+		if (!many) return document.createTextNode("");
+		const rail = document.createElement("span");
+		rail.className = "cal-dots";
+		for (let at = 0; at < many; at += 1) rail.append(document.createElement("i"));
+		return rail;
+	}
+
+	const plainCal = document.getElementById("cal-plain");
+	if (plainCal) calendar(plainCal, null);
+
+	const dotsCal = document.getElementById("cal-dots");
+	if (dotsCal) {
+		calendar(dotsCal, (day) => {
+			const stack = document.createDocumentFragment();
+			stack.append(String(day.date.getDate()), dotsFor(day.date));
+			return stack;
+		});
+	}
+
+	const romanCal = document.getElementById("cal-roman");
+	if (romanCal) {
+		calendar(romanCal, (day) => {
+			const numeral = document.createElement("span");
+			numeral.className = "cal-roman";
+			numeral.textContent = ROMAN[day.date.getDate()];
+			return numeral;
+		});
+	}
+
+	const shortcutCal = document.getElementById("cal-shortcuts");
+	if (shortcutCal) calendar(shortcutCal, null);
+
+	// ---- PROGRESS ------------------------------------------------------------------
+	// A track and the digits. The press does not have to land on the knob, and the keys are
+	// the ones a slider is expected to answer — the component clamps and rounds, so nothing
+	// upstream has to remember that a percentage stops at 100.
+	const PROGRESS_STEPS = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
+
+	function clampPercent(value) {
+		return Math.min(100, Math.max(0, Math.round(value)));
+	}
+
+	function progress(host) {
+		const track = host.querySelector(".progress-track");
+		const fill = host.querySelector(".progress-fill");
+		const knob = host.querySelector(".progress-knob");
+		const digits = host.querySelector(".progress-num");
+		let held = false;
+		let shown = Number(host.getAttribute("aria-valuenow")) || 0;
+
+		const show = (next) => {
+			if (next === null || next === shown) return;
+			shown = next;
+			fill.style.width = shown + "%";
+			knob.style.left = shown + "%";
+			digits.textContent = shown + "%";
+			host.setAttribute("aria-valuenow", String(shown));
+		};
+
+		const underPointer = (event) => {
+			const box = track.getBoundingClientRect();
+			// before the first layout every box is zero, and a division by it is not a value
+			if (!box.width) return null;
+			return clampPercent(((event.clientX - box.left) / box.width) * 100);
+		};
+
+		const release = () => { held = false; host.classList.remove("grabbed"); };
+
+		track.addEventListener("pointerdown", (event) => {
+			held = true;
+			host.classList.add("grabbed");
+			if (track.setPointerCapture) track.setPointerCapture(event.pointerId);
+			show(underPointer(event));
+		});
+		track.addEventListener("pointermove", (event) => { if (held) show(underPointer(event)); });
+		track.addEventListener("pointerup", release);
+		track.addEventListener("pointercancel", release);
+
+		host.addEventListener("keydown", (event) => {
+			if (event.key === "Home") return show(0);
+			if (event.key === "End") return show(100);
+			const by = PROGRESS_STEPS[event.key];
+			if (by === undefined) return;
+			event.preventDefault();
+			show(clampPercent(shown + by));
+		});
+	}
+
+	const liveProgress = document.getElementById("prog-a");
+	if (liveProgress) progress(liveProgress);
+
+	// ---- THE MARKDOWN MIRROR -------------------------------------------------------
+	// Reading B: a backticked span is consumed FIRST, so the markers inside it stay plain and
+	// it takes no class of its own. Everything else is left exactly as typed — the asterisks,
+	// the brackets and the hashes are all still on screen, only weight and colour change.
+	const HEADING_LINE = /^#{1,6}\s/;
+	const INLINE = /(`[^`\n]*`)|(\[\[[^\]\n]*\]\])|(\[[^\]\n]*\]\([^)\n]*\))|(\*\*[^*\n]+\*\*|__[^_\n]+__)|(\*[^*\n]+\*|_[^_\n]+_)/g;
+	const INLINE_CLASSES = [null, "is-link", "is-link", "is-strong", "is-em"];
+
+	function markLine(line, into) {
+		if (HEADING_LINE.test(line)) {
+			const whole = document.createElement("span");
+			whole.className = "is-heading";
+			whole.textContent = line;
+			into.append(whole);
+			return;
+		}
+		let at = 0;
+		INLINE.lastIndex = 0;
+		for (let found = INLINE.exec(line); found; found = INLINE.exec(line)) {
+			if (found.index > at) into.append(line.slice(at, found.index));
+			const group = [1, 2, 3, 4, 5].find((index) => found[index] !== undefined);
+			const styled = INLINE_CLASSES[group - 1];
+			if (!styled) {
+				into.append(found[0]);
+			} else {
+				const span = document.createElement("span");
+				span.className = styled;
+				span.textContent = found[0];
+				into.append(span);
+			}
+			at = found.index + found[0].length;
+		}
+		if (at < line.length) into.append(line.slice(at));
+	}
+
+	const editor = document.getElementById("md-live");
+	if (editor) {
+		const mirror = editor.querySelector(".md-mirror");
+		const input = editor.querySelector(".md-input");
+		const mark = () => {
+			const built = document.createDocumentFragment();
+			input.value.split("\n").forEach((line, at) => {
+				if (at > 0) built.append("\n");
+				markLine(line, built);
+			});
+			mirror.replaceChildren(built);
+		};
+		input.addEventListener("input", mark);
+		mark();
+	}
+
+	// ---- THE DIALOG ------------------------------------------------
+	// The sheet is laid out where it belongs, then thrown back onto the tile's exact
+	// rectangle and released. Growing a copy from the middle of the screen is the
+	// thing every one of these references does NOT do.
+	const scrim = document.getElementById("scrim");
+	const card = document.getElementById("sheetcard");
+	const content = document.getElementById("sheetcontent");
+	let origin = null;
+
+	function open(tile) {
+		origin = tile;
+		const from = tile.getBoundingClientRect();
+		card.classList.add("on");
+		scrim.classList.add("on");
+		const to = card.getBoundingClientRect();
+		if (reduced) return;
+
+		const scaleX = from.width / to.width;
+		const scaleY = from.height / to.height;
+		card.style.transition = "none";
+		content.style.transition = "none";
+		card.style.transformOrigin = "top left";
+		card.style.transform = "translate(" + (from.left - to.left) + "px," + (from.top - to.top) + "px) scale(" + scaleX + "," + scaleY + ")";
+		card.style.borderRadius = startRadius(tile, to, from);
+		content.style.opacity = "0";
+
+		requestAnimationFrame(() => {
+			card.style.transition = "transform var(--wg-dur-l) var(--wg-spring), border-radius var(--wg-dur-l) var(--wg-spring)";
+			content.style.transition = "opacity var(--wg-dur-m) var(--wg-ease) 80ms";
+			card.style.transform = "none";
+			card.style.borderRadius = "";
+			content.style.opacity = "1";
+		});
+	}
+
+	function close() {
+		if (!origin) return;
+		if (reduced) { card.classList.remove("on"); scrim.classList.remove("on"); origin = null; return; }
+		const from = origin.getBoundingClientRect();
+		const to = card.getBoundingClientRect();
+		card.style.transition = "transform var(--wg-dur-m) var(--wg-ease), border-radius var(--wg-dur-m) var(--wg-ease), opacity var(--wg-dur-s) var(--wg-ease) 120ms";
+		content.style.transition = "opacity var(--wg-dur-s) var(--wg-ease)";
+		content.style.opacity = "0";
+		card.style.transform = "translate(" + (from.left - to.left) + "px," + (from.top - to.top) + "px) scale(" + (from.width / to.width) + "," + (from.height / to.height) + ")";
+		card.style.borderRadius = startRadius(origin, to, from);
+		scrim.classList.remove("on");
+		card.classList.remove("on");
+		origin = null;
+	}
+
+	for (const tile of document.querySelectorAll("[data-sheet]")) tile.addEventListener("click", () => open(tile));
+	scrim.addEventListener("click", close);
+	document.getElementById("sheetclose").addEventListener("click", close);
+	document.getElementById("sheetcancel").addEventListener("click", close);
+	document.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
+})();
+</script>

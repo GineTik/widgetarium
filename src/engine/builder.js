@@ -1,5 +1,13 @@
 import { buildIsCurrent, buildRecord, withBuild, withModule } from "./widget-lock.js";
-import { SHEET_FILES, SOURCE_FILES, buildFolder, builtCodePath, builtSheetPath, compileWidget, sourceFileIn } from "./widget-build.js";
+import {
+	SHEET_FILES,
+	SOURCE_FILES,
+	buildFolder,
+	builtCodePath,
+	builtSheetPath,
+	compileWidget,
+	sourceFileIn,
+} from "./widget-build.js";
 import { TAILWIND, TAILWIND_RANGE, importsTailwind, buildSheet, candidatesIn } from "./tailwind.js";
 import { moduleFromBundle } from "./compiled-module.js";
 
@@ -9,7 +17,12 @@ export function compiledSource(files, folder) {
 	try {
 		return { ok: true, from, code: compileWidget(files[from], `${folder}/${from}`), failure: null };
 	} catch (failure) {
-		return { ok: false, from: null, code: null, failure: `${from} did not compile: ${String(failure?.message ?? failure)}` };
+		return {
+			ok: false,
+			from: null,
+			code: null,
+			failure: `${from} did not compile: ${String(failure?.message ?? failure)}`,
+		};
 	}
 }
 
@@ -28,7 +41,14 @@ export function createBuilder({ adapter, space }) {
 		const styled = await styledBy({ adapter, space, lock, id, folder, files, code: built.code, aboutToBeWritten });
 		if (!styled.ok) return refused(lock, styled.failure);
 
-		return { ok: true, lock: styled.lock, built, css: styled.css, record: recordOfBuild(folder, built, styled, files), failure: null };
+		return {
+			ok: true,
+			lock: styled.lock,
+			built,
+			css: styled.css,
+			record: recordOfBuild(folder, built, styled, files),
+			failure: null,
+		};
 	}
 
 	return {
@@ -85,7 +105,8 @@ function recordOfBuild(folder, built, styled, files) {
 
 async function styledBy({ adapter, space, lock, id, folder, files, code, aboutToBeWritten }) {
 	const name = SHEET_FILES.find((each) => typeof files?.[each] === "string");
-	if (!name || !importsTailwind(files[name])) return { ok: true, lock, css: null, compiler: null, inputs: {}, failure: null };
+	if (!name || !importsTailwind(files[name]))
+		return { ok: true, lock, css: null, compiler: null, inputs: {}, failure: null };
 
 	const found = await space.take(lock, TAILWIND, TAILWIND_RANGE);
 	if (!found.ok) return { ok: false, lock, css: null, compiler: null, inputs: null, failure: found.failure };

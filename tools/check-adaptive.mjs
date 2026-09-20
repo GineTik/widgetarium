@@ -13,7 +13,6 @@ import { widgetFiles } from "./widget-files.mjs";
 const roots = process.argv.slice(2).filter((root) => fs.existsSync(root));
 const offences = [];
 
-
 // classes, attributes and pseudo-classes all weigh the same; elements are a tie-break we do
 // not need, because widget CSS is written in classes
 function weigh(selector) {

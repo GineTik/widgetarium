@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { transform } from "sucrase";
-import { recordUnderItsTypes } from "./props-from-types.mjs";
+import { widgetTypeFiles } from "./widget-types.mjs";
 
 const PUBLISHED_WIDGETS = path.join("tools", ".widgets-published");
 let published = null;
@@ -14,20 +14,8 @@ function publishInto(from, to) {
 	for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
 		const source = path.join(from, entry.name);
 		if (entry.isDirectory()) publishInto(source, path.join(to, entry.name));
-		else if (entry.name !== "manifest.json") fs.copyFileSync(source, path.join(to, entry.name));
+		else fs.copyFileSync(source, path.join(to, entry.name));
 	}
-	writeRecordIn(from, to);
-}
-
-function writeRecordIn(from, to) {
-	const at = path.join(from, "widget.tsx");
-	if (!fs.existsSync(at)) return;
-	const card = path.join(from, "manifest.json");
-	const held = fs.existsSync(card) ? JSON.parse(fs.readFileSync(card, "utf8")) : {};
-	fs.writeFileSync(
-		path.join(to, "manifest.json"),
-		`${JSON.stringify(recordUnderItsTypes(held, fs.readFileSync(at, "utf8"), at), null, "\t")}\n`,
-	);
 }
 
 export function buildWidgets() {
@@ -53,6 +41,10 @@ export function buildMirror({ widgetsCli = null } = {}) {
 	fs.writeFileSync(
 		path.join(cache, "widgets-cli-source.mjs"),
 		`export default ${JSON.stringify(widgetsCli ?? fs.readFileSync(path.join("src", "ai", "widgets-cli.mjs"), "utf8"))};\n`,
+	);
+	fs.writeFileSync(
+		path.join(cache, "widget-types-source.mjs"),
+		`export default ${JSON.stringify(widgetTypeFiles())};\n`,
 	);
 	return "./.mjs-cache";
 }
@@ -124,6 +116,10 @@ function mirrored(source, isTs, toStub) {
 		withTextImports(isTs ? transform(read, { transforms: ["typescript"], filePath: source }).code : read, source)
 			.replace(/from "widgetarium:surface"/g, `from "${toStub.replace("obsidian.mjs", "surface-source.mjs")}"`)
 			.replace(/from "widgetarium:widgets-cli"/g, `from "${toStub.replace("obsidian.mjs", "widgets-cli-source.mjs")}"`)
+			.replace(
+				/from "widgetarium:widget-types"/g,
+				`from "${toStub.replace("obsidian.mjs", "widget-types-source.mjs")}"`,
+			)
 			.replace(/from "(\.\.?\/[\w./-]+)\.js"/g, 'from "$1.mjs"')
 			// CONTEXT: TS sources import without an extension; node needs the mirror's .mjs spelled out
 			.replace(/from "(\.\.?\/[\w./-]+)"/g, (whole, specifier) =>

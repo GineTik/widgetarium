@@ -21,7 +21,9 @@ function check(name, got, want) {
 	checks += 1;
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 const ID = "@demo/clock";
@@ -125,7 +127,10 @@ async function sheetsWornBy(vault) {
 	return [...dom.window.document.head.querySelectorAll("style")].map((node) => node.textContent);
 }
 
-const styled = await installedFrom(`@import "tailwindcss";\n@import "../tokens.css";\n.clock { color: red; }\n`, ":root { --wg-kit-accent: red; }");
+const styled = await installedFrom(
+	`@import "tailwindcss";\n@import "../tokens.css";\n.clock { color: red; }\n`,
+	":root { --wg-kit-accent: red; }",
+);
 check("a widget whose sheet asks for tailwind installs", [styled.done.ok, styled.done.failure], [true, null]);
 
 const built = styled.shelf.files.get(builtSheetPath(INSTALLED));
@@ -136,7 +141,11 @@ check("and the theme the package serves", String(built).includes("--wg-served-th
 check("and the scope file the sheet imported", String(built).includes("--wg-kit-accent"), true);
 check("and the widget's own rules", String(built).includes(".clock { color: red; }"), true);
 check("no preflight reaches it", String(built).includes("--preflight-reached-the-build"), false);
-check("and none was ever asked of the network", styled.asked.some((url) => url.includes("preflight")), false);
+check(
+	"and none was ever asked of the network",
+	styled.asked.some((url) => url.includes("preflight")),
+	false,
+);
 
 check(
 	"the top level holds only what the developer wrote",
@@ -145,15 +154,23 @@ check(
 );
 
 const worn = await sheetsWornBy(styled.shelf);
-check("a vault wears the built sheet", worn.some((text) => String(text).includes(".text-3xl { --built: 1; }")), true);
-check("and never the unbuilt one", worn.some((text) => String(text).includes(`@import "tailwindcss"`)), false);
+check(
+	"a vault wears the built sheet",
+	worn.some((text) => String(text).includes(".text-3xl { --built: 1; }")),
+	true,
+);
+check(
+	"and never the unbuilt one",
+	worn.some((text) => String(text).includes(`@import "tailwindcss"`)),
+	false,
+);
 
 const lock = await styled.installer.lock();
-check(
-	"the lock names every input the sheet was built from",
-	Object.keys(lock.builds[ID].inputs).sort(),
-	[`${INSTALLED}/widget.css`, `${INSTALLED}/widget.tsx`, `${WIDGETS_DIR}/@demo/tokens.css`],
-);
+check("the lock names every input the sheet was built from", Object.keys(lock.builds[ID].inputs).sort(), [
+	`${INSTALLED}/widget.css`,
+	`${INSTALLED}/widget.tsx`,
+	`${WIDGETS_DIR}/@demo/tokens.css`,
+]);
 check("and the compiler that built it", lock.builds[ID].compiler, KEY);
 check("and the compiler is a module the widget points at", lock.modules[KEY].widgets, [ID]);
 
@@ -161,28 +178,55 @@ const plain = await installedFrom(".clock { color: red; }\n", null);
 check("a widget that never asks for tailwind installs too", [plain.done.ok, plain.done.failure], [true, null]);
 check("and no sheet is built for it", plain.shelf.files.has(builtSheetPath(INSTALLED)), false);
 check("and nothing at all was fetched", plain.asked, []);
-check("and its own sheet is what a vault wears", (await sheetsWornBy(plain.shelf)).includes(".clock { color: red; }\n"), true);
+check(
+	"and its own sheet is what a vault wears",
+	(await sheetsWornBy(plain.shelf)).includes(".clock { color: red; }\n"),
+	true,
+);
 
 plain.shelf.files.set(`${INSTALLED}/widget.css`, `@import "tailwindcss";\n.clock { color: red; }\n`);
 const askedLater = await plain.installer.rebuildDrifted();
 check("a sheet that asks for tailwind after the install is built then", askedLater.rebuilt, [ID]);
-check("and the sheet it produces is what the vault gets", String(plain.shelf.files.get(builtSheetPath(INSTALLED))).includes(".text-3xl { --built: 1; }"), true);
+check(
+	"and the sheet it produces is what the vault gets",
+	String(plain.shelf.files.get(builtSheetPath(INSTALLED))).includes(".text-3xl { --built: 1; }"),
+	true,
+);
 
 const reset = await installedFrom(`@import "tailwindcss";\n@import "tailwindcss/preflight.css";\n`, null);
 check("a sheet importing preflight is refused at install", reset.done.ok, false);
 check("and the refusal names it", String(reset.done.failure).includes("tailwindcss/preflight.css"), true);
-check("and nothing of it reached the vault", [...reset.shelf.files.keys()].some((at) => at.startsWith(`${INSTALLED}/`)), false);
+check(
+	"and nothing of it reached the vault",
+	[...reset.shelf.files.keys()].some((at) => at.startsWith(`${INSTALLED}/`)),
+	false,
+);
 
 const wrecked = await installedFrom(".clock { color: red; }\n", null);
-wrecked.shelf.files.set(LOCK_PATH, JSON.stringify({ version: 1, builds: { [ID]: { from: "widget.tsx", inputs: "not an object at all" } } }));
+wrecked.shelf.files.set(
+	LOCK_PATH,
+	JSON.stringify({ version: 1, builds: { [ID]: { from: "widget.tsx", inputs: "not an object at all" } } }),
+);
 const overIt = await wrecked.installer.rebuildDrifted();
 check("a lock whose build record is nonsense is built over, not thrown on", overIt.rebuilt, [ID]);
 
 const OUTSIDE = `${WIDGETS_DIR}/what-the-vault-holds.md`;
-const escaping = await installedFrom(`@import "tailwindcss";\n@import "../../what-the-vault-holds.md";\n`, null, { [OUTSIDE]: "words no widget may read" });
+const escaping = await installedFrom(`@import "tailwindcss";\n@import "../../what-the-vault-holds.md";\n`, null, {
+	[OUTSIDE]: "words no widget may read",
+});
 check("a sheet reaching a file outside its scope is refused, though the file is right there", escaping.done.ok, false);
-check("and the refusal names what it may not leave", String(escaping.done.failure).includes(`${WIDGETS_DIR}/@demo`), true);
-check("and nothing of that file was built into anything", [...escaping.shelf.files.values()].some((text) => String(text).includes("words no widget may read") && text !== escaping.shelf.files.get(OUTSIDE)), false);
+check(
+	"and the refusal names what it may not leave",
+	String(escaping.done.failure).includes(`${WIDGETS_DIR}/@demo`),
+	true,
+);
+check(
+	"and nothing of that file was built into anything",
+	[...escaping.shelf.files.values()].some(
+		(text) => String(text).includes("words no widget may read") && text !== escaping.shelf.files.get(OUTSIDE),
+	),
+	false,
+);
 
 const missing = await installedFrom(`@import "tailwindcss";\n@import "../nowhere.css";\n`, null);
 check("a sheet importing a file nothing holds is refused", missing.done.ok, false);
@@ -194,32 +238,66 @@ check("a build nothing has touched is left alone", settled, { rebuilt: [], failu
 styled.shelf.files.set(`${INSTALLED}/widget.tsx`, SOURCE.replace("text-3xl", "font-bold"));
 const afterTheSource = await styled.installer.rebuildDrifted();
 check("a source edited in the vault is built again", afterTheSource.rebuilt, [ID]);
-check("and the sheet built with it follows the classes now used", String(styled.shelf.files.get(builtSheetPath(INSTALLED))).includes(".font-bold { --built: 1; }"), true);
-check("and drops the ones that are gone", String(styled.shelf.files.get(builtSheetPath(INSTALLED))).includes(".text-3xl"), false);
+check(
+	"and the sheet built with it follows the classes now used",
+	String(styled.shelf.files.get(builtSheetPath(INSTALLED))).includes(".font-bold { --built: 1; }"),
+	true,
+);
+check(
+	"and drops the ones that are gone",
+	String(styled.shelf.files.get(builtSheetPath(INSTALLED))).includes(".text-3xl"),
+	false,
+);
 
 styled.shelf.files.set(`${WIDGETS_DIR}/@demo/tokens.css`, ":root { --wg-kit-accent: blue; }");
 const afterTheScope = await styled.installer.rebuildDrifted();
 check("a scope file the sheet imports is an input like any other", afterTheScope.rebuilt, [ID]);
-check("and the built sheet carries what it now says", String(styled.shelf.files.get(builtSheetPath(INSTALLED))).includes("--wg-kit-accent: blue"), true);
+check(
+	"and the built sheet carries what it now says",
+	String(styled.shelf.files.get(builtSheetPath(INSTALLED))).includes("--wg-kit-accent: blue"),
+	true,
+);
 
 const AUTHORED = `${WIDGETS_DIR}/@demo/draft`;
 styled.shelf.files.set(`${AUTHORED}/widget.tsx`, SOURCE);
 styled.shelf.files.set(`${AUTHORED}/widget.css`, `@import "tailwindcss";\n`);
 const authored = await styled.installer.rebuildDrifted();
 check("a widget nobody installed is built too", authored.rebuilt, ["@demo/draft"]);
-check("and its sheet lands in its own build folder", String(styled.shelf.files.get(builtSheetPath(AUTHORED))).includes(".text-3xl { --built: 1; }"), true);
+check(
+	"and its sheet lands in its own build folder",
+	String(styled.shelf.files.get(builtSheetPath(AUTHORED))).includes(".text-3xl { --built: 1; }"),
+	true,
+);
 check("and nothing is built a second time", (await styled.installer.rebuildDrifted()).rebuilt, []);
 
 styled.shelf.files.set(`${INSTALLED}/widget.css`, ".clock { color: red; }\n");
 const afterTheAsk = await styled.installer.rebuildDrifted();
 check("a sheet that stopped asking for tailwind is built again", afterTheAsk.rebuilt, [ID]);
-check("and the sheet built for it is gone, not left standing", styled.shelf.files.has(builtSheetPath(INSTALLED)), false);
-check("and a vault wears the widget's own sheet again", (await sheetsWornBy(styled.shelf)).includes(".clock { color: red; }\n"), true);
+check(
+	"and the sheet built for it is gone, not left standing",
+	styled.shelf.files.has(builtSheetPath(INSTALLED)),
+	false,
+);
+check(
+	"and a vault wears the widget's own sheet again",
+	(await sheetsWornBy(styled.shelf)).includes(".clock { color: red; }\n"),
+	true,
+);
 
 styled.shelf.files.set(`${AUTHORED}/widget.tsx`, "export default createWidget(function Draft() { return <b>;");
 const broke = await withoutTheReport(() => styled.installer.rebuildDrifted());
-check("a source that stopped compiling is reported, not thrown", broke.failures.map((each) => each.id), ["@demo/draft"]);
-check("and the build it had is still standing", String(styled.shelf.files.get(builtSheetPath(AUTHORED))).includes(".text-3xl { --built: 1; }"), true);
+check(
+	"a source that stopped compiling is reported, not thrown",
+	broke.failures.map((each) => each.id),
+	["@demo/draft"],
+);
+check(
+	"and the build it had is still standing",
+	String(styled.shelf.files.get(builtSheetPath(AUTHORED))).includes(".text-3xl { --built: 1; }"),
+	true,
+);
 
-console.log(`\n${failed === 0 ? `tailwind at install: clean (${checks} checks)` : `tailwind at install: ${failed} failed`}`);
+console.log(
+	`\n${failed === 0 ? `tailwind at install: clean (${checks} checks)` : `tailwind at install: ${failed} failed`}`,
+);
 process.exit(failed === 0 ? 0 : 1);

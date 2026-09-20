@@ -15,7 +15,10 @@ export function boxNamed(offered, said) {
 	return offered.find((entry) => entry.tile === said.tile && entry.prop === said.needle) ?? null;
 }
 
-export const matchesNeedle = (name, needle) => String(name ?? "").toLowerCase().includes(String(needle ?? "").toLowerCase());
+export const matchesNeedle = (name, needle) =>
+	String(name ?? "")
+		.toLowerCase()
+		.includes(String(needle ?? "").toLowerCase());
 
 export function widgetsOffering(offered) {
 	return [...new Map(offered.map((entry) => [entry.tile, entry])).values()];

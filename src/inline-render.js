@@ -60,7 +60,11 @@ function InlineMenu({ isText, onShowSource }) {
 					"Settings",
 					h("span", { key: "why", className: "wg-inline-off" }, NO_PLAYGROUND),
 				]),
-				h(PopoverItem, { key: "source", className: "wg-inline-source", onClick: showSource }, isText ? "Show the widget" : "Show the source"),
+				h(
+					PopoverItem,
+					{ key: "source", className: "wg-inline-source", onClick: showSource },
+					isText ? "Show the widget" : "Show the source",
+				),
 			],
 		),
 	);
@@ -70,7 +74,11 @@ export function InlineWidget({ definition, here, navigator, raw, host, reader })
 	const [isText, setText] = useState(false);
 	const menu = h(InlineMenu, { key: "menu", isText, onShowSource: () => setText(!isText) });
 
-	if (isText) return h("div", { className: "wg-inline is-text" }, [h("span", { key: "raw", className: "wg-inline-raw" }, raw), menu]);
+	if (isText)
+		return h("div", { className: "wg-inline is-text" }, [
+			h("span", { key: "raw", className: "wg-inline-raw" }, raw),
+			menu,
+		]);
 	if (!definition?.component) {
 		return h("div", { className: "wg-inline is-missing" }, [
 			h("span", { key: "raw", className: "wg-inline-raw" }, raw),
@@ -120,7 +128,9 @@ function probeOf(group) {
 
 // CONTEXT: a log carries the line it tested, never the note — so it is cut short
 function clip(text) {
-	const one = String(text ?? "").replace(/\s+/g, " ").trim();
+	const one = String(text ?? "")
+		.replace(/\s+/g, " ")
+		.trim();
 	return one.length > CLIP_CHARS ? `${one.slice(0, CLIP_CHARS)}…` : one;
 }
 

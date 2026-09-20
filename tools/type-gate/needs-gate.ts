@@ -31,7 +31,7 @@ declare const habits: CollectionGateway<Habit, Accesses>;
 
 export async function readsThroughDeclaredVerbs(): Promise<number> {
 	const listed = await habits.list({ limit: 3 } satisfies Query);
-	const first = listed.rows[0]?.value;
+	const first = listed.rows[0];
 	const patch: Patch<Habit> = { ref: "Habits/Reading.md", data: { goal: 21 } };
 	await habits.update(patch);
 	if (habits.remove.can().can) await habits.remove("Habits/Reading.md");

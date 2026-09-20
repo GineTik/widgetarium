@@ -60,7 +60,12 @@ function normalize(input) {
 function sectionInfo(text) {
 	const lines = text.split("\n");
 	const block = findBlocks(lines)[0];
-	return { text, lineStart: block.start, lineEnd: block.end, source: lines.slice(block.start + 1, block.end).join("\n") };
+	return {
+		text,
+		lineStart: block.start,
+		lineEnd: block.end,
+		source: lines.slice(block.start + 1, block.end).join("\n"),
+	};
 }
 
 let file = NOTE;
@@ -76,10 +81,16 @@ for (let step = 0; step < 60 && !broken; step += 1) {
 		broken = `YAML broke at step ${step}: ${failure.message}`;
 		break;
 	}
-	if (layout.length !== 3) { broken = `tile count became ${layout.length} at step ${step}`; break; }
+	if (layout.length !== 3) {
+		broken = `tile count became ${layout.length} at step ${step}`;
+		break;
+	}
 
 	const blockIndex = findBlocks(info.text.split("\n")).findIndex((b) => b.start === info.lineStart);
-	if (blockIndex < 0) { broken = `blockIndex lost at step ${step}`; break; }
+	if (blockIndex < 0) {
+		broken = `blockIndex lost at step ${step}`;
+		break;
+	}
 
 	// WRITE: same as flushWrites — drag the third tile
 	layout[2].y = 10 + (step % 5);
@@ -87,7 +98,10 @@ for (let step = 0; step < 60 && !broken; step += 1) {
 		const parsed = parseYaml(written);
 		return Array.isArray(parsed) && parsed.length === layout.length;
 	});
-	if (next === null) { broken = `replaceBlock refused at step ${step}`; break; }
+	if (next === null) {
+		broken = `replaceBlock refused at step ${step}`;
+		break;
+	}
 	file = next;
 }
 
@@ -109,7 +123,6 @@ check("and the tiles all survive them", tiles.length, 3);
 check("the note still holds exactly one block", findBlocks(file.split("\n")).length, 1);
 check("and the block still parses as a list", Array.isArray(parseYaml(finalInfo.source)), true);
 
-
 // THE OTHER REGION OF A NOTE. A board block is replaced without eating the rest of the file;
 // a note's BODY has to be replaced the same way, because the half above it is the properties
 // every widget reads. A body write that reformats the frontmatter loses data nobody edited.
@@ -128,7 +141,11 @@ const NOTE_BARE = "Just a note.\nNo properties at all.\n";
 
 const frontmatterOf = (text) => text.split("\n").slice(0, 3).join("\n");
 
-check("a note's body is what follows its frontmatter", readBody(NOTE_WITH_PROPS).trim().split("\n")[0], "Check every heading against the ramp.");
+check(
+	"a note's body is what follows its frontmatter",
+	readBody(NOTE_WITH_PROPS).trim().split("\n")[0],
+	"Check every heading against the ramp.",
+);
 // a rule in the body is NOT a second frontmatter fence; reading must not stop at it
 check("and a rule inside the body stays in the body", readBody(NOTE_WITH_PROPS).includes("Then write it up."), true);
 check("a note without frontmatter is all body", readBody(NOTE_BARE), NOTE_BARE);
@@ -142,11 +159,23 @@ check("the write really changed the note", readBody(rewritten) !== readBody(NOTE
 
 // REFUSE, do not half-write: a bare note given a body that opens with a rule would gain
 // frontmatter it never had, and the next read would take the first paragraph for properties.
-check("a body that would become frontmatter is refused", replaceBody(NOTE_BARE, "---\nnot: properties\n---\nbody"), null);
+check(
+	"a body that would become frontmatter is refused",
+	replaceBody(NOTE_BARE, "---\nnot: properties\n---\nbody"),
+	null,
+);
 // the same text under real frontmatter is only a rule, and must go through
-check("but the same text under real frontmatter goes through", readBody(replaceBody(NOTE_WITH_PROPS, "---\nnot: properties\n---\nbody")), "---\nnot: properties\n---\nbody");
+check(
+	"but the same text under real frontmatter goes through",
+	readBody(replaceBody(NOTE_WITH_PROPS, "---\nnot: properties\n---\nbody")),
+	"---\nnot: properties\n---\nbody",
+);
 
-check("an empty body empties the note without touching its properties", frontmatterOf(replaceBody(NOTE_WITH_PROPS, "")), frontmatterOf(NOTE_WITH_PROPS));
+check(
+	"an empty body empties the note without touching its properties",
+	frontmatterOf(replaceBody(NOTE_WITH_PROPS, "")),
+	frontmatterOf(NOTE_WITH_PROPS),
+);
 check("and reads back empty", readBody(replaceBody(NOTE_WITH_PROPS, "")), "");
 
 console.log(failed ? `\n${failed} failed` : "\nthe note survives being written to");

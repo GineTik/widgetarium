@@ -50,7 +50,10 @@ function parseCost(source, label) {
 
 async function reportFreshBuilds() {
 	const out = fs.mkdtempSync(nodePath.join(os.tmpdir(), "wg-perf-"));
-	for (const [label, minify, sourcemap] of [["dev", false, "inline"], ["prod", true, false]]) {
+	for (const [label, minify, sourcemap] of [
+		["dev", false, "inline"],
+		["prod", true, false],
+	]) {
 		const at = nodePath.join(out, `${label}.js`);
 		await esbuild.build({ ...bundleOptions({ outfile: at, minify, sourcemap }), logLevel: "silent" });
 		const source = fs.readFileSync(at, "utf8");
@@ -60,10 +63,16 @@ async function reportFreshBuilds() {
 }
 
 function reportBuildsOnDisk() {
-	const places = [["repo main.js", "main.js"], ["vault main.js", `${VAULT}/.obsidian/plugins/widgetarium/main.js`]];
+	const places = [
+		["repo main.js", "main.js"],
+		["vault main.js", `${VAULT}/.obsidian/plugins/widgetarium/main.js`],
+	];
 	for (const [label, at] of places.filter(([, held]) => fs.existsSync(held))) {
 		const source = fs.readFileSync(at, "utf8");
-		row(label, `${megabytes(source.length)}, ${isDevBuild(source) ? "DEV — the vault pays for this every start" : "prod"}`);
+		row(
+			label,
+			`${megabytes(source.length)}, ${isDevBuild(source) ? "DEV — the vault pays for this every start" : "prod"}`,
+		);
 	}
 }
 
@@ -77,7 +86,8 @@ function widgetSources(at, found = []) {
 	for (const name of fs.readdirSync(at)) {
 		const here = nodePath.join(at, name);
 		if (fs.statSync(here).isDirectory()) widgetSources(here, found);
-		else if (/(widget\.(tsx|ts|jsx|js)|lib\.js)$/.test(name)) found.push({ path: here, code: fs.readFileSync(here, "utf8") });
+		else if (/(widget\.(tsx|ts|jsx|js)|lib\.js)$/.test(name))
+			found.push({ path: here, code: fs.readFileSync(here, "utf8") });
 	}
 	return found;
 }
@@ -95,8 +105,16 @@ function vaultHoldingAnInstalledWidget() {
 	const vault = fakeVault();
 	const files = { "manifest.json": JSON.stringify({ id: INSTALLED, title: "One" }), "widget.tsx": SOURCE_SAYS };
 	for (const [name, text] of Object.entries(files)) vault.files.set(`${INSTALLED_FOLDER}/${name}`, text);
-	vault.files.set(builtCodePath(INSTALLED_FOLDER), `module.exports.default = function One() { return h("b", null, "the stored build ran"); };\n`);
-	const entry = lockEntry({ source: "local", commit: "local", files, build: { from: "widget.tsx", inputs: { "widget.tsx": SOURCE_SAYS } } });
+	vault.files.set(
+		builtCodePath(INSTALLED_FOLDER),
+		`module.exports.default = function One() { return h("b", null, "the stored build ran"); };\n`,
+	);
+	const entry = lockEntry({
+		source: "local",
+		commit: "local",
+		files,
+		build: { from: "widget.tsx", inputs: { "widget.tsx": SOURCE_SAYS } },
+	});
 	vault.files.set(LOCK_PATH, JSON.stringify(withEntry(readLock(null), INSTALLED, entry)));
 	return vault;
 }
@@ -117,10 +135,16 @@ async function reportWidgetCompile() {
 	for (const source of sources) compileWidget(source.code, source.path);
 	const once = performance.now() - at;
 
-	row("widget modules", `${sources.length}, ${(sources.reduce((sum, one) => sum + one.code.length, 0) / 1024).toFixed(0)} kB`);
+	row(
+		"widget modules",
+		`${sources.length}, ${(sources.reduce((sum, one) => sum + one.code.length, 0) / 1024).toFixed(0)} kB`,
+	);
 	row("sucrase, one pass", `${once.toFixed(0)} ms`);
 	row("passes on the startup path", await passesPerInstalledWidget());
-	row("the catalogue", onloadBody().includes("drawable") ? "compiles every offer at startup too" : "waits to be opened");
+	row(
+		"the catalogue",
+		onloadBody().includes("drawable") ? "compiles every offer at startup too" : "waits to be opened",
+	);
 }
 
 async function reportCatalogueWalk() {
@@ -135,12 +159,20 @@ async function reportCatalogueWalk() {
 	const at = performance.now();
 	const offered = await installer.available();
 	row("offers found", offered.length);
-	row("disk calls, awaited one by one", `${counters.exists + counters.read + counters.folders} (${counters.exists} exists, ${counters.read} read, ${counters.folders} folders)`);
+	row(
+		"disk calls, awaited one by one",
+		`${counters.exists + counters.read + counters.folders} (${counters.exists} exists, ${counters.read} read, ${counters.folders} folders)`,
+	);
 	row("wall time, warm local disk", `${(performance.now() - at).toFixed(0)} ms`);
 }
 
 function readerOver(host, folderName, at) {
-	const base = folderGateway({ host, path: folderName, baked: { sort: [{ prop: "order", dir: "asc" }] }, requested: ["list", "get", "update"] });
+	const base = folderGateway({
+		host,
+		path: folderName,
+		baked: { sort: [{ prop: "order", dir: "asc" }] },
+		requested: ["list", "get", "update"],
+	});
 	const mapped = mappedCollection(base, { needs: TASK_NEEDS, chosen: {} });
 	return at === 0 ? mapped : narrowed(mapped, { order: { gte: at } });
 }
@@ -151,7 +183,14 @@ async function costOfOneMove(readerCount, metadataDelayMs) {
 	const { app, files, counters, reset } = fakeTaskVault(folderName, NOTES, metadataDelayMs);
 	const host = createHost(app, NO_PLUGIN);
 	const readers = Array.from({ length: readerCount }, (_, at) => readerOver(host, folderName, at));
-	const stops = readers.map((reader) => gatewayCache.subscribe(reader.list.meta, undefined, (input) => reader.list(input), () => {}));
+	const stops = readers.map((reader) =>
+		gatewayCache.subscribe(
+			reader.list.meta,
+			undefined,
+			(input) => reader.list(input),
+			() => {},
+		),
+	);
 	await settle(60);
 
 	reset();
@@ -167,12 +206,18 @@ async function reportCardMove() {
 	heading(`4 · one card move, ${NOTES} notes in the folder`);
 	for (const readerCount of [1, 3, 5]) {
 		const held = await costOfOneMove(readerCount, 20);
-		row(`${readerCount} widget${readerCount > 1 ? "s" : ""} over the folder`, `${held.folderWalk} full folder walks, ${held.toRecord} records built`);
+		row(
+			`${readerCount} widget${readerCount > 1 ? "s" : ""} over the folder`,
+			`${held.folderWalk} full folder walks, ${held.toRecord} records built`,
+		);
 	}
 	console.log("");
 	for (const metadataDelayMs of [20, 150, MEATADATA_NEVER_ARRIVES_MS]) {
 		const held = await costOfOneMove(1, metadataDelayMs);
-		const label = metadataDelayMs === MEATADATA_NEVER_ARRIVES_MS ? "metadataCache never answers" : `metadataCache answers in ${metadataDelayMs} ms`;
+		const label =
+			metadataDelayMs === MEATADATA_NEVER_ARRIVES_MS
+				? "metadataCache never answers"
+				: `metadataCache answers in ${metadataDelayMs} ms`;
 		row(label, `await update() blocks the widget for ${held.untilTheWidgetIsFreeAgain.toFixed(0)} ms`);
 	}
 }
@@ -188,18 +233,30 @@ async function reportFirstPaint() {
 	reset();
 	let at = performance.now();
 	await mapped.list();
-	row("first list() through needs mapping", `${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`);
+	row(
+		"first list() through needs mapping",
+		`${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`,
+	);
 
 	reset();
 	at = performance.now();
 	await mapped.list();
-	row("second list(), resolution remembered", `${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`);
+	row(
+		"second list(), resolution remembered",
+		`${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`,
+	);
 
-	const rebuilt = mappedCollection(folderGateway({ host, path: folderName, baked: {}, requested: ["list"] }), { needs: TASK_NEEDS, chosen: {} });
+	const rebuilt = mappedCollection(folderGateway({ host, path: folderName, baked: {}, requested: ["list"] }), {
+		needs: TASK_NEEDS,
+		chosen: {},
+	});
 	reset();
 	at = performance.now();
 	await rebuilt.list();
-	row("a REBUILT gateway pays it again", `${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`);
+	row(
+		"a REBUILT gateway pays it again",
+		`${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`,
+	);
 }
 
 async function reportEmojiTable() {

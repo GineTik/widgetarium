@@ -1,6 +1,11 @@
 import { createElement as h } from "react";
 import { viewHost } from "./engine/view-host.js";
 import { reactClash } from "./fit.js";
+import { pageOf } from "./gateway/match";
+import { slotDefaults } from "./gateway/props.js";
+import { slotSurfaceOf } from "./surface-roles.js";
+import { isPainted } from "./tree.js";
+import { surfacedSlot } from "./widget-root.js";
 import { spanToPixels } from "./paths.js";
 import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
@@ -9,7 +14,7 @@ import { refusedRead } from "./engine/read-file.js";
 import { collectionGateway, soloGateway } from "./gateway/create";
 import { pickedGateway, selectionGateway } from "./gateway/refs";
 import { mappedCollection } from "./gateway/mapped";
-import { storedRows } from "./gateway/props.js";
+import { declaredOf, needsOf, storedRows } from "./gateway/props.js";
 
 // A WIDGET DRAWN WITH NOBODY BEHIND IT. The catalogue shows a widget before it has a board, a
 // folder or a person's notes — so everything it would normally read comes from its own manifest,
@@ -42,27 +47,11 @@ function refuse(what) {
 
 const previewPropId = (manifest, name) => `preview/${manifest?.id ?? "widget"}/${name}`;
 
-const shapeOfSeed = (seeded) =>
-	Array.isArray(seeded?.rows) ? "collection" : seeded?.value === undefined ? null : "value";
-
-const MARKS_A_SINGLE_VALUE = ["picks", "of", "type"];
-
-const shapeOfSpec = (spec) =>
-	MARKS_A_SINGLE_VALUE.some((mark) => spec?.[mark]) || spec?.kind === "value" ? "value" : null;
-
-const shapeOfDefault = (spec) =>
-	spec?.default?.value === undefined ? null : Array.isArray(spec.default.value) ? "collection" : "value";
-
-// TRADE-OFF: kind comes from the types at publish, so a folder-read widget carries none and the seed's shape answers instead
-function isSingleValueProp(seeded, spec) {
-	return (shapeOfSeed(seeded) ?? shapeOfSpec(spec) ?? shapeOfDefault(spec)) === "value";
-}
-
-const seededValue = (seeded, spec) => seeded?.value ?? spec?.default?.value ?? null;
+const seededValue = (seeded, spec) => seeded?.value ?? declaredOf(spec) ?? null;
 
 function seededRows(seeded, spec) {
-	if (!Array.isArray(seeded?.rows)) return storedRows(spec?.default?.value ?? [], spec);
-	return seeded.rows.map(toRecord).map((record) => ({ ref: record.path, value: record }));
+	if (!Array.isArray(seeded?.rows)) return storedRows(declaredOf(spec) ?? [], spec);
+	return seeded.rows.map(toRecord).map((record) => ({ ...record, ref: record.path }));
 }
 
 // CONTEXT: a preview gateway lists what the manifest offers and refuses every write by omission
@@ -70,17 +59,17 @@ function heldCollection(id, rows, spec) {
 	const listing = collectionGateway({
 		id,
 		handlers: {
-			list: (query) => ({ rows: query?.limit ? rows.slice(0, query.limit) : rows, total: rows.length }),
+			list: (query) => ({ rows: pageOf(rows, query), total: rows.length }),
 			get: (ref) => rows.find((row) => row.ref === ref) ?? null,
 		},
 	});
-	return mappedCollection(listing, { needs: spec?.needs ?? {} });
+	return mappedCollection(listing, { needs: needsOf(spec) });
 }
 
 function heldByTheManifest(manifest, name, spec) {
 	const seeded = manifest?.preview?.props?.[name];
 	const id = previewPropId(manifest, name);
-	if (isSingleValueProp(seeded, spec)) return soloGateway(seededValue(seeded, spec), {}, id);
+	if (spec?.kind === "value") return soloGateway(seededValue(seeded, spec), {}, id);
 	return heldCollection(id, seededRows(seeded, spec), spec);
 }
 
@@ -186,9 +175,18 @@ export function previewProps(definition, options) {
 	for (const [name, spec] of Object.entries(manifest.slots ?? {})) {
 		const child = options?.registry?.get(spec.default);
 		const drawable = child?.component && !child.error && !reactClash(definition?.react, child.react);
-		slots[name] = drawable
-			? (given) => h(child.component, { ...given, size: { w: 1, h: 1, scale: 1 }, host: previewHost(options.host) })
-			: null;
+		const unfed = drawable ? slotDefaults(child.manifest, null) : {};
+		const draw = (given) =>
+			h(child.component, {
+				...unfed,
+				...given,
+				size: { w: 1, h: 1, scale: 1 },
+				host: previewHost(options?.host),
+				here: previewHere(),
+				navigator: previewNavigator,
+			});
+		const surface = slotSurfaceOf(spec, null);
+		slots[name] = drawable ? surfacedSlot(draw, { surface, isCard: isPainted({ surface }) }) : null;
 	}
 
 	const content = manifest.inline ? (manifest.preview?.content ?? manifest.title ?? "Sample text") : null;
@@ -199,7 +197,14 @@ export function previewProps(definition, options) {
 		navigator: previewNavigator,
 		reader: previewReader(manifest),
 		content,
-		size: { w: manifest.preview?.size?.w ?? 4, h: manifest.preview?.size?.h ?? 3, scale: 1, isCollapsed: false, collapse() {}, expand() {} },
+		size: {
+			w: manifest.preview?.size?.w ?? 4,
+			h: manifest.preview?.size?.h ?? 3,
+			scale: 1,
+			isCollapsed: false,
+			collapse() {},
+			expand() {},
+		},
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		host: previewHost(options?.host),
 		catalogue: NO_CATALOGUE,

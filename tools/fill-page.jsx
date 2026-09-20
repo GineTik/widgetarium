@@ -1,8 +1,9 @@
 import { render } from "../src/engine/render.js";
+import { rootedWidget } from "../src/widget-root.js";
 import { arrayGateway, soloGateway } from "../src/gateway/create";
 import { createGatewayRefs, createViewCells, selectionGateway } from "../src/gateway/refs.js";
-import ViewTabs from "../widgets/@task/view-tabs/widget.tsx";
-import FilterPanel from "../widgets/@core/filter-panel/widget.tsx";
+import ViewTabs from "../widgets/@default/view-tabs/widget.tsx";
+import FilterPanel from "../widgets/@default/filter-panel/widget.tsx";
 import { spanToPixels } from "../src/paths.js";
 import { GRID } from "../src/paths.js";
 
@@ -18,7 +19,16 @@ const viewOptions = (selected) => {
 	);
 	const picked = cellFor(`fill-picked-${selected}`);
 	picked.update(selected === "Kanban" ? "i0" : "i1");
-	return { options, selection: selectionGateway({ id: `fill-selection-${selected}`, memory: picked, collection: options, fieldName: "value", isFallbackToFirst: true }) };
+	return {
+		options,
+		selection: selectionGateway({
+			id: `fill-selection-${selected}`,
+			memory: picked,
+			collection: options,
+			fieldName: "value",
+			isFallbackToFirst: true,
+		}),
+	};
 };
 const shortLabel = viewOptions("Kanban");
 const longLabel = viewOptions("Archived columns");
@@ -27,7 +37,13 @@ const noProperties = arrayGateway([], {}, "fill-properties");
 const openNothing = soloGateway("", {}, "fill-open");
 const chosenFilters = cellFor("fill-chosen");
 const filterPanel = () => (
-	<FilterPanel tasks={emptyTasks} groups={filterGroups} openGroup={openNothing} properties={noProperties} chosen={chosenFilters} />
+	<FilterPanel
+		tasks={emptyTasks}
+		groups={filterGroups}
+		openGroup={openNothing}
+		properties={noProperties}
+		chosen={chosenFilters}
+	/>
 );
 
 const CASES = [
@@ -112,7 +128,7 @@ function boxOf(node) {
 function drawAll() {
 	return CASES.map((entry) => {
 		const { tile, body, width } = tileFor(entry.cells);
-		render(entry.node, body);
+		render(rootedWidget(entry.node), body);
 		return { entry, tile, body, width };
 	});
 }

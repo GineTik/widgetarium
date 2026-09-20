@@ -15,7 +15,20 @@ const VAULT = "/Users/denissevcuk/Documents/Obsidian/Personal/Personal";
 const WIDGETS = path.join(VAULT, ".widgetarium/widgets");
 const OUT = process.argv[2];
 
-const VOID = new Set(["br", "hr", "img", "input", "path", "circle", "stop", "use", "rect", "line", "ellipse", "polygon"]);
+const VOID = new Set([
+	"br",
+	"hr",
+	"img",
+	"input",
+	"path",
+	"circle",
+	"stop",
+	"use",
+	"rect",
+	"line",
+	"ellipse",
+	"polygon",
+]);
 
 function styleString(value) {
 	if (typeof value === "string") return value;
@@ -41,20 +54,32 @@ function renderNode(node) {
 	let inner = "";
 	for (const [key, value] of Object.entries(props ?? {})) {
 		if (key === "children") continue;
-		if (key === "dangerouslySetInnerHTML") { inner = value.__html; continue; }
+		if (key === "dangerouslySetInnerHTML") {
+			inner = value.__html;
+			continue;
+		}
 		if (typeof value === "function" || value === false || value == null) continue;
 		const name = key === "className" ? "class" : key;
 		attributes.push(` ${name}="${key === "style" ? styleString(value) : String(value).replace(/"/g, "&quot;")}"`);
 	}
 	if (type === "style") return `<style>${props.children}</style>`;
 	const body = inner || renderNode(props?.children);
-	return VOID.has(type) && !body ? `<${type}${attributes.join("")} />` : `<${type}${attributes.join("")}>${body}</${type}>`;
+	return VOID.has(type) && !body
+		? `<${type}${attributes.join("")} />`
+		: `<${type}${attributes.join("")}>${body}</${type}>`;
 }
 
 function createRequire(scope) {
 	const modules = {
 		widgetarium: scope.widgetarium,
-		react: { createElement: scope.h, Fragment: scope.Fragment, useState: scope.useState, useEffect: scope.useEffect, useMemo: scope.useMemo, useRef: scope.useRef },
+		react: {
+			createElement: scope.h,
+			Fragment: scope.Fragment,
+			useState: scope.useState,
+			useEffect: scope.useEffect,
+			useMemo: scope.useMemo,
+			useRef: scope.useRef,
+		},
 	};
 	return (name) => {
 		const found = modules[name];
@@ -109,17 +134,29 @@ function buildWidget(folder, manifest, bindings) {
 					const left = a.props[seed.prop] ?? a.name;
 					const right = b.props[seed.prop] ?? b.name;
 					return (left > right ? 1 : left < right ? -1 : 0) * (seed.dir === "desc" ? -1 : 1);
-			  })
+				})
 			: rows;
 		sources[key] = {
 			name: key,
 			binding: { path: bindings?.[key] ?? "" },
 			data: { rows: sorted, total: sorted.length, isLoading: false },
-			filters: { list: spec.default?.filters ?? [], update: () => ({ appliedFilters: [], rejectedFilters: [] }), canFilterBy: () => true },
-			sort: { list: spec.default?.sort ?? [], update: () => ({ appliedSort: [], rejectedSort: [] }), canSortBy: () => true },
+			filters: {
+				list: spec.default?.filters ?? [],
+				update: () => ({ appliedFilters: [], rejectedFilters: [] }),
+				canFilterBy: () => true,
+			},
+			sort: {
+				list: spec.default?.sort ?? [],
+				update: () => ({ appliedSort: [], rejectedSort: [] }),
+				canSortBy: () => true,
+			},
 			window: { list: { offset: 0, limit: 0 }, update: () => {} },
-			canCreate: true, canUpdate: true, canRemove: true,
-			openRecord: () => {}, update: async () => null, create: async () => null,
+			canCreate: true,
+			canUpdate: true,
+			canRemove: true,
+			openRecord: () => {},
+			update: async () => null,
+			create: async () => null,
 		};
 	}
 
@@ -137,7 +174,38 @@ function buildWidget(folder, manifest, bindings) {
 		...actions,
 	};
 
-	const api = { DialogOverlay: () => null, DialogContent: (p) => h('div', { className: 'wg-dialog' }, p.children), DialogClose: () => null, WidgetRoot: (props) => h('div', { className: 'wg-widget-root ' + (props.className || ''), 'data-rounded': props.roundedType || 'base', 'data-fill': props.fillType || 'fill' }, props.children), createWidget: (component, meta) => { if (meta) component.meta = meta; return component; }, Dialog: () => null, ConfirmDialog: () => null, DialogHeader: (p) => h('div', null, p.children), DialogTitle: (p) => h('h2', null, p.children), DialogDescription: (p) => h('p', null, p.children), DialogFooter: (p) => h('div', null, p.children), useAction: (action) => ({ ...action, run: async () => {}, runIfCan: async () => ({ isBlocked: false }), isLoading: false, error: null }) };
+	const api = {
+		DialogOverlay: () => null,
+		DialogContent: (p) => h("div", { className: "wg-dialog" }, p.children),
+		DialogClose: () => null,
+		WidgetRoot: (props) =>
+			h(
+				"div",
+				{
+					className: "wg-widget-root " + (props.className || ""),
+					"data-rounded": props.roundedType || "base",
+					"data-fill": props.fillType || "fill",
+				},
+				props.children,
+			),
+		createWidget: (component, meta) => {
+			if (meta) component.meta = meta;
+			return component;
+		},
+		Dialog: () => null,
+		ConfirmDialog: () => null,
+		DialogHeader: (p) => h("div", null, p.children),
+		DialogTitle: (p) => h("h2", null, p.children),
+		DialogDescription: (p) => h("p", null, p.children),
+		DialogFooter: (p) => h("div", null, p.children),
+		useAction: (action) => ({
+			...action,
+			run: async () => {},
+			runIfCan: async () => ({ isBlocked: false }),
+			isLoading: false,
+			error: null,
+		}),
+	};
 
 	const scope = {
 		widgetarium: api,
@@ -192,7 +260,9 @@ const widgetItems = PIECES.map((piece) => {
 
 const css = fs.readFileSync("styles.css", "utf8");
 
-fs.writeFileSync(OUT, `<!doctype html><html><head><meta charset="utf-8"><title>cell size playground</title><style>
+fs.writeFileSync(
+	OUT,
+	`<!doctype html><html><head><meta charset="utf-8"><title>cell size playground</title><style>
 :root{--wg-radius-s:4px;--wg-radius-m:8px;--wg-radius-l:12px;--wg-radius-xl:16px;--wg-radius-full:999px;
 --wg-widget-radius-s:1rem;--wg-widget-radius-m:1.5rem;--wg-widget-radius-l:1.875rem;--wg-widget-radius-xl:2.5rem;
 --wg-widget-radius-full:999px;--wg-widget-radius:1.875rem;--wg-board-pad:1rem;--wg-board-bg:transparent;
@@ -298,5 +368,6 @@ function apply() {
 [cell, gap, tie].forEach((node) => node.addEventListener("input", apply));
 addEventListener("resize", apply);
 apply();
-</script></body></html>`);
+</script></body></html>`,
+);
 console.log("written", OUT);

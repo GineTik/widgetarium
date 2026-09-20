@@ -12,7 +12,7 @@ import type {
 } from "./contract";
 import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
 import type { EveryValueVerb } from "./needs";
-import { isMatch, sortedRows } from "./match";
+import { isMatch, pageOf, sortedRows } from "./match";
 
 export interface ActionMeta {
 	gatewayId: string;
@@ -40,6 +40,13 @@ export function action<I, O>(run: (input: I) => MaybePromise<O>): Action<I, O> {
 		(input: I) => Promise.resolve(run(input)),
 		() => ({ can: true }),
 	);
+}
+
+export function refusedVerb(original: unknown, reason: string): Action<never, unknown> {
+	const refused = refusedAction<never, unknown>(reason) as Action<never, unknown> & { meta?: ActionMeta };
+	const meta = (original as { meta?: ActionMeta } | null)?.meta;
+	if (meta) refused.meta = meta;
+	return refused;
 }
 
 function refusedAction<I, O>(reason: string): Action<I, O> {
@@ -159,24 +166,39 @@ function isWrapped(entry: unknown, key: string): boolean {
 }
 
 // CONTEXT: an entry already wrapped keeps its identity; a raw value is read by index
-export function toRows<T>(entries: readonly (T | Row<T>)[], wrapKey: "ref" | "id" = "ref"): Row<T>[] {
+const isRecord = (held: unknown) => typeof held === "object" && held !== null && !Array.isArray(held);
+
+export const rowOf = <T>(value: unknown, ref: string): Row<T> =>
+	(isRecord(value) ? { ...(value as object), ref } : { value, ref }) as Row<T>;
+
+export function toRows<T>(
+	entries: readonly (T | { ref?: string; id?: string; value: T })[],
+	wrapKey: "ref" | "id" = "ref",
+): Row<T>[] {
 	return entries.map((entry, index) =>
 		isWrapped(entry, wrapKey)
-			? { ref: String((entry as Record<string, unknown>)[wrapKey]), value: (entry as { value: T }).value }
-			: { ref: `i${index}`, value: entry as T },
+			? rowOf<T>((entry as { value: T }).value, String((entry as Record<string, unknown>)[wrapKey]))
+			: rowOf<T>(entry, `i${index}`),
 	);
 }
 
+// TRADE-OFF: a row whose only field is value reads back as that value; a list of primitives has nowhere else to keep it
+export const valueIn = <T>(row: Row<T>): T => {
+	const { ref, ...held } = row as Row<T> & { ref: string };
+	const named = Object.keys(held);
+	return (named.length === 1 && named[0] === "value" ? (held as unknown as { value: T }).value : held) as T;
+};
+
 export function applyQuery<T>(rows: Row<T>[], query?: Query | void): RowsResult<T> {
 	const asked = query ?? {};
-	const kept = asked.where?.length ? rows.filter((row) => isMatch(row.value, asked.where)) : rows;
+	const kept = asked.where?.length ? rows.filter((row) => isMatch(row, asked.where)) : rows;
 	const ordered = sortedRows(kept, asked.sort);
-	return { rows: asked.limit ? ordered.slice(0, asked.limit) : ordered, total: ordered.length };
+	return { rows: pageOf(ordered, asked), total: ordered.length };
 }
 
 let mintedArrays = 0;
 
-type ArraySource<T> = readonly (T | Row<T>)[] | (() => readonly (T | Row<T>)[]);
+type ArraySource<T> = readonly T[] | (() => readonly T[]);
 
 function arrayReads<T>(source: ArraySource<T>): HandlerMap {
 	const readAll = typeof source === "function" ? source : () => source;

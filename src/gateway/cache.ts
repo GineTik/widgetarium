@@ -48,7 +48,8 @@ interface CacheState {
 	awaitingRefetch: Set<string>;
 }
 
-const keyOf = (meta: ActionMeta, input: unknown) => `${meta.gatewayId}${KEY_GAP}${meta.verb}${KEY_GAP}${stableKey(input)}`;
+const keyOf = (meta: ActionMeta, input: unknown) =>
+	`${meta.gatewayId}${KEY_GAP}${meta.verb}${KEY_GAP}${stableKey(input)}`;
 
 function notify(state: CacheState, key: string) {
 	for (const listener of state.tracked.get(key)?.listeners ?? []) listener();
@@ -65,11 +66,22 @@ function fetchNow(state: CacheState, key: string) {
 	if (!held) return;
 	const ticket = ++held.ticket;
 	held.run(held.input).then(
-		(data) => settle(state, key, ticket, (before) => ({ status: "ready", data, failure: null, version: (before?.version ?? 0) + 1 })),
+		(data) =>
+			settle(state, key, ticket, (before) => ({
+				status: "ready",
+				data,
+				failure: null,
+				version: (before?.version ?? 0) + 1,
+			})),
 		(failure: unknown) => {
 			console.error(`Widgetarium: ${key.split(KEY_GAP, 2).join(".")} failed`, failure);
 			const said = failure instanceof Error ? failure.message : String(failure);
-			settle(state, key, ticket, (before) => ({ status: "failed", data: before?.data ?? null, failure: said, version: (before?.version ?? 0) + 1 }));
+			settle(state, key, ticket, (before) => ({
+				status: "failed",
+				data: before?.data ?? null,
+				failure: said,
+				version: (before?.version ?? 0) + 1,
+			}));
 		},
 	);
 }
@@ -95,7 +107,8 @@ function invalidate(state: CacheState, gatewayId: string) {
 
 // TRADE-OFF: keyed on the subscribe function too, not only gatewayId — two live gateways can share an id for a beat when one tile's board remounts before the outdoing one detaches
 function attach(state: CacheState, meta: ActionMeta) {
-	const bySubscriber = state.attached.get(meta.gatewayId) ?? new Map<Subscriber, { count: number; stop: Unsubscribe }>();
+	const bySubscriber =
+		state.attached.get(meta.gatewayId) ?? new Map<Subscriber, { count: number; stop: Unsubscribe }>();
 	state.attached.set(meta.gatewayId, bySubscriber);
 	const held = bySubscriber.get(meta.subscribe);
 	if (held) {
@@ -161,7 +174,12 @@ function settleNow(state: CacheState, key: string, meta: ActionMeta, input: unkn
 	try {
 		data = (meta.readNow as NonNullable<ActionMeta["readNow"]>)(input);
 	} catch (failure: unknown) {
-		return { status: "failed", data: null, failure: failure instanceof Error ? failure.message : String(failure), version: 1 };
+		return {
+			status: "failed",
+			data: null,
+			failure: failure instanceof Error ? failure.message : String(failure),
+			version: 1,
+		};
 	}
 	if (isThenable(data)) return NOT_LOADED;
 	const entry: CacheEntry = { status: "ready", data, failure: null, version: 1 };
@@ -181,7 +199,8 @@ export function createGatewayCache() {
 	const state: CacheState = { entries: new Map(), tracked: new Map(), attached: new Map(), awaitingRefetch: new Set() };
 	return {
 		read: (meta: ActionMeta, input: unknown): CacheEntry => readEntry(state, meta, input),
-		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) => track(state, { meta, input, run, listener }),
+		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) =>
+			track(state, { meta, input, run, listener }),
 		invalidate: (gatewayId: string) => invalidate(state, gatewayId),
 	};
 }

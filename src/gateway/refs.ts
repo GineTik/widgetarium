@@ -320,14 +320,14 @@ export function refCollection<T>(refs: GatewayRefs, ref: Ref): CollectionGateway
 }
 
 function identityOf(row: Row<unknown>, named: string): unknown {
-	const held = fieldOf(row.value, named);
+	const held = fieldOf(row, named);
 	if (!isEmpty(held)) return held;
-	const aliases = [...new Set([fieldOf(row.value, "id"), fieldOf(row.value, "name")].filter(Boolean))];
+	const aliases = [...new Set([fieldOf(row, "id"), fieldOf(row, "name")].filter(Boolean))];
 	if (aliases.length === 0) return row.ref;
 	return aliases.length === 1 ? aliases[0] : aliases;
 }
 
-const isArchivedRow = (row: Row<unknown>): boolean => Boolean(fieldOf(row.value, "archivedAt"));
+const isArchivedRow = (row: Row<unknown>): boolean => Boolean(fieldOf(row, "archivedAt"));
 
 const firstStandingRow = <T>(rows: Row<T>[]): Row<T> | null => rows.find((row) => !isArchivedRow(row)) ?? null;
 
@@ -426,7 +426,7 @@ export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown, Every
 		handlers: {
 			get: async () => {
 				const row = await rowNow();
-				return row ? row.value : (spec.inTile?.get() ?? null);
+				return row ?? spec.inTile?.get() ?? null;
 			},
 			...pickedWrites(spec, home),
 		},

@@ -74,11 +74,20 @@ function compareSortable(left: unknown, right: unknown): number {
 	return String(left).localeCompare(String(right));
 }
 
+const PAGE_UNASKED = 100;
+
+export function pageOf<T>(rows: T[], query?: { offset?: number; limit?: number } | null): T[] {
+	const from = Math.max(Number(query?.offset) || 0, 0);
+	const asked = Number(query?.limit) || 0;
+	const limit = asked > 0 ? asked : PAGE_UNASKED;
+	return rows.slice(from, from + limit);
+}
+
 export function sortedRows<T>(rows: Row<T>[], sort?: SortRow[] | null): Row<T>[] {
 	if (!sort || sort.length === 0) return rows;
 	return [...rows].sort((left, right) => {
 		for (const clause of sort) {
-			const step = compareSortable(valueOf(left.value, clause.prop), valueOf(right.value, clause.prop));
+			const step = compareSortable(valueOf(left, clause.prop), valueOf(right, clause.prop));
 			if (step !== 0) return clause.dir === "desc" ? -step : step;
 		}
 		return 0;

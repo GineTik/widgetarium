@@ -10,7 +10,9 @@ export function fakeVault() {
 			files.set(path, text);
 		},
 		made: new Set(),
-		mkdir: async function (path) { this.made.add(path); },
+		mkdir: async function (path) {
+			this.made.add(path);
+		},
 		list: async (path) => {
 			const under = `${path}/`;
 			const folders = new Set();
@@ -24,7 +26,11 @@ export function fakeVault() {
 			}
 			return { files: found, folders: [...folders] };
 		},
-		remove: async (path) => { files.delete(path); },
-		rmdir: async (path) => { for (const held of [...files.keys()]) if (held.startsWith(`${path}/`)) files.delete(held); },
+		remove: async (path) => {
+			files.delete(path);
+		},
+		rmdir: async (path) => {
+			for (const held of [...files.keys()]) if (held.startsWith(`${path}/`)) files.delete(held);
+		},
 	};
 }

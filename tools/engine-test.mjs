@@ -3,7 +3,8 @@
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { createGatewayRefs, createViewCells, narrowedByRefs, pickedGateway, refValue, selectionGateway } = await import("./.mjs-cache/gateway/refs.mjs");
+const { createGatewayRefs, createViewCells, narrowedByRefs, pickedGateway, refValue, selectionGateway } =
+	await import("./.mjs-cache/gateway/refs.mjs");
 const { arrayGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { wiredTiles } = await import("./.mjs-cache/engine/wiring.mjs");
 const { mountKeyFor } = await import("./.mjs-cache/mount-key.mjs");
@@ -14,7 +15,9 @@ let failed = 0;
 function check(name, got, want) {
 	const ok = JSON.stringify(got) === JSON.stringify(want);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`);
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
 }
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -22,27 +25,59 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 {
 	const refs = createGatewayRefs();
 	const cellFor = createViewCells();
-	const boards = arrayGateway([{ name: "Marketing", props: { board: "Marketing" } }, { name: "Ux", props: { board: "Ux" } }], {}, "boards");
+	const boards = arrayGateway(
+		[
+			{ name: "Marketing", props: { board: "Marketing" } },
+			{ name: "Ux", props: { board: "Ux" } },
+		],
+		{},
+		"boards",
+	);
 	const picked = cellFor("tabs/selection");
-	const selection = selectionGateway({ id: "tabs/selection", memory: picked, collection: boards, fieldName: "board", isFallbackToFirst: true });
-	refs.put("tabs/selection", selection, { describes: { tile: "tabs", prop: "selection", label: "Selected tab", title: "Editable tabs", kind: "value" } });
+	const selection = selectionGateway({
+		id: "tabs/selection",
+		memory: picked,
+		collection: boards,
+		fieldName: "board",
+		isFallbackToFirst: true,
+	});
+	refs.put("tabs/selection", selection, {
+		describes: { tile: "tabs", prop: "selection", label: "Selected tab", title: "Editable tabs", kind: "value" },
+	});
 
 	check("a box with nothing picked answers the first row", await selection.get(), "Marketing");
-	check("the dropdown is offered what the board holds", refs.offered().map((entry) => entry.ref), ["tabs/selection"]);
+	check(
+		"the dropdown is offered what the board holds",
+		refs.offered().map((entry) => entry.ref),
+		["tabs/selection"],
+	);
 
 	const tasks = arrayGateway(
-		[{ name: "One", props: { board: "Marketing" } }, { name: "Two", props: { board: "Ux" } }],
+		[
+			{ name: "One", props: { board: "Marketing" } },
+			{ name: "Two", props: { board: "Ux" } },
+		],
 		{},
 		"tasks",
 	);
 	const narrowed = narrowedByRefs(tasks, [{ prop: "board", op: "is", value: { ref: "tabs/selection" } }], refs);
-	check("a where row naming a ref reads through it", (await narrowed.list()).rows.map((row) => row.value.name), ["One"]);
+	check(
+		"a where row naming a ref reads through it",
+		(await narrowed.list()).rows.map((row) => row.name),
+		["One"],
+	);
 
 	await selection.update("i1");
-	check("and follows the box when it moves", (await narrowed.list()).rows.map((row) => row.value.name), ["Two"]);
+	check(
+		"and follows the box when it moves",
+		(await narrowed.list()).rows.map((row) => row.name),
+		["Two"],
+	);
 
 	let woke = 0;
-	const stop = narrowed.subscribe(() => { woke += 1; });
+	const stop = narrowed.subscribe(() => {
+		woke += 1;
+	});
 	await selection.update("i0");
 	check("a widget reading through a ref is woken by the write", woke > 0, true);
 	stop();
@@ -51,83 +86,114 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	check("an alias reads the same box", await alias.get(), "Marketing");
 	check("a ref nothing has registered reads as nothing", await refValue(refs, "nowhere/selection").get(), null);
 
-	refs.put("loop/one", refValue(refs, "loop/two"), { describes: { tile: "loop", prop: "one", label: "One", title: "Loop", kind: "value" }, dependsOn: ["loop/two"] });
-	refs.put("loop/two", refValue(refs, "loop/one"), { describes: { tile: "loop", prop: "two", label: "Two", title: "Loop", kind: "value" }, dependsOn: ["loop/one"] });
+	refs.put("loop/one", refValue(refs, "loop/two"), {
+		describes: { tile: "loop", prop: "one", label: "One", title: "Loop", kind: "value" },
+		dependsOn: ["loop/two"],
+	});
+	refs.put("loop/two", refValue(refs, "loop/one"), {
+		describes: { tile: "loop", prop: "two", label: "Two", title: "Loop", kind: "value" },
+		dependsOn: ["loop/one"],
+	});
 	check("a ref that reads itself is cut, not chased", await refs.read("loop/one"), null);
 
 	refs.drop("tabs/selection");
-	check("dropping a tile takes its box out of the dropdown", refs.offered().map((entry) => entry.ref).includes("tabs/selection"), false);
+	check(
+		"dropping a tile takes its box out of the dropdown",
+		refs
+			.offered()
+			.map((entry) => entry.ref)
+			.includes("tabs/selection"),
+		false,
+	);
 	await tick();
 }
 
-
 {
 	const shelf = {
-		"@core/editable-tabs": { props: { tabs: { kind: "collection" }, selection: { kind: "value", of: "tabs" } } },
-		"@core/filter-panel": { props: { chosen: { kind: "value" } } },
-		"@task/kanban-board": {
+		"@default/editable-tabs": { props: { tabs: { kind: "collection" }, selection: { kind: "value", of: "tabs" } } },
+		"@default/filter-panel": { props: { chosen: { kind: "value" } } },
+		"@default/kanban-board": {
 			props: {
 				tasks: {
 					kind: "collection",
-					default: {
-						path: "Orbitask/Tasks",
-						where: [
-							{ prop: "board", op: "is", value: { wants: "@core/editable-tabs/selection" } },
-							{ spread: { wants: "@core/filter-panel/chosen" } },
-						],
-					},
+					where: [
+						{ prop: "board", op: "is", value: { wants: "@default/editable-tabs/selection" } },
+						{ spread: { wants: "@default/filter-panel/chosen" } },
+					],
+					default: { path: "Orbitask/Tasks" },
 				},
-				selection: { kind: "value", wants: "@core/editable-tabs/selection" },
+				selection: { kind: "value", wants: "@default/editable-tabs/selection" },
 				opened: { kind: "value", of: "tasks" },
 			},
 		},
-		"@probe/box-reader": { props: { opened: { kind: "value", wants: "@task/kanban-board/opened" } } },
+		"@probe/box-reader": { props: { opened: { kind: "value", wants: "@default/kanban-board/opened" } } },
 	};
 	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id] } : null) };
 
-	const alone = { id: "board", widget: "@task/kanban-board" };
+	const alone = { id: "board", widget: "@default/kanban-board" };
 	check("a widget with nothing to point at is not written to at all", wiredTiles([alone], registry)[0], alone);
 
 	const wired = wiredTiles(
 		[
-			{ id: "boards", widget: "@core/editable-tabs" },
-			{ id: "filters", widget: "@core/filter-panel" },
-			{ id: "board", widget: "@task/kanban-board" },
+			{ id: "boards", widget: "@default/editable-tabs" },
+			{ id: "filters", widget: "@default/filter-panel" },
+			{ id: "board", widget: "@default/kanban-board" },
 			{ id: "dialog", widget: "@probe/box-reader" },
 		],
 		registry,
 	);
 	const kanban = wired.find((tile) => tile.id === "board");
-	check("the tile it wants is found by widget id and named by ref", kanban.props.selection, { from: "ref", ref: "boards/selection" });
+	check("the tile it wants is found by widget id and named by ref", kanban.props.selection, {
+		from: "ref",
+		ref: "boards/selection",
+	});
 	check("a where row is written onto the tile, resolved", kanban.props.tasks.where, [
 		{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true },
 		{ spread: { ref: "filters/chosen" }, fixed: true },
 	]);
-	check("and a dialog points at the kanban's own box", wired.find((tile) => tile.id === "dialog").props.opened, { from: "ref", ref: "board/opened" });
+	check("and a dialog points at the kanban's own box", wired.find((tile) => tile.id === "dialog").props.opened, {
+		from: "ref",
+		ref: "board/opened",
+	});
 
 	const again = wiredTiles(wired, registry);
 	check("wiring an already-wired board writes nothing twice", JSON.stringify(again), JSON.stringify(wired));
 
 	const byHand = wiredTiles(
 		[
-			{ id: "boards", widget: "@core/editable-tabs" },
-			{ id: "board", widget: "@task/kanban-board", props: { selection: { from: "ref", ref: "elsewhere/selection" }, tasks: { where: [{ prop: "status", op: "is", value: "Doing" }] } } },
+			{ id: "boards", widget: "@default/editable-tabs" },
+			{
+				id: "board",
+				widget: "@default/kanban-board",
+				props: {
+					selection: { from: "ref", ref: "elsewhere/selection" },
+					tasks: { where: [{ prop: "status", op: "is", value: "Doing" }] },
+				},
+			},
 		],
 		registry,
 	);
 	const held = byHand.find((tile) => tile.id === "board");
 	check("a binding somebody made by hand is never overwritten", held.props.selection.ref, "elsewhere/selection");
-	check("and their own conditions survive beside the wired ones", held.props.tasks.where.filter((row) => row.fixed !== true), [{ prop: "status", op: "is", value: "Doing" }]);
+	check(
+		"and their own conditions survive beside the wired ones",
+		held.props.tasks.where.filter((row) => row.fixed !== true),
+		[{ prop: "status", op: "is", value: "Doing" }],
+	);
 
 	const mounted = wiredTiles(
 		[
-			{ id: "boards", widget: "@core/editable-tabs" },
-			{ id: "group", widget: "@core/view-group", mounted: { Kanban: { widget: "@task/kanban-board" } } },
+			{ id: "boards", widget: "@default/editable-tabs" },
+			{ id: "group", widget: "@default/view-group", mounted: { Kanban: { widget: "@default/kanban-board" } } },
 			{ id: "dialog", widget: "@probe/box-reader" },
 		],
 		registry,
 	);
-	check("a widget inside a holder is found under the holder's own ref", mounted.find((tile) => tile.id === "dialog").props.opened.ref, "group/Kanban/opened");
+	check(
+		"a widget inside a holder is found under the holder's own ref",
+		mounted.find((tile) => tile.id === "dialog").props.opened.ref,
+		"group/Kanban/opened",
+	);
 }
 
 // INVARIANT: a widget sees its ENVIRONMENT, never the store and never the Obsidian API.
@@ -144,7 +210,11 @@ const fullHost = {
 	plugin: {},
 };
 fullHost.type = "obsidian-desktop";
-fullHost.console = { can: { log: true, run: true }, log: () => true, run: async () => ({ ok: true, output: "", failure: null }) };
+fullHost.console = {
+	can: { log: true, run: true },
+	log: () => true,
+	run: async () => ({ ok: true, output: "", failure: null }),
+};
 const exposed = viewHost(fullHost);
 check("the widget is told which platform it runs on", exposed.platform, "obsidian");
 check("and what it can do there", Object.keys(exposed.can).sort(), ["fullscreen", "network", "renderMarkdown"]);
@@ -163,25 +233,52 @@ const { hostTypeOf } = await import("./.mjs-cache/engine/host-type.mjs");
 const { createConsole, refusingConsole } = await import("./.mjs-cache/engine/host-console.mjs");
 
 check("a desktop app is a desktop", hostTypeOf({ isDesktopApp: true }), "obsidian-desktop");
-check("a phone is a phone even when the desktop flag is on too", hostTypeOf({ isDesktopApp: true, isMobileApp: true }), "obsidian-mobile");
+check(
+	"a phone is a phone even when the desktop flag is on too",
+	hostTypeOf({ isDesktopApp: true, isMobileApp: true }),
+	"obsidian-mobile",
+);
 check("a tablet reading as mobile is mobile", hostTypeOf({ isMobile: true }), "obsidian-mobile");
 check("anything else is the web", hostTypeOf({}), "obsidian-web");
 
-const fakeRequire = (name) => (name === "child_process" ? { exec: (command, options, done) => done(null, `ran ${command}`, "") } : null);
-check("logging is available on every build", [createConsole("obsidian-mobile", null).can.log, createConsole("obsidian-web", null).can.log], [true, true]);
-check("a command line only on the desktop", ["obsidian-desktop", "obsidian-mobile", "obsidian-web"].map((type) => createConsole(type, fakeRequire).can.run), [true, false, false]);
+const fakeRequire = (name) =>
+	name === "child_process" ? { exec: (command, options, done) => done(null, `ran ${command}`, "") } : null;
+check(
+	"logging is available on every build",
+	[createConsole("obsidian-mobile", null).can.log, createConsole("obsidian-web", null).can.log],
+	[true, true],
+);
+check(
+	"a command line only on the desktop",
+	["obsidian-desktop", "obsidian-mobile", "obsidian-web"].map((type) => createConsole(type, fakeRequire).can.run),
+	[true, false, false],
+);
 check("and only where there is a way to reach one", createConsole("obsidian-desktop", null).can.run, false);
 // CONTEXT: caught on purpose — a throw must show up as a wrong VALUE here, not as a crash
-const refusedRun = await createConsole("obsidian-mobile", fakeRequire).run("ls").catch((failure) => ({ threw: String(failure?.message ?? failure) }));
-check("a refused run says why instead of throwing", refusedRun, { ok: false, output: "", failure: "no command line in this build" });
-check("a run hands back what the command printed", await createConsole("obsidian-desktop", fakeRequire).run("ls"), { ok: true, output: "ran ls", failure: null });
+const refusedRun = await createConsole("obsidian-mobile", fakeRequire)
+	.run("ls")
+	.catch((failure) => ({ threw: String(failure?.message ?? failure) }));
+check("a refused run says why instead of throwing", refusedRun, {
+	ok: false,
+	output: "",
+	failure: "no command line in this build",
+});
+check("a run hands back what the command printed", await createConsole("obsidian-desktop", fakeRequire).run("ls"), {
+	ok: true,
+	output: "ran ls",
+	failure: null,
+});
 check("a preview's console refuses both", Object.values(refusingConsole("no").can), [false, false]);
 
 // MARKDOWN IS THE HOST'S TO DRAW. A widget may only import widgetarium, widgetarium/kit and
 // preact, so Obsidian's renderer can only reach it through the host — and it reaches it as a
 // call taking an element the widget already owns, never as the app that could render it.
 check("a widget can ask the host to render markdown", typeof exposed.ui.renderMarkdown, "function");
-check("and the element it names is its own, not the vault", exposed.ui.renderMarkdown("#node", "# Hi"), "# Hi into #node");
+check(
+	"and the element it names is its own, not the vault",
+	exposed.ui.renderMarkdown("#node", "# Hi"),
+	"# Hi into #node",
+);
 check("the ui it gets, in full", Object.keys(exposed.ui).sort(), ["notify", "renderMarkdown"]);
 // still nothing else: the seam must not have widened the door it came through
 check("still no Obsidian app object", [exposed.app, exposed.plugin, exposed.slot], [undefined, undefined, undefined]);
@@ -191,38 +288,72 @@ check("still no Obsidian app object", [exposed.app, exposed.plugin, exposed.slot
 const { resolveSlots } = await import("./.mjs-cache/surface.mjs");
 if (typeof resolveSlots === "function") {
 	const registry = {
-		get: (id) =>
-			id === "@task/task-card"
-				? { component: () => null, manifest: {} }
-				: null,
+		get: (id) => (id === "@default/task-card" ? { component: () => null, manifest: {} } : null),
 	};
-	const manifest = { slots: { card: { of: "widget", default: "@task/task-card" } } };
+	const manifest = { slots: { card: { of: "widget", default: "@default/task-card" } } };
 	const noHost = { platform: "obsidian", can: {}, ui: { notify: () => {} } };
 
-	const bySpec = resolveSlots(manifest, {}, registry, noHost, null);
+	const bySpec = resolveSlots({
+		manifest,
+		tile: {},
+		registry,
+		host: noHost,
+		foldIntoGroup: null,
+		gatewaysOf: () => ({}),
+	});
 	check("a slot resolves to its default widget", typeof bySpec.card, "function");
 	// the slot builds a vnode; preact calls the component later, so read the props off it
 	const node = bySpec.card({ task: { title: "Analyze Insights" } });
 	check("the parent's data reaches the slotted widget", node.props.task.title, "Analyze Insights");
 	check("a fed slot is handed nothing of its own to tune", node.props.settings, undefined);
-	check("the child is handed the narrow host, not the store", Object.keys(node.props.host).sort(), ["can", "console", "platform", "type", "ui"]);
+	check("the child is handed the narrow host, not the store", Object.keys(node.props.host).sort(), [
+		"can",
+		"console",
+		"platform",
+		"type",
+		"ui",
+	]);
 
 	// CONTEXT: the model normalises both stored shapes, so the engine only ever meets the record
-	const overridden = resolveSlots(manifest, { slots: { card: { widget: "@other/card" } } }, registry, noHost, null);
+	const overridden = resolveSlots({
+		manifest,
+		tile: { slots: { card: { widget: "@other/card" } } },
+		registry,
+		host: noHost,
+		foldIntoGroup: null,
+		gatewaysOf: () => ({}),
+	});
 	check("a tile may name a different widget for the slot", overridden.card, null);
-	const kept = resolveSlots(manifest, { slots: { card: { widget: "@task/task-card" } } }, registry, noHost, null);
+	const kept = resolveSlots({
+		manifest,
+		tile: { slots: { card: { widget: "@default/task-card" } } },
+		registry,
+		host: noHost,
+		foldIntoGroup: null,
+		gatewaysOf: () => ({}),
+	});
 	check("and naming the same widget the manifest defaults to still resolves it", typeof kept.card, "function");
 
 	const fold = () => true;
-	const withBoard = resolveSlots(manifest, {}, registry, noHost, fold).card({});
+	const withBoard = resolveSlots({
+		manifest,
+		tile: {},
+		registry,
+		host: noHost,
+		foldIntoGroup: fold,
+		gatewaysOf: () => ({}),
+	}).card({});
 	check("a slotted widget may fold the board's views the same way a tile does", withBoard.props.foldIntoGroup(), true);
 	const noBoard = bySpec.card({});
-	check("and with no board behind it the refusal is a boolean, not a missing function", noBoard.props.foldIntoGroup(), false);
+	check(
+		"and with no board behind it the refusal is a boolean, not a missing function",
+		noBoard.props.foldIntoGroup(),
+		false,
+	);
 } else {
 	failed += 1;
 	console.log("!!  resolveSlots is not exported from surface.js — slots cannot be tested");
 }
-
 
 {
 	const mine = createViewCells();
@@ -235,8 +366,6 @@ if (typeof resolveSlots === "function") {
 	check("and none of it reaches another viewer", await yours("kanban/opened").get(), null);
 	check("a box offers no way to persist", typeof mine("filter/chosen").markTransient, "undefined");
 }
-
-
 
 // REGRESSION: getSectionInfo returns null while the editor is mid-render — which is when our
 // OWN write lands, and on a cold start too. Two fallbacks failed the same way: "the note's
@@ -264,14 +393,17 @@ if (typeof resolveSlots === "function") {
 	check("another note is never adopted", mountKeyFor(["Other.md#0"], NOTE, -1), `${NOTE}#0`);
 }
 
-
 // REGRESSION: the exact numbers from a live session — 1256 and 1224, alternating forever,
 // with a file write on every turn. A wider board is taller, a taller board brings the note's
 // scrollbar in, and the scrollbar takes the width back.
 {
 	let clock = 0;
 	const gate = createWidthGate({ minimum: 120, now: () => clock });
-	const feed = (widths, step = 16) => widths.filter((width) => { clock += step; return gate(width); });
+	const feed = (widths, step = 16) =>
+		widths.filter((width) => {
+			clock += step;
+			return gate(width);
+		});
 
 	check("the first real width is taken", gate(1256), true);
 	check("and a width that has not moved is not", gate(1256), false);
@@ -296,7 +428,6 @@ if (typeof resolveSlots === "function") {
 	check("a detached board reports nothing usable", [gate(0), gate(40)], [false, false]);
 }
 
-
 // REGRESSION: Obsidian's side panel SLIDES, and the note went 1115 → 1013 → 973 → 902 → 827
 // in one gesture. Every frame was treated as a new screen, so the whole board was re-laid five
 // times per toggle — the app lagged, and a tile near its chip threshold crossed it and came
@@ -308,11 +439,20 @@ if (typeof resolveSlots === "function") {
 	const watcher = createWidthWatcher({
 		minimum: 120,
 		onWidth: (value) => taken.push(value),
-		schedule: (task) => { queued = task; return 1; },
-		cancel: () => { queued = null; },
+		schedule: (task) => {
+			queued = task;
+			return 1;
+		},
+		cancel: () => {
+			queued = null;
+		},
 		now: () => clock,
 	});
-	const idle = () => { const task = queued; queued = null; task?.(); };
+	const idle = () => {
+		const task = queued;
+		queued = null;
+		task?.();
+	};
 
 	// the board arriving is not a change: it draws at once
 	watcher.measured(1115);
@@ -347,19 +487,38 @@ if (typeof resolveSlots === "function") {
 	check("a board that goes away takes its pending width with it", taken.length, 5);
 }
 
-
 // A filter panel offers checkboxes, so a clause carries several values — and the record's own
 // side can be a list too, because a task has several assignees. Comparing list to list with
 // includes() answered false for every task that had more than one of anything.
 {
 	const task = { name: "t", path: "t.md", props: { assignees: ["Emma", "Liam"], priority: "P1" } };
-	check("a task matches a member who is on it", isMatch(task, [{ prop: "assignees", op: "in", value: ["Liam"] }]), true);
+	check(
+		"a task matches a member who is on it",
+		isMatch(task, [{ prop: "assignees", op: "in", value: ["Liam"] }]),
+		true,
+	);
 	check("and not one who is not", isMatch(task, [{ prop: "assignees", op: "in", value: ["Brandon"] }]), false);
-	check("any of the ticked members is enough", isMatch(task, [{ prop: "assignees", op: "in", value: ["Brandon", "Emma"] }]), true);
-	check("a single value still works against a list of choices", isMatch(task, [{ prop: "priority", op: "in", value: ["P1", "P2"] }]), true);
+	check(
+		"any of the ticked members is enough",
+		isMatch(task, [{ prop: "assignees", op: "in", value: ["Brandon", "Emma"] }]),
+		true,
+	);
+	check(
+		"a single value still works against a list of choices",
+		isMatch(task, [{ prop: "priority", op: "in", value: ["P1", "P2"] }]),
+		true,
+	);
 	check("and an empty choice matches nothing", isMatch(task, [{ prop: "priority", op: "in", value: [] }]), false);
-	check("the same clause negated keeps a task off nobody's list", isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon"] }]), true);
-	check("and takes off one that is on it", isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon", "Emma"] }]), false);
+	check(
+		"the same clause negated keeps a task off nobody's list",
+		isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon"] }]),
+		true,
+	);
+	check(
+		"and takes off one that is on it",
+		isMatch(task, [{ prop: "assignees", op: "nin", value: ["Brandon", "Emma"] }]),
+		false,
+	);
 	check("an empty choice excludes nobody", isMatch(task, [{ prop: "priority", op: "nin", value: [] }]), true);
 }
 
@@ -372,39 +531,89 @@ if (typeof resolveSlots === "function") {
 	const written = [];
 	const boards = arrayGateway(rows, { update: (patch) => written.push(patch) }, "boards");
 	const picked = cellFor("kanban/selection");
-	const selection = selectionGateway({ id: "kanban/selection", memory: picked, collection: boards, fieldName: "board", isFallbackToFirst: true });
-	const board = pickedGateway({ id: "kanban/board", chosen: selection, collection: boards, fieldName: "board", isFallbackToFirst: true });
+	const selection = selectionGateway({
+		id: "kanban/selection",
+		memory: picked,
+		collection: boards,
+		fieldName: "board",
+		isFallbackToFirst: true,
+	});
+	const board = pickedGateway({
+		id: "kanban/board",
+		chosen: selection,
+		collection: boards,
+		fieldName: "board",
+		isFallbackToFirst: true,
+	});
 
 	check("a selection answers with the field it names", await selection.get(), "Marketing");
-	check("and the prop that picks by it answers with the whole record", (await board.get())?.props?.columns, [{ name: "To Do" }]);
+	check("and the prop that picks by it answers with the whole record", (await board.get())?.props?.columns, [
+		{ name: "To Do" },
+	]);
 
 	await selection.update("i1");
 	check("moving the selection moves the record it picks", (await board.get())?.name, "Ux");
 
 	await board.update({ columns: [{ name: "Doing" }] });
-	check("and a write through it patches that row, not the tile", written, [{ ref: "i1", data: { columns: [{ name: "Doing" }] } }]);
+	check("and a write through it patches that row, not the tile", written, [
+		{ ref: "i1", data: { columns: [{ name: "Doing" }] } },
+	]);
 
-	const readOnly = pickedGateway({ id: "kanban/readOnly", chosen: selection, collection: arrayGateway(rows, {}, "frozen"), fieldName: "board", isFallbackToFirst: true });
+	const readOnly = pickedGateway({
+		id: "kanban/readOnly",
+		chosen: selection,
+		collection: arrayGateway(rows, {}, "frozen"),
+		fieldName: "board",
+		isFallbackToFirst: true,
+	});
 	check("a collection that refuses update makes the picked record read-only", readOnly.update.can().can, false);
 
 	const withArchived = arrayGateway(
-		[{ name: "Old", props: { board: "Old", archivedAt: "2026-09-09T09:30:42.630Z", columns: [{ name: "Gone" }] } }, ...rows],
+		[
+			{ name: "Old", props: { board: "Old", archivedAt: "2026-09-09T09:30:42.630Z", columns: [{ name: "Gone" }] } },
+			...rows,
+		],
 		{},
 		"boardsWithArchived",
 	);
 	const pickedNothing = cellFor("kanban/nothing-picked");
-	const standing = selectionGateway({ id: "kanban/standing", memory: pickedNothing, collection: withArchived, fieldName: "board", isFallbackToFirst: true });
+	const standing = selectionGateway({
+		id: "kanban/standing",
+		memory: pickedNothing,
+		collection: withArchived,
+		fieldName: "board",
+		isFallbackToFirst: true,
+	});
 	check("a selection with nothing picked skips a row that was archived", await standing.get(), "Marketing");
-	const standingBoard = pickedGateway({ id: "kanban/standingBoard", chosen: standing, collection: withArchived, fieldName: "board", isFallbackToFirst: true });
-	check("and the record it picks is the first one still standing", (await standingBoard.get())?.props?.columns, [{ name: "To Do" }]);
+	const standingBoard = pickedGateway({
+		id: "kanban/standingBoard",
+		chosen: standing,
+		collection: withArchived,
+		fieldName: "board",
+		isFallbackToFirst: true,
+	});
+	check("and the record it picks is the first one still standing", (await standingBoard.get())?.props?.columns, [
+		{ name: "To Do" },
+	]);
 
 	const inTile = cellFor("kanban/board?tile");
 	await inTile.update({ columns: [{ name: "Solo" }] });
-	const untied = pickedGateway({ id: "kanban/untied", chosen: selection, collection: arrayGateway([], {}, "noBoards"), fieldName: "board", isFallbackToFirst: true, inTile });
-	check("with no record to pick the board is the one the tile holds", await untied.get(), { columns: [{ name: "Solo" }] });
+	const untied = pickedGateway({
+		id: "kanban/untied",
+		chosen: selection,
+		collection: arrayGateway([], {}, "noBoards"),
+		fieldName: "board",
+		isFallbackToFirst: true,
+		inTile,
+	});
+	check("with no record to pick the board is the one the tile holds", await untied.get(), {
+		columns: [{ name: "Solo" }],
+	});
 
 	await untied.update({ columns: [{ name: "Solo" }, { name: "Next" }] });
-	check("and a write lands in the tile, patched, not replaced", await inTile.get(), { columns: [{ name: "Solo" }, { name: "Next" }] });
+	check("and a write lands in the tile, patched, not replaced", await inTile.get(), {
+		columns: [{ name: "Solo" }, { name: "Next" }],
+	});
 	check("the record still wins over the tile when there is one", (await board.get())?.name, "Ux");
 
 	const heldElsewhere = cellFor("kanban/board?elsewhere");
@@ -421,9 +630,15 @@ if (typeof resolveSlots === "function") {
 		() => null,
 		(failure) => String(failure.message),
 	);
-	check("a write that names no row on a collection that holds some is refused, not diverted to the tile", Boolean(refused), true);
+	check(
+		"a write that names no row on a collection that holds some is refused, not diverted to the tile",
+		Boolean(refused),
+		true,
+	);
 	check("and the refusal says why instead of answering nothing at all", refused?.includes("not empty"), true);
-	check("and the tile it could have landed in is untouched", await heldElsewhere.get(), { columns: [{ name: "Held" }] });
+	check("and the tile it could have landed in is untouched", await heldElsewhere.get(), {
+		columns: [{ name: "Held" }],
+	});
 }
 
 console.log(failed ? `\n${failed} failed` : "\nall passed");

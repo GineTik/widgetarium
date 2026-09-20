@@ -1,0 +1,325 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Metric total",
+	"description": "A running total over a window, the curve or bars behind it, and the day's own reading.",
+	"keywords": [
+		"metric",
+		"total",
+		"sum",
+		"chart",
+		"curve",
+		"bars",
+		"sparkline",
+		"trend",
+		"records",
+		"amount",
+		"period",
+		"number"
+	],
+	"role": "indicator",
+	"preview": {
+		"shot": {
+			"of": "218794189"
+		},
+		"size": {
+			"w": 6,
+			"h": 5
+		},
+		"props": {
+			"title": {
+				"value": "Revenue"
+			},
+			"unit": {
+				"value": "$"
+			},
+			"records": {
+				"rows": [
+					{
+						"path": "Metrics/2026-08-25-1.md",
+						"date": "2026-08-25",
+						"amount": 40,
+						"note": "Client retainer"
+					},
+					{
+						"path": "Metrics/2026-08-25-2.md",
+						"date": "2026-08-25",
+						"amount": -12,
+						"note": "Hosting"
+					},
+					{
+						"path": "Metrics/2026-08-26-3.md",
+						"date": "2026-08-26",
+						"amount": -15,
+						"note": "Design tools"
+					},
+					{
+						"path": "Metrics/2026-08-27-4.md",
+						"date": "2026-08-27",
+						"amount": 30,
+						"note": "Workshop fee"
+					},
+					{
+						"path": "Metrics/2026-08-28-5.md",
+						"date": "2026-08-28",
+						"amount": 20,
+						"note": "Late invoice"
+					},
+					{
+						"path": "Metrics/2026-08-28-6.md",
+						"date": "2026-08-28",
+						"amount": -8,
+						"note": "Domain renewal"
+					},
+					{
+						"path": "Metrics/2026-08-29-7.md",
+						"date": "2026-08-29",
+						"amount": -25,
+						"note": "Contractor day"
+					},
+					{
+						"path": "Metrics/2026-08-30-8.md",
+						"date": "2026-08-30",
+						"amount": 35,
+						"note": "Consulting call"
+					},
+					{
+						"path": "Metrics/2026-08-31-9.md",
+						"date": "2026-08-31",
+						"amount": 45,
+						"note": "Retainer top up"
+					},
+					{
+						"path": "Metrics/2026-09-01-10.md",
+						"date": "2026-09-01",
+						"amount": -20,
+						"note": "Office rent"
+					},
+					{
+						"path": "Metrics/2026-09-02-11.md",
+						"date": "2026-09-02",
+						"amount": 30,
+						"note": "Template sale"
+					},
+					{
+						"path": "Metrics/2026-09-02-12.md",
+						"date": "2026-09-02",
+						"amount": 14,
+						"note": "Template sale"
+					},
+					{
+						"path": "Metrics/2026-09-03-13.md",
+						"date": "2026-09-03",
+						"amount": 15,
+						"note": "Support hours"
+					},
+					{
+						"path": "Metrics/2026-09-04-14.md",
+						"date": "2026-09-04",
+						"amount": -35,
+						"note": "Hardware"
+					},
+					{
+						"path": "Metrics/2026-09-05-15.md",
+						"date": "2026-09-05",
+						"amount": 25,
+						"note": "Audit session"
+					},
+					{
+						"path": "Metrics/2026-09-06-16.md",
+						"date": "2026-09-06",
+						"amount": 20,
+						"note": "Template sale"
+					},
+					{
+						"path": "Metrics/2026-09-07-17.md",
+						"date": "2026-09-07",
+						"amount": 60,
+						"note": "Onboarding project"
+					},
+					{
+						"path": "Metrics/2026-09-07-18.md",
+						"date": "2026-09-07",
+						"amount": -18,
+						"note": "Travel"
+					},
+					{
+						"path": "Metrics/2026-09-08-19.md",
+						"date": "2026-09-08",
+						"amount": -20,
+						"note": "Subscriptions"
+					},
+					{
+						"path": "Metrics/2026-09-09-20.md",
+						"date": "2026-09-09",
+						"amount": 75,
+						"note": "Second milestone"
+					},
+					{
+						"path": "Metrics/2026-09-09-21.md",
+						"date": "2026-09-09",
+						"amount": 22,
+						"note": "Template sale"
+					},
+					{
+						"path": "Metrics/2026-09-10-22.md",
+						"date": "2026-09-10",
+						"amount": 40,
+						"note": "Review session"
+					},
+					{
+						"path": "Metrics/2026-09-11-23.md",
+						"date": "2026-09-11",
+						"amount": -30,
+						"note": "Contractor day"
+					},
+					{
+						"path": "Metrics/2026-09-12-24.md",
+						"date": "2026-09-12",
+						"amount": 85,
+						"note": "Final milestone"
+					},
+					{
+						"path": "Metrics/2026-09-12-25.md",
+						"date": "2026-09-12",
+						"amount": 18,
+						"note": "Template sale"
+					},
+					{
+						"path": "Metrics/2026-09-13-26.md",
+						"date": "2026-09-13",
+						"amount": 55,
+						"note": "New retainer"
+					},
+					{
+						"path": "Metrics/2026-09-13-27.md",
+						"date": "2026-09-13",
+						"amount": 26,
+						"note": "Template sale"
+					}
+				]
+			}
+		}
+	},
+	"props": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "One note per reading. Each carries a date and an amount.",
+			"writes": ["list", "get", "create", "update", "remove"],
+			"describes": {
+				"amount": {
+					"type": "number",
+					"aka": ["value", "count", "total", "kept", "score", "done"]
+				},
+				"date": {
+					"type": "date",
+					"aka": ["created", "day", "when", "on"]
+				},
+				"note": {
+					"type": "text",
+					"aka": ["text", "comment", "description", "body"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"title": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "What the number is",
+			"writes": ["get"],
+			"default": {
+				"value": "Total"
+			}
+		},
+		"unit": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Unit the amounts are in",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"rising": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "good · bad",
+			"hint": "Whether a rise reads as good or as bad.",
+			"writes": ["get"],
+			"default": {
+				"value": "good"
+			}
+		},
+		"periods": {
+			"kind": "collection",
+			"label": "Periods",
+			"hint": "Every window the card can read over.",
+			"writes": ["list", "get"],
+			"describes": {
+				"label": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"days": {
+					"label": "Days",
+					"type": "number",
+					"required": true
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"label": "Past 7 days",
+						"days": 7
+					},
+					{
+						"label": "Past 30 days",
+						"days": 30
+					},
+					{
+						"label": "Past 90 days",
+						"days": 90
+					}
+				]
+			}
+		},
+		"periodPick": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Picked period",
+			"of": "periods",
+			"field": "label",
+			"fallback": "first",
+			"writes": ["get", "update"]
+		},
+		"period": {
+			"kind": "value",
+			"control": "row",
+			"label": "The period",
+			"picks": "periodPick",
+			"of": "periods",
+			"writes": ["get"]
+		},
+		"view": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "curve · bars",
+			"writes": ["get", "update"],
+			"default": {
+				"value": "curve"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

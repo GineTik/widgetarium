@@ -1,0 +1,379 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<script src="./support.js"></script>
+	</head>
+	<body>
+		<x-dc>
+			<helmet>
+				<style>
+					body {
+						margin: 0;
+						font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter var", sans-serif;
+					}
+					a {
+						color: #6d4ee0;
+					}
+					a:hover {
+						color: #5a3bd0;
+					}
+
+					.stage {
+						--ground: #ffffff;
+						--board: #fcfcfc;
+						--ink: #222222;
+						--accent: #6d4ee0;
+						--wg-kit-fill: color-mix(in srgb, var(--ink) 5.5%, var(--ground));
+						--wg-kit-raise: color-mix(in srgb, #ffffff 12%, var(--ground));
+						--wg-plate: color-mix(in srgb, var(--ink) 4.5%, transparent);
+						--wg-plate-blur: blur(22px) saturate(150%);
+						--muted: color-mix(in srgb, var(--ink) 55%, var(--ground));
+						box-sizing: border-box;
+						width: 900px;
+						height: 420px;
+						padding: 40px 30px 60px;
+						display: flex;
+						gap: 20px;
+						background: var(--board);
+						color: var(--ink);
+					}
+					.stage * {
+						box-sizing: border-box;
+					}
+
+					.tile {
+						position: relative;
+						flex: 1 1 0;
+						border-radius: 16px;
+						background: var(--wg-kit-raise);
+						padding: 8px;
+						box-shadow:
+							inset 0 0 0 1px color-mix(in srgb, var(--ink) 4%, transparent),
+							0 6px 47px rgba(0, 0, 0, 0.035),
+							0 4px 8px rgba(0, 0, 0, 0.005);
+					}
+					.surface {
+						position: relative;
+						width: 100%;
+						height: 100%;
+						border-radius: 8px;
+						overflow: hidden;
+					}
+
+					.chart {
+						position: absolute;
+						inset: 0 0 0 8%;
+					}
+					.chart svg {
+						display: block;
+						width: 100%;
+						height: 100%;
+					}
+
+					.content {
+						position: relative;
+						z-index: 1;
+						display: flex;
+						flex-direction: column;
+						height: 100%;
+						padding: 14px 14px 12px;
+						gap: 12px;
+						pointer-events: none;
+					}
+
+					.head {
+						display: flex;
+						align-items: center;
+						justify-content: space-between;
+						gap: 8px;
+					}
+					.title {
+						font-size: 13px;
+						font-weight: 600;
+						letter-spacing: -0.01em;
+					}
+					.trend {
+						display: inline-flex;
+						align-items: center;
+						gap: 4px;
+						font-size: 13px;
+						font-weight: 600;
+					}
+					.headline {
+						font-size: 46px;
+						font-weight: 500;
+						line-height: 0.94;
+						letter-spacing: -0.04em;
+						font-variant-numeric: tabular-nums;
+					}
+
+					.plates {
+						display: grid;
+						grid-template-columns: repeat(2, minmax(0, 1fr));
+						gap: 8px;
+						width: 176px;
+					}
+					.plate {
+						aspect-ratio: 1;
+						display: flex;
+						flex-direction: column;
+						justify-content: space-between;
+						padding: 11px 13px 10px;
+						border-radius: 18px;
+						background: var(--wg-plate);
+						backdrop-filter: var(--wg-plate-blur);
+						-webkit-backdrop-filter: var(--wg-plate-blur);
+					}
+					.plate-value {
+						font-size: 23px;
+						font-weight: 600;
+						line-height: 1;
+						letter-spacing: -0.025em;
+						font-variant-numeric: tabular-nums;
+					}
+					.plate-label {
+						font-size: 11px;
+						font-weight: 500;
+						color: var(--muted);
+					}
+
+					.foot {
+						margin-top: auto;
+						display: flex;
+						gap: 6px;
+						pointer-events: auto;
+					}
+					.btn {
+						width: 34px;
+						height: 34px;
+						display: inline-flex;
+						align-items: center;
+						justify-content: center;
+						border: none;
+						border-radius: 999px;
+						background: var(--accent);
+						color: #ffffff;
+						cursor: pointer;
+					}
+					.icon-btn {
+						width: 34px;
+						height: 34px;
+						display: inline-flex;
+						align-items: center;
+						justify-content: center;
+						border: none;
+						border-radius: 999px;
+						background: var(--wg-plate);
+						backdrop-filter: var(--wg-plate-blur);
+						-webkit-backdrop-filter: var(--wg-plate-blur);
+						color: var(--ink);
+						cursor: pointer;
+					}
+
+					.caption {
+						position: absolute;
+						left: 2px;
+						bottom: -28px;
+						font-size: 11px;
+						line-height: 1.35;
+						color: var(--muted);
+					}
+				</style>
+			</helmet>
+
+			<div class="stage">
+				<sc-for list="{{cards}}" as="card" hint-placeholder-count="3">
+					<div class="tile" style="--tone: {{card.tone}}">
+						<div class="surface">
+							<div class="chart">
+								<svg viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true">
+									<defs>
+										<pattern id="{{card.dotsId}}" width="14" height="14" patternUnits="userSpaceOnUse">
+											<circle cx="1" cy="1" r="1" fill="rgba(34,34,34,0.11)"></circle>
+										</pattern>
+										<linearGradient id="{{card.washId}}" x1="1" y1="0" x2="0" y2="0">
+											<stop offset="0" stop-color="{{card.tone}}" stop-opacity="0.13"></stop>
+											<stop offset="0.82" stop-color="{{card.tone}}" stop-opacity="0"></stop>
+										</linearGradient>
+										<linearGradient id="{{card.dotRampId}}" x1="0" y1="0" x2="1" y2="0">
+											<stop offset="0" stop-color="#ffffff" stop-opacity="0"></stop>
+											<stop offset="0.55" stop-color="#ffffff" stop-opacity="1"></stop>
+										</linearGradient>
+										<mask id="{{card.dotFadeId}}"><rect width="300" height="300" fill="{{card.dotRamp}}"></rect></mask>
+										<linearGradient id="{{card.inkRampId}}" x1="0" y1="0" x2="1" y2="0">
+											<stop offset="0" stop-color="#ffffff" stop-opacity="0"></stop>
+											<stop offset="0.24" stop-color="#ffffff" stop-opacity="0.3"></stop>
+											<stop offset="0.56" stop-color="#ffffff" stop-opacity="1"></stop>
+										</linearGradient>
+										<mask id="{{card.inkFadeId}}"><rect width="300" height="300" fill="{{card.inkRamp}}"></rect></mask>
+										<linearGradient id="{{card.underId}}" x1="0" y1="0" x2="0" y2="1">
+											<stop offset="0" stop-color="{{card.tone}}" stop-opacity="0.22"></stop>
+											<stop offset="1" stop-color="{{card.tone}}" stop-opacity="0.015"></stop>
+										</linearGradient>
+									</defs>
+									<rect width="300" height="300" fill="{{card.wash}}"></rect>
+									<g mask="{{card.dotFade}}">
+										<rect width="300" height="300" fill="{{card.dots}}"></rect>
+									</g>
+									<g mask="{{card.inkFade}}">
+										<path d="{{card.area}}" fill="{{card.under}}"></path>
+										<path
+											d="{{card.line}}"
+											fill="none"
+											stroke="{{card.tone}}"
+											stroke-width="2.2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											vector-effect="non-scaling-stroke"
+										></path>
+									</g>
+								</svg>
+							</div>
+
+							<div class="content">
+								<div class="head">
+									<span class="title">{{card.title}}</span>
+									<span class="trend" style="color: {{card.tone}}">
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 20 20"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.1"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
+											<path d="{{card.arrow}}"></path></svg
+										>{{card.percent}}
+									</span>
+								</div>
+
+								<div class="headline">{{card.total}}</div>
+
+								<div class="plates">
+									<div class="plate">
+										<span class="plate-value" style="color: {{card.tone}}">{{card.delta}}</span>
+										<span class="plate-label">today</span>
+									</div>
+									<div class="plate">
+										<span class="plate-value">{{card.peak}}</span>
+										<span class="plate-label">peak</span>
+									</div>
+								</div>
+
+								<div class="foot">
+									<button type="button" class="btn" aria-label="Add record">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 20 20"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+										>
+											<path d="M10 4.9v10.2M4.9 10h10.2"></path>
+										</svg>
+									</button>
+									<button type="button" class="icon-btn" aria-label="All records">
+										<svg
+											width="16"
+											height="16"
+											viewBox="0 0 20 20"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.8"
+											stroke-linecap="round"
+										>
+											<path d="M7.4 6.2h8M7.4 10h8M7.4 13.8h8"></path>
+											<circle cx="4.4" cy="6.2" r="0.9" fill="currentColor" stroke="none"></circle>
+											<circle cx="4.4" cy="10" r="0.9" fill="currentColor" stroke="none"></circle>
+											<circle cx="4.4" cy="13.8" r="0.9" fill="currentColor" stroke="none"></circle>
+										</svg>
+									</button>
+								</div>
+							</div>
+						</div>
+						<span class="caption">{{card.caption}}</span>
+					</div>
+				</sc-for>
+			</div>
+		</x-dc>
+
+		<script data-dc-script data-props='{"$preview": {"width": 900, "height": 420}}'>
+			const UP = "M10 15.4V5.5M5.7 9.8L10 5.5l4.3 4.3";
+			const DOWN = "M10 4.6v9.9M5.7 10.2L10 14.5l4.3-4.3";
+			const FLAT = "M4.6 10h10.8M10.9 5.7L15.2 10l-4.3 4.3";
+
+			const SHAPES = {
+				up: "M0 250 C40 244 60 210 100 196 C140 182 160 150 200 132 C240 114 270 96 300 78",
+				flat: "M0 168 C40 160 60 178 100 170 C140 162 160 176 200 166 C240 156 270 172 300 164",
+				down: "M0 84 C40 92 60 128 100 142 C140 156 160 186 200 204 C240 222 270 240 300 252",
+			};
+
+			const CARDS = [
+				{
+					key: "up",
+					title: "Total orders",
+					tone: "#1f8a4c",
+					percent: "66.0%",
+					total: "3.15K",
+					delta: "+4",
+					peak: "205",
+					arrow: UP,
+					caption: "narrow: two plates, no toggle, no period — Add is an icon",
+				},
+				{
+					key: "flat",
+					title: "Daily steps",
+					tone: "#707070",
+					percent: "0.3%",
+					total: "128K",
+					delta: "+1",
+					peak: "9.4K",
+					arrow: FLAT,
+					caption: "under half a percent reads as neutral",
+				},
+				{
+					key: "down",
+					title: "Spend",
+					tone: "#c0392b",
+					percent: "12.4%",
+					total: "1.02K",
+					delta: "−9",
+					peak: "184",
+					arrow: DOWN,
+					caption: "the plate lets the curve through instead of covering it",
+				},
+			];
+
+			class Component extends DCLogic {
+				renderVals() {
+					return {
+						cards: CARDS.map((card) => ({
+							...card,
+							dotsId: `dots-${card.key}`,
+							washId: `wash-${card.key}`,
+							underId: `under-${card.key}`,
+							dotRampId: `dot-ramp-${card.key}`,
+							dotFadeId: `dot-fade-${card.key}`,
+							inkRampId: `ink-ramp-${card.key}`,
+							inkFadeId: `ink-fade-${card.key}`,
+							dots: `url(#dots-${card.key})`,
+							wash: `url(#wash-${card.key})`,
+							under: `url(#under-${card.key})`,
+							dotRamp: `url(#dot-ramp-${card.key})`,
+							dotFade: `url(#dot-fade-${card.key})`,
+							inkRamp: `url(#ink-ramp-${card.key})`,
+							inkFade: `url(#ink-fade-${card.key})`,
+							line: SHAPES[card.key],
+							area: `${SHAPES[card.key]} L300 300 L0 300 Z`,
+						})),
+					};
+				}
+			}
+		</script>
+	</body>
+</html>

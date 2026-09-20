@@ -1,0 +1,9 @@
+.coverage-track {
+	height: 8px;
+	background: var(--wg-kit-plate);
+}
+
+.coverage-fill {
+	height: 8px;
+	background: var(--wg-kit-success);
+}

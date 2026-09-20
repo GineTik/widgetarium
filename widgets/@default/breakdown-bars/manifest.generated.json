@@ -1,0 +1,122 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Breakdown bars",
+	"description": "How a collection splits across folders or one property, as bars ordered biggest first.",
+	"keywords": [
+		"breakdown",
+		"distribution",
+		"bars",
+		"bar chart",
+		"group by",
+		"analytics",
+		"statistics",
+		"share",
+		"composition",
+		"folders",
+		"tags",
+		"status",
+		"histogram",
+		"ranking"
+	],
+	"role": "collection",
+	"size": {
+		"collapseBelowPx": 220,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 4
+		},
+		"props": {
+			"groupBy": {
+				"value": "status"
+			},
+			"records": {
+				"rows": [
+					{
+						"path": "Books/One.md",
+						"name": "One",
+						"status": "Reading"
+					},
+					{
+						"path": "Books/Two.md",
+						"name": "Two",
+						"status": "Reading"
+					},
+					{
+						"path": "Books/Three.md",
+						"name": "Three",
+						"status": "Finished"
+					},
+					{
+						"path": "Books/Four.md",
+						"name": "Four",
+						"status": "To read"
+					}
+				]
+			}
+		}
+	},
+	"props": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The notes to split up.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"groupBy": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Group by",
+			"hint": "Write folder to split by the folder a note sits in, or the name of a property to split by its value.",
+			"writes": ["get"],
+			"default": {
+				"value": "folder"
+			}
+		},
+		"shownAtFirst": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Bars shown at first",
+			"hint": "How many of the biggest groups get a bar before anything is pressed.",
+			"aka": ["shown"],
+			"writes": ["get"],
+			"default": {
+				"value": 8
+			}
+		},
+		"step": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Bars added by a press",
+			"hint": "How many more bars each press of Show more draws.",
+			"writes": ["get"],
+			"default": {
+				"value": 8
+			}
+		},
+		"showMoreButton": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Show more button",
+			"hint": "Whether a press may draw past the first bars. Without it the rest are summed into one line.",
+			"writes": ["get"],
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

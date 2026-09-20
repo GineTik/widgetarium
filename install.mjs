@@ -8,7 +8,10 @@ const BUILD_OUTPUTS = ["main.js", "manifest.json", "styles.css"];
 const SETTINGS_FILE = "data.json";
 
 const here = await realpath(".");
-const targetIsThisRepo = await realpath(target).then((at) => at === here, () => false);
+const targetIsThisRepo = await realpath(target).then(
+	(at) => at === here,
+	() => false,
+);
 
 async function describeBuild() {
 	const bytes = (await stat("main.js")).size;
@@ -16,7 +19,11 @@ async function describeBuild() {
 	return `${(bytes / 1048576).toFixed(2)} MB, ${carriesSourcemap ? "dev build with an inline sourcemap" : "production build"}`;
 }
 
-const exists = (at) => access(at).then(() => true, () => false);
+const exists = (at) =>
+	access(at).then(
+		() => true,
+		() => false,
+	);
 
 // TRADE-OFF: seeded only into a folder that has none, so the copy in the repo can never overwrite live settings
 async function seedSettings() {
@@ -28,7 +35,9 @@ async function seedSettings() {
 if (targetIsThisRepo) {
 	console.log(`the plugin folder is a symlink to this repo — nothing to copy`);
 	console.log(`Obsidian is running main.js from here: ${await describeBuild()}`);
-	console.log(`a dev build costs the vault every start; "npm run install-vault" replaces the symlink with a production copy`);
+	console.log(
+		`a dev build costs the vault every start; "npm run install-vault" replaces the symlink with a production copy`,
+	);
 } else if (!(await exists(VAULT))) {
 	console.error(VAULT_MISSING.replace("{at}", VAULT));
 	process.exit(1);

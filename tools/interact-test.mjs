@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { buildMirror } from "./mirror.mjs";
+const EVERY_VERB = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const FOLDER = "Orbitask/Tasks";
@@ -44,7 +45,7 @@ buildMirror();
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { WidgetSurface, resolveMounts } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry, boardWidgets } = await import("./.mjs-cache/registry.mjs");
+const { WidgetRegistry, boardWidgets, declaredName } = await import("./.mjs-cache/registry.mjs");
 const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
 const { leavesOf } = await import("./.mjs-cache/tree.mjs");
 const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
@@ -180,6 +181,13 @@ const host = { ...realHost, ui: { ...realHost.ui, notify: (message) => notices.p
 const registry = new WidgetRegistry({ vault: { adapter } });
 await registry.load();
 
+const readBoard = (shape) =>
+	normalizeBoard(
+		shape,
+		(id) => id,
+		(id) => declaredName(registry, id),
+	);
+
 // The board is built HERE, not read from a note. Pointing this at a live page tied the
 // suite to whatever was last clicked in the app: a tile deleted there failed a test about
 // search. The note proves the format; this proves the behaviour.
@@ -194,8 +202,8 @@ console.error = (...parts) => {
 	if (/unique "key"|flushSync|unmount a root/.test(said)) reactComplaints.push(said.split("\n")[0]);
 };
 
-const KANBAN = "@task/kanban-board";
-const ARCHIVED = "@task/archived-columns";
+const KANBAN = "@default/kanban-board";
+const ARCHIVED = "@default/archived-columns";
 
 // CONTEXT: the kanban is MOUNTED in a view group now, so its settings live one level down
 const READING_PLACES = [
@@ -207,22 +215,22 @@ const READING_PLACES = [
 	{ id: "board", x: 4, y: 5, w: 16, h: 10 },
 ];
 
-let board = normalizeBoard({
+let board = readBoard({
 	tiles: [
 		{
 			id: "boards",
-			widget: "@task/board-tabs",
-			props: { tabs: { value: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
+			widget: "@default/editable-tabs",
+			props: { tabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
 		},
 		{
 			id: "views",
-			widget: "@task/view-tabs",
+			widget: "@default/view-tabs",
 			props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
 		},
-		{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: FOLDER } } },
+		{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } },
 		{
 			id: "board",
-			widget: "@core/view-group",
+			widget: "@default/view-group",
 			settings: {
 				holds: [
 					{ name: "Kanban", widget: KANBAN },
@@ -230,17 +238,25 @@ let board = normalizeBoard({
 				],
 			},
 			mounted: {
-				"Archived columns": { widget: ARCHIVED, props: { selection: { from: "ref", ref: "boards/selection" } } },
+				"Archived columns": {
+					widget: ARCHIVED,
+					props: {
+						boards: { allow: EVERY_VERB, path: "Orbitask/Boards" },
+						selection: { from: "ref", ref: "boards/selection" },
+					},
+				},
 				Kanban: {
 					widget: KANBAN,
 					props: {
 						tasks: {
+							allow: EVERY_VERB,
 							path: FOLDER,
 							where: [
 								{ prop: "board", op: "is", value: { ref: "boards/selection" } },
 								{ spread: { ref: "filters/chosen" } },
 							],
 						},
+						boards: { allow: EVERY_VERB, path: "Orbitask/Boards" },
 						selection: { from: "ref", ref: "boards/selection" },
 					},
 				},
@@ -296,7 +312,7 @@ const check = (label, got, want) => {
 // An expanded board renders into a portal outside the mount element, so the page has to be
 // looked for where it actually is — the same board either way, which is the point.
 const surface = () => dom.window.document.querySelector(".wg-page") ?? root;
-const all = (selector) => [...surface().querySelectorAll(selector)];
+const all = (selector) => [...surface().querySelectorAll(selector)].filter((node) => !node.closest("[hidden]"));
 const cards = () => all(".orbi-kanban .ok-card-slot").length;
 const byText = (selector, text) =>
 	all(selector).find((node) => node.textContent.trim().toLowerCase() === text.toLowerCase());
@@ -317,20 +333,21 @@ check("the board shows cards from real notes", cards() > 0, true);
 
 // The baseline is taken WITH a board selected, not before: unselected means unfiltered, and
 // comparing a later filtered count against that would fail on the board filter working.
-const marketingTab = byText(".wg-tabs:not(.ovg-strip) button", "Marketing Team");
+const marketingTab = byText(".wg-tabs:not(.wg-tree-swap-strip) button", "Marketing Team");
 if (marketingTab) await click(marketingTab);
 const marketing = cards();
 check("selecting a board narrows to its own tasks", marketing > 0 && marketing <= 10, true);
 
 // 2. a board tab steers it
 const uxTab =
-	byText(".wg-tabs:not(.ovg-strip) button", "Ux Team") ?? byText(".wg-tabs:not(.ovg-strip) button", "UX Team");
+	byText(".wg-tabs:not(.wg-tree-swap-strip) button", "Ux Team") ??
+	byText(".wg-tabs:not(.wg-tree-swap-strip) button", "UX Team");
 check("the second board tab exists", Boolean(uxTab), true);
 if (uxTab) {
 	await click(uxTab);
 	check("switching board changes what is shown", cards() !== marketing, true);
 	check("and it is not empty", cards() > 0, true);
-	const back = byText(".wg-tabs:not(.ovg-strip) button", "Marketing Team");
+	const back = byText(".wg-tabs:not(.wg-tree-swap-strip) button", "Marketing Team");
 	if (back) {
 		await click(back);
 		check("switching back restores the first board", cards(), marketing);
@@ -468,10 +485,10 @@ check("Reset All puts every task back", cards(), beforeApply);
 // had no handler at all.
 const settingsOf = (id) => board.tiles.find((tile) => tile.id === id)?.settings ?? {};
 const tabRowsOf = (id) =>
-	(board.tiles.find((tile) => tile.id === id)?.props?.tabs?.value ?? []).map((row) => row.value ?? row);
+	(board.tiles.find((tile) => tile.id === id)?.props?.tabs?.rows ?? []).map((row) => row.value ?? row);
 const tabFieldOf = (row, field) => row?.props?.[field] ?? row?.[field];
 // CONTEXT: a mounted widget persists under the NAME the board gave it, not under its widget id
-const mountedOf = (id, key) => board.tiles.find((tile) => tile.id === id)?.mounted?.[key];
+const tileNamed = (id) => board.tiles.find((tile) => tile.id === id);
 const boardNote = (name) => vaultFiles("Orbitask/Boards").find((file) => file.props.board === name);
 const boardColumns = (name) => (boardNote(name)?.props?.columns ?? []).map((row) => row?.name ?? row);
 const boardArchived = (name) =>
@@ -496,9 +513,13 @@ const boardArchived = (name) =>
 	check("and it is written in the note the board keeps", boardColumns("Marketing Team").includes("Blocked"), true);
 	// THE LAZY MIGRATION, MEASURED ON A REAL EDIT. The board arrived with the record under the
 	// widget id; the first write moves it onto the name and takes the old key with it.
-	check("the edit lands under the board-owned name", Boolean(mountedOf("board", KANBAN_VIEW)), true);
-	check("the widget-id key it arrived under is gone", Boolean(mountedOf("board", KANBAN)), false);
-	check("and the record it held came across", mountedOf("board", KANBAN_VIEW)?.props?.tasks?.path, FOLDER);
+	check("the view the group held is a tile of the board's own", Boolean(tileNamed(`board:${KANBAN_VIEW}`)), true);
+	check(
+		"the holder it arrived in is gone",
+		board.tiles.some((tile) => tile.widget === "@default/view-group"),
+		false,
+	);
+	check("and the props it held came across", tileNamed(`board:${KANBAN_VIEW}`)?.props?.tasks?.path, FOLDER);
 	check("no task was invented to make it appear", cards(), tasksBefore);
 
 	// ARCHIVING ASKS FIRST. The control no longer deletes, so pressing it changes nothing until
@@ -519,7 +540,7 @@ const boardArchived = (name) =>
 	check("the name stays authored on the board", boardColumns("Marketing Team").includes("Blocked"), true);
 	check("and it is the column itself that carries the archiving", boardArchived("Marketing Team"), ["Blocked"]);
 	check("the board block keeps no map of archived columns", serializeBoard(board).archivedColumns, undefined);
-	check("nor a second list on the tile", mountedOf("board", KANBAN_VIEW)?.props?.archivedColumns, undefined);
+	check("nor a second list on the tile", tileNamed(`board:${KANBAN_VIEW}`)?.props?.archivedColumns, undefined);
 
 	// A COLUMN WITH TASKS IS ARCHIVED TOO. Refusing was right while removal was permanent;
 	// archiving is reversible, so the count in the dialog is the warning instead.
@@ -577,9 +598,10 @@ const boardArchived = (name) =>
 	check("and its tasks came back with it", cards() > cardsWithoutIt, true);
 
 	// CONTEXT: on the note, every board read one list — archived on one, shown on all
-	const firstBoard = () => byText(".wg-tabs:not(.ovg-strip) button", "Marketing Team");
+	const firstBoard = () => byText(".wg-tabs:not(.wg-tree-swap-strip) button", "Marketing Team");
 	const otherBoard = () =>
-		byText(".wg-tabs:not(.ovg-strip) button", "Ux Team") ?? byText(".wg-tabs:not(.ovg-strip) button", "UX Team");
+		byText(".wg-tabs:not(.wg-tree-swap-strip) button", "Ux Team") ??
+		byText(".wg-tabs:not(.wg-tree-swap-strip) button", "UX Team");
 	const columnNamed = (name) => all(".orbi-kanban .ok-list").find((node) => node.textContent.includes(name));
 
 	await showView("Archived columns");
@@ -616,10 +638,10 @@ const boardArchived = (name) =>
 }
 
 {
-	const tabsBefore = all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length;
-	await click(all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0]);
-	await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Add"));
-	check("Add Board adds a tab", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, tabsBefore + 1);
+	const tabsBefore = all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab").length;
+	await click(all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-more")[0]);
+	await click(byText(".wg-tabs:not(.wg-tree-swap-strip) .wg-kit-pop-item", "Add"));
+	check("Add Board adds a tab", all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab").length, tabsBefore + 1);
 	check(
 		"named Untitled 1",
 		tabRowsOf("boards").some((row) => tabFieldOf(row, "name") === "Untitled 1"),
@@ -627,13 +649,13 @@ const boardArchived = (name) =>
 	);
 	// the board's own selection is not reachable from here — the visible truth is which tab
 	// the kit's thumb sits on, which is the tab marked selected, and what a person sees anyway
-	const active = all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[aria-selected="true"]').map((node) =>
+	const active = all('.wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab[aria-selected="true"]').map((node) =>
 		node.textContent.trim(),
 	);
 	check("and it becomes the selected board", active, ["Untitled 1"]);
 
 	// the new tab opens ready to be renamed, in place
-	const editable = all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[contenteditable="true"]');
+	const editable = all('.wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab[contenteditable="true"]');
 	check("the new board is editable where it stands", editable.length, 1);
 }
 
@@ -649,7 +671,9 @@ const boardArchived = (name) =>
 
 	// back to a board that has tasks: the previous block selected a new empty one, and a rename
 	// that touches nothing proves nothing
-	const marketing = all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").find((node) => /Marketing/.test(node.textContent));
+	const marketing = all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab").find((node) =>
+		/Marketing/.test(node.textContent),
+	);
 	await click(marketing);
 
 	// RENAMING A COLUMN MUST REACH THE TASKS. The heading is a setting; what files a task under
@@ -682,18 +706,18 @@ const boardArchived = (name) =>
 {
 	// ONE MENU, NOT A PAIR OF BUTTONS. The pencil and the tick are gone; renaming is a menu
 	// item, and Enter or blur commits. The menu stands beside the capsule, never inside a tab.
-	const more = all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0];
+	const more = all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-more")[0];
 	check("the board row offers a menu", Boolean(more), true);
 	check("and it stands outside the tab capsule", Boolean(more.closest(".wg-kit-seg")), false);
 
 	await click(more);
 	// CONTEXT: the panel stays in the DOM when shut, so only is-open proves it opened
-	check("the menu opens", all(".wg-tabs:not(.ovg-strip) .wg-kit-pop.is-open").length, 1);
+	check("the menu opens", all(".wg-tabs:not(.wg-tree-swap-strip) .wg-kit-pop.is-open").length, 1);
 
-	await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Rename"));
+	await click(byText(".wg-tabs:not(.wg-tree-swap-strip) .wg-kit-pop-item", "Rename"));
 	check(
 		"and Rename edits the selected tab in place",
-		all('.wg-tabs:not(.ovg-strip) .wg-tabs-tab[contenteditable="true"]').length,
+		all('.wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab[contenteditable="true"]').length,
 		1,
 	);
 }
@@ -703,28 +727,28 @@ const boardArchived = (name) =>
 	// one, and a fresh Untitled must be standing there — a board bar with nothing on it offers
 	// the person no way back in.
 	const archive = async () => {
-		await click(all(".wg-tabs:not(.ovg-strip) .wg-tabs-more")[0]);
-		await click(byText(".wg-tabs:not(.ovg-strip) .wg-kit-pop-item", "Archive"));
+		await click(all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-more")[0]);
+		await click(byText(".wg-tabs:not(.wg-tree-swap-strip) .wg-kit-pop-item", "Archive"));
 	};
 
 	let guard = 0;
-	while (all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length > 1 && guard < 12) {
+	while (all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab").length > 1 && guard < 12) {
 		await archive();
 		guard += 1;
 	}
-	check("archiving hands the strip down to one board", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, 1);
+	check("archiving hands the strip down to one board", all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab").length, 1);
 
-	const last = all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim();
+	const last = all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab")[0].textContent.trim();
 	await archive();
-	check("archiving the LAST board still leaves one", all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab").length, 1);
+	check("archiving the LAST board still leaves one", all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab").length, 1);
 	check(
 		"and the one left is a fresh Untitled",
-		/^Untitled \d+$/.test(all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim()),
+		/^Untitled \d+$/.test(all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab")[0].textContent.trim()),
 		true,
 	);
 	check(
 		"which is not the board just archived",
-		all(".wg-tabs:not(.ovg-strip) .wg-tabs-tab")[0].textContent.trim() === last,
+		all(".wg-tabs:not(.wg-tree-swap-strip) .wg-tabs-tab")[0].textContent.trim() === last,
 		false,
 	);
 	check(
@@ -758,20 +782,27 @@ const boardArchived = (name) =>
 
 // CONTEXT: one tile, several whole widgets, one of them on screen
 const groupBoard = (views, archived = null) =>
-	normalizeBoard({
+	readBoard({
 		tiles: [
-			{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "Marketing Team" }] } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "Marketing Team" }] } } },
 			{
 				id: "views",
-				widget: "@task/view-tabs",
+				widget: "@default/view-tabs",
 				props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
 			},
 			{
 				id: "board",
-				widget: "@core/view-group",
+				widget: "@default/view-group",
 				settings: { views },
 				mounted: {
-					"Archived columns": { widget: ARCHIVED, props: { selection: { from: "ref", ref: "boards/selection" } } },
+					"Archived columns": {
+						widget: ARCHIVED,
+						props: {
+							boards: { allow: EVERY_VERB, path: "Orbitask/Boards" },
+							selection: { from: "ref", ref: "boards/selection" },
+						},
+					},
+					Kanban: { widget: KANBAN, props: { boards: { allow: EVERY_VERB, path: "Orbitask/Boards" } } },
 				},
 			},
 		],
@@ -788,6 +819,7 @@ const groupBoard = (views, archived = null) =>
 	});
 
 const tileNode = (id) => all(`[data-cell="${id}"]`)[0];
+const strip = () => all(".wg-tree-swap-strip .wg-tabs-tab").map((node) => node.textContent.trim());
 const tabLabel = (id = "views") => tileNode(id)?.querySelector(".ovt-pick")?.textContent.trim() ?? "";
 const tabItems = () =>
 	[...tileNode("views").querySelectorAll(".wg-kit-pop-item")].map((node) => node.textContent.trim());
@@ -851,16 +883,16 @@ const pickView = async (name, id = "views") => {
 
 {
 	// CONTEXT: the shape before the board held a list at all — the kanban's own tile carried it
-	board = normalizeBoard({
+	board = readBoard({
 		tiles: [
 			{
 				id: "fallback",
-				widget: "@core/view-group",
+				widget: "@default/view-group",
 				settings: { views: `${KANBAN}, ${ARCHIVED}` },
 				mounted: {
 					[KANBAN]: {
 						settings: { columns: "To Do, Blocked", archivedColumns: "Blocked" },
-						props: { boards: { path: "Orbitask/Nowhere" } },
+						props: { boards: { allow: EVERY_VERB, path: "Orbitask/Nowhere" } },
 					},
 				},
 			},
@@ -980,26 +1012,26 @@ const pickView = async (name, id = "views") => {
 	board = groupBoard("@task/no-such-view");
 	draw();
 	await settle();
-	const shown = tileNode("board").textContent;
+	const shown = surface().textContent;
 	check("a view that is not a widget is named, not swallowed", /no-such-view/.test(shown), true);
-	check("and the group does not claim to be empty", /holds no views/.test(shown), false);
+	check("and the box still offers it as a view", strip().includes("@task/no-such-view"), true);
 }
 
 {
 	// CONTEXT: ownership was keyed by widget id, so a second instance read as the first updating itself
-	board = normalizeBoard({
+	board = readBoard({
 		tiles: [
 			{
 				id: "left",
-				widget: "@task/view-tabs",
+				widget: "@default/view-tabs",
 				props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
 			},
 			{
 				id: "right",
-				widget: "@task/view-tabs",
+				widget: "@default/view-tabs",
 				props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
 			},
-			{ id: "board", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
+			{ id: "board", widget: "@default/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
 		],
 		layouts: {
 			20: {
@@ -1034,10 +1066,10 @@ const pickView = async (name, id = "views") => {
 {
 	// CONTEXT: a claim outliving its widget makes the key unwritable forever
 	const switcherBoard = (id) =>
-		normalizeBoard({
+		readBoard({
 			tiles: [
-				{ id, widget: "@task/view-tabs" },
-				{ id: "board", widget: "@core/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
+				{ id, widget: "@default/view-tabs" },
+				{ id: "board", widget: "@default/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
 			],
 			layouts: {
 				20: {
@@ -1070,10 +1102,10 @@ const pickView = async (name, id = "views") => {
 	let broken = null;
 	let failure = null;
 	try {
-		broken = normalizeBoard({
+		broken = readBoard({
 			tiles: [
 				{ id: "a", widget: KANBAN, props: { tasks: null } },
-				{ id: "b", widget: "@core/view-group", mounted: { "@foo": null } },
+				{ id: "b", widget: "@default/view-group", mounted: { "@foo": null } },
 			],
 		});
 	} catch (thrown) {
@@ -1105,7 +1137,7 @@ const pickView = async (name, id = "views") => {
 			label: "Boards",
 			verbs: { list: "required", update: "optional" },
 			default: {
-				value: [
+				rows: [
 					{ name: "A", columns: [{ name: "To Do" }] },
 					{ name: "B", columns: [{ name: "Backlog" }] },
 				],
@@ -1138,7 +1170,7 @@ const pickView = async (name, id = "views") => {
 	const last = () => seen[seen.length - 1];
 	const columnsNow = async () => (await last().board.get())?.columns?.map((column) => column.name);
 
-	board = normalizeBoard({
+	board = readBoard({
 		tiles: [{ id: "probe", widget: "@probe/board", props: { notes: { path: FOLDER } } }],
 		layouts: { 20: { places: [{ id: "probe", x: 0, y: 0, w: 6, h: 3 }] } },
 	});
@@ -1171,17 +1203,17 @@ const pickView = async (name, id = "views") => {
 	check("the widget is handed rows to draw", Boolean(first), true);
 	check(
 		"and not one of them carries a body",
-		listed.rows.some((row) => row.value.body !== undefined),
+		listed.rows.some((row) => row.body !== undefined),
 		false,
 	);
 
 	const opened = await notes().get(first.ref);
-	check("a widget can fetch one record's body", typeof opened.value.body, "string");
-	check("and its properties come with it", opened.value.props, first.value.props);
+	check("a widget can fetch one record's body", typeof opened.body, "string");
+	check("and its properties come with it", opened.props, first.props);
 
 	await notes().update({ ref: first.ref, data: { body: "Written from a widget.\n" } });
-	check("and save an edited one", (await notes().get(first.ref)).value.body, "Written from a widget.\n");
-	check("the note's properties survived the body write", (await notes().get(first.ref)).value.props, first.value.props);
+	check("and save an edited one", (await notes().get(first.ref)).body, "Written from a widget.\n");
+	check("the note's properties survived the body write", (await notes().get(first.ref)).props, first.props);
 
 	check(
 		"the verbs a widget is handed on a folder",
@@ -1194,8 +1226,8 @@ const pickView = async (name, id = "views") => {
 	// A MOUNTED widget must not be handed less than a tile: the list belongs to the board, and
 	// where a widget happens to be standing is not a fact about the board.
 	seen.length = 0;
-	board = normalizeBoard({
-		tiles: [{ id: "group", widget: "@core/view-group", settings: { views: "@probe/board" } }],
+	board = readBoard({
+		tiles: [{ id: "group", widget: "@default/view-group", settings: { views: "@probe/board" } }],
 		layouts: { 20: { places: [{ id: "group", x: 0, y: 0, w: 12, h: 8 }] } },
 	});
 	draw();
@@ -1211,8 +1243,8 @@ const pickView = async (name, id = "views") => {
 {
 	const spare = dom.window.document.createElement("div");
 	dom.window.document.querySelector(".view-content").appendChild(spare);
-	let plain = normalizeBoard({
-		tiles: [{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: FOLDER } } }],
+	let plain = readBoard({
+		tiles: [{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } }],
 		layouts: { 20: { places: [{ id: "filters", x: 0, y: 0, w: 3, h: 1 }] } },
 	});
 	const drawPlain = () =>
@@ -1269,16 +1301,19 @@ const pickView = async (name, id = "views") => {
 	const pluginApp = {
 		vault: { adapter: { ...adapter, mkdir: async () => {} }, getAbstractFileByPath: () => null },
 		metadataCache: { getFileCache: () => null, getFirstLinkpathDest: () => null },
-		workspace: { getLeavesOfType: () => [], on: () => ({}) },
+		workspace: { getLeavesOfType: () => [], on: () => ({}), onLayoutReady: () => {} },
 	};
 	const plugin = Object.assign(new WidgetariumPlugin(), {
 		app: pluginApp,
 		manifest: { id: "widgetarium" },
-		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }] },
+		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@default/reminder" }] },
 		addCommand: (command) => commands.push(command),
 		addRibbonIcon: (icon, title) => ribbon.push(title),
 		registerMarkdownCodeBlockProcessor: (language, handler) => fences.push({ language, handler }),
 		registerMarkdownPostProcessor: (handler) => posts.push(handler),
+		registerView: () => {},
+		registerEvent: () => {},
+		addSettingTab: () => {},
 		registerInterval: () => {},
 	});
 	await plugin.onload();
@@ -1302,8 +1337,8 @@ const pickView = async (name, id = "views") => {
 
 	const boardBlock = dom.window.document.createElement("div");
 	dom.window.document.body.appendChild(boardBlock);
-	const sided = normalizeBoard({
-		tiles: [{ id: "a", widget: "@inline/reminder" }],
+	const sided = readBoard({
+		tiles: [{ id: "a", widget: "@default/reminder" }],
 		layout: { left: { rows: [[{ id: "a" }]] }, main: { rows: [[{ id: "a" }]] } },
 		layouts: {},
 	});
@@ -1352,14 +1387,21 @@ const pickView = async (name, id = "views") => {
 	const starting = Object.assign(new WidgetariumPlugin(), {
 		app: {
 			...pluginApp,
-			workspace: { getLeavesOfType: (kind) => (kind === "markdown" ? [openLeaf] : []), on: () => ({}) },
+			workspace: {
+				getLeavesOfType: (kind) => (kind === "markdown" ? [openLeaf] : []),
+				on: () => ({}),
+				onLayoutReady: () => {},
+			},
 		},
 		manifest: { id: "widgetarium" },
-		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@inline/reminder" }] },
+		_data: { substitutions: [{ id: "sub-1", name: "Reminder", mode: "line", open: "!", widget: "@default/reminder" }] },
 		addCommand: () => {},
 		addRibbonIcon: () => {},
 		registerMarkdownCodeBlockProcessor: () => {},
 		registerMarkdownPostProcessor: (handler) => startingPosts.push(handler),
+		registerView: () => {},
+		registerEvent: () => {},
+		addSettingTab: () => {},
 		registerInterval: () => {},
 	});
 	const loading = starting.onload();
@@ -1392,6 +1434,7 @@ const pickView = async (name, id = "views") => {
 	check("the ribbon offers substitutions beside edit mode", ribbon, [
 		"Widgetarium: edit mode",
 		"Widgetarium: substitutions",
+		"Widgetarium: ask the assistant",
 	]);
 	check(
 		"and a command opens the same surface",
@@ -1441,10 +1484,10 @@ const pickView = async (name, id = "views") => {
 }
 
 {
-	board = normalizeBoard({
+	board = readBoard({
 		tiles: [
-			{ id: "boards", widget: "@task/board-tabs", props: { tabs: { value: [{ name: "Marketing Team" }] } } },
-			{ id: "filters", widget: "@core/filter-panel", props: { tasks: { path: FOLDER } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "Marketing Team" }] } } },
+			{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } },
 		],
 		layouts: {
 			20: {
@@ -1486,8 +1529,8 @@ const pickView = async (name, id = "views") => {
 // THE PALETTE IS THE CATALOGUE NOW. A row of titles said nothing about what a widget looks like,
 // which is the only question a person adding one is actually asking.
 {
-	board = normalizeBoard({
-		tiles: [{ id: "header", widget: "@task/board-tabs" }],
+	board = readBoard({
+		tiles: [{ id: "header", widget: "@default/editable-tabs" }],
 		layouts: { 20: { places: [{ id: "header", x: 0, y: 0, w: 12, h: 2 }] } },
 	});
 	editing = true;
@@ -1537,7 +1580,7 @@ const pickView = async (name, id = "views") => {
 	);
 
 	const named = (title) => drawn.find((tile) => tile.querySelector(".wg-cat-name").textContent === title);
-	const declared = registry.get("@task/task-card").manifest.preview.size;
+	const declared = registry.get("@default/task-card").manifest.preview.size;
 	const onGrid = named("Task card");
 	check("a card names the widget", Boolean(onGrid), true);
 	check("and says the span the manifest declares", onGrid.getAttribute("data-span"), `${declared.w}x${declared.h}`);
@@ -1545,7 +1588,7 @@ const pickView = async (name, id = "views") => {
 	check(
 		"and the card says which pack it came from, in one line with the name",
 		onGrid.querySelector(".wg-cat-said").textContent,
-		"@task/Task card",
+		"@default/Task card",
 	);
 
 	// INSTALLED IS NOT A STATE WORTH DRAWING. Fetching a widget and placing one both land at the
@@ -1565,7 +1608,7 @@ const pickView = async (name, id = "views") => {
 	);
 	const shapeOf = (tile) => `${tile.className}|${tile.getAttribute("aria-label")}|${chromeButtons(tile).length}`;
 	const wasInstalled = onGrid.dataset.state;
-	registry.get("@task/task-card").installed = false;
+	registry.get("@default/task-card").installed = false;
 	draw();
 	await settle();
 	const renamed = (title) =>
@@ -1579,7 +1622,7 @@ const pickView = async (name, id = "views") => {
 		renamed("Task card").getAttribute("aria-label").startsWith("Add "),
 		true,
 	);
-	delete registry.get("@task/task-card").installed;
+	delete registry.get("@default/task-card").installed;
 	draw();
 	await settle();
 
@@ -1610,7 +1653,7 @@ const pickView = async (name, id = "views") => {
 	check("the card is offered", Boolean(card), true);
 	await click(card);
 	check("picking it adds a tile", board.tiles.length, before + 1);
-	check("of the widget that was drawn", board.tiles.at(-1).widget, "@task/task-card");
+	check("of the widget that was drawn", board.tiles.at(-1).widget, "@default/task-card");
 	const placed = leavesOf(board.layout).find((leaf) => leaf.id === board.tiles.at(-1).id);
 	check("on a row of its own in the box that was pressed", placed?.path.join("/"), "1/1");
 	check("and the catalogue closes behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
@@ -1664,12 +1707,12 @@ const pickView = async (name, id = "views") => {
 	const authored = parseYaml(lines.slice(fence.start + 1, fence.end).join("\n"));
 
 	check("the shipped board is stored in the pre-record shape", authored.tiles.find((tile) => tile.slots)?.slots, {
-		card: "@task/task-card",
+		card: "@default/task-card",
 	});
 	check(
 		"and it holds the four widgets the owner placed",
 		authored.tiles.map((tile) => tile.widget),
-		["@task/board-tabs", "@task/view-tabs", "@task/kanban-board", "@core/filter-panel"],
+		["@default/editable-tabs", "@default/view-tabs", "@default/kanban-board", "@default/filter-panel"],
 	);
 
 	const drawBoard = async (source) => {
@@ -1677,22 +1720,21 @@ const pickView = async (name, id = "views") => {
 		dom.window.document.querySelector(".view-content").appendChild(spare);
 		const standing = new Set(dom.window.document.querySelectorAll(".wg-page"));
 		const writes = [];
-		render(
+		const drawn = readBoard(source);
+		const surfaceWhile = (editing) =>
 			h(WidgetSurface, {
 				boardNode: spare,
-				board: normalizeBoard(source),
+				board: drawn,
 				registry,
 				host,
-				editing: false,
+				editing,
 				screen: true,
 				initialWidth: 1280,
 				// CONTEXT: a probe counts writes and does not answer them — repainting turns one write into a loop
 				onChange: (next) => writes.push(next),
-				onToggleEditing: () => {},
 				onWidth: () => {},
-			}),
-			spare,
-		);
+			});
+		render(surfaceWhile(false), spare);
 		await settle();
 		// CONTEXT: an expanded board draws through a portal on the body, not into its own element
 		const page = [...dom.window.document.querySelectorAll(".wg-page")].find((node) => !standing.has(node)) ?? spare;
@@ -1708,7 +1750,10 @@ const pickView = async (name, id = "views") => {
 			writes: writes.length,
 		};
 		// CONTEXT: a counter that cannot go up proves nothing, so one real edit has to move it
-		await click(page.querySelector(".wg-region-toggle.is-page"));
+		render(surfaceWhile(true), spare);
+		await settle();
+		await click(page.querySelector('.wg-tile-actions button[aria-label="Remove"]'));
+		await click(dom.window.document.body.querySelector(".wg-dialog-confirm"));
 		seen.writesAfterAnEdit = writes.length;
 		render(null, spare);
 		spare.remove();
@@ -1716,7 +1761,7 @@ const pickView = async (name, id = "views") => {
 	};
 
 	const old = await drawBoard(authored);
-	const fresh = await drawBoard(serializeBoard(normalizeBoard(authored)));
+	const fresh = await drawBoard(serializeBoard(readBoard(authored)));
 
 	// CONTEXT: the owner's pick IS the manifest default, so only a different pick can tell a read from a fallback
 	const repointed = (pick) => ({
@@ -1755,12 +1800,12 @@ const pickView = async (name, id = "views") => {
 	dom.window.document.querySelector(".view-content").appendChild(stage);
 	const standing = new Set(dom.window.document.querySelectorAll(".wg-page"));
 
-	let strip = normalizeBoard({
+	let strip = readBoard({
 		tiles: [
 			{
 				id: "boards",
-				widget: "@core/editable-tabs",
-				props: { tabs: { value: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
+				widget: "@default/editable-tabs",
+				props: { tabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
 			},
 		],
 		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }] } },
@@ -1799,7 +1844,7 @@ const pickView = async (name, id = "views") => {
 	const listedNames = () => listed().map((row) => row.querySelector(".wg-kit-row-label").textContent.trim());
 	const asking = () => dom.window.document.body.querySelector(".wg-tabs-confirm");
 	const kept = () =>
-		(serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.tabs?.value ?? []).map(
+		(serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.tabs?.rows ?? []).map(
 			(row) => row.value ?? row,
 		);
 	const keptNamed = (name) => kept().find((row) => tabFieldOf(row, "name") === name) ?? null;

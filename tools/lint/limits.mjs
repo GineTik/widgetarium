@@ -9,7 +9,7 @@ export const LIMITS = {
 
 export const LINTED_ROOTS = ["src", "widgets"];
 
-export const SKIPPED_PATHS = ["src/emoji-table.js", "src/regex-sample.js"];
+export const SKIPPED_PATHS = ["src/emoji-table.js", "src/icon-table.js", "src/regex-sample.js"];
 
 export const ALLOWED_COMMENT_PREFIXES = ["TODO:", "TRADE-OFF:"];
 

@@ -30,10 +30,13 @@ export async function buildSheet({ entry, compiler, sheetOfTailwind, readFile, c
 
 		const path = joined(base, specifier);
 		if (path !== reachable && !path.startsWith(`${reachable}/`))
-			throw new Error(`"${specifier}" leaves ${reachable}, and a widget's sheet may only import what its own scope holds`);
+			throw new Error(
+				`"${specifier}" leaves ${reachable}, and a widget's sheet may only import what its own scope holds`,
+			);
 
 		const content = await readFile(path);
-		if (content === null) throw new Error(`"${specifier}" is imported by the widget's sheet, and no such file is there`);
+		if (content === null)
+			throw new Error(`"${specifier}" is imported by the widget's sheet, and no such file is there`);
 
 		inputs[path] = content;
 		return { path, base: folderOf(path), content };
@@ -43,7 +46,12 @@ export async function buildSheet({ entry, compiler, sheetOfTailwind, readFile, c
 		const compiled = await compiler.compile(entry.content, { base: entry.base, loadStylesheet });
 		return { ok: true, css: compiled.build(candidates), inputs, failure: null };
 	} catch (failure) {
-		return { ok: false, css: null, inputs: null, failure: `the widget's sheet did not build: ${String(failure?.message ?? failure)}` };
+		return {
+			ok: false,
+			css: null,
+			inputs: null,
+			failure: `the widget's sheet did not build: ${String(failure?.message ?? failure)}`,
+		};
 	}
 }
 

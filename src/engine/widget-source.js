@@ -1,4 +1,4 @@
-import { RECORD_FILE, readRecord } from "./catalogue-index.js";
+import { RECORD_FILES, readRecord, recordIn } from "./catalogue-index.js";
 import { SHEET_FILES, SOURCE_FILES, sourceFileIn } from "./widget-build.js";
 import {
 	commitUrl,
@@ -15,7 +15,7 @@ import { REGISTRY_FILE, readRegistry } from "./registry-file.js";
 import { contentHash } from "./content-hash.js";
 import { apiRefusal } from "../version.js";
 
-export const WIDGET_FILES = [RECORD_FILE, ...SOURCE_FILES, ...SHEET_FILES];
+export const WIDGET_FILES = [...RECORD_FILES, ...SOURCE_FILES, ...SHEET_FILES];
 export const SCOPE_FILES = ["lib.js", "tokens.css", "theme.css"];
 export const WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS = "local";
 
@@ -44,24 +44,79 @@ export function createWidgetSource(doors) {
 
 async function offersInFolder({ disk }, source) {
 	if (!disk || !(await disk.exists(source.path))) return [];
+
+	const registry = await registryInFolder(disk, source);
+	if (wasRefused(registry)) return [];
+
+	const offers = registry
+		? await listedInFolderRegistry(disk, source, registry.rows)
+		: await listedInFolderTree(disk, source);
+	return stampedWhereItMoved(offers, registry);
+}
+
+function wasRefused(registry) {
+	if (!registry?.refusal) return false;
+	console.error(`[widgetarium] ${registry.refusal}`);
+	return true;
+}
+
+function stampedWhereItMoved(offers, registry) {
+	if (!registry?.movedTo) return offers;
+	return offers.map((offer) => ({ ...offer, manifest: { ...offer.manifest, movedTo: registry.movedTo } }));
+}
+
+async function registryInFolder(disk, source) {
+	const at = `${source.path}/${REGISTRY_FILE}`;
+	if (!(await disk.exists(at))) return null;
+	try {
+		return readRegistry(await disk.read(at), at);
+	} catch (failure) {
+		console.error(`[widgetarium] cannot read ${at}`, failure);
+		return null;
+	}
+}
+
+async function listedInFolderRegistry(disk, source, rows) {
+	const found = [];
+	for (const row of rows) {
+		const under = row.path ?? scopedName(row.id);
+		if (!under || !isCleanRepositoryPath(under)) continue;
+		const offer = await offeredFromFolder(disk, `${source.path}/${under}`, source.path, row.id);
+		if (offer) found.push(offer);
+		else
+			console.error(
+				`[widgetarium] ${source.path}/${REGISTRY_FILE} lists "${row.id}" at ${under}, where no widget stands`,
+			);
+	}
+	return found;
+}
+
+async function listedInFolderTree(disk, source) {
 	const found = [];
 	for (const scope of await disk.folders(source.path)) {
 		for (const folder of await disk.folders(scope)) {
-			const held = await codeAt(disk, folder, scope);
-			if (!held.code) continue;
-			const manifest = await recordAt(disk, folder);
-			if (manifest?.id)
-				found.push({
-					manifest,
-					installed: false,
-					origin: source.path,
-					commit: stampOf(await filesUnder(disk, folder, WIDGET_FILES)),
-					from: { folder },
-					...held,
-				});
+			const offer = await offeredFromFolder(disk, folder, source.path, null);
+			if (offer) found.push(offer);
 		}
 	}
 	return found;
+}
+
+async function offeredFromFolder(disk, folder, origin, id) {
+	const held = await codeAt(disk, folder, scopeOf(folder));
+	if (!held.code) return null;
+
+	const read = await recordAt(disk, folder);
+	const manifest = id ? { ...read, id } : read;
+	if (!manifest?.id) return null;
+	return {
+		manifest,
+		installed: false,
+		origin,
+		commit: stampOf(await filesUnder(disk, folder, WIDGET_FILES)),
+		from: { folder },
+		...held,
+	};
 }
 
 async function offersInRepository(doors, source) {
@@ -71,13 +126,12 @@ async function offersInRepository(doors, source) {
 		const commit = String((await doors.fetchJson(commitUrl(repository, source.ref)))?.sha ?? "");
 		if (!commit) return [];
 		const registry = await registryIfThereIsOne(doors, repository, commit, source);
-		if (registry?.refusal) {
-			console.error(`[widgetarium] ${registry.refusal}`);
-			return [];
-		}
-		return registry
+		if (wasRefused(registry)) return [];
+
+		const offers = registry
 			? await listedInRegistry(doors, repository, commit, source, registry.rows)
 			: await listedInTree(doors, repository, commit, source);
+		return stampedWhereItMoved(offers, registry);
 	} catch (failure) {
 		console.error(`[widgetarium] cannot read ${source.repository}`, failure);
 		return [];
@@ -108,22 +162,32 @@ async function listedInRegistry(doors, repository, commit, source, rows) {
 }
 
 async function recordServedAt({ fetchText }, repository, commit, folder) {
-	try {
-		return JSON.parse(await fetchText(rawUrl(repository, commit, `${folder}/${RECORD_FILE}`)));
-	} catch {
-		return null;
+	for (const name of RECORD_FILES) {
+		const served = await fetchText(rawUrl(repository, commit, `${folder}/${name}`))
+			.then(JSON.parse)
+			.catch(() => null);
+		if (served) return served;
 	}
+	return null;
+}
+
+function folderOfRecord(path) {
+	const name = RECORD_FILES.find((held) => path.endsWith(`/${held}`));
+	return name ? path.slice(0, -name.length - 1) : null;
 }
 
 async function listedInTree(doors, repository, commit, source) {
 	const under = source.path ? `${source.path}/` : "";
 	const tree = (await doors.fetchJson(treeUrl(repository, commit)))?.tree ?? [];
 	const found = [];
+	const seen = new Set();
 	for (const node of tree) {
-		if (!node?.path?.startsWith(under) || !node.path.endsWith(`/${RECORD_FILE}`)) continue;
-		const folder = node.path.slice(0, -RECORD_FILE.length - 1);
+		const folder = node?.path?.startsWith(under) ? folderOfRecord(node.path) : null;
+		if (!folder || seen.has(folder)) continue;
+		seen.add(folder);
 		const manifest = await recordServedAt(doors, repository, commit, folder);
-		if (manifest?.id) found.push(offeredFromRepository(manifest, folder, commit, source));
+		const id = manifest?.id ?? idOfFolder(folder);
+		if (manifest && id) found.push(offeredFromRepository({ ...manifest, id }, folder, commit, source));
 	}
 	return found;
 }
@@ -156,8 +220,10 @@ async function codeAt(disk, folder, scope) {
 }
 
 async function recordAt(disk, folder) {
-	const at = `${folder}/${RECORD_FILE}`;
-	if (!(await disk.exists(at))) return readRecord(null, idOfFolder(folder));
+	const held = await Promise.all(RECORD_FILES.map((name) => disk.exists(`${folder}/${name}`)));
+	const name = RECORD_FILES[held.indexOf(true)];
+	if (!name) return readRecord(null, idOfFolder(folder));
+	const at = `${folder}/${name}`;
 	try {
 		return readRecord(JSON.parse(await disk.read(at)), idOfFolder(folder));
 	} catch (failure) {
@@ -228,15 +294,16 @@ async function fetchedFrom({ fetchJson, fetchText }, repository, manifest, wante
 }
 
 function recordServedUnder(files, promised) {
-	if (files[RECORD_FILE] === undefined) return { ok: true, record: readRecord(promised, promised.id), failure: null };
+	const served = recordIn(files);
+	if (served === undefined) return { ok: true, record: readRecord(promised, promised.id), failure: null };
 
 	let parsed;
 	try {
-		parsed = JSON.parse(files[RECORD_FILE]);
+		parsed = JSON.parse(served);
 	} catch {
-		return { ok: false, record: null, failure: `${RECORD_FILE} did not come back as JSON` };
+		return { ok: false, record: null, failure: "the widget's card did not come back as JSON" };
 	}
-	if (parsed?.id !== promised.id)
+	if (parsed?.id !== undefined && parsed.id !== promised.id)
 		return { ok: false, record: null, failure: `the repository served "${parsed?.id}" under "${promised.id}"` };
 	return { ok: true, record: readRecord(parsed, promised.id), failure: null };
 }

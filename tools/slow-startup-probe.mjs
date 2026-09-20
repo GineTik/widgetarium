@@ -28,9 +28,16 @@ walk(SOURCE, WIDGETS_DIR);
 let reads = 0;
 const fetched = () => new Promise((done) => setTimeout(done, FETCH_MS));
 
-const foldersUnder = (at) => [...new Set([...held.keys()].filter((path) => path.startsWith(`${at}/`)).map((path) => path.slice(at.length + 1).split("/")[0]))]
-	.map((name) => `${at}/${name}`)
-	.filter((path) => [...held.keys()].some((known) => known.startsWith(`${path}/`)));
+const foldersUnder = (at) =>
+	[
+		...new Set(
+			[...held.keys()]
+				.filter((path) => path.startsWith(`${at}/`))
+				.map((path) => path.slice(at.length + 1).split("/")[0]),
+		),
+	]
+		.map((name) => `${at}/${name}`)
+		.filter((path) => [...held.keys()].some((known) => known.startsWith(`${path}/`)));
 
 const adapter = {
 	exists: async (path) => {
@@ -46,7 +53,12 @@ const adapter = {
 	list: async (path) => {
 		reads += 1;
 		await fetched();
-		return { folders: foldersUnder(path), files: [...held.keys()].filter((known) => known.startsWith(`${path}/`) && !known.slice(path.length + 1).includes("/")) };
+		return {
+			folders: foldersUnder(path),
+			files: [...held.keys()].filter(
+				(known) => known.startsWith(`${path}/`) && !known.slice(path.length + 1).includes("/"),
+			),
+		};
 	},
 };
 

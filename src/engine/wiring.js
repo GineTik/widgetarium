@@ -1,13 +1,14 @@
 // TRADE-OFF: a widget id in a manifest, the way a slot already names its default widget — a bare prop name would collide, since two widgets both offer `selection`
+import { widgetKeyOf } from "./widget-ref.js";
 
 const mountedTiles = (tile) => Object.entries(tile.mounted ?? {}).map(([name, held]) => ({ ...held, id: name }));
 
-export function tilesByWidget(tiles, currentId = (id) => id) {
-	const seen = new Map();
+export function tilesByWidget(tiles, currentId = (id) => id, standing = []) {
+	const seen = new Map(standing.map((held) => [widgetKeyOf(held.widget), held.id]));
 	const walk = (held, at) => {
 		for (const tile of held ?? []) {
 			const id = at ? `${at}/${tile.id}` : tile.id;
-			const widget = tile.widget && currentId(tile.widget);
+			const widget = tile.widget && widgetKeyOf(currentId(tile.widget));
 			if (widget && !seen.has(widget)) seen.set(widget, id);
 			walk(mountedTiles(tile), id);
 		}
@@ -40,7 +41,7 @@ function wiredRow(row, standing) {
 }
 
 function wiredWhere(spec, config, standing) {
-	const rows = (spec.default?.where ?? []).map((row) => wiredRow(row, standing)).filter(Boolean);
+	const rows = (spec.where ?? []).map((row) => wiredRow(row, standing)).filter(Boolean);
 	const own = (config.where ?? []).filter((row) => row.fixed !== true);
 	if (rows.length === 0) return null;
 	return [...rows, ...own];
@@ -81,7 +82,8 @@ function wiredMounted(mounted, registry, standing) {
 	return wired.some(([name, held]) => held !== mounted[name]) ? Object.fromEntries(wired) : null;
 }
 
-export function wiredTiles(tiles, registry) {
-	const standing = tilesByWidget(tiles, (id) => registry.resolveId?.(id) ?? id);
+// TRADE-OFF: a box standing in for a widget is passed in rather than found here, because a layout node is not a tile and wiring reads tiles
+export function wiredTiles(tiles, registry, standsFor = []) {
+	const standing = tilesByWidget(tiles, (id) => registry.resolveId?.(id) ?? id, standsFor);
 	return tiles.map((tile) => wiredHeld(tile, registry, standing));
 }

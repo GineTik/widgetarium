@@ -1,5 +1,6 @@
 import { createElement as h, useEffect, useLayoutEffect, useRef } from "react";
 import { leaseFor } from "./engine/render.js";
+import { rootedWidget } from "./widget-root.js";
 
 export function DrawnInShell({ shell, tree }) {
 	const node = useRef(null);
@@ -13,8 +14,11 @@ export function DrawnInShell({ shell, tree }) {
 }
 
 export function drawnWidget(definition, props) {
-	if (!definition.draw) return h(definition.component, props);
-	const entry = { name: definition.manifest?.id, drawInto: (element) => definition.draw(element, definition.component, props) };
+	if (!definition.draw) return rootedWidget(h(definition.component, props));
+	const entry = {
+		name: definition.manifest?.id,
+		drawInto: (element) => definition.draw(element, definition.component, props),
+	};
 	return h(Mounted, { entry });
 }
 
@@ -33,7 +37,9 @@ export function Mounted({ entry }) {
 	useEffect(() => () => release.current?.(), []);
 
 	if (!entry.drawInto) {
-		console.error(`Widgetarium: Mounted was given "${entry.name}", which has nothing to draw — branch on entry.problem first`);
+		console.error(
+			`Widgetarium: Mounted was given "${entry.name}", which has nothing to draw — branch on entry.problem first`,
+		);
 		return h("div", { className: "wg-missing" }, h("b", null, "This view cannot be drawn"));
 	}
 	return h("div", { className: "wg-mounted", ref: node });

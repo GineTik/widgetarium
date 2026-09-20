@@ -25,16 +25,16 @@ name on the block.
 
 ## The eight steps, and what landed
 
-| # | step | state |
-|---|---|---|
-| 1 | `picks` resolves to the row, not a field of it | done — `pickedGateway` in `src/gateway/refs.ts` |
-| 2 | `archivedAt` on the column; reading still accepts the old second list | done — `columnsOf` in `widgets/@task/lib.js` |
-| 3 | `board` as a prop in kanban; `columns`/`archivedColumns`/`readBoardRecord`/`boardWriter` go | done |
-| 4 | `@task/archived-columns` reads `board.columns` | done |
-| 5 | `properties` becomes a field of the board; filter-panel loses the `board?.properties` fallback | done |
-| 6 | `{holder: true}` becomes the `foldIntoGroup` command | done |
-| 7 | `board` and `configureBoard` deleted, with the plumbing behind them | done |
-| 8 | `properties`/`archivedColumns` out of `normalizeBoard`/`serializeBoard` | done |
+| #   | step                                                                                           | state                                           |
+| --- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 1   | `picks` resolves to the row, not a field of it                                                 | done — `pickedGateway` in `src/gateway/refs.ts` |
+| 2   | `archivedAt` on the column; reading still accepts the old second list                          | done — `columnsOf` in `widgets/@task/lib.js`    |
+| 3   | `board` as a prop in kanban; `columns`/`archivedColumns`/`readBoardRecord`/`boardWriter` go    | done                                            |
+| 4   | `@task/archived-columns` reads `board.columns`                                                 | done                                            |
+| 5   | `properties` becomes a field of the board; filter-panel loses the `board?.properties` fallback | done                                            |
+| 6   | `{holder: true}` becomes the `foldIntoGroup` command                                           | done                                            |
+| 7   | `board` and `configureBoard` deleted, with the plumbing behind them                            | done                                            |
+| 8   | `properties`/`archivedColumns` out of `normalizeBoard`/`serializeBoard`                        | done                                            |
 
 ## Not done, and why
 

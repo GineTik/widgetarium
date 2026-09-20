@@ -1,0 +1,51 @@
+.wg-markdown-preview {
+	height: 100%;
+	overflow: auto;
+}
+
+.wg-markdown-preview-open {
+	float: right;
+	margin-inline-start: 8px;
+}
+
+.wg-markdown-preview-body.markdown-rendered > :first-child {
+	margin-top: 0;
+}
+
+.wg-markdown-preview-body.markdown-rendered > :last-child {
+	margin-bottom: 0;
+}
+
+.wg-markdown-preview-plain {
+	margin: 0;
+	white-space: pre-wrap;
+	font: inherit;
+}
+
+.wg-markdown-preview-failure {
+	margin: 0;
+	color: var(--text-muted);
+}
+
+.wg-markdown-preview-clip {
+	overflow: hidden;
+	transition: max-height 360ms var(--wg-spread);
+}
+
+.wg-markdown-preview-clip[data-cut="true"] {
+	mask-image: linear-gradient(to bottom, black calc(100% - 56px), transparent);
+}
+
+.wg-markdown-preview-collapsible {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.wg-markdown-preview-collapsible > .wg-markdown-preview-clip {
+	align-self: stretch;
+}
+
+.wg-markdown-preview-more {
+	margin-top: 8px;
+}

@@ -4,7 +4,21 @@ import { transform } from "sucrase";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
-for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MouseEvent", "PointerEvent", "Event", "MutationObserver"]) {
+for (const key of [
+	"window",
+	"document",
+	"Node",
+	"Element",
+	"HTMLElement",
+	"SVGElement",
+	"getComputedStyle",
+	"requestAnimationFrame",
+	"cancelAnimationFrame",
+	"MouseEvent",
+	"PointerEvent",
+	"Event",
+	"MutationObserver",
+]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 globalThis.ResizeObserver = class {
@@ -25,7 +39,7 @@ const emojis = await import("./.mjs-cache/emojis.mjs");
 const { EMOJI_TABLE } = await import("./.mjs-cache/emoji-table.mjs");
 const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 
-const WIDGET = "widgets/@rank/tier-list/widget.tsx";
+const WIDGET = "widgets/@default/tier-list/widget.tsx";
 const libs = new Map();
 
 function compiled(file, source) {
@@ -39,7 +53,14 @@ function compiled(file, source) {
 }
 
 function importing() {
-	const modules = { widgetarium, "widgetarium/kit": kit, "widgetarium/kit/emojis": emojis, react, "react-dom": reactDom, ...Object.fromEntries(libs) };
+	const modules = {
+		widgetarium,
+		"widgetarium/kit": kit,
+		"widgetarium/kit/emojis": emojis,
+		react,
+		"react-dom": reactDom,
+		...Object.fromEntries(libs),
+	};
 	return (name) => {
 		const found = modules[name];
 		if (!found) throw new Error(`cannot import "${name}"`);
@@ -54,18 +75,20 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@rank/lib", run("widgets/@rank/lib.js"));
-const lib = libs.get("@rank/lib");
+libs.set("@default/lib", run("widgets/@default/lib.js"));
+const lib = libs.get("@default/lib");
 const TierList = run(WIDGET).default;
 
 let failed = 0;
 function check(what, got, wanted) {
 	const ok = JSON.stringify(got) === JSON.stringify(wanted);
 	if (!ok) failed += 1;
-	console.log(`${ok ? "ok  " : "FAIL"} ${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`);
+	console.log(
+		`${ok ? "ok  " : "FAIL"} ${what}${ok ? "" : ` — got ${JSON.stringify(got)}, wanted ${JSON.stringify(wanted)}`}`,
+	);
 }
 
-const rowsOf = (values) => values.map((value, at) => ({ ref: `r${at}`, value }));
+const rowsOf = (values) => values.map((value, at) => ({ ...value, ref: `r${at}` }));
 
 const TIERS = rowsOf([
 	{ label: "S", tone: "error", order: 1 },
@@ -81,47 +104,144 @@ const CARDS = rowsOf([
 ]);
 
 const held = lib.rackOf(TIERS, CARDS);
-check("a row holds only the cards that name it", held.rack[0].cards.map((row) => row.value.name), ["Ramen", "Pizza"]);
-check("a card with no row waits in the tray", held.tray.map((row) => row.value.name), ["Falafel"]);
-check("a card naming a row nobody carries is an orphan, not a tray card", held.orphans.map((row) => row.value.name), ["Lost"]);
-check("rows come out in the order they carry", held.rack.map((line) => line.label), ["S", "A"]);
+check(
+	"a row holds only the cards that name it",
+	held.rack[0].cards.map((row) => row.name),
+	["Ramen", "Pizza"],
+);
+check(
+	"a card with no row waits in the tray",
+	held.tray.map((row) => row.name),
+	["Falafel"],
+);
+check(
+	"a card naming a row nobody carries is an orphan, not a tray card",
+	held.orphans.map((row) => row.name),
+	["Lost"],
+);
+check(
+	"rows come out in the order they carry",
+	held.rack.map((line) => line.label),
+	["S", "A"],
+);
 
-const twinned = lib.rackOf(rowsOf([{ label: "S", order: 1 }, { label: "S", order: 2 }]), CARDS);
-check("two rows sharing a name are one row, and its cards are counted once", [twinned.rack.length, twinned.rack[0].cards.length], [1, 2]);
+const twinned = lib.rackOf(
+	rowsOf([
+		{ label: "S", order: 1 },
+		{ label: "S", order: 2 },
+	]),
+	CARDS,
+);
+check(
+	"two rows sharing a name are one row, and its cards are counted once",
+	[twinned.rack.length, twinned.rack[0].cards.length],
+	[1, 2],
+);
 
-const unnamed = lib.rackOf(rowsOf([{ label: "  ", order: 1 }, { label: "S", order: 2 }]), CARDS);
-check("a row with no name is no row", unnamed.rack.map((line) => line.label), ["S"]);
+const unnamed = lib.rackOf(
+	rowsOf([
+		{ label: "  ", order: 1 },
+		{ label: "S", order: 2 },
+	]),
+	CARDS,
+);
+check(
+	"a row with no name is no row",
+	unnamed.rack.map((line) => line.label),
+	["S"],
+);
 
-check("a place between two neighbours is their middle", lib.orderBetween({ value: { order: 1 } }, { value: { order: 2 } }), 1.5);
-check("a place above everything steps below the first", lib.orderBetween(null, { value: { order: 4 } }), 3);
-check("a place under everything steps past the last", lib.orderBetween({ value: { order: 4 } }, null), 5);
+check("a place between two neighbours is their middle", lib.orderBetween({ order: 1 }, { order: 2 }), 1.5);
+check("a place above everything steps below the first", lib.orderBetween(null, { order: 4 }), 3);
+check("a place under everything steps past the last", lib.orderBetween({ order: 4 }, null), 5);
 check("an empty row starts at one", lib.orderBetween(null, null), 1);
-check("a middle that cannot be told from its neighbour asks for a renumber", lib.orderBetween({ value: { order: 1 } }, { value: { order: 1 + Number.EPSILON } }), null);
-check("a renumber lays whole numbers in the order given", lib.renumbered(rowsOf([{ name: "a" }, { name: "b" }])).map((row) => row.value.order), [1, 2]);
+check(
+	"a middle that cannot be told from its neighbour asks for a renumber",
+	lib.orderBetween({ order: 1 }, { order: 1 + Number.EPSILON }),
+	null,
+);
+check(
+	"a renumber lays whole numbers in the order given",
+	lib.renumbered(rowsOf([{ name: "a" }, { name: "b" }])).map((row) => row.order),
+	[1, 2],
+);
 
 const moved = lib.placedAt(CARDS, CARDS[0], 3);
-check("a card put at an index leaves its old place", moved.map((row) => row.value.name), ["Ramen", "Tacos", "Falafel", "Pizza", "Lost"]);
-check("an index past the end lands at the end", lib.placedAt(CARDS, CARDS[0], 99).map((row) => row.value.name).slice(-1), ["Pizza"]);
+check(
+	"a card put at an index leaves its old place",
+	moved.map((row) => row.name),
+	["Ramen", "Tacos", "Falafel", "Pizza", "Lost"],
+);
+check(
+	"an index past the end lands at the end",
+	lib
+		.placedAt(CARDS, CARDS[0], 99)
+		.map((row) => row.name)
+		.slice(-1),
+	["Pizza"],
+);
 
-check("a size that is not a number falls back rather than reaching the stylesheet", [lib.cardSizeOf("abc"), lib.cardSizeOf(""), lib.cardSizeOf(undefined)], [64, 32, 64]);
+check(
+	"a size that is not a number falls back rather than reaching the stylesheet",
+	[lib.cardSizeOf("abc"), lib.cardSizeOf(""), lib.cardSizeOf(undefined)],
+	[64, 32, 64],
+);
 check("a size is held between its floor and its ceiling", [lib.cardSizeOf(4), lib.cardSizeOf(1e6)], [32, 160]);
 
 check("a bare card draws its letters", lib.pictureOf({ name: "Fried chicken" }), { kind: "letters", letters: "FC" });
-check("a web address is drawn as a picture", lib.pictureOf({ name: "Iris", picture: "https://example.com/a.svg" }).kind, "remote");
-check("an emoji is named, never typed", lib.pictureOf({ name: "Sleepy", picture: "emoji:sleepy-face" }), { kind: "emoji", name: "sleepy-face", letters: "SL" });
-check("an attachment becomes an embed the host can resolve", lib.pictureOf({ name: "Zoe", picture: "faces/zoe.png" }).markdown, "![[faces/zoe.png]]");
-check("an embed already written stays as it is", lib.pictureOf({ name: "Zoe", picture: "![[zoe.png]]" }).markdown, "![[zoe.png]]");
+check(
+	"a web address is drawn as a picture",
+	lib.pictureOf({ name: "Iris", picture: "https://example.com/a.svg" }).kind,
+	"remote",
+);
+check("an emoji is named, never typed", lib.pictureOf({ name: "Sleepy", picture: "emoji:sleepy-face" }), {
+	kind: "emoji",
+	name: "sleepy-face",
+	letters: "SL",
+});
+check(
+	"an attachment becomes an embed the host can resolve",
+	lib.pictureOf({ name: "Zoe", picture: "faces/zoe.png" }).markdown,
+	"![[faces/zoe.png]]",
+);
+check(
+	"an embed already written stays as it is",
+	lib.pictureOf({ name: "Zoe", picture: "![[zoe.png]]" }).markdown,
+	"![[zoe.png]]",
+);
 
-check("a new row takes a name no row holds", [lib.freeLabel([]), lib.freeLabel(["New row"]), lib.freeLabel(["New row", "New row 2"])], ["New row", "New row 2", "New row 3"]);
-check("the colour after one is the kit's next, and never neutral", [lib.nextToneAfter("accent"), lib.nextToneAfter(kit.TONE_NAMES[kit.TONE_NAMES.length - 1])].includes("neutral"), false);
-check("every card colour the hash reaches is one the kit draws", lib.PRESETS[0].cards.every((card) => kit.TONE_NAMES.includes(lib.toneForSeed(card.name))), true);
-check("and never the one that paints no rail", lib.PRESETS[0].cards.some((card) => lib.toneForSeed(card.name) === "neutral"), false);
-check("a row with a colour the kit does not draw falls back rather than painting nothing", lib.toneOf({ tone: "chartreuse" }), "neutral");
+check(
+	"a new row takes a name no row holds",
+	[lib.freeLabel([]), lib.freeLabel(["New row"]), lib.freeLabel(["New row", "New row 2"])],
+	["New row", "New row 2", "New row 3"],
+);
+check(
+	"the colour after one is the kit's next, and never neutral",
+	[lib.nextToneAfter("accent"), lib.nextToneAfter(kit.TONE_NAMES[kit.TONE_NAMES.length - 1])].includes("neutral"),
+	false,
+);
+check(
+	"every card colour the hash reaches is one the kit draws",
+	lib.PRESETS[0].cards.every((card) => kit.TONE_NAMES.includes(lib.toneForSeed(card.name))),
+	true,
+);
+check(
+	"and never the one that paints no rail",
+	lib.PRESETS[0].cards.some((card) => lib.toneForSeed(card.name) === "neutral"),
+	false,
+);
+check(
+	"a row with a colour the kit does not draw falls back rather than painting nothing",
+	lib.toneOf({ tone: "chartreuse" }),
+	"neutral",
+);
 
 const presetFaults = lib.PRESETS.flatMap((preset) => {
 	const names = preset.cards.map((card) => card.name);
 	const twins = names.filter((name, at) => names.indexOf(name) !== at);
-	const unknownFaces = preset.cards.map((card) => String(card.picture ?? "")).filter((written) => written.startsWith("emoji:") && !EMOJI_TABLE[written.slice(6)]);
+	const unknownFaces = preset.cards
+		.map((card) => String(card.picture ?? ""))
+		.filter((written) => written.startsWith("emoji:") && !EMOJI_TABLE[written.slice(6)]);
 	const web = preset.cards.some((card) => String(card.picture ?? "").startsWith("http"));
 	return [
 		...(names.length >= 10 ? [] : [`${preset.id}: only ${names.length} cards`]),
@@ -143,10 +263,16 @@ let minted = 0;
 
 function writesOver(verbs, name) {
 	return {
-		...(verbs.includes("create") ? { create: (draft) => (written.push({ verb: `${name}.create`, ...draft }), null) } : {}),
-		...(verbs.includes("update") ? { update: (input) => (written.push({ verb: `${name}.update`, ref: input.ref, ...input.data }), null) } : {}),
+		...(verbs.includes("create")
+			? { create: (draft) => (written.push({ verb: `${name}.create`, ...draft }), null) }
+			: {}),
+		...(verbs.includes("update")
+			? { update: (input) => (written.push({ verb: `${name}.update`, ref: input.ref, ...input.data }), null) }
+			: {}),
 		...(verbs.includes("remove") ? { remove: (ref) => void written.push({ verb: `${name}.remove`, ref }) } : {}),
-		...(verbs.includes("replace") ? { replace: (given) => void written.push({ verb: `${name}.replace`, count: given.length }) } : {}),
+		...(verbs.includes("replace")
+			? { replace: (given) => void written.push({ verb: `${name}.replace`, count: given.length }) }
+			: {}),
 	};
 }
 
@@ -156,7 +282,11 @@ function listOver(rows, verbs, name) {
 	return collectionGateway({
 		id: `rank-test/${name}/${minted}`,
 		settlesNow: true,
-		handlers: { list: () => ({ rows: stored, total: stored.length }), get: (ref) => stored.find((row) => row.ref === ref) ?? null, ...writesOver(verbs, name) },
+		handlers: {
+			list: () => ({ rows: stored, total: stored.length }),
+			get: (ref) => stored.find((row) => row.ref === ref) ?? null,
+			...writesOver(verbs, name),
+		},
 	});
 }
 
@@ -194,11 +324,16 @@ async function draw(asked = {}) {
 }
 
 const all = (selector) => [...host.querySelectorAll(selector)];
-const pressed = (label) => all("button").find((button) => (button.getAttribute("aria-label") ?? button.textContent) === label);
+const pressed = (label) =>
+	all("button").find((button) => (button.getAttribute("aria-label") ?? button.textContent) === label);
 const cardNamed = (name) => all(".wr-card").find((node) => node.querySelector(".wr-cap")?.textContent === name);
 
 await draw();
-check("every row the list carries is drawn", all(".wr-rail-label").map((node) => node.textContent), ["S", "A"]);
+check(
+	"every row the list carries is drawn",
+	all(".wr-rail-label").map((node) => node.textContent),
+	["S", "A"],
+);
 check("a card is drawn inside the row it names", all(".wr-tier")[0].querySelectorAll(".wr-card").length, 2);
 check("the tray holds only what is unranked", all(".wr-tray-row")[1].querySelectorAll(".wr-card").length, 1);
 check("an orphan is said out loud rather than quietly trayed", all(".wr-orphans").length, 1);
@@ -211,18 +346,32 @@ check("pressing a card picks it up for a second press", all(".wr-card.is-picked"
 
 all(".wr-rail")[0].dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settled();
-check("pressing a row with a card in hand moves that card, in one write", written, [{ verb: "cards.update", ref: "r2", tier: "S", order: 3 }]);
+check("pressing a row with a card in hand moves that card, in one write", written, [
+	{ verb: "cards.update", ref: "r2", tier: "S", order: 3 },
+]);
 
 await draw({ cardVerbs: ["list"] });
 check("a source nothing can write to offers no add", pressed("Add a card"), undefined);
-check("a source nothing can write to offers no reset", all("button").some((button) => button.textContent === "Reset"), false);
+check(
+	"a source nothing can write to offers no reset",
+	all("button").some((button) => button.textContent === "Reset"),
+	false,
+);
 
 await draw({ cardVerbs: ["update"], tierVerbs: ["update"] });
-check("presets are offered only where a whole list can be replaced", all("button").some((button) => button.textContent === "Presets"), false);
+check(
+	"presets are offered only where a whole list can be replaced",
+	all("button").some((button) => button.textContent === "Presets"),
+	false,
+);
 
 await draw({ tiers: [] });
 check("no rows is a drawn state, not a refusal", all(".wr-empty-note").length, 1);
-check("with no rows the ranked cards are orphans and the rest is the tray", [all(".wr-orphans .wr-card").length, all(".wr-tray-row").slice(-1)[0].querySelectorAll(".wr-card").length], [4, 1]);
+check(
+	"with no rows the ranked cards are orphans and the rest is the tray",
+	[all(".wr-orphans .wr-card").length, all(".wr-tray-row").slice(-1)[0].querySelectorAll(".wr-card").length],
+	[4, 1],
+);
 
 await draw({ cards: [] });
 check("nothing to rank says so", all(".wr-tray-say").length, 1);

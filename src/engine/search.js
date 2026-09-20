@@ -42,7 +42,9 @@ export function fold(text) {
 }
 
 export function terms(query) {
-	return fold(query).split(" ").filter((term) => term !== "");
+	return fold(query)
+		.split(" ")
+		.filter((term) => term !== "");
 }
 
 function textOf(value) {

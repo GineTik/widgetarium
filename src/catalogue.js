@@ -20,6 +20,7 @@ import {
 import { rankSearch } from "./engine/search.js";
 import { drawnWidget } from "./mounted.js";
 import { previewProps, previewSize } from "./preview.js";
+import { gapVarsOf } from "./tree.js";
 import { shotUrl, themeNow } from "./engine/shot.js";
 
 import { classOf, GRID, spanToPixels } from "./paths.js";
@@ -89,6 +90,7 @@ const COUNTED = "{count} widgets";
 const WRITING = "Writing {done} of {total} files";
 const FETCHING = "Fetching";
 const OUTDATED = "{here} here · {there} out";
+const MOVED_TO = "This registry moved to {movedTo}; newer versions are published there.";
 const COULD_NOT_FETCH = "could not fetch this widget";
 
 const SHORT_LABEL = "These want more than this slot hands down";
@@ -273,6 +275,7 @@ function Preview({ definition, registry, host, tile, entry }) {
 					width: `${tile.size.width}px`,
 					height: `${tile.size.height}px`,
 					transform: `scale(${tile.scale})`,
+					...gapVarsOf(1),
 				},
 			},
 			drawnWidget(definition, previewProps(definition, { registry, host })),
@@ -389,6 +392,9 @@ function TileLines({ entry, state, step, failure, lacks }) {
 			: null,
 		// TRADE-OFF: the sentence lives on the card, because there is no detail page to hold it
 		description ? h("p", { className: "wg-cat-what", key: "what" }, description) : null,
+		entry.manifest?.movedTo
+			? h("p", { className: "wg-cat-lack", key: "moved" }, MOVED_TO.replace("{movedTo}", entry.manifest.movedTo))
+			: null,
 		failure ? h("p", { className: "wg-cat-lack is-failure", key: "failure" }, failure) : null,
 		lacks ? h("p", { className: "wg-cat-lack", key: "lack" }, lacks) : null,
 	];
