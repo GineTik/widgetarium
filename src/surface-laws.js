@@ -1,5 +1,12 @@
 import { colorOf, contrastOf, lightnessOf, over } from "./color-math.js";
-import { DEFAULT_STYLE, isKnownRole, mayWearInside } from "./surface-roles.js";
+import {
+	DEFAULT_STYLE,
+	isKnownRole,
+	MAX_SURFACE_DEPTH,
+	mayWearInside,
+	plateRefusal,
+	platesWithin,
+} from "./surface-roles.js";
 import {
 	APART,
 	allEdges,
@@ -26,7 +33,6 @@ import {
 const LIGHTNESS_STEP = 2;
 const TEXT_CONTRAST = 4.5;
 const FAINT_TEXT_KEEPS = 0.85;
-const MAX_SURFACE_DEPTH = 2;
 const FILLS_ITS_PARENT = 0.88;
 const REGION_CHILD_DEPTH = 2;
 
@@ -71,8 +77,6 @@ function wrongNow(layout) {
 const identityOf = (finding) => `${finding.path.join("/")}:${finding.law}:${finding.reason}`;
 
 const NOTHING_THERE = "nothing stands there any more, so its surface was left alone";
-const NOT_INSIDE = "{one} may not stand inside {other}";
-const SAID_AS = { group: "a group", object: "an object", item: "an item", apart: "a divider", none: "the page" };
 
 // TRADE-OFF: a law's letter is the agent's vocabulary, not a person's, so the reason says itself and the letter stays on the finding for the CLI
 export function saidRefusal(refusal) {
@@ -99,25 +103,13 @@ export function nestingFindings(layout) {
 
 function visitNesting(findings, node, path, above) {
 	const surface = node.surface ?? NO_SURFACE;
-	const levels = above.levels + (isPainted(node) ? 1 : 0);
+	const levels = platesWithin(above, surface);
 	findings.push(
-		...[misnested(surface, above), tooDeep(levels), crowded(node, surface)]
-			.filter(Boolean)
-			.map((one) => ({ path, ...one })),
+		...[plateRefusal(above, surface), crowded(node, surface)].filter(Boolean).map((one) => ({ path, ...one })),
 	);
 	if (!isBox(node)) return;
 	const inside = { surface: isPainted(node) ? surface : above.surface, levels };
 	node.of.forEach((child, at) => visitNesting(findings, child, [...path, at], inside));
-}
-
-function misnested(surface, above) {
-	if (surface === NO_SURFACE || mayWearInside(above.surface, surface)) return null;
-	return { law: "N", reason: NOT_INSIDE.replace("{one}", SAID_AS[surface]).replace("{other}", SAID_AS[above.surface]) };
-}
-
-function tooDeep(levels) {
-	if (levels <= MAX_SURFACE_DEPTH) return null;
-	return { law: "5", reason: `${levels} surfaces deep counted from the region, over ${MAX_SURFACE_DEPTH}` };
 }
 
 function crowded(node, surface) {

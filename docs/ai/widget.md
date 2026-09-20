@@ -131,8 +131,27 @@ corner; `size={24}` makes it an avatar. `shape` and `tone` name one outright whe
 has a colour. It is `aria-hidden` — the label beside it is what a screen reader reads. No seed is the
 empty seed: one mark, shared by everything nameless.
 
-**Draw no background, border or shadow on your root.** The engine draws the root — container query,
-size, clipping — and the board decides the plate. Paint one only when it is the content itself.
+## A plate inside a widget
+
+**Draw no background, border, corner or shadow of your own.** The engine draws the root — container
+query, size, clipping — the board decides the tile's plate, and every plate you paint under it is
+`<Surface>` from `widgetarium/kit`:
+
+```tsx
+<Surface type="group">…</Surface>
+<Surface type="group" tone="warning">…</Surface>
+<Surface type="apart" side="start" across="column">…</Surface>
+```
+
+`type` is `group`, `object`, `apart` or `none`, and `none` is the default, so a widget that asks for
+nothing stays bare. `tone` paints the plate in a state — that is what a warning block is, rather
+than a colour of your own. The corner and the padding come out concentric with the tile's.
+
+**The laws decide it, not you.** Two plates stand from the region, the tile's own included, so a
+tile already wearing a `group` leaves you one plate and the next is refused: it paints nothing and
+says why in the console. A `type`, `tone`, `side` or `across` the kit never had is refused the same
+way — the default is drawn and the console names what it took instead, so a typo never reaches the
+screen as a plate or a line nobody can explain. Read [surfaces.md](surfaces.md) before nesting them.
 
 ## The rest of the manifest
 

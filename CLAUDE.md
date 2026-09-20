@@ -108,16 +108,20 @@ parent. **The agent gives every node its surface as it places it**, guided by `d
 `widgets.mjs surfaces` reads a **drawn** board back and says which plates look wrong beside each
 other, and is never a source of surfaces to write.
 
-**A pattern is data, and the board remembers which one it is.** `src/patterns.js` holds the six
-shells that cut a page into regions, each region carrying its `role`, `purpose`, `surface` and
-whether it is kept or collapses, beside the board width the full form needs. `widgets.mjs pattern
-<name>` hands that skeleton over with the surfaces already on the nodes, so the pattern writes them
-into the note rather than competing with the laws at draw time — `regionSurfaceOf` still reads the
-node, and a board with no pattern still falls to D1. `pattern:` survives `normalizeBoard` and
-`serializeBoard`, which is what lets `lint` hold a built screen against what was declared: a region
-count that does not match, a region holding the wrong role, a declared region left empty. A pattern
-named only in the chat was thrown away, and that is why the same request produced a different screen
-every time.
+**A screen starts from a base, and the board remembers which one.** `src/layouts.js` holds the
+fifteen page skeletons a screen may begin as — `page`, `page-composed`, `workspace`, `three-pane`,
+`supporting-pane`, `split`, `surface`, `journal`, `analytics`, `library`, `gallery`, `atlas`,
+`showcase`, `notebook`, `drill` — each cutting the page into regions that carry their `role`,
+`purpose`, `surface` and whether they are kept or collapse, each region already holding its named
+sections, and **no widgets anywhere**: a section is a plain column with a `name`, never a node kind
+of its own, and which widget stands in it is the design's answer rather than the shell's.
+`widgets.mjs base <name>` hands the skeleton over with the surfaces already on the nodes, so the base
+writes them into the note rather than competing with the laws at draw time. `base:` survives
+`normalizeBoard` and `serializeBoard`, which is what lets `lint` hold a built screen against what was
+declared: a region count that does not match, a region holding the wrong role, a declared region left
+empty. A shell named only in the chat was thrown away, and that is why the same request produced a
+different screen every time. `src/patterns.js` is now only the card shapes — what a card wears alone
+and among peers — which is a different question from how a page is cut.
 
 **The agent sees the whole catalogue, not the vault.** `widgets.mjs find` merges what is installed
 with what every configured source offers, and `src/engine/registry-file.js` is the one reader of a
@@ -269,8 +273,28 @@ records become tiles, and the box answers to the widget id in wiring so a switch
 group finds it. Full decision in `docs/decisions.md`.
 
 **A background belongs to a group, not to a widget.** The engine draws every widget's root — its
-container query, size and clipping — and a widget draws no background on its own; `WidgetRoot`
-survives only as a bare element for widgets written before. Any node may wear `surface: group |
+container query, size and clipping — and a widget paints a plate only through `<Surface>` from the
+kit; `WidgetRoot` survives only as a bare element for widgets written before.
+
+**The tile's plate is the node's, the plates under it are the widget's, and one component paints
+both kinds.** `Surface` in `src/kit.js` takes `type` — the same four words, `none` by default, so a
+widget that asks for nothing stays bare — plus `tone` for a plate in a state and `side`/`across` for
+a divider. It reads `PLATES_ABOVE` (`src/kit-surface.js`), seeded from the laid node's own `plates` and
+`underSurface` — **inside the tree handed to the tile's shell, because a widget is drawn in its own
+render root** (`DrawnInShell` in `src/mounted.js`) and no context crosses that seam. Measured: a Provider
+around the cell body left every widget counting from zero, and the third plate painted itself white
+on a drawn board while every jsdom check stayed green. Every plate under it provides the next level,
+so a widget's Surface is judged by the very laws the tree is judged by: `plateRefusal` in `src/surface-roles.js`
+is the one function answering whether a plate may stand somewhere, asked by `nestingFindings` for the
+note and by the kit for the screen; `tone`, `side` and `across` are held to the kit's own words the
+same way, and a word the kit never had falls back and warns rather than reaching the DOM. A named
+`data-surface` cannot outrank the computed one — the laws' attributes are spread after a caller's
+props, because a prop that could name the plate would be a way past the gate. **A tone replaces the
+plate's grey**, which the cascade had to be told: `.wg-kit-tone` is excluded from the group and object
+fills by name, and a jsdom check on the class list said the tone was there while Chrome painted grey. **A refused plate paints nothing and warns** — it cannot reach the
+screen and be measured later as a third fill nobody declared. Corners step inward from the tile's
+own (`--wg-surface-corner`) and are never written by a widget. The slot wrapper is that component
+too, which is what makes a slotted widget's depth right rather than one level short. Any node may wear `surface: group |
 object | apart | none`, named for what the node **is** rather than for how it is painted, so a
 design system may repaint any of them without the name lying: a `group` is several things answering
 one question, an `object` is a thing lifted off the page that a person acts in, and `apart` is a

@@ -10,6 +10,8 @@ import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
 const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
+const { cornerOf } = await import("./.mjs-cache/tree.mjs");
+const CORNER_AT_DEPTH = [cornerOf(1), cornerOf(2)];
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-paint-"));
@@ -76,6 +78,155 @@ function pageFor(theme, script, name, sheets = []) {
 	writeFileSync(file, page);
 	return file;
 }
+
+const KIT_SURFACE_SCRIPT = `
+const host = document.getElementById("host");
+host.innerHTML = '<div class="wg-tree-page">'
+  + '<div class="wg-tile wg-tree-cell" data-surface="group" style="--wg-plate-corner:18px;--wg-kit-plate:14px;--wg-kit-item:6px">'
+  + '<div class="wg-tile-body"><div class="wg-kit-surface" id="in-group" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">deep</div></div>'
+  + '</div>'
+  + '<div class="wg-tile wg-tree-cell" style="--wg-kit-plate:14px;--wg-kit-item:6px">'
+  + '<div class="wg-tile-body"><div class="wg-kit-surface" id="on-page" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">alone</div></div>'
+  + '</div>'
+  + '<div id="token-fill" style="background: var(--wg-kit-group-fill)"></div>'
+  + '<div id="token-raise" style="background: var(--wg-kit-group-raise)"></div>'
+  + '</div>'
+  + '<div class="wg-kit-surface" id="off-board" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">off</div>'
+  + '<div class="wg-kit-surface wg-kit-tone is-warn" id="toned" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">warned</div>'
+  + '<div style="width:200px"><div class="wg-kit-surface" id="line-below" data-surface="apart" data-side="end" data-across="column">above the line</div>'
+  + '<div class="wg-kit-surface" id="line-left" data-surface="apart" data-side="start" data-across="row">beside the line</div></div>';
+`;
+
+const KIT_SURFACE_ASK = `(() => {
+	const paintOf = (id) => getComputedStyle(document.getElementById(id));
+	const lineOf = (id) => {
+		const drawn = getComputedStyle(document.getElementById(id), "::before");
+		return { width: drawn.width, height: drawn.height, top: drawn.top, left: drawn.left };
+	};
+	const token = (name, property) => {
+		const probe = document.createElement("div");
+		probe.style[property ?? "borderTopLeftRadius"] = "var(" + name + ")";
+		document.body.appendChild(probe);
+		const read = getComputedStyle(probe)[property ?? "borderTopLeftRadius"];
+		probe.remove();
+		return read;
+	};
+	const inGroup = paintOf("in-group");
+	const onPage = paintOf("on-page");
+	return {
+		inGroup: inGroup.backgroundColor,
+		onPage: onPage.backgroundColor,
+		fill: paintOf("token-fill").backgroundColor,
+		raise: paintOf("token-raise").backgroundColor,
+		offBoard: paintOf("off-board").backgroundColor,
+		toned: paintOf("toned").backgroundColor,
+		warningWash: token("--wg-kit-warning-wash", "backgroundColor"),
+		corner: inGroup.borderTopLeftRadius,
+		pad: inGroup.paddingTop,
+		lineBelow: lineOf("line-below"),
+		lineLeft: lineOf("line-left"),
+		plateCornerPx: token("--wg-kit-plate"),
+		itemCornerPx: token("--wg-kit-item"),
+	};
+})()`;
+
+const PLATE_PROBE = `
+import { createElement as h } from "react";
+import { render } from "./src/engine/render.js";
+import { WidgetSurface } from "./src/surface.js";
+import { normalizeBoard } from "./src/model.js";
+import { Surface } from "./src/kit.js";
+
+const WIDGET_ID = "@probe/plated";
+const Plated = () =>
+	h(Surface, { type: "group", className: "probe-first" }, h(Surface, { type: "group", className: "probe-second" }, "deeper"));
+const manifest = { id: WIDGET_ID, title: "Plated", role: "collection" };
+const registry = { get: () => ({ manifest, component: Plated }), list: () => [{ manifest, component: Plated }] };
+const host = { platform: "probe", can: {}, ui: { notify() {}, openNote() {} } };
+const board = normalizeBoard({
+	v: 2,
+	tiles: [{ id: "onGroup", widget: WIDGET_ID }, { id: "onPage", widget: WIDGET_ID }],
+	layout: {
+		dir: "row",
+		of: [
+			{ dir: "column", of: [{ id: "onGroup", surface: "group" }] },
+			{ dir: "column", of: [{ id: "onPage" }] },
+		],
+	},
+});
+const node = document.getElementById("host");
+render(h(WidgetSurface, { board, boardNode: node, registry, host, initialWidth: 1240 }), node);
+`;
+
+const PLATE_ASK = `(() => {
+	const paintIn = (cell, part) => {
+		const found = document.querySelector('[data-cell="' + cell + '"] .' + part);
+		return found ? { fill: getComputedStyle(found).backgroundColor, worn: found.getAttribute("data-surface") } : null;
+	};
+	const token = (name) => {
+		const probe = document.createElement("div");
+		probe.style.background = "var(" + name + ")";
+		document.body.appendChild(probe);
+		const read = getComputedStyle(probe).backgroundColor;
+		probe.remove();
+		return read;
+	};
+	return {
+		onPageFirst: paintIn("onPage", "probe-first"),
+		onPageSecond: paintIn("onPage", "probe-second"),
+		onGroupFirst: paintIn("onGroup", "probe-first"),
+		onGroupSecond: paintIn("onGroup", "probe-second"),
+		fill: token("--wg-kit-group-fill"),
+		raise: token("--wg-kit-group-raise"),
+		clear: "rgba(0, 0, 0, 0)",
+	};
+})()`;
+
+const KANBAN_PLATE_SCRIPT = `
+const sheetOf = (id) => {
+	const key = Object.keys(window.__FILES__).find((name) => name.endsWith(id + "/widget.tsx"));
+	const source = window.__FILES__[key];
+	return source.slice(source.indexOf("\`", source.indexOf("STYLE = \`")) + 1, source.indexOf("\`;"));
+};
+const style = document.createElement("style");
+style.textContent = sheetOf("@default/kanban-board");
+document.head.appendChild(style);
+const host = document.getElementById("host");
+host.innerHTML = '<div class="wg-tree-page"><div class="wg-tile wg-tree-cell" style="--wg-kit-plate:14px;--wg-kit-item:6px">'
+  + '<div class="wg-tile-body"><div class="orbi-kanban"><div class="ok-board">'
+  + '<div class="wg-kit-surface ok-list" id="column" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">'
+  + '<div class="ok-card-slot"><div class="wg-kit-surface" id="card" data-surface="group" style="--wg-surface-corner: var(--wg-kit-item)">'
+  + '<span class="ok-card-title">Write the brief</span></div></div>'
+  + '</div>'
+  + '<button type="button" class="wg-kit-surface ok-add-list-rest" id="add-list" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">Add List</button>'
+  + '</div></div></div></div></div>';
+`;
+
+const KANBAN_PLATE_ASK = `(() => {
+	const read = (id) => {
+		const drawn = getComputedStyle(document.getElementById(id));
+		return { fill: drawn.backgroundColor, pad: drawn.paddingTop, corner: drawn.borderTopLeftRadius };
+	};
+	const token = (name) => {
+		const probe = document.createElement("div");
+		probe.style.background = "var(" + name + ")";
+		document.body.appendChild(probe);
+		const painted = getComputedStyle(probe).backgroundColor;
+		probe.remove();
+		return painted;
+	};
+	const addList = read("add-list");
+	const behind = getComputedStyle(document.getElementById("add-list"), "::before").backgroundColor;
+	return {
+		column: read("column"),
+		card: read("card"),
+		addList,
+		behind,
+		fill: token("--wg-kit-group-fill"),
+		raise: token("--wg-kit-group-raise"),
+		clear: "rgba(0, 0, 0, 0)",
+	};
+})()`;
 
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
@@ -877,6 +1028,24 @@ const METRIC_ASK = `(async () => {
 	};
 })()`;
 
+const SHEET_SCRIPT = `document.getElementById("host").innerHTML =
+	'<div class="wg-tile wg-tree-cell"><div class="wg-tile-body"><div class="wg-widget-root">' +
+	'<style>.probe-line { margin: 0 }</style>' +
+	'<h2 class="probe-line" id="drawn">The section</h2>' +
+	'</div></div></div>';`;
+
+const SHEET_ASK = `(() => {
+	const root = document.querySelector(".wg-widget-root");
+	if (!root) return { found: document.body.innerHTML.slice(0, 300) };
+	const sheet = root.querySelector("style");
+	const drawn = root.querySelector("#drawn");
+	return {
+		display: getComputedStyle(sheet).display,
+		sheetHeight: Math.round(sheet.getBoundingClientRect().height),
+		headingStartsTheTile: Math.round(drawn.getBoundingClientRect().top - root.getBoundingClientRect().top),
+	};
+})()`;
+
 const DRAWER_SCRIPT = `document.getElementById("host").innerHTML =
 	'<div class="wg-drawer-over is-open">' +
 	'<div class="wg-drawer-scrim"></div>' +
@@ -901,17 +1070,32 @@ const DRAWER_ASK = `(() => {
 	};
 })()`;
 
-const [subScript, kitScript, mountScript, overlayScript, streakScript, rankScript, metricScript, catalogueScript] =
-	await Promise.all([
-		bundle(SUB_PROBE),
-		bundle(KIT_PROBE),
-		bundle(MOUNT_PROBE),
-		bundle(OVERLAY_PROBE),
-		bundle(STREAK_PROBE),
-		bundle(RANK_PROBE),
-		bundle(METRIC_PROBE),
-		bundle(CATALOGUE_PROBE),
-	]);
+const [
+	subScript,
+	kitScript,
+	mountScript,
+	overlayScript,
+	streakScript,
+	rankScript,
+	metricScript,
+	catalogueScript,
+	plateScript,
+] = await Promise.all([
+	bundle(SUB_PROBE),
+	bundle(KIT_PROBE),
+	bundle(MOUNT_PROBE),
+	bundle(OVERLAY_PROBE),
+	bundle(STREAK_PROBE),
+	bundle(RANK_PROBE),
+	bundle(METRIC_PROBE),
+	bundle(CATALOGUE_PROBE),
+	bundle(PLATE_PROBE),
+]);
+
+const sheet = await ask(pageFor("light", SHEET_SCRIPT, "sheet"), SHEET_ASK, 400);
+check("a widget's own sheet is never drawn, however the engine lays the root's children", sheet.display, "none");
+check("so it takes no height in the tile", sheet.sheetHeight, 0);
+check("and what the widget drew is the first thing in the tile", sheet.headingStartsTheTile, 0);
 
 for (const theme of ["light", "dark"]) {
 	console.log(`\n— ${theme} —`);
@@ -967,6 +1151,58 @@ for (const theme of ["light", "dark"]) {
 	check("the form is the same share of the box at a cover, an avatar and between", kit.markShare, [56, 56, 56]);
 	check("and it is the same form at both ends, not a second drawing", kit.markSameFormAtBothEnds, true);
 	check("the mark says nothing to a screen reader", kit.markIsDecorative, "true");
+
+	const kanban = await ask(pageFor(theme, KANBAN_PLATE_SCRIPT, "kanban-plate"), KANBAN_PLATE_ASK, 900);
+	check("a kanban column is the grey plate on a bare tile", kanban.column.fill, kanban.fill);
+	check("and a card inside it rises off the column", kanban.card.fill, kanban.raise);
+	check("both are padded by the kit rather than by the widget", [kanban.column.pad, kanban.card.pad], ["16px", "16px"]);
+	check(
+		"with the card rounded one step inside the column",
+		[kanban.column.corner, kanban.card.corner],
+		["14px", "6px"],
+	);
+	check(
+		"the add-list button is the plate itself, not a box drawn behind it",
+		[kanban.addList.fill, kanban.behind],
+		[kanban.fill, kanban.clear],
+	);
+
+	const plates = await ask(pageFor(theme, plateScript, "plates"), PLATE_ASK, 1400);
+	check("a widget's own plate on a bare tile is the grey one", plates.onPageFirst, {
+		fill: plates.fill,
+		worn: "group",
+	});
+	check("the plate it paints inside that one rises off it", plates.onPageSecond, {
+		fill: plates.raise,
+		worn: "group",
+	});
+	check("under a tile already wearing a group the widget's plate is the risen one", plates.onGroupFirst, {
+		fill: plates.raise,
+		worn: "group",
+	});
+	check("and the plate it would paint inside that is refused on the drawn board", plates.onGroupSecond, {
+		fill: plates.clear,
+		worn: null,
+	});
+
+	const plated = await ask(pageFor(theme, KIT_SURFACE_SCRIPT, "kit-surface"), KIT_SURFACE_ASK, 900);
+	check("a plate a widget paints stands grey on the page", plated.onPage, plated.fill);
+	check("and rises off the plate the tile already wears", plated.inGroup, plated.raise);
+	check("it is rounded concentric with the tile, not at the tile's own corner", plated.corner, "14px");
+	check("and it pads itself the way every other plate does", plated.pad, "16px");
+	check("the same plate is painted where a widget is previewed, off the board", plated.offBoard, plated.fill);
+	check("a tone paints the plate instead of its own grey", plated.toned, plated.warningWash);
+	check("a divider across a column draws one hairline along its bottom", plated.lineBelow.height, "1px");
+	check(
+		"and one down its start edge when the parts run in a row",
+		[plated.lineLeft.width, plated.lineLeft.left],
+		["1px", "0px"],
+	);
+	check(
+		"the corner tokens a widget's plate reads are the very steps the tree computes",
+		[plated.plateCornerPx, plated.itemCornerPx],
+		[`${CORNER_AT_DEPTH[0]}px`, `${CORNER_AT_DEPTH[1]}px`],
+	);
 
 	const crowded = await ask(pageFor(theme, CROWDED_POP_SCRIPT, "crowded-pop"), CROWDED_POP_ASK, 1200);
 	check("a tall field under the kind switch leaves the switch its own height", crowded.kindHeightPx, 28);

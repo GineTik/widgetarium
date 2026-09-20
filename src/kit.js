@@ -1,6 +1,7 @@
 import { Fragment, createElement as h, cloneElement, Children } from "react";
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "./icon-table.js";
+import { NO_SURFACE, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "./kit-surface.js";
 
 export function cx(...parts) {
 	return parts.flat(Infinity).filter(Boolean).join(" ");
@@ -23,7 +24,8 @@ function render(tag, props, resolvedClass) {
 	if (!asChild) return h(tag, { ...rest, className: resolvedClass }, children);
 	const only = Children.toArray(children)[0];
 	if (!only || typeof only !== "object") return h(tag, { ...rest, className: resolvedClass }, children);
-	return cloneElement(only, { ...rest, className: cx(resolvedClass, only.props.className) });
+	const style = rest.style || only.props.style ? { ...rest.style, ...only.props.style } : undefined;
+	return cloneElement(only, { ...rest, style, className: cx(resolvedClass, only.props.className) });
 }
 
 // CONTEXT: paths copied verbatim from docs/reference/orbitask-converted.html:456-464, on its 20 grid.
@@ -148,7 +150,10 @@ const TONE_CLASSES = {
 export const TONE_NAMES = Object.keys(TONE_CLASSES);
 
 export function toneClass(tone) {
-	return TONE_CLASSES[tone] ?? TONE_CLASSES.neutral;
+	if (tone === undefined || tone === null) return TONE_CLASSES.neutral;
+	if (Object.hasOwn(TONE_CLASSES, tone)) return TONE_CLASSES[tone];
+	warnOnce(`${tone} is no tone, so the neutral one was drawn instead: ${Object.keys(TONE_CLASSES).join(", ")}`);
+	return TONE_CLASSES.neutral;
 }
 
 export const pillClass = variants("wg-kit-pill", { tone: TONE_CLASSES }, { tone: "neutral" });
@@ -227,6 +232,7 @@ function pickedFrom(held, at) {
 
 // CONTEXT: the plate every surface is built from — light stands on the page, solid is the grey well
 // TRADE-OFF: the lift is asked for, never inherited — a Card is a tile far oftener than a panel
+// TODO: fold Card and Plate into Surface, one painted container instead of two over --wg-kit-raise
 export const cardClass = variants(
 	"wg-kit-card",
 	{ variant: { light: "", solid: "is-solid" }, lift: { true: "is-lifted" }, selected: { true: "is-selected" } },
@@ -258,6 +264,18 @@ export function Plate(props) {
 
 export function Card(props) {
 	return render("div", props, cardClass(props));
+}
+
+export function Surface({ type = NO_SURFACE, tone, side, across, className: cls, style, children, ...rest }) {
+	const above = useContext(PLATES_ABOVE);
+	const { surface, refusal } = wornPlate(above, type);
+	if (refusal) sayRefusedPlate(type, refusal);
+	const props = { ...rest, ...plateProps(above, { surface, side, across, style }), children };
+	return h(
+		PLATES_ABOVE.Provider,
+		{ value: platesInside(above, surface) },
+		render("div", props, cx("wg-kit-surface", tonedPlateClass(tone), cls)),
+	);
 }
 
 export function SlotList({ slot: Drawn, rows = [], give, keyOf, className: cls, children }) {
@@ -1393,6 +1411,15 @@ export function Switch({ checked, onChange, label }) {
 }
 
 // CONTEXT: capitalised because it is read in JSX — <Kit.Button/>, the way Radix reads
+function tonedPlateClass(tone) {
+	const toned = tone ? toneClass(tone) : "";
+	return toned ? cx("wg-kit-tone", toned) : null;
+}
+
+function sayRefusedPlate(said, refusal) {
+	warnOnce(`a ${said} surface painted nothing — ${refusal.reason} (law ${refusal.law})`);
+}
+
 export const Kit = {
 	Sidebar,
 	sidebarClass,
@@ -1408,6 +1435,7 @@ export const Kit = {
 	Count,
 	Plate,
 	Card,
+	Surface,
 	SlotList,
 	List,
 	Row,

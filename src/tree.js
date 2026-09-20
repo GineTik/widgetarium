@@ -199,6 +199,7 @@ export function laidRegion(root, at, given, { ask, isFloating = false, viewportP
 		path: [at],
 		edges: allEdges(pad),
 		plates,
+		underSurface: isPainted(worn) ? worn.surface : NO_SURFACE,
 		level: 0,
 		viewportPx,
 	});
@@ -453,10 +454,21 @@ const spaceOf = (how) => ({ level: how.level, ask: how.ask });
 function placedChild(box, how, at, dir) {
 	const space = spaceOf(how);
 	const edges = edgesOfChild(box, how.edges, at, dir, space);
-	const plates = how.plates + (isPainted(box) ? 1 : 0);
+	const isPlate = isPainted(box);
+	const plates = how.plates + (isPlate ? 1 : 0);
+	const underSurface = isPlate ? box.surface : how.underSurface;
 	const level = box.dir === SWAP ? how.level : how.level + 1;
 	return {
-		how: { ...how, path: [...how.path, at], edges, plates, level, across: how.childAcross ?? null, childAcross: null },
+		how: {
+			...how,
+			path: [...how.path, at],
+			edges,
+			plates,
+			underSurface,
+			level,
+			across: how.childAcross ?? null,
+			childAcross: null,
+		},
 		divider: {
 			...dividerOf(box.of[at], edges, box, { at, dir, space }),
 			gapAfter: at === box.of.length - 1 ? 0 : pairGapOf(box, at, space, dir),
@@ -509,7 +521,7 @@ function laidRow(node, width, how, sized) {
 }
 
 export function laid(node, width, how) {
-	const held = { path: [], edges: allEdges(0), plates: 0, level: 0, ...how };
+	const held = { path: [], edges: allEdges(0), plates: 0, underSurface: NO_SURFACE, level: 0, ...how };
 	if (!isBox(node)) return laidLeaf(node, width, held);
 	const inner = width - 2 * insetOf(node);
 	if (node.dir === SWAP) return laidSwap(node, width, inner, held);
@@ -538,7 +550,14 @@ export function laid(node, width, how) {
 function collapsedNode(node, how, side) {
 	const into = collapseOf(node);
 	const width = overlayWidthOf(into, how.viewportPx ?? DRAWER_MAX_PX) - 2 * REGION_PAD_PX;
-	const opened = { ...how, edges: allEdges(REGION_PAD_PX), plates: 0, level: 0, opened: pathKey(how.path) };
+	const opened = {
+		...how,
+		edges: allEdges(REGION_PAD_PX),
+		plates: 0,
+		underSurface: NO_SURFACE,
+		level: 0,
+		opened: pathKey(how.path),
+	};
 	return {
 		kind: "collapsed",
 		path: how.path,
@@ -641,11 +660,14 @@ export function withHolds(root, path, rows) {
 const limitsOf = (declared) => ({ minPx: declared.minPx ?? 0, cap: declared.cap ?? 0 });
 
 function laidLeaf(node, width, how) {
+	const isPlate = isPainted(node);
 	return {
 		kind: "leaf",
 		id: node.id,
 		path: how.path,
 		level: how.level,
+		plates: how.plates + (isPlate ? 1 : 0),
+		underSurface: isPlate ? node.surface : how.underSurface,
 		width,
 		grow: 1,
 		ratio: node.ratio ?? 1,

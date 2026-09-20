@@ -78,6 +78,30 @@ is never consulted for a prop: a value a person typed is `{ from: typed, value }
 value sliced by a selection must be read through its gateway **inside the widget that draws it**. One
 level up gives a correct declared value and a stale screen.
 
+## A plate is one component, and the laws decide it at render
+
+The tile's plate belongs to the node in the note: the agent writes it, the Design tab switches it,
+`lint` holds the board to it. Everything a widget paints under that plate is `<Surface>` from
+`widgetarium/kit`, with `type` naming the same four surfaces and `none` as the default, so a widget
+that asks for nothing stays bare.
+
+Two writers for the tile's own plate were refused. A widget declaring its root surface in the render
+tree is invisible to the tree — `wornSurfaceAt` gates a write, and nothing can gate what only exists
+once drawn — so the node keeps that fact and the widget paints inside it.
+
+What makes this safe is that the depth travels in React context rather than being measured off the
+DOM afterwards. `PLATES_ABOVE` is seeded from the laid node's `plates` and `underSurface` **into the
+tree the tile's shell draws**, because a widget is rendered in its own root and context does not cross
+that seam — seeded one level out, every widget counts from zero and the third plate paints itself
+while the jsdom checks stay green. Every painted Surface provides the next level, and
+`plateRefusal` answers before anything is painted: a plate the laws refuse paints nothing and warns. The DOM census in `surface-measure.js`
+stays what it was — advice about colour and contrast — and is no longer the only thing that knows a
+widget painted a third plate.
+
+The payoff is the reason to do it at all: a plate drawn by the kit reading context can be repainted
+by the engine — a tone, a density, a design system — without touching a widget. A plate a widget
+hand-rolled from its own `background` and `border-radius` never could.
+
 ## Three versions, and only one of them is semver
 
 `manifest.json`'s version is Obsidian's business. The two that cost are `v:`, stamped into every

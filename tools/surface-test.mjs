@@ -21,8 +21,10 @@ const {
 	STEP_PX,
 	SURFACE_PAD_PX,
 } = await import("./.mjs-cache/tree.mjs");
-const { surfaceChoicesAt, surfaceVerdicts, wornSurfaceAt } = await import("./.mjs-cache/surface-laws.mjs");
-const { isKnownRole, ROLES, slotSurfaceOf } = await import("./.mjs-cache/surface-roles.mjs");
+const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, wornSurfaceAt } =
+	await import("./.mjs-cache/surface-laws.mjs");
+const { isKnownRole, plateRefusal, ROLES, slotSurfaceOf } = await import("./.mjs-cache/surface-roles.mjs");
+const { platesAtCell } = await import("./.mjs-cache/kit-surface.mjs");
 const { gapVarsOf } = await import("./.mjs-cache/tree.mjs");
 const { literalGapsIn } = await import("./gap-audit.mjs");
 const { lintBoard } = await import("./.mjs-cache/board-lint.mjs");
@@ -138,6 +140,56 @@ check(
 	[loose.of[1].of[0].dividerBefore, loose.of[1].of[0].dividerAfter],
 	[null, null],
 );
+
+console.log("\n— what the widget is told stands above it —\n");
+
+const twoGroups = laidRegion(
+	{
+		dir: "row",
+		of: [
+			{
+				dir: "column",
+				surface: "group",
+				of: [{ dir: "column", surface: "group", of: [{ id: "deep" }] }, { id: "shallow" }],
+			},
+		],
+	},
+	0,
+	600,
+	{ ask: () => ({}) },
+);
+const deep = twoGroups.node.of[0].of[0];
+const shallow = twoGroups.node.of[1];
+check("a leaf two groups down is told both of them", [deep.plates, deep.underSurface], [2, "group"]);
+check("a leaf inside the one group is told the one", [shallow.plates, shallow.underSurface], [1, "group"]);
+check("and the cell hands the kit exactly that", platesAtCell(deep), { surface: "group", levels: 2, ownPlates: 0 });
+check("so a widget under two groups may paint no plate of its own", plateRefusal(platesAtCell(deep), "group").law, "5");
+check("while one group above still leaves it a plate", plateRefusal(platesAtCell(shallow), "group"), null);
+const noPlates = laidRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "flat" }] }] }, 0, 600, {
+	ask: () => ({}),
+});
+
+const twiceWrong = {
+	dir: "row",
+	of: [
+		{
+			dir: "column",
+			surface: "group",
+			of: [{ dir: "column", surface: "group", of: [{ id: "both", surface: "object" }] }],
+		},
+	],
+};
+const namedOnce = nestingFindings(twiceWrong).filter((one) => String(one.path) === "0,0,0");
+check(
+	"a node breaking two laws at once is refused once, by the same answer the kit gets",
+	namedOnce.map((one) => one.law),
+	[plateRefusal({ surface: "group", levels: 2 }, "object").law],
+);
+check("a leaf on the page is told nothing stands above it", platesAtCell(noPlates.node.of[0]), {
+	surface: "none",
+	levels: 0,
+	ownPlates: 0,
+});
 
 console.log("\n— the laws, one by one —\n");
 

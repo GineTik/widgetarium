@@ -125,6 +125,7 @@ import { useMeasuredSurfaces } from "./surface-measure.js";
 import { slotSurfaceOf } from "./surface-roles.js";
 import { saidRefusal, surfaceChoicesAt, wornSurfaceAt } from "./surface-laws.js";
 import { surfacedSlot } from "./widget-root.js";
+import { platesAtCell, PLATES_ABOVE } from "./kit-surface.js";
 import { useContentInsets } from "./content-insets.js";
 
 const SHOW_NAMED = "Show {name}";
@@ -687,7 +688,11 @@ function treeCellBody({ tile, definition, shared, cell, patchTile, editing }) {
 	const drawn = drawnTile(
 		shared.shells,
 		tile,
-		h(WidgetHost, { ...shared, ...widgetPatchers(tile, onPatch), definition, tile, place, onPatch }),
+		h(
+			PLATES_ABOVE.Provider,
+			{ value: platesAtCell(cell) },
+			h(WidgetHost, { ...shared, ...widgetPatchers(tile, onPatch), definition, tile, place, onPatch }),
+		),
 	);
 	const note = editing ? newerGenerationNote(shared.registry, tile, patchTile) : null;
 	return note ? [note, drawn] : drawn;
@@ -780,6 +785,8 @@ const CELL_SHAPE = [
 	"gapAfter",
 	"corner",
 	"level",
+	"plates",
+	"underSurface",
 ];
 const CELL_PROPS = ["standInPx", "editing", "settingsStandInPx", "tile", "definition", "shared"];
 

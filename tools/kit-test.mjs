@@ -45,6 +45,7 @@ const {
 	variants,
 	cx,
 } = await import("./.mjs-cache/kit.mjs");
+const { PLATES_ABOVE } = await import("./.mjs-cache/kit-surface.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
 // has finished listening. Wait for the frame rather than guessing at a sleep.
@@ -241,6 +242,60 @@ render(
 host.querySelector(".wg-kit-switch").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 check("Switch reports the new value rather than holding one", flipped, true);
 
+const plated = (said) => [...host.querySelectorAll(".wg-kit-surface")].map((one) => one.getAttribute(said));
+const seeded = (value, drawn) => render(h(PLATES_ABOVE.Provider, { value }, drawn), host);
+const ONE_PLATE_ABOVE = { surface: "group", levels: 1, ownPlates: 0 };
+
+render(h(Kit.Surface, null, "bare"), host);
+check("a surface nobody typed paints nothing", plated("data-surface"), [null]);
+
+render(h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "group" }))), host);
+check("on the page a group holds a group, and the third is refused", plated("data-surface"), ["group", "group", null]);
+check("the corner steps inward with each plate", plated("style"), [
+	"--wg-surface-corner: var(--wg-kit-plate);",
+	"--wg-surface-corner: var(--wg-kit-item);",
+	null,
+]);
+
+render(h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "object" })), host);
+check("an object may not stand inside a group", plated("data-surface"), ["group", null]);
+
+seeded(ONE_PLATE_ABOVE, h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "group" })));
+check("a tile already wearing a group leaves the widget one plate", plated("data-surface"), ["group", null]);
+
+seeded(ONE_PLATE_ABOVE, h(Kit.Surface, { type: "object" }));
+check("and an object is refused under it", plated("data-surface"), [null]);
+
+render(h(Kit.Surface, { type: "apart", side: "start", across: "row" }), host);
+check(
+	"a divider says which edge and which way it stands",
+	plated("data-surface").concat(plated("data-side"), plated("data-across")),
+	["apart", "start", "row"],
+);
+
+render(h(Kit.Surface, { type: "group", tone: "warning" }), host);
+check("a tone is a state of the plate", plated("class"), ["wg-kit-surface wg-kit-tone is-warn"]);
+
+render(h(Kit.Surface, { type: "apart", side: "sideways", across: "diagonal" }), host);
+check(
+	"a divider given words the kit never had falls back rather than mis-painting",
+	plated("data-side").concat(plated("data-across")),
+	["end", "column"],
+);
+
+render(h(Kit.Surface, { type: "group", tone: "danger" }), host);
+check("and a tone it never had is drawn neutral", plated("class"), ["wg-kit-surface"]);
+
+render(h(Kit.Surface, { type: "group", "data-surface": "object" }), host);
+check("a plate named by hand cannot outrank the law", plated("data-surface"), ["group"]);
+
+let heldBySurface = null;
+render(h(Kit.Surface, { type: "group", ref: (node) => void (heldBySurface = node) }), host);
+check("a surface hands its element back to the widget", heldBySurface?.className, "wg-kit-surface");
+
+render(h(Kit.Surface, { type: "chartreuse" }), host);
+check("a type the kit never had paints nothing", plated("data-surface"), [null]);
+
 const surface = [
 	"Button",
 	"IconButton",
@@ -248,6 +303,7 @@ const surface = [
 	"Count",
 	"Plate",
 	"Card",
+	"Surface",
 	"Row",
 	"List",
 	"RowBadge",

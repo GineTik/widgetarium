@@ -1,5 +1,7 @@
-import { APART, GROUP, NO_SURFACE, OBJECT, SURFACE_WAS } from "./tree.js";
+import { APART, GROUP, isPainted, NO_SURFACE, OBJECT, SURFACES, SURFACE_WAS } from "./tree.js";
 import { readingOfProp, wrapOf, WRAP_EACH } from "./reading.js";
+
+export const MAX_SURFACE_DEPTH = 2;
 
 export const ROLES = [
 	"navigation",
@@ -40,6 +42,29 @@ export function isKnownRole(role) {
 
 export function mayWearInside(parentSurface, surface) {
 	return ALLOWED_INSIDE[parentSurface].includes(surface);
+}
+
+const NOT_INSIDE = "{one} may not stand inside {other}";
+const SAID_AS = { group: "a group", object: "an object", item: "an item", apart: "a divider", none: "the page" };
+
+export function platesWithin(above, surface) {
+	return above.levels + (isPainted({ surface }) ? 1 : 0);
+}
+
+export function misnested(surface, above) {
+	if (surface === NO_SURFACE || mayWearInside(above.surface, surface)) return null;
+	return { law: "N", reason: NOT_INSIDE.replace("{one}", SAID_AS[surface]).replace("{other}", SAID_AS[above.surface]) };
+}
+
+export function tooDeep(levels) {
+	if (levels <= MAX_SURFACE_DEPTH) return null;
+	return { law: "5", reason: `${levels} surfaces deep counted from the region, over ${MAX_SURFACE_DEPTH}` };
+}
+
+export function plateRefusal(above, surface) {
+	if (!SURFACES.includes(surface)) return { law: "S", reason: `${surface} is no surface: ${SURFACES.join(", ")}` };
+	if (surface === NO_SURFACE) return null;
+	return misnested(surface, above) ?? tooDeep(platesWithin(above, surface));
 }
 
 export function slotSurfaceOf(spec, held, card) {

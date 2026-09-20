@@ -33,6 +33,35 @@ child wears a plate is refused.
 note that carries one, and a surface they refuse cannot be written at all. Everything else about
 surfaces is yours. Read [examples.md](examples.md) and build what the screens there build.
 
+## Inside a widget
+
+The tile's own plate is the node's, written in the note. Everything the widget paints under it is
+`<Surface>` from `widgetarium/kit`, and it is the only way a widget paints a plate:
+
+```tsx
+import { Surface } from "widgetarium/kit";
+
+<Surface type="group" tone="warning">
+	…
+</Surface>;
+```
+
+`type` is the same four words, and `none` — the default — paints nothing, so a widget that asks for
+no surface stays bare. `tone` paints the plate with a state, which is what a warning block is, and it
+replaces the plate's own grey rather than sitting under it.
+`apart` takes `side: start | end` and `across: row | column` — the direction the parts it divides
+run.
+
+**A widget that paints its own plates wants a bare node.** `@default/kanban-board` paints a plate on
+every column and one on every card in it, so its tile wears **no** surface — two plates are already
+spent inside. Give a node `group` only when the widget draws flat content on it.
+
+**The same laws decide it, and the widget is not asked.** A Surface counts against the two plates
+from the region, the tile's own included, so a `group` on the node leaves the widget one plate and a
+second is refused. The refusal paints nothing and says why in the console; it can never reach the
+screen as a plate nobody can name. Corners come out concentric with the tile's and are never
+written.
+
 ## Roles
 
 A widget names `role` in its manifest. A box you build names `role` and `purpose` — `purpose` is the
@@ -57,7 +86,8 @@ plate's padding comes off. Every plate is rounded concentric with the one around
 every change.
 
 So a box exists only where a surface, a heading or a turn of direction makes the group visible. A box
-of its parent's direction with no surface and no heading is what `lint` names a phantom.
+of its parent's direction with no surface and no heading is what `lint` names a phantom. A heading is
+a `role: text` tile standing first in the column, never a `name` on the box.
 
 Inside a widget the same steps arrive as `--wg-gap-items`, `--wg-gap-parts`, `--wg-gap-cards`.
 
