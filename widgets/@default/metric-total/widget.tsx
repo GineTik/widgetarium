@@ -15,13 +15,13 @@ import {
 import {
 	Button,
 	ButtonLabel,
-	Card,
+	cardClass,
 	Calendar,
 	Field,
 	Icon,
 	IconButton,
 	List,
-	Surface,
+	Card,
 	Popover,
 	PopoverItem,
 	Segmented,
@@ -521,12 +521,12 @@ function Tip({ point, unit, left }: { point: Point; unit: string; left: number }
 	});
 
 	return (
-		<Card ref={held} data-part="tip" className="mt3-tip" style={{ [TIP_AT]: `${left}px` }}>
+		<div ref={held} data-part="tip" className={`${cardClass({})} mt3-tip`} style={{ [TIP_AT]: `${left}px` }}>
 			<div data-part="tip-value" className="mt3-tip-value">{`${compactOf(point.value)} ${unit}`}</div>
 			<div data-part="tip-day" className="mt3-tip-day">
 				{longDaySaid(point.day)}
 			</div>
-		</Card>
+		</div>
 	);
 }
 
@@ -616,14 +616,14 @@ type PlateProps = { name: string; label: string; value: string; isTone?: boolean
 function MetricPlate({ name, label, value, isTone }: PlateProps) {
 	const worn = isTone ? `mt3-plate mt3-plate-${name} is-tone` : `mt3-plate mt3-plate-${name}`;
 	return (
-		<Surface type="group" data-part={`plate-${name}`} className={worn}>
+		<Card type="group" data-part={`plate-${name}`} className={worn}>
 			<span data-part={`plate-${name}-value`} className="mt3-plate-value">
 				{value}
 			</span>
 			<span data-part={`plate-${name}-label`} className="mt3-plate-label">
 				{label}
 			</span>
-		</Surface>
+		</Card>
 	);
 }
 

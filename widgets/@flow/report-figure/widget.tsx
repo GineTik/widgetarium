@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "react";
 import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Icon, Surface } from "widgetarium/kit";
+import { Icon, Card } from "widgetarium/kit";
 import type { Navigation, ViewHost } from "widgetarium";
 
 const CSS = `
@@ -118,11 +118,11 @@ function RenderedMarkdown({ host, markdown }: { host: ViewHost; markdown: string
 
 function MissingImage({ said, alt }: { said: string; alt: string }) {
 	return (
-		<Surface type="group" className="flow-report-figure-missing" data-part="missing">
+		<Card type="group" className="flow-report-figure-missing" data-part="missing">
 			<Icon name="image-off" size={20} />
 			<span className="flow-report-figure-missing-said">{said}</span>
 			{alt ? <span className="flow-report-figure-missing-alt">{alt}</span> : null}
-		</Surface>
+		</Card>
 	);
 }
 

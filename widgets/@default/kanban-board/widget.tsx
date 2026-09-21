@@ -38,7 +38,7 @@ import {
 	PopoverSeparator,
 	Progress,
 	Segmented,
-	Surface,
+	Card,
 	Sidebar,
 	SidebarGroup,
 	SidebarRow,
@@ -879,9 +879,9 @@ const CSS = `
 // TRADE-OFF: the task-card widget owns the card; this draws a title when the slot is empty
 function FallbackCard({ task }: { task: CardFace }) {
 	return (
-		<Surface type="group">
+		<Card type="group">
 			<span className="ok-card-title">{String(task.title ?? "")}</span>
-		</Surface>
+		</Card>
 	);
 }
 
@@ -1005,7 +1005,7 @@ function KanbanList({
 	const [isRenaming, setRenaming] = useState(false);
 
 	return (
-		<Surface
+		<Card
 			type="group"
 			className={`ok-list${isOver ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
 			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
@@ -1047,7 +1047,7 @@ function KanbanList({
 			/>
 
 			{canWrite && onAdd ? <AddTask onAdd={onAdd} /> : null}
-		</Surface>
+		</Card>
 	);
 }
 
@@ -1118,20 +1118,20 @@ function AddList({ onAdd }: { onAdd: (name: string) => void }) {
 
 	if (!entry.isOpen) {
 		return (
-			<Surface type="group" asChild>
+			<Card type="group" asChild>
 				<button type="button" className="ok-add-list-rest" onClick={entry.open}>
 					<Icon name="plus" size={16} />
 					<span>Add List</span>
 				</button>
-			</Surface>
+			</Card>
 		);
 	}
 
 	return (
-		<Surface type="group" className="ok-add-list">
+		<Card type="group" className="ok-add-list">
 			<input className="ok-list-name" placeholder="Enter list name..." {...entry.fieldProps} />
 			<NameEntryActions onCancel={entry.close} onConfirm={entry.confirm} />
-		</Surface>
+		</Card>
 	);
 }
 
@@ -1899,12 +1899,12 @@ function DescriptionHead({
 function RefusedNotice({ isRefused }: { isRefused: boolean }) {
 	if (!isRefused) return null;
 	return (
-		<Surface type="group" tone="warning" asChild>
+		<Card type="group" tone="warning" asChild>
 			<p className="otd-refused">
 				<Glyph name="alert" />
 				Not saved. This would turn the note's first line into its properties.
 			</p>
-		</Surface>
+		</Card>
 	);
 }
 
@@ -2753,12 +2753,12 @@ function BoardStrip({
 			))}
 			{lists.canEdit ? <AddList onAdd={lists.add} /> : null}
 			{repairing.canRepair ? (
-				<Surface type="group" asChild>
+				<Card type="group" asChild>
 					<button type="button" className="ok-add-list-rest ok-repair-ids" onClick={repairing.ask}>
 						<Icon name="folder" size={16} />
 						<span>{REPAIR_BOARDS}</span>
 					</button>
-				</Surface>
+				</Card>
 			) : null}
 		</div>
 	);

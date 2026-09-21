@@ -1,5 +1,5 @@
 import { createWidget, defineManifest } from "widgetarium";
-import { Surface } from "widgetarium/kit";
+import { Card } from "widgetarium/kit";
 
 const STYLE = `
 .wgi-reminder {
@@ -49,10 +49,10 @@ export const manifest = defineManifest({
 
 export default createWidget(manifest, ({ content }) => {
 	return (
-		<Surface type="group" className="wgi-reminder">
+		<Card type="group" className="wgi-reminder">
 			<style>{STYLE}</style>
 			<span className="wgi-reminder-mark">!</span>
 			<span className="wgi-reminder-text">{content}</span>
-		</Surface>
+		</Card>
 	);
 });

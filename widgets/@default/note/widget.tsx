@@ -1,5 +1,5 @@
 import { createWidget, defineManifest } from "widgetarium";
-import { Surface } from "widgetarium/kit";
+import { Card } from "widgetarium/kit";
 
 const STYLE = `
 .wgi-note {
@@ -29,13 +29,13 @@ export const manifest = defineManifest({
 export default createWidget(manifest, ({ content }) => {
 	const lines = String(content ?? "").split("\n");
 	return (
-		<Surface type="group" className="wgi-note">
+		<Card type="group" className="wgi-note">
 			<style>{STYLE}</style>
 			{lines.map((line, at) => (
 				<p key={at} className="wgi-note-line">
 					{line}
 				</p>
 			))}
-		</Surface>
+		</Card>
 	);
 });

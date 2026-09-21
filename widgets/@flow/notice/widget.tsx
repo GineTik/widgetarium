@@ -1,5 +1,5 @@
 import { canDo, createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Button, Icon, Surface } from "widgetarium/kit";
+import { Button, Icon, Card } from "widgetarium/kit";
 
 const CSS = `
 .flow-notice {
@@ -155,7 +155,7 @@ export default createWidget(manifest, ({ title, body, icon, tone, action, presse
 	const isPressed = useData(pressed.get).data === true;
 
 	return (
-		<Surface type={toned === "neutral" ? "none" : "group"} tone={toned} className="flow-notice">
+		<Card type={toned === "neutral" ? "none" : "group"} tone={toned} className="flow-notice">
 			<style>{CSS}</style>
 			{glyph ? <Icon name={glyph} size={20} className="flow-notice-icon" /> : null}
 			<div className="flow-notice-said">
@@ -177,6 +177,6 @@ export default createWidget(manifest, ({ title, body, icon, tone, action, presse
 					{label}
 				</Button>
 			) : null}
-		</Surface>
+		</Card>
 	);
 });
