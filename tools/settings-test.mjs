@@ -861,13 +861,22 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("the child's own setting is drawn", Boolean(rowSaying("Group tasks by")), true);
 	check("and the parent's is gone from the panel", Boolean(rowSaying("Which views")), false);
 	check("the child's own source is drawn too", Boolean(rowSaying("Tasks")), true);
-	// A CHILD HAS NO PLACE ON THE BOARD, so there is no width, height or fold to show
-	check(
-		"the Design tab is not offered one level down",
-		all(".wg-set-panel .wg-kit-seg button").map((button) => button.textContent.trim()),
-		["Settings", "Data"],
-	);
+	const tabNames = () => all(".wg-set-panel .wg-kit-seg button").map((button) => button.textContent.trim());
+	const tabNamed = (name) =>
+		all(".wg-set-panel .wg-kit-seg button").find((button) => button.textContent.trim() === name);
+	check("a mounted widget is offered the same three tabs as a tile", tabNames(), ["Settings", "Data", "Design"]);
 	check("nor is the size the tile has on the board", Boolean(all(".wg-set-head .wg-kit-pill").length), false);
+	await press(tabNamed("Design"));
+	const designLabels = () => all(".wg-set-panel .wg-kit-side-label").map((node) => node.textContent.trim());
+	check("its Design tab holds its own surface and its own size", designLabels(), ["Surface", "Size"]);
+	check("it stands as its holder draws it until told otherwise", Boolean(rowSaying("As its holder draws it")), true);
+	check("its height is its own, not the tile's", Boolean(rowSaying("As tall as it needs")), true);
+	check("there is no fold for a thing with no place of its own", designLabels().includes("Folded"), false);
+	await press(rowSaying("As its holder draws it"));
+	const groupChoice = all(OPEN_POP + " .wg-set-pop-name").find((node) => node.textContent === "Group");
+	await press(groupChoice?.closest("button"));
+	check("a surface picked here lands on the mount's own record", Boolean(rowSaying("Group")), true);
+	await press(tabNamed("Settings"));
 
 	const cardRow = rowSaying("Card");
 	check("a slot the parent feeds says what it is fed", cardRow?.textContent.includes("Fed task"), true);
@@ -1766,6 +1775,136 @@ console.log("\n— a surface is picked in the Design tab, and only the ones the 
 	await press(tab("Design"));
 	await press(rowSaying("Surface"));
 	check("the second row of a list may be plated too: grey around, white rows", named("Group")?.disabled, false);
+
+	render(null, mount);
+}
+
+console.log("\n— one switch, and the window asks only for the half in use —");
+{
+	const SWITCHY = "@probe/switchy";
+	const CHILD = "@probe/child";
+	const seesPerRow = (props) => props.filling?.value === "per-row";
+	const manifest = {
+		id: SWITCHY,
+		title: "Switchy",
+		props: {
+			filling: {
+				kind: "value",
+				type: "line",
+				control: "choice",
+				label: "What fills it",
+				writes: ["get", "update"],
+				options: [
+					{ value: "placed", label: "Widgets I place" },
+					{ value: "per-row", label: "One widget per row of data" },
+				],
+				default: { value: "placed" },
+			},
+			fillings: {
+				kind: "collection",
+				label: "The two fillings",
+				writes: ["list"],
+				default: { rows: [] },
+				isVisible: () => false,
+			},
+			items: {
+				kind: "collection",
+				label: "Rows to draw",
+				writes: ["list"],
+				default: { rows: [] },
+				isVisible: seesPerRow,
+			},
+		},
+		slots: { item: { label: "Drawn for every row", isVisible: seesPerRow } },
+		mounts: { widgets: { label: "Widgets", default: [], isVisible: (props) => !seesPerRow(props) } },
+	};
+	const child = { id: CHILD, title: "Child", props: {} };
+	const Leaf = () => h("div", { className: "leaf" }, "leaf");
+	const shelf = { [SWITCHY]: manifest, [CHILD]: child };
+	const registry = {
+		get: (id) => (shelf[id] ? { manifest: shelf[id], component: Leaf } : null),
+		list: () => Object.values(shelf).map((held) => ({ manifest: held })),
+	};
+	const host = { platform: "test", can: {}, slot: () => null, ui: { notify() {}, openNote() {} } };
+	let board = normalizeBoard({
+		tiles: [
+			{ id: "placed", widget: SWITCHY, props: { filling: { from: "typed", value: "placed" } } },
+			{ id: "perRow", widget: SWITCHY, props: { filling: { from: "typed", value: "per-row" } } },
+		],
+		layouts: {
+			20: [
+				{ id: "placed", x: 0, y: 0, w: 9, h: 6 },
+				{ id: "perRow", x: 9, y: 0, w: 9, h: 6 },
+			],
+		},
+	});
+	const mount = document.getElementById("host");
+	const draw = () =>
+		render(
+			h(WidgetSurface, {
+				boardNode: mount,
+				board,
+				registry,
+				host,
+				editing: true,
+				initialWidth: boardWidthPx,
+				onChange: (next) => {
+					board = next;
+					draw();
+				},
+			}),
+			mount,
+		);
+	draw();
+
+	const tick = async () => {
+		for (let frame = 0; frame < 3; frame += 1) {
+			await new Promise((done) => globalThis.requestAnimationFrame(() => setTimeout(done, 0)));
+		}
+	};
+	const press = async (node) => {
+		node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+		await tick();
+	};
+	const escape = async () => {
+		document.dispatchEvent(new dom.window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+		await tick();
+		await new Promise((done) => setTimeout(done, 280));
+		await tick();
+	};
+	const all = (selector) => [...document.querySelectorAll(selector)];
+	const labels = () => all(".wg-set-panel .wg-kit-side-label").map((node) => node.textContent.trim());
+	const rows = () => all(".wg-set-panel .wg-kit-row").map((node) => node.textContent);
+	const saying = (text) => rows().some((row) => row.includes(text));
+	const settingsButtons = () => all('.wg-tile-actions button[aria-label="Settings"]');
+
+	await tick();
+	await press(settingsButtons()[0]);
+	check("the switch itself is always asked for", saying("What fills it"), true);
+	check("a prop hidden outright is never drawn", saying("The two fillings"), false);
+	check("the mount list stands while the widgets are placed", labels().includes("Widgets"), true);
+	check("the slot is not asked for", saying("Item"), false);
+	check("and its empty group leaves no heading behind", labels().includes("Slots"), false);
+	check("nor is the data only the slot would read", saying("Rows to draw"), false);
+	await escape();
+
+	await press(settingsButtons()[1]);
+	check("the other way round: the slot is asked for", labels().includes("Slots"), true);
+	check("with the data it reads", saying("Rows to draw"), true);
+	check("and the mount list is gone", labels().includes("Widgets"), false);
+	await escape();
+
+	await press(settingsButtons()[0]);
+	check("the row says what is chosen, in words", saying("What fills itWidgets I place"), true);
+	await press(all(".wg-set-panel .wg-kit-row").find((row) => row.textContent.includes("What fills it")));
+	const offered = all(OPEN_POP + " .wg-set-pop-name").map((node) => node.textContent);
+	check("both answers are offered", offered, ["Widgets I place", "One widget per row of data"]);
+	const perRowItem = all(OPEN_POP + " .wg-set-pop-name").find((node) => node.textContent.includes("per row"));
+	await press(perRowItem?.closest("button"));
+	check("the window follows the press at once", labels().includes("Slots"), true);
+	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
+	await tick();
+	check("and Done writes it to the tile", board.tiles[0].props.filling.value, "per-row");
 
 	render(null, mount);
 }

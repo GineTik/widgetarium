@@ -230,13 +230,15 @@ export function resolveSlots({ manifest, tile, registry, host, foldIntoGroup, ga
 }
 
 // CONTEXT: module scope, so returning to a view finds the same component type
-function MountedWidget({ name, was, widget, definition, tile, patchMounted, ...rest }) {
+function MountedWidget({ name, was, widget, definition, tile, patchMounted, enterMount, ...rest }) {
 	const child = heldTile(tile, "mounted", heldKey(tile.mounted, name, was), widget);
+	const ownStep = stepInto({ name, was, widget });
 	return h(WidgetHost, {
 		...rest,
 		definition,
 		tile: child,
 		isMounted: true,
+		enterMount: enterMount ? (steps) => enterMount([ownStep, ...steps]) : null,
 		// TODO: mounted prop writes read the render's copy — thread a functional patch through rekeyed
 		patchProp: (given, patch) =>
 			patchMounted(name, was, { props: { ...child.props, [given]: resolvePatch(child.props?.[given] ?? {}, patch) } }),
@@ -250,12 +252,26 @@ function resolvePatch(current, patch) {
 	return { ...current, ...(typeof patch === "function" ? patch(current) : patch) };
 }
 
+const stepInto = (row) => ({ hold: "mounted", key: row.name, was: row.was, widget: row.widget });
+
+function entryPress(row, enterMount) {
+	if (!enterMount) return null;
+	return () => enterMount([stepInto(row)]);
+}
+
 // CONTEXT: an id the registry could not resolve is still an entry — dropping it hid the gap
+function lookOfMount(tile, row) {
+	const record = heldTile(tile, "mounted", heldKey(tile.mounted, row.name, row.was), row.widget);
+	return { surface: record.surface ?? null, height: record.height ?? null };
+}
+
 function mountEntry(row, registry, mount) {
 	const held = row.widget ? registry.get(row.widget) : null;
 	const drawable = isDrawable(held);
 	return {
 		name: row.name,
+		enter: drawable ? entryPress(row, mount.enterMount) : null,
+		...lookOfMount(mount.tile, row),
 		id: row.widget,
 		// CONTEXT: archived is hidden, never gone — the record and its settings stay put
 		hidden: row.hidden === true,
@@ -437,6 +453,7 @@ export function WidgetHost({
 	patchMounted,
 	isMounted,
 	foldIntoGroup,
+	enterMount,
 }) {
 	const manifest = definition.manifest;
 
@@ -456,6 +473,7 @@ export function WidgetHost({
 		onExpand,
 		patchMounted,
 		foldIntoGroup,
+		enterMount,
 	});
 
 	const gateways = {};
@@ -681,17 +699,18 @@ function newerGenerationNote(registry, tile, patchTile) {
 	]);
 }
 
-function treeCellBody({ tile, definition, shared, cell, patchTile, editing }) {
+function treeCellBody({ tile, definition, shared, cell, patchTile, editing, onOpenSettings }) {
 	if (!definition) return missingTile(tile, shared.host);
 	const onPatch = (patch) => patchTile(tile.id, patch);
 	const place = { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 };
+	const enterMount = editing && onOpenSettings ? (steps) => onOpenSettings(tile.id, null, steps) : null;
 	const drawn = drawnTile(
 		shared.shells,
 		tile,
 		h(
 			PLATES_ABOVE.Provider,
 			{ value: platesAtCell(cell) },
-			h(WidgetHost, { ...shared, ...widgetPatchers(tile, onPatch), definition, tile, place, onPatch }),
+			h(WidgetHost, { ...shared, ...widgetPatchers(tile, onPatch), definition, tile, place, onPatch, enterMount }),
 		),
 	);
 	const note = editing ? newerGenerationNote(shared.registry, tile, patchTile) : null;
@@ -761,7 +780,7 @@ function TreeCell(props) {
 		});
 	const shownInCell = settingsStandInPx
 		? h("div", { style: { minHeight: `${settingsStandInPx}px` } })
-		: treeCellBody({ tile, definition, shared, cell, patchTile, editing });
+		: treeCellBody({ tile, definition, shared, cell, patchTile, editing, onOpenSettings });
 	return h("div", { className: "wg-tile wg-tree-cell", style, ...at, ...surfaceAttrs(cell) }, [
 		h("div", { className: "wg-tile-body", key: "body" }, shownInCell),
 		editing && !settingsStandInPx ? tileActions(tile.id, onOpenSettings, onRemove) : null,
@@ -1439,6 +1458,7 @@ function TreeSettings({ session, tile, canvasBox, entryPath, shared, patchTile, 
 		definition,
 		tile,
 		canvasBox,
+		entryPath,
 		onPatch: (patch) => patchTile(tile.id, patch),
 		surface: surfaceOfTile(board, tile.id, commitLayout, frame.host),
 		place: { ...TREE_PLACE, id: tile.id },
@@ -2022,11 +2042,11 @@ export function WidgetSurface({
 			onClose: () => setPickingInto(null),
 		});
 
-	const openSettings = (id, canvasBox = null) => {
+	const openSettings = (id, canvasBox = null, entryPath = null) => {
 		sessionRef.current += 1;
 		setClosingTile(null);
 		setStaged(boardAsItStands());
-		setSettingsTile({ id, key: String(sessionRef.current), canvasBox });
+		setSettingsTile({ id, key: String(sessionRef.current), canvasBox, entryPath });
 	};
 
 	// TRADE-OFF: the panels fade first and the box follows, per the kit's rule on panels that bounce
@@ -2141,6 +2161,7 @@ export function WidgetSurface({
 					session: `${settingsTile ? "open" : "closing"}:${held.key}`,
 					tile: configured,
 					canvasBox,
+					entryPath: held.entryPath ?? null,
 					shared,
 					patchTile,
 					board,

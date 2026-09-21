@@ -45,7 +45,10 @@ export type {
 	GatewayOf,
 	HeldBy,
 	Manifest,
+	HeldSpec,
 	ManifestCard,
+	PropSeen,
+	PropsSeen,
 	ManifestInput,
 	Migration,
 	Prop,
@@ -57,6 +60,7 @@ export type {
 	TileConfigOf,
 	ValueGatewayOf,
 	WrittenBy,
+	Visibility,
 	WritesRow,
 } from "../../src/gateway/manifest";
 export { defineManifest, defineProp, migration, verb } from "../../src/gateway/manifest";
@@ -148,6 +152,8 @@ export interface MountEntry {
 	manifest: Record<string, unknown> | null;
 	problem: "failed" | "not-found" | "empty" | null;
 	failure: string | null;
+	surface: "group" | "none" | null;
+	height: number | null;
 	drawInto: ((element: HTMLElement) => Release) | null;
 }
 

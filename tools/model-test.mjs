@@ -773,5 +773,39 @@ console.log(
 	);
 }
 
+console.log("\n— a mount keeps its own look through a save —");
+{
+	const board = normalizeBoard({
+		v: 2,
+		tiles: [
+			{
+				id: "s",
+				widget: "@default/section",
+				mounts: { widgets: [{ name: "Body", widget: "@you/body-trend" }] },
+				mounted: { Body: { widget: "@you/body-trend", surface: "object", height: 320 } },
+			},
+		],
+		layout: { dir: "row", of: [{ id: "s" }] },
+	});
+	const held = board.tiles[0].mounted.Body;
+	check("a mount's old object surface is read as a group", held.surface, "group");
+	check("and its height", held.height, 320);
+	const written = serializeBoard(board).tiles[0].mounted.Body;
+	check("both are written back", [written.surface, written.height], ["group", 320]);
+	const refused = normalizeBoard({
+		v: 2,
+		tiles: [
+			{
+				id: "s",
+				widget: "@default/section",
+				mounted: { Body: { widget: "@you/body-trend", surface: "sparkly", height: -4 } },
+			},
+		],
+		layout: { dir: "row", of: [{ id: "s" }] },
+	}).tiles[0].mounted.Body;
+	check("a surface the kit never had is not kept", refused.surface, undefined);
+	check("nor a height that is no height", refused.height, undefined);
+}
+
 console.log(failed ? `\n${failed} failed` : "\nall passed");
 process.exit(failed ? 1 : 0);

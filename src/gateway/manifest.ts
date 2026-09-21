@@ -18,7 +18,13 @@ export interface CustomVerb<Input, Output> {
 
 export type WritesRow = readonly StandardVerb[] | Readonly<Record<string, true | CustomVerb<never, unknown>>>;
 
-export type Control = "line" | "text" | "number" | "boolean" | "emoji" | "icon" | "json" | "pick" | "row" | "memory";
+export type Control =
+	"line" | "text" | "number" | "boolean" | "emoji" | "icon" | "json" | "pick" | "row" | "memory" | "choice";
+
+export interface Choice {
+	readonly value: string;
+	readonly label: string;
+}
 
 export type DrawnAs = "line" | "text" | "number" | "boolean" | "emoji" | "icon" | "json";
 
@@ -43,11 +49,26 @@ export interface FieldDescription {
 
 export type Describes<Row> = { [K in keyof Row]?: string | FieldDescription };
 
+export interface PropSeen {
+	readonly kind: "collection" | "value";
+	readonly control: Control | null;
+	readonly binding: string;
+	readonly isSet: boolean;
+	readonly value?: unknown;
+	readonly rows?: readonly unknown[];
+}
+
+export type PropsSeen = Readonly<Record<string, PropSeen>>;
+
+export type Visibility = (props: PropsSeen) => boolean;
+
 interface PropCommon<Held> {
 	label?: string;
 	hint?: string;
 	aka?: readonly string[];
 	design?: boolean;
+	isVisible?: Visibility;
+	options?: [Held] extends [string] ? readonly Choice[] : never;
 	wants?: string;
 	shape?: string;
 	where?: readonly DeclaredFilterRow[];
@@ -100,6 +121,8 @@ export interface PropSpec {
 	readonly hint?: string;
 	readonly aka?: readonly string[];
 	readonly design?: boolean;
+	readonly isVisible?: Visibility;
+	readonly options?: readonly Choice[];
 	readonly wants?: string;
 	readonly shape?: string;
 	readonly writes: readonly string[];
@@ -160,9 +183,22 @@ export interface ManifestCard {
 	preview?: Readonly<Record<string, unknown>>;
 	inline?: boolean;
 	view?: string;
-	slots?: Readonly<Record<string, unknown>>;
-	mounts?: Readonly<Record<string, unknown>>;
+	slots?: Readonly<Record<string, HeldSpec>>;
+	mounts?: Readonly<Record<string, HeldSpec>>;
 }
+
+export interface HeldSpec {
+	label?: string;
+	hint?: string;
+	was?: string;
+	isVisible?: Visibility;
+	default?: unknown;
+	surface?: string;
+	of?: string;
+	gives?: Readonly<Record<string, readonly string[]>>;
+}
+
+export const HELD_KEYS: readonly string[] = ["label", "hint", "was", "isVisible", "default", "surface", "of", "gives"];
 
 declare const propsHeld: unique symbol;
 
@@ -245,6 +281,8 @@ interface WrittenProp {
 	hint?: string;
 	aka?: readonly string[];
 	design?: boolean;
+	isVisible?: Visibility;
+	options?: readonly Choice[];
 	wants?: string;
 	shape?: string;
 	where?: readonly DeclaredFilterRow[];
@@ -265,6 +303,7 @@ interface WrittenProp {
 const DRAWN_BY_DEFAULT: Readonly<Record<string, Control>> = { string: "line", number: "number", boolean: "boolean" };
 
 function controlOf(input: WrittenProp, kind: string): Control | undefined {
+	if (input.options) return "choice";
 	if (input.control) return input.control;
 	if (kind === "collection") return undefined;
 	if (input.picks) return "row";
@@ -274,6 +313,7 @@ function controlOf(input: WrittenProp, kind: string): Control | undefined {
 }
 
 const PRIMITIVE_OF_CONTROL: Readonly<Record<string, "line" | "text" | "number" | "boolean">> = {
+	choice: "line",
 	line: "line",
 	text: "text",
 	number: "number",
@@ -314,6 +354,8 @@ export function specOf(name: string, given: unknown): PropSpec {
 			["hint", input.hint],
 			["aka", input.aka],
 			["design", input.design],
+			["isVisible", input.isVisible],
+			["options", input.options],
 			["wants", input.wants],
 			["shape", input.shape],
 			["where", input.where],
@@ -359,6 +401,17 @@ function propProblem(name: string, spec: PropSpec, input: WrittenProp): string |
 	return DECLARES_NO_DEFAULT.replace("{name}", name);
 }
 
+const HELD_NAMES_NOTHING =
+	'the {holder} "{name}" declares {key}, which the engine never reads — a misspelling here is silent';
+
+function heldProblems(holder: string, held: Readonly<Record<string, HeldSpec>> | undefined): string[] {
+	return Object.entries(held ?? {}).flatMap(([name, spec]) =>
+		Object.keys(spec ?? {})
+			.filter((key) => !HELD_KEYS.includes(key))
+			.map((key) => HELD_NAMES_NOTHING.replace("{holder}", holder).replace("{name}", name).replace("{key}", key)),
+	);
+}
+
 const migrationProblem = (step: Migration<never>, at: number) =>
 	Object.keys(step.from ?? {}).length === 0 ? MIGRATES_FROM_NOTHING.replace("{at}", String(at + 1)) : null;
 
@@ -386,6 +439,7 @@ export function defineManifest<
 		const problem = propProblem(name, spec, given as WrittenProp);
 		if (problem) problems.push(problem);
 	}
+	problems.push(...heldProblems("slot", input.slots), ...heldProblems("mount", input.mounts));
 	for (const [at, step] of (input.migrate ?? []).entries()) {
 		const problem = migrationProblem(step, at);
 		if (problem) problems.push(problem);

@@ -50,18 +50,18 @@ export function differences(wanted, got, at = []) {
 	if (typeOf(wanted) !== "object")
 		return wanted === got ? [] : [`${said}: expected ${JSON.stringify(wanted)}, engine answers ${JSON.stringify(got)}`];
 
-	const keys = [...new Set([...Object.keys(wanted), ...Object.keys(got)])];
+	const servable = Object.keys(got).filter((key) => typeof got[key] !== "function");
+	const keys = [...new Set([...Object.keys(wanted), ...servable])];
 	const ordered =
-		Object.keys(wanted).join(",") === Object.keys(got).join(",")
+		Object.keys(wanted).join(",") === servable.join(",")
 			? []
-			: [
-					`${said}: keys are declared in the order ${Object.keys(got).join(", ")}, expected ${Object.keys(wanted).join(", ")}`,
-				];
+			: [`${said}: keys are declared in the order ${servable.join(", ")}, expected ${Object.keys(wanted).join(", ")}`];
 	return [...ordered, ...keys.flatMap((key) => keyDifference(wanted, got, key, at))];
 }
 
 function keyDifference(wanted, got, key, at) {
 	if (!(key in got)) return [`${[...at, key].join(" › ")}: missing — the engine no longer answers it`];
+	if (typeof got[key] === "function") return [];
 	if (!(key in wanted))
 		return [`${[...at, key].join(" › ")}: unexpected — the engine answers ${JSON.stringify(got[key])}`];
 	return differences(wanted[key], got[key], [...at, key]);

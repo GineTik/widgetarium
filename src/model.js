@@ -21,7 +21,7 @@ import {
 } from "./tree.js";
 import { BLOCK_FORMAT } from "./version.js";
 import { widgetKeyOf } from "./engine/widget-ref.js";
-import { isKnownRole, SLOT_SURFACES } from "./surface-roles.js";
+import { isKnownRole, slotSurfaceSaid } from "./surface-roles.js";
 import { withDefaultSurfaces } from "./surface-default.js";
 
 const LEGACY_CLASS_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
@@ -48,6 +48,16 @@ function normalizeHeld(input, keyWidget, idOf) {
 		props: held.props ?? {},
 		slots: normalizeSlots(held.slots, idOf),
 		mounted: normalizeMounted(held.mounted, idOf),
+		...heldLook(held),
+	};
+}
+
+function heldLook(held) {
+	const height = positiveNumber(held.height);
+	const surface = slotSurfaceSaid(held.surface);
+	return {
+		...(surface ? { surface } : {}),
+		...(height ? { height } : {}),
 	};
 }
 
@@ -70,7 +80,8 @@ function normalizeSlots(input, idOf = SAME_ID) {
 	const result = {};
 	for (const [name, held] of Object.entries(input)) {
 		const record = normalizeHeld(held, null, idOf);
-		const worn = SLOT_SURFACES.includes(held?.surface) ? { surface: held.surface } : null;
+		const said = slotSurfaceSaid(held?.surface);
+		const worn = said ? { surface: said } : null;
 		const set = isHeldProps(held?.props) ? { props: held.props } : null;
 		if (record || worn || set) result[name] = { ...set, ...record, ...worn };
 	}
@@ -89,6 +100,7 @@ export function heldTile(holder, hold, key, widget) {
 		props: held.props ?? {},
 		slots: held.slots ?? {},
 		mounted: held.mounted ?? {},
+		...heldLook(held),
 	};
 }
 
@@ -508,6 +520,7 @@ function serializeHeld(held) {
 	return {
 		...(held.widget ? { widget: held.widget } : {}),
 		...(held.surface ? { surface: held.surface } : {}),
+		...(held.height ? { height: held.height } : {}),
 		...(Object.keys(held.settings ?? {}).length ? { settings: held.settings } : {}),
 		...(Object.keys(held.mounts ?? {}).length ? { mounts: held.mounts } : {}),
 		...(Object.keys(held.props ?? {}).length ? { props: held.props } : {}),

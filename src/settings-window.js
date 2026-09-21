@@ -57,6 +57,7 @@ import { NOTE_CONTENT, NOTE_NAME, noteFieldOf } from "./gateway/obsidian.js";
 import { boxNamed, matchesNeedle, referenceIn, referenceText, widgetsOffering } from "./ref-draft.js";
 import { conditionOfRow, conditionsFor, rowFor } from "./gateway/operators.js";
 import { ALGORITHMS_READING_A_FIELD, DEFAULT_DATE_FIELD } from "./gateway/stats.js";
+import { isShown, seenOf, shownEntries } from "./prop-visibility.js";
 import { reactClash, slotFit } from "./fit.js";
 import { SLOT_SURFACES, slotSurfaceOf } from "./surface-roles.js";
 import { APART, SIDES } from "./tree.js";
@@ -924,7 +925,29 @@ function bindingBody(state, prop) {
 	if (binding === "stat") return statBody(state, key, spec, config);
 	if (binding !== "hardcode") return vaultBody(state, key, spec, config);
 	if (isSwitched(spec)) return [];
+	if (spec.options) return choiceBody(state, key, spec, config);
 	return listedFields(spec, binding) ? itemRows(state, key, spec, config) : typedBody(state, key, spec, config);
+}
+
+function choiceBody(state, key, spec, config) {
+	const now = chosenValue(spec, config);
+	const take = (value) => {
+		writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, value));
+		state.openEditor(null);
+	};
+	return spec.options.map((choice) =>
+		pickRow(choice.value, choice.label, () => take(choice.value), choice.value === now),
+	);
+}
+
+function chosenValue(spec, config) {
+	const held = typedIn(spec, config) ?? declaredOf(spec);
+	return held === undefined || held === null ? "" : String(held);
+}
+
+function chosenLabel(spec, config) {
+	const now = chosenValue(spec, config);
+	return spec.options.find((choice) => choice.value === now)?.label ?? now;
 }
 
 function pickedRowValue(spec, config, binding) {
@@ -940,6 +963,7 @@ function pickedRowValue(spec, config, binding) {
 function propValue(state, prop, switched) {
 	const { key, spec, config, binding } = prop;
 	if (switched) return switchedValue(state, key, spec, config);
+	if (spec.options && binding === "hardcode") return h("span", { className: "wg-set-path" }, chosenLabel(spec, config));
 	return pickedRowValue(spec, config, binding) ?? h("span", { className: "wg-set-path" }, boundLabel(state, prop));
 }
 
@@ -949,7 +973,7 @@ function propTrigger(state, prop) {
 	return valueRow({
 		label: spec.label ?? key,
 		value: propValue(state, prop, switched),
-		unset: !switched && !config.path && typedIn(spec, config) === undefined && !config.ref,
+		unset: !switched && !spec.options && !config.path && typedIn(spec, config) === undefined && !config.ref,
 	});
 }
 
@@ -986,9 +1010,9 @@ function declaredProps(manifest, wanted) {
 const hasOwnProps = (manifest, fed) => Object.keys(manifest?.props ?? {}).some((key) => !fed.includes(key));
 
 function propGroup(state) {
-	const declared = declaredProps(state.manifest, (spec) => spec.design !== true).filter(
-		([key]) => !state.fed.includes(key),
-	);
+	const declared = declaredProps(state.manifest, (spec) => spec.design !== true)
+		.filter(([key]) => !state.fed.includes(key))
+		.filter(([, spec]) => isShown(spec, state.seen));
 	if (declared.length === 0) return null;
 	const rows = declared.map(([key, spec]) => propRow(state, boundProp(state, key, spec)));
 	return group("props", declared.length > 1 ? "Sources" : "Source", rows, null);
@@ -997,76 +1021,86 @@ function propGroup(state) {
 // A SLOT PICKER IS A CATALOGUE, NOT A LIST OF NAMES. What goes in a slot is drawn on every row of
 // the parent, so the question is what it LOOKS like — and the same surface can rank the candidates
 // against what this slot declares it hands down, which a list of titles cannot say anything about.
+function slotGroup(state) {
+	const rows = slotRows(state);
+	if (rows.length === 0) return null;
+	return group("slots", "Slots", rows, "A hole this widget fills with another widget.");
+}
+
 function slotRows(state) {
+	const picks = state.tile.slots ?? {};
+	return shownEntries(state.manifest.slots, state.seen).map(([name, spec]) =>
+		slotRow(state, name, spec, picks[name]?.widget ?? spec.default ?? ""),
+	);
+}
+
+function slotRow(state, name, spec, chosen) {
 	const { manifest, tile, registry, host, onPatch } = state;
 	const picks = tile.slots ?? {};
 	const parentReact = registry.get(manifest.id)?.react;
 	const clashWith = (id) => reactClash(parentReact, registry.get(id)?.react);
-	return Object.entries(manifest.slots ?? {}).map(([name, spec]) => {
-		const chosen = picks[name]?.widget ?? spec.default ?? "";
-		const held = registry.get(chosen);
-		const key = `slot:${name}`;
-		// CONTEXT: a new widget in the slot is a new record — the old one's settings are not its
-		const write = (id) => {
-			const clash = clashWith(id);
-			if (clash) {
-				state.host?.ui?.notify(clash);
-				return;
-			}
-			const { [name]: dropped, ...rest } = picks;
-			const worn = dropped?.surface ? { surface: dropped.surface } : null;
-			onPatch({
-				slots: id ? { ...picks, [name]: { ...worn, widget: id } } : { ...rest, ...(worn ? { [name]: worn } : {}) },
-			});
-			state.openEditor(null);
-		};
-		const wear = (surface) => {
-			onPatch({ slots: { ...picks, [name]: { ...picks[name], surface } } });
-			state.openEditor(null);
-		};
-		const worn = slotSurfaceOf(spec, picks[name]);
-		// CONTEXT: a `gives` clause is the manifest saying the parent feeds this slot
-		const fed = Object.keys(spec.gives ?? {});
-		const row = valueRow({
-			glyph: h(Icon, { name: "check" }),
-			label: titleCase(name),
-			sub: fed.length ? `Fed ${fed.join(", ")}` : null,
-			value: held?.manifest?.title ?? chosen ?? "Nothing",
-			unset: !chosen,
-			onClick: () => state.openEditor(key),
-			after:
-				chosen && (fed.length === 0 || hasOwnProps(held?.manifest, fed))
-					? enterButton(state, { hold: "slots", key: name, widget: chosen, fed })
-					: null,
+	const held = registry.get(chosen);
+	const key = `slot:${name}`;
+	// CONTEXT: a new widget in the slot is a new record — the old one's settings are not its
+	const write = (id) => {
+		const clash = clashWith(id);
+		if (clash) {
+			state.host?.ui?.notify(clash);
+			return;
+		}
+		const { [name]: dropped, ...rest } = picks;
+		const worn = dropped?.surface ? { surface: dropped.surface } : null;
+		onPatch({
+			slots: id ? { ...picks, [name]: { ...worn, widget: id } } : { ...rest, ...(worn ? { [name]: worn } : {}) },
 		});
-		return h("div", { className: "wg-set-slot", key }, [
-			row,
-			editorPopover(
-				state,
-				`slot-surface:${name}`,
-				valueRow({ label: "Surface", value: titleCase(worn) }),
-				h(
-					"div",
-					{ className: "wg-set-pop-body" },
-					SLOT_SURFACES.map((surface) => pickRow(surface, titleCase(surface), () => wear(surface), surface === worn)),
-				),
-			),
-			state.openRow === key
-				? h(CatalogueDialog, {
-						key: "pick",
-						registry,
-						host,
-						mode: "fill",
-						rank: (candidate) => slotFit(candidate, spec.gives, clashWith(candidate.id)),
-						foot: spec.default
-							? h(Button, { size: "s", onClick: () => write(null) }, "Back to the widget's default")
-							: null,
-						onPick: write,
-						onClose: () => state.openEditor(null),
-					})
+		state.openEditor(null);
+	};
+	const wear = (surface) => {
+		onPatch({ slots: { ...picks, [name]: { ...picks[name], surface } } });
+		state.openEditor(null);
+	};
+	const worn = slotSurfaceOf(spec, picks[name]);
+	// CONTEXT: a `gives` clause is the manifest saying the parent feeds this slot
+	const fed = Object.keys(spec.gives ?? {});
+	const row = valueRow({
+		glyph: h(Icon, { name: "check" }),
+		label: titleCase(name),
+		sub: fed.length ? `Fed ${fed.join(", ")}` : null,
+		value: held?.manifest?.title ?? chosen ?? "Nothing",
+		unset: !chosen,
+		onClick: () => state.openEditor(key),
+		after:
+			chosen && (fed.length === 0 || hasOwnProps(held?.manifest, fed))
+				? enterButton(state, { hold: "slots", key: name, widget: chosen, fed })
 				: null,
-		]);
 	});
+	return h("div", { className: "wg-set-slot", key }, [
+		row,
+		editorPopover(
+			state,
+			`slot-surface:${name}`,
+			valueRow({ label: "Surface", value: titleCase(worn) }),
+			h(
+				"div",
+				{ className: "wg-set-pop-body" },
+				SLOT_SURFACES.map((surface) => pickRow(surface, titleCase(surface), () => wear(surface), surface === worn)),
+			),
+		),
+		state.openRow === key
+			? h(CatalogueDialog, {
+					key: "pick",
+					registry,
+					host,
+					mode: "fill",
+					rank: (candidate) => slotFit(candidate, spec.gives, clashWith(candidate.id)),
+					foot: spec.default
+						? h(Button, { size: "s", onClick: () => write(null) }, "Back to the widget's default")
+						: null,
+					onPick: write,
+					onClose: () => state.openEditor(null),
+				})
+			: null,
+	]);
 }
 
 // CONTEXT: the row's name IS the record's key, so a rename has to carry the record with it
@@ -1080,6 +1114,32 @@ function movedRecord(held, from, to) {
 function renamed(rows, index, wanted) {
 	const taken = new Set(rows.filter((row, at) => at !== index).map((row) => row.name));
 	return rows.map((row, at) => (at === index ? { ...row, name: uniqueName(taken, wanted) } : row));
+}
+
+function movedRows(rows, index, step) {
+	const to = index + step;
+	if (to < 0 || to >= rows.length) return rows;
+	const next = [...rows];
+	[next[index], next[to]] = [next[to], next[index]];
+	return next;
+}
+
+function moveButton(rows, index, step, label, glyph, write) {
+	const at = index + step;
+	if (at < 0 || at >= rows.length) return null;
+	return h(
+		IconButton,
+		{
+			size: "s",
+			key: label,
+			label,
+			onClick: (event) => {
+				event.stopPropagation();
+				write(movedRows(rows, index, step));
+			},
+		},
+		h(Icon, { name: glyph }),
+	);
 }
 
 function mountRow(state, rows, index, write, rename) {
@@ -1100,6 +1160,8 @@ function mountRow(state, rows, index, write, rename) {
 		]),
 		h(RowValue, { className: "wg-set-value", key: "value" }, [
 			found?.component ? null : h(Pill, { tone: "error", key: "gone" }, "Not installed"),
+			moveButton(rows, index, -1, "Move up", "chevron-up", write),
+			moveButton(rows, index, 1, "Move down", "chevron-down", write),
 			// CONTEXT: a mount is never fed, so it always has its own settings inside it
 			found?.component
 				? enterButton(state, { hold: "mounted", key: row.name, was: row.was, widget: row.widget })
@@ -1139,7 +1201,7 @@ function mountPicker(state, key, onPick) {
 // TRADE-OFF: no rank — a mount hands nothing down, so slotFit has no clause to weigh
 function mountGroups(state) {
 	const { manifest, tile, registry, host, onPatch } = state;
-	return Object.entries(manifest.mounts ?? {}).map(([name, spec]) => {
+	return shownEntries(manifest.mounts, state.seen).map(([name, spec]) => {
 		const rows = mountRows(mountList(tile, name, spec), (id) => declaredName(registry, id));
 		// CONTEXT: the setting's old key goes in the same write, so the next read has one answer
 		const write = mountWrite(tile, name, spec, onPatch);
@@ -1761,16 +1823,45 @@ function surfaceGroup(state) {
 	return group("surface", "Surface", rows, SURFACE_HERE);
 }
 
+const AS_ITS_HOLDER_DRAWS_IT = "As its holder draws it";
+const AS_TALL_AS_IT_NEEDS = "As tall as it needs";
+const MOUNT_SURFACE_NOTE = "The plate this widget stands on inside the one holding it.";
+const MOUNT_HEIGHT_NOTE = "Leave it empty and the widget is as tall as what it draws.";
+
+function mountSurfaceGroup(state) {
+	const worn = state.tile.surface ?? null;
+	const wear = (surface) => {
+		state.onPatch({ surface: surface ?? undefined });
+		state.openEditor(null);
+	};
+	const choices = [
+		pickRow("holder", AS_ITS_HOLDER_DRAWS_IT, () => wear(null), worn === null),
+		...SLOT_SURFACES.map((surface) => pickRow(surface, titleCase(surface), () => wear(surface), surface === worn)),
+	];
+	const trigger = valueRow({ label: "Surface", value: worn ? titleCase(worn) : AS_ITS_HOLDER_DRAWS_IT });
+	const row = editorPopover(state, "mount-surface", trigger, h("div", { className: "wg-set-pop-body" }, choices));
+	return group("mount-surface", "Surface", row, MOUNT_SURFACE_NOTE);
+}
+
+function mountHeightGroup(state) {
+	const now = state.tile.height ?? null;
+	const apply = (typed) => {
+		const height = Number(typed);
+		state.onPatch({ height: Number.isFinite(height) && height > 0 ? Math.round(height) : undefined });
+	};
+	const trigger = valueRow({ label: "Height", value: now ? `${now}px` : AS_TALL_AS_IT_NEEDS });
+	const row = editorPopover(state, "mount-height", trigger, textEditor(state, now ? String(now) : "", apply));
+	return group("mount-height", "Size", row, MOUNT_HEIGHT_NOTE);
+}
+
 function designGroups(state) {
-	const own = declaredProps(state.manifest, (spec) => spec.design === true).map(([key, spec]) =>
-		propRow(state, boundProp(state, key, spec)),
-	);
-	const groups = [
-		surfaceGroup(state),
-		sizeOnBoardGroup(state),
-		foldGroup(state),
-		own.length > 0 ? group("design:own", "This widget", own, null) : null,
-	].filter(Boolean);
+	const own = declaredProps(state.manifest, (spec) => spec.design === true)
+		.filter(([, spec]) => isShown(spec, state.seen))
+		.map(([key, spec]) => propRow(state, boundProp(state, key, spec)));
+	const placement = state.isMount
+		? [mountSurfaceGroup(state), mountHeightGroup(state)]
+		: [surfaceGroup(state), sizeOnBoardGroup(state), foldGroup(state)];
+	const groups = [...placement, own.length > 0 ? group("design:own", "This widget", own, null) : null].filter(Boolean);
 	if (groups.length > 0) return groups;
 	return [
 		group(
@@ -1785,13 +1876,7 @@ function designGroups(state) {
 function panelBody(state) {
 	if (state.tab === "data") return dataGroups(state);
 	if (state.tab === "design") return designGroups(state);
-	return [
-		propGroup(state),
-		state.manifest.slots
-			? group("slots", "Slots", slotRows(state), "A hole this widget fills with another widget.")
-			: null,
-		...mountGroups(state),
-	];
+	return [propGroup(state), slotGroup(state), ...mountGroups(state)];
 }
 
 // A BREADCRUMB, NOT A TREE. It is what Gutenberg shipped after reverting click-through, and it is
@@ -2078,9 +2163,6 @@ function addressed(options, path) {
 	return { manifest, tile, onPatch, crumbs };
 }
 
-// CONTEXT: a child has no place on the board, so there is no width, height or fold to draw
-const CHILD_TABS = TABS.filter((entry) => entry.value !== "design");
-
 // TRADE-OFF: one keyed record, not eight resets in an effect — an effect that resets on open
 // RACES the first press, and wiped the popover the person had just opened
 const FRESH = {
@@ -2117,6 +2199,7 @@ export function useSettingsWindow(options) {
 		countReaders,
 		refs,
 		surface,
+		entryPath,
 	} = options;
 	const [phase, key] = String(session ?? "").split(":");
 	const open = phase === "open";
@@ -2124,10 +2207,10 @@ export function useSettingsWindow(options) {
 	const [held, setHeld] = useState(null);
 	// CONTEXT: read from the sheet, never recomputed — see SidebarSheet's onHeight
 	const [sheetHeight, setSheetHeight] = useState(CHROME.sheetPeekPx);
-	const view = held && held.key === key ? held : { ...FRESH, key };
+	const born = { ...FRESH, key, path: entryPath ?? [] };
+	const view = held && held.key === key ? held : born;
 	// CONTEXT: read from the record, never from the render's copy — Escape pops from a listener
-	const put = (patch) =>
-		setHeld((current) => ({ ...(current && current.key === key ? current : { ...FRESH, key }), ...patch }));
+	const put = (patch) => setHeld((current) => ({ ...(current && current.key === key ? current : born), ...patch }));
 	const { tab, zoom, pan, folded, narrow, sheetFull, openRow, draft, path } = view;
 	const setTab = (next) => put({ tab: next });
 	const setZoom = (next) => put({ zoom: next });
@@ -2183,10 +2266,12 @@ export function useSettingsWindow(options) {
 	const state = {
 		manifest: here.manifest,
 		tile: here.tile,
+		seen: seenOf(here.manifest, here.tile),
 		onPatch: here.onPatch,
 		crumbs: here.crumbs,
 		fed: path.at(-1)?.fed ?? [],
-		tabs: path.length > 0 ? CHILD_TABS : TABS,
+		tabs: TABS,
+		isMount: path.length > 0,
 		enter: (step) => put({ path: [...path, step], tab: "settings", openRow: null, draft: "" }),
 		popTo: (depth) => put({ path: path.slice(0, depth), tab: "settings", openRow: null, draft: "" }),
 		place,
