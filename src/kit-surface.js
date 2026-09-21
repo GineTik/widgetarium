@@ -1,8 +1,8 @@
 import { createContext } from "react";
 import { plateRefusal, platesWithin } from "./surface-roles.js";
-import { APART, COLUMN, isPainted, NO_SURFACE, ROW, SIDES, SURFACE_WAS } from "./tree.js";
+import { APART, COLUMN, GROUP, isPainted, NO_SURFACE, ROW, SIDES, SURFACE_WAS } from "./tree.js";
 
-export { NO_SURFACE };
+export { GROUP, NO_SURFACE };
 
 const SIDE_WORD = { kind: "side", allowed: SIDES, fallback: "end" };
 const ACROSS_WORD = { kind: "direction", allowed: [ROW, COLUMN], fallback: COLUMN };

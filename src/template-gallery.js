@@ -1,5 +1,5 @@
 import { createElement as h, useState } from "react";
-import { Card, Icon, IconButton } from "./kit.js";
+import { Icon, IconButton, cardClass, cx } from "./kit.js";
 import { templateSketch } from "./templates.js";
 
 const tallestOf = (row) => row.reduce((most, cell) => Math.max(most, cell.height ?? 0), 0);
@@ -88,16 +88,12 @@ function cardHandle(template, press) {
 
 function TemplateCard({ template, nameOf, onUse }) {
 	const { step, isBusy, failure, press } = useBuild(template, onUse);
-	return h(
-		Card,
-		{ asChild: true, className: "wg-tpl-tile" },
-		h("article", cardHandle(template, press), [
-			h("div", { className: "wg-tpl-stage", key: "stage" }, h(Sketch, { template, nameOf })),
-			h(TemplateFoot, { key: "foot", template, isBusy, press }),
-			h("p", { className: "wg-tpl-what", key: "what" }, template.description),
-			h(TemplateNote, { key: "note", isBusy, step, failure }),
-		]),
-	);
+	return h("article", { ...cardHandle(template, press), className: cx(cardClass({}), "wg-tpl-tile") }, [
+		h("div", { className: "wg-tpl-stage", key: "stage" }, h(Sketch, { template, nameOf })),
+		h(TemplateFoot, { key: "foot", template, isBusy, press }),
+		h("p", { className: "wg-tpl-what", key: "what" }, template.description),
+		h(TemplateNote, { key: "note", isBusy, step, failure }),
+	]);
 }
 
 export function TemplateGrid({ templates, columns, nameOf, onUse }) {

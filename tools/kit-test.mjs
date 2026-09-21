@@ -246,10 +246,13 @@ const plated = (said) => [...host.querySelectorAll(".wg-kit-surface")].map((one)
 const seeded = (value, drawn) => render(h(PLATES_ABOVE.Provider, { value }, drawn), host);
 const ONE_PLATE_ABOVE = { surface: "group", levels: 1, ownPlates: 0 };
 
-render(h(Kit.Surface, null, "bare"), host);
-check("a surface nobody typed paints nothing", plated("data-surface"), [null]);
+render(h(Kit.Card, null, "plain"), host);
+check("a card nobody typed is a group plate", plated("data-surface"), ["group"]);
+render(h(Kit.Card, { type: "none" }, "bare"), host);
+check("and one told none paints nothing", plated("data-surface"), [null]);
+check("Surface is the same component, kept for widgets published before the rename", Kit.Surface, Kit.Card);
 
-render(h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "group" }))), host);
+render(h(Kit.Card, { type: "group" }, h(Kit.Card, { type: "group" }, h(Kit.Card, { type: "group" }))), host);
 check("on the page a group holds a group, and the third is refused", plated("data-surface"), ["group", "group", null]);
 check("the corner steps inward with each plate", plated("style"), [
 	"--wg-surface-corner: var(--wg-kit-plate);",
@@ -257,44 +260,88 @@ check("the corner steps inward with each plate", plated("style"), [
 	null,
 ]);
 
-render(h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "object" })), host);
-check("an object may not stand inside a group", plated("data-surface"), ["group", null]);
+render(h(Kit.Card, { type: "group" }, h(Kit.Card, { type: "object" })), host);
+check("an old object is drawn as the group it became", plated("data-surface"), ["group", "group"]);
 
-seeded(ONE_PLATE_ABOVE, h(Kit.Surface, { type: "group" }, h(Kit.Surface, { type: "group" })));
+seeded(ONE_PLATE_ABOVE, h(Kit.Card, { type: "group" }, h(Kit.Card, { type: "group" })));
 check("a tile already wearing a group leaves the widget one plate", plated("data-surface"), ["group", null]);
 
-seeded(ONE_PLATE_ABOVE, h(Kit.Surface, { type: "object" }));
-check("and an object is refused under it", plated("data-surface"), [null]);
+seeded(ONE_PLATE_ABOVE, h(Kit.Card, { type: "chartreuse" }));
+check("and a surface the kit never had is refused under it", plated("data-surface"), [null]);
 
-render(h(Kit.Surface, { type: "apart", side: "start", across: "row" }), host);
+render(h(Kit.Card, { type: "apart", side: "start", across: "row" }), host);
 check(
 	"a divider says which edge and which way it stands",
 	plated("data-surface").concat(plated("data-side"), plated("data-across")),
 	["apart", "start", "row"],
 );
 
-render(h(Kit.Surface, { type: "group", tone: "warning" }), host);
+render(h(Kit.Card, { type: "group", tone: "warning" }), host);
 check("a tone is a state of the plate", plated("class"), ["wg-kit-surface wg-kit-tone is-warn"]);
 
-render(h(Kit.Surface, { type: "apart", side: "sideways", across: "diagonal" }), host);
+render(h(Kit.Card, { type: "apart", side: "sideways", across: "diagonal" }), host);
 check(
 	"a divider given words the kit never had falls back rather than mis-painting",
 	plated("data-side").concat(plated("data-across")),
 	["end", "column"],
 );
 
-render(h(Kit.Surface, { type: "group", tone: "danger" }), host);
+render(h(Kit.Card, { type: "group", tone: "danger" }), host);
 check("and a tone it never had is drawn neutral", plated("class"), ["wg-kit-surface"]);
 
-render(h(Kit.Surface, { type: "group", "data-surface": "object" }), host);
+render(h(Kit.Card, { type: "group", "data-surface": "object" }), host);
 check("a plate named by hand cannot outrank the law", plated("data-surface"), ["group"]);
 
 let heldBySurface = null;
-render(h(Kit.Surface, { type: "group", ref: (node) => void (heldBySurface = node) }), host);
+render(h(Kit.Card, { type: "group", ref: (node) => void (heldBySurface = node) }), host);
 check("a surface hands its element back to the widget", heldBySurface?.className, "wg-kit-surface");
 
-render(h(Kit.Surface, { type: "chartreuse" }), host);
+render(h(Kit.Card, { type: "chartreuse" }), host);
 check("a type the kit never had paints nothing", plated("data-surface"), [null]);
+
+render(h(Kit.Card, { tone: "success" }, "done"), host);
+check("a card in a tone is the same plate in a state", [plated("data-surface"), plated("class")], [
+	["group"],
+	["wg-kit-surface wg-kit-tone is-ok"],
+]);
+
+const itemsOf = () =>
+	[...host.querySelectorAll(".wg-kit-layout-item")].map((one) => [one.getAttribute("data-surface"), one.className]);
+render(h(Kit.Rows, null, h(Kit.Rows.Header, { title: "Steps" }), h(Kit.Rows.Item, null, "one"), h(Kit.Rows.Item, { tone: "success" }, "two")), host);
+check("rows stand in the one plate", plated("data-surface"), ["group"]);
+check("and every row stands bare on it, a tone washing only its own", itemsOf(), [
+	[null, "wg-kit-layout-item"],
+	[null, "wg-kit-layout-item wg-kit-tone is-ok"],
+]);
+check("the header is a line of the same plate", host.querySelector(".wg-kit-layout > .wg-kit-layout-head .wg-kit-layout-title")?.textContent, "Steps");
+
+render(h(Kit.Grid, { min: 180 }, h(Kit.Grid.Item, null, "a"), h(Kit.Grid.Item, { tone: "warning" }, "b")), host);
+check("a grid gives every cell its own plate", itemsOf().map(([worn]) => worn), ["group", "group"]);
+check("and itself paints none", host.querySelector(".wg-kit-layout").getAttribute("data-surface"), null);
+check("it wraps at the narrowest a cell may be", host.querySelector(".wg-kit-layout").getAttribute("style"), "--wg-kit-layout-min: 180px;");
+
+render(h(Kit.Layout, { kind: "row" }, h(Kit.Layout.Item, null, "a")), host);
+check("a row is cards across", itemsOf().map(([worn]) => worn), ["group"]);
+render(h(Kit.Layout, { kind: "stack" }, h(Kit.Layout.Item, null, "a")), host);
+check("a stack paints nothing at all", [plated("data-surface"), itemsOf().map(([worn]) => worn)], [[], [null]]);
+render(h(Kit.Layout, { kind: "masonry" }, h(Kit.Layout.Item, null, "a")), host);
+check("a layout the kit never had is drawn as a stack", host.querySelector(".wg-kit-layout").className, "wg-kit-layout is-stack");
+check("the four layouts are named in one place", Kit.LAYOUT_KINDS, ["stack", "row", "grid", "rows"]);
+
+render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x"))), host);
+check("rows already on a plate paint no second one, only their lines", [plated("data-surface"), host.querySelector(".wg-kit-layout").className], [["group"], "wg-kit-layout is-rows is-on-plate"]);
+const flushOf = () => host.querySelector('[data-surface="group"]')?.getAttribute("data-rows-flush") ?? null;
+check("rows alone in a card take its padding on every side", flushOf(), "inline top bottom");
+render(h(Kit.Card, null, h("style", null, ".x{}"), h("div", null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")))), host);
+check("a sheet and a wrapper before them are not content, so the top is still theirs", flushOf(), "inline top bottom");
+render(h(Kit.Card, null, h("p", null, "Above"), h(Kit.Rows, null, h(Kit.Rows.Item, null, "x"))), host);
+check("something above them leaves the card its top", flushOf(), "inline bottom");
+render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")), h(Kit.Button, null, "More")), host);
+check("something below them leaves the card its bottom", flushOf(), "inline top");
+render(h(Kit.Card, null, "plain"), host);
+check("a card with no rows keeps every edge", flushOf(), null);
+seeded(ONE_PLATE_ABOVE, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")));
+check("and so do rows in a tile the board already plated", plated("data-surface"), []);
 
 const surface = [
 	"Button",
@@ -304,6 +351,9 @@ const surface = [
 	"Plate",
 	"Card",
 	"Surface",
+	"Layout",
+	"Rows",
+	"Grid",
 	"Row",
 	"List",
 	"RowBadge",
@@ -1481,7 +1531,7 @@ check(
 	const entry = [
 		'import { createElement as h } from "react";',
 		'import { render } from "./src/engine/render.js";',
-		'import { Button, Card, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./src/kit.js";',
+		'import { Button, cardClass, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./src/kit.js";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,
 		"const mirror = host.querySelector('.wg-kit-md-mirror');",
@@ -1506,7 +1556,7 @@ check(
 		"payload.sidebar.fullIsCard = fullSide.classList.contains('wg-kit-card') && fullSide.classList.contains('is-lifted');",
 		"payload.sidebar.groupFill = getComputedStyle(fullSide.querySelector('.wg-kit-side-list')).backgroundColor;",
 		"const cards = document.querySelector('.wg-cards');",
-		"render(h('div', null, [h(Card, { key: 'tile' }, 'tile'), h(Card, { key: 'solid', variant: 'solid' }, 'solid'), h(Card, { key: 'lifted', lift: true }, 'lifted'), h(Plate, { key: 'plate' }, 'plate'), h(List, { key: 'list' }, h(Row, null, h(RowLabel, null, 'row'))), h(Button, { key: 'grey' }, 'grey')]), cards);",
+		"render(h('div', null, [h('div', { key: 'tile', className: cardClass({}) }, 'tile'), h('div', { key: 'solid', className: cardClass({ variant: 'solid' }) }, 'solid'), h('div', { key: 'lifted', className: cardClass({ lift: true }) }, 'lifted'), h(Plate, { key: 'plate' }, 'plate'), h(List, { key: 'list' }, h(Row, null, h(RowLabel, null, 'row'))), h(Button, { key: 'grey' }, 'grey')]), cards);",
 		"const cardFrame = (node) => { const s = getComputedStyle(node); return { fill: s.backgroundColor, corner: s.borderTopLeftRadius, pad: s.paddingTop, edge: s.boxShadow, cast: castOf(node).filter((part) => part !== 'none').length }; };",
 		"payload.cards = { tile: cardFrame(cards.querySelector('.wg-kit-card:not(.is-solid):not(.is-lifted)')), solid: cardFrame(cards.querySelector('.wg-kit-card.is-solid:not(.wg-kit-plate):not(.wg-kit-list)')), lifted: cardFrame(cards.querySelector('.wg-kit-card.is-lifted')), plate: cardFrame(cards.querySelector('.wg-kit-plate')), list: cardFrame(cards.querySelector('.wg-kit-list')), greyControl: getComputedStyle(cards.querySelector('.wg-kit-btn'), '::before').backgroundColor };",
 		"const onGround = (host) => ({ ground: getComputedStyle(host).backgroundColor, cast: castOf(host.querySelector('.wg-kit-side')) });",

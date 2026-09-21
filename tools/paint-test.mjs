@@ -135,11 +135,11 @@ import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
 import { WidgetSurface } from "./src/surface.js";
 import { normalizeBoard } from "./src/model.js";
-import { Surface } from "./src/kit.js";
+import { Card } from "./src/kit.js";
 
 const WIDGET_ID = "@probe/plated";
 const Plated = () =>
-	h(Surface, { type: "group", className: "probe-first" }, h(Surface, { type: "group", className: "probe-second" }, "deeper"));
+	h(Card, { type: "group", className: "probe-first" }, h(Card, { type: "group", className: "probe-second" }, "deeper"));
 const manifest = { id: WIDGET_ID, title: "Plated", role: "collection" };
 const registry = { get: () => ({ manifest, component: Plated }), list: () => [{ manifest, component: Plated }] };
 const host = { platform: "probe", can: {}, ui: { notify() {}, openNote() {} } };
@@ -409,7 +409,7 @@ render(h(Harness), document.getElementById("host"));
 const KIT_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./src/engine/render.js";
-import { Button, Card, Icon, IconButton, List, PlaceholderMark, Row, markOf } from "./src/kit.js";
+import { Button, cardClass, Icon, IconButton, List, PlaceholderMark, Row, markOf } from "./src/kit.js";
 const MARK_SEED = "Kind of Blue";
 const marked = (id, props) => h("div", { key: id, id }, h(PlaceholderMark, { seed: MARK_SEED, ...props }));
 render(
@@ -429,8 +429,8 @@ render(
 				h(IconButton, { key: "rowicon", id: "row-icon" }, h(Icon, { name: "close" })),
 			]),
 		]),
-		h(Card, { key: "plate", id: "plain-card", style: { width: "240px", height: "80px" } }, "A plain light card"),
-		h(Card, { key: "lifted", id: "lifted-card", lift: true, style: { width: "240px", height: "80px" } }, "A lifted card"),
+		h("div", { key: "plate", id: "plain-card", className: cardClass({}), style: { width: "240px", height: "80px" } }, "A plain light card"),
+		h("div", { key: "lifted", id: "lifted-card", className: cardClass({ lift: true }), style: { width: "240px", height: "80px" } }, "A lifted card"),
 		h("div", { key: "raise", id: "raise-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-raise)" } }),
 		h("div", { key: "fill", id: "fill-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill)" } }),
 		h("div", { key: "hover", id: "hover-swatch", style: { width: "8px", height: "8px", background: "var(--wg-kit-fill-hover)" } }),

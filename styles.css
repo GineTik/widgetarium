@@ -73,7 +73,7 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-card-edge: color-mix(in srgb, var(--text-normal) 9%, transparent);
 	--wg-kit-group-fill: color-mix(in srgb, var(--text-normal) 3%, transparent);
 	--wg-kit-group-inset: var(--wg-kit-raise);
-	--wg-kit-group-edge: var(--wg-kit-card-edge);
+	--wg-kit-group-edge: none;
 	--wg-kit-group-line: color-mix(in srgb, var(--text-normal) 7%, transparent);
 	--wg-group-pad: 16px;
 	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
@@ -3858,6 +3858,7 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-slot[data-surface="group"],
 :is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="group"]:not(.wg-kit-tone) {
 	background: var(--wg-kit-group-fill);
+	box-shadow: var(--wg-kit-group-edge);
 }
 
 :is(.wg-root, .wg-portal) [data-surface="group"] [data-surface="group"]:not(.wg-kit-tone) {
@@ -3872,6 +3873,90 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="group"] {
 	padding: var(--wg-group-pad);
 	border-radius: var(--wg-surface-corner, var(--wg-kit-plate));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-cards, 8px);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-row {
+	flex-direction: row;
+	align-items: stretch;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-row > * {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--wg-kit-layout-min, 240px)), 1fr));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-grid > .wg-kit-layout-head {
+	grid-column: 1 / -1;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-layout.is-rows {
+	gap: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows.is-on-plate {
+	gap: 0;
+}
+
+:is(.wg-root, .wg-portal, .wg-tree-page) [data-surface="group"][data-rows-flush~="inline"] {
+	padding-inline: 0;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal, .wg-tree-page) [data-surface="group"][data-rows-flush~="top"] {
+	padding-top: 0;
+}
+
+:is(.wg-root, .wg-portal, .wg-tree-page) [data-surface="group"][data-rows-flush~="bottom"] {
+	padding-bottom: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > * {
+	padding: var(--size-4-3, 12px) var(--wg-group-pad);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > * + * {
+	border-top: 1px solid var(--wg-kit-group-line);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > .wg-kit-layout-item.wg-kit-tone {
+	color: inherit;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout-head {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-items, 8px);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout-title {
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout-trailing {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-items, 8px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="apart"]::before {

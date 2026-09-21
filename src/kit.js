@@ -1,7 +1,7 @@
 import { Fragment, createElement as h, cloneElement, Children } from "react";
-import { useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "./icon-table.js";
-import { NO_SURFACE, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "./kit-surface.js";
+import { GROUP, NO_SURFACE, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "./kit-surface.js";
 
 export function cx(...parts) {
 	return parts.flat(Infinity).filter(Boolean).join(" ");
@@ -232,7 +232,7 @@ function pickedFrom(held, at) {
 
 // CONTEXT: the plate every surface is built from — light stands on the page, solid is the grey well
 // TRADE-OFF: the lift is asked for, never inherited — a Card is a tile far oftener than a panel
-// TODO: fold Card and Plate into Surface, one painted container instead of two over --wg-kit-raise
+// TODO: fold Plate into Card, one painted container instead of two over --wg-kit-raise
 export const cardClass = variants(
 	"wg-kit-card",
 	{ variant: { light: "", solid: "is-solid" }, lift: { true: "is-lifted" }, selected: { true: "is-selected" } },
@@ -262,11 +262,7 @@ export function Plate(props) {
 	return render("div", props, plateClass(props));
 }
 
-export function Card(props) {
-	return render("div", props, cardClass(props));
-}
-
-export function Surface({ type = NO_SURFACE, tone, side, across, className: cls, style, children, ...rest }) {
+export function Card({ type = GROUP, tone, side, across, className: cls, style, children, ...rest }) {
 	const above = useContext(PLATES_ABOVE);
 	const { surface, refusal } = wornPlate(above, type);
 	if (refusal) sayRefusedPlate(type, refusal);
@@ -278,11 +274,107 @@ export function Surface({ type = NO_SURFACE, tone, side, across, className: cls,
 	);
 }
 
-export function SlotList({ slot: Drawn, rows = [], give, keyOf, className: cls, children }) {
+export const LAYOUT_KINDS = ["stack", "row", "grid", "rows"];
+const LAYOUT_KIND = createContext("stack");
+const DEFAULT_CELL_PX = 240;
+
+function wornKind(kind) {
+	if (LAYOUT_KINDS.includes(kind)) return kind;
+	warnOnce(`${kind} is no layout, so a stack was drawn instead: ${LAYOUT_KINDS.join(", ")}`);
+	return "stack";
+}
+
+// TODO: drop Surface once every published widget imports Card
+export const Surface = Card;
+
+const ROWS_TAKE_THE_PLATE_EDGE = "data-rows-flush";
+const NEVER_CONTENT = new Set(["STYLE", "SCRIPT", "TEMPLATE"]);
+const DRAWN_WITHOUT_TEXT = "svg, img, canvas, video, input, button, textarea, select";
+
+function holdsNothing(node) {
+	if (NEVER_CONTENT.has(node.tagName)) return true;
+	return node.textContent.trim() === "" && !node.matches(DRAWN_WITHOUT_TEXT) && !node.querySelector(DRAWN_WITHOUT_TEXT);
+}
+
+function standsAtEdge(node, plate, toward) {
+	for (let at = node; at && at !== plate; at = at.parentElement) {
+		for (let beside = at[toward]; beside; beside = beside[toward]) if (!holdsNothing(beside)) return false;
+	}
+	return true;
+}
+
+export function plateEdgesTakenBy(node) {
+	const plate = node.parentElement?.closest('[data-surface="group"]');
+	if (!plate) return null;
+	const edges = ["inline"];
+	if (standsAtEdge(node, plate, "previousElementSibling")) edges.push("top");
+	if (standsAtEdge(node, plate, "nextElementSibling")) edges.push("bottom");
+	return { plate, edges: edges.join(" ") };
+}
+
+function useEdgesOfThePlate(node, isOnPlate) {
+	useLayoutEffect(() => {
+		if (!isOnPlate || !node.current) return undefined;
+		const taken = plateEdgesTakenBy(node.current);
+		if (!taken) return undefined;
+		taken.plate.setAttribute(ROWS_TAKE_THE_PLATE_EDGE, taken.edges);
+		return () => taken.plate.removeAttribute(ROWS_TAKE_THE_PLATE_EDGE);
+	});
+}
+
+export function Layout({ kind = "stack", min = DEFAULT_CELL_PX, className: cls, style, children, ...rest }) {
+	const worn = wornKind(kind);
+	const rowsNode = useRef(null);
+	const look = {
+		className: cx("wg-kit-layout", `is-${worn}`, cls),
+		style: worn === "grid" ? { "--wg-kit-layout-min": `${min}px`, ...style } : style,
+	};
+	const held = h(LAYOUT_KIND.Provider, { value: worn }, children);
+	const isOnPlate = useContext(PLATES_ABOVE).surface === GROUP;
+	useEdgesOfThePlate(rowsNode, worn === "rows" && isOnPlate);
+	if (worn === "rows" && !isOnPlate) return h(Card, { ...rest, ...look }, held);
+	if (worn === "rows") return h("div", { ...rest, ref: rowsNode, className: cx(look.className, "is-on-plate") }, held);
+	return h("div", { ...rest, ...look }, held);
+}
+
+function LayoutHeader({ title, className: cls, children, ...rest }) {
+	return h(
+		"div",
+		{ ...rest, className: cx("wg-kit-layout-head", cls) },
+		title ? h("span", { className: "wg-kit-layout-title" }, title) : null,
+		children ? h("span", { className: "wg-kit-layout-trailing" }, children) : null,
+	);
+}
+
+function LayoutItem({ tone, className: cls, children, ...rest }) {
+	const kind = useContext(LAYOUT_KIND);
+	const itemClass = cx("wg-kit-layout-item", cls);
+	if (kind === "grid" || kind === "row") return h(Card, { ...rest, tone, className: itemClass }, children);
+	if (kind === "rows") return h("div", { ...rest, className: cx(itemClass, tonedPlateClass(tone)) }, children);
+	return h("div", { ...rest, className: itemClass }, children);
+}
+
+Layout.Header = LayoutHeader;
+Layout.Item = LayoutItem;
+
+// TODO: fold List and Row into Rows, one grouped list instead of two
+export function Rows(props) {
+	return h(Layout, { ...props, kind: "rows" });
+}
+Rows.Header = LayoutHeader;
+Rows.Item = LayoutItem;
+
+export function Grid(props) {
+	return h(Layout, { ...props, kind: "grid" });
+}
+Grid.Header = LayoutHeader;
+Grid.Item = LayoutItem;
+
+export function SlotList({ slot: Drawn, rows = [], give, keyOf, className: cls, style, children }) {
 	if (!Drawn) return null;
 	return h(
 		"div",
-		{ className: cx("wg-kit-slot-list", cls), "data-cards": Drawn.isCard ? "" : undefined },
+		{ className: cx("wg-kit-slot-list", cls), style, "data-cards": Drawn.isCard ? "" : undefined },
 		children ?? rows.map((row, at) => h(Drawn, { key: keyOf ? keyOf(row) : at, ...give(row) })),
 	);
 }
@@ -1436,6 +1528,10 @@ export const Kit = {
 	Plate,
 	Card,
 	Surface,
+	Layout,
+	Rows,
+	Grid,
+	LAYOUT_KINDS,
 	SlotList,
 	List,
 	Row,
