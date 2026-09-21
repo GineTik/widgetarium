@@ -1124,7 +1124,7 @@ function movedRows(rows, index, step) {
 	return next;
 }
 
-function moveButton(rows, index, step, label, glyph, write) {
+function moveButton({ rows, index, write }, step, label, glyph) {
 	const at = index + step;
 	if (at < 0 || at >= rows.length) return null;
 	return h(
@@ -1160,8 +1160,8 @@ function mountRow(state, rows, index, write, rename) {
 		]),
 		h(RowValue, { className: "wg-set-value", key: "value" }, [
 			found?.component ? null : h(Pill, { tone: "error", key: "gone" }, "Not installed"),
-			moveButton(rows, index, -1, "Move up", "chevron-up", write),
-			moveButton(rows, index, 1, "Move down", "chevron-down", write),
+			moveButton({ rows, index, write }, -1, "Move up", "chevron-up"),
+			moveButton({ rows, index, write }, 1, "Move down", "chevron-down"),
 			// CONTEXT: a mount is never fed, so it always has its own settings inside it
 			found?.component
 				? enterButton(state, { hold: "mounted", key: row.name, was: row.was, widget: row.widget })
