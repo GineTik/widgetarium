@@ -1,4 +1,4 @@
-import { ADAPTIVE, APART, COLUMN, DRAWER, GROUP, NO_SURFACE, OBJECT, ROW } from "./tree.js";
+import { ADAPTIVE, APART, COLUMN, DRAWER, GROUP, NO_SURFACE, ROW } from "./tree.js";
 
 export const HEADING_WIDGET = "@default/text-line";
 
@@ -438,7 +438,7 @@ function headed(heading, purpose, role, of) {
 	};
 }
 
-function hole(purpose, role, surface = GROUP) {
+function hole(purpose, role, surface = NO_SURFACE) {
 	return { dir: COLUMN, role, purpose, surface, of: [] };
 }
 
@@ -457,7 +457,7 @@ function cards(heading, purpose, across) {
 			dir: ROW,
 			role: "collection",
 			purpose: "Each one, read across",
-			of: Array.from({ length: across }, (ignored, at) => hole(`Card ${at + 1}`, "detail", OBJECT)),
+			of: Array.from({ length: across }, (ignored, at) => hole(`Card ${at + 1}`, "detail", GROUP)),
 		},
 	]);
 }
@@ -468,7 +468,7 @@ function strip(heading, purpose, across, role) {
 			dir: ROW,
 			role,
 			purpose: "The figures, read beside each other",
-			of: Array.from({ length: across }, (ignored, at) => hole(`Figure ${at + 1}`, "indicator")),
+			of: Array.from({ length: across }, (ignored, at) => hole(`Figure ${at + 1}`, "indicator", GROUP)),
 		},
 	]);
 }

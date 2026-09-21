@@ -101,7 +101,7 @@ export const manifest = defineManifest({
 		card: {
 			of: "widget",
 			default: "@flow/project-card",
-			surface: "object",
+			surface: "group",
 			gives: { project: ["mark", "name", "repository", "open", "doing", "done", "touched"] },
 		},
 	},

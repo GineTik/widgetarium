@@ -123,7 +123,7 @@ import {
 import { movesFrom, playMoves, positionsWithin } from "./flip.js";
 import { useMeasuredSurfaces } from "./surface-measure.js";
 import { slotSurfaceOf } from "./surface-roles.js";
-import { saidRefusal, surfaceChoicesAt, wornSurfaceAt } from "./surface-laws.js";
+import { saidRefusal, surfaceChoicesAt, widgetOfTiles, wornSurfaceAt } from "./surface-laws.js";
 import { surfacedSlot } from "./widget-root.js";
 import { platesAtCell, PLATES_ABOVE } from "./kit-surface.js";
 import { useContentInsets } from "./content-insets.js";
@@ -1412,25 +1412,26 @@ function useLandingGhost(carry, setCarry, { pageRef, ghostRef }) {
 const TREE_PLACE = { x: 0, y: 0, w: 1, h: 1 };
 const UNMEASURED_CELL = { width: MIN_SIDEBAR_PX, height: MIN_HEIGHT_PX };
 
-function surfaceOfTile(layout, id, commitLayout, host) {
+function surfaceOfTile({ layout, tiles }, id, commitLayout, host) {
+	const widgetOf = widgetOfTiles(tiles);
 	const path = pathOfLeaf(layout, id);
 	if (!path) return null;
 	const node = nodeAt(layout, path);
 	const wear = (surface, side) =>
 		commitLayout((now) => {
-			const { layout: next, refusal } = wornSurfaceAt(now, path, surface, side);
+			const { layout: next, refusal } = wornSurfaceAt(now, path, surface, side, widgetOf);
 			if (refusal) host?.ui?.notify?.(saidRefusal(refusal));
 			return next;
 		});
 	return {
 		now: node?.surface ?? NO_SURFACE,
 		side: node?.side ?? null,
-		choices: () => surfaceChoicesAt(layout, path),
+		choices: () => surfaceChoicesAt(layout, path, widgetOf),
 		wear,
 	};
 }
 
-function TreeSettings({ session, tile, canvasBox, shared, patchTile, layout, commitLayout, frame }) {
+function TreeSettings({ session, tile, canvasBox, entryPath, shared, patchTile, board, commitLayout, frame }) {
 	const definition = shared.registry.get(tile.widget);
 	const settingsWindow = useSettingsWindow({
 		...frame,
@@ -1439,7 +1440,7 @@ function TreeSettings({ session, tile, canvasBox, shared, patchTile, layout, com
 		tile,
 		canvasBox,
 		onPatch: (patch) => patchTile(tile.id, patch),
-		surface: surfaceOfTile(layout, tile.id, commitLayout, frame.host),
+		surface: surfaceOfTile(board, tile.id, commitLayout, frame.host),
 		place: { ...TREE_PLACE, id: tile.id },
 		widget: treeCellBody({ tile, definition, shared, cell: { width: canvasBox.width }, patchTile }),
 	});
@@ -2142,7 +2143,7 @@ export function WidgetSurface({
 					canvasBox,
 					shared,
 					patchTile,
-					layout: board.layout,
+					board,
 					commitLayout,
 					frame: {
 						host,

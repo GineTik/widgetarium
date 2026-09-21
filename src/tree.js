@@ -26,11 +26,10 @@ export const TOGGLES = [ALWAYS, ADAPTIVE];
 export const MENU_PX = 360;
 
 export const GROUP = "group";
-export const OBJECT = "object";
 export const APART = "apart";
 export const NO_SURFACE = "none";
-export const SURFACES = [GROUP, OBJECT, APART, NO_SURFACE];
-export const SURFACE_WAS = { fill: GROUP, outline: OBJECT, raise: GROUP, item: GROUP, divider: APART };
+export const SURFACES = [GROUP, APART, NO_SURFACE];
+export const SURFACE_WAS = { fill: GROUP, outline: GROUP, object: GROUP, raise: GROUP, item: GROUP, divider: APART };
 export const SIDES = ["start", "end"];
 export const STEP_PX = [24, 16, 8];
 export const SURFACE_PAD_PX = 16;
@@ -57,8 +56,7 @@ function isLeaf(node) {
 	return typeof node?.id === "string" && node.id !== "";
 }
 
-const PLATES = new Set([GROUP, OBJECT]);
-export const isPainted = (node) => PLATES.has(node?.surface);
+export const isPainted = (node) => node?.surface === GROUP;
 export const insetOf = (node) => (isPainted(node) ? SURFACE_PAD_PX : 0);
 
 export const stepOf = (level) => STEP_PX[Math.min(Math.max(level, 0), STEP_PX.length - 1)];

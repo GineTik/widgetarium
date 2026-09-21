@@ -21,7 +21,7 @@ const {
 	STEP_PX,
 	SURFACE_PAD_PX,
 } = await import("./.mjs-cache/tree.mjs");
-const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, wornSurfaceAt } =
+const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, widgetOfTiles, wornSurfaceAt } =
 	await import("./.mjs-cache/surface-laws.mjs");
 const { isKnownRole, plateRefusal, ROLES, slotSurfaceOf } = await import("./.mjs-cache/surface-roles.mjs");
 const { platesAtCell } = await import("./.mjs-cache/kit-surface.mjs");
@@ -72,7 +72,7 @@ const written = normalizeBoard({
 	},
 });
 check(
-	"a known surface and side survive, an unknown surface and every pad are dropped",
+	"a known surface and side survive, an old object is read as a group, an unknown surface and every pad are dropped",
 	serializeBoard(written).layout,
 	{
 		dir: "row",
@@ -81,7 +81,7 @@ check(
 			{
 				dir: "column",
 				keep: true,
-				of: [{ dir: "column", surface: "object", of: [{ id: "b", surface: "apart", side: "start" }, { id: "b2" }] }],
+				of: [{ dir: "column", surface: "group", of: [{ id: "b", surface: "apart", side: "start" }, { id: "b2" }] }],
 			},
 		],
 	},
@@ -175,15 +175,15 @@ const twiceWrong = {
 		{
 			dir: "column",
 			surface: "group",
-			of: [{ dir: "column", surface: "group", of: [{ id: "both", surface: "object" }] }],
+			of: [{ dir: "column", surface: "group", of: [{ id: "both", surface: "group" }] }],
 		},
 	],
 };
 const namedOnce = nestingFindings(twiceWrong).filter((one) => String(one.path) === "0,0,0");
 check(
-	"a node breaking two laws at once is refused once, by the same answer the kit gets",
+	"a node the laws refuse is named once, by the same answer the kit gets",
 	namedOnce.map((one) => one.law),
-	[plateRefusal({ surface: "group", levels: 2 }, "object").law],
+	[plateRefusal({ surface: "group", levels: 2 }, "group").law],
 );
 check("a leaf on the page is told nothing stands above it", platesAtCell(noPlates.node.of[0]), {
 	surface: "none",
@@ -299,10 +299,15 @@ const lonely = judge(
 	],
 	{ n1: plain(), n2: plain(), body: plain(), aside: plain() },
 );
-check("law P1: the only group of its kind inside a plate wears none of its own", lawOf(lonely, "1/0/0"), [
+check("law R: a box repeating nothing beside it and holding no repeat wears no plate", lawOf(lonely, "1/0"), [
 	"none",
-	"P1",
+	"R",
 ]);
+check(
+	"law R: the stats it holds repeat one another, so their box is a list and earns the group",
+	lawOf(lonely, "1/0/0"),
+	["group", "9"],
+);
 
 const allPlated = judge(
 	rootWith([
@@ -321,10 +326,11 @@ const allPlated = judge(
 	],
 	{ p1: plain(), p2: plain(), p3: plain(), p4: plain(), aside2: plain() },
 );
-check("law P2: two peers inside a plate with nothing bare beside them wear none", lawOf(allPlated, "1/0/0"), [
-	"none",
-	"P2",
+check("law R: a box holding two peers is a list, and a list is offered only the group", lawOf(allPlated, "1/0"), [
+	"group",
+	"9",
 ]);
+check("and the peers inside that list keep their plates, white on its grey", lawOf(allPlated, "1/0/0"), ["group", "9"]);
 
 const peersAmongBare = judge(
 	rootWith([
@@ -448,7 +454,7 @@ const boards = judge(
 		["list", "@x/kanban"],
 		["s1", "@x/stat"],
 		["kanban2", "@x/kanban"],
-		["s2", "@x/stat"],
+		["s2", "@x/kanban"],
 	],
 	{
 		list: plain(),
@@ -457,10 +463,7 @@ const boards = judge(
 		s2: plain(),
 	},
 );
-check("law R3: a collection inside a group that already has an edge needs none", lawOf(boards, "1/0/0"), [
-	"none",
-	"R3",
-]);
+check("law R: a collection repeating nothing beside it wears no plate", lawOf(boards, "1/0/0"), ["none", "R"]);
 check(
 	"law 5: a collection whose widget is two containers deep cannot be wrapped",
 	verdictAt(boards, "1/1").candidates[0].reasons.some((reason) => reason.startsWith("- 3 containers deep")),
@@ -477,15 +480,15 @@ const composers = judge(
 	rootWith([group("detail", "A conversation", [{ id: "reply" }, { id: "s1" }]), { id: "reply2" }, { id: "s2" }]),
 	[
 		["reply", "@x/composer"],
-		["s1", "@x/stat"],
+		["s1", "@x/composer"],
 		["reply2", "@x/composer"],
-		["s2", "@x/stat"],
+		["s2", "@x/composer"],
 	],
 	{ reply: plain(), s1: plain(), reply2: plain(), s2: plain() },
 );
-check("a composer at the top of a region is raised with an outline", lawOf(composers, "1/1"), ["object", "9"]);
+check("a composer at the top of a region is given a plate", lawOf(composers, "1/1"), ["group", "9"]);
 check(
-	"law N: inside a fill an outline is never offered, so a composer falls back to a fill",
+	"law N: inside a fill a composer is offered a fill",
 	[verdictAt(composers, "1/0/0").candidates.map((one) => one.surface), verdictAt(composers, "1/0/0").advised],
 	[["group"], "group"],
 );
@@ -500,7 +503,7 @@ const inked = (texts) =>
 		rootWith([group("indicators", "Words", [{ id: "words" }, { id: "more" }]), { id: "other" }]),
 		[
 			["words", "@x/words"],
-			["more", "@x/stat"],
+			["more", "@x/words"],
 			["other", "@x/stat"],
 		],
 		{
@@ -564,13 +567,13 @@ const nested = surfaceVerdicts({
 			dir: "column",
 			surface: "group",
 			of: [
-				{ dir: "column", surface: "object", of: [{ id: "x" }] },
+				{ dir: "column", surface: "group", of: [{ id: "x" }] },
 				{ dir: "column", surface: "group", of: [{ id: "y", surface: "group" }] },
 			],
 		},
 		{
 			dir: "column",
-			surface: "object",
+			surface: "group",
 			of: [
 				{ id: "z", surface: "apart" },
 				{ id: "w", surface: "group" },
@@ -581,9 +584,9 @@ const nested = surfaceVerdicts({
 	measured: null,
 });
 check(
-	"the nesting table names a plate whose children all wear plates, an outline inside a fill and a third surface deep, and nothing else",
+	"the gate names a third surface deep and every plate repeating nothing, one law per node",
 	nested.nesting.map((one) => `${one.path.join("/")} ${one.law}`),
-	["1/0 N2", "1/0/0 N", "1/0/1/0 5"],
+	["1/0 R", "1/0/0 R", "1/0/1 R", "1/0/1/0 5", "1/1 R", "1/1/1 R"],
 );
 
 console.log("\n— the layout linter —\n");
@@ -616,14 +619,22 @@ check(
 check(
 	"a value outside its list is named with the list it must come from",
 	lintSaid(boardWith([{ dir: "row", surface: "grey", of: [{ id: "a" }] }])),
-	['1/0 surface: "grey" is not allowed; write one of group, object, apart, none'],
+	['1/0 surface: "grey" is not allowed; write one of group, apart, none'],
 );
 check(
-	"a group stands on the page, on a group and inside an object alike",
+	"a group stands on the page and on a group alike",
 	[
 		lintSaid(boardWith([{ dir: "column", surface: "group", of: [{ id: "a", surface: "group" }, { id: "b" }] }])),
 		lintSaid(boardWith([{ id: "a", surface: "group" }, { id: "b" }])),
-		lintSaid(boardWith([{ dir: "column", surface: "object", of: [{ id: "a", surface: "group" }, { id: "b" }] }])),
+		lintSaid(
+			boardWith(
+				[
+					{ dir: "column", surface: "group", of: [{ id: "a", surface: "group" }, { id: "b" }] },
+					{ dir: "column", surface: "group", of: [{ id: "c", surface: "group" }, { id: "d" }] },
+				],
+				["a", "b", "c", "d"],
+			),
+		),
 	],
 	[[], [], []],
 );
@@ -648,17 +659,17 @@ check(
 		tiles: [{ id: "k", widget: "@x/kanban", slots: { card: { surface: "glow" } } }],
 		layout: rootWith([{ id: "k" }]),
 	}),
-	[' tile "k", slot "card": surface: "glow" is not allowed; write one of group, object, none'],
+	[' tile "k", slot "card": surface: "glow" is not allowed; write one of group, none'],
 );
 check(
 	"the tile's pick wins over the manifest's default, and a slot that says nothing wears nothing",
 	[
-		slotSurfaceOf({ surface: "group" }, { surface: "object" }),
+		slotSurfaceOf({ surface: "group" }, { surface: "none" }),
 		slotSurfaceOf({ surface: "group" }, {}),
 		slotSurfaceOf({}, null),
 		slotSurfaceOf({ surface: "apart" }, null),
 	],
-	["object", "group", "none", "none"],
+	["none", "group", "none", "none"],
 );
 check("a widget one level under its region reads its gaps from the same steps the board is laid by", gapVarsOf(1), {
 	"--wg-gap-items": `${STEP_PX[1]}px`,
@@ -763,28 +774,36 @@ check("a leaf naming no tile is named", lintSaid(boardWith([{ id: "ghost" }])), 
 	'1/0 no tile in tiles has the id "ghost"',
 ]);
 check(
-	"law N2: a plate whose every child wears a plate is an error, one plated child among bare ones is not",
+	"a list is a group around rows that repeat, and its rows may all wear their white plates",
+	lintSaid(
+		boardWith([
+			{
+				dir: "column",
+				surface: "group",
+				of: [
+					{ id: "a", surface: "group" },
+					{ id: "b", surface: "group" },
+				],
+			},
+		]),
+	),
+	[],
+);
+const aloneSaid =
+	"law R: a group stands alone: a plate is earned by a repeat — the same thing beside it again, or a list of the same things it holds";
+check(
+	"law R: a plate around one widget, and a plate on a widget nothing repeats, are named",
 	[
-		lintSaid(
-			boardWith([
-				{
-					dir: "column",
-					surface: "group",
-					of: [
-						{ id: "a", surface: "group" },
-						{ id: "b", surface: "group" },
-					],
-				},
-			]),
-		),
-		lintSaid(boardWith([{ dir: "column", surface: "group", of: [{ id: "a", surface: "group" }, { id: "b" }] }])),
+		lintSaid(boardWith([{ dir: "column", surface: "group", of: [{ id: "a" }] }, { id: "b" }])),
+		lintSaid({
+			tiles: [
+				{ id: "a", widget: "@x/stat" },
+				{ id: "b", widget: "@x/heat" },
+			],
+			layout: rootWith([{ id: "a", surface: "group" }, { id: "b" }]),
+		}),
 	],
-	[
-		[
-			"1/0 law N2: every child of this group wears a plate of its own: keep the plate around them or the plates on them, never both",
-		],
-		[],
-	],
+	[[`1/0 ${aloneSaid}`], [`1/0 ${aloneSaid}`]],
 );
 
 console.log("\n— the gap a person sees, and the corner each plate gets —\n");
@@ -822,7 +841,7 @@ check(
 	],
 	[STEP_PX[0], STEP_PX[0], STEP_PX[0] - 12, STEP_PX[0] - 6, MIN_GAP_PX, STEP_PX[0]],
 );
-const otherPlate = { id: "r", surface: "object" };
+const otherPlate = { id: "r", surface: "group" };
 check(
 	"between two plates the padding is taken off once, so cards stand one small step apart at every level; a row counts as a plate only when all of it is",
 	[
@@ -969,18 +988,13 @@ check(
 	true,
 );
 check(
-	"outline paints the raised token with an inset edge",
-	[paint.outline.background, paint.outline.shadow.includes("inset")],
-	[paint.outline.token, true],
-);
-check(
-	"two repeats of one widget inside an outline stand one step closer, less the empty edge the upper one leaves",
-	Math.round(paint.outline.gap),
+	"two repeats of one widget inside a plate stand one step closer, less the empty edge the upper one leaves",
+	Math.round(paint.lower.gap),
 	Math.max(STEP_PX[2] - (paint.rowGap.before?.bottom ?? 0), MIN_GAP_PX),
 );
 check(
 	"a plate inside a plate is rounded one padding smaller, and the kit inside inherits it",
-	[paint.outline.nestedCorner, paint.outline.kitPlate],
+	[paint.lower.nestedCorner, paint.lower.kitPlate],
 	["6px", "6px"],
 );
 const probeInsets = [paint.rowGap.before ?? {}, paint.rowGap.after ?? {}];
@@ -1000,7 +1014,7 @@ const slots = paint.slots;
 check(
 	"a slot the tile dresses as a card is wrapped by the engine in that plate, padded like any plate",
 	[slots.cards.surface, slots.cards.background, slots.cards.padding],
-	["group", slots.raise, `${SURFACE_PAD_PX}px`],
+	["group", slots.inset, `${SURFACE_PAD_PX}px`],
 );
 check(
 	"SlotList spaces cards at the cards gap and bare items at the items gap, both read from the root's variables",
@@ -1088,7 +1102,7 @@ console.log("\n— the writer refuses, so no caller may read the laws, decide, a
 	const grouped = normalizeBoard({
 		tiles: [
 			{ id: "a", widget: "@x/a" },
-			{ id: "b", widget: "@x/b" },
+			{ id: "b", widget: "@x/a" },
 		],
 		layout: {
 			dir: "row",
@@ -1110,21 +1124,20 @@ console.log("\n— the writer refuses, so no caller may read the laws, decide, a
 		},
 	}).layout;
 	const at = [0, 0, 0];
+	const widgetOf = () => "@x/a";
 	const leafOf = (layout, which) => layout.of[0].of[0].of[which];
 
-	const refused = wornSurfaceAt(grouped, at, "object");
-	check("an object inside a group is refused by the writer, not only by the picker", refused.refusal?.law, "N");
+	const refused = wornSurfaceAt(grouped, at, "object", undefined, widgetOf);
+	check("an object, a surface no longer held, is refused by the writer", refused.refusal?.law, "S");
 	check("and the tree it was given comes back untouched", refused.layout, grouped);
 
-	const worn = wornSurfaceAt(grouped, at, "group");
+	const worn = wornSurfaceAt(grouped, at, "group", undefined, widgetOf);
 	check("one the laws leave standing is written", [worn.refusal, leafOf(worn.layout, 0).surface], [null, "group"]);
 
-	const bothPlated = wornSurfaceAt(worn.layout, [0, 0, 1], "group");
-	check(
-		"plating the last bare child is refused, because then the plate around them says nothing",
-		bothPlated.refusal?.law,
-		"N2",
-	);
+	const bothPlated = wornSurfaceAt(worn.layout, [0, 0, 1], "group", undefined, widgetOf);
+	check("plating the last bare row of a list is written too: grey around, white rows", bothPlated.refusal, null);
+	const lone = wornSurfaceAt(grouped, at, "group", undefined, (id) => `@x/${id}`);
+	check("and a row repeating nothing beside it is refused by the writer", lone.refusal?.law, "R");
 
 	const divider = wornSurfaceAt(grouped, at, "apart", "start");
 	check(
@@ -1154,13 +1167,12 @@ console.log("\n— the writer refuses, so no caller may read the laws, decide, a
 		["apart", undefined],
 	);
 
-	const offered = surfaceChoicesAt(grouped, at);
+	const offered = surfaceChoicesAt(grouped, at, widgetOf);
 	check(
 		"the picker is offered exactly what the writer would take",
 		offered.map((one) => [one.surface, Boolean(one.refusal)]),
 		[
 			["group", false],
-			["object", true],
 			["apart", false],
 			["none", false],
 		],

@@ -72,9 +72,8 @@ pre:has(> .block-language-widgetarium),
 	/* CONTEXT: the hairline a lifted card and a quoted block are drawn with */
 	--wg-kit-card-edge: color-mix(in srgb, var(--text-normal) 9%, transparent);
 	--wg-kit-group-fill: color-mix(in srgb, var(--text-normal) 3%, transparent);
-	--wg-kit-group-raise: var(--wg-kit-raise);
+	--wg-kit-group-inset: var(--wg-kit-raise);
 	--wg-kit-group-edge: var(--wg-kit-card-edge);
-	--wg-kit-group-shadow: 0 1px 2px color-mix(in srgb, var(--text-normal) 6%, transparent);
 	--wg-kit-group-line: color-mix(in srgb, var(--text-normal) 7%, transparent);
 	--wg-group-pad: 16px;
 	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
@@ -209,12 +208,21 @@ pre:has(> .block-language-widgetarium),
 	width: 100%;
 }
 
+body {
+	--wg-kit-page: var(--background-primary);
+}
+
+.view-content:has(.wg-root.is-screen),
+.view-content:has(.wg-root.is-screen) :is(.markdown-preview-view, .cm-scroller) {
+	background: var(--wg-kit-page);
+}
+
 .wg-page {
 	position: absolute;
 	inset: 0;
 	z-index: 50;
 	overflow: auto;
-	background: var(--background-primary);
+	background: var(--wg-kit-page);
 }
 
 .wg-root.is-page {
@@ -224,7 +232,7 @@ pre:has(> .block-language-widgetarium),
 	overflow: visible;
 	min-height: 100%;
 	padding: 1.6rem 0.5rem var(--wg-page-pad-bottom);
-	background: var(--background-primary);
+	background: var(--wg-kit-page);
 }
 
 .wg-root.is-page > .wg-tree-page,
@@ -3822,8 +3830,7 @@ body.wg-tree-carrying .wg-tile-body {
 	box-sizing: border-box;
 }
 
-.wg-tree-page [data-surface="group"],
-.wg-tree-page [data-surface="object"] {
+.wg-tree-page [data-surface="group"] {
 	padding: var(--wg-group-pad);
 	border-radius: var(--wg-plate-corner);
 }
@@ -3835,16 +3842,7 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 :is(.wg-root, .wg-portal) [data-surface="group"] [data-surface="group"]:not(.wg-kit-tone) {
-	background: var(--wg-kit-group-raise);
-}
-
-.wg-tree-page [data-surface="object"],
-.wg-slot[data-surface="object"],
-:is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="object"]:not(.wg-kit-tone) {
-	background: var(--wg-kit-group-raise);
-	box-shadow:
-		inset 0 0 0 1px var(--wg-kit-group-edge),
-		var(--wg-kit-group-shadow);
+	background: var(--wg-kit-group-inset);
 }
 
 :is(.wg-root, .wg-portal) .wg-slot[data-surface] {
@@ -3852,8 +3850,7 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: var(--wg-slot-corner, var(--wg-surface-corner, var(--wg-kit-plate)));
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="group"],
-:is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="object"] {
+:is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="group"] {
 	padding: var(--wg-group-pad);
 	border-radius: var(--wg-surface-corner, var(--wg-kit-plate));
 }

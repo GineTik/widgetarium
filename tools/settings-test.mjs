@@ -520,7 +520,7 @@ console.log("\n— and the panel writes what it draws —");
 	check(
 		"its surfaces are the slot's own list",
 		all(`${OPEN_POP} .wg-kit-pop-item`).map((item) => item.textContent.trim()),
-		["Group", "Object", "None"],
+		["Group", "None"],
 	);
 	await press(raise);
 	check("a picked surface is drawn on the row", rowSaying("Surface")?.textContent.includes("Group"), true);
@@ -1714,22 +1714,16 @@ console.log("\n— a surface is picked in the Design tab, and only the ones the 
 	check("and it says what the widget wears now", rowSaying("Surface")?.textContent.includes("None"), true);
 
 	await press(rowSaying("Surface"));
-	check("every surface is listed, none silently left out", picks().map(labelOf), ["Group", "Object", "Apart", "None"]);
+	check("every surface is listed, none silently left out", picks().map(labelOf), ["Group", "Apart", "None"]);
 	check(
 		"they are the kit's own popover items, not a list this window drew itself",
 		[picks().length, all(OPEN_POP + " .wg-set-pop-body > p").length],
-		[4, 0],
+		[3, 0],
 	);
 	check(
 		"each carries its sentence inside the item, not beside it",
 		picks().every((row) => Boolean(row.querySelector(".wg-kit-pop-sub"))),
 		true,
-	);
-	check("an object may not stand inside a group, so it cannot be pressed", named("Object")?.disabled, true);
-	check(
-		"and the reason is said on the row itself, in words rather than a law's letter",
-		subOf("Object"),
-		"An object may not stand inside a group.",
 	);
 	check(
 		"what the laws leave standing is pressable",
@@ -1771,11 +1765,7 @@ console.log("\n— a surface is picked in the Design tab, and only the ones the 
 	await tick();
 	await press(tab("Design"));
 	await press(rowSaying("Surface"));
-	check(
-		"now the second child may not be plated too, because then the plate around them would say nothing",
-		[named("Group")?.disabled, subOf("Group")?.includes("wears a plate of its own")],
-		[true, true],
-	);
+	check("the second row of a list may be plated too: grey around, white rows", named("Group")?.disabled, false);
 
 	render(null, mount);
 }

@@ -40,7 +40,7 @@ export function lintBoard(raw, roleOfWidget = () => null) {
 	const widgetOf = new Map(tiles.map((tile) => [tile?.id, tile?.widget]));
 	const lint = { errors, tileIds: new Set(widgetOf.keys()), roleOf: (id) => roleOfWidget(widgetOf.get(id)) };
 	lintNode(lint, raw.layout, [], null);
-	const nesting = nestingFindings(normalizeBoard(raw).layout);
+	const nesting = nestingFindings(normalizeBoard(raw).layout, (id) => widgetOf.get(id));
 	return [
 		...errors,
 		...tiles.flatMap(slotFindings),

@@ -89,7 +89,7 @@ host.innerHTML = '<div class="wg-tree-page">'
   + '<div class="wg-tile-body"><div class="wg-kit-surface" id="on-page" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">alone</div></div>'
   + '</div>'
   + '<div id="token-fill" style="background: var(--wg-kit-group-fill)"></div>'
-  + '<div id="token-raise" style="background: var(--wg-kit-group-raise)"></div>'
+  + '<div id="token-raise" style="background: var(--wg-kit-group-inset)"></div>'
   + '</div>'
   + '<div class="wg-kit-surface" id="off-board" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">off</div>'
   + '<div class="wg-kit-surface wg-kit-tone is-warn" id="toned" data-surface="group" style="--wg-surface-corner: var(--wg-kit-plate)">warned</div>'
@@ -177,7 +177,7 @@ const PLATE_ASK = `(() => {
 		onGroupFirst: paintIn("onGroup", "probe-first"),
 		onGroupSecond: paintIn("onGroup", "probe-second"),
 		fill: token("--wg-kit-group-fill"),
-		raise: token("--wg-kit-group-raise"),
+		raise: token("--wg-kit-group-inset"),
 		clear: "rgba(0, 0, 0, 0)",
 	};
 })()`;
@@ -223,7 +223,7 @@ const KANBAN_PLATE_ASK = `(() => {
 		addList,
 		behind,
 		fill: token("--wg-kit-group-fill"),
-		raise: token("--wg-kit-group-raise"),
+		raise: token("--wg-kit-group-inset"),
 		clear: "rgba(0, 0, 0, 0)",
 	};
 })()`;

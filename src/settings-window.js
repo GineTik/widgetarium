@@ -1681,9 +1681,7 @@ function foldGroup({ isCollapsed, onCollapse, onExpand }) {
 }
 
 const SURFACE_SAYS = {
-	group: "A translucent plate.",
-	object: "A raised plate with an edge.",
-	item: "The page's own raised colour.",
+	group: "A white plate on the grey page.",
 	apart: "One straight line.",
 	none: "Nothing is drawn.",
 };

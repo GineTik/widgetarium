@@ -43,8 +43,8 @@ layout:
 
 - `layout` is a tree. A node is a **leaf** (`{ id }`) or a **box** (`dir: row | column | swap`).
 - A box carrying `collapse` is a side region; one carrying `keep: true` is the main one.
-- Every node may wear a `surface`: `none`, `apart`, `group` or `object`. A `group` is grey on the
-  page and white on another group.
+- Every node may wear a `surface`: `none`, `apart` or `group`. A `group` is a faint grey plate
+  with a hairline, white on another group, and most nodes wear none.
 - Spacing is never written. It follows the tree: 24px in a region, 16px one box down, 8px deeper.
 - A board of typed tiles is a mock-up, not a screen.
 

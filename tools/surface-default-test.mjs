@@ -4,7 +4,7 @@ buildMirror();
 
 const { withDefaultSurfaces, surfacesWritten } = await import("./.mjs-cache/surface-default.mjs");
 const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
-const { nestingFindings } = await import("./.mjs-cache/surface-laws.mjs");
+const { nestingFindings, widgetOfTiles } = await import("./.mjs-cache/surface-laws.mjs");
 
 let failed = 0;
 let checks = 0;
@@ -63,7 +63,7 @@ check("the algorithm lays them from the tree alone, with nothing drawn yet", sur
 	"1/1": "group",
 });
 check("the card gets its plate without anybody asking", laid.of[1].of[1].surface, "group");
-check("and what it laid breaks no nesting law", nestingFindings(laid), []);
+check("and what it laid breaks no nesting law", nestingFindings(laid, widgetOfTiles(tiles)), []);
 
 const twice = withDefaultSurfaces({ layout: laid, tiles, roleOf });
 check("laying it a second time changes nothing", surfacesWritten(twice), surfacesWritten(laid));

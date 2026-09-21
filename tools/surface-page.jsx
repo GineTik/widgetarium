@@ -42,7 +42,7 @@ const board = normalizeBoard({
 					},
 					{
 						dir: "column",
-						surface: "object",
+						surface: "group",
 						of: [
 							{ id: "f", height: 60 },
 							{ id: "g", height: 60, surface: "group" },
@@ -96,7 +96,7 @@ function tokenColour(token) {
 
 function readPaint() {
 	const filled = boxAt("1/0");
-	const outlined = boxAt("1/2");
+	const lower = boxAt("1/2");
 	const leftRegion = document.querySelector('.wg-tree-region[data-region="0"]');
 	const mainRegion = document.querySelector('.wg-tree-region[data-region="1"]');
 	const rightRegion = document.querySelector('.wg-tree-region[data-region="2"]');
@@ -110,17 +110,14 @@ function readPaint() {
 			box: rectOf(filled),
 			cells: [rectOf(cellOf("b")), rectOf(cellOf("c"))],
 		},
-		outline: {
-			background: getComputedStyle(outlined).backgroundColor,
-			token: tokenColour("--wg-kit-group-raise"),
-			shadow: getComputedStyle(outlined).boxShadow,
+		lower: {
 			gap: rectOf(cellOf("g")).top - rectOf(cellOf("f")).bottom,
-			kitPlate: getComputedStyle(outlined).getPropertyValue("--wg-kit-plate").trim(),
+			kitPlate: getComputedStyle(lower).getPropertyValue("--wg-kit-plate").trim(),
 			nestedCorner: getComputedStyle(cellOf("g")).borderTopLeftRadius,
 		},
 		gaps: {
 			plateToBare: rectOf(boxAt("1/1")).top - rectOf(filled).bottom,
-			bareToPlate: rectOf(outlined).top - rectOf(boxAt("1/1")).bottom,
+			bareToPlate: rectOf(lower).top - rectOf(boxAt("1/1")).bottom,
 		},
 		columnLine: lineOf(cellOf("c")),
 		rowLine: { line: lineOf(cellOf("d")), cell: rectOf(cellOf("d")), next: rectOf(cellOf("e")) },
@@ -161,7 +158,7 @@ function readSlots() {
 	return {
 		cards: listed("cards"),
 		bare: listed("bare"),
-		raise: tokenColour("--wg-kit-group-raise"),
+		inset: tokenColour("--wg-kit-group-inset"),
 		fill: tokenColour("--wg-kit-group-fill"),
 		steps: gapVarsOf(0),
 	};

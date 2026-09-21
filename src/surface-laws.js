@@ -3,21 +3,24 @@ import {
 	DEFAULT_STYLE,
 	isKnownRole,
 	MAX_SURFACE_DEPTH,
+	EARNED_BY_LIST,
 	mayWearInside,
 	plateRefusal,
 	platesWithin,
+	repeatEarning,
+	unearnedPlate,
 } from "./surface-roles.js";
 import {
 	APART,
 	allEdges,
 	edgesOfChild,
+	GROUP,
 	isBox,
 	isDividedByDefault,
 	isPainted,
 	leavesOf,
 	nodeAt,
 	NO_SURFACE,
-	OBJECT,
 	REGION_PAD_PX,
 	regionSurfaceOf,
 	replacedAt,
@@ -36,42 +39,53 @@ const FAINT_TEXT_KEEPS = 0.85;
 const FILLS_ITS_PARENT = 0.88;
 const REGION_CHILD_DEPTH = 2;
 
+const NO_WIDGETS = () => null;
+
+export function widgetOfTiles(tiles) {
+	const widgets = new Map(tiles.map((tile) => [tile.id, tile.widget]));
+	return (id) => widgets.get(id);
+}
+
 export function surfaceVerdicts({ layout, tiles, measured, roleOf = () => null }) {
 	const walk = {
-		widgetOf: new Map(tiles.map((tile) => [tile.id, tile.widget])),
+		widgetOf: widgetOfTiles(tiles),
 		roleOf,
 		measured: measured ?? null,
 		page: colorOf(measured?.page) ?? WHITE,
 		verdicts: [],
 	};
 	layout.of.forEach((region, at) => walkRegion(walk, layout, at, walk.page));
-	return { verdicts: walk.verdicts, nesting: nestingFindings(layout) };
+	return { verdicts: walk.verdicts, nesting: nestingFindings(layout, walk.widgetOf) };
 }
 
-export function surfaceChoicesAt(layout, path) {
-	const already = wrongNow(layout);
+export function surfaceChoicesAt(layout, path, widgetOf = NO_WIDGETS) {
+	const already = wrongNow(layout, widgetOf);
 	const side = nodeAt(layout, path)?.side;
-	return SURFACES.map((surface) => ({ surface, refusal: introducedFinding(layout, path, { surface, side }, already) }));
+	return SURFACES.map((surface) => ({
+		surface,
+		refusal: introducedFinding(layout, path, { surface, side }, { already, widgetOf }),
+	}));
 }
 
 // TRADE-OFF: the check lives inside the write, so no caller may decide and write separately — it costs a second walk of the tree the picker already walked
-export function wornSurfaceAt(layout, path, surface, side) {
+export function wornSurfaceAt(layout, path, surface, side, widgetOf = NO_WIDGETS) {
 	const node = nodeAt(layout, path);
 	if (!node) return { layout, refusal: { reason: NOTHING_THERE } };
-	const refusal = introducedFinding(layout, path, { surface, side }, wrongNow(layout));
+	const already = wrongNow(layout, widgetOf);
+	const refusal = introducedFinding(layout, path, { surface, side }, { already, widgetOf });
 	if (refusal) return { layout, refusal };
 	return { layout: replacedAt(layout, path, surfaced(node, surface, side)), refusal: null };
 }
 
-function introducedFinding(layout, path, worn, already) {
+function introducedFinding(layout, path, worn, { already, widgetOf }) {
 	const node = nodeAt(layout, path);
 	if (!node) return null;
 	const would = replacedAt(layout, path, surfaced(node, worn.surface, worn.side));
-	return nestingFindings(would).find((one) => !already.has(identityOf(one))) ?? null;
+	return nestingFindings(would, widgetOf).find((one) => !already.has(identityOf(one))) ?? null;
 }
 
-function wrongNow(layout) {
-	return new Set(nestingFindings(layout).map(identityOf));
+function wrongNow(layout, widgetOf) {
+	return new Set(nestingFindings(layout, widgetOf).map(identityOf));
 }
 
 const identityOf = (finding) => `${finding.path.join("/")}:${finding.law}:${finding.reason}`;
@@ -89,35 +103,29 @@ function surfaced(node, surface, side) {
 	return { ...bare, surface, ...(surface === APART && SIDES.includes(side) ? { side } : {}) };
 }
 
-export function nestingFindings(layout) {
+export function nestingFindings(layout, widgetOf = NO_WIDGETS) {
 	const findings = [];
 	layout.of.forEach((region, at) => {
 		if (!isBox(region)) return;
 		const { surface } = regionSurfaceOf(layout, at);
 		const isRegionPainted = isPainted({ surface });
 		const above = { surface: isRegionPainted ? surface : NO_SURFACE, levels: isRegionPainted ? 1 : 0 };
-		region.of.forEach((child, index) => visitNesting(findings, child, [at, index], above));
+		region.of.forEach((child, index) =>
+			visitNesting(findings, { node: child, siblings: region.of, path: [at, index] }, { above, widgetOf }),
+		);
 	});
 	return findings;
 }
 
-function visitNesting(findings, node, path, above) {
+function visitNesting(findings, { node, siblings, path }, { above, widgetOf }) {
 	const surface = node.surface ?? NO_SURFACE;
-	const levels = platesWithin(above, surface);
-	findings.push(
-		...[plateRefusal(above, surface), crowded(node, surface)].filter(Boolean).map((one) => ({ path, ...one })),
-	);
+	const refusal = plateRefusal(above, surface) ?? unearnedPlate(node, siblings, widgetOf);
+	if (refusal) findings.push({ path, ...refusal });
 	if (!isBox(node)) return;
-	const inside = { surface: isPainted(node) ? surface : above.surface, levels };
-	node.of.forEach((child, at) => visitNesting(findings, child, [...path, at], inside));
-}
-
-function crowded(node, surface) {
-	if (!isBox(node) || !isPainted(node) || node.of.length < 2 || !node.of.every(isPainted)) return null;
-	return {
-		law: "N2",
-		reason: `every child of this ${surface} wears a plate of its own: keep the plate around them or the plates on them, never both`,
-	};
+	const inside = { surface: isPainted(node) ? surface : above.surface, levels: platesWithin(above, surface) };
+	node.of.forEach((child, at) =>
+		visitNesting(findings, { node: child, siblings: node.of, path: [...path, at] }, { above: inside, widgetOf }),
+	);
 }
 
 function walkRegion(walk, layout, at, page) {
@@ -127,7 +135,7 @@ function walkRegion(walk, layout, at, page) {
 	const isRegionPainted = isPainted({ surface });
 	walkBox(walk, layout.of[at], [at], {
 		edges: allEdges(isRegionPainted ? SURFACE_PAD_PX : REGION_PAD_PX),
-		under: isRegionPainted ? presetColour(walk.measured, surface, page) : page,
+		under: isRegionPainted ? presetColour(walk.measured, { under: page, underSurface: NO_SURFACE }) : page,
 		underSurface: isRegionPainted ? surface : NO_SURFACE,
 		levels: isRegionPainted ? 1 : 0,
 	});
@@ -213,6 +221,8 @@ function decided(walk, box, where, { at, role }) {
 }
 
 function placed(walk, box, child, role, where) {
+	const earned = repeatEarning(child, box.of, walk.widgetOf);
+	if (!earned) return nothing("R", "it stands alone, and only a repeat earns a plate: a heading and the step group it");
 	if (role === "collection" && where.underSurface !== NO_SURFACE)
 		return nothing("R3", "a collection inside a group that already has an edge needs none of its own");
 	if (!isBox(child) && role !== "composer" && where.underSurface !== NO_SURFACE)
@@ -223,14 +233,9 @@ function placed(walk, box, child, role, where) {
 			"P1",
 			`the only ${role} in this group wears no plate of its own: a heading and the step already say it`,
 		);
-	if (inside && box.of.every((one) => wouldBePlated(walk, one)))
-		return nothing(
-			"P2",
-			"every child here would wear a plate, and plates say nothing when nothing beside them is bare",
-		);
 	const filling = fillsItsPlate(walk, where);
 	if (filling) return nothing("P3", filling);
-	const worn = DEFAULT_STYLE[role];
+	const worn = earned === EARNED_BY_LIST ? [GROUP] : DEFAULT_STYLE[role];
 	const offered = worn.filter((surface) => mayWearInside(where.underSurface, surface));
 	if (offered.length === 0)
 		return nothing(
@@ -266,20 +271,15 @@ function peersOf(walk, box, role) {
 	return box.of.filter((one) => roleOfNode(walk, one) === role).length;
 }
 
-function wouldBePlated(walk, node) {
-	const role = roleOfNode(walk, node);
-	return role !== null && DEFAULT_STYLE[role].length > 0;
-}
-
 function roleOfNode(walk, node) {
 	if (isBox(node)) return isKnownRole(node.role) ? node.role : null;
-	const role = walk.roleOf(walk.widgetOf.get(node.id));
+	const role = walk.roleOf(walk.widgetOf(node.id));
 	return isKnownRole(role) ? role : null;
 }
 
 function missingDeclaration(walk, node, role) {
 	if (!isBox(node) && role) return null;
-	if (!isBox(node)) return unknownRoleSaid(walk.roleOf(walk.widgetOf.get(node.id)));
+	if (!isBox(node)) return unknownRoleSaid(walk.roleOf(walk.widgetOf(node.id)));
 	if (!role) return "a group that names no role cannot be judged: write its role and its purpose";
 	return node.purpose ? null : "a group that names no purpose cannot be judged: write the question it answers";
 }
@@ -326,14 +326,14 @@ function judged(walk, child, surface, where) {
 			passes: true,
 			reasons: ["+ the tree's own laws let it stand; the colours are judged once the board has been drawn"],
 		};
-	const colour = presetColour(walk.measured, surface, where.under);
+	const colour = presetColour(walk.measured, where);
 	const tiles = leavesOf(child).map((leaf) => ({
 		id: leaf.id,
 		measured: measuredTileOf(walk.measured.tiles?.[leaf.id]),
 	}));
 	const reasons = [
 		depthReason(tiles, where.levels),
-		standsOutReason(walk.measured, surface, colour, where.under),
+		standsOutReason(colour, where.under),
 		...tiles.flatMap((tile) => tileReasons(tile, colour, walk.page)),
 	];
 	return { surface, colour, passes: reasons.every((one) => one.startsWith("+")), reasons };
@@ -349,14 +349,7 @@ function depthReason(tiles, levels) {
 	return `+ ${total} of ${MAX_SURFACE_DEPTH} containers deep (law 5)`;
 }
 
-function standsOutReason(measured, surface, colour, under) {
-	if (surface === OBJECT) {
-		const edge = colorOf(measured.presets?.edge);
-		const step = edge ? stepBetween(over(edge, colour), colour) : 0;
-		return step >= LIGHTNESS_STEP
-			? `+ its edge is ${round(step)} from its own fill (law 6)`
-			: `- its edge is only ${round(step)} from its own fill, under ${LIGHTNESS_STEP} (law 6)`;
-	}
+function standsOutReason(colour, under) {
 	const step = stepBetween(colour, under);
 	return step >= LIGHTNESS_STEP
 		? `+ ${round(step)} from what it stands on (law 6)`
@@ -388,8 +381,8 @@ function tileReasons({ id, measured }, colour, page) {
 	return [...fills, ...texts];
 }
 
-function presetColour(measured, surface, under) {
-	const token = surface === OBJECT ? measured?.presets?.raise : measured?.presets?.fill;
+function presetColour(measured, { under, underSurface }) {
+	const token = isPainted({ surface: underSurface }) ? measured?.presets?.inset : measured?.presets?.fill;
 	return over(colorOf(token) ?? WHITE, under);
 }
 
