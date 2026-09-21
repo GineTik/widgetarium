@@ -2,6 +2,11 @@
 
 Only when `find` offers nothing close. A near neighbour with different controls beats a new widget.
 
+**One widget draws one thing.** A total with its bar, a chart, a list of rows: each is a widget of
+its own, and a section places them together. When the design asks for a figure over a list, write
+two widgets reading the same folder, never one that draws both. Shared arithmetic goes in the scope's
+`lib.js`.
+
 ## The folder
 
 ```
@@ -86,6 +91,34 @@ person to a folder, a file, a typed value or another tile's prop.
 | `describes`     | for a collection: the row's fields. A string is a label; an object may carry `label`, `type`, `required`, `aka`. **A field matches a note's properties exactly when it names `aka`** |
 | `where`, `sort` | conditions and order the widget always reads through; a condition may `wants` another widget's prop                                                                                  |
 | `aka`           | every name this prop had before, newest last                                                                                                                                         |
+| `isVisible`     | a function over every prop, answering whether the settings window draws this one at all                                                                                              |
+| `options`       | the answers a person picks between: `[{ value, label }]`. The window draws them as a list; nothing else is needed and no second prop holds them                                      |
+
+**`isVisible` is how one switch changes what the window asks for.** It is handed every prop of this
+widget as `{ kind, control, binding, isSet, value }` for a value and `{ ..., rows }` for a
+collection, reading what the person typed and falling back to the default, so a rule is written
+against the tile as it stands rather than against data that has to be fetched:
+
+```ts
+mode: defineProp<string>()({
+	default: "placed",
+	options: [
+		{ value: "placed", label: "Widgets I place" },
+		{ value: "per-row", label: "One widget per row" },
+	],
+}),
+items: defineProp<Row[]>()({ default: [], isVisible: (props) => props.mode.value === "per-row" }),
+```
+
+**A choice is `options`, never a second prop holding the answers.** `of:` binds a prop to a box the
+**widget** fills — a tab a person pressed, a card they opened — and a box draws nothing in the
+settings window, so a configuration written that way cannot be changed there at all.
+
+The same key works on a `slots` or a `mounts` entry, which is what lets one switch put a slot away
+and bring a mount list out. A rule that throws draws the thing it would have hidden and says so in
+the console — a settings window with a prop missing and no reason is worse than one prop too many.
+The function lives in the code, so `manifest.generated.json` does not carry it: a catalogue that has
+never run the widget draws every prop.
 
 **A default never names a file or a folder, at any depth, under any spelling. This is a security
 law.** A path in a default would let a widget read a person's notes before they chose anything, or
@@ -134,24 +167,26 @@ empty seed: one mark, shared by everything nameless.
 ## A plate inside a widget
 
 **Draw no background, border, corner or shadow of your own.** The engine draws the root — container
-query, size, clipping — the board decides the tile's plate, and every plate you paint under it is
-`<Surface>` from `widgetarium/kit`:
+query, size, clipping — the board decides the tile's plate, and every plate you paint under it comes
+from `widgetarium/kit`:
 
 ```tsx
-<Surface type="group">…</Surface>
-<Surface type="group" tone="warning">…</Surface>
-<Surface type="apart" side="start" across="column">…</Surface>
+<Card>…</Card>
+<Card tone="warning">…</Card>
+<Rows>{rows.map((row) => <Rows.Item key={row.ref}>…</Rows.Item>)}</Rows>
+<Grid min={220}>{cards.map((card) => <Grid.Item key={card.ref}>…</Grid.Item>)}</Grid>
+<Layout kind="rows">…</Layout>
+<Card type="apart" side="start" across="column">…</Card>
 ```
 
-`type` is `group`, `object`, `apart` or `none`, and `none` is the default, so a widget that asks for
-nothing stays bare. `tone` paints the plate in a state — that is what a warning block is, rather
-than a colour of your own. The corner and the padding come out concentric with the tile's.
+One block goes in `Card`, rows of data in `Rows`, a grid of things in `Grid`. `Layout kind` is the
+same behind one word, so a design changes by changing it. The rules they follow are in
+[surfaces.md](surfaces.md).
 
 **The laws decide it, not you.** Two plates stand from the region, the tile's own included, so a
 tile already wearing a `group` leaves you one plate and the next is refused: it paints nothing and
-says why in the console. A `type`, `tone`, `side` or `across` the kit never had is refused the same
-way — the default is drawn and the console names what it took instead, so a typo never reaches the
-screen as a plate or a line nobody can explain. Read [surfaces.md](surfaces.md) before nesting them.
+says why in the console. A `kind`, `type`, `tone`, `side` or `across` the kit never had is refused
+the same way — the default is drawn and the console names what it took instead.
 
 ## The rest of the manifest
 
@@ -160,6 +195,8 @@ screen as a plate or a line nobody can explain. Read [surfaces.md](surfaces.md) 
 - `role` — required. Without one the widget is never given a surface.
 - `slots` — the holes other widgets fill:
   `card: { of: "widget", default: "@default/task-card", surface: "group", gives: { ... } }`.
+- `mounts` — named lists of widgets the person places, each with its own settings. A mount's settings
+  are reached from the board itself while it is being edited, not only from the holder's window.
 - `size: { collapseBelowPx, stackBelowPx, tallestPx, shortestPx }` — the responsive ladder, in
   pixels. Below `collapseBelowPx` the widget must be legible with less; below `stackBelowPx` its row
   becomes a column. Use `useNarrowed`, never a media query.

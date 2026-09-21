@@ -273,12 +273,12 @@ records become tiles, and the box answers to the widget id in wiring so a switch
 group finds it. Full decision in `docs/decisions.md`.
 
 **A background belongs to a group, not to a widget.** The engine draws every widget's root — its
-container query, size and clipping — and a widget paints a plate only through `<Surface>` from the
+container query, size and clipping — and a widget paints a plate only through `<Card>` from the
 kit; `WidgetRoot` survives only as a bare element for widgets written before.
 
 **The tile's plate is the node's, the plates under it are the widget's, and one component paints
-both kinds.** `Surface` in `src/kit.js` takes `type` — the same four words, `none` by default, so a
-widget that asks for nothing stays bare — plus `tone` for a plate in a state and `side`/`across` for
+both kinds.** `Card` in `src/kit.js` (once `Surface`, which stays as an alias for widgets published
+before the rename) takes `type` — `group` by default, `none` for a widget that paints nothing — plus `tone` for a plate in a state and `side`/`across` for
 a divider. It reads `PLATES_ABOVE` (`src/kit-surface.js`), seeded from the laid node's own `plates` and
 `underSurface` — **inside the tree handed to the tile's shell, because a widget is drawn in its own
 render root** (`DrawnInShell` in `src/mounted.js`) and no context crosses that seam. Measured: a Provider
@@ -290,19 +290,25 @@ note and by the kit for the screen; `tone`, `side` and `across` are held to the 
 same way, and a word the kit never had falls back and warns rather than reaching the DOM. A named
 `data-surface` cannot outrank the computed one — the laws' attributes are spread after a caller's
 props, because a prop that could name the plate would be a way past the gate. **A tone replaces the
-plate's grey**, which the cascade had to be told: `.wg-kit-tone` is excluded from the group and object
-fills by name, and a jsdom check on the class list said the tone was there while Chrome painted grey. **A refused plate paints nothing and warns** — it cannot reach the
+plate's grey**, which the cascade had to be told: `.wg-kit-tone` is excluded from the group fills by
+name, and a jsdom check on the class list said the tone was there while Chrome painted grey. **A refused plate paints nothing and warns** — it cannot reach the
 screen and be measured later as a third fill nobody declared. Corners step inward from the tile's
 own (`--wg-surface-corner`) and are never written by a widget. The slot wrapper is that component
 too, which is what makes a slotted widget's depth right rather than one level short. Any node may wear `surface: group |
-object | apart | none`, named for what the node **is** rather than for how it is painted, so a
-design system may repaint any of them without the name lying: a `group` is several things answering
-one question, an `object` is a thing lifted off the page that a person acts in, and `apart` is a
-boundary with no plate. **A `group` takes its colour from what it stands on** — grey on the page,
-raised on another group — so the white card on a grey plate is not a fourth name to choose, and the
-only CSS that decides it is `[data-surface="group"] [data-surface="group"]`. `item` was that fourth
-name, and it is read once at `normalizeBoard` through `SURFACE_WAS` beside `fill`, `outline`, `raise`
-and `divider`, then never written again. A
+apart | none`, named for what the node **is** rather than for how it is painted, so a design system
+may repaint any of them without the name lying: a `group` is several things answering one question,
+and `apart` is a boundary with no plate. **The page is the theme's colour and a `group`
+is a 3% grey with no edge** — `--wg-kit-page` under the board and the pane of a screen,
+`--wg-kit-group-fill` on the plate, `--wg-kit-group-edge: none` — and a `group` on another group turns
+white (`--wg-kit-group-inset`). **The kit carries the rules for what is drawn inside a widget**:
+`Rows` is one plate with a line between its items (`--wg-kit-group-line`), `Grid` gives every cell a
+`Card`, and `Layout kind` is all of them behind one word, so a design changes by one prop.
+**An `indicators` region lays a `group` on every widget in it** that names no surface — `wornInRegion`
+in `src/tree.js`, at lay time, never written to the note — except a `text`, `layout`, `control` or
+`navigation` widget and one already standing on a plate. The only CSS that decides the colour is `[data-surface="group"] [data-surface="group"]`. `object`, a plate lifted with a
+hairline, was a second plate nobody placed and is gone; `item` was a fourth name. Both are read once
+at `normalizeBoard` through `SURFACE_WAS` beside `fill`, `outline`, `raise` and `divider` as a
+`group`, then never written again. A
 slot wears one too: the manifest's `slots.<name>.surface` is the default, a tile's `slots.<name>.surface`
 the pick, and `surfacedSlot` wraps every item the slot draws in that plate, so the widget in a slot
 draws no background either — a kanban's `task-card` lies in the `group` its manifest names, raised
@@ -397,6 +403,37 @@ and a region stays.
 **A fed slot cannot be entered; an unfed one can.** A slot whose manifest declares `gives` gets its
 inputs from the parent and owns nothing. Without `gives` the child owns its own props.
 `docs/decisions.md` carries this; it replaced an earlier split between "slot" and "mount".
+
+**A mount's settings are reached where the mount stands.** While the board is being edited every
+mounted widget wears its own press, and it opens the settings window already inside that mount rather
+than at its holder — `enterMount` is threaded from the cell down through `WidgetHost` into every
+entry, composing a step per level, so a mount inside a mount is reached in one press too. The same
+list reorders in place: a mount row carries a move up and a move down, because the order of the rows
+is the order they are drawn in. **A mount has the same three tabs as a tile.** Its Design tab holds
+its own `surface` and `height`, written to `mounted.<name>` and handed to the holder on every
+`MountEntry`, plus its own `design: true` props; it holds no fold and no board size, because those
+are facts of a place on the board and a mount has none — showing the holder's would edit the wrong
+thing.
+
+**A prop says for itself whether it is drawn.** `isVisible` on a prop, a slot or a mount entry is a
+function over every prop of the widget — `{ kind, control, binding, isSet, value }`, or `rows` for a
+collection — read from what the person typed, falling back to the default. `isShown` in
+`src/prop-visibility.js` is the one place that answers it, asked by the props group, the slot rows and
+the mount groups alike, which is what lets **one switch** put a slot away and bring a mount list out.
+A rule that throws draws what it would have hidden and says so: a window with a prop missing and no
+reason is worse than a window with one prop too many. The function is code, so no card carries it,
+and both sides of the card comparison drop it rather than one of them.
+
+**A section is a widget with the `layout` role, and that role is the middle of three.** A base cuts
+the page into regions, a `layout` widget stands in a region and is the only kind allowed to draw its
+own `h2`, and every other widget stands inside one. `@default/section` is the one the engine ships:
+a heading, a badge, controls as a mount list, and a body that is either the widgets a person placed
+(`mounts.widgets`) or one widget drawn again for every row of the data (`slots.item`) — **one switch
+between them**, and `isVisible` is what makes the window ask only for the half in use. The body
+is drawn through the kit's `Layout`, and `arrangement` is its kind: a `column` stands bare, a `row`
+and a `grid` give every widget its own plate, `rows` stand in one plate with a line between them.
+The section itself wears no plate, so the heading stands outside every plate and the widget's own
+plate laws still count from there.
 
 **One widget points at another by ref, never by a shared name.** There is no context bus. A ref is
 `<tileId>/<propName>`; the board holds one registry of them (`src/gateway/refs.js`) and a where row

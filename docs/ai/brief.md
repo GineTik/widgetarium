@@ -63,6 +63,11 @@ Called with nothing it is the whole catalogue — **not the vault**. Every row s
 `GET ` row is one `node {tool} install <id>` away. Where nothing matches the design, **write the
 widget**. Then place, bind every prop, give every node its surface, lint, measure, and look at it.
 
+**A titled part of a region is a section, not a bare widget.** `@default/section` carries the
+heading, the badge and the controls, and holds either the widgets you place or one widget drawn again
+for every row of the data. A badge, a note or a toggle standing alone in a region needs no section
+and nothing refuses one placed bare.
+
 **The catalogue is not the ceiling on the design.** A screen only as good as what happens to be
 installed is the thing this order prevents. Reuse a widget because it fits the design; never design
 around a widget because it exists.
@@ -126,6 +131,11 @@ region and tile.
 
 **13. Nothing is done until it is on the board and drawing.** Written but not placed, placed but not
 bound, a prop left on its default — none of those are finished.
+
+**14. One widget answers one question.** A figure against a target and the rows it adds up are two
+widgets; a chart and the numbers beside it are two; a day's totals and the meals of that day are two.
+Put both in one section, each placed on its own. A widget that draws a summary and a list under it
+cannot be rearranged, re-plated or reused, and the design loses the choice of where each one stands.
 
 ## In this vault
 

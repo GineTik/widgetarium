@@ -1,66 +1,100 @@
 # Surfaces
 
-Four. You write one on every node as you place it. Nothing lays one for you, and a node you leave
-bare stays bare.
+Three words, and most of the screen wears the first.
 
 | `surface`         | Paints                                        |
 | ----------------- | --------------------------------------------- |
 | absent, or `none` | nothing                                       |
 | `apart`           | one 1px line on one side, no plate, no corner |
-| `group`           | a plate                                       |
-| `object`          | a plate with a hairline edge, lifted          |
+| `group`           | a plate: a faint grey, no edge                |
 
-**A `group` takes its colour from what it stands on**: grey on the page, white on a grey group. One
-name, both looks, no decision. On a light theme nothing is lighter than white, so the white one
-separates by the gap around it.
+**The page is white and a plate is a light grey on it.** A `group` on another `group` turns white, so
+it still reads against the grey it stands on. A plate is never outlined.
 
-`apart` carries `side: start | end` — which edge the line stands on.
+## The rules
+
+1. **A set gets plates; a single thing stands bare.** Headings, prose, a chart, a graph, one block in
+   the middle of the page: no plate.
+2. **A grid gives every cell its own plate**, a grid of widgets and a grid of records alike. The grid
+   itself wears nothing.
+3. **Rows of data stand in one plate, with a line between them.** The rows wear nothing of their own.
+4. **Every widget in an `indicators` region wears a plate.** The engine lays it as the board is
+   drawn, on any widget in that region that names no surface of its own, however deep its section.
+   A `text`, `layout`, `control` or `navigation` widget stays bare. A `navigation` region lays
+   nothing.
+5. **A state replaces the grey.** `tone` paints the plate with a warning, an error, a success or the
+   accent. A row in a state is washed edge to edge, and the line beside it stays.
+6. **A control is not a plate.** A field, a switch, a count keep their own darker grey, so they still
+   show on a plate.
+
+Everything else you write on every node as you place it; a node you leave bare stays bare. `apart`
+carries `side: start | end`, the edge the line stands on.
 
 ## Where each may stand
 
 Read by the nearest plate above. An `apart` makes no plate and does not count.
 
-| Nearest plate above ↓     | `group` | `object` | `apart` |
-| ------------------------- | ------- | -------- | ------- |
-| none — page, region, pane | yes     | yes      | yes     |
-| `group`                   | yes     | **no**   | yes     |
-| `object`                  | yes     | **no**   | yes     |
+| Nearest plate above ↓     | `group` | `apart` |
+| ------------------------- | ------- | ------- |
+| none — page, region, pane | yes     | yes     |
+| `group`                   | yes     | yes     |
 
 Two plates deep from the region, counting any a widget paints inside itself. A plate whose every
 child wears a plate is refused.
 
 **These three are a gate, not advice.** The Design tab greys out what they refuse, `lint` fails a
-note that carries one, and a surface they refuse cannot be written at all. Everything else about
-surfaces is yours. Read [examples.md](examples.md) and build what the screens there build.
+note that carries one, and a surface they refuse cannot be written at all. Read
+[examples.md](examples.md) and build what the screens there build.
 
-## Inside a widget
+## Inside a widget: Card, Rows, Grid, Layout
 
-The tile's own plate is the node's, written in the note. Everything the widget paints under it is
-`<Surface>` from `widgetarium/kit`, and it is the only way a widget paints a plate:
+The tile's own plate is the node's. Everything the widget paints under it comes from
+`widgetarium/kit`, and the kit already follows the rules above:
 
 ```tsx
-import { Surface } from "widgetarium/kit";
+import { Card, Grid, Layout, Rows } from "widgetarium/kit";
 
-<Surface type="group" tone="warning">
-	…
-</Surface>;
+<Card tone="warning">3 bugs found today</Card>
+
+<Rows>
+	<Rows.Header title="Steps">{actions}</Rows.Header>
+	{steps.map((step) => (
+		<Rows.Item key={step.ref} tone={step.done ? "success" : undefined}>…</Rows.Item>
+	))}
+</Rows>
+
+<Grid min={220}>
+	{albums.map((album) => <Grid.Item key={album.ref}>…</Grid.Item>)}
+</Grid>
+
+<Layout kind={kind}>
+	{rows.map((row) => <Layout.Item key={row.ref}>…</Layout.Item>)}
+</Layout>
 ```
 
-`type` is the same four words, and `none` — the default — paints nothing, so a widget that asks for
-no surface stays bare. `tone` paints the plate with a state, which is what a warning block is, and it
-replaces the plate's own grey rather than sitting under it.
-`apart` takes `side: start | end` and `across: row | column` — the direction the parts it divides
-run.
+- `Card` is one plate. `type` is `group` by default, `none` paints nothing, `apart` is a line and
+  takes `side: start | end` and `across: row | column`. `tone` is `success`, `warning`, `error`,
+  `accent` or any other kit tone. A card has no header or footer: what goes in it is yours.
+- `Rows` is one plate; `Rows.Item` stands bare on it with a line above every item after the first.
+  The plate has no side padding: each row carries the inset itself, so a line and a toned row reach
+  both edges while the text stays 16px in. Rows standing on a plate already paint no second one.
+- **Padding is never doubled.** Rows on a card take the card's padding on every edge they touch: the
+  sides always, the top only when nothing stands above them in the card, the bottom only when nothing
+  stands below. Anything else in the card keeps that edge for the card. The rows mark it on the card
+  as `data-rows-flush="inline top bottom"` and the CSS drops exactly those edges.
+- `Grid` is bare; every `Grid.Item` is a `Card`. `min` is the narrowest a cell may be before it wraps.
+- `Layout` is all of them behind one word: `kind` is `stack` (bare), `row` (cards across), `grid`
+  or `rows`, and `Layout.Item` becomes whatever the kind asks for. Changing the design is changing
+  that one word.
 
 **A widget that paints its own plates wants a bare node.** `@default/kanban-board` paints a plate on
 every column and one on every card in it, so its tile wears **no** surface — two plates are already
 spent inside. Give a node `group` only when the widget draws flat content on it.
 
-**The same laws decide it, and the widget is not asked.** A Surface counts against the two plates
-from the region, the tile's own included, so a `group` on the node leaves the widget one plate and a
-second is refused. The refusal paints nothing and says why in the console; it can never reach the
-screen as a plate nobody can name. Corners come out concentric with the tile's and are never
-written.
+**The same laws decide it, and the widget is not asked.** Every kit plate counts against the two
+plates from the region, the tile's own included, so a `group` on the node leaves the widget one plate
+and a second is refused. The refusal paints nothing and says why in the console. Corners come out
+concentric with the tile's and are never written.
 
 ## Roles
 
@@ -75,8 +109,12 @@ one question the box answers.
   of: [{ id: w3 }, { id: w4 }]
 ```
 
-`navigation`, `indicator`, `indicators`, `collection`, `detail`, `composer`, `control`, `media`,
-`text`. A widget without one is never given a surface.
+`layout`, `navigation`, `indicator`, `indicators`, `collection`, `detail`, `composer`, `control`,
+`media`, `text`. A widget without one is never given a surface.
+
+`layout` is the section: a widget that titles a part of a region and holds what stands under it. It
+is the only role besides `text` allowed to draw its own `h2`, and it wears no surface of its own —
+its `arrangement` decides the plates of what stands in it, by rules 2 and 3.
 
 ## Spacing and corners are computed
 
@@ -96,7 +134,7 @@ Inside a widget the same steps arrive as `--wg-gap-items`, `--wg-gap-parts`, `--
 Every colour is a `--wg-kit-*` token. A theme repaints a token and cannot repaint a hex.
 
 - `--wg-kit-fill`, `--wg-kit-fill-hover` — the ground a control sits on
-- `--wg-kit-card-fill`, `--wg-kit-card-edge` — a card inside a widget, and its hairline
+- `--wg-kit-group-fill`, `--wg-kit-group-line` — a plate, and the line between rows on it
 - `--wg-kit-accent`, `--wg-kit-accent-wash` — the one thing being asked for
 - `--wg-kit-success`, `-warning`, `-error`, `-info`, `-note`, `-standout`, `-highlight`, each with
   `-wash` and `-ink`

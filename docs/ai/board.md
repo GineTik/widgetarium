@@ -51,7 +51,7 @@ trigger: t1/open # the ref of a @default/toggle that opens it
 folded: true # it starts folded
 scroll: true # it scrolls on its own
 name: Filters # a label, presentation only
-surface: group # none, apart, group or object — see surfaces.md
+surface: group # none, apart or group — see surfaces.md
 side: start # which edge an apart line stands on: start or end
 role: indicators # navigation, indicator(s), collection, detail, composer, control, media, text
 purpose: How the selected habit is going # the one question this box answers
@@ -104,6 +104,58 @@ has no bar of its own — edit mode is the pencil in Obsidian's view header.
 
 Two edits in one save: append a record to `tiles`, append a leaf naming its `id` to the box it stands
 in. Give the leaf its `surface` in the same edit. Save, let the person see it, then bind it.
+
+## Sections
+
+A widget whose manifest names `role: layout` stands in a region and titles what is under it. It is
+the only kind allowed to draw its own `h2`; every other widget is titled from outside.
+`@default/section` is the one that ships:
+
+```yaml
+- id: projects
+  widget: "@default/section"
+  props:
+    heading: { from: typed, value: Projects }
+    badge: { from: typed, value: 5 open }
+    filling: { from: typed, value: per-row }
+    items: { from: vault, path: Projects, allow: [list] }
+    arrangement: { from: typed, value: grid }
+    minWidthPx: { from: typed, value: 280 }
+  slots:
+    item: { widget: "@flow/project-card" }
+```
+
+`filling` is one switch with two answers, and the settings window asks only for the half in use:
+
+- **`placed`** — the widgets a person put in `mounts.widgets`, each keeping its own props and its own
+  settings. Use it when the cells are different kinds of thing.
+- **`per-row`** — `slots.item` drawn again for every row of `items`, the whole row handed down. Use
+  it when every cell is the same kind of record. There is nothing to edit per row: the binding is the
+  edit.
+
+`arrangement` decides both how the body stands and what it stands on:
+
+| `arrangement` | Stands                   | Plates                         |
+| ------------- | ------------------------ | ------------------------------ |
+| `column`      | down the column          | none                           |
+| `row`         | across                   | one on each widget             |
+| `grid`        | wraps under `minWidthPx` | one on each widget             |
+| `rows`        | down the column          | one around all, a line between |
+
+Controls belong in `mounts.controls` and govern this section only — a control over the whole screen
+stands in the screen's own heading instead.
+
+**The section wears nothing; its arrangement plates what stands in it.** The heading stays outside
+every plate. A widget that paints its own cards stands in a `column`. One placed widget may say
+otherwise for itself: `mounted.<name>.surface` wins over the arrangement, and
+`mounted.<name>.height` fixes its height — both set in that widget's own Design tab.
+
+`badgeTone` is what the badge means, not how it is painted: `neutral` for a count, `success`,
+`warning` or `error` for a state, `accent`, `info`, `note`, `standout` or `highlight` where the
+design needs one. The colour comes from the kit.
+
+A section is not compulsory. A badge, a note, a toggle standing alone in a region needs no heading,
+and nothing refuses one placed bare.
 
 ## Binding a prop
 

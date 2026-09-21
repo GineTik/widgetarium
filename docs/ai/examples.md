@@ -146,7 +146,7 @@ layout:
 ````
 
 The track list is one `group`; its rows are drawn by the widget, not by the board. The album grid
-wears **nothing** — each album is an `object` the widget draws itself, and a plate around them would
+wears **nothing** — each album is a `group` the widget draws itself, and a plate around them would
 be an edge drawn twice. The player is `apart` along the bottom.
 
 ## A record with a rail of its own
@@ -197,13 +197,85 @@ layout:
       width: 300
       collapse: { into: drawer, toggle: adaptive }
       of:
-        - { id: progress, surface: group }
-        - { id: jump, surface: group }
+        - { id: progress }
+        - { id: jump }
 ```
 ````
 
 The tabs and the report stand bare in the kept column — a heading and the spacing step already say
-they belong together. The rail is `apart`, and each block on it is a `group`.
+they belong together. The rail is `apart`, and each block on it is a `group` that nobody wrote: the
+rail's role is `indicators`, and an `indicators` region lays a plate on every widget in it.
+
+## A section, and the two ways it fills
+
+`@default/section` is a widget with `role: layout`. It titles a part of a region and holds what stands
+under it. `filling` decides which half of it the settings window even asks for.
+
+````markdown
+---
+widgetarium: { kind: screen }
+---
+
+# Work
+
+```widgetarium
+v: 2
+tiles:
+  - id: projects
+    widget: "@default/section"
+    props:
+      heading: { from: typed, value: Projects }
+      badge: { from: typed, value: 5 open }
+      filling: { from: typed, value: per-row }
+      arrangement: { from: typed, value: grid }
+      minWidthPx: { from: typed, value: 280 }
+      items: { from: vault, path: Projects, allow: [list] }
+    slots:
+      item: { widget: "@flow/project-card" }
+  - id: today
+    widget: "@default/section"
+    props:
+      heading: { from: typed, value: Today }
+      filling: { from: typed, value: placed }
+      arrangement: { from: typed, value: column }
+    mounts:
+      widgets:
+        - { name: Reminders, widget: "@default/reminder" }
+        - { name: Streak, widget: "@default/streak" }
+      controls:
+        - { name: Search, widget: "@default/search-input" }
+layout:
+  dir: row
+  of:
+    - dir: column
+      keep: true
+      role: collection
+      purpose: The work this vault is doing
+      of:
+        - { id: projects }
+    - dir: column
+      role: detail
+      purpose: What is waiting right now
+      surface: apart
+      side: start
+      width: 320
+      collapse: { into: drawer, toggle: adaptive }
+      of:
+        - { id: today }
+```
+````
+
+`projects` fills **per row**: one `@flow/project-card` is drawn again for every note in the folder,
+the whole row handed down, and the grid wraps once a card would go under 280px. Nothing is edited per
+card — the binding is the edit.
+
+`today` fills **placed**: two widgets a person put there, each keeping its own props and its own
+settings, reached from the board itself while it is being edited. Its `controls` stand at the end of
+the heading row and govern that section only.
+
+Neither section wears a plate; the arrangement plates what stands in it. `projects` is a `grid`, so
+every card is a plate of its own. `today` is a `column`, so its two widgets stand bare. Were `today`
+a list of the same kind of row, it would be `rows`: one plate around all of them, a line between.
 
 ## Words on the screen
 
