@@ -198,6 +198,7 @@ export function laidRegion(root, at, given, { ask, isFloating = false, viewportP
 		edges: allEdges(pad),
 		plates,
 		underSurface: isPainted(worn) ? worn.surface : NO_SURFACE,
+		regionRole: root.of[at]?.role ?? null,
 		level: 0,
 		viewportPx,
 	});
@@ -518,9 +519,20 @@ function laidRow(node, width, how, sized) {
 	};
 }
 
+export const REGIONS_THAT_PLATE = ["indicators"];
+const ROLES_LEFT_BARE = [TEXT_ROLE, "layout", "control", "navigation"];
+
+export function wornInRegion(leaf, how) {
+	if (leaf.surface !== undefined) return leaf;
+	if (!REGIONS_THAT_PLATE.includes(how.regionRole)) return leaf;
+	if (how.underSurface !== NO_SURFACE) return leaf;
+	if (ROLES_LEFT_BARE.includes(how.ask(leaf.id).role)) return leaf;
+	return { ...leaf, surface: GROUP };
+}
+
 export function laid(node, width, how) {
 	const held = { path: [], edges: allEdges(0), plates: 0, underSurface: NO_SURFACE, level: 0, ...how };
-	if (!isBox(node)) return laidLeaf(node, width, held);
+	if (!isBox(node)) return laidLeaf(wornInRegion(node, held), width, held);
 	const inner = width - 2 * insetOf(node);
 	if (node.dir === SWAP) return laidSwap(node, width, inner, held);
 	if (node.dir === COLUMN) return laidColumn(node, width, inner, held);

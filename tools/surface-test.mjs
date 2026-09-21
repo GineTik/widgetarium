@@ -165,6 +165,46 @@ check("a leaf inside the one group is told the one", [shallow.plates, shallow.un
 check("and the cell hands the kit exactly that", platesAtCell(deep), { surface: "group", levels: 2, ownPlates: 0 });
 check("so a widget under two groups may paint no plate of its own", plateRefusal(platesAtCell(deep), "group").law, "5");
 check("while one group above still leaves it a plate", plateRefusal(platesAtCell(shallow), "group"), null);
+console.log("\n— an indicators region lays a group on each widget in it —\n");
+
+const REGION_ROLE_OF = { note: "text", stat: "indicator", pick: "control", own: "indicator", inGroup: "indicator" };
+const askRole = (id) => ({ role: REGION_ROLE_OF[id] });
+const aside = (role) =>
+	laidRegion(
+		{
+			dir: "row",
+			of: [
+				{
+					dir: "column",
+					role,
+					of: [
+						{ id: "note" },
+						{ dir: "column", name: "Numbers", of: [{ id: "stat" }, { id: "pick" }] },
+						{ id: "own", surface: "none" },
+						{ dir: "column", surface: "group", of: [{ id: "inGroup" }] },
+					],
+				},
+			],
+		},
+		0,
+		320,
+		{ ask: askRole },
+	).node;
+const wornIn = (node) => (node.kind === "leaf" ? [[node.id, node.surface ?? null]] : node.of.flatMap(wornIn));
+check(
+	"a widget in it wears a group however deep its section, a heading and a control stay bare",
+	Object.fromEntries(wornIn(aside("indicators"))),
+	{ note: null, stat: "group", pick: null, own: "none", inGroup: null },
+);
+check("the same region under another role lays nothing", Object.fromEntries(wornIn(aside("collection"))), {
+	note: null,
+	stat: null,
+	pick: null,
+	own: "none",
+	inGroup: null,
+});
+check("the laid group counts as the widget's plate", aside("indicators").of[1].of[0].plates, 1);
+
 const noPlates = laidRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "flat" }] }] }, 0, 600, {
 	ask: () => ({}),
 });
