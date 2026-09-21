@@ -43,7 +43,9 @@
 			"control": "json",
 			"label": "Entry",
 			"hint": "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"at": "14:32:07",
@@ -54,7 +56,9 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

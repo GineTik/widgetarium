@@ -44,7 +44,10 @@
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every choice is a record. Bind a view box and it offers the views it holds.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -80,12 +83,17 @@
 			"of": "options",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/view-group/selection"
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

@@ -3,7 +3,19 @@
 	"api": 2,
 	"title": "View tabs",
 	"description": "A row of tabs that picks which view a view group draws.",
-	"keywords": ["view", "views", "tabs", "switch", "kanban", "table", "picker", "navigation", "bar", "modes", "layout"],
+	"keywords": [
+		"view",
+		"views",
+		"tabs",
+		"switch",
+		"kanban",
+		"table",
+		"picker",
+		"navigation",
+		"bar",
+		"modes",
+		"layout"
+	],
 	"role": "control",
 	"size": {
 		"collapseBelowPx": 90,
@@ -24,7 +36,10 @@
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -58,12 +73,17 @@
 			"of": "options",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/view-group/selection"
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

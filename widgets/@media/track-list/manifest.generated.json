@@ -75,7 +75,14 @@
 			"default": "@media/track-row",
 			"surface": "group",
 			"gives": {
-				"track": ["title", "artist", "album", "addedAt", "duration", "favourite"]
+				"track": [
+					"title",
+					"artist",
+					"album",
+					"addedAt",
+					"duration",
+					"favourite"
+				]
 			}
 		}
 	},
@@ -84,37 +91,65 @@
 			"kind": "collection",
 			"label": "Tracks",
 			"hint": "The notes this list draws, one row each. Every field may be missing — a folder of loose recordings is the normal case.",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "text",
-					"aka": ["name", "track", "song"]
+					"aka": [
+						"name",
+						"track",
+						"song"
+					]
 				},
 				"artist": {
 					"label": "Artist",
 					"type": "text",
-					"aka": ["artists", "performer", "by"]
+					"aka": [
+						"artists",
+						"performer",
+						"by"
+					]
 				},
 				"album": {
 					"label": "Album",
 					"type": "text",
-					"aka": ["record", "release"]
+					"aka": [
+						"record",
+						"release"
+					]
 				},
 				"addedAt": {
 					"label": "Added",
 					"type": "date",
-					"aka": ["added", "dateAdded", "created"]
+					"aka": [
+						"added",
+						"dateAdded",
+						"created"
+					]
 				},
 				"duration": {
 					"label": "Duration",
 					"type": "text",
-					"aka": ["length", "time", "runtime"]
+					"aka": [
+						"length",
+						"time",
+						"runtime"
+					]
 				},
 				"favourite": {
 					"label": "Favourite",
 					"type": "boolean",
-					"aka": ["favorite", "liked", "starred", "loved"]
+					"aka": [
+						"favorite",
+						"liked",
+						"starred",
+						"loved"
+					]
 				}
 			},
 			"sort": [
@@ -133,7 +168,10 @@
 			"label": "Selected track",
 			"hint": "Which track is picked. A player bound to this plays whatever the list picks.",
 			"of": "tracks",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"playing": {
 			"kind": "value",
@@ -141,7 +179,9 @@
 			"label": "Playing track",
 			"hint": "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
 			"of": "tracks",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"wants": "@media/player/playing"
 		},
 		"filter": {
@@ -150,7 +190,10 @@
 			"type": "line",
 			"label": "Filter",
 			"hint": "Only tracks whose title holds these words are listed. Bind a search field and the two move together.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			},
@@ -162,14 +205,20 @@
 			"type": "number",
 			"label": "Tracks per page",
 			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 50
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@media/track-row"]
+	"widgetDependencies": [
+		"@media/track-row"
+	]
 }

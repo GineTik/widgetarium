@@ -191,16 +191,31 @@
 		"log": {
 			"kind": "collection",
 			"label": "Log",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"days": {
 					"type": "date",
 					"many": true,
-					"aka": ["entries", "dates", "log", "checkins"]
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins"
+					]
 				},
 				"done": {
 					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
 				}
 			},
 			"default": {
@@ -214,14 +229,18 @@
 			"hint": "One habit only. Nothing picked draws all of them.",
 			"of": "log",
 			"field": "name",
-			"writes": ["get"]
+			"writes": [
+				"get"
+			]
 		},
 		"year": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Year, or 0 for this one",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -232,7 +251,9 @@
 			"type": "boolean",
 			"label": "Round cells instead of square",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -242,14 +263,18 @@
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

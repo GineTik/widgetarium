@@ -57,7 +57,10 @@
 			"of": "holds",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"isTabsShown": {
 			"kind": "value",
@@ -65,14 +68,21 @@
 			"type": "boolean",
 			"label": "Show the tab row",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@default/archived-columns", "@default/kanban-board"]
+	"widgetDependencies": [
+		"@default/archived-columns",
+		"@default/kanban-board"
+	]
 }

@@ -78,7 +78,12 @@
 			"default": "@flow/report-figure",
 			"surface": "none",
 			"gives": {
-				"source": ["caption", "image", "alt", "drawing"]
+				"source": [
+					"caption",
+					"image",
+					"alt",
+					"drawing"
+				]
 			}
 		}
 	},
@@ -89,7 +94,9 @@
 			"type": "line",
 			"label": "Report",
 			"hint": "The prose of the report, typed here or bound to a note. Headings, lists and links work as they do in a note.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -98,27 +105,46 @@
 			"kind": "collection",
 			"label": "Figures",
 			"hint": "One record per figure, each drawn by the widget in the figure slot.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"caption": {
 					"label": "Caption",
 					"type": "text",
-					"aka": ["title", "label", "legend"]
+					"aka": [
+						"title",
+						"label",
+						"legend"
+					]
 				},
 				"image": {
 					"label": "Image",
 					"type": "text",
-					"aka": ["picture", "screenshot", "file", "shot"]
+					"aka": [
+						"picture",
+						"screenshot",
+						"file",
+						"shot"
+					]
 				},
 				"alt": {
 					"label": "Alt text",
 					"type": "text",
-					"aka": ["alt-text", "description"]
+					"aka": [
+						"alt-text",
+						"description"
+					]
 				},
 				"drawing": {
 					"label": "Drawing",
 					"type": "text",
-					"aka": ["diagram", "chart", "sketch"]
+					"aka": [
+						"diagram",
+						"chart",
+						"sketch"
+					]
 				}
 			},
 			"default": {
@@ -129,22 +155,38 @@
 			"kind": "collection",
 			"label": "Test plan",
 			"hint": "One record per step: what to press, and what should happen when it is pressed.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"step": {
 					"label": "Step",
 					"type": "text",
-					"aka": ["name", "title", "case", "action"]
+					"aka": [
+						"name",
+						"title",
+						"case",
+						"action"
+					]
 				},
 				"expect": {
 					"label": "What should happen",
 					"type": "text",
-					"aka": ["expected", "result", "outcome"]
+					"aka": [
+						"expected",
+						"result",
+						"outcome"
+					]
 				},
 				"done": {
 					"label": "Checked",
 					"type": "boolean",
-					"aka": ["complete", "passed", "verified"]
+					"aka": [
+						"complete",
+						"passed",
+						"verified"
+					]
 				}
 			},
 			"default": {
@@ -155,17 +197,28 @@
 			"kind": "collection",
 			"label": "What was fixed",
 			"hint": "One record per fix, with the file it was made in.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"title": {
 					"label": "Fix",
 					"type": "text",
-					"aka": ["name", "summary", "what"]
+					"aka": [
+						"name",
+						"summary",
+						"what"
+					]
 				},
 				"where": {
 					"label": "Where",
 					"type": "text",
-					"aka": ["file", "path", "location"]
+					"aka": [
+						"file",
+						"path",
+						"location"
+					]
 				}
 			},
 			"default": {
@@ -178,7 +231,9 @@
 			"type": "number",
 			"label": "Reading width, in characters",
 			"hint": "How wide the prose is allowed to run. A figure ignores it and takes the whole tile.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 68
 			}
@@ -189,14 +244,20 @@
 			"type": "number",
 			"label": "Test steps per page",
 			"hint": "How many steps of the test plan are drawn at once.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 8
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@flow/report-figure"]
+	"widgetDependencies": [
+		"@flow/report-figure"
+	]
 }

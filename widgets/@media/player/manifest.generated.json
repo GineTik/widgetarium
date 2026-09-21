@@ -76,37 +76,68 @@
 			"kind": "collection",
 			"label": "Tracks",
 			"hint": "The queue. One note per track, in the order the bound folder is sorted.",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "text",
-					"aka": ["track", "song", "heading"]
+					"aka": [
+						"track",
+						"song",
+						"heading"
+					]
 				},
 				"artist": {
 					"label": "Artist",
 					"type": "text",
-					"aka": ["performer", "band", "author", "by"]
+					"aka": [
+						"performer",
+						"band",
+						"author",
+						"by"
+					]
 				},
 				"album": {
 					"label": "Album",
 					"type": "text",
-					"aka": ["release", "record"]
+					"aka": [
+						"release",
+						"record"
+					]
 				},
 				"cover": {
 					"label": "Cover",
 					"type": "text",
-					"aka": ["art", "artwork", "image", "thumbnail", "picture"]
+					"aka": [
+						"art",
+						"artwork",
+						"image",
+						"thumbnail",
+						"picture"
+					]
 				},
 				"duration": {
 					"label": "Duration",
 					"type": "number",
-					"aka": ["length", "runtime", "seconds"]
+					"aka": [
+						"length",
+						"runtime",
+						"seconds"
+					]
 				},
 				"favourite": {
 					"label": "Favourite",
 					"type": "boolean",
-					"aka": ["favorite", "loved", "starred", "liked"]
+					"aka": [
+						"favorite",
+						"loved",
+						"starred",
+						"liked"
+					]
 				}
 			},
 			"default": {
@@ -119,7 +150,10 @@
 			"label": "Playing",
 			"hint": "Which track is loaded. Bind a queue beside it and the two move together.",
 			"of": "tracks",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			}
@@ -129,7 +163,10 @@
 			"control": "memory",
 			"label": "Playing state",
 			"hint": "Whether the transport stands at play or at pause.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -140,7 +177,10 @@
 			"control": "memory",
 			"label": "Position",
 			"hint": "How far into the track the transport stands, in seconds.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": 0
@@ -151,7 +191,10 @@
 			"control": "memory",
 			"label": "Volume",
 			"hint": "The level the transport is set to, from nothing to full.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": 70
@@ -162,7 +205,10 @@
 			"control": "memory",
 			"label": "Shuffle",
 			"hint": "Whether the next track is the one after this or one drawn at random.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -173,7 +219,10 @@
 			"control": "memory",
 			"label": "Repeat",
 			"hint": "What the end of the queue does: stop, start again, or hold on this track.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": "off"
@@ -181,7 +230,9 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

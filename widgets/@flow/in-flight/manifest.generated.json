@@ -93,7 +93,16 @@
 			"default": "@flow/flight-row",
 			"surface": "group",
 			"gives": {
-				"flight": ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"]
+				"flight": [
+					"title",
+					"status",
+					"stage",
+					"project",
+					"branch",
+					"activity",
+					"elapsed",
+					"who"
+				]
 			}
 		}
 	},
@@ -102,52 +111,84 @@
 			"kind": "collection",
 			"label": "Flights",
 			"hint": "One record per piece of work in flight. The newest start is drawn first.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "line",
-					"aka": ["summary", "headline"]
+					"aka": [
+						"summary",
+						"headline"
+					]
 				},
 				"status": {
 					"label": "Status",
 					"type": "line",
-					"aka": ["state", "result"]
+					"aka": [
+						"state",
+						"result"
+					]
 				},
 				"stage": {
 					"label": "Stage",
 					"type": "line",
-					"aka": ["phase", "step"]
+					"aka": [
+						"phase",
+						"step"
+					]
 				},
 				"project": {
 					"label": "Project",
 					"type": "line",
-					"aka": ["repo", "repository"]
+					"aka": [
+						"repo",
+						"repository"
+					]
 				},
 				"branch": {
 					"label": "Branch",
 					"type": "line",
-					"aka": ["head", "gitBranch"]
+					"aka": [
+						"head",
+						"gitBranch"
+					]
 				},
 				"activity": {
 					"label": "Activity",
 					"type": "line",
-					"aka": ["doing", "detail"]
+					"aka": [
+						"doing",
+						"detail"
+					]
 				},
 				"startedAt": {
 					"label": "Started at",
 					"type": "datetime",
-					"aka": ["started", "since", "begun"]
+					"aka": [
+						"started",
+						"since",
+						"begun"
+					]
 				},
 				"elapsed": {
 					"label": "Elapsed",
 					"type": "line",
-					"aka": ["duration", "runtime"]
+					"aka": [
+						"duration",
+						"runtime"
+					]
 				},
 				"who": {
 					"label": "Who",
 					"type": "line",
-					"aka": ["owner", "assignee", "agent"]
+					"aka": [
+						"owner",
+						"assignee",
+						"agent"
+					]
 				}
 			},
 			"sort": [
@@ -166,7 +207,10 @@
 			"label": "Selected flight",
 			"hint": "Which row is picked. A detail tile that picks from the same list follows it.",
 			"of": "flights",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"pageSize": {
 			"kind": "value",
@@ -174,14 +218,20 @@
 			"type": "number",
 			"label": "Rows per page",
 			"hint": "How many rows are read at once, and how many more each press adds.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 12
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@flow/flight-row"]
+	"widgetDependencies": [
+		"@flow/flight-row"
+	]
 }

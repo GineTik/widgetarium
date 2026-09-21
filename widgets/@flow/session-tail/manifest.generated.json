@@ -65,7 +65,11 @@
 			"default": "@flow/log-line",
 			"surface": "none",
 			"gives": {
-				"entry": ["at", "text", "tone"]
+				"entry": [
+					"at",
+					"text",
+					"tone"
+				]
 			}
 		}
 	},
@@ -74,22 +78,43 @@
 			"kind": "collection",
 			"label": "Lines",
 			"hint": "The log this draws, newest first. Each row is one line: when it was written, what it says, how it went.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"at": {
 					"label": "Time",
 					"type": "text",
-					"aka": ["time", "timestamp", "when", "ts", "date"]
+					"aka": [
+						"time",
+						"timestamp",
+						"when",
+						"ts",
+						"date"
+					]
 				},
 				"text": {
 					"label": "Text",
 					"type": "text",
-					"aka": ["line", "message", "body", "content", "output"]
+					"aka": [
+						"line",
+						"message",
+						"body",
+						"content",
+						"output"
+					]
 				},
 				"tone": {
 					"label": "Tone",
 					"type": "text",
-					"aka": ["level", "kind", "severity", "status", "result"]
+					"aka": [
+						"level",
+						"kind",
+						"severity",
+						"status",
+						"result"
+					]
 				}
 			},
 			"sort": [
@@ -124,7 +149,9 @@
 			"type": "number",
 			"label": "Lines kept",
 			"hint": "How many of the newest lines are held on screen. Older ones stay in the source and are counted, not drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 200
 			}
@@ -134,7 +161,10 @@
 			"control": "memory",
 			"label": "Follow the newest line",
 			"hint": "Whether the view sticks to the end. It lets go when the reader scrolls away and takes hold again on a press.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": true
@@ -142,7 +172,11 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@flow/log-line"]
+	"widgetDependencies": [
+		"@flow/log-line"
+	]
 }

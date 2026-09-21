@@ -28,7 +28,11 @@
 			"w": 3,
 			"h": 1
 		},
-		"properties": ["Status", "Priority", "Assignees"],
+		"properties": [
+			"Status",
+			"Priority",
+			"Assignees"
+		],
 		"props": {
 			"tasks": {
 				"rows": [
@@ -37,21 +41,27 @@
 						"title": "Design the onboarding flow",
 						"status": "To Do",
 						"priority": "P1",
-						"assignees": ["Alex Morgan"]
+						"assignees": [
+							"Alex Morgan"
+						]
 					},
 					{
 						"path": "preview/2.md",
 						"title": "Build the board layout engine",
 						"status": "Doing",
 						"priority": "P1",
-						"assignees": ["Dana Reid"]
+						"assignees": [
+							"Dana Reid"
+						]
 					},
 					{
 						"path": "preview/3.md",
 						"title": "Ship the colour token set",
 						"status": "Done",
 						"priority": "P2",
-						"assignees": ["Kai Lawson"]
+						"assignees": [
+							"Kai Lawson"
+						]
 					}
 				]
 			}
@@ -64,7 +74,10 @@
 		"tasks": {
 			"kind": "collection",
 			"label": "Tasks",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"where": [
 				{
 					"prop": "board",
@@ -82,7 +95,10 @@
 			"kind": "collection",
 			"label": "Filter by",
 			"hint": "The properties offered. Empty offers what the board names or the tasks carry.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"prop": {
 					"label": "Property",
@@ -108,7 +124,9 @@
 			"type": "line",
 			"label": "Open by default",
 			"hint": "Whose choices unfold on opening. Name none and it opens folded.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -117,7 +135,10 @@
 			"kind": "collection",
 			"label": "Board properties",
 			"hint": "The properties this board names. Empty offers what the tasks carry.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"name": {
 					"label": "Property",
@@ -135,7 +156,10 @@
 			"label": "Chosen filters",
 			"hint": "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
 			"shape": "conditions",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": {}
@@ -143,7 +167,9 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

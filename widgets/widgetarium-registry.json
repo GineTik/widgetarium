@@ -23,6 +23,7 @@
 		{ "name": "property-coverage" },
 		{ "name": "reminder" },
 		{ "name": "search-input" },
+		{ "name": "section" },
 		{ "name": "segmented-switch" },
 		{ "name": "streak" },
 		{ "name": "table" },

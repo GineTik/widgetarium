@@ -122,7 +122,14 @@
 			"kind": "collection",
 			"label": "Cards",
 			"hint": "The things being ranked. A folder of notes, or a list typed into the tile.",
-			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove",
+				"replace"
+			],
 			"describes": {
 				"name": {
 					"label": "Name",
@@ -132,17 +139,30 @@
 				"tier": {
 					"label": "Row",
 					"type": "text",
-					"aka": ["rank", "grade", "bucket"]
+					"aka": [
+						"rank",
+						"grade",
+						"bucket"
+					]
 				},
 				"order": {
 					"label": "Order",
 					"type": "number",
-					"aka": ["position", "sort", "index"]
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
 				},
 				"picture": {
 					"label": "Picture",
 					"type": "text",
-					"aka": ["image", "avatar", "cover", "icon"]
+					"aka": [
+						"image",
+						"avatar",
+						"cover",
+						"icon"
+					]
 				}
 			},
 			"default": {
@@ -154,23 +174,41 @@
 			"control": "json",
 			"label": "Rows",
 			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
-			"writes": ["get", "list", "create", "update", "remove", "replace"],
+			"writes": [
+				"get",
+				"list",
+				"create",
+				"update",
+				"remove",
+				"replace"
+			],
 			"describes": {
 				"label": {
 					"label": "Name",
 					"type": "text",
 					"required": true,
-					"aka": ["name", "title", "tier"]
+					"aka": [
+						"name",
+						"title",
+						"tier"
+					]
 				},
 				"tone": {
 					"label": "Colour",
 					"type": "text",
-					"aka": ["colour", "color"]
+					"aka": [
+						"colour",
+						"color"
+					]
 				},
 				"order": {
 					"label": "Order",
 					"type": "number",
-					"aka": ["position", "sort", "index"]
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
 				}
 			},
 			"default": {}
@@ -180,7 +218,10 @@
 			"control": "line",
 			"type": "line",
 			"label": "Title",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": "Tier list"
 			}
@@ -192,14 +233,20 @@
 			"label": "Card size",
 			"hint": "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
 			"design": true,
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": 64
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

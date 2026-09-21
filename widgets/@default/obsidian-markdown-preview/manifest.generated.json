@@ -52,7 +52,9 @@
 			"type": "line",
 			"label": "Source",
 			"hint": "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -63,7 +65,9 @@
 			"type": "boolean",
 			"label": "Collapse long text",
 			"hint": "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -74,7 +78,9 @@
 			"type": "number",
 			"label": "Collapsed height, in pixels",
 			"hint": "How much of long text shows before Show more is pressed.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 240
 			}
@@ -85,14 +91,19 @@
 			"type": "number",
 			"label": "Show more step, in pixels",
 			"hint": "How much each press of Show more opens. 0 opens all of it at once.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

@@ -3,7 +3,11 @@
 		"boards": {
 			"kind": "collection",
 			"label": "Boards",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"default": {
 				"rows": []
 			}
@@ -16,7 +20,9 @@
 			"of": "boards",
 			"field": "board",
 			"fallback": "first",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"wants": "@default/editable-tabs/selection"
 		},
 		"board": {
@@ -26,7 +32,10 @@
 			"hint": "The board whose archived columns are listed.",
 			"picks": "selection",
 			"of": "boards",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/kanban-board/board"
 		}
 	},
@@ -35,7 +44,10 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes to split up.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"default": {
 				"rows": []
 			}
@@ -46,7 +58,9 @@
 			"type": "line",
 			"label": "Group by",
 			"hint": "Write folder to split by the folder a note sits in, or the name of a property to split by its value.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "folder"
 			}
@@ -57,8 +71,12 @@
 			"type": "number",
 			"label": "Bars shown at first",
 			"hint": "How many of the biggest groups get a bar before anything is pressed.",
-			"aka": ["shown"],
-			"writes": ["get"],
+			"aka": [
+				"shown"
+			],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 8
 			}
@@ -69,7 +87,9 @@
 			"type": "number",
 			"label": "Bars added by a press",
 			"hint": "How many more bars each press of Show more draws.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 8
 			}
@@ -80,7 +100,9 @@
 			"type": "boolean",
 			"label": "Show more button",
 			"hint": "Whether a press may draw past the first bars. Without it the rest are summed into one line.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
@@ -92,7 +114,9 @@
 			"control": "number",
 			"type": "number",
 			"label": "Lines shown at first, and added by each press",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 30
 			}
@@ -102,7 +126,9 @@
 			"control": "number",
 			"type": "number",
 			"label": "Largest file that may be shown, in KB",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 256
 			}
@@ -113,8 +139,16 @@
 			"kind": "collection",
 			"label": "Tabs",
 			"hint": "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
-			"aka": ["records"],
-			"writes": ["list", "get", "create", "update", "remove"],
+			"aka": [
+				"records"
+			],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
 			"describes": {
 				"name": {
 					"label": "Label",
@@ -140,7 +174,9 @@
 			"type": "line",
 			"label": "Label field",
 			"hint": "Which field is written on a tab. Without it a note shows its own name.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "name"
 			}
@@ -151,7 +187,9 @@
 			"type": "line",
 			"label": "Value field",
 			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "board"
 			}
@@ -164,7 +202,10 @@
 			"of": "tabs",
 			"fieldFrom": "value",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		}
 	},
 	"@default/feed": {
@@ -172,7 +213,10 @@
 			"kind": "collection",
 			"label": "Items",
 			"hint": "The records the feed draws, one after another, newest first when the source is sorted that way.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"default": {
 				"rows": []
 			}
@@ -183,7 +227,9 @@
 			"type": "number",
 			"label": "Items per load",
 			"hint": "How many more are drawn each time the end of the feed comes into view.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 10
 			}
@@ -193,7 +239,10 @@
 		"tasks": {
 			"kind": "collection",
 			"label": "Tasks",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"where": [
 				{
 					"prop": "board",
@@ -211,7 +260,10 @@
 			"kind": "collection",
 			"label": "Filter by",
 			"hint": "The properties offered. Empty offers what the board names or the tasks carry.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"prop": {
 					"label": "Property",
@@ -237,7 +289,9 @@
 			"type": "line",
 			"label": "Open by default",
 			"hint": "Whose choices unfold on opening. Name none and it opens folded.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -246,7 +300,10 @@
 			"kind": "collection",
 			"label": "Board properties",
 			"hint": "The properties this board names. Empty offers what the tasks carry.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"name": {
 					"label": "Property",
@@ -264,7 +321,10 @@
 			"label": "Chosen filters",
 			"hint": "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
 			"shape": "conditions",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": {}
@@ -275,16 +335,31 @@
 		"log": {
 			"kind": "collection",
 			"label": "Log",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"days": {
 					"type": "date",
 					"many": true,
-					"aka": ["entries", "dates", "log", "checkins"]
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins"
+					]
 				},
 				"done": {
 					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
 				}
 			},
 			"default": {
@@ -298,14 +373,18 @@
 			"hint": "One habit only. Nothing picked draws all of them.",
 			"of": "log",
 			"field": "name",
-			"writes": ["get"]
+			"writes": [
+				"get"
+			]
 		},
 		"year": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Year, or 0 for this one",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -316,7 +395,9 @@
 			"type": "boolean",
 			"label": "Round cells instead of square",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -326,7 +407,9 @@
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
@@ -337,26 +420,40 @@
 			"kind": "collection",
 			"label": "Lines",
 			"hint": "One line per point. Each carries its own icon and colour, and reads as markdown.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"text": {
 					"label": "Text",
 					"hint": "The line itself, as markdown: **bold**, `code`, a [[link]] and the rest all draw.",
 					"type": "text",
 					"required": true,
-					"aka": ["body", "line", "description"]
+					"aka": [
+						"body",
+						"line",
+						"description"
+					]
 				},
 				"icon": {
 					"label": "Icon",
 					"hint": "The icon inside the disc, under the name the icon picker gives it — tick, close, alarm-clock. A name nothing answers to draws a dot.",
 					"type": "line",
-					"aka": ["glyph", "symbol"]
+					"aka": [
+						"glyph",
+						"symbol"
+					]
 				},
 				"tone": {
 					"label": "Colour",
 					"hint": "The colour behind the icon: neutral, accent, success, warning, error, info, note, standout or highlight. Any other word draws neutral.",
 					"type": "line",
-					"aka": ["colour", "color", "status"]
+					"aka": [
+						"colour",
+						"color",
+						"status"
+					]
 				}
 			},
 			"default": {
@@ -380,7 +477,9 @@
 			"type": "boolean",
 			"label": "Number the lines",
 			"hint": "Off, every line shows its own icon. On, the discs count the lines instead — 1, 2, 3 — and keep their colours.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -391,7 +490,9 @@
 			"type": "boolean",
 			"label": "Fill the discs",
 			"hint": "Off, a disc wears a pale wash of its colour. On, it is filled with the colour itself and the icon or number turns white.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -401,7 +502,13 @@
 		"tasks": {
 			"kind": "collection",
 			"label": "Tasks",
-			"writes": ["list", "get", "create", "update", "remove"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
 			"where": [
 				{
 					"prop": "board",
@@ -429,7 +536,13 @@
 		"boards": {
 			"kind": "collection",
 			"label": "Boards",
-			"writes": ["list", "get", "create", "update", "repairIds"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"repairIds"
+			],
 			"default": {
 				"rows": []
 			}
@@ -442,7 +555,10 @@
 			"of": "boards",
 			"field": "board",
 			"fallback": "first",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/editable-tabs/selection"
 		},
 		"board": {
@@ -452,7 +568,10 @@
 			"hint": "The board this draws: its columns, their order and which of them are archived.",
 			"picks": "selection",
 			"of": "boards",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": {
 					"columns": [
@@ -475,14 +594,19 @@
 			"label": "Opened task",
 			"hint": "Which card is open, as a box. The board draws it full size itself.",
 			"of": "tasks",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"groupBy": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Group tasks by property",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "status"
 			}
@@ -493,7 +617,11 @@
 			"kind": "collection",
 			"label": "Rows",
 			"hint": "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"default": {
 				"rows": []
 			}
@@ -504,7 +632,9 @@
 			"type": "line",
 			"label": "Handed as",
 			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes commit.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "task"
 			}
@@ -515,7 +645,10 @@
 			"label": "Selected row",
 			"hint": "Which row is picked. A detail tile reading the same collection follows it.",
 			"of": "rows",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"filter": {
 			"kind": "value",
@@ -523,7 +656,10 @@
 			"type": "line",
 			"label": "Filter",
 			"hint": "Only rows whose filtered field holds these words are listed. Bind a search field and the two move together.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			},
@@ -535,7 +671,9 @@
 			"type": "line",
 			"label": "Filtered field",
 			"hint": "The field the filter is matched in.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "title"
 			}
@@ -546,7 +684,9 @@
 			"type": "number",
 			"label": "Rows per page",
 			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 20
 			}
@@ -557,7 +697,9 @@
 			"type": "line",
 			"label": "Heading",
 			"hint": "A line above the rows. Left empty, none is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -567,7 +709,13 @@
 		"habits": {
 			"kind": "collection",
 			"label": "Logs",
-			"writes": ["list", "get", "create", "update", "remove"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
 			"default": {
 				"path": "Habits"
 			}
@@ -580,14 +728,19 @@
 			"of": "habits",
 			"field": "name",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"metric": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "streak · best · total · rate · goal",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "streak"
 			}
@@ -597,7 +750,9 @@
 			"control": "number",
 			"type": "number",
 			"label": "Days the rate looks back over",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 30
 			}
@@ -608,7 +763,9 @@
 			"type": "line",
 			"label": "Look: default · stat1",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "default"
 			}
@@ -619,19 +776,42 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "One note per reading. Each carries a date and an amount.",
-			"writes": ["list", "get", "create", "update", "remove"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
 			"describes": {
 				"amount": {
 					"type": "number",
-					"aka": ["value", "count", "total", "kept", "score", "done"]
+					"aka": [
+						"value",
+						"count",
+						"total",
+						"kept",
+						"score",
+						"done"
+					]
 				},
 				"date": {
 					"type": "date",
-					"aka": ["created", "day", "when", "on"]
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
 				},
 				"note": {
 					"type": "text",
-					"aka": ["text", "comment", "description", "body"]
+					"aka": [
+						"text",
+						"comment",
+						"description",
+						"body"
+					]
 				}
 			},
 			"default": {
@@ -643,7 +823,9 @@
 			"control": "line",
 			"type": "line",
 			"label": "What the number is",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Total"
 			}
@@ -653,7 +835,9 @@
 			"control": "line",
 			"type": "line",
 			"label": "Unit the amounts are in",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -664,7 +848,9 @@
 			"type": "line",
 			"label": "good · bad",
 			"hint": "Whether a rise reads as good or as bad.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "good"
 			}
@@ -673,7 +859,10 @@
 			"kind": "collection",
 			"label": "Periods",
 			"hint": "Every window the card can read over.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -710,7 +899,10 @@
 			"of": "periods",
 			"field": "label",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"period": {
 			"kind": "value",
@@ -718,14 +910,19 @@
 			"label": "The period",
 			"picks": "periodPick",
 			"of": "periods",
-			"writes": ["get"]
+			"writes": [
+				"get"
+			]
 		},
 		"view": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "curve · bars",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": "curve"
 			}
@@ -736,25 +933,51 @@
 			"kind": "collection",
 			"label": "Days",
 			"hint": "A folder of habit notes, or a folder of day notes for a single habit.",
-			"aka": ["habits"],
-			"writes": ["list", "get", "update", "create"],
+			"aka": [
+				"habits"
+			],
+			"writes": [
+				"list",
+				"get",
+				"update",
+				"create"
+			],
 			"describes": {
 				"days": {
 					"type": "date",
 					"many": true,
-					"aka": ["entries", "dates", "log", "checkins"]
+					"aka": [
+						"entries",
+						"dates",
+						"log",
+						"checkins"
+					]
 				},
 				"done": {
 					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
 				},
 				"date": {
 					"type": "date",
-					"aka": ["created", "day", "when", "on"]
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
 				},
 				"title": {
 					"type": "text",
-					"aka": ["name"]
+					"aka": [
+						"name"
+					]
 				}
 			},
 			"default": {
@@ -769,14 +992,18 @@
 			"of": "days",
 			"field": "name",
 			"fallback": "first",
-			"writes": ["get"]
+			"writes": [
+				"get"
+			]
 		},
 		"isWeekStartingMonday": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
@@ -791,7 +1018,9 @@
 			"type": "line",
 			"label": "Source",
 			"hint": "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -802,7 +1031,9 @@
 			"type": "boolean",
 			"label": "Collapse long text",
 			"hint": "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -813,7 +1044,9 @@
 			"type": "number",
 			"label": "Collapsed height, in pixels",
 			"hint": "How much of long text shows before Show more is pressed.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 240
 			}
@@ -824,7 +1057,9 @@
 			"type": "number",
 			"label": "Show more step, in pixels",
 			"hint": "How much each press of Show more opens. 0 opens all of it at once.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -835,7 +1070,10 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes whose properties are counted.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"default": {
 				"rows": []
 			}
@@ -846,8 +1084,12 @@
 			"type": "number",
 			"label": "Properties shown at first",
 			"hint": "How many of the most used properties get a row before anything is pressed.",
-			"aka": ["shown"],
-			"writes": ["get"],
+			"aka": [
+				"shown"
+			],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 10
 			}
@@ -858,7 +1100,9 @@
 			"type": "number",
 			"label": "Properties added by a press",
 			"hint": "How many more rows each press of Show more draws.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 10
 			}
@@ -869,7 +1113,9 @@
 			"type": "boolean",
 			"label": "Show more button",
 			"hint": "Whether a press may draw past the first rows. Without it the rest are named as a count.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
@@ -883,7 +1129,10 @@
 			"type": "line",
 			"label": "Query",
 			"hint": "What is typed. Bind another widget to it and it filters as you type.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			}
@@ -894,9 +1143,194 @@
 			"type": "line",
 			"label": "Placeholder",
 			"hint": "Shown while nothing is typed.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Search"
+			}
+		}
+	},
+	"@default/section": {
+		"heading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "What this part of the screen is.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": "Section"
+			}
+		},
+		"badgeTone": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "What the badge says it is",
+			"hint": "The colour a badge wears is its meaning: a count is neutral, a problem is an error.",
+			"design": true,
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": "neutral"
+			},
+			"options": [
+				{
+					"value": "neutral",
+					"label": "Neutral"
+				},
+				{
+					"value": "accent",
+					"label": "Accent"
+				},
+				{
+					"value": "success",
+					"label": "Going well"
+				},
+				{
+					"value": "warning",
+					"label": "Needs a look"
+				},
+				{
+					"value": "error",
+					"label": "Something is wrong"
+				},
+				{
+					"value": "info",
+					"label": "Information"
+				},
+				{
+					"value": "note",
+					"label": "A note"
+				},
+				{
+					"value": "standout",
+					"label": "Stands out"
+				},
+				{
+					"value": "highlight",
+					"label": "Highlighted"
+				}
+			]
+		},
+		"badge": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Badge",
+			"hint": "A count or a state, beside the heading. It says something about the body, never a filter.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": ""
+			}
+		},
+		"filling": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "What fills it",
+			"hint": "Placed: you put each widget in yourself. Per row: one widget is drawn again for every row of the data.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": "placed"
+			},
+			"options": [
+				{
+					"value": "placed",
+					"label": "Widgets I place"
+				},
+				{
+					"value": "per-row",
+					"label": "One widget per row of data"
+				}
+			]
+		},
+		"arrangement": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "How they stand",
+			"hint": "A column reads down with nothing under it. A row and a grid give each widget its own plate. Rows stand in one plate with a line between them.",
+			"design": true,
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": "column"
+			},
+			"options": [
+				{
+					"value": "column",
+					"label": "Down the column"
+				},
+				{
+					"value": "row",
+					"label": "Across the row, a plate each"
+				},
+				{
+					"value": "grid",
+					"label": "A grid that wraps, a plate each"
+				},
+				{
+					"value": "rows",
+					"label": "Rows in one plate"
+				}
+			]
+		},
+		"minWidthPx": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Narrowest a cell may be",
+			"hint": "The grid fits as many across as this allows, then wraps.",
+			"design": true,
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": 240
+			}
+		},
+		"items": {
+			"kind": "collection",
+			"label": "Rows to draw",
+			"hint": "Bind the folder whose notes this section draws. The widget in the slot draws one of them at a time.",
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Rows drawn",
+			"hint": "How many rows are drawn before the rest are asked for.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 24
 			}
 		}
 	},
@@ -905,7 +1339,10 @@
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every choice is a record. Bind a view box and it offers the views it holds.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -941,7 +1378,10 @@
 			"of": "options",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/view-group/selection"
 		}
 	},
@@ -949,16 +1389,35 @@
 		"days": {
 			"kind": "collection",
 			"label": "Days",
-			"aka": ["habits"],
-			"writes": ["list", "get", "update", "create"],
+			"aka": [
+				"habits"
+			],
+			"writes": [
+				"list",
+				"get",
+				"update",
+				"create"
+			],
 			"describes": {
 				"done": {
 					"type": "number",
-					"aka": ["kept", "value", "count", "steps", "amount", "score"]
+					"aka": [
+						"kept",
+						"value",
+						"count",
+						"steps",
+						"amount",
+						"score"
+					]
 				},
 				"date": {
 					"type": "date",
-					"aka": ["created", "day", "when", "on"]
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
 				}
 			},
 			"default": {
@@ -971,7 +1430,9 @@
 			"type": "line",
 			"label": "Habit name",
 			"hint": "What is written beside the emoji. Type one here, or take it from another widget's value.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Habit"
 			}
@@ -982,7 +1443,9 @@
 			"type": "line",
 			"label": "Emoji",
 			"hint": "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "smiling-face-with-halo"
 			}
@@ -993,7 +1456,10 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes the table draws, one row each. A value reading emoji:<name> or icon:<name> is drawn as that emoji or icon, with any words after it beside it.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"default": {
 				"rows": []
 			}
@@ -1002,7 +1468,10 @@
 			"kind": "collection",
 			"label": "Columns",
 			"hint": "Which properties get a column, in the order they are listed. Left empty, every property the records carry gets one.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"property": {
 					"label": "Property"
@@ -1021,7 +1490,9 @@
 			"type": "line",
 			"label": "Row title property",
 			"hint": "The property drawn in the bare first column that names each row. Left empty, the table has no such column.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1032,7 +1503,9 @@
 			"type": "boolean",
 			"label": "Yes and no",
 			"hint": "Whether a true or false value is drawn as Yes or No.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -1043,7 +1516,9 @@
 			"type": "number",
 			"label": "Rows shown at first",
 			"hint": "How many records get a row before Show more is pressed. Each press draws that many again.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 50
 			}
@@ -1055,7 +1530,9 @@
 			"label": "Fade the scrolling edges",
 			"hint": "Whether an edge the table carries on past dissolves, so there is something to say it scrolls.",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
@@ -1067,11 +1544,17 @@
 			"control": "json",
 			"label": "Task",
 			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": {
 					"title": "Design the onboarding flow",
-					"tags": ["design", "research"],
+					"tags": [
+						"design",
+						"research"
+					],
 					"tagTones": {
 						"design": "warning",
 						"research": "accent"
@@ -1081,7 +1564,11 @@
 					"progress": 60,
 					"due": "12 Aug",
 					"files": 2,
-					"initials": ["Alex Morgan", "Mia Tan", "Theo Ruiz"]
+					"initials": [
+						"Alex Morgan",
+						"Mia Tan",
+						"Theo Ruiz"
+					]
 				}
 			}
 		}
@@ -1093,7 +1580,9 @@
 			"type": "line",
 			"label": "Text",
 			"hint": "The line itself. Left empty, the widget draws nothing at all.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1104,7 +1593,9 @@
 			"type": "line",
 			"label": "Tone",
 			"hint": "One of label, value or caption. It decides the weight and the ink, never the plate.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "value"
 			}
@@ -1115,7 +1606,9 @@
 			"type": "number",
 			"label": "Heading level",
 			"hint": "Zero draws a plain line. One, two or three draw the line as a heading of that level.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -1126,7 +1619,9 @@
 			"type": "number",
 			"label": "Lines",
 			"hint": "How many lines the text may take before it is cut. Zero lets it run as long as it is.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -1137,7 +1632,14 @@
 			"kind": "collection",
 			"label": "Cards",
 			"hint": "The things being ranked. A folder of notes, or a list typed into the tile.",
-			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove",
+				"replace"
+			],
 			"describes": {
 				"name": {
 					"label": "Name",
@@ -1147,17 +1649,30 @@
 				"tier": {
 					"label": "Row",
 					"type": "text",
-					"aka": ["rank", "grade", "bucket"]
+					"aka": [
+						"rank",
+						"grade",
+						"bucket"
+					]
 				},
 				"order": {
 					"label": "Order",
 					"type": "number",
-					"aka": ["position", "sort", "index"]
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
 				},
 				"picture": {
 					"label": "Picture",
 					"type": "text",
-					"aka": ["image", "avatar", "cover", "icon"]
+					"aka": [
+						"image",
+						"avatar",
+						"cover",
+						"icon"
+					]
 				}
 			},
 			"default": {
@@ -1168,23 +1683,41 @@
 			"kind": "collection",
 			"label": "Rows",
 			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
-			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove",
+				"replace"
+			],
 			"describes": {
 				"label": {
 					"label": "Name",
 					"type": "text",
 					"required": true,
-					"aka": ["name", "title", "tier"]
+					"aka": [
+						"name",
+						"title",
+						"tier"
+					]
 				},
 				"tone": {
 					"label": "Colour",
 					"type": "text",
-					"aka": ["colour", "color"]
+					"aka": [
+						"colour",
+						"color"
+					]
 				},
 				"order": {
 					"label": "Order",
 					"type": "number",
-					"aka": ["position", "sort", "index"]
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
 				}
 			},
 			"default": {
@@ -1222,7 +1755,10 @@
 			"control": "line",
 			"type": "line",
 			"label": "Title",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": "Tier list"
 			}
@@ -1234,7 +1770,10 @@
 			"label": "Card size",
 			"hint": "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
 			"design": true,
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": 64
 			}
@@ -1246,7 +1785,10 @@
 			"control": "memory",
 			"label": "Open",
 			"hint": "Whether the box this opens is open. A box names it as its trigger, and reads it.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -1258,7 +1800,9 @@
 			"type": "line",
 			"label": "Icon",
 			"hint": "The icon drawn on the button, picked off the grid: the kit's own glyphs and all of Lucide.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "menu"
 			}
@@ -1269,7 +1813,9 @@
 			"type": "line",
 			"label": "Label",
 			"hint": "What a screen reader says the button does.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Open the panel"
 			}
@@ -1280,7 +1826,10 @@
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every section is a record. Bind a view box and it offers the views it holds.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -1319,7 +1868,10 @@
 			"of": "options",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/view-group/selection"
 		}
 	},
@@ -1332,7 +1884,10 @@
 			"of": "holds",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"isTabsShown": {
 			"kind": "value",
@@ -1340,7 +1895,9 @@
 			"type": "boolean",
 			"label": "Show the tab row",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
@@ -1351,7 +1908,10 @@
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -1385,7 +1945,10 @@
 			"of": "options",
 			"field": "value",
 			"fallback": "first",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/view-group/selection"
 		}
 	},
@@ -1395,7 +1958,9 @@
 			"control": "json",
 			"label": "Commit",
 			"hint": "The commit this row draws. Held in a tree it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"sha": "70a3c80f42",
@@ -1404,7 +1969,9 @@
 					"files": 21,
 					"added": 903,
 					"removed": 412,
-					"parents": ["83ab3d2e71"]
+					"parents": [
+						"83ab3d2e71"
+					]
 				}
 			}
 		}
@@ -1414,37 +1981,62 @@
 			"kind": "collection",
 			"label": "Files",
 			"hint": "One record per file the change touched. Bind a commit list beside this one and the two move together.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"path": {
 					"label": "Path",
 					"type": "line",
-					"aka": ["file", "filename", "filePath"]
+					"aka": [
+						"file",
+						"filename",
+						"filePath"
+					]
 				},
 				"added": {
 					"label": "Lines added",
 					"type": "number",
-					"aka": ["insertions", "additions"]
+					"aka": [
+						"insertions",
+						"additions"
+					]
 				},
 				"removed": {
 					"label": "Lines removed",
 					"type": "number",
-					"aka": ["deletions", "removals"]
+					"aka": [
+						"deletions",
+						"removals"
+					]
 				},
 				"change": {
 					"label": "Change",
 					"type": "line",
-					"aka": ["status", "kind", "changeType"]
+					"aka": [
+						"status",
+						"kind",
+						"changeType"
+					]
 				},
 				"from": {
 					"label": "Renamed from",
 					"type": "line",
-					"aka": ["oldPath", "previousPath", "renamedFrom"]
+					"aka": [
+						"oldPath",
+						"previousPath",
+						"renamedFrom"
+					]
 				},
 				"commit": {
 					"label": "Commit",
 					"type": "line",
-					"aka": ["sha", "revision", "hash"]
+					"aka": [
+						"sha",
+						"revision",
+						"hash"
+					]
 				}
 			},
 			"where": [
@@ -1472,7 +2064,10 @@
 			"label": "Selected file",
 			"hint": "Which file is picked. A diff standing beside this list binds to it and follows every press.",
 			"of": "files",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": null
 			}
@@ -1483,7 +2078,9 @@
 			"type": "line",
 			"label": "Heading",
 			"hint": "The words standing before the count. Left empty, only the count is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Files touched"
 			}
@@ -1494,7 +2091,9 @@
 			"type": "number",
 			"label": "Files shown",
 			"hint": "How many rows are read at once, and how many more each press adds.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 200
 			}
@@ -1506,7 +2105,9 @@
 			"control": "json",
 			"label": "File",
 			"hint": "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"filePath": "src/engine/catalogue-index.js",
@@ -1523,7 +2124,9 @@
 			"control": "json",
 			"label": "Flight",
 			"hint": "The work this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"title": "Rewrite the board tree reader",
@@ -1543,16 +2146,27 @@
 			"kind": "collection",
 			"label": "Commits",
 			"hint": "The commit records written for this branch, newest first. Only the sha and its parents are drawn.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"sha": {
 					"label": "Commit",
-					"aka": ["hash", "commit", "revision"]
+					"aka": [
+						"hash",
+						"commit",
+						"revision"
+					]
 				},
 				"parents": {
 					"label": "Parents",
 					"many": true,
-					"aka": ["parent", "parentShas", "ancestors"]
+					"aka": [
+						"parent",
+						"parentShas",
+						"ancestors"
+					]
 				}
 			},
 			"default": {
@@ -1565,7 +2179,9 @@
 			"type": "line",
 			"label": "Branch",
 			"hint": "The name of the branch these commits are on. Left empty, no name is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1576,7 +2192,9 @@
 			"type": "number",
 			"label": "Commits shown",
 			"hint": "How many of the newest commits the graph spans.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 40
 			}
@@ -1587,52 +2205,84 @@
 			"kind": "collection",
 			"label": "Flights",
 			"hint": "One record per piece of work in flight. The newest start is drawn first.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "line",
-					"aka": ["summary", "headline"]
+					"aka": [
+						"summary",
+						"headline"
+					]
 				},
 				"status": {
 					"label": "Status",
 					"type": "line",
-					"aka": ["state", "result"]
+					"aka": [
+						"state",
+						"result"
+					]
 				},
 				"stage": {
 					"label": "Stage",
 					"type": "line",
-					"aka": ["phase", "step"]
+					"aka": [
+						"phase",
+						"step"
+					]
 				},
 				"project": {
 					"label": "Project",
 					"type": "line",
-					"aka": ["repo", "repository"]
+					"aka": [
+						"repo",
+						"repository"
+					]
 				},
 				"branch": {
 					"label": "Branch",
 					"type": "line",
-					"aka": ["head", "gitBranch"]
+					"aka": [
+						"head",
+						"gitBranch"
+					]
 				},
 				"activity": {
 					"label": "Activity",
 					"type": "line",
-					"aka": ["doing", "detail"]
+					"aka": [
+						"doing",
+						"detail"
+					]
 				},
 				"startedAt": {
 					"label": "Started at",
 					"type": "datetime",
-					"aka": ["started", "since", "begun"]
+					"aka": [
+						"started",
+						"since",
+						"begun"
+					]
 				},
 				"elapsed": {
 					"label": "Elapsed",
 					"type": "line",
-					"aka": ["duration", "runtime"]
+					"aka": [
+						"duration",
+						"runtime"
+					]
 				},
 				"who": {
 					"label": "Who",
 					"type": "line",
-					"aka": ["owner", "assignee", "agent"]
+					"aka": [
+						"owner",
+						"assignee",
+						"agent"
+					]
 				}
 			},
 			"sort": [
@@ -1651,7 +2301,10 @@
 			"label": "Selected flight",
 			"hint": "Which row is picked. A detail tile that picks from the same list follows it.",
 			"of": "flights",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"pageSize": {
 			"kind": "value",
@@ -1659,7 +2312,9 @@
 			"type": "number",
 			"label": "Rows per page",
 			"hint": "How many rows are read at once, and how many more each press adds.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 12
 			}
@@ -1671,7 +2326,9 @@
 			"control": "json",
 			"label": "Entry",
 			"hint": "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"at": "14:32:07",
@@ -1688,7 +2345,9 @@
 			"type": "line",
 			"label": "Title",
 			"hint": "The one line a person reads first. Left empty, the notice says it has nothing to report.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1699,7 +2358,9 @@
 			"type": "text",
 			"label": "Body",
 			"hint": "The sentence under the title, for what the title could not hold.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1710,7 +2371,9 @@
 			"type": "line",
 			"label": "Icon",
 			"hint": "The glyph beside the text, picked off the grid. Left empty, no icon is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1721,7 +2384,9 @@
 			"type": "line",
 			"label": "Tone",
 			"hint": "One of neutral, info, success, warning or error. Neutral draws no background of its own.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "neutral"
 			}
@@ -1732,7 +2397,9 @@
 			"type": "line",
 			"label": "Action",
 			"hint": "What the button says. Left empty, the notice carries no button.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1742,7 +2409,10 @@
 			"control": "memory",
 			"label": "Pressed",
 			"hint": "Whether the action has been pressed. A box names it as its trigger, or another tile reads it by ref.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -1754,46 +2424,72 @@
 			"kind": "collection",
 			"label": "Questions",
 			"hint": "One record per question asked, each carrying the options offered, the answer chosen and the reason for it.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"question": {
 					"label": "Question",
 					"hint": "The question that was asked, in full.",
 					"type": "text",
 					"required": true,
-					"aka": ["asked", "prompt", "ask"]
+					"aka": [
+						"asked",
+						"prompt",
+						"ask"
+					]
 				},
 				"options": {
 					"label": "Options",
 					"hint": "Every option that was offered, as a list or separated by commas.",
 					"type": "text",
 					"many": true,
-					"aka": ["choices", "alternatives", "offered"]
+					"aka": [
+						"choices",
+						"alternatives",
+						"offered"
+					]
 				},
 				"answer": {
 					"label": "Answer",
 					"hint": "The option that was chosen. An answer naming none of them is drawn beside them, not dropped.",
 					"type": "line",
-					"aka": ["chosen", "decision", "picked"]
+					"aka": [
+						"chosen",
+						"decision",
+						"picked"
+					]
 				},
 				"reason": {
 					"label": "Reason",
 					"hint": "Why that answer won.",
 					"type": "text",
-					"aka": ["why", "rationale", "because"]
+					"aka": [
+						"why",
+						"rationale",
+						"because"
+					]
 				}
 			},
 			"default": {
 				"rows": [
 					{
 						"question": "Where does the loading threshold live?",
-						"options": ["one engine constant", "per widget", "per binding"],
+						"options": [
+							"one engine constant",
+							"per widget",
+							"per binding"
+						],
 						"answer": "one engine constant",
 						"reason": "One number a person can find and change, instead of three settings nobody tunes."
 					},
 					{
 						"question": "How many rows does a list hand over when nothing asked for a number?",
-						"options": ["all of them", "ten"],
+						"options": [
+							"all of them",
+							"ten"
+						],
 						"answer": "a hundred",
 						"reason": "Enough to fill a screen twice, few enough that a vault of a thousand notes cannot take the frame with it."
 					}
@@ -1807,7 +2503,9 @@
 			"control": "json",
 			"label": "Project",
 			"hint": "The project this card draws. Held in a grid it is handed down; standing alone it is the one bound here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"mark": "🧭",
@@ -1826,37 +2524,66 @@
 			"kind": "collection",
 			"label": "Projects",
 			"hint": "One note per project. Bind the folder they live in.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"mark": {
 					"label": "Mark",
 					"type": "line",
-					"aka": ["emoji", "icon", "symbol"]
+					"aka": [
+						"emoji",
+						"icon",
+						"symbol"
+					]
 				},
 				"repository": {
 					"label": "Repository",
 					"type": "line",
-					"aka": ["repo", "git", "source", "folder"]
+					"aka": [
+						"repo",
+						"git",
+						"source",
+						"folder"
+					]
 				},
 				"open": {
 					"label": "Open",
 					"type": "number",
-					"aka": ["todo", "backlog", "waiting"]
+					"aka": [
+						"todo",
+						"backlog",
+						"waiting"
+					]
 				},
 				"doing": {
 					"label": "Doing",
 					"type": "number",
-					"aka": ["active", "wip", "inProgress"]
+					"aka": [
+						"active",
+						"wip",
+						"inProgress"
+					]
 				},
 				"done": {
 					"label": "Done",
 					"type": "number",
-					"aka": ["closed", "finished", "complete"]
+					"aka": [
+						"closed",
+						"finished",
+						"complete"
+					]
 				},
 				"touched": {
 					"label": "Touched",
 					"type": "date",
-					"aka": ["updated", "modified", "lastTouched", "changed"]
+					"aka": [
+						"updated",
+						"modified",
+						"lastTouched",
+						"changed"
+					]
 				}
 			},
 			"default": {
@@ -1871,7 +2598,10 @@
 			"of": "projects",
 			"field": "name",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"pageSize": {
 			"kind": "value",
@@ -1879,7 +2609,9 @@
 			"type": "number",
 			"label": "Projects per load",
 			"hint": "How many cards are drawn before the rest are asked for.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 12
 			}
@@ -1891,11 +2623,17 @@
 			"control": "json",
 			"label": "Question",
 			"hint": "The question, the options it offered, the answer that was chosen and the reason for it. Standing in a record it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"question": "Where does the loading threshold live?",
-					"options": ["one engine constant", "per widget", "per binding"],
+					"options": [
+						"one engine constant",
+						"per widget",
+						"per binding"
+					],
 					"answer": "one engine constant",
 					"reason": "One number a person can find and change, instead of three settings nobody tunes."
 				}
@@ -1909,7 +2647,9 @@
 			"type": "line",
 			"label": "Report",
 			"hint": "The prose of the report, typed here or bound to a note. Headings, lists and links work as they do in a note.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -1918,27 +2658,46 @@
 			"kind": "collection",
 			"label": "Figures",
 			"hint": "One record per figure, each drawn by the widget in the figure slot.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"caption": {
 					"label": "Caption",
 					"type": "text",
-					"aka": ["title", "label", "legend"]
+					"aka": [
+						"title",
+						"label",
+						"legend"
+					]
 				},
 				"image": {
 					"label": "Image",
 					"type": "text",
-					"aka": ["picture", "screenshot", "file", "shot"]
+					"aka": [
+						"picture",
+						"screenshot",
+						"file",
+						"shot"
+					]
 				},
 				"alt": {
 					"label": "Alt text",
 					"type": "text",
-					"aka": ["alt-text", "description"]
+					"aka": [
+						"alt-text",
+						"description"
+					]
 				},
 				"drawing": {
 					"label": "Drawing",
 					"type": "text",
-					"aka": ["diagram", "chart", "sketch"]
+					"aka": [
+						"diagram",
+						"chart",
+						"sketch"
+					]
 				}
 			},
 			"default": {
@@ -1949,22 +2708,38 @@
 			"kind": "collection",
 			"label": "Test plan",
 			"hint": "One record per step: what to press, and what should happen when it is pressed.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"step": {
 					"label": "Step",
 					"type": "text",
-					"aka": ["name", "title", "case", "action"]
+					"aka": [
+						"name",
+						"title",
+						"case",
+						"action"
+					]
 				},
 				"expect": {
 					"label": "What should happen",
 					"type": "text",
-					"aka": ["expected", "result", "outcome"]
+					"aka": [
+						"expected",
+						"result",
+						"outcome"
+					]
 				},
 				"done": {
 					"label": "Checked",
 					"type": "boolean",
-					"aka": ["complete", "passed", "verified"]
+					"aka": [
+						"complete",
+						"passed",
+						"verified"
+					]
 				}
 			},
 			"default": {
@@ -1975,17 +2750,28 @@
 			"kind": "collection",
 			"label": "What was fixed",
 			"hint": "One record per fix, with the file it was made in.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"title": {
 					"label": "Fix",
 					"type": "text",
-					"aka": ["name", "summary", "what"]
+					"aka": [
+						"name",
+						"summary",
+						"what"
+					]
 				},
 				"where": {
 					"label": "Where",
 					"type": "text",
-					"aka": ["file", "path", "location"]
+					"aka": [
+						"file",
+						"path",
+						"location"
+					]
 				}
 			},
 			"default": {
@@ -1998,7 +2784,9 @@
 			"type": "number",
 			"label": "Reading width, in characters",
 			"hint": "How wide the prose is allowed to run. A figure ignores it and takes the whole tile.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 68
 			}
@@ -2009,7 +2797,9 @@
 			"type": "number",
 			"label": "Test steps per page",
 			"hint": "How many steps of the test plan are drawn at once.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 8
 			}
@@ -2021,7 +2811,9 @@
 			"control": "json",
 			"label": "Figure",
 			"hint": "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {}
 			}
@@ -2032,22 +2824,43 @@
 			"kind": "collection",
 			"label": "Lines",
 			"hint": "The log this draws, newest first. Each row is one line: when it was written, what it says, how it went.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"at": {
 					"label": "Time",
 					"type": "text",
-					"aka": ["time", "timestamp", "when", "ts", "date"]
+					"aka": [
+						"time",
+						"timestamp",
+						"when",
+						"ts",
+						"date"
+					]
 				},
 				"text": {
 					"label": "Text",
 					"type": "text",
-					"aka": ["line", "message", "body", "content", "output"]
+					"aka": [
+						"line",
+						"message",
+						"body",
+						"content",
+						"output"
+					]
 				},
 				"tone": {
 					"label": "Tone",
 					"type": "text",
-					"aka": ["level", "kind", "severity", "status", "result"]
+					"aka": [
+						"level",
+						"kind",
+						"severity",
+						"status",
+						"result"
+					]
 				}
 			},
 			"sort": [
@@ -2082,7 +2895,9 @@
 			"type": "number",
 			"label": "Lines kept",
 			"hint": "How many of the newest lines are held on screen. Older ones stay in the source and are counted, not drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 200
 			}
@@ -2092,7 +2907,10 @@
 			"control": "memory",
 			"label": "Follow the newest line",
 			"hint": "Whether the view sticks to the end. It lets go when the reader scrolls away and takes hold again on a press.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": true
@@ -2105,7 +2923,9 @@
 			"control": "json",
 			"label": "Album",
 			"hint": "The album this cover draws. Held in a shelf it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"title": "In Rainbows",
@@ -2120,7 +2940,9 @@
 			"type": "boolean",
 			"label": "Art beside the text",
 			"hint": "On, the art stands on the leading edge with the title and artist beside it rather than beneath.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -2131,27 +2953,46 @@
 			"kind": "collection",
 			"label": "Albums",
 			"hint": "The records the shelf draws, one cell each.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "text",
-					"aka": ["album", "name"]
+					"aka": [
+						"album",
+						"name"
+					]
 				},
 				"artist": {
 					"label": "Artist",
 					"type": "text",
-					"aka": ["band", "performer", "by"]
+					"aka": [
+						"band",
+						"performer",
+						"by"
+					]
 				},
 				"cover": {
 					"label": "Cover",
 					"type": "text",
-					"aka": ["art", "artwork", "image", "sleeve"]
+					"aka": [
+						"art",
+						"artwork",
+						"image",
+						"sleeve"
+					]
 				},
 				"tracks": {
 					"label": "Tracks",
 					"type": "number",
-					"aka": ["trackCount", "songs", "length"]
+					"aka": [
+						"trackCount",
+						"songs",
+						"length"
+					]
 				}
 			},
 			"default": {
@@ -2193,7 +3034,9 @@
 			"type": "number",
 			"label": "Albums per load",
 			"hint": "How many more are drawn each time the end of the shelf comes into view.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 24
 			}
@@ -2204,37 +3047,68 @@
 			"kind": "collection",
 			"label": "Tracks",
 			"hint": "The queue. One note per track, in the order the bound folder is sorted.",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "text",
-					"aka": ["track", "song", "heading"]
+					"aka": [
+						"track",
+						"song",
+						"heading"
+					]
 				},
 				"artist": {
 					"label": "Artist",
 					"type": "text",
-					"aka": ["performer", "band", "author", "by"]
+					"aka": [
+						"performer",
+						"band",
+						"author",
+						"by"
+					]
 				},
 				"album": {
 					"label": "Album",
 					"type": "text",
-					"aka": ["release", "record"]
+					"aka": [
+						"release",
+						"record"
+					]
 				},
 				"cover": {
 					"label": "Cover",
 					"type": "text",
-					"aka": ["art", "artwork", "image", "thumbnail", "picture"]
+					"aka": [
+						"art",
+						"artwork",
+						"image",
+						"thumbnail",
+						"picture"
+					]
 				},
 				"duration": {
 					"label": "Duration",
 					"type": "number",
-					"aka": ["length", "runtime", "seconds"]
+					"aka": [
+						"length",
+						"runtime",
+						"seconds"
+					]
 				},
 				"favourite": {
 					"label": "Favourite",
 					"type": "boolean",
-					"aka": ["favorite", "loved", "starred", "liked"]
+					"aka": [
+						"favorite",
+						"loved",
+						"starred",
+						"liked"
+					]
 				}
 			},
 			"default": {
@@ -2247,7 +3121,10 @@
 			"label": "Playing",
 			"hint": "Which track is loaded. Bind a queue beside it and the two move together.",
 			"of": "tracks",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			}
@@ -2257,7 +3134,10 @@
 			"control": "memory",
 			"label": "Playing state",
 			"hint": "Whether the transport stands at play or at pause.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -2268,7 +3148,10 @@
 			"control": "memory",
 			"label": "Position",
 			"hint": "How far into the track the transport stands, in seconds.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": 0
@@ -2279,7 +3162,10 @@
 			"control": "memory",
 			"label": "Volume",
 			"hint": "The level the transport is set to, from nothing to full.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": 70
@@ -2290,7 +3176,10 @@
 			"control": "memory",
 			"label": "Shuffle",
 			"hint": "Whether the next track is the one after this or one drawn at random.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -2301,7 +3190,10 @@
 			"control": "memory",
 			"label": "Repeat",
 			"hint": "What the end of the queue does: stop, start again, or hold on this track.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": "off"
@@ -2313,37 +3205,65 @@
 			"kind": "collection",
 			"label": "Tracks",
 			"hint": "The notes this list draws, one row each. Every field may be missing — a folder of loose recordings is the normal case.",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "text",
-					"aka": ["name", "track", "song"]
+					"aka": [
+						"name",
+						"track",
+						"song"
+					]
 				},
 				"artist": {
 					"label": "Artist",
 					"type": "text",
-					"aka": ["artists", "performer", "by"]
+					"aka": [
+						"artists",
+						"performer",
+						"by"
+					]
 				},
 				"album": {
 					"label": "Album",
 					"type": "text",
-					"aka": ["record", "release"]
+					"aka": [
+						"record",
+						"release"
+					]
 				},
 				"addedAt": {
 					"label": "Added",
 					"type": "date",
-					"aka": ["added", "dateAdded", "created"]
+					"aka": [
+						"added",
+						"dateAdded",
+						"created"
+					]
 				},
 				"duration": {
 					"label": "Duration",
 					"type": "text",
-					"aka": ["length", "time", "runtime"]
+					"aka": [
+						"length",
+						"time",
+						"runtime"
+					]
 				},
 				"favourite": {
 					"label": "Favourite",
 					"type": "boolean",
-					"aka": ["favorite", "liked", "starred", "loved"]
+					"aka": [
+						"favorite",
+						"liked",
+						"starred",
+						"loved"
+					]
 				}
 			},
 			"sort": [
@@ -2362,7 +3282,10 @@
 			"label": "Selected track",
 			"hint": "Which track is picked. A player bound to this plays whatever the list picks.",
 			"of": "tracks",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"playing": {
 			"kind": "value",
@@ -2370,7 +3293,9 @@
 			"label": "Playing track",
 			"hint": "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
 			"of": "tracks",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"wants": "@media/player/playing"
 		},
 		"filter": {
@@ -2379,7 +3304,10 @@
 			"type": "line",
 			"label": "Filter",
 			"hint": "Only tracks whose title holds these words are listed. Bind a search field and the two move together.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			},
@@ -2391,7 +3319,9 @@
 			"type": "number",
 			"label": "Tracks per page",
 			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 50
 			}
@@ -2403,7 +3333,10 @@
 			"control": "json",
 			"label": "Track",
 			"hint": "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": {
 					"title": "Weightless",
@@ -2421,7 +3354,9 @@
 			"type": "number",
 			"label": "Place in the list",
 			"hint": "The number drawn where the equaliser stands while the track is playing.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -2432,7 +3367,9 @@
 			"type": "boolean",
 			"label": "Playing",
 			"hint": "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}

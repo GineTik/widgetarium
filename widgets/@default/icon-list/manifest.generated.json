@@ -57,26 +57,40 @@
 			"kind": "collection",
 			"label": "Lines",
 			"hint": "One line per point. Each carries its own icon and colour, and reads as markdown.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"text": {
 					"label": "Text",
 					"hint": "The line itself, as markdown: **bold**, `code`, a [[link]] and the rest all draw.",
 					"type": "text",
 					"required": true,
-					"aka": ["body", "line", "description"]
+					"aka": [
+						"body",
+						"line",
+						"description"
+					]
 				},
 				"icon": {
 					"label": "Icon",
 					"hint": "The icon inside the disc, under the name the icon picker gives it — tick, close, alarm-clock. A name nothing answers to draws a dot.",
 					"type": "line",
-					"aka": ["glyph", "symbol"]
+					"aka": [
+						"glyph",
+						"symbol"
+					]
 				},
 				"tone": {
 					"label": "Colour",
 					"hint": "The colour behind the icon: neutral, accent, success, warning, error, info, note, standout or highlight. Any other word draws neutral.",
 					"type": "line",
-					"aka": ["colour", "color", "status"]
+					"aka": [
+						"colour",
+						"color",
+						"status"
+					]
 				}
 			},
 			"default": {
@@ -100,7 +114,9 @@
 			"type": "boolean",
 			"label": "Number the lines",
 			"hint": "Off, every line shows its own icon. On, the discs count the lines instead — 1, 2, 3 — and keep their colours.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -111,14 +127,19 @@
 			"type": "boolean",
 			"label": "Fill the discs",
 			"hint": "Off, a disc wears a pale wash of its colour. On, it is filled with the colour itself and the icon or number turns white.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

@@ -71,9 +71,17 @@
 		"card": {
 			"of": "widget",
 			"default": "@flow/project-card",
-			"surface": "object",
+			"surface": "group",
 			"gives": {
-				"project": ["mark", "name", "repository", "open", "doing", "done", "touched"]
+				"project": [
+					"mark",
+					"name",
+					"repository",
+					"open",
+					"doing",
+					"done",
+					"touched"
+				]
 			}
 		}
 	},
@@ -82,37 +90,66 @@
 			"kind": "collection",
 			"label": "Projects",
 			"hint": "One note per project. Bind the folder they live in.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"mark": {
 					"label": "Mark",
 					"type": "line",
-					"aka": ["emoji", "icon", "symbol"]
+					"aka": [
+						"emoji",
+						"icon",
+						"symbol"
+					]
 				},
 				"repository": {
 					"label": "Repository",
 					"type": "line",
-					"aka": ["repo", "git", "source", "folder"]
+					"aka": [
+						"repo",
+						"git",
+						"source",
+						"folder"
+					]
 				},
 				"open": {
 					"label": "Open",
 					"type": "number",
-					"aka": ["todo", "backlog", "waiting"]
+					"aka": [
+						"todo",
+						"backlog",
+						"waiting"
+					]
 				},
 				"doing": {
 					"label": "Doing",
 					"type": "number",
-					"aka": ["active", "wip", "inProgress"]
+					"aka": [
+						"active",
+						"wip",
+						"inProgress"
+					]
 				},
 				"done": {
 					"label": "Done",
 					"type": "number",
-					"aka": ["closed", "finished", "complete"]
+					"aka": [
+						"closed",
+						"finished",
+						"complete"
+					]
 				},
 				"touched": {
 					"label": "Touched",
 					"type": "date",
-					"aka": ["updated", "modified", "lastTouched", "changed"]
+					"aka": [
+						"updated",
+						"modified",
+						"lastTouched",
+						"changed"
+					]
 				}
 			},
 			"default": {
@@ -127,7 +164,10 @@
 			"of": "projects",
 			"field": "name",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"pageSize": {
 			"kind": "value",
@@ -135,14 +175,20 @@
 			"type": "number",
 			"label": "Projects per load",
 			"hint": "How many cards are drawn before the rest are asked for.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 12
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@flow/project-card"]
+	"widgetDependencies": [
+		"@flow/project-card"
+	]
 }

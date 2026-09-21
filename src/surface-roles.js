@@ -3,7 +3,10 @@ import { readingOfProp, wrapOf, WRAP_EACH } from "./reading.js";
 
 export const MAX_SURFACE_DEPTH = 2;
 
+export const LAYOUT_ROLE = "layout";
+
 export const ROLES = [
+	LAYOUT_ROLE,
 	"navigation",
 	"indicator",
 	"indicators",
@@ -16,6 +19,7 @@ export const ROLES = [
 ];
 
 export const DEFAULT_STYLE = {
+	[LAYOUT_ROLE]: [],
 	navigation: [APART],
 	indicator: [GROUP],
 	indicators: [GROUP],

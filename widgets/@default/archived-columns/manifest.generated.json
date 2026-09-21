@@ -51,7 +51,11 @@
 		"boards": {
 			"kind": "collection",
 			"label": "Boards",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"default": {
 				"rows": []
 			}
@@ -64,7 +68,9 @@
 			"of": "boards",
 			"field": "board",
 			"fallback": "first",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"wants": "@default/editable-tabs/selection"
 		},
 		"board": {
@@ -74,12 +80,17 @@
 			"hint": "The board whose archived columns are listed.",
 			"picks": "selection",
 			"of": "boards",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"wants": "@default/kanban-board/board"
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

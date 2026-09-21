@@ -48,7 +48,10 @@
 			"control": "json",
 			"label": "Track",
 			"hint": "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": {
 					"title": "Weightless",
@@ -66,7 +69,9 @@
 			"type": "number",
 			"label": "Place in the list",
 			"hint": "The number drawn where the equaliser stands while the track is playing.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 0
 			}
@@ -77,14 +82,18 @@
 			"type": "boolean",
 			"label": "Playing",
 			"hint": "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

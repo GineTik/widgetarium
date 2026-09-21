@@ -43,7 +43,9 @@
 			"control": "json",
 			"label": "Album",
 			"hint": "The album this cover draws. Held in a shelf it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"title": "In Rainbows",
@@ -58,14 +60,18 @@
 			"type": "boolean",
 			"label": "Art beside the text",
 			"hint": "On, the art stands on the leading edge with the title and artist beside it rather than beneath.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

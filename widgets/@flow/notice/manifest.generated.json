@@ -52,7 +52,9 @@
 			"type": "line",
 			"label": "Title",
 			"hint": "The one line a person reads first. Left empty, the notice says it has nothing to report.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -63,7 +65,9 @@
 			"type": "text",
 			"label": "Body",
 			"hint": "The sentence under the title, for what the title could not hold.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -74,7 +78,9 @@
 			"type": "line",
 			"label": "Icon",
 			"hint": "The glyph beside the text, picked off the grid. Left empty, no icon is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -85,7 +91,9 @@
 			"type": "line",
 			"label": "Tone",
 			"hint": "One of neutral, info, success, warning or error. Neutral draws no background of its own.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "neutral"
 			}
@@ -96,7 +104,9 @@
 			"type": "line",
 			"label": "Action",
 			"hint": "What the button says. Left empty, the notice carries no button.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -106,7 +116,10 @@
 			"control": "memory",
 			"label": "Pressed",
 			"hint": "Whether the action has been pressed. A box names it as its trigger, or another tile reads it by ref.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -114,7 +127,9 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

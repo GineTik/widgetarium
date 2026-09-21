@@ -50,7 +50,9 @@
 			"control": "json",
 			"label": "Flight",
 			"hint": "The work this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"title": "Rewrite the board tree reader",
@@ -66,7 +68,9 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

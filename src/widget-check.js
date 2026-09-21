@@ -11,7 +11,7 @@ const KIT_TOKEN_PREFIX = "--wg-kit-";
 
 const WIDGETARIUM_IMPORT = /import\s+(type\s+)?\{([^}]+)\}\s+from\s+"widgetarium"/g;
 const BOARD_HEADING = /<(h[12])[\s/>]/g;
-const TEXT_ROLE = "text";
+const ROLES_THAT_MAY_TITLE = ["text", "layout"];
 
 export const WIDGET_CHECK_RULES = ["colour", "font", "unbounded", "role", "reaches", "heading"];
 
@@ -100,7 +100,7 @@ function unboundedFindings(source) {
 }
 
 function headingFindings(source, card) {
-	if (!card || card.role === TEXT_ROLE) return [];
+	if (!card || ROLES_THAT_MAY_TITLE.includes(card.role)) return [];
 	const drawn = [...new Set([...source.matchAll(BOARD_HEADING)].map((found) => found[1]))];
 	if (drawn.length === 0) return [];
 	return [

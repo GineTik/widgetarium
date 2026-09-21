@@ -37,7 +37,9 @@
 			"control": "number",
 			"type": "number",
 			"label": "Lines shown at first, and added by each press",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 30
 			}
@@ -47,14 +49,18 @@
 			"control": "number",
 			"type": "number",
 			"label": "Largest file that may be shown, in KB",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 256
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

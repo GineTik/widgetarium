@@ -3,7 +3,19 @@
 	"api": 2,
 	"title": "Note",
 	"description": "A short block of text pinned in the middle of a note, marked in the accent colour.",
-	"keywords": ["note", "callout", "aside", "memo", "remark", "text", "block", "highlight", "quote", "panel", "comment"],
+	"keywords": [
+		"note",
+		"callout",
+		"aside",
+		"memo",
+		"remark",
+		"text",
+		"block",
+		"highlight",
+		"quote",
+		"panel",
+		"comment"
+	],
 	"inline": true,
 	"preview": {
 		"size": {
@@ -17,7 +29,9 @@
 	},
 	"props": {},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

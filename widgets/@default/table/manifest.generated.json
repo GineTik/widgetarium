@@ -70,7 +70,10 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes the table draws, one row each. A value reading emoji:<name> or icon:<name> is drawn as that emoji or icon, with any words after it beside it.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"default": {
 				"rows": []
 			}
@@ -79,7 +82,10 @@
 			"kind": "collection",
 			"label": "Columns",
 			"hint": "Which properties get a column, in the order they are listed. Left empty, every property the records carry gets one.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"property": {
 					"label": "Property"
@@ -98,7 +104,9 @@
 			"type": "line",
 			"label": "Row title property",
 			"hint": "The property drawn in the bare first column that names each row. Left empty, the table has no such column.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -109,7 +117,9 @@
 			"type": "boolean",
 			"label": "Yes and no",
 			"hint": "Whether a true or false value is drawn as Yes or No.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": false
 			}
@@ -120,7 +130,9 @@
 			"type": "number",
 			"label": "Rows shown at first",
 			"hint": "How many records get a row before Show more is pressed. Each press draws that many again.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 50
 			}
@@ -132,14 +144,19 @@
 			"label": "Fade the scrolling edges",
 			"hint": "Whether an edge the table carries on past dissolves, so there is something to say it scrolls.",
 			"design": true,
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": true
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

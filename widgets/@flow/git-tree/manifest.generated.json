@@ -36,22 +36,31 @@
 					{
 						"path": "commits/748628d.md",
 						"sha": "748628d1c0",
-						"parents": ["70a3c80f42", "2a64d67ba9"]
+						"parents": [
+							"70a3c80f42",
+							"2a64d67ba9"
+						]
 					},
 					{
 						"path": "commits/70a3c80.md",
 						"sha": "70a3c80f42",
-						"parents": ["83ab3d2e71"]
+						"parents": [
+							"83ab3d2e71"
+						]
 					},
 					{
 						"path": "commits/2a64d67.md",
 						"sha": "2a64d67ba9",
-						"parents": ["83ab3d2e71"]
+						"parents": [
+							"83ab3d2e71"
+						]
 					},
 					{
 						"path": "commits/83ab3d2.md",
 						"sha": "83ab3d2e71",
-						"parents": ["8a4ab1806d"]
+						"parents": [
+							"8a4ab1806d"
+						]
 					},
 					{
 						"path": "commits/8a4ab18.md",
@@ -67,16 +76,27 @@
 			"kind": "collection",
 			"label": "Commits",
 			"hint": "The commit records written for this branch, newest first. Only the sha and its parents are drawn.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"sha": {
 					"label": "Commit",
-					"aka": ["hash", "commit", "revision"]
+					"aka": [
+						"hash",
+						"commit",
+						"revision"
+					]
 				},
 				"parents": {
 					"label": "Parents",
 					"many": true,
-					"aka": ["parent", "parentShas", "ancestors"]
+					"aka": [
+						"parent",
+						"parentShas",
+						"ancestors"
+					]
 				}
 			},
 			"default": {
@@ -89,7 +109,9 @@
 			"type": "line",
 			"label": "Branch",
 			"hint": "The name of the branch these commits are on. Left empty, no name is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -100,14 +122,18 @@
 			"type": "number",
 			"label": "Commits shown",
 			"hint": "How many of the newest commits the graph spans.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 40
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

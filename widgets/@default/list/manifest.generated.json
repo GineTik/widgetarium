@@ -35,7 +35,9 @@
 					{
 						"path": "preview/onboarding.md",
 						"title": "Design the onboarding flow",
-						"tags": ["design"],
+						"tags": [
+							"design"
+						],
 						"priority": "P1",
 						"progress": 60,
 						"due": "12 Aug"
@@ -43,7 +45,9 @@
 					{
 						"path": "preview/release-notes.md",
 						"title": "Record the release notes",
-						"tags": ["launch"],
+						"tags": [
+							"launch"
+						],
 						"priority": "P3",
 						"progress": 80,
 						"due": "4 Sep"
@@ -51,7 +55,9 @@
 					{
 						"path": "preview/paint-gate.md",
 						"title": "Run the paint gate on every widget",
-						"tags": ["build"],
+						"tags": [
+							"build"
+						],
 						"priority": "P2",
 						"progress": 20,
 						"due": "20 Sep"
@@ -75,7 +81,11 @@
 			"kind": "collection",
 			"label": "Rows",
 			"hint": "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
-			"writes": ["list", "get", "update"],
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
 			"default": {
 				"rows": []
 			}
@@ -86,7 +96,9 @@
 			"type": "line",
 			"label": "Handed as",
 			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes commit.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "task"
 			}
@@ -97,7 +109,10 @@
 			"label": "Selected row",
 			"hint": "Which row is picked. A detail tile reading the same collection follows it.",
 			"of": "rows",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"filter": {
 			"kind": "value",
@@ -105,7 +120,10 @@
 			"type": "line",
 			"label": "Filter",
 			"hint": "Only rows whose filtered field holds these words are listed. Bind a search field and the two move together.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			},
@@ -117,7 +135,9 @@
 			"type": "line",
 			"label": "Filtered field",
 			"hint": "The field the filter is matched in.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "title"
 			}
@@ -128,7 +148,9 @@
 			"type": "number",
 			"label": "Rows per page",
 			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": 20
 			}
@@ -139,14 +161,20 @@
 			"type": "line",
 			"label": "Heading",
 			"hint": "A line above the rows. Left empty, none is drawn.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
-	"widgetDependencies": ["@default/task-card"]
+	"widgetDependencies": [
+		"@default/task-card"
+	]
 }

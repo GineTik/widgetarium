@@ -49,8 +49,16 @@
 			"kind": "collection",
 			"label": "Tabs",
 			"hint": "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
-			"aka": ["records"],
-			"writes": ["list", "get", "create", "update", "remove"],
+			"aka": [
+				"records"
+			],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
 			"describes": {
 				"name": {
 					"label": "Label",
@@ -76,7 +84,9 @@
 			"type": "line",
 			"label": "Label field",
 			"hint": "Which field is written on a tab. Without it a note shows its own name.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "name"
 			}
@@ -87,7 +97,9 @@
 			"type": "line",
 			"label": "Value field",
 			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "board"
 			}
@@ -100,11 +112,16 @@
 			"of": "tabs",
 			"fieldFrom": "value",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

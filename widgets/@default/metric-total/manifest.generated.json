@@ -206,19 +206,42 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "One note per reading. Each carries a date and an amount.",
-			"writes": ["list", "get", "create", "update", "remove"],
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove"
+			],
 			"describes": {
 				"amount": {
 					"type": "number",
-					"aka": ["value", "count", "total", "kept", "score", "done"]
+					"aka": [
+						"value",
+						"count",
+						"total",
+						"kept",
+						"score",
+						"done"
+					]
 				},
 				"date": {
 					"type": "date",
-					"aka": ["created", "day", "when", "on"]
+					"aka": [
+						"created",
+						"day",
+						"when",
+						"on"
+					]
 				},
 				"note": {
 					"type": "text",
-					"aka": ["text", "comment", "description", "body"]
+					"aka": [
+						"text",
+						"comment",
+						"description",
+						"body"
+					]
 				}
 			},
 			"default": {
@@ -230,7 +253,9 @@
 			"control": "line",
 			"type": "line",
 			"label": "What the number is",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Total"
 			}
@@ -240,7 +265,9 @@
 			"control": "line",
 			"type": "line",
 			"label": "Unit the amounts are in",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": ""
 			}
@@ -251,7 +278,9 @@
 			"type": "line",
 			"label": "good · bad",
 			"hint": "Whether a rise reads as good or as bad.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "good"
 			}
@@ -260,7 +289,10 @@
 			"kind": "collection",
 			"label": "Periods",
 			"hint": "Every window the card can read over.",
-			"writes": ["list", "get"],
+			"writes": [
+				"list",
+				"get"
+			],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -297,7 +329,10 @@
 			"of": "periods",
 			"field": "label",
 			"fallback": "first",
-			"writes": ["get", "update"]
+			"writes": [
+				"get",
+				"update"
+			]
 		},
 		"period": {
 			"kind": "value",
@@ -305,21 +340,29 @@
 			"label": "The period",
 			"picks": "periodPick",
 			"of": "periods",
-			"writes": ["get"]
+			"writes": [
+				"get"
+			]
 		},
 		"view": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "curve · bars",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": "curve"
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

@@ -3,7 +3,15 @@
 	"api": 2,
 	"title": "Search input",
 	"description": "A search field whose text is a value other widgets can read.",
-	"keywords": ["search", "input", "query", "filter", "find", "field", "text"],
+	"keywords": [
+		"search",
+		"input",
+		"query",
+		"filter",
+		"find",
+		"field",
+		"text"
+	],
 	"role": "control",
 	"preview": {
 		"size": {
@@ -23,7 +31,10 @@
 			"type": "line",
 			"label": "Query",
 			"hint": "What is typed. Bind another widget to it and it filters as you type.",
-			"writes": ["get", "update"],
+			"writes": [
+				"get",
+				"update"
+			],
 			"default": {
 				"value": ""
 			}
@@ -34,14 +45,19 @@
 			"type": "line",
 			"label": "Placeholder",
 			"hint": "Shown while nothing is typed.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": "Search"
 			}
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

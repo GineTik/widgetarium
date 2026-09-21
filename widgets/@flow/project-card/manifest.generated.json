@@ -47,7 +47,9 @@
 			"control": "json",
 			"label": "Project",
 			"hint": "The project this card draws. Held in a grid it is handed down; standing alone it is the one bound here.",
-			"writes": ["get"],
+			"writes": [
+				"get"
+			],
 			"default": {
 				"value": {
 					"mark": "🧭",
@@ -62,7 +64,9 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": [
+		"widget.tsx"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }
