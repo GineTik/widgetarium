@@ -281,11 +281,12 @@ function mountEntry(row, registry, mount) {
 		problem: drawable ? null : row.widget ? (held ? "failed" : "not-found") : "empty",
 		failure: held?.error ? String(held.error.message ?? held.error) : null,
 		drawInto: drawable
-			? (element) =>
+			? (element, platesAbove) =>
 					drawMounted(
 						element,
 						row.widget,
 						h(MountedWidget, { ...mount, name: row.name, was: row.was, widget: row.widget, definition: held }),
+						platesAbove,
 					)
 			: null,
 	};
@@ -295,9 +296,10 @@ function behindBoundary(widget, child) {
 	return h(Boundary, { key: widget }, child);
 }
 
-function drawMounted(element, widget, child) {
+function drawMounted(element, widget, child, platesAbove) {
 	const { draw, release } = leaseFor(element);
-	draw(behindBoundary(widget, child));
+	const seated = platesAbove ? h(PLATES_ABOVE.Provider, { value: platesAbove }, child) : child;
+	draw(behindBoundary(widget, seated));
 	return release;
 }
 

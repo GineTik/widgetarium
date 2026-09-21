@@ -1,7 +1,8 @@
-import { createElement as h, useEffect, useLayoutEffect, useRef } from "react";
+import { createElement as h, useContext, useEffect, useLayoutEffect, useRef } from "react";
 import { leaseFor } from "./engine/render.js";
 import { rootedWidget } from "./widget-root.js";
 import { Icon, IconButton } from "./kit.js";
+import { PLATES_ABOVE } from "./kit-surface.js";
 
 export function DrawnInShell({ shell, tree }) {
 	const node = useRef(null);
@@ -26,10 +27,11 @@ export function drawnWidget(definition, props) {
 function useDrawnInto(entry) {
 	const node = useRef(null);
 	const release = useRef(null);
+	const platesAbove = useContext(PLATES_ABOVE);
 
 	useEffect(() => {
 		if (entry.drawInto) {
-			release.current = entry.drawInto(node.current);
+			release.current = entry.drawInto(node.current, platesAbove);
 			return;
 		}
 		release.current?.();
