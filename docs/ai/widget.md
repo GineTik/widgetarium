@@ -162,18 +162,18 @@ one component whether it ends up reading as an avatar, a logo or a mark.
 
 ```tsx
 <Emblem label={person.name}>
-	<Emblem.Image src={person.photo} />
-	<Emblem.Fallback seed={person.name} />
+	<EmblemImage src={person.photo} />
+	<EmblemFallback seed={person.name} />
 </Emblem>
 
 <Emblem size="l" shape="rounded" label={project.title}>
-	<Emblem.DiceBear style="shapes" seed={project.ref} options={{ backgroundColor: ["b6e3f4"] }} />
-	<Emblem.Fallback seed={project.title} />
+	<EmblemDiceBear style="shapes" seed={project.ref} options={{ backgroundColor: ["b6e3f4"] }} />
+	<EmblemFallback seed={project.title} />
 </Emblem>
 ```
 
 `size` is `s` (24), `m` (40), `l` (64), `xl` (96) or a number; `shape` is `circle`, `rounded` or
-`square`; `label` is what a screen reader reads. `Emblem.Fallback` stands until the picture has
+`square`; `label` is what a screen reader reads. `EmblemFallback` stands until the picture has
 loaded and wherever it failed; with no children it draws the `PlaceholderMark` below.
 
 **Where the picture comes from, in this order:**
@@ -181,7 +181,7 @@ loaded and wherever it failed; with no children it draws the `PlaceholderMark` b
 1. What the person gave — a file they named, an address in a note, a picture already in the vault.
    Only when they ask for one on their machine do you read it from there.
 2. A field of the record that already holds a picture.
-3. Otherwise `Emblem.DiceBear`, chosen for what the thing is. `style` is a DiceBear style name,
+3. Otherwise `EmblemDiceBear`, chosen for what the thing is. `style` is a DiceBear style name,
    `seed` a stable value of the record — its `ref`, never a value that changes — and `options` is the
    style's own options object as DiceBear documents it. Pick by kind and leave the exact style to the
    design:
@@ -259,6 +259,49 @@ it arrives. It takes every prop `ProgressBar` does, plus `tones` to repaint any 
 (`{ done: "info" }`) and its own `displayValue` where the tick is not what you want. Reach for it whenever a bar means "not started / going /
 finished"; the plain `ProgressBar` knows nothing of states.
 
+## Choosing, opening, switching
+
+The kit's controls follow Radix and shadcn: parts with flat names, state that works controlled or
+not, and the state written on the element.
+
+```tsx
+<Select value={status} onValueChange={setStatus}>
+	<SelectTrigger>
+		<SelectValue placeholder="Status" />
+	</SelectTrigger>
+	<SelectContent>
+		<SelectItem value="todo">To do</SelectItem>
+		<SelectItem value="done">Done</SelectItem>
+	</SelectContent>
+</Select>
+
+<Popover>
+	<PopoverTrigger asChild>
+		<IconButton label="More">
+			<Icon name="ellipsis" />
+		</IconButton>
+	</PopoverTrigger>
+	<PopoverContent>
+		<PopoverItem onClick={archive}>Archive</PopoverItem>
+	</PopoverContent>
+</Popover>
+```
+
+- **One naming rule.** `value` / `defaultValue` / `onValueChange` (Select, Segmented, Tabs),
+  `checked` / `defaultChecked` / `onCheckedChange` (Switch), `open` / `defaultOpen` / `onOpenChange`
+  (Popover, Select, SidebarSheet), `month` / `defaultMonth` / `onMonthChange` (Calendar). Pass the
+  first to control it, the second to let it hold its own.
+- **`asChild`** on `Button`, `IconButton`, `Badge`, `Card`, `Plate`, `List`, `Row`, `Sidebar` and
+  `PopoverTrigger` draws the kit's look and behaviour on your own element — an `<a>` that is a
+  button, a row that is a link. Props merge the Radix way: yours win, both click handlers run.
+- **Keyboard comes built in**: arrows and Home/End in `Segmented`, in an open Popover's items and
+  in `Calendar` (PageUp/PageDown turn the month); Escape closes a Popover and hands focus back.
+- **State is on the element**: `data-state="open|closed|checked|unchecked|active|inactive"`,
+  `data-disabled`, `data-highlighted`, `data-loading`, `data-selected`, `data-today`.
+- An open `PopoverContent` carries `--wg-kit-anchor-width`, `--wg-kit-pop-available-width`,
+  `--wg-kit-pop-available-height` and `--wg-kit-pop-origin`, so content can match its trigger and
+  stop at the screen's edge in plain CSS.
+
 ## Tailwind, when the widget's styling asks for it
 
 A `widget.css` may be a Tailwind sheet. Three imports give it the kit's whole vocabulary:
@@ -280,6 +323,11 @@ of your own comes last and wins: add a colour, or change one of the kit's for th
 (`--radius-plate: 18px`). `--color-*: initial` drops a whole namespace, `--*: initial` starts from
 nothing.
 
+Style a kit control's state with Tailwind's data variants — `data-[state=open]:bg-group`,
+`data-[highlighted]:bg-fill` — and join classes with `cn` from `widgetarium/kit`: it is shadcn's,
+so a class you pass wins a conflict with the kit's own (`cn("p-plate", "p-2")` is `p-2`), and it
+knows the theme's names, so `text-h3 text-muted` keeps both.
+
 `@plugin` and `@config` load JavaScript and are refused; `@utility` and `@custom-variant` are not.
 Preflight is refused too, and so is every other name under `widgetarium/`. A widget whose styling
 needs Tailwind declares `api: 2`.
@@ -293,8 +341,8 @@ from `widgetarium/kit`:
 ```tsx
 <Card>…</Card>
 <Card tone="warning">…</Card>
-<Rows>{rows.map((row) => <Rows.Item key={row.ref}>…</Rows.Item>)}</Rows>
-<Grid min={220}>{cards.map((card) => <Grid.Item key={card.ref}>…</Grid.Item>)}</Grid>
+<Rows>{rows.map((row) => <LayoutItem key={row.ref}>…</LayoutItem>)}</Rows>
+<Grid min={220}>{cards.map((card) => <LayoutItem key={card.ref}>…</LayoutItem>)}</Grid>
 <Layout kind="rows">…</Layout>
 <Card type="apart" side="start" across="column">…</Card>
 ```

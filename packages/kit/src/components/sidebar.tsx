@@ -2,11 +2,18 @@ import { createElement as h, useEffect, useRef, useState } from "react";
 import type { LooseProps } from "../types";
 import { rowClass, sidebarClass } from "../utils/class-names";
 import { cx } from "../utils/cx";
-import { render } from "../utils/render";
+import { domPropsOf } from "../utils/dom-props";
 import { List, RowLabel, RowValue } from "./list";
+import { Slot } from "./slot";
+import { useControllableState } from "../hooks/use-controllable-state";
 
-export function Sidebar({ as = "div", ...props }: LooseProps) {
-	return render(as, props, sidebarClass(props));
+export function Sidebar({ as = "div", asChild = false, children, ...props }: LooseProps) {
+	const Comp = asChild ? Slot : as;
+	return (
+		<Comp {...domPropsOf(props)} className={sidebarClass(props)}>
+			{children}
+		</Comp>
+	);
 }
 
 const SHEET_COMMIT = 0.4;
@@ -15,7 +22,10 @@ export function SidebarSheet({
 	as = "div",
 	mode,
 	surface,
-	isOpen,
+	open,
+	isOpen: openAsLegacy,
+	defaultOpen = false,
+	onOpenChange,
 	onOpen,
 	onHeight,
 	peekPx = 220,
@@ -26,9 +36,25 @@ export function SidebarSheet({
 	children,
 	...rest
 }: LooseProps) {
+	const [isOpen, setOpen] = useControllableState({
+		prop: open ?? openAsLegacy,
+		defaultProp: defaultOpen,
+		onChange: (next) => {
+			onOpenChange?.(next);
+			onOpen?.(next);
+		},
+	});
 	const [dragged, setDragged] = useState(null);
 	const from = useRef(null);
 	const latest = useRef(0);
+	const gripRef = useRef(null);
+
+	const collapseOnEscape = (event) => {
+		if (event.key !== "Escape" || !isOpen) return;
+		event.stopPropagation();
+		setOpen(false);
+		gripRef.current?.focus();
+	};
 
 	const height = dragged ?? (isOpen ? maxPx : peekPx);
 	latest.current = height;
@@ -59,7 +85,7 @@ export function SidebarSheet({
 		const moved = Math.abs(settled - from.current.height) > 2;
 		from.current = null;
 		setDragged(null);
-		onOpen?.(moved ? settled > peekPx + (maxPx - peekPx) * SHEET_COMMIT : !isOpen);
+		setOpen(moved ? settled > peekPx + (maxPx - peekPx) * SHEET_COMMIT : !isOpen);
 	};
 
 	return h(
@@ -68,10 +94,13 @@ export function SidebarSheet({
 			...rest,
 			className: cx("wg-kit-sheet", sidebarClass({ mode, surface }), from.current && "is-dragging", cls),
 			style: { ...style, height: `${Math.round(height)}px` },
+			"data-state": isOpen ? "open" : "closed",
+			onKeyDown: collapseOnEscape,
 		},
 		[
 			<button
 				key="grip"
+				ref={gripRef}
 				type="button"
 				className="wg-kit-sheet-grip"
 				aria-label={grip}

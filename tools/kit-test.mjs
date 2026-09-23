@@ -150,7 +150,203 @@ check(
 	host.querySelector("a")?.getAttribute("class"),
 	"wg-kit-btn is-plain is-m",
 );
+check("and a slotted anchor is given no button type", host.querySelector("a")?.hasAttribute("type"), false);
 check("and keeps that element's own props", host.querySelector("a")?.getAttribute("href"), "#x");
+
+{
+	const { cn } = await import("./.mjs-cache/index.mjs");
+	check("CN, AS IN SHADCN: a caller's class wins a conflict with the kit's", cn("p-plate", "p-2"), "p-2");
+	check("and the kit's own sizes and colours are told apart", cn("text-h3", "text-muted"), "text-h3 text-muted");
+	check("and a kit class is never taken for a utility", cn("wg-kit-btn is-m", "is-l"), "wg-kit-btn is-m is-l");
+}
+
+{
+	const { Slot, Slottable } = await import("./.mjs-cache/index.mjs");
+	const heard = [];
+	const slotRef = { current: null };
+	const childRef = { current: null };
+	render(
+		h(
+			Slot,
+			{
+				className: "from-slot",
+				title: "slot",
+				style: { color: "red", margin: "1px" },
+				onClick: () => heard.push("slot"),
+				ref: slotRef,
+			},
+			h("a", {
+				className: "from-child",
+				title: "child",
+				style: { color: "blue" },
+				onClick: () => heard.push("child"),
+				ref: childRef,
+			}),
+		),
+		host,
+	);
+	const slotted = host.querySelector("a");
+	check("SLOT, AS IN RADIX: the classes of both are kept", slotted?.getAttribute("class"), "from-slot from-child");
+	check("the child's own prop wins over the slot's", slotted?.getAttribute("title"), "child");
+	check("styles merge with the child on top", [slotted?.style.color, slotted?.style.margin], ["blue", "1px"]);
+	slotted?.click();
+	check("both handlers run, the child's first", heard, ["child", "slot"]);
+	check("both refs reach the element", [slotRef.current === slotted, childRef.current === slotted], [true, true]);
+
+	render(h(Slot, { className: "outer" }, h("i", null, "before"), h(Slottable, null, h("b", null, "held"))), host);
+	const bold = host.querySelector("b");
+	check(
+		"Slottable names the child that takes the props, the rest are drawn inside it",
+		[bold?.getAttribute("class"), bold?.textContent],
+		["outer", "beforeheld"],
+	);
+}
+
+{
+	const kit = await import("./.mjs-cache/index.mjs");
+	const press = (node, key) => node?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+
+	const chosen = [];
+	render(
+		h(
+			kit.Select,
+			{ defaultValue: "b", onValueChange: (next) => chosen.push(next) },
+			h(kit.SelectTrigger, null, h(kit.SelectValue, { placeholder: "Pick" })),
+			h(
+				kit.SelectContent,
+				null,
+				h(kit.SelectItem, { value: "a" }, "Apple"),
+				h(kit.SelectItem, { value: "b" }, "Banana"),
+			),
+		),
+		host,
+	);
+	await settle();
+	const selectTrigger = host.querySelector(".wg-kit-select-trigger");
+	check(
+		"SELECT, AS IN RADIX: the trigger shows the chosen item's label",
+		host.querySelector(".wg-kit-select-value")?.textContent,
+		"Banana",
+	);
+	check(
+		"and says it opens a list, closed for now",
+		[selectTrigger?.getAttribute("aria-haspopup"), selectTrigger?.dataset.state],
+		["listbox", "closed"],
+	);
+	selectTrigger?.click();
+	await settle();
+	check(
+		"pressing the trigger opens it",
+		[selectTrigger?.dataset.state, host.querySelector(".wg-kit-pop")?.dataset.state],
+		["open", "open"],
+	);
+	check(
+		"and the chosen option is marked",
+		host.querySelector('[role="option"][aria-selected="true"]')?.textContent,
+		"Banana",
+	);
+	[...host.querySelectorAll('[role="option"]')].find((option) => option.textContent === "Apple")?.click();
+	await settle();
+	check("choosing an option tells the caller and closes", [chosen, selectTrigger?.dataset.state], [["a"], "closed"]);
+	check("and the trigger shows the new label", host.querySelector(".wg-kit-select-value")?.textContent, "Apple");
+
+	render(
+		h(
+			kit.Popover,
+			{ placement: "below" },
+			h(kit.PopoverTrigger, null, "Open"),
+			h(kit.PopoverContent, null, h(kit.PopoverItem, null, "one"), h(kit.PopoverItem, null, "two")),
+		),
+		host,
+	);
+	await settle();
+	const opener = host.querySelector("button[aria-haspopup]");
+	opener?.click();
+	await settle();
+	const panel = host.querySelector(".wg-kit-pop");
+	check(
+		"POPOVER PARTS: the trigger opens the content",
+		[opener?.dataset.state, panel?.dataset.state],
+		["open", "open"],
+	);
+	check(
+		"and the content says where it may grow, for plain CSS to read",
+		["--wg-kit-pop-available-height", "--wg-kit-pop-available-width", "--wg-kit-pop-origin"].every(
+			(name) => panel?.style.getPropertyValue(name) !== "",
+		),
+		true,
+	);
+	const items = [...host.querySelectorAll(".wg-kit-pop-item")];
+	items[0]?.focus();
+	press(items[0], "ArrowDown");
+	await settle();
+	check("arrow keys walk the items", document.activeElement === items[1], true);
+	check("and the focused item is highlighted", items[1]?.hasAttribute("data-highlighted"), true);
+	press(items[1], "ArrowDown");
+	check("and wrap past the last", document.activeElement === items[0], true);
+	document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+	await settle();
+	check(
+		"Escape closes it and gives focus back to the trigger",
+		[opener?.dataset.state, document.activeElement === opener],
+		["closed", true],
+	);
+
+	const tabbed = [];
+	render(
+		h(kit.Segmented, {
+			items: ["a", "b", "c"].map((value) => ({ value, label: value.toUpperCase() })),
+			defaultValue: "a",
+			onValueChange: (next) => tabbed.push(next),
+		}),
+		host,
+	);
+	const tabs = () => [...host.querySelectorAll('[role="tab"]')];
+	tabs()[0]?.focus();
+	press(tabs()[0], "ArrowRight");
+	await settle();
+	check(
+		"SEGMENTED: an arrow key moves the choice and the focus",
+		[tabbed, document.activeElement === tabs()[1]],
+		[["b"], true],
+	);
+	check(
+		"and only the chosen tab is in the tab order",
+		tabs().map((tab) => tab.tabIndex),
+		[-1, 0, -1],
+	);
+	press(tabs()[1], "End");
+	await settle();
+	check(
+		"End goes to the last, and the state is in the data",
+		tabs().map((tab) => tab.dataset.state),
+		["inactive", "inactive", "active"],
+	);
+
+	render(h(kit.Switch, { label: "Wrap" }), host);
+	const toggle = host.querySelector('[role="switch"]');
+	toggle?.click();
+	await settle();
+	check(
+		"SWITCH: nobody controls it and it still switches",
+		[toggle?.dataset.state, toggle?.getAttribute("aria-checked")],
+		["checked", "true"],
+	);
+
+	render(h(kit.Calendar, { defaultMonth: new Date(2026, 8, 1), today: new Date(2026, 8, 30) }), host);
+	const focused = () => document.activeElement?.dataset?.date;
+	host.querySelector('[data-date="2026-8-30"]')?.focus();
+	press(document.activeElement, "ArrowRight");
+	await settle();
+	check(
+		"CALENDAR: stepping past the month's last day turns the page and keeps the focus",
+		[focused(), host.querySelector(".wg-kit-cal-month")?.textContent],
+		["2026-9-1", "October 2026"],
+	);
+	press(document.activeElement, "ArrowUp");
+	await settle();
+	check("and a week back crosses the page again", focused(), "2026-8-24");
+}
 
 render(
 	h(Kit.Segmented, {
@@ -313,9 +509,9 @@ render(
 	h(
 		Kit.Rows,
 		null,
-		h(Kit.Rows.Header, { title: "Steps" }),
-		h(Kit.Rows.Item, null, "one"),
-		h(Kit.Rows.Item, { tone: "success" }, "two"),
+		h(Kit.LayoutHeader, { title: "Steps" }),
+		h(Kit.LayoutItem, null, "one"),
+		h(Kit.LayoutItem, { tone: "success" }, "two"),
 	),
 	host,
 );
@@ -335,7 +531,7 @@ check(
 	[true, "group", "Steps"],
 );
 render(
-	h(Kit.Rows, null, h(Kit.Rows.Header, { title: "Steps", className: "mine" }), h(Kit.Rows.Item, null, "one")),
+	h(Kit.Rows, null, h(Kit.LayoutHeader, { title: "Steps", className: "mine" }), h(Kit.LayoutItem, null, "one")),
 	host,
 );
 await settle();
@@ -350,12 +546,12 @@ render(
 		Kit.Rows,
 		null,
 		h(
-			Kit.Rows.Header,
+			Kit.LayoutHeader,
 			null,
-			h(Kit.Rows.Title, null, "Sessions"),
-			h(Kit.Rows.Actions, null, h(Kit.Rows.ActionButton, { icon: "plus", label: "Log a session" })),
+			h(Kit.LayoutTitle, null, "Sessions"),
+			h(Kit.LayoutActions, null, h(Kit.ActionButton, { icon: "plus", label: "Log a session" })),
 		),
-		h(Kit.Rows.Item, null, "one"),
+		h(Kit.LayoutItem, null, "one"),
 	),
 	host,
 );
@@ -372,7 +568,7 @@ check(
 	["wg-kit-icon is-s wg-kit-action", "Log a session"],
 );
 render(
-	h(Kit.Rows, null, h(Kit.Rows.Header, { title: "Steps" }, h("button", null, "go")), h(Kit.Rows.Item, null, "one")),
+	h(Kit.Rows, null, h(Kit.LayoutHeader, { title: "Steps" }, h("button", null, "go")), h(Kit.LayoutItem, null, "one")),
 	host,
 );
 await settle();
@@ -452,8 +648,8 @@ render(null, host);
 		h(
 			Kit.Emblem,
 			{ label: "Anna" },
-			h(Kit.Emblem.DiceBear, { style: "bottts", seed: "Anna" }),
-			h(Kit.Emblem.Fallback, null, "AL"),
+			h(Kit.EmblemDiceBear, { style: "bottts", seed: "Anna" }),
+			h(Kit.EmblemFallback, null, "AL"),
 		),
 		host,
 	);
@@ -470,8 +666,8 @@ render(null, host);
 		h(
 			Kit.Emblem,
 			{ size: "l", shape: "rounded" },
-			h(Kit.Emblem.Image, { src: "x.png" }),
-			h(Kit.Emblem.Fallback, null, "AL"),
+			h(Kit.EmblemImage, { src: "x.png" }),
+			h(Kit.EmblemFallback, null, "AL"),
 		),
 		host,
 	);
@@ -486,12 +682,12 @@ render(null, host);
 		[host.firstChild.style.getPropertyValue("--wg-emblem-size"), host.firstChild.classList.contains("is-rounded")],
 		["64px", true],
 	);
-	render(h(Kit.Emblem, null, h(Kit.Emblem.Fallback, { seed: "Acme" })), host);
+	render(h(Kit.Emblem, null, h(Kit.EmblemFallback, { seed: "Acme" })), host);
 	check("with nothing to show it draws the seeded placeholder mark", Boolean(host.querySelector(".wg-kit-mark")), true);
 	render(null, host);
 }
 
-render(h(Kit.Grid, { min: 180 }, h(Kit.Grid.Item, null, "a"), h(Kit.Grid.Item, { tone: "warning" }, "b")), host);
+render(h(Kit.Grid, { min: 180 }, h(Kit.LayoutItem, null, "a"), h(Kit.LayoutItem, { tone: "warning" }, "b")), host);
 check(
 	"a grid gives every cell its own plate",
 	itemsOf().map(([worn]) => worn),
@@ -504,15 +700,15 @@ check(
 	"--wg-kit-layout-min: 180px;",
 );
 
-render(h(Kit.Layout, { kind: "row" }, h(Kit.Layout.Item, null, "a")), host);
+render(h(Kit.Layout, { kind: "row" }, h(Kit.LayoutItem, null, "a")), host);
 check(
 	"a row is cards across",
 	itemsOf().map(([worn]) => worn),
 	["group"],
 );
-render(h(Kit.Layout, { kind: "stack" }, h(Kit.Layout.Item, null, "a")), host);
+render(h(Kit.Layout, { kind: "stack" }, h(Kit.LayoutItem, null, "a")), host);
 check("a stack paints nothing at all", [plated("data-surface"), itemsOf().map(([worn]) => worn)], [[], [null]]);
-render(h(Kit.Layout, { kind: "masonry" }, h(Kit.Layout.Item, null, "a")), host);
+render(h(Kit.Layout, { kind: "masonry" }, h(Kit.LayoutItem, null, "a")), host);
 check(
 	"a layout the kit never had is drawn as a stack",
 	host.querySelector(".wg-kit-layout").className,
@@ -520,7 +716,7 @@ check(
 );
 check("the four layouts are named in one place", Kit.LAYOUT_KINDS, ["stack", "row", "grid", "rows"]);
 
-render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x"))), host);
+render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x"))), host);
 check(
 	"rows already on a plate paint no second one, only their lines",
 	[plated("data-surface"), host.querySelector(".wg-kit-layout").className],
@@ -529,17 +725,17 @@ check(
 const flushOf = () => host.querySelector('[data-surface="group"]')?.getAttribute("data-rows-flush") ?? null;
 check("rows alone in a card take its padding on every side", flushOf(), "inline top bottom");
 render(
-	h(Kit.Card, null, h("style", null, ".x{}"), h("div", null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")))),
+	h(Kit.Card, null, h("style", null, ".x{}"), h("div", null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")))),
 	host,
 );
 check("a sheet and a wrapper before them are not content, so the top is still theirs", flushOf(), "inline top bottom");
-render(h(Kit.Card, null, h("p", null, "Above"), h(Kit.Rows, null, h(Kit.Rows.Item, null, "x"))), host);
+render(h(Kit.Card, null, h("p", null, "Above"), h(Kit.Rows, null, h(Kit.LayoutItem, null, "x"))), host);
 check("something above them leaves the card its top", flushOf(), "inline bottom");
-render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")), h(Kit.Button, null, "More")), host);
+render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")), h(Kit.Button, null, "More")), host);
 check("something below them leaves the card its bottom", flushOf(), "inline top");
 render(h(Kit.Card, null, "plain"), host);
 check("a card with no rows keeps every edge", flushOf(), null);
-seeded(ONE_PLATE_ABOVE, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")));
+seeded(ONE_PLATE_ABOVE, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")));
 check("and so do rows in a tile the board already plated", plated("data-surface"), []);
 
 const surface = [
@@ -2774,11 +2970,34 @@ check(
 		SidebarRow: { label: "row" },
 		SidebarGroup: { label: "group" },
 	};
+	const PART_OF = {
+		EmblemImage: "Emblem",
+		EmblemDiceBear: "Emblem",
+		EmblemFallback: "Emblem",
+		PopoverTrigger: "Popover",
+		PopoverContent: "Popover",
+		SelectTrigger: "Select",
+		SelectValue: "Select",
+		SelectContent: "Select",
+		SelectItem: "Select",
+	};
+	const PART_NEEDS = { SelectItem: { value: "a" } };
+	const DRAWN_ONLY_ONCE_AN_IMAGE_LOADS = new Set(["EmblemImage"]);
+	const DRAWS_NO_ELEMENT_OF_ITS_OWN = new Set(["Select"]);
+	const PARENT_NEEDS = { Emblem: { label: "probe" }, Popover: { defaultOpen: true }, Select: { defaultOpen: true } };
 	const withoutClass = [];
 	for (const [name, drawn] of Object.entries(Kit)) {
-		if (typeof drawn !== "function" || !/^[A-Z]/.test(name)) continue;
+		if (
+			typeof drawn !== "function" ||
+			!/^[A-Z]/.test(name) ||
+			DRAWN_ONLY_ONCE_AN_IMAGE_LOADS.has(name) ||
+			DRAWS_NO_ELEMENT_OF_ITS_OWN.has(name)
+		)
+			continue;
 		render(null, host);
-		render(h(drawn, { ...NEEDED_TO_DRAW[name], className: PROBE }), host);
+		const part = h(drawn, { ...NEEDED_TO_DRAW[name], ...PART_NEEDS[name], className: PROBE });
+		const parent = PART_OF[name];
+		render(parent ? h(Kit[parent], PARENT_NEEDS[parent], part) : part, host);
 		await settle();
 		if (!document.querySelector(`.${PROBE}`)) withoutClass.push(name);
 	}

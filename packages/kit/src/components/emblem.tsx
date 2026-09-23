@@ -26,13 +26,14 @@ export function Emblem({ size = "m", shape = "circle", label, className: cls, st
 	);
 }
 
+// TODO: drop the dot aliases once the vault's @default copy is reinstalled
 Emblem.Image = EmblemImage;
 
 Emblem.DiceBear = EmblemDiceBear;
 
 Emblem.Fallback = EmblemFallback;
 
-function EmblemImage({ src, alt = "", className: cls, ...rest }: LooseProps) {
+export function EmblemImage({ src, alt = "", className: cls, ...rest }: LooseProps) {
 	const { status, setStatus } = useContext(EMBLEM_STATUS);
 	useLayoutEffect(() => {
 		if (!src) return setStatus("failed");
@@ -50,7 +51,7 @@ function EmblemImage({ src, alt = "", className: cls, ...rest }: LooseProps) {
 	return <img {...rest} src={src} alt={alt} className={cx("wg-kit-emblem-image", cls)} draggable={false} />;
 }
 
-function EmblemDiceBear({ style, seed, options, className: cls }: LooseProps) {
+export function EmblemDiceBear({ style, seed, options, className: cls }: LooseProps) {
 	const { setStatus } = useContext(EMBLEM_STATUS);
 	const verdict = diceBearVerdict(style);
 	useLayoutEffect(() => {
@@ -72,7 +73,7 @@ function EmblemRefused({ reason, className: cls }: LooseProps) {
 	);
 }
 
-function EmblemFallback({ seed, className: cls, children }: LooseProps) {
+export function EmblemFallback({ seed, className: cls, children }: LooseProps) {
 	const { status } = useContext(EMBLEM_STATUS);
 	if (status === "loaded" || status === "refused") return null;
 	if (children) return <span className={cx("wg-kit-emblem-fallback", cls)}>{children}</span>;

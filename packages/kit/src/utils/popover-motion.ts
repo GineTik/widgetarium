@@ -43,6 +43,9 @@ function placePanel(panel, rect, placement) {
 	}
 	panel.style.left = `${left - zero.left}px`;
 	panel.style.top = `${top - zero.top}px`;
+	panel.style.setProperty("--wg-kit-pop-available-width", `${window.innerWidth - marginPx - left}px`);
+	panel.style.setProperty("--wg-kit-pop-available-height", `${window.innerHeight - marginPx - top}px`);
+	panel.style.setProperty("--wg-kit-pop-origin", growthOrigin({ flippedX, flippedY }));
 	// CONTEXT: the growth leans on the corner the panel actually ended up on, screen edge included
 	return { flippedX, flippedY, width: zero.width, height: zero.height };
 }

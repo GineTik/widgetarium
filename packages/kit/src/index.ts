@@ -4,14 +4,22 @@ import { Badge, Count, Pill } from "./components/badge";
 import { Calendar } from "./components/calendar";
 import { Card, Plate, Surface } from "./components/card";
 
-import { Emblem, PlaceholderMark } from "./components/emblem";
+import { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
 import { Field, MarkdownEditor, TextArea } from "./components/field";
-import { Grid, Layout, Rows } from "./components/layout";
+import { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle, Rows } from "./components/layout";
 import { Heading } from "./components/heading";
 
 import { List, Row, RowBadge, RowLabel, RowValue, SlotList } from "./components/list";
 
-import { Popover, PopoverItem, PopoverSearch, PopoverSeparator } from "./components/popover";
+import {
+	Popover,
+	PopoverContent,
+	PopoverItem,
+	PopoverSearch,
+	PopoverSeparator,
+	PopoverTrigger,
+} from "./components/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
 
 import { Progress, ProgressBar, StatusProgress } from "./components/progress";
 
@@ -59,6 +67,9 @@ export const Kit = {
 	Badge,
 	Spinner,
 	Emblem,
+	EmblemImage,
+	EmblemDiceBear,
+	EmblemFallback,
 	ActionButton,
 	Tabs,
 	BADGE_VARIANTS,
@@ -71,6 +82,10 @@ export const Kit = {
 	Card,
 	Surface,
 	Layout,
+	LayoutHeader,
+	LayoutTitle,
+	LayoutActions,
+	LayoutItem,
 	Rows,
 	Grid,
 	LAYOUT_KINDS,
@@ -97,6 +112,13 @@ export const Kit = {
 	useSegmentedThumb,
 	useRoomForLabel,
 	Popover,
+	PopoverTrigger,
+	PopoverContent,
+	Select,
+	SelectTrigger,
+	SelectValue,
+	SelectContent,
+	SelectItem,
 	PopoverItem,
 	PopoverSearch,
 	PopoverSeparator,
@@ -127,20 +149,30 @@ export { Calendar } from "./components/calendar";
 export { Card, Plate, Surface } from "./components/card";
 export { CodeArea, Field, MarkdownEditor, TextArea } from "./components/field";
 
-export { Emblem, PlaceholderMark } from "./components/emblem";
+export { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
 
-export { Grid, Layout, Rows } from "./components/layout";
+export { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle, Rows } from "./components/layout";
 export { Heading } from "./components/heading";
 
 export { List, Row, RowBadge, RowLabel, RowValue, SlotList } from "./components/list";
 
-export { Popover, PopoverItem, PopoverSearch, PopoverSeparator } from "./components/popover";
+export {
+	Popover,
+	PopoverContent,
+	PopoverItem,
+	PopoverSearch,
+	PopoverSeparator,
+	PopoverTrigger,
+	usePopover,
+} from "./components/popover";
 
 export { Progress, ProgressBar, StatusProgress } from "./components/progress";
 
 export { Segmented, Tabs } from "./components/segmented";
 
 export { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
+export { Slot, Slottable, composeRefs, slotted } from "./components/slot";
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
 
 export { Switch } from "./components/switch";
 
@@ -163,7 +195,7 @@ export {
 	rowClass,
 	sidebarClass,
 } from "./utils/class-names";
-export { cx, variants } from "./utils/cx";
+export { cx, cx as cn, variants } from "./utils/cx";
 export { markOf } from "./utils/marks";
 export { plateEdgesTakenBy } from "./utils/plate-edges";
 export { progressState } from "./utils/progress";

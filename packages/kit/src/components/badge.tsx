@@ -3,14 +3,20 @@ import { BADGE_COLORS } from "../constants/tones";
 import type { LooseProps } from "../types";
 import { pillClass } from "../utils/class-names";
 import { cx } from "../utils/cx";
-import { render } from "../utils/render";
+import { domPropsOf } from "../utils/dom-props";
+import { Slot } from "./slot";
 
-export function Badge({ color, style, ...props }: LooseProps) {
+export function Badge({ asChild = false, color, style, children, ...props }: LooseProps) {
 	const isThemed = typeof color === "object" && color !== null;
-	return render(
-		"span",
-		{ ...props, style: { ...style, ...badgeInksOf(color) } },
-		cx(pillClass(props), isThemed && "is-themed"),
+	const Comp = asChild ? Slot : "span";
+	return (
+		<Comp
+			{...domPropsOf(props)}
+			style={{ ...style, ...badgeInksOf(color) }}
+			className={cx(pillClass(props), isThemed && "is-themed")}
+		>
+			{children}
+		</Comp>
 	);
 }
 

@@ -10,6 +10,7 @@ export { gatewayCache, stableKey } from "./gateway/cache";
 export { soloGateway } from "./gateway/create";
 export { narrowed } from "./gateway/narrow";
 export { EMOJI_TABLE, EMOJI_VIEW_BOX } from "@widgetarium/kit/emoji-table";
+export { extendTailwindMerge } from "tailwind-merge";
 export { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "@widgetarium/kit/icons";
 
 export const coreSurface = {

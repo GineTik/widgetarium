@@ -3,26 +3,25 @@ import { Icon } from "../icons/icon";
 import type { LooseProps } from "../types";
 import { buttonClass, iconButtonClass } from "../utils/class-names";
 import { cx } from "../utils/cx";
-import { render } from "../utils/render";
+import { domPropsOf } from "../utils/dom-props";
+import { Slot, Slottable, slotted } from "./slot";
 
-export function Button({ isLoading = false, isDone = false, children, ...props }: LooseProps) {
-	const mark = buttonMark(isLoading, isDone, props.size);
-	const held = {
-		type: "button",
-		...props,
-		disabled: props.disabled || isLoading,
-		"aria-busy": isLoading ? "true" : undefined,
-		children:
-			mark === null ? (
-				children
-			) : (
-				<>
-					{mark}
-					{children}
-				</>
-			),
-	};
-	return render("button", held, cx(buttonClass(props), isLoading && "is-loading", isDone && "is-done"));
+export function Button({ asChild = false, isLoading = false, isDone = false, children, ...props }: LooseProps) {
+	const Comp = asChild ? Slot : "button";
+	return (
+		<Comp
+			type={asChild ? undefined : "button"}
+			{...domPropsOf(props)}
+			disabled={props.disabled || isLoading}
+			aria-busy={isLoading ? "true" : undefined}
+			data-loading={isLoading ? "" : undefined}
+			data-disabled={props.disabled || isLoading ? "" : undefined}
+			className={cx(buttonClass(props), isLoading && "is-loading", isDone && "is-done")}
+		>
+			{buttonMark(isLoading, isDone, props.size)}
+			<Slottable>{children}</Slottable>
+		</Comp>
+	);
 }
 
 const MARK_PX = { l: 20, m: 18, s: 16, xs: 14 };
@@ -34,23 +33,32 @@ function buttonMark(isLoading, isDone, size) {
 	return null;
 }
 
-export function IconButton(props) {
-	const { label, isLoading = false, isDone = false, children, ...rest } = props;
-	const mark = buttonMark(isLoading, isDone, props.size);
-	const held = {
-		type: "button",
-		"aria-label": label,
-		...rest,
-		disabled: rest.disabled || isLoading,
-		"aria-busy": isLoading ? "true" : undefined,
-		children: mark ?? children,
-	};
-	return render("button", held, cx(iconButtonClass(props), isLoading && "is-loading", isDone && "is-done"));
+export function IconButton({
+	asChild = false,
+	label,
+	isLoading = false,
+	isDone = false,
+	children,
+	...props
+}: LooseProps) {
+	const Comp = asChild ? Slot : "button";
+	return (
+		<Comp
+			type={asChild ? undefined : "button"}
+			aria-label={label}
+			{...domPropsOf(props)}
+			disabled={props.disabled || isLoading}
+			aria-busy={isLoading ? "true" : undefined}
+			data-loading={isLoading ? "" : undefined}
+			data-disabled={props.disabled || isLoading ? "" : undefined}
+			className={cx(iconButtonClass(props), isLoading && "is-loading", isDone && "is-done")}
+		>
+			{buttonMark(isLoading, isDone, props.size) ?? <Slottable>{children}</Slottable>}
+		</Comp>
+	);
 }
 
-export function ButtonLabel(props) {
-	return render("span", props, cx("wg-kit-btn-label", props.className));
-}
+export const ButtonLabel = slotted("span", (props) => cx("wg-kit-btn-label", props.className), "ButtonLabel");
 
 const ACTION_ICON_PX = 16;
 

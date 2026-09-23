@@ -57,48 +57,48 @@ import { Card, Grid, Layout, Rows, Tabs } from "widgetarium/kit";
 <Card tone="warning">3 bugs found today</Card>
 
 <Rows>
-	<Rows.Header>
-		<Rows.Title>Steps</Rows.Title>
-		<Rows.Actions>
+	<LayoutHeader>
+		<LayoutTitle>Steps</LayoutTitle>
+		<LayoutActions>
 			<Tabs size="s" items={views} value={view} onChange={setView} />
-			<Rows.ActionButton icon="plus" label="Add a step" onClick={add} />
-		</Rows.Actions>
-	</Rows.Header>
+			<ActionButton icon="plus" label="Add a step" onClick={add} />
+		</LayoutActions>
+	</LayoutHeader>
 	{steps.map((step) => (
-		<Rows.Item key={step.ref} tone={step.done ? "success" : undefined}>…</Rows.Item>
+		<LayoutItem key={step.ref} tone={step.done ? "success" : undefined}>…</LayoutItem>
 	))}
 </Rows>
 
 <Grid min={220}>
-	{albums.map((album) => <Grid.Item key={album.ref}>…</Grid.Item>)}
+	{albums.map((album) => <LayoutItem key={album.ref}>…</LayoutItem>)}
 </Grid>
 
 <Layout kind={kind}>
-	{rows.map((row) => <Layout.Item key={row.ref}>…</Layout.Item>)}
+	{rows.map((row) => <LayoutItem key={row.ref}>…</LayoutItem>)}
 </Layout>
 ```
 
 - `Card` is one plate. `type` is `group` by default, `none` paints nothing, `apart` is a line and
   takes `side: start | end` and `across: row | column`. `tone` is `success`, `warning`, `error`,
   `accent` or any other kit tone. A card has no header or footer: what goes in it is yours.
-- `Rows` is one plate; `Rows.Item` stands bare on it with a line above every item after the first.
+- `Rows` is one plate; `LayoutItem` stands bare on it with a line above every item after the first.
   The plate has no side padding: each row carries the inset itself, so a line and a toned row reach
   both edges while the text stays 16px in. Rows standing on a plate already paint no second one.
-- `Rows.Header` is a row standing **above** the plate, outside it, flush with its edge rather than
-  inset like a row. `Rows.Title` is a kit `Heading` (an `h3` at size 4) and `Rows.Actions` holds
-  what stands at the end of the line: anything at all. `Rows.ActionButton` is the quick one, a small
+- `LayoutHeader` is a row standing **above** the plate, outside it, flush with its edge rather than
+  inset like a row. `LayoutTitle` is a kit `Heading` (an `h3` at size 4) and `LayoutActions` holds
+  what stands at the end of the line: anything at all. `ActionButton` is the quick one, a small
   grey button with an `icon`, an `icon` and words, or words alone; it is a plain button, so it is the
   `trigger` of a `Popover` or a `Dialog` as it stands. `Tabs` belong there too.
-  `<Rows.Header title="…">{actions}</Rows.Header>` is the short form of the same. Only rows standing
+  `<LayoutHeader title="…">{actions}</LayoutHeader>` is the short form of the same. Only rows standing
   on a tile that is itself a plate keep the header inside, because that plate is the board's and
   nothing can stand above it.
 - **Padding is never doubled.** Rows on a card take the card's padding on every edge they touch: the
   sides always, the top only when nothing stands above them in the card, the bottom only when nothing
   stands below. Anything else in the card keeps that edge for the card. The rows mark it on the card
   as `data-rows-flush="inline top bottom"` and the CSS drops exactly those edges.
-- `Grid` is bare; every `Grid.Item` is a `Card`. `min` is the narrowest a cell may be before it wraps.
+- `Grid` is bare; every `LayoutItem` is a `Card`. `min` is the narrowest a cell may be before it wraps.
 - `Layout` is all of them behind one word: `kind` is `stack` (bare), `row` (cards across), `grid`
-  or `rows`, and `Layout.Item` becomes whatever the kind asks for. Changing the design is changing
+  or `rows`, and `LayoutItem` becomes whatever the kind asks for. Changing the design is changing
   that one word.
 
 **A widget that paints its own plates wants a bare node.** `@default/kanban-board` paints a plate on

@@ -227,6 +227,17 @@ check(
 	KIT_THEME_FILE.includes("--text-*: initial;"),
 	true,
 );
+{
+	const { THEME_SCALES } = await import("./.mjs-cache/constants/theme-scales.mjs");
+	const declared = {};
+	for (const [, scale, name] of KIT_THEME_FILE.matchAll(
+		/--(color|text|radius|spacing|shadow|ease|font-weight|font)-([a-z0-9-]+):/g,
+	)) {
+		if (name.includes("--")) continue;
+		(declared[scale] ??= []).push(name);
+	}
+	check("THE CLASS MERGER KNOWS EVERY NAME THE THEME DECLARES, and no other", THEME_SCALES, declared);
+}
 check(
 	"THE KIT'S THEME IS INLINE, because a plain @theme resolves var(--wg-kit-*) on :root, where no kit token lives",
 	KIT_THEME_FILE.trimStart().startsWith("@theme inline {"),

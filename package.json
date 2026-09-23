@@ -104,6 +104,7 @@
 		"canvas": "node tools/canvas-from-widget.mjs",
 		"shot:widgets": "node tools/shot-widgets.mjs",
 		"shot:ai": "node tools/ai-shot.mjs",
+		"shot:select": "node tools/select-shot.mjs",
 		"test:shots": "node tools/shot-gate-test.mjs",
 		"test:manifest": "node tools/manifest-test.mjs",
 		"test:refusals": "node tools/refusal-test.mjs",

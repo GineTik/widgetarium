@@ -2,29 +2,17 @@ import { createElement as h } from "react";
 import type { LooseProps } from "../types";
 import { listClass, rowClass } from "../utils/class-names";
 import { cx } from "../utils/cx";
-import { render } from "../utils/render";
+import { slotted } from "./slot";
 
-export function List(props) {
-	return render("div", props, listClass(props));
-}
+export const List = slotted("div", listClass, "List");
 
-export function Row(props) {
-	return render("div", props, rowClass(props));
-}
+export const Row = slotted("div", rowClass, "Row");
 
-function rowPart(baseClass, name) {
-	function Part(props) {
-		return render("span", props, cx(baseClass, props.className));
-	}
-	Part.displayName = name;
-	return Part;
-}
+export const RowBadge = slotted("span", (props) => cx("wg-kit-row-badge", props.className), "RowBadge");
 
-export const RowBadge = rowPart("wg-kit-row-badge", "RowBadge");
+export const RowLabel = slotted("span", (props) => cx("wg-kit-row-label", props.className), "RowLabel");
 
-export const RowLabel = rowPart("wg-kit-row-label", "RowLabel");
-
-export const RowValue = rowPart("wg-kit-row-value", "RowValue");
+export const RowValue = slotted("span", (props) => cx("wg-kit-row-value", props.className), "RowValue");
 
 export function SlotList({ slot: Drawn, rows = [], give, keyOf, className: cls, style, children }: LooseProps) {
 	if (!Drawn) return null;

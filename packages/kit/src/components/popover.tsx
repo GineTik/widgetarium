@@ -1,68 +1,166 @@
-import { Fragment, createElement as h, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import {
+	Fragment,
+	createContext,
+	createElement as h,
+	useCallback,
+	useContext,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { PLACEMENTS, PRESS_EVENTS } from "../constants/popover";
+import { useControllableState } from "../hooks/use-controllable-state";
 import { Icon } from "../icons/icon";
 import type { LooseProps } from "../types";
 import { cx } from "../utils/cx";
 import { enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
+import { steppedIndex } from "../utils/roving";
 import { Field } from "./field";
+import { Slot } from "./slot";
+
+const PopoverContext = createContext(null);
+const ITEM = ".wg-kit-pop-item:not([disabled])";
+const CAPTURE_PAST_THE_EDITOR_SHIELD = true;
+
+const stateOf = (isOpen: boolean) => (isOpen ? "open" : "closed");
+
+export function usePopover() {
+	const popover = useContext(PopoverContext);
+	if (!popover) throw new Error("a popover part stands outside a Popover");
+	return popover;
+}
 
 export function Popover({
 	trigger,
 	children,
-	isOpen: isOpenAsked,
+	open,
+	isOpen: openAsLegacy,
+	defaultOpen = false,
 	onOpenChange,
 	className: cls,
 	placement = "over",
 }: LooseProps) {
+	const popover = usePopoverState({ open: open ?? openAsLegacy, defaultOpen, onOpenChange, placement });
+	if (trigger === undefined) {
+		return (
+			<PopoverContext.Provider value={{ ...popover, className: cls }}>
+				<span className="wg-kit-anchor" ref={popover.anchorRef} data-state={stateOf(popover.isOpen)}>
+					{children}
+				</span>
+			</PopoverContext.Provider>
+		);
+	}
+	return (
+		<PopoverContext.Provider value={{ ...popover, className: cls }}>
+			<span
+				className="wg-kit-anchor"
+				ref={popover.anchorRef}
+				aria-expanded={String(popover.isOpen)}
+				aria-controls={popover.id}
+				data-state={stateOf(popover.isOpen)}
+				onClick={(event) => {
+					if (popover.panelRef.current?.contains(event.target)) return;
+					popover.setOpen(!popover.isOpen);
+				}}
+			>
+				{trigger}
+				<PopoverContent>{children}</PopoverContent>
+			</span>
+		</PopoverContext.Provider>
+	);
+}
+
+export function PopoverTrigger({ asChild = false, onClick, children, ...props }: LooseProps) {
+	const popover = usePopover();
+	const Comp = asChild ? Slot : "button";
+	return (
+		<Comp
+			type={asChild ? undefined : "button"}
+			aria-haspopup="dialog"
+			aria-expanded={String(popover.isOpen)}
+			aria-controls={popover.id}
+			data-state={stateOf(popover.isOpen)}
+			{...props}
+			ref={popover.triggerRef}
+			onClick={(event) => {
+				onClick?.(event);
+				if (event.defaultPrevented) return;
+				popover.openedByKeyboard.current = event.detail === 0;
+				popover.setOpen(!popover.isOpen);
+			}}
+		>
+			{children}
+		</Comp>
+	);
+}
+
+export function PopoverContent({ children, className: cls }: LooseProps) {
+	const popover = usePopover();
+	const held = useRef(null);
+	if (popover.isOpen) held.current = children;
+	return (
+		<div
+			id={popover.id}
+			ref={popover.panelRef}
+			className={cx(
+				"wg-kit-pop",
+				popover.where.panelClass,
+				(popover.isOpen || popover.isExiting) && "is-open",
+				popover.isExiting && "is-exiting",
+				popover.className,
+				cls,
+			)}
+			role="dialog"
+			data-state={stateOf(popover.isOpen)}
+			data-side={popover.placement}
+			data-wg-overlay={popover.shown ? "" : undefined}
+			onKeyDown={moveBetweenItems}
+		>
+			<div className="wg-kit-pop-inner">{popover.shown ? held.current : null}</div>
+		</div>
+	);
+}
+
+function moveBetweenItems(event) {
+	const step = { ArrowDown: 1, ArrowUp: -1, Home: "first", End: "last" }[event.key];
+	if (step === undefined) return;
+	const items = [...event.currentTarget.querySelectorAll(ITEM)];
+	if (items.length === 0) return;
+	event.preventDefault();
+	items[steppedIndex(items.indexOf(document.activeElement), step, items.length)].focus();
+}
+
+function usePopoverState({ open, defaultOpen, onOpenChange, placement }) {
 	const where = PLACEMENTS[placement] ?? PLACEMENTS.over;
-	const [isOpenHeld, setOpenHeld] = useState(false);
-	const isOpen = isOpenAsked ?? isOpenHeld;
-	const triggerRef = useRef(null);
+	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
+	const anchorRef = useRef(null);
 	const panelRef = useRef(null);
+	const triggerRef = useRef(null);
+	const openedByKeyboard = useRef(false);
 	const id = useId();
 
-	// CONTEXT: one press fires pointerdown AND mousedown — report the transition once
-	const reported = useRef(isOpen);
-	reported.current = isOpen;
-
-	const setOpen = useCallback(
-		(next) => {
-			if (reported.current === next) return;
-			reported.current = next;
-			if (isOpenAsked === undefined) setOpenHeld(next);
-			onOpenChange?.(next);
-		},
-		[isOpenAsked, onOpenChange],
-	);
-
-	// TRADE-OFF: a ref, so the listener below depends on `open` alone — a caller handing over
-	// a fresh onOpenChange each render would otherwise re-hang it on every render
-	const latestSetOpen = useRef(setOpen);
-	latestSetOpen.current = setOpen;
-
-	// CONTEXT: preact drops `is-open` the instant `open` turns false, so the exit needs its own state
 	const [isExiting, setExiting] = useState(false);
 	const wasOpen = useRef(false);
 	const stopExit = useRef(null);
-
-	// CONTEXT: a caller writes `{open ? <panel/> : null}`, so the children go before the fold is measured
-	const held = useRef(null);
-	if (isOpen) held.current = children;
-	// CONTEXT: wasOpen is still true on the closing render, the one render `exiting` cannot cover
 	const shown = isOpen || isExiting || wasOpen.current;
 
 	useLayoutEffect(() => {
 		const panel = panelRef.current;
-		const anchor = triggerRef.current;
+		const anchor = anchorRef.current;
 		if (!panel || !anchor) return;
 		const closing = wasOpen.current && !isOpen;
 		wasOpen.current = isOpen;
 		stopExit.current?.();
 		stopExit.current = null;
+		if (closing) returnFocus(panel, triggerRef.current ?? anchor);
 
 		if (isOpen) {
 			setExiting(false);
-			return enterPanel(panel, anchor, where);
+			const stopEnter = enterPanel(panel, anchor, where);
+			if (openedByKeyboard.current) panel.querySelector(ITEM)?.focus();
+			return stopEnter;
 		}
 		if (!closing || prefersReducedMotion()) {
 			setExiting(false);
@@ -82,66 +180,75 @@ export function Popover({
 		};
 	}, [isOpen]);
 
-	// CONTEXT: src/editor-shield.js stops pointerdown/mousedown in the BUBBLE phase on every
-	// widget root, so a press on the board never reached a bubble listener here — capture does
 	useEffect(() => {
 		if (!isOpen) return;
 		const closeOnOutsidePress = (event) => {
 			if (panelRef.current?.contains(event.target)) return;
-			if (triggerRef.current?.contains(event.target)) return;
-			latestSetOpen.current(false);
+			if (anchorRef.current?.contains(event.target)) return;
+			setOpen(false);
 		};
 		const closeOnEscape = (event) => {
-			if (event.key === "Escape") latestSetOpen.current(false);
+			if (event.key === "Escape") setOpen(false);
 		};
-		// CONTEXT: pointerdown carries touch and pen; mousedown covers a host without it
-		for (const name of PRESS_EVENTS) document.addEventListener(name, closeOnOutsidePress, true);
-		document.addEventListener("keydown", closeOnEscape, true);
+		for (const name of PRESS_EVENTS)
+			document.addEventListener(name, closeOnOutsidePress, CAPTURE_PAST_THE_EDITOR_SHIELD);
+		document.addEventListener("keydown", closeOnEscape, CAPTURE_PAST_THE_EDITOR_SHIELD);
 		return () => {
-			for (const name of PRESS_EVENTS) document.removeEventListener(name, closeOnOutsidePress, true);
-			document.removeEventListener("keydown", closeOnEscape, true);
+			for (const name of PRESS_EVENTS)
+				document.removeEventListener(name, closeOnOutsidePress, CAPTURE_PAST_THE_EDITOR_SHIELD);
+			document.removeEventListener("keydown", closeOnEscape, CAPTURE_PAST_THE_EDITOR_SHIELD);
 		};
-	}, [isOpen]);
+	}, [isOpen, setOpen]);
 
-	// TRADE-OFF: measure the WRAPPER, not the trigger — a ref does not reach a DOM node
-	// through a function component, so any component trigger would have gone unmeasured
-	return (
-		<span
-			className="wg-kit-anchor"
-			ref={triggerRef}
-			aria-expanded={String(isOpen)}
-			aria-controls={id}
-			onClick={(event) => {
-				if (panelRef.current?.contains(event.target)) return;
-				setOpen(!isOpen);
-			}}
-		>
-			{trigger}
-			<div
-				id={id}
-				ref={panelRef}
-				className={cx(
-					"wg-kit-pop",
-					where.panelClass,
-					(isOpen || isExiting) && "is-open",
-					isExiting && "is-exiting",
-					cls,
-				)}
-				role="dialog"
-				data-wg-overlay={shown ? "" : undefined}
-			>
-				<div className="wg-kit-pop-inner">{shown ? held.current : null}</div>
-			</div>
-		</span>
-	);
+	return {
+		id,
+		where,
+		placement,
+		isOpen,
+		isExiting,
+		shown,
+		setOpen,
+		anchorRef,
+		panelRef,
+		triggerRef,
+		openedByKeyboard,
+	};
+}
+
+function returnFocus(panel, trigger) {
+	if (!panel.contains(document.activeElement)) return;
+	const target = trigger.matches?.("button, a, input, [tabindex]")
+		? trigger
+		: trigger.querySelector?.("button, a, input, [tabindex]");
+	target?.focus();
 }
 
 export function PopoverItem({ checked, sub, children, ...rest }: LooseProps) {
+	const [isHighlighted, setHighlighted] = useState(false);
 	return (
 		<button
 			type="button"
 			{...rest}
 			aria-checked={checked === undefined ? undefined : String(checked)}
+			data-state={checked === undefined ? undefined : checked ? "checked" : "unchecked"}
+			data-highlighted={isHighlighted ? "" : undefined}
+			data-disabled={rest.disabled ? "" : undefined}
+			onFocus={(event) => {
+				setHighlighted(true);
+				rest.onFocus?.(event);
+			}}
+			onBlur={(event) => {
+				setHighlighted(false);
+				rest.onBlur?.(event);
+			}}
+			onPointerEnter={(event) => {
+				setHighlighted(true);
+				rest.onPointerEnter?.(event);
+			}}
+			onPointerLeave={(event) => {
+				setHighlighted(false);
+				rest.onPointerLeave?.(event);
+			}}
 			className={cx("wg-kit-pop-item", sub && "is-two", rest.className)}
 		>
 			{sub === undefined ? (
@@ -168,7 +275,6 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }: L
 	const needle = keyword.trim().toLowerCase();
 	const listRef = useRef(null);
 
-	// CONTEXT: the list is capped in the stylesheet, so what is out of sight is measured, never counted
 	const [reach, setReach] = useState({ up: false, down: false });
 	const measureReach = useCallback(() => {
 		const list = listRef.current;
@@ -177,13 +283,11 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }: L
 		const down = list.scrollTop + list.clientHeight < list.scrollHeight - 1;
 		setReach((was) => (was.up === up && was.down === down ? was : { up, down }));
 	}, []);
-	// CONTEXT: a needle takes rows away, so the edges are re-measured after every render, not once
 	useLayoutEffect(measureReach);
 
-	// CONTEXT: whatever the caller drew first is what Enter means — the kit does not know the list
 	const takeFirst = (event) => {
 		if (event.key !== "Enter") return;
-		const first = listRef.current?.querySelector(".wg-kit-pop-item:not([disabled])");
+		const first = listRef.current?.querySelector(ITEM);
 		if (!first) return;
 		event.preventDefault();
 		first.click();

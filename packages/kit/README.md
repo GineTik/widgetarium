@@ -41,6 +41,11 @@ Everything is TSX with the classic `h` factory, so every file that draws imports
 - **Colours are tokens.** Every colour is a `--wg-kit-*` custom property; nothing is written by hand.
 - **A plate is earned.** `Card` asks the plate laws whether it may stand where it is; a refused plate paints nothing and warns.
 - **Icons and emojis are drawings**, not font glyphs, so they look the same in every host.
+- **Radix's conventions, shadcn's names.** Parts are flat exports (`PopoverTrigger`, `SelectItem`,
+  `LayoutHeader`); state works controlled or not through one rule (`value` / `defaultValue` /
+  `onValueChange`, and `open`, `checked`, `month` alike); `asChild` goes through `Slot`; state is
+  written on the element (`data-state`, `data-disabled`, `data-highlighted`); `cn` merges classes
+  with tailwind-merge, told the theme's names by `constants/theme-scales.ts`.
 
 Glyph tables are generated: `node tools/fetch-icons.mjs`, `node tools/fetch-emojis.mjs` and `node tools/fetch-shapes.mjs` rewrite them. Their own licences sit in [`assets/`](assets).
 

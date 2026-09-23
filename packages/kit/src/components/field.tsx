@@ -5,9 +5,9 @@ import { cx } from "../utils/cx";
 import { markdownSpans } from "../utils/markdown";
 import { yamlSpans } from "../utils/yaml";
 
-export function Field({ icon, value, onInput, placeholder, type = "text", ...rest }: LooseProps) {
+export function Field({ icon, value, onInput, onValueChange, placeholder, type = "text", ...rest }: LooseProps) {
 	return (
-		<label className={fieldClass(rest)}>
+		<label className={fieldClass(rest)} data-disabled={rest.disabled ? "" : undefined}>
 			{icon}
 			<input
 				{...withoutFieldLook(rest)}
@@ -15,7 +15,10 @@ export function Field({ icon, value, onInput, placeholder, type = "text", ...res
 				type={type}
 				value={value}
 				placeholder={placeholder}
-				onInput={onInput}
+				onInput={(event) => {
+					onInput?.(event);
+					onValueChange?.((event.target as HTMLInputElement).value);
+				}}
 			/>
 		</label>
 	);

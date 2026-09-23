@@ -1443,6 +1443,30 @@ body {
 	opacity: 1;
 	pointer-events: auto;
 }
+
+:is(.wg-root, .wg-portal) .wg-kit-select-trigger {
+	justify-content: space-between;
+	gap: var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-select-value[data-placeholder] {
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-select-chevron {
+	color: var(--wg-kit-text-muted);
+	transition: rotate var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-select-trigger[data-state="open"] .wg-kit-select-chevron {
+	rotate: 180deg;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-select-content {
+	width: max(200px, var(--wg-kit-anchor-width, 200px));
+	max-height: var(--wg-kit-pop-available-height, 60vh);
+	overflow-y: auto;
+}
 /* CONTEXT: it is folding back into the trigger — a press must not land on it on the way */
 :is(.wg-root, .wg-portal) .wg-kit-pop.is-exiting {
 	pointer-events: none;

@@ -54,6 +54,7 @@ export function Layout({
 	);
 }
 
+// TODO: drop the dot aliases once the vault's @default copy is reinstalled
 Layout.Header = LayoutHeader;
 
 Layout.Title = LayoutTitle;
@@ -64,7 +65,7 @@ Layout.ActionButton = ActionButton;
 
 Layout.Item = LayoutItem;
 
-function LayoutHeader({ title, className: cls, children, ...rest }: LooseProps) {
+export function LayoutHeader({ title, className: cls, children, ...rest }: LooseProps) {
 	const headPlace = useContext(HEAD_OUTSIDE);
 	const drawn = (
 		<div {...rest} className={cx("wg-kit-layout-head", headPlace && "is-outside", cls)}>
@@ -80,11 +81,16 @@ const LAYOUT_TITLE_LEVEL = 3;
 
 const LAYOUT_TITLE_SIZE = 4;
 
-function LayoutTitle({ level = LAYOUT_TITLE_LEVEL, size = LAYOUT_TITLE_SIZE, className: cls, ...rest }: LooseProps) {
+export function LayoutTitle({
+	level = LAYOUT_TITLE_LEVEL,
+	size = LAYOUT_TITLE_SIZE,
+	className: cls,
+	...rest
+}: LooseProps) {
 	return <Heading {...rest} level={level} size={size} className={cx("wg-kit-layout-title", cls)} />;
 }
 
-function LayoutActions({ className: cls, children, ...rest }: LooseProps) {
+export function LayoutActions({ className: cls, children, ...rest }: LooseProps) {
 	return (
 		<div {...rest} className={cx("wg-kit-layout-actions", cls)}>
 			{children}
@@ -92,7 +98,7 @@ function LayoutActions({ className: cls, children, ...rest }: LooseProps) {
 	);
 }
 
-function LayoutItem({ tone, className: cls, children, ...rest }: LooseProps) {
+export function LayoutItem({ tone, className: cls, children, ...rest }: LooseProps) {
 	const kind = useContext(LAYOUT_KIND);
 	const itemClass = cx("wg-kit-layout-item", cls);
 	if (kind === "grid" || kind === "row")

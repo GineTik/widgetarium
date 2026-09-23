@@ -1,8 +1,8 @@
-import { createElement as h, cloneElement, createContext, Children } from "react";
+import { createElement as h, createContext } from "react";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { mountInto } from "./portal.js";
-import { Button, cx, Icon, IconButton } from "@widgetarium/kit";
+import { Button, cx, Icon, IconButton, slotted } from "@widgetarium/kit";
 
 // CONTEXT: preact's render() starts a new tree, so no provider outside the portal reaches inside
 const DialogState = createContext(null);
@@ -181,17 +181,8 @@ function exitDialog(node, done) {
 	panel.addEventListener("transitionend", finish);
 }
 
-// CONTEXT: shadcn's asChild, same shape as render() in kit.js, which is module-private there
 function part(tag, baseClass, name) {
-	function Part({ asChild, children, className: cls, ...rest }) {
-		const resolved = cx(baseClass, cls);
-		if (!asChild) return h(tag, { ...rest, className: resolved }, children);
-		const only = Children.toArray(children)[0];
-		if (!only || typeof only !== "object") return h(tag, { ...rest, className: resolved }, children);
-		return cloneElement(only, { ...rest, className: cx(resolved, only.props.className) });
-	}
-	Part.displayName = name;
-	return Part;
+	return slotted(tag, (props) => cx(baseClass, props.className), name);
 }
 
 // CONTEXT: React strips the portal on unmount, so the exit is played on a copy left in its place

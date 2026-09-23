@@ -1,5 +1,6 @@
 import type { LooseProps } from "../types";
-import { createElement as h, useState } from "react";
+import { createElement as h, useLayoutEffect, useRef, useState } from "react";
+import { useControllableState } from "../hooks/use-controllable-state";
 import { IconButton } from "./button";
 import { Icon } from "../icons/icon";
 import { cx } from "../utils/cx";
@@ -38,18 +39,56 @@ function sameDay(one, other) {
 	);
 }
 
-export function Calendar({ month, onMonthChange, selected, today, onSelect, renderDay, className: cls }: LooseProps) {
-	const [ownMonth, setOwnMonth] = useState(() => month ?? selected ?? today ?? new Date());
-	const shown = month ?? ownMonth;
+const DAYS_OF_KEY = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+const MONTHS_OF_KEY = { PageUp: -1, PageDown: 1 };
+
+const dayKey = (date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+function movedByKey(date, key) {
+	if (key in DAYS_OF_KEY) return new Date(date.getFullYear(), date.getMonth(), date.getDate() + DAYS_OF_KEY[key]);
+	if (key in MONTHS_OF_KEY) return new Date(date.getFullYear(), date.getMonth() + MONTHS_OF_KEY[key], date.getDate());
+	return null;
+}
+
+export function Calendar({
+	month,
+	defaultMonth,
+	onMonthChange,
+	selected,
+	today,
+	onSelect,
+	renderDay,
+	className: cls,
+}: LooseProps) {
+	const now = today ?? new Date();
+	const [shown, setShown] = useControllableState({
+		prop: month,
+		defaultProp: defaultMonth ?? selected ?? now,
+		onChange: onMonthChange,
+	});
+	const [focusWanted, setFocusWanted] = useState(null);
+	const gridRef = useRef(null);
 	const year = shown.getFullYear();
 	const index = shown.getMonth();
-	const now = today ?? new Date();
 	const first = startOfCalendar(year, index);
+	const inMonth = (date) => date && date.getFullYear() === year && date.getMonth() === index;
+	const tabStop = inMonth(selected) ? selected : inMonth(now) ? now : new Date(year, index, 1);
 
-	const step = (by) => {
-		const next = new Date(year, index + by, 1);
-		if (month === undefined) setOwnMonth(next);
-		onMonthChange?.(next);
+	useLayoutEffect(() => {
+		if (!focusWanted) return;
+		gridRef.current?.querySelector(`[data-date="${dayKey(focusWanted)}"]`)?.focus();
+		setFocusWanted(null);
+	}, [focusWanted, shown]);
+
+	const step = (by) => setShown(new Date(year, index + by, 1));
+
+	const moveWithKeys = (event) => {
+		const from = event.target.closest?.("[data-date]");
+		const next = from ? movedByKey(new Date(from.dataset.day), event.key) : null;
+		if (!next) return;
+		event.preventDefault();
+		if (!inMonth(next)) setShown(new Date(next.getFullYear(), next.getMonth(), 1));
+		setFocusWanted(next);
 	};
 
 	const cells = [];
@@ -64,7 +103,13 @@ export function Calendar({ month, onMonthChange, selected, today, onSelect, rend
 		cells.push(
 			<button
 				type="button"
-				key={`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`}
+				key={dayKey(date)}
+				data-date={dayKey(date)}
+				data-day={date.toISOString()}
+				data-selected={day.selected ? "" : undefined}
+				data-today={day.today ? "" : undefined}
+				data-outside={day.outside ? "" : undefined}
+				tabIndex={sameDay(date, tabStop) ? 0 : -1}
 				className={cx(
 					"wg-kit-cal-day",
 					day.outside && "is-outside",
@@ -90,7 +135,7 @@ export function Calendar({ month, onMonthChange, selected, today, onSelect, rend
 					<Icon name="chevron" />
 				</IconButton>
 			</div>
-			<div className="wg-kit-cal-grid">
+			<div className="wg-kit-cal-grid" role="grid" ref={gridRef} onKeyDown={moveWithKeys}>
 				{WEEKDAY_INITIALS.map((initial, at) => (
 					<span key={at} className="wg-kit-cal-weekday">
 						{initial}

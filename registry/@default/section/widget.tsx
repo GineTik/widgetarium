@@ -1,6 +1,6 @@
 import { Mounted, createWidget, defineManifest, defineProp, useData } from "widgetarium";
 import type { CollectionGatewayOf, MountEntry, RecordRef, Slot, ValueGatewayOf } from "widgetarium";
-import { Layout, Pill, Card } from "widgetarium/kit";
+import { Card, Layout, LayoutItem, Pill } from "widgetarium/kit";
 
 type Item = { ref: RecordRef };
 
@@ -159,9 +159,9 @@ function Stands({ entry }: { entry: MountEntry }) {
 			</Card>
 		);
 	return (
-		<Layout.Item className="wg-section-stands">
+		<LayoutItem className="wg-section-stands">
 			<Mounted entry={entry} />
-		</Layout.Item>
+		</LayoutItem>
 	);
 }
 
@@ -202,9 +202,9 @@ function PerRow({ Drawn, rows }: { Drawn: Slot<Record<string, unknown>> | undefi
 	return (
 		<>
 			{rows.map((row) => (
-				<Layout.Item key={String(row.ref)}>
+				<LayoutItem key={String(row.ref)}>
 					<Drawn {...row} />
-				</Layout.Item>
+				</LayoutItem>
 			))}
 		</>
 	);

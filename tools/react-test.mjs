@@ -268,7 +268,8 @@ check(
 	[...readFromCore].filter((name) => !(name in coreExports)),
 	[],
 );
-check("the emoji drawings stay behind that boundary", SURFACE_SOURCE.length < 120 * 1024, true);
+check("the emoji drawings stay behind that boundary", SURFACE_SOURCE.includes('"grinning-face"'), false);
+check("and so does the class merger", SURFACE_SOURCE.includes("twJoin"), false);
 
 console.log("\n— a slot may not cross a React —");
 const onePlace = { instance: "one", version: "19.2.8" };
