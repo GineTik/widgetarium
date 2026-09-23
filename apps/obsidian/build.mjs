@@ -56,7 +56,11 @@ function widgetTypesSource() {
 			build.onLoad({ filter: /.*/, namespace: "wg-types" }, () => ({
 				contents: `export default ${JSON.stringify(widgetTypeFiles())};`,
 				loader: "js",
-				watchFiles: ["packages/sdk/types/widgetarium.d.ts", "packages/sdk/types/globals.d.ts", "tsconfig.widgets.json"],
+				watchFiles: [
+					"packages/sdk/types/widgetarium.d.ts",
+					"packages/sdk/types/globals.d.ts",
+					"packages/sdk/tsconfig.widgets.json",
+				],
 			}));
 		},
 	};

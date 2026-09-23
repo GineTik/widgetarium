@@ -18,7 +18,7 @@ function saidBy(file) {
 	writeFileSync(
 		CONFIG_AT,
 		JSON.stringify({
-			extends: "../../../tsconfig.widgets.json",
+			extends: "../../../packages/sdk/tsconfig.widgets.json",
 			compilerOptions: { paths: { widgetarium: ["../../../packages/sdk/types/widgetarium.d.ts"] } },
 			include: ["../../../packages/sdk/types/**/*.d.ts", `./${file}`],
 		}),

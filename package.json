@@ -18,7 +18,7 @@
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"format:watch": "node tools/format-watch.mjs",
-		"hooks": "git config core.hooksPath .githooks",
+		"hooks": "git config core.hooksPath tools/githooks",
 		"test:lib": "node tools/lib-test.mjs",
 		"test:streak": "node tools/streak-test.mjs",
 		"test:model": "node tools/model-test.mjs",
@@ -27,8 +27,8 @@
 		"test:dialog-fit": "node tools/dialog-fit-test.mjs",
 		"test:write": "node tools/write-test.mjs",
 		"test:editor-write": "node tools/editor-write-test.mjs",
-		"test:types": "tsc --noEmit",
-		"test:needs": "tsc -p tsconfig.widgets.json --noEmit",
+		"test:types": "tsc -p packages/core --noEmit",
+		"test:needs": "tsc -p packages/sdk/tsconfig.widgets.json --noEmit",
 		"test:surface": "node tools/api-surface-test.mjs",
 		"test:props": "node tools/props-test.mjs",
 		"test:visibility": "node tools/visibility-test.mjs",
@@ -133,5 +133,19 @@
 		"react-dom": "^19.2.8",
 		"sucrase": "^3.35.0",
 		"yaml": "^2.9.0"
+	},
+	"prettier": {
+		"useTabs": true,
+		"tabWidth": 2,
+		"printWidth": 120,
+		"semi": true,
+		"singleQuote": false,
+		"quoteProps": "as-needed",
+		"jsxSingleQuote": false,
+		"trailingComma": "all",
+		"bracketSpacing": true,
+		"bracketSameLine": false,
+		"arrowParens": "always",
+		"endOfLine": "lf"
 	}
 }

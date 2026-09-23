@@ -15,7 +15,7 @@ function declarationsOf(outDir) {
 			"--no-install",
 			"tsc",
 			"-p",
-			"tsconfig.json",
+			"packages/core/tsconfig.json",
 			"--noEmit",
 			"false",
 			"--declaration",
@@ -36,7 +36,7 @@ function declarationsOf(outDir) {
 const vaultFacing = (text) => text.replaceAll("../../core/src/gateway/", "./gateway/");
 
 function standaloneTsconfig() {
-	const held = JSON.parse(fs.readFileSync("tsconfig.widgets.json", "utf8"));
+	const held = JSON.parse(fs.readFileSync("packages/sdk/tsconfig.widgets.json", "utf8"));
 	const options = {
 		...held.compilerOptions,
 		paths: { widgetarium: ["./types/widgetarium.d.ts"] },

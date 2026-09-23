@@ -24,8 +24,8 @@ re-export it from there. The app reaches core as `@widgetarium/core/<file>` and 
 `@widgetarium/kit[/surface|/plates|/icons|/emoji-table|/emojis|/shapes|/dicebear]` — the kit's
 `package.json` `exports` is the one list of its entry points, and `tools/mirror.mjs` reads it to lay
 the test cache flat. Every tool runs from the repo root. A second host (web, Tauri) is another
-`apps/*` beside `obsidian`, never a branch inside core. Licences: `LICENSE` (FSL-1.1-ALv2) at the
-root, MIT in `packages/kit/LICENSE` and `registry/LICENSE`, `REUSE.toml` maps paths to them.
+`apps/*` beside `obsidian`, never a branch inside core. Licences: each package folder carries its own `LICENSE`; the root `LICENSE` is only the
+map of which folder is MIT and which FSL-1.1-ALv2, and `REUSE.toml` maps paths to them.
 
 **The handbook written for the in-app agent is your handbook too.** `docs/ai/` is the whole of it:
 `brief.md` is the prompt, `board.md`, `surfaces.md` and `examples.md` go into the agent's context in
@@ -160,7 +160,7 @@ until the last shipped widget moves.
 
 **A widget folder is typed wherever it stands.** The repo has `registry/tsconfig.json`, so an editor
 opening a widget resolves `widgetarium` instead of reporting `TS2307` and handing every prop `any` —
-the root `tsconfig.json` covers only `packages/core/src/`. The vault gets the same: `layAgentFiles` lays
+`packages/core/tsconfig.json` covers only the gateway's TypeScript. The vault gets the same: `layAgentFiles` lays
 `.widgetarium/widgets/tsconfig.json` and `types/` beside the widgets, built by `tools/widget-types.mjs`
 from the gateway's emitted declarations, so a widget written in a vault is typed by the same manifest
 the engine reads. `npm run test:vault-types` lays them into a temp folder and compiles a widget

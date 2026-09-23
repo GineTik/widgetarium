@@ -12,3 +12,6 @@ tools/.mjs-cache/
 tools/.widgets-published/
 registry/*/*/build/
 .preview/
+.claude/
+.design/
+.tasks/
