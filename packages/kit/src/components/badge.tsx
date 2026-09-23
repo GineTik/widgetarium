@@ -1,5 +1,6 @@
-import type { LooseProps } from "../types";
+import { createElement as h } from "react";
 import { BADGE_COLORS } from "../constants/tones";
+import type { LooseProps } from "../types";
 import { pillClass } from "../utils/class-names";
 import { cx } from "../utils/cx";
 import { render } from "../utils/render";
@@ -25,3 +26,11 @@ function inkNamed(color) {
 }
 
 export const Pill = Badge;
+
+export function Count({ children, ...rest }: LooseProps) {
+	return (
+		<span {...rest} className={cx("wg-kit-count", rest.className)}>
+			{children}
+		</span>
+	);
+}

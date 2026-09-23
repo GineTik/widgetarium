@@ -23,7 +23,7 @@ import { Card, Rows, Icon } from "widgetarium/kit";
 
 ```
 src/
-  components/   one component per file: button.tsx, card.tsx, layout.tsx, popover.tsx, …
+  components/   one file per kit item: emblem.tsx holds Emblem and its image, dice-bear and fallback parts, button.tsx every button, layout.tsx Layout with Rows and Grid, …
   icons/        icon.tsx, the kit's own glyphs, the generated Lucide table
   emojis/       emoji.tsx and the generated Fluent table
   hooks/        one hook per file
@@ -34,7 +34,7 @@ src/
   plates.ts     the plate words and laws, for @widgetarium/kit/plates
 ```
 
-Everything is TSX with the classic `h` factory, so every file that draws imports `createElement as h` from React. A constant or helper used by one component lives in that component's file; one used by several lives in `constants/` or `utils/`.
+Everything is TSX with the classic `h` factory, so every file that draws imports `createElement as h` from React. A constant or helper used by one kit item lives in that item's file; one used by several lives in `constants/` or `utils/`.
 
 ## Rules it keeps
 

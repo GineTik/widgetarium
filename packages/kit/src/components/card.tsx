@@ -1,5 +1,6 @@
-import type { LooseProps } from "../types";
 import { createElement as h, useContext } from "react";
+import type { LooseProps } from "../types";
+import { plateClass } from "../utils/class-names";
 import { cx } from "../utils/cx";
 import { render } from "../utils/render";
 import { GROUP, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "../utils/surface";
@@ -21,4 +22,8 @@ export const Surface = Card;
 
 function sayRefusedPlate(said, refusal) {
 	warnOnce(`a ${said} surface painted nothing — ${refusal.reason} (law ${refusal.law})`);
+}
+
+export function Plate(props) {
+	return render("div", props, plateClass(props));
 }

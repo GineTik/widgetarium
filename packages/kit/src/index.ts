@@ -1,40 +1,26 @@
-import { ActionButton } from "./components/action-button";
-import { Badge, Pill } from "./components/badge";
-import { Button } from "./components/button";
-import { ButtonLabel } from "./components/button-label";
+import { ActionButton, Button, ButtonLabel, IconButton, ShowMore, Spinner } from "./components/button";
+import { Badge, Count, Pill } from "./components/badge";
+
 import { Calendar } from "./components/calendar";
-import { Card, Surface } from "./components/card";
-import { Count } from "./components/count";
-import { Emblem } from "./components/emblem";
-import { Field } from "./components/field";
-import { Grid } from "./components/grid";
+import { Card, Plate, Surface } from "./components/card";
+
+import { Emblem, PlaceholderMark } from "./components/emblem";
+import { Field, MarkdownEditor, TextArea } from "./components/field";
+import { Grid, Layout, Rows } from "./components/layout";
 import { Heading } from "./components/heading";
-import { IconButton } from "./components/icon-button";
-import { Layout } from "./components/layout";
-import { List } from "./components/list";
-import { MarkdownEditor } from "./components/markdown-editor";
-import { PlaceholderMark } from "./components/placeholder-mark";
-import { Plate } from "./components/plate";
-import { Popover } from "./components/popover";
-import { PopoverItem } from "./components/popover-item";
-import { PopoverSearch } from "./components/popover-search";
-import { PopoverSeparator } from "./components/popover-separator";
-import { Progress } from "./components/progress";
-import { ProgressBar } from "./components/progress-bar";
-import { Row } from "./components/row";
-import { RowBadge, RowLabel, RowValue } from "./components/row-parts";
-import { Rows } from "./components/rows";
+
+import { List, Row, RowBadge, RowLabel, RowValue, SlotList } from "./components/list";
+
+import { Popover, PopoverItem, PopoverSearch, PopoverSeparator } from "./components/popover";
+
+import { Progress, ProgressBar, StatusProgress } from "./components/progress";
+
 import { Segmented, Tabs } from "./components/segmented";
-import { ShowMore } from "./components/show-more";
-import { Sidebar } from "./components/sidebar";
-import { SidebarGroup } from "./components/sidebar-group";
-import { SidebarRow } from "./components/sidebar-row";
-import { SidebarSheet } from "./components/sidebar-sheet";
-import { SlotList } from "./components/slot-list";
-import { Spinner } from "./components/spinner";
-import { StatusProgress } from "./components/status-progress";
+
+import { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
+
 import { Switch } from "./components/switch";
-import { TextArea } from "./components/text-area";
+
 import { LAYOUT_KINDS } from "./constants/layout";
 import { MARK_SHAPE_NAMES, MARK_TONE_NAMES } from "./constants/marks";
 import { APPROVAL_TONES, BADGE_COLORS, BADGE_VARIANTS, PRIORITY_TONES, TONE_NAMES } from "./constants/tones";
@@ -134,44 +120,30 @@ export const Kit = {
 	glassClass,
 };
 
-export { ActionButton } from "./components/action-button";
-export { Badge, Pill } from "./components/badge";
-export { Button } from "./components/button";
-export { ButtonLabel } from "./components/button-label";
+export { ActionButton, Button, ButtonLabel, IconButton, ShowMore, Spinner } from "./components/button";
+export { Badge, Count, Pill } from "./components/badge";
+
 export { Calendar } from "./components/calendar";
-export { Card, Surface } from "./components/card";
-export { CodeArea } from "./components/code-area";
-export { Count } from "./components/count";
-export { Emblem } from "./components/emblem";
-export { Field } from "./components/field";
-export { Grid } from "./components/grid";
+export { Card, Plate, Surface } from "./components/card";
+export { CodeArea, Field, MarkdownEditor, TextArea } from "./components/field";
+
+export { Emblem, PlaceholderMark } from "./components/emblem";
+
+export { Grid, Layout, Rows } from "./components/layout";
 export { Heading } from "./components/heading";
-export { IconButton } from "./components/icon-button";
-export { Layout } from "./components/layout";
-export { List } from "./components/list";
-export { MarkdownEditor } from "./components/markdown-editor";
-export { PlaceholderMark } from "./components/placeholder-mark";
-export { Plate } from "./components/plate";
-export { Popover } from "./components/popover";
-export { PopoverItem } from "./components/popover-item";
-export { PopoverSearch } from "./components/popover-search";
-export { PopoverSeparator } from "./components/popover-separator";
-export { Progress } from "./components/progress";
-export { ProgressBar } from "./components/progress-bar";
-export { Row } from "./components/row";
-export { RowBadge, RowLabel, RowValue } from "./components/row-parts";
-export { Rows } from "./components/rows";
+
+export { List, Row, RowBadge, RowLabel, RowValue, SlotList } from "./components/list";
+
+export { Popover, PopoverItem, PopoverSearch, PopoverSeparator } from "./components/popover";
+
+export { Progress, ProgressBar, StatusProgress } from "./components/progress";
+
 export { Segmented, Tabs } from "./components/segmented";
-export { ShowMore } from "./components/show-more";
-export { Sidebar } from "./components/sidebar";
-export { SidebarGroup } from "./components/sidebar-group";
-export { SidebarRow } from "./components/sidebar-row";
-export { SidebarSheet } from "./components/sidebar-sheet";
-export { SlotList } from "./components/slot-list";
-export { Spinner } from "./components/spinner";
-export { StatusProgress } from "./components/status-progress";
+
+export { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
+
 export { Switch } from "./components/switch";
-export { TextArea } from "./components/text-area";
+
 export { LAYOUT_KINDS } from "./constants/layout";
 export { MARK_SHAPE_NAMES, MARK_TONE_NAMES } from "./constants/marks";
 export { APPROVAL_TONES, BADGE_COLORS, BADGE_VARIANTS, PRIORITY_TONES, TONE_NAMES } from "./constants/tones";

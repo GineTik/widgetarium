@@ -1,6 +1,6 @@
 import type { LooseProps } from "../types";
 import { createElement as h, useState } from "react";
-import { IconButton } from "./icon-button";
+import { IconButton } from "./button";
 import { Icon } from "../icons/icon";
 import { cx } from "../utils/cx";
 
