@@ -31,7 +31,7 @@ const { createElement: h, Fragment } = react;
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/kit.mjs");
+const kit = await import("./.mjs-cache/index.mjs");
 const { previewProps } = await import("./.mjs-cache/preview.mjs");
 const { soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 

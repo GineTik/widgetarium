@@ -24,7 +24,7 @@ const {
 const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, widgetOfTiles, wornSurfaceAt } =
 	await import("./.mjs-cache/surface-laws.mjs");
 const { isKnownRole, plateRefusal, ROLES, slotSurfaceOf } = await import("./.mjs-cache/surface-roles.mjs");
-const { platesAtCell } = await import("./.mjs-cache/kit-surface.mjs");
+const { platesAtCell } = await import("./.mjs-cache/utils/surface.mjs");
 const { gapVarsOf } = await import("./.mjs-cache/tree.mjs");
 const { literalGapsIn } = await import("./gap-audit.mjs");
 const { lintBoard } = await import("./.mjs-cache/board-lint.mjs");

@@ -52,8 +52,8 @@ async function bundle(source) {
 		inject: ["tools/fill-inject.js"],
 		alias: {
 			widgetarium: "./tools/fill-shim.js",
-			"widgetarium/kit": "./packages/kit/src/kit.js",
-			"widgetarium/kit/emojis": "./packages/kit/src/emojis.js",
+			"widgetarium/kit": "./packages/kit/src/index.ts",
+			"widgetarium/kit/emojis": "./packages/kit/src/emojis/emoji.tsx",
 			"@default/lib": "./registry/@default/lib.js",
 			obsidian: "./tools/obsidian-shim.js",
 		},
@@ -135,7 +135,7 @@ import { createElement as h } from "react";
 import { render } from "./packages/core/src/engine/render.js";
 import { WidgetSurface } from "./packages/core/src/surface.js";
 import { normalizeBoard } from "./packages/core/src/model.js";
-import { Card } from "./packages/kit/src/kit.js";
+import { Card } from "./packages/kit/src/index.ts";
 
 const WIDGET_ID = "@probe/plated";
 const Plated = () =>
@@ -409,7 +409,7 @@ render(h(Harness), document.getElementById("host"));
 const KIT_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./packages/core/src/engine/render.js";
-import { Button, cardClass, Icon, IconButton, List, PlaceholderMark, Row, markOf } from "./packages/kit/src/kit.js";
+import { Button, cardClass, Icon, IconButton, List, PlaceholderMark, Row, markOf } from "./packages/kit/src/index.ts";
 const MARK_SEED = "Kind of Blue";
 const marked = (id, props) => h("div", { key: id, id }, h(PlaceholderMark, { seed: MARK_SEED, ...props }));
 render(
@@ -791,7 +791,7 @@ const RANK_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./packages/core/src/engine/render.js";
 import Widget from "./registry/@default/tier-list/widget.tsx";
-import { TONE_NAMES } from "./packages/kit/src/kit.js";
+import { TONE_NAMES } from "./packages/kit/src/index.ts";
 import { collectionGateway, soloGateway } from "./packages/core/src/gateway/create";
 
 const tierRows = TONE_NAMES.map((tone, at) => ({ ref: "t" + at, value: { label: tone, tone, order: at + 1 } }));

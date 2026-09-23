@@ -94,7 +94,7 @@ window.__measure = () => [...document.querySelectorAll(".wg-root")].map(clearanc
 
 const alias = {
 	widgetarium: "./tools/fill-shim.js",
-	"widgetarium/kit": "./packages/kit/src/kit.js",
+	"widgetarium/kit": "./packages/kit/src/index.ts",
 	obsidian: "./tools/obsidian-shim.js",
 };
 for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {

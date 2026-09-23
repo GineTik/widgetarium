@@ -78,7 +78,7 @@ const bundle = await esbuild.build({
 	inject: ["tools/fill-inject.js"],
 	alias: {
 		widgetarium: "./tools/fill-shim.js",
-		"widgetarium/kit": "./packages/kit/src/kit.js",
+		"widgetarium/kit": "./packages/kit/src/index.ts",
 		obsidian: "./tools/obsidian-shim.js",
 	},
 	logLevel: "warning",

@@ -5,7 +5,7 @@ import { normalizeBoard } from "../packages/core/src/model.js";
 import { WidgetRegistry } from "../packages/core/src/registry.js";
 import { measureTile } from "../packages/core/src/surface-measure.js";
 import { contentInsetsOf } from "../packages/core/src/content-insets.js";
-import { SlotList } from "../packages/kit/src/kit.js";
+import { SlotList } from "../packages/kit/src/index.ts";
 import { gapVarsOf } from "../packages/core/src/tree.js";
 import { surfacedSlot } from "../packages/core/src/widget-root.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";

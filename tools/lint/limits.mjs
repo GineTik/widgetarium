@@ -16,8 +16,8 @@ export const LINTED_ROOTS = [
 ];
 
 export const SKIPPED_PATHS = [
-	"packages/kit/src/emoji-table.js",
-	"packages/kit/src/icon-table.js",
+	"packages/kit/src/emojis/emoji-table.ts",
+	"packages/kit/src/icons/icon-table.ts",
 	"apps/obsidian/src/regex-sample.js",
 ];
 

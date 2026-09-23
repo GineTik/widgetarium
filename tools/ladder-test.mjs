@@ -9,7 +9,7 @@ import path from "node:path";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { TONE_NAMES, toneClass } = await import("./.mjs-cache/kit.mjs");
+const { TONE_NAMES, toneClass } = await import("./.mjs-cache/index.mjs");
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-ladder-"));

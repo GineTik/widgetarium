@@ -3,7 +3,9 @@ export const DICEBEAR_API = "https://api.dicebear.com/10.x";
 export const ALLOWED_LICENSES = ["CC0 1.0", "MIT", "CC BY 4.0"];
 
 const CC0 = "CC0 1.0";
+
 const CC_BY = "CC BY 4.0";
+
 const PERSONAL_AND_COMMERCIAL = "Free for personal and commercial use";
 
 export const DICEBEAR_STYLES = {
@@ -70,21 +72,4 @@ export const DICEBEAR_STYLES = {
 	bottts: { license: PERSONAL_AND_COMMERCIAL, author: "Pablo Stanley", suits: "character" },
 };
 
-const OPTION_NAME = /^[A-Za-z][A-Za-z0-9]*$/;
-
-export function diceBearVerdict(style) {
-	if (!Object.hasOwn(DICEBEAR_STYLES, style)) return { refusal: `${style} is no DiceBear style` };
-	const { license, author } = DICEBEAR_STYLES[style];
-	if (!ALLOWED_LICENSES.includes(license))
-		return { refusal: `${style} by ${author} is licensed "${license}", which is not on the allow list` };
-	return { credit: `${style} by ${author}, ${license}` };
-}
-
-export function diceBearUrl(style, seed, options = {}) {
-	const query = new URLSearchParams({ seed: String(seed ?? "") });
-	for (const [name, value] of Object.entries(options)) {
-		if (!OPTION_NAME.test(name)) continue;
-		query.set(name, Array.isArray(value) ? value.join(",") : String(value));
-	}
-	return `${DICEBEAR_API}/${style}/svg?${query}`;
-}
+export const OPTION_NAME = /^[A-Za-z][A-Za-z0-9]*$/;

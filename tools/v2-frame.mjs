@@ -195,8 +195,8 @@ setTimeout(() => {
 
 const ALIASED = {
 	widgetarium: "./tools/fill-shim.js",
-	"widgetarium/kit": "./packages/kit/src/kit.js",
-	"widgetarium/kit/emojis": "./packages/kit/src/emojis.js",
+	"widgetarium/kit": "./packages/kit/src/index.ts",
+	"widgetarium/kit/emojis": "./packages/kit/src/emojis/emoji.tsx",
 	"@default/lib": "./registry/@default/lib.js",
 	obsidian: "./tools/obsidian-shim.js",
 };

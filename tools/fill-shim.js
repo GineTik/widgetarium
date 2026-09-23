@@ -20,7 +20,7 @@ export {
 } from "../packages/core/src/dialog.js";
 export { useAction } from "../packages/core/src/action.js";
 export { Mounted } from "../packages/core/src/mounted.js";
-export { Kit } from "../packages/kit/src/kit.js";
+export { Kit } from "../packages/kit/src/index.ts";
 
 export function createWidget(first, second) {
 	if (typeof first === "function") {

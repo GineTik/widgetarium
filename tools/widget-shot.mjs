@@ -33,7 +33,7 @@ for (const [name, given] of Object.entries(manifest.preview?.sources ?? {}))
 
 // CONTEXT: the board paints nothing behind a tile — WidgetRoot's own fill is the whole surface
 // CONTEXT: a lib is reached by its scope name, so every scope that has one becomes an alias
-const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./packages/kit/src/kit.js" };
+const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./packages/kit/src/index.ts" };
 for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {
 	const lib = path.join("registry", scope, "lib.js");
 	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;

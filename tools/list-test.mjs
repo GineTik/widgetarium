@@ -27,7 +27,7 @@ const { createElement: h, Fragment } = react;
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/kit.mjs");
+const kit = await import("./.mjs-cache/index.mjs");
 const { collectionGateway, soloGateway, valueGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { surfacedSlot } = await import("./.mjs-cache/widget-root.mjs");
 

@@ -47,7 +47,7 @@ const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
 const { createHost } = await import("./.mjs-cache/host.mjs");
 const { TFile, TFolder, MarkdownRenderer } = await import("./.mjs-cache/obsidian.mjs");
 const { readBody } = await import("./.mjs-cache/block-writer.mjs");
-const { TONE_NAMES } = await import("./.mjs-cache/kit.mjs");
+const { TONE_NAMES } = await import("./.mjs-cache/index.mjs");
 
 const adapter = {
 	exists: async (p) => fs.existsSync(path.join(VAULT, p)),

@@ -1212,7 +1212,7 @@ render(null, panel);
 		inject: ["tools/fill-inject.js"],
 		alias: {
 			widgetarium: "./tools/fill-shim.js",
-			"widgetarium/kit": "./packages/kit/src/kit.js",
+			"widgetarium/kit": "./packages/kit/src/index.ts",
 			obsidian: "./tools/obsidian-shim.js",
 		},
 		logLevel: "warning",
@@ -1469,7 +1469,7 @@ render(null, panel);
 		inject: ["tools/fill-inject.js"],
 		alias: {
 			widgetarium: "./tools/fill-shim.js",
-			"widgetarium/kit": "./packages/kit/src/kit.js",
+			"widgetarium/kit": "./packages/kit/src/index.ts",
 			obsidian: "./tools/obsidian-shim.js",
 		},
 		loader: { ".json": "json" },

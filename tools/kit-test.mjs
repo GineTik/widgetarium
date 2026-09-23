@@ -45,8 +45,8 @@ const {
 	toneClass,
 	variants,
 	cx,
-} = await import("./.mjs-cache/kit.mjs");
-const { PLATES_ABOVE } = await import("./.mjs-cache/kit-surface.mjs");
+} = await import("./.mjs-cache/index.mjs");
+const { PLATES_ABOVE } = await import("./.mjs-cache/utils/surface.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
 // has finished listening. Wait for the frame rather than guessing at a sleep.
@@ -427,8 +427,8 @@ check(
 render(null, host);
 
 {
-	const { diceBearUrl, diceBearVerdict, DICEBEAR_STYLES, ALLOWED_LICENSES } =
-		await import("./.mjs-cache/dicebear-styles.mjs");
+	const { diceBearUrl, diceBearVerdict } = await import("./.mjs-cache/utils/dicebear.mjs");
+	const { DICEBEAR_STYLES, ALLOWED_LICENSES } = await import("./.mjs-cache/constants/dicebear.mjs");
 	check(
 		"a DiceBear address carries the style, the seed and every option, arrays joined",
 		diceBearUrl("notionists", "Anna Lee", { backgroundColor: ["b6e3f4", "c0aede"], flip: true }),
@@ -627,7 +627,7 @@ check(
 // the measure returns early — which is why a render loop that froze the real app passed here.
 // Give the DOM believable rects and the loop becomes reproducible.
 {
-	const { useSegmentedThumb } = await import("./.mjs-cache/kit.mjs");
+	const { useSegmentedThumb } = await import("./.mjs-cache/index.mjs");
 	const { useState } = await import("react");
 	const was = Element.prototype.getBoundingClientRect;
 	const rect = (left, width) => ({ left, width, right: left + width, top: 0, bottom: 38, height: 38, x: left, y: 0 });
@@ -1179,7 +1179,10 @@ check(
 	const drivenIn = (state) => partsOf(state).map((part) => part.split(/\s+/)[0]);
 
 	// TRADE-OFF: the law's numbers are read off the source, so one changed there fails here
-	const source = (await import("node:fs")).readFileSync("packages/kit/src/kit.js", "utf8");
+	const { readFileSync: readSource } = await import("node:fs");
+	const source = ["constants/popover.ts", "utils/popover-motion.ts"]
+		.map((file) => readSource(`packages/kit/src/${file}`, "utf8"))
+		.join("\n");
 	const constant = (name) => Number(new RegExp(`const ${name} = ([\\d.]+)`).exec(source)[1]);
 	const growMs = constant("GROW_MS");
 	const contentMs = constant("CONTENT_MS");
@@ -1992,13 +1995,13 @@ check(
 	const UNBROKEN_PATH = "Orbitask/Tasks/Archive/Another-Very-Long-Folder-Segment-With-No-Spaces-At-All";
 
 	// TRADE-OFF: the numbers the page is measured against are read off the source, never guessed at
-	const KIT_SOURCE = readFileSync("packages/kit/src/kit.js", "utf8");
+	const KIT_SOURCE = readFileSync("packages/kit/src/constants/popover.ts", "utf8");
 	const kitNumber = (name) => Number(new RegExp(`const ${name} = ([\\d.]+)`).exec(KIT_SOURCE)[1]);
 
 	const entry = [
 		'import { createElement as h } from "react";',
 		'import { render } from "./packages/core/src/engine/render.js";',
-		'import { Button, cardClass, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./packages/kit/src/kit.js";',
+		'import { Button, cardClass, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./packages/kit/src/index.ts";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,
 		"const mirror = host.querySelector('.wg-kit-md-mirror');",

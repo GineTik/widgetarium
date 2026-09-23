@@ -34,9 +34,9 @@ const { createElement: h, Fragment } = react;
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/kit.mjs");
-const emojis = await import("./.mjs-cache/emojis.mjs");
-const { EMOJI_TABLE } = await import("./.mjs-cache/emoji-table.mjs");
+const kit = await import("./.mjs-cache/index.mjs");
+const emojis = await import("./.mjs-cache/emojis/emoji.mjs");
+const { EMOJI_TABLE } = await import("./.mjs-cache/emojis/emoji-table.mjs");
 const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 
 const WIDGET = "registry/@default/tier-list/widget.tsx";

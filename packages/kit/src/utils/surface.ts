@@ -1,16 +1,6 @@
 import { createContext } from "react";
-import {
-	APART,
-	COLUMN,
-	GROUP,
-	isPainted,
-	NO_SURFACE,
-	plateRefusal,
-	platesWithin,
-	ROW,
-	SIDES,
-	SURFACE_WAS,
-} from "./plates.js";
+import { APART, COLUMN, GROUP, NO_SURFACE, ROW, SIDES, SURFACE_WAS } from "../constants/surfaces";
+import { isPainted, plateRefusal, platesWithin } from "./plate-laws";
 
 export { GROUP, NO_SURFACE };
 

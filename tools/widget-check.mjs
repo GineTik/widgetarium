@@ -30,7 +30,7 @@ globalThis.ResizeObserver ??= class {
 
 // CONTEXT: the REAL kit, not a shim — a stub here would pass widgets the plugin cannot render
 buildMirror();
-const kit = await import("./.mjs-cache/kit.mjs");
+const kit = await import("./.mjs-cache/index.mjs");
 const { previewGateways } = await import("./.mjs-cache/preview.mjs");
 const { manifestOf } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 

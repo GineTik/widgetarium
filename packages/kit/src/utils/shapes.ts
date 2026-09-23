@@ -1,4 +1,4 @@
-const isHeld = (value) => typeof value === "object" && value !== null;
+const isHeld = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
 export function shapesOf(stored) {
 	const held = isHeld(stored) ? stored : {};

@@ -7,8 +7,8 @@ packages/kit/assets
 .obsidian
 .tasks
 .omc
-packages/kit/src/emoji-table.js
-packages/kit/src/icon-table.js
+packages/kit/src/emojis/emoji-table.ts
+packages/kit/src/icons/icon-table.ts
 tools/fixture
 tools/fixture-boards
 tools/fixture-react

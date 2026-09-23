@@ -9,15 +9,32 @@ The component kit every widget and every screen is drawn with. Change a componen
 | `@widgetarium/kit`         | `Card`, `Layout`, `Rows`, `Grid`, `Button`, `IconButton`, `Badge`, `Heading`, `Field`, `Segmented`, `Tabs`, `Popover`, `Calendar`, `ProgressBar`, `Switch`, `Icon` and the rest |
 | `@widgetarium/kit/surface` | The plate context: how many plates stand above a component and which one it may wear                                                                                            |
 | `@widgetarium/kit/plates`  | The plate laws: which surface may stand inside which, and how deep                                                                                                              |
-| `@widgetarium/kit/icons`   | The kit's own glyphs with the whole of Lucide behind them                                                                                                                       |
+| `@widgetarium/kit/icons`   | The Lucide icon table the kit's `Icon` draws behind its own glyphs                                                                                                              |
 | `@widgetarium/kit/emojis`  | The Microsoft Fluent faces as drawings, on their own entry so nobody pays for them unasked                                                                                      |
-| `@widgetarium/kit/shapes`  | The outline shapes an accent is drawn with                                                                                                                                      |
+| `@widgetarium/kit/shapes`  | The store of which shape each path wears                                                                                                                                        |
 
 Inside a widget the same kit arrives as `widgetarium/kit`:
 
 ```tsx
 import { Card, Rows, Icon } from "widgetarium/kit";
 ```
+
+## Layout
+
+```
+src/
+  components/   one component per file: button.tsx, card.tsx, layout.tsx, popover.tsx, …
+  icons/        icon.tsx, the kit's own glyphs, the generated Lucide table
+  emojis/       emoji.tsx and the generated Fluent table
+  hooks/        one hook per file
+  constants/    shared words and numbers: surfaces, tones, marks, layout, progress, popover
+  utils/        shared helpers: cx, class names, plate laws, popover motion, progress geometry
+  types.ts      LooseProps, until each component types its own props
+  index.ts      the public surface
+  plates.ts     the plate words and laws, for @widgetarium/kit/plates
+```
+
+Everything is TSX with the classic `h` factory, so every file that draws imports `createElement as h` from React. A constant or helper used by one component lives in that component's file; one used by several lives in `constants/` or `utils/`.
 
 ## Rules it keeps
 

@@ -261,7 +261,7 @@ async function reportFirstPaint() {
 
 async function reportEmojiTable() {
 	heading("6 · emoji table");
-	const source = fs.readFileSync("packages/kit/src/emoji-table.js", "utf8");
+	const source = fs.readFileSync("packages/kit/src/emojis/emoji-table.ts", "utf8");
 	const asScript = source.replace(/^export const/gm, "var");
 	row("size", `${(source.length / 1024).toFixed(0)} kB`);
 	row("parse + evaluate", `${parseCost(asScript, "emoji").toFixed(1)} ms`);

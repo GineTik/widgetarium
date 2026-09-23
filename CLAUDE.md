@@ -1,7 +1,7 @@
 # Widgetarium
 
 An Obsidian plugin: widget tiles in a nested layout inside a note, plus rules that substitute a
-widget for a line of text. Every `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
+widget for a line of text. `packages/kit` is TSX (JSX with the classic `h` factory, one component per file); the rest of `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
 `packages/core/src/gateway/` is TypeScript (`tsc --noEmit` gates it), the rest is untyped JS that dies
 in place rather than being typed. Widgets under `registry/` are `.tsx` compiled at runtime by
 sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
@@ -13,15 +13,15 @@ apps/obsidian     FSL  the host: mounts core in a note, gives it the vault as it
       ↓
 packages/core     FSL  the board builder: tree, engine, gateways, renderer, laws
       ↓
-packages/kit      MIT  everything drawn: Card and its plate laws (plates.js), Layout, Icon, emojis
+packages/kit      MIT  everything drawn: TSX, one component per file in components/; plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
 **Kit imports nothing but React; core never imports the app.** A plate law lives in
-`packages/kit/src/plates.js` because `Card` answers it, and `tree.js` and `surface-roles.js`
+`packages/kit/src/utils/plate-laws.ts` (the words in `constants/surfaces.ts`) because `Card` answers it, and `tree.js` and `surface-roles.js`
 re-export it from there. The app reaches core as `@widgetarium/core/<file>` and the kit as
-`@widgetarium/kit[/surface|/plates|/icons|/emoji-table|/emojis|/shapes|/dicebear]` — the kit's
+`@widgetarium/kit[/surface|/plates|/icons|/emoji-table|/emojis|/shapes]` — the kit's
 `package.json` `exports` is the one list of its entry points, and `tools/mirror.mjs` reads it to lay
 the test cache flat. Every tool runs from the repo root. A second host (web, Tauri) is another
 `apps/*` beside `obsidian`, never a branch inside core. Licences: each package folder carries its own `LICENSE`; the root `LICENSE` is only the
@@ -309,9 +309,9 @@ container query, size and clipping — and a widget paints a plate only through 
 kit; `WidgetRoot` survives only as a bare element for widgets written before.
 
 **The tile's plate is the node's, the plates under it are the widget's, and one component paints
-both kinds.** `Card` in `packages/kit/src/kit.js` (once `Surface`, which stays as an alias for widgets published
+both kinds.** `Card` in `packages/kit/src/components/card.tsx` (once `Surface`, which stays as an alias for widgets published
 before the rename) takes `type` — `group` by default, `none` for a widget that paints nothing — plus `tone` for a plate in a state and `side`/`across` for
-a divider. It reads `PLATES_ABOVE` (`packages/kit/src/kit-surface.js`), seeded from the laid node's own `plates` and
+a divider. It reads `PLATES_ABOVE` (`packages/kit/src/utils/surface.ts`), seeded from the laid node's own `plates` and
 `underSurface` — **inside the tree handed to the tile's shell, because a widget is drawn in its own
 render root** (`DrawnInShell` in `packages/core/src/mounted.js`) and no context crosses that seam. Measured: a Provider
 around the cell body left every widget counting from zero, and the third plate painted itself white
@@ -544,13 +544,13 @@ the same on both sides: **maximalist, physical, answering.**
 - **An emoji is a drawing, not a character.** A typed emoji renders as whatever font the host has;
   `<Emoji name="smiling-face-with-halo"/>` from `widgetarium/kit/emojis` renders the same everywhere.
   The 129 Microsoft Fluent faces are the vocabulary — the Unicode group "Smileys & Emotion" up to the
-  monkeys, and nothing else. `node tools/fetch-emojis.mjs` regenerates `packages/kit/src/emoji-table.js`; the
+  monkeys, and nothing else. `node tools/fetch-emojis.mjs` regenerates `packages/kit/src/emojis/emoji-table.ts`; the
   licence sits in `packages/kit/assets/emojis/`. They cost 300kb of the bundle, so they hang off their own
   specifier and no widget pays for them unless it asks.
 - **An icon is a name the kit resolves, never an import.** `<Icon name="anchor"/>` from
   `widgetarium/kit` draws the kit's own 35 glyphs first and the whole of Lucide behind them — one
   name, one drawing, and a kit glyph wins a name Lucide also holds. `node tools/fetch-icons.mjs`
-  regenerates `packages/kit/src/icon-table.js` from `lucide-static`; the licence sits in `packages/kit/assets/icons/`. Lucide
+  regenerates `packages/kit/src/icons/icon-table.ts` from `lucide-static`; the licence sits in `packages/kit/assets/icons/`. Lucide
   is drawn on its own 24 grid, so the kit scales its stroke to the weight of the 20 grid rather than
   letting two families sit at two weights. Obsidian's own set is refused: `setIcon` draws nothing in
   a catalogue shot or a paint test, and a drawing that only exists inside the host is not a drawing.

@@ -30,7 +30,7 @@ globalThis.ResizeObserver = class {
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, toneClass, variants, cx } =
-	await import("./.mjs-cache/kit.mjs");
+	await import("./.mjs-cache/index.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
 // has finished listening. Wait for the frame rather than guessing at a sleep.
@@ -258,7 +258,7 @@ check(
 // the measure returns early — which is why a render loop that froze the real app passed here.
 // Give the DOM believable rects and the loop becomes reproducible.
 {
-	const { useSegmentedThumb } = await import("./.mjs-cache/kit.mjs");
+	const { useSegmentedThumb } = await import("./.mjs-cache/index.mjs");
 	const { useState } = await import("react");
 	const was = Element.prototype.getBoundingClientRect;
 	const rect = (left, width) => ({ left, width, right: left + width, top: 0, bottom: 38, height: 38, x: left, y: 0 });
@@ -930,7 +930,7 @@ check(
 	const entry = [
 		'import { createElement as h } from "react";',
 		'import { render } from "./packages/core/src/engine/render.js";',
-		'import { MarkdownEditor, List, Row, RowLabel, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./packages/kit/src/kit.js";',
+		'import { MarkdownEditor, List, Row, RowLabel, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./packages/kit/src/index.ts";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,
 		"const mirror = host.querySelector('.wg-kit-md-mirror');",

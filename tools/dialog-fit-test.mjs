@@ -40,7 +40,7 @@ const bundle = await esbuild.build({
 	inject: ["tools/fill-inject.js"],
 	alias: {
 		widgetarium: "./tools/fill-shim.js",
-		"widgetarium/kit": "./packages/kit/src/kit.js",
+		"widgetarium/kit": "./packages/kit/src/index.ts",
 		"@default/lib": "./registry/@default/lib.js",
 	},
 	logLevel: "warning",

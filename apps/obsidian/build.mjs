@@ -69,7 +69,7 @@ function widgetTypesSource() {
 const SUPPLIED_BY_ELECTRON_AT_RUNTIME = ["obsidian", "electron", "node:fs/promises", "node:path", "node:child_process"];
 
 const HELD_BY_THE_ONE_CORE =
-	/^(\.\/(cache|create|narrow|emoji-table\.js|icon-table\.js)|@widgetarium\/kit\/(emoji-table|icons))$/;
+	/^(\.\/(cache|create|narrow|(emoji|icon)-table(\.js)?)|@widgetarium\/kit\/(emoji-table|icons))$/;
 
 function coreProvides() {
 	return {

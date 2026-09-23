@@ -4,14 +4,13 @@
 	"private": true,
 	"license": "MIT",
 	"exports": {
-		".": "./src/kit.js",
-		"./surface": "./src/kit-surface.js",
-		"./plates": "./src/plates.js",
-		"./icons": "./src/icon-table.js",
-		"./emoji-table": "./src/emoji-table.js",
-		"./emojis": "./src/emojis.js",
-		"./shapes": "./src/shapes.js",
-		"./dicebear": "./src/dicebear-styles.js"
+		".": "./src/index.ts",
+		"./surface": "./src/utils/surface.ts",
+		"./plates": "./src/plates.ts",
+		"./icons": "./src/icons/icon-table.ts",
+		"./emoji-table": "./src/emojis/emoji-table.ts",
+		"./emojis": "./src/emojis/emoji.tsx",
+		"./shapes": "./src/utils/shapes.ts"
 	},
 	"peerDependencies": {
 		"react": "^19.2.8",

@@ -1,16 +1,15 @@
-export const ROW = "row";
-export const COLUMN = "column";
-
-export const GROUP = "group";
-export const APART = "apart";
-export const NO_SURFACE = "none";
-export const SURFACES = [GROUP, APART, NO_SURFACE];
-export const SURFACE_WAS = { fill: GROUP, outline: GROUP, object: GROUP, raise: GROUP, item: GROUP, divider: APART };
-export const SIDES = ["start", "end"];
+import {
+	APART,
+	GROUP,
+	MAX_SURFACE_DEPTH,
+	NO_SURFACE,
+	SAID_AS,
+	SLOT_SURFACES,
+	SURFACES,
+	SURFACE_WAS,
+} from "../constants/surfaces";
 
 export const isPainted = (node) => node?.surface === GROUP;
-
-export const MAX_SURFACE_DEPTH = 2;
 
 const ALLOWED_INSIDE = {
 	[NO_SURFACE]: [GROUP, APART],
@@ -18,14 +17,11 @@ const ALLOWED_INSIDE = {
 	[GROUP]: [GROUP, APART],
 };
 
-export const SLOT_SURFACES = [GROUP, NO_SURFACE];
-
 export function mayWearInside(parentSurface, surface) {
 	return ALLOWED_INSIDE[parentSurface].includes(surface);
 }
 
 const NOT_INSIDE = "{one} may not stand inside {other}";
-export const SAID_AS = { group: "a group", item: "an item", apart: "a divider", none: "the page" };
 
 export function platesWithin(above, surface) {
 	return above.levels + (isPainted({ surface }) ? 1 : 0);

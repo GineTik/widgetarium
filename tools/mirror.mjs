@@ -116,14 +116,22 @@ function withTextImports(code, source) {
 }
 
 function mirroredWorkspaceImport(name, subpath, cacheRoot) {
-	const file = name === "kit" ? path.basename(KIT_EXPORTS[`.${subpath}`]) : subpath.replace(/^\//, "");
-	return `from "${cacheRoot}${file.replace(/\.(js|ts|mjs)$/, "")}.mjs"`;
+	const file = name === "kit" ? KIT_EXPORTS[`.${subpath}`].replace(/^\.\/src\//, "") : subpath.replace(/^\//, "");
+	return `from "${cacheRoot}${file.replace(/\.(js|ts|tsx|mjs)$/, "")}.mjs"`;
 }
 
-function mirrored(source, isTs, toStub) {
+const TRANSFORMS_BY_EXTENSION = { ".js": [], ".ts": ["typescript"], ".tsx": ["typescript", "jsx"] };
+
+function stripped(read, source) {
+	const transforms = TRANSFORMS_BY_EXTENSION[path.extname(source)];
+	if (transforms.length === 0) return read;
+	return transform(read, { transforms, filePath: source, jsxPragma: "h", jsxFragmentPragma: "Fragment" }).code;
+}
+
+function mirrored(source, toStub) {
 	const read = fs.readFileSync(source, "utf8");
 	return (
-		withTextImports(isTs ? transform(read, { transforms: ["typescript"], filePath: source }).code : read, source)
+		withTextImports(stripped(read, source), source)
 			.replace(/from "widgetarium:surface"/g, `from "${toStub.replace("obsidian.mjs", "surface-source.mjs")}"`)
 			.replace(/from "widgetarium:widgets-cli"/g, `from "${toStub.replace("obsidian.mjs", "widgets-cli-source.mjs")}"`)
 			.replace(
@@ -150,13 +158,12 @@ function copyTree(from, to) {
 			copyTree(source, path.join(to, entry.name));
 			continue;
 		}
-		const isTs = entry.name.endsWith(".ts");
-		if (!entry.name.endsWith(".js") && !isTs) continue;
+		if (!(path.extname(entry.name) in TRANSFORMS_BY_EXTENSION)) continue;
 		const depth = path
 			.relative(path.join(process.cwd(), "tools", ".mjs-cache"), to)
 			.split(path.sep)
 			.filter(Boolean).length;
 		const toStub = depth === 0 ? "./obsidian.mjs" : `${"../".repeat(depth)}obsidian.mjs`;
-		fs.writeFileSync(path.join(to, entry.name.replace(/\.(js|ts)$/, ".mjs")), mirrored(source, isTs, toStub));
+		fs.writeFileSync(path.join(to, entry.name.replace(/\.(js|tsx|ts)$/, ".mjs")), mirrored(source, toStub));
 	}
 }

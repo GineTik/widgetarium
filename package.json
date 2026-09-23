@@ -27,7 +27,7 @@
 		"test:dialog-fit": "node tools/dialog-fit-test.mjs",
 		"test:write": "node tools/write-test.mjs",
 		"test:editor-write": "node tools/editor-write-test.mjs",
-		"test:types": "tsc -p packages/core --noEmit",
+		"test:types": "tsc -p packages/core --noEmit && tsc -p packages/kit --noEmit",
 		"test:needs": "tsc -p packages/sdk/tsconfig.widgets.json --noEmit",
 		"test:surface": "node tools/api-surface-test.mjs",
 		"test:props": "node tools/props-test.mjs",

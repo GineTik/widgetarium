@@ -15,7 +15,7 @@ const kitRules = [
 
 const LAWS = `# Widgetarium design system
 
-A brief, not the source. \`styles.css\` and \`packages/kit/src/kit.js\` are the source; this is what a design
+A brief, not the source. \`styles.css\` and \`packages/kit/src/index.ts\` are the source; this is what a design
 decision needs to be right.
 
 ## The laws, each one measured
@@ -61,7 +61,7 @@ decision needs to be right.
 
 ## Components
 
-Class names are the contract; \`packages/kit/src/kit.js\` exports a component per class.
+Class names are the contract; \`packages/kit/src/index.ts\` exports a component per class.
 
 \`\`\`css
 ${kitRules.join("\n\n")}

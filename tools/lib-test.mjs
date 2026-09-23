@@ -138,7 +138,7 @@ const check = (name, got, want) => {
 	writeFileSync(
 		copy,
 		readFileSync("registry/@default/lib.js", "utf8")
-			.replace('from "widgetarium/kit"', `from "file://${mirrorAt}/kit.mjs"`)
+			.replace('from "widgetarium/kit"', `from "file://${mirrorAt}/index.mjs"`)
 			.replace('from "widgetarium"', `from "file://${mirrorAt}/gateway/match.mjs"`),
 	);
 	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf } = await import(`file://${copy}`);

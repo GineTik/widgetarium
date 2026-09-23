@@ -26,7 +26,7 @@ const { createElement: h, Fragment } = react;
 const { flushSync } = await import("react-dom");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
 const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
-const kit = await import("./.mjs-cache/kit.mjs");
+const kit = await import("./.mjs-cache/index.mjs");
 const { soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 
 const WIDGET = "registry/@default/search-input/widget.tsx";
