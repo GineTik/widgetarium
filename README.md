@@ -1,42 +1,75 @@
 # Widgetarium
 
-Плитки-віджети на сітці з точок для Obsidian. Віджети живуть у сховищі, плагін їх лише рендерить.
+Build working screens out of your own notes. A board of widget tiles lives inside a note, every widget reads and writes real vault data, and an assistant can lay out a whole screen for you.
 
-## Розробка
+## What it does
+
+- **Boards in a note.** A ` ```widgetarium ` block holds a board: a tree of rows and columns with a widget in every leaf. Regions collapse into drawers and sheets on narrow panes instead of breaking.
+- **Widgets bound to your data.** A widget declares what it needs — a list of tasks, a number, a selection — and you bind each need to a vault folder, a file, a value kept in the tile, or another tile. A widget writes only through the verbs you switch on.
+- **A catalogue.** Widgets install from registries into `.widgetarium/widgets` in the vault, pinned to the commit they came from. Updates that would break a tile install beside the old version instead of over it.
+- **Substitutions.** Rules that draw a widget in place of a line of text in reading mode.
+- **An assistant.** A sidebar agent that designs a screen, picks or writes the widgets for it and places them on a board.
+
+## Repository
+
+An npm-workspaces monorepo. Dependencies point one way: the app uses core, core uses the kit, the kit uses only React.
+
+| Folder                           | What it is                                                                | Licence      |
+| -------------------------------- | ------------------------------------------------------------------------- | ------------ |
+| [`apps/obsidian`](apps/obsidian) | The Obsidian plugin: mounts core in a note and gives it the vault         | FSL-1.1-ALv2 |
+| [`packages/core`](packages/core) | The board engine: layout tree, widget build and install, gateways, render | FSL-1.1-ALv2 |
+| [`packages/kit`](packages/kit)   | The component kit every widget and screen is drawn with                   | MIT          |
+| [`packages/sdk`](packages/sdk)   | The types a widget is written against                                     | FSL-1.1-ALv2 |
+| [`registry`](registry)           | The widget library: `@default`, `@flow`, `@media`                         | MIT          |
+| `tools`                          | Tests, generators and repository checks                                   | FSL-1.1-ALv2 |
+| `docs`                           | The assistant's handbook (`docs/ai`), design decisions, catalogue guides  | FSL-1.1-ALv2 |
+
+## Develop
 
 ```bash
-npm run build          # зібрати main.js
-npm run install-vault  # зібрати й покласти у сховище
-WG_VAULT="/шлях/до/vault" npm run install-vault
+npm install
 ```
 
-Після заміни файлів у сховищі — у Obsidian: Settings → Community plugins → вимкнути й увімкнути Widgetarium.
-Після зміни коду віджетів — команда `Widgetarium: Перезавантажити віджети`.
-
-## Структура
-
-```
-src/
-  main.js       точка входу: код-блок, екран, ribbon, команди
-  surface.js    сітка, drag, resize, налаштування плитки, повний екран
-  registry.js   завантаження віджетів із .widgetarium/widgets
-  host.js       реалізація host для Obsidian: слоти даних, can-поля
-  paths.js      константи сітки й шляхів
+```bash
+npm run dev
 ```
 
-## Контракт віджета
+`dev` builds the plugin with a sourcemap and copies it into the vault; `npm run install-vault` does the same with a production build. The vault defaults to the author's; point elsewhere with `WG_VAULT=/path/to/vault`. After an install, reload the plugin in Obsidian with the command **Widgetarium: Reload plugin**.
 
-Файл `.widgetarium/widgets/<scope>/<name>/widget.js` виконується з доступними `h`, `useState`, `useEffect`, `useMemo`, `useRef` і може імпортувати `react`, `react-dom`, `widgetarium`, `widgetarium/kit` і мусить визначити `const widget = ({ settings, data, host, size, fullscreen }) => …`.
+```bash
+npm test
+```
 
-Поруч — `manifest.json` з `id`, `minSize`, `data` (слоти) і `settings` (схема форми).
+`npm test` runs every gate in turn; each one is also its own script (`npm run test:tree`, `npm run test:kit`, …). The paint and tree gates drive a real headless Chrome. `npm run lint` checks that everything is written in English and holds the house code rules.
 
-Повний опис — нотатка `Widgetarium Demo/Довідка.md` у сховищі.
+Every command runs from the repository root.
 
-## Стан
+## Write a widget
 
-Реалізовано: сітка з точок, drag і resize зі збереженням, палітра віджетів, налаштування плитки з маніфесту, повний екран, слоти даних над теками (`list/get/create/update/remove/subscribe/describe`), `can`-поля, два віджети.
+A widget is a folder with a `widget.tsx` that describes itself and draws itself:
 
-Не реалізовано: порти й дроти між віджетами, компоненти-екрани, кодген типів, каталог і оновлення.
+```tsx
+import { createWidget, defineManifest, defineProp } from "widgetarium";
+
+type Entry = { title: string; done?: boolean };
+
+export const manifest = defineManifest({
+	title: "Checklist",
+	description: "The entries still to do, ticked off where they stand.",
+	role: "collection",
+	size: { preferredWidth: 320, preferredHeight: "auto" },
+	props: {
+		heading: defineProp<string>()({ default: "To do" }),
+		entries: defineProp<Entry[]>()({ default: [], writes: ["create", "update"] }),
+	},
+});
+
+export default createWidget(manifest, ({ heading, entries }) => {
+	// read with useData(entries.list), write with entries.update(...)
+});
+```
+
+The engine compiles it in the vault; nothing is built ahead of time. [Add your own widget](docs/catalogue/add-your-own-widget.md) and [publish it](docs/catalogue/publish-your-widget.md) walk through the rest.
 
 ## License
 
