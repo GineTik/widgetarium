@@ -11,9 +11,11 @@ const SOURCE_ROOTS = ["packages/kit/src", "packages/core/src", "apps/obsidian/sr
 const KIT_EXPORTS = JSON.parse(fs.readFileSync(path.join("packages", "kit", "package.json"), "utf8")).exports;
 let published = null;
 
-function publishInto(from, to) {
+const reachesAVault = (name) => !name.endsWith(".md");
+
+function publishInto(from, to, keeps = () => true) {
 	fs.mkdirSync(to, { recursive: true });
-	for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+	for (const entry of fs.readdirSync(from, { withFileTypes: true }).filter((one) => keeps(one.name))) {
 		const source = path.join(from, entry.name);
 		if (entry.isDirectory()) publishInto(source, path.join(to, entry.name));
 		else fs.copyFileSync(source, path.join(to, entry.name));
@@ -25,7 +27,7 @@ export function buildWidgets() {
 
 	const to = path.join(process.cwd(), PUBLISHED_WIDGETS);
 	fs.rmSync(to, { recursive: true, force: true });
-	publishInto("registry", to);
+	publishInto("registry", to, reachesAVault);
 	publishInto(path.join("packages", "sdk", "types"), path.join(to, "types"));
 	published = to;
 	return to;
