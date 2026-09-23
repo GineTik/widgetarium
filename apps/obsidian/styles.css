@@ -62,6 +62,10 @@ pre:has(> .block-language-widgetarium),
 	--wg-on-accent: var(--text-on-accent);
 	--wg-kit-text: var(--text-normal);
 	--wg-kit-text-muted: color-mix(in srgb, var(--text-muted) 94%, var(--background-primary));
+	--wg-kit-text-xs: 11px;
+	--wg-kit-text-s: var(--font-ui-smaller, 12px);
+	--wg-kit-text-m: var(--font-ui-small, 14px);
+	--wg-kit-text-l: var(--font-ui-medium, 16px);
 	--wg-muted: var(--wg-kit-text-muted);
 
 	/* CONTEXT: the kit's own tokens — hung here, not on :root, for the same reason as above */
@@ -778,17 +782,17 @@ body {
 	transform: scale(0.955);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-l {
-	font-size: var(--font-ui-medium, 16px);
+	font-size: var(--wg-kit-text-l);
 	padding: 0 var(--size-4-6, 24px);
 	height: 52px;
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-m {
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	padding: 0 var(--size-4-5, 20px);
 	height: 42px;
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-s {
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	padding: 0 var(--size-4-4, 16px);
 	height: 34px;
 }
@@ -940,7 +944,7 @@ body {
 	gap: var(--size-2-2, 4px);
 	border-radius: var(--wg-kit-pill);
 	padding: 3px var(--size-4-3, 12px);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-semibold, 600);
 	line-height: 1.4;
 	white-space: nowrap;
@@ -1155,7 +1159,7 @@ body {
 	border-radius: var(--wg-kit-pill);
 	background: var(--wg-kit-raise);
 	color: var(--wg-kit-text-muted);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-semibold, 600);
 }
 
@@ -1217,7 +1221,7 @@ body {
 	/* CONTEXT: measured — a <button> row kept the UA's 2px border and pushed the label off the hairline */
 	border: none;
 	font-family: inherit;
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	color: var(--wg-kit-text);
 	text-align: left;
 }
@@ -1315,7 +1319,7 @@ body {
 	padding: 0;
 	background: none;
 	font: inherit;
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	color: var(--wg-kit-text);
 }
 
@@ -1356,7 +1360,7 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-seg button {
 	flex: none;
 	font-family: inherit;
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	font-weight: var(--font-medium, 500);
 	color: var(--wg-kit-text-muted);
 	border: none;
@@ -1376,7 +1380,7 @@ body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-l button {
 	height: 46px;
-	font-size: var(--font-ui-medium, 16px);
+	font-size: var(--wg-kit-text-l);
 	padding: 0 var(--size-4-5, 20px);
 }
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-s {
@@ -1384,7 +1388,7 @@ body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-s button {
 	height: 24px;
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	padding: 0 var(--size-4-2, 8px);
 	gap: var(--size-2-2, 4px);
 }
@@ -1477,7 +1481,7 @@ body {
 	border-radius: var(--wg-kit-item);
 	cursor: pointer;
 	font-family: inherit;
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	font-weight: var(--font-medium, 500);
 	color: var(--wg-kit-text);
 	text-align: left;
@@ -1496,7 +1500,7 @@ body {
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-sub {
-	font-size: 11px;
+	font-size: var(--wg-kit-text-xs);
 	font-weight: var(--font-normal, 400);
 	line-height: 1.45;
 	color: var(--wg-kit-text-muted);
@@ -1596,7 +1600,7 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-search-hint {
 	padding: 0 var(--size-4-2, 8px);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	color: var(--wg-kit-text-muted);
 }
 
@@ -1615,7 +1619,7 @@ body {
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-cal-month {
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	font-weight: var(--font-semibold, 600);
 	color: var(--wg-kit-text);
 }
@@ -1630,7 +1634,7 @@ body {
 	text-align: center;
 	padding-bottom: var(--size-2-2, 4px);
 	font-family: var(--font-monospace);
-	font-size: 9px;
+	font-size: var(--wg-kit-text-xs);
 	letter-spacing: 0.06em;
 	color: var(--text-faint);
 }
@@ -1640,7 +1644,7 @@ body {
 	padding: 0;
 	border: none;
 	font-family: inherit;
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	font-variant-numeric: tabular-nums;
 	color: var(--wg-kit-text-muted);
 	cursor: pointer;
@@ -1711,7 +1715,7 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-progress-num {
 	flex: none;
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	font-weight: var(--font-medium, 500);
 	font-variant-numeric: tabular-nums;
 	color: var(--wg-kit-text);
@@ -1749,7 +1753,7 @@ body {
 	place-items: center;
 	width: 100%;
 	height: 100%;
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	font-weight: var(--font-semibold, 600);
 	font-variant-numeric: tabular-nums;
 	color: var(--wg-kit-text);
@@ -1793,7 +1797,7 @@ body {
 	align-self: stretch;
 	min-height: 1em;
 	transition: width var(--wg-quick) var(--wg-ease);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-semibold, 600);
 	font-variant-numeric: tabular-nums;
 	line-height: 1;
@@ -1885,7 +1889,7 @@ body {
 	border: 0;
 	padding: var(--size-4-4, 16px);
 	font-family: var(--font-interface);
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	font-weight: var(--font-normal, 400);
 	font-style: normal;
 	line-height: 1.62;
@@ -1913,7 +1917,7 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-code .wg-kit-md-text {
 	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
 	font-family: var(--font-monospace, monospace);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	line-height: 1.5;
 }
 
@@ -2336,7 +2340,7 @@ body {
 	cursor: pointer;
 	color: var(--wg-kit-text-muted);
 	font-weight: var(--font-medium, 500);
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -2348,13 +2352,13 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-set-crumb-sep {
 	color: var(--text-faint);
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 }
 
 :is(.wg-root, .wg-portal) .wg-set-here {
 	color: var(--wg-kit-text);
 	font-weight: var(--font-semibold, 600);
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -2456,7 +2460,7 @@ body {
 :is(.wg-root, .wg-portal) .wg-set-panel .wg-set-tabs button {
 	flex: 1;
 	height: 30px;
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	padding: 0 8px;
 }
 
@@ -2473,7 +2477,7 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-set-label {
 	padding: 0 16px;
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-medium, 500);
 	color: var(--text-faint);
 }
@@ -2642,7 +2646,7 @@ body {
 }
 
 :is(.wg-root, .wg-portal) :is(.wg-set-pop-hint, .wg-set-pop-note) {
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	line-height: 1.45;
 	color: var(--wg-kit-text-muted);
 }
@@ -2671,7 +2675,7 @@ body {
 :is(.wg-root, .wg-portal) .wg-set-pop-error {
 	margin: 0;
 	padding: 2px var(--size-4-2, 8px);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	line-height: 1.45;
 	color: var(--text-error);
 }
@@ -3677,7 +3681,7 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-side-label {
 	padding: 0 var(--size-4-4, 16px);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-medium, 500);
 	color: var(--text-faint);
 }
@@ -3685,13 +3689,13 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-side-hint {
 	margin: 0;
 	padding: 0 var(--size-4-4, 16px);
-	font-size: var(--font-ui-smaller, 12px);
+	font-size: var(--wg-kit-text-s);
 	line-height: 1.45;
 	color: var(--wg-kit-text-muted);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-side-sub {
-	font-size: 11px;
+	font-size: var(--wg-kit-text-xs);
 	font-weight: var(--font-medium, 500);
 	line-height: 1.45;
 	color: var(--text-faint);
@@ -3776,19 +3780,19 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-side.is-minimal .wg-kit-side-label {
 	padding: 0 var(--size-4-3, 12px);
-	font-size: 11px;
+	font-size: var(--wg-kit-text-xs);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-side.is-minimal .wg-kit-side-hint {
 	padding: 0 var(--size-4-3, 12px);
-	font-size: 11px;
+	font-size: var(--wg-kit-text-xs);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-side.is-minimal .wg-kit-side-row {
 	min-height: 34px;
 	padding: 0 var(--size-4-3, 12px);
 	gap: var(--size-4-2, 8px);
-	font-size: var(--font-ui-small, 14px);
+	font-size: var(--wg-kit-text-m);
 }
 
 /* CONTEXT: the minimal row has no vertical padding — two lines would sit on its edges */
