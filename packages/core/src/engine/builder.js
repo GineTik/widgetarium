@@ -8,7 +8,7 @@ import {
 	compileWidget,
 	sourceFileIn,
 } from "./widget-build.js";
-import { TAILWIND, TAILWIND_RANGE, importsTailwind, buildSheet, candidatesIn } from "./tailwind.js";
+import { TAILWIND, TAILWIND_RANGE, importsTailwind, buildSheet, candidatesIn, servedContent } from "./tailwind.js";
 import { moduleFromBundle } from "./compiled-module.js";
 
 export function compiledSource(files, folder) {
@@ -59,7 +59,8 @@ export function createBuilder({ adapter, space }) {
 			if (!inputNamesFor(folder, files).every((path) => path in (record?.inputs ?? {}))) return false;
 
 			const onDisk = {};
-			for (const path of Object.keys(record.inputs)) onDisk[path] = await readIfThere(adapter, path);
+			for (const path of Object.keys(record.inputs))
+				onDisk[path] = servedContent(path) ?? (await readIfThere(adapter, path));
 			return buildIsCurrent(record, onDisk);
 		},
 

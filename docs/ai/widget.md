@@ -259,6 +259,31 @@ it arrives. It takes every prop `ProgressBar` does, plus `tones` to repaint any 
 (`{ done: "info" }`) and its own `displayValue` where the tick is not what you want. Reach for it whenever a bar means "not started / going /
 finished"; the plain `ProgressBar` knows nothing of states.
 
+## Tailwind, when the widget's styling asks for it
+
+A `widget.css` may be a Tailwind sheet. Three imports give it the kit's whole vocabulary:
+
+```css
+@import "tailwindcss";
+@import "widgetarium/theme.css";
+@import "../theme.css";
+
+@theme {
+	--color-brand: oklch(0.72 0.11 221);
+}
+```
+
+The kit's theme names every token as a Tailwind one — `bg-group`, `bg-fill`, `text-muted`,
+`text-accent`, `rounded-plate`, `rounded-pill`, `text-sm`, `text-h3`, `gap-cards`, `p-plate` — so you
+repeat no variable. A scope file beside your widgets carries what all of them share, and a `@theme`
+of your own comes last and wins: add a colour, or change one of the kit's for this widget alone
+(`--radius-plate: 18px`). `--color-*: initial` drops a whole namespace, `--*: initial` starts from
+nothing.
+
+`@plugin` and `@config` load JavaScript and are refused; `@utility` and `@custom-variant` are not.
+Preflight is refused too, and so is every other name under `widgetarium/`. A widget whose styling
+needs Tailwind declares `api: 2`.
+
 ## A plate inside a widget
 
 **Draw no background, border, corner or shadow of your own.** The engine draws the root — container

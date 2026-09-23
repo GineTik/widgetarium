@@ -1,4 +1,9 @@
+import KIT_THEME from "@widgetarium/kit/theme.css";
+
 export const TAILWIND = "tailwindcss";
+export const KIT_THEME_SHEET = "widgetarium/theme.css";
+const WIDGETARIUM = "widgetarium";
+const KIT_SCOPE = `${WIDGETARIUM}/`;
 export const TAILWIND_RANGE = "^4";
 const TAILWIND_SHEETS = ["theme.css", "utilities.css"];
 
@@ -25,7 +30,10 @@ export async function buildSheet({ entry, compiler, sheetOfTailwind, readFile, c
 
 	async function loadStylesheet(specifier, base) {
 		const served = await servedByTailwind(specifier, sheetOfTailwind);
-		if (served !== null) return served;
+		if (served !== null) {
+			if (servedContent(served.path) !== null) inputs[served.path] = served.content;
+			return served;
+		}
 		if (!specifier.startsWith(".")) throw new Error(`"${specifier}" is not a file this widget can reach`);
 
 		const path = joined(base, specifier);
@@ -55,6 +63,10 @@ export async function buildSheet({ entry, compiler, sheetOfTailwind, readFile, c
 	}
 }
 
+export function servedContent(path) {
+	return path === KIT_THEME_SHEET ? KIT_THEME : null;
+}
+
 function folderOf(path) {
 	const cut = path.lastIndexOf("/");
 	return cut < 0 ? "" : path.slice(0, cut);
@@ -71,6 +83,9 @@ function joined(base, specifier) {
 }
 
 async function servedByTailwind(specifier, sheetOfTailwind) {
+	if (specifier === KIT_THEME_SHEET) return { path: KIT_THEME_SHEET, base: "", content: KIT_THEME };
+	if (specifier === WIDGETARIUM || specifier.startsWith(KIT_SCOPE))
+		throw new Error(`widgetarium serves no "${specifier.slice(KIT_SCOPE.length)}", only its theme.css`);
 	if (specifier === TAILWIND) return { path: TAILWIND, base: "", content: WITHOUT_PREFLIGHT };
 	if (specifier === PREFLIGHT)
 		throw new Error(`"${PREFLIGHT}" restyles the host's own elements, so a widget may not import it`);

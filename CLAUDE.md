@@ -1,7 +1,7 @@
 # Widgetarium
 
 An Obsidian plugin: widget tiles in a nested layout inside a note, plus rules that substitute a
-widget for a line of text. `packages/kit` is TSX (JSX with the classic `h` factory, one component per file); the rest of `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
+widget for a line of text. `packages/kit` is TSX (JSX with the classic `h` factory, one file per kit item); the rest of `src/` is React with `h()` hyperscript — **no JSX there**; the gateway layer under
 `packages/core/src/gateway/` is TypeScript (`tsc --noEmit` gates it), the rest is untyped JS that dies
 in place rather than being typed. Widgets under `registry/` are `.tsx` compiled at runtime by
 sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
@@ -13,7 +13,7 @@ apps/obsidian     FSL  the host: mounts core in a note, gives it the vault as it
       ↓
 packages/core     FSL  the board builder: tree, engine, gateways, renderer, laws
       ↓
-packages/kit      MIT  everything drawn: TSX, one component per file in components/; plate laws in utils/plate-laws.ts
+packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
@@ -505,6 +505,20 @@ space like any other dependency and never loaded to draw anything. The theme is 
 over `--wg-kit-*`, in the widget's sheet or in a scope file it imports — so the configuration lives
 outside the widget. Preflight is never imported: it restyles the host's own elements, and a sheet that
 asks for it is refused by name. A widget whose styling needs this declares `api: 2`.
+
+**The kit's tokens are one Tailwind theme, served by the plugin.** `packages/kit/theme.css` maps every
+`--wg-kit-*` token onto Tailwind's namespaces — `--color-group`, `--text-sm`, `--radius-plate`,
+`--spacing-cards` — and `servedByTailwind` answers `@import "widgetarium/theme.css"` with it, so a
+widget writes `bg-group rounded-plate text-sm` and repeats no variable. It is served out of the
+plugin's own bundle, never fetched, and any other name under `widgetarium/` is refused by the same
+function that refuses preflight. **The mapping is `@theme inline`.** A plain `@theme` declares
+`--color-group: var(--wg-kit-group-fill)` on `:root`, and CSS resolves that `var()` where it is declared —
+but the kit's tokens live on `.wg-root` and `.wg-portal`, not `:root`, so every kit colour came out
+transparent (measured in Chrome: `rgba(0, 0, 0, 0)` plain, the token's colour inline). Inline writes
+`var(--wg-kit-group-fill)` into the utility itself, still a live variable a theme can repaint. The kit's own
+stylesheet reads the same tokens directly, and its four text sizes — `--wg-kit-text-xs|s|m|l`, 11px
+and the host's three UI steps — are what both sides now name: the five hand-written sizes that
+answered to nothing, three 11px and one 9px among them, are on the scale.
 
 ## Next tasks
 

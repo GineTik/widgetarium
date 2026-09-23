@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
@@ -14,6 +15,8 @@ const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
 const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
 const { facadeUrl } = await import("./.mjs-cache/engine/modules.mjs");
 const { builtSheetPath } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { gapVarsOf } = await import("./.mjs-cache/tree.mjs");
+const KIT_THEME_FILE = readFileSync("packages/kit/theme.css", "utf8");
 
 let failed = 0;
 let checks = 0;
@@ -196,6 +199,48 @@ check(
 const reset = await installedFrom(`@import "tailwindcss";\n@import "tailwindcss/preflight.css";\n`, null);
 check("a sheet importing preflight is refused at install", reset.done.ok, false);
 check("and the refusal names it", String(reset.done.failure).includes("tailwindcss/preflight.css"), true);
+
+const themed = await installedFrom(`@import "tailwindcss";\n@import "widgetarium/theme.css";\n`, null);
+check("A SHEET MAY IMPORT THE KIT'S THEME, and it installs", [themed.done.ok, themed.done.failure], [true, null]);
+const themedBuild = String(themed.shelf.files.get(builtSheetPath(INSTALLED)));
+check(
+	"the build carries the kit's tokens, so a widget names them without repeating them",
+	[themedBuild.includes("--color-group: var(--wg-kit-group-fill)"), themedBuild.includes("--radius-plate")],
+	[true, true],
+);
+check(
+	"and the kit's own theme was never asked of the network",
+	themed.asked.some((url) => url.includes("widgetarium")),
+	false,
+);
+
+const strayed = await installedFrom(`@import "tailwindcss";\n@import "widgetarium/nothing.css";\n`, null);
+check("ANY OTHER NAME UNDER widgetarium/ IS REFUSED", strayed.done.ok, false);
+check("and the refusal says what is served instead", String(strayed.done.failure).includes("only its theme.css"), true);
+check(
+	"EVERY GAP THE TREE WRITES IS A SPACING THE THEME NAMES, so a rename cannot part them quietly",
+	Object.keys(gapVarsOf(1)).filter((named) => !KIT_THEME_FILE.includes(`var(${named})`)),
+	[],
+);
+check(
+	"AND TAILWIND'S OWN TYPE SCALE IS CLEARED, so no size the kit never chose slips through",
+	KIT_THEME_FILE.includes("--text-*: initial;"),
+	true,
+);
+check(
+	"THE KIT'S THEME IS INLINE, because a plain @theme resolves var(--wg-kit-*) on :root, where no kit token lives",
+	KIT_THEME_FILE.trimStart().startsWith("@theme inline {"),
+	true,
+);
+const themedLock = JSON.parse(themed.shelf.files.get(LOCK_PATH));
+check(
+	"THE THEME IS AN INPUT OF THE BUILD, so a plugin that changes it is a build out of date",
+	Object.keys(themedLock.builds[ID].inputs).includes("widgetarium/theme.css"),
+	true,
+);
+themedLock.builds[ID].inputs["widgetarium/theme.css"] = "a theme this plugin no longer ships";
+themed.shelf.files.set(LOCK_PATH, JSON.stringify(themedLock));
+check("AND THE WIDGET IS BUILT AGAIN WHEN IT CHANGES", (await themed.installer.rebuildDrifted()).rebuilt, [ID]);
 check(
 	"and nothing of it reached the vault",
 	[...reset.shelf.files.keys()].some((at) => at.startsWith(`${INSTALLED}/`)),

@@ -10,7 +10,8 @@
 		"./icons": "./src/icons/icon-table.ts",
 		"./emoji-table": "./src/emojis/emoji-table.ts",
 		"./emojis": "./src/emojis/emoji.tsx",
-		"./shapes": "./src/utils/shapes.ts"
+		"./shapes": "./src/utils/shapes.ts",
+		"./theme.css": "./theme.css"
 	},
 	"peerDependencies": {
 		"react": "^19.2.8",

@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import esbuild from "esbuild";
 import { widgetTypeFiles } from "../../tools/widget-types.mjs";
 
-export const TEXT_LOADERS = { ".md": "text" };
+export const TEXT_LOADERS = { ".md": "text", ".css": "text" };
 
 const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
 const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.mjs";

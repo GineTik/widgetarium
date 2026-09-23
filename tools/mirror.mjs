@@ -109,10 +109,15 @@ export const stringifyYaml = (value) => stringify(value);
 `;
 
 function withTextImports(code, source) {
-	return code.replace(/import (\w+) from "([^"]+\.md)";/g, (whole, name, specifier) => {
-		const at = path.resolve(path.dirname(source), specifier);
-		return `const ${name} = ${JSON.stringify(fs.readFileSync(at, "utf8"))};`;
+	return code.replace(/import (\w+) from "([^"]+\.(?:md|css))";/g, (whole, name, specifier) => {
+		return `const ${name} = ${JSON.stringify(fs.readFileSync(textFileAt(specifier, source), "utf8"))};`;
 	});
+}
+
+function textFileAt(specifier, source) {
+	if (!specifier.startsWith("@widgetarium/kit/")) return path.resolve(path.dirname(source), specifier);
+	const held = KIT_EXPORTS[`.${specifier.slice("@widgetarium/kit".length)}`];
+	return path.join("packages", "kit", held.replace(/^\.\//, ""));
 }
 
 function mirroredWorkspaceImport(name, subpath, cacheRoot) {
