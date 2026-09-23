@@ -40,8 +40,14 @@ src/
 
 ## License
 
-The engine and the Obsidian plugin are under the [Functional Source License 1.1, Apache 2.0 Future License](LICENSE) (`FSL-1.1-ALv2`). The kit (`packages/kit/`, [MIT](packages/kit/LICENSE)) and the widgets (`registry/`, [MIT](registry/LICENSE)) are MIT; [REUSE.toml](REUSE.toml) maps every path to its licence.
+Two licences, one per folder. [LICENSE](LICENSE) is the map.
 
-You may use, modify and redistribute the software for any purpose except a Competing Use: offering it, or something substantially similar built from it, as a commercial product or service. Each version becomes Apache 2.0 two years after its release. To build a competing product, contact the author for a commercial license.
+| Folder           | Licence                               |
+| ---------------- | ------------------------------------- |
+| `packages/kit/`  | [MIT](packages/kit/LICENSE)           |
+| `registry/`      | [MIT](registry/LICENSE)               |
+| `packages/core/` | [FSL-1.1-ALv2](packages/core/LICENSE) |
+| `packages/sdk/`  | [FSL-1.1-ALv2](packages/sdk/LICENSE)  |
+| `apps/obsidian/` | [FSL-1.1-ALv2](apps/obsidian/LICENSE) |
 
-The kit and the widgets are MIT so they can be copied into any project, including a commercial one.
+The kit and the widgets are MIT so they can be copied into any project, including a commercial one. The FSL folders may be used, changed and shared for any purpose except a Competing Use: offering them, or something substantially similar built from them, as a commercial product or service. Each version becomes Apache 2.0 two years after its release. To build a competing product, contact the author for a commercial license.
