@@ -3,8 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const HANDED_TO_A_WIDGET = "widgets/types/widgetarium.d.ts";
-const GLOBALS = "widgets/types/globals.d.ts";
+const HANDED_TO_A_WIDGET = "packages/sdk/types/widgetarium.d.ts";
+const GLOBALS = "packages/sdk/types/globals.d.ts";
 const GATEWAY_AT = "types/gateway";
 const REACT_STAND_IN = "tools/vault-types/react.d.ts";
 
@@ -21,7 +21,7 @@ function declarationsOf(outDir) {
 			"--declaration",
 			"--emitDeclarationOnly",
 			"--rootDir",
-			"src",
+			"packages/core/src",
 			"--outDir",
 			outDir,
 		],
@@ -33,7 +33,7 @@ function declarationsOf(outDir) {
 	);
 }
 
-const vaultFacing = (text) => text.replaceAll("../../src/gateway/", "./gateway/");
+const vaultFacing = (text) => text.replaceAll("../../core/src/gateway/", "./gateway/");
 
 function standaloneTsconfig() {
 	const held = JSON.parse(fs.readFileSync("tsconfig.widgets.json", "utf8"));

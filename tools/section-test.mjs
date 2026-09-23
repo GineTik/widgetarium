@@ -52,7 +52,7 @@ function run(file) {
 	return shell.exports;
 }
 
-const loaded = run("widgets/@default/section/widget.tsx");
+const loaded = run("registry/@default/section/widget.tsx");
 const Section = loaded.default;
 const { manifest } = loaded;
 
@@ -161,14 +161,13 @@ const entryOf = (name, look) => ({
 	...look,
 });
 const plated = () => [...host.querySelectorAll(".wg-section-stands")].map((one) => one.getAttribute("data-surface"));
-const placedTwo = { widgets: [entryOf("Plain", {}), entryOf("Lifted", { surface: "group", height: 200 })] };
+const placedTwo = { widgets: [entryOf("Plain", {}), entryOf("Lifted", { surface: "group" })] };
 await drawn({ mounts: placedTwo });
 const stands = [...host.querySelectorAll(".wg-section-stands")];
 check("every placed widget stands in its own wrapper", stands.length, 2);
 check("in a column one with no word of its own wears nothing", stands[0].getAttribute("data-surface"), null);
 check("one that names its own plate wears that one", stands[1].getAttribute("data-surface"), "group");
-check("and is as tall as its record says", stands[1].style.height, "200px");
-check("while the other is as tall as it needs", stands[0].style.height, "");
+check("and each is as tall as what it draws", stands.map((one) => one.style.height), ["", ""]);
 
 console.log("\n— the arrangement decides the plates —");
 const twoPlain = { widgets: [entryOf("First", {}), entryOf("Second", {})] };

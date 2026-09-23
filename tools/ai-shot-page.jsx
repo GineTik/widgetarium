@@ -1,6 +1,9 @@
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
-import { AiChat } from "../src/ai/chat.js";
+import { AiChat } from "../apps/obsidian/src/ai/chat.js";
+import { buildWidget } from "../packages/core/src/registry.js";
+import taskProgressSource from "../registry/@default/task-progress/widget.tsx";
+import taskProgressCard from "../registry/@default/task-progress/manifest.generated.json";
 
 const PROVIDERS = [
 	{ id: "claude-code", label: "Claude Code", canEdit: true },
@@ -102,7 +105,98 @@ const BROKEN = {
 	tool: null,
 };
 
-const STATES = { empty: EMPTY, talking: TALKING, broken: BROKEN };
+const TOOL = "node /Users/me/Vault/.widgetarium/bin/widgets.mjs";
+const WIDGET_FOLDER = "/Users/me/Vault/.widgetarium/widgets/@mine";
+const STARTED = Date.now() - 41000;
+
+const buildCalls = (id, title, from) => [
+	{
+		ref: `${id}-start`,
+		name: "Bash",
+		input: { command: `${TOOL} start @mine/${id} --title "${title}"` },
+		answered: true,
+		output: `Building @mine/${id}, a new widget.`,
+		failed: false,
+		at: from,
+		answeredAt: from + 400,
+	},
+	{
+		ref: `${id}-write`,
+		name: "Write",
+		input: { file_path: `${WIDGET_FOLDER}/${id}/widget.tsx` },
+		answered: true,
+		output: "written",
+		failed: false,
+		at: from + 9000,
+		answeredAt: from + 9200,
+	},
+	{
+		ref: `${id}-check`,
+		name: "Bash",
+		input: { command: `${TOOL} check @mine/${id}` },
+		answered: true,
+		output: "the widget is clean",
+		failed: false,
+		at: from + 21000,
+		answeredAt: from + 22000,
+	},
+];
+
+const MISSING_SAID =
+	"The catalogue has nothing for two of these, so I will write them:\n\n- **Habit streak** — days in a row a habit was kept, with the gaps.\n- **Mood month** — one dot a day, coloured by mood.\n\nMoving on to create them.";
+
+const BUILDING = {
+	turns: [
+		{ role: "user", text: "Add a habit streak and a mood month to the right column.", calls: [] },
+		{
+			role: "agent",
+			text: MISSING_SAID,
+			calls: [
+				...buildCalls("mood-month", "Mood month", STARTED - 60000),
+				{
+					ref: "mood-note",
+					name: "Edit",
+					input: { file_path: "/Users/me/Vault/Boards/Dashboard.md" },
+					answered: true,
+					output: "written",
+					failed: false,
+					at: STARTED - 20000,
+					answeredAt: STARTED - 19800,
+				},
+				{
+					ref: "mood-lint",
+					name: "Bash",
+					input: { command: `${TOOL} lint Boards/Dashboard.md` },
+					answered: true,
+					output: "the board is valid",
+					failed: false,
+					at: STARTED - 12000,
+					answeredAt: STARTED - 11000,
+				},
+				...buildCalls("habit-streak", "Habit streak", STARTED),
+			],
+		},
+	],
+	busy: true,
+	failure: null,
+	session: "s-2",
+	tool: "Bash",
+	phase: "tools",
+	spent: 2210,
+	startedAt: STARTED - 70000,
+};
+
+const BUILT = { ...BUILDING, busy: false, tool: null, phase: null };
+
+const STATES = { empty: EMPTY, talking: TALKING, broken: BROKEN, building: BUILDING, built: BUILT };
+
+const PROGRESS = {
+	definition: {
+		manifest: taskProgressCard,
+		component: buildWidget({ manifest: taskProgressCard, code: taskProgressSource, path: "widget.tsx" }),
+	},
+	refusal: null,
+};
 
 const host = document.getElementById("host");
 const which = document.body.dataset.state ?? "empty";
@@ -110,5 +204,10 @@ const holder = document.createElement("div");
 holder.className = "wg-ai-shot";
 host.appendChild(holder);
 createRoot(holder).render(
-	h(AiChat, { session: sessionOf(STATES[which]), ai: AI, onChoose: () => {}, onOpenProviders: () => {} }),
+	h(AiChat, {
+		session: sessionOf(STATES[which]),
+		ai: { ...AI, progress: PROGRESS },
+		onChoose: () => {},
+		onOpenProviders: () => {},
+	}),
 );

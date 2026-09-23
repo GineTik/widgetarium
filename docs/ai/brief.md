@@ -61,7 +61,8 @@ node {tool} find --role <role> --reading <kind> --needs <types> --about <words>
 
 Called with nothing it is the whole catalogue — **not the vault**. Every row says `have` or `GET `; a
 `GET ` row is one `node {tool} install <id>` away. Where nothing matches the design, **write the
-widget**. Then place, bind every prop, give every node its surface, lint, measure, and look at it.
+widget** — law 15 says how you begin. Then place, bind every prop, give every node its surface, lint,
+measure, and look at it.
 
 **A titled part of a region is a section, not a bare widget.** `@default/section` carries the
 heading, the badge and the controls, and holds either the widgets you place or one widget drawn again
@@ -119,7 +120,13 @@ from the base it declares.
 what you wrote. Three laws are a gate and the rest is yours — `surfaces.md` has both, `examples.md`
 has whole boards to build like.
 
-**9. Colours, radii and type come from `--wg-kit-*` tokens.** A hardcoded colour is a defect.
+**9. A widget is built from the kit, always.** Colours, radii and type come from `--wg-kit-*` tokens;
+a hardcoded colour is a defect. What the kit draws you take from `widgetarium/kit`, never draw again:
+`Badge`, `Heading`, `Button`, `ActionButton`, `Tabs`, `ProgressBar`, `StatusProgress`, `ShowMore`, `Spinner`, `Emblem`, `Icon`,
+`Rows`, `Grid`, `Card`, `Layout` — `widget.md` lists them. Hand-drawn markup is allowed in two cases
+only: the person asked for it outright, or the kit has no component, or no part of one, for what you
+need — and then only that missing part is yours, still on the kit's tokens. A second badge written by
+hand is a defect the same way a hex is.
 
 **10. A widget you wrote is checked before it is placed.** `node {tool} check <id>` exits 1 while
 anything is wrong.
@@ -132,10 +139,40 @@ region and tile.
 **13. Nothing is done until it is on the board and drawing.** Written but not placed, placed but not
 bound, a prop left on its default — none of those are finished.
 
-**14. One widget answers one question.** A figure against a target and the rows it adds up are two
-widgets; a chart and the numbers beside it are two; a day's totals and the meals of that day are two.
-Put both in one section, each placed on its own. A widget that draws a summary and a list under it
-cannot be rearranged, re-plated or reused, and the design loses the choice of where each one stands.
+**14. One widget answers one question, and holds one role.** A widget's `role` is the whole of what it
+draws: an `indicator` draws no rows, a `collection` draws no figure over them, a `control` draws no
+list it filters. Where one design block needs two roles, it is two widgets in one section. A figure
+against a target and the rows it adds up are two widgets; a chart and the numbers beside it are two;
+a day's totals and the meals of that day are two.
+
+```
+wrong — one widget, two roles           right — one section, two widgets
+┌ Training ─────────────────────┐       section "Training"
+│ This week      435 of 240 min │  →      ├ indicator   "This week" · progress · caption
+│ ████████████████████████████  │         └ collection  "Sessions" · + · rows
+│ Sessions                    + │
+│ ≋ Swim · Sun 20 Sept   10 min │
+│ ⚲ Pull day · Sun…      49 min │
+└───────────────────────────────┘
+```
+
+The boundary is where the reading changes: a summary answers "how much", rows answer "which ones". A
+widget that draws both cannot be rearranged, re-plated or reused, and the design loses the choice of
+where each one stands.
+
+**15. Say which widgets are missing, then start each one before its first file.** Before you write
+any widget, tell the person in the chat which widgets the catalogue does not have, as a list, one
+line each saying what it will show, and end with that you are moving on to create them. Then, for
+each one, before you write or edit a single file in its folder:
+
+```bash
+node {tool} start @you/habit-streak --title "Habit streak"
+```
+
+That is your access to a widget's files, for a new widget and for an edit alike. It is what puts the
+card in the chat that shows the person which widget is being built and how far it has got; a widget
+written without it is built where nobody can watch. One `start` per widget, and finish one before you
+start the next.
 
 ## In this vault
 

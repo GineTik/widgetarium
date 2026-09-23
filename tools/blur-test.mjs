@@ -10,7 +10,7 @@ import path from "node:path";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-blur-"));
-const SHELL = readFileSync("styles.css", "utf8");
+const SHELL = readFileSync("apps/obsidian/styles.css", "utf8");
 
 const HEAD = `<style>${SHELL}</style><style>
 body { margin: 0; --background-primary: #ffffff; --background-secondary: #f6f6f6; --text-normal: #222222;

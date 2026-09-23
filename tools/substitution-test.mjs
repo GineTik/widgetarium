@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 
@@ -358,7 +358,7 @@ check(
 check("and says why there is no widget", missing.querySelector(".wg-inline-why")?.textContent, "widget not installed");
 
 // CONTEXT: every kit rule and --wg-kit-* token is hung on these scopes, so a host outside them is unpainted
-const styleSheet = fs.readFileSync("styles.css", "utf8");
+const styleSheet = fs.readFileSync("apps/obsidian/styles.css", "utf8");
 const kitScopes = [
 	...new Set(
 		[...styleSheet.matchAll(/:is\(([^)]*)\)\s+\.wg-kit-/g)].flatMap((found) =>
@@ -814,7 +814,7 @@ check(
 	"!code main.py | zig",
 );
 
-const sheet = fs.readFileSync("styles.css", "utf8");
+const sheet = fs.readFileSync("apps/obsidian/styles.css", "utf8");
 const codeSheet = shownCode.querySelector(".wgc-code style")?.textContent ?? "";
 const ruleOf = (css, selector) => new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
 const valueOf = (css, selector, property) =>
@@ -1212,7 +1212,7 @@ render(null, panel);
 		inject: ["tools/fill-inject.js"],
 		alias: {
 			widgetarium: "./tools/fill-shim.js",
-			"widgetarium/kit": "./src/kit.js",
+			"widgetarium/kit": "./packages/kit/src/kit.js",
 			obsidian: "./tools/obsidian-shim.js",
 		},
 		logLevel: "warning",
@@ -1300,13 +1300,13 @@ render(null, panel);
 	const file = path.join(work, "look.html");
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${fs.readFileSync("styles.css", "utf8")}</style>` +
+		`<!doctype html><html><head><meta charset="utf-8"><style>${fs.readFileSync("apps/obsidian/styles.css", "utf8")}</style>` +
 			`<style>body { margin: 0; --background-primary: #fff; --background-secondary: #f6f6f6; --background-modifier-border: #e4e4e4;` +
 			` --background-modifier-hover: rgba(0,0,0,0.05); --text-normal: #222; --text-muted: #707070; --text-faint: #a0a0a0;` +
 			` --text-on-accent: #fff; --text-error: #c0392b; --text-success: #1f8a4c; --interactive-accent: #6d4ee0;` +
 			` font-family: -apple-system, "Segoe UI", sans-serif; background: var(--background-secondary); }</style>` +
 			`</head><body class="wg-root"><div id="host"></div><script id="wg-measure" type="application/json"></script>` +
-			`<script>window.__FILES__=${JSON.stringify(collect("widgets", {}, WIDGETS_DIR))};</script>` +
+			`<script>window.__FILES__=${JSON.stringify(collect("registry", {}, WIDGETS_DIR))};</script>` +
 			`<script>${built.outputFiles[0].text}</script><script>${probe}</script></body></html>`,
 	);
 
@@ -1469,7 +1469,7 @@ render(null, panel);
 		inject: ["tools/fill-inject.js"],
 		alias: {
 			widgetarium: "./tools/fill-shim.js",
-			"widgetarium/kit": "./src/kit.js",
+			"widgetarium/kit": "./packages/kit/src/kit.js",
 			obsidian: "./tools/obsidian-shim.js",
 		},
 		loader: { ".json": "json" },
@@ -1513,7 +1513,7 @@ render(null, panel);
 	writeFileSync(
 		file,
 		`<!doctype html><html><head><meta charset="utf-8">` +
-			`<style>${readFileSync("styles.css", "utf8")}</style><style>${OBSIDIAN}</style>` +
+			`<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style><style>${OBSIDIAN}</style>` +
 			`<style>#note { width: 640px; padding: 24px; }</style></head>` +
 			`<body><button id="before">before</button>` +
 			`<div class="markdown-preview-view markdown-rendered" id="note"></div>` +

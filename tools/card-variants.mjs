@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 buildMirror();
 const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
@@ -32,7 +32,7 @@ function collect(from, into, prefix) {
 	return into;
 }
 
-const files = collect("widgets", {}, WIDGETS_DIR);
+const files = collect("registry", {}, WIDGETS_DIR);
 const bundle = await esbuild.build({
 	entryPoints: ["tools/catalogue-page.jsx"],
 	bundle: true,
@@ -52,7 +52,7 @@ const LIGHT = `--background-primary:#ffffff;--background-secondary:#f6f6f6;--bac
 
 function pageFor(variant, title, said) {
 	return `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>${readFileSync("tools/card-variants.css", "utf8")}</style>
 <style>
 body { margin: 0; padding: 28px 32px; ${LIGHT}

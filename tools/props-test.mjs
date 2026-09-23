@@ -34,9 +34,9 @@ for (const [id, wanted] of Object.entries(frozen)) {
 
 function manifestsStillDeclaringProps() {
 	const found = [];
-	for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("@"))) {
-		for (const folder of fs.readdirSync(path.join("widgets", scope))) {
-			const at = path.join("widgets", scope, folder, "manifest.json");
+	for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {
+		for (const folder of fs.readdirSync(path.join("registry", scope))) {
+			const at = path.join("registry", scope, folder, "manifest.json");
 			if (!fs.existsSync(at)) continue;
 			if (JSON.parse(fs.readFileSync(at, "utf8")).props)
 				found.push(`${at}: props belong beside the component that reads them`);

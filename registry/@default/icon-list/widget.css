@@ -1,0 +1,69 @@
+.wg-icon-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts);
+	min-width: 0;
+	--wg-icon-list-mark: 30px;
+	--wg-icon-list-line: 1.5;
+}
+
+.wg-icon-list-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--wg-gap-parts);
+	min-width: 0;
+}
+
+.wg-icon-list-mark {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: var(--wg-icon-list-mark);
+	height: var(--wg-icon-list-mark);
+	border-radius: var(--wg-kit-pill);
+}
+
+.wg-icon-list-number {
+	font-size: var(--font-ui-small, 14px);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+/* TRADE-OFF: the first line is centred on the disc by arithmetic over the two sizes rather than
+   a measured offset — a measurement per row costs a layout pass and the disc never moves */
+.wg-icon-list-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding-top: calc((var(--wg-icon-list-mark) - 1em * var(--wg-icon-list-line)) / 2);
+	font-size: var(--font-ui-small, 14px);
+	line-height: var(--wg-icon-list-line);
+	color: var(--wg-kit-text);
+	overflow-wrap: anywhere;
+}
+
+.wg-icon-list-text.markdown-rendered > :first-child {
+	margin-top: 0;
+}
+
+.wg-icon-list-text.markdown-rendered > :last-child {
+	margin-bottom: 0;
+}
+
+.wg-icon-list-text.markdown-rendered p {
+	margin: 0;
+}
+
+.wg-icon-list-text.markdown-rendered p + p {
+	margin-top: var(--wg-gap-parts);
+}
+
+.wg-icon-list-more {
+	align-self: flex-start;
+}
+
+.wg-icon-list-said {
+	margin: 0;
+	color: var(--wg-kit-text-muted);
+	font-size: var(--font-ui-small, 14px);
+}

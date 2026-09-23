@@ -52,12 +52,18 @@ The tile's own plate is the node's. Everything the widget paints under it comes 
 `widgetarium/kit`, and the kit already follows the rules above:
 
 ```tsx
-import { Card, Grid, Layout, Rows } from "widgetarium/kit";
+import { Card, Grid, Layout, Rows, Tabs } from "widgetarium/kit";
 
 <Card tone="warning">3 bugs found today</Card>
 
 <Rows>
-	<Rows.Header title="Steps">{actions}</Rows.Header>
+	<Rows.Header>
+		<Rows.Title>Steps</Rows.Title>
+		<Rows.Actions>
+			<Tabs size="s" items={views} value={view} onChange={setView} />
+			<Rows.ActionButton icon="plus" label="Add a step" onClick={add} />
+		</Rows.Actions>
+	</Rows.Header>
 	{steps.map((step) => (
 		<Rows.Item key={step.ref} tone={step.done ? "success" : undefined}>…</Rows.Item>
 	))}
@@ -78,6 +84,14 @@ import { Card, Grid, Layout, Rows } from "widgetarium/kit";
 - `Rows` is one plate; `Rows.Item` stands bare on it with a line above every item after the first.
   The plate has no side padding: each row carries the inset itself, so a line and a toned row reach
   both edges while the text stays 16px in. Rows standing on a plate already paint no second one.
+- `Rows.Header` is a row standing **above** the plate, outside it, flush with its edge rather than
+  inset like a row. `Rows.Title` is a kit `Heading` (an `h3` at size 4) and `Rows.Actions` holds
+  what stands at the end of the line: anything at all. `Rows.ActionButton` is the quick one, a small
+  grey button with an `icon`, an `icon` and words, or words alone; it is a plain button, so it is the
+  `trigger` of a `Popover` or a `Dialog` as it stands. `Tabs` belong there too.
+  `<Rows.Header title="…">{actions}</Rows.Header>` is the short form of the same. Only rows standing
+  on a tile that is itself a plate keep the header inside, because that plate is the board's and
+  nothing can stand above it.
 - **Padding is never doubled.** Rows on a card take the card's padding on every edge they touch: the
   sides always, the top only when nothing stands above them in the card, the bottom only when nothing
   stands below. Anything else in the card keeps that edge for the card. The rows mark it on the card
@@ -133,6 +147,10 @@ Inside a widget the same steps arrive as `--wg-gap-items`, `--wg-gap-parts`, `--
 
 Every colour is a `--wg-kit-*` token. A theme repaints a token and cannot repaint a hex.
 
+- **Text** and **muted text**, two colours and no third: `--wg-kit-text` is the theme's own text
+  colour, `--wg-kit-text-muted` the theme's muted colour a step toward the page, so a caption, a date
+  or a secondary figure recedes instead of competing with the line above it. Never `--text-muted`
+  or `--text-normal` directly.
 - `--wg-kit-fill`, `--wg-kit-fill-hover` — the ground a control sits on
 - `--wg-kit-group-fill`, `--wg-kit-group-line` — a plate, and the line between rows on it
 - `--wg-kit-accent`, `--wg-kit-accent-wash` — the one thing being asked for

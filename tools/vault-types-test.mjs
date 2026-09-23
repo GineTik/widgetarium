@@ -8,7 +8,7 @@ const WIDGET = `import { createWidget, defineManifest, defineProp, useData } fro
 
 type Entry = { title: string; done?: boolean };
 
-export const manifest = defineManifest({
+export const manifest = defineManifest({ size: { preferredWidth: "full", preferredHeight: "auto" }, 
 	title: "Checklist",
 	description: "The widget a vault is measured on.",
 	props: {
@@ -26,7 +26,7 @@ export default createWidget(manifest, ({ heading, entries }) => {
 
 const REFUSED = `import { defineManifest, defineProp } from "widgetarium";
 
-export const manifest = defineManifest({
+export const manifest = defineManifest({ size: { preferredWidth: "full", preferredHeight: "auto" }, 
 	title: "Refused",
 	description: "A verb nobody declared.",
 	props: { entries: defineProp<{ title: string }[]>()({ default: [] }) },

@@ -1,10 +1,10 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
+import { render } from "../packages/core/src/engine/render.js";
 import { useEffect, useState } from "react";
-import { WidgetRegistry } from "../src/registry.js";
-import { drawnWidget } from "../src/mounted.js";
-import { previewProps, previewSize } from "../src/preview.js";
-import { GRID } from "../src/paths.js";
+import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { drawnWidget } from "../packages/core/src/mounted.js";
+import { previewProps, previewSize } from "../packages/core/src/preview.js";
+import { GRID } from "../packages/core/src/paths.js";
 
 const FILES = window.__FILES__;
 const WANTED = window.__WANTED__;

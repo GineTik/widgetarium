@@ -5,7 +5,7 @@ import path from "node:path";
 import esbuild from "esbuild";
 import { findBrowser, widgetFiles } from "./harness.mjs";
 import { buildMirror } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 buildMirror();
 const { LAYOUT_NAMES, skeletonOf } = await import("./.mjs-cache/layouts.mjs");
@@ -38,7 +38,7 @@ for (const name of names) {
 		continue;
 	}
 	const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
 	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; --font-ui-small: 14px; --font-ui-medium: 15px;

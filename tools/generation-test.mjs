@@ -38,9 +38,20 @@ const declared = {
 	tabs: defineProp()({ label: "Tabs", default: [] }),
 	label: defineProp()({ label: "Label", default: "name" }),
 };
-const base = defineManifest({ title: "Tabs", description: "Tabs.", props: declared });
+const base = defineManifest({
+	size: { preferredWidth: "full", preferredHeight: "auto" },
+	title: "Tabs",
+	description: "Tabs.",
+	props: declared,
+});
 const withProps = (props, extra = {}) =>
-	defineManifest({ title: base.title, description: base.description, ...extra, props });
+	defineManifest({
+		size: { preferredWidth: "full", preferredHeight: "auto" },
+		title: base.title,
+		description: base.description,
+		...extra,
+		props,
+	});
 const verdictFor = (next) => compatibility(base, next);
 
 check(
@@ -66,6 +77,7 @@ check(
 	propChanges(
 		base.props,
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Tabs",
 			description: "Tabs.",
 			props: { ...declared, tabs: defineProp()({ label: "Tabs", default: [], writes: ["update"] }) },

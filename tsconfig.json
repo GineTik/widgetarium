@@ -22,5 +22,5 @@
 		"allowJs": false,
 		"types": []
 	},
-	"include": ["src/**/*.ts"]
+	"include": ["packages/core/src/**/*.ts"]
 }

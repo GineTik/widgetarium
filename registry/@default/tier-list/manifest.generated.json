@@ -1,0 +1,253 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Tier list",
+	"description": "Cards dragged into named rows, best at the top, with everything unranked waiting in a tray.",
+	"keywords": [
+		"tier",
+		"tierlist",
+		"rank",
+		"ranking",
+		"rate",
+		"rating",
+		"compare",
+		"order",
+		"best",
+		"worst",
+		"vote",
+		"poll",
+		"favourites",
+		"drag",
+		"drop",
+		"grade",
+		"s tier"
+	],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 280,
+		"stackBelowPx": 420
+	},
+	"preview": {
+		"size": {
+			"w": 7,
+			"h": 6
+		},
+		"props": {
+			"title": {
+				"value": "Comfort food"
+			},
+			"cardSize": {
+				"value": 48
+			},
+			"tiers": {
+				"rows": [
+					{
+						"label": "S",
+						"tone": "error",
+						"order": 1
+					},
+					{
+						"label": "A",
+						"tone": "warning",
+						"order": 2
+					},
+					{
+						"label": "B",
+						"tone": "standout",
+						"order": 3
+					},
+					{
+						"label": "C",
+						"tone": "success",
+						"order": 4
+					}
+				]
+			},
+			"cards": {
+				"rows": [
+					{
+						"name": "Pizza",
+						"tier": "S",
+						"order": 1
+					},
+					{
+						"name": "Ramen",
+						"tier": "S",
+						"order": 2
+					},
+					{
+						"name": "Dumplings",
+						"tier": "S",
+						"order": 3
+					},
+					{
+						"name": "Tacos",
+						"tier": "A",
+						"order": 4
+					},
+					{
+						"name": "Sushi",
+						"tier": "A",
+						"order": 5
+					},
+					{
+						"name": "Burger",
+						"tier": "B",
+						"order": 6
+					},
+					{
+						"name": "Pancakes",
+						"tier": "C",
+						"order": 7
+					},
+					{
+						"name": "Falafel"
+					},
+					{
+						"name": "Pierogi"
+					},
+					{
+						"name": "Ice cream"
+					}
+				]
+			}
+		},
+		"shot": {
+			"of": "115520328"
+		}
+	},
+	"props": {
+		"cards": {
+			"kind": "collection",
+			"label": "Cards",
+			"hint": "The things being ranked. A folder of notes, or a list typed into the tile.",
+			"writes": [
+				"list",
+				"get",
+				"create",
+				"update",
+				"remove",
+				"replace"
+			],
+			"describes": {
+				"name": {
+					"label": "Name",
+					"type": "text",
+					"required": true
+				},
+				"tier": {
+					"label": "Row",
+					"type": "text",
+					"aka": [
+						"rank",
+						"grade",
+						"bucket"
+					]
+				},
+				"order": {
+					"label": "Order",
+					"type": "number",
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
+				},
+				"picture": {
+					"label": "Picture",
+					"type": "text",
+					"aka": [
+						"image",
+						"avatar",
+						"cover",
+						"icon"
+					]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"tiers": {
+			"kind": "value",
+			"control": "json",
+			"label": "Rows",
+			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
+			"writes": [
+				"get",
+				"list",
+				"create",
+				"update",
+				"remove",
+				"replace"
+			],
+			"describes": {
+				"label": {
+					"label": "Name",
+					"type": "text",
+					"required": true,
+					"aka": [
+						"name",
+						"title",
+						"tier"
+					]
+				},
+				"tone": {
+					"label": "Colour",
+					"type": "text",
+					"aka": [
+						"colour",
+						"color"
+					]
+				},
+				"order": {
+					"label": "Order",
+					"type": "number",
+					"aka": [
+						"position",
+						"sort",
+						"index"
+					]
+				}
+			},
+			"default": {}
+		},
+		"title": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": "Tier list"
+			}
+		},
+		"cardSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Card size",
+			"hint": "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
+			"design": true,
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": 64
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx",
+		"widget.css"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

@@ -4,7 +4,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const ID = process.argv[2];
@@ -20,7 +20,7 @@ if (!ID) {
 const WIDGET_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
 const widgetFile = (at) => WIDGET_FILES.map((name) => path.join(at, name)).find((file) => fs.existsSync(file));
 
-const folder = path.join("widgets", ID);
+const folder = path.join("registry", ID);
 const manifest = JSON.parse(fs.readFileSync(path.join(folder, "manifest.json"), "utf8"));
 
 const settings = {};
@@ -33,22 +33,22 @@ for (const [name, given] of Object.entries(manifest.preview?.sources ?? {}))
 
 // CONTEXT: the board paints nothing behind a tile — WidgetRoot's own fill is the whole surface
 // CONTEXT: a lib is reached by its scope name, so every scope that has one becomes an alias
-const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js" };
-for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("@"))) {
-	const lib = path.join("widgets", scope, "lib.js");
+const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./packages/kit/src/kit.js" };
+for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {
+	const lib = path.join("registry", scope, "lib.js");
 	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;
 }
 
 // CONTEXT: a fed slot is what the board fills from the manifest default — a shot without it draws a hole
 const slots = Object.entries(manifest.slots ?? {});
 const slotImports = slots
-	.map(([name, spec], at) => `import Slot${at} from "./${widgetFile(path.join("widgets", spec.default))}";`)
+	.map(([name, spec], at) => `import Slot${at} from "./${widgetFile(path.join("registry", spec.default))}";`)
 	.join("\n");
 const slotMap = `{ ${slots.map(([name], at) => `${name}: Slot${at}`).join(", ")} }`;
 
 const PAGE = `
 import { createElement as h } from "react";
-import { render } from "./src/engine/render.js";
+import { render } from "./packages/core/src/engine/render.js";
 import Widget from "./${widgetFile(folder)}";
 ${slotImports}
 
@@ -87,13 +87,13 @@ const THEMES = {
 		--text-on-accent:#ffffff;--text-error:#e06c5f;--text-success:#4ec97f;--interactive-accent:#8b6cef;`,
 };
 
-const scopeSheet = path.join("widgets", ID.split("/")[0], "tokens.css");
+const scopeSheet = path.join("registry", ID.split("/")[0], "tokens.css");
 const work = mkdtempSync(path.join(tmpdir(), "wg-shot-"));
 const slug = ID.replace("@", "").replace("/", "-");
 
 for (const theme of ["light", "dark"]) {
 	const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${fs.readFileSync("styles.css", "utf8")}</style>
+<style>${fs.readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 ${fs.existsSync(scopeSheet) ? `<style>${fs.readFileSync(scopeSheet, "utf8")}</style>` : ""}
 <style>body { margin: 0; ${THEMES[theme]}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;

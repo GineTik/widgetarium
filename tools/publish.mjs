@@ -222,7 +222,7 @@ export async function writeCardBeside(folder) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 	const asked = process.argv[2];
 	if (!asked) {
-		console.error("!!  name the widget folder to publish, as widgets/@scope/name");
+		console.error("!!  name the widget folder to publish, as registry/@scope/name");
 		process.exit(1);
 	}
 	const named = process.argv.indexOf("--out");

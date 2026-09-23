@@ -1,4 +1,4 @@
-// Every earlier test built its OWN slot and proved that. This one drives src/host.js — the
+// Every earlier test built its OWN slot and proved that. This one drives apps/obsidian/src/host.js — the
 // adapter that actually ships — over a stand-in vault, because the two bugs that made the
 // board sit on "Loading..." forever both lived in the half no test ever touched.
 import fs from "node:fs";

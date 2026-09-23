@@ -5,7 +5,7 @@ import path from "node:path";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
 import { findBrowser, THEMES } from "./harness.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 buildMirror();
 const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
@@ -64,7 +64,7 @@ const FRAMES = [
 	},
 ];
 
-const files = collect("widgets", {}, WIDGETS_DIR);
+const files = collect("registry", {}, WIDGETS_DIR);
 const bundle = await esbuild.build({
 	entryPoints: ["tools/substitution-page.jsx"],
 	bundle: true,
@@ -78,13 +78,13 @@ const bundle = await esbuild.build({
 	inject: ["tools/fill-inject.js"],
 	alias: {
 		widgetarium: "./tools/fill-shim.js",
-		"widgetarium/kit": "./src/kit.js",
+		"widgetarium/kit": "./packages/kit/src/kit.js",
 		obsidian: "./tools/obsidian-shim.js",
 	},
 	logLevel: "warning",
 });
 
-const sheet = readFileSync("styles.css", "utf8");
+const sheet = readFileSync("apps/obsidian/styles.css", "utf8");
 
 for (const theme of ["light", "dark"]) {
 	writeFileSync(path.join(work, `frame-${theme}.html`), framePage(theme));

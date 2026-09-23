@@ -1,11 +1,11 @@
 import esbuild from "esbuild";
 import { readFile } from "node:fs/promises";
 import { propsOfEveryShippedWidget } from "./widget-props.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/fields"; export * from "./src/gateway/resolve-needs"; export * from "./src/gateway/mapped"; export { needsOf } from "./src/gateway/props.js";`,
+		contents: `export * from "./packages/core/src/gateway/create"; export * from "./packages/core/src/gateway/fields"; export * from "./packages/core/src/gateway/resolve-needs"; export * from "./packages/core/src/gateway/mapped"; export { needsOf } from "./packages/core/src/gateway/props.js";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},
@@ -243,11 +243,11 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const { existsSync, readdirSync } = await import("node:fs");
-	const scopes = readdirSync("widgets").filter((name) => name.startsWith("@"));
+	const scopes = readdirSync("registry").filter((name) => name.startsWith("@"));
 	const shipped = scopes.flatMap((scope) =>
-		readdirSync(`widgets/${scope}`)
+		readdirSync(`registry/${scope}`)
 			.filter((name) => !name.endsWith(".js") && !name.endsWith(".css"))
-			.map((name) => `widgets/${scope}/${name}/manifest.generated.json`)
+			.map((name) => `registry/${scope}/${name}/manifest.generated.json`)
 			.filter((path) => existsSync(path)),
 	);
 	const declaring = [];
@@ -263,7 +263,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 }
 
 {
-	const manifest = JSON.parse(await readFile("widgets/@default/streak/manifest.generated.json", "utf8"));
+	const manifest = JSON.parse(await readFile("registry/@default/streak/manifest.generated.json", "utf8"));
 	const needs = gateway.needsOf((await propsOfEveryShippedWidget())["@default/streak"].days);
 	const rows = manifest.preview.props.days.rows;
 	const { map } = resolveNeeds(needs, fieldsOf(rows));

@@ -20,8 +20,8 @@
 		"skipLibCheck": false,
 		"allowJs": false,
 		"paths": {
-			"widgetarium": ["./widgets/types/widgetarium.d.ts"]
+			"widgetarium": ["./packages/sdk/types/widgetarium.d.ts"]
 		}
 	},
-	"include": ["widgets/types/**/*.d.ts", "tools/type-gate/**/*.ts", "tools/type-gate/*.tsx", "widgets/**/*.tsx"]
+	"include": ["packages/sdk/types/**/*.d.ts", "tools/type-gate/**/*.ts", "tools/type-gate/*.tsx", "registry/**/*.tsx"]
 }

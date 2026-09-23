@@ -12,8 +12,8 @@ const SMILEYS_AND_EMOTION = 0;
 const LAST_FACE_SUBGROUP = 13;
 const AT_ONCE = 8;
 
-const TABLE_FILE = path.join(process.cwd(), "src", "emoji-table.js");
-const NOTICE_DIR = path.join(process.cwd(), "assets", "emojis");
+const TABLE_FILE = path.join(process.cwd(), "packages", "kit", "src", "emoji-table.js");
+const NOTICE_DIR = path.join(process.cwd(), "packages", "kit", "assets", "emojis");
 
 const MIT = `MIT License
 
@@ -38,7 +38,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 `;
 
-const NOTICE = `The emoji drawings in src/emoji-table.js are Microsoft Fluent Emoji
+const NOTICE = `The emoji drawings in packages/kit/src/emoji-table.js are Microsoft Fluent Emoji
 (https://github.com/microsoft/fluentui-emoji), Flat style, licensed under the
 MIT License, a copy of which sits beside this file.
 
@@ -132,4 +132,4 @@ writeFileSync(path.join(NOTICE_DIR, "LICENSE"), MIT);
 writeFileSync(path.join(NOTICE_DIR, "NOTICE"), NOTICE);
 
 for (const held of undrawn) console.log(`no Fluent drawing for ${held.entry.emoji} ${held.entry.label}`);
-console.log(`${Object.keys(table).length} emojis -> src/emoji-table.js`);
+console.log(`${Object.keys(table).length} emojis -> packages/kit/src/emoji-table.js`);

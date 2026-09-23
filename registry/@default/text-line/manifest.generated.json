@@ -1,0 +1,98 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Text line",
+	"description": "One line of text in the tone it is read as: a label, a value or a caption.",
+	"keywords": [
+		"text",
+		"line",
+		"label",
+		"value",
+		"caption",
+		"heading",
+		"title",
+		"subtitle",
+		"note",
+		"words",
+		"sentence"
+	],
+	"role": "text",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"text": {
+				"value": "Last synced four minutes ago"
+			},
+			"tone": {
+				"value": "caption"
+			}
+		}
+	},
+	"props": {
+		"text": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Text",
+			"hint": "The line itself. Left empty, the widget draws nothing at all.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": ""
+			}
+		},
+		"tone": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Tone",
+			"hint": "One of label, value or caption. It decides the weight and the ink, never the plate.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "value"
+			}
+		},
+		"heading": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Heading level",
+			"hint": "Zero draws a plain line. One, two or three draw the line as a heading of that level.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 0
+			}
+		},
+		"lines": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Lines",
+			"hint": "How many lines the text may take before it is cut. Zero lets it run as long as it is.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

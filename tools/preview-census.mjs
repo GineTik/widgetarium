@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-const ROOT = "widgets";
+const ROOT = "registry";
 
 const SAYS_NOTHING =
 	/no (projects|tracks|albums|files|commits|questions|rows|records|output|report|widget)|touched no files|has no widget|nothing (is|has|to)|is empty|yet\./i;

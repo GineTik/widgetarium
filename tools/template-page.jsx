@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
-import { Catalogue } from "../src/catalogue.js";
-import { TEMPLATES } from "../src/templates.js";
+import { render } from "../packages/core/src/engine/render.js";
+import { Catalogue } from "../packages/core/src/catalogue.js";
+import { TEMPLATES } from "../packages/core/src/templates.js";
 
 const TITLES = window.__TITLES__;
 

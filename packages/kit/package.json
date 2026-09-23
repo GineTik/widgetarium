@@ -1,0 +1,20 @@
+{
+	"name": "@widgetarium/kit",
+	"version": "0.1.0",
+	"private": true,
+	"license": "MIT",
+	"exports": {
+		".": "./src/kit.js",
+		"./surface": "./src/kit-surface.js",
+		"./plates": "./src/plates.js",
+		"./icons": "./src/icon-table.js",
+		"./emoji-table": "./src/emoji-table.js",
+		"./emojis": "./src/emojis.js",
+		"./shapes": "./src/shapes.js",
+		"./dicebear": "./src/dicebear-styles.js"
+	},
+	"peerDependencies": {
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	}
+}

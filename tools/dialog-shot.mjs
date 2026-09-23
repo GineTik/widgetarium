@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-dlg-"));
@@ -20,7 +20,7 @@ const bundle = await esbuild.build({
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	inject: ["tools/fill-inject.js"],
-	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js" },
+	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./packages/kit/src/kit.js" },
 	logLevel: "warning",
 });
 
@@ -35,8 +35,8 @@ const THEMES = {
 
 for (const theme of ["light", "dark"]) {
 	const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
+<style>${readFileSync("registry/@default/tokens.css", "utf8")}</style>
 <style>body { margin: 0; ${THEMES[theme]}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;
 	--font-text: "Helvetica Neue", Helvetica, Arial, sans-serif;

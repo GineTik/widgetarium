@@ -26,6 +26,7 @@ function refusal(said, run, part) {
 }
 
 const made = defineManifest({
+	size: { preferredWidth: "full", preferredHeight: "auto" },
 	title: "Probe",
 	description: "The widget the manifest checks are measured on.",
 	props: {
@@ -69,13 +70,20 @@ check("the card carries no writes of its own", made.writes, undefined);
 
 refusal(
 	"a prop that is not defineProp is refused",
-	() => defineManifest({ title: "Probe", description: "x", props: { notes: { default: [] } } }),
+	() =>
+		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
+			title: "Probe",
+			description: "x",
+			props: { notes: { default: [] } },
+		}),
 	"is not made by defineProp",
 );
 refusal(
 	"a default naming a path is refused",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: { path: "Tasks" } }) },
@@ -86,6 +94,7 @@ refusal(
 	"a default whose rows name a path is refused too",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: [{ path: "Tasks/one.md" }] }) },
@@ -96,6 +105,7 @@ refusal(
 	"a path nested inside a default is refused too",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: { change: { path: "Tasks/one.md" } } }) },
@@ -106,6 +116,7 @@ refusal(
 	"a default object naming ref is refused, not only rows",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: { ref: "abc", title: "One" } }) },
@@ -114,13 +125,20 @@ refusal(
 );
 refusal(
 	"a prop with no default is refused",
-	() => defineManifest({ title: "Probe", description: "x", props: { notes: defineProp()({ label: "Notes" }) } }),
+	() =>
+		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
+			title: "Probe",
+			description: "x",
+			props: { notes: defineProp()({ label: "Notes" }) },
+		}),
 	"declares no default",
 );
 refusal(
 	"a described ref is refused",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: [], describes: { ref: "Address" } }) },
@@ -131,6 +149,7 @@ refusal(
 	"a default row carrying a ref is refused",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: [{ ref: "r1", name: "One" }] }) },
@@ -141,6 +160,7 @@ refusal(
 	"an own verb with no type is refused",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: [], writes: { archive: true } }) },
@@ -151,6 +171,7 @@ refusal(
 	"a migration from nothing is refused",
 	() =>
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Probe",
 			description: "x",
 			props: { notes: defineProp()({ default: [] }) },
@@ -159,7 +180,44 @@ refusal(
 	"names no props it migrates from",
 );
 
+refusal(
+	"a manifest naming no preferred size is refused",
+	() => defineManifest({ title: "Probe", description: "x", props: {} }),
+	"size names no preferredWidth",
+);
+refusal(
+	"and so is a step that names no region width, or no size",
+	() =>
+		defineManifest({
+			title: "Probe",
+			description: "x",
+			size: {
+				preferredWidth: 420,
+				preferredHeight: "auto",
+				at: [{ belowPx: 0, preferredWidth: "full" }, { belowPx: 400 }],
+			},
+			props: {},
+		}),
+	"size.at[0] needs a belowPx above 0 and a preferredWidth or preferredHeight of the same kinds; size.at[1]",
+);
+check(
+	"while a preferred size with its steps passes",
+	defineManifest({
+		title: "Probe",
+		description: "x",
+		size: {
+			preferredWidth: 420,
+			preferredHeight: 420,
+			keepsRatio: true,
+			at: [{ belowPx: 520, preferredWidth: "full" }],
+		},
+		props: {},
+	}).size.keepsRatio,
+	true,
+);
+
 const withOwnVerb = defineManifest({
+	size: { preferredWidth: "full", preferredHeight: "auto" },
 	title: "Probe",
 	description: "x",
 	props: { notes: defineProp()({ default: [], writes: { create: true, archive: verb() } }) },

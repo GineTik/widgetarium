@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 
-const DECLARATION = "widgets/types/widgetarium.d.ts";
+const DECLARATION = "packages/sdk/types/widgetarium.d.ts";
 const HALVES = [
-	["src/api-core.js", "coreSurface"],
-	["src/widget-api.js", "reactSurface"],
+	["packages/core/src/api-core.js", "coreSurface"],
+	["packages/core/src/widget-api.js", "reactSurface"],
 ];
 const MODULE = HALVES.map(([path]) => path).join(" + ");
 

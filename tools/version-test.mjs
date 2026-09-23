@@ -103,11 +103,11 @@ check(
 );
 
 const shipped = [];
-for (const scope of fs.readdirSync("widgets", { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+for (const scope of fs.readdirSync("registry", { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
 	for (const folder of fs
-		.readdirSync(path.join("widgets", scope.name), { withFileTypes: true })
+		.readdirSync(path.join("registry", scope.name), { withFileTypes: true })
 		.filter((entry) => entry.isDirectory())) {
-		const at = path.join("widgets", scope.name, folder.name, "manifest.generated.json");
+		const at = path.join("registry", scope.name, folder.name, "manifest.generated.json");
 		if (fs.existsSync(at)) shipped.push({ at, manifest: JSON.parse(fs.readFileSync(at, "utf8")) });
 	}
 }

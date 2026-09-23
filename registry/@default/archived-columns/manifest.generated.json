@@ -1,0 +1,98 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Archived columns",
+	"description": "Lists the columns a board has put away, with the tasks still sitting in them.",
+	"keywords": [
+		"archive",
+		"archived",
+		"hidden",
+		"columns",
+		"board",
+		"kanban",
+		"storage",
+		"restore",
+		"put away",
+		"old",
+		"closed",
+		"backlog"
+	],
+	"role": "collection",
+	"view": "Archived columns",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 240
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 4
+		},
+		"props": {
+			"board": {
+				"value": {
+					"columns": [
+						{
+							"name": "Blocked",
+							"archivedAt": "2026-09-01"
+						},
+						{
+							"name": "On hold",
+							"archivedAt": "2026-09-01"
+						}
+					]
+				}
+			}
+		},
+		"shot": {
+			"of": "134271609"
+		}
+	},
+	"props": {
+		"boards": {
+			"kind": "collection",
+			"label": "Boards",
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Shown board",
+			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
+			"of": "boards",
+			"field": "board",
+			"fallback": "first",
+			"writes": [
+				"get"
+			],
+			"wants": "@default/editable-tabs/selection"
+		},
+		"board": {
+			"kind": "value",
+			"control": "row",
+			"label": "Board",
+			"hint": "The board whose archived columns are listed.",
+			"picks": "selection",
+			"of": "boards",
+			"writes": [
+				"get",
+				"update"
+			],
+			"wants": "@default/kanban-board/board"
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

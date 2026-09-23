@@ -1,9 +1,9 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
+import { render } from "../packages/core/src/engine/render.js";
 import { useEffect, useState } from "react";
-import { Catalogue } from "../src/catalogue.js";
-import { WidgetRegistry } from "../src/registry.js";
-import { slotFit } from "../src/fit.js";
+import { Catalogue } from "../packages/core/src/catalogue.js";
+import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { slotFit } from "../packages/core/src/fit.js";
 
 const FILES = window.__FILES__;
 const MODE = window.__MODE__ ?? "place";

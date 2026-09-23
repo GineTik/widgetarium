@@ -4,7 +4,7 @@ import { join, relative, sep } from "node:path";
 import { format, resolveConfig, getFileInfo } from "prettier";
 
 const explicitRoots = process.argv.slice(2).filter((argument) => !argument.startsWith("--"));
-const ROOTS = explicitRoots.length > 0 ? explicitRoots : ["src", "widgets", "tools"];
+const ROOTS = explicitRoots.length > 0 ? explicitRoots : ["apps", "packages", "registry", "tools"];
 const SETTLE_MS = 120;
 
 const cwd = process.cwd();

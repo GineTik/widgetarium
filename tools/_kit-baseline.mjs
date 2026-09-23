@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 buildMirror();
 
@@ -319,7 +319,7 @@ check(
 // and the other to a literal, so a theme without the ramp drove them apart.
 {
 	const fs = await import("node:fs");
-	const tokens = fs.readFileSync("widgets/@default/tokens.css", "utf8");
+	const tokens = fs.readFileSync("registry/@default/tokens.css", "utf8");
 	check(
 		"the plate fill has ONE owner, so no second fallback can drift",
 		/--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens),
@@ -328,7 +328,7 @@ check(
 
 	for (const id of ["@task/board-tabs", "@default/filter-panel", "@default/view-tabs"]) {
 		const name = id.slice(id.indexOf("/") + 1);
-		const src = fs.readFileSync(`widgets/${id}/widget.jsx`, "utf8");
+		const src = fs.readFileSync(`registry/${id}/widget.jsx`, "utf8");
 		// either form counts: the kit is importable as components AND wearable as classes
 		check(`${name} builds on the kit rather than restating it`, /widgetarium\/kit|wg-kit-/.test(src), true);
 		check(`${name} does not paint its own plate`, /background:\s*var\(--orbi-plate\)/.test(src), false);
@@ -336,7 +336,7 @@ check(
 }
 
 // THE PANEL MUST BE CLOSABLE, and the press that closes it never reaches `document`.
-// src/editor-shield.js wraps EVERY widget block and stops mousedown/pointerdown in the bubble
+// packages/core/src/editor-shield.js wraps EVERY widget block and stops mousedown/pointerdown in the bubble
 // phase, so CodeMirror cannot move the caret under a live widget. A document-level bubble
 // listener is therefore never called for a press landing on any widget on the board.
 {
@@ -646,7 +646,7 @@ check(
 	render(null, host);
 }
 
-// CONTEXT: widgets/@default/filter-panel builds this by hand today
+// CONTEXT: registry/@default/filter-panel builds this by hand today
 {
 	const host = document.getElementById("host");
 	render(null, host);
@@ -929,8 +929,8 @@ check(
 
 	const entry = [
 		'import { createElement as h } from "react";',
-		'import { render } from "./src/engine/render.js";',
-		'import { MarkdownEditor, List, Row, RowLabel, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./src/kit.js";',
+		'import { render } from "./packages/core/src/engine/render.js";',
+		'import { MarkdownEditor, List, Row, RowLabel, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./packages/kit/src/kit.js";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,
 		"const mirror = host.querySelector('.wg-kit-md-mirror');",
@@ -973,7 +973,7 @@ check(
 	const file = nodePath.join(work, "mirror.html");
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>` +
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>` +
 			`<style>:root { --text-normal: #222; --text-muted: #707070; --text-faint: #ababab; --background-primary: #fff; --interactive-accent: #6d4ee0; --font-interface: -apple-system, "Segoe UI", sans-serif; --font-ui-small: 14px; --size-4-4: 16px; }` +
 			`body { margin: 0; } .wg-root { width: 380px; }</style>` +
 			`</head><body><div class="wg-root"></div><div class="wg-root wg-sides" style="width:300px"></div>` +
@@ -1120,7 +1120,7 @@ check(
 	const liftFile = nodePath.join(work, "lift.html");
 	writeFileSync(
 		liftFile,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>` +
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>` +
 			`<style>html, body { margin: 0; padding: 0; } body { width: 400px; height: ${pageHeight}px; }` +
 			`.wg-ground { position: absolute; left: 0; width: 400px; height: ${BLOCK.slot}px; background: var(--wg-kit-raise); }` +
 			`.wg-ground .wg-kit-side { position: absolute; left: ${BLOCK.left}px; top: ${BLOCK.top}px; width: ${BLOCK.width}px; height: ${BLOCK.height}px; }</style>` +

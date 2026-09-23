@@ -1,0 +1,169 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Plan questions",
+	"description": "The questions an agent asked before it started and the answers that were chosen, every rejected option still readable.",
+	"keywords": [
+		"questions",
+		"answers",
+		"decisions",
+		"plan",
+		"agent",
+		"record",
+		"choices",
+		"options",
+		"rationale",
+		"why",
+		"review",
+		"handoff"
+	],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 160,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 5
+		},
+		"props": {
+			"questions": {
+				"rows": [
+					{
+						"question": "Where does the loading threshold live?",
+						"options": [
+							"one engine constant",
+							"per widget",
+							"per binding"
+						],
+						"answer": "one engine constant",
+						"reason": "One number a person can find and change, instead of three settings nobody tunes."
+					},
+					{
+						"question": "What happens to a tile whose widget the vault does not hold?",
+						"options": [
+							"hide the tile",
+							"draw a placeholder naming it",
+							"refuse the whole board"
+						],
+						"answer": "draw a placeholder naming it",
+						"reason": "A board that quietly loses a tile teaches nobody. The placeholder carries the id, so the install is one press away."
+					},
+					{
+						"question": "How many rows does a list hand over when nothing asked for a number?",
+						"options": [
+							"all of them",
+							"ten"
+						],
+						"answer": "a hundred",
+						"reason": "Enough to fill a screen twice, few enough that a vault of a thousand notes cannot take the frame with it."
+					}
+				]
+			}
+		}
+	},
+	"slots": {
+		"question": {
+			"of": "widget",
+			"default": "@flow/qa-block",
+			"surface": "group",
+			"gives": {
+				"asked": [
+					"question",
+					"options",
+					"answer",
+					"reason"
+				]
+			}
+		}
+	},
+	"props": {
+		"questions": {
+			"kind": "collection",
+			"label": "Questions",
+			"hint": "One record per question asked, each carrying the options offered, the answer chosen and the reason for it.",
+			"writes": [
+				"list",
+				"get"
+			],
+			"describes": {
+				"question": {
+					"label": "Question",
+					"hint": "The question that was asked, in full.",
+					"type": "text",
+					"required": true,
+					"aka": [
+						"asked",
+						"prompt",
+						"ask"
+					]
+				},
+				"options": {
+					"label": "Options",
+					"hint": "Every option that was offered, as a list or separated by commas.",
+					"type": "text",
+					"many": true,
+					"aka": [
+						"choices",
+						"alternatives",
+						"offered"
+					]
+				},
+				"answer": {
+					"label": "Answer",
+					"hint": "The option that was chosen. An answer naming none of them is drawn beside them, not dropped.",
+					"type": "line",
+					"aka": [
+						"chosen",
+						"decision",
+						"picked"
+					]
+				},
+				"reason": {
+					"label": "Reason",
+					"hint": "Why that answer won.",
+					"type": "text",
+					"aka": [
+						"why",
+						"rationale",
+						"because"
+					]
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"question": "Where does the loading threshold live?",
+						"options": [
+							"one engine constant",
+							"per widget",
+							"per binding"
+						],
+						"answer": "one engine constant",
+						"reason": "One number a person can find and change, instead of three settings nobody tunes."
+					},
+					{
+						"question": "How many rows does a list hand over when nothing asked for a number?",
+						"options": [
+							"all of them",
+							"ten"
+						],
+						"answer": "a hundred",
+						"reason": "Enough to fill a screen twice, few enough that a vault of a thousand notes cannot take the frame with it."
+					}
+				]
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": [
+		"@flow/qa-block"
+	]
+}

@@ -75,6 +75,7 @@ check(
 function refusalOf(card) {
 	try {
 		defineManifest({
+			size: { preferredWidth: "full", preferredHeight: "auto" },
 			title: "Tried",
 			description: "A manifest the engine should refuse.",
 			role: "collection",

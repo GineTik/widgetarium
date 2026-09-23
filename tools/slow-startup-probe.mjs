@@ -11,7 +11,7 @@ globalThis.document = {
 buildMirror();
 const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
 
-const SOURCE = process.env.WG_WIDGETS ?? nodePath.resolve("widgets");
+const SOURCE = process.env.WG_WIDGETS ?? nodePath.resolve("registry");
 const FETCH_MS = Number(process.env.FETCH_MS ?? 60);
 const WIDGETS_DIR = ".widgetarium/widgets";
 

@@ -6,7 +6,7 @@ buildMirror();
 
 const { readRegistry, REGISTRY_FILE } = await import("./.mjs-cache/engine/registry-file.mjs");
 
-const SOURCE = "widgets";
+const SOURCE = "registry";
 const at = path.join(SOURCE, REGISTRY_FILE);
 const read = readRegistry(readFileSync(at, "utf8"), at);
 

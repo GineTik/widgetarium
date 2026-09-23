@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { buildWidgets } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const BROWSERS = [
 	process.env.WG_CHROME,
@@ -79,7 +79,7 @@ const HARNESS_CHROME = `.harness-top { display: flex; align-items: baseline; gap
 
 export function shotPage({ theme, title, lead, body }) {
 	return `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>
 body { margin: 0; padding: 28px 32px; ${THEMES[theme]}
 	background: var(--background-primary); color: var(--text-normal);
@@ -142,7 +142,7 @@ export async function stage({ board, files, steps, editing, rows }) {
 	});
 
 	const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
 	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }

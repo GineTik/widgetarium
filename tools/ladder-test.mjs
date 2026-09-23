@@ -38,7 +38,7 @@ function levels(theme) {
 	const file = path.join(work, `${theme}.html`);
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>body{margin:0;${THEMES[theme]}}</style></head><body class="wg-root"><pre id="out"></pre><script>
 window.addEventListener('load',()=>{
 	const probe=(value)=>{const node=document.createElement('div');node.style.cssText='width:10px;height:10px;background:'+value;

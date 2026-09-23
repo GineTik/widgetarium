@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const BROWSERS = [
 	process.env.WG_CHROME,
@@ -40,15 +40,15 @@ const bundle = await esbuild.build({
 	inject: ["tools/fill-inject.js"],
 	alias: {
 		widgetarium: "./tools/fill-shim.js",
-		"widgetarium/kit": "./src/kit.js",
-		"@default/lib": "./widgets/@default/lib.js",
+		"widgetarium/kit": "./packages/kit/src/kit.js",
+		"@default/lib": "./registry/@default/lib.js",
 	},
 	logLevel: "warning",
 });
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
+<style>${readFileSync("registry/@default/tokens.css", "utf8")}</style>
 <style>body {
 	margin: 0;
 	/* CONTEXT: the host's colour tokens, undefined here until a colour was measured — every fill

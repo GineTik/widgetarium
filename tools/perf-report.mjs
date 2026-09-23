@@ -4,7 +4,7 @@ import fsp from "node:fs/promises";
 import os from "node:os";
 import nodePath from "node:path";
 import vm from "node:vm";
-import { bundleOptions } from "../build.mjs";
+import { bundleOptions } from "../apps/obsidian/build.mjs";
 import { NO_PLUGIN, TASK_NEEDS, catalogueAdapter, countingDisk, fakeTaskVault } from "./perf-fixture.mjs";
 import { fakeVault } from "./fake-vault.mjs";
 
@@ -20,7 +20,7 @@ const { builtCodePath, compileWidget } = await import("./.mjs-cache/engine/widge
 const { lockEntry, withEntry, readLock } = await import("./.mjs-cache/engine/widget-lock.mjs");
 
 const NOTES = Number(process.env.N ?? 200);
-const WIDGET_SOURCE = process.env.WG_WIDGET_SOURCE ?? nodePath.resolve("widgets");
+const WIDGET_SOURCE = process.env.WG_WIDGET_SOURCE ?? nodePath.resolve("registry");
 const MEATADATA_NEVER_ARRIVES_MS = 2000;
 const VAULT = process.env.WG_VAULT ?? `${process.env.HOME}/Documents/Obsidian/Personal/Personal`;
 
@@ -31,7 +31,7 @@ const megabytes = (bytes) => `${(bytes / 1048576).toFixed(2)} MB`;
 const isDevBuild = (source) => source.includes("//# sourceMappingURL=");
 
 function onloadBody() {
-	const startup = fs.readFileSync("src/main.js", "utf8");
+	const startup = fs.readFileSync("apps/obsidian/src/main.js", "utf8");
 	const opens = startup.indexOf("\n\tasync onload() {");
 	const closes = startup.indexOf("\n\t}\n", opens);
 	return startup.slice(opens, closes);
@@ -261,7 +261,7 @@ async function reportFirstPaint() {
 
 async function reportEmojiTable() {
 	heading("6 · emoji table");
-	const source = fs.readFileSync("src/emoji-table.js", "utf8");
+	const source = fs.readFileSync("packages/kit/src/emoji-table.js", "utf8");
 	const asScript = source.replace(/^export const/gm, "var");
 	row("size", `${(source.length / 1024).toFixed(0)} kB`);
 	row("parse + evaluate", `${parseCost(asScript, "emoji").toFixed(1)} ms`);
@@ -282,7 +282,7 @@ async function reportThisVaultsSources() {
 
 async function reportPollGate() {
 	heading("7 · does this vault poll the filesystem");
-	const startup = fs.readFileSync("src/main.js", "utf8");
+	const startup = fs.readFileSync("apps/obsidian/src/main.js", "utf8");
 	const isGated = /isAuthoringWidgetsHere\(\)\) await this\.watchWidgetFolder\(\)/.test(startup);
 	row("interval", `${Number(/WIDGET_POLL_MS = (\d+)/.exec(startup)?.[1] ?? 0)} ms`);
 	row("gated on a folder catalogue source", isGated ? "yes — other vaults never poll" : "NO — every vault polls");

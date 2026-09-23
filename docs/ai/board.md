@@ -31,12 +31,13 @@ A whole board is in [examples.md](examples.md).
 A **leaf** names a tile:
 
 ```yaml
-{ id: w0, ratio: 2, height: 320, surface: group }
+{ id: w0, ratio: 2, surface: group }
 ```
 
-`ratio` is its share along the parent's direction, default `1`. **Only a leaf has a height** — a box
-is as tall as its widgets, so to make a row 86px tall give each widget `height: 86`.
-`heights: { 1: 180 }` applies while the row stands one across.
+`ratio` is its share along the parent's direction, default `1`. **Nothing on the board has a
+height.** A widget leans toward the `preferredWidth` and `preferredHeight` its manifest declares and
+grows past them when it has more to draw, and a box is as tall as its widgets. The only size a person sets is a region's `width`,
+by dragging the edge between regions. `height` and `heights` are refused by `lint`.
 
 A **box** holds nodes:
 
@@ -147,8 +148,8 @@ stands in the screen's own heading instead.
 
 **The section wears nothing; its arrangement plates what stands in it.** The heading stays outside
 every plate. A widget that paints its own cards stands in a `column`. One placed widget may say
-otherwise for itself: `mounted.<name>.surface` wins over the arrangement, and
-`mounted.<name>.height` fixes its height — both set in that widget's own Design tab.
+otherwise for itself: `mounted.<name>.surface` wins over the arrangement, set in that widget's own
+Design tab.
 
 `badgeTone` is what the badge means, not how it is painted: `neutral` for a count, `success`,
 `warning` or `error` for a state, `accent`, `info`, `note`, `standout` or `highlight` where the

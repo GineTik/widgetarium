@@ -1,0 +1,71 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Toggle",
+	"description": "A button that opens a box which collapsed because the screen is too narrow for it.",
+	"keywords": [
+		"toggle",
+		"button",
+		"menu",
+		"drawer",
+		"sheet",
+		"sidebar",
+		"open",
+		"collapse",
+		"trigger",
+		"hamburger"
+	],
+	"role": "control",
+	"size": {
+		"preferredWidth": 240,
+		"preferredHeight": "auto"
+	},
+	"props": {
+		"open": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Open",
+			"hint": "Whether the box this opens is open. A box names it as its trigger, and reads it.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"icon": {
+			"kind": "value",
+			"control": "icon",
+			"type": "line",
+			"label": "Icon",
+			"hint": "The icon drawn on the button, picked off the grid: the kit's own glyphs and all of Lucide.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "menu"
+			}
+		},
+		"label": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Label",
+			"hint": "What a screen reader says the button does.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "Open the panel"
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

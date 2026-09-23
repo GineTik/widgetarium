@@ -141,7 +141,7 @@ layout:
       surface: apart
       side: start
       of:
-        - { id: player, height: 88 }
+        - { id: player }
 ```
 ````
 

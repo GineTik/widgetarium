@@ -277,7 +277,7 @@ const tiles = SOLO.map((entry) => {
 	return `<div class="theme-dark deck">${caption}${tile}</div>`;
 }).join("\n");
 
-const css = fs.readFileSync("styles.css", "utf8");
+const css = fs.readFileSync("apps/obsidian/styles.css", "utf8");
 fs.writeFileSync(
 	OUT,
 	`<!doctype html><html><head><meta charset="utf-8"><style>

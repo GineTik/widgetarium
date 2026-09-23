@@ -1,0 +1,76 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Question and answer",
+	"description": "One question an agent asked before it started: every option it offered, the answer that won, and the reason underneath.",
+	"keywords": [
+		"question",
+		"answer",
+		"decision",
+		"choice",
+		"option",
+		"reason",
+		"rationale",
+		"why",
+		"plan",
+		"record",
+		"agent",
+		"review"
+	],
+	"role": "detail",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 120,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 2
+		},
+		"props": {
+			"asked": {
+				"value": {
+					"question": "Where does the loading threshold live?",
+					"options": [
+						"one engine constant",
+						"per widget",
+						"per binding"
+					],
+					"answer": "one engine constant",
+					"reason": "One number a person can find and change. A threshold per widget is three settings nobody tunes, and a threshold per binding is a number nobody can explain a week later."
+				}
+			}
+		}
+	},
+	"props": {
+		"asked": {
+			"kind": "value",
+			"control": "json",
+			"label": "Question",
+			"hint": "The question, the options it offered, the answer that was chosen and the reason for it. Standing in a record it is handed down; standing alone it is the one typed here.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": {
+					"question": "Where does the loading threshold live?",
+					"options": [
+						"one engine constant",
+						"per widget",
+						"per binding"
+					],
+					"answer": "one engine constant",
+					"reason": "One number a person can find and change, instead of three settings nobody tunes."
+				}
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

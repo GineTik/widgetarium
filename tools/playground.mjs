@@ -258,7 +258,7 @@ const widgetItems = PIECES.map((piece) => {
 	return gridItem(piece.w, piece.h, `${piece.id} · ${piece.w}×${piece.h}`, renderNode(h(component, props)), "widget");
 }).join("\n");
 
-const css = fs.readFileSync("styles.css", "utf8");
+const css = fs.readFileSync("apps/obsidian/styles.css", "utf8");
 
 fs.writeFileSync(
 	OUT,

@@ -17,8 +17,8 @@ function check(name, got, want) {
 // CONTEXT: the shipped manifests themselves, so the shop window is what this gate reads
 function shippedWidgets() {
 	const found = [];
-	for (const scope of fs.readdirSync("widgets")) {
-		const folder = `widgets/${scope}`;
+	for (const scope of fs.readdirSync("registry")) {
+		const folder = `registry/${scope}`;
 		if (!fs.statSync(folder).isDirectory()) continue;
 		for (const name of fs.readdirSync(folder)) {
 			const file = `${folder}/${name}/manifest.generated.json`;

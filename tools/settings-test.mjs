@@ -232,7 +232,7 @@ console.log("\n— and the panel writes what it draws —");
 		title: "Kanban board",
 		collapseBelowPx: 240,
 
-		// CONTEXT: what the parent DECLARES it hands the slot — the shape src/fit.js ranks against
+		// CONTEXT: what the parent DECLARES it hands the slot — the shape packages/core/src/fit.js ranks against
 		slots: { card: { of: "widget", default: CARD_ID, gives: { task: ["title", "status"] } } },
 		props: {
 			groupBy: {
@@ -868,9 +868,8 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("nor is the size the tile has on the board", Boolean(all(".wg-set-head .wg-kit-pill").length), false);
 	await press(tabNamed("Design"));
 	const designLabels = () => all(".wg-set-panel .wg-kit-side-label").map((node) => node.textContent.trim());
-	check("its Design tab holds its own surface and its own size", designLabels(), ["Surface", "Size"]);
+	check("its Design tab holds its own surface and no size, because only a region is sized", designLabels(), ["Surface"]);
 	check("it stands as its holder draws it until told otherwise", Boolean(rowSaying("As its holder draws it")), true);
-	check("its height is its own, not the tile's", Boolean(rowSaying("As tall as it needs")), true);
 	check("there is no fold for a thing with no place of its own", designLabels().includes("Folded"), false);
 	await press(rowSaying("As its holder draws it"));
 	const groupChoice = all(OPEN_POP + " .wg-set-pop-name").find((node) => node.textContent === "Group");
@@ -974,7 +973,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 
 	// THE AFFORDANCE IS NOT BEHIND A HOVER. Gutenberg shipped that, called it a mistake, and was
 	// still adding a back button to it five years later.
-	const sheet = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
+	const sheet = readFileSync(new URL("../apps/obsidian/styles.css", import.meta.url), "utf8");
 	const hoverGated = sheet
 		.split("}")
 		.map((block) => block.split("{")[0])

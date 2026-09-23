@@ -1,4 +1,4 @@
-// Compiles and renders every widget in widgets/ the way the plugin does — sucrase, the same
+// Compiles and renders every widget in registry/ the way the plugin does — sucrase, the same
 // require shim, preact to a string. A widget that only LOOKS right in a review is not
 // checked; this fails if it cannot even be built.
 import fs from "node:fs";
@@ -108,7 +108,7 @@ function load(folder) {
 }
 
 let failed = 0;
-const root = "widgets";
+const root = "registry";
 const scopes = fs.readdirSync(root).filter((name) => name.startsWith("@"));
 
 for (const scope of scopes) {

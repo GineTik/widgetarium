@@ -1,0 +1,137 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Notice",
+	"description": "One thing the person should notice: a count, a state or a warning, with an action beside it.",
+	"keywords": [
+		"notice",
+		"callout",
+		"banner",
+		"alert",
+		"warning",
+		"error",
+		"status",
+		"count",
+		"message",
+		"hint",
+		"announcement",
+		"empty state"
+	],
+	"role": "indicator",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 120,
+		"stackBelowPx": 200
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 2
+		},
+		"props": {
+			"icon": {
+				"value": "triangle-alert"
+			},
+			"tone": {
+				"value": "warning"
+			},
+			"title": {
+				"value": "3 bugs found today"
+			},
+			"body": {
+				"value": "Two of them are in the importer and one is on the board."
+			},
+			"action": {
+				"value": "Review"
+			}
+		}
+	},
+	"props": {
+		"title": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title",
+			"hint": "The one line a person reads first. Left empty, the notice says it has nothing to report.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": ""
+			}
+		},
+		"body": {
+			"kind": "value",
+			"control": "text",
+			"type": "text",
+			"label": "Body",
+			"hint": "The sentence under the title, for what the title could not hold.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": ""
+			}
+		},
+		"icon": {
+			"kind": "value",
+			"control": "icon",
+			"type": "line",
+			"label": "Icon",
+			"hint": "The glyph beside the text, picked off the grid. Left empty, no icon is drawn.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": ""
+			}
+		},
+		"tone": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Tone",
+			"hint": "One of neutral, info, success, warning or error. Neutral draws no background of its own.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "neutral"
+			}
+		},
+		"action": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Action",
+			"hint": "What the button says. Left empty, the notice carries no button.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": ""
+			}
+		},
+		"pressed": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Pressed",
+			"hint": "Whether the action has been pressed. A box names it as its trigger, or another tile reads it by ref.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

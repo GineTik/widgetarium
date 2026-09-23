@@ -48,7 +48,7 @@ const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/cr
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 const { needsOf } = await import("./.mjs-cache/gateway/props.mjs");
 
-const WIDGET = "widgets/@default/streak/widget.tsx";
+const WIDGET = "registry/@default/streak/widget.tsx";
 const { propsOfEveryShippedWidget } = await import("./widget-props.mjs");
 const DECLARED = (await propsOfEveryShippedWidget())["@default/streak"];
 
@@ -86,7 +86,7 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@default/lib", run("widgets/@default/lib.js"));
+libs.set("@default/lib", run("registry/@default/lib.js"));
 const { isoOf, shiftedBy } = libs.get("@default/lib");
 const Streak = run(WIDGET).default;
 

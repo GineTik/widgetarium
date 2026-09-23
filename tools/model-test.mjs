@@ -560,7 +560,7 @@ console.log(
 		{ id: "a", ratio: 3 },
 		{ id: "b", ratio: 1 },
 	]);
-	check("a row of one cell is the cell itself", nodeAt(regioned.layout, [1, 1]), { id: "c", ratio: 1, height: 640 });
+	check("a row of one cell is the cell itself", nodeAt(regioned.layout, [1, 1]), { id: "c", ratio: 1 });
 	check(
 		"every leaf knows its path",
 		leavesOf(regioned.layout).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`),
@@ -587,63 +587,23 @@ console.log(
 		JSON.stringify(serializeBoard(deep)),
 	);
 	check("a ratio of one is not written down", serializeBoard(deep).layout.of[0].of[0].of[1].of[0], { id: "b" });
-	check("a height is", serializeBoard(deep).layout.of[0].of[0].of[1].of[1], { id: "c", height: 200 });
+	check("a height is not written either, because nobody sizes a widget by hand", serializeBoard(deep).layout.of[0].of[0].of[1].of[1], { id: "c" });
 
 	const five = ["a", "b", "c", "d", "e"].map((id) => ({ id, widget: "w" }));
-	const boxHeights = normalizeBoard({
+	const heightsWritten = normalizeBoard({
 		tiles: five,
 		layout: THREE_REGIONS([
 			{ dir: "row", height: 86, of: [{ id: "a" }, { id: "b", height: 120 }] },
-			{ dir: "column", height: 400, of: [{ id: "c", height: 100 }, { id: "d" }, { id: "e" }] },
+			{ dir: "column", height: 400, of: [{ id: "c", height: 100, heights: { 1: 200 } }, { id: "d" }] },
 		]),
 	});
-	const heightsAt = (path) => nodeAt(boxHeights.layout, path).of.map((child) => child.height ?? null);
-	check("a row's old height is handed to every widget in it that had none", heightsAt([1, 0]), [86, 120]);
+	const heightsIn = (node) => (node.of ? [node.height, ...node.of.flatMap(heightsIn)] : [node.height, node.heights]);
 	check(
-		"a column's old height is shared by the widgets that had none, gaps at the region's step taken out",
-		heightsAt([1, 1]),
-		[100, 126, 126],
+		"a height written before, on a box or a widget or per arrangement, is read and dropped",
+		heightsIn(nodeAt(heightsWritten.layout, [1])).filter((one) => one !== undefined),
+		[],
 	);
-	check(
-		"and no box keeps a height of its own",
-		[nodeAt(boxHeights.layout, [1, 0]).height, nodeAt(boxHeights.layout, [1, 1]).height],
-		[undefined, undefined],
-	);
-	const arranged = normalizeBoard({
-		tiles: five,
-		layout: THREE_REGIONS([{ id: "a", height: 90, heights: { 1: 200, 2: "wide", x: 5, 0: 3 } }]),
-	});
-	check(
-		"a widget's heights per arrangement are read, whole counts with a height only",
-		nodeAt(arranged.layout, [1, 0]).heights,
-		{ 1: 200 },
-	);
-	check("and written back beside its height", serializeBoard(arranged).layout.of[1].of[0], {
-		id: "a",
-		height: 90,
-		heights: { 1: 200 },
-	});
-	const respelled = normalizeBoard({
-		tiles: five,
-		layout: THREE_REGIONS([
-			{ id: "a", heights: { "01": 150 } },
-			{ id: "b", heights: [180, 200] },
-		]),
-	});
-	check("a count spelled another way is read as the count itself", nodeAt(respelled.layout, [1, 0]).heights, {
-		1: 150,
-	});
-	check("and a list is not heights at all", nodeAt(respelled.layout, [1, 1]).heights, undefined);
-	const squat = normalizeBoard({
-		tiles: five,
-		layout: THREE_REGIONS([{ dir: "row", height: 20.4, surface: "group", of: [{ id: "a" }] }]),
-	});
-	check(
-		"a box height too small for its plate still hands down a whole height on the floor",
-		nodeAt(squat.layout, [1, 0, 0]).height,
-		42,
-	);
-	check("so none is written back", "height" in serializeBoard(boxHeights).layout.of[1].of[0], false);
+	check("and never written back", JSON.stringify(serializeBoard(heightsWritten).layout).includes("height"), false);
 
 	const grid = normalizeBoard({
 		tiles,
@@ -674,7 +634,7 @@ console.log(
 		nodeAt(grid.layout, [1, 0]).of.map((cell) => cell.ratio),
 		[6, 14],
 	);
-	check("a place's height becomes pixels", nodeAt(grid.layout, [1, 1]).height, 8 * 62 - 8);
+	check("a place's height is not carried over", nodeAt(grid.layout, [1, 1]).height, undefined);
 	check("and nothing of the grid is written back", "layouts" in serializeBoard(grid), false);
 
 	const stray = normalizeBoard({ tiles, layouts: { 20: { places: [{ id: "a", x: 0, y: 0, w: 4, h: 2 }] } } });
@@ -789,9 +749,9 @@ console.log("\n— a mount keeps its own look through a save —");
 	});
 	const held = board.tiles[0].mounted.Body;
 	check("a mount's old object surface is read as a group", held.surface, "group");
-	check("and its height", held.height, 320);
+	check("while its old height is dropped", held.height, undefined);
 	const written = serializeBoard(board).tiles[0].mounted.Body;
-	check("both are written back", [written.surface, written.height], ["group", 320]);
+	check("only the surface is written back", [written.surface, written.height], ["group", undefined]);
 	const refused = normalizeBoard({
 		v: 2,
 		tiles: [

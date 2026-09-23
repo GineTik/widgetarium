@@ -1,14 +1,18 @@
 {
 	"name": "widgetarium",
 	"version": "0.1.0",
+	"private": true,
 	"description": "Adaptive widget tiles on a dot grid for Obsidian",
-	"main": "index.js",
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
 	"scripts": {
-		"build": "node build.mjs",
-		"prod": "node build.mjs --prod",
-		"install-vault": "node build.mjs --prod && node install.mjs",
-		"dev": "node build.mjs && node install.mjs",
-		"lint:lang": "node tools/lint-language.mjs src widgets styles.css manifest.json tools install.mjs build.mjs",
+		"build": "node apps/obsidian/build.mjs",
+		"prod": "node apps/obsidian/build.mjs --prod",
+		"install-vault": "node apps/obsidian/build.mjs --prod && node apps/obsidian/install.mjs",
+		"dev": "node apps/obsidian/build.mjs && node apps/obsidian/install.mjs",
+		"lint:lang": "node tools/lint-language.mjs apps packages registry tools",
 		"lint:code": "node tools/lint-code.mjs",
 		"lint": "npm run lint:lang && npm run lint:code",
 		"format": "prettier --write .",
@@ -114,7 +118,7 @@
 	},
 	"keywords": [],
 	"author": "",
-	"license": "ISC",
+	"license": "FSL-1.1-ALv2",
 	"type": "commonjs",
 	"devDependencies": {
 		"@babel/parser": "^8.0.5",

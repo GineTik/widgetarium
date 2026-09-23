@@ -2,18 +2,45 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { bundleOf, shoot, THEMES } from "./harness.mjs";
+import esbuild from "esbuild";
+import { shoot, THEMES } from "./harness.mjs";
+import { OBSIDIAN_STUB } from "./mirror.mjs";
+
+const obsidianStub = {
+	name: "obsidian-stub",
+	setup(build) {
+		build.onResolve({ filter: /^obsidian$/ }, () => ({ path: "obsidian", namespace: "obsidian-stub" }));
+		build.onLoad({ filter: /.*/, namespace: "obsidian-stub" }, () => ({
+			contents: OBSIDIAN_STUB,
+			loader: "js",
+			resolveDir: process.cwd(),
+		}));
+	},
+};
 
 const work = mkdtempSync(path.join(tmpdir(), "wg-ai-shot-"));
-const script = await bundleOf("tools/ai-shot-page.jsx");
-const sheet = readFileSync("styles.css", "utf8");
+const built = await esbuild.build({
+	entryPoints: ["tools/ai-shot-page.jsx"],
+	bundle: true,
+	loader: { ".md": "text", ".tsx": "text" },
+	write: false,
+	format: "iife",
+	platform: "browser",
+	target: "es2020",
+	jsxFactory: "h",
+	jsxFragment: "Fragment",
+	logLevel: "warning",
+	plugins: [obsidianStub],
+});
+const script = built.outputFiles[0].text;
+const sheet = readFileSync("apps/obsidian/styles.css", "utf8");
 
 const HOST_TOKENS = `--font-ui-small: 14px; --font-ui-smaller: 12px; --font-ui-large: 18px; --font-semibold: 600;
 	--font-monospace: ui-monospace, monospace; font-family: -apple-system, system-ui, sans-serif;`;
 
 const PANEL_SIZE = ["#host", ".wg-ai-shot"].join(", ") + " { height: 640px; width: 400px; }";
 
-const STATES = ["empty", "talking", "broken"];
+const STATES = ["empty", "talking", "broken", "building", "built"];
 
 for (const theme of ["light", "dark"]) {
 	for (const state of STATES) {

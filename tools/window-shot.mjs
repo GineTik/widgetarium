@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-shot-"));
@@ -26,7 +26,7 @@ const head = source.slice(
 	source.indexOf("</html>`") + "</html>".length,
 );
 const html = head
-	.replace('${readFileSync("styles.css", "utf8")}', readFileSync("styles.css", "utf8"))
+	.replace('${readFileSync("apps/obsidian/styles.css", "utf8")}', readFileSync("apps/obsidian/styles.css", "utf8"))
 	.replace("${bundle.outputFiles[0].text}", bundle.outputFiles[0].text);
 // CONTEXT: the gate's own page is authored light, so dark is the same page with the tokens swapped
 const DARK = `body { background: #1e1e1e; color: #dadada;

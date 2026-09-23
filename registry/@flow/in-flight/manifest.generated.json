@@ -1,0 +1,239 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "In flight",
+	"description": "The work running right now, one row apiece, the most recently started at the top.",
+	"keywords": [
+		"flight",
+		"running",
+		"active",
+		"now",
+		"queue",
+		"jobs",
+		"runs",
+		"builds",
+		"agents",
+		"pipeline",
+		"status",
+		"live",
+		"list"
+	],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 240,
+		"stackBelowPx": 420
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 4
+		},
+		"props": {
+			"flights": {
+				"rows": [
+					{
+						"path": "preview/flight-1.md",
+						"title": "Rewrite the board tree reader",
+						"status": "running",
+						"stage": "build",
+						"project": "widgetarium",
+						"branch": "unsafe-dev",
+						"activity": "compiling widgets",
+						"elapsed": "12m",
+						"who": "Dana Reid"
+					},
+					{
+						"path": "preview/flight-2.md",
+						"title": "Port the settings window to the kit",
+						"status": "waiting",
+						"stage": "review",
+						"project": "widgetarium",
+						"branch": "kit-settings",
+						"activity": "waiting on review",
+						"elapsed": "1h",
+						"who": "Mia Tan"
+					},
+					{
+						"path": "preview/flight-3.md",
+						"title": "Catalogue install from a local registry",
+						"status": "blocked",
+						"stage": "plan",
+						"project": "widgetarium",
+						"activity": "needs a curator list",
+						"elapsed": "3h"
+					},
+					{
+						"path": "preview/flight-4.md",
+						"title": "Paint tests against headless Chrome",
+						"status": "failed",
+						"stage": "test",
+						"project": "widgetarium",
+						"branch": "paint-gate",
+						"elapsed": "2d",
+						"who": "Theo Ruiz"
+					},
+					{
+						"path": "preview/flight-5.md",
+						"title": "Lay the agent files into a vault",
+						"status": "done",
+						"stage": "ship",
+						"project": "widgetarium",
+						"branch": "agent-files",
+						"activity": "installed",
+						"elapsed": "4d",
+						"who": "Alex Morgan"
+					}
+				]
+			}
+		}
+	},
+	"slots": {
+		"row": {
+			"of": "widget",
+			"default": "@flow/flight-row",
+			"surface": "group",
+			"gives": {
+				"flight": [
+					"title",
+					"status",
+					"stage",
+					"project",
+					"branch",
+					"activity",
+					"elapsed",
+					"who"
+				]
+			}
+		}
+	},
+	"props": {
+		"flights": {
+			"kind": "collection",
+			"label": "Flights",
+			"hint": "One record per piece of work in flight. The newest start is drawn first.",
+			"writes": [
+				"list",
+				"get"
+			],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "line",
+					"aka": [
+						"summary",
+						"headline"
+					]
+				},
+				"status": {
+					"label": "Status",
+					"type": "line",
+					"aka": [
+						"state",
+						"result"
+					]
+				},
+				"stage": {
+					"label": "Stage",
+					"type": "line",
+					"aka": [
+						"phase",
+						"step"
+					]
+				},
+				"project": {
+					"label": "Project",
+					"type": "line",
+					"aka": [
+						"repo",
+						"repository"
+					]
+				},
+				"branch": {
+					"label": "Branch",
+					"type": "line",
+					"aka": [
+						"head",
+						"gitBranch"
+					]
+				},
+				"activity": {
+					"label": "Activity",
+					"type": "line",
+					"aka": [
+						"doing",
+						"detail"
+					]
+				},
+				"startedAt": {
+					"label": "Started at",
+					"type": "datetime",
+					"aka": [
+						"started",
+						"since",
+						"begun"
+					]
+				},
+				"elapsed": {
+					"label": "Elapsed",
+					"type": "line",
+					"aka": [
+						"duration",
+						"runtime"
+					]
+				},
+				"who": {
+					"label": "Who",
+					"type": "line",
+					"aka": [
+						"owner",
+						"assignee",
+						"agent"
+					]
+				}
+			},
+			"sort": [
+				{
+					"prop": "startedAt",
+					"dir": "desc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected flight",
+			"hint": "Which row is picked. A detail tile that picks from the same list follows it.",
+			"of": "flights",
+			"writes": [
+				"get",
+				"update"
+			]
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Rows per page",
+			"hint": "How many rows are read at once, and how many more each press adds.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 12
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": [
+		"@flow/flight-row"
+	]
+}

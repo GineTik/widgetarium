@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 buildMirror();
 
@@ -18,6 +18,7 @@ for (const key of [
 	"MouseEvent",
 	"KeyboardEvent",
 	"TransitionEvent",
+	"Image",
 ]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
@@ -300,39 +301,237 @@ render(h(Kit.Card, { type: "chartreuse" }), host);
 check("a type the kit never had paints nothing", plated("data-surface"), [null]);
 
 render(h(Kit.Card, { tone: "success" }, "done"), host);
-check("a card in a tone is the same plate in a state", [plated("data-surface"), plated("class")], [
-	["group"],
-	["wg-kit-surface wg-kit-tone is-ok"],
-]);
+check(
+	"a card in a tone is the same plate in a state",
+	[plated("data-surface"), plated("class")],
+	[["group"], ["wg-kit-surface wg-kit-tone is-ok"]],
+);
 
 const itemsOf = () =>
 	[...host.querySelectorAll(".wg-kit-layout-item")].map((one) => [one.getAttribute("data-surface"), one.className]);
-render(h(Kit.Rows, null, h(Kit.Rows.Header, { title: "Steps" }), h(Kit.Rows.Item, null, "one"), h(Kit.Rows.Item, { tone: "success" }, "two")), host);
+render(
+	h(
+		Kit.Rows,
+		null,
+		h(Kit.Rows.Header, { title: "Steps" }),
+		h(Kit.Rows.Item, null, "one"),
+		h(Kit.Rows.Item, { tone: "success" }, "two"),
+	),
+	host,
+);
 check("rows stand in the one plate", plated("data-surface"), ["group"]);
 check("and every row stands bare on it, a tone washing only its own", itemsOf(), [
 	[null, "wg-kit-layout-item"],
 	[null, "wg-kit-layout-item wg-kit-tone is-ok"],
 ]);
-check("the header is a line of the same plate", host.querySelector(".wg-kit-layout > .wg-kit-layout-head .wg-kit-layout-title")?.textContent, "Steps");
+await settle();
+check(
+	"THE HEADER STANDS OUTSIDE THE PLATE, above it",
+	[
+		host.querySelector(".wg-kit-layout .wg-kit-layout-head") === null,
+		host.querySelector(".wg-kit-layout-block > .wg-kit-layout-heads + .wg-kit-layout")?.getAttribute("data-surface"),
+		host.querySelector(".wg-kit-layout-heads > .wg-kit-layout-head h3.wg-kit-heading.is-h4")?.textContent,
+	],
+	[true, "group", "Steps"],
+);
+render(
+	h(Kit.Rows, null, h(Kit.Rows.Header, { title: "Steps", className: "mine" }), h(Kit.Rows.Item, null, "one")),
+	host,
+);
+await settle();
+check(
+	"and it still takes a caller's class",
+	host.querySelector(".wg-kit-layout-head").classList.contains("mine"),
+	true,
+);
+
+render(
+	h(
+		Kit.Rows,
+		null,
+		h(
+			Kit.Rows.Header,
+			null,
+			h(Kit.Rows.Title, null, "Sessions"),
+			h(Kit.Rows.Actions, null, h(Kit.Rows.ActionButton, { icon: "plus", label: "Log a session" })),
+		),
+		h(Kit.Rows.Item, null, "one"),
+	),
+	host,
+);
+await settle();
+const headOf = () => host.querySelector(".wg-kit-layout-heads > .wg-kit-layout-head");
+check(
+	"a header is a row: its title, then its actions at the end",
+	[...headOf().children].map((part) => part.className),
+	["wg-kit-heading is-h4 wg-kit-layout-title", "wg-kit-layout-actions"],
+);
+check(
+	"an action with no words is a small grey icon button named for a reader",
+	[headOf().querySelector("button").className, headOf().querySelector("button").getAttribute("aria-label")],
+	["wg-kit-icon is-s wg-kit-action", "Log a session"],
+);
+render(
+	h(Kit.Rows, null, h(Kit.Rows.Header, { title: "Steps" }, h("button", null, "go")), h(Kit.Rows.Item, null, "one")),
+	host,
+);
+await settle();
+check(
+	"the short form puts what it holds in the actions",
+	[...headOf().children].map((part) => part.className),
+	["wg-kit-heading is-h4 wg-kit-layout-title", "wg-kit-layout-actions"],
+);
+render(h(Kit.ActionButton, { icon: "plus" }, "Add"), host);
+check(
+	"with words it is a small grey button carrying both",
+	[host.firstChild.className, host.firstChild.textContent],
+	["wg-kit-btn is-s wg-kit-action", "Add"],
+);
+check("tabs are the segmented tablist", Kit.Tabs, Kit.Segmented);
+
+let pressed = 0;
+render(h(Kit.Button, { isLoading: true, onClick: () => (pressed += 1) }, "Save"), host);
+const loading = host.querySelector("button");
+check(
+	"A LOADING BUTTON CARRIES THE KIT'S OWN SPINNER, and says it is busy",
+	[loading.className, Boolean(loading.querySelector(".wg-kit-spinner")), loading.getAttribute("aria-busy")],
+	["wg-kit-btn is-m is-loading", true, "true"],
+);
+check("it keeps its words", loading.textContent, "Save");
+check("AND IT CANNOT BE PRESSED WHILE IT LOADS", loading.disabled, true);
+loading.click();
+check("so a press does nothing", pressed, 0);
+
+render(h(Kit.Button, { isDone: true, onClick: () => (pressed += 1) }, "Saved"), host);
+const done = host.querySelector("button");
+check(
+	"a finished button wears the tick instead",
+	[done.className, Boolean(done.querySelector(".wg-kit-btn-mark")), done.disabled],
+	["wg-kit-btn is-m is-done", true, false],
+);
+done.click();
+check("and it is a button again, pressable", pressed, 1);
+
+render(h(Kit.IconButton, { label: "Save", isLoading: true }, h(Kit.Icon, { name: "plus" })), host);
+check(
+	"an icon button loads the same way, its icon stepping aside",
+	[Boolean(host.querySelector(".wg-kit-spinner")), host.querySelector("button").disabled],
+	[true, true],
+);
+render(h(Kit.Button, { disabled: true }, "Off"), host);
+check(
+	"a disabled button is still just disabled",
+	[host.querySelector("button").disabled, host.querySelector("button").className],
+	[true, "wg-kit-btn is-m"],
+);
+render(null, host);
+
+{
+	const { diceBearUrl, diceBearVerdict, DICEBEAR_STYLES, ALLOWED_LICENSES } =
+		await import("./.mjs-cache/dicebear-styles.mjs");
+	check(
+		"a DiceBear address carries the style, the seed and every option, arrays joined",
+		diceBearUrl("notionists", "Anna Lee", { backgroundColor: ["b6e3f4", "c0aede"], flip: true }),
+		"https://api.dicebear.com/10.x/notionists/svg?seed=Anna+Lee&backgroundColor=b6e3f4%2Cc0aede&flip=true",
+	);
+	check(
+		"AN OPTION NAME THAT COULD BREAK THE QUERY IS DROPPED",
+		diceBearUrl("shapes", "x", { "a&b": 1, "../x": 2 }),
+		"https://api.dicebear.com/10.x/shapes/svg?seed=x",
+	);
+	check("a CC0 style is allowed and credited", diceBearVerdict("blobs").credit, "blobs by DiceBear, CC0 1.0");
+	check("A STYLE UNDER A LICENCE OFF THE LIST IS REFUSED", Boolean(diceBearVerdict("avataaars").refusal), true);
+	check("and so is a style that does not exist", Boolean(diceBearVerdict("../../evil").refusal), true);
+	check(
+		"every style the table allows names an allowed licence",
+		Object.values(DICEBEAR_STYLES).filter((one) => !ALLOWED_LICENSES.includes(one.license)).length,
+		4,
+	);
+
+	render(
+		h(
+			Kit.Emblem,
+			{ label: "Anna" },
+			h(Kit.Emblem.DiceBear, { style: "bottts", seed: "Anna" }),
+			h(Kit.Emblem.Fallback, null, "AL"),
+		),
+		host,
+	);
+	await settle();
+	check(
+		"A REFUSED STYLE SAYS WHY IN PLACE OF THE PICTURE, and the fallback steps aside",
+		[
+			host.querySelector(".wg-kit-emblem-refused")?.title.startsWith("Unavailable for licensing reasons"),
+			host.querySelector(".wg-kit-emblem-fallback") === null,
+		],
+		[true, true],
+	);
+	render(
+		h(
+			Kit.Emblem,
+			{ size: "l", shape: "rounded" },
+			h(Kit.Emblem.Image, { src: "x.png" }),
+			h(Kit.Emblem.Fallback, null, "AL"),
+		),
+		host,
+	);
+	await settle();
+	check(
+		"until the picture has loaded the fallback stands",
+		[host.querySelector(".wg-kit-emblem-fallback")?.textContent, host.querySelector("img") === null],
+		["AL", true],
+	);
+	check(
+		"the size is the kit's step, the shape a class",
+		[host.firstChild.style.getPropertyValue("--wg-emblem-size"), host.firstChild.classList.contains("is-rounded")],
+		["64px", true],
+	);
+	render(h(Kit.Emblem, null, h(Kit.Emblem.Fallback, { seed: "Acme" })), host);
+	check("with nothing to show it draws the seeded placeholder mark", Boolean(host.querySelector(".wg-kit-mark")), true);
+	render(null, host);
+}
 
 render(h(Kit.Grid, { min: 180 }, h(Kit.Grid.Item, null, "a"), h(Kit.Grid.Item, { tone: "warning" }, "b")), host);
-check("a grid gives every cell its own plate", itemsOf().map(([worn]) => worn), ["group", "group"]);
+check(
+	"a grid gives every cell its own plate",
+	itemsOf().map(([worn]) => worn),
+	["group", "group"],
+);
 check("and itself paints none", host.querySelector(".wg-kit-layout").getAttribute("data-surface"), null);
-check("it wraps at the narrowest a cell may be", host.querySelector(".wg-kit-layout").getAttribute("style"), "--wg-kit-layout-min: 180px;");
+check(
+	"it wraps at the narrowest a cell may be",
+	host.querySelector(".wg-kit-layout").getAttribute("style"),
+	"--wg-kit-layout-min: 180px;",
+);
 
 render(h(Kit.Layout, { kind: "row" }, h(Kit.Layout.Item, null, "a")), host);
-check("a row is cards across", itemsOf().map(([worn]) => worn), ["group"]);
+check(
+	"a row is cards across",
+	itemsOf().map(([worn]) => worn),
+	["group"],
+);
 render(h(Kit.Layout, { kind: "stack" }, h(Kit.Layout.Item, null, "a")), host);
 check("a stack paints nothing at all", [plated("data-surface"), itemsOf().map(([worn]) => worn)], [[], [null]]);
 render(h(Kit.Layout, { kind: "masonry" }, h(Kit.Layout.Item, null, "a")), host);
-check("a layout the kit never had is drawn as a stack", host.querySelector(".wg-kit-layout").className, "wg-kit-layout is-stack");
+check(
+	"a layout the kit never had is drawn as a stack",
+	host.querySelector(".wg-kit-layout").className,
+	"wg-kit-layout is-stack",
+);
 check("the four layouts are named in one place", Kit.LAYOUT_KINDS, ["stack", "row", "grid", "rows"]);
 
 render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x"))), host);
-check("rows already on a plate paint no second one, only their lines", [plated("data-surface"), host.querySelector(".wg-kit-layout").className], [["group"], "wg-kit-layout is-rows is-on-plate"]);
+check(
+	"rows already on a plate paint no second one, only their lines",
+	[plated("data-surface"), host.querySelector(".wg-kit-layout").className],
+	[["group"], "wg-kit-layout is-rows is-on-plate"],
+);
 const flushOf = () => host.querySelector('[data-surface="group"]')?.getAttribute("data-rows-flush") ?? null;
 check("rows alone in a card take its padding on every side", flushOf(), "inline top bottom");
-render(h(Kit.Card, null, h("style", null, ".x{}"), h("div", null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")))), host);
+render(
+	h(Kit.Card, null, h("style", null, ".x{}"), h("div", null, h(Kit.Rows, null, h(Kit.Rows.Item, null, "x")))),
+	host,
+);
 check("a sheet and a wrapper before them are not content, so the top is still theirs", flushOf(), "inline top bottom");
 render(h(Kit.Card, null, h("p", null, "Above"), h(Kit.Rows, null, h(Kit.Rows.Item, null, "x"))), host);
 check("something above them leaves the card its top", flushOf(), "inline bottom");
@@ -346,7 +545,14 @@ check("and so do rows in a tile the board already plated", plated("data-surface"
 const surface = [
 	"Button",
 	"IconButton",
+	"Badge",
+	"Spinner",
+	"Emblem",
+	"Heading",
+	"ActionButton",
+	"Tabs",
 	"Pill",
+	"ShowMore",
 	"Count",
 	"Plate",
 	"Card",
@@ -366,6 +572,8 @@ const surface = [
 	"PopoverSeparator",
 	"Calendar",
 	"Progress",
+	"ProgressBar",
+	"StatusProgress",
 	"MarkdownEditor",
 	"Switch",
 	"PlaceholderMark",
@@ -482,20 +690,20 @@ check(
 	const fs = await import("node:fs");
 	const widgetSource = (id) => {
 		for (const ext of ["tsx", "ts", "jsx", "js"]) {
-			const at = `widgets/${id}/widget.${ext}`;
+			const at = `registry/${id}/widget.${ext}`;
 			if (fs.existsSync(at)) return fs.readFileSync(at, "utf8");
 		}
 		throw new Error(`${id}: no widget source found`);
 	};
-	const tokens = fs.readFileSync("widgets/@default/tokens.css", "utf8");
+	const tokens = fs.readFileSync("registry/@default/tokens.css", "utf8");
 	check(
 		"the plate fill has ONE owner, so no second fallback can drift",
 		/--orbi-plate:\s*var\(--wg-kit-fill\)/.test(tokens),
 		true,
 	);
 
-	// CONTEXT: the tab strip left the widget for src/editable-tabs.js, so that is where it is checked
-	const strip = fs.readFileSync("src/editable-tabs.js", "utf8");
+	// CONTEXT: the tab strip left the widget for packages/core/src/editable-tabs.js, so that is where it is checked
+	const strip = fs.readFileSync("packages/core/src/editable-tabs.js", "utf8");
 	check("the tab strip builds on the kit rather than restating it", /from "\.\/kit\.js"|wg-kit-/.test(strip), true);
 	check("the tab strip does not paint its own plate", /background:\s*var\(--orbi-plate\)/.test(strip), false);
 	check(
@@ -602,7 +810,7 @@ check(
 }
 
 // THE PANEL MUST BE CLOSABLE, and the press that closes it never reaches `document`.
-// src/editor-shield.js wraps EVERY widget block and stops mousedown/pointerdown in the bubble
+// packages/core/src/editor-shield.js wraps EVERY widget block and stops mousedown/pointerdown in the bubble
 // phase, so CodeMirror cannot move the caret under a live widget. A document-level bubble
 // listener is therefore never called for a press landing on any widget on the board.
 {
@@ -971,7 +1179,7 @@ check(
 	const drivenIn = (state) => partsOf(state).map((part) => part.split(/\s+/)[0]);
 
 	// TRADE-OFF: the law's numbers are read off the source, so one changed there fails here
-	const source = (await import("node:fs")).readFileSync("src/kit.js", "utf8");
+	const source = (await import("node:fs")).readFileSync("packages/kit/src/kit.js", "utf8");
 	const constant = (name) => Number(new RegExp(`const ${name} = ([\\d.]+)`).exec(source)[1]);
 	const growMs = constant("GROW_MS");
 	const contentMs = constant("CONTENT_MS");
@@ -1069,7 +1277,7 @@ check(
 	check("nor the trigger touched, at any beat", beats.map((state) => state.rowTouched).join(""), "||||||||||||");
 
 	// TRADE-OFF: the peak is READ OFF the keyframes, because that is where it is authored
-	const css = (await import("node:fs")).readFileSync("styles.css", "utf8");
+	const css = (await import("node:fs")).readFileSync("apps/obsidian/styles.css", "utf8");
 	const frames = /@keyframes wg-kit-pop-bloom \{([\s\S]*?)\n\}/.exec(css)[1];
 	const stopAt = (label) => numbers(new RegExp(`${label}\\s*\\{\\s*scale:\\s*([^;]+);`).exec(frames)[1]);
 	const peakStop = Number(/(\d+)%\s*\{\s*scale:/.exec(frames)[1]) / 100;
@@ -1239,7 +1447,7 @@ check(
 	render(null, host);
 }
 
-// CONTEXT: widgets/@default/filter-panel builds this by hand today
+// CONTEXT: registry/@default/filter-panel builds this by hand today
 {
 	const host = document.getElementById("host");
 	render(null, host);
@@ -1424,6 +1632,265 @@ check(
 	render(null, host);
 }
 
+{
+	const host = document.getElementById("host");
+	render(null, host);
+
+	render(h(Kit.Badge, { tone: "success", variant: "solid" }, "done"), host);
+	check("a solid badge wears its tone filled", host.firstChild.className, "wg-kit-pill wg-kit-inked is-ok is-solid");
+	check("and Pill is the same component", Kit.Pill, Kit.Badge);
+	check(
+		"every variant has its own class",
+		Kit.BADGE_VARIANTS.map((variant) => Kit.pillClass({ variant })),
+		[
+			"wg-kit-pill wg-kit-inked",
+			"wg-kit-pill wg-kit-inked is-solid",
+			"wg-kit-pill wg-kit-inked is-outline",
+			"wg-kit-pill wg-kit-inked is-dot",
+			"wg-kit-pill wg-kit-inked is-text",
+		],
+	);
+	render(h(Kit.Badge, { color: "purple", size: "s", className: "mine" }, "implementing"), host);
+	check(
+		"a palette colour becomes the ink both fills are mixed from",
+		host.firstChild.style.getPropertyValue("--wg-badge-ink"),
+		"var(--wg-kit-purple)",
+	);
+	check("a caller's class rides along with the kit's", host.firstChild.className, "wg-kit-pill wg-kit-inked is-s mine");
+	render(h(Kit.Badge, { color: "#123456" }, "own"), host);
+	check("any other colour is taken as it is", host.firstChild.style.getPropertyValue("--wg-badge-ink"), "#123456");
+	render(h(Kit.Badge, { color: { light: "#0a5c46", dark: "mint" } }, "brand"), host);
+	check(
+		"a pair names one ink per theme",
+		["--wg-badge-ink-light", "--wg-badge-ink-dark"].map((name) => host.firstChild.style.getPropertyValue(name)),
+		["#0a5c46", "mint"],
+	);
+	check("and says it is themed", host.firstChild.classList.contains("is-themed"), true);
+	render(h(Kit.Badge, { color: { light: "blue" } }, "one"), host);
+	check(
+		"a pair missing its dark half wears the light one in both",
+		host.firstChild.style.getPropertyValue("--wg-badge-ink-dark"),
+		"var(--wg-kit-blue)",
+	);
+
+	render(h(Kit.Heading, null, "Plain"), host);
+	check(
+		"a heading in a widget is an h3 unless asked",
+		host.firstChild.outerHTML,
+		'<h3 class="wg-kit-heading is-h3">Plain</h3>',
+	);
+	render(h(Kit.Heading, { level: 2, size: 4, className: "mine" }, "Small"), host);
+	check(
+		"the level is the outline, the size is the look",
+		host.firstChild.outerHTML,
+		'<h2 class="wg-kit-heading is-h4 mine">Small</h2>',
+	);
+	render(h(Kit.Heading, { level: 9 }, "Far"), host);
+	check("A LEVEL NO HEADING HAS FALLS BACK", host.firstChild.tagName, "H3");
+	render(h(Kit.Switch, { checked: true, className: "mine" }), host);
+	check("a switch takes a caller's class too", host.firstChild.className, "wg-kit-switch mine");
+
+	let pressed = 0;
+	render(h(Kit.ShowMore, { remaining: 12, onMore: () => (pressed += 1) }), host);
+	check("show more says how many are left", host.textContent, "Show 12 more");
+	host.querySelector("button").click();
+	check("and a press asks for them", pressed, 1);
+	render(h(Kit.ShowMore, { remaining: 0, onMore: () => {} }), host);
+	check("NOTHING LEFT DRAWS NO BUTTON", host.innerHTML, "");
+	render(h(Kit.ShowMore, { remaining: Number.NaN, onMore: () => {} }), host);
+	check("NOR DOES A COUNT THAT IS NO NUMBER", host.innerHTML, "");
+	check("a value that is no number draws an empty bar", Kit.barGeometry(400, "soon").active, null);
+	render(h(Kit.ShowMore, { isLoading: true, onMore: () => {} }), host);
+	check("a load under way cannot be asked twice", host.querySelector("button").disabled, true);
+
+	const { barGeometry } = Kit;
+	const wavy = barGeometry(400, 50);
+	check("the wave stands in M3's 10px container", wavy.height, 10);
+	check("the wave moves off its middle", /L\S+ (?!5L)/.test(wavy.active), true);
+	check(
+		"THE WAVE RUNS THE WHOLE LENGTH, at a sliver and near the end alike",
+		[5, 97].map((percent) =>
+			barGeometry(400, percent)
+				.active.split("L")
+				.every((at) => at.endsWith(" 5")),
+		),
+		[false, false],
+	);
+	check("the track starts one stroke and one gap after the active end", wavy.track.startsWith("M208 "), true);
+	check(
+		"at zero only the track is drawn",
+		[barGeometry(400, 0).active, barGeometry(400, 0).track.startsWith("M2 ")],
+		[null, true],
+	);
+	check("at a hundred the track is gone", barGeometry(400, 100).track, null);
+
+	const { circleGeometry, progressState } = Kit;
+	check(
+		"a ring names the three states by its value",
+		[0, 1, 99, 100].map((percent) => progressState(percent)),
+		["empty", "running", "running", "done"],
+	);
+	const ring = circleGeometry(48, 50);
+	check(
+		"an empty ring is all track and no active",
+		[circleGeometry(48, 0).active, Boolean(circleGeometry(48, 0).track)],
+		[null, true],
+	);
+	check(
+		"a full ring is all active and no track",
+		[Boolean(circleGeometry(48, 100).active), circleGeometry(48, 100).track],
+		[true, null],
+	);
+	check("a half ring carries both", [Boolean(ring.active), Boolean(ring.track)], [true, true]);
+	check(
+		"THE RING WAVES AROUND ITS RADIUS, and stands still when asked to",
+		[ring, circleGeometry(48, 50, { isWavy: false })]
+			.map(
+				(drawn) =>
+					new Set(
+						drawn.active
+							.slice(1)
+							.split("L")
+							.map((point) => {
+								const [x, y] = point.split(" ").map(Number);
+								return Math.round(Math.hypot(x - drawn.middle, y - drawn.middle) * 2) / 2;
+							}),
+					).size,
+			)
+			.map((reaches) => reaches > 1),
+		[true, false],
+	);
+
+	render(h(Kit.StatusProgress, { shape: "circle", value: 100, label: "Done" }), host);
+	await settle();
+	check(
+		"A FINISHED StatusProgress WEARS THE SUCCESS INK AND A TICK",
+		[
+			host.querySelector(".wg-kit-ring")?.className,
+			Boolean(host.querySelector(".wg-kit-ring-value .wg-kit-icon-glyph")),
+		],
+		["wg-kit-ring wg-kit-inked is-ok wg-kit-status is-done", true],
+	);
+	render(h(Kit.StatusProgress, { shape: "circle", value: 0 }), host);
+	await settle();
+	check(
+		"an empty one is the neutral ink and says which state it is in",
+		host.querySelector(".wg-kit-ring").className,
+		"wg-kit-ring wg-kit-inked wg-kit-status is-empty",
+	);
+	render(h(Kit.StatusProgress, { value: 40 }), host);
+	await settle();
+	check(
+		"and a running line is the accent, on the very same base",
+		host.querySelector(".wg-kit-bar").className,
+		"wg-kit-bar wg-kit-inked is-accent wg-kit-status is-running",
+	);
+	render(h(Kit.StatusProgress, { shape: "circle", value: 100, tones: { done: "info" } }), host);
+	await settle();
+	check(
+		"the tones it paints each state with are the caller's to change",
+		host.querySelector(".wg-kit-ring").className.includes("is-info"),
+		true,
+	);
+	render(h(Kit.StatusProgress, { shape: "circle", value: 100, displayValue: "done!" }), host);
+	await settle();
+	check("a displayValue of its own outranks the tick", host.querySelector(".wg-kit-ring-value").textContent, "done!");
+	render(h(Kit.ProgressBar, { shape: "circle", value: 100 }), host);
+	await settle();
+	check("THE BASE COMPONENT KNOWS NOTHING OF STATES", host.querySelector(".wg-kit-ring-value").textContent, "");
+	render(
+		h(Kit.ProgressBar, { shape: "circle", value: 42, displayValue: ({ value, state }) => `${value}·${state}` }),
+		host,
+	);
+	await settle();
+	check(
+		"displayValue is handed the value and the state",
+		host.querySelector(".wg-kit-ring-value").textContent,
+		"42·running",
+	);
+	render(h(Kit.ProgressBar, { value: 30, displayValue: "30 of 100" }), host);
+	await settle();
+	check(
+		"on a line the value stands in its own room at the end",
+		[
+			host.querySelector(".wg-kit-bar-said")?.textContent,
+			host.querySelector(".wg-kit-bar")?.style.getPropertyValue("--wg-bar-value-room"),
+		],
+		["30 of 100", "8px"],
+	);
+	render(h(Kit.ProgressBar, { value: 30 }), host);
+	await settle();
+	check(
+		"WITH NO displayValue THE ROOM IS NOTHING, so the line runs the whole width",
+		[
+			host.querySelector(".wg-kit-bar").classList.contains("has-value"),
+			host.querySelector(".wg-kit-bar").style.getPropertyValue("--wg-bar-value-room"),
+		],
+		[false, "0px"],
+	);
+	check("and no stop mark is drawn unless it is asked for", host.querySelector(".wg-kit-bar-stop") === null, true);
+	render(h(Kit.ProgressBar, { value: 30, displayValue: () => null }), host);
+	await settle();
+	check(
+		"A displayValue THAT ANSWERS WITH NOTHING TAKES NO ROOM EITHER",
+		[
+			host.querySelector(".wg-kit-bar").classList.contains("has-value"),
+			host.querySelector(".wg-kit-bar").style.getPropertyValue("--wg-bar-value-room"),
+		],
+		[false, "0px"],
+	);
+	render(h(Kit.StatusProgress, { value: 100 }), host);
+	await settle();
+	check(
+		"A FINISHED STATUS LINE MAKES ROOM FOR ITS MARK",
+		host.querySelector(".wg-kit-bar").classList.contains("has-value"),
+		true,
+	);
+	render(null, host);
+	const cursored = barGeometry(400, 50, { isCursorVisible: true });
+	check("a cursor makes the bar as tall as itself", cursored.height, 20);
+	check(
+		"and stands a gap from the wave on both sides",
+		[cursored.cursor.x, cursored.track.startsWith("M208 ")],
+		[198, true],
+	);
+	check("no cursor is drawn unless asked", wavy.cursor, null);
+
+	render(h(Kit.ProgressBar, { value: 40, label: "Loaded", onChange: () => {} }), host);
+	const bar = host.querySelector(".wg-kit-bar");
+	check(
+		"UNCONTROLLED IT IS A PROGRESSBAR, and carries no cursor, onChange or not",
+		[
+			bar.getAttribute("role"),
+			bar.classList.contains("is-settable"),
+			host.querySelector(".wg-kit-bar-cursor") === null,
+		],
+		["progressbar", false, true],
+	);
+	check("with the value a reader can hear", bar.getAttribute("aria-valuenow"), "40");
+
+	let moved = 0;
+	render(h(Kit.ProgressBar, { value: 40, isControlled: true, onChange: (next) => (moved = next) }), host);
+	await settle();
+	const settable = host.querySelector(".wg-kit-bar");
+	check(
+		"CONTROLLED IT IS A SLIDER a person can take hold of",
+		[settable.getAttribute("role"), settable.classList.contains("is-settable")],
+		["slider", true],
+	);
+	check(
+		"and the drawing it asks for carries the cursor, which an uncontrolled one never has",
+		[Boolean(barGeometry(400, 40, { isCursorVisible: true }).cursor), barGeometry(400, 40).cursor],
+		[true, null],
+	);
+	check("a reader can reach it by keyboard", settable.getAttribute("tabindex"), "0");
+	settable.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+	check("and an end key carries it to the far edge", moved, 100);
+	settable.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+	check("and home back to the near one", moved, 0);
+	render(null, host);
+}
+
 // CONTEXT: reading B — inline code is plain, not bold
 {
 	const host = document.getElementById("host");
@@ -1525,13 +1992,13 @@ check(
 	const UNBROKEN_PATH = "Orbitask/Tasks/Archive/Another-Very-Long-Folder-Segment-With-No-Spaces-At-All";
 
 	// TRADE-OFF: the numbers the page is measured against are read off the source, never guessed at
-	const KIT_SOURCE = readFileSync("src/kit.js", "utf8");
+	const KIT_SOURCE = readFileSync("packages/kit/src/kit.js", "utf8");
 	const kitNumber = (name) => Number(new RegExp(`const ${name} = ([\\d.]+)`).exec(KIT_SOURCE)[1]);
 
 	const entry = [
 		'import { createElement as h } from "react";',
-		'import { render } from "./src/engine/render.js";',
-		'import { Button, cardClass, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./src/kit.js";',
+		'import { render } from "./packages/core/src/engine/render.js";',
+		'import { Button, cardClass, Icon, MarkdownEditor, List, Plate, Popover, PopoverItem, Row, RowLabel, RowValue, Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./packages/kit/src/kit.js";',
 		"const host = document.querySelector('.wg-root');",
 		`render(h(MarkdownEditor, { value: "${NOTE}" }), host);`,
 		"const mirror = host.querySelector('.wg-kit-md-mirror');",
@@ -1641,7 +2108,7 @@ check(
 	const file = nodePath.join(work, "mirror.html");
 	writeFileSync(
 		file,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>` +
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>` +
 			`<style>:root { --text-normal: #222; --text-muted: #707070; --text-faint: #ababab; --background-primary: #fff; --interactive-accent: #6d4ee0; --font-interface: -apple-system, "Segoe UI", sans-serif; --font-ui-small: 14px; --size-4-4: 16px; }` +
 			`body { margin: 0; } .wg-root { width: 380px; }</style>` +
 			`</head><body><div class="wg-root"></div><div class="wg-root wg-sides" style="width:300px"></div>` +
@@ -1989,7 +2456,7 @@ check(
 	const liftFile = nodePath.join(work, "lift.html");
 	writeFileSync(
 		liftFile,
-		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("styles.css", "utf8")}</style>` +
+		`<!doctype html><html><head><meta charset="utf-8"><style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>` +
 			`<style>html, body { margin: 0; padding: 0; } body { width: 400px; height: ${pageHeight}px; }` +
 			`.wg-ground { position: absolute; left: 0; width: 400px; height: ${BLOCK.slot}px; background: var(--wg-kit-raise); }` +
 			`.wg-ground .wg-kit-side { position: absolute; left: ${BLOCK.left}px; top: ${BLOCK.top}px; width: ${BLOCK.width}px; height: ${BLOCK.height}px; }</style>` +
@@ -2285,6 +2752,35 @@ check(
 
 	render(null, stage);
 	stage.remove();
+}
+
+{
+	const host = document.getElementById("host");
+	const PROBE = "probe-class";
+	const NEEDED_TO_DRAW = {
+		Popover: { trigger: h("button", null, "open"), isOpen: true },
+		Calendar: { month: new Date(2026, 8, 1), today: new Date(2026, 8, 21) },
+		Segmented: { items: [{ value: "a", label: "A" }], value: "a" },
+		Tabs: { items: [{ value: "a", label: "A" }], value: "a" },
+		SlotList: { slot: () => h("i"), rows: [1], give: () => ({}) },
+		Icon: { name: "search" },
+		ShowMore: { remaining: 2 },
+		Emblem: { label: "probe" },
+		StatusProgress: { value: 50 },
+		Spinner: { size: 16 },
+		SidebarRow: { label: "row" },
+		SidebarGroup: { label: "group" },
+	};
+	const withoutClass = [];
+	for (const [name, drawn] of Object.entries(Kit)) {
+		if (typeof drawn !== "function" || !/^[A-Z]/.test(name)) continue;
+		render(null, host);
+		render(h(drawn, { ...NEEDED_TO_DRAW[name], className: PROBE }), host);
+		await settle();
+		if (!document.querySelector(`.${PROBE}`)) withoutClass.push(name);
+	}
+	render(null, host);
+	check("EVERY KIT COMPONENT TAKES A CALLER'S CLASS", withoutClass, []);
 }
 
 console.log(failed ? `\n${failed} failed` : `\nall passed (${checks} checks)`);

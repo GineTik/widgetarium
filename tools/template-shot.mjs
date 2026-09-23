@@ -13,7 +13,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-tpl-"));
 const titles = {};
 for (const template of TEMPLATES) {
 	for (const id of templateWidgets(template)) {
-		titles[id] = JSON.parse(readFileSync(`widgets/${id}/manifest.json`, "utf8")).title;
+		titles[id] = JSON.parse(readFileSync(`registry/${id}/manifest.json`, "utf8")).title;
 	}
 }
 

@@ -1,9 +1,9 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
+import { render } from "../packages/core/src/engine/render.js";
 import { useEffect, useState } from "react";
-import { SubstitutionDialog } from "../src/substitution-dialog.js";
-import { WidgetRegistry } from "../src/registry.js";
-import { normalizeRules } from "../src/substitution.js";
+import { SubstitutionDialog } from "../apps/obsidian/src/substitution-dialog.js";
+import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { normalizeRules } from "../apps/obsidian/src/substitution.js";
 
 const FILES = window.__FILES__;
 

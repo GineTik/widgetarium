@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { widgetsCliBundle } from "../build.mjs";
+import { widgetsCliBundle } from "../apps/obsidian/build.mjs";
 
 const run = promisify(execFile);
 

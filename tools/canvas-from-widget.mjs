@@ -6,10 +6,10 @@ import path from "node:path";
 import esbuild from "esbuild";
 import { findBrowser } from "./harness.mjs";
 import { THEMES, HOST_FONTS } from "./host-themes.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const OUT = "docs/reference/metric-total";
-const SHEETS = ["styles.css", "widgets/@default/tokens.css", "widgets/@default/metric-total/widget.css"];
+const SHEETS = ["apps/obsidian/styles.css", "registry/@default/tokens.css", "registry/@default/metric-total/widget.css"];
 
 const FRAMES = [
 	{ file: "Main", title: "Card — curve", theme: "light", view: "curve", tile: [840, 480], frame: [900, 560] },
@@ -83,9 +83,9 @@ const FRAMES = [
 
 const PROBE = `
 import { createElement as h } from "react";
-import { render } from "./src/engine/render.js";
-import Widget from "./widgets/@default/metric-total/widget.tsx";
-import { collectionGateway, soloGateway } from "./src/gateway/create";
+import { render } from "./packages/core/src/engine/render.js";
+import Widget from "./registry/@default/metric-total/widget.tsx";
+import { collectionGateway, soloGateway } from "./packages/core/src/gateway/create";
 
 const asked = window.__FRAME__;
 const DAY = 86400000;
@@ -172,9 +172,9 @@ async function bundled() {
 		inject: ["tools/fill-inject.js"],
 		alias: {
 			widgetarium: "./tools/fill-shim.js",
-			"widgetarium/kit": "./src/kit.js",
-			"widgetarium/kit/emojis": "./src/emojis.js",
-			"@default/lib": "./widgets/@default/lib.js",
+			"widgetarium/kit": "./packages/kit/src/kit.js",
+			"widgetarium/kit/emojis": "./packages/kit/src/emojis.js",
+			"@default/lib": "./registry/@default/lib.js",
 			obsidian: "./tools/obsidian-shim.js",
 		},
 		logLevel: "warning",

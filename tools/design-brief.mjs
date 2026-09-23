@@ -4,7 +4,7 @@
 // why the tokens are shaped the way they are.
 import { readFileSync, writeFileSync } from "node:fs";
 
-const css = readFileSync("styles.css", "utf8");
+const css = readFileSync("apps/obsidian/styles.css", "utf8");
 
 // the token block: everything declared on the root, comments and all, because the comments carry
 // the measurements that make a value non-negotiable
@@ -15,7 +15,7 @@ const kitRules = [
 
 const LAWS = `# Widgetarium design system
 
-A brief, not the source. \`styles.css\` and \`src/kit.js\` are the source; this is what a design
+A brief, not the source. \`styles.css\` and \`packages/kit/src/kit.js\` are the source; this is what a design
 decision needs to be right.
 
 ## The laws, each one measured
@@ -61,7 +61,7 @@ decision needs to be right.
 
 ## Components
 
-Class names are the contract; \`src/kit.js\` exports a component per class.
+Class names are the contract; \`packages/kit/src/kit.js\` exports a component per class.
 
 \`\`\`css
 ${kitRules.join("\n\n")}

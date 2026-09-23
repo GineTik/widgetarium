@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { EventEmitter } from "node:events";
 import { buildMirror } from "./mirror.mjs";
-import { widgetsCliBundle } from "../build.mjs";
+import { widgetsCliBundle } from "../apps/obsidian/build.mjs";
 
 const WIDGETS_CLI = await widgetsCliBundle();
 buildMirror({ widgetsCli: WIDGETS_CLI });
@@ -28,6 +28,7 @@ const { createElement } = await import("react");
 const { renderToStaticMarkup } = await import("react-dom/server");
 const { briefGoesInTheMessage } = await import("./.mjs-cache/ai/providers.mjs");
 const { sendState } = await import("./.mjs-cache/ai/chat.mjs");
+const { buildsIn, startIn } = await import("./.mjs-cache/ai/builds.mjs");
 
 let failed = 0;
 let checks = 0;
@@ -304,6 +305,100 @@ check(
 	"terminal",
 );
 check("a command naming no tool of ours is not claimed", ourCallIn("npm run build"), null);
+
+const BIN = "node /v/.widgetarium/bin/widgets.mjs";
+const FOLDER = "/v/.widgetarium/widgets/@mine/habit-streak";
+const callOf = (ref, name, input, answer = {}) => ({
+	ref,
+	name,
+	input,
+	answered: true,
+	output: "",
+	failed: false,
+	at: 1000,
+	answeredAt: 2000,
+	...answer,
+});
+const started = callOf("s", "Bash", { command: `${BIN} start @mine/habit-streak --title "Habit streak"` });
+const wrote = callOf("w", "Write", { file_path: `${FOLDER}/widget.tsx` });
+const checked = callOf("c", "Bash", { command: `${BIN} check @mine/habit-streak` });
+const checkRefused = callOf(
+	"c2",
+	"Bash",
+	{ command: `${BIN} check @mine/habit-streak` },
+	{
+		failed: true,
+		output: "@mine/habit-streak colour: a plate painted from outside the kit",
+	},
+);
+const placed = callOf("p", "Edit", { file_path: "/v/Boards/Home.md" });
+const linted = callOf("l", "Bash", { command: `${BIN} lint Boards/Home.md` }, { answeredAt: 9000 });
+const statusesOf = (build) => build.steps.map((step) => step.status);
+
+check("start names the widget and the title a person reads", startIn(started), {
+	id: "@mine/habit-streak",
+	title: "Habit streak",
+});
+check(
+	"start with no title reads one off the id",
+	startIn(callOf("s", "Bash", { command: `${BIN} start @mine/mood-month` }))?.title,
+	"Mood month",
+);
+check("a call that is not start opens no build", startIn(checked), null);
+check("calls before any start build nothing", buildsIn([wrote, checked], true), []);
+check("a widget just started is being written", statusesOf(buildsIn([started], true)[0]), [
+	"active",
+	"pending",
+	"pending",
+	"pending",
+]);
+check("the step the agent is in is the active one", statusesOf(buildsIn([started, wrote, checked], true)[0]), [
+	"done",
+	"active",
+	"pending",
+	"pending",
+]);
+check(
+	"a failed check stays failed while the widget is written again",
+	statusesOf(buildsIn([started, wrote, checkRefused, wrote], true)[0]),
+	["active", "failed", "pending", "pending"],
+);
+check("a failed check says why", buildsIn([started, wrote, checkRefused], true)[0].steps[1].hint, checkRefused.output);
+const whole = buildsIn([started, wrote, checked, placed, linted], false)[0];
+check(
+	"a build that finished every step is built",
+	[whole.title, statusesOf(whole), whole.isLive],
+	["Built Habit streak", ["done", "done", "done", "done"], false],
+);
+check("a finished build stops its clock at its last answer", [whole.startedAt, whole.endedAt], [1000, 9000]);
+check(
+	"a running build keeps saying it is building",
+	buildsIn([started, wrote], true)[0].title,
+	"Building Habit streak",
+);
+check("a running build has no end yet", buildsIn([started, wrote], true)[0].endedAt, 0);
+const two = buildsIn([started, wrote, callOf("s2", "Bash", { command: `${BIN} start @mine/mood-month` }), wrote], true);
+check(
+	"only the last of two builds is live",
+	two.map((build) => build.isLive),
+	[false, true],
+);
+check("a write into another widget's folder is not this build's", statusesOf(two[1]), [
+	"active",
+	"pending",
+	"pending",
+	"pending",
+]);
+check(
+	"a write names the file under the widget",
+	buildsIn([started, wrote], true)[0].steps[0].hint,
+	"@mine/habit-streak/widget.tsx",
+);
+check(
+	"a call cut off when the run ended is a failure, not a success",
+	statusesOf(buildsIn([started, { ...wrote, answered: false }], false)[0])[0],
+	"failed",
+);
 check(
 	"a description on our own call does not outrank knowing it is ours",
 	titleOf({
@@ -1107,6 +1202,8 @@ const hugeOutput = keptTurns([
 check("a tool's answer is cut down before it is kept", hugeOutput[0].calls[0].output.length, 2000);
 check("a kept call carries the shape the panel draws from", Object.keys(hugeOutput[0].calls[0]).sort(), [
 	"answered",
+	"answeredAt",
+	"at",
 	"failed",
 	"input",
 	"name",
@@ -1331,6 +1428,31 @@ try {
 	refusedUnknown = failure.status;
 }
 check("a widget that does not exist is refused, not invented", refusedUnknown, 1);
+
+const startedAnswer = JSON.parse(
+	execFileSync(
+		"node",
+		[path.join(vault, ".widgetarium/bin/widgets.mjs"), "start", "@mine/habit-streak", "--title", "Habit streak"],
+		{ encoding: "utf8" },
+	),
+);
+check(
+	"start says the widget is new and where its files go",
+	[startedAnswer.isNew, startedAnswer.title],
+	[true, "Habit streak"],
+);
+check("start names the widget's own folder", startedAnswer.folder.endsWith("@mine/habit-streak"), true);
+
+let refusedId = 0;
+try {
+	execFileSync("node", [path.join(vault, ".widgetarium/bin/widgets.mjs"), "start", "Habit Streak"], {
+		encoding: "utf8",
+		stdio: "pipe",
+	});
+} catch (failure) {
+	refusedId = failure.status;
+}
+check("start refuses a name that is not a widget id", refusedId, 1);
 
 fs.rmSync(vault, { recursive: true, force: true });
 

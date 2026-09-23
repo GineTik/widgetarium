@@ -7,9 +7,19 @@ export const LIMITS = {
 	propsWidth: { warn: 6, error: 12 },
 };
 
-export const LINTED_ROOTS = ["src", "widgets"];
+export const LINTED_ROOTS = [
+	"apps/obsidian/src",
+	"packages/core/src",
+	"packages/kit/src",
+	"packages/sdk/types",
+	"registry",
+];
 
-export const SKIPPED_PATHS = ["src/emoji-table.js", "src/icon-table.js", "src/regex-sample.js"];
+export const SKIPPED_PATHS = [
+	"packages/kit/src/emoji-table.js",
+	"packages/kit/src/icon-table.js",
+	"apps/obsidian/src/regex-sample.js",
+];
 
 export const ALLOWED_COMMENT_PREFIXES = ["TODO:", "TRADE-OFF:"];
 

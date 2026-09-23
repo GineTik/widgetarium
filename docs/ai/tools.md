@@ -10,6 +10,7 @@
 | `show <id>`        | one widget's props, role and size                                        |
 | `source <id>`      | its source, to read before copying anything from it                      |
 | `install <id>`     | writes it and its scope's shared files into the vault                    |
+| `start <id>`       | your access to a widget's files, and the progress card in the chat       |
 | `check <id>`       | six defects in a widget you wrote; exits 1 while any stands              |
 | `bases`            | every base a screen can start from                                       |
 | `base <name>`      | one base: its regions, its sections, ready to write into a note          |
@@ -62,6 +63,18 @@ node {tool} card header-body
 
 `header-body`, `media-body`, `metric`, `list-row`. Each says what it wears standing alone and among
 peers of its kind, and which parts it holds. Every part stands bare on the one plate.
+
+## Starting a widget
+
+```bash
+node {tool} start @you/clock --title "Clock"
+```
+
+Run it before the first file you write or edit in a widget's folder, once per widget. It says
+whether the widget is new, where its files go, and whether it came from a repository — an update
+replaces that folder. The chat reads it and shows the person a card, **Building Clock**, whose steps
+follow what you do next: writing into the folder, `check`, writing the note, `lint`. `--title` is
+the name a person reads; left out, it is made from the id.
 
 ## Checking a widget you wrote
 

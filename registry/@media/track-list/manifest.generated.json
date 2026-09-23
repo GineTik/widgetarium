@@ -1,0 +1,226 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Track list",
+	"description": "Every track in a folder as a row: its title over its artist, its album, when it arrived, a favourite and how long it runs.",
+	"keywords": [
+		"track",
+		"tracks",
+		"music",
+		"song",
+		"songs",
+		"audio",
+		"library",
+		"playlist",
+		"album",
+		"artist",
+		"queue",
+		"listen",
+		"favourite",
+		"duration"
+	],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 220,
+		"stackBelowPx": 600
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 5
+		},
+		"props": {
+			"tracks": {
+				"rows": [
+					{
+						"path": "music/weightless.md",
+						"name": "Weightless",
+						"title": "Weightless",
+						"artist": "Marconi Union",
+						"album": "Ambient Transmissions",
+						"addedAt": "2026-02-11",
+						"duration": 488,
+						"favourite": true
+					},
+					{
+						"path": "music/night-drive.md",
+						"name": "Night Drive",
+						"title": "Night Drive",
+						"artist": "Kiasmos",
+						"addedAt": "2026-01-30",
+						"duration": 322
+					},
+					{
+						"path": "music/first-light.md",
+						"name": "First Light",
+						"title": "First Light",
+						"artist": "Nils Frahm",
+						"album": "Spaces",
+						"addedAt": "2025-12-04"
+					},
+					{
+						"path": "music/untitled-demo.md",
+						"name": "Untitled demo",
+						"artist": "Hania Rani",
+						"album": "Home",
+						"duration": "4:12"
+					}
+				]
+			}
+		}
+	},
+	"slots": {
+		"row": {
+			"of": "widget",
+			"default": "@media/track-row",
+			"surface": "group",
+			"gives": {
+				"track": [
+					"title",
+					"artist",
+					"album",
+					"addedAt",
+					"duration",
+					"favourite"
+				]
+			}
+		}
+	},
+	"props": {
+		"tracks": {
+			"kind": "collection",
+			"label": "Tracks",
+			"hint": "The notes this list draws, one row each. Every field may be missing — a folder of loose recordings is the normal case.",
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "text",
+					"aka": [
+						"name",
+						"track",
+						"song"
+					]
+				},
+				"artist": {
+					"label": "Artist",
+					"type": "text",
+					"aka": [
+						"artists",
+						"performer",
+						"by"
+					]
+				},
+				"album": {
+					"label": "Album",
+					"type": "text",
+					"aka": [
+						"record",
+						"release"
+					]
+				},
+				"addedAt": {
+					"label": "Added",
+					"type": "date",
+					"aka": [
+						"added",
+						"dateAdded",
+						"created"
+					]
+				},
+				"duration": {
+					"label": "Duration",
+					"type": "text",
+					"aka": [
+						"length",
+						"time",
+						"runtime"
+					]
+				},
+				"favourite": {
+					"label": "Favourite",
+					"type": "boolean",
+					"aka": [
+						"favorite",
+						"liked",
+						"starred",
+						"loved"
+					]
+				}
+			},
+			"sort": [
+				{
+					"prop": "addedAt",
+					"dir": "desc"
+				}
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected track",
+			"hint": "Which track is picked. A player bound to this plays whatever the list picks.",
+			"of": "tracks",
+			"writes": [
+				"get",
+				"update"
+			]
+		},
+		"playing": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Playing track",
+			"hint": "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
+			"of": "tracks",
+			"writes": [
+				"get"
+			],
+			"wants": "@media/player/playing"
+		},
+		"filter": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Filter",
+			"hint": "Only tracks whose title holds these words are listed. Bind a search field and the two move together.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": ""
+			},
+			"wants": "@default/search-input/value"
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Tracks per page",
+			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 50
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": [
+		"@media/track-row"
+	]
+}

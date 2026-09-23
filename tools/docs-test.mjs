@@ -230,14 +230,14 @@ check(
 
 const boardsIn = (text) => [...text.matchAll(/```widgetarium\n([\s\S]*?)```/g)].map((found) => parseYaml(found[1]));
 
-const cardOf = (id) => JSON.parse(fs.readFileSync(`widgets/${id}/manifest.generated.json`, "utf8"));
+const cardOf = (id) => JSON.parse(fs.readFileSync(`registry/${id}/manifest.generated.json`, "utf8"));
 const leavesIn = (node) => (node?.of ? node.of.flatMap(leavesIn) : node?.id ? [node.id] : []);
 
 const boards = boardsIn(EXAMPLES);
 check("the examples page holds whole boards", boards.length >= 3, true);
 check(
 	"every widget an example names is one this repo ships",
-	boards.flatMap((board) => board.tiles.map((tile) => tile.widget)).filter((id) => !fs.existsSync(`widgets/${id}`)),
+	boards.flatMap((board) => board.tiles.map((tile) => tile.widget)).filter((id) => !fs.existsSync(`registry/${id}`)),
 	[],
 );
 check(
@@ -281,15 +281,15 @@ check(
 );
 
 const CARDS_ON_DISK = fs
-	.readdirSync("widgets")
+	.readdirSync("registry")
 	.filter((scope) => scope.startsWith("@"))
 	.flatMap((scope) =>
 		fs
-			.readdirSync(`widgets/${scope}`)
-			.filter((name) => fs.existsSync(`widgets/${scope}/${name}/manifest.generated.json`))
+			.readdirSync(`registry/${scope}`)
+			.filter((name) => fs.existsSync(`registry/${scope}/${name}/manifest.generated.json`))
 			.map((name) => ({
 				id: `${scope}/${name}`,
-				role: JSON.parse(fs.readFileSync(`widgets/${scope}/${name}/manifest.generated.json`, "utf8")).role ?? null,
+				role: JSON.parse(fs.readFileSync(`registry/${scope}/${name}/manifest.generated.json`, "utf8")).role ?? null,
 			})),
 	);
 

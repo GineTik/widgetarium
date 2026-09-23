@@ -31,7 +31,7 @@ const kit = await import("./.mjs-cache/kit.mjs");
 const { collectionGateway, soloGateway, valueGateway } = await import("./.mjs-cache/gateway/create.mjs");
 const { surfacedSlot } = await import("./.mjs-cache/widget-root.mjs");
 
-const WIDGET = "widgets/@default/list/widget.tsx";
+const WIDGET = "registry/@default/list/widget.tsx";
 const modules = { widgetarium, "widgetarium/kit": kit, react };
 const code = transform(fs.readFileSync(WIDGET, "utf8"), {
 	transforms: ["typescript", "jsx", "imports"],

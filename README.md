@@ -37,3 +37,11 @@ src/
 Реалізовано: сітка з точок, drag і resize зі збереженням, палітра віджетів, налаштування плитки з маніфесту, повний екран, слоти даних над теками (`list/get/create/update/remove/subscribe/describe`), `can`-поля, два віджети.
 
 Не реалізовано: порти й дроти між віджетами, компоненти-екрани, кодген типів, каталог і оновлення.
+
+## License
+
+The engine and the Obsidian plugin are under the [Functional Source License 1.1, Apache 2.0 Future License](LICENSE) (`FSL-1.1-ALv2`). The kit (`packages/kit/`, [MIT](packages/kit/LICENSE)) and the widgets (`registry/`, [MIT](registry/LICENSE)) are MIT; [REUSE.toml](REUSE.toml) maps every path to its licence.
+
+You may use, modify and redistribute the software for any purpose except a Competing Use: offering it, or something substantially similar built from it, as a commercial product or service. Each version becomes Apache 2.0 two years after its release. To build a competing product, contact the author for a commercial license.
+
+The kit and the widgets are MIT so they can be copied into any project, including a commercial one.

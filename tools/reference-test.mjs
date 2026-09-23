@@ -1,9 +1,9 @@
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./src/ref-draft.js";`,
+		contents: `export * from "./packages/core/src/ref-draft.js";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},

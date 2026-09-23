@@ -1,13 +1,13 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
-import { WidgetSurface } from "../src/surface.js";
-import { normalizeBoard } from "../src/model.js";
-import { WidgetRegistry } from "../src/registry.js";
-import { measureTile } from "../src/surface-measure.js";
-import { contentInsetsOf } from "../src/content-insets.js";
-import { SlotList } from "../src/kit.js";
-import { gapVarsOf } from "../src/tree.js";
-import { surfacedSlot } from "../src/widget-root.js";
+import { render } from "../packages/core/src/engine/render.js";
+import { WidgetSurface } from "../packages/core/src/surface.js";
+import { normalizeBoard } from "../packages/core/src/model.js";
+import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { measureTile } from "../packages/core/src/surface-measure.js";
+import { contentInsetsOf } from "../packages/core/src/content-insets.js";
+import { SlotList } from "../packages/kit/src/kit.js";
+import { gapVarsOf } from "../packages/core/src/tree.js";
+import { surfacedSlot } from "../packages/core/src/widget-root.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 
 const WIDTH = 1400;

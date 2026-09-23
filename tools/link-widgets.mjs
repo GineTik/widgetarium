@@ -9,7 +9,7 @@ const target = path.join(VAULT, ".widgetarium", "widgets");
 const here = path.join(process.cwd(), "widgets");
 
 if (!fs.existsSync(here)) {
-	console.log("no widgets/ folder in this repo — nothing to link");
+	console.log("no registry/ folder in this repo — nothing to link");
 	process.exit(0);
 }
 

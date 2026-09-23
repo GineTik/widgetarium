@@ -1,13 +1,14 @@
 node_modules
-/main.js
-/main.js.map
+/apps/obsidian/main.js
+/apps/obsidian/main.js.map
 
 .DS_Store
 .obsidian/
 tools/.mjs-cache/
-/data.json
+/apps/obsidian/data.json
 /export/
 /*.png
 .omc/
 tools/.widgets-published/
-widgets/*/*/build/
+registry/*/*/build/
+.preview/

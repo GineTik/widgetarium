@@ -1,0 +1,15 @@
+{
+	"name": "@widgetarium/sdk",
+	"version": "0.1.0",
+	"private": true,
+	"license": "FSL-1.1-ALv2",
+	"types": "./types/widgetarium.d.ts",
+	"exports": {
+		".": {
+			"types": "./types/widgetarium.d.ts"
+		},
+		"./globals": {
+			"types": "./types/globals.d.ts"
+		}
+	}
+}

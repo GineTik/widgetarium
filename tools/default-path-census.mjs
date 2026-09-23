@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
-const ROOT = "widgets";
+const ROOT = "registry";
 
 function foldersUnder(at, into = []) {
 	for (const name of readdirSync(at)) {

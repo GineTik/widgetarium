@@ -75,7 +75,7 @@ const adapter = {
 	stat: async () => ({ mtime: 1, size: 1 }),
 };
 
-// The slot comes from src/host.js — the adapter that ships. Building one here is how the
+// The slot comes from apps/obsidian/src/host.js — the adapter that ships. Building one here is how the
 // board passed this test while being dead in the app.
 const written = { created: [], updated: [] };
 const notices = [];
@@ -416,7 +416,7 @@ if (bare) {
 
 // TODO: restore the end-to-end fold test — the sidebar was the only widget that offered a fold
 // control, and it has been removed from the product. The engine still exposes size.collapse()
-// and size.expand() (src/surface.js:238), so the capability is now WRITE-ONLY: nothing in the
+// and size.expand() (packages/core/src/surface.js:238), so the capability is now WRITE-ONLY: nothing in the
 // product calls it and nothing proves it works. Either a widget takes it up again, or the
 // engine drops it, and nothing at the model level covers it either.
 
@@ -1127,7 +1127,7 @@ const pickView = async (name, id = "views") => {
 {
 	// THE PROPERTY LIST IS THE BOARD'S, NOT A TILE'S. Two widgets have to read ONE list, so a
 	// widget keeping its own copy in `settings` was right for exactly one widget. The probe is
-	// registered here rather than added to widgets/, because what is under test is what the
+	// registered here rather than added to registry/, because what is under test is what the
 	// ENGINE hands over, not what any product widget does with it.
 	const seen = [];
 	const PROBE_PROPS = {

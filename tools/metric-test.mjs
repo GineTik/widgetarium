@@ -37,8 +37,8 @@ const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/cr
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 const { needsOf } = await import("./.mjs-cache/gateway/props.mjs");
 
-const WIDGET = "widgets/@default/metric-total/widget.tsx";
-const DECLARED = JSON.parse(fs.readFileSync("widgets/@default/metric-total/manifest.generated.json", "utf8")).props;
+const WIDGET = "registry/@default/metric-total/widget.tsx";
+const DECLARED = JSON.parse(fs.readFileSync("registry/@default/metric-total/manifest.generated.json", "utf8")).props;
 
 const libs = new Map();
 
@@ -68,7 +68,7 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@default/lib", run("widgets/@default/lib.js"));
+libs.set("@default/lib", run("registry/@default/lib.js"));
 const lib = libs.get("@default/lib");
 const Metric = run(WIDGET).default;
 

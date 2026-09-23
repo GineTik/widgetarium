@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const WIDGETS = "widgets";
+const WIDGETS = "registry";
 const SOURCES = ["widget.tsx", "widget.css"];
 const LITERAL_GAP = /(?:^|[\s;{])((?:row-|column-)?gap)\s*:\s*([^;}\n]*\d[^;}\n]*)/g;
 const ENGINE_GAP = /var\(--wg-gap-(items|parts|cards)\)/;

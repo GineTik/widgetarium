@@ -137,7 +137,7 @@ const check = (name, got, want) => {
 	const mirrorAt = nodePath.resolve("tools/.mjs-cache");
 	writeFileSync(
 		copy,
-		readFileSync("widgets/@default/lib.js", "utf8")
+		readFileSync("registry/@default/lib.js", "utf8")
 			.replace('from "widgetarium/kit"', `from "file://${mirrorAt}/kit.mjs"`)
 			.replace('from "widgetarium"', `from "file://${mirrorAt}/gateway/match.mjs"`),
 	);
@@ -223,10 +223,10 @@ const check = (name, got, want) => {
 	const { buildWidget } = await import("./.mjs-cache/registry.mjs");
 	// CONTEXT: the catalogue draws a widget nobody installed, so it compiles one straight off disk
 	const drawn = buildWidget({
-		code: readFileSync("widgets/@default/heatmap/widget.tsx", "utf8"),
-		path: "widgets/@default/heatmap/widget.tsx",
-		lib: readFileSync("widgets/@default/lib.js", "utf8"),
-		libPath: "widgets/@default/lib.js",
+		code: readFileSync("registry/@default/heatmap/widget.tsx", "utf8"),
+		path: "registry/@default/heatmap/widget.tsx",
+		lib: readFileSync("registry/@default/lib.js", "utf8"),
+		libPath: "registry/@default/lib.js",
 		scope: "@default",
 	});
 	check("a widget is built from files nobody installed", typeof drawn, "function");

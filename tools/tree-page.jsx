@@ -1,12 +1,12 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
-import { WidgetHost, WidgetSurface } from "../src/surface.js";
-import { normalizeBoard, serializeBoard } from "../src/model.js";
-import { WidgetRegistry } from "../src/registry.js";
-import { createGatewayRefs, createViewCells } from "../src/gateway/refs.js";
+import { render } from "../packages/core/src/engine/render.js";
+import { WidgetHost, WidgetSurface } from "../packages/core/src/surface.js";
+import { normalizeBoard, serializeBoard } from "../packages/core/src/model.js";
+import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { createGatewayRefs, createViewCells } from "../packages/core/src/gateway/refs.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
-import { classOf, scaleOf } from "../src/paths.js";
-import { GAP_PX, isBox, laid, leavesOf } from "../src/tree.js";
+import { classOf, scaleOf } from "../packages/core/src/paths.js";
+import { GAP_PX, isBox, laid, leavesOf } from "../packages/core/src/tree.js";
 
 const FILES = JSON.parse(document.getElementById("wg-widgets").textContent);
 const BOARD = JSON.parse(document.getElementById("wg-board").textContent);
@@ -341,16 +341,9 @@ function readStacked() {
 		rowBottom: Math.round(boxOf(row).bottom),
 		lastBottom: Math.round(cellAt("wynttpz").bottom),
 		boardTop: Math.round(cellAt("board").top),
-		rowGrips: row.parentElement.querySelectorAll(":scope > .wg-tree-handle").length,
 		standsAcross: ["views", "wynttpz"].map(
 			(id) => document.querySelector(`.wg-stacked-probe .wg-tree-cell[data-cell="${id}"]`).dataset.standsAcross ?? null,
 		),
-		lastGrip:
-			[
-				...document.querySelectorAll(
-					'.wg-stacked-probe [data-path="0/0"] > .wg-tree-band:last-of-type > .wg-tree-handle.is-along',
-				),
-			].map((grip) => [1, Math.round(boxOf(grip).height)])[0] ?? null,
 	};
 }
 
@@ -379,48 +372,6 @@ function readNested() {
 		withinRow: column.top >= row.top - 0.5 && column.bottom <= row.bottom + 0.5,
 		spare: Math.round(row.width - cellAt("board").width - column.width),
 		written: JSON.stringify(serializeBoard(nestedBoard).layout),
-	};
-}
-
-function dragNestedGrips() {
-	const row = document.querySelector('.wg-nested-probe [data-path="0/1"]');
-	const across = row?.querySelector(":scope > .wg-tree-handle.is-across");
-	const nest = document.querySelector('.wg-nested-probe [data-path="0/1/1"]');
-	const along = nest?.querySelector(":scope > .wg-tree-band > .wg-tree-handle.is-along");
-	if (!across || !along) return { failed: "the nested box carries no grips" };
-	const widthOf = (id) =>
-		Math.round(document.querySelector(`.wg-nested-probe [data-cell="${id}"]`).getBoundingClientRect().width);
-	const heightOf = (id) =>
-		Math.round(document.querySelector(`.wg-nested-probe [data-cell="${id}"]`).getBoundingClientRect().height);
-	const before = { board: widthOf("board"), views: heightOf("views"), writes: nestedWrites };
-
-	const acrossBox = across.getBoundingClientRect();
-	firePointer("pointerdown", { x: acrossBox.left + acrossBox.width / 2, y: acrossBox.top + 40 }, across);
-	firePointer("pointermove", { x: acrossBox.left + acrossBox.width / 2 - 200, y: acrossBox.top + 40 }, window);
-	const heldWidth = widthOf("board");
-	firePointer("pointerup", { x: acrossBox.left + acrossBox.width / 2 - 200, y: acrossBox.top + 40 }, window);
-
-	const alongBox = along.getBoundingClientRect();
-	firePointer("pointerdown", { x: alongBox.left + alongBox.width / 2, y: alongBox.top + alongBox.height / 2 }, along);
-	firePointer(
-		"pointermove",
-		{ x: alongBox.left + alongBox.width / 2, y: alongBox.top + alongBox.height / 2 + 120 },
-		window,
-	);
-	const heldHeight = heightOf("views");
-	firePointer(
-		"pointerup",
-		{ x: alongBox.left + alongBox.width / 2, y: alongBox.top + alongBox.height / 2 + 120 },
-		window,
-	);
-
-	return {
-		before,
-		heldWidth,
-		heldHeight,
-		after: { board: widthOf("board"), views: heightOf("views"), writes: nestedWrites },
-		ratios: nestedBoard.layout.of[0].of[1].of.map((child) => Math.round(child.ratio * 100) / 100),
-		nestedHeight: nestedBoard.layout.of[0].of[1].of[1].of[0].height,
 	};
 }
 
@@ -673,20 +624,6 @@ function widenSidebar(byX) {
 	return held;
 }
 
-async function squashRow(byY) {
-	const along = document.querySelector(".wg-surface-probe .wg-tree-handle.is-along");
-	if (!along) return { failed: "no strip to drag" };
-	const rowOf = () => Math.round(along.parentElement.firstElementChild.getBoundingClientRect().height);
-	const box = along.getBoundingClientRect();
-	const from = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
-	firePointer("pointerdown", from, along);
-	firePointer("pointermove", { x: from.x, y: from.y + byY }, window);
-	await settled();
-	const held = rowOf();
-	firePointer("pointerup", { x: from.x, y: from.y + byY }, window);
-	return { held, settled: rowOf() };
-}
-
 function pinchSidebar(byX) {
 	const edge = document.querySelector(".wg-sides-probe .wg-tree-handle.is-edge");
 	if (!edge) return { failed: "no edge to drag" };
@@ -716,11 +653,6 @@ function easeOf(className) {
 	return eased;
 }
 
-function dragGrip(grip, byX, byY) {
-	const box = grip.getBoundingClientRect();
-	return dragFrom(grip, { x: box.left + box.width / 2, y: box.top + box.height / 2 }, byX, byY);
-}
-
 function firePointer(type, at, target) {
 	target.dispatchEvent(
 		new window.PointerEvent(type, {
@@ -735,26 +667,6 @@ function firePointer(type, at, target) {
 	);
 }
 
-function dragFrom(node, from, byX, byY) {
-	const fire = (type, at, target) =>
-		target.dispatchEvent(
-			new window.PointerEvent(type, {
-				bubbles: true,
-				cancelable: true,
-				clientX: at.x,
-				clientY: at.y,
-				shiftKey: true,
-				button: 0,
-				pointerId: 1,
-			}),
-		);
-	fire("pointerdown", from, node);
-	fire("pointermove", { x: from.x + byX, y: from.y + byY }, window);
-	const whileHeld = surfaceWrites;
-	fire("pointerup", { x: from.x + byX, y: from.y + byY }, window);
-	return whileHeld;
-}
-
 function rowsOfSurface() {
 	return rowsUnder(document.querySelector(".wg-surface-probe .wg-tree"));
 }
@@ -764,7 +676,6 @@ const faded = () => new Promise((done) => setTimeout(done, 320));
 
 async function carryTile() {
 	const before = rowsOfSurface();
-	const gripShown = Number(getComputedStyle(document.querySelector(".wg-surface-probe .wg-tree-grip")).opacity);
 	const cellOf = () => document.querySelector('.wg-surface-probe .wg-tree-cell[data-cell="board"]');
 	const held = cellOf();
 	if (!held) return { before, failed: "the kanban cell was not found" };
@@ -792,7 +703,6 @@ async function carryTile() {
 	const off = (key) => (standIn && landed ? Math.round(landed[key] - standIn[key]) : null);
 	return {
 		before,
-		gripShown,
 		ghosts,
 		spilled,
 		standIns: standIn ? 1 : 0,
@@ -957,15 +867,7 @@ function readSurface() {
 		overlays: document.querySelectorAll(".wg-surface-probe .wg-tree-overlay").length,
 		widest: Math.max(...[...root.children].map((node) => node.getBoundingClientRect().width)),
 		regions: document.querySelectorAll(".wg-surface-probe .wg-tree-region").length,
-		across: root.querySelectorAll(".wg-tree-handle.is-across").length,
-		gripShown: Number(getComputedStyle(root.querySelector(".wg-tree-grip")).opacity),
-		along: root.querySelectorAll(".wg-tree-handle.is-along").length,
-		capped: root.querySelectorAll(".wg-tree-handle.is-along.is-capped").length,
-		alongWidth: Math.round(root.querySelector(".wg-tree-handle.is-along")?.getBoundingClientRect().width ?? 0),
-		firstRowHeight: Math.round(
-			root.querySelector(".wg-tree-band")?.firstElementChild?.getBoundingClientRect().height ?? 0,
-		),
-		firstCellHeight: Math.round(root.querySelector(".wg-tree-cell[data-path]")?.getBoundingClientRect().height ?? 0),
+		handles: root.querySelectorAll(".wg-tree-handle").length,
 		sharedRow: cellsOf(
 			[...root.querySelectorAll(".wg-tree-row")].find((node) => node.querySelectorAll(".wg-tree-cell").length > 1),
 		),
@@ -977,17 +879,6 @@ function readSurface() {
 				),
 			),
 		writes: surfaceWrites,
-		declaredHeights: TREE.flat()
-			.filter((cell) => cell.height)
-			.map((cell) => ({
-				id: cell.id,
-				wanted: cell.height,
-				drawn: Math.round(
-					document.querySelector(`.wg-surface-probe .wg-tree-cell[data-cell="${cell.id}"]`)?.getBoundingClientRect()
-						.height ?? 0,
-				),
-			})),
-		ratios: (surfaceBoard.layout.of[0].of.find(isBox)?.of ?? []).map((cell) => cell.ratio),
 	};
 }
 
@@ -995,17 +886,10 @@ async function report() {
 	const sink = document.getElementById("wg-measure");
 	try {
 		const before = readSurface();
-		const across = document.querySelector(".wg-surface-probe .wg-tree-handle.is-across");
-		const writesWhileAcross = across ? dragGrip(across, 120, 0) : null;
-		const dragged = readSurface();
-		const along = document.querySelector(".wg-surface-probe .wg-tree-handle.is-along");
-		const writesWhileAlong = along ? dragGrip(along, 0, 200) : null;
-		const stretched = readSurface();
 		const whileReading = await carryTile();
 		surfaceEditing = true;
 		draw();
 		const carried = await carryTile();
-		const squashed = { first: await squashRow(-800), again: await squashRow(-800) };
 		const eases = { cell: easeOf("wg-tree-cell"), region: easeOf("wg-tree-region") };
 		const sides = readSides();
 		const widened = widenSidebar(100);
@@ -1040,14 +924,12 @@ async function report() {
 		const addedIntoRight = await addIntoRegion("right");
 		const nested = readNested();
 		const stacked = readStacked();
-		const nestedGrips = dragNestedGrips();
 		const screenFill = readScreenFill();
 		const intoNest = await carryIntoNest();
 		const unnested = await carryOutOfNest();
 		sink.textContent = JSON.stringify({
 			nested,
 			stacked,
-			nestedGrips,
 			screenFill,
 			intoNest,
 			unnested,
@@ -1065,10 +947,7 @@ async function report() {
 			foldedLeft,
 			unfoldedLeft,
 			soloChrome,
-			squashed,
 			eases,
-			dragged,
-			stretched,
 			whileReading,
 			carried,
 			emptyOpen,
@@ -1078,7 +957,6 @@ async function report() {
 			chromeReading,
 			configured,
 			removal,
-			whileHeld: { across: writesWhileAcross, along: writesWhileAlong },
 			failures,
 		});
 	} catch (failure) {

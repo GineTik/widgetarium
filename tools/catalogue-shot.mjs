@@ -10,7 +10,7 @@ const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
 
 const work = mkdtempSync(path.join(tmpdir(), "wg-cat-"));
 
-const SOURCE = "widgets";
+const SOURCE = "registry";
 const SIZE = { width: Number(process.env.WG_WIDTH ?? 1280), height: Number(process.env.WG_HEIGHT ?? 1240) };
 // the only slot two shipped widgets actually share, so fill mode is photographed against real data
 const SLOT = { parent: "@default/kanban-board", name: "card" };

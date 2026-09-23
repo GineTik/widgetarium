@@ -1,0 +1,66 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Log line",
+	"description": "One line of a running log: when it was written, what it says, and how it went.",
+	"keywords": [
+		"log",
+		"line",
+		"entry",
+		"output",
+		"console",
+		"terminal",
+		"trace",
+		"event",
+		"message",
+		"timestamp",
+		"tail",
+		"session"
+	],
+	"role": "text",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 60,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 1
+		},
+		"props": {
+			"entry": {
+				"value": {
+					"at": "14:32:09",
+					"text": "wrote widgets/@flow/log-line/widget.tsx",
+					"tone": "accent"
+				}
+			}
+		}
+	},
+	"props": {
+		"entry": {
+			"kind": "value",
+			"control": "json",
+			"label": "Entry",
+			"hint": "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": {
+					"at": "14:32:07",
+					"text": "Session started.",
+					"tone": "neutral"
+				}
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

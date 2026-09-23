@@ -3,7 +3,7 @@ import { JSDOM } from "jsdom";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
-import { surfaceOptions } from "../build.mjs";
+import { surfaceOptions } from "../apps/obsidian/build.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
 	pretendToBeVisual: true,

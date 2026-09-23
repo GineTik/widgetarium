@@ -13,7 +13,7 @@ const offences = [];
 const ENGINE = new Set(["orbi", "wg-widget-root"]);
 
 // CONTEXT: a widget built on the kit carries kit classes, whose rules live in the plugin sheet
-for (const [, name] of (fs.existsSync("styles.css") ? fs.readFileSync("styles.css", "utf8") : "").matchAll(
+for (const [, name] of (fs.existsSync("apps/obsidian/styles.css") ? fs.readFileSync("apps/obsidian/styles.css", "utf8") : "").matchAll(
 	/\.([a-z][\w-]*)/g,
 )) {
 	ENGINE.add(name);
@@ -26,7 +26,7 @@ function scopeSheet(file) {
 	return fs.existsSync(sheet) ? fs.readFileSync(sheet, "utf8") : "";
 }
 
-// TODO: read these from src/engine/widget-build.js once tools can import it as an ES module
+// TODO: read these from packages/core/src/engine/widget-build.js once tools can import it as an ES module
 const SHEET_FILES = ["widget.css", "styles.css"];
 
 function ownSheets(file) {

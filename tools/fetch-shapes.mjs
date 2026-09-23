@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const PACKAGE = "material-shapes-ts@0.3.0";
-const OUT = path.join(process.cwd(), "assets", "shapes");
+const OUT = path.join(process.cwd(), "packages", "kit", "assets", "shapes");
 
 const work = mkdtempSync(path.join(tmpdir(), "wg-shapes-"));
 writeFileSync(path.join(work, "package.json"), JSON.stringify({ name: "wg-shapes", private: true, type: "module" }));

@@ -1,0 +1,108 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Underline tabs",
+	"description": "A row of section names with the open one underlined, picking which view a view box draws.",
+	"keywords": [
+		"tabs",
+		"underline",
+		"sections",
+		"navigation",
+		"switch",
+		"strip",
+		"record",
+		"summary",
+		"overview",
+		"views",
+		"steer",
+		"header"
+	],
+	"role": "navigation",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 120,
+		"stackBelowPx": 240
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"options": {
+				"rows": [
+					{
+						"label": "Summary"
+					},
+					{
+						"label": "Plan"
+					},
+					{
+						"label": "Implementation"
+					}
+				]
+			}
+		}
+	},
+	"props": {
+		"options": {
+			"kind": "collection",
+			"label": "Options",
+			"hint": "Every section is a record. Bind a view box and it offers the views it holds.",
+			"writes": [
+				"list",
+				"get"
+			],
+			"describes": {
+				"label": {
+					"label": "Label",
+					"type": "text",
+					"required": true
+				},
+				"value": {
+					"label": "Value",
+					"type": "text"
+				},
+				"hidden": {
+					"label": "Hidden",
+					"type": "boolean"
+				}
+			},
+			"default": {
+				"rows": [
+					{
+						"label": "Summary"
+					},
+					{
+						"label": "Plan"
+					},
+					{
+						"label": "Implementation"
+					}
+				]
+			},
+			"wants": "@default/view-group/holds"
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Open section",
+			"hint": "Which section is open. Bind the view box's own selection and the two move together.",
+			"of": "options",
+			"field": "value",
+			"fallback": "first",
+			"writes": [
+				"get",
+				"update"
+			],
+			"wants": "@default/view-group/selection"
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import esbuild from "esbuild";
 import { THEMES, fontsOf } from "./host-themes.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 export const FRAMES = {
 	Main: { theme: "light", view: "curve", tile: [840, 480], window: [900, 560] },
@@ -13,7 +13,7 @@ export const FRAMES = {
 	RecordList: { theme: "dark", view: "curve", tile: [840, 480], window: [660, 700], opens: "list" },
 };
 
-export const SHEETS = ["styles.css", "widgets/@default/tokens.css"];
+export const SHEETS = ["apps/obsidian/styles.css", "registry/@default/tokens.css"];
 
 export const SETTLED_AT = Date.parse("2026-09-13T09:00:00Z");
 
@@ -64,13 +64,13 @@ const PINNED_CLOCK = `
 })();
 `;
 
-export const WIDGET_BY_DEFAULT = "widgets/@default/metric-total";
+export const WIDGET_BY_DEFAULT = "registry/@default/metric-total";
 
 const probeFor = (widget) => `
 import { createElement as h } from "react";
-import { render } from "./src/engine/render.js";
+import { render } from "./packages/core/src/engine/render.js";
 import Widget from "./${widget}/widget.tsx";
-import { collectionGateway, soloGateway } from "./src/gateway/create";
+import { collectionGateway, soloGateway } from "./packages/core/src/gateway/create";
 
 const asked = window.__FRAME__;
 const DAY = 86400000;
@@ -195,9 +195,9 @@ setTimeout(() => {
 
 const ALIASED = {
 	widgetarium: "./tools/fill-shim.js",
-	"widgetarium/kit": "./src/kit.js",
-	"widgetarium/kit/emojis": "./src/emojis.js",
-	"@default/lib": "./widgets/@default/lib.js",
+	"widgetarium/kit": "./packages/kit/src/kit.js",
+	"widgetarium/kit/emojis": "./packages/kit/src/emojis.js",
+	"@default/lib": "./registry/@default/lib.js",
 	obsidian: "./tools/obsidian-shim.js",
 };
 

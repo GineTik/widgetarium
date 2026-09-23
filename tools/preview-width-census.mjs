@@ -6,7 +6,7 @@ buildMirror();
 
 const { GRID } = await import("./.mjs-cache/paths.mjs");
 
-const ROOT = "widgets";
+const ROOT = "registry";
 const widthOf = (cells) => cells * GRID.cellPx + (cells - 1) * GRID.gapPx;
 
 function sourcesUnder(at, into = []) {

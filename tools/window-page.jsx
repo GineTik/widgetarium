@@ -1,8 +1,8 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
-import { WidgetSurface } from "../src/surface.js";
-import { normalizeBoard } from "../src/model.js";
-import { GRID, measureGrid } from "../src/paths.js";
+import { render } from "../packages/core/src/engine/render.js";
+import { WidgetSurface } from "../packages/core/src/surface.js";
+import { normalizeBoard } from "../packages/core/src/model.js";
+import { GRID, measureGrid } from "../packages/core/src/paths.js";
 
 const WIDGET = "@probe/board";
 

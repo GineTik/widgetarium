@@ -1,9 +1,9 @@
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./src/gateway/create"; export * from "./src/gateway/refs"; export * from "./src/gateway/cache"; export * from "./src/gateway/props.js"; export * from "./src/gateway/narrow"; export * from "./src/gateway/match"; export * from "./src/gateway/fields"; export * from "./src/gateway/operators"; export * from "./src/gateway/obsidian.js";`,
+		contents: `export * from "./packages/core/src/gateway/create"; export * from "./packages/core/src/gateway/refs"; export * from "./packages/core/src/gateway/cache"; export * from "./packages/core/src/gateway/props.js"; export * from "./packages/core/src/gateway/narrow"; export * from "./packages/core/src/gateway/match"; export * from "./packages/core/src/gateway/fields"; export * from "./packages/core/src/gateway/operators"; export * from "./packages/core/src/gateway/obsidian.js";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},

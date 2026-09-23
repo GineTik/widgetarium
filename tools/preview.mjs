@@ -250,7 +250,7 @@ const tiles = LAYOUT.map((entry) => {
 	return `<div class="wg-tile" style="transform:translate3d(${left}px,${top}px,0);width:${width}px;height:${height}px;font-size:${(scale * 16).toFixed(3)}px"><div class="wg-tile-body">${renderNode(h(component, props))}</div></div>`;
 }).join("\n");
 
-const css = fs.readFileSync("styles.css", "utf8");
+const css = fs.readFileSync("apps/obsidian/styles.css", "utf8");
 fs.writeFileSync(
 	OUT,
 	`<!doctype html><html><head><meta charset="utf-8"><style>

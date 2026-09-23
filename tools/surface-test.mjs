@@ -637,17 +637,17 @@ const boardWith = (main, tiles = ["a", "b", "c"]) => ({
 });
 const lintSaid = (board, roles = () => null) =>
 	lintBoard(board, roles).map((one) => `${one.path.join("/")} ${one.message}`);
-const heightSaid = (leaf) => lintSaid(boardWith([leaf])).filter((line) => line.includes("height"));
-check("a widget's heights per arrangement pass lint", heightSaid({ id: "a", height: 86, heights: { 1: 180 } }), []);
+const heightSaid = (leaf) => lintSaid(boardWith([leaf])).filter((line) => line.includes('" is gone: a widget is as tall'));
 check(
-	"a height that is not pixels, and heights that are not { n: pixels }, are named",
+	"a height on a widget or a box is named as gone, once per field, whatever it holds",
 	[
+		heightSaid({ id: "a", height: 86, heights: { 1: 180 } }).length,
 		heightSaid({ id: "a", height: "tall" }).length,
-		heightSaid({ id: "a", heights: [180] }).length,
-		heightSaid({ id: "a", heights: { 0: 180 } }).length,
-		heightSaid({ id: "a", heights: { 1: -5 } }).length,
+		lintSaid(boardWith([{ dir: "column", height: 300, of: [{ id: "a" }, { id: "b" }] }])).filter((line) =>
+			line.includes('"height" is gone'),
+		).length,
 	],
-	[1, 1, 1, 1],
+	[2, 1, 1],
 );
 check(
 	"a valid layout gives no errors",
@@ -940,14 +940,14 @@ const nestedPlates = laid(
 check("a plate inside a plate is one padding rounder-in", [nestedPlates.corner, nestedPlates.of[0].corner], [14, 6]);
 check(
 	"the padding the stylesheet paints is the padding the layout subtracts",
-	Number(/--wg-group-pad:\s*(\d+)px/.exec(readFileSync("styles.css", "utf8"))?.[1]),
+	Number(/--wg-group-pad:\s*(\d+)px/.exec(readFileSync("apps/obsidian/styles.css", "utf8"))?.[1]),
 	SURFACE_PAD_PX,
 );
 
-const BOARD_WIDGETS = readdirSync("widgets")
+const BOARD_WIDGETS = readdirSync("registry")
 	.filter((scope) => scope.startsWith("@"))
 	.flatMap((scope) =>
-		readdirSync(path.join("widgets", scope)).map((name) => path.join("widgets", scope, name, "manifest.json")),
+		readdirSync(path.join("registry", scope)).map((name) => path.join("registry", scope, name, "manifest.json")),
 	)
 	.filter((file) => existsSync(file))
 	.map((file) => ({ file, manifest: JSON.parse(readFileSync(file, "utf8")) }))
@@ -971,7 +971,7 @@ console.log("\n— painted in Chrome —\n");
 const script = await bundleOf("tools/surface-page.jsx");
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
 	--background-modifier-border: #e4e4e4; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
 	--text-on-accent: #fff; --interactive-accent: #6d4ee0; }

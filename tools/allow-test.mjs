@@ -15,6 +15,7 @@ function check(name, got, want) {
 }
 
 const tasks = defineManifest({
+	size: { preferredWidth: "full", preferredHeight: "auto" },
 	title: "Tasks",
 	description: "Tasks.",
 	props: { tasks: defineProp()({ label: "Tasks", default: [], writes: ["create", "remove"] }) },

@@ -1,0 +1,12 @@
+{
+	"name": "@widgetarium/obsidian",
+	"version": "0.1.0",
+	"private": true,
+	"license": "FSL-1.1-ALv2",
+	"dependencies": {
+		"@widgetarium/core": "0.1.0",
+		"@widgetarium/kit": "0.1.0",
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	}
+}

@@ -16,9 +16,9 @@ const widgetSourceAt = (folder) => {
 };
 const WIDGETS_THE_ORBITASK_DESIGN_COVERS = ["archived-columns", "kanban-board", "task-card", "view-tabs"];
 const ours =
-	readFileSync("styles.css", "utf8") +
-	readFileSync("widgets/@default/tokens.css", "utf8") +
-	WIDGETS_THE_ORBITASK_DESIGN_COVERS.map((n) => widgetSourceAt(`widgets/@default/${n}`)).join("\n");
+	readFileSync("apps/obsidian/styles.css", "utf8") +
+	readFileSync("registry/@default/tokens.css", "utf8") +
+	WIDGETS_THE_ORBITASK_DESIGN_COVERS.map((n) => widgetSourceAt(`registry/@default/${n}`)).join("\n");
 
 // PULL ONE DECLARATION OUT OF THE BASE RULE. Taking the first rule whose selector merely ENDS
 // with the class read a variant instead: adding `.wg-kit-seg.is-s .wg-kit-seg-thumb` above the

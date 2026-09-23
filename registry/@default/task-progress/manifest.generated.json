@@ -1,0 +1,110 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Task progress",
+	"description": "A task and its steps, each with a status: folded to one line saying what is happening now, opened into the whole list.",
+	"keywords": [
+		"progress",
+		"status",
+		"steps",
+		"stages",
+		"task",
+		"build",
+		"loading",
+		"agent",
+		"checklist",
+		"running"
+	],
+	"role": "indicator",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"props": {
+		"title": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title",
+			"hint": "The one line naming the task, the way a person says it: Building Habit streak.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "Building a widget"
+			}
+		},
+		"steps": {
+			"kind": "collection",
+			"label": "Steps",
+			"hint": "Every step in order. A status is pending, active, done or failed; the hint is the one line under an active step.",
+			"writes": [
+				"list",
+				"get"
+			],
+			"default": {
+				"rows": [
+					{
+						"label": "Write the widget",
+						"status": "done"
+					},
+					{
+						"label": "Check it",
+						"status": "active",
+						"hint": "widgets.mjs check"
+					},
+					{
+						"label": "Place it on the board",
+						"status": "pending"
+					}
+				]
+			}
+		},
+		"open": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Open",
+			"hint": "Whether the steps are shown. Pressing the line flips it.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"startedAt": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Started at",
+			"hint": "When the task started, in milliseconds since 1970. Zero draws no clock.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 0
+			}
+		},
+		"endedAt": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Ended at",
+			"hint": "When the task ended, in milliseconds since 1970. Zero while it runs, so the clock keeps counting.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

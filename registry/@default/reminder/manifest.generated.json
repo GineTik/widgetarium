@@ -1,0 +1,41 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Reminder",
+	"description": "A line of text with a tick beside it, for something that still has to be done.",
+	"keywords": [
+		"reminder",
+		"todo",
+		"check",
+		"tick",
+		"task",
+		"follow up",
+		"remember",
+		"checkbox",
+		"deadline",
+		"nudge",
+		"prompt"
+	],
+	"inline": true,
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 2
+		},
+		"content": "call Olena before Friday",
+		"shot": {
+			"of": "486558682"
+		}
+	},
+	"props": {},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

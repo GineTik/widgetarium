@@ -1,0 +1,182 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "List",
+	"description": "Every row of a collection drawn by the widget in its slot, a page at a time, with a press that picks.",
+	"keywords": [
+		"list",
+		"rows",
+		"collection",
+		"items",
+		"table",
+		"grid",
+		"feed",
+		"browse",
+		"pick",
+		"select",
+		"filter",
+		"paginate",
+		"catalogue",
+		"directory"
+	],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 160,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 5,
+			"h": 4
+		},
+		"props": {
+			"rows": {
+				"rows": [
+					{
+						"path": "preview/onboarding.md",
+						"title": "Design the onboarding flow",
+						"tags": [
+							"design"
+						],
+						"priority": "P1",
+						"progress": 60,
+						"due": "12 Aug"
+					},
+					{
+						"path": "preview/release-notes.md",
+						"title": "Record the release notes",
+						"tags": [
+							"launch"
+						],
+						"priority": "P3",
+						"progress": 80,
+						"due": "4 Sep"
+					},
+					{
+						"path": "preview/paint-gate.md",
+						"title": "Run the paint gate on every widget",
+						"tags": [
+							"build"
+						],
+						"priority": "P2",
+						"progress": 20,
+						"due": "20 Sep"
+					}
+				]
+			},
+			"handedAs": {
+				"value": "task"
+			}
+		}
+	},
+	"slots": {
+		"row": {
+			"of": "widget",
+			"default": "@default/task-card",
+			"surface": "group"
+		}
+	},
+	"props": {
+		"rows": {
+			"kind": "collection",
+			"label": "Rows",
+			"hint": "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
+			"writes": [
+				"list",
+				"get",
+				"update"
+			],
+			"default": {
+				"rows": []
+			}
+		},
+		"handedAs": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Handed as",
+			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes commit.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "task"
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected row",
+			"hint": "Which row is picked. A detail tile reading the same collection follows it.",
+			"of": "rows",
+			"writes": [
+				"get",
+				"update"
+			]
+		},
+		"filter": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Filter",
+			"hint": "Only rows whose filtered field holds these words are listed. Bind a search field and the two move together.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": ""
+			},
+			"wants": "@default/search-input/value"
+		},
+		"filterField": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Filtered field",
+			"hint": "The field the filter is matched in.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": "title"
+			}
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Rows per page",
+			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 20
+			}
+		},
+		"heading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "A line above the rows. Left empty, none is drawn.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": ""
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": [
+		"@default/task-card"
+	]
+}

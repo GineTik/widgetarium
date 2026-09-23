@@ -29,7 +29,7 @@ const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
 const kit = await import("./.mjs-cache/kit.mjs");
 const { soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 
-const WIDGET = "widgets/@default/search-input/widget.tsx";
+const WIDGET = "registry/@default/search-input/widget.tsx";
 const modules = { widgetarium: ENGINE_SCOPE.api, "widgetarium/kit": kit, react };
 const code = transform(fs.readFileSync(WIDGET, "utf8"), {
 	transforms: ["typescript", "jsx", "imports"],

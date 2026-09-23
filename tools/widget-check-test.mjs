@@ -155,6 +155,13 @@ const heading = { ...clean, source: `${clean.source}\nreturn <h2>Metadata</h2>;`
 check("a board heading drawn inside a widget is a finding", rulesIn(checkWidget(heading)), ["heading"]);
 check("the same heading in a text widget is not", rulesIn(checkWidget({ ...heading, card: { role: "text" } })), []);
 check("a widget with no card yet is not judged for a heading", rulesIn(checkWidget({ ...heading, card: null })), []);
+const kitHeading = { ...clean, source: `${clean.source}\nreturn <Heading level={1}>Metadata</Heading>;` };
+check("so is the kit's Heading asked for a board level", rulesIn(checkWidget(kitHeading)), ["heading"]);
+check(
+	"a kit Heading at a card's level is not",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\nreturn <Heading level={3} size={4}>Due</Heading>;` })),
+	[],
+);
 check(
 	"a card's own h3 is not a board heading",
 	rulesIn(checkWidget({ ...clean, source: `${clean.source}\nreturn <h3>{r.title}</h3>;` })),

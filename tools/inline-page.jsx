@@ -1,9 +1,9 @@
 import { createElement as h } from "react";
-import { render } from "../src/engine/render.js";
-import { InlineWidget, HOST_CLASS } from "../src/inline-render.js";
-import { manifestOf } from "../src/engine/catalogue-index.js";
-import CodeBlock from "../widgets/@default/code-block/widget.tsx";
-import record from "../widgets/@default/code-block/manifest.generated.json";
+import { render } from "../packages/core/src/engine/render.js";
+import { InlineWidget, HOST_CLASS } from "../apps/obsidian/src/inline-render.js";
+import { manifestOf } from "../packages/core/src/engine/catalogue-index.js";
+import CodeBlock from "../registry/@default/code-block/widget.tsx";
+import record from "../registry/@default/code-block/manifest.generated.json";
 
 const manifest = manifestOf(record, CodeBlock);
 const FILE = manifest.preview.files["main.py"];

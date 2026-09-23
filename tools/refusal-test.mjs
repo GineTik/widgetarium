@@ -19,8 +19,8 @@ function saidBy(file) {
 		CONFIG_AT,
 		JSON.stringify({
 			extends: "../../../tsconfig.widgets.json",
-			compilerOptions: { paths: { widgetarium: ["../../../widgets/types/widgetarium.d.ts"] } },
-			include: ["../../../widgets/types/**/*.d.ts", `./${file}`],
+			compilerOptions: { paths: { widgetarium: ["../../../packages/sdk/types/widgetarium.d.ts"] } },
+			include: ["../../../packages/sdk/types/**/*.d.ts", `./${file}`],
 		}),
 	);
 	const run = spawnSync("npx", ["--no-install", "tsc", "-p", CONFIG_AT], { encoding: "utf8" });

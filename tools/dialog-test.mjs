@@ -275,7 +275,7 @@ const typeBody = async (text) => {
 	editor().dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 	await settle();
 };
-// CONTEXT: preact/compat renames onBlur to onfocusout for the whole app, src/surface.js:2
+// CONTEXT: preact/compat renames onBlur to onfocusout for the whole app, packages/core/src/surface.js:2
 const leaveBody = async () => {
 	editor().dispatchEvent(new dom.window.FocusEvent("focusout", { bubbles: true }));
 	await settle(80);
@@ -503,7 +503,7 @@ const field = rowNamed("Client").querySelector("input.otd-text");
 field.value = "Internal";
 field.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 await settle();
-// CONTEXT: preact/compat renames onBlur to onfocusout for the whole app, src/surface.js:2
+// CONTEXT: preact/compat renames onBlur to onfocusout for the whole app, packages/core/src/surface.js:2
 field.dispatchEvent(new dom.window.FocusEvent("focusout", { bubbles: true }));
 await settle();
 check("leaving the field writes it", wroteLast().props.Client, "Internal");

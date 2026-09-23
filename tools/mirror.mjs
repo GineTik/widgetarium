@@ -7,6 +7,8 @@ import { transform } from "sucrase";
 import { widgetTypeFiles } from "./widget-types.mjs";
 
 const PUBLISHED_WIDGETS = path.join("tools", ".widgets-published");
+const SOURCE_ROOTS = ["packages/kit/src", "packages/core/src", "apps/obsidian/src"];
+const KIT_EXPORTS = JSON.parse(fs.readFileSync(path.join("packages", "kit", "package.json"), "utf8")).exports;
 let published = null;
 
 function publishInto(from, to) {
@@ -23,7 +25,8 @@ export function buildWidgets() {
 
 	const to = path.join(process.cwd(), PUBLISHED_WIDGETS);
 	fs.rmSync(to, { recursive: true, force: true });
-	publishInto("widgets", to);
+	publishInto("registry", to);
+	publishInto(path.join("packages", "sdk", "types"), path.join(to, "types"));
 	published = to;
 	return to;
 }
@@ -32,7 +35,7 @@ export function buildMirror({ widgetsCli = null } = {}) {
 	buildWidgets();
 	const cache = path.join(process.cwd(), "tools", ".mjs-cache");
 	fs.rmSync(cache, { recursive: true, force: true });
-	copyTree("src", cache);
+	for (const root of SOURCE_ROOTS) copyTree(root, cache);
 	// The adapter imports "obsidian", which exists only inside the app. Without a stand-in it
 	// could not be imported at all, so every test reimplemented it — and then proved a
 	// reimplementation instead of the code that ships.
@@ -40,7 +43,7 @@ export function buildMirror({ widgetsCli = null } = {}) {
 	fs.writeFileSync(path.join(cache, "surface-source.mjs"), "export const REACT_SURFACE_SOURCE = null;\n");
 	fs.writeFileSync(
 		path.join(cache, "widgets-cli-source.mjs"),
-		`export default ${JSON.stringify(widgetsCli ?? fs.readFileSync(path.join("src", "ai", "widgets-cli.mjs"), "utf8"))};\n`,
+		`export default ${JSON.stringify(widgetsCli ?? fs.readFileSync(path.join("apps", "obsidian", "src", "ai", "widgets-cli.mjs"), "utf8"))};\n`,
 	);
 	fs.writeFileSync(
 		path.join(cache, "widget-types-source.mjs"),
@@ -49,7 +52,7 @@ export function buildMirror({ widgetsCli = null } = {}) {
 	return "./.mjs-cache";
 }
 
-const OBSIDIAN_STUB = `import { parse, stringify } from "yaml";
+export const OBSIDIAN_STUB = `import { parse, stringify } from "yaml";
 export class TAbstractFile {}
 export class TFile extends TAbstractFile {}
 export class TFolder extends TAbstractFile {}
@@ -110,6 +113,11 @@ function withTextImports(code, source) {
 	});
 }
 
+function mirroredWorkspaceImport(name, subpath, cacheRoot) {
+	const file = name === "kit" ? path.basename(KIT_EXPORTS[`.${subpath}`]) : subpath.replace(/^\//, "");
+	return `from "${cacheRoot}${file.replace(/\.(js|ts|mjs)$/, "")}.mjs"`;
+}
+
 function mirrored(source, isTs, toStub) {
 	const read = fs.readFileSync(source, "utf8");
 	return (
@@ -119,6 +127,9 @@ function mirrored(source, isTs, toStub) {
 			.replace(
 				/from "widgetarium:widget-types"/g,
 				`from "${toStub.replace("obsidian.mjs", "widget-types-source.mjs")}"`,
+			)
+			.replace(/from "@widgetarium\/(kit|core)([^"]*)"/g, (whole, name, subpath) =>
+				mirroredWorkspaceImport(name, subpath, toStub.replace("obsidian.mjs", "")),
 			)
 			.replace(/from "(\.\.?\/[\w./-]+)\.js"/g, 'from "$1.mjs"')
 			// CONTEXT: TS sources import without an extension; node needs the mirror's .mjs spelled out

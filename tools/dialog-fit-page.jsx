@@ -1,7 +1,7 @@
-import { render } from "../src/engine/render.js";
-import { arrayGateway, soloGateway } from "../src/gateway/create";
-import { createViewCells } from "../src/gateway/refs.js";
-import KanbanBoard from "../widgets/@default/kanban-board/widget.tsx";
+import { render } from "../packages/core/src/engine/render.js";
+import { arrayGateway, soloGateway } from "../packages/core/src/gateway/create";
+import { createViewCells } from "../packages/core/src/gateway/refs.js";
+import KanbanBoard from "../registry/@default/kanban-board/widget.tsx";
 
 const task = {
 	path: "Orbitask/Tasks/replace-the-three-task-widgets.md",

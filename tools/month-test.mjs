@@ -45,7 +45,7 @@ const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/cr
 const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
 const { needsOf } = await import("./.mjs-cache/gateway/props.mjs");
 
-const WIDGET = "widgets/@default/month/widget.tsx";
+const WIDGET = "registry/@default/month/widget.tsx";
 const { propsOfEveryShippedWidget } = await import("./widget-props.mjs");
 const DECLARED = (await propsOfEveryShippedWidget())["@default/month"];
 
@@ -77,7 +77,7 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@default/lib", run("widgets/@default/lib.js"));
+libs.set("@default/lib", run("registry/@default/lib.js"));
 const { isoOf } = libs.get("@default/lib");
 const Month = run(WIDGET).default;
 

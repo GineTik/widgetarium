@@ -1,4 +1,4 @@
-// The one thing src/host.js cannot do: state shared BETWEEN widgets. The vault adapter,
+// The one thing apps/obsidian/src/host.js cannot do: state shared BETWEEN widgets. The vault adapter,
 // its filters and its live subscription already exist there — this covers only the gap.
 import { buildMirror } from "./mirror.mjs";
 

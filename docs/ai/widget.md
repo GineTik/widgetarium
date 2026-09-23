@@ -32,7 +32,7 @@ export const manifest = defineManifest({
 	description: "The entries still to do, ticked off where they stand.",
 	keywords: ["checklist", "todo", "tasks"],
 	role: "collection",
-	size: { collapseBelowPx: 200, stackBelowPx: 320 },
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
 	props: {
 		entries: defineProp<Entry[]>()({
 			hint: "One note per entry.",
@@ -155,6 +155,48 @@ Never write a gap as a number. The engine sets three variables on every cell:
 
 `SlotList` from `widgetarium/kit` draws what a slot holds and picks the right one itself.
 
+## A picture: `Emblem`
+
+Every picture that stands for something — a person, a company, a project, a place — is an `Emblem`:
+one component whether it ends up reading as an avatar, a logo or a mark.
+
+```tsx
+<Emblem label={person.name}>
+	<Emblem.Image src={person.photo} />
+	<Emblem.Fallback seed={person.name} />
+</Emblem>
+
+<Emblem size="l" shape="rounded" label={project.title}>
+	<Emblem.DiceBear style="shapes" seed={project.ref} options={{ backgroundColor: ["b6e3f4"] }} />
+	<Emblem.Fallback seed={project.title} />
+</Emblem>
+```
+
+`size` is `s` (24), `m` (40), `l` (64), `xl` (96) or a number; `shape` is `circle`, `rounded` or
+`square`; `label` is what a screen reader reads. `Emblem.Fallback` stands until the picture has
+loaded and wherever it failed; with no children it draws the `PlaceholderMark` below.
+
+**Where the picture comes from, in this order:**
+
+1. What the person gave — a file they named, an address in a note, a picture already in the vault.
+   Only when they ask for one on their machine do you read it from there.
+2. A field of the record that already holds a picture.
+3. Otherwise `Emblem.DiceBear`, chosen for what the thing is. `style` is a DiceBear style name,
+   `seed` a stable value of the record — its `ref`, never a value that changes — and `options` is the
+   style's own options object as DiceBear documents it. Pick by kind and leave the exact style to the
+   design:
+   - a person: a face style — `notionists`, `lorelei`, `open-peeps`, `personas`, `micah`, `adventurer`,
+     `pixel-art` and the rest of the faces;
+   - a company, a team, a brand: `initials`, `icons`, or a geometric style;
+   - a project, a topic, anything abstract: a minimal style — `shapes`, `rings`, `glass`, `blobs`,
+     `marbles`, `loops`, `identicon`, `waves`;
+   - a playful thing: `thumbs`, `fun-emoji`, `initial-face`.
+
+**Only styles under an allowed licence draw** — CC0 1.0, CC BY 4.0 and MIT. The four styles licensed
+"free for personal and commercial use" (`avataaars`, `bottts` and their neutral versions) are
+refused: they draw a mark saying the picture is unavailable for licensing reasons, and the console
+says which. Do not reach for them.
+
 ## A missing picture
 
 `<PlaceholderMark seed={album.title}/>` from `widgetarium/kit` — never an empty box, never a broken
@@ -163,6 +205,59 @@ wears the same mark forever and on every machine. It fills what it stands in and
 corner; `size={24}` makes it an avatar. `shape` and `tone` name one outright when the thing already
 has a colour. It is `aria-hidden` — the label beside it is what a screen reader reads. No seed is the
 empty seed: one mark, shared by everything nameless.
+
+## A badge, a heading, a "show more", a progress bar
+
+Take these from `widgetarium/kit` rather than drawing them:
+
+```tsx
+<Badge color="purple" size="s">implementing</Badge>
+<Badge tone="error" variant="solid">3</Badge>
+<Heading level={3}>Due this week</Heading>
+<Heading level={3} size={5}>Smaller, same outline</Heading>
+<ShowMore remaining={total - rows.length} isLoading={isLoading} onMore={loadMore} />
+<ProgressBar value={percent} label="Loaded" />
+<ProgressBar value={percent} isControlled onChange={seek} label="Seek" />
+<StatusProgress shape="circle" value={percent} label="Backup" />
+<ProgressBar shape="circle" size={72} value={percent} displayValue={({ value }) => `${value}%`} />
+```
+
+A badge is drawn from one ink: `color` names one of `red orange yellow green cyan blue purple pink`
+(Obsidian's own palette through `--wg-kit-<name>`, which the theme repaints for light and dark), any
+colour, or a pair `{ light, dark }` when one colour cannot serve both themes; `tone` names a role instead
+(`neutral accent success warning error info note standout highlight`). The wash behind it and the
+text on it are both mixed from that ink. `variant` is `soft` (the default), `solid`, `outline`, `dot`
+or `text`; `size` is `m` or `s`.
+
+`Heading` draws `h1`–`h6`: `level` is the outline, `size` is the look and defaults to the level. In a
+widget it is an `h3` unless asked; `level` or `size` 1 and 2 are a region's title, which `check`
+refuses outside a `text` or `layout` widget. Every size comes from `--wg-kit-h<n>-*`, so a design
+system restyles all of them at once.
+
+`ShowMore` is the full-width button under a list that reads a page at a time, draws nothing when
+`remaining` is not above `0`, and names the count when `remaining` is given.
+
+`Button` and `IconButton` own their states: `isLoading` draws the kit's spinner, disables the press
+and says `aria-busy`, so a widget never passes a loader of its own; `isDone` swaps the mark for a
+tick and washes the button in the success tone, and it stays pressable; `disabled` is the plain
+disabled button. `Spinner` is that same spinner on its own, sized in pixels.
+`ProgressBar` is Material 3's wavy indicator, as a line or as a ring: `shape` is `line` (the default)
+or `circle`, and a circle takes `size` in pixels. `displayValue` is what stands over the line or
+inside the ring: nothing by default, anything you pass — a number, an `Icon`, an `Emoji`, a component
+of your own — or a function handed `{ value, state }` that answers with what to draw.
+On a line it stands at the right end and the line gives up exactly the room it takes, so the two
+together are the full width; the room grows and shrinks with a transition, so a value that comes and
+goes never makes anything jump. `tone` paints
+it, `isWavy={false}` draws it straight, and `hasStopMark` adds Material's dot at the far end.
+`isControlled` is what hands a line to the person: only then does the upright cursor appear, only
+then can it be dragged or moved with the arrow keys, and only then does it answer as a slider rather
+than a progress bar. `onChange` is how it tells you where they left it.
+
+`StatusProgress` is that same bar wearing the three states a person reads at a glance: a dashed track
+at `0`, the accent wave while it runs, and the success tone with a tick at `100`, which grows in as
+it arrives. It takes every prop `ProgressBar` does, plus `tones` to repaint any state
+(`{ done: "info" }`) and its own `displayValue` where the tick is not what you want. Reach for it whenever a bar means "not started / going /
+finished"; the plain `ProgressBar` knows nothing of states.
 
 ## A plate inside a widget
 
@@ -192,14 +287,21 @@ the same way — the default is drawn and the console names what it took instead
 
 - `title`, `description`, `keywords` — what the catalogue searches. `description` is the one question
   the widget answers.
-- `role` — required. Without one the widget is never given a surface.
+- `role` — required, and one. Without one the widget is never given a surface; a widget drawing two
+  roles (a figure and its rows) is two widgets — `brief.md` law 14.
 - `slots` — the holes other widgets fill:
   `card: { of: "widget", default: "@default/task-card", surface: "group", gives: { ... } }`.
 - `mounts` — named lists of widgets the person places, each with its own settings. A mount's settings
   are reached from the board itself while it is being edited, not only from the holder's window.
-- `size: { collapseBelowPx, stackBelowPx, tallestPx, shortestPx }` — the responsive ladder, in
-  pixels. Below `collapseBelowPx` the widget must be legible with less; below `stackBelowPx` its row
-  becomes a column. Use `useNarrowed`, never a media query.
+- `size` — required. **`preferredWidth` and `preferredHeight` are the size the widget prefers, never a
+  size it is promised.** The widget is created at it and the engine leans toward it: the width is a
+  ceiling the cell narrows under when the region is narrower, `"full"` takes the whole cell; the
+  height is where a short widget is drawn to, and a widget with more to draw grows past it, `"auto"`
+  is as tall as it draws. `keepsRatio: true` holds height to width as the two numbers say. `at` steps
+  by the width of the **region** the widget stands in, never the screen, and switches at once, the way
+  a `max-width` query does: `at: [{ belowPx: 520, preferredWidth: "full" }]`. A widget that needs a
+  hard size bounds its own container in its sheet. `collapseBelowPx` and `stackBelowPx` stay the
+  floors a row stacks and a widget collapses at. Use `useNarrowed`, never a media query.
 - `preview` — sample props the catalogue card draws with.
 - `inline: true` — a widget that stands in text; it is handed `content` and `reader`.
 - `migrate` — `migration({ from: { ...old props }, run })` for a change tiles cannot follow alone.

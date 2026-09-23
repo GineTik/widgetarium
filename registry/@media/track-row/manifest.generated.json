@@ -1,0 +1,101 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Track row",
+	"description": "One track as a row: its place, its title over its artist, its album, when it arrived and how long it runs.",
+	"keywords": [
+		"track",
+		"row",
+		"song",
+		"music",
+		"audio",
+		"library",
+		"playlist",
+		"album",
+		"artist",
+		"duration",
+		"favourite"
+	],
+	"role": "detail",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 120,
+		"stackBelowPx": 600
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 1
+		},
+		"props": {
+			"track": {
+				"value": {
+					"title": "Weightless",
+					"artist": "Marconi Union",
+					"album": "Ambient Transmissions",
+					"addedAt": "2026-02-11",
+					"duration": 488,
+					"favourite": true
+				}
+			},
+			"position": {
+				"value": 3
+			}
+		}
+	},
+	"props": {
+		"track": {
+			"kind": "value",
+			"control": "json",
+			"label": "Track",
+			"hint": "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"writes": [
+				"get",
+				"update"
+			],
+			"default": {
+				"value": {
+					"title": "Weightless",
+					"artist": "Marconi Union",
+					"album": "Ambient Transmissions",
+					"addedAt": "2026-02-11",
+					"duration": 488,
+					"favourite": false
+				}
+			}
+		},
+		"position": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Place in the list",
+			"hint": "The number drawn where the equaliser stands while the track is playing.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 0
+			}
+		},
+		"isPlaying": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Playing",
+			"hint": "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": false
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

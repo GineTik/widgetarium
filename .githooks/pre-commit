@@ -1,5 +1,5 @@
 #!/bin/sh
-node tools/lint-language.mjs src widgets styles.css manifest.json tools install.mjs build.mjs || {
+node tools/lint-language.mjs apps packages registry tools || {
 	echo ""
 	echo "commit blocked: English only. Fix the lines above."
 	exit 1
@@ -11,7 +11,7 @@ staged=$(git diff --cached --name-only --diff-filter=ACMR)
 echo "$staged" | xargs npx prettier --ignore-unknown --write >/dev/null 2>&1
 echo "$staged" | xargs git add
 
-sources=$(echo "$staged" | grep -E '^(src|widgets)/.*\.(js|jsx|ts|tsx|mjs)$')
+sources=$(echo "$staged" | grep -E '^(apps/obsidian/src|packages/[a-z]+/src|registry)/.*\.(js|jsx|ts|tsx|mjs)$')
 [ -z "$sources" ] && exit 0
 
 echo "$sources" | xargs node tools/lint-code.mjs || {

@@ -39,7 +39,7 @@ const emojis = await import("./.mjs-cache/emojis.mjs");
 const { EMOJI_TABLE } = await import("./.mjs-cache/emoji-table.mjs");
 const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
 
-const WIDGET = "widgets/@default/tier-list/widget.tsx";
+const WIDGET = "registry/@default/tier-list/widget.tsx";
 const libs = new Map();
 
 function compiled(file, source) {
@@ -75,7 +75,7 @@ function run(file) {
 	return shell.exports;
 }
 
-libs.set("@default/lib", run("widgets/@default/lib.js"));
+libs.set("@default/lib", run("registry/@default/lib.js"));
 const lib = libs.get("@default/lib");
 const TierList = run(WIDGET).default;
 

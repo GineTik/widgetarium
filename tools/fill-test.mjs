@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { buildMirror } from "./mirror.mjs";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 buildMirror();
 const { GRID } = await import("./.mjs-cache/paths.mjs");
@@ -46,13 +46,13 @@ const bundle = await esbuild.build({
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	inject: ["tools/fill-inject.js"],
-	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./src/kit.js" },
+	alias: { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./packages/kit/src/kit.js" },
 	logLevel: "warning",
 });
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
+<style>${readFileSync("registry/@default/tokens.css", "utf8")}</style>
 <style>body { margin: 0; font-family: -apple-system, "Segoe UI", sans-serif; }</style>
 </head><body><div class="wg-root"></div><script id="wg-measure" type="application/json"></script>
 <script>${bundle.outputFiles[0].text}</script></body></html>`;

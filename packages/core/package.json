@@ -1,0 +1,18 @@
+{
+	"name": "@widgetarium/core",
+	"version": "0.1.0",
+	"private": true,
+	"license": "FSL-1.1-ALv2",
+	"exports": {
+		"./*": "./src/*"
+	},
+	"dependencies": {
+		"@widgetarium/kit": "0.1.0",
+		"sucrase": "^3.35.0",
+		"yaml": "^2.9.0"
+	},
+	"peerDependencies": {
+		"react": "^19.2.8",
+		"react-dom": "^19.2.8"
+	}
+}

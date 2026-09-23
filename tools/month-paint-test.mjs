@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { TEXT_LOADERS } from "../build.mjs";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const ROOT = process.cwd();
@@ -17,14 +17,14 @@ const tile = (cells) => cells * CELL_PX + (cells - 1) * GAP_PX;
 const WIDTHS = [4, 5, 6, 8, 10, 13];
 const HEIGHTS = [4, 5, 6, 8, 11];
 
-const FOLDER = "widgets/@default/month";
+const FOLDER = "registry/@default/month";
 
 const PAGE = `
 import { createElement as h } from "react";
-import { render } from "./src/engine/render.js";
-import { previewProps } from "./src/preview.js";
-import { rootedWidget } from "./src/widget-root.js";
-import { manifestOf } from "./src/engine/catalogue-index.js";
+import { render } from "./packages/core/src/engine/render.js";
+import { previewProps } from "./packages/core/src/preview.js";
+import { rootedWidget } from "./packages/core/src/widget-root.js";
+import { manifestOf } from "./packages/core/src/engine/catalogue-index.js";
 import Widget from "./${FOLDER}/widget.tsx";
 
 const manifest = manifestOf(${readFileSync(path.join(FOLDER, "manifest.json"), "utf8")}, Widget);
@@ -94,11 +94,11 @@ window.__measure = () => [...document.querySelectorAll(".wg-root")].map(clearanc
 
 const alias = {
 	widgetarium: "./tools/fill-shim.js",
-	"widgetarium/kit": "./src/kit.js",
+	"widgetarium/kit": "./packages/kit/src/kit.js",
 	obsidian: "./tools/obsidian-shim.js",
 };
-for (const scope of fs.readdirSync("widgets").filter((name) => name.startsWith("@"))) {
-	const lib = path.join("widgets", scope, "lib.js");
+for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {
+	const lib = path.join("registry", scope, "lib.js");
 	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;
 }
 
@@ -136,8 +136,8 @@ const boxes = tiles
 	.join("");
 
 const page = `<!doctype html><html><head><meta charset="utf-8">
-<style>${readFileSync("styles.css", "utf8")}</style>
-<style>${readFileSync("widgets/@default/tokens.css", "utf8")}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
+<style>${readFileSync("registry/@default/tokens.css", "utf8")}</style>
 <style>${HOST_RULES}</style>
 <style>body { margin: 0; padding: 8px; ${THEME}
 	--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif;

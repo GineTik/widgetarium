@@ -1,0 +1,196 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Project grid",
+	"description": "Every project as an equal card across the row, and pressing one picks it for the rest of the screen.",
+	"keywords": [
+		"projects",
+		"grid",
+		"cards",
+		"portfolio",
+		"repositories",
+		"repos",
+		"overview",
+		"tiles",
+		"collection",
+		"picker",
+		"work"
+	],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 200,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 4
+		},
+		"props": {
+			"projects": {
+				"rows": [
+					{
+						"path": "Projects/widgetarium.md",
+						"name": "Widgetarium",
+						"mark": "🧩",
+						"repository": "~/Projects/Obsidian Plugins/widgetarium",
+						"open": 12,
+						"doing": 3,
+						"done": 48,
+						"touched": "2026-09-18"
+					},
+					{
+						"path": "Projects/paperclip.md",
+						"name": "Paperclip",
+						"mark": "📎",
+						"repository": "~/Projects/paperclip",
+						"open": 4,
+						"doing": 1,
+						"done": 27,
+						"touched": "2026-09-11"
+					},
+					{
+						"path": "Projects/field-notes.md",
+						"name": "Field notes",
+						"mark": "🗒️",
+						"touched": "2026-08-30"
+					},
+					{
+						"path": "Projects/harbour.md",
+						"name": "Harbour",
+						"repository": "~/Projects/harbour",
+						"open": 0,
+						"doing": 2,
+						"done": 9
+					}
+				]
+			}
+		}
+	},
+	"slots": {
+		"card": {
+			"of": "widget",
+			"default": "@flow/project-card",
+			"surface": "group",
+			"gives": {
+				"project": [
+					"mark",
+					"name",
+					"repository",
+					"open",
+					"doing",
+					"done",
+					"touched"
+				]
+			}
+		}
+	},
+	"props": {
+		"projects": {
+			"kind": "collection",
+			"label": "Projects",
+			"hint": "One note per project. Bind the folder they live in.",
+			"writes": [
+				"list",
+				"get"
+			],
+			"describes": {
+				"mark": {
+					"label": "Mark",
+					"type": "line",
+					"aka": [
+						"emoji",
+						"icon",
+						"symbol"
+					]
+				},
+				"repository": {
+					"label": "Repository",
+					"type": "line",
+					"aka": [
+						"repo",
+						"git",
+						"source",
+						"folder"
+					]
+				},
+				"open": {
+					"label": "Open",
+					"type": "number",
+					"aka": [
+						"todo",
+						"backlog",
+						"waiting"
+					]
+				},
+				"doing": {
+					"label": "Doing",
+					"type": "number",
+					"aka": [
+						"active",
+						"wip",
+						"inProgress"
+					]
+				},
+				"done": {
+					"label": "Done",
+					"type": "number",
+					"aka": [
+						"closed",
+						"finished",
+						"complete"
+					]
+				},
+				"touched": {
+					"label": "Touched",
+					"type": "date",
+					"aka": [
+						"updated",
+						"modified",
+						"lastTouched",
+						"changed"
+					]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Selected project",
+			"hint": "The project the pressed card names. Bind a task list or a docs tree to it and they follow the press.",
+			"of": "projects",
+			"field": "name",
+			"fallback": "first",
+			"writes": [
+				"get",
+				"update"
+			]
+		},
+		"pageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Projects per load",
+			"hint": "How many cards are drawn before the rest are asked for.",
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": 12
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": [
+		"@flow/project-card"
+	]
+}

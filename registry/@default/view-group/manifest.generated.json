@@ -1,0 +1,90 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "View group",
+	"description": "Holds several widgets in one place and draws only the one the view tabs select.",
+	"keywords": [
+		"view",
+		"views",
+		"group",
+		"switch",
+		"swap",
+		"container",
+		"holder",
+		"stack",
+		"panes",
+		"tabs",
+		"layout",
+		"shell"
+	],
+	"role": "detail",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"collapseBelowPx": 240,
+		"stackBelowPx": 320
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 3
+		},
+		"shot": {
+			"of": "653330514"
+		}
+	},
+	"mounts": {
+		"holds": {
+			"was": "views",
+			"label": "Views",
+			"hint": "Each view is a widget you name. Press a name to rename it.",
+			"default": [
+				{
+					"name": "Kanban",
+					"widget": "@default/kanban-board"
+				},
+				{
+					"name": "Archived columns",
+					"widget": "@default/archived-columns"
+				}
+			]
+		}
+	},
+	"props": {
+		"selection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Shown view",
+			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
+			"of": "holds",
+			"field": "value",
+			"fallback": "first",
+			"writes": [
+				"get",
+				"update"
+			]
+		},
+		"isTabsShown": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Show the tab row",
+			"design": true,
+			"writes": [
+				"get"
+			],
+			"default": {
+				"value": true
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx"
+	],
+	"dependencies": {},
+	"widgetDependencies": [
+		"@default/archived-columns",
+		"@default/kanban-board"
+	]
+}

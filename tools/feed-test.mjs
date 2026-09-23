@@ -71,7 +71,7 @@ function run(file) {
 	return shell.exports;
 }
 
-const Feed = run("widgets/@default/feed/widget.tsx").default;
+const Feed = run("registry/@default/feed/widget.tsx").default;
 
 let failed = 0;
 function check(what, got, wanted) {
@@ -198,7 +198,7 @@ console.log("\n— the catalogue card —");
 const manifests = await manifestOfEveryShippedWidget();
 const markdownPreview = {
 	manifest: manifests["@default/obsidian-markdown-preview"],
-	component: run("widgets/@default/obsidian-markdown-preview/widget.tsx").default,
+	component: run("registry/@default/obsidian-markdown-preview/widget.tsx").default,
 };
 const cardRegistry = { get: (id) => (id === "@default/obsidian-markdown-preview" ? markdownPreview : null) };
 const failures = [];

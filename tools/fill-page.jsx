@@ -1,11 +1,11 @@
-import { render } from "../src/engine/render.js";
-import { rootedWidget } from "../src/widget-root.js";
-import { arrayGateway, soloGateway } from "../src/gateway/create";
-import { createGatewayRefs, createViewCells, selectionGateway } from "../src/gateway/refs.js";
-import ViewTabs from "../widgets/@default/view-tabs/widget.tsx";
-import FilterPanel from "../widgets/@default/filter-panel/widget.tsx";
-import { spanToPixels } from "../src/paths.js";
-import { GRID } from "../src/paths.js";
+import { render } from "../packages/core/src/engine/render.js";
+import { rootedWidget } from "../packages/core/src/widget-root.js";
+import { arrayGateway, soloGateway } from "../packages/core/src/gateway/create";
+import { createGatewayRefs, createViewCells, selectionGateway } from "../packages/core/src/gateway/refs.js";
+import ViewTabs from "../registry/@default/view-tabs/widget.tsx";
+import FilterPanel from "../registry/@default/filter-panel/widget.tsx";
+import { spanToPixels } from "../packages/core/src/paths.js";
+import { GRID } from "../packages/core/src/paths.js";
 
 const emptyTasks = arrayGateway([], {}, "fill-tasks");
 const refs = createGatewayRefs();

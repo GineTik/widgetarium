@@ -73,7 +73,7 @@ const boxes = swapBoxes(templateBoard(template).layout).map(({ box }) => box);
 const standing = new Map([...boxes.map((box) => [VIEW_GROUP, box.id]), ...tiles.map((tile) => [tile.widget, tile.id])]);
 const standsAt = (ref) =>
 	[...tiles.map((tile) => tile.id), ...boxes.map((box) => box.id)].some((id) => ref.startsWith(`${id}/`));
-const manifestOf = (id) => JSON.parse(fs.readFileSync(`widgets/${id}/manifest.generated.json`, "utf8"));
+const manifestOf = (id) => JSON.parse(fs.readFileSync(`registry/${id}/manifest.generated.json`, "utf8"));
 
 check("the shelf offers at least one template", TEMPLATES.length > 0, true);
 check("the template names every widget it stands on, mounted and slotted alike", templateWidgets(template).sort(), [
@@ -85,7 +85,7 @@ check("the template names every widget it stands on, mounted and slotted alike",
 ]);
 check(
 	"every widget it names is one this repository actually ships",
-	templateWidgets(template).filter((id) => !fs.existsSync(`widgets/${id}/manifest.generated.json`)),
+	templateWidgets(template).filter((id) => !fs.existsSync(`registry/${id}/manifest.generated.json`)),
 	[],
 );
 

@@ -6,7 +6,7 @@ const { defineManifest, defineProp } = await import("./.mjs-cache/gateway/manife
 
 function refusalFor(name, prop) {
 	try {
-		defineManifest({ title: "Probe", description: "A probe.", role: "detail", props: { [name]: prop } });
+		defineManifest({ size: { preferredWidth: "full", preferredHeight: "auto" },  title: "Probe", description: "A probe.", role: "detail", props: { [name]: prop } });
 		return "accepted";
 	} catch (failure) {
 		return String(failure.message);

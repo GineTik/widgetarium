@@ -1,4 +1,4 @@
-import { fieldsOf } from "../src/gateway/fields.js";
+import { fieldsOf } from "../packages/core/src/gateway/fields.js";
 
 const under = (files, at) => Object.keys(files).filter((key) => key.startsWith(`${at}/`));
 
