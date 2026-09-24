@@ -9,6 +9,7 @@ declare module "react-dom" {
 // TODO: type the kit; every import through widgetarium/kit is any until then
 declare module "widgetarium/kit";
 declare module "widgetarium/kit/emojis";
+declare module "widgetarium/kit/charts";
 
 declare module "@default/lib" {
 	import type { CollectionGateway } from "widgetarium";
@@ -95,6 +96,7 @@ declare module "@default/lib" {
 	export function isoOf(date: Date): string;
 	export function shiftedBy(iso: string, days: number): string;
 	export function dayOfRecord(record: unknown): string | null;
+	export function numberIn(held: unknown): number | null;
 	export function amountOf(record: unknown): number | null;
 	export function summarize(records: readonly unknown[], days: number, today: string, rising: string): MetricSummary;
 	export function keyOf(draft: MetricDraft): string;

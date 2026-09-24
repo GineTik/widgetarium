@@ -1,7 +1,7 @@
 import type { LooseProps } from "../types";
 import { createElement as h } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 
 export function Switch({
 	checked,
@@ -29,7 +29,7 @@ export function Switch({
 			data-state={isOn ? "checked" : "unchecked"}
 			data-disabled={disabled ? "" : undefined}
 			disabled={disabled}
-			className={cx("wg-kit-switch", cls)}
+			className={cn("wg-kit-switch", cls)}
 			onClick={() => setOn(!isOn)}
 		/>
 	);

@@ -302,6 +302,196 @@ not, and the state written on the element.
   `--wg-kit-pop-available-height` and `--wg-kit-pop-origin`, so content can match its trigger and
   stop at the screen's edge in plain CSS.
 
+## A table, its pages, and a skeleton
+
+Rows are drawn by `DataTable`, the way shadcn pairs a data table with its table parts, except that
+it is the kit's own component rather than code you copy, so how every table behaves changes in one
+place:
+
+```tsx
+const read = useData(records.list, {
+	sort: sort ? [{ prop: sort.key, dir: sort.direction }] : [],
+	offset: (page - 1) * size,
+	limit: size,
+});
+
+<DataTable
+	rows={read.data}
+	columns={[
+		{ key: "client", label: "Client" },
+		{ key: "status", label: "Status", render: (row) => <Badge size="s">{row.status}</Badge> },
+		{ key: "due", label: "Due", type: "date" },
+		{ key: "amount", label: "Amount", type: "number" },
+	]}
+	sort={sort}
+	onSortChange={setSort}
+	selected={picked}
+	onSelect={setPicked}
+	isLoading={read.isLoading}
+	failure={read.failure}
+	page={page}
+	count={Math.ceil(read.total / size)}
+	onPageChange={setPage}
+/>;
+```
+
+- A column's `type` (`text`, `number`, `date`) aligns its head and its cells together; `number`
+  and `date` stand at the end. `align` overrides it.
+- A cell shows `row[key]`, a number written for a person and a dash for nothing. `render(row)`
+  draws anything else in it — a kit component, one of the widget's own, or markup of its own.
+- `onSortChange` makes every head a sort button, and `sortable: false` takes one out. The table
+  only asks for an order, `{ key, direction }`; the gateway sorts, because a table sorting its own
+  rows would sort one page of a hundred and say nothing.
+- `onSelect(key, row)` makes a row pressable by pointer and keyboard; `selected` marks it. A row's
+  key is its `ref`, else its `id`, else its place — `rowKey(row, index)` names another.
+- `rowProps(row)` puts a class, a handler or a `data-*` on a row.
+- `isLoading` with no rows draws skeleton rows, `failure` a sentence in the error tone, and no rows
+  the `empty` sentence. `count` over one draws the kit's `Pagination` under it.
+
+A table `DataTable` cannot draw — cells spanning columns, rows in groups — is built from the parts.
+They are shadcn's, and a table scrolls sideways inside its own box when its columns are wider than
+the region. There are no cards for a narrow region: the table stays a table.
+
+```tsx
+<Table>
+	<TableCaption>Invoices due this month</TableCaption>
+	<TableHeader>
+		<TableRow>
+			<TableHead>Client</TableHead>
+			<TableHead className="text-right">Amount</TableHead>
+		</TableRow>
+	</TableHeader>
+	<TableBody>
+		{rows.map((row) => (
+			<TableRow key={row.ref} data-state={row.ref === picked ? "selected" : undefined}>
+				<TableCell>{row.client}</TableCell>
+				<TableCell className="text-right">{row.amount}</TableCell>
+			</TableRow>
+		))}
+	</TableBody>
+</Table>
+```
+
+`TableFooter` holds totals. A row marked `data-state="selected"` is washed in the accent.
+
+Pages are drawn by the kit whole, so how a pagination looks and behaves changes in one place:
+
+```tsx
+<Pagination page={page} count={count} onPageChange={setPage} />
+```
+
+It draws the first and last page, the current one with `siblings` on each side (1 by default), and
+a gap wherever pages were left out. `variant="compact"` draws `‹ 3 / 20 ›` instead, and a full one
+turns compact by itself in a widget narrower than 360px. `defaultPage` in place of `page` keeps the
+page inside the pagination. One page or none draws nothing.
+
+Reach for the parts only for a pagination the ready one cannot draw. They are shadcn's, and
+`paginationItems(page, count, siblings)` says which pages to lay out, with `{ kind: "gap" }` where
+pages were left out:
+
+```tsx
+<Pagination>
+	<PaginationContent>
+		<PaginationItem>
+			<PaginationPrevious disabled={page === 1} onClick={() => setPage(page - 1)} />
+		</PaginationItem>
+		{paginationItems(page, count).map((entry) =>
+			entry.kind === "gap" ? (
+				<PaginationItem key={entry.key}>
+					<PaginationEllipsis />
+				</PaginationItem>
+			) : (
+				<PaginationItem key={entry.page}>
+					<PaginationLink isActive={entry.page === page} onClick={() => setPage(entry.page)}>
+						{entry.page}
+					</PaginationLink>
+				</PaginationItem>
+			),
+		)}
+		<PaginationItem>
+			<PaginationNext disabled={page === count} onClick={() => setPage(page + 1)} />
+		</PaginationItem>
+	</PaginationContent>
+</Pagination>
+```
+
+A page read through a gateway is `useData(list, { offset: (page - 1) * size, limit: size })`, and
+`total` beside the rows is what `count` is made from. `ShowMore` stays the answer for a list that
+grows as it is read.
+
+`Skeleton` stands where something has not been read yet, in the shape of what is coming. `kind`
+names the kit item it stands in for: `block` (sized by its class), `text` (`lines`, 3 by default),
+`emblem` (`size`, `shape`, as `Emblem` takes them), `button` (`size`, `block`), `field` (`size`),
+`row`, `sparkline` (`height`), `chart` and `card`. It is hidden from a screen reader; the thing
+that is loading says `aria-busy` itself. A button, a field, an icon button and their skeletons read
+one height per size, `--wg-kit-control-s|m|l`, so a theme that changes one changes all of them.
+
+`<CodeBlock code={source} label="Usage" />` shows code as it is written: monospace, on the kit's
+fill, scrolling sideways rather than wrapping. It draws text only, never markup.
+
+## A chart and a sparkline
+
+A chart is composed the way shadcn composes one: Recharts' own parts inside the kit's
+`ChartContainer`, all of them from `widgetarium/kit/charts`. Import nothing from `recharts` itself;
+the plugin holds the one copy, and it draws with the plugin's own React.
+
+```tsx
+import {
+	Area,
+	AreaChart,
+	CartesianGrid,
+	ChartContainer,
+	ChartLegend,
+	ChartLegendContent,
+	ChartTooltip,
+	ChartTooltipContent,
+	XAxis,
+} from "widgetarium/kit/charts";
+
+const config = { notes: { label: "Notes" }, links: { label: "Links", color: 2 } };
+
+<ChartContainer config={config}>
+	<AreaChart data={rows} accessibilityLayer>
+		<CartesianGrid vertical={false} />
+		<XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+		<ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+		<ChartLegend content={<ChartLegendContent />} />
+		<Area dataKey="notes" stroke="var(--color-notes)" fill="var(--color-notes)" fillOpacity={0.18} />
+		<Area dataKey="links" stroke="var(--color-links)" fill="var(--color-links)" fillOpacity={0.18} />
+	</AreaChart>
+</ChartContainer>;
+```
+
+`config` names every series once: `label` is what the tooltip and the legend say, `color` is a
+number from 1 to 5 (`--wg-kit-chart-1…5`), a palette name (`purple`) or a tone (`success`), and
+left out it is the series' place in the config. The container turns each key into
+`--color-<key>`, and a mark paints with that variable, never with a colour of its own: a hex or an
+`rgb()` is refused and the place's colour drawn instead. The container is 16:9 unless its class
+says otherwise. `ChartTooltipContent` takes `indicator` (`dot`, `line`, `dashed`), `hideLabel`,
+`hideIndicator`, `labelFormatter`, `formatter`, `nameKey` and `labelKey`; `ChartLegendContent`
+takes `hideIcon` and `nameKey`, and a config entry's `icon` is a kit icon name. A tooltip or legend
+of your own reads the config with `useChart()` inside the container. Recharts' raw `Tooltip` and
+`Legend` are not handed over: `ChartTooltip` and `ChartLegend` are them. `Area`, `Bar`,
+`Line`, `Pie`, `Radar`, `RadialBar`, `Scatter` and `Funnel` stand still on load; pass
+`isAnimationActive` to make one move.
+
+A sparkline is a line with no axes drawn at the size of a word, from the main kit and with no
+Recharts under it, so a hundred rows can each carry one:
+
+```tsx
+<Sparkline data={rows} dataKey="value" color="success" label="Notes, twelve weeks">
+	<SparklineArea />
+	<SparklineLine />
+	<SparklineDot at="last" />
+</Sparkline>
+```
+
+`data` is numbers or rows with `dataKey`; anything that is not a number is a gap. It fills its
+parent's width and is `height` pixels tall (32 by default). `SparklineBars` draws bars instead,
+the last one full (`highlight` names another index, or `"none"`); `SparklineDot` takes `at`:
+`first`, `last`, `min`, `max` or an index. With no children it draws the line alone. Without
+`label` it is hidden from a screen reader, so give one when nothing beside it says the same.
+
 ## Tailwind, when the widget's styling asks for it
 
 A `widget.css` may be a Tailwind sheet. Three imports give it the kit's whole vocabulary:

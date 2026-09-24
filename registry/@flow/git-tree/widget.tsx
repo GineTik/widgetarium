@@ -1,6 +1,6 @@
 import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
 import type { Row, VaultRecord } from "widgetarium";
-import { cx } from "widgetarium/kit";
+import { cn } from "widgetarium/kit";
 
 const CSS = `
 .fgt {
@@ -193,14 +193,14 @@ function Graph({ rows, hasEarlier }: { rows: readonly Row<Commit>[]; hasEarlier:
 			{linksOf(placed, span, hasEarlier).map((link) => (
 				<path
 					key={link.key}
-					className={cx("fgt-line", link.isAside && "is-aside", link.isEarlier && "is-earlier")}
+					className={cn("fgt-line", link.isAside && "is-aside", link.isEarlier && "is-earlier")}
 					d={pathOf(link.from, link.to)}
 				/>
 			))}
 			{dotsOf(placed, span).map((dot) => (
 				<circle
 					key={dot.key}
-					className={dot.isTip ? "fgt-tip" : cx("fgt-dot", dot.isAside && "is-aside")}
+					className={dot.isTip ? "fgt-tip" : cn("fgt-dot", dot.isAside && "is-aside")}
 					cx={dot.spot.x}
 					cy={dot.spot.y}
 					r={dot.isTip ? TIP_R : DOT_R}

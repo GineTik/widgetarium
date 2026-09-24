@@ -2,7 +2,7 @@ import type { LooseProps } from "../types";
 import { createElement as h } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
 import { useSegmentedThumb } from "../hooks/use-segmented-thumb";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { steppedIndex } from "../utils/roving";
 
 const STEP_OF_KEY = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, Home: "first", End: "last" };
@@ -41,7 +41,7 @@ export function Segmented({
 
 	return (
 		<div
-			className={cx("wg-kit-seg", size === "l" && "is-l", size === "s" && "is-s", cls)}
+			className={cn("wg-kit-seg", size === "l" && "is-l", size === "s" && "is-s", cls)}
 			ref={listRef}
 			role="tablist"
 			aria-orientation="horizontal"

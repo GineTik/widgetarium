@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { Button, Field, Icon, cx } from "@widgetarium/kit";
+import { Button, Field, Icon, cn } from "@widgetarium/kit";
 import { MATCH_WORDS } from "./substitution-say.js";
 
 const CHOOSE = "Choose a widget";
@@ -14,7 +14,7 @@ export function RuleSentence({ rule, patch, chosen, onPickWidget, error }) {
 			key,
 			value,
 			placeholder,
-			className: cx("wg-sub-trigger", wide && "is-wide"),
+			className: cn("wg-sub-trigger", wide && "is-wide"),
 			onInput: (event) => patch({ [key]: event.target.value }),
 		});
 
@@ -31,7 +31,7 @@ export function RuleSentence({ rule, patch, chosen, onPickWidget, error }) {
 				Button,
 				{
 					key: "widget",
-					className: cx("wg-sub-pick", !chosen && "is-unset"),
+					className: cn("wg-sub-pick", !chosen && "is-unset"),
 					onClick: onPickWidget,
 				},
 				[

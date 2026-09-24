@@ -43,7 +43,7 @@ import {
 	SidebarGroup,
 	SidebarRow,
 	TONE_NAMES,
-	cx,
+	cn,
 	iconButtonClass,
 	toneClass,
 	toneOf,
@@ -2052,7 +2052,7 @@ function TonePicker({ picked, onPick }: { picked: string; onPick: (tone: string)
 				<button
 					key={each}
 					type="button"
-					className={cx("otd-tone", toneClass(each), each === picked && "is-picked")}
+					className={cn("otd-tone", toneClass(each), each === picked && "is-picked")}
 					aria-label={each}
 					title={each}
 					aria-pressed={each === picked}

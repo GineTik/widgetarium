@@ -1,7 +1,7 @@
 import { createElement as h, useContext } from "react";
 import type { LooseProps } from "../types";
 import { plateClass } from "../utils/class-names";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 import { Slot, slotted } from "./slot";
 import { GROUP, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "../utils/surface";
@@ -27,7 +27,7 @@ export function Card({
 			<Comp
 				{...domPropsOf(rest)}
 				{...plateProps(above, { surface, side, across, style })}
-				className={cx("wg-kit-surface", tonedPlateClass(tone), cls)}
+				className={cn("wg-kit-surface", tonedPlateClass(tone), cls)}
 			>
 				{children}
 			</Comp>

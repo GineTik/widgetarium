@@ -10,6 +10,7 @@
 		"./icons": "./src/icons/icon-table.ts",
 		"./emoji-table": "./src/emojis/emoji-table.ts",
 		"./emojis": "./src/emojis/emoji.tsx",
+		"./charts": "./src/charts/index.ts",
 		"./shapes": "./src/utils/shapes.ts",
 		"./theme.css": "./theme.css"
 	},
@@ -18,6 +19,8 @@
 		"react-dom": "^19.2.8"
 	},
 	"dependencies": {
+		"react-is": "^19.3.0",
+		"recharts": "^3.10.1",
 		"tailwind-merge": "^3.7.0"
 	}
 }

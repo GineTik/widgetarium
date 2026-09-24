@@ -3,6 +3,7 @@ import * as reactDom from "react-dom";
 import * as coreModule from "./api-core.js";
 import { coreSurface } from "./api-core.js";
 import { reactSurface, kit, emojis } from "./widget-api.js";
+import * as charts from "@widgetarium/kit/charts";
 import { apiRefusal, WIDGET_API } from "./version.js";
 import { WIDGETS_DIR, LOCK_PATH } from "./paths.js";
 import {
@@ -53,6 +54,21 @@ const EXPORT_MISSING =
 	'this widget calls "{name}" from "widgetarium", which this Widgetarium (widget API {api}) does not provide — update the plugin';
 const MODULE_INTEROP_KEYS = new Set(["__esModule", "default", "then"]);
 
+const CHARTS_NEED_THE_ENGINE_REACT =
+	'"widgetarium/kit/charts" draws with the plugin\'s own React, so a widget bringing {react} cannot import it — declare recharts as a dependency of its own instead';
+
+function refusedModule(reason) {
+	return new Proxy(
+		{},
+		{
+			get(held, name) {
+				if (typeof name !== "string" || MODULE_INTEROP_KEYS.has(name)) return undefined;
+				throw new Error(reason);
+			},
+		},
+	);
+}
+
 function refusingMissingExports(api) {
 	return new Proxy(api, {
 		get(held, name) {
@@ -70,6 +86,7 @@ function createRequire(libs, packages, scope) {
 		widgetarium: refusingMissingExports(scope.api),
 		"widgetarium/kit": scope.kit,
 		"widgetarium/kit/emojis": scope.emojis,
+		"widgetarium/kit/charts": scope.charts,
 		react: scope.react,
 		"react-dom": scope.reactDom,
 		...Object.fromEntries(libs),
@@ -91,6 +108,7 @@ export const ENGINE_SCOPE = {
 	api: { ...coreSurface, ...reactSurface },
 	kit,
 	emojis,
+	charts,
 	draw: null,
 };
 
@@ -119,6 +137,7 @@ function foreignScope(source, ownReact, ownReactDom) {
 		api: { ...coreSurface, ...built.reactSurface },
 		kit: built.kit,
 		emojis: built.emojis,
+		charts: refusedModule(CHARTS_NEED_THE_ENGINE_REACT.replace("{react}", said)),
 		draw: built.drawWidget,
 	};
 }

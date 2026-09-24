@@ -1,6 +1,6 @@
 import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
 import type { ReactNode } from "react";
-import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, cx, toneClass, toneOf } from "widgetarium/kit";
+import { APPROVAL_TONES, Icon, PRIORITY_TONES, Pill, cn, toneClass, toneOf } from "widgetarium/kit";
 
 const CSS = `
 .orbi-task-card {
@@ -248,7 +248,7 @@ function TagStripes({ tags, tones }: { tags: string[]; tones: Record<string, str
 	return (
 		<div className="orbi-task-card-stripes">
 			{tags.map((tag, at) => (
-				<span key={`${tag}-${at}`} className={cx("orbi-task-card-stripe", toneClass(tones[tag]))} title={tag} />
+				<span key={`${tag}-${at}`} className={cn("orbi-task-card-stripe", toneClass(tones[tag]))} title={tag} />
 			))}
 		</div>
 	);
@@ -340,7 +340,13 @@ export const manifest = defineManifest({
 		"avatar",
 	],
 	role: "detail",
-	size: { preferredWidth: 360, preferredHeight: "auto", at: [{ belowPx: 440, preferredWidth: "full" }], collapseBelowPx: 90, stackBelowPx: 220 },
+	size: {
+		preferredWidth: 360,
+		preferredHeight: "auto",
+		at: [{ belowPx: 440, preferredWidth: "full" }],
+		collapseBelowPx: 90,
+		stackBelowPx: 220,
+	},
 	preview: {
 		size: { w: 4, h: 2 },
 		props: {

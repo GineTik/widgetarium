@@ -9,7 +9,11 @@ import { THEMES, HOST_FONTS } from "./host-themes.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const OUT = "docs/reference/metric-total";
-const SHEETS = ["apps/obsidian/styles.css", "registry/@default/tokens.css", "registry/@default/metric-total/widget.css"];
+const SHEETS = [
+	"apps/obsidian/styles.css",
+	"registry/@default/tokens.css",
+	"registry/@default/metric-total/widget.css",
+];
 
 const FRAMES = [
 	{ file: "Main", title: "Card — curve", theme: "light", view: "curve", tile: [840, 480], frame: [900, 560] },
@@ -174,6 +178,7 @@ async function bundled() {
 			widgetarium: "./tools/fill-shim.js",
 			"widgetarium/kit": "./packages/kit/src/index.ts",
 			"widgetarium/kit/emojis": "./packages/kit/src/emojis/emoji.tsx",
+			"widgetarium/kit/charts": "./packages/kit/src/charts/index.ts",
 			"@default/lib": "./registry/@default/lib.js",
 			obsidian: "./tools/obsidian-shim.js",
 		},

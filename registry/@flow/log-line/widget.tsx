@@ -1,5 +1,5 @@
 import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import { Icon, cx } from "widgetarium/kit";
+import { Icon, cn } from "widgetarium/kit";
 
 const CSS = `
 .wg-log-line {
@@ -129,12 +129,12 @@ export default createWidget(manifest, ({ entry }) => {
 	return (
 		<div className="wg-log-line">
 			<style>{CSS}</style>
-			<span className={cx("wg-log-line-mark", mark.markClass)} title={mark.said} aria-label={mark.said} role="img">
+			<span className={cn("wg-log-line-mark", mark.markClass)} title={mark.said} aria-label={mark.said} role="img">
 				<Icon name={mark.icon} size={14} />
 			</span>
 			<span className="wg-log-line-body">
 				{at ? <time className="wg-log-line-at">{at}</time> : null}
-				<span className={cx("wg-log-line-text", text ? mark.textClass : "is-blank")}>{text || BLANK}</span>
+				<span className={cn("wg-log-line-text", text ? mark.textClass : "is-blank")}>{text || BLANK}</span>
 			</span>
 		</div>
 	);

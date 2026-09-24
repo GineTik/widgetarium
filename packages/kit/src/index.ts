@@ -6,6 +6,7 @@ import { Card, Plate, Surface } from "./components/card";
 
 import { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
 import { Field, MarkdownEditor, TextArea } from "./components/field";
+import { CodeBlock } from "./components/code-block";
 import { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle, Rows } from "./components/layout";
 import { Heading } from "./components/heading";
 
@@ -27,7 +28,34 @@ import { Segmented, Tabs } from "./components/segmented";
 
 import { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
 
+import {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "./components/pagination";
+
+import { Skeleton } from "./components/skeleton";
+
+import { DataTable } from "./components/data-table";
+
+import { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } from "./components/sparkline";
+
 import { Switch } from "./components/switch";
+
+import {
+	Table,
+	TableBody,
+	TableCaption,
+	TableCell,
+	TableFooter,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "./components/table";
 
 import { LAYOUT_KINDS } from "./constants/layout";
 import { MARK_SHAPE_NAMES, MARK_TONE_NAMES } from "./constants/marks";
@@ -47,7 +75,7 @@ import {
 	rowClass,
 	sidebarClass,
 } from "./utils/class-names";
-import { cx, variants } from "./utils/cx";
+import { cn, variants } from "./utils/cn";
 import { markOf } from "./utils/marks";
 import { progressState } from "./utils/progress";
 import { barGeometry, circleGeometry } from "./utils/progress-geometry";
@@ -59,7 +87,8 @@ export const Kit = {
 	SidebarSheet,
 	SidebarGroup,
 	SidebarRow,
-	cx,
+	cn,
+	cx: cn,
 	variants,
 	Button,
 	ButtonLabel,
@@ -131,6 +160,29 @@ export const Kit = {
 	circleGeometry,
 	progressState,
 	MarkdownEditor,
+	CodeBlock,
+	Sparkline,
+	SparklineArea,
+	SparklineBars,
+	SparklineDot,
+	SparklineLine,
+	Skeleton,
+	Pagination,
+	PaginationContent,
+	PaginationItem,
+	PaginationLink,
+	PaginationPrevious,
+	PaginationNext,
+	PaginationEllipsis,
+	Table,
+	TableHeader,
+	TableBody,
+	TableFooter,
+	TableRow,
+	TableHead,
+	TableCell,
+	TableCaption,
+	DataTable,
 	Switch,
 	buttonClass,
 	iconButtonClass,
@@ -148,6 +200,7 @@ export { Badge, Count, Pill } from "./components/badge";
 export { Calendar } from "./components/calendar";
 export { Card, Plate, Surface } from "./components/card";
 export { CodeArea, Field, MarkdownEditor, TextArea } from "./components/field";
+export { CodeBlock } from "./components/code-block";
 
 export { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
 
@@ -174,7 +227,37 @@ export { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/si
 export { Slot, Slottable, composeRefs, slotted } from "./components/slot";
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
 
+export {
+	Pagination,
+	PaginationContent,
+	PaginationEllipsis,
+	PaginationItem,
+	PaginationLink,
+	PaginationNext,
+	PaginationPrevious,
+} from "./components/pagination";
+export { paginationItems } from "./utils/pagination";
+export type { PaginationEntry } from "./utils/pagination";
+
+export { Skeleton } from "./components/skeleton";
+
+export { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } from "./components/sparkline";
+
 export { Switch } from "./components/switch";
+
+export { DataTable } from "./components/data-table";
+export type { DataColumn, SortOrder } from "./utils/data-table";
+
+export {
+	Table,
+	TableBody,
+	TableCaption,
+	TableCell,
+	TableFooter,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "./components/table";
 
 export { LAYOUT_KINDS } from "./constants/layout";
 export { MARK_SHAPE_NAMES, MARK_TONE_NAMES } from "./constants/marks";
@@ -195,7 +278,7 @@ export {
 	rowClass,
 	sidebarClass,
 } from "./utils/class-names";
-export { cx, cx as cn, variants } from "./utils/cx";
+export { cn, cn as cx, variants } from "./utils/cn";
 export { markOf } from "./utils/marks";
 export { plateEdgesTakenBy } from "./utils/plate-edges";
 export { progressState } from "./utils/progress";

@@ -18,10 +18,11 @@ packages/sdk      FSL  what a widget author compiles against: types/widgetarium.
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
-**Kit imports nothing but React; core never imports the app.** A plate law lives in
+**Kit imports nothing but React, tailwind-merge and, behind `/charts` alone, Recharts; core never
+imports the app.** A plate law lives in
 `packages/kit/src/utils/plate-laws.ts` (the words in `constants/surfaces.ts`) because `Card` answers it, and `tree.js` and `surface-roles.js`
 re-export it from there. The app reaches core as `@widgetarium/core/<file>` and the kit as
-`@widgetarium/kit[/surface|/plates|/icons|/emoji-table|/emojis|/shapes]` — the kit's
+`@widgetarium/kit[/surface|/plates|/icons|/emoji-table|/emojis|/charts|/shapes]` — the kit's
 `package.json` `exports` is the one list of its entry points, and `tools/mirror.mjs` reads it to lay
 the test cache flat. Every tool runs from the repo root. A second host (web, Tauri) is another
 `apps/*` beside `obsidian`, never a branch inside core. Licences: each package folder carries its own `LICENSE`; the root `LICENSE` is only the

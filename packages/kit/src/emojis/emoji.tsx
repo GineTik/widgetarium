@@ -1,6 +1,6 @@
 import type { LooseProps } from "../types";
 import { createElement as h } from "react";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { EMOJI_TABLE, EMOJI_VIEW_BOX } from "./emoji-table";
 
 function spokenEmoji(name) {
@@ -15,7 +15,7 @@ export function Emoji({ name, size = 20, className: cls, label }: LooseProps) {
 	}
 	return (
 		<svg
-			className={cx("wg-kit-emoji", cls)}
+			className={cn("wg-kit-emoji", cls)}
 			viewBox={EMOJI_VIEW_BOX}
 			width={size}
 			height={size}

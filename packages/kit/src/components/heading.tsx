@@ -1,6 +1,6 @@
 import type { LooseProps } from "../types";
 import { createElement as h } from "react";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { warnOnce } from "../utils/surface";
 
 const HEADING_LEVELS = [1, 2, 3, 4, 5, 6];
@@ -17,5 +17,5 @@ function headingLevelOf(asked, fallback) {
 export function Heading({ level, size, className: cls, children, ...rest }: LooseProps) {
 	const said = headingLevelOf(level, WIDGET_HEADING_LEVEL);
 	const looks = headingLevelOf(size, said);
-	return h(`h${said}`, { ...rest, className: cx("wg-kit-heading", `is-h${looks}`, cls) }, children);
+	return h(`h${said}`, { ...rest, className: cn("wg-kit-heading", `is-h${looks}`, cls) }, children);
 }

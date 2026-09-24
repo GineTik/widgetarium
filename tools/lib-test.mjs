@@ -90,7 +90,7 @@ const check = (name, got, want) => {
 	check(
 		"an import of something else is still refused",
 		String(entry?.error ?? ""),
-		'Error: cannot import "nowhere" — a widget may only import widgetarium, widgetarium/kit, widgetarium/kit/emojis, react, react-dom, @default/lib',
+		'Error: cannot import "nowhere" — a widget may only import widgetarium, widgetarium/kit, widgetarium/kit/emojis, widgetarium/kit/charts, react, react-dom, @default/lib',
 	);
 }
 

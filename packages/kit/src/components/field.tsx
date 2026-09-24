@@ -1,7 +1,7 @@
 import { createElement as h, useEffect, useRef } from "react";
 import type { LooseProps } from "../types";
 import { fieldClass } from "../utils/class-names";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { markdownSpans } from "../utils/markdown";
 import { yamlSpans } from "../utils/yaml";
 
@@ -34,7 +34,7 @@ function withoutFieldLook(props) {
 
 export function TextArea({ value, onInput, placeholder, ...rest }: LooseProps) {
 	return (
-		<label className={cx(fieldClass(rest), "is-area")}>
+		<label className={cn(fieldClass(rest), "is-area")}>
 			<textarea
 				{...withoutFieldLook(rest)}
 				className="wg-kit-field-area"
@@ -49,7 +49,7 @@ export function TextArea({ value, onInput, placeholder, ...rest }: LooseProps) {
 
 export function CodeArea({ value = "", onInput, placeholder, className: cls }: LooseProps) {
 	return (
-		<div className={cx("wg-kit-md", "wg-kit-code", cls)}>
+		<div className={cn("wg-kit-md", "wg-kit-code", cls)}>
 			<div className="wg-kit-md-page">
 				<div className="wg-kit-md-text wg-kit-md-mirror" aria-hidden="true">
 					{yamlSpans(value)}
@@ -77,7 +77,7 @@ export function MarkdownEditor({ value = "", onInput, placeholder, className: cl
 	}, [focusAtStart]);
 
 	return (
-		<div className={cx("wg-kit-md", cls)}>
+		<div className={cn("wg-kit-md", cls)}>
 			<div className="wg-kit-md-page">
 				<div className="wg-kit-md-text wg-kit-md-mirror" aria-hidden="true">
 					{markdownSpans(value)}

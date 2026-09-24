@@ -11,16 +11,18 @@ import { useSlider } from "../hooks/use-slider";
 import { useWidthOf } from "../hooks/use-width-of";
 import { Icon } from "../icons/icon";
 import type { LooseProps } from "../types";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { clampPercent, progressState, rangeAria, shownValue } from "../utils/progress";
 import { barGeometry, circleGeometry } from "../utils/progress-geometry";
-import { warnOnce } from "../utils/surface";
+import { wornWord } from "../utils/surface";
 import { inkedClass } from "../utils/tones";
+
+const PROGRESS_SHAPE_WORD = { kind: "progress shape", allowed: PROGRESS_SHAPES, fallback: PROGRESS_SHAPES[0] };
 
 export function Progress({ value = 0, onChange, label, className: cls }: LooseProps) {
 	const { shown, isGrabbed, trackRef, sliderProps, trackProps } = useSlider(value, onChange);
 	return (
-		<div className={cx("wg-kit-progress", isGrabbed && "is-grabbed", cls)} aria-label={label} {...sliderProps}>
+		<div className={cn("wg-kit-progress", isGrabbed && "is-grabbed", cls)} aria-label={label} {...sliderProps}>
 			<span className="wg-kit-progress-track" ref={trackRef} {...trackProps}>
 				<i className="wg-kit-progress-fill" style={{ width: `${shown}%` }} />
 				<span className="wg-kit-progress-knob" style={{ left: `${shown}%` }} />
@@ -30,14 +32,8 @@ export function Progress({ value = 0, onChange, label, className: cls }: LoosePr
 	);
 }
 
-function wornWord(asked, offered, what) {
-	if (offered.includes(asked)) return asked;
-	warnOnce(`${asked} is no ${what}, so ${offered[0]} was drawn instead: ${offered.join(", ")}`);
-	return offered[0];
-}
-
 export function ProgressBar({ shape = "line", ...props }: LooseProps) {
-	if (wornWord(shape, PROGRESS_SHAPES, "progress shape") === "circle") return <ProgressCircle {...props} />;
+	if (wornWord(shape, PROGRESS_SHAPE_WORD) === "circle") return <ProgressCircle {...props} />;
 	return <ProgressLine {...props} />;
 }
 
@@ -60,7 +56,7 @@ function ProgressLine({
 	return (
 		<div
 			{...barRootProps(slider, isControlled)}
-			className={cx(barRootClass(slider, isControlled, tone), said !== null && "has-value", cls)}
+			className={cn(barRootClass(slider, isControlled, tone), said !== null && "has-value", cls)}
 			aria-label={label}
 			style={{ "--wg-bar-value-room": said === null ? "0px" : `${roomForValue + VALUE_GAP_PX}px` }}
 		>
@@ -83,7 +79,7 @@ function ProgressLine({
 }
 
 function barRootClass({ isGrabbed }, isControlled, tone) {
-	return cx("wg-kit-bar", inkedClass(tone), isControlled && "is-settable", isGrabbed && "is-grabbed");
+	return cn("wg-kit-bar", inkedClass(tone), isControlled && "is-settable", isGrabbed && "is-grabbed");
 }
 
 function barRootProps({ shown, sliderProps, trackProps }, isSettable) {
@@ -105,7 +101,7 @@ function ProgressCircle({
 	const said = shownValue(displayValue, shown);
 	return (
 		<div
-			className={cx("wg-kit-ring", inkedClass(tone), cls)}
+			className={cn("wg-kit-ring", inkedClass(tone), cls)}
 			style={{ width: `${size}px`, height: `${size}px` }}
 			role="progressbar"
 			aria-label={label}
@@ -155,7 +151,7 @@ export function StatusProgress({ value = 0, tones, displayValue, className: cls,
 			value={shown}
 			tone={{ ...STATUS_TONES, ...tones }[state]}
 			displayValue={displayValue ?? tickWhenDone}
-			className={cx("wg-kit-status", `is-${state}`, cls)}
+			className={cn("wg-kit-status", `is-${state}`, cls)}
 		/>
 	);
 }

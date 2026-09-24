@@ -1,5 +1,5 @@
 import { createElement as h, useState } from "react";
-import { Icon, IconButton, cardClass, cx } from "@widgetarium/kit";
+import { Icon, IconButton, cardClass, cn } from "@widgetarium/kit";
 import { templateSketch } from "./templates.js";
 
 const tallestOf = (row) => row.reduce((most, cell) => Math.max(most, cell.height ?? 0), 0);
@@ -88,7 +88,7 @@ function cardHandle(template, press) {
 
 function TemplateCard({ template, nameOf, onUse }) {
 	const { step, isBusy, failure, press } = useBuild(template, onUse);
-	return h("article", { ...cardHandle(template, press), className: cx(cardClass({}), "wg-tpl-tile") }, [
+	return h("article", { ...cardHandle(template, press), className: cn(cardClass({}), "wg-tpl-tile") }, [
 		h("div", { className: "wg-tpl-stage", key: "stage" }, h(Sketch, { template, nameOf })),
 		h(TemplateFoot, { key: "foot", template, isBusy, press }),
 		h("p", { className: "wg-tpl-what", key: "what" }, template.description),

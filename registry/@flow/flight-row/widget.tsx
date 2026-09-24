@@ -1,5 +1,5 @@
 import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import { Pill, Row, RowLabel, RowValue, cx } from "widgetarium/kit";
+import { Pill, Row, RowLabel, RowValue, cn } from "widgetarium/kit";
 
 const CSS = `
 :is(.wg-root, .wg-portal) .wg-kit-row.flow-row {
@@ -186,7 +186,7 @@ function initialOf(who: string | undefined): string | undefined {
 function Mark({ status }: { status: string | undefined }) {
 	const key = status?.toLowerCase() ?? "";
 	const label = STATUS_LABELS[key] ?? status;
-	return <span className={cx("flow-row-mark", STATUS_SHAPES[key])} role="img" aria-label={label} title={label} />;
+	return <span className={cn("flow-row-mark", STATUS_SHAPES[key])} role="img" aria-label={label} title={label} />;
 }
 
 function Meta({ flight }: { flight: Flight }) {

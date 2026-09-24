@@ -3,7 +3,7 @@ import { createElement as h, useLayoutEffect, useRef, useState } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
 import { IconButton } from "./button";
 import { Icon } from "../icons/icon";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 
 const MONTH_NAMES = [
 	"January",
@@ -110,7 +110,7 @@ export function Calendar({
 				data-today={day.today ? "" : undefined}
 				data-outside={day.outside ? "" : undefined}
 				tabIndex={sameDay(date, tabStop) ? 0 : -1}
-				className={cx(
+				className={cn(
 					"wg-kit-cal-day",
 					day.outside && "is-outside",
 					day.today && "is-today",
@@ -125,7 +125,7 @@ export function Calendar({
 	}
 
 	return (
-		<div className={cx("wg-kit-cal", cls)}>
+		<div className={cn("wg-kit-cal", cls)}>
 			<div className="wg-kit-cal-head">
 				<IconButton size="s" label="Previous month" onClick={() => step(-1)}>
 					<Icon name="fold" />

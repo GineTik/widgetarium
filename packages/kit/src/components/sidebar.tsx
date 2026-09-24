@@ -1,7 +1,7 @@
 import { createElement as h, useEffect, useRef, useState } from "react";
 import type { LooseProps } from "../types";
 import { rowClass, sidebarClass } from "../utils/class-names";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 import { List, RowLabel, RowValue } from "./list";
 import { Slot } from "./slot";
@@ -92,7 +92,7 @@ export function SidebarSheet({
 		as,
 		{
 			...rest,
-			className: cx("wg-kit-sheet", sidebarClass({ mode, surface }), from.current && "is-dragging", cls),
+			className: cn("wg-kit-sheet", sidebarClass({ mode, surface }), from.current && "is-dragging", cls),
 			style: { ...style, height: `${Math.round(height)}px` },
 			"data-state": isOpen ? "open" : "closed",
 			onKeyDown: collapseOnEscape,
@@ -117,7 +117,7 @@ export function SidebarSheet({
 
 export function SidebarGroup({ label, hint, children, className: cls }: LooseProps) {
 	return (
-		<div className={cx("wg-kit-side-group", cls)}>
+		<div className={cn("wg-kit-side-group", cls)}>
 			{[
 				label ? (
 					<span className="wg-kit-side-label" key="label">
@@ -165,7 +165,7 @@ export function SidebarRow({
 			// CONTEXT: aria-current is how a list says which of its rows is the one being read
 			"aria-current": selected ? "true" : undefined,
 			// CONTEXT: is-two is the row's own state — the height law reads it, not the caller's markup
-			className: cx(
+			className: cn(
 				rowClass({ pressable: pressable || as === "button" }),
 				"wg-kit-side-row",
 				sub && "is-two",

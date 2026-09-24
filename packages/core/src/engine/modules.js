@@ -27,7 +27,12 @@ export function modulePath(key) {
 }
 
 const KEPT_OUTSIDE_A_BUNDLE = ["react", "react-dom"];
-export const HELD_BY_THE_ENGINE = ["widgetarium", "widgetarium/kit", "widgetarium/kit/emojis"];
+export const HELD_BY_THE_ENGINE = [
+	"widgetarium",
+	"widgetarium/kit",
+	"widgetarium/kit/emojis",
+	"widgetarium/kit/charts",
+];
 export const ANSWERED_BY_THE_ENGINE = [...HELD_BY_THE_ENGINE, ...KEPT_OUTSIDE_A_BUNDLE];
 
 export function facadeUrl(name, range) {

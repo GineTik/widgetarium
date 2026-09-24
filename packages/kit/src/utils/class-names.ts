@@ -1,5 +1,5 @@
 import { TONE_CLASSES } from "../constants/tones";
-import { cx, variants } from "./cx";
+import { cn, variants } from "./cn";
 
 export const buttonClass = variants(
 	"wg-kit-btn",
@@ -36,16 +36,16 @@ export const cardClass = variants(
 	{ variant: "light" },
 );
 
-export const plateClass = variants(cx("wg-kit-plate", cardClass({ variant: "solid" })), {});
+export const plateClass = variants(cn("wg-kit-plate", cardClass({ variant: "solid" })), {});
 
-export const listClass = variants(cx("wg-kit-list", cardClass({ variant: "solid" })), {});
+export const listClass = variants(cn("wg-kit-list", cardClass({ variant: "solid" })), {});
 
 export const rowClass = variants("wg-kit-row", { pressable: { true: "is-pressable" } });
 
 export const glassClass = variants("wg-kit-glass", {});
 
 export const sidebarClass = variants(
-	cx("wg-kit-side", cardClass({ variant: "light", lift: true })),
+	cn("wg-kit-side", cardClass({ variant: "light", lift: true })),
 	{ mode: { full: "", minimal: "is-minimal" }, surface: { solid: "", glass: "is-glass" } },
 	{ mode: "full", surface: "solid" },
 );

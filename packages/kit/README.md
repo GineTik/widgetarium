@@ -28,7 +28,7 @@ src/
   emojis/       emoji.tsx and the generated Fluent table
   hooks/        one hook per file
   constants/    shared words and numbers: surfaces, tones, marks, layout, progress, popover
-  utils/        shared helpers: cx, class names, plate laws, popover motion, progress geometry
+  utils/        shared helpers: cn, class names, plate laws, popover motion, progress geometry
   types.ts      LooseProps, until each component types its own props
   index.ts      the public surface
   plates.ts     the plate words and laws, for @widgetarium/kit/plates

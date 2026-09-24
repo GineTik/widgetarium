@@ -2,7 +2,7 @@ import { createElement as h, createContext } from "react";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { mountInto } from "./portal.js";
-import { Button, cx, Icon, IconButton, slotted } from "@widgetarium/kit";
+import { Button, cn, Icon, IconButton, slotted } from "@widgetarium/kit";
 
 // CONTEXT: preact's render() starts a new tree, so no provider outside the portal reaches inside
 const DialogState = createContext(null);
@@ -182,7 +182,7 @@ function exitDialog(node, done) {
 }
 
 function part(tag, baseClass, name) {
-	return slotted(tag, (props) => cx(baseClass, props.className), name);
+	return slotted(tag, (props) => cn(baseClass, props.className), name);
 }
 
 // CONTEXT: React strips the portal on unmount, so the exit is played on a copy left in its place
@@ -243,7 +243,7 @@ export function DialogOverlay({ className: cls, onClose, children }) {
 			"div",
 			{
 				ref: overlayRef,
-				className: cx("wg-dialog-overlay", cls),
+				className: cn("wg-dialog-overlay", cls),
 				tabIndex: -1,
 				onClick: (event) => event.target === event.currentTarget && onClose?.(),
 			},
@@ -256,7 +256,7 @@ export function DialogContent({ className: cls, width, children }) {
 	return h(
 		"div",
 		{
-			className: cx("wg-dialog", cls),
+			className: cn("wg-dialog", cls),
 			role: "dialog",
 			"aria-modal": "true",
 			tabIndex: -1,
@@ -279,7 +279,7 @@ export function DialogClose({ className: cls, onClose, label = "Close", ...rest 
 		{
 			size: "s",
 			...rest,
-			className: cx("wg-dialog-close", cls),
+			className: cn("wg-dialog-close", cls),
 			label,
 			title: label,
 			onClick: onClose ?? state?.close,
@@ -301,7 +301,7 @@ export function Dialog({ isOpen: isOpenAsked, onOpenChange, onClose, trigger, ch
 
 	const close = () => setOpen(false);
 	const body = isOpen
-		? h(DialogOverlay, { className: cx(cls), onClose: close }, h(DialogState.Provider, { value: { close } }, children))
+		? h(DialogOverlay, { className: cn(cls), onClose: close }, h(DialogState.Provider, { value: { close } }, children))
 		: null;
 
 	if (!trigger) return body;

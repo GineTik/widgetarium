@@ -1,0 +1,158 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Chart",
+	"description": "The numbers a set of notes carries, drawn across one property as an area, bars, a line or a glance.",
+	"keywords": [
+		"chart",
+		"graph",
+		"plot",
+		"area",
+		"bars",
+		"line",
+		"trend",
+		"series",
+		"sparkline",
+		"numbers",
+		"over time",
+		"compare"
+	],
+	"role": "indicator",
+	"size": {
+		"preferredWidth": 520,
+		"preferredHeight": "auto",
+		"at": [
+			{
+				"belowPx": 560,
+				"preferredWidth": "full"
+			}
+		]
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 4
+		},
+		"props": {
+			"records": {
+				"rows": [
+					{
+						"name": "Jan",
+						"notes": 186,
+						"links": 80
+					},
+					{
+						"name": "Feb",
+						"notes": 305,
+						"links": 200
+					},
+					{
+						"name": "Mar",
+						"notes": 237,
+						"links": 120
+					},
+					{
+						"name": "Apr",
+						"notes": 73,
+						"links": 190
+					},
+					{
+						"name": "May",
+						"notes": 209,
+						"links": 130
+					},
+					{
+						"name": "Jun",
+						"notes": 214,
+						"links": 140
+					}
+				]
+			},
+			"series": {
+				"rows": [
+					{
+						"property": "notes",
+						"label": "Notes"
+					},
+					{
+						"property": "links",
+						"label": "Links"
+					}
+				]
+			}
+		}
+	},
+	"props": {
+		"records": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The notes the chart reads, one point each.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"across": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Across",
+			"hint": "The property each point stands at, such as a date or a name. Left empty, the note's own name. Dates are put in order.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"series": {
+			"kind": "collection",
+			"label": "Series",
+			"hint": "The number properties drawn, in the order they are listed. Left empty, every property holding a number.",
+			"writes": ["list", "get"],
+			"describes": {
+				"property": {
+					"label": "Property"
+				},
+				"label": {
+					"label": "Label"
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"kind": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Drawn as",
+			"hint": "A glance is the latest value of the first series with its sparkline under it.",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": "area"
+			},
+			"options": [
+				{
+					"value": "area",
+					"label": "An area"
+				},
+				{
+					"value": "bar",
+					"label": "Bars"
+				},
+				{
+					"value": "line",
+					"label": "A line"
+				},
+				{
+					"value": "glance",
+					"label": "A glance"
+				}
+			]
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

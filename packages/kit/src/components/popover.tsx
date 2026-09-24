@@ -14,7 +14,7 @@ import { PLACEMENTS, PRESS_EVENTS } from "../constants/popover";
 import { useControllableState } from "../hooks/use-controllable-state";
 import { Icon } from "../icons/icon";
 import type { LooseProps } from "../types";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
 import { steppedIndex } from "../utils/roving";
 import { Field } from "./field";
@@ -104,7 +104,7 @@ export function PopoverContent({ children, className: cls }: LooseProps) {
 		<div
 			id={popover.id}
 			ref={popover.panelRef}
-			className={cx(
+			className={cn(
 				"wg-kit-pop",
 				popover.where.panelClass,
 				(popover.isOpen || popover.isExiting) && "is-open",
@@ -249,7 +249,7 @@ export function PopoverItem({ checked, sub, children, ...rest }: LooseProps) {
 				setHighlighted(false);
 				rest.onPointerLeave?.(event);
 			}}
-			className={cx("wg-kit-pop-item", sub && "is-two", rest.className)}
+			className={cn("wg-kit-pop-item", sub && "is-two", rest.className)}
 		>
 			{sub === undefined ? (
 				children
@@ -267,7 +267,7 @@ export function PopoverItem({ checked, sub, children, ...rest }: LooseProps) {
 }
 
 export function PopoverSeparator(props) {
-	return <div {...props} role="separator" className={cx("wg-kit-pop-sep", props.className)} />;
+	return <div {...props} role="separator" className={cn("wg-kit-pop-sep", props.className)} />;
 }
 
 export function PopoverSearch({ placeholder, hint, children, className: cls }: LooseProps) {
@@ -296,7 +296,7 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }: L
 
 	return (
 		<>
-			<div className={cx("wg-kit-pop-search", cls)}>
+			<div className={cn("wg-kit-pop-search", cls)}>
 				<Field
 					block={true}
 					size="s"

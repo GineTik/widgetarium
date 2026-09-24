@@ -37,6 +37,12 @@
 	--color-purple: var(--wg-kit-purple);
 	--color-pink: var(--wg-kit-pink);
 
+	--color-chart-1: var(--wg-kit-chart-1);
+	--color-chart-2: var(--wg-kit-chart-2);
+	--color-chart-3: var(--wg-kit-chart-3);
+	--color-chart-4: var(--wg-kit-chart-4);
+	--color-chart-5: var(--wg-kit-chart-5);
+
 	--text-*: initial;
 	--text-xs: var(--wg-kit-text-xs);
 	--text-sm: var(--wg-kit-text-s);

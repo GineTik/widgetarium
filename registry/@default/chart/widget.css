@@ -1,0 +1,42 @@
+.wg-chart-said {
+	margin: 0;
+	font-size: var(--font-ui-smaller, 12px);
+	line-height: 1.5;
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-chart-said[data-failure] {
+	color: var(--text-error);
+}
+
+.wg-chart-glance {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts);
+	min-width: 0;
+}
+
+.wg-chart-glance-label {
+	font-size: var(--font-ui-small, 14px);
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-chart-glance-row {
+	display: flex;
+	align-items: flex-end;
+	gap: var(--wg-gap-items);
+	min-width: 0;
+}
+
+.wg-chart-glance-value {
+	flex: none;
+	font-size: var(--wg-kit-h2-size);
+	font-weight: var(--font-bold, 700);
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	color: var(--wg-kit-text);
+}
+
+.wg-chart-glance .wg-chart-glance-spark {
+	flex: 1 1 auto;
+}

@@ -6,7 +6,7 @@ import { MarkdownRenderChild } from "obsidian";
 import { activeRules, matchLines, renderSpan } from "./substitution.js";
 import { traceSub } from "@widgetarium/core/trace.js";
 import { findLines, replaceLines } from "@widgetarium/core/engine/text-span.js";
-import { Icon, Popover, PopoverItem, cx, iconButtonClass } from "@widgetarium/kit";
+import { Icon, Popover, PopoverItem, cn, iconButtonClass } from "@widgetarium/kit";
 import { viewHost } from "@widgetarium/core/engine/view-host.js";
 import { NO_HOST } from "@widgetarium/core/engine/host-none.js";
 import { UNREADABLE, refusedRead } from "@widgetarium/core/engine/read-file.js";
@@ -47,7 +47,7 @@ function InlineMenu({ isText, onShowSource }) {
 				trigger: h(
 					"button",
 					{
-						className: cx("wg-inline-more", iconButtonClass({ variant: "glass", size: "s" })),
+						className: cn("wg-inline-more", iconButtonClass({ variant: "glass", size: "s" })),
 						type: "button",
 						"aria-label": "More",
 						title: "More",

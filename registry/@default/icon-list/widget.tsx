@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Button, cx, Icon, toneClass } from "widgetarium/kit";
+import { Button, cn, Icon, toneClass } from "widgetarium/kit";
 import type { Row, Text, ViewHost } from "widgetarium";
 
 type Entry = { text: Text; icon?: string; tone?: string };
@@ -46,7 +46,7 @@ function EntryRow({ host, entry, at, look }: { host: ViewHost; entry: Entry; at:
 	return (
 		<div className="wg-icon-list-row">
 			<span
-				className={cx("wg-icon-list-mark", "wg-kit-tone", look.isSolid && "is-solid", toneClass(askedName(entry.tone)))}
+				className={cn("wg-icon-list-mark", "wg-kit-tone", look.isSolid && "is-solid", toneClass(askedName(entry.tone)))}
 			>
 				<Marked entry={entry} at={at} look={look} />
 			</span>

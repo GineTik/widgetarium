@@ -54,7 +54,7 @@ function plateStyle(above, surface) {
 	return { "--wg-surface-corner": above.ownPlates === 0 ? "var(--wg-kit-plate)" : "var(--wg-kit-item)" };
 }
 
-function wornWord(said, { kind, allowed, fallback }) {
+export function wornWord(said, { kind, allowed, fallback }) {
 	if (said === undefined || said === null) return fallback;
 	if (allowed.includes(said)) return said;
 	warnOnce(`${said} is no ${kind}, so ${fallback} was drawn instead: ${allowed.join(", ")}`);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createWidget, defineManifest, defineProp, pickedValue, useData } from "widgetarium";
 import type { Row, Slot, VaultRecord, WidgetProps } from "widgetarium";
-import { Button, Count, SlotList, cx } from "widgetarium/kit";
+import { Button, Count, SlotList, cn } from "widgetarium/kit";
 
 const CSS = `
 .flow-project-grid {
@@ -265,7 +265,7 @@ function Cell({ Drawn, project, isPicked: isOn, onPick }: CellProps) {
 	const press = () => onPick(project.ref);
 	return (
 		<div
-			className={cx("flow-project-grid-cell", isOn && "is-picked")}
+			className={cn("flow-project-grid-cell", isOn && "is-picked")}
 			role="button"
 			tabIndex={0}
 			aria-pressed={isOn}

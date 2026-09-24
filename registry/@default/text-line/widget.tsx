@@ -1,5 +1,5 @@
 import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { cx } from "widgetarium/kit";
+import { cn } from "widgetarium/kit";
 
 const CSS = `
 .wgi-text-line {
@@ -98,7 +98,7 @@ export default createWidget(manifest, ({ text, tone, heading, lines }) => {
 		<>
 			<style>{CSS}</style>
 			<Line
-				className={cx("wgi-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
+				className={cn("wgi-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
 				style={style}
 			>
 				{said}

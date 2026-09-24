@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { HEAD_OUTSIDE, LAYOUT_KIND, LAYOUT_KINDS } from "../constants/layout";
 import { useEdgesOfThePlate } from "../hooks/use-edges-of-the-plate";
 import type { LooseProps } from "../types";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { GROUP, PLATES_ABOVE, warnOnce } from "../utils/surface";
 import { tonedPlateClass } from "../utils/tones";
 import { ActionButton } from "./button";
@@ -29,7 +29,7 @@ export function Layout({
 	const worn = wornKind(kind);
 	const rowsNode = useRef(null);
 	const look = {
-		className: cx("wg-kit-layout", `is-${worn}`, cls),
+		className: cn("wg-kit-layout", `is-${worn}`, cls),
 		style: worn === "grid" ? { "--wg-kit-layout-min": `${min}px`, ...style } : style,
 	};
 	const held = <LAYOUT_KIND.Provider value={worn}>{children}</LAYOUT_KIND.Provider>;
@@ -43,7 +43,7 @@ export function Layout({
 		);
 	if (worn === "rows")
 		return (
-			<div {...rest} ref={rowsNode} className={cx(look.className, "is-on-plate")}>
+			<div {...rest} ref={rowsNode} className={cn(look.className, "is-on-plate")}>
 				{held}
 			</div>
 		);
@@ -68,7 +68,7 @@ Layout.Item = LayoutItem;
 export function LayoutHeader({ title, className: cls, children, ...rest }: LooseProps) {
 	const headPlace = useContext(HEAD_OUTSIDE);
 	const drawn = (
-		<div {...rest} className={cx("wg-kit-layout-head", headPlace && "is-outside", cls)}>
+		<div {...rest} className={cn("wg-kit-layout-head", headPlace && "is-outside", cls)}>
 			{title ? <LayoutTitle>{title}</LayoutTitle> : null}
 			{title && children ? <LayoutActions>{children}</LayoutActions> : children}
 		</div>
@@ -87,12 +87,12 @@ export function LayoutTitle({
 	className: cls,
 	...rest
 }: LooseProps) {
-	return <Heading {...rest} level={level} size={size} className={cx("wg-kit-layout-title", cls)} />;
+	return <Heading {...rest} level={level} size={size} className={cn("wg-kit-layout-title", cls)} />;
 }
 
 export function LayoutActions({ className: cls, children, ...rest }: LooseProps) {
 	return (
-		<div {...rest} className={cx("wg-kit-layout-actions", cls)}>
+		<div {...rest} className={cn("wg-kit-layout-actions", cls)}>
 			{children}
 		</div>
 	);
@@ -100,7 +100,7 @@ export function LayoutActions({ className: cls, children, ...rest }: LooseProps)
 
 export function LayoutItem({ tone, className: cls, children, ...rest }: LooseProps) {
 	const kind = useContext(LAYOUT_KIND);
-	const itemClass = cx("wg-kit-layout-item", cls);
+	const itemClass = cn("wg-kit-layout-item", cls);
 	if (kind === "grid" || kind === "row")
 		return (
 			<Card {...rest} tone={tone} className={itemClass}>
@@ -109,7 +109,7 @@ export function LayoutItem({ tone, className: cls, children, ...rest }: LoosePro
 		);
 	if (kind === "rows")
 		return (
-			<div {...rest} className={cx(itemClass, tonedPlateClass(tone))}>
+			<div {...rest} className={cn(itemClass, tonedPlateClass(tone))}>
 				{children}
 			</div>
 		);

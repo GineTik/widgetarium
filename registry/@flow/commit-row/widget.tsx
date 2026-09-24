@@ -1,5 +1,5 @@
 import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import { Icon, Row, RowValue, cx } from "widgetarium/kit";
+import { Icon, Row, RowValue, cn } from "widgetarium/kit";
 
 const CSS = `
 /* TRADE-OFF: the slot plate already pads an item; the kit row's own padding would be the second one */
@@ -279,10 +279,10 @@ export default createWidget(manifest, ({ commit }) => {
 			<Icon
 				name={isMerge ? MERGE_GLYPH : COMMIT_GLYPH}
 				size={GLYPH_SIZE}
-				className={cx("fcr-glyph", isMerge && "is-merge")}
+				className={cn("fcr-glyph", isMerge && "is-merge")}
 			/>
 			<div className="fcr-body">
-				<p className={cx("fcr-subject", subject === "" && "is-missing")}>{subject === "" ? NO_SUBJECT : subject}</p>
+				<p className={cn("fcr-subject", subject === "" && "is-missing")}>{subject === "" ? NO_SUBJECT : subject}</p>
 				<Meta commit={held} />
 			</div>
 			<DiffStat commit={held} />

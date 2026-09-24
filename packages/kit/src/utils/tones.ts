@@ -1,5 +1,5 @@
 import { TONE_CLASSES } from "../constants/tones";
-import { cx } from "./cx";
+import { cn } from "./cn";
 import { warnOnce } from "./surface";
 
 export function toneOf(table, value) {
@@ -14,10 +14,10 @@ export function toneClass(tone) {
 }
 
 export function inkedClass(tone) {
-	return cx("wg-kit-inked", toneClass(tone));
+	return cn("wg-kit-inked", toneClass(tone));
 }
 
 export function tonedPlateClass(tone) {
 	const toned = tone ? toneClass(tone) : "";
-	return toned ? cx("wg-kit-tone", toned) : null;
+	return toned ? cn("wg-kit-tone", toned) : null;
 }

@@ -2,7 +2,7 @@ import { Fragment, createElement as h } from "react";
 import { Icon } from "../icons/icon";
 import type { LooseProps } from "../types";
 import { buttonClass, iconButtonClass } from "../utils/class-names";
-import { cx } from "../utils/cx";
+import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 import { Slot, Slottable, slotted } from "./slot";
 
@@ -16,7 +16,7 @@ export function Button({ asChild = false, isLoading = false, isDone = false, chi
 			aria-busy={isLoading ? "true" : undefined}
 			data-loading={isLoading ? "" : undefined}
 			data-disabled={props.disabled || isLoading ? "" : undefined}
-			className={cx(buttonClass(props), isLoading && "is-loading", isDone && "is-done")}
+			className={cn(buttonClass(props), isLoading && "is-loading", isDone && "is-done")}
 		>
 			{buttonMark(isLoading, isDone, props.size)}
 			<Slottable>{children}</Slottable>
@@ -51,21 +51,21 @@ export function IconButton({
 			aria-busy={isLoading ? "true" : undefined}
 			data-loading={isLoading ? "" : undefined}
 			data-disabled={props.disabled || isLoading ? "" : undefined}
-			className={cx(iconButtonClass(props), isLoading && "is-loading", isDone && "is-done")}
+			className={cn(iconButtonClass(props), isLoading && "is-loading", isDone && "is-done")}
 		>
 			{buttonMark(isLoading, isDone, props.size) ?? <Slottable>{children}</Slottable>}
 		</Comp>
 	);
 }
 
-export const ButtonLabel = slotted("span", (props) => cx("wg-kit-btn-label", props.className), "ButtonLabel");
+export const ButtonLabel = slotted("span", (props) => cn("wg-kit-btn-label", props.className), "ButtonLabel");
 
 const ACTION_ICON_PX = 16;
 
 export function ActionButton({ icon, label, className: cls, children, ...rest }: LooseProps) {
 	const isMarked = rest.isLoading || rest.isDone;
 	const drawnIcon = isMarked ? null : typeof icon === "string" ? <Icon name={icon} size={ACTION_ICON_PX} /> : icon;
-	const own = { ...rest, size: "s", className: cx("wg-kit-action", cls) };
+	const own = { ...rest, size: "s", className: cn("wg-kit-action", cls) };
 	if (!children)
 		return (
 			<IconButton {...own} label={label}>
@@ -82,7 +82,7 @@ export function ActionButton({ icon, label, className: cls, children, ...rest }:
 
 export function Spinner({ size = 18, className: cls }: LooseProps) {
 	return (
-		<span className={cx("wg-kit-spinner", cls)} style={{ width: `${size}px`, height: `${size}px` }} aria-hidden="true">
+		<span className={cn("wg-kit-spinner", cls)} style={{ width: `${size}px`, height: `${size}px` }} aria-hidden="true">
 			<svg viewBox="0 0 24 24">
 				<circle cx={12} cy={12} r={9} />
 			</svg>

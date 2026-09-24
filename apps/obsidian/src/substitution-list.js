@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { Icon, List, Pill, Sidebar, SidebarGroup, SidebarRow, cx } from "@widgetarium/kit";
+import { Icon, List, Pill, Sidebar, SidebarGroup, SidebarRow, cn } from "@widgetarium/kit";
 import { ruleBlock } from "./substitution.js";
 import { ruleStatus, triggerLabel } from "./substitution-say.js";
 
@@ -11,7 +11,7 @@ const NOTHING_YET = "Nothing here yet";
 const UNTITLED = "Untitled";
 
 export function RuleList({ editing, onPicked, className }) {
-	return h(Sidebar, { className: cx("wg-sub-list", className) }, [
+	return h(Sidebar, { className: cn("wg-sub-list", className) }, [
 		h("div", { key: "head", className: "wg-sub-side-head" }, [
 			h("h2", { key: "title", className: "wg-sub-side-title" }, TITLE),
 			h("p", { key: "lead", className: "wg-sub-side-lead" }, LEAD),
@@ -25,7 +25,7 @@ export function RuleList({ editing, onPicked, className }) {
 						h(SidebarRow, {
 							key: entry.id,
 							as: "button",
-							className: cx("wg-sub-item", !entry.enabled && "is-disabled"),
+							className: cn("wg-sub-item", !entry.enabled && "is-disabled"),
 							selected: entry.id === editing.rule?.id,
 							onClick: () => {
 								editing.open(entry.id);

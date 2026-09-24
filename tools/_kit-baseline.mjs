@@ -29,7 +29,7 @@ globalThis.ResizeObserver = class {
 
 const { createElement: h } = await import("react");
 const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, toneClass, variants, cx } =
+const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, toneClass, variants, cn } =
 	await import("./.mjs-cache/index.mjs");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
@@ -62,7 +62,7 @@ check(
 	variants("x", { tone: { hot: "is-hot" } })({ tone: "hot" }),
 	"x is-hot",
 );
-check("cx drops the falsy and flattens", cx("a", false, ["b", null], "c"), "a b c");
+check("cn drops the falsy and flattens", cn("a", false, ["b", null], "c"), "a b c");
 
 // A TONE IS A ROLE THE KIT OWNS. Two tones sharing a class is one colour wearing two names, and
 // a table pointing at a name the kit dropped paints the thing neutral grey with nothing failing.

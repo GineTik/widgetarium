@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
 import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
@@ -44,6 +45,7 @@ const {
 	sidebarClass,
 	toneClass,
 	variants,
+	cn,
 	cx,
 } = await import("./.mjs-cache/index.mjs");
 const { PLATES_ABOVE } = await import("./.mjs-cache/utils/surface.mjs");
@@ -93,7 +95,12 @@ check(
 	variants("x", { tone: { hot: "is-hot" } })({ tone: "hot" }),
 	"x is-hot",
 );
-check("cx drops the falsy and flattens", cx("a", false, ["b", null], "c"), "a b c");
+check("cn drops the falsy and flattens", cn("a", false, ["b", null], "c"), "a b c");
+check(
+	"CX STAYS THE SAME FUNCTION AS CN FOR WIDGETS PUBLISHED BEFORE THE RENAME",
+	[cx === cn, Kit.cx === cn],
+	[true, true],
+);
 
 // A CARD IS THE PLATE EVERY SURFACE IS BUILT FROM, so the pieces built on it must SAY so in their
 // class list — a sidebar that only looks like a card is the block spelled twice again.
@@ -2963,6 +2970,8 @@ check(
 		Tabs: { items: [{ value: "a", label: "A" }], value: "a" },
 		SlotList: { slot: () => h("i"), rows: [1], give: () => ({}) },
 		Icon: { name: "search" },
+		Pagination: { count: 3 },
+		DataTable: { columns: [{ key: "a" }], rows: [{ a: 1 }] },
 		ShowMore: { remaining: 2 },
 		Emblem: { label: "probe" },
 		StatusProgress: { value: 50 },
@@ -2980,11 +2989,20 @@ check(
 		SelectValue: "Select",
 		SelectContent: "Select",
 		SelectItem: "Select",
+		SparklineLine: "Sparkline",
+		SparklineArea: "Sparkline",
+		SparklineBars: "Sparkline",
+		SparklineDot: "Sparkline",
 	};
 	const PART_NEEDS = { SelectItem: { value: "a" } };
 	const DRAWN_ONLY_ONCE_AN_IMAGE_LOADS = new Set(["EmblemImage"]);
 	const DRAWS_NO_ELEMENT_OF_ITS_OWN = new Set(["Select"]);
-	const PARENT_NEEDS = { Emblem: { label: "probe" }, Popover: { defaultOpen: true }, Select: { defaultOpen: true } };
+	const PARENT_NEEDS = {
+		Emblem: { label: "probe" },
+		Popover: { defaultOpen: true },
+		Select: { defaultOpen: true },
+		Sparkline: { data: [1, 2] },
+	};
 	const withoutClass = [];
 	for (const [name, drawn] of Object.entries(Kit)) {
 		if (
@@ -3003,6 +3021,403 @@ check(
 	}
 	render(null, host);
 	check("EVERY KIT COMPONENT TAKES A CALLER'S CLASS", withoutClass, []);
+}
+
+{
+	const { valuesOf, sparkSpots, linePath, areaPath, sparkBars, spotAt, highlightedIndex } =
+		await import("./.mjs-cache/utils/sparkline.mjs");
+	const { chartColorOf, seriesColorName } = await import("./.mjs-cache/utils/chart-colors.mjs");
+	check(
+		"A SPARKLINE READS NUMBERS AND NUMERIC TEXT, AND ANYTHING ELSE IS A GAP",
+		valuesOf([1, "2", "", "x", null, 3]),
+		[1, 2, null, null, null, 3],
+	);
+	check(
+		"THE LOWEST POINT SITS ON THE FLOOR AND THE HIGHEST ON THE CEILING, INSIDE THE INSET",
+		sparkSpots([0, 10], 108, 40).map((spot) => [spot.x, spot.y]),
+		[
+			[4, 36],
+			[104, 4],
+		],
+	);
+	check(
+		"A FLAT SERIES IS DRAWN THROUGH THE MIDDLE",
+		sparkSpots([5, 5], 108, 40).map((spot) => spot.y),
+		[20, 20],
+	);
+	check(
+		"A GAP BREAKS THE LINE INTO TWO RUNS",
+		(linePath(sparkSpots([1, 2, null, 3, 4], 108, 40)).match(/M/g) ?? []).length,
+		2,
+	);
+	check("AN AREA CLOSES ON ITS BASE", areaPath(sparkSpots([0, 10], 108, 40), 36), "M4 36L4 36L104 4L104 36Z");
+	check("A DOT MARKS THE HIGHEST POINT WHEN ASKED", spotAt(sparkSpots([3, 9, 1], 108, 40), "max")?.value, 9);
+	check(
+		"A PLACE THE SPARKLINE NEVER HAD MARKS THE LAST POINT",
+		spotAt(sparkSpots([3, 9, 1], 108, 40), "middle")?.value,
+		1,
+	);
+	check("THE LAST DRAWN BAR IS THE HIGHLIGHTED ONE", highlightedIndex([1, 2, null], "last"), 1);
+	check("A BAR AT ZERO STAYS VISIBLE", sparkBars([0, 4], 100, 40)[0].height, 1.5);
+	check("A NUMBERED CHART COLOUR IS ITS TOKEN", chartColorOf(3, 0), "var(--wg-kit-chart-3)");
+	check("A PALETTE NAME IS THE KIT'S INK", chartColorOf("purple", 0), "var(--wg-kit-purple)");
+	check("A SERIES WITH NO COLOUR TAKES ITS PLACE'S TOKEN", chartColorOf(undefined, 6), "var(--wg-kit-chart-2)");
+	check("A HAND-WRITTEN COLOUR IS REFUSED FOR THE PLACE'S TOKEN", chartColorOf("#ff0000", 0), "var(--wg-kit-chart-1)");
+	check("A SERIES KEY BECOMES A SAFE PROPERTY NAME", seriesColorName("notes per day"), "--color-notes-per-day");
+
+	const { Sparkline, SparklineArea, SparklineLine, SparklineDot } = await import("./.mjs-cache/index.mjs");
+	render(
+		h(
+			Sparkline,
+			{ data: [1, 5, 3], label: "Notes", color: "green" },
+			h(SparklineArea),
+			h(SparklineLine),
+			h(SparklineDot, { at: "max" }),
+		),
+		host,
+	);
+	await settle();
+	const spark = host.querySelector(".wg-kit-spark");
+	check(
+		"A SPARKLINE WEARS ITS COLOUR AS A TOKEN",
+		spark?.style.getPropertyValue("--wg-kit-spark"),
+		"var(--wg-kit-green)",
+	);
+	check(
+		"A LABELLED SPARKLINE IS AN IMAGE WITH A NAME",
+		[spark?.querySelector("svg")?.getAttribute("role"), spark?.querySelector("svg")?.getAttribute("aria-label")],
+		["img", "Notes"],
+	);
+	check(
+		"A SPARKLINE DRAWS ITS PARTS IN THE ORDER GIVEN",
+		[...(spark?.querySelectorAll("path, circle") ?? [])].map((part) => part.getAttribute("class")),
+		["wg-kit-spark-area", "wg-kit-spark-line", "wg-kit-spark-dot"],
+	);
+	render(null, host);
+
+	const charts = await import("./.mjs-cache/charts/index.mjs");
+	const measured = HTMLElement.prototype.getBoundingClientRect;
+	HTMLElement.prototype.getBoundingClientRect = () => ({
+		width: 320,
+		height: 180,
+		top: 0,
+		left: 0,
+		right: 320,
+		bottom: 180,
+		x: 0,
+		y: 0,
+	});
+	render(
+		h(
+			charts.ChartContainer,
+			{ config: { s0: { label: "Notes" }, s1: { label: "Links", color: "cyan" } } },
+			h(charts.ChartTooltipContent, {
+				active: true,
+				label: "Feb",
+				indicator: "line",
+				payload: [
+					{ dataKey: "s0", name: "s0", value: 1305, color: "var(--color-s0)" },
+					{ dataKey: "s1", name: "s1", value: 200, color: "var(--color-s1)" },
+				],
+			}),
+		),
+		host,
+	);
+	await settle();
+	const chartBox = host.querySelector(".wg-kit-chart");
+	check(
+		"A CHART'S SERIES TAKE THEIR COLOURS FROM ITS CONFIG",
+		[chartBox?.style.getPropertyValue("--color-s0"), chartBox?.style.getPropertyValue("--color-s1")],
+		["var(--wg-kit-chart-1)", "var(--wg-kit-cyan)"],
+	);
+	const tip = host.querySelector(".wg-kit-chart-tip");
+	check("THE CHART TOOLTIP IS THE KIT'S GLASS", tip?.classList.contains("wg-kit-glass"), true);
+	check(
+		"THE TOOLTIP NAMES A SERIES BY ITS CONFIG LABEL",
+		[...(tip?.querySelectorAll(".wg-kit-chart-tip-name") ?? [])].map((name) => name.textContent),
+		["Notes", "Links"],
+	);
+	check(
+		"THE TOOLTIP HEADS WITH THE POINT IT STANDS AT",
+		tip?.querySelector(".wg-kit-chart-tip-label")?.textContent,
+		"Feb",
+	);
+	check(
+		"A TOOLTIP VALUE IS WRITTEN FOR A PERSON",
+		tip?.querySelector(".wg-kit-chart-tip-value")?.textContent,
+		(1305).toLocaleString(),
+	);
+	check(
+		"THE TOOLTIP MARK IS THE ASKED INDICATOR",
+		tip?.querySelector(".wg-kit-chart-mark")?.getAttribute("data-indicator"),
+		"line",
+	);
+	render(null, host);
+	HTMLElement.prototype.getBoundingClientRect = measured;
+	check(
+		"A CHART MARK STANDS STILL ON LOAD UNLESS ASKED TO MOVE",
+		[
+			charts.Area({ dataKey: "x" }).props.isAnimationActive,
+			charts.Bar({ dataKey: "x", isAnimationActive: true }).props.isAnimationActive,
+		],
+		[false, true],
+	);
+	check(
+		"RECHARTS' RAW TOOLTIP AND LEGEND ARE HANDED OVER ONLY AS THE KIT'S OWN",
+		[charts.Tooltip, charts.Legend, charts.ChartTooltip !== undefined, charts.ChartLegend !== undefined],
+		[undefined, undefined, true, true],
+	);
+}
+
+{
+	const { paginationItems, PaginationLink, Skeleton, Table, TableBody, TableCaption, TableCell, TableRow } =
+		await import("./.mjs-cache/index.mjs");
+	const shownPages = (page, count) =>
+		paginationItems(page, count)
+			.map((entry) => (entry.kind === "gap" ? "…" : entry.page))
+			.join(" ");
+	check("A SHORT RUN OF PAGES IS SHOWN WHOLE", shownPages(3, 7), "1 2 3 4 5 6 7");
+	check("NEAR THE START ONE GAP STANDS BEFORE THE LAST PAGE", shownPages(1, 10), "1 2 3 4 5 … 10");
+	check("THE LAST PAGE BEFORE THE FIRST GAP OPENS STILL READS FROM ONE", shownPages(4, 10), "1 2 3 4 5 … 10");
+	check("THE FIRST PAGE AFTER THE LAST GAP CLOSES STILL READS TO THE END", shownPages(7, 10), "1 … 6 7 8 9 10");
+	check("IN THE MIDDLE A GAP STANDS ON EACH SIDE OF THE CURRENT PAGE", shownPages(5, 10), "1 … 4 5 6 … 10");
+	check("NEAR THE END ONE GAP STANDS AFTER THE FIRST PAGE", shownPages(10, 10), "1 … 6 7 8 9 10");
+	check("NO PAGES DRAWS NOTHING", shownPages(1, 0), "");
+
+	render(h(PaginationLink, { isActive: true }, "3"), host);
+	await settle();
+	check(
+		"THE CURRENT PAGE IS ANNOUNCED AS THE CURRENT PAGE",
+		[
+			host.querySelector("button")?.getAttribute("aria-current"),
+			host.querySelector("button")?.hasAttribute("data-active"),
+		],
+		["page", true],
+	);
+
+	const { Pagination } = await import("./.mjs-cache/index.mjs");
+	render(h(Pagination, { count: 1 }), host);
+	await settle();
+	check("A SINGLE PAGE DRAWS NO PAGINATION", host.querySelector("nav"), null);
+	render(null, host);
+	render(h(Pagination, { count: 5, defaultPage: 2 }), host);
+	await settle();
+	const currentPage = () => host.querySelector('[aria-current="page"]')?.textContent;
+	check("THE READY PAGINATION MARKS THE PAGE IT STARTS ON", currentPage(), "2");
+	host.querySelector('[aria-label="Go to the next page"]')?.click();
+	await settle();
+	check("NEXT MOVES THE READY PAGINATION ONE PAGE ON", currentPage(), "3");
+	check(
+		"THE PAGE IT STANDS ON IS SPOKEN FOR A NARROW REGION",
+		host.querySelector('[role="status"]')?.getAttribute("aria-label"),
+		"Page 3 of 5",
+	);
+	const moved = [];
+	render(null, host);
+	render(h(Pagination, { count: 5, page: 5, onPageChange: (next) => moved.push(next) }), host);
+	await settle();
+	check(
+		"ON THE LAST PAGE NEXT IS OFF AND PREVIOUS ASKS FOR THE PAGE BEFORE",
+		[
+			host.querySelector('[aria-label="Go to the next page"]')?.disabled,
+			(host.querySelector('[aria-label="Go to the previous page"]')?.click(), moved[0]),
+		],
+		[true, 4],
+	);
+	check(
+		"A PAGE IS THE KIT'S GHOST ICON BUTTON AND A STEP IS ITS GHOST BUTTON",
+		[
+			host.querySelector('[aria-current="page"]')?.className,
+			host.querySelector('[aria-label="Go to the next page"]')?.className,
+		],
+		[
+			"wg-kit-icon is-ghost is-s wg-kit-pagination-link",
+			"wg-kit-btn is-ghost is-s wg-kit-pagination-link wg-kit-pagination-step",
+		],
+	);
+	render(h(Pagination, { count: 5, variant: "tiny" }), host);
+	await settle();
+	check(
+		"A VARIANT PAGINATION NEVER HAD DRAWS IN FULL",
+		host.querySelector("nav")?.getAttribute("data-variant"),
+		"full",
+	);
+	render(null, host);
+
+	const { DataTable } = await import("./.mjs-cache/index.mjs");
+	const invoices = [
+		{ ref: "a", client: "Halden & Co", amount: 1860 },
+		{ ref: "b", client: "Northwind", amount: null },
+	];
+	const invoiceColumns = [
+		{ key: "client", label: "Client" },
+		{ key: "amount", label: "Amount", type: "number" },
+	];
+	const asked = { sorts: [], picks: [] };
+	render(null, host);
+	render(
+		h(DataTable, {
+			rows: invoices,
+			columns: [...invoiceColumns, { key: "badge", label: "Mark", render: (row) => h("b", null, row.ref) }],
+			sort: { key: "amount", direction: "asc" },
+			onSortChange: (next) => asked.sorts.push(next),
+			selected: "b",
+			onSelect: (key) => asked.picks.push(key),
+		}),
+		host,
+	);
+	await settle();
+	const heads = [...host.querySelectorAll("th")];
+	const firstCells = [...host.querySelectorAll("tbody tr:first-child td")];
+	check(
+		"A NUMBER COLUMN STANDS AT THE END IN ITS HEAD AND ITS CELLS ALIKE",
+		[
+			heads[1]?.getAttribute("data-align"),
+			firstCells[1]?.getAttribute("data-align"),
+			heads[0]?.getAttribute("data-align"),
+		],
+		["end", "end", "start"],
+	);
+	check(
+		"A CELL SHOWS ITS NUMBER FOR A PERSON AND A DASH FOR NOTHING",
+		[firstCells[1]?.textContent, host.querySelectorAll("tbody tr")[1]?.querySelectorAll("td")[1]?.textContent],
+		[(1860).toLocaleString(), "—"],
+	);
+	check("A COLUMN'S RENDER DRAWS ITS CELL", firstCells[2]?.innerHTML, "<b>a</b>");
+	check("THE SORTED COLUMN SAYS SO TO A SCREEN READER", heads[1]?.getAttribute("aria-sort"), "ascending");
+	check(
+		"AN END COLUMN'S HEAD ENDS IN ITS WORD, SO THE WORD LINES UP WITH THE VALUES UNDER IT",
+		[heads[1]?.querySelector("button")?.lastChild?.nodeName, heads[0]?.querySelector("button")?.lastChild?.nodeName],
+		["#text", "svg"],
+	);
+	heads[1]?.querySelector("button")?.click();
+	heads[0]?.querySelector("button")?.click();
+	check("PRESSING THE SORTED HEAD TURNS THE ORDER, ANOTHER HEAD STARTS ASCENDING", asked.sorts, [
+		{ key: "amount", direction: "desc" },
+		{ key: "client", direction: "asc" },
+	]);
+	check(
+		"THE SELECTED ROW IS MARKED BY ITS REF",
+		[...host.querySelectorAll("tbody tr")].map((row) => row.getAttribute("data-state")),
+		[null, "selected"],
+	);
+	host.querySelector("tbody tr")?.click();
+	check("PRESSING A ROW SELECTS IT BY ITS REF", asked.picks, ["a"]);
+
+	render(null, host);
+	render(h(DataTable, { rows: [], columns: invoiceColumns, isLoading: true }), host);
+	await settle();
+	check(
+		"A TABLE STILL READING DRAWS SKELETON ROWS",
+		host.querySelectorAll("tbody tr .wg-kit-skeleton-group").length,
+		10,
+	);
+	render(h(DataTable, { rows: [], columns: invoiceColumns }), host);
+	await settle();
+	check(
+		"AN EMPTY TABLE SAYS SO ACROSS EVERY COLUMN",
+		[host.querySelector("tbody td")?.textContent, host.querySelector("tbody td")?.getAttribute("colspan")],
+		["Nothing here yet.", "2"],
+	);
+	render(h(DataTable, { rows: invoices, columns: invoiceColumns, count: 4, page: 2 }), host);
+	await settle();
+	check(
+		"A TABLE OF MANY PAGES DRAWS THE KIT'S PAGINATION UNDER IT",
+		host.querySelector('[aria-current="page"]')?.textContent,
+		"2",
+	);
+	render(null, host);
+
+	const { CodeBlock } = await import("./.mjs-cache/index.mjs");
+	render(h(CodeBlock, { code: "<Button />", label: "Usage" }), host);
+	await settle();
+	check(
+		"A CODE BLOCK HOLDS ITS CODE AS TEXT, NEVER AS MARKUP",
+		[host.querySelector("pre.wg-kit-code-block > code")?.textContent, host.querySelector("button")],
+		["<Button />", null],
+	);
+	render(null, host);
+
+	const sheet = readFileSync("apps/obsidian/styles.css", "utf8");
+	const heightOf = (selector) =>
+		new RegExp(`${selector.replace(/[.[\]"=]/g, "\\$&")} \\{[^}]*height: ([^;]+);`).exec(sheet)?.[1];
+	check(
+		"A BUTTON, A FIELD, AN ICON BUTTON AND THEIR SKELETONS READ ONE HEIGHT TOKEN PER SIZE",
+		[
+			heightOf(".wg-kit-btn.is-s"),
+			heightOf(".wg-kit-field.is-s"),
+			heightOf(".wg-kit-icon.is-s"),
+			heightOf('.wg-kit-skeleton[data-kind="button"][data-size="s"]'),
+			heightOf(".wg-kit-btn.is-m"),
+			heightOf(".wg-kit-icon.is-m"),
+			heightOf('.wg-kit-skeleton[data-kind="field"]'),
+		],
+		[
+			"var(--wg-kit-control-s)",
+			"var(--wg-kit-control-s)",
+			"var(--wg-kit-control-s)",
+			"var(--wg-kit-control-s)",
+			"var(--wg-kit-control-m)",
+			"var(--wg-kit-control-m)",
+			"var(--wg-kit-control-m)",
+		],
+	);
+
+	render(h(Skeleton, { kind: "text", lines: 4 }), host);
+	await settle();
+	check(
+		"A TEXT SKELETON DRAWS ITS LINES, THE LAST ONE SHORT",
+		[...host.querySelectorAll('[data-part="line"]')].map((line) => line.hasAttribute("data-last")),
+		[false, false, false, true],
+	);
+	render(h(Skeleton, { kind: "emblem", size: "l" }), host);
+	await settle();
+	check(
+		"AN EMBLEM SKELETON TAKES THE EMBLEM'S OWN SIZE",
+		host.querySelector(".wg-kit-skeleton")?.style.getPropertyValue("--wg-kit-skeleton-size"),
+		"64px",
+	);
+	render(h(Skeleton, { kind: "button", size: "xl" }), host);
+	await settle();
+	check(
+		"A BUTTON SKELETON OF A SIZE NO BUTTON HAS IS DRAWN MEDIUM",
+		host.querySelector(".wg-kit-skeleton")?.getAttribute("data-size"),
+		"m",
+	);
+	render(h(Skeleton, { kind: "sonar" }), host);
+	await settle();
+	check(
+		"A KIND THE SKELETON NEVER HAD DRAWS A BLOCK",
+		host.querySelector(".wg-kit-skeleton")?.getAttribute("data-kind"),
+		"block",
+	);
+	check(
+		"A SKELETON IS HIDDEN FROM A SCREEN READER",
+		host.querySelector(".wg-kit-skeleton")?.getAttribute("aria-hidden"),
+		"true",
+	);
+
+	render(
+		h(
+			Table,
+			null,
+			h(TableCaption, null, "Sample"),
+			h(TableBody, null, h(TableRow, { "data-state": "selected" }, h(TableCell, null, "one"))),
+		),
+		host,
+	);
+	await settle();
+	check(
+		"A TABLE STANDS IN ITS OWN SIDEWAYS SCROLL",
+		host.querySelector(".wg-kit-table-scroll > table.wg-kit-table") !== null,
+		true,
+	);
+	check(
+		"A SELECTED ROW SAYS SO ON THE ELEMENT",
+		host.querySelector("tr.wg-kit-table-row")?.getAttribute("data-state"),
+		"selected",
+	);
+	render(null, host);
 }
 
 console.log(failed ? `\n${failed} failed` : `\nall passed (${checks} checks)`);

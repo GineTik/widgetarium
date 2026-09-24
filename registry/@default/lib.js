@@ -198,6 +198,13 @@ export function tipShare(hovered, count) {
 	return (hovered + 0.5) / count;
 }
 
+export function numberIn(held) {
+	if (typeof held === "number") return Number.isFinite(held) ? held : null;
+	if (typeof held !== "string" || held.trim() === "") return null;
+	const read = Number(held);
+	return Number.isFinite(read) ? read : null;
+}
+
 export function amountOf(record) {
 	const held = Number(record?.amount);
 	return Number.isFinite(held) ? held : null;

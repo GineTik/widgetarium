@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import { useRef, useState } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
 import { DialogClose, DialogContent, DialogOverlay } from "@widgetarium/core/dialog.js";
-import { Button, Icon, cx } from "@widgetarium/kit";
+import { Button, Icon, cn } from "@widgetarium/kit";
 import { classOf } from "@widgetarium/core/paths.js";
 import { useWidth } from "@widgetarium/core/use-width.js";
 import { useRuleEditing } from "./use-rule-editing.js";
@@ -25,7 +25,7 @@ export function SubstitutionDialog({ rules, registry, host, available = [], onIn
 		{ className: "wg-sub-over", onClose },
 		h(DialogContent, { className: "wg-sub-dialog" }, [
 			h(DialogClose, { key: "x", onClose }),
-			h("div", { key: "body", className: cx("wg-sub", phone && "is-phone"), ref: rootRef }, [
+			h("div", { key: "body", className: cn("wg-sub", phone && "is-phone"), ref: rootRef }, [
 				phone ? null : h(RuleList, { key: "side", editing, className: "wg-sub-side" }),
 				h("section", { key: "main", className: "wg-sub-main" }, [
 					phone
