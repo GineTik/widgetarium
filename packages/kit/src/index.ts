@@ -80,6 +80,18 @@ import { markOf } from "./utils/marks";
 import { progressState } from "./utils/progress";
 import { barGeometry, circleGeometry } from "./utils/progress-geometry";
 import { inkedClass, toneClass, toneOf } from "./utils/tones";
+import { Ceiling, COUNTED_CEILING, countedFirstLine } from "./components/ceiling";
+import { DiffBar } from "./components/diff-bar";
+import { FLAME, Flame } from "./components/flame";
+import { Line } from "./components/line";
+import { MoreWhenSeen } from "./components/more-when-seen";
+import { RenderedMarkdown } from "./components/rendered-markdown";
+import { useMarkdownRenderedInto } from "./hooks/use-markdown-rendered-into";
+import { useNow } from "./hooks/use-now";
+import { usePages } from "./hooks/use-pages";
+import { useScrollFog } from "./hooks/use-scroll-fog";
+import { useShown } from "./hooks/use-shown";
+import { useWhenSeen } from "./hooks/use-when-seen";
 
 export const Kit = {
 	Sidebar,
@@ -192,6 +204,21 @@ export const Kit = {
 	listClass,
 	rowClass,
 	glassClass,
+	Ceiling,
+	COUNTED_CEILING,
+	countedFirstLine,
+	DiffBar,
+	FLAME,
+	Flame,
+	Line,
+	MoreWhenSeen,
+	RenderedMarkdown,
+	useMarkdownRenderedInto,
+	useNow,
+	usePages,
+	useScrollFog,
+	useShown,
+	useWhenSeen,
 };
 
 export { ActionButton, Button, ButtonLabel, IconButton, ShowMore, Spinner } from "./components/button";
@@ -284,3 +311,17 @@ export { plateEdgesTakenBy } from "./utils/plate-edges";
 export { progressState } from "./utils/progress";
 export { barGeometry, circleGeometry } from "./utils/progress-geometry";
 export { inkedClass, toneClass, toneOf } from "./utils/tones";
+export { Ceiling, COUNTED_CEILING, countedFirstLine } from "./components/ceiling";
+export { DiffBar } from "./components/diff-bar";
+export { FLAME, Flame } from "./components/flame";
+export { Line } from "./components/line";
+export { MoreWhenSeen } from "./components/more-when-seen";
+export { RenderedMarkdown } from "./components/rendered-markdown";
+export { useMarkdownRenderedInto } from "./hooks/use-markdown-rendered-into";
+export type { MarkdownHost } from "./hooks/use-markdown-rendered-into";
+export { useNow } from "./hooks/use-now";
+export { usePages } from "./hooks/use-pages";
+export { useScrollFog } from "./hooks/use-scroll-fog";
+export type { ScrollEdges } from "./hooks/use-scroll-fog";
+export { useShown } from "./hooks/use-shown";
+export { useWhenSeen } from "./hooks/use-when-seen";

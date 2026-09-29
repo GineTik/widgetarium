@@ -25,6 +25,10 @@ globalThis.ResizeObserver = class {
 	observe() {}
 	disconnect() {}
 };
+globalThis.IntersectionObserver = class {
+	observe() {}
+	disconnect() {}
+};
 
 const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
@@ -2975,6 +2979,11 @@ check(
 		Spinner: { size: 16 },
 		SidebarRow: { label: "row" },
 		SidebarGroup: { label: "group" },
+		DiffBar: { added: 2, removed: 1 },
+		Ceiling: { total: 501, tone: "inherit" },
+		Line: { tone: "inherit", text: "line" },
+		RenderedMarkdown: { host: { can: { renderMarkdown: false }, ui: {} }, markdown: "text" },
+		MoreWhenSeen: { onSeen: () => {} },
 	};
 	const PART_OF = {
 		EmblemImage: "Emblem",
