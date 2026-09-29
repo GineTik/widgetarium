@@ -1,5 +1,6 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { widgetModulesUnder } from "@widgetarium/core/engine/widget-build.js";
 
 export async function readJson(at, fallback) {
 	try {
@@ -25,6 +26,14 @@ export async function filesIn(at) {
 			found.push(entry.name);
 	}
 	return found;
+}
+
+export async function widgetFilesIn(folder) {
+	return [...new Set([...(await filesIn(folder)), ...(await widgetModulesUnder(folder, listedIn))])];
+}
+
+export async function listedIn(at) {
+	return { files: (await filesIn(at)).map((name) => join(at, name)), folders: await foldersIn(at) };
 }
 
 async function readdirOf(at) {

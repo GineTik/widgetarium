@@ -10,8 +10,6 @@ import WIDGET_TYPES from "widgetarium:widget-types";
 export const HANDBOOK_DIR = `${ROOT}/agent`;
 export const BIN_DIR = `${ROOT}/bin`;
 export const WIDGETS_DIR = `${ROOT}/widgets`;
-export const TYPES_DIR = `${WIDGETS_DIR}/types`;
-export const GATEWAY_TYPES_DIR = `${TYPES_DIR}/gateway`;
 export const TOOL_PATH = `${BIN_DIR}/widgets.mjs`;
 
 export const HANDBOOK = {
@@ -23,6 +21,20 @@ export const HANDBOOK = {
 };
 
 const PAGES_LAID_BEFORE = `${HANDBOOK_DIR}/patterns`;
+
+export async function layAgentFiles(adapter) {
+	const written = [];
+	for (const folder of [HANDBOOK_DIR, BIN_DIR]) {
+		if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
+	}
+	for (const [name, text] of Object.entries(HANDBOOK)) {
+		if (await writeIfChanged(adapter, `${HANDBOOK_DIR}/${name}`, text)) written.push(name);
+	}
+	written.push(...(await sweptOfPagesNoLongerLaid(adapter)));
+	if (await writeIfChanged(adapter, TOOL_PATH, WIDGETS_CLI)) written.push("widgets.mjs");
+	written.push(...(await layWidgetTypes(adapter)));
+	return written;
+}
 
 // TRADE-OFF: only markdown beside the pages and the one folder this file used to lay, because the
 // TRADE-OFF: agent keeps its own measurements under the same roof and a wider sweep would eat them
@@ -48,27 +60,23 @@ async function writeIfChanged(adapter, path, text) {
 	return true;
 }
 
+function foldersHolding(names) {
+	const folders = new Set([WIDGETS_DIR]);
+	for (const name of names) {
+		const parts = `${WIDGETS_DIR}/${name}`.split("/").slice(0, -1);
+		for (let depth = WIDGETS_DIR.split("/").length + 1; depth <= parts.length; depth += 1)
+			folders.add(parts.slice(0, depth).join("/"));
+	}
+	return [...folders];
+}
+
 async function layWidgetTypes(adapter) {
 	const written = [];
-	for (const folder of [WIDGETS_DIR, TYPES_DIR, GATEWAY_TYPES_DIR]) {
+	for (const folder of foldersHolding(Object.keys(WIDGET_TYPES))) {
 		if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
 	}
 	for (const [name, text] of Object.entries(WIDGET_TYPES)) {
 		if (await writeIfChanged(adapter, `${WIDGETS_DIR}/${name}`, text)) written.push(name);
 	}
-	return written;
-}
-
-export async function layAgentFiles(adapter) {
-	const written = [];
-	for (const folder of [HANDBOOK_DIR, BIN_DIR]) {
-		if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
-	}
-	for (const [name, text] of Object.entries(HANDBOOK)) {
-		if (await writeIfChanged(adapter, `${HANDBOOK_DIR}/${name}`, text)) written.push(name);
-	}
-	written.push(...(await sweptOfPagesNoLongerLaid(adapter)));
-	if (await writeIfChanged(adapter, TOOL_PATH, WIDGETS_CLI)) written.push("widgets.mjs");
-	written.push(...(await layWidgetTypes(adapter)));
 	return written;
 }

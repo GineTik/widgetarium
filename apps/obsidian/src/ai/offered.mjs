@@ -2,7 +2,7 @@ import { readFile, realpath } from "node:fs/promises";
 import { join, relative, isAbsolute } from "node:path";
 import { readRegistry, REGISTRY_FILE } from "@widgetarium/core/engine/registry-file.js";
 import { cardIn } from "./entries.mjs";
-import { filesIn } from "./vault-files.mjs";
+import { widgetFilesIn } from "./vault-files.mjs";
 
 const GITHUB_REPOSITORY = /github\.com[/:]([^/]+)\/([^/.]+)/;
 
@@ -19,7 +19,7 @@ async function offeredRow(row, read, cardFrom) {
 	const folder = await insideItsSource(read, row);
 	if (folder === null) return cardFrom(row, row.id, stands);
 	const card = await cardIn(folder);
-	return cardFrom({ ...row, ...card }, row.id, { ...stands, folder, files: await filesIn(folder) });
+	return cardFrom({ ...row, ...card }, row.id, { ...stands, folder, files: await widgetFilesIn(folder) });
 }
 
 async function insideItsSource(read, row) {

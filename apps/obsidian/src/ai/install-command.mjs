@@ -1,7 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { readLock, lockEntry, withEntry, INSTALL_PENDING } from "@widgetarium/core/engine/widget-lock.js";
-import { SOURCE_FILES } from "@widgetarium/core/engine/widget-build.js";
+import {
+	JAVASCRIPT_SOURCE_FILES,
+	SOURCE_FILES,
+	javascriptSourceRefusal,
+	widgetModulesUnder,
+} from "@widgetarium/core/engine/widget-build.js";
+import { listedIn } from "./vault-files.mjs";
 import { SCOPE_FILES, WIDGET_FILES, stampOf } from "@widgetarium/core/engine/widget-source.js";
 import { apiRefusal } from "@widgetarium/core/version.js";
 
@@ -35,12 +41,18 @@ function refusalFor(entry) {
 	return apiRefusal({ id: entry.id, api: entry.api });
 }
 
+async function sourceMissingFailure(entry, taken) {
+	const javascriptFiles = Object.keys(await readFrom(entry.folder, JAVASCRIPT_SOURCE_FILES));
+	return (
+		javascriptSourceRefusal(javascriptFiles, entry.folder) ??
+		`${entry.folder} holds no widget source, only ${Object.keys(taken).join(", ") || "nothing"}, so ${entry.id} was not installed.`
+	);
+}
+
 async function whatWouldBeWritten(entry, widgetsDir) {
-	const taken = await readFrom(entry.folder, WIDGET_FILES);
-	if (!SOURCE_FILES.some((file) => file in taken))
-		return {
-			failure: `${entry.folder} holds no widget source, only ${Object.keys(taken).join(", ") || "nothing"}, so ${entry.id} was not installed.`,
-		};
+	const modules = await widgetModulesUnder(entry.folder, listedIn);
+	const taken = await readFrom(entry.folder, [...new Set([...WIDGET_FILES, ...modules])]);
+	if (!SOURCE_FILES.some((file) => file in taken)) return { failure: await sourceMissingFailure(entry, taken) };
 
 	const [scope, name] = entry.id.split("/");
 	const scopeAt = join(widgetsDir, scope);
@@ -84,8 +96,10 @@ async function alreadyStanding(into, files) {
 }
 
 async function writtenInto(into, files) {
-	await mkdir(into, { recursive: true });
-	for (const [file, text] of Object.entries(files)) await writeFile(join(into, file), text);
+	for (const [file, text] of Object.entries(files)) {
+		await mkdir(dirname(join(into, file)), { recursive: true });
+		await writeFile(join(into, file), text);
+	}
 }
 
 // TODO: two processes installing at once still lose an entry; the plugin and this tool need one writer

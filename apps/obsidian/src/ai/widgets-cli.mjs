@@ -4,16 +4,19 @@ import { fileURLToPath } from "node:url";
 import { boardOfNote } from "./board-note.mjs";
 import { lintOfNote } from "./lint-command.mjs";
 import { surfacesOfNote } from "./surfaces-command.mjs";
-import { columnsOf, isBox, keptAt, laidRegion, sideOf } from "@widgetarium/core/tree.js";
+import { columnsOf, keptAt, laidRegion, sideOf } from "@widgetarium/core/tree.js";
 import { cardIn } from "./entries.mjs";
-import { filesIn, foldersIn, readJson } from "./vault-files.mjs";
+import { filesIn, foldersIn, readJson, widgetFilesIn } from "./vault-files.mjs";
 import { installWidget } from "./install-command.mjs";
 import { BASE_NAMES, baseNamed, cardLayoutNamed, everyBase } from "./shape-command.mjs";
 import { offeredBySource } from "./offered.mjs";
 import { surfaceNamesIn } from "./widget-surface.mjs";
-import { rankedWidgets, refusedReading, READING_KINDS } from "./find-command.mjs";
-import { checkWidget, saidWidgetCheck, WIDGET_CHECK_RULES } from "@widgetarium/core/widget-check.js";
+import { rankedWidgets, refusedReading } from "./find-command.mjs";
+import { checkWidget, saidWidgetCheck } from "@widgetarium/core/widget-check.js";
+import { HELP } from "./widgets-cli-help.mjs";
+import { drawnNode } from "./drawn-node.mjs";
 import { GRID, LOCK_PATH } from "@widgetarium/core/paths.js";
+import { SOURCE_FILES, isWidgetModule, javascriptSourceRefusal } from "@widgetarium/core/engine/widget-build.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const VAULT = resolve(HERE, "..", "..");
@@ -23,7 +26,6 @@ const PLUGIN_DATA = join(VAULT, ".obsidian", "plugins", "widgetarium", "data.jso
 const DEFAULT_BOARD_WIDTH = 1400;
 
 // TODO: import idOfFolder, readRegistry and mergeCatalogue from the engine too, now that this script is bundled
-const SOURCE_FILES = ["widget.tsx", "widget.ts", "widget.jsx", "widget.js"];
 const STYLE_FILES = ["widget.css"];
 const STEPS_OUT_OF_THE_REPOSITORY = /^\/|(^|\/)\.\.(\/|$)/;
 const WIDGET_ID = /^@[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
@@ -32,40 +34,6 @@ const STARTED_NEW = "Building {id}, a new widget. Write its files in {folder}.";
 const STARTED_EDIT = "Building {id}, which is already here. Edit its files in {folder}.";
 const STARTED_PUBLISHED =
 	"{id} was installed from a repository, so the next update replaces whatever you change in {folder}.";
-
-const HELP = `widgets — the Widgetarium catalogue, for the agent
-
-  node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
-  node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
-  node widgets.mjs bases               every base a screen can start from
-  node widgets.mjs base <name>         one base: its regions, its sections, ready to write into a note
-  node widgets.mjs card <name>          one card's parts and the plate it wears, ready to put in a region
-  node widgets.mjs show <id>            one widget's manifest and the files it is made of
-  node widgets.mjs start <id> --title <words>   say you are building a widget, before its first file
-  node widgets.mjs check <id>           a widget's own colours, type, paging and manifest, rule by rule
-  node widgets.mjs source <id>          print a widget's component source
-  node widgets.mjs packs                the packs, and how many widgets each holds
-  node widgets.mjs sources              the catalogue sources this vault reads
-  node widgets.mjs layout <note>        the measured layout of a board, region by region
-  node widgets.mjs surfaces <note>      which surface every group should wear, law by law, and why
-  node widgets.mjs lint <note>          every value, field and nesting in the layout that is not valid
-
-Options for find, none of them a filter — every widget comes back, ranked, with its reasons:
-  --role <role>       the role the hole asks for
-  --reading <kind>    ${READING_KINDS}
-
-What check names: ${WIDGET_CHECK_RULES.join(", ")}
-  --needs <types>     comma-separated field types the data holds, as describes names them
-  --about <words>     the subject; this one only lifts a widget's score, it never hides one
-
-  --search <words>    keep only widgets matching these words
-  --tag <keyword>     keep only widgets carrying this keyword
-  --pack <@pack>      keep only widgets in this pack
-  --source <where>    installed | offered | all            (default: all)
-  --offset <n>        skip this many                       (default: 0)
-  --limit <n>         return at most this many, 1 to 100   (default: 20)
-  --text              print a readable table instead of JSON
-`;
 
 function optionsIn(argv) {
 	const held = { _: [] };
@@ -110,11 +78,17 @@ function cardFrom(raw, id, extra) {
 	};
 }
 
+function sayJavascriptRefused(files, folder) {
+	const refusal = javascriptSourceRefusal(files, folder);
+	if (refusal) console.error(refusal);
+}
+
 async function installedWidgets() {
 	const found = [];
 	for (const scope of await foldersIn(WIDGETS_DIR)) {
 		for (const folder of await foldersIn(scope)) {
-			const files = await filesIn(folder);
+			const files = await widgetFilesIn(folder);
+			sayJavascriptRefused(files, folder);
 			if (!files.some((name) => SOURCE_FILES.includes(name))) continue;
 			const manifest = (await cardIn(folder)) ?? {};
 			const id = typeof manifest.id === "string" && manifest.id !== "" ? manifest.id : idOfFolder(folder);
@@ -232,8 +206,8 @@ async function runCheck(id, options) {
 	}
 	const found = checkWidget({
 		id,
-		source: await joinedFiles(entry, SOURCE_FILES),
-		styles: await joinedFiles(entry, STYLE_FILES),
+		source: await joinedFiles(entry, isWidgetModule),
+		styles: await joinedFiles(entry, (name) => STYLE_FILES.includes(name)),
 		card: await cardOf(entry),
 		surface,
 	});
@@ -241,8 +215,8 @@ async function runCheck(id, options) {
 	return found.length === 0 ? 0 : 1;
 }
 
-async function joinedFiles(entry, wanted) {
-	const named = (entry.files ?? []).filter((name) => wanted.includes(name));
+async function joinedFiles(entry, isWanted) {
+	const named = (entry.files ?? []).filter(isWanted);
 	const texts = [];
 	for (const name of named) texts.push(await readFile(join(entry.folder, name), "utf8").catch(() => ""));
 	return texts.join("\n");
@@ -273,12 +247,15 @@ async function source(id) {
 		console.error(`${id} is offered but not installed here, so it has no source on this machine.`);
 		return 1;
 	}
-	const name = (entry.files ?? []).find((each) => SOURCE_FILES.includes(each));
-	if (!name) {
+	if (!(entry.files ?? []).some((each) => SOURCE_FILES.includes(each))) {
 		console.error(`${id} has no component file in ${entry.folder}.`);
 		return 1;
 	}
-	console.log(await readFile(join(entry.folder, name), "utf8"));
+	const modules = (entry.files ?? []).filter(isWidgetModule);
+	for (const name of modules) {
+		if (modules.length > 1) console.log(`==> ${name} <==`);
+		console.log(await readFile(join(entry.folder, name), "utf8"));
+	}
 	return 0;
 }
 
@@ -310,22 +287,6 @@ async function sources(options) {
 function missingNote() {
 	console.error("Name the note to measure, for example: layout Boards/Dashboard.md");
 	return 1;
-}
-
-function drawnNode(node, depth) {
-	const pad = "  ".repeat(depth);
-	const worn = node.surface ? ` \u00b7 ${node.surface}` : "";
-	if (!isBox(node)) {
-		const tall = node.height ? ` ${node.height}px tall` : "";
-		return `${pad}${node.id}${tall} \u00b7 ${Math.round(node.width)}px wide${worn}`;
-	}
-	const said = `${pad}${node.dir}${node.isStacked ? " (stacked)" : ""} \u00b7 ${Math.round(node.width)}px \u00b7 gaps drawn ${
-		node.of
-			.slice(0, -1)
-			.map((child) => `${Math.round(child.gapAfter)}px`)
-			.join(", ") || "none"
-	}${worn}`;
-	return [said, ...node.of.map((child) => drawnNode(child, depth + 1))].join("\n");
 }
 
 async function surfaces(at, options) {

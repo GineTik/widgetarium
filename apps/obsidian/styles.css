@@ -2672,6 +2672,43 @@ body {
 	padding: 2px var(--size-4-2, 8px) 4px;
 }
 
+:is(.wg-root, .wg-portal) .wg-set-pop-headline {
+	display: flex;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-pop-headline > .wg-set-pop-head {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-problems {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	inline-size: 18px;
+	block-size: 18px;
+	margin-block-start: 3px;
+	border-radius: 50%;
+	background: var(--wg-kit-error-wash);
+	color: var(--wg-kit-error-ink);
+	font-size: var(--wg-kit-text-xs);
+	font-weight: var(--font-bold, 700);
+	cursor: help;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-sources .wg-kit-side-list {
+	max-height: 312px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+:is(.wg-root, .wg-portal) .wg-set-sources .wg-kit-side-list > * {
+	flex: none;
+}
+
 :is(.wg-root, .wg-portal) .wg-set-pop-title {
 	font-size: var(--font-ui-small, 13px);
 	font-weight: var(--font-medium, 500);
