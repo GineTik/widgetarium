@@ -81,10 +81,13 @@ check("releasing one of the two collects nothing", afterOne.collected, []);
 check("and leaves the other pointing", afterOne.lock.modules[KEY].widgets, ["@task/board"]);
 check("releasing the last one collects the version", releaseModules(afterOne.lock, "@task/board").collected, [KEY]);
 
-const widgetSource = (name) => `import { createWidget } from "widgetarium";
+const widgetSource = (name) => `import { createWidget, defineLayout } from "widgetarium";
 import { useDraggable } from "${PACKAGE}";
-export default createWidget(function ${name}() {
-	return h("b", null, useDraggable());
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({
+	draw: function ${name}() {
+		return h("b", null, useDraggable());
+	},
 });
 `;
 
@@ -93,30 +96,32 @@ const CLOCK = {
 	repository: "https://github.com/acme/widgets",
 	ref: "main",
 	path: "widgets/@demo/clock",
-	files: ["manifest.json", "widget.jsx"],
+	files: ["manifest.generated.json", "widget.tsx"],
 };
 const BOARD = {
 	id: "@task/board",
 	repository: "https://github.com/acme/widgets",
 	ref: "main",
 	path: "widgets/@task/board",
-	files: ["manifest.json", "widget.jsx"],
+	files: ["manifest.generated.json", "widget.tsx"],
 };
 
 const SERVED = {
 	"https://api.github.com/repos/acme/widgets/commits/main": { sha: "abc1234567" },
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.json": JSON.stringify({
-		id: "@demo/clock",
-		title: "Clock",
-		dependencies: { [PACKAGE]: "^6.3.1" },
-	}),
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/widget.jsx": widgetSource("Clock"),
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@task/board/manifest.json": JSON.stringify({
-		id: "@task/board",
-		title: "Board",
-		dependencies: { [PACKAGE]: "6.3.1" },
-	}),
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@task/board/widget.jsx": widgetSource("Board"),
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.generated.json":
+		JSON.stringify({
+			id: "@demo/clock",
+			title: "Clock",
+			dependencies: { [PACKAGE]: "^6.3.1" },
+		}),
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/widget.tsx": widgetSource("Clock"),
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@task/board/manifest.generated.json":
+		JSON.stringify({
+			id: "@task/board",
+			title: "Board",
+			dependencies: { [PACKAGE]: "6.3.1" },
+		}),
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@task/board/widget.tsx": widgetSource("Board"),
 	[facadeUrl(PACKAGE, "^6.3.1")]: FACADE,
 	[facadeUrl(PACKAGE, "6.3.1")]: FACADE,
 	[BUNDLE_URL]: BUNDLE,
@@ -187,10 +192,10 @@ check(
 
 const orphan = fakeVault();
 orphan.files.set(
-	".widgetarium/widgets/@demo/clock/manifest.json",
+	".widgetarium/widgets/@demo/clock/manifest.generated.json",
 	JSON.stringify({ id: "@demo/clock", title: "Clock" }),
 );
-orphan.files.set(".widgetarium/widgets/@demo/clock/widget.jsx", widgetSource("Clock"));
+orphan.files.set(".widgetarium/widgets/@demo/clock/widget.tsx", widgetSource("Clock"));
 const alone = new WidgetRegistry({ vault: { adapter: orphan } });
 await withoutTheReport(() => alone.load());
 check("a widget importing a package nothing holds refuses", Boolean(alone.get("@demo/clock")?.error), true);
@@ -247,10 +252,11 @@ const twoPackages = await createInstaller({
 	adapter: mixed,
 	...network({
 		...SERVED,
-		"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.json": JSON.stringify({
-			id: "@demo/clock",
-			dependencies: { [PACKAGE]: "^6.3.1", clsx: "2.1.1" },
-		}),
+		"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.generated.json":
+			JSON.stringify({
+				id: "@demo/clock",
+				dependencies: { [PACKAGE]: "^6.3.1", clsx: "2.1.1" },
+			}),
 		[facadeUrl("clsx", "2.1.1")]: `export * from "${PLAIN_PATH}";\n`,
 		[`https://esm.sh${PLAIN_PATH}`]: `export const clsx = () => "joined";\n`,
 	}),
@@ -295,10 +301,11 @@ const escaped = await createInstaller({
 	adapter: escaping,
 	...network({
 		...SERVED,
-		"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.json": JSON.stringify({
-			id: "@demo/clock",
-			dependencies: { "../../evil": "1.0.0" },
-		}),
+		"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.generated.json":
+			JSON.stringify({
+				id: "@demo/clock",
+				dependencies: { "../../evil": "1.0.0" },
+			}),
 	}),
 }).install({ manifest: CLOCK });
 check("a package name that is a path is refused", escaped.failure, `"../../evil" is not a package name`);

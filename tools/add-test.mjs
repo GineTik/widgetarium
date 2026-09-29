@@ -17,21 +17,25 @@ function check(name, got, want) {
 const ENGINE = { name: "widgetarium", range: "^0.1.0" };
 const CATALOGUE = "/repo/widgets";
 
-const CLOCK_SOURCE = `import { createWidget } from "widgetarium";
+const CLOCK_SOURCE = `import { IValueGateway, createWidget, defineLayout, z } from "widgetarium";
 import { useState } from "react";
 
-export default createWidget(function Clock({ face }: { face: string }) {
-	const [ticking] = useState(true);
-	return <b   data-odd="  spacing  kept  ">{face}{String(ticking)}</b>;
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({
+	inject: { face: IValueGateway.of(z.string().default("")).pick("get") },
+	draw: ({ face }) => {
+		const [ticking] = useState(true);
+		return <b   data-odd="  spacing  kept  ">{face}{String(ticking)}</b>;
+	},
 });
 `;
 const bareSource = (word) =>
-	`import { createWidget } from "widgetarium";\nexport default createWidget(function Named() {\n\treturn <b>${word}</b>;\n});\n`;
+	`import { createWidget, defineLayout } from "widgetarium";\nexport const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });\nexport default createWidget({ draw: () => <b>${word}</b> });\n`;
 
 const shelf = new Map([
 	[`${CATALOGUE}/@demo/lib.js`, "export const shared = 1;\n"],
 	[
-		`${CATALOGUE}/@demo/clock/manifest.json`,
+		`${CATALOGUE}/@demo/clock/manifest.generated.json`,
 		JSON.stringify({
 			id: "@demo/clock",
 			title: "Clock",
@@ -42,17 +46,17 @@ const shelf = new Map([
 	[`${CATALOGUE}/@demo/clock/widget.tsx`, CLOCK_SOURCE],
 	[`${CATALOGUE}/@demo/clock/widget.css`, ".clock { color: red; }\n"],
 	[
-		`${CATALOGUE}/@demo/face/manifest.json`,
+		`${CATALOGUE}/@demo/face/manifest.generated.json`,
 		JSON.stringify({ id: "@demo/face", title: "Face", slots: { hand: { default: "@demo/hand" } } }),
 	],
 	[`${CATALOGUE}/@demo/face/widget.tsx`, bareSource("face")],
 	[
-		`${CATALOGUE}/@demo/hand/manifest.json`,
+		`${CATALOGUE}/@demo/hand/manifest.generated.json`,
 		JSON.stringify({ id: "@demo/hand", title: "Hand", dependencies: { "@dnd-kit/core": "^6.3.1" } }),
 	],
 	[`${CATALOGUE}/@demo/hand/widget.tsx`, bareSource("hand")],
 	[
-		`${CATALOGUE}/@demo/greedy/manifest.json`,
+		`${CATALOGUE}/@demo/greedy/manifest.generated.json`,
 		JSON.stringify({
 			id: "@demo/greedy",
 			title: "Greedy",
@@ -170,7 +174,7 @@ check("each into a folder of its own under the project's widgets", [...project.w
 ]);
 check(
 	"the catalogue's own card is not part of what the project gets",
-	[...project.written.keys()].some((at) => at.endsWith("manifest.json")),
+	[...project.written.keys()].some((at) => at.endsWith("manifest.generated.json")),
 	false,
 );
 
@@ -217,14 +221,14 @@ const PUBLISHED_HAND = JSON.stringify({
 	id: "@demo/hand",
 	title: "Hand",
 	dependencies: { "@dnd-kit/core": "^6.3.1" },
-	files: ["manifest.json", "widget.tsx"],
+	files: ["manifest.generated.json", "widget.tsx"],
 });
 const SERVED = {
 	"https://api.github.com/repos/acme/widgets/commits/main": { sha: "abc1234567" },
 	"https://api.github.com/repos/acme/widgets/git/trees/abc1234567?recursive=1": {
-		tree: [{ path: "widgets/@demo/hand/manifest.json" }],
+		tree: [{ path: "widgets/@demo/hand/manifest.generated.json" }],
 	},
-	[`${raw}/widgets/@demo/hand/manifest.json`]: PUBLISHED_HAND,
+	[`${raw}/widgets/@demo/hand/manifest.generated.json`]: PUBLISHED_HAND,
 	[`${raw}/widgets/@demo/hand/widget.tsx`]: shelf.get(`${CATALOGUE}/@demo/hand/widget.tsx`),
 };
 const served = (url) => {

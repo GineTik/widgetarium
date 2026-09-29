@@ -1,9 +1,11 @@
-import { defineManifest, defineProp } from "widgetarium";
+import { IValueGateway, defineMetadata, defineProps, z } from "widgetarium";
 
-export const manifest = defineManifest({
+const props = defineProps({
+	pageSize: IValueGateway.of(z.number().default(10)).pick("get"),
+});
+
+export const metadata = defineMetadata(props, {
 	title: "Wrong control",
 	description: "A number drawn as an icon.",
-	props: {
-		pageSize: defineProp<number>()({ default: 10, control: "icon" }),
-	},
+	props: { pageSize: { control: "icon" } },
 });

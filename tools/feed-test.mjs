@@ -1,6 +1,5 @@
-import fs from "node:fs";
 import { JSDOM } from "jsdom";
-import { transform } from "sucrase";
+import { runWidgetSource } from "./run-widget-source.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -52,23 +51,8 @@ const { previewProps } = await import("./.mjs-cache/preview.mjs");
 const { manifestOfEveryShippedWidget } = await import("./widget-props.mjs");
 
 function run(file) {
-	const shell = { exports: {} };
-	const code = transform(fs.readFileSync(file, "utf8"), {
-		transforms: ["typescript", "jsx", "imports"],
-		jsxPragma: "h",
-		jsxFragmentPragma: "Fragment",
-		production: true,
-		filePath: file,
-	}).code;
 	const modules = { widgetarium, "widgetarium/kit": kit, react };
-	new Function("require", "module", "exports", "h", "Fragment", code)(
-		(name) => modules[name],
-		shell,
-		shell.exports,
-		h,
-		Fragment,
-	);
-	return shell.exports;
+	return runWidgetSource(file, (name) => modules[name], h, Fragment);
 }
 
 const Feed = run("registry/@default/feed/widget.tsx").default;
@@ -139,7 +123,7 @@ const items = arrayGateway(
 				query,
 			);
 		},
-		get: (ref) => ({ ref, value: { path: ref, content: `Body of ${ref}` } }),
+		get: (ref) => ({ ref, path: ref, content: `Body of ${ref}` }),
 	},
 	"feed-test/daily",
 );

@@ -571,9 +571,9 @@ console.log("\n— and the panel writes what it draws —");
 	await tick();
 	await press(all(OPEN_POP + " button").find((button) => button.textContent.trim() === "Apply"));
 	check(
-		"clearing it falls back to the widget's own default",
+		"clearing it names no folder, because a default is never a path",
 		rowSaying("Tasks")?.textContent.includes("Orbitask/Tasks"),
-		true,
+		false,
 	);
 	check("and the row says the difference out loud", Boolean(rowSaying("Tasks")?.classList.contains("is-unset")), true);
 	await press(tab("Data"));
@@ -868,7 +868,9 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("nor is the size the tile has on the board", Boolean(all(".wg-set-head .wg-kit-pill").length), false);
 	await press(tabNamed("Design"));
 	const designLabels = () => all(".wg-set-panel .wg-kit-side-label").map((node) => node.textContent.trim());
-	check("its Design tab holds its own surface and no size, because only a region is sized", designLabels(), ["Surface"]);
+	check("its Design tab holds its own surface and no size, because only a region is sized", designLabels(), [
+		"Surface",
+	]);
 	check("it stands as its holder draws it until told otherwise", Boolean(rowSaying("As its holder draws it")), true);
 	check("there is no fold for a thing with no place of its own", designLabels().includes("Folded"), false);
 	await press(rowSaying("As its holder draws it"));
@@ -1462,9 +1464,28 @@ console.log("\n— a text reads a note: its content, its name, or one of its pro
 	await press(
 		[...document.querySelectorAll(".wg-set-panel .wg-kit-row")].find((row) => row.textContent.includes("Body")),
 	);
-	check("a text is offered a file, beside typing it", Boolean(popButton("File")), true);
+	const sourceRow = (title) =>
+		[...document.querySelectorAll(OPEN_POP + " .wg-set-sources button")].find(
+			(node) => node.querySelector(".wg-kit-row-label")?.firstChild?.textContent === title,
+		);
+	check(
+		"the prop names where its data comes from behind one button, not a row of tabs",
+		Boolean(popButton("File")),
+		false,
+	);
+	await press(document.querySelector(OPEN_POP + ' button[aria-label="Where the data comes from"]'));
+	check(
+		"a text is offered a file, beside typing it",
+		[Boolean(sourceRow("File")), Boolean(sourceRow("Typed here"))],
+		[true, true],
+	);
+	check(
+		"and the source it reads from now is the one marked",
+		sourceRow("Typed here")?.getAttribute("aria-current"),
+		"true",
+	);
 
-	await press(popButton("File"));
+	await press(sourceRow("File"));
 	await press(popButton("Habits.md"));
 	check(
 		"the parts offered are content, name and the note's own properties",

@@ -48,7 +48,10 @@ await writeFile(join(bin, "widgets.mjs"), await widgetsCliBundle());
 const held = join(vault, ".widgetarium", "widgets", "@here", "already");
 await mkdir(held, { recursive: true });
 await writeFile(join(held, "widget.tsx"), "export default null;\n");
-await writeFile(join(held, "manifest.json"), JSON.stringify({ title: "Already", role: "collection", keywords: [] }));
+await writeFile(
+	join(held, "manifest.generated.json"),
+	JSON.stringify({ title: "Already", role: "collection", keywords: [] }),
+);
 const pluginData = join(vault, ".obsidian", "plugins", "widgetarium");
 await mkdir(pluginData, { recursive: true });
 await writeFile(join(pluginData, "data.json"), JSON.stringify({ registries: [{ path: served }] }));

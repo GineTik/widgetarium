@@ -7,7 +7,7 @@ import type {
 	ListAction,
 	Patch,
 	Query,
-	Ref,
+	RecordRef,
 	RemoveAction,
 	Text,
 	UpdateAction,
@@ -24,18 +24,19 @@ type Accesses = {
 	list: ListAction;
 	update: UpdateAction;
 	remove?: RemoveAction;
-	archive?: Action<Ref, void>;
+	archive?: Action<RecordRef, void>;
 };
 
 declare const habits: CollectionGateway<Habit, Accesses>;
+declare const READING: RecordRef;
 
 export async function readsThroughDeclaredVerbs(): Promise<number> {
 	const listed = await habits.list({ limit: 3 } satisfies Query);
 	const first = listed.rows[0];
-	const patch: Patch<Habit> = { ref: "Habits/Reading.md", data: { goal: 21 } };
+	const patch: Patch<Habit> = { ref: READING, data: { goal: 21 } };
 	await habits.update(patch);
-	if (habits.remove.can().can) await habits.remove("Habits/Reading.md");
-	if (habits.archive.can().can) await habits.archive("Habits/Reading.md");
+	if (habits.remove.can().can) await habits.remove(READING);
+	if (habits.archive.can().can) await habits.archive(READING);
 	return first ? first.days.length : 0;
 }
 
@@ -51,7 +52,7 @@ declare const unstated: CollectionGateway<Habit>;
 
 export async function unstatedAccessesKeepEveryEngineVerb(): Promise<void> {
 	await unstated.create({ goal: 1 });
-	await unstated.get("Habits/Reading.md");
+	await unstated.get(READING);
 }
 
 type Mispaired = { list: RemoveAction };

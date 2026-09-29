@@ -69,7 +69,7 @@ const INDEX = {
 			repository: "https://github.com/acme/widgets",
 			ref: "main",
 			path: "widgets/@demo/clock",
-			files: ["manifest.json", "widget.jsx"],
+			files: ["manifest.generated.json", "widget.tsx"],
 			defaultSize: { w: 3, h: 2 },
 		},
 		{ id: "@default/task-card", title: "Impostor", repository: "https://github.com/acme/widgets" },
@@ -117,8 +117,8 @@ check(
 );
 check(
 	"and files are taken at the commit, never at the ref",
-	rawUrl({ owner: "acme", repo: "widgets" }, "abc123", "widgets/@demo/clock/widget.jsx"),
-	"https://raw.githubusercontent.com/acme/widgets/abc123/widgets/@demo/clock/widget.jsx",
+	rawUrl({ owner: "acme", repo: "widgets" }, "abc123", "widgets/@demo/clock/widget.tsx"),
+	"https://raw.githubusercontent.com/acme/widgets/abc123/widgets/@demo/clock/widget.tsx",
 );
 check(
 	"a scoped id becomes its folder",
@@ -131,12 +131,12 @@ check("an unscoped id has no folder", folderFor(".widgetarium/widgets", "clock")
 const entry = lockEntry({
 	source: "https://github.com/acme/widgets",
 	commit: "abc123",
-	files: { "widget.jsx": "one" },
+	files: { "widget.tsx": "one" },
 });
 check("a lock entry pins the commit", entry.commit, "abc123");
-check("and carries a hash per file", Object.keys(entry.files), ["widget.jsx"]);
-check("an untouched widget does not read as edited", isEdited(entry, { "widget.jsx": "one" }), false);
-check("an edited one does", isEdited(entry, { "widget.jsx": "two" }), true);
+check("and carries a hash per file", Object.keys(entry.files), ["widget.tsx"]);
+check("an untouched widget does not read as edited", isEdited(entry, { "widget.tsx": "one" }), false);
+check("an edited one does", isEdited(entry, { "widget.tsx": "two" }), true);
 check("a missing file reads as edited, not as unchanged", isEdited(entry, {}), true);
 check(
 	"an entry goes in and comes out",
@@ -148,9 +148,9 @@ check(
 
 const SERVED = {
 	"https://api.github.com/repos/acme/widgets/commits/main": { sha: "abc1234567" },
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.json":
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.generated.json":
 		'{"id":"@demo/clock","title":"Clock"}',
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/widget.jsx":
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/widget.tsx":
 		"export default () => null;",
 };
 const network = (served) => ({
@@ -180,15 +180,15 @@ check(
 	[...vault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(),
 	[
 		".widgetarium/widgets/@demo/clock/build/widget.js",
-		".widgetarium/widgets/@demo/clock/manifest.json",
-		".widgetarium/widgets/@demo/clock/widget.jsx",
+		".widgetarium/widgets/@demo/clock/manifest.generated.json",
+		".widgetarium/widgets/@demo/clock/widget.tsx",
 	],
 );
 check("the lock pins that commit, not the ref", (await installer.lock()).widgets["@demo/clock"].commit, "abc1234567");
 check(
 	"and records a hash for every file it took",
 	Object.keys((await installer.lock()).widgets["@demo/clock"].files).sort(),
-	["manifest.json", "widget.jsx"],
+	["manifest.generated.json", "widget.tsx"],
 );
 
 // THE ONE ATTACK THIS CATALOGUE CAN ACTUALLY SEE: a repository serving something else under an
@@ -198,7 +198,7 @@ const lying = createInstaller({
 	adapter: liar,
 	...network({
 		...SERVED,
-		"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.json":
+		"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.generated.json":
 			'{"id":"@evil/miner"}',
 	}),
 });
@@ -216,18 +216,18 @@ check("an entry naming no repository is refused", noRepo.failure, "this entry na
 const unscoped = await installer.install({ manifest: { id: "clock", repository: "https://github.com/acme/widgets" } });
 check("an unscoped id is refused before any fetch", unscoped.failure, '"clock" is not a scoped widget id');
 const noSource = await installer.install({
-	manifest: { id: "@demo/y", repository: "https://github.com/acme/widgets", files: ["manifest.json"] },
+	manifest: { id: "@demo/y", repository: "https://github.com/acme/widgets", files: ["manifest.generated.json"] },
 });
 check("an entry listing no widget source is refused", noSource.failure, "the entry lists no widget source");
 
 const bareVault = fakeVault();
 const bareInstaller = createInstaller({ adapter: bareVault, ...network(SERVED) });
-const bareDone = await bareInstaller.install({ manifest: { ...listed[0].manifest, files: ["widget.jsx"] } });
+const bareDone = await bareInstaller.install({ manifest: { ...listed[0].manifest, files: ["widget.tsx"] } });
 check("a widget served as nothing but its source installs", [bareDone.ok, bareDone.failure], [true, null]);
 check(
 	"and no record is invented beside it",
 	[...bareVault.files.keys()].filter((path) => path.includes("@demo/clock")).sort(),
-	[".widgetarium/widgets/@demo/clock/build/widget.js", ".widgetarium/widgets/@demo/clock/widget.jsx"],
+	[".widgetarium/widgets/@demo/clock/build/widget.js", ".widgetarium/widgets/@demo/clock/widget.tsx"],
 );
 
 const offline = createInstaller({ adapter: fakeVault(), ...network({}) });
@@ -242,8 +242,11 @@ check(
 const shelf = fakeVault();
 shelf.files.set("/repo/widgets/@default/lib.js", "export const RATE = 21;");
 shelf.files.set("/repo/widgets/@default/tokens.css", ".habit-dot { }");
-shelf.files.set("/repo/widgets/@default/heatmap/manifest.json", '{"id":"@default/heatmap","title":"Heatmap"}');
-shelf.files.set("/repo/widgets/@default/heatmap/widget.jsx", "export default () => null;");
+shelf.files.set(
+	"/repo/widgets/@default/heatmap/manifest.generated.json",
+	'{"id":"@default/heatmap","title":"Heatmap"}',
+);
+shelf.files.set("/repo/widgets/@default/heatmap/widget.tsx", "export default () => null;");
 shelf.files.set("/repo/widgets/@habit/nothing/readme.md", "not a widget");
 shelf.files.set(INDEX_PATH, JSON.stringify({ sources: [{ path: "/repo/widgets" }] }));
 
@@ -272,8 +275,8 @@ check("and what it offers is not installed", onShelf[0].installed, false);
 // A CARD DRAWS THE WIDGET, INSTALLED OR NOT: the code has to travel with the offer
 check(
 	"an offer carries the code its card will draw",
-	[typeof onShelf[0].code, onShelf[0].path],
-	["string", "/repo/widgets/@default/heatmap/widget.jsx"],
+	[typeof onShelf[0].sources?.["widget.tsx"], onShelf[0].path],
+	["string", "/repo/widgets/@default/heatmap"],
 );
 check("and the scope lib it cannot run without", [typeof onShelf[0].lib, onShelf[0].scope], ["string", "@default"]);
 check("a folder with no manifest is not a widget", onShelf.length, 1);
@@ -282,7 +285,7 @@ const copied = await shelved.install(onShelf[0]);
 check("installing from a folder needs no network", copied.ok, true);
 check("and what it records instead of a commit is a stamp of the files", copied.commit, onShelf[0].commit);
 
-shelf.files.set("/repo/widgets/@default/heatmap/widget.jsx", "export default () => null; // one line more");
+shelf.files.set("/repo/widgets/@default/heatmap/widget.tsx", "export default () => null; // one line more");
 const offeredAgain = (await shelved.discover({ path: "/repo/widgets" }))[0];
 check("a folder whose widget changed offers a different stamp", offeredAgain.commit === onShelf[0].commit, false);
 check(
@@ -293,7 +296,7 @@ check(
 		there: String(offeredAgain.commit).slice(0, 7),
 	},
 );
-shelf.files.set("/repo/widgets/@default/heatmap/widget.jsx", "export default () => null;");
+shelf.files.set("/repo/widgets/@default/heatmap/widget.tsx", "export default () => null;");
 check(
 	"and the same files offer the same stamp again",
 	(await shelved.discover({ path: "/repo/widgets" }))[0].commit,
@@ -304,8 +307,8 @@ check(
 	[...shelf.files.keys()].filter((path) => path.startsWith(".widgetarium/widgets/@default/heatmap")).sort(),
 	[
 		".widgetarium/widgets/@default/heatmap/build/widget.js",
-		".widgetarium/widgets/@default/heatmap/manifest.json",
-		".widgetarium/widgets/@default/heatmap/widget.jsx",
+		".widgetarium/widgets/@default/heatmap/manifest.generated.json",
+		".widgetarium/widgets/@default/heatmap/widget.tsx",
 	],
 );
 // A WIDGET IMPORTING ITS SCOPE'S LIB IS BROKEN WITHOUT IT

@@ -131,7 +131,7 @@ check("the finding names the prop", checkWidget(drawnUnbounded)[0].message.start
 check("a manifest with no role is a finding", rulesIn(checkWidget({ ...clean, card: { title: "x" } })), ["role"]);
 check("no card at all is not judged for a role", rulesIn(checkWidget({ ...clean, card: null })), []);
 
-const surface = ["useData", "createWidget", "defineManifest"];
+const surface = ["useData", "createWidget", "defineProps"];
 const reaching = { ...clean, source: 'import { useData, flatRows } from "widgetarium";\n' + clean.source };
 check("an import the surface does not carry is a finding", rulesIn(checkWidget({ ...reaching, surface })), ["reaches"]);
 check(

@@ -165,6 +165,11 @@ function onThisMachine() {
 				.readdirSync(at, { withFileTypes: true })
 				.filter((entry) => entry.isDirectory())
 				.map((entry) => path.join(at, entry.name)),
+		files: async (at) =>
+			fs
+				.readdirSync(at, { withFileTypes: true })
+				.filter((entry) => entry.isFile())
+				.map((entry) => path.join(at, entry.name)),
 	};
 }
 

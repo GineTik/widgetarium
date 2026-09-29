@@ -4,7 +4,8 @@ import { fakeVault } from "./fake-vault.mjs";
 buildMirror();
 const { generationOf, widgetKeyOf, widgetRef } = await import("./.mjs-cache/engine/widget-ref.mjs");
 const { compatibility, movedTileProps, propChanges } = await import("./.mjs-cache/engine/compatibility.mjs");
-const { defineManifest, defineProp, migration } = await import("./.mjs-cache/gateway/manifest.mjs");
+const { ICrudGateway, IListGateway, IValueGateway, defineProps, manifestOfModule, z } =
+	await import("./.mjs-cache/gateway/declared.mjs");
 const { cardOf, RECORD_FILE } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 const { createInstaller } = await import("./.mjs-cache/installer.mjs");
 const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
@@ -34,61 +35,48 @@ check(
 );
 check("a ref is written back the way it is read", widgetRef("@core/tabs", COMMIT), `@core/tabs@${COMMIT}`);
 
-const declared = {
-	tabs: defineProp()({ label: "Tabs", default: [] }),
-	label: defineProp()({ label: "Label", default: "name" }),
-};
-const base = defineManifest({
-	size: { preferredWidth: "full", preferredHeight: "auto" },
-	title: "Tabs",
-	description: "Tabs.",
-	props: declared,
+const rows = (meta, writes = []) => ({
+	gateway: writes.length > 0 ? ICrudGateway.of(z.unknown()).pick(...writes) : IListGateway.of(z.unknown()),
+	meta,
 });
-const withProps = (props, extra = {}) =>
-	defineManifest({
-		size: { preferredWidth: "full", preferredHeight: "auto" },
-		title: base.title,
-		description: base.description,
-		...extra,
-		props,
-	});
+const value = (meta, fallback) => ({ gateway: IValueGateway.of(z.unknown().default(fallback)).pick("get"), meta });
+const entriesOf = (props, part) => Object.fromEntries(Object.entries(props).map(([name, held]) => [name, held[part]]));
+const withProps = (props, extra = {}) => ({
+	...manifestOfModule({
+		default: { declared: defineProps(entriesOf(props, "gateway")) },
+		metadata: { title: "Tabs", description: "Tabs.", props: entriesOf(props, "meta") },
+		layout: { size: { preferredWidth: "full", preferredHeight: "auto" } },
+	}),
+	...extra,
+});
+const declared = { tabs: rows({ label: "Tabs" }), label: value({ label: "Label" }, "name") };
+const base = withProps(declared);
 const verdictFor = (next) => compatibility(base, next);
 
 check(
 	"a label change is compatible",
-	verdictFor(withProps({ ...declared, label: defineProp()({ label: "Label field", default: "name" }) })).isCompatible,
+	verdictFor(withProps({ ...declared, label: value({ label: "Label field" }, "name") })).isCompatible,
 	true,
 );
 check(
 	"a new prop with a default is compatible",
-	verdictFor(withProps({ ...declared, icon: defineProp()({ label: "Icon", control: "icon", default: "menu" }) }))
-		.isCompatible,
+	verdictFor(withProps({ ...declared, icon: value({ label: "Icon", control: "icon" }, "menu") })).isCompatible,
 	true,
 );
 check(
 	"a rename carrying was is compatible",
-	verdictFor(
-		withProps({ tabs: declared.tabs, field: defineProp()({ label: "Label", aka: ["label"], default: "name" }) }),
-	).isCompatible,
+	verdictFor(withProps({ tabs: declared.tabs, field: value({ label: "Label", aka: ["label"] }, "name") })).isCompatible,
 	true,
 );
 check(
 	"a new verb is compatible and named",
-	propChanges(
-		base.props,
-		defineManifest({
-			size: { preferredWidth: "full", preferredHeight: "auto" },
-			title: "Tabs",
-			description: "Tabs.",
-			props: { ...declared, tabs: defineProp()({ label: "Tabs", default: [], writes: ["update"] }) },
-		}).props,
-	).find((change) => change.kind === "writes")?.verbs,
+	propChanges(base.props, withProps({ ...declared, tabs: rows({ label: "Tabs" }, ["update"]) }).props).find(
+		(change) => change.kind === "writes",
+	)?.verbs,
 	["update"],
 );
 
-const defaultChanged = verdictFor(
-	withProps({ ...declared, label: defineProp()({ label: "Label", default: "title" }) }),
-);
+const defaultChanged = verdictFor(withProps({ ...declared, label: value({ label: "Label" }, "title") }));
 check(
 	"a changed default breaks, and moves tiles with no migration",
 	[defaultChanged.isCompatible, defaultChanged.canMoveTiles],
@@ -98,9 +86,7 @@ check(
 const removed = verdictFor(withProps({ tabs: declared.tabs }));
 check("a removed prop breaks and strands tiles", [removed.isCompatible, removed.canMoveTiles], [false, false]);
 
-const renamedBare = verdictFor(
-	withProps({ tabs: declared.tabs, field: defineProp()({ label: "Label", default: "name" }) }),
-);
+const renamedBare = verdictFor(withProps({ tabs: declared.tabs, field: value({ label: "Label" }, "name") }));
 check(
 	"a rename without was is a removal",
 	renamedBare.breaking.map((change) => change.kind),
@@ -108,13 +94,13 @@ check(
 );
 
 const reshaped = withProps(
-	{ tabs: declared.tabs, label: defineProp()({ label: "Label", default: 0 }) },
+	{ tabs: declared.tabs, label: value({ label: "Label" }, 0) },
 	{
 		migrate: [
-			migration({
-				from: { tabs: declared.tabs, label: declared.label },
+			{
+				from: { tabs: base.props.tabs, label: base.props.label },
 				run: (old) => ({ label: { from: "typed", value: String(old.label?.value ?? "").length } }),
-			}),
+			},
 		],
 	},
 );
@@ -128,7 +114,7 @@ check(
 );
 
 const renamedVerdict = verdictFor(
-	withProps({ tabs: declared.tabs, field: defineProp()({ label: "Label", aka: ["label"], default: "name" }) }),
+	withProps({ tabs: declared.tabs, field: value({ label: "Label", aka: ["label"] }, "name") }),
 );
 check(
 	"moving carries a renamed prop onto its new name",
@@ -140,7 +126,7 @@ const card = (manifest) => JSON.stringify(cardOf(manifest, 1));
 const SOURCE = "export default () => null;";
 const served = (commit, manifest) => ({
 	[`https://raw.githubusercontent.com/acme/widgets/${commit}/widgets/@demo/tabs/${RECORD_FILE}`]: card(manifest),
-	[`https://raw.githubusercontent.com/acme/widgets/${commit}/widgets/@demo/tabs/widget.jsx`]: SOURCE,
+	[`https://raw.githubusercontent.com/acme/widgets/${commit}/widgets/@demo/tabs/widget.tsx`]: SOURCE,
 });
 const network = (routes) => ({
 	fetchJson: async (url) => {
@@ -159,7 +145,7 @@ const offer = (ref) => ({
 		repository: "https://github.com/acme/widgets",
 		ref,
 		path: "widgets/@demo/tabs",
-		files: [RECORD_FILE, "widget.jsx"],
+		files: [RECORD_FILE, "widget.tsx"],
 	},
 });
 
@@ -184,10 +170,7 @@ check(
 
 routes["https://api.github.com/repos/acme/widgets/commits/main"] = { sha: NEXT };
 routes[`https://api.github.com/repos/acme/widgets/commits/${NEXT}`] = { sha: NEXT };
-Object.assign(
-	routes,
-	served(NEXT, withProps({ ...declared, label: defineProp()({ label: "Label field", default: "name" }) })),
-);
+Object.assign(routes, served(NEXT, withProps({ ...declared, label: value({ label: "Label field" }, "name") })));
 const compatibleUpdate = await installer.install(offer("main"));
 check(
 	"a compatible update replaces the files in place",
@@ -208,8 +191,8 @@ check(
 	[breakingUpdate.id, breakingUpdate.isNewGeneration],
 	[`@demo/tabs@${BREAK}`, true],
 );
-check("into a folder of its own", vault.files.has(`.widgetarium/widgets/@demo/tabs@${BREAK}/widget.jsx`), true);
-check("while the old generation keeps its files", vault.files.has(".widgetarium/widgets/@demo/tabs/widget.jsx"), true);
+check("into a folder of its own", vault.files.has(`.widgetarium/widgets/@demo/tabs@${BREAK}/widget.tsx`), true);
+check("while the old generation keeps its files", vault.files.has(".widgetarium/widgets/@demo/tabs/widget.tsx"), true);
 
 const shared = await installer.installAt(`@demo/tabs@${COMMIT}`, [offer("main")]);
 check(
@@ -264,7 +247,7 @@ check(
 );
 check("and says where it moved", scoped.movedTo, "https://github.com/acme/next");
 
-const lyingCard = withProps({ ...declared, extra: defineProp()({ label: "Extra", default: "" }) });
+const lyingCard = withProps({ ...declared, extra: value({ label: "Extra" }, "") });
 const checkedVault = fakeVault();
 const checked = createInstaller({
 	adapter: checkedVault,
@@ -282,7 +265,7 @@ check("and nothing reached the vault", checkedVault.files.size, 0);
 const brokenVault = fakeVault();
 const originalWrite = brokenVault.write;
 brokenVault.write = async function (path, text) {
-	if (path.endsWith("widget.jsx")) throw new Error("the disk filled up");
+	if (path.endsWith("widget.tsx")) throw new Error("the disk filled up");
 	return originalWrite.call(this, path, text);
 };
 const breaking = createInstaller({
@@ -299,7 +282,7 @@ check(
 	(await breaking.lock()).widgets["@demo/tabs"]?.state,
 	INSTALL_PENDING,
 );
-brokenVault.files.set(".widgetarium/widgets/@demo/tabs/widget.jsx", SOURCE);
+brokenVault.files.set(".widgetarium/widgets/@demo/tabs/widget.tsx", SOURCE);
 const unfinished = new WidgetRegistry({ vault: { adapter: brokenVault } });
 await unfinished.load();
 check(

@@ -1,9 +1,5 @@
-import { defineManifest } from "widgetarium";
+import { defineProps } from "widgetarium";
 
-export const manifest = defineManifest({
-	title: "Not a prop",
-	description: "A prop written as a bare object.",
-	props: {
-		entries: { default: [], writes: ["create"] },
-	},
+export const props = defineProps({
+	entries: { default: [], writes: ["create"] },
 });

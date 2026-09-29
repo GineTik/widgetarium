@@ -5,11 +5,21 @@ import path from "node:path";
 const REFUSED_AT = "tools/type-gate/refused";
 
 const WANTED = {
-	"undeclared-verb.tsx": ["Property 'remove' does not exist", "Property 'update' does not exist"],
+	"undeclared-verb.tsx": [
+		"Property 'remove' does not exist",
+		"Property 'update' does not exist",
+		"Property 'removeMany' does not exist",
+		"Property 'upsert' does not exist",
+	],
 	"reserved-ref.tsx": ["the field ref is reserved"],
 	"wrong-control.tsx": ["not assignable to type '\"number\"'"],
-	"not-a-prop.tsx": ["'default' does not exist in type 'Prop<unknown, unknown>'"],
-	"default-does-not-fit.tsx": ["Type 'number' is not assignable to type 'string'"],
+	"not-a-prop.tsx": ["'default' does not exist in type 'WidgetProp'"],
+	"default-does-not-fit.tsx": ["Argument of type 'number' is not assignable to parameter of type '() => string'"],
+	"implementation-missing-read.tsx": ["does not implement inherited abstract member get"],
+	"implementation-missing-write.tsx": ["Property 'create' is missing"],
+	"create-misses-its-schema.tsx": ["Property 'title' is missing"],
+	"aka-is-not-a-list.tsx": ["Type 'string' is not assignable to type 'readonly string[]'"],
+	"unpicked-read.tsx": ["Property 'list' does not exist"],
 };
 
 const CONFIG_AT = path.join(REFUSED_AT, "tsconfig.checked.json");

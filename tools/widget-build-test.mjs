@@ -32,26 +32,31 @@ const CLOCK = {
 	repository: "https://github.com/acme/widgets",
 	ref: "main",
 	path: "widgets/@demo/clock",
-	files: ["manifest.json", SOURCE_FILE],
+	files: ["manifest.generated.json", SOURCE_FILE],
 };
 
-const sourceSaying = (word) => `import { createWidget } from "widgetarium";
-export default createWidget(function Clock() {
-	const said: string = "${word}";
-	return <b>{said}</b>;
+const sourceSaying = (word) => `import { createWidget, defineLayout } from "widgetarium";
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({
+	draw: () => {
+		const said: string = "${word}";
+		return <b>{said}</b>;
+	},
 });
 `;
 
-const buildSaying = (word) => `const { createWidget } = require("widgetarium");
-module.exports.default = createWidget(function Clock() { return h("b", null, "${word}"); });
+const buildSaying = (word) => `const { createWidget, defineLayout } = require("widgetarium");
+module.exports.layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+module.exports.default = createWidget({ draw: () => h("b", null, "${word}") });
 `;
 
 const served = (source) => ({
 	"https://api.github.com/repos/acme/widgets/commits/main": { sha: "abc1234567" },
-	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.json": JSON.stringify({
-		id: "@demo/clock",
-		title: "Clock",
-	}),
+	"https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/manifest.generated.json":
+		JSON.stringify({
+			id: "@demo/clock",
+			title: "Clock",
+		}),
 	[`https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock/${SOURCE_FILE}`]: source,
 });
 
@@ -94,7 +99,7 @@ check("and leaves a build in the build folder", typeof build, "string");
 check(
 	"while the top level holds only what the developer wrote",
 	[...vault.files.keys()].filter((at) => at.startsWith(`${FOLDER}/`) && !at.includes("/build/")).sort(),
-	[`${FOLDER}/manifest.json`, `${FOLDER}/${SOURCE_FILE}`],
+	[`${FOLDER}/manifest.generated.json`, `${FOLDER}/${SOURCE_FILE}`],
 );
 check("which holds no JSX", String(build).includes("<b>"), false);
 check("and no type annotation", String(build).includes(": string"), false);
@@ -107,7 +112,7 @@ check(
 	undefined,
 );
 check("and still hashes the source itself", Object.keys((await installer.lock()).widgets["@demo/clock"].files).sort(), [
-	"manifest.json",
+	"manifest.generated.json",
 	SOURCE_FILE,
 ]);
 
@@ -119,7 +124,11 @@ check("and what it runs is the stored build, not the source", await drawnBy(vaul
 const beforeTheFolder = fakeVault();
 for (const [path, text] of vault.files)
 	beforeTheFolder.files.set(path === builtCodePath(FOLDER) ? `${FOLDER}/${BUILD_FILE}` : path, text);
-check("a build written before the build folder existed still runs", await drawnBy(beforeTheFolder), "from the build");
+check(
+	"a widget.js beside a TypeScript source is neither a build nor a refusal, so the source is compiled",
+	await drawnBy(beforeTheFolder),
+	"from the source",
+);
 
 vault.files.set(`${FOLDER}/${SOURCE_FILE}`, sourceSaying("edited in the vault"));
 check("a build whose source has changed since is not used", await drawnBy(vault), "edited in the vault");
@@ -137,7 +146,7 @@ check(
 );
 
 const authored = fakeVault();
-authored.files.set(`${FOLDER}/manifest.json`, JSON.stringify({ id: "@demo/clock", title: "Clock" }));
+authored.files.set(`${FOLDER}/manifest.generated.json`, JSON.stringify({ id: "@demo/clock", title: "Clock" }));
 authored.files.set(`${FOLDER}/${SOURCE_FILE}`, sourceSaying("first draft"));
 check("a widget nobody installed draws from its source", await drawnBy(authored), "first draft");
 
@@ -155,6 +164,41 @@ const refused = await createInstaller({
 check("a source that will not compile is refused at install", refused.ok, false);
 check("and the refusal names the file", String(refused.failure).startsWith(`${SOURCE_FILE} did not compile`), true);
 check("and nothing of it reached the vault", broken.files.size, 0);
+
+const RENAME_TO_TSX = "Rename it to widget.tsx";
+
+for (const javascriptFile of ["widget.jsx", "widget.js"]) {
+	const written = fakeVault();
+	written.files.set(`${FOLDER}/manifest.generated.json`, JSON.stringify({ id: "@demo/clock", title: "Clock" }));
+	written.files.set(`${FOLDER}/${javascriptFile}`, "export default () => null;");
+	const said = await drawnBy(written);
+	check(`a vault widget written as ${javascriptFile} does not draw, and says why`, said.includes(RENAME_TO_TSX), true);
+	check(
+		"and names the command that renames it",
+		said.includes(`mv "${FOLDER}/${javascriptFile}" "${FOLDER}/widget.tsx"`),
+		true,
+	);
+}
+
+const javascriptInstall = await createInstaller({ adapter: fakeVault(), ...network({}) }).install({
+	manifest: { ...CLOCK, files: ["manifest.generated.json", "widget.jsx"] },
+});
+check("a registry entry serving widget.jsx is refused before anything is fetched", javascriptInstall.ok, false);
+check(
+	"and the refusal says it is JavaScript and how to rename it",
+	String(javascriptInstall.failure).startsWith(`${CLOCK.path}/widget.jsx is JavaScript`) &&
+		String(javascriptInstall.failure).includes(RENAME_TO_TSX),
+	true,
+);
+
+const placeholderInPath = await createInstaller({ adapter: fakeVault(), ...network({}) }).install({
+	manifest: { ...CLOCK, path: "widgets/{file}", files: ["manifest.generated.json", "widget.jsx"] },
+});
+check(
+	"a registry path holding a placeholder is quoted as it stands, never filled in again",
+	String(placeholderInPath.failure).startsWith("widgets/{file}/widget.jsx is JavaScript"),
+	true,
+);
 
 console.log(
 	`\n${failed === 0 ? `compile at install: clean (${checks} checks)` : `compile at install: ${failed} failed`}`,

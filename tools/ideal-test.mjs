@@ -2,18 +2,12 @@
 // accepted design; every number below is read out of it at run time rather than copied here, so
 // the day the reference changes this fails instead of quietly going stale.
 import { readFileSync } from "node:fs";
+import { widgetModuleSources } from "./run-widget-source.mjs";
 
 const ref = readFileSync("docs/reference/orbitask-converted.html", "utf8");
 // CONTEXT: the approved design for the parts the task dialog is built from
 const dialogRef = readFileSync("docs/reference/task-dialog.html", "utf8");
-const widgetSourceAt = (folder) => {
-	for (const ext of ["tsx", "ts", "jsx", "js"]) {
-		try {
-			return readFileSync(`${folder}/widget.${ext}`, "utf8");
-		} catch {}
-	}
-	return "";
-};
+const widgetSourceAt = (folder) => Object.values(widgetModuleSources(folder)).join("\n");
 const WIDGETS_THE_ORBITASK_DESIGN_COVERS = ["archived-columns", "kanban-board", "task-card", "view-tabs"];
 const ours =
 	readFileSync("apps/obsidian/styles.css", "utf8") +

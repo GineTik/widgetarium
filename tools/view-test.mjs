@@ -4,25 +4,20 @@ import { stage, widgetFiles, WIDGETS_AT } from "./harness.mjs";
 
 export { stage, widgetFiles, WIDGETS_AT };
 
-const PROBE = `import { createWidget, useData, WidgetRoot } from "widgetarium";
-export default createWidget(function Probe({ seen }) {
-	const held = useData(seen.get).data;
-	return <WidgetRoot className="wg-probe"><i class="wg-probe-seen">{JSON.stringify(held ?? null)}</i></WidgetRoot>;
+const PROBE = `import { IValueGateway, WidgetRoot, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
+const props = defineProps({ seen: IValueGateway.of(z.unknown().default(null)).pick("get") });
+export const metadata = defineMetadata(props, { title: "Box probe", description: "", props: { seen: { label: "Reads" } } });
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({
+	inject: props,
+	draw: ({ seen }) => (
+		<WidgetRoot className="wg-probe"><i class="wg-probe-seen">{JSON.stringify(seen ?? null)}</i></WidgetRoot>
+	),
 });
 `;
 
-const PROBE_MANIFEST = {
-	id: "@probe/context",
-	title: "Box probe",
-	defaultSize: { w: 4, h: 1 },
-	props: { seen: { kind: "value", label: "Reads", verbs: { get: "required" } } },
-};
-
 export function probeFiles() {
-	return {
-		[`${WIDGETS_AT}/@probe/context/widget.jsx`]: PROBE,
-		[`${WIDGETS_AT}/@probe/context/manifest.json`]: JSON.stringify(PROBE_MANIFEST),
-	};
+	return { [`${WIDGETS_AT}/@probe/context/widget.tsx`]: PROBE };
 }
 
 const KANBAN = "@default/kanban-board";
@@ -325,15 +320,20 @@ async function gate() {
 		tiles: [{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { path: "Orbitask/Boards" } } }],
 		layout: kept([{ id: "boards", height: 56 }]),
 	};
+	const SOURCES_BUTTON = '.wg-set-pop button[aria-label="Where the data comes from"]';
+	const SOURCE_ROW = ".wg-set-pop .wg-set-sources button";
 	const SWITCH_KIND = [
 		BOARD_SETTINGS_STEP,
 		{ name: "opened", click: ".wg-set-panel .wg-set-row", saying: "Tabs" },
-		{ name: "switched", click: '.wg-set-pop [role="tab"]', said: "Typed here" },
+		{ name: "sources", click: SOURCES_BUTTON },
+		{ name: "switched", click: SOURCE_ROW, saying: "Typed here" },
 		{ name: "adding", click: ".wg-set-pop .wg-set-row", saying: "Add item" },
 		{ name: "named", click: ".wg-set-pop textarea", type: 'name: "Solo"' },
 		{ name: "applied", click: ".wg-set-pop button", said: "Apply" },
-		{ name: "back", click: '.wg-set-pop [role="tab"]', said: "Folder" },
-		{ name: "again", click: '.wg-set-pop [role="tab"]', said: "Typed here" },
+		{ name: "backSources", click: SOURCES_BUTTON },
+		{ name: "back", click: SOURCE_ROW, saying: "Folder" },
+		{ name: "againSources", click: SOURCES_BUTTON },
+		{ name: "again", click: SOURCE_ROW, saying: "Typed here" },
 		{ name: "done", click: ".wg-set-head button", said: "Done" },
 	];
 	const switched = await stage({ board: BOUND, files, editing: true, steps: SWITCH_KIND });
@@ -343,10 +343,10 @@ async function gate() {
 		SWITCH_KIND.map(() => true),
 	);
 	check("a folder-bound strip draws the notes it lists", switched.arrival?.strip.length > 0, true);
-	check("the row offers every place the rows can live", switched.opened?.kinds, [
-		"Folder",
+	check("the prop names no source until its source button is pressed", switched.opened?.kinds, []);
+	check("the source list offers every place the rows can live on a board of one tile", switched.sources?.kinds, [
 		"Typed here",
-		"From a widget",
+		"Folder",
 	]);
 	check(
 		"and the same source says the same thing whichever kind it is bound to",

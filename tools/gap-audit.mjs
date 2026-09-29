@@ -1,9 +1,9 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 const WIDGETS = "registry";
-const SOURCES = ["widget.tsx", "widget.css"];
+const SHEET = "widget.css";
 const LITERAL_GAP = /(?:^|[\s;{])((?:row-|column-)?gap)\s*:\s*([^;}\n]*\d[^;}\n]*)/g;
 const ENGINE_GAP = /var\(--wg-gap-(items|parts|cards)\)/;
 
@@ -21,8 +21,15 @@ function widgetSources() {
 	return readdirSync(WIDGETS)
 		.filter((scope) => scope.startsWith("@"))
 		.flatMap((scope) => readdirSync(path.join(WIDGETS, scope)).map((name) => path.join(WIDGETS, scope, name)))
-		.flatMap((folder) => SOURCES.map((file) => path.join(folder, file)))
+		.filter((folder) => statSync(folder).isDirectory())
+		.flatMap((folder) => [...modulesIn(folder), SHEET].map((file) => path.join(folder, file)))
 		.filter((file) => existsSync(file));
+}
+
+function modulesIn(folder) {
+	return readdirSync(folder, { recursive: true })
+		.map((name) => String(name).split(path.sep).join("/"))
+		.filter((name) => /\.tsx?$/.test(name) && !name.endsWith(".d.ts") && !name.startsWith("build/"));
 }
 
 function report() {

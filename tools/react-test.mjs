@@ -53,24 +53,27 @@ const ENGINE_REACT = engineReact.version;
 const built = await esbuild.build(surfaceOptions());
 const SURFACE_SOURCE = built.outputFiles[0].text;
 
-const PROBE = `import { createWidget, soloGateway, useData } from "widgetarium";
+const PROBE = `import { IValueGateway, createWidget, defineLayout, soloGateway, useData, z } from "widgetarium";
 import { useEffect, useState, version } from "react";
 
 const own = soloGateway(() => globalThis.WG_BOX[version], {}, \`probe/\${version}\`);
 
-export default createWidget(function Probe({ value }) {
-	const [pressed, setPressed] = useState(0);
-	useEffect(() => () => { globalThis.WG_GONE[version] = (globalThis.WG_GONE[version] ?? 0) + 1; }, []);
-	const held = useData(value.get);
-	const mine = useData(own.get);
-	return (
-		<div className="probe">
-			<b className="probe-react">{version}</b>
-			<span className="probe-value">{String(held.data)}</span>
-			<span className="probe-own">{String(mine.data)}</span>
-			<button className="probe-press" onClick={() => setPressed(pressed + 1)}>{String(pressed)}</button>
-		</div>
-	);
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({
+	inject: { value: IValueGateway.of(z.unknown().default(null)).pick("get") },
+	draw: function Probe({ value }) {
+		const [pressed, setPressed] = useState(0);
+		useEffect(() => () => { globalThis.WG_GONE[version] = (globalThis.WG_GONE[version] ?? 0) + 1; }, []);
+		const mine = useData(own.get);
+		return (
+			<div className="probe">
+				<b className="probe-react">{version}</b>
+				<span className="probe-value">{String(value)}</span>
+				<span className="probe-own">{String(mine.data)}</span>
+				<button className="probe-press" onClick={() => setPressed(pressed + 1)}>{String(pressed)}</button>
+			</div>
+		);
+	},
 });
 `;
 
@@ -78,7 +81,7 @@ const NUMBER_PROP = { value: { kind: "value", type: "number", verbs: { get: "req
 
 function widgetFolder(vault, id, manifest) {
 	vault.files.set(
-		`${WIDGETS_DIR}/${id}/manifest.json`,
+		`${WIDGETS_DIR}/${id}/manifest.generated.json`,
 		JSON.stringify({ id, api: 1, title: id, props: NUMBER_PROP, ...manifest }),
 	);
 	vault.files.set(`${WIDGETS_DIR}/${id}/widget.tsx`, PROBE);

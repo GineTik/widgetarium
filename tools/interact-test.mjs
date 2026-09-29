@@ -1146,16 +1146,19 @@ const pickView = async (name, id = "views") => {
 		chosen: {
 			kind: "value",
 			label: "Shown board",
-			of: "boards",
-			field: "name",
-			fallback: "first",
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "boards", field: "name", whenNothingPicked: "first" },
+			},
 			verbs: { get: "required", update: "required" },
 		},
 		board: {
 			kind: "value",
 			label: "Board",
-			picks: "chosen",
-			of: "boards",
+			source: {
+				implementation: "@core/selected-row",
+				fields: { rows: "boards", picked: "chosen", field: "name", whenNothingPicked: "first" },
+			},
 			verbs: { get: "required", update: "optional" },
 		},
 	};
@@ -1317,6 +1320,7 @@ const pickView = async (name, id = "views") => {
 		registerInterval: () => {},
 	});
 	await plugin.onload();
+	await plugin.started;
 
 	check("the plugin hands Obsidian a post processor", posts.length, 1);
 	check("and a processor for its own fence", fences[0]?.language, "widgetarium");
@@ -1366,13 +1370,22 @@ const pickView = async (name, id = "views") => {
 		addRibbonIcon: () => {},
 		registerMarkdownCodeBlockProcessor: () => {},
 		registerMarkdownPostProcessor: (handler) => brokenPosts.push(handler),
+		registerView: () => {},
+		registerEvent: () => {},
+		addSettingTab: () => {},
 		registerInterval: () => {},
 	});
-	const failure = await broken.onload().then(
-		() => null,
-		(error) => error.message,
+	const said = [];
+	const quiet = console.error;
+	console.error = (...parts) => said.push(parts.map((part) => part?.message ?? String(part)).join(" "));
+	await broken.onload();
+	await broken.started;
+	console.error = quiet;
+	check(
+		"a disk that rejects never fails onload, and says why",
+		said.some((line) => line.includes("vault unreachable")),
+		true,
 	);
-	check("an await that rejects still fails the load", failure, "vault unreachable");
 	check("but the post processor was registered before it", brokenPosts.length, 1);
 	check(
 		"and it substitutes nothing rather than throwing",
@@ -1416,6 +1429,7 @@ const pickView = async (name, id = "views") => {
 	);
 	check("which leaves the note plain", early.querySelectorAll(".wg-inline-host").length, 0);
 	await loading;
+	await starting.started;
 	check("so the load ends by asking every open note to draw again", asked.length, 1);
 	check("in full, because a substitution is only made while a note renders", asked[0], true);
 	check("and the rules it will draw with are the ones on disk", starting.rules.length, 1);

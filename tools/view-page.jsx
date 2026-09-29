@@ -96,7 +96,9 @@ function read() {
 		),
 		groupSelected:
 			document.querySelector('.wg-tree-swap-strip .wg-tabs-tab[aria-selected="true"]')?.textContent.trim() ?? null,
-		kinds: [...document.querySelectorAll('.wg-set-pop [role="tab"]')].map((node) => node.textContent.trim()),
+		kinds: [...document.querySelectorAll(".wg-set-pop .wg-set-sources .wg-kit-row-label")].map((node) =>
+			node.firstChild.textContent.trim(),
+		),
 		popRows: [...document.querySelectorAll(".wg-set-pop .wg-set-row .wg-kit-row-label")].map((node) =>
 			node.textContent.trim(),
 		),

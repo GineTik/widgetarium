@@ -8,8 +8,8 @@ const ON_THE_GOOD_FOLDER = new Set([
 	GOOD_FOLDER,
 	`${GOOD_FOLDER}/@a`,
 	`${GOOD_FOLDER}/@a/b`,
-	`${GOOD_FOLDER}/@a/b/manifest.json`,
-	`${GOOD_FOLDER}/@a/b/widget.jsx`,
+	`${GOOD_FOLDER}/@a/b/manifest.generated.json`,
+	`${GOOD_FOLDER}/@a/b/widget.tsx`,
 ]);
 
 const oneWidgetOnDisk = {
@@ -67,6 +67,23 @@ await offersSurvive("a good folder on its own", { sources: [{ path: GOOD_FOLDER 
 await offersSurvive("a path that is a number, beside it", { sources: [{ path: 42 }, { path: GOOD_FOLDER }] });
 await offersSurvive("a null source, beside it", { sources: [null, { path: GOOD_FOLDER }] });
 await offersSurvive("a path that is an object, beside it", { sources: [{ path: {} }, { path: GOOD_FOLDER }] });
+
+console.log("\na JavaScript widget in a folder source is not offered, and the log says why");
+const JAVASCRIPT_FOLDER = "/tmp/javascript-widgets";
+const javascriptOnDisk = {
+	exists: async (at) => [JAVASCRIPT_FOLDER, `${JAVASCRIPT_FOLDER}/@a/b/widget.jsx`].includes(at),
+	read: async () => "export default () => null;",
+	folders: async (at) => (at === JAVASCRIPT_FOLDER ? [`${JAVASCRIPT_FOLDER}/@a`] : [`${JAVASCRIPT_FOLDER}/@a/b`]),
+};
+const logged = [];
+const wasError = console.error;
+console.error = (...said) => logged.push(said.join(" "));
+const javascriptOffers = await installerOver({ sources: [{ path: JAVASCRIPT_FOLDER }] }, javascriptOnDisk).available();
+console.error = wasError;
+const javascriptSaid = logged.some((line) => line.includes(`${JAVASCRIPT_FOLDER}/@a/b/widget.jsx is JavaScript`));
+const javascriptOk = javascriptOffers.length === 0 && javascriptSaid;
+if (!javascriptOk) wrong += 1;
+console.log(`${javascriptOk ? "OK " : "BAD"} offered ${javascriptOffers.length}, refusal logged ${javascriptSaid}`);
 
 const { sourcesOf, identityOf } = await import("./.mjs-cache/sources.mjs");
 const { SHIPPED_SOURCES } = await import("./.mjs-cache/registries.mjs");
@@ -126,8 +143,8 @@ const ON_EITHER_FOLDER = new Set(
 		root,
 		`${root}/@a`,
 		`${root}/@a/b`,
-		`${root}/@a/b/manifest.json`,
-		`${root}/@a/b/widget.jsx`,
+		`${root}/@a/b/manifest.generated.json`,
+		`${root}/@a/b/widget.tsx`,
 	]),
 );
 const sameWidgetInTwoFolders = {
@@ -164,7 +181,7 @@ function answerFrom(served, url) {
 const withRegistry = (registry) => ({
 	[`https://api.github.com/repos/acme/widgets/commits/main`]: { sha: SHA },
 	[`${raw}/widgetarium-registry.json`]: JSON.stringify(registry),
-	[`${raw}/widgets/@demo/clock/manifest.json`]: CLOCK_CARD,
+	[`${raw}/widgets/@demo/clock/manifest.generated.json`]: CLOCK_CARD,
 });
 
 const ONE_ROW = {
@@ -194,8 +211,8 @@ console.log("\nthe offer carries the commit it was read at");
 same("a repository offer names its commit", fromRegistry[0]?.commit, SHA);
 same(
 	"a widget whose manifest is missing is still offered from its row alone",
-	(await offersOf({ ...withRegistry(ONE_ROW), [`${raw}/widgets/@demo/clock/manifest.json`]: undefined }))[0]?.manifest
-		.title,
+	(await offersOf({ ...withRegistry(ONE_ROW), [`${raw}/widgets/@demo/clock/manifest.generated.json`]: undefined }))[0]
+		?.manifest.title,
 	"Clock",
 );
 
@@ -221,9 +238,9 @@ console.log("\na repository with no registry file is read the way it always was"
 const TREE_ONLY = {
 	[`https://api.github.com/repos/acme/widgets/commits/main`]: { sha: SHA },
 	[`https://api.github.com/repos/acme/widgets/git/trees/${SHA}?recursive=1`]: {
-		tree: [{ path: "widgets/@demo/clock/manifest.json" }],
+		tree: [{ path: "widgets/@demo/clock/manifest.generated.json" }],
 	},
-	[`${raw}/widgets/@demo/clock/manifest.json`]: CLOCK_CARD,
+	[`${raw}/widgets/@demo/clock/manifest.generated.json`]: CLOCK_CARD,
 };
 const fromTree = await repositoryServing(TREE_ONLY).offersFrom({
 	repository: REPOSITORY,
@@ -280,8 +297,8 @@ const TWO_WIDGETS = ["one", "two"];
 const filesOfTheLibrary = (registryText) =>
 	new Map([
 		...TWO_WIDGETS.flatMap((name) => [
-			[`${LIBRARY}/@lib/${name}/manifest.json`, JSON.stringify({ id: `@lib/${name}`, title: name, api: 1 })],
-			[`${LIBRARY}/@lib/${name}/widget.jsx`, "export default () => null;"],
+			[`${LIBRARY}/@lib/${name}/manifest.generated.json`, JSON.stringify({ id: `@lib/${name}`, title: name, api: 1 })],
+			[`${LIBRARY}/@lib/${name}/widget.tsx`, "export default () => null;"],
 		]),
 		...(registryText === null ? [] : [[`${LIBRARY}/widgetarium-registry.json`, registryText]]),
 	]);

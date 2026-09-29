@@ -35,16 +35,36 @@ function declarationsOf(outDir) {
 
 const vaultFacing = (text) => text.replaceAll("../../core/src/gateway/", "./gateway/");
 
+const ZOD_AT = "node_modules/zod";
+const ZOD_LAID_AT = "types/zod";
+
+function declarationsUnder(folder) {
+	return fs.readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
+		const at = path.join(folder, entry.name);
+		if (entry.isDirectory()) return declarationsUnder(at);
+		return entry.name.endsWith(".d.ts") ? [at] : [];
+	});
+}
+
+function zodDeclarations() {
+	return Object.fromEntries(
+		declarationsUnder(ZOD_AT).map((at) => [
+			`${ZOD_LAID_AT}/${path.relative(ZOD_AT, at).split(path.sep).join("/")}`,
+			fs.readFileSync(at, "utf8"),
+		]),
+	);
+}
+
 function standaloneTsconfig() {
 	const held = JSON.parse(fs.readFileSync("packages/sdk/tsconfig.widgets.json", "utf8"));
 	const options = {
 		...held.compilerOptions,
-		paths: { widgetarium: ["./types/widgetarium.d.ts"] },
+		paths: { widgetarium: ["./types/widgetarium.d.ts"], zod: [`./${ZOD_LAID_AT}/index.d.ts`] },
 		noImplicitAny: false,
 		noUnusedLocals: false,
 		skipLibCheck: true,
 	};
-	return `${JSON.stringify({ compilerOptions: options, include: ["./types/**/*.d.ts", "./**/*.tsx"] }, null, "\t")}\n`;
+	return `${JSON.stringify({ compilerOptions: options, include: ["./types/**/*.d.ts", "./**/*.ts", "./**/*.tsx"] }, null, "\t")}\n`;
 }
 
 export function widgetTypeFiles() {
@@ -56,6 +76,7 @@ export function widgetTypeFiles() {
 			"types/react.d.ts": fs.readFileSync(REACT_STAND_IN, "utf8"),
 			"tsconfig.json": standaloneTsconfig(),
 			...declarationsOf(outDir),
+			...zodDeclarations(),
 		};
 	} finally {
 		fs.rmSync(outDir, { recursive: true, force: true });

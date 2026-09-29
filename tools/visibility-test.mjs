@@ -3,7 +3,8 @@ import { buildMirror } from "./mirror.mjs";
 buildMirror();
 
 const { seenOf, isShown, shownEntries } = await import("./.mjs-cache/prop-visibility.mjs");
-const { defineManifest, defineProp } = await import("./.mjs-cache/gateway/manifest.mjs");
+const { IListGateway, IMounts, ISlot, defineProps, manifestOfModule, z } =
+	await import("./.mjs-cache/gateway/declared.mjs");
 
 let failed = 0;
 let checks = 0;
@@ -72,15 +73,12 @@ check(
 	["controls", "widgets"],
 );
 
-function refusalOf(card) {
+function refusalOf(held, described) {
 	try {
-		defineManifest({
-			size: { preferredWidth: "full", preferredHeight: "auto" },
-			title: "Tried",
-			description: "A manifest the engine should refuse.",
-			role: "collection",
-			props: { rows: defineProp()({ default: [] }) },
-			...card,
+		manifestOfModule({
+			default: { declared: defineProps({ rows: IListGateway.of(z.unknown()), ...held }) },
+			metadata: { title: "Tried", description: "A manifest the engine should refuse.", props: described },
+			layout: { role: "collection", size: { preferredWidth: "full", preferredHeight: "auto" } },
 		});
 		return null;
 	} catch (thrown) {
@@ -88,13 +86,13 @@ function refusalOf(card) {
 	}
 }
 
-const misspelled = refusalOf({ mounts: { held: { isVisibel: () => false } } });
+const misspelled = refusalOf({ held: IMounts.of() }, { held: { isVisibel: () => false } });
 check("a misspelled isVisible on a mount is refused", misspelled !== null, true);
 check("and the refusal names the key", misspelled?.includes("isVisibel"), true);
 check("and names the mount it stands on", misspelled?.includes('mount "held"'), true);
 check(
 	"a slot declaring what the engine reads is accepted",
-	refusalOf({ slots: { item: { label: "Item", surface: "none", isVisible: () => true } } }),
+	refusalOf({ item: ISlot.of({ surface: "none" }) }, { item: { label: "Item", isVisible: () => true } }),
 	null,
 );
 

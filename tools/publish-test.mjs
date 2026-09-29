@@ -40,16 +40,21 @@ const LOCKFILE = {
 const servingEsm = async () => 'export * from "/react@19.2.8/X-abc/es2022/react.bundle.mjs";';
 const servingNoEsm = async () => "build failed: the package has no ES module build";
 
-const sourceSaying = (word) => `import { createWidget } from "widgetarium";
-export default createWidget(function Clock() {
-	return <b>${word}</b>;
-});
+const LAYOUT = `export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });`;
+
+const sourceSaying = (word) => `import { createWidget, defineLayout } from "widgetarium";
+${LAYOUT}
+export default createWidget({ draw: () => <b>${word}</b> });
 `;
 
-const declaring = (word, meta) => `import { createWidget } from "widgetarium";
-export default createWidget(function Clock() {
-	return <b>${word}</b>;
-}, ${JSON.stringify(meta)});
+const declaring = (
+	word,
+	metadata = {},
+) => `import { IListGateway, ISlot, createWidget, defineLayout, defineProps, z } from "widgetarium";
+const props = defineProps({ days: IListGateway.of(z.unknown()), face: ISlot.of({ default: "@demo/face" }) });
+export const metadata = ${JSON.stringify(metadata)};
+${LAYOUT}
+export default createWidget({ inject: props, draw: () => <b>${word}</b> });
 `;
 
 async function withoutTheReport(run) {
@@ -146,47 +151,37 @@ const looseRegistry = new WidgetRegistry({ vault: { adapter: loose } });
 await withoutTheReport(() => looseRegistry.load());
 check("a folder no @scope holds is not a widget at all", looseRegistry.list().length, 0);
 
-const older = fakeVault();
-older.files.set(
-	`${INSTALLED}/${RECORD_FILE}`,
-	JSON.stringify({ id: ID, title: "Clock", props: { days: { kind: "value", verbs: { get: "required" } } } }),
-);
-older.files.set(`${INSTALLED}/widget.tsx`, sourceSaying("from a record's props"));
-const fromRecord = await loadedFrom(older);
-check("a record still carrying props still draws", fromRecord?.component({}).props.children, "from a record's props");
-check("and the props come from it while the code declares none", fromRecord?.manifest.props.days.kind, "value");
-
 const declared = fakeVault();
 declared.files.set(
 	`${INSTALLED}/${RECORD_FILE}`,
 	JSON.stringify({ id: ID, title: "Clock", props: { days: { kind: "value", verbs: { get: "required" } } } }),
 );
-declared.files.set(
-	`${INSTALLED}/widget.tsx`,
-	declaring("from the code", { props: { days: { kind: "collection", verbs: { list: "required" } } } }),
-);
+declared.files.set(`${INSTALLED}/widget.tsx`, declaring("from the code"));
 const fromCode = await loadedFrom(declared);
 check("where the code declares them the props come from the code", fromCode?.manifest.props.days.kind, "collection");
 check("and the record still says what its card draws", fromCode?.manifest.title, "Clock");
 
 const renaming = fakeVault();
-renaming.files.set(`${INSTALLED}/widget.tsx`, declaring("named elsewhere", { id: "@evil/miner", title: "Miner" }));
+renaming.files.set(
+	`${INSTALLED}/widget.tsx`,
+	declaring("named elsewhere", { id: "@evil/miner", title: "Miner", description: "" }),
+);
 check(
 	"a declaration cannot move a widget to an id its folder does not hold",
 	(await loadedFrom(renaming))?.manifest.id,
 	ID,
 );
 
-const importing = `import { createWidget } from "widgetarium";
+const importing = `import { createWidget, defineLayout } from "widgetarium";
 import { Icon } from "widgetarium/kit";
 import { useState } from "react";
 import { DndContext } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers/dist/edges";
 import { shared } from "@demo/lib";
 import type { Board } from "tidy-cjs";
-export default createWidget(function Clock({ board }: { board: Board }) {
-	return <b>{String([Icon, useState, DndContext, restrictToWindowEdges, shared, board].length)}</b>;
-});
+${LAYOUT}
+const board: Board | null = null;
+export default createWidget({ draw: () => <b>{String([Icon, useState, DndContext, restrictToWindowEdges, shared, board].length)}</b> });
 `;
 const code = compileWidget(importing, `${FOLDER}/widget.tsx`);
 check(
@@ -245,7 +240,7 @@ check("a dependency written into the record by hand loses to what the source imp
 });
 
 const cjsOnly = {
-	"widget.tsx": `import { createWidget } from "widgetarium";\nimport { pad } from "tidy-cjs";\nexport default createWidget(function Clock() { return <b>{String(pad)}</b>; });\n`,
+	"widget.tsx": `import { createWidget, defineLayout } from "widgetarium";\nimport { pad } from "tidy-cjs";\n${LAYOUT}\nexport default createWidget({ draw: () => <b>{String(pad)}</b> });\n`,
 };
 const refused = await publishWidget({ folder: FOLDER, files: cjsOnly, lockfile: LOCKFILE, askEsm: servingNoEsm });
 check(
@@ -282,14 +277,14 @@ const whole = {
 		description: "Tells the time.",
 		slots: { face: { default: "@demo/face" } },
 	}),
-	"widget.tsx": declaring("published", { props: { days: { kind: "collection", verbs: { list: "required" } } } }),
+	"widget.tsx": declaring("published", { title: "Clock", description: "Tells the time." }),
 	"styles.css": ".clock { color: red; }",
 };
 const wholly = await publishWidget({ folder: FOLDER, files: whole, lockfile: LOCKFILE, askEsm: servingEsm });
 check(
 	"the record keeps what its card is drawn from",
-	[wholly.record.id, wholly.record.title, wholly.record.description],
-	[ID, "Clock", "Tells the time."],
+	[wholly.record.title, wholly.record.description],
+	["Clock", "Tells the time."],
 );
 check("it lists the files a vault has to fetch, the sheet under the widget's own name", wholly.record.files, [
 	"widget.tsx",
@@ -307,9 +302,15 @@ check(
 );
 
 check(
-	"a source declaring nothing declares nothing",
-	declarationIn(compileWidget(sourceSaying("bare"), `${FOLDER}/widget.tsx`)),
-	null,
+	"a source that does not export createWidget({ inject, draw }) is refused",
+	(() => {
+		try {
+			return declarationIn(compileWidget("export default () => null;", `${FOLDER}/widget.tsx`));
+		} catch (failure) {
+			return String(failure.message);
+		}
+	})(),
+	"the widget does not export createWidget({ inject: { ... }, draw })",
 );
 check(
 	"a folder with no source is refused before anything else",

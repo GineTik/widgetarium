@@ -21,7 +21,7 @@ function check(label, ok, said) {
 }
 
 for (const { id, folder } of widgetFolders()) {
-	const manifest = JSON.parse(readFileSync(path.join(folder, "manifest.json"), "utf8"));
+	const manifest = JSON.parse(readFileSync(path.join(folder, "manifest.generated.json"), "utf8"));
 	const declared = manifest.preview?.shot?.of;
 	if (!declared) {
 		console.log(`--  ${id} declares no shot, so its card draws live`);

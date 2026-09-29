@@ -4,13 +4,13 @@ import { pathToFileURL } from "node:url";
 import { buildMirror } from "./mirror.mjs";
 
 buildMirror();
-const { RECORD_FILE, RECORD_FILES, cardOf, manifestOf, readRecord, recordIn } =
-	await import("./.mjs-cache/engine/catalogue-index.mjs");
+const { RECORD_FILE, RECORD_FILES, cardOf } = await import("./.mjs-cache/engine/catalogue-index.mjs");
 const { WIDGET_API } = await import("./.mjs-cache/version.mjs");
-const { SHEET_FILES, SOURCE_FILES, compileWidget } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { EVERY_SOURCE_FILE, SHEET_FILES, SOURCE_FILES, compileWidgetFolder, isWidgetModule, missingSourceRefusal } =
+	await import("./.mjs-cache/engine/widget-build.mjs");
 const { ANSWERED_BY_THE_ENGINE, facadeUrl, realPathIn } = await import("./.mjs-cache/engine/modules.mjs");
 const { idOfFolder } = await import("./.mjs-cache/engine/github.mjs");
-const manifestBuilders = await import("./.mjs-cache/gateway/manifest.mjs");
+const declaredBuilders = await import("./.mjs-cache/gateway/declared.mjs");
 
 export const PUBLISHED_SHEET = SHEET_FILES[0];
 
@@ -52,20 +52,17 @@ export function dependenciesFrom(names, lockfile) {
 	return { ok: true, dependencies, failure: null };
 }
 
-function declaringCreateWidget(onDeclared) {
-	return (first, second) => {
-		if (typeof first !== "function") {
-			onDeclared({ manifest: first });
-			return second;
-		}
-		onDeclared(second ? { meta: second } : null);
-		return first;
-	};
+const NOT_DECLARED_PROPS = "the widget does not export createWidget({ inject: { ... }, draw })";
+
+function declaringCreateWidget(widget) {
+	if (typeof widget?.draw !== "function") throw new Error(NOT_DECLARED_PROPS);
+	const inject = widget.inject ?? {};
+	const declared = declaredBuilders.isDeclaredProps(inject) ? inject : declaredBuilders.defineProps(inject);
+	return Object.assign(widget.draw, { declared });
 }
 
 export function declarationIn(code) {
-	let declared = null;
-	const surface = { ...manifestBuilders, createWidget: declaringCreateWidget((found) => (declared = found)) };
+	const surface = { ...declaredBuilders, createWidget: declaringCreateWidget };
 	const widgetarium = new Proxy(surface, { get: (held, name) => held[name] ?? ANYTHING });
 	const globals = {
 		h: () => null,
@@ -83,7 +80,9 @@ export function declarationIn(code) {
 		shell.exports,
 		...Object.values(globals),
 	);
-	return declared;
+	const manifest = declaredBuilders.manifestOfModule(shell.exports);
+	if (!manifest) throw new Error(NOT_DECLARED_PROPS);
+	return { manifest };
 }
 
 export function widgetDependenciesIn(record) {
@@ -109,17 +108,15 @@ async function esmRefusal(askEsm, dependencies) {
 
 export async function publishWidget({ folder, files, lockfile, askEsm }) {
 	const from = SOURCE_FILES.find((name) => typeof files?.[name] === "string");
-	if (!from) return refuse(`${folder} holds no widget source`);
+	if (!from) return refuse(missingSourceRefusal(Object.keys(files ?? {}), folder));
 
 	const id = idOfFolder(folder);
 	if (!id) return refuse(`${folder} is not a @scope/name folder`);
 
-	let card;
 	let code;
 	let declared;
 	try {
-		card = readRecord(JSON.parse(recordIn(files) ?? null), id);
-		code = compileWidget(files[from], `${folder}/${from}`);
+		code = compileWidgetFolder(files, folder);
 		declared = declarationIn(code);
 	} catch (failure) {
 		return refuse(`${folder} could not be read: ${String(failure?.message ?? failure)}`);
@@ -133,19 +130,31 @@ export async function publishWidget({ folder, files, lockfile, askEsm }) {
 	if (unservable) return refuse(unservable);
 
 	const sheet = SHEET_FILES.map((name) => files[name]).find((text) => typeof text === "string") ?? null;
-	const declaredCard = declared?.manifest ? cardOf(declared.manifest, WIDGET_API) : manifestOf(card, declared);
+	const declaredCard = cardOf(declared.manifest, WIDGET_API);
 	const record = {
 		...declaredCard,
-		files: [from, ...(sheet === null ? [] : [PUBLISHED_SHEET])],
+		files: [
+			from,
+			...Object.keys(files).filter((name) => name !== from && isWidgetModule(name)),
+			...(sheet === null ? [] : [PUBLISHED_SHEET]),
+		],
 		dependencies: found.dependencies,
 		widgetDependencies: widgetDependenciesIn(declaredCard),
 	};
 	return { ok: true, record, sheet, failure: null };
 }
 
+export function widgetModulesOnDisk(folder) {
+	return fs
+		.readdirSync(folder, { recursive: true })
+		.map((name) => String(name).split(path.sep).join("/"))
+		.filter(isWidgetModule)
+		.sort();
+}
+
 function filesUnder(folder) {
 	const held = {};
-	for (const name of [...RECORD_FILES, ...SOURCE_FILES, ...SHEET_FILES]) {
+	for (const name of new Set([...RECORD_FILES, ...EVERY_SOURCE_FILE, ...SHEET_FILES, ...widgetModulesOnDisk(folder)])) {
 		const at = path.join(folder, name);
 		if (fs.existsSync(at)) held[name] = fs.readFileSync(at, "utf8");
 	}
@@ -163,6 +172,7 @@ async function runCli(folder, out) {
 	fs.mkdirSync(out, { recursive: true });
 	fs.writeFileSync(path.join(out, RECORD_FILE), `${JSON.stringify(done.record, null, "\t")}\n`);
 	for (const name of done.record.files) {
+		fs.mkdirSync(path.dirname(path.join(out, name)), { recursive: true });
 		fs.writeFileSync(path.join(out, name), name === PUBLISHED_SHEET ? done.sheet : files[name]);
 	}
 	console.log(`OK  ${done.record.id} → ${out}`);
@@ -178,12 +188,7 @@ export function widgetFolders(root) {
 				.filter((entry) => entry.isDirectory())
 				.map((entry) => path.join(root, scope.name, entry.name)),
 		)
-		.filter((folder) => SOURCE_FILES.some((name) => fs.existsSync(path.join(folder, name))));
-}
-
-function declaresManifest(folder, files) {
-	const source = SOURCE_FILES.find((name) => typeof files[name] === "string");
-	return Boolean(declarationIn(compileWidget(files[source], `${folder}/${source}`))?.manifest);
+		.filter((folder) => EVERY_SOURCE_FILE.some((name) => fs.existsSync(path.join(folder, name))));
 }
 
 const publishedFromDisk = (folder, files) =>
@@ -196,9 +201,7 @@ const publishedFromDisk = (folder, files) =>
 
 async function cardMadeFrom(folder) {
 	try {
-		const files = filesUnder(folder);
-		if (!declaresManifest(folder, files)) return { skipped: true };
-		return await publishedFromDisk(folder, files);
+		return await publishedFromDisk(folder, filesUnder(folder));
 	} catch (failure) {
 		return { ok: false, failure: String(failure?.message ?? failure) };
 	}
@@ -206,10 +209,6 @@ async function cardMadeFrom(folder) {
 
 export async function writeCardBeside(folder) {
 	const done = await cardMadeFrom(folder);
-	if (done.skipped) {
-		console.log(`--  ${folder} still declares createWidget(component, meta), so no card was written`);
-		return;
-	}
 	if (!done.ok) {
 		console.error(`!!  ${folder}: ${done.failure}`);
 		process.exitCode = 1;

@@ -34,10 +34,9 @@ const INSTALLED = `${WIDGETS_DIR}/@demo/clock`;
 const KEY = "tailwindcss@4.3.3";
 const REAL_PATH = "/tailwindcss@4.3.3/es2022/tailwindcss.bundle.mjs";
 
-const SOURCE = `import { createWidget } from "widgetarium";
-export default createWidget(function Clock() {
-	return <b className="text-3xl">tick</b>;
-});
+const SOURCE = `import { createWidget, defineLayout } from "widgetarium";
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({ draw: () => <b className="text-3xl">tick</b> });
 `;
 
 const A_COMPILER_THAT_ANSWERS_LIKE_TAILWIND = `export async function compile(css, options) {

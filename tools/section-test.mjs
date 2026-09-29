@@ -1,6 +1,5 @@
-import fs from "node:fs";
 import { JSDOM } from "jsdom";
-import { transform } from "sucrase";
+import { runWidgetSource } from "./run-widget-source.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -34,27 +33,16 @@ const { api: widgetarium } = ENGINE_SCOPE;
 const kit = await import("./.mjs-cache/index.mjs");
 const { previewProps } = await import("./.mjs-cache/preview.mjs");
 const { soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-
-const plainJs = (file) =>
-	transform(fs.readFileSync(file, "utf8"), {
-		transforms: ["typescript", "jsx", "imports"],
-		jsxPragma: "h",
-		jsxFragmentPragma: "Fragment",
-		production: true,
-		filePath: file,
-	}).code;
+const { manifestOfModule } = await import("./.mjs-cache/gateway/declared.mjs");
 
 function run(file) {
-	const shell = { exports: {} };
 	const modules = { widgetarium, "widgetarium/kit": kit, react };
-	const load = new Function("require", "module", "exports", "h", "Fragment", plainJs(file));
-	load((name) => modules[name], shell, shell.exports, h, Fragment);
-	return shell.exports;
+	return runWidgetSource(file, (name) => modules[name], h, Fragment);
 }
 
 const loaded = run("registry/@default/section/widget.tsx");
 const Section = loaded.default;
-const { manifest } = loaded;
+const manifest = manifestOfModule(loaded);
 
 let failed = 0;
 function check(what, got, wanted) {
@@ -98,7 +86,7 @@ check(
 	["placed", "per-row"],
 );
 check("and is drawn as a choice", manifest.props.filling.control, "choice");
-check("no prop picks a row of another", Object.values(manifest.props).filter((spec) => spec.of).length, 0);
+check("no prop picks a row of another", Object.values(manifest.props).filter((spec) => spec.source).length, 0);
 check(
 	"the narrowest cell is asked for only in a grid",
 	manifest.props.minWidthPx.isVisible({ arrangement: { value: "grid" } }),
@@ -167,7 +155,11 @@ const stands = [...host.querySelectorAll(".wg-section-stands")];
 check("every placed widget stands in its own wrapper", stands.length, 2);
 check("in a column one with no word of its own wears nothing", stands[0].getAttribute("data-surface"), null);
 check("one that names its own plate wears that one", stands[1].getAttribute("data-surface"), "group");
-check("and each is as tall as what it draws", stands.map((one) => one.style.height), ["", ""]);
+check(
+	"and each is as tall as what it draws",
+	stands.map((one) => one.style.height),
+	["", ""],
+);
 
 console.log("\n— the arrangement decides the plates —");
 const twoPlain = { widgets: [entryOf("First", {}), entryOf("Second", {})] };
@@ -177,13 +169,24 @@ await drawn({ arrangement: soloGateway("row", {}, "section-test:row-plates"), mo
 check("so does a row", plated(), ["group", "group"]);
 await drawn({ arrangement: soloGateway("rows", {}, "section-test:rows-plates"), mounts: twoPlain });
 check("rows stand bare, each of them", plated(), [null, null]);
-check("inside the one plate the body wears", host.querySelector(".wg-kit-layout").getAttribute("data-surface"), "group");
+check(
+	"inside the one plate the body wears",
+	host.querySelector(".wg-kit-layout").getAttribute("data-surface"),
+	"group",
+);
 
 console.log("\n— a placed widget is told the plate it stands on —");
 const toldOf = (arrangement) => {
 	const told = [];
-	const spy = { ...entryOf("Spy", {}), drawInto: (element, platesAbove) => (told.push(platesAbove?.surface ?? null), () => {}) };
-	return { told, mounts: { widgets: [spy] }, arrangement: soloGateway(arrangement, {}, `section-test:told-${arrangement}`) };
+	const spy = {
+		...entryOf("Spy", {}),
+		drawInto: (element, platesAbove) => (told.push(platesAbove?.surface ?? null), () => {}),
+	};
+	return {
+		told,
+		mounts: { widgets: [spy] },
+		arrangement: soloGateway(arrangement, {}, `section-test:told-${arrangement}`),
+	};
 };
 const onGrid = toldOf("grid");
 await drawn({ arrangement: onGrid.arrangement, mounts: onGrid.mounts });

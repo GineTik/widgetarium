@@ -110,7 +110,12 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 {
 	const shelf = {
-		"@default/editable-tabs": { props: { tabs: { kind: "collection" }, selection: { kind: "value", of: "tabs" } } },
+		"@default/editable-tabs": {
+			props: {
+				tabs: { kind: "collection" },
+				selection: { kind: "value", source: { implementation: "@core/selection", fields: { rows: "tabs" } } },
+			},
+		},
 		"@default/filter-panel": { props: { chosen: { kind: "value" } } },
 		"@default/kanban-board": {
 			props: {
@@ -123,7 +128,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 					default: { path: "Orbitask/Tasks" },
 				},
 				selection: { kind: "value", wants: "@default/editable-tabs/selection" },
-				opened: { kind: "value", of: "tasks" },
+				opened: { kind: "value", source: { implementation: "@core/selection", fields: { rows: "tasks" } } },
 			},
 		},
 		"@probe/box-reader": { props: { opened: { kind: "value", wants: "@default/kanban-board/opened" } } },

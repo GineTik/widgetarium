@@ -1259,6 +1259,17 @@ check(
 	written[TOOL_PATH].includes("widgets — the Widgetarium catalogue"),
 	true,
 );
+const zodLaid = Object.keys(written).filter((at) => at.includes("/types/zod/") && written[at] !== null);
+check(
+	"the schema library's declarations are laid beside the widget types",
+	zodLaid.some((at) => at.endsWith("/types/zod/index.d.ts")),
+	true,
+);
+check(
+	"and every folder they stand in was made before a file was written into it",
+	zodLaid.filter((at) => written[at.slice(0, at.lastIndexOf("/"))] !== null),
+	[],
+);
 check("laying them a second time writes nothing", await layAgentFiles(adapter), []);
 
 check(
@@ -1309,7 +1320,7 @@ check("a handbook page that drifted is written again", await layAgentFiles(adapt
 
 function widgetIn(at, id, manifest) {
 	fs.mkdirSync(at, { recursive: true });
-	fs.writeFileSync(path.join(at, "manifest.json"), JSON.stringify({ id, ...manifest }));
+	fs.writeFileSync(path.join(at, "manifest.generated.json"), JSON.stringify({ id, ...manifest }));
 	fs.writeFileSync(path.join(at, "widget.tsx"), `export default function ${id.split("/")[1].replace(/-/g, "")}() {}\n`);
 }
 
@@ -1349,7 +1360,7 @@ fs.writeFileSync(
 	}),
 );
 widgetIn(path.join(vault, ".widgetarium/widgets/unscoped/delta"), "unscoped/delta", { title: "Delta" });
-fs.rmSync(path.join(vault, ".widgetarium/widgets/unscoped/delta/manifest.json"));
+fs.rmSync(path.join(vault, ".widgetarium/widgets/unscoped/delta/manifest.generated.json"));
 
 const tool = (...argv) =>
 	JSON.parse(execFileSync("node", [path.join(vault, ".widgetarium/bin/widgets.mjs"), ...argv], { encoding: "utf8" }));

@@ -43,16 +43,15 @@ export function streakOf(days) {
 `;
 
 const WIDGET = `import { streakOf, RATE } from "@default/lib";
-import { createWidget } from "widgetarium";
-export default createWidget(function Probe({ days = [] }) {
-	return h("b", null, streakOf(days) + "/" + RATE);
-});
+import { createWidget, defineLayout } from "widgetarium";
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({ draw: () => h("b", null, streakOf(["a", "b", "c"]) + "/" + RATE) });
 `;
 
 const FILES = {
 	[`${ROOT}/@default/lib.js`]: LIB,
-	[`${ROOT}/@habit/probe/manifest.json`]: JSON.stringify({ id: "@habit/probe", title: "Probe" }),
-	[`${ROOT}/@habit/probe/widget.jsx`]: WIDGET,
+	[`${ROOT}/@habit/probe/manifest.generated.json`]: JSON.stringify({ id: "@habit/probe", title: "Probe" }),
+	[`${ROOT}/@habit/probe/widget.tsx`]: WIDGET,
 };
 
 let failed = 0;
@@ -78,12 +77,12 @@ const check = (name, got, want) => {
 		"RATE",
 		"streakOf",
 	]);
-	check("and what the widget draws came from it", entry.component({ days: ["a", "b", "c"] }).props.children, "3/21");
+	check("and what the widget draws came from it", entry.component({}).props.children, "3/21");
 }
 
 {
 	const registry = new WidgetRegistry(
-		vaultOf({ ...FILES, [`${ROOT}/@habit/probe/widget.jsx`]: `import "nowhere";\nexport default () => null;\n` }),
+		vaultOf({ ...FILES, [`${ROOT}/@habit/probe/widget.tsx`]: `import "nowhere";\nexport default () => null;\n` }),
 	);
 	await registry.load();
 	const entry = registry.get("@habit/probe");
@@ -118,8 +117,8 @@ const check = (name, got, want) => {
 {
 	const registry = new WidgetRegistry(
 		vaultOf({
-			[`${ROOT}/@task/probe/manifest.json`]: JSON.stringify({ id: "@task/probe" }),
-			[`${ROOT}/@task/probe/widget.jsx`]: "export default () => null;",
+			[`${ROOT}/@task/probe/manifest.generated.json`]: JSON.stringify({ id: "@task/probe" }),
+			[`${ROOT}/@task/probe/widget.tsx`]: "export default () => null;",
 		}),
 	);
 	await registry.load();
@@ -221,10 +220,11 @@ const check = (name, got, want) => {
 {
 	const { readFileSync } = await import("node:fs");
 	const { buildWidget } = await import("./.mjs-cache/registry.mjs");
+	const { widgetModuleSources } = await import("./run-widget-source.mjs");
 	// CONTEXT: the catalogue draws a widget nobody installed, so it compiles one straight off disk
 	const drawn = buildWidget({
-		code: readFileSync("registry/@default/heatmap/widget.tsx", "utf8"),
-		path: "registry/@default/heatmap/widget.tsx",
+		sources: widgetModuleSources("registry/@default/heatmap"),
+		path: "registry/@default/heatmap",
 		lib: readFileSync("registry/@default/lib.js", "utf8"),
 		libPath: "registry/@default/lib.js",
 		scope: "@default",
@@ -233,14 +233,14 @@ const check = (name, got, want) => {
 
 	let refused = "";
 	try {
-		buildWidget({ code: "export default 5;", path: "nowhere/widget.jsx" });
+		buildWidget({ code: "export default 5;", path: "nowhere/widget.tsx" });
 	} catch (failure) {
 		refused = String(failure.message);
 	}
 	check(
 		"and one exporting no component says so",
 		refused,
-		'nowhere/widget.jsx: the file must "export default createWidget(...)"',
+		'nowhere/widget.tsx: the file must "export default createWidget(...)"',
 	);
 }
 

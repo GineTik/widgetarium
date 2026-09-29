@@ -124,10 +124,9 @@ check(
 );
 
 const ROOT = ".widgetarium/widgets";
-const WIDGET = `import { createWidget } from "widgetarium";
-export default createWidget(function Probe() {
-	return h("b", null, "drawn");
-});
+const WIDGET = `import { createWidget, defineLayout } from "widgetarium";
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({ draw: () => h("b", null, "drawn") });
 `;
 
 function vaultOf(files) {
@@ -158,8 +157,8 @@ function vaultOf(files) {
 }
 
 const filesFor = (manifest) => ({
-	[`${ROOT}/@demo/probe/manifest.json`]: JSON.stringify(manifest),
-	[`${ROOT}/@demo/probe/widget.jsx`]: WIDGET,
+	[`${ROOT}/@demo/probe/manifest.generated.json`]: JSON.stringify(manifest),
+	[`${ROOT}/@demo/probe/widget.tsx`]: WIDGET,
 });
 
 {
@@ -207,8 +206,8 @@ const COMMIT = "https://api.github.com/repos/acme/widgets/commits/main";
 const RAW = "https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/clock";
 const served = {
 	[COMMIT]: { sha: "abc1234567" },
-	[`${RAW}/manifest.json`]: JSON.stringify({ id: "@demo/clock", title: "Clock", api: WIDGET_API + 1 }),
-	[`${RAW}/widget.jsx`]: WIDGET,
+	[`${RAW}/manifest.generated.json`]: JSON.stringify({ id: "@demo/clock", title: "Clock", api: WIDGET_API + 1 }),
+	[`${RAW}/widget.tsx`]: WIDGET,
 };
 const offer = {
 	manifest: {
@@ -216,7 +215,7 @@ const offer = {
 		repository: "https://github.com/acme/widgets",
 		ref: "main",
 		path: "widgets/@demo/clock",
-		files: ["manifest.json", "widget.jsx"],
+		files: ["manifest.generated.json", "widget.tsx"],
 	},
 };
 
@@ -260,7 +259,7 @@ const offer = {
 const { default: WidgetariumPlugin, drawable } = await import("./.mjs-cache/main.mjs");
 
 const offered = (api) =>
-	drawable({ manifest: { id: "@demo/clock", api }, code: WIDGET, path: "@demo/clock/widget.jsx" });
+	drawable({ manifest: { id: "@demo/clock", api }, sources: { "widget.tsx": WIDGET }, path: "@demo/clock" });
 check("an offer inside the range is drawn on its card", Boolean(offered(WIDGET_API).component), true);
 check("an offer outside it is never built", offered(WIDGET_API + 1).component ?? null, null);
 check(
@@ -281,7 +280,7 @@ function renderedBlock(source) {
 		return {};
 	};
 	const element = { createEl: (tag, options) => said.push(options?.text ?? "") };
-	plugin.renderBlock(source, element, { sourcePath: "Note.md", getSectionInfo: () => null });
+	plugin.drawBlock(source, element, { sourcePath: "Note.md", getSectionInfo: () => null });
 	return { said, mounts };
 }
 

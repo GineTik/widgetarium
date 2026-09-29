@@ -3,7 +3,7 @@ import { buildMirror } from "./mirror.mjs";
 buildMirror();
 const { allowedVerbs, withinAllowed } = await import("./.mjs-cache/gateway/props.mjs");
 const { arrayGateway, canDo } = await import("./.mjs-cache/gateway/create.mjs");
-const { defineManifest, defineProp } = await import("./.mjs-cache/gateway/manifest.mjs");
+const { ICrudGateway, defineProps, manifestOfModule, z } = await import("./.mjs-cache/gateway/declared.mjs");
 
 let failed = 0;
 function check(name, got, want) {
@@ -14,11 +14,10 @@ function check(name, got, want) {
 	);
 }
 
-const tasks = defineManifest({
-	size: { preferredWidth: "full", preferredHeight: "auto" },
-	title: "Tasks",
-	description: "Tasks.",
-	props: { tasks: defineProp()({ label: "Tasks", default: [], writes: ["create", "remove"] }) },
+const tasks = manifestOfModule({
+	default: { declared: defineProps({ tasks: ICrudGateway.of(z.unknown()).pick("create", "remove") }) },
+	metadata: { title: "Tasks", description: "Tasks.", props: { tasks: { label: "Tasks" } } },
+	layout: { size: { preferredWidth: "full", preferredHeight: "auto" } },
 }).props.tasks;
 const onVerbs = (decisions) => decisions.filter((decision) => decision.can).map((decision) => decision.verb);
 

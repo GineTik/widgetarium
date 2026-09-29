@@ -637,7 +637,8 @@ const boardWith = (main, tiles = ["a", "b", "c"]) => ({
 });
 const lintSaid = (board, roles = () => null) =>
 	lintBoard(board, roles).map((one) => `${one.path.join("/")} ${one.message}`);
-const heightSaid = (leaf) => lintSaid(boardWith([leaf])).filter((line) => line.includes('" is gone: a widget is as tall'));
+const heightSaid = (leaf) =>
+	lintSaid(boardWith([leaf])).filter((line) => line.includes('" is gone: a widget is as tall'));
 check(
 	"a height on a widget or a box is named as gone, once per field, whatever it holds",
 	[
@@ -947,7 +948,9 @@ check(
 const BOARD_WIDGETS = readdirSync("registry")
 	.filter((scope) => scope.startsWith("@"))
 	.flatMap((scope) =>
-		readdirSync(path.join("registry", scope)).map((name) => path.join("registry", scope, name, "manifest.json")),
+		readdirSync(path.join("registry", scope)).map((name) =>
+			path.join("registry", scope, name, "manifest.generated.json"),
+		),
 	)
 	.filter((file) => existsSync(file))
 	.map((file) => ({ file, manifest: JSON.parse(readFileSync(file, "utf8")) }))

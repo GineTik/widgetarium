@@ -26,10 +26,9 @@ function check(name, got, want) {
 
 const INSTALLED = `${WIDGETS_DIR}/@demo/clock`;
 
-const SOURCE = `import { createWidget } from "widgetarium";
-export default createWidget(function Clock() {
-	return <b className="text-3xl bg-brand hover:opacity-50">tick</b>;
-});
+const SOURCE = `import { createWidget, defineLayout } from "widgetarium";
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({ draw: () => <b className="text-3xl bg-brand hover:opacity-50">tick</b> });
 `;
 
 const SHEET = `@import "tailwindcss";

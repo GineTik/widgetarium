@@ -112,7 +112,11 @@ const OPENER_MANIFEST = {
 	title: "Opener",
 	props: {
 		items: { kind: "collection", verbs: { list: "required" } },
-		opened: { kind: "value", of: "items", verbs: { get: "required", update: "required" } },
+		opened: {
+			kind: "value",
+			source: { implementation: "@core/selection", fields: { rows: "items" } },
+			verbs: { get: "required", update: "required" },
+		},
 	},
 };
 
@@ -321,6 +325,22 @@ console.log("\n— a cell the widget has not landed in yet is not a resting plac
 	const afterTheyLand = positionsWithin(region, ".wg-tree-cell", keyOf);
 	check("so the widgets landing in it slide nothing", Object.keys(movesFrom(beforeTheyLand, afterTheyLand)), []);
 }
+
+const FAILED = "@probe/failed";
+registry.widgets.set(FAILED, {
+	manifest: { id: FAILED, title: "Failed" },
+	error: new Error('this widget calls "defineProp" from "widgetarium"'),
+});
+await start({
+	tiles: [{ id: "old", widget: FAILED }],
+	layout: { left: [], main: [[{ id: "old", height: 200 }]], right: [] },
+});
+const failedTile = root.querySelector(".wg-missing");
+check(
+	"a widget that failed to load says so on its tile, with why, instead of crashing it",
+	[failedTile?.querySelector("b")?.textContent, failedTile?.textContent.includes("defineProp")],
+	["This widget could not be loaded", true],
+);
 
 check(
 	"and nothing was logged but the crash the board asked for",

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
-import { transform } from "sucrase";
+import { runWidgetSource } from "./run-widget-source.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -42,16 +42,6 @@ const DECLARED = JSON.parse(fs.readFileSync("registry/@default/metric-total/mani
 
 const libs = new Map();
 
-function compiled(file, source) {
-	return transform(source, {
-		transforms: file.endsWith(".tsx") ? ["typescript", "jsx", "imports"] : ["jsx", "imports"],
-		jsxPragma: "h",
-		jsxFragmentPragma: "Fragment",
-		production: true,
-		filePath: file,
-	}).code;
-}
-
 function importing() {
 	const modules = { widgetarium, "widgetarium/kit": kit, react, ...Object.fromEntries(libs) };
 	return (name) => {
@@ -62,10 +52,7 @@ function importing() {
 }
 
 function run(file) {
-	const shell = { exports: {} };
-	const code = compiled(file, fs.readFileSync(file, "utf8"));
-	new Function("require", "module", "exports", "h", "Fragment", code)(importing(), shell, shell.exports, h, Fragment);
-	return shell.exports;
+	return runWidgetSource(file, importing(), h, Fragment);
 }
 
 libs.set("@default/lib", run("registry/@default/lib.js"));

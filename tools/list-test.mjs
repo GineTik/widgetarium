@@ -1,6 +1,5 @@
-import fs from "node:fs";
 import { JSDOM } from "jsdom";
-import { transform } from "sucrase";
+import { runWidgetSource } from "./run-widget-source.mjs";
 import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -33,22 +32,7 @@ const { surfacedSlot } = await import("./.mjs-cache/widget-root.mjs");
 
 const WIDGET = "registry/@default/list/widget.tsx";
 const modules = { widgetarium, "widgetarium/kit": kit, react };
-const code = transform(fs.readFileSync(WIDGET, "utf8"), {
-	transforms: ["typescript", "jsx", "imports"],
-	jsxPragma: "h",
-	jsxFragmentPragma: "Fragment",
-	production: true,
-	filePath: WIDGET,
-}).code;
-const shell = { exports: {} };
-new Function("require", "module", "exports", "h", "Fragment", code)(
-	(name) => modules[name],
-	shell,
-	shell.exports,
-	h,
-	Fragment,
-);
-const List = shell.exports.default;
+const List = runWidgetSource(WIDGET, (name) => modules[name], h, Fragment).default;
 
 let failed = 0;
 let checks = 0;

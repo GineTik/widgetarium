@@ -95,15 +95,20 @@ function widgetSources(at, found = []) {
 const INSTALLED = "@perf/one";
 const INSTALLED_FOLDER = `${WIDGETS_DIR}/@perf/one`;
 const SOURCE_SAYS = `import { createWidget } from "widgetarium";
-export default createWidget(function One() {
-	const said: string = "the source was compiled at startup";
-	return <b>{said}</b>;
+export default createWidget({
+	draw: function One() {
+		const said: string = "the source was compiled at startup";
+		return <b>{said}</b>;
+	},
 });
 `;
 
 function vaultHoldingAnInstalledWidget() {
 	const vault = fakeVault();
-	const files = { "manifest.json": JSON.stringify({ id: INSTALLED, title: "One" }), "widget.tsx": SOURCE_SAYS };
+	const files = {
+		"manifest.generated.json": JSON.stringify({ id: INSTALLED, title: "One" }),
+		"widget.tsx": SOURCE_SAYS,
+	};
 	for (const [name, text] of Object.entries(files)) vault.files.set(`${INSTALLED_FOLDER}/${name}`, text);
 	vault.files.set(
 		builtCodePath(INSTALLED_FOLDER),

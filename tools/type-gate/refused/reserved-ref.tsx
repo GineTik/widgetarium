@@ -1,11 +1,7 @@
-import { defineManifest, defineProp } from "widgetarium";
+import { IListGateway, defineProps, z } from "widgetarium";
 
-type Entry = { title: string; ref: string };
+const Entry = z.object({ title: z.string(), ref: z.string() });
 
-export const manifest = defineManifest({
-	title: "Reserved ref",
-	description: "A row type spelling ref as a plain string.",
-	props: {
-		entries: defineProp<Entry[]>()({ default: [] }),
-	},
+export const props = defineProps({
+	entries: IListGateway.of(Entry),
 });

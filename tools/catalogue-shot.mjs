@@ -31,31 +31,35 @@ const files = collect(SOURCE, {}, WIDGETS_DIR);
 // `accepts` the kanban's card slot cannot satisfy, so the ranked half of the picture needs a probe
 if (process.env.WG_MISFIT) {
 	const folder = `${WIDGETS_DIR}/@task/estimate-card`;
-	files[`${folder}/manifest.json`] = JSON.stringify({
+	files[`${folder}/manifest.generated.json`] = JSON.stringify({
 		id: "@task/estimate-card",
 		title: "OrbiTask \u00b7 Estimate card",
 		defaultSize: { w: 4, h: 2 },
 		preview: { size: { w: 4, h: 2 } },
 		accepts: { task: { required: ["title", "estimate"] } },
 	});
-	files[`${folder}/widget.jsx`] = `import { createWidget, WidgetRoot } from "widgetarium";
-export default createWidget(function EstimateCard() {
-	return <WidgetRoot className="orbi">3 days left</WidgetRoot>;
+	files[`${folder}/widget.tsx`] = `import { createWidget, WidgetRoot } from "widgetarium";
+export default createWidget({
+	draw: function EstimateCard() {
+		return <WidgetRoot className="orbi">3 days left</WidgetRoot>;
+	},
 });`;
 }
 
 // CONTEXT: a containment nobody triggered is a containment nobody has
 if (process.env.WG_BREAK) {
 	const folder = `${WIDGETS_DIR}/@task/throwing-probe`;
-	files[`${folder}/manifest.json`] = JSON.stringify({
+	files[`${folder}/manifest.generated.json`] = JSON.stringify({
 		id: "@task/throwing-probe",
 		title: "OrbiTask \u00b7 Throwing probe",
 		defaultSize: { w: 4, h: 2 },
 		preview: { size: { w: 4, h: 2 } },
 	});
-	files[`${folder}/widget.jsx`] = `import { createWidget } from "widgetarium";
-export default createWidget(function Throwing() {
-	throw new Error("this widget throws while drawing");
+	files[`${folder}/widget.tsx`] = `import { createWidget } from "widgetarium";
+export default createWidget({
+	draw: function Throwing() {
+		throw new Error("this widget throws while drawing");
+	},
 });`;
 }
 
