@@ -39,19 +39,22 @@ async function transformed(file) {
 	return code;
 }
 
+const isOwnSource = (file) => file.startsWith(REPO) && !file.includes(`${path.sep}node_modules${path.sep}`);
+
+async function ownModuleSource(file) {
+	const extension = path.extname(file);
+	if (READ_AS_TEXT.has(extension)) return `export default ${JSON.stringify(fs.readFileSync(file, "utf8"))};\n`;
+	if (extension in TRANSFORMED) return transformed(file);
+	if (extension === ".js" && isModuleJs(file)) return fs.readFileSync(file, "utf8");
+	return null;
+}
+
 export async function load(url, context, nextLoad) {
 	if (isVirtual(url)) return { format: "module", source: await virtualSource(url), shortCircuit: true };
 	if (!url.startsWith("file:")) return nextLoad(url, context);
 	const file = fileURLToPath(url);
-	if (!file.startsWith(REPO) || file.includes(`${path.sep}node_modules${path.sep}`)) return nextLoad(url, context);
-	const extension = path.extname(file);
-	if (READ_AS_TEXT.has(extension)) {
-		const text = JSON.stringify(fs.readFileSync(file, "utf8"));
-		return { format: "module", source: `export default ${text};\n`, shortCircuit: true };
-	}
-	if (extension in TRANSFORMED) return { format: "module", source: await transformed(file), shortCircuit: true };
-	if (extension === ".js" && isModuleJs(file)) {
-		return { format: "module", source: fs.readFileSync(file, "utf8"), shortCircuit: true };
-	}
-	return nextLoad(url, context);
+	if (!isOwnSource(file)) return nextLoad(url, context);
+	const source = await ownModuleSource(file);
+	if (source === null) return nextLoad(url, context);
+	return { format: "module", source, shortCircuit: true };
 }

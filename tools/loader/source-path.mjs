@@ -40,8 +40,11 @@ function workspacePath(specifier) {
 	return path.join(REPO, WORKSPACE_PACKAGES[named[1]], target);
 }
 
+const isRelative = (specifier) => specifier.startsWith("./") || specifier.startsWith("../");
+const isFromRepoSource = (parentURL) => parentURL?.startsWith("file:") && inRepoSource(fileURLToPath(parentURL));
+
 function wantedPath(specifier, parentURL) {
-	if (specifier.startsWith("./") || specifier.startsWith("../")) {
+	if (isRelative(specifier)) {
 		return path.resolve(path.dirname(fileURLToPath(parentURL)), specifier);
 	}
 	if (specifier.startsWith("file:")) return fileURLToPath(specifier);
@@ -61,8 +64,7 @@ function existingSource(wanted) {
 
 export function sourceUrlOf(specifier, parentURL) {
 	const [bare, suffix = ""] = specifier.split(/(?=[?#])/);
-	const relative = bare.startsWith("./") || bare.startsWith("../");
-	if (relative && !(parentURL?.startsWith("file:") && inRepoSource(fileURLToPath(parentURL)))) return null;
+	if (isRelative(bare) && !isFromRepoSource(parentURL)) return null;
 	const wanted = wantedPath(bare, parentURL);
 	if (!wanted || !inRepoSource(wanted)) return null;
 	const found = existingSource(wanted);
