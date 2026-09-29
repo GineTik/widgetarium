@@ -1,0 +1,96 @@
+import { createElement as h } from "react";
+import { Icon, IconButton, SidebarGroup, SidebarRow } from "@widgetarium/kit";
+import { typedIn, withTyped } from "../gateway/props.js";
+import { hostGatewayFor, sourcesFor } from "../engine/host-gateways.js";
+import { FROM_WIDGET, IN_VAULT, STATISTICS, TYPED_HERE, blankValue, writeProp, writtenText } from "./prop-writing.js";
+import { note } from "./settings-rows.js";
+import { openStatStep } from "./stat-body.js";
+
+const SOURCE_KIND = {
+	"@core/typed-value": TYPED_HERE,
+	"@core/typed-rows": TYPED_HERE,
+	"@core/file": IN_VAULT,
+	"@core/folder": IN_VAULT,
+	"@core/from-tile-value": FROM_WIDGET,
+	"@core/from-tile-rows": FROM_WIDGET,
+};
+
+const STAT_SOURCE = "@core/stat-";
+
+const SOURCES_OPEN = "#source";
+
+const WHERE_FROM = "Where the data comes from";
+
+const NEEDS_ANOTHER_TILE = ["@core/from-tile-value", "@core/from-tile-rows", "@core/selected-row"];
+
+export function sourcesOpenKey(key) {
+	return `prop:${key}${SOURCES_OPEN}`;
+}
+
+export function sourceButton(state, key, spec) {
+	if (spec.source) return null;
+	const isOpen = state.openRow === sourcesOpenKey(key);
+	return h(
+		IconButton,
+		{
+			size: "s",
+			key: "source",
+			label: WHERE_FROM,
+			className: "wg-set-pop-source",
+			"aria-pressed": isOpen,
+			onClick: () => state.openEditor(isOpen ? `prop:${key}` : sourcesOpenKey(key)),
+		},
+		h(Icon, { name: "database" }),
+	);
+}
+
+export function sourceList(state, key, spec, config) {
+	const chosen = hostGatewayFor(spec, config)?.id;
+	const rows = offeredSources(state, spec).map((entry) =>
+		h(SidebarRow, {
+			key: entry.id,
+			as: "button",
+			label: entry.title,
+			sub: entry.description,
+			selected: entry.id === chosen,
+			onClick: () => pickSource(state, key, spec, config, entry),
+		}),
+	);
+	return [note(WHERE_FROM), h(SidebarGroup, { className: "wg-set-sources", key: "sources" }, rows)];
+}
+
+function offeredSources(state, spec) {
+	const othersOffer = (state.refs?.offered?.() ?? []).some((entry) => entry.tile !== state.tile.id);
+	return sourcesFor(spec).filter((entry) => othersOffer || !NEEDS_ANOTHER_TILE.includes(entry.id));
+}
+
+function pickSource(state, key, spec, config, entry) {
+	const { implementation: formerSource, fields, ...legacy } = config;
+	const kind = SOURCE_KIND[entry.id];
+	if (kind) {
+		switchKind(state, key, spec, legacy, kind);
+		return;
+	}
+	if (entry.id.startsWith(STAT_SOURCE)) {
+		writeProp(state, key, spec, { ...legacy, from: STATISTICS, algorithm: entry.id.slice(STAT_SOURCE.length) });
+		openStatStep(state, key, null);
+		return;
+	}
+	const kept = formerSource === entry.id ? (fields ?? {}) : {};
+	writeProp(state, key, spec, { implementation: entry.id, fields: kept });
+	state.openEditor(`prop:${key}`);
+}
+
+// TRADE-OFF: the sources the host already drew an editor for keep their written shape, so a tile bound before still opens in the editor it was bound in
+function switchKind(state, key, spec, config, kind) {
+	const typed = kind === TYPED_HERE;
+	const typedBefore = typedIn(spec, config);
+	const path = config.path === undefined && kind === IN_VAULT ? "" : config.path;
+	const kept = withTyped(
+		spec,
+		{ ...config, from: kind, path },
+		typedBefore === undefined && typed ? blankValue(spec) : typedBefore,
+	);
+	writeProp(state, key, spec, kept);
+	state.openEditor(`prop:${key}`, typed ? writtenText(spec, typedIn(spec, kept)) : kept.path);
+}
