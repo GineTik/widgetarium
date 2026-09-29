@@ -8,7 +8,7 @@ import { widgetsNamedBy } from "@widgetarium/core/templates.js";
 import { queueWrite } from "./board-writes.js";
 
 export function drawBlock(plugin, source, element, context) {
-	const board = boardReadFrom(plugin, source, element);
+	const board = readBoardFrom(plugin, source, element);
 	if (!board) return;
 
 	plugin.wanted?.want(widgetsNamedBy(board.tiles));
@@ -31,7 +31,7 @@ export function drawBlock(plugin, source, element, context) {
 	if (blockIndex >= 0) mounted.blockIndex = blockIndex;
 }
 
-function boardReadFrom(plugin, source, element) {
+function readBoardFrom(plugin, source, element) {
 	try {
 		const parsed = parseYaml(source) ?? [];
 		const refusal = blockRefusal(parsed);

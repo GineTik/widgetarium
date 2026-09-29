@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import { render } from "../packages/core/src/engine/render.js";
 import { useEffect, useState } from "react";
 import { WidgetRegistry } from "../packages/core/src/registry.js";
-import { drawnWidget } from "../packages/core/src/mounted.js";
+import { drawWidget } from "../packages/core/src/mounted.js";
 import { previewProps, previewSize } from "../packages/core/src/preview.js";
 import { GRID } from "../packages/core/src/paths.js";
 
@@ -75,7 +75,7 @@ function Card() {
 				h(
 					"div",
 					{ className: "wg-cat-scaled", style: { width: `${size.width}px`, height: `${size.height}px` } },
-					drawnWidget(definition, previewProps(definition, { registry, host })),
+					drawWidget(definition, previewProps(definition, { registry, host })),
 				),
 			),
 		),

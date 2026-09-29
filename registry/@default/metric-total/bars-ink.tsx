@@ -1,5 +1,5 @@
 import { slotOf } from "./days";
-import { rounded } from "./numbers";
+import { roundToTenth } from "./numbers";
 import type { ChartBox, Point, Spot } from "./types";
 
 type Bar = { day: string; x: number; y: number; width: number; height: number; rx: number };
@@ -42,11 +42,11 @@ function barsOf(points: readonly Point[], spots: readonly Spot[], box: ChartBox,
 		const spot = spots[at] as Spot;
 		return {
 			day: point.day,
-			x: rounded(slotOf(point.day, from) * pitch + gap / 2),
-			y: rounded(spot.y),
-			width: rounded(width),
-			height: rounded(box.height + box.bleed - spot.y),
-			rx: rounded(width / 2),
+			x: roundToTenth(slotOf(point.day, from) * pitch + gap / 2),
+			y: roundToTenth(spot.y),
+			width: roundToTenth(width),
+			height: roundToTenth(box.height + box.bleed - spot.y),
+			rx: roundToTenth(width / 2),
 		};
 	});
 }

@@ -9,7 +9,7 @@ export function boundPath(spec, config) {
 
 export function vaultPathsOf(manifest, tile) {
 	const held = Object.entries(manifest?.props ?? {}).map(([name, spec]) =>
-		folderRead(spec, propConfig(tile, name, spec)),
+		folderToRead(spec, propConfig(tile, name, spec)),
 	);
 	return [...new Set(held)].filter(Boolean).sort();
 }
@@ -26,7 +26,7 @@ export function offeredPaths(host, spec) {
 	return spec.kind === "value" ? notesOf(host) : foldersOf(host);
 }
 
-function folderRead(spec, config) {
+function folderToRead(spec, config) {
 	if (bindingOf(spec, config).binding === "stat") return boundPath(spec, config);
 	if (spec.kind === "value" || spec.source) return "";
 	if (bindingOf(spec, config).binding !== "vault") return "";

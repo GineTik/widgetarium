@@ -3,7 +3,7 @@ const SOURCE_UNREADABLE = "[widgetarium] this source names neither a folder nor 
 export function sourcesOf({ added, legacy, shipped }) {
 	const held = [];
 	const seen = new Set();
-	for (const source of [...listedIn(added), ...listedIn(legacy?.sources), ...listedIn(shipped)]) {
+	for (const source of [...asList(added), ...asList(legacy?.sources), ...asList(shipped)]) {
 		if (!isReachableSource(source)) {
 			console.error(SOURCE_UNREADABLE, source);
 			continue;
@@ -30,4 +30,4 @@ export const namesAFolderOnThisMachine = (source) => !namesARepository(source) &
 const namesARepository = (source) => isNamed(source?.repository);
 const carriesAWorkableRef = (source) => source?.ref === undefined || isNamed(source.ref);
 const isNamed = (held) => typeof held === "string" && held !== "";
-const listedIn = (held) => (Array.isArray(held) ? held : []);
+const asList = (held) => (Array.isArray(held) ? held : []);

@@ -8,26 +8,26 @@ import { findBrowser, widgetFiles } from "./harness.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const {
-	aimedAt,
+	targetAt,
 	columnsOf,
 	drawerWidth,
 	DRAWER_MAX_PX,
 	isFolded,
 	keptAt,
-	insertedAt,
-	laid,
-	laidRegion,
+	insertAt,
+	layNode,
+	layRegion,
 	leavesOf,
-	movedInto,
+	moveInto,
 	nodeAt,
 	sameTarget,
-	toggledFold,
+	toggleFold,
 	GAP_PX,
 	STEP_PX,
 	MAIN_FLOOR_PX,
 	MIN_SIDEBAR_PX,
 	SIDEBAR_PX,
-	widenedBox,
+	widenBox,
 	withoutLeaf,
 } = await import("../packages/core/src/tree.js");
 
@@ -288,7 +288,7 @@ console.log("\n— a widget is as tall as what it draws, and nothing on the boar
 {
 	const ask = () => ({ minPx: 260 });
 	const four = { dir: "row", of: ["a", "b", "c", "d"].map((id) => ({ id, height: 86 })) };
-	const narrow = laid(four, 700, { ask });
+	const narrow = layNode(four, 700, { ask });
 	check("a row too narrow for four is drawn as a column", [narrow.dir, narrow.isStacked], ["column", true]);
 	check("with no height to squeeze them into", narrow.height ?? null, null);
 	check(
@@ -296,7 +296,7 @@ console.log("\n— a widget is as tall as what it draws, and nothing on the boar
 		narrow.of.map((one) => one.height ?? null),
 		[null, null, null, null],
 	);
-	check("wide, the row draws no height of its own either", laid(four, 1400, { ask }).height ?? null, null);
+	check("wide, the row draws no height of its own either", layNode(four, 1400, { ask }).height ?? null, null);
 	const month = {
 		preferredWidth: 420,
 		preferredHeight: 420,
@@ -307,7 +307,7 @@ console.log("\n— a widget is as tall as what it draws, and nothing on the boar
 		],
 	};
 	const inRegionOf = (px) => {
-		const leaf = laidRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "m" }] }] }, 0, px, {
+		const leaf = layRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "m" }] }] }, 0, px, {
 			ask: () => ({ preferred: month }),
 		}).node.of[0];
 		return [leaf.preferredWidth, leaf.preferredHeight, leaf.keepsRatio];
@@ -321,7 +321,7 @@ console.log("\n— a widget is as tall as what it draws, and nothing on the boar
 	check("and every step the region is under applies, narrowest last", inRegionOf(260), ["full", "auto", true]);
 	check(
 		"a widget that names no size is drawn with none",
-		laid({ id: "a" }, 400, { ask: () => ({}) }).preferredWidth,
+		layNode({ id: "a" }, 400, { ask: () => ({}) }).preferredWidth,
 		undefined,
 	);
 }
@@ -329,7 +329,7 @@ console.log("\n— a widget is as tall as what it draws, and nothing on the boar
 console.log("\n— a gap stands between two siblings, never after the last —");
 {
 	const ask = () => ({ minPx: 260 });
-	const narrow = laid({ dir: "column", of: [{ dir: "row", of: [{ id: "a" }, { id: "b" }] }, { id: "c" }] }, 400, {
+	const narrow = layNode({ dir: "column", of: [{ dir: "row", of: [{ id: "a" }, { id: "b" }] }, { id: "c" }] }, 400, {
 		ask,
 	});
 	check(
@@ -343,7 +343,7 @@ console.log("\n— a gap stands between two siblings, never after the last —")
 console.log("\n— and so does a sidebar at either end of its travel —");
 {
 	const widest = 1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX;
-	const heldAt = (px, give) => widenedBox(THREE, 0, { wantedPx: px, width: 1600, gap: 8, give });
+	const heldAt = (px, give) => widenBox(THREE, 0, { wantedPx: px, width: 1600, gap: 8, give });
 
 	check("dragged under its minimum it goes under it", heldAt(40, true) < MIN_SIDEBAR_PX, true);
 	check("but never by more than the give", heldAt(40, true) > MIN_SIDEBAR_PX - GIVE_PX, true);
@@ -495,30 +495,30 @@ console.log("\n— a board of three regions stands side by side while there is r
 
 	check(
 		"dragging a sidebar narrower stops at its own minimum",
-		widenedBox(THREE, 0, { wantedPx: 40, width: 1600, gap: 8 }),
+		widenBox(THREE, 0, { wantedPx: 40, width: 1600, gap: 8 }),
 		MIN_SIDEBAR_PX,
 	);
 	check(
 		"and wider stops where the main would fall under its floor",
-		widenedBox(THREE, 0, { wantedPx: 2000, width: 1600, gap: 8 }),
+		widenBox(THREE, 0, { wantedPx: 2000, width: 1600, gap: 8 }),
 		1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX,
 	);
 	check(
 		"between the two it lands where the pointer asked",
-		widenedBox(THREE, 0, { wantedPx: 360, width: 1600, gap: 8 }),
+		widenBox(THREE, 0, { wantedPx: 360, width: 1600, gap: 8 }),
 		360,
 	);
 	check(
 		"the other sidebar is counted, not forgotten",
-		widenedBox(rootOf([side(), kept()]), 0, { wantedPx: 2000, width: 1600, gap: 8 }),
+		widenBox(rootOf([side(), kept()]), 0, { wantedPx: 2000, width: 1600, gap: 8 }),
 		1600 - 8 - MAIN_FLOOR_PX,
 	);
 
 	const folded = rootOf([side({ folded: true }), kept(), side()]);
 	check("the fold reads off the region that carries it", [isFolded(folded, 0), isFolded(folded, 2)], [true, false]);
-	check("and toggling one names the other unchanged", isFolded(toggledFold(folded, 0), 0), false);
-	check("toggling an open one folds it", isFolded(toggledFold(THREE, 2), 2), true);
-	check("and leaves every other region as it stood", toggledFold(THREE, 2).of[0], THREE.of[0]);
+	check("and toggling one names the other unchanged", isFolded(toggleFold(folded, 0), 0), false);
+	check("toggling an open one folds it", isFolded(toggleFold(THREE, 2), 2), true);
+	check("and leaves every other region as it stood", toggleFold(THREE, 2).of[0], THREE.of[0]);
 	check("a folded sidebar does not stand", sides(columnsOf(folded, 1600, 8)), ["main", "right"]);
 	check("and on a board with room for it, folded means hidden, not floating", columnsOf(folded, 1600, 8), {
 		beside: [
@@ -553,7 +553,7 @@ console.log("\n— a board of three regions stands side by side while there is r
 	);
 	check(
 		"a folded sidebar is no longer counted against a drag",
-		widenedBox(folded, 2, { wantedPx: 2000, width: 1600, gap: 8 }),
+		widenBox(folded, 2, { wantedPx: 2000, width: 1600, gap: 8 }),
 		1600 - 8 - MAIN_FLOOR_PX,
 	);
 	check(
@@ -647,50 +647,50 @@ console.log("\n— carrying a tile puts it where it was aimed, and prunes what i
 	};
 	const at = (node) => leavesOf(node).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`);
 
-	check("dropped beside a tile it joins that row", at(movedInto(board, "a", { kind: "beside", box: [1], at: 1 })), [
+	check("dropped beside a tile it joins that row", at(moveInto(board, "a", { kind: "beside", box: [1], at: 1 })), [
 		"b@0/0",
 		"a@0/1",
 		"c@0/2",
 	]);
 	check(
 		"and the box it emptied is gone with it",
-		nodeAt(movedInto(board, "a", { kind: "beside", box: [1], at: 1 }), [0]).dir,
+		nodeAt(moveInto(board, "a", { kind: "beside", box: [1], at: 1 }), [0]).dir,
 		"row",
 	);
-	check("dropped at the head of a box it stands first", at(movedInto(board, "c", { kind: "beside", box: [], at: 0 })), [
+	check("dropped at the head of a box it stands first", at(moveInto(board, "c", { kind: "beside", box: [], at: 0 })), [
 		"c@0",
 		"a@1",
 		"b@2",
 	]);
 	check(
 		"a box left holding one tile becomes that tile",
-		nodeAt(movedInto(board, "c", { kind: "beside", box: [], at: 0 }), [2]).id,
+		nodeAt(moveInto(board, "c", { kind: "beside", box: [], at: 0 }), [2]).id,
 		"b",
 	);
 	check(
 		"it carries its own weight along",
-		nodeAt(movedInto(board, "c", { kind: "beside", box: [], at: 0 }), [0]).ratio,
+		nodeAt(moveInto(board, "c", { kind: "beside", box: [], at: 0 }), [0]).ratio,
 		2,
 	);
 	check(
 		"a tile nobody is holding moves nothing",
-		at(movedInto(board, "nobody", { kind: "beside", box: [], at: 0 })),
+		at(moveInto(board, "nobody", { kind: "beside", box: [], at: 0 })),
 		at(board),
 	);
-	check("and no target moves nothing either", at(movedInto(board, "a", null)), at(board));
+	check("and no target moves nothing either", at(moveInto(board, "a", null)), at(board));
 
-	const wrapped = movedInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "after" });
+	const wrapped = moveInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "after" });
 	check("aimed across the grain it wraps the tile it landed on", at(wrapped), ["b@0/0/0", "a@0/0/1", "c@0/1"]);
 	check("in a box of the direction it was aimed at", nodeAt(wrapped, [0, 0]).dir, "column");
 	check("which takes over the slot's own share", nodeAt(wrapped, [0, 0]).ratio, 1);
 	check(
 		"and dropped before, it stands first",
-		at(movedInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "before" })),
+		at(moveInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "before" })),
 		["a@0/0/0", "b@0/0/1", "c@0/1"],
 	);
 	check(
 		"wrapping the very tile being carried moves nothing",
-		at(movedInto(board, "a", { kind: "wrap", path: [0], axis: "row", side: "after" })),
+		at(moveInto(board, "a", { kind: "wrap", path: [0], axis: "row", side: "after" })),
 		at(board),
 	);
 
@@ -702,12 +702,12 @@ console.log("\n— carrying a tile puts it where it was aimed, and prunes what i
 		]),
 		side([]),
 	]);
-	const across = movedInto(region, "a", { kind: "beside", box: [0], at: 0 });
+	const across = moveInto(region, "a", { kind: "beside", box: [0], at: 0 });
 	check("a tile carried into an empty sidebar arrives there", at(across), ["a@0/0", "b@1/0"]);
 	check("and the region it came from keeps the rest", nodeAt(across, [1]).of.length, 1);
 	check(
 		"a region emptied by the carry is still a region",
-		nodeAt(movedInto(region, "a", { kind: "beside", box: [2], at: 0 }), [1]).keep,
+		nodeAt(moveInto(region, "a", { kind: "beside", box: [2], at: 0 }), [1]).keep,
 		true,
 	);
 	const leafAside = {
@@ -717,12 +717,12 @@ console.log("\n— carrying a tile puts it where it was aimed, and prunes what i
 			{ dir: "column", keep: true, of: [{ id: "M", ratio: 1 }] },
 		],
 	};
-	const ontoLeaf = movedInto(leafAside, "M", { kind: "beside", box: [0], at: 0 });
+	const ontoLeaf = moveInto(leafAside, "M", { kind: "beside", box: [0], at: 0 });
 	check("a drop aimed at a path that holds no box keeps the tile it was carrying", at(ontoLeaf), at(leafAside));
 	check("and the board comes back untouched, not half-emptied", JSON.stringify(ontoLeaf), JSON.stringify(leafAside));
 	check(
 		"a box that cannot take a tile says so rather than answering with the tree it was given",
-		insertedAt(leafAside, [0], 0, { id: "x" }),
+		insertAt(leafAside, [0], 0, { id: "x" }),
 		null,
 	);
 
@@ -741,49 +741,53 @@ console.log("\n— and the aim reads the pointer against the boxes it is over �
 		{ path: [1], kind: "leaf", box: { left: 0, top: 112, right: 1200, bottom: 312 } },
 	];
 
-	check("in a tile's left half it goes before that tile", aimedAt(spots, 200, 50), { kind: "beside", box: [0], at: 0 });
-	check("in its right half it goes after", aimedAt(spots, 400, 50), { kind: "beside", box: [0], at: 1 });
-	check("in the second tile's right half it goes to the end of the row", aimedAt(spots, 1100, 50).at, 2);
-	check("near the left edge of a tile in a row it still goes beside it", aimedAt(spots, 8, 50), {
+	check("in a tile's left half it goes before that tile", targetAt(spots, 200, 50), {
 		kind: "beside",
 		box: [0],
 		at: 0,
 	});
-	check("near the top of a tile in a row it wraps it in a column", aimedAt(spots, 300, 6), {
+	check("in its right half it goes after", targetAt(spots, 400, 50), { kind: "beside", box: [0], at: 1 });
+	check("in the second tile's right half it goes to the end of the row", targetAt(spots, 1100, 50).at, 2);
+	check("near the left edge of a tile in a row it still goes beside it", targetAt(spots, 8, 50), {
+		kind: "beside",
+		box: [0],
+		at: 0,
+	});
+	check("near the top of a tile in a row it wraps it in a column", targetAt(spots, 300, 6), {
 		kind: "wrap",
 		path: [0, 0],
 		axis: "column",
 		side: "before",
 	});
-	check("and near the bottom, the same the other way round", aimedAt(spots, 300, 96).side, "after");
-	check("over a tile in a column it goes beside it in that column", aimedAt(spots, 600, 300), {
+	check("and near the bottom, the same the other way round", targetAt(spots, 300, 96).side, "after");
+	check("over a tile in a column it goes beside it in that column", targetAt(spots, 600, 300), {
 		kind: "beside",
 		box: [],
 		at: 2,
 	});
-	check("and near its left edge it wraps it in a row", aimedAt(spots, 8, 212), {
+	check("and near its left edge it wraps it in a row", targetAt(spots, 8, 212), {
 		kind: "wrap",
 		path: [1],
 		axis: "row",
 		side: "before",
 	});
-	check("in the gap between two rows it takes the slot between them", aimedAt(spots, 300, 106), {
+	check("in the gap between two rows it takes the slot between them", targetAt(spots, 300, 106), {
 		kind: "beside",
 		box: [],
 		at: 1,
 	});
-	check("the deepest box under the pointer is the one that answers", aimedAt(spots, 300, 50).box, [0]);
-	check("an empty box answers with its only slot", aimedAt([spots[0]], 300, 50), { kind: "beside", box: [], at: 0 });
-	check("and a pointer over nothing aims at nothing", aimedAt(spots, 300, 900), null);
+	check("the deepest box under the pointer is the one that answers", targetAt(spots, 300, 50).box, [0]);
+	check("an empty box answers with its only slot", targetAt([spots[0]], 300, 50), { kind: "beside", box: [], at: 0 });
+	check("and a pointer over nothing aims at nothing", targetAt(spots, 300, 900), null);
 	check(
 		"two aims at the same slot are the same aim",
-		sameTarget(aimedAt(spots, 200, 50), aimedAt(spots, 100, 50)),
+		sameTarget(targetAt(spots, 200, 50), targetAt(spots, 100, 50)),
 		true,
 	);
-	check("and two at different slots are not", sameTarget(aimedAt(spots, 200, 50), aimedAt(spots, 400, 50)), false);
+	check("and two at different slots are not", sameTarget(targetAt(spots, 200, 50), targetAt(spots, 400, 50)), false);
 	check(
 		"a wrap and a drop beside are never the same aim",
-		sameTarget(aimedAt(spots, 300, 6), aimedAt(spots, 300, 50)),
+		sameTarget(targetAt(spots, 300, 6), targetAt(spots, 300, 50)),
 		false,
 	);
 }
@@ -1007,8 +1011,8 @@ if (measured.failures.length > 0) {
 	for (const failure of measured.failures) console.log(`!! the page logged: ${failure}`);
 }
 
-const heldToAMeasure = laid({ dir: "column", measure: 720, of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
-const filling = laid({ dir: "column", of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
+const heldToAMeasure = layNode({ dir: "column", measure: 720, of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
+const filling = layNode({ dir: "column", of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
 check("a box declaring a measure carries it into the laid node", heldToAMeasure.measure, 720);
 check("a box declaring none carries none", filling.measure, undefined);
 check("a measure never changes how wide the box is laid", [heldToAMeasure.width, filling.width], [1400, 1400]);

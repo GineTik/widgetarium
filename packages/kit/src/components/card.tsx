@@ -3,7 +3,7 @@ import type { LooseProps } from "../types";
 import { plateClass } from "../utils/class-names";
 import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
-import { Slot, slotted } from "./slot";
+import { Slot, createSlotPart } from "./slot";
 import { GROUP, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "../utils/surface";
 import { tonedPlateClass } from "../utils/tones";
 
@@ -41,4 +41,4 @@ function sayRefusedPlate(said, refusal) {
 	warnOnce(`a ${said} surface painted nothing — ${refusal.reason} (law ${refusal.law})`);
 }
 
-export const Plate = slotted("div", plateClass, "Plate");
+export const Plate = createSlotPart("div", plateClass, "Plate");

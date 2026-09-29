@@ -11,7 +11,7 @@ export function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSi
 			className={`hm-day${cell.isOutside ? " is-outside" : ""}${cell.isAhead ? " is-ahead" : ""}`}
 			disabled={!cell.canPress}
 			aria-pressed={cell.kept}
-			aria-label={filled(cell.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: cell.day })}
+			aria-label={fillSentence(cell.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: cell.day })}
 			onClick={onPress}
 		>
 			<span className="hm-number">{cell.dayOfMonth}</span>
@@ -23,6 +23,6 @@ export function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSi
 	);
 }
 
-function filled(sentence: string, values: Record<string, string>) {
+function fillSentence(sentence: string, values: Record<string, string>) {
 	return Object.entries(values).reduce((held, [name, value]) => held.replace(`{${name}}`, value), sentence);
 }

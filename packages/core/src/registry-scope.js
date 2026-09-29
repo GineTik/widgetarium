@@ -47,7 +47,7 @@ export function foreignScope(source, ownReact, ownReactDom) {
 		},
 		kit: built.kit,
 		emojis: built.emojis,
-		charts: refusedModule(CHARTS_NEED_THE_ENGINE_REACT.replace("{react}", said)),
+		charts: createRefusedModule(CHARTS_NEED_THE_ENGINE_REACT.replace("{react}", said)),
 		draw: built.drawWidget,
 	};
 }
@@ -80,7 +80,7 @@ function injectedGlobals(scope) {
 	};
 }
 
-function refusedModule(reason) {
+function createRefusedModule(reason) {
 	return new Proxy(
 		{},
 		{

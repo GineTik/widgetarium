@@ -16,7 +16,7 @@ const { searchPath, whereCommandIs, environmentFor } = await import("../apps/obs
 const { briefFor, templatePlaceholders } = await import("../apps/obsidian/src/ai/brief.js");
 const { createRunner } = await import("../apps/obsidian/src/ai/run.js");
 const { createSession } = await import("../apps/obsidian/src/ai/session.js");
-const { keptTurns } = await import("../apps/obsidian/src/ai/transcript.js");
+const { turnsToKeep } = await import("../apps/obsidian/src/ai/transcript.js");
 const { layAgentFiles, HANDBOOK_DIR, TOOL_PATH, HANDBOOK } = await import("../apps/obsidian/src/ai/agent-files.js");
 const { glyphForTool, glyphOf, glyphsOf, hintOf, titleOf, ourCallIn, withResult, failuresIn } =
 	await import("../apps/obsidian/src/ai/tools.js");
@@ -1194,7 +1194,7 @@ check(
 	["kept"],
 );
 
-const hugeOutput = keptTurns([
+const hugeOutput = turnsToKeep([
 	{ role: "agent", text: "x", calls: [{ ref: "r", name: "Read", output: "z".repeat(9000) }] },
 ]);
 check("a tool's answer is cut down before it is kept", hugeOutput[0].calls[0].output.length, 2000);
@@ -1210,10 +1210,10 @@ check("a kept call carries the shape the panel draws from", Object.keys(hugeOutp
 ]);
 check(
 	"a stored conversation of the wrong shape is read as an empty one",
-	[keptTurns("not a list").length, keptTurns([{ role: 7, calls: "no" }])[0]],
+	[turnsToKeep("not a list").length, turnsToKeep([{ role: 7, calls: "no" }])[0]],
 	[0, { role: "agent", text: "", calls: [] }],
 );
-const tooMuch = keptTurns(
+const tooMuch = turnsToKeep(
 	Array.from({ length: 200 }, (unused, at) => ({
 		role: "agent",
 		text: `${at}`,

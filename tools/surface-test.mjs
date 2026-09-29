@@ -7,8 +7,8 @@ import { bundleOf, findBrowser } from "./harness.mjs";
 const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 const {
 	allEdges,
-	laid,
-	laidRegion,
+	layNode,
+	layRegion,
 	levelAt,
 	MIN_CORNER_PX,
 	MIN_GAP_PX,
@@ -19,7 +19,7 @@ const {
 	STEP_PX,
 	SURFACE_PAD_PX,
 } = await import("../packages/core/src/tree.js");
-const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, widgetOfTiles, wornSurfaceAt } =
+const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, widgetOfTiles, wearSurfaceAt } =
 	await import("../packages/core/src/surface-laws.js");
 const { isKnownRole, plateRefusal, ROLES, slotSurfaceOf } = await import("../packages/core/src/surface-roles.js");
 const { platesAtCell } = await import("../packages/kit/src/utils/surface.ts");
@@ -105,7 +105,7 @@ check(
 
 console.log("\n— the layout gives a surface its padding and a level its gap —\n");
 
-const painted = laid(
+const painted = layNode(
 	{ dir: "column", surface: "group", of: [{ id: "p" }, { id: "q", surface: "apart", side: "start" }] },
 	600,
 	{ ask: () => ({}), path: [1, 0], edges: allEdges(8), level: 1 },
@@ -121,7 +121,7 @@ check(
 	[painted.of[1].dividerBefore, painted.of[1].dividerAfter],
 	[SURFACE_PAD_PX, SURFACE_PAD_PX],
 );
-const loose = laid(
+const loose = layNode(
 	{
 		dir: "column",
 		of: [{ id: "top" }, { dir: "row", of: [{ id: "d", surface: "apart" }, { id: "e" }] }, { id: "bottom" }],
@@ -141,7 +141,7 @@ check(
 
 console.log("\n— what the widget is told stands above it —\n");
 
-const twoGroups = laidRegion(
+const twoGroups = layRegion(
 	{
 		dir: "row",
 		of: [
@@ -168,7 +168,7 @@ console.log("\n— an indicators region lays a group on each widget in it —\n"
 const REGION_ROLE_OF = { note: "text", stat: "indicator", pick: "control", own: "indicator", inGroup: "indicator" };
 const askRole = (id) => ({ role: REGION_ROLE_OF[id] });
 const aside = (role) =>
-	laidRegion(
+	layRegion(
 		{
 			dir: "row",
 			of: [
@@ -203,7 +203,7 @@ check("the same region under another role lays nothing", Object.fromEntries(worn
 });
 check("the laid group counts as the widget's plate", aside("indicators").of[1].of[0].plates, 1);
 
-const noPlates = laidRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "flat" }] }] }, 0, 600, {
+const noPlates = layRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "flat" }] }] }, 0, 600, {
 	ask: () => ({}),
 });
 
@@ -901,7 +901,7 @@ check(
 	gapAt(0, { dir: "column", of: [bare, { id: "padded" }] }, { dir: "row", of: [{ id: "padded" }, bare] }),
 	STEP_PX[0] - 6 - 0,
 );
-const kept = laidRegion(
+const kept = layRegion(
 	{ dir: "row", of: [{ dir: "column", keep: true, of: [{ dir: "row", of: [plate, bare] }, bare] }] },
 	0,
 	616,
@@ -927,7 +927,7 @@ check("a plate at the top gets the kanban column's corner, and hands the kit a s
 	kitPlate: 6,
 	kitItem: MIN_CORNER_PX,
 });
-const nestedPlates = laid(
+const nestedPlates = layNode(
 	{ dir: "column", surface: "group", of: [{ dir: "column", surface: "group", of: [bare, { id: "r" }] }, { id: "s" }] },
 	600,
 	{
@@ -1168,40 +1168,40 @@ console.log("\n— the writer refuses, so no caller may read the laws, decide, a
 	const widgetOf = () => "@x/a";
 	const leafOf = (layout, which) => layout.of[0].of[0].of[which];
 
-	const refused = wornSurfaceAt(grouped, at, "object", undefined, widgetOf);
+	const refused = wearSurfaceAt(grouped, at, "object", undefined, widgetOf);
 	check("an object, a surface no longer held, is refused by the writer", refused.refusal?.law, "S");
 	check("and the tree it was given comes back untouched", refused.layout, grouped);
 
-	const worn = wornSurfaceAt(grouped, at, "group", undefined, widgetOf);
+	const worn = wearSurfaceAt(grouped, at, "group", undefined, widgetOf);
 	check("one the laws leave standing is written", [worn.refusal, leafOf(worn.layout, 0).surface], [null, "group"]);
 
-	const bothPlated = wornSurfaceAt(worn.layout, [0, 0, 1], "group", undefined, widgetOf);
+	const bothPlated = wearSurfaceAt(worn.layout, [0, 0, 1], "group", undefined, widgetOf);
 	check("plating the last bare row of a list is written too: grey around, white rows", bothPlated.refusal, null);
-	const lone = wornSurfaceAt(grouped, at, "group", undefined, (id) => `@x/${id}`);
+	const lone = wearSurfaceAt(grouped, at, "group", undefined, (id) => `@x/${id}`);
 	check("and a row repeating nothing beside it is refused by the writer", lone.refusal?.law, "R");
 
-	const divider = wornSurfaceAt(grouped, at, "apart", "start");
+	const divider = wearSurfaceAt(grouped, at, "apart", "start");
 	check(
 		"a divider keeps the side it was given",
 		[leafOf(divider.layout, 0).surface, leafOf(divider.layout, 0).side],
 		["apart", "start"],
 	);
 
-	const bare = wornSurfaceAt(divider.layout, at, "none");
+	const bare = wearSurfaceAt(divider.layout, at, "none");
 	check(
 		"taking the surface off takes the side with it",
 		[leafOf(bare.layout, 0).surface, leafOf(bare.layout, 0).side],
 		[undefined, undefined],
 	);
 
-	const gone = wornSurfaceAt(grouped, [0, 0, 7], "group");
+	const gone = wearSurfaceAt(grouped, [0, 0, 7], "group");
 	check(
 		"a path naming nothing is refused in words, not with a crash",
 		[gone.layout === grouped, Boolean(gone.refusal)],
 		[true, true],
 	);
 
-	const sideways = wornSurfaceAt(grouped, at, "apart", "sideways");
+	const sideways = wearSurfaceAt(grouped, at, "apart", "sideways");
 	check(
 		"a side outside the two that exist is not written",
 		[leafOf(sideways.layout, 0).surface, leafOf(sideways.layout, 0).side],

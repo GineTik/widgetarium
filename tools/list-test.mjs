@@ -26,7 +26,7 @@ const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
 const kit = await import("../packages/kit/src/index.ts");
 const { collectionGateway, soloGateway, valueGateway } = await import("../packages/core/src/gateway/create.ts");
-const { surfacedSlot } = await import("../packages/core/src/widget-root.js");
+const { withSlotSurface } = await import("../packages/core/src/widget-root.js");
 
 const WIDGET = "registry/@default/list/widget.tsx";
 const modules = { widgetarium, "widgetarium/kit": kit, react };
@@ -106,7 +106,7 @@ function Commit({ commit }) {
 	return h("p", { className: "probe" }, String(held.title ?? ""));
 }
 
-const slotOf = (draw) => surfacedSlot(draw, { surface: "group", isCard: true });
+const slotOf = (draw) => withSlotSurface(draw, { surface: "group", isCard: true });
 
 const shown = () => [...host.querySelectorAll(".probe")].map((node) => node.textContent);
 const said = () => host.querySelector(".wg-list-said")?.textContent?.trim() ?? null;

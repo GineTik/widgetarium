@@ -32,7 +32,7 @@ const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
 const kit = await import("../packages/kit/src/index.ts");
 const { collectionGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
-const { mappedCollection } = await import("../packages/core/src/gateway/mapped.ts");
+const { mapCollection } = await import("../packages/core/src/gateway/mapped.ts");
 const { needsOf } = await import("../packages/core/src/gateway/props.js");
 
 const WIDGET = "registry/@default/metric-total/widget.tsx";
@@ -70,7 +70,7 @@ function check(what, got, wanted) {
 }
 
 const TODAY = "2026-09-12";
-const dayBefore = (back) => own.shiftedBy(TODAY, -back);
+const dayBefore = (back) => own.shiftBy(TODAY, -back);
 
 const recordsOver = (rows) => rows.map((row, at) => ({ ref: `Metrics/r${at}.md`, name: `r${at}`, ...row }));
 
@@ -110,7 +110,7 @@ const leftOut = summaryOf([
 	{ date: dayBefore(0), amount: 10 },
 	{ amount: 7 },
 	{ date: dayBefore(0), amount: "two" },
-	{ date: own.shiftedBy(TODAY, 3), amount: 9 },
+	{ date: own.shiftBy(TODAY, 3), amount: 9 },
 ]);
 check("a record carrying no date is counted as left out", leftOut.undated, 1);
 check("a record left out does not reach the total", leftOut.total, 10);
@@ -140,7 +140,7 @@ function gatewayOver(rows, verbs = ["create", "update", "remove"]) {
 			...writes,
 		},
 	});
-	return mappedCollection(base, { needs: needsOf(DECLARED.records) });
+	return mapCollection(base, { needs: needsOf(DECLARED.records) });
 }
 
 const PERIODS = [

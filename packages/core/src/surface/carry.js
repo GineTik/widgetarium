@@ -1,4 +1,4 @@
-import { aimedAt, COLUMN, movedInto, sameTarget } from "../tree.js";
+import { targetAt, COLUMN, moveInto, sameTarget } from "../tree.js";
 
 const CARRY_THRESHOLD_PX = 5;
 const CARRY_EDGE_PX = 56;
@@ -52,7 +52,7 @@ export function startCarry({ event, page, regions, carryRef, ghostRef, setCarry,
 			id,
 			target: carried.target,
 			height: Math.round(box.height),
-			ghost: liftedGhost({ box, grabbed, lifted: carried.lifted, page }),
+			ghost: liftGhost({ box, grabbed, lifted: carried.lifted, page }),
 		});
 	};
 
@@ -75,7 +75,7 @@ export function startCarry({ event, page, regions, carryRef, ghostRef, setCarry,
 		const wasStarted = carryRef.current?.isStarted;
 		carryRef.current = null;
 		if (!isKept || !wasStarted || !carried.target) return setCarry(null);
-		commitLayout((held) => movedInto(held, id, carried.target));
+		commitLayout((held) => moveInto(held, id, carried.target));
 		setCarry((was) => ({ ...was, isLanding: true }));
 	};
 	const abandon = () => finish(false);
@@ -166,7 +166,7 @@ function aimKeeper(held) {
 	return {
 		rest,
 		aim: (pointer, isFirst) => {
-			const aimed = aimedAt(held.spots(), pointer.clientX, pointer.clientY);
+			const aimed = targetAt(held.spots(), pointer.clientX, pointer.clientY);
 			if (sameTarget(aimed, held.target())) return rest();
 			if (isFirst) return held.onTarget(aimed);
 			window.clearTimeout(dwelling);
@@ -175,7 +175,7 @@ function aimKeeper(held) {
 	};
 }
 
-function liftedGhost({ box, grabbed, lifted, page }) {
+function liftGhost({ box, grabbed, lifted, page }) {
 	const ghost = ghostFor(box, grabbed);
 	return {
 		...ghost,

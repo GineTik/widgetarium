@@ -6,7 +6,7 @@ import { problemsOf } from "../gateway/problems.js";
 import { refOf } from "../gateway/refs.js";
 import { isShown } from "../prop-visibility.js";
 import { implementationBody, implementationLabel } from "./implementation-body.js";
-import { said } from "./item-yaml.js";
+import { fillSentence } from "./item-yaml.js";
 import { refLabel } from "./offered-boxes.js";
 import { ProblemsMark } from "./problems-mark.js";
 import { isSwitched, propConfigOf, writtenPlainly, writtenText } from "./prop-writing.js";
@@ -85,7 +85,7 @@ function readersNote(spec, readerCount) {
 	return h(
 		"p",
 		{ className: "wg-set-pop-note", key: "readers" },
-		said(spec.kind === "value" ? READ_BY_MANY_NOTE : READ_BY_MANY_FOLDER, readerCount),
+		fillSentence(spec.kind === "value" ? READ_BY_MANY_NOTE : READ_BY_MANY_FOLDER, readerCount),
 	);
 }
 
@@ -118,7 +118,7 @@ function boundLabel(state, prop) {
 	if (!path) return unpickedLabel(spec);
 	const field = noteFieldOf(spec, config);
 	if (!field || field === NOTE_CONTENT) return path;
-	return said(FIELD_OF_NOTE, field, path);
+	return fillSentence(FIELD_OF_NOTE, field, path);
 }
 
 function bindingBody(state, prop) {

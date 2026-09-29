@@ -1,5 +1,5 @@
 import { Flame } from "widgetarium/kit";
-import { filled } from "./filled";
+import { fillSentence } from "./fill-sentence";
 import type { DayColumn } from "./types";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -14,7 +14,7 @@ export function DayButton({ column, onPress }: { column: DayColumn; onPress: () 
 			className="hs-day"
 			disabled={!column.canPress}
 			aria-pressed={column.kept}
-			aria-label={filled(column.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: column.day })}
+			aria-label={fillSentence(column.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: column.day })}
 			onClick={onPress}
 		>
 			<span className="hs-head">

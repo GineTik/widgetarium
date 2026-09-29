@@ -10,7 +10,7 @@ import {
 	z,
 } from "widgetarium";
 import { useRef } from "react";
-import { daysLogged, isoOf, pressing, shiftedBy, streakOf } from "@default/lib";
+import { daysLogged, isoOf, pressing, shiftBy, streakOf } from "@default/lib";
 import { DayButton } from "./day-button";
 import { Summary } from "./summary";
 import type { DayColumn } from "./types";
@@ -222,14 +222,14 @@ function columnWidth(railWidth: number, columns: number) {
 function daysAround(today: string, count: number) {
 	const daysBehindToday = Math.ceil((count - 1) / 2);
 	const days: string[] = [];
-	for (let at = -daysBehindToday; days.length < count; at += 1) days.push(shiftedBy(today, at));
+	for (let at = -daysBehindToday; days.length < count; at += 1) days.push(shiftBy(today, at));
 	return days;
 }
 
 function seatClass(keptDays: Set<string>, day: string) {
 	if (!keptDays.has(day)) return "hs-seat";
-	const opens = keptDays.has(shiftedBy(day, -1)) ? "" : " is-run-start";
-	const closes = keptDays.has(shiftedBy(day, 1)) ? "" : " is-run-end";
+	const opens = keptDays.has(shiftBy(day, -1)) ? "" : " is-run-start";
+	const closes = keptDays.has(shiftBy(day, 1)) ? "" : " is-run-end";
 	return `hs-seat is-run${opens}${closes}`;
 }
 
@@ -240,7 +240,7 @@ function ringClass(day: string, kept: boolean, today: string) {
 
 function edgeClass(keptDays: Set<string>, day: string | undefined, towards: number) {
 	if (!day) return "hs-edge";
-	return keptDays.has(day) && keptDays.has(shiftedBy(day, towards)) ? "hs-edge is-run" : "hs-edge";
+	return keptDays.has(day) && keptDays.has(shiftBy(day, towards)) ? "hs-edge is-run" : "hs-edge";
 }
 
 function dayColumns(shown: string[], keptDays: Set<string>, today: string, canWrite: boolean): DayColumn[] {

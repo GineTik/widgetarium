@@ -26,7 +26,7 @@ export async function cardIn(folder) {
 	return null;
 }
 
-export function pagedOf(rows, options) {
+export function pageRows(rows, options) {
 	const offset = Math.max(0, Number(options.offset) || 0);
 	const wanted = Number(options.limit);
 	const limit = Number.isFinite(wanted) && wanted > 0 ? Math.min(LARGEST_PAGE, Math.floor(wanted)) : DEFAULT_PAGE;

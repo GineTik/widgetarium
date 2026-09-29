@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { useMarkdownRenderedInto, type MarkdownHost } from "../hooks/use-markdown-rendered-into";
+import { useRendersMarkdownInto, type MarkdownHost } from "../hooks/use-renders-markdown-into";
 
 type RenderedMarkdownProps = {
 	host: MarkdownHost;
@@ -18,7 +18,7 @@ export function RenderedMarkdown({
 	plainClassName,
 	part,
 }: RenderedMarkdownProps) {
-	const body = useMarkdownRenderedInto(host, markdown, path);
+	const body = useRendersMarkdownInto(host, markdown, path);
 	return host.can.renderMarkdown ? (
 		<div ref={body} className={`${className} markdown-rendered`} data-part={part} />
 	) : (

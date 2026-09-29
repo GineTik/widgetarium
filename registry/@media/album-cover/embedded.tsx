@@ -1,7 +1,7 @@
 import type { ViewHost } from "widgetarium";
-import { useMarkdownEmbeddedInto } from "./use-markdown-embedded-into";
+import { useEmbedsMarkdownInto } from "./use-embeds-markdown-into";
 
 export function Embedded({ markdown, host }: { markdown: string; host: ViewHost }) {
-	const holder = useMarkdownEmbeddedInto(host, markdown);
+	const holder = useEmbedsMarkdownInto(host, markdown);
 	return <div className="wg-album-art" ref={holder} />;
 }

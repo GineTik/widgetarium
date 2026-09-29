@@ -108,14 +108,14 @@ const asObject = (held) => (held && typeof held === "object" ? held : {});
 // TRADE-OFF: a build recorded inside a widget entry is read from there and written to builds, because what is installed and what is built are two facts and only one of them belongs to a repository
 function buildsIn(parsed) {
 	const held = {};
-	for (const [id, record] of Object.entries(asObject(parsed.builds))) held[id] = buildRead(record);
+	for (const [id, record] of Object.entries(asObject(parsed.builds))) held[id] = readBuild(record);
 	for (const [id, entry] of Object.entries(asObject(parsed.widgets))) {
-		if (entry?.build?.from && !held[id]) held[id] = buildRead(entry.build);
+		if (entry?.build?.from && !held[id]) held[id] = readBuild(entry.build);
 	}
 	return held;
 }
 
-function buildRead(record) {
+function readBuild(record) {
 	return { from: String(record?.from ?? ""), compiler: record?.compiler ?? null, inputs: asObject(record?.inputs) };
 }
 

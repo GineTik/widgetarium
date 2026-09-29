@@ -115,7 +115,7 @@ export class WidgetRegistry {
 		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
 
 		const found = await this.readEverything(adapter);
-		this.lock = parsedLock(found.lockText);
+		this.lock = parseLock(found.lockText);
 		await this.readPackages(adapter, this.lock);
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// TRADE-OFF: second pass is cheaper than deciding an order between scopes that reference each other
@@ -343,7 +343,7 @@ async function filesIn(adapter, folder, isRoot = true) {
 	return found;
 }
 
-function parsedLock(text) {
+function parseLock(text) {
 	try {
 		return readLock(JSON.parse(text));
 	} catch {

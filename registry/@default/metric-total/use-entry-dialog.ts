@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Draft, Listed, MetricProps } from "./types";
-import { writtenOrNotified } from "./written";
+import { writeOrNotify } from "./write-or-notify";
 
 const CANNOT_WRITE = "The record was not written, so the card still reads what it read before.";
 
@@ -26,7 +26,7 @@ export function useEntryDialog(today: string, records: MetricProps["records"], h
 
 	const confirmDraft = async () => {
 		const write = draftWrite(records, draft);
-		if (write && (await writtenOrNotified(host, write, CANNOT_WRITE))) setAsked(null);
+		if (write && (await writeOrNotify(host, write, CANNOT_WRITE))) setAsked(null);
 	};
 
 	return { asked, setAsked, draft, setDraft, openAdd, editRow, confirmDraft };

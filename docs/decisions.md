@@ -86,7 +86,7 @@ The tile's plate belongs to the node in the note: the agent writes it, the Desig
 that asks for nothing stays bare.
 
 Two writers for the tile's own plate were refused. A widget declaring its root surface in the render
-tree is invisible to the tree — `wornSurfaceAt` gates a write, and nothing can gate what only exists
+tree is invisible to the tree — `wearSurfaceAt` gates a write, and nothing can gate what only exists
 once drawn — so the node keeps that fact and the widget paints inside it.
 
 What makes this safe is that the depth travels in React context rather than being measured off the

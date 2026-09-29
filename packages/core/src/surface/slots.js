@@ -1,10 +1,10 @@
 import { createElement as h } from "react";
-import { heldTile, rekeyed } from "../model.js";
+import { heldTile, rekey } from "../model.js";
 import { reactClash } from "../fit.js";
 import { viewHost } from "../engine/view-host.js";
 import { NOWHERE } from "../engine/navigator-none.js";
 import { slotSurfaceOf } from "../surface-roles.js";
-import { surfacedSlot } from "../widget-root.js";
+import { withSlotSurface } from "../widget-root.js";
 import { isPainted } from "../tree.js";
 import { isDrawable } from "./is-drawable.js";
 import { refuseFold } from "./refuse-fold.js";
@@ -39,7 +39,7 @@ export function resolveSlots({ manifest, tile, registry, host, foldIntoGroup, ga
 				foldIntoGroup: foldIntoGroup ?? refuseFold,
 			});
 		const surface = slotSurfaceOf(spec, tile.slots?.[name]);
-		slots[name] = surfacedSlot(draw, { surface, isCard: isPainted({ surface }) });
+		slots[name] = withSlotSurface(draw, { surface, isCard: isPainted({ surface }) });
 	}
 	return slots;
 }
@@ -50,7 +50,7 @@ export function slotGateways({ childDefinition, tile, name, widget, host, refs, 
 	const propsRef = { current: held.props };
 	const patchProp = (prop, patch) =>
 		onPatch({
-			slots: rekeyed(tile.slots, name, undefined, {
+			slots: rekey(tile.slots, name, undefined, {
 				props: { ...held.props, [prop]: resolvePatch(held.props?.[prop] ?? {}, patch) },
 			}),
 		});

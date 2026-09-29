@@ -24,14 +24,14 @@ const PAGE = `
 import { createElement as h } from "react";
 import { render } from "./packages/core/src/engine/render.js";
 import { previewProps } from "./packages/core/src/preview.js";
-import { rootedWidget } from "./packages/core/src/widget-root.js";
+import { rootWidget } from "./packages/core/src/widget-root.js";
 import { manifestOf } from "./packages/core/src/engine/catalogue-index.js";
 import Widget from "./${FOLDER}/widget.tsx";
 
 const manifest = manifestOf(${readFileSync(path.join(FOLDER, "manifest.generated.json"), "utf8")}, Widget);
 
 for (const box of document.querySelectorAll(".wg-root")) {
-	render(rootedWidget(h(Widget, previewProps({ manifest, component: Widget }, {}))), box);
+	render(rootWidget(h(Widget, previewProps({ manifest, component: Widget }, {}))), box);
 }
 
 function clearances(root) {

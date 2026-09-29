@@ -5,12 +5,12 @@ const {
 	serializeBoard,
 	placedIds,
 	heldKey,
-	keptRecords,
+	keepNamedRecords,
 	mountRows,
 	mountList,
 	mountPatch,
 	propConfig,
-	rekeyed,
+	rekey,
 	uniqueName,
 } = await import("../packages/core/src/model.js");
 const { leavesOf, nodeAt } = await import("../packages/core/src/tree.js");
@@ -433,12 +433,14 @@ console.log(
 	};
 	const shorter = mountPatch(holder, "holds", [{ name: "One", widget: "@x/a" }]);
 	check("a row taken off the list takes its record with it", Object.keys(shorter.mounted), ["One"]);
-	check("and the same holds where the window writes it", Object.keys(keptRecords(holder.mounted, [{ name: "One" }])), [
-		"One",
-	]);
+	check(
+		"and the same holds where the window writes it",
+		Object.keys(keepNamedRecords(holder.mounted, [{ name: "One" }])),
+		["One"],
+	);
 	check(
 		"a record still on the widget-id key it arrived under is not swept away",
-		Object.keys(keptRecords({ "@x/b": {} }, [{ name: "Two", was: "@x/b" }])),
+		Object.keys(keepNamedRecords({ "@x/b": {} }, [{ name: "Two", was: "@x/b" }])),
 		["@x/b"],
 	);
 	check(
@@ -479,10 +481,10 @@ console.log(
 	check("and under its name once it has moved", heldKey({ Kanban: {} }, "Kanban", "@x/kanban"), "Kanban");
 	check("a mount that never had a legacy key reads its name", heldKey({}, "Kanban", "@x/kanban"), "Kanban");
 
-	const moved = rekeyed(legacy, "Kanban", "@x/kanban", { settings: { a: 2 } });
+	const moved = rekey(legacy, "Kanban", "@x/kanban", { settings: { a: 2 } });
 	check("writing moves the record onto the name", moved.Kanban, { widget: "@x/kanban", settings: { a: 2 } });
 	check("and takes the widget-id key with it", "@x/kanban" in moved, false);
-	const beside = rekeyed({ ...legacy, Other: { widget: "@x/other" } }, "Kanban", "@x/kanban", { settings: { a: 2 } });
+	const beside = rekey({ ...legacy, Other: { widget: "@x/other" } }, "Kanban", "@x/kanban", { settings: { a: 2 } });
 	check("a sibling record is not touched by the move", beside.Other, { widget: "@x/other" });
 
 	// AN UNEDITED NOTE MUST NOT MOVE. The record still keyed by a widget id round-trips as it is.

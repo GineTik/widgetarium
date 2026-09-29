@@ -134,7 +134,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const { gateway: base } = folderStandIn(HABITS);
-	const mapped = gateway.mappedCollection(base, { needs: { ...NEEDS, colour: { type: "text" } } });
+	const mapped = gateway.mapCollection(base, { needs: { ...NEEDS, colour: { type: "text" } } });
 	const listed = await mapped.list();
 	const first = listed.rows[0];
 	check(
@@ -151,7 +151,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const { gateway: base } = folderStandIn([{ path: "a.md", props: { entries: "2026-08-01", name: "One" } }]);
-	const mapped = gateway.mappedCollection(base, { needs: NEEDS });
+	const mapped = gateway.mapCollection(base, { needs: NEEDS });
 	const listed = await mapped.list();
 	check(
 		"coercion: one day where many were declared arrives wrapped",
@@ -163,7 +163,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 	const { gateway: base } = folderStandIn([
 		{ path: "a.md", props: { entries: ["2026-08-01", "not a day", ""], name: "One" } },
 	]);
-	const mapped = gateway.mappedCollection(base, { needs: NEEDS });
+	const mapped = gateway.mapCollection(base, { needs: NEEDS });
 	const listed = await mapped.list();
 	check(
 		"coercion: a value that will not convert is dropped, not drawn",
@@ -173,7 +173,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const { gateway: base, written } = folderStandIn(HABITS);
-	const mapped = gateway.mappedCollection(base, { needs: NEEDS });
+	const mapped = gateway.mapCollection(base, { needs: NEEDS });
 	await mapped.update({ ref: "Habits/Reading.md", data: { days: ["2026-08-04"] } });
 	check(
 		"mapped: a write goes back under the property the vault uses",
@@ -185,7 +185,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const { gateway: base } = folderStandIn(HABITS, { canWrite: false });
-	const mapped = gateway.mappedCollection(base, { needs: NEEDS });
+	const mapped = gateway.mapCollection(base, { needs: NEEDS });
 	check("mapped: a folder that refuses a write still refuses it through the map", mapped.update.can().can === false);
 }
 
@@ -202,7 +202,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 {
 	const { gateway: base, written } = folderStandIn(HABITS);
 	const wanting = { ...NEEDS, colour: { type: "text", required: true } };
-	const mapped = gateway.mappedCollection(base, { needs: wanting });
+	const mapped = gateway.mapCollection(base, { needs: wanting });
 	let refusal = null;
 	await mapped.update({ ref: "Habits/Reading.md", data: { colour: "red" } }).catch((failure) => (refusal = failure));
 	check(
@@ -221,7 +221,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 {
 	const { gateway: base } = folderStandIn(HABITS);
 	const wanting = { ...NEEDS, colour: { type: "text", required: true } };
-	const mapped = gateway.mappedCollection(base, { needs: wanting });
+	const mapped = gateway.mapCollection(base, { needs: wanting });
 	const listed = await mapped.list({ where: [{ prop: "colour", op: "is", value: "red" }] });
 	check(
 		"read: a condition on an unanswered need narrows nothing rather than to nothing",
@@ -232,7 +232,7 @@ function folderStandIn(records, { canWrite = true } = {}) {
 
 {
 	const { gateway: base } = folderStandIn(HABITS);
-	const mapped = gateway.mappedCollection(base, { needs: NEEDS });
+	const mapped = gateway.mapCollection(base, { needs: NEEDS });
 	const listed = await mapped.list({ where: [{ prop: "title", op: "is", value: "Reading" }] });
 	check(
 		"read: a condition on an answered need is asked under the vault's own property",

@@ -23,12 +23,12 @@ import { Head } from "./head";
 import { ListDialog } from "./list-dialog";
 import { compactOf } from "./numbers";
 import { Plates } from "./plates";
-import { amountOf, shiftedBy, summarize } from "./summary";
+import { amountOf, shiftBy, summarize } from "./summary";
 import { Tip } from "./tip";
 import type { Allowed, Hovered, Listed, MetricProps } from "./types";
 import { useBand } from "./use-band";
 import { useEntryDialog } from "./use-entry-dialog";
-import { writtenOrNotified } from "./written";
+import { writeOrNotify } from "./write-or-notify";
 
 const ALL_RECORDS = 5000;
 
@@ -107,7 +107,7 @@ export const MetricTotal = createWidget({
 		const allowed = allowedOn(records);
 		const [hovered, setHovered] = useState<Hovered | null>(null);
 		const { asked, setAsked, draft, setDraft, openAdd, editRow, confirmDraft } = useEntryDialog(today, records, host);
-		const wrote = (write: Promise<unknown>, said: string) => writtenOrNotified(host, write, said);
+		const wrote = (write: Promise<unknown>, said: string) => writeOrNotify(host, write, said);
 
 		const point = hovered ? summary.balance[hovered.at] : undefined;
 
@@ -117,7 +117,7 @@ export const MetricTotal = createWidget({
 					<Chart
 						points={summary.balance}
 						days={days}
-						from={shiftedBy(today, 1 - days)}
+						from={shiftBy(today, 1 - days)}
 						view={view.value}
 						band={band}
 						ids={ids}

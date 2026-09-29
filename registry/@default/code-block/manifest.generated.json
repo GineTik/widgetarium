@@ -64,7 +64,7 @@
 		"painted.tsx",
 		"refusal.tsx",
 		"style.ts",
-		"use-markdown-painted-into.ts"
+		"use-paints-markdown-into.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": []

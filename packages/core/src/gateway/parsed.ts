@@ -27,7 +27,7 @@ type HeldRow = Row<unknown> & Record<string, unknown>;
 
 const NOT_A_VERB = ["list", "get", "id", "kind", "subscribe"];
 
-export function checkedCollection<T>(
+export function checkCollectionWrites<T>(
 	gateway: CollectionGateway<T>,
 	schemas: Schemas,
 	name: string,
@@ -38,7 +38,7 @@ export function checkedCollection<T>(
 		id: `${gateway.id}#checked`,
 		handlers: {
 			...passed,
-			...checkedWrites(passed, schemas, name),
+			...checkWrites(passed, schemas, name),
 			list: readsOf(verbs["list"], (result) => result),
 			get: readsOf(verbs["get"], (row) => row),
 		},
@@ -48,15 +48,15 @@ export function checkedCollection<T>(
 	});
 }
 
-export function checkedValueUpdate<U extends Verb>(update: U, schemas: Schemas, name: string): U {
+export function checkValueUpdate<U extends Verb>(update: U, schemas: Schemas, name: string): U {
 	const schema = schemas.update ?? schemas.schema;
-	return Object.assign(async (value: unknown) => update(checkedInput(schema, value, "update", name)), {
+	return Object.assign(async (value: unknown) => update(checkInput(schema, value, "update", name)), {
 		can: () => update.can(),
 		meta: update.meta,
 	}) as unknown as U;
 }
 
-export function readsParsedBy(gateway: HeldGateway, context: GatewayContext, kind: "collection" | "value") {
+export function parseReadsBy(gateway: HeldGateway, context: GatewayContext, kind: "collection" | "value") {
 	if (isOpen(context.schema)) return gateway;
 	const { verbs, passed, cans } = handlersOf(gateway);
 	const common = {
@@ -68,16 +68,16 @@ export function readsParsedBy(gateway: HeldGateway, context: GatewayContext, kin
 	if (kind === "value")
 		return valueGateway({
 			...common,
-			handlers: { ...passed, get: readsOf(verbs["get"], (value) => valueParsed(value, context)) },
+			handlers: { ...passed, get: readsOf(verbs["get"], (value) => parseValue(value, context)) },
 		});
 	return collectionGateway({
 		...common,
 		handlers: {
 			...passed,
 			list: readsOf(verbs["list"], (result, query) =>
-				rowsParsed(result as RowsResult<unknown>, context, query as Query | undefined),
+				parseRows(result as RowsResult<unknown>, context, query as Query | undefined),
 			),
-			get: readsOf(verbs["get"], (row) => (row ? rowParsed(row as HeldRow, context) : null)),
+			get: readsOf(verbs["get"], (row) => (row ? parseRow(row as HeldRow, context) : null)),
 		},
 	});
 }
@@ -92,19 +92,19 @@ function handlersOf(gateway: HeldGateway) {
 	return { verbs, passed, cans };
 }
 
-function valueParsed(value: unknown, context: GatewayContext) {
+function parseValue(value: unknown, context: GatewayContext) {
 	if (value === null || value === undefined) return null;
 	return context.parse(value, { label: "the value" });
 }
 
-function rowsParsed(
+function parseRows(
 	result: RowsResult<unknown>,
 	context: GatewayContext,
 	query: Query | undefined,
 ): RowsResult<unknown> {
 	const held = result.rows as HeldRow[];
 	const rows = held.flatMap((row) => {
-		const parsed = rowParsed(row, context);
+		const parsed = parseRow(row, context);
 		return parsed ? [parsed] : [];
 	});
 	const isWhole = !query?.offset && !query?.where?.length && held.length >= result.total;
@@ -112,7 +112,7 @@ function rowsParsed(
 	return { ...result, rows: rows as Row<unknown>[] };
 }
 
-function rowParsed(row: HeldRow, context: GatewayContext): HeldRow | null {
+function parseRow(row: HeldRow, context: GatewayContext): HeldRow | null {
 	const primitive = isPrimitiveRow(row, context.schema);
 	const parsed = context.parse<Record<string, unknown>>(primitive ? row["value"] : row, {
 		label: labelOf(row),
@@ -127,13 +127,13 @@ function labelOf(row: HeldRow): string {
 	return typeof named === "string" && named !== "" ? named : String(row.ref);
 }
 
-function checkedWrites(passed: Record<string, (input: unknown) => unknown>, schemas: Schemas, name: string) {
+function checkWrites(passed: Record<string, (input: unknown) => unknown>, schemas: Schemas, name: string) {
 	const creates = schemas.create ?? partialOf(schemas.schema);
 	const patches = partialOf(schemas.update ?? schemas.schema);
 	const checked: Record<string, (input: unknown) => unknown> = {};
-	const creating = (data: unknown) => checkedInput(creates, data, "create", name);
+	const creating = (data: unknown) => checkInput(creates, data, "create", name);
 	const patching = (patch: unknown) => {
-		checkedInput(patches, (patch as { data?: unknown } | null)?.data, "update", name);
+		checkInput(patches, (patch as { data?: unknown } | null)?.data, "update", name);
 		return patch;
 	};
 	const each = (check: (input: unknown) => unknown) => (inputs: unknown) =>
@@ -152,7 +152,7 @@ function checkedWrites(passed: Record<string, (input: unknown) => unknown>, sche
 	return checked;
 }
 
-function checkedInput(schema: z.ZodType, input: unknown, verb: string, name: string): unknown {
+function checkInput(schema: z.ZodType, input: unknown, verb: string, name: string): unknown {
 	if (isOpen(schema)) return input;
 	const parsed = schema.safeParse(input);
 	if (parsed.success) return input;

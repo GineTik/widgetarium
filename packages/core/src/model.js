@@ -8,9 +8,7 @@ import {
 	APART,
 	isBox,
 	leavesOf,
-	pathOfLeaf,
-	pruned,
-	replacedAt,
+	prune,
 	ROW,
 	SIDES,
 	SURFACES,
@@ -18,25 +16,84 @@ import {
 	SWAP,
 } from "./tree.js";
 import { BLOCK_FORMAT } from "./version.js";
-import { widgetKeyOf } from "./engine/widget-ref.js";
-import { isKnownRole, slotSurfaceSaid } from "./surface-roles.js";
+import { isKnownRole, readSlotSurface } from "./surface-roles.js";
 import { withDefaultSurfaces } from "./surface-default.js";
+import { heldLook } from "./held-records.js";
+import { swapsFromGroups } from "./view-groups.js";
+
+export {
+	heldKey,
+	heldTile,
+	keepNamedRecords,
+	keysStillNamed,
+	mountKeys,
+	mountList,
+	mountPatch,
+	mountRows,
+	mountRowToStore,
+	propConfig,
+	rekey,
+	uniqueName,
+	withoutKey,
+} from "./held-records.js";
+export { VIEW_GROUP } from "./view-groups.js";
 
 const LEGACY_CLASS_COLUMNS = { phone: 4, tablet: 12, desktop: 20 };
 
-// CONTEXT: a board read without a registry cannot know a widget was renamed, and keeps what it has
-const SAME_ID = (id) => id;
+const DIRECTIONS = new Set([ROW, COLUMN, SWAP]);
 
-// CONTEXT: a slot used to persist as the widget id alone, a mount as a record keyed by that id
-function heldWidget(input, keyWidget) {
+const SIDE_FLAGS = { collapse: { into: DRAWER, toggle: ALWAYS } };
+const KEPT_FLAGS = { keep: true };
+
+const LEGACY_BARE_ARRAY = 12;
+
+export function normalizeBoard(
+	input,
+	idOf = KEEP_ID_WITHOUT_REGISTRY,
+	nameOf = KEEP_ID_WITHOUT_REGISTRY,
+	roleOf = null,
+) {
+	// TRADE-OFF: a bare array is read as tiles AND places at once, which is what the oldest files hold; delegating keeps one promised shape
+	if (Array.isArray(input))
+		return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY]: input } }, idOf, nameOf, roleOf);
+	const read = (input?.tiles ?? []).map((tile, index) => normalizeTile(tile, index, idOf));
+	const { tiles, layout } = swapsFromGroups({ tiles: read, layout: normalizeLayout(input, read) }, nameOf);
+	return {
+		tiles,
+		layout: roleOf ? withDefaultSurfaces({ layout, tiles, roleOf }) : layout,
+		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
+		...(typeof input?.base === "string" && input.base !== "" ? { base: input.base } : {}),
+	};
+}
+
+export function serializeBoard(board) {
+	return {
+		v: BLOCK_FORMAT,
+		tiles: board.tiles.map(serializeTile),
+		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
+		...(board.base ? { base: board.base } : {}),
+		layout: serializeNode(board.layout),
+	};
+}
+
+export function tileById(board, id) {
+	return board.tiles.find((tile) => tile.id === id) ?? null;
+}
+
+export function placedIds(board) {
+	return new Set(leavesOf(board.layout).map((leaf) => leaf.id));
+}
+
+const KEEP_ID_WITHOUT_REGISTRY = (id) => id;
+
+function widgetOfSlotOrMount(input, keyWidget) {
 	if (typeof input === "string") return input === "" ? null : input;
 	if (typeof input?.widget === "string" && input.widget !== "") return input.widget;
 	return keyWidget;
 }
 
-// CONTEXT: a slot and a mount are one record — whether the parent feeds it is the manifest's answer
 function normalizeHeld(input, keyWidget, idOf) {
-	const widget = heldWidget(input, keyWidget);
+	const widget = widgetOfSlotOrMount(input, keyWidget);
 	if (typeof widget !== "string" || widget === "") return null;
 	const held = typeof input === "object" && input !== null ? input : {};
 	return {
@@ -50,13 +107,7 @@ function normalizeHeld(input, keyWidget, idOf) {
 	};
 }
 
-function heldLook(held) {
-	const surface = slotSurfaceSaid(held.surface);
-	return surface ? { surface } : {};
-}
-
-// CONTEXT: a mount key is the widget id, with #n on a repeat — a record written before this carries no widget
-function normalizeMounted(input, idOf = SAME_ID) {
+function normalizeMounted(input, idOf = KEEP_ID_WITHOUT_REGISTRY) {
 	if (typeof input !== "object" || input === null) return {};
 	const result = {};
 	for (const [key, held] of Object.entries(input)) {
@@ -68,159 +119,17 @@ function normalizeMounted(input, idOf = SAME_ID) {
 
 const isHeldProps = (props) => typeof props === "object" && props !== null && Object.keys(props).length > 0;
 
-// CONTEXT: a slot key is a manifest name and names no widget, so a nameless pick is no pick
-function normalizeSlots(input, idOf = SAME_ID) {
+function normalizeSlots(input, idOf = KEEP_ID_WITHOUT_REGISTRY) {
 	if (typeof input !== "object" || input === null) return {};
 	const result = {};
 	for (const [name, held] of Object.entries(input)) {
 		const record = normalizeHeld(held, null, idOf);
-		const said = slotSurfaceSaid(held?.surface);
+		const said = readSlotSurface(held?.surface);
 		const worn = said ? { surface: said } : null;
 		const set = isHeldProps(held?.props) ? { props: held.props } : null;
 		if (record || worn || set) result[name] = { ...set, ...record, ...worn };
 	}
 	return result;
-}
-
-// CONTEXT: the SLOT, not the widget id — the same widget held twice is two of these
-// TRADE-OFF: the live widget wins over the record's, which is a mirror of it
-export function heldTile(holder, hold, key, widget) {
-	const held = holder[hold]?.[key] ?? {};
-	return {
-		id: `${holder.id}/${key}`,
-		widget,
-		settings: held.settings ?? {},
-		mounts: held.mounts ?? {},
-		props: held.props ?? {},
-		slots: held.slots ?? {},
-		mounted: held.mounted ?? {},
-		...heldLook(held),
-	};
-}
-
-// CONTEXT: the key a mount was stored under while the widget id was the key
-export function mountKeys(ids) {
-	const taken = new Map();
-	return ids.map((id) => {
-		const nth = (taken.get(id) ?? 0) + 1;
-		taken.set(id, nth);
-		return nth === 1 ? id : `${id}#${nth}`;
-	});
-}
-
-// CONTEXT: the old shape is a comma list of widget ids, the new one substitution's { name, widget }
-function rowsOf(value) {
-	const list = Array.isArray(value) ? value : String(value ?? "").split(",");
-	return (
-		list
-			.map((entry) =>
-				typeof entry === "string"
-					? { name: "", widget: entry, hidden: false }
-					: { name: String(entry?.name ?? ""), widget: String(entry?.widget ?? ""), hidden: entry?.hidden === true },
-			)
-			.map((row) => ({ name: row.name.trim(), widget: row.widget.trim(), hidden: row.hidden }))
-			// CONTEXT: a named row with no widget yet is a view waiting to be filled
-			.filter((row) => row.widget !== "" || row.name !== "")
-	);
-}
-
-// CONTEXT: run on every READ as well as on rename, so no stored name can shadow another
-export function uniqueName(taken, wanted) {
-	const base = String(wanted ?? "").trim();
-	let name = base;
-	let nth = 1;
-	while (taken.has(name)) {
-		nth += 1;
-		name = `${base} ${nth}`;
-	}
-	taken.add(name);
-	return name;
-}
-
-// CONTEXT: read where the record sits, write under the new key — that is the whole migration
-export function heldKey(held, key, was) {
-	return !held?.[key] && was && held?.[was] ? was : key;
-}
-
-function propKeyHeld(props, key, was) {
-	if (props?.[key]) return key;
-	return [].concat(was ?? []).find((old) => props?.[old]) ?? key;
-}
-
-export function propConfig(tile, key, spec) {
-	return tile?.props?.[propKeyHeld(tile?.props, key, spec?.aka)] ?? {};
-}
-
-// CONTEXT: the record moves onto its new key in the same write that changes it
-export function rekeyed(held, key, was, patch) {
-	const { [was]: legacy, ...rest } = held ?? {};
-	return { ...rest, [key]: { ...(held?.[key] ?? legacy ?? {}), ...patch } };
-}
-
-function underEitherKey(held, name, was) {
-	return held?.[name] ?? (was ? held?.[was] : undefined);
-}
-
-export function mountList(tile, name, spec) {
-	return (
-		underEitherKey(tile?.mounts, name, spec?.was) ?? underEitherKey(tile?.settings, name, spec?.was) ?? spec?.default
-	);
-}
-
-// CONTEXT: `was` is the widget-id key a note written before this still stores the record under
-export function mountRows(value, nameFor) {
-	const rows = rowsOf(value);
-	const legacy = mountKeys(rows.map((row) => row.widget));
-	const taken = new Set();
-	return rows.map((row, index) => ({
-		name: uniqueName(taken, row.name || nameFor?.(row.widget) || row.widget),
-		widget: row.widget,
-		hidden: row.hidden,
-		was: legacy[index],
-	}));
-}
-
-// CONTEXT: the rows and the records they key move in one write, or a rename orphans the settings
-export function storedMountRow(row) {
-	return { name: row.name, widget: row.widget ?? "", ...(row.hidden ? { hidden: true } : {}) };
-}
-
-function afterRenames(mounted, rows) {
-	let held = mounted ?? {};
-	for (const row of rows) {
-		if (!row.was || row.was === row.name || !held[row.was]) continue;
-		held = rekeyed(held, row.name, row.was, {});
-	}
-	return held;
-}
-
-export function keysStillNamed(rows) {
-	const kept = new Set();
-	for (const row of rows) {
-		kept.add(row.name);
-		if (row.was) kept.add(row.was);
-	}
-	return kept;
-}
-
-export function keptRecords(mounted, rows) {
-	const kept = keysStillNamed(rows);
-	return Object.fromEntries(Object.entries(mounted ?? {}).filter(([key]) => kept.has(key)));
-}
-
-export function mountPatch(tile, name, rows, was) {
-	const kept = new Set(rows.map((row) => row.name));
-	const moved = Object.entries(afterRenames(tile.mounted, rows));
-	return {
-		mounts: { ...withoutKey(tile.mounts, was), [name]: rows.map(storedMountRow) },
-		settings: withoutKey(withoutKey(tile.settings, was), name),
-		mounted: Object.fromEntries(moved.filter(([key]) => kept.has(key))),
-	};
-}
-
-export function withoutKey(held, key) {
-	const { [key]: dropped, ...rest } = held ?? {};
-	return rest;
 }
 
 function normalizeTile(tile, index, idOf) {
@@ -232,9 +141,6 @@ function normalizeTile(tile, index, idOf) {
 		props: tile.props ?? {},
 		slots: normalizeSlots(tile.slots, idOf),
 		mounted: normalizeMounted(tile.mounted, idOf),
-		// Folded or not is a fact about the WIDGET, not about one screen width. Kept on the
-		// place it was stored once per layout, so a board with four layouts held four
-		// opinions and the sidebar sprang open at whichever width was authored first.
 		...(tile.folded ? { folded: true } : {}),
 	};
 }
@@ -263,8 +169,6 @@ function normalizeLeaf(input) {
 	const ratio = positiveNumber(input?.ratio);
 	return { id, ratio: ratio ?? 1, ...slotFlags(input) };
 }
-
-const DIRECTIONS = new Set([ROW, COLUMN, SWAP]);
 
 function collapseFrom(input) {
 	const given = typeof input.collapse === "string" ? { into: input.collapse } : (input.collapse ?? {});
@@ -320,9 +224,6 @@ function regionBox(given, flags) {
 	return { dir: COLUMN, of, ...boxFlags({ ...(Array.isArray(given) ? {} : (given ?? {})), ...flags }) };
 }
 
-const SIDE_FLAGS = { collapse: { into: DRAWER, toggle: ALWAYS } };
-const KEPT_FLAGS = { keep: true };
-
 function sideBox(given) {
 	return regionBox(given, SIDE_FLAGS) ?? { dir: COLUMN, of: [], ...SIDE_FLAGS };
 }
@@ -376,9 +277,7 @@ function rootFromPlaces(layouts, tiles) {
 	const places = widestPlaces(layouts);
 	if (places.length === 0) return null;
 	const seated = new Set(places.map((place) => place.id));
-	const rows = bandsOfPlaces(places).map((band) =>
-		rowNode(band.map((place) => ({ id: place.id, ratio: place.w }))),
-	);
+	const rows = bandsOfPlaces(places).map((band) => rowNode(band.map((place) => ({ id: place.id, ratio: place.w }))));
 	const spare = tiles.filter((tile) => !seated.has(tile.id)).map((tile) => ({ id: tile.id, ratio: 1 }));
 	return { dir: ROW, of: [sideBox(null), { dir: COLUMN, of: [...rows, ...spare], keep: true }, sideBox(null)] };
 }
@@ -391,7 +290,7 @@ function normalizeLayout(input, tiles) {
 	const given = input?.layout;
 	const laidOut = isBox(given) ? normalizeNode(given) : rootFromRegions(given);
 	const root = laidOut ?? rootFromPlaces(input?.layouts, tiles) ?? emptyRoot();
-	return pruned(root);
+	return prune(root);
 }
 
 function serializeNode(node) {
@@ -405,90 +304,6 @@ function serializeNode(node) {
 	return { dir, ...flags, of: of.map(serializeNode) };
 }
 
-// TRADE-OFF: a swap box answers to the id of the widget it replaced, because every switcher shipped says `wants: "@default/view-group/holds"` and a box is not a widget to rename
-export const VIEW_GROUP = "@default/view-group";
-const GROUP_HELD = { was: "views" };
-
-const isStripShown = (tile) => (tile.props?.isTabsShown?.value ?? tile.settings?.isTabsShown) !== false;
-
-function viewsOfGroup(tile, taken, nameOf) {
-	return mountRows(mountList(tile, "holds", GROUP_HELD), nameOf).map((row) => {
-		const record = tile.mounted[row.name] ?? (row.was ? tile.mounted[row.was] : null) ?? null;
-		return {
-			name: row.name,
-			hidden: row.hidden,
-			widget: record?.widget ?? row.widget,
-			record,
-			id: uniqueName(taken, `${tile.id}:${row.name}`),
-		};
-	});
-}
-
-function nodeOfView(view) {
-	const slot = { name: view.name, ...(view.hidden ? { hidden: true } : {}) };
-	if (view.widget === "") return { dir: COLUMN, of: [], ...slot };
-	return { id: view.id, ratio: 1, ...slot };
-}
-
-function tileOfView(view) {
-	return {
-		id: view.id,
-		widget: view.widget,
-		settings: view.record?.settings ?? {},
-		mounts: view.record?.mounts ?? {},
-		props: view.record?.props ?? {},
-		slots: view.record?.slots ?? {},
-		mounted: view.record?.mounted ?? {},
-	};
-}
-
-function swapFromGroup(tile, views) {
-	return {
-		dir: SWAP,
-		id: tile.id,
-		...(isStripShown(tile) ? {} : { strip: false }),
-		of: views.map(nodeOfView),
-	};
-}
-
-// TRADE-OFF: a group is read into a swap box on every read and never written back as a tile, because a view that holds its own widget's settings inside a mount cannot be carried, resized or bound like the tile it always was
-function swapsFromGroups(board, nameOf) {
-	const groups = board.tiles.filter(
-		(tile) => widgetKeyOf(tile.widget) === VIEW_GROUP && pathOfLeaf(board.layout, tile.id),
-	);
-	if (groups.length === 0) return board;
-	const taken = new Set(board.tiles.map((tile) => tile.id));
-	const born = [];
-	let layout = board.layout;
-	for (const group of groups) {
-		const views = viewsOfGroup(group, taken, nameOf);
-		layout = replacedAt(layout, pathOfLeaf(layout, group.id), swapFromGroup(group, views));
-		born.push(...views.filter((view) => view.widget !== "").map(tileOfView));
-	}
-	const gone = new Set(groups.map((tile) => tile.id));
-	return { tiles: [...board.tiles.filter((tile) => !gone.has(tile.id)), ...born], layout: pruned(layout) };
-}
-
-const LEGACY_BARE_ARRAY = 12;
-
-export function normalizeBoard(input, idOf = SAME_ID, nameOf = SAME_ID, roleOf = null) {
-	// TRADE-OFF: a bare array is read as tiles AND places at once, which is what the oldest files hold; delegating keeps one promised shape
-	if (Array.isArray(input))
-		return normalizeBoard({ tiles: input, layouts: { [LEGACY_BARE_ARRAY]: input } }, idOf, nameOf, roleOf);
-	const read = (input?.tiles ?? []).map((tile, index) => normalizeTile(tile, index, idOf));
-	const { tiles, layout } = swapsFromGroups({ tiles: read, layout: normalizeLayout(input, read) }, nameOf);
-	return {
-		tiles,
-		layout: roleOf ? withDefaultSurfaces({ layout, tiles, roleOf }) : layout,
-		// One board, two sizes. The mode is a fact about the board, so it lives in the file:
-		// held in a hook it was lost to every re-render the editor caused, which read as
-		// "any keystroke collapses the page".
-		mode: input?.mode === "expanded" ? "expanded" : "collapsed",
-		...(typeof input?.base === "string" && input.base !== "" ? { base: input.base } : {}),
-	};
-}
-
-// CONTEXT: a view never opened has nothing to say, and an empty sub-record in the file reads as one that does
 function serializeHeld(held) {
 	const slots = serializeHolders(held.slots);
 	const mounted = serializeHolders(held.mounted);
@@ -522,22 +337,4 @@ function serializeTile(tile) {
 		...(slots ? { slots } : {}),
 		...(mounted ? { mounted } : {}),
 	};
-}
-
-export function serializeBoard(board) {
-	return {
-		v: BLOCK_FORMAT,
-		tiles: board.tiles.map(serializeTile),
-		...(board.mode === "expanded" ? { mode: "expanded" } : {}),
-		...(board.base ? { base: board.base } : {}),
-		layout: serializeNode(board.layout),
-	};
-}
-
-export function tileById(board, id) {
-	return board.tiles.find((tile) => tile.id === id) ?? null;
-}
-
-export function placedIds(board) {
-	return new Set(leavesOf(board.layout).map((leaf) => leaf.id));
 }

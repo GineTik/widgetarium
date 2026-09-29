@@ -19,7 +19,7 @@ const DOT_R = 3.4;
 const TIP_R = 5;
 
 export function Graph({ rows, hasEarlier }: { rows: readonly Row<Commit>[]; hasEarlier: boolean }) {
-	const placed = placedOf(rows);
+	const placed = placementsOf(rows);
 	const span = spanOf(rows.length);
 	const lanes = placed.reduce((most, one) => Math.max(most, one.lane), 0) + 1;
 	const width = PAD * 2 + span * PITCH;
@@ -63,7 +63,7 @@ function freeLane(lanes: (string | null)[]): number {
 	return free === -1 ? lanes.length : free;
 }
 
-function placedOf(rows: readonly Row<Commit>[]): Placed[] {
+function placementsOf(rows: readonly Row<Commit>[]): Placed[] {
 	const lanes: (string | null)[] = [];
 	return rows.map((row, at) => {
 		const sha = saidOf(row.sha);

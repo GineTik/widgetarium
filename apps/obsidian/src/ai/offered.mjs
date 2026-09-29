@@ -7,7 +7,7 @@ import { widgetFilesIn } from "./vault-files.mjs";
 const GITHUB_REPOSITORY = /github\.com[/:]([^/]+)\/([^/.]+)/;
 
 export async function offeredBySource(source, cardFrom) {
-	const read = source.repository ? await fetchedRegistry(source) : await laidRegistry(source);
+	const read = source.repository ? await fetchRegistry(source) : await readRegistryOnDisk(source);
 	if (read === null) return [];
 	const found = [];
 	for (const row of read.rows) found.push(await offeredRow(row, read, cardFrom));
@@ -38,18 +38,18 @@ function stepsInside(root, real) {
 	return step !== "" && !step.startsWith("..") && !isAbsolute(step);
 }
 
-async function laidRegistry(source) {
+async function readRegistryOnDisk(source) {
 	const at = join(source.path, REGISTRY_FILE);
 	const rows = rowsIn(await readFile(at, "utf8").catch(() => null), at);
 	if (rows === null) return null;
 	return { rows, origin: source.path, folderOf: (row) => join(source.path, ...row.id.split("/")) };
 }
 
-async function fetchedRegistry(source) {
+async function fetchRegistry(source) {
 	const named = String(source.repository ?? "").match(GITHUB_REPOSITORY);
 	if (!named) return null;
 	const at = `https://raw.githubusercontent.com/${named[1]}/${named[2]}/${source.ref ?? "HEAD"}/${REGISTRY_FILE}`;
-	const rows = rowsIn(await fetchedText(at), at);
+	const rows = rowsIn(await fetchText(at), at);
 	if (rows === null) return null;
 	return { rows, origin: source.repository, folderOf: null };
 }
@@ -65,7 +65,7 @@ function rowsIn(text, at) {
 	return null;
 }
 
-function fetchedText(at) {
+function fetchText(at) {
 	return fetch(at)
 		.then((answer) => (answer.ok ? answer.text() : null))
 		.catch(() => null);

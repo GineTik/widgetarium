@@ -3,14 +3,14 @@ import { collectionGateway, valueIn } from "./create";
 import { fieldsOf, isBoolean, isDay, isNumber } from "./fields";
 import type { FieldReport } from "./fields";
 import { fieldOf } from "./match";
-import { delegatedVerbs } from "./narrow";
+import { delegateVerbs } from "./narrow";
 import type { ChosenProps, DeclaredNeeds, Resolution } from "./resolve-needs";
 import { resolveNeeds } from "./resolve-needs";
 import { stableKey } from "./cache";
 
 type Held = Record<string, unknown>;
 
-export function coercedOne(value: unknown, type: string): unknown {
+export function coerceOne(value: unknown, type: string): unknown {
 	if (value === undefined || value === null || value === "") return null;
 	if (type === "date") return asDay(value);
 	if (type === "number") return asNumber(value);
@@ -27,12 +27,12 @@ type Handler = (input: never) => unknown;
 
 type Reading = () => Promise<Resolution>;
 
-export function mappedCollection<T>(base: CollectionGateway<T>, spec: MappingSpec): CollectionGateway<T> {
+export function mapCollection<T>(base: CollectionGateway<T>, spec: MappingSpec): CollectionGateway<T> {
 	if (Object.keys(spec.needs).length === 0) return base;
-	const resolutionOf = rememberedResolution(base as unknown as CollectionGateway<unknown>, spec);
+	const resolutionOf = rememberResolution(base as unknown as CollectionGateway<unknown>, spec);
 	return collectionGateway<T>({
 		id: `${base.id}|needs?${stableKey({ needs: Object.keys(spec.needs), chosen: spec.chosen })}`,
-		handlers: mappedHandlers(base, spec, resolutionOf),
+		handlers: mapHandlers(base, spec, resolutionOf),
 		subscribe: base.subscribe,
 		announcesOwnWrites: false,
 	});
@@ -54,25 +54,25 @@ function asBoolean(value: unknown): boolean | null {
 	return value === true || value === "true";
 }
 
-function coerced(value: unknown, type: string, many: boolean): unknown {
-	if (!many) return coercedOne(value, type);
+function coerce(value: unknown, type: string, many: boolean): unknown {
+	if (!many) return coerceOne(value, type);
 	const held = Array.isArray(value) ? value : [value];
-	return held.map((one) => coercedOne(one, type)).filter((one) => one !== null);
+	return held.map((one) => coerceOne(one, type)).filter((one) => one !== null);
 }
 
-function renamedValue(value: unknown, needs: DeclaredNeeds, map: Record<string, string>): unknown {
+function renameValue(value: unknown, needs: DeclaredNeeds, map: Record<string, string>): unknown {
 	if (!isHeld(value)) return value;
 	const read: Held = { ...value };
 	for (const [need, declared] of Object.entries(needs)) {
 		const prop = map[need];
 		if (!prop) continue;
-		read[need] = coerced(fieldOf(value, prop), declared.type, Boolean(declared.many));
+		read[need] = coerce(fieldOf(value, prop), declared.type, Boolean(declared.many));
 	}
 	return read;
 }
 
 // TRADE-OFF: a clause naming a need nothing answers is dropped, so the list is not narrowed to nothing by a question still unanswered
-function renamedClauses<T extends FilterRow | SortRow>(
+function renameClauses<T extends FilterRow | SortRow>(
 	rows: T[] | undefined,
 	needs: DeclaredNeeds,
 	map: Record<string, string>,
@@ -83,14 +83,14 @@ function renamedClauses<T extends FilterRow | SortRow>(
 		.map((row) => (row.prop && map[row.prop] ? { ...row, prop: map[row.prop] } : row));
 }
 
-function renamedQuery(query: Query | void, needs: DeclaredNeeds, map: Record<string, string>): Query {
+function renameQuery(query: Query | void, needs: DeclaredNeeds, map: Record<string, string>): Query {
 	const asked = query ?? {};
-	const where = renamedClauses(asked.where, needs, map);
-	const sort = renamedClauses(asked.sort, needs, map);
+	const where = renameClauses(asked.where, needs, map);
+	const sort = renameClauses(asked.sort, needs, map);
 	return { ...asked, ...(where ? { where } : {}), ...(sort ? { sort } : {}) };
 }
 
-function renamedPatch(data: unknown, needs: DeclaredNeeds, map: Record<string, string>): unknown {
+function renamePatch(data: unknown, needs: DeclaredNeeds, map: Record<string, string>): unknown {
 	if (!isHeld(data)) return data;
 	const { props, ...rest } = data as { props?: unknown } & Held;
 	const written: Held = isHeld(props) ? { ...props } : {};
@@ -115,7 +115,7 @@ async function fieldsBehind(base: CollectionGateway<unknown>): Promise<FieldRepo
 }
 
 // TRADE-OFF: the resolution is remembered for the life of the gateway, so a property added after the first read is seen on the next mount rather than at once
-function rememberedResolution(base: CollectionGateway<unknown>, spec: MappingSpec) {
+function rememberResolution(base: CollectionGateway<unknown>, spec: MappingSpec) {
 	let held: Promise<Resolution> | null = null;
 	return () => {
 		if (held) return held;
@@ -127,11 +127,11 @@ function rememberedResolution(base: CollectionGateway<unknown>, spec: MappingSpe
 function readsRows<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading) {
 	return async (query: Query | void): Promise<RowsResult<T>> => {
 		const { map } = await resolutionOf();
-		const listed = await base.list(renamedQuery(query, spec.needs, map) as Query);
+		const listed = await base.list(renameQuery(query, spec.needs, map) as Query);
 		return {
 			...listed,
 			rows: listed.rows.map(
-				(row) => ({ ...(renamedValue(valueIn(row), spec.needs, map) as object), ref: row.ref }) as Row<T>,
+				(row) => ({ ...(renameValue(valueIn(row), spec.needs, map) as object), ref: row.ref }) as Row<T>,
 			),
 		};
 	};
@@ -141,35 +141,31 @@ function readsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf
 	return async (ref: RecordRef): Promise<Row<T> | null> => {
 		const { map } = await resolutionOf();
 		const found = await base.get(ref);
-		return found ? ({ ...(renamedValue(valueIn(found), spec.needs, map) as object), ref: found.ref } as Row<T>) : null;
+		return found ? ({ ...(renameValue(valueIn(found), spec.needs, map) as object), ref: found.ref } as Row<T>) : null;
 	};
 }
 
 function writesOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading) {
 	return async (input: { ref: RecordRef; data: Partial<T> }): Promise<Row<T> | null> => {
 		const { map } = await resolutionOf();
-		return base.update({ ref: input.ref, data: renamedPatch(input.data, spec.needs, map) as Partial<T> });
+		return base.update({ ref: input.ref, data: renamePatch(input.data, spec.needs, map) as Partial<T> });
 	};
 }
 
 function createsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading) {
 	return async (draft: Partial<T>): Promise<Row<T> | null> => {
 		const { map } = await resolutionOf();
-		return base.create(renamedPatch(draft, spec.needs, map) as Partial<T>);
+		return base.create(renamePatch(draft, spec.needs, map) as Partial<T>);
 	};
 }
 
-function mappedHandlers<T>(
-	base: CollectionGateway<T>,
-	spec: MappingSpec,
-	resolutionOf: Reading,
-): Record<string, Handler> {
+function mapHandlers<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading): Record<string, Handler> {
 	const mapped: Record<string, unknown> = {
 		get: readsOne(base, spec, resolutionOf),
 		update: writesOne(base, spec, resolutionOf),
 		create: createsOne(base, spec, resolutionOf),
 	};
-	const delegated = delegatedVerbs(base as unknown as Record<string, unknown>);
+	const delegated = delegateVerbs(base as unknown as Record<string, unknown>);
 	const handlers: Record<string, Handler> = { ...delegated, list: readsRows(base, spec, resolutionOf) as Handler };
 	for (const verb of Object.keys(mapped)) {
 		if (delegated[verb]) handlers[verb] = mapped[verb] as Handler;

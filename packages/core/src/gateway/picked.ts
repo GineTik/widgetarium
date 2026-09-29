@@ -3,7 +3,7 @@ import type { EveryValueVerb } from "./needs";
 import { canDo, valueGateway } from "./create";
 import { fieldOf } from "./match";
 import { isEmpty } from "./narrow";
-import { combined } from "./combined";
+import { combineSubscribes } from "./combined";
 import type { Subscribe } from "./combined";
 
 export interface SelectionSpec<T> {
@@ -23,7 +23,7 @@ export function selectionGateway<T>(spec: SelectionSpec<T>): ValueGateway<unknow
 			update: (ref: unknown) => spec.memory.update(ref),
 			remove: () => spec.memory.remove(),
 		},
-		subscribe: combined([
+		subscribe: combineSubscribes([
 			spec.memory.subscribe as Subscribe,
 			spec.collection.subscribe as Subscribe,
 			spec.watches ?? null,
@@ -53,7 +53,7 @@ interface WriteHomeAnswer<T> {
 	found(): Promise<WriteHome<T>>;
 }
 
-export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown, EveryValueVerb> {
+export function createPickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown, EveryValueVerb> {
 	const rowNow = rowPicker(spec);
 	const home = writeHomeOf(spec, rowNow);
 	return valueGateway<unknown>({
@@ -64,9 +64,9 @@ export function pickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown, Every
 				const row = await rowNow();
 				return row ?? spec.inTile?.get() ?? null;
 			},
-			...pickedWrites(spec, home),
+			...createPickedWrites(spec, home),
 		},
-		subscribe: combined([
+		subscribe: combineSubscribes([
 			spec.chosen.subscribe as Subscribe,
 			spec.collection.subscribe as Subscribe,
 			(spec.inTile?.subscribe ?? null) as Subscribe | null,
@@ -147,7 +147,7 @@ function writeHomeOf<T>(spec: PickSpec<T>, rowNow: () => Promise<Row<T> | null>)
 	};
 }
 
-async function writtenInto<T>(spec: PickSpec<T>, home: WriteHome<T>, patch: never): Promise<unknown> {
+async function writeInto<T>(spec: PickSpec<T>, home: WriteHome<T>, patch: never): Promise<unknown> {
 	if ("refused" in home) throw new Error(home.refused);
 	if ("row" in home) return spec.collection.update({ ref: home.row.ref, data: patch as Partial<T> });
 	const held = await home.cell.get();
@@ -155,6 +155,6 @@ async function writtenInto<T>(spec: PickSpec<T>, home: WriteHome<T>, patch: neve
 }
 
 // TRADE-OFF: the verb always exists and `cans.update` carries the live answer, because deciding at construction whether a write has anywhere to go is what made a ref-picked write silently do nothing on the first render
-function pickedWrites<T>(spec: PickSpec<T>, home: WriteHomeAnswer<T>): Record<string, (input: never) => unknown> {
-	return { update: async (patch: never) => writtenInto(spec, await home.found(), patch) };
+function createPickedWrites<T>(spec: PickSpec<T>, home: WriteHomeAnswer<T>): Record<string, (input: never) => unknown> {
+	return { update: async (patch: never) => writeInto(spec, await home.found(), patch) };
 }

@@ -17,7 +17,7 @@ import { cardMismatchIn } from "./installer-placement.js";
 export async function installPlaced(installing, listed, held, placed) {
 	const mismatch = await cardMismatchIn(installing, held);
 	if (mismatch) return refuse(mismatch);
-	const made = await madeFor(installing, readLock(await installing.readJson(LOCK_PATH, null)), placed.id, held);
+	const made = await makeFor(installing, readLock(await installing.readJson(LOCK_PATH, null)), placed.id, held);
 	if (!made.ok) return refuse(made.failure);
 	await writeGeneration(installing, { listed, held, placed, made });
 	return { ok: true, id: placed.id, commit: held.commit, isNewGeneration: placed.isNewGeneration, failure: null };
@@ -29,7 +29,7 @@ export async function absorbCommit({ writeJson }, lock, id, commit) {
 	return { ok: true, id, commit, isNewGeneration: false, failure: null };
 }
 
-async function madeFor(installing, lock, id, held) {
+async function makeFor(installing, lock, id, held) {
 	const resolved = await withDependencies(installing, lock, id, held.record);
 	if (!resolved.ok) return resolved;
 	const folder = folderFor(WIDGETS_DIR, id);

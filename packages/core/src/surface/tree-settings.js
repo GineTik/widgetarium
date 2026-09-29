@@ -1,5 +1,5 @@
 import { useSettingsWindow } from "../settings-window.js";
-import { saidRefusal, surfaceChoicesAt, widgetOfTiles, wornSurfaceAt } from "../surface-laws.js";
+import { saidRefusal, surfaceChoicesAt, widgetOfTiles, wearSurfaceAt } from "../surface-laws.js";
 import { NO_SURFACE, nodeAt, pathOfLeaf } from "../tree.js";
 import { treeCellBody } from "./tree-cell-body.js";
 
@@ -29,7 +29,7 @@ function surfaceOfTile({ layout, tiles }, id, commitLayout, host) {
 	const node = nodeAt(layout, path);
 	const wear = (surface, side) =>
 		commitLayout((now) => {
-			const { layout: next, refusal } = wornSurfaceAt(now, path, surface, side, widgetOf);
+			const { layout: next, refusal } = wearSurfaceAt(now, path, surface, side, widgetOf);
 			if (refusal) host?.ui?.notify?.(saidRefusal(refusal));
 			return next;
 		});

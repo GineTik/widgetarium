@@ -1,5 +1,5 @@
 import { render } from "../packages/core/src/engine/render.js";
-import { rootedWidget } from "../packages/core/src/widget-root.js";
+import { rootWidget } from "../packages/core/src/widget-root.js";
 import { arrayGateway, soloGateway } from "../packages/core/src/gateway/create";
 import { createGatewayRefs, createViewCells, selectionGateway } from "../packages/core/src/gateway/refs.js";
 import ViewTabs from "../registry/@default/view-tabs/widget.tsx";
@@ -128,7 +128,7 @@ function boxOf(node) {
 function drawAll() {
 	return CASES.map((entry) => {
 		const { tile, body, width } = tileFor(entry.cells);
-		render(rootedWidget(entry.node), body);
+		render(rootWidget(entry.node), body);
 		return { entry, tile, body, width };
 	});
 }

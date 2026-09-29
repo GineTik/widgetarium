@@ -1,5 +1,5 @@
 import { canDo } from "widgetarium";
-import { orderBetween, placedAt, renumbered } from "./ordering";
+import { orderBetween, placeAt, renumber } from "./ordering";
 import type { CardRow, Draft, Gates, RackView, Target } from "./types";
 
 const CANNOT_MOVE = "This source cannot be written here, so the card stayed where it was.";
@@ -10,7 +10,7 @@ export function useCardWriting(held: RackView, { cards, say }: Gates) {
 		tier === null ? held.tray : (held.rack.find((line) => line.label === tier)?.cards ?? []);
 
 	const renumberCards = async (rows: CardRow[], tier: string | null) => {
-		for (const row of renumbered(rows)) await cards.update({ ref: row.ref, data: { tier, order: row.order } });
+		for (const row of renumber(rows)) await cards.update({ ref: row.ref, data: { tier, order: row.order } });
 	};
 
 	const unrank = async (rows: CardRow[]) => {
@@ -22,7 +22,7 @@ export function useCardWriting(held: RackView, { cards, say }: Gates) {
 
 		into: async (row: CardRow, target: Target) => {
 			if (!canDo(cards.update)) return say(CANNOT_MOVE);
-			const line = placedAt(listOf(target.tier), row, target.at);
+			const line = placeAt(listOf(target.tier), row, target.at);
 			const at = line.findIndex((card) => card.ref === row.ref);
 			const order = orderBetween(line[at - 1] ?? null, line[at + 1] ?? null);
 			if (order === null) return renumberCards(line, target.tier);

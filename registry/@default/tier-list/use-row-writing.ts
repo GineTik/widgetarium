@@ -1,7 +1,7 @@
 import { canDo } from "widgetarium";
 import { freeLabel, isLabelTaken, labelOf } from "./tiers";
 import { nextToneAfter, toneOf } from "./tones";
-import { orderBetween, placedAt, renumbered } from "./ordering";
+import { orderBetween, placeAt, renumber } from "./ordering";
 import type { CardRow, Gates, RackView, TierRow } from "./types";
 
 type Rename = { standing: string[]; isRenamed: boolean; wanted: string; heldCards: number; canWriteCards: boolean };
@@ -55,14 +55,14 @@ export function useRowWriting(
 		moveRow: async (row: TierRow, step: number) => {
 			if (!canDo(tiers.update)) return say(CANNOT_WRITE_ROW);
 			const at = held.tiers.findIndex((standingRow) => standingRow.ref === row.ref);
-			const line = placedAt(held.tiers, row, at + step);
+			const line = placeAt(held.tiers, row, at + step);
 			const landing = line.findIndex((standingRow) => standingRow.ref === row.ref);
 			const order = orderBetween(line[landing - 1] ?? null, line[landing + 1] ?? null);
 			if (order !== null) {
 				await tiers.update({ ref: row.ref, data: { order } });
 				return;
 			}
-			for (const renumberedRow of renumbered(line))
+			for (const renumberedRow of renumber(line))
 				await tiers.update({ ref: renumberedRow.ref, data: { order: renumberedRow.order } });
 		},
 

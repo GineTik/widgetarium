@@ -30,7 +30,7 @@ export function useDragging(
 			held = { ...held, x: moved.clientX, y: moved.clientY, isDragging: held.isDragging || isPastSlop };
 			setCarry(held);
 			if (!held.isDragging) return;
-			aimed = aimedAt(rootRef.current, moved.clientX, moved.clientY, row.ref);
+			aimed = targetAt(rootRef.current, moved.clientX, moved.clientY, row.ref);
 			setTarget(aimed);
 		};
 		const stop = () => {
@@ -55,7 +55,7 @@ function isWithin(box: DOMRect, x: number, y: number) {
 	return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
 }
 
-function aimedAt(root: HTMLElement | null, x: number, y: number, movedRef: string): Target | null {
+function targetAt(root: HTMLElement | null, x: number, y: number, movedRef: string): Target | null {
 	const pens = [...(root?.querySelectorAll<HTMLElement>("[data-pen]") ?? [])];
 	const pen = pens.find((node) => isWithin(node.getBoundingClientRect(), x, y));
 	if (!pen) return null;

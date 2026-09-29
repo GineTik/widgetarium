@@ -260,8 +260,8 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		{ name: "Two", props: { board: "B" } },
 	];
 	const tasks = gateway.arrayGateway(rows, { update: () => null }, "narrowable");
-	const onA = gateway.narrowed(tasks, { board: "A" });
-	const onB = gateway.narrowed(tasks, { board: "B" });
+	const onA = gateway.narrow(tasks, { board: "A" });
+	const onB = gateway.narrow(tasks, { board: "B" });
 	check("narrow: two narrowings of one folder are two ids", onA.id !== onB.id && onA.id !== tasks.id);
 	check("narrow: each answers its own rows", (await onA.list()).total === 1 && (await onB.list()).total === 1);
 	check("narrow: and they are not the same row", (await onA.list()).rows[0].name === "One");
@@ -269,7 +269,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		"narrow: a second narrowing at the call site still applies",
 		(await onA.list({ where: [{ prop: "name", op: "is", value: "Two" }] })).total === 0,
 	);
-	check("narrow: nothing to narrow by is the base itself", gateway.narrowed(tasks, { board: "" }) === tasks);
+	check("narrow: nothing to narrow by is the base itself", gateway.narrow(tasks, { board: "" }) === tasks);
 	check("narrow: a write the base allows is offered", onA.update.can().can === true);
 	check("narrow: a write the base refuses stays refused", onA.create.can().can === false);
 	check(
@@ -289,8 +289,8 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		},
 		"shared-store",
 	);
-	const onA = gateway.narrowed(tasks, { board: "A" });
-	const onB = gateway.narrowed(tasks, { board: "B" });
+	const onA = gateway.narrow(tasks, { board: "A" });
+	const onB = gateway.narrow(tasks, { board: "B" });
 	const cache = gateway.createGatewayCache();
 	let woke = 0;
 	cache.subscribe(
@@ -414,7 +414,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	const rowsOf = (all) => ({ rows: all.map((value, at) => ({ ...value, ref: `r${at}` })), total: all.length });
 	const written = [];
 	const pickedOver = ({ all, chosen, canWriteRows, inTile }) =>
-		gateway.pickedGateway({
+		gateway.createPickedGateway({
 			id: "board/board",
 			chosen: gateway.valueGateway({ id: "chosen", handlers: { get: async () => chosen } }),
 			collection: gateway.collectionGateway({
@@ -482,7 +482,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	);
 
 	const refs = gateway.createGatewayRefs();
-	const later = gateway.pickedGateway({
+	const later = gateway.createPickedGateway({
 		id: "board/late",
 		chosen: gateway.valueGateway({ id: "chosen", handlers: { get: async () => "Marketing" } }),
 		collection: gateway.refCollection(refs, "boards/rows"),

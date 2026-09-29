@@ -28,7 +28,7 @@ export function useTagReorder(
 			);
 			const to = dropIndex(boxes, pointer.clientX, pointer.clientY);
 			if (to < 0 || to === drag.at) return setDragged({ ...drag });
-			drag.list = movedWithin(drag.list, drag.at, to);
+			drag.list = moveWithin(drag.list, drag.at, to);
 			drag.at = to;
 			setDragged({ ...drag });
 		};
@@ -63,7 +63,7 @@ function dropIndex(boxes: DOMRect[], x: number, y: number): number {
 	return landed;
 }
 
-function movedWithin(list: string[], from: number, to: number): string[] {
+function moveWithin(list: string[], from: number, to: number): string[] {
 	const next = [...list];
 	const [moving] = next.splice(from, 1);
 	if (!moving) return list;

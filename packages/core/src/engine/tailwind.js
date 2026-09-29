@@ -29,14 +29,14 @@ export async function buildSheet({ entry, compiler, sheetOfTailwind, readFile, c
 	const reachable = folderOf(entry.base);
 
 	async function loadStylesheet(specifier, base) {
-		const served = await servedByTailwind(specifier, sheetOfTailwind);
+		const served = await serveToTailwind(specifier, sheetOfTailwind);
 		if (served !== null) {
 			if (servedContent(served.path) !== null) inputs[served.path] = served.content;
 			return served;
 		}
 		if (!specifier.startsWith(".")) throw new Error(`"${specifier}" is not a file this widget can reach`);
 
-		const path = joined(base, specifier);
+		const path = joinPath(base, specifier);
 		if (path !== reachable && !path.startsWith(`${reachable}/`))
 			throw new Error(
 				`"${specifier}" leaves ${reachable}, and a widget's sheet may only import what its own scope holds`,
@@ -72,7 +72,7 @@ function folderOf(path) {
 	return cut < 0 ? "" : path.slice(0, cut);
 }
 
-function joined(base, specifier) {
+function joinPath(base, specifier) {
 	const held = [];
 	for (const part of `${base}/${specifier}`.split("/")) {
 		if (part === "" || part === ".") continue;
@@ -82,7 +82,7 @@ function joined(base, specifier) {
 	return held.join("/");
 }
 
-async function servedByTailwind(specifier, sheetOfTailwind) {
+async function serveToTailwind(specifier, sheetOfTailwind) {
 	if (specifier === KIT_THEME_SHEET) return { path: KIT_THEME_SHEET, base: "", content: KIT_THEME };
 	if (specifier === WIDGETARIUM || specifier.startsWith(KIT_SCOPE))
 		throw new Error(`widgetarium serves no "${specifier.slice(KIT_SCOPE.length)}", only its theme.css`);

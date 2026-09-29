@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useContentInsets } from "../content-insets.js";
-import { useMeasuredSurfaces } from "../surface-measure.js";
+import { useMeasuresSurfaces } from "../surface-measure.js";
 import { startCarry } from "./carry.js";
 import { useLandingGhost } from "./use-landing-ghost.js";
 import { useStopOnUnmount } from "./use-stop-on-unmount.js";
@@ -18,7 +18,7 @@ export function useTreePage({ shared, editing, commitLayout }) {
 	useStopOnUnmount(carryRef);
 	useLandingGhost(carry, setCarry, { pageRef, ghostRef });
 	const everyRegionRef = useRef(new Map());
-	useMeasuredSurfaces(pageRef, shared.host, everyRegionRef);
+	useMeasuresSurfaces(pageRef, shared.host, everyRegionRef);
 	return {
 		pageRef,
 		regionsRef,

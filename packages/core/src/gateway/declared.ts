@@ -14,7 +14,7 @@ import type {
 	WidgetCatalogue,
 } from "./host";
 import type { DeclaredFilterRow, Manifest, RecordRef as RecordRefType } from "./manifest";
-import { manifestOfWritten, sizeProblems } from "./manifest";
+import { manifestOfDeclared, sizeProblems } from "./manifest";
 import type { Declaration } from "./declaration";
 import { DECLARATION, declarationIn } from "./declaration";
 import {
@@ -23,8 +23,8 @@ import {
 	refuseMetadataForNothing,
 	refuseSourcesOverNothing,
 	refuseUndeclared,
-	writtenMigrationOf,
-	writtenPartsOf,
+	migrationOfDeclared,
+	partsOfDeclared,
 } from "./written";
 import type {
 	CreateInOf,
@@ -219,33 +219,33 @@ Object.defineProperty(ICrudGateway, DECLARATION, {
 export type ISlot<Given = Readonly<Record<string, unknown>>> = Slot<Given>;
 export const ISlot = {
 	of<Given = Readonly<Record<string, unknown>>>(options: SlotOptions = {}): PassedDeclared<Slot<Given>> {
-		return heldClassOf("slot", { of: "widget", ...options }) as PassedDeclared<Slot<Given>>;
+		return createHeldClass("slot", { of: "widget", ...options }) as PassedDeclared<Slot<Given>>;
 	},
 };
 
 export type IMounts = readonly MountEntry[];
 export const IMounts = {
 	of(options: MountsOptions = {}): PassedDeclared<IMounts> {
-		return heldClassOf("mounts", { default: [], ...options }) as PassedDeclared<IMounts>;
+		return createHeldClass("mounts", { default: [], ...options }) as PassedDeclared<IMounts>;
 	},
 };
 
 export type IHost = ViewHost;
-export const IHost = passedClassOf("host") as PassedDeclared<IHost>;
+export const IHost = createPassedClass("host") as PassedDeclared<IHost>;
 export type INavigator = Navigation;
-export const INavigator = passedClassOf("navigator") as PassedDeclared<INavigator>;
+export const INavigator = createPassedClass("navigator") as PassedDeclared<INavigator>;
 export type IHere = Here | null;
-export const IHere = passedClassOf("here") as PassedDeclared<IHere>;
+export const IHere = createPassedClass("here") as PassedDeclared<IHere>;
 export type ICatalogue = WidgetCatalogue;
-export const ICatalogue = passedClassOf("catalogue") as PassedDeclared<ICatalogue>;
+export const ICatalogue = createPassedClass("catalogue") as PassedDeclared<ICatalogue>;
 export type IFoldIntoGroup = FoldIntoGroup;
-export const IFoldIntoGroup = passedClassOf("foldIntoGroup") as PassedDeclared<IFoldIntoGroup>;
+export const IFoldIntoGroup = createPassedClass("foldIntoGroup") as PassedDeclared<IFoldIntoGroup>;
 export type IConfigureMounts = ConfigureMounts;
-export const IConfigureMounts = passedClassOf("configureMounts") as PassedDeclared<IConfigureMounts>;
+export const IConfigureMounts = createPassedClass("configureMounts") as PassedDeclared<IConfigureMounts>;
 export type IContent = string | null;
-export const IContent = passedClassOf("content") as PassedDeclared<IContent>;
+export const IContent = createPassedClass("content") as PassedDeclared<IContent>;
 export type IReader = PassageReader;
-export const IReader = passedClassOf("reader") as PassedDeclared<IReader>;
+export const IReader = createPassedClass("reader") as PassedDeclared<IReader>;
 
 export function defineProps<const P extends DeclaredProps>(props: P): P {
 	refuseOutsideTheRoot(props);
@@ -285,10 +285,10 @@ export function manifestOfModule(module: DeclaredModule): Manifest | null {
 	const input = {
 		...card,
 		...module.layout,
-		...writtenPartsOf(props, described ?? {}),
-		...(module.migrations ? { migrate: module.migrations.map(writtenMigrationOf) } : {}),
+		...partsOfDeclared(props, described ?? {}),
+		...(module.migrations ? { migrate: module.migrations.map(migrationOfDeclared) } : {}),
 	};
-	return manifestOfWritten(input as unknown as Parameters<typeof manifestOfWritten>[0]);
+	return manifestOfDeclared(input as unknown as Parameters<typeof manifestOfDeclared>[0]);
 }
 
 export function isDeclaredProps(held: unknown): held is DeclaredProps {
@@ -340,13 +340,13 @@ function declaredClassOf(base: AbstractOf<IBaseGateway>, declaration: Declaratio
 	return Declared;
 }
 
-function heldClassOf(kind: "slot" | "mounts", held: Readonly<Record<string, unknown>>) {
+function createHeldClass(kind: "slot" | "mounts", held: Readonly<Record<string, unknown>>) {
 	abstract class Held extends IBaseGateway {}
 	Object.defineProperty(Held, DECLARATION, { value: { kind, schema: z.unknown(), writes: [], held } });
 	return Held;
 }
 
-function passedClassOf(passed: string) {
+function createPassedClass(passed: string) {
 	abstract class Passed extends IBaseGateway {}
 	Object.defineProperty(Passed, DECLARATION, { value: { kind: "passed", schema: z.unknown(), writes: [], passed } });
 	return Passed;

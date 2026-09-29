@@ -85,13 +85,13 @@ const NAMES_NOTHING = "This figure names no image.";
 const NOT_IN_VAULT = "{name} is not in this vault.";
 const CANNOT_BE_DRAWN = "{name} cannot be drawn here.";
 
-const trimmed = (held: unknown) => (typeof held === "string" ? held.trim() : "");
+const trimText = (held: unknown) => (typeof held === "string" ? held.trim() : "");
 
 const embedOf = (path: string) => `![[${path}]]`;
 
 function shownFigure(figure: Figure | null, navigation: Navigation, canDraw: boolean): Shown {
-	const image = trimmed(figure?.image);
-	const drawing = trimmed(figure?.drawing);
+	const image = trimText(figure?.image);
+	const drawing = trimText(figure?.drawing);
 	if (!image) return drawing ? { kind: "markdown", markdown: drawing } : { kind: "missing", said: NAMES_NOTHING };
 	if (!canDraw) return { kind: "missing", said: CANNOT_BE_DRAWN.replace("{name}", image) };
 	const found = navigation.canNavigate ? navigation.resolve(image) : image;
@@ -106,8 +106,8 @@ const ReportFigure = createWidget({
 		navigator: INavigator,
 	},
 	draw: ({ source, host, navigator }) => {
-		const caption = trimmed(source.caption);
-		const alt = trimmed(source.alt);
+		const caption = trimText(source.caption);
+		const alt = trimText(source.alt);
 		const shown = shownFigure(source, navigator, host.can.renderMarkdown);
 
 		return (

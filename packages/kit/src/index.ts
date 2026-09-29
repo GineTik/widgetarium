@@ -86,7 +86,7 @@ import { FLAME, Flame } from "./components/flame";
 import { Line } from "./components/line";
 import { MoreWhenSeen } from "./components/more-when-seen";
 import { RenderedMarkdown } from "./components/rendered-markdown";
-import { useMarkdownRenderedInto } from "./hooks/use-markdown-rendered-into";
+import { useRendersMarkdownInto } from "./hooks/use-renders-markdown-into";
 import { useNow } from "./hooks/use-now";
 import { usePages } from "./hooks/use-pages";
 import { useScrollFog } from "./hooks/use-scroll-fog";
@@ -213,7 +213,7 @@ export const Kit = {
 	Line,
 	MoreWhenSeen,
 	RenderedMarkdown,
-	useMarkdownRenderedInto,
+	useRendersMarkdownInto,
 	useNow,
 	usePages,
 	useScrollFog,
@@ -251,7 +251,7 @@ export { Progress, ProgressBar, StatusProgress } from "./components/progress";
 export { Segmented, Tabs } from "./components/segmented";
 
 export { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
-export { Slot, Slottable, composeRefs, slotted } from "./components/slot";
+export { Slot, Slottable, composeRefs, createSlotPart } from "./components/slot";
 export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
 
 export {
@@ -317,8 +317,8 @@ export { FLAME, Flame } from "./components/flame";
 export { Line } from "./components/line";
 export { MoreWhenSeen } from "./components/more-when-seen";
 export { RenderedMarkdown } from "./components/rendered-markdown";
-export { useMarkdownRenderedInto } from "./hooks/use-markdown-rendered-into";
-export type { MarkdownHost } from "./hooks/use-markdown-rendered-into";
+export { useRendersMarkdownInto } from "./hooks/use-renders-markdown-into";
+export type { MarkdownHost } from "./hooks/use-renders-markdown-into";
 export { useNow } from "./hooks/use-now";
 export { usePages } from "./hooks/use-pages";
 export { useScrollFog } from "./hooks/use-scroll-fog";

@@ -1,10 +1,53 @@
 import { collectionGateway, valueGateway } from "./create";
 import { stableKey } from "./cache";
-import { coercedOne } from "./mapped";
+import { coerceOne } from "./mapped";
+
+export const NOTE_CONTENT = "content";
+
+export const NOTE_NAME = "name";
+
+const NOTE_PARTS = {
+	[NOTE_CONTENT]: (record) => record.content,
+	[NOTE_NAME]: (record) => record.name,
+};
+
+export function folderGateway({ host, path, baked = {}, requested = [] }) {
+	const slot = host.slot({ kind: "folder", path });
+	return collectionGateway({
+		id: folderIdPerReading(path, baked),
+		handlers: { ...folderReads(slot, baked), ...folderWrites(slot) },
+		requested,
+		subscribe: slot.canSubscribe
+			? (listener) => slot.subscribe((event) => listener({ refs: event?.path ? [event.path] : undefined }))
+			: undefined,
+	});
+}
+
+export function noteFieldOf(spec, config) {
+	if (spec?.kind !== "value" || !spec.type) return config?.field;
+	return config?.field ?? NOTE_CONTENT;
+}
+
+export function fieldOfNote(record, field, type) {
+	if (!record || !field) return record;
+	return coerceOne(partOfNote(record, field), type);
+}
+
+export function fileGateway({ host, path, part = {}, requested = [] }) {
+	const { field, type } = part;
+	const handlers = noteHandlers(host.file?.(path), field, type);
+
+	return valueGateway({
+		id: field ? `file:${path}#${field}` : `file:${path}`,
+		handlers,
+		requested,
+		subscribe: host.watchFile ? (listener) => host.watchFile(path, () => listener({ refs: [path] })) : undefined,
+	});
+}
 
 const toRow = (record) => ({ ...record, ref: record.path });
 
-function bakedQuery(baked, query) {
+function bakeQuery(baked, query) {
 	const asked = query ?? {};
 	const where = [...(baked.where ?? []), ...(asked.where ?? [])];
 	const sort = asked.sort?.length ? asked.sort : (baked.sort ?? []);
@@ -14,7 +57,7 @@ function bakedQuery(baked, query) {
 function folderReads(slot, baked) {
 	return {
 		list: async (query) => {
-			const result = await slot.list(bakedQuery(baked, query));
+			const result = await slot.list(bakeQuery(baked, query));
 			return { rows: result.rows.map(toRow), total: result.total, duplicates: result.duplicates ?? [] };
 		},
 		get: async (ref) => {
@@ -50,39 +93,8 @@ function folderWrites(slot) {
 	return handlers;
 }
 
-export function folderGateway({ host, path, baked = {}, requested = [] }) {
-	const slot = host.slot({ kind: "folder", path });
-	return collectionGateway({
-		// CONTEXT: the baked query is identity — two widgets over one folder share a cache only when they read it the same way
-		id: `folder:${path}?${stableKey(baked)}`,
-		handlers: { ...folderReads(slot, baked), ...folderWrites(slot) },
-		requested,
-		subscribe: slot.canSubscribe
-			? (listener) => slot.subscribe((event) => listener({ refs: event?.path ? [event.path] : undefined }))
-			: undefined,
-	});
-}
-
-export const NOTE_CONTENT = "content";
-export const NOTE_NAME = "name";
-
-const NOTE_PARTS = {
-	[NOTE_CONTENT]: (record) => record.content,
-	[NOTE_NAME]: (record) => record.name,
-};
-
-export function noteFieldOf(spec, config) {
-	if (spec?.kind !== "value" || !spec.type) return config?.field;
-	return config?.field ?? NOTE_CONTENT;
-}
-
 function partOfNote(record, field) {
 	return Object.hasOwn(NOTE_PARTS, field) ? NOTE_PARTS[field](record) : record.props?.[field];
-}
-
-export function fieldOfNote(record, field, type) {
-	if (!record || !field) return record;
-	return coercedOne(partOfNote(record, field), type);
 }
 
 function noteHandlers(solo, field, type) {
@@ -93,14 +105,6 @@ function noteHandlers(solo, field, type) {
 	return { get, update: (content) => solo.update(content) };
 }
 
-export function fileGateway({ host, path, part = {}, requested = [] }) {
-	const { field, type } = part;
-	const handlers = noteHandlers(host.file?.(path), field, type);
-
-	return valueGateway({
-		id: field ? `file:${path}#${field}` : `file:${path}`,
-		handlers,
-		requested,
-		subscribe: host.watchFile ? (listener) => host.watchFile(path, () => listener({ refs: [path] })) : undefined,
-	});
+function folderIdPerReading(path, baked) {
+	return `folder:${path}?${stableKey(baked)}`;
 }

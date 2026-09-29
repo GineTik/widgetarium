@@ -25,8 +25,8 @@ export function compatibility(from, to) {
 	};
 }
 
-export function movedTileProps(props, verdict) {
-	const renamed = renamedConfig(props ?? {}, verdict.changes);
+export function moveTileProps(props, verdict) {
+	const renamed = renameConfig(props ?? {}, verdict.changes);
 	if (!verdict.migration) return renamed;
 	return { ...renamed, ...verdict.migration.run(renamed) };
 }
@@ -75,7 +75,7 @@ const sameProps = (from, props) =>
 
 const tilesCanMove = (breaking, migration) => migration !== null || breaking.every((change) => change.implicit);
 
-function renamedConfig(props, changes) {
+function renameConfig(props, changes) {
 	const moved = { ...props };
 	for (const change of changes.filter((held) => held.kind === "renamed")) {
 		if (moved[change.prop] === undefined) continue;

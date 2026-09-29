@@ -29,10 +29,10 @@ export async function filesIn(at) {
 }
 
 export async function widgetFilesIn(folder) {
-	return [...new Set([...(await filesIn(folder)), ...(await widgetModulesUnder(folder, listedIn))])];
+	return [...new Set([...(await filesIn(folder)), ...(await widgetModulesUnder(folder, listFolder))])];
 }
 
-export async function listedIn(at) {
+export async function listFolder(at) {
 	return { files: (await filesIn(at)).map((name) => join(at, name)), folders: await foldersIn(at) };
 }
 

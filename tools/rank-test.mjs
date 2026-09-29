@@ -149,11 +149,11 @@ check(
 );
 check(
 	"a renumber lays whole numbers in the order given",
-	lib.renumbered(rowsOf([{ name: "a" }, { name: "b" }])).map((row) => row.order),
+	lib.renumber(rowsOf([{ name: "a" }, { name: "b" }])).map((row) => row.order),
 	[1, 2],
 );
 
-const moved = lib.placedAt(CARDS, CARDS[0], 3);
+const moved = lib.placeAt(CARDS, CARDS[0], 3);
 check(
 	"a card put at an index leaves its old place",
 	moved.map((row) => row.name),
@@ -162,7 +162,7 @@ check(
 check(
 	"an index past the end lands at the end",
 	lib
-		.placedAt(CARDS, CARDS[0], 99)
+		.placeAt(CARDS, CARDS[0], 99)
 		.map((row) => row.name)
 		.slice(-1),
 	["Pizza"],

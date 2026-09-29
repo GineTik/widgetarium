@@ -30,7 +30,7 @@ export async function layAgentFiles(adapter) {
 	for (const [name, text] of Object.entries(HANDBOOK)) {
 		if (await writeIfChanged(adapter, `${HANDBOOK_DIR}/${name}`, text)) written.push(name);
 	}
-	written.push(...(await sweptOfPagesNoLongerLaid(adapter)));
+	written.push(...(await sweepPagesNoLongerLaid(adapter)));
 	if (await writeIfChanged(adapter, TOOL_PATH, WIDGETS_CLI)) written.push("widgets.mjs");
 	written.push(...(await layWidgetTypes(adapter)));
 	return written;
@@ -38,7 +38,7 @@ export async function layAgentFiles(adapter) {
 
 // TRADE-OFF: only markdown beside the pages and the one folder this file used to lay, because the
 // TRADE-OFF: agent keeps its own measurements under the same roof and a wider sweep would eat them
-async function sweptOfPagesNoLongerLaid(adapter) {
+async function sweepPagesNoLongerLaid(adapter) {
 	const gone = [];
 	if (await adapter.exists(PAGES_LAID_BEFORE)) {
 		await adapter.rmdir(PAGES_LAID_BEFORE, true);

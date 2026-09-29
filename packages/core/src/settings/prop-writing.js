@@ -46,7 +46,7 @@ export function blankValue(spec) {
 	return spec.kind === "value" ? "" : [];
 }
 
-export function typedAs(spec, typed) {
+export function parseTyped(spec, typed) {
 	return spec.type === "number" ? Number(typed) : typed.trim();
 }
 

@@ -1,11 +1,11 @@
 import { createElement as h } from "react";
 import { Card } from "@widgetarium/kit";
 
-export function rootedWidget(drawn) {
+export function rootWidget(drawn) {
 	return h("div", { className: "wg-widget-root" }, drawn);
 }
 
-export function surfacedSlot(draw, { surface, isCard }) {
+export function withSlotSurface(draw, { surface, isCard }) {
 	const drawn = isCard ? (given) => h(Card, { type: surface, className: "wg-slot" }, draw(given)) : draw;
 	return Object.assign(drawn, { surface, isCard });
 }

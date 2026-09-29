@@ -1,6 +1,6 @@
-import { wiredTiles } from "../engine/wiring.js";
-import { insertedAt, isBox, leavesOf, nodeAt, pathKey, withHolds, withoutLeaf } from "../tree.js";
-import { bornTileId, layoutWithSwap, swapOfViews, swapsStanding, viewTiles } from "./fold-views.js";
+import { wireTiles } from "../engine/wiring.js";
+import { insertAt, isBox, leavesOf, nodeAt, pathKey, withHolds, withoutLeaf } from "../tree.js";
+import { mintTileId, layoutWithSwap, swapOfViews, swapsStanding, viewTiles } from "./fold-views.js";
 
 const NO_VIEWS_TO_FOLD =
 	"Widgetarium: this board holds no widget that names itself a view, so there was nothing to fold.";
@@ -20,7 +20,7 @@ export function boardEdits({ boardAsItStands, onChange, registry }) {
 		patchTile: (id, patch) => commitBoard((now) => withTilePatched(now, id, patch)),
 		removeTile: (id) => commitBoard((now) => withoutTile(now, id)),
 		addTileInto: (widgetId, path) => commitBoard((now) => withTileAdded(now, widgetId, path, registry)),
-		foldIntoGroup: () => foldedIntoGroup(commitBoard, registry),
+		foldIntoGroup: () => foldIntoGroup(commitBoard, registry),
 	};
 }
 
@@ -47,24 +47,24 @@ function withTileAdded(board, widgetId, path, registry) {
 		console.warn(NO_BOX_TO_ADD_INTO.replace("{path}", pathKey(path)));
 		return null;
 	}
-	const { id, tiles } = bornTile(board, widgetId, registry);
-	return { ...board, tiles, layout: insertedAt(board.layout, path, box.of.length, { id, ratio: 1 }) };
+	const { id, tiles } = createTile(board, widgetId, registry);
+	return { ...board, tiles, layout: insertAt(board.layout, path, box.of.length, { id, ratio: 1 }) };
 }
 
-function bornTile(board, widgetId, registry) {
-	const id = bornTileId();
+function createTile(board, widgetId, registry) {
+	const id = mintTileId();
 	const widget = registry.tileRefOf?.(widgetId) ?? widgetId;
-	return { id, tiles: wiredTiles([...board.tiles, { id, widget }], registry, swapsStanding(board.layout)) };
+	return { id, tiles: wireTiles([...board.tiles, { id, widget }], registry, swapsStanding(board.layout)) };
 }
 
-function foldedIntoGroup(commitBoard, registry) {
+function foldIntoGroup(commitBoard, registry) {
 	let folded = false;
 	commitBoard((now) => {
 		const moved = viewTiles(now.tiles, registry);
 		if (moved.length === 0) return null;
 		folded = true;
-		const layout = layoutWithSwap(now.layout, moved, swapOfViews(moved, registry, bornTileId()));
-		return { ...now, tiles: wiredTiles(now.tiles, registry, swapsStanding(layout)), layout };
+		const layout = layoutWithSwap(now.layout, moved, swapOfViews(moved, registry, mintTileId()));
+		return { ...now, tiles: wireTiles(now.tiles, registry, swapsStanding(layout)), layout };
 	});
 	if (!folded) console.warn(NO_VIEWS_TO_FOLD);
 	return folded;

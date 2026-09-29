@@ -8,7 +8,7 @@ export function resolveGateway(context) {
 		return resolveHostGateway(context);
 	} catch (failure) {
 		console.error(`[widgetarium] prop "${context.name}" could not be bound`, failure);
-		return unboundGateway(context, String(failure?.message ?? failure));
+		return createUnboundGateway(context, String(failure?.message ?? failure));
 	}
 }
 
@@ -16,7 +16,7 @@ export function propSchemaOf(definition, name) {
 	return declarationIn(definition?.component?.declared?.[name])?.schema;
 }
 
-function unboundGateway({ tile, name, spec }, reason) {
+function createUnboundGateway({ tile, name, spec }, reason) {
 	const refuse = () => {
 		throw new Error(reason);
 	};

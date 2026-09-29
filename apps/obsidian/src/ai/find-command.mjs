@@ -1,5 +1,5 @@
 import { readingOfProp, wrapOf, READINGS } from "@widgetarium/core/reading.js";
-import { cardIn, matches, pagedOf } from "./entries.mjs";
+import { cardIn, matches, pageRows } from "./entries.mjs";
 
 const SCORE_NEEDS_EXACT = 40;
 const SCORE_NEEDS_COMPATIBLE = 15;
@@ -10,12 +10,12 @@ const WILDCARD_FIELD_TYPE = "text";
 
 export const READING_KINDS = READINGS.join(" | ");
 
-export async function rankedWidgets(asked, options) {
-	const entries = narrowed(asked, options);
+export async function rankWidgets(asked, options) {
+	const entries = narrowEntries(asked, options);
 	const rows = [];
-	for (const entry of entries) rows.push(scoredEntry(entry, await cardIn(entry.folder), options));
+	for (const entry of entries) rows.push(scoreEntry(entry, await cardIn(entry.folder), options));
 	rows.sort((one, other) => other.score - one.score || one.id.localeCompare(other.id));
-	const { offset, limit, page } = pagedOf(rows, options);
+	const { offset, limit, page } = pageRows(rows, options);
 	const text = [
 		`${rows.length} widgets ranked, showing ${page.length} from ${offset}`,
 		...page.map(
@@ -26,12 +26,12 @@ export async function rankedWidgets(asked, options) {
 	return { value: { total: rows.length, offset, limit, widgets: page }, text };
 }
 
-export function refusedReading(asked) {
+export function refuseReading(asked) {
 	if (typeof asked !== "string" || READINGS.includes(asked)) return null;
 	return `${asked} is not a reading; the five are ${READING_KINDS}.`;
 }
 
-function narrowed(entries, options) {
+function narrowEntries(entries, options) {
 	const asked = [
 		options.source === "installed" && ((entry) => entry.installed),
 		options.source === "offered" && ((entry) => !entry.installed),
@@ -46,11 +46,11 @@ function namesTag(entry, tag) {
 	return (entry.keywords ?? []).some((word) => word.toLowerCase() === String(tag).toLowerCase());
 }
 
-function scoredEntry(entry, card, options) {
+function scoreEntry(entry, card, options) {
 	const readings = readingsIn(card);
 	const types = typesIn(card);
 	const scored = [
-		...neededTypes(options.needs).map((type) => needScore(type, types)),
+		...parseNeededTypes(options.needs).map((type) => needScore(type, types)),
 		roleScore(card, options.role),
 		readingScore(readings, options.reading),
 		aboutScore(entry, options),
@@ -100,7 +100,7 @@ function readingsIn(card) {
 	return new Set(Object.values(card?.props ?? {}).map((prop) => readingOfProp(prop)));
 }
 
-function neededTypes(value) {
+function parseNeededTypes(value) {
 	return String(value ?? "")
 		.split(",")
 		.map((word) => word.trim().toLowerCase())

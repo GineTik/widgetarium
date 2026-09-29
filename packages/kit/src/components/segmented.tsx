@@ -3,7 +3,7 @@ import { createElement as h } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
 import { useSegmentedThumb } from "../hooks/use-segmented-thumb";
 import { cn } from "../utils/cn";
-import { steppedIndex } from "../utils/roving";
+import { stepIndex } from "../utils/roving";
 
 const STEP_OF_KEY = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, Home: "first", End: "last" };
 
@@ -30,7 +30,7 @@ export function Segmented({
 		const step = STEP_OF_KEY[event.key];
 		if (step === undefined) return;
 		event.preventDefault();
-		const next = steppedIndex(
+		const next = stepIndex(
 			items.findIndex((item) => item.value === current),
 			step,
 			items.length,

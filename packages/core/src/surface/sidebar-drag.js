@@ -1,4 +1,4 @@
-import { sidebarWidth, widenedBox, withWidth } from "../tree.js";
+import { sidebarWidth, widenBox, withWidth } from "../tree.js";
 
 export function sidebarGrip({ width, commitLayout }, { sidebarRef, pageRef }, root) {
 	return (at, toward) => (event) => {
@@ -44,7 +44,7 @@ function sidebarRecipe({ root, at, toward, event, width, pageRef }) {
 	const node = pageRef.current?.querySelector(`.wg-tree-region[data-region="${at}"]`);
 	const wantedAt = (pointer) => held + (pointer.clientX - grabbed) * toward;
 	return {
-		read: (pointer, give) => widenedBox(root, at, { wantedPx: wantedAt(pointer), width, give }),
+		read: (pointer, give) => widenBox(root, at, { wantedPx: wantedAt(pointer), width, give }),
 		paint: (given) => {
 			if (node) node.style.flexBasis = `${given}px`;
 		},

@@ -1,8 +1,15 @@
-import { colorOf, contrastOf, lightnessOf, over } from "./color-math.js";
+import { colorOf } from "./color-math.js";
+import {
+	depthReason,
+	measuredTileOf,
+	presetColour,
+	standsOutReason,
+	tileReasons,
+	WHITE,
+} from "./surface-tile-reasons.js";
 import {
 	DEFAULT_STYLE,
 	isKnownRole,
-	MAX_SURFACE_DEPTH,
 	EARNED_BY_LIST,
 	mayWearInside,
 	plateRefusal,
@@ -23,7 +30,7 @@ import {
 	NO_SURFACE,
 	REGION_PAD_PX,
 	regionSurfaceOf,
-	replacedAt,
+	replaceAt,
 	ROW,
 	SIDES,
 	withoutSurface,
@@ -33,13 +40,8 @@ import {
 	TEXT_ROLE,
 } from "./tree.js";
 
-const LIGHTNESS_STEP = 2;
-const TEXT_CONTRAST = 4.5;
-const FAINT_TEXT_KEEPS = 0.85;
 const FILLS_ITS_PARENT = 0.88;
 const REGION_CHILD_DEPTH = 2;
-
-const NO_WIDGETS = () => null;
 
 export function widgetOfTiles(tiles) {
 	const widgets = new Map(tiles.map((tile) => [tile.id, tile.widget]));
@@ -68,39 +70,20 @@ export function surfaceChoicesAt(layout, path, widgetOf = NO_WIDGETS) {
 }
 
 // TRADE-OFF: the check lives inside the write, so no caller may decide and write separately — it costs a second walk of the tree the picker already walked
-export function wornSurfaceAt(layout, path, surface, side, widgetOf = NO_WIDGETS) {
+export function wearSurfaceAt(layout, path, surface, side, widgetOf = NO_WIDGETS) {
 	const node = nodeAt(layout, path);
 	if (!node) return { layout, refusal: { reason: NOTHING_THERE } };
 	const already = wrongNow(layout, widgetOf);
 	const refusal = introducedFinding(layout, path, { surface, side }, { already, widgetOf });
 	if (refusal) return { layout, refusal };
-	return { layout: replacedAt(layout, path, surfaced(node, surface, side)), refusal: null };
+	return { layout: replaceAt(layout, path, withSurface(node, surface, side)), refusal: null };
 }
-
-function introducedFinding(layout, path, worn, { already, widgetOf }) {
-	const node = nodeAt(layout, path);
-	if (!node) return null;
-	const would = replacedAt(layout, path, surfaced(node, worn.surface, worn.side));
-	return nestingFindings(would, widgetOf).find((one) => !already.has(identityOf(one))) ?? null;
-}
-
-function wrongNow(layout, widgetOf) {
-	return new Set(nestingFindings(layout, widgetOf).map(identityOf));
-}
-
-const identityOf = (finding) => `${finding.path.join("/")}:${finding.law}:${finding.reason}`;
 
 const NOTHING_THERE = "nothing stands there any more, so its surface was left alone";
 
 // TRADE-OFF: a law's letter is the agent's vocabulary, not a person's, so the reason says itself and the letter stays on the finding for the CLI
 export function saidRefusal(refusal) {
 	return `${refusal.reason.charAt(0).toUpperCase()}${refusal.reason.slice(1)}.`;
-}
-
-function surfaced(node, surface, side) {
-	const bare = withoutSurface(node);
-	if (surface === NO_SURFACE) return bare;
-	return { ...bare, surface, ...(surface === APART && SIDES.includes(side) ? { side } : {}) };
 }
 
 export function nestingFindings(layout, widgetOf = NO_WIDGETS) {
@@ -191,7 +174,7 @@ function verdictFor(walk, box, where, { at, path }) {
 		role,
 		...(child.purpose ? { purpose: child.purpose } : {}),
 		now: child.surface ?? NO_SURFACE,
-		...decided(walk, box, where, { at, role }),
+		...decideVerdict(walk, box, where, { at, role }),
 	};
 }
 
@@ -208,7 +191,7 @@ function whereUnder(where, verdict) {
 
 const nothing = (law, reason) => ({ advised: NO_SURFACE, law, reason, candidates: [] });
 
-function decided(walk, box, where, { at, role }) {
+function decideVerdict(walk, box, where, { at, role }) {
 	const child = box.of[at];
 	const missing = missingDeclaration(walk, child, role);
 	if (missing) return nothing("R1", missing);
@@ -217,10 +200,10 @@ function decided(walk, box, where, { at, role }) {
 		return nothing("R2", `a ${role} wears no surface of its own; it stands in the group it serves`);
 	if (role === "navigation") return navigationVerdict(box, at, where.edges);
 	if (box.of.length === 1) return nothing("2", "it stands alone in its box, and the box already sets it apart");
-	return placed(walk, box, child, role, where);
+	return judgePlacement(walk, box, child, role, where);
 }
 
-function placed(walk, box, child, role, where) {
+function judgePlacement(walk, box, child, role, where) {
 	const earned = repeatEarning(child, box.of, walk.widgetOf);
 	if (!earned) return nothing("R", "it stands alone, and only a repeat earns a plate: a heading and the step group it");
 	if (role === "collection" && where.underSurface !== NO_SURFACE)
@@ -242,7 +225,7 @@ function placed(walk, box, child, role, where) {
 			"N",
 			`a ${role} wears ${worn.join(" or ")}, and none of them may stand inside a ${where.underSurface}`,
 		);
-	return carded(walk, child, where, offered);
+	return chooseCardSurface(walk, child, where, offered);
 }
 
 function headingReading(path, at) {
@@ -306,8 +289,8 @@ function navigationVerdict(box, at, edges) {
 	};
 }
 
-function carded(walk, child, where, offered) {
-	const candidates = offered.map((surface) => judged(walk, child, surface, where));
+function chooseCardSurface(walk, child, where, offered) {
+	const candidates = offered.map((surface) => judgeSurface(walk, child, surface, where));
 	const chosen = candidates.find((one) => one.passes);
 	if (!chosen) return { ...nothing("10", "no surface passed every law, so it stands without one"), candidates };
 	return {
@@ -319,7 +302,7 @@ function carded(walk, child, where, offered) {
 	};
 }
 
-function judged(walk, child, surface, where) {
+function judgeSurface(walk, child, surface, where) {
 	if (!walk.measured)
 		return {
 			surface,
@@ -339,70 +322,23 @@ function judged(walk, child, surface, where) {
 	return { surface, colour, passes: reasons.every((one) => one.startsWith("+")), reasons };
 }
 
-function depthReason(tiles, levels) {
-	const unmeasured = tiles.filter((tile) => !tile.measured).map((tile) => tile.id);
-	if (unmeasured.length > 0) return `- ${unmeasured.join(", ")} not measured yet, so its depth is unknown (law 10)`;
-	const deepest = Math.max(0, ...tiles.map((tile) => tile.measured.depth));
-	const total = levels + 1 + deepest;
-	if (total > MAX_SURFACE_DEPTH)
-		return `- ${total} containers deep: ${levels} surface(s) above, this one, ${deepest} inside the widgets (law 5 allows ${MAX_SURFACE_DEPTH})`;
-	return `+ ${total} of ${MAX_SURFACE_DEPTH} containers deep (law 5)`;
+const NO_WIDGETS = () => null;
+
+function introducedFinding(layout, path, worn, { already, widgetOf }) {
+	const node = nodeAt(layout, path);
+	if (!node) return null;
+	const would = replaceAt(layout, path, withSurface(node, worn.surface, worn.side));
+	return nestingFindings(would, widgetOf).find((one) => !already.has(identityOf(one))) ?? null;
 }
 
-function standsOutReason(colour, under) {
-	const step = stepBetween(colour, under);
-	return step >= LIGHTNESS_STEP
-		? `+ ${round(step)} from what it stands on (law 6)`
-		: `- only ${round(step)} from what it stands on, under ${LIGHTNESS_STEP} (law 6)`;
+function wrongNow(layout, widgetOf) {
+	return new Set(nestingFindings(layout, widgetOf).map(identityOf));
 }
 
-function textShortfall(ink, surface, page) {
-	const onSurface = contrastOf(over(ink, surface), surface);
-	const onPage = contrastOf(over(ink, page), page);
-	const floor = onPage >= TEXT_CONTRAST ? TEXT_CONTRAST : onPage * FAINT_TEXT_KEEPS;
-	return onSurface < floor ? { onSurface, floor } : null;
-}
+const identityOf = (finding) => `${finding.path.join("/")}:${finding.law}:${finding.reason}`;
 
-function tileReasons({ id, measured }, colour, page) {
-	if (!measured) return [];
-	const fills = measured.fills
-		.map((fill) => ({ ...fill, step: stepBetween(over(colorOf(fill.color) ?? WHITE, colour), colour) }))
-		.filter((fill) => fill.step < LIGHTNESS_STEP)
-		.map((fill) => `- ${id} holds a ${fill.kind} only ${round(fill.step)} from this surface (law 7)`);
-	const texts = measured.texts
-		.map((text) => textShortfall(colorOf(text) ?? WHITE, colour, page))
-		.filter(Boolean)
-		.map(
-			(short) =>
-				`- ${id} has text at ${round(short.onSurface)}:1 on this surface, under the ${round(short.floor)}:1 it must keep (law 8)`,
-		);
-	if (fills.length === 0 && texts.length === 0)
-		return [`+ ${id}: its fills stand apart and its text reads (laws 7, 8)`];
-	return [...fills, ...texts];
-}
-
-function presetColour(measured, { under, underSurface }) {
-	const token = isPainted({ surface: underSurface }) ? measured?.presets?.inset : measured?.presets?.fill;
-	return over(colorOf(token) ?? WHITE, under);
-}
-
-function measuredTileOf(raw) {
-	if (!Number.isFinite(raw?.depth)) return null;
-	const fills = Array.isArray(raw.fills)
-		? raw.fills
-				.filter((fill) => colorOf(fill?.color))
-				.map((fill) => ({ kind: fill.kind ?? fill.role, color: fill.color }))
-		: [];
-	const texts = Array.isArray(raw.texts) ? raw.texts.filter((text) => colorOf(text)) : [];
-	return { depth: raw.depth, fills, texts };
-}
-
-const WHITE = { r: 1, g: 1, b: 1, a: 1 };
-
-function round(value) {
-	return Math.round(value * 10) / 10;
-}
-
-function stepBetween(one, other) {
-	return Math.abs(lightnessOf(one) - lightnessOf(other));
+function withSurface(node, surface, side) {
+	const bare = withoutSurface(node);
+	if (surface === NO_SURFACE) return bare;
+	return { ...bare, surface, ...(surface === APART && SIDES.includes(side) ? { side } : {}) };
 }

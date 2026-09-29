@@ -20,12 +20,19 @@ export const templatePlaceholders = () => [
 	...new Set([...`${BRIEF}\n${CHAT_BRIEF}`.matchAll(PLACEHOLDER)].map((found) => found[1])),
 ];
 
-function pagesSent() {
+// TRADE-OFF: only the template is substituted, never the handbook after it, so a page that comes
+// TRADE-OFF: to hold {vault} in an example is printed as written instead of silently rewritten
+export function briefFor({ paths, note, publishWidgets, canEdit = true }) {
+	if (!canEdit) return [substitutePaths(CHAT_BRIEF, paths), noteNamed(note)].join("\n\n");
+	return [substitutePaths(BRIEF, paths), handbookInFull(), thisRun(note, publishWidgets)].join("\n\n");
+}
+
+function pagesToSend() {
 	return Object.entries(HANDBOOK).filter(([name]) => !LEFT_ON_DISK.includes(name));
 }
 
 function handbookInFull() {
-	return `=== HANDBOOK ===\n\n${pagesSent()
+	return `=== HANDBOOK ===\n\n${pagesToSend()
 		.map(([name, text]) => `=== HANDBOOK PAGE: ${name} ===\n\n${text}`)
 		.join("\n\n")}`;
 }
@@ -56,7 +63,7 @@ function thisRun(note, publishWidgets) {
 
 // TRADE-OFF: the template names what it needs, so a brief asking for one path is not made to
 // TRADE-OFF: carry five, and a path nobody renders is never a reason to refuse
-function substituted(template, paths) {
+function substitutePaths(template, paths) {
 	let said = template;
 	for (const name of [...new Set([...template.matchAll(PLACEHOLDER)].map((found) => found[1]))]) {
 		const value = paths?.[name];
@@ -64,11 +71,4 @@ function substituted(template, paths) {
 		said = said.replaceAll(`{${name}}`, value);
 	}
 	return said;
-}
-
-// TRADE-OFF: only the template is substituted, never the handbook after it, so a page that comes
-// TRADE-OFF: to hold {vault} in an example is printed as written instead of silently rewritten
-export function briefFor({ paths, note, publishWidgets, canEdit = true }) {
-	if (!canEdit) return [substituted(CHAT_BRIEF, paths), noteNamed(note)].join("\n\n");
-	return [substituted(BRIEF, paths), handbookInFull(), thisRun(note, publishWidgets)].join("\n\n");
 }

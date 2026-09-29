@@ -3,7 +3,7 @@ import { refsOfFields, whereOf } from "../engine/host-gateways.js";
 import { refOf, refsWithin } from "../gateway/refs.js";
 import { mountsCollection } from "./mounts.js";
 import { propSchemaOf, resolveGateway } from "./prop-gateway.js";
-import { useDroppedOnUnmount } from "./use-dropped-on-unmount.js";
+import { useDropsOnUnmount } from "./use-drops-on-unmount.js";
 import { RESERVED_PROPS } from "./widget-host.js";
 
 export function useHostGateways({ definition, tile, host, refs, cellFor, patchProp }, mounts) {
@@ -11,7 +11,7 @@ export function useHostGateways({ definition, tile, host, refs, cellFor, patchPr
 	propsRef.current = tile.props ?? {};
 	const gateways = gatewaysOf({ definition, tile, host, refs, cellFor, patchProp, propsRef }, mounts);
 	publishGateways(gateways, definition.manifest, tile, refs);
-	useDroppedOnUnmount(
+	useDropsOnUnmount(
 		refs,
 		Object.entries(gateways).map(([name, gateway]) => [refOf(tile.id, name), gateway]),
 	);

@@ -1,5 +1,5 @@
 import { createElement as h, useEffect, useMemo, useRef } from "react";
-import { drawnWidget } from "@widgetarium/core/mounted.js";
+import { drawWidget } from "@widgetarium/core/mounted.js";
 import { arrayGateway, soloGateway } from "@widgetarium/core/gateway/create.ts";
 import { TASK_PROGRESS } from "./builds.js";
 
@@ -14,7 +14,7 @@ export function BuildProgress({ build, progress, openByBuild }) {
 			progress?.refusal ? h("span", { key: "why", className: "wg-ai-build-why" }, progress.refusal) : null,
 		]);
 	}
-	return h("div", { className: "wg-ai-build" }, drawnWidget(progress.definition, gateways));
+	return h("div", { className: "wg-ai-build" }, drawWidget(progress.definition, gateways));
 }
 
 function useProgressGateways(build, openByBuild) {
@@ -37,10 +37,10 @@ function useProgressGateways(build, openByBuild) {
 function progressGateways(key, latest, openByBuild, listeners) {
 	const held = { id: `ai-build/${key}`, latest, subscribe: subscriberTo(listeners) };
 	return {
-		title: heldField(held, "title"),
-		startedAt: heldField(held, "startedAt"),
-		endedAt: heldField(held, "endedAt"),
-		steps: heldSteps(held),
+		title: createFieldGateway(held, "title"),
+		startedAt: createFieldGateway(held, "startedAt"),
+		endedAt: createFieldGateway(held, "endedAt"),
+		steps: createStepsGateway(held),
 		open: openGateway(held.id, key, openByBuild),
 	};
 }
@@ -52,11 +52,11 @@ function subscriberTo(listeners) {
 	};
 }
 
-function heldField({ id, latest, subscribe }, field) {
+function createFieldGateway({ id, latest, subscribe }, field) {
 	return soloGateway(() => latest.current[field], {}, `${id}/${field}`, { subscribe });
 }
 
-function heldSteps({ id, latest, subscribe }) {
+function createStepsGateway({ id, latest, subscribe }) {
 	return arrayGateway(() => latest.current.steps, {}, `${id}/steps`, { subscribe });
 }
 

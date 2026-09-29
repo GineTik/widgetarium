@@ -155,7 +155,7 @@
 		"use-behind.ts",
 		"use-following.ts",
 		"use-patience.ts",
-		"use-stuck-to-end.ts"
+		"use-sticks-to-end.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/log-line"]

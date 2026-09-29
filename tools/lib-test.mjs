@@ -155,7 +155,7 @@ const check = (name, got, want) => {
 			`from "${sourceAt("packages/core/src/gateway/match.ts")}"`,
 		),
 	);
-	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf } = await import(`file://${copy}`);
+	const { daysLogged, pressing, readLog, shapeOf, shiftBy, streakOf } = await import(`file://${copy}`);
 
 	const habits = [
 		{ path: "Habits/Exercise.md", name: "Exercise", days: ["2026-08-29", "2026-08-30", "2026-08-31"] },
@@ -183,9 +183,9 @@ const check = (name, got, want) => {
 	check("a tick counts as one", readLog(daily).at(-1).value, 1);
 
 	const run = readLog(habits, { pick: "Exercise" });
-	check("a day shifted forward crosses the month end", shiftedBy("2026-08-31", 1), "2026-09-01");
-	check("and shifted back crosses it the other way", shiftedBy("2026-09-01", -1), "2026-08-31");
-	check("shifted by nothing is the same day", shiftedBy("2026-09-01", 0), "2026-09-01");
+	check("a day shifted forward crosses the month end", shiftBy("2026-08-31", 1), "2026-09-01");
+	check("and shifted back crosses it the other way", shiftBy("2026-09-01", -1), "2026-08-31");
+	check("shifted by nothing is the same day", shiftBy("2026-09-01", 0), "2026-09-01");
 
 	check("three days in a row is a run of three", streakOf(run, { today: "2026-08-31" }).best, 3);
 	check("and it is alive the day after the last one", streakOf(run, { today: "2026-09-01" }).current, 3);

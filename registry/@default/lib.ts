@@ -52,7 +52,7 @@ export function isoOf(date: Date): string {
 }
 
 // TRADE-OFF: UTC, while isoOf reads a Date in local time — a date-only shift must not drift over a DST seam
-export function shiftedBy(iso: string, days: number): string {
+export function shiftBy(iso: string, days: number): string {
 	const when = new Date(Date.parse(`${iso}T00:00:00Z`));
 	when.setUTCDate(when.getUTCDate() + days);
 	return when.toISOString().slice(0, 10);
@@ -162,15 +162,15 @@ export function archivedColumnsOf(columns: readonly BoardColumn[]): string[] {
 	return columns.filter((column) => column.isArchived).map((column) => column.name);
 }
 
-export function archived(column: BoardColumn): BoardColumn {
+export function archiveColumn(column: BoardColumn): BoardColumn {
 	return { ...column, isArchived: true, archivedAt: archivedStamp(column) };
 }
 
-export function restored(column: BoardColumn): BoardColumn {
+export function restoreColumn(column: BoardColumn): BoardColumn {
 	return { ...column, isArchived: false, archivedAt: null };
 }
 
-export function columnPatched(
+export function patchColumn(
 	columns: readonly BoardColumn[],
 	name: string,
 	step: (column: BoardColumn) => BoardColumn,
@@ -179,7 +179,7 @@ export function columnPatched(
 }
 
 // TRADE-OFF: the old key is emptied, not dropped — processFrontMatter merges and cannot delete
-export function columnsWritten(columns: readonly BoardColumn[]): WrittenColumns {
+export function columnsToWrite(columns: readonly BoardColumn[]): WrittenColumns {
 	return {
 		columns: columns.map((column) =>
 			column.isArchived ? { name: column.name, archivedAt: archivedStamp(column) } : { name: column.name },

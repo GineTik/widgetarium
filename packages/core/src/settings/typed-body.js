@@ -7,7 +7,7 @@ import { declaredOf, typedIn, withTyped } from "../gateway/props.js";
 import {
 	TYPED_HERE,
 	isSwitched,
-	typedAs,
+	parseTyped,
 	typedControlOf,
 	writeProp,
 	writtenPlainly,
@@ -36,7 +36,7 @@ export function typedBody(state, key, spec, config) {
 	const shown = writtenText(spec, typedIn(spec, config) ?? declaredOf(spec));
 	const apply = (typed) => {
 		if (writtenPlainly(spec)) {
-			writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, typedAs(spec, typed)));
+			writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, parseTyped(spec, typed)));
 			return;
 		}
 		let parsed;

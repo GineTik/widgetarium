@@ -1,6 +1,6 @@
 import { mountPatch } from "../model.js";
 import { widgetCatalogue } from "../catalogue-dialog.js";
-import { drawnWidget } from "../mounted.js";
+import { drawWidget } from "../mounted.js";
 import { viewHost } from "../engine/view-host.js";
 import { NOWHERE } from "../engine/navigator-none.js";
 import { refuseFold } from "./refuse-fold.js";
@@ -28,7 +28,7 @@ export function WidgetHost(props) {
 	const { definition, registry } = props;
 	const mounts = resolveMounts(definition.manifest, registry, mountContextOf(props));
 	const gateways = useHostGateways(props, mounts);
-	return drawnWidget(definition, widgetPropsOf(props, gateways, mounts));
+	return drawWidget(definition, widgetPropsOf(props, gateways, mounts));
 }
 
 function mountContextOf({

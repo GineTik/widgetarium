@@ -12,14 +12,14 @@ export function useChosenDraft(applied: Chosen, chosen: FilterProps["chosen"]) {
 	const [draft, setDraft] = useState<Chosen>(applied);
 
 	const draftAfterRadio = (group: Group, value: string) => {
-		if (draft[group.prop] === value) return dropped(draft, group.prop);
+		if (draft[group.prop] === value) return dropProp(draft, group.prop);
 		return { ...draft, [group.prop]: value };
 	};
 
 	const draftAfterCheck = (group: Group, value: string) => {
 		const held = (draft[group.prop] as string[]) ?? [];
 		const next = held.includes(value) ? held.filter((item) => item !== value) : [...held, value];
-		if (next.length === 0) return dropped(draft, group.prop);
+		if (next.length === 0) return dropProp(draft, group.prop);
 		return { ...draft, [group.prop]: next };
 	};
 
@@ -48,7 +48,7 @@ export function useChosenDraft(applied: Chosen, chosen: FilterProps["chosen"]) {
 	};
 }
 
-function dropped(chosen: Chosen, prop: string): Chosen {
+function dropProp(chosen: Chosen, prop: string): Chosen {
 	const { [prop]: gone, ...rest } = chosen;
 	return rest;
 }

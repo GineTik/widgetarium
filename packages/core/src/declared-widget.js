@@ -1,18 +1,18 @@
 import { createElement as h, useMemo } from "react";
 import { defaultImplementationFor } from "./gateway/defaults";
-import { refusedVerb } from "./gateway/create";
+import { refuseVerb } from "./gateway/create";
 import { ENGINE_GATEWAY, gatewayOverImplementation, isImplementation } from "./gateway/adapted";
 import { stableKey } from "./gateway/cache";
 import { useData } from "./gateway/use-data";
 import { declarationIn, defaultOf } from "./gateway/declared";
 import { withManyVerbs } from "./gateway/many";
-import { checkedCollection, checkedValueUpdate } from "./gateway/parsed";
+import { checkCollectionWrites, checkValueUpdate } from "./gateway/parsed";
 
 const NOT_READ = "A prop could not be read";
 
 const declaredInterfaces = new WeakMap();
 
-export function declaredWidget(props, draw) {
+export function createDeclaredWidget(props, draw) {
 	const declared = Object.entries(props).map(([name, held]) => [name, declarationOfInterface(held)]);
 	function InjectedWidget(given) {
 		const drawn = {};
@@ -44,7 +44,7 @@ const HANDED = {
 function readOf(name, declaration, given) {
 	const hand = HANDED[declaration.kind];
 	if (hand) return { value: hand(name, declaration, given), failure: null };
-	return useDrawn(name, declaration, given[name]);
+	return useProp(name, declaration, given[name]);
 }
 
 function notReadNotice(failures) {
@@ -54,11 +54,10 @@ function notReadNotice(failures) {
 	]);
 }
 
-function useDrawn(name, declaration, given) {
+function useProp(name, declaration, given) {
 	const gateway = useGateway(name, declaration, given);
-	if (declaration.kind === "collection")
-		return { value: useCollectionDrawn(name, declaration, gateway), failure: null };
-	return useValueDrawn(name, declaration, gateway);
+	if (declaration.kind === "collection") return { value: useCollectionProp(name, declaration, gateway), failure: null };
+	return useValueProp(name, declaration, gateway);
 }
 
 function useGateway(name, declaration, given) {
@@ -79,9 +78,9 @@ function heldAs(declaration, given) {
 	return "plain";
 }
 
-function useCollectionDrawn(name, declaration, gateway) {
+function useCollectionProp(name, declaration, gateway) {
 	return useMemo(
-		() => pickedOnly(name, declaration, withManyVerbs({ ...checkedCollection(gateway, declaration, name) })),
+		() => keepOnlyPicked(name, declaration, withManyVerbs({ ...checkCollectionWrites(gateway, declaration, name) })),
 		[gateway],
 	);
 }
@@ -89,7 +88,7 @@ function useCollectionDrawn(name, declaration, gateway) {
 const MANY_OF = { create: "createMany", update: "updateMany", remove: "removeMany" };
 const NOT_PICKED = 'prop "{name}" did not pick {verb}, so the widget cannot {verb}';
 
-function pickedOnly(name, declaration, drawn) {
+function keepOnlyPicked(name, declaration, drawn) {
 	const writes = declaration.writes;
 	const upsert = writes.includes("create") && writes.includes("update") ? ["upsert"] : [];
 	const picked = new Set([...(declaration.reads ?? []), ...writes, ...writes.map((verb) => MANY_OF[verb]), ...upsert]);
@@ -99,15 +98,15 @@ function pickedOnly(name, declaration, drawn) {
 	if (unpicked.length === 0) return drawn;
 	const refused = unpicked.map((verb) => [
 		verb,
-		refusedVerb(drawn[verb], NOT_PICKED.replace("{name}", name).replaceAll("{verb}", verb)),
+		refuseVerb(drawn[verb], NOT_PICKED.replace("{name}", name).replaceAll("{verb}", verb)),
 	]);
 	return { ...drawn, ...Object.fromEntries(refused) };
 }
 
-function useValueDrawn(name, declaration, gateway) {
+function useValueProp(name, declaration, gateway) {
 	const { data, failure } = useData(gateway.get);
 	const value = useMemo(() => valueOrDefault(declaration, data), [data]);
-	const update = useMemo(() => checkedValueUpdate(gateway.update, declaration, name), [gateway.update]);
+	const update = useMemo(() => checkValueUpdate(gateway.update, declaration, name), [gateway.update]);
 	if (declaration.writes.length === 0) return { value, failure };
 	const picked = { value, update, remove: gateway.remove };
 	const verbs = [

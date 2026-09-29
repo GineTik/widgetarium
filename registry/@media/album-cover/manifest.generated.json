@@ -67,7 +67,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "art.tsx", "embedded.tsx", "types.ts", "use-markdown-embedded-into.ts"],
+	"files": ["widget.tsx", "art.tsx", "embedded.tsx", "types.ts", "use-embeds-markdown-into.ts"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

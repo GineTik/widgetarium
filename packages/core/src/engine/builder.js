@@ -14,7 +14,7 @@ import {
 import { TAILWIND, TAILWIND_RANGE, importsTailwind, buildSheet, candidatesIn, servedContent } from "./tailwind.js";
 import { moduleFromBundle } from "./compiled-module.js";
 
-export function compiledSource(files, folder) {
+export function compileSource(files, folder) {
 	const from = sourceFileIn(files);
 	if (!from) return { ok: true, from: null, code: null, failure: null };
 	try {
@@ -38,11 +38,11 @@ export function createBuilder({ adapter, space }) {
 	}
 
 	async function make({ lock, id, folder, files, aboutToBeWritten = {} }) {
-		const built = compiledSource(files, folder);
-		if (!built.ok) return refused(lock, built.failure);
+		const built = compileSource(files, folder);
+		if (!built.ok) return refuseBuild(lock, built.failure);
 
-		const styled = await styledBy({ adapter, space, lock, id, folder, files, code: built.code, aboutToBeWritten });
-		if (!styled.ok) return refused(lock, styled.failure);
+		const styled = await compileSheet({ adapter, space, lock, id, folder, files, code: built.code, aboutToBeWritten });
+		if (!styled.ok) return refuseBuild(lock, styled.failure);
 
 		const lib = await scopeLibInput(adapter, folder, files, aboutToBeWritten);
 		return {
@@ -89,7 +89,7 @@ export function createBuilder({ adapter, space }) {
 	};
 }
 
-function refused(lock, failure) {
+function refuseBuild(lock, failure) {
 	return { ok: false, lock, built: null, css: null, record: null, failure };
 }
 
@@ -110,7 +110,7 @@ function recordOfBuild(folder, built, styled, files) {
 	return buildRecord({ from: built.from, compiler: styled.compiler, inputs: { ...own, ...styled.inputs } });
 }
 
-async function styledBy({ adapter, space, lock, id, folder, files, code, aboutToBeWritten }) {
+async function compileSheet({ adapter, space, lock, id, folder, files, code, aboutToBeWritten }) {
 	const name = SHEET_FILES.find((each) => typeof files?.[each] === "string");
 	if (!name || !importsTailwind(files[name]))
 		return { ok: true, lock, css: null, compiler: null, inputs: {}, failure: null };

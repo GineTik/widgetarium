@@ -1,6 +1,6 @@
 import { openKeyOf, togglesUnder } from "../tree.js";
 import { dockedAction, floatingAction, nestedAction, triggerPoint } from "./box-actions.js";
-import { laidTree } from "./laid-tree.js";
+import { layTree } from "./lay-tree.js";
 import { sidebarGrip } from "./sidebar-drag.js";
 import { regionsOf } from "./tree-regions.js";
 import { useHeaderActions } from "./use-header-actions.js";
@@ -8,7 +8,7 @@ import { useOpenKeys } from "./use-open-keys.js";
 
 export function useTreeChrome(props, page) {
 	const { width, shared, commitLayout, onActions } = props;
-	const laid = laidTree(props, page);
+	const laid = layTree(props, page);
 	const pressAt = (openKey) => page.pressedRef.current.get(openKey) ?? triggerPoint(openKey);
 	const { placedOf, region } = regionsOf({ ...props, pressAt }, page, laid);
 	const toggles = standingOf(laid, placedOf, width).flatMap((placed) => togglesUnder(placed.node));

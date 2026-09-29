@@ -1,5 +1,5 @@
 import { ICrudGateway, IValueGateway, createWidget, defineLayout, defineMetadata, pickedValue, z } from "widgetarium";
-import { archivedColumnsOf, columnPatched, columnsOf, columnsWritten, restored } from "@default/lib";
+import { archivedColumnsOf, patchColumn, columnsOf, columnsToWrite, restoreColumn } from "@default/lib";
 import type { Board } from "@default/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 
@@ -69,7 +69,7 @@ const ArchivedColumns = createWidget({
 		const record = board.value;
 		const columns = columnsOf(record);
 		const archived: string[] = archivedColumnsOf(columns);
-		const restore = (name: string) => board.update(columnsWritten(columnPatched(columns, name, restored)));
+		const restore = (name: string) => board.update(columnsToWrite(patchColumn(columns, name, restoreColumn)));
 
 		return (
 			<div className="orbi orbi-archived-columns">

@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import { Button } from "@widgetarium/kit";
-import { compatibility, movedTileProps } from "../engine/compatibility.js";
+import { compatibility, moveTileProps } from "../engine/compatibility.js";
 import { widgetKeyOf } from "../engine/widget-ref.js";
 
 const NEWER_GENERATION = "A newer {widget} is installed; this tile still uses the version it was made with.";
@@ -13,7 +13,7 @@ export function newerGenerationNote(registry, tile, patchTile) {
 		h("span", { key: "said" }, NEWER_GENERATION.replace("{widget}", widgetKeyOf(tile.widget))),
 		h(
 			Button,
-			{ key: "move", size: "s", onClick: () => patchTile(tile.id, movedToNewer(registry, tile, newer)) },
+			{ key: "move", size: "s", onClick: () => patchTile(tile.id, moveToNewer(registry, tile, newer)) },
 			MOVE_TO_NEWER,
 		),
 	]);
@@ -27,9 +27,9 @@ function newerGenerationFor(registry, tile) {
 	return verdict.canMoveTiles ? { newest, verdict } : null;
 }
 
-function movedToNewer(registry, tile, newer) {
+function moveToNewer(registry, tile, newer) {
 	return (now) =>
 		now.widget === tile.widget
-			? { widget: registry.tileRefOf(newer.newest), props: movedTileProps(now.props, newer.verdict) }
+			? { widget: registry.tileRefOf(newer.newest), props: moveTileProps(now.props, newer.verdict) }
 			: {};
 }

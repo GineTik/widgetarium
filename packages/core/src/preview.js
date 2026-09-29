@@ -5,16 +5,16 @@ import { pageOf } from "./gateway/match";
 import { slotDefaults } from "./gateway/props.js";
 import { slotSurfaceOf } from "./surface-roles.js";
 import { isPainted } from "./tree.js";
-import { surfacedSlot } from "./widget-root.js";
+import { withSlotSurface } from "./widget-root.js";
 import { spanToPixels } from "./paths.js";
 import { typeOf } from "./engine/record-type.js";
 import { NO_HOST } from "./engine/host-none.js";
 import { NO_CATALOGUE } from "./engine/catalogue-none.js";
-import { refusedRead } from "./engine/read-file.js";
+import { refuseRead } from "./engine/read-file.js";
 import { collectionGateway, soloGateway } from "./gateway/create";
-import { pickedGateway, selectionGateway } from "./gateway/refs";
-import { selectedRowPicking, selectionPicking } from "./engine/host-gateways.js";
-import { mappedCollection } from "./gateway/mapped";
+import { createPickedGateway, selectionGateway } from "./gateway/refs";
+import { selectedRowPicking, selectionPicking } from "./engine/row-picking.js";
+import { mapCollection } from "./gateway/mapped";
 import { declaredOf, needsOf, storedRows } from "./gateway/props.js";
 
 export function previewGateways(manifest) {
@@ -22,14 +22,15 @@ export function previewGateways(manifest) {
 	const gateways = {};
 	const gatewayFor = (name) => gateways[name] ?? null;
 
-	for (const [name, spec] of props) gateways[name] = heldByTheManifest(manifest, name, spec);
+	for (const [name, spec] of props) gateways[name] = createManifestGateway(manifest, name, spec);
 
 	for (const [name, spec] of props) {
 		if (resolvesASelection(spec, gatewayFor)) gateways[name] = selectionOverFirst(manifest, name, spec, gatewayFor);
 	}
 
 	for (const [name, spec] of props) {
-		if (resolvesAPickedRow(spec, gatewayFor)) gateways[name] = rowPickedBySelection(manifest, name, spec, gatewayFor);
+		if (resolvesAPickedRow(spec, gatewayFor))
+			gateways[name] = createSelectedRowGateway(manifest, name, spec, gatewayFor);
 	}
 
 	return gateways;
@@ -61,7 +62,7 @@ export function previewReader(manifest) {
 		async read(link) {
 			const named = String(link ?? "").trim();
 			const text = declared[named];
-			if (text === undefined) return refusedRead(`${named || "that file"} is not in this preview`);
+			if (text === undefined) return refuseRead(`${named || "that file"} is not in this preview`);
 			return { ok: true, text, path: named, bytes: text.length, failure: null };
 		},
 	};
@@ -96,7 +97,7 @@ export function previewProps(definition, options) {
 				navigator: previewNavigator,
 			});
 		const surface = slotSurfaceOf(spec, null);
-		slots[name] = drawable ? surfacedSlot(draw, { surface, isCard: isPainted({ surface }) }) : null;
+		slots[name] = drawable ? withSlotSurface(draw, { surface, isCard: isPainted({ surface }) }) : null;
 	}
 
 	const content = manifest.inline ? (manifest.preview?.content ?? manifest.title ?? "Sample text") : null;
@@ -157,7 +158,7 @@ function seededRows(seeded, spec) {
 	return seeded.rows.map(toRecord).map((record) => ({ ...record, ref: record.path }));
 }
 
-function heldCollection(id, rows, spec) {
+function createHeldCollection(id, rows, spec) {
 	const listing = collectionGateway({
 		id,
 		handlers: {
@@ -165,14 +166,14 @@ function heldCollection(id, rows, spec) {
 			get: (ref) => rows.find((row) => row.ref === ref) ?? null,
 		},
 	});
-	return mappedCollection(listing, { needs: needsOf(spec) });
+	return mapCollection(listing, { needs: needsOf(spec) });
 }
 
-function heldByTheManifest(manifest, name, spec) {
+function createManifestGateway(manifest, name, spec) {
 	const seeded = manifest?.preview?.props?.[name];
 	const id = previewPropId(manifest, name);
 	if (spec?.kind === "value") return soloGateway(seededValue(seeded, spec), {}, id);
-	return heldCollection(id, seededRows(seeded, spec), spec);
+	return createHeldCollection(id, seededRows(seeded, spec), spec);
 }
 
 const sourceFieldsOf = (spec) => spec?.source?.fields ?? {};
@@ -181,20 +182,20 @@ function selectionOverFirst(manifest, name, spec, gatewayFor) {
 	const fields = sourceFieldsOf(spec);
 	return selectionGateway({
 		id: previewPropId(manifest, name),
-		memory: heldByTheManifest(manifest, name, { kind: "value" }),
+		memory: createManifestGateway(manifest, name, { kind: "value" }),
 		collection: gatewayFor(fields.rows),
 		...selectionPicking(fields, (prop) => gatewayFor(prop)?.get() ?? null),
 	});
 }
 
-function rowPickedBySelection(manifest, name, spec, gatewayFor) {
+function createSelectedRowGateway(manifest, name, spec, gatewayFor) {
 	const fields = sourceFieldsOf(spec);
-	return pickedGateway({
+	return createPickedGateway({
 		id: previewPropId(manifest, name),
 		chosen: gatewayFor(fields.picked),
 		collection: gatewayFor(fields.rows),
 		...selectedRowPicking(fields, (prop) => gatewayFor(prop)?.get() ?? null),
-		inTile: heldByTheManifest(manifest, name, spec),
+		inTile: createManifestGateway(manifest, name, spec),
 	});
 }
 

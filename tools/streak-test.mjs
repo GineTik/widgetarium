@@ -42,7 +42,7 @@ const { api: widgetarium } = ENGINE_SCOPE;
 const kit = await import("../packages/kit/src/index.ts");
 const emojis = await import("../packages/kit/src/emojis/emoji.tsx");
 const { collectionGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
-const { mappedCollection } = await import("../packages/core/src/gateway/mapped.ts");
+const { mapCollection } = await import("../packages/core/src/gateway/mapped.ts");
 const { needsOf } = await import("../packages/core/src/gateway/props.js");
 
 const WIDGET = "registry/@default/streak/widget.tsx";
@@ -71,7 +71,7 @@ function run(file) {
 }
 
 libs.set("@default/lib", run("registry/@default/lib.ts"));
-const { isoOf, shiftedBy } = libs.get("@default/lib");
+const { isoOf, shiftBy } = libs.get("@default/lib");
 const Streak = run(WIDGET).default;
 
 let failed = 0;
@@ -123,7 +123,7 @@ function gatewayOver(notes, verbs = ["update", "create"]) {
 	};
 	minted += 1;
 	const base = collectionGateway({ id: `streak-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
-	return mappedCollection(base, { needs: needsOf(DECLARED.days) });
+	return mapCollection(base, { needs: needsOf(DECLARED.days) });
 }
 
 const host = document.getElementById("host");
@@ -147,7 +147,7 @@ const namesShown = () => dayButtons().map((button) => button.querySelector(".hs-
 const daysShown = () => dayButtons().map((button) => button.getAttribute("aria-label").split(",")[0]);
 const dayLabelled = (label) => dayButtons().find((button) => button.getAttribute("aria-label") === label);
 
-const KEPT_RUN = [shiftedBy(TODAY, -4), shiftedBy(TODAY, -3), shiftedBy(TODAY, -2), shiftedBy(TODAY, -1)];
+const KEPT_RUN = [shiftBy(TODAY, -4), shiftBy(TODAY, -3), shiftBy(TODAY, -2), shiftBy(TODAY, -1)];
 const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { done: 1 } }));
 
 {
@@ -319,7 +319,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	railWidth = WIDE;
 	await draw(RUN_NOTES);
 	const pressable = (day) => !dayButtons()[daysShown().indexOf(day)].disabled;
-	check("a day that has not happened yet cannot be pressed", pressable(shiftedBy(TODAY, 1)), false);
+	check("a day that has not happened yet cannot be pressed", pressable(shiftBy(TODAY, 1)), false);
 	check(
 		"nor any day after it",
 		daysShown()
@@ -339,7 +339,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 
 {
 	railWidth = WIDE;
-	const AHEAD = shiftedBy(TODAY, 2);
+	const AHEAD = shiftBy(TODAY, 2);
 	await draw([...RUN_NOTES, { path: `Habits/${AHEAD}.md`, props: { done: 1 } }]);
 	const at = daysShown().indexOf(AHEAD);
 	check("a day marked ahead of time still draws its flame", Boolean(dayButtons()[at].querySelector(".hs-flame")), true);

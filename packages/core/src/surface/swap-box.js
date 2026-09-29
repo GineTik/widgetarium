@@ -6,7 +6,7 @@ import { holdsOf, pathKey, shownIn, SWAP } from "../tree.js";
 import { styleOfNode, surfaceAttrs } from "./node-style.js";
 import { nodeElement } from "./tree-nodes.js";
 import { useCellValue } from "./use-cell-value.js";
-import { usePublishedSwap } from "./use-published-swap.js";
+import { usePublishesSwap } from "./use-publishes-swap.js";
 
 const VIEW_GONE_FOR_GOOD =
 	"The view goes for good, with the widgets in it and everything they were set to. This cannot be undone.";
@@ -17,7 +17,7 @@ export function SwapBox({ swap, draw }) {
 	const cell = draw.shared.cellFor(named.selection);
 	const shown = shownIn(rows, useCellValue(cell));
 	const shownAt = rows.findIndex((row) => row.name === shown);
-	usePublishedSwap(swap, { refs: draw.shared.refs, cell, named, rows });
+	usePublishesSwap(swap, { refs: draw.shared.refs, cell, named, rows });
 
 	const apply = (step) => {
 		if (movesSelection(step)) cell.update(step.selected ?? "");

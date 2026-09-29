@@ -35,7 +35,7 @@ function registryObjectIn(text) {
 	return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
 }
 
-function identifiedRow(row, scope) {
+function identifyRow(row, scope) {
 	if (hasStringId(row) || typeof scope !== "string" || typeof row?.name !== "string" || row.name === "") return row;
 	return { ...row, id: `${scope}/${row.name}` };
 }
@@ -43,7 +43,7 @@ function identifiedRow(row, scope) {
 function rowsIn(parsed, at) {
 	const held = [];
 	for (const listed of Array.isArray(parsed.widgets) ? parsed.widgets : []) {
-		const row = identifiedRow(listed, parsed.scope);
+		const row = identifyRow(listed, parsed.scope);
 		if (!hasStringId(row)) continue;
 		if (scopedName(row.id) === null) {
 			console.error(`[widgetarium] ${at} lists "${row.id}", which is not a scoped widget id, so it was skipped`);

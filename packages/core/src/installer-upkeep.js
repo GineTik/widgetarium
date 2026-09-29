@@ -11,7 +11,7 @@ export async function rebuildDrifted(installing, lockNow) {
 	const rebuilt = [];
 	const failures = [];
 	for (const folder of await everyWidgetFolder(adapter)) {
-		const made = await rebuiltIfDrifted(installing, lock, folder);
+		const made = await rebuildIfDrifted(installing, lock, folder);
 		if (made === null) continue;
 		if (!made.ok) failures.push({ id: made.id, failure: made.failure });
 		else {
@@ -45,7 +45,7 @@ async function everyWidgetFolder(adapter) {
 	return found;
 }
 
-async function rebuiltIfDrifted({ builder }, lock, folder) {
+async function rebuildIfDrifted({ builder }, lock, folder) {
 	const id = idOfFolder(folder);
 	if (!id) return null;
 

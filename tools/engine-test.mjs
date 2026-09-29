@@ -1,10 +1,10 @@
 // The one thing apps/obsidian/src/host.js cannot do: state shared BETWEEN widgets. The vault adapter,
 // its filters and its live subscription already exist there — this covers only the gap.
 
-const { createGatewayRefs, createViewCells, narrowedByRefs, pickedGateway, refValue, selectionGateway } =
+const { createGatewayRefs, createViewCells, narrowByRefs, createPickedGateway, refValue, selectionGateway } =
 	await import("../packages/core/src/gateway/refs.ts");
 const { arrayGateway } = await import("../packages/core/src/gateway/create.ts");
-const { wiredTiles } = await import("../packages/core/src/engine/wiring.js");
+const { wireTiles } = await import("../packages/core/src/engine/wiring.js");
 const { mountKeyFor } = await import("../packages/core/src/mount-key.js");
 const { createWidthGate, createWidthWatcher } = await import("../packages/core/src/width-gate.js");
 const { isMatch } = await import("../packages/core/src/gateway/match.ts");
@@ -58,7 +58,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		{},
 		"tasks",
 	);
-	const narrowed = narrowedByRefs(tasks, [{ prop: "board", op: "is", value: { ref: "tabs/selection" } }], refs);
+	const narrowed = narrowByRefs(tasks, [{ prop: "board", op: "is", value: { ref: "tabs/selection" } }], refs);
 	check(
 		"a where row naming a ref reads through it",
 		(await narrowed.list()).rows.map((row) => row.name),
@@ -134,9 +134,9 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 	const registry = { get: (id) => (shelf[id] ? { manifest: shelf[id] } : null) };
 
 	const alone = { id: "board", widget: "@default/kanban-board" };
-	check("a widget with nothing to point at is not written to at all", wiredTiles([alone], registry)[0], alone);
+	check("a widget with nothing to point at is not written to at all", wireTiles([alone], registry)[0], alone);
 
-	const wired = wiredTiles(
+	const wired = wireTiles(
 		[
 			{ id: "boards", widget: "@default/editable-tabs" },
 			{ id: "filters", widget: "@default/filter-panel" },
@@ -159,10 +159,10 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		ref: "board/opened",
 	});
 
-	const again = wiredTiles(wired, registry);
+	const again = wireTiles(wired, registry);
 	check("wiring an already-wired board writes nothing twice", JSON.stringify(again), JSON.stringify(wired));
 
-	const byHand = wiredTiles(
+	const byHand = wireTiles(
 		[
 			{ id: "boards", widget: "@default/editable-tabs" },
 			{
@@ -184,7 +184,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 		[{ prop: "status", op: "is", value: "Doing" }],
 	);
 
-	const mounted = wiredTiles(
+	const mounted = wireTiles(
 		[
 			{ id: "boards", widget: "@default/editable-tabs" },
 			{ id: "group", widget: "@default/view-group", mounted: { Kanban: { widget: "@default/kanban-board" } } },
@@ -541,7 +541,7 @@ if (typeof resolveSlots === "function") {
 		fieldName: "board",
 		isFallbackToFirst: true,
 	});
-	const board = pickedGateway({
+	const board = createPickedGateway({
 		id: "kanban/board",
 		chosen: selection,
 		collection: boards,
@@ -562,7 +562,7 @@ if (typeof resolveSlots === "function") {
 		{ ref: "i1", data: { columns: [{ name: "Doing" }] } },
 	]);
 
-	const readOnly = pickedGateway({
+	const readOnly = createPickedGateway({
 		id: "kanban/readOnly",
 		chosen: selection,
 		collection: arrayGateway(rows, {}, "frozen"),
@@ -588,7 +588,7 @@ if (typeof resolveSlots === "function") {
 		isFallbackToFirst: true,
 	});
 	check("a selection with nothing picked skips a row that was archived", await standing.get(), "Marketing");
-	const standingBoard = pickedGateway({
+	const standingBoard = createPickedGateway({
 		id: "kanban/standingBoard",
 		chosen: standing,
 		collection: withArchived,
@@ -601,7 +601,7 @@ if (typeof resolveSlots === "function") {
 
 	const inTile = cellFor("kanban/board?tile");
 	await inTile.update({ columns: [{ name: "Solo" }] });
-	const untied = pickedGateway({
+	const untied = createPickedGateway({
 		id: "kanban/untied",
 		chosen: selection,
 		collection: arrayGateway([], {}, "noBoards"),
@@ -621,7 +621,7 @@ if (typeof resolveSlots === "function") {
 
 	const heldElsewhere = cellFor("kanban/board?elsewhere");
 	await heldElsewhere.update({ columns: [{ name: "Held" }] });
-	const missed = pickedGateway({
+	const missed = createPickedGateway({
 		id: "kanban/missed",
 		chosen: { get: async () => "Nowhere", subscribe: () => () => {} },
 		collection: arrayGateway(rows, { update: (patch) => written.push(patch) }, "boardsAgain"),

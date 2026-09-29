@@ -27,15 +27,17 @@ export function sparkSpots(values: (number | null)[], width: number, height: num
 
 export function linePath(spots: (SparkSpot | null)[]): string {
 	return runsOf(spots)
-		.map((run) => run.map((spot, at) => `${at === 0 ? "M" : "L"}${rounded(spot.x)} ${rounded(spot.y)}`).join(""))
+		.map((run) =>
+			run.map((spot, at) => `${at === 0 ? "M" : "L"}${roundToHundredth(spot.x)} ${roundToHundredth(spot.y)}`).join(""),
+		)
 		.join("");
 }
 
 export function areaPath(spots: (SparkSpot | null)[], base: number): string {
 	return runsOf(spots)
 		.map((run) => {
-			const along = run.map((spot) => `L${rounded(spot.x)} ${rounded(spot.y)}`).join("");
-			return `M${rounded(run[0].x)} ${rounded(base)}${along}L${rounded(run[run.length - 1].x)} ${rounded(base)}Z`;
+			const along = run.map((spot) => `L${roundToHundredth(spot.x)} ${roundToHundredth(spot.y)}`).join("");
+			return `M${roundToHundredth(run[0].x)} ${roundToHundredth(base)}${along}L${roundToHundredth(run[run.length - 1].x)} ${roundToHundredth(base)}Z`;
 		})
 		.join("");
 }
@@ -99,6 +101,6 @@ function runsOf(spots: (SparkSpot | null)[]): SparkSpot[][] {
 	return runs.filter((run) => run.length > 0);
 }
 
-function rounded(value: number): number {
+function roundToHundredth(value: number): number {
 	return Math.round(value * 100) / 100;
 }

@@ -2,7 +2,8 @@ import fs from "node:fs";
 import { parse } from "yaml";
 
 const { normalizeBoard } = await import("../packages/core/src/model.js");
-const { columnsOf, isBox, keptAt, laid, sideOf, GAP_PX, REGION_PAD_PX } = await import("../packages/core/src/tree.js");
+const { columnsOf, isBox, keptAt, layNode, sideOf, GAP_PX, REGION_PAD_PX } =
+	await import("../packages/core/src/tree.js");
 
 const FENCE = String.fromCharCode(96, 96, 96);
 const AT = process.argv[2];
@@ -34,6 +35,6 @@ console.log(
 for (const column of beside) {
 	console.log(`  ${said(column.at)}`);
 	console.log(
-		drawn(laid(root.of[column.at], column.width - REGION_PAD_PX * 2, { ask, gap: GAP_PX, path: [column.at] }), 2),
+		drawn(layNode(root.of[column.at], column.width - REGION_PAD_PX * 2, { ask, gap: GAP_PX, path: [column.at] }), 2),
 	);
 }

@@ -1,6 +1,6 @@
 import { Flame } from "widgetarium/kit";
 import { Emoji } from "widgetarium/kit/emojis";
-import { filled } from "./filled";
+import { fillSentence } from "./fill-sentence";
 
 const ONE_DAY = "{count} day";
 const MANY_DAYS = "{count} days";
@@ -14,7 +14,7 @@ export function Summary({ habitName, face, count }: { habitName: string; face: s
 			</div>
 			<div className={`hs-count${count === 0 ? " is-cold" : ""}`}>
 				<Flame size={16} className="hs-flame" />
-				<span>{filled(count === 1 ? ONE_DAY : MANY_DAYS, { count: String(count) })}</span>
+				<span>{fillSentence(count === 1 ? ONE_DAY : MANY_DAYS, { count: String(count) })}</span>
 			</div>
 		</div>
 	);

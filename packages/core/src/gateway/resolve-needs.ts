@@ -17,6 +17,18 @@ export interface Resolution {
 	missing: string[];
 }
 
+// TRADE-OFF: one property answers at most one need — without that, a lone text field is claimed by every text need at once
+export function resolveNeeds(
+	needs: DeclaredNeeds,
+	fields: readonly FieldReport[],
+	chosen: ChosenProps = {},
+): Resolution {
+	const map = resolveByName(needs, fields, chosen);
+	resolveByType(needs, fields, map);
+	const unresolved = Object.keys(needs).filter((need) => !map[need]);
+	return { map, unresolved, missing: unresolved.filter((need) => needs[need]?.required) };
+}
+
 const plainly = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 function namesOf(need: string, declared: DeclaredNeed): string[] {
@@ -64,7 +76,7 @@ function namedFor(need: string, declared: DeclaredNeed, fields: readonly FieldRe
 	return (namedExactly(fields, names, declared) ?? namedPlainly(fields, names, declared))?.prop ?? null;
 }
 
-function resolvedByName(
+function resolveByName(
 	needs: DeclaredNeeds,
 	fields: readonly FieldReport[],
 	chosen: ChosenProps,
@@ -77,7 +89,7 @@ function resolvedByName(
 	return map;
 }
 
-function resolvedByType(needs: DeclaredNeeds, fields: readonly FieldReport[], map: Record<string, string>): void {
+function resolveByType(needs: DeclaredNeeds, fields: readonly FieldReport[], map: Record<string, string>): void {
 	const claimed = new Set(Object.values(map));
 	for (const [need, declared] of Object.entries(needs)) {
 		if (map[need]) continue;
@@ -89,16 +101,4 @@ function resolvedByType(needs: DeclaredNeeds, fields: readonly FieldReport[], ma
 		map[need] = found.prop;
 		claimed.add(found.prop);
 	}
-}
-
-// TRADE-OFF: one property answers at most one need — without that, a lone text field is claimed by every text need at once
-export function resolveNeeds(
-	needs: DeclaredNeeds,
-	fields: readonly FieldReport[],
-	chosen: ChosenProps = {},
-): Resolution {
-	const map = resolvedByName(needs, fields, chosen);
-	resolvedByType(needs, fields, map);
-	const unresolved = Object.keys(needs).filter((need) => !map[need]);
-	return { map, unresolved, missing: unresolved.filter((need) => needs[need]?.required) };
 }

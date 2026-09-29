@@ -7,8 +7,8 @@ type Amounted = { amount?: number | null | undefined };
 const FLAT_UNDER = 0.5;
 
 export function summarize(records: readonly Amounted[], days: number, today: string, rising: string): Summary {
-	const points = pointsOf(records, shiftedBy(today, 1 - days), today);
-	const before = pointsOf(records, shiftedBy(today, 1 - days * 2), shiftedBy(today, -days));
+	const points = pointsOf(records, shiftBy(today, 1 - days), today);
+	const before = pointsOf(records, shiftBy(today, 1 - days * 2), shiftBy(today, -days));
 	const total = sumOf(points);
 	const was = sumOf(before);
 	const percent = was > 0 ? ((total - was) / was) * 100 : null;
@@ -16,7 +16,7 @@ export function summarize(records: readonly Amounted[], days: number, today: str
 	const values = points.map((point) => point.value);
 	return {
 		points,
-		balance: balanceByDay(records, days, shiftedBy(today, 1 - days)),
+		balance: balanceByDay(records, days, shiftBy(today, 1 - days)),
 		total,
 		today: points.find((point) => point.day === today)?.value ?? 0,
 		percent,
@@ -29,7 +29,7 @@ export function summarize(records: readonly Amounted[], days: number, today: str
 	};
 }
 
-export function shiftedBy(iso: string, days: number): string {
+export function shiftBy(iso: string, days: number): string {
 	const at = dateOf(iso);
 	return isoFrom(new Date(at.getFullYear(), at.getMonth(), at.getDate() + days));
 }
@@ -65,7 +65,7 @@ function balanceByDay(records: readonly Amounted[], days: number, from: string):
 	}
 	let running = opening;
 	return Array.from({ length: Math.max(days, 1) }, (_unused, at) => {
-		const day = shiftedBy(from, at);
+		const day = shiftBy(from, at);
 		running += byDay.get(day) ?? 0;
 		return { day, value: running };
 	});

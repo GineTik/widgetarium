@@ -6,7 +6,7 @@ export function resist(wanted, low, high) {
 	return wanted;
 }
 
-export function heldBetween(wanted, low, high, give) {
+export function holdBetween(wanted, low, high, give) {
 	if (give) return resist(wanted, low, high);
 	return Math.min(Math.max(wanted, low), high);
 }

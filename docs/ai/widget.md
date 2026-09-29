@@ -359,7 +359,7 @@ system restyles all of them at once.
 The kit carries the hooks widgets kept copying. `usePages(source, size)` and `useShown(source, size)`
 count pages or rows and start over when the source changes; `useWhenSeen(onSeen)` and
 `<MoreWhenSeen onSeen className/>` load the next page 400px before the end is on screen.
-`useMarkdownRenderedInto(host, markdown, path)` and `<RenderedMarkdown host markdown path className
+`useRendersMarkdownInto(host, markdown, path)` and `<RenderedMarkdown host markdown path className
 plainClassName part/>` draw markdown through the host, as plain text where it cannot; pass the note's
 path whenever you have one, or a relative link has no note to resolve from. `useNow(tickMs, isTicking)`
 is a clock, `useScrollFog(ref, onEdges, watched)` hands over how far a box is scrolled from each edge,

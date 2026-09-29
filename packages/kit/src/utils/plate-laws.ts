@@ -43,7 +43,7 @@ export function plateRefusal(above, surface) {
 	return misnested(surface, above) ?? tooDeep(platesWithin(above, surface));
 }
 
-export function slotSurfaceSaid(said) {
+export function readSlotSurface(said) {
 	const surface = SURFACE_WAS[said] ?? said;
 	return SLOT_SURFACES.includes(surface) ? surface : null;
 }

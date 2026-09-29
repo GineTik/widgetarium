@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import { declaredName } from "../registry.js";
-import { heldKey, keptRecords, mountList, mountRows, storedMountRow, uniqueName, withoutKey } from "../model.js";
+import { heldKey, keepNamedRecords, mountList, mountRows, mountRowToStore, uniqueName, withoutKey } from "../model.js";
 import { Icon, IconButton, Pill, Row, RowLabel, RowValue } from "@widgetarium/kit";
 import { CatalogueDialog } from "../catalogue-dialog.js";
 import { shownEntries } from "../prop-visibility.js";
@@ -22,27 +22,24 @@ export function mountGroups(state) {
 		const key = `mount:${name}`;
 		const picker = mountPicker(state, key, add);
 		const rename = (next, index) =>
-			write(
-				next,
-				movedRecord(tile.mounted, heldKey(tile.mounted, rows[index].name, rows[index].was), next[index].name),
-			);
+			write(next, moveRecord(tile.mounted, heldKey(tile.mounted, rows[index].name, rows[index].was), next[index].name));
 		const drawn = rows.map((row, index) => mountRow(state, rows, index, write, rename));
 		return group(key, spec?.label ?? titleCase(name), [...drawn, picker], spec?.hint ?? null);
 	});
 }
 
-function movedRecord(held, from, to) {
+function moveRecord(held, from, to) {
 	if (from === to || !held?.[from]) return held ?? {};
 	const { [from]: moved, ...rest } = held;
 	return { ...rest, [to]: moved };
 }
 
-function renamed(rows, index, wanted) {
+function renameRow(rows, index, wanted) {
 	const taken = new Set(rows.filter((row, at) => at !== index).map((row) => row.name));
 	return rows.map((row, at) => (at === index ? { ...row, name: uniqueName(taken, wanted) } : row));
 }
 
-function movedRows(rows, index, step) {
+function moveRow(rows, index, step) {
 	const to = index + step;
 	if (to < 0 || to >= rows.length) return rows;
 	const next = [...rows];
@@ -61,7 +58,7 @@ function moveButton({ rows, index, write }, step, label, glyph) {
 			label,
 			onClick: (event) => {
 				event.stopPropagation();
-				write(movedRows(rows, index, step));
+				write(moveRow(rows, index, step));
 			},
 		},
 		h(Icon, { name: glyph }),
@@ -92,16 +89,16 @@ function mountRow(state, rows, index, write, rename) {
 			h(IconButton, { size: "s", key: "drop", label: "Remove", onClick: drop }, h(Icon, { name: "close" })),
 		]),
 	]);
-	const apply = (typed) => rename(renamed(rows, index, typed.trim() || declaredName(registry, row.widget)), index);
+	const apply = (typed) => rename(renameRow(rows, index, typed.trim() || declaredName(registry, row.widget)), index);
 	return editorPopover(state, key, trigger, textEditor(state, row.name, apply), row.name);
 }
 
 function mountWrite(tile, name, spec, onPatch) {
 	return (next, moved) =>
 		onPatch({
-			mounts: { ...withoutKey(tile.mounts, spec?.was), [name]: next.map(storedMountRow) },
+			mounts: { ...withoutKey(tile.mounts, spec?.was), [name]: next.map(mountRowToStore) },
 			settings: withoutKey(withoutKey(tile.settings, spec?.was), name),
-			mounted: keptRecords(moved ?? tile.mounted, next),
+			mounted: keepNamedRecords(moved ?? tile.mounted, next),
 		});
 }
 

@@ -28,7 +28,7 @@ export function vaultBody(state, key, spec, config) {
 		...found.map((entry) =>
 			h(
 				PopoverItem,
-				{ key: entry, checked: entry === path, onClick: () => notePicked(state, key, spec, config, entry) },
+				{ key: entry, checked: entry === path, onClick: () => pickNote(state, key, spec, config, entry) },
 				[h("span", { className: "wg-set-pop-name", key: "name" }, entry)],
 			),
 		),
@@ -83,7 +83,7 @@ function noteFieldItems(state, key, spec, config, path) {
 	];
 }
 
-function notePicked(state, key, spec, config, entry) {
+function pickNote(state, key, spec, config, entry) {
 	if (!writtenPlainly(spec)) {
 		state.setDraft(entry);
 		return;

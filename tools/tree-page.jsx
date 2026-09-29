@@ -6,7 +6,7 @@ import { WidgetRegistry } from "../packages/core/src/registry.js";
 import { createGatewayRefs, createViewCells } from "../packages/core/src/gateway/refs.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 import { classOf, scaleOf } from "../packages/core/src/paths.js";
-import { GAP_PX, isBox, laid, leavesOf } from "../packages/core/src/tree.js";
+import { GAP_PX, isBox, layNode, leavesOf } from "../packages/core/src/tree.js";
 
 const FILES = JSON.parse(document.getElementById("wg-widgets").textContent);
 const BOARD = JSON.parse(document.getElementById("wg-board").textContent);
@@ -101,7 +101,7 @@ function boardNode(width) {
 	return h(
 		"div",
 		attrs,
-		laid(PROBE_TREE, width, { ask: askOf, gap: GAP_PX }).of.map((child) => laidNode(child, width, wiring)),
+		layNode(PROBE_TREE, width, { ask: askOf, gap: GAP_PX }).of.map((child) => laidNode(child, width, wiring)),
 	);
 }
 

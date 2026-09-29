@@ -4,13 +4,13 @@ import type { EveryValueVerb } from "./needs";
 type PropRef = string;
 import { collectionGateway, valueGateway } from "./create";
 import type { Narrowing } from "./narrow";
-import { isEmpty, narrowedCollection, normalizeWhere } from "./narrow";
-import { combined } from "./combined";
+import { isEmpty, narrowCollection, normalizeWhere } from "./narrow";
+import { combineSubscribes } from "./combined";
 import type { Subscribe } from "./combined";
 
 export type AnyGateway = GatewayBase & Record<string, unknown>;
 export type { Subscribe } from "./combined";
-export { pickedGateway, pickedValue, selectionGateway } from "./picked";
+export { createPickedGateway, pickedValue, selectionGateway } from "./picked";
 export type { PickSpec, SelectionSpec } from "./picked";
 
 export interface RefDescription {
@@ -84,22 +84,22 @@ const NOT_A_NARROWING =
 
 export async function resolveWhere(rows: FilterRow[], refs: GatewayRefs): Promise<FilterRow[]> {
 	const out: FilterRow[] = [];
-	for (const row of rows) out.push(...(await resolvedRow(row, refs)));
+	for (const row of rows) out.push(...(await resolveRow(row, refs)));
 	return out;
 }
 
-export function narrowedByRefs<T>(
+export function narrowByRefs<T>(
 	base: CollectionGateway<T>,
 	rows: FilterRow[] | null | undefined,
 	refs: GatewayRefs,
 ): CollectionGateway<T> {
 	const held = rows ?? [];
 	const named = refsWithin(held);
-	return narrowedCollection<T>(
+	return narrowCollection<T>(
 		base,
 		held,
 		(asked) => resolveWhere(asked, refs),
-		combined([
+		combineSubscribes([
 			base.subscribe,
 			named.length > 0 ? (((listener) => refs.watch(named, listener as () => void)) as Subscribe) : null,
 		]),
@@ -128,7 +128,7 @@ const NOTHING_PUBLISHED = "Nothing is published at {ref} yet, so it cannot be wr
 export function refCollection<T>(refs: GatewayRefs, ref: PropRef): CollectionGateway<T> {
 	const target = refs.get(ref);
 	const held = () => refs.get(ref) as unknown as CollectionGateway<T> | null;
-	const writes = delegatedWrites(refs, ref);
+	const writes = delegateWrites(refs, ref);
 	return collectionGateway<T>({
 		id: `ref:${ref}?${target?.id ?? ""}`,
 		cans: writes.cans,
@@ -269,7 +269,7 @@ function clausesOn(row: FilterRow, chosen: unknown, by: PropRef): FilterRow[] {
 	return [{ prop: row.prop, op: "in", value: chosen, by }];
 }
 
-async function resolvedRow(row: FilterRow, refs: GatewayRefs): Promise<FilterRow[]> {
+async function resolveRow(row: FilterRow, refs: GatewayRefs): Promise<FilterRow[]> {
 	if (isUnwired(row?.spread) || isUnwired(row?.value)) return [];
 	const spread = row?.spread?.ref;
 	if (typeof spread === "string") return spreadClauses(await refs.read(spread), spread);
@@ -278,7 +278,7 @@ async function resolvedRow(row: FilterRow, refs: GatewayRefs): Promise<FilterRow
 	return clausesOn(row, await refs.read(named), named);
 }
 
-function delegatedWrites(refs: GatewayRefs, ref: PropRef) {
+function delegateWrites(refs: GatewayRefs, ref: PropRef) {
 	const handlers: Record<string, (input: never) => unknown> = {};
 	const cans: Record<string, () => CanResult> = {};
 	const refused = { can: false as const, reason: NOTHING_PUBLISHED.replace("{ref}", ref) };

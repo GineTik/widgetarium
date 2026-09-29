@@ -35,7 +35,7 @@ export function rackOf<Tier, Card>(
 	};
 }
 
-export function placedAt<Held extends { ref: string }>(cards: readonly Held[], moved: Held, at: number): Held[] {
+export function placeAt<Held extends { ref: string }>(cards: readonly Held[], moved: Held, at: number): Held[] {
 	const without = cards.filter((card) => card.ref !== moved.ref);
 	const landing = Math.max(0, Math.min(without.length, at));
 	return [...without.slice(0, landing), moved, ...without.slice(landing)];
@@ -50,7 +50,7 @@ export function orderBetween(above: Ordered | null, below: Ordered | null): numb
 	return middle > low && middle < high ? middle : null;
 }
 
-export function renumbered<Held extends { ref: string }>(cards: readonly Held[]): (Held & { order: number })[] {
+export function renumber<Held extends { ref: string }>(cards: readonly Held[]): (Held & { order: number })[] {
 	return cards.map((card, at) => ({ ...card, order: at + 1 }));
 }
 

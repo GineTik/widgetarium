@@ -19,11 +19,11 @@ export function RuleExample({ rule, registry, host, sample, onSample }) {
 			onInput: (event) => onSample(event.target.value),
 		}),
 		h("span", { key: "turn", className: "wg-sub-arrow" }, h(Icon, { name: "chevron", size: 16 })),
-		h("div", { key: "out", className: "wg-sub-out" }, drawnLines(lines, rule, registry, host)),
+		h("div", { key: "out", className: "wg-sub-out" }, drawLines(lines, rule, registry, host)),
 	]);
 }
 
-function drawnLines(lines, rule, registry, host) {
+function drawLines(lines, rule, registry, host) {
 	const spans = matchLines(lines, [{ ...rule, draft: false, enabled: true }]);
 	const definition = registry.get(rule.widget);
 	const out = [];

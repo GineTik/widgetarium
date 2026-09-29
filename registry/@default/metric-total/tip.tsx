@@ -2,12 +2,12 @@ import { cardClass } from "widgetarium/kit";
 import { shortDaySaid } from "./days";
 import { compactOf } from "./numbers";
 import type { Point } from "./types";
-import { useOwnSizeWritten } from "./use-own-size-written";
+import { useWritesOwnSize } from "./use-writes-own-size";
 
 const TIP_AT = "--mt3-tip-at";
 
 export function Tip({ point, unit, left }: { point: Point; unit: string; left: number }) {
-	const held = useOwnSizeWritten();
+	const held = useWritesOwnSize();
 	return (
 		<div
 			ref={held}

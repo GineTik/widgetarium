@@ -264,7 +264,7 @@ export interface ManifestInput extends ManifestCard {
 	size: WidgetSize;
 }
 
-export function manifestOfWritten(input: ManifestInput): Manifest {
+export function manifestOfDeclared(input: ManifestInput): Manifest {
 	const props: Record<string, PropSpec> = {};
 	const problems: string[] = [];
 	for (const [name, given] of Object.entries(input.props)) {

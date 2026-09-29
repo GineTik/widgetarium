@@ -52,7 +52,7 @@ export function hintOf(call) {
 	for (const field of HINT_FIELDS) {
 		const held = call?.input?.[field];
 		if (typeof held !== "string" || held.trim() === "") continue;
-		return clippedLine(held, LONGEST_HINT);
+		return clipLine(held, LONGEST_HINT);
 	}
 	return "";
 }
@@ -84,7 +84,7 @@ export function glyphsOf(calls, most) {
 	return held;
 }
 
-export function clippedLine(text, longest) {
+export function clipLine(text, longest) {
 	const line = String(text ?? "")
 		.trim()
 		.split("\n")[0]

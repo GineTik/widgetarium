@@ -13,7 +13,7 @@ export function mountBoardByBlock(plugin, element, board, save, screen, context,
 	const key = blockKey ?? element;
 	renamePositionalMount(plugin.mounts, key, `${context.sourcePath}#0`);
 	const existing = plugin.mounts.get(key);
-	if (existing) return remounted(plugin, existing, { element, board, save, screen, context, blockKey, key });
+	if (existing) return remount(plugin, existing, { element, board, save, screen, context, blockKey, key });
 
 	const mount = freshMount(plugin, { element, board, save, screen, context });
 	plugin.mounts.set(key, mount);
@@ -28,7 +28,7 @@ function renamePositionalMount(mounts, key, positionalKey) {
 	mounts.delete(positionalKey);
 }
 
-function remounted(plugin, existing, { element, board, save, screen, context, blockKey, key }) {
+function remount(plugin, existing, { element, board, save, screen, context, blockKey, key }) {
 	trace("re-mount", {
 		key: String(key),
 		blockKey,

@@ -10,25 +10,7 @@ interface CacheEntry {
 
 const NOT_LOADED: CacheEntry = { status: "loading", data: null, failure: null, version: 0 };
 
-// CONTEXT: a gateway id may carry any path character; no path carries a NUL
-const KEY_GAP = "\u0000";
-
-function sortedValue(input: unknown): unknown {
-	if (Array.isArray(input)) return input.map(sortedValue);
-	if (input && typeof input === "object") {
-		const sorted: Record<string, unknown> = {};
-		for (const key of Object.keys(input as Record<string, unknown>).sort()) {
-			sorted[key] = sortedValue((input as Record<string, unknown>)[key]);
-		}
-		return sorted;
-	}
-	return input;
-}
-
-export function stableKey(input: unknown): string {
-	if (input === undefined) return "";
-	return JSON.stringify(sortedValue(input));
-}
+const KEY_GAP_NO_PATH_HOLDS = "\u0000";
 
 type Runner = (input: unknown) => Promise<unknown>;
 
@@ -48,8 +30,38 @@ interface CacheState {
 	awaitingRefetch: Set<string>;
 }
 
-const keyOf = (meta: ActionMeta, input: unknown) =>
-	`${meta.gatewayId}${KEY_GAP}${meta.verb}${KEY_GAP}${stableKey(input)}`;
+export function stableKey(input: unknown): string {
+	if (input === undefined) return "";
+	return JSON.stringify(sortKeys(input));
+}
+
+export function createGatewayCache() {
+	const state: CacheState = { entries: new Map(), tracked: new Map(), attached: new Map(), awaitingRefetch: new Set() };
+	return {
+		read: (meta: ActionMeta, input: unknown): CacheEntry => readEntry(state, meta, input),
+		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) =>
+			track(state, { meta, input, run, listener }),
+		invalidate: (gatewayId: string) => invalidate(state, gatewayId),
+	};
+}
+
+export const gatewayCache = createGatewayCache();
+
+function sortKeys(input: unknown): unknown {
+	if (Array.isArray(input)) return input.map(sortKeys);
+	if (input && typeof input === "object") {
+		const sorted: Record<string, unknown> = {};
+		for (const key of Object.keys(input as Record<string, unknown>).sort()) {
+			sorted[key] = sortKeys((input as Record<string, unknown>)[key]);
+		}
+		return sorted;
+	}
+	return input;
+}
+
+function keyOf(meta: ActionMeta, input: unknown): string {
+	return `${meta.gatewayId}${KEY_GAP_NO_PATH_HOLDS}${meta.verb}${KEY_GAP_NO_PATH_HOLDS}${stableKey(input)}`;
+}
 
 function notify(state: CacheState, key: string) {
 	for (const listener of state.tracked.get(key)?.listeners ?? []) listener();
@@ -74,7 +86,7 @@ function fetchNow(state: CacheState, key: string) {
 				version: (before?.version ?? 0) + 1,
 			})),
 		(failure: unknown) => {
-			console.error(`Widgetarium: ${key.split(KEY_GAP, 2).join(".")} failed`, failure);
+			console.error(`Widgetarium: ${key.split(KEY_GAP_NO_PATH_HOLDS, 2).join(".")} failed`, failure);
 			const said = failure instanceof Error ? failure.message : String(failure);
 			settle(state, key, ticket, (before) => ({
 				status: "failed",
@@ -97,7 +109,7 @@ function refetchOnceThisTick(state: CacheState, key: string) {
 }
 
 function invalidate(state: CacheState, gatewayId: string) {
-	const prefix = `${gatewayId}${KEY_GAP}`;
+	const prefix = `${gatewayId}${KEY_GAP_NO_PATH_HOLDS}`;
 	for (const key of [...state.entries.keys()]) {
 		if (!key.startsWith(prefix)) continue;
 		if (state.tracked.get(key)?.listeners.size) refetchOnceThisTick(state, key);
@@ -157,17 +169,13 @@ function track(state: CacheState, { meta, input, run, listener }: TrackRequest):
 	const key = keyOf(meta, input);
 	const nothingWasSubscribed = !state.attached.has(meta.gatewayId);
 	const held = state.tracked.get(key) ?? { run, input, listeners: new Set<() => void>(), ticket: 0 };
-	// CONTEXT: the freshest closure wins — a refetch must not read through a stale config
-	held.run = run;
-	held.input = input;
+	keepFreshestRun(held, run, input);
 	state.tracked.set(key, held);
 	held.listeners.add(listener);
 	attach(state, meta);
 	if (nothingWasSubscribed || !state.entries.has(key)) fetchNow(state, key);
 	return () => untrack(state, { key, held, listener, meta });
 }
-
-const isThenable = (held: unknown): boolean => typeof (held as { then?: unknown } | null)?.then === "function";
 
 function settleNow(state: CacheState, key: string, meta: ActionMeta, input: unknown): CacheEntry {
 	let data: unknown;
@@ -195,14 +203,11 @@ function readEntry(state: CacheState, meta: ActionMeta, input: unknown): CacheEn
 	return settleNow(state, key, meta, input);
 }
 
-export function createGatewayCache() {
-	const state: CacheState = { entries: new Map(), tracked: new Map(), attached: new Map(), awaitingRefetch: new Set() };
-	return {
-		read: (meta: ActionMeta, input: unknown): CacheEntry => readEntry(state, meta, input),
-		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) =>
-			track(state, { meta, input, run, listener }),
-		invalidate: (gatewayId: string) => invalidate(state, gatewayId),
-	};
+function keepFreshestRun(held: Tracked, run: Runner, input: unknown) {
+	held.run = run;
+	held.input = input;
 }
 
-export const gatewayCache = createGatewayCache();
+function isThenable(held: unknown): boolean {
+	return typeof (held as { then?: unknown } | null)?.then === "function";
+}

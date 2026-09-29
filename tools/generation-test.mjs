@@ -1,7 +1,7 @@
 import { fakeVault } from "./fake-vault.mjs";
 
 const { generationOf, widgetKeyOf, widgetRef } = await import("../packages/core/src/engine/widget-ref.js");
-const { compatibility, movedTileProps, propChanges } = await import("../packages/core/src/engine/compatibility.js");
+const { compatibility, moveTileProps, propChanges } = await import("../packages/core/src/engine/compatibility.js");
 const { ICrudGateway, IListGateway, IValueGateway, defineProps, manifestOfModule, z } =
 	await import("../packages/core/src/gateway/declared.ts");
 const { cardOf, RECORD_FILE } = await import("../packages/core/src/engine/catalogue-index.js");
@@ -107,7 +107,7 @@ check("a changed type breaks", reshapedVerdict.isCompatible, false);
 check("and a migration from the old props lets tiles move", reshapedVerdict.canMoveTiles, true);
 check(
 	"moving runs the migration over the tile's own config",
-	movedTileProps({ label: { from: "typed", value: "title" } }, reshapedVerdict).label,
+	moveTileProps({ label: { from: "typed", value: "title" } }, reshapedVerdict).label,
 	{ from: "typed", value: 5 },
 );
 
@@ -116,7 +116,7 @@ const renamedVerdict = verdictFor(
 );
 check(
 	"moving carries a renamed prop onto its new name",
-	movedTileProps({ label: { from: "typed", value: "x" } }, renamedVerdict),
+	moveTileProps({ label: { from: "typed", value: "x" } }, renamedVerdict),
 	{ field: { from: "typed", value: "x" } },
 );
 

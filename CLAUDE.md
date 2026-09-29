@@ -171,7 +171,7 @@ screens: the writer wrote `apart` on navigation columns and **nothing else**, be
 requires `isBox(node)` and a tile is a leaf; `surfaceVerdicts` meanwhile advised `group` on every one
 of those tiles. Two paths, disagreeing, neither reproducing the reference design — which is why the
 agent now decides. `tools/surface-shapes.mjs` holds the other half of the finding: a box takes a
-plate only when it has sibling boxes, because `decided()` refuses a box that stands alone in its
+plate only when it has sibling boxes, because `decideVerdict()` refuses a box that stands alone in its
 parent. **The agent gives every node its surface as it places it**, guided by `docs/ai/surfaces.md`;
 `widgets.mjs surfaces` reads a **drawn** board back and says which plates look wrong beside each
 other, and is never a source of surfaces to write.
@@ -325,7 +325,7 @@ expressible, and the three named regions were not able to say it. Full decision 
 **A widget prefers a size and is promised none.** Every manifest declares `size.preferredWidth`
 (pixels or `"full"`) and `size.preferredHeight` (pixels or `"auto"`) — `defineLayout` refuses one
 without — and may add `keepsRatio` and `at`, steps keyed by the width of the **region** it stands in
-(`regionPx` from `laidRegion`), never the screen, switching at once like a `max-width` query.
+(`regionPx` from `layRegion`), never the screen, switching at once like a `max-width` query.
 `preferredSizeAt` in `packages/core/src/tree.js` picks the size for a region and `preferredSizeStyle` in
 `packages/core/src/surface.js` draws it: the width as the cell's `max-inline-size`, the height as its `min-height`
 or, with `keepsRatio`, its `aspect-ratio`, each widened by the plate's padding when the cell wears one.
@@ -382,14 +382,14 @@ is a 3% grey with no edge** — `--wg-kit-page` under the board and the pane of 
 white (`--wg-kit-group-inset`). **The kit carries the rules for what is drawn inside a widget**:
 `Rows` is one plate with a line between its items (`--wg-kit-group-line`), `Grid` gives every cell a
 `Card`, and `Layout kind` is all of them behind one word, so a design changes by one prop.
-**An `indicators` region lays a `group` on every widget in it** that names no surface — `wornInRegion`
+**An `indicators` region lays a `group` on every widget in it** that names no surface — `wearInRegion`
 in `packages/core/src/tree.js`, at lay time, never written to the note — except a `text`, `layout`, `control` or
 `navigation` widget and one already standing on a plate. The only CSS that decides the colour is `[data-surface="group"] [data-surface="group"]`. `object`, a plate lifted with a
 hairline, was a second plate nobody placed and is gone; `item` was a fourth name. Both are read once
 at `normalizeBoard` through `SURFACE_WAS` beside `fill`, `outline`, `raise` and `divider` as a
 `group`, then never written again. A
 slot wears one too: the manifest's `slots.<name>.surface` is the default, a tile's `slots.<name>.surface`
-the pick, and `surfacedSlot` wraps every item the slot draws in that plate, so the widget in a slot
+the pick, and `withSlotSurface` wraps every item the slot draws in that plate, so the widget in a slot
 draws no background either — a kanban's `task-card` lies in the `group` its manifest names, raised
 because the column under it is a group already. A prop the
 parent does not feed a slotted widget arrives as a gateway over its declared default (`slotDefaults`),
@@ -401,7 +401,7 @@ the first plate from the region, a `fill` inside a `fill` is one step darker bec
 translucent, and a `divider` stands anywhere; a plate whose every child wears a plate is an error.
 The laws in `docs/ai/surfaces.md` are run by `packages/core/src/surface-laws.js` over what `packages/core/src/surface-measure.js`
 read off the drawn board — never by eye, and when in doubt, none. **The laws the tree alone can
-answer — N, 5 and N2 — are a gate, not advice**: `wornSurfaceAt` decides and writes in one call, so a
+answer — N, 5 and N2 — are a gate, not advice**: `wearSurfaceAt` decides and writes in one call, so a
 surface the laws refuse cannot be written at all, and the Design tab draws the refused ones disabled
 with the law that refused them. Everything the drawn board decides stays advice from
 `widgets.mjs surfaces`.
@@ -440,7 +440,7 @@ kind is short for `{ into: kind, toggle: adaptive }`, and an old `foldable: true
 `{ into: drawer, toggle: always }` and never written. Nothing is chosen by breakpoint:
 `columnsOf` still answers for the root's children in four words — `beside`, `floating`, `hidden`,
 `alone` — and a nested row that cannot give its children their floors takes the children carrying a
-`collapse` out of the row (`laidRowWithout`), or leaves its parent whole when it carries one itself.
+`collapse` out of the row (`layRowWithout`), or leaves its parent whole when it carries one itself.
 A collapsed box is drawn on the layer the dialog already owns: a portal into `document.body`, `fixed`
 over the whole Obsidian window, `--wg-overlay-scrim`, `--wg-kit-raise` with an edge and no cast
 shadow, growing from the point that was pressed. Its widgets stay mounted while it is shut, because
@@ -557,7 +557,7 @@ asks for it is refused by name. A widget whose styling needs this declares `api:
 
 **The kit's tokens are one Tailwind theme, served by the plugin.** `packages/kit/theme.css` maps every
 `--wg-kit-*` token onto Tailwind's namespaces — `--color-group`, `--text-sm`, `--radius-plate`,
-`--spacing-cards` — and `servedByTailwind` answers `@import "widgetarium/theme.css"` with it, so a
+`--spacing-cards` — and `serveToTailwind` answers `@import "widgetarium/theme.css"` with it, so a
 widget writes `bg-group rounded-plate text-sm` and repeats no variable. It is served out of the
 plugin's own bundle, never fetched, and any other name under `widgetarium/` is refused by the same
 function that refuses preflight. **The mapping is `@theme inline`.** A plain `@theme` declares
@@ -673,6 +673,15 @@ before re-reading the code, before blaming the cache, and before reloading the p
   documentation, a `.md` anywhere in the tree. `npm run lint:lang` must pass. Never build a sentence
   by concatenation — author the whole sentence with a placeholder.
 - Early returns over nesting; no proxy variables; every new entity needs a consumer.
+- **A name says what the code does.** Four rules:
+  1. A function that returns a changed copy or builds something is an imperative verb phrase:
+     `archiveColumn(column)`, `prune(node)`, `columnsToWrite(columns)` when it only prepares a write.
+  2. A past participle or an `is*` name is a fact about data that already exists: `isInstalled`,
+     `surfacesWritten(layout)`. A component naming a drawn state (`Collapsed`) is fine.
+  3. A hook that performs an effect every render is named for what it does: `useWritesOwnSize`.
+  4. One idiom per name: `manifestOfDeclared`, never `manifestOfWritten`.
+     Idioms that stay: `xOf(y)` for a derivation read off `y`, `isX`/`hasX`, `refuseX` answering a reason
+     or null, `withX(y)`, `useX`, `createX`, `defineX`, `*Gateway`/`I*Gateway`, `*Schema`.
 - Migrations are **lazy**: reading accepts the old shape, writing emits the new one, and nothing bulk
   rewrites the vault. A prop's `was` carries every name it had. Until the first release this law is
   suspended for the manifest and tile shapes: boards written before are rebound by hand, and every

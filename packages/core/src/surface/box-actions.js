@@ -7,8 +7,8 @@ import {
 	regionCollapseOf,
 	SHEET,
 	sideOf,
-	toggledFold,
-	toggledFoldAt,
+	toggleFold,
+	toggleFoldAt,
 } from "../tree.js";
 import { lookOf } from "./collapsed-panel.js";
 
@@ -50,13 +50,13 @@ export function dockedAction(at, chrome) {
 		look: sideOf(chrome.drawn, at),
 		name: node.name ?? node.purpose,
 		isOn: !isFolded(chrome.root, at),
-		press: () => chrome.commitLayout((held) => toggledFold(held, at)),
+		press: () => chrome.commitLayout((held) => toggleFold(held, at)),
 	});
 }
 
 export function nestedAction(toggle, chrome) {
 	if (toggle.hasTrigger) return null;
-	const foldAt = () => chrome.commitLayout((held) => toggledFoldAt(held, toggle.path));
+	const foldAt = () => chrome.commitLayout((held) => toggleFoldAt(held, toggle.path));
 	if (toggle.kind === "box")
 		return boxAction({ openKey: toggle.openKey, look: toggle.side, name: toggle.label, isOn: true, press: foldAt });
 	if (toggle.isFolded)

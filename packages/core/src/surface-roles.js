@@ -1,6 +1,6 @@
 import { APART, GROUP, isBox, isPainted, NO_SURFACE } from "./tree.js";
 import { readingOfProp, wrapOf, WRAP_EACH } from "./reading.js";
-import { SAID_AS, slotSurfaceSaid } from "@widgetarium/kit/plates";
+import { SAID_AS, readSlotSurface } from "@widgetarium/kit/plates";
 
 export {
 	MAX_SURFACE_DEPTH,
@@ -10,7 +10,7 @@ export {
 	misnested,
 	tooDeep,
 	plateRefusal,
-	slotSurfaceSaid,
+	readSlotSurface,
 } from "@widgetarium/kit/plates";
 
 export const LAYOUT_ROLE = "layout";
@@ -56,11 +56,6 @@ export function kindOfNode(node, widgetOf) {
 	return `${node.role ?? ""}:${node.dir}:[${node.of.map((one) => kindOfNode(one, widgetOf)).join(",")}]`;
 }
 
-function holdsRepeat(nodes, widgetOf) {
-	const kinds = nodes.map((one) => kindOfNode(one, widgetOf));
-	return new Set(kinds).size < kinds.length;
-}
-
 export function repeatEarning(node, siblings, widgetOf) {
 	const kind = kindOfNode(node, widgetOf);
 	if (siblings.some((one) => one !== node && kindOfNode(one, widgetOf) === kind)) return EARNED_BY_PEERS;
@@ -76,9 +71,9 @@ export function unearnedPlate(node, siblings, widgetOf) {
 }
 
 export function slotSurfaceOf(spec, held, card) {
-	const picked = slotSurfaceSaid(held?.surface);
+	const picked = readSlotSurface(held?.surface);
 	if (picked) return picked;
-	return slotSurfaceSaid(spec?.surface) ?? wornByReading(card);
+	return readSlotSurface(spec?.surface) ?? wornByReading(card);
 }
 
 // TRADE-OFF: only when one collection prop stands alone, because a slot never says which prop it draws and two would be a guess
@@ -86,4 +81,9 @@ function wornByReading(card) {
 	const collections = Object.values(card?.props ?? {}).filter((prop) => prop?.kind === "collection");
 	if (collections.length !== 1) return NO_SURFACE;
 	return wrapOf(readingOfProp(collections[0])) === WRAP_EACH ? GROUP : NO_SURFACE;
+}
+
+function holdsRepeat(nodes, widgetOf) {
+	const kinds = nodes.map((one) => kindOfNode(one, widgetOf));
+	return new Set(kinds).size < kinds.length;
 }

@@ -67,7 +67,7 @@ export function statOf(records: readonly unknown[], query: StatQuery, today: str
 	if (comparison === "none") return current;
 	const previous = span ? previousSpanOf(window, span) : null;
 	if (!previous) return null;
-	return comparedWith(current, readingIn(occurrences, query, previous, previous.to), comparison);
+	return compareWith(current, readingIn(occurrences, query, previous, previous.to), comparison);
 }
 
 export function statGateway(
@@ -132,7 +132,7 @@ function readingIn(occurrences: Occurrence[], query: StatQuery, span: Span | nul
 	const counted = inside.filter((held) => isMatch(held.record, query.counts));
 	const algorithm = oneOf(STAT_ALGORITHMS, query.algorithm, "count");
 	const reading = READINGS[algorithm]({ inside, counted, field: query.field ?? "", span, end });
-	return reading === null ? null : roundedOf(reading);
+	return reading === null ? null : roundToTenth(reading);
 }
 
 interface ReadingInput {
@@ -226,13 +226,13 @@ function longestMatchesOf(inside: Occurrence[], counted: Occurrence[]): number {
 	return best;
 }
 
-function comparedWith(current: number | null, previous: number | null, comparison: StatComparison): number | null {
+function compareWith(current: number | null, previous: number | null, comparison: StatComparison): number | null {
 	if (current === null || previous === null) return null;
-	if (comparison === "change") return roundedOf(current - previous);
+	if (comparison === "change") return roundToTenth(current - previous);
 	if (previous === 0) return null;
-	return roundedOf(((current - previous) / Math.abs(previous)) * 100);
+	return roundToTenth(((current - previous) / Math.abs(previous)) * 100);
 }
 
-function roundedOf(value: number): number {
+function roundToTenth(value: number): number {
 	return Math.round(value * 10) / 10;
 }

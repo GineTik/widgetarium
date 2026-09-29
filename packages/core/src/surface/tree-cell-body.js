@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import { platesAtCell, PLATES_ABOVE } from "@widgetarium/kit/surface";
-import { rekeyed } from "../model.js";
+import { rekey } from "../model.js";
 import { DrawnInShell } from "../mounted.js";
 import { behindBoundary } from "./behind-boundary.js";
 import { isDrawable } from "./is-drawable.js";
@@ -15,7 +15,7 @@ export function treeCellBody({ tile, definition, shared, cell, patchTile, editin
 	const onPatch = (patch) => patchTile(tile.id, patch);
 	const place = { id: tile.id, x: 0, y: 0, w: cell.width, h: 1 };
 	const enterMount = editing && onOpenSettings ? (steps) => onOpenSettings(tile.id, null, steps) : null;
-	const drawn = drawnTile(
+	const drawn = drawTile(
 		shared.shells,
 		tile,
 		h(
@@ -28,7 +28,7 @@ export function treeCellBody({ tile, definition, shared, cell, patchTile, editin
 	return note ? [note, drawn] : drawn;
 }
 
-function drawnTile(shells, tile, child) {
+function drawTile(shells, tile, child) {
 	return h(DrawnInShell, { shell: shells.shellFor(tile.id), tree: behindBoundary(tile.widget, child) });
 }
 
@@ -36,6 +36,6 @@ function widgetPatchers(tile, onPatch) {
 	return {
 		patchProp: (name, patch) =>
 			onPatch((now) => ({ props: { ...(now.props ?? {}), [name]: resolvePatch(now.props?.[name] ?? {}, patch) } })),
-		patchMounted: (name, was, patch) => onPatch({ mounted: rekeyed(tile.mounted, name, was, patch) }),
+		patchMounted: (name, was, patch) => onPatch({ mounted: rekey(tile.mounted, name, was, patch) }),
 	};
 }

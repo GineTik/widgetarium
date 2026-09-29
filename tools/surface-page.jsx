@@ -7,7 +7,7 @@ import { measureTile } from "../packages/core/src/surface-measure.js";
 import { contentInsetsOf } from "../packages/core/src/content-insets.js";
 import { SlotList } from "../packages/kit/src/index.ts";
 import { gapVarsOf } from "../packages/core/src/tree.js";
-import { surfacedSlot } from "../packages/core/src/widget-root.js";
+import { withSlotSurface } from "../packages/core/src/widget-root.js";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.mjs";
 
 const WIDTH = 1400;
@@ -273,7 +273,7 @@ for (const [name, isCard] of [
 	holder.appendChild(ground);
 	render(
 		h(SlotList, {
-			slot: surfacedSlot(drawProbe, { surface: isCard ? "group" : "none", isCard }),
+			slot: withSlotSurface(drawProbe, { surface: isCard ? "group" : "none", isCard }),
 			rows: slotRows,
 			give: (row) => row,
 		}),

@@ -39,7 +39,7 @@ const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
 const kit = await import("../packages/kit/src/index.ts");
 const { collectionGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
-const { mappedCollection } = await import("../packages/core/src/gateway/mapped.ts");
+const { mapCollection } = await import("../packages/core/src/gateway/mapped.ts");
 const { needsOf } = await import("../packages/core/src/gateway/props.js");
 
 const WIDGET = "registry/@default/month/widget.tsx";
@@ -113,7 +113,7 @@ function gatewayOver(notes, verbs = ["update", "create"]) {
 	};
 	minted += 1;
 	const base = collectionGateway({ id: `month-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
-	return mappedCollection(base, { needs: needsOf(DECLARED.days) });
+	return mapCollection(base, { needs: needsOf(DECLARED.days) });
 }
 
 const host = document.getElementById("host");

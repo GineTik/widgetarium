@@ -2,11 +2,11 @@ import { createElement as h, useRef } from "react";
 import { GAP_PX } from "../tree.js";
 import { nodeElement } from "./tree-nodes.js";
 import { TreeCell } from "./tree-cell.js";
-import { useSettledCells } from "./use-settled-cells.js";
+import { useSettlesCells } from "./use-settles-cells.js";
 
 export function TreeRegion({ node, insets, onCarry, overlay, ...draw }) {
 	const rootRef = useRef(null);
-	useSettledCells(rootRef, insets);
+	useSettlesCells(rootRef, insets);
 
 	return h(
 		"div",

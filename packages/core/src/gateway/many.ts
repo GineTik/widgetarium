@@ -52,13 +52,13 @@ export function withManyVerbs<G extends object>(gateway: G): G {
 	return Object.assign(gateway, many);
 }
 
-function derived<I, O>(from: Verb, run: (input: I) => Promise<O>): Action<I, O> {
+function deriveVerb<I, O>(from: Verb, run: (input: I) => Promise<O>): Action<I, O> {
 	return Object.assign(run, { can: () => from.can() });
 }
 
 function manyOver(verb: Verb): Action<readonly unknown[], ManyResult<unknown, unknown>> {
 	const run = verb as unknown as (input: unknown) => Promise<unknown>;
-	return derived(verb, async (inputs: readonly unknown[]) => {
+	return deriveVerb(verb, async (inputs: readonly unknown[]) => {
 		const settled = await Promise.allSettled(inputs.map((input) => run(input)));
 		const done: unknown[] = [];
 		const failed: { input: unknown; failure: unknown }[] = [];

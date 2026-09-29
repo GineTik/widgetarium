@@ -7,7 +7,7 @@ import {
 	javascriptSourceRefusal,
 	widgetModulesUnder,
 } from "@widgetarium/core/engine/widget-build.js";
-import { listedIn } from "./vault-files.mjs";
+import { listFolder } from "./vault-files.mjs";
 import { SCOPE_FILES, WIDGET_FILES, stampOf } from "@widgetarium/core/engine/widget-source.js";
 import { apiRefusal } from "@widgetarium/core/version.js";
 
@@ -26,8 +26,8 @@ export async function installWidget(entry, { widgetsDir, lockPath }) {
 
 	const { taken, shared, into, scopeAt, described } = planned;
 	await writeLock(lockPath, lock, entry.id, { ...described, state: INSTALL_PENDING });
-	await writtenInto(into, taken);
-	await writtenInto(scopeAt, shared);
+	await writeInto(into, taken);
+	await writeInto(scopeAt, shared);
 	await writeLock(lockPath, lock, entry.id, described);
 	return { failure: null, files: Object.keys(taken), shared: Object.keys(shared), at: into };
 }
@@ -50,7 +50,7 @@ async function sourceMissingFailure(entry, taken) {
 }
 
 async function whatWouldBeWritten(entry, widgetsDir) {
-	const modules = await widgetModulesUnder(entry.folder, listedIn);
+	const modules = await widgetModulesUnder(entry.folder, listFolder);
 	const taken = await readFrom(entry.folder, [...new Set([...WIDGET_FILES, ...modules])]);
 	if (!SOURCE_FILES.some((file) => file in taken)) return { failure: await sourceMissingFailure(entry, taken) };
 
@@ -95,7 +95,7 @@ async function alreadyStanding(into, files) {
 	return found;
 }
 
-async function writtenInto(into, files) {
+async function writeInto(into, files) {
 	for (const [file, text] of Object.entries(files)) {
 		await mkdir(dirname(join(into, file)), { recursive: true });
 		await writeFile(join(into, file), text);

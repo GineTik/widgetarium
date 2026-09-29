@@ -1,8 +1,8 @@
 import type { ViewHost } from "widgetarium";
-import { useMarkdownRenderedInto } from "widgetarium/kit";
+import { useRendersMarkdownInto } from "widgetarium/kit";
 
 export function MarkdownLine({ host, text }: { host: ViewHost; text: string }) {
-	const body = useMarkdownRenderedInto(host, text);
+	const body = useRendersMarkdownInto(host, text);
 	return host.can.renderMarkdown ? (
 		<div ref={body} className="wg-icon-list-text markdown-rendered" />
 	) : (

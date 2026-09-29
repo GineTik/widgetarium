@@ -4,7 +4,7 @@ const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway
 const { problemsOf } = await import("../packages/core/src/gateway/problems.ts");
 const { ICrudGateway, IValueGateway, defineProps, manifestOfModule, z } =
 	await import("../packages/core/src/gateway/declared.ts");
-const { declaredWidget } = await import("../packages/core/src/declared-widget.js");
+const { createDeclaredWidget } = await import("../packages/core/src/declared-widget.js");
 
 let failed = 0;
 function check(what, got, wanted) {
@@ -105,7 +105,7 @@ const DayNoteSchema = z.object({
 });
 const days = { days: ICrudGateway.of(DayNoteSchema) };
 const described = manifestOfModule({
-	default: declaredWidget(defineProps(days), () => null),
+	default: createDeclaredWidget(defineProps(days), () => null),
 	metadata: { title: "Days", props: { days: { describes: { done: { label: "Kept", type: "number" } } } } },
 	layout: LAYOUT,
 });
@@ -122,7 +122,10 @@ const FaceSchema = z.object({
 		.meta({ aka: ["mood"] }),
 });
 const wrapped = manifestOfModule({
-	default: declaredWidget(defineProps({ face: IValueGateway.of(FaceSchema.default({})).pick("get") }), () => null),
+	default: createDeclaredWidget(
+		defineProps({ face: IValueGateway.of(FaceSchema.default({})).pick("get") }),
+		() => null,
+	),
 	metadata: { title: "Face" },
 	layout: LAYOUT,
 });
@@ -133,7 +136,7 @@ check(
 	"metadata naming aka is refused with the schema line that replaces it",
 	refusal(() =>
 		manifestOfModule({
-			default: declaredWidget(defineProps(days), () => null),
+			default: createDeclaredWidget(defineProps(days), () => null),
 			metadata: { title: "Days", props: { days: { describes: { done: { aka: ["kept"] } } } } },
 			layout: LAYOUT,
 		}),

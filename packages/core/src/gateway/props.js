@@ -2,7 +2,7 @@ import {
 	applyQuery,
 	arrayGateway,
 	collectionGateway,
-	refusedVerb,
+	refuseVerb,
 	rowOf,
 	soloGateway,
 	toRows,
@@ -16,7 +16,7 @@ export function slotDefaults(manifest, held) {
 	return Object.fromEntries(
 		Object.entries(manifest?.props ?? {}).map(([name, spec]) => [
 			name,
-			declaredGateway(`${manifest.id}/${name}`, spec, held?.props?.[name]),
+			createDeclaredGateway(`${manifest.id}/${name}`, spec, held?.props?.[name]),
 		]),
 	);
 }
@@ -116,11 +116,11 @@ export function allowedVerbs(spec, config, binding) {
 	);
 }
 
-export function withinAllowed(gateway, decisions) {
+export function restrictToAllowed(gateway, decisions) {
 	const refused = decisions.filter((decision) => !decision.can);
 	if (!gateway || refused.length === 0) return gateway;
 	const narrowed = { ...gateway };
-	for (const decision of refused) narrowed[decision.verb] = refusedVerb(gateway[decision.verb], decision.reason);
+	for (const decision of refused) narrowed[decision.verb] = refuseVerb(gateway[decision.verb], decision.reason);
 	return narrowed;
 }
 
@@ -146,15 +146,15 @@ function wrapRows(rows) {
 
 const isPlain = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 
-function flattened(data) {
+function flattenProps(data) {
 	if (!isPlain(data)) return data;
 	const { props, ...rest } = data;
 	return isPlain(props) ? { ...rest, ...props } : rest;
 }
 
-function patched(value, data) {
-	if (!isPlain(value) || !isPlain(data)) return flattened(data);
-	return { ...value, ...flattened(data) };
+function patchValue(value, data) {
+	if (!isPlain(value) || !isPlain(data)) return flattenProps(data);
+	return { ...value, ...flattenProps(data) };
 }
 
 function updateStoredRow(write, { ref, data }) {
@@ -162,7 +162,7 @@ function updateStoredRow(write, { ref, data }) {
 	write((rows) =>
 		rows.map((row) => {
 			if (row.ref !== ref) return row;
-			next = rowOf(patched(valueIn(row), data), ref);
+			next = rowOf(patchValue(valueIn(row), data), ref);
 			return next;
 		}),
 	);
@@ -174,7 +174,7 @@ const withMintedRef = (row) => (row?.ref ? row : { ...row, ref: mintRef() });
 function hardcodeWrites(write) {
 	return {
 		create: (draft) => {
-			const row = rowOf(flattened(draft), mintRef());
+			const row = rowOf(flattenProps(draft), mintRef());
 			write((rows) => [...rows, row]);
 			return row;
 		},
@@ -209,7 +209,7 @@ function allowWritten(config, unasked) {
 	return unasked;
 }
 
-function declaredGateway(key, spec, config) {
+function createDeclaredGateway(key, spec, config) {
 	if (spec.kind === "collection") {
 		const rows = storedRows(config?.rows ?? spec.default?.rows, spec);
 		return arrayGateway(rows, {}, `slot:${key}?${stableKey(rows)}`);

@@ -4,14 +4,14 @@ import { fileURLToPath } from "node:url";
 import { boardOfNote } from "./board-note.mjs";
 import { lintOfNote } from "./lint-command.mjs";
 import { surfacesOfNote } from "./surfaces-command.mjs";
-import { columnsOf, keptAt, laidRegion, sideOf } from "@widgetarium/core/tree.js";
+import { columnsOf, keptAt, layRegion, sideOf } from "@widgetarium/core/tree.js";
 import { cardIn } from "./entries.mjs";
 import { filesIn, foldersIn, readJson, widgetFilesIn } from "./vault-files.mjs";
 import { installWidget } from "./install-command.mjs";
 import { BASE_NAMES, baseNamed, cardLayoutNamed, everyBase } from "./shape-command.mjs";
 import { offeredBySource } from "./offered.mjs";
 import { surfaceNamesIn } from "./widget-surface.mjs";
-import { rankedWidgets, refusedReading } from "./find-command.mjs";
+import { rankWidgets, refuseReading } from "./find-command.mjs";
 import { checkWidget, saidWidgetCheck } from "@widgetarium/core/widget-check.js";
 import { HELP } from "./widgets-cli-help.mjs";
 import { drawnNode } from "./drawn-node.mjs";
@@ -124,7 +124,7 @@ async function offeredWidgets() {
 	return [...listed, ...fetched];
 }
 
-function merged(installed, offered) {
+function mergeEntries(installed, offered) {
 	const held = new Map();
 	for (const entry of [...offered, ...installed]) {
 		if (!entry.id) continue;
@@ -137,7 +137,7 @@ function say(options, value, lines) {
 	console.log(options.text ? lines : JSON.stringify(value, null, "\t"));
 }
 
-function told(options, answer) {
+function tell(options, answer) {
 	if (answer.refusal) {
 		console.error(answer.refusal);
 		return 1;
@@ -147,13 +147,13 @@ function told(options, answer) {
 }
 
 async function findRanked(options) {
-	const refusal = refusedReading(options.reading);
+	const refusal = refuseReading(options.reading);
 	if (refusal) {
 		console.error(refusal);
 		return 1;
 	}
-	const entries = merged(await installedWidgets(), await offeredWidgets());
-	const { value, text } = await rankedWidgets(entries, options);
+	const entries = mergeEntries(await installedWidgets(), await offeredWidgets());
+	const { value, text } = await rankWidgets(entries, options);
 	say(options, value, text);
 	return 0;
 }
@@ -206,8 +206,8 @@ async function runCheck(id, options) {
 	}
 	const found = checkWidget({
 		id,
-		source: await joinedFiles(entry, isWidgetModule),
-		styles: await joinedFiles(entry, (name) => STYLE_FILES.includes(name)),
+		source: await joinFiles(entry, isWidgetModule),
+		styles: await joinFiles(entry, (name) => STYLE_FILES.includes(name)),
 		card: await cardOf(entry),
 		surface,
 	});
@@ -215,7 +215,7 @@ async function runCheck(id, options) {
 	return found.length === 0 ? 0 : 1;
 }
 
-async function joinedFiles(entry, isWanted) {
+async function joinFiles(entry, isWanted) {
 	const named = (entry.files ?? []).filter(isWanted);
 	const texts = [];
 	for (const name of named) texts.push(await readFile(join(entry.folder, name), "utf8").catch(() => ""));
@@ -227,7 +227,7 @@ async function cardOf(entry) {
 }
 
 async function entryById(id) {
-	const all = merged(await installedWidgets(), await offeredWidgets());
+	const all = mergeEntries(await installedWidgets(), await offeredWidgets());
 	return all.find((entry) => entry.id === id) ?? null;
 }
 
@@ -261,7 +261,7 @@ async function source(id) {
 
 async function packs(options) {
 	const held = new Map();
-	for (const entry of merged(await installedWidgets(), await offeredWidgets())) {
+	for (const entry of mergeEntries(await installedWidgets(), await offeredWidgets())) {
 		const seen = held.get(entry.pack) ?? { pack: entry.pack, widgets: 0, installed: 0 };
 		seen.widgets += 1;
 		if (entry.installed) seen.installed += 1;
@@ -319,7 +319,7 @@ async function layout(at, options) {
 	const tree = [];
 	for (const column of where.beside) {
 		tree.push(named(column.at));
-		tree.push(drawnNode(laidRegion(root, column.at, column.width, { ask }).node, 1));
+		tree.push(drawnNode(layRegion(root, column.at, column.width, { ask }).node, 1));
 	}
 
 	const head = [
@@ -351,9 +351,9 @@ const COMMANDS = {
 	list: { run: (argument, options) => findRanked(options) },
 	packs: { run: (argument, options) => packs(options) },
 	sources: { run: (argument, options) => sources(options) },
-	bases: { run: (argument, options) => told(options, everyBase()) },
-	base: { asks: "base", run: (argument, options) => told(options, baseNamed(argument)) },
-	card: { run: (argument, options) => told(options, cardLayoutNamed(argument)) },
+	bases: { run: (argument, options) => tell(options, everyBase()) },
+	base: { asks: "base", run: (argument, options) => tell(options, baseNamed(argument)) },
+	card: { run: (argument, options) => tell(options, cardLayoutNamed(argument)) },
 	install: { asks: "widget", run: (argument, options) => runInstall(argument, options) },
 	start: { asks: "widget", run: (argument, options) => runStart(argument, options) },
 	check: { asks: "widget", run: (argument, options) => runCheck(argument, options) },

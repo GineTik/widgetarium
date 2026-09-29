@@ -1,4 +1,4 @@
-import { clippedLine, ourCallOf } from "./tools.js";
+import { clipLine, ourCallOf } from "./tools.js";
 
 export const TASK_PROGRESS = "@default/task-progress";
 
@@ -125,7 +125,7 @@ function noteNameOf(call) {
 }
 
 function firstLineOf(output) {
-	return clippedLine(output, LONGEST_HINT);
+	return clipLine(output, LONGEST_HINT);
 }
 
 function writesInto(call, id) {

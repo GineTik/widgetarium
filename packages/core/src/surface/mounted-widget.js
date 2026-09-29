@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import { heldKey, heldTile, rekeyed } from "../model.js";
+import { heldKey, heldTile, rekey } from "../model.js";
 import { WidgetHost } from "./widget-host.js";
 import { resolvePatch } from "./resolve-patch.js";
 
@@ -16,7 +16,7 @@ export function MountedWidget({ name, was, widget, definition, tile, patchMounte
 		patchProp: (given, patch) =>
 			patchMounted(name, was, { props: { ...child.props, [given]: resolvePatch(child.props?.[given] ?? {}, patch) } }),
 		patchMounted: (held, heldWas, patch) =>
-			patchMounted(name, was, { mounted: rekeyed(child.mounted, held, heldWas, patch) }),
+			patchMounted(name, was, { mounted: rekey(child.mounted, held, heldWas, patch) }),
 		onPatch: (patch) => patchMounted(name, was, patch),
 	});
 }

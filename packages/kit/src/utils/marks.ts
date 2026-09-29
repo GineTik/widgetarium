@@ -3,8 +3,8 @@ import { MARK_SHAPES, MARK_SHAPE_NAMES, MARK_TONE_NAMES, SHAPE_STREAM, TONE_STRE
 export function markOf(seed) {
 	const hash = hashOf(String(seed ?? ""));
 	return {
-		shape: pickedFrom(MARK_SHAPE_NAMES, stirred(hash ^ SHAPE_STREAM)),
-		tone: pickedFrom(MARK_TONE_NAMES, stirred(hash ^ TONE_STREAM)),
+		shape: pickedFrom(MARK_SHAPE_NAMES, stir(hash ^ SHAPE_STREAM)),
+		tone: pickedFrom(MARK_TONE_NAMES, stir(hash ^ TONE_STREAM)),
 	};
 }
 
@@ -18,7 +18,7 @@ function hashOf(text) {
 	return held >>> 0;
 }
 
-function stirred(held) {
+function stir(held) {
 	const once = Math.imul(held ^ (held >>> 16), 2246822507);
 	const twice = Math.imul(once ^ (once >>> 13), 3266489909);
 	return (twice ^ (twice >>> 16)) >>> 0;

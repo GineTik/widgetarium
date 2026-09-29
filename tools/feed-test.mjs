@@ -44,7 +44,7 @@ const kit = await import("../packages/kit/src/index.ts");
 const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
 const { slotDefaults } = await import("../packages/core/src/gateway/props.js");
 const { applyQuery, toRows } = await import("../packages/core/src/gateway/create.ts");
-const { surfacedSlot } = await import("../packages/core/src/widget-root.js");
+const { withSlotSurface } = await import("../packages/core/src/widget-root.js");
 const { previewProps } = await import("../packages/core/src/preview.js");
 const { manifestOfEveryShippedWidget } = await import("./widget-props.mjs");
 
@@ -142,7 +142,7 @@ const reveal = async () => {
 	await settled();
 };
 
-const cards = surfacedSlot(Probe, { surface: "group", isCard: true });
+const cards = withSlotSurface(Probe, { surface: "group", isCard: true });
 await draw({ items, pageSize: soloGateway(10, {}, "feed-test/size"), slots: { item: cards } });
 check("the first load draws ten", shown().length, 10);
 check("each item is read whole through the collection's get, not the listed record", shown()[0], "Body of Daily/01.md");

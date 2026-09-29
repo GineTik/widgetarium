@@ -96,7 +96,7 @@ function optionOf(ref: string, held: Held): Option {
 	return { ref, label, value: textOf(held, VALUE) || label };
 }
 
-function steppedTo(key: string, at: number, count: number): number | null {
+function stepTo(key: string, at: number, count: number): number | null {
 	const step = STEP_BY_KEY[key];
 	if (step !== undefined) return (at + step + count) % count;
 	const end = END_BY_KEY[key];
@@ -130,7 +130,7 @@ const UnderlineTabs = createWidget({
 
 		const onKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
 			const from = rows.findIndex((row) => row.ref === active?.ref);
-			const at = steppedTo(event.key, Math.max(from, 0), rows.length);
+			const at = stepTo(event.key, Math.max(from, 0), rows.length);
 			const picked = at === null ? null : rows[at];
 			if (at === null || !picked) return;
 			event.preventDefault();

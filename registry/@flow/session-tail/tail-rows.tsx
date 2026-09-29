@@ -6,7 +6,7 @@ import { CSS } from "./style";
 import type { LogLine, TailProps } from "./types";
 import { useBehind } from "./use-behind";
 import { useFollowing } from "./use-following";
-import { useStuckToEnd } from "./use-stuck-to-end";
+import { useSticksToEnd } from "./use-sticks-to-end";
 
 type Drawn = NonNullable<TailProps["line"]>;
 
@@ -18,7 +18,11 @@ export function TailRows({ rows, total, following, Line }: RowsProps) {
 	const { isFollowing, setFollowing } = useFollowing(following);
 	const oldestFirst = useMemo(() => [...rows].reverse(), [rows]);
 	const newest = oldestFirst[oldestFirst.length - 1];
-	const { scroller, onScroll } = useStuckToEnd(isFollowing, `${oldestFirst.length}|${newest?.ref ?? ""}`, setFollowing);
+	const { scroller, onScroll } = useSticksToEnd(
+		isFollowing,
+		`${oldestFirst.length}|${newest?.ref ?? ""}`,
+		setFollowing,
+	);
 	const behind = useBehind(isFollowing, total);
 
 	return (

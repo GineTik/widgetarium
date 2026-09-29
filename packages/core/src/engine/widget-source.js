@@ -57,10 +57,8 @@ async function offersInFolder({ disk }, source) {
 	const registry = await registryInFolder(disk, source);
 	if (wasRefused(registry)) return [];
 
-	const offers = registry
-		? await listedInFolderRegistry(disk, source, registry.rows)
-		: await listedInFolderTree(disk, source);
-	return stampedWhereItMoved(offers, registry);
+	const offers = registry ? await listFolderRegistry(disk, source, registry.rows) : await listFolderTree(disk, source);
+	return stampWhereItMoved(offers, registry);
 }
 
 function wasRefused(registry) {
@@ -69,7 +67,7 @@ function wasRefused(registry) {
 	return true;
 }
 
-function stampedWhereItMoved(offers, registry) {
+function stampWhereItMoved(offers, registry) {
 	if (!registry?.movedTo) return offers;
 	return offers.map((offer) => ({ ...offer, manifest: { ...offer.manifest, movedTo: registry.movedTo } }));
 }
@@ -85,7 +83,7 @@ async function registryInFolder(disk, source) {
 	}
 }
 
-async function listedInFolderRegistry(disk, source, rows) {
+async function listFolderRegistry(disk, source, rows) {
 	const found = [];
 	for (const row of rows) {
 		const under = row.path ?? scopedName(row.id);
@@ -100,7 +98,7 @@ async function listedInFolderRegistry(disk, source, rows) {
 	return found;
 }
 
-async function listedInFolderTree(disk, source) {
+async function listFolderTree(disk, source) {
 	const found = [];
 	for (const scope of await disk.folders(source.path)) {
 		for (const folder of await disk.folders(scope)) {
@@ -138,9 +136,9 @@ async function offersInRepository(doors, source) {
 		if (wasRefused(registry)) return [];
 
 		const offers = registry
-			? await listedInRegistry(doors, repository, commit, source, registry.rows)
-			: await listedInTree(doors, repository, commit, source);
-		return stampedWhereItMoved(offers, registry);
+			? await listRegistry(doors, repository, commit, source, registry.rows)
+			: await listTree(doors, repository, commit, source);
+		return stampWhereItMoved(offers, registry);
 	} catch (failure) {
 		console.error(`[widgetarium] cannot read ${source.repository}`, failure);
 		return [];
@@ -157,12 +155,12 @@ async function registryIfThereIsOne({ fetchText }, repository, commit, source) {
 	return readRegistry(text, `${source.repository}/${REGISTRY_FILE}`);
 }
 
-async function listedInRegistry(doors, repository, commit, source, rows) {
+async function listRegistry(doors, repository, commit, source, rows) {
 	const found = [];
 	for (const row of rows) {
 		const folder = row.path ?? scopedName(row.id);
 		if (!folder) continue;
-		const card = await recordServedAt(doors, repository, commit, folder);
+		const card = await fetchServedRecord(doors, repository, commit, folder);
 		found.push(
 			offeredFromRepository({ ...row, ...card, id: row.id, files: row.files ?? card?.files }, folder, commit, source),
 		);
@@ -170,7 +168,7 @@ async function listedInRegistry(doors, repository, commit, source, rows) {
 	return found;
 }
 
-async function recordServedAt({ fetchText }, repository, commit, folder) {
+async function fetchServedRecord({ fetchText }, repository, commit, folder) {
 	for (const name of RECORD_FILES) {
 		const served = await fetchText(rawUrl(repository, commit, `${folder}/${name}`))
 			.then(JSON.parse)
@@ -185,7 +183,7 @@ function folderOfRecord(path) {
 	return name ? path.slice(0, -name.length - 1) : null;
 }
 
-async function listedInTree(doors, repository, commit, source) {
+async function listTree(doors, repository, commit, source) {
 	const under = source.path ? `${source.path}/` : "";
 	const tree = (await doors.fetchJson(treeUrl(repository, commit)))?.tree ?? [];
 	const found = [];
@@ -194,7 +192,7 @@ async function listedInTree(doors, repository, commit, source) {
 		const folder = node?.path?.startsWith(under) ? folderOfRecord(node.path) : null;
 		if (!folder || seen.has(folder)) continue;
 		seen.add(folder);
-		const manifest = await recordServedAt(doors, repository, commit, folder);
+		const manifest = await fetchServedRecord(doors, repository, commit, folder);
 		const id = manifest?.id ?? idOfFolder(folder);
 		if (manifest && id) found.push(offeredFromRepository({ ...manifest, id }, folder, commit, source));
 	}
@@ -257,7 +255,7 @@ async function fromFolder({ disk }, listed) {
 	}
 
 	const scope = await filesUnder(disk, scopeOf(folder), SCOPE_FILES);
-	return answered({ files, scope, record: readRecord(listed.manifest, idOfFolder(folder)), commit: stampOf(files) });
+	return answerHeld({ files, scope, record: readRecord(listed.manifest, idOfFolder(folder)), commit: stampOf(files) });
 }
 
 async function javascriptNamesAt(disk, folder) {
@@ -309,15 +307,15 @@ async function fromRepository(doors, manifest, onStep) {
 	const unlisted = listedSourceRefusal(wanted, manifest);
 	if (unlisted) return refuse(unlisted);
 
-	const fetched = await fetchedFrom(doors, repository, manifest, wanted, onStep);
+	const fetched = await fetchFrom(doors, repository, manifest, wanted, onStep);
 	if (!fetched.ok) return fetched;
 
-	const served = recordServedUnder(fetched.files, manifest);
+	const served = readServedRecord(fetched.files, manifest);
 	if (!served.ok) return refuse(served.failure);
-	return answered({ files: fetched.files, scope: {}, record: served.record, commit: fetched.commit });
+	return answerHeld({ files: fetched.files, scope: {}, record: served.record, commit: fetched.commit });
 }
 
-async function fetchedFrom({ fetchJson, fetchText }, repository, manifest, wanted, onStep) {
+async function fetchFrom({ fetchJson, fetchText }, repository, manifest, wanted, onStep) {
 	const files = {};
 	try {
 		const commit = String((await fetchJson(commitUrl(repository, manifest.ref)))?.sha ?? "");
@@ -334,7 +332,7 @@ async function fetchedFrom({ fetchJson, fetchText }, repository, manifest, wante
 	}
 }
 
-function recordServedUnder(files, promised) {
+function readServedRecord(files, promised) {
 	const served = recordIn(files);
 	if (served === undefined) return { ok: true, record: readRecord(promised, promised.id), failure: null };
 
@@ -349,7 +347,7 @@ function recordServedUnder(files, promised) {
 	return { ok: true, record: readRecord(parsed, promised.id), failure: null };
 }
 
-function answered(held) {
+function answerHeld(held) {
 	const refusal = apiRefusal(held.record);
 	return refusal ? refuse(refusal) : { ok: true, ...held, failure: null };
 }

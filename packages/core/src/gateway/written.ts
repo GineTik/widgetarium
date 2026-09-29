@@ -19,14 +19,14 @@ const MIGRATES_FROM_NOTHING = "migration {at} names no props it migrates from";
 
 const SIBLING_FIELDS = ["rows", "picked", "fieldFrom"] as const;
 
-export function writtenPartsOf(props: DeclaredProps, described: Described) {
+export function partsOfDeclared(props: DeclaredProps, described: Described) {
 	const parts = { props: {}, slots: {}, mounts: {} } as Record<"props" | "slots" | "mounts", Record<string, unknown>>;
 	for (const [name, held] of Object.entries(props)) {
 		const declaration = declarationIn(held) as Declaration;
 		if (declaration.kind === "passed") continue;
 		if (declaration.kind === "slot") parts.slots[name] = heldSpecOf(declaration, described[name] ?? {});
 		else if (declaration.kind === "mounts") parts.mounts[name] = heldSpecOf(declaration, described[name] ?? {});
-		else parts.props[name] = writtenPropOf(name, declaration, described[name] ?? {});
+		else parts.props[name] = propOfDeclared(name, declaration, described[name] ?? {});
 	}
 	return {
 		props: parts.props,
@@ -35,8 +35,8 @@ export function writtenPartsOf(props: DeclaredProps, described: Described) {
 	};
 }
 
-export function writtenMigrationOf(step: MigrationStep<DeclaredProps>) {
-	const { props } = writtenPartsOf(step.from, {});
+export function migrationOfDeclared(step: MigrationStep<DeclaredProps>) {
+	const { props } = partsOfDeclared(step.from, {});
 	return {
 		from: Object.fromEntries(Object.entries(props).map(([name, prop]) => [name, specOf(name, prop)])),
 		run: step.run,
@@ -94,7 +94,7 @@ export function refuseEmptyMigrations(steps: readonly MigrationStep<DeclaredProp
 	});
 }
 
-function writtenPropOf(name: string, declaration: Declaration, described: PropMetadata<unknown>) {
+function propOfDeclared(name: string, declaration: Declaration, described: PropMetadata<unknown>) {
 	const options = described.options ?? enumOptions(declaration.schema);
 	const describes = describesWithAka(
 		name,

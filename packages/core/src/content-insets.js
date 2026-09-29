@@ -13,7 +13,7 @@ export function useContentInsets(pageRef, setInsets) {
 		const page = pageRef.current;
 		if (!page) return undefined;
 		let timer = 0;
-		const measure = () => setInsets((held) => settledInsets(held, insetsOnPage(page)));
+		const measure = () => setInsets((held) => settleInsets(held, insetsOnPage(page)));
 		const schedule = () => {
 			window.clearTimeout(timer);
 			timer = window.setTimeout(measure, SETTLE_MS);
@@ -53,7 +53,7 @@ function insetsOnPage(page) {
 	);
 }
 
-function settledInsets(held, measured) {
+function settleInsets(held, measured) {
 	const ids = new Set([...Object.keys(held), ...Object.keys(measured)]);
 	const isStill = [...ids].every(
 		(id) => held[id] && measured[id] && SIDES.every((side) => Math.abs(held[id][side] - measured[id][side]) < STILL_PX),

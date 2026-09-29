@@ -72,6 +72,6 @@ export {
 	tabsOf,
 } from "../packages/core/src/tab-rows.js";
 export { EditableTabs, toTabList } from "../packages/core/src/editable-tabs.js";
-export { narrowed, normalizeWhere } from "../packages/core/src/gateway/narrow";
+export { narrow, normalizeWhere } from "../packages/core/src/gateway/narrow";
 export { pickedValue } from "../packages/core/src/gateway/refs.js";
 export { useNarrowed } from "../packages/core/src/gateway/use-narrowed";

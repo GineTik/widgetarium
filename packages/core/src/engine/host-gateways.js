@@ -4,8 +4,8 @@ import { stableKey } from "../gateway/cache.js";
 import { ENGINE_GATEWAY, gatewayOverImplementation } from "../gateway/adapted.js";
 import { ICrudGateway, IValueGateway, declarationIn } from "../gateway/declared.js";
 import { defineGatewayMetadata } from "../gateway/implementation-metadata.js";
-import { mappedCollection } from "../gateway/mapped.js";
-import { readsParsedBy } from "../gateway/parsed.js";
+import { mapCollection } from "../gateway/mapped.js";
+import { parseReadsBy } from "../gateway/parsed.js";
 import { problemsOf } from "../gateway/problems.js";
 import { folderGateway, fileGateway, noteFieldOf } from "../gateway/obsidian.js";
 import {
@@ -18,10 +18,18 @@ import {
 	requestedVerbs,
 	typedIn,
 	typedKeyOf,
-	withinAllowed,
+	restrictToAllowed,
 } from "../gateway/props.js";
-import { narrowedByRefs, pickedGateway, refCollection, refOf, refValue, selectionGateway } from "../gateway/refs.js";
+import {
+	narrowByRefs,
+	createPickedGateway,
+	refCollection,
+	refOf,
+	refValue,
+	selectionGateway,
+} from "../gateway/refs.js";
 import { STAT_ALGORITHMS, statGateway } from "../gateway/stats.js";
+import { selectedRowPicking, selectionPicking } from "./row-picking.js";
 
 const ENGINE_VERBS = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
@@ -33,7 +41,7 @@ export function hostGatewayFor(spec, config) {
 	return BY_ID.get(FROM_OLD_BINDING[kind]?.[binding]) ?? null;
 }
 
-export function boundFields(spec, config, tileId) {
+export function bindFields(spec, config, tileId) {
 	if (!startsFromSource(spec, config)) return fieldsOf(config);
 	const fields = spec.source.fields ?? {};
 	const named = SIBLING_FIELDS.filter((key) => typeof fields[key] === "string" && !fields[key].includes("/"));
@@ -64,7 +72,7 @@ export function fieldsOf(config) {
 }
 
 export function refsOfFields(spec, config, tileId) {
-	const fields = boundFields(spec, config, tileId);
+	const fields = bindFields(spec, config, tileId);
 	return [fields.ref, fields.rows, fields.picked, fields.fieldFrom].filter((held) => typeof held === "string");
 }
 
@@ -73,7 +81,7 @@ export function resolveHostGateway(context) {
 	const config = propConfig(tile, name, spec);
 	const chosen = hostGatewayFor(spec, config);
 	if (!chosen) throw new Error(NO_SUCH_GATEWAY.replace("{name}", name).replace("{id}", String(config.implementation)));
-	const fields = boundFields(spec, config, tile.id);
+	const fields = bindFields(spec, config, tile.id);
 	const problems = problemsOf(context.refs).contextFor(
 		refOf(tile.id, name),
 		context.schema ?? z.unknown(),
@@ -84,14 +92,14 @@ export function resolveHostGateway(context) {
 	const engine = made[ENGINE_GATEWAY] ?? gatewayOverImplementation(name, declarationIn(chosen.implementation), made);
 	const allow = ALLOW_OF[chosen.id];
 	if (!allow) return engine;
-	return withinAllowed(engine, allowedVerbs(spec, config, allow === "vault" ? "vault" : "hardcode"));
+	return restrictToAllowed(engine, allowedVerbs(spec, config, allow === "vault" ? "vault" : "hardcode"));
 }
 
 export function whereOf(spec, config) {
 	return [...(spec?.where ?? []), ...(config?.where ?? [])];
 }
 
-export function typedGateway({ name, spec, tile, config, refs, propsRef, patchProp }) {
+export function createTypedGateway({ name, spec, tile, config, refs, propsRef, patchProp }) {
 	const declared = declaredOf(spec);
 	const asRendered = typedIn(spec, config) ?? declared;
 	const held = {
@@ -107,28 +115,28 @@ export function typedGateway({ name, spec, tile, config, refs, propsRef, patchPr
 		spec,
 	};
 	if (spec.kind === "value") return hardcodeValue(held);
-	return narrowedByRefs(hardcodeCollection(held), whereOf(spec, config), refs);
+	return narrowByRefs(hardcodeCollection(held), whereOf(spec, config), refs);
 }
 
-export class TypedValueGateway extends engineBacked(IValueGateway) {
+export class TypedValueGateway extends createEngineBacked(IValueGateway) {
 	static build(fields, context) {
-		return typedGateway({ ...context, config: fields });
+		return createTypedGateway({ ...context, config: fields });
 	}
 }
 
-export class TypedRowsGateway extends engineBacked(ICrudGateway) {
+export class TypedRowsGateway extends createEngineBacked(ICrudGateway) {
 	static build(fields, context) {
-		return typedGateway({ ...context, config: fields });
+		return createTypedGateway({ ...context, config: fields });
 	}
 }
 
-export class ScreenStateGateway extends engineBacked(IValueGateway) {
+export class ScreenStateGateway extends createEngineBacked(IValueGateway) {
 	static build(fields, context) {
 		return context.cellFor(refOf(context.tile.id, context.name));
 	}
 }
 
-export class FileGateway extends engineBacked(IValueGateway) {
+export class FileGateway extends createEngineBacked(IValueGateway) {
 	static build(fields, context) {
 		const { spec, host } = context;
 		const path = fields.path || "";
@@ -137,7 +145,7 @@ export class FileGateway extends engineBacked(IValueGateway) {
 	}
 }
 
-export class FolderGateway extends engineBacked(ICrudGateway) {
+export class FolderGateway extends createEngineBacked(ICrudGateway) {
 	static build(fields, context) {
 		const { spec, host, refs } = context;
 		const path = fields.path || "";
@@ -145,19 +153,19 @@ export class FolderGateway extends engineBacked(ICrudGateway) {
 	}
 }
 
-export class FromTileValueGateway extends engineBacked(IValueGateway) {
+export class FromTileValueGateway extends createEngineBacked(IValueGateway) {
 	static build(fields, context) {
 		return refValue(context.refs, fields.ref);
 	}
 }
 
-export class FromTileRowsGateway extends engineBacked(ICrudGateway) {
+export class FromTileRowsGateway extends createEngineBacked(ICrudGateway) {
 	static build(fields, context) {
 		return refCollection(context.refs, fields.ref);
 	}
 }
 
-export class StatisticsGateway extends engineBacked(IValueGateway) {
+export class StatisticsGateway extends createEngineBacked(IValueGateway) {
 	static algorithm = "count";
 
 	static build(fields, context) {
@@ -181,13 +189,13 @@ export const STAT_TITLES = {
 	"best-record-streak": "Most notes in a row",
 };
 
-export class SelectedRowGateway extends engineBacked(IValueGateway) {
+export class SelectedRowGateway extends createEngineBacked(IValueGateway) {
 	static build(fields, context) {
 		const { refs, tile, name, cellFor } = context;
 		const own = refOf(tile.id, name);
 		const picked = fields.picked ?? "";
-		const inTile = context.tileConfig ? typedGateway({ ...context, config: context.tileConfig }) : null;
-		return pickedGateway({
+		const inTile = context.tileConfig ? createTypedGateway({ ...context, config: context.tileConfig }) : null;
+		return createPickedGateway({
 			id: `${own}?selected-from=${fields.rows}&by=${picked || "screen"}${inTile ? `&kept=${inTile.id}` : ""}`,
 			chosen: picked ? refValue(refs, picked) : cellFor(`${own}#picked`),
 			collection: refCollection(refs, fields.rows),
@@ -199,7 +207,7 @@ export class SelectedRowGateway extends engineBacked(IValueGateway) {
 }
 
 // TRADE-OFF: the list is read back through the registry rather than closed over, because a stable id keeps the cache attached across a write and only a live read then sees the row that write just made
-export class SelectionGateway extends engineBacked(IValueGateway) {
+export class SelectionGateway extends createEngineBacked(IValueGateway) {
 	static build(fields, context) {
 		const { refs, tile, name, cellFor } = context;
 		const own = refOf(tile.id, name);
@@ -324,14 +332,6 @@ const ALLOW_OF = {
 
 const NO_SUCH_GATEWAY = 'prop "{name}" names the gateway "{id}", which this host does not offer';
 
-export function selectionPicking(fields, readField) {
-	return { fieldName: fieldNamed(fields, readField), isFallbackToFirst: fields.whenNothingPicked === "first" };
-}
-
-export function selectedRowPicking(fields, readField) {
-	return { fieldName: fieldNamed(fields, readField) ?? "ref", isFallbackToFirst: fields.whenNothingPicked !== "none" };
-}
-
 function startsFromSource(spec, config) {
 	return (
 		SOURCE_IMPLEMENTATIONS.includes(spec?.source?.implementation) &&
@@ -352,13 +352,13 @@ function statisticsGatewayFor(algorithm) {
 	return Counted;
 }
 
-function engineBacked(Interface) {
+function createEngineBacked(Interface) {
 	class EngineBacked extends Interface {
 		constructor(fields, context) {
 			super();
 			const built = this.constructor.build(fields ?? {}, context);
 			const kind = declarationIn(this.constructor).kind;
-			this[ENGINE_GATEWAY] = context?.parse ? readsParsedBy(built, context, kind) : built;
+			this[ENGINE_GATEWAY] = context?.parse ? parseReadsBy(built, context, kind) : built;
 		}
 
 		subscribe(changed) {
@@ -384,10 +384,5 @@ function folderRows({ spec, host, config, refs, path, requested }) {
 	const baked = { sort: [...(spec.sort ?? []), ...(config.sort ?? [])] };
 	const base = folderGateway({ host, path, baked, requested });
 	const mapping = mappingFor(spec, config, host?.shapes, path);
-	return narrowedByRefs(mapping ? mappedCollection(base, mapping) : base, whereOf(spec, config), refs);
-}
-
-function fieldNamed(fields, readField) {
-	if (fields.fieldFrom) return () => readField(fields.fieldFrom);
-	return fields.field ?? null;
+	return narrowByRefs(mapping ? mapCollection(base, mapping) : base, whereOf(spec, config), refs);
 }

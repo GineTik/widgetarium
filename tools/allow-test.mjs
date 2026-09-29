@@ -1,4 +1,4 @@
-const { allowedVerbs, withinAllowed } = await import("../packages/core/src/gateway/props.js");
+const { allowedVerbs, restrictToAllowed } = await import("../packages/core/src/gateway/props.js");
 const { arrayGateway, canDo } = await import("../packages/core/src/gateway/create.ts");
 const { ICrudGateway, defineProps, manifestOfModule, z } = await import("../packages/core/src/gateway/declared.ts");
 
@@ -45,7 +45,7 @@ check(
 );
 
 const rows = arrayGateway(["a"], { create: () => null, remove: () => null }, "allow-test");
-const narrowed = withinAllowed(rows, allowedVerbs(tasks, { allow: ["list", "remove"] }, "vault"));
+const narrowed = restrictToAllowed(rows, allowedVerbs(tasks, { allow: ["list", "remove"] }, "vault"));
 check("a gateway keeps the verbs the tile allows", [canDo(narrowed.list), canDo(narrowed.remove)], [true, true]);
 check("and refuses the ones it does not", canDo(narrowed.create), false);
 check("the refusal carries the reason", narrowed.create.can().reason, "create is not switched on for this tile");
@@ -59,7 +59,7 @@ check(
 );
 check(
 	"nothing is wrapped when nothing is cut",
-	withinAllowed(rows, allowedVerbs(tasks, { allow: ["list", "create", "remove"] }, "vault")),
+	restrictToAllowed(rows, allowedVerbs(tasks, { allow: ["list", "create", "remove"] }, "vault")),
 	rows,
 );
 

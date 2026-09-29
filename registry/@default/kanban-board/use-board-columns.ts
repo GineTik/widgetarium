@@ -1,11 +1,11 @@
 import { canDo } from "widgetarium";
 import {
-	archived,
+	archiveColumn,
 	archivedColumnsOf,
-	columnPatched,
+	patchColumn,
 	columnsOf,
-	columnsWritten,
-	restored,
+	columnsToWrite,
+	restoreColumn,
 	shownColumnsOf,
 	type Board,
 	type BoardColumn,
@@ -19,11 +19,11 @@ export function useBoardColumns(board: KanbanProps["board"], record: Board | nul
 	const authoredColumns = boardColumns.map((column) => column.name);
 	const shownColumns = shownColumnsOf(boardColumns);
 	const columnNames = shownOrOneFreshColumn(shownColumns, [...authoredColumns, ...archivedColumns]);
-	const save = (columns: BoardColumn[]) => board.update(columnsWritten(columns));
+	const save = (columns: BoardColumn[]) => board.update(columnsToWrite(columns));
 
 	const columnsAfterRename = (was: string, name: string) => {
 		if (authoredColumns.includes(was))
-			return columnPatched(boardColumns, was, (column: BoardColumn) => ({ ...column, name }));
+			return patchColumn(boardColumns, was, (column: BoardColumn) => ({ ...column, name }));
 		return [...boardColumns, { name }];
 	};
 
@@ -39,13 +39,13 @@ export function useBoardColumns(board: KanbanProps["board"], record: Board | nul
 			const trimmed = String(name ?? "").trim();
 			if (!trimmed || shownColumns.includes(trimmed)) return;
 			if (archivedColumns.includes(trimmed)) {
-				save(columnPatched(boardColumns, trimmed, restored));
+				save(patchColumn(boardColumns, trimmed, restoreColumn));
 				return;
 			}
 			save([...boardColumns, { name: trimmed }]);
 		},
 		rename: (was: string, name: string) => save(columnsAfterRename(was, name)),
-		archive: (name: string) => save(columnPatched(boardColumns, name, archived)),
+		archive: (name: string) => save(patchColumn(boardColumns, name, archiveColumn)),
 	};
 }
 

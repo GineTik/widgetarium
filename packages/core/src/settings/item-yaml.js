@@ -14,7 +14,7 @@ const BAD_BOOLEAN = 'The field "{field}" must be true or false.';
 
 const BOOLEAN_WORDS = new Set(["true", "false"]);
 
-export const said = (sentence, field, note) => sentence.replace("{field}", field).replace("{note}", note);
+export const fillSentence = (sentence, field, note) => sentence.replace("{field}", field).replace("{note}", note);
 
 export function yamlOf(fields, item) {
 	return fields
@@ -37,18 +37,19 @@ export function readYaml(text, fields) {
 	if (!isMap(parsed)) return { failure: NOT_A_MAP };
 	const known = new Set(fields.map((field) => field.key));
 	const stray = Object.keys(parsed).find((name) => !known.has(name));
-	if (stray) return { failure: said(UNKNOWN_FIELD, stray) };
+	if (stray) return { failure: fillSentence(UNKNOWN_FIELD, stray) };
 	const item = {};
 	for (const field of fields) {
 		const held = parsed[field.key];
 		if (isEmpty(held)) {
-			if (field.required) return { failure: said(EMPTY_FIELD, field.key) };
+			if (field.required) return { failure: fillSentence(EMPTY_FIELD, field.key) };
 			continue;
 		}
 		const written = held instanceof Date ? held.toISOString() : String(held);
 		if (field.type === "datetime" && Number.isNaN(Date.parse(written)))
-			return { failure: said(BAD_DATETIME, field.key) };
-		if (field.type === "boolean" && !BOOLEAN_WORDS.has(written)) return { failure: said(BAD_BOOLEAN, field.key) };
+			return { failure: fillSentence(BAD_DATETIME, field.key) };
+		if (field.type === "boolean" && !BOOLEAN_WORDS.has(written))
+			return { failure: fillSentence(BAD_BOOLEAN, field.key) };
 		item[field.key] = field.type === "boolean" ? written === "true" : written;
 	}
 	return { item };

@@ -1,4 +1,4 @@
-import { heldKey, heldTile, rekeyed } from "../model.js";
+import { heldKey, heldTile, rekey } from "../model.js";
 import { bindingOf, declaredOf, typedIn } from "../gateway/props.js";
 import { seenOf } from "../prop-visibility.js";
 import { barPlacement, CHROME } from "../settings-fit.js";
@@ -38,7 +38,7 @@ export function settingsState({ options, look, here, geometry, vaultFields, boxV
 	};
 }
 
-export function addressed(options, path) {
+export function contextAt(options, path) {
 	const root = options.definition?.manifest ?? {};
 	let manifest = root;
 	let tile = options.tile;
@@ -49,7 +49,7 @@ export function addressed(options, path) {
 		const write = onPatch;
 		manifest = options.registry.get(step.widget)?.manifest ?? { id: step.widget };
 		tile = heldTile(tile, step.hold, heldKey(held, step.key, step.was), step.widget);
-		onPatch = (patch) => write({ [step.hold]: rekeyed(held, step.key, step.was, { widget: step.widget, ...patch }) });
+		onPatch = (patch) => write({ [step.hold]: rekey(held, step.key, step.was, { widget: step.widget, ...patch }) });
 		crumbs.push(manifest.title ?? manifest.id);
 	}
 	return { manifest, tile, onPatch, crumbs };

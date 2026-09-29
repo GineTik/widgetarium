@@ -45,7 +45,7 @@ const BreakdownBars = createWidget({
 
 		return (
 			<Bars
-				groups={grouped(read.data, groupKey)}
+				groups={groupRows(read.data, groupKey)}
 				shown={shown}
 				step={added}
 				onMore={showMoreButton ? () => setShown(shown + added) : null}
@@ -119,7 +119,7 @@ export const layout = defineLayout({
 
 export default BreakdownBars;
 
-function grouped(rows: VaultRecord[], groupKey: string): Group[] {
+function groupRows(rows: VaultRecord[], groupKey: string): Group[] {
 	const counts = new Map<string, number>();
 	const root = groupKey === BY_FOLDER ? sharedFolderOf(rows) : "";
 	for (const row of rows) {

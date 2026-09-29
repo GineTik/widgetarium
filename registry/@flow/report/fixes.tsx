@@ -1,5 +1,5 @@
 import type { Row } from "widgetarium";
-import { trimmed } from "./prose-of";
+import { trimText } from "./prose-of";
 import type { Fix } from "./types";
 
 const UNNAMED_FIX = "An unnamed fix.";
@@ -14,8 +14,8 @@ export function Fixes({ rows, counted }: { rows: Row<Fix>[]; counted: number }) 
 			<ul className="flow-report-fixes">
 				{rows.map((row) => (
 					<li key={row.ref} className="flow-report-fix">
-						<span className="flow-report-fix-what">{trimmed(row.title) || UNNAMED_FIX}</span>
-						{trimmed(row.where) ? <code className="flow-report-fix-where">{trimmed(row.where)}</code> : null}
+						<span className="flow-report-fix-what">{trimText(row.title) || UNNAMED_FIX}</span>
+						{trimText(row.where) ? <code className="flow-report-fix-where">{trimText(row.where)}</code> : null}
 					</li>
 				))}
 			</ul>

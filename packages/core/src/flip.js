@@ -34,12 +34,12 @@ export function positionsWithin(root, selector, keyOf) {
 }
 
 export function playMoves(root, moves, find) {
-	const held = heldWhereTheyWere(root, moves, find);
+	const held = holdWhereTheyWere(root, moves, find);
 	if (held.length === 0) return;
 	window.requestAnimationFrame(() => release(held));
 }
 
-function heldWhereTheyWere(root, moves, find) {
+function holdWhereTheyWere(root, moves, find) {
 	const held = [];
 	for (const [id, move] of Object.entries(moves)) {
 		const node = find(root, id);

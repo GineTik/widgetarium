@@ -1,13 +1,13 @@
 import { uniqueName, VIEW_GROUP } from "../model.js";
 import { declaredName } from "../registry.js";
 import {
-	insertedAt,
+	insertAt,
 	isBox,
 	keptAt,
 	nodeAt,
 	pathOfLeaf,
-	pruned,
-	replacedAt,
+	prune,
+	replaceAt,
 	SWAP,
 	swapBoxes,
 	withoutLeaf,
@@ -23,10 +23,10 @@ export function viewTiles(tiles, registry) {
 // TRADE-OFF: the tile standing first is marked before the others are taken out, because pruning moves every path behind it and the seat has to survive that
 export function layoutWithSwap(layout, moved, box) {
 	const stood = moved.map((tile) => pathOfLeaf(layout, tile.id)).find(Boolean);
-	if (!stood) return seatedBeside(layout, box);
-	const emptied = moved.reduce((held, tile) => withoutLeaf(held, tile.id), replacedAt(layout, stood, { id: SEAT }));
+	if (!stood) return seatBeside(layout, box);
+	const emptied = moved.reduce((held, tile) => withoutLeaf(held, tile.id), replaceAt(layout, stood, { id: SEAT }));
 	const seat = pathOfLeaf(emptied, SEAT);
-	return seat ? pruned(replacedAt(emptied, seat, box)) : seatedBeside(emptied, box);
+	return seat ? prune(replaceAt(emptied, seat, box)) : seatBeside(emptied, box);
 }
 
 export function swapsStanding(layout) {
@@ -44,13 +44,13 @@ export function swapOfViews(moved, registry, id) {
 	};
 }
 
-export function bornTileId() {
+export function mintTileId() {
 	return `w${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function seatedBeside(layout, box) {
+function seatBeside(layout, box) {
 	const keep = keptAt(layout) >= 0 ? [keptAt(layout)] : firstBoxIn(layout);
-	const seated = keep === null ? null : insertedAt(layout, keep, nodeAt(layout, keep).of.length, box);
+	const seated = keep === null ? null : insertAt(layout, keep, nodeAt(layout, keep).of.length, box);
 	if (seated) return seated;
 	console.warn(NO_BOX_FOR_THE_VIEWS);
 	return layout;

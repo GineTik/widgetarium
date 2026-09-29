@@ -106,7 +106,7 @@ export {
 	valueGateway,
 } from "../../core/src/gateway/create";
 export { fieldOf, textOf } from "../../core/src/gateway/match";
-export { narrowed, normalizeWhere } from "../../core/src/gateway/narrow";
+export { narrow, normalizeWhere } from "../../core/src/gateway/narrow";
 export { useNarrowed } from "../../core/src/gateway/use-narrowed";
 export { useValue } from "../../core/src/gateway/use-value";
 

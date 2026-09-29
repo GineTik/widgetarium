@@ -365,9 +365,9 @@
 		"types.ts",
 		"use-band.ts",
 		"use-entry-dialog.ts",
-		"use-own-size-written.ts",
+		"use-writes-own-size.ts",
 		"view-toggle.tsx",
-		"written.ts",
+		"write-or-notify.ts",
 		"widget.css"
 	],
 	"dependencies": {},

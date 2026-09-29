@@ -10,8 +10,8 @@ import { fakeVault } from "./fake-vault.mjs";
 
 const { createHost } = await import("../apps/obsidian/src/host.js");
 const { folderGateway } = await import("../packages/core/src/gateway/obsidian.js");
-const { mappedCollection } = await import("../packages/core/src/gateway/mapped.ts");
-const { narrowed } = await import("../packages/core/src/gateway/narrow.ts");
+const { mapCollection } = await import("../packages/core/src/gateway/mapped.ts");
+const { narrow } = await import("../packages/core/src/gateway/narrow.ts");
 const { gatewayCache } = await import("../packages/core/src/gateway/cache.ts");
 const { createInstaller, INDEX_PATH } = await import("../packages/core/src/installer.js");
 const { WidgetRegistry } = await import("../packages/core/src/registry.js");
@@ -178,8 +178,8 @@ function readerOver(host, folderName, at) {
 		baked: { sort: [{ prop: "order", dir: "asc" }] },
 		requested: ["list", "get", "update"],
 	});
-	const mapped = mappedCollection(base, { needs: TASK_NEEDS, chosen: {} });
-	return at === 0 ? mapped : narrowed(mapped, { order: { gte: at } });
+	const mapped = mapCollection(base, { needs: TASK_NEEDS, chosen: {} });
+	return at === 0 ? mapped : narrow(mapped, { order: { gte: at } });
 }
 
 // TRADE-OFF: a folder name per round, because the gateway cache is one module-level singleton and a shared name would let an earlier round answer a later one
@@ -233,7 +233,7 @@ async function reportFirstPaint() {
 	const { app, counters, reset } = fakeTaskVault(folderName, NOTES);
 	const host = createHost(app, NO_PLUGIN);
 	const base = folderGateway({ host, path: folderName, baked: {}, requested: ["list", "get", "update"] });
-	const mapped = mappedCollection(base, { needs: TASK_NEEDS, chosen: {} });
+	const mapped = mapCollection(base, { needs: TASK_NEEDS, chosen: {} });
 
 	reset();
 	let at = performance.now();
@@ -251,7 +251,7 @@ async function reportFirstPaint() {
 		`${(performance.now() - at).toFixed(1)} ms, ${counters.folderWalk} walks, ${counters.toRecord} records`,
 	);
 
-	const rebuilt = mappedCollection(folderGateway({ host, path: folderName, baked: {}, requested: ["list"] }), {
+	const rebuilt = mapCollection(folderGateway({ host, path: folderName, baked: {}, requested: ["list"] }), {
 		needs: TASK_NEEDS,
 		chosen: {},
 	});

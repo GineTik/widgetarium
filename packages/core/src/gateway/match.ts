@@ -2,9 +2,24 @@ import type { FilterRow, Row, SortRow } from "./contract";
 
 type Held = Record<string, unknown>;
 
-function isHeld(record: unknown): record is Held {
-	return typeof record === "object" && record !== null;
-}
+const OPERATIONS: Record<string, (left: unknown, right: unknown) => boolean> = {
+	eq: (left, right) => left === right,
+	is: (left, right) => left === right,
+	ne: (left, right) => left !== right,
+	in: (left, right) => meets(left, right),
+	nin: (left, right) => !meets(left, right),
+	contains: (left, right) =>
+		String(left ?? "")
+			.toLowerCase()
+			.includes(String(right).toLowerCase()),
+	gt: (left, right) => (left as number) > (right as number),
+	lt: (left, right) => (left as number) < (right as number),
+	exists: (left, right) => (right === false ? left == null : left != null),
+};
+
+export const KNOWN_OPERATORS = Object.keys(OPERATIONS);
+
+const PAGE_UNASKED = 100;
 
 export function fieldOf(record: unknown, prop: string): unknown {
 	if (!isHeld(record) || !prop) return undefined;
@@ -25,27 +40,6 @@ export function valueOf(record: unknown, prop: string): unknown {
 	return fieldOf(record, prop);
 }
 
-function meets(left: unknown, right: unknown): boolean {
-	if (!Array.isArray(right)) return false;
-	const held = Array.isArray(left) ? left : [left];
-	return held.some((value) => right.includes(value));
-}
-
-const OPERATIONS: Record<string, (left: unknown, right: unknown) => boolean> = {
-	eq: (left, right) => left === right,
-	is: (left, right) => left === right,
-	ne: (left, right) => left !== right,
-	in: (left, right) => meets(left, right),
-	nin: (left, right) => !meets(left, right),
-	contains: (left, right) =>
-		String(left ?? "")
-			.toLowerCase()
-			.includes(String(right).toLowerCase()),
-	gt: (left, right) => (left as number) > (right as number),
-	lt: (left, right) => (left as number) < (right as number),
-	exists: (left, right) => (right === false ? left == null : left != null),
-};
-
 export function isMatch(record: unknown, where?: FilterRow[] | null): boolean {
 	if (!where || where.length === 0) return true;
 	return where.every((clause) => {
@@ -59,7 +53,33 @@ export function isMatch(record: unknown, where?: FilterRow[] | null): boolean {
 	});
 }
 
-export const KNOWN_OPERATORS = Object.keys(OPERATIONS);
+export function pageOf<T>(rows: T[], query?: { offset?: number; limit?: number } | null): T[] {
+	const from = Math.max(Number(query?.offset) || 0, 0);
+	const asked = Number(query?.limit) || 0;
+	const limit = asked > 0 ? asked : PAGE_UNASKED;
+	return rows.slice(from, from + limit);
+}
+
+export function sortRows<T>(rows: Row<T>[], sort?: SortRow[] | null): Row<T>[] {
+	if (!sort || sort.length === 0) return rows;
+	return [...rows].sort((left, right) => {
+		for (const clause of sort) {
+			const step = compareSortable(valueOf(left, clause.prop), valueOf(right, clause.prop));
+			if (step !== 0) return clause.dir === "desc" ? -step : step;
+		}
+		return 0;
+	});
+}
+
+function isHeld(record: unknown): record is Held {
+	return typeof record === "object" && record !== null;
+}
+
+function meets(left: unknown, right: unknown): boolean {
+	if (!Array.isArray(right)) return false;
+	const held = Array.isArray(left) ? left : [left];
+	return held.some((value) => right.includes(value));
+}
 
 function isNumeric(held: unknown): boolean {
 	return held !== "" && held !== true && held !== false && Number.isFinite(Number(held));
@@ -72,24 +92,4 @@ function compareSortable(left: unknown, right: unknown): number {
 	if (isBlank(left) || isBlank(right)) return isBlank(left) ? 1 : -1;
 	if (isNumeric(left) && isNumeric(right)) return Number(left) - Number(right);
 	return String(left).localeCompare(String(right));
-}
-
-const PAGE_UNASKED = 100;
-
-export function pageOf<T>(rows: T[], query?: { offset?: number; limit?: number } | null): T[] {
-	const from = Math.max(Number(query?.offset) || 0, 0);
-	const asked = Number(query?.limit) || 0;
-	const limit = asked > 0 ? asked : PAGE_UNASKED;
-	return rows.slice(from, from + limit);
-}
-
-export function sortedRows<T>(rows: Row<T>[], sort?: SortRow[] | null): Row<T>[] {
-	if (!sort || sort.length === 0) return rows;
-	return [...rows].sort((left, right) => {
-		for (const clause of sort) {
-			const step = compareSortable(valueOf(left, clause.prop), valueOf(right, clause.prop));
-			if (step !== 0) return clause.dir === "desc" ? -step : step;
-		}
-		return 0;
-	});
 }

@@ -2,7 +2,7 @@ import type { Query, RecordRef, Row, RowsResult } from "./contract";
 import { rowOf, toRows } from "./create";
 import { declarationIn } from "./declaration";
 import { ICrudGateway, IListGateway, IValueGateway } from "./declared";
-import { isMatch, pageOf, sortedRows } from "./match";
+import { isMatch, pageOf, sortRows } from "./match";
 
 const DEFAULT_IMPLEMENTATION = Symbol.for("widgetarium.default-implementation");
 
@@ -65,7 +65,7 @@ export class RowsInMemoryGateway extends ICrudGateway {
 	}
 
 	list(query?: Query): RowsResult<unknown> {
-		const matching = sortedRows(
+		const matching = sortRows(
 			this.rows.filter((row) => isMatch(row, query?.where)),
 			query?.sort,
 		);

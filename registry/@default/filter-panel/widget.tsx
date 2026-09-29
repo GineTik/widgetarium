@@ -200,7 +200,7 @@ function countOf(chosen: Chosen): number {
 }
 
 // TRADE-OFF: an authored list outranks a derived one — a board may want its own order and labels
-function groupsShown(authored: Group[], fromBoard: Group[], rows: TaskRow[]): Group[] {
+function groupsToShow(authored: Group[], fromBoard: Group[], rows: TaskRow[]): Group[] {
 	if (authored.length > 0) return authored;
 	if (fromBoard.length > 0) return fromBoard;
 	return groupsFromData(rows);
@@ -227,7 +227,7 @@ const FilterPanel = createWidget({
 		const named = useData(properties.list, { limit: ALL_TASKS })
 			.data.map((held) => textOf(held, "name") || textOf(held, RECORD_NAME))
 			.filter(Boolean);
-		const shownGroups = groupsShown(authored, groupsFromBoard(named, rows), rows);
+		const shownGroups = groupsToShow(authored, groupsFromBoard(named, rows), rows);
 		const applied: Chosen = chosen.value ?? {};
 
 		const triggerRef = useRef<HTMLButtonElement | null>(null);

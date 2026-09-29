@@ -4,7 +4,7 @@ import { MEASURED_DIR, measuredPathOf, PRESET_TOKENS } from "./surface-contract.
 import { byPath } from "./tree.js";
 
 // TRADE-OFF: measured after every settled render into the plugin's own folder, not on request, because the agent reading it cannot ask the plugin anything; an unchanged measurement writes nothing
-export function useMeasuredSurfaces(pageRef, host, regionsRef) {
+export function useMeasuresSurfaces(pageRef, host, regionsRef) {
 	useEffect(() => {
 		const adapter = host?.app?.vault?.adapter;
 		const note = host?.notePath;
@@ -23,15 +23,6 @@ export function measureBoard(page, regions) {
 		tiles: tilesIn(regions),
 		extents: extentsIn(regions),
 	};
-}
-
-function extentsIn(regions) {
-	return Object.assign({}, ...regions.map((region) => byPath(region, extentOf)));
-}
-
-function extentOf(node) {
-	const box = node.getBoundingClientRect();
-	return { w: Math.round(box.width), h: Math.round(box.height) };
 }
 
 export function measureTile(body) {
@@ -156,4 +147,13 @@ function contentCount(element) {
 
 function hasOwnText(element) {
 	return [...element.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim() !== "");
+}
+
+function extentsIn(regions) {
+	return Object.assign({}, ...regions.map((region) => byPath(region, extentOf)));
+}
+
+function extentOf(node) {
+	const box = node.getBoundingClientRect();
+	return { w: Math.round(box.width), h: Math.round(box.height) };
 }

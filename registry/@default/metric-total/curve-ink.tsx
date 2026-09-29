@@ -1,4 +1,4 @@
-import { rounded } from "./numbers";
+import { roundToTenth } from "./numbers";
 import type { ChartBox, Spot } from "./types";
 
 export function CurveInk({ spots, box, ids }: { spots: Spot[]; box: ChartBox; ids: string }) {
@@ -35,14 +35,14 @@ function pathThrough(spots: readonly Spot[]): string {
 	const first = spots[0];
 	if (!first) return "";
 	const steps = stepsOf(spots);
-	let written = `M${rounded(first.x)} ${rounded(first.y)}`;
+	let written = `M${roundToTenth(first.x)} ${roundToTenth(first.y)}`;
 	for (let at = 1; at < spots.length; at += 1) {
 		const here = spots[at] as Spot;
 		const before = spots[at - 1] as Spot;
 		const third = (here.x - before.x) / 3;
-		const out = rounded(before.y + slopeAt(steps, at - 1) * third);
-		const into = rounded(here.y - slopeAt(steps, at) * third);
-		written += ` C${rounded(before.x + third)} ${out} ${rounded(here.x - third)} ${into} ${rounded(here.x)} ${rounded(here.y)}`;
+		const out = roundToTenth(before.y + slopeAt(steps, at - 1) * third);
+		const into = roundToTenth(here.y - slopeAt(steps, at) * third);
+		written += ` C${roundToTenth(before.x + third)} ${out} ${roundToTenth(here.x - third)} ${into} ${roundToTenth(here.x)} ${roundToTenth(here.y)}`;
 	}
 	return written;
 }
