@@ -1,4 +1,5 @@
 import {
+	type TabStep,
 	ICatalogue,
 	IConfigureMounts,
 	EditableTabs,
@@ -75,8 +76,6 @@ function rowOf(entry: MountEntry): MountRow {
 	return { name: entry.name, widget: entry.id, hidden: entry.hidden };
 }
 
-type Step = { verb: string; name?: string; was?: string; selected?: string };
-
 const ViewGroup = createWidget({
 	inject: {
 		holds: IMounts.of({
@@ -101,7 +100,7 @@ const ViewGroup = createWidget({
 		const asked = shown.find((entry) => entry.name === selection.value);
 		const active = asked ?? shown[0];
 
-		const apply = (step: Step) => {
+		const apply = (step: TabStep) => {
 			if (movesSelection(step)) selection.update(step.selected ?? "");
 			if (movesRows(step)) configureMounts?.("holds", applyTabStep(rows, step));
 		};
@@ -111,7 +110,7 @@ const ViewGroup = createWidget({
 				className="ovg-strip"
 				tabs={tabs}
 				archived={archived}
-				selected={active?.name ?? tabs[0]}
+				selected={active?.name ?? tabs[0] ?? ""}
 				onChange={apply}
 				deleteWarning={GONE_FOR_GOOD}
 			/>

@@ -804,7 +804,6 @@ check("every piece is reachable from one object", surface.filter((name) => !Kit[
 // take "widgetarium/kit". Proving them through the host's own resolver, not by reading api.js.
 const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium, kit: kitModule } = ENGINE_SCOPE;
-check('import { Kit } from "widgetarium" — for <Kit.Button/> in JSX', widgetarium.Kit === Kit, true);
 check(
 	'import { Button } from "widgetarium/kit" — flat, and it says where it came from',
 	kitModule.Button === Kit.Button,
@@ -817,7 +816,7 @@ check(
 );
 check(
 	"the core is still whole",
-	["createWidget", "WidgetRoot", "Dialog", "useAction"].filter((name) => !widgetarium[name]).join(", ") || 0,
+	["createWidget", "Dialog", "EditableTabs", "ConfirmDialog"].filter((name) => !widgetarium[name]).join(", ") || 0,
 	0,
 );
 // THE KIT IS OPTIONAL, so it must not be sitting in the core surface pretending otherwise

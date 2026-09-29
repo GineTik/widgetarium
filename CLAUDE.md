@@ -353,7 +353,7 @@ group finds it. Full decision in `docs/decisions.md`.
 
 **A background belongs to a group, not to a widget.** The engine draws every widget's root — its
 container query, size and clipping — and a widget paints a plate only through `<Card>` from the
-kit; `WidgetRoot` survives only as a bare element for widgets written before.
+kit; `WidgetRoot` is no longer handed to widgets.
 
 **The tile's plate is the node's, the plates under it are the widget's, and one component paints
 both kinds.** `Card` in `packages/kit/src/components/card.tsx` (once `Surface`, which stays as an alias for widgets published

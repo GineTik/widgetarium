@@ -36,10 +36,10 @@ if (process.env.WG_MISFIT) {
 		preview: { size: { w: 4, h: 2 } },
 		accepts: { task: { required: ["title", "estimate"] } },
 	});
-	files[`${folder}/widget.tsx`] = `import { createWidget, WidgetRoot } from "widgetarium";
+	files[`${folder}/widget.tsx`] = `import { createWidget } from "widgetarium";
 export default createWidget({
 	draw: function EstimateCard() {
-		return <WidgetRoot className="orbi">3 days left</WidgetRoot>;
+		return <div className="orbi">3 days left</div>;
 	},
 });`;
 }

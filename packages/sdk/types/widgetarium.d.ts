@@ -109,8 +109,9 @@ export { fieldOf, textOf } from "../../core/src/gateway/match";
 export { narrow, normalizeWhere } from "../../core/src/gateway/narrow";
 export { useNarrowed } from "../../core/src/gateway/use-narrowed";
 export { useValue } from "../../core/src/gateway/use-value";
+export { pickedValue } from "../../core/src/gateway/picked";
 
-import type { ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import type { DeclaredProps, DrawnProps, GivenProps } from "../../core/src/gateway/declared";
 
 export type {
@@ -135,34 +136,68 @@ import type { MountEntry } from "../../core/src/gateway/host";
 
 export declare function createWidget<const P extends DeclaredProps = {}>(widget: {
 	readonly inject?: P;
-	readonly draw: (drawn: DrawnProps<P>) => any;
-}): ((given: GivenProps<P>) => any) & { readonly declared: P };
+	readonly draw: (drawn: DrawnProps<P>) => ReactNode;
+}): ((given: GivenProps<P>) => ReactNode) & { readonly declared: P };
 
-// TODO: type the React surface of the api module — these are widget-facing components, not gateways
-export declare const Dialog: any;
-export declare const DialogOverlay: any;
-export declare const DialogContent: any;
-export declare const DialogHeader: any;
-export declare const DialogTitle: any;
-export declare const DialogDescription: any;
-export declare const DialogFooter: any;
-export declare const DialogClose: any;
-export declare const ConfirmDialog: any;
-export declare const Mounted: (props: { entry: MountEntry }) => ReactNode;
-export declare const WidgetRoot: any;
-export declare const AppearanceOverride: any;
-export declare const useWidgetRounded: any;
-export declare const useBackgroundType: any;
-export declare const ROUNDED: any;
-export declare const BACKGROUND: any;
-export declare const useAction: any;
-export declare const pickedValue: any;
-export declare const EditableTabs: any;
-export declare const toTabList: any;
-export declare const applyTabStep: any;
-export declare const archivedOf: any;
-export declare const movesRows: any;
-export declare const movesSelection: any;
-export declare const rowNamed: any;
-export declare const tabsOf: any;
-export declare const Kit: any;
+export declare function Dialog(props: {
+	readonly isOpen?: boolean;
+	readonly onOpenChange?: (isOpen: boolean) => unknown;
+	readonly onClose?: () => unknown;
+	readonly trigger?: ReactNode;
+	readonly className?: string;
+	readonly children?: ReactNode;
+}): ReactNode;
+export declare function DialogContent(props: {
+	readonly className?: string;
+	readonly width?: string;
+	readonly children?: ReactNode;
+}): ReactNode;
+export declare function DialogClose(props: {
+	readonly className?: string;
+	readonly onClose?: () => unknown;
+	readonly label?: string;
+}): ReactNode;
+type DialogPartProps = HTMLAttributes<HTMLElement> & { readonly children?: ReactNode };
+export declare function DialogHeader(props: DialogPartProps): ReactNode;
+export declare function DialogTitle(props: DialogPartProps): ReactNode;
+export declare function DialogDescription(props: DialogPartProps): ReactNode;
+export declare function DialogFooter(props: DialogPartProps): ReactNode;
+export declare function ConfirmDialog(props: {
+	readonly isOpen?: boolean;
+	readonly title: ReactNode;
+	readonly description: ReactNode;
+	readonly confirmLabel: ReactNode;
+	readonly variant?: "danger" | "accent";
+	readonly onConfirm: () => unknown;
+	readonly onOpenChange?: (isOpen: boolean) => unknown;
+	readonly className?: string;
+}): ReactNode;
+
+export type TabStep = {
+	readonly verb: "add" | "rename" | "archive" | "restore" | "delete" | "select";
+	readonly tabs: readonly string[];
+	readonly archived: readonly string[];
+	readonly selected: string;
+	readonly name: string;
+	readonly was: string | null;
+};
+export type TabRow = { readonly name: string; readonly hidden?: boolean; readonly was?: string };
+export declare function EditableTabs(props: {
+	readonly tabs: readonly string[];
+	readonly archived: readonly string[];
+	readonly selected: string;
+	readonly onChange?: (step: TabStep) => unknown;
+	readonly onRefuse?: (said: string) => unknown;
+	readonly deleteWarning?: string;
+	readonly className?: string;
+}): ReactNode;
+export declare function tabsOf(rows: readonly TabRow[] | null | undefined): string[];
+export declare function archivedOf(rows: readonly TabRow[] | null | undefined): string[];
+export declare function applyTabStep<R extends TabRow>(
+	rows: readonly R[] | null | undefined,
+	step: TabStep,
+): (R | TabRow)[];
+export declare function movesRows(step: TabStep): boolean;
+export declare function movesSelection(step: TabStep): boolean;
+
+export declare function Mounted(props: { readonly entry: MountEntry }): ReactNode;

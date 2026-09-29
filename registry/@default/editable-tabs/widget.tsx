@@ -1,4 +1,5 @@
 import {
+	type TabStep,
 	ICrudGateway,
 	EditableTabs,
 	IHost,
@@ -29,8 +30,6 @@ const RECORD_ID = "id";
 const RECORD_NAME = "name";
 
 type TabRow = { ref: RecordRef; label: string; value: string; isArchived: boolean };
-type Step = { verb: string; name?: string; was?: string; selected?: string };
-
 function patchOf(field: string, value: unknown): Record<string, unknown> {
 	return field === RECORD_NAME ? { [field]: value } : { props: { [field]: value } };
 }
@@ -105,7 +104,7 @@ const EditableTabsWidget = createWidget({
 			await tabs.remove(row.ref);
 		};
 
-		const apply = async (step: Step) => {
+		const apply = async (step: TabStep) => {
 			if (step.verb === "select") return select(step.selected ?? "");
 			if (step.verb === "add") return add(step.name ?? "");
 			if (step.verb === "rename") return rename(step.was ?? "", step.name ?? "");

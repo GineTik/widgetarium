@@ -3,7 +3,6 @@ import { leaseFor } from "./engine/render.js";
 import { crashBoundary } from "./crash-boundary.js";
 import {
 	Dialog,
-	DialogOverlay,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
@@ -12,10 +11,9 @@ import {
 	DialogClose,
 	ConfirmDialog,
 } from "./dialog.js";
-import { useAction } from "./action.js";
-import { EditableTabs, toTabList } from "./editable-tabs.js";
+import { EditableTabs } from "./editable-tabs.js";
 import { Mounted } from "./mounted.js";
-import { AppearanceOverride, rootWidget, useBackgroundType, useWidgetRounded, WidgetRoot } from "./widget-root.js";
+import { rootWidget } from "./widget-root.js";
 import { useData } from "./gateway/use-data";
 import { useNarrowed } from "./gateway/use-narrowed";
 import { useValue } from "./gateway/use-value";
@@ -43,7 +41,6 @@ export function drawWidget(element, component, props) {
 
 export const reactSurface = {
 	Dialog,
-	DialogOverlay,
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
@@ -51,19 +48,12 @@ export const reactSurface = {
 	DialogFooter,
 	DialogClose,
 	ConfirmDialog,
+	EditableTabs,
 	Mounted,
-	WidgetRoot,
-	AppearanceOverride,
-	useWidgetRounded,
-	useBackgroundType,
-	useAction,
 	createWidget,
 	useData,
 	useNarrowed,
 	useValue,
-	EditableTabs,
-	toTabList,
-	Kit: kitModule.Kit,
 };
 
 export const kit = kitModule;

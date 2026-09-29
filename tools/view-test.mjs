@@ -4,14 +4,14 @@ import { stage, widgetFiles, WIDGETS_AT } from "./harness.mjs";
 
 export { stage, widgetFiles, WIDGETS_AT };
 
-const PROBE = `import { IValueGateway, WidgetRoot, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
+const PROBE = `import { IValueGateway, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
 const props = defineProps({ seen: IValueGateway.of(z.unknown().default(null)).pick("get") });
 export const metadata = defineMetadata(props, { title: "Box probe", description: "", props: { seen: { label: "Reads" } } });
 export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
 export default createWidget({
 	inject: props,
 	draw: ({ seen }) => (
-		<WidgetRoot className="wg-probe"><i class="wg-probe-seen">{JSON.stringify(seen ?? null)}</i></WidgetRoot>
+		<div className="wg-probe"><i class="wg-probe-seen">{JSON.stringify(seen ?? null)}</i></div>
 	),
 });
 `;

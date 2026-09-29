@@ -27,8 +27,7 @@ import { defineDefaultImplementation, RowsInMemoryGateway, ValueInMemoryGateway 
 import { fieldOf, textOf } from "./gateway/match";
 import { narrow, normalizeWhere } from "./gateway/narrow";
 import { pickedValue } from "./gateway/refs.js";
-import { applyTabStep, archivedOf, movesRows, movesSelection, rowNamed, tabsOf } from "./tab-rows.js";
-import { BACKGROUND, ROUNDED } from "./widget-root.js";
+import { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "./tab-rows.js";
 
 export { gatewayCache, stableKey } from "./gateway/cache";
 export { collectionGateway, rowOf, soloGateway, toRows, valueGateway } from "./gateway/create";
@@ -78,8 +77,5 @@ export const coreSurface = {
 	archivedOf,
 	movesRows,
 	movesSelection,
-	rowNamed,
 	tabsOf,
-	ROUNDED,
-	BACKGROUND,
 };
