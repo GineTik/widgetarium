@@ -96,15 +96,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"collapsed.tsx",
-		"rendered-markdown.tsx",
-		"use-markdown-rendered-into.ts",
-		"use-measured-height.ts",
-		"use-shown-px.ts",
-		"widget.css"
-	],
+	"files": ["widget.tsx", "collapsed.tsx", "use-measured-height.ts", "use-shown-px.ts", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

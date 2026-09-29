@@ -101,17 +101,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"ceiling.tsx",
-		"line.tsx",
-		"meter-label.tsx",
-		"meter.tsx",
-		"meters.tsx",
-		"more.tsx",
-		"types.ts",
-		"widget.css"
-	],
+	"files": ["widget.tsx", "meter-label.tsx", "meter.tsx", "meters.tsx", "more.tsx", "types.ts", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

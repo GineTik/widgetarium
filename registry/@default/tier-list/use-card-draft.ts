@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { nameOf } from "@default/lib";
+import { nameOf } from "./cards";
 import type { CardRow, Draft } from "./types";
 
 export function useCardDraft(isOpen: boolean, row: CardRow | null) {

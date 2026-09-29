@@ -1,5 +1,4 @@
-import { RowValue } from "widgetarium/kit";
-import { DiffBar } from "./diff-bar";
+import { DiffBar, RowValue } from "widgetarium/kit";
 import { KINDS } from "./kinds";
 import type { FileChange, Kind } from "./types";
 
@@ -20,7 +19,7 @@ export function DiffStat({ file, kind }: { file: FileChange; kind: Kind }) {
 		<RowValue className="ffr-stat">
 			{added === null ? null : <span className="ffr-added">{ADDED.replace(COUNT, String(added))}</span>}
 			{removed === null ? null : <span className="ffr-removed">{REMOVED.replace(COUNT, String(removed))}</span>}
-			<DiffBar added={added} removed={removed} />
+			<DiffBar added={added} removed={removed} className="ffr-bar" />
 		</RowValue>
 	);
 }

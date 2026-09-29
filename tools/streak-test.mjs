@@ -70,7 +70,7 @@ function run(file) {
 	return runWidgetSource(file, importing(), h, Fragment);
 }
 
-libs.set("@default/lib", run("registry/@default/lib.js"));
+libs.set("@default/lib", run("registry/@default/lib.ts"));
 const { isoOf, shiftedBy } = libs.get("@default/lib");
 const Streak = run(WIDGET).default;
 

@@ -1,5 +1,4 @@
-import { Button } from "widgetarium/kit";
-import { Line } from "./line";
+import { Button, Line } from "widgetarium/kit";
 
 const LEFT_OUT = "{count} more properties";
 const SHOW_MORE = "Show {count} more";

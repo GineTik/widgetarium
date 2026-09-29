@@ -1,5 +1,5 @@
+import { Flame } from "widgetarium/kit";
 import { filled } from "./filled";
-import { Flame } from "./flame";
 import type { DayColumn } from "./types";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -22,7 +22,7 @@ export function DayButton({ column, onPress }: { column: DayColumn; onPress: () 
 				<span className="hs-date">{Number(column.day.slice(8))}</span>
 			</span>
 			<span className={column.seat}>
-				<span className={column.ring}>{column.kept ? <Flame size={22} /> : null}</span>
+				<span className={column.ring}>{column.kept ? <Flame size={22} className="hs-flame" /> : null}</span>
 			</span>
 		</button>
 	);

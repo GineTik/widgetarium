@@ -1,7 +1,8 @@
 import { toneClass } from "widgetarium/kit";
 import { Emoji } from "widgetarium/kit/emojis";
 import { useState, type ReactNode } from "react";
-import { nameOf, pictureOf, toneForSeed, type Picture } from "@default/lib";
+import { nameOf, pictureOf, type Picture } from "./cards";
+import { toneForSeed } from "./tones";
 import { Attachment } from "./attachment";
 import type { CardRecord } from "./types";
 

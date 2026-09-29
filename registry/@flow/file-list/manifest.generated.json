@@ -181,7 +181,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "head.tsx", "more-row.tsx", "picked-row.tsx", "text-of.ts", "types.ts", "use-shown.ts"],
+	"files": ["widget.tsx", "head.tsx", "more-row.tsx", "picked-row.tsx", "text-of.ts", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/file-row"]
 }

@@ -1,5 +1,7 @@
 import { canDo } from "widgetarium";
-import { DEFAULT_TIERS, rowsOf, type Preset } from "@default/lib";
+import { DEFAULT_TIERS } from "./tiers";
+import { rowsOf } from "./cards";
+import type { Preset } from "./presets";
 import type { Gates } from "./types";
 
 const NO_PRESETS_HERE = "A preset may only fill a list typed into this tile, never a folder in the vault.";

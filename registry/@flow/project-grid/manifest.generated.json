@@ -149,7 +149,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "cell.tsx", "cells.tsx", "grid-said.tsx", "style.ts", "types.ts", "use-shown.ts"],
+	"files": ["widget.tsx", "cell.tsx", "cells.tsx", "grid-said.tsx", "style.ts", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/project-card"]
 }

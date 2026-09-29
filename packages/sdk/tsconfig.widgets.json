@@ -20,7 +20,8 @@
 		"skipLibCheck": false,
 		"allowJs": false,
 		"paths": {
-			"widgetarium": ["./types/widgetarium.d.ts"]
+			"widgetarium": ["./types/widgetarium.d.ts"],
+			"@*/lib": ["../../registry/@*/lib"]
 		}
 	},
 	"include": [

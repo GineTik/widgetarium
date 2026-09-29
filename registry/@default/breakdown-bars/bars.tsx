@@ -1,5 +1,5 @@
+import { Ceiling } from "widgetarium/kit";
 import { Bar } from "./bar";
-import { Ceiling } from "./ceiling";
 import { More } from "./more";
 import type { Group } from "./types";
 
@@ -15,7 +15,7 @@ export function Bars({ groups, shown, step, onMore, total }: BarsProps) {
 				<Bar key={group.key} group={group} widest={widest} />
 			))}
 			<More left={groups.slice(top.length)} step={step} onMore={onMore} />
-			<Ceiling total={total} />
+			<Ceiling total={total} tone="var(--text-faint)" />
 		</div>
 	);
 }

@@ -13,7 +13,7 @@ import {
 import { FeedPages } from "./feed-pages";
 import { FeedSaid } from "./feed-said";
 import type { Drawn, Given, ItemSlot } from "./types";
-import { usePages } from "./use-pages";
+import { usePages } from "widgetarium/kit";
 
 const PAGE_SIZE = 10;
 

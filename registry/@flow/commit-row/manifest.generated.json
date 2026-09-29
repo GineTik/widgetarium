@@ -64,7 +64,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "counts.ts", "diff-bar.tsx", "diff-stat.tsx", "meta.tsx", "types.ts"],
+	"files": ["widget.tsx", "counts.ts", "diff-stat.tsx", "meta.tsx", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

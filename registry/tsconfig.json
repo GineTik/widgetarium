@@ -2,7 +2,8 @@
 	"extends": "../packages/sdk/tsconfig.widgets.json",
 	"compilerOptions": {
 		"paths": {
-			"widgetarium": ["../packages/sdk/types/widgetarium.d.ts"]
+			"widgetarium": ["../packages/sdk/types/widgetarium.d.ts"],
+			"@*/lib": ["./@*/lib"]
 		}
 	},
 	"include": ["../packages/sdk/types/**/*.d.ts", "./**/*.ts", "./**/*.tsx"]

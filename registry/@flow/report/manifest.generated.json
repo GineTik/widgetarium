@@ -206,14 +206,12 @@
 		"pager.tsx",
 		"prose-of.ts",
 		"prose.tsx",
-		"rendered-markdown.tsx",
 		"report-said.tsx",
 		"style.ts",
 		"test-plan.tsx",
 		"test-step-row.tsx",
 		"types.ts",
-		"use-figure-source.ts",
-		"use-markdown-rendered-into.ts"
+		"use-figure-source.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/report-figure"]

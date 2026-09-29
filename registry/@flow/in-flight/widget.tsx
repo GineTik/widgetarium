@@ -17,10 +17,10 @@ import { MoreRow } from "./more-row";
 import { PickedRow } from "./picked-row";
 import { CSS } from "./style";
 import type { FlightFace, RowSlot } from "./types";
-import { useNow } from "./use-now";
-import { useShown } from "./use-shown";
+import { useNow, useShown } from "widgetarium/kit";
 
 const PAGE_SIZE = 12;
+const TICK_MS = 30000;
 
 const NO_SLOT = "This list has no widget to draw its rows with.";
 const NOTHING = "Nothing is in flight right now.";
@@ -139,10 +139,10 @@ const InFlight = createWidget({
 	},
 	draw: ({ flights, pageSize, selection, row: Drawn }) => {
 		const size = pageSizeOf(pageSize);
-		const { shown, more } = useShown(size, flights.id);
+		const { shown, more } = useShown(flights.id, size);
 		const listed = useData(flights.list, { offset: 0, limit: shown });
 		const picked = selection.value;
-		const now = useNow();
+		const now = useNow(TICK_MS);
 		const said = saidInstead(Drawn, listed);
 		if (said || !Drawn) return <InFlightSaid text={said ?? NO_SLOT} />;
 

@@ -1,7 +1,6 @@
 import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
-import { Icon, IconButton } from "widgetarium/kit";
+import { Icon, IconButton, RenderedMarkdown } from "widgetarium/kit";
 import { Collapsed } from "./collapsed";
-import { RenderedMarkdown } from "./rendered-markdown";
 
 type MarkdownSource = string | { content?: string | null; body?: string | null; path?: string | null } | null;
 
@@ -48,7 +47,14 @@ const ObsidianMarkdownPreview = createWidget({
 						<Icon name="open-tab" />
 					</IconButton>
 				) : null}
-				<RenderedMarkdown host={host} markdown={markdownOf(source)} path={path} />
+				<RenderedMarkdown
+					host={host}
+					markdown={markdownOf(source)}
+					path={path}
+					className="wg-markdown-preview-body"
+					plainClassName="wg-markdown-preview-plain"
+					part="body"
+				/>
 			</>
 		);
 

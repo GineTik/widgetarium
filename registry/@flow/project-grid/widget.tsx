@@ -15,7 +15,7 @@ import type { Row } from "widgetarium";
 import { Cells } from "./cells";
 import { GridSaid } from "./grid-said";
 import type { Drawn, Project, ProjectSlot } from "./types";
-import { useShown } from "./use-shown";
+import { useShown } from "widgetarium/kit";
 
 const PAGE_SIZE = 12;
 

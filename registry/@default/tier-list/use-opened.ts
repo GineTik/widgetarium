@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Preset } from "@default/lib";
+import type { Preset } from "./presets";
 import type { CardRow, TierRow } from "./types";
 
 export function useOpened() {

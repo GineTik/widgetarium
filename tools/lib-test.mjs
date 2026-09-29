@@ -33,8 +33,8 @@ function vaultOf(files) {
 	return { vault: { adapter } };
 }
 
-const LIB = `export const RATE = 21;
-export function streakOf(days) {
+const LIB = `export const RATE: number = 21;
+export function streakOf(days: readonly string[]): number {
 	return days.length;
 }
 `;
@@ -46,7 +46,7 @@ export default createWidget({ draw: () => h("b", null, streakOf(["a", "b", "c"])
 `;
 
 const FILES = {
-	[`${ROOT}/@default/lib.js`]: LIB,
+	[`${ROOT}/@default/lib.ts`]: LIB,
 	[`${ROOT}/@habit/probe/manifest.generated.json`]: JSON.stringify({ id: "@habit/probe", title: "Probe" }),
 	[`${ROOT}/@habit/probe/widget.tsx`]: WIDGET,
 };
@@ -94,13 +94,13 @@ const check = (name, got, want) => {
 	const said = [];
 	const wasError = console.error;
 	console.error = (...parts) => said.push(parts.join(" "));
-	const registry = new WidgetRegistry(vaultOf({ ...FILES, [`${ROOT}/@default/lib.js`]: "export const broken = (" }));
+	const registry = new WidgetRegistry(vaultOf({ ...FILES, [`${ROOT}/@default/lib.ts`]: "export const broken = (" }));
 	await registry.load();
 	console.error = wasError;
 
 	check(
 		"a lib that will not parse is reported",
-		said.some((line) => line.includes("@default/lib.js")),
+		said.some((line) => line.includes("@default/lib.ts")),
 		true,
 	);
 	check("and it is not served", registry.libs.has("@default/lib"), false);
@@ -108,6 +108,22 @@ const check = (name, got, want) => {
 		"so the widget that wanted it fails by name",
 		String(registry.get("@habit/probe")?.error ?? "").includes("@default/lib"),
 		true,
+	);
+}
+
+{
+	const { [`${ROOT}/@default/lib.ts`]: typed, ...rest } = FILES;
+	const registry = new WidgetRegistry(
+		vaultOf({
+			...rest,
+			[`${ROOT}/@default/lib.js`]: typed.replaceAll(": number", "").replace(": readonly string[]", ""),
+		}),
+	);
+	await registry.load();
+	check(
+		"a lib still written as lib.js is served too",
+		registry.get("@habit/probe")?.component({}).props.children,
+		"3/21",
 	);
 }
 
@@ -129,14 +145,15 @@ const check = (name, got, want) => {
 	const { tmpdir } = await import("node:os");
 	const nodePath = await import("node:path");
 	const work = mkdtempSync(nodePath.join(tmpdir(), "wg-lib-"));
-	const copy = nodePath.join(work, "lib.mjs");
+	const copy = nodePath.join(work, "lib.ts");
 	const { pathToFileURL } = await import("node:url");
 	const sourceAt = (file) => pathToFileURL(nodePath.resolve(file)).href;
 	writeFileSync(
 		copy,
-		readFileSync("registry/@default/lib.js", "utf8")
-			.replace('from "widgetarium/kit"', `from "${sourceAt("packages/kit/src/index.ts")}"`)
-			.replace('from "widgetarium"', `from "${sourceAt("packages/core/src/gateway/match.ts")}"`),
+		readFileSync("registry/@default/lib.ts", "utf8").replaceAll(
+			'from "widgetarium"',
+			`from "${sourceAt("packages/core/src/gateway/match.ts")}"`,
+		),
 	);
 	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf } = await import(`file://${copy}`);
 
@@ -223,8 +240,8 @@ const check = (name, got, want) => {
 	const drawn = buildWidget({
 		sources: widgetModuleSources("registry/@default/heatmap"),
 		path: "registry/@default/heatmap",
-		lib: readFileSync("registry/@default/lib.js", "utf8"),
-		libPath: "registry/@default/lib.js",
+		lib: readFileSync("registry/@default/lib.ts", "utf8"),
+		libPath: "registry/@default/lib.ts",
 		scope: "@default",
 	});
 	check("a widget is built from files nobody installed", typeof drawn, "function");

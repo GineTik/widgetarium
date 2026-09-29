@@ -5,7 +5,7 @@ Only when `find` offers nothing close. A near neighbour with different controls 
 **One widget draws one thing.** A total with its bar, a chart, a list of rows: each is a widget of
 its own, and a section places them together. When the design asks for a figure over a list, write
 two widgets reading the same folder, never one that draws both. Shared arithmetic goes in the scope's
-`lib.js`.
+`lib.ts`.
 
 ## The folder
 
@@ -17,12 +17,15 @@ The path names it: `@you/clock` is the id, `@you` the scope. Save and it appears
 reload. The engine compiles the TSX into `build/` beside your file. **Never write anything in
 `build/`.** A widget is TypeScript: `widget.tsx`, or `widget.ts` when it draws no JSX. A
 `widget.jsx` or `widget.js` is refused and draws its refusal instead; rename it to `widget.tsx`,
-which builds as it stands. A scope may also hold `lib.js`, `tokens.css` and `theme.css`, shared by its widgets.
+which builds as it stands. A scope may also hold `lib.ts`, `tokens.css` and `theme.css`, shared by its
+widgets; a widget imports the lib as `@you/lib`, is typed by it, and rebuilds when it changes. An older
+`lib.js` still loads.
 
 **A widget may split its code into sibling modules.** `widget.tsx` stays the entry and imports the
 rest relatively — `import { columns } from "./board-state"`, `"./parts/card"` — any `.ts` or `.tsx`
 in the folder or a folder under it. The engine builds, installs and checks them as one widget. Logic
-only this widget uses lives in its own folder; the scope's `lib.js` is for what several widgets share.
+only this widget uses lives in its own folder; the scope's `lib.ts` is for what several widgets of one
+scope share, and a hook or part every scope could use belongs in the kit.
 
 Beside the scopes the plugin lays `tsconfig.json` and `types/` — written, never edited, and what
 makes an editor type every prop from its declaration instead of handing you `any`.
@@ -352,6 +355,17 @@ system restyles all of them at once.
 
 `ShowMore` is the full-width button under a list that reads a page at a time, draws nothing when
 `remaining` is not above `0`, and names the count when `remaining` is given.
+
+The kit carries the hooks widgets kept copying. `usePages(source, size)` and `useShown(source, size)`
+count pages or rows and start over when the source changes; `useWhenSeen(onSeen)` and
+`<MoreWhenSeen onSeen className/>` load the next page 400px before the end is on screen.
+`useMarkdownRenderedInto(host, markdown, path)` and `<RenderedMarkdown host markdown path className
+plainClassName part/>` draw markdown through the host, as plain text where it cannot; pass the note's
+path whenever you have one, or a relative link has no note to resolve from. `useNow(tickMs, isTicking)`
+is a clock, `useScrollFog(ref, onEdges, watched)` hands over how far a box is scrolled from each edge,
+`<Line tone text/>` and `<Ceiling total tone/>` are a status line and the "first 500 of N counted"
+line under `COUNTED_CEILING`, `<Flame size className/>` is the streak flame (`FLAME` its path) and
+`<DiffBar added removed className/>` the added-against-removed bar.
 
 `Button` and `IconButton` own their states: `isLoading` draws the kit's spinner, disables the press
 and says `aria-busy`, so a widget never passes a loader of its own; `isDone` swaps the mark for a

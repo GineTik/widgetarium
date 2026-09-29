@@ -108,7 +108,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "day-button.tsx", "filled.ts", "flame.tsx", "summary.tsx", "types.ts", "use-width.ts"],
+	"files": ["widget.tsx", "day-button.tsx", "filled.ts", "summary.tsx", "types.ts", "use-width.ts"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

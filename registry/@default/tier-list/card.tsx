@@ -1,5 +1,5 @@
 import { Icon } from "widgetarium/kit";
-import { nameOf } from "@default/lib";
+import { nameOf } from "./cards";
 import { Face } from "./face";
 import type { CardRow, Dragging } from "./types";
 

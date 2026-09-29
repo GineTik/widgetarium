@@ -360,6 +360,7 @@
 		"plates.tsx",
 		"record-actions.tsx",
 		"stroked.tsx",
+		"summary.ts",
 		"tip.tsx",
 		"types.ts",
 		"use-band.ts",

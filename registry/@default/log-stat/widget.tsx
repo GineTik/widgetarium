@@ -9,7 +9,8 @@ import {
 	useData,
 	z,
 } from "widgetarium";
-import { FLAME, isoOf, readLog, streakOf } from "@default/lib";
+import { FLAME } from "widgetarium/kit";
+import { isoOf, readLog, streakOf } from "@default/lib";
 import type { LogEntry } from "@default/lib";
 
 const STYLE = `

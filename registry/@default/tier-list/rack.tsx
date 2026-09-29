@@ -1,10 +1,10 @@
-import { Icon, toneClass } from "widgetarium/kit";
+import { Icon, toneClass, useScrollFog } from "widgetarium/kit";
 import { useRef } from "react";
 import { Grip } from "./grip";
 import { Pen } from "./pen";
 import type { Picking, RackView, TierRow } from "./types";
-import { useFog } from "./use-fog";
 
+const FOG_REACH_PX = 24;
 const NO_ROWS = "No rows yet. Everything sits in the tray until there is somewhere to put it.";
 
 export function Rack({
@@ -23,7 +23,7 @@ export function Rack({
 }) {
 	const rackRef = useRef<HTMLDivElement | null>(null);
 	const fogRef = useRef<HTMLDivElement | null>(null);
-	useFog(rackRef, fogRef);
+	useScrollFog(rackRef, (edges: { top: number; bottom: number }) => paintFog(fogRef.current, edges));
 	const isEmpty = held.rack.length === 0;
 
 	const addRow = onAddRow ? (
@@ -74,4 +74,10 @@ export function Rack({
 			</div>
 		</div>
 	);
+}
+
+function paintFog(fog: HTMLElement | null, edges: { top: number; bottom: number }) {
+	if (!fog) return;
+	fog.style.setProperty("--wr-fog-top", String(Math.min(1, edges.top / FOG_REACH_PX)));
+	fog.style.setProperty("--wr-fog-bottom", String(Math.min(1, edges.bottom / FOG_REACH_PX)));
 }

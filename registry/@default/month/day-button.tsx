@@ -1,4 +1,4 @@
-import { Flame } from "./flame";
+import { Flame } from "widgetarium/kit";
 import type { DayCell } from "./types";
 
 const A_KEPT_DAY = "{date}, kept";
@@ -17,7 +17,7 @@ export function DayButton({ cell, flameSize, onPress }: { cell: DayCell; flameSi
 			<span className="hm-number">{cell.dayOfMonth}</span>
 			<span className="hm-seat">
 				{cell.run ? <span className={cell.run} /> : null}
-				<span className={cell.ring}>{cell.kept ? <Flame size={flameSize} /> : null}</span>
+				<span className={cell.ring}>{cell.kept ? <Flame size={flameSize} className="hm-flame" /> : null}</span>
 			</span>
 		</button>
 	);

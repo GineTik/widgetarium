@@ -188,16 +188,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"in-flight-said.tsx",
-		"more-row.tsx",
-		"picked-row.tsx",
-		"style.ts",
-		"types.ts",
-		"use-now.ts",
-		"use-shown.ts"
-	],
+	"files": ["widget.tsx", "in-flight-said.tsx", "more-row.tsx", "picked-row.tsx", "style.ts", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/flight-row"]
 }

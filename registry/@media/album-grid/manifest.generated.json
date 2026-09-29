@@ -154,13 +154,10 @@
 		"album-cell.tsx",
 		"album-page.tsx",
 		"cell-sizes.ts",
-		"more-when-seen.tsx",
 		"types.ts",
 		"use-album-source.ts",
 		"use-beside.ts",
-		"use-narrow-shelf.ts",
-		"use-pages.ts",
-		"use-when-seen.ts"
+		"use-narrow-shelf.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@media/album-cover"]

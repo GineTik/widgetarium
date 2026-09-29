@@ -1,5 +1,5 @@
 import type { ViewHost } from "widgetarium";
-import { useMarkdownRenderedInto } from "./use-markdown-rendered-into";
+import { useMarkdownRenderedInto } from "widgetarium/kit";
 
 export function MarkdownLine({ host, text }: { host: ViewHost; text: string }) {
 	const body = useMarkdownRenderedInto(host, text);

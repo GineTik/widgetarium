@@ -59,8 +59,11 @@ function run(file) {
 	return runWidgetSource(file, importing(), h, Fragment);
 }
 
-libs.set("@default/lib", run("registry/@default/lib.js"));
-const lib = libs.get("@default/lib");
+libs.set("@default/lib", run("registry/@default/lib.ts"));
+const lib = Object.assign(
+	{},
+	...["tiers", "tones", "cards", "ordering", "presets"].map((name) => run(`registry/@default/tier-list/${name}.ts`)),
+);
 const TierList = run(WIDGET).default;
 
 let failed = 0;

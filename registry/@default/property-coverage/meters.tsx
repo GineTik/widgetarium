@@ -1,5 +1,4 @@
-import { Ceiling } from "./ceiling";
-import { Line } from "./line";
+import { Ceiling, Line } from "widgetarium/kit";
 import { Meter } from "./meter";
 import { More } from "./more";
 import type { Coverage } from "./types";
@@ -25,7 +24,7 @@ export function Meters({ coverage, shown, step, onMore, counted, total }: Meters
 				<Meter key={property.key} coverage={property} counted={counted} />
 			))}
 			<More left={coverage.length - top.length} step={step} onMore={onMore} />
-			<Ceiling total={total} />
+			<Ceiling total={total} tone="var(--text-faint)" />
 		</div>
 	);
 }

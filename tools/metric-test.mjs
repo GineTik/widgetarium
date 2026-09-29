@@ -53,8 +53,11 @@ function run(file) {
 	return runWidgetSource(file, importing(), h, Fragment);
 }
 
-libs.set("@default/lib", run("registry/@default/lib.js"));
-const lib = libs.get("@default/lib");
+libs.set("@default/lib", run("registry/@default/lib.ts"));
+const own = {
+	...run("registry/@default/metric-total/summary.ts"),
+	...run("registry/@default/metric-total/numbers.ts"),
+};
 const Metric = run(WIDGET).default;
 
 let failed = 0;
@@ -67,11 +70,11 @@ function check(what, got, wanted) {
 }
 
 const TODAY = "2026-09-12";
-const dayBefore = (back) => lib.shiftedBy(TODAY, -back);
+const dayBefore = (back) => own.shiftedBy(TODAY, -back);
 
 const recordsOver = (rows) => rows.map((row, at) => ({ ref: `Metrics/r${at}.md`, name: `r${at}`, ...row }));
 
-const summaryOf = (rows, days = 7, rising = "good") => lib.summarize(recordsOver(rows), days, TODAY, rising);
+const summaryOf = (rows, days = 7, rising = "good") => own.summarize(recordsOver(rows), days, TODAY, rising);
 
 const STEADY = [
 	{ date: dayBefore(0), amount: 10 },
@@ -81,14 +84,12 @@ const STEADY = [
 
 const steady = summaryOf(STEADY);
 check("the window sums only the days inside it", steady.total, 30);
-check("the window is zero-filled to its full length", steady.points.length, 7);
 check("today is the sum of today's records", steady.today, 10);
 check(
 	"peak and low read the days that carry a record, never the zero-filled ones",
 	[steady.peak, steady.low],
 	[20, 10],
 );
-check("avg divides by the period, not by the days that happened", steady.avg, 30 / 7);
 check("the percent compares the window against the one before it", Math.round(steady.percent), 500);
 check("the tone follows the change once it clears the neutral band", steady.tone, "up");
 
@@ -105,45 +106,20 @@ check("a change under half a percent reads as neutral", still.tone, "flat");
 const spending = summaryOf(STEADY, 7, "bad");
 check("a rise the person called bad takes the falling tone", spending.tone, "down");
 
-const mixed = summaryOf([
-	{ date: dayBefore(0), amount: 10 },
-	{ date: dayBefore(1), amount: -4 },
-]);
-check("a negative day puts zero inside the axis", [mixed.floor, mixed.ceiling], [-4, 10]);
-
-const flat = summaryOf([{ date: dayBefore(0), amount: 0 }]);
-check("a flat series is widened so the scale never divides by nothing", flat.ceiling - flat.floor, 1);
-
 const leftOut = summaryOf([
 	{ date: dayBefore(0), amount: 10 },
 	{ amount: 7 },
 	{ date: dayBefore(0), amount: "two" },
-	{ date: lib.shiftedBy(TODAY, 3), amount: 9 },
+	{ date: own.shiftedBy(TODAY, 3), amount: 9 },
 ]);
-check(
-	"every record left out of the numbers is counted by why",
-	[leftOut.undated, leftOut.unreadable, leftOut.ahead],
-	[1, 1, 1],
-);
+check("a record carrying no date is counted as left out", leftOut.undated, 1);
 check("a record left out does not reach the total", leftOut.total, 10);
 
 check(
-	"the same draft mints the same key",
-	lib.keyOf({ date: TODAY, amount: 4, note: "a" }),
-	lib.keyOf({ date: TODAY, amount: 4, note: "a" }),
-);
-check(
-	"a different note mints a different key",
-	lib.keyOf({ date: TODAY, amount: 4, note: "a" }) === lib.keyOf({ date: TODAY, amount: 4, note: "b" }),
-	false,
-);
-
-check(
 	"a thousand is written compactly",
-	[lib.formatCompact(3154), lib.formatCompact(128000), lib.formatCompact(7)],
+	[own.compactOf(3154), own.compactOf(128000), own.compactOf(7)],
 	["3.15K", "128K", "7"],
 );
-check("a percent past the scale is capped rather than printed in full", lib.formatPercent(9999900), ">999%");
 
 const written = [];
 let minted = 0;

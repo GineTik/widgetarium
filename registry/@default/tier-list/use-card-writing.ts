@@ -1,5 +1,5 @@
 import { canDo } from "widgetarium";
-import { orderBetween, placedAt, renumbered } from "@default/lib";
+import { orderBetween, placedAt, renumbered } from "./ordering";
 import type { CardRow, Draft, Gates, RackView, Target } from "./types";
 
 const CANNOT_MOVE = "This source cannot be written here, so the card stayed where it was.";

@@ -141,17 +141,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"cell.tsx",
-		"grid.tsx",
-		"line.tsx",
-		"more.tsx",
-		"row.tsx",
-		"types.ts",
-		"use-fog.ts",
-		"widget.css"
-	],
+	"files": ["widget.tsx", "cell.tsx", "grid.tsx", "more.tsx", "row.tsx", "types.ts", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

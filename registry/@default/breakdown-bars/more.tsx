@@ -1,5 +1,4 @@
-import { Button } from "widgetarium/kit";
-import { Line } from "./line";
+import { Button, Line } from "widgetarium/kit";
 import type { Group } from "./types";
 
 const LEFT_OUT = "{count} more — {sum} together";

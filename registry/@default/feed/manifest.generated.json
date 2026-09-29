@@ -85,11 +85,8 @@
 		"feed-page.tsx",
 		"feed-pages.tsx",
 		"feed-said.tsx",
-		"more-when-seen.tsx",
 		"types.ts",
-		"use-item-source.ts",
-		"use-pages.ts",
-		"use-when-seen.ts"
+		"use-item-source.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@default/obsidian-markdown-preview"]

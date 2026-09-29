@@ -178,7 +178,6 @@
 	"files": [
 		"widget.tsx",
 		"day-button.tsx",
-		"flame.tsx",
 		"grid-measures.ts",
 		"month-head.tsx",
 		"style.ts",

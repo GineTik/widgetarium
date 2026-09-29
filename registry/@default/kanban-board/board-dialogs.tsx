@@ -1,4 +1,4 @@
-import { propertiesOf } from "@default/lib";
+import { propertiesOf } from "./properties-of";
 import { ArchiveAsk } from "./archive-ask";
 import { RepairIdsAsk } from "./repair-ids-ask";
 import { TaskDialog } from "./task-dialog";

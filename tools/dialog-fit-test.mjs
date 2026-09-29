@@ -41,7 +41,7 @@ const bundle = await esbuild.build({
 	alias: {
 		widgetarium: "./tools/fill-shim.js",
 		"widgetarium/kit": "./packages/kit/src/index.ts",
-		"@default/lib": "./registry/@default/lib.js",
+		"@default/lib": "./registry/@default/lib.ts",
 	},
 	logLevel: "warning",
 });

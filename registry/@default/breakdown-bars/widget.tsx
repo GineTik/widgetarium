@@ -10,9 +10,9 @@ import {
 	useData,
 	z,
 } from "widgetarium";
-import { askedCount, COUNTED_CEILING } from "@default/lib";
+import { COUNTED_CEILING, Line } from "widgetarium/kit";
+import { askedCount } from "@default/lib";
 import { Bars } from "./bars";
-import { Line } from "./line";
 import type { Group } from "./types";
 
 const SHOWN_AT_FIRST = 8;

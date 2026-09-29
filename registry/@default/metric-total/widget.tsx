@@ -17,14 +17,15 @@ import { dayOfRecord } from "@default/lib";
 import { useId, useRef, useState } from "react";
 import { AddDialog } from "./add-dialog";
 import { Chart } from "./chart";
-import { dateOf, isoFrom } from "./days";
+import { isoFrom } from "./days";
 import { Foot } from "./foot";
 import { Head } from "./head";
 import { ListDialog } from "./list-dialog";
 import { compactOf } from "./numbers";
 import { Plates } from "./plates";
+import { amountOf, shiftedBy, summarize } from "./summary";
 import { Tip } from "./tip";
-import type { Allowed, Hovered, Listed, MetricProps, Point, Summary, Tone } from "./types";
+import type { Allowed, Hovered, Listed, MetricProps } from "./types";
 import { useBand } from "./use-band";
 import { useEntryDialog } from "./use-entry-dialog";
 import { writtenOrNotified } from "./written";
@@ -56,8 +57,6 @@ const PeriodRowSchema = z.object({
 	days: z.number().nullable().exactOptional(),
 });
 
-const FLAT_UNDER = 0.5;
-
 const DEFAULT_DAYS = 30;
 
 const AT_THE_ROOT = "Vault";
@@ -66,90 +65,11 @@ const CANNOT_DELETE = "The record was not deleted, so it is still in the list.";
 const CANNOT_KEEP_VIEW = "This card cannot remember which chart you picked, so it kept the one it was drawing.";
 const CANNOT_KEEP_PERIOD = "This card cannot remember the period you picked, so it kept the one it was reading over.";
 
-function shiftedBy(iso: string, days: number): string {
-	const at = dateOf(iso);
-	return isoFrom(new Date(at.getFullYear(), at.getMonth(), at.getDate() + days));
-}
-
 function folderSaid(path: string | undefined): string {
 	const cut = (path ?? "").lastIndexOf("/");
 	if (cut < 1) return AT_THE_ROOT;
 	const holding = path?.slice(0, cut) ?? "";
 	return holding.slice(holding.lastIndexOf("/") + 1);
-}
-
-function amountOf(record: MetricRecord): number {
-	const read = Number(record.amount);
-	return Number.isFinite(read) ? read : 0;
-}
-
-function pointsOf(records: readonly MetricRecord[], from: string, to: string): Point[] {
-	const byDay = new Map<string, number>();
-	for (const record of records) {
-		const day = dayOfRecord(record);
-		if (!day || day < from || day > to) continue;
-		byDay.set(day, (byDay.get(day) ?? 0) + amountOf(record));
-	}
-	return [...byDay.entries()]
-		.sort(([here], [there]) => (here < there ? -1 : 1))
-		.map(([day, value]) => ({ day, value }));
-}
-
-function balanceByDay(records: readonly MetricRecord[], days: number, from: string): Point[] {
-	const byDay = new Map<string, number>();
-	let opening = 0;
-	for (const record of records) {
-		const day = dayOfRecord(record);
-		if (!day) continue;
-		if (day < from) {
-			opening += amountOf(record);
-			continue;
-		}
-		byDay.set(day, (byDay.get(day) ?? 0) + amountOf(record));
-	}
-	let running = opening;
-	return Array.from({ length: Math.max(days, 1) }, (_unused, at) => {
-		const day = shiftedBy(from, at);
-		running += byDay.get(day) ?? 0;
-		return { day, value: running };
-	});
-}
-
-function sumOf(points: readonly Point[]): number {
-	return points.reduce((kept, point) => kept + point.value, 0);
-}
-
-function directionOf(percent: number): Tone {
-	if (Math.abs(percent) < FLAT_UNDER) return "flat";
-	return percent > 0 ? "up" : "down";
-}
-
-function toneOf(direction: Tone, rising: string): Tone {
-	if (direction === "flat") return "flat";
-	return (direction === "up") === (rising !== "bad") ? "up" : "down";
-}
-
-function summarize(records: readonly MetricRecord[], days: number, today: string, rising: string): Summary {
-	const points = pointsOf(records, shiftedBy(today, 1 - days), today);
-	const before = pointsOf(records, shiftedBy(today, 1 - days * 2), shiftedBy(today, -days));
-	const total = sumOf(points);
-	const was = sumOf(before);
-	const percent = was > 0 ? ((total - was) / was) * 100 : null;
-	const direction = percent === null ? (total > 0 ? "up" : "flat") : directionOf(percent);
-	const values = points.map((point) => point.value);
-	return {
-		points,
-		balance: balanceByDay(records, days, shiftedBy(today, 1 - days)),
-		total,
-		today: points.find((point) => point.day === today)?.value ?? 0,
-		percent,
-		direction,
-		tone: toneOf(direction, rising),
-		peak: values.length > 0 ? Math.max(...values) : 0,
-		low: values.length > 0 ? Math.min(...values) : 0,
-		avg: values.length > 0 ? Math.round(total / values.length) : 0,
-		undated: records.filter((record) => !dayOfRecord(record)).length,
-	};
 }
 
 export const MetricTotal = createWidget({

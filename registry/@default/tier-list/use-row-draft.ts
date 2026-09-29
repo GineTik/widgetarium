@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { labelOf, toneOf } from "@default/lib";
+import { labelOf } from "./tiers";
+import { toneOf } from "./tones";
 import type { TierRow } from "./types";
 
 export function useRowDraft(row: TierRow | null) {

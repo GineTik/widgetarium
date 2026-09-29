@@ -1,6 +1,6 @@
 import { useData, type Row } from "widgetarium";
 import { FeedItem } from "./feed-item";
-import { MoreWhenSeen } from "./more-when-seen";
+import { MoreWhenSeen } from "widgetarium/kit";
 import type { Drawn, Item, Items } from "./types";
 
 type PageProps = { items: Items; Drawn: Drawn; offset: number; limit: number; isLast: boolean; onMore: () => void };
@@ -14,7 +14,7 @@ export function FeedPage({ items, Drawn, offset, limit, isLast, onMore }: PagePr
 			{listed.data.map((row) => (
 				<FeedItem key={row.ref} items={items} row={row as Row<Item>} Drawn={Drawn} />
 			))}
-			{hasMore ? <MoreWhenSeen onSeen={onMore} /> : null}
+			{hasMore ? <MoreWhenSeen onSeen={onMore} className="wg-feed-more" /> : null}
 		</>
 	);
 }

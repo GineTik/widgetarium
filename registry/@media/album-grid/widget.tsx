@@ -12,11 +12,10 @@ import {
 } from "widgetarium";
 import { AlbumPage } from "./album-page";
 import { MIN_CELL_PX, NARROW_PX } from "./cell-sizes";
-import { MoreWhenSeen } from "./more-when-seen";
+import { MoreWhenSeen, usePages } from "widgetarium/kit";
 import type { CoverSlot, Drawn, Given } from "./types";
 import { useBeside } from "./use-beside";
 import { useNarrowShelf } from "./use-narrow-shelf";
-import { usePages } from "./use-pages";
 
 export const AlbumSchema = VaultRecordSchema.extend({
 	title: z
@@ -110,7 +109,7 @@ const AlbumGrid = createWidget({
 						))}
 					</div>
 				)}
-				{hasMore ? <MoreWhenSeen onSeen={more} /> : null}
+				{hasMore ? <MoreWhenSeen onSeen={more} className="wg-albums-more" /> : null}
 			</div>
 		);
 	},

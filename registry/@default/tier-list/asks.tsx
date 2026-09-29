@@ -1,5 +1,5 @@
 import { ConfirmDialog } from "widgetarium";
-import type { Preset } from "@default/lib";
+import type { Preset } from "./presets";
 import type { Opened, Writing } from "./types";
 
 const RESET_TITLE = "Put {count} cards back in the tray?";

@@ -127,7 +127,6 @@
 		"markdown-line.tsx",
 		"marked.tsx",
 		"types.ts",
-		"use-markdown-rendered-into.ts",
 		"widget.css"
 	],
 	"dependencies": {},

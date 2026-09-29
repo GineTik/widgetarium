@@ -10,9 +10,9 @@ import {
 	useData,
 	z,
 } from "widgetarium";
+import { Line } from "widgetarium/kit";
 import { askedCount, heldProperties } from "@default/lib";
 import { Grid } from "./grid";
-import { Line } from "./line";
 import { More } from "./more";
 import type { Shown } from "./types";
 

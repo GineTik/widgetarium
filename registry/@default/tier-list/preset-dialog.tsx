@@ -1,6 +1,8 @@
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "widgetarium";
 import { toneClass } from "widgetarium/kit";
-import { DEFAULT_TIERS, labelOf, PRESETS, toneOf, type Preset } from "@default/lib";
+import { DEFAULT_TIERS, labelOf } from "./tiers";
+import { PRESETS, type Preset } from "./presets";
+import { toneOf } from "./tones";
 
 const PRESET_TITLE = "Start from a preset";
 const PRESET_SAID = "A preset fills this tile. Nothing is written into the vault, and every card can be put back.";

@@ -60,7 +60,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "diff-bar.tsx", "diff-stat.tsx", "kinds.ts", "path-text.tsx", "types.ts", "was-path.tsx"],
+	"files": ["widget.tsx", "diff-stat.tsx", "kinds.ts", "path-text.tsx", "types.ts", "was-path.tsx"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

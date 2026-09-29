@@ -1,6 +1,7 @@
 import { toneClass } from "widgetarium/kit";
 import { createPortal } from "react-dom";
-import { nameOf, toneForSeed } from "@default/lib";
+import { nameOf } from "./cards";
+import { toneForSeed } from "./tones";
 import { Face } from "./face";
 import type { Carry } from "./types";
 

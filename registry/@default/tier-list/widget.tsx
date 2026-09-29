@@ -13,7 +13,9 @@ import {
 } from "widgetarium";
 import type { ViewHost } from "widgetarium";
 import { useRef } from "react";
-import { cardSizeOf, DEFAULT_TIERS, rackOf } from "@default/lib";
+import { cardSizeOf } from "./cards";
+import { DEFAULT_TIERS } from "./tiers";
+import { rackOf } from "./ordering";
 import { Board } from "./board";
 import { Renderer } from "./renderer";
 import type { CardRow, May, RackView, RenderMarkdown, TierListProps, TierRow } from "./types";

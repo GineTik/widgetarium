@@ -198,7 +198,7 @@ const ALIASED = {
 	"widgetarium/kit": "./packages/kit/src/index.ts",
 	"widgetarium/kit/emojis": "./packages/kit/src/emojis/emoji.tsx",
 	"widgetarium/kit/charts": "./packages/kit/src/charts/index.ts",
-	"@default/lib": "./registry/@default/lib.js",
+	"@default/lib": "./registry/@default/lib.ts",
 	obsidian: "./tools/obsidian-shim.js",
 };
 

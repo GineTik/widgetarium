@@ -118,7 +118,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "bar.tsx", "bars.tsx", "ceiling.tsx", "line.tsx", "more.tsx", "types.ts", "widget.css"],
+	"files": ["widget.tsx", "bar.tsx", "bars.tsx", "more.tsx", "types.ts", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

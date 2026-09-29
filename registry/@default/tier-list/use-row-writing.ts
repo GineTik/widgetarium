@@ -1,14 +1,7 @@
 import { canDo } from "widgetarium";
-import {
-	freeLabel,
-	isLabelTaken,
-	labelOf,
-	nextToneAfter,
-	orderBetween,
-	placedAt,
-	renumbered,
-	toneOf,
-} from "@default/lib";
+import { freeLabel, isLabelTaken, labelOf } from "./tiers";
+import { nextToneAfter, toneOf } from "./tones";
+import { orderBetween, placedAt, renumbered } from "./ordering";
 import type { CardRow, Gates, RackView, TierRow } from "./types";
 
 type Rename = { standing: string[]; isRenamed: boolean; wanted: string; heldCards: number; canWriteCards: boolean };

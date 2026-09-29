@@ -15,7 +15,7 @@ import { Head } from "./head";
 import { MoreRow } from "./more-row";
 import { PickedRow } from "./picked-row";
 import type { Drawn, FileFace, FileRow, FileSlot } from "./types";
-import { useShown } from "./use-shown";
+import { useShown } from "widgetarium/kit";
 
 const CSS = `
 .ffl {
@@ -144,7 +144,7 @@ const FileList = createWidget({
 	},
 	draw: ({ files, selection, heading, shownFiles, file }) => {
 		const size = askedCount(shownFiles, SHOWN);
-		const { shown, more } = useShown(size, files.id);
+		const { shown, more } = useShown(files.id, size);
 		const listed = useData(files.list, { offset: 0, limit: shown });
 		const Drawn = file as Drawn;
 		const said = saidInstead(file, listed);

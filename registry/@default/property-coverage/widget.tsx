@@ -10,8 +10,8 @@ import {
 	useData,
 	z,
 } from "widgetarium";
-import { askedCount, COUNTED_CEILING, heldProperties } from "@default/lib";
-import { Line } from "./line";
+import { COUNTED_CEILING, Line } from "widgetarium/kit";
+import { askedCount, heldProperties } from "@default/lib";
 import { Meters } from "./meters";
 import type { Coverage } from "./types";
 

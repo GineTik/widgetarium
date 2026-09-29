@@ -1,7 +1,7 @@
 import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import type { Navigation } from "widgetarium";
+import { RenderedMarkdown } from "widgetarium/kit";
 import { MissingImage } from "./missing-image";
-import { RenderedMarkdown } from "./rendered-markdown";
 
 const CSS = `
 .flow-report-figure {
@@ -114,7 +114,13 @@ const ReportFigure = createWidget({
 			<figure className="flow-report-figure">
 				<style>{CSS}</style>
 				{shown.kind === "markdown" ? (
-					<RenderedMarkdown host={host} markdown={shown.markdown} />
+					<RenderedMarkdown
+						host={host}
+						markdown={shown.markdown}
+						className="flow-report-figure-drawn"
+						plainClassName="flow-report-figure-plain"
+						part="drawing"
+					/>
 				) : (
 					<MissingImage said={shown.said} alt={alt} />
 				)}

@@ -86,7 +86,6 @@
 		"step-row.tsx",
 		"steps-fold.tsx",
 		"types.ts",
-		"use-now.ts",
 		"use-progress.ts"
 	],
 	"dependencies": {},
