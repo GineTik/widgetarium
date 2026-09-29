@@ -25,21 +25,10 @@ export {
 	YAxis,
 	ZAxis,
 } from "recharts";
-export {
-	Area,
-	Bar,
-	Funnel,
-	Line,
-	Pie,
-	Radar,
-	RadialBar,
-	Scatter,
-	ChartContainer,
-	ChartLegend,
-	ChartLegendContent,
-	ChartTooltip,
-	ChartTooltipContent,
-	useChart,
-} from "./chart";
-export type { ChartConfig } from "./chart";
+export { Area, Bar, Funnel, Line, Pie, Radar, RadialBar, Scatter } from "./still-marks";
+export { ChartContainer, ChartLegend, ChartTooltip } from "./chart-container";
+export { ChartLegendContent } from "./chart-legend-content";
+export { ChartTooltipContent } from "./chart-tooltip-content";
+export { useChart } from "./chart-context";
+export type { ChartConfig } from "./chart-context";
 export { chartColorOf } from "../utils/chart-colors";
