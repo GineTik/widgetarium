@@ -21,7 +21,7 @@ const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { previewProps } = await import("../packages/core/src/preview.js");
 const { manifestOf } = await import("../packages/core/src/engine/catalogue-index.js");
 const { manifestOfModule } = await import("../packages/core/src/gateway/declared.ts");
-const { SOURCE_FILES, compileWidgetFolder } = await import("../packages/core/src/engine/widget-build.js");
+const { LIB_FILES, SOURCE_FILES, compileWidgetFolder } = await import("../packages/core/src/engine/widget-build.js");
 const { widgetModulesOnDisk } = await import("./publish.mjs");
 const { declarationIn } = await import("../packages/core/src/gateway/declaration.ts");
 
@@ -100,9 +100,7 @@ const root = "registry";
 const scopes = fs.readdirSync(root).filter((name) => name.startsWith("@"));
 
 for (const scope of scopes) {
-	const file = ["lib.ts", "lib.tsx", "lib.js"]
-		.map((name) => path.join(root, scope, name))
-		.find((at) => fs.existsSync(at));
+	const file = LIB_FILES.map((name) => path.join(root, scope, name)).find((at) => fs.existsSync(at));
 	if (file) libs.set(`${scope}/lib`, run(file, fs.readFileSync(file, "utf8")));
 }
 

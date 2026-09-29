@@ -20,6 +20,7 @@ import {
 	compileWidgetFolder,
 	isWidgetModule,
 	javascriptSourceRefusal,
+	libFileIn,
 } from "./engine/widget-build.js";
 import { RECORD_FILE, manifestOf, readRecord } from "./engine/catalogue-index.js";
 import { idOfFolder } from "./engine/github.js";
@@ -118,7 +119,7 @@ export class WidgetRegistry {
 		await this.readPackages(adapter, this.lock);
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// TRADE-OFF: second pass is cheaper than deciding an order between scopes that reference each other
-		found.scopes.forEach((scope, at) => this.runLib(scope, found.libSources[at]));
+		found.scopes.forEach((scope, at) => this.runLib(scope, found.libPaths[at], found.libSources[at]));
 		this.wearEverySheet(found.sheets, found.sheetSources);
 		found.folders.forEach((folder, at) => this.mountWidget(folder, found.widgetSources[at]));
 		return this.widgets;
@@ -143,8 +144,9 @@ export class WidgetRegistry {
 			])
 			.filter((sheet) => present.has(sheet.path));
 		const readPresent = (path) => (present.has(path) ? this.readIfThere(adapter, path, { known: true }) : null);
+		const libPaths = scopes.map((scope, at) => libPathIn(scope, scopeListings[at].files));
 		const [libSources, sheetSources, widgetSources, lockText] = await Promise.all([
-			Promise.all(scopes.map((scope) => readPresent(`${scope}/lib.js`))),
+			Promise.all(libPaths.map((path) => (path === null ? null : readPresent(path)))),
 			Promise.all(sheets.map((sheet) => readPresent(sheet.path))),
 			Promise.all(
 				folders.map((folder, at) =>
@@ -157,7 +159,7 @@ export class WidgetRegistry {
 			),
 			this.readIfThere(adapter, LOCK_PATH),
 		]);
-		return { scopes, sheets, folders, libSources, sheetSources, widgetSources, lockText };
+		return { scopes, sheets, folders, libPaths, libSources, sheetSources, widgetSources, lockText };
 	}
 
 	async readPackages(adapter, lock) {
@@ -228,10 +230,9 @@ export class WidgetRegistry {
 		}
 	}
 
-	runLib(scope, source) {
+	runLib(scope, path, source) {
 		if (source === null) return;
 
-		const path = `${scope}/lib.js`;
 		const name = `${scope.slice(WIDGETS_DIR.length + 1)}/lib`;
 		try {
 			this.libs.set(name, runModule(source, path, this.libs));
@@ -348,4 +349,9 @@ function parsedLock(text) {
 	} catch {
 		return EMPTY_LOCK;
 	}
+}
+
+function libPathIn(scope, files) {
+	const name = libFileIn(files.map((path) => path.slice(scope.length + 1)));
+	return name === null ? null : `${scope}/${name}`;
 }

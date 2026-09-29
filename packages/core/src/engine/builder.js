@@ -1,10 +1,12 @@
 import { buildIsCurrent, buildRecord, withBuild, withModule } from "./widget-lock.js";
 import {
+	LIB_FILES,
 	SHEET_FILES,
 	buildFolder,
 	builtCodePath,
 	builtSheetPath,
 	compileWidgetFolder,
+	importsScopeLib,
 	modulesIn,
 	sourceFileIn,
 	widgetModulesUnder,
@@ -42,12 +44,13 @@ export function createBuilder({ adapter, space }) {
 		const styled = await styledBy({ adapter, space, lock, id, folder, files, code: built.code, aboutToBeWritten });
 		if (!styled.ok) return refused(lock, styled.failure);
 
+		const lib = await scopeLibInput(adapter, folder, files, aboutToBeWritten);
 		return {
 			ok: true,
 			lock: styled.lock,
 			built,
 			css: styled.css,
-			record: recordOfBuild(folder, built, styled, files),
+			record: recordOfBuild(folder, built, { ...styled, inputs: { ...styled.inputs, ...lib } }, files),
 			failure: null,
 		};
 	}
@@ -57,7 +60,8 @@ export function createBuilder({ adapter, space }) {
 		make,
 
 		async isCurrent(record, folder, files) {
-			if (!inputNamesFor(folder, files).every((path) => path in (record?.inputs ?? {}))) return false;
+			const wanted = [...inputNamesFor(folder, files), ...Object.keys(await scopeLibInput(adapter, folder, files))];
+			if (!wanted.every((path) => path in (record?.inputs ?? {}))) return false;
 
 			const onDisk = {};
 			for (const path of Object.keys(record.inputs))
@@ -122,6 +126,17 @@ async function styledBy({ adapter, space, lock, id, folder, files, code, aboutTo
 		candidates: candidatesIn(code),
 	});
 	return { ...done, compiler: found.key, lock: withModule(lock, id, found) };
+}
+
+async function scopeLibInput(adapter, folder, files, aboutToBeWritten = {}) {
+	const scope = folder.slice(0, folder.lastIndexOf("/"));
+	if (!importsScopeLib(files, scope.slice(scope.lastIndexOf("/") + 1))) return {};
+	for (const name of LIB_FILES) {
+		const path = `${scope}/${name}`;
+		const text = aboutToBeWritten[path] ?? (await readIfThere(adapter, path));
+		if (text !== null) return { [path]: text };
+	}
+	return {};
 }
 
 async function readIfThere(adapter, path) {

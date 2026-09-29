@@ -1,6 +1,7 @@
 import { RECORD_FILES, readRecord, recordIn } from "./catalogue-index.js";
 import {
 	JAVASCRIPT_SOURCE_FILES,
+	LIB_FILES,
 	SHEET_FILES,
 	SOURCE_FILES,
 	javascriptSourceRefusal,
@@ -24,7 +25,7 @@ import { contentHash } from "./content-hash.js";
 import { apiRefusal } from "../version.js";
 
 export const WIDGET_FILES = [...RECORD_FILES, ...SOURCE_FILES, ...SHEET_FILES];
-export const SCOPE_FILES = ["lib.js", "tokens.css", "theme.css"];
+export const SCOPE_FILES = [...LIB_FILES, "tokens.css", "theme.css"];
 export const WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS = "local";
 
 export function stampOf(files) {
@@ -214,14 +215,21 @@ async function codeAt(disk, folder, scope) {
 	if (!sourceFileIn(sources)) return {};
 	const held = { sources, path: folder };
 
-	const libAt = `${scope}/lib.js`;
-	if (await disk.exists(libAt))
+	const libAt = await libPathAt(disk, scope);
+	if (libAt !== null)
 		Object.assign(held, {
 			lib: await disk.read(libAt),
 			libPath: libAt,
 			scope: scope.slice(scope.lastIndexOf("/") + 1),
 		});
 	return held;
+}
+
+async function libPathAt(disk, scope) {
+	for (const name of LIB_FILES) {
+		if (await disk.exists(`${scope}/${name}`)) return `${scope}/${name}`;
+	}
+	return null;
 }
 
 async function recordAt(disk, folder) {

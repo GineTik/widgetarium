@@ -92,6 +92,23 @@ check(
 	true,
 );
 
+fs.writeFileSync(
+	path.join(laid, "@you/lib.ts"),
+	"export const shoutOf = (text: string): string => text.toUpperCase();\n",
+);
+const IMPORTING_THE_LIB = `import { shoutOf } from "@you/lib";\n${DECLARED}`.replace(
+	"heading.toUpperCase()",
+	"shoutOf(heading)",
+);
+fs.writeFileSync(path.join(laid, "@you/checklist/widget.tsx"), IMPORTING_THE_LIB);
+check("a widget importing its scope's lib.ts typechecks against it", said(laid).trim(), "");
+
+fs.writeFileSync(
+	path.join(laid, "@you/checklist/widget.tsx"),
+	IMPORTING_THE_LIB.replace("shoutOf(heading)", "shoutOf(heading).toFixed()"),
+);
+check("and what the lib returns is typed, not any", said(laid).includes("error TS2551"), true);
+
 fs.rmSync(laid, { recursive: true, force: true });
 console.log(failures === 0 ? "vault types: every check passed" : `vault types: ${failures} checks red`);
 process.exit(failures === 0 ? 0 : 1);

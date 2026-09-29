@@ -59,7 +59,11 @@ function standaloneTsconfig() {
 	const held = JSON.parse(fs.readFileSync("packages/sdk/tsconfig.widgets.json", "utf8"));
 	const options = {
 		...held.compilerOptions,
-		paths: { widgetarium: ["./types/widgetarium.d.ts"], zod: [`./${ZOD_LAID_AT}/index.d.ts`] },
+		paths: {
+			widgetarium: ["./types/widgetarium.d.ts"],
+			zod: [`./${ZOD_LAID_AT}/index.d.ts`],
+			"@*/lib": ["./@*/lib"],
+		},
 		noImplicitAny: false,
 		noUnusedLocals: false,
 		skipLibCheck: true,

@@ -7,6 +7,16 @@ export const SOURCE_FILES = ["widget.tsx", "widget.ts"];
 export const JAVASCRIPT_SOURCE_FILES = ["widget.jsx", "widget.js"];
 export const EVERY_SOURCE_FILE = [...SOURCE_FILES, ...JAVASCRIPT_SOURCE_FILES];
 export const SHEET_FILES = ["widget.css", "styles.css"];
+export const LIB_FILES = ["lib.ts", "lib.tsx", "lib.js"];
+
+export function libFileIn(names) {
+	return LIB_FILES.find((name) => names.includes(name)) ?? null;
+}
+
+export function importsScopeLib(files, scopeName) {
+	const quoted = [`"${scopeName}/lib"`, `'${scopeName}/lib'`];
+	return modulesIn(files).some((name) => quoted.some((spec) => String(files[name]).includes(spec)));
+}
 
 const JAVASCRIPT_REFUSED =
 	'{folder}/{file} is JavaScript, and a widget is written in TypeScript. Rename it to widget.tsx — JavaScript is valid TypeScript, so the rename alone is enough to build it: mv "{folder}/{file}" "{folder}/widget.tsx"';

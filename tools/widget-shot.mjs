@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
+import { LIB_FILES } from "../packages/core/src/engine/widget-build.js";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const ID = process.argv[2];
@@ -35,8 +36,8 @@ for (const [name, given] of Object.entries(manifest.preview?.sources ?? {}))
 // CONTEXT: a lib is reached by its scope name, so every scope that has one becomes an alias
 const alias = { widgetarium: "./tools/fill-shim.js", "widgetarium/kit": "./packages/kit/src/index.ts" };
 for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {
-	const lib = path.join("registry", scope, "lib.js");
-	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;
+	const lib = LIB_FILES.map((name) => path.join("registry", scope, name)).find((at) => fs.existsSync(at));
+	if (lib) alias[`${scope}/lib`] = `./${lib}`;
 }
 
 // CONTEXT: a fed slot is what the board fills from the manifest default — a shot without it draws a hole

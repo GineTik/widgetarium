@@ -1,6 +1,7 @@
 import { Platform, requestUrl } from "obsidian";
 import { buildWidget } from "@widgetarium/core/registry.js";
 import { scopeOf } from "@widgetarium/core/engine/widget-source.js";
+import { libFileIn } from "@widgetarium/core/engine/widget-build.js";
 import { createInstaller } from "@widgetarium/core/installer.js";
 
 const CARD_NOT_COMPARED =
@@ -28,13 +29,14 @@ export function drawable(entry) {
 
 function declaredManifestOf(held) {
 	const scope = scopeOf(held.record.id);
+	const libName = libFileIn(Object.keys(held.scope ?? {}));
 	try {
 		const component = buildWidget({
 			manifest: held.record,
 			sources: held.files,
 			path: held.record.id,
-			lib: held.scope?.["lib.js"],
-			libPath: `${scope}/lib.js`,
+			lib: libName === null ? undefined : held.scope[libName],
+			libPath: `${scope}/${libName}`,
 			scope,
 		});
 		return component.manifest ?? null;

@@ -127,6 +127,45 @@ check(
 );
 check("which is what draws", await drawnBy(vault), "42 of 42symbol");
 
+const LIBBED = "@demo/libbed";
+const LIB_AT = `${WIDGETS_DIR}/@demo/lib.ts`;
+const LIBBED_AT = "https://raw.githubusercontent.com/acme/widgets/abc1234567/widgets/@demo/libbed";
+const LIBBED_ENTRY = `import { createWidget, defineLayout } from "widgetarium";
+import { RATE } from "@demo/lib";
+export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });
+export default createWidget({ draw: () => <b>{RATE}</b> });
+`;
+vault.files.set(LIB_AT, "export const RATE: number = 1;\n");
+const libbedDone = await createInstaller({
+	adapter: vault,
+	...network({
+		"https://api.github.com/repos/acme/widgets/commits/main": { sha: "abc1234567" },
+		[`${LIBBED_AT}/manifest.generated.json`]: JSON.stringify({ id: LIBBED, title: "Libbed" }),
+		[`${LIBBED_AT}/widget.tsx`]: LIBBED_ENTRY,
+	}),
+}).install({
+	manifest: {
+		id: LIBBED,
+		repository: "https://github.com/acme/widgets",
+		ref: "main",
+		path: "widgets/@demo/libbed",
+		files: ["manifest.generated.json", "widget.tsx"],
+	},
+});
+check("a widget importing its scope's lib installs", [libbedDone.ok, libbedDone.failure], [true, null]);
+check(
+	"and its build names the scope's lib.ts among its inputs",
+	LIB_AT in (await installer.lock()).builds[LIBBED].inputs,
+	true,
+);
+check("a lib nobody touched rebuilds nothing", (await withoutTheReport(() => installer.rebuildDrifted())).rebuilt, []);
+vault.files.set(LIB_AT, "export const RATE: number = 2;\n");
+check(
+	"a change to lib.ts rebuilds the widget importing it and no other",
+	(await withoutTheReport(() => installer.rebuildDrifted())).rebuilt,
+	[LIBBED],
+);
+
 const missing = fakeVault();
 const missingDone = await createInstaller({
 	adapter: missing,

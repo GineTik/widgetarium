@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
+import { LIB_FILES } from "../packages/core/src/engine/widget-build.js";
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const ROOT = process.cwd();
@@ -98,8 +99,8 @@ const alias = {
 	obsidian: "./tools/obsidian-shim.js",
 };
 for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith("@"))) {
-	const lib = path.join("registry", scope, "lib.js");
-	if (fs.existsSync(lib)) alias[`${scope}/lib`] = `./${lib}`;
+	const lib = LIB_FILES.map((name) => path.join("registry", scope, name)).find((at) => fs.existsSync(at));
+	if (lib) alias[`${scope}/lib`] = `./${lib}`;
 }
 
 const bundle = await esbuild.build({
