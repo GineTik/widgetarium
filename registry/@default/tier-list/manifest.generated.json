@@ -151,11 +151,10 @@
 			}
 		},
 		"tiers": {
-			"kind": "value",
-			"control": "json",
+			"kind": "collection",
 			"label": "Rows",
 			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
-			"writes": ["get", "create", "update", "remove", "replace"],
+			"writes": ["list", "get", "create", "update", "remove", "replace"],
 			"describes": {
 				"label": {
 					"label": "Name",
@@ -174,7 +173,35 @@
 					"aka": ["position", "sort", "index"]
 				}
 			},
-			"default": {}
+			"default": {
+				"rows": [
+					{
+						"label": "S",
+						"tone": "error",
+						"order": 1
+					},
+					{
+						"label": "A",
+						"tone": "warning",
+						"order": 2
+					},
+					{
+						"label": "B",
+						"tone": "standout",
+						"order": 3
+					},
+					{
+						"label": "C",
+						"tone": "success",
+						"order": 4
+					},
+					{
+						"label": "D",
+						"tone": "info",
+						"order": 5
+					}
+				]
+			}
 		},
 		"title": {
 			"kind": "value",
@@ -207,24 +234,28 @@
 		"board.tsx",
 		"card-dialog.tsx",
 		"card.tsx",
+		"cards.ts",
 		"carried.tsx",
 		"face.tsx",
 		"grip.tsx",
 		"head.tsx",
+		"ordering.ts",
 		"orphans.tsx",
 		"pen.tsx",
 		"preset-dialog.tsx",
+		"presets.ts",
 		"rack.tsx",
 		"renderer.ts",
 		"row-dialog.tsx",
+		"tiers.ts",
+		"tones.ts",
 		"tray-empty.tsx",
 		"tray.tsx",
 		"types.ts",
 		"use-card-draft.ts",
 		"use-card-writing.ts",
 		"use-dragging.ts",
-		"use-fog.ts",
-		"use-markdown-drawn-into.ts",
+		"use-draws-markdown-into.ts",
 		"use-opened.ts",
 		"use-row-draft.ts",
 		"use-row-writing.ts",

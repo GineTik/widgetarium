@@ -1,7 +1,7 @@
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "widgetarium";
 import { toneClass } from "widgetarium/kit";
 import { DEFAULT_TIERS, labelOf } from "./tiers";
-import { PRESETS, type Preset } from "./presets";
+import { presetsOffered, type Preset } from "./presets";
 import { toneOf } from "./tones";
 
 const PRESET_TITLE = "Start from a preset";
@@ -19,6 +19,7 @@ export function PresetDialog({
 	onClose: () => void;
 	onPick: (preset: Preset) => void;
 }) {
+	const offered = presetsOffered();
 	return (
 		<Dialog isOpen={isOpen} onOpenChange={onClose}>
 			<DialogContent className="wg-rank" width="40rem">
@@ -28,7 +29,7 @@ export function PresetDialog({
 					<DialogDescription>{PRESET_SAID}</DialogDescription>
 				</DialogHeader>
 				<div className="wr-gallery">
-					{PRESETS.map((preset) => (
+					{offered.map((preset) => (
 						<button type="button" className="wr-preset" key={preset.id} onClick={() => onPick(preset)}>
 							<span className="wr-preset-name">{preset.name}</span>
 							<span className="wr-preset-mini">
@@ -43,11 +44,13 @@ export function PresetDialog({
 						</button>
 					))}
 				</div>
-				{PRESETS.filter((preset) => preset.credit).map((preset) => (
-					<p className="wr-credit" key={preset.id}>
-						{preset.credit}
-					</p>
-				))}
+				{offered
+					.filter((preset) => preset.credit)
+					.map((preset) => (
+						<p className="wr-credit" key={preset.id}>
+							{preset.credit}
+						</p>
+					))}
 			</DialogContent>
 		</Dialog>
 	);

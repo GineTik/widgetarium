@@ -209,12 +209,12 @@ check(
 );
 check(
 	"every card colour the hash reaches is one the kit draws",
-	lib.PRESETS[0].cards.every((card) => kit.TONE_NAMES.includes(lib.toneForSeed(card.name))),
+	lib.presetsOffered()[0].cards.every((card) => kit.TONE_NAMES.includes(lib.toneForSeed(card.name))),
 	true,
 );
 check(
 	"and never the one that paints no rail",
-	lib.PRESETS[0].cards.some((card) => lib.toneForSeed(card.name) === "neutral"),
+	lib.presetsOffered()[0].cards.some((card) => lib.toneForSeed(card.name) === "neutral"),
 	false,
 );
 check(
@@ -223,7 +223,7 @@ check(
 	"neutral",
 );
 
-const presetFaults = lib.PRESETS.flatMap((preset) => {
+const presetFaults = lib.presetsOffered().flatMap((preset) => {
 	const names = preset.cards.map((card) => card.name);
 	const twins = names.filter((name, at) => names.indexOf(name) !== at);
 	const unknownFaces = preset.cards
@@ -238,7 +238,7 @@ const presetFaults = lib.PRESETS.flatMap((preset) => {
 	];
 });
 check("every preset is whole, and says whether it reaches the web", presetFaults, []);
-check("there are ten presets", lib.PRESETS.length, 10);
+check("there are ten presets", lib.presetsOffered().length, 10);
 
 const host = document.getElementById("host");
 const settled = async () => {

@@ -4,11 +4,11 @@ export type RankCard = { name: string; tier?: string; order?: number; picture?: 
 
 export type Preset = { id: string; name: string; needsTheWeb?: boolean; credit?: string; cards: RankCard[] };
 
-export const PRESETS: Preset[] = [
+const PRESETS_DRAWN_WITHOUT_THE_LIB: Preset[] = [
 	{
 		id: "comfort-food",
 		name: "Comfort food",
-		cards: named([
+		cards: nameCards([
 			"Pizza",
 			"Ramen",
 			"Dumplings",
@@ -28,7 +28,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "languages",
 		name: "Programming languages",
-		cards: named([
+		cards: nameCards([
 			"TypeScript",
 			"Python",
 			"Rust",
@@ -48,7 +48,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "saturday",
 		name: "Ways to spend a Saturday",
-		cards: named([
+		cards: nameCards([
 			"Long walk",
 			"Cooking",
 			"Reading",
@@ -66,7 +66,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "coffee-and-tea",
 		name: "Coffee and tea",
-		cards: named([
+		cards: nameCards([
 			"Espresso",
 			"Flat white",
 			"Cold brew",
@@ -84,7 +84,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "music-genres",
 		name: "Music genres",
-		cards: named([
+		cards: nameCards([
 			"Jazz",
 			"Hip hop",
 			"Techno",
@@ -104,7 +104,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "places-to-live",
 		name: "Places to live",
-		cards: named([
+		cards: nameCards([
 			"Lisbon",
 			"Tokyo",
 			"Berlin",
@@ -124,7 +124,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "weather",
 		name: "Weather",
-		cards: named([
+		cards: nameCards([
 			"Spring rain",
 			"Summer heat",
 			"First snow",
@@ -140,7 +140,7 @@ export const PRESETS: Preset[] = [
 	{
 		id: "note-taking",
 		name: "Note-taking habits",
-		cards: named([
+		cards: nameCards([
 			"Daily note",
 			"Zettelkasten",
 			"Bullet journal",
@@ -162,7 +162,14 @@ export const PRESETS: Preset[] = [
 		credit: "Faces drawn by DiceBear from the Notionists set, dedicated to the public domain under CC0 1.0.",
 		cards: withFaces(["Iris", "Milo", "Zoe", "Luna", "Otto", "Juno", "Finn", "Rhea", "Theo", "Ada", "Kai", "Nova"]),
 	},
-	{
+];
+
+export function presetsOffered(): Preset[] {
+	return [...PRESETS_DRAWN_WITHOUT_THE_LIB, moods()];
+}
+
+function moods(): Preset {
+	return {
 		id: "moods",
 		name: "Moods",
 		cards: asEmoji([
@@ -179,14 +186,14 @@ export const PRESETS: Preset[] = [
 			["Indifferent", "neutral-face"],
 			["Celebrating", "partying-face"],
 		]),
-	},
-];
+	};
+}
 
 function avatarFor(seed: string): string {
 	return `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
 }
 
-function named(names: readonly string[]): RankCard[] {
+function nameCards(names: readonly string[]): RankCard[] {
 	return names.map((name) => ({ name }));
 }
 
