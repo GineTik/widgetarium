@@ -1,6 +1,4 @@
-// CONTEXT: what KIND of thing a record is, so a filter can ask for pictures and not for names.
-// Derived from the path, never authored — an extension and a written property would disagree.
-const BY_EXTENSION = {
+const TYPE_BY_EXTENSION: Readonly<Record<string, string>> = {
 	md: "markdown",
 	canvas: "canvas",
 	pdf: "pdf",
@@ -23,11 +21,11 @@ const BY_EXTENSION = {
 	flac: "audio",
 };
 
-export function typeOf(path) {
+export function typeOf(path: string | null | undefined): string {
 	const name = String(path ?? "").toLowerCase();
 	const dot = name.lastIndexOf(".");
 	if (dot < 0) return "folder";
 	if (name.endsWith(".excalidraw.md")) return "excalidraw";
 	const extension = name.slice(dot + 1);
-	return BY_EXTENSION[extension] ?? extension;
+	return TYPE_BY_EXTENSION[extension] ?? extension;
 }

@@ -27,7 +27,7 @@
 		"test:dialog-fit": "node --import ./tools/loader/register.mjs tools/dialog-fit-test.mjs",
 		"test:write": "node --import ./tools/loader/register.mjs tools/write-test.mjs",
 		"test:editor-write": "node --import ./tools/loader/register.mjs tools/editor-write-test.mjs",
-		"test:types": "tsc -p packages/core --noEmit && tsc -p packages/kit --noEmit",
+		"test:types": "tsc -b packages/kit packages/core",
 		"test:needs": "tsc -p packages/sdk/tsconfig.widgets.json --noEmit",
 		"test:surface": "node --import ./tools/loader/register.mjs tools/api-surface-test.mjs",
 		"test:props": "node --import ./tools/loader/register.mjs tools/props-test.mjs",

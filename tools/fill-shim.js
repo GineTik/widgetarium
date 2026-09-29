@@ -63,14 +63,7 @@ export {
 export { fieldOf, textOf } from "../packages/core/src/gateway/match";
 export { useData } from "../packages/core/src/gateway/use-data";
 export { useValue } from "../packages/core/src/gateway/use-value";
-export {
-	applyTabStep,
-	archivedOf,
-	movesRows,
-	movesSelection,
-	rowNamed,
-	tabsOf,
-} from "../packages/core/src/tab-rows.js";
+export { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "../packages/core/src/tab-rows.js";
 export { EditableTabs, toTabList } from "../packages/core/src/editable-tabs.js";
 export { narrow, normalizeWhere } from "../packages/core/src/gateway/narrow";
 export { pickedValue } from "../packages/core/src/gateway/refs.js";

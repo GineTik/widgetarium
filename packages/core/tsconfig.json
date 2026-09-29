@@ -16,11 +16,14 @@
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
 		"noEmit": true,
+		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/core.tsbuildinfo",
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
-		"allowJs": false,
+		"allowJs": true,
+		"checkJs": false,
 		"types": []
 	},
-	"include": ["src/**/*.ts"]
+	"references": [{ "path": "../kit" }],
+	"include": ["src/**/*.ts", "src/**/*.js"]
 }

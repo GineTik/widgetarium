@@ -8,7 +8,9 @@
 		"jsxFactory": "h",
 		"jsxFragmentFactory": "Fragment",
 		"strict": false,
-		"noEmit": true,
+		"composite": true,
+		"emitDeclarationOnly": true,
+		"outDir": "../../node_modules/.cache/widgetarium/kit-declarations",
 		"isolatedModules": true,
 		"skipLibCheck": true,
 		"allowJs": false

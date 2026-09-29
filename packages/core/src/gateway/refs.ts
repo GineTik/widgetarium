@@ -45,11 +45,16 @@ export const refOf = (tileId: string, name: string): PropRef => `${tileId}/${nam
 
 type Reader = { get?: { (): Promise<unknown>; can(): { can: boolean } } };
 
-export function createViewCells(): (key: string) => ValueGateway<unknown, EveryValueVerb> {
-	const cells = new Map<string, ValueGateway<unknown, EveryValueVerb>>();
+export type ViewCell = ValueGateway<unknown, EveryValueVerb>;
+
+export function createViewCells(): (key: string) => ViewCell {
+	const cells = new Map<string, ViewCell>();
 	return (key) => {
-		if (!cells.has(key)) cells.set(key, memoryCell(key));
-		return cells.get(key) as ValueGateway<unknown, EveryValueVerb>;
+		const held = cells.get(key);
+		if (held) return held;
+		const cell = memoryCell(key);
+		cells.set(key, cell);
+		return cell;
 	};
 }
 
@@ -220,7 +225,7 @@ async function read(state: RefsState, ref: PropRef): Promise<unknown> {
 	return (gateway as unknown as ValueGateway<unknown, EveryValueVerb>).get();
 }
 
-function memoryCell(key: string): ValueGateway<unknown, EveryValueVerb> {
+function memoryCell(key: string): ViewCell {
 	const cell: { value: unknown } = { value: null };
 	return valueGateway<unknown>({
 		id: `memory:${key}`,

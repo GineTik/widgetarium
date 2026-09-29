@@ -965,6 +965,7 @@ check(
 	".widgetarium/agent/measured/Boards__Home.md.json",
 );
 check("lightness reads a colour the browser resolved", Math.round(lightnessOf(colorOf("color(srgb 1 1 1)"))), 100);
+check("a colour with too few channels is no colour", colorOf("rgba()"), null);
 check("contrast is WCAG's", Math.round(contrastOf(colorOf("rgb(0, 0, 0)"), colorOf("rgb(255, 255, 255)"))), 21);
 
 console.log("\n— painted in Chrome —\n");

@@ -15,7 +15,7 @@ function declarationsOf(outDir) {
 			"--no-install",
 			"tsc",
 			"-p",
-			"packages/core/tsconfig.json",
+			"packages/core/tsconfig.gateway.json",
 			"--noEmit",
 			"false",
 			"--declaration",
