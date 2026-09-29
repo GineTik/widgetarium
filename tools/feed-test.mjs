@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import { runWidgetSource } from "./run-widget-source.mjs";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -36,18 +35,17 @@ globalThis.IntersectionObserver = class {
 	}
 };
 
-buildMirror();
 const react = await import("react");
 const { createElement: h, Fragment } = react;
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/index.mjs");
-const { arrayGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { slotDefaults } = await import("./.mjs-cache/gateway/props.mjs");
-const { applyQuery, toRows } = await import("./.mjs-cache/gateway/create.mjs");
-const { surfacedSlot } = await import("./.mjs-cache/widget-root.mjs");
-const { previewProps } = await import("./.mjs-cache/preview.mjs");
+const kit = await import("../packages/kit/src/index.ts");
+const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
+const { slotDefaults } = await import("../packages/core/src/gateway/props.js");
+const { applyQuery, toRows } = await import("../packages/core/src/gateway/create.ts");
+const { surfacedSlot } = await import("../packages/core/src/widget-root.js");
+const { previewProps } = await import("../packages/core/src/preview.js");
 const { manifestOfEveryShippedWidget } = await import("./widget-props.mjs");
 
 function run(file) {

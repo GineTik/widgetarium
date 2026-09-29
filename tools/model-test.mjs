@@ -1,7 +1,4 @@
 // The storage format and the derivation rule, checked without Obsidian.
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
 
 const {
 	normalizeBoard,
@@ -15,10 +12,10 @@ const {
 	propConfig,
 	rekeyed,
 	uniqueName,
-} = await import("./.mjs-cache/model.mjs");
-const { leavesOf, nodeAt } = await import("./.mjs-cache/tree.mjs");
-const { BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
-const { storedRows } = await import("./.mjs-cache/gateway/props.mjs");
+} = await import("../packages/core/src/model.js");
+const { leavesOf, nodeAt } = await import("../packages/core/src/tree.js");
+const { BLOCK_FORMAT } = await import("../packages/core/src/version.js");
+const { storedRows } = await import("../packages/core/src/gateway/props.js");
 
 const THREE_REGIONS = (of) => ({
 	dir: "row",
@@ -38,7 +35,7 @@ function check(name, got, want) {
 	);
 }
 
-const { measureGrid } = await import("./.mjs-cache/paths.mjs");
+const { measureGrid } = await import("../packages/core/src/paths.js");
 
 // The grid law, swept across every width the plugin can be given.
 const TAP_TARGET_PX = 48;
@@ -74,7 +71,7 @@ check("columns never decrease as the width grows", sweep.backwards, []);
 // INVARIANT: the leftover is always less than one more column. The cell is fixed now, so it
 // cannot absorb the remainder the way an elastic one did — but if the rag ever reached a whole
 // cell plus its gutter, that is a column we should have fitted and did not.
-const { GRID } = await import("./.mjs-cache/paths.mjs");
+const { GRID } = await import("../packages/core/src/paths.js");
 // INVARIANT, restored: the board is exactly as wide as it was given. The fixed cell would have
 // left a rag of up to 77px; scaling it to the pane closes that without giving up one number.
 check("no dead margin at any width", Math.round(sweep.deadMargin), 0);
@@ -587,7 +584,11 @@ console.log(
 		JSON.stringify(serializeBoard(deep)),
 	);
 	check("a ratio of one is not written down", serializeBoard(deep).layout.of[0].of[0].of[1].of[0], { id: "b" });
-	check("a height is not written either, because nobody sizes a widget by hand", serializeBoard(deep).layout.of[0].of[0].of[1].of[1], { id: "c" });
+	check(
+		"a height is not written either, because nobody sizes a widget by hand",
+		serializeBoard(deep).layout.of[0].of[0].of[1].of[1],
+		{ id: "c" },
+	);
 
 	const five = ["a", "b", "c", "d", "e"].map((id) => ({ id, widget: "w" }));
 	const heightsWritten = normalizeBoard({

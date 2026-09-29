@@ -1,6 +1,5 @@
 import { pathToFileURL } from "node:url";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
 import { widgetFiles } from "./harness.mjs";
 
@@ -11,8 +10,7 @@ if (!globalThis.document) {
 	}
 }
 
-buildMirror();
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 
 function vaultHolding(files) {
 	const held = fakeVault();

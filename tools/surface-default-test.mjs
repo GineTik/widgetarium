@@ -1,10 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
-const { withDefaultSurfaces, surfacesWritten } = await import("./.mjs-cache/surface-default.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
-const { nestingFindings, widgetOfTiles } = await import("./.mjs-cache/surface-laws.mjs");
+const { withDefaultSurfaces, surfacesWritten } = await import("../packages/core/src/surface-default.js");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
+const { nestingFindings, widgetOfTiles } = await import("../packages/core/src/surface-laws.js");
 
 let failed = 0;
 let checks = 0;

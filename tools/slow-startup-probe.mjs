@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import nodePath from "node:path";
-import { buildMirror } from "./mirror.mjs";
 
 globalThis.window = { setTimeout, clearTimeout, queueMicrotask };
 globalThis.document = {
@@ -8,8 +7,7 @@ globalThis.document = {
 	createElement: () => ({ dataset: {}, remove: () => {} }),
 };
 
-buildMirror();
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 
 const SOURCE = process.env.WG_WIDGETS ?? nodePath.resolve("registry");
 const FETCH_MS = Number(process.env.FETCH_MS ?? 60);

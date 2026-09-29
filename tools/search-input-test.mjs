@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
 import { transform } from "sucrase";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -20,14 +19,13 @@ for (const key of [
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-buildMirror();
 const react = await import("react");
 const { createElement: h, Fragment } = react;
 const { flushSync } = await import("react-dom");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
-const kit = await import("./.mjs-cache/index.mjs");
-const { soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
+const kit = await import("../packages/kit/src/index.ts");
+const { soloGateway } = await import("../packages/core/src/gateway/create.ts");
 
 const WIDGET = "registry/@default/search-input/widget.tsx";
 const modules = { widgetarium: ENGINE_SCOPE.api, "widgetarium/kit": kit, react };

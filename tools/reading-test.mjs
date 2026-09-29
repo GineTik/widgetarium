@@ -1,7 +1,3 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
 const {
 	readingOf,
 	wrapOf,
@@ -15,7 +11,7 @@ const {
 	WRAP_AROUND,
 	WRAP_EACH,
 	WRAP_NONE,
-} = await import("./.mjs-cache/reading.mjs");
+} = await import("../packages/core/src/reading.js");
 
 let failed = 0;
 let checks = 0;
@@ -73,7 +69,7 @@ check("a card declaring tracks reads as a table", readingOfProp(table), TABLE);
 check("a value holding a number reads as a field", readingOfProp(number), FIELD);
 check("a card with no props at all reads as a field", readingOfProp(undefined), FIELD);
 
-const { slotSurfaceOf } = await import("./.mjs-cache/surface-roles.mjs");
+const { slotSurfaceOf } = await import("../packages/core/src/surface-roles.js");
 
 const comparing = {
 	props: { rows: { kind: "collection", describes: { name: { type: "text" }, due: { type: "date" } } } },

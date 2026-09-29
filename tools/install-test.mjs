@@ -1,7 +1,6 @@
 // FETCHING SOMEBODY'S CODE, proved without a network: the installer's only two doors outward are
 // handed in, so a test drives them itself and every refusal is a value, never a thrown error.
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -30,15 +29,15 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { contentHash } = await import("./.mjs-cache/engine/content-hash.mjs");
-const { readIndex, mergeCatalogue, isInstalled } = await import("./.mjs-cache/engine/catalogue-index.mjs");
-const { readLock, lockEntry, withEntry, withoutEntry, isEdited } = await import("./.mjs-cache/engine/widget-lock.mjs");
-const { readRepository, commitUrl, rawUrl, folderFor } = await import("./.mjs-cache/engine/github.mjs");
-const { createInstaller, INDEX_PATH, LOCK_PATH } = await import("./.mjs-cache/installer.mjs");
-const { Catalogue, updateOffered } = await import("./.mjs-cache/catalogue.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { contentHash } = await import("../packages/core/src/engine/content-hash.js");
+const { readIndex, mergeCatalogue, isInstalled } = await import("../packages/core/src/engine/catalogue-index.js");
+const { readLock, lockEntry, withEntry, withoutEntry, isEdited } =
+	await import("../packages/core/src/engine/widget-lock.js");
+const { readRepository, commitUrl, rawUrl, folderFor } = await import("../packages/core/src/engine/github.js");
+const { createInstaller, INDEX_PATH, LOCK_PATH } = await import("../packages/core/src/installer.js");
+const { Catalogue, updateOffered } = await import("../packages/core/src/catalogue.js");
 
 let failed = 0;
 function check(name, got, want) {
@@ -698,7 +697,7 @@ check("and stops offering itself", panel.querySelector(".wg-cat-clear"), null);
 
 render(null, panel);
 
-const { openCatalogue } = await import("./.mjs-cache/catalogue-dialog.mjs");
+const { openCatalogue } = await import("../packages/core/src/catalogue-dialog.js");
 
 const inTheVault = [definition("@default/task-card", "Task card")];
 const growingRegistry = {

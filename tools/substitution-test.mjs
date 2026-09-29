@@ -3,7 +3,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
@@ -40,23 +39,23 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 // CONTEXT: the catalogue draws nothing at zero width, and jsdom lays nothing out
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { matchLines, normalizeRules, newRule, ruleError, activeRules } = await import("./.mjs-cache/substitution.mjs");
-const { sampleFromPattern } = await import("./.mjs-cache/regex-sample.mjs");
-const { substituteIn, passageHere } = await import("./.mjs-cache/inline-render.mjs");
-const { SubstitutionDialog } = await import("./.mjs-cache/substitution-dialog.mjs");
-const { defaultSample, triggerLabel } = await import("./.mjs-cache/substitution-say.mjs");
-const { WidgetRegistry, boardWidgets, inlineWidgets } = await import("./.mjs-cache/registry.mjs");
-const { createHost, bindNote } = await import("./.mjs-cache/host.mjs");
-const { typeOf } = await import("./.mjs-cache/engine/record-type.mjs");
-const { readLink } = await import("./.mjs-cache/engine/link.mjs");
-const { findLines, replaceLines } = await import("./.mjs-cache/engine/text-span.mjs");
-const { TFile, TFolder, MarkdownRenderer } = await import("./.mjs-cache/obsidian.mjs");
-const { passageReader } = await import("./.mjs-cache/inline-render.mjs");
-const { readTarget, UNREADABLE } = await import("./.mjs-cache/engine/read-file.mjs");
-const { previewReader } = await import("./.mjs-cache/preview.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { matchLines, normalizeRules, newRule, ruleError, activeRules } =
+	await import("../apps/obsidian/src/substitution.js");
+const { sampleFromPattern } = await import("../apps/obsidian/src/regex-sample.js");
+const { substituteIn, passageHere } = await import("../apps/obsidian/src/inline-render.js");
+const { SubstitutionDialog } = await import("../apps/obsidian/src/substitution-dialog.js");
+const { defaultSample, triggerLabel } = await import("../apps/obsidian/src/substitution-say.js");
+const { WidgetRegistry, boardWidgets, inlineWidgets } = await import("../packages/core/src/registry.js");
+const { createHost, bindNote } = await import("../apps/obsidian/src/host.js");
+const { typeOf } = await import("../packages/core/src/engine/record-type.js");
+const { readLink } = await import("../packages/core/src/engine/link.js");
+const { findLines, replaceLines } = await import("../packages/core/src/engine/text-span.js");
+const { TFile, TFolder, MarkdownRenderer } = await import("obsidian");
+const { passageReader } = await import("../apps/obsidian/src/inline-render.js");
+const { readTarget, UNREADABLE } = await import("../packages/core/src/engine/read-file.js");
+const { previewReader } = await import("../packages/core/src/preview.js");
 
 let failed = 0;
 // CONTEXT: preact commits a state change on a microtask, so a press is read one tick later
@@ -393,7 +392,7 @@ check(
 	true,
 );
 
-const { setTracing, tracing, traceSub } = await import("./.mjs-cache/trace.mjs");
+const { setTracing, tracing, traceSub } = await import("../packages/core/src/trace.js");
 const SUB_TAG = "[widgetarium:sub]";
 
 function logged(on, work) {
@@ -1167,7 +1166,7 @@ render(null, panel);
 	const { mkdtempSync, readdirSync, statSync, writeFileSync } = await import("node:fs");
 	const { tmpdir } = await import("node:os");
 	const esbuild = (await import("esbuild")).default;
-	const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
+	const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
 
 	const CANDIDATES = [
 		process.env.WG_CHROME,

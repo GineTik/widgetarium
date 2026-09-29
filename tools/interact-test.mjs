@@ -6,7 +6,6 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 const EVERY_VERB = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
@@ -41,16 +40,15 @@ globalThis.window.setTimeout = globalThis.window.setTimeout ?? setTimeout;
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { WidgetSurface, resolveMounts } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry, boardWidgets, declaredName } = await import("./.mjs-cache/registry.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
-const { leavesOf } = await import("./.mjs-cache/tree.mjs");
-const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
-const { createHost } = await import("./.mjs-cache/host.mjs");
-const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { WidgetSurface, resolveMounts } = await import("../packages/core/src/surface.js");
+const { WidgetRegistry, boardWidgets, declaredName } = await import("../packages/core/src/registry.js");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
+const { leavesOf } = await import("../packages/core/src/tree.js");
+const { findBlocks } = await import("../packages/core/src/block-writer.js");
+const { createHost } = await import("../apps/obsidian/src/host.js");
+const { TFile, TFolder } = await import("obsidian");
 
 const adapter = {
 	exists: async (p) => fs.existsSync(path.join(VAULT, p)),
@@ -1296,7 +1294,7 @@ const pickView = async (name, id = "views") => {
 // drawn inside a note's own element; this one is opened from the command palette, where there is
 // no note, no block and no tree to hang it on.
 {
-	const { default: WidgetariumPlugin } = await import("./.mjs-cache/main.mjs");
+	const { default: WidgetariumPlugin } = await import("../apps/obsidian/src/main.js");
 	const commands = [];
 	const ribbon = [];
 	const posts = [];

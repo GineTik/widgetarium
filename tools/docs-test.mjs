@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -29,14 +28,13 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { Catalogue } = await import("./.mjs-cache/catalogue.mjs");
-const { DOC_PAGES, pageAfter, pagesMatching } = await import("./.mjs-cache/docs.mjs");
-const { SURFACES } = await import("./.mjs-cache/tree.mjs");
-const { ROLES } = await import("./.mjs-cache/surface-roles.mjs");
-const { lintBoard } = await import("./.mjs-cache/board-lint.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { Catalogue } = await import("../packages/core/src/catalogue.js");
+const { DOC_PAGES, pageAfter, pagesMatching } = await import("../packages/core/src/docs.js");
+const { SURFACES } = await import("../packages/core/src/tree.js");
+const { ROLES } = await import("../packages/core/src/surface-roles.js");
+const { lintBoard } = await import("../packages/core/src/board-lint.js");
 
 let failed = 0;
 function check(name, got, want) {

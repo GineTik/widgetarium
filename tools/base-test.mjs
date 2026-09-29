@@ -1,12 +1,8 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
 const { LAYOUTS, LAYOUT_NAMES, HEADING_WIDGET, layoutNamed, skeletonOf, sectionsOf, emptyColumnsOf, baseMismatch } =
-	await import("./.mjs-cache/layouts.mjs");
-const { CARDS, CARD_NAMES, cardNode } = await import("./.mjs-cache/patterns.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
-const { nestingFindings } = await import("./.mjs-cache/surface-laws.mjs");
+	await import("../packages/core/src/layouts.js");
+const { CARDS, CARD_NAMES, cardNode } = await import("../packages/core/src/patterns.js");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
+const { nestingFindings } = await import("../packages/core/src/surface-laws.js");
 
 const BOX_KEYS = [
 	"dir",

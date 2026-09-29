@@ -4,31 +4,29 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { EventEmitter } from "node:events";
-import { buildMirror } from "./mirror.mjs";
 import { widgetsCliBundle } from "../apps/obsidian/build.mjs";
 
 const WIDGETS_CLI = await widgetsCliBundle();
-buildMirror({ widgetsCli: WIDGETS_CLI });
 
-const { expandArgs, commandLineOf } = await import("./.mjs-cache/ai/command.mjs");
-const { readerNamed, plainText, createLineSplitter } = await import("./.mjs-cache/ai/stream.mjs");
-const { aiStateOf, createAiSettings, changedFrom, providerFrom } = await import("./.mjs-cache/ai/settings.mjs");
-const { PRESETS, presetById, DEFAULT_PROVIDER } = await import("./.mjs-cache/ai/providers.mjs");
-const { searchPath, whereCommandIs, environmentFor } = await import("./.mjs-cache/ai/path.mjs");
-const { briefFor, templatePlaceholders } = await import("./.mjs-cache/ai/brief.mjs");
-const { createRunner } = await import("./.mjs-cache/ai/run.mjs");
-const { createSession } = await import("./.mjs-cache/ai/session.mjs");
-const { keptTurns } = await import("./.mjs-cache/ai/transcript.mjs");
-const { layAgentFiles, HANDBOOK_DIR, TOOL_PATH, HANDBOOK } = await import("./.mjs-cache/ai/agent-files.mjs");
+const { expandArgs, commandLineOf } = await import("../apps/obsidian/src/ai/command.js");
+const { readerNamed, plainText, createLineSplitter } = await import("../apps/obsidian/src/ai/stream.js");
+const { aiStateOf, createAiSettings, changedFrom, providerFrom } = await import("../apps/obsidian/src/ai/settings.js");
+const { PRESETS, presetById, DEFAULT_PROVIDER } = await import("../apps/obsidian/src/ai/providers.js");
+const { searchPath, whereCommandIs, environmentFor } = await import("../apps/obsidian/src/ai/path.js");
+const { briefFor, templatePlaceholders } = await import("../apps/obsidian/src/ai/brief.js");
+const { createRunner } = await import("../apps/obsidian/src/ai/run.js");
+const { createSession } = await import("../apps/obsidian/src/ai/session.js");
+const { keptTurns } = await import("../apps/obsidian/src/ai/transcript.js");
+const { layAgentFiles, HANDBOOK_DIR, TOOL_PATH, HANDBOOK } = await import("../apps/obsidian/src/ai/agent-files.js");
 const { glyphForTool, glyphOf, glyphsOf, hintOf, titleOf, ourCallIn, withResult, failuresIn } =
-	await import("./.mjs-cache/ai/tools.mjs");
-const { canRenderMarkdown, settledPart, Said } = await import("./.mjs-cache/ai/markdown.mjs");
-const { saidElapsed, saidTokens, saidPhase, saidProgress } = await import("./.mjs-cache/ai/spent.mjs");
+	await import("../apps/obsidian/src/ai/tools.js");
+const { canRenderMarkdown, settledPart, Said } = await import("../apps/obsidian/src/ai/markdown.js");
+const { saidElapsed, saidTokens, saidPhase, saidProgress } = await import("../apps/obsidian/src/ai/spent.js");
 const { createElement } = await import("react");
 const { renderToStaticMarkup } = await import("react-dom/server");
-const { briefGoesInTheMessage } = await import("./.mjs-cache/ai/providers.mjs");
-const { sendState } = await import("./.mjs-cache/ai/chat.mjs");
-const { buildsIn, startIn } = await import("./.mjs-cache/ai/builds.mjs");
+const { briefGoesInTheMessage } = await import("../apps/obsidian/src/ai/providers.js");
+const { sendState } = await import("../apps/obsidian/src/ai/chat.js");
+const { buildsIn, startIn } = await import("../apps/obsidian/src/ai/builds.js");
 
 let failed = 0;
 let checks = 0;
@@ -1170,7 +1168,7 @@ const afterClearing = createSession({
 await afterClearing.restore();
 check("clearing the context forgets it for the next load too", afterClearing.now().turns.length, 0);
 
-const { createAssistant } = await import("./.mjs-cache/ai/assistant.mjs");
+const { createAssistant } = await import("../apps/obsidian/src/ai/assistant.js");
 let vaultData = { ai: { transcript: { turns: [{ role: "user", text: "kept", calls: [] }], session: "s-1" } } };
 const assistantApp = {
 	vault: { configDir: ".obsidian", adapter: { getBasePath: () => "/v" }, cachedRead: async () => "" },

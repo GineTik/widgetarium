@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import { runWidgetSource } from "./run-widget-source.mjs";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -24,16 +23,15 @@ globalThis.IntersectionObserver = class {
 	disconnect() {}
 };
 
-buildMirror();
 const react = await import("react");
 const { createElement: h, Fragment } = react;
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/index.mjs");
-const { previewProps } = await import("./.mjs-cache/preview.mjs");
-const { soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { manifestOfModule } = await import("./.mjs-cache/gateway/declared.mjs");
+const kit = await import("../packages/kit/src/index.ts");
+const { previewProps } = await import("../packages/core/src/preview.js");
+const { soloGateway } = await import("../packages/core/src/gateway/create.ts");
+const { manifestOfModule } = await import("../packages/core/src/gateway/declared.ts");
 
 function run(file) {
 	const modules = { widgetarium, "widgetarium/kit": kit, react };

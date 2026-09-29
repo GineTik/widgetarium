@@ -1,5 +1,4 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
 	pretendToBeVisual: true,
@@ -35,11 +34,10 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 globalThis.CSS = { escape: (value) => String(value).replace(/["\\]/g, "\\$&") };
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { WidgetSurface } = await import("../packages/core/src/surface.js");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
 
 const plainWidget = {
 	manifest: { id: "w", minSize: { w: 2, h: 2 }, maxSize: { w: 14, h: 10 } },

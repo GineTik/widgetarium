@@ -4,17 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { shoot, THEMES } from "./harness.mjs";
-import { OBSIDIAN_STUB } from "./mirror.mjs";
 
 const obsidianStub = {
 	name: "obsidian-stub",
 	setup(build) {
-		build.onResolve({ filter: /^obsidian$/ }, () => ({ path: "obsidian", namespace: "obsidian-stub" }));
-		build.onLoad({ filter: /.*/, namespace: "obsidian-stub" }, () => ({
-			contents: OBSIDIAN_STUB,
-			loader: "js",
-			resolveDir: process.cwd(),
-		}));
+		build.onResolve({ filter: /^obsidian$/ }, () => ({ path: path.resolve("tools/loader/obsidian-stub.mjs") }));
 	},
 };
 

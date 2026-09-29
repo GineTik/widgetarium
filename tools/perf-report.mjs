@@ -8,16 +8,16 @@ import { bundleOptions } from "../apps/obsidian/build.mjs";
 import { NO_PLUGIN, TASK_NEEDS, catalogueAdapter, countingDisk, fakeTaskVault } from "./perf-fixture.mjs";
 import { fakeVault } from "./fake-vault.mjs";
 
-const { createHost } = await import("./.mjs-cache/host.mjs");
-const { folderGateway } = await import("./.mjs-cache/gateway/obsidian.mjs");
-const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
-const { narrowed } = await import("./.mjs-cache/gateway/narrow.mjs");
-const { gatewayCache } = await import("./.mjs-cache/gateway/cache.mjs");
-const { createInstaller, INDEX_PATH } = await import("./.mjs-cache/installer.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { WIDGETS_DIR, LOCK_PATH } = await import("./.mjs-cache/paths.mjs");
-const { builtCodePath, compileWidget } = await import("./.mjs-cache/engine/widget-build.mjs");
-const { lockEntry, withEntry, readLock } = await import("./.mjs-cache/engine/widget-lock.mjs");
+const { createHost } = await import("../apps/obsidian/src/host.js");
+const { folderGateway } = await import("../packages/core/src/gateway/obsidian.js");
+const { mappedCollection } = await import("../packages/core/src/gateway/mapped.ts");
+const { narrowed } = await import("../packages/core/src/gateway/narrow.ts");
+const { gatewayCache } = await import("../packages/core/src/gateway/cache.ts");
+const { createInstaller, INDEX_PATH } = await import("../packages/core/src/installer.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { WIDGETS_DIR, LOCK_PATH } = await import("../packages/core/src/paths.js");
+const { builtCodePath, compileWidget } = await import("../packages/core/src/engine/widget-build.js");
+const { lockEntry, withEntry, readLock } = await import("../packages/core/src/engine/widget-lock.js");
 
 const NOTES = Number(process.env.N ?? 200);
 const WIDGET_SOURCE = process.env.WG_WIDGET_SOURCE ?? nodePath.resolve("registry");

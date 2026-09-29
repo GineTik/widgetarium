@@ -6,11 +6,9 @@ import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
-const { cornerOf } = await import("./.mjs-cache/tree.mjs");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { cornerOf } = await import("../packages/core/src/tree.js");
 const CORNER_AT_DEPTH = [cornerOf(1), cornerOf(2)];
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";

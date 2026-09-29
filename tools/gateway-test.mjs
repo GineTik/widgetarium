@@ -584,7 +584,7 @@ if (failed > 0) {
 	process.exit(1);
 }
 
-const { pageOf } = await import("./.mjs-cache/gateway/match.mjs");
+const { pageOf } = await import("../packages/core/src/gateway/match.ts");
 const many = Array.from({ length: 250 }, (_, at) => at);
 check("a list with no limit stops at a hundred rows", pageOf(many).length, 100);
 check("an asked limit is honoured above it", pageOf(many, { limit: 200 }).length, 200);

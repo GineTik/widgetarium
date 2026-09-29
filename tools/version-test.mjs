@@ -1,9 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
 
 const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
@@ -11,10 +8,10 @@ for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGE
 }
 
 const { BLOCK_FORMAT, WIDGET_API, MIN_WIDGET_API, blockFormatOf, blockRefusal, widgetApiOf, apiRefusal } =
-	await import("./.mjs-cache/version.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { createInstaller } = await import("./.mjs-cache/installer.mjs");
+	await import("../packages/core/src/version.js");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { createInstaller } = await import("../packages/core/src/installer.js");
 
 let failed = 0;
 let checks = 0;
@@ -256,7 +253,7 @@ const offer = {
 	check("and nothing of it reached the vault", vault.files.size, 0);
 }
 
-const { default: WidgetariumPlugin, drawable } = await import("./.mjs-cache/main.mjs");
+const { default: WidgetariumPlugin, drawable } = await import("../apps/obsidian/src/main.js");
 
 const offered = (api) =>
 	drawable({ manifest: { id: "@demo/clock", api }, sources: { "widget.tsx": WIDGET }, path: "@demo/clock" });

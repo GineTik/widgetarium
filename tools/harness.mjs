@@ -4,7 +4,6 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { buildWidgets } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
 const BROWSERS = [
@@ -28,15 +27,18 @@ export function findBrowser(gate) {
 
 export const WIDGETS_AT = ".widgetarium/widgets";
 
-export function widgetFiles(from = buildWidgets()) {
+const reachesAVault = (name) => !name.endsWith(".md");
+
+export function widgetFiles() {
 	const found = {};
-	const walk = (at, to) => {
-		for (const entry of fs.readdirSync(at, { withFileTypes: true })) {
+	const walk = (at, to, keeps = () => true) => {
+		for (const entry of fs.readdirSync(at, { withFileTypes: true }).filter((one) => keeps(one.name))) {
 			if (entry.isDirectory()) walk(path.join(at, entry.name), `${to}/${entry.name}`);
 			else found[`${to}/${entry.name}`] = fs.readFileSync(path.join(at, entry.name), "utf8");
 		}
 	};
-	walk(from, WIDGETS_AT);
+	walk("registry", WIDGETS_AT, reachesAVault);
+	walk(path.join("packages", "sdk", "types"), `${WIDGETS_AT}/types`);
 	return found;
 }
 

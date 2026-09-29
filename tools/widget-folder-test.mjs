@@ -1,19 +1,17 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
-
-buildMirror();
 
 const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-const { createInstaller } = await import("./.mjs-cache/installer.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
-const { builtCodePath, compileWidget, compileWidgetFolder } = await import("./.mjs-cache/engine/widget-build.mjs");
-const { readRegistry } = await import("./.mjs-cache/engine/registry-file.mjs");
+const { createInstaller } = await import("../packages/core/src/installer.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { builtCodePath, compileWidget, compileWidgetFolder } =
+	await import("../packages/core/src/engine/widget-build.js");
+const { readRegistry } = await import("../packages/core/src/engine/registry-file.js");
 const { publishWidget } = await import("./publish.mjs");
 
 let failed = 0;

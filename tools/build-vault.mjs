@@ -1,9 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { createInstaller } = await import("./.mjs-cache/installer.mjs");
+const { createInstaller } = await import("../packages/core/src/installer.js");
 
 const VAULT = process.env.WG_VAULT ?? `${process.env.HOME}/Documents/Obsidian/Personal/Personal`;
 

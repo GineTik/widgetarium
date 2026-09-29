@@ -3,12 +3,10 @@ import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { buildMirror } from "./mirror.mjs";
 import { findBrowser, THEMES } from "./harness.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
-buildMirror();
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
 
 const work = mkdtempSync(path.join(tmpdir(), "wg-sub-sheet-"));
 

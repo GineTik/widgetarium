@@ -6,10 +6,8 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { TONE_NAMES, toneClass } = await import("./.mjs-cache/index.mjs");
+const { TONE_NAMES, toneClass } = await import("../packages/kit/src/index.ts");
 
 const CHROME = process.env.WG_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const work = mkdtempSync(path.join(tmpdir(), "wg-ladder-"));

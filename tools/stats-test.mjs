@@ -1,8 +1,5 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-const { statOf, statGateway, todayIso } = await import("./.mjs-cache/gateway/stats.mjs");
-const { arrayGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const { statOf, statGateway, todayIso } = await import("../packages/core/src/gateway/stats.ts");
+const { arrayGateway } = await import("../packages/core/src/gateway/create.ts");
 
 let failed = 0;
 function check(label, got, want) {

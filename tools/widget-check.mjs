@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { transform } from "sucrase";
-import { buildMirror } from "./mirror.mjs";
 import { act, createElement as h, Fragment } from "react";
 import { createRoot } from "react-dom/client";
 import { JSDOM } from "jsdom";
@@ -18,14 +17,13 @@ globalThis.ResizeObserver ??= class {
 	disconnect() {}
 };
 
-buildMirror();
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
-const { previewProps } = await import("./.mjs-cache/preview.mjs");
-const { manifestOf } = await import("./.mjs-cache/engine/catalogue-index.mjs");
-const { manifestOfModule } = await import("./.mjs-cache/gateway/declared.mjs");
-const { SOURCE_FILES, compileWidgetFolder } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
+const { previewProps } = await import("../packages/core/src/preview.js");
+const { manifestOf } = await import("../packages/core/src/engine/catalogue-index.js");
+const { manifestOfModule } = await import("../packages/core/src/gateway/declared.ts");
+const { SOURCE_FILES, compileWidgetFolder } = await import("../packages/core/src/engine/widget-build.js");
 const { widgetModulesOnDisk } = await import("./publish.mjs");
-const { declarationIn } = await import("./.mjs-cache/gateway/declaration.mjs");
+const { declarationIn } = await import("../packages/core/src/gateway/declaration.ts");
 
 const libs = new Map();
 

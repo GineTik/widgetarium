@@ -1,13 +1,10 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-const { resolveHostGateway } = await import("./.mjs-cache/engine/host-gateways.mjs");
-const { createGatewayRefs, createViewCells } = await import("./.mjs-cache/gateway/refs.mjs");
-const { arrayGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { problemsOf } = await import("./.mjs-cache/gateway/problems.mjs");
+const { resolveHostGateway } = await import("../packages/core/src/engine/host-gateways.js");
+const { createGatewayRefs, createViewCells } = await import("../packages/core/src/gateway/refs.ts");
+const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
+const { problemsOf } = await import("../packages/core/src/gateway/problems.ts");
 const { ICrudGateway, IValueGateway, defineProps, manifestOfModule, z } =
-	await import("./.mjs-cache/gateway/declared.mjs");
-const { declaredWidget } = await import("./.mjs-cache/declared-widget.mjs");
+	await import("../packages/core/src/gateway/declared.ts");
+const { declaredWidget } = await import("../packages/core/src/declared-widget.js");
 
 let failed = 0;
 function check(what, got, wanted) {
@@ -144,7 +141,7 @@ check(
 	'prop "days" names aka for field "done" in metadata; other names belong to the schema: add .meta({ aka: [...] }) to the schema of done',
 );
 
-const { createWidget } = await import("./.mjs-cache/widget-api.mjs");
+const { createWidget } = await import("../packages/core/src/widget-api.js");
 check(
 	"createWidget takes what it injects and how it draws",
 	Object.keys(

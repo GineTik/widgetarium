@@ -4,12 +4,10 @@ node_modules
 
 .DS_Store
 .obsidian/
-tools/.mjs-cache/
 /apps/obsidian/data.json
 /export/
 /*.png
 .omc/
-tools/.widgets-published/
 registry/*/*/build/
 .preview/
 .claude/

@@ -1,13 +1,11 @@
 import { parse as parseYaml } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
 const { boardBlock, boardNoteText, boardPathIn, boardInsertAt, isScreenNote, createBoardNote, insertBoardAtCursor } =
-	await import("./.mjs-cache/board-note.mjs");
-const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
-const { readId, withId } = await import("./.mjs-cache/record-id.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
-const { blockRefusal, BLOCK_FORMAT } = await import("./.mjs-cache/version.mjs");
+	await import("../apps/obsidian/src/board-note.js");
+const { findBlocks } = await import("../packages/core/src/block-writer.js");
+const { readId, withId } = await import("../packages/core/src/record-id.js");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
+const { blockRefusal, BLOCK_FORMAT } = await import("../packages/core/src/version.js");
 
 let failed = 0;
 function check(name, got, want) {

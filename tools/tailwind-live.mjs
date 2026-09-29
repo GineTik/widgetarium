@@ -1,17 +1,14 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
-
-buildMirror();
 
 const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-const { createInstaller } = await import("./.mjs-cache/installer.mjs");
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
-const { builtSheetPath } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { createInstaller } = await import("../packages/core/src/installer.js");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { builtSheetPath } = await import("../packages/core/src/engine/widget-build.js");
 
 let failed = 0;
 let checks = 0;

@@ -1,9 +1,7 @@
 import { stage, TASK_ROWS } from "./harness.mjs";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { TEMPLATES, templateBoard } = await import("./.mjs-cache/templates.mjs");
-const { serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { TEMPLATES, templateBoard } = await import("../packages/core/src/templates.js");
+const { serializeBoard } = await import("../packages/core/src/model.js");
 
 let failed = 0;
 function check(name, got, want) {

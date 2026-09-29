@@ -1,7 +1,6 @@
 // Two rules the eye caught and no suite did: an expanded board survives the block element
 // being rebuilt under it, and a widget with no surface rounds nothing.
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
 	pretendToBeVisual: true,
@@ -29,14 +28,13 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { WidgetRoot } = await import("./.mjs-cache/widget-root.mjs");
-const { drawWidget } = await import("./.mjs-cache/widget-api.mjs");
-const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { WidgetRoot } = await import("../packages/core/src/widget-root.js");
+const { drawWidget } = await import("../packages/core/src/widget-api.js");
+const { WidgetSurface } = await import("../packages/core/src/surface.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
 
 const settle = async (times = 20) => {
 	for (let i = 0; i < times; i += 1) await new Promise((resolve) => setTimeout(resolve, 1));
@@ -64,7 +62,7 @@ check(
 );
 
 const { useWidgetRounded, useBackgroundType, AppearanceOverride, ROUNDED, BACKGROUND } =
-	await import("./.mjs-cache/widget-root.mjs");
+	await import("../packages/core/src/widget-root.js");
 function OldWidget() {
 	return h(
 		AppearanceOverride,

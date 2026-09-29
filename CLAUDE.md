@@ -27,8 +27,8 @@ imports the app.** A plate law lives in
 `packages/kit/src/utils/plate-laws.ts` (the words in `constants/surfaces.ts`) because `Card` answers it, and `tree.js` and `surface-roles.js`
 re-export it from there. The app reaches core as `@widgetarium/core/<file>` and the kit as
 `@widgetarium/kit[/surface|/plates|/icons|/emoji-table|/emojis|/charts|/shapes]` — the kit's
-`package.json` `exports` is the one list of its entry points, and `tools/mirror.mjs` reads it to lay
-the test cache flat. Every tool runs from the repo root. A second host (web, Tauri) is another
+`package.json` `exports` is the one list of its entry points, and the test loader resolves
+`@widgetarium/*` through it. Every tool runs from the repo root. A second host (web, Tauri) is another
 `apps/*` beside `obsidian`, never a branch inside core. Licences: each package folder carries its own `LICENSE`; the root `LICENSE` is only the
 map of which folder is MIT and which FSL-1.1-ALv2, and `REUSE.toml` maps paths to them.
 
@@ -588,6 +588,15 @@ Remind the person of this list at the end of every finished task, until each is 
 check, mutate the source to violate the law it claims, confirm it goes red, restore with a
 uniqueness-asserted targeted edit, verify by md5. If a check turns out unfalsifiable, delete it —
 along with whatever depends on it — rather than ship it.
+
+**Tests import the real sources; nothing is copied.** Every `node tools/…` script in `package.json`
+runs under `node --import ./tools/loader/register.mjs`, an in-memory loader that compiles `.ts`,
+`.tsx` and `.jsx` with esbuild exactly as `apps/obsidian/build.mjs` does (`h`/`Fragment`, the
+nearest `tsconfig.json`, `es2020`), resolves extensionless and `.js` specifiers to the `.ts` behind
+them and `@widgetarium/*` through each package's `exports`, reads `.md` and `.css` as text, answers
+`obsidian` with `tools/loader/obsidian-stub.mjs` and the `widgetarium:*` specifiers the build
+provides. A test imports `../packages/core/src/<file>`; an edit shows in the next run with no
+rebuild, and suites run side by side. A tool run by hand needs the same `--import`.
 
 `npm run test:paint` drives real headless Chrome and reads **resolved** computed values; the jsdom
 suites resolve no cascade and lay nothing out, so a CSS claim proved only there is not proved.

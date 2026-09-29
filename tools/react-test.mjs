@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
 import esbuild from "esbuild";
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
 import { surfaceOptions } from "../apps/obsidian/build.mjs";
 
@@ -32,18 +31,18 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
 const engineReact = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { WidgetSurface, resolveSlots } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry, ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
-const { createHost } = await import("./.mjs-cache/host.mjs");
-const { gatewayCache } = await import("./.mjs-cache/gateway/cache.mjs");
-const { reactClash, slotFit } = await import("./.mjs-cache/fit.mjs");
-const { keyFor, modulePath, createModuleSpace, HELD_BY_THE_ENGINE } = await import("./.mjs-cache/engine/modules.mjs");
-const { WIDGETS_DIR, LOCK_PATH } = await import("./.mjs-cache/paths.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { WidgetSurface, resolveSlots } = await import("../packages/core/src/surface.js");
+const { WidgetRegistry, ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
+const { createHost } = await import("../apps/obsidian/src/host.js");
+const { gatewayCache } = await import("../packages/core/src/gateway/cache.ts");
+const { reactClash, slotFit } = await import("../packages/core/src/fit.js");
+const { keyFor, modulePath, createModuleSpace, HELD_BY_THE_ENGINE } =
+	await import("../packages/core/src/engine/modules.js");
+const { WIDGETS_DIR, LOCK_PATH } = await import("../packages/core/src/paths.js");
 
 const OWN = "@two/own";
 const HOSTED = "@two/hosted";
@@ -256,7 +255,7 @@ for (const name of HELD_BY_THE_ENGINE) {
 }
 
 console.log("\n— the surface takes the core, it does not carry one —");
-const coreExports = await import("./.mjs-cache/api-core.mjs");
+const coreExports = await import("../packages/core/src/api-core.js");
 const coreHolders = [...SURFACE_SOURCE.matchAll(/var (\w+) = require\("widgetarium\/core"\)/g)].map(
 	(found) => found[1],
 );

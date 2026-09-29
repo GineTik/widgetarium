@@ -1,9 +1,6 @@
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
-
-buildMirror();
 
 const dom = new JSDOM('<!doctype html><body><div id="host"></div></body>', { pretendToBeVisual: true });
 for (const key of [
@@ -30,7 +27,7 @@ globalThis.ResizeObserver = class {
 };
 
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
 const {
 	Kit,
 	APPROVAL_TONES,
@@ -47,8 +44,8 @@ const {
 	variants,
 	cn,
 	cx,
-} = await import("./.mjs-cache/index.mjs");
-const { PLATES_ABOVE } = await import("./.mjs-cache/utils/surface.mjs");
+} = await import("../packages/kit/src/index.ts");
+const { PLATES_ABOVE } = await import("../packages/kit/src/utils/surface.ts");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
 // has finished listening. Wait for the frame rather than guessing at a sleep.
@@ -161,14 +158,14 @@ check("and a slotted anchor is given no button type", host.querySelector("a")?.h
 check("and keeps that element's own props", host.querySelector("a")?.getAttribute("href"), "#x");
 
 {
-	const { cn } = await import("./.mjs-cache/index.mjs");
+	const { cn } = await import("../packages/kit/src/index.ts");
 	check("CN, AS IN SHADCN: a caller's class wins a conflict with the kit's", cn("p-plate", "p-2"), "p-2");
 	check("and the kit's own sizes and colours are told apart", cn("text-h3", "text-muted"), "text-h3 text-muted");
 	check("and a kit class is never taken for a utility", cn("wg-kit-btn is-m", "is-l"), "wg-kit-btn is-m is-l");
 }
 
 {
-	const { Slot, Slottable } = await import("./.mjs-cache/index.mjs");
+	const { Slot, Slottable } = await import("../packages/kit/src/index.ts");
 	const heard = [];
 	const slotRef = { current: null };
 	const childRef = { current: null };
@@ -210,7 +207,7 @@ check("and keeps that element's own props", host.querySelector("a")?.getAttribut
 }
 
 {
-	const kit = await import("./.mjs-cache/index.mjs");
+	const kit = await import("../packages/kit/src/index.ts");
 	const press = (node, key) => node?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 
 	const chosen = [];
@@ -630,8 +627,8 @@ check(
 render(null, host);
 
 {
-	const { diceBearUrl, diceBearVerdict } = await import("./.mjs-cache/utils/dicebear.mjs");
-	const { DICEBEAR_STYLES, ALLOWED_LICENSES } = await import("./.mjs-cache/constants/dicebear.mjs");
+	const { diceBearUrl, diceBearVerdict } = await import("../packages/kit/src/utils/dicebear.ts");
+	const { DICEBEAR_STYLES, ALLOWED_LICENSES } = await import("../packages/kit/src/constants/dicebear.ts");
 	check(
 		"a DiceBear address carries the style, the seed and every option, arrays joined",
 		diceBearUrl("notionists", "Anna Lee", { backgroundColor: ["b6e3f4", "c0aede"], flip: true }),
@@ -801,7 +798,7 @@ check("every piece is reachable from one object", surface.filter((name) => !Kit[
 
 // THE TWO SPECIFIERS, and what each one is FOR. A widget must have "widgetarium"; it may
 // take "widgetarium/kit". Proving them through the host's own resolver, not by reading api.js.
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium, kit: kitModule } = ENGINE_SCOPE;
 check('import { Kit } from "widgetarium" — for <Kit.Button/> in JSX', widgetarium.Kit === Kit, true);
 check(
@@ -830,7 +827,7 @@ check(
 // the measure returns early — which is why a render loop that froze the real app passed here.
 // Give the DOM believable rects and the loop becomes reproducible.
 {
-	const { useSegmentedThumb } = await import("./.mjs-cache/index.mjs");
+	const { useSegmentedThumb } = await import("../packages/kit/src/index.ts");
 	const { useState } = await import("react");
 	const was = Element.prototype.getBoundingClientRect;
 	const rect = (left, width) => ({ left, width, right: left + width, top: 0, bottom: 38, height: 38, x: left, y: 0 });
@@ -928,7 +925,7 @@ check(
 // source and drew Restore alone for a whole session — a declared control nobody can press.
 {
 	const { useState } = await import("react");
-	const { EditableTabs } = await import("./.mjs-cache/editable-tabs.mjs");
+	const { EditableTabs } = await import("../packages/core/src/editable-tabs.js");
 	const host = document.getElementById("host");
 	render(null, host);
 
@@ -3025,8 +3022,8 @@ check(
 
 {
 	const { valuesOf, sparkSpots, linePath, areaPath, sparkBars, spotAt, highlightedIndex } =
-		await import("./.mjs-cache/utils/sparkline.mjs");
-	const { chartColorOf, seriesColorName } = await import("./.mjs-cache/utils/chart-colors.mjs");
+		await import("../packages/kit/src/utils/sparkline.ts");
+	const { chartColorOf, seriesColorName } = await import("../packages/kit/src/utils/chart-colors.ts");
 	check(
 		"A SPARKLINE READS NUMBERS AND NUMERIC TEXT, AND ANYTHING ELSE IS A GAP",
 		valuesOf([1, "2", "", "x", null, 3]),
@@ -3065,7 +3062,7 @@ check(
 	check("A HAND-WRITTEN COLOUR IS REFUSED FOR THE PLACE'S TOKEN", chartColorOf("#ff0000", 0), "var(--wg-kit-chart-1)");
 	check("A SERIES KEY BECOMES A SAFE PROPERTY NAME", seriesColorName("notes per day"), "--color-notes-per-day");
 
-	const { Sparkline, SparklineArea, SparklineLine, SparklineDot } = await import("./.mjs-cache/index.mjs");
+	const { Sparkline, SparklineArea, SparklineLine, SparklineDot } = await import("../packages/kit/src/index.ts");
 	render(
 		h(
 			Sparkline,
@@ -3095,7 +3092,7 @@ check(
 	);
 	render(null, host);
 
-	const charts = await import("./.mjs-cache/charts/index.mjs");
+	const charts = await import("../packages/kit/src/charts/index.ts");
 	const measured = HTMLElement.prototype.getBoundingClientRect;
 	HTMLElement.prototype.getBoundingClientRect = () => ({
 		width: 320,
@@ -3171,7 +3168,7 @@ check(
 
 {
 	const { paginationItems, PaginationLink, Skeleton, Table, TableBody, TableCaption, TableCell, TableRow } =
-		await import("./.mjs-cache/index.mjs");
+		await import("../packages/kit/src/index.ts");
 	const shownPages = (page, count) =>
 		paginationItems(page, count)
 			.map((entry) => (entry.kind === "gap" ? "…" : entry.page))
@@ -3195,7 +3192,7 @@ check(
 		["page", true],
 	);
 
-	const { Pagination } = await import("./.mjs-cache/index.mjs");
+	const { Pagination } = await import("../packages/kit/src/index.ts");
 	render(h(Pagination, { count: 1 }), host);
 	await settle();
 	check("A SINGLE PAGE DRAWS NO PAGINATION", host.querySelector("nav"), null);
@@ -3244,7 +3241,7 @@ check(
 	);
 	render(null, host);
 
-	const { DataTable } = await import("./.mjs-cache/index.mjs");
+	const { DataTable } = await import("../packages/kit/src/index.ts");
 	const invoices = [
 		{ ref: "a", client: "Halden & Co", amount: 1860 },
 		{ ref: "b", client: "Northwind", amount: null },
@@ -3328,7 +3325,7 @@ check(
 	);
 	render(null, host);
 
-	const { CodeBlock } = await import("./.mjs-cache/index.mjs");
+	const { CodeBlock } = await import("../packages/kit/src/index.ts");
 	render(h(CodeBlock, { code: "<Button />", label: "Usage" }), host);
 	await settle();
 	check(

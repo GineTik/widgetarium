@@ -3,10 +3,8 @@ import { mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { bundleOf, shoot, shotPage } from "./harness.mjs";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
 
 const work = mkdtempSync(path.join(tmpdir(), "wg-cat-"));
 

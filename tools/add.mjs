@@ -2,15 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { buildMirror } from "./mirror.mjs";
 import { widgetDependenciesIn } from "./publish.mjs";
 import { rangesAgree } from "./version-range.mjs";
 
-buildMirror();
-const { RECORD_FILES } = await import("./.mjs-cache/engine/catalogue-index.mjs");
-const { createWidgetSource } = await import("./.mjs-cache/engine/widget-source.mjs");
-const { scopedName } = await import("./.mjs-cache/engine/github.mjs");
-const { declaredDependencies } = await import("./.mjs-cache/engine/modules.mjs");
+const { RECORD_FILES } = await import("../packages/core/src/engine/catalogue-index.js");
+const { createWidgetSource } = await import("../packages/core/src/engine/widget-source.js");
+const { scopedName } = await import("../packages/core/src/engine/github.js");
+const { declaredDependencies } = await import("../packages/core/src/engine/modules.js");
 
 const CONFIG_FILE = "widgetarium.json";
 

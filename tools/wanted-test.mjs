@@ -1,10 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
-const { createWantedWidgets } = await import("./.mjs-cache/engine/widgets-wanted.mjs");
-const { widgetsNamedBy } = await import("./.mjs-cache/templates.mjs");
-const { widgetKeyOf } = await import("./.mjs-cache/engine/widget-ref.mjs");
+const { createWantedWidgets } = await import("../packages/core/src/engine/widgets-wanted.js");
+const { widgetsNamedBy } = await import("../packages/core/src/templates.js");
+const { widgetKeyOf } = await import("../packages/core/src/engine/widget-ref.js");
 
 let failed = 0;
 let checks = 0;

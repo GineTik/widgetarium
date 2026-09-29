@@ -1,15 +1,13 @@
 // The one thing apps/obsidian/src/host.js cannot do: state shared BETWEEN widgets. The vault adapter,
 // its filters and its live subscription already exist there — this covers only the gap.
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
 const { createGatewayRefs, createViewCells, narrowedByRefs, pickedGateway, refValue, selectionGateway } =
-	await import("./.mjs-cache/gateway/refs.mjs");
-const { arrayGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { wiredTiles } = await import("./.mjs-cache/engine/wiring.mjs");
-const { mountKeyFor } = await import("./.mjs-cache/mount-key.mjs");
-const { createWidthGate, createWidthWatcher } = await import("./.mjs-cache/width-gate.mjs");
-const { isMatch } = await import("./.mjs-cache/gateway/match.mjs");
+	await import("../packages/core/src/gateway/refs.ts");
+const { arrayGateway } = await import("../packages/core/src/gateway/create.ts");
+const { wiredTiles } = await import("../packages/core/src/engine/wiring.js");
+const { mountKeyFor } = await import("../packages/core/src/mount-key.js");
+const { createWidthGate, createWidthWatcher } = await import("../packages/core/src/width-gate.js");
+const { isMatch } = await import("../packages/core/src/gateway/match.ts");
 
 let failed = 0;
 function check(name, got, want) {
@@ -204,7 +202,7 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
 // INVARIANT: a widget sees its ENVIRONMENT, never the store and never the Obsidian API.
 // Handing it `app` lets it reach the whole vault behind the engine, which is the model
 // crossing into the view — the thing the layer split exists to prevent.
-const { viewHost } = await import("./.mjs-cache/engine/view-host.mjs");
+const { viewHost } = await import("../packages/core/src/engine/view-host.js");
 const fullHost = {
 	platform: "obsidian",
 	can: { fullscreen: true, network: true, renderMarkdown: true },
@@ -234,8 +232,8 @@ check("what it does get, in full", Object.keys(exposed).sort(), ["can", "console
 
 // WHICH BUILD, AND WHAT IT CAN REACH. `systemRun` used to be declared on the host and read by
 // nobody; the console is what consumes it, and it answers per build rather than per family.
-const { hostTypeOf } = await import("./.mjs-cache/engine/host-type.mjs");
-const { createConsole, refusingConsole } = await import("./.mjs-cache/engine/host-console.mjs");
+const { hostTypeOf } = await import("../packages/core/src/engine/host-type.js");
+const { createConsole, refusingConsole } = await import("../packages/core/src/engine/host-console.js");
 
 check("a desktop app is a desktop", hostTypeOf({ isDesktopApp: true }), "obsidian-desktop");
 check(
@@ -290,7 +288,7 @@ check("still no Obsidian app object", [exposed.app, exposed.plugin, exposed.slot
 
 // Slots: the board decides WHICH widget draws a part of another. A slotted widget gets no
 // source of its own — the parent feeds it — which is what makes replacing a card a setting.
-const { resolveSlots } = await import("./.mjs-cache/surface.mjs");
+const { resolveSlots } = await import("../packages/core/src/surface.js");
 if (typeof resolveSlots === "function") {
 	const registry = {
 		get: (id) => (id === "@default/task-card" ? { component: () => null, manifest: {} } : null),

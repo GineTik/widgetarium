@@ -1,18 +1,16 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle", "Event"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
-const { arrayGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { useData } = await import("./.mjs-cache/gateway/use-data.mjs");
-const { declarationIn, manifestOfModule } = await import("./.mjs-cache/gateway/declared.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
+const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
+const { useData } = await import("../packages/core/src/gateway/use-data.ts");
+const { declarationIn, manifestOfModule } = await import("../packages/core/src/gateway/declared.ts");
 const manifestOf = (props, metadata, layout) =>
 	manifestOfModule({ default: { declared: defineProps(props) }, metadata, layout });
 

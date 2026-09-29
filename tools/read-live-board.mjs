@@ -1,10 +1,8 @@
 import fs from "node:fs";
 import { parse } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
-const { columnsOf, isBox, keptAt, laid, sideOf, GAP_PX, REGION_PAD_PX } = await import("./.mjs-cache/tree.mjs");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
+const { columnsOf, isBox, keptAt, laid, sideOf, GAP_PX, REGION_PAD_PX } = await import("../packages/core/src/tree.js");
 
 const FENCE = String.fromCharCode(96, 96, 96);
 const AT = process.argv[2];

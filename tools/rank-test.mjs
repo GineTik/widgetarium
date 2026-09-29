@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import { runWidgetSource } from "./run-widget-source.mjs";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -26,17 +25,16 @@ globalThis.ResizeObserver = class {
 };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
-buildMirror();
 const react = await import("react");
 const reactDom = await import("react-dom");
 const { createElement: h, Fragment } = react;
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/index.mjs");
-const emojis = await import("./.mjs-cache/emojis/emoji.mjs");
-const { EMOJI_TABLE } = await import("./.mjs-cache/emojis/emoji-table.mjs");
-const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
+const kit = await import("../packages/kit/src/index.ts");
+const emojis = await import("../packages/kit/src/emojis/emoji.tsx");
+const { EMOJI_TABLE } = await import("../packages/kit/src/emojis/emoji-table.ts");
+const { collectionGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
 
 const WIDGET = "registry/@default/tier-list/widget.tsx";
 const libs = new Map();

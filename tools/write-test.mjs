@@ -1,9 +1,7 @@
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 
 // CONTEXT: src is ESM but Node reads .js as CommonJS here, so every suite goes through the mirror
-buildMirror();
-const { findBlocks, replaceBlock, readBody, replaceBody } = await import("./.mjs-cache/block-writer.mjs");
+const { findBlocks, replaceBlock, readBody, replaceBody } = await import("../packages/core/src/block-writer.js");
 
 const NOTE = `---
 widgetarium: screen

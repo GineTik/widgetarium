@@ -1,14 +1,11 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
 
 const dom = new JSDOM("<!doctype html><div id=editor><div id=block></div></div>");
 global.window = dom.window;
 global.document = dom.window.document;
 global.Node = dom.window.Node;
 
-const { shieldFromEditor } = await import("./.mjs-cache/editor-shield.mjs");
+const { shieldFromEditor } = await import("../packages/core/src/editor-shield.js");
 
 const editor = document.getElementById("editor");
 const block = document.getElementById("block");

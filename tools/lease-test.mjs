@@ -1,5 +1,4 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(
 	"<!doctype html><body><div id=kept></div><div id=reclaimed></div><div id=closed></div><div id=nulled></div><div id=untouched></div></body>",
@@ -20,9 +19,8 @@ for (const key of [
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-buildMirror();
 const { createElement: h, useState } = await import("react");
-const { leaseFor } = await import("./.mjs-cache/engine/render.mjs");
+const { leaseFor } = await import("../packages/core/src/engine/render.js");
 
 const settle = async (times = 20) => {
 	for (let at = 0; at < times; at += 1) await new Promise((resolve) => setTimeout(resolve, 1));

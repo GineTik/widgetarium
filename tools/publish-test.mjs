@@ -8,12 +8,12 @@ for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGE
 
 const { declarationIn, dependenciesFrom, packageNames, publishWidget, widgetDependenciesIn, PUBLISHED_SHEET } =
 	await import("./publish.mjs");
-const { ANSWERED_BY_THE_ENGINE } = await import("./.mjs-cache/engine/modules.mjs");
-const { createInstaller } = await import("./.mjs-cache/installer.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
-const { RECORD_FILE } = await import("./.mjs-cache/engine/catalogue-index.mjs");
-const { compileWidget } = await import("./.mjs-cache/engine/widget-build.mjs");
+const { ANSWERED_BY_THE_ENGINE } = await import("../packages/core/src/engine/modules.js");
+const { createInstaller } = await import("../packages/core/src/installer.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { RECORD_FILE } = await import("../packages/core/src/engine/catalogue-index.js");
+const { compileWidget } = await import("../packages/core/src/engine/widget-build.js");
 
 let failed = 0;
 let checks = 0;

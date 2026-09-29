@@ -1,10 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-
-const { readRegistry, REGISTRY_FILE } = await import("./.mjs-cache/engine/registry-file.mjs");
+const { readRegistry, REGISTRY_FILE } = await import("../packages/core/src/engine/registry-file.js");
 
 const SOURCE = "registry";
 const at = path.join(SOURCE, REGISTRY_FILE);

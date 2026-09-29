@@ -1,9 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-const { allowedVerbs, withinAllowed } = await import("./.mjs-cache/gateway/props.mjs");
-const { arrayGateway, canDo } = await import("./.mjs-cache/gateway/create.mjs");
-const { ICrudGateway, defineProps, manifestOfModule, z } = await import("./.mjs-cache/gateway/declared.mjs");
+const { allowedVerbs, withinAllowed } = await import("../packages/core/src/gateway/props.js");
+const { arrayGateway, canDo } = await import("../packages/core/src/gateway/create.ts");
+const { ICrudGateway, defineProps, manifestOfModule, z } = await import("../packages/core/src/gateway/declared.ts");
 
 let failed = 0;
 function check(name, got, want) {

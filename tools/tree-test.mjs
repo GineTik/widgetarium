@@ -5,10 +5,8 @@ import path from "node:path";
 import esbuild from "esbuild";
 import { parse } from "yaml";
 import { findBrowser, widgetFiles } from "./harness.mjs";
-import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
-buildMirror();
 const {
 	aimedAt,
 	columnsOf,
@@ -31,7 +29,7 @@ const {
 	SIDEBAR_PX,
 	widenedBox,
 	withoutLeaf,
-} = await import("./.mjs-cache/tree.mjs");
+} = await import("../packages/core/src/tree.js");
 
 const ONE_CELL = [{ id: "x", ratio: 1 }];
 const rootOf = (of) => ({ dir: "row", of });
@@ -45,8 +43,8 @@ const side = (of = ONE_CELL, flags = {}) => ({
 const kept = (of = ONE_CELL) => ({ dir: "column", keep: true, of });
 const THREE = rootOf([side(), kept(), side()]);
 const sideName = (at) => (at === 1 ? "main" : at === 0 ? "left" : "right");
-const { GIVE_PX } = await import("./.mjs-cache/give.mjs");
-const { millisecondsAcross } = await import("./.mjs-cache/flip.mjs");
+const { GIVE_PX } = await import("../packages/core/src/give.js");
+const { millisecondsAcross } = await import("../packages/core/src/flip.js");
 
 const FIXTURE = "tools/fixture/Orbitask/Board.md";
 const FENCE = String.fromCharCode(96, 96, 96);
@@ -315,9 +313,17 @@ console.log("\n— a widget is as tall as what it draws, and nothing on the boar
 		return [leaf.preferredWidth, leaf.preferredHeight, leaf.keepsRatio];
 	};
 	check("a wide region draws the size a widget prefers", inRegionOf(900), [420, 420, true]);
-	check("under a step's region width the step's size is drawn instead, the rest kept", inRegionOf(480), ["full", 420, true]);
+	check("under a step's region width the step's size is drawn instead, the rest kept", inRegionOf(480), [
+		"full",
+		420,
+		true,
+	]);
 	check("and every step the region is under applies, narrowest last", inRegionOf(260), ["full", "auto", true]);
-	check("a widget that names no size is drawn with none", laid({ id: "a" }, 400, { ask: () => ({}) }).preferredWidth, undefined);
+	check(
+		"a widget that names no size is drawn with none",
+		laid({ id: "a" }, 400, { ask: () => ({}) }).preferredWidth,
+		undefined,
+	);
 }
 
 console.log("\n— a gap stands between two siblings, never after the last —");
@@ -896,10 +902,7 @@ console.log("\n— a column inside a row: the thing the three regions could not 
 							{ id: "board", ratio: 2 },
 							{
 								dir: "column",
-								of: [
-									{ id: "views" },
-									{ id: "wynttpz" },
-								],
+								of: [{ id: "views" }, { id: "wynttpz" }],
 							},
 						],
 					},

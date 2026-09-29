@@ -1,16 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { RECORD_FILE, RECORD_FILES, cardOf } = await import("./.mjs-cache/engine/catalogue-index.mjs");
-const { WIDGET_API } = await import("./.mjs-cache/version.mjs");
+const { RECORD_FILE, RECORD_FILES, cardOf } = await import("../packages/core/src/engine/catalogue-index.js");
+const { WIDGET_API } = await import("../packages/core/src/version.js");
 const { EVERY_SOURCE_FILE, SHEET_FILES, SOURCE_FILES, compileWidgetFolder, isWidgetModule, missingSourceRefusal } =
-	await import("./.mjs-cache/engine/widget-build.mjs");
-const { ANSWERED_BY_THE_ENGINE, facadeUrl, realPathIn } = await import("./.mjs-cache/engine/modules.mjs");
-const { idOfFolder } = await import("./.mjs-cache/engine/github.mjs");
-const declaredBuilders = await import("./.mjs-cache/gateway/declared.mjs");
+	await import("../packages/core/src/engine/widget-build.js");
+const { ANSWERED_BY_THE_ENGINE, facadeUrl, realPathIn } = await import("../packages/core/src/engine/modules.js");
+const { idOfFolder } = await import("../packages/core/src/engine/github.js");
+const declaredBuilders = await import("../packages/core/src/gateway/declared.ts");
 
 export const PUBLISHED_SHEET = SHEET_FILES[0];
 

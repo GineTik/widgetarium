@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
 	pretendToBeVisual: true,
@@ -31,15 +30,14 @@ globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 let boardWidthPx = 1340;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => boardWidthPx });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { GRID } = await import("./.mjs-cache/paths.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { GRID } = await import("../packages/core/src/paths.js");
 boardWidthPx = 20 * GRID.cellPx + 19 * GRID.gapPx + 2 * GRID.padPx;
 const { CHROME, barPlacement, dialogBox, freeArea, openingScale, openingPan, clampPan } =
-	await import("./.mjs-cache/settings-fit.mjs");
-const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
-const { heldTile, normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+	await import("../packages/core/src/settings-fit.js");
+const { WidgetSurface } = await import("../packages/core/src/surface.js");
+const { heldTile, normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 
 let failed = 0;
 

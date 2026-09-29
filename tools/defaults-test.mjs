@@ -1,11 +1,8 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-const { ICrudGateway, IValueGateway, z } = await import("./.mjs-cache/gateway/declared.mjs");
+const { ICrudGateway, IValueGateway, z } = await import("../packages/core/src/gateway/declared.ts");
 const { RowsInMemoryGateway, ValueInMemoryGateway, defaultImplementationFor, defineDefaultImplementation } =
-	await import("./.mjs-cache/gateway/defaults.mjs");
-const { gatewayOverImplementation } = await import("./.mjs-cache/gateway/adapted.mjs");
-const { declarationIn } = await import("./.mjs-cache/gateway/declaration.mjs");
+	await import("../packages/core/src/gateway/defaults.ts");
+const { gatewayOverImplementation } = await import("../packages/core/src/gateway/adapted.js");
+const { declarationIn } = await import("../packages/core/src/gateway/declaration.ts");
 
 let failed = 0;
 function check(what, got, wanted) {

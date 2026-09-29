@@ -1,14 +1,11 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
 
 const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 
 const ROOT = ".widgetarium/widgets";
 
@@ -133,12 +130,13 @@ const check = (name, got, want) => {
 	const nodePath = await import("node:path");
 	const work = mkdtempSync(nodePath.join(tmpdir(), "wg-lib-"));
 	const copy = nodePath.join(work, "lib.mjs");
-	const mirrorAt = nodePath.resolve("tools/.mjs-cache");
+	const { pathToFileURL } = await import("node:url");
+	const sourceAt = (file) => pathToFileURL(nodePath.resolve(file)).href;
 	writeFileSync(
 		copy,
 		readFileSync("registry/@default/lib.js", "utf8")
-			.replace('from "widgetarium/kit"', `from "file://${mirrorAt}/index.mjs"`)
-			.replace('from "widgetarium"', `from "file://${mirrorAt}/gateway/match.mjs"`),
+			.replace('from "widgetarium/kit"', `from "${sourceAt("packages/kit/src/index.ts")}"`)
+			.replace('from "widgetarium"', `from "${sourceAt("packages/core/src/gateway/match.ts")}"`),
 	);
 	const { daysLogged, pressing, readLog, shapeOf, shiftedBy, streakOf } = await import(`file://${copy}`);
 
@@ -219,7 +217,7 @@ const check = (name, got, want) => {
 
 {
 	const { readFileSync } = await import("node:fs");
-	const { buildWidget } = await import("./.mjs-cache/registry.mjs");
+	const { buildWidget } = await import("../packages/core/src/registry.js");
 	const { widgetModuleSources } = await import("./run-widget-source.mjs");
 	// CONTEXT: the catalogue draws a widget nobody installed, so it compiles one straight off disk
 	const drawn = buildWidget({

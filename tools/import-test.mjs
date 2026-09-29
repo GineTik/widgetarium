@@ -4,7 +4,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
@@ -16,21 +15,22 @@ globalThis.ResizeObserver = class {
 };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
-buildMirror();
-const cache = path.join(process.cwd(), "tools", ".mjs-cache");
+const SOURCE_ROOTS = ["packages/kit/src", "packages/core/src", "apps/obsidian/src"];
+const isModuleSource = (name) => /\.(js|ts|tsx|jsx)$/.test(name) && !name.endsWith(".d.ts");
 
 const modules = [];
-(function walk(dir) {
+function walk(dir) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
 		const full = path.join(dir, entry.name);
 		if (entry.isDirectory()) walk(full);
-		else if (entry.name.endsWith(".mjs") && entry.name !== "obsidian.mjs") modules.push(full);
+		else if (isModuleSource(entry.name)) modules.push(full);
 	}
-})(cache);
+}
+for (const root of SOURCE_ROOTS) walk(path.resolve(root));
 
 let failed = 0;
 for (const file of modules.sort()) {
-	const name = path.relative(cache, file);
+	const name = path.relative(process.cwd(), file);
 	try {
 		const loaded = await import(file);
 		const exported = Object.keys(loaded).length;

@@ -2,15 +2,13 @@
 // shared selection → columns. If the tabs do not actually steer the board, this fails.
 import fs from "node:fs";
 import path from "node:path";
-import { buildMirror } from "./mirror.mjs";
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const TASKS = path.join(VAULT, "Orbitask", "Tasks");
 
-buildMirror();
-const { createGatewayRefs, createViewCells, resolveWhere } = await import("./.mjs-cache/gateway/refs.mjs");
+const { createGatewayRefs, createViewCells, resolveWhere } = await import("../packages/core/src/gateway/refs.ts");
 // the REAL matcher the vault adapter uses — a copy here is how a dead operator hid before
-const { isMatch, KNOWN_OPERATORS } = await import("./.mjs-cache/gateway/match.mjs");
+const { isMatch, KNOWN_OPERATORS } = await import("../packages/core/src/gateway/match.ts");
 
 let failed = 0;
 function check(name, got, want) {

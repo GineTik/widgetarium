@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import { parse as parseYaml } from "yaml";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -29,16 +28,15 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { TEMPLATES, templateWidgets, templateBoard, templateSketch } = await import("./.mjs-cache/templates.mjs");
-const { boardNoteText } = await import("./.mjs-cache/board-note.mjs");
-const { findBlocks } = await import("./.mjs-cache/block-writer.mjs");
-const { normalizeBoard, serializeBoard, VIEW_GROUP } = await import("./.mjs-cache/model.mjs");
-const { swapBoxes } = await import("./.mjs-cache/tree.mjs");
-const { blockRefusal } = await import("./.mjs-cache/version.mjs");
-const { Catalogue } = await import("./.mjs-cache/catalogue.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { TEMPLATES, templateWidgets, templateBoard, templateSketch } = await import("../packages/core/src/templates.js");
+const { boardNoteText } = await import("../apps/obsidian/src/board-note.js");
+const { findBlocks } = await import("../packages/core/src/block-writer.js");
+const { normalizeBoard, serializeBoard, VIEW_GROUP } = await import("../packages/core/src/model.js");
+const { swapBoxes } = await import("../packages/core/src/tree.js");
+const { blockRefusal } = await import("../packages/core/src/version.js");
+const { Catalogue } = await import("../packages/core/src/catalogue.js");
 
 let failed = 0;
 function check(name, got, want) {

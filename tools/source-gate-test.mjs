@@ -1,6 +1,6 @@
 import { catalogueAdapter } from "./perf-fixture.mjs";
 
-const { createInstaller, INDEX_PATH } = await import("./.mjs-cache/installer.mjs");
+const { createInstaller, INDEX_PATH } = await import("../packages/core/src/installer.js");
 
 const GOOD_FOLDER = "/tmp/good-widgets";
 
@@ -85,8 +85,8 @@ const javascriptOk = javascriptOffers.length === 0 && javascriptSaid;
 if (!javascriptOk) wrong += 1;
 console.log(`${javascriptOk ? "OK " : "BAD"} offered ${javascriptOffers.length}, refusal logged ${javascriptSaid}`);
 
-const { sourcesOf, identityOf } = await import("./.mjs-cache/sources.mjs");
-const { SHIPPED_SOURCES } = await import("./.mjs-cache/registries.mjs");
+const { sourcesOf, identityOf } = await import("../packages/core/src/sources.js");
+const { SHIPPED_SOURCES } = await import("../packages/core/src/registries.js");
 
 function same(label, found, wanted) {
 	const ok = JSON.stringify(found) === JSON.stringify(wanted);
@@ -158,8 +158,8 @@ const offeredOnce = await installerOver({ sources: [{ path: OTHER_FOLDER }] }, s
 same("two sources offering one widget id answer once", offeredOnce.length, 1);
 same("and the one nearer the person is the answer", offeredOnce[0]?.origin, GOOD_FOLDER);
 
-const { createWidgetSource } = await import("./.mjs-cache/engine/widget-source.mjs");
-const { REGISTRY_FORMAT } = await import("./.mjs-cache/version.mjs");
+const { createWidgetSource } = await import("../packages/core/src/engine/widget-source.js");
+const { REGISTRY_FORMAT } = await import("../packages/core/src/version.js");
 
 const REPOSITORY = "https://github.com/acme/widgets";
 const SHA = "abc1234567";

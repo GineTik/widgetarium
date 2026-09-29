@@ -1,9 +1,7 @@
 // CONTEXT: a substring filter had nothing to get wrong; a score has an order, and an order is a claim
 import fs from "node:fs";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { fold, rankSearch, DEFAULT_FIELDS } = await import("./.mjs-cache/engine/search.mjs");
+const { fold, rankSearch, DEFAULT_FIELDS } = await import("../packages/core/src/engine/search.js");
 
 let failed = 0;
 function check(name, got, want) {

@@ -1,7 +1,7 @@
 import { addWidget } from "./add.mjs";
 import { rangesAgree } from "./version-range.mjs";
 
-const { createWidgetSource } = await import("./.mjs-cache/engine/widget-source.mjs");
+const { createWidgetSource } = await import("../packages/core/src/engine/widget-source.js");
 
 let failed = 0;
 let checks = 0;

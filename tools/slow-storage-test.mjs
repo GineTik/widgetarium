@@ -1,6 +1,6 @@
 import { NO_PLUGIN, fakeTaskVault } from "./perf-fixture.mjs";
 
-const { createHost } = await import("./.mjs-cache/host.mjs");
+const { createHost } = await import("../apps/obsidian/src/host.js");
 
 const FOLDER = "Tasks";
 const CACHE_STAYS_SILENT = 100000;

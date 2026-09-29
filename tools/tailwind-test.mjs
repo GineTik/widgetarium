@@ -1,21 +1,18 @@
 import { readFileSync } from "node:fs";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
-
-buildMirror();
 
 const dom = new JSDOM("<!doctype html><body></body>");
 for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
 	globalThis[key] = key === "window" ? dom.window : dom.window[key];
 }
 
-const { createInstaller, LOCK_PATH } = await import("./.mjs-cache/installer.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { WIDGETS_DIR } = await import("./.mjs-cache/paths.mjs");
-const { facadeUrl } = await import("./.mjs-cache/engine/modules.mjs");
-const { builtSheetPath } = await import("./.mjs-cache/engine/widget-build.mjs");
-const { gapVarsOf } = await import("./.mjs-cache/tree.mjs");
+const { createInstaller, LOCK_PATH } = await import("../packages/core/src/installer.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { facadeUrl } = await import("../packages/core/src/engine/modules.js");
+const { builtSheetPath } = await import("../packages/core/src/engine/widget-build.js");
+const { gapVarsOf } = await import("../packages/core/src/tree.js");
 const KIT_THEME_FILE = readFileSync("packages/kit/theme.css", "utf8");
 
 let failed = 0;
@@ -227,7 +224,7 @@ check(
 	true,
 );
 {
-	const { THEME_SCALES } = await import("./.mjs-cache/constants/theme-scales.mjs");
+	const { THEME_SCALES } = await import("../packages/kit/src/constants/theme-scales.ts");
 	const declared = {};
 	for (const [, scale, name] of KIT_THEME_FILE.matchAll(
 		/--(color|text|radius|spacing|shadow|ease|font-weight|font)-([a-z0-9-]+):/g,

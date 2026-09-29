@@ -1,8 +1,5 @@
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
-
-buildMirror();
 
 const dom = new JSDOM('<!doctype html><body><div id="host"></div></body>', { pretendToBeVisual: true });
 for (const key of [
@@ -28,9 +25,9 @@ globalThis.ResizeObserver = class {
 };
 
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
 const { Kit, APPROVAL_TONES, PRIORITY_TONES, TONE_NAMES, buttonClass, toneClass, variants, cn } =
-	await import("./.mjs-cache/index.mjs");
+	await import("../packages/kit/src/index.ts");
 
 // preact defers useEffect a frame, so a test that acts immediately acts before the component
 // has finished listening. Wait for the frame rather than guessing at a sleep.
@@ -229,7 +226,7 @@ check("every piece is reachable from one object", surface.filter((name) => !Kit[
 
 // THE TWO SPECIFIERS, and what each one is FOR. A widget must have "widgetarium"; it may
 // take "widgetarium/kit". Proving them through the host's own resolver, not by reading api.js.
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium, kit: kitModule } = ENGINE_SCOPE;
 check('import { Kit } from "widgetarium" — for <Kit.Button/> in JSX', widgetarium.Kit === Kit, true);
 check(
@@ -258,7 +255,7 @@ check(
 // the measure returns early — which is why a render loop that froze the real app passed here.
 // Give the DOM believable rects and the loop becomes reproducible.
 {
-	const { useSegmentedThumb } = await import("./.mjs-cache/index.mjs");
+	const { useSegmentedThumb } = await import("../packages/kit/src/index.ts");
 	const { useState } = await import("react");
 	const was = Element.prototype.getBoundingClientRect;
 	const rect = (left, width) => ({ left, width, right: left + width, top: 0, bottom: 38, height: 38, x: left, y: 0 });

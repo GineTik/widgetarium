@@ -1,9 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-const { default: WidgetariumPlugin } = await import("./.mjs-cache/main.mjs");
-const { TFile, stringifyYaml } = await import("./.mjs-cache/obsidian.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { default: WidgetariumPlugin } = await import("../apps/obsidian/src/main.js");
+const { TFile, stringifyYaml } = await import("obsidian");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 
 let failed = 0;
 function check(name, got, want) {

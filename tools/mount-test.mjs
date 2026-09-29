@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const VAULT = "tools/fixture-records";
 const HOLDER = "@probe/holder";
@@ -37,16 +36,15 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h, useEffect, useState } = await import("react");
-const { leaseFor, render } = await import("./.mjs-cache/engine/render.mjs");
-const { Mounted } = await import("./.mjs-cache/mounted.mjs");
-const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
-const { createHost } = await import("./.mjs-cache/host.mjs");
-const { useData } = await import("./.mjs-cache/gateway/use-data.mjs");
-const { TFile } = await import("./.mjs-cache/obsidian.mjs");
+const { leaseFor, render } = await import("../packages/core/src/engine/render.js");
+const { Mounted } = await import("../packages/core/src/mounted.js");
+const { WidgetSurface } = await import("../packages/core/src/surface.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
+const { createHost } = await import("../apps/obsidian/src/host.js");
+const { useData } = await import("../packages/core/src/gateway/use-data.ts");
+const { TFile } = await import("obsidian");
 
 const adapter = {
 	exists: async (target) => fs.existsSync(path.join(VAULT, target)),

@@ -1,9 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
 globalThis.window = { setTimeout, clearTimeout, queueMicrotask };
-buildMirror();
 
-const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
+const { TFile, TFolder } = await import("obsidian");
 
 export const TASK_NEEDS = {
 	title: { type: "text" },

@@ -1,10 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
-const { seenOf, isShown, shownEntries } = await import("./.mjs-cache/prop-visibility.mjs");
+const { seenOf, isShown, shownEntries } = await import("../packages/core/src/prop-visibility.js");
 const { IListGateway, IMounts, ISlot, defineProps, manifestOfModule, z } =
-	await import("./.mjs-cache/gateway/declared.mjs");
+	await import("../packages/core/src/gateway/declared.ts");
 
 let failed = 0;
 let checks = 0;

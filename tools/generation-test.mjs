@@ -1,14 +1,12 @@
-import { buildMirror } from "./mirror.mjs";
 import { fakeVault } from "./fake-vault.mjs";
 
-buildMirror();
-const { generationOf, widgetKeyOf, widgetRef } = await import("./.mjs-cache/engine/widget-ref.mjs");
-const { compatibility, movedTileProps, propChanges } = await import("./.mjs-cache/engine/compatibility.mjs");
+const { generationOf, widgetKeyOf, widgetRef } = await import("../packages/core/src/engine/widget-ref.js");
+const { compatibility, movedTileProps, propChanges } = await import("../packages/core/src/engine/compatibility.js");
 const { ICrudGateway, IListGateway, IValueGateway, defineProps, manifestOfModule, z } =
-	await import("./.mjs-cache/gateway/declared.mjs");
-const { cardOf, RECORD_FILE } = await import("./.mjs-cache/engine/catalogue-index.mjs");
-const { createInstaller } = await import("./.mjs-cache/installer.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
+	await import("../packages/core/src/gateway/declared.ts");
+const { cardOf, RECORD_FILE } = await import("../packages/core/src/engine/catalogue-index.js");
+const { createInstaller } = await import("../packages/core/src/installer.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 
 let failed = 0;
 function check(name, got, want) {
@@ -228,8 +226,8 @@ check(
 	`@demo/tabs@${COMMIT}`,
 );
 
-const { readRegistry } = await import("./.mjs-cache/engine/registry-file.mjs");
-const { INSTALL_PENDING } = await import("./.mjs-cache/engine/widget-lock.mjs");
+const { readRegistry } = await import("../packages/core/src/engine/registry-file.js");
+const { INSTALL_PENDING } = await import("../packages/core/src/engine/widget-lock.js");
 
 const scoped = readRegistry(
 	JSON.stringify({

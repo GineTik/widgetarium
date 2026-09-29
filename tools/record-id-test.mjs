@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 const EVERY_VERB = ["list", "get", "create", "update", "remove", "replace", "repairIds"];
 
 const VAULT = "tools/fixture-records";
@@ -38,15 +37,14 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { WidgetSurface } = await import("./.mjs-cache/surface.mjs");
-const { WidgetRegistry } = await import("./.mjs-cache/registry.mjs");
-const { normalizeBoard } = await import("./.mjs-cache/model.mjs");
-const { createHost } = await import("./.mjs-cache/host.mjs");
-const { readId } = await import("./.mjs-cache/record-id.mjs");
-const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { WidgetSurface } = await import("../packages/core/src/surface.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { normalizeBoard } = await import("../packages/core/src/model.js");
+const { createHost } = await import("../apps/obsidian/src/host.js");
+const { readId } = await import("../packages/core/src/record-id.js");
+const { TFile, TFolder } = await import("obsidian");
 
 const adapter = {
 	exists: async (target) => fs.existsSync(path.join(VAULT, target)),

@@ -2,7 +2,6 @@
 // folder and no notes behind it — so every read comes from the manifest and every write is
 // refused. A preview that can create a note is a catalogue that edits the vault while you scroll.
 import { JSDOM } from "jsdom";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -28,12 +27,11 @@ globalThis.ResizeObserver = class {
 };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
-buildMirror();
 const { createElement: h } = await import("react");
-const { render } = await import("./.mjs-cache/engine/render.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
 const { previewProps, previewGateways, previewSize, previewReader, previewHost } =
-	await import("./.mjs-cache/preview.mjs");
-const { GRID } = await import("./.mjs-cache/paths.mjs");
+	await import("../packages/core/src/preview.js");
+const { GRID } = await import("../packages/core/src/paths.js");
 const { manifestOfEveryShippedWidget } = await import("./widget-props.mjs");
 
 let failed = 0;
@@ -169,7 +167,7 @@ render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);
 check("the widget is handed the sample rows", mount.textContent.includes("4 rows"), true);
 
 console.log("\n— the catalogue is a switch, not a fact about the build —");
-const { widgetCatalogue } = await import("./.mjs-cache/catalogue-dialog.mjs");
+const { widgetCatalogue } = await import("../packages/core/src/catalogue-dialog.js");
 check("a host that says nothing about the catalogue keeps it open", widgetCatalogue({}, { can: {} }).canOpen, true);
 check("a host that allows it opens it", widgetCatalogue({}, { can: { catalogue: true } }).canOpen, true);
 check("a host that switches it off closes it", widgetCatalogue({}, { can: { catalogue: false } }).canOpen, false);

@@ -7,12 +7,10 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
-import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
-buildMirror();
-const { GRID } = await import("./.mjs-cache/paths.mjs");
-const { spanToPixels } = await import("./.mjs-cache/paths.mjs");
+const { GRID } = await import("../packages/core/src/paths.js");
+const { spanToPixels } = await import("../packages/core/src/paths.js");
 
 const BROWSERS = [
 	process.env.WG_CHROME,

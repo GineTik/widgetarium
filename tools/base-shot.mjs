@@ -4,12 +4,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import { findBrowser, widgetFiles } from "./harness.mjs";
-import { buildMirror } from "./mirror.mjs";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mjs";
 
-buildMirror();
-const { LAYOUT_NAMES, skeletonOf } = await import("./.mjs-cache/layouts.mjs");
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { LAYOUT_NAMES, skeletonOf } = await import("../packages/core/src/layouts.js");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 
 const asked = process.argv.slice(2).filter((said) => !said.startsWith("--"));
 const names = asked.length > 0 ? asked : LAYOUT_NAMES;

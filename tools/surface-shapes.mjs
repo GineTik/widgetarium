@@ -1,9 +1,5 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
-const { withDefaultSurfaces, surfacesWritten } = await import("./.mjs-cache/surface-default.mjs");
-const { surfaceVerdicts } = await import("./.mjs-cache/surface-laws.mjs");
+const { withDefaultSurfaces, surfacesWritten } = await import("../packages/core/src/surface-default.js");
+const { surfaceVerdicts } = await import("../packages/core/src/surface-laws.js");
 
 const ROLE_OF = {
 	"@x/list": "collection",

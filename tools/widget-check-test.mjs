@@ -1,8 +1,4 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-
-const { checkWidget, saidWidgetCheck, WIDGET_CHECK_RULES } = await import("./.mjs-cache/widget-check.mjs");
+const { checkWidget, saidWidgetCheck, WIDGET_CHECK_RULES } = await import("../packages/core/src/widget-check.js");
 
 let failed = 0;
 let checks = 0;

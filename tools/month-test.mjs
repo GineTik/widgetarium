@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import { runWidgetSource } from "./run-widget-source.mjs";
-import { buildMirror } from "./mirror.mjs";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 for (const key of [
@@ -33,16 +32,15 @@ globalThis.ResizeObserver = class {
 };
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
-buildMirror();
 const react = await import("react");
 const { createElement: h, Fragment } = react;
-const { render } = await import("./.mjs-cache/engine/render.mjs");
-const { ENGINE_SCOPE } = await import("./.mjs-cache/registry.mjs");
+const { render } = await import("../packages/core/src/engine/render.js");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
 const { api: widgetarium } = ENGINE_SCOPE;
-const kit = await import("./.mjs-cache/index.mjs");
-const { collectionGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { mappedCollection } = await import("./.mjs-cache/gateway/mapped.mjs");
-const { needsOf } = await import("./.mjs-cache/gateway/props.mjs");
+const kit = await import("../packages/kit/src/index.ts");
+const { collectionGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
+const { mappedCollection } = await import("../packages/core/src/gateway/mapped.ts");
+const { needsOf } = await import("../packages/core/src/gateway/props.js");
 
 const WIDGET = "registry/@default/month/widget.tsx";
 const { propsOfEveryShippedWidget } = await import("./widget-props.mjs");

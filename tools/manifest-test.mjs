@@ -1,9 +1,6 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
 const { ICrudGateway, IListGateway, IValueGateway, defineLayout, defineMigrations, defineProps, manifestOfModule, z } =
-	await import("./.mjs-cache/gateway/declared.mjs");
-const { migrationFrom } = await import("./.mjs-cache/engine/compatibility.mjs");
+	await import("../packages/core/src/gateway/declared.ts");
+const { migrationFrom } = await import("../packages/core/src/engine/compatibility.js");
 
 let failures = 0;
 

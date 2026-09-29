@@ -3,10 +3,8 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { bundleOf, findBrowser } from "./harness.mjs";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { normalizeBoard, serializeBoard } = await import("./.mjs-cache/model.mjs");
+const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 const {
 	allEdges,
 	laid,
@@ -20,16 +18,16 @@ const {
 	regionSurfaceOf,
 	STEP_PX,
 	SURFACE_PAD_PX,
-} = await import("./.mjs-cache/tree.mjs");
+} = await import("../packages/core/src/tree.js");
 const { nestingFindings, surfaceChoicesAt, surfaceVerdicts, widgetOfTiles, wornSurfaceAt } =
-	await import("./.mjs-cache/surface-laws.mjs");
-const { isKnownRole, plateRefusal, ROLES, slotSurfaceOf } = await import("./.mjs-cache/surface-roles.mjs");
-const { platesAtCell } = await import("./.mjs-cache/utils/surface.mjs");
-const { gapVarsOf } = await import("./.mjs-cache/tree.mjs");
+	await import("../packages/core/src/surface-laws.js");
+const { isKnownRole, plateRefusal, ROLES, slotSurfaceOf } = await import("../packages/core/src/surface-roles.js");
+const { platesAtCell } = await import("../packages/kit/src/utils/surface.ts");
+const { gapVarsOf } = await import("../packages/core/src/tree.js");
 const { literalGapsIn } = await import("./gap-audit.mjs");
-const { lintBoard } = await import("./.mjs-cache/board-lint.mjs");
-const { measuredPathOf } = await import("./.mjs-cache/surface-contract.mjs");
-const { colorOf, contrastOf, lightnessOf } = await import("./.mjs-cache/color-math.mjs");
+const { lintBoard } = await import("../packages/core/src/board-lint.js");
+const { measuredPathOf } = await import("../packages/core/src/surface-contract.js");
+const { colorOf, contrastOf, lightnessOf } = await import("../packages/core/src/color-math.js");
 
 let failed = 0;
 function check(label, got, want) {

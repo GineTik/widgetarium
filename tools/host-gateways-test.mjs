@@ -1,11 +1,9 @@
-import { buildMirror } from "./mirror.mjs";
-
-buildMirror();
-const { HOST_GATEWAYS, hostGatewayFor, resolveHostGateway } = await import("./.mjs-cache/engine/host-gateways.mjs");
-const { createGatewayRefs, createViewCells } = await import("./.mjs-cache/gateway/refs.mjs");
-const { arrayGateway, soloGateway } = await import("./.mjs-cache/gateway/create.mjs");
-const { defineGatewayMetadata } = await import("./.mjs-cache/gateway/implementation-metadata.mjs");
-const { IValueGateway, z } = await import("./.mjs-cache/gateway/declared.mjs");
+const { HOST_GATEWAYS, hostGatewayFor, resolveHostGateway } =
+	await import("../packages/core/src/engine/host-gateways.js");
+const { createGatewayRefs, createViewCells } = await import("../packages/core/src/gateway/refs.ts");
+const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
+const { defineGatewayMetadata } = await import("../packages/core/src/gateway/implementation-metadata.ts");
+const { IValueGateway, z } = await import("../packages/core/src/gateway/declared.ts");
 
 let failed = 0;
 function check(what, got, wanted) {
@@ -82,7 +80,7 @@ check(
 	"@core/selected-row",
 );
 
-const { sourcesFor } = await import("./.mjs-cache/engine/host-gateways.mjs");
+const { sourcesFor } = await import("../packages/core/src/engine/host-gateways.js");
 check(
 	"a prop that writes rows is offered only sources that can write them",
 	sourcesFor({ kind: "collection", writes: ["list", "get", "update"] }).map((entry) => entry.id),

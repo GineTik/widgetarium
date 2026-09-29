@@ -4,14 +4,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
-import { buildMirror } from "./mirror.mjs";
 
 globalThis.window = { setTimeout, clearTimeout };
 
-buildMirror();
-const { TFile, TFolder } = await import("./.mjs-cache/obsidian.mjs");
-const { createHost, bindNote } = await import("./.mjs-cache/host.mjs");
-const { MarkdownRenderer, MarkdownRenderChild } = await import("./.mjs-cache/obsidian.mjs");
+const { TFile, TFolder } = await import("obsidian");
+const { createHost, bindNote } = await import("../apps/obsidian/src/host.js");
+const { MarkdownRenderer, MarkdownRenderChild } = await import("obsidian");
 
 const VAULT = process.env.WG_VAULT ?? "tools/fixture";
 const FOLDER = "Orbitask/Tasks";

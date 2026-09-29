@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { SHOT_NAMES, shotBox, shotInputHash, widgetFolders } from "./shot-widgets.mjs";
 
-const { SHOT_BYTE_CAP } = await import("./.mjs-cache/engine/shot.mjs");
+const { SHOT_BYTE_CAP } = await import("../packages/core/src/engine/shot.js");
 
 const DEVICE_SCALE = 2;
 

@@ -2,10 +2,8 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { bundleOf, shoot, shotPage } from "./harness.mjs";
-import { buildMirror } from "./mirror.mjs";
 
-buildMirror();
-const { TEMPLATES, templateWidgets } = await import("./.mjs-cache/templates.mjs");
+const { TEMPLATES, templateWidgets } = await import("../packages/core/src/templates.js");
 
 const SIZE = { width: Number(process.env.WG_WIDTH ?? 1080), height: Number(process.env.WG_HEIGHT ?? 720) };
 const work = mkdtempSync(path.join(tmpdir(), "wg-tpl-"));
