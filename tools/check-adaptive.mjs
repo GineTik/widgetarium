@@ -23,6 +23,10 @@ function propertiesOf(body) {
 	return [...String(body).matchAll(/([a-z-]+)\s*:/g)].map(([, name]) => name);
 }
 
+function selectorsIn(list) {
+	return list.split(/,(?![^(]*\))/);
+}
+
 function lastClass(selector) {
 	const classes = selector.match(/\.[\w-]+/g);
 	return classes ? classes[classes.length - 1] : null;
@@ -40,7 +44,7 @@ for (const root of roots) {
 		const heaviest = new Map();
 		for (const [, selectors, body] of withoutContainers.matchAll(/([^{}@]+)\{([^{}]*)\}/g)) {
 			for (const property of propertiesOf(body)) {
-				for (const selector of selectors.split(",")) {
+				for (const selector of selectorsIn(selectors)) {
 					const target = lastClass(selector.trim());
 					if (!target) continue;
 					const key = `${target}|${property}`;
@@ -52,7 +56,7 @@ for (const root of roots) {
 		for (const [, query, block] of text.matchAll(/@container([^{]*)\{([\s\S]*?)\n\}/g)) {
 			for (const [, selectors, body] of block.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
 				for (const property of propertiesOf(body)) {
-					for (const selector of selectors.split(",")) {
+					for (const selector of selectorsIn(selectors)) {
 						const trimmed = selector.trim();
 						const target = lastClass(trimmed);
 						if (!target) continue;

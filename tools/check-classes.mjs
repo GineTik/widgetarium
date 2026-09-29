@@ -13,9 +13,10 @@ const offences = [];
 const ENGINE = new Set(["orbi", "wg-widget-root"]);
 
 // CONTEXT: a widget built on the kit carries kit classes, whose rules live in the plugin sheet
-for (const [, name] of (fs.existsSync("apps/obsidian/styles.css") ? fs.readFileSync("apps/obsidian/styles.css", "utf8") : "").matchAll(
-	/\.([a-z][\w-]*)/g,
-)) {
+for (const [, name] of (fs.existsSync("apps/obsidian/styles.css")
+	? fs.readFileSync("apps/obsidian/styles.css", "utf8")
+	: ""
+).matchAll(/\.([a-z][\w-]*)/g)) {
 	ENGINE.add(name);
 }
 
@@ -37,9 +38,21 @@ function ownSheets(file) {
 		.join("\n");
 }
 
+function folderSource(folder) {
+	return fs
+		.readdirSync(folder, { withFileTypes: true })
+		.filter((entry) => entry.name !== "build" && entry.name !== "node_modules")
+		.map((entry) => {
+			const at = path.join(folder, entry.name);
+			if (entry.isDirectory()) return folderSource(at);
+			return /\.tsx?$/.test(entry.name) ? fs.readFileSync(at, "utf8") : "";
+		})
+		.join("\n");
+}
+
 for (const root of roots) {
 	for (const file of widgetFiles(root)) {
-		const text = fs.readFileSync(file, "utf8");
+		const text = folderSource(path.dirname(file));
 		const styled = new Set();
 		for (const [, name] of `${text}\n${scopeSheet(file)}\n${ownSheets(file)}`.matchAll(/\.([a-z][\w-]*)/g))
 			styled.add(name);
