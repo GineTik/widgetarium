@@ -46,27 +46,47 @@ Every command runs from the repository root.
 
 ## Write a widget
 
-A widget is a folder with a `widget.tsx` that describes itself and draws itself:
+A widget is a folder with a `widget.tsx` that declares its props, describes itself and draws:
 
 ```tsx
-import { createWidget, defineManifest, defineProp } from "widgetarium";
+import {
+	ICrudGateway,
+	IValueGateway,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
 
-type Entry = { title: string; done?: boolean };
+const EntrySchema = VaultRecordSchema.extend({
+	title: z.string(),
+	done: z
+		.boolean()
+		.optional()
+		.meta({ aka: ["complete"] }),
+});
 
-export const manifest = defineManifest({
-	title: "Checklist",
-	description: "The entries still to do, ticked off where they stand.",
-	role: "collection",
-	size: { preferredWidth: 320, preferredHeight: "auto" },
-	props: {
-		heading: defineProp<string>()({ default: "To do" }),
-		entries: defineProp<Entry[]>()({ default: [], writes: ["create", "update"] }),
+const Checklist = createWidget({
+	inject: {
+		heading: IValueGateway.of(z.string().default("To do")).pick("get"),
+		entries: ICrudGateway.of(EntrySchema).pick("list", "create", "update"),
+	},
+	draw: ({ heading, entries }) => {
+		const { data } = useData(entries.list, { limit: 20 });
+		return <h3>{`${heading}: ${data.length}`}</h3>;
 	},
 });
 
-export default createWidget(manifest, ({ heading, entries }) => {
-	// read with useData(entries.list), write with entries.update(...)
+export const metadata = defineMetadata(Checklist, {
+	title: "Checklist",
+	description: "The entries still to do, ticked off where they stand.",
 });
+
+export const layout = defineLayout({ role: "collection", size: { preferredWidth: 320, preferredHeight: "auto" } });
+
+export default Checklist;
 ```
 
 The engine compiles it in the vault; nothing is built ahead of time. [Add your own widget](docs/catalogue/add-your-own-widget.md) and [publish it](docs/catalogue/publish-your-widget.md) walk through the rest.

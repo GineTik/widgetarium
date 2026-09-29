@@ -121,12 +121,35 @@ what you wrote. Three laws are a gate and the rest is yours — `surfaces.md` ha
 has whole boards to build like.
 
 **9. A widget is built from the kit, always.** Colours, radii and type come from `--wg-kit-*` tokens;
-a hardcoded colour is a defect. What the kit draws you take from `widgetarium/kit`, never draw again:
-`Badge`, `Heading`, `Button`, `ActionButton`, `Tabs`, `ProgressBar`, `StatusProgress`, `ShowMore`, `Spinner`, `Emblem`, `Icon`,
-`Rows`, `Grid`, `Card`, `Layout` — `widget.md` lists them. Hand-drawn markup is allowed in two cases
-only: the person asked for it outright, or the kit has no component, or no part of one, for what you
-need — and then only that missing part is yours, still on the kit's tokens. A second badge written by
-hand is a defect the same way a hex is.
+a hardcoded colour is a defect. What the kit draws you take from `widgetarium/kit` (charts from
+`widgetarium/kit/charts`), never draw again. Pick by what the design says, and `widget.md` has how
+each one is written:
+
+| The design says                            | Take                                                                    |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| a number, and how it moved                 | the number, `Badge` in a tone for the change, `Sparkline` for the trend |
+| values over time a person reads points off | `ChartContainer` with `AreaChart`, `BarChart`, `LineChart`              |
+| the parts of a whole                       | `PieChart`, or a `ProgressBar` per part                                 |
+| how far along, against a goal              | `ProgressBar`; `StatusProgress` for not started, going, done            |
+| records compared field by field            | `DataTable`; `Table` parts only for what it cannot draw                 |
+| a short list, a grid of things             | `Rows`, `List` and `Row`, `Grid`, `Card`                                |
+| more rows than fit                         | `Pagination` for pages, `ShowMore` for a list that grows                |
+| not read yet                               | `Skeleton` of the kind that is coming                                   |
+| a state, a category, a count               | `Badge`, `Count`                                                        |
+| a person, a company, a project             | `Emblem`, `PlaceholderMark` when there is no picture                    |
+| one of a few, another view                 | `Segmented`, `Tabs`; `Select` for many                                  |
+| on or off, a date, text                    | `Switch`, `Calendar`, `Field`, `TextArea`, `MarkdownEditor`             |
+| an action, a menu of actions               | `Button`, `IconButton`, `Popover` with `PopoverItem`                    |
+| code, an icon, a face                      | `CodeBlock`, `Icon`, `Emoji` from `widgetarium/kit/emojis`              |
+
+**A number that changes over time is drawn with its trend.** A balance, a weight, a count per day, a
+total over weeks: whenever the records carry dates, the indicator shows a `Sparkline` of the recent
+points under or beside the number, and the change since the last period in a `Badge` whose tone says
+whether it is good. A bare number that has a history is a design left half done.
+
+Hand-drawn markup is allowed in two cases only: the person asked for it outright, or the kit has no
+component, or no part of one, for what you need — and then only that missing part is yours, still on
+the kit's tokens. A second badge written by hand is a defect the same way a hex is.
 
 **10. A widget you wrote is checked before it is placed.** `node {tool} check <id>` exits 1 while
 anything is wrong.
@@ -143,7 +166,8 @@ bound, a prop left on its default — none of those are finished.
 draws: an `indicator` draws no rows, a `collection` draws no figure over them, a `control` draws no
 list it filters. Where one design block needs two roles, it is two widgets in one section. A figure
 against a target and the rows it adds up are two widgets; a chart and the numbers beside it are two;
-a day's totals and the meals of that day are two.
+a day's totals and the meals of that day are two. A `Sparkline` is not a chart: it has no axes and
+is read as one shape, so it belongs to the indicator whose number it explains.
 
 ```
 wrong — one widget, two roles           right — one section, two widgets

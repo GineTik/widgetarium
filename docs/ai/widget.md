@@ -15,125 +15,241 @@ two widgets reading the same folder, never one that draws both. Shared arithmeti
 
 The path names it: `@you/clock` is the id, `@you` the scope. Save and it appears — no publish, no
 reload. The engine compiles the TSX into `build/` beside your file. **Never write anything in
-`build/`.** A scope may also hold `lib.js`, `tokens.css` and `theme.css`, shared by its widgets.
-Beside the scopes the plugin lays `tsconfig.json` and `types/` — written, never edited, and what
-makes an editor type every prop from the manifest instead of handing you `any`.
+`build/`.** A widget is TypeScript: `widget.tsx`, or `widget.ts` when it draws no JSX. A
+`widget.jsx` or `widget.js` is refused and draws its refusal instead; rename it to `widget.tsx`,
+which builds as it stands. A scope may also hold `lib.js`, `tokens.css` and `theme.css`, shared by its widgets.
 
-## The manifest is one value in the file
+**A widget may split its code into sibling modules.** `widget.tsx` stays the entry and imports the
+rest relatively — `import { columns } from "./board-state"`, `"./parts/card"` — any `.ts` or `.tsx`
+in the folder or a folder under it. The engine builds, installs and checks them as one widget. Logic
+only this widget uses lives in its own folder; the scope's `lib.js` is for what several widgets share.
+
+Beside the scopes the plugin lays `tsconfig.json` and `types/` — written, never edited, and what
+makes an editor type every prop from its declaration instead of handing you `any`.
+
+## Props, metadata and layout
 
 ```tsx
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import type { VaultRecord } from "widgetarium";
+import {
+	ICrudGateway,
+	IHost,
+	IValueGateway,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
 
-type Entry = VaultRecord & { title?: string | null; done?: boolean | null };
+const EntrySchema = VaultRecordSchema.extend({
+	title: z.string().optional(),
+	done: z
+		.boolean()
+		.optional()
+		.meta({ aka: ["complete", "finished"] }),
+});
 
-export const manifest = defineManifest({
-	title: "Checklist",
-	description: "The entries still to do, ticked off where they stand.",
-	keywords: ["checklist", "todo", "tasks"],
-	role: "collection",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
-	props: {
-		entries: defineProp<Entry[]>()({
-			hint: "One note per entry.",
-			default: [],
-			writes: ["update"],
-			describes: { title: "Title", done: { label: "Done", type: "boolean" } },
-		}),
-		heading: defineProp<string>()({ default: "To do" }),
+const Checklist = createWidget({
+	inject: {
+		entries: ICrudGateway.of(EntrySchema).pick("list", "update"),
+		heading: IValueGateway.of(z.string().default("To do")).pick("get"),
+		host: IHost,
+	},
+	draw: ({ entries, heading }) => {
+		const { data } = useData(entries.list, { limit: 20 });
+		return (
+			<>
+				<h3>{heading}</h3>
+				{data.map((entry) => (
+					<div key={entry.ref}>{entry.title}</div>
+				))}
+			</>
+		);
 	},
 });
 
-export default createWidget(manifest, ({ entries, heading }) => {
-	const { data } = useData(entries.list);
-	const said = String(useData(heading.get).data ?? "");
-	return (
-		<>
-			<h3>{said}</h3>
-			{data.map((entry) => (
-				<div key={entry.ref}>{entry.title}</div>
-			))}
-		</>
-	);
+export const metadata = defineMetadata(Checklist, {
+	title: "Checklist",
+	description: "The entries still to do, ticked off where they stand.",
+	keywords: ["checklist", "todo", "tasks"],
+	props: { entries: { hint: "One note per entry.", describes: { done: { label: "Done", type: "boolean" } } } },
+});
+
+export const layout = defineLayout({
+	role: "collection",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
+});
+
+export default Checklist;
+```
+
+**`createWidget({ inject, draw })` declares and draws, `metadata` describes, `layout` places.**
+`inject` holds the gateways the widget reads and may be left out when it reads none; `draw` gets
+them typed. `defineMetadata` takes the created widget. Never annotate `inject` or `draw` with a type:
+that erases what the component is typed from. Code outside `draw` that needs the prop types keeps
+`const props = defineProps({...})`, reads `DrawnProps<typeof props>` and passes `inject: props`.
+
+### A prop is a gateway class
+
+| Declared                                                    | Arrives as                                                |
+| ----------------------------------------------------------- | --------------------------------------------------------- |
+| `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema            |
+| `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                       |
+| `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                               |
+| `IListGateway.of(RowSchema, { where, sort, default })`      | a gateway that reads: `list`, `get`                       |
+| `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`     | a gateway with every verb, or only the ones picked        |
+| `ISlot.of<Given>({ default, surface, gives })`              | a function drawing the widget in the slot, or `null`      |
+| `IMounts.of({ default: [] })`                               | `MountEntry[]`, each drawn with `<Mounted entry={...} />` |
+| `IHost`, `INavigator`, `IHere`                              | what the engine hands over, only when declared            |
+| `IReader`, `IContent`                                       | the passage and its reader, for an `inline` widget        |
+| `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer   |
+
+**The schema is the type and the default.** A value's schema must carry `.default()`; one without is
+refused. The default is drawn only when a value is missing, never in place of a wrong one. The
+built-in gateways check what they read against the schema through `context.parse`: a record that
+does not fit is left out and reported on the red "!" beside the prop in the settings window.
+`useData` answers `data`, never a list of refused rows. `z.enum([...])` becomes the options a person
+picks from. A row schema is `VaultRecordSchema.extend({...})` for notes, or any `z.object`; `ref` in
+it is typed `RecordRef` or left out.
+
+**A field's other names live in the schema.** `done: z.boolean().optional().meta({ aka: ["complete"] })`
+lets a note holding `complete:` answer for `done`. An `aka` maps a field only when the record has no
+field of its own name, and it is a list: `aka: "complete"` does not compile.
+
+**`.pick(...)` is the widget asking; `allow` on the tile is the person answering.** Without `.pick`
+a gateway has every method of its interface; with it, only the ones named, reads included, so a
+collection that reads and writes picks `"list"` beside its writes. A value picked only `"get"` arrives
+as the plain value. A verb not picked does not exist on the gateway at compile time. A collection that picked
+`create` also has `createMany`, `update` has `updateMany`, `remove` has `removeMany`, and `create`
+with `update` has `upsert({ ref, data })`: each answers `{ done, failed }` and never stops at the
+first failure.
+
+**A value takes no options in `.of()`; its metadata names the source it starts from.** The widget
+never picks a row or falls back itself: `props.<name>.source` names a host implementation, and that
+implementation does the picking. Sibling props are named by their prop name:
+
+```tsx
+const props = defineProps({
+	tabs: IListGateway.of(TabSchema),
+	selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+	board: IValueGateway.of(BoardSchema).pick("get"),
+});
+
+export const metadata = defineMetadata(props, {
+	title: "Board",
+	description: "…",
+	props: {
+		selection: {
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "tabs", field: "name", whenNothingPicked: "first" },
+			},
+		},
+		board: {
+			source: {
+				implementation: "@core/selected-row",
+				fields: { rows: "tabs", picked: "selection", field: "name", whenNothingPicked: "first" },
+			},
+		},
+	},
 });
 ```
 
-**The type a prop holds is what it is.** An array is a collection, anything else a value. The
-component takes props anonymously and annotates nothing — it is typed from the manifest.
+`@core/selection` is which row of `rows` is chosen, kept while the screen is open; `field` (or
+`fieldFrom`, a prop holding the field's name) says which field of the row it holds, and
+`whenNothingPicked` is `"none"` unless written. `@core/selected-row` is the row that `picked` names;
+its `whenNothingPicked` is `"first"` unless written. `of()` given options for a value is refused.
+`keep: "screen"` in the prop's metadata, `props: { open: { keep: "screen" } }`, makes a value a fact
+about this screen that never reaches the note.
 
-**The two parentheses are what pays for that.** TypeScript stops inferring once a type argument is
-written by hand, so the type goes in the first call and everything read literally — `writes` above
-all — in the second. No wrapper can hide this.
+**An own verb is not declarable yet.** `pick` refuses a verb its interface does not have, and a
+class extending the declared one is refused as an implementation. Compose the verbs you picked
+inside the widget instead: `const finish = (ref) => tasks.update({ ref, data: { done: true } })`.
 
-**Never write a gateway type a second time.** `WidgetProps<typeof manifest>` is the whole set: every
-prop plus what the engine hands over (`host`, `here`, `navigator`, `slots`, and `content` for an
-inline widget).
+**The component is an ordinary one.** `<Checklist heading="Today" entries={[{ title: "Write" }]} />`
+draws outside the board too: an implementation passed in is used as it stands, and a plain value or
+array is handed to the interface's default implementation — `RowsInMemoryGateway` for a list,
+`ValueInMemoryGateway` for a value — so a write to it lands. An interface of your own names its own
+default, and one lacking a verb of the interface is refused:
 
-## Props are gateways, all of them
-
-There are no settings. A prop is a collection over a list or a value over one thing, bound by the
-person to a folder, a file, a typed value or another tile's prop.
-
-| Written                                         | Is                                                   |
-| ----------------------------------------------- | ---------------------------------------------------- |
-| `defineProp<Entry[]>()({ default: [] })`        | a list of rows                                       |
-| `defineProp<string>()`, `<number>`, `<boolean>` | a primitive: a field, a number field or a switch     |
-| `control: "text" \| "emoji" \| "icon"`          | the same primitive drawn otherwise                   |
-| `defineProp<Shape>()({ default: {...} })`       | any other value, edited as JSON                      |
-| `keep: "screen"`                                | a fact about this screen that never reaches the note |
-| `picks: "selection", of: "tabs"`                | the row that pick names                              |
-
-| Key             | Means                                                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `label`, `hint` | what the settings window shows; `label` is read off the key when not written                                                                                                         |
-| `writes`        | only what the widget changes: `["create", "update"]`, or `{ archive: verb<Input>() }` for its own. Reads are always there. A verb missing here does not exist                        |
-| `default`       | the value itself                                                                                                                                                                     |
-| `describes`     | for a collection: the row's fields. A string is a label; an object may carry `label`, `type`, `required`, `aka`. **A field matches a note's properties exactly when it names `aka`** |
-| `where`, `sort` | conditions and order the widget always reads through; a condition may `wants` another widget's prop                                                                                  |
-| `aka`           | every name this prop had before, newest last                                                                                                                                         |
-| `isVisible`     | a function over every prop, answering whether the settings window draws this one at all                                                                                              |
-| `options`       | the answers a person picks between: `[{ value, label }]`. The window draws them as a list; nothing else is needed and no second prop holds them                                      |
-
-**`isVisible` is how one switch changes what the window asks for.** It is handed every prop of this
-widget as `{ kind, control, binding, isSet, value }` for a value and `{ ..., rows }` for a
-collection, reading what the person typed and falling back to the default, so a rule is written
-against the tile as it stands rather than against data that has to be fetched:
-
-```ts
-mode: defineProp<string>()({
-	default: "placed",
-	options: [
-		{ value: "placed", label: "Widgets I place" },
-		{ value: "per-row", label: "One widget per row" },
-	],
-}),
-items: defineProp<Row[]>()({ default: [], isVisible: (props) => props.mode.value === "per-row" }),
+```tsx
+defineDefaultImplementation(IBoardsGateway, BoardsInMemoryGateway);
 ```
 
-**A choice is `options`, never a second prop holding the answers.** `of:` binds a prop to a box the
-**widget** fills — a tab a person pressed, a card they opened — and a box draws nothing in the
-settings window, so a configuration written that way cannot be changed there at all.
+Every implementation is constructed `new XGateway(fields, context)`: `fields` are what the person or
+the code gave, `context` is what the engine hands over. `context.parse(held, { label, ref })` checks
+a record against the widget's schema and answers it parsed, or `null` after reporting it;
+`context.report({ label, ref, issues })` reports anything else. Reports show as the red "!" beside
+the prop in the settings window; the widget never sees them.
 
-The same key works on a `slots` or a `mounts` entry, which is what lets one switch put a slot away
-and bring a mount list out. A rule that throws draws the thing it would have hidden and says so in
-the console — a settings window with a prop missing and no reason is worse than one prop too many.
-The function lives in the code, so `manifest.generated.json` does not carry it: a catalogue that has
-never run the widget draws every prop.
+### Metadata is what a person reads
+
+`title`, `description` (the one question the widget answers), `keywords`, `preview` (sample props the
+catalogue card draws with), and per prop:
+
+| Key             | Means                                                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `label`, `hint` | what the settings window shows; `label` is read off the key when not written                                                                                                                           |
+| `describes`     | for a collection: the row's fields. A string is a label; an object may carry `label`, `hint`, `type`, `many`, `required`. A field's `aka` belongs to the schema, and `describes` naming one is refused |
+| `aka`           | every name this prop had before, newest last                                                                                                                                                           |
+| `control`       | only when the type does not say how to draw it: `text`, `emoji`, `icon`                                                                                                                                |
+| `options`       | the answers a person picks between: `[{ value, label }]`                                                                                                                                               |
+| `design`        | the prop belongs on the Design tab                                                                                                                                                                     |
+| `wants`         | the other widget's prop this one is usually bound to                                                                                                                                                   |
+| `source`        | where a value starts from: `{ implementation: "@core/selection" \| "@core/selected-row", fields }`, the host implementation that picks the row                                                         |
+| `isVisible`     | a function over every prop, answering whether the settings window draws this one                                                                                                                       |
+
+Metadata naming a prop `inject` does not declare, or one the engine hands over, is refused.
+
+**`isVisible` is how one switch changes what the window asks for.** It is handed every prop as
+`{ kind, control, binding, isSet, value }` for a value and `{ ..., rows }` for a collection, reading
+what the person typed and falling back to the default. It works on a slot or a mount too. A rule that
+throws draws the thing it would have hidden and says so in the console. The function is code, so
+`manifest.generated.json` does not carry it.
+
+**A choice is `options`, never a second prop holding the answers.** A `source` binds a prop to a box the
+widget fills — a tab pressed, a card opened — and a box draws nothing in the settings window.
+
+### Layout is where it stands
+
+- `role` — required, and one. A widget drawing two roles (a figure and its rows) is two widgets —
+  `brief.md` law 14.
+- `size` — required. **`preferredWidth` and `preferredHeight` are the size the widget prefers, never
+  a size it is promised.** The width is a ceiling the cell narrows under, `"full"` takes the whole
+  cell; the height is where a short widget is drawn to, and one with more to draw grows past it,
+  `"auto"` is as tall as it draws. `keepsRatio: true` holds height to width. `at` steps by the width
+  of the **region**, never the screen: `at: [{ belowPx: 520, preferredWidth: "full" }]`.
+  `collapseBelowPx` and `stackBelowPx` are the floors a row stacks and a widget collapses at. Use
+  `useNarrowed`, never a media query.
+- `inline: true` — a widget that stands in text; declare `IContent` and `IReader`.
+
+### A migration, when tiles cannot follow alone
+
+```tsx
+export const migrations = defineMigrations([
+	{
+		from: { label: IValueGateway.of(z.string().default("")).pick("get") },
+		run: (old) => ({ label: { from: "typed", value: String(old.label?.value ?? "").length } }),
+	},
+]);
+```
+
+`from` is the props as an older version declared them; a tile made with exactly those moves by a
+press, through `run`.
+
+### A default is never a path
 
 **A default never names a file or a folder, at any depth, under any spelling. This is a security
 law.** A path in a default would let a widget read a person's notes before they chose anything, or
-delete files on first render. `defineManifest` refuses `path` or `ref` in an object, in an array's
-rows, or nested inside either, and renaming the field is not a fix.
-
-A prop added after the first release must carry a default. A row type may not spell `ref` as a plain
-string — `ref` is the address the engine mints.
+delete files on first render. `path` or `ref` in a default — in an object, in an array's rows, or
+nested inside either — is refused, and renaming the field is not a fix.
 
 ## Reading and writing
 
 ```tsx
 const { data, total } = useData(entries.list); // data is always an array
 const page = useData(entries.list, { offset: 20, limit: 10 });
-const { data } = useData(heading.get); // a value
 if (canDo(entries.update)) await entries.update({ ref, data: { done: true } });
 ```
 
@@ -545,32 +661,6 @@ same behind one word, so a design changes by changing it. The rules they follow 
 tile already wearing a `group` leaves you one plate and the next is refused: it paints nothing and
 says why in the console. A `kind`, `type`, `tone`, `side` or `across` the kit never had is refused
 the same way — the default is drawn and the console names what it took instead.
-
-## The rest of the manifest
-
-- `title`, `description`, `keywords` — what the catalogue searches. `description` is the one question
-  the widget answers.
-- `role` — required, and one. Without one the widget is never given a surface; a widget drawing two
-  roles (a figure and its rows) is two widgets — `brief.md` law 14.
-- `slots` — the holes other widgets fill:
-  `card: { of: "widget", default: "@default/task-card", surface: "group", gives: { ... } }`.
-- `mounts` — named lists of widgets the person places, each with its own settings. A mount's settings
-  are reached from the board itself while it is being edited, not only from the holder's window.
-- `size` — required. **`preferredWidth` and `preferredHeight` are the size the widget prefers, never a
-  size it is promised.** The widget is created at it and the engine leans toward it: the width is a
-  ceiling the cell narrows under when the region is narrower, `"full"` takes the whole cell; the
-  height is where a short widget is drawn to, and a widget with more to draw grows past it, `"auto"`
-  is as tall as it draws. `keepsRatio: true` holds height to width as the two numbers say. `at` steps
-  by the width of the **region** the widget stands in, never the screen, and switches at once, the way
-  a `max-width` query does: `at: [{ belowPx: 520, preferredWidth: "full" }]`. A widget that needs a
-  hard size bounds its own container in its sheet. `collapseBelowPx` and `stackBelowPx` stay the
-  floors a row stacks and a widget collapses at. Use `useNarrowed`, never a media query.
-- `preview` — sample props the catalogue card draws with.
-- `inline: true` — a widget that stands in text; it is handed `content` and `reader`.
-- `migrate` — `migration({ from: { ...old props }, run })` for a change tiles cannot follow alone.
-
-`manifest.generated.json` beside the widget is the same manifest written out for a catalogue that has
-not run the code. Never edit it.
 
 ## Before you say it is done
 

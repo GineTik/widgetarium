@@ -43,8 +43,8 @@ a widget is.
 `id` is the widget's own id and its first half is your pack — the row a person filters by in the
 catalogue. `path` is the folder inside the repository; `files` is what is taken from it. Anything
 else a card shows — the description, the keywords, the preview, the sizing — comes from the
-widget's own `manifest.json`, read from the folder `path` names, so the registry never carries a
-second copy of it.
+widget's own `manifest.generated.json`, written by `npm run manifest` from the widget's code and read
+from the folder `path` names, so the registry never carries a second copy of it.
 
 The registry lists folders, never code. When somebody presses Install, the repository's ref is
 resolved to a commit once, every file is taken at that commit, and both the commit and a hash per

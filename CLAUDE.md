@@ -5,6 +5,10 @@ widget for a line of text. `packages/kit` is TSX (JSX with the classic `h` facto
 `packages/core/src/gateway/` is TypeScript (`tsc --noEmit` gates it), the rest is untyped JS that dies
 in place rather than being typed. Widgets under `registry/` are `.tsx` compiled at runtime by
 sucrase (types stripped, never checked — the contract holds through `can()` and the engine, not tsc).
+**A widget is TypeScript or it is refused.** `SOURCE_FILES` in `packages/core/src/engine/widget-build.js`
+is `widget.tsx` and `widget.ts`; a folder holding only `widget.jsx` or `widget.js` is answered by
+`javascriptSourceRefusal` — on the tile, at install, in `publish`, `manifest` and `widgets.mjs` — with
+the rename that fixes it. A `widget.js` beside a TypeScript source is ignored, never read as a build.
 
 **The repository is an npm-workspaces monorepo, and the arrows between its parts point one way.**
 
@@ -58,44 +62,86 @@ measured in real Chrome by `tools/tree-test.mjs` against the viewport, and the d
 of its own. `is-page` stays a separate thing: `mode: expanded` changes the board's padding, a screen
 only claims height, and conflating them moved every drag measurement in the tree gate.
 
-**A widget describes itself with one value in its own file.** `export const manifest =
-defineManifest({ ... })` beside the component, and `export default createWidget(manifest, Component)`,
-whose component is anonymous and carries no props annotation — it is typed from the manifest.
+**A widget is a created component and two declarations, in TypeScript only, and it knows interfaces,
+never implementations.** `const Name = createWidget({ inject: {...}, draw })` — `inject` the gateway
+interfaces it reads, omitted when none — then `export const metadata = defineMetadata(Name, {...})`
+for everything a person reads, `export const layout = defineLayout({...})` for `role`, `size`,
+`inline` and `view`, and `export default Name`; `export const migrations = defineMigrations([...])`
+when a tile cannot follow a change alone. The old `createWidget(props, draw)` throws. Code outside
+`draw` that needs the prop types keeps `const props = defineProps({...})` and passes `inject: props`.
+All of it lives in `packages/core/src/gateway/declared.ts`. Each `define*` returns what it was given,
+typed and checked on its own line; `createWidget` builds the component that reads and caches
+(`define*` returns its input, `create*` builds something new). `manifestOfModule` turns the module
+into the one manifest shape the engine reads, and `tools/props-test.mjs` pins what every shipped
+widget resolves to. A `widget.jsx` or `widget.js` is refused with the command that renames it. The
+target is written down in https://claude.ai/artifact/RxMVaSunPzhiHGjTESozqT.
 
 ```tsx
-type Entry = { title: string; done?: boolean };
-
-export const manifest = defineManifest({
-	title: "Checklist",
-	description: "The entries still to do, ticked off where they stand.",
-	props: {
-		heading: defineProp<string>()({ default: "To do" }),
-		open: defineProp<boolean>()({ default: false, keep: "screen", writes: ["update"] }),
-		entries: defineProp<Entry[]>()({ default: [], writes: ["create", "update"], describes: { done: { aka: ["complete"] } } }),
-	},
+const EntrySchema = VaultRecordSchema.extend({
+	title: z.string(),
+	done: z.boolean().optional().meta({ aka: ["complete"] }),
 });
 
-export default createWidget(manifest, ({ heading, entries, open }) => { ... });
+const Checklist = createWidget({
+	inject: {
+		heading: IValueGateway.of(z.string().default("To do")).pick("get"),
+		entries: ICrudGateway.of(EntrySchema).pick("list", "create", "update"),
+		host: IHost,
+	},
+	draw: ({ heading, entries }) => { ... },
+});
+
+export const metadata = defineMetadata(Checklist, { ... });
+export default Checklist;
 ```
 
-Every prop is `defineProp<Held>()({ ... })` from `packages/core/src/gateway/manifest.ts`, and **the type it holds
-decides what it is**: an array is a collection, anything else a value. What the prop carries is data,
-never a second builder — `control` only when the drawing is not obvious from the type (`text`,
-`emoji`, `icon`), `keep: "screen"` for a value that never reaches the note, `of`/`picks` for a prop
-that names a row of another, `default` always. `label` is read off the key (`archivedAt` → "Archived
-at") and written only when the key lies. `aka` is every other name the prop answered to. **The two
-parentheses are not decoration**: TypeScript stops inferring the rest of a call once a type argument
-is given by hand, so the type goes in the first call and the literal `writes` in the second. Nothing
-can be hidden behind a wrapper — a wrapper hides execution, not inference.
+**Every gateway is an abstract class under `IBaseGateway`, named `I*Gateway`; an implementation is a
+class named `*Gateway` that extends one.** `IValueGateway`, `IListGateway`, `ICrudGateway` and any
+interface extending them inherit `IBaseGateway.of`; `defineProps` refuses a class outside the root
+and refuses an implementation where an interface belongs. `.of(schema)` types every verb from one
+zod schema; `.of({ read, create, update, other })` types each verb from its own, `other` standing for
+every verb not named. Without `.of` an interface is untyped (`unknown`) — there is no generic form.
+The compiler holds an implementation's reads in its own class (`TS2515`) and its picked writes where it
+is given to a prop (`Implementation<typeof declared>`). `ISlot.of`, `IMounts.of`, `IHost`,
+`INavigator`, `IHere`, `IReader`, `IContent`, `ICatalogue`, `IFoldIntoGroup` and `IConfigureMounts` are
+what the host hands over, and a widget gets one only by declaring it. A zod schema value is named
+`*Schema` and its type carries no suffix; a record's address is `RecordRef`, one branded name.
 
-**`writes` is the widget asking, `allow` is the person answering.** A prop declares only what it
-changes; `list` and `get` are never declared and always there. A verb missing from `writes` does not
-exist on the gateway **at compile time** (`entries.remove` is `TS2339`), and an own verb is declared
-typed: `writes: { archive: verb<{ ref: RecordRef }>() }`.
+**Values are checked where they cross, never in the widget.** The built-in gateways check what they
+read against the widget's schema through `context.parse` (`gateway/parsed.ts`, `gateway/problems.ts`):
+a record that does not fit is left out and reported to the settings window's red "!" beside the
+prop, and `useData` carries no `refused`. The default is drawn only when a value is missing, never
+in place of a wrong one. `createWidget` wraps whatever it is given — an engine gateway, any class
+extending an interface, or a plain value or array (`packages/core/src/declared-widget.js`) — and a
+`create` or `update` the schema refuses rejects before it reaches the implementation. A value picked
+only `"get"` arrives as the value, `{ value, update }` when it picked `"get", "update"`. After any write it handed out the runtime
+re-reads that gateway; `subscribe` is optional and only means "read again".
 
-**`describes` is what the type could not say.** One object keyed by the row's fields, holding the
-label a person reads, the `aka` a vault note may use for it and the `type` the engine matches fields
-by. It replaced both `item.fields` and `needs`, which described the same row twice.
+**`.pick(...)` is the widget asking, `allow` is the person answering.** Without `.pick` a gateway has
+every method of its interface; with it, only the ones named, reads included. A verb not picked does not exist on the gateway **at compile time** (`entries.remove`
+is `TS2339`). A picked `create`, `update` or `remove` brings `createMany`, `updateMany` or
+`removeMany`, and `create` with `update` brings `upsert` (`packages/core/src/gateway/many.ts`): each
+answers `{ done, failed }`, and an implementation that has its own is used instead.
+
+**Still to build: an implementation holds every piece of logic.** A selection has left the
+declaration: `.of()` takes no options for a value, and the widget's metadata names where the prop
+starts from — `props.<name>.source = { implementation, fields }`, `@core/selection` for which row is
+chosen and `@core/selected-row` for the row a sibling picks, resolved by `SelectionGateway` and
+`SelectedRowGateway` in `packages/core/src/engine/host-gateways.js`; `fields` name sibling props by
+their prop name. What still sits in declarations is `wants` and a declared list `where`/`sort`; they
+leave for gateway implementations the Obsidian host offers per prop (`FolderGateway`,
+`TypedValueGateway`, `ScreenStateGateway`), each registered with `defineGatewayMetadata` and the fields
+the settings window draws from its constructor's schema. `keep: "screen"` is said in `defineMetadata`
+(`props.<name>.keep`), never in `.of()`; without it the value is kept in the tile. A widget then draws states and formats
+values; it never picks a row, falls back to the first, maps fields or filters by another widget. A
+relation is the target's id, written by the widget that creates the record.
+
+**`describes` in metadata is what the schema could not say.** One object keyed by the row's fields, holding the
+label a person reads and the `type` the engine matches fields by. The `aka` a vault note may use for
+a field lives in the schema, `done: z.number().optional().meta({ aka: ["kept"] })`, maps the field
+only when the record has no field of its own name, and is merged into `describes` by the manifest
+build (`packages/core/src/gateway/written.ts`); `describes` naming `aka` throws. A prop's own `aka`,
+the names the prop had, stays in metadata. It replaced both `item.fields` and `needs`, which described the same row twice.
 Four readers, each drawing a **different** conclusion from it, and no two of them ever compute the
 same answer: `describedFields` and `needsOf` in `packages/core/src/gateway/props.js` — the field list the settings
 window draws, and the fields that take part in matching a note's properties — `inputsOfProp` in
@@ -108,7 +154,7 @@ only tells the settings window how to draw it.
 **A row is the record, and `ref` is its address.** `Row<T> = T & { ref }` — there is no `{ ref, value }`
 wrapper, so a widget writes `entry.title`, keys by `entry.ref`, and `useData` answers with `data`
 alone: an array for a list, the value for a value, `total` beside it. `ref` in a row type must be
-typed `RecordRef` or left out, and `defineManifest` refuses a described or defaulted `ref` outright.
+typed `RecordRef` or left out, and `defineProps` and `defineMetadata` refuse a described or defaulted `ref` outright.
 `rowOf` and `valueIn` in `packages/core/src/gateway/create.ts` are the only places an address is put on or taken
 off. A list of primitives is the one exception and keeps `{ value, ref }`, because a string has
 nowhere else to hold itself.
@@ -156,8 +202,7 @@ to the engine. Everything the plugin still owns is the remote fetch. A vault who
 answers with only what it already holds is what makes an agent write a widget that exists.
 
 `manifestOf` in `packages/core/src/engine/catalogue-index.js` is the one place a declaration becomes the manifest
-the engine reads; an old `createWidget(component, { props })` still passes through `legacyProp` there
-until the last shipped widget moves.
+the engine reads.
 
 **A widget folder is typed wherever it stands.** The repo has `registry/tsconfig.json`, so an editor
 opening a widget resolves `widgetarium` instead of reporting `TS2307` and handing every prop `any` —
@@ -204,7 +249,7 @@ destructive verb could then delete files on first render, with no binding made, 
 nothing to undo. The person names the path in the settings window, and only then does the widget
 touch anything. That order is the whole protection, and a default naming a path removes it.
 
-`defineManifest` refuses it: `carriesKey` in `packages/core/src/gateway/manifest.ts` walks a default to any depth
+The manifest is refused: `carriesKey` in `packages/core/src/gateway/manifest.ts` walks a default to any depth
 and refuses `path` in an object, in an array's rows, or nested inside either. `ref` is refused the
 same way, because a row's address is minted by the engine. Measured before the walk was added — the
 two checks used to be mirror images of each other's holes: `path` was caught only on a plain object,
@@ -226,7 +271,7 @@ from a repository, a bare id for one that lives in the vault; `widgetKeyOf` in
 with what is installed by `packages/core/src/engine/compatibility.js`: a compatible one replaces the files in place
 and the generation absorbs its commit; one that breaks tiles — a removed or reshaped prop, a changed
 default, a rename without `aka` — installs beside it as `@scope/name@<commit>`. A tile moves to a
-newer generation only by a press, through the widget's `migration` when one covers the old props. A
+newer generation only by a press, through the widget's `migrations` when one covers the old props. A
 note naming a commit the vault lacks offers to install that version.
 
 ## The laws that cost the most to learn
@@ -239,7 +284,7 @@ path second. Duplicate ids come from **copies**, not from generation; the surviv
 path sorts first, detection is on read, and the re-mint is a write, so it waits for one.
 
 **There are no settings. Every prop is a gateway, primitives included.** A list of named things —
-tabs, views, columns, boards — is a `CollectionGateway`. A single thing is a `ValueGateway`, and the
+tabs, views, columns, boards — is an `IListGateway` or `ICrudGateway`. A single thing is an `IValueGateway`, and the
 card the build writes names what it holds: `{ "kind": "value", "control": "number" }`,
 and `line`, `text` and `boolean` alike. The control is what the settings window draws from — a
 switch for a boolean, a one-line field for a number or a `line`, an area resized downward for a `text`,
@@ -263,8 +308,9 @@ archive, reorder, delete — are written **once** over rows, and each storage su
 meaning three different things, slot versus mount, and archived columns living in two places.
 
 **A board is a record, and its columns are a field of it.** A widget that draws a board declares one
-prop — `{ "kind": "value", "picks": "<the selection prop>", "of": "<the collection>" }` — and the
-engine resolves it to the **row** that selection names, not to a field of that row. Archived is a
+prop — `{ "kind": "value", "source": { "implementation": "@core/selected-row", "fields": { "rows":
+"<the collection>", "picked": "<the selection prop>" } } }` — and the engine resolves it to the **row**
+that selection names, not to a field of that row. Archived is a
 field of the column (`archivedAt`), never a second list and never a map keyed by board name. A board
 with no note of its own answers from the row its tile keeps. There is no `board` bus and no `configureBoard`: the only board-wide
 command left is `foldIntoGroup`, because folding tiles into a group is an action, not data.
@@ -277,7 +323,7 @@ expressible, and the three named regions were not able to say it. Full decision 
 `docs/decisions.md`.
 
 **A widget prefers a size and is promised none.** Every manifest declares `size.preferredWidth`
-(pixels or `"full"`) and `size.preferredHeight` (pixels or `"auto"`) — `defineManifest` refuses one
+(pixels or `"full"`) and `size.preferredHeight` (pixels or `"auto"`) — `defineLayout` refuses one
 without — and may add `keepsRatio` and `at`, steps keyed by the width of the **region** it stands in
 (`regionPx` from `laidRegion`), never the screen, switching at once like a `max-width` query.
 `preferredSizeAt` in `packages/core/src/tree.js` picks the size for a region and `preferredSizeStyle` in
@@ -490,7 +536,9 @@ back, and a widget outside the range does not mount, install or draw. The number
 raising each are in `docs/decisions.md`; they live in `packages/core/src/version.js`.
 
 **The build is the engine's, and it runs on the person's machine.** A widget folder holds only what
-its author wrote; everything the engine makes lands in `build/` beside it — `widget.js` from the TSX,
+its author wrote — `widget.tsx`, the entry, and any sibling `.ts`/`.tsx` modules it imports
+relatively, nested folders included (`compileWidgetFolder` in `packages/core/src/engine/widget-build.js`
+makes them one program, and every one is a build input); everything the engine makes lands in `build/` beside it — `widget.js` from the TSX,
 `widget.css` when the sheet asked to be compiled — and a vault wears the built sheet in place of the
 author's. `tools/publish.mjs` is the author's check that it all builds, not the thing that builds it.
 What is built is a fact of its own: `lock.builds[id]` names the source, the compiler and a hash per
@@ -530,10 +578,9 @@ Remind the person of this list at the end of every finished task, until each is 
 - [Widget code cannot reach past its gateways](.tasks/widget-code-scanner/artifacts/task.md) — kit
   APIs for window events and portals, then a scanner refusing `window`, `document` and
   `ownerDocument` in widget source.
-- **What the engine hands over is declared too** — `host`, `navigator`, `here` and `slots` arrive
-  silently today. They belong in `props` beside the data, each declared by its own function
-  (`defineHost()`, `defineNavigator()`, `defineSlot()`), so a widget asks for what it uses and the
-  tile can answer. It is the same law as `writes`, one level up.
+- [Widgets know interfaces, implementations hold the logic](https://claude.ai/artifact/RxMVaSunPzhiHGjTESozqT)
+  — `I*` gateway interfaces, `defineGatewayImplementation`, the settings window's implementation
+  picker, the widgets off declared `where`/`sort` and `wants`, schemas renamed `*Schema`.
 
 ## Verification
 
