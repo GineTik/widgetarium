@@ -25,6 +25,10 @@ export function isBareFileName(name) {
 	return typeof name === "string" && name !== "" && !/[\\/]/.test(name) && name !== "." && name !== "..";
 }
 
+export function isPathInsideFolder(name) {
+	return isCleanRepositoryPath(name) && !name.split("/").includes("");
+}
+
 export function scopedName(id) {
 	const [scope, name] = String(id ?? "").split("/");
 	return isBareFileName(scope) && isBareFileName(name) ? `${scope}/${name}` : null;

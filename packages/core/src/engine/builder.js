@@ -1,12 +1,13 @@
 import { buildIsCurrent, buildRecord, withBuild, withModule } from "./widget-lock.js";
 import {
 	SHEET_FILES,
-	SOURCE_FILES,
 	buildFolder,
 	builtCodePath,
 	builtSheetPath,
-	compileWidget,
+	compileWidgetFolder,
+	modulesIn,
 	sourceFileIn,
+	widgetModulesUnder,
 } from "./widget-build.js";
 import { TAILWIND, TAILWIND_RANGE, importsTailwind, buildSheet, candidatesIn, servedContent } from "./tailwind.js";
 import { moduleFromBundle } from "./compiled-module.js";
@@ -15,7 +16,7 @@ export function compiledSource(files, folder) {
 	const from = sourceFileIn(files);
 	if (!from) return { ok: true, from: null, code: null, failure: null };
 	try {
-		return { ok: true, from, code: compileWidget(files[from], `${folder}/${from}`), failure: null };
+		return { ok: true, from, code: compileWidgetFolder(files, folder), failure: null };
 	} catch (failure) {
 		return {
 			ok: false,
@@ -66,7 +67,8 @@ export function createBuilder({ adapter, space }) {
 
 		async sourceAndSheetsAt(folder) {
 			const held = {};
-			for (const name of [...SOURCE_FILES, ...SHEET_FILES]) {
+			const modules = await widgetModulesUnder(folder, (at) => adapter.list(at));
+			for (const name of [...modules, ...SHEET_FILES]) {
 				const text = await readIfThere(adapter, `${folder}/${name}`);
 				if (text !== null) held[name] = text;
 			}
@@ -88,8 +90,8 @@ function refused(lock, failure) {
 }
 
 function inputNamesFor(folder, files) {
-	const from = sourceFileIn(files);
-	const names = from ? [from] : [];
+	if (!sourceFileIn(files)) return [];
+	const names = modulesIn(files);
 	for (const name of SHEET_FILES) {
 		if (typeof files?.[name] === "string") names.push(name);
 	}

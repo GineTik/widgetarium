@@ -1,5 +1,5 @@
 import { registryRefusal } from "../version.js";
-import { isBareFileName, isCleanRepositoryPath, scopedName } from "./github.js";
+import { isCleanRepositoryPath, isPathInsideFolder, scopedName } from "./github.js";
 import { hasStringId } from "./catalogue-index.js";
 
 export const REGISTRY_FILE = "widgetarium-registry.json";
@@ -58,14 +58,14 @@ function rowsIn(parsed, at) {
 
 function rowNamingAPlaceInsideItsOwnRepository(row) {
 	if (!pathStaysInside(row)) return null;
-	if (!filesAreBareNames(row)) return null;
+	if (!filesStayInside(row)) return null;
 	return { ...row, path: row.path ?? null, files: row.files ?? null };
 }
 
 const pathStaysInside = (row) => row.path === undefined || row.path === null || isCleanRepositoryPath(row.path);
 
-const filesAreBareNames = (row) =>
-	row.files === undefined || (Array.isArray(row.files) && row.files.every(isBareFileName));
+const filesStayInside = (row) =>
+	row.files === undefined || (Array.isArray(row.files) && row.files.every(isPathInsideFolder));
 
 function refuse(failure) {
 	return { refusal: failure, name: null, author: null, movedTo: null, rows: [] };

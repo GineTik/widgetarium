@@ -1,4 +1,35 @@
-const SAME_SHAPE_KEYS = ["kind", "control", "of", "picks", "field", "fieldFrom", "shape"];
+const SAME_SHAPE_KEYS = ["kind", "control", "source", "shape"];
+
+export function propChanges(fromProps = {}, toProps = {}) {
+	const changed = Object.entries(fromProps)
+		.map(([name, spec]) => changeOf(name, spec, toProps))
+		.filter(Boolean);
+	return [...changed, ...addedProps(fromProps, toProps)];
+}
+
+export function migrationFrom(manifest, fromProps) {
+	return (manifest?.migrate ?? []).find((step) => sameProps(step.from, fromProps)) ?? null;
+}
+
+export function compatibility(from, to) {
+	const fromProps = from?.props ?? {};
+	const changes = propChanges(fromProps, to?.props ?? {});
+	const breaking = changes.filter((change) => change.breaks);
+	const migration = migrationFrom(to, fromProps);
+	return {
+		isCompatible: breaking.length === 0,
+		changes,
+		breaking,
+		canMoveTiles: tilesCanMove(breaking, migration),
+		migration,
+	};
+}
+
+export function movedTileProps(props, verdict) {
+	const renamed = renamedConfig(props ?? {}, verdict.changes);
+	if (!verdict.migration) return renamed;
+	return { ...renamed, ...verdict.migration.run(renamed) };
+}
 
 const shapeOf = (spec) => JSON.stringify(SAME_SHAPE_KEYS.map((key) => spec?.[key] ?? null));
 
@@ -38,36 +69,11 @@ function addedProps(fromProps, toProps) {
 		}));
 }
 
-export function propChanges(fromProps = {}, toProps = {}) {
-	const changed = Object.entries(fromProps)
-		.map(([name, spec]) => changeOf(name, spec, toProps))
-		.filter(Boolean);
-	return [...changed, ...addedProps(fromProps, toProps)];
-}
-
 const sameProps = (from, props) =>
 	Object.keys(from ?? {}).length === Object.keys(props ?? {}).length &&
 	Object.entries(from ?? {}).every(([name, spec]) => props?.[name] && shapeOf(spec) === shapeOf(props[name]));
 
-export function migrationFrom(manifest, fromProps) {
-	return (manifest?.migrate ?? []).find((step) => sameProps(step.from, fromProps)) ?? null;
-}
-
 const tilesCanMove = (breaking, migration) => migration !== null || breaking.every((change) => change.implicit);
-
-export function compatibility(from, to) {
-	const fromProps = from?.props ?? {};
-	const changes = propChanges(fromProps, to?.props ?? {});
-	const breaking = changes.filter((change) => change.breaks);
-	const migration = migrationFrom(to, fromProps);
-	return {
-		isCompatible: breaking.length === 0,
-		changes,
-		breaking,
-		canMoveTiles: tilesCanMove(breaking, migration),
-		migration,
-	};
-}
 
 function renamedConfig(props, changes) {
 	const moved = { ...props };
@@ -77,10 +83,4 @@ function renamedConfig(props, changes) {
 		delete moved[change.prop];
 	}
 	return moved;
-}
-
-export function movedTileProps(props, verdict) {
-	const renamed = renamedConfig(props ?? {}, verdict.changes);
-	if (!verdict.migration) return renamed;
-	return { ...renamed, ...verdict.migration.run(renamed) };
 }

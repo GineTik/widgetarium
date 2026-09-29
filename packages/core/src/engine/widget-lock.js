@@ -1,25 +1,8 @@
 import { contentHash } from "./content-hash.js";
 import { nameIn } from "./modules.js";
+import { isWidgetModule } from "./widget-build.js";
 
-// WHAT IS ACTUALLY INSTALLED, pinned to a commit. Nothing here ever updates itself: an update is a
-// comparison a person presses, and a tag can be moved under its own name where a commit cannot.
 export const EMPTY_LOCK = { version: 1, widgets: {}, modules: {}, builds: {} };
-
-const asObject = (held) => (held && typeof held === "object" ? held : {});
-
-// TRADE-OFF: a build recorded inside a widget entry is read from there and written to builds, because what is installed and what is built are two facts and only one of them belongs to a repository
-function buildsIn(parsed) {
-	const held = {};
-	for (const [id, record] of Object.entries(asObject(parsed.builds))) held[id] = buildRead(record);
-	for (const [id, entry] of Object.entries(asObject(parsed.widgets))) {
-		if (entry?.build?.from && !held[id]) held[id] = buildRead(entry.build);
-	}
-	return held;
-}
-
-function buildRead(record) {
-	return { from: String(record?.from ?? ""), compiler: record?.compiler ?? null, inputs: asObject(record?.inputs) };
-}
 
 export function readLock(raw) {
 	const parsed = asObject(raw);
@@ -29,12 +12,6 @@ export function readLock(raw) {
 		modules: { ...asObject(parsed.modules) },
 		builds: buildsIn(parsed),
 	};
-}
-
-function hashesOf(texts) {
-	const hashes = {};
-	for (const [name, text] of Object.entries(texts ?? {})) hashes[name] = contentHash(text);
-	return hashes;
 }
 
 export function commitsOf(entry) {
@@ -61,24 +38,21 @@ export function buildRecord({ from, compiler, inputs }) {
 	return { from, compiler: compiler ?? null, inputs: hashesOf(inputs) };
 }
 
-export function buildMatchesSource(record, path, source) {
-	if (!record?.inputs || !(path in record.inputs)) return false;
-	return contentHash(source) === record.inputs[path];
+export function buildMatchesSources(record, folder, sources) {
+	if (!record?.inputs) return false;
+	const recorded = Object.keys(record.inputs).filter(
+		(path) => path.startsWith(`${folder}/`) && isWidgetModule(path.slice(folder.length + 1)),
+	);
+	const named = Object.entries(sources);
+	return (
+		recorded.length === named.length &&
+		named.every(([name, source]) => buildMatchesSource(record, `${folder}/${name}`, source))
+	);
 }
 
 export function buildIsCurrent(record, inputs) {
 	if (!record?.inputs) return false;
 	return Object.entries(record.inputs).every(([path, hash]) => contentHash(inputs?.[path]) === hash);
-}
-
-function lockWith(lock, changed) {
-	return {
-		version: 1,
-		widgets: { ...lock.widgets },
-		modules: { ...lock.modules },
-		builds: { ...lock.builds },
-		...changed,
-	};
 }
 
 export function withEntry(lock, id, entry) {
@@ -124,9 +98,44 @@ export function modulesByWidget(lock) {
 	return found;
 }
 
-// CONTEXT: an update offered against an edited widget must fork or refuse, never overwrite —
-// this is what tells the two apart
 export function isEdited(entry, files) {
 	if (!entry) return false;
 	return Object.entries(entry.files ?? {}).some(([name, hash]) => contentHash(files?.[name]) !== hash);
+}
+
+const asObject = (held) => (held && typeof held === "object" ? held : {});
+
+// TRADE-OFF: a build recorded inside a widget entry is read from there and written to builds, because what is installed and what is built are two facts and only one of them belongs to a repository
+function buildsIn(parsed) {
+	const held = {};
+	for (const [id, record] of Object.entries(asObject(parsed.builds))) held[id] = buildRead(record);
+	for (const [id, entry] of Object.entries(asObject(parsed.widgets))) {
+		if (entry?.build?.from && !held[id]) held[id] = buildRead(entry.build);
+	}
+	return held;
+}
+
+function buildRead(record) {
+	return { from: String(record?.from ?? ""), compiler: record?.compiler ?? null, inputs: asObject(record?.inputs) };
+}
+
+function hashesOf(texts) {
+	const hashes = {};
+	for (const [name, text] of Object.entries(texts ?? {})) hashes[name] = contentHash(text);
+	return hashes;
+}
+
+function buildMatchesSource(record, path, source) {
+	if (!(path in record.inputs)) return false;
+	return contentHash(source) === record.inputs[path];
+}
+
+function lockWith(lock, changed) {
+	return {
+		version: 1,
+		widgets: { ...lock.widgets },
+		modules: { ...lock.modules },
+		builds: { ...lock.builds },
+		...changed,
+	};
 }

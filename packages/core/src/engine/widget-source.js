@@ -1,10 +1,18 @@
 import { RECORD_FILES, readRecord, recordIn } from "./catalogue-index.js";
-import { SHEET_FILES, SOURCE_FILES, sourceFileIn } from "./widget-build.js";
+import {
+	JAVASCRIPT_SOURCE_FILES,
+	SHEET_FILES,
+	SOURCE_FILES,
+	javascriptSourceRefusal,
+	missingSourceRefusal,
+	sourceFileIn,
+	widgetModulesUnder,
+} from "./widget-build.js";
 import {
 	commitUrl,
 	idOfFolder,
-	isBareFileName,
 	isCleanRepositoryPath,
+	isPathInsideFolder,
 	rawUrl,
 	readRepository,
 	scopeRefusal,
@@ -104,7 +112,7 @@ async function listedInFolderTree(disk, source) {
 
 async function offeredFromFolder(disk, folder, origin, id) {
 	const held = await codeAt(disk, folder, scopeOf(folder));
-	if (!held.code) return null;
+	if (!held.sources) return sayJavascriptRefused(disk, folder);
 
 	const read = await recordAt(disk, folder);
 	const manifest = id ? { ...read, id } : read;
@@ -113,7 +121,7 @@ async function offeredFromFolder(disk, folder, origin, id) {
 		manifest,
 		installed: false,
 		origin,
-		commit: stampOf(await filesUnder(disk, folder, WIDGET_FILES)),
+		commit: stampOf(await widgetFilesAt(disk, folder)),
 		from: { folder },
 		...held,
 	};
@@ -202,12 +210,9 @@ function offeredFromRepository(manifest, folder, commit, source) {
 }
 
 async function codeAt(disk, folder, scope) {
-	const held = {};
-	for (const name of SOURCE_FILES) {
-		const at = `${folder}/${name}`;
-		if (!held.code && (await disk.exists(at))) Object.assign(held, { code: await disk.read(at), path: at });
-	}
-	if (!held.code) return held;
+	const sources = await filesUnder(disk, folder, [...new Set([...SOURCE_FILES, ...(await modulesAt(disk, folder))])]);
+	if (!sourceFileIn(sources)) return {};
+	const held = { sources, path: folder };
 
 	const libAt = `${scope}/lib.js`;
 	if (await disk.exists(libAt))
@@ -238,11 +243,38 @@ async function fromFolder({ disk }, listed) {
 	if (!disk) return refuse("this build cannot read a folder outside the vault");
 
 	const folder = listed.from.folder;
-	const files = await filesUnder(disk, folder, WIDGET_FILES);
-	if (!sourceFileIn(files)) return refuse(`${folder} holds no widget source`);
+	const files = await widgetFilesAt(disk, folder);
+	if (!sourceFileIn(files)) {
+		return refuse(missingSourceRefusal(await javascriptNamesAt(disk, folder), folder));
+	}
 
 	const scope = await filesUnder(disk, scopeOf(folder), SCOPE_FILES);
 	return answered({ files, scope, record: readRecord(listed.manifest, idOfFolder(folder)), commit: stampOf(files) });
+}
+
+async function javascriptNamesAt(disk, folder) {
+	return Object.keys(await filesUnder(disk, folder, JAVASCRIPT_SOURCE_FILES));
+}
+
+async function sayJavascriptRefused(disk, folder) {
+	const refusal = javascriptSourceRefusal(await javascriptNamesAt(disk, folder), folder);
+	if (refusal) console.error(`[widgetarium] ${refusal}`);
+	return null;
+}
+
+function listedSourceRefusal(wanted, manifest) {
+	if (SOURCE_FILES.some((name) => wanted.includes(name))) return null;
+	return javascriptSourceRefusal(wanted, manifest.path ?? manifest.id) ?? "the entry lists no widget source";
+}
+
+// TRADE-OFF: a door that cannot list files is offered the fixed names alone; every door the plugin builds lists them
+async function modulesAt(disk, folder) {
+	if (typeof disk.files !== "function") return [];
+	return widgetModulesUnder(folder, async (at) => ({ files: await disk.files(at), folders: await disk.folders(at) }));
+}
+
+async function widgetFilesAt(disk, folder) {
+	return filesUnder(disk, folder, [...new Set([...WIDGET_FILES, ...(await modulesAt(disk, folder))])]);
 }
 
 async function filesUnder(disk, folder, names) {
@@ -264,9 +296,10 @@ async function fromRepository(doors, manifest, onStep) {
 		return refuse(`"${manifest.path}" is not a place inside the repository`);
 
 	const wanted = Array.isArray(manifest.files) && manifest.files.length > 0 ? manifest.files : WIDGET_FILES;
-	const strays = wanted.filter((name) => !isBareFileName(name));
+	const strays = wanted.filter((name) => !isPathInsideFolder(name));
 	if (strays.length > 0) return refuse(`"${strays[0]}" is not a file name a widget folder can hold`);
-	if (!SOURCE_FILES.some((name) => wanted.includes(name))) return refuse("the entry lists no widget source");
+	const unlisted = listedSourceRefusal(wanted, manifest);
+	if (unlisted) return refuse(unlisted);
 
 	const fetched = await fetchedFrom(doors, repository, manifest, wanted, onStep);
 	if (!fetched.ok) return fetched;
