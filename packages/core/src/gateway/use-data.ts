@@ -13,26 +13,6 @@ export interface DataState<O> {
 	failure: string | null;
 }
 
-function metaOf(read: unknown): ActionMeta {
-	const meta = (read as { meta?: ActionMeta })?.meta;
-	if (!meta) throw new Error("useData wants a gateway verb such as tasks.list — this function is not one");
-	return meta;
-}
-
-function toDataState<O>(
-	entry: { status: string; data: unknown; failure: string | null },
-	listed: boolean,
-): DataState<O> {
-	const held = entry.data as { rows?: Row<unknown>[]; total?: number; duplicates?: DuplicateIdReport[] } | null;
-	return {
-		data: (listed ? (held?.rows ?? []) : entry.data) as Listed<O>,
-		total: held?.total ?? null,
-		duplicates: held?.duplicates ?? [],
-		isLoading: entry.status === "loading",
-		failure: entry.failure,
-	};
-}
-
 export function useData<I, O>(read: Action<I, O>, input?: I): DataState<O> {
 	const meta = metaOf(read);
 	const inputKey = stableKey(input);
@@ -45,4 +25,28 @@ export function useData<I, O>(read: Action<I, O>, input?: I): DataState<O> {
 	const entry = useSyncExternalStore(subscribe, () => gatewayCache.read(meta, input));
 
 	return useMemo(() => toDataState<O>(entry, meta.verb === "list"), [entry, meta.verb]);
+}
+
+function metaOf(read: unknown): ActionMeta {
+	const meta = (read as { meta?: ActionMeta })?.meta;
+	if (!meta) throw new Error("useData wants a gateway verb such as tasks.list — this function is not one");
+	return meta;
+}
+
+function toDataState<O>(
+	entry: { status: string; data: unknown; failure: string | null },
+	listed: boolean,
+): DataState<O> {
+	const held = entry.data as {
+		rows?: Row<unknown>[];
+		total?: number;
+		duplicates?: DuplicateIdReport[];
+	} | null;
+	return {
+		data: (listed ? (held?.rows ?? []) : entry.data) as Listed<O>,
+		total: held?.total ?? null,
+		duplicates: held?.duplicates ?? [],
+		isLoading: entry.status === "loading",
+		failure: entry.failure,
+	};
 }

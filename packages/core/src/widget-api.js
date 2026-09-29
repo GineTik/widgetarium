@@ -19,17 +19,18 @@ import { AppearanceOverride, rootedWidget, useBackgroundType, useWidgetRounded, 
 import { useData } from "./gateway/use-data";
 import { useNarrowed } from "./gateway/use-narrowed";
 import { useValue } from "./gateway/use-value";
+import { defineProps, isDeclaredProps } from "./gateway/declared";
+import { declaredWidget } from "./declared-widget.js";
 import * as kitModule from "@widgetarium/kit";
 import * as emojiModule from "@widgetarium/kit/emojis";
 
-// TODO: drop the (component, meta) form once every shipped widget declares defineManifest
-function createWidget(first, second) {
-	if (typeof first === "function") {
-		if (second) first.meta = second;
-		return first;
-	}
-	second.manifest = first;
-	return second;
+const NOT_A_WIDGET =
+	"createWidget takes what the widget injects and the function that draws it: createWidget({ inject: { ... }, draw: (props) => ... })";
+
+export function createWidget(widget) {
+	if (typeof widget?.draw !== "function") throw new Error(NOT_A_WIDGET);
+	const inject = widget.inject ?? {};
+	return declaredWidget(isDeclaredProps(inject) ? inject : defineProps(inject), widget.draw);
 }
 
 const Boundary = crashBoundary(h, Component);

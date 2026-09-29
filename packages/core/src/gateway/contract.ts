@@ -1,9 +1,10 @@
 import type { DefaultValueVerbs, DefaultVerbs, ResolvedOps, ResolvedValueOps } from "./needs";
-import type { DeclaredNeeds } from "./resolve-needs";
 
-export type Ref = string;
+declare const recordRef: unique symbol;
 
-export type Row<T> = T & { ref: Ref };
+export type RecordRef = string & { readonly [recordRef]: true };
+
+export type Row<T> = T & { ref: RecordRef };
 
 export type CanResult = { can: true } | { can: false; reason: string };
 
@@ -47,21 +48,20 @@ export interface DuplicateIdReport {
 export interface RowsResult<T> {
 	rows: Row<T>[];
 	total: number;
-	// CONTEXT: found on the read and carried — the re-mint waits for a write
 	duplicates?: DuplicateIdReport[];
 }
 
 export interface Patch<T> {
-	ref: Ref;
+	ref: RecordRef;
 	data: Partial<T>;
 }
 
 export interface CollectionOps<T> {
 	list: Action<Query | void, RowsResult<T>>;
-	get: Action<Ref, Row<T> | null>;
+	get: Action<RecordRef, Row<T> | null>;
 	create: Action<Partial<T>, Row<T> | null>;
 	update: Action<Patch<T>, Row<T> | null>;
-	remove: Action<Ref, void>;
+	remove: Action<RecordRef, void>;
 }
 
 export interface ValueOps<T> {
@@ -71,7 +71,7 @@ export interface ValueOps<T> {
 }
 
 export interface GatewayEvent {
-	refs?: Ref[];
+	refs?: RecordRef[];
 }
 
 export type Unsubscribe = () => void;
@@ -93,45 +93,3 @@ export const COLLECTION_VERBS = ["list", "get", "create", "update", "remove"] as
 export const VALUE_VERBS = ["get", "update", "remove"] as const;
 
 export type PropKind = "collection" | "value";
-export type PrimitiveType = "line" | "text" | "number" | "boolean";
-export type VerbNeed = "required" | "optional";
-
-export interface ItemField {
-	key: string;
-	label?: string;
-	type?: string;
-	required?: boolean;
-}
-
-export interface ItemShape {
-	fields: ItemField[];
-}
-
-export interface PropSpec {
-	kind: PropKind;
-	type?: PrimitiveType;
-	label?: string;
-	hint?: string;
-	of?: string;
-	picks?: string;
-	field?: string;
-	fieldFrom?: string;
-	fallback?: string;
-	shape?: string;
-	design?: boolean;
-	item?: ItemShape;
-	needs?: DeclaredNeeds;
-	wants?: string;
-	was?: string;
-	wasSetting?: boolean;
-	wasSettings?: Record<string, string>;
-	rowsFromText?: string;
-	verbs?: Record<string, VerbNeed>;
-	default?: unknown;
-}
-
-type DerivedFromTheType = "kind" | "verbs" | "needs";
-
-export type DeclaredPropSpec = Omit<PropSpec, DerivedFromTheType> & Partial<Pick<PropSpec, DerivedFromTheType>>;
-
-export type DeclaredPropSpecs = Record<string, DeclaredPropSpec>;

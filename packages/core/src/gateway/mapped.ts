@@ -1,4 +1,4 @@
-import type { CollectionGateway, FilterRow, Query, Row, RowsResult, SortRow } from "./contract";
+import type { CollectionGateway, FilterRow, Query, RecordRef, Row, RowsResult, SortRow } from "./contract";
 import { collectionGateway, valueIn } from "./create";
 import { fieldsOf, isBoolean, isDay, isNumber } from "./fields";
 import type { FieldReport } from "./fields";
@@ -9,6 +9,34 @@ import { resolveNeeds } from "./resolve-needs";
 import { stableKey } from "./cache";
 
 type Held = Record<string, unknown>;
+
+export function coercedOne(value: unknown, type: string): unknown {
+	if (value === undefined || value === null || value === "") return null;
+	if (type === "date") return asDay(value);
+	if (type === "number") return asNumber(value);
+	if (type === "boolean") return asBoolean(value);
+	return String(value);
+}
+
+export interface MappingSpec {
+	needs: DeclaredNeeds;
+	chosen?: ChosenProps;
+}
+
+type Handler = (input: never) => unknown;
+
+type Reading = () => Promise<Resolution>;
+
+export function mappedCollection<T>(base: CollectionGateway<T>, spec: MappingSpec): CollectionGateway<T> {
+	if (Object.keys(spec.needs).length === 0) return base;
+	const resolutionOf = rememberedResolution(base as unknown as CollectionGateway<unknown>, spec);
+	return collectionGateway<T>({
+		id: `${base.id}|needs?${stableKey({ needs: Object.keys(spec.needs), chosen: spec.chosen })}`,
+		handlers: mappedHandlers(base, spec, resolutionOf),
+		subscribe: base.subscribe,
+		announcesOwnWrites: false,
+	});
+}
 
 const isHeld = (value: unknown): value is Held => typeof value === "object" && value !== null;
 
@@ -24,14 +52,6 @@ function asNumber(value: unknown): number | null {
 function asBoolean(value: unknown): boolean | null {
 	if (!isBoolean(value)) return null;
 	return value === true || value === "true";
-}
-
-export function coercedOne(value: unknown, type: string): unknown {
-	if (value === undefined || value === null || value === "") return null;
-	if (type === "date") return asDay(value);
-	if (type === "number") return asNumber(value);
-	if (type === "boolean") return asBoolean(value);
-	return String(value);
 }
 
 function coerced(value: unknown, type: string, many: boolean): unknown {
@@ -85,11 +105,6 @@ function renamedPatch(data: unknown, needs: DeclaredNeeds, map: Record<string, s
 	return Object.keys(written).length ? { ...kept, props: written } : kept;
 }
 
-export interface MappingSpec {
-	needs: DeclaredNeeds;
-	chosen?: ChosenProps;
-}
-
 async function fieldsBehind(base: CollectionGateway<unknown>): Promise<FieldReport[]> {
 	const describe = (base as unknown as Held)["describe"] as (() => Promise<FieldReport[]>) & {
 		can(): { can: boolean };
@@ -109,10 +124,6 @@ function rememberedResolution(base: CollectionGateway<unknown>, spec: MappingSpe
 	};
 }
 
-type Handler = (input: never) => unknown;
-
-type Reading = () => Promise<Resolution>;
-
 function readsRows<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading) {
 	return async (query: Query | void): Promise<RowsResult<T>> => {
 		const { map } = await resolutionOf();
@@ -127,7 +138,7 @@ function readsRows<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionO
 }
 
 function readsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading) {
-	return async (ref: string): Promise<Row<T> | null> => {
+	return async (ref: RecordRef): Promise<Row<T> | null> => {
 		const { map } = await resolutionOf();
 		const found = await base.get(ref);
 		return found ? ({ ...(renamedValue(valueIn(found), spec.needs, map) as object), ref: found.ref } as Row<T>) : null;
@@ -135,7 +146,7 @@ function readsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf
 }
 
 function writesOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading) {
-	return async (input: { ref: string; data: Partial<T> }): Promise<Row<T> | null> => {
+	return async (input: { ref: RecordRef; data: Partial<T> }): Promise<Row<T> | null> => {
 		const { map } = await resolutionOf();
 		return base.update({ ref: input.ref, data: renamedPatch(input.data, spec.needs, map) as Partial<T> });
 	};
@@ -164,15 +175,4 @@ function mappedHandlers<T>(
 		if (delegated[verb]) handlers[verb] = mapped[verb] as Handler;
 	}
 	return handlers;
-}
-
-export function mappedCollection<T>(base: CollectionGateway<T>, spec: MappingSpec): CollectionGateway<T> {
-	if (Object.keys(spec.needs).length === 0) return base;
-	const resolutionOf = rememberedResolution(base as unknown as CollectionGateway<unknown>, spec);
-	return collectionGateway<T>({
-		id: `${base.id}|needs?${stableKey({ needs: Object.keys(spec.needs), chosen: spec.chosen })}`,
-		handlers: mappedHandlers(base, spec, resolutionOf),
-		subscribe: base.subscribe,
-		announcesOwnWrites: false,
-	});
 }

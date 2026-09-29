@@ -9,7 +9,8 @@
 	"dependencies": {
 		"@widgetarium/kit": "0.1.0",
 		"sucrase": "^3.35.0",
-		"yaml": "^2.9.0"
+		"yaml": "^2.9.0",
+		"zod": "^4.6.5"
 	},
 	"peerDependencies": {
 		"react": "^19.2.8",

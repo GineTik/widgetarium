@@ -1,22 +1,11 @@
-import type { Action, CollectionOps, FilterRow, GatewayBase, GatewayRef, SortRow, ValueOps } from "./contract";
-import { COLLECTION_VERBS } from "./contract";
+import type { CollectionOps, FilterRow, GatewayBase, GatewayRef, SortRow, ValueOps } from "./contract";
 
 export type DeclaredFilterRow = Omit<FilterRow, "spread"> & { spread?: GatewayRef | { wants: string } };
 
-declare const recordRef: unique symbol;
-
-export type RecordRef = string & { readonly [recordRef]: true };
+import type { RecordRef } from "./contract";
+export type { RecordRef };
 
 export type StandardVerb = "list" | "get" | "create" | "update" | "remove";
-
-declare const verbTypes: unique symbol;
-
-export interface CustomVerb<Input, Output> {
-	readonly custom: true;
-	readonly [verbTypes]?: (input: Input) => Output;
-}
-
-export type WritesRow = readonly StandardVerb[] | Readonly<Record<string, true | CustomVerb<never, unknown>>>;
 
 export type Control =
 	"line" | "text" | "number" | "boolean" | "emoji" | "icon" | "json" | "pick" | "row" | "memory" | "choice";
@@ -47,7 +36,12 @@ export interface FieldDescription {
 	required?: boolean;
 }
 
-export type Describes<Row> = { [K in keyof Row]?: string | FieldDescription };
+export interface PropSource {
+	readonly implementation: string;
+	readonly fields?: Readonly<Record<string, unknown>>;
+}
+
+export type Describes<Row> = { [K in keyof Row]?: string | Omit<FieldDescription, "aka"> };
 
 export interface PropSeen {
 	readonly kind: "collection" | "value";
@@ -62,7 +56,7 @@ export type PropsSeen = Readonly<Record<string, PropSeen>>;
 
 export type Visibility = (props: PropsSeen) => boolean;
 
-interface PropCommon<Held> {
+export interface PropCommon<Held> {
 	label?: string;
 	hint?: string;
 	aka?: readonly string[];
@@ -77,42 +71,8 @@ interface PropCommon<Held> {
 	tracks?: [Held] extends [readonly unknown[]] ? boolean : never;
 	control?: ControlFor<Held>;
 	keep?: [Held] extends [readonly unknown[]] ? never : "screen";
+	source?: PropSource;
 }
-
-interface Picking {
-	of: string;
-	picks?: string;
-	field?: string;
-	fieldFrom?: string;
-	fallback?: "first";
-}
-
-type NamedKeys<T> = keyof { [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K] };
-
-type ReservedRefRefused<Held> = [Held] extends [readonly (infer Row)[]]
-	? "ref" extends NamedKeys<Row>
-		? [Row["ref"]] extends [RecordRef]
-			? unknown
-			: { "the field ref is reserved: type it as RecordRef or leave it out of the row type": never }
-		: unknown
-	: unknown;
-
-type DefaultFor<Held> = [Held] extends [readonly (infer Row)[]] ? readonly Partial<Row>[] : Held;
-
-export type PropInput<Held> = (
-	(PropCommon<Held> & { default: DefaultFor<Held> }) | (PropCommon<Held> & Picking & { default?: DefaultFor<Held> })
-) & {
-	writes?: WritesRow;
-} & ReservedRefRefused<Held>;
-
-declare const isProp: unique symbol;
-
-export type Prop<Held, Written = never> = { readonly [isProp]: [Held, Written] };
-
-export type HeldBy<P> = P extends Prop<infer Held, unknown> ? Held : never;
-
-export type WrittenBy<P> = P extends Prop<unknown, infer Written> ? Written : never;
-
 export interface PropSpec {
 	readonly kind: "collection" | "value";
 	readonly control?: Control;
@@ -130,49 +90,23 @@ export interface PropSpec {
 	readonly tracks?: boolean;
 	readonly where?: readonly DeclaredFilterRow[];
 	readonly sort?: readonly SortRow[];
-	readonly of?: string;
-	readonly picks?: string;
-	readonly field?: string;
-	readonly fieldFrom?: string;
-	readonly fallback?: "first";
+	readonly source?: PropSource;
 	readonly default?: Readonly<Record<string, unknown>>;
 }
 
-type RowWithRef<Row> = [Row] extends [{ ref: RecordRef }] ? Row : Row & { ref: RecordRef };
+export type RowWithRef<Row> = [Row] extends [{ ref: RecordRef }] ? Row : Row & { ref: RecordRef };
 
-type OwnActions<Written> = [Written] extends [never]
-	? unknown
-	: [Written] extends [readonly unknown[]]
-		? unknown
-		: [Written] extends [Readonly<Record<string, unknown>>]
-			? {
-					[
-						K in keyof Written as Written[K] extends { readonly custom: true } ? K : never
-					]: Written[K] extends CustomVerb<infer Input, infer Output> ? Action<Input, Output> : never;
-				}
-			: unknown;
-
-type VerbsIn<Written> = [Written] extends [readonly (infer Named extends string)[]]
-	? Named
-	: [Written] extends [Readonly<Record<string, unknown>>]
-		? Extract<keyof Written, string>
-		: never;
+type VerbsIn<Written> = [Written] extends [readonly (infer Named extends string)[]] ? Named : never;
 
 export type CollectionGatewayOf<Row, Written = never> = GatewayBase & { readonly kind: "collection" } & Pick<
 		CollectionOps<RowWithRef<Row>>,
 		"list" | "get" | Extract<VerbsIn<Written>, keyof CollectionOps<RowWithRef<Row>>>
-	> &
-	OwnActions<Written>;
+	>;
 
 export type ValueGatewayOf<Held, Written = never> = GatewayBase & { readonly kind: "value" } & Pick<
 		ValueOps<Held>,
 		"get" | Extract<VerbsIn<Written>, keyof ValueOps<Held>>
-	> &
-	OwnActions<Written>;
-
-export type GatewayOf<Held, Written = never> = [Held] extends [readonly (infer Row)[]]
-	? CollectionGatewayOf<Row, Written>
-	: ValueGatewayOf<Held, Written>;
+	>;
 
 export interface ManifestCard {
 	title: string;
@@ -218,80 +152,18 @@ export interface HeldSpec {
 
 export const HELD_KEYS: readonly string[] = ["label", "hint", "was", "isVisible", "default", "surface", "of", "gives"];
 
-declare const propsHeld: unique symbol;
-
-export type Manifest<
-	P = Record<string, Prop<unknown, unknown>>,
-	Inline extends boolean | undefined = boolean | undefined,
-> = ManifestCard & {
+export type Manifest = ManifestCard & {
 	props: Readonly<Record<string, PropSpec>>;
-	inline?: Inline;
-	migrate?: readonly Migration<never>[];
 	isManifest: true;
-	readonly [propsHeld]?: P;
 };
-
-type PropsHeldBy<M> = M extends { readonly [propsHeld]?: infer P } ? NonNullable<P> : never;
-
-export type PropsOf<M> = {
-	[K in keyof PropsHeldBy<M>]: GatewayOf<HeldBy<PropsHeldBy<M>[K]>, WrittenBy<PropsHeldBy<M>[K]>>;
-};
-
-type BindingOf<Held> = [Held] extends [readonly (infer Row)[]]
-	? | { from: "vault"; path: string; allow?: readonly string[] }
-		| { from: "typed"; rows: readonly Row[]; allow?: readonly string[] }
-		| { from: "ref"; ref: string }
-	: | { from: "vault"; path: string; field?: string; allow?: readonly string[] }
-		| { from: "typed"; value: Held; allow?: readonly string[] }
-		| { from: "ref"; ref: string };
-
-export type TileConfigOf<Held> = { [K in keyof Held]: BindingOf<Held[K]> };
-
-export interface Migration<From> {
-	readonly from: { [K in keyof From]: Prop<From[K], unknown> };
-	run(old: TileConfigOf<From>): Readonly<Record<string, unknown>>;
-}
-
-export function verb<Input, Output = void>(): CustomVerb<Input, Output> {
-	return { custom: true };
-}
-
-export function migration<From>(spec: Migration<From>): Migration<From> {
-	const named = Object.entries(spec.from as Readonly<Record<string, unknown>>);
-	return {
-		...spec,
-		from: Object.fromEntries(
-			named.map(([name, prop]) => [name, specOf(name, prop)]),
-		) as unknown as Migration<From>["from"],
-	};
-}
 
 export const PROP_MARK = "$prop";
-
-export function defineProp<Held>() {
-	return <const P extends PropInput<Held>>(
-		input: P,
-	): Prop<Held, P extends { writes: infer Written } ? Written : never> =>
-		({ ...(input as object), [PROP_MARK]: true }) as unknown as Prop<
-			Held,
-			P extends { writes: infer Written } ? Written : never
-		>;
-}
-
-const OWN_VERB_UNTYPED =
-	'the verb "{verb}" is not one the engine supplies, so it has to be declared as verb<Input, Output>()';
-const STANDARD_VERBS: readonly string[] = COLLECTION_VERBS;
 
 const READS_A_LIST: readonly StandardVerb[] = ["list", "get"];
 const READS_A_VALUE: readonly StandardVerb[] = ["get"];
 
-export function verbNames(written: WritesRow | undefined, reads: readonly StandardVerb[]): string[] {
-	if (!written) return [...reads];
-	if (Array.isArray(written)) return [...new Set([...reads, ...written])];
-	const named = written as Readonly<Record<string, true | CustomVerb<never, unknown>>>;
-	const untyped = Object.entries(named).find(([verb, declared]) => declared === true && !STANDARD_VERBS.includes(verb));
-	if (untyped) throw new Error(OWN_VERB_UNTYPED.replace("{verb}", untyped[0]));
-	return [...new Set([...reads, ...Object.keys(named)])];
+export function verbNames(written: readonly string[] | undefined, reads: readonly StandardVerb[]): string[] {
+	return [...new Set([...reads, ...(written ?? [])])];
 }
 
 interface WrittenProp {
@@ -309,26 +181,14 @@ interface WrittenProp {
 	tracks?: boolean;
 	control?: DrawnAs;
 	keep?: "screen";
-	of?: string;
-	picks?: string;
-	field?: string;
-	fieldFrom?: string;
-	fallback?: "first";
+	source?: PropSource;
 	default?: unknown;
-	writes?: WritesRow;
+	writes?: readonly string[];
 }
 
 const DRAWN_BY_DEFAULT: Readonly<Record<string, Control>> = { string: "line", number: "number", boolean: "boolean" };
 
-function controlOf(input: WrittenProp, kind: string): Control | undefined {
-	if (input.options) return "choice";
-	if (input.control) return input.control;
-	if (kind === "collection") return undefined;
-	if (input.picks) return "row";
-	if (input.of) return "pick";
-	if (input.keep === "screen") return "memory";
-	return DRAWN_BY_DEFAULT[typeof input.default] ?? "json";
-}
+const CONTROL_OF_SOURCE: Readonly<Record<string, Control>> = { "@core/selected-row": "row", "@core/selection": "pick" };
 
 const PRIMITIVE_OF_CONTROL: Readonly<Record<string, "line" | "text" | "number" | "boolean">> = {
 	choice: "line",
@@ -339,6 +199,100 @@ const PRIMITIVE_OF_CONTROL: Readonly<Record<string, "line" | "text" | "number" |
 	emoji: "line",
 	icon: "line",
 };
+
+export function specOf(name: string, given: unknown): PropSpec {
+	const input = given as WrittenProp;
+	const kind = Array.isArray(input.default) ? "collection" : "value";
+	const control = controlOf(input, kind);
+	return {
+		kind,
+		...present([
+			["control", control],
+			["type", control === undefined ? undefined : PRIMITIVE_OF_CONTROL[control]],
+			["hint", input.hint],
+			["aka", input.aka],
+			["design", input.design],
+			["isVisible", input.isVisible],
+			["options", input.options],
+			["wants", input.wants],
+			["shape", input.shape],
+			["where", input.where],
+			["source", input.source],
+			["sort", input.sort],
+			["describes", input.describes === undefined ? undefined : describedFields(input.describes)],
+			["tracks", input.tracks],
+			["default", defaultOf(input, kind)],
+		]),
+		label: input.label ?? labelFromKey(name),
+		writes: verbNames(input.writes, kind === "collection" ? READS_A_LIST : READS_A_VALUE),
+	} as PropSpec;
+}
+
+const MANIFEST_REFUSED = "{title}: {why}";
+
+const NO_PREFERRED_SIZE =
+	'size names no preferredWidth (a number of pixels or "full") and preferredHeight (a number of pixels or "auto"): the size a widget is created at and leans toward';
+const SIZE_AT_BAD = "size.at[{at}] needs a belowPx above 0 and a preferredWidth or preferredHeight of the same kinds";
+
+export function sizeProblems(size: WidgetSize | undefined): string[] {
+	if (!size || !isPreferredWidth(size.preferredWidth) || !isPreferredHeight(size.preferredHeight))
+		return [NO_PREFERRED_SIZE];
+	return (size.at ?? []).flatMap((step, at) => {
+		const isBelowOk = typeof step?.belowPx === "number" && step.belowPx > 0;
+		const saysSomething = step?.preferredWidth !== undefined || step?.preferredHeight !== undefined;
+		const isWidthOk = step?.preferredWidth === undefined || isPreferredWidth(step.preferredWidth);
+		const isHeightOk = step?.preferredHeight === undefined || isPreferredHeight(step.preferredHeight);
+		return isBelowOk && saysSomething && isWidthOk && isHeightOk ? [] : [SIZE_AT_BAD.replace("{at}", String(at))];
+	});
+}
+
+const DEFAULTS_TO_A_PATH = 'prop "{name}" defaults to a vault path, and a default may only be a value kept in the tile';
+const DECLARES_NO_DEFAULT = 'prop "{name}" declares no default';
+const SOURCE_PICKS_NO_ROW =
+	'prop "{name}" starts from {implementation}; a widget may only start a prop from @core/selection or @core/selected-row, and the person binds everything else';
+const REF_IS_RESERVED = "prop \"{name}\" describes a field named ref, and ref is the engine's name for a row's address";
+const DEFAULT_CARRIES_A_REF =
+	'prop "{name}" defaults to data carrying ref, and a row\'s address is minted by the engine';
+
+const HELD_NAMES_NOTHING =
+	'the {holder} "{name}" declares {key}, which the engine never reads — a misspelling here is silent';
+
+const NOT_A_WRITTEN_PROP = 'prop "{name}" was not written by manifestOfModule';
+
+export interface ManifestInput extends ManifestCard {
+	props: Readonly<Record<string, unknown>>;
+	size: WidgetSize;
+}
+
+export function manifestOfWritten(input: ManifestInput): Manifest {
+	const props: Record<string, PropSpec> = {};
+	const problems: string[] = [];
+	for (const [name, given] of Object.entries(input.props)) {
+		if (!isWrittenProp(given)) {
+			problems.push(NOT_A_WRITTEN_PROP.replace("{name}", name));
+			continue;
+		}
+		const spec = specOf(name, given);
+		props[name] = spec;
+		const problem = propProblem(name, spec, given as WrittenProp);
+		if (problem) problems.push(problem);
+	}
+	problems.push(...heldProblems("slot", input.slots), ...heldProblems("mount", input.mounts));
+	problems.push(...sizeProblems(input.size));
+	if (problems.length > 0)
+		throw new Error(MANIFEST_REFUSED.replace("{title}", input.title).replace("{why}", problems.join("; ")));
+	return { ...input, props, isManifest: true };
+}
+
+function controlOf(input: WrittenProp, kind: string): Control | undefined {
+	if (input.options) return "choice";
+	if (input.control) return input.control;
+	if (kind === "collection") return undefined;
+	if (input.source)
+		return CONTROL_OF_SOURCE[input.source.implementation] ?? DRAWN_BY_DEFAULT[typeof input.default] ?? "json";
+	if (input.keep === "screen") return "memory";
+	return DRAWN_BY_DEFAULT[typeof input.default] ?? "json";
+}
 
 function describedFields(describes: Readonly<Record<string, string | FieldDescription>>) {
 	return Object.fromEntries(
@@ -360,44 +314,6 @@ function defaultOf(input: WrittenProp, kind: string): Readonly<Record<string, un
 
 const present = (entries: [string, unknown][]) => Object.fromEntries(entries.filter(([, held]) => held !== undefined));
 
-export function specOf(name: string, given: unknown): PropSpec {
-	const input = given as WrittenProp;
-	const kind = Array.isArray(input.default) ? "collection" : "value";
-	const control = controlOf(input, kind);
-	return {
-		kind,
-		...present([
-			["control", control],
-			["type", control === undefined ? undefined : PRIMITIVE_OF_CONTROL[control]],
-			["hint", input.hint],
-			["aka", input.aka],
-			["design", input.design],
-			["isVisible", input.isVisible],
-			["options", input.options],
-			["wants", input.wants],
-			["shape", input.shape],
-			["where", input.where],
-			["sort", input.sort],
-			["of", input.of],
-			["picks", input.picks],
-			["field", input.field],
-			["fieldFrom", input.fieldFrom],
-			["fallback", input.fallback],
-			["describes", input.describes === undefined ? undefined : describedFields(input.describes)],
-			["tracks", input.tracks],
-			["default", defaultOf(input, kind)],
-		]),
-		label: input.label ?? labelFromKey(name),
-		writes: verbNames(input.writes, kind === "collection" ? READS_A_LIST : READS_A_VALUE),
-	} as PropSpec;
-}
-
-const MANIFEST_REFUSED = "{title}: {why}";
-
-const NO_PREFERRED_SIZE =
-	"size names no preferredWidth (a number of pixels or \"full\") and preferredHeight (a number of pixels or \"auto\"): the size a widget is created at and leans toward";
-const SIZE_AT_BAD = "size.at[{at}] needs a belowPx above 0 and a preferredWidth or preferredHeight of the same kinds";
-
 function isPreferredWidth(held: unknown) {
 	return held === "full" || (typeof held === "number" && held > 0);
 }
@@ -405,26 +321,6 @@ function isPreferredWidth(held: unknown) {
 function isPreferredHeight(held: unknown) {
 	return held === "auto" || (typeof held === "number" && held > 0);
 }
-
-function sizeProblems(size: WidgetSize | undefined): string[] {
-	if (!size || !isPreferredWidth(size.preferredWidth) || !isPreferredHeight(size.preferredHeight))
-		return [NO_PREFERRED_SIZE];
-	return (size.at ?? []).flatMap((step, at) => {
-		const isBelowOk = typeof step?.belowPx === "number" && step.belowPx > 0;
-		const saysSomething = step?.preferredWidth !== undefined || step?.preferredHeight !== undefined;
-		const isWidthOk = step?.preferredWidth === undefined || isPreferredWidth(step.preferredWidth);
-		const isHeightOk = step?.preferredHeight === undefined || isPreferredHeight(step.preferredHeight);
-		return isBelowOk && saysSomething && isWidthOk && isHeightOk ? [] : [SIZE_AT_BAD.replace("{at}", String(at))];
-	});
-}
-
-const NOT_A_PROP = 'prop "{name}" is not made by defineProp';
-const DEFAULTS_TO_A_PATH = 'prop "{name}" defaults to a vault path, and a default may only be a value kept in the tile';
-const DECLARES_NO_DEFAULT = 'prop "{name}" declares no default';
-const REF_IS_RESERVED = "prop \"{name}\" describes a field named ref, and ref is the engine's name for a row's address";
-const DEFAULT_CARRIES_A_REF =
-	'prop "{name}" defaults to data carrying ref, and a row\'s address is minted by the engine';
-const MIGRATES_FROM_NOTHING = "migration {at} names no props it migrates from";
 
 const isPlain = (held: unknown) => typeof held === "object" && held !== null && !Array.isArray(held);
 
@@ -436,15 +332,15 @@ function carriesKey(held: unknown, key: string): boolean {
 }
 
 function propProblem(name: string, spec: PropSpec, input: WrittenProp): string | null {
-	if (carriesKey(input.default, "path")) return DEFAULTS_TO_A_PATH.replace("{name}", name);
+	if (carriesKey(input.default, "path") || carriesKey(input.source?.fields, "path"))
+		return DEFAULTS_TO_A_PATH.replace("{name}", name);
+	if (input.source && !(input.source.implementation in CONTROL_OF_SOURCE))
+		return SOURCE_PICKS_NO_ROW.replace("{name}", name).replace("{implementation}", input.source.implementation);
 	if (spec.describes && "ref" in spec.describes) return REF_IS_RESERVED.replace("{name}", name);
 	if (carriesKey(input.default, "ref")) return DEFAULT_CARRIES_A_REF.replace("{name}", name);
-	if (input.default !== undefined || input.of !== undefined) return null;
+	if (input.default !== undefined || input.source !== undefined) return null;
 	return DECLARES_NO_DEFAULT.replace("{name}", name);
 }
-
-const HELD_NAMES_NOTHING =
-	'the {holder} "{name}" declares {key}, which the engine never reads — a misspelling here is silent';
 
 function heldProblems(holder: string, held: Readonly<Record<string, HeldSpec>> | undefined): string[] {
 	return Object.entries(held ?? {}).flatMap(([name, spec]) =>
@@ -454,41 +350,5 @@ function heldProblems(holder: string, held: Readonly<Record<string, HeldSpec>> |
 	);
 }
 
-const migrationProblem = (step: Migration<never>, at: number) =>
-	Object.keys(step.from ?? {}).length === 0 ? MIGRATES_FROM_NOTHING.replace("{at}", String(at + 1)) : null;
-
-const madeByDefineProp = (given: unknown) =>
+const isWrittenProp = (given: unknown) =>
 	isPlain(given) && (given as Readonly<Record<string, unknown>>)[PROP_MARK] === true;
-
-export interface ManifestInput<P extends Record<string, Prop<unknown, unknown>>> extends ManifestCard {
-	props: P;
-	size: WidgetSize;
-	migrate?: readonly Migration<never>[];
-}
-
-export function defineManifest<
-	const P extends Record<string, Prop<unknown, unknown>>,
-	const M extends ManifestInput<P>,
->(input: M & ManifestInput<P>): Manifest<P, M extends { inline: true } ? true : undefined> {
-	const props: Record<string, PropSpec> = {};
-	const problems: string[] = [];
-	for (const [name, given] of Object.entries(input.props as Readonly<Record<string, unknown>>)) {
-		if (!madeByDefineProp(given)) {
-			problems.push(NOT_A_PROP.replace("{name}", name));
-			continue;
-		}
-		const spec = specOf(name, given);
-		props[name] = spec;
-		const problem = propProblem(name, spec, given as WrittenProp);
-		if (problem) problems.push(problem);
-	}
-	problems.push(...heldProblems("slot", input.slots), ...heldProblems("mount", input.mounts));
-	problems.push(...sizeProblems(input.size));
-	for (const [at, step] of (input.migrate ?? []).entries()) {
-		const problem = migrationProblem(step, at);
-		if (problem) problems.push(problem);
-	}
-	if (problems.length > 0)
-		throw new Error(MANIFEST_REFUSED.replace("{title}", input.title).replace("{why}", problems.join("; ")));
-	return { ...input, props, isManifest: true } as unknown as Manifest<P, M extends { inline: true } ? true : undefined>;
-}
