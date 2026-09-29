@@ -70,12 +70,7 @@
 			"default": "@media/album-cover",
 			"surface": "none",
 			"gives": {
-				"album": [
-					"title",
-					"artist",
-					"cover",
-					"tracks"
-				],
+				"album": ["title", "artist", "cover", "tracks"],
 				"beside": []
 			}
 		}
@@ -85,46 +80,27 @@
 			"kind": "collection",
 			"label": "Albums",
 			"hint": "The records the shelf draws, one cell each.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"describes": {
 				"title": {
 					"label": "Title",
 					"type": "text",
-					"aka": [
-						"album",
-						"name"
-					]
+					"aka": ["album", "name"]
 				},
 				"artist": {
 					"label": "Artist",
 					"type": "text",
-					"aka": [
-						"band",
-						"performer",
-						"by"
-					]
+					"aka": ["band", "performer", "by"]
 				},
 				"cover": {
 					"label": "Cover",
 					"type": "text",
-					"aka": [
-						"art",
-						"artwork",
-						"image",
-						"sleeve"
-					]
+					"aka": ["art", "artwork", "image", "sleeve"]
 				},
 				"tracks": {
 					"label": "Tracks",
 					"type": "number",
-					"aka": [
-						"trackCount",
-						"songs",
-						"length"
-					]
+					"aka": ["trackCount", "songs", "length"]
 				}
 			},
 			"default": {
@@ -166,9 +142,7 @@
 			"type": "number",
 			"label": "Albums per load",
 			"hint": "How many more are drawn each time the end of the shelf comes into view.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 24
 			}
@@ -176,10 +150,18 @@
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"album-cell.tsx",
+		"album-page.tsx",
+		"cell-sizes.ts",
+		"more-when-seen.tsx",
+		"types.ts",
+		"use-album-source.ts",
+		"use-beside.ts",
+		"use-narrow-shelf.ts",
+		"use-pages.ts",
+		"use-when-seen.ts"
 	],
 	"dependencies": {},
-	"widgetDependencies": [
-		"@media/album-cover"
-	]
+	"widgetDependencies": ["@media/album-cover"]
 }

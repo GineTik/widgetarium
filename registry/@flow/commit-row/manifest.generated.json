@@ -38,10 +38,7 @@
 					"files": 9,
 					"added": 214,
 					"removed": 137,
-					"parents": [
-						"70a3c80f42",
-						"2a64d67ba9"
-					]
+					"parents": ["70a3c80f42", "2a64d67ba9"]
 				}
 			}
 		}
@@ -52,9 +49,7 @@
 			"control": "json",
 			"label": "Commit",
 			"hint": "The commit this row draws. Held in a tree it is handed down; standing alone it is the one typed here.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": {
 					"sha": "70a3c80f42",
@@ -63,17 +58,13 @@
 					"files": 21,
 					"added": 903,
 					"removed": 412,
-					"parents": [
-						"83ab3d2e71"
-					]
+					"parents": ["83ab3d2e71"]
 				}
 			}
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx"
-	],
+	"files": ["widget.tsx", "counts.ts", "diff-bar.tsx", "diff-stat.tsx", "meta.tsx", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

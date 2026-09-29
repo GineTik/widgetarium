@@ -1,13 +1,12 @@
-import { canDo, createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import type { WidgetProps } from "widgetarium";
-import { Icon, IconButton, Row, RowLabel, RowValue } from "widgetarium/kit";
+import { IValueGateway, canDo, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
+import type { DrawnProps } from "widgetarium";
+import { Row, RowLabel, RowValue } from "widgetarium/kit";
+import { Equaliser } from "./equaliser";
+import { Favourite } from "./favourite";
 
 const NARROW_PX = 600;
 
 const UNTITLED = "Untitled";
-const PLAYING_NOW = "Playing now";
-const ADD_TO_FAVOURITES = "Add to favourites";
-const REMOVE_FROM_FAVOURITES = "Remove from favourites";
 
 const CSS = `
 /* TRADE-OFF: the slot plate already pads 16px, so the kit row's own 12px 16px is dropped rather than accepted at 28px */
@@ -151,7 +150,63 @@ type Track = {
 	favourite?: boolean | null;
 };
 
-export const manifest = defineManifest({
+const props = defineProps({
+	track: IValueGateway.of(
+		z.custom<Track>().default({
+			title: "Weightless",
+			artist: "Marconi Union",
+			album: "Ambient Transmissions",
+			addedAt: "2026-02-11",
+			duration: 488,
+			favourite: false,
+		}),
+	).pick("get", "update"),
+	position: IValueGateway.of(z.number().default(0)).pick("get"),
+	isPlaying: IValueGateway.of(z.boolean().default(false)).pick("get"),
+});
+
+const TrackRow = createWidget({
+	inject: props,
+	draw: ({ track, position, isPlaying }) => {
+		const held: Track = track.value ?? {};
+		const playing = isPlaying === true;
+		const at = Number(position ?? 0);
+		const isFavourite = held.favourite === true;
+
+		return (
+			<Row className={playing ? "mt-row is-playing" : "mt-row"}>
+				<style>{CSS}</style>
+
+				<span className="mt-index">{playing ? <Equaliser /> : shownPlace(at)}</span>
+
+				<span className="mt-name">
+					<RowLabel className={said(held.title) === "" ? "mt-title mt-blank" : "mt-title"}>
+						{said(held.title) === "" ? UNTITLED : said(held.title)}
+					</RowLabel>
+					<RowLabel className="mt-artist">{said(held.artist)}</RowLabel>
+				</span>
+
+				<RowValue className="mt-col mt-col-album" title={said(held.album)}>
+					{said(held.album)}
+				</RowValue>
+
+				<RowValue className="mt-col mt-col-added">{shownDay(held.addedAt)}</RowValue>
+
+				<RowValue className="mt-col mt-col-fav">
+					{canDo(track.update) ? (
+						<Favourite isOn={isFavourite} onPress={() => favour(track, held, !isFavourite)} />
+					) : null}
+				</RowValue>
+
+				<RowValue className="mt-col mt-col-time">{shownLength(held.duration)}</RowValue>
+
+				<span className="mt-break" aria-hidden="true" />
+			</Row>
+		);
+	},
+});
+
+export const metadata = defineMetadata(TrackRow, {
 	title: "Track row",
 	description:
 		"One track as a row: its place, its title over its artist, its album, when it arrived and how long it runs.",
@@ -168,8 +223,6 @@ export const manifest = defineManifest({
 		"duration",
 		"favourite",
 	],
-	role: "detail",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 120, stackBelowPx: NARROW_PX },
 	preview: {
 		size: { w: 6, h: 1 },
 		props: {
@@ -187,103 +240,30 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		track: defineProp<Track>()({
+		track: {
 			label: "Track",
 			hint: "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			default: {
-				title: "Weightless",
-				artist: "Marconi Union",
-				album: "Ambient Transmissions",
-				addedAt: "2026-02-11",
-				duration: 488,
-				favourite: false,
-			},
-			writes: ["update"],
-		}),
-		position: defineProp<number>()({
+		},
+		position: {
 			label: "Place in the list",
 			hint: "The number drawn where the equaliser stands while the track is playing.",
-			default: 0,
-		}),
-		isPlaying: defineProp<boolean>()({
+		},
+		isPlaying: {
 			label: "Playing",
 			hint: "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
-			default: false,
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ track, position, isPlaying }) => {
-	const held: Track = useValue(track) ?? {};
-	const playing = useValue(isPlaying) === true;
-	const at = Number(useValue(position) ?? 0);
-	const isFavourite = held.favourite === true;
-
-	return (
-		<Row className={playing ? "mt-row is-playing" : "mt-row"}>
-			<style>{CSS}</style>
-
-			<span className="mt-index">{playing ? <Equaliser /> : shownPlace(at)}</span>
-
-			<span className="mt-name">
-				<RowLabel className={said(held.title) === "" ? "mt-title mt-blank" : "mt-title"}>
-					{said(held.title) === "" ? UNTITLED : said(held.title)}
-				</RowLabel>
-				<RowLabel className="mt-artist">{said(held.artist)}</RowLabel>
-			</span>
-
-			<RowValue className="mt-col mt-col-album" title={said(held.album)}>
-				{said(held.album)}
-			</RowValue>
-
-			<RowValue className="mt-col mt-col-added">{shownDay(held.addedAt)}</RowValue>
-
-			<RowValue className="mt-col mt-col-fav">
-				{canDo(track.update) ? (
-					<Favourite isOn={isFavourite} onPress={() => favour(track, held, !isFavourite)} />
-				) : null}
-			</RowValue>
-
-			<RowValue className="mt-col mt-col-time">{shownLength(held.duration)}</RowValue>
-
-			<span className="mt-break" aria-hidden="true" />
-		</Row>
-	);
+export const layout = defineLayout({
+	role: "detail",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 120, stackBelowPx: NARROW_PX },
 });
 
-type RowProps = WidgetProps<typeof manifest>;
+export default TrackRow;
 
-function favour(track: RowProps["track"], held: Track, next: boolean) {
+function favour(track: DrawnProps<typeof props>["track"], held: Track, next: boolean) {
 	void track.update({ ...held, favourite: next });
-}
-
-function Favourite({ isOn, onPress }: { isOn: boolean; onPress: () => void }) {
-	return (
-		<IconButton
-			className="mt-fav"
-			size="s"
-			variant="ghost"
-			data-on={isOn ? "" : undefined}
-			aria-pressed={isOn ? "true" : "false"}
-			label={isOn ? REMOVE_FROM_FAVOURITES : ADD_TO_FAVOURITES}
-			onClick={(event: { stopPropagation(): void }) => {
-				event.stopPropagation();
-				onPress();
-			}}
-		>
-			<Icon name="heart" size={15} />
-		</IconButton>
-	);
-}
-
-function Equaliser() {
-	return (
-		<span className="mt-eq" role="img" aria-label={PLAYING_NOW}>
-			<i />
-			<i />
-			<i />
-		</span>
-	);
 }
 
 function said(held: unknown): string {

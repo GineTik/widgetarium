@@ -1,4 +1,4 @@
-import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
+import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Icon, cn } from "widgetarium/kit";
 
 const CSS = `
@@ -84,7 +84,34 @@ function clockOf(at: unknown): string {
 	return when.toLocaleTimeString();
 }
 
-export const manifest = defineManifest({
+const LogLine = createWidget({
+	inject: {
+		entry: IValueGateway.of(
+			z.custom<LogEntry>().default({ at: "14:32:07", text: "Session started.", tone: "neutral" }),
+		).pick("get"),
+	},
+	draw: ({ entry }) => {
+		const line: LogEntry = entry ?? {};
+		const mark = markOf(line.tone);
+		const at = clockOf(line.at);
+		const text = String(line.text ?? "").trim();
+
+		return (
+			<div className="wg-log-line">
+				<style>{CSS}</style>
+				<span className={cn("wg-log-line-mark", mark.markClass)} title={mark.said} aria-label={mark.said} role="img">
+					<Icon name={mark.icon} size={14} />
+				</span>
+				<span className="wg-log-line-body">
+					{at ? <time className="wg-log-line-at">{at}</time> : null}
+					<span className={cn("wg-log-line-text", text ? mark.textClass : "is-blank")}>{text || BLANK}</span>
+				</span>
+			</div>
+		);
+	},
+});
+
+export const metadata = defineMetadata(LogLine, {
 	title: "Log line",
 	description: "One line of a running log: when it was written, what it says, and how it went.",
 	keywords: [
@@ -101,8 +128,6 @@ export const manifest = defineManifest({
 		"tail",
 		"session",
 	],
-	role: "text",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 60, stackBelowPx: 320 },
 	preview: {
 		size: { w: 5, h: 1 },
 		props: {
@@ -112,30 +137,16 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		entry: defineProp<LogEntry>()({
+		entry: {
 			label: "Entry",
 			hint: "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
-			default: { at: "14:32:07", text: "Session started.", tone: "neutral" },
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ entry }) => {
-	const line: LogEntry = useValue(entry) ?? {};
-	const mark = markOf(line.tone);
-	const at = clockOf(line.at);
-	const text = String(line.text ?? "").trim();
-
-	return (
-		<div className="wg-log-line">
-			<style>{CSS}</style>
-			<span className={cn("wg-log-line-mark", mark.markClass)} title={mark.said} aria-label={mark.said} role="img">
-				<Icon name={mark.icon} size={14} />
-			</span>
-			<span className="wg-log-line-body">
-				{at ? <time className="wg-log-line-at">{at}</time> : null}
-				<span className={cn("wg-log-line-text", text ? mark.textClass : "is-blank")}>{text || BLANK}</span>
-			</span>
-		</div>
-	);
+export const layout = defineLayout({
+	role: "text",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 60, stackBelowPx: 320 },
 });
+
+export default LogLine;

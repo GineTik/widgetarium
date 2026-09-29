@@ -1,4 +1,14 @@
-import { createWidget, defineManifest, defineProp, textOf, useData } from "widgetarium";
+import {
+	IFoldIntoGroup,
+	IListGateway,
+	IValueGateway,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	textOf,
+	useData,
+	z,
+} from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
 import { useState } from "react";
 
@@ -25,78 +35,92 @@ function optionOf(ref: string, held: Held): Option {
 	return { ref, label, value: textOf(held, VALUE) || label };
 }
 
-export const manifest = defineManifest({
-	title: "View tabs",
-	description: "A row of tabs that picks which view a view group draws.",
-	keywords: ["view", "views", "tabs", "switch", "kanban", "table", "picker", "navigation", "bar", "modes", "layout"],
-	role: "control",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 90, stackBelowPx: 120 },
-	preview: { size: { w: 3, h: 1 }, shot: { of: "693919284" } },
-	props: {
-		options: defineProp<Held[]>()({
-			label: "Options",
-			hint: "Every option is a record. Bind a view group and it offers the views it holds.",
-			wants: "@default/view-group/holds",
+const ChoiceSchema = z.looseObject({ label: z.string().optional(), value: z.string().optional() });
+
+const ViewTabs = createWidget({
+	inject: {
+		options: IListGateway.of(ChoiceSchema, {
 			default: [
 				{ label: "Kanban", value: "Kanban" },
 				{ label: "Archived columns", value: "Archived columns" },
 			],
-			describes: { label: { label: "Label", type: "text", required: true }, value: { label: "Value", type: "text" } },
 		}),
-		selection: defineProp<string>()({
-			label: "Picked option",
-			hint: "Which option is picked. Bind the view group's own box and the two move together.",
-			of: "options",
-			field: "value",
-			fallback: "first",
-			wants: "@default/view-group/selection",
-			writes: ["update"],
-		}),
+		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+		foldIntoGroup: IFoldIntoGroup,
 	},
-});
+	draw: ({ options, selection, foldIntoGroup }) => {
+		const listed = useData(options.list);
+		const [isOpen, setOpen] = useState(false);
 
-export default createWidget(manifest, ({ options, selection, foldIntoGroup }) => {
-	const listed = useData(options.list);
-	const chosen = useData(selection.get).data;
-	const [isOpen, setOpen] = useState(false);
+		const rows: Option[] = listed.data.map((held) => optionOf(held.ref, held));
+		const active = rows.find((row) => row.value === selection.value) ?? rows[0] ?? null;
 
-	const rows: Option[] = listed.data.map((held) => optionOf(held.ref, held));
-	const active = rows.find((row) => row.value === chosen) ?? rows[0] ?? null;
+		if (!listed.isLoading && rows.length === 0) {
+			return (
+				<div className="orbi orbi-view-tabs">
+					<style>{STYLE}</style>
+					<Button block className="ovt-deaf" title={NO_GROUP} onClick={() => foldIntoGroup?.()}>
+						<Icon name="plus" size={15} />
+						<ButtonLabel>Add a view group</ButtonLabel>
+					</Button>
+				</div>
+			);
+		}
 
-	if (!listed.isLoading && rows.length === 0) {
+		const trigger = (
+			<Button block className={`ovt-pick${isOpen ? " is-open" : ""}`} aria-label="Change view">
+				<ButtonLabel>{active?.label ?? ""}</ButtonLabel>
+				<Icon name="chevron" size={15} className="ovt-caret" />
+			</Button>
+		);
+
+		const choose = (picked: Option) => () => {
+			setOpen(false);
+			selection.update(picked.ref);
+		};
+
 		return (
 			<div className="orbi orbi-view-tabs">
 				<style>{STYLE}</style>
-				<Button block className="ovt-deaf" title={NO_GROUP} onClick={() => foldIntoGroup?.()}>
-					<Icon name="plus" size={15} />
-					<ButtonLabel>Add a view group</ButtonLabel>
-				</Button>
+				<Popover trigger={trigger} isOpen={isOpen} onOpenChange={setOpen}>
+					{rows.map((row) => (
+						<PopoverItem key={row.ref} checked={row.ref === active?.ref} onClick={choose(row)}>
+							{row.label}
+						</PopoverItem>
+					))}
+				</Popover>
 			</div>
 		);
-	}
-
-	const trigger = (
-		<Button block className={`ovt-pick${isOpen ? " is-open" : ""}`} aria-label="Change view">
-			<ButtonLabel>{active?.label ?? ""}</ButtonLabel>
-			<Icon name="chevron" size={15} className="ovt-caret" />
-		</Button>
-	);
-
-	const choose = (picked: Option) => () => {
-		setOpen(false);
-		selection.update(picked.ref);
-	};
-
-	return (
-		<div className="orbi orbi-view-tabs">
-			<style>{STYLE}</style>
-			<Popover trigger={trigger} isOpen={isOpen} onOpenChange={setOpen}>
-				{rows.map((row) => (
-					<PopoverItem key={row.ref} checked={row.ref === active?.ref} onClick={choose(row)}>
-						{row.label}
-					</PopoverItem>
-				))}
-			</Popover>
-		</div>
-	);
+	},
 });
+
+export const metadata = defineMetadata(ViewTabs, {
+	title: "View tabs",
+	description: "A row of tabs that picks which view a view group draws.",
+	keywords: ["view", "views", "tabs", "switch", "kanban", "table", "picker", "navigation", "bar", "modes", "layout"],
+	preview: { size: { w: 3, h: 1 }, shot: { of: "693919284" } },
+	props: {
+		options: {
+			label: "Options",
+			hint: "Every option is a record. Bind a view group and it offers the views it holds.",
+			wants: "@default/view-group/holds",
+			describes: { label: { label: "Label", type: "text", required: true }, value: { label: "Value", type: "text" } },
+		},
+		selection: {
+			label: "Picked option",
+			hint: "Which option is picked. Bind the view group's own box and the two move together.",
+			wants: "@default/view-group/selection",
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "options", field: "value", whenNothingPicked: "first" },
+			},
+		},
+	},
+});
+
+export const layout = defineLayout({
+	role: "control",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 90, stackBelowPx: 120 },
+});
+
+export default ViewTabs;

@@ -1,8 +1,21 @@
-import { useEffect, useState } from "react";
-import type { KeyboardEvent } from "react";
-import { canDo, createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import type { Row, Slot, VaultRecord, WidgetProps } from "widgetarium";
-import { Button, Count, SlotList } from "widgetarium/kit";
+import {
+	IListGateway,
+	ISlot,
+	IValueGateway,
+	VaultRecordSchema,
+	canDo,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
+import { SlotList } from "widgetarium/kit";
+import { Head } from "./head";
+import { MoreRow } from "./more-row";
+import { PickedRow } from "./picked-row";
+import type { Drawn, FileFace, FileRow, FileSlot } from "./types";
+import { useShown } from "./use-shown";
 
 const CSS = `
 .ffl {
@@ -65,62 +78,42 @@ const SHOWN = 200;
 const NO_SLOT = "This list has no widget to draw its files with.";
 const NOTHING = "This change touched no files.";
 const READING = "Reading the files this change touched.";
-const SHOW_MORE = "Show more ({rest} left)";
-const REST = "{rest}";
 
-type FileChangeRecord = VaultRecord & {
-	added?: number | string | null;
-	removed?: number | string | null;
-	change?: string | null;
-	from?: string | null;
-};
-
-type FileFace = {
-	filePath: string | null;
-	added: number | string | null;
-	removed: number | string | null;
-	change: string | null;
-	from: string | null;
-};
-
-type FileRow = Row<FileChangeRecord>;
-type FileSlot = Slot<{ file: FileFace }>;
-type Drawn = NonNullable<FileSlot>;
-type FileListProps = WidgetProps<typeof manifest>;
-
-function textOf(value: unknown): string | null {
-	if (value === undefined || value === null) return null;
-	const said = String(value).trim();
-	return said === "" ? null : said;
-}
-
-function faceOf(row: FileRow): FileFace {
-	return {
-		filePath: textOf(row.path) ?? textOf(row.name),
-		added: (row.added as number | string | null | undefined) ?? null,
-		removed: (row.removed as number | string | null | undefined) ?? null,
-		change: textOf(row.change),
-		from: textOf(row.from),
-	};
-}
+export const FileChangeSchema = VaultRecordSchema.extend({
+	path: z
+		.string()
+		.optional()
+		.meta({ aka: ["file", "filename", "filePath"] }),
+	commit: z
+		.union([z.string(), z.number()])
+		.nullable()
+		.optional()
+		.meta({ aka: ["sha", "revision", "hash"] }),
+	added: z
+		.union([z.number(), z.string()])
+		.nullable()
+		.optional()
+		.meta({ aka: ["insertions", "additions"] }),
+	removed: z
+		.union([z.number(), z.string()])
+		.nullable()
+		.optional()
+		.meta({ aka: ["deletions", "removals"] }),
+	change: z
+		.string()
+		.nullable()
+		.optional()
+		.meta({ aka: ["status", "kind", "changeType"] }),
+	from: z
+		.string()
+		.nullable()
+		.optional()
+		.meta({ aka: ["oldPath", "previousPath", "renamedFrom"] }),
+});
 
 function askedCount(value: unknown, fallback: number): number {
 	const asked = Math.round(Number(value));
 	return Number.isFinite(asked) && asked > 0 ? asked : fallback;
-}
-
-function useShown(size: number, source: string) {
-	const [shown, setShown] = useState(size);
-	useEffect(() => setShown(size), [size, source]);
-	return { shown, more: () => setShown(shown + size) };
-}
-
-function pressKeys(act: () => void) {
-	return (event: KeyboardEvent<HTMLDivElement>) => {
-		if (event.key !== "Enter" && event.key !== " ") return;
-		event.preventDefault();
-		act();
-	};
 }
 
 function saidInstead(
@@ -133,41 +126,57 @@ function saidInstead(
 	return listed.data.length === 0 ? NOTHING : null;
 }
 
-function MoreRow({ rest, onMore }: { rest: number; onMore: () => void }) {
-	if (rest <= 0) return null;
-	return (
-		<div className="ffl-more">
-			<Button onClick={onMore}>{SHOW_MORE.replace(REST, String(rest))}</Button>
-		</div>
-	);
-}
+const FileList = createWidget({
+	inject: {
+		files: IListGateway.of(FileChangeSchema, {
+			where: [{ prop: "commit", op: "is", value: { wants: "@flow/git-tree/selection" } }],
+			sort: [{ prop: "path", dir: "asc" }],
+			default: [],
+		}),
+		selection: IValueGateway.of(z.string().nullable().default(null)).pick("get", "update"),
+		heading: IValueGateway.of(z.string().default("Files touched")).pick("get"),
+		shownFiles: IValueGateway.of(z.number().default(SHOWN)).pick("get"),
+		file: ISlot.of<{ file: FileFace }>({
+			default: "@flow/file-row",
+			surface: "group",
+			gives: { file: ["path", "added", "removed", "change", "from"] },
+		}),
+	},
+	draw: ({ files, selection, heading, shownFiles, file }) => {
+		const size = askedCount(shownFiles, SHOWN);
+		const { shown, more } = useShown(size, files.id);
+		const listed = useData(files.list, { offset: 0, limit: shown });
+		const Drawn = file as Drawn;
+		const said = saidInstead(file, listed);
+		const rows = listed.data as FileRow[];
+		const total = listed.total ?? rows.length;
+		const canPick = canDo(selection.update);
 
-type PickedRowProps = { row: FileRow; Drawn: Drawn; isPicked: boolean; onPick: (() => void) | null };
-
-function PickedRow({ row, Drawn, isPicked, onPick }: PickedRowProps) {
-	const marks = ["ffl-pick", onPick ? "is-pressable" : "", isPicked ? "is-picked" : ""].filter(Boolean).join(" ");
-	if (!onPick)
 		return (
-			<div className={marks}>
-				<Drawn file={faceOf(row)} />
+			<div className="ffl">
+				<style>{CSS}</style>
+				<Head heading={heading} total={total} />
+				{said === null ? null : <p className="ffl-said">{said}</p>}
+				{said !== null ? null : (
+					<SlotList slot={Drawn}>
+						{rows.map((row) => (
+							<PickedRow
+								key={row.ref}
+								row={row}
+								Drawn={Drawn}
+								isPicked={row.ref === selection.value}
+								onPick={canPick ? () => selection.update(row.ref) : null}
+							/>
+						))}
+					</SlotList>
+				)}
+				{said === null ? <MoreRow rest={total - rows.length} onMore={more} /> : null}
 			</div>
 		);
+	},
+});
 
-	return (
-		<div
-			className={marks}
-			role="button"
-			tabIndex={0}
-			aria-pressed={isPicked}
-			onClick={onPick}
-			onKeyDown={pressKeys(onPick)}
-		>
-			<Drawn file={faceOf(row)} />
-		</div>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(FileList, {
 	title: "File list",
 	description: "The files a change touched, each with what happened to it and how many lines it gained and lost.",
 	keywords: [
@@ -185,16 +194,6 @@ export const manifest = defineManifest({
 		"list",
 		"rename",
 	],
-	role: "collection",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 160, stackBelowPx: 260 },
-	slots: {
-		file: {
-			of: "widget",
-			default: "@flow/file-row",
-			surface: "group",
-			gives: { file: ["path", "added", "removed", "change", "from"] },
-		},
-	},
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
@@ -240,81 +239,37 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		files: defineProp<FileChangeRecord[]>()({
+		files: {
 			label: "Files",
 			hint: "One record per file the change touched. Bind a commit list beside this one and the two move together.",
-			default: [],
-			sort: [{ prop: "path", dir: "asc" }],
-			where: [{ prop: "commit", op: "is", value: { wants: "@flow/git-tree/selection" } }],
 			describes: {
-				path: { label: "Path", type: "line", aka: ["file", "filename", "filePath"] },
-				added: { label: "Lines added", type: "number", aka: ["insertions", "additions"] },
-				removed: { label: "Lines removed", type: "number", aka: ["deletions", "removals"] },
-				change: { label: "Change", type: "line", aka: ["status", "kind", "changeType"] },
-				from: { label: "Renamed from", type: "line", aka: ["oldPath", "previousPath", "renamedFrom"] },
-				commit: { label: "Commit", type: "line", aka: ["sha", "revision", "hash"] },
+				path: { label: "Path", type: "line" },
+				added: { label: "Lines added", type: "number" },
+				removed: { label: "Lines removed", type: "number" },
+				change: { label: "Change", type: "line" },
+				from: { label: "Renamed from", type: "line" },
+				commit: { label: "Commit", type: "line" },
 			},
-		}),
-		selection: defineProp<string | null>()({
+		},
+		selection: {
 			label: "Selected file",
 			hint: "Which file is picked. A diff standing beside this list binds to it and follows every press.",
-			of: "files",
-			default: null,
-			writes: ["update"],
-		}),
-		heading: defineProp<string>()({
+			source: { implementation: "@core/selection", fields: { rows: "files" } },
+		},
+		heading: {
 			label: "Heading",
 			hint: "The words standing before the count. Left empty, only the count is drawn.",
-			default: "Files touched",
-		}),
-		shownFiles: defineProp<number>()({
+		},
+		shownFiles: {
 			label: "Files shown",
 			hint: "How many rows are read at once, and how many more each press adds.",
-			default: SHOWN,
-		}),
+		},
 	},
 });
 
-function Head({ heading, total }: { heading: FileListProps["heading"]; total: number }) {
-	const said = textOf(useData(heading.get).data);
-	return (
-		<div className="ffl-head">
-			{said === null ? null : <span className="ffl-title">{said}</span>}
-			<Count>{total}</Count>
-		</div>
-	);
-}
-
-export default createWidget(manifest, ({ files, selection, heading, shownFiles, slots }) => {
-	const size = askedCount(useData(shownFiles.get).data, SHOWN);
-	const { shown, more } = useShown(size, files.id);
-	const listed = useData(files.list, { offset: 0, limit: shown });
-	const picked = useData(selection.get).data;
-	const Drawn = slots?.file as Drawn;
-	const said = saidInstead(slots?.file as FileSlot, listed);
-	const rows = listed.data as FileRow[];
-	const total = listed.total ?? rows.length;
-	const canPick = canDo(selection.update);
-
-	return (
-		<div className="ffl">
-			<style>{CSS}</style>
-			<Head heading={heading} total={total} />
-			{said === null ? null : <p className="ffl-said">{said}</p>}
-			{said !== null ? null : (
-				<SlotList slot={Drawn}>
-					{rows.map((row) => (
-						<PickedRow
-							key={row.ref}
-							row={row}
-							Drawn={Drawn}
-							isPicked={row.ref === picked}
-							onPick={canPick ? () => selection.update(row.ref) : null}
-						/>
-					))}
-				</SlotList>
-			)}
-			{said === null ? <MoreRow rest={total - rows.length} onMore={more} /> : null}
-		</div>
-	);
+export const layout = defineLayout({
+	role: "collection",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 160, stackBelowPx: 260 },
 });
+
+export default FileList;

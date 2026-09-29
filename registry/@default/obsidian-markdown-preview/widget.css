@@ -22,11 +22,6 @@
 	font: inherit;
 }
 
-.wg-markdown-preview-failure {
-	margin: 0;
-	color: var(--wg-kit-text-muted);
-}
-
 .wg-markdown-preview-clip {
 	overflow: hidden;
 	transition: max-height 360ms var(--wg-spread);

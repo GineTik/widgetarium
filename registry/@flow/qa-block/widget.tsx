@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import { Button, Icon } from "widgetarium/kit";
+import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { Options } from "./options";
+import { Reason } from "./reason";
+import type { Chip } from "./types";
 
 const CSS = `
 .wg-qa-block {
@@ -124,14 +125,45 @@ type Question = {
 	reason?: string | undefined;
 };
 
-type Chip = { label: string; isChosen: boolean; wasOffered: boolean };
-
-const MARK_PX = 14;
 const NOTHING = "Nothing was recorded for this question.";
-const SHOW_REST = "Show the rest";
-const SHOW_LESS = "Show less";
 
-export const manifest = defineManifest({
+const QaBlock = createWidget({
+	inject: {
+		asked: IValueGateway.of(
+			z.custom<Question>().default({
+				question: "Where does the loading threshold live?",
+				options: ["one engine constant", "per widget", "per binding"],
+				answer: "one engine constant",
+				reason: "One number a person can find and change, instead of three settings nobody tunes.",
+			}),
+		).pick("get"),
+	},
+	draw: ({ asked }) => {
+		const held: Question = asked ?? {};
+		const chips = chipsOf(held);
+		const question = textOf(held.question);
+		const reason = textOf(held.reason);
+
+		if (!question && !reason && chips.length === 0)
+			return (
+				<div className="wg-qa-block">
+					<style>{CSS}</style>
+					<p className="wg-qa-block-said">{NOTHING}</p>
+				</div>
+			);
+
+		return (
+			<div className="wg-qa-block">
+				<style>{CSS}</style>
+				{question ? <p className="wg-qa-block-question">{question}</p> : null}
+				<Options chips={chips} />
+				<Reason text={reason} />
+			</div>
+		);
+	},
+});
+
+export const metadata = defineMetadata(QaBlock, {
 	title: "Question and answer",
 	description:
 		"One question an agent asked before it started: every option it offered, the answer that won, and the reason underneath.",
@@ -149,8 +181,6 @@ export const manifest = defineManifest({
 		"agent",
 		"review",
 	],
-	role: "detail",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 120, stackBelowPx: 320 },
 	preview: {
 		size: { w: 4, h: 2 },
 		props: {
@@ -166,96 +196,19 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		asked: defineProp<Question>()({
+		asked: {
 			label: "Question",
 			hint: "The question, the options it offered, the answer that was chosen and the reason for it. Standing in a record it is handed down; standing alone it is the one typed here.",
-			default: {
-				question: "Where does the loading threshold live?",
-				options: ["one engine constant", "per widget", "per binding"],
-				answer: "one engine constant",
-				reason: "One number a person can find and change, instead of three settings nobody tunes.",
-			},
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ asked }) => {
-	const held: Question = useValue(asked) ?? {};
-	const chips = chipsOf(held);
-	const question = textOf(held.question);
-	const reason = textOf(held.reason);
-
-	if (!question && !reason && chips.length === 0)
-		return (
-			<div className="wg-qa-block">
-				<style>{CSS}</style>
-				<p className="wg-qa-block-said">{NOTHING}</p>
-			</div>
-		);
-
-	return (
-		<div className="wg-qa-block">
-			<style>{CSS}</style>
-			{question ? <p className="wg-qa-block-question">{question}</p> : null}
-			<Options chips={chips} />
-			<Reason text={reason} />
-		</div>
-	);
+export const layout = defineLayout({
+	role: "detail",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 120, stackBelowPx: 320 },
 });
 
-function Options({ chips }: { chips: Chip[] }) {
-	if (chips.length === 0) return null;
-	return (
-		<div className="wg-qa-block-options">
-			{chips.map((chip, at) => (
-				<span
-					key={`${chip.label}-${at}`}
-					className="wg-qa-block-option"
-					data-chosen={chip.isChosen ? "yes" : "no"}
-					data-offered={chip.wasOffered ? "yes" : "no"}
-				>
-					{chip.isChosen ? <Icon name="tick" size={MARK_PX} className="wg-qa-block-mark" /> : null}
-					<span className="wg-qa-block-option-label">{chip.label}</span>
-				</span>
-			))}
-		</div>
-	);
-}
-
-function Reason({ text }: { text: string }) {
-	const { body, isOpen, isOverflowing, toggle } = useClamped(text);
-	if (!text) return null;
-	return (
-		<div className="wg-qa-block-reason-box">
-			<p ref={body} className="wg-qa-block-reason" data-clamped={isOpen ? "no" : "yes"}>
-				{text}
-			</p>
-			{isOverflowing ? (
-				<Button size="s" variant="ghost" onClick={toggle}>
-					{isOpen ? SHOW_LESS : SHOW_REST}
-				</Button>
-			) : null}
-		</div>
-	);
-}
-
-function useClamped(text: string) {
-	const body = useRef<HTMLParagraphElement>(null);
-	const [isOpen, setOpen] = useState(false);
-	const [isOverflowing, setOverflowing] = useState(false);
-
-	useEffect(() => {
-		const node = body.current;
-		if (!node || isOpen) return undefined;
-		const measure = () => setOverflowing(node.scrollHeight > node.clientHeight + 1);
-		measure();
-		const watcher = new ResizeObserver(measure);
-		watcher.observe(node);
-		return () => watcher.disconnect();
-	}, [text, isOpen]);
-
-	return { body, isOpen, isOverflowing, toggle: () => setOpen(!isOpen) };
-}
+export default QaBlock;
 
 // TRADE-OFF: an answer naming no offered option is appended rather than dropped — it is what was chosen
 function chipsOf(held: Question): Chip[] {

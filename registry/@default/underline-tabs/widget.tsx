@@ -1,4 +1,14 @@
-import { createWidget, defineManifest, defineProp, fieldOf, textOf, useData } from "widgetarium";
+import {
+	IListGateway,
+	IValueGateway,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	fieldOf,
+	textOf,
+	useData,
+	z,
+} from "widgetarium";
 import { useLayoutEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from "react";
 
@@ -100,7 +110,58 @@ function useActiveInView(rowRef: RefObject<HTMLDivElement | null>, activeRef: st
 	}, [activeRef]);
 }
 
-export const manifest = defineManifest({
+const UnderlineTabs = createWidget({
+	inject: {
+		options: IListGateway.of(z.custom<Held>(), {
+			default: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }],
+		}),
+		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+	},
+	draw: ({ options, selection }) => {
+		const listed = useData(options.list, { limit: ALL_OPTIONS });
+		const rowRef = useRef<HTMLDivElement | null>(null);
+
+		const rows: Option[] = listed.data.filter((held) => !fieldOf(held, HIDDEN)).map((held) => optionOf(held.ref, held));
+		const active = rows.find((row) => row.value === selection.value) ?? rows[0] ?? null;
+
+		useActiveInView(rowRef, active?.ref ?? "");
+
+		if (rows.length === 0) return null;
+
+		const onKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+			const from = rows.findIndex((row) => row.ref === active?.ref);
+			const at = steppedTo(event.key, Math.max(from, 0), rows.length);
+			const picked = at === null ? null : rows[at];
+			if (at === null || !picked) return;
+			event.preventDefault();
+			selection.update(picked.ref);
+			event.currentTarget.querySelectorAll("button")[at]?.focus();
+		};
+
+		return (
+			<div className="wg-underline-tabs">
+				<style>{CSS}</style>
+				<div className="wg-ult-row" role="tablist" onKeyDown={onKeys} ref={rowRef}>
+					{rows.map((row) => (
+						<button
+							key={row.ref}
+							type="button"
+							role="tab"
+							aria-selected={row.ref === active?.ref}
+							aria-label={row.label || UNNAMED}
+							tabIndex={row.ref === active?.ref ? 0 : -1}
+							onClick={() => selection.update(row.ref)}
+						>
+							{row.label || UNNAMED}
+						</button>
+					))}
+				</div>
+			</div>
+		);
+	},
+});
+
+export const metadata = defineMetadata(UnderlineTabs, {
 	title: "Underline tabs",
 	description: "A row of section names with the open one underlined, picking which view a view box draws.",
 	keywords: [
@@ -117,76 +178,36 @@ export const manifest = defineManifest({
 		"steer",
 		"header",
 	],
-	role: "navigation",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 120, stackBelowPx: 240 },
 	preview: {
 		size: { w: 4, h: 1 },
 		props: { options: { rows: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }] } },
 	},
 	props: {
-		options: defineProp<Held[]>()({
+		options: {
 			label: "Options",
 			hint: "Every section is a record. Bind a view box and it offers the views it holds.",
 			wants: "@default/view-group/holds",
-			default: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }],
 			describes: {
 				label: { label: "Label", type: "text", required: true },
 				value: { label: "Value", type: "text" },
 				hidden: { label: "Hidden", type: "boolean" },
 			},
-		}),
-		selection: defineProp<string>()({
+		},
+		selection: {
 			label: "Open section",
 			hint: "Which section is open. Bind the view box's own selection and the two move together.",
-			of: "options",
-			field: "value",
-			fallback: "first",
 			wants: "@default/view-group/selection",
-			writes: ["update"],
-		}),
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "options", field: "value", whenNothingPicked: "first" },
+			},
+		},
 	},
 });
 
-export default createWidget(manifest, ({ options, selection }) => {
-	const listed = useData(options.list, { limit: ALL_OPTIONS });
-	const chosen = useData(selection.get).data;
-	const rowRef = useRef<HTMLDivElement | null>(null);
-
-	const rows: Option[] = listed.data.filter((held) => !fieldOf(held, HIDDEN)).map((held) => optionOf(held.ref, held));
-	const active = rows.find((row) => row.value === chosen) ?? rows[0] ?? null;
-
-	useActiveInView(rowRef, active?.ref ?? "");
-
-	if (rows.length === 0) return null;
-
-	const onKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-		const from = rows.findIndex((row) => row.ref === active?.ref);
-		const at = steppedTo(event.key, Math.max(from, 0), rows.length);
-		const picked = at === null ? null : rows[at];
-		if (at === null || !picked) return;
-		event.preventDefault();
-		selection.update(picked.ref);
-		event.currentTarget.querySelectorAll("button")[at]?.focus();
-	};
-
-	return (
-		<div className="wg-underline-tabs">
-			<style>{CSS}</style>
-			<div className="wg-ult-row" role="tablist" onKeyDown={onKeys} ref={rowRef}>
-				{rows.map((row) => (
-					<button
-						key={row.ref}
-						type="button"
-						role="tab"
-						aria-selected={row.ref === active?.ref}
-						aria-label={row.label || UNNAMED}
-						tabIndex={row.ref === active?.ref ? 0 : -1}
-						onClick={() => selection.update(row.ref)}
-					>
-						{row.label || UNNAMED}
-					</button>
-				))}
-			</div>
-		</div>
-	);
+export const layout = defineLayout({
+	role: "navigation",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 120, stackBelowPx: 240 },
 });
+
+export default UnderlineTabs;

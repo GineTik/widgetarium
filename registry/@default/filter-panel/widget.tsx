@@ -1,8 +1,21 @@
-import { createWidget, defineManifest, defineProp, textOf, useData } from "widgetarium";
-import type { WidgetProps } from "widgetarium";
-import { Button, ButtonLabel, Icon, Popover, PopoverItem, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
+import {
+	IListGateway,
+	IValueGateway,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	defineProps,
+	textOf,
+	useData,
+	z,
+} from "widgetarium";
+import { Button, Popover, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "react";
-import type { Ref } from "react";
+import { PEOPLE, RADIO, valuesFor } from "./control-kinds";
+import { FilterTrigger } from "./filter-trigger";
+import { GroupList } from "./group-list";
+import type { Chosen, Group, TaskRow } from "./types";
+import { useChosenDraft } from "./use-chosen-draft";
 
 const ALL_TASKS = 2000;
 
@@ -112,8 +125,6 @@ const CSS = `
 `;
 
 const CHECKBOX = "checkbox";
-const RADIO = "radio";
-const PEOPLE = "people";
 
 const PROP = "prop";
 const LABEL = "label";
@@ -121,14 +132,10 @@ const CONTROL = "control";
 const RECORD_NAME = "name";
 
 type Held = Record<string, unknown> & { props?: Record<string, unknown> };
-type Group = { prop: string; control: string; label: string };
-type TaskRow = { ref: string; props?: Record<string, unknown> };
-type Chosen = Record<string, string | string[]>;
 
 const PEOPLE_NAMES = ["assignees", "members", "people", "owner", "owners"];
 const NEVER_FILTERED = ["title", "board", "status", "deadline", "due"];
-// TRADE-OFF: a property nearly every note carries a DIFFERENT value for is an identifier, not a
-// filter — ticking it would leave one row, which is a search, and the bar has a search already
+// TRADE-OFF: a mostly-distinct property is an identifier; ticking it leaves one row, a search the bar already has.
 const MOST_DISTINCT_SHARE = 0.75;
 
 function controlFor(prop: string, named: string): string {
@@ -185,50 +192,12 @@ function keyCarrying(rows: TaskRow[], name: string): string | null {
 	return null;
 }
 
-function valuesFor(rows: TaskRow[], prop: string): string[] {
-	const seen = new Set<string>();
-	for (const row of rows) {
-		const held = row.props?.[prop];
-		for (const value of Array.isArray(held) ? held : [held]) {
-			if (value !== undefined && value !== null && value !== "") seen.add(String(value));
-		}
-	}
-	return [...seen].sort();
-}
-
-function initialOf(value: string): string {
-	return (
-		String(value ?? "?")
-			.trim()
-			.charAt(0)
-			.toUpperCase() || "?"
-	);
-}
-
-const FIRST_TONE = "is-accent";
-
-const TONES = [FIRST_TONE, "is-ok", "is-warn", "is-err"];
-
-// TRADE-OFF: hashed, so there is no palette to maintain
-function toneOf(value: string): string {
-	let sum = 0;
-	for (const letter of String(value)) sum += letter.charCodeAt(0);
-	return TONES[sum % TONES.length] ?? FIRST_TONE;
-}
-
 function countOf(chosen: Chosen): number {
 	return Object.values(chosen ?? {}).reduce(
 		(total: number, values) => total + (Array.isArray(values) ? values.length : 1),
 		0,
 	);
 }
-
-function dropped(chosen: Chosen, prop: string): Chosen {
-	const { [prop]: gone, ...rest } = chosen;
-	return rest;
-}
-
-type FilterProps = WidgetProps<typeof manifest>;
 
 // TRADE-OFF: an authored list outranks a derived one — a board may want its own order and labels
 function groupsShown(authored: Group[], fromBoard: Group[], rows: TaskRow[]): Group[] {
@@ -237,129 +206,77 @@ function groupsShown(authored: Group[], fromBoard: Group[], rows: TaskRow[]): Gr
 	return groupsFromData(rows);
 }
 
-// TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
-function useChosenDraft(applied: Chosen, chosen: FilterProps["chosen"]) {
-	const [isOpen, setOpen] = useState(false);
-	const [draft, setDraft] = useState<Chosen>(applied);
+export const props = defineProps({
+	tasks: IListGateway.of(z.custom<Held>(), {
+		where: [{ prop: "board", op: "is", value: { wants: "@default/editable-tabs/selection" } }],
+	}),
+	groups: IListGateway.of(z.custom<Held>()),
+	openGroup: IValueGateway.of(z.string().default("")).pick("get"),
+	properties: IListGateway.of(z.custom<Held>()),
+	chosen: IValueGateway.of(z.custom<Chosen>().default({})).pick("get", "update"),
+});
 
-	const draftAfterRadio = (group: Group, value: string) => {
-		if (draft[group.prop] === value) return dropped(draft, group.prop);
-		return { ...draft, [group.prop]: value };
-	};
+const FilterPanel = createWidget({
+	inject: props,
+	draw: ({ tasks, groups, openGroup, properties, chosen }) => {
+		const listed = useData(tasks.list, { limit: ALL_TASKS });
+		const rows: TaskRow[] = listed.data;
+		const authored = useData(groups.list, { limit: ALL_TASKS })
+			.data.map((held) => groupOf(held))
+			.filter((group: Group) => group.prop !== "");
+		const named = useData(properties.list, { limit: ALL_TASKS })
+			.data.map((held) => textOf(held, "name") || textOf(held, RECORD_NAME))
+			.filter(Boolean);
+		const shownGroups = groupsShown(authored, groupsFromBoard(named, rows), rows);
+		const applied: Chosen = chosen.value ?? {};
 
-	const draftAfterCheck = (group: Group, value: string) => {
-		const held = (draft[group.prop] as string[]) ?? [];
-		const next = held.includes(value) ? held.filter((item) => item !== value) : [...held, value];
-		if (next.length === 0) return dropped(draft, group.prop);
-		return { ...draft, [group.prop]: next };
-	};
+		const triggerRef = useRef<HTMLButtonElement | null>(null);
+		const hasRoomForWord = useRoomForLabel(triggerRef);
 
-	return {
-		isOpen,
-		change: (next: boolean) => {
-			if (next) setDraft(applied);
-			setOpen(next);
-		},
-		isChosen: (group: Group, value: string) => {
-			if (group.control === RADIO) return draft[group.prop] === value;
-			return ((draft[group.prop] as string[]) ?? []).includes(value);
-		},
-		toggle: (group: Group, value: string) => {
-			if (group.control === RADIO) return setDraft(draftAfterRadio(group, value));
-			setDraft(draftAfterCheck(group, value));
-		},
-		apply: () => {
-			chosen.update(draft);
-			setOpen(false);
-		},
-		reset: () => {
-			setDraft({});
-			chosen.update({});
-		},
-	};
-}
+		const picking = useChosenDraft(applied, chosen);
+		const [pressed, setPressed] = useState<string | null>(null);
+		const shown = pressed ?? openGroup;
 
-type GroupValuesProps = {
-	group: Group;
-	values: string[];
-	isChosen: (group: Group, value: string) => boolean;
-	onToggle: (group: Group, value: string) => void;
-};
+		return (
+			<div className="orbi orbi-filter">
+				<style>{CSS}</style>
 
-function GroupValues({ group, values, isChosen, onToggle }: GroupValuesProps) {
-	if (values.length === 0) return <p className="ofp-empty">Nothing to choose from yet.</p>;
-	return values.map((value) => (
-		<PopoverItem
-			key={value}
-			className="ofp-option"
-			checked={isChosen(group, value)}
-			onClick={() => onToggle(group, value)}
-		>
-			{group.control === PEOPLE ? <span className={`ofp-av ${toneOf(value)}`}>{initialOf(value)}</span> : null}
-			<span className="ofp-name">{value}</span>
-		</PopoverItem>
-	));
-}
+				<Popover
+					className="ofp-pop"
+					trigger={<FilterTrigger triggerRef={triggerRef} count={countOf(applied)} hasRoomForWord={hasRoomForWord} />}
+					isOpen={picking.isOpen}
+					onOpenChange={picking.change}
+				>
+					<div className="ofp-panel">
+						<PopoverSearch placeholder="Keyword" hint="Narrows the choices below, not the board">
+							{(needle: string) => (
+								<GroupList
+									groups={shownGroups}
+									rows={rows}
+									needle={needle}
+									unfolded={shown}
+									onUnfold={setPressed}
+									picking={picking}
+								/>
+							)}
+						</PopoverSearch>
 
-type FilterGroupProps = GroupValuesProps & { isUnfolded: boolean; onUnfold: (prop: string) => void };
+						<div className="ofp-foot">
+							<Button className="ofp-reset" onClick={picking.reset}>
+								Reset
+							</Button>
+							<Button className="ofp-apply" variant="accent" onClick={picking.apply}>
+								Apply
+							</Button>
+						</div>
+					</div>
+				</Popover>
+			</div>
+		);
+	},
+});
 
-function FilterGroup({ group, values, isUnfolded, onUnfold, isChosen, onToggle }: FilterGroupProps) {
-	return (
-		<div className="ofp-group">
-			<button
-				type="button"
-				className={`ofp-group-head${isUnfolded ? " is-on" : ""}`}
-				onClick={() => onUnfold(isUnfolded ? "" : group.prop)}
-			>
-				<span>{group.label}</span>
-				<Icon name="chevron" className="ofp-chev" />
-			</button>
-			{isUnfolded ? <GroupValues group={group} values={values} isChosen={isChosen} onToggle={onToggle} /> : null}
-		</div>
-	);
-}
-
-type GroupListProps = {
-	groups: Group[];
-	rows: TaskRow[];
-	needle: string;
-	unfolded: string;
-	onUnfold: (prop: string) => void;
-	picking: ReturnType<typeof useChosenDraft>;
-};
-
-function GroupList({ groups, rows, needle, unfolded, onUnfold, picking }: GroupListProps) {
-	const matching = (value: string) => needle === "" || value.toLowerCase().includes(needle);
-	return groups.map((group: Group) => (
-		<FilterGroup
-			key={group.prop}
-			group={group}
-			values={valuesFor(rows, group.prop).filter(matching)}
-			isUnfolded={unfolded === group.prop}
-			onUnfold={onUnfold}
-			isChosen={picking.isChosen}
-			onToggle={picking.toggle}
-		/>
-	));
-}
-
-type FilterTriggerProps = { triggerRef: Ref<HTMLButtonElement>; count: number; hasRoomForWord: boolean };
-
-function FilterTrigger({ triggerRef, count, hasRoomForWord }: FilterTriggerProps) {
-	return (
-		<button
-			type="button"
-			ref={triggerRef}
-			className={`wg-kit-btn is-m is-block ofp-open${count > 0 ? " is-on" : ""}${hasRoomForWord ? "" : " is-tight"}`}
-		>
-			<Icon name="filter" className="ofp-icon" />
-			{hasRoomForWord ? <ButtonLabel>Filter</ButtonLabel> : null}
-			{count > 0 ? <span className="wg-kit-count ofp-count">{count}</span> : null}
-		</button>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(FilterPanel, {
 	title: "Filter",
 	description: "Narrows every widget bound to it by a task property, from one row of dropdowns.",
 	keywords: [
@@ -377,8 +294,6 @@ export const manifest = defineManifest({
 		"controls",
 		"where",
 	],
-	role: "control",
-	size: { preferredWidth: "full", preferredHeight: "auto", stackBelowPx: 320 },
 	preview: {
 		size: { w: 3, h: 1 },
 		properties: ["Status", "Priority", "Assignees"],
@@ -412,97 +327,39 @@ export const manifest = defineManifest({
 		shot: { of: "330087152" },
 	},
 	props: {
-		tasks: defineProp<Held[]>()({
+		tasks: {
 			label: "Tasks",
-			where: [{ prop: "board", op: "is", value: { wants: "@default/editable-tabs/selection" } }],
-			default: [],
-		}),
-		groups: defineProp<Held[]>()({
+		},
+		groups: {
 			label: "Filter by",
 			hint: "The properties offered. Empty offers what the board names or the tasks carry.",
-			default: [],
 			describes: {
 				prop: { label: "Property", type: "text", required: true },
 				label: { label: "Label", type: "text" },
 				control: { label: "Control", type: "text" },
 			},
-		}),
-		openGroup: defineProp<string>()({
+		},
+		openGroup: {
 			label: "Open by default",
 			hint: "Whose choices unfold on opening. Name none and it opens folded.",
-			default: "",
-		}),
-		properties: defineProp<Held[]>()({
+		},
+		properties: {
 			label: "Board properties",
 			hint: "The properties this board names. Empty offers what the tasks carry.",
-			default: [],
 			describes: { name: { label: "Property", type: "text", required: true } },
-		}),
-		chosen: defineProp<Chosen>()({
+		},
+		chosen: {
+			keep: "screen",
 			label: "Chosen filters",
 			hint: "What is ticked, as a box. Point a widget's Where at it and this narrows it.",
 			shape: "conditions",
-			keep: "screen",
-			default: {},
-			writes: ["update"],
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ tasks, groups, openGroup, properties, chosen }) => {
-	const listed = useData(tasks.list, { limit: ALL_TASKS });
-	const rows: TaskRow[] = listed.data;
-	const authored = useData(groups.list, { limit: ALL_TASKS })
-		.data.map((held) => groupOf(held))
-		.filter((group: Group) => group.prop !== "");
-	const named = useData(properties.list, { limit: ALL_TASKS })
-		.data.map((held) => textOf(held, "name") || textOf(held, RECORD_NAME))
-		.filter(Boolean);
-	const shownGroups = groupsShown(authored, groupsFromBoard(named, rows), rows);
-	const applied: Chosen = (useData(chosen.get).data as Chosen) ?? {};
-
-	const triggerRef = useRef<HTMLButtonElement | null>(null);
-	const hasRoomForWord = useRoomForLabel(triggerRef);
-
-	const picking = useChosenDraft(applied, chosen);
-	const unfolded = String(useData(openGroup.get).data ?? "");
-	const [pressed, setPressed] = useState<string | null>(null);
-	const shown = pressed ?? unfolded;
-
-	return (
-		<div className="orbi orbi-filter">
-			<style>{CSS}</style>
-
-			<Popover
-				className="ofp-pop"
-				trigger={<FilterTrigger triggerRef={triggerRef} count={countOf(applied)} hasRoomForWord={hasRoomForWord} />}
-				isOpen={picking.isOpen}
-				onOpenChange={picking.change}
-			>
-				<div className="ofp-panel">
-					<PopoverSearch placeholder="Keyword" hint="Narrows the choices below, not the board">
-						{(needle: string) => (
-							<GroupList
-								groups={shownGroups}
-								rows={rows}
-								needle={needle}
-								unfolded={shown}
-								onUnfold={setPressed}
-								picking={picking}
-							/>
-						)}
-					</PopoverSearch>
-
-					<div className="ofp-foot">
-						<Button className="ofp-reset" onClick={picking.reset}>
-							Reset
-						</Button>
-						<Button className="ofp-apply" variant="accent" onClick={picking.apply}>
-							Apply
-						</Button>
-					</div>
-				</div>
-			</Popover>
-		</div>
-	);
+export const layout = defineLayout({
+	role: "control",
+	size: { preferredWidth: "full", preferredHeight: "auto", stackBelowPx: 320 },
 });
+
+export default FilterPanel;

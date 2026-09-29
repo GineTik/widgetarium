@@ -123,51 +123,25 @@
 			"kind": "collection",
 			"label": "Days",
 			"hint": "A folder of habit notes, or a folder of day notes for a single habit.",
-			"aka": [
-				"habits"
-			],
-			"writes": [
-				"list",
-				"get",
-				"update",
-				"create"
-			],
+			"aka": ["habits"],
+			"writes": ["list", "get", "update", "create"],
 			"describes": {
 				"days": {
 					"type": "date",
 					"many": true,
-					"aka": [
-						"entries",
-						"dates",
-						"log",
-						"checkins"
-					]
+					"aka": ["entries", "dates", "log", "checkins"]
 				},
 				"done": {
 					"type": "number",
-					"aka": [
-						"kept",
-						"value",
-						"count",
-						"steps",
-						"amount",
-						"score"
-					]
+					"aka": ["kept", "value", "count", "steps", "amount", "score"]
 				},
 				"date": {
 					"type": "date",
-					"aka": [
-						"created",
-						"day",
-						"when",
-						"on"
-					]
+					"aka": ["created", "day", "when", "on"]
 				},
 				"title": {
 					"type": "text",
-					"aka": [
-						"name"
-					]
+					"aka": ["name"]
 				}
 			},
 			"default": {
@@ -179,21 +153,22 @@
 			"control": "pick",
 			"label": "Which habit",
 			"hint": "The habit this grid writes into. Bind it to a habit list and the month follows what the list picks.",
-			"of": "days",
-			"field": "name",
-			"fallback": "first",
-			"writes": [
-				"get"
-			]
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "days",
+					"field": "name",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get"]
 		},
 		"isWeekStartingMonday": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": true
 			}
@@ -201,7 +176,15 @@
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"day-button.tsx",
+		"flame.tsx",
+		"grid-measures.ts",
+		"month-head.tsx",
+		"style.ts",
+		"types.ts",
+		"use-size.ts",
+		"weekday-names.tsx"
 	],
 	"dependencies": {},
 	"widgetDependencies": []

@@ -52,10 +52,7 @@
 			"default": "@default/obsidian-markdown-preview",
 			"surface": "group",
 			"gives": {
-				"source": [
-					"content",
-					"path"
-				]
+				"source": ["content", "path"]
 			}
 		}
 	},
@@ -64,10 +61,7 @@
 			"kind": "collection",
 			"label": "Items",
 			"hint": "The records the feed draws, one after another, newest first when the source is sorted that way.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
@@ -78,9 +72,7 @@
 			"type": "number",
 			"label": "Items per load",
 			"hint": "How many more are drawn each time the end of the feed comes into view.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 10
 			}
@@ -88,10 +80,17 @@
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"feed-item.tsx",
+		"feed-page.tsx",
+		"feed-pages.tsx",
+		"feed-said.tsx",
+		"more-when-seen.tsx",
+		"types.ts",
+		"use-item-source.ts",
+		"use-pages.ts",
+		"use-when-seen.ts"
 	],
 	"dependencies": {},
-	"widgetDependencies": [
-		"@default/obsidian-markdown-preview"
-	]
+	"widgetDependencies": ["@default/obsidian-markdown-preview"]
 }

@@ -1,5 +1,10 @@
-import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import { Pill, Row, RowLabel, RowValue, cn } from "widgetarium/kit";
+import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { Row, RowLabel } from "widgetarium/kit";
+import { Mark } from "./mark";
+import { Meta } from "./meta";
+import { textOf } from "./text-of";
+import { Trail } from "./trail";
+import type { Flight } from "./types";
 
 const CSS = `
 :is(.wg-root, .wg-portal) .wg-kit-row.flow-row {
@@ -132,110 +137,41 @@ const CSS = `
 `;
 
 const UNTITLED = "Untitled";
-const SEPARATOR = "·";
 
-const STATUS_SHAPES: Record<string, string> = {
-	running: "is-running",
-	waiting: "is-waiting",
-	queued: "is-waiting",
-	blocked: "is-blocked",
-	failed: "is-failed",
-	done: "is-done",
-};
+const FlightRow = createWidget({
+	inject: {
+		flight: IValueGateway.of(
+			z.custom<Flight>().default({
+				title: "Rewrite the board tree reader",
+				status: "running",
+				stage: "build",
+				project: "widgetarium",
+				branch: "unsafe-dev",
+				activity: "compiling widgets",
+				elapsed: "12m",
+				who: "Dana Reid",
+			}),
+		).pick("get"),
+	},
+	draw: ({ flight }) => {
+		const shown: Flight = flight ?? {};
+		const title = textOf(shown.title) ?? UNTITLED;
 
-const STATUS_LABELS: Record<string, string> = {
-	running: "Running",
-	waiting: "Waiting",
-	queued: "Queued",
-	blocked: "Blocked",
-	failed: "Failed",
-	done: "Done",
-};
+		return (
+			<Row className="flow-row">
+				<style>{CSS}</style>
+				<Mark status={textOf(shown.status)} />
+				<RowLabel title={title}>{title}</RowLabel>
+				<div className="flow-row-under">
+					<Meta flight={shown} />
+					<Trail flight={shown} />
+				</div>
+			</Row>
+		);
+	},
+});
 
-const STAGE_TONES: Record<string, string> = {
-	plan: "info",
-	build: "accent",
-	review: "warning",
-	test: "note",
-	ship: "success",
-	blocked: "error",
-	failed: "error",
-};
-
-type Flight = {
-	title?: string;
-	status?: string;
-	stage?: string;
-	project?: string;
-	branch?: string;
-	activity?: string;
-	elapsed?: string;
-	who?: string;
-};
-
-function textOf(value: unknown): string | undefined {
-	if (value === undefined || value === null) return undefined;
-	const said = String(value).trim();
-	return said === "" ? undefined : said;
-}
-
-function initialOf(who: string | undefined): string | undefined {
-	return who === undefined ? undefined : who.charAt(0).toUpperCase();
-}
-
-function Mark({ status }: { status: string | undefined }) {
-	const key = status?.toLowerCase() ?? "";
-	const label = STATUS_LABELS[key] ?? status;
-	return <span className={cn("flow-row-mark", STATUS_SHAPES[key])} role="img" aria-label={label} title={label} />;
-}
-
-function Meta({ flight }: { flight: Flight }) {
-	const parts = [
-		{ key: "project", className: "flow-row-part", text: textOf(flight.project) },
-		{ key: "branch", className: "flow-row-part is-branch", text: textOf(flight.branch) },
-		{ key: "activity", className: "flow-row-part", text: textOf(flight.activity) },
-	].filter((part) => part.text !== undefined);
-
-	return (
-		<div className="flow-row-meta">
-			{parts.flatMap((part, at) => [
-				at === 0 ? null : (
-					<span key={`${part.key}-sep`} className="flow-row-sep" aria-hidden="true">
-						{SEPARATOR}
-					</span>
-				),
-				<span key={part.key} className={part.className} title={part.text}>
-					{part.text}
-				</span>,
-			])}
-		</div>
-	);
-}
-
-// TRADE-OFF: a cell is drawn empty rather than dropped — a dropped one moves the column under it
-function Trail({ flight }: { flight: Flight }) {
-	const stage = textOf(flight.stage);
-	const elapsed = textOf(flight.elapsed);
-	const initial = initialOf(textOf(flight.who));
-
-	return (
-		<RowValue>
-			<span className="flow-row-cell is-stage">
-				{stage === undefined ? null : <Pill tone={STAGE_TONES[stage.toLowerCase()] ?? "neutral"}>{stage}</Pill>}
-			</span>
-			<span className="flow-row-cell is-time">{elapsed}</span>
-			<span className="flow-row-cell is-face">
-				{initial === undefined ? null : (
-					<span className="flow-row-face" aria-label={flight.who} title={flight.who}>
-						{initial}
-					</span>
-				)}
-			</span>
-		</RowValue>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(FlightRow, {
 	title: "Flight row",
 	description: "One piece of work in flight: where it stands, what it is doing, how long it has been going.",
 	keywords: [
@@ -254,8 +190,6 @@ export const manifest = defineManifest({
 		"pipeline",
 		"build",
 	],
-	role: "detail",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 160, stackBelowPx: 420 },
 	preview: {
 		size: { w: 5, h: 1 },
 		props: {
@@ -274,37 +208,17 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		flight: defineProp<Flight>()({
+		flight: {
 			label: "Flight",
 			hint: "The work this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			default: {
-				title: "Rewrite the board tree reader",
-				status: "running",
-				stage: "build",
-				project: "widgetarium",
-				branch: "unsafe-dev",
-				activity: "compiling widgets",
-				elapsed: "12m",
-				who: "Dana Reid",
-			},
-		}),
+		},
 	},
 });
 
-// TRADE-OFF: the kit row's own padding is dropped, because the item plate around it already pads
-export default createWidget(manifest, ({ flight }) => {
-	const shown: Flight = useValue(flight) ?? {};
-	const title = textOf(shown.title) ?? UNTITLED;
-
-	return (
-		<Row className="flow-row">
-			<style>{CSS}</style>
-			<Mark status={textOf(shown.status)} />
-			<RowLabel title={title}>{title}</RowLabel>
-			<div className="flow-row-under">
-				<Meta flight={shown} />
-				<Trail flight={shown} />
-			</div>
-		</Row>
-	);
+export const layout = defineLayout({
+	role: "detail",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 160, stackBelowPx: 420 },
 });
+
+// TRADE-OFF: the kit row's own padding is dropped, because the item plate around it already pads
+export default FlightRow;

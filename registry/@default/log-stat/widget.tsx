@@ -1,15 +1,13 @@
-import { createWidget, pickedValue, useData } from "widgetarium";
-import type {
-	Aka,
-	CollectionGateway,
-	Color,
-	Day,
-	GetAction,
-	ListAction,
-	Text,
-	UpdateAction,
-	ValueGateway,
-	VaultRecord,
+import {
+	ICrudGateway,
+	IValueGateway,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	pickedValue,
+	useData,
+	z,
 } from "widgetarium";
 import { FLAME, isoOf, readLog, streakOf } from "@default/lib";
 import type { LogEntry } from "@default/lib";
@@ -112,35 +110,38 @@ const STYLE = `
 }
 `;
 
-type Habit = VaultRecord & {
-	days?: (Day[] & Aka<"entries" | "dates" | "log" | "checkins">) | null;
-	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
-	title?: (Text & Aka<"name">) | null;
-	color?: (Color & Aka<"colour">) | null;
-	goal?: (number & Aka<"target">) | null;
-	maxGap?: (number & Aka<"max gap" | "grace">) | null;
-};
+const HabitSchema = VaultRecordSchema.extend({
+	path: z.string(),
+	name: z.string(),
+	days: z.array(z.string()).nullable().optional(),
+	done: z.number().nullable().optional(),
+	title: z.string().nullable().optional(),
+	color: z.string().nullable().optional(),
+	goal: z.number().nullable().optional(),
+	maxGap: z.number().nullable().optional(),
+});
+
+type Habit = z.infer<typeof HabitSchema>;
 
 type Reading = { value: number; unit: string; part?: number | undefined };
 
-type StatProps = {
-	habits: CollectionGateway<Habit, { list: ListAction }>;
-	pick: ValueGateway<unknown, { get: GetAction; update?: UpdateAction }>;
-	metric: ValueGateway<string>;
-	period: ValueGateway<number>;
-	look: ValueGateway<string>;
-};
-
 type Metric = { caption: string; glyph: string; tone: string };
 
-export default createWidget(
-	function HabitStat({ pick, metric: asked, period: lookback, habits, look }: StatProps) {
-		const picked = pickedValue(useData(pick.get).data);
+const LogStat = createWidget({
+	inject: {
+		habits: ICrudGateway.of(HabitSchema),
+		pick: IValueGateway.of(z.unknown()).pick("get", "update"),
+		metric: IValueGateway.of(z.string().default("streak")).pick("get"),
+		period: IValueGateway.of(z.number().default(30)).pick("get"),
+		look: IValueGateway.of(z.string().default("default")).pick("get"),
+	},
+	draw: ({ pick, metric: asked, period, habits, look }) => {
+		const picked = pickedValue(pick.value);
 		const habit = habitPicked(useData(habits.list).data, picked);
-		const metricKey = metricKeyOf(useData(asked.get).data);
+		const metricKey = metricKeyOf(asked);
 		const metric = METRICS[metricKey];
-		const isStat1 = useData(look.get).data === "stat1";
-		const reading = readingOf(metricKey, habit, useData(lookback.get).data);
+		const isStat1 = look === "stat1";
+		const reading = readingOf(metricKey, habit, period);
 
 		return (
 			<div className={isStat1 ? "habit-stat is-stat1" : "habit-stat"} style={toneVarsOf(metric, habit)}>
@@ -167,44 +168,113 @@ export default createWidget(
 			</div>
 		);
 	},
-	{
-		size: { preferredWidth: 240, preferredHeight: "auto", at: [{ belowPx: 320, preferredWidth: "full" }] },
+});
+
+export const metadata = defineMetadata(LogStat, {
+	title: "Log stat",
+	description: "One number from a dated log: its streak, its best, how often it is kept.",
+	keywords: [
+		"stat",
+		"streak",
+		"best",
+		"rate",
+		"total",
+		"goal",
+		"number",
+		"metric",
+		"habit",
+		"tile",
+		"count",
+		"progress",
+	],
+	preview: {
+		size: { w: 3, h: 1 },
 		props: {
 			habits: {
-				label: "Logs",
-				default: { path: "Habits" },
-			},
-			pick: {
-				label: "Which log",
-				hint: "The log this number is about.",
-				of: "habits",
-				field: "name",
-				fallback: "first",
-			},
-			metric: {
-				kind: "value",
-				wasSetting: true,
-				type: "line",
-				label: "streak · best · total · rate · goal",
-				default: { value: "streak" },
-			},
-			period: {
-				kind: "value",
-				wasSetting: true,
-				type: "number",
-				label: "Days the rate looks back over",
-				default: { value: 30 },
-			},
-			look: {
-				kind: "value",
-				type: "line",
-				label: "Look: default · stat1",
-				design: true,
-				default: { value: "default" },
+				rows: [
+					{
+						path: "Habits/Exercise.md",
+						name: "Exercise",
+						props: {
+							title: "Exercise",
+							color: "#4CAF50",
+							maxGap: 1,
+							goal: 21,
+							entries: [
+								"2026-07-04",
+								"2026-07-05",
+								"2026-07-06",
+								"2026-07-07",
+								"2026-07-08",
+								"2026-07-13",
+								"2026-07-14",
+								"2026-07-15",
+								"2026-07-16",
+								"2026-07-17",
+								"2026-07-19",
+								"2026-07-21",
+								"2026-07-23",
+								"2026-07-24",
+								"2026-07-25",
+								"2026-07-28",
+								"2026-07-29",
+								"2026-07-31",
+								"2026-08-01",
+								"2026-08-02",
+								"2026-08-05",
+								"2026-08-06",
+								"2026-08-07",
+								"2026-08-08",
+								"2026-08-09",
+								"2026-08-11",
+								"2026-08-12",
+								"2026-08-16",
+								"2026-08-17",
+								"2026-08-18",
+								"2026-08-21",
+								"2026-08-22",
+								"2026-08-23",
+								"2026-08-25",
+								"2026-08-26",
+								"2026-08-27",
+								"2026-08-29",
+								"2026-08-31",
+							],
+						},
+					},
+				],
 			},
 		},
+		shot: { of: "80335274" },
 	},
-);
+	props: {
+		habits: { label: "Logs" },
+		pick: {
+			label: "Which log",
+			hint: "The log this number is about.",
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "habits", field: "name", whenNothingPicked: "first" },
+			},
+		},
+		metric: { label: "streak · best · total · rate · goal" },
+		period: { label: "Days the rate looks back over" },
+		look: { label: "Look: default · stat1", design: true },
+	},
+});
+
+export const layout = defineLayout({
+	role: "indicator",
+	size: {
+		preferredWidth: 240,
+		preferredHeight: "auto",
+		at: [{ belowPx: 320, preferredWidth: "full" }],
+		collapseBelowPx: 110,
+		stackBelowPx: 140,
+	},
+});
+
+export default LogStat;
 
 const TROPHY =
 	"M6 2.5h12v2h3.25c.41 0 .75.34.75.75V8a5.25 5.25 0 0 1-4.9 5.24A6.5 6.5 0 0 1 13 16.42V19h3.25c.41 0 .75.34.75.75V22H7v-2.25c0-.41.34-.75.75-.75H11v-2.58a6.5 6.5 0 0 1-4.1-3.18A5.25 5.25 0 0 1 2 8V5.25c0-.41.34-.75.75-.75H6v-2Zm12 4v4.52A3.25 3.25 0 0 0 20 8V6.5h-2ZM4 6.5V8a3.25 3.25 0 0 0 2 3.02V6.5H4Z";

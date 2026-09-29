@@ -43,18 +43,14 @@
 			"control": "json",
 			"label": "Figure",
 			"hint": "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": {}
 			}
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx"
-	],
+	"files": ["widget.tsx", "missing-image.tsx", "rendered-markdown.tsx", "use-markdown-rendered-into.ts"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

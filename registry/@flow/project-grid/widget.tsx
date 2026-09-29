@@ -1,85 +1,93 @@
-import { useCallback, useEffect, useState } from "react";
-import { createWidget, defineManifest, defineProp, pickedValue, useData } from "widgetarium";
-import type { Row, Slot, VaultRecord, WidgetProps } from "widgetarium";
-import { Button, Count, SlotList, cn } from "widgetarium/kit";
-
-const CSS = `
-.flow-project-grid {
-	display: flex;
-	flex: 1 1 auto;
-	flex-direction: column;
-	gap: var(--wg-gap-items);
-	min-width: 0;
-	min-height: 0;
-	overflow: auto;
-}
-
-.flow-project-grid .flow-project-grid-cells.wg-kit-slot-list {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
-	align-content: start;
-}
-
-.flow-project-grid-cell {
-	display: flex;
-	min-width: 0;
-	border-radius: var(--wg-kit-plate);
-	cursor: pointer;
-	transition:
-		box-shadow var(--wg-quick) var(--wg-ease),
-		transform var(--wg-press) var(--wg-ease);
-}
-
-.flow-project-grid-cell > * {
-	flex: 1 1 auto;
-	min-width: 0;
-}
-
-.flow-project-grid-cell:active {
-	transform: scale(0.985);
-}
-
-.flow-project-grid-cell.is-picked {
-	box-shadow: 0 0 0 2px var(--wg-kit-accent);
-}
-
-.flow-project-grid-cell:focus-visible {
-	outline: 2px solid var(--wg-kit-accent);
-	outline-offset: 2px;
-}
-
-.flow-project-grid-more {
-	flex: none;
-	align-self: flex-start;
-}
-
-.flow-project-grid-said {
-	margin: 0;
-	font-size: var(--font-ui-small);
-	color: var(--wg-kit-text-muted);
-}
-`;
+import { useCallback } from "react";
+import {
+	IListGateway,
+	ISlot,
+	IValueGateway,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	pickedValue,
+	useData,
+	z,
+} from "widgetarium";
+import type { Row } from "widgetarium";
+import { Cells } from "./cells";
+import { GridSaid } from "./grid-said";
+import type { Drawn, Project, ProjectSlot } from "./types";
+import { useShown } from "./use-shown";
 
 const PAGE_SIZE = 12;
-const MORE = "Show more";
+
 const NO_SLOT = "This grid has no widget to draw its projects with.";
 const NOTHING = "No projects in what this tile is bound to.";
-const PRESS_KEYS = ["Enter", " "];
 
-type Project = VaultRecord & {
-	mark?: string | null;
-	repository?: string | null;
-	open?: number | string | null;
-	doing?: number | string | null;
-	done?: number | string | null;
-	touched?: string | null;
-};
+export const ProjectSchema = VaultRecordSchema.extend({
+	mark: z
+		.string()
+		.nullable()
+		.optional()
+		.meta({ aka: ["emoji", "icon", "symbol"] }),
+	repository: z
+		.string()
+		.nullable()
+		.optional()
+		.meta({ aka: ["repo", "git", "source", "folder"] }),
+	open: z
+		.union([z.number(), z.string()])
+		.nullable()
+		.optional()
+		.meta({ aka: ["todo", "backlog", "waiting"] }),
+	doing: z
+		.union([z.number(), z.string()])
+		.nullable()
+		.optional()
+		.meta({ aka: ["active", "wip", "inProgress"] }),
+	done: z
+		.union([z.number(), z.string()])
+		.nullable()
+		.optional()
+		.meta({ aka: ["closed", "finished", "complete"] }),
+	touched: z
+		.string()
+		.nullable()
+		.optional()
+		.meta({ aka: ["updated", "modified", "lastTouched", "changed"] }),
+});
 
-type GridProps = WidgetProps<typeof manifest>;
-type ProjectSlot = Slot<{ project: Row<Project> }>;
-type Drawn = NonNullable<ProjectSlot>;
+const ProjectGrid = createWidget({
+	inject: {
+		projects: IListGateway.of(ProjectSchema, { default: [] }),
+		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+		pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
+		card: ISlot.of<{ project: Row<Project> }>({
+			default: "@flow/project-card",
+			surface: "group",
+			gives: { project: ["mark", "name", "repository", "open", "doing", "done", "touched"] },
+		}),
+	},
+	draw: ({ projects, selection, pageSize, card }) => {
+		const size = askedSize(pageSize);
+		const { shown, more } = useShown(projects.id, size);
+		const listed = useData(projects.list, { offset: 0, limit: shown });
+		const picked = pickedValue(selection.value);
+		const pick = useCallback((ref: string) => void selection.update(ref), [selection.update]);
+		const said = saidInstead(card, listed);
+		if (said) return <GridSaid text={said} />;
+		return (
+			<Cells
+				Drawn={card as Drawn}
+				rows={listed.data as Row<Project>[]}
+				picked={picked}
+				onPick={pick}
+				rest={restOf(listed.total, listed.data.length)}
+				onMore={more}
+			/>
+		);
+	},
+});
 
-export const manifest = defineManifest({
+export const metadata = defineMetadata(ProjectGrid, {
 	title: "Project grid",
 	description: "Every project as an equal card across the row, and pressing one picks it for the rest of the screen.",
 	keywords: [
@@ -95,16 +103,6 @@ export const manifest = defineManifest({
 		"picker",
 		"work",
 	],
-	role: "collection",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
-	slots: {
-		card: {
-			of: "widget",
-			default: "@flow/project-card",
-			surface: "group",
-			gives: { project: ["mark", "name", "repository", "open", "doing", "done", "touched"] },
-		},
-	},
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
@@ -144,54 +142,39 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		projects: defineProp<Project[]>()({
+		projects: {
 			label: "Projects",
 			hint: "One note per project. Bind the folder they live in.",
-			default: [],
 			describes: {
-				mark: { label: "Mark", type: "line", aka: ["emoji", "icon", "symbol"] },
-				repository: { label: "Repository", type: "line", aka: ["repo", "git", "source", "folder"] },
-				open: { label: "Open", type: "number", aka: ["todo", "backlog", "waiting"] },
-				doing: { label: "Doing", type: "number", aka: ["active", "wip", "inProgress"] },
-				done: { label: "Done", type: "number", aka: ["closed", "finished", "complete"] },
-				touched: { label: "Touched", type: "date", aka: ["updated", "modified", "lastTouched", "changed"] },
+				mark: { label: "Mark", type: "line" },
+				repository: { label: "Repository", type: "line" },
+				open: { label: "Open", type: "number" },
+				doing: { label: "Doing", type: "number" },
+				done: { label: "Done", type: "number" },
+				touched: { label: "Touched", type: "date" },
 			},
-		}),
-		selection: defineProp<string>()({
+		},
+		selection: {
 			label: "Selected project",
 			hint: "The project the pressed card names. Bind a task list or a docs tree to it and they follow the press.",
-			of: "projects",
-			field: "name",
-			fallback: "first",
-			writes: ["update"],
-		}),
-		pageSize: defineProp<number>()({
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "projects", field: "name", whenNothingPicked: "first" },
+			},
+		},
+		pageSize: {
 			label: "Projects per load",
 			hint: "How many cards are drawn before the rest are asked for.",
-			default: PAGE_SIZE,
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ projects, selection, pageSize, slots }) => {
-	const size = useAsked(pageSize);
-	const { shown, more } = useShown(projects.id, size);
-	const listed = useData(projects.list, { offset: 0, limit: shown });
-	const picked = pickedValue(useData(selection.get).data);
-	const pick = useCallback((ref: string) => void selection.update(ref), [selection]);
-	const said = saidInstead(slots?.card, listed);
-	if (said) return <GridSaid text={said} />;
-	return (
-		<Cells
-			Drawn={slots?.card as Drawn}
-			rows={listed.data as Row<Project>[]}
-			picked={picked}
-			onPick={pick}
-			rest={restOf(listed.total, listed.data.length)}
-			onMore={more}
-		/>
-	);
+export const layout = defineLayout({
+	role: "collection",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
 });
+
+export default ProjectGrid;
 
 function saidInstead(
 	slot: ProjectSlot | undefined,
@@ -202,81 +185,11 @@ function saidInstead(
 	return !listed.isLoading && listed.total === 0 ? NOTHING : null;
 }
 
-function useAsked(pageSize: GridProps["pageSize"]) {
-	const asked = Math.round(Number(useData(pageSize.get).data));
+function askedSize(pageSize: number) {
+	const asked = Math.round(Number(pageSize));
 	return asked > 0 ? asked : PAGE_SIZE;
-}
-
-function useShown(source: string, size: number) {
-	const [shown, setShown] = useState(size);
-	const more = useCallback(() => setShown((held) => held + size), [size]);
-	useEffect(() => setShown(size), [source, size]);
-	return { shown, more };
 }
 
 function restOf(total: number | null, drawn: number) {
 	return Math.max(0, (total ?? drawn) - drawn);
-}
-
-function GridSaid({ text }: { text: string }) {
-	return (
-		<div className="flow-project-grid">
-			<style>{CSS}</style>
-			<p className="flow-project-grid-said">{text}</p>
-		</div>
-	);
-}
-
-type CellsProps = {
-	Drawn: Drawn;
-	rows: Row<Project>[];
-	picked: string;
-	onPick: (ref: string) => void;
-	rest: number;
-	onMore: () => void;
-};
-
-function Cells({ Drawn, rows, picked, onPick, rest, onMore }: CellsProps) {
-	return (
-		<div className="flow-project-grid">
-			<style>{CSS}</style>
-			<SlotList slot={Drawn} className="flow-project-grid-cells">
-				{rows.map((row) => (
-					<Cell key={row.ref} Drawn={Drawn} project={row} isPicked={isPicked(row, picked)} onPick={onPick} />
-				))}
-			</SlotList>
-			{rest > 0 ? (
-				<Button className="flow-project-grid-more" onClick={onMore}>
-					{MORE}
-					<Count>{rest}</Count>
-				</Button>
-			) : null}
-		</div>
-	);
-}
-
-function isPicked(row: Row<Project>, picked: string) {
-	return picked !== "" && String(row.name ?? "") === picked;
-}
-
-type CellProps = { Drawn: Drawn; project: Row<Project>; isPicked: boolean; onPick: (ref: string) => void };
-
-function Cell({ Drawn, project, isPicked: isOn, onPick }: CellProps) {
-	const press = () => onPick(project.ref);
-	return (
-		<div
-			className={cn("flow-project-grid-cell", isOn && "is-picked")}
-			role="button"
-			tabIndex={0}
-			aria-pressed={isOn}
-			onClick={press}
-			onKeyDown={(event) => {
-				if (!PRESS_KEYS.includes(event.key)) return;
-				event.preventDefault();
-				press();
-			}}
-		>
-			<Drawn project={project} />
-		</div>
-	);
 }

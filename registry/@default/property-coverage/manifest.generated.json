@@ -60,10 +60,7 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes whose properties are counted.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
@@ -74,12 +71,8 @@
 			"type": "number",
 			"label": "Properties shown at first",
 			"hint": "How many of the most used properties get a row before anything is pressed.",
-			"aka": [
-				"shown"
-			],
-			"writes": [
-				"get"
-			],
+			"aka": ["shown"],
+			"writes": ["get"],
 			"default": {
 				"value": 10
 			}
@@ -90,9 +83,7 @@
 			"type": "number",
 			"label": "Properties added by a press",
 			"hint": "How many more rows each press of Show more draws.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 10
 			}
@@ -103,9 +94,7 @@
 			"type": "boolean",
 			"label": "Show more button",
 			"hint": "Whether a press may draw past the first rows. Without it the rest are named as a count.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": true
 			}
@@ -114,6 +103,13 @@
 	"migrates": [],
 	"files": [
 		"widget.tsx",
+		"ceiling.tsx",
+		"line.tsx",
+		"meter-label.tsx",
+		"meter.tsx",
+		"meters.tsx",
+		"more.tsx",
+		"types.ts",
 		"widget.css"
 	],
 	"dependencies": {},

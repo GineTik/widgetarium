@@ -80,13 +80,7 @@
 			"default": "@flow/file-row",
 			"surface": "group",
 			"gives": {
-				"file": [
-					"path",
-					"added",
-					"removed",
-					"change",
-					"from"
-				]
+				"file": ["path", "added", "removed", "change", "from"]
 			}
 		}
 	},
@@ -95,62 +89,37 @@
 			"kind": "collection",
 			"label": "Files",
 			"hint": "One record per file the change touched. Bind a commit list beside this one and the two move together.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"describes": {
 				"path": {
 					"label": "Path",
 					"type": "line",
-					"aka": [
-						"file",
-						"filename",
-						"filePath"
-					]
+					"aka": ["file", "filename", "filePath"]
 				},
 				"added": {
 					"label": "Lines added",
 					"type": "number",
-					"aka": [
-						"insertions",
-						"additions"
-					]
+					"aka": ["insertions", "additions"]
 				},
 				"removed": {
 					"label": "Lines removed",
 					"type": "number",
-					"aka": [
-						"deletions",
-						"removals"
-					]
+					"aka": ["deletions", "removals"]
 				},
 				"change": {
 					"label": "Change",
 					"type": "line",
-					"aka": [
-						"status",
-						"kind",
-						"changeType"
-					]
+					"aka": ["status", "kind", "changeType"]
 				},
 				"from": {
 					"label": "Renamed from",
 					"type": "line",
-					"aka": [
-						"oldPath",
-						"previousPath",
-						"renamedFrom"
-					]
+					"aka": ["oldPath", "previousPath", "renamedFrom"]
 				},
 				"commit": {
 					"label": "Commit",
 					"type": "line",
-					"aka": [
-						"sha",
-						"revision",
-						"hash"
-					]
+					"aka": ["sha", "revision", "hash"]
 				}
 			},
 			"where": [
@@ -177,11 +146,13 @@
 			"control": "pick",
 			"label": "Selected file",
 			"hint": "Which file is picked. A diff standing beside this list binds to it and follows every press.",
-			"of": "files",
-			"writes": [
-				"get",
-				"update"
-			],
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "files"
+				}
+			},
+			"writes": ["get", "update"],
 			"default": {
 				"value": null
 			}
@@ -192,9 +163,7 @@
 			"type": "line",
 			"label": "Heading",
 			"hint": "The words standing before the count. Left empty, only the count is drawn.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": "Files touched"
 			}
@@ -205,20 +174,14 @@
 			"type": "number",
 			"label": "Files shown",
 			"hint": "How many rows are read at once, and how many more each press adds.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 200
 			}
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx"
-	],
+	"files": ["widget.tsx", "head.tsx", "more-row.tsx", "picked-row.tsx", "text-of.ts", "types.ts", "use-shown.ts"],
 	"dependencies": {},
-	"widgetDependencies": [
-		"@flow/file-row"
-	]
+	"widgetDependencies": ["@flow/file-row"]
 }

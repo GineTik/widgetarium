@@ -1,8 +1,20 @@
-import { canDo, createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import type { Aka, Day, VaultRecord } from "widgetarium";
-import { Emoji } from "widgetarium/kit/emojis";
-import { useEffect, useRef, useState } from "react";
-import { daysLogged, FLAME, isoOf, pressing, shiftedBy, streakOf } from "@default/lib";
+import {
+	ICrudGateway,
+	IValueGateway,
+	VaultRecordSchema,
+	canDo,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
+import { useRef } from "react";
+import { daysLogged, isoOf, pressing, shiftedBy, streakOf } from "@default/lib";
+import { DayButton } from "./day-button";
+import { Summary } from "./summary";
+import type { DayColumn } from "./types";
+import { useWidth } from "./use-width";
 
 const COLUMN_PX = 44;
 const RING_PX = 36;
@@ -184,33 +196,20 @@ const STYLE = `
 }
 `;
 
-const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const ONE_DAY = "{count} day";
-const MANY_DAYS = "{count} days";
-const A_KEPT_DAY = "{date}, kept";
-const AN_OPEN_DAY = "{date}, not kept";
-
-function filled(sentence: string, values: Record<string, string>) {
-	return Object.entries(values).reduce((held, [name, value]) => held.replace(`{${name}}`, value), sentence);
-}
-
-type DayNote = VaultRecord & {
-	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
-	date?: (Day & Aka<"created" | "day" | "when" | "on">) | null;
-	props?: Record<string, unknown>;
-};
-
-type DayColumn = {
-	day: string;
-	kept: boolean;
-	seat: string;
-	ring: string;
-	canPress: boolean;
-};
-
-function weekdayOf(iso: string) {
-	return WEEKDAYS[new Date(Date.parse(`${iso}T00:00:00Z`)).getUTCDay()];
-}
+const DayNoteSchema = VaultRecordSchema.extend({
+	path: z.string(),
+	name: z.string(),
+	done: z
+		.number()
+		.nullable()
+		.optional()
+		.meta({ aka: ["kept", "value", "count", "steps", "amount", "score"] }),
+	date: z
+		.string()
+		.nullable()
+		.optional()
+		.meta({ aka: ["created", "day", "when", "on"] }),
+});
 
 function columnsAcrossFullWidth(railWidth: number) {
 	return Math.max(1, Math.floor(railWidth / COLUMN_PX));
@@ -257,70 +256,49 @@ function dayColumns(shown: string[], keptDays: Set<string>, today: string, canWr
 	});
 }
 
-function useWidth(node: { current: HTMLElement | null }, fallback: number) {
-	const [width, setWidth] = useState(fallback);
-	useEffect(() => {
-		const held = node.current;
-		if (!held || typeof ResizeObserver !== "function") return undefined;
-		const watcher = new ResizeObserver(([entry]) => {
-			if (entry) setWidth(entry.contentRect.width);
-		});
-		watcher.observe(held);
-		return () => watcher.disconnect();
-	}, []);
-	return width;
-}
+const HabitStreak = createWidget({
+	inject: {
+		days: ICrudGateway.of(DayNoteSchema).pick("list", "update", "create"),
+		title: IValueGateway.of(z.string().default("Habit")).pick("get"),
+		emoji: IValueGateway.of(z.string().default("smiling-face-with-halo")).pick("get"),
+	},
+	draw: ({ days, title, emoji }) => {
+		const rail = useRef<HTMLDivElement | null>(null);
+		const railWidth = useWidth(rail, 7 * COLUMN_PX);
+		const today = isoOf(new Date());
 
-function Flame({ size }: { size: number }) {
-	return (
-		<svg className="hs-flame" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-			<path fillRule="evenodd" clipRule="evenodd" d={FLAME} />
-		</svg>
-	);
-}
+		const listed = useData(days.list);
+		const { noteByDay, keptDays } = daysLogged(listed.data);
 
-function DayButton({ column, onPress }: { column: DayColumn; onPress: () => void }) {
-	return (
-		<button
-			type="button"
-			className="hs-day"
-			disabled={!column.canPress}
-			aria-pressed={column.kept}
-			aria-label={filled(column.kept ? A_KEPT_DAY : AN_OPEN_DAY, { date: column.day })}
-			onClick={onPress}
-		>
-			<span className="hs-head">
-				<span className="hs-name">{weekdayOf(column.day)}</span>
-				<span className="hs-date">{Number(column.day.slice(8))}</span>
-			</span>
-			<span className={column.seat}>
-				<span className={column.ring}>{column.kept ? <Flame size={22} /> : null}</span>
-			</span>
-		</button>
-	);
-}
+		const shown = daysAround(today, columnsAcrossFullWidth(railWidth));
+		const columnPx = columnWidth(railWidth, shown.length);
+		const streak = streakOf(
+			[...keptDays].map((date) => ({ date })),
+			{ today },
+		);
+		const press = pressing({ days, noteByDay, keptDays });
+		const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
 
-function Summary({ habitName, face, count }: { habitName: string; face: string; count: number }) {
-	return (
-		<div className="hs-top">
-			<div className="hs-title">
-				<Emoji name={face} size={18} />
-				<span>{habitName}</span>
+		return (
+			<div className="habit-streak" style={{ "--hs-column": `${columnPx}px` } as Record<string, string>}>
+				<style>{STYLE}</style>
+				<Summary habitName={title} face={emoji} count={streak.current} />
+				<div className="hs-rail" ref={rail}>
+					<i className={edgeClass(keptDays, shown[0], -1)} />
+					{columns.map((column) => (
+						<DayButton key={column.day} column={column} onPress={() => press(column.day)} />
+					))}
+					<i className={edgeClass(keptDays, shown[shown.length - 1], 1)} />
+				</div>
 			</div>
-			<div className={`hs-count${count === 0 ? " is-cold" : ""}`}>
-				<Flame size={16} />
-				<span>{filled(count === 1 ? ONE_DAY : MANY_DAYS, { count: String(count) })}</span>
-			</div>
-		</div>
-	);
-}
+		);
+	},
+});
 
-export const manifest = defineManifest({
+export const metadata = defineMetadata(HabitStreak, {
 	title: "Habit streak",
 	description: "The days around today as a run of rings, each one a press away from kept.",
 	keywords: ["streak", "days", "row", "week", "run", "fire", "flame", "daily", "habit", "tracker", "keep", "press"],
-	role: "indicator",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 170, stackBelowPx: 260 },
 	preview: {
 		size: { w: 8, h: 2 },
 		props: {
@@ -342,60 +320,27 @@ export const manifest = defineManifest({
 		shot: { of: "499947623" },
 	},
 	props: {
-		days: defineProp<DayNote[]>()({
-			label: "Days",
+		days: {
 			aka: ["habits"],
-			default: [],
-			writes: ["update", "create"],
 			describes: {
-				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
-				date: { type: "date", aka: ["created", "day", "when", "on"] },
+				done: { type: "number" },
+				date: { type: "date" },
 			},
-		}),
-		title: defineProp<string>()({
+		},
+		title: {
 			label: "Habit name",
 			hint: "What is written beside the emoji. Type one here, or take it from another widget's value.",
-			default: "Habit",
-		}),
-		emoji: defineProp<string>()({
-			label: "Emoji",
+		},
+		emoji: {
 			hint: "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
 			control: "emoji",
-			default: "smiling-face-with-halo",
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ days, title, emoji }) => {
-	const rail = useRef<HTMLDivElement | null>(null);
-	const railWidth = useWidth(rail, 7 * COLUMN_PX);
-	const today = isoOf(new Date());
-
-	const listed = useData(days.list);
-	const habitName = String(useData(title.get).data ?? "");
-	const face = String(useData(emoji.get).data ?? "");
-	const { noteByDay, keptDays } = daysLogged(listed.data);
-
-	const shown = daysAround(today, columnsAcrossFullWidth(railWidth));
-	const columnPx = columnWidth(railWidth, shown.length);
-	const streak = streakOf(
-		[...keptDays].map((date) => ({ date })),
-		{ today },
-	);
-	const press = pressing({ days, noteByDay, keptDays });
-	const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
-
-	return (
-		<div className="habit-streak" style={{ "--hs-column": `${columnPx}px` } as Record<string, string>}>
-			<style>{STYLE}</style>
-			<Summary habitName={habitName} face={face} count={streak.current} />
-			<div className="hs-rail" ref={rail}>
-				<i className={edgeClass(keptDays, shown[0], -1)} />
-				{columns.map((column) => (
-					<DayButton key={column.day} column={column} onPress={() => press(column.day)} />
-				))}
-				<i className={edgeClass(keptDays, shown[shown.length - 1], 1)} />
-			</div>
-		</div>
-	);
+export const layout = defineLayout({
+	role: "indicator",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 170, stackBelowPx: 260 },
 });
+
+export default HabitStreak;

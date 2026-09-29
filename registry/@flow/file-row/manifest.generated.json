@@ -48,9 +48,7 @@
 			"control": "json",
 			"label": "File",
 			"hint": "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": {
 					"filePath": "src/engine/catalogue-index.js",
@@ -62,9 +60,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx"
-	],
+	"files": ["widget.tsx", "diff-bar.tsx", "diff-stat.tsx", "kinds.ts", "path-text.tsx", "types.ts", "was-path.tsx"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

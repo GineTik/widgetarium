@@ -1,55 +1,58 @@
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
+import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Icon, IconButton } from "widgetarium/kit";
 
 const CSS = `
 .wg-toggle { display: flex; align-items: center; justify-content: flex-start; }
 `;
 
-export const manifest = defineManifest({
-	title: "Toggle",
-	description: "A button that opens a box which collapsed because the screen is too narrow for it.",
-	keywords: ["toggle", "button", "menu", "drawer", "sheet", "sidebar", "open", "collapse", "trigger", "hamburger"],
-	role: "control",
-	size: { preferredWidth: 240, preferredHeight: "auto" },
-	props: {
-		open: defineProp<boolean>()({
-			label: "Open",
-			hint: "Whether the box this opens is open. A box names it as its trigger, and reads it.",
-			keep: "screen",
-			default: false,
-			writes: ["update"],
-		}),
-		icon: defineProp<string>()({
-			label: "Icon",
-			hint: "The icon drawn on the button, picked off the grid: the kit's own glyphs and all of Lucide.",
-			control: "icon",
-			default: "menu",
-		}),
-		label: defineProp<string>()({
-			label: "Label",
-			hint: "What a screen reader says the button does.",
-			default: "Open the panel",
-		}),
+const ToggleWidget = createWidget({
+	inject: {
+		open: IValueGateway.of(z.boolean().default(false)).pick("get", "update"),
+		icon: IValueGateway.of(z.string().default("menu")).pick("get"),
+		label: IValueGateway.of(z.string().default("Open the panel")).pick("get"),
+	},
+	draw: ({ open, icon, label }) => {
+		const isOpen = open.value === true;
+
+		return (
+			<div className="wg-toggle">
+				<style>{CSS}</style>
+				<IconButton
+					variant="raised"
+					size="l"
+					label={label || "Open the panel"}
+					aria-pressed={String(isOpen)}
+					onClick={() => open.update(!isOpen)}
+				>
+					<Icon name={icon || "menu"} size={22} />
+				</IconButton>
+			</div>
+		);
 	},
 });
 
-export default createWidget(manifest, ({ open, icon, label }) => {
-	const isOpen = useData(open.get).data === true;
-	const glyph = String(useData(icon.get).data ?? "") || "menu";
-	const said = String(useData(label.get).data ?? "") || "Open the panel";
-
-	return (
-		<div className="wg-toggle">
-			<style>{CSS}</style>
-			<IconButton
-				variant="raised"
-				size="l"
-				label={said}
-				aria-pressed={String(isOpen)}
-				onClick={() => open.update(!isOpen)}
-			>
-				<Icon name={glyph} size={22} />
-			</IconButton>
-		</div>
-	);
+export const metadata = defineMetadata(ToggleWidget, {
+	title: "Toggle",
+	description: "A button that opens a box which collapsed because the screen is too narrow for it.",
+	keywords: ["toggle", "button", "menu", "drawer", "sheet", "sidebar", "open", "collapse", "trigger", "hamburger"],
+	props: {
+		open: {
+			keep: "screen",
+			label: "Open",
+			hint: "Whether the box this opens is open. A box names it as its trigger, and reads it.",
+		},
+		icon: {
+			label: "Icon",
+			hint: "The icon drawn on the button, picked off the grid: the kit's own glyphs and all of Lucide.",
+			control: "icon",
+		},
+		label: {
+			label: "Label",
+			hint: "What a screen reader says the button does.",
+		},
+	},
 });
+
+export const layout = defineLayout({ role: "control", size: { preferredWidth: 240, preferredHeight: "auto" } });
+
+export default ToggleWidget;

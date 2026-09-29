@@ -1,4 +1,14 @@
-import { createWidget, defineManifest, defineProp, fieldOf, textOf, useData } from "widgetarium";
+import {
+	IListGateway,
+	IValueGateway,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	fieldOf,
+	textOf,
+	useData,
+	z,
+} from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, Segmented } from "widgetarium/kit";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -82,95 +92,110 @@ function useTrackFits() {
 	return { isFitting, holdHost };
 }
 
-export const manifest = defineManifest({
+const ChoiceSchema = z.looseObject({
+	label: z.string().optional(),
+	value: z.string().optional(),
+	hidden: z.boolean().optional(),
+});
+
+const SegmentedSwitch = createWidget({
+	inject: {
+		options: IListGateway.of(ChoiceSchema, { default: [{ label: "Git tree" }, { label: "Report" }] }),
+		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+	},
+	draw: ({ options, selection }) => {
+		const listed = useData(options.list, { limit: ALL_OPTIONS });
+		const { isFitting, holdHost } = useTrackFits();
+		const [isOpen, setOpen] = useState(false);
+
+		const rows: Option[] = listed.data.filter((held) => !fieldOf(held, HIDDEN)).map((held) => optionOf(held.ref, held));
+		const active = rows.find((row) => row.value === selection.value) ?? rows[0] ?? null;
+
+		if (rows.length === 0) return null;
+
+		const choose = (ref: string) => selection.update(ref);
+
+		const onKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+			const from = rows.findIndex((row) => row.ref === active?.ref);
+			const at = steppedTo(event.key, Math.max(from, 0), rows.length);
+			const picked = at === null ? null : rows[at];
+			if (at === null || !picked) return;
+			event.preventDefault();
+			choose(picked.ref);
+			event.currentTarget.querySelectorAll<HTMLElement>(".wg-kit-seg button")[at]?.focus();
+		};
+
+		const trigger = (
+			<Button block className={`wg-sgs-pick${isOpen ? " is-open" : ""}`} aria-label="Change what is shown">
+				<ButtonLabel>{active?.label || UNNAMED}</ButtonLabel>
+				<Icon name="chevron" size={15} className="wg-sgs-caret" />
+			</Button>
+		);
+
+		return (
+			<div className="wg-segmented-switch" ref={holdHost} onKeyDown={isFitting ? onKeys : undefined}>
+				<style>{CSS}</style>
+				{isFitting ? (
+					<Segmented
+						items={rows.map((row) => ({ value: row.ref, label: row.label || UNNAMED }))}
+						value={active?.ref ?? ""}
+						onChange={choose}
+					/>
+				) : (
+					<Popover trigger={trigger} isOpen={isOpen} onOpenChange={setOpen}>
+						{rows.map((row) => (
+							<PopoverItem
+								key={row.ref}
+								checked={row.ref === active?.ref}
+								onClick={() => {
+									setOpen(false);
+									choose(row.ref);
+								}}
+							>
+								{row.label || UNNAMED}
+							</PopoverItem>
+						))}
+					</Popover>
+				)}
+			</div>
+		);
+	},
+});
+
+export const metadata = defineMetadata(SegmentedSwitch, {
 	title: "Segmented switch",
 	description: "A filled track whose raised chip says which of two views of the same content is shown.",
 	keywords: ["segmented", "switch", "control", "toggle", "chip", "track", "mode", "views", "pill", "choice", "between"],
-	role: "control",
-	size: { preferredWidth: 360, preferredHeight: "auto", collapseBelowPx: MENU_BELOW_PX },
 	preview: {
 		size: { w: 2, h: 1 },
 		props: { options: { rows: [{ label: "Git tree" }, { label: "Report" }] } },
 	},
 	props: {
-		options: defineProp<Held[]>()({
+		options: {
 			label: "Options",
 			hint: "Every choice is a record. Bind a view box and it offers the views it holds.",
 			wants: "@default/view-group/holds",
-			default: [{ label: "Git tree" }, { label: "Report" }],
 			describes: {
 				label: { label: "Label", type: "text", required: true },
 				value: { label: "Value", type: "text" },
 				hidden: { label: "Hidden", type: "boolean" },
 			},
-		}),
-		selection: defineProp<string>()({
+		},
+		selection: {
 			label: "Shown choice",
 			hint: "Which choice is shown. Bind the view box's own selection and the two move together.",
-			of: "options",
-			field: "value",
-			fallback: "first",
 			wants: "@default/view-group/selection",
-			writes: ["update"],
-		}),
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "options", field: "value", whenNothingPicked: "first" },
+			},
+		},
 	},
 });
 
-export default createWidget(manifest, ({ options, selection }) => {
-	const listed = useData(options.list, { limit: ALL_OPTIONS });
-	const chosen = useData(selection.get).data;
-	const { isFitting, holdHost } = useTrackFits();
-	const [isOpen, setOpen] = useState(false);
-
-	const rows: Option[] = listed.data.filter((held) => !fieldOf(held, HIDDEN)).map((held) => optionOf(held.ref, held));
-	const active = rows.find((row) => row.value === chosen) ?? rows[0] ?? null;
-
-	if (rows.length === 0) return null;
-
-	const choose = (ref: string) => selection.update(ref);
-
-	const onKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-		const from = rows.findIndex((row) => row.ref === active?.ref);
-		const at = steppedTo(event.key, Math.max(from, 0), rows.length);
-		const picked = at === null ? null : rows[at];
-		if (at === null || !picked) return;
-		event.preventDefault();
-		choose(picked.ref);
-		event.currentTarget.querySelectorAll<HTMLElement>(".wg-kit-seg button")[at]?.focus();
-	};
-
-	const trigger = (
-		<Button block className={`wg-sgs-pick${isOpen ? " is-open" : ""}`} aria-label="Change what is shown">
-			<ButtonLabel>{active?.label || UNNAMED}</ButtonLabel>
-			<Icon name="chevron" size={15} className="wg-sgs-caret" />
-		</Button>
-	);
-
-	return (
-		<div className="wg-segmented-switch" ref={holdHost} onKeyDown={isFitting ? onKeys : undefined}>
-			<style>{CSS}</style>
-			{isFitting ? (
-				<Segmented
-					items={rows.map((row) => ({ value: row.ref, label: row.label || UNNAMED }))}
-					value={active?.ref ?? ""}
-					onChange={choose}
-				/>
-			) : (
-				<Popover trigger={trigger} isOpen={isOpen} onOpenChange={setOpen}>
-					{rows.map((row) => (
-						<PopoverItem
-							key={row.ref}
-							checked={row.ref === active?.ref}
-							onClick={() => {
-								setOpen(false);
-								choose(row.ref);
-							}}
-						>
-							{row.label || UNNAMED}
-						</PopoverItem>
-					))}
-				</Popover>
-			)}
-		</div>
-	);
+export const layout = defineLayout({
+	role: "control",
+	size: { preferredWidth: 360, preferredHeight: "auto", collapseBelowPx: MENU_BELOW_PX },
 });
+
+export default SegmentedSwitch;

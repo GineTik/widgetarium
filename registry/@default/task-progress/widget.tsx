@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
-import { canDo, createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import type { Row, WidgetProps } from "widgetarium";
-import { Card, Icon } from "widgetarium/kit";
-
-const MOST_STEPS = 50;
-const TICK_MS = 1000;
-const NO_STEPS = "No steps yet.";
-const STEPS_DONE = "{done} of {total} steps done";
-const OPEN_STEPS = "Show the steps";
-const CLOSE_STEPS = "Hide the steps";
+import {
+	IListGateway,
+	IValueGateway,
+	canDo,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	defineProps,
+	z,
+} from "widgetarium";
+import { Card } from "widgetarium/kit";
+import { overallOf } from "./overall";
+import { ProgressHead } from "./progress-head";
+import { StepsFold } from "./steps-fold";
+import { useProgress } from "./use-progress";
 
 const CSS = `
 .wg-task-progress {
@@ -304,171 +308,73 @@ const CSS = `
 }
 `;
 
-type StepStatus = "pending" | "active" | "done" | "failed";
-type Step = { label: string; status: StepStatus; hint?: string };
-type OverallStatus = "running" | "done" | "failed" | "stopped";
-type Progress = { title: string; rows: Row<Step>[]; isOpen: boolean; clock: string };
+export const StepSchema = z.object({
+	label: z.string(),
+	status: z.enum(["pending", "active", "done", "failed"]),
+	hint: z.string().optional(),
+});
 
-const STEP_STATUSES: readonly unknown[] = ["pending", "active", "done", "failed"];
+export const props = defineProps({
+	title: IValueGateway.of(z.string().default("Building a widget")).pick("get"),
+	steps: IListGateway.of(StepSchema, {
+		default: [
+			{ label: "Write the widget", status: "done" },
+			{ label: "Check it", status: "active", hint: "widgets.mjs check" },
+			{ label: "Place it on the board", status: "pending" },
+		],
+	}),
+	open: IValueGateway.of(z.boolean().default(false)).pick("get", "update"),
+	startedAt: IValueGateway.of(z.number().default(0)).pick("get"),
+	endedAt: IValueGateway.of(z.number().default(0)).pick("get"),
+});
 
-const MARK_GLYPH: Record<OverallStatus, string | null> = {
-	running: null,
-	done: "tick",
-	failed: "close",
-	stopped: "minus",
-};
-const DOT_GLYPH: Record<StepStatus, string | null> = { pending: null, active: null, done: "tick", failed: "close" };
+const TaskProgress = createWidget({
+	inject: props,
+	draw: (drawn) => {
+		const progress = useProgress(drawn);
+		const onToggleOpen = canDo(drawn.open.update) ? () => drawn.open.update(!progress.isOpen) : null;
+		return (
+			<Card
+				className="wg-task-progress"
+				data-state={overallOf(progress.rows)}
+				data-open={progress.isOpen ? "" : undefined}
+			>
+				<style>{CSS}</style>
+				<ProgressHead progress={progress} onToggleOpen={onToggleOpen} />
+				<StepsFold progress={progress} />
+			</Card>
+		);
+	},
+});
 
-export const manifest = defineManifest({
+export const metadata = defineMetadata(TaskProgress, {
 	title: "Task progress",
 	description:
 		"A task and its steps, each with a status: folded to one line saying what is happening now, opened into the whole list.",
 	keywords: ["progress", "status", "steps", "stages", "task", "build", "loading", "agent", "checklist", "running"],
-	role: "indicator",
-	size: { preferredWidth: "full", preferredHeight: "auto" },
 	props: {
-		title: defineProp<string>()({
+		title: {
 			hint: "The one line naming the task, the way a person says it: Building Habit streak.",
-			default: "Building a widget",
-		}),
-		steps: defineProp<Step[]>()({
+		},
+		steps: {
 			hint: "Every step in order. A status is pending, active, done or failed; the hint is the one line under an active step.",
-			default: [
-				{ label: "Write the widget", status: "done" },
-				{ label: "Check it", status: "active", hint: "widgets.mjs check" },
-				{ label: "Place it on the board", status: "pending" },
-			],
-		}),
-		open: defineProp<boolean>()({
-			hint: "Whether the steps are shown. Pressing the line flips it.",
+		},
+		open: {
 			keep: "screen",
-			default: false,
-			writes: ["update"],
-		}),
-		startedAt: defineProp<number>()({
+			hint: "Whether the steps are shown. Pressing the line flips it.",
+		},
+		startedAt: {
 			hint: "When the task started, in milliseconds since 1970. Zero draws no clock.",
-			default: 0,
-		}),
-		endedAt: defineProp<number>()({
+		},
+		endedAt: {
 			hint: "When the task ended, in milliseconds since 1970. Zero while it runs, so the clock keeps counting.",
-			default: 0,
-		}),
+		},
 	},
 });
 
-function overallOf(steps: readonly Step[]): OverallStatus {
-	if (steps.some((step) => step.status === "active")) return "running";
-	if (steps.some((step) => step.status === "failed")) return "failed";
-	if (steps.length > 0 && steps.every((step) => step.status === "done")) return "done";
-	return "stopped";
-}
-
-function saidNow(steps: readonly Step[]): string {
-	if (steps.length === 0) return NO_STEPS;
-	const named = steps.find((step) => step.status === "active") ?? steps.find((step) => step.status === "failed");
-	if (named) return named.label;
-	const done = steps.filter((step) => step.status === "done").length;
-	return STEPS_DONE.replace("{done}", String(done)).replace("{total}", String(steps.length));
-}
-
-function saidClock(ms: number): string {
-	const seconds = Math.max(0, Math.floor(ms / TICK_MS));
-	return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-function useNow(isTicking: boolean): number {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		if (!isTicking) return undefined;
-		const timer = setInterval(() => setNow(Date.now()), TICK_MS);
-		return () => clearInterval(timer);
-	}, [isTicking]);
-	return now;
-}
-
-function StepRow({ step }: { step: Row<Step> }) {
-	const glyph = DOT_GLYPH[step.status] ?? null;
-	const hint = step.status === "active" || step.status === "failed" ? (step.hint ?? "") : "";
-	return (
-		<li className="wg-task-progress-step" data-status={step.status}>
-			<span className="wg-task-progress-dot">{glyph ? <Icon name={glyph} size={12} /> : null}</span>
-			<span className="wg-task-progress-label">{step.label}</span>
-			{hint === "" ? null : <span className="wg-task-progress-hint">{hint}</span>}
-		</li>
-	);
-}
-
-function stepOf(row: Row<Step>): Row<Step> {
-	const status = (STEP_STATUSES.includes(row.status) ? row.status : "pending") as StepStatus;
-	return { ref: row.ref, label: String(row.label ?? ""), status, hint: String(row.hint ?? "") };
-}
-
-function useProgress({ title, steps, open, startedAt, endedAt }: WidgetProps<typeof manifest>): Progress {
-	const rows = (useData(steps.list, { limit: MOST_STEPS }).data ?? []) as readonly Row<Step>[];
-	const began = Number(useData(startedAt.get).data ?? 0);
-	const ended = Number(useData(endedAt.get).data ?? 0);
-	const clockNow = useNow(began > 0 && ended === 0);
-	return {
-		title: String(useData(title.get).data ?? ""),
-		rows: rows.map(stepOf),
-		isOpen: useData(open.get).data === true,
-		clock: began > 0 ? saidClock((ended || clockNow) - began) : "",
-	};
-}
-
-function ProgressHead({ progress, onToggleOpen }: { progress: Progress; onToggleOpen: (() => void) | null }) {
-	const mark = MARK_GLYPH[overallOf(progress.rows)];
-	const statusLine = saidNow(progress.rows);
-	return (
-		<button
-			type="button"
-			className="wg-task-progress-head"
-			aria-expanded={progress.isOpen}
-			aria-label={progress.isOpen ? CLOSE_STEPS : OPEN_STEPS}
-			disabled={!onToggleOpen}
-			onClick={onToggleOpen ?? undefined}
-		>
-			<span className="wg-task-progress-mark">{mark ? <Icon name={mark} size={16} /> : null}</span>
-			<span className="wg-task-progress-said">
-				<span className="wg-task-progress-title">{progress.title}</span>
-				<span className="wg-task-progress-now">
-					<span key={statusLine}>{statusLine}</span>
-				</span>
-			</span>
-			{progress.clock === "" ? null : <span className="wg-task-progress-clock">{progress.clock}</span>}
-			<Icon name="chevron-down" size={14} className="wg-task-progress-chevron" />
-		</button>
-	);
-}
-
-function StepsFold({ progress }: { progress: Progress }) {
-	return (
-		<div className="wg-task-progress-fold" aria-hidden={!progress.isOpen}>
-			{progress.rows.length === 0 ? (
-				<p className="wg-task-progress-empty">{NO_STEPS}</p>
-			) : (
-				<ol className="wg-task-progress-steps">
-					{progress.rows.map((step) => (
-						<StepRow key={step.ref} step={step} />
-					))}
-				</ol>
-			)}
-		</div>
-	);
-}
-
-export default createWidget(manifest, (props) => {
-	const progress = useProgress(props);
-	const onToggleOpen = canDo(props.open.update) ? () => props.open.update(!progress.isOpen) : null;
-	return (
-		<Card
-			className="wg-task-progress"
-			data-state={overallOf(progress.rows)}
-			data-open={progress.isOpen ? "" : undefined}
-		>
-			<style>{CSS}</style>
-			<ProgressHead progress={progress} onToggleOpen={onToggleOpen} />
-			<StepsFold progress={progress} />
-		</Card>
-	);
+export const layout = defineLayout({
+	role: "indicator",
+	size: { preferredWidth: "full", preferredHeight: "auto" },
 });
+
+export default TaskProgress;

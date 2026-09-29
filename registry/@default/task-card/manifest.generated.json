@@ -41,10 +41,7 @@
 			"task": {
 				"value": {
 					"title": "Record the release notes",
-					"tags": [
-						"launch",
-						"notes"
-					],
+					"tags": ["launch", "notes"],
 					"tagTones": {
 						"launch": "accent"
 					},
@@ -53,9 +50,7 @@
 					"progress": 80,
 					"due": "4 Sep",
 					"files": 1,
-					"initials": [
-						"Dana Reid"
-					]
+					"initials": ["Dana Reid"]
 				}
 			}
 		},
@@ -69,17 +64,11 @@
 			"control": "json",
 			"label": "Task",
 			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": {
 					"title": "Design the onboarding flow",
-					"tags": [
-						"design",
-						"research"
-					],
+					"tags": ["design", "research"],
 					"tagTones": {
 						"design": "warning",
 						"research": "accent"
@@ -89,18 +78,22 @@
 					"progress": 60,
 					"due": "12 Aug",
 					"files": 2,
-					"initials": [
-						"Alex Morgan",
-						"Mia Tan",
-						"Theo Ruiz"
-					]
+					"initials": ["Alex Morgan", "Mia Tan", "Theo Ruiz"]
 				}
 			}
 		}
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"avatars.tsx",
+		"badges.tsx",
+		"has.ts",
+		"meta-item.tsx",
+		"meta-row.tsx",
+		"progress-track.tsx",
+		"tag-stripes.tsx",
+		"types.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": []

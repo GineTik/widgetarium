@@ -1,6 +1,14 @@
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import type { VaultRecord } from "widgetarium";
-import { Sparkline, SparklineArea, SparklineDot, SparklineLine } from "widgetarium/kit";
+import {
+	IListGateway,
+	IValueGateway,
+	VaultRecordSchema,
+	type VaultRecord,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
 import {
 	Area,
 	AreaChart,
@@ -17,6 +25,9 @@ import {
 	XAxis,
 } from "widgetarium/kit/charts";
 import { heldProperties, heldValues, numberIn } from "@default/lib";
+import { Glance } from "./glance";
+import { Said } from "./said";
+import type { Drawn, Point } from "./types";
 
 const POINTS_AT_MOST = 366;
 const SERIES_AT_MOST = 8;
@@ -26,22 +37,44 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
 const CHART_MARGIN = { top: 8, right: 12, left: 12, bottom: 0 };
 const AREA_WASH = 0.18;
 const BAR_CORNER = 4;
-const GLANCE_HEIGHT = 40;
-const BLANK = "—";
+
 const READING = "Reading…";
 const NO_RECORDS = "There are no records here yet.";
 const NO_NUMBERS = "None of these records carries a number to draw.";
-const GLANCE_LABEL = "{label} across {count} points";
 
 type Series = { property: string; label?: string | null };
 
-type Drawn = { key: string; property: string; label: string };
+const ChartWidget = createWidget({
+	inject: {
+		records: IListGateway.of(VaultRecordSchema),
+		across: IValueGateway.of(z.string().default("")).pick("get"),
+		series: IListGateway.of(z.custom<Series>()),
+		kind: IValueGateway.of(z.string().default("area")).pick("get"),
+	},
+	draw: ({ records, across, series, kind }) => {
+		const read = useData(records.list, { limit: POINTS_AT_MOST });
+		const declared = useData(series.list, { limit: SERIES_AT_MOST }).data;
+		const acrossProperty = across.trim();
+		const drawnAs = kindOf(kind);
 
-type Point = { at: string; [key: string]: string | number | null };
+		if (read.failure !== null) return <Said text={read.failure} isFailure />;
+		if (read.isLoading && read.data.length === 0) return <Said text={READING} />;
+		if (read.data.length === 0) return <Said text={NO_RECORDS} />;
 
-export const manifest = defineManifest({
+		const drawn = seriesOf(declared, read.data, acrossProperty);
+		const [first] = drawn;
+		if (!first) return <Said text={NO_NUMBERS} />;
+
+		const points = pointsOf(read.data, drawn, acrossProperty);
+		if (drawnAs === "glance") return <Glance points={points} first={first} />;
+		return <ChartContainer config={configOf(drawn)}>{plotOf(drawnAs, points, drawn)}</ChartContainer>;
+	},
+});
+
+export const metadata = defineMetadata(ChartWidget, {
 	title: "Chart",
-	description: "The numbers a set of notes carries, drawn across one property as an area, bars, a line or a glance.",
+	description:
+		"The numbers a set of notes carries, drawn across one property as an area, bars, a line, or a glance: the latest value with its sparkline.",
 	keywords: [
 		"chart",
 		"graph",
@@ -55,9 +88,13 @@ export const manifest = defineManifest({
 		"numbers",
 		"over time",
 		"compare",
+		"stat",
+		"kpi",
+		"glance",
+		"balance",
+		"total",
+		"history",
 	],
-	role: "indicator",
-	size: { preferredWidth: 520, preferredHeight: "auto", at: [{ belowPx: 560, preferredWidth: "full" }] },
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
@@ -80,24 +117,21 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		records: defineProp<VaultRecord[]>()({
+		records: {
 			label: "Records",
 			hint: "The notes the chart reads, one point each.",
-			default: [],
-		}),
-		across: defineProp<string>()({
+		},
+		across: {
 			label: "Across",
 			hint: "The property each point stands at, such as a date or a name. Left empty, the note's own name. Dates are put in order.",
 			control: "line",
-			default: "",
-		}),
-		series: defineProp<Series[]>()({
+		},
+		series: {
 			label: "Series",
 			hint: "The number properties drawn, in the order they are listed. Left empty, every property holding a number.",
-			default: [],
 			describes: { property: "Property", label: "Label" },
-		}),
-		kind: defineProp<string>()({
+		},
+		kind: {
 			design: true,
 			label: "Drawn as",
 			hint: "A glance is the latest value of the first series with its sparkline under it.",
@@ -107,29 +141,16 @@ export const manifest = defineManifest({
 				{ value: "line", label: "A line" },
 				{ value: "glance", label: "A glance" },
 			],
-			default: "area",
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ records, across, series, kind }) => {
-	const read = useData(records.list, { limit: POINTS_AT_MOST });
-	const declared = useData(series.list, { limit: SERIES_AT_MOST }).data;
-	const acrossProperty = String(useData(across.get).data ?? "").trim();
-	const drawnAs = kindOf(useData(kind.get).data);
-
-	if (read.failure !== null) return <Said text={read.failure} isFailure />;
-	if (read.isLoading && read.data.length === 0) return <Said text={READING} />;
-	if (read.data.length === 0) return <Said text={NO_RECORDS} />;
-
-	const drawn = seriesOf(declared, read.data, acrossProperty);
-	const [first] = drawn;
-	if (!first) return <Said text={NO_NUMBERS} />;
-
-	const points = pointsOf(read.data, drawn, acrossProperty);
-	if (drawnAs === "glance") return <Glance points={points} first={first} />;
-	return <ChartContainer config={configOf(drawn)}>{plotOf(drawnAs, points, drawn)}</ChartContainer>;
+export const layout = defineLayout({
+	role: "indicator",
+	size: { preferredWidth: 520, preferredHeight: "auto", at: [{ belowPx: 560, preferredWidth: "full" }] },
 });
+
+export default ChartWidget;
 
 function plotOf(kind: string, points: Point[], drawn: Drawn[]) {
 	const parts = [
@@ -188,37 +209,6 @@ function plotOf(kind: string, points: Point[], drawn: Drawn[]) {
 				/>
 			))}
 		</AreaChart>
-	);
-}
-
-function Glance({ points, first }: { points: Point[]; first: Drawn }) {
-	const latest = [...points].reverse().find((point) => typeof point[first.key] === "number");
-	return (
-		<div className="wg-chart-glance">
-			<span className="wg-chart-glance-label">{first.label}</span>
-			<div className="wg-chart-glance-row">
-				<b className="wg-chart-glance-value">{latest ? Number(latest[first.key]).toLocaleString() : BLANK}</b>
-				<Sparkline
-					className="wg-chart-glance-spark"
-					data={points}
-					dataKey={first.key}
-					height={GLANCE_HEIGHT}
-					label={GLANCE_LABEL.replace("{label}", first.label).replace("{count}", String(points.length))}
-				>
-					<SparklineArea />
-					<SparklineLine />
-					<SparklineDot at="last" />
-				</Sparkline>
-			</div>
-		</div>
-	);
-}
-
-function Said({ text, isFailure = false }: { text: string; isFailure?: boolean }) {
-	return (
-		<p className="wg-chart-said" data-failure={isFailure ? "" : undefined}>
-			{text}
-		</p>
 	);
 }
 

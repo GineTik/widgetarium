@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import type { VaultRecord } from "widgetarium";
-import { Button } from "widgetarium/kit";
-import { askedCount, COUNTED_CEILING, countedFirstLine } from "@default/lib";
+import {
+	IListGateway,
+	IValueGateway,
+	VaultRecordSchema,
+	type VaultRecord,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
+import { askedCount, COUNTED_CEILING } from "@default/lib";
+import { Bars } from "./bars";
+import { Line } from "./line";
+import type { Group } from "./types";
 
 const SHOWN_AT_FIRST = 8;
 const STEP = 8;
@@ -11,12 +22,40 @@ const IN_ROOT = "(root)";
 const NOT_SET = "(empty)";
 const READING = "Reading…";
 const NO_NOTES = "There are no notes here yet.";
-const LEFT_OUT = "{count} more — {sum} together";
-const SHOW_MORE = "Show {count} more";
 
-type Group = { key: string; count: number };
+const BreakdownBars = createWidget({
+	inject: {
+		records: IListGateway.of(VaultRecordSchema),
+		groupBy: IValueGateway.of(z.string().default(BY_FOLDER)).pick("get"),
+		shownAtFirst: IValueGateway.of(z.number().default(SHOWN_AT_FIRST)).pick("get"),
+		step: IValueGateway.of(z.number().default(STEP)).pick("get"),
+		showMoreButton: IValueGateway.of(z.boolean().default(true)).pick("get"),
+	},
+	draw: ({ records, groupBy, shownAtFirst, step, showMoreButton }) => {
+		const read = useData(records.list, { limit: COUNTED_CEILING });
+		const groupKey = groupBy.trim() || BY_FOLDER;
+		const atFirst = askedCount(shownAtFirst, SHOWN_AT_FIRST);
+		const added = askedCount(step, STEP);
+		const [shown, setShown] = useState(atFirst);
+		useEffect(() => setShown(atFirst), [atFirst]);
 
-export const manifest = defineManifest({
+		if (read.failure !== null) return <Line tone="var(--text-error)" text={read.failure} />;
+		if (read.isLoading && read.data.length === 0) return <Line tone="var(--text-faint)" text={READING} />;
+		if (read.data.length === 0) return <Line tone="var(--wg-kit-text-muted)" text={NO_NOTES} />;
+
+		return (
+			<Bars
+				groups={grouped(read.data, groupKey)}
+				shown={shown}
+				step={added}
+				onMore={showMoreButton ? () => setShown(shown + added) : null}
+				total={read.total}
+			/>
+		);
+	},
+});
+
+export const metadata = defineMetadata(BreakdownBars, {
 	title: "Breakdown bars",
 	description: "How a collection splits across folders or one property, as bars ordered biggest first.",
 	keywords: [
@@ -35,8 +74,6 @@ export const manifest = defineManifest({
 		"histogram",
 		"ranking",
 	],
-	role: "collection",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 220, stackBelowPx: 320 },
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
@@ -52,114 +89,35 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		records: defineProp<VaultRecord[]>()({
+		records: {
 			label: "Records",
 			hint: "The notes to split up.",
-			default: [],
-		}),
-		groupBy: defineProp<string>()({
+		},
+		groupBy: {
 			label: "Group by",
 			hint: "Write folder to split by the folder a note sits in, or the name of a property to split by its value.",
-			default: BY_FOLDER,
-		}),
-		shownAtFirst: defineProp<number>()({
+		},
+		shownAtFirst: {
 			label: "Bars shown at first",
 			hint: "How many of the biggest groups get a bar before anything is pressed.",
 			aka: ["shown"],
-			default: SHOWN_AT_FIRST,
-		}),
-		step: defineProp<number>()({
+		},
+		step: {
 			label: "Bars added by a press",
 			hint: "How many more bars each press of Show more draws.",
-			default: STEP,
-		}),
-		showMoreButton: defineProp<boolean>()({
+		},
+		showMoreButton: {
 			hint: "Whether a press may draw past the first bars. Without it the rest are summed into one line.",
-			default: true,
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ records, groupBy, shownAtFirst, step, showMoreButton }) => {
-	const read = useData(records.list, { limit: COUNTED_CEILING });
-	const groupKey = String(useData(groupBy.get).data ?? BY_FOLDER).trim() || BY_FOLDER;
-	const atFirst = askedCount(useData(shownAtFirst.get).data, SHOWN_AT_FIRST);
-	const added = askedCount(useData(step.get).data, STEP);
-	const mayShowMore = useData(showMoreButton.get).data !== false;
-	const [shown, setShown] = useState(atFirst);
-	useEffect(() => setShown(atFirst), [atFirst]);
-
-	if (read.failure !== null) return <Line tone="var(--text-error)" text={read.failure} />;
-	if (read.isLoading && read.data.length === 0) return <Line tone="var(--text-faint)" text={READING} />;
-	if (read.data.length === 0) return <Line tone="var(--wg-kit-text-muted)" text={NO_NOTES} />;
-
-	return (
-		<Bars
-			groups={grouped(read.data, groupKey)}
-			shown={shown}
-			step={added}
-			onMore={mayShowMore ? () => setShown(shown + added) : null}
-			total={read.total}
-		/>
-	);
+export const layout = defineLayout({
+	role: "collection",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 220, stackBelowPx: 320 },
 });
 
-type BarsProps = { groups: Group[]; shown: number; step: number; onMore: (() => void) | null; total: number | null };
-
-function Bars({ groups, shown, step, onMore, total }: BarsProps) {
-	const top = groups.slice(0, shown);
-	const widest = top[0]?.count ?? 1;
-
-	return (
-		<div style={{ display: "flex", flexDirection: "column", gap: "var(--wg-gap-items)" }}>
-			{top.map((group) => (
-				<Bar key={group.key} group={group} widest={widest} />
-			))}
-			<More left={groups.slice(top.length)} step={step} onMore={onMore} />
-			<Ceiling total={total} />
-		</div>
-	);
-}
-
-function Bar({ group, widest }: { group: Group; widest: number }) {
-	const width = Math.max(2, Math.round((group.count / widest) * 100));
-	return (
-		<div style={{ display: "flex", flexDirection: "column", gap: "var(--wg-gap-parts)" }}>
-			<div style={{ display: "flex", justifyContent: "space-between", gap: "var(--wg-gap-parts)" }}>
-				<span>{group.key}</span>
-				<span style={{ color: "var(--wg-kit-text-muted)" }}>{group.count}</span>
-			</div>
-			<div className="breakdown-track">
-				<div className="breakdown-fill" style={{ width: `${width}%` }} />
-			</div>
-		</div>
-	);
-}
-
-function More({ left, step, onMore }: { left: Group[]; step: number; onMore: (() => void) | null }) {
-	if (left.length === 0) return null;
-	if (onMore === null) return <Line tone="var(--text-faint)" text={leftOutLine(left)} />;
-	return (
-		<Button size="s" onClick={onMore}>
-			{SHOW_MORE.replace("{count}", String(Math.min(step, left.length)))}
-		</Button>
-	);
-}
-
-function leftOutLine(left: Group[]): string {
-	const summed = left.reduce((sum, group) => sum + group.count, 0);
-	return LEFT_OUT.replace("{count}", String(left.length)).replace("{sum}", String(summed));
-}
-
-function Ceiling({ total }: { total: number | null }) {
-	const said = countedFirstLine(total);
-	if (said === null) return null;
-	return <Line tone="var(--text-faint)" text={said} />;
-}
-
-function Line({ tone, text }: { tone: string; text: string }) {
-	return <div style={{ color: tone }}>{text}</div>;
-}
+export default BreakdownBars;
 
 function grouped(rows: VaultRecord[], groupKey: string): Group[] {
 	const counts = new Map<string, number>();

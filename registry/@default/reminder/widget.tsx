@@ -1,4 +1,4 @@
-import { createWidget, defineManifest } from "widgetarium";
+import { IContent, createWidget, defineLayout, defineMetadata } from "widgetarium";
 import { Card } from "widgetarium/kit";
 
 const STYLE = `
@@ -26,7 +26,22 @@ const STYLE = `
 }
 `;
 
-export const manifest = defineManifest({
+const ReminderWidget = createWidget({
+	inject: {
+		content: IContent,
+	},
+	draw: ({ content }) => {
+		return (
+			<Card type="group" className="wgi-reminder">
+				<style>{STYLE}</style>
+				<span className="wgi-reminder-mark">!</span>
+				<span className="wgi-reminder-text">{content}</span>
+			</Card>
+		);
+	},
+});
+
+export const metadata = defineMetadata(ReminderWidget, {
 	title: "Reminder",
 	description: "A line of text with a tick beside it, for something that still has to be done.",
 	keywords: [
@@ -42,18 +57,9 @@ export const manifest = defineManifest({
 		"nudge",
 		"prompt",
 	],
-	inline: true,
 	preview: { size: { w: 6, h: 2 }, content: "call Olena before Friday", shot: { of: "486558682" } },
-	size: { preferredWidth: "full", preferredHeight: "auto" },
-	props: {},
 });
 
-export default createWidget(manifest, ({ content }) => {
-	return (
-		<Card type="group" className="wgi-reminder">
-			<style>{STYLE}</style>
-			<span className="wgi-reminder-mark">!</span>
-			<span className="wgi-reminder-text">{content}</span>
-		</Card>
-	);
-});
+export const layout = defineLayout({ inline: true, size: { preferredWidth: "full", preferredHeight: "auto" } });
+
+export default ReminderWidget;

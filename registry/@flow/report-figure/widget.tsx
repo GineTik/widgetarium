@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef } from "react";
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Icon, Card } from "widgetarium/kit";
-import type { Navigation, ViewHost } from "widgetarium";
+import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import type { Navigation } from "widgetarium";
+import { MissingImage } from "./missing-image";
+import { RenderedMarkdown } from "./rendered-markdown";
 
 const CSS = `
 .flow-report-figure {
@@ -70,11 +70,6 @@ const CSS = `
 	min-width: 0;
 	color: var(--wg-kit-text-muted);
 }
-
-.flow-report-figure-failure {
-	margin: 0;
-	color: var(--wg-kit-text-muted);
-}
 `;
 
 type Figure = {
@@ -104,29 +99,32 @@ function shownFigure(figure: Figure | null, navigation: Navigation, canDraw: boo
 	return { kind: "markdown", markdown: embedOf(found) };
 }
 
-function RenderedMarkdown({ host, markdown }: { host: ViewHost; markdown: string }) {
-	const body = useRef<HTMLDivElement>(null);
+const ReportFigure = createWidget({
+	inject: {
+		source: IValueGateway.of(z.custom<Figure>().default({})).pick("get"),
+		host: IHost,
+		navigator: INavigator,
+	},
+	draw: ({ source, host, navigator }) => {
+		const caption = trimmed(source.caption);
+		const alt = trimmed(source.alt);
+		const shown = shownFigure(source, navigator, host.can.renderMarkdown);
 
-	useLayoutEffect(() => {
-		if (!body.current || !host.can.renderMarkdown) return undefined;
-		return host.ui.renderMarkdown(body.current, markdown);
-	}, [host, markdown]);
+		return (
+			<figure className="flow-report-figure">
+				<style>{CSS}</style>
+				{shown.kind === "markdown" ? (
+					<RenderedMarkdown host={host} markdown={shown.markdown} />
+				) : (
+					<MissingImage said={shown.said} alt={alt} />
+				)}
+				{caption ? <figcaption className="flow-report-figure-caption">{caption}</figcaption> : null}
+			</figure>
+		);
+	},
+});
 
-	if (!host.can.renderMarkdown) return <pre className="flow-report-figure-plain">{markdown}</pre>;
-	return <div ref={body} className="flow-report-figure-drawn markdown-rendered" data-part="drawing" />;
-}
-
-function MissingImage({ said, alt }: { said: string; alt: string }) {
-	return (
-		<Card type="group" className="flow-report-figure-missing" data-part="missing">
-			<Icon name="image-off" size={20} />
-			<span className="flow-report-figure-missing-said">{said}</span>
-			{alt ? <span className="flow-report-figure-missing-alt">{alt}</span> : null}
-		</Card>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(ReportFigure, {
 	title: "Report figure",
 	description:
 		"One figure of a report: the picture this vault holds or the drawing written beside it, with the caption under it.",
@@ -143,8 +141,6 @@ export const manifest = defineManifest({
 		"report",
 		"media",
 	],
-	role: "media",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 160, stackBelowPx: 260 },
 	preview: {
 		size: { w: 4, h: 3 },
 		props: {
@@ -157,31 +153,16 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		source: defineProp<Figure>()({
+		source: {
 			label: "Figure",
 			hint: "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
-			default: {},
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ source, host, navigator }) => {
-	const { data, failure } = useData(source.get);
-	if (failure) return <p className="flow-report-figure-failure">{failure}</p>;
-
-	const caption = trimmed(data?.caption);
-	const alt = trimmed(data?.alt);
-	const shown = shownFigure(data, navigator, host.can.renderMarkdown);
-
-	return (
-		<figure className="flow-report-figure">
-			<style>{CSS}</style>
-			{shown.kind === "markdown" ? (
-				<RenderedMarkdown host={host} markdown={shown.markdown} />
-			) : (
-				<MissingImage said={shown.said} alt={alt} />
-			)}
-			{caption ? <figcaption className="flow-report-figure-caption">{caption}</figcaption> : null}
-		</figure>
-	);
+export const layout = defineLayout({
+	role: "media",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 160, stackBelowPx: 260 },
 });
+
+export default ReportFigure;

@@ -66,10 +66,7 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes to split up.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
@@ -80,9 +77,7 @@
 			"type": "line",
 			"label": "Group by",
 			"hint": "Write folder to split by the folder a note sits in, or the name of a property to split by its value.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": "folder"
 			}
@@ -93,12 +88,8 @@
 			"type": "number",
 			"label": "Bars shown at first",
 			"hint": "How many of the biggest groups get a bar before anything is pressed.",
-			"aka": [
-				"shown"
-			],
-			"writes": [
-				"get"
-			],
+			"aka": ["shown"],
+			"writes": ["get"],
 			"default": {
 				"value": 8
 			}
@@ -109,9 +100,7 @@
 			"type": "number",
 			"label": "Bars added by a press",
 			"hint": "How many more bars each press of Show more draws.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 8
 			}
@@ -122,19 +111,14 @@
 			"type": "boolean",
 			"label": "Show more button",
 			"hint": "Whether a press may draw past the first bars. Without it the rest are summed into one line.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": true
 			}
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"widget.css"
-	],
+	"files": ["widget.tsx", "bar.tsx", "bars.tsx", "ceiling.tsx", "line.tsx", "more.tsx", "types.ts", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

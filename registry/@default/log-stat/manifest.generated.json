@@ -1,9 +1,8 @@
 {
-	"id": "@default/log-stat",
-	"api": 1,
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
 	"title": "Log stat",
 	"description": "One number from a dated log: its streak, its best, how often it is kept.",
-	"role": "indicator",
 	"keywords": [
 		"stat",
 		"streak",
@@ -18,11 +17,19 @@
 		"count",
 		"progress"
 	],
-	"defaultSize": {
-		"w": 3,
-		"h": 1
+	"role": "indicator",
+	"size": {
+		"preferredWidth": 240,
+		"preferredHeight": "auto",
+		"at": [
+			{
+				"belowPx": 320,
+				"preferredWidth": "full"
+			}
+		],
+		"collapseBelowPx": 110,
+		"stackBelowPx": 140
 	},
-	"collapseBelowPx": 110,
 	"preview": {
 		"size": {
 			"w": 3,
@@ -88,5 +95,64 @@
 			"of": "80335274"
 		}
 	},
-	"stackBelowPx": 140
+	"props": {
+		"habits": {
+			"kind": "collection",
+			"label": "Logs",
+			"writes": ["list", "get", "create", "update", "remove"],
+			"default": {
+				"rows": []
+			}
+		},
+		"pick": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Which log",
+			"hint": "The log this number is about.",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "habits",
+					"field": "name",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get", "update"]
+		},
+		"metric": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "streak · best · total · rate · goal",
+			"writes": ["get"],
+			"default": {
+				"value": "streak"
+			}
+		},
+		"period": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Days the rate looks back over",
+			"writes": ["get"],
+			"default": {
+				"value": 30
+			}
+		},
+		"look": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Look: default · stat1",
+			"design": true,
+			"writes": ["get"],
+			"default": {
+				"value": "default"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
 }

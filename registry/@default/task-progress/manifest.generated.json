@@ -3,18 +3,7 @@
 	"api": 2,
 	"title": "Task progress",
 	"description": "A task and its steps, each with a status: folded to one line saying what is happening now, opened into the whole list.",
-	"keywords": [
-		"progress",
-		"status",
-		"steps",
-		"stages",
-		"task",
-		"build",
-		"loading",
-		"agent",
-		"checklist",
-		"running"
-	],
+	"keywords": ["progress", "status", "steps", "stages", "task", "build", "loading", "agent", "checklist", "running"],
 	"role": "indicator",
 	"size": {
 		"preferredWidth": "full",
@@ -27,9 +16,7 @@
 			"type": "line",
 			"label": "Title",
 			"hint": "The one line naming the task, the way a person says it: Building Habit streak.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": "Building a widget"
 			}
@@ -38,10 +25,7 @@
 			"kind": "collection",
 			"label": "Steps",
 			"hint": "Every step in order. A status is pending, active, done or failed; the hint is the one line under an active step.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": [
 					{
@@ -65,10 +49,7 @@
 			"control": "memory",
 			"label": "Open",
 			"hint": "Whether the steps are shown. Pressing the line flips it.",
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"from": "memory",
 				"value": false
@@ -80,9 +61,7 @@
 			"type": "number",
 			"label": "Started at",
 			"hint": "When the task started, in milliseconds since 1970. Zero draws no clock.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 0
 			}
@@ -93,9 +72,7 @@
 			"type": "number",
 			"label": "Ended at",
 			"hint": "When the task ended, in milliseconds since 1970. Zero while it runs, so the clock keeps counting.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 0
 			}
@@ -103,7 +80,14 @@
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"overall.ts",
+		"progress-head.tsx",
+		"step-row.tsx",
+		"steps-fold.tsx",
+		"types.ts",
+		"use-now.ts",
+		"use-progress.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": []

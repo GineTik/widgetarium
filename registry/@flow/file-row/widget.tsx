@@ -1,5 +1,10 @@
-import { createWidget, defineManifest, defineProp, useValue } from "widgetarium";
-import { Icon, Row, RowLabel, RowValue } from "widgetarium/kit";
+import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { Icon, Row, RowLabel } from "widgetarium/kit";
+import { DiffStat } from "./diff-stat";
+import { KINDS, saidOf } from "./kinds";
+import { PathText } from "./path-text";
+import type { FileChange, Kind } from "./types";
+import { WasPath } from "./was-path";
 
 // TRADE-OFF: the row drops the kit's own padding; the item slot already pads, and both is 28px
 const CSS = `
@@ -162,32 +167,6 @@ const CSS = `
 }
 `;
 
-const NO_PATH = "No path";
-const BINARY = "binary";
-const NOT_COUNTED = "not counted";
-const RENAMED_FROM = "Renamed from";
-const ADDED = "+{count}";
-const REMOVED = "−{count}";
-const COUNT = "{count}";
-
-type FileChange = {
-	filePath?: string | null;
-	added?: number | string | null;
-	removed?: number | string | null;
-	change?: string | null;
-	from?: string | null;
-};
-
-type Kind = { icon: string; word: string; mark: string };
-
-const KINDS: Record<string, Kind> = {
-	added: { icon: "file-plus", word: "Added", mark: "is-added" },
-	modified: { icon: "file-pen", word: "Modified", mark: "is-modified" },
-	renamed: { icon: "file-symlink", word: "Renamed", mark: "is-renamed" },
-	deleted: { icon: "file-x", word: "Deleted", mark: "is-deleted" },
-	binary: { icon: "binary", word: "Binary", mark: "is-binary" },
-};
-
 const UNTOLD: Kind = { icon: "file", word: "Touched", mark: "is-untold" };
 
 const KIND_NAMED: Record<string, string> = {
@@ -212,17 +191,6 @@ const KIND_NAMED: Record<string, string> = {
 	binary: "binary",
 };
 
-function saidOf(value: unknown): string {
-	return String(value ?? "").trim();
-}
-
-function countOf(value: unknown): number | null {
-	if (value === undefined || value === null || value === "") return null;
-	const number = Number(value);
-	if (!Number.isFinite(number)) return null;
-	return Math.max(0, Math.round(number));
-}
-
 function kindOf(change: FileChange["change"], from: FileChange["from"]): Kind {
 	const named = KIND_NAMED[saidOf(change).toLowerCase()];
 	if (named) return KINDS[named] ?? UNTOLD;
@@ -230,82 +198,37 @@ function kindOf(change: FileChange["change"], from: FileChange["from"]): Kind {
 	return UNTOLD;
 }
 
-function splitPath(path: string): { dir: string; name: string } {
-	const cut = path.lastIndexOf("/");
-	if (cut < 0) return { dir: "", name: path };
-	return { dir: path.slice(0, cut + 1), name: path.slice(cut + 1) };
-}
+const FileRow = createWidget({
+	inject: {
+		file: IValueGateway.of(
+			z.custom<FileChange>().default({
+				filePath: "src/engine/catalogue-index.js",
+				change: "modified",
+				added: 128,
+				removed: 44,
+			}),
+		).pick("get"),
+	},
+	draw: ({ file }) => {
+		const kind = kindOf(file.change, file.from);
 
-function sharesOf(added: number | null, removed: number | null): { added: number; removed: number } | null {
-	const up = added ?? 0;
-	const down = removed ?? 0;
-	const together = up + down;
-	if (together === 0) return null;
-	return { added: (up / together) * 100, removed: (down / together) * 100 };
-}
-
-function PathText({ path, className }: { path: string; className?: string }) {
-	const said = saidOf(path);
-	if (said === "")
 		return (
-			<span className={className ? `ffr-path ${className}` : "ffr-path"}>
-				<span className="ffr-name is-missing">{NO_PATH}</span>
-			</span>
-		);
-
-	const { dir, name } = splitPath(said);
-	return (
-		<span className={className ? `ffr-path ${className}` : "ffr-path"} title={said}>
-			{dir === "" ? null : (
-				<span className="ffr-dir">
-					<span>{dir}</span>
+			<Row className="ffr">
+				<style>{CSS}</style>
+				<span className={`ffr-mark ${kind.mark}`} role="img" aria-label={kind.word} title={kind.word}>
+					<Icon name={kind.icon} size={16} />
 				</span>
-			)}
-			<span className="ffr-name">{name}</span>
-		</span>
-	);
-}
+				<RowLabel className="ffr-label">
+					<PathText path={saidOf(file.filePath)} />
+					<WasPath file={file} />
+				</RowLabel>
+				<DiffStat file={file} kind={kind} />
+			</Row>
+		);
+	},
+});
 
-function DiffBar({ added, removed }: { added: number | null; removed: number | null }) {
-	const shares = sharesOf(added, removed);
-	if (shares === null) return null;
-
-	return (
-		<span className="ffr-bar" aria-hidden="true">
-			<i className="ffr-bar-added" style={{ width: `${shares.added}%` }} />
-			<i className="ffr-bar-removed" style={{ width: `${shares.removed}%` }} />
-		</span>
-	);
-}
-
-function DiffStat({ file, kind }: { file: FileChange; kind: Kind }) {
-	const added = countOf(file.added);
-	const removed = countOf(file.removed);
-	if (kind === KINDS.binary) return <RowValue className="ffr-stat ffr-said">{BINARY}</RowValue>;
-	if (added === null && removed === null) return <RowValue className="ffr-stat ffr-said">{NOT_COUNTED}</RowValue>;
-
-	return (
-		<RowValue className="ffr-stat">
-			{added === null ? null : <span className="ffr-added">{ADDED.replace(COUNT, String(added))}</span>}
-			{removed === null ? null : <span className="ffr-removed">{REMOVED.replace(COUNT, String(removed))}</span>}
-			<DiffBar added={added} removed={removed} />
-		</RowValue>
-	);
-}
-
-function WasPath({ file }: { file: FileChange }) {
-	const was = saidOf(file.from);
-	if (was === "" || was === saidOf(file.filePath)) return null;
-
-	return (
-		<span className="ffr-was">
-			<span className="ffr-was-word">{RENAMED_FROM}</span>
-			<PathText path={was} />
-		</span>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(FileRow, {
 	title: "File row",
 	description: "One file a change touched: what happened to it, its path, and the lines it gained and lost.",
 	keywords: [
@@ -323,8 +246,6 @@ export const manifest = defineManifest({
 		"binary",
 		"review",
 	],
-	role: "detail",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 40, stackBelowPx: 220 },
 	preview: {
 		size: { w: 4, h: 1 },
 		props: {
@@ -340,34 +261,16 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		file: defineProp<FileChange>()({
+		file: {
 			label: "File",
 			hint: "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			default: {
-				filePath: "src/engine/catalogue-index.js",
-				change: "modified",
-				added: 128,
-				removed: 44,
-			},
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ file }) => {
-	const held: FileChange = useValue(file) ?? {};
-	const kind = kindOf(held.change, held.from);
-
-	return (
-		<Row className="ffr">
-			<style>{CSS}</style>
-			<span className={`ffr-mark ${kind.mark}`} role="img" aria-label={kind.word} title={kind.word}>
-				<Icon name={kind.icon} size={16} />
-			</span>
-			<RowLabel className="ffr-label">
-				<PathText path={saidOf(held.filePath)} />
-				<WasPath file={held} />
-			</RowLabel>
-			<DiffStat file={held} kind={kind} />
-		</Row>
-	);
+export const layout = defineLayout({
+	role: "detail",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 40, stackBelowPx: 220 },
 });
+
+export default FileRow;

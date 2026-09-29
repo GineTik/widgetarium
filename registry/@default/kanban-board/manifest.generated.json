@@ -43,15 +43,9 @@
 						"priority": "P1",
 						"approval": "Check",
 						"progress": 34,
-						"assignees": [
-							"Alex Morgan",
-							"Maya Chen"
-						],
+						"assignees": ["Alex Morgan", "Maya Chen"],
 						"order": 1,
-						"tags": [
-							"design",
-							"research"
-						],
+						"tags": ["design", "research"],
 						"tagTones": {
 							"design": "error"
 						}
@@ -63,13 +57,9 @@
 						"priority": "P2",
 						"approval": "Check",
 						"progress": 45,
-						"assignees": [
-							"Sam Okafor"
-						],
+						"assignees": ["Sam Okafor"],
 						"order": 2,
-						"tags": [
-							"research"
-						],
+						"tags": ["research"],
 						"tagTones": {
 							"research": "warning"
 						}
@@ -81,15 +71,9 @@
 						"priority": "P1",
 						"approval": "Check",
 						"progress": 68,
-						"assignees": [
-							"Dana Reid",
-							"Liam Parker"
-						],
+						"assignees": ["Dana Reid", "Liam Parker"],
 						"order": 3,
-						"tags": [
-							"engine",
-							"design"
-						],
+						"tags": ["engine", "design"],
 						"tagTones": {
 							"engine": "accent"
 						}
@@ -101,13 +85,9 @@
 						"priority": "P2",
 						"approval": "Approve",
 						"progress": 100,
-						"assignees": [
-							"Kai Lawson"
-						],
+						"assignees": ["Kai Lawson"],
 						"order": 4,
-						"tags": [
-							"tokens"
-						],
+						"tags": ["tokens"],
 						"tagTones": {
 							"tokens": "success"
 						}
@@ -127,11 +107,7 @@
 							"name": "Done"
 						}
 					],
-					"properties": [
-						"Status",
-						"Priority",
-						"Assignees"
-					]
+					"properties": ["Status", "Priority", "Assignees"]
 				}
 			}
 		},
@@ -145,17 +121,7 @@
 			"default": "@default/task-card",
 			"surface": "group",
 			"gives": {
-				"task": [
-					"title",
-					"tags",
-					"tagTones",
-					"priority",
-					"status",
-					"progress",
-					"initials",
-					"due",
-					"files"
-				]
+				"task": ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"]
 			}
 		}
 	},
@@ -163,13 +129,7 @@
 		"tasks": {
 			"kind": "collection",
 			"label": "Tasks",
-			"writes": [
-				"list",
-				"get",
-				"create",
-				"update",
-				"remove"
-			],
+			"writes": ["list", "get", "create", "update", "remove"],
 			"where": [
 				{
 					"prop": "board",
@@ -197,13 +157,7 @@
 		"boards": {
 			"kind": "collection",
 			"label": "Boards",
-			"writes": [
-				"list",
-				"get",
-				"create",
-				"update",
-				"repairIds"
-			],
+			"writes": ["list", "get", "create", "update", "repairIds"],
 			"default": {
 				"rows": []
 			}
@@ -213,13 +167,15 @@
 			"control": "pick",
 			"label": "Shown board",
 			"hint": "Which board this draws. Bind a tab strip and the two move together.",
-			"of": "boards",
-			"field": "board",
-			"fallback": "first",
-			"writes": [
-				"get",
-				"update"
-			],
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "boards",
+					"field": "board",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get", "update"],
 			"wants": "@default/editable-tabs/selection"
 		},
 		"board": {
@@ -227,12 +183,16 @@
 			"control": "row",
 			"label": "Board",
 			"hint": "The board this draws: its columns, their order and which of them are archived.",
-			"picks": "selection",
-			"of": "boards",
-			"writes": [
-				"get",
-				"update"
-			],
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "boards",
+					"picked": "selection",
+					"field": "board",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get", "update"],
 			"default": {
 				"value": {
 					"columns": [
@@ -254,20 +214,20 @@
 			"control": "pick",
 			"label": "Opened task",
 			"hint": "Which card is open, as a box. The board draws it full size itself.",
-			"of": "tasks",
-			"writes": [
-				"get",
-				"update"
-			]
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "tasks"
+				}
+			},
+			"writes": ["get", "update"]
 		},
 		"groupBy": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Group tasks by property",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": "status"
 			}
@@ -275,10 +235,70 @@
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"add-list.tsx",
+		"add-property.tsx",
+		"add-task.tsx",
+		"anchors.ts",
+		"archive-ask.tsx",
+		"avatar.tsx",
+		"blur-on-enter.ts",
+		"board-dialogs.tsx",
+		"board-strip.tsx",
+		"board-style.ts",
+		"choice-row.tsx",
+		"choices.ts",
+		"deadline-row.tsx",
+		"description-head.tsx",
+		"description-modes.ts",
+		"description.tsx",
+		"dialog-style.ts",
+		"dialog-top.tsx",
+		"fallback-card.tsx",
+		"glyph.tsx",
+		"glyphs.ts",
+		"kanban-list.tsx",
+		"list-cards.tsx",
+		"list-head.tsx",
+		"loading-board.tsx",
+		"markdown-style.ts",
+		"members-row.tsx",
+		"members-value.tsx",
+		"months.ts",
+		"name-entry-actions.tsx",
+		"preview.tsx",
+		"progress-row.tsx",
+		"properties-pane.tsx",
+		"properties-style.ts",
+		"property-row.tsx",
+		"refused-notice.tsx",
+		"repair-ids-ask.tsx",
+		"roster-picker.tsx",
+		"row-frame.tsx",
+		"style.ts",
+		"tag-chip.tsx",
+		"tag-editor.tsx",
+		"tag-row.tsx",
+		"task-dialog.tsx",
+		"task-fields.ts",
+		"task-notes.tsx",
+		"task-title.tsx",
+		"text-row.tsx",
+		"tone-picker.tsx",
+		"types.ts",
+		"use-board-columns.ts",
+		"use-board-reads.ts",
+		"use-carried-task.ts",
+		"use-column-reorder.ts",
+		"use-draft-following.ts",
+		"use-id-repair.ts",
+		"use-list-rename.ts",
+		"use-markdown-with-copy-buttons.ts",
+		"use-name-entry.ts",
+		"use-note-body.ts",
+		"use-tag-reorder.ts",
+		"use-task-writes.ts"
 	],
 	"dependencies": {},
-	"widgetDependencies": [
-		"@default/task-card"
-	]
+	"widgetDependencies": ["@default/task-card"]
 }

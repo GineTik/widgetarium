@@ -1,4 +1,4 @@
-import { createWidget, defineManifest, defineProp, pickedValue, useData } from "widgetarium";
+import { ICrudGateway, IValueGateway, createWidget, defineLayout, defineMetadata, pickedValue, z } from "widgetarium";
 import { archivedColumnsOf, columnPatched, columnsOf, columnsWritten, restored } from "@default/lib";
 import type { Board } from "@default/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
@@ -56,9 +56,61 @@ const STYLE = `
 }
 `;
 
-// CONTEXT: archived BOARDS stay behind the tab strip's menu; this view holds columns only
+const BoardSchema = z.custom<Board>();
 
-export const manifest = defineManifest({
+const ArchivedColumns = createWidget({
+	inject: {
+		boards: ICrudGateway.of(BoardSchema).pick("list", "get", "update"),
+		selection: IValueGateway.of(z.unknown()).pick("get"),
+		board: IValueGateway.of(BoardSchema).pick("get", "update"),
+	},
+	draw: ({ selection, board }) => {
+		const onBoard = pickedValue(selection);
+		const record = board.value;
+		const columns = columnsOf(record);
+		const archived: string[] = archivedColumnsOf(columns);
+		const restore = (name: string) => board.update(columnsWritten(columnPatched(columns, name, restored)));
+
+		return (
+			<div className="orbi orbi-archived-columns">
+				<style>{STYLE}</style>
+				<div className="oac-head">
+					<h3 className="oac-title">Archived columns</h3>
+					<span className="oac-board">{onBoard ? onBoard : "No board selected"}</span>
+				</div>
+				{archived.length === 0 ? (
+					<div className="oac-soon">
+						<p className="oac-soon-line">
+							<Icon name="archive" size={15} />
+							Every column archived from this board, with the tasks still filed under it.
+						</p>
+						<p className="oac-soon-line">
+							<Icon name="chevron" size={15} />
+							Restore puts a column back on the board it came from.
+						</p>
+						<p className="oac-soon-line">
+							<Icon name="folder" size={15} />
+							Archived boards are not here — they live behind the board strip's own menu.
+						</p>
+					</div>
+				) : (
+					<List>
+						{archived.map((name) => (
+							<Row key={name}>
+								<RowLabel>{name}</RowLabel>
+								<Button size="s" className="oac-restore" onClick={() => restore(name)}>
+									Restore
+								</Button>
+							</Row>
+						))}
+					</List>
+				)}
+			</div>
+		);
+	},
+});
+
+export const metadata = defineMetadata(ArchivedColumns, {
 	title: "Archived columns",
 	description: "Lists the columns a board has put away, with the tasks still sitting in them.",
 	keywords: [
@@ -75,9 +127,6 @@ export const manifest = defineManifest({
 		"closed",
 		"backlog",
 	],
-	role: "collection",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 240 },
-	view: "Archived columns",
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
@@ -93,71 +142,34 @@ export const manifest = defineManifest({
 		shot: { of: "134271609" },
 	},
 	props: {
-		boards: defineProp<Board[]>()({
+		boards: {
 			label: "Boards",
-			default: [],
-			writes: ["update"],
-		}),
-		selection: defineProp<string>()({
+		},
+		selection: {
 			label: "Shown board",
 			hint: "Whose archived columns are listed. Bind a tab strip and the two move together.",
-			of: "boards",
-			field: "board",
-			fallback: "first",
 			wants: "@default/editable-tabs/selection",
-		}),
-		board: defineProp<Board>()({
+			source: {
+				implementation: "@core/selection",
+				fields: { rows: "boards", field: "board", whenNothingPicked: "first" },
+			},
+		},
+		board: {
 			label: "Board",
 			hint: "The board whose archived columns are listed.",
-			picks: "selection",
-			of: "boards",
 			wants: "@default/kanban-board/board",
-			writes: ["update"],
-		}),
+			source: {
+				implementation: "@core/selected-row",
+				fields: { rows: "boards", picked: "selection", field: "board", whenNothingPicked: "first" },
+			},
+		},
 	},
 });
 
-export default createWidget(manifest, ({ selection, board }) => {
-	const onBoard = pickedValue(useData(selection.get).data);
-	const record = useData(board.get).data;
-	const columns = columnsOf(record);
-	const archived: string[] = archivedColumnsOf(columns);
-	const restore = (name: string) => board.update(columnsWritten(columnPatched(columns, name, restored)));
-
-	return (
-		<div className="orbi orbi-archived-columns">
-			<style>{STYLE}</style>
-			<div className="oac-head">
-				<h3 className="oac-title">Archived columns</h3>
-				<span className="oac-board">{onBoard ? onBoard : "No board selected"}</span>
-			</div>
-			{archived.length === 0 ? (
-				<div className="oac-soon">
-					<p className="oac-soon-line">
-						<Icon name="archive" size={15} />
-						Every column archived from this board, with the tasks still filed under it.
-					</p>
-					<p className="oac-soon-line">
-						<Icon name="chevron" size={15} />
-						Restore puts a column back on the board it came from.
-					</p>
-					<p className="oac-soon-line">
-						<Icon name="folder" size={15} />
-						Archived boards are not here — they live behind the board strip's own menu.
-					</p>
-				</div>
-			) : (
-				<List>
-					{archived.map((name) => (
-						<Row key={name}>
-							<RowLabel>{name}</RowLabel>
-							<Button size="s" className="oac-restore" onClick={() => restore(name)}>
-								Restore
-							</Button>
-						</Row>
-					))}
-				</List>
-			)}
-		</div>
-	);
+export const layout = defineLayout({
+	role: "collection",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 240 },
+	view: "Archived columns",
 });
+
+export default ArchivedColumns;

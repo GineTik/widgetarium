@@ -1,4 +1,4 @@
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
+import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { cn } from "widgetarium/kit";
 
 const CSS = `
@@ -46,12 +46,42 @@ type Tone = keyof typeof TONE_CLASSES;
 
 const LINE_TAGS = ["p", "h1", "h2", "h3"] as const;
 
-export const manifest = defineManifest({
+const TextLine = createWidget({
+	inject: {
+		text: IValueGateway.of(z.string().default("")).pick("get"),
+		tone: IValueGateway.of(z.string().default("value")).pick("get"),
+		heading: IValueGateway.of(z.number().default(0)).pick("get"),
+		lines: IValueGateway.of(z.number().default(0)).pick("get"),
+	},
+	draw: ({ text, tone, heading, lines }) => {
+		const said = text.trim();
+		const toned = toneNamed(tone);
+		const level = Math.min(countOf(heading), LINE_TAGS.length - 1);
+		const clamped = countOf(lines);
+
+		if (said === "") return null;
+
+		const Line = LINE_TAGS[level] ?? "p";
+		const style = clamped > 0 ? ({ "--wgi-line-clamp": String(clamped) } as Record<string, string>) : undefined;
+
+		return (
+			<>
+				<style>{CSS}</style>
+				<Line
+					className={cn("wgi-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
+					style={style}
+				>
+					{said}
+				</Line>
+			</>
+		);
+	},
+});
+
+export const metadata = defineMetadata(TextLine, {
 	title: "Text line",
 	description: "One line of text in the tone it is read as: a label, a value or a caption.",
 	keywords: ["text", "line", "label", "value", "caption", "heading", "title", "subtitle", "note", "words", "sentence"],
-	role: "text",
-	size: { preferredWidth: "full", preferredHeight: "auto" },
 	preview: {
 		size: { w: 4, h: 1 },
 		props: {
@@ -60,59 +90,26 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		text: defineProp<string>()({
-			label: "Text",
-			hint: "The line itself. Left empty, the widget draws nothing at all.",
-			default: "",
-		}),
-		tone: defineProp<string>()({
-			label: "Tone",
-			hint: "One of label, value or caption. It decides the weight and the ink, never the plate.",
-			default: "value",
-		}),
-		heading: defineProp<number>()({
+		text: { hint: "The line itself. Left empty, the widget draws nothing at all." },
+		tone: { hint: "One of label, value or caption. It decides the weight and the ink, never the plate." },
+		heading: {
 			label: "Heading level",
 			hint: "Zero draws a plain line. One, two or three draw the line as a heading of that level.",
-			default: 0,
-		}),
-		lines: defineProp<number>()({
-			label: "Lines",
-			hint: "How many lines the text may take before it is cut. Zero lets it run as long as it is.",
-			default: 0,
-		}),
+		},
+		lines: { hint: "How many lines the text may take before it is cut. Zero lets it run as long as it is." },
 	},
 });
 
-export default createWidget(manifest, ({ text, tone, heading, lines }) => {
-	const said = String(useData(text.get).data ?? "").trim();
-	const toned = toneNamed(useData(tone.get).data);
-	const level = Math.min(countOf(useData(heading.get).data), LINE_TAGS.length - 1);
-	const clamped = countOf(useData(lines.get).data);
+export const layout = defineLayout({ role: "text", size: { preferredWidth: "full", preferredHeight: "auto" } });
 
-	if (said === "") return null;
+export default TextLine;
 
-	const Line = LINE_TAGS[level] ?? "p";
-	const style = clamped > 0 ? ({ "--wgi-line-clamp": String(clamped) } as Record<string, string>) : undefined;
-
-	return (
-		<>
-			<style>{CSS}</style>
-			<Line
-				className={cn("wgi-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
-				style={style}
-			>
-				{said}
-			</Line>
-		</>
-	);
-});
-
-function toneNamed(said: unknown): Tone {
-	const named = String(said ?? "").toLowerCase();
+function toneNamed(said: string): Tone {
+	const named = said.toLowerCase();
 	return Object.hasOwn(TONE_CLASSES, named) ? (named as Tone) : "value";
 }
 
-function countOf(held: unknown): number {
-	const number = Math.trunc(Number(held));
+function countOf(held: number): number {
+	const number = Math.trunc(held);
 	return Number.isFinite(number) && number > 0 ? number : 0;
 }

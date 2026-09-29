@@ -1,7 +1,18 @@
-import { createWidget, defineManifest, defineProp, pickedValue, useData } from "widgetarium";
-import type { Aka, Day, Navigation, VaultRecord } from "widgetarium";
-import { isoOf, leadDaysOf, readLog } from "@default/lib";
-import type { LogEntry } from "@default/lib";
+import {
+	IListGateway,
+	INavigator,
+	IValueGateway,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	pickedValue,
+	useData,
+	z,
+} from "widgetarium";
+import { readLog } from "@default/lib";
+import { CELL } from "./grid-geometry";
+import { YearGrid } from "./year-grid";
 
 const ALL_DAYS = 2000;
 
@@ -58,154 +69,60 @@ const STYLE = `
 }
 `;
 
-type DayNote = VaultRecord & {
-	days?: (Day[] & Aka<"entries" | "dates" | "log" | "checkins">) | null;
-	done?: (number & Aka<"kept" | "value" | "count" | "steps" | "amount" | "score">) | null;
-};
+const DayNoteSchema = VaultRecordSchema.extend({
+	path: z.string(),
+	name: z.string(),
+	days: z
+		.array(z.string())
+		.nullable()
+		.optional()
+		.meta({ aka: ["entries", "dates", "log", "checkins"] }),
+	done: z
+		.number()
+		.nullable()
+		.optional()
+		.meta({ aka: ["kept", "value", "count", "steps", "amount", "score"] }),
+});
 
-type MonthSpan = { month: number; column: number; weeks: number };
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const WEEK = 7;
-const CELL = 10;
-const GAP = 3;
-const PITCH = CELL + GAP;
 const SQUARE_CORNER = 2.5;
 
-function weeksOf(year: number, isWeekStartingMonday: boolean): (string | null)[] {
-	const lead = leadDaysOf(new Date(year, 0, 1).getDay(), isWeekStartingMonday);
-	const days: (string | null)[] = [];
-	for (let at = 0; at < lead; at += 1) days.push(null);
-	for (const day = new Date(year, 0, 1); day.getFullYear() === year; day.setDate(day.getDate() + 1)) {
-		days.push(isoOf(day));
-	}
-	while (days.length % WEEK !== 0) days.push(null);
-	return days;
-}
+const HeatmapWidget = createWidget({
+	inject: {
+		log: IListGateway.of(DayNoteSchema),
+		pick: IValueGateway.of(z.unknown()).pick("get"),
+		year: IValueGateway.of(z.number().default(0)).pick("get"),
+		isRound: IValueGateway.of(z.boolean().default(false)).pick("get"),
+		isWeekStartingMonday: IValueGateway.of(z.boolean().default(true)).pick("get"),
+		navigator: INavigator,
+	},
+	draw: ({ pick, year, isRound, isWeekStartingMonday, log, navigator }) => {
+		const rows = useData(log.list, { limit: ALL_DAYS }).data;
 
-function stepOf(value: number, top: number): number {
-	if (value <= 0) return 0;
-	return Math.min(4, Math.ceil((value / Math.max(top, 1)) * 4));
-}
+		if (rows.length === 0) {
+			return (
+				<div className="habit-heatmap">
+					<style>{STYLE}</style>
+					<p className="hh-empty">Point this widget at a folder of habit notes, or a folder of daily notes.</p>
+				</div>
+			);
+		}
 
-function monthSpans(days: (string | null)[]): MonthSpan[] {
-	const spans: MonthSpan[] = [];
-	for (let column = 0; column * WEEK < days.length; column += 1) {
-		const iso = days.slice(column * WEEK, column * WEEK + WEEK).find(Boolean);
-		const month = iso ? Number(iso.slice(5, 7)) - 1 : -1;
-		const last = spans[spans.length - 1];
-		if (last && last.month === month) last.weeks += 1;
-		else spans.push({ month, column, weeks: 1 });
-	}
-	return spans;
-}
+		return (
+			<div className="habit-heatmap">
+				<style>{STYLE}</style>
+				<YearGrid
+					log={readLog(rows, { pick: pickedValue(pick) })}
+					year={year > 0 ? year : new Date().getFullYear()}
+					cornerRadius={isRound ? CELL / 2 : SQUARE_CORNER}
+					isMondayFirst={isWeekStartingMonday !== false}
+					navigator={navigator}
+				/>
+			</div>
+		);
+	},
+});
 
-type DayTotal = { value: number; path: string };
-
-function totalsByDate(log: LogEntry[]): Map<string, DayTotal> {
-	const totals = new Map<string, DayTotal>();
-	for (const entry of log) {
-		const total = totals.get(entry.date);
-		if (total) total.value += entry.value;
-		else totals.set(entry.date, { value: entry.value, path: entry.path ?? "" });
-	}
-	return totals;
-}
-
-function gridWidthOf(days: (string | null)[]): number {
-	return (days.length / WEEK) * PITCH - GAP;
-}
-
-function MonthLabels({ days }: { days: (string | null)[] }) {
-	const shareOf = (pitches: number) => `${((pitches * PITCH) / gridWidthOf(days)) * 100}%`;
-	return (
-		<div className="hh-months">
-			{monthSpans(days)
-				.filter((span) => span.month >= 0 && span.weeks > 1)
-				.map((span) => (
-					<span
-						className="hh-month"
-						key={span.month}
-						style={{ left: shareOf(span.column), maxWidth: shareOf(span.weeks) }}
-					>
-						{MONTHS[span.month]}
-					</span>
-				))}
-		</div>
-	);
-}
-
-function cellMarksOf(step: number, isToday: boolean): string {
-	return ["hh-cell", step > 0 && "is-done", isToday && "is-today"].filter(Boolean).join(" ");
-}
-
-type DayCellProps = {
-	iso: string;
-	at: number;
-	total: DayTotal | undefined;
-	top: number;
-	cornerRadius: number;
-	isToday: boolean;
-	navigator: Navigation;
-};
-
-function DayCell({ iso, at, total, top, cornerRadius, isToday, navigator }: DayCellProps) {
-	const value = total?.value ?? 0;
-	const step = stepOf(value, top);
-	return (
-		<rect
-			className={cellMarksOf(step, isToday)}
-			x={Math.floor(at / WEEK) * PITCH}
-			y={(at % WEEK) * PITCH}
-			width={CELL}
-			height={CELL}
-			rx={cornerRadius}
-			fillOpacity={step > 0 ? 0.25 + step * 0.1875 : undefined}
-			onClick={total && (() => navigator?.navigate?.(total.path))}
-		>
-			<title>{`${iso} — ${value || "nothing"}`}</title>
-		</rect>
-	);
-}
-
-type YearGridProps = {
-	log: LogEntry[];
-	year: number;
-	cornerRadius: number;
-	isMondayFirst: boolean;
-	navigator: Navigation;
-};
-
-function YearGrid({ log, year, cornerRadius, isMondayFirst, navigator }: YearGridProps) {
-	const totals = totalsByDate(log);
-	const top = Math.max(...[...totals.values()].map((total) => total.value), 1);
-	const days = weeksOf(year, isMondayFirst);
-	const today = isoOf(new Date());
-	return (
-		<>
-			<MonthLabels days={days} />
-			<svg
-				className="hh-grid"
-				viewBox={`0 0 ${gridWidthOf(days)} ${WEEK * PITCH - GAP}`}
-				role="img"
-				aria-label={String(year)}
-			>
-				{days.map((iso, at) =>
-					iso ? (
-						<DayCell
-							key={iso}
-							{...{ iso, at, top, cornerRadius, navigator }}
-							total={totals.get(iso)}
-							isToday={iso === today}
-						/>
-					) : null,
-				)}
-			</svg>
-		</>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(HeatmapWidget, {
 	title: "Heatmap",
 	description: "A year of squares: every day you kept a habit, in one glance.",
 	keywords: [
@@ -222,8 +139,6 @@ export const manifest = defineManifest({
 		"github",
 		"log",
 	],
-	role: "indicator",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 320 },
 	preview: {
 		size: { w: 7, h: 3 },
 		props: {
@@ -386,64 +301,27 @@ export const manifest = defineManifest({
 		shot: { of: "181870122" },
 	},
 	props: {
-		log: defineProp<DayNote[]>()({
+		log: {
 			label: "Log",
-			default: [],
 			describes: {
-				days: { type: "date", many: true, aka: ["entries", "dates", "log", "checkins"] },
-				done: { type: "number", aka: ["kept", "value", "count", "steps", "amount", "score"] },
+				days: { type: "date", many: true },
+				done: { type: "number" },
 			},
-		}),
-		pick: defineProp<string>()({
+		},
+		pick: {
 			label: "Which habit",
 			hint: "One habit only. Nothing picked draws all of them.",
-			of: "log",
-			field: "name",
-		}),
-		year: defineProp<number>()({
-			label: "Year, or 0 for this one",
-			default: 0,
-		}),
-		isRound: defineProp<boolean>()({
-			label: "Round cells instead of square",
-			design: true,
-			default: false,
-		}),
-		isWeekStartingMonday: defineProp<boolean>()({
-			label: "Weeks start on Monday",
-			default: true,
-		}),
+			source: { implementation: "@core/selection", fields: { rows: "log", field: "name" } },
+		},
+		year: { label: "Year, or 0 for this one" },
+		isRound: { label: "Round cells instead of square", design: true },
+		isWeekStartingMonday: { label: "Weeks start on Monday" },
 	},
 });
 
-export default createWidget(
-	manifest,
-	({ pick, year: shownYear, isRound, isWeekStartingMonday, log: source, navigator }) => {
-		const rows = useData(source.list, { limit: ALL_DAYS }).data;
-		const picked = pickedValue(useData(pick.get).data);
-		const asked = Number(useData(shownYear.get).data);
-		const isRoundCell = Boolean(useData(isRound.get).data);
-		const isMondayFirst = useData(isWeekStartingMonday.get).data !== false;
+export const layout = defineLayout({
+	role: "indicator",
+	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 320 },
+});
 
-		if (rows.length === 0) {
-			return (
-				<div className="habit-heatmap">
-					<style>{STYLE}</style>
-					<p className="hh-empty">Point this widget at a folder of habit notes, or a folder of daily notes.</p>
-				</div>
-			);
-		}
-
-		return (
-			<div className="habit-heatmap">
-				<style>{STYLE}</style>
-				<YearGrid
-					log={readLog(rows, { pick: picked })}
-					year={asked > 0 ? asked : new Date().getFullYear()}
-					cornerRadius={isRoundCell ? CELL / 2 : SQUARE_CORNER}
-					{...{ isMondayFirst, navigator }}
-				/>
-			</div>
-		);
-	},
-);
+export default HeatmapWidget;

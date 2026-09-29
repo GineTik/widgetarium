@@ -1,4 +1,4 @@
-import { createWidget, defineManifest } from "widgetarium";
+import { IContent, INavigator, createWidget, defineLayout, defineMetadata } from "widgetarium";
 const STYLE = `
 .wgi-link {
 	display: inline-flex;
@@ -32,30 +32,35 @@ const STYLE = `
 }
 `;
 
-// CONTEXT: the widget that proves navigation is its own entity — no gateway verb opens a note
+const NoteLink = createWidget({
+	inject: {
+		content: IContent,
+		navigator: INavigator,
+	},
+	draw: ({ content, navigator }) => {
+		const target = String(content ?? "").trim();
+		const found = navigator.resolve(target);
+		return (
+			<button
+				type="button"
+				className={`wgi-link${found ? "" : " is-missing"}`}
+				onClick={() => navigator.navigate(target)}
+			>
+				<style>{STYLE}</style>
+				<span className="wgi-link-name">{target}</span>
+				<span className="wgi-link-state">{found ? "open" : "not in this vault"}</span>
+			</button>
+		);
+	},
+});
 
-export const manifest = defineManifest({
+export const metadata = defineMetadata(NoteLink, {
 	title: "Note link",
 	description: "A rounded chip in the text that opens another note in the vault.",
 	keywords: ["link", "note", "chip", "open", "jump", "reference", "wikilink", "navigate", "shortcut", "pill", "button"],
-	inline: true,
 	preview: { size: { w: 6, h: 2 }, content: "Board", shot: { of: "973396447" } },
-	size: { preferredWidth: "full", preferredHeight: "auto" },
-	props: {},
 });
 
-export default createWidget(manifest, ({ content, navigator }) => {
-	const target = String(content ?? "").trim();
-	const found = navigator.resolve(target);
-	return (
-		<button
-			type="button"
-			className={`wgi-link${found ? "" : " is-missing"}`}
-			onClick={() => navigator.navigate(target)}
-		>
-			<style>{STYLE}</style>
-			<span className="wgi-link-name">{target}</span>
-			<span className="wgi-link-state">{found ? "open" : "not in this vault"}</span>
-		</button>
-	);
-});
+export const layout = defineLayout({ inline: true, size: { preferredWidth: "full", preferredHeight: "auto" } });
+
+export default NoteLink;

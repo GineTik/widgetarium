@@ -1,0 +1,3 @@
+export const MIN_CELL_PX = 140;
+const CELL_GAP_ALLOWANCE_PX = 20;
+export const NARROW_PX = MIN_CELL_PX * 2 + CELL_GAP_ALLOWANCE_PX;

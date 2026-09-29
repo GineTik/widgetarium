@@ -1,8 +1,7 @@
-import { useLayoutEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
-import { createWidget, defineManifest, defineProp, useData } from "widgetarium";
-import { Button, Icon, IconButton } from "widgetarium/kit";
-import type { GetAction, ValueGateway, ViewHost } from "widgetarium";
+import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { Icon, IconButton } from "widgetarium/kit";
+import { Collapsed } from "./collapsed";
+import { RenderedMarkdown } from "./rendered-markdown";
 
 type MarkdownSource = string | { content?: string | null; body?: string | null; path?: string | null } | null;
 
@@ -16,70 +15,55 @@ function pathOf(source: MarkdownSource) {
 	return source?.path ?? null;
 }
 
-function usePixels(gateway: ValueGateway<number, { get: GetAction }>, fallback: number) {
-	const held = Number(useData(gateway.get).data);
+function pixelsOf(held: number, fallback: number) {
 	if (!Number.isFinite(held) || held < 0) return fallback;
 	return held;
 }
 
-function RenderedMarkdown({ host, markdown, path }: { host: ViewHost; markdown: string; path: string | null }) {
-	const body = useRef<HTMLDivElement>(null);
+const ObsidianMarkdownPreview = createWidget({
+	inject: {
+		source: IValueGateway.of(z.custom<MarkdownSource>().default("")).pick("get"),
+		collapsible: IValueGateway.of(z.boolean().default(false)).pick("get"),
+		collapsedHeight: IValueGateway.of(z.number().default(240)).pick("get"),
+		step: IValueGateway.of(z.number().default(0)).pick("get"),
+		host: IHost,
+		navigator: INavigator,
+	},
+	draw: ({ source, collapsible, collapsedHeight, step, host, navigator }) => {
+		const collapsedPx = pixelsOf(collapsedHeight, 240);
+		const stepPx = pixelsOf(step, 0);
+		const path = pathOf(source);
+		const canOpen = Boolean(path) && navigator.canNavigate;
 
-	useLayoutEffect(() => {
-		if (!body.current || !host.can.renderMarkdown) return undefined;
-		return host.ui.renderMarkdown(body.current, markdown, path ?? undefined);
-	}, [host, markdown, path]);
+		const note = (
+			<>
+				{canOpen ? (
+					<IconButton
+						size="xs"
+						className="wg-markdown-preview-open"
+						data-part="open"
+						label="Open in a new tab"
+						onClick={() => navigator.navigate(`/${path}`, { target: "blank" })}
+					>
+						<Icon name="open-tab" />
+					</IconButton>
+				) : null}
+				<RenderedMarkdown host={host} markdown={markdownOf(source)} path={path} />
+			</>
+		);
 
-	if (!host.can.renderMarkdown) return <pre className="wg-markdown-preview-plain">{markdown}</pre>;
-	return <div ref={body} className="wg-markdown-preview-body markdown-rendered" data-part="body" />;
-}
+		if (collapsible) {
+			return (
+				<Collapsed collapsedPx={collapsedPx} stepPx={stepPx}>
+					{note}
+				</Collapsed>
+			);
+		}
+		return <div className="wg-markdown-preview">{note}</div>;
+	},
+});
 
-function Collapsed({ collapsedPx, stepPx, children }: { collapsedPx: number; stepPx: number; children: ReactNode }) {
-	const content = useRef<HTMLDivElement>(null);
-	const [fullPx, setFullPx] = useState(0);
-	const [shownPx, setShownPx] = useState(collapsedPx);
-
-	useLayoutEffect(() => setShownPx(collapsedPx), [collapsedPx]);
-
-	useLayoutEffect(() => {
-		const measured = content.current;
-		if (!measured) return undefined;
-		const observer = new ResizeObserver(() => setFullPx(measured.offsetHeight));
-		observer.observe(measured);
-		setFullPx(measured.offsetHeight);
-		return () => observer.disconnect();
-	}, []);
-
-	const isLong = fullPx > collapsedPx;
-	const isCut = isLong && fullPx > shownPx;
-	const more = () => setShownPx(stepPx > 0 ? shownPx + stepPx : fullPx);
-	const less = () => setShownPx(collapsedPx);
-
-	return (
-		<div className="wg-markdown-preview-collapsible">
-			<div
-				className="wg-markdown-preview-clip"
-				data-cut={isCut}
-				style={{ maxHeight: isLong ? Math.min(shownPx, fullPx) : undefined }}
-			>
-				<div ref={content}>{children}</div>
-			</div>
-			{isLong ? (
-				<Button
-					variant="ghost"
-					size="s"
-					className="wg-markdown-preview-more"
-					data-part="more"
-					onClick={isCut ? more : less}
-				>
-					{isCut ? "Show more" : "Show less"}
-				</Button>
-			) : null}
-		</div>
-	);
-}
-
-export const manifest = defineManifest({
+export const metadata = defineMetadata(ObsidianMarkdownPreview, {
 	title: "Obsidian markdown preview",
 	description:
 		"Text drawn the way Obsidian draws a note: a page or section title, an explanation the screen does not give on its own, a list, a whole note. It shows text and never edits it.",
@@ -107,8 +91,6 @@ export const manifest = defineManifest({
 		"text",
 		"title",
 	],
-	role: "text",
-	size: { preferredWidth: "full", preferredHeight: "auto" },
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
@@ -121,62 +103,28 @@ export const manifest = defineManifest({
 		},
 	},
 	props: {
-		source: defineProp<MarkdownSource>()({
+		source: {
 			label: "Source",
 			hint: "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
-			default: "",
-		}),
-		collapsible: defineProp<boolean>()({
+		},
+		collapsible: {
 			label: "Collapse long text",
 			hint: "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
-			default: false,
-		}),
-		collapsedHeight: defineProp<number>()({
+		},
+		collapsedHeight: {
 			label: "Collapsed height, in pixels",
 			hint: "How much of long text shows before Show more is pressed.",
-			default: 240,
-		}),
-		step: defineProp<number>()({
+		},
+		step: {
 			label: "Show more step, in pixels",
 			hint: "How much each press of Show more opens. 0 opens all of it at once.",
-			default: 0,
-		}),
+		},
 	},
 });
 
-export default createWidget(manifest, ({ source, collapsible, collapsedHeight, step, host, navigator }) => {
-	const { data, failure } = useData(source.get);
-	const isCollapsible = useData(collapsible.get).data === true;
-	const collapsedPx = usePixels(collapsedHeight, 240);
-	const stepPx = usePixels(step, 0);
-	const path = pathOf(data);
-	const canOpen = Boolean(path) && navigator.canNavigate;
-
-	if (failure) return <p className="wg-markdown-preview-failure">{failure}</p>;
-
-	const note = (
-		<>
-			{canOpen ? (
-				<IconButton
-					size="xs"
-					className="wg-markdown-preview-open"
-					data-part="open"
-					label="Open in a new tab"
-					onClick={() => navigator.navigate(`/${path}`, { target: "blank" })}
-				>
-					<Icon name="open-tab" />
-				</IconButton>
-			) : null}
-			<RenderedMarkdown host={host} markdown={markdownOf(data)} path={path} />
-		</>
-	);
-
-	if (isCollapsible) {
-		return (
-			<Collapsed collapsedPx={collapsedPx} stepPx={stepPx}>
-				{note}
-			</Collapsed>
-		);
-	}
-	return <div className="wg-markdown-preview">{note}</div>;
+export const layout = defineLayout({
+	role: "text",
+	size: { preferredWidth: "full", preferredHeight: "auto" },
 });
+
+export default ObsidianMarkdownPreview;

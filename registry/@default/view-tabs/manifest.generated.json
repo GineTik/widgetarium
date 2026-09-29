@@ -3,19 +3,7 @@
 	"api": 2,
 	"title": "View tabs",
 	"description": "A row of tabs that picks which view a view group draws.",
-	"keywords": [
-		"view",
-		"views",
-		"tabs",
-		"switch",
-		"kanban",
-		"table",
-		"picker",
-		"navigation",
-		"bar",
-		"modes",
-		"layout"
-	],
+	"keywords": ["view", "views", "tabs", "switch", "kanban", "table", "picker", "navigation", "bar", "modes", "layout"],
 	"role": "control",
 	"size": {
 		"preferredWidth": "full",
@@ -37,10 +25,7 @@
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -71,20 +56,20 @@
 			"control": "pick",
 			"label": "Picked option",
 			"hint": "Which option is picked. Bind the view group's own box and the two move together.",
-			"of": "options",
-			"field": "value",
-			"fallback": "first",
-			"writes": [
-				"get",
-				"update"
-			],
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "options",
+					"field": "value",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get", "update"],
 			"wants": "@default/view-group/selection"
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx"
-	],
+	"files": ["widget.tsx"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

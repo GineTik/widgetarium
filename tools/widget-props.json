@@ -13,9 +13,14 @@
 			"control": "pick",
 			"label": "Shown board",
 			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
-			"of": "boards",
-			"field": "board",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "boards",
+					"field": "board",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get"],
 			"wants": "@default/editable-tabs/selection"
 		},
@@ -24,8 +29,15 @@
 			"control": "row",
 			"label": "Board",
 			"hint": "The board whose archived columns are listed.",
-			"picks": "selection",
-			"of": "boards",
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "boards",
+					"picked": "selection",
+					"field": "board",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"],
 			"wants": "@default/kanban-board/board"
 		}
@@ -230,9 +242,14 @@
 			"control": "pick",
 			"label": "Selected tab",
 			"hint": "Which tab is picked, as a box. Bind another widget and the two move together.",
-			"of": "tabs",
-			"fieldFrom": "value",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "tabs",
+					"fieldFrom": "value",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"]
 		}
 	},
@@ -365,8 +382,13 @@
 			"control": "pick",
 			"label": "Which habit",
 			"hint": "One habit only. Nothing picked draws all of them.",
-			"of": "log",
-			"field": "name",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "log",
+					"field": "name"
+				}
+			},
 			"writes": ["get"]
 		},
 		"year": {
@@ -508,9 +530,14 @@
 			"control": "pick",
 			"label": "Shown board",
 			"hint": "Which board this draws. Bind a tab strip and the two move together.",
-			"of": "boards",
-			"field": "board",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "boards",
+					"field": "board",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"],
 			"wants": "@default/editable-tabs/selection"
 		},
@@ -519,8 +546,15 @@
 			"control": "row",
 			"label": "Board",
 			"hint": "The board this draws: its columns, their order and which of them are archived.",
-			"picks": "selection",
-			"of": "boards",
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "boards",
+					"picked": "selection",
+					"field": "board",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"],
 			"default": {
 				"value": {
@@ -543,7 +577,12 @@
 			"control": "pick",
 			"label": "Opened task",
 			"hint": "Which card is open, as a box. The board draws it full size itself.",
-			"of": "tasks",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "tasks"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"groupBy": {
@@ -583,7 +622,12 @@
 			"control": "pick",
 			"label": "Selected row",
 			"hint": "Which row is picked. A detail tile reading the same collection follows it.",
-			"of": "rows",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "rows"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"filter": {
@@ -638,7 +682,7 @@
 			"label": "Logs",
 			"writes": ["list", "get", "create", "update", "remove"],
 			"default": {
-				"path": "Habits"
+				"rows": []
 			}
 		},
 		"pick": {
@@ -646,9 +690,14 @@
 			"control": "pick",
 			"label": "Which log",
 			"hint": "The log this number is about.",
-			"of": "habits",
-			"field": "name",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "habits",
+					"field": "name",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"metric": {
@@ -776,17 +825,29 @@
 			"kind": "value",
 			"control": "pick",
 			"label": "Picked period",
-			"of": "periods",
-			"field": "label",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "periods",
+					"field": "label",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"period": {
 			"kind": "value",
 			"control": "row",
 			"label": "The period",
-			"picks": "periodPick",
-			"of": "periods",
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "periods",
+					"picked": "periodPick",
+					"field": "label",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get"]
 		},
 		"view": {
@@ -835,9 +896,14 @@
 			"control": "pick",
 			"label": "Which habit",
 			"hint": "The habit this grid writes into. Bind it to a habit list and the month follows what the list picks.",
-			"of": "days",
-			"field": "name",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "days",
+					"field": "name",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get"]
 		},
 		"isWeekStartingMonday": {
@@ -1164,9 +1230,14 @@
 			"control": "pick",
 			"label": "Shown choice",
 			"hint": "Which choice is shown. Bind the view box's own selection and the two move together.",
-			"of": "options",
-			"field": "value",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "options",
+					"field": "value",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"],
 			"wants": "@default/view-group/selection"
 		}
@@ -1611,9 +1682,14 @@
 			"control": "pick",
 			"label": "Open section",
 			"hint": "Which section is open. Bind the view box's own selection and the two move together.",
-			"of": "options",
-			"field": "value",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "options",
+					"field": "value",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"],
 			"wants": "@default/view-group/selection"
 		}
@@ -1624,9 +1700,14 @@
 			"control": "pick",
 			"label": "Shown view",
 			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
-			"of": "holds",
-			"field": "value",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "holds",
+					"field": "value",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"isTabsShown": {
@@ -1677,9 +1758,14 @@
 			"control": "pick",
 			"label": "Picked option",
 			"hint": "Which option is picked. Bind the view group's own box and the two move together.",
-			"of": "options",
-			"field": "value",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "options",
+					"field": "value",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"],
 			"wants": "@default/view-group/selection"
 		}
@@ -1766,7 +1852,12 @@
 			"control": "pick",
 			"label": "Selected file",
 			"hint": "Which file is picked. A diff standing beside this list binds to it and follows every press.",
-			"of": "files",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "files"
+				}
+			},
 			"writes": ["get", "update"],
 			"default": {
 				"value": null
@@ -1945,7 +2036,12 @@
 			"control": "pick",
 			"label": "Selected flight",
 			"hint": "Which row is picked. A detail tile that picks from the same list follows it.",
-			"of": "flights",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "flights"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"pageSize": {
@@ -2163,9 +2259,14 @@
 			"control": "pick",
 			"label": "Selected project",
 			"hint": "The project the pressed card names. Bind a task list or a docs tree to it and they follow the press.",
-			"of": "projects",
-			"field": "name",
-			"fallback": "first",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "projects",
+					"field": "name",
+					"whenNothingPicked": "first"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"pageSize": {
@@ -2541,7 +2642,12 @@
 			"control": "pick",
 			"label": "Playing",
 			"hint": "Which track is loaded. Bind a queue beside it and the two move together.",
-			"of": "tracks",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "tracks"
+				}
+			},
 			"writes": ["get", "update"],
 			"default": {
 				"value": ""
@@ -2656,7 +2762,12 @@
 			"control": "pick",
 			"label": "Selected track",
 			"hint": "Which track is picked. A player bound to this plays whatever the list picks.",
-			"of": "tracks",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "tracks"
+				}
+			},
 			"writes": ["get", "update"]
 		},
 		"playing": {
@@ -2664,7 +2775,12 @@
 			"control": "pick",
 			"label": "Playing track",
 			"hint": "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
-			"of": "tracks",
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "tracks"
+				}
+			},
 			"writes": ["get"],
 			"wants": "@media/player/playing"
 		},

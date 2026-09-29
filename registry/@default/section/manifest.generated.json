@@ -3,18 +3,7 @@
 	"api": 2,
 	"title": "Section",
 	"description": "A titled part of a screen: the heading, what it says about itself, the controls beside it, and the widgets standing under it.",
-	"keywords": [
-		"section",
-		"group",
-		"region",
-		"heading",
-		"title",
-		"block",
-		"layout",
-		"container",
-		"grid",
-		"list"
-	],
+	"keywords": ["section", "group", "region", "heading", "title", "block", "layout", "container", "grid", "list"],
 	"role": "layout",
 	"size": {
 		"preferredWidth": "full",
@@ -24,20 +13,21 @@
 	},
 	"slots": {
 		"item": {
-			"label": "Drawn for every row",
-			"surface": "none"
+			"of": "widget",
+			"surface": "none",
+			"label": "Drawn for every row"
 		}
 	},
 	"mounts": {
 		"controls": {
+			"default": [],
 			"label": "Controls",
-			"hint": "Widgets standing at the end of the heading row. They govern this section and nothing else.",
-			"default": []
+			"hint": "Widgets standing at the end of the heading row. They govern this section and nothing else."
 		},
 		"widgets": {
+			"default": [],
 			"label": "Widgets",
-			"hint": "Each widget you place stands in the body, in the order listed here.",
-			"default": []
+			"hint": "Each widget you place stands in the body, in the order listed here."
 		}
 	},
 	"props": {
@@ -47,10 +37,7 @@
 			"type": "line",
 			"label": "Heading",
 			"hint": "What this part of the screen is.",
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": "Section"
 			}
@@ -62,10 +49,7 @@
 			"label": "What the badge says it is",
 			"hint": "The colour a badge wears is its meaning: a count is neutral, a problem is an error.",
 			"design": true,
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": "neutral"
 			},
@@ -114,10 +98,7 @@
 			"type": "line",
 			"label": "Badge",
 			"hint": "A count or a state, beside the heading. It says something about the body, never a filter.",
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": ""
 			}
@@ -128,10 +109,7 @@
 			"type": "line",
 			"label": "What fills it",
 			"hint": "Placed: you put each widget in yourself. Per row: one widget is drawn again for every row of the data.",
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": "placed"
 			},
@@ -153,10 +131,7 @@
 			"label": "How they stand",
 			"hint": "A column reads down with nothing under it. A row and a grid give each widget its own plate. Rows stand in one plate with a line between them.",
 			"design": true,
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": "column"
 			},
@@ -186,10 +161,7 @@
 			"label": "Narrowest a cell may be",
 			"hint": "The grid fits as many across as this allows, then wraps.",
 			"design": true,
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": 240
 			}
@@ -198,13 +170,7 @@
 			"kind": "collection",
 			"label": "Rows to draw",
 			"hint": "Bind the folder whose notes this section draws. The widget in the slot draws one of them at a time.",
-			"writes": [
-				"list",
-				"get",
-				"create",
-				"update",
-				"remove"
-			],
+			"writes": ["list", "get", "create", "update", "remove"],
 			"default": {
 				"rows": []
 			}
@@ -215,9 +181,7 @@
 			"type": "number",
 			"label": "Rows drawn",
 			"hint": "How many rows are drawn before the rest are asked for.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": 24
 			}
@@ -225,7 +189,14 @@
 	},
 	"migrates": [],
 	"files": [
-		"widget.tsx"
+		"widget.tsx",
+		"body-modes.ts",
+		"body.tsx",
+		"controls.tsx",
+		"head.tsx",
+		"per-row.tsx",
+		"placed.tsx",
+		"stands.tsx"
 	],
 	"dependencies": {},
 	"widgetDependencies": []

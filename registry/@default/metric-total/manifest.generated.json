@@ -216,42 +216,19 @@
 			"kind": "collection",
 			"label": "Records",
 			"hint": "One note per reading. Each carries a date and an amount.",
-			"writes": [
-				"list",
-				"get",
-				"create",
-				"update",
-				"remove"
-			],
+			"writes": ["list", "get", "create", "update", "remove"],
 			"describes": {
 				"amount": {
 					"type": "number",
-					"aka": [
-						"value",
-						"count",
-						"total",
-						"kept",
-						"score",
-						"done"
-					]
+					"aka": ["value", "count", "total", "kept", "score", "done"]
 				},
 				"date": {
 					"type": "date",
-					"aka": [
-						"created",
-						"day",
-						"when",
-						"on"
-					]
+					"aka": ["created", "day", "when", "on"]
 				},
 				"note": {
 					"type": "text",
-					"aka": [
-						"text",
-						"comment",
-						"description",
-						"body"
-					]
+					"aka": ["text", "comment", "description", "body"]
 				}
 			},
 			"default": {
@@ -263,9 +240,7 @@
 			"control": "line",
 			"type": "line",
 			"label": "What the number is",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": "Total"
 			}
@@ -275,9 +250,7 @@
 			"control": "line",
 			"type": "line",
 			"label": "Unit the amounts are in",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
@@ -288,9 +261,7 @@
 			"type": "line",
 			"label": "good · bad",
 			"hint": "Whether a rise reads as good or as bad.",
-			"writes": [
-				"get"
-			],
+			"writes": ["get"],
 			"default": {
 				"value": "good"
 			}
@@ -299,10 +270,7 @@
 			"kind": "collection",
 			"label": "Periods",
 			"hint": "Every window the card can read over.",
-			"writes": [
-				"list",
-				"get"
-			],
+			"writes": ["list", "get"],
 			"describes": {
 				"label": {
 					"label": "Label",
@@ -336,33 +304,37 @@
 			"kind": "value",
 			"control": "pick",
 			"label": "Picked period",
-			"of": "periods",
-			"field": "label",
-			"fallback": "first",
-			"writes": [
-				"get",
-				"update"
-			]
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "periods",
+					"field": "label",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get", "update"]
 		},
 		"period": {
 			"kind": "value",
 			"control": "row",
 			"label": "The period",
-			"picks": "periodPick",
-			"of": "periods",
-			"writes": [
-				"get"
-			]
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "periods",
+					"picked": "periodPick",
+					"field": "label",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get"]
 		},
 		"view": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "curve · bars",
-			"writes": [
-				"get",
-				"update"
-			],
+			"writes": ["get", "update"],
 			"default": {
 				"value": "curve"
 			}
@@ -371,6 +343,30 @@
 	"migrates": [],
 	"files": [
 		"widget.tsx",
+		"add-button.tsx",
+		"add-dialog.tsx",
+		"bars-ink.tsx",
+		"chart.tsx",
+		"close-button.tsx",
+		"curve-ink.tsx",
+		"days.ts",
+		"foot.tsx",
+		"head.tsx",
+		"list-dialog.tsx",
+		"list-glyph.tsx",
+		"metric-plate.tsx",
+		"numbers.ts",
+		"period-picker.tsx",
+		"plates.tsx",
+		"record-actions.tsx",
+		"stroked.tsx",
+		"tip.tsx",
+		"types.ts",
+		"use-band.ts",
+		"use-entry-dialog.ts",
+		"use-own-size-written.ts",
+		"view-toggle.tsx",
+		"written.ts",
 		"widget.css"
 	],
 	"dependencies": {},

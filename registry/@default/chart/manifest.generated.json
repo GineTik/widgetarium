@@ -2,7 +2,7 @@
 	"$generated": "widgetarium build — do not edit",
 	"api": 2,
 	"title": "Chart",
-	"description": "The numbers a set of notes carries, drawn across one property as an area, bars, a line or a glance.",
+	"description": "The numbers a set of notes carries, drawn across one property as an area, bars, a line, or a glance: the latest value with its sparkline.",
 	"keywords": [
 		"chart",
 		"graph",
@@ -15,7 +15,13 @@
 		"sparkline",
 		"numbers",
 		"over time",
-		"compare"
+		"compare",
+		"stat",
+		"kpi",
+		"glance",
+		"balance",
+		"total",
+		"history"
 	],
 	"role": "indicator",
 	"size": {
@@ -152,7 +158,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "widget.css"],
+	"files": ["widget.tsx", "glance.tsx", "said.tsx", "types.ts", "widget.css"],
 	"dependencies": {},
 	"widgetDependencies": []
 }
