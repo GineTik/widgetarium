@@ -72,6 +72,11 @@ export const reactSurface = {
 export const kit = kitModule;
 export const emojis = emojiModule;
 
+// TRADE-OFF: an object is only claimed to hold props; defineProps refuses every entry that is not one
+export function isPropsToDefine(held: unknown): held is DeclaredProps {
+	return isObject(held);
+}
+
 function injectedProps(inject: unknown): DeclaredProps {
 	if (isDeclaredProps(inject)) return inject;
 	if (!isPropsToDefine(inject)) throw new Error(NOT_A_WIDGET);
@@ -80,9 +85,4 @@ function injectedProps(inject: unknown): DeclaredProps {
 
 function isWidgetDeclaration(held: unknown): held is WidgetDeclaration {
 	return isObject(held) && typeof held["draw"] === "function";
-}
-
-// TRADE-OFF: an object is only claimed to hold props; defineProps refuses every entry that is not one
-function isPropsToDefine(held: unknown): held is DeclaredProps {
-	return isObject(held);
 }
