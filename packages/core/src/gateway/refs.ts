@@ -1,5 +1,6 @@
 import type { CanResult, CollectionGateway, FilterRow, GatewayBase, Unsubscribe, ValueGateway } from "./contract";
 import type { EveryValueVerb } from "./needs";
+import { isObject } from "../engine/is-object";
 
 type PropRef = string;
 import { collectionGateway, valueGateway } from "./create";
@@ -8,7 +9,7 @@ import { isEmpty, narrowCollection, normalizeWhere } from "./narrow";
 import { combineSubscribes } from "./combined";
 import type { Subscribe } from "./combined";
 
-export type AnyGateway = GatewayBase & Record<string, unknown>;
+export type AnyGateway = GatewayBase;
 export type { Subscribe } from "./combined";
 export { createPickedGateway, pickedValue, selectionGateway } from "./picked";
 export type { PickSpec, SelectionSpec } from "./picked";
@@ -289,7 +290,7 @@ function delegateWrites(refs: GatewayRefs, ref: PropRef) {
 	const refused = { can: false as const, reason: NOTHING_PUBLISHED.replace("{ref}", ref) };
 	for (const verb of COLLECTION_WRITES) {
 		const live = (): WriteVerb | null => {
-			const held = refs.get(ref)?.[verb];
+			const held = verbOf(refs.get(ref), verb);
 			return typeof held === "function" ? (held as WriteVerb) : null;
 		};
 		handlers[verb] = (input: never) => {
@@ -303,4 +304,8 @@ function delegateWrites(refs: GatewayRefs, ref: PropRef) {
 		};
 	}
 	return { handlers, cans };
+}
+
+function verbOf(gateway: unknown, verb: string): unknown {
+	return isObject(gateway) ? gateway[verb] : undefined;
 }

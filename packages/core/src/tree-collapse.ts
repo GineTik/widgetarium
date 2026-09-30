@@ -3,7 +3,7 @@ import { ALWAYS, MENU, MENU_PX, SHEET, STACK, DRAWER } from "./tree-constants.js
 import { isBox, pathKey } from "./tree-nodes.js";
 import { drawerWidth, keptAt } from "./tree-columns.js";
 import type { ScreenSide } from "./tree-columns.js";
-import type { BoxNode, CollapseKind, HeldNode, NodePath, SurfaceSide, SurfaceWord } from "./tree-nodes.js";
+import type { BoardNode, BoxNode, CollapseKind, HeldNode, NodePath, SurfaceSide, SurfaceWord } from "./tree-nodes.js";
 import type { LaidBox, LaidChild, LaidCollapsed, LaidNode } from "./tree.js";
 
 export interface RegionSurface {
@@ -30,8 +30,8 @@ export function regionCollapseOf(root: BoxNode, at: number): CollapseKind {
 	return into === STACK ? DRAWER : into;
 }
 
-export const openKeyOf = (node: BoxNode, path: NodePath): string =>
-	node.trigger ?? `collapse:${node.id ?? pathKey(path)}/open`;
+export const openKeyOf = (node: BoardNode, path: NodePath): string =>
+	(isBox(node) ? node.trigger : undefined) ?? `collapse:${node.id ?? pathKey(path)}/open`;
 
 export function overlayWidthOf(into: CollapseKind, viewportPx: number): number {
 	if (into === MENU) return Math.min(MENU_PX, viewportPx);

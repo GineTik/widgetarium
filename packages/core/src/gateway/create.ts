@@ -42,7 +42,11 @@ type Subscribe = (listener: (event: GatewayEvent) => void) => Unsubscribe;
 
 let mintedArrays = 0;
 
-type ArraySource<T> = readonly T[] | (() => readonly T[]);
+type WrappedEntry<T> = { ref?: string; id?: string; value: T };
+
+type ArrayEntries<T> = readonly (T | WrappedEntry<T>)[];
+
+type ArraySource<T> = ArrayEntries<T> | (() => ArrayEntries<T>);
 
 type HeldOptions = { subscribe?: Subscribe };
 
@@ -92,10 +96,7 @@ export function valueGateway<T>(options: {
 export const rowOf = <T>(value: unknown, ref: string): Row<T> =>
 	(isRecord(value) ? { ...(value as object), ref } : { value, ref }) as Row<T>;
 
-export function toRows<T>(
-	entries: readonly (T | { ref?: string; id?: string; value: T })[],
-	wrapKey: "ref" | "id" = "ref",
-): Row<T>[] {
+export function toRows<T>(entries: ArrayEntries<T>, wrapKey: "ref" | "id" = "ref"): Row<T>[] {
 	return entries.map((entry, index) =>
 		isWrapped(entry, wrapKey)
 			? rowOf<T>((entry as { value: T }).value, String((entry as Record<string, unknown>)[wrapKey]))
