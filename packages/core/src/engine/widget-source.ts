@@ -32,8 +32,8 @@ export type { SourceDisk } from "./source-disk.js";
 export type { SourceDoors, WidgetOffer, WidgetSourcePlace } from "./source-offers.js";
 
 export interface ListedWidget {
-	readonly manifest?: Fields | null;
-	readonly from?: { readonly folder?: string | null } | null;
+	readonly manifest?: Fields | null | undefined;
+	readonly from?: { readonly folder?: string | null | undefined } | null | undefined;
 }
 
 export interface FetchProgress {

@@ -31,9 +31,9 @@ const megabytes = (bytes) => `${(bytes / 1048576).toFixed(2)} MB`;
 const isDevBuild = (source) => source.includes("//# sourceMappingURL=");
 
 function onloadBody() {
-	const startup = fs.readFileSync("apps/obsidian/src/main.js", "utf8");
-	const opens = startup.indexOf("\n\tasync onload() {");
-	const closes = startup.indexOf("\n\t}\n", opens);
+	const startup = fs.readFileSync("apps/obsidian/src/plugin-setup.ts", "utf8");
+	const opens = startup.indexOf("\nexport function startPlugin(");
+	const closes = startup.indexOf("\n}\n", opens);
 	return startup.slice(opens, closes);
 }
 
@@ -287,8 +287,8 @@ async function reportThisVaultsSources() {
 
 async function reportPollGate() {
 	heading("7 · does this vault poll the filesystem");
-	const startup = fs.readFileSync("apps/obsidian/src/main.js", "utf8");
-	const isGated = /isAuthoringWidgetsHere\(\)\) await this\.watchWidgetFolder\(\)/.test(startup);
+	const startup = fs.readFileSync("apps/obsidian/src/widget-upkeep.ts", "utf8");
+	const isGated = /isAuthoringWidgetsHere\(plugin\)\) await watchWidgetFolder\(plugin\)/.test(startup);
 	row("interval", `${Number(/WIDGET_POLL_MS = (\d+)/.exec(startup)?.[1] ?? 0)} ms`);
 	row("gated on a folder catalogue source", isGated ? "yes — other vaults never poll" : "NO — every vault polls");
 	await reportThisVaultsSources();

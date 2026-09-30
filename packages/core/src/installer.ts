@@ -30,7 +30,7 @@ interface Installer {
 	lock(): Promise<WidgetLock>;
 	rebuildDrifted(): Promise<RebuiltDrifted>;
 	install(listed: InstallListing, onStep?: OnFetchStep): Promise<Installed>;
-	installAt(ref: string, offers: readonly WidgetOffer[]): Promise<Installed>;
+	installAt(ref: string, offers: readonly AvailableEntry[]): Promise<Installed>;
 	installEvery(listed: readonly InstallListing[], onStep?: (id: unknown) => void): Promise<InstalledEvery>;
 	uninstall(id: string): Promise<Uninstalled>;
 }

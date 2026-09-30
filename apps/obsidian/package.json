@@ -10,6 +10,7 @@
 		"react-dom": "^19.2.8"
 	},
 	"devDependencies": {
+		"@types/node": "^22.20.4",
 		"obsidian": "^1.13.1"
 	}
 }

@@ -18,7 +18,7 @@ export const LINTED_ROOTS = [
 export const SKIPPED_PATHS = [
 	"packages/kit/src/emojis/emoji-table.ts",
 	"packages/kit/src/icons/icon-table.ts",
-	"apps/obsidian/src/regex-sample.js",
+	"apps/obsidian/src/regex-sample.ts",
 ];
 
 export const ALLOWED_COMMENT_PREFIXES = ["TODO:", "TRADE-OFF:"];

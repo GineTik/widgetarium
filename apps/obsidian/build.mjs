@@ -5,7 +5,7 @@ import { widgetTypeFiles } from "../../tools/widget-types.mjs";
 export const TEXT_LOADERS = { ".md": "text", ".css": "text" };
 
 const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
-const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.mjs";
+const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.ts";
 
 function widgetsCliOptions() {
 	return {
@@ -131,7 +131,7 @@ function surfaceSource({ minify }) {
 export function bundleOptions({ outfile = "apps/obsidian/main.js", minify = false, sourcemap = false } = {}) {
 	return {
 		plugins: [surfaceSource({ minify }), widgetsCliSource(), widgetTypesSource()],
-		entryPoints: ["apps/obsidian/src/main.js"],
+		entryPoints: ["apps/obsidian/src/main.ts"],
 		bundle: true,
 		outfile,
 		format: "cjs",

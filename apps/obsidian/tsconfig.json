@@ -3,7 +3,7 @@
 		"target": "ES2020",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"lib": ["ES2020", "DOM", "DOM.Iterable"],
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -15,18 +15,15 @@
 		"noPropertyAccessFromIndexSignature": true,
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
-		"composite": true,
-		"emitDeclarationOnly": true,
-		"rootDir": "./src",
-		"outDir": "../../node_modules/.cache/widgetarium/core-declarations",
+		"noEmit": true,
 		"jsx": "preserve",
-		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/core.tsbuildinfo",
+		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/obsidian.tsbuildinfo",
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 		"allowJs": false,
-		"types": []
+		"types": ["node"]
 	},
-	"references": [{ "path": "../kit" }],
-	"include": ["src/**/*.ts"]
+	"references": [{ "path": "../../packages/kit" }, { "path": "../../packages/core" }],
+	"include": ["src/**/*.ts", "../../packages/core/src/*.d.ts"]
 }

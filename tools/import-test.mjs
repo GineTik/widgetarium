@@ -16,6 +16,7 @@ globalThis.ResizeObserver = class {
 globalThis.window.ResizeObserver = globalThis.ResizeObserver;
 
 const SOURCE_ROOTS = ["packages/kit/src", "packages/core/src", "apps/obsidian/src"];
+const ENTRY_PROGRAMS = new Set([path.resolve("apps/obsidian/src/ai/widgets-cli.ts")]);
 const isModuleSource = (name) => /\.(js|ts|tsx|jsx)$/.test(name) && !name.endsWith(".d.ts");
 
 const modules = [];
@@ -23,7 +24,7 @@ function walk(dir) {
 	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
 		const full = path.join(dir, entry.name);
 		if (entry.isDirectory()) walk(full);
-		else if (isModuleSource(entry.name)) modules.push(full);
+		else if (isModuleSource(entry.name) && !ENTRY_PROGRAMS.has(full)) modules.push(full);
 	}
 }
 for (const root of SOURCE_ROOTS) walk(path.resolve(root));

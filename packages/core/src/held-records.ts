@@ -86,7 +86,7 @@ export function mountKeys(ids: readonly string[]): string[] {
 	});
 }
 
-export function uniqueName(taken: Set<string>, wanted: unknown): string {
+export function uniqueName(taken: Pick<Set<string>, "has" | "add">, wanted: unknown): string {
 	const base = String(wanted ?? "").trim();
 	let name = base;
 	let nth = 1;
