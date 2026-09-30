@@ -1,7 +1,9 @@
+import type { ViewHost } from "../gateway/host.js";
 import { refusingConsole } from "./host-console.js";
 
-// CONTEXT: an environment that can do nothing still answers — `can` is what a widget asks
-export const NO_HOST = {
+export type HostClaimingNothing = Omit<ViewHost, "can"> & { readonly can: Partial<ViewHost["can"]> };
+
+export const NO_HOST: HostClaimingNothing = {
 	platform: "preview",
 	type: "preview",
 	can: {},

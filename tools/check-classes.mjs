@@ -27,7 +27,7 @@ function scopeSheet(file) {
 	return fs.existsSync(sheet) ? fs.readFileSync(sheet, "utf8") : "";
 }
 
-// TODO: read these from packages/core/src/engine/widget-build.js once tools can import it as an ES module
+// TODO: read these from packages/core/src/engine/widget-build.ts once tools can import it as an ES module
 const SHEET_FILES = ["widget.css", "styles.css"];
 
 function ownSheets(file) {

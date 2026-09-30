@@ -313,5 +313,33 @@ check(
 	false,
 );
 
+const { createModuleSpace } = await import("../packages/core/src/engine/modules.js");
+const { contentHash } = await import("../packages/core/src/engine/content-hash.js");
+async function takenFromDiskHolding(lockedEntry) {
+	const adapter = fakeVault();
+	adapter.files.set(modulePath(KEY), BUNDLE);
+	adapter.made.add(moduleFolder(KEY));
+	const fetched = [];
+	const fetchText = async (url) => {
+		fetched.push(url);
+		return url === BUNDLE_URL ? BUNDLE : FACADE;
+	};
+	const taken = await createModuleSpace({ adapter, fetchText }).take(
+		{ modules: { [KEY]: lockedEntry } },
+		PACKAGE,
+		"^6.3.1",
+	);
+	return { hash: taken.hash, downloaded: fetched.includes(BUNDLE_URL) };
+}
+check("a version the lock holds with its hash is read off disk", await takenFromDiskHolding({ hash: "7" }), {
+	hash: "7",
+	downloaded: false,
+});
+check(
+	"a lock entry naming no hash is fetched again rather than answered with no hash",
+	await takenFromDiskHolding({ widgets: ["@demo/clock"] }),
+	{ hash: contentHash(BUNDLE), downloaded: true },
+);
+
 console.log(`\n${failed === 0 ? `module space: clean (${checks} checks)` : `module space: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

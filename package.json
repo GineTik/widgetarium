@@ -131,6 +131,7 @@
 	"devDependencies": {
 		"@babel/parser": "^8.0.5",
 		"@types/react": "^19.2.18",
+		"@types/react-dom": "^19.3.0",
 		"esbuild": "^0.23.0",
 		"jsdom": "^29.1.1",
 		"prettier": "^3.9.6",

@@ -197,6 +197,21 @@ check(
 	true,
 );
 
+const { compileWidgetFolder } = await import("../packages/core/src/engine/widget-build.js");
+function compileFailureOf(files) {
+	try {
+		compileWidgetFolder(files, FOLDER);
+		return null;
+	} catch (failure) {
+		return failure.message;
+	}
+}
+check(
+	"a folder with no widget source is refused by name rather than handed to the compiler",
+	compileFailureOf({ "helper.ts": "export const x = 1;" }),
+	`${FOLDER} holds no widget source`,
+);
+
 console.log(
 	`\n${failed === 0 ? `compile at install: clean (${checks} checks)` : `compile at install: ${failed} failed`}`,
 );
