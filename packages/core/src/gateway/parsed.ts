@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { CollectionGateway, Query, Row, RowsResult } from "./contract";
+import type { CollectionGateway, Query, Row, RowsResult, ValueGateway } from "./contract";
+import type { EveryValueVerb } from "./needs";
 import { collectionGateway, valueGateway } from "./create";
 import type { GatewayContext } from "./problems";
 
@@ -18,10 +19,10 @@ type Verb = ((input: unknown) => Promise<unknown>) & {
 
 type Cans = Record<string, () => { can: true } | { can: false; reason: string }>;
 
-type HeldGateway = {
+interface HeldGateway {
 	readonly id: string;
 	readonly subscribe?: CollectionGateway<unknown>["subscribe"];
-} & Record<string, unknown>;
+}
 
 type HeldRow = Row<unknown> & Record<string, unknown>;
 
@@ -56,7 +57,11 @@ export function checkValueUpdate<U extends Verb>(update: U, schemas: Schemas, na
 	}) as unknown as U;
 }
 
-export function parseReadsBy(gateway: HeldGateway, context: GatewayContext, kind: "collection" | "value") {
+export function parseReadsBy<Held extends HeldGateway>(
+	gateway: Held,
+	context: GatewayContext,
+	kind: "collection" | "value",
+): Held | CollectionGateway<unknown> | ValueGateway<unknown, EveryValueVerb> {
 	if (isOpen(context.schema)) return gateway;
 	const { verbs, passed, cans } = handlersOf(gateway);
 	const common = {

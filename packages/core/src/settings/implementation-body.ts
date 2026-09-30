@@ -1,9 +1,16 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { Segmented } from "@widgetarium/kit";
+import type { TileProp } from "../model.js";
 import { hostGatewayFor } from "../engine/host-gateways.js";
-import { refLabel } from "./offered-boxes.js";
+import type { HostFields } from "../engine/host-gateways.js";
+import { isObject } from "../engine/is-object.js";
+import { offeredEntries, refLabel } from "./offered-boxes.js";
+import type { OfferedEntry } from "./offered-boxes.js";
 import { writeProp } from "./prop-writing.js";
+import type { SettingsProp } from "./prop-row.js";
 import { note, pickRow } from "./settings-rows.js";
+import type { SettingsSpec, SettingsState } from "./settings-state.js";
 
 const SCREEN_NOTE = "Nothing to fill in: the value lives while this screen is open and never reaches the note.";
 
@@ -20,27 +27,30 @@ const FALLBACKS = [
 	{ value: "none", label: "Nothing" },
 ];
 
-export function implementationBody(state, prop) {
+export function implementationBody(state: SettingsState, prop: SettingsProp): ReactElement[] {
 	const { key, spec, config } = prop;
 	if (config.implementation === "@core/selected-row") return selectedRowBody(state, key, spec, config);
 	if (config.implementation === "@core/screen-state") return [note(SCREEN_NOTE)];
 	return [];
 }
 
-export function implementationLabel(state, prop) {
+export function implementationLabel(state: SettingsState, prop: SettingsProp): string {
 	const { spec, config } = prop;
-	const chosen = hostGatewayFor(spec, config);
-	const rows = config.fields?.rows;
+	const rows = sourceFieldsOf(config).rows;
 	if (config.implementation === "@core/selected-row" && rows) return refLabel(state, rows);
-	return chosen?.title ?? String(config.implementation);
+	return hostGatewayFor(spec, config)?.title ?? String(config.implementation);
 }
 
-function selectedRowBody(state, key, spec, config) {
-	const fields = config.fields ?? {};
-	const write = (next) => writeProp(state, key, spec, { ...config, fields: next });
+function sourceFieldsOf(config: TileProp): HostFields {
+	return isObject(config.fields) ? config.fields : {};
+}
+
+function selectedRowBody(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactElement[] {
+	const fields = sourceFieldsOf(config);
+	const write = (next: HostFields): void => writeProp(state, key, spec, { ...config, fields: next });
 	const { picked: formerPicker, ...unpicked } = fields;
-	const others = (state.refs?.offered?.() ?? []).filter((entry) => entry.tile !== state.tile.id);
-	const named = (entry) => `${entry.title} · ${entry.label}`;
+	const others = offeredEntries(state.refs).filter((entry) => entry.tile !== state.tile.id);
+	const named = (entry: OfferedEntry): string => `${entry.title} · ${entry.label}`;
 	return [
 		note(PICKED_FROM),
 		...others
@@ -72,7 +82,7 @@ function selectedRowBody(state, key, spec, config) {
 			size: "s",
 			items: FALLBACKS,
 			value: fields.whenNothingPicked ?? "first",
-			onChange: (next) => write({ ...fields, whenNothingPicked: next }),
+			onChange: (next: string) => write({ ...fields, whenNothingPicked: next }),
 		}),
 	];
 }

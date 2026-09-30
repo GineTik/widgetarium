@@ -1,5 +1,6 @@
-import { createElement as h } from "react";
-import { useSyncExternalStore } from "react";
+import { createElement as h, useSyncExternalStore } from "react";
+import type { ReactElement } from "react";
+import type { ProblemsStore } from "../gateway/problems.js";
 
 const ONE_LEFT_OUT = "1 record was left out:";
 
@@ -7,7 +8,12 @@ const MANY_LEFT_OUT = "{count} records were left out:";
 
 const ISSUE_LINE = "{label} — {field}: {message}";
 
-export function ProblemsMark({ store, propRef }) {
+export interface ProblemsMarkProps {
+	readonly store: ProblemsStore;
+	readonly propRef: string;
+}
+
+export function ProblemsMark({ store, propRef }: ProblemsMarkProps): ReactElement | null {
 	const problems = useSyncExternalStore(store.subscribe, () => store.of(propRef));
 	if (problems.length === 0) return null;
 	const heading = problems.length === 1 ? ONE_LEFT_OUT : MANY_LEFT_OUT.replace("{count}", String(problems.length));

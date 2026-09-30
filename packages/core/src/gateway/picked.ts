@@ -10,7 +10,7 @@ export interface SelectionSpec<T> {
 	id: string;
 	memory: ValueGateway<unknown, EveryValueVerb>;
 	collection: CollectionGateway<T>;
-	fieldName: string | null | (() => Promise<unknown>);
+	fieldName: string | null | (() => unknown);
 	isFallbackToFirst: boolean;
 	watches?: Subscribe | null;
 }
@@ -35,7 +35,7 @@ export interface PickSpec<T> {
 	id: string;
 	chosen: ValueGateway<unknown, EveryValueVerb>;
 	collection: CollectionGateway<T>;
-	fieldName: string | null | (() => Promise<unknown>);
+	fieldName: string | null | (() => unknown);
 	isFallbackToFirst: boolean;
 	inTile?: ValueGateway<unknown, EveryValueVerb> | null;
 	watches?: Subscribe | null;

@@ -1,16 +1,21 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { Icon, Pill, Row, RowLabel, RowValue } from "@widgetarium/kit";
+import type { TileProp } from "../model.js";
 import { bindingOf, declaredOf, storedRows, typedIn } from "../gateway/props.js";
-import { valueIn } from "../gateway/create";
+import { valueIn } from "../gateway/create.js";
 import { fieldsOf } from "../gateway/fields.js";
-import { conditionBody, conditionSentence, keepRow, stepAt } from "./condition-steps.js";
+import type { FilterRow } from "../gateway/contract.js";
+import { conditionBody, conditionRowsIn, conditionSentence, keepRow, stepAt } from "./condition-steps.js";
+import type { ConditionAt, ConditionField, ConditionList, RowIndex } from "./condition-steps.js";
 import { boxRows, offeredBoxes } from "./offered-boxes.js";
 import { editorPopover, group, note, valueRow } from "./settings-rows.js";
+import type { SettingsSpec, SettingsState } from "./settings-state.js";
 import { boundPath } from "./vault-paths.js";
 
 const PICK_SPREAD = "Everything a filter has picked arrives as conditions of its own.";
 
-const CONDITION_LISTS = {
+const CONDITION_LISTS: Readonly<Record<ConditionList, { readonly heading: string; readonly hint: string }>> = {
 	where: {
 		heading: "Where",
 		hint: "These decide which data arrives. A condition the widget declares cannot be edited here.",
@@ -21,12 +26,27 @@ const CONDITION_LISTS = {
 	},
 };
 
-export function whereGroup(state, key, spec, config, list = "where") {
+type Fields = readonly ConditionField[];
+
+export function whereGroup(
+	state: SettingsState,
+	key: string,
+	spec: SettingsSpec,
+	config: TileProp,
+	list: ConditionList = "where",
+): ReactElement {
 	const fields = fieldsFor(state, spec, config);
-	const held = config[list] ?? [];
+	const held = conditionRowsIn(config, list);
 	const rows = held.filter((row) => row.fixed !== true);
 	const open = stepAt(state.openRow, key, list);
-	const at = (index) => ({ key, list, config, rows, index, step: open?.index === String(index) ? open.step : null });
+	const at = (index: RowIndex): ConditionAt => ({
+		key,
+		list,
+		config,
+		rows,
+		index,
+		step: open?.index === String(index) ? open.step : null,
+	});
 	const drawn = [
 		...held.filter((row) => row.fixed === true).map((row, index) => fixedCondition(state, fields, row, index)),
 		...rows.map((row, index) =>
@@ -45,20 +65,20 @@ export function whereGroup(state, key, spec, config, list = "where") {
 	);
 }
 
-function fieldsFor(state, spec, config) {
+function fieldsFor(state: SettingsState, spec: SettingsSpec, config: TileProp): Fields {
 	if (bindingOf(spec, config).binding === "hardcode")
-		return fieldsOf(storedRows(typedIn(spec, config) ?? declaredOf(spec), spec).map(valueIn));
-	return state.vaultFields?.[boundPath(spec, config)] ?? [];
+		return fieldsOf(storedRows(typedIn(spec, config) ?? declaredOf(spec)).map(valueIn));
+	return state.vaultFields?.[boundPath(config)] ?? [];
 }
 
-function spreadBody(state, at) {
+function spreadBody(state: SettingsState, at: ConditionAt): ReactElement[] {
 	return [
 		note(PICK_SPREAD),
 		...boxRows(state, "conditions", (entry) => keepRow(state, at, { spread: { ref: entry.ref } }, null)),
 	];
 }
 
-function conditionRow(state, at, fields, trigger) {
+function conditionRow(state: SettingsState, at: ConditionAt, fields: Fields, trigger: ReactElement): ReactElement {
 	const body = at.index === "spread" ? spreadBody(state, at) : conditionBody(state, at, fields, at.step ?? "");
 	return editorPopover(
 		state,
@@ -70,15 +90,16 @@ function conditionRow(state, at, fields, trigger) {
 	);
 }
 
-function fixedCondition(state, fields, row, index) {
+function fixedCondition(state: SettingsState, fields: Fields, row: FilterRow, index: number): ReactElement {
 	return h(Row, { className: "wg-set-row", key: `fixed${index}` }, [
 		h(RowLabel, { key: "label" }, conditionSentence(state, fields, row)),
 		h(RowValue, { className: "wg-set-value", key: "value" }, h(Pill, null, "Fixed")),
 	]);
 }
 
-const addRow = (said) =>
-	h(Row, { className: "wg-set-row is-add", pressable: true }, [
+function addRow(said: string): ReactElement {
+	return h(Row, { className: "wg-set-row is-add", pressable: true }, [
 		h(Icon, { name: "plus", key: "plus" }),
 		h(RowLabel, { key: "label" }, said),
 	]);
+}

@@ -1,5 +1,8 @@
 import { createElement as h } from "react";
+import type { ReactElement, ReactNode } from "react";
+import type { TileProp } from "../model.js";
 import { bindingOf, declaredOf, typedIn } from "../gateway/props.js";
+import type { PropBinding } from "../gateway/props.js";
 import { NOTE_CONTENT, noteFieldOf } from "../gateway/obsidian.js";
 import { hostGatewayFor } from "../engine/host-gateways.js";
 import { problemsOf } from "../gateway/problems.js";
@@ -11,6 +14,7 @@ import { refLabel } from "./offered-boxes.js";
 import { ProblemsMark } from "./problems-mark.js";
 import { isSwitched, propConfigOf, writtenPlainly, writtenText } from "./prop-writing.js";
 import { editorPopover, group, valueRow } from "./settings-rows.js";
+import type { SettingsManifest, SettingsSpec, SettingsState } from "./settings-state.js";
 import { sourceButton, sourceList, sourcesOpenKey } from "./source-list.js";
 import { statBody, statLabel, statStepOf } from "./stat-body.js";
 import { choiceBody, chosenLabel, pickedRowValue, switchedValue, typedBody, typedLabel } from "./typed-body.js";
@@ -39,7 +43,17 @@ const READ_BY_MANY_NOTE = "This note is read by {field} widgets on this board.";
 
 const FIELD_OF_NOTE = "{field} of {note}";
 
-export function propRow(state, prop) {
+export interface SettingsProp {
+	readonly key: string;
+	readonly spec: SettingsSpec;
+	readonly config: TileProp;
+	readonly binding: PropBinding;
+	readonly path: string;
+}
+
+export type DeclaredEntry = readonly [string, SettingsSpec];
+
+export function propRow(state: SettingsState, prop: SettingsProp): ReactElement {
 	const { key, spec, config, binding, path } = prop;
 	const readerCount = binding === "vault" ? state.countReaders(path) : 0;
 	const at = listedFields(spec, binding) ? openedItem(state.openRow, key) : null;
@@ -53,16 +67,16 @@ export function propRow(state, prop) {
 	return editorPopover(state, `prop:${key}`, propTrigger(state, prop), body, seed, isOnAStep);
 }
 
-export function boundProp(state, key, spec) {
+export function boundProp(state: SettingsState, key: string, spec: SettingsSpec): SettingsProp {
 	const config = propConfigOf(state, key, spec);
-	return { key, spec, config, binding: bindingOf(spec, config).binding, path: config.path || "" };
+	return { key, spec, config, binding: bindingOf(spec, config).binding, path: config.path ? String(config.path) : "" };
 }
 
-export function declaredProps(manifest, wanted) {
+export function declaredProps(manifest: SettingsManifest, wanted: (spec: SettingsSpec) => boolean): DeclaredEntry[] {
 	return Object.entries(manifest.props ?? {}).filter(([, spec]) => wanted(spec));
 }
 
-export function propGroup(state) {
+export function propGroup(state: SettingsState): ReactElement | null {
 	const declared = declaredProps(state.manifest, (spec) => spec.design !== true)
 		.filter(([key]) => !state.fed.includes(key))
 		.filter(([, spec]) => isShown(spec, state.seen));
@@ -71,7 +85,7 @@ export function propGroup(state) {
 	return group("props", declared.length > 1 ? "Sources" : "Source", rows, null);
 }
 
-function kindNote(spec, binding) {
+function kindNote(spec: SettingsSpec, binding: PropBinding): string {
 	if (binding === "box") return OWN_BOX_NOTE;
 	if (binding === "ref") return FROM_ANOTHER;
 	if (binding === "stat") return FROM_STATISTICS;
@@ -80,7 +94,7 @@ function kindNote(spec, binding) {
 	return writtenPlainly(spec) ? FROM_NOTE_FIELD : FROM_FILE;
 }
 
-function readersNote(spec, readerCount) {
+function readersNote(spec: SettingsSpec, readerCount: number): ReactElement | null {
 	if (readerCount < 2) return null;
 	return h(
 		"p",
@@ -89,7 +103,7 @@ function readersNote(spec, readerCount) {
 	);
 }
 
-function propHead(state, prop) {
+function propHead(state: SettingsState, prop: SettingsProp): ReactElement {
 	const { key, spec, config, binding } = prop;
 	const said = config.implementation ? hostGatewayFor(spec, config)?.description : kindNote(spec, binding);
 	return h("div", { className: "wg-set-pop-headline", key: "head" }, [
@@ -104,11 +118,11 @@ function propHead(state, prop) {
 	]);
 }
 
-function unpickedLabel(spec) {
+function unpickedLabel(spec: SettingsSpec): string {
 	return spec.kind === "value" ? "Pick a note" : "Pick a folder";
 }
 
-function boundLabel(state, prop) {
+function boundLabel(state: SettingsState, prop: SettingsProp): string {
 	const { spec, config, binding, path } = prop;
 	if (config.implementation) return implementationLabel(state, prop);
 	if (binding === "box") return "Its own";
@@ -116,12 +130,12 @@ function boundLabel(state, prop) {
 	if (binding === "stat") return statLabel(config);
 	if (binding === "hardcode") return typedLabel(spec, config);
 	if (!path) return unpickedLabel(spec);
-	const field = noteFieldOf(spec, config);
+	const field = noteFieldOf(spec, { field: typeof config.field === "string" ? config.field : undefined });
 	if (!field || field === NOTE_CONTENT) return path;
 	return fillSentence(FIELD_OF_NOTE, field, path);
 }
 
-function bindingBody(state, prop) {
+function bindingBody(state: SettingsState, prop: SettingsProp): ReactNode[] {
 	const { key, spec, config, binding } = prop;
 	if (config.implementation) return implementationBody(state, prop);
 	if (binding === "ref") return refBody(state, key, spec, config);
@@ -133,14 +147,14 @@ function bindingBody(state, prop) {
 	return listedFields(spec, binding) ? itemRows(state, key, spec, config) : typedBody(state, key, spec, config);
 }
 
-function propValue(state, prop, switched) {
+function propValue(state: SettingsState, prop: SettingsProp, switched: boolean): ReactElement {
 	const { key, spec, config, binding } = prop;
 	if (switched) return switchedValue(state, key, spec, config);
 	if (spec.options && binding === "hardcode") return h("span", { className: "wg-set-path" }, chosenLabel(spec, config));
 	return pickedRowValue(spec, config, binding) ?? h("span", { className: "wg-set-path" }, boundLabel(state, prop));
 }
 
-function propTrigger(state, prop) {
+function propTrigger(state: SettingsState, prop: SettingsProp): ReactElement {
 	const { key, spec, config, binding } = prop;
 	const switched = isSwitched(spec) && binding === "hardcode";
 	return valueRow({
@@ -156,7 +170,7 @@ function propTrigger(state, prop) {
 	});
 }
 
-function propBody(state, prop, readerCount) {
+function propBody(state: SettingsState, prop: SettingsProp, readerCount: number): ReactNode[] {
 	const { key, spec, config } = prop;
 	const head = propHead(state, prop);
 	if (state.openRow === sourcesOpenKey(key)) return [head, ...sourceList(state, key, spec, config)];

@@ -1,4 +1,7 @@
 import { createElement as h } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactElement, WheelEvent } from "react";
+import type { Point, Size } from "../settings-fit.js";
+import type { LookPatch } from "./use-settings-look.js";
 
 export const ZOOM_STEP = 0.1;
 
@@ -11,40 +14,48 @@ const PAN_PER_WHEEL_UNIT = 2;
 
 const TAP_SLOP_PX = 4;
 
-export function clamp(value, low, high) {
+export interface CanvasState {
+	readonly at: Point;
+	readonly scale: number;
+	readonly live: boolean;
+	readonly setLook: (patch: LookPatch) => void;
+	readonly setPan: (next: Point) => void;
+	readonly setZoom: (next: number) => void;
+}
+
+export interface PanHandlers {
+	readonly onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
+}
+
+type CellsStyle = CSSProperties & { readonly "--wg-set-across": number };
+
+export function clamp(value: number, low: number, high: number): number {
 	return Math.max(low, Math.min(value, high));
 }
 
-export function cellLayer(box, at, scale, cell, gap) {
+export function cellLayer(box: Size, at: Point, scale: number, cell: number, gap: number): ReactElement {
 	const pitch = cell + gap;
 	const step = pitch * scale;
 	const left = at.x - Math.ceil(Math.max(0, at.x) / step) * step;
 	const top = at.y - Math.ceil(Math.max(0, at.y) / step) * step;
 	const across = Math.max(1, Math.ceil((box.width - left) / step));
 	const down = Math.max(1, Math.ceil((box.height - top) / step));
-	const held = [];
+	const held: ReactElement[] = [];
 	for (let index = 0; index < across * down; index += 1) held.push(h("i", { key: index }));
-	return h(
-		"div",
-		{
-			className: "wg-set-cells",
-			key: "cells",
-			style: {
-				left: `${left}px`,
-				top: `${top}px`,
-				width: `${across * pitch - gap}px`,
-				transform: `scale(${scale})`,
-				"--wg-set-across": across,
-			},
-		},
-		held,
-	);
+	const style: CellsStyle = {
+		left: `${left}px`,
+		top: `${top}px`,
+		width: `${across * pitch - gap}px`,
+		transform: `scale(${scale})`,
+		"--wg-set-across": across,
+	};
+	return h("div", { className: "wg-set-cells", key: "cells", style }, held);
 }
 
 // TRADE-OFF: a wheel over the widget pans the canvas instead of scrolling the widget. At 1:1 the widget is the thing being looked at, not used; the chrome is exempt so its lists still scroll.
-export function wheelHandler(state) {
+export function wheelHandler(state: CanvasState): (event: WheelEvent<HTMLElement>) => void {
 	return (event) => {
-		if (event.target?.closest?.(".wg-set-chrome")) return;
+		if (isInsideChrome(event.target)) return;
 		event.preventDefault();
 
 		const rect = event.currentTarget.getBoundingClientRect();
@@ -70,20 +81,20 @@ export function wheelHandler(state) {
 	};
 }
 
-export function panHandlers(state) {
+export function panHandlers(state: CanvasState): PanHandlers {
 	return {
 		onPointerDown: (event) => {
 			const rect = event.currentTarget.getBoundingClientRect();
 			const start = { x: event.clientX, y: event.clientY };
 			const from = { ...state.at };
 			let moved = false;
-			const move = (pointer) => {
+			const move = (pointer: PointerEvent): void => {
 				const dx = pointer.clientX - start.x;
 				const dy = pointer.clientY - start.y;
 				if (Math.abs(dx) > TAP_SLOP_PX || Math.abs(dy) > TAP_SLOP_PX) moved = true;
 				if (moved) state.setPan({ x: from.x + dx, y: from.y + dy });
 			};
-			const stop = (pointer) => {
+			const stop = (pointer: PointerEvent): void => {
 				window.removeEventListener("pointermove", move);
 				window.removeEventListener("pointerup", stop);
 				if (moved || state.live) return;
@@ -96,4 +107,12 @@ export function panHandlers(state) {
 			window.addEventListener("pointerup", stop);
 		},
 	};
+}
+
+function isInsideChrome(target: EventTarget | null): boolean {
+	return canClimb(target) && Boolean(target.closest(".wg-set-chrome"));
+}
+
+function canClimb(target: unknown): target is Pick<Element, "closest"> {
+	return typeof target === "object" && target !== null && "closest" in target && typeof target.closest === "function";
 }
