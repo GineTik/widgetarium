@@ -24,17 +24,17 @@ export const MENU = "menu";
 
 export const HIDE = "hide";
 
-export const COLLAPSES = [STACK, DRAWER, SHEET, MENU, HIDE];
+export const COLLAPSES = [STACK, DRAWER, SHEET, MENU, HIDE] as const;
 
 export const ALWAYS = "always";
 
 export const ADAPTIVE = "adaptive";
 
-export const TOGGLES = [ALWAYS, ADAPTIVE];
+export const TOGGLES = [ALWAYS, ADAPTIVE] as const;
 
 export const MENU_PX = 360;
 
-export const STEP_PX = [24, 16, 8];
+export const STEP_PX = [24, 16, 8] as const;
 
 export const SURFACE_PAD_PX = 16;
 

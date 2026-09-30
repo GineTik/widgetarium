@@ -1,9 +1,12 @@
-import { GRID, spanToPixels } from "./paths.js";
-import { APART, COLUMN, GROUP, isPainted, NO_SURFACE, ROW, SURFACES } from "@widgetarium/kit/plates";
+import { APART, COLUMN, GROUP, isPainted, NO_SURFACE, ROW } from "@widgetarium/kit/plates";
 import { DRAWER_MAX_PX, HIDE, REGION_PAD_PX, SURFACE_PAD_PX, SWAP, TEXT_ROLE } from "./tree-constants.js";
-import { isBox, leavesOf, pathKey, slotOf } from "./tree-nodes.js";
-import { innerWidthOf, insetOf, pairGapOf, plateOf, stepOf, UNDRAWN_SPACE } from "./tree-spacing.js";
+import { isBox, pathKey, slotOf } from "./tree-nodes.js";
+import type { AskLeaf, BoardNode, BoxDirection, BoxNode, LeafNode, NodePath, PlaceFlags } from "./tree-nodes.js";
+import { innerWidthOf, insetOf, pairGapOf, plateOf, stepOf } from "./tree-spacing.js";
+import type { Plate, Space } from "./tree-spacing.js";
 import { floorOf, growsOf, limitsOf, preferredSizeAt, widthsOf } from "./tree-sizes.js";
+import type { ScreenSide } from "./tree-columns.js";
+import type { RegionSurface } from "./tree-collapse.js";
 import {
 	collapseOf,
 	isAlwaysToggled,
@@ -15,7 +18,36 @@ import {
 	regionSurfaceOf,
 	sideAt,
 } from "./tree-collapse.js";
+import { allEdges, edgesOfChild } from "./tree-edges.js";
+import type {
+	Divider,
+	Edges,
+	LaidBox,
+	LaidChild,
+	LaidCollapsed,
+	LaidLeaf,
+	LaidNode,
+	LaidRegion,
+	LayAsk,
+	LayPlace,
+	RegionAsk,
+	SizedCell,
+	SurfaceFields,
+} from "./tree-laid.js";
 
+export type {
+	Edges,
+	LaidBox,
+	LaidChild,
+	LaidCollapsed,
+	LaidLeaf,
+	LaidNode,
+	LaidRegion,
+	LayAsk,
+	Placement,
+	RegionAsk,
+	SizedCell,
+} from "./tree-laid.js";
 export {
 	APART,
 	COLUMN,
@@ -27,77 +59,11 @@ export {
 	SURFACES,
 	SURFACE_WAS,
 } from "@widgetarium/kit/plates";
-export {
-	ADAPTIVE,
-	ALWAYS,
-	COLLAPSES,
-	CORNER_STEP_PX,
-	DRAWER,
-	DRAWER_MAX_PX,
-	GAP_PX,
-	HIDE,
-	MAIN_FLOOR_PX,
-	MENU,
-	MENU_PX,
-	MIN_CORNER_PX,
-	MIN_GAP_PX,
-	MIN_HEIGHT_PX,
-	MIN_SIDEBAR_PX,
-	PLATE_CORNER_PX,
-	REGION_GAP_PX,
-	REGION_PAD_PX,
-	SHEET,
-	SIDEBAR_PX,
-	STACK,
-	STEP_PX,
-	SURFACE_PAD_PX,
-	SWAP,
-	TEXT_ROLE,
-	TOGGLES,
-} from "./tree-constants.js";
-export {
-	byPath,
-	holdsOf,
-	insertAt,
-	isBox,
-	leavesOf,
-	nodeAt,
-	pathKey,
-	pathOfLeaf,
-	prune,
-	replaceAt,
-	shownIn,
-	swapBoxes,
-	withHolds,
-	withWidth,
-	withoutLeaf,
-} from "./tree-nodes.js";
-export {
-	UNDRAWN_SPACE,
-	cardsGapOf,
-	cornerOf,
-	facingOf,
-	gapVarsOf,
-	gapsOf,
-	innerWidthOf,
-	insetOf,
-	levelAt,
-	pairGapOf,
-	plateOf,
-	seenGapOf,
-	stepOf,
-} from "./tree-spacing.js";
-export {
-	columnsOf,
-	drawerWidth,
-	isFolded,
-	keptAt,
-	sideOf,
-	sidebarWidth,
-	toggleFold,
-	toggleFoldAt,
-	widenBox,
-} from "./tree-columns.js";
+export * from "./tree-constants.js";
+export * from "./tree-nodes.js";
+export * from "./tree-spacing.js";
+export * from "./tree-columns.js";
+export { allEdges, edgesOfChild } from "./tree-edges.js";
 export {
 	collapseOf,
 	isAlwaysToggled,
@@ -113,17 +79,26 @@ export { floorOf, growsOf, preferredSizeAt, widthsOf } from "./tree-sizes.js";
 
 const HAIR_PX = 0.5;
 
-export function layRegion(root, at, given, { ask, isFloating = false, viewportPx = given }) {
-	const worn = isFloating ? { surface: NO_SURFACE, side: null } : regionSurfaceOf(root, at);
+const NO_REGION_AT = "Widgetarium: no region stands at {at}.";
+
+export function layRegion(
+	root: BoxNode,
+	at: number,
+	given: number,
+	{ ask, isFloating = false, viewportPx = given }: RegionAsk,
+): LaidRegion {
+	const region = root.of[at];
+	if (region === undefined) throw new Error(NO_REGION_AT.replace("{at}", String(at)));
+	const worn: RegionSurface = isFloating ? { surface: NO_SURFACE, side: null } : regionSurfaceOf(root, at);
 	const pad = isPainted(worn) ? SURFACE_PAD_PX : REGION_PAD_PX;
 	const plates = isPainted(worn) ? 1 : 0;
-	const node = layNode(withoutSurface(root.of[at]), given - pad * 2, {
+	const node = layNode(withoutSurface(region), given - pad * 2, {
 		ask,
 		path: [at],
 		edges: allEdges(pad),
 		plates,
 		underSurface: isPainted(worn) ? worn.surface : NO_SURFACE,
-		regionRole: root.of[at]?.role ?? null,
+		regionRole: isBox(region) ? (region.role ?? null) : null,
 		regionPx: given,
 		level: 0,
 		viewportPx,
@@ -131,33 +106,25 @@ export function layRegion(root, at, given, { ask, isFloating = false, viewportPx
 	return { worn, plate: plates ? plateOf(1) : null, node };
 }
 
-export function withoutSurface(node) {
+export function withoutSurface(node: BoardNode): BoardNode {
 	const { surface, side, ...bare } = node;
 	return surface === undefined && side === undefined ? node : bare;
 }
 
-export const allEdges = (px) => ({ top: px, bottom: px, left: px, right: px });
+export const REGIONS_THAT_PLATE: readonly string[] = ["indicators"];
+const ROLES_LEFT_BARE: readonly string[] = [TEXT_ROLE, "layout", "control", "navigation"];
 
-export function edgesOfChild(box, edges, at, dir = box.dir, space = UNDRAWN_SPACE) {
-	const base = isPainted(box) ? allEdges(SURFACE_PAD_PX) : edges;
-	if (dir === SWAP) return { ...base, top: box.strip === false ? base.top : null };
-	const ends = { isFirst: at === 0, isLast: at === box.of.length - 1 };
-	return dir === ROW ? edgesInRow(base, ends) : edgesInColumn(base, ends);
-}
-
-export const REGIONS_THAT_PLATE = ["indicators"];
-const ROLES_LEFT_BARE = [TEXT_ROLE, "layout", "control", "navigation"];
-
-export function wearInRegion(leaf, how) {
+export function wearInRegion(leaf: LeafNode, how: LayPlace): LeafNode {
 	if (leaf.surface !== undefined) return leaf;
-	if (!REGIONS_THAT_PLATE.includes(how.regionRole)) return leaf;
+	if (!REGIONS_THAT_PLATE.some((role) => role === how.regionRole)) return leaf;
 	if (how.underSurface !== NO_SURFACE) return leaf;
-	if (ROLES_LEFT_BARE.includes(how.ask(leaf.id).role)) return leaf;
+	const { role } = how.ask(leaf.id);
+	if (ROLES_LEFT_BARE.some((bare) => bare === role)) return leaf;
 	return { ...leaf, surface: GROUP };
 }
 
-export function layNode(node, width, how) {
-	const held = { path: [], edges: allEdges(0), plates: 0, underSurface: NO_SURFACE, level: 0, ...how };
+export function layNode(node: BoardNode, width: number, how: LayAsk): LaidNode {
+	const held: LayPlace = { path: [], edges: allEdges(0), plates: 0, underSurface: NO_SURFACE, level: 0, ...how };
 	if (!isBox(node)) return layLeaf(wearInRegion(node, held), width, held);
 	const inner = width - 2 * insetOf(node);
 	if (node.dir === SWAP) return laySwap(node, width, inner, held);
@@ -183,7 +150,7 @@ export function layNode(node, width, how) {
 	return layRowWithout(node, width, held, { sized: keptSized, leaves: leavesNarrowRow });
 }
 
-function layLeaf(node, width, how) {
+function layLeaf(node: LeafNode, width: number, how: LayPlace): LaidLeaf {
 	const isPlate = isPainted(node);
 	return {
 		kind: "leaf",
@@ -191,7 +158,7 @@ function layLeaf(node, width, how) {
 		path: how.path,
 		level: how.level,
 		plates: how.plates + (isPlate ? 1 : 0),
-		underSurface: isPlate ? node.surface : how.underSurface,
+		underSurface: isPlate ? GROUP : how.underSurface,
 		width,
 		grow: 1,
 		ratio: node.ratio ?? 1,
@@ -203,31 +170,37 @@ function layLeaf(node, width, how) {
 	};
 }
 
-function sharedWidths(box, width, space) {
-	const fixed = box.of.map((child) => (child.width > 0 ? child.width : 0));
-	const free = box.of.filter((child, at) => fixed[at] === 0);
+const fixedWidthOf = (child: BoardNode): number =>
+	isBox(child) && child.width !== undefined && child.width > 0 ? child.width : 0;
+
+function sharedWidths(box: BoxNode, width: number, space: Space): SizedCell[] {
+	const fixed = box.of.map(fixedWidthOf);
+	const free = box.of.filter((_child, at) => fixed[at] === 0);
 	const inner = innerWidthOf(box, width, space) - fixed.reduce((sum, one) => sum + one, 0);
 	const shares = widthsOf(free, Math.max(inner, 0));
 	const grows = growsOf(free);
 	let taken = 0;
-	return box.of.map((child, at) => {
-		if (fixed[at] > 0) return { width: fixed[at], basisPx: fixed[at], grow: 0 };
-		const held = { width: shares[taken], grow: grows[taken] };
+	return fixed.map((fixedPx) => {
+		if (fixedPx > 0) return { width: fixedPx, basisPx: fixedPx, grow: 0 };
+		const held = { width: shares[taken] ?? 0, grow: grows[taken] ?? 0 };
 		taken += 1;
 		return held;
 	});
 }
 
-function edgesInRow(base, { isFirst, isLast }) {
-	return { top: base.top, bottom: base.bottom, left: isFirst ? base.left : null, right: isLast ? base.right : null };
+interface DividerAsk {
+	readonly at: number;
+	readonly dir: BoxDirection;
+	readonly space: Space;
 }
 
-function edgesInColumn(base, { isFirst, isLast }) {
-	return { left: base.left, right: base.right, top: isFirst ? base.top : null, bottom: isLast ? base.bottom : null };
-}
-
-function dividerOf(child, edges, box, { at, dir, space }) {
-	if (child.surface !== APART) return {};
+function dividerOf(
+	child: BoardNode | undefined,
+	edges: Edges,
+	box: BoxNode,
+	{ at, dir, space }: DividerAsk,
+): Omit<Divider, "gapAfter"> {
+	if (child?.surface !== APART) return {};
 	const [before, after] = dir === ROW ? [edges.top, edges.bottom] : [edges.left, edges.right];
 	const side = child.side ?? "end";
 	const beside = pairGapOf(box, side === "end" ? at : at - 1, space, dir);
@@ -240,14 +213,19 @@ function dividerOf(child, edges, box, { at, dir, space }) {
 	};
 }
 
-const spaceOf = (how) => ({ level: how.level, ask: how.ask });
+const spaceOf = (how: LayPlace): Space => ({ level: how.level, ask: how.ask });
 
-function placeChild(box, how, at, dir) {
+interface PlacedChild {
+	readonly how: LayPlace;
+	readonly divider: Divider;
+}
+
+function placeChild(box: BoxNode, how: LayPlace, at: number, dir: BoxDirection): PlacedChild {
 	const space = spaceOf(how);
-	const edges = edgesOfChild(box, how.edges, at, dir, space);
+	const edges = edgesOfChild(box, how.edges, at, dir);
 	const isPlate = isPainted(box);
 	const plates = how.plates + (isPlate ? 1 : 0);
-	const underSurface = isPlate ? box.surface : how.underSurface;
+	const underSurface = isPlate ? GROUP : how.underSurface;
 	const level = box.dir === SWAP ? how.level : how.level + 1;
 	return {
 		how: {
@@ -267,12 +245,17 @@ function placeChild(box, how, at, dir) {
 	};
 }
 
-const surfaceFields = (node) =>
+const surfaceFields = (node: PlaceFlags): SurfaceFields =>
 	node.surface ? { surface: node.surface, ...(node.side ? { side: node.side } : {}) } : {};
 
-const plateFields = (node, how) => (isPainted(node) ? plateOf(how.plates + 1) : {});
+const plateFields = (node: PlaceFlags, how: LayPlace): Partial<Plate> =>
+	isPainted(node) ? plateOf(how.plates + 1) : {};
 
-function toggleFields(node, path) {
+type ToggleFields = Pick<LaidBox, "isAlwaysToggled" | "openKey" | "label" | "hasTrigger">;
+
+type BoxShape = Omit<LaidBox, "of" | "isStacked">;
+
+function toggleFields(node: BoxNode, path: NodePath): ToggleFields {
 	if (!isAlwaysToggled(node)) return {};
 	return {
 		isAlwaysToggled: true,
@@ -282,39 +265,42 @@ function toggleFields(node, path) {
 	};
 }
 
-function boxShape(node, dir, width, how) {
+function boxShape(node: BoxNode, dir: BoxDirection, width: number, how: LayPlace): BoxShape {
 	return {
 		kind: "box",
 		dir,
 		path: how.path,
 		width,
 		gap: stepOf(how.level),
-		...(node.measure > 0 ? { measure: node.measure } : {}),
+		...(node.measure !== undefined && node.measure > 0 ? { measure: node.measure } : {}),
 		...surfaceFields(node),
 		...plateFields(node, how),
 		...toggleFields(node, how.path),
 	};
 }
 
-function mustStack(node, sized, ask) {
-	return node.of.some((child, at) => sized[at].width + HAIR_PX < floorOf(child, ask) + 2 * insetOf(child));
+const UNSIZED: SizedCell = { width: 0, grow: 0 };
+
+function mustStack(node: BoxNode, sized: readonly SizedCell[], ask: AskLeaf): boolean {
+	return node.of.some((child, at) => (sized[at] ?? UNSIZED).width + HAIR_PX < floorOf(child, ask) + 2 * insetOf(child));
 }
 
-function layRow(node, width, how, sized) {
+function layRow(node: BoxNode, width: number, how: LayPlace, sized: readonly SizedCell[]): LaidBox {
 	return {
 		...boxShape(node, ROW, width, how),
 		isStacked: false,
 		of: node.of.map((child, at) => {
 			const placed = placeChild(node, how, at, ROW);
-			return { ...layNode(child, sized[at].width, placed.how), ...sized[at], ...placed.divider };
+			const size = sized[at] ?? UNSIZED;
+			return { ...layNode(child, size.width, placed.how), ...size, ...placed.divider };
 		}),
 	};
 }
 
-function collapseNode(node, how, side) {
+function collapseNode(node: BoxNode, how: LayPlace, side: ScreenSide): LaidCollapsed {
 	const into = collapseOf(node);
 	const width = overlayWidthOf(into, how.viewportPx ?? DRAWER_MAX_PX) - 2 * REGION_PAD_PX;
-	const opened = {
+	const opened: LayPlace = {
 		...how,
 		edges: allEdges(REGION_PAD_PX),
 		plates: 0,
@@ -335,14 +321,20 @@ function collapseNode(node, how, side) {
 	};
 }
 
-function foldNode(node, how, side) {
+function foldNode(node: BoxNode, how: LayPlace, side: ScreenSide): LaidCollapsed {
 	return { ...collapseNode(node, how, side), into: HIDE, isFolded: true };
 }
 
-const awayNode = (node, how, side) => (isFoldedAway(node) ? foldNode(node, how, side) : collapseNode(node, how, side));
+const awayNode = (node: BoxNode, how: LayPlace, side: ScreenSide): LaidCollapsed =>
+	isFoldedAway(node) ? foldNode(node, how, side) : collapseNode(node, how, side);
+
+interface RowWithout {
+	readonly sized: readonly SizedCell[];
+	readonly leaves: (node: BoardNode) => boolean;
+}
 
 // TRADE-OFF: the row keeps its collapsed children in place as zero-width entries, so every path stays the note's; its ratio grips are not drawn while any child is collapsed
-function layRowWithout(node, width, how, { sized, leaves }) {
+function layRowWithout(node: BoxNode, width: number, how: LayPlace, { sized, leaves }: RowWithout): LaidBox {
 	let taken = 0;
 	return {
 		...boxShape(node, ROW, width, how),
@@ -350,8 +342,8 @@ function layRowWithout(node, width, how, { sized, leaves }) {
 		hasCollapsed: true,
 		of: node.of.map((child, at) => {
 			const placed = placeChild(node, { ...how, childAcross: sized.length }, at, ROW);
-			if (leaves(child)) return awayNode(child, placed.how, sideAt(node, at));
-			const size = sized[taken];
+			if (isBox(child) && leaves(child)) return awayNode(child, placed.how, sideAt(node, at));
+			const size = sized[taken] ?? UNSIZED;
 			taken += 1;
 			return { ...layNode(child, size.width, placed.how), ...size, ...placed.divider };
 		}),
@@ -359,21 +351,22 @@ function layRowWithout(node, width, how, { sized, leaves }) {
 }
 
 // TRADE-OFF: a child of a column declares `basis: "auto"` so its own height survives; flex-basis 0 would replace the height with the content's, which is what silently ate every height a column held
-function layColumn(node, width, inner, how, isCollapsing = false) {
+function layColumn(node: BoxNode, width: number, inner: number, how: LayPlace, isCollapsing = false): LaidBox {
 	return {
 		...boxShape(node, COLUMN, width, how),
 		isStacked: false,
-		of: node.of.map((child, at) => {
+		of: node.of.map((child, at): LaidChild => {
 			const placed = placeChild(node, how, at, COLUMN);
-			if (isFoldedAway(child)) return foldNode(child, placed.how, sideAt(node, at));
-			if (isCollapsing && isCollapsible(child)) return collapseNode(child, placed.how, sideAt(node, at));
+			if (isBox(child) && isFoldedAway(child)) return foldNode(child, placed.how, sideAt(node, at));
+			if (isCollapsing && isBox(child) && isCollapsible(child))
+				return collapseNode(child, placed.how, sideAt(node, at));
 			return { ...layNode(child, inner, placed.how), ...placed.divider, grow: 0, basis: "auto" };
 		}),
 	};
 }
 
 // TRADE-OFF: every child is laid out, the hidden ones included, because a view that is not on screen keeps its widgets mounted and its refs alive — which is the whole reason this box exists
-function laySwap(node, width, inner, how) {
+function laySwap(node: BoxNode, width: number, inner: number, how: LayPlace): LaidBox {
 	return {
 		...boxShape(node, SWAP, width, how),
 		isStacked: false,

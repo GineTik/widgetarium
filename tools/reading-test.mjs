@@ -43,6 +43,7 @@ check(
 
 check("a sequence wraps around all", wrapOf(SEQUENCE), WRAP_AROUND);
 check("a comparison wraps on each", wrapOf(COMPARISON), WRAP_EACH);
+check("a name inherited by every object is no reading, so it wraps nothing", wrapOf("constructor"), WRAP_NONE);
 check("a table wraps around all", wrapOf(TABLE), WRAP_AROUND);
 check("a cross wraps on each cell", wrapOf(CROSS), WRAP_EACH);
 check("a field wraps nowhere", wrapOf(FIELD), WRAP_NONE);
