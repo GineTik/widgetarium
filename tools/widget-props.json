@@ -702,13 +702,35 @@
 		},
 		"metric": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "streak · best · total · rate · goal",
+			"label": "What it counts",
 			"writes": ["get"],
 			"default": {
 				"value": "streak"
-			}
+			},
+			"options": [
+				{
+					"value": "streak",
+					"label": "Streak"
+				},
+				{
+					"value": "best",
+					"label": "Best streak"
+				},
+				{
+					"value": "total",
+					"label": "Total check-ins"
+				},
+				{
+					"value": "rate",
+					"label": "Check-in rate"
+				},
+				{
+					"value": "goal",
+					"label": "Goal"
+				}
+			]
 		},
 		"period": {
 			"kind": "value",
@@ -722,14 +744,24 @@
 		},
 		"look": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "Look: default · stat1",
+			"label": "Look",
 			"design": true,
 			"writes": ["get"],
 			"default": {
 				"value": "default"
-			}
+			},
+			"options": [
+				{
+					"value": "default",
+					"label": "Default"
+				},
+				{
+					"value": "stat1",
+					"label": "Stat 1"
+				}
+			]
 		}
 	},
 	"@default/metric-total": {
@@ -778,14 +810,23 @@
 		},
 		"rising": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "good · bad",
-			"hint": "Whether a rise reads as good or as bad.",
+			"label": "A rise reads as",
 			"writes": ["get"],
 			"default": {
 				"value": "good"
-			}
+			},
+			"options": [
+				{
+					"value": "good",
+					"label": "Good"
+				},
+				{
+					"value": "bad",
+					"label": "Bad"
+				}
+			]
 		},
 		"periods": {
 			"kind": "collection",
@@ -852,13 +893,23 @@
 		},
 		"view": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "curve · bars",
+			"label": "Drawn as",
 			"writes": ["get", "update"],
 			"default": {
 				"value": "curve"
-			}
+			},
+			"options": [
+				{
+					"value": "curve",
+					"label": "A curve"
+				},
+				{
+					"value": "bars",
+					"label": "Bars"
+				}
+			]
 		}
 	},
 	"@default/month": {
@@ -1466,14 +1517,28 @@
 		},
 		"tone": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
 			"label": "Tone",
-			"hint": "One of label, value or caption. It decides the weight and the ink, never the plate.",
+			"hint": "It decides the weight and the ink, never the plate.",
 			"writes": ["get"],
 			"default": {
 				"value": "value"
-			}
+			},
+			"options": [
+				{
+					"value": "label",
+					"label": "A label"
+				},
+				{
+					"value": "value",
+					"label": "A value"
+				},
+				{
+					"value": "caption",
+					"label": "A caption"
+				}
+			]
 		},
 		"heading": {
 			"kind": "value",
@@ -2108,14 +2173,36 @@
 		},
 		"tone": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
 			"label": "Tone",
-			"hint": "One of neutral, info, success, warning or error. Neutral draws no background of its own.",
+			"hint": "Neutral draws no background of its own.",
 			"writes": ["get"],
 			"default": {
 				"value": "neutral"
-			}
+			},
+			"options": [
+				{
+					"value": "neutral",
+					"label": "Neutral"
+				},
+				{
+					"value": "info",
+					"label": "Information"
+				},
+				{
+					"value": "success",
+					"label": "Going well"
+				},
+				{
+					"value": "warning",
+					"label": "Needs a look"
+				},
+				{
+					"value": "error",
+					"label": "Something is wrong"
+				}
+			]
 		},
 		"action": {
 			"kind": "value",
@@ -2699,14 +2786,29 @@
 		},
 		"repeat": {
 			"kind": "value",
-			"control": "memory",
+			"control": "choice",
+			"type": "line",
 			"label": "Repeat",
-			"hint": "What the end of the queue does: stop, start again, or hold on this track.",
+			"hint": "What the end of the queue does.",
 			"writes": ["get", "update"],
 			"default": {
 				"from": "memory",
 				"value": "off"
-			}
+			},
+			"options": [
+				{
+					"value": "off",
+					"label": "Stop"
+				},
+				{
+					"value": "all",
+					"label": "Start the queue again"
+				},
+				{
+					"value": "one",
+					"label": "Hold on this track"
+				}
+			]
 		}
 	},
 	"@media/track-list": {

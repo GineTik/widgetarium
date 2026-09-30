@@ -15,7 +15,7 @@ import { Icon, IconButton, Pill, Progress } from "widgetarium/kit";
 import { Cover } from "./cover";
 import { Deck } from "./deck";
 import { PERCENT } from "./percent";
-import { repeatIn } from "./repeat";
+import { REPEAT_MODES } from "./repeat";
 import { CSS } from "./style";
 import type { PlayerProps, RepeatMode, Steering } from "./types";
 
@@ -112,7 +112,7 @@ export const PlayerWidget = createWidget({
 		position: IValueGateway.of(z.number().default(0)).pick("get", "update"),
 		volume: IValueGateway.of(z.number().default(70)).pick("get", "update"),
 		isShuffled: IValueGateway.of(z.boolean().default(false)).pick("get", "update"),
-		repeat: IValueGateway.of(z.string().default("off")).pick("get", "update"),
+		repeat: IValueGateway.of(z.enum(REPEAT_MODES).default("off")).pick("get", "update"),
 	},
 	draw: ({ tracks, playing, isPlaying, position, volume, isShuffled, repeat }) => {
 		const listed = useData(tracks.list, { limit: QUEUE_CEILING });
@@ -198,12 +198,11 @@ type Queue = {
 	elapsed: number;
 	repeatMode: RepeatMode;
 };
-function queueOf(rows: readonly Row<Track>[], playingValue: unknown, positionValue: unknown, repeatValue: unknown) {
+function queueOf(rows: readonly Row<Track>[], playingValue: unknown, positionValue: unknown, repeatMode: RepeatMode) {
 	const playingRef: string = pickedValue(playingValue);
 	const at = rows.findIndex((row) => row.ref === playingRef);
 	const track = at < 0 ? null : (rows[at] ?? null);
 	const sought = wholeSecondsIn(positionValue);
-	const repeatMode = repeatIn(repeatValue);
 	const duration = secondsIn(track?.duration);
 	const elapsed = duration === null ? 0 : Math.min(sought, duration);
 	return { rows, at, track, duration, elapsed, repeatMode };
@@ -324,7 +323,12 @@ export const metadata = defineMetadata(PlayerWidget, {
 		repeat: {
 			keep: "screen",
 			label: "Repeat",
-			hint: "What the end of the queue does: stop, start again, or hold on this track.",
+			hint: "What the end of the queue does.",
+			options: [
+				{ value: "off", label: "Stop" },
+				{ value: "all", label: "Start the queue again" },
+				{ value: "one", label: "Hold on this track" },
+			],
 		},
 	},
 });

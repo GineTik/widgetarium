@@ -42,20 +42,17 @@ const CSS = `
 
 const TONE_CLASSES = { label: "is-label", value: "is-value", caption: "is-caption" };
 
-type Tone = keyof typeof TONE_CLASSES;
-
 const LINE_TAGS = ["p", "h1", "h2", "h3"] as const;
 
 const TextLine = createWidget({
 	inject: {
 		text: IValueGateway.of(z.string().default("")).pick("get"),
-		tone: IValueGateway.of(z.string().default("value")).pick("get"),
+		tone: IValueGateway.of(z.enum(["label", "value", "caption"]).default("value")).pick("get"),
 		heading: IValueGateway.of(z.number().default(0)).pick("get"),
 		lines: IValueGateway.of(z.number().default(0)).pick("get"),
 	},
 	draw: ({ text, tone, heading, lines }) => {
 		const said = text.trim();
-		const toned = toneNamed(tone);
 		const level = Math.min(countOf(heading), LINE_TAGS.length - 1);
 		const clamped = countOf(lines);
 
@@ -68,7 +65,7 @@ const TextLine = createWidget({
 			<>
 				<style>{CSS}</style>
 				<Line
-					className={cn("wgi-text-line", TONE_CLASSES[toned], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
+					className={cn("wgi-text-line", TONE_CLASSES[tone], level > 0 && "is-heading", clamped > 0 && "is-clamped")}
 					style={style}
 				>
 					{said}
@@ -91,7 +88,14 @@ export const metadata = defineMetadata(TextLine, {
 	},
 	props: {
 		text: { hint: "The line itself. Left empty, the widget draws nothing at all." },
-		tone: { hint: "One of label, value or caption. It decides the weight and the ink, never the plate." },
+		tone: {
+			hint: "It decides the weight and the ink, never the plate.",
+			options: [
+				{ value: "label", label: "A label" },
+				{ value: "value", label: "A value" },
+				{ value: "caption", label: "A caption" },
+			],
+		},
 		heading: {
 			label: "Heading level",
 			hint: "Zero draws a plain line. One, two or three draw the line as a heading of that level.",
@@ -103,11 +107,6 @@ export const metadata = defineMetadata(TextLine, {
 export const layout = defineLayout({ role: "text", size: { preferredWidth: "full", preferredHeight: "auto" } });
 
 export default TextLine;
-
-function toneNamed(said: string): Tone {
-	const named = said.toLowerCase();
-	return Object.hasOwn(TONE_CLASSES, named) ? (named as Tone) : "value";
-}
 
 function countOf(held: number): number {
 	const number = Math.trunc(held);

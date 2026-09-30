@@ -132,14 +132,13 @@ const LogStat = createWidget({
 	inject: {
 		habits: ICrudGateway.of(HabitSchema),
 		pick: IValueGateway.of(z.unknown()).pick("get", "update"),
-		metric: IValueGateway.of(z.string().default("streak")).pick("get"),
+		metric: IValueGateway.of(z.enum(["streak", "best", "total", "rate", "goal"]).default("streak")).pick("get"),
 		period: IValueGateway.of(z.number().default(30)).pick("get"),
-		look: IValueGateway.of(z.string().default("default")).pick("get"),
+		look: IValueGateway.of(z.enum(["default", "stat1"]).default("default")).pick("get"),
 	},
-	draw: ({ pick, metric: asked, period, habits, look }) => {
+	draw: ({ pick, metric: metricKey, period, habits, look }) => {
 		const picked = pickedValue(pick.value);
 		const habit = habitPicked(useData(habits.list).data, picked);
-		const metricKey = metricKeyOf(asked);
 		const metric = METRICS[metricKey];
 		const isStat1 = look === "stat1";
 		const reading = readingOf(metricKey, habit, period);
@@ -258,9 +257,25 @@ export const metadata = defineMetadata(LogStat, {
 				fields: { rows: "habits", field: "name", whenNothingPicked: "first" },
 			},
 		},
-		metric: { label: "streak · best · total · rate · goal" },
+		metric: {
+			label: "What it counts",
+			options: [
+				{ value: "streak", label: "Streak" },
+				{ value: "best", label: "Best streak" },
+				{ value: "total", label: "Total check-ins" },
+				{ value: "rate", label: "Check-in rate" },
+				{ value: "goal", label: "Goal" },
+			],
+		},
 		period: { label: "Days the rate looks back over" },
-		look: { label: "Look: default · stat1", design: true },
+		look: {
+			label: "Look",
+			design: true,
+			options: [
+				{ value: "default", label: "Default" },
+				{ value: "stat1", label: "Stat 1" },
+			],
+		},
 	},
 });
 
@@ -298,10 +313,6 @@ const METRICS = {
 } satisfies Record<string, Metric>;
 
 type MetricKey = keyof typeof METRICS;
-
-function metricKeyOf(named: unknown): MetricKey {
-	return typeof named === "string" && Object.hasOwn(METRICS, named) ? (named as MetricKey) : "streak";
-}
 
 function dayWord(count: number) {
 	return count === 1 ? "day" : "days";

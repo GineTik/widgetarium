@@ -257,14 +257,23 @@
 		},
 		"rising": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "good · bad",
-			"hint": "Whether a rise reads as good or as bad.",
+			"label": "A rise reads as",
 			"writes": ["get"],
 			"default": {
 				"value": "good"
-			}
+			},
+			"options": [
+				{
+					"value": "good",
+					"label": "Good"
+				},
+				{
+					"value": "bad",
+					"label": "Bad"
+				}
+			]
 		},
 		"periods": {
 			"kind": "collection",
@@ -331,13 +340,23 @@
 		},
 		"view": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "curve · bars",
+			"label": "Drawn as",
 			"writes": ["get", "update"],
 			"default": {
 				"value": "curve"
-			}
+			},
+			"options": [
+				{
+					"value": "curve",
+					"label": "A curve"
+				},
+				{
+					"value": "bars",
+					"label": "Bars"
+				}
+			]
 		}
 	},
 	"migrates": [],

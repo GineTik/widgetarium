@@ -121,13 +121,35 @@
 		},
 		"metric": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "streak · best · total · rate · goal",
+			"label": "What it counts",
 			"writes": ["get"],
 			"default": {
 				"value": "streak"
-			}
+			},
+			"options": [
+				{
+					"value": "streak",
+					"label": "Streak"
+				},
+				{
+					"value": "best",
+					"label": "Best streak"
+				},
+				{
+					"value": "total",
+					"label": "Total check-ins"
+				},
+				{
+					"value": "rate",
+					"label": "Check-in rate"
+				},
+				{
+					"value": "goal",
+					"label": "Goal"
+				}
+			]
 		},
 		"period": {
 			"kind": "value",
@@ -141,14 +163,24 @@
 		},
 		"look": {
 			"kind": "value",
-			"control": "line",
+			"control": "choice",
 			"type": "line",
-			"label": "Look: default · stat1",
+			"label": "Look",
 			"design": true,
 			"writes": ["get"],
 			"default": {
 				"value": "default"
-			}
+			},
+			"options": [
+				{
+					"value": "default",
+					"label": "Default"
+				},
+				{
+					"value": "stat1",
+					"label": "Stat 1"
+				}
+			]
 		}
 	},
 	"migrates": [],

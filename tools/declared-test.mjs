@@ -509,5 +509,40 @@ check("the label comes from metadata", manifest.props.query.label, "Search for")
 check("a narrowed crud asks for the verbs it kept", manifest.props.tasks.writes, ["list", "get", "update"]);
 check("the layout reaches the manifest", [manifest.role, manifest.size.preferredWidth], ["control", 320]);
 
+const KindSchema = z.enum(["area", "bar"]).default("area");
+const SIZE = { size: { preferredWidth: 320, preferredHeight: "auto" } };
+check(
+	"an enum behind a default offers its values as the options",
+	manifestOf({ kind: IValueGateway.of(KindSchema).pick("get") }, { title: "Probe", description: "" }, SIZE).props.kind
+		.options,
+	[
+		{ value: "area", label: "area" },
+		{ value: "bar", label: "bar" },
+	],
+);
+check(
+	"options listed beside an enum must name exactly its values",
+	refusal(() =>
+		manifestOf(
+			{ kind: IValueGateway.of(KindSchema).pick("get") },
+			{
+				title: "Probe",
+				description: "",
+				props: {
+					kind: {
+						label: "Kind",
+						options: [
+							{ value: "area", label: "An area" },
+							{ value: "pie", label: "A pie" },
+						],
+					},
+				},
+			},
+			SIZE,
+		),
+	),
+	'prop "kind" lists the options ["area","pie"] beside a schema whose values are ["area","bar"]; the options must name exactly the values of the enum',
+);
+
 console.log(`\n${failed === 0 ? "declared props: clean" : `declared props: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

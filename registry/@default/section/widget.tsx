@@ -14,7 +14,20 @@ import { Body } from "./body";
 import { PER_ROW, PLACED } from "./body-modes";
 import { Head } from "./head";
 
-type Arrangement = "column" | "row" | "grid" | "rows";
+const ArrangementSchema = z.enum(["column", "row", "grid", "rows"]);
+const BadgeToneSchema = z.enum([
+	"neutral",
+	"accent",
+	"success",
+	"warning",
+	"error",
+	"info",
+	"note",
+	"standout",
+	"highlight",
+]);
+
+type Arrangement = z.infer<typeof ArrangementSchema>;
 
 const KIND_OF: Record<Arrangement, string> = { column: "stack", row: "row", grid: "grid", rows: "rows" };
 
@@ -29,10 +42,10 @@ const STYLE = `
 
 export const props = defineProps({
 	heading: IValueGateway.of(z.string().default("Section")).pick("get", "update"),
-	badgeTone: IValueGateway.of(z.string().default("neutral")).pick("get", "update"),
+	badgeTone: IValueGateway.of(BadgeToneSchema.default("neutral")).pick("get", "update"),
 	badge: IValueGateway.of(z.string().default("")).pick("get", "update"),
-	filling: IValueGateway.of(z.string().default(PLACED)).pick("get", "update"),
-	arrangement: IValueGateway.of(z.string().default("column")).pick("get", "update"),
+	filling: IValueGateway.of(z.enum([PLACED, PER_ROW]).default(PLACED)).pick("get", "update"),
+	arrangement: IValueGateway.of(ArrangementSchema.default("column")).pick("get", "update"),
 	minWidthPx: IValueGateway.of(z.number().default(240)).pick("get", "update"),
 	items: ICrudGateway.of(z.looseObject({})),
 	pageSize: IValueGateway.of(z.number().default(24)).pick("get"),
@@ -53,7 +66,7 @@ const SectionWidget = createWidget({
 				pageSize={pageSize}
 				Drawn={item as Slot<Record<string, unknown>> | undefined}
 				placed={widgets}
-				kind={KIND_OF[arrangement.value as Arrangement] ?? "stack"}
+				kind={KIND_OF[arrangement.value]}
 				narrowest={minWidthPx.value}
 			/>
 		</section>

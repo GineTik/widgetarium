@@ -109,11 +109,13 @@ that erases what the component is typed from. Code outside `draw` that needs the
 | `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer   |
 
 **The schema is the type and the default.** A value's schema must carry `.default()`; one without is
-refused. The default is drawn only when a value is missing, never in place of a wrong one. The
-built-in gateways check what they read against the schema through `context.parse`: a record that
-does not fit is left out and reported on the red "!" beside the prop in the settings window.
-`useData` answers `data`, never a list of refused rows. `z.enum([...])` becomes the options a person
-picks from. A row schema is `VaultRecordSchema.extend({...})` for notes, or any `z.object`; `ref` in
+refused. The built-in gateways check what they read against the schema through `context.parse`: a
+record that does not fit is left out, a value that does not fit is drawn as the default, and both
+are reported on the red "!" beside the prop in the settings window — so a widget never receives a
+value its schema refuses, and needs no fallback of its own. `useData` answers `data`, never a list
+of refused rows. A fixed set of choices is `z.enum([...]).default(...)`: its values become the
+options a person picks from, and metadata `options` beside it may add labels but must name exactly
+the same values. A row schema is `VaultRecordSchema.extend({...})` for notes, or any `z.object`; `ref` in
 it is typed `RecordRef` or left out.
 
 **A field's other names live in the schema.** `done: z.boolean().optional().meta({ aka: ["complete"] })`

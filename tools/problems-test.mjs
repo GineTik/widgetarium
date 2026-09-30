@@ -91,6 +91,39 @@ check(
 	[1],
 );
 
+const { JSDOM } = await import("jsdom");
+const page = new JSDOM("<!doctype html><body></body>");
+for (const key of ["window", "document", "Node", "Element", "HTMLElement", "SVGElement", "getComputedStyle"]) {
+	globalThis[key] = key === "window" ? page.window : page.window[key];
+}
+const { createElement: h } = await import("react");
+const { render } = await import("../packages/core/src/engine/render.ts");
+const KindSchema = z.enum(["area", "bar"]);
+const kindsDrawn = [];
+const KindProbe = createDeclaredWidget(
+	defineProps({ kind: IValueGateway.of(KindSchema.default("area")).pick("get") }),
+	({ kind }) => {
+		kindsDrawn.push(kind);
+		return null;
+	},
+);
+async function kindDrawnFrom(stored) {
+	refs.put("t1/kind", soloGateway(stored, {}, `problems-test/kind-${stored}`));
+	const kind = resolveHostGateway(context("kind", "@core/from-tile-value", "t1/kind", KindSchema));
+	const drawnInto = document.createElement("div");
+	render(h(KindProbe, { kind }), drawnInto);
+	await new Promise((settle) => setTimeout(settle, 0));
+	render(null, drawnInto);
+	return kindsDrawn.at(-1);
+}
+check("an enum prop holding one of its values is drawn as that value", await kindDrawnFrom("bar"), "bar");
+check("an enum prop holding a value outside the enum is drawn as its default", await kindDrawnFrom("pie"), "area");
+check(
+	"and the value it refused is reported beside the prop",
+	problems.of("t2/kind").map((problem) => problem.issues.length),
+	[1],
+);
+
 const LAYOUT = { role: "indicator", size: { preferredWidth: "full", preferredHeight: "auto" } };
 const DayNoteSchema = z.object({
 	date: z

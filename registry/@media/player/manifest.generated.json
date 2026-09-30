@@ -175,14 +175,29 @@
 		},
 		"repeat": {
 			"kind": "value",
-			"control": "memory",
+			"control": "choice",
+			"type": "line",
 			"label": "Repeat",
-			"hint": "What the end of the queue does: stop, start again, or hold on this track.",
+			"hint": "What the end of the queue does.",
 			"writes": ["get", "update"],
 			"default": {
 				"from": "memory",
 				"value": "off"
-			}
+			},
+			"options": [
+				{
+					"value": "off",
+					"label": "Stop"
+				},
+				{
+					"value": "all",
+					"label": "Start the queue again"
+				},
+				{
+					"value": "one",
+					"label": "Hold on this track"
+				}
+			]
 		}
 	},
 	"migrates": [],

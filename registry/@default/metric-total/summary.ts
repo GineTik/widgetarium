@@ -1,12 +1,12 @@
 import { dayOfRecord } from "@default/lib";
 import { dateOf, isoFrom } from "./days";
-import type { Point, Summary, Tone } from "./types";
+import type { Point, Rising, Summary, Tone } from "./types";
 
 type Amounted = { amount?: number | null | undefined };
 
 const FLAT_UNDER = 0.5;
 
-export function summarize(records: readonly Amounted[], days: number, today: string, rising: string): Summary {
+export function summarize(records: readonly Amounted[], days: number, today: string, rising: Rising): Summary {
 	const points = pointsOf(records, shiftBy(today, 1 - days), today);
 	const before = pointsOf(records, shiftBy(today, 1 - days * 2), shiftBy(today, -days));
 	const total = sumOf(points);
@@ -80,7 +80,7 @@ function directionOf(percent: number): Tone {
 	return percent > 0 ? "up" : "down";
 }
 
-function toneOf(direction: Tone, rising: string): Tone {
+function toneOf(direction: Tone, rising: Rising): Tone {
 	if (direction === "flat") return "flat";
-	return (direction === "up") === (rising !== "bad") ? "up" : "down";
+	return (direction === "up") === (rising === "good") ? "up" : "down";
 }

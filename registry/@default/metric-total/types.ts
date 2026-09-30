@@ -39,9 +39,9 @@ export type HeadProps = {
 	summary: Summary;
 	label: string;
 	days: number;
-	view: string;
+	view: View;
 	rows: { ref: RecordRef; label: string }[];
-	onView: (picked: string) => void;
+	onView: (picked: View) => void;
 	onPeriod: (ref: RecordRef) => void;
 };
 
@@ -50,3 +50,5 @@ export type Listed = { ref: RecordRef; day: string; note: string; amount: number
 export type Allowed = { canAdd: boolean; canEdit: boolean; canDelete: boolean };
 
 export type MetricProps = DrawnProps<typeof MetricTotal.declared>;
+export type View = MetricProps["view"]["value"];
+export type Rising = MetricProps["rising"];

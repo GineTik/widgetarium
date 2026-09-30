@@ -110,8 +110,10 @@ what the host hands over, and a widget gets one only by declaring it. A zod sche
 **Values are checked where they cross, never in the widget.** The built-in gateways check what they
 read against the widget's schema through `context.parse` (`gateway/parsed.ts`, `gateway/problems.ts`):
 a record that does not fit is left out and reported to the settings window's red "!" beside the
-prop, and `useData` carries no `refused`. The default is drawn only when a value is missing, never
-in place of a wrong one. `createWidget` wraps whatever it is given — an engine gateway, any class
+prop, and `useData` carries no `refused`. A value that does not fit is reported the same way and
+drawn as the default, so a widget never receives what its schema refuses and keeps no fallback of its
+own; a fixed set of choices is `z.enum([...]).default(...)`, whose values are the options
+(`optionsOf` in `gateway/written.ts` refuses metadata `options` naming other values). `createWidget` wraps whatever it is given — an engine gateway, any class
 extending an interface, or a plain value or array (`packages/core/src/declared-widget.js`) — and a
 `create` or `update` the schema refuses rejects before it reaches the implementation. A value picked
 only `"get"` arrives as the value, `{ value, update }` when it picked `"get", "update"`. After any write it handed out the runtime

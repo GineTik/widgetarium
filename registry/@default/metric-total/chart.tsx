@@ -2,13 +2,13 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { BarsInk } from "./bars-ink";
 import { CurveInk } from "./curve-ink";
 import { slotOf } from "./days";
-import type { Band, ChartBox, Hovered, Point, Spot } from "./types";
+import type { Band, ChartBox, Hovered, Point, Spot, View } from "./types";
 
 type ChartProps = {
 	points: Point[];
 	days: number;
 	from: string;
-	view: string;
+	view: View;
 	band: Band;
 	ids: string;
 	hovered: Hovered | null;

@@ -16,6 +16,8 @@ const READS_NOTHING_DECLARED =
 const AN_IMPLEMENTATION =
 	'prop "{name}" is {implementation}, an implementation; a widget declares the interface it needs (IValueGateway.of(...), ICrudGateway.of(...)) and the host decides what fills it';
 const MIGRATES_FROM_NOTHING = "migration {at} names no props it migrates from";
+const OPTIONS_BESIDE_THE_ENUM =
+	'prop "{name}" lists the options {listed} beside a schema whose values are {values}; the options must name exactly the values of the enum';
 
 const SIBLING_FIELDS = ["rows", "picked", "fieldFrom"] as const;
 
@@ -95,7 +97,7 @@ export function refuseEmptyMigrations(steps: readonly MigrationStep<DeclaredProp
 }
 
 function propOfDeclared(name: string, declaration: Declaration, described: PropMetadata<unknown>) {
-	const options = described.options ?? enumOptions(declaration.schema);
+	const options = optionsOf(name, described.options, declaration.schema);
 	const describes = describesWithAka(
 		name,
 		described.describes as Readonly<Record<string, unknown>> | undefined,
@@ -159,7 +161,27 @@ function heldSpecOf(declaration: Declaration, described: PropMetadata<unknown>) 
 	return { ...declaration.held, ...described };
 }
 
-function enumOptions(schema: z.ZodType): readonly Choice[] | undefined {
-	if (!(schema instanceof z.ZodEnum)) return undefined;
-	return (schema.options as readonly string[]).map((value) => ({ value, label: value }));
+function optionsOf(
+	name: string,
+	listed: readonly Choice[] | undefined,
+	schema: z.ZodType,
+): readonly Choice[] | undefined {
+	const values = enumValuesOf(schema);
+	if (!listed) return values?.map((value) => ({ value, label: value }));
+	if (!values || sameValues(listed, values)) return listed;
+	throw new Error(
+		OPTIONS_BESIDE_THE_ENUM.replace("{name}", name)
+			.replace("{listed}", JSON.stringify(listed.map((choice) => choice.value)))
+			.replace("{values}", JSON.stringify(values)),
+	);
+}
+
+function enumValuesOf(schema: z.ZodType): readonly string[] | undefined {
+	if (schema instanceof z.ZodEnum) return schema.options as readonly string[];
+	const inner = innerOf(schema);
+	return inner ? enumValuesOf(inner) : undefined;
+}
+
+function sameValues(listed: readonly Choice[], values: readonly string[]): boolean {
+	return listed.length === values.length && listed.every((choice) => values.includes(String(choice.value)));
 }

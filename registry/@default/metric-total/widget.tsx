@@ -77,7 +77,7 @@ export const MetricTotal = createWidget({
 		records: ICrudGateway.of(MetricSchema),
 		title: IValueGateway.of(z.string().default("Total")).pick("get"),
 		unit: IValueGateway.of(z.string().default("")).pick("get"),
-		rising: IValueGateway.of(z.string().default("good")).pick("get"),
+		rising: IValueGateway.of(z.enum(["good", "bad"]).default("good")).pick("get"),
 		periods: IListGateway.of(PeriodRowSchema, {
 			default: [
 				{ label: "Past 7 days", days: 7 },
@@ -87,7 +87,7 @@ export const MetricTotal = createWidget({
 		}),
 		periodPick: IValueGateway.of(z.unknown()).pick("get", "update"),
 		period: IValueGateway.of(PeriodRowSchema.nullable()).pick("get"),
-		view: IValueGateway.of(z.string().default("curve")).pick("get", "update"),
+		view: IValueGateway.of(z.enum(["curve", "bars"]).default("curve")).pick("get", "update"),
 		host: IHost,
 	},
 	draw: ({ records, title, unit, rising, periods, periodPick, period, view, host }) => {
@@ -264,8 +264,11 @@ export const metadata = defineMetadata(MetricTotal, {
 			label: "Unit the amounts are in",
 		},
 		rising: {
-			label: "good · bad",
-			hint: "Whether a rise reads as good or as bad.",
+			label: "A rise reads as",
+			options: [
+				{ value: "good", label: "Good" },
+				{ value: "bad", label: "Bad" },
+			],
 		},
 		periods: {
 			label: "Periods",
@@ -290,7 +293,11 @@ export const metadata = defineMetadata(MetricTotal, {
 			},
 		},
 		view: {
-			label: "curve · bars",
+			label: "Drawn as",
+			options: [
+				{ value: "curve", label: "A curve" },
+				{ value: "bars", label: "Bars" },
+			],
 		},
 	},
 });

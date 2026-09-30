@@ -1,7 +1,7 @@
 import { canDo } from "widgetarium";
 import { Icon, IconButton, Progress } from "widgetarium/kit";
 import { PERCENT } from "./percent";
-import { REPEAT_MODES, repeatIn } from "./repeat";
+import { REPEAT_MODES } from "./repeat";
 import type { PlayerProps, RepeatMode, Steering } from "./types";
 
 type DeckProps = Pick<PlayerProps, "isShuffled" | "isPlaying" | "repeat" | "volume"> & {
@@ -27,7 +27,6 @@ export function Deck({
 	canSteer,
 	steering: { toPrevious, togglePlay, toNext },
 }: DeckProps) {
-	const repeatMode = repeatIn(repeat.value);
 	const heard = levelIn(volume.value, 0);
 	const canHear = canDo(volume.update);
 	return (
@@ -66,15 +65,15 @@ export function Deck({
 				</IconButton>
 
 				<IconButton
-					variant={repeatMode === "off" ? "ghost" : "raised"}
+					variant={repeat.value === "off" ? "ghost" : "raised"}
 					size="m"
 					className="wgm-mode"
-					label={REPEAT_LABELS[repeatAfter(repeatMode)]}
-					aria-pressed={String(repeatMode !== "off")}
+					label={REPEAT_LABELS[repeatAfter(repeat.value)]}
+					aria-pressed={String(repeat.value !== "off")}
 					disabled={!canDo(repeat.update)}
-					onClick={() => void repeat.update(repeatAfter(repeatMode))}
+					onClick={() => void repeat.update(repeatAfter(repeat.value))}
 				>
-					<Icon name={REPEAT_ICONS[repeatMode]} size={18} />
+					<Icon name={REPEAT_ICONS[repeat.value]} size={18} />
 				</IconButton>
 			</div>
 

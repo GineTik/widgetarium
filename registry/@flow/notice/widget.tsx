@@ -70,21 +70,12 @@ const CSS = `
 }
 `;
 
-const TONES = ["neutral", "info", "success", "warning", "error"] as const;
-
-type Tone = (typeof TONES)[number];
-
-function toneNamed(said: unknown): Tone {
-	const named = String(said ?? "").toLowerCase() as Tone;
-	return TONES.includes(named) ? named : "neutral";
-}
-
 const NoticeWidget = createWidget({
 	inject: {
 		title: IValueGateway.of(z.string().default("")).pick("get"),
 		body: IValueGateway.of(z.string().default("")).pick("get"),
 		icon: IValueGateway.of(z.string().default("")).pick("get"),
-		tone: IValueGateway.of(z.string().default("neutral")).pick("get"),
+		tone: IValueGateway.of(z.enum(["neutral", "info", "success", "warning", "error"]).default("neutral")).pick("get"),
 		action: IValueGateway.of(z.string().default("")).pick("get"),
 		pressed: IValueGateway.of(z.boolean().default(false)).pick("get", "update"),
 	},
@@ -93,10 +84,9 @@ const NoticeWidget = createWidget({
 		const sentence = body.trim();
 		const glyph = icon.trim();
 		const label = action.trim();
-		const toned = toneNamed(tone);
 
 		return (
-			<Card type={toned === "neutral" ? "none" : "group"} tone={toned} className="flow-notice">
+			<Card type={tone === "neutral" ? "none" : "group"} tone={tone} className="flow-notice">
 				<style>{CSS}</style>
 				{glyph ? <Icon name={glyph} size={20} className="flow-notice-icon" /> : null}
 				<div className="flow-notice-said">
@@ -167,7 +157,14 @@ export const metadata = defineMetadata(NoticeWidget, {
 		},
 		tone: {
 			label: "Tone",
-			hint: "One of neutral, info, success, warning or error. Neutral draws no background of its own.",
+			hint: "Neutral draws no background of its own.",
+			options: [
+				{ value: "neutral", label: "Neutral" },
+				{ value: "info", label: "Information" },
+				{ value: "success", label: "Going well" },
+				{ value: "warning", label: "Needs a look" },
+				{ value: "error", label: "Something is wrong" },
+			],
 		},
 		action: {
 			label: "Action",

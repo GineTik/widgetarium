@@ -31,8 +31,7 @@ import type { Drawn, Point } from "./types";
 
 const POINTS_AT_MOST = 366;
 const SERIES_AT_MOST = 8;
-const DEFAULT_KIND = "area";
-const KINDS = [DEFAULT_KIND, "bar", "line", "glance"];
+const KindSchema = z.enum(["area", "bar", "line", "glance"]);
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
 const CHART_MARGIN = { top: 8, right: 12, left: 12, bottom: 0 };
 const AREA_WASH = 0.18;
@@ -43,19 +42,19 @@ const NO_RECORDS = "There are no records here yet.";
 const NO_NUMBERS = "None of these records carries a number to draw.";
 
 type Series = { property: string; label?: string | null };
+type Kind = z.infer<typeof KindSchema>;
 
 const ChartWidget = createWidget({
 	inject: {
 		records: IListGateway.of(VaultRecordSchema),
 		across: IValueGateway.of(z.string().default("")).pick("get"),
 		series: IListGateway.of(z.custom<Series>()),
-		kind: IValueGateway.of(z.string().default("area")).pick("get"),
+		kind: IValueGateway.of(KindSchema.default("area")).pick("get"),
 	},
 	draw: ({ records, across, series, kind }) => {
 		const read = useData(records.list, { limit: POINTS_AT_MOST });
 		const declared = useData(series.list, { limit: SERIES_AT_MOST }).data;
 		const acrossProperty = across.trim();
-		const drawnAs = kindOf(kind);
 
 		if (read.failure !== null) return <Said text={read.failure} isFailure />;
 		if (read.isLoading && read.data.length === 0) return <Said text={READING} />;
@@ -66,8 +65,8 @@ const ChartWidget = createWidget({
 		if (!first) return <Said text={NO_NUMBERS} />;
 
 		const points = pointsOf(read.data, drawn, acrossProperty);
-		if (drawnAs === "glance") return <Glance points={points} first={first} />;
-		return <ChartContainer config={configOf(drawn)}>{plotOf(drawnAs, points, drawn)}</ChartContainer>;
+		if (kind === "glance") return <Glance points={points} first={first} />;
+		return <ChartContainer config={configOf(drawn)}>{plotOf(kind, points, drawn)}</ChartContainer>;
 	},
 });
 
@@ -152,7 +151,7 @@ export const layout = defineLayout({
 
 export default ChartWidget;
 
-function plotOf(kind: string, points: Point[], drawn: Drawn[]) {
+function plotOf(kind: Kind, points: Point[], drawn: Drawn[]) {
 	const parts = [
 		<CartesianGrid key="grid" vertical={false} />,
 		<XAxis
@@ -210,10 +209,6 @@ function plotOf(kind: string, points: Point[], drawn: Drawn[]) {
 			))}
 		</AreaChart>
 	);
-}
-
-function kindOf(asked: unknown): string {
-	return KINDS.includes(String(asked)) ? String(asked) : DEFAULT_KIND;
 }
 
 function inkOf(one: Drawn): string {

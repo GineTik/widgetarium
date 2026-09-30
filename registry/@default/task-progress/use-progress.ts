@@ -1,12 +1,10 @@
 import { useData, type DrawnProps, type Row } from "widgetarium";
 import { useNow } from "widgetarium/kit";
 import { TICK_MS } from "./overall";
-import type { Progress, Step, StepStatus } from "./types";
+import type { Progress, Step } from "./types";
 import type { props } from "./widget";
 
 const MOST_STEPS = 50;
-
-const STEP_STATUSES: readonly unknown[] = ["pending", "active", "done", "failed"];
 
 export function useProgress({ title, steps, open, startedAt, endedAt }: DrawnProps<typeof props>): Progress {
 	const rows = (useData(steps.list, { limit: MOST_STEPS }).data ?? []) as readonly Row<Step>[];
@@ -25,6 +23,5 @@ function saidClock(ms: number): string {
 }
 
 function stepOf(row: Row<Step>): Row<Step> {
-	const status = (STEP_STATUSES.includes(row.status) ? row.status : "pending") as StepStatus;
-	return { ref: row.ref, label: String(row.label ?? ""), status, hint: String(row.hint ?? "") };
+	return { ref: row.ref, label: String(row.label ?? ""), status: row.status, hint: String(row.hint ?? "") };
 }
