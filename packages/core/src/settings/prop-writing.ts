@@ -1,10 +1,18 @@
 import { propConfig } from "../model.js";
 import type { Tile, TileProp } from "../model.js";
+import type { FormEvent, FunctionComponent } from "react";
 import { Field, TextArea } from "@widgetarium/kit";
 import { declaredOf } from "../gateway/props.js";
 import type { SettingsSpec, TilePatch } from "./settings-state.js";
 
-export type TypedControl = typeof Field;
+export interface TypedControlProps {
+	readonly block: boolean;
+	readonly value: string;
+	readonly placeholder: string;
+	readonly onInput: (event: FormEvent) => void;
+}
+
+export type TypedControl = FunctionComponent<TypedControlProps>;
 
 interface PlainWriting {
 	readonly blank: string | number | boolean;

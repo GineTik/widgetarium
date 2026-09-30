@@ -1,6 +1,19 @@
+import type { ToneName } from "./tones";
+
+export type ProgressState = "empty" | "running" | "done";
+
+export type ProgressShape = "line" | "circle";
+
 export const PROGRESS_MAX = 100;
 
-export const PROGRESS_STEPS = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1, PageUp: 10, PageDown: -10 };
+export const PROGRESS_STEPS: ReadonlyMap<string, number> = new Map([
+	["ArrowRight", 1],
+	["ArrowUp", 1],
+	["ArrowLeft", -1],
+	["ArrowDown", -1],
+	["PageUp", 10],
+	["PageDown", -10],
+]);
 
 export const BAR_STROKE = 4;
 
@@ -24,9 +37,13 @@ export const CIRCLE_WAVELENGTH = 15;
 
 export const TAU = Math.PI * 2;
 
-export const PROGRESS_SHAPES = ["line", "circle"];
+export const PROGRESS_SHAPES: readonly ProgressShape[] = ["line", "circle"];
 
-export const STATUS_TONES = { empty: "neutral", running: "accent", done: "success" };
+export const STATUS_TONES: Readonly<Record<ProgressState, ToneName>> = {
+	empty: "neutral",
+	running: "accent",
+	done: "success",
+};
 
 export const VALUE_GAP_PX = 8;
 

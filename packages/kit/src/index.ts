@@ -325,3 +325,5 @@ export { useScrollFog } from "./hooks/use-scroll-fog";
 export type { ScrollEdges } from "./hooks/use-scroll-fog";
 export { useShown } from "./hooks/use-shown";
 export { useWhenSeen } from "./hooks/use-when-seen";
+
+export type * from "./exported-types";

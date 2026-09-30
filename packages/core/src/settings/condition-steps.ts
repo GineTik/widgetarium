@@ -204,7 +204,7 @@ function valueStep(state: SettingsState, at: ConditionAt, field: ConditionField,
 		h(Field, {
 			block: true,
 			key: "typed",
-			className: referenceClassOf(said, pointedAt),
+			className: referenceClassOf(said, pointedAt) ?? undefined,
 			value: state.draft ?? "",
 			placeholder: FIELD_PLACEHOLDER[kind.takes] ?? FIELD_PLACEHOLDER.one,
 			onInput: draftOnInput(state),

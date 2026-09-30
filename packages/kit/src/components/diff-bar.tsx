@@ -1,14 +1,18 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 
-export function DiffBar({
-	added,
-	removed,
-	className,
-}: {
-	added: number | null;
-	removed: number | null;
-	className: string;
-}) {
+export interface DiffBarProps {
+	readonly added: number | null;
+	readonly removed: number | null;
+	readonly className: string;
+}
+
+interface DiffShares {
+	readonly added: number;
+	readonly removed: number;
+}
+
+export function DiffBar({ added, removed, className }: DiffBarProps): ReactElement | null {
 	const shares = sharesOf(added, removed);
 	if (shares === null) return null;
 
@@ -20,7 +24,7 @@ export function DiffBar({
 	);
 }
 
-function sharesOf(added: number | null, removed: number | null): { added: number; removed: number } | null {
+function sharesOf(added: number | null, removed: number | null): DiffShares | null {
 	const up = added ?? 0;
 	const down = removed ?? 0;
 	const together = up + down;

@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from "react";
 import { DialogClose } from "../dialog.js";
 import type { WindowState } from "../settings-window.js";
 import { Button, Icon, IconButton, Pill, Segmented, Sidebar, SidebarSheet } from "@widgetarium/kit";
+import type { SettingsTab } from "./use-settings-look.js";
 import { ZOOM_FLOOR, ZOOM_STEP, clamp } from "./canvas-input.js";
 import { dataGroups } from "./data-groups.js";
 import { designGroups } from "./design-groups.js";
@@ -114,7 +115,7 @@ export function panel(state: WindowState): ReactElement {
 		);
 	}
 	const inside = [
-		h(Segmented, {
+		h(Segmented<SettingsTab>, {
 			key: "tabs",
 			className: "wg-set-tabs",
 			items: state.tabs,
@@ -134,11 +135,10 @@ export function panel(state: WindowState): ReactElement {
 				surface: "glass",
 				className: "wg-set-panel is-sheet",
 				style: state.panelStyle,
-				isOpen: state.sheetFull,
-				onOpen: state.setSheetFull,
+				open: state.sheetFull,
+				onOpenChange: state.setSheetFull,
 				// TODO: pass CHROME.sheetPeekPx — the sheet peeks at the kit's 220px, the canvas reserves 168px
-				maxPx: state.sheetMaxPx,
-				onHeight: state.setSheetHeight,
+				height: { maxPx: state.sheetMaxPx, onHeight: state.setSheetHeight },
 			},
 			inside,
 		);

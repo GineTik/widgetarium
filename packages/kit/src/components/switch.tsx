@@ -1,7 +1,17 @@
-import type { LooseProps } from "../types";
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
 import { cn } from "../utils/cn";
+
+export interface SwitchProps {
+	readonly checked?: boolean | undefined;
+	readonly defaultChecked?: boolean;
+	readonly onCheckedChange?: ((checked: boolean) => void) | undefined;
+	readonly onChange?: ((checked: boolean) => void) | undefined;
+	readonly disabled?: boolean | undefined;
+	readonly label?: string | undefined;
+	readonly className?: string | undefined;
+}
 
 export function Switch({
 	checked,
@@ -11,7 +21,7 @@ export function Switch({
 	disabled,
 	label,
 	className: cls,
-}: LooseProps) {
+}: SwitchProps): ReactElement {
 	const [isOn, setOn] = useControllableState({
 		prop: checked === undefined ? undefined : Boolean(checked),
 		defaultProp: defaultChecked,
@@ -24,7 +34,7 @@ export function Switch({
 		<button
 			type="button"
 			role="switch"
-			aria-checked={String(isOn)}
+			aria-checked={isOn}
 			aria-label={label}
 			data-state={isOn ? "checked" : "unchecked"}
 			data-disabled={disabled ? "" : undefined}

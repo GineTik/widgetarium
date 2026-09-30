@@ -1,12 +1,25 @@
 import { createElement as h, useRef } from "react";
-import type { LooseProps } from "../types";
+import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { cn } from "../utils/cn";
 import { stepIndex } from "../utils/roving";
+import type { Step } from "../utils/roving";
 import { POPOVER_ITEM, dataStateOf, usePopover } from "./popover-context";
 
-export function PopoverContent({ children, className: cls }: LooseProps) {
+export interface PopoverContentProps {
+	readonly children?: ReactNode;
+	readonly className?: string | undefined;
+}
+
+const STEP_OF_KEY: ReadonlyMap<string, Step> = new Map<string, Step>([
+	["ArrowDown", 1],
+	["ArrowUp", -1],
+	["Home", "first"],
+	["End", "last"],
+]);
+
+export function PopoverContent({ children, className: cls }: PopoverContentProps): ReactElement {
 	const popover = usePopover();
-	const held = useRef(null);
+	const held = useRef<ReactNode>(null);
 	if (popover.isOpen) held.current = children;
 	return (
 		<div
@@ -31,11 +44,12 @@ export function PopoverContent({ children, className: cls }: LooseProps) {
 	);
 }
 
-function moveBetweenItems(event) {
-	const step = { ArrowDown: 1, ArrowUp: -1, Home: "first", End: "last" }[event.key];
+function moveBetweenItems(event: KeyboardEvent<HTMLDivElement>): void {
+	const step = STEP_OF_KEY.get(event.key);
 	if (step === undefined) return;
-	const items = [...event.currentTarget.querySelectorAll(POPOVER_ITEM)];
+	const items = [...event.currentTarget.querySelectorAll<HTMLElement>(POPOVER_ITEM)];
 	if (items.length === 0) return;
 	event.preventDefault();
-	items[stepIndex(items.indexOf(document.activeElement), step, items.length)].focus();
+	const at = items.findIndex((item) => item === document.activeElement);
+	items[stepIndex(at, step, items.length)]?.focus();
 }

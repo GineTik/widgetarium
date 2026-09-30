@@ -1,13 +1,18 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { Icon } from "../icons/icon";
-import type { LooseProps } from "../types";
 import { cn } from "../utils/cn";
 import { PaginationButton } from "./pagination-button";
+import type { PaginationStepProps } from "./pagination-next";
 import { STEP_ICON_PX, STEP_LOOK } from "./pagination-parts";
 
 const PREVIOUS_PAGE = "Go to the previous page";
 
-export function PaginationPrevious({ label = "Previous", className: cls, ...props }: LooseProps) {
+export function PaginationPrevious({
+	label = "Previous",
+	className: cls,
+	...props
+}: PaginationStepProps): ReactElement {
 	return (
 		<PaginationButton
 			aria-label={PREVIOUS_PAGE}

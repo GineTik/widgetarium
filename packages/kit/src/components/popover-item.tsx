@@ -1,16 +1,21 @@
 import { createElement as h, useState } from "react";
+import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
 import { Icon } from "../icons/icon";
-import type { LooseProps } from "../types";
 import { cn } from "../utils/cn";
 
-export function PopoverItem({ checked, sub, children, ...rest }: LooseProps) {
+export interface PopoverItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+	readonly checked?: boolean | undefined;
+	readonly sub?: ReactNode;
+}
+
+export function PopoverItem({ checked, sub, children, ...rest }: PopoverItemProps): ReactElement {
 	const [isHighlighted, setHighlighted] = useState(false);
 	return (
 		<button
 			type="button"
 			{...rest}
-			aria-checked={checked === undefined ? undefined : String(checked)}
-			data-state={checked === undefined ? undefined : checked ? "checked" : "unchecked"}
+			aria-checked={checked}
+			data-state={checkedStateOf(checked)}
 			data-highlighted={isHighlighted ? "" : undefined}
 			data-disabled={rest.disabled ? "" : undefined}
 			onFocus={(event) => {
@@ -29,7 +34,7 @@ export function PopoverItem({ checked, sub, children, ...rest }: LooseProps) {
 				setHighlighted(false);
 				rest.onPointerLeave?.(event);
 			}}
-			className={cn("wg-kit-pop-item", sub && "is-two", rest.className)}
+			className={cn("wg-kit-pop-item", Boolean(sub) && "is-two", rest.className)}
 		>
 			{sub === undefined ? (
 				children
@@ -44,4 +49,9 @@ export function PopoverItem({ checked, sub, children, ...rest }: LooseProps) {
 			{checked === undefined ? null : <Icon name="tick" className="wg-kit-pop-tick" />}
 		</button>
 	);
+}
+
+function checkedStateOf(checked: boolean | undefined): "checked" | "unchecked" | undefined {
+	if (checked === undefined) return undefined;
+	return checked ? "checked" : "unchecked";
 }

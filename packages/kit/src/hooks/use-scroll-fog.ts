@@ -6,7 +6,7 @@ export function useScrollFog(
 	scrollRef: { current: HTMLElement | null },
 	onEdges: (edges: ScrollEdges) => void,
 	watched: unknown = null,
-) {
+): void {
 	const latest = useRef(onEdges);
 	latest.current = onEdges;
 

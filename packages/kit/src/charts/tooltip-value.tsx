@@ -1,7 +1,11 @@
 import { createElement as h } from "react";
-import type { LooseProps } from "../types";
+import type { ReactElement } from "react";
 
-export function TooltipValue({ value }: LooseProps) {
+export interface TooltipValueProps {
+	readonly value: unknown;
+}
+
+export function TooltipValue({ value }: TooltipValueProps): ReactElement | null {
 	if (value === undefined) return null;
 	return (
 		<span className="wg-kit-chart-tip-value">{typeof value === "number" ? value.toLocaleString() : String(value)}</span>

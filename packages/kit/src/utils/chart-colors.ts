@@ -2,7 +2,7 @@ import { CHART_COLOR_COUNT } from "../constants/charts";
 import { BADGE_COLORS, TONE_NAMES } from "../constants/tones";
 import { warnOnce } from "./surface";
 
-const NAMED_INKS = [...BADGE_COLORS, ...TONE_NAMES];
+const NAMED_INKS: readonly string[] = [...BADGE_COLORS, ...TONE_NAMES];
 
 export function chartColorOf(asked: unknown, place: number): string {
 	const step = (place % CHART_COLOR_COUNT) + 1;
@@ -17,6 +17,6 @@ export function chartColorOf(asked: unknown, place: number): string {
 	return `var(--wg-kit-chart-${step})`;
 }
 
-export function seriesColorName(key: string): string {
+export function seriesColorName(key: string | number): `--color-${string}` {
 	return `--color-${String(key).replace(/[^\w-]/g, "-")}`;
 }

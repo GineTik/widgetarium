@@ -12,6 +12,7 @@ export {
 	misnested,
 	tooDeep,
 	plateRefusal,
+	notASurface,
 	readSlotSurface,
 } from "@widgetarium/kit/plates";
 

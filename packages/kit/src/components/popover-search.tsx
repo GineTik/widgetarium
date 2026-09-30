@@ -1,20 +1,29 @@
 import { Fragment, createElement as h, useRef, useState } from "react";
+import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { useScrollReach } from "../hooks/use-scroll-reach";
 import { Icon } from "../icons/icon";
-import type { LooseProps } from "../types";
 import { cn } from "../utils/cn";
 import { Field } from "./field";
 import { POPOVER_ITEM } from "./popover-context";
 
-export function PopoverSearch({ placeholder, hint, children, className: cls }: LooseProps) {
+export interface PopoverSearchProps {
+	readonly placeholder?: string | undefined;
+	readonly hint?: ReactNode;
+	readonly children?: ReactNode | ((needle: string) => ReactNode);
+	readonly className?: string | undefined;
+}
+
+const EDGE_ICON_PX = 12;
+
+export function PopoverSearch({ placeholder, hint, children, className: cls }: PopoverSearchProps): ReactElement {
 	const [keyword, setKeyword] = useState("");
 	const needle = keyword.trim().toLowerCase();
-	const listRef = useRef(null);
+	const listRef = useRef<HTMLDivElement>(null);
 	const { reach, measureReach } = useScrollReach(listRef);
 
-	const takeFirst = (event) => {
+	const takeFirst = (event: KeyboardEvent): void => {
 		if (event.key !== "Enter") return;
-		const first = listRef.current?.querySelector(POPOVER_ITEM);
+		const first = listRef.current?.querySelector<HTMLElement>(POPOVER_ITEM);
 		if (!first) return;
 		event.preventDefault();
 		first.click();
@@ -31,7 +40,7 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }: L
 					icon={<Icon name="search" />}
 					placeholder={placeholder}
 					value={keyword}
-					onInput={(event) => setKeyword(event.target.value)}
+					onValueChange={setKeyword}
 					onKeyDown={takeFirst}
 				/>
 				{hint ? <span className="wg-kit-pop-search-hint">{hint}</span> : null}
@@ -42,12 +51,12 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }: L
 				</div>
 				{reach.up ? (
 					<span className="wg-kit-pop-edge is-up">
-						<Icon name="chevron" size={12} />
+						<Icon name="chevron" size={EDGE_ICON_PX} />
 					</span>
 				) : null}
 				{reach.down ? (
 					<span className="wg-kit-pop-edge is-down">
-						<Icon name="chevron" size={12} />
+						<Icon name="chevron" size={EDGE_ICON_PX} />
 					</span>
 				) : null}
 			</div>

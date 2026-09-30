@@ -13,7 +13,6 @@ export interface FacetGroupProps {
 export function FacetGroup({ label, placeholder, query, onQuery, children }: FacetGroupProps): ReactElement {
 	return h("div", { className: "wg-kit-side-group wg-cat-facet" }, [
 		h("span", { className: "wg-kit-side-label", key: "label" }, label),
-		// TODO: Field props are unchecked until the kit types LooseProps
 		h(Field, {
 			key: "search",
 			block: true,

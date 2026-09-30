@@ -1,11 +1,15 @@
 import { createElement as h } from "react";
-import type { LooseProps } from "../types";
+import type { HTMLAttributes, ReactElement } from "react";
 import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 
-export function PaginationRoot({ className: cls, children, ...props }: LooseProps) {
+export interface PaginationRootProps extends HTMLAttributes<HTMLElement> {
+	readonly "data-variant"?: string | undefined;
+}
+
+export function PaginationRoot({ children, ...props }: PaginationRootProps): ReactElement {
 	return (
-		<nav aria-label="Pages" {...domPropsOf(props)} className={cn("wg-kit-pagination", cls)}>
+		<nav aria-label="Pages" {...domPropsOf(props)} className={cn("wg-kit-pagination", props.className)}>
 			{children}
 		</nav>
 	);

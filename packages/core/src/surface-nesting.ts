@@ -1,4 +1,4 @@
-import { mayWearInside, plateRefusal, platesWithin, unearnedPlate } from "./surface-roles.js";
+import { mayWearInside, notASurface, plateRefusal, platesWithin, unearnedPlate } from "./surface-roles.js";
 import type { LawRefusal, WidgetOf } from "./surface-roles.js";
 import {
 	APART,
@@ -130,7 +130,7 @@ function visitNesting(
 	);
 }
 
-function plateRefusalOf(above: PlatesAbove | null, surface: string): LawRefusal | null {
+function plateRefusalOf(above: PlatesAbove, surface: string): LawRefusal | null {
 	return plateRefusal(above, surface);
 }
 
@@ -151,9 +151,8 @@ function introducedFinding(
 	return nestingFindings(would, widgetOf).find((one) => !already.has(identityOf(one))) ?? null;
 }
 
-function refusedWord(path: NodePath, surface: string): NestingFinding | null {
-	const refusal = plateRefusalOf(null, surface);
-	return refusal ? { path, ...refusal } : null;
+function refusedWord(path: NodePath, surface: string): NestingFinding {
+	return { path, ...notASurface(surface) };
 }
 
 function wrongNow(layout: BoxNode, widgetOf: WidgetOf): Set<string> {

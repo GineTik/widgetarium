@@ -1,23 +1,32 @@
 import { useLayoutEffect, useRef } from "react";
+import type { RefObject } from "react";
+import type { Placement } from "../constants/popover";
 import { POPOVER_ITEM } from "../components/popover-context";
+import { isFocusable } from "../utils/dom-nodes";
 import { enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
+import type { StopMotion } from "../utils/popover-motion";
 
-export function usePanelMotion({
-	isOpen,
-	where,
-	anchorRef,
-	panelRef,
-	triggerRef,
-	openedByKeyboard,
-	wasOpen,
-	setExiting,
-}) {
-	const stopExit = useRef(null);
+export interface PanelMotionAsk {
+	readonly isOpen: boolean;
+	readonly where: Placement;
+	readonly anchorRef: RefObject<HTMLElement | null>;
+	readonly panelRef: RefObject<HTMLElement | null>;
+	readonly triggerRef: RefObject<HTMLElement | null>;
+	readonly openedByKeyboard: RefObject<boolean>;
+	readonly wasOpen: RefObject<boolean>;
+	readonly setExiting: (isExiting: boolean) => void;
+}
+
+const FOCUSABLE = "button, a, input, [tabindex]";
+
+export function usePanelMotion(ask: PanelMotionAsk): void {
+	const { isOpen, where, anchorRef, panelRef, triggerRef, openedByKeyboard, wasOpen, setExiting } = ask;
+	const stopExit = useRef<StopMotion | null>(null);
 
 	useLayoutEffect(() => {
 		const panel = panelRef.current;
 		const anchor = anchorRef.current;
-		if (!panel || !anchor) return;
+		if (!panel || !anchor) return undefined;
 		const closing = wasOpen.current && !isOpen;
 		wasOpen.current = isOpen;
 		stopExit.current?.();
@@ -27,13 +36,13 @@ export function usePanelMotion({
 		if (isOpen) {
 			setExiting(false);
 			const stopEnter = enterPanel(panel, anchor, where);
-			if (openedByKeyboard.current) panel.querySelector(POPOVER_ITEM)?.focus();
+			if (openedByKeyboard.current) panel.querySelector<HTMLElement>(POPOVER_ITEM)?.focus();
 			return stopEnter;
 		}
 		if (!closing || prefersReducedMotion()) {
 			setExiting(false);
 			restPanel(panel, anchor);
-			return;
+			return undefined;
 		}
 
 		setExiting(true);
@@ -49,10 +58,8 @@ export function usePanelMotion({
 	}, [isOpen]);
 }
 
-function returnFocus(panel, trigger) {
+function returnFocus(panel: HTMLElement, trigger: HTMLElement): void {
 	if (!panel.contains(document.activeElement)) return;
-	const target = trigger.matches?.("button, a, input, [tabindex]")
-		? trigger
-		: trigger.querySelector?.("button, a, input, [tabindex]");
-	target?.focus();
+	const target = trigger.matches(FOCUSABLE) ? trigger : trigger.querySelector(FOCUSABLE);
+	if (isFocusable(target)) target.focus();
 }

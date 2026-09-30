@@ -1,8 +1,23 @@
 import { TONE_NAMES } from "./tones";
+import type { ToneName } from "./tones";
+
+export type MarkShape =
+	| "disc"
+	| "ring"
+	| "diamond"
+	| "triangle"
+	| "hexagon"
+	| "squircle"
+	| "arch"
+	| "quarter"
+	| "cross"
+	| "star"
+	| "capsule"
+	| "quatrefoil";
 
 export const MARK_VIEW_BOX = "0 0 48 48";
 
-export const MARK_SHAPES = {
+export const MARK_SHAPES: Readonly<Record<MarkShape, string>> = {
 	disc: "M24 6a18 18 0 1 0 0 36 18 18 0 0 0 0-36Z",
 	ring: "M24 6a18 18 0 1 0 0 36 18 18 0 0 0 0-36Zm0 11a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z",
 	diamond: "M24 5 43 24 24 43 5 24Z",
@@ -18,9 +33,22 @@ export const MARK_SHAPES = {
 		"M24 6a9 9 0 0 1 9 9 9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1-9-9 9 9 0 0 1 9-9 9 9 0 0 1 9-9Z",
 };
 
-export const MARK_SHAPE_NAMES = Object.keys(MARK_SHAPES);
+export const MARK_SHAPE_NAMES: readonly MarkShape[] = [
+	"disc",
+	"ring",
+	"diamond",
+	"triangle",
+	"hexagon",
+	"squircle",
+	"arch",
+	"quarter",
+	"cross",
+	"star",
+	"capsule",
+	"quatrefoil",
+];
 
-export const MARK_TONE_NAMES = TONE_NAMES.filter((name) => name !== "error" && name !== "neutral");
+export const MARK_TONE_NAMES: readonly ToneName[] = TONE_NAMES.filter((name) => name !== "error" && name !== "neutral");
 
 export const SHAPE_STREAM = 0x9e3779b9;
 

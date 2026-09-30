@@ -1,6 +1,12 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { useWhenSeen } from "../hooks/use-when-seen";
 
-export function MoreWhenSeen({ onSeen, className }: { onSeen: () => void; className?: string }) {
+export interface MoreWhenSeenProps {
+	readonly onSeen: () => void;
+	readonly className?: string | undefined;
+}
+
+export function MoreWhenSeen({ onSeen, className }: MoreWhenSeenProps): ReactElement {
 	return <div ref={useWhenSeen(onSeen)} className={className} aria-hidden="true" />;
 }

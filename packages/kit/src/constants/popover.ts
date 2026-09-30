@@ -1,4 +1,23 @@
-export const PRESS_EVENTS = ["pointerdown", "mousedown"];
+export interface PanelSpot {
+	readonly left: number;
+	readonly top: number;
+}
+
+export interface PanelSize {
+	readonly width: number;
+	readonly height: number;
+}
+
+export interface Placement {
+	readonly panelClass: string;
+	readonly hidesTrigger: boolean;
+	readonly origin: (rect: DOMRect) => PanelSpot;
+	readonly flipped: (rect: DOMRect, size: PanelSize) => PanelSpot;
+}
+
+export type PlacementName = "over" | "below";
+
+export const PRESS_EVENTS: readonly ("pointerdown" | "mousedown")[] = ["pointerdown", "mousedown"];
 
 export const EXIT_GUARD_MS = 400;
 
@@ -12,7 +31,7 @@ export const LAND_MARGIN_MS = 40;
 
 const ANCHOR_GAP_PX = 6;
 
-export const PLACEMENTS = {
+export const PLACEMENTS: Readonly<Record<PlacementName, Placement>> = {
 	over: {
 		panelClass: "",
 		hidesTrigger: true,

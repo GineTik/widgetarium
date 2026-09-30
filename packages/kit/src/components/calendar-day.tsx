@@ -1,9 +1,17 @@
 import { createElement as h } from "react";
-import type { LooseProps } from "../types";
+import type { ReactElement, ReactNode } from "react";
 import { cn } from "../utils/cn";
 import { dayKey, sameDay } from "../utils/calendar";
+import type { CalendarCell } from "../utils/calendar";
 
-export function CalendarDay({ day, tabStop, onSelect, renderDay }: LooseProps) {
+export interface CalendarDayProps {
+	readonly day: CalendarCell;
+	readonly tabStop: Date;
+	readonly onSelect?: ((day: Date) => void) | undefined;
+	readonly renderDay?: ((day: CalendarCell) => ReactNode) | undefined;
+}
+
+export function CalendarDay({ day, tabStop, onSelect, renderDay }: CalendarDayProps): ReactElement {
 	const { date } = day;
 	return (
 		<button
@@ -20,7 +28,7 @@ export function CalendarDay({ day, tabStop, onSelect, renderDay }: LooseProps) {
 				day.today && "is-today",
 				day.selected && "is-picked",
 			)}
-			aria-pressed={String(day.selected)}
+			aria-pressed={day.selected}
 			onClick={() => onSelect?.(date)}
 		>
 			{renderDay ? renderDay(day) : String(date.getDate())}

@@ -1,9 +1,18 @@
-import type { LooseProps } from "../types";
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { iconOf } from "./glyphs";
 import { cn } from "../utils/cn";
 
-export function Icon({ name, fallback, size = 16, className: cls }: LooseProps) {
+export interface IconProps {
+	readonly name: string;
+	readonly fallback?: string | undefined;
+	readonly size?: number | string;
+	readonly className?: string | undefined;
+}
+
+const ICON_PX = 16;
+
+export function Icon({ name, fallback, size = ICON_PX, className: cls }: IconProps): ReactElement | null {
 	const drawn = iconOf(name) ?? (fallback ? iconOf(fallback) : null);
 	if (!drawn) return null;
 	return (

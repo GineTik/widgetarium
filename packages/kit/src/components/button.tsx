@@ -1,10 +1,12 @@
 import { createElement as h } from "react";
-import type { LooseProps } from "../types";
+import type { ButtonHTMLAttributes, FunctionComponent, ReactElement, Ref } from "react";
 import { buttonClass } from "../utils/class-names";
+import type { ButtonSize, ButtonVariant } from "../utils/class-names";
 import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 import { buttonMark } from "./button-mark";
 import { createSlotPart } from "./create-slot-part";
+import type { SlotPartProps } from "./create-slot-part";
 import { Slot } from "./slot";
 import { Slottable } from "./slottable";
 
@@ -13,16 +15,33 @@ export { ActionButton } from "./action-button";
 export { Spinner } from "./spinner";
 export { ShowMore } from "./show-more";
 
-export function Button({ asChild = false, isLoading = false, isDone = false, children, ...props }: LooseProps) {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+	readonly asChild?: boolean;
+	readonly isLoading?: boolean;
+	readonly isDone?: boolean;
+	readonly variant?: ButtonVariant | undefined;
+	readonly size?: ButtonSize | undefined;
+	readonly block?: boolean | undefined;
+	readonly ref?: Ref<HTMLButtonElement>;
+}
+
+export function Button({
+	asChild = false,
+	isLoading = false,
+	isDone = false,
+	children,
+	...props
+}: ButtonProps): ReactElement {
 	const Comp = asChild ? Slot : "button";
+	const isDisabled = Boolean(props.disabled) || isLoading;
 	return (
 		<Comp
 			type={asChild ? undefined : "button"}
 			{...domPropsOf(props)}
-			disabled={props.disabled || isLoading}
+			disabled={isDisabled}
 			aria-busy={isLoading ? "true" : undefined}
 			data-loading={isLoading ? "" : undefined}
-			data-disabled={props.disabled || isLoading ? "" : undefined}
+			data-disabled={isDisabled ? "" : undefined}
 			className={cn(buttonClass(props), isLoading && "is-loading", isDone && "is-done")}
 		>
 			{buttonMark(isLoading, isDone, props.size)}
@@ -31,4 +50,8 @@ export function Button({ asChild = false, isLoading = false, isDone = false, chi
 	);
 }
 
-export const ButtonLabel = createSlotPart("span", (props) => cn("wg-kit-btn-label", props.className), "ButtonLabel");
+export const ButtonLabel: FunctionComponent<SlotPartProps> = createSlotPart(
+	"span",
+	(props) => cn("wg-kit-btn-label", props.className),
+	"ButtonLabel",
+);

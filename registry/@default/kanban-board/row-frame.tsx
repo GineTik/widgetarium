@@ -20,8 +20,7 @@ export function RowFrame({ anchor, name, unset, isOpen, children, asButton, onCl
 			className="otd-row"
 			icon={<Glyph name={anchor.icon} />}
 			label={name}
-			unset={unset}
-			isOpen={isOpen}
+			state={{ unset, isOpen }}
 			onClick={onClick}
 		>
 			{children}

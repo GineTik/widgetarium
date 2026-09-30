@@ -1,22 +1,49 @@
-import { createElement as h, useContext, useLayoutEffect, useState } from "react";
-import { EMBLEM_SHAPE_WORD, EMBLEM_SIZES, EMBLEM_STATUS } from "../constants/emblem";
-import { MARK_VIEW_BOX } from "../constants/marks";
-import { Icon } from "../icons/icon";
-import type { LooseProps } from "../types";
+import { createElement as h, useState } from "react";
+import type { ReactElement, ReactNode } from "react";
+import { EMBLEM_SHAPE_WORD, EMBLEM_SIZE_WORD, EMBLEM_SIZES, EMBLEM_STATUS } from "../constants/emblem";
+import type { EmblemShape, EmblemSize, EmblemStatus } from "../constants/emblem";
 import { cn } from "../utils/cn";
-import { diceBearUrl, diceBearVerdict } from "../utils/dicebear";
-import { markOf, pathOf } from "../utils/marks";
-import { warnOnce, wornWord } from "../utils/surface";
-import { toneClass } from "../utils/tones";
+import { isOneOf } from "../utils/is-one-of";
+import { wornWord } from "../utils/surface";
+import type { StyleProp, TokenStyle } from "../utils/token-style";
+import { EmblemDiceBear } from "./emblem-dice-bear";
+import { EmblemFallback } from "./emblem-fallback";
+import { EmblemImage } from "./emblem-image";
 
-export function Emblem({ size = "m", shape = "circle", label, className: cls, style, children }: LooseProps) {
-	const [status, setStatus] = useState("idle");
-	const px = EMBLEM_SIZES[size] ?? size;
+export { EmblemDiceBear } from "./emblem-dice-bear";
+export { EmblemFallback } from "./emblem-fallback";
+export { EmblemImage } from "./emblem-image";
+export { PlaceholderMark } from "./placeholder-mark";
+export type { EmblemDiceBearProps } from "./emblem-dice-bear";
+export type { EmblemFallbackProps } from "./emblem-fallback";
+export type { EmblemImageProps } from "./emblem-image";
+export type { PlaceholderMarkProps } from "./placeholder-mark";
+
+export interface EmblemProps {
+	readonly size?: EmblemSize | number | string;
+	readonly shape?: EmblemShape | undefined;
+	readonly label?: string | undefined;
+	readonly className?: string | undefined;
+	readonly style?: StyleProp | undefined;
+	readonly children?: ReactNode;
+}
+
+export function Emblem({
+	size = "m",
+	shape = "circle",
+	label,
+	className: cls,
+	style,
+	children,
+}: EmblemProps): ReactElement {
+	const [status, setStatus] = useState<EmblemStatus>("idle");
+	const px = emblemPx(size);
+	const sized: TokenStyle = { ...style, "--wg-emblem-size": typeof px === "number" ? `${px}px` : px };
 	return (
 		<EMBLEM_STATUS.Provider value={{ status, setStatus }}>
 			<span
 				className={cn("wg-kit-emblem", `is-${wornWord(shape, EMBLEM_SHAPE_WORD)}`, cls)}
-				style={{ ...style, "--wg-emblem-size": typeof px === "number" ? `${px}px` : px }}
+				style={sized}
 				role={label ? "img" : undefined}
 				aria-label={label}
 			>
@@ -33,64 +60,7 @@ Emblem.DiceBear = EmblemDiceBear;
 
 Emblem.Fallback = EmblemFallback;
 
-export function EmblemImage({ src, alt = "", className: cls, ...rest }: LooseProps) {
-	const { status, setStatus } = useContext(EMBLEM_STATUS);
-	useLayoutEffect(() => {
-		if (!src) return setStatus("failed");
-		setStatus("loading");
-		const probe = new Image();
-		probe.onload = () => setStatus("loaded");
-		probe.onerror = () => setStatus("failed");
-		probe.src = src;
-		return () => {
-			probe.onload = null;
-			probe.onerror = null;
-		};
-	}, [src]);
-	if (status !== "loaded") return null;
-	return <img {...rest} src={src} alt={alt} className={cn("wg-kit-emblem-image", cls)} draggable={false} />;
-}
-
-export function EmblemDiceBear({ style, seed, options, className: cls }: LooseProps) {
-	const { setStatus } = useContext(EMBLEM_STATUS);
-	const verdict = diceBearVerdict(style);
-	useLayoutEffect(() => {
-		if (!verdict.refusal) return;
-		setStatus("refused");
-		warnOnce(`a DiceBear emblem drew nothing — ${verdict.refusal}`);
-	}, [verdict.refusal]);
-	if (verdict.refusal) return <EmblemRefused reason={verdict.refusal} className={cls} />;
-	return <EmblemImage src={diceBearUrl(style, seed, options)} title={verdict.credit} className={cls} />;
-}
-
-const LICENCE_REFUSED = "Unavailable for licensing reasons: {reason}";
-
-function EmblemRefused({ reason, className: cls }: LooseProps) {
-	return (
-		<span className={cn("wg-kit-emblem-refused", cls)} title={LICENCE_REFUSED.replace("{reason}", reason)}>
-			<Icon name="ban" size={16} />
-		</span>
-	);
-}
-
-export function EmblemFallback({ seed, className: cls, children }: LooseProps) {
-	const { status } = useContext(EMBLEM_STATUS);
-	if (status === "loaded" || status === "refused") return null;
-	if (children) return <span className={cn("wg-kit-emblem-fallback", cls)}>{children}</span>;
-	return <PlaceholderMark seed={seed} className={cls} />;
-}
-
-export function PlaceholderMark({ seed, shape, tone, size = "100%", className: cls }: LooseProps) {
-	const held = markOf(seed);
-	return (
-		<span
-			className={cn("wg-kit-mark", "wg-kit-tone", toneClass(tone ?? held.tone), cls)}
-			style={{ width: size, height: size }}
-			aria-hidden="true"
-		>
-			<svg viewBox={MARK_VIEW_BOX} focusable="false">
-				<path d={pathOf(shape) ?? pathOf(held.shape)} fillRule="evenodd" />
-			</svg>
-		</span>
-	);
+function emblemPx(size: EmblemSize | number | string): number | string {
+	if (typeof size === "number") return size;
+	return isOneOf(EMBLEM_SIZE_WORD.allowed, size) ? EMBLEM_SIZES[size] : size;
 }

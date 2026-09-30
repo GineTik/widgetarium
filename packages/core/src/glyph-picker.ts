@@ -60,7 +60,6 @@ function spokenOf(entry: GlyphEntry): string {
 	return `${entry.name.replace(/-/g, " ")} ${entry.words ?? ""}`;
 }
 
-// TODO: Field props are unchecked until the kit types LooseProps
 function searchField(
 	placeholder: string,
 	keyword: string,

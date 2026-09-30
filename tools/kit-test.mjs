@@ -2248,7 +2248,7 @@ check(
 		"payload.lift = { light: onGround(document.querySelector('.wg-ground-light')), dark: onGround(document.querySelector('.wg-ground-dark')) };",
 		"const picked = document.querySelector('.wg-picked');",
 		"const pickedRow = (key, extra) => h(SidebarRow, { key, label: 'row ' + key, value: 'v', ...extra });",
-		"render(h(Sidebar, null, h(SidebarGroup, {}, [pickedRow(1, {}), pickedRow(2, { selected: true }), pickedRow(3, { unset: true, selected: true }), pickedRow(4, { unset: true })])), picked);",
+		"render(h(Sidebar, null, h(SidebarGroup, {}, [pickedRow(1, {}), pickedRow(2, { selected: true }), pickedRow(3, { state: { unset: true }, selected: true }), pickedRow(4, { state: { unset: true } })])), picked);",
 		"const pickedRows = [...picked.querySelectorAll('.wg-kit-side-row')];",
 		"const labelOf = (node) => { const s = getComputedStyle(node.querySelector('.wg-kit-row-label')); return s.fontWeight + ' ' + s.color; };",
 		"payload.picked = { marks: pickedRows.map((node) => node.getAttribute('aria-current')), states: pickedRows.map((node) => node.classList.contains('is-selected')), washes: pickedRows.map((node) => getComputedStyle(node, '::before').backgroundColor), labels: pickedRows.map(labelOf) };",
@@ -2282,7 +2282,7 @@ check(
 		"const pops = document.querySelector('.wg-pops');",
 		"const stamp = (node) => { const r = node.getBoundingClientRect(); const to = (n) => Math.round(n * 100) / 100; return to(r.width) + 'x' + to(r.height) + '@' + to(r.left) + ',' + to(r.top); };",
 		// TRADE-OFF: a WIDE trigger, because a narrow one hides a seed measured before the width floor lands
-		"render(h(Sidebar, null, h(SidebarGroup, null, h(Popover, { isOpen: true, trigger: h(SidebarRow, { pressable: true, label: 'A settings row', value: 'Something' }) }, h(PopoverItem, {}, 'Rename')))), pops);",
+		"render(h(Sidebar, null, h(SidebarGroup, null, h(Popover, { isOpen: true, trigger: h(SidebarRow, { state: { pressable: true }, label: 'A settings row', value: 'Something' }) }, h(PopoverItem, {}, 'Rename')))), pops);",
 		"const wideTrigger = pops.querySelector('.wg-kit-side-row');",
 		"const widePanel = pops.querySelector('.wg-kit-pop');",
 		// CONTEXT: the seat is written in the layout effect, so frame zero is readable the moment render returns
@@ -2743,13 +2743,12 @@ check(
 			h(
 				Kit.SidebarSheet,
 				{
-					isOpen: open,
-					onOpen: (next) => {
+					open,
+					onOpenChange: (next) => {
 						open = next;
 						draw();
 					},
-					peekPx: 100,
-					maxPx: 500,
+					height: { peekPx: 100, maxPx: 500 },
 				},
 				"body",
 			),

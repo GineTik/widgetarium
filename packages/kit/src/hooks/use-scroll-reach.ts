@@ -1,7 +1,18 @@
 import { useCallback, useLayoutEffect, useState } from "react";
+import type { RefObject } from "react";
 
-export function useScrollReach(listRef) {
-	const [reach, setReach] = useState({ up: false, down: false });
+export interface ScrollReach {
+	readonly up: boolean;
+	readonly down: boolean;
+}
+
+export interface ScrollReachWatch {
+	readonly reach: ScrollReach;
+	readonly measureReach: () => void;
+}
+
+export function useScrollReach(listRef: RefObject<Element | null>): ScrollReachWatch {
+	const [reach, setReach] = useState<ScrollReach>({ up: false, down: false });
 	const measureReach = useCallback(() => {
 		const list = listRef.current;
 		if (!list) return;

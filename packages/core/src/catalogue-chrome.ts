@@ -1,13 +1,14 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Button, Field, Icon, List, Segmented, Sidebar, SidebarRow, SidebarSheet } from "@widgetarium/kit";
+import type { SegmentedItem } from "@widgetarium/kit";
 import { DOC_PAGES } from "./docs.js";
 import { fillLine } from "./catalogue-entries.js";
 import type { CatalogueView } from "./catalogue-view.js";
 import { Facets } from "./catalogue-facets.js";
 import { DocsList } from "./catalogue-docs-list.js";
 
-const SHELVES = [
+const SHELVES: readonly SegmentedItem<CatalogueView["shelf"]>[] = [
 	{ value: "widgets", label: "Widgets" },
 	{ value: "templates", label: "Templates" },
 ];
@@ -48,7 +49,6 @@ export function sideHead({ shown }: CatalogueView): ReactElement {
 }
 
 export function searchField({ page, onShelf, keyword, setKeyword }: CatalogueView): ReactElement {
-	// TODO: Field props are unchecked until the kit types LooseProps
 	return h(Field, {
 		key: "search",
 		block: true,
@@ -76,7 +76,7 @@ export function topBar(view: CatalogueView): ReactElement {
 				)
 			: null,
 		offersBoth
-			? h(Segmented, {
+			? h(Segmented<CatalogueView["shelf"]>, {
 					key: "shelf",
 					className: "wg-cat-shelf",
 					items: SHELVES,
@@ -102,10 +102,12 @@ export function filterSheet(view: CatalogueView): ReactElement {
 			key: "sheet",
 			surface: "glass",
 			className: isSheetOpen ? "wg-cat-sheet is-open" : "wg-cat-sheet",
-			isOpen: isSheetOpen,
-			onOpen: setSheetOpen,
-			peekPx: SHEET_SHUT_PX,
-			maxPx: Math.max(SHEET_LEAST_PX, Math.round(roomHeight * SHEET_SHARE)),
+			open: isSheetOpen,
+			onOpenChange: setSheetOpen,
+			height: {
+				peekPx: SHEET_SHUT_PX,
+				maxPx: Math.max(SHEET_LEAST_PX, Math.round(roomHeight * SHEET_SHARE)),
+			},
 			grip: FILTERS,
 		},
 		[

@@ -41,7 +41,6 @@ const PICKER_OF_CONTROL: ReadonlyMap<unknown, GlyphSet> = new Map<unknown, Glyph
 		"icon",
 		{
 			draw: Icon,
-			// TODO: offeredIcons is untyped until the kit types its icon list
 			entries: offeredIcons,
 			placeholder: "Search icons",
 			nothingFound: "No icon answers to that name.",

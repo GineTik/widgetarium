@@ -1,5 +1,5 @@
 import { createElement as h } from "react";
-import type { ComponentProps, ComponentType, JSXElementConstructor } from "react";
+import type { ComponentType, JSXElementConstructor, ReactElement } from "react";
 import {
 	Area as RechartsArea,
 	Bar as RechartsBar,
@@ -11,7 +11,13 @@ import {
 	Scatter as RechartsScatter,
 } from "recharts";
 
-type StillMark<Mark extends JSXElementConstructor<never>> = ComponentType<ComponentProps<Mark>>;
+type PropsOf<Mark> = Mark extends JSXElementConstructor<infer P> ? P : never;
+
+type StillMark<Mark> = ComponentType<PropsOf<Mark>>;
+
+interface LoadMotion {
+	readonly isAnimationActive?: unknown;
+}
 
 export const Area: StillMark<typeof RechartsArea> = withoutLoadMotion(RechartsArea, "Area");
 export const Bar: StillMark<typeof RechartsBar> = withoutLoadMotion(RechartsBar, "Bar");
@@ -22,9 +28,9 @@ export const RadialBar: StillMark<typeof RechartsRadialBar> = withoutLoadMotion(
 export const Scatter: StillMark<typeof RechartsScatter> = withoutLoadMotion(RechartsScatter, "Scatter");
 export const Funnel: StillMark<typeof RechartsFunnel> = withoutLoadMotion(RechartsFunnel, "Funnel");
 
-function withoutLoadMotion<P extends object>(Mark: ComponentType<P>, name: string) {
-	function Still({ isAnimationActive = false, ...props }: P & { isAnimationActive?: boolean }) {
-		return h(Mark, { isAnimationActive, ...props } as P);
+function withoutLoadMotion<P extends LoadMotion>(Mark: ComponentType<P>, name: string): ComponentType<P> {
+	function Still(props: P): ReactElement {
+		return h(Mark, { ...props, isAnimationActive: props.isAnimationActive ?? false });
 	}
 	Still.displayName = name;
 	return Still;

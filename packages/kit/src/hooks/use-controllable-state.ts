@@ -1,14 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 
-export function useControllableState<T>({
-	prop,
-	defaultProp,
-	onChange,
-}: {
-	prop?: T;
-	defaultProp: T;
-	onChange?: (next: T) => void;
-}): [T, (next: T) => void] {
+export interface ControllableAsk<T> {
+	readonly prop?: T | undefined;
+	readonly defaultProp: T;
+	readonly onChange?: ((next: T) => void) | undefined;
+}
+
+export function useControllableState<T>({ prop, defaultProp, onChange }: ControllableAsk<T>): [T, (next: T) => void] {
 	const [held, setHeld] = useState(defaultProp);
 	const isControlled = prop !== undefined;
 	const value = isControlled ? prop : held;

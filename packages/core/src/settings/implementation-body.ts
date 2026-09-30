@@ -69,12 +69,12 @@ function selectedRowBody(state: SettingsState, key: string, spec: SettingsSpec, 
 				),
 			),
 		note(WHILE_NOTHING_PICKED),
-		h(Segmented, {
+		h(Segmented<string>, {
 			key: "fallback",
 			className: "wg-set-pop-kind",
 			size: "s",
 			items: FALLBACKS,
-			value: fields.whenNothingPicked ?? "first",
+			value: typeof fields.whenNothingPicked === "string" ? fields.whenNothingPicked : "first",
 			onChange: (next: string) => write({ ...fields, whenNothingPicked: next }),
 		}),
 	];

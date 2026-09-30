@@ -1,18 +1,17 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { Line } from "./line";
+
+export interface CeilingProps {
+	readonly total: number | null | undefined;
+	readonly tone: string;
+	readonly className?: string | undefined;
+}
 
 export const COUNTED_CEILING = 500;
 const COUNTED_FIRST = "the first {counted} of {total} counted";
 
-export function Ceiling({
-	total,
-	tone,
-	className,
-}: {
-	total: number | null | undefined;
-	tone: string;
-	className?: string;
-}) {
+export function Ceiling({ total, tone, className }: CeilingProps): ReactElement | null {
 	const said = countedFirstLine(total);
 	if (said === null) return null;
 	return <Line tone={tone} text={said} className={className} />;

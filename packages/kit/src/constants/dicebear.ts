@@ -1,6 +1,6 @@
 export const DICEBEAR_API = "https://api.dicebear.com/10.x";
 
-export const ALLOWED_LICENSES = ["CC0 1.0", "MIT", "CC BY 4.0"];
+export const ALLOWED_LICENSES: readonly string[] = ["CC0 1.0", "MIT", "CC BY 4.0"];
 
 const CC0 = "CC0 1.0";
 
@@ -8,7 +8,13 @@ const CC_BY = "CC BY 4.0";
 
 const PERSONAL_AND_COMMERCIAL = "Free for personal and commercial use";
 
-export const DICEBEAR_STYLES = {
+export interface DiceBearStyle {
+	readonly license: string;
+	readonly author: string;
+	readonly suits: string;
+}
+
+export const DICEBEAR_STYLES: Readonly<Record<string, DiceBearStyle>> = {
 	blobs: { license: CC0, author: "DiceBear", suits: "abstract" },
 	cameo: { license: CC0, author: "DiceBear", suits: "person" },
 	clay: { license: CC0, author: "DiceBear", suits: "person" },

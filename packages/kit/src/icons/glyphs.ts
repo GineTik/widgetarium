@@ -1,6 +1,6 @@
 import { ICON_TABLE, ICON_VIEW_BOX } from "./icon-table";
 
-export const GLYPHS = {
+export const GLYPHS: Readonly<Record<string, string>> = {
 	chevron: '<path d="M8.25 5.5l4.5 4.5-4.5 4.5"/>',
 	fold: '<path d="M11.75 5.5l-4.5 4.5 4.5 4.5"/>',
 	expand: '<path d="M11.8 4.6h3.6v3.6"/><path d="M8.2 15.4H4.6v-3.6"/><path d="M15.4 4.6l-4.4 4.4M4.6 15.4l4.4-4.4"/>',
@@ -20,7 +20,6 @@ export const GLYPHS = {
 	check: '<rect x="4.2" y="4.2" width="11.6" height="11.6" rx="3.4"/><path d="M7.3 10.1l2 2 3.5-4"/>',
 	tick: '<path d="M5 10.4l3.3 3.3 6.7-7.1"/>',
 	pencil: '<path d="M4.6 15.4l1-3.7 7.4-7.4 2.7 2.7-7.4 7.4z"/>',
-	// CONTEXT: r below half the 1.8 stroke, or the stroke leaves a hole and the dots read as rings
 	dots: '<circle cx="10" cy="5.2" r="0.8"/><circle cx="10" cy="10" r="0.8"/><circle cx="10" cy="14.8" r="0.8"/>',
 	menu: '<path d="M4.6 6.3h10.8M4.6 10h10.8M4.6 13.7h10.8"/>',
 	terminal:
@@ -42,8 +41,19 @@ export const GLYPHS = {
 
 const KIT_VIEW_BOX = "0 0 20 20";
 
-export function iconOf(name) {
-	if (Object.hasOwn(GLYPHS, name)) return { body: GLYPHS[name], viewBox: KIT_VIEW_BOX, isLucide: false };
-	if (Object.hasOwn(ICON_TABLE, name)) return { body: ICON_TABLE[name], viewBox: ICON_VIEW_BOX, isLucide: true };
+const LUCIDE_BODIES: Readonly<Record<string, string>> = ICON_TABLE;
+
+export interface IconDrawing {
+	readonly body: string;
+	readonly viewBox: string;
+	readonly isLucide: boolean;
+}
+
+export function iconOf(name: unknown): IconDrawing | null {
+	if (typeof name !== "string") return null;
+	const kitBody = Object.hasOwn(GLYPHS, name) ? GLYPHS[name] : undefined;
+	if (kitBody !== undefined) return { body: kitBody, viewBox: KIT_VIEW_BOX, isLucide: false };
+	const lucideBody = Object.hasOwn(LUCIDE_BODIES, name) ? LUCIDE_BODIES[name] : undefined;
+	if (lucideBody !== undefined) return { body: lucideBody, viewBox: ICON_VIEW_BOX, isLucide: true };
 	return null;
 }

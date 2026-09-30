@@ -1,6 +1,7 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { Button } from "@widgetarium/kit";
+import type { ButtonVariant } from "@widgetarium/kit";
 import { Dialog } from "./dialog.js";
 import { DialogContent } from "./dialog-content.js";
 import { DialogClose } from "./dialog-close.js";
@@ -13,7 +14,7 @@ export interface ConfirmDialogProps {
 	readonly title: ReactNode;
 	readonly description: ReactNode;
 	readonly confirmLabel: ReactNode;
-	readonly variant?: string;
+	readonly variant?: ButtonVariant;
 	readonly onConfirm: () => void;
 	readonly onOpenChange?: ((isOpen: boolean) => void) | undefined;
 	readonly className?: string | undefined;

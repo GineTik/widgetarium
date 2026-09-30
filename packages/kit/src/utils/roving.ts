@@ -1,6 +1,6 @@
 export type Step = number | "first" | "last";
 
-export function stepIndex(at: number, step: Step, count: number) {
+export function stepIndex(at: number, step: Step, count: number): number {
 	if (step === "first") return 0;
 	if (step === "last") return count - 1;
 	if (at === -1) return step > 0 ? 0 : count - 1;

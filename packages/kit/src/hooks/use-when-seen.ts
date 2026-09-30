@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
 
 const LOAD_AHEAD = "400px 0px";
 
-export function useWhenSeen(onSeen: () => void) {
+export function useWhenSeen(onSeen: () => void): RefObject<HTMLDivElement | null> {
 	const mark = useRef<HTMLDivElement>(null);
 	useEffect(() => {
 		const node = mark.current;

@@ -1,20 +1,38 @@
-import type { LooseProps } from "../types";
+type KitProp =
+	| "variant"
+	| "size"
+	| "tone"
+	| "block"
+	| "selected"
+	| "pressable"
+	| "mode"
+	| "surface"
+	| "lift"
+	| "shape"
+	| "lines"
+	| "asChild"
+	| "className"
+	| "children";
 
-const KIT_PROPS = [
-	"variant",
-	"size",
-	"tone",
-	"block",
-	"selected",
-	"pressable",
-	"mode",
-	"surface",
-	"lift",
-	"shape",
-	"lines",
-];
+export type DomProps<P> = Omit<P, KitProp>;
 
-export function domPropsOf({ asChild, className, children, ...rest }: LooseProps) {
-	for (const name of KIT_PROPS) delete rest[name];
+export function domPropsOf<P extends object>(props: P & Partial<Record<KitProp, unknown>>): DomProps<P> {
+	const {
+		variant,
+		size,
+		tone,
+		block,
+		selected,
+		pressable,
+		mode,
+		surface,
+		lift,
+		shape,
+		lines,
+		asChild,
+		className,
+		children,
+		...rest
+	} = props;
 	return rest;
 }

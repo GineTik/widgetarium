@@ -57,8 +57,7 @@ export function valueRow(parts: ValueRowParts): ReactElement {
 	return h(SidebarRow, {
 		className: "wg-set-row",
 		key: parts.key,
-		pressable: true,
-		unset: parts.unset,
+		state: { pressable: true, unset: parts.unset },
 		onClick: parts.onClick,
 		icon: parts.glyph,
 		label: parts.label,
