@@ -4,6 +4,7 @@ import { bindingOf } from "../gateway/props.js";
 import type { DeclaredProp } from "../gateway/props.js";
 import type { PropAka } from "../held-records.js";
 import { isObject } from "../engine/is-object.js";
+import { textIn } from "../engine/held-text.js";
 
 export const FOLDERS_SHOWN = 12;
 
@@ -21,7 +22,7 @@ interface LoadedFile {
 }
 
 export function boundPath(config: TileProp): string {
-	return config.path ? String(config.path) : "";
+	return textIn(config.path);
 }
 
 export function vaultPathsOf(manifest: PathsManifest | null | undefined, tile: Pick<Tile, "props">): string[] {

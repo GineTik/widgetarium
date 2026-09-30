@@ -2,11 +2,9 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Segmented } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
-import { hostGatewayFor } from "../engine/host-gateways.js";
+import { fieldsIn, hostGatewayFor } from "../engine/host-gateways.js";
 import type { HostFields } from "../engine/host-gateways.js";
-import { isObject } from "../engine/is-object.js";
-import { offeredEntries, refLabel } from "./offered-boxes.js";
-import type { OfferedEntry } from "./offered-boxes.js";
+import { offeredEntries, offeredLabelOf, refLabel } from "./offered-boxes.js";
 import { writeProp } from "./prop-writing.js";
 import type { SettingsProp } from "./prop-row.js";
 import { note, pickRow } from "./settings-rows.js";
@@ -36,21 +34,16 @@ export function implementationBody(state: SettingsState, prop: SettingsProp): Re
 
 export function implementationLabel(state: SettingsState, prop: SettingsProp): string {
 	const { spec, config } = prop;
-	const rows = sourceFieldsOf(config).rows;
+	const rows = fieldsIn(config.fields).rows;
 	if (config.implementation === "@core/selected-row" && rows) return refLabel(state, rows);
 	return hostGatewayFor(spec, config)?.title ?? String(config.implementation);
 }
 
-function sourceFieldsOf(config: TileProp): HostFields {
-	return isObject(config.fields) ? config.fields : {};
-}
-
 function selectedRowBody(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactElement[] {
-	const fields = sourceFieldsOf(config);
+	const fields = fieldsIn(config.fields);
 	const write = (next: HostFields): void => writeProp(state, key, spec, { ...config, fields: next });
 	const { picked: formerPicker, ...unpicked } = fields;
 	const others = offeredEntries(state.refs).filter((entry) => entry.tile !== state.tile.id);
-	const named = (entry: OfferedEntry): string => `${entry.title} · ${entry.label}`;
 	return [
 		note(PICKED_FROM),
 		...others
@@ -58,7 +51,7 @@ function selectedRowBody(state: SettingsState, key: string, spec: SettingsSpec, 
 			.map((entry) =>
 				pickRow(
 					`rows:${entry.ref}`,
-					named(entry),
+					offeredLabelOf(entry),
 					() => write({ ...fields, rows: entry.ref }),
 					entry.ref === fields.rows,
 				),
@@ -70,7 +63,7 @@ function selectedRowBody(state: SettingsState, key: string, spec: SettingsSpec, 
 			.map((entry) =>
 				pickRow(
 					`picked:${entry.ref}`,
-					named(entry),
+					offeredLabelOf(entry),
 					() => write({ ...fields, picked: entry.ref }),
 					entry.ref === formerPicker,
 				),

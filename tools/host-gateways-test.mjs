@@ -147,5 +147,25 @@ check(
 	'prop "board" names the gateway "@core/nowhere", which this host does not offer',
 );
 
+const boundTo = (implementation, fields) =>
+	refusal(() =>
+		resolveHostGateway({ ...contextFor({}), tile: { id: "t4", props: { board: { implementation, fields } } } }),
+	);
+check(
+	'a gateway reading another tile refuses a missing or malformed ref rather than reading the ref "undefined"',
+	[
+		boundTo("@core/from-tile-value", {}),
+		boundTo("@core/from-tile-rows", { ref: "t1" }),
+		boundTo("@core/selected-row", { picked: "t1/selection" }),
+		boundTo("@core/selection", { rows: 7 }),
+	],
+	[
+		'FromTileValueGateway needs "ref" to name a prop of another tile, written tile/prop; it holds nothing',
+		'FromTileRowsGateway needs "ref" to name a prop of another tile, written tile/prop; it holds "t1"',
+		'SelectedRowGateway needs "rows" to name a prop of another tile, written tile/prop; it holds nothing',
+		'SelectionGateway needs "rows" to name a prop of another tile, written tile/prop; it holds 7',
+	],
+);
+
 console.log(`\n${failed === 0 ? "host gateways: clean" : `host gateways: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

@@ -12,7 +12,7 @@ import { filterRowsIn } from "../engine/host-gateways.js";
 import { isObject } from "../engine/is-object.js";
 import { completionRows, draftOf, offeredValues, refLabel } from "./offered-boxes.js";
 import type { OfferedEntry } from "./offered-boxes.js";
-import { draftOnInput, note, pickRow, valueRow } from "./settings-rows.js";
+import { draftOnInput, note, pickRow, useItButton, valueRow } from "./settings-rows.js";
 import type { SettingsState } from "./settings-state.js";
 
 const NOT_WIRED = "nothing on this board yet";
@@ -126,10 +126,8 @@ function openStep(state: SettingsState, at: ConditionAt, step: string, seed?: st
 	state.openEditor(`${at.list}:${at.key}#${at.index}${step ? `|${step}` : ""}`, seed ?? "");
 }
 
-function useItButton(disabled: boolean, onClick: () => void): ReactElement {
-	return h("div", { className: "wg-set-pop-foot", key: "foot" }, [
-		h(Button, { size: "s", variant: "accent", key: "apply", disabled, onClick }, "Use it"),
-	]);
+function useItFoot(disabled: boolean, onClick: () => void): ReactElement {
+	return h("div", { className: "wg-set-pop-foot", key: "foot" }, [useItButton(disabled, onClick)]);
 }
 
 function fieldStep(state: SettingsState, at: ConditionAt, fields: Fields): ReactNode[] {
@@ -148,7 +146,7 @@ function fieldStep(state: SettingsState, at: ConditionAt, fields: Fields): React
 			placeholder: OTHER_FIELD,
 			onInput: draftOnInput(state),
 		}),
-		useItButton(typed === "", () => typed && start(typed)),
+		useItFoot(typed === "", () => typed && start(typed)),
 	];
 }
 
@@ -211,7 +209,7 @@ function valueStep(state: SettingsState, at: ConditionAt, field: ConditionField,
 			placeholder: FIELD_PLACEHOLDER[kind.takes] ?? FIELD_PLACEHOLDER.one,
 			onInput: draftOnInput(state),
 		}),
-		useItButton(typed === "" || (said !== null && !pointedAt), apply),
+		useItFoot(typed === "" || (said !== null && !pointedAt), apply),
 		...completionRows(said, offered, state.setDraft, (entry) => keepValue({ ref: entry.ref })),
 	];
 }

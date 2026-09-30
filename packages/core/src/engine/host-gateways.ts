@@ -4,36 +4,17 @@ import type { TileProp } from "../model.js";
 import { stableKey } from "../gateway/cache.js";
 import { ENGINE_GATEWAY } from "../gateway/adapted.js";
 import { ICrudGateway } from "../gateway/declared.js";
-import { defineGatewayMetadata } from "../gateway/implementation-metadata.js";
-import type { GatewayMetadata } from "../gateway/implementation-metadata.js";
 import { problemsOf } from "../gateway/problems.js";
 import { allowedVerbs, bindingOf, restrictToAllowed } from "../gateway/props.js";
 import { refOf } from "../gateway/refs.js";
-import { STAT_ALGORITHMS } from "../gateway/stats.js";
 import { isObject } from "./is-object.js";
-import type {
-	EngineBackedRows,
-	EngineBackedValue,
-	HostFields,
-	HostGateway,
-	HostGatewayContext,
-	HostSpec,
-} from "./engine-backed.js";
-import {
-	FileGateway,
-	FolderGateway,
-	FromTileRowsGateway,
-	FromTileValueGateway,
-	STAT_TITLES,
-	ScreenStateGateway,
-	SelectedRowGateway,
-	SelectionGateway,
-	TypedRowsGateway,
-	TypedValueGateway,
-	fieldsOf,
-	statisticsGatewayFor,
-} from "./host-gateway-classes.js";
+import type { HostFields, HostGateway, HostGatewayContext, HostSpec } from "./engine-backed.js";
+import { fieldsOf } from "./host-gateway-classes.js";
+import { HOST_GATEWAYS } from "./host-gateway-list.js";
+import type { HostGatewayEntry } from "./host-gateway-list.js";
 
+export { HOST_GATEWAYS } from "./host-gateway-list.js";
+export type { HostGatewayEntry } from "./host-gateway-list.js";
 export {
 	FileGateway,
 	FolderGateway,
@@ -66,8 +47,6 @@ export type {
 	ShapeReader,
 } from "./engine-backed.js";
 
-export type HostGatewayEntry = GatewayMetadata<typeof EngineBackedValue | typeof EngineBackedRows>;
-
 type AllowedBy = "declared" | "vault";
 
 type BoundKind = "value" | "collection";
@@ -82,93 +61,6 @@ const WRITING: readonly string[] = ["create", "update", "remove"];
 const NOT_OFFERED_YET = ["@core/selection"];
 
 const NO_SUCH_GATEWAY = 'prop "{name}" names the gateway "{id}", which this host does not offer';
-
-const PropRefSchema = z.string().regex(/^[^/]+\/.+$/, "a prop of another tile, written tile/prop");
-
-const RowsQuerySchema = {
-	where: z.array(z.looseObject({})).optional(),
-	sort: z.array(z.looseObject({})).optional(),
-};
-
-export const HOST_GATEWAYS: readonly HostGatewayEntry[] = [
-	defineGatewayMetadata(TypedValueGateway, {
-		id: "@core/typed-value",
-		title: "Typed here",
-		description: "A value typed into the tile and kept in the note.",
-		fields: z.looseObject({ value: z.unknown().optional() }),
-	}),
-	defineGatewayMetadata(TypedRowsGateway, {
-		id: "@core/typed-rows",
-		title: "Typed here",
-		description: "Rows typed into the tile and kept in the note.",
-		fields: z.looseObject({ rows: z.array(z.unknown()).optional(), ...RowsQuerySchema }),
-	}),
-	defineGatewayMetadata(ScreenStateGateway, {
-		id: "@core/screen-state",
-		title: "This screen",
-		description: "A value that lives while the screen is open and never reaches the note.",
-		fields: z.looseObject({}),
-	}),
-	defineGatewayMetadata(FileGateway, {
-		id: "@core/file",
-		title: "File",
-		description: "One note, or one property of it.",
-		fields: z.looseObject({ path: z.string().optional(), field: z.string().optional() }),
-	}),
-	defineGatewayMetadata(FolderGateway, {
-		id: "@core/folder",
-		title: "Folder",
-		description: "Every note in a folder, one row per note.",
-		fields: z.looseObject({
-			path: z.string().optional(),
-			map: z.record(z.string(), z.string()).optional(),
-			...RowsQuerySchema,
-		}),
-	}),
-	defineGatewayMetadata(FromTileValueGateway, {
-		id: "@core/from-tile-value",
-		title: "From a widget",
-		description: "The value another tile on this board holds.",
-		fields: z.looseObject({ ref: PropRefSchema }),
-	}),
-	defineGatewayMetadata(FromTileRowsGateway, {
-		id: "@core/from-tile-rows",
-		title: "From a widget",
-		description: "The rows another tile on this board holds.",
-		fields: z.looseObject({ ref: PropRefSchema }),
-	}),
-	...STAT_ALGORITHMS.map((algorithm) =>
-		defineGatewayMetadata(statisticsGatewayFor(algorithm), {
-			id: `@core/stat-${algorithm}`,
-			title: STAT_TITLES[algorithm] ?? algorithm,
-			description: "One number counted over the notes of a folder.",
-			fields: z.looseObject({ path: z.string().optional() }),
-		}),
-	),
-	defineGatewayMetadata(SelectedRowGateway, {
-		id: "@core/selected-row",
-		title: "Picked in a widget",
-		description: "The row of a list that another widget, or this screen, has picked.",
-		fields: z.looseObject({
-			rows: PropRefSchema,
-			picked: PropRefSchema.optional(),
-			field: z.string().optional(),
-			fieldFrom: PropRefSchema.optional(),
-			whenNothingPicked: z.enum(["none", "first"]).default("first"),
-		}),
-	}),
-	defineGatewayMetadata(SelectionGateway, {
-		id: "@core/selection",
-		title: "Chosen from a list",
-		description: "Which row of a list is chosen, kept while the screen is open.",
-		fields: z.looseObject({
-			rows: PropRefSchema,
-			field: z.string().optional(),
-			fieldFrom: PropRefSchema.optional(),
-			whenNothingPicked: z.enum(["none", "first"]).default("none"),
-		}),
-	}),
-];
 
 const BY_ID = new Map(HOST_GATEWAYS.map((entry) => [entry.id, entry] as const));
 
@@ -259,13 +151,13 @@ export function resolveHostGateway(context: HostGatewayContext): HostGateway {
 	return restrictToAllowed(engine, allowedVerbs(spec, config, allow === "vault" ? "vault" : "hardcode")) ?? engine;
 }
 
+export function fieldsIn(held: unknown): HostFields {
+	return isObject(held) ? held : {};
+}
+
 function sourceOf(spec: HostSpec | null | undefined, config: TileProp | null | undefined): string | null {
 	const implementation = spec?.source?.implementation;
 	if (!SOURCE_IMPLEMENTATIONS.includes(implementation) || typeof implementation !== "string") return null;
 	if (typeof config?.implementation === "string" || config?.ref) return null;
 	return implementation;
-}
-
-function fieldsIn(held: unknown): HostFields {
-	return isObject(held) ? held : {};
 }

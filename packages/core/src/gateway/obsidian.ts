@@ -105,7 +105,7 @@ export interface NoteFieldSpec {
 }
 
 export interface NoteFieldConfig {
-	readonly field?: string | undefined;
+	readonly field?: unknown;
 }
 
 export interface FolderGatewayOptions {
@@ -176,8 +176,9 @@ export function folderGateway({
 }
 
 export function noteFieldOf(spec: Held<NoteFieldSpec>, config: Held<NoteFieldConfig>): string | undefined {
-	if (spec?.kind !== "value" || !spec.type) return config?.field;
-	return config?.field ?? NOTE_CONTENT;
+	const field = typeof config?.field === "string" ? config.field : undefined;
+	if (spec?.kind !== "value" || !spec.type) return field;
+	return field ?? NOTE_CONTENT;
 }
 
 export function fieldOfNote(record: Held<NoteRecord>, field: Held<string>, type: Held<string>): unknown {

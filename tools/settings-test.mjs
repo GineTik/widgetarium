@@ -119,7 +119,7 @@ console.log("— the free area is the window minus every panel, and one cell of 
 console.log("\n— a widget that fits opens at 1:1, and centred —");
 {
 	const free = freeArea(WINDOW, CHROME);
-	const opening = openingScale(KANBAN, free, CHROME.floorScale);
+	const opening = openingScale(KANBAN, free, CHROME.smallestLegibleScale);
 	check("the 12x8 kanban fits the free area", opening.fit, 1);
 	check("so it opens at 1:1", opening.scale, 1);
 	check("and is not panned", opening.panned, false);
@@ -132,14 +132,14 @@ console.log("\n— a widget that fits opens at 1:1, and centred —");
 console.log("\n— a widget wider than the free area is zoomed out, down to the floor —");
 {
 	const free = freeArea(WINDOW, CHROME);
-	const opening = openingScale(WIDE, free, CHROME.floorScale);
+	const opening = openingScale(WIDE, free, CHROME.smallestLegibleScale);
 	check(
 		"the fit is the width ratio, not the height",
 		Math.round(opening.fit * 1000),
 		Math.round((free.width / WIDE.width) * 1000),
 	);
-	check("which is below the legibility floor", opening.fit < CHROME.floorScale, true);
-	check("so the scale stops at the floor", opening.scale, CHROME.floorScale);
+	check("which is below the legibility floor", opening.fit < CHROME.smallestLegibleScale, true);
+	check("so the scale stops at the floor", opening.scale, CHROME.smallestLegibleScale);
 	check("and the window says it is panned", opening.panned, true);
 
 	const at = openingPan(WIDE, free, opening);
@@ -150,7 +150,7 @@ console.log("\n— between the floor and 1:1 it really does zoom, and stays cent
 {
 	const free = freeArea(WINDOW, CHROME);
 	const slightly = { width: Math.round(free.width / 0.9), height: KANBAN.height };
-	const opening = openingScale(slightly, free, CHROME.floorScale);
+	const opening = openingScale(slightly, free, CHROME.smallestLegibleScale);
 	check("it zooms to the ratio", Math.round(opening.scale * 100), 90);
 	check("and is not panned", opening.panned, false);
 	const at = openingPan(slightly, free, opening);
@@ -589,7 +589,7 @@ console.log("\n— and the panel writes what it draws —");
 	// the number is DERIVED, not pinned: the window fits the screen now, so a different screen
 	// is a different scale and a pasted percentage would only ever record the last machine
 	const screenFree = freeArea(dialogBox({ width: window.innerWidth, height: window.innerHeight }, false), CHROME);
-	const screenFit = openingScale({ width: span(6), height: span(8) }, screenFree, CHROME.floorScale);
+	const screenFit = openingScale({ width: span(6), height: span(8) }, screenFree, CHROME.smallestLegibleScale);
 	check(
 		"it opened at the scale the SCREEN allows",
 		find(".wg-set-said")?.textContent,

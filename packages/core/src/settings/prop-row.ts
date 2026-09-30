@@ -20,6 +20,7 @@ import { statBody, statLabel, statStepOf } from "./stat-body.js";
 import { choiceBody, chosenLabel, pickedRowValue, switchedValue, typedBody, typedLabel } from "./typed-body.js";
 import { itemBody, itemRows, listedFields, openedItem } from "./typed-rows.js";
 import { refBody, vaultBody } from "./vault-body.js";
+import { boundPath } from "./vault-paths.js";
 
 const FROM_FOLDER = "Every note in the folder arrives as one item.";
 
@@ -69,7 +70,7 @@ export function propRow(state: SettingsState, prop: SettingsProp): ReactElement 
 
 export function boundProp(state: SettingsState, key: string, spec: SettingsSpec): SettingsProp {
 	const config = propConfigOf(state, key, spec);
-	return { key, spec, config, binding: bindingOf(spec, config).binding, path: config.path ? String(config.path) : "" };
+	return { key, spec, config, binding: bindingOf(spec, config).binding, path: boundPath(config) };
 }
 
 export function declaredProps(manifest: SettingsManifest, wanted: (spec: SettingsSpec) => boolean): DeclaredEntry[] {
@@ -130,7 +131,7 @@ function boundLabel(state: SettingsState, prop: SettingsProp): string {
 	if (binding === "stat") return statLabel(config);
 	if (binding === "hardcode") return typedLabel(spec, config);
 	if (!path) return unpickedLabel(spec);
-	const field = noteFieldOf(spec, { field: typeof config.field === "string" ? config.field : undefined });
+	const field = noteFieldOf(spec, config);
 	if (!field || field === NOTE_CONTENT) return path;
 	return fillSentence(FIELD_OF_NOTE, field, path);
 }

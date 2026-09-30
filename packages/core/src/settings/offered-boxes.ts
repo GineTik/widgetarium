@@ -32,7 +32,11 @@ export function offeredEntries(refs: GatewayRefs | null | undefined): OfferedEnt
 
 export function refLabel(state: OfferingState, ref: unknown): string {
 	const found = offeredEntries(state.refs).find((entry) => entry.ref === ref);
-	return found ? `${found.title} · ${found.label}` : String(ref ?? "");
+	return found ? offeredLabelOf(found) : String(ref ?? "");
+}
+
+export function offeredLabelOf(entry: OfferedEntry): string {
+	return `${entry.title} · ${entry.label}`;
 }
 
 export function offeredBoxes(state: BoxesState, shape: string): Map<string, OfferedEntry[]> {

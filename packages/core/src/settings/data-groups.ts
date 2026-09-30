@@ -5,9 +5,11 @@ import type { TileProp } from "../model.js";
 import { allowedVerbs, bindingOf } from "../gateway/props.js";
 import type { PropBinding } from "../gateway/props.js";
 import { sortRowsIn } from "../engine/host-gateways.js";
+import { textIn } from "../engine/held-text.js";
 import { propConfigOf, writeProp } from "./prop-writing.js";
 import { group, reportRow, titleCase } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
+import { boundPath } from "./vault-paths.js";
 import { whereGroup } from "./where-group.js";
 
 const VERBS_SWITCHED_HERE = "Switch one off and this tile can no longer do it, whatever the widget asks for.";
@@ -73,7 +75,7 @@ function sortGroup({ key, spec, config, label }: DataProp): ReactElement | null 
 function verbsGroup(state: SettingsState, prop: DataProp): ReactElement {
 	const { key, spec, config, label, binding } = prop;
 	const isHardcoded = binding === "hardcode";
-	const path = String(config.path || spec.default?.path || "");
+	const path = boundPath(config) || textIn(spec.default?.path);
 	const isOn = isHardcoded || Boolean(path);
 	const decisions = allowedVerbs(spec, config, binding);
 	const verbsSwitchedOn = decisions.filter((decision) => decision.can).map((decision) => decision.verb);

@@ -22,7 +22,7 @@ export interface ChromeLayout {
 	readonly foldedPanelPx: number;
 	readonly barHeightPx: number;
 	readonly sheetPeekPx: number;
-	readonly floorScale: number;
+	readonly smallestLegibleScale: number;
 	readonly sheet: boolean;
 }
 
@@ -59,8 +59,7 @@ export const CHROME: ChromeLayout = {
 	foldedPanelPx: 38,
 	barHeightPx: 36,
 	sheetPeekPx: 168,
-	// TRADE-OFF: 12px type at 0.7 renders at 8.4px; lower, a preview answers nothing.
-	floorScale: 0.7,
+	smallestLegibleScale: 0.7,
 	sheet: false,
 };
 
@@ -91,10 +90,10 @@ export function freeArea(box: Size, chrome: ChromeLayout): FreeArea {
 	return { left, top, right, bottom, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
 }
 
-export function openingScale(widget: Size, free: Size, floorScale: number): OpeningScale {
+export function openingScale(widget: Size, free: Size, smallestLegibleScale: number): OpeningScale {
 	if (!(widget.width > 0) || !(widget.height > 0)) return { fit: 1, scale: 1, panned: false };
 	const fit = Math.min(1, free.width / widget.width, free.height / widget.height);
-	const scale = Math.max(fit, floorScale);
+	const scale = Math.max(fit, smallestLegibleScale);
 	return { fit, scale, panned: scale > fit };
 }
 

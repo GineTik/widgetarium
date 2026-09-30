@@ -17,7 +17,14 @@ type Verb = ((input: unknown) => Promise<unknown>) & {
 	meta?: { readNow?: (input: unknown) => unknown };
 };
 
-type Cans = Record<string, () => { can: true } | { can: false; reason: string }>;
+type CanAnswer = { can: true } | { can: false; reason: string };
+
+type HeldVerb = ((input: unknown) => unknown) & {
+	can?: () => CanAnswer;
+	meta?: { readNow?: (input: unknown) => unknown };
+};
+
+type Cans = Record<string, () => CanAnswer>;
 
 interface HeldGateway {
 	readonly id: string;
@@ -34,7 +41,7 @@ export function checkCollectionWrites<T>(
 	name: string,
 ): CollectionGateway<T> {
 	if (isOpen(schemas.schema) && !schemas.create && !schemas.update) return gateway;
-	const { verbs, passed, cans } = handlersOf(gateway as unknown as HeldGateway);
+	const { verbs, passed, cans } = handlersOf(gateway);
 	return collectionGateway<T>({
 		id: `${gateway.id}#checked`,
 		handlers: {
@@ -66,7 +73,7 @@ export function parseReadsBy<Held extends HeldGateway>(
 	const { verbs, passed, cans } = handlersOf(gateway);
 	const common = {
 		id: `${gateway.id}#parsed`,
-		settlesNow: Boolean((verbs[kind === "collection" ? "list" : "get"] as Verb | undefined)?.meta?.readNow),
+		settlesNow: Boolean(verbs[kind === "collection" ? "list" : "get"]?.meta?.readNow),
 		cans,
 		...(gateway.subscribe ? { subscribe: gateway.subscribe } : {}),
 	};
@@ -88,13 +95,33 @@ export function parseReadsBy<Held extends HeldGateway>(
 }
 
 function handlersOf(gateway: HeldGateway) {
-	const verbs = gateway as unknown as Record<string, Verb | undefined>;
-	const writes = Object.keys(gateway).filter((key) => !NOT_A_VERB.includes(key) && typeof verbs[key] === "function");
-	const passed = Object.fromEntries(writes.map((verb) => [verb, (input: unknown) => verbs[verb]?.(input)]));
-	const cans = Object.fromEntries(
-		writes.filter((verb) => typeof verbs[verb]?.can === "function").map((verb) => [verb, () => verbs[verb]?.can()]),
-	) as Cans;
+	const verbs = verbsOf(gateway);
+	const writes = Object.keys(verbs).filter((key) => !NOT_A_VERB.includes(key));
+	const passed = Object.fromEntries(
+		writes.map((verb) => [verb, (input: unknown) => verbs[verb]?.call(gateway, input)]),
+	);
+	const cans: Cans = Object.fromEntries(
+		writes.flatMap((verb) => {
+			const held = verbs[verb];
+			const can = held?.can;
+			return typeof can === "function" ? [[verb, () => can.call(held)] as const] : [];
+		}),
+	);
 	return { verbs, passed, cans };
+}
+
+function verbsOf(gateway: HeldGateway): Partial<Record<string, HeldVerb>> {
+	const keys = new Set([...Object.keys(gateway), "list", "get"]);
+	return Object.fromEntries(
+		[...keys].flatMap((key) => {
+			const held: unknown = Reflect.get(gateway, key);
+			return isHeldVerb(held) ? [[key, held] as const] : [];
+		}),
+	);
+}
+
+function isHeldVerb(held: unknown): held is HeldVerb {
+	return typeof held === "function";
 }
 
 function parseValue(value: unknown, context: GatewayContext) {
@@ -173,7 +200,7 @@ function isOpen(schema: z.ZodType): boolean {
 	return schema instanceof z.ZodUnknown || schema instanceof z.ZodAny;
 }
 
-function readsOf(read: Verb | undefined, parse: (held: unknown, input: unknown) => unknown) {
+function readsOf(read: HeldVerb | undefined, parse: (held: unknown, input: unknown) => unknown) {
 	const now = read?.meta?.readNow;
 	if (now) return (input: unknown) => parse(now(input), input);
 	return async (input: unknown) => parse(await read?.(input), input);

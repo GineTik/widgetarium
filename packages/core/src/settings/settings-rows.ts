@@ -116,6 +116,10 @@ export function editorPopover(
 	);
 }
 
+export function useItButton(disabled: boolean, onClick: () => void): ReactElement {
+	return h(Button, { size: "s", variant: "accent", key: "use", disabled, onClick }, "Use it");
+}
+
 export function popoverFoot(state: EditorState, onReset: () => void, onApply: Apply): ReactElement {
 	return h("div", { className: "wg-set-pop-foot", key: "foot" }, [
 		h(Button, { size: "s", key: "reset", onClick: onReset }, "Reset"),

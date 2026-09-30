@@ -1,173 +1,42 @@
-import type { CSSProperties, Dispatch, SetStateAction } from "react";
+import type { CSSProperties } from "react";
 import { heldKey, heldTile, rekey } from "../model.js";
-import type { SlotRecord, Tile, TileMounts, TileProps, TileSettings } from "../model.js";
+import type { SlotRecord } from "../model.js";
 import { bindingOf, declaredOf, typedIn } from "../gateway/props.js";
-import type { PropDefault } from "../gateway/props.js";
-import type { SortRow, FilterRow } from "../gateway/contract.js";
-import type { GatewayRefs } from "../gateway/refs.js";
 import { seenOf } from "../prop-visibility.js";
-import type { Seen, SeenSpec } from "../prop-visibility.js";
 import { barPlacement, CHROME } from "../settings-fit.js";
-import type { DialogFrame, OpeningScale, Point } from "../settings-fit.js";
+import type { DialogFrame } from "../settings-fit.js";
 import { writtenText } from "./prop-writing.js";
-import type { TileSurface } from "./surface-group.js";
-import type { BoxValues } from "./use-box-values.js";
-import type { LookPatch, MountStep, SettingsLook, SettingsTab } from "./use-settings-look.js";
-import type { DescribingHost, VaultFields } from "./use-vault-fields.js";
-import type { VaultFilesHost } from "./vault-paths.js";
-import type { GeometryManifest, GeometryOptions, Place, WindowGeometry } from "./window-geometry.js";
+import { boundPath } from "./vault-paths.js";
+import type { MountStep, SettingsLook } from "./use-settings-look.js";
+import type { Place } from "./window-geometry.js";
+import type {
+	BoardOptions,
+	ChromeState,
+	SettingsContext,
+	SettingsManifest,
+	SettingsState,
+	SettingsStateAsk,
+	SettingsWindowOptions,
+	TabChoice,
+	TilePatch,
+	ViewState,
+} from "./settings-types.js";
 
-export interface ChoiceOption {
-	readonly value: string;
-	readonly label: string;
-}
-
-export interface SettingsDefault extends PropDefault {
-	readonly path?: unknown;
-}
-
-export interface PropSource {
-	readonly implementation?: unknown;
-	readonly fields?: unknown;
-}
-
-export interface SettingsSpec extends SeenSpec {
-	readonly type?: string | undefined;
-	readonly label?: string | undefined;
-	readonly hint?: string | undefined;
-	readonly design?: boolean | undefined;
-	readonly options?: readonly ChoiceOption[] | undefined;
-	readonly sort?: readonly SortRow[] | undefined;
-	readonly where?: readonly FilterRow[] | undefined;
-	readonly default?: SettingsDefault | null;
-	readonly source?: PropSource | undefined;
-}
-
-export interface SettingsManifest extends GeometryManifest {
-	readonly props?: Readonly<Record<string, SettingsSpec>> | null;
-}
-
-export interface TilePatch {
-	readonly widget?: string;
-	readonly props?: TileProps;
-	readonly surface?: string | undefined;
-	readonly settings?: TileSettings;
-	readonly mounts?: TileMounts;
-	readonly slots?: Readonly<Record<string, TilePatch>>;
-	readonly mounted?: Readonly<Record<string, TilePatch>>;
-}
-
-export interface SettingsHost extends DescribingHost, VaultFilesHost {
-	readonly propertiesOf?: (path: string) => readonly string[] | null | undefined;
-	readonly ui?: { readonly notify?: (said: string) => void } | null | undefined;
-}
-
-export interface SettingsRegistry {
-	get(id: string): { readonly manifest?: SettingsManifest | null | undefined } | null | undefined;
-}
-
-export interface SettingsWindowOptions extends GeometryOptions {
-	readonly definition?: { readonly manifest?: SettingsManifest | null | undefined } | null | undefined;
-	readonly tile: Tile;
-	readonly onPatch: (patch: TilePatch) => void;
-	readonly registry: SettingsRegistry;
-	readonly host?: SettingsHost | null | undefined;
-	readonly refs?: GatewayRefs | null | undefined;
-	readonly surface?: TileSurface | null | undefined;
-	readonly columns: number;
-	readonly countReaders: (path: string) => number;
-	readonly onDone: () => void;
-	readonly onDismiss: () => void;
-	readonly onResize?: ((size: Partial<Place>) => void) | undefined;
-	readonly onCollapse?: (() => void) | undefined;
-	readonly onExpand?: (() => void) | undefined;
-}
-
-export interface SettingsContext {
-	readonly manifest: SettingsManifest;
-	readonly tile: Tile;
-	readonly onPatch: (patch: TilePatch) => void;
-	readonly crumbs: readonly string[];
-}
-
-export interface TabChoice {
-	readonly value: SettingsTab;
-	readonly label: string;
-}
-
-export interface SettingsStateAsk {
-	readonly options: SettingsWindowOptions;
-	readonly look: SettingsLook;
-	readonly here: SettingsContext;
-	readonly geometry: WindowGeometry;
-	readonly vaultFields: VaultFields;
-	readonly boxValues: BoxValues;
-}
-
-interface BoardOptions {
-	readonly place: Place;
-	readonly host: SettingsHost | null | undefined;
-	readonly registry: SettingsRegistry;
-	readonly columns: number;
-	readonly onDone: () => void;
-	readonly onDismiss: () => void;
-	readonly onResize: ((size: Partial<Place>) => void) | undefined;
-	readonly onCollapse: (() => void) | undefined;
-	readonly onExpand: (() => void) | undefined;
-	readonly countReaders: (path: string) => number;
-	readonly refs: GatewayRefs | null | undefined;
-	readonly surface: TileSurface | null | undefined;
-}
-
-interface ViewState {
-	readonly tab: SettingsTab;
-	readonly setTab: (next: SettingsTab) => void;
-	readonly zoom: number | null;
-	readonly setZoom: (next: number) => void;
-	readonly setPan: (next: Point) => void;
-	readonly setLook: (patch: LookPatch) => void;
-	readonly folded: boolean;
-	readonly setFolded: (next: boolean) => void;
-	readonly narrow: boolean;
-	readonly setNarrow: (next: boolean) => void;
-	readonly sheetFull: boolean;
-	readonly setSheetFull: (next: boolean) => void;
-	readonly openRow: string | null;
-	readonly openEditor: (next: string | null, seed?: string) => void;
-	readonly draft: string;
-	readonly setDraft: (next: string) => void;
-}
-
-interface ChromeState {
-	readonly panelStyle: CSSProperties;
-	readonly barStyle: CSSProperties | null;
-	readonly barHidden: boolean;
-	readonly sheetHeight: number;
-	readonly setSheetHeight: Dispatch<SetStateAction<number>>;
-	readonly sheetMaxPx: number;
-}
-
-export interface SettingsState extends BoardOptions, ViewState, ChromeState {
-	readonly manifest: SettingsManifest;
-	readonly tile: Tile;
-	readonly seen: Seen;
-	readonly onPatch: (patch: TilePatch) => void;
-	readonly crumbs: readonly string[];
-	readonly fed: readonly string[];
-	readonly tabs: readonly TabChoice[];
-	readonly isMount: boolean;
-	readonly enter: (step: MountStep) => void;
-	readonly popTo: (depth: number) => void;
-	readonly vaultFields: VaultFields;
-	readonly boxValues: BoxValues;
-	readonly scale: number;
-	readonly live: boolean;
-	readonly opening: OpeningScale;
-	readonly at: Point;
-	readonly canNarrow: boolean;
-	readonly phone: boolean;
-	readonly isCollapsed: boolean;
-}
+export type {
+	ChoiceOption,
+	PropSource,
+	SettingsContext,
+	SettingsDefault,
+	SettingsHost,
+	SettingsManifest,
+	SettingsRegistry,
+	SettingsSpec,
+	SettingsState,
+	SettingsStateAsk,
+	SettingsWindowOptions,
+	TabChoice,
+	TilePatch,
+} from "./settings-types.js";
 
 const TABS: readonly TabChoice[] = [
 	{ value: "settings", label: "Settings" },
@@ -238,7 +107,7 @@ function startingDraft(key: string, here: SettingsContext, place: Place): string
 function startingPropDraft(here: SettingsContext, name: string): string {
 	const spec = here.manifest.props?.[name];
 	const config = here.tile.props?.[name] ?? {};
-	if (bindingOf(spec, config).binding !== "hardcode") return config.path ? String(config.path) : "";
+	if (bindingOf(spec, config).binding !== "hardcode") return boundPath(config);
 	const held = typedIn(spec, config) ?? declaredOf(spec);
 	if (held === undefined || !spec) return "";
 	return writtenText(spec, held);

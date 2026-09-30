@@ -48,7 +48,7 @@ export function windowGeometry(options: GeometryOptions, view: LookView, viewpor
 	const narrowPx = narrowWidthOf(manifest);
 	const showingChip = narrowPx !== null && narrow;
 	const canvas = narrowPx !== null && narrow ? { width: narrowPx, height: wanted.height } : wanted;
-	const opening = openingScale(canvas, free, CHROME.floorScale);
+	const opening = openingScale(canvas, free, CHROME.smallestLegibleScale);
 	const scale = zoom ?? opening.scale;
 	const at = clampPan(pan ?? openingPan(canvas, free, opening), canvas, scale, free, cell);
 	const canNarrow = narrowPx !== null;

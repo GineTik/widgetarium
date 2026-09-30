@@ -8,7 +8,7 @@ import type { OfferedEntry } from "./offered-boxes.js";
 import { FROM_WIDGET, IN_VAULT, writeProp, writtenPlainly } from "./prop-writing.js";
 import { draftOnInput, popoverFoot } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
-import { FOLDERS_SHOWN, offeredPaths } from "./vault-paths.js";
+import { FOLDERS_SHOWN, boundPath, offeredPaths } from "./vault-paths.js";
 
 const NOTE_FIELDS_HEADING = "Which part of the note";
 
@@ -16,7 +16,7 @@ const NOTE_WITHOUT_PROPERTIES = "This note has no properties yet.";
 
 export function vaultBody(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactNode[] {
 	const offered = offeredPaths(state.host, spec);
-	const path = config.path ? String(config.path) : "";
+	const path = boundPath(config);
 	const needle = String(state.draft ?? "").toLowerCase();
 	const found = offered.filter((entry) => entry.toLowerCase().includes(needle)).slice(0, FOLDERS_SHOWN);
 	return [
@@ -64,7 +64,7 @@ function noteFieldItems(
 	path: string,
 ): ReactNode[] {
 	if (!writtenPlainly(spec) || !path) return [];
-	const picked = noteFieldOf(spec, { field: typeof config.field === "string" ? config.field : undefined });
+	const picked = noteFieldOf(spec, config);
 	const properties = state.host?.propertiesOf?.(path) ?? [];
 	const pick = (field: string): void => writeProp(state, key, spec, { ...config, from: IN_VAULT, path, field });
 	const item = (field: string, label: string): ReactElement =>
