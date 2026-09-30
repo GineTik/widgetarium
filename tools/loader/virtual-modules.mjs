@@ -1,19 +1,12 @@
+import { widgetsCliBundleSync } from "../../apps/obsidian/build.mjs";
+import { widgetTypeFiles } from "../widget-types.mjs";
+
 const exportedDefault = (value) => `export default ${JSON.stringify(value)};\n`;
 
-async function widgetsCliModule() {
-	const { widgetsCliBundle } = await import("../../apps/obsidian/build.mjs");
-	return exportedDefault(await widgetsCliBundle());
-}
-
-async function widgetTypesModule() {
-	const { widgetTypeFiles } = await import("../widget-types.mjs");
-	return exportedDefault(widgetTypeFiles());
-}
-
 const VIRTUAL_MODULES = {
-	"widgetarium:surface": async () => "export const REACT_SURFACE_SOURCE = null;\n",
-	"widgetarium:widgets-cli": widgetsCliModule,
-	"widgetarium:widget-types": widgetTypesModule,
+	"widgetarium:surface": () => "export const REACT_SURFACE_SOURCE = null;\n",
+	"widgetarium:widgets-cli": () => exportedDefault(widgetsCliBundleSync()),
+	"widgetarium:widget-types": () => exportedDefault(widgetTypeFiles()),
 };
 
 const built = new Map();

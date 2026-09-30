@@ -7,8 +7,8 @@ export const TEXT_LOADERS = { ".md": "text", ".css": "text" };
 const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
 const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.mjs";
 
-export async function widgetsCliBundle() {
-	const built = await esbuild.build({
+function widgetsCliOptions() {
+	return {
 		entryPoints: [WIDGETS_CLI_SOURCE],
 		bundle: true,
 		write: false,
@@ -22,8 +22,16 @@ export async function widgetsCliBundle() {
 			js: 'import { createRequire as __needs } from "node:module";\nconst require = __needs(import.meta.url);',
 		},
 		logLevel: "warning",
-	});
+	};
+}
+
+export async function widgetsCliBundle() {
+	const built = await esbuild.build(widgetsCliOptions());
 	return built.outputFiles[0].text;
+}
+
+export function widgetsCliBundleSync() {
+	return esbuild.buildSync(widgetsCliOptions()).outputFiles[0].text;
 }
 
 function widgetsCliSource() {

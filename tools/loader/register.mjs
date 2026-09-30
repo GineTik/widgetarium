@@ -1,3 +1,4 @@
-import { register } from "node:module";
+import { registerHooks } from "node:module";
+import { load, resolve } from "./hooks.mjs";
 
-register("./hooks.mjs", import.meta.url);
+registerHooks({ resolve, load });

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { transform } from "esbuild";
+import { transformSync } from "esbuild";
 import { REPO, isModuleJs, nearestTsconfig, sourceUrlOf } from "./source-path.mjs";
 import { isVirtual, virtualSource } from "./virtual-modules.mjs";
 
@@ -10,7 +10,7 @@ const TRANSFORMED = { ".ts": "ts", ".tsx": "tsx", ".jsx": "jsx" };
 const READ_AS_TEXT = new Set([".md", ".css"]);
 const tsconfigText = new Map();
 
-export async function resolve(specifier, context, nextResolve) {
+export function resolve(specifier, context, nextResolve) {
 	if (specifier === "obsidian") return { url: OBSIDIAN_STUB_URL, format: "module", shortCircuit: true };
 	if (isVirtual(specifier)) return { url: specifier, format: "module", shortCircuit: true };
 	const found = sourceUrlOf(specifier, context.parentURL);
@@ -25,8 +25,8 @@ function tsconfigRawFor(file) {
 	return tsconfigText.get(at);
 }
 
-async function transformed(file) {
-	const { code } = await transform(fs.readFileSync(file, "utf8"), {
+function transformed(file) {
+	const { code } = transformSync(fs.readFileSync(file, "utf8"), {
 		loader: TRANSFORMED[path.extname(file)],
 		format: "esm",
 		target: "es2020",
@@ -41,7 +41,7 @@ async function transformed(file) {
 
 const isOwnSource = (file) => file.startsWith(REPO) && !file.includes(`${path.sep}node_modules${path.sep}`);
 
-async function ownModuleSource(file) {
+function ownModuleSource(file) {
 	const extension = path.extname(file);
 	if (READ_AS_TEXT.has(extension)) return `export default ${JSON.stringify(fs.readFileSync(file, "utf8"))};\n`;
 	if (extension in TRANSFORMED) return transformed(file);
@@ -49,12 +49,12 @@ async function ownModuleSource(file) {
 	return null;
 }
 
-export async function load(url, context, nextLoad) {
-	if (isVirtual(url)) return { format: "module", source: await virtualSource(url), shortCircuit: true };
+export function load(url, context, nextLoad) {
+	if (isVirtual(url)) return { format: "module", source: virtualSource(url), shortCircuit: true };
 	if (!url.startsWith("file:")) return nextLoad(url, context);
 	const file = fileURLToPath(url);
 	if (!isOwnSource(file)) return nextLoad(url, context);
-	const source = await ownModuleSource(file);
+	const source = ownModuleSource(file);
 	if (source === null) return nextLoad(url, context);
 	return { format: "module", source, shortCircuit: true };
 }
