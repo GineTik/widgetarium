@@ -770,5 +770,17 @@ console.log("\n— a mount keeps its own look through a save —");
 	check("nor a height that is no height", refused.height, undefined);
 }
 
+{
+	const odd = normalizeBoard({
+		tiles: [null, { id: 7, widget: 3, settings: "loud", props: { kept: { from: "typed", value: 1 }, junk: "x" } }],
+		layout: { dir: "row", of: [] },
+	});
+	check("a tile that is no object is read as an empty one, not thrown on", odd.tiles[0].id, "w0");
+	check("an id that is no string is minted from the index", odd.tiles[1].id, "w1");
+	check("a widget that is no string is no widget", odd.tiles[1].widget, "");
+	check("settings that are no object are none", odd.tiles[1].settings, {});
+	check("a prop config that is no object and no null is dropped", Object.keys(odd.tiles[1].props), ["kept"]);
+}
+
 console.log(failed ? `\n${failed} failed` : "\nall passed");
 process.exit(failed ? 1 : 0);

@@ -2,23 +2,7 @@
 import { widgetKeyOf } from "./widget-ref.js";
 import { isObject } from "./is-object.js";
 import type { Fields } from "./catalogue-index.js";
-
-export interface PropConfig {
-	readonly [field: string]: unknown;
-	readonly ref?: unknown;
-	readonly where?: unknown;
-}
-
-export interface MountedTile {
-	readonly id?: string;
-	readonly widget?: string;
-	readonly props?: Readonly<Record<string, PropConfig>>;
-	readonly mounted?: Readonly<Record<string, MountedTile>>;
-}
-
-export interface WiredTile extends MountedTile {
-	readonly id: string;
-}
+import type { HeldRecord, Tile, TileProp, TileProps } from "../model.js";
 
 export interface StandingTile {
 	readonly widget: string;
@@ -33,12 +17,12 @@ export interface WiringRegistry {
 type Standing = ReadonlyMap<string, string>;
 
 export function tilesByWidget(
-	tiles: readonly WiredTile[] | null | undefined,
+	tiles: readonly Tile[] | null | undefined,
 	currentId: (id: string) => string = (id) => id,
 	standing: readonly StandingTile[] = [],
 ): Map<string, string> {
 	const seen = new Map(standing.map((held) => [widgetKeyOf(held.widget), held.id] as const));
-	const walk = (held: readonly WiredTile[] | null | undefined, at: string | null): void => {
+	const walk = (held: readonly Tile[] | null | undefined, at: string | null): void => {
 		for (const tile of held ?? []) {
 			const id = at ? `${at}/${tile.id}` : tile.id;
 			const widget = tile.widget && widgetKeyOf(currentId(tile.widget));
@@ -56,15 +40,15 @@ export function isUnresolved(held: unknown): boolean {
 
 // TRADE-OFF: a box standing in for a widget is passed in rather than found here, because a layout node is not a tile and wiring reads tiles
 export function wireTiles(
-	tiles: readonly WiredTile[],
+	tiles: readonly Tile[],
 	registry: WiringRegistry,
 	standsFor: readonly StandingTile[] = [],
-): WiredTile[] {
+): Tile[] {
 	const standing = tilesByWidget(tiles, (id) => registry.resolveId?.(id) ?? id, standsFor);
 	return tiles.map((tile) => wireHeld(tile, registry, standing));
 }
 
-function mountedTiles(tile: MountedTile): WiredTile[] {
+function mountedTiles(tile: HeldRecord): Tile[] {
 	return Object.entries(tile.mounted ?? {}).map(([name, held]) => ({ ...held, id: name }));
 }
 
@@ -96,7 +80,7 @@ function rowsOf(held: unknown): readonly unknown[] {
 	return Array.isArray(held) ? held : [];
 }
 
-function wireWhere(spec: Fields, config: PropConfig, standing: Standing): unknown[] | null {
+function wireWhere(spec: Fields, config: TileProp, standing: Standing): unknown[] | null {
 	const rows = rowsOf(spec["where"])
 		.map((row) => wireRow(row, standing))
 		.filter((row): row is Fields => row !== null);
@@ -105,7 +89,7 @@ function wireWhere(spec: Fields, config: PropConfig, standing: Standing): unknow
 	return [...rows, ...own];
 }
 
-function wireProp(spec: Fields, config: PropConfig, standing: Standing): PropConfig | null {
+function wireProp(spec: Fields, config: TileProp, standing: Standing): TileProp | null {
 	if (typeof spec["wants"] === "string") {
 		if (typeof config.ref === "string") return null;
 		const ref = refFor(spec["wants"], standing);
@@ -120,20 +104,16 @@ function stableWhere(rows: unknown): string {
 	return JSON.stringify(rows ?? []);
 }
 
-function wireProps(
-	tile: MountedTile,
-	manifest: Fields | null | undefined,
-	standing: Standing,
-): Readonly<Record<string, PropConfig>> | null {
+function wireProps(tile: HeldRecord, manifest: Fields | null | undefined, standing: Standing): TileProps | null {
 	const held = tile.props ?? {};
 	const specs = manifest?.["props"];
 	const wired = Object.entries(isObject(specs) ? specs : {})
 		.map(([name, spec]) => [name, wireProp(isObject(spec) ? spec : {}, held[name] ?? {}, standing)] as const)
-		.filter((entry): entry is readonly [string, PropConfig] => entry[1] !== null);
+		.filter((entry): entry is readonly [string, TileProp] => entry[1] !== null);
 	return wired.length === 0 ? null : { ...held, ...Object.fromEntries(wired) };
 }
 
-function wireHeld<Held extends MountedTile>(held: Held, registry: WiringRegistry, standing: Standing): Held {
+function wireHeld<Held extends HeldRecord>(held: Held, registry: WiringRegistry, standing: Standing): Held {
 	const props = wireProps(held, registry.get(held.widget)?.manifest, standing);
 	const mounted = wireMounted(held.mounted, registry, standing);
 	if (!props && !mounted) return held;
@@ -141,10 +121,10 @@ function wireHeld<Held extends MountedTile>(held: Held, registry: WiringRegistry
 }
 
 function wireMounted(
-	mounted: Readonly<Record<string, MountedTile>> | undefined,
+	mounted: Readonly<Record<string, HeldRecord>>,
 	registry: WiringRegistry,
 	standing: Standing,
-): Readonly<Record<string, MountedTile>> | null {
+): Readonly<Record<string, HeldRecord>> | null {
 	const entries = Object.entries(mounted ?? {});
 	if (entries.length === 0) return null;
 	const wired = entries.map(([name, held]) => [name, wireHeld(held, registry, standing)] as const);

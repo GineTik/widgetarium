@@ -13,8 +13,16 @@ import {
 	sub,
 	title,
 } from "./layout-regions.js";
+import type { BaseBox } from "./layout-regions.js";
 
-export const LAYOUTS = {
+export interface LayoutBase {
+	readonly suits: string;
+	readonly holds: string;
+	readonly needsPx: number;
+	readonly layout: BaseBox;
+}
+
+export const LAYOUTS: Readonly<Record<string, LayoutBase>> = {
 	page: {
 		suits: "one thing to read, at a comfortable measure, with nothing beside it",
 		holds: "a résumé, a proposal, a note somebody published",

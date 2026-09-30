@@ -1,6 +1,23 @@
-import { COLUMN, GROUP, NO_SURFACE, ROW } from "./tree.js";
+import { COLUMN, GROUP, NO_SURFACE } from "./tree.js";
+import type { BoxNode, SurfaceWord } from "./tree.js";
 
-export const CARDS = {
+export interface CardPart {
+	readonly place: string;
+	readonly asks: string;
+}
+
+export interface CardShape {
+	readonly suits: string;
+	readonly role: string;
+	readonly wears: { readonly alone: SurfaceWord; readonly amongPeers: SurfaceWord };
+	readonly parts: readonly CardPart[];
+}
+
+export interface CardAsk {
+	readonly amongPeers?: boolean;
+}
+
+export const CARDS: Readonly<Record<string, CardShape>> = {
 	"header-body": {
 		suits: "a title and the thing it explains, the commonest card there is",
 		role: "detail",
@@ -42,13 +59,14 @@ export const CARDS = {
 	},
 };
 
-export const CARD_NAMES = Object.keys(CARDS);
+export const CARD_NAMES: readonly string[] = Object.keys(CARDS);
 
-export function cardNamed(said) {
-	return CARDS[String(said ?? "")] ?? null;
+export function cardNamed(said: unknown): CardShape | null {
+	const name = String(said ?? "");
+	return CARD_NAMES.includes(name) ? (CARDS[name] ?? null) : null;
 }
 
-export function cardNode(name, { amongPeers = false } = {}) {
+export function cardNode(name: unknown, { amongPeers = false }: CardAsk = {}): BoxNode | null {
 	const card = cardNamed(name);
 	if (!card) return null;
 	const surface = amongPeers ? card.wears.amongPeers : card.wears.alone;

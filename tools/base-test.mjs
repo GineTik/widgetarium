@@ -1,6 +1,6 @@
 const { LAYOUTS, LAYOUT_NAMES, HEADING_WIDGET, layoutNamed, skeletonOf, sectionsOf, emptyColumnsOf, baseMismatch } =
 	await import("../packages/core/src/layouts.js");
-const { CARDS, CARD_NAMES, cardNode } = await import("../packages/core/src/patterns.js");
+const { CARDS, CARD_NAMES, cardNamed, cardNode } = await import("../packages/core/src/patterns.js");
 const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 const { nestingFindings } = await import("../packages/core/src/surface-laws.js");
 
@@ -195,6 +195,8 @@ for (const name of CARD_NAMES) {
 	check(`${name} is a card shape, not a page`, Boolean(CARDS[name].parts), true);
 	check(`${name} draws a node`, Boolean(cardNode(name)), true);
 }
+check("a name every object inherits is no card shape", cardNamed("constructor"), null);
+check("and draws no node", cardNode("toString"), null);
 
 console.log(failed ? `\nbase gate: ${failed} of ${checks} failed` : `\nbase gate: clean, ${checks} checks`);
 process.exit(failed ? 1 : 0);
