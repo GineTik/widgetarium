@@ -6,7 +6,7 @@ import { isObject } from "./engine/is-object.js";
 import { refuse } from "./installer-context.js";
 import type { InstallerAdapter, Installing, Refusal } from "./installer-context.js";
 
-export interface BuildFailure {
+interface BuildFailure {
 	readonly id: string;
 	readonly failure: string;
 }

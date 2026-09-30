@@ -17,15 +17,15 @@ export interface Spot {
 	readonly box: Rect;
 }
 
-export type DropSide = "before" | "after";
+type DropSide = "before" | "after";
 
-export interface BesideTarget {
+interface BesideTarget {
 	readonly kind: "beside";
 	readonly box: NodePath;
 	readonly at: number;
 }
 
-export interface WrapTarget {
+interface WrapTarget {
 	readonly kind: "wrap";
 	readonly path: NodePath;
 	readonly axis: Axis;

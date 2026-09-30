@@ -3,7 +3,7 @@ export interface ReferenceDraft {
 	readonly needle: string;
 }
 
-export interface OfferedBox {
+interface OfferedBox {
 	readonly tile: string;
 	readonly prop: string;
 }

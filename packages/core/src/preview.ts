@@ -30,12 +30,12 @@ export interface PreviewSpan {
 	readonly height: number;
 }
 
-export interface PreviewDefinition {
+interface PreviewDefinition {
 	readonly manifest?: Fields | null | undefined;
 	readonly react?: ReactIdentity | null | undefined;
 }
 
-export interface PreviewChild {
+interface PreviewChild {
 	readonly manifest?: Fields | null | undefined;
 	readonly component?: WidgetComponent | undefined;
 	readonly error?: unknown;
@@ -46,12 +46,12 @@ export interface PreviewRegistry {
 	get(id: string | null | undefined): PreviewChild | null;
 }
 
-export interface PreviewOptions {
+interface PreviewOptions {
 	readonly registry?: PreviewRegistry | null | undefined;
 	readonly host?: ViewHost | null | undefined;
 }
 
-export type PreviewHost = ViewHost | HostClaimingNothing;
+type PreviewHost = ViewHost | HostClaimingNothing;
 
 export interface PreviewProps {
 	readonly [prop: string]: unknown;

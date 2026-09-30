@@ -16,13 +16,13 @@ const ROLES_THAT_MAY_TITLE: readonly string[] = ["text", "layout"];
 
 export const WIDGET_CHECK_RULES = ["colour", "font", "unbounded", "role", "reaches", "heading"] as const;
 
-export type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
+type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
 
-export interface CheckedCard {
+interface CheckedCard {
 	readonly role?: unknown;
 }
 
-export interface WidgetCheckInput {
+interface WidgetCheckInput {
 	readonly id: string;
 	readonly source?: string;
 	readonly styles?: string;
@@ -30,7 +30,7 @@ export interface WidgetCheckInput {
 	readonly surface?: readonly unknown[] | null;
 }
 
-export interface WidgetFinding {
+interface WidgetFinding {
 	readonly widget: string;
 	readonly rule: WidgetCheckRule;
 	readonly message: string;

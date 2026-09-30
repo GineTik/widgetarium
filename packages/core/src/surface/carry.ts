@@ -1,8 +1,8 @@
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from "react";
 import { targetAt, moveInto, sameTarget } from "../tree.js";
-import type { BoxNode } from "../tree-nodes.js";
 import type { DropTarget, Spot } from "../tree-drop.js";
 import { spotsIn } from "./carry-spots.js";
+import type { CommitLayout } from "./board-edits.js";
 
 const CARRY_THRESHOLD_PX = 5;
 const CARRY_EDGE_PX = 56;
@@ -22,7 +22,7 @@ export interface PointerAt {
 	readonly clientY: number;
 }
 
-export interface CarriedGhost {
+interface CarriedGhost {
 	readonly across: number;
 	readonly down: number;
 	readonly gripAcross: number;
@@ -47,11 +47,9 @@ export interface CarryGesture {
 	readonly stop: () => void;
 }
 
-export type CommitLayout = (change: (held: BoxNode) => BoxNode) => void;
+type PageCorner = Pick<DOMRect, "left" | "top">;
 
-export type PageCorner = Pick<DOMRect, "left" | "top">;
-
-export interface CarryStart {
+interface CarryStart {
 	readonly event: PointerAt;
 	readonly cell: HTMLElement;
 	readonly id: string;

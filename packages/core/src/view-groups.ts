@@ -7,7 +7,7 @@ import type { HeldRecord, Tile } from "./board-tiles.js";
 
 export type NameOf = (id: string) => string | null | undefined;
 
-export interface TilesAndLayout {
+interface TilesAndLayout {
 	readonly tiles: readonly Tile[];
 	readonly layout: BoxNode;
 }

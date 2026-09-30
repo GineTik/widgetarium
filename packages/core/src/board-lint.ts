@@ -8,12 +8,12 @@ import { isObject } from "./engine/is-object.js";
 import { isRawBox } from "./board-layout.js";
 import type { RawBox, RawFields } from "./board-layout.js";
 
-export interface LintFinding {
+interface LintFinding {
 	readonly path: NodePath;
 	readonly message: string;
 }
 
-export type RoleOfWidget = (widget: unknown) => unknown;
+type RoleOfWidget = (widget: unknown) => unknown;
 
 interface Lint {
 	readonly errors: LintFinding[];

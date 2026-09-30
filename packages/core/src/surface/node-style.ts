@@ -9,7 +9,7 @@ const PLATE_EDGES_PX = "2 * var(--wg-group-pad)";
 
 export type NodeStyle = CSSProperties & Readonly<Record<`--${string}`, string>>;
 
-export interface SurfaceAttrs {
+interface SurfaceAttrs {
 	readonly "data-surface"?: SurfaceWord;
 	readonly "data-across"?: Axis;
 	readonly "data-side"?: string | null | undefined;

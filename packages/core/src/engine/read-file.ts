@@ -1,7 +1,6 @@
 import type { PassageReader, ReadAnswer } from "../gateway/host.js";
 
-export type ReadTarget =
-	{ readonly ok: false; readonly failure: string } | { readonly ok: true; readonly link: string };
+type ReadTarget = { readonly ok: false; readonly failure: string } | { readonly ok: true; readonly link: string };
 
 const OUT_OF_VAULT = /(^|\/)\.\.(\/|$)/;
 const MACHINE_PATH = /^(~|[A-Za-z]:[\\/]|\\\\)/;

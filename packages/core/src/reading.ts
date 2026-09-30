@@ -13,7 +13,7 @@ export type Reading = (typeof READINGS)[number];
 
 export type Wrap = typeof WRAP_AROUND | typeof WRAP_EACH | typeof WRAP_NONE;
 
-export interface ReadingInputs {
+interface ReadingInputs {
 	readonly isCollection?: boolean;
 	readonly fieldsCount?: number;
 	readonly tracks?: boolean;

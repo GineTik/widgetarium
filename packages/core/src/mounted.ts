@@ -12,13 +12,13 @@ export type PlatesAbove = ContextType<typeof PLATES_ABOVE>;
 
 export type DrawWidget<Props> = (element: HTMLElement, component: ComponentType<Props>, props: Props) => Release;
 
-export interface DrawableWidget<Props> {
+interface DrawableWidget<Props> {
 	readonly component: ComponentType<Props>;
 	readonly draw?: DrawWidget<Props> | null | undefined;
 	readonly manifest?: { readonly id?: string | undefined } | null | undefined;
 }
 
-export interface MountedEntry {
+interface MountedEntry {
 	readonly name?: string | undefined;
 	readonly title?: string | null | undefined;
 	readonly drawInto?: ((element: HTMLElement, platesAbove: PlatesAbove) => Release) | null | undefined;

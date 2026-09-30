@@ -30,7 +30,7 @@ import * as emojiModule from "@widgetarium/kit/emojis";
 const NOT_A_WIDGET =
 	"createWidget takes what the widget injects and the function that draws it: createWidget({ inject: { ... }, draw: (props) => ... })";
 
-export interface WidgetDeclaration {
+interface WidgetDeclaration {
 	readonly inject?: unknown;
 	readonly draw: (drawn: DrawnProps) => ReactNode;
 }

@@ -17,7 +17,7 @@ export interface Columns {
 	readonly alone: readonly number[];
 }
 
-export interface WidenAsk {
+interface WidenAsk {
 	readonly wantedPx: number;
 	readonly width: number;
 	readonly gap?: number;

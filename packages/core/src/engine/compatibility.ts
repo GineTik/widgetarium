@@ -1,9 +1,9 @@
 import { isObject } from "./is-object.js";
 import type { Fields } from "./catalogue-index.js";
 
-export type PropSpecs = Readonly<Record<string, Fields>>;
+type PropSpecs = Readonly<Record<string, Fields>>;
 
-export type PropChange =
+type PropChange =
 	| { readonly prop: string; readonly kind: "removed" | "reshaped"; readonly breaks: true }
 	| { readonly prop: string; readonly kind: "renamed"; readonly to: string; readonly breaks: false }
 	| { readonly prop: string; readonly kind: "default"; readonly breaks: true; readonly implicit: true }
@@ -23,7 +23,7 @@ export interface Compatibility {
 	readonly migration: MigrationStep | null;
 }
 
-export interface PropsHolder {
+interface PropsHolder {
 	readonly props?: unknown;
 	readonly migrate?: unknown;
 }

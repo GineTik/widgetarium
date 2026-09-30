@@ -3,7 +3,7 @@ import type { ViewCell } from "../gateway/refs.js";
 import { useCellValue } from "./use-cell-value.js";
 import type { SurfaceShared } from "./use-surface-shared.js";
 
-export interface OpenCell {
+interface OpenCell {
 	readonly cell: ViewCell;
 	readonly isOpen: boolean;
 }

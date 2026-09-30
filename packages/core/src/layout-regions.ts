@@ -1,7 +1,7 @@
 import { ADAPTIVE, APART, COLUMN, DRAWER, GROUP, NO_SURFACE, ROW } from "./tree.js";
 import type { BoxNode, SurfaceSide, SurfaceWord } from "./tree.js";
 
-export type TextTone = "value" | "caption";
+type TextTone = "value" | "caption";
 
 export interface BaseText {
 	readonly text: string;
@@ -17,7 +17,7 @@ export interface BaseBox extends Omit<BoxNode, "of"> {
 
 export type BaseNode = BaseBox | BaseText;
 
-export interface RailAsk {
+interface RailAsk {
 	readonly role: string;
 	readonly purpose: string;
 	readonly side: SurfaceSide;

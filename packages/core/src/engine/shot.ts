@@ -4,9 +4,9 @@ import type { Fields } from "./catalogue-index.js";
 import { WIDGETS_DIR } from "../paths.js";
 import { isObject } from "./is-object.js";
 
-export type Theme = "light" | "dark";
+type Theme = "light" | "dark";
 
-export interface ShotEntry {
+interface ShotEntry {
 	readonly manifest?: Fields | null;
 	readonly installed?: unknown;
 	readonly from?: { readonly folder?: string | null } | null;
@@ -16,12 +16,12 @@ export interface ShotHost {
 	readonly resourcePathOf?: ((path: string) => string | null) | null;
 }
 
-export interface DeclaredShot {
+interface DeclaredShot {
 	readonly [field: string]: unknown;
 	readonly of: string;
 }
 
-export const SHOT_FILES: Readonly<Record<Theme, string>> = { light: "shot-light.png", dark: "shot-dark.png" };
+const SHOT_FILES: Readonly<Record<Theme, string>> = { light: "shot-light.png", dark: "shot-dark.png" };
 // TODO: enforce at the reader too — an <img> cannot be capped, so a repository shot needs a HEAD read first
 export const SHOT_BYTE_CAP = 300 * 1024;
 
@@ -50,11 +50,11 @@ export function themeNow(): Theme {
 	return globalThis.document?.body?.classList?.contains("theme-dark") ? "dark" : "light";
 }
 
-export function shotNameFor(theme: unknown): string {
+function shotNameFor(theme: unknown): string {
 	return SHOT_FILES[theme === "dark" ? "dark" : "light"];
 }
 
-export function declaredShot(manifest: Fields | null | undefined): DeclaredShot | null {
+function declaredShot(manifest: Fields | null | undefined): DeclaredShot | null {
 	const preview = manifest?.["preview"];
 	const shot = isObject(preview) ? preview["shot"] : null;
 	return isDeclaredShot(shot) ? shot : null;

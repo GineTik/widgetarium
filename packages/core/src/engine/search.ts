@@ -5,19 +5,19 @@ const NAME_TIER = 3;
 const KEYWORD_TIER = 2;
 const BLURB_TIER = 1;
 
-export interface SearchField {
+interface SearchField {
 	readonly key: string;
 	readonly tier: number;
 }
 
-export type ReadSearchField<Record> = (record: Record, key: string) => unknown;
+type ReadSearchField<Record> = (record: Record, key: string) => unknown;
 
-export interface SearchOptions<Record> {
+interface SearchOptions<Record> {
 	readonly fields?: readonly SearchField[];
 	readonly read?: ReadSearchField<Record>;
 }
 
-export interface SearchHit<Record> {
+interface SearchHit<Record> {
 	readonly record: Record;
 	readonly order: number;
 	readonly score: number;
@@ -70,12 +70,6 @@ export function terms(query: unknown): string[] {
 	return fold(query)
 		.split(" ")
 		.filter((term) => term !== "");
-}
-
-export function scoreTermInText(term: string, text: string): number | null {
-	if (term === "" || text === "") return null;
-	const hit = bestRunAllowing(term, text, TYPO_BUDGET);
-	return hit === null ? null : hit.score;
 }
 
 // TRADE-OFF: every term must land, and the record scores their mean — a query is a conjunction
@@ -206,4 +200,10 @@ function scoreTerm<Record>(
 
 function readOwn(record: unknown, key: string): unknown {
 	return isObject(record) ? record[key] : undefined;
+}
+
+function scoreTermInText(term: string, text: string): number | null {
+	if (term === "" || text === "") return null;
+	const hit = bestRunAllowing(term, text, TYPO_BUDGET);
+	return hit === null ? null : hit.score;
 }

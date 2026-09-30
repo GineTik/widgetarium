@@ -5,17 +5,17 @@ const FENCE_OPEN = new RegExp(`^${FENCE}+\\s*${BLOCK_LANGUAGE}\\s*$`);
 const FENCE_CLOSE = new RegExp(`^${FENCE}+\\s*$`);
 const FRONTMATTER_FENCE = /^---\s*$/;
 
-export interface BlockLines {
+interface BlockLines {
 	readonly start: number;
 	readonly end: number;
 }
 
-export interface BlockSection {
+interface BlockSection {
 	readonly text: string;
 	readonly lineStart: number;
 }
 
-export interface EditorBlock {
+interface EditorBlock {
 	readonly replaceCode?: unknown;
 	section(): BlockSection | null | undefined;
 }

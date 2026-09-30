@@ -2,7 +2,7 @@ const FITS = 0;
 const UNDECLARED = 1;
 const SHORT = 2;
 
-export type FitOrder = typeof FITS | typeof UNDECLARED | typeof SHORT;
+type FitOrder = typeof FITS | typeof UNDECLARED | typeof SHORT;
 
 export interface SlotFit {
 	readonly order: FitOrder;
@@ -14,7 +14,7 @@ export interface ReactIdentity {
 	readonly version: unknown;
 }
 
-export interface AcceptingManifest {
+interface AcceptingManifest {
 	readonly accepts?: Readonly<Record<string, unknown>>;
 }
 

@@ -2,22 +2,22 @@ import KIT_THEME from "@widgetarium/kit/theme.css";
 import { failureMessage } from "./failure-message.js";
 import { isObject } from "./is-object.js";
 
-export interface Stylesheet {
+interface Stylesheet {
 	readonly path: string;
 	readonly base: string;
 	readonly content: string;
 }
 
-export type LoadStylesheet = (specifier: string, base: string) => Promise<Stylesheet>;
+type LoadStylesheet = (specifier: string, base: string) => Promise<Stylesheet>;
 
-export interface TailwindCompiler {
+interface TailwindCompiler {
 	compile(
 		css: string,
 		options: { readonly base: string; readonly loadStylesheet: LoadStylesheet },
 	): Promise<{ build(candidates: readonly string[]): string }>;
 }
 
-export interface SheetRequest {
+interface SheetRequest {
 	readonly entry: Stylesheet;
 	readonly compiler: unknown;
 	readonly sheetOfTailwind: (name: string) => Promise<string>;
@@ -27,12 +27,12 @@ export interface SheetRequest {
 
 export type SheetInputs = Record<string, string>;
 
-export type SheetBuild =
+type SheetBuild =
 	| { readonly ok: true; readonly css: string; readonly inputs: SheetInputs; readonly failure: null }
 	| { readonly ok: false; readonly css: null; readonly inputs: null; readonly failure: string };
 
 export const TAILWIND = "tailwindcss";
-export const KIT_THEME_SHEET = "widgetarium/theme.css";
+const KIT_THEME_SHEET = "widgetarium/theme.css";
 const WIDGETARIUM = "widgetarium";
 const KIT_SCOPE = `${WIDGETARIUM}/`;
 export const TAILWIND_RANGE = "^4";

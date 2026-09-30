@@ -3,7 +3,7 @@ import type { DeclaredProp, PropBinding, PropConfig } from "./gateway/props.js";
 import { propConfig } from "./model.js";
 import type { TileProps } from "./model.js";
 
-export interface VisibleSpec {
+interface VisibleSpec {
 	readonly isVisible?: unknown;
 }
 
@@ -12,12 +12,12 @@ export interface SeenSpec extends DeclaredProp, VisibleSpec {
 	readonly aka?: unknown;
 }
 
-export interface SeenData {
+interface SeenData {
 	readonly value?: unknown;
 	readonly rows?: readonly unknown[];
 }
 
-export interface SeenProp extends SeenData {
+interface SeenProp extends SeenData {
 	readonly kind: "collection" | "value";
 	readonly control: unknown;
 	readonly binding: PropBinding;

@@ -17,7 +17,7 @@ export interface Space {
 	readonly ask: AskLeaf;
 }
 
-export interface Facing {
+interface Facing {
 	readonly isPlate: boolean;
 	readonly inset: number;
 }
@@ -28,7 +28,7 @@ export interface Plate {
 	readonly kitItem: number;
 }
 
-export interface GapVars {
+interface GapVars {
 	readonly "--wg-gap-items": string;
 	readonly "--wg-gap-parts": string;
 	readonly "--wg-gap-cards": string;
@@ -43,8 +43,6 @@ export const insetOf = (node: Worn): number => (isPainted(node) ? SURFACE_PAD_PX
 export const stepOf = (level: number): number =>
 	STEP_PX[Math.min(Math.max(level, 0), STEP_PX.length - 1)] ?? DEEPEST_STEP_PX;
 
-export const cardsGapOf = (seen: number): number => Math.max(seen - SURFACE_PAD_PX, MIN_GAP_PX);
-
 export function gapVarsOf(level: number): GapVars {
 	return {
 		"--wg-gap-items": `${stepOf(level)}px`,
@@ -53,30 +51,11 @@ export function gapVarsOf(level: number): GapVars {
 	};
 }
 
-// TRADE-OFF: a height read before the board is drawn counts every gap at the region's step with nothing measured, because no drawn width or widget stands behind it yet
-export const UNDRAWN_SPACE: Space = { level: 0, ask: () => ({}) };
-
-export function seenGapOf(box: BoxNode, at: number, space: Space): number {
-	const isCloser = holdsPeers(box, space.ask) || isHeading(box.of[at], space.ask);
-	return stepOf(isCloser ? space.level + 1 : space.level);
-}
-
 const START_SIDES: ReadonlySet<EdgeSide> = new Set(["left", "top"]);
 
 const BARE_EDGE: Facing = { isPlate: false, inset: 0 };
 
 const PLATE_EDGE: Facing = { isPlate: true, inset: 0 };
-
-export function facingOf(node: HeldNode, side: EdgeSide, ask: AskLeaf): Facing {
-	if (!node) return BARE_EDGE;
-	if (isPainted(node)) return PLATE_EDGE;
-	if (!isBox(node)) return { isPlate: false, inset: ask(node.id).insets?.[side] ?? 0 };
-	if (node.of.length === 0 || node.dir === SWAP) return BARE_EDGE;
-	if (isAlong(node.dir, side))
-		return facingOf(START_SIDES.has(side) ? node.of[0] : node.of[node.of.length - 1], side, ask);
-	const faces = node.of.map((child) => facingOf(child, side, ask));
-	return { isPlate: faces.every((face) => face.isPlate), inset: Math.min(...faces.map((face) => face.inset)) };
-}
 
 export function pairGapOf(box: BoxNode, at: number, space: Space, dir: BoxDirection = box.dir): number {
 	const [end, start] = dir === ROW ? (["right", "left"] as const) : (["bottom", "top"] as const);
@@ -85,10 +64,6 @@ export function pairGapOf(box: BoxNode, at: number, space: Space, dir: BoxDirect
 	const seen = seenGapOf(box, at, space);
 	if (before.isPlate && after.isPlate) return cardsGapOf(seen);
 	return Math.max(seen - before.inset - after.inset, MIN_GAP_PX);
-}
-
-export function gapsOf(box: BoxNode, space: Space, dir: BoxDirection = box.dir): number[] {
-	return box.of.slice(1).map((_child, at) => pairGapOf(box, at, space, dir));
 }
 
 export function innerWidthOf(box: BoxNode, width: number, space: Space): number {
@@ -127,3 +102,25 @@ const isHeading = (node: HeldNode, ask: AskLeaf): boolean => isLeaf(node) && ask
 
 const isAlong = (dir: BoxDirection, side: EdgeSide): boolean =>
 	dir === ROW ? side === "left" || side === "right" : side === "top" || side === "bottom";
+
+const cardsGapOf = (seen: number): number => Math.max(seen - SURFACE_PAD_PX, MIN_GAP_PX);
+
+function seenGapOf(box: BoxNode, at: number, space: Space): number {
+	const isCloser = holdsPeers(box, space.ask) || isHeading(box.of[at], space.ask);
+	return stepOf(isCloser ? space.level + 1 : space.level);
+}
+
+function facingOf(node: HeldNode, side: EdgeSide, ask: AskLeaf): Facing {
+	if (!node) return BARE_EDGE;
+	if (isPainted(node)) return PLATE_EDGE;
+	if (!isBox(node)) return { isPlate: false, inset: ask(node.id).insets?.[side] ?? 0 };
+	if (node.of.length === 0 || node.dir === SWAP) return BARE_EDGE;
+	if (isAlong(node.dir, side))
+		return facingOf(START_SIDES.has(side) ? node.of[0] : node.of[node.of.length - 1], side, ask);
+	const faces = node.of.map((child) => facingOf(child, side, ask));
+	return { isPlate: faces.every((face) => face.isPlate), inset: Math.min(...faces.map((face) => face.inset)) };
+}
+
+function gapsOf(box: BoxNode, space: Space, dir: BoxDirection = box.dir): number[] {
+	return box.of.slice(1).map((_child, at) => pairGapOf(box, at, space, dir));
+}

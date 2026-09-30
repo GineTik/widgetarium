@@ -59,7 +59,7 @@ export function declaredPropsIn(manifest: Fields | null | undefined): [string, D
 	);
 }
 
-export function isDeclaredProp(spec: unknown): spec is DeclaredProp {
+function isDeclaredProp(spec: unknown): spec is DeclaredProp {
 	if (!isObject(spec)) return false;
 	const { describes, writes } = spec;
 	return (

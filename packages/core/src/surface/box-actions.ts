@@ -14,7 +14,7 @@ import {
 import type { BoardNode } from "../tree-nodes.js";
 import type { Toggle } from "../tree-collapse.js";
 import type { PressAt } from "../drawer.js";
-import type { CommitLayout } from "./carry.js";
+import type { CommitLayout } from "./board-edits.js";
 import { lookOf } from "./collapsed-panel.js";
 import type { LaidTree } from "./lay-tree.js";
 
@@ -39,7 +39,7 @@ const ICON_OF_LOOK: Readonly<Record<string, string>> = {
 	[MENU]: "menu",
 };
 
-export type PressBox = (point?: PressAt | null) => void;
+type PressBox = (point?: PressAt | null) => void;
 
 export interface BoxAction {
 	readonly key: string;

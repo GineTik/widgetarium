@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 import { Card } from "@widgetarium/kit";
 
-export interface SlotLook {
+interface SlotLook {
 	readonly surface: string;
 	readonly isCard: boolean;
 }

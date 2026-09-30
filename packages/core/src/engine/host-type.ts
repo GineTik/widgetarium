@@ -1,8 +1,8 @@
-export const HOST_TYPES = ["obsidian-desktop", "obsidian-mobile", "obsidian-web"] as const;
+const HOST_TYPES = ["obsidian-desktop", "obsidian-mobile", "obsidian-web"] as const;
 
-export type HostType = (typeof HOST_TYPES)[number];
+type HostType = (typeof HOST_TYPES)[number];
 
-export interface HostPlatformFlags {
+interface HostPlatformFlags {
 	readonly isMobileApp?: unknown;
 	readonly isMobile?: unknown;
 	readonly isDesktopApp?: unknown;

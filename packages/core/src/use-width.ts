@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
-export interface MeasuredNode {
+interface MeasuredNode {
 	readonly current: HTMLElement | null;
 }
 
-export interface BoxSize {
+interface BoxSize {
 	readonly width: number;
 	readonly height: number;
 }

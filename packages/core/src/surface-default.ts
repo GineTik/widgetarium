@@ -3,7 +3,7 @@ import type { RoleOf, TileWidget } from "./surface-laws.js";
 import { isBox, nodeAt, NO_SURFACE, pathKey, replaceAt } from "./tree.js";
 import type { BoardNode, BoxNode, NodePath, SurfaceWord } from "./tree.js";
 
-export interface DefaultSurfacesAsk {
+interface DefaultSurfacesAsk {
 	readonly layout: BoxNode;
 	readonly tiles: readonly TileWidget[];
 	readonly roleOf?: RoleOf;

@@ -1,20 +1,20 @@
 import { failureMessage } from "./failure-message.js";
 
-export interface InstallOutcome {
+interface InstallOutcome {
 	readonly ok: boolean;
 	readonly failure?: string | null;
 }
 
-export interface WidgetDoor {
+interface WidgetDoor {
 	isHeld(id: string): boolean;
 	installOne(id: string): Promise<InstallOutcome>;
 	reread(): Promise<unknown>;
 	onInstalled?: (ids: readonly string[]) => unknown;
 }
 
-export type OnWantedStep = (id: string) => void;
+type OnWantedStep = (id: string) => void;
 
-export interface WantedWidgets {
+interface WantedWidgets {
 	want(ids: readonly string[], onStep?: OnWantedStep): Promise<string[]>;
 	refusalOf(id: string): string | null;
 }

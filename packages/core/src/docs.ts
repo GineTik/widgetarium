@@ -1,7 +1,7 @@
 import ADD_YOUR_OWN_WIDGET from "../../../docs/catalogue/add-your-own-widget.md";
 import PUBLISH_YOUR_WIDGET from "../../../docs/catalogue/publish-your-widget.md";
 
-export interface DocAction {
+interface DocAction {
 	readonly label: string;
 	readonly icon: string;
 	readonly href: string;

@@ -1,24 +1,25 @@
 import type { MutableRefObject, RefObject } from "react";
 import { sidebarWidth, widenBox, withWidth } from "../tree.js";
 import type { BoxNode } from "../tree-nodes.js";
-import type { CommitLayout, PointerAt } from "./carry.js";
+import type { CommitLayout } from "./board-edits.js";
+import type { PointerAt } from "./carry.js";
 
 export interface SidebarDrag {
 	readonly stop: () => void;
 	readonly repaint: () => void;
 }
 
-export interface SidebarLayout {
+interface SidebarLayout {
 	readonly width: number;
 	readonly commitLayout: CommitLayout;
 }
 
-export interface SidebarRefs {
+interface SidebarRefs {
 	readonly sidebarRef: MutableRefObject<SidebarDrag | null>;
 	readonly pageRef: RefObject<HTMLElement | null>;
 }
 
-export type GripEvent = PointerAt & Pick<PointerEvent, "preventDefault" | "stopPropagation">;
+type GripEvent = PointerAt & Pick<PointerEvent, "preventDefault" | "stopPropagation">;
 
 export type Toward = 1 | -1;
 

@@ -5,23 +5,24 @@ import type { InsetsByCell } from "../content-insets.js";
 import { useMeasuresSurfaces } from "../surface-measure.js";
 import type { PressAt } from "../drawer.js";
 import { startCarry } from "./carry.js";
-import type { Carry, CarryGesture, CommitLayout, PointerAt, SetCarry } from "./carry.js";
+import type { Carry, CarryGesture, PointerAt, SetCarry } from "./carry.js";
+import type { CommitLayout } from "./board-edits.js";
 import type { SidebarDrag } from "./sidebar-drag.js";
 import { useLandingGhost } from "./use-landing-ghost.js";
 import { useStopOnUnmount } from "./use-stop-on-unmount.js";
 import type { SurfaceShared } from "./use-surface-shared.js";
 
-export type RegionElements = Map<number, HTMLElement>;
+type RegionElements = Map<number, HTMLElement>;
 
-export type EveryRegionElement = Map<string, HTMLElement>;
+type EveryRegionElement = Map<string, HTMLElement>;
 
-export interface CarryPress extends PointerAt {
+interface CarryPress extends PointerAt {
 	readonly target: EventTarget | null;
 	readonly button: number;
 	readonly preventDefault: () => void;
 }
 
-export interface TreePageAsk {
+interface TreePageAsk {
 	readonly shared: Pick<SurfaceShared, "host">;
 	readonly editing: boolean;
 	readonly commitLayout: CommitLayout;

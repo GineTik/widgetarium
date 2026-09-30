@@ -10,7 +10,7 @@ export interface TabStripFacts {
 	readonly onRefuse?: ((message: string) => void) | undefined;
 }
 
-export interface TabStripSetters {
+interface TabStripSetters {
 	readonly setEditing: (tab: string) => void;
 	readonly setDeleting: (tab: string) => void;
 }

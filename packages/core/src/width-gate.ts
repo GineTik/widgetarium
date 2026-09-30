@@ -2,14 +2,14 @@ const SCROLLBAR_SLACK_PX = 20;
 const OSCILLATION_MS = 500;
 const SETTLE_MS = 120;
 
-export type WidthGate = (value: number) => boolean;
+type WidthGate = (value: number) => boolean;
 
-export interface WidthGateOptions {
+interface WidthGateOptions {
 	readonly minimum?: number;
 	readonly now?: (() => number) | undefined;
 }
 
-export interface WidthWatcherOptions<Timer> {
+interface WidthWatcherOptions<Timer> {
 	readonly minimum: number;
 	readonly onWidth: (width: number) => void;
 	readonly schedule: (task: () => void, delayMs: number) => Timer;
@@ -17,7 +17,7 @@ export interface WidthWatcherOptions<Timer> {
 	readonly now?: () => number;
 }
 
-export interface WidthWatcher {
+interface WidthWatcher {
 	measured(value: number): void;
 	stop(): void;
 }

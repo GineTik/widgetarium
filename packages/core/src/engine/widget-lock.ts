@@ -4,7 +4,7 @@ import { isWidgetModule } from "./widget-build.js";
 import { isObject } from "./is-object.js";
 import type { Fields } from "./catalogue-index.js";
 
-export type HashedFiles = Readonly<Record<string, string>>;
+type HashedFiles = Readonly<Record<string, string>>;
 export type Texts = Readonly<Record<string, string | null | undefined>>;
 
 export interface BuildRecord {
@@ -20,9 +20,9 @@ export interface WidgetLock {
 	readonly builds: Readonly<Record<string, BuildRecord>>;
 }
 
-export type InstallState = typeof INSTALL_PENDING | typeof INSTALLED;
+type InstallState = typeof INSTALL_PENDING | typeof INSTALLED;
 
-export interface LockEntry {
+interface LockEntry {
 	readonly source: string;
 	readonly path: string | null;
 	readonly commit: string;
@@ -40,19 +40,19 @@ export interface LockEntryInput {
 	readonly state?: InstallState;
 }
 
-export interface BuildInput {
+interface BuildInput {
 	readonly from: string;
 	readonly compiler?: unknown;
 	readonly inputs?: Texts | null;
 }
 
-export interface LockedModule {
+interface LockedModule {
 	readonly key: string;
 	readonly path: string;
 	readonly hash: string;
 }
 
-export interface ReleasedModules {
+interface ReleasedModules {
 	readonly lock: WidgetLock;
 	readonly collected: string[];
 }

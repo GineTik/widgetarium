@@ -17,7 +17,7 @@ export interface TemplateBuildState {
 	readonly failure: string | null;
 }
 
-export interface TemplateBuild extends TemplateBuildState {
+interface TemplateBuild extends TemplateBuildState {
 	readonly press: () => Promise<void>;
 }
 

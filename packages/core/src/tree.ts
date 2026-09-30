@@ -111,17 +111,8 @@ export function withoutSurface(node: BoardNode): BoardNode {
 	return surface === undefined && side === undefined ? node : bare;
 }
 
-export const REGIONS_THAT_PLATE: readonly string[] = ["indicators"];
+const REGIONS_THAT_PLATE: readonly string[] = ["indicators"];
 const ROLES_LEFT_BARE: readonly string[] = [TEXT_ROLE, "layout", "control", "navigation"];
-
-export function wearInRegion(leaf: LeafNode, how: LayPlace): LeafNode {
-	if (leaf.surface !== undefined) return leaf;
-	if (!REGIONS_THAT_PLATE.some((role) => role === how.regionRole)) return leaf;
-	if (how.underSurface !== NO_SURFACE) return leaf;
-	const { role } = how.ask(leaf.id);
-	if (ROLES_LEFT_BARE.some((bare) => bare === role)) return leaf;
-	return { ...leaf, surface: GROUP };
-}
 
 export function layNode(node: BoardNode, width: number, how: LayAsk): LaidNode {
 	const held: LayPlace = { path: [], edges: allEdges(0), plates: 0, underSurface: NO_SURFACE, level: 0, ...how };
@@ -377,4 +368,13 @@ function laySwap(node: BoxNode, width: number, inner: number, how: LayPlace): La
 			return { ...layNode(child, inner, placed.how), ...placed.divider, ...slotOf(child), grow: 0, basis: "auto" };
 		}),
 	};
+}
+
+function wearInRegion(leaf: LeafNode, how: LayPlace): LeafNode {
+	if (leaf.surface !== undefined) return leaf;
+	if (!REGIONS_THAT_PLATE.some((role) => role === how.regionRole)) return leaf;
+	if (how.underSurface !== NO_SURFACE) return leaf;
+	const { role } = how.ask(leaf.id);
+	if (ROLES_LEFT_BARE.some((bare) => bare === role)) return leaf;
+	return { ...leaf, surface: GROUP };
 }

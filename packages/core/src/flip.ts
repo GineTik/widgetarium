@@ -14,7 +14,7 @@ export interface Move {
 }
 
 export type Places = Readonly<Record<string, Place>>;
-export type Moves = Readonly<Record<string, Move>>;
+type Moves = Readonly<Record<string, Move>>;
 
 interface HeldMove {
 	readonly node: HTMLElement;

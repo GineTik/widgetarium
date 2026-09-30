@@ -1,6 +1,6 @@
 let isTracingAsked = false;
 
-export interface SpentRow {
+interface SpentRow {
 	readonly what: string;
 	readonly calls: number;
 	readonly totalMs: number;

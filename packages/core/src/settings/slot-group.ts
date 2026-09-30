@@ -1,47 +1,63 @@
 import { createElement as h } from "react";
+import type { ReactElement } from "react";
 import { Button, Icon } from "@widgetarium/kit";
 import { CatalogueDialog } from "../catalogue-dialog.js";
 import { shownEntries } from "../prop-visibility.js";
 import { reactClash, slotFit } from "../fit.js";
+import type { SlotFit } from "../fit.js";
+import type { Fields } from "../engine/catalogue-index.js";
+import { slotSpecsOf } from "../manifest-holds.js";
+import type { SlotSpec } from "../manifest-holds.js";
 import { SLOT_SURFACES, slotSurfaceOf } from "../surface-roles.js";
+import type { WindowState } from "../settings-window.js";
+import type { TilePatch } from "./settings-state.js";
 import { editorPopover, enterButton, group, pickRow, titleCase, valueRow } from "./settings-rows.js";
 
-export function slotGroup(state) {
+interface SlotAt {
+	readonly name: string;
+	readonly spec: SlotSpec;
+	readonly chosen: string;
+}
+
+export function slotGroup(state: WindowState): ReactElement | null {
 	const rows = slotRows(state);
 	if (rows.length === 0) return null;
 	return group("slots", "Slots", rows, "A hole this widget fills with another widget.");
 }
 
-const hasOwnProps = (manifest, fed) => Object.keys(manifest?.props ?? {}).some((key) => !fed.includes(key));
+function hasOwnProps(manifest: Fields | null | undefined, fed: readonly string[]): boolean {
+	return Object.keys(manifest?.["props"] ?? {}).some((key) => !fed.includes(key));
+}
 
-function slotRows(state) {
+function slotRows(state: WindowState): ReactElement[] {
 	const picks = state.tile.slots ?? {};
-	return shownEntries(state.manifest.slots, state.seen).map(([name, spec]) =>
-		slotRow(state, name, spec, picks[name]?.widget ?? spec.default ?? ""),
+	return shownEntries(slotSpecsOf(state.manifest), state.seen).map(([name, spec]) =>
+		slotRow(state, { name, spec, chosen: picks[name]?.widget ?? spec.default ?? "" }),
 	);
 }
 
-function slotRow(state, name, spec, chosen) {
+function slotRow(state: WindowState, { name, spec, chosen }: SlotAt): ReactElement {
 	const { manifest, tile, registry, host, onPatch } = state;
 	const picks = tile.slots ?? {};
 	const parentReact = registry.get(manifest.id)?.react;
-	const clashWith = (id) => reactClash(parentReact, registry.get(id)?.react);
+	const clashWith = (id: string | undefined): string | null => reactClash(parentReact, registry.get(id)?.react);
 	const held = registry.get(chosen);
 	const key = `slot:${name}`;
-	const write = (id) => {
-		const clash = clashWith(id);
+	const write = (id: string | null): void => {
+		const clash = clashWith(id ?? undefined);
 		if (clash) {
-			state.host?.ui?.notify(clash);
+			host?.ui?.notify(clash);
 			return;
 		}
 		const { [name]: dropped, ...rest } = picks;
 		const worn = dropped?.surface ? { surface: dropped.surface } : null;
-		onPatch({
-			slots: id ? { ...picks, [name]: { ...worn, widget: id } } : { ...rest, ...(worn ? { [name]: worn } : {}) },
-		});
+		const slots: Readonly<Record<string, TilePatch>> = id
+			? { ...picks, [name]: { ...worn, widget: id } }
+			: { ...rest, ...(worn ? { [name]: worn } : {}) };
+		onPatch({ slots });
 		state.openEditor(null);
 	};
-	const wear = (surface) => {
+	const wear = (surface: string): void => {
 		onPatch({ slots: { ...picks, [name]: { ...picks[name], surface } } });
 		state.openEditor(null);
 	};
@@ -51,7 +67,7 @@ function slotRow(state, name, spec, chosen) {
 		glyph: h(Icon, { name: "check" }),
 		label: titleCase(name),
 		sub: fed.length ? `Fed ${fed.join(", ")}` : null,
-		value: held?.manifest?.title ?? chosen ?? "Nothing",
+		value: titleOf(held?.manifest) ?? chosen,
 		unset: !chosen,
 		onClick: () => state.openEditor(key),
 		after:
@@ -68,7 +84,9 @@ function slotRow(state, name, spec, chosen) {
 			h(
 				"div",
 				{ className: "wg-set-pop-body" },
-				SLOT_SURFACES.map((surface) => pickRow(surface, titleCase(surface), () => wear(surface), surface === worn)),
+				SLOT_SURFACES.map((surface: string) =>
+					pickRow(surface, titleCase(surface), () => wear(surface), surface === worn),
+				),
 			),
 		),
 		state.openRow === key
@@ -77,7 +95,7 @@ function slotRow(state, name, spec, chosen) {
 					registry,
 					host,
 					mode: "fill",
-					rank: (candidate) => slotFit(candidate, spec.gives, clashWith(candidate.id)),
+					rank: (candidate): SlotFit => slotFit(candidate, spec.gives, clashWith(idOf(candidate))),
 					foot: spec.default
 						? h(Button, { size: "s", onClick: () => write(null) }, "Back to the widget's default")
 						: null,
@@ -86,4 +104,14 @@ function slotRow(state, name, spec, chosen) {
 				})
 			: null,
 	]);
+}
+
+function titleOf(manifest: Fields | null | undefined): string | undefined {
+	const title = manifest?.["title"];
+	return typeof title === "string" ? title : undefined;
+}
+
+function idOf(candidate: Fields): string | undefined {
+	const id = candidate["id"];
+	return typeof id === "string" ? id : undefined;
 }

@@ -28,11 +28,11 @@ export interface SurfaceSaid {
 	readonly surface?: unknown;
 }
 
-export interface SlotCard {
+interface SlotCard {
 	readonly props?: Readonly<Record<string, ReadProp | null | undefined>> | null;
 }
 
-export const LAYOUT_ROLE = "layout";
+const LAYOUT_ROLE = "layout";
 
 export const ROLES = [
 	LAYOUT_ROLE,
@@ -66,10 +66,10 @@ export function isKnownRole(role: unknown): role is Role {
 	return ROLES.some((known) => known === role);
 }
 
-export const EARNED_BY_PEERS = "peers";
+const EARNED_BY_PEERS = "peers";
 export const EARNED_BY_LIST = "list";
 
-export type Earning = typeof EARNED_BY_PEERS | typeof EARNED_BY_LIST;
+type Earning = typeof EARNED_BY_PEERS | typeof EARNED_BY_LIST;
 
 const STANDS_ALONE =
 	"{one} stands alone: a plate is earned by a repeat — the same thing beside it again, or a list of the same things it holds";
@@ -77,11 +77,6 @@ const STANDS_ALONE =
 export function slotSurfaceNamed(said: unknown): SlotSurface | null {
 	const surface: unknown = readSlotSurface(said);
 	return surface === GROUP || surface === NO_SURFACE ? surface : null;
-}
-
-export function kindOfNode(node: BoardNode, widgetOf: WidgetOf): string {
-	if (!isBox(node)) return widgetOf(node.id) ?? `tile:${node.id}`;
-	return `${node.role ?? ""}:${node.dir}:[${node.of.map((one) => kindOfNode(one, widgetOf)).join(",")}]`;
 }
 
 export function repeatEarning(node: BoardNode, siblings: readonly BoardNode[], widgetOf: WidgetOf): Earning | null {
@@ -116,4 +111,9 @@ function wornByReading(card: SlotCard | null | undefined): SlotSurface {
 function holdsRepeat(nodes: readonly BoardNode[], widgetOf: WidgetOf): boolean {
 	const kinds = nodes.map((one) => kindOfNode(one, widgetOf));
 	return new Set(kinds).size < kinds.length;
+}
+
+function kindOfNode(node: BoardNode, widgetOf: WidgetOf): string {
+	if (!isBox(node)) return widgetOf(node.id) ?? `tile:${node.id}`;
+	return `${node.role ?? ""}:${node.dir}:[${node.of.map((one) => kindOfNode(one, widgetOf)).join(",")}]`;
 }

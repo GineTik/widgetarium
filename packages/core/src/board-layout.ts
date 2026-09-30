@@ -6,9 +6,9 @@ import { isBoxDirection, isCollapseKind, isCollapseToggle, isSurfaceSide, surfac
 
 export type RawFields = Readonly<Record<string, unknown>>;
 
-export type BoxFlags = Omit<BoxNode, "dir" | "of">;
+type BoxFlags = Omit<BoxNode, "dir" | "of">;
 
-export type SlotFlags = Pick<PlaceFlags, "name" | "hidden" | "surface" | "side">;
+type SlotFlags = Pick<PlaceFlags, "name" | "hidden" | "surface" | "side">;
 
 export interface RawBox extends RawFields {
 	readonly of: readonly unknown[];
@@ -16,10 +16,6 @@ export interface RawBox extends RawFields {
 
 export function isRawBox(input: unknown): input is RawBox {
 	return isObject(input) && Array.isArray(input["of"]);
-}
-
-export function normalizeNode(input: unknown): BoardNode | null {
-	return isRawBox(input) ? normalizeBox(input) : normalizeLeaf(input);
 }
 
 export function normalizeBox(input: RawBox): BoxNode {
@@ -99,4 +95,8 @@ function collapseFrom(input: RawFields): Collapse | null {
 function collapseSaid(said: unknown): RawFields {
 	if (typeof said === "string") return { into: said };
 	return isObject(said) ? said : {};
+}
+
+function normalizeNode(input: unknown): BoardNode | null {
+	return isRawBox(input) ? normalizeBox(input) : normalizeLeaf(input);
 }

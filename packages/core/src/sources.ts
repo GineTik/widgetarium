@@ -3,7 +3,7 @@ import type { WidgetSourcePlace } from "./engine/source-offers.js";
 
 const SOURCE_UNREADABLE = "[widgetarium] this source names neither a folder nor a repository, so it was skipped";
 
-export interface SourceLists {
+interface SourceLists {
 	readonly added?: unknown;
 	readonly legacy?: unknown;
 	readonly shipped?: unknown;
@@ -31,9 +31,6 @@ export function identityOf(source: WidgetSourcePlace | null | undefined): string
 		: String(source?.path ?? "");
 }
 
-export const isReachableSource = (source: unknown): source is WidgetSourcePlace =>
-	isObject(source) && carriesAWorkableRef(source) && (namesARepository(source) || namesAFolderOnThisMachine(source));
-
 export const namesAFolderOnThisMachine = (source: unknown): boolean =>
 	!namesARepository(source) && isNamed(fieldOf(source, "path"));
 
@@ -50,3 +47,6 @@ const isNamed = (held: unknown): held is string => typeof held === "string" && h
 const asList = (held: unknown): readonly unknown[] => (Array.isArray(held) ? held : []);
 
 const fieldOf = (held: unknown, key: string): unknown => (isObject(held) ? held[key] : undefined);
+
+const isReachableSource = (source: unknown): source is WidgetSourcePlace =>
+	isObject(source) && carriesAWorkableRef(source) && (namesARepository(source) || namesAFolderOnThisMachine(source));

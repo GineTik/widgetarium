@@ -10,7 +10,7 @@ export interface Holder {
 	readonly mounted?: Readonly<Record<string, HeldRecord>>;
 }
 
-export interface HeldLook {
+interface HeldLook {
 	readonly surface?: SlotSurface;
 }
 
@@ -37,19 +37,19 @@ export interface MountRowLike {
 	readonly was?: string | null;
 }
 
-export interface StoredMountRow {
+interface StoredMountRow {
 	readonly name: string;
 	readonly widget: string;
 	readonly hidden?: true;
 }
 
-export interface MountHolder {
+interface MountHolder {
 	readonly mounts?: TileMounts;
 	readonly settings?: TileSettings;
 	readonly mounted?: Readonly<Record<string, HeldRecord>>;
 }
 
-export interface MountPatch {
+interface MountPatch {
 	readonly mounts: TileMounts;
 	readonly settings: TileSettings;
 	readonly mounted: Readonly<Record<string, HeldRecord>>;

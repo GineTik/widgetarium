@@ -16,11 +16,11 @@ export interface EngineManifest {
 	readonly props?: OrderedProps;
 }
 
-export interface MigratedFrom {
+interface MigratedFrom {
 	readonly from: unknown;
 }
 
-export interface GeneratedCard {
+interface GeneratedCard {
 	readonly [field: string]: unknown;
 	readonly $generated: string;
 	readonly api: unknown;
@@ -36,13 +36,13 @@ export interface IndexedEntry {
 	readonly origin: unknown;
 }
 
-export interface KeyedEntry {
+interface KeyedEntry {
 	readonly manifest?: { readonly id?: unknown } | null | undefined;
 }
 
 export const RECORD_FILE = "manifest.generated.json";
 export const RECORD_FILES: readonly string[] = [RECORD_FILE];
-export const GENERATED_NOTE = "widgetarium build — do not edit";
+const GENERATED_NOTE = "widgetarium build — do not edit";
 
 const PROP_KEYS: readonly string[] = [
 	"kind",

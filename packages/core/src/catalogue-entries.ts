@@ -22,7 +22,7 @@ export interface CatalogueDefinition {
 	readonly from?: { readonly folder?: string | null | undefined } | null | undefined;
 }
 
-export interface UpdateOffered {
+interface UpdateOffered {
 	readonly here: string;
 	readonly there: string;
 }
@@ -68,7 +68,7 @@ export interface CatalogueFacets {
 
 export type Showing = "all" | "installed" | "update";
 
-export interface EntryFilter {
+interface EntryFilter {
 	readonly showing: Showing;
 	readonly pack: string;
 	readonly tag: string | null;
@@ -76,7 +76,7 @@ export interface EntryFilter {
 
 export type EntryAction = "install" | "update" | "add";
 
-export interface LaidOut<Entry> {
+interface LaidOut<Entry> {
 	readonly placed: Entry[];
 	readonly divide: number | null;
 }

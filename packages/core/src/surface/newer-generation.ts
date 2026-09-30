@@ -11,7 +11,7 @@ import type { SurfaceRegistry } from "./use-surface-shared.js";
 const NEWER_GENERATION = "A newer {widget} is installed; this tile still uses the version it was made with.";
 const MOVE_TO_NEWER = "Move this tile to it";
 
-export interface GenerationRegistry extends SurfaceRegistry {
+interface GenerationRegistry extends SurfaceRegistry {
 	resolveId?(id: string): string | null | undefined;
 	generationsOf?(key: string): readonly string[];
 	tileRefOf(id: string): string;

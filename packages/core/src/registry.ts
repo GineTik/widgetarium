@@ -35,11 +35,11 @@ export interface WidgetLookup {
 	get(id: string | null | undefined): WidgetDefinition | null;
 }
 
-export interface RegistryApp {
+interface RegistryApp {
 	readonly vault: { readonly adapter: RegistryAdapter };
 }
 
-export interface BuildWidgetInput {
+interface BuildWidgetInput {
 	readonly manifest?: VersionedManifest | null;
 	readonly code?: string;
 	readonly path: string;
@@ -85,6 +85,10 @@ export function inlineWidgets<Entry extends ManifestHolder>(entries: readonly En
 export function declaredName(registry: WidgetLookup | null | undefined, id: string): unknown {
 	const manifest = registry?.get(id)?.manifest;
 	return manifest?.["view"] ?? manifest?.["title"] ?? id;
+}
+
+export function declaredLabel(registry: WidgetLookup | null | undefined, id: string): string {
+	return String(declaredName(registry, id));
 }
 
 export class WidgetRegistry implements WidgetLookup {

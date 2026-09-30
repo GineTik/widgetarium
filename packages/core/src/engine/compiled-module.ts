@@ -2,12 +2,12 @@ import { compileWidget } from "./widget-build.js";
 
 export type RequireModule = (name: string) => unknown;
 
-export interface ModuleOptions {
+interface ModuleOptions {
 	readonly require?: RequireModule;
 	readonly globals?: Readonly<Record<string, unknown>>;
 }
 
-export interface ModuleShell {
+interface ModuleShell {
 	exports: unknown;
 }
 

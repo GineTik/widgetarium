@@ -28,14 +28,14 @@ export interface BuilderAdapter {
 	list(at: string): Promise<FolderListing>;
 }
 
-export type CompiledSource =
+type CompiledSource =
 	| { readonly ok: true; readonly from: string; readonly code: string; readonly failure: null }
 	| { readonly ok: true; readonly from: null; readonly code: null; readonly failure: null }
 	| { readonly ok: false; readonly from: null; readonly code: null; readonly failure: string };
 
-export type AboutToBeWritten = Readonly<Record<string, string>>;
+type AboutToBeWritten = Readonly<Record<string, string>>;
 
-export interface BuildAsked {
+interface BuildAsked {
 	readonly lock: WidgetLock;
 	readonly id: string;
 	readonly folder: string;
@@ -61,7 +61,7 @@ export type MadeBuild =
 			readonly failure: string;
 	  };
 
-export type Rebuilt =
+type Rebuilt =
 	| { readonly ok: true; readonly lock: WidgetLock; readonly failure: null }
 	| { readonly ok: false; readonly lock: WidgetLock; readonly failure: string };
 
@@ -73,7 +73,7 @@ export interface Builder {
 	rebuild(lock: WidgetLock, id: string, folder: string, files: FolderFiles): Promise<Rebuilt>;
 }
 
-export interface BuilderDoors {
+interface BuilderDoors {
 	readonly adapter: BuilderAdapter;
 	readonly space: ModuleSpace;
 }
@@ -108,16 +108,6 @@ interface SheetAsked extends BuilderDoors {
 interface StyledInputs {
 	readonly compiler: string | null;
 	readonly inputs: SheetInputs;
-}
-
-export function compileSource(files: FolderFiles, folder: string): CompiledSource {
-	const from = sourceFileIn(files);
-	if (!from) return { ok: true, from: null, code: null, failure: null };
-	try {
-		return { ok: true, from, code: compileWidgetFolder(files, folder), failure: null };
-	} catch (failure) {
-		return { ok: false, from: null, code: null, failure: `${from} did not compile: ${failureMessage(failure)}` };
-	}
 }
 
 export function createBuilder({ adapter, space }: BuilderDoors): Builder {
@@ -263,4 +253,14 @@ async function scopeLibInput(
 
 async function readIfThere(adapter: BuilderAdapter, path: string): Promise<string | null> {
 	return (await adapter.exists(path)) ? adapter.read(path) : null;
+}
+
+function compileSource(files: FolderFiles, folder: string): CompiledSource {
+	const from = sourceFileIn(files);
+	if (!from) return { ok: true, from: null, code: null, failure: null };
+	try {
+		return { ok: true, from, code: compileWidgetFolder(files, folder), failure: null };
+	} catch (failure) {
+		return { ok: false, from: null, code: null, failure: `${from} did not compile: ${failureMessage(failure)}` };
+	}
 }

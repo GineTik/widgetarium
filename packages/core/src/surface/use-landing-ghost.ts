@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import { flyGhostHome, LANDING_MS } from "./ghost.js";
 import type { Carry, SetCarry } from "./carry.js";
 
-export interface LandingRefs {
+interface LandingRefs {
 	readonly pageRef: RefObject<HTMLElement | null>;
 	readonly ghostRef: RefObject<HTMLElement | null>;
 }

@@ -3,7 +3,7 @@ import type { Board } from "./model.js";
 import { isBox, keptAt, sideOf } from "./tree.js";
 import type { BoardNode, LeafNode, ScreenSide } from "./tree.js";
 
-export interface TemplateNode {
+interface TemplateNode {
 	readonly dir?: string;
 	readonly of?: readonly TemplateNode[];
 	readonly id?: string;
@@ -15,14 +15,14 @@ export interface TemplateNode {
 	readonly collapse?: { readonly into: string; readonly toggle: string };
 }
 
-export interface TemplateTile {
+interface TemplateTile {
 	readonly id: string;
 	readonly widget: string;
 	readonly props?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
 	readonly slots?: Readonly<Record<string, { readonly widget: string }>>;
 }
 
-export interface TemplateBoard {
+interface TemplateBoard {
 	readonly mode: string;
 	readonly tiles: readonly TemplateTile[];
 	readonly layout: TemplateNode;
@@ -36,7 +36,7 @@ export interface Template {
 	readonly board: TemplateBoard;
 }
 
-export interface WidgetHolder {
+interface WidgetHolder {
 	readonly widget?: string | undefined;
 	readonly slots?: Readonly<Record<string, WidgetHolder>> | null | undefined;
 	readonly mounted?: Readonly<Record<string, WidgetHolder>> | null | undefined;

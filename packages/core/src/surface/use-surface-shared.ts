@@ -8,12 +8,17 @@ import { createGatewayRefs, createViewCells } from "../gateway/refs.js";
 import type { GatewayRefs, ViewCell } from "../gateway/refs.js";
 import type { MeasureHost } from "../surface-measure.js";
 import type { Tile } from "../model.js";
+import type { WidgetLookup } from "../registry.js";
+import type { HostGatewayHost } from "../engine/host-gateways.js";
+import type { CatalogueHost } from "../catalogue-preview.js";
+import type { Here, Navigation } from "../gateway/host.js";
+import type { SettingsHost, TilePatch } from "../settings/settings-state.js";
 import type { InstallingHost } from "./missing-tile.js";
 import type { WidgetDefinition } from "./is-drawable.js";
 import { refuseFold } from "./refuse-fold.js";
 import { MIN_LAID_OUT_BOARD_PX } from "./use-board-width.js";
 
-export interface RegisteredWidget extends WidgetDefinition {
+interface RegisteredWidget extends WidgetDefinition {
 	readonly manifest?: EngineManifest | null;
 }
 
@@ -21,32 +26,47 @@ export interface SurfaceRegistry {
 	get(id: string | undefined): RegisteredWidget | null | undefined;
 }
 
-export type SurfaceHost = MeasureHost & InstallingHost;
+export interface BoardRegistry extends WidgetLookup {
+	resolveId?(id: string): string | null | undefined;
+	generationsOf?(key: string): readonly string[];
+	tileRefOf(id: string): string;
+}
+
+interface HostPlace {
+	readonly here?: Here | null | undefined;
+	readonly navigator?: Navigation | null | undefined;
+}
+
+export type SurfaceHost = MeasureHost & InstallingHost & HostGatewayHost & CatalogueHost & SettingsHost & HostPlace;
+
+export type FoldTile = (tileId: string) => void;
+
+export type PatchMounted = (name: string, was: string | null | undefined, patch: TilePatch) => void;
 
 export type FoldIntoGroup = () => boolean;
 
 export interface SurfaceShared {
-	readonly host: SurfaceHost | null | undefined;
+	readonly host: SurfaceHost;
 	readonly scale: number;
 	readonly refs: GatewayRefs;
 	readonly cellFor: (key: string) => ViewCell;
 	readonly shells: TileShells;
-	readonly registry: SurfaceRegistry;
-	readonly onCollapse: () => void;
-	readonly onExpand: () => void;
-	readonly patchMounted: () => void;
+	readonly registry: BoardRegistry;
+	readonly onCollapse: FoldTile;
+	readonly onExpand: FoldTile;
+	readonly patchMounted: PatchMounted;
 	readonly isMounted: boolean;
 	readonly foldIntoGroup: FoldIntoGroup;
 }
 
-export interface SurfaceSharedAsk {
-	readonly host: SurfaceHost | null | undefined;
-	readonly registry: SurfaceRegistry;
+interface SurfaceSharedAsk {
+	readonly host: SurfaceHost;
+	readonly registry: BoardRegistry;
 	readonly tiles: readonly Tile[];
 	readonly width: number;
 }
 
-export interface SurfaceSharing {
+interface SurfaceSharing {
 	readonly refs: GatewayRefs;
 	readonly shared: SurfaceShared;
 	readonly foldRef: MutableRefObject<FoldIntoGroup | null>;

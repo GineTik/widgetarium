@@ -7,7 +7,7 @@ export type PressState = EntryAction | "busy" | "failed";
 
 export type CatalogueMode = "browse" | "place" | "fill" | "text" | "mount" | "template";
 
-export interface InstallAnswer {
+interface InstallAnswer {
 	readonly ok: boolean;
 	readonly failure?: string | null;
 }
@@ -16,14 +16,14 @@ export type OnPick = (id: string, mode: CatalogueMode) => unknown;
 
 export type OnInstall = (listed: CatalogueDefinition, onStep: OnFetchStep) => Promise<InstallAnswer | null | undefined>;
 
-export interface InstallPressAsk {
+interface InstallPressAsk {
 	readonly entry: MergedEntry;
 	readonly mode: CatalogueMode;
 	readonly onPick?: OnPick | undefined;
 	readonly onInstall?: OnInstall | undefined;
 }
 
-export interface InstallPress {
+interface InstallPress {
 	readonly state: PressState;
 	readonly step: FetchProgress | null;
 	readonly failure: string | null;

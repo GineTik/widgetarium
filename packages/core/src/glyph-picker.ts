@@ -50,7 +50,7 @@ export function GlyphPicker({ picker, value, onPick }: GlyphPickerProps): ReactE
 	]);
 }
 
-export function glyphsMatching<Entry extends GlyphEntry>(entries: readonly Entry[], keyword: string): readonly Entry[] {
+function glyphsMatching<Entry extends GlyphEntry>(entries: readonly Entry[], keyword: string): readonly Entry[] {
 	const words = keyword.trim().toLowerCase().split(/\s+/).filter(Boolean);
 	if (words.length === 0) return entries;
 	return entries.filter((entry) => words.every((word) => spokenOf(entry).includes(word)));

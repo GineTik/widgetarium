@@ -50,21 +50,21 @@ export interface TileWidget {
 	readonly widget?: string | undefined;
 }
 
-export interface VerdictAsk {
+interface VerdictAsk {
 	readonly layout: BoxNode;
 	readonly tiles: readonly TileWidget[];
 	readonly measured: unknown;
 	readonly roleOf?: RoleOf;
 }
 
-export interface Candidate {
+interface Candidate {
 	readonly surface: SurfaceWord;
 	readonly passes: boolean;
 	readonly reasons: readonly string[];
 	readonly colour?: Rgba;
 }
 
-export interface Judgement {
+interface Judgement {
 	readonly advised: SurfaceWord;
 	readonly law: string;
 	readonly reason: string;
@@ -73,7 +73,7 @@ export interface Judgement {
 	readonly side?: SurfaceSide;
 }
 
-export interface Verdict extends Omit<Judgement, "candidates"> {
+interface Verdict extends Omit<Judgement, "candidates"> {
 	readonly path: NodePath;
 	readonly kind: "region" | "box" | "leaf";
 	readonly now: string;
@@ -82,7 +82,7 @@ export interface Verdict extends Omit<Judgement, "candidates"> {
 	readonly candidates?: readonly Candidate[];
 }
 
-export interface SurfaceReport {
+interface SurfaceReport {
 	readonly verdicts: readonly Verdict[];
 	readonly nesting: readonly NestingFinding[];
 }

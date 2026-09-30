@@ -9,34 +9,12 @@ export interface StandingTile {
 	readonly id: string;
 }
 
-export interface WiringRegistry {
+interface WiringRegistry {
 	resolveId?(id: string): string | null | undefined;
 	get(id: string | undefined): { readonly manifest?: Fields | null } | null | undefined;
 }
 
 type Standing = ReadonlyMap<string, string>;
-
-export function tilesByWidget(
-	tiles: readonly Tile[] | null | undefined,
-	currentId: (id: string) => string = (id) => id,
-	standing: readonly StandingTile[] = [],
-): Map<string, string> {
-	const seen = new Map(standing.map((held) => [widgetKeyOf(held.widget), held.id] as const));
-	const walk = (held: readonly Tile[] | null | undefined, at: string | null): void => {
-		for (const tile of held ?? []) {
-			const id = at ? `${at}/${tile.id}` : tile.id;
-			const widget = tile.widget && widgetKeyOf(currentId(tile.widget));
-			if (widget && !seen.has(widget)) seen.set(widget, id);
-			walk(mountedTiles(tile), id);
-		}
-	};
-	walk(tiles, null);
-	return seen;
-}
-
-export function isUnresolved(held: unknown): boolean {
-	return isObject(held) && typeof held["wants"] === "string" && typeof held["ref"] !== "string";
-}
 
 // TRADE-OFF: a box standing in for a widget is passed in rather than found here, because a layout node is not a tile and wiring reads tiles
 export function wireTiles(
@@ -129,4 +107,22 @@ function wireMounted(
 	if (entries.length === 0) return null;
 	const wired = entries.map(([name, held]) => [name, wireHeld(held, registry, standing)] as const);
 	return wired.some(([name, held]) => held !== mounted?.[name]) ? Object.fromEntries(wired) : null;
+}
+
+function tilesByWidget(
+	tiles: readonly Tile[] | null | undefined,
+	currentId: (id: string) => string = (id) => id,
+	standing: readonly StandingTile[] = [],
+): Map<string, string> {
+	const seen = new Map(standing.map((held) => [widgetKeyOf(held.widget), held.id] as const));
+	const walk = (held: readonly Tile[] | null | undefined, at: string | null): void => {
+		for (const tile of held ?? []) {
+			const id = at ? `${at}/${tile.id}` : tile.id;
+			const widget = tile.widget && widgetKeyOf(currentId(tile.widget));
+			if (widget && !seen.has(widget)) seen.set(widget, id);
+			walk(mountedTiles(tile), id);
+		}
+	};
+	walk(tiles, null);
+	return seen;
 }

@@ -21,10 +21,9 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
-		"allowJs": true,
-		"checkJs": false,
+		"allowJs": false,
 		"types": []
 	},
 	"references": [{ "path": "../kit" }],
-	"include": ["src/**/*.ts", "src/**/*.js"]
+	"include": ["src/**/*.ts"]
 }

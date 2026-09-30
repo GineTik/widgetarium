@@ -1,4 +1,4 @@
-export interface ParsedLink {
+interface ParsedLink {
 	readonly rooted: boolean;
 	readonly path: string;
 }

@@ -1,19 +1,19 @@
 import { COLUMN, GROUP, NO_SURFACE } from "./tree.js";
 import type { BoxNode, SurfaceWord } from "./tree.js";
 
-export interface CardPart {
+interface CardPart {
 	readonly place: string;
 	readonly asks: string;
 }
 
-export interface CardShape {
+interface CardShape {
 	readonly suits: string;
 	readonly role: string;
 	readonly wears: { readonly alone: SurfaceWord; readonly amongPeers: SurfaceWord };
 	readonly parts: readonly CardPart[];
 }
 
-export interface CardAsk {
+interface CardAsk {
 	readonly amongPeers?: boolean;
 }
 

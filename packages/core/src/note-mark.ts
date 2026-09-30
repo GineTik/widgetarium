@@ -2,7 +2,7 @@ const NAMESPACE = "widgetarium";
 
 export type Frontmatter = Readonly<Record<string, unknown>>;
 
-export interface NoteMark {
+interface NoteMark {
 	readonly kind?: unknown;
 	readonly [field: string]: unknown;
 }

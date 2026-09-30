@@ -4,9 +4,9 @@ export interface PickingFields {
 	readonly field?: string | null;
 }
 
-export type ReadField = (named: string) => unknown;
+type ReadField = (named: string) => unknown;
 
-export type FieldName = string | (() => unknown) | null;
+type FieldName = string | (() => unknown) | null;
 
 export interface RowPicking {
 	readonly fieldName: FieldName;

@@ -3,13 +3,13 @@ export const WIDGETS_DIR = `${ROOT}/widgets`;
 export const COMPONENTS_DIR = `${ROOT}/components`;
 export const LOCK_PATH = `${ROOT}/widgets.lock.json`;
 
-export interface SizeClass {
+interface SizeClass {
 	readonly name: "phone" | "tablet" | "desktop";
 	readonly upTo: number;
 	readonly scale: number;
 }
 
-export interface GridMetrics {
+interface GridMetrics {
 	readonly columns: number;
 	readonly scale: number;
 	readonly cell: number;
@@ -20,7 +20,7 @@ export interface GridMetrics {
 
 const WIDEST_CLASS: SizeClass = { name: "desktop", upTo: Infinity, scale: 1.1 };
 
-export const CLASSES: readonly SizeClass[] = [
+const CLASSES: readonly SizeClass[] = [
 	{ name: "phone", upTo: 599, scale: 0.95 },
 	{ name: "tablet", upTo: 1023, scale: 1 },
 	WIDEST_CLASS,

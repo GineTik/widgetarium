@@ -16,13 +16,13 @@ import type { RebuiltDrifted, Uninstalled } from "./installer-upkeep.js";
 
 export { INDEX_PATH, LOCK_PATH };
 
-export type InstallListing = ListedWidget & ListedOrigin;
+type InstallListing = ListedWidget & ListedOrigin;
 
-export type AvailableEntry = IndexedEntry | WidgetOffer;
+type AvailableEntry = IndexedEntry | WidgetOffer;
 
-export type InstalledEvery = { readonly ok: true; readonly failure: null } | Refusal;
+type InstalledEvery = { readonly ok: true; readonly failure: null } | Refusal;
 
-export interface Installer {
+interface Installer {
 	discover(source: WidgetSourcePlace): Promise<WidgetOffer[]>;
 	folderSourcePaths(): Promise<(string | null | undefined)[]>;
 	offersFrom(source: WidgetSourcePlace): Promise<WidgetOffer[]>;

@@ -15,7 +15,7 @@ import type { DeclaredModule, DeclaredProps } from "./gateway/declared";
 import type { GivenProps } from "./declared-widget.js";
 import type { DrawWidget } from "./mounted.js";
 
-export interface ReactLike {
+interface ReactLike {
 	readonly version?: unknown;
 	readonly createElement: unknown;
 	readonly Fragment: unknown;
@@ -47,7 +47,7 @@ export interface PackageTaker {
 	take(name: string): unknown;
 }
 
-export type Libs = ReadonlyMap<string, unknown>;
+type Libs = ReadonlyMap<string, unknown>;
 
 interface SurfaceBuild {
 	readonly reactSurface: Readonly<Record<string, unknown>> & { createWidget(widget: unknown): unknown };

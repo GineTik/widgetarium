@@ -2,7 +2,7 @@ import { COLUMN } from "../tree.js";
 import type { NodePath } from "../tree-nodes.js";
 import type { Rect, Spot } from "../tree-drop.js";
 
-export type RegionRoots = Iterable<readonly [number, HTMLElement]>;
+type RegionRoots = Iterable<readonly [number, HTMLElement]>;
 
 export function spotsIn(roots: RegionRoots, carriedId: string): Spot[] {
 	return [...roots].flatMap(([, node]) => spotsUnder(node, carriedId));

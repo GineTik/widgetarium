@@ -30,10 +30,6 @@ export function isCleanRepositoryPath(path: unknown): path is string {
 	return typeof path === "string" && path !== "" && !STEPS_OUT_OR_IN_FROM_THE_ROOT.test(path);
 }
 
-export function isBareFileName(name: unknown): name is string {
-	return typeof name === "string" && name !== "" && !/[\\/]/.test(name) && name !== "." && name !== "..";
-}
-
 export function isPathInsideFolder(name: unknown): name is string {
 	return isCleanRepositoryPath(name) && !name.split("/").includes("");
 }
@@ -57,4 +53,8 @@ export function idOfFolder(folder: HeldText): string {
 	const name = parts.pop() ?? "";
 	const scope = parts.pop() ?? "";
 	return scope.startsWith("@") && name ? `${scope}/${name}` : "";
+}
+
+function isBareFileName(name: unknown): name is string {
+	return typeof name === "string" && name !== "" && !/[\\/]/.test(name) && name !== "." && name !== "..";
 }

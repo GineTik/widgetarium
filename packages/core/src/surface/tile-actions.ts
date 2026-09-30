@@ -18,7 +18,7 @@ export interface CellSize {
 	readonly height: number;
 }
 
-export type OpenSettings = (tileId: string, canvasBox: CellSize | null) => void;
+type OpenSettings = (tileId: string, canvasBox: CellSize | null) => void;
 
 export function tileActions(
 	tileId: string,

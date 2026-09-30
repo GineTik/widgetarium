@@ -1,5 +1,7 @@
 import { createElement as h } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { DialogClose } from "../dialog.js";
+import type { WindowState } from "../settings-window.js";
 import { Button, Icon, IconButton, Pill, Segmented, Sidebar, SidebarSheet } from "@widgetarium/kit";
 import { ZOOM_FLOOR, ZOOM_STEP, clamp } from "./canvas-input.js";
 import { dataGroups } from "./data-groups.js";
@@ -8,7 +10,7 @@ import { mountGroups } from "./mount-groups.js";
 import { propGroup } from "./prop-row.js";
 import { slotGroup } from "./slot-group.js";
 
-export function header(state) {
+export function header(state: WindowState): ReactElement {
 	return h("div", { className: `wg-set-head wg-kit-glass${state.phone ? " is-sheet" : ""}`, key: "head" }, [
 		h("span", { className: "wg-set-crumbs", key: "crumbs" }, crumbTrail(state)),
 		h("span", { className: "wg-set-head-right", key: "right" }, [
@@ -20,16 +22,25 @@ export function header(state) {
 	]);
 }
 
-export function zoomBar(state) {
+export function zoomBar(state: WindowState): ReactElement {
 	const percent = `${Math.round(state.scale * 100)}%`;
 	const said = state.opening.panned && state.zoom === null ? `${percent} · panned to the top left` : percent;
 	return h(
 		"div",
-		{ className: `wg-set-bar wg-kit-glass${state.barHidden ? " is-hidden" : ""}`, key: "bar", style: state.barStyle },
+		{
+			className: `wg-set-bar wg-kit-glass${state.barHidden ? " is-hidden" : ""}`,
+			key: "bar",
+			style: state.barStyle ?? undefined,
+		},
 		[
 			h(
 				"button",
-				{ type: "button", key: "fit", "aria-pressed": String(state.zoom === null), onClick: () => state.setZoom(null) },
+				{
+					type: "button",
+					key: "fit",
+					"aria-pressed": String(state.zoom === null),
+					onClick: () => state.setLook({ zoom: null }),
+				},
 				"Fit",
 			),
 			h(
@@ -88,7 +99,7 @@ export function zoomBar(state) {
 	);
 }
 
-export function panel(state) {
+export function panel(state: WindowState): ReactElement {
 	if (state.folded) {
 		return h(
 			IconButton,
@@ -125,7 +136,7 @@ export function panel(state) {
 				style: state.panelStyle,
 				isOpen: state.sheetFull,
 				onOpen: state.setSheetFull,
-				peekPx: state.sheetPeekPx,
+				// TODO: pass CHROME.sheetPeekPx — the sheet peeks at the kit's 220px, the canvas reserves 168px
 				maxPx: state.sheetMaxPx,
 				onHeight: state.setSheetHeight,
 			},
@@ -140,15 +151,15 @@ export function panel(state) {
 	);
 }
 
-function panelBody(state) {
+function panelBody(state: WindowState): ReactNode[] {
 	if (state.tab === "data") return dataGroups(state);
 	if (state.tab === "design") return designGroups(state);
 	return [propGroup(state), slotGroup(state), ...mountGroups(state)];
 }
 
-function crumbTrail(state) {
+function crumbTrail(state: WindowState): ReactElement[] {
 	const last = state.crumbs.length - 1;
-	return state.crumbs.flatMap((crumb, depth) =>
+	return state.crumbs.flatMap((crumb, depth): ReactElement[] =>
 		depth === last
 			? [h("span", { className: "wg-set-here", key: depth }, crumb)]
 			: [

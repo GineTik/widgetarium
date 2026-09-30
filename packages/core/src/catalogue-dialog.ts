@@ -15,11 +15,11 @@ export interface CatalogueDialogProps extends CatalogueProps {
 	readonly onClose: () => void;
 }
 
-export type OpenCatalogueOptions = Omit<CatalogueDialogProps, "onClose"> & {
+type OpenCatalogueOptions = Omit<CatalogueDialogProps, "onClose"> & {
 	readonly onClose?: (() => void) | undefined;
 };
 
-export interface OpenedCatalogue {
+interface OpenedCatalogue {
 	readonly close: () => void;
 	readonly redraw: (fresh: Partial<OpenCatalogueOptions>) => void;
 }

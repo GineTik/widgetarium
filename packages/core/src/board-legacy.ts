@@ -4,7 +4,7 @@ import { isObject } from "./engine/is-object.js";
 import { boxFlags, normalizeLeaf, rowNode } from "./board-layout.js";
 import type { RawFields } from "./board-layout.js";
 
-export interface GridPlace {
+interface GridPlace {
 	readonly id: string;
 	readonly x: number;
 	readonly y: number;

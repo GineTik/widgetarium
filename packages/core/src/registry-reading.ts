@@ -32,7 +32,7 @@ export interface HeldWidget {
 	readonly refusal: string | null;
 }
 
-export interface VaultWidgets {
+interface VaultWidgets {
 	readonly scopes: readonly string[];
 	readonly sheets: readonly OwnedSheet[];
 	readonly folders: readonly string[];

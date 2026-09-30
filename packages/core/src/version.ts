@@ -7,11 +7,11 @@ const OLDEST_BLOCK_FORMAT = 1;
 const WIDGET_API_WHEN_ABSENT = 1;
 const OLDEST_REGISTRY_FORMAT = 1;
 
-export interface VersionedBlock {
+interface VersionedBlock {
 	readonly v?: unknown;
 }
 
-export interface VersionedRegistry {
+interface VersionedRegistry {
 	readonly registry?: unknown;
 }
 
@@ -36,10 +36,6 @@ export function blockRefusal(input: Held<VersionedBlock>): string | null {
 	if (format > BLOCK_FORMAT)
 		return `Widgetarium: this board was written in format ${format}, and this plugin reads up to ${BLOCK_FORMAT}. Update Widgetarium to open it — nothing was changed.`;
 	return null;
-}
-
-export function registryFormatOf(raw: Held<VersionedRegistry>): number | null {
-	return versionNumber(raw?.registry, OLDEST_REGISTRY_FORMAT);
 }
 
 // TRADE-OFF: a newer registry is refused whole rather than read row by row — a row this plugin cannot
@@ -72,4 +68,8 @@ export function apiRefusal(manifest: Held<VersionedManifest>): string | null {
 function versionNumber(declared: unknown, whenAbsent: number): number | null {
 	if (declared === undefined || declared === null) return whenAbsent;
 	return typeof declared === "number" && Number.isInteger(declared) && declared >= 0 ? declared : null;
+}
+
+function registryFormatOf(raw: Held<VersionedRegistry>): number | null {
+	return versionNumber(raw?.registry, OLDEST_REGISTRY_FORMAT);
 }

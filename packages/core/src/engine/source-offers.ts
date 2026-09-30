@@ -21,7 +21,7 @@ export interface SourceDoors {
 	readonly fetchText: (url: string) => Promise<string>;
 }
 
-export interface HeldCode {
+interface HeldCode {
 	readonly sources?: HeldFiles;
 	readonly path?: string;
 	readonly lib?: string;

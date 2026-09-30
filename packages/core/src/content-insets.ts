@@ -3,7 +3,7 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import { isClear } from "./color-math.js";
 import type { EdgeSide } from "./tree-nodes.js";
 
-export type ContentInsets = Readonly<Record<EdgeSide, number>>;
+type ContentInsets = Readonly<Record<EdgeSide, number>>;
 
 export type InsetsByCell = Readonly<Record<string, ContentInsets>>;
 

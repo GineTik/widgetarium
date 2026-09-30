@@ -5,32 +5,32 @@ import { MEASURED_DIR, measuredPathOf, PRESET_TOKENS } from "./surface-contract.
 import { byPath } from "./tree.js";
 import type { ModuleAdapter } from "./engine/modules.js";
 
-export type MeasureAdapter = Pick<ModuleAdapter, "exists" | "mkdir" | "write">;
+type MeasureAdapter = Pick<ModuleAdapter, "exists" | "mkdir" | "write">;
 
 export interface MeasureHost {
 	readonly app?: { readonly vault?: { readonly adapter?: MeasureAdapter | null } | null } | null;
 	readonly notePath?: string | null;
 }
 
-export type SolidKind = "container" | "mark" | "control" | "label";
+type SolidKind = "container" | "mark" | "control" | "label";
 
-export interface MeasuredFill {
+interface MeasuredFill {
 	readonly kind: SolidKind;
 	readonly color: string;
 }
 
-export interface MeasuredTile {
+interface MeasuredTile {
 	readonly depth: number;
 	readonly fills: readonly MeasuredFill[];
 	readonly texts: readonly string[];
 }
 
-export interface Extent {
+interface Extent {
 	readonly w: number;
 	readonly h: number;
 }
 
-export interface BoardMeasure {
+interface BoardMeasure {
 	readonly theme: "dark" | "light";
 	readonly page: string;
 	readonly presets: Readonly<Record<string, string>>;
@@ -56,16 +56,6 @@ export function useMeasuresSurfaces(
 		const timer = window.setTimeout(measure, SETTLE_MS);
 		return () => window.clearTimeout(timer);
 	});
-}
-
-export function measureBoard(page: HTMLElement, regions: readonly HTMLElement[]): BoardMeasure {
-	return {
-		theme: document.body.classList.contains("theme-dark") ? "dark" : "light",
-		page: pageColourOf(page),
-		presets: presetsOf(page),
-		tiles: tilesIn(regions),
-		extents: extentsIn(regions),
-	};
 }
 
 export function measureTile(body: Element): MeasuredTile {
@@ -211,4 +201,14 @@ function extentsIn(regions: readonly HTMLElement[]): Record<string, Extent> {
 function extentOf(node: HTMLElement): Extent {
 	const box = node.getBoundingClientRect();
 	return { w: Math.round(box.width), h: Math.round(box.height) };
+}
+
+function measureBoard(page: HTMLElement, regions: readonly HTMLElement[]): BoardMeasure {
+	return {
+		theme: document.body.classList.contains("theme-dark") ? "dark" : "light",
+		page: pageColourOf(page),
+		presets: presetsOf(page),
+		tiles: tilesIn(regions),
+		extents: extentsIn(regions),
+	};
 }

@@ -54,12 +54,12 @@ export interface BoxNode extends PlaceFlags {
 
 export type BoardNode = LeafNode | BoxNode;
 
-export interface LeafPlace {
+interface LeafPlace {
 	readonly id: string;
 	readonly path: NodePath;
 }
 
-export interface SwapPlace {
+interface SwapPlace {
 	readonly path: NodePath;
 	readonly box: BoxNode;
 }
@@ -68,7 +68,7 @@ export type EdgeSide = "top" | "bottom" | "left" | "right";
 
 export type PreferredSize = Pick<WidgetSize, "preferredWidth" | "preferredHeight" | "keepsRatio" | "at">;
 
-export interface LeafFacts {
+interface LeafFacts {
 	readonly minPx?: number;
 	readonly preferred?: PreferredSize | null;
 	readonly widget?: string | undefined;
@@ -178,12 +178,17 @@ export function withWidth(root: BoxNode, path: NodePath, width: number): BoxNode
 	return isBox(node) ? replaceAt(root, path, { ...node, width }) : root;
 }
 
-export const slotOf = (child: BoardNode): TabRow => ({
+interface TabbedNode {
+	readonly name?: string | null | undefined;
+	readonly hidden?: boolean | undefined;
+}
+
+export const slotOf = (child: TabbedNode): TabRow => ({
 	name: child.name ?? "",
 	...(child.hidden ? { hidden: true } : {}),
 });
 
-export function holdsOf(box: BoxNode): TabRow[] {
+export function holdsOf(box: { readonly of: readonly TabbedNode[] }): TabRow[] {
 	return box.of.map(slotOf);
 }
 

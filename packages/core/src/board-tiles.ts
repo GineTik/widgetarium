@@ -61,6 +61,14 @@ export function normalizeTile(raw: unknown, index: number, idOf: IdOf): Tile {
 	};
 }
 
+export function isTile(held: unknown): held is Tile {
+	if (!isObject(held)) return false;
+	const { id, widget, settings, mounts, props, slots, mounted } = held;
+	return (
+		typeof id === "string" && typeof widget === "string" && [settings, mounts, props, slots, mounted].every(isObject)
+	);
+}
+
 export function propsIn(raw: unknown): TileProps {
 	if (!isObject(raw)) return {};
 	return Object.fromEntries(

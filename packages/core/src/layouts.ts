@@ -11,18 +11,18 @@ export const HEADING_WIDGET = "@default/text-line";
 
 export const LAYOUT_NAMES: readonly string[] = Object.keys(LAYOUTS);
 
-export interface TypedValue {
+interface TypedValue {
 	readonly from: "typed";
 	readonly value: unknown;
 }
 
-export interface SkeletonTile {
+interface SkeletonTile {
 	readonly id: string;
 	readonly widget: string;
 	readonly props: Readonly<Record<"text" | "tone" | "heading", TypedValue>>;
 }
 
-export interface SkeletonBoard {
+interface SkeletonBoard {
 	readonly v: 2;
 	readonly tiles: readonly SkeletonTile[];
 	readonly mode: "expanded";
@@ -30,7 +30,7 @@ export interface SkeletonBoard {
 	readonly layout: BoxNode;
 }
 
-export interface SectionRow {
+interface SectionRow {
 	readonly name: string;
 	readonly role: string | null;
 	readonly purpose: string | null;

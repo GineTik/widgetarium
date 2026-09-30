@@ -8,7 +8,7 @@ export interface FolderListing {
 	readonly folders: readonly string[];
 }
 
-export type ListFolder = (at: string) => Promise<FolderListing>;
+type ListFolder = (at: string) => Promise<FolderListing>;
 
 const BUILD_DIR = "build";
 export const BUILD_FILE = "widget.js";

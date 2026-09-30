@@ -3,6 +3,10 @@ export interface WidgetDefinition {
 	readonly error?: unknown;
 }
 
-export function isDrawable(definition: WidgetDefinition | null | undefined): boolean {
+export type Drawable<Held extends WidgetDefinition> = Held & { readonly component: NonNullable<Held["component"]> };
+
+export function isDrawable<Held extends WidgetDefinition>(
+	definition: Held | null | undefined,
+): definition is Drawable<Held> {
 	return Boolean(definition?.component) && !definition?.error;
 }

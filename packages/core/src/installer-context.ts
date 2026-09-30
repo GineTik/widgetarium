@@ -13,7 +13,7 @@ export type InstallerAdapter = BuilderAdapter & ModuleAdapter;
 
 export type HeldWidgetFiles = Extract<WidgetFiles, { readonly ok: true }>;
 
-export type DeclaredIn = (held: HeldWidgetFiles) => Promise<Fields | null | undefined>;
+type DeclaredIn = (held: HeldWidgetFiles) => Promise<Fields | null | undefined>;
 
 export type Refusal = { readonly ok: false; readonly failure: string };
 
@@ -27,7 +27,7 @@ export interface InstallerOptions {
 	readonly declaredIn?: DeclaredIn | null;
 }
 
-export interface ReadCatalogue {
+interface ReadCatalogue {
 	readonly raw: unknown;
 	readonly sources: WidgetSourcePlace[];
 }

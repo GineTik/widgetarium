@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { MutableRefObject } from "react";
 
-export interface StoppableGesture {
+interface StoppableGesture {
 	readonly stop: () => void;
 }
 

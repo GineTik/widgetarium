@@ -57,7 +57,7 @@ export async function cardMismatchIn({ declaredIn }: Installing, held: HeldWidge
 	return differs ? CARD_DIFFERS.replace("{widget}", held.record.id).replace("{key}", differs) : null;
 }
 
-export function lockedCommits(lock: WidgetLock, id: string): string[] {
+function lockedCommits(lock: WidgetLock, id: string): string[] {
 	return commitsOf(lock.widgets[id]).filter((commit): commit is string => typeof commit === "string");
 }
 

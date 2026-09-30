@@ -7,7 +7,7 @@ const KEY = "wgId";
 const REPORT =
 	"Widgetarium: {count} records claim the id {id}. {keeps} keeps it; the rest are re-minted on their next write.";
 
-export interface IdentifiedRecord {
+interface IdentifiedRecord {
 	readonly id?: string | null;
 	readonly path: string;
 }

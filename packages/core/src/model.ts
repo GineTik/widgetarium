@@ -39,7 +39,7 @@ export type {
 } from "./board-tiles.js";
 export type { NameOf } from "./view-groups.js";
 
-export type BoardMode = "expanded" | "collapsed";
+type BoardMode = "expanded" | "collapsed";
 
 export interface Board {
 	readonly tiles: readonly Tile[];
@@ -48,7 +48,7 @@ export interface Board {
 	readonly base?: string;
 }
 
-export interface SerializedHeld {
+interface SerializedHeld {
 	readonly widget?: string;
 	readonly surface?: string;
 	readonly settings?: TileSettings;
@@ -58,13 +58,13 @@ export interface SerializedHeld {
 	readonly mounted?: Readonly<Record<string, SerializedHeld>>;
 }
 
-export interface SerializedTile extends SerializedHeld {
+interface SerializedTile extends SerializedHeld {
 	readonly id: string;
 	readonly widget: string;
 	readonly folded?: true;
 }
 
-export interface SerializedBoard {
+interface SerializedBoard {
 	readonly v: number;
 	readonly tiles: readonly SerializedTile[];
 	readonly mode?: "expanded";
@@ -105,10 +105,6 @@ export function serializeBoard(board: Board): SerializedBoard {
 		...(board.base ? { base: board.base } : {}),
 		layout: serializeNode(board.layout),
 	};
-}
-
-export function tileById(board: Pick<Board, "tiles">, id: string): Tile | null {
-	return board.tiles.find((tile) => tile.id === id) ?? null;
 }
 
 export function placedIds(board: Pick<Board, "layout">): Set<string> {

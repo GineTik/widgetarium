@@ -8,18 +8,18 @@ import type { Board, Tile } from "../model.js";
 import type { Carry } from "./carry.js";
 import type { SurfaceShared } from "./use-surface-shared.js";
 
-export interface TreeAsk {
+interface TreeAsk {
 	readonly board: Board;
 	readonly width: number;
 	readonly shared: Pick<SurfaceShared, "registry">;
 }
 
-export interface TreeMoment {
+interface TreeMoment {
 	readonly carrying: Carry | null;
 	readonly insets: InsetsByCell;
 }
 
-export type ManifestAt = (id: string | undefined) => EngineManifest | null | undefined;
+type ManifestAt = (id: string | undefined) => EngineManifest | null | undefined;
 
 export interface LaidTree {
 	readonly root: BoxNode;

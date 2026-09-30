@@ -11,7 +11,7 @@ export interface RegionSurface {
 	readonly side: SurfaceSide | null;
 }
 
-export type SidedBox = Omit<LaidBox, "side"> & { readonly side: ScreenSide };
+type SidedBox = Omit<LaidBox, "side"> & { readonly side: ScreenSide };
 
 export type Toggle = LaidCollapsed | SidedBox;
 

@@ -13,7 +13,7 @@ export interface SwapRefs {
 	readonly selection: string;
 }
 
-export interface SwapPublishing {
+interface SwapPublishing {
 	readonly refs: GatewayRefs;
 	readonly cell: ViewCell;
 	readonly named: SwapRefs;

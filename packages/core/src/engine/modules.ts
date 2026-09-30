@@ -11,11 +11,11 @@ export interface ModuleAdapter {
 	rmdir(path: string, recursive: boolean): Promise<unknown>;
 }
 
-export interface LockedModules {
+interface LockedModules {
 	readonly modules?: Readonly<Record<string, unknown>>;
 }
 
-export type ModuleRefusal = {
+type ModuleRefusal = {
 	readonly ok: false;
 	readonly key: null;
 	readonly path: null;
@@ -23,7 +23,7 @@ export type ModuleRefusal = {
 	readonly failure: string;
 };
 
-export type TakenModule =
+type TakenModule =
 	| { readonly ok: true; readonly key: string; readonly path: string; readonly hash: string; readonly failure: null }
 	| ModuleRefusal;
 
@@ -33,7 +33,7 @@ export interface ModuleSpace {
 	collect(key: string): Promise<void>;
 }
 
-export interface ModuleSpaceDoors {
+interface ModuleSpaceDoors {
 	readonly adapter: ModuleAdapter;
 	readonly fetchText: (url: string) => Promise<string>;
 }

@@ -5,7 +5,7 @@ import { GROUP } from "./tree.js";
 import type { SurfaceWord } from "./tree.js";
 import { isObject } from "./engine/is-object.js";
 
-export interface MeasuredPresets {
+interface MeasuredPresets {
 	readonly fill?: unknown;
 	readonly inset?: unknown;
 }
@@ -17,23 +17,23 @@ export interface MeasuredRead {
 	readonly extents?: Readonly<Record<string, unknown>> | null;
 }
 
-export interface ReadFill {
+interface ReadFill {
 	readonly kind: unknown;
 	readonly color: string;
 }
 
-export interface ReadTile {
+interface ReadTile {
 	readonly depth: number;
 	readonly fills: readonly ReadFill[];
 	readonly texts: readonly string[];
 }
 
-export interface TileMeasured {
+interface TileMeasured {
 	readonly id: string;
 	readonly measured: ReadTile | null;
 }
 
-export interface Underneath {
+interface Underneath {
 	readonly under: Rgba;
 	readonly underSurface: SurfaceWord;
 }

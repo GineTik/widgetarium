@@ -36,11 +36,11 @@ import type { ShowingCounts } from "./catalogue-facets.js";
 
 export type CatalogueKind = "board" | "inline";
 
-export type Shelf = "widgets" | "templates";
+type Shelf = "widgets" | "templates";
 
 export type RankEntry = (manifest: Fields) => SlotFit | null | undefined;
 
-export interface CatalogueViewAsk {
+interface CatalogueViewAsk {
 	readonly registry: WidgetLookup;
 	readonly mode: CatalogueMode;
 	readonly kind: CatalogueKind;
@@ -50,7 +50,7 @@ export interface CatalogueViewAsk {
 	readonly lock: WidgetLock | null;
 }
 
-export interface CatalogueFilters {
+interface CatalogueFilters {
 	readonly keyword: string;
 	readonly setKeyword: (keyword: string) => void;
 	readonly showing: Showing;
@@ -74,7 +74,7 @@ export interface CatalogueFilters {
 	readonly openPage: (id: string) => void;
 }
 
-export interface CatalogueRoom {
+interface CatalogueRoom {
 	readonly rootRef: RefObject<HTMLDivElement | null>;
 	readonly scrollRef: RefObject<HTMLDivElement | null>;
 	readonly width: number;
@@ -82,12 +82,12 @@ export interface CatalogueRoom {
 	readonly phone: boolean;
 }
 
-export interface ShelfSaid {
+interface ShelfSaid {
 	readonly title: string;
 	readonly lead: string;
 }
 
-export interface CatalogueShelf {
+interface CatalogueShelf {
 	readonly cards: Cards;
 	readonly templateCards: Cards;
 	readonly onShelf: boolean;
