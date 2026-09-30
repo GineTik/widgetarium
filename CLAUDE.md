@@ -592,13 +592,17 @@ uniqueness-asserted targeted edit, verify by md5. If a check turns out unfalsifi
 along with whatever depends on it — rather than ship it.
 
 **Tests import the real sources; nothing is copied.** Every `node tools/…` script in `package.json`
-runs under `node --import ./tools/loader/register.mjs`, an in-memory loader that compiles `.ts`,
+runs under `node --single-threaded --import ./tools/loader/register.mjs`, an in-memory loader that compiles `.ts`,
 `.tsx` and `.jsx` with esbuild exactly as `apps/obsidian/build.mjs` does (`h`/`Fragment`, the
 nearest `tsconfig.json`, `es2020`), resolves extensionless and `.js` specifiers to the `.ts` behind
 them and `@widgetarium/*` through each package's `exports`, reads `.md` and `.css` as text, answers
 `obsidian` with `tools/loader/obsidian-stub.mjs` and the `widgetarium:*` specifiers the build
 provides. A test imports `../packages/core/src/<file>`; an edit shows in the next run with no
-rebuild, and suites run side by side. A tool run by hand needs the same `--import`.
+rebuild, and suites run side by side. A tool run by hand needs the same two flags.
+`--single-threaded` is not optional: under eight suites at once, Node 25 deadlocks in `process.exit()`
+when a background Sparkplug or Maglev compile job waits for a GC the exiting main thread never runs —
+measured 11 of 240 runs hung without it, 0 of 240 with it, and the flag only works on the command
+line (set at runtime through `v8.setFlagsFromString` it changed nothing, and `NODE_OPTIONS` refuses it).
 
 `npm run test:paint` drives real headless Chrome and reads **resolved** computed values; the jsdom
 suites resolve no cascade and lay nothing out, so a CSS claim proved only there is not proved.
