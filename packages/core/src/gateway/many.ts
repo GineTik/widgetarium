@@ -1,4 +1,6 @@
-import type { Action, CanResult, Patch, RecordRef, Row } from "./contract";
+import type { Action, RecordRef, Row } from "./contract";
+import type { LooseAction } from "./verbs-of";
+import { actionOf, verbOf } from "./verbs-of";
 
 export interface ManyResult<Input, Output> {
 	readonly done: readonly Output[];
@@ -33,33 +35,31 @@ export type ManyVerbsOf<T, Verbs extends string, CreateIn = Partial<T>, PatchIn 
 	ManyOf[Extract<Verbs, keyof ManyOf>] | UpsertOf<Verbs>
 >;
 
-type Verb = ((input: never) => Promise<unknown>) & { can(): CanResult };
-
-type Verbs = Partial<Record<"get" | keyof ManyOf, Verb>>;
-
 type ManyName = keyof ManyOps<unknown, unknown, unknown>;
 
 export const MANY_VERBS: readonly ManyName[] = ["createMany", "updateMany", "removeMany", "upsert"];
 
 export function withManyVerbs<G extends object>(gateway: G): G {
-	const { get, create, update, remove } = gateway as Verbs;
-	const own = gateway as Partial<Record<ManyName, unknown>>;
+	const get = actionOf(gateway, "get");
+	const create = actionOf(gateway, "create");
+	const update = actionOf(gateway, "update");
+	const remove = actionOf(gateway, "remove");
+	const isOwn = (verb: ManyName) => Boolean(verbOf(gateway, verb));
 	const many: Partial<Record<ManyName, unknown>> = {};
-	if (create && !own.createMany) many.createMany = manyOver(create);
-	if (update && !own.updateMany) many.updateMany = manyOver(update);
-	if (remove && !own.removeMany) many.removeMany = manyOver(remove);
-	if (get && create && update && !own.upsert) many.upsert = upsertOver(get, create, update);
+	if (create && !isOwn("createMany")) many.createMany = manyOver(create);
+	if (update && !isOwn("updateMany")) many.updateMany = manyOver(update);
+	if (remove && !isOwn("removeMany")) many.removeMany = manyOver(remove);
+	if (get && create && update && !isOwn("upsert")) many.upsert = upsertOver(get, create, update);
 	return Object.assign(gateway, many);
 }
 
-function deriveVerb<I, O>(from: Verb, run: (input: I) => Promise<O>): Action<I, O> {
+function deriveVerb<I, O>(from: LooseAction, run: (input: I) => Promise<O>): Action<I, O> {
 	return Object.assign(run, { can: () => from.can() });
 }
 
-function manyOver(verb: Verb): Action<readonly unknown[], ManyResult<unknown, unknown>> {
-	const run = verb as unknown as (input: unknown) => Promise<unknown>;
+function manyOver(verb: LooseAction): Action<readonly unknown[], ManyResult<unknown, unknown>> {
 	return deriveVerb(verb, async (inputs: readonly unknown[]) => {
-		const settled = await Promise.allSettled(inputs.map((input) => run(input)));
+		const settled = await Promise.allSettled(inputs.map((input) => verb(input)));
 		const done: unknown[] = [];
 		const failed: { input: unknown; failure: unknown }[] = [];
 		settled.forEach((outcome, at) => {
@@ -71,14 +71,11 @@ function manyOver(verb: Verb): Action<readonly unknown[], ManyResult<unknown, un
 }
 
 // TRADE-OFF: read, decide, write — no storage offers an atomic upsert, so a row made between get and create is doubled
-function upsertOver(get: Verb, create: Verb, update: Verb): Action<Upsert<unknown>, unknown> {
-	const read = get as unknown as (ref: RecordRef) => Promise<unknown>;
-	const made = create as unknown as (data: unknown) => Promise<unknown>;
-	const changed = update as unknown as (patch: Patch<unknown>) => Promise<unknown>;
+function upsertOver(get: LooseAction, create: LooseAction, update: LooseAction): Action<Upsert<unknown>, unknown> {
 	return Object.assign(
 		async ({ ref, data }: Upsert<unknown>) => {
-			if (ref && (await read(ref))) return changed({ ref, data });
-			return made(data);
+			if (ref && (await get(ref))) return update({ ref, data });
+			return create(data);
 		},
 		{ can: () => (create.can().can ? update.can() : create.can()) },
 	);

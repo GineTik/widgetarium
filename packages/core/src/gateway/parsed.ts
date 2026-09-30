@@ -56,12 +56,12 @@ export function checkCollectionWrites<T>(
 	});
 }
 
-export function checkValueUpdate<U extends Verb>(update: U, schemas: Schemas, name: string): U {
+export function checkValueUpdate(update: Verb, schemas: Schemas, name: string): Verb {
 	const schema = schemas.update ?? schemas.schema;
 	return Object.assign(async (value: unknown) => update(checkInput(schema, value, "update", name)), {
 		can: () => update.can(),
-		meta: update.meta,
-	}) as unknown as U;
+		...(update.meta ? { meta: update.meta } : {}),
+	});
 }
 
 export function parseReadsBy<Held extends HeldGateway>(

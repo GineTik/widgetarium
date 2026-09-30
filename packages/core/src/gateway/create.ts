@@ -13,6 +13,7 @@ import type {
 import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
 import type { EveryValueVerb } from "./needs";
 import { isMatch, pageOf, sortRows } from "./match";
+import { isAction, verbOf } from "./verbs-of";
 
 export interface ActionMeta {
 	gatewayId: string;
@@ -52,6 +53,8 @@ type HeldOptions = { subscribe?: Subscribe };
 
 let mintedValues = 0;
 
+const NOT_ASSEMBLED = "{id} was assembled without every standard verb";
+
 export function canDo(verb?: { can(): CanResult } | null): boolean {
 	return verb?.can().can === true;
 }
@@ -79,7 +82,9 @@ export function collectionGateway<T>(options: {
 	announcesOwnWrites?: boolean;
 	settlesNow?: boolean;
 }): CollectionGateway<T> {
-	return assemble({ ...options, kind: "collection" }) as unknown as CollectionGateway<T>;
+	const gateway = assemble({ ...options, kind: "collection" });
+	if (!isCollectionGateway<T>(gateway)) throw new Error(NOT_ASSEMBLED.replace("{id}", options.id));
+	return gateway;
 }
 
 export function valueGateway<T>(options: {
@@ -90,7 +95,9 @@ export function valueGateway<T>(options: {
 	subscribe?: (listener: (event: GatewayEvent) => void) => Unsubscribe;
 	settlesNow?: boolean;
 }): ValueGateway<T, EveryValueVerb> {
-	return assemble({ ...options, kind: "value" }) as unknown as ValueGateway<T, EveryValueVerb>;
+	const gateway = assemble({ ...options, kind: "value" });
+	if (!isValueGateway<T>(gateway)) throw new Error(NOT_ASSEMBLED.replace("{id}", options.id));
+	return gateway;
 }
 
 export const rowOf = <T>(value: unknown, ref: string): Row<T> =>
@@ -98,9 +105,7 @@ export const rowOf = <T>(value: unknown, ref: string): Row<T> =>
 
 export function toRows<T>(entries: ArrayEntries<T>, wrapKey: "ref" | "id" = "ref"): Row<T>[] {
 	return entries.map((entry, index) =>
-		isWrapped(entry, wrapKey)
-			? rowOf<T>((entry as { value: T }).value, String((entry as Record<string, unknown>)[wrapKey]))
-			: rowOf<T>(entry, `i${index}`),
+		isWrapped(entry, wrapKey) ? rowOf<T>(entry.value, String(entry[wrapKey])) : rowOf<T>(entry, `i${index}`),
 	);
 }
 
@@ -108,7 +113,7 @@ export function toRows<T>(entries: ArrayEntries<T>, wrapKey: "ref" | "id" = "ref
 export const valueIn = <T>(row: Row<T>): T => {
 	const { ref, ...held } = row as Row<T> & { ref: string };
 	const named = Object.keys(held);
-	return (named.length === 1 && named[0] === "value" ? (held as unknown as { value: T }).value : held) as T;
+	return (named.length === 1 && "value" in held ? held.value : held) as T;
 };
 
 export function applyQuery<T>(rows: Row<T>[], query?: Query | void): RowsResult<T> {
@@ -206,7 +211,7 @@ function readNowHandlerFor(options: AssembleOptions, verb: string): ((input: unk
 	return held as (input: unknown) => unknown;
 }
 
-function assemble(options: AssembleOptions): Record<string, unknown> {
+function assemble(options: AssembleOptions): object {
 	const emitter = createEmitter();
 	const subscribe = combineSubscribe(emitter, options.subscribe);
 	const standard = options.kind === "collection" ? COLLECTION_VERBS : VALUE_VERBS;
@@ -228,7 +233,15 @@ function assemble(options: AssembleOptions): Record<string, unknown> {
 	return gateway;
 }
 
-function isWrapped(entry: unknown, key: string): boolean {
+function isCollectionGateway<T>(held: object): held is CollectionGateway<T> {
+	return Reflect.get(held, "kind") === "collection" && COLLECTION_VERBS.every((verb) => isAction(verbOf(held, verb)));
+}
+
+function isValueGateway<T>(held: object): held is ValueGateway<T, EveryValueVerb> {
+	return Reflect.get(held, "kind") === "value" && VALUE_VERBS.every((verb) => isAction(verbOf(held, verb)));
+}
+
+function isWrapped<T>(entry: T | WrappedEntry<T>, key: "ref" | "id"): entry is WrappedEntry<T> {
 	return typeof entry === "object" && entry !== null && key in entry && "value" in entry;
 }
 

@@ -1,5 +1,6 @@
 import { normalizeBoard } from "./model.js";
 import type { Board } from "./model.js";
+import type { TileProp } from "./board-tiles.js";
 import { isBox, keptAt, sideOf } from "./tree.js";
 import type { BoardNode, LeafNode, ScreenSide } from "./tree.js";
 
@@ -18,7 +19,7 @@ interface TemplateNode {
 interface TemplateTile {
 	readonly id: string;
 	readonly widget: string;
-	readonly props?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+	readonly props?: Readonly<Record<string, TileProp>>;
 	readonly slots?: Readonly<Record<string, { readonly widget: string }>>;
 }
 

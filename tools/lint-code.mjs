@@ -11,6 +11,7 @@ import * as earlyReturn from "./lint/rules/early-return.mjs";
 import * as onePerFile from "./lint/rules/one-per-file.mjs";
 import * as typing from "./lint/rules/typing.mjs";
 import * as propsWidth from "./lint/rules/props-width.mjs";
+import * as doubleCast from "./lint/rules/double-cast.mjs";
 
 const RULES = [
 	fileSize,
@@ -22,6 +23,7 @@ const RULES = [
 	onePerFile,
 	typing,
 	propsWidth,
+	doubleCast,
 ];
 
 const cwd = process.cwd();

@@ -213,7 +213,9 @@ export type WidgetLayout = Pick<ManifestCard, "role" | "inline" | "view"> & { si
 
 export interface DeclaredModule {
 	readonly default?: { readonly declared?: DeclaredProps };
-	readonly metadata?: Readonly<Record<string, unknown>> & { readonly props?: Described };
+	readonly metadata?: Partial<Pick<ManifestCard, "title" | "description" | "keywords" | "preview">> & {
+		readonly props?: Described;
+	};
 	readonly layout?: WidgetLayout;
 	readonly migrations?: readonly MigrationStep<DeclaredProps>[];
 }

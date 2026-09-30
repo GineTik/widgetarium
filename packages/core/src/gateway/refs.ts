@@ -1,6 +1,6 @@
 import type { CanResult, CollectionGateway, FilterRow, GatewayBase, Unsubscribe, ValueGateway } from "./contract";
 import type { EveryValueVerb } from "./needs";
-import { isObject } from "../engine/is-object";
+import { actionOf, callVerbOf, verbOf } from "./verbs-of";
 
 type PropRef = string;
 import { collectionGateway, valueGateway } from "./create";
@@ -43,8 +43,6 @@ interface RefsState {
 }
 
 export const refOf = (tileId: string, name: string): PropRef => `${tileId}/${name}`;
-
-type Reader = { get?: { (): Promise<unknown>; can(): { can: boolean } } };
 
 export type ViewCell = ValueGateway<unknown, EveryValueVerb>;
 
@@ -113,13 +111,12 @@ export function narrowByRefs<T>(
 }
 
 export function refValue(refs: GatewayRefs, ref: PropRef, id?: string): ValueGateway<unknown, EveryValueVerb> {
-	const target = () => refs.get(ref) as unknown as ValueGateway<unknown, EveryValueVerb> | null;
 	return valueGateway<unknown>({
 		id: id ?? `ref:${ref}`,
 		handlers: {
 			get: () => refs.read(ref),
-			update: (next: unknown) => target()?.update?.(next) ?? null,
-			remove: () => target()?.remove?.(),
+			update: (next: unknown) => callVerbOf(refs.get(ref), "update", next) ?? null,
+			remove: () => callVerbOf(refs.get(ref), "remove"),
 		},
 		subscribe: (listener) => refs.watch([ref], listener as () => void),
 	});
@@ -133,14 +130,13 @@ const NOTHING_PUBLISHED = "Nothing is published at {ref} yet, so it cannot be wr
 
 export function refCollection<T>(refs: GatewayRefs, ref: PropRef): CollectionGateway<T> {
 	const target = refs.get(ref);
-	const held = () => refs.get(ref) as unknown as CollectionGateway<T> | null;
 	const writes = delegateWrites(refs, ref);
 	return collectionGateway<T>({
 		id: `ref:${ref}?${target?.id ?? ""}`,
 		cans: writes.cans,
 		handlers: {
-			list: (query: never) => held()?.list?.(query) ?? { rows: [], total: 0 },
-			get: (given: never) => held()?.get?.(given) ?? null,
+			list: (query: never) => callVerbOf(refs.get(ref), "list", query) ?? { rows: [], total: 0 },
+			get: (given: never) => callVerbOf(refs.get(ref), "get", given) ?? null,
 			...writes.handlers,
 		},
 		subscribe: (listener) => refs.watch([ref], listener as () => void),
@@ -212,8 +208,8 @@ function watch(state: RefsState, refs: PropRef[], listener: () => void): Unsubsc
 }
 
 function answers(gateway: AnyGateway | undefined): boolean {
-	const read = (gateway as Reader | undefined)?.get;
-	return typeof read === "function" && read.can().can !== false;
+	const read = actionOf(gateway, "get");
+	return read !== null && read.can().can !== false;
 }
 
 async function read(state: RefsState, ref: PropRef): Promise<unknown> {
@@ -223,7 +219,7 @@ async function read(state: RefsState, ref: PropRef): Promise<unknown> {
 		console.warn(`Widgetarium: "${ref}" reads its own answer back — the loop is cut here`);
 		return null;
 	}
-	return (gateway as unknown as ValueGateway<unknown, EveryValueVerb>).get();
+	return callVerbOf(gateway, "get");
 }
 
 function memoryCell(key: string): ViewCell {
@@ -304,8 +300,4 @@ function delegateWrites(refs: GatewayRefs, ref: PropRef) {
 		};
 	}
 	return { handlers, cans };
-}
-
-function verbOf(gateway: unknown, verb: string): unknown {
-	return isObject(gateway) ? gateway[verb] : undefined;
 }

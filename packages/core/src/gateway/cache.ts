@@ -1,5 +1,6 @@
 import type { Unsubscribe } from "./contract";
 import type { ActionMeta } from "./create";
+import { isObject } from "../engine/is-object";
 
 interface CacheEntry {
 	status: "loading" | "ready" | "failed";
@@ -49,11 +50,9 @@ export const gatewayCache = createGatewayCache();
 
 function sortKeys(input: unknown): unknown {
 	if (Array.isArray(input)) return input.map(sortKeys);
-	if (input && typeof input === "object") {
+	if (isObject(input)) {
 		const sorted: Record<string, unknown> = {};
-		for (const key of Object.keys(input as Record<string, unknown>).sort()) {
-			sorted[key] = sortKeys((input as Record<string, unknown>)[key]);
-		}
+		for (const key of Object.keys(input).sort()) sorted[key] = sortKeys(input[key]);
 		return sorted;
 	}
 	return input;

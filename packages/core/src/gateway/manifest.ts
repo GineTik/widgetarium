@@ -259,12 +259,15 @@ const HELD_NAMES_NOTHING =
 
 const NOT_A_WRITTEN_PROP = 'prop "{name}" was not written by manifestOfModule';
 
-export interface ManifestInput extends ManifestCard {
+export interface ManifestInput extends Omit<ManifestCard, "title" | "description"> {
+	title?: string;
+	description?: string;
 	props: Readonly<Record<string, unknown>>;
-	size: WidgetSize;
 }
 
-export function manifestOfDeclared(input: ManifestInput): Manifest {
+export type ModuleManifest = Omit<Manifest, "title" | "description"> & Pick<ManifestInput, "title" | "description">;
+
+export function manifestOfDeclared(input: ManifestInput): ModuleManifest {
 	const props: Record<string, PropSpec> = {};
 	const problems: string[] = [];
 	for (const [name, given] of Object.entries(input.props)) {
@@ -274,13 +277,13 @@ export function manifestOfDeclared(input: ManifestInput): Manifest {
 		}
 		const spec = specOf(name, given);
 		props[name] = spec;
-		const problem = propProblem(name, spec, given as WrittenProp);
+		const problem = propProblem(name, spec, given);
 		if (problem) problems.push(problem);
 	}
 	problems.push(...heldProblems("slot", input.slots), ...heldProblems("mount", input.mounts));
 	problems.push(...sizeProblems(input.size));
 	if (problems.length > 0)
-		throw new Error(MANIFEST_REFUSED.replace("{title}", input.title).replace("{why}", problems.join("; ")));
+		throw new Error(MANIFEST_REFUSED.replace("{title}", String(input.title)).replace("{why}", problems.join("; ")));
 	return { ...input, props, isManifest: true };
 }
 
@@ -322,13 +325,13 @@ function isPreferredHeight(held: unknown) {
 	return held === "auto" || (typeof held === "number" && held > 0);
 }
 
-const isPlain = (held: unknown) => typeof held === "object" && held !== null && !Array.isArray(held);
+const isPlain = (held: unknown): held is Readonly<Record<string, unknown>> =>
+	typeof held === "object" && held !== null && !Array.isArray(held);
 
 function carriesKey(held: unknown, key: string): boolean {
 	if (Array.isArray(held)) return held.some((one) => carriesKey(one, key));
 	if (!isPlain(held)) return false;
-	const inside = held as Readonly<Record<string, unknown>>;
-	return key in inside || Object.values(inside).some((one) => carriesKey(one, key));
+	return key in held || Object.values(held).some((one) => carriesKey(one, key));
 }
 
 function propProblem(name: string, spec: PropSpec, input: WrittenProp): string | null {
@@ -350,5 +353,4 @@ function heldProblems(holder: string, held: Readonly<Record<string, HeldSpec>> |
 	);
 }
 
-const isWrittenProp = (given: unknown) =>
-	isPlain(given) && (given as Readonly<Record<string, unknown>>)[PROP_MARK] === true;
+const isWrittenProp = (given: unknown): given is WrittenProp => isPlain(given) && given[PROP_MARK] === true;

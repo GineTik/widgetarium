@@ -13,7 +13,7 @@ import type {
 	ViewHost,
 	WidgetCatalogue,
 } from "./host";
-import type { DeclaredFilterRow, Manifest, RecordRef as RecordRefType } from "./manifest";
+import type { DeclaredFilterRow, HeldSpec, ModuleManifest, RecordRef as RecordRefType } from "./manifest";
 import { manifestOfDeclared, sizeProblems } from "./manifest";
 import type { Declaration } from "./declaration";
 import { DECLARATION, declarationIn } from "./declaration";
@@ -167,21 +167,25 @@ export abstract class IBaseGateway {
 	static of<C extends KindedClass, const X extends SchemaOrShapes>(
 		this: C,
 		schemas: X & RefReserved<ReadOf<X>>,
-		options: OptionsBy<C, X> = {} as OptionsBy<C, X>,
-	): DeclaredBy<C, X> {
+		options?: OptionsBy<C, X>,
+	): DeclaredBy<C, X>;
+	static of(
+		this: AbstractOf<IBaseGateway>,
+		schemas: SchemaOrShapes,
+		options: ListOptions<unknown> = {},
+	): AbstractOf<IBaseGateway> {
 		const root = declarationIn(this);
 		if (!root) throw new Error(ROOT_OF);
-		const held = options as Readonly<Record<string, unknown>>;
-		if (root.kind === "value" && Object.keys(held).length > 0)
-			throw new Error(VALUE_TAKES_NO_OPTIONS.replace("{keys}", Object.keys(held).join(", ")));
-		return declaredClassOf(this as unknown as AbstractOf<IBaseGateway>, {
+		if (root.kind === "value" && Object.keys(options).length > 0)
+			throw new Error(VALUE_TAKES_NO_OPTIONS.replace("{keys}", Object.keys(options).join(", ")));
+		return declaredClassOf(this, {
 			kind: root.kind,
 			...schemasOf(schemas),
 			reads: root.reads ?? [],
 			...(root.pickableWrites ? { pickableWrites: root.pickableWrites } : {}),
 			writes: root.writes,
-			...(root.kind === "value" ? {} : listOptions(held as ListOptions<unknown>)),
-		}) as unknown as DeclaredBy<C, X>;
+			...(root.kind === "value" ? {} : listOptions(options)),
+		});
 	}
 }
 
@@ -275,7 +279,7 @@ export function defineMigrations<const Steps extends readonly MigrationStep<Decl
 	return steps;
 }
 
-export function manifestOfModule(module: DeclaredModule): Manifest | null {
+export function manifestOfModule(module: DeclaredModule): ModuleManifest | null {
 	const props = module.default?.declared;
 	if (!props) return null;
 	const { props: described, ...card } = module.metadata ?? {};
@@ -288,11 +292,11 @@ export function manifestOfModule(module: DeclaredModule): Manifest | null {
 		...partsOfDeclared(props, described ?? {}),
 		...(module.migrations ? { migrate: module.migrations.map(migrationOfDeclared) } : {}),
 	};
-	return manifestOfDeclared(input as unknown as Parameters<typeof manifestOfDeclared>[0]);
+	return manifestOfDeclared(input);
 }
 
 export function isDeclaredProps(held: unknown): held is DeclaredProps {
-	return typeof held === "object" && held !== null && (held as Record<symbol, unknown>)[DEFINED_PROPS] === true;
+	return typeof held === "object" && held !== null && DEFINED_PROPS in held && held[DEFINED_PROPS] === true;
 }
 
 function refuseOutsideTheRoot(props: DeclaredProps) {
@@ -340,7 +344,7 @@ function declaredClassOf(base: AbstractOf<IBaseGateway>, declaration: Declaratio
 	return Declared;
 }
 
-function createHeldClass(kind: "slot" | "mounts", held: Readonly<Record<string, unknown>>) {
+function createHeldClass(kind: "slot" | "mounts", held: Readonly<HeldSpec>) {
 	abstract class Held extends IBaseGateway {}
 	Object.defineProperty(Held, DECLARATION, { value: { kind, schema: z.unknown(), writes: [], held } });
 	return Held;

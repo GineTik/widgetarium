@@ -2,10 +2,10 @@ import { z } from "zod";
 import type { Declaration } from "./declaration";
 import { DECLARATION, declarationIn, defaultOf } from "./declaration";
 import type { DeclaredProps, MigrationStep, PropMetadata } from "./declared";
-import type { Choice } from "./manifest";
+import type { Choice, HeldSpec } from "./manifest";
 import { PROP_MARK, specOf } from "./manifest";
 
-export type Described = Readonly<Record<string, PropMetadata<unknown>>>;
+export type Described = Readonly<Record<string, PropMetadata<unknown> | undefined>>;
 
 const NOT_DECLARED =
 	'prop "{name}" is not a gateway declared with IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)';
@@ -22,18 +22,20 @@ const OPTIONS_BESIDE_THE_ENUM =
 const SIBLING_FIELDS = ["rows", "picked", "fieldFrom"] as const;
 
 export function partsOfDeclared(props: DeclaredProps, described: Described) {
-	const parts = { props: {}, slots: {}, mounts: {} } as Record<"props" | "slots" | "mounts", Record<string, unknown>>;
+	const written: Record<string, unknown> = {};
+	const slots: Record<string, HeldSpec> = {};
+	const mounts: Record<string, HeldSpec> = {};
 	for (const [name, held] of Object.entries(props)) {
 		const declaration = declarationIn(held) as Declaration;
 		if (declaration.kind === "passed") continue;
-		if (declaration.kind === "slot") parts.slots[name] = heldSpecOf(declaration, described[name] ?? {});
-		else if (declaration.kind === "mounts") parts.mounts[name] = heldSpecOf(declaration, described[name] ?? {});
-		else parts.props[name] = propOfDeclared(name, declaration, described[name] ?? {});
+		if (declaration.kind === "slot") slots[name] = heldSpecOf(declaration, described[name] ?? {});
+		else if (declaration.kind === "mounts") mounts[name] = heldSpecOf(declaration, described[name] ?? {});
+		else written[name] = propOfDeclared(name, declaration, described[name] ?? {});
 	}
 	return {
-		props: parts.props,
-		...(Object.keys(parts.slots).length > 0 ? { slots: parts.slots } : {}),
-		...(Object.keys(parts.mounts).length > 0 ? { mounts: parts.mounts } : {}),
+		props: written,
+		...(Object.keys(slots).length > 0 ? { slots } : {}),
+		...(Object.keys(mounts).length > 0 ? { mounts } : {}),
 	};
 }
 
@@ -63,11 +65,10 @@ export function refuseImplementations(props: DeclaredProps) {
 		);
 }
 
-export function refuseSourcesOverNothing(props: DeclaredProps, described: Readonly<Record<string, unknown>>) {
+export function refuseSourcesOverNothing(props: DeclaredProps, described: Described) {
 	const names = Object.keys(props);
 	for (const [name, held] of Object.entries(described)) {
-		const fields =
-			(held as { source?: { fields?: Readonly<Record<string, unknown>> } } | undefined)?.source?.fields ?? {};
+		const fields = held?.source?.fields ?? {};
 		const option = SIBLING_FIELDS.find((key) => {
 			const target = fields[key];
 			return typeof target === "string" && !target.includes("/") && !names.includes(target);
@@ -81,7 +82,7 @@ export function refuseSourcesOverNothing(props: DeclaredProps, described: Readon
 	}
 }
 
-export function refuseMetadataForNothing(props: DeclaredProps, described: Readonly<Record<string, unknown>>) {
+export function refuseMetadataForNothing(props: DeclaredProps, described: Described) {
 	const names = Object.keys(props);
 	const stray = Object.keys(described).find((name) => !names.includes(name));
 	if (stray) throw new Error(METADATA_FOR_NOTHING.replace("{name}", stray));
@@ -157,7 +158,7 @@ function innerOf(schema: z.ZodType): z.ZodType | undefined {
 	return def?.innerType ?? def?.in;
 }
 
-function heldSpecOf(declaration: Declaration, described: PropMetadata<unknown>) {
+function heldSpecOf(declaration: Declaration, described: PropMetadata<unknown>): HeldSpec {
 	return { ...declaration.held, ...described };
 }
 

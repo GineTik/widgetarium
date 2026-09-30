@@ -3,6 +3,7 @@ import { rowOf, toRows } from "./create";
 import { declarationIn } from "./declaration";
 import { ICrudGateway, IListGateway, IValueGateway } from "./declared";
 import { isMatch, pageOf, sortRows } from "./match";
+import { verbOf } from "./verbs-of";
 
 const DEFAULT_IMPLEMENTATION = Symbol.for("widgetarium.default-implementation");
 
@@ -30,7 +31,7 @@ export function defineDefaultImplementation<I extends Constructed, C extends new
 	const declaration = declarationIn(gatewayInterface);
 	if (!declaration) throw new Error(NOT_AN_INTERFACE.replace("{name}", gatewayInterface.name || "this class"));
 	const missing = [...(declaration.reads ?? []), ...declaration.writes].find(
-		(verb) => typeof (implementation.prototype as Record<string, unknown>)[verb] !== "function",
+		(verb) => typeof verbOf(implementation.prototype, verb) !== "function",
 	);
 	if (missing)
 		throw new Error(

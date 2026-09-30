@@ -7,6 +7,8 @@ import { delegateVerbs } from "./narrow";
 import type { ChosenProps, DeclaredNeeds, Resolution } from "./resolve-needs";
 import { resolveNeeds } from "./resolve-needs";
 import { stableKey } from "./cache";
+import { actionOf } from "./verbs-of";
+import { isObject } from "../engine/is-object";
 
 type Held = Record<string, unknown>;
 
@@ -29,7 +31,7 @@ type Reading = () => Promise<Resolution>;
 
 export function mapCollection<T>(base: CollectionGateway<T>, spec: MappingSpec): CollectionGateway<T> {
 	if (Object.keys(spec.needs).length === 0) return base;
-	const resolutionOf = rememberResolution(base as unknown as CollectionGateway<unknown>, spec);
+	const resolutionOf = rememberResolution(base, spec);
 	return collectionGateway<T>({
 		id: `${base.id}|needs?${stableKey({ needs: Object.keys(spec.needs), chosen: spec.chosen })}`,
 		handlers: mapHandlers(base, spec, resolutionOf),
@@ -105,17 +107,26 @@ function renamePatch(data: unknown, needs: DeclaredNeeds, map: Record<string, st
 	return Object.keys(written).length ? { ...kept, props: written } : kept;
 }
 
-async function fieldsBehind(base: CollectionGateway<unknown>): Promise<FieldReport[]> {
-	const describe = (base as unknown as Held)["describe"] as (() => Promise<FieldReport[]>) & {
-		can(): { can: boolean };
-	};
-	if (typeof describe === "function" && describe.can().can) return describe();
+async function fieldsBehind<T>(base: CollectionGateway<T>): Promise<FieldReport[]> {
+	const described = await describedFieldsOf(base);
+	if (described) return described;
 	const listed = await base.list();
 	return fieldsOf(listed.rows.map(valueIn));
 }
 
+async function describedFieldsOf(base: object): Promise<FieldReport[] | null> {
+	const describe = actionOf(base, "describe");
+	if (!describe?.can().can) return null;
+	const described = await describe();
+	return isFieldReportList(described) ? described : null;
+}
+
+function isFieldReportList(held: unknown): held is FieldReport[] {
+	return Array.isArray(held) && held.every((row: unknown) => isObject(row) && typeof row["prop"] === "string");
+}
+
 // TRADE-OFF: the resolution is remembered for the life of the gateway, so a property added after the first read is seen on the next mount rather than at once
-function rememberResolution(base: CollectionGateway<unknown>, spec: MappingSpec) {
+function rememberResolution<T>(base: CollectionGateway<T>, spec: MappingSpec) {
 	let held: Promise<Resolution> | null = null;
 	return () => {
 		if (held) return held;
@@ -160,15 +171,16 @@ function createsOne<T>(base: CollectionGateway<T>, spec: MappingSpec, resolution
 }
 
 function mapHandlers<T>(base: CollectionGateway<T>, spec: MappingSpec, resolutionOf: Reading): Record<string, Handler> {
-	const mapped: Record<string, unknown> = {
+	const mapped: Record<string, Handler> = {
 		get: readsOne(base, spec, resolutionOf),
 		update: writesOne(base, spec, resolutionOf),
 		create: createsOne(base, spec, resolutionOf),
 	};
-	const delegated = delegateVerbs(base as unknown as Record<string, unknown>);
+	const delegated = delegateVerbs(base);
 	const handlers: Record<string, Handler> = { ...delegated, list: readsRows(base, spec, resolutionOf) as Handler };
 	for (const verb of Object.keys(mapped)) {
-		if (delegated[verb]) handlers[verb] = mapped[verb] as Handler;
+		const held = mapped[verb];
+		if (delegated[verb] && held) handlers[verb] = held;
 	}
 	return handlers;
 }

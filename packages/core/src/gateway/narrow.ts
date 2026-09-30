@@ -1,15 +1,14 @@
-import type { CanResult, CollectionGateway, FilterRow, Query } from "./contract";
+import type { CollectionGateway, FilterRow, Query } from "./contract";
 import { collectionGateway } from "./create";
 import { stableKey } from "./cache";
 import { KNOWN_OPERATORS } from "./match";
+import { isAction, verbOf } from "./verbs-of";
 
 export type NarrowClause = Record<string, unknown>;
 
 export type Narrowing = NarrowClause | FilterRow[] | null | undefined;
 
 const OPERATORS = new Set(KNOWN_OPERATORS);
-
-type AnyAction = ((input: never) => Promise<unknown>) & { can(): CanResult };
 
 export type RowsResolver = (rows: FilterRow[]) => Promise<FilterRow[]> | FilterRow[];
 
@@ -28,9 +27,10 @@ export function normalizeWhere(where: Narrowing, by?: string): FilterRow[] {
 	return Object.entries(where).flatMap(([prop, value]) => clausesFor(prop, value, by));
 }
 
-export function delegateVerbs(base: Record<string, unknown>): Record<string, (input: never) => unknown> {
+export function delegateVerbs(base: object): Record<string, (input: never) => unknown> {
 	const handlers: Record<string, (input: never) => unknown> = {};
-	for (const [verb, held] of Object.entries(base)) {
+	for (const verb of Object.keys(base)) {
+		const held = verbOf(base, verb);
 		if (verb === "list" || !isAction(held)) continue;
 		if (held.can().can === false) continue;
 		handlers[verb] = (input: never) => held(input);
@@ -52,7 +52,7 @@ export function narrowCollection<T>(
 	};
 	return collectionGateway<T>({
 		id: `${base.id}|where?${stableKey(rows)}`,
-		handlers: { ...delegateVerbs(base as unknown as Record<string, unknown>), list },
+		handlers: { ...delegateVerbs(base), list },
 		subscribe: subscribe ?? base.subscribe,
 		announcesOwnWrites: false,
 	}) as CollectionGateway<T>;
@@ -78,8 +78,4 @@ function clausesFor(prop: string, value: unknown, by?: string): FilterRow[] {
 	}
 	if (Array.isArray(value)) return [{ prop, op: "in", value, ...marked }];
 	return [{ prop, op: "is", value, ...marked }];
-}
-
-function isAction(held: unknown): held is AnyAction {
-	return typeof held === "function" && typeof (held as AnyAction).can === "function";
 }

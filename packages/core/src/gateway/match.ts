@@ -40,7 +40,7 @@ export function valueOf(record: unknown, prop: string): unknown {
 	return fieldOf(record, prop);
 }
 
-export function isMatch(record: unknown, where?: FilterRow[] | null): boolean {
+export function isMatch(record: unknown, where?: readonly FilterRow[] | null): boolean {
 	if (!where || where.length === 0) return true;
 	return where.every((clause) => {
 		const name = clause.op ?? "eq";
