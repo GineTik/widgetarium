@@ -97,7 +97,7 @@ function coreProvides() {
 
 export function surfaceOptions({ minify = false } = {}) {
 	return {
-		entryPoints: ["packages/core/src/widget-api.js"],
+		entryPoints: ["packages/core/src/widget-api.ts"],
 		bundle: true,
 		write: false,
 		format: "cjs",

@@ -16,6 +16,7 @@
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
 		"noEmit": true,
+		"jsx": "preserve",
 		"tsBuildInfoFile": "../../node_modules/.cache/widgetarium/core.tsbuildinfo",
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,

@@ -905,8 +905,7 @@ check(
 		true,
 	);
 
-	// CONTEXT: the tab strip left the widget for packages/core/src/editable-tabs.js, so that is where it is checked
-	const strip = fs.readFileSync("packages/core/src/editable-tabs.js", "utf8");
+	const strip = fs.readFileSync("packages/core/src/editable-tabs.ts", "utf8");
 	check("the tab strip builds on the kit rather than restating it", /from "\.\/kit\.js"|wg-kit-/.test(strip), true);
 	check("the tab strip does not paint its own plate", /background:\s*var\(--orbi-plate\)/.test(strip), false);
 	check(
@@ -1008,6 +1007,18 @@ check(
 		["Marketing Team", "Sales"],
 	);
 
+	render(null, host);
+	for (const stray of inBody(".wg-dialog-overlay")) stray.remove();
+
+	const strayed = [];
+	render(
+		h(EditableTabs, { tabs: ["A", "B"], archived: [], selected: "Gone", onChange: (step) => strayed.push(step) }),
+		host,
+	);
+	await settle();
+	await press(host.querySelector(".wg-tabs-more"));
+	await press(inBody(".wg-kit-pop-item").find((item) => item.textContent.trim() === "Archive"));
+	check("archiving a selection the strip does not hold still selects a tab it does", strayed.at(-1)?.selected, "A");
 	render(null, host);
 	for (const stray of inBody(".wg-dialog-overlay")) stray.remove();
 }

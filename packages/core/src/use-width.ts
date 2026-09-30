@@ -1,12 +1,21 @@
 import { useEffect, useState } from "react";
 
-export function useBox(nodeRef) {
-	const [box, setBox] = useState({ width: 0, height: 0 });
+export interface MeasuredNode {
+	readonly current: HTMLElement | null;
+}
+
+export interface BoxSize {
+	readonly width: number;
+	readonly height: number;
+}
+
+export function useBox(nodeRef: MeasuredNode): BoxSize {
+	const [box, setBox] = useState<BoxSize>({ width: 0, height: 0 });
 
 	useEffect(() => {
 		const node = nodeRef.current;
 		if (!node) return undefined;
-		const read = () =>
+		const read = (): void =>
 			setBox((held) =>
 				held.width === node.clientWidth && held.height === node.clientHeight
 					? held
@@ -21,6 +30,6 @@ export function useBox(nodeRef) {
 	return box;
 }
 
-export function useWidth(nodeRef) {
+export function useWidth(nodeRef: MeasuredNode): number {
 	return useBox(nodeRef).width;
 }

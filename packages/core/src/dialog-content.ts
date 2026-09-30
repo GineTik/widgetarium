@@ -3,7 +3,7 @@ import type { ReactElement, ReactNode } from "react";
 import { cn } from "@widgetarium/kit";
 
 export interface DialogContentProps {
-	readonly className?: string;
+	readonly className?: string | undefined;
 	readonly width?: number | string;
 	readonly children?: ReactNode;
 }

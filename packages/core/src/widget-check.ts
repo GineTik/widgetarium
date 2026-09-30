@@ -12,11 +12,39 @@ const KIT_TOKEN_PREFIX = "--wg-kit-";
 const WIDGETARIUM_IMPORT = /import\s+(type\s+)?\{([^}]+)\}\s+from\s+"widgetarium"/g;
 const BOARD_HEADING = /<(h[12])[\s/>]/g;
 const KIT_BOARD_HEADING = /<Heading\b[^>]*\b(?:level|size)=\{?["']?([12])\b/g;
-const ROLES_THAT_MAY_TITLE = ["text", "layout"];
+const ROLES_THAT_MAY_TITLE: readonly string[] = ["text", "layout"];
 
-export const WIDGET_CHECK_RULES = ["colour", "font", "unbounded", "role", "reaches", "heading"];
+export const WIDGET_CHECK_RULES = ["colour", "font", "unbounded", "role", "reaches", "heading"] as const;
 
-export function checkWidget({ id, source = "", styles = "", card = null, surface = null }) {
+export type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
+
+export interface CheckedCard {
+	readonly role?: unknown;
+}
+
+export interface WidgetCheckInput {
+	readonly id: string;
+	readonly source?: string;
+	readonly styles?: string;
+	readonly card?: CheckedCard | null;
+	readonly surface?: readonly unknown[] | null;
+}
+
+export interface WidgetFinding {
+	readonly widget: string;
+	readonly rule: WidgetCheckRule;
+	readonly message: string;
+}
+
+type Finding = Omit<WidgetFinding, "widget">;
+
+export function checkWidget({
+	id,
+	source = "",
+	styles = "",
+	card = null,
+	surface = null,
+}: WidgetCheckInput): WidgetFinding[] {
 	const text = `${source}\n${styles}`;
 	return [
 		...colourFindings(text),
@@ -28,18 +56,18 @@ export function checkWidget({ id, source = "", styles = "", card = null, surface
 	].map((one) => ({ widget: id, ...one }));
 }
 
-export function saidWidgetCheck(findings) {
+export function saidWidgetCheck(findings: readonly WidgetFinding[]): string {
 	if (findings.length === 0) return "the widget is clean";
 	return findings.map((one) => `${one.widget} ${one.rule}: ${one.message}`).join("\n");
 }
 
-function reachFindings(source, surface) {
+function reachFindings(source: string, surface: readonly unknown[] | null): Finding[] {
 	if (!Array.isArray(surface) || surface.length === 0) return [];
 	const held = new Set(surface);
 	const missing = [...source.matchAll(WIDGETARIUM_IMPORT)]
 		.filter((found) => !found[1])
-		.flatMap((found) => found[2].split(","))
-		.map((entry) => entry.trim().split(/\s+as\s+/)[0])
+		.flatMap((found) => (found[2] ?? "").split(","))
+		.map((entry) => entry.trim().split(/\s+as\s+/)[0] ?? "")
 		.filter((name) => name !== "" && !name.startsWith("type ") && !held.has(name));
 	if (missing.length === 0) return [];
 	return [
@@ -50,9 +78,9 @@ function reachFindings(source, surface) {
 	];
 }
 
-function colourFindings(text) {
+function colourFindings(text: string): Finding[] {
 	const written = [...text.matchAll(HEX), ...text.matchAll(FUNCTIONAL_COLOUR)]
-		.filter((found) => !lineNamesToken(text, found.index))
+		.filter((found) => !lineNamesToken(text, found.index ?? 0))
 		.map((found) => found[0]);
 	const said = [...written, ...borrowedPaint(text)];
 	if (said.length === 0) return [];
@@ -65,20 +93,20 @@ function colourFindings(text) {
 }
 
 // TRADE-OFF: the kit declares no type tokens, so the host's font variables are the right source and only arithmetic over them is a finding
-function borrowedPaint(text) {
+function borrowedPaint(text: string): string[] {
 	return [...text.matchAll(PLATE_PROPERTY)]
-		.filter((found) => !SHAPE_PROPERTY.test(found[1]))
-		.map((found) => found[2].trim())
+		.filter((found) => !SHAPE_PROPERTY.test(found[1] ?? ""))
+		.map((found) => (found[2] ?? "").trim())
 		.filter((value) => !BARE_PAINT.test(value) && !value.includes(KIT_TOKEN_PREFIX));
 }
 
-function fontFindings(text) {
+function fontFindings(text: string): Finding[] {
 	const families = [...text.matchAll(NAMED_FAMILY)];
 	const sizes = [...text.matchAll(COMPUTED_FONT_SIZE)];
 	const said = [
 		families.length > 0 ? `${families.length} font-family naming a typeface` : null,
 		sizes.length > 0 ? `${sizes.length} font-size computed rather than taken` : null,
-	].filter(Boolean);
+	].filter((one): one is string => one !== null);
 	if (said.length === 0) return [];
 	return [
 		{
@@ -88,7 +116,7 @@ function fontFindings(text) {
 	];
 }
 
-function unboundedFindings(source) {
+function unboundedFindings(source: string): Finding[] {
 	if (!HAS_MAP_CALL.test(source)) return [];
 	const listed = [...source.matchAll(USE_DATA_LIST)].map((found) => found[1]);
 	if (listed.length === 0) return [];
@@ -100,8 +128,8 @@ function unboundedFindings(source) {
 	];
 }
 
-function headingFindings(source, card) {
-	if (!card || ROLES_THAT_MAY_TITLE.includes(card.role)) return [];
+function headingFindings(source: string, card: CheckedCard | null): Finding[] {
+	if (!card || mayTitle(card.role)) return [];
 	const drawn = [
 		...new Set([
 			...[...source.matchAll(BOARD_HEADING)].map((found) => found[1]),
@@ -117,7 +145,7 @@ function headingFindings(source, card) {
 	];
 }
 
-function roleFindings(card) {
+function roleFindings(card: CheckedCard | null): Finding[] {
 	if (!card || typeof card.role === "string") return [];
 	return [
 		{
@@ -127,10 +155,12 @@ function roleFindings(card) {
 	];
 }
 
-function lineNamesToken(text, at) {
-	const line = text.slice(
-		text.lastIndexOf("\n", at) + 1,
-		text.indexOf("\n", at) === -1 ? undefined : text.indexOf("\n", at),
-	);
+function mayTitle(role: unknown): boolean {
+	return typeof role === "string" && ROLES_THAT_MAY_TITLE.includes(role);
+}
+
+function lineNamesToken(text: string, at: number): boolean {
+	const lineEnd = text.indexOf("\n", at);
+	const line = text.slice(text.lastIndexOf("\n", at) + 1, lineEnd === -1 ? undefined : lineEnd);
 	return line.includes(KIT_TOKEN_PREFIX);
 }
