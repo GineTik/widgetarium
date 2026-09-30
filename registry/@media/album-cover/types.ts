@@ -1,6 +1,4 @@
-export type Album = {
-	title?: string | null;
-	artist?: string | null;
-	cover?: string | null;
-	tracks?: number | string | null;
-};
+import type { z } from "widgetarium";
+import type { AlbumSchema } from "./widget";
+
+export type Album = z.infer<typeof AlbumSchema>;

@@ -1,10 +1,4 @@
-export type Flight = {
-	title?: string;
-	status?: string;
-	stage?: string;
-	project?: string;
-	branch?: string;
-	activity?: string;
-	elapsed?: string;
-	who?: string;
-};
+import type { z } from "widgetarium";
+import type { FlightSchema } from "./widget";
+
+export type Flight = z.infer<typeof FlightSchema>;

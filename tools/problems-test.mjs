@@ -124,6 +124,37 @@ check(
 	[1],
 );
 
+const { runWidgetSource } = await import("./run-widget-source.mjs");
+const { ENGINE_SCOPE } = await import("../packages/core/src/registry.js");
+const { propSchemaOf } = await import("../packages/core/src/surface/prop-gateway.ts");
+const DRAWS_NOTHING = new Proxy({}, { get: () => () => null });
+const FileRow = runWidgetSource(
+	"registry/@flow/file-row/widget.tsx",
+	(name) => (name === "widgetarium" ? ENGINE_SCOPE.api : DRAWS_NOTHING),
+	h,
+	null,
+).default;
+async function fileRowDrawnFrom(stored) {
+	refs.put("t1/file", soloGateway(stored, {}, `problems-test/file-${JSON.stringify(stored)}`));
+	const schema = propSchemaOf({ component: FileRow }, "file");
+	return resolveHostGateway(context("file", "@core/from-tile-value", "t1/file", schema)).get();
+}
+check(
+	"a shipped widget's schema hands over the record it accepts",
+	await fileRowDrawnFrom({ filePath: "src/tree.js", added: 3 }),
+	{ filePath: "src/tree.js", added: 3 },
+);
+check(
+	"and answers a record its schema refuses as missing",
+	await fileRowDrawnFrom({ filePath: "src/tree.js", added: true }),
+	null,
+);
+check(
+	"naming the field it refused beside the prop",
+	problems.of("t2/file").flatMap((problem) => problem.issues.map((issue) => issue.path.join("."))),
+	["added"],
+);
+
 const LAYOUT = { role: "indicator", size: { preferredWidth: "full", preferredHeight: "auto" } };
 const DayNoteSchema = z.object({
 	date: z

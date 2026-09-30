@@ -1,5 +1,6 @@
 import {
 	IListGateway,
+	VaultRecordSchema,
 	IValueGateway,
 	createWidget,
 	defineLayout,
@@ -131,7 +132,13 @@ const LABEL = "label";
 const CONTROL = "control";
 const RECORD_NAME = "name";
 
-type Held = Record<string, unknown> & { props?: Record<string, unknown> };
+const FilterGroupSchema = VaultRecordSchema.extend({
+	prop: z.string().optional(),
+	label: z.string().optional(),
+	control: z.string().optional(),
+});
+
+export const ChosenSchema = z.record(z.string(), z.union([z.string(), z.array(z.string())]));
 
 const PEOPLE_NAMES = ["assignees", "members", "people", "owner", "owners"];
 const NEVER_FILTERED = ["title", "board", "status", "deadline", "due"];
@@ -143,7 +150,7 @@ function controlFor(prop: string, named: string): string {
 	return PEOPLE_NAMES.includes(prop.toLowerCase()) ? PEOPLE : CHECKBOX;
 }
 
-function groupOf(held: Held): Group {
+function groupOf(held: z.infer<typeof FilterGroupSchema>): Group {
 	const prop = textOf(held, PROP) || textOf(held, RECORD_NAME);
 	return { prop, label: textOf(held, LABEL) || prop, control: controlFor(prop, textOf(held, CONTROL)) };
 }
@@ -193,7 +200,7 @@ function keyCarrying(rows: TaskRow[], name: string): string | null {
 }
 
 function countOf(chosen: Chosen): number {
-	return Object.values(chosen ?? {}).reduce(
+	return Object.values(chosen).reduce(
 		(total: number, values) => total + (Array.isArray(values) ? values.length : 1),
 		0,
 	);
@@ -207,13 +214,13 @@ function groupsToShow(authored: Group[], fromBoard: Group[], rows: TaskRow[]): G
 }
 
 export const props = defineProps({
-	tasks: IListGateway.of(z.custom<Held>(), {
+	tasks: IListGateway.of(VaultRecordSchema, {
 		where: [{ prop: "board", op: "is", value: { wants: "@default/editable-tabs/selection" } }],
 	}),
-	groups: IListGateway.of(z.custom<Held>()),
+	groups: IListGateway.of(FilterGroupSchema),
 	openGroup: IValueGateway.of(z.string().default("")).pick("get"),
-	properties: IListGateway.of(z.custom<Held>()),
-	chosen: IValueGateway.of(z.custom<Chosen>().default({})).pick("get", "update"),
+	properties: IListGateway.of(VaultRecordSchema),
+	chosen: IValueGateway.of(ChosenSchema.default({})).pick("get", "update"),
 });
 
 const FilterPanel = createWidget({
@@ -228,12 +235,11 @@ const FilterPanel = createWidget({
 			.data.map((held) => textOf(held, "name") || textOf(held, RECORD_NAME))
 			.filter(Boolean);
 		const shownGroups = groupsToShow(authored, groupsFromBoard(named, rows), rows);
-		const applied: Chosen = chosen.value ?? {};
 
 		const triggerRef = useRef<HTMLButtonElement | null>(null);
 		const hasRoomForWord = useRoomForLabel(triggerRef);
 
-		const picking = useChosenDraft(applied, chosen);
+		const picking = useChosenDraft(chosen.value, chosen);
 		const [pressed, setPressed] = useState<string | null>(null);
 		const shown = pressed ?? openGroup;
 
@@ -243,7 +249,9 @@ const FilterPanel = createWidget({
 
 				<Popover
 					className="ofp-pop"
-					trigger={<FilterTrigger triggerRef={triggerRef} count={countOf(applied)} hasRoomForWord={hasRoomForWord} />}
+					trigger={
+						<FilterTrigger triggerRef={triggerRef} count={countOf(chosen.value)} hasRoomForWord={hasRoomForWord} />
+					}
 					isOpen={picking.isOpen}
 					onOpenChange={picking.change}
 				>

@@ -1,6 +1,5 @@
 import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Face } from "./face";
-import type { Project } from "./types";
 
 const CSS = `
 .flow-project-card {
@@ -144,10 +143,20 @@ const CSS = `
 }
 `;
 
+export const ProjectSchema = z.object({
+	mark: z.string().nullish(),
+	name: z.string().nullish(),
+	repository: z.string().nullish(),
+	open: z.union([z.number(), z.string()]).nullish(),
+	doing: z.union([z.number(), z.string()]).nullish(),
+	done: z.union([z.number(), z.string()]).nullish(),
+	touched: z.string().nullish(),
+});
+
 const ProjectCard = createWidget({
 	inject: {
 		project: IValueGateway.of(
-			z.custom<Project>().default({
+			ProjectSchema.default({
 				mark: "🧭",
 				name: "Harbour",
 				repository: "~/Projects/harbour",

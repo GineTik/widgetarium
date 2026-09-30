@@ -1,7 +1,7 @@
 import { IValueGateway, z, type DrawnProps, type Slot } from "widgetarium";
-import type { FigureSchema, FixSchema, TestStepSchema, props } from "./widget";
+import type { FigureSchema, FixSchema, ProseSourceSchema, TestStepSchema, props } from "./widget";
 
-export type ProseSource = string | { content?: string | null; body?: string | null; path?: string | null } | null;
+export type ProseSource = z.infer<typeof ProseSourceSchema>;
 
 export type Figure = z.infer<typeof FigureSchema>;
 

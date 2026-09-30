@@ -1,9 +1,4 @@
-export type Commit = {
-	sha?: string | null;
-	subject?: string | null;
-	at?: string | null;
-	files?: number | string | null;
-	added?: number | string | null;
-	removed?: number | string | null;
-	parents?: readonly string[] | string | null;
-};
+import type { z } from "widgetarium";
+import type { CommitSchema } from "./widget";
+
+export type Commit = z.infer<typeof CommitSchema>;

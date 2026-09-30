@@ -4,7 +4,6 @@ import { Mark } from "./mark";
 import { Meta } from "./meta";
 import { textOf } from "./text-of";
 import { Trail } from "./trail";
-import type { Flight } from "./types";
 
 const CSS = `
 :is(.wg-root, .wg-portal) .wg-kit-row.flow-row {
@@ -138,10 +137,21 @@ const CSS = `
 
 const UNTITLED = "Untitled";
 
+export const FlightSchema = z.object({
+	title: z.string().nullish(),
+	status: z.string().nullish(),
+	stage: z.string().nullish(),
+	project: z.string().nullish(),
+	branch: z.string().nullish(),
+	activity: z.string().nullish(),
+	elapsed: z.string().nullish(),
+	who: z.string().nullish(),
+});
+
 const FlightRow = createWidget({
 	inject: {
 		flight: IValueGateway.of(
-			z.custom<Flight>().default({
+			FlightSchema.default({
 				title: "Rewrite the board tree reader",
 				status: "running",
 				stage: "build",
@@ -154,17 +164,16 @@ const FlightRow = createWidget({
 		).pick("get"),
 	},
 	draw: ({ flight }) => {
-		const shown: Flight = flight ?? {};
-		const title = textOf(shown.title) ?? UNTITLED;
+		const title = textOf(flight.title) ?? UNTITLED;
 
 		return (
 			<Row className="flow-row">
 				<style>{CSS}</style>
-				<Mark status={textOf(shown.status)} />
+				<Mark status={textOf(flight.status)} />
 				<RowLabel title={title}>{title}</RowLabel>
 				<div className="flow-row-under">
-					<Meta flight={shown} />
-					<Trail flight={shown} />
+					<Meta flight={flight} />
+					<Trail flight={flight} />
 				</div>
 			</Row>
 		);

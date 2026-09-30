@@ -1,6 +1,14 @@
-import { ICrudGateway, IValueGateway, createWidget, defineLayout, defineMetadata, pickedValue, z } from "widgetarium";
+import {
+	ICrudGateway,
+	IValueGateway,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	pickedValue,
+	z,
+} from "widgetarium";
 import { archivedColumnsOf, patchColumn, columnsOf, columnsToWrite, restoreColumn } from "@default/lib";
-import type { Board } from "@default/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 
 const STYLE = `
@@ -56,7 +64,15 @@ const STYLE = `
 }
 `;
 
-const BoardSchema = z.custom<Board>();
+const BoardSchema = VaultRecordSchema.extend({
+	columns: z
+		.union([
+			z.string(),
+			z.array(z.union([z.string(), z.object({ name: z.string(), archivedAt: z.string().nullish() })])),
+		])
+		.optional(),
+	archivedColumns: z.union([z.string(), z.array(z.string())]).optional(),
+});
 
 const ArchivedColumns = createWidget({
 	inject: {

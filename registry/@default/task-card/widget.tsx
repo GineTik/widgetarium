@@ -187,8 +187,8 @@ function toList(value: unknown): string[] {
 	return held.map((entry) => String(entry).trim()).filter(Boolean);
 }
 
-function toToneMap(value: unknown): Record<string, string> {
-	if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, string>;
+function toToneMap(value: Task["tagTones"]): Record<string, string> {
+	if (typeof value === "object") return value;
 	const map: Record<string, string> = {};
 	for (const entry of toList(value)) {
 		const at = entry.indexOf(":");
@@ -210,10 +210,22 @@ function shownText(value: unknown): string | null {
 	return String(value);
 }
 
+export const TaskSchema = z.object({
+	title: z.string().optional(),
+	tags: z.union([z.array(z.string()), z.string()]).optional(),
+	tagTones: z.union([z.record(z.string(), z.string()), z.string()]).optional(),
+	priority: z.string().optional(),
+	status: z.string().optional(),
+	progress: z.union([z.number(), z.string()]).optional(),
+	initials: z.union([z.array(z.string()), z.string()]).optional(),
+	due: z.string().optional(),
+	files: z.union([z.number(), z.string()]).optional(),
+});
+
 const TaskCard = createWidget({
 	inject: {
 		task: IValueGateway.of(
-			z.custom<Task>().default({
+			TaskSchema.default({
 				title: "Design the onboarding flow",
 				tags: ["design", "research"],
 				tagTones: { design: "warning", research: "accent" },

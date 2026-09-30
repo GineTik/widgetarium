@@ -118,6 +118,16 @@ const CSS = `
 }
 `;
 
+export const CommitSchema = z.object({
+	sha: z.string().nullish(),
+	subject: z.string().nullish(),
+	at: z.string().nullish(),
+	files: z.union([z.number(), z.string()]).nullish(),
+	added: z.union([z.number(), z.string()]).nullish(),
+	removed: z.union([z.number(), z.string()]).nullish(),
+	parents: z.union([z.array(z.string()), z.string()]).nullish(),
+});
+
 const NO_SUBJECT = "No subject";
 
 const COMMIT_GLYPH = "git-commit-vertical";
@@ -132,7 +142,7 @@ function parentCount(value: Commit["parents"]): number {
 const CommitRow = createWidget({
 	inject: {
 		commit: IValueGateway.of(
-			z.custom<Commit>().default({
+			CommitSchema.default({
 				sha: "70a3c80f42",
 				subject:
 					"feat(catalogue): let the agent see the whole catalogue instead of only what the vault happens to hold",
@@ -145,9 +155,8 @@ const CommitRow = createWidget({
 		).pick("get"),
 	},
 	draw: ({ commit }) => {
-		const held: Commit = commit ?? {};
-		const subject = saidOf(held.subject);
-		const isMerge = parentCount(held.parents) > 1;
+		const subject = saidOf(commit.subject);
+		const isMerge = parentCount(commit.parents) > 1;
 
 		return (
 			<Row className="fcr">
@@ -159,9 +168,9 @@ const CommitRow = createWidget({
 				/>
 				<div className="fcr-body">
 					<p className={cn("fcr-subject", subject === "" && "is-missing")}>{subject === "" ? NO_SUBJECT : subject}</p>
-					<Meta commit={held} />
+					<Meta commit={commit} />
 				</div>
-				<DiffStat commit={held} />
+				<DiffStat commit={commit} />
 			</Row>
 		);
 	},

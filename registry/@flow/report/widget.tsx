@@ -19,7 +19,7 @@ import { proseOf } from "./prose-of";
 import { ReportSaid } from "./report-said";
 import { CSS } from "./style";
 import { TestPlan } from "./test-plan";
-import type { Figure, Fix, ProseSource, TestStep } from "./types";
+import type { Figure, Fix, TestStep } from "./types";
 
 export const FigureSchema = z.object({
 	caption: z
@@ -98,8 +98,13 @@ function saidInstead(reads: Read[], isEmpty: boolean) {
 	return isEmpty ? NOTHING_YET : null;
 }
 
+export const ProseSourceSchema = z.union([
+	z.string(),
+	z.object({ content: z.string().nullish(), body: z.string().nullish(), path: z.string().nullish() }),
+]);
+
 export const props = defineProps({
-	body: IValueGateway.of(z.custom<ProseSource>().default("")).pick("get"),
+	body: IValueGateway.of(ProseSourceSchema.default("")).pick("get"),
 	figures: IListGateway.of(FigureSchema),
 	testPlan: IListGateway.of(TestStepSchema),
 	fixes: IListGateway.of(FixSchema),

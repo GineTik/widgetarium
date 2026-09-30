@@ -2,16 +2,21 @@ import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMet
 import { Icon, IconButton, RenderedMarkdown } from "widgetarium/kit";
 import { Collapsed } from "./collapsed";
 
-type MarkdownSource = string | { content?: string | null; body?: string | null; path?: string | null } | null;
+const MarkdownSourceSchema = z.union([
+	z.string(),
+	z.object({ content: z.string().nullish(), body: z.string().nullish(), path: z.string().nullish() }),
+]);
+
+type MarkdownSource = z.infer<typeof MarkdownSourceSchema>;
 
 function markdownOf(source: MarkdownSource) {
 	if (typeof source === "string") return source;
-	return String(source?.content ?? source?.body ?? "");
+	return source.content ?? source.body ?? "";
 }
 
 function pathOf(source: MarkdownSource) {
-	if (typeof source !== "object") return null;
-	return source?.path ?? null;
+	if (typeof source === "string") return null;
+	return source.path ?? null;
 }
 
 function pixelsOf(held: number, fallback: number) {
@@ -21,7 +26,7 @@ function pixelsOf(held: number, fallback: number) {
 
 const ObsidianMarkdownPreview = createWidget({
 	inject: {
-		source: IValueGateway.of(z.custom<MarkdownSource>().default("")).pick("get"),
+		source: IValueGateway.of(MarkdownSourceSchema.default("")).pick("get"),
 		collapsible: IValueGateway.of(z.boolean().default(false)).pick("get"),
 		collapsedHeight: IValueGateway.of(z.number().default(240)).pick("get"),
 		step: IValueGateway.of(z.number().default(0)).pick("get"),

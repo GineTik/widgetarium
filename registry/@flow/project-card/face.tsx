@@ -5,7 +5,6 @@ import { Touched } from "./touched";
 import { Track } from "./track";
 import type { Counted, Head, Project } from "./types";
 
-const NOTHING = "No project bound to this card.";
 const BLANK = "This project note names nothing this card can draw.";
 
 const COUNTS = [
@@ -14,8 +13,7 @@ const COUNTS = [
 	{ field: "done", label: "done", tone: "success" },
 ] as const;
 
-export function Face({ project }: { project: Project | null }) {
-	if (!project) return <Said text={NOTHING} />;
+export function Face({ project }: { project: Project }) {
 	const head = headOf(project);
 	const percent = percentOf(project);
 	const counted = countedIn(project);

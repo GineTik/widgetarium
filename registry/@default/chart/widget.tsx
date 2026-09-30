@@ -41,14 +41,16 @@ const READING = "Reading…";
 const NO_RECORDS = "There are no records here yet.";
 const NO_NUMBERS = "None of these records carries a number to draw.";
 
-type Series = { property: string; label?: string | null };
+const SeriesSchema = z.object({ property: z.string(), label: z.string().nullish() });
+
+type Series = z.infer<typeof SeriesSchema>;
 type Kind = z.infer<typeof KindSchema>;
 
 const ChartWidget = createWidget({
 	inject: {
 		records: IListGateway.of(VaultRecordSchema),
 		across: IValueGateway.of(z.string().default("")).pick("get"),
-		series: IListGateway.of(z.custom<Series>()),
+		series: IListGateway.of(SeriesSchema),
 		kind: IValueGateway.of(KindSchema.default("area")).pick("get"),
 	},
 	draw: ({ records, across, series, kind }) => {
@@ -221,7 +223,7 @@ function configOf(drawn: Drawn[]) {
 
 function seriesOf(declared: Series[], rows: VaultRecord[], acrossProperty: string): Drawn[] {
 	const asked = declared
-		.map((one) => ({ property: String(one?.property ?? "").trim(), label: String(one?.label ?? "").trim() }))
+		.map((one) => ({ property: one.property.trim(), label: (one.label ?? "").trim() }))
 		.filter((one) => one.property !== "");
 	const chosen =
 		asked.length > 0 ? asked : numericProperties(rows, acrossProperty).map((property) => ({ property, label: "" }));

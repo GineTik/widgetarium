@@ -118,19 +118,21 @@ const CSS = `
 }
 `;
 
-type Question = {
-	question?: string | undefined;
-	options?: readonly string[] | string | undefined;
-	answer?: string | undefined;
-	reason?: string | undefined;
-};
+const QuestionSchema = z.object({
+	question: z.string().optional(),
+	options: z.union([z.array(z.string()), z.string()]).optional(),
+	answer: z.string().optional(),
+	reason: z.string().optional(),
+});
+
+type Question = z.infer<typeof QuestionSchema>;
 
 const NOTHING = "Nothing was recorded for this question.";
 
 const QaBlock = createWidget({
 	inject: {
 		asked: IValueGateway.of(
-			z.custom<Question>().default({
+			QuestionSchema.default({
 				question: "Where does the loading threshold live?",
 				options: ["one engine constant", "per widget", "per binding"],
 				answer: "one engine constant",
@@ -139,10 +141,9 @@ const QaBlock = createWidget({
 		).pick("get"),
 	},
 	draw: ({ asked }) => {
-		const held: Question = asked ?? {};
-		const chips = chipsOf(held);
-		const question = textOf(held.question);
-		const reason = textOf(held.reason);
+		const chips = chipsOf(asked);
+		const question = textOf(asked.question);
+		const reason = textOf(asked.reason);
 
 		if (!question && !reason && chips.length === 0)
 			return (

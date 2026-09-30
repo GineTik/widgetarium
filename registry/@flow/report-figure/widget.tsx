@@ -72,12 +72,14 @@ const CSS = `
 }
 `;
 
-type Figure = {
-	caption?: string | null;
-	image?: string | null;
-	alt?: string | null;
-	drawing?: string | null;
-};
+const FigureSchema = z.object({
+	caption: z.string().nullish(),
+	image: z.string().nullish(),
+	alt: z.string().nullish(),
+	drawing: z.string().nullish(),
+});
+
+type Figure = z.infer<typeof FigureSchema>;
 
 type Shown = { kind: "markdown"; markdown: string } | { kind: "missing"; said: string };
 
@@ -85,13 +87,13 @@ const NAMES_NOTHING = "This figure names no image.";
 const NOT_IN_VAULT = "{name} is not in this vault.";
 const CANNOT_BE_DRAWN = "{name} cannot be drawn here.";
 
-const trimText = (held: unknown) => (typeof held === "string" ? held.trim() : "");
+const trimText = (held: string | null | undefined) => held?.trim() ?? "";
 
 const embedOf = (path: string) => `![[${path}]]`;
 
-function shownFigure(figure: Figure | null, navigation: Navigation, canDraw: boolean): Shown {
-	const image = trimText(figure?.image);
-	const drawing = trimText(figure?.drawing);
+function shownFigure(figure: Figure, navigation: Navigation, canDraw: boolean): Shown {
+	const image = trimText(figure.image);
+	const drawing = trimText(figure.drawing);
 	if (!image) return drawing ? { kind: "markdown", markdown: drawing } : { kind: "missing", said: NAMES_NOTHING };
 	if (!canDraw) return { kind: "missing", said: CANNOT_BE_DRAWN.replace("{name}", image) };
 	const found = navigation.canNavigate ? navigation.resolve(image) : image;
@@ -101,7 +103,7 @@ function shownFigure(figure: Figure | null, navigation: Navigation, canDraw: boo
 
 const ReportFigure = createWidget({
 	inject: {
-		source: IValueGateway.of(z.custom<Figure>().default({})).pick("get"),
+		source: IValueGateway.of(FigureSchema.default({})).pick("get"),
 		host: IHost,
 		navigator: INavigator,
 	},

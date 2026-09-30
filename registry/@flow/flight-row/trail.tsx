@@ -16,7 +16,8 @@ const STAGE_TONES: Record<string, string> = {
 export function Trail({ flight }: { flight: Flight }) {
 	const stage = textOf(flight.stage);
 	const elapsed = textOf(flight.elapsed);
-	const initial = initialOf(textOf(flight.who));
+	const who = textOf(flight.who);
+	const initial = initialOf(who);
 
 	return (
 		<RowValue>
@@ -26,7 +27,7 @@ export function Trail({ flight }: { flight: Flight }) {
 			<span className="flow-row-cell is-time">{elapsed}</span>
 			<span className="flow-row-cell is-face">
 				{initial === undefined ? null : (
-					<span className="flow-row-face" aria-label={flight.who} title={flight.who}>
+					<span className="flow-row-face" aria-label={who} title={who}>
 						{initial}
 					</span>
 				)}

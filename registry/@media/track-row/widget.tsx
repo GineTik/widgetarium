@@ -141,18 +141,20 @@ const CSS = `
 }
 `;
 
-type Track = {
-	title?: string | null;
-	artist?: string | null;
-	album?: string | null;
-	addedAt?: string | null;
-	duration?: string | number | null;
-	favourite?: boolean | null;
-};
+const TrackSchema = z.object({
+	title: z.string().nullish(),
+	artist: z.string().nullish(),
+	album: z.string().nullish(),
+	addedAt: z.string().nullish(),
+	duration: z.union([z.string(), z.number()]).nullish(),
+	favourite: z.boolean().nullish(),
+});
+
+type Track = z.infer<typeof TrackSchema>;
 
 const props = defineProps({
 	track: IValueGateway.of(
-		z.custom<Track>().default({
+		TrackSchema.default({
 			title: "Weightless",
 			artist: "Marconi Union",
 			album: "Ambient Transmissions",
@@ -168,16 +170,14 @@ const props = defineProps({
 const TrackRow = createWidget({
 	inject: props,
 	draw: ({ track, position, isPlaying }) => {
-		const held: Track = track.value ?? {};
-		const playing = isPlaying === true;
-		const at = Number(position ?? 0);
+		const held = track.value;
 		const isFavourite = held.favourite === true;
 
 		return (
-			<Row className={playing ? "mt-row is-playing" : "mt-row"}>
+			<Row className={isPlaying ? "mt-row is-playing" : "mt-row"}>
 				<style>{CSS}</style>
 
-				<span className="mt-index">{playing ? <Equaliser /> : shownPlace(at)}</span>
+				<span className="mt-index">{isPlaying ? <Equaliser /> : shownPlace(position)}</span>
 
 				<span className="mt-name">
 					<RowLabel className={said(held.title) === "" ? "mt-title mt-blank" : "mt-title"}>
@@ -266,16 +266,15 @@ function favour(track: DrawnProps<typeof props>["track"], held: Track, next: boo
 	void track.update({ ...held, favourite: next });
 }
 
-function said(held: unknown): string {
-	if (held === null || held === undefined) return "";
-	return String(held).trim();
+function said(held: Track["duration"]): string {
+	return String(held ?? "").trim();
 }
 
 function shownPlace(at: number): string {
 	return Number.isFinite(at) && at > 0 ? String(Math.round(at)) : "";
 }
 
-function shownLength(held: unknown): string {
+function shownLength(held: Track["duration"]): string {
 	const written = said(held);
 	if (written === "") return "";
 	const seconds = Number(written);
@@ -284,7 +283,7 @@ function shownLength(held: unknown): string {
 	return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
 }
 
-function shownDay(held: unknown): string {
+function shownDay(held: Track["addedAt"]): string {
 	const written = said(held);
 	if (written === "") return "";
 	const at = new Date(written);

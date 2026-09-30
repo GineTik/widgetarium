@@ -167,6 +167,14 @@ const CSS = `
 }
 `;
 
+export const FileChangeSchema = z.object({
+	filePath: z.string().nullish(),
+	added: z.union([z.number(), z.string()]).nullish(),
+	removed: z.union([z.number(), z.string()]).nullish(),
+	change: z.string().nullish(),
+	from: z.string().nullish(),
+});
+
 const UNTOLD: Kind = { icon: "file", word: "Touched", mark: "is-untold" };
 
 const KIND_NAMED: Record<string, string> = {
@@ -201,7 +209,7 @@ function kindOf(change: FileChange["change"], from: FileChange["from"]): Kind {
 const FileRow = createWidget({
 	inject: {
 		file: IValueGateway.of(
-			z.custom<FileChange>().default({
+			FileChangeSchema.default({
 				filePath: "src/engine/catalogue-index.js",
 				change: "modified",
 				added: 128,

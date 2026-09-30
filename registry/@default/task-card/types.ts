@@ -1,11 +1,4 @@
-export type Task = {
-	title?: string;
-	tags?: string[] | string;
-	tagTones?: Record<string, string> | string;
-	priority?: string;
-	status?: string;
-	progress?: number | string;
-	initials?: string[] | string;
-	due?: string;
-	files?: number | string;
-};
+import type { z } from "widgetarium";
+import type { TaskSchema } from "./widget";
+
+export type Task = z.infer<typeof TaskSchema>;

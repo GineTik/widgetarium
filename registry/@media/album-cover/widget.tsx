@@ -51,24 +51,27 @@ const CSS = `
 
 `;
 
+export const AlbumSchema = z.object({
+	title: z.string().nullish(),
+	artist: z.string().nullish(),
+	cover: z.string().nullish(),
+	tracks: z.union([z.number(), z.string()]).nullish(),
+});
+
 const AlbumCover = createWidget({
 	inject: {
-		album: IValueGateway.of(z.custom<Album>().default({ title: "In Rainbows", artist: "Radiohead", tracks: 10 })).pick(
-			"get",
-		),
+		album: IValueGateway.of(AlbumSchema.default({ title: "In Rainbows", artist: "Radiohead", tracks: 10 })).pick("get"),
 		beside: IValueGateway.of(z.boolean().default(false)).pick("get"),
 		host: IHost,
 	},
 	draw: ({ album, beside, host }) => {
-		const held: Album = album ?? {};
-
 		return (
 			<div className={beside ? "wg-album is-beside" : "wg-album"}>
 				<style>{CSS}</style>
-				<Art album={held} host={host} />
+				<Art album={album} host={host} />
 				<div className="wg-album-text">
-					<p className="wg-album-title">{titleOf(held)}</p>
-					<p className="wg-album-meta">{metaOf(held)}</p>
+					<p className="wg-album-title">{titleOf(album)}</p>
+					<p className="wg-album-meta">{metaOf(album)}</p>
 				</div>
 			</div>
 		);

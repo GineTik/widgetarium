@@ -1,6 +1,9 @@
+import type { Row, VaultRecord, z } from "widgetarium";
+import type { ChosenSchema } from "./widget";
+
 export type Group = { prop: string; control: string; label: string };
-export type TaskRow = { ref: string; props?: Record<string, unknown> };
-export type Chosen = Record<string, string | string[]>;
+export type TaskRow = Row<VaultRecord>;
+export type Chosen = z.infer<typeof ChosenSchema>;
 
 export type GroupValuesProps = {
 	group: Group;

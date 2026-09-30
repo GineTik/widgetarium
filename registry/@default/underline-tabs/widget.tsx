@@ -88,7 +88,13 @@ const CSS = `
 .wg-underline-tabs button[aria-selected="true"]::after { transform: scaleX(1); }
 `;
 
-type Held = Record<string, unknown> & { props?: Record<string, unknown> };
+const ChoiceSchema = z.looseObject({
+	label: z.string().optional(),
+	value: z.string().optional(),
+	hidden: z.boolean().optional(),
+});
+
+type Held = z.infer<typeof ChoiceSchema>;
 type Option = { ref: string; label: string; value: string };
 
 function optionOf(ref: string, held: Held): Option {
@@ -112,7 +118,7 @@ function useActiveInView(rowRef: RefObject<HTMLDivElement | null>, activeRef: st
 
 const UnderlineTabs = createWidget({
 	inject: {
-		options: IListGateway.of(z.custom<Held>(), {
+		options: IListGateway.of(ChoiceSchema, {
 			default: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }],
 		}),
 		selection: IValueGateway.of(z.unknown()).pick("get", "update"),

@@ -19,6 +19,6 @@ export function Prose({ host, source }: { host: ViewHost; source: ProseSource })
 }
 
 function pathOf(source: ProseSource) {
-	if (typeof source !== "object") return null;
-	return source?.path ?? null;
+	if (typeof source === "string") return null;
+	return source.path ?? null;
 }

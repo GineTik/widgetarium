@@ -26,9 +26,9 @@ export type DayWriter = {
 export type BoardColumn = { name: string; archivedAt?: string | null; isArchived?: boolean };
 
 export type Board = {
-	path?: string;
-	name?: string;
-	props?: Record<string, unknown>;
+	path?: string | undefined;
+	name?: string | undefined;
+	props?: Record<string, unknown> | undefined;
 	columns?: unknown;
 	archivedColumns?: unknown;
 	properties?: unknown;

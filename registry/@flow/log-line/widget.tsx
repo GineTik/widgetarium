@@ -61,7 +61,11 @@ const CSS = `
 const BLANK = "(blank line)";
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
 
-type LogEntry = { at?: string | null; text?: string | null; tone?: string | null };
+const LogEntrySchema = z.object({
+	at: z.string().nullish(),
+	text: z.string().nullish(),
+	tone: z.string().nullish(),
+});
 
 type Mark = { icon: string; markClass: string; textClass: string; said: string };
 
@@ -86,15 +90,14 @@ function clockOf(at: unknown): string {
 
 const LogLine = createWidget({
 	inject: {
-		entry: IValueGateway.of(
-			z.custom<LogEntry>().default({ at: "14:32:07", text: "Session started.", tone: "neutral" }),
-		).pick("get"),
+		entry: IValueGateway.of(LogEntrySchema.default({ at: "14:32:07", text: "Session started.", tone: "neutral" })).pick(
+			"get",
+		),
 	},
 	draw: ({ entry }) => {
-		const line: LogEntry = entry ?? {};
-		const mark = markOf(line.tone);
-		const at = clockOf(line.at);
-		const text = String(line.text ?? "").trim();
+		const mark = markOf(entry.tone);
+		const at = clockOf(entry.at);
+		const text = String(entry.text ?? "").trim();
 
 		return (
 			<div className="wg-log-line">
