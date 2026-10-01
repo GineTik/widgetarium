@@ -1,6 +1,6 @@
 /* FOUR TREATMENTS OF ONE TILE. The markup does not change — only how the tile is dressed — so
    whatever is chosen is what ships, not a picture of what might. Layered over styles.css by
-   tools/card-variants.mjs and never loaded by the plugin. */
+   tools/card-variants.ts and never loaded by the plugin. */
 
 /* ── A · full bleed ─────────────────────────────────────────────────────────────────────
    The picture IS the tile: no card, no chrome over it, the name sits underneath on the page

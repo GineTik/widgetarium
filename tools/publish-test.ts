@@ -1,0 +1,350 @@
+import { JSDOM } from "jsdom";
+import { fakeVault, type FakeVault } from "./fake-vault.ts";
+import { isObject } from "../packages/core/src/engine/is-object.js";
+
+const dom = new JSDOM("<!doctype html><body></body>");
+Object.assign(globalThis, {
+	window: dom.window,
+	document: dom.window.document,
+	Node: dom.window.Node,
+	Element: dom.window.Element,
+	HTMLElement: dom.window.HTMLElement,
+	SVGElement: dom.window.SVGElement,
+	getComputedStyle: dom.window.getComputedStyle,
+});
+
+const { declarationIn, dependenciesFrom, packageNames, publishWidget, widgetDependenciesIn, PUBLISHED_SHEET } =
+	await import("./publish.ts");
+const { ANSWERED_BY_THE_ENGINE } = await import("../packages/core/src/engine/modules.js");
+const { createInstaller } = await import("../packages/core/src/installer.js");
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+const { WIDGETS_DIR } = await import("../packages/core/src/paths.js");
+const { RECORD_FILE } = await import("../packages/core/src/engine/catalogue-index.js");
+const { compileWidget } = await import("../packages/core/src/engine/widget-build.js");
+
+let failed = 0;
+let checks = 0;
+const pathIn = (value: unknown, ...keys: readonly string[]): unknown =>
+	keys.reduce<unknown>((held, key) => (isObject(held) ? held[key] : undefined), value);
+const keysOf = (value: unknown): string[] => (isObject(value) ? Object.keys(value) : []);
+
+function check(name: string, got: unknown, want: unknown): void {
+	checks += 1;
+	const ok = JSON.stringify(got) === JSON.stringify(want);
+	if (!ok) failed += 1;
+	console.log(
+		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
+}
+
+const FOLDER = "widgets/@demo/clock";
+const ID = "@demo/clock";
+const INSTALLED = `${WIDGETS_DIR}/@demo/clock`;
+const LOCKFILE = {
+	packages: {
+		"node_modules/react": { version: "19.2.8" },
+		"node_modules/@dnd-kit/core": { version: "6.3.1" },
+		"node_modules/@dnd-kit/modifiers": { version: "9.0.0" },
+		"node_modules/tidy-cjs": { version: "2.0.0" },
+	},
+};
+const servingEsm = async (): Promise<string> => 'export * from "/react@19.2.8/X-abc/es2022/react.bundle.mjs";';
+const servingNoEsm = async (): Promise<string> => "build failed: the package has no ES module build";
+
+const LAYOUT = `export const layout = defineLayout({ size: { preferredWidth: 320, preferredHeight: "auto" } });`;
+
+const sourceSaying = (word: string): string => `import { createWidget, defineLayout } from "widgetarium";
+${LAYOUT}
+export default createWidget({ draw: () => <b>${word}</b> });
+`;
+
+const declaring = (
+	word: string,
+	metadata: Readonly<Record<string, unknown>> = {},
+): string => `import { IListGateway, ISlot, createWidget, defineLayout, defineProps, z } from "widgetarium";
+const props = defineProps({ days: IListGateway.of(z.unknown()), face: ISlot.of({ default: "@demo/face" }) });
+export const metadata = ${JSON.stringify(metadata)};
+${LAYOUT}
+export default createWidget({ inject: props, draw: () => <b>${word}</b> });
+`;
+
+function firstOf<T>(list: readonly T[]): T {
+	const first = list[0];
+	if (first === undefined) throw new Error("the list holds nothing");
+	return first;
+}
+
+async function withoutTheReport<T>(run: () => T | Promise<T>): Promise<T> {
+	const wasError = console.error;
+	console.error = () => {};
+	try {
+		return await run();
+	} finally {
+		console.error = wasError;
+	}
+}
+
+async function loadedFrom(vault: FakeVault) {
+	const registry = new WidgetRegistry({ vault: { adapter: vault } });
+	await withoutTheReport(() => registry.load());
+	return registry.get(ID);
+}
+
+async function sheetsWornBy(vault: FakeVault): Promise<(string | null)[]> {
+	dom.window.document.head.replaceChildren();
+	await loadedFrom(vault);
+	return [...dom.window.document.head.querySelectorAll("style")].map((node) => node.textContent);
+}
+
+function vaultHolding(files: Readonly<Record<string, string>>): FakeVault {
+	const held = fakeVault();
+	held.files.set(`${INSTALLED}/widget.tsx`, sourceSaying("styled"));
+	for (const [name, text] of Object.entries(files)) held.files.set(`${INSTALLED}/${name}`, text);
+	return held;
+}
+
+const onMachineOver = (files: ReadonlyMap<string, string>) => ({
+	exists: async (at: string): Promise<boolean> =>
+		files.has(at) || [...files.keys()].some((held) => held.startsWith(`${at}/`)),
+	read: async (at: string): Promise<string> => files.get(at) ?? "",
+	folders: async (at: string): Promise<string[]> => {
+		const under = `${at}/`;
+		const held = new Set<string>();
+		for (const each of files.keys()) {
+			if (!each.startsWith(under)) continue;
+			const rest = each.slice(under.length);
+			if (rest.includes("/")) held.add(under + rest.slice(0, rest.indexOf("/")));
+		}
+		return [...held];
+	},
+});
+
+const noNetwork = {
+	fetchJson: async () => {
+		throw new Error("no network");
+	},
+	fetchText: async () => {
+		throw new Error("no network");
+	},
+};
+
+const shelf = fakeVault();
+shelf.files.set(`/repo/${FOLDER}/widget.tsx`, sourceSaying("only a source"));
+const shelved = createInstaller({ adapter: shelf, disk: onMachineOver(shelf.files), ...noNetwork });
+
+const offered = await shelved.discover({ path: "/repo/widgets" });
+check(
+	"a folder holding no record at all is still offered as a widget",
+	offered.map((entry) => entry.manifest["id"]),
+	[ID],
+);
+check("and the folder is what names it", offered[0]?.manifest["title"], ID);
+
+const copied = await shelved.install(firstOf(offered));
+check("a folder holding nothing but its source installs", [copied.ok, copied.failure], [true, null]);
+check(
+	"and lands as source and build, with no record invented beside them",
+	[...shelf.files.keys()].filter((at) => at.startsWith(INSTALLED)).sort(),
+	[`${INSTALLED}/build/widget.js`, `${INSTALLED}/widget.tsx`],
+);
+check("and it draws", pathIn((await loadedFrom(shelf))?.component?.({}), "props", "children"), "only a source");
+
+check("a widget's sheet is published under the widget's own name", PUBLISHED_SHEET, "widget.css");
+check("and a vault wears it", await sheetsWornBy(vaultHolding({ "widget.css": ".clock { color: red; }" })), [
+	".clock { color: red; }",
+]);
+check(
+	"and the name it used to carry is worn as well",
+	await sheetsWornBy(vaultHolding({ "styles.css": ".clock { color: blue; }" })),
+	[".clock { color: blue; }"],
+);
+check(
+	"a folder holding both wears the published one, once",
+	await sheetsWornBy(vaultHolding({ "widget.css": ".clock { color: red; }", "styles.css": ".clock { color: blue; }" })),
+	[".clock { color: red; }"],
+);
+const loose = fakeVault();
+loose.files.set(`${WIDGETS_DIR}/loose/thing/widget.tsx`, sourceSaying("nowhere"));
+const looseRegistry = new WidgetRegistry({ vault: { adapter: loose } });
+await withoutTheReport(() => looseRegistry.load());
+check("a folder no @scope holds is not a widget at all", looseRegistry.list().length, 0);
+
+const declared = fakeVault();
+declared.files.set(
+	`${INSTALLED}/${RECORD_FILE}`,
+	JSON.stringify({ id: ID, title: "Clock", props: { days: { kind: "value", verbs: { get: "required" } } } }),
+);
+declared.files.set(`${INSTALLED}/widget.tsx`, declaring("from the code"));
+const fromCode = await loadedFrom(declared);
+check(
+	"where the code declares them the props come from the code",
+	pathIn(fromCode?.manifest, "props", "days", "kind"),
+	"collection",
+);
+check("and the record still says what its card draws", fromCode?.manifest["title"], "Clock");
+
+const renaming = fakeVault();
+renaming.files.set(
+	`${INSTALLED}/widget.tsx`,
+	declaring("named elsewhere", { id: "@evil/miner", title: "Miner", description: "" }),
+);
+check(
+	"a declaration cannot move a widget to an id its folder does not hold",
+	(await loadedFrom(renaming))?.manifest.id,
+	ID,
+);
+
+const importing = `import { createWidget, defineLayout } from "widgetarium";
+import { Icon } from "widgetarium/kit";
+import { useState } from "react";
+import { DndContext } from "@dnd-kit/core";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers/dist/edges";
+import { shared } from "@demo/lib";
+import type { Board } from "tidy-cjs";
+${LAYOUT}
+const board: Board | null = null;
+export default createWidget({ draw: () => <b>{String([Icon, useState, DndContext, restrictToWindowEdges, shared, board].length)}</b> });
+`;
+const code = compileWidget(importing, `${FOLDER}/widget.tsx`);
+check(
+	"what the engine itself hands a widget is not a package",
+	packageNames(code, ["widgetarium", "widgetarium/kit", "@demo/lib"]),
+	["@dnd-kit/core", "@dnd-kit/modifiers", "react"],
+);
+check(
+	"a subpath is the package it belongs to, not a name of its own",
+	packageNames('require("@dnd-kit/modifiers/dist/edges");require("@dnd-kit/modifiers")', []),
+	["@dnd-kit/modifiers"],
+);
+check(
+	"a type-only import is nothing at run time and nothing a widget depends on",
+	keysOf(
+		(
+			await publishWidget({
+				folder: FOLDER,
+				files: { "widget.tsx": importing },
+				lockfile: LOCKFILE,
+				askEsm: servingEsm,
+			})
+		).record?.dependencies,
+	),
+	["@dnd-kit/core", "@dnd-kit/modifiers"],
+);
+check(
+	"and neither is react, which the engine answers with its own — a widget bringing one says so by hand",
+	packageNames(code, ANSWERED_BY_THE_ENGINE),
+	["@demo/lib", "@dnd-kit/core", "@dnd-kit/modifiers"],
+);
+check(
+	"a react-dom subpath is answered too",
+	packageNames('require("react-dom/client");require("react")', ANSWERED_BY_THE_ENGINE),
+	[],
+);
+check("a version comes from the author's lockfile", dependenciesFrom(["react"], LOCKFILE), {
+	ok: true,
+	dependencies: { react: "^19.2.8" },
+	failure: null,
+});
+check(
+	"and a package the lockfile pins nowhere stops the publish",
+	dependenciesFrom(["nowhere"], LOCKFILE).failure,
+	'"nowhere" is imported by the widget, and the lockfile pins no version for it',
+);
+
+const lying = {
+	[RECORD_FILE]: JSON.stringify({ id: ID, title: "Clock", dependencies: { "left-pad": "^1.0.0" } }),
+	"widget.tsx": importing,
+};
+const published = await publishWidget({ folder: FOLDER, files: lying, lockfile: LOCKFILE, askEsm: servingEsm });
+check("a dependency written into the record by hand loses to what the source imports", published.record?.dependencies, {
+	"@dnd-kit/core": "^6.3.1",
+	"@dnd-kit/modifiers": "^9.0.0",
+});
+
+const cjsOnly = {
+	"widget.tsx": `import { createWidget, defineLayout } from "widgetarium";\nimport { pad } from "tidy-cjs";\n${LAYOUT}\nexport default createWidget({ draw: () => <b>{String(pad)}</b> });\n`,
+};
+const refused = await publishWidget({ folder: FOLDER, files: cjsOnly, lockfile: LOCKFILE, askEsm: servingNoEsm });
+check(
+	"a package with no ES module build is refused at publish",
+	[refused.ok, refused.failure],
+	[false, '"tidy-cjs@^2.0.0" has no ES module build on esm.sh, so no vault could load it'],
+);
+check(
+	"and the same package served as one is published",
+	(await publishWidget({ folder: FOLDER, files: cjsOnly, lockfile: LOCKFILE, askEsm: servingEsm })).record
+		?.dependencies,
+	{ "tidy-cjs": "^2.0.0" },
+);
+
+const unpublished = fakeVault();
+unpublished.files.set(`/repo/${FOLDER}/widget.tsx`, cjsOnly["widget.tsx"]);
+const unpublishedInstaller = createInstaller({
+	adapter: unpublished,
+	disk: onMachineOver(unpublished.files),
+	...noNetwork,
+});
+const installedAnyway = await unpublishedInstaller.install(
+	firstOf(await unpublishedInstaller.discover({ path: "/repo/widgets" })),
+);
+check(
+	"while installing a folder nobody published reaches for no package at all",
+	[installedAnyway.ok, installedAnyway.failure],
+	[true, null],
+);
+
+const whole = {
+	[RECORD_FILE]: JSON.stringify({
+		id: ID,
+		title: "Clock",
+		description: "Tells the time.",
+		slots: { face: { default: "@demo/face" } },
+	}),
+	"widget.tsx": declaring("published", { title: "Clock", description: "Tells the time." }),
+	"styles.css": ".clock { color: red; }",
+};
+const wholly = await publishWidget({ folder: FOLDER, files: whole, lockfile: LOCKFILE, askEsm: servingEsm });
+check(
+	"the record keeps what its card is drawn from",
+	[wholly.record?.["title"], wholly.record?.["description"]],
+	["Clock", "Tells the time."],
+);
+check("it lists the files a vault has to fetch, the sheet under the widget's own name", wholly.record?.files, [
+	"widget.tsx",
+	"widget.css",
+]);
+check("and the sheet travels beside it", wholly.sheet, ".clock { color: red; }");
+check("the props are the ones the code declares", keysOf(wholly.record?.props), ["days"]);
+check("and the widgets it cannot draw without are read off its slots", wholly.record?.widgetDependencies, [
+	"@demo/face",
+]);
+check(
+	"a mount's default rows name widgets too",
+	widgetDependenciesIn({ mounts: { holds: { default: [{ name: "Kanban", widget: "@default/kanban-board" }] } } }),
+	["@default/kanban-board"],
+);
+
+check(
+	"a source that does not export createWidget({ inject, draw }) is refused",
+	(() => {
+		try {
+			return declarationIn(compileWidget("export default () => null;", `${FOLDER}/widget.tsx`));
+		} catch (failure) {
+			return String(pathIn(failure, "message"));
+		}
+	})(),
+	"the widget does not export createWidget({ inject: { ... }, draw })",
+);
+check(
+	"a folder with no source is refused before anything else",
+	(await publishWidget({ folder: FOLDER, files: {}, lockfile: LOCKFILE, askEsm: servingEsm })).failure,
+	`${FOLDER} holds no widget source`,
+);
+check(
+	"and a folder outside a scope is refused too",
+	(await publishWidget({ folder: "widgets/clock", files: whole, lockfile: LOCKFILE, askEsm: servingEsm })).failure,
+	"widgets/clock is not a @scope/name folder",
+);
+
+console.log(`\n${failed === 0 ? `publish: clean (${checks} checks)` : `publish: ${failed} failed`}`);
+process.exit(failed === 0 ? 0 : 1);

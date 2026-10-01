@@ -1,0 +1,1208 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import esbuild from "esbuild";
+import { parse } from "yaml";
+import { findBrowser, widgetFiles } from "./harness.ts";
+import { isObject } from "../packages/core/src/engine/is-object.js";
+import { standIn } from "./stand-in.ts";
+import type { BoardNode, BoxNode, PreferredSize } from "../packages/core/src/tree-nodes.js";
+import type { Spot } from "../packages/core/src/tree-drop.js";
+import { TEXT_LOADERS } from "../apps/obsidian/build.mts";
+
+const {
+	targetAt,
+	columnsOf,
+	drawerWidth,
+	DRAWER_MAX_PX,
+	isFolded,
+	keptAt,
+	insertAt,
+	layNode,
+	layRegion,
+	leavesOf,
+	moveInto,
+	nodeAt,
+	sameTarget,
+	toggleFold,
+	STEP_PX,
+	MAIN_FLOOR_PX,
+	MIN_SIDEBAR_PX,
+	SIDEBAR_PX,
+	widenBox,
+	withoutLeaf,
+} = await import("../packages/core/src/tree.js");
+
+const ONE_CELL = [{ id: "x", ratio: 1 }];
+const rootOf = (of: readonly BoardNode[]): BoxNode => ({ dir: "row", of });
+const side = (of: readonly BoardNode[] | Partial<BoxNode> = ONE_CELL, flags: Partial<BoxNode> = {}): BoxNode => ({
+	dir: "column",
+	collapse: { into: "drawer", toggle: "always" },
+	...(Array.isArray(of) ? {} : of),
+	of: Array.isArray(of) ? of : ONE_CELL,
+	...flags,
+});
+const kept = (of: readonly BoardNode[] = ONE_CELL): BoxNode => ({ dir: "column", keep: true, of });
+const THREE = rootOf([side(), kept(), side()]);
+const sideName = (at: number): string => (at === 1 ? "main" : at === 0 ? "left" : "right");
+const { GIVE_PX } = await import("../packages/core/src/give.js");
+const { millisecondsAcross } = await import("../packages/core/src/flip.js");
+
+const FIXTURE = "tools/fixture/Orbitask/Board.md";
+const FENCE = String.fromCharCode(96, 96, 96);
+
+function boardOf(at: string): unknown {
+	const note = readFileSync(at, "utf8");
+	const block = note.split(`${FENCE}widgetarium`)[1]?.split(FENCE)[0];
+	if (!block) {
+		console.error(`tree gate: ${at} carries no widgetarium block`);
+		process.exit(1);
+	}
+	return parse(block);
+}
+
+const ROWS = ["To Do", "Doing", "Done"].flatMap((status, at) =>
+	[1, 2].map((nth) => ({
+		path: `Orbitask/Tasks/${status}-${nth}.md`,
+		ref: { path: `Orbitask/Tasks/${status}-${nth}.md` },
+		name: `${status} ${nth}`,
+		props: { title: `${status} ${nth}`, status, order: at * 2 + nth },
+		meta: { created: 1, modified: 2 },
+		attachments: 0,
+	})),
+);
+
+// TODO: manifest field stackBelowPx — collapseBelowPx means chip, not own row
+const TREE = [
+	[{ id: "boards", ratio: 1, minPx: 220 }],
+	[
+		{ id: "views", ratio: 0.75, minPx: 260 },
+		{ id: "wynttpz", ratio: 0.25, minPx: 320 },
+	],
+	[{ id: "board", ratio: 1, minPx: 420, height: 560 }],
+];
+
+const WIDTHS = [320, 390, 768, 1194, 1728];
+const ORDER = ["boards", "views", "wynttpz", "board"];
+
+const unmeasurable = TREE.flat().filter((cell) => !Number.isFinite(cell.ratio) || !Number.isFinite(cell.minPx));
+if (unmeasurable.length > 0) {
+	console.error(`tree gate: ${unmeasurable.map((cell) => cell.id).join(", ")} carry no ratio or no minPx`);
+	process.exit(1);
+}
+
+const inertJson = (value: unknown): string => JSON.stringify(value).replace(/<\/script/gi, "<\\/script");
+
+const saved = boardOf(FIXTURE);
+const board = { tiles: isObject(saved) ? saved["tiles"] : undefined };
+
+const bundle = await esbuild.build({
+	entryPoints: ["tools/tree-page.tsx"],
+	bundle: true,
+	loader: TEXT_LOADERS,
+	write: false,
+	format: "iife",
+	platform: "browser",
+	target: "es2020",
+	jsxFactory: "h",
+	jsxFragment: "Fragment",
+	logLevel: "warning",
+});
+
+const HOST_BUTTON_PAINT_COPIED_VERBATIM = `button:not(.clickable-icon) {
+	color: var(--text-color);
+	background-color: var(--interactive-normal);
+	box-shadow: var(--input-shadow);
+}
+@media (hover: hover) {
+	button:hover {
+		background-color: var(--interactive-hover);
+		box-shadow: var(--input-shadow-hover);
+	}
+}`;
+
+const page = `<!doctype html><html><head><meta charset="utf-8">
+<style>${HOST_BUTTON_PAINT_COPIED_VERBATIM}</style>
+<style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
+<style>${readFileSync("registry/@default/tokens.css", "utf8")}</style>
+<style>body { margin: 0; background: #fff; color: #222; --background-primary: #fff; --background-secondary: #f6f6f6;
+	--background-modifier-border: #e4e4e4; --background-modifier-hover: #ededed; --text-normal: #222; --text-muted: #707070; --text-faint: #ababab;
+	--text-on-accent: #fff; --interactive-accent: #6d4ee0; --text-color: #222; --interactive-normal: #e3e3e3;
+	--interactive-hover: #d8d8d8; --input-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); --input-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.14); }
+.wg-host { display: flex; flex-direction: column; gap: 64px; align-items: flex-start; }
+.wg-host, .wg-host * { transition: none !important; animation: none !important; }</style>
+</head><body><div class="wg-host"></div>
+<script id="wg-widgets" type="application/json">${inertJson(widgetFiles())}</script>
+<script id="wg-board" type="application/json">${JSON.stringify(board)}</script>
+<script id="wg-rows" type="application/json">${JSON.stringify(ROWS)}</script>
+<script id="wg-tree" type="application/json">${JSON.stringify(TREE)}</script>
+<script id="wg-widths" type="application/json">${JSON.stringify(WIDTHS)}</script>
+<script id="wg-measure" type="application/json"></script>
+<script>${bundledPage()}</script>
+</body></html>`;
+
+function bundledPage(): string {
+	const first = bundle.outputFiles[0];
+	if (!first) throw new Error("esbuild wrote no bundle of the tree page");
+	return first.text;
+}
+
+const work = mkdtempSync(path.join(tmpdir(), "wg-tree-"));
+const file = path.join(work, "tree.html");
+writeFileSync(file, page);
+
+const dom = execFileSync(
+	findBrowser("tree"),
+	[
+		"--headless",
+		"--disable-gpu",
+		"--no-sandbox",
+		"--hide-scrollbars",
+		"--window-size=2000,1200",
+		"--virtual-time-budget=9000",
+		"--dump-dom",
+		`file://${file}`,
+	],
+	{
+		encoding: "utf8",
+		maxBuffer: 64 * 1024 * 1024,
+		stdio: ["ignore", "pipe", process.env["WG_DEBUG"] ? "inherit" : "ignore"],
+	},
+);
+
+const payload = /<script id="wg-measure" type="application\/json">([\s\S]*?)<\/script>/.exec(dom)?.[1];
+if (!payload) {
+	console.error("tree gate: the page never reported");
+	console.error(`  page: file://${file}`);
+	process.exit(1);
+}
+const unescaped = payload.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+function reportOf(said: string): unknown {
+	try {
+		return JSON.parse(said);
+	} catch (broken) {
+		console.error(
+			`tree gate: the report did not survive the DOM — ${broken instanceof Error ? broken.message : undefined}`,
+		);
+		console.error(said.slice(0, 2000));
+		process.exit(1);
+	}
+}
+const measured = reportOf(unescaped);
+const field = (value: unknown, ...keys: readonly (string | number)[]): unknown =>
+	keys.reduce<unknown>((held, key) => (isObject(held) ? held[String(key)] : undefined), value);
+const num = (value: unknown, ...keys: readonly (string | number)[]): number => Number(field(value, ...keys));
+const listAt = (value: unknown, ...keys: readonly (string | number)[]): unknown[] => {
+	const held = field(value, ...keys);
+	return Array.isArray(held) ? held : [];
+};
+if (field(measured, "failure")) {
+	console.error(`tree gate: the page threw — ${String(field(measured, "failure"))}`);
+	process.exit(1);
+}
+if (process.env["WG_DEBUG"]) console.log(JSON.stringify(measured, null, 1));
+
+let failed = 0;
+function check(label: string, got: unknown, want: unknown): void {
+	const ok = JSON.stringify(got) === JSON.stringify(want);
+	if (!ok) failed += 1;
+	console.log(
+		`${ok ? "OK " : "!! "} ${label}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
+	);
+}
+
+console.log("— the live Orbitask board, drawn as a tree at five widths —\n");
+
+interface MeasuredBox {
+	readonly left: number;
+	readonly right: number;
+	readonly width: number;
+	readonly height: number;
+}
+
+interface MeasuredCell {
+	readonly id: unknown;
+	readonly painted: unknown;
+	readonly missing: unknown;
+	readonly minPx: number;
+	readonly scrollWidth: number;
+	readonly clientWidth: number;
+	readonly box: MeasuredBox;
+}
+
+const boxOf = (value: unknown): MeasuredBox => ({
+	left: num(value, "left"),
+	right: num(value, "right"),
+	width: num(value, "width"),
+	height: num(value, "height"),
+});
+
+const cellsOf = (seen: unknown): MeasuredCell[] =>
+	listAt(seen, "cells").map((cell) => ({
+		id: field(cell, "id"),
+		painted: field(cell, "painted"),
+		missing: field(cell, "missing"),
+		minPx: num(cell, "minPx"),
+		scrollWidth: num(cell, "scrollWidth"),
+		clientWidth: num(cell, "clientWidth"),
+		box: boxOf(field(cell, "box")),
+	}));
+
+interface MeasuredRegion {
+	readonly name: unknown;
+	readonly left: number;
+	readonly right: number;
+	readonly top: unknown;
+	readonly height: unknown;
+}
+
+const regionsOf = (seen: unknown): MeasuredRegion[] =>
+	listAt(seen, "regions").map((region) => ({
+		name: field(region, "name"),
+		left: num(region, "left"),
+		right: num(region, "right"),
+		top: field(region, "top"),
+		height: field(region, "height"),
+	}));
+
+for (const seen of listAt(measured, "widths")) {
+	const at = `${String(field(seen, "width"))}px`;
+	if (field(seen, "drawn") === false) {
+		failed += 1;
+		console.log(`!! ${at}: the board never drew — the host held ${JSON.stringify(field(seen, "host"))}`);
+		continue;
+	}
+	const cells = cellsOf(seen);
+	const byId = new Map(cells.map((cell) => [cell.id, cell]));
+	const onBoard = boxOf(field(seen, "board"));
+
+	check(`${at}: every tile is drawn`, [...byId.keys()].sort(), [...ORDER].sort());
+	check(
+		`${at}: none of them is an empty box`,
+		cells.filter((cell) => cell.painted === 0 || cell.missing).map((cell) => cell.id),
+		[],
+	);
+	check(
+		`${at}: none of them has zero area`,
+		cells.filter((cell) => cell.box.width < 1 || cell.box.height < 1).map((cell) => cell.id),
+		[],
+	);
+	check(`${at}: the board does not scroll sideways`, num(seen, "scrollWidth") <= num(seen, "clientWidth") + 1, true);
+	check(
+		`${at}: no widget spills out of its own box`,
+		cells.filter((cell) => cell.scrollWidth > cell.clientWidth + 1).map((cell) => cell.id),
+		[],
+	);
+	check(
+		`${at}: nothing sticks out of the board`,
+		cells
+			.filter((cell) => cell.box.left < onBoard.left - 0.5 || cell.box.right > onBoard.right + 0.5)
+			.map((cell) => cell.id),
+		[],
+	);
+	check(
+		`${at}: nothing is drawn under its minimum unless it already has the whole width`,
+		cells
+			.filter((cell) => cell.box.width + 0.5 < cell.minPx && cell.box.width + 0.5 < onBoard.width)
+			.map((cell) => cell.id),
+		[],
+	);
+	check(`${at}: reading order is unchanged`, listAt(seen, "rows").flat(), ORDER);
+}
+
+console.log("\n— the row of two either stands or stacks, and nothing else changes —");
+{
+	const rowsAt = (width: number): unknown[] =>
+		listAt(
+			listAt(measured, "widths").find((seen) => field(seen, "width") === width),
+			"rows",
+		);
+	check("at 1728 the tabs and the filter share a row", rowsAt(1728)[1], ["views", "wynttpz"]);
+	check("at 1194 the filter takes its own row, because a quarter of it is under 320px", rowsAt(1194).slice(1, 3), [
+		["views"],
+		["wynttpz"],
+	]);
+	check("at 768 it still does", rowsAt(768).slice(1, 3), [["views"], ["wynttpz"]]);
+	check("at 390 it still does", rowsAt(390).slice(1, 3), [["views"], ["wynttpz"]]);
+	check("at 320 it still does", rowsAt(320).slice(1, 3), [["views"], ["wynttpz"]]);
+	check(
+		"and the kanban is last at every width",
+		listAt(measured, "widths").map((seen) => listAt(seen, "rows").at(-1)),
+		WIDTHS.map(() => ["board"]),
+	);
+}
+
+console.log("\n— the plugin's own surface draws a board that carries rows —");
+{
+	const seen = field(measured, "surface");
+	check("the surface drew a tree, not a grid", field(seen, "drawn"), true);
+	check("the tabs and the filter share a row, the kanban keeps its own", field(seen, "rows"), [1, 2, 1]);
+	check("every cell painted a widget, the unplaced one included", field(seen, "painted"), 5);
+	check("a tile no row names is drawn without taking a row", field(seen, "overlays"), 1);
+	check("and no row is wider than the board it sits in", num(seen, "widest") <= num(seen, "boardWidth") + 0.5, true);
+	check("no grip stands between two widgets, because only a region is sized", field(seen, "handles"), 0);
+	check(
+		"the gap between two widgets is the gap the layout counted",
+		num(seen, "sharedRow", 0) + num(seen, "sharedRow", 1) + (STEP_PX[1] ?? NaN),
+		field(seen, "boardWidth"),
+	);
+	check(
+		"a tile standing alone on a row takes the whole row",
+		field(seen, "loneRows"),
+		listAt(seen, "loneRows").map(() => 0),
+	);
+}
+
+console.log("\n— the ratio the person chose is the ratio drawn —");
+{
+	const wide = listAt(measured, "widths").find((seen) => field(seen, "width") === 1728);
+	const views = cellsOf(wide).find((cell) => cell.id === "views")?.box.width ?? NaN;
+	const filter = cellsOf(wide).find((cell) => cell.id === "wynttpz")?.box.width ?? NaN;
+	check("three to one, within a pixel", Math.abs(views / filter - 3) < 0.02, true);
+}
+
+console.log("\n— a widget is as tall as what it draws, and nothing on the board says otherwise —");
+{
+	const ask = () => ({ minPx: 260 });
+	const four = { dir: "row" as const, of: ["a", "b", "c", "d"].map((id) => ({ id, height: 86 })) };
+	const narrow = layNode(four, 700, { ask });
+	check(
+		"a row too narrow for four is drawn as a column",
+		[field(narrow, "dir"), field(narrow, "isStacked")],
+		["column", true],
+	);
+	check("with no height to squeeze them into", field(narrow, "height") ?? null, null);
+	check(
+		"and no widget is handed a height, not even one its note still carries",
+		listAt(narrow, "of").map((one) => field(one, "height") ?? null),
+		[null, null, null, null],
+	);
+	check("wide, the row draws no height of its own either", field(layNode(four, 1400, { ask }), "height") ?? null, null);
+	const month: PreferredSize = {
+		preferredWidth: 420,
+		preferredHeight: 420,
+		keepsRatio: true,
+		at: [
+			{ belowPx: 520, preferredWidth: "full" },
+			{ belowPx: 300, preferredHeight: "auto" },
+		],
+	};
+	const inRegionOf = (px: number): unknown[] => {
+		const leaf = field(
+			layRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "m" }] }] }, 0, px, {
+				ask: () => ({ preferred: month }),
+			}).node,
+			"of",
+			0,
+		);
+		return [field(leaf, "preferredWidth"), field(leaf, "preferredHeight"), field(leaf, "keepsRatio")];
+	};
+	check("a wide region draws the size a widget prefers", inRegionOf(900), [420, 420, true]);
+	check("under a step's region width the step's size is drawn instead, the rest kept", inRegionOf(480), [
+		"full",
+		420,
+		true,
+	]);
+	check("and every step the region is under applies, narrowest last", inRegionOf(260), ["full", "auto", true]);
+	check(
+		"a widget that names no size is drawn with none",
+		field(layNode({ id: "a" }, 400, { ask: () => ({}) }), "preferredWidth"),
+		undefined,
+	);
+}
+
+console.log("\n— a gap stands between two siblings, never after the last —");
+{
+	const ask = () => ({ minPx: 260 });
+	const narrow = layNode({ dir: "column", of: [{ dir: "row", of: [{ id: "a" }, { id: "b" }] }, { id: "c" }] }, 400, {
+		ask,
+	});
+	check(
+		"inside a stacked row only the widget with a sibling below leaves a gap",
+		listAt(narrow, "of", 0, "of").map((one) => num(one, "gapAfter") > 0),
+		[true, false],
+	);
+	check("and a column's own last child leaves none", field(narrow, "of", 1, "gapAfter"), 0);
+}
+
+console.log("\n— and so does a sidebar at either end of its travel —");
+{
+	const widest = 1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX;
+	const heldAt = (px: number, give: boolean): number => widenBox(THREE, 0, { wantedPx: px, width: 1600, gap: 8, give });
+
+	check("dragged under its minimum it goes under it", heldAt(40, true) < MIN_SIDEBAR_PX, true);
+	check("but never by more than the give", heldAt(40, true) > MIN_SIDEBAR_PX - GIVE_PX, true);
+	check("dragged past where the main breaks it goes past it", heldAt(2000, true) > widest, true);
+	check("by no more than the give either", heldAt(2000, true) - widest <= GIVE_PX, true);
+	check("released, either end lands on the limit", [heldAt(40, false), heldAt(2000, false)], [MIN_SIDEBAR_PX, widest]);
+	check("and between them the give changes nothing", heldAt(360, true), heldAt(360, false));
+}
+
+console.log("\n— and the plugin's own sidebar squashes and springs back —");
+{
+	const seen = field(measured, "pinched");
+	check("the probe found the edge", field(seen, "failed") ?? null, null);
+	check("dragged 400px under its minimum it is drawn under it", num(seen, "held") < MIN_SIDEBAR_PX, true);
+	check("but never by more than the give", num(seen, "held") > MIN_SIDEBAR_PX - GIVE_PX, true);
+	check("and on release it sits on the minimum exactly", field(seen, "settled"), MIN_SIDEBAR_PX);
+}
+
+console.log("\n— and the give is handed back with a transition, never during the drag —");
+{
+	const seen = field(measured, "eases");
+	check(
+		"a cell eases the room it takes, the place it moves to and its height",
+		[field(seen, "cell", "property"), field(seen, "cell", "loose")],
+		["transform, flex-grow, height", "0.22s, 0.2s, 0.2s"],
+	);
+	check(
+		"a region eases its width",
+		[field(seen, "region", "property"), field(seen, "region", "loose")],
+		["flex-basis", "0.2s"],
+	);
+	check(
+		"and neither eases while the pointer is down",
+		[field(seen, "cell", "held"), field(seen, "region", "held")],
+		["0s", "0s"],
+	);
+}
+
+console.log("\n— in reading mode a press on a tile carries nothing —");
+{
+	const seen = field(measured, "whileReading");
+	check("no stand-in was drawn", field(seen, "standIns"), 0);
+	check("and nothing was carried under the pointer", field(seen, "ghosts"), 0);
+	check("and the rows are exactly as they were", field(seen, "after"), field(seen, "before"));
+}
+
+console.log("\n— and carrying the kanban onto the first row moves it there —");
+{
+	const seen = field(measured, "carried");
+	check("the probe found the kanban", field(seen, "failed") ?? null, null);
+	check("before the carry it stood alone on the last row", listAt(seen, "before").at(-1), ["board"]);
+	check("the row it will land in holds its place for it", field(seen, "standIns"), 1);
+	check("and one tile rides under the pointer", field(seen, "ghosts"), 1);
+	check("the plate is under the pointer, not beside it", field(seen, "underPointer"), true);
+	check("and it is a plate, not the whole widget", num(seen, "plateSize", 1) <= 96, true);
+	check("after the drop it stands on the first row", listAt(seen, "after", 0).includes("board"), true);
+	check("and it left no empty row behind", listAt(seen, "after").length, listAt(seen, "before").length - 1);
+	check("the board was written once, by the drop", field(seen, "writes"), 1);
+}
+
+console.log("\n— a sidebar answers the pointer everywhere, not only where its widgets reach —");
+{
+	const seen = field(measured, "intoSlack");
+	check("the probe found a sidebar with room to spare", field(seen, "failed") ?? null, null);
+	check("and that room is real, not a rounding error", num(seen, "slack") > 100, true);
+	check("aiming into the bare part of the column shows where the tile would land", field(seen, "aimed"), 1);
+	check("and releasing it there puts the tile under the widget already standing there", field(seen, "left"), [
+		["boards"],
+		["board"],
+	]);
+	check("the region it came from is left empty", field(seen, "main"), []);
+}
+
+console.log("\n— and the place it held is the place it lands, to the pixel —");
+{
+	const seen = field(measured, "carried");
+	const off = field(seen, "lie") ?? {};
+	check("the stand-in stands where the tile lands", [field(off, "left"), field(off, "top")], [0, 0]);
+	check("and is exactly as wide and as tall", [field(off, "width"), field(off, "height")], [0, 0]);
+	check("nothing was pushed outside the board while it was held", field(seen, "spilled"), []);
+}
+
+console.log("\n— and the plugin draws those three regions without a pixel spare —");
+{
+	const seen = field(measured, "sides");
+	check("the page drew its columns", field(seen, "drawn"), true);
+	check(
+		"three regions stand",
+		regionsOf(seen).map((one) => one.name),
+		["left", "main", "right"],
+	);
+	check("with a handle in every gap between them", field(seen, "edges"), 2);
+	check("the strip paints no fill of its own", field(seen, "edgeFill"), "rgba(0, 0, 0, 0)");
+	check(
+		"and it can be grabbed the whole height of the column",
+		field(seen, "edgeReach"),
+		field(seen, "regions", "0", "height"),
+	);
+	check(
+		"none of them overlaps the next",
+		regionsOf(seen)
+			.slice(1)
+			.every((one, at) => one.left >= (regionsOf(seen)[at]?.right ?? NaN)),
+		true,
+	);
+	check("together they span the row exactly", field(seen, "spans"), field(seen, "rowWidth"));
+	check("and nothing overflows sideways", num(seen, "scrollWidth") <= num(seen, "clientWidth") + 1, true);
+	check("every region starts at the same top", new Set(regionsOf(seen).map((one) => one.top)).size, 1);
+	check("and every one reaches the same bottom", new Set(regionsOf(seen).map((one) => one.height)).size, 1);
+}
+
+console.log("\n— and while a sidebar is being dragged the rest keep up with it —");
+{
+	const before = field(measured, "sides");
+	const after = field(measured, "widened");
+	const wideOf = (seen: unknown, name: string): number => {
+		const region = regionsOf(seen).find((one) => one.name === name);
+		return (region?.right ?? NaN) - (region?.left ?? NaN);
+	};
+
+	check("the sidebar took the whole pull, while still held", wideOf(after, "left") - wideOf(before, "left"), 100);
+	check("the main gave up exactly that, while still held", wideOf(before, "main") - wideOf(after, "main"), 100);
+	check("the other sidebar was not touched", wideOf(after, "right"), wideOf(before, "right"));
+	check("and the three still span the row exactly", field(after, "spans"), field(after, "rowWidth"));
+	check("so nothing ran off the side", num(after, "scrollWidth") <= num(after, "clientWidth") + 1, true);
+}
+
+console.log("\n— a board of three regions stands side by side while there is room —");
+{
+	const sides = (given: ReturnType<typeof columnsOf>): string[] => given.beside.map((column) => sideName(column.at));
+	const wide = columnsOf(THREE, 1600, 8);
+
+	check("all three stand", sides(wide), ["left", "main", "right"]);
+	check("a sidebar is the width its own constant names", wide.beside[0]?.width, SIDEBAR_PX);
+	check("and the main takes everything the sidebars left", wide.beside[1]?.width, 1600 - (8 + SIDEBAR_PX) * 2);
+	check("nothing had to float", wide.floating, []);
+
+	const narrow = columnsOf(THREE, SIDEBAR_PX * 2 + MAIN_FLOOR_PX, 8);
+	check("when the main would fall under its floor the right one goes first", sides(narrow), ["left", "main"]);
+	check("and the one that went floats over the app, it is not a row under it", narrow.floating, [2]);
+
+	const tight = columnsOf(THREE, MAIN_FLOOR_PX + 100, 8);
+	check("tighter still, only the main stands", sides(tight), ["main"]);
+	check("and both sidebars float", tight.floating, [0, 2]);
+
+	check("a board with no sidebars is one column", columnsOf(rootOf([kept()]), 900, 8).beside, [{ at: 0, width: 900 }]);
+	check("and a board with no main stands nothing beside anything", columnsOf(rootOf([side()]), 1600, 8), {
+		beside: [],
+		floating: [],
+		hidden: [],
+		alone: [0],
+	});
+	check("under the floor the main still stands alone, at the whole width", columnsOf(THREE, 300, 8).beside, [
+		{ at: 1, width: 300 },
+	]);
+	check("and both sidebars float over it", columnsOf(THREE, 300, 8).floating, [0, 2]);
+
+	const widened = rootOf([side({ width: 420 }), kept(), side()]);
+	check("a sidebar drawn at the width it carries", columnsOf(widened, 1600, 8).beside[0]?.width, 420);
+	check(
+		"and the main gives up exactly that",
+		columnsOf(widened, 1600, 8).beside[1]?.width,
+		1600 - 8 - 420 - 8 - SIDEBAR_PX,
+	);
+
+	check(
+		"dragging a sidebar narrower stops at its own minimum",
+		widenBox(THREE, 0, { wantedPx: 40, width: 1600, gap: 8 }),
+		MIN_SIDEBAR_PX,
+	);
+	check(
+		"and wider stops where the main would fall under its floor",
+		widenBox(THREE, 0, { wantedPx: 2000, width: 1600, gap: 8 }),
+		1600 - 8 - SIDEBAR_PX - 8 - MAIN_FLOOR_PX,
+	);
+	check(
+		"between the two it lands where the pointer asked",
+		widenBox(THREE, 0, { wantedPx: 360, width: 1600, gap: 8 }),
+		360,
+	);
+	check(
+		"the other sidebar is counted, not forgotten",
+		widenBox(rootOf([side(), kept()]), 0, { wantedPx: 2000, width: 1600, gap: 8 }),
+		1600 - 8 - MAIN_FLOOR_PX,
+	);
+
+	const folded = rootOf([side({ folded: true }), kept(), side()]);
+	check("the fold reads off the region that carries it", [isFolded(folded, 0), isFolded(folded, 2)], [true, false]);
+	check("and toggling one names the other unchanged", isFolded(toggleFold(folded, 0), 0), false);
+	check("toggling an open one folds it", isFolded(toggleFold(THREE, 2), 2), true);
+	check("and leaves every other region as it stood", toggleFold(THREE, 2).of[0], THREE.of[0]);
+	check("a folded sidebar does not stand", sides(columnsOf(folded, 1600, 8)), ["main", "right"]);
+	check("and on a board with room for it, folded means hidden, not floating", columnsOf(folded, 1600, 8), {
+		beside: [
+			{ at: 1, width: 1600 - 8 - SIDEBAR_PX },
+			{ at: 2, width: SIDEBAR_PX },
+		],
+		floating: [],
+		hidden: [0],
+		alone: [],
+	});
+	check(
+		"a drawer takes its width from the screen, not from the width the region was dragged to",
+		drawerWidth(390),
+		320,
+	);
+	check("a wider phone gets a wider drawer, still the same share", drawerWidth(430), 353);
+	check("and a tablet stops at the ceiling instead of eating the screen", drawerWidth(834), DRAWER_MAX_PX);
+	check("as does a desktop", drawerWidth(1728), DRAWER_MAX_PX);
+
+	const foldedOnPhone = columnsOf(rootOf([side({ folded: true }), kept()]), MAIN_FLOOR_PX + 100, 8);
+	check("on a board with no room for it, the same fold is a shut drawer", foldedOnPhone.floating, [0]);
+	check("and nothing of it is hidden away twice", foldedOnPhone.hidden, []);
+	check(
+		"an open sidebar that cannot stand floats whatever the other one does",
+		columnsOf(folded, MAIN_FLOOR_PX + 100, 8).floating,
+		[0, 2],
+	);
+	check(
+		"the main takes back every pixel the folded one held",
+		columnsOf(folded, 1600, 8).beside[0]?.width,
+		1600 - 8 - SIDEBAR_PX,
+	);
+	check(
+		"a folded sidebar is no longer counted against a drag",
+		widenBox(folded, 2, { wantedPx: 2000, width: 1600, gap: 8 }),
+		1600 - 8 - MAIN_FLOOR_PX,
+	);
+	check(
+		"folding both leaves the main alone",
+		sides(columnsOf(rootOf([side({ folded: true }), kept(), side({ folded: true })]), 1600, 8)),
+		["main"],
+	);
+	check(
+		"folding one is what keeps the other standing when the board is narrow",
+		sides(columnsOf(folded, SIDEBAR_PX + MAIN_FLOOR_PX + 8, 8)),
+		["main", "right"],
+	);
+
+	const bare = rootOf([side([]), kept([]), side([])]);
+	check(
+		"an empty sidebar still stands, because nothing can be dropped where nothing is drawn",
+		sides(columnsOf(bare, 1600, 8)),
+		["left", "main", "right"],
+	);
+	check("a box that keeps the board standing is the one the sides are measured from", keptAt(THREE), 1);
+}
+
+function chromeChecks(): void {
+	console.log("\n— the board draws no bar of its own, and its regions toggled always are offered to the header —");
+	const chromeless = field(measured, "chromeless");
+	const openSides = field(measured, "openSides");
+	const foldedLeft = field(measured, "foldedLeft");
+	const unfoldedLeft = field(measured, "unfoldedLeft");
+	const soloChrome = field(measured, "soloChrome");
+	const openRegions = regionsOf(openSides);
+	const widthAt = (regions: readonly MeasuredRegion[], at: number): number =>
+		(regions[at]?.right ?? NaN) - (regions[at]?.left ?? NaN);
+	const HIDE_LEFT = { key: "box:collapse:0/open", isOn: true, title: "Hide the left panel" };
+	const SHOW_LEFT = { key: "box:collapse:0/open", isOn: false, title: "Show the left panel" };
+	const HIDE_RIGHT = { key: "box:collapse:2/open", isOn: true, title: "Hide the right panel" };
+	check("the board with sidebars draws no bar and no toggle", field(chromeless, "chrome"), 0);
+	check("so its first region starts at the top of the page", field(chromeless, "regionFromTop"), 0);
+	check("a board with no sidebar draws none either", soloChrome, 0);
+	check("while both sidebars stand, the header is offered each of them as on", field(chromeless, "actions"), [
+		HIDE_LEFT,
+		HIDE_RIGHT,
+	]);
+	check(
+		"all three regions stand before the press",
+		openRegions.map((one) => one.name),
+		["left", "main", "right"],
+	);
+	check("pressing the left action writes it folded", field(foldedLeft, "folded"), true);
+	check(
+		"and takes the left region off the board",
+		regionsOf(foldedLeft).map((one) => one.name),
+		["main", "right"],
+	);
+	if (!field(foldedLeft, "regions")) return;
+	check(
+		"the main grew by exactly what the sidebar held",
+		widthAt(regionsOf(foldedLeft), 0),
+		widthAt(openRegions, 1) + ((openRegions[1]?.left ?? NaN) - (openRegions[0]?.left ?? NaN)),
+	);
+	check(
+		"the board still does not scroll sideways",
+		num(foldedLeft, "scrollWidth") <= num(foldedLeft, "clientWidth") + 1,
+		true,
+	);
+	check("the same action now reads off, and the right one is untouched", field(foldedLeft, "actions"), [
+		SHOW_LEFT,
+		HIDE_RIGHT,
+	]);
+	check(
+		"a folded sidebar keeps its widgets mounted, or every ref they offer dies with them",
+		field(measured, "mountedFolded", "tiles"),
+		field(measured, "mountedOpen", "tiles"),
+	);
+	check(
+		"and they are still drawn, not emptied husks",
+		field(measured, "mountedFolded", "painted"),
+		field(measured, "mountedOpen", "painted"),
+	);
+	check("pressing it again writes the region unfolded", field(unfoldedLeft, "folded"), false);
+	check(
+		"and brings the sidebar back",
+		regionsOf(unfoldedLeft).map((one) => one.name),
+		["left", "main", "right"],
+	);
+	check(
+		"at the width it had before it went",
+		field(unfoldedLeft, "regions") ? widthAt(regionsOf(unfoldedLeft), 0) : null,
+		widthAt(openRegions, 0),
+	);
+	check("and the action reads on again", field(unfoldedLeft, "actions"), [HIDE_LEFT, HIDE_RIGHT]);
+}
+
+chromeChecks();
+
+console.log("\n— carrying a tile puts it where it was aimed, and prunes what it left —");
+{
+	const board: BoxNode = {
+		dir: "column",
+		of: [
+			{ id: "a", ratio: 1 },
+			{
+				dir: "row",
+				of: [
+					{ id: "b", ratio: 1 },
+					{ id: "c", ratio: 2 },
+				],
+			},
+		],
+	};
+	const at = (node: BoardNode): string[] => leavesOf(node).map((leaf) => `${leaf.id}@${leaf.path.join("/")}`);
+
+	check("dropped beside a tile it joins that row", at(moveInto(board, "a", { kind: "beside", box: [1], at: 1 })), [
+		"b@0/0",
+		"a@0/1",
+		"c@0/2",
+	]);
+	check(
+		"and the box it emptied is gone with it",
+		field(nodeAt(moveInto(board, "a", { kind: "beside", box: [1], at: 1 }), [0]), "dir"),
+		"row",
+	);
+	check("dropped at the head of a box it stands first", at(moveInto(board, "c", { kind: "beside", box: [], at: 0 })), [
+		"c@0",
+		"a@1",
+		"b@2",
+	]);
+	check(
+		"a box left holding one tile becomes that tile",
+		nodeAt(moveInto(board, "c", { kind: "beside", box: [], at: 0 }), [2])?.id,
+		"b",
+	);
+	check(
+		"it carries its own weight along",
+		nodeAt(moveInto(board, "c", { kind: "beside", box: [], at: 0 }), [0])?.ratio,
+		2,
+	);
+	check(
+		"a tile nobody is holding moves nothing",
+		at(moveInto(board, "nobody", { kind: "beside", box: [], at: 0 })),
+		at(board),
+	);
+	check("and no target moves nothing either", at(moveInto(board, "a", null)), at(board));
+
+	const wrapped = moveInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "after" });
+	check("aimed across the grain it wraps the tile it landed on", at(wrapped), ["b@0/0/0", "a@0/0/1", "c@0/1"]);
+	check("in a box of the direction it was aimed at", field(nodeAt(wrapped, [0, 0]), "dir"), "column");
+	check("which takes over the slot's own share", nodeAt(wrapped, [0, 0])?.ratio, 1);
+	check(
+		"and dropped before, it stands first",
+		at(moveInto(board, "a", { kind: "wrap", path: [1, 0], axis: "column", side: "before" })),
+		["a@0/0/0", "b@0/0/1", "c@0/1"],
+	);
+	check(
+		"wrapping the very tile being carried moves nothing",
+		at(moveInto(board, "a", { kind: "wrap", path: [0], axis: "row", side: "after" })),
+		at(board),
+	);
+
+	const region = rootOf([
+		side([]),
+		kept([
+			{ id: "a", ratio: 1 },
+			{ id: "b", ratio: 1 },
+		]),
+		side([]),
+	]);
+	const across = moveInto(region, "a", { kind: "beside", box: [0], at: 0 });
+	check("a tile carried into an empty sidebar arrives there", at(across), ["a@0/0", "b@1/0"]);
+	check("and the region it came from keeps the rest", listAt(nodeAt(across, [1]), "of").length, 1);
+	check(
+		"a region emptied by the carry is still a region",
+		field(nodeAt(moveInto(region, "a", { kind: "beside", box: [2], at: 0 }), [1]), "keep"),
+		true,
+	);
+	const leafAside: BoxNode = {
+		dir: "row",
+		of: [
+			{ id: "a", ratio: 1 },
+			{ dir: "column", keep: true, of: [{ id: "M", ratio: 1 }] },
+		],
+	};
+	const ontoLeaf = moveInto(leafAside, "M", { kind: "beside", box: [0], at: 0 });
+	check("a drop aimed at a path that holds no box keeps the tile it was carrying", at(ontoLeaf), at(leafAside));
+	check("and the board comes back untouched, not half-emptied", JSON.stringify(ontoLeaf), JSON.stringify(leafAside));
+	check(
+		"a box that cannot take a tile says so rather than answering with the tree it was given",
+		insertAt(leafAside, [0], 0, { id: "x" }),
+		null,
+	);
+
+	check("a tile taken off the board leaves no empty box behind", at(withoutLeaf(board, "a")), ["b@0/0", "c@0/1"]);
+	check("and taking the last of a box takes the box", at(withoutLeaf(withoutLeaf(board, "b"), "c")), ["a@0"]);
+	check("a tile the board does not hold is nothing to take off it", at(withoutLeaf(board, "nobody")), at(board));
+}
+
+console.log("\n— and the aim reads the pointer against the boxes it is over —");
+{
+	const leafSpot = (spot: Omit<Spot, "dir">): Spot => standIn<Spot>(spot, ["path", "kind", "box"], "leaf spot");
+	const spots: readonly Spot[] = [
+		{ path: [], kind: "box", dir: "column", box: { left: 0, top: 0, right: 1200, bottom: 324 } },
+		{ path: [0], kind: "box", dir: "row", box: { left: 0, top: 0, right: 1200, bottom: 100 } },
+		leafSpot({ path: [0, 0], kind: "leaf", box: { left: 0, top: 0, right: 600, bottom: 100 } }),
+		leafSpot({ path: [0, 1], kind: "leaf", box: { left: 612, top: 0, right: 1200, bottom: 100 } }),
+		leafSpot({ path: [1], kind: "leaf", box: { left: 0, top: 112, right: 1200, bottom: 312 } }),
+	];
+
+	check("in a tile's left half it goes before that tile", targetAt(spots, 200, 50), {
+		kind: "beside",
+		box: [0],
+		at: 0,
+	});
+	check("in its right half it goes after", targetAt(spots, 400, 50), { kind: "beside", box: [0], at: 1 });
+	check("in the second tile's right half it goes to the end of the row", field(targetAt(spots, 1100, 50), "at"), 2);
+	check("near the left edge of a tile in a row it still goes beside it", targetAt(spots, 8, 50), {
+		kind: "beside",
+		box: [0],
+		at: 0,
+	});
+	check("near the top of a tile in a row it wraps it in a column", targetAt(spots, 300, 6), {
+		kind: "wrap",
+		path: [0, 0],
+		axis: "column",
+		side: "before",
+	});
+	check("and near the bottom, the same the other way round", field(targetAt(spots, 300, 96), "side"), "after");
+	check("over a tile in a column it goes beside it in that column", targetAt(spots, 600, 300), {
+		kind: "beside",
+		box: [],
+		at: 2,
+	});
+	check("and near its left edge it wraps it in a row", targetAt(spots, 8, 212), {
+		kind: "wrap",
+		path: [1],
+		axis: "row",
+		side: "before",
+	});
+	check("in the gap between two rows it takes the slot between them", targetAt(spots, 300, 106), {
+		kind: "beside",
+		box: [],
+		at: 1,
+	});
+	check("the deepest box under the pointer is the one that answers", field(targetAt(spots, 300, 50), "box"), [0]);
+	check("an empty box answers with its only slot", targetAt(spots.slice(0, 1), 300, 50), {
+		kind: "beside",
+		box: [],
+		at: 0,
+	});
+	check("and a pointer over nothing aims at nothing", targetAt(spots, 300, 900), null);
+	check(
+		"two aims at the same slot are the same aim",
+		sameTarget(targetAt(spots, 200, 50), targetAt(spots, 100, 50)),
+		true,
+	);
+	check("and two at different slots are not", sameTarget(targetAt(spots, 200, 50), targetAt(spots, 400, 50)), false);
+	check(
+		"a wrap and a drop beside are never the same aim",
+		sameTarget(targetAt(spots, 300, 6), targetAt(spots, 300, 50)),
+		false,
+	);
+}
+
+console.log("\n— a tile travels at a speed, so a long move is not a teleport —");
+{
+	check("a step takes the floor, however short it is", millisecondsAcross(4, 0), millisecondsAcross(0, 0));
+	check("twice as far takes longer", millisecondsAcross(800, 0) > millisecondsAcross(400, 0), true);
+	check("and the far side of a board still lands inside half a second", millisecondsAcross(4000, 0) <= 500, true);
+	check("a diagonal is measured as one distance, not two", millisecondsAcross(300, 400), millisecondsAcross(500, 0));
+	check("and nothing crawls: even the floor is under a fifth of a second", millisecondsAcross(0, 0) <= 200, true);
+}
+
+console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from the main lands in it —");
+{
+	const emptyOpen = field(measured, "emptyOpen");
+	const carriedAcross = field(measured, "carriedAcross");
+	const emptyResting = field(measured, "emptyResting");
+	const addedIntoRight = field(measured, "addedIntoRight");
+
+	check("the board draws at all", field(emptyOpen, "drawn"), true);
+	check("all three regions stand while the board is being laid out", field(emptyOpen, "regions"), [
+		"left",
+		"main",
+		"right",
+	]);
+	check("and each one names itself, so a carried tile can find it", field(emptyOpen, "named"), ["0", "1", "2"]);
+	check(
+		"the empty left is a zone with real room in it",
+		num(emptyOpen, "left", "height") > 0 && num(emptyOpen, "left", "width") > 0,
+		true,
+	);
+	check("and it says what pressing it does", field(emptyOpen, "left", "text"), "Add a widget");
+	check("it is a control, not a caption", field(emptyOpen, "left", "tag"), "button");
+	check(
+		"while the board is being laid out it is a solid ring, not a hint",
+		[field(emptyOpen, "left", "line"), field(emptyOpen, "left", "ring") === "none"],
+		["none", false],
+	);
+	check(
+		"the empty right is a zone too",
+		num(emptyOpen, "right", "height") > 0 && num(emptyOpen, "right", "width") > 0,
+		true,
+	);
+	check("a tile alone on a row fills it even while its share says half", field(emptyOpen, "halfShare"), 0);
+	check("every region ends in one, so a widget can be added where the eye is", field(emptyOpen, "adds"), [
+		"left",
+		"main",
+		"right",
+	]);
+	check(
+		"and in a region holding rows it is the last thing, not the first",
+		field(emptyOpen, "lastInRegion"),
+		"wg-tree-add",
+	);
+	check("the board no longer carries a press that names no region", field(emptyOpen, "palette"), 0);
+
+	check("aiming into the empty sidebar shows where the tile would land", field(carriedAcross, "aimed"), 1);
+	check(
+		"and a tile is stood in for where it lands and as wide, its height left to what it draws there",
+		{
+			left: field(carriedAcross, "lie", "left"),
+			top: field(carriedAcross, "lie", "top"),
+			width: field(carriedAcross, "lie", "width"),
+		},
+		{ left: 0, top: 0, width: 0 },
+	);
+	check("and releasing it puts the tile in that sidebar", field(carriedAcross, "left"), [["boards"]]);
+	check("the region it came from lets it go", field(carriedAcross, "main"), [["board"]]);
+
+	check("the sidebar that stayed empty still stands for a reader", field(emptyResting, "regions"), [
+		"left",
+		"main",
+		"right",
+	]);
+	check("no palette is drawn to a reader", field(emptyResting, "palette"), 0);
+	check(
+		"a region a reader finds empty says what it is waiting for",
+		field(emptyResting, "adds"),
+		field(emptyResting, "bare"),
+	);
+	check("and it is exactly the regions holding nothing", field(emptyResting, "bare"), ["main", "right"]);
+	check("a region holding rows offers a reader no press", field(emptyResting, "left"), null);
+	check(
+		"the reader's zone is a dashed hint, not the edit control's solid ring",
+		[field(emptyResting, "right", "line"), field(emptyResting, "right", "ring")],
+		["dashed", "none"],
+	);
+	check(
+		"and it is see-through, so it reads as room rather than as a tile",
+		field(emptyResting, "right", "fill"),
+		"rgba(0, 0, 0, 0)",
+	);
+	check(
+		"while the one offered to an editor keeps the fill the host paints on a button",
+		field(emptyOpen, "left", "fill"),
+		"rgb(227, 227, 227)",
+	);
+	check("a reader's board draws no chrome of its own either", field(emptyResting, "chrome"), 0);
+
+	check("the probe reached the catalogue", field(addedIntoRight, "failed") ?? null, null);
+	check("pressing a region's zone opens the catalogue", field(addedIntoRight, "opened"), 1);
+	check("and the pick adds one tile", field(addedIntoRight, "born"), 1);
+	check("on a row of its own in the region that was pressed", field(addedIntoRight, "grew"), 1);
+	check("the other two regions are left exactly as they were", field(addedIntoRight, "untouched"), ["left", "main"]);
+	check("and the catalogue closes behind the pick", field(addedIntoRight, "dialogs"), 0);
+}
+
+console.log("\n— a column inside a row: the thing the three regions could not say —");
+{
+	const stacked = field(measured, "stacked");
+	check("a row carrying an old height is drawn", field(stacked, "drawn"), true);
+	check("too narrow for two, it is drawn as a column", field(stacked, "dir"), "column");
+	check("the row ends where its last widget ends", field(stacked, "rowBottom"), field(stacked, "lastBottom"));
+	check(
+		"every widget in it says it stands one across, a divider's axis beside it included",
+		field(stacked, "standsAcross"),
+		["1", "1"],
+	);
+	check(
+		"and the widget below it starts under the last of them rather than over it",
+		num(stacked, "boardTop") >= num(stacked, "lastBottom"),
+		true,
+	);
+
+	const seen = field(measured, "nested");
+	const after = field(measured, "unnested");
+	check("the board drew at all", field(seen, "drawn"), true);
+	check("the row holds a tile and a column of two", field(seen, "rows"), [["boards"], ["board", "views", "wynttpz"]]);
+	check("and the tree says so, level by level", field(seen, "dirs"), ["0:column", "0/1:row", "0/1/1:column"]);
+	check("every widget in it is drawn", listAt(seen, "painted").filter((count) => Number(count) > 0).length, 4);
+	check("the two inside the column stand one over the other", field(seen, "stacked"), [0, 1]);
+	check("the wide tile stands beside them, not over them", field(seen, "beside"), 1);
+	check("the column is inside the row it belongs to", field(seen, "withinRow"), true);
+	check("two to one, within a pixel", Math.abs(num(seen, "shares", 0) / num(seen, "shares", 1) - 2) < 0.02, true);
+	check("and the gap between them is the step of a row one box under its region", field(seen, "spare"), STEP_PX[1]);
+	check(
+		"the nesting survives being written back, the heights it was given left behind",
+		JSON.parse(String(field(seen, "written"))),
+		{
+			dir: "row",
+			of: [
+				{
+					dir: "column",
+					keep: true,
+					of: [
+						{ id: "boards" },
+						{
+							dir: "row",
+							of: [
+								{ id: "board", ratio: 2 },
+								{
+									dir: "column",
+									of: [{ id: "views" }, { id: "wynttpz" }],
+								},
+							],
+						},
+					],
+				},
+			],
+		},
+	);
+
+	const into = field(measured, "intoNest");
+	check("the probe found the tile to carry in", field(into, "failed") ?? null, null);
+	check("a tile aimed inside the nested column is stood in for there", field(into, "aimed"), 1);
+	check("and it lands between the two that were already in it", field(into, "inNest"), ["views", "boards", "wynttpz"]);
+	check("at a path three levels down", field(into, "leaves"), [
+		"board@0/0/0",
+		"views@0/0/1/0",
+		"boards@0/0/1/1",
+		"wynttpz@0/0/1/2",
+	]);
+
+	check("the probe found the nested tile", field(after, "failed") ?? null, null);
+	check("carrying one tile onto another's edge wraps the two, four levels deep", field(after, "leaves"), [
+		"board@0/0/0",
+		"views@0/0/1/0/0",
+		"boards@0/0/1/0/1",
+		"wynttpz@0/0/1/1",
+	]);
+	check("and every tile is still on the board", field(after, "rows", 0), ["board", "views", "boards", "wynttpz"]);
+	check("with one write per press and not one more", field(after, "writes"), 2);
+
+	const fill = field(measured, "screenFill");
+	check("a screen board is on the page at all", field(fill, "failed") ?? null, null);
+	check(
+		"a screen board claims the window height less the host's chrome",
+		field(fill, "root"),
+		num(fill, "viewport") - 192,
+	);
+	check(
+		"and the tree inside it claims the same, so the regions reach the bottom",
+		field(fill, "page"),
+		field(fill, "root"),
+	);
+}
+
+console.log("\n— a tile on a tree board carries the same two controls the grid tile has —");
+{
+	const chromeEditing = field(measured, "chromeEditing");
+	const chromeReading = field(measured, "chromeReading");
+	check(
+		"every cell on the board draws a settings control",
+		field(chromeEditing, "settings"),
+		field(chromeEditing, "cells"),
+	);
+	check("and a remove control beside it", field(chromeEditing, "removes"), field(chromeEditing, "cells"));
+	check("the pill is a real box, not a collapsed one", field(chromeEditing, "pill", "held"), true);
+	check("seated in the corner of the cell it belongs to", field(chromeEditing, "pill", "within"), true);
+	check("because the cell is what it is measured against", field(chromeEditing, "pill", "seat"), "absolute");
+	check("and it stands there without being pointed at", field(chromeEditing, "pill", "shown"), 1);
+	check("a reader is offered neither", [field(chromeReading, "settings"), field(chromeReading, "removes")], [0, 0]);
+	check("and the cells are all still there", field(chromeReading, "cells"), field(chromeEditing, "cells"));
+}
+
+console.log("\n— settings open the playground, and it offers nothing measured in cells —");
+{
+	const seen = field(measured, "configured");
+	check("the probe found the control", field(seen, "failed") ?? null, null);
+	check("pressing it opens one window", field(seen, "windows"), 1);
+	check(
+		"the window is drawn at the size the cell had, not at a count of cells",
+		field(seen, "canvas"),
+		field(seen, "box"),
+	);
+	check("the widget is drawn there and not twice", field(seen, "drawnInCell"), 0);
+	check("and the cell it left keeps the height it had", field(seen, "heldBox"), field(seen, "box"));
+	check("closing the window takes it away", field(seen, "closed"), 0);
+	check("and puts the widget back in its cell", num(seen, "backInCell") > 0, true);
+	check("all three tabs are offered", field(seen, "tabs"), ["Settings", "Data", "Design"]);
+	check("and the Design tab counts no cells", field(seen, "cells"), 0);
+	check(
+		"because a tree cell has no width in cells to write",
+		listAt(seen, "rows")
+			.map(String)
+			.filter((text) => text.startsWith("Width") || text.startsWith("Height")),
+		[],
+	);
+	check(
+		"nor a fold to one column",
+		listAt(seen, "rows")
+			.map(String)
+			.filter((text) => text.includes("Fold to one column")),
+		[],
+	);
+}
+
+console.log("\n— and removing one asks first —");
+{
+	const seen = field(measured, "removal");
+	check("the probe found the control", field(seen, "failed") ?? null, null);
+	check("pressing remove puts one dialog up", field(seen, "asked", "dialogs"), 1);
+	check("it asks about the widget", field(seen, "asked", "title"), "Remove this widget?");
+	check("and names the verb on the button", field(seen, "asked", "confirmLabel"), "Remove");
+	check("nothing is gone while it is up", listAt(seen, "asked", "tiles").includes("views"), true);
+	check("cancelling takes the dialog away", field(seen, "cancelled", "dialogs"), 0);
+	check("and leaves the tile where it was", listAt(seen, "cancelled", "tiles").includes("views"), true);
+	check("and writes nothing at all", field(seen, "cancelled", "writes"), field(seen, "asked", "writes"));
+	check("confirming drops the tile from the board", listAt(seen, "gone", "tiles").includes("views"), false);
+	check("and out of the rows the board draws", listAt(seen, "gone", "rows").flat().includes("views"), false);
+	check("and out of the rows the file holds", listAt(seen, "gone", "written").includes("views"), false);
+	check(
+		"while the ones it holds beside it stay written",
+		field(seen, "gone", "written"),
+		listAt(seen, "asked", "written").filter((id) => id !== "views"),
+	);
+	check(
+		"leaving every other tile standing",
+		field(seen, "gone", "tiles"),
+		listAt(seen, "asked", "tiles").filter((id) => id !== "views"),
+	);
+	check("in one write", num(seen, "gone", "writes") - num(seen, "cancelled", "writes"), 1);
+}
+
+const pageFailures = listAt(measured, "failures");
+if (pageFailures.length > 0) {
+	failed += pageFailures.length;
+	for (const failure of pageFailures) console.log(`!! the page logged: ${String(failure)}`);
+}
+
+const heldToAMeasure = layNode({ dir: "column", measure: 720, of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
+const filling = layNode({ dir: "column", of: [{ id: "prose" }] }, 1400, { ask: () => ({}) });
+check("a box declaring a measure carries it into the laid node", field(heldToAMeasure, "measure"), 720);
+check("a box declaring none carries none", field(filling, "measure"), undefined);
+check(
+	"a measure never changes how wide the box is laid",
+	[field(heldToAMeasure, "width"), field(filling, "width")],
+	[1400, 1400],
+);
+
+console.log(failed ? `\n${failed} widths the tree got wrong` : "\nfour widgets, five widths, nothing vanished");
+process.exit(failed ? 1 : 0);

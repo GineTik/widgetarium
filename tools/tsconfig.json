@@ -1,0 +1,52 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2023", "DOM", "DOM.Iterable"],
+		"jsx": "react",
+		"jsxFactory": "h",
+		"jsxFragmentFactory": "Fragment",
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"noImplicitOverride": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"allowUnreachableCode": false,
+		"allowUnusedLabels": false,
+		"noEmit": true,
+		"tsBuildInfoFile": "../node_modules/.cache/widgetarium/tools.tsbuildinfo",
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true,
+		"allowJs": true,
+		"allowImportingTsExtensions": true,
+		"checkJs": false,
+		"types": ["node"],
+		"paths": {
+			"widgetarium": ["../packages/sdk/types/widgetarium.d.ts"],
+			"widgetarium/kit": ["../packages/kit/src/index.ts"],
+			"widgetarium/kit/emojis": ["../packages/kit/src/emojis/emoji.tsx"],
+			"widgetarium/kit/charts": ["../packages/kit/src/charts/index.ts"],
+			"@*/lib": ["../registry/@*/lib"]
+		}
+	},
+	"references": [{ "path": "../packages/kit" }, { "path": "../packages/core" }],
+	"include": [
+		"*.ts",
+		"*.mts",
+		"*.tsx",
+		"loader/**/*.mts",
+		"lint/**/*.mts",
+		"../apps/obsidian/*.mts",
+		"loader/**/*.ts",
+		"lint/**/*.ts",
+		"../apps/obsidian/src/build-modules.d.ts",
+		"../packages/core/src/*.d.ts",
+		"../packages/kit/src/jsx-namespace.d.ts"
+	]
+}

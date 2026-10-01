@@ -1,5 +1,5 @@
 #!/bin/sh
-node tools/lint-language.mjs apps packages registry tools || {
+node tools/lint-language.mts apps packages registry tools || {
 	echo ""
 	echo "commit blocked: English only. Fix the lines above."
 	exit 1
@@ -14,7 +14,7 @@ echo "$staged" | xargs git add
 sources=$(echo "$staged" | grep -E '^(apps/obsidian/src|packages/[a-z]+/src|registry)/.*\.(js|jsx|ts|tsx|mjs)$')
 [ -z "$sources" ] && exit 0
 
-echo "$sources" | xargs node tools/lint-code.mjs || {
+echo "$sources" | xargs node tools/lint-code.mts || {
 	echo ""
 	echo "commit blocked: the code above breaks a house rule. Fix it, do not weaken the rule."
 	exit 1

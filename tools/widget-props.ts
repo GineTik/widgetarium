@@ -1,0 +1,91 @@
+import { pathToFileURL } from "node:url";
+import type { EngineManifest, OrderedProps } from "../packages/core/src/engine/catalogue-index.js";
+import { fakeVault } from "./fake-vault.ts";
+import type { FakeVault } from "./fake-vault.ts";
+import { widgetFiles } from "./harness.ts";
+import { layJsdomGlobals } from "./jsdom-globals.ts";
+import { isRecord } from "./page-dom.ts";
+
+if (typeof document === "undefined") layJsdomGlobals();
+
+const { WidgetRegistry } = await import("../packages/core/src/registry.js");
+
+type Files = Readonly<Record<string, string>>;
+
+function vaultHolding(files: Files): FakeVault {
+	const held = fakeVault();
+	for (const [at, text] of Object.entries(files)) held.files.set(at, text);
+	return held;
+}
+
+export async function manifestsAsTheEngineResolvesThem(
+	files: Files,
+): Promise<Record<string, EngineManifest | undefined>> {
+	const registry = new WidgetRegistry({ vault: { adapter: vaultHolding(files) } });
+	await registry.load();
+	const byId: Record<string, EngineManifest | undefined> = {};
+	for (const id of [...registry.widgets.keys()].sort()) byId[id] = registry.get(id)?.manifest;
+	return byId;
+}
+
+export async function propsAsTheEngineResolvesThem(files: Files): Promise<Record<string, OrderedProps | null>> {
+	const found = await manifestsAsTheEngineResolvesThem(files);
+	return Object.fromEntries(Object.entries(found).map(([id, manifest]) => [id, manifest?.props ?? null]));
+}
+
+export const manifestOfEveryShippedWidget = (): Promise<Record<string, EngineManifest | undefined>> =>
+	manifestsAsTheEngineResolvesThem(widgetFiles());
+
+export const propsOfEveryShippedWidget = (): Promise<Record<string, OrderedProps | null>> =>
+	propsAsTheEngineResolvesThem(widgetFiles());
+
+function isList(value: unknown): value is readonly unknown[] {
+	return Array.isArray(value);
+}
+
+function typeOf(value: unknown): string {
+	if (isList(value)) return "array";
+	return value === null ? "null" : typeof value;
+}
+
+function mismatchAt(said: string, wanted: unknown, got: unknown): string {
+	return `${said}: expected ${JSON.stringify(wanted)}, engine answers ${JSON.stringify(got)}`;
+}
+
+export function differences(wanted: unknown, got: unknown, at: readonly string[] = []): string[] {
+	const said = at.join(" › ");
+	if (typeOf(wanted) !== typeOf(got)) return [mismatchAt(said, wanted, got)];
+	if (isList(wanted) && isList(got)) return arrayDifferences(wanted, got, at);
+	if (!isRecord(wanted) || !isRecord(got)) return wanted === got ? [] : [mismatchAt(said, wanted, got)];
+
+	const servable = Object.keys(got).filter((key) => typeof got[key] !== "function");
+	const keys = [...new Set([...Object.keys(wanted), ...servable])];
+	const ordered =
+		Object.keys(wanted).join(",") === servable.join(",")
+			? []
+			: [`${said}: keys are declared in the order ${servable.join(", ")}, expected ${Object.keys(wanted).join(", ")}`];
+	return [...ordered, ...keys.flatMap((key) => keyDifference(wanted, got, key, at))];
+}
+
+type Fields = Readonly<Record<string, unknown>>;
+
+function keyDifference(wanted: Fields, got: Fields, key: string, at: readonly string[]): string[] {
+	if (!(key in got)) return [`${[...at, key].join(" › ")}: missing — the engine no longer answers it`];
+	if (typeof got[key] === "function") return [];
+	if (!(key in wanted))
+		return [`${[...at, key].join(" › ")}: unexpected — the engine answers ${JSON.stringify(got[key])}`];
+	return differences(wanted[key], got[key], [...at, key]);
+}
+
+function arrayDifferences(wanted: readonly unknown[], got: readonly unknown[], at: readonly string[]): string[] {
+	const length = Math.max(wanted.length, got.length);
+	return Array.from({ length }, (_unused, index) => index).flatMap((index) => {
+		if (index >= got.length) return [`${at.join(" › ")}[${index}]: missing ${JSON.stringify(wanted[index])}`];
+		if (index >= wanted.length) return [`${at.join(" › ")}[${index}]: unexpected ${JSON.stringify(got[index])}`];
+		return differences(wanted[index], got[index], [...at, `[${index}]`]);
+	});
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+	console.log(JSON.stringify(await propsOfEveryShippedWidget(), null, "\t"));
+}
