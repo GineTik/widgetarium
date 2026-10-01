@@ -151,3 +151,5 @@ export type { TabRow, TabStep, TabVerb } from "../../core/src/tab-rows";
 export { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "../../core/src/tab-rows";
 export type { MountedProps } from "../../core/src/mounted";
 export { Mounted } from "../../core/src/mounted";
+export type { WidgetRootProps } from "../../core/src/widget-root";
+export { WidgetRoot } from "../../core/src/widget-root";

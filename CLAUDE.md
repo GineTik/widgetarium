@@ -358,7 +358,10 @@ group finds it. Full decision in `docs/decisions.md`.
 
 **A background belongs to a group, not to a widget.** The engine draws every widget's root — its
 container query, size and clipping — and a widget paints a plate only through `<Card>` from the
-kit; `WidgetRoot` is no longer handed to widgets.
+kit; `WidgetRoot` survives only as a bare element for widgets written before. **A name leaves the
+widget API only when no widget anywhere uses it — the repo's `registry/` is not all of them:** a
+person's own vault widgets import from `widgetarium` too. Removing `WidgetRoot` because the registry
+no longer used it crashed `@you/habit-list` in a real vault on 2026-10-01.
 
 **The tile's plate is the node's, the plates under it are the widget's, and one component paints
 both kinds.** `Card` in `packages/kit/src/components/card.tsx` (once `Surface`, which stays as an alias for widgets published

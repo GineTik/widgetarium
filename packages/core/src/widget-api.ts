@@ -14,7 +14,7 @@ import {
 } from "./dialog.js";
 import { EditableTabs } from "./editable-tabs.js";
 import { Mounted } from "./mounted.js";
-import { rootWidget } from "./widget-root.js";
+import { rootWidget, WidgetRoot } from "./widget-root.js";
 import { useData } from "./gateway/use-data";
 import { useNarrowed } from "./gateway/use-narrowed";
 import { useValue } from "./gateway/use-value";
@@ -71,6 +71,7 @@ export const reactSurface = {
 	ConfirmDialog,
 	EditableTabs,
 	Mounted,
+	WidgetRoot,
 	createWidget,
 	useData,
 	useNarrowed,
