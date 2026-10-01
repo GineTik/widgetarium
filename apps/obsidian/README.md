@@ -14,7 +14,7 @@ The Obsidian plugin. It mounts [`@widgetarium/core`](../../packages/core) inside
 | `src/substitution*.js`        | The rules editor behind those inline widgets                                   |
 | `src/ai/`                     | The assistant: sidebar chat, providers, and the `widgets.mjs` CLI it runs      |
 | `manifest.json`, `styles.css` | What Obsidian loads, next to the built `main.js`                               |
-| `build.mjs`, `install.mjs`    | Bundle with esbuild, then copy into `.obsidian/plugins/widgetarium` of a vault |
+| `build.mts`, `install.mts`    | Bundle with esbuild, then copy into `.obsidian/plugins/widgetarium` of a vault |
 
 Anything that would also work on the web or in a desktop shell belongs in core, not here.
 

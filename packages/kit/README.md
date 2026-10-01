@@ -46,7 +46,7 @@ Everything is TSX with the classic `h` factory, so every file that draws imports
   written on the element (`data-state`, `data-disabled`, `data-highlighted`); `cn` merges classes
   with tailwind-merge, told the theme's names by `constants/theme-scales.ts`.
 
-Glyph tables are generated: `node tools/fetch-icons.mjs`, `node tools/fetch-emojis.mjs` and `node tools/fetch-shapes.mjs` rewrite them. Their own licences sit in [`assets/`](assets).
+Glyph tables are generated: `node tools/fetch-icons.mts`, `node tools/fetch-emojis.mts` and `node tools/fetch-shapes.mts` rewrite them. Their own licences sit in [`assets/`](assets).
 
 ## Licence
 

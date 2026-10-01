@@ -104,7 +104,7 @@ Two requests, one file written. No npm, no node, no bundler — this is what kee
 | ----------------------- | ----------------------------------------------------------------------------------------------------- |
 | `src/installer.js`      | compile the widget's TSX once, store `widget.js` beside the source, record its hash                   |
 | `src/registry.js`       | load `widget.js`; compile source only when there is no build — that is the author's local folder path |
-| `tools/perf-report.mjs` | the startup row must read zero passes for installed widgets                                           |
+| `tools/perf-report.ts` | the startup row must read zero passes for installed widgets                                           |
 
 **Checks**
 
