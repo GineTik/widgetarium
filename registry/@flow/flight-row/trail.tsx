@@ -1,8 +1,8 @@
-import { Pill, RowValue } from "widgetarium/kit";
+import { Pill, RowValue, type ToneName } from "widgetarium/kit";
 import { textOf } from "./text-of";
 import type { Flight } from "./types";
 
-const STAGE_TONES: Record<string, string> = {
+const STAGE_TONES: Readonly<Record<string, ToneName>> = {
 	plan: "info",
 	build: "accent",
 	review: "warning",

@@ -33,9 +33,7 @@
 	},
 	"props": {},
 	"migrates": [],
-	"files": [
-		"widget.tsx"
-	],
+	"files": ["widget.tsx"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

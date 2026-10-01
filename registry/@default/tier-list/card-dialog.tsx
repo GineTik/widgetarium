@@ -37,11 +37,15 @@ export function CardDialog({
 					<DialogDescription>{CARD_PICTURE_SAID}</DialogDescription>
 				</DialogHeader>
 				<div className="wr-pop">
-					<Field value={draft.name} placeholder="Name" onInput={(next: string) => setDraft({ ...draft, name: next })} />
+					<Field
+						value={draft.name}
+						placeholder="Name"
+						onInput={(event) => setDraft({ ...draft, name: event.currentTarget.value })}
+					/>
 					<Field
 						value={draft.picture}
 						placeholder="Picture"
-						onInput={(next: string) => setDraft({ ...draft, picture: next })}
+						onInput={(event) => setDraft({ ...draft, picture: event.currentTarget.value })}
 					/>
 				</div>
 				<DialogFooter>

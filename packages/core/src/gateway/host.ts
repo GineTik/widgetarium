@@ -80,7 +80,7 @@ export interface MountEntry {
 	drawInto: ((element: HTMLElement) => Release) | null;
 }
 
-export type ConfigureMounts = (name: string, rows: MountRow[]) => void;
+export type ConfigureMounts = (name: string, rows: readonly MountRow[]) => void;
 
 export interface WidgetCatalogue {
 	canOpen: boolean;

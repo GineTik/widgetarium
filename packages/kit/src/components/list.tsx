@@ -5,17 +5,27 @@ import { cn } from "../utils/cn";
 import { createSlotPart } from "./slot";
 import type { SlotPartProps } from "./create-slot-part";
 
-export type SlotDrawing = FunctionComponent<Readonly<Record<string, unknown>>> & { readonly isCard?: boolean };
+export type SlotDrawing<Given = Readonly<Record<string, unknown>>> = ((given: Given) => ReactNode) & {
+	readonly isCard?: boolean;
+};
 
-export interface SlotListProps<R> {
-	readonly slot?: SlotDrawing | null | undefined;
-	readonly rows?: readonly R[] | undefined;
-	readonly give: (row: R) => Readonly<Record<string, unknown>>;
-	readonly keyOf?: ((row: R) => Key) | undefined;
+interface SlotListFrame<Given> {
+	readonly slot?: SlotDrawing<Given> | null | undefined;
 	readonly className?: string | undefined;
 	readonly style?: CSSProperties | undefined;
-	readonly children?: ReactNode;
 }
+
+interface SlotListOfChildren {
+	readonly children: ReactNode;
+}
+
+interface SlotListOfRows<R, Given> {
+	readonly rows?: readonly R[] | undefined;
+	readonly give: (row: R) => Given;
+	readonly keyOf?: ((row: R) => Key) | undefined;
+}
+
+export type SlotListProps<R, Given> = SlotListFrame<Given> & (SlotListOfChildren | SlotListOfRows<R, Given>);
 
 export const List: FunctionComponent<SlotPartProps> = createSlotPart("div", listClass, "List");
 
@@ -43,19 +53,19 @@ export const RowValue: FunctionComponent<SlotPartProps> = createSlotPart(
 	"RowValue",
 );
 
-export function SlotList<R>({
-	slot: Drawn,
-	rows = [],
-	give,
-	keyOf,
-	className: cls,
-	style,
-	children,
-}: SlotListProps<R>): ReactNode {
+export function SlotList<R, Given extends object>(props: SlotListProps<R, Given>): ReactNode {
+	const { slot: Drawn, className: cls, style } = props;
 	if (!Drawn) return null;
 	return (
 		<div className={cn("wg-kit-slot-list", cls)} style={style} data-cards={Drawn.isCard ? "" : undefined}>
-			{children ?? rows.map((row, at) => <Drawn key={keyOf ? keyOf(row) : at} {...give(row)} />)}
+			{"give" in props ? drawnRows(Drawn, props) : props.children}
 		</div>
 	);
+}
+
+function drawnRows<R, Given extends object>(
+	Drawn: SlotDrawing<Given>,
+	{ rows = [], give, keyOf }: SlotListOfRows<R, Given>,
+): ReactNode {
+	return rows.map((row, at) => <Drawn key={keyOf ? keyOf(row) : at} {...give(row)} />);
 }

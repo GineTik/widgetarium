@@ -4,13 +4,13 @@ import {
 	INavigator,
 	ISlot,
 	IValueGateway,
-	VaultRecordSchema,
 	createWidget,
 	defineLayout,
 	defineMetadata,
 	defineProps,
 	z,
 } from "widgetarium";
+import { BoardSchema } from "@default/lib";
 import { useState } from "react";
 import { BoardDialogs } from "./board-dialogs";
 import { BoardStrip } from "./board-strip";
@@ -25,22 +25,24 @@ import { useIdRepair } from "./use-id-repair";
 import { useListRename } from "./use-list-rename";
 import { useTaskWrites } from "./use-task-writes";
 
+const TaskPropsSchema = z.looseObject({
+	title: z.unknown().optional(),
+	order: z.unknown().optional(),
+	priority: z.unknown().optional(),
+	approval: z.unknown().optional(),
+	progress: z.unknown().optional(),
+	assignees: z.unknown().optional(),
+});
+
 export const TaskSchema = z.looseObject({
 	path: z.string().optional(),
 	name: z.string().optional(),
-	props: z.record(z.string(), z.unknown()).optional(),
+	props: TaskPropsSchema.optional(),
 	attachments: z.number().optional(),
 	body: z.string().optional(),
 });
 
-const BoardSchema = VaultRecordSchema.extend({
-	columns: z
-		.union([
-			z.string(),
-			z.array(z.union([z.string(), z.object({ name: z.string(), archivedAt: z.string().nullish() })])),
-		])
-		.optional(),
-	archivedColumns: z.union([z.string(), z.array(z.string())]).optional(),
+const KanbanBoardSchema = BoardSchema.extend({
 	properties: z.union([z.string(), z.array(z.string())]).optional(),
 });
 
@@ -65,10 +67,10 @@ export const props = defineProps({
 		],
 		default: [],
 	}),
-	boards: ICrudGateway.of(BoardSchema, { default: [] }).pick("list", "create", "update", "repairIds"),
+	boards: ICrudGateway.of(KanbanBoardSchema, { default: [] }).pick("list", "create", "update", "repairIds"),
 	selection: IValueGateway.of(z.unknown()).pick("get", "update"),
 	board: IValueGateway.of(
-		BoardSchema.default({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }),
+		KanbanBoardSchema.default({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }),
 	).pick("get", "update"),
 	opened: IValueGateway.of(z.string().nullable()).pick("get", "update"),
 	groupBy: IValueGateway.of(z.string().default("status")).pick("get"),

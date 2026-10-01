@@ -37,7 +37,7 @@ export function Deck({
 					size="m"
 					className="wgm-mode"
 					label={isShuffled.value ? "Play the queue in order" : "Play the queue shuffled"}
-					aria-pressed={String(isShuffled.value)}
+					aria-pressed={isShuffled.value}
 					disabled={!canDo(isShuffled.update)}
 					onClick={() => void isShuffled.update(!isShuffled.value)}
 				>
@@ -53,7 +53,7 @@ export function Deck({
 					size="l"
 					className="wgm-play-disc"
 					label={isPlaying.value ? "Pause" : "Play"}
-					aria-pressed={String(isPlaying.value)}
+					aria-pressed={isPlaying.value}
 					disabled={!canSteer}
 					onClick={togglePlay}
 				>
@@ -69,7 +69,7 @@ export function Deck({
 					size="m"
 					className="wgm-mode"
 					label={REPEAT_LABELS[repeatAfter(repeat.value)]}
-					aria-pressed={String(repeat.value !== "off")}
+					aria-pressed={repeat.value !== "off"}
 					disabled={!canDo(repeat.update)}
 					onClick={() => void repeat.update(repeatAfter(repeat.value))}
 				>

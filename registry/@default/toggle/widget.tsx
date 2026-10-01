@@ -21,7 +21,7 @@ const ToggleWidget = createWidget({
 					variant="raised"
 					size="l"
 					label={label || "Open the panel"}
-					aria-pressed={String(isOpen)}
+					aria-pressed={isOpen}
 					onClick={() => open.update(!isOpen)}
 				>
 					<Icon name={icon || "menu"} size={22} />

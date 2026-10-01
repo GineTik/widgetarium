@@ -6,7 +6,7 @@ import { TagRow } from "./tag-row";
 import { keyFor, toTrimmedList } from "./task-fields";
 import { TaskNotes } from "./task-notes";
 import { TaskTitle } from "./task-title";
-import type { TaskDialogProps, TaskRow, Tones } from "./types";
+import type { TaskDialogProps, TaskProps, TaskRow, Tones } from "./types";
 
 const STARTING_PROPERTIES = ["Status", "Priority", "Approval", "Progress", "Assignees", "Deadline"];
 
@@ -28,11 +28,11 @@ export function TaskDialog({
 	const task = rows.find((row) => row.ref === openedRef) ?? null;
 	const isOpen = Boolean(openedRef) && Boolean(task);
 	const names = propertyNames(properties);
-	const props = task?.props ?? {};
+	const props: TaskProps = task?.props ?? {};
 	const people = useMemo(() => [...valuesAcross(rows, "members"), ...valuesAcross(rows, "assignees")], [rows]);
 	const tagRoster = useMemo(() => valuesAcross(rows, "tags"), [rows]);
 
-	const setProperties = (patch: Record<string, unknown>) => {
+	const setProperties = (patch: TaskProps) => {
 		if (!canUpdate || !task) return;
 		tasks.update({ ref: task.ref, data: { props: patch } });
 	};

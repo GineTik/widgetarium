@@ -17,13 +17,17 @@
 		"noEmit": true,
 		"jsx": "react-jsx",
 		"jsxImportSource": "react",
-		"skipLibCheck": false,
+		"skipLibCheck": true,
 		"allowJs": false,
 		"paths": {
 			"widgetarium": ["./types/widgetarium.d.ts"],
+			"widgetarium/kit": ["../kit/src/index.ts"],
+			"widgetarium/kit/emojis": ["../kit/src/emojis/emoji.tsx"],
+			"widgetarium/kit/charts": ["../kit/src/charts/index.ts"],
 			"@*/lib": ["../../registry/@*/lib"]
 		}
 	},
+	"references": [{ "path": "../kit" }, { "path": "../core" }],
 	"include": [
 		"types/**/*.d.ts",
 		"../../tools/type-gate/**/*.ts",

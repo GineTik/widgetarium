@@ -153,7 +153,7 @@ export const PlayerWidget = createWidget({
 								size="m"
 								className={isFavourite ? "wgm-fav is-on" : "wgm-fav"}
 								label={isFavourite ? "Remove this track from favourites" : "Add this track to favourites"}
-								aria-pressed={String(isFavourite)}
+								aria-pressed={isFavourite}
 								onClick={() => void tracks.update({ ref: track.ref, data: { favourite: !isFavourite } })}
 							>
 								<Icon name="heart" size={18} />

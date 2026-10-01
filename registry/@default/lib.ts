@@ -1,5 +1,15 @@
-import { fieldOf } from "widgetarium";
+import { VaultRecordSchema, fieldOf, z } from "widgetarium";
 import type { RecordRef } from "widgetarium";
+
+export const BoardSchema = VaultRecordSchema.extend({
+	columns: z
+		.union([
+			z.string(),
+			z.array(z.union([z.string(), z.object({ name: z.string(), archivedAt: z.string().nullish() })])),
+		])
+		.optional(),
+	archivedColumns: z.union([z.string(), z.array(z.string())]).optional(),
+});
 
 export type HabitNote = {
 	ref?: RecordRef;

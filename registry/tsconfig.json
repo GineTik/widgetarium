@@ -3,8 +3,12 @@
 	"compilerOptions": {
 		"paths": {
 			"widgetarium": ["../packages/sdk/types/widgetarium.d.ts"],
+			"widgetarium/kit": ["../packages/kit/src/index.ts"],
+			"widgetarium/kit/emojis": ["../packages/kit/src/emojis/emoji.tsx"],
+			"widgetarium/kit/charts": ["../packages/kit/src/charts/index.ts"],
 			"@*/lib": ["./@*/lib"]
 		}
 	},
+	"references": [{ "path": "../packages/kit" }, { "path": "../packages/core" }],
 	"include": ["../packages/sdk/types/**/*.d.ts", "./**/*.ts", "./**/*.tsx"]
 }

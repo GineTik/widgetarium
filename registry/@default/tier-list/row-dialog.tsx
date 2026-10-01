@@ -36,7 +36,7 @@ export function RowDialog({
 					<DialogDescription>{RENAME_REWRITES.replace("{count}", String(heldCards))}</DialogDescription>
 				</DialogHeader>
 				<div className="wr-pop">
-					<Field value={label} placeholder="Name" onInput={setLabel} />
+					<Field value={label} placeholder="Name" onInput={(event) => setLabel(event.currentTarget.value)} />
 					<p className="wr-pop-hint">{EIGHT_COLOURS}</p>
 					<div className="wr-swatches">
 						{TONE_NAMES.map((name: string) => (

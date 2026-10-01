@@ -46,7 +46,6 @@ type Question = z.infer<typeof QuestionSchema>;
 
 type Given = { asked: Question };
 type QuestionSlot = Slot<Given>;
-type Drawn = NonNullable<QuestionSlot>;
 
 const PAGE_SIZE = 20;
 const NOTHING = "No questions were asked before this plan — it was clear enough to start.";
@@ -94,7 +93,7 @@ const PlanQa = createWidget({
 		return (
 			<div className="wg-plan-qa">
 				<style>{CSS}</style>
-				<SlotList slot={question as Drawn} rows={listed.data as Row<Question>[]} keyOf={keyOf} give={give} />
+				<SlotList slot={question} rows={listed.data} keyOf={keyOf} give={give} />
 				{(listed.total ?? 0) > listed.data.length ? (
 					<Button size="s" variant="ghost" className="wg-plan-qa-more" onClick={() => setShown(shown + PAGE_SIZE)}>
 						{SHOW_MORE}

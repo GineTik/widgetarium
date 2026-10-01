@@ -7,9 +7,6 @@
 	"exports": {
 		".": {
 			"types": "./types/widgetarium.d.ts"
-		},
-		"./globals": {
-			"types": "./types/globals.d.ts"
 		}
 	}
 }

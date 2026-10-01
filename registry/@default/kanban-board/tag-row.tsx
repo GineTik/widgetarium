@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Glyph } from "./glyph";
 import { RosterPicker } from "./roster-picker";
 import { TagChip } from "./tag-chip";
+import { toneNamed } from "./tone-named";
 import type { TagRowProps, Tones } from "./types";
 import { useTagReorder } from "./use-tag-reorder";
 
@@ -33,7 +34,7 @@ export function TagRow({ tags, tones, roster, onWrite }: TagRowProps) {
 				<TagChip
 					key={tag}
 					tag={tag}
-					tone={tones[tag] ?? "neutral"}
+					tone={toneNamed(tones[tag])}
 					held={dragged?.isDragging === true && dragged.at === at}
 					onGrab={grab(at)}
 					onSave={(name, tone) => save(tag, name, tone)}

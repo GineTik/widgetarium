@@ -10,6 +10,7 @@ import {
 	z,
 } from "widgetarium";
 import type { Slot } from "widgetarium";
+import type { LayoutKind } from "widgetarium/kit";
 import { Body } from "./body";
 import { PER_ROW, PLACED } from "./body-modes";
 import { Head } from "./head";
@@ -29,7 +30,7 @@ const BadgeToneSchema = z.enum([
 
 type Arrangement = z.infer<typeof ArrangementSchema>;
 
-const KIND_OF: Record<Arrangement, string> = { column: "stack", row: "row", grid: "grid", rows: "rows" };
+const KIND_OF: Readonly<Record<Arrangement, LayoutKind>> = { column: "stack", row: "row", grid: "grid", rows: "rows" };
 
 const STYLE = `
 .wg-section { display: flex; flex-direction: column; gap: var(--wg-gap-parts, 12px); }

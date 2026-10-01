@@ -19,7 +19,7 @@ import { useData } from "./gateway/use-data";
 import { useNarrowed } from "./gateway/use-narrowed";
 import { useValue } from "./gateway/use-value";
 import { defineProps, isDeclaredProps } from "./gateway/declared";
-import type { DeclaredProps } from "./gateway/declared";
+import type { DeclaredProps, DrawnProps as DrawnPropsOf, GivenProps as GivenPropsOf } from "./gateway/declared";
 import type { Release } from "./gateway/host.js";
 import { createDeclaredWidget } from "./declared-widget.js";
 import type { DrawnProps, InjectedWidget } from "./declared-widget.js";
@@ -37,6 +37,14 @@ interface WidgetDeclaration {
 
 const Boundary = crashBoundary(h, Component);
 
+export interface WidgetToCreate<P extends DeclaredProps> {
+	readonly inject?: P;
+	readonly draw: (drawn: DrawnPropsOf<P>) => ReactNode;
+}
+
+export type CreatedWidget<P extends DeclaredProps> = ((given: GivenPropsOf<P>) => ReactNode) & { readonly declared: P };
+
+export function createWidget<const P extends DeclaredProps = {}>(widget: WidgetToCreate<P>): CreatedWidget<P>;
 export function createWidget(widget: unknown): InjectedWidget {
 	if (!isWidgetDeclaration(widget)) throw new Error(NOT_A_WIDGET);
 	return createDeclaredWidget(injectedProps(widget.inject ?? {}), widget.draw);

@@ -12,6 +12,7 @@ export const HANDBOOK_DIR = `${ROOT}/agent`;
 export const BIN_DIR = `${ROOT}/bin`;
 export const WIDGETS_DIR = `${ROOT}/widgets`;
 export const TOOL_PATH = `${BIN_DIR}/widgets.mjs`;
+const TYPES_DIR = `${WIDGETS_DIR}/types`;
 
 export type AgentFilesAdapter = Pick<DataAdapter, "exists" | "mkdir" | "list" | "rmdir" | "remove" | "read" | "write">;
 
@@ -81,5 +82,32 @@ async function layWidgetTypes(adapter: AgentFilesAdapter): Promise<string[]> {
 	for (const [name, text] of Object.entries(WIDGET_TYPES)) {
 		if (await writeIfChanged(adapter, `${WIDGETS_DIR}/${name}`, text)) written.push(name);
 	}
+	if (await adapter.exists(TYPES_DIR)) written.push(...(await sweepTypesNoLongerLaid(adapter, TYPES_DIR)));
 	return written;
+}
+
+async function sweepTypesNoLongerLaid(adapter: AgentFilesAdapter, folder: string): Promise<string[]> {
+	const gone: string[] = [];
+	const held = await adapter.list(folder);
+	for (const at of held.files) {
+		if (Object.hasOwn(WIDGET_TYPES, laidNameOf(at))) continue;
+		await adapter.remove(at);
+		gone.push(laidNameOf(at));
+	}
+	for (const at of held.folders) {
+		if (holdsLaidTypes(at)) {
+			gone.push(...(await sweepTypesNoLongerLaid(adapter, at)));
+			continue;
+		}
+		await adapter.rmdir(at, true);
+		gone.push(`${laidNameOf(at)}/`);
+	}
+	return gone;
+}
+
+const laidNameOf = (at: string): string => at.slice(WIDGETS_DIR.length + 1);
+
+function holdsLaidTypes(folder: string): boolean {
+	const inside = `${laidNameOf(folder)}/`;
+	return Object.keys(WIDGET_TYPES).some((name) => name.startsWith(inside));
 }

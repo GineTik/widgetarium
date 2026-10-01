@@ -50,7 +50,7 @@ export function KanbanList({
 		<Card
 			type="group"
 			className={`ok-list${isOver ? " is-over" : ""}${placeholder ? " is-placeholder" : ""}`}
-			style={shift === undefined ? null : { transform: `translateX(${shift}px)` }}
+			style={shift === undefined ? undefined : { transform: `translateX(${shift}px)` }}
 			onDragOver={(event: DragEvent<HTMLElement>) => {
 				if (!dragging?.row) return;
 				event.preventDefault();

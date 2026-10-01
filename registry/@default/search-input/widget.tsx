@@ -24,7 +24,7 @@ const SearchInput = createWidget({
 					placeholder={placeholder}
 					value={draft}
 					readOnly={!canWrite}
-					onInput={(event: { target: HTMLInputElement }) => write(event.target.value)}
+					onInput={(event) => write(event.currentTarget.value)}
 				/>
 			</div>
 		);

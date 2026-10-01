@@ -101,7 +101,7 @@ const NoticeWidget = createWidget({
 					<Button
 						className="flow-notice-action"
 						aria-label={label}
-						aria-pressed={String(pressed.value)}
+						aria-pressed={pressed.value}
 						disabled={!canDo(pressed.update)}
 						onClick={() => pressed.update(!pressed.value)}
 					>

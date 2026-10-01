@@ -1,15 +1,15 @@
 import { readFileSync } from "node:fs";
 
 const DECLARATION = "packages/sdk/types/widgetarium.d.ts";
-const HALVES = [
+const HALVES: readonly (readonly [at: string, held: string])[] = [
 	["packages/core/src/api-core.ts", "coreSurface"],
 	["packages/core/src/widget-api.ts", "reactSurface"],
 ];
 const MODULE = HALVES.map(([path]) => path).join(" + ");
 
-function reExportedNames(source) {
-	const names = new Set();
-	for (const [, list] of source.matchAll(/export\s+\{([^}]+)\}\s+from/g)) {
+function reExportedNames(source: string): Set<string> {
+	const names = new Set<string>();
+	for (const [, list = ""] of source.matchAll(/export\s+\{([^}]+)\}\s+from/g)) {
 		for (const entry of list.split(",")) {
 			const name = entry
 				.trim()
@@ -21,30 +21,32 @@ function reExportedNames(source) {
 	return names;
 }
 
-function declaredNames(source) {
+function declaredNames(source: string): Set<string> {
 	const names = reExportedNames(source);
-	for (const [, name] of source.matchAll(/export\s+declare\s+(?:const|function)\s+(\w+)/g)) names.add(name);
+	for (const [, name] of source.matchAll(/export\s+declare\s+(?:const|function)\s+(\w+)/g)) {
+		if (name) names.add(name);
+	}
 	return names;
 }
 
-function surfaceLiteral(source, held, at) {
+function surfaceLiteral(source: string, held: string, at: string): string {
 	const found = source.match(new RegExp(`const ${held} = \\{([\\s\\S]*?)\\n\\};`));
 	if (!found) throw new Error(`${at}: the ${held} object literal was not found — this check reads it by shape`);
-	return found[1];
+	return found[1] ?? "";
 }
 
-function runtimeNames() {
-	const names = new Set();
+function runtimeNames(): Set<string> {
+	const names = new Set<string>();
 	for (const [at, held] of HALVES) {
 		for (const entry of surfaceLiteral(readFileSync(at, "utf8"), held, at).split(",")) {
-			const name = entry.trim().split(":")[0].trim();
+			const name = entry.trim().split(":")[0]?.trim();
 			if (name) names.add(name);
 		}
 	}
 	return names;
 }
 
-function driftBetween(runtime, declared) {
+function driftBetween(runtime: ReadonlySet<string>, declared: ReadonlySet<string>): string[] {
 	const missing = [...runtime]
 		.filter((name) => !declared.has(name))
 		.map((name) => `${name}: exported by ${MODULE}, absent from ${DECLARATION}`);

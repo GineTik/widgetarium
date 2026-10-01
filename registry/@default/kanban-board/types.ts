@@ -1,9 +1,12 @@
 import { z, type DrawnProps, type Navigation, type RecordRef, type ViewHost } from "widgetarium";
+import type { ToneName } from "widgetarium/kit";
 import type { TaskSchema, props } from "./widget";
 
 type TaskRecord = z.infer<typeof TaskSchema>;
 
 export type TaskRow = TaskRecord & { ref: RecordRef };
+
+export type TaskProps = NonNullable<TaskRecord["props"]>;
 
 export type KanbanColumn = { title: string; rows: TaskRow[] };
 
@@ -15,7 +18,7 @@ export type Anchor = {
 	word: string;
 	required?: boolean;
 	choices?: Choice[];
-	tones?: Record<string, string>;
+	tones?: Readonly<Record<string, ToneName>>;
 };
 
 export type Tones = Record<string, string>;

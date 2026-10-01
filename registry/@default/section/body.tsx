@@ -1,5 +1,5 @@
 import { useData, type DrawnProps, type MountEntry, type Slot } from "widgetarium";
-import { Layout } from "widgetarium/kit";
+import { Layout, type LayoutKind } from "widgetarium/kit";
 import { PER_ROW } from "./body-modes";
 import { PerRow } from "./per-row";
 import { Placed } from "./placed";
@@ -11,7 +11,7 @@ type BodyProps = {
 	pageSize: number;
 	Drawn: Slot<Record<string, unknown>> | undefined;
 	placed: readonly MountEntry[];
-	kind: string;
+	kind: LayoutKind;
 	narrowest: number;
 };
 

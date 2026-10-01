@@ -4,7 +4,7 @@ import { AddList } from "./add-list";
 import { KanbanList } from "./kanban-list";
 import { MONTHS } from "./months";
 import { keyFor, toTrimmedList } from "./task-fields";
-import type { CardFace, KanbanColumn, TaskRow } from "./types";
+import type { CardFace, KanbanColumn, TaskProps, TaskRow } from "./types";
 import type { useBoardColumns } from "./use-board-columns";
 import type { useCarriedTask } from "./use-carried-task";
 import type { useColumnReorder } from "./use-column-reorder";
@@ -103,7 +103,7 @@ function filesOf(attachments: number | undefined): { files?: number } {
 }
 
 function toCard(row: TaskRow, now: Date): CardFace {
-	const props = row.props ?? {};
+	const props: TaskProps = row.props ?? {};
 	const deadline = props[keyFor(props, "deadline")];
 	return {
 		title: props.title ?? row.name,

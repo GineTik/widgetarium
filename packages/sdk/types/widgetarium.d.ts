@@ -111,9 +111,6 @@ export { useNarrowed } from "../../core/src/gateway/use-narrowed";
 export { useValue } from "../../core/src/gateway/use-value";
 export { pickedValue } from "../../core/src/gateway/picked";
 
-import type { HTMLAttributes, ReactNode } from "react";
-import type { DeclaredProps, DrawnProps, GivenProps } from "../../core/src/gateway/declared";
-
 export type {
 	ConfigureMounts,
 	FoldIntoGroup,
@@ -132,72 +129,25 @@ export type {
 	ViewHost,
 	WidgetCatalogue,
 } from "../../core/src/gateway/host";
-import type { MountEntry } from "../../core/src/gateway/host";
 
-export declare function createWidget<const P extends DeclaredProps = {}>(widget: {
-	readonly inject?: P;
-	readonly draw: (drawn: DrawnProps<P>) => ReactNode;
-}): ((given: GivenProps<P>) => ReactNode) & { readonly declared: P };
-
-export declare function Dialog(props: {
-	readonly isOpen?: boolean;
-	readonly onOpenChange?: (isOpen: boolean) => unknown;
-	readonly onClose?: () => unknown;
-	readonly trigger?: ReactNode;
-	readonly className?: string;
-	readonly children?: ReactNode;
-}): ReactNode;
-export declare function DialogContent(props: {
-	readonly className?: string;
-	readonly width?: string;
-	readonly children?: ReactNode;
-}): ReactNode;
-export declare function DialogClose(props: {
-	readonly className?: string;
-	readonly onClose?: () => unknown;
-	readonly label?: string;
-}): ReactNode;
-type DialogPartProps = HTMLAttributes<HTMLElement> & { readonly children?: ReactNode };
-export declare function DialogHeader(props: DialogPartProps): ReactNode;
-export declare function DialogTitle(props: DialogPartProps): ReactNode;
-export declare function DialogDescription(props: DialogPartProps): ReactNode;
-export declare function DialogFooter(props: DialogPartProps): ReactNode;
-export declare function ConfirmDialog(props: {
-	readonly isOpen?: boolean;
-	readonly title: ReactNode;
-	readonly description: ReactNode;
-	readonly confirmLabel: ReactNode;
-	readonly variant?: "danger" | "accent";
-	readonly onConfirm: () => unknown;
-	readonly onOpenChange?: (isOpen: boolean) => unknown;
-	readonly className?: string;
-}): ReactNode;
-
-export type TabStep = {
-	readonly verb: "add" | "rename" | "archive" | "restore" | "delete" | "select";
-	readonly tabs: readonly string[];
-	readonly archived: readonly string[];
-	readonly selected: string;
-	readonly name: string;
-	readonly was: string | null;
-};
-export type TabRow = { readonly name: string; readonly hidden?: boolean; readonly was?: string };
-export declare function EditableTabs(props: {
-	readonly tabs: readonly string[];
-	readonly archived: readonly string[];
-	readonly selected: string;
-	readonly onChange?: (step: TabStep) => unknown;
-	readonly onRefuse?: (said: string) => unknown;
-	readonly deleteWarning?: string;
-	readonly className?: string;
-}): ReactNode;
-export declare function tabsOf(rows: readonly TabRow[] | null | undefined): string[];
-export declare function archivedOf(rows: readonly TabRow[] | null | undefined): string[];
-export declare function applyTabStep<R extends TabRow>(
-	rows: readonly R[] | null | undefined,
-	step: TabStep,
-): (R | TabRow)[];
-export declare function movesRows(step: TabStep): boolean;
-export declare function movesSelection(step: TabStep): boolean;
-
-export declare function Mounted(props: { readonly entry: MountEntry }): ReactNode;
+export type { CreatedWidget, WidgetToCreate } from "../../core/src/widget-api";
+export { createWidget } from "../../core/src/widget-api";
+export type { DialogProps } from "../../core/src/dialog";
+export {
+	ConfirmDialog,
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "../../core/src/dialog";
+export type { ConfirmDialogProps } from "../../core/src/confirm-dialog";
+export type { DialogPartProps } from "../../core/src/dialog-parts";
+export type { EditableTabsProps } from "../../core/src/editable-tabs";
+export { EditableTabs } from "../../core/src/editable-tabs";
+export type { TabRow, TabStep, TabVerb } from "../../core/src/tab-rows";
+export { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "../../core/src/tab-rows";
+export type { MountedProps } from "../../core/src/mounted";
+export { Mounted } from "../../core/src/mounted";

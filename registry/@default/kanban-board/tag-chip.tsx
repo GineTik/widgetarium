@@ -1,10 +1,10 @@
-import { Pill, Popover } from "widgetarium/kit";
+import { Pill, Popover, type ToneName } from "widgetarium/kit";
 import { useState, type PointerEvent as ReactPointerEvent } from "react";
 import { TagEditor } from "./tag-editor";
 
 type TagChipProps = {
 	tag: string;
-	tone: string;
+	tone: ToneName;
 	held: boolean;
 	onGrab: (event: ReactPointerEvent<HTMLButtonElement>) => void;
 	onSave: (name: string, tone: string) => void;
@@ -13,7 +13,7 @@ type TagChipProps = {
 export function TagChip({ tag, tone, held, onGrab, onSave }: TagChipProps) {
 	const [isOpen, setOpen] = useState(false);
 	const [name, setName] = useState(tag);
-	const [picked, setPicked] = useState(tone);
+	const [picked, setPicked] = useState<string>(tone);
 
 	const show = (next: boolean) => {
 		setOpen(next);

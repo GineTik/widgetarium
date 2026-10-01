@@ -1,10 +1,10 @@
 import { blurOnEnterRestoreOnEscape } from "./blur-on-enter";
 import { keyFor } from "./task-fields";
-import type { TaskRow } from "./types";
+import type { TaskProps, TaskRow } from "./types";
 
 type TaskTitleProps = {
 	task: TaskRow | null;
-	props: Record<string, unknown>;
+	props: TaskProps;
 	canUpdate: boolean;
 	onWrite: (key: string, value: unknown) => void;
 };

@@ -1,11 +1,11 @@
 import type { MountEntry } from "widgetarium";
-import { Pill } from "widgetarium/kit";
+import { Pill, type ToneName } from "widgetarium/kit";
 import { Controls } from "./controls";
 
 type HeadProps = {
 	heading: string;
 	badge: string;
-	badgeTone: string;
+	badgeTone: ToneName;
 	controls: readonly MountEntry[];
 };
 

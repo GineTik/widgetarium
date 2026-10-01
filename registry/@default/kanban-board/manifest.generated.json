@@ -285,6 +285,7 @@
 		"task-notes.tsx",
 		"task-title.tsx",
 		"text-row.tsx",
+		"tone-named.ts",
 		"tone-picker.tsx",
 		"types.ts",
 		"use-board-columns.ts",
