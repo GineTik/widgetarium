@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
 import { byId } from "./dom-find.ts";
 import { present } from "./page-dom.ts";
-import type { Board } from "../packages/core/src/model.js";
+import type { Board, Tile } from "../packages/core/src/model.js";
 import type { Command, RecordRef } from "../packages/core/src/gateway/declared.ts";
 import type { BoardRegistry, SurfaceHost } from "../packages/core/src/surface/use-surface-shared.js";
 import { standIn } from "./stand-in.ts";
@@ -90,6 +90,7 @@ const slot = {
 	canRemove: true,
 	canSubscribe: false,
 	list: async () => ({ rows: [], total: 0 }),
+	update: async () => null,
 	describe: async () => [],
 };
 const host = { platform: "test", can: {}, slot: () => slot, ui: { notify() {}, openNote() {} } };
@@ -101,8 +102,8 @@ let board: Board = normalizeBoard({
 			widget: ID,
 			props: {
 				tasks: { from: "typed", rows: [{ title: "Ship spec", status: "doing" }] },
-				move: { implementation: "@core/typed-rows-update", fields: { target: "t1/tasks" } },
-				create: { implementation: "@core/typed-rows-create", fields: { target: "t1/tasks" } },
+				move: { implementation: "@core/rows-update", fields: { target: "t1/tasks" } },
+				create: { implementation: "@core/rows-create", fields: { target: "t1/tasks" } },
 			},
 		},
 	],
@@ -176,17 +177,35 @@ await tick();
 check("two presses at once with one id both answer ok", pressedTwice, [{ ok: true }, { ok: true }]);
 check("and still leave one record", last().tasks.filter((row) => row.title === "Pressed twice").length, 1);
 
-const malformed = { implementation: "@core/typed-rows-update", fields: { target: "t1/tasks" }, allow: "run" };
+const malformed = { implementation: "@core/rows-update", fields: { target: "t1/tasks" }, allow: "run" };
 board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: { ...tile.props, move: malformed } })) };
 draw();
 await tick();
 check("an allow that is not a list switches the command off", last().move.can().can, false);
 
-const switchedOff = { implementation: "@core/typed-rows-update", fields: { target: "t1/tasks" }, allow: [] };
+const switchedOff = { implementation: "@core/rows-update", fields: { target: "t1/tasks" }, allow: [] };
 board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: { ...tile.props, move: switchedOff } })) };
 draw();
 await tick();
 check("a command switched off in the Data tab cannot run", last().move.can().can, false);
+
+const typedTasks = board.tiles[0]?.props?.["tasks"] ?? null;
+const withProps = (props: Tile["props"]): void => {
+	board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: { ...tile.props, ...props } })) };
+	draw();
+};
+const moveInVault = { implementation: "@core/rows-update", fields: { target: "t1/tasks" } };
+withProps({ tasks: { from: "vault", path: "Tasks" }, move: moveInVault });
+await tick();
+check("a command over a vault list stays shut until it is switched on", last().move.can(), {
+	can: false,
+	reason: '"move" writes the vault, which stays shut until it is switched on in the Data tab',
+});
+withProps({ move: { ...moveInVault, allow: ["run"] } });
+await tick();
+check("and opens once the Data tab switches it on", last().move.can(), { can: true });
+withProps({ tasks: typedTasks, move: moveInVault });
+await tick();
 
 const unbound = Object.fromEntries(Object.entries(board.tiles[0]?.props ?? {}).filter(([name]) => name !== "move"));
 board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: unbound })) };
@@ -208,7 +227,7 @@ board = {
 	...board,
 	tiles: board.tiles.map((tile) => ({
 		...tile,
-		props: { ...tile.props, move: { implementation: "@core/typed-rows-update" } },
+		props: { ...tile.props, move: { implementation: "@core/rows-update" } },
 	})),
 };
 let isEditing = true;
@@ -268,7 +287,7 @@ await press(runSwitch);
 await press(done());
 const moveBinding = (): unknown => board.tiles.find((tile) => tile.id === "t1")?.props?.["move"];
 check("picking a list links the command by ref, and switching it off writes allow without run", moveBinding(), {
-	implementation: "@core/typed-rows-update",
+	implementation: "@core/rows-update",
 	fields: { target: "t1/tasks" },
 	allow: [],
 });

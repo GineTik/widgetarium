@@ -23,6 +23,7 @@ export interface RefDescription {
 	kind: string;
 	shape?: string;
 	isTyped?: boolean;
+	isVault?: boolean;
 }
 
 export interface GatewayRefs {
@@ -32,6 +33,7 @@ export interface GatewayRefs {
 	watch(refs: PropRef[], listener: () => void): Unsubscribe;
 	get(ref: PropRef): AnyGateway | null;
 	offered(): RefDescription[];
+	described(ref: PropRef): RefDescription | null;
 	subscribe(listener: () => void): Unsubscribe;
 }
 
@@ -73,6 +75,7 @@ export function createGatewayRefs(): GatewayRefs {
 		watch: (refs, listener) => watch(state, refs, listener),
 		get: (ref) => state.held.get(ref) ?? null,
 		offered: () => [...state.described.values()],
+		described: (ref) => state.described.get(ref) ?? null,
 		subscribe(listener) {
 			state.listeners.add(listener);
 			return () => state.listeners.delete(listener);

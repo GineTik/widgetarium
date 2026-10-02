@@ -8,6 +8,7 @@ import {
 	commandBindingOf,
 	commandSpecsOf,
 	isRunAllowed,
+	targetOf,
 	withRunAllowed,
 } from "../surface/command-binding.js";
 import type { CommandBinding, CommandTarget, HostCommandKind, ParsedCommandSpec } from "../surface/command-binding.js";
@@ -21,8 +22,8 @@ const CHANGES_OF_TARGET: Readonly<Record<CommandTarget, string>> = {
 	value: "Value it sets",
 };
 const NOT_SET_UP = "Not set up: pick where it acts.";
-const NOTHING_TYPED = "Nothing on this board is typed by hand yet. Type it into a widget first, then pick it here.";
-const ONLY_TYPED = "Only what is typed by hand is offered.";
+const NOTHING_TO_CHANGE =
+	"Nothing on this board holds what this changes yet. Place a widget that does, then pick it here.";
 const FIND_IT = "Find a list or a widget";
 const THIS_WIDGET = "This widget";
 const RUN_DESCRIPTION = "runs it through what you picked";
@@ -46,7 +47,7 @@ export function actionGroup(state: SettingsState): ReactElement | null {
 export function commandDataGroups(state: SettingsState): ReactElement[] {
 	return commandsOf(state).map(([name, spec]) => {
 		const binding = commandBindingOf(state.tile, name, spec);
-		const isOn = isRunAllowed(binding);
+		const isOn = isRunAllowed(binding, isVaultTarget(state, binding));
 		const flip = (next: boolean): void => writeBinding(state, name, withRunAllowed(binding, next));
 		const toggle = h(Switch, { checked: isOn, label: spec.label, onChange: flip });
 		return group(
@@ -133,10 +134,8 @@ function targetChoices(state: SettingsState, name: string, binding: CommandBindi
 	const target = targetKindOf(binding);
 	if (!target) return [];
 	const byTile = offeredByTile(state, target);
-	if (byTile.size === 0) return [note(NOTHING_TYPED)];
-	const groups = [...byTile].map(([tile, offered], index) =>
-		tileGroup(state, { name, binding, tile, offered, isLast: index === byTile.size - 1 }),
-	);
+	if (byTile.size === 0) return [note(NOTHING_TO_CHANGE)];
+	const groups = [...byTile].map(([tile, offered]) => tileGroup(state, { name, binding, tile, offered }));
 	return [note(CHANGES_OF_TARGET[target]), findField(state), ...groups];
 }
 
@@ -150,10 +149,9 @@ interface TileGroupAsk {
 	readonly binding: CommandBinding;
 	readonly tile: string;
 	readonly offered: readonly OfferedRef[];
-	readonly isLast: boolean;
 }
 
-function tileGroup(state: SettingsState, { name, binding, tile, offered, isLast }: TileGroupAsk): ReactElement {
+function tileGroup(state: SettingsState, { name, binding, tile, offered }: TileGroupAsk): ReactElement {
 	const label = tile === state.tile.id ? THIS_WIDGET : (offered[0]?.title ?? tile);
 	const rows = offered.map((held) => {
 		const pick = (): void =>
@@ -161,14 +159,13 @@ function tileGroup(state: SettingsState, { name, binding, tile, offered, isLast 
 		const selected = binding.fields?.[TARGET_FIELD] === held.ref;
 		return h(SidebarRow, { key: held.ref, as: "button", label: held.label, selected, onClick: pick });
 	});
-	const hint = isLast ? ONLY_TYPED : undefined;
-	return h(SidebarGroup, { className: "wg-set-sources", key: tile, label, hint }, rows);
+	return h(SidebarGroup, { className: "wg-set-sources", key: tile, label }, rows);
 }
 
 function offeredByTile(state: SettingsState, target: CommandTarget): Map<string, OfferedRef[]> {
 	const typed = (state.draft ?? "").trim().toLowerCase();
 	const byTile = new Map<string, OfferedRef[]>();
-	const shown = typedRefsOffered(state, target).filter(
+	const shown = refsOffered(state, target).filter(
 		(held) => !typed || `${held.label} ${held.title}`.toLowerCase().includes(typed),
 	);
 	const ordered = shown.sort((one, other) => Number(other.tile === state.tile.id) - Number(one.tile === state.tile.id));
@@ -176,11 +173,15 @@ function offeredByTile(state: SettingsState, target: CommandTarget): Map<string,
 	return byTile;
 }
 
-function typedRefsOffered(state: SettingsState, target: CommandTarget): OfferedRef[] {
+function refsOffered(state: SettingsState, target: CommandTarget): OfferedRef[] {
 	return (state.refs?.offered() ?? []).filter(
-		(described): described is OfferedRef =>
-			described.kind === target && described.isTyped === true && typeof described.ref === "string",
+		(described): described is OfferedRef => described.kind === target && typeof described.ref === "string",
 	);
+}
+
+function isVaultTarget(state: SettingsState, binding: CommandBinding): boolean {
+	const target = targetOf(binding);
+	return target ? state.refs?.described(target)?.isVault === true : false;
 }
 
 function sayingOf(binding: CommandBinding): string {

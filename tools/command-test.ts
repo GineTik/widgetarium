@@ -100,14 +100,17 @@ const invalid = await last().subscribe({ plan: "" });
 check("an input the schema refuses never reaches the implementation", invalid.ok, false);
 check("and nothing was written", stripe.plans, ["basic", "pro"]);
 
-check("a command nobody bound cannot run, and says why", last().refresh.can(), {
-	can: false,
-	reason: '"refresh" is not set up: pick what runs it in the settings window',
-});
-check("and answers that reason when pressed", await last().refresh(), {
-	ok: false,
-	reason: '"refresh" is not set up: pick what runs it in the settings window',
-});
+check("a command nobody fed can run", last().refresh.can(), { can: true });
+const printedUnfed: unknown[][] = [];
+const printingUnfed = console.log;
+console.log = (...parts: unknown[]): void => void printedUnfed.push(parts);
+const unfed = await last().refresh();
+console.log = printingUnfed;
+check(
+	"and prints what it was sent instead of acting",
+	[unfed, printedUnfed],
+	[{ ok: true }, [["[widgetarium] refresh sent", undefined]]],
+);
 
 check(
 	"ICommand.sends declares a command over its schema",
@@ -134,10 +137,10 @@ check(
 		"press",
 		{
 			label: "Press",
-			source: { implementation: "@core/typed-value-set", fields: { target: "pressed" } },
+			source: { implementation: "@core/value-set", fields: { target: "pressed" } },
 		},
 	),
-	{ implementation: "@core/typed-value-set", fields: { target: "t1/pressed" } },
+	{ implementation: "@core/value-set", fields: { target: "t1/pressed" } },
 );
 check("a can() that answers something else is no permission", canOf({ can: () => "yes" }), {
 	can: false,

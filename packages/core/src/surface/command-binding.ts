@@ -25,29 +25,41 @@ export const HOST_COMMAND_KINDS: Readonly<Record<string, HostCommandKind>> = {
 		title: "Print to the console",
 		said: "Prints what the widget sends to the developer console and changes nothing.",
 	},
-	"@core/typed-rows-create": {
+	"@core/rows-create": {
 		verb: "create",
 		target: "collection",
 		title: "Add a row",
-		said: "Adds a row to a typed list on this board.",
+		said: "Adds a row to a list on this board.",
 	},
-	"@core/typed-rows-update": {
+	"@core/rows-update": {
 		verb: "update",
 		target: "collection",
 		title: "Change a row",
-		said: "Rewrites a row of a typed list on this board.",
+		said: "Rewrites a row of a list on this board.",
 	},
-	"@core/typed-rows-remove": {
+	"@core/rows-remove": {
 		verb: "remove",
 		target: "collection",
 		title: "Remove a row",
-		said: "Drops a row from a typed list on this board.",
+		said: "Drops a row from a list on this board.",
 	},
-	"@core/typed-value-set": {
+	"@core/rows-replace": {
+		verb: "replace",
+		target: "collection",
+		title: "Replace every row",
+		said: "Writes a new set of rows over a list on this board.",
+	},
+	"@core/rows-repair-ids": {
+		verb: "repairIds",
+		target: "collection",
+		title: "Repair row ids",
+		said: "Gives a fresh id to every row of a list that shares one with another.",
+	},
+	"@core/value-set": {
 		verb: "update",
 		target: "value",
 		title: "Set a value",
-		said: "Sets a value typed on this board.",
+		said: "Sets a value on this board.",
 	},
 };
 
@@ -85,8 +97,8 @@ export function commandBindingOf(tile: Tile, name: string, spec: ParsedCommandSp
 	return { implementation: spec.source.implementation, fields: siblingRefsOf(tile.id, spec.source.fields ?? {}) };
 }
 
-export function isRunAllowed(binding: CommandBinding): boolean {
-	return binding.allow === undefined || binding.allow.includes("run");
+export function isRunAllowed(binding: CommandBinding, isVaultTarget: boolean): boolean {
+	return binding.allow === undefined ? !isVaultTarget : binding.allow.includes("run");
 }
 
 export function withRunAllowed(binding: CommandBinding, isOn: boolean): CommandBinding {

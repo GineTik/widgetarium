@@ -28,13 +28,15 @@ import { folderRows, whereOf } from "./folder-rows.js";
 import { selectedRowPicking, selectionPicking } from "./row-picking.js";
 import type { PickingFields } from "./row-picking.js";
 import { EngineBackedRows, EngineBackedValue } from "./engine-backed.js";
-import type { HostFields, HostGateway, HostGatewayContext, ImplementationContext } from "./engine-backed.js";
+import type { HostFields, HostGateway, HostGatewayContext, HostSpec, ImplementationContext } from "./engine-backed.js";
 
 export { filterRowsIn, sortRowsIn, whereOf } from "./folder-rows.js";
 
 export interface TypedGatewayAsk extends HostGatewayContext {
 	readonly config: HostFields | null | undefined;
 }
+
+const VAULT_WRITES: readonly string[] = ["create", "update", "remove"];
 
 export const STAT_TITLES: Readonly<Record<string, string>> = {
 	count: "How many",
@@ -104,7 +106,7 @@ export class FileGateway extends EngineBackedValue {
 		const { spec, host } = context;
 		const path = textIn(fields.path);
 		const part = { field: noteFieldOf(spec, fields), type: spec.type };
-		return fileGateway({ host, path, part, requested: requestedVerbs(spec) });
+		return fileGateway({ host, path, part, requested: writableInVault(spec) });
 	}
 }
 
@@ -112,7 +114,7 @@ export class FolderGateway extends EngineBackedRows {
 	static override build(fields: HostFields, context: ImplementationContext): HostGateway {
 		const { spec, host, refs } = context;
 		const path = textIn(fields.path);
-		return folderRows({ spec, host, config: fields, refs, path, requested: requestedVerbs(spec) });
+		return folderRows({ spec, host, config: fields, refs, path, requested: writableInVault(spec) });
 	}
 }
 
@@ -179,6 +181,10 @@ export function statisticsGatewayFor(algorithm: StatAlgorithm): typeof Statistic
 	};
 	Object.defineProperty(Counted, "name", { value: `${pascalOf(algorithm)}Gateway` });
 	return Counted;
+}
+
+function writableInVault(spec: HostSpec): readonly string[] {
+	return [...new Set([...requestedVerbs(spec), ...VAULT_WRITES])];
 }
 
 function pickingFieldsOf(fields: HostFields): PickingFields {

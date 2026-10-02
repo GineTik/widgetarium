@@ -123,7 +123,13 @@ frame draws the change. A create carries its own `id: z.uuid()`, minted at the p
 with that id writes nothing. Ask `move.can()` before drawing the control, and draw `reason` when it
 answers `ok: false`. The person picks what runs a command in the Actions group of the settings
 window; `metadata.props.<command>.source = { implementation, fields }` names the default, with
-`fields` naming sibling props, so a toggle works with nothing set up. A command with neither runs
+`fields` naming sibling props, so a toggle works with nothing set up. The host runs `@core/value-set`,
+`@core/rows-create`, `@core/rows-update` (input `{ ref, ...changed }`), `@core/rows-remove`
+(`{ ref }`), `@core/rows-replace` and `@core/rows-repair-ids`, each over the sibling named in
+`fields.target`: `source: { implementation: "@core/value-set", fields: { target: "getIsOpen" } }`.
+A command whose target is bound to the vault stays shut until the person switches it on in the
+Data tab; over anything kept in the tile or the screen it runs at once. A parent hands a slotted
+widget a command as a function: `updateTask: (patch) => updateRow({ ref: row.ref, ...patch })`. A command with neither runs
 `@core/console-log`: it prints the tile, the command and what was sent to the console and changes
 nothing, the way an unbound query shows its typed default.
 

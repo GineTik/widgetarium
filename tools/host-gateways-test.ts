@@ -69,7 +69,7 @@ check(
 			{ id: "x", title: "X", fields: z.object({}) },
 		),
 	),
-	"Loose extends no gateway interface — extend IValueGateway, IListGateway or ICrudGateway, with or without .of()",
+	"Loose extends no gateway interface — extend IQuery.returns, IQuery.returnsAny, ICommand.takes, IValueGateway, IListGateway or ICrudGateway",
 );
 check(
 	"and takes its kind from the interface it extends",

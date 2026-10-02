@@ -20,7 +20,6 @@ import { isObject } from "./engine/is-object.js";
 const NOT_READ = "A prop could not be read";
 const NOT_DECLARED = 'prop "{name}" declares no gateway interface';
 const NOT_PICKED = 'prop "{name}" did not pick {verb}, so the widget cannot {verb}';
-const NOT_SET_UP = '"{name}" is not set up: pick what runs it in the settings window';
 const MANY_OF: Readonly<Record<string, string>> = { create: "createMany", update: "updateMany", remove: "removeMany" };
 
 export type GivenProps = Readonly<Record<string, unknown>>;
@@ -118,9 +117,8 @@ function commandOver(
 	given: unknown,
 	readGatewayIdsNow: () => readonly string[],
 ): Action<unknown, CommandAnswer> {
-	const runner = runnerOf(given);
-	if (!runner) return createRefusedAction(NOT_SET_UP.replace("{name}", name));
-	const can = (): CanResult => canOf(given);
+	const runner = runnerOf(given) ?? printTo(name);
+	const can = (): CanResult => (given === undefined ? { can: true } : canOf(given));
 	const run = async (input: unknown): Promise<CommandAnswer> => {
 		const allowed = can();
 		if (!allowed.can) return { ok: false, reason: allowed.reason };
@@ -144,13 +142,14 @@ async function failureOf(name: string, run: () => unknown): Promise<string | nul
 	}
 }
 
-function createRefusedAction(reason: string): Action<unknown, CommandAnswer> {
-	return Object.assign(async (): Promise<CommandAnswer> => ({ ok: false, reason }), {
-		can: (): CanResult => ({ can: false, reason }),
-	});
+function printTo(name: string): Runner {
+	return (input) => {
+		console.log(`[widgetarium] ${name} sent`, input);
+	};
 }
 
 function runnerOf(given: unknown): Runner | null {
+	if (typeof given === "function") return (input) => Reflect.apply(given, undefined, [input]);
 	if (!isObject(given)) return null;
 	const run: unknown = given["run"];
 	return typeof run === "function" ? (input) => Reflect.apply(run, given, [input]) : null;

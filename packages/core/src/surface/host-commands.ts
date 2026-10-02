@@ -32,19 +32,23 @@ interface TargetedAsk {
 	readonly write: Write;
 	readonly target: string;
 	readonly refs: GatewayRefs;
+	readonly binding: CommandBinding;
 }
 
 const NOT_ALLOWED = '"{name}" is switched off for this tile';
+const VAULT_NOT_SWITCHED_ON = '"{name}" writes the vault, which stays shut until it is switched on in the Data tab';
 const UNKNOWN_IMPLEMENTATION = '"{name}" names {implementation}, which this host does not run';
 const NOTHING_NAMED = '"{name}" names nothing to change: pick it in the settings window';
 const TARGET_GONE = '"{name}" changes {ref}, which is no longer on this board';
 const TARGET_CANNOT = "{ref} cannot {verb}";
 
 const WRITES: Readonly<Record<string, Write>> = {
-	"@core/typed-rows-create": createRow,
-	"@core/typed-rows-update": updateRow,
-	"@core/typed-rows-remove": removeRow,
-	"@core/typed-value-set": (verbs, input) => call(verbs, "update", input),
+	"@core/rows-create": createRow,
+	"@core/rows-update": updateRow,
+	"@core/rows-remove": removeRow,
+	"@core/rows-replace": (verbs, input) => call(verbs, "replace", input),
+	"@core/rows-repair-ids": (verbs) => call(verbs, "repairIds", undefined),
+	"@core/value-set": (verbs, input) => call(verbs, "update", input),
 };
 
 const RUNNING_ON_TARGET = new Map<string, Promise<unknown>>();
@@ -65,8 +69,8 @@ export function useHostCommands(manifest: EngineManifest, tile: Tile, refs: Gate
 
 function hostCommandOf(name: string, binding: CommandBinding, refs: GatewayRefs, tileId: string): HostCommand | null {
 	const { implementation } = binding;
+	if (binding.allow && !binding.allow.includes("run")) return createRefusedCommand(NOT_ALLOWED.replace("{name}", name));
 	if (!implementation) return null;
-	if (!isRunAllowed(binding)) return createRefusedCommand(NOT_ALLOWED.replace("{name}", name));
 	if (implementation === CONSOLE_LOG) return createConsoleLogCommand(`${tileId}/${name}`);
 	const kind = HOST_COMMAND_KINDS[implementation];
 	const write = WRITES[implementation];
@@ -76,7 +80,7 @@ function hostCommandOf(name: string, binding: CommandBinding, refs: GatewayRefs,
 		);
 	const target = targetOf(binding);
 	if (!target) return createRefusedCommand(NOTHING_NAMED.replace("{name}", name));
-	return createTargetedCommand({ name, verb: kind.verb, write, target, refs });
+	return createTargetedCommand({ name, verb: kind.verb, write, target, refs, binding });
 }
 
 function createTargetedCommand(ask: TargetedAsk): HostCommand {
@@ -95,9 +99,11 @@ async function writeWhenDecided(ask: TargetedAsk, input: unknown): Promise<void>
 	await ask.write(decided.verbs, input);
 }
 
-function decisionOf({ name, verb, target, refs }: TargetedAsk): Decision {
+function decisionOf({ name, verb, target, refs, binding }: TargetedAsk): Decision {
 	const verbs: unknown = refs.get(target);
 	if (!isObject(verbs)) return { can: false, reason: TARGET_GONE.replace("{name}", name).replace("{ref}", target) };
+	if (!isRunAllowed(binding, refs.described(target)?.isVault === true))
+		return { can: false, reason: VAULT_NOT_SWITCHED_ON.replace("{name}", name) };
 	if (typeof verbs[verb] !== "function") return { can: false, reason: cannot(target, verb) };
 	const asked = canOf(verbs[verb]);
 	return asked.can ? { can: true, verbs } : asked;

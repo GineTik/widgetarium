@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { refsOfFields, whereOf } from "../engine/host-gateways.js";
+import { hostGatewayFor, refsOfFields, whereOf } from "../engine/host-gateways.js";
 import type { EngineManifest } from "../engine/catalogue-index.js";
 import { isObject } from "../engine/is-object.js";
 import { refOf, refsWithin } from "../gateway/refs.js";
@@ -13,6 +13,8 @@ import { useDropsOnUnmount } from "./use-drops-on-unmount.js";
 import { RESERVED_PROPS } from "./widget-host.js";
 import type { WidgetHostProps } from "./widget-host.js";
 
+const VAULT_IMPLEMENTATIONS: readonly string[] = ["@core/file", "@core/folder"];
+
 type GatewayAsk = Pick<WidgetHostProps, "definition" | "tile" | "host" | "refs" | "cellFor" | "patchProp">;
 
 interface HeldProps extends GatewayAsk {
@@ -24,11 +26,7 @@ export function useHostGateways(ask: GatewayAsk, mounts: ResolvedMounts): PropGa
 	const propsRef = useRef(tile.props);
 	propsRef.current = tile.props ?? {};
 	const gateways = gatewaysOf({ ...ask, propsRef }, mounts);
-	publishGateways(gateways, definition.manifest, tile, refs);
-	useDropsOnUnmount(
-		refs,
-		Object.entries(gateways).map(([name, gateway]) => [refOf(tile.id, name), gateway] as const),
-	);
+	useDropsOnUnmount(refs, publishGateways(gateways, definition.manifest, tile, refs));
 	return gateways;
 }
 
@@ -61,7 +59,13 @@ function unreservedProps(manifest: EngineManifest): [string, unknown][] {
 	});
 }
 
-function publishGateways(gateways: PropGateways, manifest: EngineManifest, tile: Tile, refs: GatewayRefs): void {
+function publishGateways(
+	gateways: PropGateways,
+	manifest: EngineManifest,
+	tile: Tile,
+	refs: GatewayRefs,
+): (readonly [string, AnyGateway])[] {
+	const published: (readonly [string, AnyGateway])[] = [];
 	for (const [name, gateway] of Object.entries(gateways)) {
 		const spec = manifest.props?.[name] ?? mountDeclaredIn(manifest, name) ?? {};
 		const hostSpec = isHostSpec(spec) ? spec : null;
@@ -76,10 +80,23 @@ function publishGateways(gateways: PropGateways, manifest: EngineManifest, tile:
 				kind: textOr(gateway, "kind", "collection"),
 				shape: textOr(spec, "shape", "value"),
 				isTyped: isObject(config) && config["from"] === "typed",
+				isVault: VAULT_IMPLEMENTATIONS.includes(hostGatewayFor(hostSpec, config)?.id ?? ""),
 			},
 			dependsOn: leansOn,
 		});
+		published.push([refOf(tile.id, name), gateway]);
+		for (const was of formerNamesOf(spec, manifest)) {
+			refs.put(refOf(tile.id, was), gateway, { dependsOn: leansOn });
+			published.push([refOf(tile.id, was), gateway]);
+		}
 	}
+	return published;
+}
+
+function formerNamesOf(spec: unknown, manifest: EngineManifest): string[] {
+	const aka = isObject(spec) ? spec["aka"] : undefined;
+	if (!Array.isArray(aka)) return [];
+	return aka.filter((was): was is string => typeof was === "string" && !(was in (manifest.props ?? {})));
 }
 
 function mountDeclaredIn(manifest: EngineManifest, name: string): unknown {
