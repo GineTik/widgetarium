@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Row, RowLabel } from "widgetarium/kit";
 import { Mark } from "./mark";
 import { Meta } from "./meta";
@@ -150,7 +150,7 @@ export const FlightSchema = z.object({
 
 const FlightRow = createWidget({
 	inject: {
-		flight: IValueGateway.of(
+		getFlight: IQuery.of(
 			FlightSchema.default({
 				title: "Rewrite the board tree reader",
 				status: "running",
@@ -161,9 +161,9 @@ const FlightRow = createWidget({
 				elapsed: "12m",
 				who: "Dana Reid",
 			}),
-		).pick("get"),
+		),
 	},
-	draw: ({ flight }) => {
+	draw: ({ getFlight: flight }) => {
 		const title = textOf(flight.title) ?? UNTITLED;
 
 		return (
@@ -202,7 +202,7 @@ export const metadata = defineMetadata(FlightRow, {
 	preview: {
 		size: { w: 5, h: 1 },
 		props: {
-			flight: {
+			getFlight: {
 				value: {
 					title: "Rewrite the board tree reader",
 					status: "running",
@@ -217,8 +217,9 @@ export const metadata = defineMetadata(FlightRow, {
 		},
 	},
 	props: {
-		flight: {
+		getFlight: {
 			label: "Flight",
+			aka: ["flight"],
 			hint: "The work this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
 		},
 	},

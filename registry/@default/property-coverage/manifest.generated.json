@@ -31,7 +31,7 @@
 			"h": 4
 		},
 		"props": {
-			"records": {
+			"getRecords": {
 				"rows": [
 					{
 						"path": "Books/One.md",
@@ -56,44 +56,47 @@
 		}
 	},
 	"props": {
-		"records": {
+		"getRecords": {
 			"kind": "collection",
-			"label": "Records",
+			"label": "Get records",
 			"hint": "The notes whose properties are counted.",
+			"aka": ["records"],
 			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"shownAtFirst": {
+		"getShownAtFirst": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Properties shown at first",
 			"hint": "How many of the most used properties get a row before anything is pressed.",
-			"aka": ["shown"],
+			"aka": ["shownAtFirst", "shown"],
 			"writes": ["get"],
 			"default": {
 				"value": 10
 			}
 		},
-		"step": {
+		"getStep": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Properties added by a press",
 			"hint": "How many more rows each press of Show more draws.",
+			"aka": ["step"],
 			"writes": ["get"],
 			"default": {
 				"value": 10
 			}
 		},
-		"showMoreButton": {
+		"getShowMoreButton": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
-			"label": "Show more button",
+			"label": "Get show more button",
 			"hint": "Whether a press may draw past the first rows. Without it the rest are named as a count.",
+			"aka": ["showMoreButton"],
 			"writes": ["get"],
 			"default": {
 				"value": true

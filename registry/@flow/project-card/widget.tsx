@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Face } from "./face";
 
 const CSS = `
@@ -155,7 +155,7 @@ export const ProjectSchema = z.object({
 
 const ProjectCard = createWidget({
 	inject: {
-		project: IValueGateway.of(
+		getProject: IQuery.of(
 			ProjectSchema.default({
 				mark: "🧭",
 				name: "Harbour",
@@ -165,9 +165,9 @@ const ProjectCard = createWidget({
 				done: 27,
 				touched: "2026-09-11",
 			}),
-		).pick("get"),
+		),
 	},
-	draw: ({ project }) => {
+	draw: ({ getProject: project }) => {
 		return (
 			<div className="flow-project-card">
 				<style>{CSS}</style>
@@ -197,7 +197,7 @@ export const metadata = defineMetadata(ProjectCard, {
 	preview: {
 		size: { w: 4, h: 2 },
 		props: {
-			project: {
+			getProject: {
 				value: {
 					mark: "🧩",
 					name: "Widgetarium",
@@ -211,8 +211,9 @@ export const metadata = defineMetadata(ProjectCard, {
 		},
 	},
 	props: {
-		project: {
+		getProject: {
 			label: "Project",
+			aka: ["project"],
 			hint: "The project this card draws. Held in a grid it is handed down; standing alone it is the one bound here.",
 		},
 	},

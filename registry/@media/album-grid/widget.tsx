@@ -1,7 +1,7 @@
 import {
 	IListGateway,
+	IQuery,
 	ISlot,
-	IValueGateway,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -71,17 +71,17 @@ export const props = defineProps({
 			{ title: "Unmarked tape", tracks: 3 },
 		],
 	}),
-	pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
+	getPageSize: IQuery.of(z.number().default(PAGE_SIZE)),
 	cover: ISlot.of<Given>({
 		default: "@media/album-cover",
 		surface: "none",
-		gives: { album: ["title", "artist", "cover", "tracks"], beside: [] },
+		gives: { getAlbum: ["title", "artist", "cover", "tracks"], getBeside: [] },
 	}),
 });
 
 const AlbumGrid = createWidget({
 	inject: props,
-	draw: ({ albums, pageSize, cover }) => {
+	draw: ({ albums, getPageSize: pageSize, cover }) => {
 		const size = pageSizeOf(pageSize);
 		const { shelf, isNarrow } = useNarrowShelf();
 		const { pages, more } = usePages(albums.id, size);
@@ -158,8 +158,9 @@ export const metadata = defineMetadata(AlbumGrid, {
 				tracks: { label: "Tracks", type: "number" },
 			},
 		},
-		pageSize: {
+		getPageSize: {
 			label: "Albums per load",
+			aka: ["pageSize"],
 			hint: "How many more are drawn each time the end of the shelf comes into view.",
 		},
 	},

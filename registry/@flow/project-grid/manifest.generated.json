@@ -75,7 +75,7 @@
 			"default": "@flow/project-card",
 			"surface": "group",
 			"gives": {
-				"project": ["mark", "name", "repository", "open", "doing", "done", "touched"]
+				"getProject": ["mark", "name", "repository", "open", "doing", "done", "touched"]
 			}
 		}
 	},

@@ -136,10 +136,10 @@ const FileList = createWidget({
 		selection: IValueGateway.of(z.string().nullable().default(null)).pick("get", "update"),
 		heading: IValueGateway.of(z.string().default("Files touched")).pick("get"),
 		shownFiles: IValueGateway.of(z.number().default(SHOWN)).pick("get"),
-		file: ISlot.of<{ file: FileFace }>({
+		file: ISlot.of<{ getFile: FileFace }>({
 			default: "@flow/file-row",
 			surface: "group",
-			gives: { file: ["path", "added", "removed", "change", "from"] },
+			gives: { getFile: ["path", "added", "removed", "change", "from"] },
 		}),
 	},
 	draw: ({ files, selection, heading, shownFiles, file }) => {

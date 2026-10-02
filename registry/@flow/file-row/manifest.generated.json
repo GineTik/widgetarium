@@ -31,7 +31,7 @@
 			"h": 1
 		},
 		"props": {
-			"file": {
+			"getFile": {
 				"value": {
 					"filePath": "src/gateway/manifest.ts",
 					"from": "src/manifest.ts",
@@ -43,11 +43,12 @@
 		}
 	},
 	"props": {
-		"file": {
+		"getFile": {
 			"kind": "value",
 			"control": "json",
 			"label": "File",
 			"hint": "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
+			"aka": ["file"],
 			"writes": ["get"],
 			"default": {
 				"value": {

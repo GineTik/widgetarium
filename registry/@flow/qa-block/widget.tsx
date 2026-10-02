@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Options } from "./options";
 import { Reason } from "./reason";
 import type { Chip } from "./types";
@@ -131,16 +131,16 @@ const NOTHING = "Nothing was recorded for this question.";
 
 const QaBlock = createWidget({
 	inject: {
-		asked: IValueGateway.of(
+		getAsked: IQuery.of(
 			QuestionSchema.default({
 				question: "Where does the loading threshold live?",
 				options: ["one engine constant", "per widget", "per binding"],
 				answer: "one engine constant",
 				reason: "One number a person can find and change, instead of three settings nobody tunes.",
 			}),
-		).pick("get"),
+		),
 	},
-	draw: ({ asked }) => {
+	draw: ({ getAsked: asked }) => {
 		const chips = chipsOf(asked);
 		const question = textOf(asked.question);
 		const reason = textOf(asked.reason);
@@ -185,7 +185,7 @@ export const metadata = defineMetadata(QaBlock, {
 	preview: {
 		size: { w: 4, h: 2 },
 		props: {
-			asked: {
+			getAsked: {
 				value: {
 					question: "Where does the loading threshold live?",
 					options: ["one engine constant", "per widget", "per binding"],
@@ -197,8 +197,9 @@ export const metadata = defineMetadata(QaBlock, {
 		},
 	},
 	props: {
-		asked: {
+		getAsked: {
 			label: "Question",
+			aka: ["asked"],
 			hint: "The question, the options it offered, the answer that was chosen and the reason for it. Standing in a record it is handed down; standing alone it is the one typed here.",
 		},
 	},

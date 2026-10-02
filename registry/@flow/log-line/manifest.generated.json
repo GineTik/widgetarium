@@ -30,7 +30,7 @@
 			"h": 1
 		},
 		"props": {
-			"entry": {
+			"getEntry": {
 				"value": {
 					"at": "14:32:09",
 					"text": "wrote widgets/@flow/log-line/widget.tsx",
@@ -40,11 +40,12 @@
 		}
 	},
 	"props": {
-		"entry": {
+		"getEntry": {
 			"kind": "value",
 			"control": "json",
 			"label": "Entry",
 			"hint": "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
+			"aka": ["entry"],
 			"writes": ["get"],
 			"default": {
 				"value": {

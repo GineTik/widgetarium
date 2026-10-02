@@ -97,8 +97,8 @@ that erases what the component is typed from. Code outside `draw` that needs the
 
 | Declared                                                    | Arrives as                                                |
 | ----------------------------------------------------------- | --------------------------------------------------------- |
-| `IQuery.of(z.array(RowSchema))`                             | a list read: `useData(tasks, { where, sort, limit })`     |
-| `IQuery.of(z.string().default("To do"))`                    | the value, read and checked against the schema            |
+| `getTasks: IQuery.of(z.array(RowSchema))`                   | a list read: `useData(getTasks, { where, sort, limit })`  |
+| `getHeading: IQuery.of(z.string().default("To do"))`        | the value: `draw: ({ getHeading: heading }) => …`         |
 | `ICommand.of(InputSchema)`, or `ICommand` with no input     | `await move(input)` answers `{ ok }` or `{ ok, reason }`  |
 | `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema            |
 | `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                       |
@@ -113,7 +113,11 @@ that erases what the component is typed from. Code outside `draw` that needs the
 
 **Reads are `IQuery`, writes are `ICommand`; prefer them in a new widget.** A query over `z.array(...)`
 takes the input every list takes (`where`, `sort`, `offset`, `limit`); any other query takes none
-and arrives as its value. A bare `IQuery` is refused: it needs `.of(schema)`. A command returns only
+and arrives as its value. A bare `IQuery` is refused: it needs `.of(schema)`. **A query is named
+`get` and what it reads**, booleans included: `getTasks` (a list is plural), `getYear`, `getIsRound`.
+A value query is renamed where it is drawn, `({ getYear: year })`, so the body reads the value. A
+prop renamed from an older name keeps it in metadata, `getTasks: { aka: ["tasks"] }`, so a tile bound
+before still finds its binding. A command is named for the action: `move`, `create`. A command returns only
 a status, never data: its promise settles after every query of the tile has re-read, so the next
 frame draws the change. A create carries its own `id: z.uuid()`, minted at the press, and a retry
 with that id writes nothing. Ask `move.can()` before drawing the control, and draw `reason` when it

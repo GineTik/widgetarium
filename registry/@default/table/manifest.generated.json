@@ -30,7 +30,7 @@
 			"h": 4
 		},
 		"props": {
-			"records": {
+			"getRecords": {
 				"rows": [
 					{
 						"name": "row / column",
@@ -62,25 +62,27 @@
 					}
 				]
 			},
-			"rowTitle": {
+			"getRowTitle": {
 				"value": "name"
 			}
 		}
 	},
 	"props": {
-		"records": {
+		"getRecords": {
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes the table draws, one row each. A value reading emoji:<name> or icon:<name> is drawn as that emoji or icon, with any words after it beside it.",
+			"aka": ["records"],
 			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"columns": {
+		"getColumns": {
 			"kind": "collection",
 			"label": "Columns",
 			"hint": "Which properties get a column, in the order they are listed. Left empty, every property the records carry gets one.",
+			"aka": ["columns"],
 			"writes": ["list", "get"],
 			"describes": {
 				"property": {
@@ -94,45 +96,49 @@
 				"rows": []
 			}
 		},
-		"rowTitle": {
+		"getRowTitle": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Row title property",
 			"hint": "The property drawn in the bare first column that names each row. Left empty, the table has no such column.",
+			"aka": ["rowTitle"],
 			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"yesNo": {
+		"getYesNo": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Yes and no",
 			"hint": "Whether a true or false value is drawn as Yes or No.",
+			"aka": ["yesNo"],
 			"writes": ["get"],
 			"default": {
 				"value": false
 			}
 		},
-		"rowsAtFirst": {
+		"getRowsAtFirst": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Rows shown at first",
 			"hint": "How many records get a row before Show more is pressed. Each press draws that many again.",
+			"aka": ["rowsAtFirst"],
 			"writes": ["get"],
 			"default": {
 				"value": 50
 			}
 		},
-		"fadeEdges": {
+		"getFadeEdges": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Fade the scrolling edges",
 			"hint": "Whether an edge the table carries on past dissolves, so there is something to say it scrolls.",
+			"aka": ["fadeEdges"],
 			"design": true,
 			"writes": ["get"],
 			"default": {

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-	IListGateway,
-	IValueGateway,
+	IQuery,
 	VaultRecordSchema,
 	type VaultRecord,
 	createWidget,
@@ -22,13 +21,13 @@ const NO_NOTES = "There are no notes here yet.";
 
 const PropertyCoverage = createWidget({
 	inject: {
-		records: IListGateway.of(VaultRecordSchema),
-		shownAtFirst: IValueGateway.of(z.number().default(SHOWN_AT_FIRST)).pick("get"),
-		step: IValueGateway.of(z.number().default(STEP)).pick("get"),
-		showMoreButton: IValueGateway.of(z.boolean().default(true)).pick("get"),
+		getRecords: IQuery.of(z.array(VaultRecordSchema)),
+		getShownAtFirst: IQuery.of(z.number().default(SHOWN_AT_FIRST)),
+		getStep: IQuery.of(z.number().default(STEP)),
+		getShowMoreButton: IQuery.of(z.boolean().default(true)),
 	},
-	draw: ({ records, shownAtFirst, step, showMoreButton }) => {
-		const read = useData(records.list, { limit: COUNTED_CEILING });
+	draw: ({ getRecords, getShownAtFirst: shownAtFirst, getStep: step, getShowMoreButton: showMoreButton }) => {
+		const read = useData(getRecords, { limit: COUNTED_CEILING });
 		const atFirst = askedCount(shownAtFirst, SHOWN_AT_FIRST);
 		const added = askedCount(step, STEP);
 		const [shown, setShown] = useState(atFirst);
@@ -72,7 +71,7 @@ export const metadata = defineMetadata(PropertyCoverage, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			records: {
+			getRecords: {
 				rows: [
 					{ path: "Books/One.md", name: "One", author: "A", status: "Reading", rating: 5 },
 					{ path: "Books/Two.md", name: "Two", author: "B", status: "Finished" },
@@ -82,15 +81,20 @@ export const metadata = defineMetadata(PropertyCoverage, {
 		},
 	},
 	props: {
-		records: { hint: "The notes whose properties are counted." },
-		shownAtFirst: {
+		getRecords: { hint: "The notes whose properties are counted.", aka: ["records"] },
+		getShownAtFirst: {
 			label: "Properties shown at first",
 			hint: "How many of the most used properties get a row before anything is pressed.",
-			aka: ["shown"],
+			aka: ["shownAtFirst", "shown"],
 		},
-		step: { label: "Properties added by a press", hint: "How many more rows each press of Show more draws." },
-		showMoreButton: {
+		getStep: {
+			label: "Properties added by a press",
+			hint: "How many more rows each press of Show more draws.",
+			aka: ["step"],
+		},
+		getShowMoreButton: {
 			hint: "Whether a press may draw past the first rows. Without it the rest are named as a count.",
+			aka: ["showMoreButton"],
 		},
 	},
 });

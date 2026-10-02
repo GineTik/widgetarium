@@ -192,8 +192,8 @@ const FileRow = runWidgetSource(
 )["default"];
 async function fileRowDrawnFrom(stored: Readonly<Record<string, unknown>>): Promise<unknown> {
 	refs.put("t1/file", soloGateway(stored, {}, `problems-test/file-${JSON.stringify(stored)}`));
-	const schema = propSchemaOf({ component: isDeclaring(FileRow) ? FileRow : null }, "file");
-	return valueOf(resolveHostGateway(context("file", "@core/from-tile-value", "t1/file", schema))).get();
+	const schema = propSchemaOf({ component: isDeclaring(FileRow) ? FileRow : null }, "getFile");
+	return valueOf(resolveHostGateway(context("getFile", "@core/from-tile-value", "t1/file", schema))).get();
 }
 check(
 	"a shipped widget's schema hands over the record it accepts",
@@ -207,7 +207,7 @@ check(
 );
 check(
 	"naming the field it refused beside the prop",
-	problems.of("t2/file").flatMap((problem) => problem.issues.map((issue) => issue.path.join("."))),
+	problems.of("t2/getFile").flatMap((problem) => problem.issues.map((issue) => issue.path.join("."))),
 	["added"],
 );
 

@@ -67,7 +67,7 @@
 			"default": "@flow/log-line",
 			"surface": "none",
 			"gives": {
-				"entry": ["at", "text", "tone"]
+				"getEntry": ["at", "text", "tone"]
 			}
 		}
 	},

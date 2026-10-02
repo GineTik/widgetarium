@@ -1,16 +1,5 @@
 import { useState } from "react";
-import {
-	IHost,
-	IListGateway,
-	ISlot,
-	IValueGateway,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	defineProps,
-	useData,
-	z,
-} from "widgetarium";
+import { IHost, IQuery, ISlot, createWidget, defineLayout, defineMetadata, defineProps, useData, z } from "widgetarium";
 import type { Row } from "widgetarium";
 import { Figures } from "./figures";
 import { Fixes } from "./fixes";
@@ -104,30 +93,39 @@ export const ProseSourceSchema = z.union([
 ]);
 
 export const props = defineProps({
-	body: IValueGateway.of(ProseSourceSchema.default("")).pick("get"),
-	figures: IListGateway.of(FigureSchema),
-	testPlan: IListGateway.of(TestStepSchema),
-	fixes: IListGateway.of(FixSchema),
-	measure: IValueGateway.of(z.number().default(MEASURE_CH)).pick("get"),
-	stepsPerPage: IValueGateway.of(z.number().default(STEPS_PER_PAGE)).pick("get"),
-	figure: ISlot.of<{ source: IValueGateway }>({
+	getBody: IQuery.of(ProseSourceSchema.default("")),
+	getFigures: IQuery.of(z.array(FigureSchema)),
+	getTestPlan: IQuery.of(z.array(TestStepSchema)),
+	getFixes: IQuery.of(z.array(FixSchema)),
+	getMeasure: IQuery.of(z.number().default(MEASURE_CH)),
+	getStepsPerPage: IQuery.of(z.number().default(STEPS_PER_PAGE)),
+	figure: ISlot.of<{ getSource: Figure }>({
 		default: "@flow/report-figure",
 		surface: "none",
-		gives: { source: ["caption", "image", "alt", "drawing"] },
+		gives: { getSource: ["caption", "image", "alt", "drawing"] },
 	}),
 	host: IHost,
 });
 
 const ReportWidget = createWidget({
 	inject: props,
-	draw: ({ body, figures, testPlan, fixes, measure, stepsPerPage, figure, host }) => {
+	draw: ({
+		getBody: body,
+		getFigures,
+		getTestPlan,
+		getFixes,
+		getMeasure: measure,
+		getStepsPerPage: stepsPerPage,
+		figure,
+		host,
+	}) => {
 		const measureCh = positiveOr(measure, MEASURE_CH);
 		const perPage = positiveOr(stepsPerPage, STEPS_PER_PAGE);
 		const [at, setAt] = useState(0);
 
-		const figureRows = useData(figures.list, { limit: FIGURES_AT_MOST });
-		const steps = useData(testPlan.list, { offset: at * perPage, limit: perPage });
-		const fixRows = useData(fixes.list, { limit: FIXES_AT_MOST });
+		const figureRows = useData(getFigures, { limit: FIGURES_AT_MOST });
+		const steps = useData(getTestPlan, { offset: at * perPage, limit: perPage });
+		const fixRows = useData(getFixes, { limit: FIXES_AT_MOST });
 
 		const figuresCounted = countOf(figureRows, figureRows.data.length);
 		const stepsCounted = countOf(steps, steps.data.length);
@@ -141,7 +139,7 @@ const ReportWidget = createWidget({
 			<div className="flow-report" style={{ "--flow-report-measure": `${measureCh}ch` } as Record<string, string>}>
 				<style>{CSS}</style>
 				<Prose host={host} source={body} />
-				<Figures figures={figures} rows={figureRows.data as Row<Figure>[]} slot={figure} />
+				<Figures rows={figureRows.data as Row<Figure>[]} slot={figure} />
 				<TestPlan
 					rows={steps.data as Row<TestStep>[]}
 					counted={stepsCounted}
@@ -176,11 +174,11 @@ export const metadata = defineMetadata(ReportWidget, {
 	preview: {
 		size: { w: 6, h: 6 },
 		props: {
-			body: {
+			getBody: {
 				value:
 					"The board now reads a drop as a path, so a tile carried across the grain wraps the node it landed on.\n\nThe measure held: prose stays at reading width while a figure takes the whole column.",
 			},
-			figures: {
+			getFigures: {
 				rows: [
 					{
 						caption: "A tile carried across the grain wraps the leaf under the pointer.",
@@ -188,14 +186,14 @@ export const metadata = defineMetadata(ReportWidget, {
 					},
 				],
 			},
-			testPlan: {
+			getTestPlan: {
 				rows: [
 					{ step: "Carry a tile onto a leaf from the side.", expect: "A new row box holds both.", done: true },
 					{ step: "Carry the last tile out of a box.", expect: "The box is pruned.", done: true },
 					{ step: "Narrow the tile under the reading width.", expect: "The figure is the column wide.", done: false },
 				],
 			},
-			fixes: {
+			getFixes: {
 				rows: [
 					{ title: "A drop across the grain wrapped the parent, not the leaf.", where: "src/tree.js" },
 					{ title: "An empty declared box was pruned with the rest.", where: "src/board-note.js" },
@@ -204,12 +202,14 @@ export const metadata = defineMetadata(ReportWidget, {
 		},
 	},
 	props: {
-		body: {
+		getBody: {
 			label: "Report",
+			aka: ["body"],
 			hint: "The prose of the report, typed here or bound to a note. Headings, lists and links work as they do in a note.",
 		},
-		figures: {
+		getFigures: {
 			label: "Figures",
+			aka: ["figures"],
 			hint: "One record per figure, each drawn by the widget in the figure slot.",
 			describes: {
 				caption: { label: "Caption", type: "text" },
@@ -218,8 +218,9 @@ export const metadata = defineMetadata(ReportWidget, {
 				drawing: { label: "Drawing", type: "text" },
 			},
 		},
-		testPlan: {
+		getTestPlan: {
 			label: "Test plan",
+			aka: ["testPlan"],
 			hint: "One record per step: what to press, and what should happen when it is pressed.",
 			describes: {
 				step: { label: "Step", type: "text" },
@@ -227,20 +228,23 @@ export const metadata = defineMetadata(ReportWidget, {
 				done: { label: "Checked", type: "boolean" },
 			},
 		},
-		fixes: {
+		getFixes: {
 			label: "What was fixed",
+			aka: ["fixes"],
 			hint: "One record per fix, with the file it was made in.",
 			describes: {
 				title: { label: "Fix", type: "text" },
 				where: { label: "Where", type: "text" },
 			},
 		},
-		measure: {
+		getMeasure: {
 			label: "Reading width, in characters",
+			aka: ["measure"],
 			hint: "How wide the prose is allowed to run. A figure ignores it and takes the whole tile.",
 		},
-		stepsPerPage: {
+		getStepsPerPage: {
 			label: "Test steps per page",
+			aka: ["stepsPerPage"],
 			hint: "How many steps of the test plan are drawn at once.",
 		},
 	},

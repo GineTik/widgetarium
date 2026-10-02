@@ -1,14 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-	IHost,
-	IListGateway,
-	IValueGateway,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	useData,
-	z,
-} from "widgetarium";
+import { IHost, IQuery, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import { Button } from "widgetarium/kit";
 import type { Row } from "widgetarium";
 import { EntryRow } from "./entry-row";
@@ -39,21 +30,21 @@ const TEXT_HINT = "The line itself, as markdown: **bold**, `code`, a [[link]] an
 
 const IconList = createWidget({
 	inject: {
-		entries: IListGateway.of(EntrySchema, {
-			default: [
+		getEntries: IQuery.of(
+			z.array(EntrySchema).default([
 				{ icon: "tick", tone: "success", text: "**A list — yes.** More columns visible, more rows in view." },
 				{ icon: "close", tone: "error", text: "**Prose — no.** Past ~75 characters the eye loses the next line." },
-			],
-		}),
-		numbered: IValueGateway.of(z.boolean().default(false)).pick("get"),
-		solid: IValueGateway.of(z.boolean().default(false)).pick("get"),
+			]),
+		),
+		getNumbered: IQuery.of(z.boolean().default(false)),
+		getSolid: IQuery.of(z.boolean().default(false)),
 		host: IHost,
 	},
-	draw: ({ entries, numbered, solid, host }) => {
+	draw: ({ getEntries, getNumbered: numbered, getSolid: solid, host }) => {
 		const [shown, setShown] = useState(PAGE_SIZE);
-		useEffect(() => setShown(PAGE_SIZE), [entries.id]);
+		useEffect(() => setShown(PAGE_SIZE), [getEntries]);
 
-		const listed = useData(entries.list, { offset: 0, limit: shown });
+		const listed = useData(getEntries, { offset: 0, limit: shown });
 		const look = { isNumbered: numbered, isSolid: solid };
 
 		if (listed.failure) return <p className="wg-icon-list-said">{listed.failure}</p>;
@@ -103,7 +94,7 @@ export const metadata = defineMetadata(IconList, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			entries: {
+			getEntries: {
 				rows: [
 					{ icon: "tick", tone: "success", text: "**A list — yes.** More columns visible, more rows in view." },
 					{ icon: "close", tone: "error", text: "**Prose — no.** Past ~75 characters the eye loses the next line." },
@@ -117,8 +108,9 @@ export const metadata = defineMetadata(IconList, {
 		},
 	},
 	props: {
-		entries: {
+		getEntries: {
 			label: "Lines",
+			aka: ["entries"],
 			hint: "One line per point. Each carries its own icon and colour, and reads as markdown.",
 			describes: {
 				text: { label: "Text", hint: TEXT_HINT, type: "text", required: true },
@@ -126,12 +118,14 @@ export const metadata = defineMetadata(IconList, {
 				tone: { label: "Colour", hint: TONE_HINT, type: "line" },
 			},
 		},
-		numbered: {
+		getNumbered: {
 			label: "Number the lines",
+			aka: ["numbered"],
 			hint: "Off, every line shows its own icon. On, the discs count the lines instead — 1, 2, 3 — and keep their colours.",
 		},
-		solid: {
+		getSolid: {
 			label: "Fill the discs",
+			aka: ["solid"],
 			hint: "Off, a disc wears a pale wash of its colour. On, it is filled with the colour itself and the icon or number turns white.",
 		},
 	},

@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Icon, cn } from "widgetarium/kit";
 
 const CSS = `
@@ -90,11 +90,9 @@ function clockOf(at: unknown): string {
 
 const LogLine = createWidget({
 	inject: {
-		entry: IValueGateway.of(LogEntrySchema.default({ at: "14:32:07", text: "Session started.", tone: "neutral" })).pick(
-			"get",
-		),
+		getEntry: IQuery.of(LogEntrySchema.default({ at: "14:32:07", text: "Session started.", tone: "neutral" })),
 	},
-	draw: ({ entry }) => {
+	draw: ({ getEntry: entry }) => {
 		const mark = markOf(entry.tone);
 		const at = clockOf(entry.at);
 		const text = String(entry.text ?? "").trim();
@@ -134,14 +132,15 @@ export const metadata = defineMetadata(LogLine, {
 	preview: {
 		size: { w: 5, h: 1 },
 		props: {
-			entry: {
+			getEntry: {
 				value: { at: "14:32:09", text: "wrote widgets/@flow/log-line/widget.tsx", tone: "accent" },
 			},
 		},
 	},
 	props: {
-		entry: {
+		getEntry: {
 			label: "Entry",
+			aka: ["entry"],
 			hint: "The line this draws. Inside a log it is handed down; standing alone it is the one typed here.",
 		},
 	},

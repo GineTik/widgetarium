@@ -33,7 +33,7 @@
 			"h": 4
 		},
 		"props": {
-			"entries": {
+			"getEntries": {
 				"rows": [
 					{
 						"icon": "tick",
@@ -55,10 +55,11 @@
 		}
 	},
 	"props": {
-		"entries": {
+		"getEntries": {
 			"kind": "collection",
 			"label": "Lines",
 			"hint": "One line per point. Each carries its own icon and colour, and reads as markdown.",
+			"aka": ["entries"],
 			"writes": ["list", "get"],
 			"describes": {
 				"text": {
@@ -96,23 +97,25 @@
 				]
 			}
 		},
-		"numbered": {
+		"getNumbered": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Number the lines",
 			"hint": "Off, every line shows its own icon. On, the discs count the lines instead — 1, 2, 3 — and keep their colours.",
+			"aka": ["numbered"],
 			"writes": ["get"],
 			"default": {
 				"value": false
 			}
 		},
-		"solid": {
+		"getSolid": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Fill the discs",
 			"hint": "Off, a disc wears a pale wash of its colour. On, it is filled with the colour itself and the icon or number turns white.",
+			"aka": ["solid"],
 			"writes": ["get"],
 			"default": {
 				"value": false

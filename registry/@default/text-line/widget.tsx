@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { cn } from "widgetarium/kit";
 
 const CSS = `
@@ -46,12 +46,12 @@ const LINE_TAGS = ["p", "h1", "h2", "h3"] as const;
 
 const TextLine = createWidget({
 	inject: {
-		text: IValueGateway.of(z.string().default("")).pick("get"),
-		tone: IValueGateway.of(z.enum(["label", "value", "caption"]).default("value")).pick("get"),
-		heading: IValueGateway.of(z.number().default(0)).pick("get"),
-		lines: IValueGateway.of(z.number().default(0)).pick("get"),
+		getText: IQuery.of(z.string().default("")),
+		getTone: IQuery.of(z.enum(["label", "value", "caption"]).default("value")),
+		getHeading: IQuery.of(z.number().default(0)),
+		getLines: IQuery.of(z.number().default(0)),
 	},
-	draw: ({ text, tone, heading, lines }) => {
+	draw: ({ getText: text, getTone: tone, getHeading: heading, getLines: lines }) => {
 		const said = text.trim();
 		const level = Math.min(countOf(heading), LINE_TAGS.length - 1);
 		const clamped = countOf(lines);
@@ -82,25 +82,30 @@ export const metadata = defineMetadata(TextLine, {
 	preview: {
 		size: { w: 4, h: 1 },
 		props: {
-			text: { value: "Last synced four minutes ago" },
-			tone: { value: "caption" },
+			getText: { value: "Last synced four minutes ago" },
+			getTone: { value: "caption" },
 		},
 	},
 	props: {
-		text: { hint: "The line itself. Left empty, the widget draws nothing at all." },
-		tone: {
+		getText: { hint: "The line itself. Left empty, the widget draws nothing at all.", aka: ["text"] },
+		getTone: {
 			hint: "It decides the weight and the ink, never the plate.",
+			aka: ["tone"],
 			options: [
 				{ value: "label", label: "A label" },
 				{ value: "value", label: "A value" },
 				{ value: "caption", label: "A caption" },
 			],
 		},
-		heading: {
+		getHeading: {
 			label: "Heading level",
 			hint: "Zero draws a plain line. One, two or three draw the line as a heading of that level.",
+			aka: ["heading"],
 		},
-		lines: { hint: "How many lines the text may take before it is cut. Zero lets it run as long as it is." },
+		getLines: {
+			hint: "How many lines the text may take before it is cut. Zero lets it run as long as it is.",
+			aka: ["lines"],
+		},
 	},
 });
 

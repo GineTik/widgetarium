@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-	IListGateway,
-	IValueGateway,
+	IQuery,
 	VaultRecord,
 	VaultRecordSchema,
 	createWidget,
@@ -30,20 +29,27 @@ type Column = z.infer<typeof ColumnSchema>;
 
 const TableWidget = createWidget({
 	inject: {
-		records: IListGateway.of(VaultRecordSchema),
-		columns: IListGateway.of(ColumnSchema),
-		rowTitle: IValueGateway.of(z.string().default("")).pick("get"),
-		yesNo: IValueGateway.of(z.boolean().default(false)).pick("get"),
-		rowsAtFirst: IValueGateway.of(z.number().default(ROWS_AT_FIRST)).pick("get"),
-		fadeEdges: IValueGateway.of(z.boolean().default(true)).pick("get"),
+		getRecords: IQuery.of(z.array(VaultRecordSchema)),
+		getColumns: IQuery.of(z.array(ColumnSchema)),
+		getRowTitle: IQuery.of(z.string().default("")),
+		getYesNo: IQuery.of(z.boolean().default(false)),
+		getRowsAtFirst: IQuery.of(z.number().default(ROWS_AT_FIRST)),
+		getFadeEdges: IQuery.of(z.boolean().default(true)),
 	},
-	draw: ({ records, columns, rowTitle, yesNo, rowsAtFirst, fadeEdges }) => {
+	draw: ({
+		getRecords,
+		getColumns,
+		getRowTitle: rowTitle,
+		getYesNo: yesNo,
+		getRowsAtFirst: rowsAtFirst,
+		getFadeEdges: fadeEdges,
+	}) => {
 		const atFirst = askedCount(rowsAtFirst, ROWS_AT_FIRST);
 		const [shown, setShown] = useState(atFirst);
 		useEffect(() => setShown(atFirst), [atFirst]);
 
-		const read = useData(records.list, { limit: shown });
-		const declared = useData(columns.list, { limit: COLUMNS_AT_MOST }).data;
+		const read = useData(getRecords, { limit: shown });
+		const declared = useData(getColumns, { limit: COLUMNS_AT_MOST }).data;
 		const titleProperty = String(rowTitle ?? "").trim();
 		const isYesNo = yesNo === true;
 		const isFaded = fadeEdges !== false;
@@ -91,7 +97,7 @@ export const metadata = defineMetadata(TableWidget, {
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
-			records: {
+			getRecords: {
 				rows: [
 					{ name: "row / column", split: "yes", swap: "yes", strip: "first or last child", paged: "no" },
 					{ name: "split", split: "unusual", swap: "yes", strip: "in each half", paged: "no" },
@@ -99,33 +105,39 @@ export const metadata = defineMetadata(TableWidget, {
 					{ name: "centred", split: "one child", swap: "one child", strip: "via its column", paged: "no" },
 				],
 			},
-			rowTitle: { value: "name" },
+			getRowTitle: { value: "name" },
 		},
 	},
 	props: {
-		records: {
+		getRecords: {
 			label: "Records",
+			aka: ["records"],
 			hint: "The notes the table draws, one row each. A value reading emoji:<name> or icon:<name> is drawn as that emoji or icon, with any words after it beside it.",
 		},
-		columns: {
+		getColumns: {
 			label: "Columns",
+			aka: ["columns"],
 			hint: "Which properties get a column, in the order they are listed. Left empty, every property the records carry gets one.",
 			describes: { property: "Property", label: "Label" },
 		},
-		rowTitle: {
+		getRowTitle: {
 			label: "Row title property",
+			aka: ["rowTitle"],
 			hint: "The property drawn in the bare first column that names each row. Left empty, the table has no such column.",
 		},
-		yesNo: {
+		getYesNo: {
 			label: "Yes and no",
+			aka: ["yesNo"],
 			hint: "Whether a true or false value is drawn as Yes or No.",
 		},
-		rowsAtFirst: {
+		getRowsAtFirst: {
 			label: "Rows shown at first",
+			aka: ["rowsAtFirst"],
 			hint: "How many records get a row before Show more is pressed. Each press draws that many again.",
 		},
-		fadeEdges: {
+		getFadeEdges: {
 			label: "Fade the scrolling edges",
+			aka: ["fadeEdges"],
 			hint: "Whether an edge the table carries on past dissolves, so there is something to say it scrolls.",
 			design: true,
 		},

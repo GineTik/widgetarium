@@ -36,21 +36,23 @@
 		}
 	},
 	"props": {
-		"lines": {
+		"getLines": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Lines shown at first, and added by each press",
+			"aka": ["lines"],
 			"writes": ["get"],
 			"default": {
 				"value": 30
 			}
 		},
-		"maxKilobytes": {
+		"getMaxKilobytes": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Largest file that may be shown, in KB",
+			"aka": ["maxKilobytes"],
 			"writes": ["get"],
 			"default": {
 				"value": 256

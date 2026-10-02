@@ -10,7 +10,7 @@ type PickProps = {
 };
 
 export function PickedRow({ Drawn, face, isPicked, onPick }: PickProps) {
-	if (!onPick) return <Drawn flight={face} />;
+	if (!onPick) return <Drawn getFlight={face} />;
 	return (
 		<div
 			className="flow-inflight-pick"
@@ -24,7 +24,7 @@ export function PickedRow({ Drawn, face, isPicked, onPick }: PickProps) {
 				onPick();
 			}}
 		>
-			<Drawn flight={face} />
+			<Drawn getFlight={face} />
 		</div>
 	);
 }

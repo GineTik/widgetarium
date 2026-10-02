@@ -70,8 +70,8 @@
 			"default": "@media/album-cover",
 			"surface": "none",
 			"gives": {
-				"album": ["title", "artist", "cover", "tracks"],
-				"beside": []
+				"getAlbum": ["title", "artist", "cover", "tracks"],
+				"getBeside": []
 			}
 		}
 	},
@@ -136,12 +136,13 @@
 				]
 			}
 		},
-		"pageSize": {
+		"getPageSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Albums per load",
 			"hint": "How many more are drawn each time the end of the shelf comes into view.",
+			"aka": ["pageSize"],
 			"writes": ["get"],
 			"default": {
 				"value": 24

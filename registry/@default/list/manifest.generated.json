@@ -87,7 +87,7 @@
 			"control": "line",
 			"type": "line",
 			"label": "Handed as",
-			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes commit.",
+			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes getCommit.",
 			"writes": ["get"],
 			"default": {
 				"value": "task"

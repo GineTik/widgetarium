@@ -11,4 +11,4 @@ export type FlightFace = {
 	who: string | undefined;
 };
 
-export type RowSlot = Slot<{ flight: FlightFace }>;
+export type RowSlot = Slot<{ getFlight: FlightFace }>;

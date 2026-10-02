@@ -20,7 +20,7 @@ tiles:
   - id: nav
     widget: "@default/icon-list"
     props:
-      entries: { from: vault, path: Boards }
+      getEntries: { from: vault, path: Boards }
   - id: running
     widget: "@flow/in-flight"
     props:
@@ -28,7 +28,7 @@ tiles:
   - id: bugs
     widget: "@flow/plan-qa"
     props:
-      questions: { from: vault, path: Bugs, allow: [list, create, update] }
+      getQuestions: { from: vault, path: Bugs }
   - id: tail
     widget: "@flow/session-tail"
     props:
@@ -169,8 +169,8 @@ tiles:
   - id: body
     widget: "@flow/report"
     props:
-      body: { from: vault, path: Tasks/152.md, field: content }
-      testPlan: { from: vault, path: Tasks/152/checks }
+      getBody: { from: vault, path: Tasks/152.md, field: content }
+      getTestPlan: { from: vault, path: Tasks/152/checks }
   - id: progress
     widget: "@default/metric-total"
     props:
@@ -178,7 +178,7 @@ tiles:
   - id: jump
     widget: "@default/icon-list"
     props:
-      entries: { from: vault, path: Tasks/152/links }
+      getEntries: { from: vault, path: Tasks/152/links }
 layout:
   dir: row
   of:

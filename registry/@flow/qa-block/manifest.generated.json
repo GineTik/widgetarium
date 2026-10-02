@@ -30,7 +30,7 @@
 			"h": 2
 		},
 		"props": {
-			"asked": {
+			"getAsked": {
 				"value": {
 					"question": "Where does the loading threshold live?",
 					"options": ["one engine constant", "per widget", "per binding"],
@@ -41,11 +41,12 @@
 		}
 	},
 	"props": {
-		"asked": {
+		"getAsked": {
 			"kind": "value",
 			"control": "json",
 			"label": "Question",
 			"hint": "The question, the options it offered, the answer that was chosen and the reason for it. Standing in a record it is handed down; standing alone it is the one typed here.",
+			"aka": ["asked"],
 			"writes": ["get"],
 			"default": {
 				"value": {

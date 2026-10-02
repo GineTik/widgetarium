@@ -3,5 +3,5 @@ import type { Drawn, Item, Items } from "./types";
 import { useItemSource } from "./use-item-source";
 
 export function FeedItem({ items, row, Drawn }: { items: Items; row: Row<Item>; Drawn: Drawn }) {
-	return <Drawn source={useItemSource(items, row)} />;
+	return <Drawn getSource={useItemSource(items, row)} />;
 }

@@ -1,13 +1,4 @@
-import {
-	IListGateway,
-	IValueGateway,
-	VaultRecordSchema,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	useData,
-	z,
-} from "widgetarium";
+import { IQuery, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row } from "widgetarium";
 import { Graph } from "./graph";
 import { Said } from "./said";
@@ -101,13 +92,13 @@ function askedCount(value: unknown, fallback: number): number {
 
 const GitTree = createWidget({
 	inject: {
-		commits: IListGateway.of(CommitSchema),
-		branch: IValueGateway.of(z.string().default("")).pick("get"),
-		shownCommits: IValueGateway.of(z.number().default(SHOWN)).pick("get"),
+		getCommits: IQuery.of(z.array(CommitSchema)),
+		getBranch: IQuery.of(z.string().default("")),
+		getShownCommits: IQuery.of(z.number().default(SHOWN)),
 	},
-	draw: ({ commits, branch, shownCommits }) => {
+	draw: ({ getCommits, getBranch: branch, getShownCommits: shownCommits }) => {
 		const shown = askedCount(shownCommits, SHOWN);
-		const read = useData(commits.list, { limit: shown });
+		const read = useData(getCommits, { limit: shown });
 		const named = saidOf(branch);
 
 		if (read.failure !== null) return <Said text={read.failure} />;
@@ -147,8 +138,8 @@ export const metadata = defineMetadata(GitTree, {
 	preview: {
 		size: { w: 5, h: 2 },
 		props: {
-			branch: { value: "unsafe-dev" },
-			commits: {
+			getBranch: { value: "unsafe-dev" },
+			getCommits: {
 				rows: [
 					{ path: "commits/748628d.md", sha: "748628d1c0", parents: ["70a3c80f42", "2a64d67ba9"] },
 					{ path: "commits/70a3c80.md", sha: "70a3c80f42", parents: ["83ab3d2e71"] },
@@ -160,20 +151,23 @@ export const metadata = defineMetadata(GitTree, {
 		},
 	},
 	props: {
-		commits: {
+		getCommits: {
 			label: "Commits",
+			aka: ["commits"],
 			hint: "The commit records written for this branch, newest first. Only the sha and its parents are drawn.",
 			describes: {
 				sha: { label: "Commit" },
 				parents: { label: "Parents", many: true },
 			},
 		},
-		branch: {
+		getBranch: {
 			label: "Branch",
+			aka: ["branch"],
 			hint: "The name of the branch these commits are on. Left empty, no name is drawn.",
 		},
-		shownCommits: {
+		getShownCommits: {
 			label: "Commits shown",
+			aka: ["shownCommits"],
 			hint: "How many of the newest commits the graph spans.",
 		},
 	},

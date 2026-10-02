@@ -52,7 +52,7 @@
 			"default": "@default/obsidian-markdown-preview",
 			"surface": "group",
 			"gives": {
-				"source": ["content", "path"]
+				"getSource": ["content", "path"]
 			}
 		}
 	},
@@ -66,12 +66,13 @@
 				"rows": []
 			}
 		},
-		"pageSize": {
+		"getPageSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Items per load",
 			"hint": "How many more are drawn each time the end of the feed comes into view.",
+			"aka": ["pageSize"],
 			"writes": ["get"],
 			"default": {
 				"value": 10

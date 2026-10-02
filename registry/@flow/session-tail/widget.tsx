@@ -51,10 +51,10 @@ export const props = defineProps({
 	}),
 	linesKept: IValueGateway.of(z.number().default(LINES_KEPT)).pick("get"),
 	following: IValueGateway.of(z.boolean().default(true)).pick("get", "update"),
-	line: ISlot.of<{ entry: Row<LogLine> }>({
+	line: ISlot.of<{ getEntry: Row<LogLine> }>({
 		default: "@flow/log-line",
 		surface: "none",
-		gives: { entry: ["at", "text", "tone"] },
+		gives: { getEntry: ["at", "text", "tone"] },
 	}),
 });
 

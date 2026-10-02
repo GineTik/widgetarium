@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Icon, Row, RowLabel } from "widgetarium/kit";
 import { DiffStat } from "./diff-stat";
 import { KINDS, saidOf } from "./kinds";
@@ -208,16 +208,16 @@ function kindOf(change: FileChange["change"], from: FileChange["from"]): Kind {
 
 const FileRow = createWidget({
 	inject: {
-		file: IValueGateway.of(
+		getFile: IQuery.of(
 			FileChangeSchema.default({
 				filePath: "src/engine/catalogue-index.js",
 				change: "modified",
 				added: 128,
 				removed: 44,
 			}),
-		).pick("get"),
+		),
 	},
-	draw: ({ file }) => {
+	draw: ({ getFile: file }) => {
 		const kind = kindOf(file.change, file.from);
 
 		return (
@@ -257,7 +257,7 @@ export const metadata = defineMetadata(FileRow, {
 	preview: {
 		size: { w: 4, h: 1 },
 		props: {
-			file: {
+			getFile: {
 				value: {
 					filePath: "src/gateway/manifest.ts",
 					from: "src/manifest.ts",
@@ -269,8 +269,9 @@ export const metadata = defineMetadata(FileRow, {
 		},
 	},
 	props: {
-		file: {
+		getFile: {
 			label: "File",
+			aka: ["file"],
 			hint: "The file this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
 		},
 	},

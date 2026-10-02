@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-	IListGateway,
-	IValueGateway,
+	IQuery,
 	VaultRecordSchema,
 	type VaultRecord,
 	createWidget,
@@ -25,14 +24,20 @@ const NO_NOTES = "There are no notes here yet.";
 
 const BreakdownBars = createWidget({
 	inject: {
-		records: IListGateway.of(VaultRecordSchema),
-		groupBy: IValueGateway.of(z.string().default(BY_FOLDER)).pick("get"),
-		shownAtFirst: IValueGateway.of(z.number().default(SHOWN_AT_FIRST)).pick("get"),
-		step: IValueGateway.of(z.number().default(STEP)).pick("get"),
-		showMoreButton: IValueGateway.of(z.boolean().default(true)).pick("get"),
+		getRecords: IQuery.of(z.array(VaultRecordSchema)),
+		getGroupBy: IQuery.of(z.string().default(BY_FOLDER)),
+		getShownAtFirst: IQuery.of(z.number().default(SHOWN_AT_FIRST)),
+		getStep: IQuery.of(z.number().default(STEP)),
+		getShowMoreButton: IQuery.of(z.boolean().default(true)),
 	},
-	draw: ({ records, groupBy, shownAtFirst, step, showMoreButton }) => {
-		const read = useData(records.list, { limit: COUNTED_CEILING });
+	draw: ({
+		getRecords,
+		getGroupBy: groupBy,
+		getShownAtFirst: shownAtFirst,
+		getStep: step,
+		getShowMoreButton: showMoreButton,
+	}) => {
+		const read = useData(getRecords, { limit: COUNTED_CEILING });
 		const groupKey = groupBy.trim() || BY_FOLDER;
 		const atFirst = askedCount(shownAtFirst, SHOWN_AT_FIRST);
 		const added = askedCount(step, STEP);
@@ -77,8 +82,8 @@ export const metadata = defineMetadata(BreakdownBars, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			groupBy: { value: "status" },
-			records: {
+			getGroupBy: { value: "status" },
+			getRecords: {
 				rows: [
 					{ path: "Books/One.md", name: "One", status: "Reading" },
 					{ path: "Books/Two.md", name: "Two", status: "Reading" },
@@ -89,25 +94,29 @@ export const metadata = defineMetadata(BreakdownBars, {
 		},
 	},
 	props: {
-		records: {
+		getRecords: {
 			label: "Records",
 			hint: "The notes to split up.",
+			aka: ["records"],
 		},
-		groupBy: {
+		getGroupBy: {
 			label: "Group by",
 			hint: "Write folder to split by the folder a note sits in, or the name of a property to split by its value.",
+			aka: ["groupBy"],
 		},
-		shownAtFirst: {
+		getShownAtFirst: {
 			label: "Bars shown at first",
 			hint: "How many of the biggest groups get a bar before anything is pressed.",
-			aka: ["shown"],
+			aka: ["shownAtFirst", "shown"],
 		},
-		step: {
+		getStep: {
 			label: "Bars added by a press",
 			hint: "How many more bars each press of Show more draws.",
+			aka: ["step"],
 		},
-		showMoreButton: {
+		getShowMoreButton: {
 			hint: "Whether a press may draw past the first bars. Without it the rest are summed into one line.",
+			aka: ["showMoreButton"],
 		},
 	},
 });

@@ -1,6 +1,5 @@
 import {
-	IListGateway,
-	IValueGateway,
+	IQuery,
 	VaultRecordSchema,
 	type VaultRecord,
 	createWidget,
@@ -48,14 +47,14 @@ type Kind = z.infer<typeof KindSchema>;
 
 const ChartWidget = createWidget({
 	inject: {
-		records: IListGateway.of(VaultRecordSchema),
-		across: IValueGateway.of(z.string().default("")).pick("get"),
-		series: IListGateway.of(SeriesSchema),
-		kind: IValueGateway.of(KindSchema.default("area")).pick("get"),
+		getRecords: IQuery.of(z.array(VaultRecordSchema)),
+		getAcross: IQuery.of(z.string().default("")),
+		getSeries: IQuery.of(z.array(SeriesSchema)),
+		getKind: IQuery.of(KindSchema.default("area")),
 	},
-	draw: ({ records, across, series, kind }) => {
-		const read = useData(records.list, { limit: POINTS_AT_MOST });
-		const declared = useData(series.list, { limit: SERIES_AT_MOST }).data;
+	draw: ({ getRecords, getAcross: across, getSeries, getKind: kind }) => {
+		const read = useData(getRecords, { limit: POINTS_AT_MOST });
+		const declared = useData(getSeries, { limit: SERIES_AT_MOST }).data;
 		const acrossProperty = across.trim();
 
 		if (read.failure !== null) return <Said text={read.failure} isFailure />;
@@ -99,7 +98,7 @@ export const metadata = defineMetadata(ChartWidget, {
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
-			records: {
+			getRecords: {
 				rows: [
 					{ name: "Jan", notes: 186, links: 80 },
 					{ name: "Feb", notes: 305, links: 200 },
@@ -109,7 +108,7 @@ export const metadata = defineMetadata(ChartWidget, {
 					{ name: "Jun", notes: 214, links: 140 },
 				],
 			},
-			series: {
+			getSeries: {
 				rows: [
 					{ property: "notes", label: "Notes" },
 					{ property: "links", label: "Links" },
@@ -118,22 +117,26 @@ export const metadata = defineMetadata(ChartWidget, {
 		},
 	},
 	props: {
-		records: {
+		getRecords: {
 			label: "Records",
 			hint: "The notes the chart reads, one point each.",
+			aka: ["records"],
 		},
-		across: {
+		getAcross: {
 			label: "Across",
+			aka: ["across"],
 			hint: "The property each point stands at, such as a date or a name. Left empty, the note's own name. Dates are put in order.",
 			control: "line",
 		},
-		series: {
+		getSeries: {
 			label: "Series",
+			aka: ["series"],
 			hint: "The number properties drawn, in the order they are listed. Left empty, every property holding a number.",
 			describes: { property: "Property", label: "Label" },
 		},
-		kind: {
+		getKind: {
 			design: true,
+			aka: ["kind"],
 			label: "Drawn as",
 			hint: "A glance is the latest value of the first series with its sparkline under it.",
 			options: [

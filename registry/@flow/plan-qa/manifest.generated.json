@@ -30,7 +30,7 @@
 			"h": 5
 		},
 		"props": {
-			"questions": {
+			"getQuestions": {
 				"rows": [
 					{
 						"question": "Where does the loading threshold live?",
@@ -60,15 +60,16 @@
 			"default": "@flow/qa-block",
 			"surface": "group",
 			"gives": {
-				"asked": ["question", "options", "answer", "reason"]
+				"getAsked": ["question", "options", "answer", "reason"]
 			}
 		}
 	},
 	"props": {
-		"questions": {
+		"getQuestions": {
 			"kind": "collection",
 			"label": "Questions",
 			"hint": "One record per question asked, each carrying the options offered, the answer chosen and the reason for it.",
+			"aka": ["questions"],
 			"writes": ["list", "get"],
 			"describes": {
 				"question": {

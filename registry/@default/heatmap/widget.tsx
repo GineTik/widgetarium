@@ -87,15 +87,22 @@ const SQUARE_CORNER = 2.5;
 
 const HeatmapWidget = createWidget({
 	inject: {
-		log: IQuery.of(z.array(DayNoteSchema)),
-		pick: IQuery.of(z.unknown()),
-		year: IQuery.of(z.number().default(0)),
-		isRound: IQuery.of(z.boolean().default(false)),
-		isWeekStartingMonday: IQuery.of(z.boolean().default(true)),
+		getLogs: IQuery.of(z.array(DayNoteSchema)),
+		getPick: IQuery.of(z.unknown()),
+		getYear: IQuery.of(z.number().default(0)),
+		getIsRound: IQuery.of(z.boolean().default(false)),
+		getIsWeekStartingMonday: IQuery.of(z.boolean().default(true)),
 		navigator: INavigator,
 	},
-	draw: ({ pick, year, isRound, isWeekStartingMonday, log, navigator }) => {
-		const rows = useData(log, { limit: ALL_DAYS }).data;
+	draw: ({
+		getPick: pick,
+		getYear: year,
+		getIsRound: isRound,
+		getIsWeekStartingMonday: isWeekStartingMonday,
+		getLogs,
+		navigator,
+	}) => {
+		const rows = useData(getLogs, { limit: ALL_DAYS }).data;
 
 		if (rows.length === 0) {
 			return (
@@ -141,7 +148,7 @@ export const metadata = defineMetadata(HeatmapWidget, {
 	preview: {
 		size: { w: 7, h: 3 },
 		props: {
-			log: {
+			getLogs: {
 				rows: [
 					{
 						path: "preview/exercise.md",
@@ -300,21 +307,23 @@ export const metadata = defineMetadata(HeatmapWidget, {
 		shot: { of: "181870122" },
 	},
 	props: {
-		log: {
+		getLogs: {
 			label: "Log",
+			aka: ["log"],
 			describes: {
 				days: { type: "date", many: true },
 				done: { type: "number" },
 			},
 		},
-		pick: {
+		getPick: {
 			label: "Which habit",
 			hint: "One habit only. Nothing picked draws all of them.",
-			source: { implementation: "@core/selection", fields: { rows: "log", field: "name" } },
+			aka: ["pick"],
+			source: { implementation: "@core/selection", fields: { rows: "getLogs", field: "name" } },
 		},
-		year: { label: "Year, or 0 for this one" },
-		isRound: { label: "Round cells instead of square", design: true },
-		isWeekStartingMonday: { label: "Weeks start on Monday" },
+		getYear: { label: "Year, or 0 for this one", aka: ["year"] },
+		getIsRound: { label: "Round cells instead of square", design: true, aka: ["isRound"] },
+		getIsWeekStartingMonday: { label: "Weeks start on Monday", aka: ["isWeekStartingMonday"] },
 	},
 });
 

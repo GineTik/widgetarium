@@ -30,10 +30,10 @@
 			"h": 6
 		},
 		"props": {
-			"body": {
+			"getBody": {
 				"value": "The board now reads a drop as a path, so a tile carried across the grain wraps the node it landed on.\n\nThe measure held: prose stays at reading width while a figure takes the whole column."
 			},
-			"figures": {
+			"getFigures": {
 				"rows": [
 					{
 						"caption": "A tile carried across the grain wraps the leaf under the pointer.",
@@ -41,7 +41,7 @@
 					}
 				]
 			},
-			"testPlan": {
+			"getTestPlan": {
 				"rows": [
 					{
 						"step": "Carry a tile onto a leaf from the side.",
@@ -60,7 +60,7 @@
 					}
 				]
 			},
-			"fixes": {
+			"getFixes": {
 				"rows": [
 					{
 						"title": "A drop across the grain wrapped the parent, not the leaf.",
@@ -80,26 +80,28 @@
 			"default": "@flow/report-figure",
 			"surface": "none",
 			"gives": {
-				"source": ["caption", "image", "alt", "drawing"]
+				"getSource": ["caption", "image", "alt", "drawing"]
 			}
 		}
 	},
 	"props": {
-		"body": {
+		"getBody": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Report",
 			"hint": "The prose of the report, typed here or bound to a note. Headings, lists and links work as they do in a note.",
+			"aka": ["body"],
 			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"figures": {
+		"getFigures": {
 			"kind": "collection",
 			"label": "Figures",
 			"hint": "One record per figure, each drawn by the widget in the figure slot.",
+			"aka": ["figures"],
 			"writes": ["list", "get"],
 			"describes": {
 				"caption": {
@@ -127,10 +129,11 @@
 				"rows": []
 			}
 		},
-		"testPlan": {
+		"getTestPlan": {
 			"kind": "collection",
 			"label": "Test plan",
 			"hint": "One record per step: what to press, and what should happen when it is pressed.",
+			"aka": ["testPlan"],
 			"writes": ["list", "get"],
 			"describes": {
 				"step": {
@@ -153,10 +156,11 @@
 				"rows": []
 			}
 		},
-		"fixes": {
+		"getFixes": {
 			"kind": "collection",
 			"label": "What was fixed",
 			"hint": "One record per fix, with the file it was made in.",
+			"aka": ["fixes"],
 			"writes": ["list", "get"],
 			"describes": {
 				"title": {
@@ -174,23 +178,25 @@
 				"rows": []
 			}
 		},
-		"measure": {
+		"getMeasure": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Reading width, in characters",
 			"hint": "How wide the prose is allowed to run. A figure ignores it and takes the whole tile.",
+			"aka": ["measure"],
 			"writes": ["get"],
 			"default": {
 				"value": 68
 			}
 		},
-		"stepsPerPage": {
+		"getStepsPerPage": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Test steps per page",
 			"hint": "How many steps of the test plan are drawn at once.",
+			"aka": ["stepsPerPage"],
 			"writes": ["get"],
 			"default": {
 				"value": 8
@@ -200,9 +206,9 @@
 	"migrates": [],
 	"files": [
 		"widget.tsx",
-		"figure-item.tsx",
 		"figures.tsx",
 		"fixes.tsx",
+		"no-figure-slot.tsx",
 		"pager.tsx",
 		"prose-of.ts",
 		"prose.tsx",
@@ -210,8 +216,7 @@
 		"style.ts",
 		"test-plan.tsx",
 		"test-step-row.tsx",
-		"types.ts",
-		"use-figure-source.ts"
+		"types.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/report-figure"]

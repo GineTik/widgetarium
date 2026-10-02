@@ -12,5 +12,5 @@ export type FileFace = {
 };
 
 export type FileRow = Row<FileChangeRecord>;
-export type FileSlot = Slot<{ file: FileFace }>;
+export type FileSlot = Slot<{ getFile: FileFace }>;
 export type Drawn = NonNullable<FileSlot>;

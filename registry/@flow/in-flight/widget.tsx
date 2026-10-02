@@ -131,10 +131,10 @@ const InFlight = createWidget({
 		flights: IListGateway.of(FlightSchema, { sort: [{ prop: "startedAt", dir: "desc" }] }),
 		selection: IValueGateway.of(z.string().nullable()).pick("get", "update"),
 		pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
-		row: ISlot.of<{ flight: FlightFace }>({
+		row: ISlot.of<{ getFlight: FlightFace }>({
 			default: "@flow/flight-row",
 			surface: "group",
-			gives: { flight: ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"] },
+			gives: { getFlight: ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"] },
 		}),
 	},
 	draw: ({ flights, pageSize, selection, row: Drawn }) => {

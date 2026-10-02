@@ -21,7 +21,7 @@ export function Cell({ Drawn, project, isPicked: isOn, onPick }: CellProps) {
 				press();
 			}}
 		>
-			<Drawn project={project} />
+			<Drawn getProject={project} />
 		</div>
 	);
 }

@@ -2,7 +2,7 @@ import { IValueGateway, z, type DrawnProps, type Slot } from "widgetarium";
 import type { ItemSchema, props } from "./widget";
 
 export type Item = z.infer<typeof ItemSchema>;
-export type Given = { source: IValueGateway };
+export type Given = { getSource: IValueGateway };
 export type ItemSlot = Slot<Given>;
 export type Drawn = NonNullable<ItemSlot>;
 

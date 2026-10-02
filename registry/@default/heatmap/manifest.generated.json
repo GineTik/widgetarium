@@ -29,7 +29,7 @@
 			"h": 3
 		},
 		"props": {
-			"log": {
+			"getLogs": {
 				"rows": [
 					{
 						"path": "preview/exercise.md",
@@ -190,9 +190,10 @@
 		}
 	},
 	"props": {
-		"log": {
+		"getLogs": {
 			"kind": "collection",
 			"label": "Log",
+			"aka": ["log"],
 			"writes": ["list", "get"],
 			"describes": {
 				"days": {
@@ -209,46 +210,50 @@
 				"rows": []
 			}
 		},
-		"pick": {
+		"getPick": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Which habit",
 			"hint": "One habit only. Nothing picked draws all of them.",
+			"aka": ["pick"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "log",
+					"rows": "getLogs",
 					"field": "name"
 				}
 			},
 			"writes": ["get"]
 		},
-		"year": {
+		"getYear": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Year, or 0 for this one",
+			"aka": ["year"],
 			"writes": ["get"],
 			"default": {
 				"value": 0
 			}
 		},
-		"isRound": {
+		"getIsRound": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Round cells instead of square",
+			"aka": ["isRound"],
 			"design": true,
 			"writes": ["get"],
 			"default": {
 				"value": false
 			}
 		},
-		"isWeekStartingMonday": {
+		"getIsWeekStartingMonday": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
+			"aka": ["isWeekStartingMonday"],
 			"writes": ["get"],
 			"default": {
 				"value": true

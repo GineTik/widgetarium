@@ -152,8 +152,8 @@ const items = arrayGateway(
 	"feed-test/daily",
 );
 
-function Probe({ source }: { readonly source: ValueGateway<unknown, EveryValueVerb> }): ReactElement {
-	const record = useData(source.get).data;
+function Probe({ getSource }: { readonly getSource: ValueGateway<unknown, EveryValueVerb> }): ReactElement {
+	const record = useData(getSource.get).data;
 	return h("p", { className: "probe" }, String(fieldIn(record, "content") ?? ""));
 }
 
@@ -169,7 +169,7 @@ const reveal = async (): Promise<void> => {
 };
 
 const cards = withSlotSurface(Probe, { surface: "group", isCard: true });
-await draw({ items, pageSize: soloGateway(10, {}, "feed-test/size"), slots: { item: cards } });
+await draw({ items, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: { item: cards } });
 check("the first load draws ten", shown().length, 10);
 check("each item is read whole through the collection's get, not the listed record", shown()[0], "Body of Daily/01.md");
 check(
@@ -239,13 +239,13 @@ check(
 render(null, host);
 await draw({
 	items: arrayGateway([], {}, "feed-test/empty"),
-	pageSize: soloGateway(10, {}, "feed-test/size"),
+	getPageSize: soloGateway(10, {}, "feed-test/size"),
 	slots: { item: cards },
 });
 check("an empty source says so", (host.textContent ?? "").trim(), "Nothing here yet.");
 
 render(null, host);
-await draw({ items, pageSize: soloGateway(10, {}, "feed-test/size"), slots: {} });
+await draw({ items, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: {} });
 check(
 	"a feed with no widget in its slot says so",
 	(host.textContent ?? "").trim(),

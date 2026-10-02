@@ -38,57 +38,61 @@
 			"h": 4
 		},
 		"props": {
-			"source": {
+			"getSource": {
 				"value": "# Weekly review\n\nWhat moved, what stalled, and **one thing** for next week.\n\n- [x] Inbox to zero\n- [ ] Plan Monday\n- [ ] Call the printer\n\n## Notes\n\nThe launch slipped a week, and nobody minded.\n\nNext week is for the pricing page."
 			},
-			"collapsible": {
+			"getCollapsible": {
 				"value": true
 			},
-			"collapsedHeight": {
+			"getCollapsedHeight": {
 				"value": 180
 			}
 		}
 	},
 	"props": {
-		"source": {
+		"getSource": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Source",
 			"hint": "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
+			"aka": ["source"],
 			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"collapsible": {
+		"getCollapsible": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Collapse long text",
 			"hint": "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
+			"aka": ["collapsible"],
 			"writes": ["get"],
 			"default": {
 				"value": false
 			}
 		},
-		"collapsedHeight": {
+		"getCollapsedHeight": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Collapsed height, in pixels",
 			"hint": "How much of long text shows before Show more is pressed.",
+			"aka": ["collapsedHeight"],
 			"writes": ["get"],
 			"default": {
 				"value": 240
 			}
 		},
-		"step": {
+		"getStep": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Show more step, in pixels",
 			"hint": "How much each press of Show more opens. 0 opens all of it at once.",
+			"aka": ["step"],
 			"writes": ["get"],
 			"default": {
 				"value": 0

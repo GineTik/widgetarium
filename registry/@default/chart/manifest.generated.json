@@ -40,7 +40,7 @@
 			"h": 4
 		},
 		"props": {
-			"records": {
+			"getRecords": {
 				"rows": [
 					{
 						"name": "Jan",
@@ -74,7 +74,7 @@
 					}
 				]
 			},
-			"series": {
+			"getSeries": {
 				"rows": [
 					{
 						"property": "notes",
@@ -89,30 +89,33 @@
 		}
 	},
 	"props": {
-		"records": {
+		"getRecords": {
 			"kind": "collection",
 			"label": "Records",
 			"hint": "The notes the chart reads, one point each.",
+			"aka": ["records"],
 			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"across": {
+		"getAcross": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Across",
 			"hint": "The property each point stands at, such as a date or a name. Left empty, the note's own name. Dates are put in order.",
+			"aka": ["across"],
 			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"series": {
+		"getSeries": {
 			"kind": "collection",
 			"label": "Series",
 			"hint": "The number properties drawn, in the order they are listed. Left empty, every property holding a number.",
+			"aka": ["series"],
 			"writes": ["list", "get"],
 			"describes": {
 				"property": {
@@ -126,12 +129,13 @@
 				"rows": []
 			}
 		},
-		"kind": {
+		"getKind": {
 			"kind": "value",
 			"control": "choice",
 			"type": "line",
 			"label": "Drawn as",
 			"hint": "A glance is the latest value of the first series with its sparkline under it.",
+			"aka": ["kind"],
 			"design": true,
 			"writes": ["get"],
 			"default": {

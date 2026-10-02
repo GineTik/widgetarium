@@ -1,4 +1,4 @@
-import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IHost, INavigator, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import type { Navigation } from "widgetarium";
 import { RenderedMarkdown } from "widgetarium/kit";
 import { MissingImage } from "./missing-image";
@@ -103,11 +103,11 @@ function shownFigure(figure: Figure, navigation: Navigation, canDraw: boolean): 
 
 const ReportFigure = createWidget({
 	inject: {
-		source: IValueGateway.of(FigureSchema.default({})).pick("get"),
+		getSource: IQuery.of(FigureSchema.default({})),
 		host: IHost,
 		navigator: INavigator,
 	},
-	draw: ({ source, host, navigator }) => {
+	draw: ({ getSource: source, host, navigator }) => {
 		const caption = trimText(source.caption);
 		const alt = trimText(source.alt);
 		const shown = shownFigure(source, navigator, host.can.renderMarkdown);
@@ -152,7 +152,7 @@ export const metadata = defineMetadata(ReportFigure, {
 	preview: {
 		size: { w: 4, h: 3 },
 		props: {
-			source: {
+			getSource: {
 				value: {
 					caption: "The drop wrapped the leaf it landed on, which is how a column is made by hand.",
 					drawing: "```\n┌────────┬─────────────┐\n│  pane  │    card     │\n└────────┴─────────────┘\n```",
@@ -161,8 +161,9 @@ export const metadata = defineMetadata(ReportFigure, {
 		},
 	},
 	props: {
-		source: {
+		getSource: {
 			label: "Figure",
+			aka: ["source"],
 			hint: "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
 		},
 	},

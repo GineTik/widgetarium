@@ -1,14 +1,4 @@
-import {
-	IContent,
-	IHere,
-	IHost,
-	IReader,
-	IValueGateway,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	z,
-} from "widgetarium";
+import { IContent, IHere, IHost, IQuery, IReader, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Button, Icon, IconButton, Card } from "widgetarium/kit";
 import { useEffect, useState } from "react";
 import { LanguagePicker } from "./language-picker";
@@ -118,14 +108,14 @@ export function languageOf(link: unknown, asked: string): string {
 
 const CodeBlock = createWidget({
 	inject: {
-		lines: IValueGateway.of(z.number().default(30)).pick("get"),
-		maxKilobytes: IValueGateway.of(z.number().default(256)).pick("get"),
+		getLines: IQuery.of(z.number().default(30)),
+		getMaxKilobytes: IQuery.of(z.number().default(256)),
 		content: IContent,
 		reader: IReader,
 		host: IHost,
 		here: IHere,
 	},
-	draw: ({ content, reader, host, here, lines: linesShown, maxKilobytes }) => {
+	draw: ({ content, reader, host, here, getLines: linesShown, getMaxKilobytes: maxKilobytes }) => {
 		const request = readRequest(content);
 		const step = Math.max(1, linesShown);
 		const maxBytes = Math.max(1, maxKilobytes) * 1024;
@@ -234,8 +224,8 @@ export const metadata = defineMetadata(CodeBlock, {
 		shot: { of: "253967223" },
 	},
 	props: {
-		lines: { label: "Lines shown at first, and added by each press" },
-		maxKilobytes: { label: "Largest file that may be shown, in KB" },
+		getLines: { label: "Lines shown at first, and added by each press", aka: ["lines"] },
+		getMaxKilobytes: { label: "Largest file that may be shown, in KB", aka: ["maxKilobytes"] },
 	},
 });
 

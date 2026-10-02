@@ -41,7 +41,7 @@ export function TailRows({ rows, total, following, Line }: RowsProps) {
 					slot={Line}
 					rows={oldestFirst}
 					keyOf={(row: Row<LogLine>) => row.ref}
-					give={(row: Row<LogLine>) => ({ entry: row })}
+					give={(row: Row<LogLine>) => ({ getEntry: row })}
 				/>
 			</div>
 			{isFollowing ? null : <BackToEnd behind={behind} onPress={() => setFollowing(true)} />}

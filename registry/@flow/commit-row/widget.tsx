@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Icon, Row, cn } from "widgetarium/kit";
 import { saidOf } from "./counts";
 import { DiffStat } from "./diff-stat";
@@ -141,7 +141,7 @@ function parentCount(value: Commit["parents"]): number {
 
 const CommitRow = createWidget({
 	inject: {
-		commit: IValueGateway.of(
+		getCommit: IQuery.of(
 			CommitSchema.default({
 				sha: "70a3c80f42",
 				subject:
@@ -152,9 +152,9 @@ const CommitRow = createWidget({
 				removed: 412,
 				parents: ["83ab3d2e71"],
 			}),
-		).pick("get"),
+		),
 	},
-	draw: ({ commit }) => {
+	draw: ({ getCommit: commit }) => {
 		const subject = saidOf(commit.subject);
 		const isMerge = parentCount(commit.parents) > 1;
 
@@ -196,7 +196,7 @@ export const metadata = defineMetadata(CommitRow, {
 	preview: {
 		size: { w: 4, h: 1 },
 		props: {
-			commit: {
+			getCommit: {
 				value: {
 					sha: "748628d1c0",
 					subject:
@@ -211,8 +211,9 @@ export const metadata = defineMetadata(CommitRow, {
 		},
 	},
 	props: {
-		commit: {
+		getCommit: {
 			label: "Commit",
+			aka: ["commit"],
 			hint: "The commit this row draws. Held in a tree it is handed down; standing alone it is the one typed here.",
 		},
 	},

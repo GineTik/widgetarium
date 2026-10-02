@@ -95,7 +95,7 @@
 			"default": "@flow/flight-row",
 			"surface": "group",
 			"gives": {
-				"flight": ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"]
+				"getFlight": ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"]
 			}
 		}
 	},

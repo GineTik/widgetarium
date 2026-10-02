@@ -30,7 +30,7 @@
 			"h": 3
 		},
 		"props": {
-			"album": {
+			"getAlbum": {
 				"value": {
 					"title": "Kind of Blue",
 					"artist": "Miles Davis",
@@ -40,11 +40,12 @@
 		}
 	},
 	"props": {
-		"album": {
+		"getAlbum": {
 			"kind": "value",
 			"control": "json",
 			"label": "Album",
 			"hint": "The album this cover draws. Held in a shelf it is handed down; standing alone it is the one typed here.",
+			"aka": ["album"],
 			"writes": ["get"],
 			"default": {
 				"value": {
@@ -54,12 +55,13 @@
 				}
 			}
 		},
-		"beside": {
+		"getBeside": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Art beside the text",
 			"hint": "On, the art stands on the leading edge with the title and artist beside it rather than beneath.",
+			"aka": ["beside"],
 			"writes": ["get"],
 			"default": {
 				"value": false

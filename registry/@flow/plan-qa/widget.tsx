@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IListGateway, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IQuery, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row, Slot } from "widgetarium";
 import { Button, SlotList } from "widgetarium/kit";
 
@@ -44,7 +44,7 @@ const QuestionSchema = z.looseObject({
 
 type Question = z.infer<typeof QuestionSchema>;
 
-type Given = { asked: Question };
+type Given = { getAsked: Question };
 type QuestionSlot = Slot<Given>;
 
 const PAGE_SIZE = 20;
@@ -54,8 +54,8 @@ const SHOW_MORE = "Show more";
 
 const PlanQa = createWidget({
 	inject: {
-		questions: IListGateway.of(QuestionSchema, {
-			default: [
+		getQuestions: IQuery.of(
+			z.array(QuestionSchema).default([
 				{
 					question: "Where does the loading threshold live?",
 					options: ["one engine constant", "per widget", "per binding"],
@@ -69,17 +69,17 @@ const PlanQa = createWidget({
 					reason:
 						"Enough to fill a screen twice, few enough that a vault of a thousand notes cannot take the frame with it.",
 				},
-			],
-		}),
+			]),
+		),
 		question: ISlot.of<Given>({
 			default: "@flow/qa-block",
 			surface: "group",
-			gives: { asked: ["question", "options", "answer", "reason"] },
+			gives: { getAsked: ["question", "options", "answer", "reason"] },
 		}),
 	},
-	draw: ({ questions, question }) => {
+	draw: ({ getQuestions, question }) => {
 		const [shown, setShown] = useState(PAGE_SIZE);
-		const listed = useData(questions.list, { offset: 0, limit: shown });
+		const listed = useData(getQuestions, { offset: 0, limit: shown });
 		const said = saidInstead(question, listed);
 
 		if (said)
@@ -125,7 +125,7 @@ export const metadata = defineMetadata(PlanQa, {
 	preview: {
 		size: { w: 5, h: 5 },
 		props: {
-			questions: {
+			getQuestions: {
 				rows: [
 					{
 						question: "Where does the loading threshold live?",
@@ -152,8 +152,9 @@ export const metadata = defineMetadata(PlanQa, {
 		},
 	},
 	props: {
-		questions: {
+		getQuestions: {
 			label: "Questions",
+			aka: ["questions"],
 			hint: "One record per question asked, each carrying the options offered, the answer chosen and the reason for it.",
 			describes: {
 				question: {
@@ -201,4 +202,4 @@ function saidInstead(
 
 const keyOf = (row: Row<Question>) => row.ref;
 
-const give = (row: Row<Question>) => ({ asked: row });
+const give = (row: Row<Question>) => ({ getAsked: row });

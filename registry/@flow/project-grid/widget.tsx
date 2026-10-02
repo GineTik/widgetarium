@@ -60,10 +60,10 @@ const ProjectGrid = createWidget({
 		projects: IListGateway.of(ProjectSchema, { default: [] }),
 		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
 		pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
-		card: ISlot.of<{ project: Row<Project> }>({
+		card: ISlot.of<{ getProject: Row<Project> }>({
 			default: "@flow/project-card",
 			surface: "group",
-			gives: { project: ["mark", "name", "repository", "open", "doing", "done", "touched"] },
+			gives: { getProject: ["mark", "name", "repository", "open", "doing", "done", "touched"] },
 		}),
 	},
 	draw: ({ projects, selection, pageSize, card }) => {

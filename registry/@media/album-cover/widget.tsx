@@ -1,4 +1,4 @@
-import { IHost, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IHost, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Art } from "./art";
 import type { Album } from "./types";
 
@@ -60,11 +60,11 @@ export const AlbumSchema = z.object({
 
 const AlbumCover = createWidget({
 	inject: {
-		album: IValueGateway.of(AlbumSchema.default({ title: "In Rainbows", artist: "Radiohead", tracks: 10 })).pick("get"),
-		beside: IValueGateway.of(z.boolean().default(false)).pick("get"),
+		getAlbum: IQuery.of(AlbumSchema.default({ title: "In Rainbows", artist: "Radiohead", tracks: 10 })),
+		getBeside: IQuery.of(z.boolean().default(false)),
 		host: IHost,
 	},
-	draw: ({ album, beside, host }) => {
+	draw: ({ getAlbum: album, getBeside: beside, host }) => {
 		return (
 			<div className={beside ? "wg-album is-beside" : "wg-album"}>
 				<style>{CSS}</style>
@@ -97,15 +97,17 @@ export const metadata = defineMetadata(AlbumCover, {
 	],
 	preview: {
 		size: { w: 2, h: 3 },
-		props: { album: { value: { title: "Kind of Blue", artist: "Miles Davis", tracks: 5 } } },
+		props: { getAlbum: { value: { title: "Kind of Blue", artist: "Miles Davis", tracks: 5 } } },
 	},
 	props: {
-		album: {
+		getAlbum: {
 			label: "Album",
+			aka: ["album"],
 			hint: "The album this cover draws. Held in a shelf it is handed down; standing alone it is the one typed here.",
 		},
-		beside: {
+		getBeside: {
 			label: "Art beside the text",
+			aka: ["beside"],
 			hint: "On, the art stands on the leading edge with the title and artist beside it rather than beneath.",
 		},
 	},

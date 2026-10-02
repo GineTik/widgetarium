@@ -1,7 +1,7 @@
 import {
 	IListGateway,
+	IQuery,
 	ISlot,
-	IValueGateway,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -24,17 +24,17 @@ export const ItemSchema = VaultRecordSchema.extend({ content: z.string().nullabl
 
 export const props = defineProps({
 	items: IListGateway.of(ItemSchema),
-	pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
+	getPageSize: IQuery.of(z.number().default(PAGE_SIZE)),
 	item: ISlot.of<Given>({
 		default: "@default/obsidian-markdown-preview",
 		surface: "group",
-		gives: { source: ["content", "path"] },
+		gives: { getSource: ["content", "path"] },
 	}),
 });
 
 const FeedWidget = createWidget({
 	inject: props,
-	draw: ({ items, pageSize, item }) => {
+	draw: ({ items, getPageSize: pageSize, item }) => {
 		const size = pageSizeOf(pageSize);
 		const first = useData(items.list, { offset: 0, limit: size });
 		const { pages, more } = usePages(items.id, size);
@@ -79,8 +79,9 @@ export const metadata = defineMetadata(FeedWidget, {
 			label: "Items",
 			hint: "The records the feed draws, one after another, newest first when the source is sorted that way.",
 		},
-		pageSize: {
+		getPageSize: {
 			label: "Items per load",
+			aka: ["pageSize"],
 			hint: "How many more are drawn each time the end of the feed comes into view.",
 		},
 	},

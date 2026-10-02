@@ -8,7 +8,7 @@ export function PickedRow({ row, Drawn, isPicked, onPick }: PickedRowProps) {
 	const marks = ["ffl-pick", onPick ? "is-pressable" : "", isPicked ? "is-picked" : ""].filter(Boolean).join(" ");
 	return (
 		<div className={marks} {...pressablePropsOf(isPicked, onPick)}>
-			<Drawn file={faceOf(row)} />
+			<Drawn getFile={faceOf(row)} />
 		</div>
 	);
 }

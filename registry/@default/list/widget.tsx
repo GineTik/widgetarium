@@ -213,7 +213,7 @@ export const metadata = defineMetadata(ListWidget, {
 			hint: "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
 		},
 		handedAs: {
-			hint: "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes commit.",
+			hint: "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes getCommit.",
 		},
 		selection: {
 			label: "Selected row",

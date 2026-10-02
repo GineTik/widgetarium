@@ -29,7 +29,7 @@
 			"h": 3
 		},
 		"props": {
-			"source": {
+			"getSource": {
 				"value": {
 					"caption": "The drop wrapped the leaf it landed on, which is how a column is made by hand.",
 					"drawing": "```\n┌────────┬─────────────┐\n│  pane  │    card     │\n└────────┴─────────────┘\n```"
@@ -38,11 +38,12 @@
 		}
 	},
 	"props": {
-		"source": {
+		"getSource": {
 			"kind": "value",
 			"control": "json",
 			"label": "Figure",
 			"hint": "The figure to draw: a caption, and either the name of an image this vault holds or a drawing written as markdown.",
+			"aka": ["source"],
 			"writes": ["get"],
 			"default": {
 				"value": {}

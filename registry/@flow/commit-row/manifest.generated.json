@@ -30,7 +30,7 @@
 			"h": 1
 		},
 		"props": {
-			"commit": {
+			"getCommit": {
 				"value": {
 					"sha": "748628d1c0",
 					"subject": "refactor(catalogue): break the two functions past the decomposition limits into the questions they ask",
@@ -44,11 +44,12 @@
 		}
 	},
 	"props": {
-		"commit": {
+		"getCommit": {
 			"kind": "value",
 			"control": "json",
 			"label": "Commit",
 			"hint": "The commit this row draws. Held in a tree it is handed down; standing alone it is the one typed here.",
+			"aka": ["commit"],
 			"writes": ["get"],
 			"default": {
 				"value": {

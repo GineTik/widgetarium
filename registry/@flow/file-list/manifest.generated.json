@@ -80,7 +80,7 @@
 			"default": "@flow/file-row",
 			"surface": "group",
 			"gives": {
-				"file": ["path", "added", "removed", "change", "from"]
+				"getFile": ["path", "added", "removed", "change", "from"]
 			}
 		}
 	},

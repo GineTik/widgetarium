@@ -1,4 +1,4 @@
-import { IHost, INavigator, IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IHost, INavigator, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Icon, IconButton, RenderedMarkdown } from "widgetarium/kit";
 import { Collapsed } from "./collapsed";
 
@@ -26,14 +26,21 @@ function pixelsOf(held: number, fallback: number) {
 
 const ObsidianMarkdownPreview = createWidget({
 	inject: {
-		source: IValueGateway.of(MarkdownSourceSchema.default("")).pick("get"),
-		collapsible: IValueGateway.of(z.boolean().default(false)).pick("get"),
-		collapsedHeight: IValueGateway.of(z.number().default(240)).pick("get"),
-		step: IValueGateway.of(z.number().default(0)).pick("get"),
+		getSource: IQuery.of(MarkdownSourceSchema.default("")),
+		getCollapsible: IQuery.of(z.boolean().default(false)),
+		getCollapsedHeight: IQuery.of(z.number().default(240)),
+		getStep: IQuery.of(z.number().default(0)),
 		host: IHost,
 		navigator: INavigator,
 	},
-	draw: ({ source, collapsible, collapsedHeight, step, host, navigator }) => {
+	draw: ({
+		getSource: source,
+		getCollapsible: collapsible,
+		getCollapsedHeight: collapsedHeight,
+		getStep: step,
+		host,
+		navigator,
+	}) => {
 		const collapsedPx = pixelsOf(collapsedHeight, 240);
 		const stepPx = pixelsOf(step, 0);
 		const path = pathOf(source);
@@ -105,29 +112,33 @@ export const metadata = defineMetadata(ObsidianMarkdownPreview, {
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
-			source: {
+			getSource: {
 				value:
 					"# Weekly review\n\nWhat moved, what stalled, and **one thing** for next week.\n\n- [x] Inbox to zero\n- [ ] Plan Monday\n- [ ] Call the printer\n\n## Notes\n\nThe launch slipped a week, and nobody minded.\n\nNext week is for the pricing page.",
 			},
-			collapsible: { value: true },
-			collapsedHeight: { value: 180 },
+			getCollapsible: { value: true },
+			getCollapsedHeight: { value: 180 },
 		},
 	},
 	props: {
-		source: {
+		getSource: {
 			label: "Source",
+			aka: ["source"],
 			hint: "The markdown to draw, typed here or bound to a note. # titles the page, ## a region, ### a group; plain lines are paragraphs. Links and embeds work as in a note.",
 		},
-		collapsible: {
+		getCollapsible: {
 			label: "Collapse long text",
+			aka: ["collapsible"],
 			hint: "Off, all of it is drawn. On, long text is cut to the collapsed height with Show more under it.",
 		},
-		collapsedHeight: {
+		getCollapsedHeight: {
 			label: "Collapsed height, in pixels",
+			aka: ["collapsedHeight"],
 			hint: "How much of long text shows before Show more is pressed.",
 		},
-		step: {
+		getStep: {
 			label: "Show more step, in pixels",
+			aka: ["step"],
 			hint: "How much each press of Show more opens. 0 opens all of it at once.",
 		},
 	},
