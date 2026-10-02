@@ -33,7 +33,7 @@ export function implementationBody(state: SettingsState, prop: SettingsProp): Re
 	const chosen = hostGatewayFor(spec, config);
 	if (!chosen || !isPackImplementation(chosen.id)) return [];
 	const write = (next: HostFields): void => writeProp(state, key, spec, { ...config, fields: next });
-	return packFieldRows(chosen.fields, fieldsIn(config.fields), write);
+	return packFieldRows(chosen.fields, fieldsIn(config.fields), write, offeredEntries(state.refs));
 }
 
 export function implementationLabel(state: SettingsState, prop: SettingsProp): string {

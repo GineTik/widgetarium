@@ -1,4 +1,6 @@
 import type { CommandMetadata, GatewayMetadata } from "../gateway/implementation-metadata.js";
+import type { VaultSlot } from "../gateway/obsidian.js";
+import type { RefDescription } from "../gateway/refs.js";
 
 export interface CommandLineOutcome {
 	readonly ok: boolean;
@@ -11,15 +13,51 @@ export interface CommandLinePort {
 	run(file: string, args: readonly string[], cwd?: string): Promise<CommandLineOutcome>;
 }
 
+export interface NetworkAnswer {
+	readonly status: number;
+	readonly text: string;
+}
+
+export interface NetworkAsk {
+	readonly method?: string;
+	readonly body?: string;
+	readonly headers?: Readonly<Record<string, string>>;
+}
+
+export interface NetworkPort {
+	readonly can: boolean;
+	request(url: string, ask: NetworkAsk): Promise<NetworkAnswer>;
+}
+
+export interface VaultNote {
+	readonly path: string;
+	readonly name: string;
+	readonly props: Readonly<Record<string, unknown>>;
+}
+
+export interface VaultPort {
+	readonly can: boolean;
+	folder(path: string): VaultSlot;
+	notesTagged(tag: string): Promise<readonly VaultNote[]>;
+	notesMatching(text: string): Promise<readonly VaultNote[]>;
+	open(path: string): void;
+}
+
 export interface RefsPort {
 	read(ref: string): Promise<unknown>;
 	watch(refs: string[], changed: () => void): () => void;
+	get(ref: string): unknown;
+	described(ref: string): RefDescription | null;
 }
 
 export interface ImplementationPorts {
+	readonly self: string;
 	readonly commandLine: CommandLinePort;
 	readonly workingDirectory: string | undefined;
+	readonly network: NetworkPort;
+	readonly vault: VaultPort;
 	readonly refs: RefsPort;
+	confirm(said: string): Promise<boolean>;
 }
 
 export interface Pack {
@@ -29,11 +67,39 @@ export interface Pack {
 	readonly commands: readonly CommandMetadata[];
 }
 
-const OUTSIDE_THE_PACK = '{id} is not named under its pack "{pack}": name it "{pack}/…"';
+export interface PortsHost {
+	readonly commandLine?: CommandLinePort | undefined;
+	readonly workingDirectory?: string | undefined;
+	readonly network?: NetworkPort | undefined;
+	readonly vault?: VaultPort | undefined;
+	readonly confirm?: ((said: string) => Promise<boolean>) | undefined;
+}
 
-const NO_COMMAND_LINE: CommandLinePort = {
+const OUTSIDE_THE_PACK = '{id} is not named under its pack "{pack}": name it "{pack}/…"';
+const NO_COMMAND_LINE = "no command line on this host";
+const NO_NETWORK = "no network on this host";
+const NO_VAULT = "no vault on this host";
+
+const SHUT_COMMAND_LINE: CommandLinePort = {
 	can: false,
-	run: async () => ({ ok: false, output: "", failure: "no command line on this host" }),
+	run: async () => ({ ok: false, output: "", failure: NO_COMMAND_LINE }),
+};
+
+const SHUT_NETWORK: NetworkPort = {
+	can: false,
+	request: () => Promise.reject(new Error(NO_NETWORK)),
+};
+
+const SHUT_VAULT: VaultPort = {
+	can: false,
+	folder: () => {
+		throw new Error(NO_VAULT);
+	},
+	notesTagged: () => Promise.reject(new Error(NO_VAULT)),
+	notesMatching: () => Promise.reject(new Error(NO_VAULT)),
+	open: () => {
+		throw new Error(NO_VAULT);
+	},
 };
 
 const REGISTERED = new Map<string, Pack>();
@@ -57,11 +123,14 @@ export function registeredCommands(): CommandMetadata[] {
 	return [...REGISTERED.values()].flatMap((pack) => pack.commands);
 }
 
-export interface PortsHost {
-	readonly commandLine?: CommandLinePort | undefined;
-	readonly workingDirectory?: string | undefined;
-}
-
-export function portsOf(host: PortsHost, refs: RefsPort): ImplementationPorts {
-	return { commandLine: host.commandLine ?? NO_COMMAND_LINE, workingDirectory: host.workingDirectory, refs };
+export function portsOf(host: PortsHost, refs: RefsPort, self: string): ImplementationPorts {
+	return {
+		self,
+		commandLine: host.commandLine ?? SHUT_COMMAND_LINE,
+		workingDirectory: host.workingDirectory,
+		network: host.network ?? SHUT_NETWORK,
+		vault: host.vault ?? SHUT_VAULT,
+		refs,
+		confirm: host.confirm ?? (async () => false),
+	};
 }

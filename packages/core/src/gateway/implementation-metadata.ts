@@ -46,6 +46,8 @@ export function defineGatewayMetadata<C extends Constructed>(
 
 export type CommandTargetKind = "collection" | "value";
 
+export type CommandConsent = "free" | "vault-target" | "always";
+
 export interface CommandMetadata<C extends Constructed = Constructed> {
 	readonly implementation: C;
 	readonly id: string;
@@ -53,6 +55,7 @@ export interface CommandMetadata<C extends Constructed = Constructed> {
 	readonly description: string;
 	readonly fields: z.ZodType;
 	readonly target: CommandTargetKind | null;
+	readonly consent: CommandConsent;
 }
 
 export interface CommandMetadataInput<C extends Constructed> {
@@ -61,6 +64,7 @@ export interface CommandMetadataInput<C extends Constructed> {
 	readonly description: string;
 	readonly fields: z.ZodType<FieldsOf<C>>;
 	readonly target?: CommandTargetKind;
+	readonly consent?: CommandConsent;
 }
 
 const NOT_A_COMMAND = "{implementation} is not a command implementation — extend ICommand.takes(schema)";
@@ -72,5 +76,5 @@ export function defineCommandMetadata<C extends Constructed>(
 	const declaration = declarationIn(implementation);
 	if (declaration?.kind !== "command" || declaration.word !== "takes")
 		throw new Error(NOT_A_COMMAND.replace("{implementation}", implementation.name || "this class"));
-	return { ...metadata, implementation, target: metadata.target ?? null };
+	return { ...metadata, implementation, target: metadata.target ?? null, consent: metadata.consent ?? "always" };
 }

@@ -9,11 +9,14 @@ import {
 	commandBindingOf,
 	commandSpecsOf,
 	isRunAllowed,
-	targetOf,
 	withRunAllowed,
 } from "../surface/command-binding.js";
 import type { CommandBinding, CommandTarget, OfferedCommand, ParsedCommandSpec } from "../surface/command-binding.js";
-import { packFieldRows } from "./pack-fields.js";
+import { hasPackFields, packFieldRows } from "./pack-fields.js";
+import { offeredEntries } from "./offered-boxes.js";
+import { isConsentNeededFor } from "../surface/host-commands.js";
+
+const NO_REFS = { described: () => null };
 import { draftOnInput, editorPopover, group, note, reportRow, valueRow } from "./settings-rows.js";
 import type { SettingsState } from "./settings-state.js";
 
@@ -49,7 +52,7 @@ export function actionGroup(state: SettingsState): ReactElement | null {
 export function commandDataGroups(state: SettingsState): ReactElement[] {
 	return commandsOf(state).map(([name, spec]) => {
 		const binding = commandBindingOf(state.tile, name, spec);
-		const isOn = isRunAllowed(binding, isVaultTarget(state, binding) || isPackCommand(binding));
+		const isOn = isRunAllowed(binding, isConsentNeededFor(binding, state.refs ?? NO_REFS));
 		const flip = (next: boolean): void => writeBinding(state, name, withRunAllowed(binding, next));
 		const toggle = h(Switch, { checked: isOn, label: spec.label, onChange: flip });
 		return group(
@@ -126,17 +129,14 @@ function implementationRow(state: SettingsState, { name, offered, selected }: Im
 
 function hasChoicesOfItsOwn(binding: CommandBinding): boolean {
 	const offered = offeredCommandOf(binding.implementation);
-	return Boolean(offered?.target || offered?.fields);
+	return Boolean(offered?.target) || (offered ? hasPackFields(offered.fields) : false);
 }
 
 function fieldChoices(state: SettingsState, name: string, binding: CommandBinding): ReactNode[] {
 	const schema = offeredCommandOf(binding.implementation)?.fields;
 	if (!schema) return [];
-	return packFieldRows(schema, binding.fields ?? {}, (fields) => writeBinding(state, name, { ...binding, fields }));
-}
-
-function isPackCommand(binding: CommandBinding): boolean {
-	return offeredCommandOf(binding.implementation)?.isPack === true;
+	const write = (fields: Record<string, unknown>): void => writeBinding(state, name, { ...binding, fields });
+	return packFieldRows(schema, binding.fields ?? {}, write, offeredEntries(state.refs));
 }
 
 function targetKindOf(binding: CommandBinding): CommandTarget | null {
@@ -190,11 +190,6 @@ function refsOffered(state: SettingsState, target: CommandTarget): OfferedRef[] 
 	return (state.refs?.offered() ?? []).filter(
 		(described): described is OfferedRef => described.kind === target && typeof described.ref === "string",
 	);
-}
-
-function isVaultTarget(state: SettingsState, binding: CommandBinding): boolean {
-	const target = targetOf(binding);
-	return target ? state.refs?.described(target)?.isVault === true : false;
 }
 
 function sayingOf(binding: CommandBinding): string {

@@ -20,6 +20,20 @@ export const STAT_ALGORITHMS = [
 export const STAT_WINDOWS = ["all", "today", "7d", "30d", "90d", "365d", "week", "month", "year"] as const;
 export const STAT_COMPARISONS = ["none", "change", "change-percent"] as const;
 
+export const STAT_TITLES: Readonly<Record<string, string>> = {
+	count: "How many",
+	sum: "Sum of a property",
+	average: "Average of a property",
+	min: "Smallest value",
+	max: "Largest value",
+	percent: "Share that counts",
+	"active-days": "Share of days with a note",
+	streak: "Days in a row",
+	"best-streak": "Most days in a row",
+	"record-streak": "Notes in a row",
+	"best-record-streak": "Most notes in a row",
+};
+
 export type StatAlgorithm = (typeof STAT_ALGORITHMS)[number];
 export type StatWindow = (typeof STAT_WINDOWS)[number];
 export type StatComparison = (typeof STAT_COMPARISONS)[number];

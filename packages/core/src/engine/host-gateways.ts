@@ -12,31 +12,13 @@ import { allowedVerbs, bindingOf, restrictToAllowed } from "../gateway/props.js"
 import { refOf } from "../gateway/refs.js";
 import { isObject } from "./is-object.js";
 import type { HostFields, HostGateway, HostGatewayContext, HostSpec } from "./engine-backed.js";
-import { fieldsOf } from "./host-gateway-classes.js";
-import { HOST_GATEWAYS } from "./host-gateway-list.js";
+import { EngineBackedRows, EngineBackedValue } from "./engine-backed.js";
 import { portsOf, registeredQueries } from "./packs.js";
+import { isFitFor } from "./source-fit.js";
 
-export { HOST_GATEWAYS } from "./host-gateway-list.js";
-export type { HostGatewayEntry } from "./host-gateway-list.js";
-export {
-	FileGateway,
-	FolderGateway,
-	FromTileRowsGateway,
-	FromTileValueGateway,
-	STAT_TITLES,
-	ScreenStateGateway,
-	SelectedRowGateway,
-	SelectionGateway,
-	StatisticsGateway,
-	TypedRowsGateway,
-	TypedValueGateway,
-	createTypedGateway,
-	fieldsOf,
-	whereOf,
-	filterRowsIn,
-	sortRowsIn,
-} from "./host-gateway-classes.js";
-export type { TypedGatewayAsk } from "./host-gateway-classes.js";
+export { filterRowsIn, sortRowsIn, whereOf } from "./folder-rows.js";
+export { STAT_TITLES } from "../gateway/stats.js";
+import { STAT_ALGORITHMS } from "../gateway/stats.js";
 export type {
 	HostFields,
 	HostGateway,
@@ -65,18 +47,25 @@ const NOT_OFFERED_YET = ["@core/selection"];
 
 const NO_SUCH_GATEWAY = 'prop "{name}" names the gateway "{id}", which this host does not offer';
 
-const BY_ID = new Map<string, GatewayMetadata>(HOST_GATEWAYS.map((entry) => [entry.id, entry] as const));
+const STAT_PREFIX = "@stats/";
+
+const FORMER_IDS: Readonly<Record<string, string>> = {
+	"@core/file": "@obsidian/file",
+	"@core/folder": "@obsidian/folder",
+};
+
+const VAULT_IMPLEMENTATIONS: readonly string[] = ["@obsidian/file", "@obsidian/folder"];
 
 const FROM_OLD_BINDING: Readonly<Record<BoundKind, Readonly<Partial<Record<string, string>>>>> = {
 	value: {
 		hardcode: "@core/typed-value",
 		memory: "@core/screen-state",
-		vault: "@core/file",
+		vault: "@obsidian/file",
 		ref: "@core/from-tile-value",
 	},
 	collection: {
 		hardcode: "@core/typed-rows",
-		vault: "@core/folder",
+		vault: "@obsidian/folder",
 		ref: "@core/from-tile-rows",
 	},
 };
@@ -84,8 +73,8 @@ const FROM_OLD_BINDING: Readonly<Record<BoundKind, Readonly<Partial<Record<strin
 const ALLOW_OF: ReadonlyMap<string, AllowedBy> = new Map<string, AllowedBy>([
 	["@core/typed-value", "declared"],
 	["@core/typed-rows", "declared"],
-	["@core/file", "vault"],
-	["@core/folder", "vault"],
+	["@obsidian/file", "vault"],
+	["@obsidian/folder", "vault"],
 ]);
 
 export function hostGatewayFor(
@@ -96,12 +85,26 @@ export function hostGatewayFor(
 	const sourced = sourceOf(spec, config);
 	if (sourced) return entryOf(sourced);
 	const { kind, binding } = bindingOf(spec, config);
-	if (binding === "stat") return entryOf(`@core/stat-${config?.algorithm ?? "count"}`);
+	if (binding === "stat") return entryOf(`${STAT_PREFIX}${config?.algorithm ?? "count"}`);
 	return entryOf(FROM_OLD_BINDING[kind][binding] ?? "");
 }
 
 export function isPackImplementation(id: string | undefined): boolean {
-	return !BY_ID.has(id ?? "") && registeredQueries().some((entry) => entry.id === id);
+	const entry = id ? entryOf(id) : null;
+	return entry !== null && !isEngineBacked(entry);
+}
+
+export function isFolderStat(id: string): boolean {
+	return id.startsWith(STAT_PREFIX) && STAT_ALGORITHMS.some((algorithm) => id === `${STAT_PREFIX}${algorithm}`);
+}
+
+export function isVaultImplementation(id: string | undefined): boolean {
+	return VAULT_IMPLEMENTATIONS.includes(id ?? "");
+}
+
+export function fieldsOf(config: HostFields | null | undefined): HostFields {
+	if (isObject(config?.fields)) return config.fields;
+	return config ?? {};
 }
 
 export function bindFields(
@@ -121,9 +124,9 @@ export function bindFields(
 export function sourcesFor(spec: HostSpec | null | undefined): GatewayMetadata[] {
 	const kind = spec?.kind === "value" ? "value" : "collection";
 	const writes = (spec?.writes ?? []).filter((verb) => WRITING.includes(verb));
-	return [...HOST_GATEWAYS, ...registeredQueries()].filter((entry) => {
-		if (entry.kind !== kind || NOT_OFFERED_YET.includes(entry.id)) return false;
-		if (entry.id.startsWith("@core/stat-")) return spec?.type === "number";
+	return registeredQueries().filter((entry) => {
+		if (entry.kind !== kind || NOT_OFFERED_YET.includes(entry.id) || !isFitFor(entry, spec)) return false;
+		if (isFolderStat(entry.id)) return spec?.type === "number";
 		if (kind === "collection" && writes.length > 0) return entry.implementation.prototype instanceof ICrudGateway;
 		return true;
 	});
@@ -151,7 +154,7 @@ export function resolveHostGateway(context: HostGatewayContext): HostGateway {
 		context.schema ?? z.unknown(),
 		`${chosen.id}?${stableKey(fields)}`,
 	);
-	if (isPackImplementation(chosen.id)) return packGatewayOf(chosen, fields, { ...context, ...problems });
+	if (!isEngineBacked(chosen)) return packGatewayOf(chosen, fields, { ...context, ...problems });
 	const tileConfig = sourceOf(spec, config) ? { tileConfig: config } : {};
 	const engine = Reflect.get(
 		Reflect.construct(chosen.implementation, [fields, { ...context, ...tileConfig, ...problems }]),
@@ -174,7 +177,14 @@ function sourceOf(spec: HostSpec | null | undefined, config: TileProp | null | u
 }
 
 function entryOf(id: string): GatewayMetadata | null {
-	return BY_ID.get(id) ?? registeredQueries().find((entry) => entry.id === id) ?? null;
+	const current =
+		FORMER_IDS[id] ?? (id.startsWith("@core/stat-") ? `${STAT_PREFIX}${id.slice("@core/stat-".length)}` : id);
+	return registeredQueries().find((entry) => entry.id === current) ?? null;
+}
+
+function isEngineBacked(entry: GatewayMetadata): boolean {
+	const prototype: unknown = entry.implementation.prototype;
+	return prototype instanceof EngineBackedValue || prototype instanceof EngineBackedRows;
 }
 
 function packGatewayOf(
@@ -182,7 +192,7 @@ function packGatewayOf(
 	fields: HostFields,
 	context: HostGatewayContext & GatewayContext,
 ): HostGateway {
-	const ports = portsOf(context.host, context.refs);
+	const ports = portsOf(context.host, context.refs, refOf(context.tile.id, context.name));
 	const instance: object = Reflect.construct(chosen.implementation, [fields, ports]);
 	const kind = chosen.kind === "value" ? "value" : "collection";
 	const id = `${refOf(context.tile.id, context.name)}?${chosen.id}&${stableKey(fields)}`;

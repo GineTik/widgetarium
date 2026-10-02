@@ -5,6 +5,7 @@ import { isObject } from "../engine/is-object.js";
 import { PropRefSchema } from "../engine/prop-ref.js";
 import type { Tile } from "../model.js";
 import { registeredCommands } from "../engine/packs.js";
+import type { CommandConsent } from "../gateway/implementation-metadata.js";
 
 export const TARGET_FIELD = "target";
 
@@ -12,85 +13,24 @@ export const CONSOLE_LOG = "@core/console-log";
 
 export type CommandTarget = "collection" | "value";
 
-export interface HostCommandKind {
-	readonly verb: string;
-	readonly target: CommandTarget | null;
-	readonly title: string;
-	readonly said: string;
-}
-
-export const HOST_COMMAND_KINDS: Readonly<Record<string, HostCommandKind>> = {
-	[CONSOLE_LOG]: {
-		verb: "run",
-		target: null,
-		title: "Print to the console",
-		said: "Prints what the widget sends to the developer console and changes nothing.",
-	},
-	"@core/rows-create": {
-		verb: "create",
-		target: "collection",
-		title: "Add a row",
-		said: "Adds a row to a list on this board.",
-	},
-	"@core/rows-update": {
-		verb: "update",
-		target: "collection",
-		title: "Change a row",
-		said: "Rewrites a row of a list on this board.",
-	},
-	"@core/rows-remove": {
-		verb: "remove",
-		target: "collection",
-		title: "Remove a row",
-		said: "Drops a row from a list on this board.",
-	},
-	"@core/rows-replace": {
-		verb: "replace",
-		target: "collection",
-		title: "Replace every row",
-		said: "Writes a new set of rows over a list on this board.",
-	},
-	"@core/rows-repair-ids": {
-		verb: "repairIds",
-		target: "collection",
-		title: "Repair row ids",
-		said: "Gives a fresh id to every row of a list that shares one with another.",
-	},
-	"@core/value-set": {
-		verb: "update",
-		target: "value",
-		title: "Set a value",
-		said: "Sets a value on this board.",
-	},
-};
-
 export interface OfferedCommand {
 	readonly id: string;
 	readonly title: string;
 	readonly said: string;
 	readonly target: CommandTarget | null;
-	readonly isPack: boolean;
-	readonly fields: z.ZodType | null;
+	readonly consent: CommandConsent;
+	readonly fields: z.ZodType;
 }
 
 export function offeredCommands(): OfferedCommand[] {
-	const built = Object.entries(HOST_COMMAND_KINDS).map(([id, kind]) => ({
-		id,
-		title: kind.title,
-		said: kind.said,
-		target: kind.target,
-		isPack: false,
-		fields: null,
-	}));
-	const packed = registeredCommands().map((entry) => ({
+	return registeredCommands().map((entry) => ({
 		id: entry.id,
 		title: entry.title,
 		said: entry.description,
 		target: entry.target,
-		isPack: true,
+		consent: entry.consent,
 		fields: entry.fields,
 	}));
-	return [...built, ...packed];
 }
 
 export function offeredCommandOf(id: string | undefined): OfferedCommand | null {

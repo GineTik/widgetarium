@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { hostGatewayFor, refsOfFields, whereOf } from "../engine/host-gateways.js";
+import { hostGatewayFor, isVaultImplementation, refsOfFields, whereOf } from "../engine/host-gateways.js";
 import type { EngineManifest } from "../engine/catalogue-index.js";
 import { isObject } from "../engine/is-object.js";
 import { refOf, refsWithin } from "../gateway/refs.js";
@@ -12,8 +12,6 @@ import type { PropGateways } from "./slots.js";
 import { useDropsOnUnmount } from "./use-drops-on-unmount.js";
 import { RESERVED_PROPS } from "./widget-host.js";
 import type { WidgetHostProps } from "./widget-host.js";
-
-const VAULT_IMPLEMENTATIONS: readonly string[] = ["@core/file", "@core/folder"];
 
 type GatewayAsk = Pick<WidgetHostProps, "definition" | "tile" | "host" | "refs" | "cellFor" | "patchProp">;
 
@@ -80,7 +78,7 @@ function publishGateways(
 				kind: textOr(gateway, "kind", "collection"),
 				shape: textOr(spec, "shape", "value"),
 				isTyped: isObject(config) && config["from"] === "typed",
-				isVault: VAULT_IMPLEMENTATIONS.includes(hostGatewayFor(hostSpec, config)?.id ?? ""),
+				isVault: isVaultImplementation(hostGatewayFor(hostSpec, config)?.id),
 			},
 			dependsOn: leansOn,
 		});

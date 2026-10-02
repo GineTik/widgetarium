@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import { Icon, IconButton, SidebarGroup, SidebarRow } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
 import { typedIn, withTyped } from "../gateway/props.js";
-import { hostGatewayFor, sourcesFor } from "../engine/host-gateways.js";
+import { hostGatewayFor, isFolderStat, sourcesFor } from "../engine/host-gateways.js";
 import type { GatewayMetadata } from "../gateway/implementation-metadata.js";
 import { offeredEntries } from "./offered-boxes.js";
 import { FROM_WIDGET, IN_VAULT, STATISTICS, TYPED_HERE, blankValue, writeProp, writtenText } from "./prop-writing.js";
@@ -14,13 +14,13 @@ import { openStatStep } from "./stat-body.js";
 const SOURCE_KIND: ReadonlyMap<string, string> = new Map([
 	["@core/typed-value", TYPED_HERE],
 	["@core/typed-rows", TYPED_HERE],
-	["@core/file", IN_VAULT],
-	["@core/folder", IN_VAULT],
+	["@obsidian/file", IN_VAULT],
+	["@obsidian/folder", IN_VAULT],
 	["@core/from-tile-value", FROM_WIDGET],
 	["@core/from-tile-rows", FROM_WIDGET],
 ]);
 
-const STAT_SOURCE = "@core/stat-";
+const STAT_SOURCE = "@stats/";
 
 const SOURCES_OPEN = "#source";
 
@@ -82,7 +82,7 @@ function pickSource(
 		switchKind(state, key, spec, legacy, kind);
 		return;
 	}
-	if (entry.id.startsWith(STAT_SOURCE)) {
+	if (isFolderStat(entry.id)) {
 		writeProp(state, key, spec, { ...legacy, from: STATISTICS, algorithm: entry.id.slice(STAT_SOURCE.length) });
 		openStatStep(state, key, null);
 		return;
