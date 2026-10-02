@@ -18,6 +18,7 @@ import {
 import { ANSWERED_BY_THE_ENGINE, facadeUrl, realPathIn } from "../packages/core/src/engine/modules.ts";
 import { idOfFolder } from "../packages/core/src/engine/github.ts";
 import * as declaredBuilders from "../packages/core/src/gateway/declared.ts";
+import * as queryBuilders from "../packages/core/src/gateway/queries.ts";
 import type { DeclaredModule, DeclaredProps } from "../packages/core/src/gateway/declared-types.ts";
 import type { ModuleManifest } from "../packages/core/src/gateway/manifest.ts";
 import { isPropsToDefine } from "../packages/core/src/widget-api.ts";
@@ -243,7 +244,7 @@ function exportsOfRun(code: string, require: RequireInWidget): DeclaredModule {
 }
 
 function widgetariumInRun(): object {
-	const surface = { ...declaredBuilders, createWidget: declaringCreateWidget };
+	const surface = { ...declaredBuilders, ...queryBuilders, createWidget: declaringCreateWidget };
 	return new Proxy(surface, { get: (held, name) => Reflect.get(held, name) ?? ANYTHING });
 }
 

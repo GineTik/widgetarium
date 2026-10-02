@@ -346,5 +346,20 @@ check(
 	"widgets/clock is not a @scope/name folder",
 );
 
+const QUERYING_WIDGET = `import { IQuery, ICommand, createWidget, z } from "widgetarium";
+const Queried = createWidget({
+	inject: { getTitles: IQuery.of(z.array(z.object({ title: z.string() }))), press: ICommand },
+	draw: () => null,
+});
+export const metadata = { title: "Queried", description: "Reads through IQuery." };
+export const layout = { role: "content", size: { preferredWidth: 320, preferredHeight: "auto" } };
+export default Queried;`;
+const queried = declarationIn(compileWidget(QUERYING_WIDGET, `${FOLDER}/widget.tsx`)).manifest;
+check(
+	"a widget that reads through IQuery and acts through ICommand gets a card",
+	[queried.props["getTitles"]?.kind, Object.keys(queried["commands"] ?? {})],
+	["collection", ["press"]],
+);
+
 console.log(`\n${failed === 0 ? `publish: clean (${checks} checks)` : `publish: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);
