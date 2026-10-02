@@ -1,7 +1,6 @@
 import {
-	IListGateway,
 	INavigator,
-	IValueGateway,
+	IQuery,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -88,15 +87,15 @@ const SQUARE_CORNER = 2.5;
 
 const HeatmapWidget = createWidget({
 	inject: {
-		log: IListGateway.of(DayNoteSchema),
-		pick: IValueGateway.of(z.unknown()).pick("get"),
-		year: IValueGateway.of(z.number().default(0)).pick("get"),
-		isRound: IValueGateway.of(z.boolean().default(false)).pick("get"),
-		isWeekStartingMonday: IValueGateway.of(z.boolean().default(true)).pick("get"),
+		log: IQuery.of(z.array(DayNoteSchema)),
+		pick: IQuery.of(z.unknown()),
+		year: IQuery.of(z.number().default(0)),
+		isRound: IQuery.of(z.boolean().default(false)),
+		isWeekStartingMonday: IQuery.of(z.boolean().default(true)),
 		navigator: INavigator,
 	},
 	draw: ({ pick, year, isRound, isWeekStartingMonday, log, navigator }) => {
-		const rows = useData(log.list, { limit: ALL_DAYS }).data;
+		const rows = useData(log, { limit: ALL_DAYS }).data;
 
 		if (rows.length === 0) {
 			return (
