@@ -71,8 +71,10 @@ never implementations.** `const Name = createWidget({ inject: {...}, draw })` �
 interfaces it reads, omitted when none — then `export const metadata = defineMetadata(Name, {...})`
 for everything a person reads, `export const layout = defineLayout({...})` for `role`, `size`,
 `inline` and `view`, and `export default Name`; `export const migrations = defineMigrations([...])`
-when a tile cannot follow a change alone. The old `createWidget(props, draw)` throws. Code outside
-`draw` that needs the prop types keeps `const props = defineProps({...})` and passes `inject: props`.
+when a tile cannot follow a change alone. The old `createWidget(props, draw)` throws. Props live in
+`inject` and nowhere else: code outside `draw` takes their types from the widget, `PropsOf<typeof
+Name>`, and no repo widget calls `defineProps` — it stays exported only for vault widgets written
+before (`@you/breakdown-bars`, `@you/property-coverage`).
 All of it lives in `packages/core/src/gateway/declared.ts`. Each `define*` returns what it was given,
 typed and checked on its own line; `createWidget` builds the component that reads and caches
 (`define*` returns its input, `create*` builds something new). `manifestOfModule` turns the module
@@ -88,12 +90,16 @@ const EntrySchema = VaultRecordSchema.extend({
 
 const Checklist = createWidget({
 	inject: {
-		heading: IValueGateway.of(z.string().default("To do")).pick("get"),
-		entries: ICrudGateway.of(EntrySchema).pick("list", "create", "update"),
+		getHeading: IQuery.expects(z.string().default("To do")),
+		getEntries: IQuery.expects(z.array(EntrySchema)),
+		createEntry: ICommand.sends(EntrySchema.extend({ id: z.uuid() })),
+		updateEntry: ICommand.sends(EntrySchema.partial().extend({ ref: RecordRefSchema })),
 		host: IHost,
 	},
-	draw: ({ heading, entries }) => { ... },
+	draw: ({ getHeading: heading, getEntries, createEntry, updateEntry }) => { ... },
 });
+
+type ChecklistProps = PropsOf<typeof Checklist>;
 
 export const metadata = defineMetadata(Checklist, { ... });
 export default Checklist;

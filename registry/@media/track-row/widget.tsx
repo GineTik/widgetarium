@@ -1,5 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
-import type { DrawnProps } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import type { PropsOf } from "widgetarium";
 import { Row, RowLabel, RowValue } from "widgetarium/kit";
 import { Equaliser } from "./equaliser";
 import { Favourite } from "./favourite";
@@ -152,24 +152,22 @@ const TrackSchema = z.object({
 
 type Track = z.infer<typeof TrackSchema>;
 
-const props = defineProps({
-	getTrack: IQuery.expects(
-		TrackSchema.default({
-			title: "Weightless",
-			artist: "Marconi Union",
-			album: "Ambient Transmissions",
-			addedAt: "2026-02-11",
-			duration: 488,
-			favourite: false,
-		}),
-	),
-	setTrack: ICommand.sends(TrackSchema),
-	getPosition: IQuery.expects(z.number().default(0)),
-	getIsPlaying: IQuery.expects(z.boolean().default(false)),
-});
-
 const TrackRow = createWidget({
-	inject: props,
+	inject: {
+		getTrack: IQuery.expects(
+			TrackSchema.default({
+				title: "Weightless",
+				artist: "Marconi Union",
+				album: "Ambient Transmissions",
+				addedAt: "2026-02-11",
+				duration: 488,
+				favourite: false,
+			}),
+		),
+		setTrack: ICommand.sends(TrackSchema),
+		getPosition: IQuery.expects(z.number().default(0)),
+		getIsPlaying: IQuery.expects(z.boolean().default(false)),
+	},
 	draw: ({ getTrack: held, setTrack, getPosition: position, getIsPlaying: isPlaying }) => {
 		const isFavourite = held.favourite === true;
 
@@ -270,7 +268,7 @@ export const layout = defineLayout({
 
 export default TrackRow;
 
-function favour(setTrack: DrawnProps<typeof props>["setTrack"], held: Track, next: boolean) {
+function favour(setTrack: PropsOf<typeof TrackRow>["setTrack"], held: Track, next: boolean) {
 	void setTrack({ ...held, favourite: next });
 }
 

@@ -8,7 +8,6 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	defineProps,
 	pickedValue,
 	useData,
 	z,
@@ -65,24 +64,22 @@ export const TrackSchema = VaultRecordSchema.extend({
 		.meta({ aka: ["favorite", "liked", "starred", "loved"] }),
 });
 
-export const props = defineProps({
-	getTracks: IQuery.expects(z.array(TrackSchema)),
-	updateTrack: ICommand.sends(TrackSchema.partial().extend({ ref: RecordRefSchema })),
-	getSelection: IQuery.expects(z.unknown()),
-	select: ICommand.sends(z.unknown()),
-	getPlaying: IQuery.expects(z.unknown()),
-	getFilter: IQuery.expects(z.string().default("")),
-	setFilter: ICommand.sends(z.string()),
-	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-	row: ISlot.of<Given>({
-		default: "@media/track-row",
-		surface: "group",
-		gives: { getTrack: ["title", "artist", "album", "addedAt", "duration", "favourite"] },
-	}),
-});
-
 const TrackList = createWidget({
-	inject: props,
+	inject: {
+		getTracks: IQuery.expects(z.array(TrackSchema)),
+		updateTrack: ICommand.sends(TrackSchema.partial().extend({ ref: RecordRefSchema })),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
+		getPlaying: IQuery.expects(z.unknown()),
+		getFilter: IQuery.expects(z.string().default("")),
+		setFilter: ICommand.sends(z.string()),
+		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		row: ISlot.of<Given>({
+			default: "@media/track-row",
+			surface: "group",
+			gives: { getTrack: ["title", "artist", "album", "addedAt", "duration", "favourite"] },
+		}),
+	},
 	draw: ({
 		getTracks,
 		updateTrack,

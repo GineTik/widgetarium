@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IHost, IQuery, ISlot, createWidget, defineLayout, defineMetadata, defineProps, useData, z } from "widgetarium";
+import { IHost, IQuery, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row } from "widgetarium";
 import { Figures } from "./figures";
 import { Fixes } from "./fixes";
@@ -92,23 +92,21 @@ export const ProseSourceSchema = z.union([
 	z.object({ content: z.string().nullish(), body: z.string().nullish(), path: z.string().nullish() }),
 ]);
 
-export const props = defineProps({
-	getBody: IQuery.expects(ProseSourceSchema.default("")),
-	getFigures: IQuery.expects(z.array(FigureSchema)),
-	getTestPlan: IQuery.expects(z.array(TestStepSchema)),
-	getFixes: IQuery.expects(z.array(FixSchema)),
-	getMeasure: IQuery.expects(z.number().default(MEASURE_CH)),
-	getStepsPerPage: IQuery.expects(z.number().default(STEPS_PER_PAGE)),
-	figure: ISlot.of<{ getSource: Figure }>({
-		default: "@flow/report-figure",
-		surface: "none",
-		gives: { getSource: ["caption", "image", "alt", "drawing"] },
-	}),
-	host: IHost,
-});
-
 const ReportWidget = createWidget({
-	inject: props,
+	inject: {
+		getBody: IQuery.expects(ProseSourceSchema.default("")),
+		getFigures: IQuery.expects(z.array(FigureSchema)),
+		getTestPlan: IQuery.expects(z.array(TestStepSchema)),
+		getFixes: IQuery.expects(z.array(FixSchema)),
+		getMeasure: IQuery.expects(z.number().default(MEASURE_CH)),
+		getStepsPerPage: IQuery.expects(z.number().default(STEPS_PER_PAGE)),
+		figure: ISlot.of<{ getSource: Figure }>({
+			default: "@flow/report-figure",
+			surface: "none",
+			gives: { getSource: ["caption", "image", "alt", "drawing"] },
+		}),
+		host: IHost,
+	},
 	draw: ({
 		getBody: body,
 		getFigures,

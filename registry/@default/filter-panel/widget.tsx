@@ -5,7 +5,6 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	defineProps,
 	textOf,
 	useData,
 	z,
@@ -115,18 +114,16 @@ function onBoard(board: unknown) {
 	return board.length === 0 ? [] : [{ prop: "board", op: "in", value: board }];
 }
 
-export const props = defineProps({
-	getTasks: IQuery.expects(z.array(VaultRecordSchema)),
-	getBoard: IQuery.expects(z.unknown().default(null)),
-	getGroups: IQuery.expects(z.array(FilterGroupSchema)),
-	getOpenGroup: IQuery.expects(z.string().default("")),
-	getProperties: IQuery.expects(z.array(VaultRecordSchema)),
-	getChosen: IQuery.expects(ChosenSchema.default({})),
-	setChosen: ICommand.sends(ChosenSchema),
-});
-
 const FilterPanel = createWidget({
-	inject: props,
+	inject: {
+		getTasks: IQuery.expects(z.array(VaultRecordSchema)),
+		getBoard: IQuery.expects(z.unknown().default(null)),
+		getGroups: IQuery.expects(z.array(FilterGroupSchema)),
+		getOpenGroup: IQuery.expects(z.string().default("")),
+		getProperties: IQuery.expects(z.array(VaultRecordSchema)),
+		getChosen: IQuery.expects(ChosenSchema.default({})),
+		setChosen: ICommand.sends(ChosenSchema),
+	},
 	draw: ({
 		getTasks,
 		getBoard: board,

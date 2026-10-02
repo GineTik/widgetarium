@@ -8,7 +8,6 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	defineProps,
 	z,
 } from "widgetarium";
 import { BoardSchema } from "@default/lib";
@@ -61,32 +60,30 @@ function toColumns(rows: TaskRow[], columnNames: string[], groupBy: string, arch
 	return [...byName.entries()].map(([title, held]) => ({ title, rows: held }));
 }
 
-export const props = defineProps({
-	getTasks: IQuery.expects(z.array(TaskSchema).default([])),
-	createTask: ICommand.sends(TaskSchema.extend({ id: z.uuid() })),
-	updateTask: ICommand.sends(TaskSchema.partial().extend({ ref: RecordRefSchema })),
-	getChosen: IQuery.expects(ChosenSchema.default({})),
-	getBoards: IQuery.expects(z.array(KanbanBoardSchema).default([])),
-	repairBoardIds: ICommand,
-	getSelection: IQuery.expects(z.unknown()),
-	getBoard: IQuery.expects(
-		KanbanBoardSchema.default({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }),
-	),
-	updateBoard: ICommand.sends(KanbanBoardSchema),
-	getOpened: IQuery.expects(z.string().nullable().default(null)),
-	open: ICommand.sends(z.string().nullable()),
-	getGroupBy: IQuery.expects(z.string().default("status")),
-	card: ISlot.of<{ getTask: CardFace }>({
-		default: "@default/task-card",
-		surface: "group",
-		gives: { getTask: ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"] },
-	}),
-	host: IHost,
-	navigator: INavigator,
-});
-
 const KanbanBoard = createWidget({
-	inject: props,
+	inject: {
+		getTasks: IQuery.expects(z.array(TaskSchema).default([])),
+		createTask: ICommand.sends(TaskSchema.extend({ id: z.uuid() })),
+		updateTask: ICommand.sends(TaskSchema.partial().extend({ ref: RecordRefSchema })),
+		getChosen: IQuery.expects(ChosenSchema.default({})),
+		getBoards: IQuery.expects(z.array(KanbanBoardSchema).default([])),
+		repairBoardIds: ICommand,
+		getSelection: IQuery.expects(z.unknown()),
+		getBoard: IQuery.expects(
+			KanbanBoardSchema.default({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }),
+		),
+		updateBoard: ICommand.sends(KanbanBoardSchema),
+		getOpened: IQuery.expects(z.string().nullable().default(null)),
+		open: ICommand.sends(z.string().nullable()),
+		getGroupBy: IQuery.expects(z.string().default("status")),
+		card: ISlot.of<{ getTask: CardFace }>({
+			default: "@default/task-card",
+			surface: "group",
+			gives: { getTask: ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"] },
+		}),
+		host: IHost,
+		navigator: INavigator,
+	},
 	draw: ({
 		getBoard,
 		updateBoard,

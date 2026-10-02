@@ -8,7 +8,6 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	defineProps,
 	pickedValue,
 	useData,
 	z,
@@ -108,22 +107,20 @@ const CSS = `
 }
 `;
 
-export const props = defineProps({
-	getRows: IQuery.expects(z.array(VaultRecordSchema)),
-	updateRow: ICommand.sends(VaultRecordSchema.partial().extend({ ref: RecordRefSchema })),
-	getHandedAs: IQuery.expects(z.string().default("getTask")),
-	getSelection: IQuery.expects(z.unknown()),
-	select: ICommand.sends(z.unknown()),
-	getFilter: IQuery.expects(z.string().default("")),
-	setFilter: ICommand.sends(z.string()),
-	getFilterField: IQuery.expects(z.string().default("title")),
-	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-	getHeading: IQuery.expects(z.string().default("")),
-	row: ISlot.of<Handed>({ default: "@default/task-card", surface: "group" }),
-});
-
 const ListWidget = createWidget({
-	inject: props,
+	inject: {
+		getRows: IQuery.expects(z.array(VaultRecordSchema)),
+		updateRow: ICommand.sends(VaultRecordSchema.partial().extend({ ref: RecordRefSchema })),
+		getHandedAs: IQuery.expects(z.string().default("getTask")),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
+		getFilter: IQuery.expects(z.string().default("")),
+		setFilter: ICommand.sends(z.string()),
+		getFilterField: IQuery.expects(z.string().default("title")),
+		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		getHeading: IQuery.expects(z.string().default("")),
+		row: ISlot.of<Handed>({ default: "@default/task-card", surface: "group" }),
+	},
 	draw: ({
 		getRows,
 		updateRow,

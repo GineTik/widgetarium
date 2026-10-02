@@ -1,14 +1,15 @@
-import { z, type DrawnProps, type Row, type ViewHost } from "widgetarium";
+import { z, type PropsOf, type Row, type ViewHost } from "widgetarium";
 import type { useDragging } from "./use-dragging";
 import type { useOpened } from "./use-opened";
 import type { useWriting } from "./use-writing";
-import type { CardSchema, TierSchema, props } from "./widget";
+import type TierList from "./widget";
+import type { CardSchema, TierSchema } from "./widget";
 
 type TierRecord = z.infer<typeof TierSchema>;
 
 export type CardRecord = z.infer<typeof CardSchema>;
 
-export type TierListProps = DrawnProps<typeof props>;
+export type TierListProps = PropsOf<typeof TierList>;
 
 export type CardRow = Row<CardRecord>;
 export type TierRow = Row<TierRecord>;

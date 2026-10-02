@@ -51,6 +51,7 @@ export type {
 export type {
 	DeclaredProps,
 	DrawnProps,
+	PropsOf,
 	GivenProps,
 	Implementation,
 	WidgetLayout,

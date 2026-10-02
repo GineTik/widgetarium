@@ -1,4 +1,4 @@
-import type { DrawnProps, RecordRef } from "widgetarium";
+import type { PropsOf, RecordRef } from "widgetarium";
 import type { MetricTotal } from "./widget";
 
 export type Tone = "up" | "down" | "flat";
@@ -49,6 +49,6 @@ export type Listed = { ref: RecordRef; day: string; note: string; amount: number
 
 export type Allowed = { canAdd: boolean; canEdit: boolean; canDelete: boolean };
 
-export type MetricProps = DrawnProps<typeof MetricTotal.declared>;
+export type MetricProps = PropsOf<typeof MetricTotal>;
 export type View = MetricProps["getView"];
 export type Rising = MetricProps["getRising"];

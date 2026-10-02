@@ -6,12 +6,11 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	defineProps,
 	pickedValue,
 	useData,
 	z,
 } from "widgetarium";
-import type { DrawnProps, RecordRef, Row } from "widgetarium";
+import type { PropsOf, RecordRef, Row } from "widgetarium";
 import { useRef, useState } from "react";
 import { daysLogged, isoOf, leadDaysOf, pressing, shapeOf } from "@default/lib";
 import { DayButton } from "./day-button";
@@ -125,7 +124,7 @@ function cellsOver(days: MonthDay[], keptDays: Set<string>, today: string, canWr
 	});
 }
 
-type MonthProps = DrawnProps<typeof props>;
+type MonthProps = PropsOf<typeof HabitMonth>;
 
 function keptDaysOf(habit?: DayNote) {
 	const held = Array.isArray(habit?.days) ? habit.days : [];
@@ -165,16 +164,14 @@ function weekStartsMonday(held: unknown): boolean {
 	return true;
 }
 
-const props = defineProps({
-	getDays: IQuery.expects(z.array(DayNoteSchema)),
-	updateDay: ICommand.sends(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
-	createDay: ICommand.sends(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
-	getPick: IQuery.expects(z.unknown()),
-	getIsWeekStartingMonday: IQuery.expects(z.boolean().default(true)),
-});
-
 const HabitMonth = createWidget({
-	inject: props,
+	inject: {
+		getDays: IQuery.expects(z.array(DayNoteSchema)),
+		updateDay: ICommand.sends(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
+		createDay: ICommand.sends(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
+		getPick: IQuery.expects(z.unknown()),
+		getIsWeekStartingMonday: IQuery.expects(z.boolean().default(true)),
+	},
 	draw: ({ getIsWeekStartingMonday: fromMonday, getDays, updateDay, createDay, getPick: pick }) => {
 		const room = useRef<HTMLDivElement | null>(null);
 		const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });

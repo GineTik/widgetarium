@@ -1,14 +1,4 @@
-import {
-	IQuery,
-	ISlot,
-	VaultRecordSchema,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	defineProps,
-	useData,
-	z,
-} from "widgetarium";
+import { IQuery, ISlot, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import { AlbumPage } from "./album-page";
 import { MIN_CELL_PX, NARROW_PX } from "./cell-sizes";
 import { MoreWhenSeen, usePages } from "widgetarium/kit";
@@ -59,27 +49,25 @@ const CSS = `
 .wg-albums-said { margin: 0; color: var(--wg-kit-text-muted); }
 `;
 
-export const props = defineProps({
-	getAlbums: IQuery.expects(
-		z.array(AlbumSchema).default([
-			{ title: "Kind of Blue", artist: "Miles Davis", tracks: 5 },
-			{ title: "In Rainbows", artist: "Radiohead", tracks: 10 },
-			{ title: "Blue Train", artist: "John Coltrane", tracks: 5 },
-			{ title: "Rumours", artist: "Fleetwood Mac", tracks: 11 },
-			{ title: "Selected Ambient Works 85-92", artist: "Aphex Twin" },
-			{ title: "Unmarked tape", tracks: 3 },
-		]),
-	),
-	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-	cover: ISlot.of<Given>({
-		default: "@media/album-cover",
-		surface: "none",
-		gives: { getAlbum: ["title", "artist", "cover", "tracks"], getBeside: [] },
-	}),
-});
-
 const AlbumGrid = createWidget({
-	inject: props,
+	inject: {
+		getAlbums: IQuery.expects(
+			z.array(AlbumSchema).default([
+				{ title: "Kind of Blue", artist: "Miles Davis", tracks: 5 },
+				{ title: "In Rainbows", artist: "Radiohead", tracks: 10 },
+				{ title: "Blue Train", artist: "John Coltrane", tracks: 5 },
+				{ title: "Rumours", artist: "Fleetwood Mac", tracks: 11 },
+				{ title: "Selected Ambient Works 85-92", artist: "Aphex Twin" },
+				{ title: "Unmarked tape", tracks: 3 },
+			]),
+		),
+		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		cover: ISlot.of<Given>({
+			default: "@media/album-cover",
+			surface: "none",
+			gives: { getAlbum: ["title", "artist", "cover", "tracks"], getBeside: [] },
+		}),
+	},
 	draw: ({ getAlbums, getPageSize: pageSize, cover }) => {
 		const size = pageSizeOf(pageSize);
 		const { shelf, isNarrow } = useNarrowShelf();

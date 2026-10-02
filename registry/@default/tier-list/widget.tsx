@@ -7,7 +7,6 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	defineProps,
 	useData,
 	z,
 } from "widgetarium";
@@ -63,24 +62,22 @@ export const CardSchema = VaultRecordSchema.extend({
 
 const COULD_NOT_READ = "That source could not be read, so nothing is drawn.";
 
-export const props = defineProps({
-	getCards: IQuery.expects(z.array(CardSchema)),
-	createCard: ICommand.sends(CardSchema.extend({ id: z.uuid() })),
-	updateCard: ICommand.sends(CardSchema.partial().extend({ ref: RecordRefSchema })),
-	removeCard: ICommand.sends(z.object({ ref: RecordRefSchema })),
-	replaceCards: ICommand.sends(z.array(CardSchema)),
-	getTiers: IQuery.expects(z.array(TierSchema).default(DEFAULT_TIERS)),
-	createTier: ICommand.sends(TierSchema.extend({ id: z.uuid() })),
-	updateTier: ICommand.sends(TierSchema.partial().extend({ ref: RecordRefSchema })),
-	removeTier: ICommand.sends(z.object({ ref: RecordRefSchema })),
-	replaceTiers: ICommand.sends(z.array(TierSchema)),
-	getTitle: IQuery.expects(z.string().default("Tier list")),
-	getCardSize: IQuery.expects(z.number().default(64)),
-	host: IHost,
-});
-
 const TierList = createWidget({
-	inject: props,
+	inject: {
+		getCards: IQuery.expects(z.array(CardSchema)),
+		createCard: ICommand.sends(CardSchema.extend({ id: z.uuid() })),
+		updateCard: ICommand.sends(CardSchema.partial().extend({ ref: RecordRefSchema })),
+		removeCard: ICommand.sends(z.object({ ref: RecordRefSchema })),
+		replaceCards: ICommand.sends(z.array(CardSchema)),
+		getTiers: IQuery.expects(z.array(TierSchema).default(DEFAULT_TIERS)),
+		createTier: ICommand.sends(TierSchema.extend({ id: z.uuid() })),
+		updateTier: ICommand.sends(TierSchema.partial().extend({ ref: RecordRefSchema })),
+		removeTier: ICommand.sends(z.object({ ref: RecordRefSchema })),
+		replaceTiers: ICommand.sends(z.array(TierSchema)),
+		getTitle: IQuery.expects(z.string().default("Tier list")),
+		getCardSize: IQuery.expects(z.number().default(64)),
+		host: IHost,
+	},
 	draw: ({ getCards, getTiers, getTitle: title, getCardSize: cardSize, host, ...commands }) => {
 		const listedCards = useData(getCards, { limit: ALL_CARDS });
 		const listedTiers = useData(getTiers, { limit: ALL_CARDS });

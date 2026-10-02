@@ -1,8 +1,9 @@
-import { z, type DrawnProps } from "widgetarium";
-import type { LogLineSchema, props } from "./widget";
+import { z, type PropsOf } from "widgetarium";
+import type SessionTail from "./widget";
+import type { LogLineSchema } from "./widget";
 
 export type Stage = "quiet" | "waiting" | "slow";
 
 export type LogLine = z.infer<typeof LogLineSchema>;
 
-export type TailProps = DrawnProps<typeof props>;
+export type TailProps = PropsOf<typeof SessionTail>;

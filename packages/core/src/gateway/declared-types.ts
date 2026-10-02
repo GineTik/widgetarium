@@ -228,6 +228,8 @@ type DrawnValue<Held, Verbs, ValueIn> = (["get"] extends [Verbs] ? { readonly va
 
 export type DrawnProps<P> = { readonly [K in keyof P]: DrawnOf<P[K]> };
 
+export type PropsOf<W> = W extends { readonly declared: infer P } ? DrawnProps<P> : never;
+
 export type GivenProps<P> = { readonly [K in keyof P]?: GivenOf<P[K]> };
 
 type HeldOf<C> = C extends { readonly [valueHeld]?: infer Held }

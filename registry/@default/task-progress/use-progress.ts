@@ -1,8 +1,8 @@
-import { useData, type DrawnProps, type Row } from "widgetarium";
+import { useData, type PropsOf, type Row } from "widgetarium";
 import { useNow } from "widgetarium/kit";
 import { TICK_MS } from "./overall";
 import type { Progress, Step } from "./types";
-import type { props } from "./widget";
+import type TaskProgress from "./widget";
 
 const MOST_STEPS = 50;
 
@@ -12,7 +12,7 @@ export function useProgress({
 	getIsOpen: isOpen,
 	getStartedAt: startedAt,
 	getEndedAt: endedAt,
-}: DrawnProps<typeof props>): Progress {
+}: PropsOf<typeof TaskProgress>): Progress {
 	const rows = useData(getSteps, { limit: MOST_STEPS }).data;
 	const clockNow = useNow(TICK_MS, startedAt > 0 && endedAt === 0);
 	return {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { DrawnProps, TabStep } from "widgetarium";
+import type { PropsOf, TabStep } from "widgetarium";
 import { patchOf } from "./patch-of";
 import { ARCHIVED_AT } from "./tab-fields";
 import type { TabRow } from "./tab-rows";
@@ -10,7 +10,7 @@ const CANNOT_RENAME = "This list cannot be written here, so the name stayed as i
 const CANNOT_ARCHIVE = "This list cannot be written here, so the tab stayed where it was.";
 const CANNOT_DELETE = "This list does not drop records, so the tab is still here.";
 
-type TabsProps = DrawnProps<typeof EditableTabsWidget.declared>;
+type TabsProps = PropsOf<typeof EditableTabsWidget>;
 type TabWrites = Pick<TabsProps, "createTab" | "updateTab" | "removeTab" | "select" | "host"> & { label: string };
 
 export function useTabSteps(

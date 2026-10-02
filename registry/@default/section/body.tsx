@@ -1,13 +1,13 @@
-import { useData, type DrawnProps, type MountEntry, type Slot } from "widgetarium";
+import { useData, type PropsOf, type MountEntry, type Slot } from "widgetarium";
 import { Layout, type LayoutKind } from "widgetarium/kit";
 import { PER_ROW } from "./body-modes";
 import { PerRow } from "./per-row";
 import { Placed } from "./placed";
-import type { props } from "./widget";
+import type SectionWidget from "./widget";
 
 type BodyProps = {
 	filling: string;
-	getItems: DrawnProps<typeof props>["getItems"];
+	getItems: PropsOf<typeof SectionWidget>["getItems"];
 	pageSize: number;
 	Drawn: Slot<Record<string, unknown>> | undefined;
 	placed: readonly MountEntry[];

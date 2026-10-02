@@ -1,4 +1,4 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Card } from "widgetarium/kit";
 import { overallOf } from "./overall";
 import { ProgressHead } from "./progress-head";
@@ -305,23 +305,21 @@ export const StepSchema = z.object({
 	hint: z.string().optional(),
 });
 
-export const props = defineProps({
-	getTitle: IQuery.expects(z.string().default("Building a widget")),
-	getSteps: IQuery.expects(
-		z.array(StepSchema).default([
-			{ label: "Write the widget", status: "done" },
-			{ label: "Check it", status: "active", hint: "widgets.mjs check" },
-			{ label: "Place it on the board", status: "pending" },
-		]),
-	),
-	getIsOpen: IQuery.expects(z.boolean().default(false)),
-	setIsOpen: ICommand.sends(z.boolean()),
-	getStartedAt: IQuery.expects(z.number().default(0)),
-	getEndedAt: IQuery.expects(z.number().default(0)),
-});
-
 const TaskProgress = createWidget({
-	inject: props,
+	inject: {
+		getTitle: IQuery.expects(z.string().default("Building a widget")),
+		getSteps: IQuery.expects(
+			z.array(StepSchema).default([
+				{ label: "Write the widget", status: "done" },
+				{ label: "Check it", status: "active", hint: "widgets.mjs check" },
+				{ label: "Place it on the board", status: "pending" },
+			]),
+		),
+		getIsOpen: IQuery.expects(z.boolean().default(false)),
+		setIsOpen: ICommand.sends(z.boolean()),
+		getStartedAt: IQuery.expects(z.number().default(0)),
+		getEndedAt: IQuery.expects(z.number().default(0)),
+	},
 	draw: (drawn) => {
 		const progress = useProgress(drawn);
 		const onToggleOpen = drawn.setIsOpen.can().can ? () => void drawn.setIsOpen(!progress.isOpen) : null;

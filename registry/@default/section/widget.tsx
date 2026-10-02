@@ -1,4 +1,4 @@
-import { IMounts, IQuery, ISlot, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
+import { IMounts, IQuery, ISlot, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import type { Slot } from "widgetarium";
 import type { LayoutKind } from "widgetarium/kit";
 import { Body } from "./body";
@@ -31,22 +31,20 @@ const STYLE = `
 .wg-section-empty { font-size: var(--font-ui-small, 13px); color: var(--wg-kit-text-muted); }
 `;
 
-export const props = defineProps({
-	getHeading: IQuery.expects(z.string().default("Section")),
-	getBadgeTone: IQuery.expects(BadgeToneSchema.default("neutral")),
-	getBadge: IQuery.expects(z.string().default("")),
-	getFilling: IQuery.expects(z.enum([PLACED, PER_ROW]).default(PLACED)),
-	getArrangement: IQuery.expects(ArrangementSchema.default("column")),
-	getMinWidthPx: IQuery.expects(z.number().default(240)),
-	getItems: IQuery.expects(z.array(z.looseObject({}))),
-	getPageSize: IQuery.expects(z.number().default(24)),
-	controls: IMounts.of({ default: [] }),
-	widgets: IMounts.of({ default: [] }),
-	item: ISlot.of({ surface: "none" }),
-});
-
 const SectionWidget = createWidget({
-	inject: props,
+	inject: {
+		getHeading: IQuery.expects(z.string().default("Section")),
+		getBadgeTone: IQuery.expects(BadgeToneSchema.default("neutral")),
+		getBadge: IQuery.expects(z.string().default("")),
+		getFilling: IQuery.expects(z.enum([PLACED, PER_ROW]).default(PLACED)),
+		getArrangement: IQuery.expects(ArrangementSchema.default("column")),
+		getMinWidthPx: IQuery.expects(z.number().default(240)),
+		getItems: IQuery.expects(z.array(z.looseObject({}))),
+		getPageSize: IQuery.expects(z.number().default(24)),
+		controls: IMounts.of({ default: [] }),
+		widgets: IMounts.of({ default: [] }),
+		item: ISlot.of({ surface: "none" }),
+	},
 	draw: ({
 		getHeading: heading,
 		getBadge: badge,

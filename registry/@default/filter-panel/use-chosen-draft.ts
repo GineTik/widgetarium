@@ -1,10 +1,10 @@
-import type { DrawnProps } from "widgetarium";
+import type { PropsOf } from "widgetarium";
 import { useState } from "react";
 import { RADIO } from "./control-kinds";
 import type { Chosen, Group } from "./types";
-import type { props } from "./widget";
+import type FilterPanel from "./widget";
 
-type FilterProps = DrawnProps<typeof props>;
+type FilterProps = PropsOf<typeof FilterPanel>;
 
 // TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
 export function useChosenDraft(applied: Chosen, setChosen: FilterProps["setChosen"]) {

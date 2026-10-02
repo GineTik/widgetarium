@@ -1,14 +1,4 @@
-import {
-	ICommand,
-	IQuery,
-	ISlot,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	defineProps,
-	useData,
-	z,
-} from "widgetarium";
+import { ICommand, IQuery, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row } from "widgetarium";
 import { TailPatience } from "./tail-patience";
 import { TailRows } from "./tail-rows";
@@ -42,26 +32,24 @@ export const LogLineSchema = z.object({
 		.meta({ aka: ["level", "kind", "severity", "status", "result"] }),
 });
 
-export const props = defineProps({
-	getLines: IQuery.expects(
-		z.array(LogLineSchema).default([
-			{ at: "14:32:09", text: "wrote widgets/@flow/log-line/widget.tsx", tone: "accent" },
-			{ at: "14:32:04", text: "tsc --noEmit: no errors", tone: "success" },
-			{ at: "14:31:52", text: "Session started.", tone: "neutral" },
-		]),
-	),
-	getLinesKept: IQuery.expects(z.number().default(LINES_KEPT)),
-	getIsFollowing: IQuery.expects(z.boolean().default(true)),
-	setIsFollowing: ICommand.sends(z.boolean()),
-	line: ISlot.of<{ getEntry: Row<LogLine> }>({
-		default: "@flow/log-line",
-		surface: "none",
-		gives: { getEntry: ["at", "text", "tone"] },
-	}),
-});
-
 const SessionTail = createWidget({
-	inject: props,
+	inject: {
+		getLines: IQuery.expects(
+			z.array(LogLineSchema).default([
+				{ at: "14:32:09", text: "wrote widgets/@flow/log-line/widget.tsx", tone: "accent" },
+				{ at: "14:32:04", text: "tsc --noEmit: no errors", tone: "success" },
+				{ at: "14:31:52", text: "Session started.", tone: "neutral" },
+			]),
+		),
+		getLinesKept: IQuery.expects(z.number().default(LINES_KEPT)),
+		getIsFollowing: IQuery.expects(z.boolean().default(true)),
+		setIsFollowing: ICommand.sends(z.boolean()),
+		line: ISlot.of<{ getEntry: Row<LogLine> }>({
+			default: "@flow/log-line",
+			surface: "none",
+			gives: { getEntry: ["at", "text", "tone"] },
+		}),
+	},
 	draw: ({ getLines, getLinesKept: linesKept, getIsFollowing: isFollowing, setIsFollowing, line }) => {
 		const kept = keptOf(linesKept);
 		const read = useData(getLines, { sort: NEWEST_FIRST, limit: kept });

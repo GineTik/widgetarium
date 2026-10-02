@@ -90,8 +90,9 @@ export default Checklist;
 **`createWidget({ inject, draw })` declares and draws, `metadata` describes, `layout` places.**
 `inject` holds the gateways the widget reads and may be left out when it reads none; `draw` gets
 them typed. `defineMetadata` takes the created widget. Never annotate `inject` or `draw` with a type:
-that erases what the component is typed from. Code outside `draw` that needs the prop types keeps
-`const props = defineProps({...})`, reads `DrawnProps<typeof props>` and passes `inject: props`.
+that erases what the component is typed from. Props are declared in `inject` and nowhere else; code
+outside `draw` takes their types from the widget itself: `PropsOf<typeof Board>`, imported with
+`import type Board from "./widget"` in a sibling file. `defineProps` is not used in a new widget.
 
 ### A prop is a gateway class
 
@@ -190,26 +191,29 @@ never picks a row or falls back itself: `props.<name>.source` names a host imple
 implementation does the picking. Sibling props are named by their prop name:
 
 ```tsx
-const props = defineProps({
-	tabs: IListGateway.of(TabSchema),
-	selection: IValueGateway.of(z.unknown()).pick("get", "update"),
-	board: IValueGateway.of(BoardSchema).pick("get"),
+const Board = createWidget({
+	inject: {
+		getTabs: IQuery.expects(z.array(TabSchema)),
+		getSelection: IQuery.expects(z.unknown()),
+		getBoard: IQuery.expects(BoardSchema),
+	},
+	draw: ({ getTabs, getSelection, getBoard }) => { … },
 });
 
-export const metadata = defineMetadata(props, {
+export const metadata = defineMetadata(Board, {
 	title: "Board",
 	description: "…",
 	props: {
-		selection: {
+		getSelection: {
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "tabs", field: "name", whenNothingPicked: "first" },
+				fields: { rows: "getTabs", field: "name", whenNothingPicked: "first" },
 			},
 		},
-		board: {
+		getBoard: {
 			source: {
 				implementation: "@core/selected-row",
-				fields: { rows: "tabs", picked: "selection", field: "name", whenNothingPicked: "first" },
+				fields: { rows: "getTabs", picked: "getSelection", field: "name", whenNothingPicked: "first" },
 			},
 		},
 	},

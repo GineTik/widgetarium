@@ -52,6 +52,7 @@ export type {
 	GivenProps,
 	Implementation,
 	ListDeclared,
+	PropsOf,
 	MigrationStep,
 	PropMetadata,
 	ShapesOf,

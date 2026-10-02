@@ -1,14 +1,4 @@
-import {
-	IQuery,
-	ISlot,
-	VaultRecordSchema,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	defineProps,
-	useData,
-	z,
-} from "widgetarium";
+import { IQuery, ISlot, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import { FeedPages } from "./feed-pages";
 import { FeedSaid } from "./feed-said";
 import type { Drawn, Given, ItemSlot } from "./types";
@@ -22,18 +12,16 @@ const NOTHING = "Nothing here yet.";
 
 export const ItemSchema = VaultRecordSchema.extend({ content: z.string().nullable().optional() });
 
-export const props = defineProps({
-	getItems: IQuery.expects(z.array(ItemSchema)),
-	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-	item: ISlot.of<Given>({
-		default: "@default/obsidian-markdown-preview",
-		surface: "group",
-		gives: { getSource: ["content", "path"] },
-	}),
-});
-
 const FeedWidget = createWidget({
-	inject: props,
+	inject: {
+		getItems: IQuery.expects(z.array(ItemSchema)),
+		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		item: ISlot.of<Given>({
+			default: "@default/obsidian-markdown-preview",
+			surface: "group",
+			gives: { getSource: ["content", "path"] },
+		}),
+	},
 	draw: ({ getItems, getPageSize: pageSize, item }) => {
 		const size = pageSizeOf(pageSize);
 		const first = useData(getItems, { offset: 0, limit: size });

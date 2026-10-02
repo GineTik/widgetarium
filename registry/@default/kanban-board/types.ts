@@ -1,6 +1,7 @@
-import { z, type DrawnProps, type Navigation, type RecordRef, type ViewHost } from "widgetarium";
+import { z, type PropsOf, type Navigation, type RecordRef, type ViewHost } from "widgetarium";
 import type { ToneName } from "widgetarium/kit";
-import type { TaskSchema, props } from "./widget";
+import type KanbanBoard from "./widget";
+import type { TaskSchema } from "./widget";
 
 type TaskRecord = z.infer<typeof TaskSchema>;
 
@@ -27,7 +28,7 @@ export type Dragging = { row: TaskRow | null; pick: (row: TaskRow) => void; drop
 
 export type RenderMarkdown = ViewHost["ui"]["renderMarkdown"];
 
-export type KanbanProps = DrawnProps<typeof props>;
+export type KanbanProps = PropsOf<typeof KanbanBoard>;
 
 // TRADE-OFF: nothing invented — an absent field must stay absent, or the card cannot tell it from a value
 export type CardFace = {
