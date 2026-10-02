@@ -96,7 +96,7 @@ export function WidgetHost(props: WidgetHostProps): ReactElement {
 	const { definition, registry } = props;
 	const mounts = resolveMounts(definition.manifest, registry, mountContextOf(props));
 	const gateways = useHostGateways(props, mounts);
-	const commands = useHostCommands(definition.manifest, props.tile, props.refs);
+	const commands = useHostCommands(definition.manifest, props.tile, props.refs, props.host);
 	return drawWidget(definition, { ...widgetPropsOf(props, gateways, mounts), ...commands });
 }
 

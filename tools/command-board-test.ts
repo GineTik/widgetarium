@@ -207,6 +207,73 @@ check("and opens once the Data tab switches it on", last().move.can(), { can: tr
 withProps({ tasks: typedTasks, move: moveInVault });
 await tick();
 
+const { definePack, registerPacks } = await import("../packages/core/src/engine/packs.ts");
+const { defineCommandMetadata, defineGatewayMetadata } =
+	await import("../packages/core/src/gateway/implementation-metadata.ts");
+const { rowOf } = await import("../packages/core/src/gateway/create.ts");
+const packMoves: unknown[] = [];
+class PackTasksQuery extends IQuery.returns(z.array(TaskSchema)) {
+	constructor(readonly fields: { readonly prefix?: string | undefined }) {
+		super();
+	}
+
+	list() {
+		const rows = [
+			rowOf<{ title: string; status: "todo" }>({ title: `${this.fields.prefix ?? ""}Packed`, status: "todo" }, "p1"),
+		];
+		return { rows, total: 1 };
+	}
+}
+class PackMoveCommand extends ICommand.takes(z.object({ ref: z.string(), status: StatusSchema })) {
+	constructor(readonly fields: { readonly prefix?: string | undefined }) {
+		super();
+	}
+
+	run(input: unknown): void {
+		packMoves.push([this.fields.prefix, input]);
+	}
+}
+const PackFieldsSchema = z.object({ prefix: z.string().optional() });
+registerPacks(
+	definePack({
+		id: "@test",
+		title: "Test",
+		queries: [
+			defineGatewayMetadata(PackTasksQuery, { id: "@test/tasks", title: "Packed tasks", fields: PackFieldsSchema }),
+		],
+		commands: [
+			defineCommandMetadata(PackMoveCommand, {
+				id: "@test/move",
+				title: "Packed move",
+				description: "Records the move.",
+				fields: PackFieldsSchema,
+			}),
+		],
+	}),
+);
+const packedMove = { implementation: "@test/move", fields: { prefix: "x-" } };
+withProps({ tasks: { implementation: "@test/tasks", fields: { prefix: "x-" } }, move: packedMove });
+await tick();
+check(
+	"a prop bound to a pack's query draws what it returns",
+	last().tasks.map((row) => row.title),
+	["x-Packed"],
+);
+check("a pack's command stays shut until it is switched on", last().move.can(), {
+	can: false,
+	reason: '"move" runs Packed move, which stays shut until it is switched on in the Data tab',
+});
+withProps({ move: { ...packedMove, allow: ["run"] } });
+await tick();
+check(
+	"once switched on it runs with its own fields",
+	await last().move({ ref: RecordRefSchema.parse("p1"), status: "done" }),
+	{ ok: true },
+);
+check("and the pack's command got the input", packMoves, [["x-", { ref: "p1", status: "done" }]]);
+withProps({ tasks: typedTasks, move: moveInVault });
+await tick();
+
 const unbound = Object.fromEntries(Object.entries(board.tiles[0]?.props ?? {}).filter(([name]) => name !== "move"));
 board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: unbound })) };
 draw();

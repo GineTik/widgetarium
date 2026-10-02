@@ -5,6 +5,8 @@ import type { ShapeStore } from "@widgetarium/kit/shapes";
 import { createWantedWidgets } from "@widgetarium/core/engine/widgets-wanted.js";
 import { WidgetRegistry } from "@widgetarium/core/registry.js";
 import { measure, trace, traceSub } from "@widgetarium/core/trace.js";
+import { registerPacks } from "@widgetarium/core/engine/packs.js";
+import { gitPack } from "@widgetarium/pack-git";
 import { REACT_SURFACE_SOURCE } from "widgetarium:surface";
 import { createHeaderActions } from "./header-actions.js";
 import type { HeaderActions } from "./header-actions.js";
@@ -26,6 +28,7 @@ const AFTER_FIRST_DRAW_MS = 3000;
 
 export function startPlugin(plugin: WidgetariumPlugin): void {
 	const startedAt = performance.now();
+	registerPacks(gitPack);
 	plugin.editing = false;
 	plugin.mounts = new Map();
 	plugin.header = headerActionsOf(plugin);

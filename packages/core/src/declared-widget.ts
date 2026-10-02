@@ -6,7 +6,7 @@ import { canOf, refuseVerb } from "./gateway/create";
 import { ENGINE_GATEWAY, gatewayOverImplementation, isImplementation } from "./gateway/adapted";
 import type { AdaptedGateway } from "./gateway/adapted";
 import { gatewayCache, stableKey } from "./gateway/cache";
-import type { Action, CanResult, CollectionGateway, ValueGateway } from "./gateway/contract";
+import type { Action, CanResult, CollectionGateway, Query, ValueGateway } from "./gateway/contract";
 import { useData } from "./gateway/use-data";
 import { declarationIn, defaultOf } from "./gateway/declared";
 import type { DeclaredProps } from "./gateway/declared";
@@ -167,9 +167,18 @@ function gatewayOver(name: string, declaration: Declaration, given: unknown): Ad
 	return gatewayOverGiven(name, declaration, given);
 }
 
+function queryReadOf(gateway: CollectionGateway<unknown>): unknown {
+	const { list, get } = gateway;
+	return Object.assign((input?: Query) => list(input), {
+		can: () => list.can(),
+		meta: Reflect.get(list, "meta"),
+		get,
+	});
+}
+
 function useCollectionProp(name: string, declaration: Declaration, gateway: CollectionGateway<unknown>): unknown {
 	return useMemo(() => {
-		if (declaration.isQuery) return gateway.list;
+		if (declaration.isQuery) return queryReadOf(gateway);
 		return keepOnlyPicked(name, declaration, withManyVerbs({ ...checkCollectionWrites(gateway, declaration, name) }));
 	}, [gateway]);
 }

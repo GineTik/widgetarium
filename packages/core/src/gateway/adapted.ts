@@ -24,6 +24,7 @@ export function gatewayOverImplementation(
 	name: string,
 	declaration: AdaptedDeclaration,
 	implementation: object,
+	stableId?: string,
 ): AdaptedGateway {
 	const standard = declaration.kind === "collection" ? COLLECTION_VERBS : VALUE_VERBS;
 	const verbs = [...new Set([...standard, ...declaration.writes, ...MANY_VERBS])].filter(
@@ -33,7 +34,7 @@ export function gatewayOverImplementation(
 		verbs.map((verb) => [verb, (input: unknown) => callVerb(implementation, verb, input)] as const),
 	);
 	const options = {
-		id: idOfImplementation(implementation, name),
+		id: stableId ?? idOfImplementation(implementation, name),
 		handlers,
 		settlesNow: Reflect.get(implementation, "settlesNow") === true,
 		...subscribeOver(implementation),

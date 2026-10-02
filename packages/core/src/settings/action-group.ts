@@ -3,15 +3,17 @@ import type { ReactElement, ReactNode } from "react";
 import { Field, Icon, IconButton, SidebarGroup, SidebarRow, Switch } from "@widgetarium/kit";
 import type { RefDescription } from "../gateway/refs.js";
 import {
-	HOST_COMMAND_KINDS,
 	TARGET_FIELD,
+	offeredCommandOf,
+	offeredCommands,
 	commandBindingOf,
 	commandSpecsOf,
 	isRunAllowed,
 	targetOf,
 	withRunAllowed,
 } from "../surface/command-binding.js";
-import type { CommandBinding, CommandTarget, HostCommandKind, ParsedCommandSpec } from "../surface/command-binding.js";
+import type { CommandBinding, CommandTarget, OfferedCommand, ParsedCommandSpec } from "../surface/command-binding.js";
+import { packFieldRows } from "./pack-fields.js";
 import { draftOnInput, editorPopover, group, note, reportRow, valueRow } from "./settings-rows.js";
 import type { SettingsState } from "./settings-state.js";
 
@@ -47,7 +49,7 @@ export function actionGroup(state: SettingsState): ReactElement | null {
 export function commandDataGroups(state: SettingsState): ReactElement[] {
 	return commandsOf(state).map(([name, spec]) => {
 		const binding = commandBindingOf(state.tile, name, spec);
-		const isOn = isRunAllowed(binding, isVaultTarget(state, binding));
+		const isOn = isRunAllowed(binding, isVaultTarget(state, binding) || isPackCommand(binding));
 		const flip = (next: boolean): void => writeBinding(state, name, withRunAllowed(binding, next));
 		const toggle = h(Switch, { checked: isOn, label: spec.label, onChange: flip });
 		return group(
@@ -69,9 +71,9 @@ function commandRow(state: SettingsState, [name, spec]: Named): ReactElement {
 	const sub = spec.hint ?? sayingOf(binding);
 	const trigger = valueRow({ label: spec.label, sub, value: null, unset: !binding.implementation });
 	const choices =
-		sourcesOpen || !targetKindOf(binding)
+		sourcesOpen || !hasChoicesOfItsOwn(binding)
 			? implementationChoices(state, name, binding)
-			: targetChoices(state, name, binding);
+			: [...targetChoices(state, name, binding), ...fieldChoices(state, name, binding)];
 	const body = h("div", { className: "wg-set-pop-body" }, [commandHead(state, name, spec, sourcesOpen), ...choices]);
 	return editorPopover(state, popKeyOf(name), trigger, body, "", sourcesOpen);
 }
@@ -102,32 +104,43 @@ function sourcesToggle(state: SettingsState, name: string, sourcesOpen: boolean)
 }
 
 function implementationChoices(state: SettingsState, name: string, binding: CommandBinding): ReactNode[] {
-	const rows = Object.entries(HOST_COMMAND_KINDS).map(([implementation, kind]) =>
-		implementationRow(state, { name, implementation, kind, selected: binding.implementation === implementation }),
+	const rows = offeredCommands().map((offered) =>
+		implementationRow(state, { name, offered, selected: binding.implementation === offered.id }),
 	);
 	return [note(WHERE_IT_ACTS), h(SidebarGroup, { className: "wg-set-sources", key: "sources" }, rows)];
 }
 
 interface ImplementationRowAsk {
 	readonly name: string;
-	readonly implementation: string;
-	readonly kind: HostCommandKind;
+	readonly offered: OfferedCommand;
 	readonly selected: boolean;
 }
 
-function implementationRow(
-	state: SettingsState,
-	{ name, implementation, kind, selected }: ImplementationRowAsk,
-): ReactElement {
+function implementationRow(state: SettingsState, { name, offered, selected }: ImplementationRowAsk): ReactElement {
 	const onClick = (): void => {
-		writeBinding(state, name, { implementation });
-		if (kind.target) state.openEditor(popKeyOf(name), "");
+		writeBinding(state, name, { implementation: offered.id });
+		if (offered.target || offered.fields) state.openEditor(popKeyOf(name), "");
 	};
-	return h(SidebarRow, { key: implementation, as: "button", label: kind.title, sub: kind.said, selected, onClick });
+	return h(SidebarRow, { key: offered.id, as: "button", label: offered.title, sub: offered.said, selected, onClick });
+}
+
+function hasChoicesOfItsOwn(binding: CommandBinding): boolean {
+	const offered = offeredCommandOf(binding.implementation);
+	return Boolean(offered?.target || offered?.fields);
+}
+
+function fieldChoices(state: SettingsState, name: string, binding: CommandBinding): ReactNode[] {
+	const schema = offeredCommandOf(binding.implementation)?.fields;
+	if (!schema) return [];
+	return packFieldRows(schema, binding.fields ?? {}, (fields) => writeBinding(state, name, { ...binding, fields }));
+}
+
+function isPackCommand(binding: CommandBinding): boolean {
+	return offeredCommandOf(binding.implementation)?.isPack === true;
 }
 
 function targetKindOf(binding: CommandBinding): CommandTarget | null {
-	return binding.implementation ? (HOST_COMMAND_KINDS[binding.implementation]?.target ?? null) : null;
+	return offeredCommandOf(binding.implementation)?.target ?? null;
 }
 
 function targetChoices(state: SettingsState, name: string, binding: CommandBinding): ReactNode[] {
@@ -186,7 +199,7 @@ function isVaultTarget(state: SettingsState, binding: CommandBinding): boolean {
 
 function sayingOf(binding: CommandBinding): string {
 	if (!binding.implementation) return NOT_SET_UP;
-	return HOST_COMMAND_KINDS[binding.implementation]?.said ?? binding.implementation;
+	return offeredCommandOf(binding.implementation)?.said ?? binding.implementation;
 }
 
 function writeBinding(state: SettingsState, name: string, binding: CommandBinding): void {

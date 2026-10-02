@@ -20,6 +20,7 @@ import type {
 } from "../gateway/contract.js";
 import type { EveryValueVerb } from "../gateway/needs.js";
 import type { GatewayRefs, ViewCell } from "../gateway/refs.js";
+import type { PortsHost } from "./packs.js";
 
 export interface HostFields extends TileProp {
 	readonly picked?: unknown;
@@ -44,7 +45,7 @@ export interface ShapeReader {
 	readShape?(path: string): unknown;
 }
 
-export interface HostGatewayHost extends FolderHost, FileHost {
+export interface HostGatewayHost extends FolderHost, FileHost, PortsHost {
 	readonly shapes?: ShapeReader | null | undefined;
 }
 

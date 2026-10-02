@@ -115,6 +115,8 @@ export type Command<Input> = ([Input] extends [void | undefined]
 	can(): CanResult;
 };
 
+export type QueryRead<R> = Action<Query | void, RowsResult<R>> & { readonly get: Action<RecordRef, Row<R> | null> };
+
 type QueryRowOf<S extends z.ZodType> = z.output<S> extends readonly (infer Held)[] ? Held : never;
 
 export type QueryHeldOf<S extends z.ZodType> = z.output<S> extends readonly unknown[] ? QueryRowOf<S> : z.output<S>;
@@ -190,7 +192,7 @@ type DrawnOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 	: C extends { readonly [commandInput]?: infer Input }
 		? Command<Input>
 		: C extends { readonly [queryRowHeld]?: infer Held }
-			? Action<Query | void, RowsResult<RowWithRef<Held>>>
+			? QueryRead<RowWithRef<Held>>
 			: C extends {
 						readonly [valueHeld]?: infer Held;
 						readonly [valueWrites]?: infer Verbs;
@@ -213,7 +215,7 @@ type GivenOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 	: C extends { readonly [commandInput]?: infer Input }
 		? CommandContract<Input>
 		: C extends { readonly [queryRowHeld]?: infer Held }
-			? readonly Held[] | QueryRowsContract<Held>
+			? readonly Held[] | QueryRowsContract<Held> | (GatewayBase & { readonly kind: "collection" })
 			: C extends { readonly [valueHeld]?: infer Held }
 				? Held | AnyImplementation<C>
 				: C extends { readonly [rowHeld]?: infer Held }

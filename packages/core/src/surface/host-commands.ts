@@ -14,6 +14,9 @@ import {
 	targetOf,
 } from "./command-binding.js";
 import type { CommandBinding } from "./command-binding.js";
+import { portsOf, registeredCommands } from "../engine/packs.js";
+import type { ImplementationPorts, PortsHost } from "../engine/packs.js";
+import type { CommandMetadata } from "../gateway/implementation-metadata.js";
 
 export interface HostCommand {
 	run(input: unknown): Promise<void>;
@@ -36,6 +39,8 @@ interface TargetedAsk {
 }
 
 const NOT_ALLOWED = '"{name}" is switched off for this tile';
+const PACK_NOT_SWITCHED_ON = '"{name}" runs {title}, which stays shut until it is switched on in the Data tab';
+const RUNS_NOTHING = "{implementation} has no run";
 const VAULT_NOT_SWITCHED_ON = '"{name}" writes the vault, which stays shut until it is switched on in the Data tab';
 const UNKNOWN_IMPLEMENTATION = '"{name}" names {implementation}, which this host does not run';
 const NOTHING_NAMED = '"{name}" names nothing to change: pick it in the settings window';
@@ -53,25 +58,41 @@ const WRITES: Readonly<Record<string, Write>> = {
 
 const RUNNING_ON_TARGET = new Map<string, Promise<unknown>>();
 
-export function useHostCommands(manifest: EngineManifest, tile: Tile, refs: GatewayRefs): Record<string, HostCommand> {
+interface CommandAsk {
+	readonly name: string;
+	readonly binding: CommandBinding;
+	readonly refs: GatewayRefs;
+	readonly tileId: string;
+	readonly host: PortsHost;
+}
+
+export function useHostCommands(
+	manifest: EngineManifest,
+	tile: Tile,
+	refs: GatewayRefs,
+	host: PortsHost,
+): Record<string, HostCommand> {
 	const specs = commandSpecsOf(manifest["commands"]);
 	return useMemo(
 		() =>
 			Object.fromEntries(
 				Object.entries(specs).flatMap(([name, spec]) => {
-					const command = hostCommandOf(name, commandBindingOf(tile, name, spec), refs, tile.id);
+					const binding = commandBindingOf(tile, name, spec);
+					const command = hostCommandOf({ name, binding, refs, tileId: tile.id, host });
 					return command ? [[name, command] as const] : [];
 				}),
 			),
-		[tile.props, refs, Object.keys(specs).join("\u0000")],
+		[tile.props, refs, host, Object.keys(specs).join("\u0000")],
 	);
 }
 
-function hostCommandOf(name: string, binding: CommandBinding, refs: GatewayRefs, tileId: string): HostCommand | null {
+function hostCommandOf({ name, binding, refs, tileId, host }: CommandAsk): HostCommand | null {
 	const { implementation } = binding;
 	if (binding.allow && !binding.allow.includes("run")) return createRefusedCommand(NOT_ALLOWED.replace("{name}", name));
 	if (!implementation) return null;
 	if (implementation === CONSOLE_LOG) return createConsoleLogCommand(`${tileId}/${name}`);
+	const packed = registeredCommands().find((entry) => entry.id === implementation);
+	if (packed) return createPackCommand(name, packed, binding, portsOf(host, refs));
 	const kind = HOST_COMMAND_KINDS[implementation];
 	const write = WRITES[implementation];
 	if (!kind || !write)
@@ -123,6 +144,25 @@ function createConsoleLogCommand(ref: string): HostCommand {
 		can: () => ({ can: true }),
 		run: async (input) => {
 			console.log(`[widgetarium] ${ref} sent`, input);
+		},
+	};
+}
+
+function createPackCommand(
+	name: string,
+	packed: CommandMetadata,
+	binding: CommandBinding,
+	ports: ImplementationPorts,
+): HostCommand {
+	if (!isRunAllowed(binding, true))
+		return createRefusedCommand(PACK_NOT_SWITCHED_ON.replace("{name}", name).replace("{title}", packed.title));
+	const instance: object = Reflect.construct(packed.implementation, [binding.fields ?? {}, ports]);
+	return {
+		can: () => canOf(instance),
+		run: async (input) => {
+			const run: unknown = Reflect.get(instance, "run");
+			if (typeof run !== "function") throw new Error(RUNS_NOTHING.replace("{implementation}", packed.id));
+			await Reflect.apply(run, instance, [input]);
 		},
 	};
 }

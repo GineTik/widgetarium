@@ -2,7 +2,7 @@ import type { z } from "zod";
 import type { Kind } from "./declaration";
 import { WIDGET_WORDS, declarationIn } from "./declaration";
 
-type Constructed = new (fields: never, host?: never) => object;
+type Constructed = new (fields: never, host: never) => object;
 
 type FieldsOf<C extends Constructed> = ConstructorParameters<C>[0];
 
@@ -42,4 +42,35 @@ export function defineGatewayMetadata<C extends Constructed>(
 				.replace("{fits}", declaration.word === "sends" ? "ICommand.takes" : "IQuery.returns or IQuery.returnsAny"),
 		);
 	return { ...metadata, implementation, kind: declaration.kind };
+}
+
+export type CommandTargetKind = "collection" | "value";
+
+export interface CommandMetadata<C extends Constructed = Constructed> {
+	readonly implementation: C;
+	readonly id: string;
+	readonly title: string;
+	readonly description: string;
+	readonly fields: z.ZodType;
+	readonly target: CommandTargetKind | null;
+}
+
+export interface CommandMetadataInput<C extends Constructed> {
+	readonly id: string;
+	readonly title: string;
+	readonly description: string;
+	readonly fields: z.ZodType<FieldsOf<C>>;
+	readonly target?: CommandTargetKind;
+}
+
+const NOT_A_COMMAND = "{implementation} is not a command implementation — extend ICommand.takes(schema)";
+
+export function defineCommandMetadata<C extends Constructed>(
+	implementation: C,
+	metadata: CommandMetadataInput<C>,
+): CommandMetadata<C> {
+	const declaration = declarationIn(implementation);
+	if (declaration?.kind !== "command" || declaration.word !== "takes")
+		throw new Error(NOT_A_COMMAND.replace("{implementation}", implementation.name || "this class"));
+	return { ...metadata, implementation, target: metadata.target ?? null };
 }

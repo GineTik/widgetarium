@@ -2,16 +2,19 @@ import { z } from "zod";
 import { propConfig } from "../model.js";
 import type { TileProp } from "../model.js";
 import { stableKey } from "../gateway/cache.js";
-import { ENGINE_GATEWAY } from "../gateway/adapted.js";
+import { ENGINE_GATEWAY, gatewayOverImplementation } from "../gateway/adapted.js";
+import type { GatewayMetadata } from "../gateway/implementation-metadata.js";
+import { parseReadsBy } from "../gateway/parsed.js";
 import { ICrudGateway } from "../gateway/declared.js";
 import { problemsOf } from "../gateway/problems.js";
+import type { GatewayContext } from "../gateway/problems.js";
 import { allowedVerbs, bindingOf, restrictToAllowed } from "../gateway/props.js";
 import { refOf } from "../gateway/refs.js";
 import { isObject } from "./is-object.js";
 import type { HostFields, HostGateway, HostGatewayContext, HostSpec } from "./engine-backed.js";
 import { fieldsOf } from "./host-gateway-classes.js";
 import { HOST_GATEWAYS } from "./host-gateway-list.js";
-import type { HostGatewayEntry } from "./host-gateway-list.js";
+import { portsOf, registeredQueries } from "./packs.js";
 
 export { HOST_GATEWAYS } from "./host-gateway-list.js";
 export type { HostGatewayEntry } from "./host-gateway-list.js";
@@ -62,7 +65,7 @@ const NOT_OFFERED_YET = ["@core/selection"];
 
 const NO_SUCH_GATEWAY = 'prop "{name}" names the gateway "{id}", which this host does not offer';
 
-const BY_ID = new Map(HOST_GATEWAYS.map((entry) => [entry.id, entry] as const));
+const BY_ID = new Map<string, GatewayMetadata>(HOST_GATEWAYS.map((entry) => [entry.id, entry] as const));
 
 const FROM_OLD_BINDING: Readonly<Record<BoundKind, Readonly<Partial<Record<string, string>>>>> = {
 	value: {
@@ -88,13 +91,17 @@ const ALLOW_OF: ReadonlyMap<string, AllowedBy> = new Map<string, AllowedBy>([
 export function hostGatewayFor(
 	spec: HostSpec | null | undefined,
 	config: TileProp | null | undefined,
-): HostGatewayEntry | null {
-	if (typeof config?.implementation === "string") return BY_ID.get(config.implementation) ?? null;
+): GatewayMetadata | null {
+	if (typeof config?.implementation === "string") return entryOf(config.implementation);
 	const sourced = sourceOf(spec, config);
-	if (sourced) return BY_ID.get(sourced) ?? null;
+	if (sourced) return entryOf(sourced);
 	const { kind, binding } = bindingOf(spec, config);
-	if (binding === "stat") return BY_ID.get(`@core/stat-${config?.algorithm ?? "count"}`) ?? null;
-	return BY_ID.get(FROM_OLD_BINDING[kind][binding] ?? "") ?? null;
+	if (binding === "stat") return entryOf(`@core/stat-${config?.algorithm ?? "count"}`);
+	return entryOf(FROM_OLD_BINDING[kind][binding] ?? "");
+}
+
+export function isPackImplementation(id: string | undefined): boolean {
+	return !BY_ID.has(id ?? "") && registeredQueries().some((entry) => entry.id === id);
 }
 
 export function bindFields(
@@ -111,10 +118,10 @@ export function bindFields(
 	return { ...fields, ...Object.fromEntries(named) };
 }
 
-export function sourcesFor(spec: HostSpec | null | undefined): HostGatewayEntry[] {
+export function sourcesFor(spec: HostSpec | null | undefined): GatewayMetadata[] {
 	const kind = spec?.kind === "value" ? "value" : "collection";
 	const writes = (spec?.writes ?? []).filter((verb) => WRITING.includes(verb));
-	return HOST_GATEWAYS.filter((entry) => {
+	return [...HOST_GATEWAYS, ...registeredQueries()].filter((entry) => {
 		if (entry.kind !== kind || NOT_OFFERED_YET.includes(entry.id)) return false;
 		if (entry.id.startsWith("@core/stat-")) return spec?.type === "number";
 		if (kind === "collection" && writes.length > 0) return entry.implementation.prototype instanceof ICrudGateway;
@@ -144,8 +151,12 @@ export function resolveHostGateway(context: HostGatewayContext): HostGateway {
 		context.schema ?? z.unknown(),
 		`${chosen.id}?${stableKey(fields)}`,
 	);
+	if (isPackImplementation(chosen.id)) return packGatewayOf(chosen, fields, { ...context, ...problems });
 	const tileConfig = sourceOf(spec, config) ? { tileConfig: config } : {};
-	const engine = new chosen.implementation(fields, { ...context, ...tileConfig, ...problems })[ENGINE_GATEWAY];
+	const engine = Reflect.get(
+		Reflect.construct(chosen.implementation, [fields, { ...context, ...tileConfig, ...problems }]),
+		ENGINE_GATEWAY,
+	);
 	const allow = ALLOW_OF.get(chosen.id);
 	if (!allow) return engine;
 	return restrictToAllowed(engine, allowedVerbs(spec, config, allow === "vault" ? "vault" : "hardcode")) ?? engine;
@@ -160,4 +171,20 @@ function sourceOf(spec: HostSpec | null | undefined, config: TileProp | null | u
 	if (!SOURCE_IMPLEMENTATIONS.includes(implementation) || typeof implementation !== "string") return null;
 	if (typeof config?.implementation === "string" || config?.ref) return null;
 	return implementation;
+}
+
+function entryOf(id: string): GatewayMetadata | null {
+	return BY_ID.get(id) ?? registeredQueries().find((entry) => entry.id === id) ?? null;
+}
+
+function packGatewayOf(
+	chosen: GatewayMetadata,
+	fields: HostFields,
+	context: HostGatewayContext & GatewayContext,
+): HostGateway {
+	const ports = portsOf(context.host, context.refs);
+	const instance: object = Reflect.construct(chosen.implementation, [fields, ports]);
+	const kind = chosen.kind === "value" ? "value" : "collection";
+	const id = `${refOf(context.tile.id, context.name)}?${chosen.id}&${stableKey(fields)}`;
+	return parseReadsBy(gatewayOverImplementation(context.name, { kind, writes: [] }, instance, id), context, kind);
 }

@@ -5,6 +5,8 @@ MIT — use it for anything, including a commercial product:
 
   packages/kit/   the component kit every widget and screen is drawn with
                   packages/kit/LICENSE
+  packages/packs/ the query and command implementations, one folder per pack
+                  packages/packs/<pack>/LICENSE
   registry/       the widget library
                   registry/LICENSE
 

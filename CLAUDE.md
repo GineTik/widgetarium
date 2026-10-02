@@ -20,6 +20,7 @@ apps/obsidian     FSL  the host: mounts core in a note, gives it the vault as it
       ↓
 packages/core     FSL  the board builder: tree, engine, gateways, renderer, laws
       ↓
+packages/packs/*  MIT  query and command implementations, one workspace per pack (@git): schemas, *Query, *Command; the host registers them
 packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media

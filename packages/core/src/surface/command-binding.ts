@@ -4,6 +4,7 @@ import { refOf } from "../gateway/refs.js";
 import { isObject } from "../engine/is-object.js";
 import { PropRefSchema } from "../engine/prop-ref.js";
 import type { Tile } from "../model.js";
+import { registeredCommands } from "../engine/packs.js";
 
 export const TARGET_FIELD = "target";
 
@@ -62,6 +63,39 @@ export const HOST_COMMAND_KINDS: Readonly<Record<string, HostCommandKind>> = {
 		said: "Sets a value on this board.",
 	},
 };
+
+export interface OfferedCommand {
+	readonly id: string;
+	readonly title: string;
+	readonly said: string;
+	readonly target: CommandTarget | null;
+	readonly isPack: boolean;
+	readonly fields: z.ZodType | null;
+}
+
+export function offeredCommands(): OfferedCommand[] {
+	const built = Object.entries(HOST_COMMAND_KINDS).map(([id, kind]) => ({
+		id,
+		title: kind.title,
+		said: kind.said,
+		target: kind.target,
+		isPack: false,
+		fields: null,
+	}));
+	const packed = registeredCommands().map((entry) => ({
+		id: entry.id,
+		title: entry.title,
+		said: entry.description,
+		target: entry.target,
+		isPack: true,
+		fields: entry.fields,
+	}));
+	return [...built, ...packed];
+}
+
+export function offeredCommandOf(id: string | undefined): OfferedCommand | null {
+	return offeredCommands().find((offered) => offered.id === id) ?? null;
+}
 
 export const CommandBindingSchema = z.object({
 	implementation: z.string().optional(),

@@ -49,7 +49,8 @@ function swapInto(layout: BoxNode, group: Tile, views: readonly View[]): BoxNode
 }
 
 function isStripShown(tile: Tile): boolean {
-	return (tile.props["isTabsShown"]?.value ?? tile.settings["isTabsShown"]) !== false;
+	const typed = tile.props["getIsTabsShown"]?.value ?? tile.props["isTabsShown"]?.value;
+	return (typed ?? tile.settings["isTabsShown"]) !== false;
 }
 
 function viewsOfGroup(tile: Tile, taken: Set<string>, nameOf: NameOf): View[] {

@@ -4,7 +4,7 @@ import { Icon, IconButton, SidebarGroup, SidebarRow } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
 import { typedIn, withTyped } from "../gateway/props.js";
 import { hostGatewayFor, sourcesFor } from "../engine/host-gateways.js";
-import type { HostGatewayEntry } from "../engine/host-gateways.js";
+import type { GatewayMetadata } from "../gateway/implementation-metadata.js";
 import { offeredEntries } from "./offered-boxes.js";
 import { FROM_WIDGET, IN_VAULT, STATISTICS, TYPED_HERE, blankValue, writeProp, writtenText } from "./prop-writing.js";
 import { note } from "./settings-rows.js";
@@ -64,7 +64,7 @@ export function sourceList(state: SettingsState, key: string, spec: SettingsSpec
 	return [note(WHERE_FROM), h(SidebarGroup, { className: "wg-set-sources", key: "sources" }, rows)];
 }
 
-function offeredSources(state: SettingsState, spec: SettingsSpec): HostGatewayEntry[] {
+function offeredSources(state: SettingsState, spec: SettingsSpec): GatewayMetadata[] {
 	const othersOffer = offeredEntries(state.refs).some((entry) => entry.tile !== state.tile.id);
 	return sourcesFor(spec).filter((entry) => othersOffer || !NEEDS_ANOTHER_TILE.includes(entry.id));
 }
@@ -74,7 +74,7 @@ function pickSource(
 	key: string,
 	spec: SettingsSpec,
 	config: TileProp,
-	entry: HostGatewayEntry,
+	entry: GatewayMetadata,
 ): void {
 	const { implementation: formerSource, fields, ...legacy } = config;
 	const kind = SOURCE_KIND.get(entry.id);

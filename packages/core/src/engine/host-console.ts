@@ -1,8 +1,18 @@
 import type { HostConsole } from "../gateway/host.js";
+import type { CommandLinePort } from "./packs.js";
 
 type CommandOutcome = Awaited<ReturnType<HostConsole["run"]>>;
 
 type RequireModule = (name: string) => unknown;
+
+interface FileRunner {
+	execFile(
+		file: string,
+		args: readonly string[],
+		options: { cwd?: string | undefined },
+		done: (failure: Error | null, stdout: string, stderr: string) => void,
+	): void;
+}
 
 interface CommandRunner {
 	exec(
@@ -28,6 +38,20 @@ export function createConsole(
 			return true;
 		},
 		run: runOrRefuse(requireOnDesktop, workingDirectory),
+	};
+}
+
+export function createCommandLine(type: string, requireModule: RequireModule | undefined): CommandLinePort {
+	const child = type === DESKTOP_HOST ? requireModule?.("child_process") : undefined;
+	if (!isFileRunner(child)) return { can: false, run: async () => refusedOutcome(NO_COMMAND_LINE) };
+	return {
+		can: true,
+		run: (file, args, cwd) =>
+			new Promise((resolve) =>
+				child.execFile(file, args, { cwd }, (failure, stdout, stderr) =>
+					resolve({ ok: !failure, output: `${stdout}${stderr}`, failure: failure ? failure.message : null }),
+				),
+			),
 	};
 }
 
@@ -64,6 +88,10 @@ function refusedOutcome(failure: string): CommandOutcome {
 function commandRunnerIn(requireModule: RequireModule): CommandRunner | null {
 	const child = requireModule("child_process");
 	return isCommandRunner(child) ? child : null;
+}
+
+function isFileRunner(value: unknown): value is FileRunner {
+	return typeof value === "object" && value !== null && "execFile" in value && typeof value.execFile === "function";
 }
 
 function isCommandRunner(value: unknown): value is CommandRunner {

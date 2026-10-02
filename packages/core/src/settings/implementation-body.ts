@@ -2,7 +2,8 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Segmented } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
-import { fieldsIn, hostGatewayFor } from "../engine/host-gateways.js";
+import { fieldsIn, hostGatewayFor, isPackImplementation } from "../engine/host-gateways.js";
+import { packFieldRows } from "./pack-fields.js";
 import type { HostFields } from "../engine/host-gateways.js";
 import { offeredEntries, offeredLabelOf, refLabel } from "./offered-boxes.js";
 import { writeProp } from "./prop-writing.js";
@@ -29,7 +30,10 @@ export function implementationBody(state: SettingsState, prop: SettingsProp): Re
 	const { key, spec, config } = prop;
 	if (config.implementation === "@core/selected-row") return selectedRowBody(state, key, spec, config);
 	if (config.implementation === "@core/screen-state") return [note(SCREEN_NOTE)];
-	return [];
+	const chosen = hostGatewayFor(spec, config);
+	if (!chosen || !isPackImplementation(chosen.id)) return [];
+	const write = (next: HostFields): void => writeProp(state, key, spec, { ...config, fields: next });
+	return packFieldRows(chosen.fields, fieldsIn(config.fields), write);
 }
 
 export function implementationLabel(state: SettingsState, prop: SettingsProp): string {

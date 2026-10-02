@@ -7,7 +7,7 @@ SPDX-FileCopyrightText = "2026 Denys Shevchuk"
 SPDX-License-Identifier = "FSL-1.1-ALv2"
 
 [[annotations]]
-path = ["packages/kit/**", "registry/**"]
+path = ["packages/kit/**", "packages/packs/**", "registry/**"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 Denys Shevchuk"
 SPDX-License-Identifier = "MIT"
