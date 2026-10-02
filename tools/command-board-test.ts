@@ -167,6 +167,21 @@ check(
 	["Ship spec", "Port heatmap"],
 );
 
+const racing = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
+const pressedTwice = await Promise.all([
+	last().create({ id: racing, title: "Pressed twice", status: "todo" }),
+	last().create({ id: racing, title: "Pressed twice", status: "todo" }),
+]);
+await tick();
+check("two presses at once with one id both answer ok", pressedTwice, [{ ok: true }, { ok: true }]);
+check("and still leave one record", last().tasks.filter((row) => row.title === "Pressed twice").length, 1);
+
+const malformed = { implementation: "@core/typed-rows-update", fields: { target: "t1/tasks" }, allow: "run" };
+board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: { ...tile.props, move: malformed } })) };
+draw();
+await tick();
+check("an allow that is not a list switches the command off", last().move.can().can, false);
+
 const switchedOff = { implementation: "@core/typed-rows-update", fields: { target: "t1/tasks" }, allow: [] };
 board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: { ...tile.props, move: switchedOff } })) };
 draw();

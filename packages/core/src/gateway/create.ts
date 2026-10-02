@@ -10,6 +10,7 @@ import type {
 	Unsubscribe,
 	ValueGateway,
 } from "./contract";
+import { z } from "zod";
 import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
 import type { EveryValueVerb } from "./needs";
 import { isMatch, pageOf, sortRows } from "./match";
@@ -27,6 +28,13 @@ type AnyHandler = (input: never) => MaybePromise<unknown>;
 type HandlerMap = Record<string, AnyHandler>;
 
 const READ_VERBS = new Set(["list", "get", "subscribe"]);
+
+const CanResultSchema = z.union([
+	z.object({ can: z.literal(true) }),
+	z.object({ can: z.literal(false), reason: z.string() }),
+]);
+
+const NOT_A_DECISION = "its can() answered something that is not a decision";
 
 interface AssembleOptions {
 	id: string;
@@ -57,6 +65,16 @@ const NOT_ASSEMBLED = "{id} was assembled without every standard verb";
 
 export function canDo(verb?: { can(): CanResult } | null): boolean {
 	return verb?.can().can === true;
+}
+
+export function canOf(holder: unknown): CanResult {
+	const asked: unknown =
+		(typeof holder === "object" && holder !== null) || typeof holder === "function"
+			? Reflect.get(holder, "can")
+			: undefined;
+	if (typeof asked !== "function") return { can: true };
+	const parsed = CanResultSchema.safeParse(Reflect.apply(asked, holder, []));
+	return parsed.success ? parsed.data : { can: false, reason: NOT_A_DECISION };
 }
 
 export function action<I, O>(run: (input: I) => MaybePromise<O>): Action<I, O> {

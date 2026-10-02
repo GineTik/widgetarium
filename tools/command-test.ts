@@ -4,7 +4,9 @@ import { ICommand, IQuery } from "../packages/core/src/gateway/queries.ts";
 import type { Command } from "../packages/core/src/gateway/declared.ts";
 import type { CommandAnswer } from "../packages/core/src/gateway/queries.ts";
 import type { Query, RowsResult } from "../packages/core/src/gateway/contract.ts";
-import { rowOf } from "../packages/core/src/gateway/create.ts";
+import { canOf, rowOf } from "../packages/core/src/gateway/create.ts";
+import { commandBindingOf } from "../packages/core/src/surface/command-binding.ts";
+import { normalizeBoard } from "../packages/core/src/model.ts";
 import { byId } from "./dom-find.ts";
 import { present } from "./page-dom.ts";
 
@@ -120,6 +122,23 @@ check(
 	[Object.keys(manifest?.props ?? {}), manifest?.["commands"]],
 	[["subscriptions"], { subscribe: { label: "Subscribe" }, refresh: { label: "refresh" } }],
 );
+
+check(
+	"a command with a manifest source and no binding of its own points at its sibling",
+	commandBindingOf(
+		present(normalizeBoard({ tiles: [{ id: "t1", widget: "@test/notice" }] }).tiles[0], "a tile"),
+		"press",
+		{
+			label: "Press",
+			source: { implementation: "@core/typed-value-set", fields: { target: "pressed" } },
+		},
+	),
+	{ implementation: "@core/typed-value-set", fields: { target: "t1/pressed" } },
+);
+check("a can() that answers something else is no permission", canOf({ can: () => "yes" }), {
+	can: false,
+	reason: "its can() answered something that is not a decision",
+});
 
 console.log(`\n${failed === 0 ? "commands: clean" : `commands: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

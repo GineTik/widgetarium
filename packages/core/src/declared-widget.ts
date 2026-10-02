@@ -2,7 +2,7 @@ import { createElement as h, useMemo, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { z } from "zod";
 import { defaultImplementationFor } from "./gateway/defaults";
-import { refuseVerb } from "./gateway/create";
+import { canOf, refuseVerb } from "./gateway/create";
 import { ENGINE_GATEWAY, gatewayOverImplementation, isImplementation } from "./gateway/adapted";
 import type { AdaptedGateway } from "./gateway/adapted";
 import { gatewayCache, stableKey } from "./gateway/cache";
@@ -54,18 +54,19 @@ const HANDED: Readonly<Partial<Record<Declaration["kind"], Hand>>> = {
 export function createDeclaredWidget(props: DeclaredProps, draw: (drawn: DrawnProps) => ReactNode): InjectedWidget {
 	const declared = Object.entries(props).map(([name, held]) => [name, declarationOfInterface(held)] as const);
 	const reads = declared.filter(([, declaration]) => declaration?.kind !== "command");
-	const commands = declared.filter(([, declaration]) => declaration?.kind === "command");
+	const commands = declared.filter((entry): entry is readonly [string, Declaration] => entry[1]?.kind === "command");
 	function InjectedWidget(given: GivenProps): ReactNode {
 		const drawn: Record<string, unknown> = {};
 		const failures: string[] = [];
-		const readIds: string[] = [];
+		const readGatewayIds: string[] = [];
 		for (const [name, declaration] of reads) {
 			const read = readOf(name, declaration, given);
 			drawn[name] = read.value;
-			if (read.gatewayId) readIds.push(read.gatewayId);
+			if (read.gatewayId) readGatewayIds.push(read.gatewayId);
 			if (read.failure) failures.push(`${name}: ${read.failure}`);
 		}
-		for (const [name, declaration] of commands) drawn[name] = useCommand(name, declaration, given[name], readIds);
+		for (const [name, declaration] of commands)
+			drawn[name] = useCommandOver(name, declaration, given[name], readGatewayIds);
 		if (failures.length > 0) return notReadNotice(failures);
 		return draw(drawn);
 	}
@@ -100,45 +101,53 @@ function useProp(name: string, declaration: Declaration, given: unknown): PropRe
 	return { ...useValueProp(name, declaration, gateway), gatewayId: gateway.id };
 }
 
-function useCommand(
+function useCommandOver(
 	name: string,
-	declaration: Declaration | null,
+	declaration: Declaration,
 	given: unknown,
-	readIds: readonly string[],
-): unknown {
-	if (!declaration) throw new TypeError(NOT_DECLARED.replace("{name}", name));
-	const readIdsNow = useRef(readIds);
-	readIdsNow.current = readIds;
-	return useMemo(() => commandOver(name, declaration, given, () => readIdsNow.current), [given]);
+	readGatewayIds: readonly string[],
+): Action<unknown, CommandAnswer> {
+	const latestReadGatewayIds = useRef(readGatewayIds);
+	latestReadGatewayIds.current = readGatewayIds;
+	return useMemo(() => commandOver(name, declaration, given, () => latestReadGatewayIds.current), [given]);
 }
 
 function commandOver(
 	name: string,
 	declaration: Declaration,
 	given: unknown,
-	readIdsNow: () => readonly string[],
+	readGatewayIdsNow: () => readonly string[],
 ): Action<unknown, CommandAnswer> {
 	const runner = runnerOf(given);
-	const can = (): CanResult => {
-		if (!runner) return { can: false, reason: NOT_SET_UP.replace("{name}", name) };
-		const asked: unknown = isObject(given) ? given["can"] : undefined;
-		return typeof asked === "function" ? Reflect.apply(asked, given, []) : { can: true };
-	};
+	if (!runner) return createRefusedAction(NOT_SET_UP.replace("{name}", name));
+	const can = (): CanResult => canOf(given);
 	const run = async (input: unknown): Promise<CommandAnswer> => {
 		const allowed = can();
 		if (!allowed.can) return { ok: false, reason: allowed.reason };
 		const parsed = declaration.schema.safeParse(input);
 		if (!parsed.success) return { ok: false, reason: z.prettifyError(parsed.error) };
-		try {
-			await runner?.(parsed.data);
-		} catch (failure: unknown) {
-			console.error(`Widgetarium: command "${name}" failed`, failure);
-			return { ok: false, reason: failure instanceof Error ? failure.message : String(failure) };
-		}
-		await gatewayCache.refetch(readIdsNow());
+		const failure = await failureOf(name, () => runner(parsed.data));
+		if (failure) return { ok: false, reason: failure };
+		await gatewayCache.refetch(readGatewayIdsNow());
 		return { ok: true };
 	};
 	return Object.assign(run, { can });
+}
+
+async function failureOf(name: string, run: () => unknown): Promise<string | null> {
+	try {
+		await run();
+		return null;
+	} catch (failure: unknown) {
+		console.error(`Widgetarium: command "${name}" failed`, failure);
+		return failure instanceof Error ? failure.message : String(failure);
+	}
+}
+
+function createRefusedAction(reason: string): Action<unknown, CommandAnswer> {
+	return Object.assign(async (): Promise<CommandAnswer> => ({ ok: false, reason }), {
+		can: (): CanResult => ({ can: false, reason }),
+	});
 }
 
 function runnerOf(given: unknown): Runner | null {
