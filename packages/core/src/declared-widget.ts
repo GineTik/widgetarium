@@ -1,14 +1,16 @@
-import { createElement as h, useMemo } from "react";
+import { createElement as h, useMemo, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
+import { z } from "zod";
 import { defaultImplementationFor } from "./gateway/defaults";
 import { refuseVerb } from "./gateway/create";
 import { ENGINE_GATEWAY, gatewayOverImplementation, isImplementation } from "./gateway/adapted";
 import type { AdaptedGateway } from "./gateway/adapted";
-import { stableKey } from "./gateway/cache";
-import type { CollectionGateway, ValueGateway } from "./gateway/contract";
+import { gatewayCache, stableKey } from "./gateway/cache";
+import type { Action, CanResult, CollectionGateway, ValueGateway } from "./gateway/contract";
 import { useData } from "./gateway/use-data";
 import { declarationIn, defaultOf } from "./gateway/declared";
 import type { DeclaredProps } from "./gateway/declared";
+import type { CommandAnswer } from "./gateway/queries";
 import type { Declaration } from "./gateway/declaration";
 import { withManyVerbs } from "./gateway/many";
 import type { EveryValueVerb } from "./gateway/needs";
@@ -18,6 +20,7 @@ import { isObject } from "./engine/is-object.js";
 const NOT_READ = "A prop could not be read";
 const NOT_DECLARED = 'prop "{name}" declares no gateway interface';
 const NOT_PICKED = 'prop "{name}" did not pick {verb}, so the widget cannot {verb}';
+const NOT_SET_UP = '"{name}" is not set up: pick what runs it in the settings window';
 const MANY_OF: Readonly<Record<string, string>> = { create: "createMany", update: "updateMany", remove: "removeMany" };
 
 export type GivenProps = Readonly<Record<string, unknown>>;
@@ -34,7 +37,10 @@ type Hand = (name: string, declaration: Declaration, given: GivenProps) => unkno
 interface PropRead {
 	readonly value: unknown;
 	readonly failure: string | null;
+	readonly gatewayId?: string;
 }
+
+type Runner = (input: unknown) => unknown;
 
 const declaredInterfaces = new WeakMap<Declaration, unknown>();
 
@@ -47,14 +53,19 @@ const HANDED: Readonly<Partial<Record<Declaration["kind"], Hand>>> = {
 
 export function createDeclaredWidget(props: DeclaredProps, draw: (drawn: DrawnProps) => ReactNode): InjectedWidget {
 	const declared = Object.entries(props).map(([name, held]) => [name, declarationOfInterface(held)] as const);
+	const reads = declared.filter(([, declaration]) => declaration?.kind !== "command");
+	const commands = declared.filter(([, declaration]) => declaration?.kind === "command");
 	function InjectedWidget(given: GivenProps): ReactNode {
 		const drawn: Record<string, unknown> = {};
 		const failures: string[] = [];
-		for (const [name, declaration] of declared) {
+		const readIds: string[] = [];
+		for (const [name, declaration] of reads) {
 			const read = readOf(name, declaration, given);
 			drawn[name] = read.value;
+			if (read.gatewayId) readIds.push(read.gatewayId);
 			if (read.failure) failures.push(`${name}: ${read.failure}`);
 		}
+		for (const [name, declaration] of commands) drawn[name] = useCommand(name, declaration, given[name], readIds);
 		if (failures.length > 0) return notReadNotice(failures);
 		return draw(drawn);
 	}
@@ -84,8 +95,56 @@ function notReadNotice(failures: readonly string[]): ReactElement {
 
 function useProp(name: string, declaration: Declaration, given: unknown): PropRead {
 	const gateway = useGateway(name, declaration, given);
-	if (gateway.kind === "collection") return { value: useCollectionProp(name, declaration, gateway), failure: null };
-	return useValueProp(name, declaration, gateway);
+	if (gateway.kind === "collection")
+		return { value: useCollectionProp(name, declaration, gateway), failure: null, gatewayId: gateway.id };
+	return { ...useValueProp(name, declaration, gateway), gatewayId: gateway.id };
+}
+
+function useCommand(
+	name: string,
+	declaration: Declaration | null,
+	given: unknown,
+	readIds: readonly string[],
+): unknown {
+	if (!declaration) throw new TypeError(NOT_DECLARED.replace("{name}", name));
+	const readIdsNow = useRef(readIds);
+	readIdsNow.current = readIds;
+	return useMemo(() => commandOver(name, declaration, given, () => readIdsNow.current), [given]);
+}
+
+function commandOver(
+	name: string,
+	declaration: Declaration,
+	given: unknown,
+	readIdsNow: () => readonly string[],
+): Action<unknown, CommandAnswer> {
+	const runner = runnerOf(given);
+	const can = (): CanResult => {
+		if (!runner) return { can: false, reason: NOT_SET_UP.replace("{name}", name) };
+		const asked: unknown = isObject(given) ? given["can"] : undefined;
+		return typeof asked === "function" ? Reflect.apply(asked, given, []) : { can: true };
+	};
+	const run = async (input: unknown): Promise<CommandAnswer> => {
+		const allowed = can();
+		if (!allowed.can) return { ok: false, reason: allowed.reason };
+		const parsed = declaration.schema.safeParse(input);
+		if (!parsed.success) return { ok: false, reason: z.prettifyError(parsed.error) };
+		try {
+			await runner?.(parsed.data);
+		} catch (failure: unknown) {
+			console.error(`Widgetarium: command "${name}" failed`, failure);
+			return { ok: false, reason: failure instanceof Error ? failure.message : String(failure) };
+		}
+		await gatewayCache.refetch(readIdsNow());
+		return { ok: true };
+	};
+	return Object.assign(run, { can });
+}
+
+function runnerOf(given: unknown): Runner | null {
+	if (!isObject(given)) return null;
+	const run: unknown = given["run"];
+	return typeof run === "function" ? (input) => Reflect.apply(run, given, [input]) : null;
 }
 
 function useGateway(name: string, declaration: Declaration, given: unknown): AdaptedGateway {
@@ -100,11 +159,11 @@ function gatewayOver(name: string, declaration: Declaration, given: unknown): Ad
 	return gatewayOverGiven(name, declaration, given);
 }
 
-function useCollectionProp(name: string, declaration: Declaration, gateway: CollectionGateway<unknown>): object {
-	return useMemo(
-		() => keepOnlyPicked(name, declaration, withManyVerbs({ ...checkCollectionWrites(gateway, declaration, name) })),
-		[gateway],
-	);
+function useCollectionProp(name: string, declaration: Declaration, gateway: CollectionGateway<unknown>): unknown {
+	return useMemo(() => {
+		if (declaration.isQuery) return gateway.list;
+		return keepOnlyPicked(name, declaration, withManyVerbs({ ...checkCollectionWrites(gateway, declaration, name) }));
+	}, [gateway]);
 }
 
 function keepOnlyPicked(name: string, declaration: Declaration, drawn: object): object {

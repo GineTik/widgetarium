@@ -2,6 +2,7 @@ import type { Query, RecordRef, Row, RowsResult } from "./contract";
 import { rowOf, toRows } from "./create";
 import { declarationIn } from "./declaration";
 import { ICrudGateway, IListGateway, IValueGateway } from "./declared";
+import { QueryRowsContract, QueryValueContract } from "./queries";
 import { isMatch, pageOf, sortRows } from "./match";
 import { verbOf } from "./verbs-of";
 
@@ -158,3 +159,5 @@ class Listeners {
 defineDefaultImplementation(IValueGateway, ValueInMemoryGateway);
 defineDefaultImplementation(IListGateway, RowsInMemoryGateway);
 defineDefaultImplementation(ICrudGateway, RowsInMemoryGateway);
+defineDefaultImplementation(QueryValueContract, ValueInMemoryGateway);
+defineDefaultImplementation(QueryRowsContract, RowsInMemoryGateway);

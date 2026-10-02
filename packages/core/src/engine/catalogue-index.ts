@@ -76,6 +76,7 @@ const CARD_KEYS: readonly string[] = [
 	"preview",
 	"slots",
 	"mounts",
+	"commands",
 ];
 
 const COMPARED_CARD_KEYS: readonly string[] = [...CARD_KEYS, "props", "migrates"];

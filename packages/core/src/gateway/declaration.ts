@@ -4,7 +4,11 @@ import type { DeclaredFilterRow, HeldSpec } from "./manifest";
 
 export const DECLARATION = Symbol.for("widgetarium.declaration");
 
-export type Kind = "collection" | "value" | "passed" | "slot" | "mounts";
+export const BARE_QUERY = Symbol.for("widgetarium.bare-query");
+
+export const QUERY_WITHOUT_SCHEMA = 'prop "{name}" is a query with no .of(schema): add the shape it returns';
+
+export type Kind = "collection" | "value" | "command" | "passed" | "slot" | "mounts";
 
 export interface Declaration {
 	readonly kind: Kind;
@@ -17,6 +21,7 @@ export interface Declaration {
 	readonly where?: readonly DeclaredFilterRow[];
 	readonly sort?: readonly SortRow[];
 	readonly rows?: readonly unknown[];
+	readonly isQuery?: boolean;
 	readonly passed?: string;
 	readonly held?: Readonly<HeldSpec>;
 }

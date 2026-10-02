@@ -23,6 +23,7 @@ import {
 	z,
 } from "./gateway/declared";
 import { defineGatewayMetadata } from "./gateway/implementation-metadata";
+import { ICommand, IQuery } from "./gateway/queries";
 import { defineDefaultImplementation, RowsInMemoryGateway, ValueInMemoryGateway } from "./gateway/defaults";
 import { fieldOf, textOf } from "./gateway/match";
 import { narrow, normalizeWhere } from "./gateway/narrow";
@@ -39,6 +40,8 @@ export { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "@widgetarium/kit/icons";
 export const coreSurface = {
 	IBaseGateway,
 	ICatalogue,
+	ICommand,
+	IQuery,
 	IConfigureMounts,
 	IContent,
 	ICrudGateway,

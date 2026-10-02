@@ -22,6 +22,7 @@ export interface RefDescription {
 	title: string;
 	kind: string;
 	shape?: string;
+	isTyped?: boolean;
 }
 
 export interface GatewayRefs {

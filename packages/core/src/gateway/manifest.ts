@@ -119,6 +119,7 @@ export interface ManifestCard {
 	view?: string;
 	slots?: Readonly<Record<string, HeldSpec>>;
 	mounts?: Readonly<Record<string, HeldSpec>>;
+	commands?: Readonly<Record<string, CommandSpec>>;
 }
 
 export type PreferredWidth = number | "full";
@@ -137,6 +138,12 @@ export interface WidgetSize {
 	at?: readonly SizeAtRegion[];
 	collapseBelowPx?: number;
 	stackBelowPx?: number;
+}
+
+export interface CommandSpec {
+	readonly label: string;
+	readonly hint?: string;
+	readonly source?: PropSource;
 }
 
 export interface HeldSpec {

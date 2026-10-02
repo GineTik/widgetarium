@@ -20,6 +20,7 @@ const WANTED: Readonly<Record<string, readonly string[]>> = {
 	"create-misses-its-schema.tsx": ["Property 'title' is missing"],
 	"aka-is-not-a-list.tsx": ["Type 'string' is not assignable to type 'readonly string[]'"],
 	"unpicked-read.tsx": ["Property 'list' does not exist"],
+	"query-without-schema.tsx": ["a query needs .of(schema): add the shape it returns"],
 };
 
 const CONFIG_AT = path.join(REFUSED_AT, "tsconfig.checked.json");

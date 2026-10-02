@@ -19,6 +19,7 @@ import { present } from "./page-dom.ts";
 import { callAsUntypedSource, constructAsUntypedSource } from "./untyped-source.ts";
 import type { Patch, RecordRef, Row, RowsResult } from "../packages/core/src/gateway/contract.ts";
 import { rowOf } from "../packages/core/src/gateway/create.ts";
+import { IQuery } from "../packages/core/src/gateway/queries.ts";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 Object.assign(globalThis, {
@@ -462,7 +463,7 @@ check(
 check(
 	"defineProps refuses an entry that is not a declared gateway where it is written",
 	refusal(() => callAsUntypedSource(defineProps, { heading: props.heading, placeholder: "Search" })),
-	'prop "placeholder" is not a gateway declared with IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)',
+	'prop "placeholder" is not a gateway declared with IQuery.of, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)',
 );
 check("and hands back the very props it was given", defineProps(props) === props, true);
 check(
@@ -604,6 +605,50 @@ check(
 	),
 	'prop "kind" lists the options ["area","pie"] beside a schema whose values are ["area","bar"]; the options must name exactly the values of the enum',
 );
+
+const queried: { heading: unknown; titles: unknown[]; total: number | null }[] = [];
+const QueryProbe = createWidget({
+	inject: {
+		heading: IQuery.of(z.string().default("Tasks")),
+		tasks: IQuery.of(z.array(TaskSchema)),
+	},
+	draw: ({ heading, tasks }) => {
+		const read = useData(tasks, { where: [{ prop: "title", op: "is", value: "Ship" }], limit: 5 });
+		queried.push({ heading, titles: read.data.map((row) => row.title), total: read.total });
+		return null;
+	},
+});
+render(h(QueryProbe, { tasks: [{ title: "Write" }, { title: "Ship" }] }), host);
+await new Promise((settled) => setTimeout(settled, 0));
+const lastQueried = present(queried[queried.length - 1], "a drawn query probe");
+check("a value query nobody gave is drawn as its schema's default", lastQueried.heading, "Tasks");
+check("a list query is read through useData with a where", lastQueried.titles, ["Ship"]);
+check("and answers its total beside the rows", lastQueried.total, 1);
+check(
+	"a query over an array declares a list that only reads",
+	[declarationIn(IQuery.of(z.array(TaskSchema)))?.kind, declarationIn(IQuery.of(z.array(TaskSchema)))?.reads],
+	["collection", ["list"]],
+);
+check("a query over anything else declares a value", declarationIn(IQuery.of(z.number()))?.kind, "value");
+check(
+	"an array default becomes the list's rows",
+	declarationIn(IQuery.of(z.array(TaskSchema).default([{ title: "Seed" }])))?.rows,
+	[{ title: "Seed" }],
+);
+check(
+	"a bare IQuery in inject is refused with the fix",
+	refusalOf(() => callAsUntypedSource(createWidget, { inject: { tasks: IQuery }, draw: () => null })),
+	'prop "tasks" is a query with no .of(schema): add the shape it returns',
+);
+
+function refusalOf(run: () => unknown): string {
+	try {
+		run();
+		return "not refused";
+	} catch (refused: unknown) {
+		return refused instanceof Error ? refused.message : String(refused);
+	}
+}
 
 console.log(`\n${failed === 0 ? "declared props: clean" : `declared props: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

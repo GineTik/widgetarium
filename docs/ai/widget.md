@@ -97,6 +97,9 @@ that erases what the component is typed from. Code outside `draw` that needs the
 
 | Declared                                                    | Arrives as                                                |
 | ----------------------------------------------------------- | --------------------------------------------------------- |
+| `IQuery.of(z.array(RowSchema))`                             | a list read: `useData(tasks, { where, sort, limit })`     |
+| `IQuery.of(z.string().default("To do"))`                    | the value, read and checked against the schema            |
+| `ICommand.of(InputSchema)`, or `ICommand` with no input     | `await move(input)` answers `{ ok }` or `{ ok, reason }`  |
 | `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema            |
 | `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                       |
 | `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                               |
@@ -107,6 +110,16 @@ that erases what the component is typed from. Code outside `draw` that needs the
 | `IHost`, `INavigator`, `IHere`                              | what the engine hands over, only when declared            |
 | `IReader`, `IContent`                                       | the passage and its reader, for an `inline` widget        |
 | `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer   |
+
+**Reads are `IQuery`, writes are `ICommand`; prefer them in a new widget.** A query over `z.array(...)`
+takes the input every list takes (`where`, `sort`, `offset`, `limit`); any other query takes none
+and arrives as its value. A bare `IQuery` is refused: it needs `.of(schema)`. A command returns only
+a status, never data: its promise settles after every query of the tile has re-read, so the next
+frame draws the change. A create carries its own `id: z.uuid()`, minted at the press, and a retry
+with that id writes nothing. Ask `move.can()` before drawing the control, and draw `reason` when it
+answers `ok: false`. The person picks what runs a command in the Actions group of the settings
+window; `metadata.props.<command>.source = { implementation, fields }` names the default, with
+`fields` naming sibling props, so a toggle works with nothing set up.
 
 **The schema is the type and the default.** A value's schema must carry `.default()`; one without is
 refused. The built-in gateways check what they read against the schema through `context.parse`: a

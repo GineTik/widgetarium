@@ -2,13 +2,13 @@ import { z } from "zod";
 import type { Declaration } from "./declaration";
 import { DECLARATION, declarationIn, defaultOf } from "./declaration";
 import type { DeclaredProps, MigrationStep, PropMetadata } from "./declared";
-import type { Choice, HeldSpec } from "./manifest";
+import type { Choice, CommandSpec, HeldSpec } from "./manifest";
 import { PROP_MARK, specOf } from "./manifest";
 
 export type Described = Readonly<Record<string, PropMetadata<unknown> | undefined>>;
 
 const NOT_DECLARED =
-	'prop "{name}" is not a gateway declared with IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)';
+	'prop "{name}" is not a gateway declared with IQuery.of, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)';
 const METADATA_FOR_NOTHING = 'metadata describes prop "{name}", which props do not declare';
 const METADATA_FOR_THE_ENGINE = 'metadata describes prop "{name}", which the engine hands over and a person never sets';
 const READS_NOTHING_DECLARED =
@@ -25,10 +25,12 @@ export function partsOfDeclared(props: DeclaredProps, described: Described) {
 	const written: Record<string, unknown> = {};
 	const slots: Record<string, HeldSpec> = {};
 	const mounts: Record<string, HeldSpec> = {};
+	const commands: Record<string, CommandSpec> = {};
 	for (const [name, held] of Object.entries(props)) {
 		const declaration = declarationIn(held) as Declaration;
 		if (declaration.kind === "passed") continue;
-		if (declaration.kind === "slot") slots[name] = heldSpecOf(declaration, described[name] ?? {});
+		if (declaration.kind === "command") commands[name] = commandSpecOf(name, described[name] ?? {});
+		else if (declaration.kind === "slot") slots[name] = heldSpecOf(declaration, described[name] ?? {});
 		else if (declaration.kind === "mounts") mounts[name] = heldSpecOf(declaration, described[name] ?? {});
 		else written[name] = propOfDeclared(name, declaration, described[name] ?? {});
 	}
@@ -36,6 +38,7 @@ export function partsOfDeclared(props: DeclaredProps, described: Described) {
 		props: written,
 		...(Object.keys(slots).length > 0 ? { slots } : {}),
 		...(Object.keys(mounts).length > 0 ? { mounts } : {}),
+		...(Object.keys(commands).length > 0 ? { commands } : {}),
 	};
 }
 
@@ -97,6 +100,19 @@ export function refuseEmptyMigrations(steps: readonly MigrationStep<DeclaredProp
 	});
 }
 
+export function innerOf(schema: z.ZodType): z.ZodType | undefined {
+	const def = (schema as { _zod?: { def?: { innerType?: z.ZodType; in?: z.ZodType } } })._zod?.def;
+	return def?.innerType ?? def?.in;
+}
+
+function commandSpecOf(name: string, described: PropMetadata<unknown>): CommandSpec {
+	return {
+		label: described.label ?? name,
+		...(described.hint ? { hint: described.hint } : {}),
+		...(described.source ? { source: described.source } : {}),
+	};
+}
+
 function propOfDeclared(name: string, declaration: Declaration, described: PropMetadata<unknown>) {
 	const options = optionsOf(name, described.options, declaration.schema);
 	const describes = describesWithAka(
@@ -151,11 +167,6 @@ function akaOf(schema: z.ZodType): readonly string[] | undefined {
 	if (Array.isArray(aka)) return aka as readonly string[];
 	const inner = innerOf(schema);
 	return inner ? akaOf(inner) : undefined;
-}
-
-function innerOf(schema: z.ZodType): z.ZodType | undefined {
-	const def = (schema as { _zod?: { def?: { innerType?: z.ZodType; in?: z.ZodType } } })._zod?.def;
-	return def?.innerType ?? def?.in;
 }
 
 function heldSpecOf(declaration: Declaration, described: PropMetadata<unknown>): HeldSpec {

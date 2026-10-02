@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { Action, GatewayBase, Query, Row, RowsResult } from "./contract";
+import type { Action, CanResult, GatewayBase, Query, Row, RowsResult } from "./contract";
 import type { ManifestCard, PropCommon, RecordRef, RowWithRef, WidgetSize } from "./manifest";
 import type { ManyVerbsOf } from "./many";
 import type { Described } from "./written";
@@ -15,6 +15,7 @@ import type {
 	ValueContract,
 	ValueWrite,
 } from "./declared";
+import type { CommandAnswer, CommandContract, QueryRowsContract, QueryValueContract } from "./queries";
 
 export declare const rowHeld: unique symbol;
 export declare const valueHeld: unique symbol;
@@ -25,6 +26,8 @@ export declare const patchIn: unique symbol;
 export declare const valueIn: unique symbol;
 export declare const gatewayKind: unique symbol;
 export declare const passedAs: unique symbol;
+export declare const queryRowHeld: unique symbol;
+export declare const commandInput: unique symbol;
 
 interface ImplementationOps<Held> {
 	replace: Action<readonly Partial<Held>[], void>;
@@ -91,6 +94,30 @@ export type ValueDeclared<Held, Verbs extends string, ValueIn = Held> = typeof V
 	pick<const K extends "get" | ValueWrite>(...verbs: K[]): ValueDeclared<Held, K, ValueIn>;
 };
 
+export type QueryRowsDeclared<Held> = typeof QueryRowsContract<Held> & { readonly [queryRowHeld]?: Held };
+
+export type QueryValueDeclared<Held> = typeof QueryValueContract<Held> & {
+	readonly [valueHeld]?: Held;
+	readonly [valueWrites]?: "get";
+};
+
+export type CommandDeclared<Input> = (abstract new () => CommandContract<Input>) & {
+	readonly [commandInput]?: Input;
+};
+
+export type Command<Input> = ([Input] extends [void | undefined]
+	? () => Promise<CommandAnswer>
+	: (input: Input) => Promise<CommandAnswer>) & {
+	can(): CanResult;
+};
+
+type QueryRowOf<S extends z.ZodType> = z.output<S> extends readonly (infer Held)[] ? Held : never;
+
+export type QueryHeldOf<S extends z.ZodType> = z.output<S> extends readonly unknown[] ? QueryRowOf<S> : z.output<S>;
+
+export type QueryDeclared<S extends z.ZodType> =
+	z.output<S> extends readonly unknown[] ? QueryRowsDeclared<QueryRowOf<S>> : QueryValueDeclared<z.output<S>>;
+
 interface ListVerbs<R, CreateIn, PatchIn> {
 	list: Action<Query | void, RowsResult<R>>;
 	get: Action<RecordRef, Row<R> | null>;
@@ -143,36 +170,51 @@ type AnyImplementation<C> = C extends { readonly [valueWrites]?: infer Verbs }
 		? IListGateway & Pick<ListWrites<unknown, never, never>, Extract<Verbs, ListWriteName>>
 		: never;
 
-export type WidgetProp = ValueDeclared<unknown, string> | ListDeclared<unknown, string> | PassedDeclared<unknown>;
+export type WidgetProp = (
+	| ValueDeclared<unknown, string>
+	| ListDeclared<unknown, string>
+	| QueryRowsDeclared<unknown>
+	| QueryValueDeclared<unknown>
+	| CommandDeclared<never>
+	| PassedDeclared<unknown>
+) & { readonly schemaMissing?: never };
 
 export type DeclaredProps = Readonly<Record<string, WidgetProp>>;
 
 type DrawnOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 	? Drawn
-	: C extends {
-				readonly [valueHeld]?: infer Held;
-				readonly [valueWrites]?: infer Verbs;
-				readonly [valueIn]?: infer ValueIn;
-		  }
-		? [Exclude<Verbs, "get">] extends [never]
-			? Held
-			: DrawnValue<Held, Verbs, ValueIn>
-		: C extends {
-					readonly [rowHeld]?: infer Held;
-					readonly [listWrites]?: infer Verbs extends string;
-					readonly [createIn]?: infer CreateIn;
-					readonly [patchIn]?: infer PatchIn;
-			  }
-			? DrawnList<Held, Verbs, CreateIn, PatchIn>
-			: never;
+	: C extends { readonly [commandInput]?: infer Input }
+		? Command<Input>
+		: C extends { readonly [queryRowHeld]?: infer Held }
+			? Action<Query | void, RowsResult<RowWithRef<Held>>>
+			: C extends {
+						readonly [valueHeld]?: infer Held;
+						readonly [valueWrites]?: infer Verbs;
+						readonly [valueIn]?: infer ValueIn;
+				  }
+				? [Exclude<Verbs, "get">] extends [never]
+					? Held
+					: DrawnValue<Held, Verbs, ValueIn>
+				: C extends {
+							readonly [rowHeld]?: infer Held;
+							readonly [listWrites]?: infer Verbs extends string;
+							readonly [createIn]?: infer CreateIn;
+							readonly [patchIn]?: infer PatchIn;
+					  }
+					? DrawnList<Held, Verbs, CreateIn, PatchIn>
+					: never;
 
 type GivenOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 	? Drawn
-	: C extends { readonly [valueHeld]?: infer Held }
-		? Held | AnyImplementation<C>
-		: C extends { readonly [rowHeld]?: infer Held }
-			? readonly Held[] | AnyImplementation<C>
-			: never;
+	: C extends { readonly [commandInput]?: infer Input }
+		? CommandContract<Input>
+		: C extends { readonly [queryRowHeld]?: infer Held }
+			? readonly Held[] | QueryRowsContract<Held>
+			: C extends { readonly [valueHeld]?: infer Held }
+				? Held | AnyImplementation<C>
+				: C extends { readonly [rowHeld]?: infer Held }
+					? readonly Held[] | AnyImplementation<C>
+					: never;
 
 type DrawnValue<Held, Verbs, ValueIn> = (["get"] extends [Verbs] ? { readonly value: Held } : unknown) &
 	(["update"] extends [Verbs] ? { readonly update: Action<ValueIn, Held | null> } : unknown) &
@@ -184,9 +226,11 @@ export type GivenProps<P> = { readonly [K in keyof P]?: GivenOf<P[K]> };
 
 type HeldOf<C> = C extends { readonly [valueHeld]?: infer Held }
 	? Held
-	: C extends { readonly [rowHeld]?: infer Held }
+	: C extends { readonly [queryRowHeld]?: infer Held }
 		? readonly Held[]
-		: never;
+		: C extends { readonly [rowHeld]?: infer Held }
+			? readonly Held[]
+			: never;
 
 type DescribedKey =
 	| "label"

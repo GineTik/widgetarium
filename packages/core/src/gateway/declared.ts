@@ -16,7 +16,7 @@ import type {
 import type { DeclaredFilterRow, HeldSpec, ModuleManifest, RecordRef as RecordRefType } from "./manifest";
 import { manifestOfDeclared, sizeProblems } from "./manifest";
 import type { Declaration } from "./declaration";
-import { DECLARATION, declarationIn } from "./declaration";
+import { BARE_QUERY, DECLARATION, QUERY_WITHOUT_SCHEMA, declarationIn } from "./declaration";
 import {
 	refuseEmptyMigrations,
 	refuseImplementations,
@@ -44,6 +44,7 @@ import type {
 	WidgetMetadata,
 } from "./declared-types";
 export type {
+	Command,
 	DeclaredModule,
 	DeclaredProps,
 	DeclaredWidget,
@@ -118,11 +119,11 @@ export interface MountsOptions {
 	readonly was?: string;
 }
 
-type AbstractOf<Instance> = abstract new () => Instance;
+export type AbstractOf<Instance> = abstract new () => Instance;
 
 type NamedKeys<T> = keyof { [K in keyof T as string extends K ? never : number extends K ? never : K]: T[K] };
 
-type RefReserved<Row> =
+export type RefReserved<Row> =
 	"ref" extends NamedKeys<Row>
 		? [Row[Extract<"ref", keyof Row>]] extends [RecordRefType | undefined]
 			? unknown
@@ -253,6 +254,7 @@ export const IReader = createPassedClass("reader") as PassedDeclared<IReader>;
 
 export function defineProps<const P extends DeclaredProps>(props: P): P {
 	refuseOutsideTheRoot(props);
+	refuseBareQuery(props);
 	refuseUndeclared(props);
 	refuseImplementations(props);
 	Object.defineProperty(props, DEFINED_PROPS, { value: true });
@@ -285,6 +287,7 @@ export function manifestOfModule(module: DeclaredModule): ModuleManifest | null 
 	const { props: described, ...card } = module.metadata ?? {};
 	refuseMetadataForNothing(props, described ?? {});
 	refuseSourcesOverNothing(props, described ?? {});
+	refuseBareQuery(props);
 	refuseUndeclared(props);
 	const input = {
 		...card,
@@ -305,6 +308,15 @@ function refuseOutsideTheRoot(props: DeclaredProps) {
 		return typeof held === "function" && !(held.prototype instanceof IBaseGateway);
 	});
 	if (named) throw new Error(OUTSIDE_THE_ROOT.replace("{name}", named));
+}
+
+function refuseBareQuery(props: DeclaredProps) {
+	const named = Object.keys(props).find((name) => isBareQuery(props[name]));
+	if (named) throw new Error(QUERY_WITHOUT_SCHEMA.replace("{name}", named));
+}
+
+function isBareQuery(held: unknown): boolean {
+	return typeof held === "function" && BARE_QUERY in held;
 }
 
 function propsIn<P extends DeclaredProps>(of: P | DeclaredWidget<P>): P {

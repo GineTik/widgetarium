@@ -19,6 +19,7 @@ import type { ResolvedMounts } from "./mounts.js";
 import { resolveSlots, slotGateways } from "./slots.js";
 import type { PropGateways } from "./slots.js";
 import { useHostGateways } from "./use-host-gateways.js";
+import { useHostCommands } from "./host-commands.js";
 import type { BoardRegistry, FoldIntoGroup, FoldTile, PatchMounted, SurfaceHost } from "./use-surface-shared.js";
 
 export const RESERVED_PROPS: ReadonlySet<string> = new Set([
@@ -95,7 +96,8 @@ export function WidgetHost(props: WidgetHostProps): ReactElement {
 	const { definition, registry } = props;
 	const mounts = resolveMounts(definition.manifest, registry, mountContextOf(props));
 	const gateways = useHostGateways(props, mounts);
-	return drawWidget(definition, widgetPropsOf(props, gateways, mounts));
+	const commands = useHostCommands(definition.manifest, props.tile, props.refs);
+	return drawWidget(definition, { ...widgetPropsOf(props, gateways, mounts), ...commands });
 }
 
 function mountContextOf({

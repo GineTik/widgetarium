@@ -75,6 +75,7 @@ function publishGateways(gateways: PropGateways, manifest: EngineManifest, tile:
 				title: textOr(manifest, "title", manifest.id),
 				kind: textOr(gateway, "kind", "collection"),
 				shape: textOr(spec, "shape", "value"),
+				isTyped: isObject(config) && config["from"] === "typed",
 			},
 			dependsOn: leansOn,
 		});

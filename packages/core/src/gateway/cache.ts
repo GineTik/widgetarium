@@ -43,6 +43,7 @@ export function createGatewayCache() {
 		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) =>
 			track(state, { meta, input, run, listener }),
 		invalidate: (gatewayId: string) => invalidate(state, gatewayId),
+		refetch: (gatewayIds: readonly string[]) => refetch(state, gatewayIds),
 	};
 }
 
@@ -72,11 +73,11 @@ function settle(state: CacheState, key: string, ticket: number, next: (before?: 
 	notify(state, key);
 }
 
-function fetchNow(state: CacheState, key: string) {
+function fetchNow(state: CacheState, key: string): Promise<void> {
 	const held = state.tracked.get(key);
-	if (!held) return;
+	if (!held) return Promise.resolve();
 	const ticket = ++held.ticket;
-	held.run(held.input).then(
+	return held.run(held.input).then(
 		(data) =>
 			settle(state, key, ticket, (before) => ({
 				status: "ready",
@@ -105,6 +106,12 @@ function refetchOnceThisTick(state: CacheState, key: string) {
 		state.awaitingRefetch.delete(key);
 		fetchNow(state, key);
 	});
+}
+
+async function refetch(state: CacheState, gatewayIds: readonly string[]): Promise<void> {
+	const prefixes = gatewayIds.map((gatewayId) => `${gatewayId}${KEY_GAP_NO_PATH_HOLDS}`);
+	const keys = [...state.tracked.keys()].filter((key) => prefixes.some((prefix) => key.startsWith(prefix)));
+	await Promise.all(keys.map((key) => fetchNow(state, key)));
 }
 
 function invalidate(state: CacheState, gatewayId: string) {
