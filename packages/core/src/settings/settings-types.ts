@@ -40,6 +40,7 @@ export interface SettingsSpec extends SeenSpec {
 
 export interface SettingsManifest extends GeometryManifest {
 	readonly props?: Readonly<Record<string, SettingsSpec>> | null;
+	readonly commands?: unknown;
 }
 
 export interface TilePatch {

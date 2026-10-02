@@ -5,6 +5,7 @@ import type { WindowState } from "../settings-window.js";
 import { Button, Icon, IconButton, Pill, Segmented, Sidebar, SidebarSheet } from "@widgetarium/kit";
 import type { SettingsTab } from "./use-settings-look.js";
 import { ZOOM_FLOOR, ZOOM_STEP, clamp } from "./canvas-input.js";
+import { actionGroup, commandDataGroups } from "./action-group.js";
 import { dataGroups } from "./data-groups.js";
 import { designGroups } from "./design-groups.js";
 import { mountGroups } from "./mount-groups.js";
@@ -152,9 +153,9 @@ export function panel(state: WindowState): ReactElement {
 }
 
 function panelBody(state: WindowState): ReactNode[] {
-	if (state.tab === "data") return dataGroups(state);
+	if (state.tab === "data") return [...dataGroups(state), ...commandDataGroups(state)];
 	if (state.tab === "design") return designGroups(state);
-	return [propGroup(state), slotGroup(state), ...mountGroups(state)];
+	return [propGroup(state), actionGroup(state), slotGroup(state), ...mountGroups(state)];
 }
 
 function crumbTrail(state: WindowState): ReactElement[] {
