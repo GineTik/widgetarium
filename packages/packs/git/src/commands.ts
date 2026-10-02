@@ -26,7 +26,15 @@ export class CreateBranchCommand extends gitCommand(
 
 export class PullCommand extends gitCommand(z.undefined(), () => ["pull", "--ff-only"]) {}
 
-export class PushCommand extends gitCommand(z.undefined(), () => ["push"]) {}
+const PUSH_ASKED = "Push the branch's commits to its upstream?";
+const PUSH_DECLINED = "the push was not confirmed, so nothing was sent";
+
+export class PushCommand extends gitCommand(z.undefined(), () => ["push"]) {
+	override async run(sent: undefined): Promise<void> {
+		if (!(await this.ports.confirm(PUSH_ASKED))) throw new Error(PUSH_DECLINED);
+		await super.run(sent);
+	}
+}
 
 export class WorktreeAddCommand extends gitCommand(
 	z.object({ path: z.string().min(1), branch: z.string().optional(), newBranch: z.string().optional() }),

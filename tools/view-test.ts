@@ -385,7 +385,7 @@ async function gate() {
 	check(
 		"the source list offers every place the rows can live on a board of one tile",
 		at(switched, "sources", "kinds"),
-		["Typed here", "Folder"],
+		["Typed here", "From the web", "Folder", "Tagged notes", "Notes matching"],
 	);
 	check(
 		"and the same source says the same thing whichever kind it is bound to",

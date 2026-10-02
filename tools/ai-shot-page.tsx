@@ -1,3 +1,4 @@
+import "./packs-registered.ts";
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
 import { AiChat } from "../apps/obsidian/src/ai/chat.js";

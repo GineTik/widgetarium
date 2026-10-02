@@ -1,0 +1,13 @@
+{
+	"name": "@widgetarium/pack-core",
+	"version": "0.1.0",
+	"private": true,
+	"license": "MIT",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"dependencies": {
+		"@widgetarium/core": "0.1.0",
+		"zod": "^4.6.5"
+	}
+}

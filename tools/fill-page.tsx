@@ -1,3 +1,4 @@
+import "./packs-registered.ts";
 import type { ReactElement } from "react";
 import { render } from "../packages/core/src/engine/render.js";
 import { rootWidget } from "../packages/core/src/widget-root.js";

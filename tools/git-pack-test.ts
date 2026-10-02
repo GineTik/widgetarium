@@ -46,7 +46,19 @@ const repository = join(root, "repo");
 const ports: ImplementationPorts = {
 	commandLine,
 	workingDirectory: repository,
-	refs: { read: async () => null, watch: () => () => {} },
+	self: "t1/git",
+	network: { can: false, request: () => Promise.reject(new Error("no network")) },
+	vault: {
+		can: false,
+		folder: () => {
+			throw new Error("no vault");
+		},
+		notesTagged: async () => [],
+		notesMatching: async () => [],
+		open: () => {},
+	},
+	confirm: async () => true,
+	refs: { read: async () => null, watch: () => () => {}, get: () => null, described: () => null },
 };
 const git = async (...args: string[]): Promise<string> => {
 	const outcome = await commandLine.run("git", args, repository);

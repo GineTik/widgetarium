@@ -1,3 +1,4 @@
+import "./packs-registered.ts";
 import { createElement as h, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {

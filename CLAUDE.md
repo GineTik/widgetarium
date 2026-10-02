@@ -20,7 +20,7 @@ apps/obsidian     FSL  the host: mounts core in a note, gives it the vault as it
       ↓
 packages/core     FSL  the board builder: tree, engine, gateways, renderer, laws
       ↓
-packages/packs/*  MIT  query and command implementations, one workspace per pack (@git): schemas, *Query, *Command; the host registers them
+packages/packs/*  MIT  every query and command implementation, one workspace per pack (@core, @obsidian, @stats, @git): schemas, *Query, *Command; the host registers them
 packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
@@ -132,11 +132,11 @@ answers `{ done, failed }`, and an implementation that has its own is used inste
 **Still to build: an implementation holds every piece of logic.** A selection has left the
 declaration: `.of()` takes no options for a value, and the widget's metadata names where the prop
 starts from — `props.<name>.source = { implementation, fields }`, `@core/selection` for which row is
-chosen and `@core/selected-row` for the row a sibling picks, resolved by `SelectionGateway` and
-`SelectedRowGateway` in `packages/core/src/engine/host-gateways.ts`; `fields` name sibling props by
+chosen and `@core/selected-row` for the row a sibling picks, resolved by `SelectionQuery` and
+`SelectedRowQuery` in `packages/packs/core`; `fields` name sibling props by
 their prop name. What still sits in declarations is `wants` and a declared list `where`/`sort`; they
-leave for gateway implementations the Obsidian host offers per prop (`FolderGateway`,
-`TypedValueGateway`, `ScreenStateGateway`), each registered with `defineGatewayMetadata` and the fields
+leave for gateway implementations the packs offer per prop (`FolderQuery`,
+`TypedValueQuery`, `ScreenStateQuery`), each registered with `defineGatewayMetadata` and the fields
 the settings window draws from its constructor's schema. `keep: "screen"` is said in `defineMetadata`
 (`props.<name>.keep`), never in `.of()`; without it the value is kept in the tile. A widget then draws states and formats
 values; it never picks a row, falls back to the first, maps fields or filters by another widget. A

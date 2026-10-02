@@ -1,3 +1,4 @@
+import "./packs-registered.ts";
 import { createElement as h } from "react";
 import { createRoot } from "react-dom/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../packages/kit/src/index.ts";

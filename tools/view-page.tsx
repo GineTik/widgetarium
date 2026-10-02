@@ -1,3 +1,4 @@
+import "./packs-registered.ts";
 import { createElement as h } from "react";
 import { render } from "../packages/core/src/engine/render.js";
 import { WidgetSurface } from "../packages/core/src/surface.js";

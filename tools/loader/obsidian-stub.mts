@@ -79,6 +79,7 @@ export const setIcon = (parent: HTMLElement, iconId: string): void => {
 export const requestUrl = (): never => {
 	throw new Error("requestUrl is not stubbed");
 };
+export const getAllTags = (): string[] => [];
 export const parseYaml = (text: string): unknown => parse(text);
 export const stringifyYaml = (value: unknown): string => stringify(value);
 

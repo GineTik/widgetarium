@@ -1,3 +1,4 @@
+import "./packs-registered.ts";
 import { createElement as h, useEffect, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { render } from "../packages/core/src/engine/render.js";

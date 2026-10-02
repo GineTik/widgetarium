@@ -1,9 +1,5 @@
-import {
-	HOST_GATEWAYS,
-	hostGatewayFor,
-	resolveHostGateway,
-	sourcesFor,
-} from "../packages/core/src/engine/host-gateways.js";
+import { registeredQueries } from "../packages/core/src/engine/packs.ts";
+import { hostGatewayFor, resolveHostGateway, sourcesFor } from "../packages/core/src/engine/host-gateways.js";
 import { createGatewayRefs, createViewCells } from "../packages/core/src/gateway/refs.ts";
 import { arrayGateway, soloGateway } from "../packages/core/src/gateway/create.ts";
 import { defineGatewayMetadata } from "../packages/core/src/gateway/implementation-metadata.ts";
@@ -34,29 +30,34 @@ function refusal(run: () => void): string | null {
 
 check(
 	"every gateway the host offers is a class under an interface, named for what it is",
-	HOST_GATEWAYS.filter((entry) => !entry.id.startsWith("@core/stat-")).map((entry) => [
-		entry.id,
-		entry.implementation.name,
-		entry.kind,
-	]),
+	registeredQueries()
+		.filter(
+			(entry) =>
+				!entry.id.startsWith("@stats/") &&
+				!entry.id.startsWith("@git/") &&
+				!entry.id.startsWith("@core/fetch") &&
+				!["@obsidian/tag", "@obsidian/search"].includes(entry.id),
+		)
+		.map((entry) => [entry.id, entry.implementation.name, entry.kind]),
 	[
-		["@core/typed-value", "TypedValueGateway", "value"],
-		["@core/typed-rows", "TypedRowsGateway", "collection"],
-		["@core/screen-state", "ScreenStateGateway", "value"],
-		["@core/file", "FileGateway", "value"],
-		["@core/folder", "FolderGateway", "collection"],
-		["@core/from-tile-value", "FromTileValueGateway", "value"],
-		["@core/from-tile-rows", "FromTileRowsGateway", "collection"],
-		["@core/selected-row", "SelectedRowGateway", "value"],
-		["@core/selection", "SelectionGateway", "value"],
+		["@core/typed-value", "TypedValueQuery", "value"],
+		["@core/typed-rows", "TypedRowsQuery", "collection"],
+		["@core/screen-state", "ScreenStateQuery", "value"],
+		["@core/from-tile-value", "FromTileValueQuery", "value"],
+		["@core/from-tile-rows", "FromTileRowsQuery", "collection"],
+		["@core/selected-row", "SelectedRowQuery", "value"],
+		["@core/selection", "SelectionQuery", "value"],
+		["@obsidian/file", "FileQuery", "value"],
+		["@obsidian/folder", "FolderQuery", "collection"],
 	],
 );
 check(
 	"statistics are one gateway per algorithm, each named for it",
-	HOST_GATEWAYS.filter((entry) => entry.id.startsWith("@core/stat-"))
+	registeredQueries()
+		.filter((entry) => entry.id.startsWith("@stats/"))
 		.map((entry) => entry.implementation.name)
 		.slice(0, 3),
-	["CountGateway", "SumGateway", "AverageGateway"],
+	["CountQuery", "SumQuery", "AverageQuery"],
 );
 
 check(
@@ -98,7 +99,7 @@ check(
 		hostGatewayFor(value, { from: "stat", path: "Log", algorithm: "sum" })?.id,
 		hostGatewayFor({ kind: "value", default: { from: "memory", value: false } }, {})?.id,
 	],
-	["@core/typed-value", "@core/from-tile-value", "@core/folder", "@core/stat-sum", "@core/screen-state"],
+	["@core/typed-value", "@core/from-tile-value", "@obsidian/folder", "@stats/sum", "@core/screen-state"],
 );
 check(
 	"a tile written now names it outright",
@@ -109,13 +110,13 @@ check(
 check(
 	"a prop that writes rows is offered only sources that can write them",
 	sourcesFor({ kind: "collection", writes: ["list", "get", "update"] }).map((entry) => entry.id),
-	["@core/typed-rows", "@core/folder", "@core/from-tile-rows"],
+	["@core/typed-rows", "@core/from-tile-rows", "@obsidian/folder"],
 );
 check(
 	"a number is offered the statistics, a line is not",
 	[
-		sourcesFor({ kind: "value", type: "number" }).some((entry) => entry.id === "@core/stat-sum"),
-		sourcesFor({ kind: "value", type: "line" }).some((entry) => entry.id === "@core/stat-sum"),
+		sourcesFor({ kind: "value", type: "number" }).some((entry) => entry.id === "@stats/sum"),
+		sourcesFor({ kind: "value", type: "line" }).some((entry) => entry.id === "@stats/sum"),
 	],
 	[true, false],
 );
@@ -188,10 +189,10 @@ check(
 		boundTo("@core/selection", { rows: 7 }),
 	],
 	[
-		'FromTileValueGateway needs "ref" to name a prop of another tile, written tile/prop; it holds nothing',
-		'FromTileRowsGateway needs "ref" to name a prop of another tile, written tile/prop; it holds "t1"',
-		'SelectedRowGateway needs "rows" to name a prop of another tile, written tile/prop; it holds nothing',
-		'SelectionGateway needs "rows" to name a prop of another tile, written tile/prop; it holds 7',
+		'FromTileValueQuery needs "ref" to name a prop of another tile, written tile/prop; it holds nothing',
+		'FromTileRowsQuery needs "ref" to name a prop of another tile, written tile/prop; it holds "t1"',
+		'SelectedRowQuery needs "rows" to name a prop of another tile, written tile/prop; it holds nothing',
+		'SelectionQuery needs "rows" to name a prop of another tile, written tile/prop; it holds 7',
 	],
 );
 

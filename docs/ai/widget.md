@@ -140,16 +140,28 @@ returns any list of objects: `IQuery.returnsAny(z.array(z.object({})))`), and `I
 word on the wrong side is refused with the word that fits. An implementation class is named
 `*Query` or `*Command`.
 
-**Implementations ship in packs.** A pack is a workspace under `packages/packs/<name>` (`@git` is
-the first): its zod schemas in `src/schemas.ts`, one class per query, and commands, each built
-`new Class(fields, ports)` where `fields` are what the person typed in the settings window and
-`ports` are what the host lends — `commandLine` (`execFile`, never a shell), `workingDirectory` and
-`refs` for reading another tile's value. `definePack({ id, title, queries, commands })` lists them
-with `defineGatewayMetadata` and `defineCommandMetadata`, every id under the pack's own name, and the
-host calls `registerPacks` once at load. A pack's command stays shut until the person switches it on
-in the Data tab. `@git` offers `commits`, `branches`, `current-branch`, `status`, `commit-files`,
-`tags` and `worktrees`, and the commands `stage`, `unstage`, `commit`, `checkout`, `create-branch`,
-`pull`, `push` and `worktree-add|remove|lock|unlock`; it runs on desktop only.
+**Every implementation ships in a pack.** A pack is a workspace under `packages/packs/<name>`; the
+engine holds none. A class is built `new Class(fields, ports)`: `fields` are what the person set in
+the settings window (text, numbers, switches, a choice, or another widget's prop for a field marked
+`.meta({ pick: "collection" })`), and `ports` are what the host lends — `self`, `commandLine`
+(`execFile`, never a shell), `workingDirectory`, `network`, `vault`, `refs` and `confirm`. A built-in
+that needs the engine's own state extends `EngineBackedValue`/`EngineBackedRows` instead and is
+built with the host context. `definePack({ id, title, queries, commands })` lists them with
+`defineGatewayMetadata` and `defineCommandMetadata`, every id under the pack's own name, and the host
+calls `registerPacks` once at load. A command's `consent` is `always` (shut until switched on in the
+Data tab, the default), `vault-target` (shut only over a vault-bound target) or `free`. A source is
+offered for a prop only when it fits: one returning any shape always fits its kind, one returning an
+exact shape fits a list whose described fields it carries and a value whose control matches.
+
+| Pack        | Queries                                                                                                                              | Commands                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `@core`     | `typed-value`, `typed-rows`, `screen-state`, `from-tile-value`, `from-tile-rows`, `selection`, `selected-row`, `fetch`, `fetch-rows` | `console-log`, `value-set`, `rows-create                                                              | update | remove                      | replace | repair-ids`, `fetch-send` |
+| `@obsidian` | `file`, `folder`, `tag`, `search`                                                                                                    | `folder-create                                                                                        | update | remove`, `file-set`, `open` |
+| `@stats`    | `number`, `series`, `breakdown`, `streak` over another widget's rows; one per algorithm over a folder                                | —                                                                                                     |
+| `@git`      | `commits`, `branches`, `current-branch`, `status`, `commit-files`, `tags`, `worktrees`                                               | `stage`, `unstage`, `commit`, `checkout`, `create-branch`, `pull`, `push` (asks first), `worktree-add | remove | lock                        | unlock` |
+
+`@core/file` and `@core/folder` are read as `@obsidian/file` and `@obsidian/folder`, and
+`@core/stat-<algorithm>` as `@stats/<algorithm>`, so a note bound before keeps its source.
 
 **The schema is the type and the default.** A value's schema must carry `.default()`; one without is
 refused. The built-in gateways check what they read against the schema through `context.parse`: a
