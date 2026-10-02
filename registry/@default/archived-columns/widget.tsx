@@ -1,4 +1,4 @@
-import { ICrudGateway, IValueGateway, createWidget, defineLayout, defineMetadata, pickedValue, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, pickedValue, z } from "widgetarium";
 import { BoardSchema, archivedColumnsOf, patchColumn, columnsOf, columnsToWrite, restoreColumn } from "@default/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 
@@ -57,16 +57,16 @@ const STYLE = `
 
 const ArchivedColumns = createWidget({
 	inject: {
-		boards: ICrudGateway.of(BoardSchema).pick("list", "get", "update"),
-		selection: IValueGateway.of(z.unknown()).pick("get"),
-		board: IValueGateway.of(BoardSchema).pick("get", "update"),
+		getBoards: IQuery.expects(z.array(BoardSchema)),
+		getSelection: IQuery.expects(z.unknown()),
+		getBoard: IQuery.expects(BoardSchema.nullable().default(null)),
+		updateBoard: ICommand.sends(BoardSchema),
 	},
-	draw: ({ selection, board }) => {
+	draw: ({ getSelection: selection, getBoard: record, updateBoard }) => {
 		const onBoard = pickedValue(selection);
-		const record = board.value;
 		const columns = columnsOf(record);
 		const archived: string[] = archivedColumnsOf(columns);
-		const restore = (name: string) => board.update(columnsToWrite(patchColumn(columns, name, restoreColumn)));
+		const restore = (name: string) => void updateBoard(columnsToWrite(patchColumn(columns, name, restoreColumn)));
 
 		return (
 			<div className="orbi orbi-archived-columns">
@@ -127,7 +127,7 @@ export const metadata = defineMetadata(ArchivedColumns, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			board: {
+			getBoard: {
 				value: {
 					columns: [
 						{ name: "Blocked", archivedAt: "2026-09-01" },
@@ -139,26 +139,33 @@ export const metadata = defineMetadata(ArchivedColumns, {
 		shot: { of: "134271609" },
 	},
 	props: {
-		boards: {
+		getBoards: {
 			label: "Boards",
+			aka: ["boards"],
 		},
-		selection: {
+		getSelection: {
 			label: "Shown board",
 			hint: "Whose archived columns are listed. Bind a tab strip and the two move together.",
-			wants: "@default/editable-tabs/selection",
+			aka: ["selection"],
+			wants: "@default/editable-tabs/getSelection",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "boards", field: "board", whenNothingPicked: "first" },
+				fields: { rows: "getBoards", field: "board", whenNothingPicked: "first" },
 			},
 		},
-		board: {
+		getBoard: {
 			label: "Board",
 			hint: "The board whose archived columns are listed.",
-			wants: "@default/kanban-board/board",
+			aka: ["board"],
+			wants: "@default/kanban-board/getBoard",
 			source: {
 				implementation: "@core/selected-row",
-				fields: { rows: "boards", picked: "selection", field: "board", whenNothingPicked: "first" },
+				fields: { rows: "getBoards", picked: "getSelection", field: "board", whenNothingPicked: "first" },
 			},
+		},
+		updateBoard: {
+			label: "Restore a column",
+			source: { implementation: "@core/value-set", fields: { target: "getBoard" } },
 		},
 	},
 });

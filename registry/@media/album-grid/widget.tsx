@@ -1,5 +1,4 @@
 import {
-	IListGateway,
 	IQuery,
 	ISlot,
 	VaultRecordSchema,
@@ -14,7 +13,6 @@ import { AlbumPage } from "./album-page";
 import { MIN_CELL_PX, NARROW_PX } from "./cell-sizes";
 import { MoreWhenSeen, usePages } from "widgetarium/kit";
 import type { CoverSlot, Drawn, Given } from "./types";
-import { useBeside } from "./use-beside";
 import { useNarrowShelf } from "./use-narrow-shelf";
 
 export const AlbumSchema = VaultRecordSchema.extend({
@@ -41,6 +39,7 @@ export const AlbumSchema = VaultRecordSchema.extend({
 });
 
 const PAGE_SIZE = 24;
+const PAGES_KEY = "@media/album-grid";
 
 const NO_SLOT = "This shelf has no widget to draw its albums with.";
 const NOTHING = "No albums here yet.";
@@ -61,16 +60,16 @@ const CSS = `
 `;
 
 export const props = defineProps({
-	albums: IListGateway.of(AlbumSchema, {
-		default: [
+	getAlbums: IQuery.expects(
+		z.array(AlbumSchema).default([
 			{ title: "Kind of Blue", artist: "Miles Davis", tracks: 5 },
 			{ title: "In Rainbows", artist: "Radiohead", tracks: 10 },
 			{ title: "Blue Train", artist: "John Coltrane", tracks: 5 },
 			{ title: "Rumours", artist: "Fleetwood Mac", tracks: 11 },
 			{ title: "Selected Ambient Works 85-92", artist: "Aphex Twin" },
 			{ title: "Unmarked tape", tracks: 3 },
-		],
-	}),
+		]),
+	),
 	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 	cover: ISlot.of<Given>({
 		default: "@media/album-cover",
@@ -81,12 +80,11 @@ export const props = defineProps({
 
 const AlbumGrid = createWidget({
 	inject: props,
-	draw: ({ albums, getPageSize: pageSize, cover }) => {
+	draw: ({ getAlbums, getPageSize: pageSize, cover }) => {
 		const size = pageSizeOf(pageSize);
 		const { shelf, isNarrow } = useNarrowShelf();
-		const { pages, more } = usePages(albums.id, size);
-		const first = useData(albums.list, { offset: 0, limit: size });
-		const beside = useBeside(albums.id, isNarrow);
+		const { pages, more } = usePages(PAGES_KEY, size);
+		const first = useData(getAlbums, { offset: 0, limit: size });
 		const said = saidInstead(cover, first);
 		const hasMore = !said && (first.total ?? 0) > pages * size;
 
@@ -100,9 +98,9 @@ const AlbumGrid = createWidget({
 						{Array.from({ length: pages }, (_, page) => (
 							<AlbumPage
 								key={page}
-								albums={albums}
+								albums={getAlbums}
 								Drawn={cover as Drawn}
-								beside={beside}
+								isBeside={isNarrow}
 								offset={page * size}
 								limit={size}
 							/>
@@ -135,7 +133,7 @@ export const metadata = defineMetadata(AlbumGrid, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			albums: {
+			getAlbums: {
 				rows: [
 					{ title: "Kind of Blue", artist: "Miles Davis", tracks: 5 },
 					{ title: "In Rainbows", artist: "Radiohead", tracks: 10 },
@@ -148,8 +146,9 @@ export const metadata = defineMetadata(AlbumGrid, {
 		},
 	},
 	props: {
-		albums: {
+		getAlbums: {
 			label: "Albums",
+			aka: ["albums"],
 			hint: "The records the shelf draws, one cell each.",
 			describes: {
 				title: { label: "Title", type: "text" },

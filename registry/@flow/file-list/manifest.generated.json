@@ -31,10 +31,10 @@
 			"h": 4
 		},
 		"props": {
-			"heading": {
+			"getHeading": {
 				"value": "Files touched"
 			},
-			"files": {
+			"getFiles": {
 				"rows": [
 					{
 						"path": "src/gateway/manifest.ts",
@@ -84,11 +84,24 @@
 			}
 		}
 	},
+	"commands": {
+		"select": {
+			"label": "Pick a file",
+			"hint": "Runs when a row is pressed, with the file that was pressed.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"files": {
+		"getFiles": {
 			"kind": "collection",
 			"label": "Files",
 			"hint": "One record per file the change touched. Bind a commit list beside this one and the two move together.",
+			"aka": ["files"],
 			"writes": ["list", "get"],
 			"describes": {
 				"path": {
@@ -122,58 +135,54 @@
 					"aka": ["sha", "revision", "hash"]
 				}
 			},
-			"where": [
-				{
-					"prop": "commit",
-					"op": "is",
-					"value": {
-						"wants": "@flow/git-tree/selection"
-					}
-				}
-			],
-			"sort": [
-				{
-					"prop": "path",
-					"dir": "asc"
-				}
-			],
 			"default": {
 				"rows": []
 			}
 		},
-		"selection": {
+		"getCommit": {
+			"kind": "value",
+			"control": "json",
+			"label": "Commit",
+			"hint": "Only the files of this commit are listed. Bind a commit list beside this one and the two move together; left unset, every file is listed.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			},
+			"wants": "@flow/git-tree/selection"
+		},
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Selected file",
 			"hint": "Which file is picked. A diff standing beside this list binds to it and follows every press.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "files"
+					"rows": "getFiles"
 				}
 			},
-			"writes": ["get", "update"],
-			"default": {
-				"value": null
-			}
+			"writes": ["get"]
 		},
-		"heading": {
+		"getHeading": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Heading",
 			"hint": "The words standing before the count. Left empty, only the count is drawn.",
+			"aka": ["heading"],
 			"writes": ["get"],
 			"default": {
 				"value": "Files touched"
 			}
 		},
-		"shownFiles": {
+		"getShownFiles": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Files shown",
 			"hint": "How many rows are read at once, and how many more each press adds.",
+			"aka": ["shownFiles"],
 			"writes": ["get"],
 			"default": {
 				"value": 200
@@ -181,7 +190,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "head.tsx", "more-row.tsx", "picked-row.tsx", "text-of.ts", "types.ts"],
+	"files": ["widget.tsx", "commit-where.ts", "head.tsx", "more-row.tsx", "picked-row.tsx", "text-of.ts", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": ["@flow/file-row"]
 }

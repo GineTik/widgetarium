@@ -30,7 +30,7 @@
 			"h": 1
 		},
 		"props": {
-			"options": {
+			"getOptions": {
 				"rows": [
 					{
 						"label": "Summary"
@@ -45,11 +45,23 @@
 			}
 		}
 	},
+	"commands": {
+		"select": {
+			"label": "Pick a choice",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"options": {
+		"getOptions": {
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every section is a record. Bind a view box and it offers the views it holds.",
+			"aka": ["options"],
 			"writes": ["list", "get"],
 			"describes": {
 				"label": {
@@ -81,20 +93,21 @@
 			},
 			"wants": "@default/view-group/holds"
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Open section",
 			"hint": "Which section is open. Bind the view box's own selection and the two move together.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "options",
+					"rows": "getOptions",
 					"field": "value",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"],
+			"writes": ["get"],
 			"wants": "@default/view-group/selection"
 		}
 	},

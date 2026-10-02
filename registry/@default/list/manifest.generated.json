@@ -32,7 +32,7 @@
 			"h": 4
 		},
 		"props": {
-			"rows": {
+			"getRows": {
 				"rows": [
 					{
 						"path": "preview/onboarding.md",
@@ -60,8 +60,8 @@
 					}
 				]
 			},
-			"handedAs": {
-				"value": "task"
+			"getHandedAs": {
+				"value": "getTask"
 			}
 		}
 	},
@@ -72,80 +72,116 @@
 			"surface": "group"
 		}
 	},
+	"commands": {
+		"updateRow": {
+			"label": "Change a row",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getRows"
+				}
+			}
+		},
+		"select": {
+			"label": "Pick a row",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		},
+		"setFilter": {
+			"label": "Clear the filter",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getFilter"
+				}
+			}
+		}
+	},
 	"props": {
-		"rows": {
+		"getRows": {
 			"kind": "collection",
-			"label": "Rows",
+			"label": "Get rows",
 			"hint": "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
-			"writes": ["list", "get", "update"],
+			"aka": ["rows"],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"handedAs": {
+		"getHandedAs": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
-			"label": "Handed as",
-			"hint": "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes getCommit.",
+			"label": "Get handed as",
+			"hint": "The name of the prop the row arrives under. @default/task-card takes getTask, @flow/commit-row takes getCommit. A row widget that writes takes the same name with update in place of get.",
+			"aka": ["handedAs"],
 			"writes": ["get"],
 			"default": {
-				"value": "task"
+				"value": "getTask"
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Selected row",
 			"hint": "Which row is picked. A detail tile reading the same collection follows it.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "rows"
+					"rows": "getRows"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		},
-		"filter": {
+		"getFilter": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
-			"label": "Filter",
+			"label": "Get filter",
 			"hint": "Only rows whose filtered field holds these words are listed. Bind a search field and the two move together.",
-			"writes": ["get", "update"],
+			"aka": ["filter"],
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			},
 			"wants": "@default/search-input/value"
 		},
-		"filterField": {
+		"getFilterField": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Filtered field",
 			"hint": "The field the filter is matched in.",
+			"aka": ["filterField"],
 			"writes": ["get"],
 			"default": {
 				"value": "title"
 			}
 		},
-		"pageSize": {
+		"getPageSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Rows per page",
 			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
+			"aka": ["pageSize"],
 			"writes": ["get"],
 			"default": {
 				"value": 20
 			}
 		},
-		"heading": {
+		"getHeading": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
-			"label": "Heading",
+			"label": "Get heading",
 			"hint": "A line above the rows. Left empty, none is drawn.",
+			"aka": ["heading"],
 			"writes": ["get"],
 			"default": {
 				"value": ""
@@ -161,8 +197,7 @@
 		"pick.tsx",
 		"row-in-slot.tsx",
 		"total-placeholder.ts",
-		"types.ts",
-		"use-row-source.ts"
+		"types.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@default/task-card"]

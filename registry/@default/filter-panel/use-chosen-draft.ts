@@ -7,7 +7,7 @@ import type { props } from "./widget";
 type FilterProps = DrawnProps<typeof props>;
 
 // TRADE-OFF: a draft until Apply, so ticking four boxes queries the vault once
-export function useChosenDraft(applied: Chosen, chosen: FilterProps["chosen"]) {
+export function useChosenDraft(applied: Chosen, setChosen: FilterProps["setChosen"]) {
 	const [isOpen, setOpen] = useState(false);
 	const [draft, setDraft] = useState<Chosen>(applied);
 
@@ -38,12 +38,12 @@ export function useChosenDraft(applied: Chosen, chosen: FilterProps["chosen"]) {
 			setDraft(draftAfterCheck(group, value));
 		},
 		apply: () => {
-			chosen.update(draft);
+			void setChosen(draft);
 			setOpen(false);
 		},
 		reset: () => {
 			setDraft({});
-			chosen.update({});
+			void setChosen({});
 		},
 	};
 }

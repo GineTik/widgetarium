@@ -50,5 +50,5 @@ export type Listed = { ref: RecordRef; day: string; note: string; amount: number
 export type Allowed = { canAdd: boolean; canEdit: boolean; canDelete: boolean };
 
 export type MetricProps = DrawnProps<typeof MetricTotal.declared>;
-export type View = MetricProps["view"]["value"];
-export type Rising = MetricProps["rising"];
+export type View = MetricProps["getView"];
+export type Rising = MetricProps["getRising"];

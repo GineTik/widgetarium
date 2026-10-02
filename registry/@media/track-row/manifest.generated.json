@@ -29,7 +29,7 @@
 			"h": 1
 		},
 		"props": {
-			"track": {
+			"getTrack": {
 				"value": {
 					"title": "Weightless",
 					"artist": "Marconi Union",
@@ -39,18 +39,31 @@
 					"favourite": true
 				}
 			},
-			"position": {
+			"getPosition": {
 				"value": 3
 			}
 		}
 	},
+	"commands": {
+		"setTrack": {
+			"label": "Change the track",
+			"hint": "Runs when the favourite is pressed, with the whole track as it should now read.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getTrack"
+				}
+			}
+		}
+	},
 	"props": {
-		"track": {
+		"getTrack": {
 			"kind": "value",
 			"control": "json",
 			"label": "Track",
 			"hint": "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
-			"writes": ["get", "update"],
+			"aka": ["track"],
+			"writes": ["get"],
 			"default": {
 				"value": {
 					"title": "Weightless",
@@ -62,23 +75,25 @@
 				}
 			}
 		},
-		"position": {
+		"getPosition": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Place in the list",
 			"hint": "The number drawn where the equaliser stands while the track is playing.",
+			"aka": ["position"],
 			"writes": ["get"],
 			"default": {
 				"value": 0
 			}
 		},
-		"isPlaying": {
+		"getIsPlaying": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Playing",
 			"hint": "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
+			"aka": ["isPlaying"],
 			"writes": ["get"],
 			"default": {
 				"value": false

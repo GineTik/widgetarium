@@ -37,7 +37,7 @@
 			"h": 6
 		},
 		"props": {
-			"days": {
+			"getDays": {
 				"rows": [
 					{
 						"path": "Habits/2026-08-31.md",
@@ -118,13 +118,33 @@
 			"of": "524690415"
 		}
 	},
+	"commands": {
+		"updateDay": {
+			"label": "Mark a day",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getDays"
+				}
+			}
+		},
+		"createDay": {
+			"label": "Add a day",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getDays"
+				}
+			}
+		}
+	},
 	"props": {
-		"days": {
+		"getDays": {
 			"kind": "collection",
 			"label": "Days",
 			"hint": "A folder of habit notes, or a folder of day notes for a single habit.",
-			"aka": ["habits"],
-			"writes": ["list", "get", "update", "create"],
+			"aka": ["days", "habits"],
+			"writes": ["list", "get"],
 			"describes": {
 				"days": {
 					"type": "date",
@@ -148,26 +168,28 @@
 				"rows": []
 			}
 		},
-		"pick": {
+		"getPick": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Which habit",
 			"hint": "The habit this grid writes into. Bind it to a habit list and the month follows what the list picks.",
+			"aka": ["pick"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "days",
+					"rows": "getDays",
 					"field": "name",
 					"whenNothingPicked": "first"
 				}
 			},
 			"writes": ["get"]
 		},
-		"isWeekStartingMonday": {
+		"getIsWeekStartingMonday": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Weeks start on Monday",
+			"aka": ["isWeekStartingMonday"],
 			"writes": ["get"],
 			"default": {
 				"value": true

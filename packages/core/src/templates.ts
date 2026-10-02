@@ -63,26 +63,22 @@ const TASK_BOARD: Template = {
 			{
 				id: "boards",
 				widget: "@default/editable-tabs",
-				props: { tabs: { from: "vault", path: "Orbitask/Boards", allow: ["list", "create", "update", "remove"] } },
+				props: { getTabs: { from: "vault", path: "Orbitask/Boards", allow: ["list", "create", "update", "remove"] } },
 			},
 			{
 				id: "filter",
 				widget: "@default/filter-panel",
 				props: {
-					tasks: {
-						from: "vault",
-						path: "Orbitask/Tasks",
-						allow: ["list"],
-						where: [{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true }],
-					},
+					getTasks: { from: "vault", path: "Orbitask/Tasks", allow: ["list"] },
+					getBoard: { from: "ref", ref: "boards/getSelection" },
 				},
 			},
 			{
 				id: "views",
 				widget: "@default/view-tabs",
 				props: {
-					options: { from: "ref", ref: "board/holds" },
-					selection: { from: "ref", ref: "board/selection" },
+					getOptions: { from: "ref", ref: "board/holds" },
+					getSelection: { from: "ref", ref: "board/selection" },
 				},
 			},
 			{
@@ -90,17 +86,10 @@ const TASK_BOARD: Template = {
 				widget: "@default/kanban-board",
 				slots: { card: { widget: "@default/task-card" } },
 				props: {
-					tasks: {
-						from: "vault",
-						path: "Orbitask/Tasks",
-						allow: ["list", "get", "create", "update", "remove"],
-						where: [
-							{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true },
-							{ spread: { ref: "filter/chosen" }, fixed: true },
-						],
-					},
-					boards: { from: "vault", path: "Orbitask/Boards", allow: ["list", "create", "update", "repairIds"] },
-					selection: { from: "ref", ref: "boards/selection" },
+					getTasks: { from: "vault", path: "Orbitask/Tasks", allow: ["list", "get", "create", "update", "remove"] },
+					getChosen: { from: "ref", ref: "filter/getChosen" },
+					getBoards: { from: "vault", path: "Orbitask/Boards", allow: ["list", "create", "update", "repairIds"] },
+					getSelection: { from: "ref", ref: "boards/getSelection" },
 				},
 			},
 		],

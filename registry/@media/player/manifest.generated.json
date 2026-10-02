@@ -34,7 +34,7 @@
 			"h": 2
 		},
 		"props": {
-			"tracks": {
+			"getTracks": {
 				"rows": [
 					{
 						"path": "Music/Riverbed.md",
@@ -57,26 +57,99 @@
 					}
 				]
 			},
-			"playing": {
+			"getPlaying": {
 				"value": "i0"
 			},
-			"isPlaying": {
+			"getIsPlaying": {
 				"value": true
 			},
-			"position": {
+			"getPosition": {
 				"value": 74
 			},
-			"volume": {
+			"getVolume": {
 				"value": 70
 			}
 		}
 	},
+	"commands": {
+		"updateTrack": {
+			"label": "Change a track",
+			"hint": "Runs when the favourite is pressed, with the track and its new favourite.",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getTracks"
+				}
+			}
+		},
+		"setPlaying": {
+			"label": "Load a track",
+			"hint": "Runs when the transport steps to another track, with the track it steps to.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getPlaying"
+				}
+			}
+		},
+		"setIsPlaying": {
+			"label": "Play or pause",
+			"hint": "Runs when play or pause is pressed, or the queue ends, with whether it now plays.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getIsPlaying"
+				}
+			}
+		},
+		"setPosition": {
+			"label": "Seek",
+			"hint": "Runs when the seek bar is moved or a track starts again, with the second it now stands at.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getPosition"
+				}
+			}
+		},
+		"setVolume": {
+			"label": "Set the volume",
+			"hint": "Runs when the volume bar is moved, with the new level.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getVolume"
+				}
+			}
+		},
+		"setIsShuffled": {
+			"label": "Shuffle or play in order",
+			"hint": "Runs when shuffle is pressed, with whether the queue is now shuffled.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getIsShuffled"
+				}
+			}
+		},
+		"setRepeat": {
+			"label": "Change the repeat",
+			"hint": "Runs when repeat is pressed, with what the end of the queue now does.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getRepeat"
+				}
+			}
+		}
+	},
 	"props": {
-		"tracks": {
+		"getTracks": {
 			"kind": "collection",
 			"label": "Tracks",
 			"hint": "The queue. One note per track, in the order the bound folder is sorted.",
-			"writes": ["list", "get", "update"],
+			"aka": ["tracks"],
+			"writes": ["list", "get"],
 			"describes": {
 				"title": {
 					"label": "Title",
@@ -113,73 +186,79 @@
 				"rows": []
 			}
 		},
-		"playing": {
+		"getPlaying": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Playing",
 			"hint": "Which track is loaded. Bind a queue beside it and the two move together.",
+			"aka": ["playing"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "tracks"
+					"rows": "getTracks"
 				}
 			},
-			"writes": ["get", "update"],
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"isPlaying": {
+		"getIsPlaying": {
 			"kind": "value",
 			"control": "memory",
 			"label": "Playing state",
 			"hint": "Whether the transport stands at play or at pause.",
-			"writes": ["get", "update"],
+			"aka": ["isPlaying"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": false
 			}
 		},
-		"position": {
+		"getPosition": {
 			"kind": "value",
 			"control": "memory",
 			"label": "Position",
 			"hint": "How far into the track the transport stands, in seconds.",
-			"writes": ["get", "update"],
+			"aka": ["position"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": 0
 			}
 		},
-		"volume": {
+		"getVolume": {
 			"kind": "value",
 			"control": "memory",
 			"label": "Volume",
 			"hint": "The level the transport is set to, from nothing to full.",
-			"writes": ["get", "update"],
+			"aka": ["volume"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": 70
 			}
 		},
-		"isShuffled": {
+		"getIsShuffled": {
 			"kind": "value",
 			"control": "memory",
 			"label": "Shuffle",
 			"hint": "Whether the next track is the one after this or one drawn at random.",
-			"writes": ["get", "update"],
+			"aka": ["isShuffled"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": false
 			}
 		},
-		"repeat": {
+		"getRepeat": {
 			"kind": "value",
 			"control": "choice",
 			"type": "line",
 			"label": "Repeat",
 			"hint": "What the end of the queue does.",
-			"writes": ["get", "update"],
+			"aka": ["repeat"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": "off"
@@ -201,7 +280,20 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "cover.tsx", "deck.tsx", "percent.ts", "repeat.ts", "style.ts", "types.ts"],
+	"files": [
+		"widget.tsx",
+		"cover.tsx",
+		"deck.tsx",
+		"percent.ts",
+		"queue-of.ts",
+		"repeat.ts",
+		"seek-bar.tsx",
+		"steering-of.ts",
+		"style.ts",
+		"text-in.ts",
+		"track-head.tsx",
+		"types.ts"
+	],
 	"dependencies": {},
 	"widgetDependencies": []
 }

@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, canDo } from "widgetarium";
+import { Dialog, DialogContent } from "widgetarium";
 import { useMemo } from "react";
 import { DialogTop } from "./dialog-top";
 import { PropertiesPane } from "./properties-pane";
@@ -11,19 +11,20 @@ import type { TaskDialogProps, TaskProps, TaskRow, Tones } from "./types";
 const STARTING_PROPERTIES = ["Status", "Priority", "Approval", "Progress", "Assignees", "Deadline"];
 
 export function TaskDialog({
-	tasks,
+	getTasks,
+	updateTask,
 	rows,
 	columns,
 	properties,
 	onBoard,
-	opened,
+	onClose,
 	openedRef,
 	today,
 	onAddProperty,
 	host,
 	navigator,
 }: TaskDialogProps) {
-	const canUpdate = canDo(tasks.update);
+	const canUpdate = updateTask.can().can;
 	// TRADE-OFF: found in the list the board already holds — tasks.get would read the note again on every vault event
 	const task = rows.find((row) => row.ref === openedRef) ?? null;
 	const isOpen = Boolean(openedRef) && Boolean(task);
@@ -34,20 +35,15 @@ export function TaskDialog({
 
 	const setProperties = (patch: TaskProps) => {
 		if (!canUpdate || !task) return;
-		tasks.update({ ref: task.ref, data: { props: patch } });
+		void updateTask({ ref: task.ref, props: patch });
 	};
 
 	const setProperty = (key: string, value: unknown) => setProperties({ [key]: value });
 
 	return (
-		<Dialog isOpen={isOpen} onOpenChange={(next: boolean) => !next && opened.update(null)}>
+		<Dialog isOpen={isOpen} onOpenChange={(next: boolean) => !next && onClose()}>
 			<DialogContent className="orbi orbi-task-dialog">
-				<DialogTop
-					onBoard={onBoard}
-					taskRef={task?.ref ?? ""}
-					navigator={navigator}
-					onClose={() => opened.update(null)}
-				/>
+				<DialogTop onBoard={onBoard} taskRef={task?.ref ?? ""} navigator={navigator} onClose={onClose} />
 
 				<div className="otd-body">
 					<div className="otd-left">
@@ -62,7 +58,7 @@ export function TaskDialog({
 							}
 						/>
 
-						<TaskNotes task={task} tasks={tasks} host={host} canEdit={canUpdate} />
+						<TaskNotes task={task} getTasks={getTasks} updateTask={updateTask} host={host} canEdit={canUpdate} />
 					</div>
 
 					<aside className="otd-right">

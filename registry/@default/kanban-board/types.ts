@@ -60,12 +60,13 @@ export type TagRowProps = {
 };
 
 export type TaskDialogProps = {
-	tasks: KanbanProps["tasks"];
+	getTasks: KanbanProps["getTasks"];
+	updateTask: KanbanProps["updateTask"];
 	rows: TaskRow[];
 	columns: string[];
 	properties: string[];
 	onBoard: string;
-	opened: KanbanProps["opened"];
+	onClose: () => void;
 	openedRef: unknown;
 	today: Date;
 	onAddProperty?: ((names: string[]) => void) | undefined;

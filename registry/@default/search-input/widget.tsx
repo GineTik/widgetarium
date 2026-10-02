@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
-import { IValueGateway, canDo, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Field, Icon } from "widgetarium/kit";
 
 const SearchInput = createWidget({
 	inject: {
-		value: IValueGateway.of(z.string().default("")).pick("get", "update"),
-		placeholder: IValueGateway.of(z.string().default("Search")).pick("get"),
+		getValue: IQuery.expects(z.string().default("")),
+		setValue: ICommand.sends(z.string()),
+		getPlaceholder: IQuery.expects(z.string().default("Search")),
 	},
-	draw: ({ value, placeholder }) => {
-		const [draft, setDraft] = useDraftOf(value.value);
-		const canWrite = canDo(value.update);
+	draw: ({ getValue: value, setValue, getPlaceholder: placeholder }) => {
+		const [draft, setDraft] = useDraftOf(value);
+		const canWrite = setValue.can().can;
 
 		const write = (typed: string) => {
 			setDraft(typed);
-			if (canWrite) value.update(typed);
+			if (canWrite) void setValue(typed);
 		};
 
 		return (
@@ -35,10 +36,18 @@ export const metadata = defineMetadata(SearchInput, {
 	title: "Search input",
 	description: "A search field whose text is a value other widgets can read.",
 	keywords: ["search", "input", "query", "filter", "find", "field", "text"],
-	preview: { size: { w: 6, h: 1 }, props: { placeholder: { value: "Search widgets" } } },
+	preview: { size: { w: 6, h: 1 }, props: { getPlaceholder: { value: "Search widgets" } } },
 	props: {
-		value: { label: "Query", hint: "What is typed. Bind another widget to it and it filters as you type." },
-		placeholder: { hint: "Shown while nothing is typed." },
+		getValue: {
+			aka: ["value"],
+			label: "Query",
+			hint: "What is typed. Bind another widget to it and it filters as you type.",
+		},
+		setValue: {
+			label: "Type the query",
+			source: { implementation: "@core/value-set", fields: { target: "getValue" } },
+		},
+		getPlaceholder: { aka: ["placeholder"], hint: "Shown while nothing is typed." },
 	},
 });
 

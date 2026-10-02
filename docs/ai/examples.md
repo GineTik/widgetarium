@@ -24,7 +24,7 @@ tiles:
   - id: running
     widget: "@flow/in-flight"
     props:
-      flights: { from: vault, path: Sessions, allow: [list, update] }
+      getFlights: { from: vault, path: Sessions, allow: [list, update] }
   - id: bugs
     widget: "@flow/plan-qa"
     props:
@@ -32,13 +32,13 @@ tiles:
   - id: tail
     widget: "@flow/session-tail"
     props:
-      lines: { from: vault, path: Sessions/live.md }
+      getLines: { from: vault, path: Sessions/live.md }
   - id: notice
     widget: "@flow/notice"
     props:
-      title: { from: typed, value: One bug found here }
-      body: { from: typed, value: normalizeBoard writes a surface onto a node the person set by hand. }
-      tone: { from: typed, value: error }
+      getTitle: { from: typed, value: One bug found here }
+      getBody: { from: typed, value: normalizeBoard writes a surface onto a node the person set by hand. }
+      getTone: { from: typed, value: error }
 layout:
   dir: row
   of:
@@ -100,21 +100,21 @@ tiles:
   - id: tabs
     widget: "@default/segmented-switch"
     props:
-      options: { from: typed, rows: [{ name: Added }, { name: Title }, { name: Artist }] }
+      getOptions: { from: typed, rows: [{ name: Added }, { name: Title }, { name: Artist }] }
   - id: tracks
     widget: "@media/track-list"
     props:
-      tracks: { from: vault, path: Music/Tracks, allow: [list, update] }
-      filter: { from: ref, ref: "tabs/selection" }
+      getTracks: { from: vault, path: Music/Tracks, allow: [list, update] }
+      getFilter: { from: ref, ref: "tabs/getSelection" }
   - id: albums
     widget: "@media/album-grid"
     props:
-      albums: { from: vault, path: Music/Albums }
+      getAlbums: { from: vault, path: Music/Albums }
   - id: player
     widget: "@media/player"
     props:
-      tracks: { from: vault, path: Music/Tracks }
-      playing: { from: ref, ref: "tracks/selection" }
+      getTracks: { from: vault, path: Music/Tracks }
+      getPlaying: { from: ref, ref: "tracks/getSelection" }
 layout:
   dir: column
   of:
@@ -165,7 +165,7 @@ tiles:
   - id: tabs
     widget: "@default/underline-tabs"
     props:
-      options: { from: typed, rows: [{ name: Summary }, { name: Plan }, { name: Implementation }] }
+      getOptions: { from: typed, rows: [{ name: Summary }, { name: Plan }, { name: Implementation }] }
   - id: body
     widget: "@flow/report"
     props:
@@ -174,7 +174,7 @@ tiles:
   - id: progress
     widget: "@default/metric-total"
     props:
-      records: { from: vault, path: Tasks/152/steps }
+      getRecords: { from: vault, path: Tasks/152/steps }
   - id: jump
     widget: "@default/icon-list"
     props:
@@ -224,20 +224,20 @@ tiles:
   - id: projects
     widget: "@default/section"
     props:
-      heading: { from: typed, value: Projects }
-      badge: { from: typed, value: 5 open }
-      filling: { from: typed, value: per-row }
-      arrangement: { from: typed, value: grid }
-      minWidthPx: { from: typed, value: 280 }
-      items: { from: vault, path: Projects, allow: [list] }
+      getHeading: { from: typed, value: Projects }
+      getBadge: { from: typed, value: 5 open }
+      getFilling: { from: typed, value: per-row }
+      getArrangement: { from: typed, value: grid }
+      getMinWidthPx: { from: typed, value: 280 }
+      getItems: { from: vault, path: Projects, allow: [list] }
     slots:
       item: { widget: "@flow/project-card" }
   - id: today
     widget: "@default/section"
     props:
-      heading: { from: typed, value: Today }
-      filling: { from: typed, value: placed }
-      arrangement: { from: typed, value: column }
+      getHeading: { from: typed, value: Today }
+      getFilling: { from: typed, value: placed }
+      getArrangement: { from: typed, value: column }
     mounts:
       widgets:
         - { name: Reminders, widget: "@default/reminder" }

@@ -1,10 +1,13 @@
-import { canDo } from "widgetarium";
 import { Icon, IconButton, Progress } from "widgetarium/kit";
 import { PERCENT } from "./percent";
 import { REPEAT_MODES } from "./repeat";
 import type { PlayerProps, RepeatMode, Steering } from "./types";
 
-type DeckProps = Pick<PlayerProps, "isShuffled" | "isPlaying" | "repeat" | "volume"> & {
+type DeckProps = Pick<PlayerProps, "setIsShuffled" | "setRepeat" | "setVolume"> & {
+	isShuffled: boolean;
+	isPlaying: boolean;
+	repeat: RepeatMode;
+	volume: number;
 	canSteer: boolean;
 	steering: Steering;
 };
@@ -21,25 +24,28 @@ const REPEAT_LABELS: Record<RepeatMode, string> = {
 
 export function Deck({
 	isShuffled,
+	setIsShuffled,
 	isPlaying,
 	repeat,
+	setRepeat,
 	volume,
+	setVolume,
 	canSteer,
 	steering: { toPrevious, togglePlay, toNext },
 }: DeckProps) {
-	const heard = levelIn(volume.value, 0);
-	const canHear = canDo(volume.update);
+	const heard = levelIn(volume, 0);
+	const canHear = setVolume.can().can;
 	return (
 		<div className="wgm-deck">
 			<div className="wgm-transport">
 				<IconButton
-					variant={isShuffled.value ? "raised" : "ghost"}
+					variant={isShuffled ? "raised" : "ghost"}
 					size="m"
 					className="wgm-mode"
-					label={isShuffled.value ? "Play the queue in order" : "Play the queue shuffled"}
-					aria-pressed={isShuffled.value}
-					disabled={!canDo(isShuffled.update)}
-					onClick={() => void isShuffled.update(!isShuffled.value)}
+					label={isShuffled ? "Play the queue in order" : "Play the queue shuffled"}
+					aria-pressed={isShuffled}
+					disabled={!setIsShuffled.can().can}
+					onClick={() => void setIsShuffled(!isShuffled)}
 				>
 					<Icon name="shuffle" size={18} />
 				</IconButton>
@@ -52,12 +58,12 @@ export function Deck({
 					variant="accent"
 					size="l"
 					className="wgm-play-disc"
-					label={isPlaying.value ? "Pause" : "Play"}
-					aria-pressed={isPlaying.value}
+					label={isPlaying ? "Pause" : "Play"}
+					aria-pressed={isPlaying}
 					disabled={!canSteer}
 					onClick={togglePlay}
 				>
-					<Icon name={isPlaying.value ? "pause" : "play"} size={24} />
+					<Icon name={isPlaying ? "pause" : "play"} size={24} />
 				</IconButton>
 
 				<IconButton variant="ghost" size="m" label="Next track" disabled={!canSteer} onClick={toNext}>
@@ -65,15 +71,15 @@ export function Deck({
 				</IconButton>
 
 				<IconButton
-					variant={repeat.value === "off" ? "ghost" : "raised"}
+					variant={repeat === "off" ? "ghost" : "raised"}
 					size="m"
 					className="wgm-mode"
-					label={REPEAT_LABELS[repeatAfter(repeat.value)]}
-					aria-pressed={repeat.value !== "off"}
-					disabled={!canDo(repeat.update)}
-					onClick={() => void repeat.update(repeatAfter(repeat.value))}
+					label={REPEAT_LABELS[repeatAfter(repeat)]}
+					aria-pressed={repeat !== "off"}
+					disabled={!setRepeat.can().can}
+					onClick={() => void setRepeat(repeatAfter(repeat))}
 				>
-					<Icon name={REPEAT_ICONS[repeat.value]} size={18} />
+					<Icon name={REPEAT_ICONS[repeat]} size={18} />
 				</IconButton>
 			</div>
 
@@ -83,7 +89,7 @@ export function Deck({
 					<Progress
 						label="Volume"
 						value={heard}
-						onChange={canHear ? (level: number) => void volume.update(level) : undefined}
+						onChange={canHear ? (level: number) => void setVolume(level) : undefined}
 					/>
 				</span>
 			</div>

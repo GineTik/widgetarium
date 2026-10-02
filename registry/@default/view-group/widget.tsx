@@ -4,8 +4,9 @@ import {
 	IConfigureMounts,
 	EditableTabs,
 	Mounted,
+	ICommand,
 	IMounts,
-	IValueGateway,
+	IQuery,
 	applyTabStep,
 	archivedOf,
 	createWidget,
@@ -85,23 +86,24 @@ const ViewGroup = createWidget({
 			],
 			was: "views",
 		}),
-		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
-		isTabsShown: IValueGateway.of(z.boolean().default(true)).pick("get"),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
+		getIsTabsShown: IQuery.expects(z.boolean().default(true)),
 		configureMounts: IConfigureMounts,
 		catalogue: ICatalogue,
 	},
-	draw: ({ isTabsShown, selection, holds, configureMounts, catalogue }) => {
+	draw: ({ getIsTabsShown: isTabsShown, getSelection: selection, select, holds, configureMounts, catalogue }) => {
 		const rows = holds.map(rowOf);
 		const tabs = tabsOf(rows);
 		const archived = archivedOf(rows);
 		const shown = holds.filter((entry) => !entry.hidden);
 		const isStriped = isTabsShown && Boolean(configureMounts);
 
-		const asked = shown.find((entry) => entry.name === selection.value);
+		const asked = shown.find((entry) => entry.name === selection);
 		const active = asked ?? shown[0];
 
 		const apply = (step: TabStep) => {
-			if (movesSelection(step)) selection.update(step.selected ?? "");
+			if (movesSelection(step)) void select(step.selected ?? "");
 			if (movesRows(step)) configureMounts?.("holds", applyTabStep(rows, step));
 		};
 
@@ -178,16 +180,22 @@ export const metadata = defineMetadata(ViewGroup, {
 			label: "Views",
 			hint: "Each view is a widget you name. Press a name to rename it.",
 		},
-		selection: {
+		getSelection: {
 			label: "Shown view",
 			hint: "Which held widget is drawn. Bind a switcher and the two move together.",
+			aka: ["selection"],
 			source: {
 				implementation: "@core/selection",
 				fields: { rows: "holds", field: "value", whenNothingPicked: "first" },
 			},
 		},
-		isTabsShown: {
+		select: {
+			label: "Show a view",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
+		},
+		getIsTabsShown: {
 			label: "Show the tab row",
+			aka: ["isTabsShown"],
 			design: true,
 		},
 	},

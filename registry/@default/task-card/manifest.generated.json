@@ -38,7 +38,7 @@
 			"h": 2
 		},
 		"props": {
-			"task": {
+			"getTask": {
 				"value": {
 					"title": "Record the release notes",
 					"tags": ["launch", "notes"],
@@ -59,12 +59,13 @@
 		}
 	},
 	"props": {
-		"task": {
+		"getTask": {
 			"kind": "value",
 			"control": "json",
 			"label": "Task",
 			"hint": "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
-			"writes": ["get", "update"],
+			"aka": ["task"],
+			"writes": ["get"],
 			"default": {
 				"value": {
 					"title": "Design the onboarding flow",

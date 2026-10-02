@@ -4,7 +4,7 @@ import type { CardFace, Dragging, TaskRow } from "./types";
 type ListCardsProps = {
 	rows: TaskRow[];
 	cards: CardFace[];
-	CardComponent: (given: { task: CardFace }) => ReactNode;
+	CardComponent: (given: { getTask: CardFace }) => ReactNode;
 	canWrite: boolean;
 	dragging: Dragging;
 	opened: unknown;
@@ -24,7 +24,7 @@ export function ListCards({ rows, cards, CardComponent, canWrite, dragging, open
 				onDragEnd={() => dragging?.drop()}
 				onClick={() => onOpen?.(row)}
 			>
-				<CardComponent task={task} />
+				<CardComponent getTask={task} />
 			</div>
 		);
 	});

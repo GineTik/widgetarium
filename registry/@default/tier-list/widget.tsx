@@ -1,9 +1,9 @@
 import {
-	ICrudGateway,
+	ICommand,
 	IHost,
-	IValueGateway,
+	IQuery,
+	RecordRefSchema,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -18,7 +18,7 @@ import { DEFAULT_TIERS } from "./tiers";
 import { rackOf } from "./ordering";
 import { Board } from "./board";
 import { Renderer } from "./renderer";
-import type { CardRow, May, RackView, RenderMarkdown, TierListProps, TierRow } from "./types";
+import type { CardRow, Commands, May, RackView, RenderMarkdown, TierRow } from "./types";
 import { useOpened } from "./use-opened";
 import { useWriting } from "./use-writing";
 import { Windows } from "./windows";
@@ -64,19 +64,27 @@ export const CardSchema = VaultRecordSchema.extend({
 const COULD_NOT_READ = "That source could not be read, so nothing is drawn.";
 
 export const props = defineProps({
-	cards: ICrudGateway.of(CardSchema).pick("list", "create", "update", "remove", "replace"),
-	tiers: ICrudGateway.of(TierSchema, { default: DEFAULT_TIERS }).pick("list", "create", "update", "remove", "replace"),
-	title: IValueGateway.of(z.string().default("Tier list")).pick("get", "update"),
-	cardSize: IValueGateway.of(z.number().default(64)).pick("get", "update"),
+	getCards: IQuery.expects(z.array(CardSchema)),
+	createCard: ICommand.sends(CardSchema.extend({ id: z.uuid() })),
+	updateCard: ICommand.sends(CardSchema.partial().extend({ ref: RecordRefSchema })),
+	removeCard: ICommand.sends(z.object({ ref: RecordRefSchema })),
+	replaceCards: ICommand.sends(z.array(CardSchema)),
+	getTiers: IQuery.expects(z.array(TierSchema).default(DEFAULT_TIERS)),
+	createTier: ICommand.sends(TierSchema.extend({ id: z.uuid() })),
+	updateTier: ICommand.sends(TierSchema.partial().extend({ ref: RecordRefSchema })),
+	removeTier: ICommand.sends(z.object({ ref: RecordRefSchema })),
+	replaceTiers: ICommand.sends(z.array(TierSchema)),
+	getTitle: IQuery.expects(z.string().default("Tier list")),
+	getCardSize: IQuery.expects(z.number().default(64)),
 	host: IHost,
 });
 
 const TierList = createWidget({
 	inject: props,
-	draw: ({ cards, tiers, title, cardSize, host }) => {
-		const listedCards = useData(cards.list, { limit: ALL_CARDS });
-		const listedTiers = useData(tiers.list, { limit: ALL_CARDS });
-		const size = cardSizeOf(cardSize.value);
+	draw: ({ getCards, getTiers, getTitle: title, getCardSize: cardSize, host, ...commands }) => {
+		const listedCards = useData(getCards, { limit: ALL_CARDS });
+		const listedTiers = useData(getTiers, { limit: ALL_CARDS });
+		const size = cardSizeOf(cardSize);
 
 		const cardRows = listedCards.data as CardRow[];
 		const tierRows = listedTiers.data as TierRow[];
@@ -84,15 +92,15 @@ const TierList = createWidget({
 
 		const rootRef = useRef<HTMLDivElement | null>(null);
 		const opened = useOpened();
-		const write = useWriting(held, { cards, tiers, say: sayingTo(host) });
-		const may = mayDo(cards, tiers);
+		const write = useWriting(held, { ...commands, say: sayingTo(host) });
+		const may = mayDo(commands);
 		const board = { held, opened, write, may, rootRef, size, cards: cardRows };
 		const isBroken = Boolean(listedCards.failure || listedTiers.failure);
 
 		return (
 			<div className="wg-rank" ref={rootRef} style={{ "--wg-rank-card": `${size}px` } as Record<string, string>}>
 				<Renderer.Provider value={host?.can?.renderMarkdown ? (host.ui.renderMarkdown as RenderMarkdown) : null}>
-					{isBroken ? <span className="wr-failure">{COULD_NOT_READ}</span> : <Board heading={title.value} {...board} />}
+					{isBroken ? <span className="wr-failure">{COULD_NOT_READ}</span> : <Board heading={title} {...board} />}
 					<Windows held={held} opened={opened} write={write} may={may} cards={cardRows.length} rows={tierRows.length} />
 				</Renderer.Provider>
 			</div>
@@ -125,9 +133,9 @@ export const metadata = defineMetadata(TierList, {
 	preview: {
 		size: { w: 7, h: 6 },
 		props: {
-			title: { value: "Comfort food" },
-			cardSize: { value: 48 },
-			tiers: {
+			getTitle: { value: "Comfort food" },
+			getCardSize: { value: 48 },
+			getTiers: {
 				rows: [
 					{ label: "S", tone: "error", order: 1 },
 					{ label: "A", tone: "warning", order: 2 },
@@ -135,7 +143,7 @@ export const metadata = defineMetadata(TierList, {
 					{ label: "C", tone: "success", order: 4 },
 				],
 			},
-			cards: {
+			getCards: {
 				rows: [
 					{ name: "Pizza", tier: "S", order: 1 },
 					{ name: "Ramen", tier: "S", order: 2 },
@@ -153,9 +161,10 @@ export const metadata = defineMetadata(TierList, {
 		shot: { of: "115520328" },
 	},
 	props: {
-		cards: {
+		getCards: {
 			label: "Cards",
 			hint: "The things being ranked. A folder of notes, or a list typed into the tile.",
+			aka: ["cards"],
 			describes: {
 				name: { label: "Name", type: "text", required: true },
 				tier: { label: "Row", type: "text" },
@@ -163,21 +172,56 @@ export const metadata = defineMetadata(TierList, {
 				picture: { label: "Picture", type: "text" },
 			},
 		},
-		tiers: {
+		getTiers: {
 			label: "Rows",
 			hint: "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
+			aka: ["tiers"],
 			describes: {
 				label: { label: "Name", type: "text", required: true },
 				tone: { label: "Colour", type: "text" },
 				order: { label: "Order", type: "number" },
 			},
 		},
-		title: {
-			label: "Title",
+		createCard: {
+			label: "Add a card",
+			source: { implementation: "@core/rows-create", fields: { target: "getCards" } },
 		},
-		cardSize: {
+		updateCard: {
+			label: "Move or rename a card",
+			source: { implementation: "@core/rows-update", fields: { target: "getCards" } },
+		},
+		removeCard: {
+			label: "Remove a card",
+			source: { implementation: "@core/rows-remove", fields: { target: "getCards" } },
+		},
+		replaceCards: {
+			label: "Fill the cards from a preset",
+			source: { implementation: "@core/rows-replace", fields: { target: "getCards" } },
+		},
+		createTier: {
+			label: "Add a row",
+			source: { implementation: "@core/rows-create", fields: { target: "getTiers" } },
+		},
+		updateTier: {
+			label: "Rename or move a row",
+			source: { implementation: "@core/rows-update", fields: { target: "getTiers" } },
+		},
+		removeTier: {
+			label: "Remove a row",
+			source: { implementation: "@core/rows-remove", fields: { target: "getTiers" } },
+		},
+		replaceTiers: {
+			label: "Fill the rows from a preset",
+			source: { implementation: "@core/rows-replace", fields: { target: "getTiers" } },
+		},
+		getTitle: {
+			label: "Title",
+			aka: ["title"],
+		},
+		getCardSize: {
 			label: "Card size",
 			hint: "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
+			aka: ["cardSize"],
 			design: true,
 		},
 	},
@@ -197,11 +241,11 @@ function sayingTo(host?: ViewHost) {
 	};
 }
 
-function mayDo(cards: TierListProps["cards"], tiers: TierListProps["tiers"]): May {
+function mayDo({ replaceCards, replaceTiers, updateCard, createCard, createTier }: Commands): May {
 	return {
-		preset: canDo(cards.replace) && canDo(tiers.replace),
-		edit: canDo(cards.update),
-		add: canDo(cards.create),
-		addRow: canDo(tiers.create),
+		preset: replaceCards.can().can && replaceTiers.can().can,
+		edit: updateCard.can().can,
+		add: createCard.can().can,
+		addRow: createTier.can().can,
 	};
 }

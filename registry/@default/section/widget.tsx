@@ -1,14 +1,4 @@
-import {
-	ICrudGateway,
-	IMounts,
-	ISlot,
-	IValueGateway,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	defineProps,
-	z,
-} from "widgetarium";
+import { IMounts, IQuery, ISlot, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
 import type { Slot } from "widgetarium";
 import type { LayoutKind } from "widgetarium/kit";
 import { Body } from "./body";
@@ -42,14 +32,14 @@ const STYLE = `
 `;
 
 export const props = defineProps({
-	heading: IValueGateway.of(z.string().default("Section")).pick("get", "update"),
-	badgeTone: IValueGateway.of(BadgeToneSchema.default("neutral")).pick("get", "update"),
-	badge: IValueGateway.of(z.string().default("")).pick("get", "update"),
-	filling: IValueGateway.of(z.enum([PLACED, PER_ROW]).default(PLACED)).pick("get", "update"),
-	arrangement: IValueGateway.of(ArrangementSchema.default("column")).pick("get", "update"),
-	minWidthPx: IValueGateway.of(z.number().default(240)).pick("get", "update"),
-	items: ICrudGateway.of(z.looseObject({})),
-	pageSize: IValueGateway.of(z.number().default(24)).pick("get"),
+	getHeading: IQuery.expects(z.string().default("Section")),
+	getBadgeTone: IQuery.expects(BadgeToneSchema.default("neutral")),
+	getBadge: IQuery.expects(z.string().default("")),
+	getFilling: IQuery.expects(z.enum([PLACED, PER_ROW]).default(PLACED)),
+	getArrangement: IQuery.expects(ArrangementSchema.default("column")),
+	getMinWidthPx: IQuery.expects(z.number().default(240)),
+	getItems: IQuery.expects(z.array(z.looseObject({}))),
+	getPageSize: IQuery.expects(z.number().default(24)),
 	controls: IMounts.of({ default: [] }),
 	widgets: IMounts.of({ default: [] }),
 	item: ISlot.of({ surface: "none" }),
@@ -57,18 +47,30 @@ export const props = defineProps({
 
 const SectionWidget = createWidget({
 	inject: props,
-	draw: ({ heading, badge, badgeTone, filling, arrangement, minWidthPx, items, pageSize, controls, widgets, item }) => (
+	draw: ({
+		getHeading: heading,
+		getBadge: badge,
+		getBadgeTone: badgeTone,
+		getFilling: filling,
+		getArrangement: arrangement,
+		getMinWidthPx: minWidthPx,
+		getItems,
+		getPageSize: pageSize,
+		controls,
+		widgets,
+		item,
+	}) => (
 		<section className="wg-section">
 			<style>{STYLE}</style>
-			<Head heading={heading.value} badge={badge.value} badgeTone={badgeTone.value} controls={controls} />
+			<Head heading={heading} badge={badge} badgeTone={badgeTone} controls={controls} />
 			<Body
-				filling={filling.value}
-				items={items}
+				filling={filling}
+				getItems={getItems}
 				pageSize={pageSize}
 				Drawn={item as Slot<Record<string, unknown>> | undefined}
 				placed={widgets}
-				kind={KIND_OF[arrangement.value]}
-				narrowest={minWidthPx.value}
+				kind={KIND_OF[arrangement]}
+				narrowest={minWidthPx}
 			/>
 		</section>
 	),
@@ -80,11 +82,13 @@ export const metadata = defineMetadata(SectionWidget, {
 		"A titled part of a screen: the heading, what it says about itself, the controls beside it, and the widgets standing under it.",
 	keywords: ["section", "group", "region", "heading", "title", "block", "layout", "container", "grid", "list"],
 	props: {
-		heading: {
+		getHeading: {
+			aka: ["heading"],
 			hint: "What this part of the screen is.",
 			control: "line",
 		},
-		badgeTone: {
+		getBadgeTone: {
+			aka: ["badgeTone"],
 			design: true,
 			label: "What the badge says it is",
 			hint: "The colour a badge wears is its meaning: a count is neutral, a problem is an error.",
@@ -99,13 +103,15 @@ export const metadata = defineMetadata(SectionWidget, {
 				{ value: "standout", label: "Stands out" },
 				{ value: "highlight", label: "Highlighted" },
 			],
-			isVisible: (props) => Boolean(props.badge?.value),
+			isVisible: (props) => Boolean(props.getBadge?.value),
 		},
-		badge: {
+		getBadge: {
+			aka: ["badge"],
 			hint: "A count or a state, beside the heading. It says something about the body, never a filter.",
 			control: "line",
 		},
-		filling: {
+		getFilling: {
+			aka: ["filling"],
 			label: "What fills it",
 			hint: "Placed: you put each widget in yourself. Per row: one widget is drawn again for every row of the data.",
 			options: [
@@ -113,7 +119,8 @@ export const metadata = defineMetadata(SectionWidget, {
 				{ value: PER_ROW, label: "One widget per row of data" },
 			],
 		},
-		arrangement: {
+		getArrangement: {
+			aka: ["arrangement"],
 			design: true,
 			label: "How they stand",
 			hint: "A column reads down with nothing under it. A row and a grid give each widget its own plate. Rows stand in one plate with a line between them.",
@@ -124,21 +131,24 @@ export const metadata = defineMetadata(SectionWidget, {
 				{ value: "rows", label: "Rows in one plate" },
 			],
 		},
-		minWidthPx: {
+		getMinWidthPx: {
+			aka: ["minWidthPx"],
 			design: true,
 			label: "Narrowest a cell may be",
 			hint: "The grid fits as many across as this allows, then wraps.",
-			isVisible: (props) => props.arrangement?.value === "grid",
+			isVisible: (props) => props.getArrangement?.value === "grid",
 		},
-		items: {
+		getItems: {
+			aka: ["items"],
 			label: "Rows to draw",
 			hint: "Bind the folder whose notes this section draws. The widget in the slot draws one of them at a time.",
-			isVisible: (props) => props.filling?.value === PER_ROW,
+			isVisible: (props) => props.getFilling?.value === PER_ROW,
 		},
-		pageSize: {
+		getPageSize: {
+			aka: ["pageSize"],
 			label: "Rows drawn",
 			hint: "How many rows are drawn before the rest are asked for.",
-			isVisible: (props) => props.filling?.value === PER_ROW,
+			isVisible: (props) => props.getFilling?.value === PER_ROW,
 		},
 		controls: {
 			label: "Controls",
@@ -147,11 +157,11 @@ export const metadata = defineMetadata(SectionWidget, {
 		widgets: {
 			label: "Widgets",
 			hint: "Each widget you place stands in the body, in the order listed here.",
-			isVisible: (props) => props.filling?.value !== PER_ROW,
+			isVisible: (props) => props.getFilling?.value !== PER_ROW,
 		},
 		item: {
 			label: "Drawn for every row",
-			isVisible: (props) => props.filling?.value === PER_ROW,
+			isVisible: (props) => props.getFilling?.value === PER_ROW,
 		},
 	},
 });

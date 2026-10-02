@@ -34,7 +34,7 @@
 			"h": 4
 		},
 		"props": {
-			"tasks": {
+			"getTasks": {
 				"rows": [
 					{
 						"path": "preview/1.md",
@@ -94,7 +94,7 @@
 					}
 				]
 			},
-			"board": {
+			"getBoard": {
 				"value": {
 					"columns": [
 						{
@@ -121,78 +121,120 @@
 			"default": "@default/task-card",
 			"surface": "group",
 			"gives": {
-				"task": ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"]
+				"getTask": ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"]
+			}
+		}
+	},
+	"commands": {
+		"createTask": {
+			"label": "Add a task",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getTasks"
+				}
+			}
+		},
+		"updateTask": {
+			"label": "Change a task",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getTasks"
+				}
+			}
+		},
+		"repairBoardIds": {
+			"label": "Repair duplicate board ids",
+			"source": {
+				"implementation": "@core/rows-repair-ids",
+				"fields": {
+					"target": "getBoards"
+				}
+			}
+		},
+		"updateBoard": {
+			"label": "Change the board's columns",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getBoard"
+				}
+			}
+		},
+		"open": {
+			"label": "Open a task",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getOpened"
+				}
 			}
 		}
 	},
 	"props": {
-		"tasks": {
+		"getTasks": {
 			"kind": "collection",
 			"label": "Tasks",
-			"writes": ["list", "get", "create", "update", "remove"],
-			"where": [
-				{
-					"prop": "board",
-					"op": "is",
-					"value": {
-						"wants": "@default/editable-tabs/selection"
-					}
-				},
-				{
-					"spread": {
-						"wants": "@default/filter-panel/chosen"
-					}
-				}
-			],
-			"sort": [
-				{
-					"prop": "order",
-					"dir": "asc"
-				}
-			],
+			"aka": ["tasks"],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"boards": {
+		"getChosen": {
+			"kind": "value",
+			"control": "json",
+			"label": "Chosen filters",
+			"hint": "Narrows the cards to what a filter panel has chosen.",
+			"writes": ["get"],
+			"default": {
+				"value": {}
+			},
+			"wants": "@default/filter-panel/getChosen"
+		},
+		"getBoards": {
 			"kind": "collection",
 			"label": "Boards",
-			"writes": ["list", "get", "create", "update", "repairIds"],
+			"aka": ["boards"],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Shown board",
 			"hint": "Which board this draws. Bind a tab strip and the two move together.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "boards",
+					"rows": "getBoards",
 					"field": "board",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"],
-			"wants": "@default/editable-tabs/selection"
+			"writes": ["get"],
+			"wants": "@default/editable-tabs/getSelection"
 		},
-		"board": {
+		"getBoard": {
 			"kind": "value",
 			"control": "row",
 			"label": "Board",
 			"hint": "The board this draws: its columns, their order and which of them are archived.",
+			"aka": ["board"],
 			"source": {
 				"implementation": "@core/selected-row",
 				"fields": {
-					"rows": "boards",
-					"picked": "selection",
+					"rows": "getBoards",
+					"picked": "getSelection",
 					"field": "board",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"],
+			"writes": ["get"],
 			"default": {
 				"value": {
 					"columns": [
@@ -209,24 +251,29 @@
 				}
 			}
 		},
-		"opened": {
+		"getOpened": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Opened task",
 			"hint": "Which card is open, as a box. The board draws it full size itself.",
+			"aka": ["opened"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "tasks"
+					"rows": "getTasks"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
 		},
-		"groupBy": {
+		"getGroupBy": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Group tasks by property",
+			"aka": ["groupBy"],
 			"writes": ["get"],
 			"default": {
 				"value": "status"

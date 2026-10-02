@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-	ICrudGateway,
+	ICommand,
+	IQuery,
 	ISlot,
-	IValueGateway,
+	RecordRefSchema,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -109,34 +109,49 @@ const CSS = `
 `;
 
 export const props = defineProps({
-	rows: ICrudGateway.of(VaultRecordSchema).pick("list", "update"),
-	handedAs: IValueGateway.of(z.string().default("task")).pick("get"),
-	selection: IValueGateway.of(z.unknown()).pick("get", "update"),
-	filter: IValueGateway.of(z.string().default("")).pick("get", "update"),
-	filterField: IValueGateway.of(z.string().default("title")).pick("get"),
-	pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
-	heading: IValueGateway.of(z.string().default("")).pick("get"),
+	getRows: IQuery.expects(z.array(VaultRecordSchema)),
+	updateRow: ICommand.sends(VaultRecordSchema.partial().extend({ ref: RecordRefSchema })),
+	getHandedAs: IQuery.expects(z.string().default("getTask")),
+	getSelection: IQuery.expects(z.unknown()),
+	select: ICommand.sends(z.unknown()),
+	getFilter: IQuery.expects(z.string().default("")),
+	setFilter: ICommand.sends(z.string()),
+	getFilterField: IQuery.expects(z.string().default("title")),
+	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+	getHeading: IQuery.expects(z.string().default("")),
 	row: ISlot.of<Handed>({ default: "@default/task-card", surface: "group" }),
 });
 
 const ListWidget = createWidget({
 	inject: props,
-	draw: ({ rows, handedAs, selection, filter, filterField, pageSize, heading, row }) => {
+	draw: ({
+		getRows,
+		updateRow,
+		getHandedAs: handedAs,
+		getSelection: selection,
+		select,
+		getFilter: filter,
+		setFilter,
+		getFilterField: filterField,
+		getPageSize: pageSize,
+		getHeading: heading,
+		row,
+	}) => {
 		const step = askedSize(pageSize);
 		const [shown, setShown] = useState(step);
 		useEffect(() => setShown(step), [step]);
 
-		const asked = saidOf(filter.value);
+		const asked = saidOf(filter);
 		const field = saidOf(filterField);
-		const page = useData(rows.list, { where: whereFieldHolds(field, asked), limit: shown });
-		const everyRow = useData(rows.list, { limit: 1 });
-		const picked = pickedValue(selection.value);
+		const page = useData(getRows, { where: whereFieldHolds(field, asked), limit: shown });
+		const everyRow = useData(getRows, { limit: 1 });
+		const picked = pickedValue(selection);
 		const givenAs = saidOf(handedAs) || "row";
 		const title = saidOf(heading);
 
 		const said = saidInstead({ slot: row, page, everyRow, isFiltered: asked !== "" });
-		const onClear = said?.canClear && canDo(filter.update) ? () => void filter.update("") : null;
-		const onPick = canDo(selection.update) ? (ref: string) => void selection.update(ref) : null;
+		const onClear = said?.canClear && setFilter.can().can ? () => void setFilter("") : null;
+		const onPick = select.can().can ? (ref: string) => void select(ref) : null;
 
 		return (
 			<div className="wg-list">
@@ -145,7 +160,14 @@ const ListWidget = createWidget({
 				{said ? (
 					<Instead said={said} onClear={onClear} />
 				) : (
-					<Drawing rows={rows} Drawn={row as Drawn} page={page} givenAs={givenAs} picked={picked} onPick={onPick} />
+					<Drawing
+						updateRow={updateRow}
+						Drawn={row as Drawn}
+						page={page}
+						givenAs={givenAs}
+						picked={picked}
+						onPick={onPick}
+					/>
 				)}
 				{said ? null : (
 					<Foot shown={page.data.length} total={page.total} step={step} onMore={() => setShown(shown + step)} />
@@ -177,7 +199,7 @@ export const metadata = defineMetadata(ListWidget, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			rows: {
+			getRows: {
 				rows: [
 					{
 						path: "preview/onboarding.md",
@@ -205,31 +227,48 @@ export const metadata = defineMetadata(ListWidget, {
 					},
 				],
 			},
-			handedAs: { value: "task" },
+			getHandedAs: { value: "getTask" },
 		},
 	},
 	props: {
-		rows: {
+		getRows: {
+			aka: ["rows"],
 			hint: "The records this list draws, one apiece. Whatever a row holds is handed to the widget in the slot whole.",
 		},
-		handedAs: {
-			hint: "The name of the prop the row arrives under. @default/task-card takes task, @flow/commit-row takes getCommit.",
+		updateRow: {
+			label: "Change a row",
+			source: { implementation: "@core/rows-update", fields: { target: "getRows" } },
 		},
-		selection: {
+		getHandedAs: {
+			aka: ["handedAs"],
+			hint: "The name of the prop the row arrives under. @default/task-card takes getTask, @flow/commit-row takes getCommit. A row widget that writes takes the same name with update in place of get.",
+		},
+		getSelection: {
 			label: "Selected row",
 			hint: "Which row is picked. A detail tile reading the same collection follows it.",
-			source: { implementation: "@core/selection", fields: { rows: "rows" } },
+			aka: ["selection"],
+			source: { implementation: "@core/selection", fields: { rows: "getRows" } },
 		},
-		filter: {
+		select: {
+			label: "Pick a row",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
+		},
+		getFilter: {
+			aka: ["filter"],
 			hint: "Only rows whose filtered field holds these words are listed. Bind a search field and the two move together.",
 			wants: "@default/search-input/value",
 		},
-		filterField: { label: "Filtered field", hint: "The field the filter is matched in." },
-		pageSize: {
+		setFilter: {
+			label: "Clear the filter",
+			source: { implementation: "@core/value-set", fields: { target: "getFilter" } },
+		},
+		getFilterField: { label: "Filtered field", hint: "The field the filter is matched in.", aka: ["filterField"] },
+		getPageSize: {
 			label: "Rows per page",
 			hint: "How many rows are read at first, and how many more each press of Show more reads.",
+			aka: ["pageSize"],
 		},
-		heading: { hint: "A line above the rows. Left empty, none is drawn." },
+		getHeading: { hint: "A line above the rows. Left empty, none is drawn.", aka: ["heading"] },
 	},
 });
 

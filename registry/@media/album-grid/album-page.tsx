@@ -1,15 +1,14 @@
-import { IValueGateway, useData, type Row } from "widgetarium";
-import { AlbumCell } from "./album-cell";
+import { useData, type Row } from "widgetarium";
 import type { Album, Albums, Drawn } from "./types";
 
-type PageProps = { albums: Albums; Drawn: Drawn; beside: IValueGateway; offset: number; limit: number };
+type PageProps = { albums: Albums; Drawn: Drawn; isBeside: boolean; offset: number; limit: number };
 
-export function AlbumPage({ albums, Drawn, beside, offset, limit }: PageProps) {
-	const listed = useData(albums.list, { offset, limit });
+export function AlbumPage({ albums, Drawn, isBeside, offset, limit }: PageProps) {
+	const listed = useData(albums, { offset, limit });
 	return (
 		<>
 			{listed.data.map((row) => (
-				<AlbumCell key={row.ref} albums={albums} row={row as Row<Album>} Drawn={Drawn} beside={beside} />
+				<Drawn key={row.ref} getAlbum={row as Row<Album>} getBeside={isBeside} />
 			))}
 		</>
 	);

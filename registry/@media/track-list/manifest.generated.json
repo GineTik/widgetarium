@@ -32,7 +32,7 @@
 			"h": 5
 		},
 		"props": {
-			"tracks": {
+			"getTracks": {
 				"rows": [
 					{
 						"path": "music/weightless.md",
@@ -77,16 +77,49 @@
 			"default": "@media/track-row",
 			"surface": "group",
 			"gives": {
-				"track": ["title", "artist", "album", "addedAt", "duration", "favourite"]
+				"getTrack": ["title", "artist", "album", "addedAt", "duration", "favourite"]
+			}
+		}
+	},
+	"commands": {
+		"updateTrack": {
+			"label": "Change a track",
+			"hint": "Runs when a row changes its track, such as a press of its favourite, with the track and what changed.",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getTracks"
+				}
+			}
+		},
+		"select": {
+			"label": "Pick a track",
+			"hint": "Runs when a row is pressed, with the track that was pressed.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		},
+		"setFilter": {
+			"label": "Clear the filter",
+			"hint": "Runs when Clear the filter is pressed, with the empty words.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getFilter"
+				}
 			}
 		}
 	},
 	"props": {
-		"tracks": {
+		"getTracks": {
 			"kind": "collection",
 			"label": "Tracks",
 			"hint": "The notes this list draws, one row each. Every field may be missing — a folder of loose recordings is the normal case.",
-			"writes": ["list", "get", "update"],
+			"aka": ["tracks"],
+			"writes": ["list", "get"],
 			"describes": {
 				"title": {
 					"label": "Title",
@@ -119,61 +152,59 @@
 					"aka": ["favorite", "liked", "starred", "loved"]
 				}
 			},
-			"sort": [
-				{
-					"prop": "addedAt",
-					"dir": "desc"
-				}
-			],
 			"default": {
 				"rows": []
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Selected track",
 			"hint": "Which track is picked. A player bound to this plays whatever the list picks.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "tracks"
+					"rows": "getTracks"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		},
-		"playing": {
+		"getPlaying": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Playing track",
 			"hint": "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
+			"aka": ["playing"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "tracks"
+					"rows": "getTracks"
 				}
 			},
 			"writes": ["get"],
-			"wants": "@media/player/playing"
+			"wants": "@media/player/getPlaying"
 		},
-		"filter": {
+		"getFilter": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Filter",
 			"hint": "Only tracks whose title holds these words are listed. Bind a search field and the two move together.",
-			"writes": ["get", "update"],
+			"aka": ["filter"],
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			},
 			"wants": "@default/search-input/value"
 		},
-		"pageSize": {
+		"getPageSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Tracks per page",
 			"hint": "How many rows are read at first, and how many more each press of Show more reads.",
+			"aka": ["pageSize"],
 			"writes": ["get"],
 			"default": {
 				"value": 50
@@ -190,8 +221,7 @@
 		"row-in-slot.tsx",
 		"said.tsx",
 		"style.ts",
-		"types.ts",
-		"use-track-source.ts"
+		"types.ts"
 	],
 	"dependencies": {},
 	"widgetDependencies": ["@media/track-row"]

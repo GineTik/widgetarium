@@ -21,29 +21,42 @@
 			"h": 1
 		},
 		"props": {
-			"placeholder": {
+			"getPlaceholder": {
 				"value": "Search widgets"
 			}
 		}
 	},
+	"commands": {
+		"setValue": {
+			"label": "Type the query",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getValue"
+				}
+			}
+		}
+	},
 	"props": {
-		"value": {
+		"getValue": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Query",
 			"hint": "What is typed. Bind another widget to it and it filters as you type.",
-			"writes": ["get", "update"],
+			"aka": ["value"],
+			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"placeholder": {
+		"getPlaceholder": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
-			"label": "Placeholder",
+			"label": "Get placeholder",
 			"hint": "Shown while nothing is typed.",
+			"aka": ["placeholder"],
 			"writes": ["get"],
 			"default": {
 				"value": "Search"

@@ -18,11 +18,18 @@ export type Target = { tier: string | null; at: number };
 export type Carry = { row: CardRow; x: number; y: number; offX: number; offY: number; isDragging: boolean };
 export type Draft = { name: string; picture: string };
 export type RenderMarkdown = ViewHost["ui"]["renderMarkdown"];
-export type Gates = {
-	cards: TierListProps["cards"];
-	tiers: TierListProps["tiers"];
-	say: (said: string) => void;
-};
+export type Commands = Pick<
+	TierListProps,
+	| "createCard"
+	| "updateCard"
+	| "removeCard"
+	| "replaceCards"
+	| "createTier"
+	| "updateTier"
+	| "removeTier"
+	| "replaceTiers"
+>;
+export type Gates = Commands & { say: (said: string) => void };
 export type Writing = ReturnType<typeof useWriting>;
 export type Opened = ReturnType<typeof useOpened>;
 

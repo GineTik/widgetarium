@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import {
-	ICrudGateway,
+	ICommand,
+	IQuery,
 	ISlot,
-	IValueGateway,
+	RecordRefSchema,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -24,6 +24,7 @@ import { CSS } from "./style";
 import type { Drawn, Given, RowSlot, TrackRow } from "./types";
 
 const PAGE_SIZE = 50;
+const NEWEST_FIRST = [{ prop: "addedAt", dir: "desc" as const }];
 
 const NO_SLOT = "This list has no widget to draw its rows with.";
 const READING = "Reading…";
@@ -65,30 +66,43 @@ export const TrackSchema = VaultRecordSchema.extend({
 });
 
 export const props = defineProps({
-	tracks: ICrudGateway.of(TrackSchema, { sort: [{ prop: "addedAt", dir: "desc" }] }).pick("list", "update"),
-	selection: IValueGateway.of(z.unknown()).pick("get", "update"),
-	playing: IValueGateway.of(z.unknown()).pick("get"),
-	filter: IValueGateway.of(z.string().default("")).pick("get", "update"),
-	pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
+	getTracks: IQuery.expects(z.array(TrackSchema)),
+	updateTrack: ICommand.sends(TrackSchema.partial().extend({ ref: RecordRefSchema })),
+	getSelection: IQuery.expects(z.unknown()),
+	select: ICommand.sends(z.unknown()),
+	getPlaying: IQuery.expects(z.unknown()),
+	getFilter: IQuery.expects(z.string().default("")),
+	setFilter: ICommand.sends(z.string()),
+	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 	row: ISlot.of<Given>({
 		default: "@media/track-row",
 		surface: "group",
-		gives: { track: ["title", "artist", "album", "addedAt", "duration", "favourite"] },
+		gives: { getTrack: ["title", "artist", "album", "addedAt", "duration", "favourite"] },
 	}),
 });
 
 const TrackList = createWidget({
 	inject: props,
-	draw: ({ tracks, selection, playing, filter, pageSize, row }) => {
+	draw: ({
+		getTracks,
+		updateTrack,
+		getSelection: selection,
+		select,
+		getPlaying: playing,
+		getFilter: filter,
+		setFilter,
+		getPageSize: pageSize,
+		row,
+	}) => {
 		const step = askedSize(pageSize);
 		const [shown, setShown] = useState(step);
 		useEffect(() => setShown(step), [step]);
 
-		const asked = String(filter.value ?? "").trim();
-		const page = useData(tracks.list, { where: whereTitleHolds(asked), limit: shown });
-		const everyTrack = useData(tracks.list, { limit: 1 });
-		const picked = String(pickedValue(selection.value) ?? "");
-		const nowPlaying = String(pickedValue(playing) ?? "");
+		const asked = filter.trim();
+		const page = useData(getTracks, { where: whereTitleHolds(asked), sort: NEWEST_FIRST, limit: shown });
+		const everyTrack = useData(getTracks, { limit: 1 });
+		const picked = pickedValue(selection);
+		const nowPlaying = pickedValue(playing);
 
 		const instead = saidInstead({ slot: row, page, everyTrack, isFiltered: asked !== "" });
 		if (instead)
@@ -97,7 +111,7 @@ const TrackList = createWidget({
 					text={instead.text}
 					tone={instead.tone}
 					count={instead.count}
-					onClear={instead.canClear && canDo(filter.update) ? () => void filter.update("") : null}
+					onClear={instead.canClear && setFilter.can().can ? () => void setFilter("") : null}
 				/>
 			);
 
@@ -110,11 +124,11 @@ const TrackList = createWidget({
 						<Pick
 							key={String(entry.ref)}
 							isPicked={String(entry.ref) === picked}
-							onPick={() => void selection.update(String(entry.ref))}
+							onPick={() => void select(String(entry.ref))}
 						>
 							<RowInSlot
 								Drawn={row as Drawn}
-								tracks={tracks}
+								updateTrack={updateTrack}
 								row={entry as TrackRow}
 								position={at + 1}
 								isPlaying={String(entry.ref) === nowPlaying}
@@ -151,7 +165,7 @@ export const metadata = defineMetadata(TrackList, {
 	preview: {
 		size: { w: 6, h: 5 },
 		props: {
-			tracks: {
+			getTracks: {
 				rows: [
 					{
 						path: "music/weightless.md",
@@ -191,8 +205,9 @@ export const metadata = defineMetadata(TrackList, {
 		},
 	},
 	props: {
-		tracks: {
+		getTracks: {
 			label: "Tracks",
+			aka: ["tracks"],
 			hint: "The notes this list draws, one row each. Every field may be missing — a folder of loose recordings is the normal case.",
 			describes: {
 				title: { label: "Title", type: "text" },
@@ -203,24 +218,43 @@ export const metadata = defineMetadata(TrackList, {
 				favourite: { label: "Favourite", type: "boolean" },
 			},
 		},
-		selection: {
+		updateTrack: {
+			label: "Change a track",
+			hint: "Runs when a row changes its track, such as a press of its favourite, with the track and what changed.",
+			source: { implementation: "@core/rows-update", fields: { target: "getTracks" } },
+		},
+		getSelection: {
 			label: "Selected track",
+			aka: ["selection"],
 			hint: "Which track is picked. A player bound to this plays whatever the list picks.",
-			source: { implementation: "@core/selection", fields: { rows: "tracks" } },
+			source: { implementation: "@core/selection", fields: { rows: "getTracks" } },
 		},
-		playing: {
+		select: {
+			label: "Pick a track",
+			hint: "Runs when a row is pressed, with the track that was pressed.",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
+		},
+		getPlaying: {
 			label: "Playing track",
+			aka: ["playing"],
 			hint: "Which track is playing now. A player writes it; the row it names wears an equaliser and a heavier title.",
-			wants: "@media/player/playing",
-			source: { implementation: "@core/selection", fields: { rows: "tracks" } },
+			wants: "@media/player/getPlaying",
+			source: { implementation: "@core/selection", fields: { rows: "getTracks" } },
 		},
-		filter: {
+		getFilter: {
 			label: "Filter",
+			aka: ["filter"],
 			hint: "Only tracks whose title holds these words are listed. Bind a search field and the two move together.",
 			wants: "@default/search-input/value",
 		},
-		pageSize: {
+		setFilter: {
+			label: "Clear the filter",
+			hint: "Runs when Clear the filter is pressed, with the empty words.",
+			source: { implementation: "@core/value-set", fields: { target: "getFilter" } },
+		},
+		getPageSize: {
 			label: "Tracks per page",
+			aka: ["pageSize"],
 			hint: "How many rows are read at first, and how many more each press of Show more reads.",
 		},
 	},

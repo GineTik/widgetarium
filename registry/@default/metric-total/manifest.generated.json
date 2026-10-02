@@ -37,13 +37,13 @@
 			"h": 5
 		},
 		"props": {
-			"title": {
+			"getTitle": {
 				"value": "Revenue"
 			},
-			"unit": {
+			"getUnit": {
 				"value": "$"
 			},
-			"records": {
+			"getRecords": {
 				"rows": [
 					{
 						"path": "Metrics/2026-08-25-1.md",
@@ -211,12 +211,60 @@
 			}
 		}
 	},
+	"commands": {
+		"createRecord": {
+			"label": "Add a record",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getRecords"
+				}
+			}
+		},
+		"updateRecord": {
+			"label": "Change a record",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getRecords"
+				}
+			}
+		},
+		"removeRecord": {
+			"label": "Delete a record",
+			"source": {
+				"implementation": "@core/rows-remove",
+				"fields": {
+					"target": "getRecords"
+				}
+			}
+		},
+		"selectPeriod": {
+			"label": "Pick a period",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getPeriodPick"
+				}
+			}
+		},
+		"setView": {
+			"label": "Switch the chart",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getView"
+				}
+			}
+		}
+	},
 	"props": {
-		"records": {
+		"getRecords": {
 			"kind": "collection",
 			"label": "Records",
 			"hint": "One note per reading. Each carries a date and an amount.",
-			"writes": ["list", "get", "create", "update", "remove"],
+			"aka": ["records"],
+			"writes": ["list", "get"],
 			"describes": {
 				"amount": {
 					"type": "number",
@@ -235,31 +283,34 @@
 				"rows": []
 			}
 		},
-		"title": {
+		"getTitle": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "What the number is",
+			"aka": ["title"],
 			"writes": ["get"],
 			"default": {
 				"value": "Total"
 			}
 		},
-		"unit": {
+		"getUnit": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Unit the amounts are in",
+			"aka": ["unit"],
 			"writes": ["get"],
 			"default": {
 				"value": ""
 			}
 		},
-		"rising": {
+		"getRising": {
 			"kind": "value",
 			"control": "choice",
 			"type": "line",
 			"label": "A rise reads as",
+			"aka": ["rising"],
 			"writes": ["get"],
 			"default": {
 				"value": "good"
@@ -275,10 +326,11 @@
 				}
 			]
 		},
-		"periods": {
+		"getPeriods": {
 			"kind": "collection",
 			"label": "Periods",
 			"hint": "Every window the card can read over.",
+			"aka": ["periods"],
 			"writes": ["list", "get"],
 			"describes": {
 				"label": {
@@ -309,41 +361,44 @@
 				]
 			}
 		},
-		"periodPick": {
+		"getPeriodPick": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Picked period",
+			"aka": ["periodPick"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "periods",
-					"field": "label",
-					"whenNothingPicked": "first"
-				}
-			},
-			"writes": ["get", "update"]
-		},
-		"period": {
-			"kind": "value",
-			"control": "row",
-			"label": "The period",
-			"source": {
-				"implementation": "@core/selected-row",
-				"fields": {
-					"rows": "periods",
-					"picked": "periodPick",
+					"rows": "getPeriods",
 					"field": "label",
 					"whenNothingPicked": "first"
 				}
 			},
 			"writes": ["get"]
 		},
-		"view": {
+		"getPeriod": {
+			"kind": "value",
+			"control": "row",
+			"label": "The period",
+			"aka": ["period"],
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "getPeriods",
+					"picked": "getPeriodPick",
+					"field": "label",
+					"whenNothingPicked": "first"
+				}
+			},
+			"writes": ["get"]
+		},
+		"getView": {
 			"kind": "value",
 			"control": "choice",
 			"type": "line",
 			"label": "Drawn as",
-			"writes": ["get", "update"],
+			"aka": ["view"],
+			"writes": ["get"],
 			"default": {
 				"value": "curve"
 			},
@@ -364,15 +419,20 @@
 		"widget.tsx",
 		"add-button.tsx",
 		"add-dialog.tsx",
+		"allowed-of.ts",
 		"bars-ink.tsx",
 		"chart.tsx",
 		"close-button.tsx",
 		"curve-ink.tsx",
 		"days.ts",
+		"entry-dialogs.tsx",
+		"folder-said.ts",
 		"foot.tsx",
 		"head.tsx",
+		"hover-chart.tsx",
 		"list-dialog.tsx",
 		"list-glyph.tsx",
+		"listed-of.ts",
 		"metric-plate.tsx",
 		"numbers.ts",
 		"period-picker.tsx",

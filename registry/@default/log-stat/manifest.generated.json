@@ -36,7 +36,7 @@
 			"h": 1
 		},
 		"props": {
-			"habits": {
+			"getHabits": {
 				"rows": [
 					{
 						"path": "Habits/Exercise.md",
@@ -96,34 +96,37 @@
 		}
 	},
 	"props": {
-		"habits": {
+		"getHabits": {
 			"kind": "collection",
 			"label": "Logs",
-			"writes": ["list", "get", "create", "update", "remove"],
+			"aka": ["habits"],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"pick": {
+		"getPick": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Which log",
 			"hint": "The log this number is about.",
+			"aka": ["pick"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "habits",
+					"rows": "getHabits",
 					"field": "name",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		},
-		"metric": {
+		"getMetric": {
 			"kind": "value",
 			"control": "choice",
 			"type": "line",
 			"label": "What it counts",
+			"aka": ["metric"],
 			"writes": ["get"],
 			"default": {
 				"value": "streak"
@@ -151,21 +154,23 @@
 				}
 			]
 		},
-		"period": {
+		"getPeriod": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Days the rate looks back over",
+			"aka": ["period"],
 			"writes": ["get"],
 			"default": {
 				"value": 30
 			}
 		},
-		"look": {
+		"getLook": {
 			"kind": "value",
 			"control": "choice",
 			"type": "line",
 			"label": "Look",
+			"aka": ["look"],
 			"design": true,
 			"writes": ["get"],
 			"default": {

@@ -1,4 +1,4 @@
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import { Badges } from "./badges";
 import { has } from "./has";
 import { MetaRow } from "./meta-row";
@@ -224,7 +224,7 @@ export const TaskSchema = z.object({
 
 const TaskCard = createWidget({
 	inject: {
-		task: IValueGateway.of(
+		getTask: IQuery.expects(
 			TaskSchema.default({
 				title: "Design the onboarding flow",
 				tags: ["design", "research"],
@@ -236,9 +236,9 @@ const TaskCard = createWidget({
 				files: 2,
 				initials: ["Alex Morgan", "Mia Tan", "Theo Ruiz"],
 			}),
-		).pick("get", "update"),
+		),
 	},
-	draw: ({ task: { value: card } }) => {
+	draw: ({ getTask: card }) => {
 		const initials = initialsOf(card.initials);
 
 		return (
@@ -284,7 +284,7 @@ export const metadata = defineMetadata(TaskCard, {
 	preview: {
 		size: { w: 4, h: 2 },
 		props: {
-			task: {
+			getTask: {
 				value: {
 					title: "Record the release notes",
 					tags: ["launch", "notes"],
@@ -301,8 +301,9 @@ export const metadata = defineMetadata(TaskCard, {
 		shot: { of: "943539583" },
 	},
 	props: {
-		task: {
+		getTask: {
 			label: "Task",
+			aka: ["task"],
 			hint: "The task this card draws. Held in a board it is handed down; standing alone it is the one typed here.",
 		},
 	},

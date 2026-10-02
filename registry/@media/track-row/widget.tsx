@@ -1,4 +1,4 @@
-import { IValueGateway, canDo, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
 import type { DrawnProps } from "widgetarium";
 import { Row, RowLabel, RowValue } from "widgetarium/kit";
 import { Equaliser } from "./equaliser";
@@ -153,7 +153,7 @@ const TrackSchema = z.object({
 type Track = z.infer<typeof TrackSchema>;
 
 const props = defineProps({
-	track: IValueGateway.of(
+	getTrack: IQuery.expects(
 		TrackSchema.default({
 			title: "Weightless",
 			artist: "Marconi Union",
@@ -162,15 +162,15 @@ const props = defineProps({
 			duration: 488,
 			favourite: false,
 		}),
-	).pick("get", "update"),
-	position: IValueGateway.of(z.number().default(0)).pick("get"),
-	isPlaying: IValueGateway.of(z.boolean().default(false)).pick("get"),
+	),
+	setTrack: ICommand.sends(TrackSchema),
+	getPosition: IQuery.expects(z.number().default(0)),
+	getIsPlaying: IQuery.expects(z.boolean().default(false)),
 });
 
 const TrackRow = createWidget({
 	inject: props,
-	draw: ({ track, position, isPlaying }) => {
-		const held = track.value;
+	draw: ({ getTrack: held, setTrack, getPosition: position, getIsPlaying: isPlaying }) => {
 		const isFavourite = held.favourite === true;
 
 		return (
@@ -193,8 +193,8 @@ const TrackRow = createWidget({
 				<RowValue className="mt-col mt-col-added">{shownDay(held.addedAt)}</RowValue>
 
 				<RowValue className="mt-col mt-col-fav">
-					{canDo(track.update) ? (
-						<Favourite isOn={isFavourite} onPress={() => favour(track, held, !isFavourite)} />
+					{setTrack.can().can ? (
+						<Favourite isOn={isFavourite} onPress={() => favour(setTrack, held, !isFavourite)} />
 					) : null}
 				</RowValue>
 
@@ -226,7 +226,7 @@ export const metadata = defineMetadata(TrackRow, {
 	preview: {
 		size: { w: 6, h: 1 },
 		props: {
-			track: {
+			getTrack: {
 				value: {
 					title: "Weightless",
 					artist: "Marconi Union",
@@ -236,20 +236,28 @@ export const metadata = defineMetadata(TrackRow, {
 					favourite: true,
 				},
 			},
-			position: { value: 3 },
+			getPosition: { value: 3 },
 		},
 	},
 	props: {
-		track: {
+		getTrack: {
 			label: "Track",
+			aka: ["track"],
 			hint: "The track this row draws. Held in a list it is handed down; standing alone it is the one typed here.",
 		},
-		position: {
+		setTrack: {
+			label: "Change the track",
+			hint: "Runs when the favourite is pressed, with the whole track as it should now read.",
+			source: { implementation: "@core/value-set", fields: { target: "getTrack" } },
+		},
+		getPosition: {
 			label: "Place in the list",
+			aka: ["position"],
 			hint: "The number drawn where the equaliser stands while the track is playing.",
 		},
-		isPlaying: {
+		getIsPlaying: {
 			label: "Playing",
+			aka: ["isPlaying"],
 			hint: "Whether this is the track playing now. The row answers with an equaliser and a heavier title.",
 		},
 	},
@@ -262,8 +270,8 @@ export const layout = defineLayout({
 
 export default TrackRow;
 
-function favour(track: DrawnProps<typeof props>["track"], held: Track, next: boolean) {
-	void track.update({ ...held, favourite: next });
+function favour(setTrack: DrawnProps<typeof props>["setTrack"], held: Track, next: boolean) {
+	void setTrack({ ...held, favourite: next });
 }
 
 function said(held: Track["duration"]): string {

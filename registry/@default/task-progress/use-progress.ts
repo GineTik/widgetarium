@@ -6,13 +6,19 @@ import type { props } from "./widget";
 
 const MOST_STEPS = 50;
 
-export function useProgress({ title, steps, open, startedAt, endedAt }: DrawnProps<typeof props>): Progress {
-	const rows = (useData(steps.list, { limit: MOST_STEPS }).data ?? []) as readonly Row<Step>[];
+export function useProgress({
+	getTitle: title,
+	getSteps,
+	getIsOpen: isOpen,
+	getStartedAt: startedAt,
+	getEndedAt: endedAt,
+}: DrawnProps<typeof props>): Progress {
+	const rows = useData(getSteps, { limit: MOST_STEPS }).data;
 	const clockNow = useNow(TICK_MS, startedAt > 0 && endedAt === 0);
 	return {
 		title,
 		rows: rows.map(stepOf),
-		isOpen: open.value,
+		isOpen,
 		clock: startedAt > 0 ? saidClock((endedAt || clockNow) - startedAt) : "",
 	};
 }

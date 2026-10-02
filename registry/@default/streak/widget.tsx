@@ -1,14 +1,15 @@
 import {
-	ICrudGateway,
-	IValueGateway,
+	ICommand,
+	IQuery,
+	RecordRefSchema,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
 	useData,
 	z,
 } from "widgetarium";
+import type { RecordRef } from "widgetarium";
 import { useRef } from "react";
 import { daysLogged, isoOf, pressing, shiftBy, streakOf } from "@default/lib";
 import { DayButton } from "./day-button";
@@ -258,16 +259,18 @@ function dayColumns(shown: string[], keptDays: Set<string>, today: string, canWr
 
 const HabitStreak = createWidget({
 	inject: {
-		days: ICrudGateway.of(DayNoteSchema).pick("list", "update", "create"),
-		title: IValueGateway.of(z.string().default("Habit")).pick("get"),
-		emoji: IValueGateway.of(z.string().default("smiling-face-with-halo")).pick("get"),
+		getDays: IQuery.expects(z.array(DayNoteSchema)),
+		updateDay: ICommand.sends(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
+		createDay: ICommand.sends(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
+		getTitle: IQuery.expects(z.string().default("Habit")),
+		getEmoji: IQuery.expects(z.string().default("smiling-face-with-halo")),
 	},
-	draw: ({ days, title, emoji }) => {
+	draw: ({ getDays, updateDay, createDay, getTitle: title, getEmoji: emoji }) => {
 		const rail = useRef<HTMLDivElement | null>(null);
 		const railWidth = useWidth(rail, 7 * COLUMN_PX);
 		const today = isoOf(new Date());
 
-		const listed = useData(days.list);
+		const listed = useData(getDays);
 		const { noteByDay, keptDays } = daysLogged(listed.data);
 
 		const shown = daysAround(today, columnsAcrossFullWidth(railWidth));
@@ -276,8 +279,12 @@ const HabitStreak = createWidget({
 			[...keptDays].map((date) => ({ date })),
 			{ today },
 		);
+		const days = {
+			update: ({ ref, data }: { ref: RecordRef; data: { done: number | null } }) => updateDay({ ref, ...data }),
+			create: (draft: { name: string; props: { done: number } }) => createDay({ id: crypto.randomUUID(), ...draft }),
+		};
 		const press = pressing({ days, noteByDay, keptDays });
-		const columns = dayColumns(shown, keptDays, today, canDo(days.update) && canDo(days.create));
+		const columns = dayColumns(shown, keptDays, today, updateDay.can().can && createDay.can().can);
 
 		return (
 			<div className="habit-streak" style={{ "--hs-column": `${columnPx}px` } as Record<string, string>}>
@@ -302,9 +309,9 @@ export const metadata = defineMetadata(HabitStreak, {
 	preview: {
 		size: { w: 8, h: 2 },
 		props: {
-			title: { value: "Meditation" },
-			emoji: { value: "smiling-face-with-halo" },
-			days: {
+			getTitle: { value: "Meditation" },
+			getEmoji: { value: "smiling-face-with-halo" },
+			getDays: {
 				rows: [
 					{ path: "Habits/2026-08-24.md", done: 1 },
 					{ path: "Habits/2026-08-25.md", done: 1 },
@@ -320,18 +327,28 @@ export const metadata = defineMetadata(HabitStreak, {
 		shot: { of: "499947623" },
 	},
 	props: {
-		days: {
-			aka: ["habits"],
+		getDays: {
+			aka: ["days", "habits"],
 			describes: {
 				done: { type: "number" },
 				date: { type: "date" },
 			},
 		},
-		title: {
+		updateDay: {
+			label: "Mark a day",
+			source: { implementation: "@core/rows-update", fields: { target: "getDays" } },
+		},
+		createDay: {
+			label: "Add a day",
+			source: { implementation: "@core/rows-create", fields: { target: "getDays" } },
+		},
+		getTitle: {
+			aka: ["title"],
 			label: "Habit name",
 			hint: "What is written beside the emoji. Type one here, or take it from another widget's value.",
 		},
-		emoji: {
+		getEmoji: {
+			aka: ["emoji"],
 			hint: "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
 			control: "emoji",
 		},

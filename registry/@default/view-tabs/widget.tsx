@@ -1,7 +1,7 @@
 import {
+	ICommand,
 	IFoldIntoGroup,
-	IListGateway,
-	IValueGateway,
+	IQuery,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -39,21 +39,22 @@ const ChoiceSchema = z.looseObject({ label: z.string().optional(), value: z.stri
 
 const ViewTabs = createWidget({
 	inject: {
-		options: IListGateway.of(ChoiceSchema, {
-			default: [
+		getOptions: IQuery.expects(
+			z.array(ChoiceSchema).default([
 				{ label: "Kanban", value: "Kanban" },
 				{ label: "Archived columns", value: "Archived columns" },
-			],
-		}),
-		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+			]),
+		),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
 		foldIntoGroup: IFoldIntoGroup,
 	},
-	draw: ({ options, selection, foldIntoGroup }) => {
-		const listed = useData(options.list);
+	draw: ({ getOptions, getSelection: selection, select, foldIntoGroup }) => {
+		const listed = useData(getOptions);
 		const [isOpen, setOpen] = useState(false);
 
 		const rows: Option[] = listed.data.map((held) => optionOf(held.ref, held));
-		const active = rows.find((row) => row.value === selection.value) ?? rows[0] ?? null;
+		const active = rows.find((row) => row.value === selection) ?? rows[0] ?? null;
 
 		if (!listed.isLoading && rows.length === 0) {
 			return (
@@ -76,7 +77,7 @@ const ViewTabs = createWidget({
 
 		const choose = (picked: Option) => () => {
 			setOpen(false);
-			selection.update(picked.ref);
+			void select(picked.ref);
 		};
 
 		return (
@@ -100,20 +101,26 @@ export const metadata = defineMetadata(ViewTabs, {
 	keywords: ["view", "views", "tabs", "switch", "kanban", "table", "picker", "navigation", "bar", "modes", "layout"],
 	preview: { size: { w: 3, h: 1 }, shot: { of: "693919284" } },
 	props: {
-		options: {
+		getOptions: {
+			aka: ["options"],
 			label: "Options",
 			hint: "Every option is a record. Bind a view group and it offers the views it holds.",
 			wants: "@default/view-group/holds",
 			describes: { label: { label: "Label", type: "text", required: true }, value: { label: "Value", type: "text" } },
 		},
-		selection: {
+		getSelection: {
+			aka: ["selection"],
 			label: "Picked option",
 			hint: "Which option is picked. Bind the view group's own box and the two move together.",
 			wants: "@default/view-group/selection",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "options", field: "value", whenNothingPicked: "first" },
+				fields: { rows: "getOptions", field: "value", whenNothingPicked: "first" },
 			},
+		},
+		select: {
+			label: "Pick a choice",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
 		},
 	},
 });

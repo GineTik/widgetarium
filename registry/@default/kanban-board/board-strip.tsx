@@ -14,7 +14,7 @@ import type { useTaskWrites } from "./use-task-writes";
 type BoardStripProps = {
 	columns: KanbanColumn[];
 	today: Date;
-	CardSlot: Slot<{ task: CardFace }>;
+	CardSlot: Slot<{ getTask: CardFace }>;
 	openedRef: unknown;
 	lists: ReturnType<typeof useBoardColumns>;
 	reordering: ReturnType<typeof useColumnReorder>;

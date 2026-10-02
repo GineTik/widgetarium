@@ -17,7 +17,7 @@ type ListCarry = {
 type KanbanListProps = {
 	column: KanbanColumn;
 	cards: CardFace[];
-	CardSlot: Slot<{ task: CardFace }>;
+	CardSlot: Slot<{ getTask: CardFace }>;
 	onAdd?: (title: string) => void;
 	onArchive?: (() => void) | undefined;
 	onRename?: ((name: string | null) => void) | undefined;

@@ -1,13 +1,4 @@
-import {
-	IListGateway,
-	IValueGateway,
-	canDo,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	defineProps,
-	z,
-} from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, defineProps, z } from "widgetarium";
 import { Card } from "widgetarium/kit";
 import { overallOf } from "./overall";
 import { ProgressHead } from "./progress-head";
@@ -315,24 +306,25 @@ export const StepSchema = z.object({
 });
 
 export const props = defineProps({
-	title: IValueGateway.of(z.string().default("Building a widget")).pick("get"),
-	steps: IListGateway.of(StepSchema, {
-		default: [
+	getTitle: IQuery.expects(z.string().default("Building a widget")),
+	getSteps: IQuery.expects(
+		z.array(StepSchema).default([
 			{ label: "Write the widget", status: "done" },
 			{ label: "Check it", status: "active", hint: "widgets.mjs check" },
 			{ label: "Place it on the board", status: "pending" },
-		],
-	}),
-	open: IValueGateway.of(z.boolean().default(false)).pick("get", "update"),
-	startedAt: IValueGateway.of(z.number().default(0)).pick("get"),
-	endedAt: IValueGateway.of(z.number().default(0)).pick("get"),
+		]),
+	),
+	getIsOpen: IQuery.expects(z.boolean().default(false)),
+	setIsOpen: ICommand.sends(z.boolean()),
+	getStartedAt: IQuery.expects(z.number().default(0)),
+	getEndedAt: IQuery.expects(z.number().default(0)),
 });
 
 const TaskProgress = createWidget({
 	inject: props,
 	draw: (drawn) => {
 		const progress = useProgress(drawn);
-		const onToggleOpen = canDo(drawn.open.update) ? () => drawn.open.update(!progress.isOpen) : null;
+		const onToggleOpen = drawn.setIsOpen.can().can ? () => void drawn.setIsOpen(!progress.isOpen) : null;
 		return (
 			<Card
 				className="wg-task-progress"
@@ -353,20 +345,29 @@ export const metadata = defineMetadata(TaskProgress, {
 		"A task and its steps, each with a status: folded to one line saying what is happening now, opened into the whole list.",
 	keywords: ["progress", "status", "steps", "stages", "task", "build", "loading", "agent", "checklist", "running"],
 	props: {
-		title: {
+		getTitle: {
+			aka: ["title"],
 			hint: "The one line naming the task, the way a person says it: Building Habit streak.",
 		},
-		steps: {
+		getSteps: {
+			aka: ["steps"],
 			hint: "Every step in order. A status is pending, active, done or failed; the hint is the one line under an active step.",
 		},
-		open: {
+		getIsOpen: {
+			aka: ["open"],
 			keep: "screen",
 			hint: "Whether the steps are shown. Pressing the line flips it.",
 		},
-		startedAt: {
+		setIsOpen: {
+			label: "Show or hide the steps",
+			source: { implementation: "@core/value-set", fields: { target: "getIsOpen" } },
+		},
+		getStartedAt: {
+			aka: ["startedAt"],
 			hint: "When the task started, in milliseconds since 1970. Zero draws no clock.",
 		},
-		endedAt: {
+		getEndedAt: {
+			aka: ["endedAt"],
 			hint: "When the task ended, in milliseconds since 1970. Zero while it runs, so the clock keeps counting.",
 		},
 	},

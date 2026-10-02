@@ -1,7 +1,7 @@
 import {
-	IListGateway,
+	ICommand,
+	IQuery,
 	ISlot,
-	IValueGateway,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -18,6 +18,8 @@ import { usePatience } from "./use-patience";
 
 const LINES_KEPT = 200;
 const LINES_CEILING = 1000;
+
+const NEWEST_FIRST = [{ prop: "at", dir: "desc" as const }];
 
 const NO_SLOT = "This log has no widget to draw its lines with.";
 const NOTHING_YET = "Nothing has been written here yet — the log fills as the session runs.";
@@ -41,16 +43,16 @@ export const LogLineSchema = z.object({
 });
 
 export const props = defineProps({
-	lines: IListGateway.of(LogLineSchema, {
-		sort: [{ prop: "at", dir: "desc" }],
-		default: [
+	getLines: IQuery.expects(
+		z.array(LogLineSchema).default([
 			{ at: "14:32:09", text: "wrote widgets/@flow/log-line/widget.tsx", tone: "accent" },
 			{ at: "14:32:04", text: "tsc --noEmit: no errors", tone: "success" },
 			{ at: "14:31:52", text: "Session started.", tone: "neutral" },
-		],
-	}),
-	linesKept: IValueGateway.of(z.number().default(LINES_KEPT)).pick("get"),
-	following: IValueGateway.of(z.boolean().default(true)).pick("get", "update"),
+		]),
+	),
+	getLinesKept: IQuery.expects(z.number().default(LINES_KEPT)),
+	getIsFollowing: IQuery.expects(z.boolean().default(true)),
+	setIsFollowing: ICommand.sends(z.boolean()),
 	line: ISlot.of<{ getEntry: Row<LogLine> }>({
 		default: "@flow/log-line",
 		surface: "none",
@@ -60,15 +62,23 @@ export const props = defineProps({
 
 const SessionTail = createWidget({
 	inject: props,
-	draw: ({ lines, linesKept, following, line }) => {
+	draw: ({ getLines, getLinesKept: linesKept, getIsFollowing: isFollowing, setIsFollowing, line }) => {
 		const kept = keptOf(linesKept);
-		const read = useData(lines.list, { limit: kept });
+		const read = useData(getLines, { sort: NEWEST_FIRST, limit: kept });
 		const patience = usePatience(read.isLoading);
 
 		if (!line) return <TailSaid text={NO_SLOT} />;
 		if (read.failure) return <TailSaid text={read.failure} />;
 		if (read.data.length > 0)
-			return <TailRows rows={read.data as Row<LogLine>[]} total={read.total} following={following} Line={line} />;
+			return (
+				<TailRows
+					rows={read.data as Row<LogLine>[]}
+					total={read.total}
+					isFollowing={isFollowing}
+					setIsFollowing={setIsFollowing}
+					Line={line}
+				/>
+			);
 		if (!read.isLoading) return <TailSaid text={NOTHING_YET} />;
 		return <TailPatience stage={patience.stage} seconds={patience.seconds} />;
 	},
@@ -94,7 +104,7 @@ export const metadata = defineMetadata(SessionTail, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			lines: {
+			getLines: {
 				rows: [
 					{ at: "14:32:11", text: "3 files changed, 218 insertions(+)", tone: "success" },
 					{ at: "14:32:09", text: "wrote widgets/@flow/log-line/widget.tsx", tone: "accent" },
@@ -106,8 +116,9 @@ export const metadata = defineMetadata(SessionTail, {
 		},
 	},
 	props: {
-		lines: {
+		getLines: {
 			label: "Lines",
+			aka: ["lines"],
 			hint: "The log this draws, newest first. Each row is one line: when it was written, what it says, how it went.",
 			describes: {
 				at: { label: "Time", type: "text" },
@@ -115,14 +126,21 @@ export const metadata = defineMetadata(SessionTail, {
 				tone: { label: "Tone", type: "text" },
 			},
 		},
-		linesKept: {
+		getLinesKept: {
 			label: "Lines kept",
+			aka: ["linesKept"],
 			hint: "How many of the newest lines are held on screen. Older ones stay in the source and are counted, not drawn.",
 		},
-		following: {
+		getIsFollowing: {
 			keep: "screen",
 			label: "Follow the newest line",
+			aka: ["following"],
 			hint: "Whether the view sticks to the end. It lets go when the reader scrolls away and takes hold again on a press.",
+		},
+		setIsFollowing: {
+			label: "Follow or let go of the newest line",
+			hint: "Runs when the reader scrolls away from the end or presses to jump back to it.",
+			source: { implementation: "@core/value-set", fields: { target: "getIsFollowing" } },
 		},
 	},
 });

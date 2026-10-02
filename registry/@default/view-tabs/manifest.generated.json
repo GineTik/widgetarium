@@ -20,11 +20,23 @@
 			"of": "693919284"
 		}
 	},
+	"commands": {
+		"select": {
+			"label": "Pick a choice",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"options": {
+		"getOptions": {
 			"kind": "collection",
 			"label": "Options",
 			"hint": "Every option is a record. Bind a view group and it offers the views it holds.",
+			"aka": ["options"],
 			"writes": ["list", "get"],
 			"describes": {
 				"label": {
@@ -51,20 +63,21 @@
 			},
 			"wants": "@default/view-group/holds"
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Picked option",
 			"hint": "Which option is picked. Bind the view group's own box and the two move together.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "options",
+					"rows": "getOptions",
 					"field": "value",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"],
+			"writes": ["get"],
 			"wants": "@default/view-group/selection"
 		}
 	},

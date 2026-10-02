@@ -116,32 +116,32 @@ the only kind allowed to draw its own `h2`; every other widget is titled from ou
 - id: projects
   widget: "@default/section"
   props:
-    heading: { from: typed, value: Projects }
-    badge: { from: typed, value: 5 open }
-    filling: { from: typed, value: per-row }
-    items: { from: vault, path: Projects, allow: [list] }
-    arrangement: { from: typed, value: grid }
-    minWidthPx: { from: typed, value: 280 }
+    getHeading: { from: typed, value: Projects }
+    getBadge: { from: typed, value: 5 open }
+    getFilling: { from: typed, value: per-row }
+    getItems: { from: vault, path: Projects, allow: [list] }
+    getArrangement: { from: typed, value: grid }
+    getMinWidthPx: { from: typed, value: 280 }
   slots:
     item: { widget: "@flow/project-card" }
 ```
 
-`filling` is one switch with two answers, and the settings window asks only for the half in use:
+`getFilling` is one switch with two answers, and the settings window asks only for the half in use:
 
 - **`placed`** — the widgets a person put in `mounts.widgets`, each keeping its own props and its own
   settings. Use it when the cells are different kinds of thing.
-- **`per-row`** — `slots.item` drawn again for every row of `items`, the whole row handed down. Use
+- **`per-row`** — `slots.item` drawn again for every row of `getItems`, the whole row handed down. Use
   it when every cell is the same kind of record. There is nothing to edit per row: the binding is the
   edit.
 
-`arrangement` decides both how the body stands and what it stands on:
+`getArrangement` decides both how the body stands and what it stands on:
 
-| `arrangement` | Stands                   | Plates                         |
-| ------------- | ------------------------ | ------------------------------ |
-| `column`      | down the column          | none                           |
-| `row`         | across                   | one on each widget             |
-| `grid`        | wraps under `minWidthPx` | one on each widget             |
-| `rows`        | down the column          | one around all, a line between |
+| `getArrangement` | Stands                      | Plates                         |
+| ---------------- | --------------------------- | ------------------------------ |
+| `column`         | down the column             | none                           |
+| `row`            | across                      | one on each widget             |
+| `grid`           | wraps under `getMinWidthPx` | one on each widget             |
+| `rows`           | down the column             | one around all, a line between |
 
 Controls belong in `mounts.controls` and govern this section only — a control over the whole screen
 stands in the screen's own heading instead.

@@ -128,7 +128,7 @@ one question the box answers.
 
 `layout` is the section: a widget that titles a part of a region and holds what stands under it. It
 is the only role besides `text` allowed to draw its own `h2`, and it wears no surface of its own —
-its `arrangement` decides the plates of what stands in it, by rules 2 and 3.
+its `getArrangement` decides the plates of what stands in it, by rules 2 and 3.
 
 ## Spacing and corners are computed
 

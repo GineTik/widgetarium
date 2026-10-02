@@ -1,5 +1,4 @@
 import {
-	IListGateway,
 	IQuery,
 	ISlot,
 	VaultRecordSchema,
@@ -16,6 +15,7 @@ import type { Drawn, Given, ItemSlot } from "./types";
 import { usePages } from "widgetarium/kit";
 
 const PAGE_SIZE = 10;
+const PAGES_KEY = "@default/feed";
 
 const NO_SLOT = "This feed has no widget to draw its items with.";
 const NOTHING = "Nothing here yet.";
@@ -23,7 +23,7 @@ const NOTHING = "Nothing here yet.";
 export const ItemSchema = VaultRecordSchema.extend({ content: z.string().nullable().optional() });
 
 export const props = defineProps({
-	items: IListGateway.of(ItemSchema),
+	getItems: IQuery.expects(z.array(ItemSchema)),
 	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 	item: ISlot.of<Given>({
 		default: "@default/obsidian-markdown-preview",
@@ -34,13 +34,13 @@ export const props = defineProps({
 
 const FeedWidget = createWidget({
 	inject: props,
-	draw: ({ items, getPageSize: pageSize, item }) => {
+	draw: ({ getItems, getPageSize: pageSize, item }) => {
 		const size = pageSizeOf(pageSize);
-		const first = useData(items.list, { offset: 0, limit: size });
-		const { pages, more } = usePages(items.id, size);
+		const first = useData(getItems, { offset: 0, limit: size });
+		const { pages, more } = usePages(PAGES_KEY, size);
 		const said = saidInstead(item, first);
 		if (said) return <FeedSaid text={said} />;
-		return <FeedPages items={items} Drawn={item as Drawn} size={size} pages={pages} onMore={more} />;
+		return <FeedPages items={getItems} Drawn={item as Drawn} size={size} pages={pages} onMore={more} />;
 	},
 });
 
@@ -65,7 +65,7 @@ export const metadata = defineMetadata(FeedWidget, {
 	preview: {
 		size: { w: 5, h: 5 },
 		props: {
-			items: {
+			getItems: {
 				rows: [
 					{ path: "preview/2026-09-16.md", content: "## Wednesday\nShipped the feed and the kanban cards." },
 					{ path: "preview/2026-09-15.md", content: "## Tuesday\nSpacing is read off the tree now." },
@@ -75,8 +75,9 @@ export const metadata = defineMetadata(FeedWidget, {
 		},
 	},
 	props: {
-		items: {
+		getItems: {
 			label: "Items",
+			aka: ["items"],
 			hint: "The records the feed draws, one after another, newest first when the source is sorted that way.",
 		},
 		getPageSize: {

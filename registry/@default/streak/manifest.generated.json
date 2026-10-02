@@ -17,13 +17,13 @@
 			"h": 2
 		},
 		"props": {
-			"title": {
+			"getTitle": {
 				"value": "Meditation"
 			},
-			"emoji": {
+			"getEmoji": {
 				"value": "smiling-face-with-halo"
 			},
-			"days": {
+			"getDays": {
 				"rows": [
 					{
 						"path": "Habits/2026-08-24.md",
@@ -64,12 +64,32 @@
 			"of": "499947623"
 		}
 	},
+	"commands": {
+		"updateDay": {
+			"label": "Mark a day",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getDays"
+				}
+			}
+		},
+		"createDay": {
+			"label": "Add a day",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getDays"
+				}
+			}
+		}
+	},
 	"props": {
-		"days": {
+		"getDays": {
 			"kind": "collection",
-			"label": "Days",
-			"aka": ["habits"],
-			"writes": ["list", "get", "update", "create"],
+			"label": "Get days",
+			"aka": ["days", "habits"],
+			"writes": ["list", "get"],
 			"describes": {
 				"done": {
 					"type": "number",
@@ -84,23 +104,25 @@
 				"rows": []
 			}
 		},
-		"title": {
+		"getTitle": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Habit name",
 			"hint": "What is written beside the emoji. Type one here, or take it from another widget's value.",
+			"aka": ["title"],
 			"writes": ["get"],
 			"default": {
 				"value": "Habit"
 			}
 		},
-		"emoji": {
+		"getEmoji": {
 			"kind": "value",
 			"control": "emoji",
 			"type": "line",
-			"label": "Emoji",
+			"label": "Get emoji",
 			"hint": "A Fluent emoji by name, such as smiling-face-with-halo. A name nobody drew leaves the row bare.",
+			"aka": ["emoji"],
 			"writes": ["get"],
 			"default": {
 				"value": "smiling-face-with-halo"

@@ -1,4 +1,3 @@
-import { canDo } from "widgetarium";
 import { freeLabel, isLabelTaken, labelOf } from "./tiers";
 import { nextToneAfter, toneOf } from "./tones";
 import { orderBetween, placeAt, renumber } from "./ordering";
@@ -14,20 +13,21 @@ const ALREADY_A_ROW = "A row is already called that, so the name stayed as it wa
 
 export function useRowWriting(
 	held: RackView,
-	{ cards, tiers, say }: Gates,
+	{ updateCard, createTier, updateTier, removeTier, say }: Gates,
 	listOf: (tier: string | null) => CardRow[],
 ) {
 	const standing = held.rack.map((line) => line.label);
 
 	const refileUnder = async (was: string, label: string) => {
-		for (const row of listOf(was)) await cards.update({ ref: row.ref, data: { tier: label } });
+		for (const row of listOf(was)) await updateCard({ ref: row.ref, tier: label });
 	};
 
 	return {
 		addRow: async () => {
-			if (!canDo(tiers.create)) return say(CANNOT_ADD_ROW);
+			if (!createTier.can().can) return say(CANNOT_ADD_ROW);
 			const last = held.tiers[held.tiers.length - 1];
-			await tiers.create({
+			await createTier({
+				id: crypto.randomUUID(),
 				label: freeLabel(standing),
 				tone: nextToneAfter(toneOf(last)),
 				order: held.tiers.length + 1,
@@ -38,37 +38,37 @@ export function useRowWriting(
 			const was = labelOf(row);
 			const wanted = label.trim();
 			if (!wanted) return;
-			if (!canDo(tiers.update)) return say(CANNOT_WRITE_ROW);
+			if (!updateTier.can().can) return say(CANNOT_WRITE_ROW);
 			const isRenamed = wanted !== was;
 			const refusal = refusalForRename({
 				standing,
 				isRenamed,
 				wanted,
 				heldCards: listOf(was).length,
-				canWriteCards: canDo(cards.update),
+				canWriteCards: updateCard.can().can,
 			});
 			if (refusal) return say(refusal);
-			await tiers.update({ ref: row.ref, data: { label: wanted, tone } });
+			await updateTier({ ref: row.ref, label: wanted, tone });
 			if (isRenamed) await refileUnder(was, wanted);
 		},
 
 		moveRow: async (row: TierRow, step: number) => {
-			if (!canDo(tiers.update)) return say(CANNOT_WRITE_ROW);
+			if (!updateTier.can().can) return say(CANNOT_WRITE_ROW);
 			const at = held.tiers.findIndex((standingRow) => standingRow.ref === row.ref);
 			const line = placeAt(held.tiers, row, at + step);
 			const landing = line.findIndex((standingRow) => standingRow.ref === row.ref);
 			const order = orderBetween(line[landing - 1] ?? null, line[landing + 1] ?? null);
 			if (order !== null) {
-				await tiers.update({ ref: row.ref, data: { order } });
+				await updateTier({ ref: row.ref, order });
 				return;
 			}
 			for (const renumberedRow of renumber(line))
-				await tiers.update({ ref: renumberedRow.ref, data: { order: renumberedRow.order } });
+				await updateTier({ ref: renumberedRow.ref, order: renumberedRow.order });
 		},
 
 		removeRow: async (row: TierRow) => {
-			if (!canDo(tiers.remove)) return say(CANNOT_REMOVE_ROW);
-			await tiers.remove(row.ref);
+			if (!removeTier.can().can) return say(CANNOT_REMOVE_ROW);
+			await removeTier({ ref: row.ref });
 		},
 	};
 }

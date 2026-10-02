@@ -1,4 +1,3 @@
-import { canDo } from "widgetarium";
 import {
 	archiveColumn,
 	archivedColumnsOf,
@@ -13,13 +12,13 @@ import {
 import { useMemo } from "react";
 import type { KanbanProps } from "./types";
 
-export function useBoardColumns(board: KanbanProps["board"], record: Board | null) {
+export function useBoardColumns(updateBoard: KanbanProps["updateBoard"], record: Board | null) {
 	const boardColumns: BoardColumn[] = useMemo(() => columnsOf(record), [record]);
 	const archivedColumns = archivedColumnsOf(boardColumns);
 	const authoredColumns = boardColumns.map((column) => column.name);
 	const shownColumns = shownColumnsOf(boardColumns);
 	const columnNames = shownOrOneFreshColumn(shownColumns, [...authoredColumns, ...archivedColumns]);
-	const save = (columns: BoardColumn[]) => board.update(columnsToWrite(columns));
+	const save = (columns: BoardColumn[]) => updateBoard(columnsToWrite(columns));
 
 	const columnsAfterRename = (was: string, name: string) => {
 		if (authoredColumns.includes(was))
@@ -32,7 +31,7 @@ export function useBoardColumns(board: KanbanProps["board"], record: Board | nul
 		archivedColumns,
 		shownColumns,
 		columnNames,
-		canEdit: canDo(board.update),
+		canEdit: updateBoard.can().can,
 		save,
 		isNameTaken: (name: string) => columnNames.includes(name) || archivedColumns.includes(name),
 		add: (name: string) => {

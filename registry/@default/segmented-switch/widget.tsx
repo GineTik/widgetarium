@@ -1,14 +1,4 @@
-import {
-	IListGateway,
-	IValueGateway,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	fieldOf,
-	textOf,
-	useData,
-	z,
-} from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, fieldOf, textOf, useData, z } from "widgetarium";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, Segmented } from "widgetarium/kit";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -100,20 +90,21 @@ const ChoiceSchema = z.looseObject({
 
 const SegmentedSwitch = createWidget({
 	inject: {
-		options: IListGateway.of(ChoiceSchema, { default: [{ label: "Git tree" }, { label: "Report" }] }),
-		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+		getOptions: IQuery.expects(z.array(ChoiceSchema).default([{ label: "Git tree" }, { label: "Report" }])),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
 	},
-	draw: ({ options, selection }) => {
-		const listed = useData(options.list, { limit: ALL_OPTIONS });
+	draw: ({ getOptions, getSelection: selection, select }) => {
+		const listed = useData(getOptions, { limit: ALL_OPTIONS });
 		const { isFitting, holdHost } = useTrackFits();
 		const [isOpen, setOpen] = useState(false);
 
 		const rows: Option[] = listed.data.filter((held) => !fieldOf(held, HIDDEN)).map((held) => optionOf(held.ref, held));
-		const active = rows.find((row) => row.value === selection.value) ?? rows[0] ?? null;
+		const active = rows.find((row) => row.value === selection) ?? rows[0] ?? null;
 
 		if (rows.length === 0) return null;
 
-		const choose = (ref: string) => selection.update(ref);
+		const choose = (ref: string) => void select(ref);
 
 		const onKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
 			const from = rows.findIndex((row) => row.ref === active?.ref);
@@ -168,10 +159,11 @@ export const metadata = defineMetadata(SegmentedSwitch, {
 	keywords: ["segmented", "switch", "control", "toggle", "chip", "track", "mode", "views", "pill", "choice", "between"],
 	preview: {
 		size: { w: 2, h: 1 },
-		props: { options: { rows: [{ label: "Git tree" }, { label: "Report" }] } },
+		props: { getOptions: { rows: [{ label: "Git tree" }, { label: "Report" }] } },
 	},
 	props: {
-		options: {
+		getOptions: {
+			aka: ["options"],
 			label: "Options",
 			hint: "Every choice is a record. Bind a view box and it offers the views it holds.",
 			wants: "@default/view-group/holds",
@@ -181,14 +173,19 @@ export const metadata = defineMetadata(SegmentedSwitch, {
 				hidden: { label: "Hidden", type: "boolean" },
 			},
 		},
-		selection: {
+		getSelection: {
+			aka: ["selection"],
 			label: "Shown choice",
 			hint: "Which choice is shown. Bind the view box's own selection and the two move together.",
 			wants: "@default/view-group/selection",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "options", field: "value", whenNothingPicked: "first" },
+				fields: { rows: "getOptions", field: "value", whenNothingPicked: "first" },
 			},
+		},
+		select: {
+			label: "Pick a choice",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
 		},
 	},
 });

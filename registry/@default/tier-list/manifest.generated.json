@@ -35,13 +35,13 @@
 			"h": 6
 		},
 		"props": {
-			"title": {
+			"getTitle": {
 				"value": "Comfort food"
 			},
-			"cardSize": {
+			"getCardSize": {
 				"value": 48
 			},
-			"tiers": {
+			"getTiers": {
 				"rows": [
 					{
 						"label": "S",
@@ -65,7 +65,7 @@
 					}
 				]
 			},
-			"cards": {
+			"getCards": {
 				"rows": [
 					{
 						"name": "Pizza",
@@ -118,12 +118,87 @@
 			"of": "115520328"
 		}
 	},
+	"commands": {
+		"createCard": {
+			"label": "Add a card",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getCards"
+				}
+			}
+		},
+		"updateCard": {
+			"label": "Move or rename a card",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getCards"
+				}
+			}
+		},
+		"removeCard": {
+			"label": "Remove a card",
+			"source": {
+				"implementation": "@core/rows-remove",
+				"fields": {
+					"target": "getCards"
+				}
+			}
+		},
+		"replaceCards": {
+			"label": "Fill the cards from a preset",
+			"source": {
+				"implementation": "@core/rows-replace",
+				"fields": {
+					"target": "getCards"
+				}
+			}
+		},
+		"createTier": {
+			"label": "Add a row",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getTiers"
+				}
+			}
+		},
+		"updateTier": {
+			"label": "Rename or move a row",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getTiers"
+				}
+			}
+		},
+		"removeTier": {
+			"label": "Remove a row",
+			"source": {
+				"implementation": "@core/rows-remove",
+				"fields": {
+					"target": "getTiers"
+				}
+			}
+		},
+		"replaceTiers": {
+			"label": "Fill the rows from a preset",
+			"source": {
+				"implementation": "@core/rows-replace",
+				"fields": {
+					"target": "getTiers"
+				}
+			}
+		}
+	},
 	"props": {
-		"cards": {
+		"getCards": {
 			"kind": "collection",
 			"label": "Cards",
 			"hint": "The things being ranked. A folder of notes, or a list typed into the tile.",
-			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"aka": ["cards"],
+			"writes": ["list", "get"],
 			"describes": {
 				"name": {
 					"label": "Name",
@@ -150,11 +225,12 @@
 				"rows": []
 			}
 		},
-		"tiers": {
+		"getTiers": {
 			"kind": "collection",
 			"label": "Rows",
 			"hint": "The rows, top to bottom. Each carries its own colour, and its name is what a card points at.",
-			"writes": ["list", "get", "create", "update", "remove", "replace"],
+			"aka": ["tiers"],
+			"writes": ["list", "get"],
 			"describes": {
 				"label": {
 					"label": "Name",
@@ -203,24 +279,26 @@
 				]
 			}
 		},
-		"title": {
+		"getTitle": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Title",
-			"writes": ["get", "update"],
+			"aka": ["title"],
+			"writes": ["get"],
 			"default": {
 				"value": "Tier list"
 			}
 		},
-		"cardSize": {
+		"getCardSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Card size",
 			"hint": "How wide one card is, in pixels. Between 32 and 160; the rows reflow around it.",
+			"aka": ["cardSize"],
 			"design": true,
-			"writes": ["get", "update"],
+			"writes": ["get"],
 			"default": {
 				"value": 64
 			}

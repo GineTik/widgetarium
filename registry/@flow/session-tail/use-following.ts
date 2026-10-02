@@ -1,13 +1,11 @@
 import { useCallback } from "react";
 import type { TailProps } from "./types";
 
-export function useFollowing(following: TailProps["following"]) {
-	const isFollowing = following.value !== false;
-	const setFollowing = useCallback(
+export function useSetFollowing(isFollowing: boolean, setIsFollowing: TailProps["setIsFollowing"]) {
+	return useCallback(
 		(wanted: boolean) => {
-			if (wanted !== isFollowing) void following.update(wanted);
+			if (wanted !== isFollowing) void setIsFollowing(wanted);
 		},
-		[following, isFollowing],
+		[setIsFollowing, isFollowing],
 	);
-	return { isFollowing, setFollowing };
 }

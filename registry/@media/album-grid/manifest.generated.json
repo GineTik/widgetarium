@@ -30,7 +30,7 @@
 			"h": 4
 		},
 		"props": {
-			"albums": {
+			"getAlbums": {
 				"rows": [
 					{
 						"title": "Kind of Blue",
@@ -76,10 +76,11 @@
 		}
 	},
 	"props": {
-		"albums": {
+		"getAlbums": {
 			"kind": "collection",
 			"label": "Albums",
 			"hint": "The records the shelf draws, one cell each.",
+			"aka": ["albums"],
 			"writes": ["list", "get"],
 			"describes": {
 				"title": {
@@ -150,16 +151,7 @@
 		}
 	},
 	"migrates": [],
-	"files": [
-		"widget.tsx",
-		"album-cell.tsx",
-		"album-page.tsx",
-		"cell-sizes.ts",
-		"types.ts",
-		"use-album-source.ts",
-		"use-beside.ts",
-		"use-narrow-shelf.ts"
-	],
+	"files": ["widget.tsx", "album-page.tsx", "cell-sizes.ts", "types.ts", "use-narrow-shelf.ts"],
 	"dependencies": {},
 	"widgetDependencies": ["@media/album-cover"]
 }

@@ -14,9 +14,10 @@ type BoardDialogsProps = {
 	reading: ReturnType<typeof useBoardReads>;
 	lists: ReturnType<typeof useBoardColumns>;
 	repairing: ReturnType<typeof useIdRepair>;
-	board: KanbanProps["board"];
-	tasks: KanbanProps["tasks"];
-	opened: KanbanProps["opened"];
+	updateBoard: KanbanProps["updateBoard"];
+	getTasks: KanbanProps["getTasks"];
+	updateTask: KanbanProps["updateTask"];
+	onClose: () => void;
 	host: KanbanProps["host"];
 	navigator: KanbanProps["navigator"];
 };
@@ -28,9 +29,10 @@ export function BoardDialogs({
 	reading,
 	lists,
 	repairing,
-	board,
-	tasks,
-	opened,
+	updateBoard,
+	getTasks,
+	updateTask,
+	onClose,
 	host,
 	navigator,
 }: BoardDialogsProps) {
@@ -50,15 +52,16 @@ export function BoardDialogs({
 			<RepairIdsAsk repairing={repairing} />
 
 			<TaskDialog
-				tasks={tasks}
+				getTasks={getTasks}
+				updateTask={updateTask}
 				rows={reading.rows}
 				columns={lists.shownColumns}
 				properties={propertiesOf(reading.record)}
 				onBoard={reading.onBoard}
-				opened={opened}
+				onClose={onClose}
 				openedRef={reading.openedRef}
 				today={reading.today}
-				onAddProperty={lists.canEdit ? (names: string[]) => board.update({ properties: names }) : undefined}
+				onAddProperty={lists.canEdit ? (names: string[]) => void updateBoard({ properties: names }) : undefined}
 				host={host}
 				navigator={navigator}
 			/>

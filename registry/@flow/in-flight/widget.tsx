@@ -1,9 +1,8 @@
 import {
-	IListGateway,
+	ICommand,
+	IQuery,
 	ISlot,
-	IValueGateway,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -21,6 +20,8 @@ import { useNow, useShown } from "widgetarium/kit";
 
 const PAGE_SIZE = 12;
 const TICK_MS = 30000;
+const SHOWN_KEY = "@flow/in-flight";
+const NEWEST_START_FIRST = [{ prop: "startedAt", dir: "desc" as const }];
 
 const NO_SLOT = "This list has no widget to draw its rows with.";
 const NOTHING = "Nothing is in flight right now.";
@@ -128,26 +129,26 @@ function saidInstead(
 
 const InFlight = createWidget({
 	inject: {
-		flights: IListGateway.of(FlightSchema, { sort: [{ prop: "startedAt", dir: "desc" }] }),
-		selection: IValueGateway.of(z.string().nullable()).pick("get", "update"),
-		pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
+		getFlights: IQuery.expects(z.array(FlightSchema)),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
+		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 		row: ISlot.of<{ getFlight: FlightFace }>({
 			default: "@flow/flight-row",
 			surface: "group",
 			gives: { getFlight: ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"] },
 		}),
 	},
-	draw: ({ flights, pageSize, selection, row: Drawn }) => {
+	draw: ({ getFlights, getPageSize: pageSize, getSelection: picked, select, row: Drawn }) => {
 		const size = pageSizeOf(pageSize);
-		const { shown, more } = useShown(flights.id, size);
-		const listed = useData(flights.list, { offset: 0, limit: shown });
-		const picked = selection.value;
+		const { shown, more } = useShown(SHOWN_KEY, size);
+		const listed = useData(getFlights, { sort: NEWEST_START_FIRST, offset: 0, limit: shown });
 		const now = useNow(TICK_MS);
 		const said = saidInstead(Drawn, listed);
 		if (said || !Drawn) return <InFlightSaid text={said ?? NO_SLOT} />;
 
 		const rows = listed.data;
-		const canPick = canDo(selection.update);
+		const canPick = select.can().can;
 
 		return (
 			<div className="flow-inflight">
@@ -159,7 +160,7 @@ const InFlight = createWidget({
 							Drawn={Drawn}
 							face={faceOf(row, now)}
 							isPicked={row.ref === picked}
-							onPick={canPick ? () => selection.update(row.ref === picked ? null : row.ref) : null}
+							onPick={canPick ? () => void select(row.ref === picked ? null : row.ref) : null}
 						/>
 					))}
 				</SlotList>
@@ -190,7 +191,7 @@ export const metadata = defineMetadata(InFlight, {
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
-			flights: {
+			getFlights: {
 				rows: [
 					{
 						path: "preview/flight-1.md",
@@ -249,8 +250,9 @@ export const metadata = defineMetadata(InFlight, {
 		},
 	},
 	props: {
-		flights: {
+		getFlights: {
 			label: "Flights",
+			aka: ["flights"],
 			hint: "One record per piece of work in flight. The newest start is drawn first.",
 			describes: {
 				title: { label: "Title", type: "line" },
@@ -264,13 +266,20 @@ export const metadata = defineMetadata(InFlight, {
 				who: { label: "Who", type: "line" },
 			},
 		},
-		selection: {
+		getSelection: {
 			label: "Selected flight",
+			aka: ["selection"],
 			hint: "Which row is picked. A detail tile that picks from the same list follows it.",
-			source: { implementation: "@core/selection", fields: { rows: "flights" } },
+			source: { implementation: "@core/selection", fields: { rows: "getFlights" } },
 		},
-		pageSize: {
+		select: {
+			label: "Pick a flight",
+			hint: "Runs when a row is pressed, with the flight that was pressed, or nothing when the picked one is pressed again.",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
+		},
+		getPageSize: {
 			label: "Rows per page",
+			aka: ["pageSize"],
 			hint: "How many rows are read at once, and how many more each press adds.",
 		},
 	},

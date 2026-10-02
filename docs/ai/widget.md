@@ -140,6 +140,17 @@ returns any list of objects: `IQuery.returnsAny(z.array(z.object({})))`), and `I
 word on the wrong side is refused with the word that fits. An implementation class is named
 `*Query` or `*Command`.
 
+**Implementations ship in packs.** A pack is a workspace under `packages/packs/<name>` (`@git` is
+the first): its zod schemas in `src/schemas.ts`, one class per query, and commands, each built
+`new Class(fields, ports)` where `fields` are what the person typed in the settings window and
+`ports` are what the host lends — `commandLine` (`execFile`, never a shell), `workingDirectory` and
+`refs` for reading another tile's value. `definePack({ id, title, queries, commands })` lists them
+with `defineGatewayMetadata` and `defineCommandMetadata`, every id under the pack's own name, and the
+host calls `registerPacks` once at load. A pack's command stays shut until the person switches it on
+in the Data tab. `@git` offers `commits`, `branches`, `current-branch`, `status`, `commit-files`,
+`tags` and `worktrees`, and the commands `stage`, `unstage`, `commit`, `checkout`, `create-branch`,
+`pull`, `push` and `worktree-add|remove|lock|unlock`; it runs on desktop only.
+
 **The schema is the type and the default.** A value's schema must carry `.default()`; one without is
 refused. The built-in gateways check what they read against the schema through `context.parse`: a
 record that does not fit is left out, a value that does not fit is drawn as the default, and both

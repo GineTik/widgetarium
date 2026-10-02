@@ -1,14 +1,4 @@
-import {
-	IListGateway,
-	IValueGateway,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	fieldOf,
-	textOf,
-	useData,
-	z,
-} from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, fieldOf, textOf, useData, z } from "widgetarium";
 import { useLayoutEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from "react";
 
@@ -118,17 +108,18 @@ function useActiveInView(rowRef: RefObject<HTMLDivElement | null>, activeRef: st
 
 const UnderlineTabs = createWidget({
 	inject: {
-		options: IListGateway.of(ChoiceSchema, {
-			default: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }],
-		}),
-		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
+		getOptions: IQuery.expects(
+			z.array(ChoiceSchema).default([{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }]),
+		),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
 	},
-	draw: ({ options, selection }) => {
-		const listed = useData(options.list, { limit: ALL_OPTIONS });
+	draw: ({ getOptions, getSelection: selection, select }) => {
+		const listed = useData(getOptions, { limit: ALL_OPTIONS });
 		const rowRef = useRef<HTMLDivElement | null>(null);
 
 		const rows: Option[] = listed.data.filter((held) => !fieldOf(held, HIDDEN)).map((held) => optionOf(held.ref, held));
-		const active = rows.find((row) => row.value === selection.value) ?? rows[0] ?? null;
+		const active = rows.find((row) => row.value === selection) ?? rows[0] ?? null;
 
 		useActiveInView(rowRef, active?.ref ?? "");
 
@@ -140,7 +131,7 @@ const UnderlineTabs = createWidget({
 			const picked = at === null ? null : rows[at];
 			if (at === null || !picked) return;
 			event.preventDefault();
-			selection.update(picked.ref);
+			void select(picked.ref);
 			event.currentTarget.querySelectorAll("button")[at]?.focus();
 		};
 
@@ -156,7 +147,7 @@ const UnderlineTabs = createWidget({
 							aria-selected={row.ref === active?.ref}
 							aria-label={row.label || UNNAMED}
 							tabIndex={row.ref === active?.ref ? 0 : -1}
-							onClick={() => selection.update(row.ref)}
+							onClick={() => void select(row.ref)}
 						>
 							{row.label || UNNAMED}
 						</button>
@@ -186,10 +177,11 @@ export const metadata = defineMetadata(UnderlineTabs, {
 	],
 	preview: {
 		size: { w: 4, h: 1 },
-		props: { options: { rows: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }] } },
+		props: { getOptions: { rows: [{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }] } },
 	},
 	props: {
-		options: {
+		getOptions: {
+			aka: ["options"],
 			label: "Options",
 			hint: "Every section is a record. Bind a view box and it offers the views it holds.",
 			wants: "@default/view-group/holds",
@@ -199,14 +191,19 @@ export const metadata = defineMetadata(UnderlineTabs, {
 				hidden: { label: "Hidden", type: "boolean" },
 			},
 		},
-		selection: {
+		getSelection: {
+			aka: ["selection"],
 			label: "Open section",
 			hint: "Which section is open. Bind the view box's own selection and the two move together.",
 			wants: "@default/view-group/selection",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "options", field: "value", whenNothingPicked: "first" },
+				fields: { rows: "getOptions", field: "value", whenNothingPicked: "first" },
 			},
+		},
+		select: {
+			label: "Pick a choice",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
 		},
 	},
 });

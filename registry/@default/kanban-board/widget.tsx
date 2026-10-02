@@ -1,9 +1,10 @@
 import {
-	ICrudGateway,
+	ICommand,
 	IHost,
 	INavigator,
+	IQuery,
 	ISlot,
-	IValueGateway,
+	RecordRefSchema,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -42,6 +43,8 @@ export const TaskSchema = z.looseObject({
 	body: z.string().optional(),
 });
 
+const ChosenSchema = z.record(z.string(), z.union([z.string(), z.array(z.string())]));
+
 const KanbanBoardSchema = BoardSchema.extend({
 	properties: z.union([z.string(), z.array(z.string())]).optional(),
 });
@@ -59,25 +62,24 @@ function toColumns(rows: TaskRow[], columnNames: string[], groupBy: string, arch
 }
 
 export const props = defineProps({
-	tasks: ICrudGateway.of(TaskSchema, {
-		sort: [{ prop: "order", dir: "asc" }],
-		where: [
-			{ prop: "board", op: "is", value: { wants: "@default/editable-tabs/selection" } },
-			{ spread: { wants: "@default/filter-panel/chosen" } },
-		],
-		default: [],
-	}),
-	boards: ICrudGateway.of(KanbanBoardSchema, { default: [] }).pick("list", "create", "update", "repairIds"),
-	selection: IValueGateway.of(z.unknown()).pick("get", "update"),
-	board: IValueGateway.of(
+	getTasks: IQuery.expects(z.array(TaskSchema).default([])),
+	createTask: ICommand.sends(TaskSchema.extend({ id: z.uuid() })),
+	updateTask: ICommand.sends(TaskSchema.partial().extend({ ref: RecordRefSchema })),
+	getChosen: IQuery.expects(ChosenSchema.default({})),
+	getBoards: IQuery.expects(z.array(KanbanBoardSchema).default([])),
+	repairBoardIds: ICommand,
+	getSelection: IQuery.expects(z.unknown()),
+	getBoard: IQuery.expects(
 		KanbanBoardSchema.default({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }),
-	).pick("get", "update"),
-	opened: IValueGateway.of(z.string().nullable()).pick("get", "update"),
-	groupBy: IValueGateway.of(z.string().default("status")).pick("get"),
-	card: ISlot.of<{ task: CardFace }>({
+	),
+	updateBoard: ICommand.sends(KanbanBoardSchema),
+	getOpened: IQuery.expects(z.string().nullable().default(null)),
+	open: ICommand.sends(z.string().nullable()),
+	getGroupBy: IQuery.expects(z.string().default("status")),
+	card: ISlot.of<{ getTask: CardFace }>({
 		default: "@default/task-card",
 		surface: "group",
-		gives: { task: ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"] },
+		gives: { getTask: ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"] },
 	}),
 	host: IHost,
 	navigator: INavigator,
@@ -85,16 +87,33 @@ export const props = defineProps({
 
 const KanbanBoard = createWidget({
 	inject: props,
-	draw: ({ board, groupBy: grouping, card, tasks, boards, selection, opened, host, navigator }) => {
-		const reading = useBoardReads({ selection, opened, tasks, board, grouping });
+	draw: ({
+		getBoard,
+		updateBoard,
+		getGroupBy: grouping,
+		card,
+		getTasks,
+		createTask,
+		updateTask,
+		getChosen,
+		getBoards,
+		repairBoardIds,
+		getSelection,
+		getOpened,
+		open,
+		host,
+		navigator,
+	}) => {
+		const reading = useBoardReads({ getSelection, getOpened, getTasks, getChosen, getBoard, grouping });
 		const { rows, today, onBoard, openedRef, record, groupBy } = reading;
 
-		const lists = useBoardColumns(board, record);
+		const lists = useBoardColumns(updateBoard, record);
 		const reordering = useColumnReorder(lists.columnNames, lists.boardColumns, lists.save);
-		const repairing = useIdRepair(boards);
+		const repairing = useIdRepair(getBoards, repairBoardIds);
 		const carrying = useCarriedTask();
 		const writing = useTaskWrites({
-			tasks,
+			createTask,
+			updateTask,
 			rows,
 			groupBy,
 			onBoard,
@@ -121,7 +140,7 @@ const KanbanBoard = createWidget({
 					carrying={carrying}
 					writing={writing}
 					repairing={repairing}
-					onOpen={(row) => opened.update(row.ref)}
+					onOpen={(row) => void open(row.ref)}
 					onArchive={setArchiving}
 					onRename={renameList}
 				/>
@@ -133,9 +152,10 @@ const KanbanBoard = createWidget({
 					reading={reading}
 					lists={lists}
 					repairing={repairing}
-					board={board}
-					tasks={tasks}
-					opened={opened}
+					updateBoard={updateBoard}
+					getTasks={getTasks}
+					updateTask={updateTask}
+					onClose={() => void open(null)}
 					host={host}
 					navigator={navigator}
 				/>
@@ -167,7 +187,7 @@ export const metadata = defineMetadata(KanbanBoard, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			tasks: {
+			getTasks: {
 				rows: [
 					{
 						path: "preview/1.md",
@@ -219,7 +239,7 @@ export const metadata = defineMetadata(KanbanBoard, {
 					},
 				],
 			},
-			board: {
+			getBoard: {
 				value: {
 					columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }],
 					properties: ["Status", "Priority", "Assignees"],
@@ -229,31 +249,59 @@ export const metadata = defineMetadata(KanbanBoard, {
 		shot: { of: "422217216" },
 	},
 	props: {
-		tasks: { label: "Tasks" },
-		boards: { label: "Boards" },
-		selection: {
+		getTasks: { label: "Tasks", aka: ["tasks"] },
+		createTask: {
+			label: "Add a task",
+			source: { implementation: "@core/rows-create", fields: { target: "getTasks" } },
+		},
+		updateTask: {
+			label: "Change a task",
+			source: { implementation: "@core/rows-update", fields: { target: "getTasks" } },
+		},
+		getChosen: {
+			label: "Chosen filters",
+			hint: "Narrows the cards to what a filter panel has chosen.",
+			wants: "@default/filter-panel/getChosen",
+		},
+		getBoards: { label: "Boards", aka: ["boards"] },
+		repairBoardIds: {
+			label: "Repair duplicate board ids",
+			source: { implementation: "@core/rows-repair-ids", fields: { target: "getBoards" } },
+		},
+		getSelection: {
 			label: "Shown board",
 			hint: "Which board this draws. Bind a tab strip and the two move together.",
-			wants: "@default/editable-tabs/selection",
+			aka: ["selection"],
+			wants: "@default/editable-tabs/getSelection",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "boards", field: "board", whenNothingPicked: "first" },
+				fields: { rows: "getBoards", field: "board", whenNothingPicked: "first" },
 			},
 		},
-		board: {
+		getBoard: {
 			label: "Board",
 			hint: "The board this draws: its columns, their order and which of them are archived.",
+			aka: ["board"],
 			source: {
 				implementation: "@core/selected-row",
-				fields: { rows: "boards", picked: "selection", field: "board", whenNothingPicked: "first" },
+				fields: { rows: "getBoards", picked: "getSelection", field: "board", whenNothingPicked: "first" },
 			},
 		},
-		opened: {
+		updateBoard: {
+			label: "Change the board's columns",
+			source: { implementation: "@core/value-set", fields: { target: "getBoard" } },
+		},
+		getOpened: {
 			label: "Opened task",
 			hint: "Which card is open, as a box. The board draws it full size itself.",
-			source: { implementation: "@core/selection", fields: { rows: "tasks" } },
+			aka: ["opened"],
+			source: { implementation: "@core/selection", fields: { rows: "getTasks" } },
 		},
-		groupBy: { label: "Group tasks by property" },
+		open: {
+			label: "Open a task",
+			source: { implementation: "@core/value-set", fields: { target: "getOpened" } },
+		},
+		getGroupBy: { label: "Group tasks by property", aka: ["groupBy"] },
 	},
 });
 

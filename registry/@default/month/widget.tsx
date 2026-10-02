@@ -1,8 +1,8 @@
 import {
-	ICrudGateway,
-	IValueGateway,
+	ICommand,
+	IQuery,
+	RecordRefSchema,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -11,7 +11,7 @@ import {
 	useData,
 	z,
 } from "widgetarium";
-import type { DrawnProps, Row } from "widgetarium";
+import type { DrawnProps, RecordRef, Row } from "widgetarium";
 import { useRef, useState } from "react";
 import { daysLogged, isoOf, leadDaysOf, pressing, shapeOf } from "@default/lib";
 import { DayButton } from "./day-button";
@@ -133,13 +133,20 @@ function keptDaysOf(habit?: DayNote) {
 	return new Set(listed.filter((entry) => A_DAY.test(entry)));
 }
 
-function pressingHabit(days: MonthProps["days"], habit: Row<DayNote> | undefined, kept: Set<string>) {
+function pressingHabit(updateDay: MonthProps["updateDay"], habit: Row<DayNote> | undefined, kept: Set<string>) {
 	return async (day: string) => {
 		if (!habit) return undefined;
 		const held = new Set(kept);
 		if (held.has(day)) held.delete(day);
 		else held.add(day);
-		return days.update({ ref: habit.ref, data: { days: [...held].sort() } });
+		return updateDay({ ref: habit.ref, days: [...held].sort() });
+	};
+}
+
+function dayWriterOf(updateDay: MonthProps["updateDay"], createDay: MonthProps["createDay"]) {
+	return {
+		update: ({ ref, data }: { ref: RecordRef; data: { done: number | null } }) => updateDay({ ref, ...data }),
+		create: (draft: { name: string; props: { done: number } }) => createDay({ id: crypto.randomUUID(), ...draft }),
 	};
 }
 
@@ -159,19 +166,21 @@ function weekStartsMonday(held: unknown): boolean {
 }
 
 const props = defineProps({
-	days: ICrudGateway.of(DayNoteSchema).pick("list", "update", "create"),
-	pick: IValueGateway.of(z.unknown()).pick("get"),
-	isWeekStartingMonday: IValueGateway.of(z.boolean().default(true)).pick("get"),
+	getDays: IQuery.expects(z.array(DayNoteSchema)),
+	updateDay: ICommand.sends(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
+	createDay: ICommand.sends(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
+	getPick: IQuery.expects(z.unknown()),
+	getIsWeekStartingMonday: IQuery.expects(z.boolean().default(true)),
 });
 
 const HabitMonth = createWidget({
 	inject: props,
-	draw: ({ isWeekStartingMonday: fromMonday, days, pick }) => {
+	draw: ({ getIsWeekStartingMonday: fromMonday, getDays, updateDay, createDay, getPick: pick }) => {
 		const room = useRef<HTMLDivElement | null>(null);
 		const box = useSize(room, { width: ACROSS * 44, height: MOST_WEEKS * 44 });
 		const [shift, setShift] = useState(0);
 
-		const listed = useData(days.list, { limit: ALL_DAYS });
+		const listed = useData(getDays, { limit: ALL_DAYS });
 		const rows = listed.data;
 		const picked = String(pickedValue(pick) ?? "");
 		const isPerHabit = shapeOf(rows) === "habit";
@@ -186,9 +195,10 @@ const HabitMonth = createWidget({
 
 		const ring = ringFor(box);
 		const press = isPerHabit
-			? pressingHabit(days, habit, keptDays)
-			: pressing({ days, noteByDay: logged.noteByDay, keptDays });
-		const canWrite = isPerHabit ? canDo(days.update) && habit !== undefined : canDo(days.update) && canDo(days.create);
+			? pressingHabit(updateDay, habit, keptDays)
+			: pressing({ days: dayWriterOf(updateDay, createDay), noteByDay: logged.noteByDay, keptDays });
+		const canUpdate = updateDay.can().can;
+		const canWrite = isPerHabit ? canUpdate && habit !== undefined : canUpdate && createDay.can().can;
 		const month = daysInSixWeeks(shown.getFullYear(), shown.getMonth(), isWeekStartingMonday);
 		const cells = cellsOver(month, keptDays, today, canWrite);
 
@@ -234,7 +244,7 @@ export const metadata = defineMetadata(HabitMonth, {
 	preview: {
 		size: { w: 6, h: 6 },
 		props: {
-			days: {
+			getDays: {
 				rows: [
 					{ path: "Habits/2026-08-31.md", done: 1 },
 					{ path: "Habits/2026-09-01.md", done: 1 },
@@ -260,9 +270,9 @@ export const metadata = defineMetadata(HabitMonth, {
 		shot: { of: "524690415" },
 	},
 	props: {
-		days: {
+		getDays: {
 			label: "Days",
-			aka: ["habits"],
+			aka: ["days", "habits"],
 			hint: "A folder of habit notes, or a folder of day notes for a single habit.",
 			describes: {
 				days: { type: "date", many: true },
@@ -271,15 +281,25 @@ export const metadata = defineMetadata(HabitMonth, {
 				title: { type: "text" },
 			},
 		},
-		pick: {
+		updateDay: {
+			label: "Mark a day",
+			source: { implementation: "@core/rows-update", fields: { target: "getDays" } },
+		},
+		createDay: {
+			label: "Add a day",
+			source: { implementation: "@core/rows-create", fields: { target: "getDays" } },
+		},
+		getPick: {
+			aka: ["pick"],
 			label: "Which habit",
 			hint: "The habit this grid writes into. Bind it to a habit list and the month follows what the list picks.",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "days", field: "name", whenNothingPicked: "first" },
+				fields: { rows: "getDays", field: "name", whenNothingPicked: "first" },
 			},
 		},
-		isWeekStartingMonday: {
+		getIsWeekStartingMonday: {
+			aka: ["isWeekStartingMonday"],
 			label: "Weeks start on Monday",
 		},
 	},

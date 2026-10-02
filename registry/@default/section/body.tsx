@@ -7,7 +7,7 @@ import type { props } from "./widget";
 
 type BodyProps = {
 	filling: string;
-	items: DrawnProps<typeof props>["items"];
+	getItems: DrawnProps<typeof props>["getItems"];
 	pageSize: number;
 	Drawn: Slot<Record<string, unknown>> | undefined;
 	placed: readonly MountEntry[];
@@ -15,8 +15,8 @@ type BodyProps = {
 	narrowest: number;
 };
 
-export function Body({ filling, items, pageSize, Drawn, placed, kind, narrowest }: BodyProps) {
-	const rows = useData(items.list, { limit: pageSize }).data ?? [];
+export function Body({ filling, getItems, pageSize, Drawn, placed, kind, narrowest }: BodyProps) {
+	const rows = useData(getItems, { limit: pageSize }).data;
 	return (
 		<Layout kind={kind} min={narrowest}>
 			{filling === PER_ROW ? <PerRow Drawn={Drawn} rows={rows} /> : <Placed held={placed} />}

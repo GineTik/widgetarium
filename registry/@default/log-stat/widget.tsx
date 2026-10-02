@@ -1,6 +1,5 @@
 import {
-	ICrudGateway,
-	IValueGateway,
+	IQuery,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -130,15 +129,15 @@ type Metric = { caption: string; glyph: string; tone: string };
 
 const LogStat = createWidget({
 	inject: {
-		habits: ICrudGateway.of(HabitSchema),
-		pick: IValueGateway.of(z.unknown()).pick("get", "update"),
-		metric: IValueGateway.of(z.enum(["streak", "best", "total", "rate", "goal"]).default("streak")).pick("get"),
-		period: IValueGateway.of(z.number().default(30)).pick("get"),
-		look: IValueGateway.of(z.enum(["default", "stat1"]).default("default")).pick("get"),
+		getHabits: IQuery.expects(z.array(HabitSchema)),
+		getPick: IQuery.expects(z.unknown()),
+		getMetric: IQuery.expects(z.enum(["streak", "best", "total", "rate", "goal"]).default("streak")),
+		getPeriod: IQuery.expects(z.number().default(30)),
+		getLook: IQuery.expects(z.enum(["default", "stat1"]).default("default")),
 	},
-	draw: ({ pick, metric: metricKey, period, habits, look }) => {
-		const picked = pickedValue(pick.value);
-		const habit = habitPicked(useData(habits.list).data, picked);
+	draw: ({ getPick: pick, getMetric: metricKey, getPeriod: period, getHabits, getLook: look }) => {
+		const picked = pickedValue(pick);
+		const habit = habitPicked(useData(getHabits).data, picked);
 		const metric = METRICS[metricKey];
 		const isStat1 = look === "stat1";
 		const reading = readingOf(metricKey, habit, period);
@@ -190,7 +189,7 @@ export const metadata = defineMetadata(LogStat, {
 	preview: {
 		size: { w: 3, h: 1 },
 		props: {
-			habits: {
+			getHabits: {
 				rows: [
 					{
 						path: "Habits/Exercise.md",
@@ -248,16 +247,18 @@ export const metadata = defineMetadata(LogStat, {
 		shot: { of: "80335274" },
 	},
 	props: {
-		habits: { label: "Logs" },
-		pick: {
+		getHabits: { label: "Logs", aka: ["habits"] },
+		getPick: {
+			aka: ["pick"],
 			label: "Which log",
 			hint: "The log this number is about.",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "habits", field: "name", whenNothingPicked: "first" },
+				fields: { rows: "getHabits", field: "name", whenNothingPicked: "first" },
 			},
 		},
-		metric: {
+		getMetric: {
+			aka: ["metric"],
 			label: "What it counts",
 			options: [
 				{ value: "streak", label: "Streak" },
@@ -267,8 +268,9 @@ export const metadata = defineMetadata(LogStat, {
 				{ value: "goal", label: "Goal" },
 			],
 		},
-		period: { label: "Days the rate looks back over" },
-		look: {
+		getPeriod: { label: "Days the rate looks back over", aka: ["period"] },
+		getLook: {
+			aka: ["look"],
 			label: "Look",
 			design: true,
 			options: [

@@ -5,17 +5,23 @@ import { BackToEnd } from "./back-to-end";
 import { CSS } from "./style";
 import type { LogLine, TailProps } from "./types";
 import { useBehind } from "./use-behind";
-import { useFollowing } from "./use-following";
+import { useSetFollowing } from "./use-following";
 import { useSticksToEnd } from "./use-sticks-to-end";
 
 type Drawn = NonNullable<TailProps["line"]>;
 
-type RowsProps = { rows: Row<LogLine>[]; total: number | null; following: TailProps["following"]; Line: Drawn };
+type RowsProps = {
+	rows: Row<LogLine>[];
+	total: number | null;
+	isFollowing: boolean;
+	setIsFollowing: TailProps["setIsFollowing"];
+	Line: Drawn;
+};
 
 const LIVE_LOG = "Session log";
 
-export function TailRows({ rows, total, following, Line }: RowsProps) {
-	const { isFollowing, setFollowing } = useFollowing(following);
+export function TailRows({ rows, total, isFollowing, setIsFollowing, Line }: RowsProps) {
+	const setFollowing = useSetFollowing(isFollowing, setIsFollowing);
 	const oldestFirst = useMemo(() => [...rows].reverse(), [rows]);
 	const newest = oldestFirst[oldestFirst.length - 1];
 	const { scroller, onScroll } = useSticksToEnd(

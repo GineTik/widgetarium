@@ -1,10 +1,10 @@
 import { SlotList } from "widgetarium/kit";
 import { Pick } from "./pick";
 import { RowInSlot } from "./row-in-slot";
-import type { Drawn, Entry, Reading, Rows } from "./types";
+import type { Drawn, Entry, Reading, UpdateRow } from "./types";
 
 type DrawingProps = {
-	rows: Rows;
+	updateRow: UpdateRow;
 	Drawn: Drawn;
 	page: Reading;
 	givenAs: string;
@@ -12,7 +12,7 @@ type DrawingProps = {
 	onPick: ((ref: string) => void) | null;
 };
 
-export function Drawing({ rows, Drawn, page, givenAs, picked, onPick }: DrawingProps) {
+export function Drawing({ updateRow, Drawn, page, givenAs, picked, onPick }: DrawingProps) {
 	return (
 		<div className="wg-list-body">
 			<SlotList slot={Drawn}>
@@ -22,7 +22,7 @@ export function Drawing({ rows, Drawn, page, givenAs, picked, onPick }: DrawingP
 						isPicked={String(row.ref) === picked}
 						onPick={onPick === null ? null : () => onPick(String(row.ref))}
 					>
-						<RowInSlot Drawn={Drawn} rows={rows} row={row} givenAs={givenAs} />
+						<RowInSlot Drawn={Drawn} updateRow={updateRow} row={row} givenAs={givenAs} />
 					</Pick>
 				))}
 			</SlotList>

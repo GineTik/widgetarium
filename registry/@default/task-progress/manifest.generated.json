@@ -9,22 +9,35 @@
 		"preferredWidth": "full",
 		"preferredHeight": "auto"
 	},
+	"commands": {
+		"setIsOpen": {
+			"label": "Show or hide the steps",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getIsOpen"
+				}
+			}
+		}
+	},
 	"props": {
-		"title": {
+		"getTitle": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
-			"label": "Title",
+			"label": "Get title",
 			"hint": "The one line naming the task, the way a person says it: Building Habit streak.",
+			"aka": ["title"],
 			"writes": ["get"],
 			"default": {
 				"value": "Building a widget"
 			}
 		},
-		"steps": {
+		"getSteps": {
 			"kind": "collection",
-			"label": "Steps",
+			"label": "Get steps",
 			"hint": "Every step in order. A status is pending, active, done or failed; the hint is the one line under an active step.",
+			"aka": ["steps"],
 			"writes": ["list", "get"],
 			"default": {
 				"rows": [
@@ -44,34 +57,37 @@
 				]
 			}
 		},
-		"open": {
+		"getIsOpen": {
 			"kind": "value",
 			"control": "memory",
-			"label": "Open",
+			"label": "Get is open",
 			"hint": "Whether the steps are shown. Pressing the line flips it.",
-			"writes": ["get", "update"],
+			"aka": ["open"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": false
 			}
 		},
-		"startedAt": {
+		"getStartedAt": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
-			"label": "Started at",
+			"label": "Get started at",
 			"hint": "When the task started, in milliseconds since 1970. Zero draws no clock.",
+			"aka": ["startedAt"],
 			"writes": ["get"],
 			"default": {
 				"value": 0
 			}
 		},
-		"endedAt": {
+		"getEndedAt": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
-			"label": "Ended at",
+			"label": "Get ended at",
 			"hint": "When the task ended, in milliseconds since 1970. Zero while it runs, so the clock keeps counting.",
+			"aka": ["endedAt"],
 			"writes": ["get"],
 			"default": {
 				"value": 0

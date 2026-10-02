@@ -31,7 +31,7 @@
 			"h": 4
 		},
 		"props": {
-			"flights": {
+			"getFlights": {
 				"rows": [
 					{
 						"path": "preview/flight-1.md",
@@ -99,11 +99,24 @@
 			}
 		}
 	},
+	"commands": {
+		"select": {
+			"label": "Pick a flight",
+			"hint": "Runs when a row is pressed, with the flight that was pressed, or nothing when the picked one is pressed again.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"flights": {
+		"getFlights": {
 			"kind": "collection",
 			"label": "Flights",
 			"hint": "One record per piece of work in flight. The newest start is drawn first.",
+			"aka": ["flights"],
 			"writes": ["list", "get"],
 			"describes": {
 				"title": {
@@ -152,35 +165,31 @@
 					"aka": ["owner", "assignee", "agent"]
 				}
 			},
-			"sort": [
-				{
-					"prop": "startedAt",
-					"dir": "desc"
-				}
-			],
 			"default": {
 				"rows": []
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Selected flight",
 			"hint": "Which row is picked. A detail tile that picks from the same list follows it.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "flights"
+					"rows": "getFlights"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		},
-		"pageSize": {
+		"getPageSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Rows per page",
 			"hint": "How many rows are read at once, and how many more each press adds.",
+			"aka": ["pageSize"],
 			"writes": ["get"],
 			"default": {
 				"value": 12

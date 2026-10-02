@@ -29,7 +29,7 @@
 			"h": 4
 		},
 		"props": {
-			"projects": {
+			"getProjects": {
 				"rows": [
 					{
 						"path": "Projects/widgetarium.md",
@@ -79,11 +79,24 @@
 			}
 		}
 	},
+	"commands": {
+		"select": {
+			"label": "Pick a project",
+			"hint": "Runs when a card is pressed, with the project that was pressed.",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"projects": {
+		"getProjects": {
 			"kind": "collection",
 			"label": "Projects",
 			"hint": "One note per project. Bind the folder they live in.",
+			"aka": ["projects"],
 			"writes": ["list", "get"],
 			"describes": {
 				"mark": {
@@ -121,27 +134,29 @@
 				"rows": []
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Selected project",
 			"hint": "The project the pressed card names. Bind a task list or a docs tree to it and they follow the press.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "projects",
+					"rows": "getProjects",
 					"field": "name",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		},
-		"pageSize": {
+		"getPageSize": {
 			"kind": "value",
 			"control": "number",
 			"type": "number",
 			"label": "Projects per load",
 			"hint": "How many cards are drawn before the rest are asked for.",
+			"aka": ["pageSize"],
 			"writes": ["get"],
 			"default": {
 				"value": 12

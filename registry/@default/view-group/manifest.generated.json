@@ -50,12 +50,24 @@
 			"hint": "Each view is a widget you name. Press a name to rename it."
 		}
 	},
+	"commands": {
+		"select": {
+			"label": "Show a view",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Shown view",
 			"hint": "Which held widget is drawn. Bind a switcher and the two move together.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
@@ -64,13 +76,14 @@
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		},
-		"isTabsShown": {
+		"getIsTabsShown": {
 			"kind": "value",
 			"control": "boolean",
 			"type": "boolean",
 			"label": "Show the tab row",
+			"aka": ["isTabsShown"],
 			"design": true,
 			"writes": ["get"],
 			"default": {

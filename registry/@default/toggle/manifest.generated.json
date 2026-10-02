@@ -9,35 +9,49 @@
 		"preferredWidth": 240,
 		"preferredHeight": "auto"
 	},
+	"commands": {
+		"setIsOpen": {
+			"label": "Open or shut the box",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getIsOpen"
+				}
+			}
+		}
+	},
 	"props": {
-		"open": {
+		"getIsOpen": {
 			"kind": "value",
 			"control": "memory",
 			"label": "Open",
 			"hint": "Whether the box this opens is open. A box names it as its trigger, and reads it.",
-			"writes": ["get", "update"],
+			"aka": ["open"],
+			"writes": ["get"],
 			"default": {
 				"from": "memory",
 				"value": false
 			}
 		},
-		"icon": {
+		"getIcon": {
 			"kind": "value",
 			"control": "icon",
 			"type": "line",
 			"label": "Icon",
 			"hint": "The icon drawn on the button, picked off the grid: the kit's own glyphs and all of Lucide.",
+			"aka": ["icon"],
 			"writes": ["get"],
 			"default": {
 				"value": "menu"
 			}
 		},
-		"label": {
+		"getLabel": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Label",
 			"hint": "What a screen reader says the button does.",
+			"aka": ["label"],
 			"writes": ["get"],
 			"default": {
 				"value": "Open the panel"

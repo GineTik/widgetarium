@@ -1,9 +1,8 @@
 import {
-	IListGateway,
+	ICommand,
+	IQuery,
 	ISlot,
-	IValueGateway,
 	VaultRecordSchema,
-	canDo,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -11,6 +10,7 @@ import {
 	z,
 } from "widgetarium";
 import { SlotList } from "widgetarium/kit";
+import { commitWhereOf } from "./commit-where";
 import { Head } from "./head";
 import { MoreRow } from "./more-row";
 import { PickedRow } from "./picked-row";
@@ -75,6 +75,8 @@ const CSS = `
 `;
 
 const SHOWN = 200;
+const SHOWN_KEY = "@flow/file-list";
+const BY_PATH = [{ prop: "path", dir: "asc" as const }];
 const NO_SLOT = "This list has no widget to draw its files with.";
 const NOTHING = "This change touched no files.";
 const READING = "Reading the files this change touched.";
@@ -128,29 +130,35 @@ function saidInstead(
 
 const FileList = createWidget({
 	inject: {
-		files: IListGateway.of(FileChangeSchema, {
-			where: [{ prop: "commit", op: "is", value: { wants: "@flow/git-tree/selection" } }],
-			sort: [{ prop: "path", dir: "asc" }],
-			default: [],
-		}),
-		selection: IValueGateway.of(z.string().nullable().default(null)).pick("get", "update"),
-		heading: IValueGateway.of(z.string().default("Files touched")).pick("get"),
-		shownFiles: IValueGateway.of(z.number().default(SHOWN)).pick("get"),
+		getFiles: IQuery.expects(z.array(FileChangeSchema).default([])),
+		getCommit: IQuery.expects(z.unknown().default(null)),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
+		getHeading: IQuery.expects(z.string().default("Files touched")),
+		getShownFiles: IQuery.expects(z.number().default(SHOWN)),
 		file: ISlot.of<{ getFile: FileFace }>({
 			default: "@flow/file-row",
 			surface: "group",
 			gives: { getFile: ["path", "added", "removed", "change", "from"] },
 		}),
 	},
-	draw: ({ files, selection, heading, shownFiles, file }) => {
+	draw: ({
+		getFiles,
+		getCommit: commit,
+		getSelection: selection,
+		select,
+		getHeading: heading,
+		getShownFiles: shownFiles,
+		file,
+	}) => {
 		const size = askedCount(shownFiles, SHOWN);
-		const { shown, more } = useShown(files.id, size);
-		const listed = useData(files.list, { offset: 0, limit: shown });
+		const { shown, more } = useShown(SHOWN_KEY, size);
+		const listed = useData(getFiles, { where: commitWhereOf(commit), sort: BY_PATH, offset: 0, limit: shown });
 		const Drawn = file as Drawn;
 		const said = saidInstead(file, listed);
 		const rows = listed.data as FileRow[];
 		const total = listed.total ?? rows.length;
-		const canPick = canDo(selection.update);
+		const canPick = select.can().can;
 
 		return (
 			<div className="ffl">
@@ -164,8 +172,8 @@ const FileList = createWidget({
 								key={row.ref}
 								row={row}
 								Drawn={Drawn}
-								isPicked={row.ref === selection.value}
-								onPick={canPick ? () => selection.update(row.ref) : null}
+								isPicked={row.ref === selection}
+								onPick={canPick ? () => void select(row.ref) : null}
 							/>
 						))}
 					</SlotList>
@@ -197,8 +205,8 @@ export const metadata = defineMetadata(FileList, {
 	preview: {
 		size: { w: 5, h: 4 },
 		props: {
-			heading: { value: "Files touched" },
-			files: {
+			getHeading: { value: "Files touched" },
+			getFiles: {
 				rows: [
 					{
 						path: "src/gateway/manifest.ts",
@@ -239,8 +247,9 @@ export const metadata = defineMetadata(FileList, {
 		},
 	},
 	props: {
-		files: {
+		getFiles: {
 			label: "Files",
+			aka: ["files"],
 			hint: "One record per file the change touched. Bind a commit list beside this one and the two move together.",
 			describes: {
 				path: { label: "Path", type: "line" },
@@ -251,17 +260,30 @@ export const metadata = defineMetadata(FileList, {
 				commit: { label: "Commit", type: "line" },
 			},
 		},
-		selection: {
-			label: "Selected file",
-			hint: "Which file is picked. A diff standing beside this list binds to it and follows every press.",
-			source: { implementation: "@core/selection", fields: { rows: "files" } },
+		getCommit: {
+			label: "Commit",
+			hint: "Only the files of this commit are listed. Bind a commit list beside this one and the two move together; left unset, every file is listed.",
+			wants: "@flow/git-tree/selection",
 		},
-		heading: {
+		getSelection: {
+			label: "Selected file",
+			aka: ["selection"],
+			hint: "Which file is picked. A diff standing beside this list binds to it and follows every press.",
+			source: { implementation: "@core/selection", fields: { rows: "getFiles" } },
+		},
+		select: {
+			label: "Pick a file",
+			hint: "Runs when a row is pressed, with the file that was pressed.",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
+		},
+		getHeading: {
 			label: "Heading",
+			aka: ["heading"],
 			hint: "The words standing before the count. Left empty, only the count is drawn.",
 		},
-		shownFiles: {
+		getShownFiles: {
 			label: "Files shown",
+			aka: ["shownFiles"],
 			hint: "How many rows are read at once, and how many more each press adds.",
 		},
 	},

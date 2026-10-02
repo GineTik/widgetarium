@@ -30,7 +30,7 @@
 			"h": 4
 		},
 		"props": {
-			"board": {
+			"getBoard": {
 				"value": {
 					"columns": [
 						{
@@ -49,47 +49,64 @@
 			"of": "134271609"
 		}
 	},
+	"commands": {
+		"updateBoard": {
+			"label": "Restore a column",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getBoard"
+				}
+			}
+		}
+	},
 	"props": {
-		"boards": {
+		"getBoards": {
 			"kind": "collection",
 			"label": "Boards",
-			"writes": ["list", "get", "update"],
+			"aka": ["boards"],
+			"writes": ["list", "get"],
 			"default": {
 				"rows": []
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Shown board",
 			"hint": "Whose archived columns are listed. Bind a tab strip and the two move together.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "boards",
+					"rows": "getBoards",
 					"field": "board",
 					"whenNothingPicked": "first"
 				}
 			},
 			"writes": ["get"],
-			"wants": "@default/editable-tabs/selection"
+			"wants": "@default/editable-tabs/getSelection"
 		},
-		"board": {
+		"getBoard": {
 			"kind": "value",
 			"control": "row",
 			"label": "Board",
 			"hint": "The board whose archived columns are listed.",
+			"aka": ["board"],
 			"source": {
 				"implementation": "@core/selected-row",
 				"fields": {
-					"rows": "boards",
-					"picked": "selection",
+					"rows": "getBoards",
+					"picked": "getSelection",
 					"field": "board",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"],
-			"wants": "@default/kanban-board/board"
+			"writes": ["get"],
+			"default": {
+				"value": null
+			},
+			"wants": "@default/kanban-board/getBoard"
 		}
 	},
 	"migrates": [],

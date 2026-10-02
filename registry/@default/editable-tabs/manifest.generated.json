@@ -30,7 +30,7 @@
 			"h": 1
 		},
 		"props": {
-			"tabs": {
+			"getTabs": {
 				"rows": [
 					{
 						"name": "Widgetarium"
@@ -45,13 +45,51 @@
 			"of": "159176842"
 		}
 	},
+	"commands": {
+		"createTab": {
+			"label": "Add a tab",
+			"source": {
+				"implementation": "@core/rows-create",
+				"fields": {
+					"target": "getTabs"
+				}
+			}
+		},
+		"updateTab": {
+			"label": "Rename or archive a tab",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getTabs"
+				}
+			}
+		},
+		"removeTab": {
+			"label": "Delete a tab",
+			"source": {
+				"implementation": "@core/rows-remove",
+				"fields": {
+					"target": "getTabs"
+				}
+			}
+		},
+		"select": {
+			"label": "Pick a tab",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getSelection"
+				}
+			}
+		}
+	},
 	"props": {
-		"tabs": {
+		"getTabs": {
 			"kind": "collection",
 			"label": "Tabs",
 			"hint": "Every tab is a record. A folder makes each a note; a typed list lives in this tile.",
-			"aka": ["records"],
-			"writes": ["list", "get", "create", "update", "remove"],
+			"aka": ["records", "tabs"],
+			"writes": ["list", "get"],
 			"describes": {
 				"name": {
 					"label": "Label",
@@ -71,46 +109,49 @@
 				"rows": []
 			}
 		},
-		"label": {
+		"getLabel": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Label field",
 			"hint": "Which field is written on a tab. Without it a note shows its own name.",
+			"aka": ["label"],
 			"writes": ["get"],
 			"default": {
 				"value": "name"
 			}
 		},
-		"value": {
+		"getValue": {
 			"kind": "value",
 			"control": "line",
 			"type": "line",
 			"label": "Value field",
 			"hint": "What a tab hands down, and what files a note under it. Without it the label stands in.",
+			"aka": ["value"],
 			"writes": ["get"],
 			"default": {
 				"value": "board"
 			}
 		},
-		"selection": {
+		"getSelection": {
 			"kind": "value",
 			"control": "pick",
 			"label": "Selected tab",
 			"hint": "Which tab is picked, as a box. Bind another widget and the two move together.",
+			"aka": ["selection"],
 			"source": {
 				"implementation": "@core/selection",
 				"fields": {
-					"rows": "tabs",
-					"fieldFrom": "value",
+					"rows": "getTabs",
+					"fieldFrom": "getValue",
 					"whenNothingPicked": "first"
 				}
 			},
-			"writes": ["get", "update"]
+			"writes": ["get"]
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx"],
+	"files": ["widget.tsx", "patch-of.ts", "tab-fields.ts", "tab-rows.ts", "use-tab-steps.ts"],
 	"dependencies": {},
 	"widgetDependencies": []
 }

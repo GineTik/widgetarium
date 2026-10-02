@@ -1,8 +1,8 @@
 import { useCallback } from "react";
 import {
-	IListGateway,
+	ICommand,
+	IQuery,
 	ISlot,
-	IValueGateway,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -18,6 +18,7 @@ import type { Drawn, Project, ProjectSlot } from "./types";
 import { useShown } from "widgetarium/kit";
 
 const PAGE_SIZE = 12;
+const SHOWN_KEY = "@flow/project-grid";
 
 const NO_SLOT = "This grid has no widget to draw its projects with.";
 const NOTHING = "No projects in what this tile is bound to.";
@@ -57,21 +58,22 @@ export const ProjectSchema = VaultRecordSchema.extend({
 
 const ProjectGrid = createWidget({
 	inject: {
-		projects: IListGateway.of(ProjectSchema, { default: [] }),
-		selection: IValueGateway.of(z.unknown()).pick("get", "update"),
-		pageSize: IValueGateway.of(z.number().default(PAGE_SIZE)).pick("get"),
+		getProjects: IQuery.expects(z.array(ProjectSchema).default([])),
+		getSelection: IQuery.expects(z.unknown()),
+		select: ICommand.sends(z.unknown()),
+		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 		card: ISlot.of<{ getProject: Row<Project> }>({
 			default: "@flow/project-card",
 			surface: "group",
 			gives: { getProject: ["mark", "name", "repository", "open", "doing", "done", "touched"] },
 		}),
 	},
-	draw: ({ projects, selection, pageSize, card }) => {
+	draw: ({ getProjects, getSelection: selection, select, getPageSize: pageSize, card }) => {
 		const size = askedSize(pageSize);
-		const { shown, more } = useShown(projects.id, size);
-		const listed = useData(projects.list, { offset: 0, limit: shown });
-		const picked = pickedValue(selection.value);
-		const pick = useCallback((ref: string) => void selection.update(ref), [selection.update]);
+		const { shown, more } = useShown(SHOWN_KEY, size);
+		const listed = useData(getProjects, { offset: 0, limit: shown });
+		const picked = pickedValue(selection);
+		const pick = useCallback((ref: string) => void select(ref), [select]);
 		const said = saidInstead(card, listed);
 		if (said) return <GridSaid text={said} />;
 		return (
@@ -106,7 +108,7 @@ export const metadata = defineMetadata(ProjectGrid, {
 	preview: {
 		size: { w: 6, h: 4 },
 		props: {
-			projects: {
+			getProjects: {
 				rows: [
 					{
 						path: "Projects/widgetarium.md",
@@ -142,8 +144,9 @@ export const metadata = defineMetadata(ProjectGrid, {
 		},
 	},
 	props: {
-		projects: {
+		getProjects: {
 			label: "Projects",
+			aka: ["projects"],
 			hint: "One note per project. Bind the folder they live in.",
 			describes: {
 				mark: { label: "Mark", type: "line" },
@@ -154,16 +157,23 @@ export const metadata = defineMetadata(ProjectGrid, {
 				touched: { label: "Touched", type: "date" },
 			},
 		},
-		selection: {
+		getSelection: {
 			label: "Selected project",
+			aka: ["selection"],
 			hint: "The project the pressed card names. Bind a task list or a docs tree to it and they follow the press.",
 			source: {
 				implementation: "@core/selection",
-				fields: { rows: "projects", field: "name", whenNothingPicked: "first" },
+				fields: { rows: "getProjects", field: "name", whenNothingPicked: "first" },
 			},
 		},
-		pageSize: {
+		select: {
+			label: "Pick a project",
+			hint: "Runs when a card is pressed, with the project that was pressed.",
+			source: { implementation: "@core/value-set", fields: { target: "getSelection" } },
+		},
+		getPageSize: {
 			label: "Projects per load",
+			aka: ["pageSize"],
 			hint: "How many cards are drawn before the rest are asked for.",
 		},
 	},
