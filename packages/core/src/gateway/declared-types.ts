@@ -29,6 +29,10 @@ export declare const passedAs: unique symbol;
 export declare const queryRowHeld: unique symbol;
 export declare const commandInput: unique symbol;
 
+export type Answering = {
+	readonly answersInAWidget?: "an implementation's word: a widget writes IQuery.expects or ICommand.sends";
+};
+
 interface ImplementationOps<Held> {
 	replace: Action<readonly Partial<Held>[], void>;
 	repairIds: Action<void, number>;
@@ -177,7 +181,7 @@ export type WidgetProp = (
 	| QueryValueDeclared<unknown>
 	| CommandDeclared<never>
 	| PassedDeclared<unknown>
-) & { readonly schemaMissing?: never };
+) & { readonly schemaMissing?: never; readonly answersInAWidget?: never };
 
 export type DeclaredProps = Readonly<Record<string, WidgetProp>>;
 

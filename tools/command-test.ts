@@ -41,14 +41,14 @@ const SubscribeSchema = z.object({ plan: z.string().min(1) });
 
 const stripe: { plans: string[] } = { plans: ["basic"] };
 
-class StripeSubscriptions extends IQuery.of(z.array(SubscriptionSchema)) {
+class StripeSubscriptions extends IQuery.returns(z.array(SubscriptionSchema)) {
 	list(query?: Query): RowsResult<{ plan: string }> {
 		const rows = stripe.plans.map((plan) => rowOf<{ plan: string }>({ plan }, plan));
 		return { rows: rows.slice(0, query?.limit ?? rows.length), total: rows.length };
 	}
 }
 
-class StripeSubscribe extends ICommand.of(SubscribeSchema) {
+class StripeSubscribe extends ICommand.takes(SubscribeSchema) {
 	run(input: { plan: string }): void {
 		if (input.plan === "refused") throw new Error("Stripe declined the card");
 		stripe.plans = [...stripe.plans, input.plan];
@@ -64,8 +64,8 @@ interface Seen {
 const seen: Seen[] = [];
 const Billing = createWidget({
 	inject: {
-		subscriptions: IQuery.of(z.array(SubscriptionSchema)),
-		subscribe: ICommand.of(SubscribeSchema),
+		subscriptions: IQuery.expects(z.array(SubscriptionSchema)),
+		subscribe: ICommand.sends(SubscribeSchema),
 		refresh: ICommand,
 	},
 	draw: ({ subscriptions, subscribe, refresh }) => {
@@ -109,7 +109,11 @@ check("and answers that reason when pressed", await last().refresh(), {
 	reason: '"refresh" is not set up: pick what runs it in the settings window',
 });
 
-check("ICommand.of declares a command over its schema", declarationIn(ICommand.of(SubscribeSchema))?.kind, "command");
+check(
+	"ICommand.sends declares a command over its schema",
+	declarationIn(ICommand.sends(SubscribeSchema))?.kind,
+	"command",
+);
 check("a bare ICommand is a command that takes nothing", declarationIn(ICommand)?.kind, "command");
 
 const manifest = manifestOfModule({

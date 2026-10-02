@@ -93,12 +93,12 @@ export const ProseSourceSchema = z.union([
 ]);
 
 export const props = defineProps({
-	getBody: IQuery.of(ProseSourceSchema.default("")),
-	getFigures: IQuery.of(z.array(FigureSchema)),
-	getTestPlan: IQuery.of(z.array(TestStepSchema)),
-	getFixes: IQuery.of(z.array(FixSchema)),
-	getMeasure: IQuery.of(z.number().default(MEASURE_CH)),
-	getStepsPerPage: IQuery.of(z.number().default(STEPS_PER_PAGE)),
+	getBody: IQuery.expects(ProseSourceSchema.default("")),
+	getFigures: IQuery.expects(z.array(FigureSchema)),
+	getTestPlan: IQuery.expects(z.array(TestStepSchema)),
+	getFixes: IQuery.expects(z.array(FixSchema)),
+	getMeasure: IQuery.expects(z.number().default(MEASURE_CH)),
+	getStepsPerPage: IQuery.expects(z.number().default(STEPS_PER_PAGE)),
 	figure: ISlot.of<{ getSource: Figure }>({
 		default: "@flow/report-figure",
 		surface: "none",

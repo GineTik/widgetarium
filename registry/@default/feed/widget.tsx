@@ -24,7 +24,7 @@ export const ItemSchema = VaultRecordSchema.extend({ content: z.string().nullabl
 
 export const props = defineProps({
 	items: IListGateway.of(ItemSchema),
-	getPageSize: IQuery.of(z.number().default(PAGE_SIZE)),
+	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 	item: ISlot.of<Given>({
 		default: "@default/obsidian-markdown-preview",
 		surface: "group",

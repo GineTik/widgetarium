@@ -1,10 +1,10 @@
 import { z } from "zod";
 import type { Query, RowsResult } from "./contract";
 import { BARE_QUERY, DECLARATION } from "./declaration";
-import type { Declaration } from "./declaration";
+import type { Declaration, DeclaringWord } from "./declaration";
 import { IBaseGateway } from "./declared";
 import type { AbstractOf, Answer, RefReserved } from "./declared";
-import type { CommandDeclared, commandInput, QueryDeclared, QueryHeldOf } from "./declared-types";
+import type { Answering, CommandDeclared, commandInput, QueryDeclared, QueryHeldOf } from "./declared-types";
 import { innerOf } from "./written";
 
 export type CommandAnswer = { readonly ok: true } | { readonly ok: false; readonly reason: string };
@@ -37,33 +37,52 @@ Object.defineProperty(QueryValueContract, DECLARATION, { value: VALUE_QUERY });
 Object.defineProperty(CommandContract, DECLARATION, { value: BARE_COMMAND });
 
 export abstract class IQuery extends (IBaseGateway as AbstractOf<IBaseGateway>) {
-	declare static readonly schemaMissing: "a query needs .of(schema): add the shape it returns";
+	declare static readonly schemaMissing: "a query needs a shape: write IQuery.expects(schema)";
 
-	static of<const S extends z.ZodType>(schema: S & RefReserved<QueryHeldOf<S>>): QueryDeclared<S> {
-		return createQueryClass(schema) as QueryDeclared<S>;
+	static expects<const S extends z.ZodType>(schema: S & RefReserved<QueryHeldOf<S>>): QueryDeclared<S> {
+		return createQueryClass(schema, { word: "expects" }) as QueryDeclared<S>;
+	}
+
+	static returns<const S extends z.ZodType>(schema: S & RefReserved<QueryHeldOf<S>>): QueryDeclared<S> & Answering {
+		return createQueryClass(schema, { word: "returns" }) as QueryDeclared<S> & Answering;
+	}
+
+	static returnsAny<const B extends z.ZodType>(bound: B): QueryDeclared<B> & Answering {
+		return createQueryClass(bound, { word: "returnsAny", isBound: true }) as QueryDeclared<B> & Answering;
 	}
 }
 
 export abstract class ICommand extends (CommandContract as AbstractOf<CommandContract<void>>) {
 	declare static readonly [commandInput]?: void;
 
-	static of<const S extends z.ZodType>(schema: S): CommandDeclared<z.input<S>> {
-		return createDeclaredClass(CommandContract, { ...BARE_COMMAND, schema }) as CommandDeclared<z.input<S>>;
+	static sends<const S extends z.ZodType>(schema: S): CommandDeclared<z.input<S>> {
+		return createCommandClass(schema, "sends") as CommandDeclared<z.input<S>>;
+	}
+
+	static takes<const S extends z.ZodType>(schema: S): CommandDeclared<z.output<S>> & Answering {
+		return createCommandClass(schema, "takes") as CommandDeclared<z.output<S>> & Answering;
 	}
 }
 
 Object.defineProperty(IQuery, BARE_QUERY, { value: true });
 Object.defineProperty(ICommand, DECLARATION, { value: BARE_COMMAND });
 
-function createQueryClass(schema: z.ZodType): AbstractOf<IBaseGateway> {
+type QueryWord = Pick<Declaration, "word" | "isBound">;
+
+function createQueryClass(schema: z.ZodType, word: QueryWord): AbstractOf<IBaseGateway> {
 	const element = arrayElementOf(schema);
-	if (!element) return createDeclaredClass(QueryValueContract, { ...VALUE_QUERY, schema });
+	if (!element) return createDeclaredClass(QueryValueContract, { ...VALUE_QUERY, ...word, schema });
 	const held = schema.safeParse(undefined);
 	return createDeclaredClass(QueryRowsContract, {
 		...ROWS_QUERY,
+		...word,
 		schema: element,
 		...(held.success && Array.isArray(held.data) ? { rows: held.data } : {}),
 	});
+}
+
+function createCommandClass(schema: z.ZodType, word: DeclaringWord): AbstractOf<IBaseGateway> {
+	return createDeclaredClass(CommandContract, { ...BARE_COMMAND, word, schema });
 }
 
 function arrayElementOf(schema: z.ZodType): z.ZodType | null {

@@ -92,9 +92,9 @@ function askedCount(value: unknown, fallback: number): number {
 
 const GitTree = createWidget({
 	inject: {
-		getCommits: IQuery.of(z.array(CommitSchema)),
-		getBranch: IQuery.of(z.string().default("")),
-		getShownCommits: IQuery.of(z.number().default(SHOWN)),
+		getCommits: IQuery.expects(z.array(CommitSchema)),
+		getBranch: IQuery.expects(z.string().default("")),
+		getShownCommits: IQuery.expects(z.number().default(SHOWN)),
 	},
 	draw: ({ getCommits, getBranch: branch, getShownCommits: shownCommits }) => {
 		const shown = askedCount(shownCommits, SHOWN);

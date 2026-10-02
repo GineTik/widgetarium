@@ -103,7 +103,7 @@ function shownFigure(figure: Figure, navigation: Navigation, canDraw: boolean): 
 
 const ReportFigure = createWidget({
 	inject: {
-		getSource: IQuery.of(FigureSchema.default({})),
+		getSource: IQuery.expects(FigureSchema.default({})),
 		host: IHost,
 		navigator: INavigator,
 	},

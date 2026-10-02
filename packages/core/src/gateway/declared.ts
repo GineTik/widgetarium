@@ -16,7 +16,7 @@ import type {
 import type { DeclaredFilterRow, HeldSpec, ModuleManifest, RecordRef as RecordRefType } from "./manifest";
 import { manifestOfDeclared, sizeProblems } from "./manifest";
 import type { Declaration } from "./declaration";
-import { BARE_QUERY, DECLARATION, QUERY_WITHOUT_SCHEMA, declarationIn } from "./declaration";
+import { BARE_QUERY, DECLARATION, QUERY_WITHOUT_SCHEMA, declarationIn, refuseImplementationWords } from "./declaration";
 import {
 	refuseEmptyMigrations,
 	refuseImplementations,
@@ -255,6 +255,7 @@ export const IReader = createPassedClass("reader") as PassedDeclared<IReader>;
 export function defineProps<const P extends DeclaredProps>(props: P): P {
 	refuseOutsideTheRoot(props);
 	refuseBareQuery(props);
+	refuseImplementationWords(props);
 	refuseUndeclared(props);
 	refuseImplementations(props);
 	Object.defineProperty(props, DEFINED_PROPS, { value: true });
@@ -288,6 +289,7 @@ export function manifestOfModule(module: DeclaredModule): ModuleManifest | null 
 	refuseMetadataForNothing(props, described ?? {});
 	refuseSourcesOverNothing(props, described ?? {});
 	refuseBareQuery(props);
+	refuseImplementationWords(props);
 	refuseUndeclared(props);
 	const input = {
 		...card,

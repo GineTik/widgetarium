@@ -8,7 +8,7 @@ import { PROP_MARK, specOf } from "./manifest";
 export type Described = Readonly<Record<string, PropMetadata<unknown> | undefined>>;
 
 const NOT_DECLARED =
-	'prop "{name}" is not a gateway declared with IQuery.of, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)';
+	'prop "{name}" is not a gateway declared with IQuery.expects, ICommand.sends, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)';
 const METADATA_FOR_NOTHING = 'metadata describes prop "{name}", which props do not declare';
 const METADATA_FOR_THE_ENGINE = 'metadata describes prop "{name}", which the engine hands over and a person never sets';
 const READS_NOTHING_DECLARED =

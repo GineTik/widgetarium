@@ -131,7 +131,7 @@ const NOTHING = "Nothing was recorded for this question.";
 
 const QaBlock = createWidget({
 	inject: {
-		getAsked: IQuery.of(
+		getAsked: IQuery.expects(
 			QuestionSchema.default({
 				question: "Where does the loading threshold live?",
 				options: ["one engine constant", "per widget", "per binding"],

@@ -71,7 +71,7 @@ export const props = defineProps({
 			{ title: "Unmarked tape", tracks: 3 },
 		],
 	}),
-	getPageSize: IQuery.of(z.number().default(PAGE_SIZE)),
+	getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 	cover: ISlot.of<Given>({
 		default: "@media/album-cover",
 		surface: "none",

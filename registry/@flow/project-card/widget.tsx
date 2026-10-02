@@ -155,7 +155,7 @@ export const ProjectSchema = z.object({
 
 const ProjectCard = createWidget({
 	inject: {
-		getProject: IQuery.of(
+		getProject: IQuery.expects(
 			ProjectSchema.default({
 				mark: "🧭",
 				name: "Harbour",

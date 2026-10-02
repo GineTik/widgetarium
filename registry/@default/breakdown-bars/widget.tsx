@@ -24,11 +24,11 @@ const NO_NOTES = "There are no notes here yet.";
 
 const BreakdownBars = createWidget({
 	inject: {
-		getRecords: IQuery.of(z.array(VaultRecordSchema)),
-		getGroupBy: IQuery.of(z.string().default(BY_FOLDER)),
-		getShownAtFirst: IQuery.of(z.number().default(SHOWN_AT_FIRST)),
-		getStep: IQuery.of(z.number().default(STEP)),
-		getShowMoreButton: IQuery.of(z.boolean().default(true)),
+		getRecords: IQuery.expects(z.array(VaultRecordSchema)),
+		getGroupBy: IQuery.expects(z.string().default(BY_FOLDER)),
+		getShownAtFirst: IQuery.expects(z.number().default(SHOWN_AT_FIRST)),
+		getStep: IQuery.expects(z.number().default(STEP)),
+		getShowMoreButton: IQuery.expects(z.boolean().default(true)),
 	},
 	draw: ({
 		getRecords,

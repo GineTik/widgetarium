@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { Kind } from "./declaration";
-import { declarationIn } from "./declaration";
+import { WIDGET_WORDS, declarationIn } from "./declaration";
 
 type Constructed = new (fields: never, host?: never) => object;
 
@@ -23,7 +23,10 @@ export interface GatewayMetadataInput<C extends Constructed> {
 }
 
 const EXTENDS_NO_INTERFACE =
-	"{implementation} extends no gateway interface — extend IValueGateway, IListGateway or ICrudGateway, with or without .of()";
+	"{implementation} extends no gateway interface — extend IQuery.returns, IQuery.returnsAny, ICommand.takes, IValueGateway, IListGateway or ICrudGateway";
+
+const WIDGET_WORD_IN_IMPLEMENTATION =
+	"{implementation} extends {word}, the word a widget declares: an implementation extends {fits}";
 
 export function defineGatewayMetadata<C extends Constructed>(
 	implementation: C,
@@ -32,5 +35,11 @@ export function defineGatewayMetadata<C extends Constructed>(
 	const declaration = declarationIn(implementation);
 	if (!declaration)
 		throw new Error(EXTENDS_NO_INTERFACE.replace("{implementation}", implementation.name || "this class"));
+	if (declaration.word && WIDGET_WORDS.includes(declaration.word))
+		throw new Error(
+			WIDGET_WORD_IN_IMPLEMENTATION.replace("{implementation}", implementation.name || "this class")
+				.replace("{word}", declaration.word === "sends" ? "ICommand.sends" : "IQuery.expects")
+				.replace("{fits}", declaration.word === "sends" ? "ICommand.takes" : "IQuery.returns or IQuery.returnsAny"),
+		);
 	return { ...metadata, implementation, kind: declaration.kind };
 }

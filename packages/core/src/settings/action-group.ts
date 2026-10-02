@@ -68,7 +68,7 @@ function commandRow(state: SettingsState, [name, spec]: Named): ReactElement {
 	const sub = spec.hint ?? sayingOf(binding);
 	const trigger = valueRow({ label: spec.label, sub, value: null, unset: !binding.implementation });
 	const choices =
-		sourcesOpen || !binding.implementation
+		sourcesOpen || !targetKindOf(binding)
 			? implementationChoices(state, name, binding)
 			: targetChoices(state, name, binding);
 	const body = h("div", { className: "wg-set-pop-body" }, [commandHead(state, name, spec, sourcesOpen), ...choices]);
@@ -120,14 +120,18 @@ function implementationRow(
 ): ReactElement {
 	const onClick = (): void => {
 		writeBinding(state, name, { implementation });
-		state.openEditor(popKeyOf(name), "");
+		if (kind.target) state.openEditor(popKeyOf(name), "");
 	};
 	return h(SidebarRow, { key: implementation, as: "button", label: kind.title, sub: kind.said, selected, onClick });
 }
 
+function targetKindOf(binding: CommandBinding): CommandTarget | null {
+	return binding.implementation ? (HOST_COMMAND_KINDS[binding.implementation]?.target ?? null) : null;
+}
+
 function targetChoices(state: SettingsState, name: string, binding: CommandBinding): ReactNode[] {
-	const kind = binding.implementation ? HOST_COMMAND_KINDS[binding.implementation] : undefined;
-	const target = kind?.target ?? "collection";
+	const target = targetKindOf(binding);
+	if (!target) return [];
 	const byTile = offeredByTile(state, target);
 	if (byTile.size === 0) return [note(NOTHING_TYPED)];
 	const groups = [...byTile].map(([tile, offered], index) =>

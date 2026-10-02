@@ -348,7 +348,7 @@ check(
 
 const QUERYING_WIDGET = `import { IQuery, ICommand, createWidget, z } from "widgetarium";
 const Queried = createWidget({
-	inject: { getTitles: IQuery.of(z.array(z.object({ title: z.string() }))), press: ICommand },
+	inject: { getTitles: IQuery.expects(z.array(z.object({ title: z.string() }))), press: ICommand },
 	draw: () => null,
 });
 export const metadata = { title: "Queried", description: "Reads through IQuery." };

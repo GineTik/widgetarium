@@ -29,12 +29,12 @@ type Column = z.infer<typeof ColumnSchema>;
 
 const TableWidget = createWidget({
 	inject: {
-		getRecords: IQuery.of(z.array(VaultRecordSchema)),
-		getColumns: IQuery.of(z.array(ColumnSchema)),
-		getRowTitle: IQuery.of(z.string().default("")),
-		getYesNo: IQuery.of(z.boolean().default(false)),
-		getRowsAtFirst: IQuery.of(z.number().default(ROWS_AT_FIRST)),
-		getFadeEdges: IQuery.of(z.boolean().default(true)),
+		getRecords: IQuery.expects(z.array(VaultRecordSchema)),
+		getColumns: IQuery.expects(z.array(ColumnSchema)),
+		getRowTitle: IQuery.expects(z.string().default("")),
+		getYesNo: IQuery.expects(z.boolean().default(false)),
+		getRowsAtFirst: IQuery.expects(z.number().default(ROWS_AT_FIRST)),
+		getFadeEdges: IQuery.expects(z.boolean().default(true)),
 	},
 	draw: ({
 		getRecords,

@@ -97,9 +97,9 @@ that erases what the component is typed from. Code outside `draw` that needs the
 
 | Declared                                                    | Arrives as                                                |
 | ----------------------------------------------------------- | --------------------------------------------------------- |
-| `getTasks: IQuery.of(z.array(RowSchema))`                   | a list read: `useData(getTasks, { where, sort, limit })`  |
-| `getHeading: IQuery.of(z.string().default("To do"))`        | the value: `draw: ({ getHeading: heading }) => …`         |
-| `ICommand.of(InputSchema)`, or `ICommand` with no input     | `await move(input)` answers `{ ok }` or `{ ok, reason }`  |
+| `getTasks: IQuery.expects(z.array(RowSchema))`              | a list read: `useData(getTasks, { where, sort, limit })`  |
+| `getHeading: IQuery.expects(z.string().default("To do"))`   | the value: `draw: ({ getHeading: heading }) => …`         |
+| `ICommand.sends(InputSchema)`, or `ICommand` with no input  | `await move(input)` answers `{ ok }` or `{ ok, reason }`  |
 | `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema            |
 | `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                       |
 | `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                               |
@@ -113,7 +113,7 @@ that erases what the component is typed from. Code outside `draw` that needs the
 
 **Reads are `IQuery`, writes are `ICommand`; prefer them in a new widget.** A query over `z.array(...)`
 takes the input every list takes (`where`, `sort`, `offset`, `limit`); any other query takes none
-and arrives as its value. A bare `IQuery` is refused: it needs `.of(schema)`. **A query is named
+and arrives as its value. A bare `IQuery` is refused: it needs `IQuery.expects(schema)`. **A query is named
 `get` and what it reads**, booleans included: `getTasks` (a list is plural), `getYear`, `getIsRound`.
 A value query is renamed where it is drawn, `({ getYear: year })`, so the body reads the value. A
 prop renamed from an older name keeps it in metadata, `getTasks: { aka: ["tasks"] }`, so a tile bound
@@ -123,7 +123,16 @@ frame draws the change. A create carries its own `id: z.uuid()`, minted at the p
 with that id writes nothing. Ask `move.can()` before drawing the control, and draw `reason` when it
 answers `ok: false`. The person picks what runs a command in the Actions group of the settings
 window; `metadata.props.<command>.source = { implementation, fields }` names the default, with
-`fields` naming sibling props, so a toggle works with nothing set up.
+`fields` naming sibling props, so a toggle works with nothing set up. A command with neither runs
+`@core/console-log`: it prints the tile, the command and what was sent to the console and changes
+nothing, the way an unbound query shows its typed default.
+
+**A widget expects and sends; an implementation returns and takes.** `IQuery.expects` and
+`ICommand.sends` are the only words a widget declares with. An implementation extends
+`IQuery.returns(S)` for one shape, `IQuery.returnsAny(B)` for any shape within the bound `B` (a folder
+returns any list of objects: `IQuery.returnsAny(z.array(z.object({})))`), and `ICommand.takes(S)`. A
+word on the wrong side is refused with the word that fits. An implementation class is named
+`*Query` or `*Command`.
 
 **The schema is the type and the default.** A value's schema must carry `.default()`; one without is
 refused. The built-in gateways check what they read against the schema through `context.parse`: a

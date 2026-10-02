@@ -208,7 +208,7 @@ function kindOf(change: FileChange["change"], from: FileChange["from"]): Kind {
 
 const FileRow = createWidget({
 	inject: {
-		getFile: IQuery.of(
+		getFile: IQuery.expects(
 			FileChangeSchema.default({
 				filePath: "src/engine/catalogue-index.js",
 				change: "modified",

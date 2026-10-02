@@ -21,10 +21,10 @@ const NO_NOTES = "There are no notes here yet.";
 
 const PropertyCoverage = createWidget({
 	inject: {
-		getRecords: IQuery.of(z.array(VaultRecordSchema)),
-		getShownAtFirst: IQuery.of(z.number().default(SHOWN_AT_FIRST)),
-		getStep: IQuery.of(z.number().default(STEP)),
-		getShowMoreButton: IQuery.of(z.boolean().default(true)),
+		getRecords: IQuery.expects(z.array(VaultRecordSchema)),
+		getShownAtFirst: IQuery.expects(z.number().default(SHOWN_AT_FIRST)),
+		getStep: IQuery.expects(z.number().default(STEP)),
+		getShowMoreButton: IQuery.expects(z.boolean().default(true)),
 	},
 	draw: ({ getRecords, getShownAtFirst: shownAtFirst, getStep: step, getShowMoreButton: showMoreButton }) => {
 		const read = useData(getRecords, { limit: COUNTED_CEILING });

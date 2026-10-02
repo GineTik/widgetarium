@@ -54,7 +54,7 @@ const SHOW_MORE = "Show more";
 
 const PlanQa = createWidget({
 	inject: {
-		getQuestions: IQuery.of(
+		getQuestions: IQuery.expects(
 			z.array(QuestionSchema).default([
 				{
 					question: "Where does the loading threshold live?",

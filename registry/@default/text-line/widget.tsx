@@ -46,10 +46,10 @@ const LINE_TAGS = ["p", "h1", "h2", "h3"] as const;
 
 const TextLine = createWidget({
 	inject: {
-		getText: IQuery.of(z.string().default("")),
-		getTone: IQuery.of(z.enum(["label", "value", "caption"]).default("value")),
-		getHeading: IQuery.of(z.number().default(0)),
-		getLines: IQuery.of(z.number().default(0)),
+		getText: IQuery.expects(z.string().default("")),
+		getTone: IQuery.expects(z.enum(["label", "value", "caption"]).default("value")),
+		getHeading: IQuery.expects(z.number().default(0)),
+		getLines: IQuery.expects(z.number().default(0)),
 	},
 	draw: ({ getText: text, getTone: tone, getHeading: heading, getLines: lines }) => {
 		const said = text.trim();

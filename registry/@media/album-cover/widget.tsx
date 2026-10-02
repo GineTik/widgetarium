@@ -60,8 +60,8 @@ export const AlbumSchema = z.object({
 
 const AlbumCover = createWidget({
 	inject: {
-		getAlbum: IQuery.of(AlbumSchema.default({ title: "In Rainbows", artist: "Radiohead", tracks: 10 })),
-		getBeside: IQuery.of(z.boolean().default(false)),
+		getAlbum: IQuery.expects(AlbumSchema.default({ title: "In Rainbows", artist: "Radiohead", tracks: 10 })),
+		getBeside: IQuery.expects(z.boolean().default(false)),
 		host: IHost,
 	},
 	draw: ({ getAlbum: album, getBeside: beside, host }) => {

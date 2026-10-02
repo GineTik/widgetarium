@@ -87,11 +87,11 @@ const SQUARE_CORNER = 2.5;
 
 const HeatmapWidget = createWidget({
 	inject: {
-		getLogs: IQuery.of(z.array(DayNoteSchema)),
-		getPick: IQuery.of(z.unknown()),
-		getYear: IQuery.of(z.number().default(0)),
-		getIsRound: IQuery.of(z.boolean().default(false)),
-		getIsWeekStartingMonday: IQuery.of(z.boolean().default(true)),
+		getLogs: IQuery.expects(z.array(DayNoteSchema)),
+		getPick: IQuery.expects(z.unknown()),
+		getYear: IQuery.expects(z.number().default(0)),
+		getIsRound: IQuery.expects(z.boolean().default(false)),
+		getIsWeekStartingMonday: IQuery.expects(z.boolean().default(true)),
 		navigator: INavigator,
 	},
 	draw: ({

@@ -26,10 +26,10 @@ function pixelsOf(held: number, fallback: number) {
 
 const ObsidianMarkdownPreview = createWidget({
 	inject: {
-		getSource: IQuery.of(MarkdownSourceSchema.default("")),
-		getCollapsible: IQuery.of(z.boolean().default(false)),
-		getCollapsedHeight: IQuery.of(z.number().default(240)),
-		getStep: IQuery.of(z.number().default(0)),
+		getSource: IQuery.expects(MarkdownSourceSchema.default("")),
+		getCollapsible: IQuery.expects(z.boolean().default(false)),
+		getCollapsedHeight: IQuery.expects(z.number().default(240)),
+		getStep: IQuery.expects(z.number().default(0)),
 		host: IHost,
 		navigator: INavigator,
 	},

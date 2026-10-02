@@ -30,14 +30,14 @@ const TEXT_HINT = "The line itself, as markdown: **bold**, `code`, a [[link]] an
 
 const IconList = createWidget({
 	inject: {
-		getEntries: IQuery.of(
+		getEntries: IQuery.expects(
 			z.array(EntrySchema).default([
 				{ icon: "tick", tone: "success", text: "**A list — yes.** More columns visible, more rows in view." },
 				{ icon: "close", tone: "error", text: "**Prose — no.** Past ~75 characters the eye loses the next line." },
 			]),
 		),
-		getNumbered: IQuery.of(z.boolean().default(false)),
-		getSolid: IQuery.of(z.boolean().default(false)),
+		getNumbered: IQuery.expects(z.boolean().default(false)),
+		getSolid: IQuery.expects(z.boolean().default(false)),
 		host: IHost,
 	},
 	draw: ({ getEntries, getNumbered: numbered, getSolid: solid, host }) => {

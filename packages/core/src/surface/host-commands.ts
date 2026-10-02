@@ -5,7 +5,14 @@ import { isObject } from "../engine/is-object.js";
 import type { EngineManifest } from "../engine/catalogue-index.js";
 import type { Tile } from "../model.js";
 import { canOf } from "../gateway/create.js";
-import { HOST_COMMAND_KINDS, commandBindingOf, commandSpecsOf, isRunAllowed, targetOf } from "./command-binding.js";
+import {
+	CONSOLE_LOG,
+	HOST_COMMAND_KINDS,
+	commandBindingOf,
+	commandSpecsOf,
+	isRunAllowed,
+	targetOf,
+} from "./command-binding.js";
 import type { CommandBinding } from "./command-binding.js";
 
 export interface HostCommand {
@@ -48,7 +55,7 @@ export function useHostCommands(manifest: EngineManifest, tile: Tile, refs: Gate
 		() =>
 			Object.fromEntries(
 				Object.entries(specs).flatMap(([name, spec]) => {
-					const command = hostCommandOf(name, commandBindingOf(tile, name, spec), refs);
+					const command = hostCommandOf(name, commandBindingOf(tile, name, spec), refs, tile.id);
 					return command ? [[name, command] as const] : [];
 				}),
 			),
@@ -56,16 +63,17 @@ export function useHostCommands(manifest: EngineManifest, tile: Tile, refs: Gate
 	);
 }
 
-function hostCommandOf(name: string, binding: CommandBinding, refs: GatewayRefs): HostCommand | null {
+function hostCommandOf(name: string, binding: CommandBinding, refs: GatewayRefs, tileId: string): HostCommand | null {
 	const { implementation } = binding;
 	if (!implementation) return null;
+	if (!isRunAllowed(binding)) return createRefusedCommand(NOT_ALLOWED.replace("{name}", name));
+	if (implementation === CONSOLE_LOG) return createConsoleLogCommand(`${tileId}/${name}`);
 	const kind = HOST_COMMAND_KINDS[implementation];
 	const write = WRITES[implementation];
 	if (!kind || !write)
 		return createRefusedCommand(
 			UNKNOWN_IMPLEMENTATION.replace("{name}", name).replace("{implementation}", implementation),
 		);
-	if (!isRunAllowed(binding)) return createRefusedCommand(NOT_ALLOWED.replace("{name}", name));
 	const target = targetOf(binding);
 	if (!target) return createRefusedCommand(NOTHING_NAMED.replace("{name}", name));
 	return createTargetedCommand({ name, verb: kind.verb, write, target, refs });
@@ -102,6 +110,15 @@ function runAfterOthersOnTarget(target: string, run: () => Promise<void>): Promi
 	return next.finally(() => {
 		if (RUNNING_ON_TARGET.get(target) === next) RUNNING_ON_TARGET.delete(target);
 	});
+}
+
+function createConsoleLogCommand(ref: string): HostCommand {
+	return {
+		can: () => ({ can: true }),
+		run: async (input) => {
+			console.log(`[widgetarium] ${ref} sent`, input);
+		},
+	};
 }
 
 function createRefusedCommand(reason: string): HostCommand {

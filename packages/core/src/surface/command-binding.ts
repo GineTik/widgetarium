@@ -7,16 +7,24 @@ import type { Tile } from "../model.js";
 
 export const TARGET_FIELD = "target";
 
+export const CONSOLE_LOG = "@core/console-log";
+
 export type CommandTarget = "collection" | "value";
 
 export interface HostCommandKind {
 	readonly verb: string;
-	readonly target: CommandTarget;
+	readonly target: CommandTarget | null;
 	readonly title: string;
 	readonly said: string;
 }
 
 export const HOST_COMMAND_KINDS: Readonly<Record<string, HostCommandKind>> = {
+	[CONSOLE_LOG]: {
+		verb: "run",
+		target: null,
+		title: "Print to the console",
+		said: "Prints what the widget sends to the developer console and changes nothing.",
+	},
 	"@core/typed-rows-create": {
 		verb: "create",
 		target: "collection",
@@ -73,7 +81,7 @@ export function commandBindingOf(tile: Tile, name: string, spec: ParsedCommandSp
 		const parsed = CommandBindingSchema.safeParse(own);
 		return parsed.success ? parsed.data : SWITCHED_OFF_UNTIL_REPAIRED;
 	}
-	if (!spec?.source) return {};
+	if (!spec?.source) return { implementation: CONSOLE_LOG };
 	return { implementation: spec.source.implementation, fields: siblingRefsOf(tile.id, spec.source.fields ?? {}) };
 }
 

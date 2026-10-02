@@ -62,9 +62,9 @@ const seen: Seen[] = [];
 
 const TaskBoard = createWidget({
 	inject: {
-		tasks: IQuery.of(z.array(TaskSchema)),
-		move: ICommand.of(z.object({ ref: RecordRefSchema, status: StatusSchema })),
-		create: ICommand.of(TaskSchema.extend({ id: z.uuid() })),
+		tasks: IQuery.expects(z.array(TaskSchema)),
+		move: ICommand.sends(z.object({ ref: RecordRefSchema, status: StatusSchema })),
+		create: ICommand.sends(TaskSchema.extend({ id: z.uuid() })),
 	},
 	draw: ({ tasks, move, create }) => {
 		const read = useData(tasks);
@@ -187,6 +187,22 @@ board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: { ...til
 draw();
 await tick();
 check("a command switched off in the Data tab cannot run", last().move.can().can, false);
+
+const unbound = Object.fromEntries(Object.entries(board.tiles[0]?.props ?? {}).filter(([name]) => name !== "move"));
+board = { ...board, tiles: board.tiles.map((tile) => ({ ...tile, props: unbound })) };
+draw();
+await tick();
+const printed: unknown[][] = [];
+const printing = console.log;
+console.log = (...parts: unknown[]): void => void printed.push(parts);
+const answeredUnbound = await last().move({ ref: shipped.ref, status: "todo" });
+console.log = printing;
+check("a command bound to nothing runs the console log and answers ok", answeredUnbound, { ok: true });
+check("and prints the tile, the command and what it was sent", printed, [
+	["[widgetarium] t1/move sent", { ref: shipped.ref, status: "todo" }],
+]);
+await tick();
+check("and changes nothing", last().tasks.find((row) => row.ref === shipped.ref)?.status, "done");
 
 board = {
 	...board,
