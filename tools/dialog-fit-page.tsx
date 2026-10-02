@@ -16,6 +16,7 @@ const task = {
 		progress: 65,
 		assignees: ["Denis Sevcuk", "Maria Kovalenko"],
 		tags: ["orbitask", "widget"],
+		board: "Widgetarium",
 	},
 };
 
@@ -58,16 +59,16 @@ const root = document.querySelector(".wg-root");
 if (root)
 	render(
 		<KanbanBoard
-			board={soloGateway(
+			getBoard={soloGateway(
 				{ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] },
 				{ update: () => null },
 				"dialog-fit-record",
 			)}
-			groupBy={soloGateway("status", {}, "dialog-fit-group")}
-			tasks={tasks}
-			boards={[]}
-			selection={selection}
-			opened={opened}
+			getGroupBy={soloGateway("status", {}, "dialog-fit-group")}
+			getTasks={tasks}
+			getBoards={[]}
+			getSelection={selection}
+			getOpened={opened}
 			host={HOST_RENDERING_WIDE_MARKDOWN}
 		/>,
 		root,

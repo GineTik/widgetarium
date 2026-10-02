@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { JSDOM } from "jsdom";
 import type { FunctionComponent } from "react";
-import type { Patch, RecordRef } from "../packages/core/src/gateway/contract.ts";
+import type { RecordRef } from "../packages/core/src/gateway/contract.ts";
 import { byId } from "./dom-find.ts";
 import { fieldAt } from "./held-fields.ts";
 import { present } from "./page-dom.ts";
@@ -50,7 +50,7 @@ const DECLARED: unknown = JSON.parse(fs.readFileSync("registry/@default/metric-t
 
 const isMetric = (value: unknown): value is FunctionComponent<MetricProps> => typeof value === "function";
 
-const RECORDS_PROP = declaredPropIn(fieldAt(DECLARED, "props", "records"), "metric-total's records");
+const RECORDS_PROP = declaredPropIn(fieldAt(DECLARED, "props", "getRecords"), "metric-total's getRecords");
 
 const libs = new Map<string, unknown>();
 
@@ -162,27 +162,26 @@ check(
 const written: { readonly verb: string; readonly [field: string]: unknown }[] = [];
 let minted = 0;
 
-function gatewayOver(
-	rows: readonly MetricRow[],
-	verbs: readonly string[] = ["create", "update", "remove"],
-): ReturnType<typeof mapCollection> {
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
+
+function commandOver(verb: string, verbs: readonly string[]) {
+	const send = (input: unknown) => {
+		written.push({ verb, ...(isRecord(input) ? input : {}) });
+		return { ok: true };
+	};
+	if (verbs.includes(verb)) return send;
+	return Object.assign(send, { can: () => ({ can: false, reason: `${verb} is switched off` }) });
+}
+
+function gatewayOver(rows: readonly MetricRow[]): ReturnType<typeof mapCollection> {
 	const held = recordsOver(rows).map((row) => ({ ref: row.ref, value: row }));
 	minted += 1;
-	const writes = {
-		...(verbs.includes("create")
-			? { create: (draft: object) => (written.push({ verb: "create", ...draft }), null) }
-			: {}),
-		...(verbs.includes("update")
-			? { update: (input: Patch<unknown>) => (written.push({ verb: "update", ...input }), null) }
-			: {}),
-		...(verbs.includes("remove") ? { remove: (ref: RecordRef) => void written.push({ verb: "remove", ref }) } : {}),
-	};
 	const base = collectionGateway({
 		id: `metric-test/${minted}`,
 		handlers: {
 			list: () => ({ rows: held, total: held.length }),
 			get: (ref: RecordRef) => held.find((row) => row.ref === ref) ?? null,
-			...writes,
 		},
 	});
 	return mapCollection(base, { needs: needsOf(RECORDS_PROP) });
@@ -219,21 +218,24 @@ interface DrawAsk {
 
 async function draw(
 	rows: readonly MetricRow[],
-	{ verbs, view = "curve", rising = "good" }: DrawAsk = {},
+	{ verbs = ["create", "update", "remove"], view = "curve", rising = "good" }: DrawAsk = {},
 ): Promise<HTMLElement> {
 	written.length = 0;
 	render(null, host);
 	minted += 1;
 	render(
 		h(Metric, {
-			records: gatewayOver(rows, verbs),
-			title: soloGateway("Total orders", {}, `metric-test/title/${minted}`),
-			unit: soloGateway("orders", {}, `metric-test/unit/${minted}`),
-			rising: soloGateway(rising, {}, `metric-test/rising/${minted}`),
-			periods: periodsGateway(),
-			periodPick: soloGateway("Past 7 days", {}, `metric-test/pick/${minted}`),
-			period: soloGateway(PERIODS[0], {}, `metric-test/period/${minted}`),
-			view: soloGateway(view, {}, `metric-test/view/${minted}`),
+			getRecords: gatewayOver(rows),
+			createRecord: commandOver("create", verbs),
+			updateRecord: commandOver("update", verbs),
+			removeRecord: commandOver("remove", verbs),
+			getTitle: soloGateway("Total orders", {}, `metric-test/title/${minted}`),
+			getUnit: soloGateway("orders", {}, `metric-test/unit/${minted}`),
+			getRising: soloGateway(rising, {}, `metric-test/rising/${minted}`),
+			getPeriods: periodsGateway(),
+			getPeriodPick: soloGateway("Past 7 days", {}, `metric-test/pick/${minted}`),
+			getPeriod: soloGateway(PERIODS[0], {}, `metric-test/period/${minted}`),
+			getView: soloGateway(view, {}, `metric-test/view/${minted}`),
 		}),
 		host,
 	);

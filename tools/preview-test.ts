@@ -77,12 +77,12 @@ const card = shipped["@default/task-card"];
 
 console.log("— the data a preview draws comes from the manifest —\n");
 const gateways = previewGateways(kanban);
-const tasks = collectionIn(gateways, "tasks");
+const tasks = collectionIn(gateways, "getTasks");
 const listed = await tasks.list();
 check(
 	"the prop the widget declares is answered",
 	listed.total,
-	lengthOf(pathIn(kanban, "preview", "props", "tasks", "rows")),
+	lengthOf(pathIn(kanban, "preview", "props", "getTasks", "rows")),
 );
 check(
 	"and the rows carry the widget's own property names",
@@ -114,9 +114,9 @@ check(
 
 console.log("\n— a widget with no source of its own still previews —");
 const cardProps = previewProps({ manifest: card }, {});
-const sampled = pathIn(card, "preview", "props", "task", "value");
-const cardDeclared = pathIn(card, "props", "task", "default", "value");
-const cardTask = await valueIn(cardProps, "task").get();
+const sampled = pathIn(card, "preview", "props", "getTask", "value");
+const cardDeclared = pathIn(card, "props", "getTask", "default", "value");
+const cardTask = await valueIn(cardProps, "getTask").get();
 check("its value comes from the manifest's sample", pathIn(cardTask, "title"), pathIn(sampled, "title"));
 check("over the manifest's own default", pathIn(cardTask, "priority"), pathIn(sampled, "priority"));
 check(
@@ -126,7 +126,7 @@ check(
 );
 check(
 	"and it is handed no gateway it never declared",
-	Object.keys(cardProps).filter((name) => name === "tasks"),
+	Object.keys(cardProps).filter((name) => name === "getTasks"),
 	[],
 );
 
@@ -141,7 +141,7 @@ check(
 );
 check("nor open the catalogue it is being drawn inside", boardProps.catalogue.canOpen, false);
 check("and pressing that closed catalogue answers nothing", await boardProps.catalogue.open(), null);
-check("the board it reads is the sample's", pathIn(await valueIn(boardProps, "board").get(), "properties"), [
+check("the board it reads is the sample's", pathIn(await valueIn(boardProps, "getBoard").get(), "properties"), [
 	"Status",
 	"Priority",
 	"Assignees",
@@ -200,7 +200,7 @@ check(
 check("and never carries the vault across", "app" in previewHost(hostCarryingTheVault), false);
 
 console.log("\n— it really draws —");
-const drawnRows = (await collectionIn(previewProps({ manifest: kanban }, {}), "tasks").list()).total;
+const drawnRows = (await collectionIn(previewProps({ manifest: kanban }, {}), "getTasks").list()).total;
 const Leaf = (): ReactElement => h("div", { className: "leaf" }, `${drawnRows} rows`);
 const mount = byId(dom.window.document, "host");
 render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);

@@ -27,8 +27,9 @@ const kit = await import("../packages/kit/src/index.ts");
 const { soloGateway } = await import("../packages/core/src/gateway/create.ts");
 
 interface SearchInputProps {
-	readonly value: unknown;
-	readonly placeholder: unknown;
+	readonly getValue: unknown;
+	readonly setValue: unknown;
+	readonly getPlaceholder: unknown;
 }
 
 const isSearchInput = (value: unknown): value is FunctionComponent<SearchInputProps> => typeof value === "function";
@@ -50,40 +51,41 @@ function check(what: string, got: unknown, wanted: unknown): void {
 const fieldOn = (host: HTMLElement): HTMLInputElement => foundAs(host, "input", dom.window.HTMLInputElement);
 
 const host = byId(document, "host");
-let held = "draft";
-const written: string[] = [];
-const value = soloGateway(
-	() => held,
-	{
-		update: (typed: string) => {
-			written.push(typed);
-			held = typed;
-		},
-	},
-	"search-test/value",
-);
-const placeholder = soloGateway("Search widgets", {}, "search-test/placeholder");
+const written: unknown[] = [];
+const getValue = soloGateway("draft", {}, "search-test/value");
+const setValue = (typed: unknown) => {
+	written.push(typed);
+	return { ok: true };
+};
+const getPlaceholder = soloGateway("Search widgets", {}, "search-test/placeholder");
 
-render(h(SearchInput, { value, placeholder }), host);
+render(h(SearchInput, { getValue, setValue, getPlaceholder }), host);
 const input = host.querySelector("input");
 check("the placeholder is read from its gateway", input?.placeholder, "Search widgets");
 check("the field opens on the value the gateway holds", input?.value, "draft");
 check("the search icon stands beside the field", Boolean(host.querySelector(".wg-kit-field svg")), true);
 
-const setValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")?.set;
-if (!input || !setValue) throw new Error("the field drew no input whose value can be set");
+const setFieldValue = Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, "value")?.set;
+if (!input || !setFieldValue) throw new Error("the field drew no input whose value can be set");
 flushSync(() => {
-	setValue.call(input, "tasks");
+	setFieldValue.call(input, "tasks");
 	input.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
 });
 await new Promise((settle) => setTimeout(settle, 0));
-check("typing writes the text through the value's update", written, ["tasks"]);
+check("typing sends the text through setValue", written, ["tasks"]);
 check("the field shows what was typed", fieldOn(host).value, "tasks");
 
 render(null, host);
-const fixed = soloGateway("fixed", {}, "search-test/fixed");
-render(h(SearchInput, { value: fixed, placeholder }), host);
-check("a value with no update is read-only rather than silently dropping keys", fieldOn(host).readOnly, true);
+const refused: unknown[] = [];
+const shutSetValue = Object.assign((typed: unknown) => void refused.push(typed), {
+	can: () => ({ can: false, reason: "the query is fixed" }),
+});
+render(
+	h(SearchInput, { getValue: soloGateway("fixed", {}, "search-test/fixed"), setValue: shutSetValue, getPlaceholder }),
+	host,
+);
+check("a setValue that answers can: false makes the field read-only", fieldOn(host).readOnly, true);
+check("and the field still shows the value it reads", fieldOn(host).value, "fixed");
 render(null, host);
 
 if (failed > 0) {

@@ -309,8 +309,8 @@ function folderStandIn(records: readonly Habit[], { canWrite = true } = {}) {
 
 {
 	const manifest: unknown = JSON.parse(await readFile("registry/@default/streak/manifest.generated.json", "utf8"));
-	const needs = gateway.needsOf((await propsOfEveryShippedWidget())["@default/streak"]?.["days"]);
-	const rows = pathIn(manifest, "preview", "props", "days", "rows");
+	const needs = gateway.needsOf((await propsOfEveryShippedWidget())["@default/streak"]?.["getDays"]);
+	const rows = pathIn(manifest, "preview", "props", "getDays", "rows");
 	const { map } = resolveNeeds(needs, fieldsOf(Array.isArray(rows) ? rows : []));
 	check(
 		"shipped: the streak names no property through a setting at all",

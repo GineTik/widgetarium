@@ -79,11 +79,11 @@ const openNothing = soloGateway("", {}, "fill-open");
 const chosenFilters = cellFor("fill-chosen");
 const filterPanel = (): ReactElement => (
 	<FilterPanel
-		tasks={emptyTasks}
-		groups={filterGroups}
-		openGroup={openNothing}
-		properties={noProperties}
-		chosen={chosenFilters}
+		getTasks={emptyTasks}
+		getGroups={filterGroups}
+		getOpenGroup={openNothing}
+		getProperties={noProperties}
+		getChosen={chosenFilters}
 	/>
 );
 
@@ -91,7 +91,7 @@ const CASES: readonly FillCase[] = [
 	{
 		name: "view-tabs, 3 cells, short label",
 		cells: 3,
-		node: <ViewTabs options={shortLabel.options} selection={shortLabel.selection} />,
+		node: <ViewTabs getOptions={shortLabel.options} getSelection={shortLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -99,7 +99,7 @@ const CASES: readonly FillCase[] = [
 	{
 		name: "view-tabs, 2 cells, over-long label",
 		cells: 2,
-		node: <ViewTabs options={longLabel.options} selection={longLabel.selection} />,
+		node: <ViewTabs getOptions={longLabel.options} getSelection={longLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -107,7 +107,7 @@ const CASES: readonly FillCase[] = [
 	{
 		name: "view-tabs, 1 cell, over-long label",
 		cells: 1,
-		node: <ViewTabs options={longLabel.options} selection={longLabel.selection} />,
+		node: <ViewTabs getOptions={longLabel.options} getSelection={longLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",
@@ -115,7 +115,7 @@ const CASES: readonly FillCase[] = [
 	{
 		name: "view-tabs, 13 cells, over-long label",
 		cells: 13,
-		node: <ViewTabs options={longLabel.options} selection={longLabel.selection} />,
+		node: <ViewTabs getOptions={longLabel.options} getSelection={longLabel.selection} />,
 		control: "button.ovt-pick",
 		label: ".ovt-pick .wg-kit-btn-label",
 		icon: ".ovt-caret",

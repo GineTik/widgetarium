@@ -219,8 +219,8 @@ check(
 );
 check(
 	"and the refs it was authored with",
-	pathIn(written, "tiles", "3", "props", "selection", "ref"),
-	"boards/selection",
+	pathIn(written, "tiles", "3", "props", "getSelection", "ref"),
+	"boards/getSelection",
 );
 check("reading it back changes nothing", serializeBoard(normalizeBoard(written)), written);
 

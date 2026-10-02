@@ -44,6 +44,7 @@ export {
 	defineProps,
 	z,
 } from "../packages/core/src/gateway/declared";
+export { ICommand, IQuery } from "../packages/core/src/gateway/queries";
 export { defineGatewayMetadata } from "../packages/core/src/gateway/implementation-metadata";
 export {
 	defineDefaultImplementation,

@@ -25,12 +25,20 @@ const KANBAN = "@default/kanban-board";
 const ARCHIVED = "@default/archived-columns";
 const CHOSEN = "Archived columns";
 
+const TABS_COMMAND_ROWS = [
+	"Add a tabAdds a row to a list on this board.",
+	"Rename or archive a tabRewrites a row of a list on this board.",
+	"Delete a tabDrops a row from a list on this board.",
+	"Pick a tabSets a value on this board.",
+];
+const TABS_ROWS = ["Tabs", "Label field", "Value field", "Selected tab", ...TABS_COMMAND_ROWS];
+
 const boundSwitcher = {
 	id: "views",
 	widget: "@default/view-tabs",
-	props: { options: { from: "ref", ref: "group/holds" }, selection: { from: "ref", ref: "group/selection" } },
+	props: { getOptions: { from: "ref", ref: "group/holds" }, getSelection: { from: "ref", ref: "group/selection" } },
 };
-const looseSwitcher = { id: "views", widget: "@default/view-tabs", props: { options: { rows: [] } } };
+const looseSwitcher = { id: "views", widget: "@default/view-tabs", props: { getOptions: { rows: [] } } };
 const probeOn = (ref: string) => ({ id: "probe", widget: "@probe/context", props: { seen: { from: "ref", ref } } });
 
 const kept = (of: readonly unknown[]) => ({ dir: "row", of: [{ dir: "column", keep: true, of }] });
@@ -52,13 +60,17 @@ function rowsAlone(held: string) {
 
 const GROUPED = {
 	tiles: [
-		{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "One" }, { name: "Two" }] } } },
+		{
+			id: "boards",
+			widget: "@default/editable-tabs",
+			props: { getTabs: { rows: [{ name: "One" }, { name: "Two" }] } },
+		},
 		boundSwitcher,
 		{
 			id: "group",
 			widget: "@default/view-group",
 			settings: { views: `${KANBAN}, ${ARCHIVED}` },
-			mounted: { [KANBAN]: { props: { tasks: { path: "Orbitask/Tasks" } } } },
+			mounted: { [KANBAN]: { props: { getTasks: { path: "Orbitask/Tasks" } } } },
 		},
 	],
 	layout: rowsOver("group"),
@@ -66,12 +78,16 @@ const GROUPED = {
 
 const STRIPPED = {
 	tiles: [
-		{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "One" }, { name: "Two" }] } } },
+		{
+			id: "boards",
+			widget: "@default/editable-tabs",
+			props: { getTabs: { rows: [{ name: "One" }, { name: "Two" }] } },
+		},
 		{
 			id: "group",
 			widget: "@default/view-group",
 			settings: { views: `${KANBAN}, ${ARCHIVED}` },
-			mounted: { [KANBAN]: { props: { tasks: { path: "Orbitask/Tasks" } } } },
+			mounted: { [KANBAN]: { props: { getTasks: { path: "Orbitask/Tasks" } } } },
 		},
 	],
 	layout: rowsAlone("group"),
@@ -79,13 +95,17 @@ const STRIPPED = {
 
 const LOOSE = {
 	tiles: [
-		{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "One" }, { name: "Two" }] } } },
+		{
+			id: "boards",
+			widget: "@default/editable-tabs",
+			props: { getTabs: { rows: [{ name: "One" }, { name: "Two" }] } },
+		},
 		looseSwitcher,
 		{
 			id: "board",
 			widget: KANBAN,
 			settings: { columns: "To Do, Doing, Done" },
-			props: { tasks: { path: "Orbitask/Tasks" } },
+			props: { getTasks: { path: "Orbitask/Tasks" } },
 		},
 	],
 	layout: rowsOver("board"),
@@ -103,13 +123,17 @@ function narrowed<Board extends { readonly layout: unknown }>(board: Board, id: 
 
 const STUCK = {
 	tiles: [
-		{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "One" }, { name: "Two" }] } } },
+		{
+			id: "boards",
+			widget: "@default/editable-tabs",
+			props: { getTabs: { rows: [{ name: "One" }, { name: "Two" }] } },
+		},
 		looseSwitcher,
 		{
 			id: "board",
 			widget: KANBAN,
 			settings: { columns: "To Do, Doing, Done" },
-			props: { tasks: { path: "Orbitask/Tasks" } },
+			props: { getTasks: { path: "Orbitask/Tasks" } },
 		},
 		{ id: "filters", widget: "@default/filter-panel" },
 	],
@@ -190,11 +214,12 @@ async function gate() {
 		"Label field = name",
 		"Value field = board",
 		"Selected tab = Its own",
+		...TABS_COMMAND_ROWS.map((row) => `${row} = `),
 	]);
 
 	const TYPED = {
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "One", board: "one" }] } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { getTabs: { rows: [{ name: "One", board: "one" }] } } },
 			probeOn("boards/selection"),
 		],
 		layout: kept([
@@ -226,10 +251,7 @@ async function gate() {
 	check(
 		"the panel holds one row for the prop, and the list is inside it",
 		[at(typed, "boardSettings", "rows"), at(typed, "opened", "popRows")],
-		[
-			["Tabs", "Label field", "Value field", "Selected tab"],
-			["One", "Add item"],
-		],
+		[TABS_ROWS, ["One", "Add item"]],
 	);
 	check("and says the rows live in the tile", at(typed, "boardSettings", "rowValues", "0"), "Tabs = Typed here");
 	check(
@@ -267,10 +289,14 @@ async function gate() {
 		[at(typed, "typed", "popError"), at(typed, "typed", "applyOff")],
 		[null, null],
 	);
-	check("Done writes the item beside the one already there", at(typed, "done", "tiles", "0", "props", "tabs", "rows"), [
-		{ name: "One", board: "one" },
-		{ name: "Two", board: "two" },
-	]);
+	check(
+		"Done writes the item beside the one already there",
+		at(typed, "done", "tiles", "0", "props", "getTabs", "rows"),
+		[
+			{ name: "One", board: "one" },
+			{ name: "Two", board: "two" },
+		],
+	);
 	check("and the strip draws it", at(typed, "done", "strip"), ["One", "Two"]);
 	check("picking it hands down the value that was typed, not the label", at(typed, "picked", "probe"), '"two"');
 
@@ -318,18 +344,18 @@ async function gate() {
 		RENAME_VALUE.map((step) => at(reread, step.name, "pressed")),
 		RENAME_VALUE.map(() => true),
 	);
-	check("the field a tab reads is the one that changed", at(reread, "done", "tiles", "0", "props", "value"), {
+	check("the field a tab reads is the one that changed", at(reread, "done", "tiles", "0", "props", "getValue"), {
 		from: "typed",
 		value: "team",
 	});
 	check(
 		"and the typed items keep every key they were written with",
-		at(reread, "done", "tiles", "0", "props", "tabs", "rows"),
+		at(reread, "done", "tiles", "0", "props", "getTabs", "rows"),
 		[{ name: "One", board: "one" }],
 	);
 
 	const BOUND = {
-		tiles: [{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { path: "Orbitask/Boards" } } }],
+		tiles: [{ id: "boards", widget: "@default/editable-tabs", props: { getTabs: { path: "Orbitask/Boards" } } }],
 		layout: kept([{ id: "boards", height: 56 }]),
 	};
 	const SOURCES_BUTTON = '.wg-set-pop button[aria-label="Where the data comes from"]';
@@ -373,17 +399,17 @@ async function gate() {
 		[at(switched, "again", "strip"), at(switched, "again", "popRows")],
 		[["Solo"], ["Solo", "Add item"]],
 	);
-	check("both live in the tile, and only one of them is read", at(switched, "done", "tiles", "0", "props", "tabs"), {
+	check("both live in the tile, and only one of them is read", at(switched, "done", "tiles", "0", "props", "getTabs"), {
 		path: "Orbitask/Boards",
 		from: "typed",
 		rows: [{ name: "Solo" }],
-		allow: ["list", "get", "create", "update", "remove"],
+		allow: ["list", "get"],
 	});
 	check("the strip draws the typed list at the end", at(switched, "done", "strip"), ["Solo"]);
 	check(
 		"and the popup offers a row to add one",
 		[at(switched, "switched", "rows"), at(switched, "switched", "popRows")],
-		[["Tabs", "Label field", "Value field", "Selected tab"], ["Add item"]],
+		[TABS_ROWS, ["Add item"]],
 	);
 
 	const loose = await stage({ board: LOOSE, files, editing: true, steps: [SETTINGS_STEP] });
@@ -401,9 +427,9 @@ async function gate() {
 				id: "filters",
 				widget: "@default/filter-panel",
 				props: {
-					tasks: { path: "Orbitask/Tasks" },
-					groups: { rows: [{ prop: "status", label: "Stage" }] },
-					openGroup: { value: "status" },
+					getTasks: { path: "Orbitask/Tasks" },
+					getGroups: { rows: [{ prop: "status", label: "Stage" }] },
+					getOpenGroup: { value: "status" },
 				},
 			},
 			probeOn("filters/chosen"),
@@ -445,10 +471,12 @@ async function gate() {
 	check("and what was ticked is what its box holds", at(narrowing, "applied", "probe"), '{"status":["Doing"]}');
 	check("every one of the panel's props is a row of its own", at(narrowing, "settings", "rows"), [
 		"Tasks",
+		"Board",
 		"Filter by",
 		"Open by default",
 		"Board properties",
 		"Chosen filters",
+		"Apply the filtersRuns when Apply or Reset is pressed, with everything that is now ticked.",
 	]);
 
 	const NARROWED = {
@@ -457,7 +485,7 @@ async function gate() {
 				id: "boards",
 				widget: "@default/editable-tabs",
 				props: {
-					tabs: {
+					getTabs: {
 						rows: [
 							{ name: "One", board: "one" },
 							{ name: "Two", board: "two" },
@@ -469,7 +497,7 @@ async function gate() {
 				id: "board",
 				widget: KANBAN,
 				settings: { columns: "To Do, Doing, Done" },
-				props: { tasks: { path: "Orbitask/Tasks" } },
+				props: { getTasks: { path: "Orbitask/Tasks" } },
 			},
 		],
 		layout: kept([
@@ -516,7 +544,7 @@ async function gate() {
 	);
 	check(
 		"and the row lands as the operator the engine reads",
-		at(tileIn(built, "done", "board"), "props", "tasks", "where"),
+		at(tileIn(built, "done", "board"), "props", "getTasks", "where"),
 		[{ prop: "status", op: "ne", value: "Done" }],
 	);
 	check("the list reads it back as a sentence", at(built, "value", "rows", "0"), "status is not Done");
@@ -542,7 +570,7 @@ async function gate() {
 	);
 	check(
 		"and it is written with the value the operator wants",
-		at(tileIn(emptied, "done", "board"), "props", "tasks", "where"),
+		at(tileIn(emptied, "done", "board"), "props", "getTasks", "where"),
 		[{ prop: "status", op: "exists", value: false }],
 	);
 
@@ -554,7 +582,7 @@ async function gate() {
 		{ name: "took", click: ".wg-set-pop button", said: "Use it" },
 		{ name: "condition", click: ".wg-set-pop .wg-kit-pop-item", said: "is" },
 		{ name: "widget", click: ".wg-set-pop .wg-kit-side-group .wg-kit-pop-item", said: "boards" },
-		{ name: "picked", click: ".wg-set-pop .wg-kit-side-group .wg-kit-pop-item", said: "selection" },
+		{ name: "picked", click: ".wg-set-pop .wg-kit-side-group .wg-kit-pop-item", said: "getSelection" },
 		{ name: "done", click: ".wg-set-head button", said: "Done" },
 	];
 	const pointed = await stage({ board: NARROWED, files, editing: true, steps: POINT_AT_A_WIDGET });
@@ -573,15 +601,15 @@ async function gate() {
 	]);
 	check("pressing a widget types it in, with the dot waiting", at(pointed, "widget", "popDraft"), "{{boards.}}");
 	check("and only then are that widget's own fields offered", at(pointed, "widget", "popBoxes"), [
-		"label",
-		"value",
-		"selection",
+		"getLabel",
+		"getValue",
+		"getSelection",
 	]);
 	check("only the boxes are grouped, the typing is left bare", at(pointed, "condition", "popGroups"), [
 		"From another widget",
 	]);
-	check("picking one writes a ref, not a value", at(tileIn(pointed, "done", "board"), "props", "tasks", "where"), [
-		{ prop: "board", op: "is", value: { ref: "boards/selection" } },
+	check("picking one writes a ref, not a value", at(tileIn(pointed, "done", "board"), "props", "getTasks", "where"), [
+		{ prop: "board", op: "is", value: { ref: "boards/getSelection" } },
 	]);
 	check("and the board is narrowed by what the strip has picked", at(pointed, "done", "kanbans"), 1);
 	check(
@@ -596,7 +624,7 @@ async function gate() {
 			{
 				id: "filters",
 				widget: "@default/filter-panel",
-				props: { tasks: { path: "Orbitask/Tasks" }, groups: { rows: [{ prop: "status", label: "Stage" }] } },
+				props: { getTasks: { path: "Orbitask/Tasks" }, getGroups: { rows: [{ prop: "status", label: "Stage" }] } },
 			},
 		],
 		layout: kept([...listAt(NARROWED.layout, "of", "0", "of"), { id: "filters", height: 56 }]),
@@ -629,8 +657,8 @@ async function gate() {
 	);
 	check(
 		"and it is written as a spread, not as a condition",
-		listAt(tileIn(spread, "done", "board"), "props", "tasks", "where").at(-1),
-		{ spread: { ref: "filters/chosen" } },
+		listAt(tileIn(spread, "done", "board"), "props", "getTasks", "where").at(-1),
+		{ spread: { ref: "filters/getChosen" } },
 	);
 
 	const NEW_SHAPE = {
@@ -646,7 +674,7 @@ async function gate() {
 						{ name: CHOSEN, widget: ARCHIVED },
 					],
 				},
-				mounted: { Kanban: { widget: KANBAN, props: { tasks: { path: "Orbitask/Tasks" } } } },
+				mounted: { Kanban: { widget: KANBAN, props: { getTasks: { path: "Orbitask/Tasks" } } } },
 			},
 		],
 		layout: rowsOver("group"),
@@ -718,7 +746,7 @@ async function gate() {
 	check("and the widget in it is the very tile it always was", at(heldBox, "of", "0", "id"), "group:Kanban");
 	check(
 		"which is why the folder it reads never moved",
-		at(tileIn(renamed, "typed", "group:Kanban"), "props", "tasks", "path"),
+		at(tileIn(renamed, "typed", "group:Kanban"), "props", "getTasks", "path"),
 		"Orbitask/Tasks",
 	);
 	check("an edited note is written", Number(at(renamed, "typed", "writes")) > 0, true);
@@ -773,7 +801,7 @@ async function gate() {
 	);
 	check(
 		"and the switcher is bound to the box that was just made",
-		at(tileIn(pressed, "held", "views"), "props", "options", "ref"),
+		at(tileIn(pressed, "held", "views"), "props", "getOptions", "ref"),
 		`${String(at(folded, "id"))}/holds`,
 	);
 	const NO_KEPT_BOX = {

@@ -311,7 +311,7 @@ let board: HeldBoard = readBoard({
 		{
 			id: "boards",
 			widget: "@default/editable-tabs",
-			props: { tabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
+			props: { getTabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
 		},
 		{
 			id: "views",
@@ -590,7 +590,7 @@ check("Reset All puts every task back", cards(), beforeApply);
 // effect of the data gaining a value nobody asked for — with a stray task in it. "Add Board"
 // had no handler at all.
 const tabRowsOf = (id: string) =>
-	listIn(board.tiles.find((tile) => tile.id === id)?.props["tabs"]?.rows ?? []).map(
+	listIn(board.tiles.find((tile) => tile.id === id)?.props["getTabs"]?.rows ?? []).map(
 		(row) => fieldOf(row, "value") ?? row,
 	);
 const tabFieldOf = (row: unknown, field: string) =>
@@ -917,7 +917,7 @@ const boardArchived = (name: string) =>
 const groupBoard = (views: string, archived: unknown = null) =>
 	readBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "Marketing Team" }] } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { getTabs: { rows: [{ name: "Marketing Team" }] } } },
 			{
 				id: "views",
 				widget: "@default/view-tabs",
@@ -1726,7 +1726,7 @@ const pickView = async (name: string, id = "views") => {
 {
 	board = readBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: [{ name: "Marketing Team" }] } } },
+			{ id: "boards", widget: "@default/editable-tabs", props: { getTabs: { rows: [{ name: "Marketing Team" }] } } },
 			{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } },
 		],
 		layouts: {
@@ -1751,14 +1751,14 @@ const pickView = async (name: string, id = "views") => {
 	await click(card);
 
 	const added = board.tiles.find((tile) => tile.widget === KANBAN);
-	check("the added kanban points its board at the strip already standing", added?.props["selection"], {
+	check("the added kanban points its board at the strip already standing", added?.props["getSelection"], {
 		from: "ref",
-		ref: "boards/selection",
+		ref: "boards/getSelection",
 	});
-	check("and its tasks are narrowed by that strip and by the filter beside it", added?.props["tasks"]?.where, [
-		{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true },
-		{ spread: { ref: "filters/chosen" }, fixed: true },
-	]);
+	check("and its tasks are narrowed by the filter beside it", added?.props["getChosen"], {
+		from: "ref",
+		ref: "filters/getChosen",
+	});
 	check(
 		"nothing was refused on the way",
 		warnings.filter((line) => /may not/.test(line)),
@@ -2075,7 +2075,7 @@ const pickView = async (name: string, id = "views") => {
 			{
 				id: "boards",
 				widget: "@default/editable-tabs",
-				props: { tabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
+				props: { getTabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
 			},
 		],
 		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }] } },
@@ -2119,7 +2119,7 @@ const pickView = async (name: string, id = "views") => {
 		listed().map((row) => present(row.querySelector(".wg-kit-row-label"), "the row label").textContent.trim());
 	const asking = () => dom.window.document.body.querySelector(".wg-tabs-confirm");
 	const kept = () =>
-		listIn(serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.["tabs"]?.rows ?? []).map(
+		listIn(serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.["getTabs"]?.rows ?? []).map(
 			(row) => fieldOf(row, "value") ?? row,
 		);
 	const keptNamed = (name: string) => kept().find((row) => tabFieldOf(row, "name") === name) ?? null;

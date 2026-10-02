@@ -57,9 +57,11 @@ const DECLARED = (await propsOfEveryShippedWidget())["@default/streak"];
 const libs = new Map<string, unknown>();
 
 interface StreakProps {
-	readonly days: unknown;
-	readonly title: unknown;
-	readonly emoji: unknown;
+	readonly getDays: unknown;
+	readonly updateDay: unknown;
+	readonly createDay: unknown;
+	readonly getTitle: unknown;
+	readonly getEmoji: unknown;
 }
 
 const isDefaultLib = (value: unknown): value is typeof DefaultLib =>
@@ -127,11 +129,6 @@ interface HabitRow {
 	readonly value: HabitNote & { readonly name: string };
 }
 
-interface PatchAsked {
-	readonly ref: unknown;
-	readonly data?: unknown;
-}
-
 function rowsOver(notes: readonly HabitNote[]): HabitRow[] {
 	return notes.map((note) => ({
 		ref: note.path,
@@ -139,34 +136,28 @@ function rowsOver(notes: readonly HabitNote[]): HabitRow[] {
 	}));
 }
 
-function createsOne(draft: Readonly<Record<string, unknown>>): null {
-	written.push({ verb: "create", ...draft });
-	return null;
-}
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
 
-function updatesOver(rows: readonly HabitRow[]): (input: PatchAsked) => HabitRow | null {
-	return (input) => {
-		written.push({ verb: "update", ...input });
-		return rows.find((row) => row.ref === input.ref) ?? null;
+function commandOver(verb: string, verbs: readonly string[]) {
+	const send = (input: unknown) => {
+		const { id, ...rest } = isRecord(input) ? input : {};
+		written.push(verb === "create" ? { verb, minted: typeof id === "string", ...rest } : { verb, ...rest });
+		return { ok: true };
 	};
+	if (verbs.includes(verb)) return send;
+	return Object.assign(send, { can: () => ({ can: false, reason: `${verb} is switched off` }) });
 }
 
-function writesOver(rows: readonly HabitRow[], verbs: readonly string[]) {
-	return {
-		...(verbs.includes("update") ? { update: updatesOver(rows) } : {}),
-		...(verbs.includes("create") ? { create: createsOne } : {}),
-	};
-}
-
-function gatewayOver(notes: readonly HabitNote[], verbs: readonly string[] = ["update", "create"]) {
+function gatewayOver(notes: readonly HabitNote[]) {
 	const rows = rowsOver(notes);
 	const reads = {
 		list: () => ({ rows, total: rows.length }),
 		get: (ref: unknown) => rows.find((row) => row.ref === ref) ?? null,
 	};
 	minted += 1;
-	const base = collectionGateway({ id: `streak-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
-	return mapCollection(base, { needs: needsOf(DECLARED?.["days"]) });
+	const base = collectionGateway({ id: `streak-test/${minted}`, handlers: reads });
+	return mapCollection(base, { needs: needsOf(DECLARED?.["getDays"]) });
 }
 
 const host = byId(document, "host");
@@ -174,12 +165,23 @@ const settled = async (): Promise<void> => {
 	for (let tick = 0; tick < 4; tick += 1) await new Promise((done) => setTimeout(done, 0));
 };
 
-async function draw(notes: readonly HabitNote[], verbs?: readonly string[], face = EMOJI): Promise<HTMLElement> {
+async function draw(
+	notes: readonly HabitNote[],
+	verbs: readonly string[] = ["update", "create"],
+	face = EMOJI,
+): Promise<HTMLElement> {
 	written.length = 0;
 	render(null, host);
-	const title = soloGateway(TITLE, {}, "streak-test/title");
-	const emoji = soloGateway(face, {}, `streak-test/emoji/${face}`);
-	render(h(Streak, { days: gatewayOver(notes, verbs), title, emoji }), host);
+	render(
+		h(Streak, {
+			getDays: gatewayOver(notes),
+			updateDay: commandOver("update", verbs),
+			createDay: commandOver("create", verbs),
+			getTitle: soloGateway(TITLE, {}, "streak-test/title"),
+			getEmoji: soloGateway(face, {}, `streak-test/emoji/${face}`),
+		}),
+		host,
+	);
 	await settled();
 	return host;
 }
@@ -339,7 +341,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	dayLabelled(`${TODAY}, not kept`)?.click();
 	await settled();
 	check("pressing a day with no note creates one named for it", written, [
-		{ verb: "create", name: TODAY, props: { done: 1 } },
+		{ verb: "create", minted: true, name: TODAY, props: { done: 1 } },
 	]);
 }
 
@@ -350,7 +352,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	dayLabelled(`${kept}, kept`)?.click();
 	await settled();
 	check("pressing a kept day empties the property", written, [
-		{ verb: "update", ref: `Habits/${kept}.md`, data: { props: { done: null } } },
+		{ verb: "update", done: null, ref: `Habits/${kept}.md` },
 	]);
 }
 

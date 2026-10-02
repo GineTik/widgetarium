@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import type { FunctionComponent } from "react";
-import type { Patch, RecordRef } from "../packages/core/src/gateway/contract.ts";
+import type { RecordRef } from "../packages/core/src/gateway/contract.ts";
 import { declaredPropIn } from "./card-props.ts";
 import { byId, foundAs } from "./dom-find.ts";
 import { present } from "./page-dom.ts";
@@ -55,7 +55,7 @@ const { needsOf } = await import("../packages/core/src/gateway/props.js");
 
 const WIDGET = "registry/@default/month/widget.tsx";
 const { propsOfEveryShippedWidget } = await import("./widget-props.ts");
-const DAYS_PROP = declaredPropIn((await propsOfEveryShippedWidget())["@default/month"]?.["days"], "month's days");
+const DAYS_PROP = declaredPropIn((await propsOfEveryShippedWidget())["@default/month"]?.["getDays"], "month's getDays");
 
 const libs = new Map<string, unknown>();
 
@@ -121,36 +121,27 @@ function rowsOver(notes: readonly HabitNote[]): HeldRow[] {
 	}));
 }
 
-function createsOne(draft: object): null {
-	written.push({ verb: "create", ...draft });
-	return null;
-}
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
 
-function updatesOver(rows: readonly HeldRow[]): (input: Patch<unknown>) => HeldRow | null {
-	return (input) => {
-		written.push({ verb: "update", ...input });
-		return rows.find((row) => row.ref === input.ref) ?? null;
+function commandOver(verb: string, verbs: readonly string[]) {
+	const send = (input: unknown) => {
+		const { id, ...rest } = isRecord(input) ? input : {};
+		written.push(verb === "create" ? { verb, minted: typeof id === "string", ...rest } : { verb, ...rest });
+		return { ok: true };
 	};
+	if (verbs.includes(verb)) return send;
+	return Object.assign(send, { can: () => ({ can: false, reason: `${verb} is switched off` }) });
 }
 
-function writesOver(rows: readonly HeldRow[], verbs: readonly string[]): Readonly<Record<string, unknown>> {
-	return {
-		...(verbs.includes("update") ? { update: updatesOver(rows) } : {}),
-		...(verbs.includes("create") ? { create: createsOne } : {}),
-	};
-}
-
-function gatewayOver(
-	notes: readonly HabitNote[],
-	verbs: readonly string[] = ["update", "create"],
-): ReturnType<typeof mapCollection> {
+function gatewayOver(notes: readonly HabitNote[]): ReturnType<typeof mapCollection> {
 	const rows = rowsOver(notes);
 	const reads = {
 		list: () => ({ rows, total: rows.length }),
 		get: (ref: RecordRef) => rows.find((row) => row.ref === ref) ?? null,
 	};
 	minted += 1;
-	const base = collectionGateway({ id: `month-test/${minted}`, handlers: { ...reads, ...writesOver(rows, verbs) } });
+	const base = collectionGateway({ id: `month-test/${minted}`, handlers: reads });
 	return mapCollection(base, { needs: needsOf(DAYS_PROP) });
 }
 
@@ -164,14 +155,19 @@ interface DrawAsk {
 	readonly fromMonday?: unknown;
 }
 
-async function draw(notes: readonly HabitNote[], { verbs, fromMonday = true }: DrawAsk = {}): Promise<HTMLElement> {
+async function draw(
+	notes: readonly HabitNote[],
+	{ verbs = ["update", "create"], fromMonday = true }: DrawAsk = {},
+): Promise<HTMLElement> {
 	written.length = 0;
 	render(null, host);
 	minted += 1;
 	render(
 		h(Month, {
-			isWeekStartingMonday: soloGateway(fromMonday, {}, `month-test/monday/${minted}`),
-			days: gatewayOver(notes, verbs),
+			getIsWeekStartingMonday: soloGateway(fromMonday, {}, `month-test/monday/${minted}`),
+			getDays: gatewayOver(notes),
+			updateDay: commandOver("update", verbs),
+			createDay: commandOver("create", verbs),
 		}),
 		host,
 	);
@@ -315,7 +311,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	dayLabelled(`${TODAY}, not kept`)?.click();
 	await settled();
 	check("pressing a day with no note creates one named for it", written, [
-		{ verb: "create", name: TODAY, props: { done: 1 } },
+		{ verb: "create", minted: true, name: TODAY, props: { done: 1 } },
 	]);
 }
 
@@ -324,7 +320,7 @@ const RUN_NOTES = KEPT_RUN.map((day) => ({ path: `Habits/${day}.md`, props: { do
 	present(dayLabelled(`${TODAY}, kept`), "today, kept").click();
 	await settled();
 	check("pressing a kept day empties the property", written, [
-		{ verb: "update", ref: `Habits/${TODAY}.md`, data: { props: { done: null } } },
+		{ verb: "update", done: null, ref: `Habits/${TODAY}.md` },
 	]);
 }
 

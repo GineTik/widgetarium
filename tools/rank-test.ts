@@ -69,11 +69,7 @@ function isTierLib(value: Readonly<Record<string, unknown>>): value is TierLib {
 }
 
 interface TierListProps {
-	readonly cards: unknown;
-	readonly tiers: unknown;
-	readonly title: unknown;
-	readonly cardSize: unknown;
-	readonly host: unknown;
+	readonly [prop: string]: unknown;
 }
 
 const isTierList = (value: unknown): value is FunctionComponent<TierListProps> => typeof value === "function";
@@ -301,39 +297,29 @@ const settled = async (): Promise<void> => {
 const written: Readonly<Record<string, unknown>>[] = [];
 let minted = 0;
 
-interface PatchAsked {
-	readonly ref: unknown;
-	readonly data: Readonly<Record<string, unknown>>;
+const COMMAND_OFF = { can: false, reason: "switched off in the test" };
+
+function commandOver(isAllowed: boolean, verb: string, record: (input: unknown) => Readonly<Record<string, unknown>>) {
+	const run = (input: unknown) => void written.push({ verb, ...record(input) });
+	return isAllowed ? run : Object.assign(run, { can: () => COMMAND_OFF });
 }
 
-function writesOver(verbs: readonly string[], name: string) {
+const fieldsOf = (input: unknown): Readonly<Record<string, unknown>> => (isObject(input) ? input : {});
+
+function commandsOver(verbs: readonly string[], name: string, singular: string, plural: string) {
 	return {
-		...(verbs.includes("create")
-			? {
-					create: (draft: Readonly<Record<string, unknown>>) => (
-						written.push({ verb: `${name}.create`, ...draft }),
-						null
-					),
-				}
-			: {}),
-		...(verbs.includes("update")
-			? {
-					update: (input: PatchAsked) => (
-						written.push({ verb: `${name}.update`, ref: input.ref, ...input.data }),
-						null
-					),
-				}
-			: {}),
-		...(verbs.includes("remove")
-			? { remove: (ref: unknown) => void written.push({ verb: `${name}.remove`, ref }) }
-			: {}),
-		...(verbs.includes("replace")
-			? { replace: (given: readonly unknown[]) => void written.push({ verb: `${name}.replace`, count: given.length }) }
-			: {}),
+		[`create${singular}`]: commandOver(verbs.includes("create"), `${name}.create`, fieldsOf),
+		[`update${singular}`]: commandOver(verbs.includes("update"), `${name}.update`, fieldsOf),
+		[`remove${singular}`]: commandOver(verbs.includes("remove"), `${name}.remove`, (input) => ({
+			ref: fieldsOf(input)["ref"],
+		})),
+		[`replace${plural}`]: commandOver(verbs.includes("replace"), `${name}.replace`, (input) => ({
+			count: Array.isArray(input) ? input.length : 0,
+		})),
 	};
 }
 
-function listOver<Row extends { readonly ref: string }>(rows: readonly Row[], verbs: readonly string[], name: string) {
+function listOver<Row extends { readonly ref: string }>(rows: readonly Row[], name: string) {
 	minted += 1;
 	const stored = rows.map((row) => ({ ...row }));
 	return collectionGateway({
@@ -342,7 +328,6 @@ function listOver<Row extends { readonly ref: string }>(rows: readonly Row[], ve
 		handlers: {
 			list: () => ({ rows: stored, total: stored.length }),
 			get: (ref: unknown) => stored.find((row) => row.ref === ref) ?? null,
-			...writesOver(verbs, name),
 		},
 	});
 }
@@ -378,10 +363,12 @@ function propsFor({
 }: DrawAsk): TierListProps {
 	minted += 1;
 	return {
-		cards: isBroken ? failing("cards") : listOver(cards, cardVerbs, "cards"),
-		tiers: listOver(tiers, tierVerbs, "tiers"),
-		title: soloGateway("Comfort food", {}, `rank-test/title/${minted}`),
-		cardSize: soloGateway(64, {}, `rank-test/size/${minted}`),
+		getCards: isBroken ? failing("cards") : listOver(cards, "cards"),
+		getTiers: listOver(tiers, "tiers"),
+		...commandsOver(cardVerbs, "cards", "Card", "Cards"),
+		...commandsOver(tierVerbs, "tiers", "Tier", "Tiers"),
+		getTitle: soloGateway("Comfort food", {}, `rank-test/title/${minted}`),
+		getCardSize: soloGateway(64, {}, `rank-test/size/${minted}`),
 		host: { can: { renderMarkdown: false }, ui: { notify: () => {} } },
 	};
 }
@@ -420,7 +407,7 @@ check("pressing a card picks it up for a second press", all(".wr-card.is-picked"
 all(".wr-rail")[0]?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settled();
 check("pressing a row with a card in hand moves that card, in one write", written, [
-	{ verb: "cards.update", ref: "r2", tier: "S", order: 3 },
+	{ verb: "cards.update", tier: "S", order: 3, ref: "r2" },
 ]);
 
 await draw({ cardVerbs: ["list"] });

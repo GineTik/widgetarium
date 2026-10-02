@@ -89,8 +89,12 @@ async function drawn(props: SectionProps): Promise<Element> {
 	return host;
 }
 
-const seenPlaced = { filling: { kind: "value", control: "pick", binding: "hardcode", isSet: false, value: "placed" } };
-const seenPerRow = { filling: { kind: "value", control: "pick", binding: "hardcode", isSet: true, value: "per-row" } };
+const seenPlaced = {
+	getFilling: { kind: "value", control: "pick", binding: "hardcode", isSet: false, value: "placed" },
+};
+const seenPerRow = {
+	getFilling: { kind: "value", control: "pick", binding: "hardcode", isSet: true, value: "per-row" },
+};
 
 function optionValuesOf(options: unknown): unknown[] {
 	return Array.isArray(options) ? options.map((one) => pathIn(one, "value")) : [];
@@ -101,18 +105,18 @@ check("the placed widgets stand while the section is placed", shownAt(seenPlaced
 check("and go when it draws one widget per row", shownAt(seenPerRow, "mounts", "widgets"), false);
 check("the slot is the other way round", shownAt(seenPerRow, "slots", "item"), true);
 check("and is gone while widgets are placed", shownAt(seenPlaced, "slots", "item"), false);
-check("the data is asked for only per row", shownAt(seenPerRow, "props", "items"), true);
+check("the data is asked for only per row", shownAt(seenPerRow, "props", "getItems"), true);
 check(
 	"no list prop stands beside a choice",
 	Object.keys(declaredSpecs).sort().join(","),
-	"arrangement,badge,badgeTone,filling,heading,items,minWidthPx,pageSize",
+	"getArrangement,getBadge,getBadgeTone,getFilling,getHeading,getItems,getMinWidthPx,getPageSize",
 );
 check(
 	"a choice names what a person picks, not another prop",
-	optionValuesOf(pathIn(declaredSpecs, "filling", "options")),
+	optionValuesOf(pathIn(declaredSpecs, "getFilling", "options")),
 	["placed", "per-row"],
 );
-check("and is drawn as a choice", pathIn(declaredSpecs, "filling", "control"), "choice");
+check("and is drawn as a choice", pathIn(declaredSpecs, "getFilling", "control"), "choice");
 check(
 	"no prop picks a row of another",
 	Object.values(declaredSpecs).filter((spec) => pathIn(spec, "source")).length,
@@ -120,10 +124,10 @@ check(
 );
 check(
 	"the narrowest cell is asked for only in a grid",
-	shownAt({ arrangement: { value: "grid" } }, "props", "minWidthPx"),
+	shownAt({ getArrangement: { value: "grid" } }, "props", "getMinWidthPx"),
 	true,
 );
-check("and not in a column", shownAt({ arrangement: { value: "column" } }, "props", "minWidthPx"), false);
+check("and not in a column", shownAt({ getArrangement: { value: "column" } }, "props", "getMinWidthPx"), false);
 
 console.log("\n— what it draws —");
 await drawn({});
@@ -133,28 +137,32 @@ check("an empty section says so", host.querySelector(".wg-section-empty")?.textC
 check("the body stands as a bare column", found(host, ".wg-kit-layout").className, "wg-kit-layout is-stack");
 
 await drawn({
-	arrangement: soloGateway("grid", {}, "section-test:grid"),
-	minWidthPx: soloGateway(320, {}, "section-test:320"),
+	getArrangement: soloGateway("grid", {}, "section-test:grid"),
+	getMinWidthPx: soloGateway(320, {}, "section-test:320"),
 });
 const grid = found(host, ".wg-kit-layout");
 check("a grid body is a grid", grid.className.includes("is-grid"), true);
 check("and wraps once a cell would go under its narrowest", grid.getAttribute("style"), "--wg-kit-layout-min: 320px;");
 
-await drawn({ arrangement: soloGateway("row", {}, "section-test:row") });
+await drawn({ getArrangement: soloGateway("row", {}, "section-test:row") });
 check("a row body stands across", found(host, ".wg-kit-layout").className.includes("is-row"), true);
 
 console.log("\n— the badge says what it is —");
-check("its tone is a choice, not a colour typed by hand", pathIn(declaredSpecs, "badgeTone", "control"), "choice");
-check("and it is asked for only once there is a badge", shownAt({ badge: { value: "" } }, "props", "badgeTone"), false);
-check("which is as soon as one is typed", shownAt({ badge: { value: "4 open" } }, "props", "badgeTone"), true);
+check("its tone is a choice, not a colour typed by hand", pathIn(declaredSpecs, "getBadgeTone", "control"), "choice");
+check(
+	"and it is asked for only once there is a badge",
+	shownAt({ getBadge: { value: "" } }, "props", "getBadgeTone"),
+	false,
+);
+check("which is as soon as one is typed", shownAt({ getBadge: { value: "4 open" } }, "props", "getBadgeTone"), true);
 await drawn({
-	badge: soloGateway("2 overdue", {}, "section-test:badge"),
-	badgeTone: soloGateway("error", {}, "section-test:tone"),
+	getBadge: soloGateway("2 overdue", {}, "section-test:badge"),
+	getBadgeTone: soloGateway("error", {}, "section-test:tone"),
 });
 const pill = host.querySelector(".wg-section-head .wg-kit-pill");
 check("the badge is drawn beside the heading", pill?.textContent, "2 overdue");
 check("in the tone it was given", pill?.className.includes("is-err"), true);
-await drawn({ badge: soloGateway("5 open", {}, "section-test:plain") });
+await drawn({ getBadge: soloGateway("5 open", {}, "section-test:plain") });
 check(
 	"and neutral when none was",
 	host.querySelector(".wg-section-head .wg-kit-pill")?.className.includes("is-"),
@@ -204,11 +212,11 @@ check(
 
 console.log("\n— the arrangement decides the plates —");
 const twoPlain = { widgets: [entryOf("First", {}), entryOf("Second", {})] };
-await drawn({ arrangement: soloGateway("grid", {}, "section-test:grid-plates"), mounts: twoPlain });
+await drawn({ getArrangement: soloGateway("grid", {}, "section-test:grid-plates"), mounts: twoPlain });
 check("a grid gives every widget its own plate", plated(), ["group", "group"]);
-await drawn({ arrangement: soloGateway("row", {}, "section-test:row-plates"), mounts: twoPlain });
+await drawn({ getArrangement: soloGateway("row", {}, "section-test:row-plates"), mounts: twoPlain });
 check("so does a row", plated(), ["group", "group"]);
-await drawn({ arrangement: soloGateway("rows", {}, "section-test:rows-plates"), mounts: twoPlain });
+await drawn({ getArrangement: soloGateway("rows", {}, "section-test:rows-plates"), mounts: twoPlain });
 check("rows stand bare, each of them", plated(), [null, null]);
 check("inside the one plate the body wears", found(host, ".wg-kit-layout").getAttribute("data-surface"), "group");
 
@@ -224,14 +232,14 @@ const toldOf = (arrangement: string) => {
 	return {
 		told,
 		mounts: { widgets: [spy] },
-		arrangement: soloGateway(arrangement, {}, `section-test:told-${arrangement}`),
+		getArrangement: soloGateway(arrangement, {}, `section-test:told-${arrangement}`),
 	};
 };
 const onGrid = toldOf("grid");
-await drawn({ arrangement: onGrid.arrangement, mounts: onGrid.mounts });
+await drawn({ getArrangement: onGrid.getArrangement, mounts: onGrid.mounts });
 check("in a grid it is drawn knowing it stands on a group", onGrid.told.at(-1), "group");
 const onColumn = toldOf("column");
-await drawn({ arrangement: onColumn.arrangement, mounts: onColumn.mounts });
+await drawn({ getArrangement: onColumn.getArrangement, mounts: onColumn.mounts });
 check("in a column it is drawn knowing it stands on nothing", onColumn.told.at(-1), "none");
 
 console.log(`\n${failed === 0 ? "section gate: clean" : `section gate: ${failed} failed`}`);

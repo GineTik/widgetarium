@@ -1,9 +1,6 @@
 import { JSDOM } from "jsdom";
 import type { FunctionComponent, ReactElement, ReactNode } from "react";
-import type { Query, RecordRef } from "../packages/core/src/gateway/contract.ts";
-import { useData } from "../packages/core/src/gateway/use-data.ts";
-import type { ValueGateway } from "../packages/core/src/gateway/contract.ts";
-import type { EveryValueVerb } from "../packages/core/src/gateway/needs.ts";
+import type { Query } from "../packages/core/src/gateway/contract.ts";
 import type { WidgetComponent } from "../packages/core/src/registry-scope.js";
 import { byId } from "./dom-find.ts";
 import { collectionOf, valueGatewayOf } from "./gateway-kinds.ts";
@@ -132,7 +129,10 @@ check(
 );
 
 console.log("\n— the feed —");
-const NOTES = Array.from({ length: 25 }, (_, at) => ({ path: `Daily/${String(at + 1).padStart(2, "0")}.md` }));
+const NOTES = Array.from({ length: 25 }, (_, at) => {
+	const path = `Daily/${String(at + 1).padStart(2, "0")}.md`;
+	return { path, content: `Body of ${path}` };
+});
 const asked: { readonly offset: number; readonly limit: number | null }[] = [];
 const items = arrayGateway(
 	NOTES,
@@ -147,14 +147,20 @@ const items = arrayGateway(
 				query,
 			);
 		},
-		get: (ref: RecordRef) => ({ ref, path: ref, content: `Body of ${ref}` }),
 	},
 	"feed-test/daily",
 );
 
-function Probe({ getSource }: { readonly getSource: ValueGateway<unknown, EveryValueVerb> }): ReactElement {
-	const record = useData(getSource.get).data;
-	return h("p", { className: "probe" }, String(fieldIn(record, "content") ?? ""));
+function Probe({ getSource }: { readonly getSource: unknown }): ReactElement {
+	return h(
+		"p",
+		{
+			className: "probe",
+			"data-ref": String(fieldIn(getSource, "ref") ?? ""),
+			"data-path": String(fieldIn(getSource, "path") ?? ""),
+		},
+		String(fieldIn(getSource, "content") ?? ""),
+	);
 }
 
 const host = byId(document, "host");
@@ -163,15 +169,21 @@ const draw = async (props: FeedProps): Promise<void> => {
 	await settled();
 };
 const shown = (): (string | null)[] => [...host.querySelectorAll(".probe")].map((node) => node.textContent);
+const firstProbe = (name: string): string | null | undefined => host.querySelector(".probe")?.getAttribute(name);
 const reveal = async (): Promise<void> => {
 	for (const watcher of [...watchers]) watcher.answer([{ isIntersecting: true, target: watcher.nodes[0] }]);
 	await settled();
 };
 
 const cards = withSlotSurface(Probe, { surface: "group", isCard: true });
-await draw({ items, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: { item: cards } });
+await draw({ getItems: items, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: { item: cards } });
 check("the first load draws ten", shown().length, 10);
-check("each item is read whole through the collection's get, not the listed record", shown()[0], "Body of Daily/01.md");
+check("the slotted child is handed the listed row itself, its content included", shown()[0], "Body of Daily/01.md");
+check(
+	"whole, with its address and every field, not a gateway to read it through",
+	[firstProbe("data-ref"), firstProbe("data-path")],
+	["Daily/01.md", "Daily/01.md"],
+);
 check(
 	"the list was asked for the first page only",
 	asked.filter((one) => one.limit === 10).every((one) => one.offset === 0),
@@ -238,14 +250,14 @@ check(
 
 render(null, host);
 await draw({
-	items: arrayGateway([], {}, "feed-test/empty"),
+	getItems: arrayGateway([], {}, "feed-test/empty"),
 	getPageSize: soloGateway(10, {}, "feed-test/size"),
 	slots: { item: cards },
 });
 check("an empty source says so", (host.textContent ?? "").trim(), "Nothing here yet.");
 
 render(null, host);
-await draw({ items, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: {} });
+await draw({ getItems: items, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: {} });
 check(
 	"a feed with no widget in its slot says so",
 	(host.textContent ?? "").trim(),
