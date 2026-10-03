@@ -1,10 +1,14 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MutableRefObject, RefObject } from "react";
 import { useContentInsets } from "../content-insets.js";
 import type { InsetsByCell } from "../content-insets.js";
 import { useMeasuresSurfaces } from "../surface-measure.js";
 import type { PressAt } from "../drawer.js";
 import { startCarry } from "./carry.js";
+import { spotsIn } from "./carry-spots.js";
+import { receiveDrops } from "./drop-receivers.js";
+import { sameTarget, targetAt } from "../tree.js";
+import type { DropTarget } from "../tree-drop.js";
 import type { Carry, CarryGesture, PointerAt, SetCarry } from "./carry.js";
 import type { CommitLayout } from "./board-edits.js";
 import type { SidebarDrag } from "./sidebar-drag.js";
@@ -26,6 +30,7 @@ interface TreePageAsk {
 	readonly shared: Pick<SurfaceShared, "host">;
 	readonly editing: boolean;
 	readonly commitLayout: CommitLayout;
+	readonly addTileAt: ((widgetId: string, target: DropTarget) => void) | null;
 }
 
 export interface TreePage {
@@ -49,7 +54,7 @@ interface CarryRefs {
 	readonly setCarry: SetCarry;
 }
 
-export function useTreePage({ shared, editing, commitLayout }: TreePageAsk): TreePage {
+export function useTreePage({ shared, editing, commitLayout, addTileAt }: TreePageAsk): TreePage {
 	const pageRef = useRef<HTMLDivElement | null>(null);
 	const regionsRef = useRef<RegionElements>(new Map());
 	const carryRef = useRef<CarryGesture | null>(null);
@@ -63,6 +68,7 @@ export function useTreePage({ shared, editing, commitLayout }: TreePageAsk): Tre
 	useLandingGhost(carry, setCarry, { pageRef, ghostRef });
 	const everyRegionRef = useRef<EveryRegionElement>(new Map());
 	useMeasuresSurfaces(pageRef, shared.host, everyRegionRef);
+	useReceivesWidgets({ pageRef, regionsRef, setCarry }, addTileAt);
 	return {
 		pageRef,
 		regionsRef,
@@ -100,4 +106,51 @@ function carryStarter(
 			commitLayout,
 		});
 	};
+}
+
+const INCOMING = "incoming-widget";
+const INCOMING_STAND_IN_PX = 120;
+
+let boardsCounted = 0;
+
+interface ReceivingRefs {
+	readonly pageRef: RefObject<HTMLElement | null>;
+	readonly regionsRef: MutableRefObject<RegionElements>;
+	readonly setCarry: SetCarry;
+}
+
+function useReceivesWidgets(
+	{ pageRef, regionsRef, setCarry }: ReceivingRefs,
+	addTileAt: ((widgetId: string, target: DropTarget) => void) | null,
+): void {
+	const [id] = useState(() => `board-${(boardsCounted += 1)}`);
+	const placeRef = useRef(addTileAt);
+	placeRef.current = addTileAt;
+	const isReceiving = addTileAt !== null;
+	useEffect(() => {
+		const element = pageRef.current;
+		if (!element || !isReceiving) return undefined;
+		let aimed: DropTarget | null = null;
+		const show = (target: DropTarget | null): void => {
+			if (sameTarget(target, aimed)) return;
+			aimed = target;
+			setCarry(target ? { id: INCOMING, target, height: INCOMING_STAND_IN_PX, ghost: null, isIncoming: true } : null);
+		};
+		return receiveDrops({
+			id,
+			element,
+			aim: (pointer) => {
+				const target = targetAt(spotsIn(regionsRef.current.entries(), INCOMING), pointer.clientX, pointer.clientY);
+				show(target);
+				return target ? { kind: "board", board: id, target } : null;
+			},
+			rest: () => show(null),
+			place: (widget, at) => {
+				if (at.kind !== "board") return false;
+				show(null);
+				placeRef.current?.(widget, at.target);
+				return true;
+			},
+		});
+	}, [id, isReceiving]);
 }

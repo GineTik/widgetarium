@@ -70,6 +70,7 @@ function draw(): void {
 			registry,
 			host: { ...createProbeHost(createRowSlot([])), catalogue: port },
 			editing: false,
+			isReadOnly: true,
 			screen: true,
 			initialWidth: node.clientWidth,
 			onChange: (next: Board) => {

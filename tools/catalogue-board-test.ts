@@ -41,6 +41,7 @@ const { render } = await import("../packages/core/src/engine/render.js");
 const { WidgetSurface } = await import("../packages/core/src/surface.js");
 const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 const { normalizeBoard } = await import("../packages/core/src/model.js");
+const { boardEdits } = await import("../packages/core/src/surface/board-edits.js");
 const { CATALOGUE_BOARD, DOCS_BOARD } = await import("../apps/obsidian/src/catalogue-boards.ts");
 const { DOC_PAGES } = await import("../packages/core/src/docs.js");
 const { TEMPLATES } = await import("../packages/core/src/templates.js");
@@ -111,7 +112,8 @@ const draw = (): void =>
 			boardNode: node,
 			registry,
 			host,
-			editing: false,
+			editing: true,
+			isReadOnly: true,
 			screen: true,
 			initialWidth: 380,
 			onChange: (next) => {
@@ -188,6 +190,41 @@ check("pressing Templates shows the templates", shownAt(), 1);
 check("and the filters, which belong to the widgets, step aside", isOnScreen(".wg-catalogue-bar-filters"), false);
 await press(tabs()[0]);
 check("pressing Widgets brings them back", isOnScreen(".wg-catalogue-bar-filters"), true);
+
+console.log("\n— the sidebar's board is read-only —");
+const tilesBefore = board.tiles.map((tile) => tile.id);
+const placedAnywhere = Array.from({ length: 8 }, (_, at) =>
+	placeWidget("@default/streak", {
+		kind: "board",
+		board: `board-${at + 1}`,
+		target: { kind: "beside", box: [0], at: 0 },
+	}),
+);
+check("no board here takes a dropped widget", placedAnywhere.includes(true), false);
+check(
+	"so its tiles stay as shipped",
+	board.tiles.map((tile) => tile.id),
+	tilesBefore,
+);
+check(
+	"asked to edit, it still draws no edit chrome",
+	all(".wg-root.is-editing").length + all(".wg-tree-add:not(.is-quiet)").length,
+	0,
+);
+const written: string[] = [];
+const readOnly = boardEdits({
+	boardAsItStands: () => board,
+	onChange: () => written.push("write"),
+	registry,
+	isReadOnly: true,
+});
+readOnly.removeTile("search");
+readOnly.addTileInto("@default/streak", [0]);
+readOnly.commitLayout((layout) => layout);
+check("removing, adding and relaying write nothing", written.length, 0);
+check("and it offers no place to drop", readOnly.addTileAt, null);
+readOnly.patchTile("search", { props: {} });
+check("a widget's own value still writes", written.length, 1);
 
 console.log("\n— the docs are a board of their own —");
 render(null, node);

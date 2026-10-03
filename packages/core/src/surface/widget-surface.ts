@@ -26,6 +26,7 @@ export interface WidgetSurfaceProps {
 	readonly initialWidth?: number | undefined;
 	readonly onWidth?: ((width: number) => void) | null | undefined;
 	readonly onDrafting?: ((isDrafting: boolean) => void) | null | undefined;
+	readonly isReadOnly?: boolean | undefined;
 }
 
 export function WidgetSurface({
@@ -33,14 +34,16 @@ export function WidgetSurface({
 	boardNode,
 	registry,
 	host,
-	editing,
+	editing: isEditingAsked,
 	onChange: save,
 	onActions,
 	screen,
 	initialWidth = 0,
 	onWidth,
 	onDrafting,
+	isReadOnly = false,
 }: WidgetSurfaceProps): ReactNode {
+	const editing = isEditingAsked && !isReadOnly;
 	const latestRef = useRef<{ readonly board: BoardRecord } | null>(null);
 	const draft = useDraftBoard(saved, save, onDrafting);
 	const boardAsItStands = (): BoardRecord => latestRef.current?.board ?? draft.board;
@@ -62,7 +65,7 @@ export function WidgetSurface({
 
 	if (width < MIN_LAID_OUT_BOARD_PX) return isPage ? h(Page, { boardNode }, boardShell(null)) : boardShell(null);
 
-	const edits = boardEdits({ boardAsItStands, onChange: draft.onChange, registry });
+	const edits = boardEdits({ boardAsItStands, onChange: draft.onChange, registry, isReadOnly });
 	foldRef.current = edits.foldIntoGroup;
 	latestRef.current = { board: draft.board };
 	const drawn = boardShell(
