@@ -46,6 +46,7 @@ const { WidgetSurface } = await import("../packages/core/src/surface.js");
 const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 const { normalizeBoard } = await import("../packages/core/src/model.js");
 const { swapBoxes } = await import("../packages/core/src/tree.js");
+const { CATALOGUE_REQUESTS } = await import("../packages/core/src/engine/catalogue-requests.js");
 const { createHost } = await import("../apps/obsidian/src/host.js");
 const { TFile, TFolder } = await import("obsidian");
 
@@ -123,7 +124,9 @@ const HOLDS: readonly HeldView[] = [
 	{ name: "Archived columns", widget: ARCHIVED },
 ];
 
-const COLUMNS = { columns: { from: "typed", value: [{ name: "To Do" }, { name: "Doing" }] } };
+const COLUMNS = {
+	columns: { implementation: "@core/typed-value", fields: { value: [{ name: "To Do" }, { name: "Doing" }] } },
+};
 const tileIdOf = (name: string): string => `v:${name}`;
 
 function viewNode(held: HeldView): BoardNode {
@@ -146,7 +149,10 @@ function swapped({ holds = HOLDS, strip, switcher = false }: SwapAsk = {}): Boar
 		tiles.unshift({
 			id: "switch",
 			widget: SWITCHER,
-			props: { options: { from: "ref", ref: "group/holds" }, selection: { from: "ref", ref: "group/selection" } },
+			props: {
+				options: { implementation: "@core/from-tile-rows", fields: { ref: "group/holds" } },
+				selection: { implementation: "@core/from-tile-value", fields: { ref: "group/selection" } },
+			},
 		});
 		rows.unshift({ id: "switch", height: 56 });
 	}
@@ -154,6 +160,7 @@ function swapped({ holds = HOLDS, strip, switcher = false }: SwapAsk = {}): Boar
 }
 
 let board = swapped();
+let isEditing = false;
 const root = byId(dom.window.document, "host");
 const draw = (): void => {
 	const surfaceProps = {
@@ -161,7 +168,7 @@ const draw = (): void => {
 		board,
 		registry,
 		host,
-		editing: false,
+		editing: isEditing,
 		screen: true,
 		initialWidth: 1280,
 		onChange: (next: Board) => {
@@ -218,7 +225,6 @@ const drawn = (): string =>
 		: onScreen(".orbi-archived-columns").length > 0
 			? "Archived columns"
 			: "nothing";
-const dialogOn = (selector: string): Element[] => [...dom.window.document.body.querySelectorAll(selector)];
 const viewBox = (): BoxNode | null => swapBoxes(board.layout)[0]?.box ?? null;
 const viewsIn = () => viewBox()?.of.map((child) => ({ name: child.name, ...(child.hidden ? { hidden: true } : {}) }));
 const tileNamed = (name: string) => board.tiles.find((tile) => tile.id === tileIdOf(name));
@@ -231,6 +237,14 @@ await click(tab("Archived columns"));
 check("pressing a tab draws that view", drawn(), "Archived columns");
 await click(tab("Kanban"));
 check("and pressing back draws the first again", drawn(), "Kanban");
+check(
+	"a board read, not edited, offers no menu to change its views",
+	all(".wg-tree-swap-strip .wg-tabs-more").length,
+	0,
+);
+isEditing = true;
+await start(board);
+check("a board being edited offers it", all(".wg-tree-swap-strip .wg-tabs-more").length, 1);
 
 {
 	const named = tab("Kanban");
@@ -243,10 +257,11 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	check("renaming a tab renames the view", strip(), ["Planner", "Archived columns"]);
 	check("the note carries the new name", viewsIn(), [{ name: "Planner" }, { name: "Archived columns" }]);
 	check("the tile under it never moved", pathIn(viewBox()?.of[0], "id"), tileIdOf("Kanban"));
-	check("so the columns it was set to are untouched", pathIn(tileNamed("Kanban")?.props, "columns", "value"), [
-		{ name: "To Do" },
-		{ name: "Doing" },
-	]);
+	check(
+		"so the columns it was set to are untouched",
+		pathIn(tileNamed("Kanban")?.props, "columns", "fields", "value"),
+		[{ name: "To Do" }, { name: "Doing" }],
+	);
 	check("and the view is still the one drawn", drawn(), "Kanban");
 }
 
@@ -258,15 +273,13 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	check("with nothing else drawn in its place", drawn(), "nothing");
 
 	await click(onScreen(".wg-tree-swap-held .wg-tree-add")[0]);
-	check("the press opens the catalogue", dialogOn(".wg-cat-dialog").length, 1);
+	check("the press asks the sidebar catalogue for a widget", CATALOGUE_REQUESTS.current()?.mode, "place");
 
-	const pick = dialogOn(".wg-cat-tile [aria-label]").find((node) =>
-		node.getAttribute("aria-label")?.includes("Archived columns"),
-	);
-	await click(pick?.querySelector(".wg-cat-go") ?? pick);
+	CATALOGUE_REQUESTS.answer(ARCHIVED);
+	await settle();
 	check("picking a widget fills the view with a tile of its own", board.tiles.at(-1)?.widget, ARCHIVED);
 	check("standing inside the view that was added", pathIn(viewBox()?.of[2], "of", "0", "id"), board.tiles.at(-1)?.id);
-	check("the catalogue closes behind it", dialogOn(".wg-cat-dialog").length, 0);
+	check("and nothing is asked any more", CATALOGUE_REQUESTS.current(), null);
 	check("the name the tab was given is kept", viewBox()?.of[2]?.name, "Untitled 1");
 	check("and the widget is drawn in it", drawn(), "Archived columns");
 }
@@ -276,7 +289,7 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	await menu("Archive");
 	check("archiving takes the tab off the strip", strip().includes("Planner"), false);
 	check("the view is still in the note, hidden", viewsIn()?.[0], { name: "Planner", hidden: true });
-	check("and so is everything the view was set to", pathIn(tileNamed("Kanban")?.props, "columns", "value"), [
+	check("and so is everything the view was set to", pathIn(tileNamed("Kanban")?.props, "columns", "fields", "value"), [
 		{ name: "To Do" },
 		{ name: "Doing" },
 	]);
@@ -285,7 +298,7 @@ check("and pressing back draws the first again", drawn(), "Kanban");
 	await click([...dom.window.document.body.querySelectorAll(".wg-tabs-restore")].at(-1));
 	check("restoring puts the tab back", strip().includes("Planner"), true);
 	check("with nothing hidden in the note", viewsIn()?.[0], { name: "Planner" });
-	check("and its columns untouched", pathIn(tileNamed("Kanban")?.props, "columns", "value"), [
+	check("and its columns untouched", pathIn(tileNamed("Kanban")?.props, "columns", "fields", "value"), [
 		{ name: "To Do" },
 		{ name: "Doing" },
 	]);

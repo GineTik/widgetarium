@@ -23,6 +23,7 @@ const STYLE = `
 export interface EditableTabsProps extends TabStripFacts {
 	readonly deleteWarning?: ReactNode;
 	readonly className?: string | undefined;
+	readonly isEditable?: boolean;
 }
 
 export function toTabList(value: unknown): string[] {
@@ -33,7 +34,12 @@ export function toTabList(value: unknown): string[] {
 		.filter(Boolean);
 }
 
-export function EditableTabs({ deleteWarning, className, ...facts }: EditableTabsProps): ReactElement {
+export function EditableTabs({
+	deleteWarning,
+	className,
+	isEditable = true,
+	...facts
+}: EditableTabsProps): ReactElement {
 	const strip = useTabStrip(facts);
 	const { listRef, thumbProps } = useSegmentedThumb(strip.selected, strip.tabs);
 
@@ -43,8 +49,6 @@ export function EditableTabs({ deleteWarning, className, ...facts }: EditableTab
 			h("span", { key: "thumb", ...thumbProps }),
 			...strip.tabs.map((tab) => tabButtonOf(tab, strip)),
 		]),
-		tabsMenuOf(strip),
-		archiveDialogOf(strip),
-		deleteConfirmOf(strip, deleteWarning),
+		...(isEditable ? [tabsMenuOf(strip), archiveDialogOf(strip), deleteConfirmOf(strip, deleteWarning)] : []),
 	]);
 }

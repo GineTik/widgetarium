@@ -50,6 +50,7 @@ export function SwapBox({ swap, draw }: SwapBoxProps): ReactElement {
 					selected: shown ?? "",
 					onChange: apply,
 					deleteWarning: VIEW_GONE_FOR_GOOD,
+					isEditable: draw.editing,
 				})
 			: null,
 		swap.of.map((child, at) =>

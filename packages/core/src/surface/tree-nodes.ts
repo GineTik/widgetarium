@@ -2,12 +2,14 @@ import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { Icon } from "@widgetarium/kit";
 import { COLUMN, HIDE, overlayWidthOf, pathKey, ROW, SWAP } from "../tree.js";
+import { MIN_GAP_PX } from "../tree-constants.js";
 import type { NodePath } from "../tree.js";
 import type { LaidBox, LaidChild, LaidCollapsed, LaidLeaf, Placement } from "../tree-laid.js";
 import type { Tile } from "../model.js";
 import type { BoardEdits, PatchTile } from "./board-edits.js";
 import type { Carry } from "./carry.js";
 import { Cell } from "./cell.js";
+import { standIn } from "./tree-cell.js";
 import { CollapsedPanel, lookOf } from "./collapsed-panel.js";
 import type { PressAtKey } from "./collapsed-panel.js";
 import { styleOfNode, surfaceAttrs } from "./node-style.js";
@@ -54,7 +56,7 @@ function collapsedElement(node: Laid<LaidCollapsed>, draw: TreeDraw): ReactEleme
 
 function cellElement(leaf: Laid<LaidLeaf>, draw: TreeDraw): ReactElement | null {
 	const tile = draw.tileOf(leaf.id);
-	if (!tile) return null;
+	if (!tile) return draw.carry?.isIncoming && draw.carry.id === leaf.id ? standIn(leaf, draw.carry.height) : null;
 	return h(Cell, {
 		key: leaf.id,
 		cell: leaf,
@@ -77,7 +79,10 @@ function rowElement(row: Laid<LaidBox>, draw: TreeDraw): ReactElement {
 		{ className: "wg-tree-row", key, "data-path": key, "data-dir": ROW, style: styleOfNode(row), ...surfaceAttrs(row) },
 		row.of.flatMap((child, at) => [
 			at > 0 && !row.hasCollapsed
-				? h("div", { key: `gap-${pathKey(child.path)}`, style: { flex: `0 0 ${row.of[at - 1]?.gapAfter}px` } })
+				? h("div", {
+						key: `gap-${pathKey(child.path)}`,
+						style: { flex: `0 0 ${scaledGapOf(row.of[at - 1]?.gapAfter ?? 0)}` },
+					})
 				: null,
 			nodeElement(child, draw),
 		]),
@@ -103,8 +108,13 @@ function bandElement(child: LaidChild, draw: TreeDraw): ReactElement {
 	]);
 }
 
+function scaledGapOf(px: number): string {
+	if (px === 0) return "0px";
+	return `max(${Math.min(px, MIN_GAP_PX)}px, calc(${px}px * var(--wg-gap-scale, 1)))`;
+}
+
 function alongElement(child: LaidChild): ReactElement {
-	return h("div", { key: "along", style: { height: `${child.gapAfter}px` } });
+	return h("div", { key: "along", style: { height: scaledGapOf(child.gapAfter ?? 0) } });
 }
 
 function addZone(column: Laid<LaidBox>, draw: TreeDraw): ReactElement {
