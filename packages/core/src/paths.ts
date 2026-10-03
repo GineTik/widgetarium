@@ -1,5 +1,7 @@
 export const ROOT = ".widgetarium";
 export const WIDGETS_DIR = `${ROOT}/widgets`;
+export const SYSTEM_WIDGETS_DIR = "widgetarium-plugin/widgets";
+export const WIDGET_ROOTS: readonly string[] = [SYSTEM_WIDGETS_DIR, WIDGETS_DIR];
 export const COMPONENTS_DIR = `${ROOT}/components`;
 export const LOCK_PATH = `${ROOT}/widgets.lock.json`;
 

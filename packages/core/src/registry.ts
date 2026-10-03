@@ -1,6 +1,6 @@
 import { apiRefusal } from "./version.js";
 import type { VersionedManifest } from "./version.js";
-import { WIDGETS_DIR } from "./paths.js";
+import { SYSTEM_WIDGETS_DIR } from "./paths.js";
 import { EMPTY_LOCK, INSTALL_PENDING, modulesByWidget, buildMatchesSources, commitsOf } from "./engine/widget-lock.js";
 import type { WidgetLock } from "./engine/widget-lock.js";
 import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
@@ -13,8 +13,8 @@ import { idOfFolder } from "./engine/github.js";
 import { isObject } from "./engine/is-object.js";
 import { ENGINE_SCOPE, componentIn, foreignScope, isReactLike, runCode, runModule } from "./registry-scope.js";
 import type { PackageTaker, WidgetComponent, WidgetScope } from "./registry-scope.js";
-import { parseLock, readEverything, readIfThere } from "./registry-reading.js";
-import type { HeldWidget, OwnedSheet, RegistryAdapter } from "./registry-reading.js";
+import { parseLock, readVault } from "./registry-reading.js";
+import type { HeldWidget, OwnedSheet, PackageSource, RegistryAdapter, VaultRead } from "./registry-reading.js";
 import type { ReactIdentity } from "./fit.js";
 import type { DrawWidget } from "./mounted.js";
 import type { GivenProps } from "./declared-widget.js";
@@ -57,6 +57,7 @@ interface HeldPackage {
 
 interface ManifestHolder {
 	readonly manifest?: Fields | null | undefined;
+	readonly folder?: string | null | undefined;
 }
 
 const INSTALL_UNFINISHED = "{widget} did not finish installing, so it is not run — install it again from the catalogue";
@@ -74,12 +75,16 @@ export function buildWidget({ manifest, code, path, sources, lib, libPath, scope
 
 // TRADE-OFF: a function over the list, not a method on the registry — every stand-in registry
 // TRADE-OFF: in the tests would otherwise have to grow a second method to say the same thing
+export function isSystemDefinition(entry: { readonly folder?: string | null | undefined } | null | undefined): boolean {
+	return entry?.folder?.startsWith(`${SYSTEM_WIDGETS_DIR}/`) === true;
+}
+
 export function boardWidgets<Entry extends ManifestHolder>(entries: readonly Entry[]): Entry[] {
-	return entries.filter((entry) => !isInlineOnly(entry));
+	return entries.filter((entry) => !isInlineOnly(entry) && !isSystemDefinition(entry));
 }
 
 export function inlineWidgets<Entry extends ManifestHolder>(entries: readonly Entry[]): Entry[] {
-	return entries.filter((entry) => entry.manifest?.["inline"] === true);
+	return entries.filter((entry) => entry.manifest?.["inline"] === true && !isSystemDefinition(entry));
 }
 
 export function declaredName(registry: WidgetLookup | null | undefined, id: string): unknown {
@@ -101,6 +106,8 @@ export class WidgetRegistry implements WidgetLookup {
 	readonly packages = new Map<string, HeldPackage>();
 	readonly packagesByWidget = new Map<unknown, Map<string, string>>();
 	lock: WidgetLock = EMPTY_LOCK;
+	onLoaded: ((read: VaultRead) => void) | null = null;
+	private mounted: VaultRead | null = null;
 	styles: Map<string, HTMLStyleElement> | undefined;
 
 	constructor(app: RegistryApp, surfaceSource: string | null = null) {
@@ -141,12 +148,25 @@ export class WidgetRegistry implements WidgetLookup {
 		return [...this.widgets.values()];
 	}
 
+	isSystemWidget(id: string): boolean {
+		return isSystemDefinition(this.get(id));
+	}
+
 	get(id: string | null | undefined): WidgetDefinition | null {
 		if (id === null || id === undefined) return null;
 		return this.widgets.get(this.resolveId(id)) ?? null;
 	}
 
 	async load(): Promise<Map<string, WidgetDefinition>> {
+		const read = await readVault(this.app.vault.adapter, this.mounted);
+		this.mount(read);
+		this.onLoaded?.(read);
+		return this.widgets;
+	}
+
+	mount(read: VaultRead): Map<string, WidgetDefinition> {
+		const { widgets: found, packages } = read;
+		this.mounted = read;
 		this.widgets.clear();
 		this.renamed.clear();
 		this.libs.clear();
@@ -154,12 +174,8 @@ export class WidgetRegistry implements WidgetLookup {
 		this.packagesByWidget.clear();
 		this.scopes.clear();
 		this.dropStyles();
-		const adapter = this.app.vault.adapter;
-		if (!(await adapter.exists(WIDGETS_DIR))) return this.widgets;
-
-		const found = await readEverything(adapter);
 		this.lock = parseLock(found.lockText);
-		await this.readPackages(adapter, this.lock);
+		this.holdPackages(packages);
 		// TRADE-OFF: libs first, all of them — a widget may import a lib from any scope, and a
 		// TRADE-OFF: second pass is cheaper than deciding an order between scopes that reference each other
 		found.scopes.forEach((scope, at) => this.runLib(scope, found.libPaths[at] ?? null, found.libSources[at] ?? null));
@@ -168,15 +184,9 @@ export class WidgetRegistry implements WidgetLookup {
 		return this.widgets;
 	}
 
-	async readPackages(adapter: RegistryAdapter, lock: WidgetLock): Promise<void> {
-		const written = Object.entries(lock.modules).map(([key, entry]) => ({ key, path: pathOf(entry) }));
-		const sources = await Promise.all(written.map((each) => readIfThere(adapter, each.path)));
-		written.forEach((each, at) => {
-			const source = sources[at];
-			if (source === null || source === undefined) return;
-			this.packages.set(each.key, { path: each.path, source, exports: new Map() });
-		});
-		for (const [id, named] of modulesByWidget(lock)) this.packagesByWidget.set(id, named);
+	holdPackages(packages: readonly PackageSource[]): void {
+		for (const { key, path, source } of packages) this.packages.set(key, { path, source, exports: new Map() });
+		for (const [id, named] of modulesByWidget(this.lock)) this.packagesByWidget.set(id, named);
 	}
 
 	packagesFor(id: string, scope: WidgetScope): PackageTaker {
@@ -227,7 +237,7 @@ export class WidgetRegistry implements WidgetLookup {
 	runLib(scope: string, path: string | null, source: string | null): void {
 		if (source === null) return;
 
-		const name = `${scope.slice(WIDGETS_DIR.length + 1)}/lib`;
+		const name = `${scope.slice(scope.lastIndexOf("/") + 1)}/lib`;
 		try {
 			this.libs.set(name, runModule(source, path ?? "", this.libs));
 		} catch (failure) {
@@ -296,7 +306,7 @@ export class WidgetRegistry implements WidgetLookup {
 			this.widgets.set(record.id, this.drawnDefinition(record, held, folder));
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
-			const id = folder.slice(WIDGETS_DIR.length + 1);
+			const id = idOfFolder(folder);
 			this.widgets.set(id, { manifest: { id, title: id }, error: failure, folder });
 		}
 	}
@@ -319,11 +329,6 @@ export class WidgetRegistry implements WidgetLookup {
 
 function isInlineOnly(entry: ManifestHolder): boolean {
 	return entry.manifest?.["inline"] === true && !entry.manifest["defaultSize"];
-}
-
-function pathOf(entry: unknown): string {
-	const path = isObject(entry) ? entry["path"] : undefined;
-	return String(path);
 }
 
 function stateOf(entry: unknown): unknown {
