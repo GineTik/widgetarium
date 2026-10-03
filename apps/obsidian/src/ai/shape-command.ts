@@ -38,13 +38,7 @@ export function everyBase(): Told<BaseRow[]> {
 }
 
 export function baseNamed(name: unknown, zonesSaid?: unknown): Told<SerializedBoard> {
-	const zones =
-		typeof zonesSaid === "string"
-			? zonesSaid
-					.split(",")
-					.map((zone) => zone.trim())
-					.filter(Boolean)
-			: [];
+	const zones = zonesIn(zonesSaid);
 	const refusal = refuseZones(name, zones);
 	if (refusal) return { refusal };
 	const held = layoutNamed(name);
@@ -70,6 +64,14 @@ export function cardLayoutNamed(name: unknown): Told<object> {
 			...card.parts.map((part) => `  ${part.place.padEnd(9)} asks for ${part.asks}`),
 		].join("\n"),
 	};
+}
+
+function zonesIn(said: unknown): string[] {
+	if (typeof said !== "string") return [];
+	return said
+		.split(",")
+		.map((zone) => zone.trim())
+		.filter(Boolean);
 }
 
 function baseText(name: string, held: LayoutBase, board: SerializedBoard): string {
