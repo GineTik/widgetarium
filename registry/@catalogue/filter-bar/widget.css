@@ -1,0 +1,38 @@
+.wg-catalogue-bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 39px;
+}
+
+:is(.wg-root, .wg-portal) .wg-catalogue-bar-filters.wg-kit-btn {
+	padding: 0 12px;
+}
+
+.wg-catalogue-bar-filters.is-on {
+	color: var(--wg-kit-accent);
+}
+
+.wg-catalogue-bar-badge {
+	display: grid;
+	place-items: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	box-sizing: border-box;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-accent);
+	color: var(--text-on-accent);
+	font-size: var(--wg-kit-text-xs);
+	font-weight: var(--font-semibold, 600);
+}
+
+.wg-catalogue-bar-count {
+	font-size: var(--wg-kit-text-m);
+	color: var(--wg-kit-text-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.wg-catalogue-bar-clear {
+	margin-left: auto;
+}

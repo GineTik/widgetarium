@@ -1,0 +1,60 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Catalogue search",
+	"description": "The catalogue's search field: what you type narrows the list under it.",
+	"keywords": ["search", "catalogue", "find", "filter", "query", "field"],
+	"role": "control",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"stackBelowPx": 240
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		}
+	},
+	"commands": {
+		"setValue": {
+			"label": "Type the query",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getValue"
+				}
+			}
+		}
+	},
+	"props": {
+		"getValue": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Query",
+			"hint": "What is typed in the field.",
+			"aka": ["value"],
+			"writes": ["get"],
+			"default": {
+				"from": "memory",
+				"value": ""
+			}
+		},
+		"getPlaceholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Placeholder",
+			"hint": "Shown while nothing is typed.",
+			"aka": ["placeholder"],
+			"writes": ["get"],
+			"default": {
+				"value": "Search widgets"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

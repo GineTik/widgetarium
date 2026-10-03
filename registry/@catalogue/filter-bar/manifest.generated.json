@@ -1,0 +1,104 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Filter bar",
+	"description": "A Filters button, how many widgets are shown, and Clear all while any filter is on.",
+	"keywords": ["filters", "toggle", "count", "clear", "catalogue", "bar"],
+	"role": "control",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"stackBelowPx": 180
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"getShown": {
+				"value": 12
+			},
+			"getNarrowed": {
+				"value": 1
+			}
+		}
+	},
+	"commands": {
+		"setIsOpen": {
+			"label": "Open or close the filters",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getIsOpen"
+				}
+			}
+		},
+		"clearFilters": {
+			"label": "Clear the filters",
+			"hint": "Turns every filter off."
+		}
+	},
+	"props": {
+		"getView": {
+			"kind": "value",
+			"control": "json",
+			"label": "Shown view",
+			"hint": "Bind a view box's selection.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		},
+		"getHiddenInView": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Hidden in view",
+			"hint": "While this view is shown the bar draws nothing; empty shows it always.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getIsOpen": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Filters open",
+			"hint": "Whether the filters are open.",
+			"aka": ["open"],
+			"writes": ["get"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"getShown": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Widgets shown",
+			"hint": "How many widgets the filters leave.",
+			"aka": ["getCounts"],
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		},
+		"getNarrowed": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Filters on",
+			"hint": "How many filters are on.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

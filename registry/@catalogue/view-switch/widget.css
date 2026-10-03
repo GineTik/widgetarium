@@ -1,0 +1,10 @@
+.wg-catalogue-views.wg-kit-seg {
+	display: flex;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+:is(.wg-root, .wg-portal) .wg-catalogue-views.wg-kit-seg > button {
+	flex: 1 1 0;
+	height: 31px;
+}

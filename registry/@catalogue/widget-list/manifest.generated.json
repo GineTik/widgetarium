@@ -1,0 +1,111 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Widget list",
+	"description": "Widgets drawn as they look: press one to add it, or drag it onto a board or into a note.",
+	"keywords": ["catalogue", "widgets", "install", "store", "gallery", "cards", "drag", "place", "add"],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 5
+		},
+		"props": {
+			"getEntries": {
+				"rows": [
+					{
+						"id": "@default/metric-total",
+						"scope": "@default",
+						"name": "Metric total",
+						"title": "Metric total",
+						"description": "A running total over a window, the curve or bars behind it, and the day's own reading.",
+						"tags": ["chart"],
+						"installed": true,
+						"action": "add",
+						"update": null,
+						"job": null,
+						"lacks": null
+					}
+				]
+			}
+		}
+	},
+	"commands": {
+		"install": {
+			"label": "Install a widget",
+			"source": {
+				"implementation": "@catalogue/install",
+				"fields": {}
+			}
+		},
+		"pick": {
+			"label": "Pick a widget",
+			"source": {
+				"implementation": "@catalogue/pick",
+				"fields": {}
+			}
+		},
+		"place": {
+			"label": "Place a dropped widget",
+			"source": {
+				"implementation": "@catalogue/place",
+				"fields": {}
+			}
+		}
+	},
+	"props": {
+		"getEntries": {
+			"kind": "collection",
+			"label": "Widgets",
+			"hint": "The widgets to show.",
+			"aka": ["entries"],
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getSaid": {
+			"kind": "value",
+			"control": "json",
+			"label": "What the catalogue is asked for",
+			"hint": "What the catalogue was opened for.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "",
+					"lead": "",
+					"mode": "browse",
+					"isAsking": false
+				}
+			}
+		},
+		"getPageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Widgets per load",
+			"aka": ["pageSize"],
+			"writes": ["get"],
+			"default": {
+				"value": 12
+			}
+		}
+	},
+	"migrates": [],
+	"files": [
+		"widget.tsx",
+		"entry-card.tsx",
+		"entry-go.tsx",
+		"entry-lines.tsx",
+		"entry-ring.tsx",
+		"types.ts",
+		"use-entry-actions.ts",
+		"widget.css"
+	],
+	"dependencies": {},
+	"widgetDependencies": []
+}

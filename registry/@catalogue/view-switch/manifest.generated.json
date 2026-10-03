@@ -1,0 +1,67 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "View switch",
+	"description": "The views a view box holds as one full-width switch.",
+	"keywords": ["views", "tabs", "switch", "segmented", "catalogue"],
+	"role": "navigation",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto",
+		"stackBelowPx": 240
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"getViews": {
+				"rows": [
+					{
+						"name": "Widgets"
+					},
+					{
+						"name": "Templates"
+					}
+				]
+			}
+		}
+	},
+	"commands": {
+		"setView": {
+			"label": "Show a view",
+			"source": {
+				"implementation": "@core/value-set",
+				"fields": {
+					"target": "getView"
+				}
+			}
+		}
+	},
+	"props": {
+		"getViews": {
+			"kind": "collection",
+			"label": "Views",
+			"hint": "Bind a view box's holds and the switch offers its views.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getView": {
+			"kind": "value",
+			"control": "json",
+			"label": "Shown view",
+			"hint": "Bind the same view box's selection and the two move together.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

@@ -1,0 +1,162 @@
+.wg-catalogue-list {
+	columns: 300px;
+	column-gap: var(--wg-gap-cards, 8px);
+}
+
+.wg-catalogue-list > * {
+	break-inside: avoid;
+	margin-bottom: var(--wg-gap-cards, 8px);
+}
+
+.wg-catalogue-list > :is(.wg-catalogue-divide, .wg-catalogue-end) {
+	column-span: all;
+}
+
+.wg-catalogue-card {
+	--wg-group-pad: 5px;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	cursor: pointer;
+	user-select: none;
+	touch-action: none;
+	transition: transform var(--wg-quick) var(--wg-ease);
+}
+
+.wg-catalogue-card:hover {
+	transform: translateY(-1px);
+}
+
+.wg-catalogue-card:focus-visible {
+	outline: 2px solid var(--wg-kit-accent);
+	outline-offset: 2px;
+}
+
+.wg-catalogue-card-stage {
+}
+
+.wg-catalogue-card-foot {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-left: 2px;
+}
+
+.wg-catalogue-card-said {
+	display: flex;
+	flex: 1;
+	align-items: baseline;
+	gap: 5px;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	font-size: var(--wg-kit-text-m);
+	line-height: 1.2;
+}
+
+.wg-catalogue-card-scope {
+	flex: none;
+	color: var(--text-faint);
+}
+
+.wg-catalogue-card-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-kit-text);
+}
+
+.wg-catalogue-card-ring {
+	display: grid;
+	place-items: center;
+	width: var(--wg-kit-control-s);
+	height: var(--wg-kit-control-s);
+	flex: none;
+}
+
+.wg-catalogue-card-go.wg-catalogue-card-go.is-install::before {
+	background: var(--wg-kit-success);
+	box-shadow: none;
+}
+
+.wg-catalogue-card-go.wg-catalogue-card-go.is-update::before {
+	background: var(--wg-kit-warning);
+	box-shadow: none;
+}
+
+.wg-catalogue-card-go.wg-catalogue-card-go.is-failed::before {
+	background: var(--wg-kit-error-wash);
+	box-shadow: none;
+}
+
+.wg-catalogue-card-go.is-install,
+.wg-catalogue-card-go.is-update {
+	color: var(--text-on-accent);
+}
+
+.wg-catalogue-card-go.is-failed {
+	color: var(--wg-kit-error);
+}
+
+.wg-catalogue-card-step,
+.wg-catalogue-card-what,
+.wg-catalogue-card-lack {
+	margin: 0;
+	padding: 0 2px 2px;
+	font-size: var(--wg-kit-text-xs);
+	line-height: 1.4;
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-catalogue-card-what {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.wg-catalogue-card-lack.is-failure {
+	color: var(--wg-kit-error);
+}
+
+.wg-catalogue-divide {
+	margin: 8px 0 0;
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-catalogue-none {
+	margin: 0;
+	padding: 20px;
+	font-size: var(--wg-kit-text-m);
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-catalogue-end {
+	height: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-catalogue-card {
+		transition: none;
+	}
+
+	.wg-catalogue-card:hover {
+		transform: none;
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-catalogue-card-go.wg-kit-icon {
+	width: 28px;
+	height: 28px;
+}
+:is(.wg-root, .wg-portal) .wg-catalogue-card.wg-kit-surface {
+	border-radius: 14px;
+}
+
+:is(.wg-root, .wg-portal) .wg-catalogue-card-stage.wg-kit-surface {
+	--wg-group-pad: 16px;
+	border-radius: 6px;
+}
