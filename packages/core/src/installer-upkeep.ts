@@ -3,6 +3,7 @@ import { releaseModules, withoutEntry } from "./engine/widget-lock.js";
 import type { WidgetLock } from "./engine/widget-lock.js";
 import { folderFor, idOfFolder } from "./engine/github.js";
 import { isObject } from "./engine/is-object.js";
+import { isScopeFolder } from "./engine/source-disk.js";
 import { refuse } from "./installer-context.js";
 import type { InstallerAdapter, Installing, Refusal } from "./installer-context.js";
 
@@ -73,7 +74,8 @@ function filesOf(entry: unknown): object {
 
 async function everyWidgetFolder(adapter: InstallerAdapter): Promise<string[]> {
 	const found: string[] = [];
-	for (const scope of (await adapter.list(WIDGETS_DIR)).folders) found.push(...(await adapter.list(scope)).folders);
+	for (const scope of (await adapter.list(WIDGETS_DIR)).folders.filter(isScopeFolder))
+		found.push(...(await adapter.list(scope)).folders);
 	return found;
 }
 

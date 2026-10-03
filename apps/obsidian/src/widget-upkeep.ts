@@ -1,5 +1,6 @@
 import { Notice } from "obsidian";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "@widgetarium/core/paths.js";
+import type { RebuiltDrifted } from "@widgetarium/core/installer-upkeep.js";
 import { watchWidgetScopes } from "./widget-watch.js";
 import type WidgetariumPlugin from "./main.js";
 
@@ -17,7 +18,10 @@ export async function watchWidgets(plugin: WidgetariumPlugin): Promise<void> {
 	const unwatch = watchedScopes(plugin);
 	if (unwatch) plugin.register(unwatch);
 	else if (await isAuthoringWidgetsHere(plugin)) await watchWidgetFolder(plugin);
-	await queueWidgetWork(plugin, () => rebuildWidgets(plugin));
+}
+
+export function revalidateWidgets(plugin: WidgetariumPlugin): Promise<void> {
+	return queueWidgetWork(plugin, () => revalidate(plugin));
 }
 
 export function widgetsChanged(plugin: WidgetariumPlugin): Promise<void> {
@@ -64,7 +68,7 @@ async function pollWidgets(plugin: WidgetariumPlugin): Promise<void> {
 	}
 }
 
-async function rebuildWidgets(plugin: WidgetariumPlugin): Promise<void> {
+async function rebuildWidgets(plugin: WidgetariumPlugin): Promise<RebuiltDrifted> {
 	const done = await plugin.installer.rebuildDrifted();
 	if (done.rebuilt.length > 0) {
 		await plugin.registry.load();
@@ -72,6 +76,7 @@ async function rebuildWidgets(plugin: WidgetariumPlugin): Promise<void> {
 	}
 	if (done.failures.length > 0)
 		new Notice(`Widgetarium: ${done.failures.map((each) => each.id).join(", ")} did not build — the console says why`);
+	return done;
 }
 
 function watchedScopes(plugin: WidgetariumPlugin): (() => void) | null {
@@ -95,4 +100,25 @@ async function reloadWidgets(plugin: WidgetariumPlugin): Promise<void> {
 	await rebuildWidgets(plugin);
 	await plugin.registry.load();
 	plugin.refresh();
+}
+
+async function revalidate(plugin: WidgetariumPlugin): Promise<void> {
+	const changed = await plugin.startupCache.filesChanged();
+	if (changed?.length === 0 && plugin.startupCache.areBuildsChecked()) {
+		console.info("[widgetarium] revalidate: unchanged");
+		return;
+	}
+	console.info(`[widgetarium] revalidate: ${revalidationOf(changed)}`);
+	const done = await rebuildWidgets(plugin);
+	if (changed?.length !== 0 && done.rebuilt.length === 0) {
+		await plugin.registry.load();
+		plugin.refresh();
+	}
+	if (done.failures.length === 0) plugin.startupCache.markBuildsChecked();
+}
+
+function revalidationOf(changed: readonly string[] | null): string {
+	if (changed === null) return "the vault cannot stat its files → reload";
+	if (changed.length === 0) return "unchanged, builds not yet checked → build pass";
+	return `${changed.length} files changed → reload`;
 }

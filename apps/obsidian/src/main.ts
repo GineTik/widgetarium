@@ -2,10 +2,10 @@ import { Plugin, TFile, TFolder, Notice } from "obsidian";
 import type { Editor, Menu, MarkdownPostProcessorContext, TAbstractFile, View } from "obsidian";
 import { render } from "@widgetarium/core/engine/render.js";
 import type { WidgetRegistry } from "@widgetarium/core/registry.js";
+import type { StartupCache } from "@widgetarium/core/startup-snapshot.js";
 import { setTracing, tracing, measure, spentSoFar, forgetSpent, traceSub } from "@widgetarium/core/trace.js";
 import type { Board } from "@widgetarium/core/model.js";
 import type { createWantedWidgets } from "@widgetarium/core/engine/widgets-wanted.js";
-import type { openCatalogue } from "@widgetarium/core/catalogue-dialog.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { AI_VIEW_TYPE, AssistantView } from "./ai/view.js";
 import type { Assistant } from "./ai/assistant.js";
@@ -19,9 +19,12 @@ import { mountBoardByBlock } from "./board-mount.js";
 import type { BoardMount, SaveBoard } from "./board-mount.js";
 import { drawBlock } from "./draw-block.js";
 import type { BlockContext } from "./draw-block.js";
-import { installAt, offersOf, openCatalogueAs, showSubstitutions } from "./plugin-catalogue.js";
+import { installAt, offersOf, showSubstitutions } from "./plugin-catalogue.js";
+import { CATALOGUE_VIEW_TYPE, DOCS_VIEW_TYPE, redrawBoardViews, revealBoardView } from "./catalogue-views.js";
+import type { PluginCataloguePort } from "./catalogue-port.js";
 import type { AvailableOffer, InstallAtAnswer } from "./plugin-catalogue.js";
 import { startPlugin, startUp } from "./plugin-setup.js";
+import { warmLikelyNotes } from "./note-warming.js";
 import type { ShapeStore, Shapes } from "@widgetarium/kit/shapes";
 import { widgetSignature, widgetsChanged } from "./widget-upkeep.js";
 import type { HeaderActions } from "./header-actions.js";
@@ -30,7 +33,6 @@ import type { ObsidianHost } from "./host.js";
 export { drawable } from "./widget-offers.js";
 
 export type WantedWidgets = ReturnType<typeof createWantedWidgets>;
-export type OpenedCatalogue = ReturnType<typeof openCatalogue>;
 
 const BOARD_REFUSED = "Widgetarium: the board was not created — {reason}";
 const BOARD_NOT_INSERTED =
@@ -42,16 +44,18 @@ export default class WidgetariumPlugin extends Plugin {
 	declare mounts: Map<unknown, BoardMount>;
 	declare header: HeaderActions;
 	declare registry: WidgetRegistry;
+	declare startupCache: StartupCache;
 	declare shapeAnswers: Shapes;
 	declare shapes: ShapeStore;
 	declare host: ObsidianHost;
 	declare rules: Rule[];
 	declare installer: Installer;
 	declare wanted: WantedWidgets;
+	declare cataloguePort: PluginCataloguePort;
 	declare started: Promise<void>;
 	assistant: Assistant | null = null;
 	available: Drawn<AvailableOffer>[] | null = null;
-	catalogue: OpenedCatalogue | null = null;
+	templateFolder: TFolder | undefined = undefined;
 	closeSubstitutions: (() => void) | null = null;
 	signature = "";
 	isPolling = false;
@@ -72,6 +76,7 @@ export default class WidgetariumPlugin extends Plugin {
 
 	override async onload(): Promise<void> {
 		startPlugin(this);
+		this.app.workspace.onLayoutReady(() => void measure("warm likely notes", () => warmLikelyNotes(this.app)));
 	}
 
 	spent(): ReturnType<typeof spentSoFar> {
@@ -102,11 +107,16 @@ export default class WidgetariumPlugin extends Plugin {
 	}
 
 	showCatalogue(): Promise<void> {
-		return openCatalogueAs(this, "browse");
+		return revealBoardView(this, CATALOGUE_VIEW_TYPE);
+	}
+
+	showDocs(): Promise<void> {
+		return revealBoardView(this, DOCS_VIEW_TYPE);
 	}
 
 	showTemplates(folder?: TFolder): Promise<void> {
-		return openCatalogueAs(this, "template", folder);
+		this.templateFolder = folder;
+		return this.showCatalogue();
 	}
 
 	showSubstitutions(): Promise<void> {
@@ -121,8 +131,7 @@ export default class WidgetariumPlugin extends Plugin {
 		this.signature = await widgetSignature(this);
 		await this.registry.load();
 		this.available = null;
-		const available = await this.offers();
-		this.catalogue?.redraw({ available, lock: await this.installer.lock() });
+		await this.cataloguePort.reread();
 		this.refresh();
 	}
 
@@ -164,7 +173,6 @@ export default class WidgetariumPlugin extends Plugin {
 	override onunload(): void {
 		clearTimeout(this.writeTimer);
 		clearTimeout(this.afterFirstDraw);
-		this.catalogue?.close();
 		this.closeSubstitutions?.();
 		this.assistant?.close();
 		this.registry?.dropStyles?.();
@@ -228,6 +236,7 @@ export default class WidgetariumPlugin extends Plugin {
 
 	refresh(): void {
 		for (const mount of this.mounts.values()) mount.draw();
+		redrawBoardViews(this);
 	}
 
 	firstMountIn(sourcePath: string | null | undefined): BoardMount | null {

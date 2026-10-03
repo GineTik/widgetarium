@@ -1383,12 +1383,16 @@ check(
 
 const vault = mkdtempSync(path.join(tmpdir(), "wg-ai-"));
 const written: Record<string, string | null> = {};
+let agentFileReads = 0;
 const adapter: AgentFilesAdapter = {
 	exists: async (at) => Object.hasOwn(written, at),
 	mkdir: async (at) => {
 		written[at] = null;
 	},
-	read: async (at) => written[at] ?? "",
+	read: async (at) => {
+		agentFileReads += 1;
+		return written[at] ?? "";
+	},
 	write: async (at, text) => {
 		written[at] = text;
 	},
@@ -1428,12 +1432,19 @@ check(
 	zodLaid.filter((at) => written[at.slice(0, at.lastIndexOf("/"))] !== null),
 	[],
 );
+agentFileReads = 0;
 check("laying them a second time writes nothing", await layAgentFiles(adapter), []);
+check(
+	"and reads one file for the whole types tree, not one per declaration",
+	agentFileReads,
+	Object.keys(HANDBOOK).length + 2,
+);
 
 const TYPES_LAID_BEFORE = ["types/react.d.ts", "types/gateway", "types/gateway/declared.d.ts"].map(
 	(name) => `${WIDGETS_DIR}/${name}`,
 );
 for (const at of TYPES_LAID_BEFORE) written[at] = at.endsWith(".ts") ? "laid by an older plugin" : null;
+written[`${WIDGETS_DIR}/types/.laid-by-plugin`] = "laid by an older plugin";
 await layAgentFiles(adapter);
 check(
 	"a type file the plugin no longer lays is swept, and its folder with it",

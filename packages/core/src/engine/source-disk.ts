@@ -36,6 +36,10 @@ export function scopeOf(folder: string): string {
 	return folder.slice(0, folder.lastIndexOf("/"));
 }
 
+export function isScopeFolder(folder: string): boolean {
+	return folder.slice(folder.lastIndexOf("/") + 1).startsWith("@");
+}
+
 export async function filesUnder(disk: SourceDisk, folder: string, names: readonly string[]): Promise<HeldFiles> {
 	const held: HeldFiles = {};
 	for (const name of names) {

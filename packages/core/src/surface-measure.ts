@@ -4,11 +4,18 @@ import { isClear } from "./color-math.js";
 import { MEASURED_DIR, measuredPathOf, PRESET_TOKENS } from "./surface-contract.js";
 import { byPath } from "./tree.js";
 import type { ModuleAdapter } from "./engine/modules.js";
+import { contentHash } from "./engine/content-hash.js";
 
 type MeasureAdapter = Pick<ModuleAdapter, "exists" | "mkdir" | "write">;
 
+export interface MeasureApp {
+	readonly vault?: { readonly adapter?: MeasureAdapter | null } | null;
+	loadLocalStorage?(key: string): unknown;
+	saveLocalStorage?(key: string, data: unknown): void;
+}
+
 export interface MeasureHost {
-	readonly app?: { readonly vault?: { readonly adapter?: MeasureAdapter | null } | null } | null;
+	readonly app?: MeasureApp | null;
 	readonly notePath?: string | null;
 }
 
@@ -30,7 +37,7 @@ interface Extent {
 	readonly h: number;
 }
 
-interface BoardMeasure {
+export interface BoardMeasure {
 	readonly theme: "dark" | "light";
 	readonly page: string;
 	readonly presets: Readonly<Record<string, string>>;
@@ -49,10 +56,12 @@ export function useMeasuresSurfaces(
 	regionsRef: RefObject<ReadonlyMap<unknown, HTMLElement>>,
 ): void {
 	useEffect(() => {
-		const adapter = host?.app?.vault?.adapter;
+		const app = host?.app;
+		const adapter = app?.vault?.adapter;
 		const note = host?.notePath;
-		if (!adapter || !note) return undefined;
-		const measure = (): void => measureInto(adapter, note, pageRef.current, [...(regionsRef.current?.values() ?? [])]);
+		if (!app || !adapter || !note) return undefined;
+		const measure = (): void =>
+			measureInto(app, adapter, note, pageRef.current, [...(regionsRef.current?.values() ?? [])]);
 		const timer = window.setTimeout(measure, SETTLE_MS);
 		return () => window.clearTimeout(timer);
 	});
@@ -69,27 +78,53 @@ const INTERACTIVE =
 const MEDIA = "img, svg, canvas, video";
 const SETTLE_MS = 700;
 const MAX_ELEMENTS_PER_TILE = 4000;
-const writtenByPath = new Map<string, string>();
+const WRITTEN_HASHES_KEY = "widgetarium-measured-hashes";
+const writtenHashesByApp = new WeakMap<MeasureApp, Map<string, string>>();
 const MEDIA_PAINT = Symbol("media");
 
+export async function writeMeasured(
+	app: MeasureApp,
+	adapter: MeasureAdapter,
+	path: string,
+	measured: BoardMeasure,
+): Promise<void> {
+	const text = JSON.stringify(measured, null, "\t");
+	const hash = contentHash(text);
+	const written = writtenHashesOf(app);
+	if (written.get(path) === hash && (await adapter.exists(path))) return;
+	written.set(path, hash);
+	if (!(await adapter.exists(MEASURED_DIR))) await adapter.mkdir(MEASURED_DIR);
+	await adapter.write(path, text);
+	app.saveLocalStorage?.(WRITTEN_HASHES_KEY, Object.fromEntries(written));
+}
+
 function measureInto(
+	app: MeasureApp,
 	adapter: MeasureAdapter,
 	note: string,
 	page: HTMLElement | null,
 	regions: readonly HTMLElement[],
 ): void {
 	if (!page) return;
-	writeMeasured(adapter, measuredPathOf(note), measureBoard(page, regions)).catch((failure: unknown) =>
+	writeMeasured(app, adapter, measuredPathOf(note), measureBoard(page, regions)).catch((failure: unknown) =>
 		console.error("[widgetarium] the board's surfaces were not measured", failure),
 	);
 }
 
-async function writeMeasured(adapter: MeasureAdapter, path: string, measured: BoardMeasure): Promise<void> {
-	const text = JSON.stringify(measured, null, "\t");
-	if (writtenByPath.get(path) === text) return;
-	writtenByPath.set(path, text);
-	if (!(await adapter.exists(MEASURED_DIR))) await adapter.mkdir(MEASURED_DIR);
-	await adapter.write(path, text);
+function writtenHashesOf(app: MeasureApp): Map<string, string> {
+	const held = writtenHashesByApp.get(app);
+	if (held) return held;
+	const stored = new Map(
+		Object.entries(storedObjectOf(app.loadLocalStorage?.(WRITTEN_HASHES_KEY))).flatMap(([path, hash]) =>
+			typeof hash === "string" ? [[path, hash] as const] : [],
+		),
+	);
+	writtenHashesByApp.set(app, stored);
+	return stored;
+}
+
+function storedObjectOf(stored: unknown): Readonly<Record<string, unknown>> {
+	return typeof stored === "object" && stored !== null ? Object.fromEntries(Object.entries(stored)) : {};
 }
 
 function tilesIn(regions: readonly HTMLElement[]): Record<string, MeasuredTile> {

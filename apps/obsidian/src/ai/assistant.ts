@@ -15,7 +15,7 @@ import type { Session } from "./session.js";
 import { briefFor } from "./brief.js";
 import type { BriefNote } from "./brief.js";
 import { openProviderWindow } from "./provider-window.js";
-import { HANDBOOK_DIR, TOOL_PATH, layAgentFiles } from "./agent-files.js";
+import { HANDBOOK_DIR, TOOL_PATH } from "./agent-files.js";
 import { whereCommandIs } from "./path.js";
 import type { Environment } from "./path.js";
 import { HTTP } from "./providers.js";
@@ -60,7 +60,6 @@ export interface Assistant {
 	readonly session: Session;
 	readonly settings: AiSettings;
 	state(): Promise<AssistantState>;
-	layAgentFiles(): Promise<string[]>;
 	restore(): Promise<void>;
 	forgetContext(): Promise<void>;
 	openProviders(): void;
@@ -126,7 +125,6 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 		session,
 		settings,
 		state,
-		layAgentFiles: () => layAgentFiles(app.vault.adapter),
 		restore: () => session.restore(),
 		forgetContext: () => session.clear(),
 		openProviders: providerWindow.open,
