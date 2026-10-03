@@ -73,6 +73,7 @@ export interface LaidBox extends SurfaceFields, Partial<Plate> {
 	readonly hasCollapsed?: boolean;
 	readonly id?: string | undefined;
 	readonly strip?: boolean;
+	readonly slot?: string;
 	readonly of: readonly LaidChild[];
 }
 

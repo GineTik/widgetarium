@@ -3948,6 +3948,21 @@ body.wg-tree-dragging .wg-tree-region {
 	min-width: 0;
 }
 
+.wg-tree-band[data-holds="header"],
+.wg-tree-band:is([data-holds="dock"], [data-holds="composer"]) {
+	position: sticky;
+	z-index: 3;
+	background: var(--wg-kit-page);
+}
+
+.wg-tree-band[data-holds="header"] {
+	top: 0;
+}
+
+.wg-tree-band:is([data-holds="dock"], [data-holds="composer"]) {
+	bottom: 0;
+}
+
 .wg-root.is-editing .wg-tree-grip {
 	opacity: 0.55;
 }

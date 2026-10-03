@@ -1,6 +1,6 @@
 import { normalizeBoard } from "./model.js";
 import { nestingFindings } from "./surface-laws.js";
-import { baseMismatch, emptyColumnsOf } from "./layouts.js";
+import { baseMismatch, bodySlotNamesOf, bodySlotProblems, emptyColumnsOf, isBody } from "./layouts.js";
 import { ROLES, SLOT_SURFACES } from "./surface-roles.js";
 import { COLLAPSES, APART, TOGGLES, NO_SURFACE, SIDES, SURFACES, SWAP, TEXT_ROLE } from "./tree.js";
 import type { NodePath } from "./tree.js";
@@ -19,6 +19,7 @@ interface Lint {
 	readonly errors: LintFinding[];
 	readonly tileIds: ReadonlySet<unknown>;
 	readonly roleOf: (id: unknown) => unknown;
+	readonly bodySlotNames: ReadonlySet<string>;
 }
 
 const DIRECTIONS = ["row", "column", "swap"];
@@ -59,29 +60,39 @@ export function lintBoard(raw: unknown, roleOfWidget: RoleOfWidget = () => null)
 	const widgetOf = new Map(
 		tiles.map((tile) => (isObject(tile) ? [tile["id"], tile["widget"]] : [undefined, undefined])),
 	);
-	const lint: Lint = { errors: [], tileIds: new Set(widgetOf.keys()), roleOf: (id) => roleOfWidget(widgetOf.get(id)) };
+	const lint = createLint(widgetOf, roleOfWidget, raw["base"]);
 	lintNode(lint, layout, [], null);
 	const nesting = nestingFindings(normalizeBoard(raw).layout, (id) => widgetNamed(widgetOf.get(id)));
 	return [
 		...lint.errors,
 		...tiles.flatMap(slotFindings),
-		...baseFindings(raw, layout),
+		...baseFindings(raw, layout, lint.roleOf),
 		...nesting.map((one) => finding(one.path, `law ${one.law}: ${one.reason}`)),
 	];
+}
+
+function createLint(widgetOf: ReadonlyMap<unknown, unknown>, roleOfWidget: RoleOfWidget, base: unknown): Lint {
+	return {
+		errors: [],
+		tileIds: new Set(widgetOf.keys()),
+		roleOf: (id) => roleOfWidget(widgetOf.get(id)),
+		bodySlotNames: bodySlotNamesOf(base),
+	};
 }
 
 function widgetNamed(widget: unknown): string | undefined {
 	return typeof widget === "string" ? widget : undefined;
 }
 
-function baseFindings(raw: RawFields, layout: RawBox): LintFinding[] {
+function baseFindings(raw: RawFields, layout: RawBox, roleOf: Lint["roleOf"]): LintFinding[] {
 	const { base } = raw;
 	if (base === undefined || base === null) return [];
 	const wrong = baseMismatch(base, layout);
 	const empty = emptyColumnsOf(layout);
-	const started = empty.length < layout.of.length;
+	const started = empty.length < layout.of.length && !isBody(base);
 	return [
 		...(wrong ? [finding([], wrong)] : []),
+		...bodySlotProblems(base, layout, roleOf).map((message) => finding([], message)),
 		...(started ? empty.map((at) => finding([at], stillEmptySaid(base))) : []),
 	];
 }
@@ -137,9 +148,14 @@ const dirOf = (node: RawFields): unknown => node["dir"] ?? "column";
 function isPhantom(lint: Lint, node: RawBox, path: NodePath, parent: RawBox | null): boolean {
 	if (path.length < 2 || parent === null || dirOf(parent) === SWAP || dirOf(node) !== dirOf(parent)) return false;
 	if (node["surface"] !== undefined && node["surface"] !== NO_SURFACE) return false;
-	if (node["id"] !== undefined || node["width"] !== undefined || node["scroll"] !== undefined) return false;
+	if (isBoxThatStandsForItself(lint, node)) return false;
 	const [first] = node.of;
 	return !(isObject(first) && !Array.isArray(first["of"]) && lint.roleOf(first["id"]) === TEXT_ROLE);
+}
+
+function isBoxThatStandsForItself(lint: Lint, node: RawBox): boolean {
+	if (node["id"] !== undefined || node["width"] !== undefined || node["scroll"] !== undefined) return true;
+	return typeof node["name"] === "string" && lint.bodySlotNames.has(node["name"]);
 }
 
 function lintLeaf(lint: Lint, node: RawFields, path: NodePath): void {

@@ -1,5 +1,6 @@
 import { ADAPTIVE, APART, COLUMN, DRAWER, GROUP, NO_SURFACE, ROW } from "./tree.js";
 import type { BoxNode, SurfaceSide, SurfaceWord } from "./tree.js";
+import { isObject } from "./engine/is-object.js";
 
 type TextTone = "value" | "caption";
 
@@ -132,6 +133,15 @@ export function rail({ role, purpose, side, width, sections }: RailAsk): BaseBox
 	};
 }
 
+export function childrenOf(node: unknown): readonly unknown[] {
+	const of = isObject(node) ? node["of"] : null;
+	return Array.isArray(of) ? of : [];
+}
+
+export function hole(purpose: string, role: string, surface: SurfaceWord = NO_SURFACE): BaseBox {
+	return { dir: COLUMN, role, purpose, surface, of: [] };
+}
+
 function text(said: string, level: number, tone: TextTone): BaseText {
 	return { text: said, level, tone, surface: NO_SURFACE };
 }
@@ -145,8 +155,4 @@ function headColumn(heading: string, purpose: string, role: string, of: readonly
 		surface: NO_SURFACE,
 		of: [text(heading, 2, "value"), text(purpose, 0, "caption"), ...of],
 	};
-}
-
-function hole(purpose: string, role: string, surface: SurfaceWord = NO_SURFACE): BaseBox {
-	return { dir: COLUMN, role, purpose, surface, of: [] };
 }

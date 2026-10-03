@@ -265,6 +265,7 @@ function boxShape(node: BoxNode, dir: BoxDirection, width: number, how: LayPlace
 		width,
 		gap: stepOf(how.level),
 		...(node.measure !== undefined && node.measure > 0 ? { measure: node.measure } : {}),
+		...(node.name ? { slot: node.name } : {}),
 		...surfaceFields(node),
 		...plateFields(node, how),
 		...toggleFields(node, how.path),

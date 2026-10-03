@@ -7,7 +7,13 @@ import {
 	sectionsOf,
 	emptyColumnsOf,
 	baseMismatch,
+	BODIES,
+	BODY_NAMES,
+	PAGE_BASE_NAMES,
+	SHELL_ZONES,
+	refuseZones,
 } from "../packages/core/src/layouts.js";
+import { lintBoard } from "../packages/core/src/board-lint.js";
 import { CARDS, CARD_NAMES, cardNamed, cardNode } from "../packages/core/src/patterns.js";
 import { normalizeBoard, serializeBoard } from "../packages/core/src/model.js";
 import { nestingFindings } from "../packages/core/src/surface-laws.js";
@@ -80,7 +86,7 @@ const shapeOf = (section: BoardNode): string => {
 
 check("there are bases to start from", LAYOUT_NAMES.length > 0, true);
 
-for (const name of LAYOUT_NAMES) {
+for (const name of PAGE_BASE_NAMES) {
 	const held = present(LAYOUTS[name], name);
 	const skeleton = present(skeletonOf(name, asBoard), `the ${name} skeleton`);
 	const nodes = nodesIn(skeleton.layout);
@@ -219,6 +225,192 @@ check(
 	"a region with nothing in it is reported by index",
 	emptyColumnsOf({ of: [{ of: [] }, { of: [{}] }, { of: [] }] }),
 	[0, 2],
+);
+
+check("no body shares its name with a page base", PAGE_BASE_NAMES.length + BODY_NAMES.length, LAYOUT_NAMES.length);
+const nodeNamedIn = (node: BoardNode, name: string): BoardNode | undefined =>
+	nodesIn(node).find((one) => said(one, "name") === name);
+const lintMessagesOf = (board: SerializedBoard): string[] =>
+	lintBoard(board, (widget) => (widget === HEADING_WIDGET ? "text" : null)).map((one) => one.message);
+for (const name of BODY_NAMES) {
+	const body = present(BODIES[name], name);
+	const skeleton = present(skeletonOf(name, asBoard, SHELL_ZONES), `the ${name} body`);
+	check(`${name} is a row of regions`, said(skeleton.layout, "dir"), "row");
+	check(`${name} keeps exactly one region`, regionsOf(skeleton).filter((region) => said(region, "keep")).length, 1);
+	check(
+		`${name} lays every slot it declares, by name`,
+		Object.keys(body.slots).filter((slot) => !nodeNamedIn(skeleton.layout, slot)),
+		[],
+	);
+	check(`${name} arrives with no lint finding`, lintMessagesOf(skeleton), []);
+	check(`${name} breaks no surface law`, nestingFindings(normalizeBoard(skeleton).layout), []);
+}
+
+const flow = present(skeletonOf("flow", asBoard), "the flow body");
+const twoHeroTiles = [
+	{ id: "x1", widget: "a" },
+	{ id: "x2", widget: "b" },
+];
+const withHeroHolding = (node: BoardNode, held: readonly BoardNode[]): BoardNode => {
+	if (!isBox(node)) return node;
+	if (said(node, "name") === "hero") return { ...node, of: held };
+	return { ...node, of: node.of.map((child) => withHeroHolding(child, held)) };
+};
+const withoutSlot = (node: BoardNode, slot: string): BoardNode => {
+	if (!isBox(node)) return node;
+	return {
+		...node,
+		of: node.of.filter((child) => said(child, "name") !== slot).map((child) => withoutSlot(child, slot)),
+	};
+};
+const flowWith = (layout: BoardNode, base = "flow"): SerializedBoard =>
+	asBoard({ ...flow, base, tiles: [...flow.tiles, ...twoHeroTiles], layout });
+const overfullSaid = 'slot "hero" holds 2 widgets and takes 1';
+check(
+	"a slot holding more than it takes is named by lint",
+	lintMessagesOf(flowWith(withHeroHolding(flow.layout, [{ id: "x1" }, { id: "x2" }]))).some((message) =>
+		message.includes(overfullSaid),
+	),
+	true,
+);
+check(
+	"and a box wrapped around them does not hide them",
+	lintMessagesOf(
+		flowWith(withHeroHolding(flow.layout, [{ dir: "column", surface: "group", of: [{ id: "x1" }, { id: "x2" }] }])),
+	).some((message) => message.includes(overfullSaid)),
+	true,
+);
+check(
+	"a base written with stray spaces is still held to its slots",
+	lintMessagesOf(flowWith(withHeroHolding(flow.layout, [{ id: "x1" }, { id: "x2" }]), " flow ")).some((message) =>
+		message.includes(overfullSaid),
+	),
+	true,
+);
+check(
+	"a required slot taken out is named by lint",
+	lintMessagesOf(asBoard({ ...flow, layout: withoutSlot(flow.layout, "stack") })).some((message) =>
+		message.includes('has no "stack" slot'),
+	),
+	true,
+);
+check(
+	"an optional slot taken out is not",
+	lintMessagesOf(asBoard({ ...flow, layout: withoutSlot(flow.layout, "hero") })),
+	[],
+);
+const collection = present(skeletonOf("collection", asBoard), "the collection body");
+const withSlotHolding = (node: BoardNode, slot: string, held: readonly BoardNode[]): BoardNode => {
+	if (!isBox(node)) return node;
+	if (said(node, "name") === slot) return { ...node, of: held };
+	return { ...node, of: node.of.map((child) => withSlotHolding(child, slot, held)) };
+};
+check(
+	"a required slot left empty while another holds a widget is named by lint",
+	lintMessagesOf(
+		asBoard({
+			...collection,
+			tiles: [...collection.tiles, { id: "x1", widget: "a" }],
+			layout: withSlotHolding(collection.layout, "toolbar", [{ id: "x1" }]),
+		}),
+	).some((message) => message.includes('slot "view" is still empty')),
+	true,
+);
+check("a name every object inherits is no body", skeletonOf("constructor", asBoard), null);
+
+const SHELLED = BODY_NAMES.filter((name) => BODIES[name]?.hasShell);
+check(
+	"every body but focus stands in the shell",
+	BODY_NAMES.filter((name) => !SHELLED.includes(name)),
+	["focus"],
+);
+for (const name of SHELLED) {
+	const bare = present(skeletonOf(name, asBoard), `the bare ${name} body`);
+	const whole = present(skeletonOf(name, asBoard, SHELL_ZONES), `the whole ${name} shell`);
+	check(
+		`${name} arrives with no optional zone nobody asked for`,
+		SHELL_ZONES.filter((zone) => nodeNamedIn(bare.layout, zone)),
+		[],
+	);
+	check(
+		`${name} lays every zone it is asked for`,
+		SHELL_ZONES.filter((zone) => !nodeNamedIn(whole.layout, zone)),
+		[],
+	);
+	check(
+		`${name} puts nav and index before main and aside after it`,
+		regionsOf(whole).map((region) => said(region, "name")),
+		["nav", "index", "main", "aside"],
+	);
+	check(
+		`${name} opens main with its one-line header`,
+		said(childrenOf(present(nodeNamedIn(whole.layout, "main"), "main"))[0], "name"),
+		"header",
+	);
+	check(
+		`${name} ends main with the dock`,
+		said(childrenOf(present(nodeNamedIn(whole.layout, "main"), "main")).at(-1), "name"),
+		"dock",
+	);
+	check(
+		`${name} sets the side zones apart rather than painting them`,
+		["nav", "index", "aside"].map((zone) => said(nodeNamedIn(whole.layout, zone), "surface")),
+		["apart", "apart", "apart"],
+	);
+	check(`${name} with every zone arrives with no lint finding`, lintMessagesOf(whole), []);
+	check(`${name} with every zone breaks no surface law`, nestingFindings(normalizeBoard(whole).layout), []);
+}
+check("a zone that is not a shell zone is refused", refuseZones("flow", ["footer"])?.includes("footer"), true);
+check("a body with no shell takes no zone", refuseZones("focus", ["aside"])?.includes("no shell"), true);
+check(
+	"a shelled body takes every zone",
+	SHELLED.map((name) => refuseZones(name, SHELL_ZONES)),
+	SHELLED.map(() => null),
+);
+
+const roleOfTest = (widget: unknown): unknown =>
+	({ [HEADING_WIDGET]: "text", chart: "indicator", feed: "collection" })[String(widget)] ?? null;
+const roleMessagesOf = (board: SerializedBoard): string[] => lintBoard(board, roleOfTest).map((one) => one.message);
+const flowHolding = (slot: string, widget: string): SerializedBoard =>
+	asBoard({
+		...flow,
+		tiles: [...flow.tiles, { id: "x1", widget }],
+		layout: withSlotHolding(flow.layout, slot, [{ id: "x1" }]),
+	});
+check(
+	"a widget of a role the slot does not take is named by lint",
+	roleMessagesOf(flowHolding("header", "feed")).some((message) => message.includes('slot "header" takes')),
+	true,
+);
+check(
+	"and one the slot takes is not",
+	roleMessagesOf(flowHolding("stack", "feed")).filter((message) => message.includes("takes")),
+	[],
+);
+check(
+	"an optional slot left standing empty while the page holds widgets asks to be filled or deleted",
+	roleMessagesOf(flowHolding("stack", "feed")).filter((message) => message.includes("still empty")),
+	['slot "hero" is still empty while the others hold widgets: fill it, or delete it'],
+);
+const flowWithAside = present(skeletonOf("flow", asBoard, ["aside"]), "flow with an aside");
+check(
+	"an aside asked for and left empty is named once the page holds widgets",
+	roleMessagesOf(
+		asBoard({
+			...flowWithAside,
+			tiles: [...flowWithAside.tiles, { id: "x1", widget: "feed" }, { id: "x2", widget: "chart" }],
+			layout: withSlotHolding(withSlotHolding(flowWithAside.layout, "stack", [{ id: "x1" }]), "hero", [{ id: "x2" }]),
+		}),
+	),
+	['slot "aside" is still empty while the others hold widgets: fill it, or delete it'],
+);
+const conversation = present(skeletonOf("conversation", asBoard), "the conversation body");
+check(
+	"a conversation pins its composer as the last slot of main",
+	childrenOf(present(nodeNamedIn(conversation.layout, "main"), "main"))
+		.map((node) => said(node, "name"))
+		.slice(-1),
+	["composer"],
 );
 
 check("the card shapes survived the removal of the page patterns", CARD_NAMES.length > 0, true);

@@ -22,7 +22,7 @@ export interface LayoutBase {
 	readonly layout: BaseBox;
 }
 
-export const LAYOUTS: Readonly<Record<string, LayoutBase>> = {
+export const PAGE_BASES: Readonly<Record<string, LayoutBase>> = {
 	page: {
 		suits: "one thing to read, at a comfortable measure, with nothing beside it",
 		holds: "a résumé, a proposal, a note somebody published",

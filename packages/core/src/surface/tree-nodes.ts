@@ -73,10 +73,9 @@ function cellElement(leaf: Laid<LaidLeaf>, draw: TreeDraw): ReactElement | null 
 }
 
 function rowElement(row: Laid<LaidBox>, draw: TreeDraw): ReactElement {
-	const key = pathKey(row.path);
 	return h(
 		"div",
-		{ className: "wg-tree-row", key, "data-path": key, "data-dir": ROW, style: styleOfNode(row), ...surfaceAttrs(row) },
+		boxAttrsOf(row, "wg-tree-row", ROW),
 		row.of.flatMap((child, at) => [
 			at > 0 && !row.hasCollapsed
 				? h("div", {
@@ -90,10 +89,8 @@ function rowElement(row: Laid<LaidBox>, draw: TreeDraw): ReactElement {
 }
 
 function columnElement(column: Laid<LaidBox>, draw: TreeDraw): ReactElement {
-	const key = pathKey(column.path);
 	const isEmpty = column.of.length === 0;
-	const attrs = { className: "wg-tree", key, "data-path": key, "data-dir": COLUMN, style: styleOfNode(column) };
-	return h("div", { ...attrs, ...surfaceAttrs(column) }, [
+	return h("div", boxAttrsOf(column, "wg-tree", COLUMN), [
 		...column.of.map((child) =>
 			child.kind === "collapsed" ? collapsedElement(child, draw) : bandElement(child, draw),
 		),
@@ -101,8 +98,15 @@ function columnElement(column: Laid<LaidBox>, draw: TreeDraw): ReactElement {
 	]);
 }
 
+function boxAttrsOf(box: Laid<LaidBox>, className: string, dir: string): Record<string, unknown> {
+	const key = pathKey(box.path);
+	const named = { className, key, "data-path": key, "data-dir": dir, "data-name": box.slot };
+	return { ...named, style: styleOfNode(box), ...surfaceAttrs(box) };
+}
+
 function bandElement(child: LaidChild, draw: TreeDraw): ReactElement {
-	return h("div", { className: "wg-tree-band", key: pathKey(child.path) }, [
+	const slot = child.kind === "box" ? child.slot : undefined;
+	return h("div", { className: "wg-tree-band", key: pathKey(child.path), "data-holds": slot }, [
 		nodeElement(child, draw),
 		alongElement(child),
 	]);

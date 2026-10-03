@@ -7,6 +7,7 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
   node widgets.mjs bases               every base a screen can start from
   node widgets.mjs base <name>         one base: its regions, its sections, ready to write into a note
+    --with aside,nav,index,dock         a body: add these shell zones around main
   node widgets.mjs card <name>          one card's parts and the plate it wears, ready to put in a region
   node widgets.mjs show <id>            one widget's manifest and the files it is made of
   node widgets.mjs start <id> --title <words>   say you are building a widget, before its first file

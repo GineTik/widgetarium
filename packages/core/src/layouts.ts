@@ -1,16 +1,31 @@
-import { LAYOUTS } from "./layout-bases.js";
+import { PAGE_BASES } from "./layout-bases.js";
 import type { LayoutBase } from "./layout-bases.js";
+import { BODIES, bodyLayoutWith, isBody } from "./layout-bodies.js";
+import { childrenOf } from "./layout-regions.js";
 import type { BaseBox, BaseNode, BaseText } from "./layout-regions.js";
 import type { BoardNode, BoxNode, LeafNode } from "./tree.js";
 import { isObject } from "./engine/is-object.js";
 import { TYPED_VALUE } from "./gateway/props.js";
 
-export { LAYOUTS };
 export type { LayoutBase };
+export {
+	BODIES,
+	BODY_NAMES,
+	SHELL_ZONES,
+	bodySlotProblems,
+	bodySlotNamesOf,
+	isBody,
+	refuseZones,
+	slotRulesOf,
+} from "./layout-bodies.js";
+
+export const LAYOUTS: Readonly<Record<string, LayoutBase>> = { ...PAGE_BASES, ...BODIES };
 
 export const HEADING_WIDGET = "@default/text-line";
 
 export const LAYOUT_NAMES: readonly string[] = Object.keys(LAYOUTS);
+
+export const PAGE_BASE_NAMES: readonly string[] = Object.keys(PAGE_BASES);
 
 interface TypedValue {
 	readonly implementation: typeof TYPED_VALUE;
@@ -47,11 +62,15 @@ export function layoutNamed(said: unknown): LayoutBase | null {
 	return LAYOUT_NAMES.includes(name) ? (LAYOUTS[name] ?? null) : null;
 }
 
-export function skeletonOf<Board>(name: unknown, asBoard: (raw: SkeletonBoard) => Board): Board | null {
+export function skeletonOf<Board>(
+	name: unknown,
+	asBoard: (raw: SkeletonBoard) => Board,
+	zones: readonly string[] = [],
+): Board | null {
 	const held = layoutNamed(name);
 	if (!held) return null;
 	const minting: Minting = { at: 0, tiles: [] };
-	const layout = placeBox(structuredClone(held.layout), minting);
+	const layout = placeBox(structuredClone(bodyLayoutWith(name, zones) ?? held.layout), minting);
 	return asBoard({ v: 2, tiles: minting.tiles, mode: "expanded", base: String(name), layout });
 }
 
@@ -71,6 +90,7 @@ export function emptyColumnsOf(root: unknown): number[] {
 export function baseMismatch(name: unknown, root: unknown): string | null {
 	const held = layoutNamed(name);
 	if (!held) return `${String(name)} is not a base; the ones a screen starts from are ${LAYOUT_NAMES.join(", ")}.`;
+	if (isBody(name)) return null;
 	const asked = held.layout.of;
 	const standing = childrenOf(root);
 	if (standing.length !== asked.length)
@@ -81,11 +101,6 @@ export function baseMismatch(name: unknown, root: unknown): string | null {
 
 function isText(node: BaseNode): node is BaseText {
 	return "text" in node;
-}
-
-function childrenOf(node: unknown): readonly unknown[] {
-	const of = isObject(node) ? node["of"] : null;
-	return Array.isArray(of) ? of : [];
 }
 
 function sectionRow(child: BaseBox, heading: string): SectionRow {

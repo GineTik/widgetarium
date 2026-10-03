@@ -95,24 +95,64 @@ seeded notes in the vault; stage 2 leaves the design in **its own note**, never 
 a screen note holds the board and nothing above it. A stage whose output lives only in the chat is a
 stage the next session repeats from nothing.
 
-**6. Every screen starts from a base, and you take it rather than name it.**
+**6. Every screen is a shell around one body, and you take both rather than draw them.**
 
 ```bash
 node {tool} bases
-node {tool} base workspace
+node {tool} base flow
+node {tool} base list-detail --with aside
 ```
 
-A base is a **finished page with the widgets left out**. It arrives with its regions and their
-roles, its sidebars, its sections in several shapes — a band, a row of cards, a strip of figures, a
-list beside the one thing open — and **every line of text already written and placed as a
-`@default/text-line` tile**: the page title, the line under it, and a heading and a caption over each
-section. What it leaves empty is the places a widget goes, each saying what it is for.
+The **shell** stands around the page, the same on every page of an app. Its zones are fixed; you
+only say which optional ones this screen has, with `--with`:
 
-So you never build the page. You fill it: put a widget in a place, duplicate a place when you need
-another of the same, and rewrite the text tiles to say what this screen's words are. It is a
-starting point, not a cage — reshape the tree the moment the design asks for something else. A new
-screen, or one with nothing on it yet, begins here. A screen that already holds widgets is continued
-from the base it declares.
+| Zone     | Holds                                                                                  | When                               |
+| -------- | -------------------------------------------------------------------------------------- | ---------------------------------- |
+| `nav`    | where the person goes in the app, navigation only                                      | `--with nav`, an app of many pages |
+| `index`  | the siblings of this page, such as a list of days or a tree of notes                   | `--with index`                     |
+| `header` | one line: the page's title, then at most a few controls; pinned while the page scrolls | always                             |
+| `main`   | the body                                                                               | always                             |
+| `aside`  | what is about the page and never part of it: measures, a queue, metadata, links        | `--with aside`                     |
+| `dock`   | what keeps running across pages, such as a player or a timer; pinned to the bottom     | `--with dock`                      |
+
+The header is one line and never the presentation: a big block that presents the page is the `hero`
+slot inside the body. The day's note, a chapter, an article is the body; the habits and totals
+beside it are the `aside`.
+
+The **body** is the layout inside `main`, cut into **named slots**. You never position a widget; you
+put it into a slot, and the body decides where the slot stands and how it adapts. Pick one by what the
+person does on the screen:
+
+| Body           | Pick it when                                              | Slots (max)                                                |
+| -------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
+| `flow`         | one page of sections read top to bottom                   | `hero` (1, optional), `stack`                              |
+| `dashboard`    | numbers that matter together, one of them leading         | `hero` (1), `indicators` (1), `stack`                      |
+| `list-detail`  | many items read one at a time                             | `list`, `detail`                                           |
+| `collection`   | many items worked on together; the collection is the page | `toolbar` (1, optional), `view` (1), `sheet` (1, optional) |
+| `conversation` | messages that scroll, with the place to write under them  | `thread`, `composer` (3, pinned to the bottom)             |
+| `focus`        | one thing filling the screen, no shell around it          | `content` (1)                                              |
+
+`base` prints every slot with the roles it takes: the header takes `text`, `control` and
+`navigation`; a dashboard's `indicators` takes `indicator` and `indicators`.
+
+A body slot, not a widget's own `slots`, is a box carrying its `name`; widgets go inside it, stacked.
+`lint` counts the widgets inside a slot, however deeply boxed, and names a slot that holds more than
+it takes, a widget whose role the slot does not take, a required slot that was removed, a slot left
+empty while others hold widgets, and a slot name used twice. A slot you do not use: fill it, or
+delete it when it is optional.
+
+The body arrives with its page title as `@default/text-line` in the header: rewrite its words, and
+keep one title per page. Never reshape the body or move a slot; if the design does not fit the
+slots, take another body.
+
+An app of many pages is many notes, each in the same shell: a list of days and the day, a course and
+its lessons. The list is a note of its own or the `index` zone.
+
+Inside a slot, a `@default/section` groups several widgets that answer one question under one
+heading; a single widget that answers its own question stands in the slot without one.
+
+A screen that already holds widgets is continued from the base it declares. `node {tool} bases` also
+lists fifteen older page bases; a new screen takes a body, never one of those.
 
 **7. The vault is the research. Never search the web while building.**
 
