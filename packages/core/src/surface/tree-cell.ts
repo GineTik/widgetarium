@@ -46,12 +46,7 @@ export function TreeCell(props: TreeCellProps): ReactElement {
 		...(cell.path ? { "data-path": pathKey(cell.path) } : {}),
 		...(cell.path && cell.across ? { "data-stands-across": cell.across } : {}),
 	};
-	if (standInPx)
-		return h("div", {
-			className: "wg-tree-cell is-stand-in",
-			style: { ...style, minHeight: `${standInPx}px` },
-			...at,
-		});
+	if (standInPx) return standIn(cell, standInPx);
 	const shownInCell = settingsStandInPx
 		? h("div", { style: { minHeight: `${settingsStandInPx}px` } })
 		: treeCellBody({ tile, definition, shared, cell, patchTile, editing, onOpenSettings });
@@ -59,4 +54,14 @@ export function TreeCell(props: TreeCellProps): ReactElement {
 		h("div", { className: "wg-tile-body", key: "body" }, shownInCell),
 		editing && !settingsStandInPx ? tileActions(tile.id, onOpenSettings, onRemove) : null,
 	]);
+}
+
+export function standIn(cell: DrawnCell, standInPx: number): ReactElement {
+	return h("div", {
+		key: cell.id,
+		className: "wg-tree-cell is-stand-in",
+		style: { ...(cell.path === null ? UNLAID_CELL_STYLE : styleOfNode(cell)), minHeight: `${standInPx}px` },
+		"data-cell": cell.id,
+		...(cell.path ? { "data-path": pathKey(cell.path) } : {}),
+	});
 }

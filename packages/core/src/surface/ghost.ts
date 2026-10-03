@@ -4,6 +4,8 @@ import type { Carry } from "./carry.js";
 
 export const LANDING_MS = 190;
 
+type CarriedGhostBox = NonNullable<Carry["ghost"]>;
+
 type GhostStyle = CSSProperties & { readonly "--wg-ghost-lifted-from": number };
 
 export function ghostElement(
@@ -27,7 +29,7 @@ export function ghostElement(
 }
 
 export function flyGhostHome(page: HTMLElement | null, ghost: HTMLElement | null, carry: Carry): void {
-	if (!page || !ghost) return;
+	if (!page || !ghost || !carry.ghost) return;
 	const home = page.querySelector(`.wg-tree-cell[data-cell="${carry.id}"]`)?.getBoundingClientRect();
 	if (!home) return;
 	const at = page.getBoundingClientRect();
@@ -36,7 +38,7 @@ export function flyGhostHome(page: HTMLElement | null, ghost: HTMLElement | null
 	ghost.style.opacity = "0";
 }
 
-function ghostBox(ghost: Carry["ghost"]): GhostStyle {
+function ghostBox(ghost: CarriedGhostBox): GhostStyle {
 	return {
 		left: `${ghost.left}px`,
 		top: `${ghost.top}px`,

@@ -12,6 +12,7 @@ import {
 	isAlwaysToggled,
 	isCollapsible,
 	isFoldedAway,
+	isNeverDocked,
 	leavesNarrowRow,
 	openKeyOf,
 	overlayWidthOf,
@@ -74,7 +75,7 @@ export {
 	regionSurfaceOf,
 	togglesUnder,
 } from "./tree-collapse.js";
-export { moveInto, sameTarget, targetAt } from "./tree-drop.js";
+export { moveInto, placeInto, sameTarget, targetAt } from "./tree-drop.js";
 export { floorOf, growsOf, preferredSizeAt, widthsOf } from "./tree-sizes.js";
 
 const HAIR_PX = 0.5;
@@ -349,6 +350,7 @@ function layColumn(node: BoxNode, width: number, inner: number, how: LayPlace, i
 		of: node.of.map((child, at): LaidChild => {
 			const placed = placeChild(node, how, at, COLUMN);
 			if (isBox(child) && isFoldedAway(child)) return foldNode(child, placed.how, sideAt(node, at));
+			if (isBox(child) && isNeverDocked(child)) return collapseNode(child, placed.how, sideAt(node, at));
 			if (isCollapsing && isBox(child) && isCollapsible(child))
 				return collapseNode(child, placed.how, sideAt(node, at));
 			return { ...layNode(child, inner, placed.how), ...placed.divider, grow: 0, basis: "auto" };

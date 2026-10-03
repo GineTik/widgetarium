@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { GAP_PX, gapVarsOf, REGION_GAP_PX } from "../tree.js";
 import type { Board } from "../model.js";
-import type { CommitLayout } from "./board-edits.js";
+import type { BoardEdits, CommitLayout } from "./board-edits.js";
 import { ghostElement } from "./ghost.js";
 import type { NodeStyle } from "./node-style.js";
 import { foldedAside, regionOverlay, standingColumns } from "./region-chrome.js";
@@ -17,6 +17,7 @@ export interface TreeBoardProps extends Omit<TreeDraw, "tileOf" | "pressAt" | "c
 	readonly board: Board;
 	readonly width: number;
 	readonly commitLayout: CommitLayout;
+	readonly addTileAt: BoardEdits["addTileAt"];
 	readonly onActions: OnActions | null | undefined;
 }
 

@@ -1,0 +1,56 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Documentation page",
+	"description": "One page of the documentation, with a link to the next one.",
+	"keywords": ["docs", "documentation", "page", "markdown", "help", "guide"],
+	"role": "text",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 3
+		},
+		"props": {
+			"getPage": {
+				"value": {
+					"id": "add-your-own-widget",
+					"title": "Add your own widget",
+					"body": "## Add your own widget\nA widget is a folder.",
+					"source": "docs/catalogue/add-your-own-widget.md",
+					"action": null,
+					"next": {
+						"id": "publish-your-widget",
+						"title": "Publish your widget"
+					}
+				}
+			}
+		}
+	},
+	"commands": {
+		"openPage": {
+			"label": "Open another page",
+			"hint": "Opens the next page when Next is pressed."
+		}
+	},
+	"props": {
+		"getPage": {
+			"kind": "value",
+			"control": "json",
+			"label": "Page",
+			"hint": "The page to show.",
+			"aka": ["page"],
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

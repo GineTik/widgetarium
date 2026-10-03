@@ -36,8 +36,9 @@ export interface Carry {
 	readonly id: string;
 	readonly target: DropTarget | null;
 	readonly height: number;
-	readonly ghost: CarriedGhost;
+	readonly ghost: CarriedGhost | null;
 	readonly isLanding?: boolean;
+	readonly isIncoming?: boolean;
 }
 
 export type SetCarry = Dispatch<SetStateAction<Carry | null>>;

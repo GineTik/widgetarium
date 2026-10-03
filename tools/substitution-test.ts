@@ -48,6 +48,7 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configu
 
 const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
+const { CATALOGUE_REQUESTS } = await import("../packages/core/src/engine/catalogue-requests.js");
 const { matchLines, normalizeRule, normalizeRules, newRule, ruleError, activeRules } =
 	await import("../apps/obsidian/src/substitution.js");
 const { sampleFromPattern } = await import("../apps/obsidian/src/regex-sample.js");
@@ -1211,30 +1212,21 @@ present(all(".wg-sub-item")[0], "the first rule row").dispatchEvent(
 await settle();
 the(".wg-sub-pick").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
 await settle();
-const shelf = dom.window.document.body.querySelector(".wg-cat-dialog");
-check("choosing a widget opens the catalogue", Boolean(shelf), true);
-if (!shelf) throw new Error("the catalogue never opened");
-const offered = [...shelf.querySelectorAll(".wg-cat-tile")];
-check("and it offers exactly the widgets that stand in text", offered.length, inlineWidgets(registry.list()).length);
+const asked = CATALOGUE_REQUESTS.current();
 check(
-	"drawn from the text their manifests offer",
-	shelf.querySelector(".wgi-reminder-text")?.textContent,
-	"call Olena before Friday",
+	"choosing a widget asks the sidebar catalogue for one that stands in text",
+	[asked?.mode, asked?.kind],
+	["text", "inline"],
 );
-check("with no lattice behind them, because text has no grid", shelf.querySelectorAll(".wg-cells").length, 0);
-const chromeButtons = (tile: Element) =>
-	[...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic"));
 check(
-	"every card still carries one button of its own",
-	offered.every((tile) => chromeButtons(tile).length === 1),
+	"and the substitutions window steps aside while it is asked",
+	Boolean(dom.window.document.body.querySelector(".wg-sub-over.is-aside")),
 	true,
 );
-
-const noted = offered.find((tile) => found(tile, ".wg-cat-name").textContent === "Note");
-present(noted, "the Note card").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
+CATALOGUE_REQUESTS.answer("@default/note");
 await settle();
 check("picking one writes it into the rule", present(held[0], "the first rule").widget, "@default/note");
-check("and closes the catalogue behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
+check("and the window comes back", Boolean(dom.window.document.body.querySelector(".wg-sub-over.is-aside")), false);
 
 const before = held.length;
 the(".wg-sub-new").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
@@ -1614,7 +1606,7 @@ function isCdpPage(entry: unknown): entry is CdpPage {
 			"widgetarium/kit": "./packages/kit/src/index.ts",
 			obsidian: "./tools/obsidian-shim.ts",
 		},
-		loader: { ".json": "json" },
+		loader: { ...TEXT_LOADERS, ".json": "json" },
 		logLevel: "warning",
 	});
 

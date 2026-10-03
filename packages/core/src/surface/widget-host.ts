@@ -4,11 +4,13 @@ import type { Tile } from "../model.js";
 import type { MountRowLike } from "../held-records.js";
 import type { WidgetDefinition } from "../registry.js";
 import type { GivenProps } from "../declared-widget.js";
-import { widgetCatalogue } from "../catalogue-dialog.js";
+import { widgetCatalogue } from "../engine/widget-catalogue.js";
+import { widgetPreview } from "./widget-preview.js";
+import { CARRIER } from "./carrier.js";
 import { drawWidget } from "../mounted.js";
 import { viewHost } from "../engine/view-host.js";
 import { NOWHERE } from "../engine/navigator-none.js";
-import type { PatchStep } from "../engine/host-gateways.js";
+import type { PatchStep } from "../engine/host-context.js";
 import type { GatewayRefs, ViewCell } from "../gateway/refs.js";
 import type { MountStep } from "../settings/use-settings-look.js";
 import type { TilePatch } from "../settings/settings-state.js";
@@ -25,6 +27,8 @@ import type { BoardRegistry, FoldIntoGroup, FoldTile, PatchMounted, SurfaceHost 
 export const RESERVED_PROPS: ReadonlySet<string> = new Set([
 	"configureMounts",
 	"catalogue",
+	"widgetPreview",
+	"widgetCarrier",
 	"foldIntoGroup",
 	"size",
 	"fullscreen",
@@ -136,7 +140,9 @@ function widgetPropsOf(context: WidgetHostProps, gateways: PropGateways, mounts:
 	return {
 		...gateways,
 		configureMounts: (name: string, rows: readonly MountRowLike[]) => onPatch(mountPatch(tile, name, rows)),
-		catalogue: widgetCatalogue(registry, host),
+		catalogue: widgetCatalogue(host),
+		widgetPreview: widgetPreview(host.catalogue),
+		widgetCarrier: CARRIER,
 		foldIntoGroup: foldOrRefuse,
 		size: sizeOf(context),
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },

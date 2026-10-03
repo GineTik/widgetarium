@@ -1,0 +1,32 @@
+.wg-catalogue-facets {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.wg-catalogue-facets-label {
+	padding: 0 16px;
+	font-size: var(--wg-kit-text-s);
+	font-weight: var(--font-medium, 500);
+	color: var(--text-faint);
+}
+
+.wg-catalogue-facet-mark {
+	font-size: var(--wg-kit-text-xs);
+	font-weight: var(--font-semibold, 600);
+}
+
+.wg-catalogue-facet.is-selected .wg-kit-side-icon {
+	background: var(--wg-kit-accent);
+	color: var(--text-on-accent);
+}
+
+.wg-catalogue-facet.is-warning .wg-kit-side-icon {
+	background: var(--wg-kit-warning-wash);
+	color: var(--wg-kit-warning);
+}
+
+.wg-catalogue-facet.is-warning.is-selected .wg-kit-side-icon {
+	background: var(--wg-kit-warning);
+	color: var(--text-on-accent);
+}

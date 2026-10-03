@@ -114,7 +114,8 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configu
 const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
 const { WidgetSurface, resolveMounts } = await import("../packages/core/src/surface.js");
-const { WidgetRegistry, boardWidgets, declaredName } = await import("../packages/core/src/registry.js");
+const { WidgetRegistry, declaredName } = await import("../packages/core/src/registry.js");
+const { CATALOGUE_REQUESTS } = await import("../packages/core/src/engine/catalogue-requests.js");
 const { normalizeBoard, serializeBoard } = await import("../packages/core/src/model.js");
 const { leavesOf } = await import("../packages/core/src/tree.js");
 const { findBlocks } = await import("../packages/core/src/block-writer.js");
@@ -311,14 +312,26 @@ let board: HeldBoard = readBoard({
 		{
 			id: "boards",
 			widget: "@default/editable-tabs",
-			props: { getTabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
+			props: {
+				getTabs: {
+					implementation: "@core/typed-rows",
+					fields: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] },
+				},
+			},
 		},
 		{
 			id: "views",
 			widget: "@default/view-tabs",
-			props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
+			props: {
+				options: { implementation: "@core/from-tile-rows", fields: { ref: "board/holds" } },
+				selection: { implementation: "@core/from-tile-value", fields: { ref: "board/selection" } },
+			},
 		},
-		{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } },
+		{
+			id: "filters",
+			widget: "@default/filter-panel",
+			props: { tasks: { implementation: "@obsidian/folder", fields: { path: FOLDER }, allow: EVERY_VERB } },
+		},
 		{
 			id: "board",
 			widget: "@default/view-group",
@@ -332,23 +345,26 @@ let board: HeldBoard = readBoard({
 				"Archived columns": {
 					widget: ARCHIVED,
 					props: {
-						boards: { allow: EVERY_VERB, path: "Orbitask/Boards" },
-						selection: { from: "ref", ref: "boards/selection" },
+						boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/Boards" }, allow: EVERY_VERB },
+						selection: { implementation: "@core/from-tile-value", fields: { ref: "boards/selection" } },
 					},
 				},
 				Kanban: {
 					widget: KANBAN,
 					props: {
 						tasks: {
+							implementation: "@obsidian/folder",
+							fields: {
+								path: FOLDER,
+								where: [
+									{ prop: "board", op: "is", value: { ref: "boards/selection" } },
+									{ spread: { ref: "filters/chosen" } },
+								],
+							},
 							allow: EVERY_VERB,
-							path: FOLDER,
-							where: [
-								{ prop: "board", op: "is", value: { ref: "boards/selection" } },
-								{ spread: { ref: "filters/chosen" } },
-							],
 						},
-						boards: { allow: EVERY_VERB, path: "Orbitask/Boards" },
-						selection: { from: "ref", ref: "boards/selection" },
+						boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/Boards" }, allow: EVERY_VERB },
+						selection: { implementation: "@core/from-tile-value", fields: { ref: "boards/selection" } },
 					},
 				},
 			},
@@ -409,10 +425,6 @@ const byText = (selector: string, text: string) =>
 const asInput = (node: Element | undefined): HTMLInputElement | undefined => {
 	if (node === undefined) return undefined;
 	if (!(node instanceof dom.window.HTMLInputElement)) throw new TypeError("the field is not an input");
-	return node;
-};
-const asElement = (node: Element | null | undefined): HTMLElement => {
-	if (!(node instanceof dom.window.HTMLElement)) throw new TypeError("the node is not an HTML element");
 	return node;
 };
 const inside = (node: Element | null | undefined, selector: string) =>
@@ -590,7 +602,7 @@ check("Reset All puts every task back", cards(), beforeApply);
 // effect of the data gaining a value nobody asked for — with a stray task in it. "Add Board"
 // had no handler at all.
 const tabRowsOf = (id: string) =>
-	listIn(board.tiles.find((tile) => tile.id === id)?.props["getTabs"]?.rows ?? []).map(
+	listIn(fieldOf(board.tiles.find((tile) => tile.id === id)?.props["getTabs"]?.fields, "rows") ?? []).map(
 		(row) => fieldOf(row, "value") ?? row,
 	);
 const tabFieldOf = (row: unknown, field: string) =>
@@ -631,7 +643,11 @@ const boardArchived = (name: string) =>
 		board.tiles.some((tile) => tile.widget === "@default/view-group"),
 		false,
 	);
-	check("and the props it held came across", tileNamed(`board:${KANBAN_VIEW}`)?.props["tasks"]?.path, FOLDER);
+	check(
+		"and the props it held came across",
+		fieldOf(tileNamed(`board:${KANBAN_VIEW}`)?.props["tasks"]?.fields, "path"),
+		FOLDER,
+	);
 	check("no task was invented to make it appear", cards(), tasksBefore);
 
 	// ARCHIVING ASKS FIRST. The control no longer deletes, so pressing it changes nothing until
@@ -917,11 +933,18 @@ const boardArchived = (name: string) =>
 const groupBoard = (views: string, archived: unknown = null) =>
 	readBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { getTabs: { rows: [{ name: "Marketing Team" }] } } },
+			{
+				id: "boards",
+				widget: "@default/editable-tabs",
+				props: { getTabs: { implementation: "@core/typed-rows", fields: { rows: [{ name: "Marketing Team" }] } } },
+			},
 			{
 				id: "views",
 				widget: "@default/view-tabs",
-				props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
+				props: {
+					options: { implementation: "@core/from-tile-rows", fields: { ref: "board/holds" } },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: "board/selection" } },
+				},
 			},
 			{
 				id: "board",
@@ -931,11 +954,16 @@ const groupBoard = (views: string, archived: unknown = null) =>
 					"Archived columns": {
 						widget: ARCHIVED,
 						props: {
-							boards: { allow: EVERY_VERB, path: "Orbitask/Boards" },
-							selection: { from: "ref", ref: "boards/selection" },
+							boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/Boards" }, allow: EVERY_VERB },
+							selection: { implementation: "@core/from-tile-value", fields: { ref: "boards/selection" } },
 						},
 					},
-					Kanban: { widget: KANBAN, props: { boards: { allow: EVERY_VERB, path: "Orbitask/Boards" } } },
+					Kanban: {
+						widget: KANBAN,
+						props: {
+							boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/Boards" }, allow: EVERY_VERB },
+						},
+					},
 				},
 			},
 		],
@@ -1035,7 +1063,9 @@ const pickView = async (name: string, id = "views") => {
 				mounted: {
 					[KANBAN]: {
 						settings: { columns: "To Do, Blocked", archivedColumns: "Blocked" },
-						props: { boards: { allow: EVERY_VERB, path: "Orbitask/Nowhere" } },
+						props: {
+							boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/Nowhere" }, allow: EVERY_VERB },
+						},
 					},
 				},
 			},
@@ -1183,12 +1213,18 @@ const pickView = async (name: string, id = "views") => {
 			{
 				id: "left",
 				widget: "@default/view-tabs",
-				props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
+				props: {
+					options: { implementation: "@core/from-tile-rows", fields: { ref: "board/holds" } },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: "board/selection" } },
+				},
 			},
 			{
 				id: "right",
 				widget: "@default/view-tabs",
-				props: { options: { from: "ref", ref: "board/holds" }, selection: { from: "ref", ref: "board/selection" } },
+				props: {
+					options: { implementation: "@core/from-tile-rows", fields: { ref: "board/holds" } },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: "board/selection" } },
+				},
 			},
 			{ id: "board", widget: "@default/view-group", settings: { views: `${KANBAN}, ${ARCHIVED}` } },
 		],
@@ -1346,7 +1382,13 @@ const pickView = async (name: string, id = "views") => {
 	};
 
 	board = readBoard({
-		tiles: [{ id: "probe", widget: "@probe/board", props: { notes: { path: FOLDER } } }],
+		tiles: [
+			{
+				id: "probe",
+				widget: "@probe/board",
+				props: { notes: { implementation: "@obsidian/folder", fields: { path: FOLDER } } },
+			},
+		],
 		layouts: { 20: { places: [{ id: "probe", x: 0, y: 0, w: 6, h: 3 }] } },
 	});
 	draw();
@@ -1435,7 +1477,13 @@ const pickView = async (name: string, id = "views") => {
 	const spare = dom.window.document.createElement("div");
 	present(dom.window.document.querySelector(".view-content"), "the view content").appendChild(spare);
 	let plain = readBoard({
-		tiles: [{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } }],
+		tiles: [
+			{
+				id: "filters",
+				widget: "@default/filter-panel",
+				props: { tasks: { implementation: "@obsidian/folder", fields: { path: FOLDER }, allow: EVERY_VERB } },
+			},
+		],
 		layouts: { 20: { places: [{ id: "filters", x: 0, y: 0, w: 3, h: 1 }] } },
 	});
 	const drawPlain = () =>
@@ -1493,7 +1541,7 @@ const pickView = async (name: string, id = "views") => {
 	const pluginApp = {
 		vault: { adapter: { ...adapter, mkdir: async () => {} }, getAbstractFileByPath: () => null },
 		metadataCache: { getFileCache: () => null, getFirstLinkpathDest: () => null },
-		workspace: { getLeavesOfType: () => [], on: () => ({}), onLayoutReady: () => {} },
+		workspace: { getLeavesOfType: () => [], getRightLeaf: () => null, on: () => ({}), onLayoutReady: () => {} },
 	};
 	const pluginManifest = () => standIn<PluginManifest>({ id: "widgetarium" }, ["id"], "manifest");
 	const plugin = Object.assign(
@@ -1538,7 +1586,10 @@ const pickView = async (name: string, id = "views") => {
 	dom.window.document.body.appendChild(boardBlock);
 	const sided = readBoard({
 		tiles: [{ id: "a", widget: "@default/reminder" }],
-		layout: { left: { rows: [[{ id: "a" }]] }, main: { rows: [[{ id: "a" }]] } },
+		layout: {
+			left: { rows: [[{ id: "a" }]] },
+			main: { rows: [[{ id: "a" }]] },
+		},
 		layouts: {},
 	});
 	plugin.mount(
@@ -1608,6 +1659,7 @@ const pickView = async (name: string, id = "views") => {
 		...pluginApp,
 		workspace: {
 			getLeavesOfType: (kind: string) => (kind === "markdown" ? [openLeaf] : []),
+			getRightLeaf: () => null,
 			on: () => ({}),
 			onLayoutReady: () => {},
 		},
@@ -1666,6 +1718,7 @@ const pickView = async (name: string, id = "views") => {
 		"Widgetarium: edit mode",
 		"Widgetarium: substitutions",
 		"Widgetarium: ask the assistant",
+		"Widgetarium: widget catalogue",
 	]);
 	check(
 		"and a command opens the same surface",
@@ -1694,40 +1747,30 @@ const pickView = async (name: string, id = "views") => {
 		false,
 	);
 
-	const command = commands.find((entry) => entry.id === "browse-widgets");
-	check("the plugin registers a command for the catalogue", command?.name, "Browse widgets");
-	call(present(command, "the catalogue command"), "callback");
-	await settle();
-
-	const opened = dom.window.document.body.querySelector(".wg-cat-dialog");
-	check("running it opens the catalogue", Boolean(opened), true);
-	check("with no board under it", Boolean(root.querySelector(".wg-cat-dialog")), false);
+	const command = commands.find((entry) => entry.id === "open-catalogue");
+	check("the plugin registers a command for the catalogue", command?.name, "Open widget catalogue");
 	check(
-		"drawing the widgets the plugin's own registry loaded",
-		present(opened, "the catalogue").querySelectorAll(".wg-cat-tile").length,
-		boardWidgets(plugin.registry.list()).length,
-	);
-	check(
-		"in browse mode",
-		[...present(opened, "the catalogue").querySelectorAll(".wg-cat-tile")].every((tile) =>
-			present(tile.getAttribute("aria-label"), "the tile label").startsWith("Open "),
-		),
-		true,
-	);
-
-	plugin.onunload();
-	check(
-		"and unloading takes it down, because nothing else owns that node",
+		"the catalogue is a sidebar, never a dialog over the note",
 		Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")),
 		false,
 	);
+
+	plugin.onunload();
 }
 
 {
 	board = readBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { getTabs: { rows: [{ name: "Marketing Team" }] } } },
-			{ id: "filters", widget: "@default/filter-panel", props: { tasks: { allow: EVERY_VERB, path: FOLDER } } },
+			{
+				id: "boards",
+				widget: "@default/editable-tabs",
+				props: { getTabs: { implementation: "@core/typed-rows", fields: { rows: [{ name: "Marketing Team" }] } } },
+			},
+			{
+				id: "filters",
+				widget: "@default/filter-panel",
+				props: { tasks: { implementation: "@obsidian/folder", fields: { path: FOLDER }, allow: EVERY_VERB } },
+			},
 		],
 		layouts: {
 			20: {
@@ -1745,19 +1788,17 @@ const pickView = async (name: string, id = "views") => {
 	await settle();
 
 	await click(all(".wg-tree-region.is-main .wg-tree-add")[0]);
-	const card = [...dom.window.document.body.querySelectorAll(".wg-cat-dialog .wg-cat-tile")].find((tile) =>
-		tile.textContent.includes("Kanban board"),
-	);
-	await click(card);
+	CATALOGUE_REQUESTS.answer(KANBAN);
+	await settle();
 
 	const added = board.tiles.find((tile) => tile.widget === KANBAN);
 	check("the added kanban points its board at the strip already standing", added?.props["getSelection"], {
-		from: "ref",
-		ref: "boards/getSelection",
+		implementation: "@core/from-tile-value",
+		fields: { ref: "boards/getSelection" },
 	});
 	check("and its tasks are narrowed by the filter beside it", added?.props["getChosen"], {
-		from: "ref",
-		ref: "filters/getChosen",
+		implementation: "@core/from-tile-value",
+		fields: { ref: "filters/getChosen" },
 	});
 	check(
 		"nothing was refused on the way",
@@ -1781,123 +1822,8 @@ const pickView = async (name: string, id = "views") => {
 	check("and it says what the press does", all(".wg-tree-region.is-main .wg-tree-add")[0]?.textContent, "Add a widget");
 
 	await click(all(".wg-tree-region.is-main .wg-tree-add")[0]);
-	// CONTEXT: a redraw remounts the dialog, so a node captured once points at a detached copy
-	const grid = () => present(dom.window.document.body.querySelector(".wg-cat-dialog"), "the catalogue");
-	check("pressing it opens the catalogue", Boolean(grid), true);
-	check("outside the board, on the body", Boolean(root.querySelector(".wg-cat-dialog")), false);
-	check(
-		"it draws every installed widget",
-		grid().querySelectorAll(".wg-cat-tile").length,
-		boardWidgets(registry.list()).length,
-	);
-	check(
-		"in place mode, so every press adds",
-		[...grid().querySelectorAll(".wg-cat-tile")].every((tile) =>
-			present(tile.getAttribute("aria-label"), "the tile label").startsWith("Add "),
-		),
-		true,
-	);
-
-	// EACH CARD CARRIES THE WIDGET'S OWN PLAYGROUND — the board's lattice at the scale that
-	// card needs — and says the span in words. On one shared lattice the widgets ran together
-	// and nothing marked where a widget ended; a card is what separates it from the space.
-	const drawn = [...grid().querySelectorAll(".wg-cat-tile")];
-	const stageOf = (tile: Element) => tile.querySelector(".wg-cat-stage");
-	// NO LATTICE. The card is what separates a widget from the space around it; cells behind it
-	// drew a second grid nothing ever stood on.
-	check(
-		"no card draws a lattice",
-		drawn.some((tile) => tile.querySelector(".wg-cells")),
-		false,
-	);
-	check(
-		"every card still gives the widget a box of its own",
-		drawn.every((tile) => inside(stageOf(tile), ".wg-cat-frame > .wg-cat-pic")),
-		true,
-	);
-	check(
-		"with more than one span among them, or this proves nothing",
-		new Set(drawn.map((tile) => tile.getAttribute("data-span"))).size > 1,
-		true,
-	);
-
-	const named = (title: string) =>
-		drawn.find((tile) => present(tile.querySelector(".wg-cat-name"), "the card name").textContent === title);
-	const declared = fieldOf(present(registry.get("@default/task-card"), "the task card").manifest["preview"], "size");
-	const onGrid = named("Task card");
-	check("a card names the widget", Boolean(onGrid), true);
-	if (!onGrid) throw new TypeError("the Task card is missing");
-	check(
-		"and says the span the manifest declares",
-		onGrid.getAttribute("data-span"),
-		`${String(fieldOf(declared, "w"))}x${String(fieldOf(declared, "h"))}`,
-	);
-	check("and prints no span badge beside the name", onGrid.querySelector(".wg-cat-span"), null);
-	check(
-		"and the card says which pack it came from, in one line with the name",
-		present(onGrid.querySelector(".wg-cat-said"), "the pack line").textContent,
-		"@default/Task card",
-	);
-
-	// INSTALLED IS NOT A STATE WORTH DRAWING. Fetching a widget and placing one both land at the
-	// press, so the card must look the same either way — no badge, no second verb, one button.
-	const foot = onGrid.querySelector(".wg-cat-foot");
-	// CONTEXT: the card's own buttons, not the widget's — a preview may draw buttons of its own
-	const chromeButtons = (tile: Element) =>
-		[...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic"));
-	check("a card carries one button", chromeButtons(onGrid).length, 1);
-	check("and it sits in the card's foot", Boolean(foot?.querySelector(".wg-cat-go")), true);
-	// THE PILL IS GONE. Glass over the picture, it hid the bottom of every widget and made the stage
-	// keep 58px it never gave one. Being the stage's NEXT SIBLING is what proves the foot is out of
-	// the stage and below it, and the exact class name is what proves it dropped the glass.
-	check(
-		"which is laid in the card's grey right after the stage, wearing no glass",
-		present(stageOf(onGrid), "the stage").nextElementSibling?.className,
-		"wg-cat-foot",
-	);
-	const wasInstalled = asElement(onGrid).dataset["state"];
-	Object.assign(present(registry.get("@default/task-card"), "the task card"), { installed: false });
-	draw();
-	await settle();
-	const renamed = (title: string) =>
-		[...grid().querySelectorAll(".wg-cat-tile")].find(
-			(tile) => present(tile.querySelector(".wg-cat-name"), "the card name").textContent === title,
-		);
-	check("a widget the vault has wears the add", wasInstalled, "add");
-	check(
-		"and one it has to fetch wears the install instead",
-		asElement(renamed("Task card")).dataset["state"],
-		"install",
-	);
-	check(
-		"while the press still says Add, because it is still one press",
-		present(present(renamed("Task card"), "the Task card").getAttribute("aria-label"), "its label").startsWith("Add "),
-		true,
-	);
-	Reflect.deleteProperty(present(registry.get("@default/task-card"), "the task card"), "installed");
-	draw();
-	await settle();
-
-	// THE SELECTION STRIP WAS REJECTED. Nothing sits under the board — the card's own glass strip
-	// carries everything the strips used to.
-	check(
-		"nothing sits under the showcase board",
-		present(present(grid().querySelector(".wg-cat-main"), "the catalogue main").lastElementChild, "its last child")
-			.className,
-		"wg-cat-scroll",
-	);
-	// WHAT IS FORBIDDEN IS THE GLOBAL STRIP — one bar at the foot of the panel naming whatever is
-	// selected. A card's own identity row is not that: it belongs to the card and travels with it.
-	check("no global strip names a selection", grid().querySelector(":scope > .wg-cat-bar"), null);
-	check(
-		"but every card says what it is",
-		drawn.every((tile) => tile.querySelector(".wg-cat-foot")),
-		true,
-	);
-
+	check("pressing it asks the sidebar catalogue to place a widget", CATALOGUE_REQUESTS.current()?.mode, "place");
 	const before = board.tiles.length;
-	// A BOARD IS MORE THAN ITS TILES: whatever it carried before an add, it carries after. Given
-	// something to carry on purpose — an empty list surviving an add proves nothing at all.
 	board = { ...board, mode: "expanded", properties: ["Status", "Priority", "Assignees"] };
 	draw();
 	await settle();
@@ -1905,14 +1831,13 @@ const pickView = async (name: string, id = "views") => {
 		mode: board.mode,
 		properties: board.properties,
 	};
-	const card = [...grid().querySelectorAll(".wg-cat-tile")].find((tile) => tile.textContent.includes("Task card"));
-	check("the card is offered", Boolean(card), true);
-	await click(card);
+	CATALOGUE_REQUESTS.answer("@default/task-card");
+	await settle();
 	check("picking it adds a tile", board.tiles.length, before + 1);
 	check("of the widget that was drawn", present(board.tiles.at(-1), "the last tile").widget, "@default/task-card");
 	const placed = leavesOf(board.layout).find((leaf) => leaf.id === present(board.tiles.at(-1), "the last tile").id);
 	check("on a row of its own in the box that was pressed", placed?.path.join("/"), "1/1");
-	check("and the catalogue closes behind it", Boolean(dom.window.document.body.querySelector(".wg-cat-dialog")), false);
+	check("and nothing is asked any more", CATALOGUE_REQUESTS.current(), null);
 
 	// Adding one used to rebuild the board as { tiles, layouts } and throw the rest away — an
 	// expanded board collapsed, and the property list went with it, which is the list the filter
@@ -1944,10 +1869,8 @@ const pickView = async (name: string, id = "views") => {
 	);
 
 	await click(all(".wg-tree-region.is-main .wg-tree-add")[0]);
-	const tabs = [...dom.window.document.body.querySelectorAll(".wg-cat-dialog .wg-cat-tile")].find((tile) =>
-		tile.textContent.includes("Editable tabs"),
-	);
-	await click(tabs);
+	CATALOGUE_REQUESTS.answer("@default/editable-tabs");
+	await settle();
 	check("the page draws the tile that was added", drawn(), before + 1);
 	check("and the file has not moved", JSON.stringify(board), saved);
 
@@ -2075,7 +1998,12 @@ const pickView = async (name: string, id = "views") => {
 			{
 				id: "boards",
 				widget: "@default/editable-tabs",
-				props: { getTabs: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] } },
+				props: {
+					getTabs: {
+						implementation: "@core/typed-rows",
+						fields: { rows: [{ name: "Marketing Team" }, { name: "Ux Team" }] },
+					},
+				},
 			},
 		],
 		layouts: { 20: { places: [{ id: "boards", x: 0, y: 0, w: 16, h: 1 }] } },
@@ -2119,9 +2047,10 @@ const pickView = async (name: string, id = "views") => {
 		listed().map((row) => present(row.querySelector(".wg-kit-row-label"), "the row label").textContent.trim());
 	const asking = () => dom.window.document.body.querySelector(".wg-tabs-confirm");
 	const kept = () =>
-		listIn(serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.["getTabs"]?.rows ?? []).map(
-			(row) => fieldOf(row, "value") ?? row,
-		);
+		listIn(
+			fieldOf(serializeBoard(strip).tiles.find((held) => held.id === "boards")?.props?.["getTabs"]?.fields, "rows") ??
+				[],
+		).map((row) => fieldOf(row, "value") ?? row);
 	const keptNamed = (name: string) => kept().find((row) => tabFieldOf(row, "name") === name) ?? null;
 
 	check("the strip draws the tabs the note names", shown(), ["Marketing Team", "Ux Team"]);

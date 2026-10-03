@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Button, Icon } from "@widgetarium/kit";
-import { CatalogueDialog } from "../catalogue-dialog.js";
+import { CatalogueAsk } from "../catalogue-ask.js";
 import { shownEntries } from "../prop-visibility.js";
 import { reactClash, slotFit } from "../fit.js";
 import type { SlotFit } from "../fit.js";
@@ -12,6 +12,8 @@ import { SLOT_SURFACES, slotSurfaceOf } from "../surface-roles.js";
 import type { WindowState } from "../settings-window.js";
 import type { TilePatch } from "./settings-state.js";
 import { editorPopover, enterButton, group, pickRow, titleCase, valueRow } from "./settings-rows.js";
+
+const BACK_TO_DEFAULT = "Back to the widget's default";
 
 interface SlotAt {
 	readonly name: string;
@@ -89,18 +91,17 @@ function slotRow(state: WindowState, { name, spec, chosen }: SlotAt): ReactEleme
 				),
 			),
 		),
+		spec.default && picks[name]?.widget
+			? h(Button, { key: "default", size: "s", variant: "plain", onClick: () => write(null) }, BACK_TO_DEFAULT)
+			: null,
 		state.openRow === key
-			? h(CatalogueDialog, {
+			? h(CatalogueAsk, {
 					key: "pick",
-					registry,
-					host,
-					mode: "fill",
-					rank: (candidate): SlotFit => slotFit(candidate, spec.gives, clashWith(idOf(candidate))),
-					foot: spec.default
-						? h(Button, { size: "s", onClick: () => write(null) }, "Back to the widget's default")
-						: null,
-					onPick: write,
-					onClose: () => state.openEditor(null),
+					asked: {
+						mode: "fill",
+						rank: (candidate): SlotFit => slotFit(candidate, spec.gives, clashWith(idOf(candidate))),
+					},
+					onAnswer: (picked) => (picked ? write(picked) : state.openEditor(null)),
 				})
 			: null,
 	]);

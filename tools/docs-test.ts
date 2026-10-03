@@ -2,11 +2,8 @@ import fs from "node:fs";
 import { JSDOM } from "jsdom";
 import { parse as parseYaml } from "yaml";
 import { z } from "../packages/core/src/gateway/declared.ts";
-import type { CatalogueProps } from "../packages/core/src/catalogue.js";
-import { byId, found } from "./dom-find.ts";
 import { fieldIn, itemsIn } from "./held-fields.ts";
 import { present } from "./page-dom.ts";
-import { standIn } from "./stand-in.ts";
 
 const ExampleBoardSchema = z.looseObject({
 	tiles: z.array(
@@ -40,9 +37,6 @@ Object.assign(globalThis, { ResizeObserver: InertResizeObserver });
 Object.assign(dom.window, { ResizeObserver: InertResizeObserver });
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-const { createElement: h } = await import("react");
-const { render } = await import("../packages/core/src/engine/render.js");
-const { Catalogue } = await import("../packages/core/src/catalogue.js");
 const { DOC_PAGES, pageAfter, pagesMatching } = await import("../packages/core/src/docs.js");
 const { SURFACES } = await import("../packages/core/src/tree.js");
 const { ROLES } = await import("../packages/core/src/surface-roles.js");
@@ -56,7 +50,6 @@ function check(name: string, got: unknown, want: unknown): void {
 		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
 	);
 }
-const settle = (): Promise<unknown> => new Promise((resolve) => setTimeout(resolve, 30));
 
 const FILE_OF = (page: { readonly id: string }): string => `docs/catalogue/${page.id}.md`;
 
@@ -106,123 +99,6 @@ check(
 	["publish-your-widget"],
 );
 check("a word in neither finds no page", pagesMatching("zzqq"), []);
-
-type CatalogueHost = NonNullable<CatalogueProps["host"]>;
-
-const rendered: string[] = [];
-const host = standIn<CatalogueHost>(
-	{
-		can: { renderMarkdown: true },
-		ui: {
-			renderMarkdown(element: HTMLElement, markdown: string) {
-				rendered.push(markdown);
-				element.textContent = markdown;
-				return () => {};
-			},
-		},
-	},
-	["can", "ui"],
-	"markdown host",
-);
-
-const definition = (id: string, title: string): ReturnType<CatalogueProps["registry"]["list"]>[number] => ({
-	manifest: { id, title, defaultSize: { w: 3, h: 2 }, keywords: ["tabs"] },
-	component: () => h("div", null, title),
-});
-const registry: CatalogueProps["registry"] = {
-	list: () => [definition("@default/task-card", "Task card")],
-	get: () => null,
-};
-
-const panel = byId(dom.window.document, "host");
-render(
-	h(Catalogue, {
-		registry,
-		host,
-		mode: "browse",
-		available: [],
-		onPick: () => {},
-		onInstall: async () => ({ ok: true }),
-	}),
-	panel,
-);
-await settle();
-
-const all = (selector: string): Element[] => [...panel.querySelectorAll(selector)];
-const press = (node: Element | undefined): boolean =>
-	present(node, "the pressed node").dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-const labelled = (selector: string): (string | null | undefined)[] =>
-	all(selector).map((node) => node.querySelector(".wg-kit-row-label")?.textContent);
-
-check("the catalogue offers both doors into the docs", labelled(".wg-cat-open-docs"), [
-	"Add your own widget",
-	"Documentation",
-]);
-check("and draws no page until one is pressed", all(".wg-doc").length, 0);
-
-press(all(".wg-cat-open-docs")[0]);
-await settle();
-
-check("pressing one opens its page", all(".wg-doc").length, 1);
-check("rendered through the host, so it looks like a note", rendered, [DOC_PAGES[0]?.body]);
-check(
-	"the sidebar becomes the contents",
-	labelled(".wg-cat-page"),
-	DOC_PAGES.map((page) => page.title),
-);
-check(
-	"with the open one marked",
-	all(".wg-cat-page")
-		.filter((node) => node.getAttribute("aria-current") === "true")
-		.map((node) => node.querySelector(".wg-kit-row-label")?.textContent),
-	[DOC_PAGES[0]?.title],
-);
-check("the widgets are not drawn behind it", all(".wg-cat-tile").length, 0);
-check("nor are the filters, which narrow nothing here", all(".wg-cat-facet").length, 0);
-check(
-	"and the page says which file it came from",
-	found(panel, ".wg-doc-source").textContent,
-	`docs/catalogue/${DOC_PAGES[0]?.id}.md`,
-);
-
-press(found(panel, ".wg-doc-next"));
-await settle();
-check("Next opens the page after it", rendered[rendered.length - 1], DOC_PAGES[1]?.body);
-check(
-	"which carries the letter as a link",
-	found(panel, ".wg-doc-action").getAttribute("href")?.startsWith("mailto:"),
-	true,
-);
-check("and nothing follows the last page", panel.querySelector(".wg-doc-next"), null);
-
-press(found(panel, ".wg-cat-back"));
-await settle();
-check("Back to widgets draws the widgets again", all(".wg-cat-tile").length, 1);
-check("and the docs are put away", all(".wg-doc").length, 0);
-
-const plain = standIn<CatalogueHost>({ can: { renderMarkdown: false }, ui: {} }, ["can", "ui"], "plain host");
-render(null, panel);
-render(
-	h(Catalogue, {
-		registry,
-		host: plain,
-		mode: "browse",
-		available: [],
-		onPick: () => {},
-		onInstall: async () => ({ ok: true }),
-	}),
-	panel,
-);
-await settle();
-press(all(".wg-cat-open-docs")[0]);
-await settle();
-check(
-	"a host that cannot render markdown still hands over the words",
-	panel.querySelector(".wg-doc-plain")?.textContent,
-	DOC_PAGES[0]?.body,
-);
-
-render(null, panel);
 
 const CHAT_BRIEF = fs.readFileSync("docs/ai/chat-brief.md", "utf8");
 const BOARD = fs.readFileSync("docs/ai/board.md", "utf8");
@@ -347,8 +223,8 @@ check("every example passes the linter the agent must pass", linted, []);
 const RESTATED_IN_THE_CHAT_BRIEF: readonly (readonly [string, string, string, string])[] = [
 	["the spacing steps", "16px one box down, 8px deeper", SURFACES_PAGE, "16px one box down, 8px deeper"],
 	["a board of typed tiles", "is a mock-up, not a screen", BOARD, "is a mock-up, not a screen"],
-	["the vault binding", "from: vault", BOARD, "from: vault"],
-	["the ref binding", "from: ref", BOARD, "from: ref"],
+	["the vault binding", "@obsidian/folder", BOARD, "@obsidian/folder"],
+	["the ref binding", "@core/from-tile-value", BOARD, "@core/from-tile-value"],
 	["the lint command", "lint <note> --text", BOARD, "lint"],
 ];
 

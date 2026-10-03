@@ -12,6 +12,7 @@ export function addCommandsAndRibbon(plugin: WidgetariumPlugin): void {
 	plugin.addRibbonIcon("layout-grid", "Widgetarium: edit mode", () => plugin.toggleEditing());
 	plugin.addRibbonIcon("replace", "Widgetarium: substitutions", () => void plugin.showSubstitutions());
 	plugin.addRibbonIcon("sparkles", "Widgetarium: ask the assistant", () => void plugin.showAssistant());
+	plugin.addRibbonIcon("library", "Widgetarium: widget catalogue", () => void plugin.showCatalogue());
 	for (const command of [...assistantCommands(plugin), ...boardCommands(plugin), ...widgetCommands(plugin)])
 		plugin.addCommand(command);
 	plugin.registerEvent(plugin.app.workspace.on("file-menu", (menu, file) => plugin.offerBoardIn(menu, file)));
@@ -59,7 +60,8 @@ function widgetCommands(plugin: WidgetariumPlugin): Command[] {
 			},
 		},
 		{ id: "edit-substitutions", name: "Edit substitutions", callback: () => void plugin.showSubstitutions() },
-		{ id: "browse-widgets", name: "Browse widgets", callback: () => void plugin.showCatalogue() },
+		{ id: "open-catalogue", name: "Open widget catalogue", callback: () => void plugin.showCatalogue() },
+		{ id: "open-docs", name: "Open docs", callback: () => void plugin.showDocs() },
 		{
 			id: "reload-widgets",
 			name: "Reload widgets",

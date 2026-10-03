@@ -5,7 +5,6 @@ import { rowOf } from "../packages/core/src/gateway/create.js";
 import type { CollectionGateway, ValueGateway } from "../packages/core/src/gateway/contract.js";
 import type { HostConsole, ViewHost } from "../packages/core/src/gateway/host.js";
 import type { EveryValueVerb } from "../packages/core/src/gateway/needs.js";
-import type { WidgetLookup } from "../packages/core/src/registry.js";
 import { byId } from "./dom-find.ts";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
@@ -207,21 +206,20 @@ render(h(Leaf, previewProps({ manifest: kanban }, {})), mount);
 check("the widget is handed the sample rows", mount.textContent?.includes("4 rows"), true);
 
 console.log("\n— the catalogue is a switch, not a fact about the build —");
-const { widgetCatalogue } = await import("../packages/core/src/catalogue-dialog.js");
-const NO_WIDGETS: WidgetLookup = { list: () => [], get: () => null };
+const { widgetCatalogue } = await import("../packages/core/src/engine/widget-catalogue.js");
 const hostWithCatalogue = (catalogue: boolean): ViewHost => ({ ...REAL_HOST, can: { ...REAL_HOST.can, catalogue } });
 const hostSilentOnCatalogue = hostWithCatalogue(true);
 Reflect.deleteProperty(hostSilentOnCatalogue.can, "catalogue");
 check(
 	"a host that says nothing about the catalogue keeps it open",
-	widgetCatalogue(NO_WIDGETS, hostSilentOnCatalogue).canOpen,
+	widgetCatalogue(hostSilentOnCatalogue).canOpen,
 	true,
 );
-check("a host that allows it opens it", widgetCatalogue(NO_WIDGETS, hostWithCatalogue(true)).canOpen, true);
-check("a host that switches it off closes it", widgetCatalogue(NO_WIDGETS, hostWithCatalogue(false)).canOpen, false);
+check("a host that allows it opens it", widgetCatalogue(hostWithCatalogue(true)).canOpen, true);
+check("a host that switches it off closes it", widgetCatalogue(hostWithCatalogue(false)).canOpen, false);
 check(
 	"and the closed one picks nothing rather than raising a dialog",
-	await widgetCatalogue(NO_WIDGETS, hostWithCatalogue(false)).open(),
+	await widgetCatalogue(hostWithCatalogue(false)).open(),
 	null,
 );
 

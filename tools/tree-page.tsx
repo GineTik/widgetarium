@@ -6,6 +6,7 @@ import { WidgetHost, WidgetSurface } from "../packages/core/src/surface.js";
 import { normalizeBoard, serializeBoard } from "../packages/core/src/model.js";
 import type { Board } from "../packages/core/src/model.js";
 import { WidgetRegistry } from "../packages/core/src/registry.js";
+import { CATALOGUE_REQUESTS } from "../packages/core/src/engine/catalogue-requests.js";
 import { createGatewayRefs, createViewCells } from "../packages/core/src/gateway/refs.js";
 import type { GatewayRefs, ViewCell } from "../packages/core/src/gateway/refs.js";
 import { classOf, scaleOf } from "../packages/core/src/paths.js";
@@ -605,15 +606,15 @@ async function addIntoRegion(name: string): Promise<Readonly<Record<string, unkn
 	const held = emptyBoard.tiles.length;
 	fireClick(zone);
 	await settled();
-	const opened = document.querySelectorAll(".wg-cat-dialog").length;
-	const card = document.querySelector(".wg-cat-dialog .wg-cat-tile");
-	if (!card) return { failed: "the catalogue never opened" };
-	fireClick(card);
+	const asked = CATALOGUE_REQUESTS.current();
+	const picked = registry.list().find((definition) => !definition.manifest?.["inline"])?.manifest?.["id"];
+	if (asked?.mode !== "place" || typeof picked !== "string") return { failed: "the catalogue was never asked" };
+	CATALOGUE_REQUESTS.answer(picked);
 	await faded();
 	const after = rowsPerRegion();
 	failures.length = quiet;
 	return {
-		opened,
+		opened: asked.mode === "place" ? 1 : 0,
 		before,
 		after,
 		untouched: ["left", "main", "right"].filter(
@@ -621,7 +622,7 @@ async function addIntoRegion(name: string): Promise<Readonly<Record<string, unkn
 		),
 		grew: present(after[name], name).length - present(before[name], name).length,
 		born: emptyBoard.tiles.length - held,
-		dialogs: document.querySelectorAll(".wg-cat-dialog").length,
+		dialogs: CATALOGUE_REQUESTS.current() === null ? 0 : 1,
 	};
 }
 

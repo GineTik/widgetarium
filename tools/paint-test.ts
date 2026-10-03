@@ -471,7 +471,9 @@ import { createElement as h } from "react";
 import { render } from "./packages/core/src/engine/render.js";
 import { WidgetSurface } from "./packages/core/src/surface.js";
 import { normalizeBoard } from "./packages/core/src/model.js";
+import { CATALOGUE_REQUESTS } from "./packages/core/src/engine/catalogue-requests.js";
 
+window.__REQUESTS__ = CATALOGUE_REQUESTS;
 const GROUP_ID = "@default/view-group";
 const KANBAN_ID = "@default/kanban-board";
 const ARCHIVE_ID = "@default/archived-columns";
@@ -592,24 +594,24 @@ const MOUNT_ASK = `(async () => {
 	const boxes = [...value.querySelectorAll("button")].map((button) => button.getBoundingClientRect());
 	const gaps = boxes.slice(1).map((box, at) => Math.round(box.left - boxes[at].right));
 	await window.__PRESS__(window.__ROWS__().find((row) => row.textContent.includes("Add a view")));
-	const dialog = document.querySelector(".wg-cat-dialog");
-	const tiles = dialog ? [...dialog.querySelectorAll(".wg-cat-tile")] : [];
+	const asked = window.__REQUESTS__.open();
+	const overlay = document.querySelector(".wg-set-panel")?.closest(".wg-dialog-overlay");
+	const asideWhileAsked = overlay ? getComputedStyle(overlay).visibility : null;
+	const noDialogOpened = document.querySelector(".wg-cat-dialog") === null;
 	const bareList = Boolean(document.querySelector(".wg-set-pop-name"));
-	const pickable = (name) => {
-		const tile = [...document.querySelectorAll(".wg-cat-tile")].find((node) => node.getAttribute("aria-label") === name);
-		return tile ? tile.querySelector(".wg-cat-go") ?? tile : null;
-	};
-	await window.__PRESS__(pickable("Add Archived columns"));
+	window.__REQUESTS__.answer("@default/archived-columns");
+	await window.__PRESS__(null);
+	const backAfterThePick = overlay ? getComputedStyle(overlay).visibility : null;
 	await window.__PRESS__(window.__ROWS__().find((row) => row.textContent.includes("Add a view")));
-	await window.__PRESS__(pickable("Add Archived columns"));
+	window.__REQUESTS__.answer("@default/archived-columns");
+	await window.__PRESS__(null);
 	return {
 		trailingCount: boxes.length,
 		gaps,
-		opened: Boolean(dialog),
-		said: dialog ? [...dialog.querySelectorAll("h1,h2,h3,p")].map((node) => node.textContent.trim())[0] : null,
-		offered: tiles.map((tile) => tile.querySelector(".wg-cat-name").textContent).sort(),
-		everyCardDrawsTheWidget: tiles.length > 0 && tiles.every((tile) => Boolean(tile.querySelector(".wg-cat-pic"))),
-		searchable: Boolean(dialog?.querySelector("input")),
+		askedFor: asked ? asked.mode : null,
+		asideWhileAsked,
+		backAfterThePick,
+		noDialogOpened,
 		bareList,
 		names: window.__ROWS__().map((row) => row.querySelector(".wg-kit-row-label")?.firstChild?.textContent ?? row.textContent.trim()),
 	};
@@ -883,84 +885,64 @@ const RANK_ASK = `(async () => {
 const CATALOGUE_PROBE = `
 import { createElement as h } from "react";
 import { render } from "./packages/core/src/engine/render.js";
-import { CatalogueDialog } from "./packages/core/src/catalogue-dialog.js";
+import { widgetPreview } from "./packages/core/src/surface/widget-preview.js";
+import { RegionDrawer } from "./packages/core/src/drawer.js";
 
 const definition = {
-	manifest: { id: "@demo/clock", title: "Clock", defaultSize: { w: 3, h: 2 }, keywords: ["clock", "time", "hours", "zone", "tick", "watch", "dial", "alarm"], description: "A clock." },
+	manifest: { id: "@demo/clock", title: "Clock", defaultSize: { w: 3, h: 2 }, description: "A clock." },
 	component: () => h("div", { className: "probe-inside", contentEditable: "true" }, "type here"),
 };
-const registry = { list: () => [definition], get: () => definition };
-
+const entry = { definition, offer: null, manifest: definition.manifest, installed: true, update: null };
+const port = {
+	can: true,
+	entryOf: () => entry,
+	subscribe: () => () => {},
+	previewRegistry: { list: () => [definition], get: () => definition },
+	previewHost: null,
+};
+const { Drawn } = widgetPreview(port);
+const host = document.getElementById("host");
+host.innerHTML = '<div class="workspace-leaf-content" id="pane" style="position:absolute;left:60px;top:40px;width:360px;height:600px"><div id="in-pane"></div></div><div id="on-phone"></div>';
 render(
-	h(CatalogueDialog, {
-		registry,
-		host: null,
-		mode: "browse",
-		available: [],
-		onPick: () => {},
-		onInstall: async () => ({ ok: true }),
-		onClose: () => {},
-	}),
-	document.getElementById("host"),
+	h("div", null, [
+		h("div", { key: "preview", id: "card", style: { width: "320px" } }, h(Drawn, { widget: "@demo/clock" })),
+		h(RegionDrawer, { key: "sheet", name: "sheet", isOpen: true, width: 360 }, h("p", { className: "sheet-said" }, "filters")),
+	]),
+	document.getElementById("in-pane"),
 );
+window.__PHONE__ = () => {
+	document.body.classList.add("is-phone");
+	render(
+		h(RegionDrawer, { name: "sheet", isOpen: true, width: 420 }, h("p", { className: "phone-said" }, "filters")),
+		document.getElementById("on-phone"),
+	);
+};
 `;
 
-const GUTTER_ASK = `(async () => {
+const CATALOGUE_ASK = `(async () => {
 	const frame = () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
-	const side = document.querySelector(".wg-cat-side");
-	const search = document.querySelector(".wg-cat-side .wg-cat-search");
-	const facet = document.querySelector(".wg-cat-facet-search");
-	const packs = document.querySelector(".wg-cat-packs");
-	const tags = document.querySelector(".wg-cat-tags");
-	const row = document.querySelector(".wg-cat-tag-row");
-	const count = document.querySelector(".wg-cat-more-tags");
-	const sideBox = side.getBoundingClientRect();
-	const searchBox = search.getBoundingClientRect();
-	const gutters = [Math.round(searchBox.left - sideBox.left), Math.round(sideBox.right - searchBox.right)];
-	const alignment = Math.round(facet.getBoundingClientRect().left - packs.getBoundingClientRect().left);
-	const tagsHtml = tags.outerHTML.slice(0, 180);
-	const tagsAreOneRow = Math.round(tags.getBoundingClientRect().height);
-	const tagRowScrolls = getComputedStyle(row).overflowX;
-	const countIsPressable = count ? count.tagName : null;
-	document.querySelector(".wg-cat-open-docs").click();
 	await frame();
-	const next = document.querySelector(".wg-doc-next");
-	const padding = next ? getComputedStyle(next) : null;
-	return {
-		gutters,
-		alignment,
-		tagsHtml,
-		tagsAreOneRow,
-		tagRowScrolls,
-		countIsPressable,
-		nextPadding: padding ? [padding.paddingTop, padding.paddingBottom].join("/") : null,
-		nextIsTallEnough: next ? Math.round(next.getBoundingClientRect().height) >= 64 : null,
-	};
-})()`;
-
-const CATALOGUE_ASK = `(() => {
-	const dialog = document.querySelector(".wg-cat-dialog");
-	const box = dialog.getBoundingClientRect();
 	const pic = document.querySelector(".wg-cat-pic");
 	const inside = document.querySelector(".probe-inside");
-	const sheet = document.querySelector(".wg-cat-sheet");
-	const grip = document.querySelector(".wg-cat-sheet .wg-kit-sheet-grip");
 	const at = inside?.getBoundingClientRect();
+	const pane = document.getElementById("pane").getBoundingClientRect();
+	const sheet = document.querySelector(".sheet-said").closest(".wg-drawer").getBoundingClientRect();
+	const sheetLayer = document.querySelector(".sheet-said").closest(".wg-portal");
+	window.__PHONE__();
+	await frame();
+	const phone = document.querySelector(".phone-said").closest(".wg-drawer").getBoundingClientRect();
 	return {
 		viewport: [innerWidth, innerHeight],
-		dialog: [Math.round(box.width), Math.round(box.height)],
-		corner: getComputedStyle(dialog).borderTopLeftRadius,
-		inert: getComputedStyle(pic).pointerEvents,
+		inert: pic ? getComputedStyle(pic).pointerEvents : null,
 		hitsTheWidget: at ? document.elementFromPoint(at.left + at.width / 2, at.top + at.height / 2)?.closest(".probe-inside") !== null : null,
 		takesTheCaret: (() => {
 			inside?.focus();
 			return document.activeElement === inside;
 		})(),
-		sidebars: document.querySelectorAll(".wg-cat-side").length,
-		sheetFromBottomPx: sheet ? Math.round(innerHeight - sheet.getBoundingClientRect().bottom) : null,
-		sheetWidthPx: sheet ? Math.round(sheet.getBoundingClientRect().width) : null,
-		gripPaintsAHandle: grip ? getComputedStyle(grip, "::before").width : null,
-		gripWearsABox: grip ? [getComputedStyle(grip).boxShadow, getComputedStyle(grip).backgroundColor].join(" ") : null,
+		sheetIsInThePane: sheetLayer.parentElement?.id === "pane",
+		sheetEdges: [Math.round(sheet.left - pane.left), Math.round(pane.right - sheet.right), Math.round(pane.bottom - sheet.bottom)],
+		sheetWiderThanThePane: sheet.width > pane.width + 1,
+		phoneEdges: [Math.round(phone.left), Math.round(innerWidth - phone.right), Math.round(innerHeight - phone.bottom)],
 	};
 })()`;
 
@@ -1257,15 +1239,10 @@ for (const theme of ["light", "dark"] as const) {
 	const mount = await ask(pageFor(theme, mountScript, "mount"), MOUNT_ASK, 2500);
 	check("a mount row ends in two controls", field(mount, "trailingCount"), 2);
 	check("spaced the way the kit spaces adjacent controls", field(mount, "gaps"), [8]);
-	check("adding a view opens the catalogue", field(mount, "opened"), true);
-	check("which says what the press means", field(mount, "said"), "Add a view");
-	check("it offers the widgets that can stand on their own", field(mount, "offered"), [
-		"Archived columns",
-		"Kanban board",
-		"View group",
-	]);
-	check("drawing each as the widget it is", field(mount, "everyCardDrawsTheWidget"), true);
-	check("and it can be searched", field(mount, "searchable"), true);
+	check("adding a view asks the sidebar catalogue for a view", field(mount, "askedFor"), "mount");
+	check("and opens no dialog of its own", field(mount, "noDialogOpened"), true);
+	check("the settings window steps aside while the catalogue is asked", field(mount, "asideWhileAsked"), "hidden");
+	check("and comes back once the pick lands", field(mount, "backAfterThePick"), "visible");
 	check("no bare list of titles is left anywhere", field(mount, "bareList"), false);
 	check("a pick lands under its declared name, disambiguated", field(mount, "names"), [
 		"Kanban",
@@ -1417,57 +1394,22 @@ for (const theme of ["light", "dark"] as const) {
 	);
 	check("and draws it no edge of its own", field(hoveredNote, "edge"), "none");
 
-	const wide = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500);
-	check(
-		"on a window with room the catalogue is a dialog, not the screen",
-		num(wide, "dialog", 1) < num(wide, "viewport", 1),
-		true,
-	);
-	check("and it stands on its own corner", field(wide, "corner"), "16px");
-	check("its filters are a column beside the cards", field(wide, "sidebars"), 1);
-	check("with no sheet, because nothing is folded away", field(wide, "sheetFromBottomPx"), null);
-	check("a card's preview takes no press at all", field(wide, "inert"), "none");
+	const catalogue = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500);
+	check("a card's preview takes no press at all", field(catalogue, "inert"), "none");
 	check(
 		"so a pointer over a widget that would take typing reaches the card instead",
-		field(wide, "hitsTheWidget"),
+		field(catalogue, "hitsTheWidget"),
 		false,
 	);
 	check(
 		"and neither can the caret land in it, which is how a preview was typed into",
-		field(wide, "takesTheCaret"),
+		field(catalogue, "takesTheCaret"),
 		false,
 	);
-
-	const gutters = await ask(pageFor(theme, catalogueScript, "catalogue"), GUTTER_ASK, 1500);
-	console.log(
-		`    side gutters ${listAt(gutters, "gutters").join(" / ")} · facet offset ${field(gutters, "alignment")} · tags ${field(gutters, "tagsAreOneRow")}px · next ${field(gutters, "nextPadding")}`,
-	);
-	console.log(`    tags markup: ${field(gutters, "tagsHtml")}`);
-	check(
-		"the column's search stands in the same gutter on both sides",
-		field(gutters, "gutters", "0"),
-		field(gutters, "gutters", "1"),
-	);
-	check("a group's own search lines up with the list under it", field(gutters, "alignment"), 0);
-	check("the tags never grow past one row", field(gutters, "tagsAreOneRow"), 28);
-	check("that row scrolls sideways instead", field(gutters, "tagRowScrolls"), "auto");
-	check(
-		"and the count of what is left over is text, not a press into an endless list",
-		field(gutters, "countIsPressable"),
-		"SPAN",
-	);
-	check("the page's Next row is padded on every side", field(gutters, "nextPadding"), "16px/16px");
-	check("so it is a row a finger can take", field(gutters, "nextIsTallEnough"), true);
-
-	const narrow = await ask(pageFor(theme, catalogueScript, "catalogue"), CATALOGUE_ASK, 1500, null, "420,760");
-	check("on a phone's window the dialog is the whole screen", field(narrow, "dialog"), field(narrow, "viewport"));
-	check("with no corner left to round", field(narrow, "corner"), "0px");
-	check("the column is gone", field(narrow, "sidebars"), 0);
-	check("and the filters are a sheet sitting on the bottom edge itself", field(narrow, "sheetFromBottomPx"), 0);
-	check("as wide as the whole screen", field(narrow, "sheetWidthPx"), field(narrow, "viewport", "0"));
-	check("carrying the kit's own grip to drag it by", field(narrow, "gripPaintsAHandle"), "44px");
-	check("a bare handle, with no box drawn around it", field(narrow, "gripWearsABox"), "none rgba(0, 0, 0, 0)");
-	check("and the preview stays inert there too", field(narrow, "inert"), "none");
+	check("a sheet opens inside the pane that holds its board", field(catalogue, "sheetIsInThePane"), true);
+	check("standing on the pane's own sides and bottom", field(catalogue, "sheetEdges"), [0, 0, 0]);
+	check("and never wider than the pane", field(catalogue, "sheetWiderThanThePane"), false);
+	check("on a phone it is the whole screen's", field(catalogue, "phoneEdges"), [0, 0, 0]);
 }
 
 console.log(failed === 0 ? "\npaint: clean" : `\npaint: ${failed} failed`);

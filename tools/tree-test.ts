@@ -1014,11 +1014,11 @@ console.log("\n— an empty sidebar is drawn as a zone, and a tile carried from 
 	check("a reader's board draws no chrome of its own either", field(emptyResting, "chrome"), 0);
 
 	check("the probe reached the catalogue", field(addedIntoRight, "failed") ?? null, null);
-	check("pressing a region's zone opens the catalogue", field(addedIntoRight, "opened"), 1);
+	check("pressing a region's zone asks the sidebar catalogue to place a widget", field(addedIntoRight, "opened"), 1);
 	check("and the pick adds one tile", field(addedIntoRight, "born"), 1);
 	check("on a row of its own in the region that was pressed", field(addedIntoRight, "grew"), 1);
 	check("the other two regions are left exactly as they were", field(addedIntoRight, "untouched"), ["left", "main"]);
-	check("and the catalogue closes behind the pick", field(addedIntoRight, "dialogs"), 0);
+	check("and the ask is answered by the pick", field(addedIntoRight, "dialogs"), 0);
 }
 
 console.log("\n— a column inside a row: the thing the three regions could not say —");

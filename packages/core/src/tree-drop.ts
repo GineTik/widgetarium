@@ -1,7 +1,7 @@
 import { COLUMN, ROW } from "@widgetarium/kit/plates";
 import { SWAP } from "./tree-constants.js";
 import { insertAt, isGap, nodeAt, pathOfLeaf, prune, replaceAt, withGapAt } from "./tree-nodes.js";
-import type { Axis, BoardNode, BoxNode, NodePath } from "./tree-nodes.js";
+import type { Axis, BoardNode, BoxNode, LeafNode, NodePath } from "./tree-nodes.js";
 
 export interface Rect {
 	readonly left: number;
@@ -87,6 +87,13 @@ export function moveInto(root: BoxNode, id: string, target: DropTarget | null | 
 		return root;
 	}
 	return prune(grown);
+}
+
+export function placeInto(root: BoxNode, leaf: LeafNode, target: DropTarget | null | undefined): BoxNode {
+	const held = insertAt(root, [], root.of.length, leaf);
+	if (!held || !target) return root;
+	const placed = moveInto(held, leaf.id, target);
+	return placed === held ? root : placed;
 }
 
 const samePath = (one: NodePath, other: NodePath): boolean =>

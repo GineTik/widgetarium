@@ -5,7 +5,7 @@ import { heldKey, keepNamedRecords, mountList, mountRows, mountRowToStore, uniqu
 import type { HeldRecord, Tile } from "../model.js";
 import type { MountRow, MountRowLike } from "../held-records.js";
 import { Icon, IconButton, Pill, Row, RowLabel, RowValue } from "@widgetarium/kit";
-import { CatalogueDialog } from "../catalogue-dialog.js";
+import { CatalogueAsk } from "../catalogue-ask.js";
 import { shownEntries } from "../prop-visibility.js";
 import { mountSpecsOf } from "../manifest-holds.js";
 import type { MountsSpec } from "../manifest-holds.js";
@@ -140,13 +140,10 @@ function mountPicker(state: WindowState, key: string, onPick: (id: string) => vo
 		h(Icon, { name: "plus" }),
 		h(RowLabel, { key: "label" }, "Add a view"),
 	]);
-	const dialog = h(CatalogueDialog, {
+	const dialog = h(CatalogueAsk, {
 		key: "pick",
-		registry: state.registry,
-		host: state.host,
-		mode: "mount",
-		onPick,
-		onClose: () => state.openEditor(null),
+		asked: { mode: "mount" },
+		onAnswer: (picked) => (picked ? onPick(picked) : state.openEditor(null)),
 	});
 	return h("div", { className: "wg-set-slot", key: "add" }, [trigger, state.openRow === key ? dialog : null]);
 }

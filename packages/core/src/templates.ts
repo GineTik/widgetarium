@@ -29,6 +29,11 @@ interface TemplateBoard {
 	readonly layout: TemplateNode;
 }
 
+export interface TemplateAnswer {
+	readonly ok: boolean;
+	readonly failure?: string | null;
+}
+
 export interface Template {
 	readonly id: string;
 	readonly title: string;
@@ -63,22 +68,28 @@ const TASK_BOARD: Template = {
 			{
 				id: "boards",
 				widget: "@default/editable-tabs",
-				props: { getTabs: { from: "vault", path: "Orbitask/Boards", allow: ["list", "create", "update", "remove"] } },
+				props: {
+					getTabs: {
+						implementation: "@obsidian/folder",
+						fields: { path: "Orbitask/Boards" },
+						allow: ["list", "create", "update", "remove"],
+					},
+				},
 			},
 			{
 				id: "filter",
 				widget: "@default/filter-panel",
 				props: {
-					getTasks: { from: "vault", path: "Orbitask/Tasks", allow: ["list"] },
-					getBoard: { from: "ref", ref: "boards/getSelection" },
+					getTasks: { implementation: "@obsidian/folder", fields: { path: "Orbitask/Tasks" }, allow: ["list"] },
+					getBoard: { implementation: "@core/from-tile-value", fields: { ref: "boards/getSelection" } },
 				},
 			},
 			{
 				id: "views",
 				widget: "@default/view-tabs",
 				props: {
-					getOptions: { from: "ref", ref: "board/holds" },
-					getSelection: { from: "ref", ref: "board/selection" },
+					getOptions: { implementation: "@core/from-tile-rows", fields: { ref: "board/holds" } },
+					getSelection: { implementation: "@core/from-tile-value", fields: { ref: "board/selection" } },
 				},
 			},
 			{
@@ -86,10 +97,18 @@ const TASK_BOARD: Template = {
 				widget: "@default/kanban-board",
 				slots: { card: { widget: "@default/task-card" } },
 				props: {
-					getTasks: { from: "vault", path: "Orbitask/Tasks", allow: ["list", "get", "create", "update", "remove"] },
-					getChosen: { from: "ref", ref: "filter/getChosen" },
-					getBoards: { from: "vault", path: "Orbitask/Boards", allow: ["list", "create", "update", "repairIds"] },
-					getSelection: { from: "ref", ref: "boards/getSelection" },
+					getTasks: {
+						implementation: "@obsidian/folder",
+						fields: { path: "Orbitask/Tasks" },
+						allow: ["list", "get", "create", "update", "remove"],
+					},
+					getChosen: { implementation: "@core/from-tile-value", fields: { ref: "filter/getChosen" } },
+					getBoards: {
+						implementation: "@obsidian/folder",
+						fields: { path: "Orbitask/Boards" },
+						allow: ["list", "create", "update", "repairIds"],
+					},
+					getSelection: { implementation: "@core/from-tile-value", fields: { ref: "boards/getSelection" } },
 				},
 			},
 		],

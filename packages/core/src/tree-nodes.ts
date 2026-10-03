@@ -22,6 +22,7 @@ export type CollapseToggle = (typeof TOGGLES)[number];
 export interface Collapse {
 	readonly into: CollapseKind;
 	readonly toggle: CollapseToggle;
+	readonly docks?: false;
 }
 
 export interface PlaceFlags {

@@ -6,6 +6,7 @@
 	"dependencies": {
 		"@widgetarium/core": "0.1.0",
 		"@widgetarium/kit": "0.1.0",
+		"@widgetarium/pack-catalogue": "0.1.0",
 		"@widgetarium/pack-core": "0.1.0",
 		"@widgetarium/pack-git": "0.1.0",
 		"@widgetarium/pack-obsidian": "0.1.0",

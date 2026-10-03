@@ -50,12 +50,16 @@ export function insertLineFor(lines: readonly string[], cursorLine: number): num
 	return isBlank(lines[cursorLine]) ? cursorLine : cursorLine + 1;
 }
 
-export function boardInsertAt(lines: readonly string[], cursorLine: number): BoardInsert | null {
+export function boardInsertAt(
+	lines: readonly string[],
+	cursorLine: number,
+	board: unknown = EMPTY_BOARD,
+): BoardInsert | null {
 	const at = insertLineFor(lines, cursorLine);
 	if (at === null) return null;
 	const lead = isBlank(lines[at - 1]) ? "" : "\n";
 	const tail = isBlank(lines[at]) ? "" : "\n";
-	return { at, text: `${lead}${boardBlock()}\n${tail}` };
+	return { at, text: `${lead}${boardBlock(board)}\n${tail}` };
 }
 
 export async function createBoardNote(

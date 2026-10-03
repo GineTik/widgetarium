@@ -1,3 +1,4 @@
+import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -47,6 +48,7 @@ const ports: ImplementationPorts = {
 	commandLine,
 	workingDirectory: repository,
 	self: "t1/git",
+	catalogue: NO_CATALOGUE_PORT,
 	network: { can: false, request: () => Promise.reject(new Error("no network")) },
 	vault: {
 		can: false,

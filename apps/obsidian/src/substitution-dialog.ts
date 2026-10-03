@@ -6,9 +6,7 @@ import { DialogClose, DialogContent, DialogOverlay } from "@widgetarium/core/dia
 import { Button, Icon, cn } from "@widgetarium/kit";
 import { classOf } from "@widgetarium/core/paths.js";
 import { useWidth } from "@widgetarium/core/use-width.js";
-import { openCatalogue } from "@widgetarium/core/catalogue-dialog.js";
-import type { CatalogueDefinition } from "@widgetarium/core/catalogue-entries.js";
-import type { OnInstall } from "@widgetarium/core/catalogue-install-press.js";
+import { CATALOGUE_REQUESTS } from "@widgetarium/core/engine/catalogue-requests.js";
 import type { CatalogueHost } from "@widgetarium/core/catalogue-preview.js";
 import type { WidgetLookup } from "@widgetarium/core/registry.js";
 import type { Rule } from "./substitution.js";
@@ -22,8 +20,6 @@ export interface SubstitutionDialogProps {
 	readonly rules: readonly Rule[];
 	readonly registry: WidgetLookup;
 	readonly host: CatalogueHost | null | undefined;
-	readonly available?: readonly CatalogueDefinition[];
-	readonly onInstall?: OnInstall;
 	readonly onChange: (next: Rule[]) => void;
 	readonly onClose: () => void;
 }
@@ -33,23 +29,15 @@ export interface SubstitutionsAsk extends Omit<SubstitutionDialogProps, "onChang
 	readonly onClose?: () => void;
 }
 
-interface InlinePick {
-	readonly registry: WidgetLookup;
-	readonly host: CatalogueHost | null | undefined;
-	readonly available: readonly CatalogueDefinition[];
-	readonly onInstall: OnInstall | undefined;
-	readonly onPick: (patch: RulePatch) => void;
-}
-
 const OPEN_LIST = "Substitutions";
 
 export function SubstitutionDialog(props: SubstitutionDialogProps): ReactElement {
-	const { rules, registry, host, available = [], onInstall, onChange, onClose } = props;
+	const { rules, registry, host, onChange, onClose } = props;
 	const editing = useRuleEditing(rules, onChange);
 	const [isSheetOpen, setSheetOpen] = useState(false);
 	const rootRef = useRef<HTMLDivElement>(null);
 	const phone = isPhone(useWidth(rootRef));
-	const pickWidget = (): void => pickInlineWidget({ registry, host, available, onInstall, onPick: editing.patch });
+	const pickWidget = (): void => pickInlineWidget(editing.patch);
 
 	return h(
 		DialogOverlay,
@@ -109,18 +97,9 @@ export function openSubstitutions(options: SubstitutionsAsk): () => void {
 	return close;
 }
 
-function pickInlineWidget({ registry, host, available, onInstall, onPick }: InlinePick): void {
-	const { close } = openCatalogue({
-		registry,
-		host,
-		mode: "text",
-		kind: "inline",
-		available,
-		onInstall,
-		onPick: (widget) => {
-			onPick({ widget });
-			close();
-		},
+function pickInlineWidget(onPick: (patch: RulePatch) => void): void {
+	void CATALOGUE_REQUESTS.ask({ mode: "text", kind: "inline" }).then((widget) => {
+		if (widget) onPick({ widget });
 	});
 }
 

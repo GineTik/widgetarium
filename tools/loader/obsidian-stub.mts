@@ -35,6 +35,7 @@ export class ItemView {
 		this.leaf = leaf;
 	}
 }
+export class MarkdownView extends ItemView {}
 export class PluginSettingTab {
 	app: unknown;
 	plugin: unknown;

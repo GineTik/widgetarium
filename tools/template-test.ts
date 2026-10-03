@@ -1,12 +1,8 @@
 import fs from "node:fs";
 import { parse as parseYaml } from "yaml";
 import { JSDOM } from "jsdom";
-import { byId, foundAs } from "./dom-find.ts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
 import type { Template } from "../packages/core/src/templates.js";
-import type { WidgetLookup } from "../packages/core/src/registry.js";
-import type { CatalogueMode } from "../packages/core/src/catalogue-install-press.js";
-import type { TemplateAnswer } from "../packages/core/src/use-template-build.js";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 const JSDOM_POINTER_EVENT: unknown = Reflect.get(dom.window, "PointerEvent");
@@ -35,15 +31,12 @@ Object.assign(globalThis, {
 Object.assign(dom.window, { ResizeObserver: SilentResizeObserver });
 Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1280 });
 
-const { createElement: h } = await import("react");
-const { render } = await import("../packages/core/src/engine/render.js");
 const { TEMPLATES, templateWidgets, templateBoard, templateSketch } = await import("../packages/core/src/templates.js");
 const { boardNoteText } = await import("../apps/obsidian/src/board-note.js");
 const { findBlocks } = await import("../packages/core/src/block-writer.js");
 const { normalizeBoard, serializeBoard, VIEW_GROUP } = await import("../packages/core/src/model.js");
 const { swapBoxes } = await import("../packages/core/src/tree.js");
 const { blockRefusal } = await import("../packages/core/src/version.js");
-const { Catalogue } = await import("../packages/core/src/catalogue.js");
 
 let failed = 0;
 const pathIn = (value: unknown, ...keys: readonly string[]): unknown =>
@@ -61,7 +54,6 @@ function check(name: string, got: unknown, want: unknown): void {
 		`${ok ? "OK  " : "!!  "}${name}${ok ? "" : `  got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`}`,
 	);
 }
-const settle = (): Promise<unknown> => new Promise((resolve) => setTimeout(resolve, 30));
 
 const firstTemplate = TEMPLATES[0];
 if (!firstTemplate) throw new Error("core ships no template");
@@ -136,7 +128,7 @@ function wantsIn(manifest: unknown): Want[] {
 }
 
 function refsAuthored(tile: WalkedTile, prop: string): unknown[] {
-	const config = tile.props[prop] ?? {};
+	const config = pathIn(tile.props[prop], "fields") ?? {};
 	const rows = listIn(config, "where")
 		.map((row) => pathIn(row, "spread", "ref") ?? pathIn(row, "value", "ref"))
 		.filter(Boolean);
@@ -219,114 +211,10 @@ check(
 );
 check(
 	"and the refs it was authored with",
-	pathIn(written, "tiles", "3", "props", "getSelection", "ref"),
+	pathIn(written, "tiles", "3", "props", "getSelection", "fields", "ref"),
 	"boards/getSelection",
 );
 check("reading it back changes nothing", serializeBoard(normalizeBoard(written)), written);
 
-const definition = (id: string, title: string) => ({
-	manifest: { id, title, defaultSize: { w: 3, h: 2 } },
-	component: () => h("div", null, title),
-});
-const registry: WidgetLookup = {
-	list: () => [definition("@default/task-card", "Task card")],
-	get: (id) => (id === "@default/task-card" ? definition(id, "Task card") : null),
-};
-
-const panel = byId(dom.window.document, "host");
-const used: string[] = [];
-const steps: (string | null)[] = [];
-let answer: TemplateAnswer = { ok: true };
-const draw = (mode: CatalogueMode): void =>
-	render(
-		h(Catalogue, {
-			registry,
-			host: null,
-			mode,
-			available: [],
-			templates: TEMPLATES,
-			onUseTemplate: async (one: Template, onStep: (step: string | null) => void) => {
-				used.push(one.id);
-				onStep("@default/editable-tabs");
-				await settle();
-				steps.push(panel.querySelector(".wg-tpl-step")?.textContent ?? null);
-				return answer;
-			},
-		}),
-		panel,
-	);
-
-draw("browse");
-await settle();
-const all = (selector: string): Element[] => [...panel.querySelectorAll(selector)];
-const press = (node: Element | null | undefined): void => {
-	node?.dispatchEvent(new dom.window.MouseEvent("click", { bubbles: true }));
-};
-check(
-	"browsing offers both shelves",
-	all(".wg-cat-shelf button").map((node) => node.textContent),
-	["Widgets", "Templates"],
-);
-check("and opens on the widgets", all(".wg-tpl-tile").length, 0);
-
-press(all(".wg-cat-shelf button")[1]);
-await settle();
-check("the templates shelf draws a card per template", all(".wg-tpl-tile").length, TEMPLATES.length);
-check(
-	"named after the template",
-	all(".wg-tpl-name").map((node) => node.textContent),
-	TEMPLATES.map((one) => one.title),
-);
-check("with nothing left to narrow a widget by", [all(".wg-cat-facet").length, all(".wg-cat-show").length], [0, 0]);
-check(
-	"the card draws the page's own tree, not a widget",
-	all(".wg-tpl-region").map((node) => node.className.split("is-")[1]),
-	["left", "main", "right"],
-);
-check(
-	"labelled with the widgets that stand in it",
-	all(".wg-tpl-cell").map((node) => node.textContent),
-	["@default/editable-tabs", "@default/filter-panel", "@default/view-tabs", "@default/kanban-board"],
-);
-
-press(panel.querySelector(".wg-tpl-tile"));
-await settle();
-await settle();
-check("pressing a card asks for that template", used, [template.id]);
-check("and says which widget it is fetching while it waits", steps, ["Installing @default/editable-tabs…"]);
-check(
-	"a template that was built leaves no complaint on the card",
-	panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure"),
-	null,
-);
-
-answer = { ok: false, failure: "the repository answered 404" };
-press(panel.querySelector(".wg-tpl-tile"));
-await settle();
-await settle();
-check(
-	"one that could not be built says why, where it was pressed",
-	panel.querySelector(".wg-tpl-tile .wg-cat-lack.is-failure")?.textContent,
-	"the repository answered 404",
-);
-
-render(null, panel);
-draw("template");
-await settle();
-check("the command's own dialog opens on the templates", all(".wg-tpl-tile").length, TEMPLATES.length);
-check("and offers no shelf to switch away from them", all(".wg-cat-shelf").length, 0);
-
-const searched = foundAs(panel, "input", dom.window.HTMLInputElement);
-searched.value = "kanban";
-searched.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-await settle();
-check("a search the template answers keeps it", all(".wg-tpl-tile").length, 1);
-searched.value = "zzzz";
-searched.dispatchEvent(new dom.window.Event("input", { bubbles: true }));
-await settle();
-check("one it does not empties the shelf", all(".wg-tpl-tile").length, 0);
-check("and says so", panel.querySelector(".wg-cat-none")?.textContent, "No template answers to that.");
-
-render(null, panel);
 console.log(failed === 0 ? "\ntemplate: clean" : `\ntemplate: ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

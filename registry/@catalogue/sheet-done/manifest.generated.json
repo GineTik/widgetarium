@@ -1,0 +1,47 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Sheet done",
+	"description": "A button under the filters that says how many widgets they leave and closes them.",
+	"keywords": ["filters", "sheet", "done", "close", "catalogue"],
+	"role": "control",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"getShown": {
+				"value": 12
+			}
+		}
+	},
+	"commands": {
+		"close": {
+			"label": "Close the filters",
+			"hint": "Closes the filters when pressed."
+		}
+	},
+	"props": {
+		"getShown": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Widgets shown",
+			"hint": "How many widgets the filters leave.",
+			"aka": ["getCounts"],
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

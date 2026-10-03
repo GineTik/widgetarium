@@ -1,0 +1,101 @@
+.wg-catalogue-tpls {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-cards, 12px);
+}
+
+.wg-catalogue-tpl {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px;
+	cursor: pointer;
+}
+
+.wg-catalogue-tpl:focus-visible {
+	outline: 2px solid var(--wg-kit-accent);
+	outline-offset: 2px;
+}
+
+.wg-catalogue-tpl-stage {
+	padding: 10px;
+}
+
+.wg-catalogue-tpl-sketch {
+	display: flex;
+	gap: 6px;
+	height: 180px;
+}
+
+.wg-catalogue-tpl-region {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.wg-catalogue-tpl-region.is-main {
+	flex: 1 1 auto;
+}
+
+.wg-catalogue-tpl-region.is-left,
+.wg-catalogue-tpl-region.is-right {
+	flex: 0 0 14%;
+	border: 1px dashed var(--wg-kit-card-edge);
+	border-radius: var(--wg-kit-item);
+}
+
+.wg-catalogue-tpl-row {
+	display: flex;
+	flex: 1 1 0;
+	gap: 6px;
+	min-height: 22px;
+}
+
+.wg-catalogue-tpl-cell {
+	display: grid;
+	place-items: center;
+	flex-basis: 0;
+	min-width: 0;
+	padding: 0 6px;
+	overflow: hidden;
+	border-radius: var(--wg-kit-item);
+	background: var(--wg-kit-fill-hover);
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.2;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.wg-catalogue-tpl-foot {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding-left: 2px;
+}
+
+.wg-catalogue-tpl-name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	font-size: var(--wg-kit-text-m);
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-kit-text);
+}
+
+.wg-catalogue-tpl-what,
+.wg-catalogue-tpl-step,
+.wg-catalogue-tpl-none {
+	margin: 0;
+	padding: 0 2px 2px;
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.4;
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-catalogue-tpl-step.is-failure {
+	color: var(--wg-kit-error);
+}

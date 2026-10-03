@@ -1,4 +1,4 @@
-import { columnsOf, keptAt, leavesOf, moveInto, REGION_GAP_PX } from "../tree.js";
+import { columnsOf, keptAt, leavesOf, moveInto, placeInto, REGION_GAP_PX } from "../tree.js";
 import type { AskLeaf, BoxNode, PreferredSize } from "../tree-nodes.js";
 import type { StandingColumn } from "../tree-columns.js";
 import type { EngineManifest } from "../engine/catalogue-index.js";
@@ -44,7 +44,7 @@ interface AskSources {
 
 export function layTree({ board, width, shared }: TreeAsk, { carrying, insets }: TreeMoment): LaidTree {
 	const root = board.layout;
-	const drawn = carrying ? moveInto(root, carrying.id, carrying.target) : root;
+	const drawn = drawnWhileCarried(root, carrying);
 	const { beside, floating, hidden, alone } = columnsOf(drawn, width, REGION_GAP_PX);
 	const tileOf = (id: string): Tile | undefined => board.tiles.find((tile) => tile.id === id);
 	const widgetOf = (id: string): string | undefined => tileOf(id)?.widget;
@@ -90,4 +90,10 @@ function isPreferredSize(held: unknown): held is PreferredSize {
 	const isWidth = typeof preferredWidth === "number" || preferredWidth === "full";
 	const isHeight = typeof preferredHeight === "number" || preferredHeight === "auto";
 	return isWidth && isHeight && (at === undefined || Array.isArray(at));
+}
+
+function drawnWhileCarried(root: BoxNode, carrying: Carry | null): BoxNode {
+	if (!carrying) return root;
+	if (carrying.isIncoming) return placeInto(root, { id: carrying.id, ratio: 1 }, carrying.target);
+	return moveInto(root, carrying.id, carrying.target);
 }

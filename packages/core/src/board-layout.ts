@@ -89,7 +89,10 @@ function collapseFrom(input: RawFields): Collapse | null {
 	const into = isCollapseKind(given["into"]) ? given["into"] : null;
 	const toggle = isCollapseToggle(given["toggle"]) ? given["toggle"] : null;
 	if (input["foldable"] === true) return { into: into ?? DRAWER, toggle: toggle ?? ALWAYS };
-	return into ? { into, toggle: toggle ?? ADAPTIVE } : null;
+	if (!into) return null;
+	return given["docks"] === false
+		? { into, toggle: toggle ?? ALWAYS, docks: false }
+		: { into, toggle: toggle ?? ADAPTIVE };
 }
 
 function collapseSaid(said: unknown): RawFields {

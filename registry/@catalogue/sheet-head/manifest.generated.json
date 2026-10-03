@@ -1,0 +1,58 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Sheet head",
+	"description": "The title above the filters, with Clear all while any filter is on.",
+	"keywords": ["filters", "sheet", "title", "clear", "catalogue"],
+	"role": "layout",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"getNarrowed": {
+				"value": 1
+			}
+		}
+	},
+	"commands": {
+		"clearFilters": {
+			"label": "Clear the filters",
+			"hint": "Turns every filter off."
+		}
+	},
+	"props": {
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title",
+			"aka": ["title"],
+			"writes": ["get"],
+			"default": {
+				"value": "Filters"
+			}
+		},
+		"getNarrowed": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Filters on",
+			"hint": "How many filters are on.",
+			"aka": ["getCounts"],
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

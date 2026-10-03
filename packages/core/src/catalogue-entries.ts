@@ -202,14 +202,14 @@ export function fromManifest(entry: { readonly manifest: Fields }, key: string):
 	return entry.manifest[key];
 }
 
+export function keywordsOf(manifest: Fields | null | undefined): string[] {
+	const keywords = manifest?.["keywords"];
+	return Array.isArray(keywords) ? keywords.filter((keyword): keyword is string => typeof keyword === "string") : [];
+}
+
 function lockedCommitOf(lock: WidgetLock | null | undefined, id: unknown): unknown {
 	const entry = typeof id === "string" ? lock?.widgets[id] : undefined;
 	return isObject(entry) ? entry["commit"] : undefined;
-}
-
-function keywordsOf(manifest: Fields | null | undefined): string[] {
-	const keywords = manifest?.["keywords"];
-	return Array.isArray(keywords) ? keywords.filter((keyword): keyword is string => typeof keyword === "string") : [];
 }
 
 function countBy(entries: readonly MergedEntry[], read: (entry: MergedEntry) => readonly string[]): Facet[] {

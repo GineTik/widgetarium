@@ -1,5 +1,6 @@
 import type { ImplementationPorts, NetworkAsk, VaultNote } from "../packages/core/src/engine/packs.ts";
-import { registeredCommands, registeredQueries } from "../packages/core/src/engine/packs.ts";
+import { definePack, registeredCommands, registeredQueries } from "../packages/core/src/engine/packs.ts";
+import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { sourcesFor } from "../packages/core/src/engine/host-gateways.ts";
 import { arrayGateway } from "../packages/core/src/gateway/create.ts";
 import type { VaultSlot } from "../packages/core/src/gateway/obsidian.ts";
@@ -72,6 +73,7 @@ const days = arrayGateway(
 let isConfirmed = false;
 const portsOf = (answer: string, status = 200): ImplementationPorts => ({
 	self: "t1/probe",
+	catalogue: NO_CATALOGUE_PORT,
 	commandLine: { can: false, run: async () => ({ ok: false, output: "", failure: "none" }) },
 	workingDirectory: undefined,
 	network: {
@@ -236,6 +238,30 @@ check(
 		[...registeredQueries(), ...registeredCommands()].some((entry) => entry.id.startsWith(`${pack}/`)),
 	),
 	[true, true, true, true],
+);
+
+const everyId = [...registeredQueries(), ...registeredCommands()].map((entry) => entry.id);
+check(
+	"no two implementations answer to one id",
+	everyId.filter((id, at) => everyId.indexOf(id) !== at),
+	[],
+);
+check(
+	"and a pack naming one id twice is refused",
+	await refusalOf(async () => {
+		const [count] = registeredQueries().filter((entry) => entry.id === "@stats/count");
+		if (!count) throw new Error("no count to name twice");
+		definePack({
+			id: "@twice",
+			title: "Twice",
+			queries: [
+				{ ...count, id: "@twice/count" },
+				{ ...count, id: "@twice/count" },
+			],
+			commands: [],
+		});
+	}),
+	"@twice/count names two implementations of one pack",
 );
 
 console.log(`\n${failed === 0 ? "packs: clean" : `packs: ${failed} failed`}`);

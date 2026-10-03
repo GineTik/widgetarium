@@ -43,6 +43,8 @@ export function togglesUnder(box: LaidNode | null | undefined): Toggle[] {
 	return box.of.flatMap((child, at) => togglesWithin(child, sideAt(box, at)));
 }
 
+export const isNeverDocked = (node: HeldNode): boolean => isBox(node) && node.collapse?.docks === false;
+
 export const isFoldedAway = (node: HeldNode): boolean => isBox(node) && isAlwaysToggled(node) && node.folded === true;
 
 export const leavesNarrowRow = (node: HeldNode): boolean => isFoldedAway(node) || isCollapsible(node);

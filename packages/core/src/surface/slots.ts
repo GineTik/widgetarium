@@ -6,8 +6,11 @@ import { reactClash } from "../fit.js";
 import type { ReactIdentity } from "../fit.js";
 import { viewHost } from "../engine/view-host.js";
 import { NOWHERE } from "../engine/navigator-none.js";
+import { widgetCatalogue } from "../engine/widget-catalogue.js";
+import { widgetPreview } from "./widget-preview.js";
+import { CARRIER } from "./carrier.js";
 import type { EngineManifest } from "../engine/catalogue-index.js";
-import type { PatchStep } from "../engine/host-gateways.js";
+import type { PatchStep } from "../engine/host-context.js";
 import type { GivenProps } from "../declared-widget.js";
 import type { WidgetDefinition } from "../registry.js";
 import type { AnyGateway, GatewayRefs, ViewCell } from "../gateway/refs.js";
@@ -124,6 +127,9 @@ function slotDraw(ask: SlotsAsk, { name, spec, parentReact }: SlotAt): SlotDraw<
 			host: viewHost(host),
 			here: host.here ?? null,
 			navigator: host.navigator ?? NOWHERE,
+			catalogue: widgetCatalogue(host),
+			widgetPreview: widgetPreview(host.catalogue),
+			widgetCarrier: CARRIER,
 			foldIntoGroup: foldIntoGroup ?? refuseFold,
 		});
 	const surface = slotSurfaceOf(spec, tile.slots?.[name]);

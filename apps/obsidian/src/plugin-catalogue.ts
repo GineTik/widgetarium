@@ -1,11 +1,9 @@
 import { Notice } from "obsidian";
 import type { TFolder } from "obsidian";
-import { openCatalogue } from "@widgetarium/core/catalogue-dialog.js";
 import { TEMPLATES, templateBoard, templateWidgets } from "@widgetarium/core/templates.js";
-import type { Template } from "@widgetarium/core/templates.js";
+import type { InstallOutcome } from "@widgetarium/core/engine/install-jobs.js";
+import type { Template, TemplateAnswer } from "@widgetarium/core/templates.js";
 import type { CatalogueDefinition } from "@widgetarium/core/catalogue-entries.js";
-import type { CatalogueMode } from "@widgetarium/core/catalogue-install-press.js";
-import type { OnUseTemplate, TemplateAnswer } from "@widgetarium/core/use-template-build.js";
 import type { OnFetchStep } from "@widgetarium/core/engine/widget-source.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { openSubstitutions } from "./substitution-dialog.js";
@@ -24,6 +22,9 @@ const INSTALLED_AT = "Widgetarium: installed {widget} at {commit}";
 const INSTALLED_BESIDE =
 	"Widgetarium: {widget} at {commit} changed what its tiles hold, so it was installed beside the version they use";
 const INSTALL_AT_REFUSED = "Widgetarium: {widget} was not installed — {why}";
+const NOT_REMOVED = "Widgetarium: {widget} was not removed — {why}";
+const REMOVED = "Widgetarium: removed {widget}";
+const NO_TEMPLATE = "no template is named {template}";
 
 // TRADE-OFF: every offer is compiled to draw its card, so it waits for somebody to look
 export async function offersOf(plugin: WidgetariumPlugin): Promise<Drawn<AvailableOffer>[]> {
@@ -37,32 +38,12 @@ export async function offersOf(plugin: WidgetariumPlugin): Promise<Drawn<Availab
 	return plugin.available;
 }
 
-export async function openCatalogueAs(plugin: WidgetariumPlugin, mode: CatalogueMode, folder?: TFolder): Promise<void> {
-	plugin.catalogue?.close();
-	plugin.catalogue = openCatalogue({
-		registry: plugin.registry,
-		host: plugin.host,
-		mode,
-		available: await plugin.offers(),
-		templates: TEMPLATES,
-		lock: await plugin.installer.lock(),
-		onInstall: (entry, onStep) => installPinnedToItsCommit(plugin, entry, onStep),
-		onUninstall: (id) => uninstall(plugin, id),
-		onUseTemplate: templateBuilderInto(plugin, folder),
-		onClose: () => {
-			plugin.catalogue = null;
-		},
-	});
-}
-
 export async function showSubstitutions(plugin: WidgetariumPlugin): Promise<void> {
 	plugin.closeSubstitutions?.();
 	plugin.closeSubstitutions = openSubstitutions({
 		rules: plugin.rules,
 		registry: plugin.registry,
 		host: plugin.host,
-		available: await plugin.offers(),
-		onInstall: (entry) => installPinnedToItsCommit(plugin, entry),
 		onChange: (next) => void plugin.setRules(next),
 		onClose: () => {
 			plugin.closeSubstitutions = null;
@@ -80,11 +61,7 @@ export async function installAt(plugin: WidgetariumPlugin, ref: string): Promise
 	return done;
 }
 
-function messageOf(failure: unknown): string {
-	return String(isObject(failure) ? (failure["message"] ?? failure) : failure);
-}
-
-async function installPinnedToItsCommit(
+export async function installPinnedToItsCommit(
 	plugin: WidgetariumPlugin,
 	entry: CatalogueDefinition,
 	onStep?: OnFetchStep,
@@ -98,23 +75,28 @@ async function installPinnedToItsCommit(
 	return done;
 }
 
-async function uninstall(plugin: WidgetariumPlugin, id: string): Promise<RemoveAnswer> {
-	const done = await plugin.installer.uninstall(id);
+export async function uninstall(plugin: WidgetariumPlugin, id: string): Promise<InstallOutcome> {
+	const done: RemoveAnswer = await plugin.installer.uninstall(id);
 	if (!done.ok) {
-		new Notice(`Widgetarium: ${id} was not removed — ${done.failure}`);
-		return done;
+		new Notice(NOT_REMOVED.replace("{widget}", id).replace("{why}", done.failure));
+		return { ok: false, failure: done.failure };
 	}
 	await plugin.rereadWidgets();
-	new Notice(`Widgetarium: removed ${id}`);
-	return done;
+	new Notice(REMOVED.replace("{widget}", id));
+	return { ok: true };
 }
 
-function templateBuilderInto(plugin: WidgetariumPlugin, folder: TFolder | undefined): OnUseTemplate {
-	return async (template, onStep) => {
-		const done = await useTemplate(plugin, template, folder, onStep);
-		if (done.ok) plugin.catalogue?.close();
-		return done;
-	};
+export async function useTemplateNamed(plugin: WidgetariumPlugin, id: string): Promise<InstallOutcome> {
+	const template = TEMPLATES.find((held) => held.id === id);
+	if (!template) return { ok: false, failure: NO_TEMPLATE.replace("{template}", id) };
+	const folder = plugin.templateFolder;
+	plugin.templateFolder = undefined;
+	const done = await useTemplate(plugin, template, folder, () => undefined);
+	return done.ok ? { ok: true } : { ok: false, failure: done.failure };
+}
+
+function messageOf(failure: unknown): string {
+	return String(isObject(failure) ? (failure["message"] ?? failure) : failure);
 }
 
 async function useTemplate(

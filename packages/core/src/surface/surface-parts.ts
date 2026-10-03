@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
-import { CatalogueDialog } from "../catalogue-dialog.js";
+import { CatalogueAsk } from "../catalogue-ask.js";
 import { ConfirmDialog } from "../dialog.js";
 import { classOf, measureGrid } from "../paths.js";
 import { MIN_HEIGHT_PX, MIN_SIDEBAR_PX } from "../tree.js";
@@ -44,7 +44,7 @@ interface SurfaceContext {
 }
 
 export function surfaceParts(context: SurfaceContext): ReactNode[] {
-	const { board, session, edits, removal, picking, registry, host } = context;
+	const { board, session, edits, removal, picking } = context;
 	const held = session.held;
 	const configured = held && board.tiles.find((tile) => tile.id === held.id);
 	const canvasBox = held?.canvasBox ?? UNMEASURED_CELL;
@@ -54,7 +54,7 @@ export function surfaceParts(context: SurfaceContext): ReactNode[] {
 		held && configured ? settingsElement(context, { configured, held, canvasBox }) : null,
 		removalDialog(removal, edits.removeTile),
 		Array.isArray(pickingInto)
-			? placeCatalogue({ registry, host, onPick: (widgetId) => edits.addTileInto(widgetId, pickingInto), picking })
+			? placeCatalogue({ onPick: (widgetId) => edits.addTileInto(widgetId, pickingInto), picking })
 			: null,
 	];
 }
@@ -77,6 +77,7 @@ function treeElement(
 		onAdd: picking.set,
 		patchTile: edits.patchTile,
 		commitLayout: edits.commitLayout,
+		addTileAt: edits.addTileAt,
 		commitHolds: edits.commitHolds,
 		onActions,
 	});
@@ -135,22 +136,17 @@ function removalDialog(removal: Removal, removeTile: (id: string) => void): Reac
 }
 
 interface PlaceAsk {
-	readonly registry: BoardRegistry;
-	readonly host: SurfaceHost;
 	readonly onPick: (widgetId: string) => void;
 	readonly picking: Picking;
 }
 
-function placeCatalogue({ registry, host, onPick, picking }: PlaceAsk): ReactElement {
-	return h(CatalogueDialog, {
+function placeCatalogue({ onPick, picking }: PlaceAsk): ReactElement {
+	return h(CatalogueAsk, {
 		key: "catalogue",
-		registry,
-		host,
-		mode: "place",
-		onPick: (widgetId) => {
-			onPick(widgetId);
+		asked: { mode: "place" },
+		onAnswer: (widgetId) => {
+			if (widgetId) onPick(widgetId);
 			picking.set(null);
 		},
-		onClose: () => picking.set(null),
 	});
 }

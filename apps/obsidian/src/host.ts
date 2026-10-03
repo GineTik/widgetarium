@@ -1,12 +1,12 @@
+import type { CataloguePort } from "@widgetarium/core/engine/catalogue-port.js";
 import { TFile, Notice, MarkdownRenderer, MarkdownRenderChild, Platform } from "obsidian";
 import type { App, Component } from "obsidian";
 import { Dialog } from "@widgetarium/core/dialog.js";
 import { readBody } from "@widgetarium/core/block-writer.js";
 import { hostTypeOf } from "@widgetarium/core/engine/host-type.js";
 import { createConsole } from "@widgetarium/core/engine/host-console.js";
-import type { CommandLinePort, NetworkPort, VaultPort } from "@widgetarium/core/engine/packs.js";
+import type { CommandLinePort, NetworkPort, ShapeReader, VaultPort } from "@widgetarium/core/engine/packs.js";
 import { packPortsOf } from "./pack-ports.js";
-import type { ShapeReader } from "@widgetarium/core/engine/engine-backed.js";
 import type { HostConsole, Navigation, PassageReader } from "@widgetarium/core/gateway/host.js";
 import type { Unsubscribe } from "@widgetarium/core/gateway/contract.js";
 import { frontmatterOf } from "./note-frontmatter.js";
@@ -20,6 +20,7 @@ import { basePathHeldBy, windowRequire } from "./desktop-adapter.js";
 export interface HostPlugin extends Pick<Component, "addChild" | "removeChild"> {
 	readonly shapes?: ShapeReader | null;
 	readonly installAt?: ((ref: string) => unknown) | null;
+	readonly cataloguePort?: CataloguePort | undefined;
 }
 
 export interface NoteHere {
@@ -49,6 +50,7 @@ export interface ObsidianHost {
 	readonly workingDirectory: string | undefined;
 	readonly network: NetworkPort;
 	readonly vault: VaultPort;
+	readonly catalogue: CataloguePort | undefined;
 	confirm(said: string): Promise<boolean>;
 	resourcePathOf(path: string): string | null;
 	slot(binding: SlotBinding | null | undefined): FolderSlot;
@@ -114,6 +116,7 @@ export function createHost(app: App, plugin: HostPlugin | null | undefined, note
 		console: createConsole(hostTypeOf(Platform), windowRequire(), basePathHeldBy(app.vault.adapter)),
 
 		...packPortsOf(app),
+		catalogue: plugin?.cataloguePort,
 
 		resourcePathOf(path) {
 			return app.vault.adapter?.getResourcePath?.(path) ?? null;

@@ -1,0 +1,79 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Catalogue head",
+	"description": "The title of the catalogue or the docs, the line under it, and a switch to the other.",
+	"keywords": ["catalogue", "docs", "heading", "title", "toggle", "switch", "sidebar"],
+	"role": "layout",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 1
+		},
+		"props": {
+			"getSaid": {
+				"value": {
+					"title": "Widgets",
+					"lead": "Every widget this vault can draw",
+					"mode": "browse",
+					"isAsking": false
+				}
+			}
+		}
+	},
+	"commands": {
+		"openView": {
+			"label": "Open the other view",
+			"source": {
+				"implementation": "@catalogue/open-view",
+				"fields": {}
+			}
+		}
+	},
+	"props": {
+		"getSaid": {
+			"kind": "value",
+			"control": "json",
+			"label": "Heading",
+			"hint": "The title and the line under it.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "Widgets",
+					"lead": "",
+					"mode": "browse",
+					"isAsking": false
+				}
+			}
+		},
+		"getView": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "This view",
+			"hint": "Which of the two this is.",
+			"writes": ["get"],
+			"default": {
+				"value": "catalogue"
+			},
+			"options": [
+				{
+					"value": "catalogue",
+					"label": "catalogue"
+				},
+				{
+					"value": "docs",
+					"label": "docs"
+				}
+			]
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

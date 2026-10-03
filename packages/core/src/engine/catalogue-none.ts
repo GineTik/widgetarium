@@ -1,4 +1,4 @@
-import type { WidgetCatalogue } from "../gateway/host.js";
+import type { Carrier, WidgetCatalogue, WidgetPreview } from "../gateway/host.js";
 
 export const NO_CATALOGUE: WidgetCatalogue = {
 	canOpen: false,
@@ -7,3 +7,7 @@ export const NO_CATALOGUE: WidgetCatalogue = {
 		return null;
 	},
 };
+
+export const NO_PREVIEW: WidgetPreview = { canPreview: false, Drawn: () => null };
+
+export const NO_CARRIER: Carrier = { canCarry: false, lift: async () => null };

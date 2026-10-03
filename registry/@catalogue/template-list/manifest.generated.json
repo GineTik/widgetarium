@@ -1,0 +1,68 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Template list",
+	"description": "Page templates with a sketch of each: press one to make a page from it.",
+	"keywords": ["templates", "pages", "catalogue", "screens", "start", "create"],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 4,
+			"h": 4
+		},
+		"props": {
+			"getTemplates": {
+				"rows": [
+					{
+						"id": "task-board",
+						"title": "Task board",
+						"description": "A board picker, a filter and a view picker over a kanban board of your tasks.",
+						"widgets": ["@default/kanban-board"],
+						"sketch": [
+							{
+								"name": "main",
+								"rows": [
+									[
+										{
+											"label": "Kanban board",
+											"grow": 1
+										}
+									]
+								]
+							}
+						]
+					}
+				]
+			}
+		}
+	},
+	"commands": {
+		"useTemplate": {
+			"label": "Create a page",
+			"source": {
+				"implementation": "@catalogue/use-template",
+				"fields": {}
+			}
+		}
+	},
+	"props": {
+		"getTemplates": {
+			"kind": "collection",
+			"label": "Templates",
+			"hint": "The templates to show.",
+			"aka": ["templates"],
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "sketch-region.tsx", "template-card.tsx", "types.ts", "use-command-press.ts", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

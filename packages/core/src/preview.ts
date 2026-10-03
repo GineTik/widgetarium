@@ -11,7 +11,7 @@ import type { SlotDraw } from "./widget-root.js";
 import { spanToPixels } from "./paths.js";
 import { NO_HOST } from "./engine/host-none.js";
 import type { HostClaimingNothing } from "./engine/host-none.js";
-import { NO_CATALOGUE } from "./engine/catalogue-none.js";
+import { NO_CARRIER, NO_CATALOGUE, NO_PREVIEW } from "./engine/catalogue-none.js";
 import { refuseRead } from "./engine/read-file.js";
 import type { Fields } from "./engine/catalogue-index.js";
 import { isObject } from "./engine/is-object.js";
@@ -137,6 +137,8 @@ export function previewProps(definition: PreviewDefinition | null | undefined, o
 		fullscreen: { isFullscreen: false, canFullscreen: false, open() {}, close() {}, toggle() {} },
 		host: previewHost(options?.host),
 		catalogue: NO_CATALOGUE,
+		widgetPreview: NO_PREVIEW,
+		widgetCarrier: NO_CARRIER,
 		foldIntoGroup: () => false,
 		slots: previewSlots(definition, options),
 		mounts: {},

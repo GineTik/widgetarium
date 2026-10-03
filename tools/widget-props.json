@@ -1,4 +1,364 @@
 {
+	"@catalogue/chip-group": {
+		"getHeading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "The small label above the chips.",
+			"aka": ["heading"],
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getChips": {
+			"kind": "collection",
+			"label": "Chips",
+			"hint": "The chips to show.",
+			"aka": ["chips"],
+			"writes": ["list", "get"],
+			"describes": {
+				"name": {
+					"label": "Name",
+					"type": "line"
+				},
+				"label": {
+					"label": "Label",
+					"type": "line"
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"getShown": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Chips shown",
+			"hint": "How many chips show before the rest are folded into a count.",
+			"writes": ["get"],
+			"default": {
+				"value": 6
+			}
+		},
+		"getSelection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Picked chip",
+			"hint": "The chip that is picked.",
+			"aka": ["selection"],
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "getChips",
+					"field": "name"
+				}
+			},
+			"writes": ["get"]
+		},
+		"getFilter": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Search in the chips",
+			"hint": "Text that narrows the chips.",
+			"writes": ["get"],
+			"default": {
+				"from": "memory",
+				"value": ""
+			}
+		},
+		"getFilterPlaceholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Search placeholder",
+			"hint": "Leave it empty to hide the search field.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		}
+	},
+	"@catalogue/doc-page": {
+		"getPage": {
+			"kind": "value",
+			"control": "json",
+			"label": "Page",
+			"hint": "The page to show.",
+			"aka": ["page"],
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		}
+	},
+	"@catalogue/facet-list": {
+		"getHeading": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Heading",
+			"hint": "The small label above the list.",
+			"aka": ["heading"],
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getRows": {
+			"kind": "collection",
+			"label": "Choices",
+			"hint": "The choices to show, each with an optional count or icon.",
+			"aka": ["rows"],
+			"writes": ["list", "get"],
+			"describes": {
+				"name": {
+					"label": "Name",
+					"type": "line"
+				},
+				"label": {
+					"label": "Label",
+					"type": "line"
+				},
+				"count": {
+					"label": "Count",
+					"type": "number"
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"getSelection": {
+			"kind": "value",
+			"control": "pick",
+			"label": "Picked choice",
+			"hint": "The choice that is picked.",
+			"aka": ["selection"],
+			"source": {
+				"implementation": "@core/selection",
+				"fields": {
+					"rows": "getRows",
+					"field": "name"
+				}
+			},
+			"writes": ["get"]
+		},
+		"getFilter": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Search in the list",
+			"hint": "Text that narrows the list.",
+			"writes": ["get"],
+			"default": {
+				"from": "memory",
+				"value": ""
+			}
+		},
+		"getFilterPlaceholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Search placeholder",
+			"hint": "Leave it empty to hide the search field.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		}
+	},
+	"@catalogue/filter-bar": {
+		"getIsOpen": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Filters open",
+			"hint": "Whether the filters are open.",
+			"aka": ["open"],
+			"writes": ["get"],
+			"default": {
+				"from": "memory",
+				"value": false
+			}
+		},
+		"getShown": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Widgets shown",
+			"hint": "How many widgets the filters leave.",
+			"aka": ["getCounts"],
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		},
+		"getNarrowed": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Filters on",
+			"hint": "How many filters are on.",
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"@catalogue/head": {
+		"getSaid": {
+			"kind": "value",
+			"control": "json",
+			"label": "Heading",
+			"hint": "The title and the line under it.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "Widgets",
+					"lead": "",
+					"mode": "browse",
+					"isAsking": false
+				}
+			}
+		},
+		"getView": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "This view",
+			"hint": "Which of the two this is.",
+			"writes": ["get"],
+			"default": {
+				"value": "catalogue"
+			},
+			"options": [
+				{
+					"value": "catalogue",
+					"label": "catalogue"
+				},
+				{
+					"value": "docs",
+					"label": "docs"
+				}
+			]
+		}
+	},
+	"@catalogue/search": {
+		"getValue": {
+			"kind": "value",
+			"control": "memory",
+			"label": "Query",
+			"hint": "What is typed in the field.",
+			"aka": ["value"],
+			"writes": ["get"],
+			"default": {
+				"from": "memory",
+				"value": ""
+			}
+		},
+		"getPlaceholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Placeholder",
+			"hint": "Shown while nothing is typed.",
+			"aka": ["placeholder"],
+			"writes": ["get"],
+			"default": {
+				"value": "Search widgets"
+			}
+		}
+	},
+	"@catalogue/sheet-done": {
+		"getShown": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Widgets shown",
+			"hint": "How many widgets the filters leave.",
+			"aka": ["getCounts"],
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"@catalogue/sheet-head": {
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title",
+			"aka": ["title"],
+			"writes": ["get"],
+			"default": {
+				"value": "Filters"
+			}
+		},
+		"getNarrowed": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Filters on",
+			"hint": "How many filters are on.",
+			"aka": ["getCounts"],
+			"writes": ["get"],
+			"default": {
+				"value": 0
+			}
+		}
+	},
+	"@catalogue/template-list": {
+		"getTemplates": {
+			"kind": "collection",
+			"label": "Templates",
+			"hint": "The templates to show.",
+			"aka": ["templates"],
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		}
+	},
+	"@catalogue/widget-list": {
+		"getEntries": {
+			"kind": "collection",
+			"label": "Widgets",
+			"hint": "The widgets to show.",
+			"aka": ["entries"],
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getSaid": {
+			"kind": "value",
+			"control": "json",
+			"label": "What the catalogue is asked for",
+			"hint": "What the catalogue was opened for.",
+			"writes": ["get"],
+			"default": {
+				"value": {
+					"title": "",
+					"lead": "",
+					"mode": "browse",
+					"isAsking": false
+				}
+			}
+		},
+		"getPageSize": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Widgets per load",
+			"aka": ["pageSize"],
+			"writes": ["get"],
+			"default": {
+				"value": 12
+			}
+		}
+	},
 	"@default/archived-columns": {
 		"getBoards": {
 			"kind": "collection",

@@ -1,6 +1,8 @@
 import { execFileSync } from "node:child_process";
 import esbuild, { type BuildOptions, type Loader, type OutputFile, type Plugin } from "esbuild";
 import { widgetTypeFiles } from "../../tools/widget-types.mts";
+import { packedModuleSource } from "../../tools/packed-module.mts";
+import { catalogueWidgetFiles, catalogueWidgetPaths } from "../../tools/catalogue-widget-files.mts";
 
 export interface SurfaceAsk {
 	readonly minify?: boolean;
@@ -17,6 +19,8 @@ export const TEXT_LOADERS: Readonly<Record<string, Loader>> = { ".md": "text", "
 const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
 const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.ts";
 const WIDGET_TYPES_SPECIFIER = "widgetarium:widget-types";
+const CATALOGUE_WIDGETS_SPECIFIER = "widgetarium:catalogue-widgets";
+const BUILD_STAMP_SPECIFIER = "widgetarium:build-stamp";
 
 const SUPPLIED_BY_ELECTRON_AT_RUNTIME = [
 	"obsidian",
@@ -62,7 +66,13 @@ export function bundleOptions({
 	sourcemap = false,
 }: BundleAsk = {}): BuildOptions {
 	return {
-		plugins: [surfaceSource(minify), widgetsCliSource(), widgetTypesSource()],
+		plugins: [
+			surfaceSource(minify),
+			widgetsCliSource(),
+			widgetTypesSource(),
+			catalogueWidgetsSource(),
+			buildStampSource(),
+		],
 		entryPoints: ["apps/obsidian/src/main.ts"],
 		bundle: true,
 		outfile,
@@ -112,7 +122,7 @@ function widgetsCliSource(): Plugin {
 				namespace: "wg-cli",
 			}));
 			build.onLoad({ filter: /.*/, namespace: "wg-cli" }, async () => ({
-				contents: `export default ${JSON.stringify(await widgetsCliBundle())};`,
+				contents: packedModuleSource(await widgetsCliBundle()),
 				loader: "js",
 				watchFiles: [WIDGETS_CLI_SOURCE],
 			}));
@@ -129,13 +139,46 @@ function widgetTypesSource(): Plugin {
 				namespace: "wg-types",
 			}));
 			build.onLoad({ filter: /.*/, namespace: "wg-types" }, () => ({
-				contents: `export default ${JSON.stringify(widgetTypeFiles())};`,
+				contents: packedModuleSource(widgetTypeFiles()),
 				loader: "js",
 				watchFiles: [
 					"packages/sdk/types/widgetarium.d.ts",
 					"packages/sdk/tsconfig.widgets.json",
 					"packages/kit/package.json",
 				],
+			}));
+		},
+	};
+}
+
+function catalogueWidgetsSource(): Plugin {
+	return {
+		name: "widgetarium-catalogue-widgets",
+		setup(build) {
+			build.onResolve({ filter: new RegExp(`^${CATALOGUE_WIDGETS_SPECIFIER}$`) }, (found) => ({
+				path: found.path,
+				namespace: "wg-catalogue-widgets",
+			}));
+			build.onLoad({ filter: /.*/, namespace: "wg-catalogue-widgets" }, () => ({
+				contents: `export default ${JSON.stringify(catalogueWidgetFiles())};`,
+				loader: "js",
+				watchFiles: catalogueWidgetPaths(),
+			}));
+		},
+	};
+}
+
+function buildStampSource(): Plugin {
+	return {
+		name: "widgetarium-build-stamp",
+		setup(build) {
+			build.onResolve({ filter: new RegExp(`^${BUILD_STAMP_SPECIFIER}$`) }, (found) => ({
+				path: found.path,
+				namespace: "wg-build-stamp",
+			}));
+			build.onLoad({ filter: /.*/, namespace: "wg-build-stamp" }, () => ({
+				contents: `export const BUILD_STAMP = ${JSON.stringify(new Date().toISOString())};`,
+				loader: "js",
 			}));
 		},
 	};
