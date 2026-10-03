@@ -1,11 +1,5 @@
-import {
-	createGatewayRefs,
-	createViewCells,
-	narrowByRefs,
-	createPickedGateway,
-	refValue,
-	selectionGateway,
-} from "../packages/core/src/gateway/refs.ts";
+import { createGatewayRefs, createViewCells, narrowByRefs, refValue } from "../packages/core/src/gateway/refs.ts";
+import { createPickedGateway, selectionGateway } from "../packages/packs/core/src/picked.ts";
 import { arrayGateway } from "../packages/core/src/gateway/create.ts";
 import type { Patch } from "../packages/core/src/gateway/contract.ts";
 import { wireTiles } from "../packages/core/src/engine/wiring.js";
@@ -162,16 +156,16 @@ const tick = (): Promise<unknown> => new Promise((resolve) => setTimeout(resolve
 	);
 	const kanban = tileNamed(wired, "board");
 	check("the tile it wants is found by widget id and named by ref", fieldAt(kanban, "props", "selection"), {
-		from: "ref",
-		ref: "boards/selection",
+		implementation: "@core/from-tile-value",
+		fields: { ref: "boards/selection" },
 	});
-	check("a where row is written onto the tile, resolved", fieldAt(kanban, "props", "tasks", "where"), [
+	check("a where row is written onto the tile, resolved", fieldAt(kanban, "props", "tasks", "fields", "where"), [
 		{ prop: "board", op: "is", value: { ref: "boards/selection" }, fixed: true },
 		{ spread: { ref: "filters/chosen" }, fixed: true },
 	]);
 	check("and a dialog points at the kanban's own box", fieldAt(tileNamed(wired, "dialog"), "props", "opened"), {
-		from: "ref",
-		ref: "board/opened",
+		implementation: "@core/from-tile-value",
+		fields: { ref: "board/opened" },
 	});
 
 	const again = wireTiles(wired, registry);
@@ -184,8 +178,8 @@ const tick = (): Promise<unknown> => new Promise((resolve) => setTimeout(resolve
 				id: "board",
 				widget: "@default/kanban-board",
 				props: {
-					selection: { from: "ref", ref: "elsewhere/selection" },
-					tasks: { where: [{ prop: "status", op: "is", value: "Doing" }] },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: "elsewhere/selection" } },
+					tasks: { fields: { where: [{ prop: "status", op: "is", value: "Doing" }] } },
 				},
 			},
 		],
@@ -194,12 +188,12 @@ const tick = (): Promise<unknown> => new Promise((resolve) => setTimeout(resolve
 	const held = tileNamed(byHand, "board");
 	check(
 		"a binding somebody made by hand is never overwritten",
-		fieldAt(held, "props", "selection", "ref"),
+		fieldAt(held, "props", "selection", "fields", "ref"),
 		"elsewhere/selection",
 	);
 	check(
 		"and their own conditions survive beside the wired ones",
-		itemsIn(fieldAt(held, "props", "tasks", "where")).filter((row) => fieldIn(row, "fixed") !== true),
+		itemsIn(fieldAt(held, "props", "tasks", "fields", "where")).filter((row) => fieldIn(row, "fixed") !== true),
 		[{ prop: "status", op: "is", value: "Doing" }],
 	);
 
@@ -213,7 +207,7 @@ const tick = (): Promise<unknown> => new Promise((resolve) => setTimeout(resolve
 	);
 	check(
 		"a widget inside a holder is found under the holder's own ref",
-		fieldAt(tileNamed(mounted, "dialog"), "props", "opened", "ref"),
+		fieldAt(tileNamed(mounted, "dialog"), "props", "opened", "fields", "ref"),
 		"group/Kanban/opened",
 	);
 }

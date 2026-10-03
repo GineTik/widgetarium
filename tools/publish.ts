@@ -224,7 +224,7 @@ function packageOf(specifier: string): string {
 function declaredPropsOf(inject: unknown): DeclaredProps {
 	if (declaredBuilders.isDeclaredProps(inject)) return inject;
 	if (!isPropsToDefine(inject)) throw new Error(NOT_DECLARED_PROPS);
-	return declaredBuilders.defineProps(inject);
+	return declaredBuilders.declareProps(inject);
 }
 
 function declaringCreateWidget(widget: unknown): object {

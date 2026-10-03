@@ -1,21 +1,13 @@
-import {
-	applyQuery,
-	arrayGateway,
-	collectionGateway,
-	refuseVerb,
-	rowOf,
-	soloGateway,
-	toRows,
-	valueGateway,
-	valueIn,
-} from "./create";
-import type { Action, CollectionGateway, Query, Row, RowsResult, ValueGateway } from "./contract";
+import { arrayGateway, refuseVerb, soloGateway } from "./create";
+import type { Action, CollectionGateway, ValueGateway } from "./contract";
+import { storedRows } from "./kept-in-tile";
 import type { EveryValueVerb } from "./needs";
 import type { FieldDescription } from "./manifest";
 import type { DeclaredNeed } from "./resolve-needs";
 import type { FieldType } from "./fields";
 import { stableKey } from "./cache";
 import { FIELD_TYPES } from "./fields";
+import { STAT_ALGORITHMS } from "../engine/stat-fields";
 
 export interface PropDefault {
 	readonly value?: unknown;
@@ -32,11 +24,8 @@ export interface DeclaredProp {
 }
 
 export interface PropConfig {
-	readonly from?: unknown;
-	readonly ref?: unknown;
-	readonly path?: unknown;
-	readonly value?: unknown;
-	readonly rows?: unknown;
+	readonly implementation?: unknown;
+	readonly fields?: unknown;
 	readonly allow?: unknown;
 }
 
@@ -60,7 +49,7 @@ export type NeedOfField = Omit<FieldDescription, "type"> & DeclaredNeed;
 
 export type TypedKey = "rows" | "value";
 
-export type PropBinding = "stat" | "ref" | "box" | "hardcode" | "vault" | "memory";
+export type PropBinding = "stat" | "ref" | "box" | "hardcode" | "vault" | "memory" | "implementation";
 
 export interface BoundProp {
 	readonly kind: "value" | "collection";
@@ -71,42 +60,39 @@ export type VerbDecision =
 	| { readonly verb: string; readonly can: true; readonly reason: null }
 	| { readonly verb: string; readonly can: false; readonly reason: string };
 
-export type StoredRow = Row<unknown>;
-
 export type DeclaredGateway = CollectionGateway<unknown> | ValueGateway<unknown, EveryValueVerb>;
-
-export interface HardcodeOptions {
-	readonly id: string;
-	readonly readValue: () => unknown;
-	readonly mutateValue: (step: (stored: unknown) => unknown) => void;
-	readonly requested?: readonly string[];
-}
 
 type Held<T> = T | null | undefined;
 
-type RowsStep = (rows: readonly StoredRow[]) => readonly StoredRow[];
-
-type RowsWrite = (step: RowsStep) => void;
-
-type BindingRule = readonly [PropBinding, (declared: DeclaredProp, held: PropConfig) => boolean];
-
 type RefusedVerb = Extract<VerbDecision, { readonly can: false }>;
 
-interface RowPatch {
-	readonly ref: string;
-	readonly data?: unknown;
-}
+export const TYPED_VALUE = "@core/typed-value";
 
-const BINDING_BY_CONFIG_SHAPE: readonly BindingRule[] = [
-	["stat", (declared, held) => declared.kind === "value" && held.from === "stat"],
-	["ref", (_declared, held) => held.from === "ref" || typeof held.ref === "string"],
-	["box", (declared) => Boolean(declared.source)],
-	["hardcode", (_declared, held) => held.from === "typed"],
-	["vault", (_declared, held) => held.from === "vault"],
-	["hardcode", (declared, held) => typedIn(declared, held) !== undefined],
-	["vault", (_declared, held) => Boolean(held.path)],
-	["memory", (declared) => declared.default?.from === "memory"],
-];
+export const TYPED_ROWS = "@core/typed-rows";
+
+export const SCREEN_STATE = "@core/screen-state";
+
+export const SELECTED_ROW = "@core/selected-row";
+
+const NOTE_IN_VAULT = "@obsidian/file";
+
+const FOLDER_IN_VAULT = "@obsidian/folder";
+
+const FROM_TILE_VALUE = "@core/from-tile-value";
+
+const FROM_TILE_ROWS = "@core/from-tile-rows";
+
+const FOLDER_STAT_PREFIX = "@stats/";
+
+const BINDING_OF_IMPLEMENTATION: ReadonlyMap<string, PropBinding> = new Map<string, PropBinding>([
+	[TYPED_VALUE, "hardcode"],
+	[TYPED_ROWS, "hardcode"],
+	[SCREEN_STATE, "memory"],
+	[NOTE_IN_VAULT, "vault"],
+	[FOLDER_IN_VAULT, "vault"],
+	[FROM_TILE_VALUE, "ref"],
+	[FROM_TILE_ROWS, "ref"],
+]);
 
 const VERBS_A_VAULT_BINDING_OFFERS_UNASKED: readonly string[] = ["list", "get"];
 const NOT_SWITCHED_ON = "{verb} is not switched on for this tile";
@@ -148,61 +134,58 @@ export function typedKeyOf(spec: Held<DeclaredProp>): TypedKey {
 }
 
 export function typedIn(spec: Held<DeclaredProp>, config: Held<PropConfig>): unknown {
-	return config?.[typedKeyOf(spec)];
+	return fieldsIn(config?.fields)[typedKeyOf(spec)];
 }
 
 export function withTyped(spec: Held<DeclaredProp>, config: Held<PropConfig>, held: unknown): PropConfig {
-	return { ...config, [typedKeyOf(spec)]: held };
+	return withFields(config, typedImplementationOf(spec), { [typedKeyOf(spec)]: held });
 }
 
-export function storedRows(stored: unknown): StoredRow[] {
-	return toRows<unknown>(configRows(stored), "id");
+export function withFields(
+	config: Held<PropConfig>,
+	implementation: string,
+	patch: Readonly<Record<string, unknown>>,
+): PropConfig {
+	return { ...allowOf(config), implementation, fields: withFieldsPatched(config, patch).fields };
 }
 
-export function hardcodeCollection({
-	id,
-	readValue,
-	mutateValue,
-	requested = [],
-}: HardcodeOptions): CollectionGateway<unknown> {
-	const rowsNow = (): StoredRow[] => storedRows(readValue());
-	const write: RowsWrite = (step) => mutateValue((stored) => wrapRows(step(storedRows(stored))));
-	return collectionGateway({
-		id,
-		requested: [...requested],
-		settlesNow: true,
-		handlers: { ...hardcodeReads(rowsNow), ...hardcodeWrites(write) },
-	});
+export function withFieldsPatched(config: Held<PropConfig>, patch: Readonly<Record<string, unknown>>): PropConfig {
+	return { ...config, fields: { ...fieldsIn(config?.fields), ...patch } };
 }
 
-export function hardcodeValue({
-	id,
-	readValue,
-	mutateValue,
-	requested = [],
-}: HardcodeOptions): ValueGateway<unknown, EveryValueVerb> {
-	return valueGateway({
-		id,
-		requested: [...requested],
-		settlesNow: true,
-		handlers: {
-			get: () => readValue() ?? null,
-			update: (next: unknown) => {
-				mutateValue(() => next);
-				return next;
-			},
-		},
-	});
+export function fieldsIn(held: unknown): Readonly<Record<string, unknown>> {
+	return isPlain(held) ? held : {};
+}
+
+export function implementationOf(spec: Held<DeclaredProp>, config: Held<PropConfig>): string {
+	return typeof config?.implementation === "string" ? config.implementation : declaredImplementationOf(spec);
+}
+
+export function vaultImplementationOf(spec: Held<DeclaredProp>): string {
+	return spec?.kind === "value" ? NOTE_IN_VAULT : FOLDER_IN_VAULT;
+}
+
+export function fromTileImplementationOf(spec: Held<DeclaredProp>): string {
+	return spec?.kind === "value" ? FROM_TILE_VALUE : FROM_TILE_ROWS;
+}
+
+export function isVaultImplementation(id: unknown): boolean {
+	return id === NOTE_IN_VAULT || id === FOLDER_IN_VAULT;
+}
+
+export function isFolderStatImplementation(id: unknown): boolean {
+	if (typeof id !== "string" || !id.startsWith(FOLDER_STAT_PREFIX)) return false;
+	return STAT_ALGORITHMS.some((algorithm) => id === `${FOLDER_STAT_PREFIX}${algorithm}`);
 }
 
 export function bindingOf(spec: Held<DeclaredProp>, config: Held<PropConfig>): BoundProp {
-	const declared = spec ?? {};
-	return { kind: declared.kind === "value" ? "value" : "collection", binding: bindingNamed(declared, config ?? {}) };
+	return { kind: spec?.kind === "value" ? "value" : "collection", binding: bindingNamed(spec, config) };
 }
 
-export function allowedVerbs(spec: Held<DeclaredProp>, config: Held<PropConfig>, binding: unknown): VerbDecision[] {
-	const uses = spec?.writes ?? [];
-	const allowed = allowWritten(config, binding === "vault" ? VERBS_A_VAULT_BINDING_OFFERS_UNASKED : uses);
+export function allowedVerbs(spec: Held<DeclaredProp>, config: Held<PropConfig>): VerbDecision[] {
+	const uses = requestedVerbs(spec);
+	const unasked = isVaultImplementation(implementationOf(spec, config)) ? VERBS_A_VAULT_BINDING_OFFERS_UNASKED : uses;
+	const allowed = allowWritten(config, unasked);
 	return uses.map((verb) =>
 		allowed.includes(verb)
 			? { verb, can: true, reason: null }
@@ -226,8 +209,6 @@ export function requestedVerbs(spec: Held<DeclaredProp>): readonly string[] {
 	return spec?.writes ?? [];
 }
 
-const mintRef = (): string => `r${Math.random().toString(36).slice(2, 10)}`;
-
 const labelFromKey = (name: string): string => {
 	const spaced = name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[-_]+/g, " ");
 	return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
@@ -236,87 +217,32 @@ const labelFromKey = (name: string): string => {
 const isPlain = (value: unknown): value is Readonly<Record<string, unknown>> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
 
-const hasRef = (row: unknown): row is StoredRow =>
-	typeof row === "object" && row !== null && "ref" in row && Boolean(row.ref);
-
 function fieldTypeOf(type: unknown): FieldType {
 	return FIELD_TYPES.find((known) => known === type) ?? "text";
 }
 
-function configRows(stored: unknown): readonly unknown[] {
-	return Array.isArray(stored) ? stored : [];
+function bindingNamed(spec: Held<DeclaredProp>, config: Held<PropConfig>): PropBinding {
+	if (typeof config?.implementation !== "string" && sourceImplementationOf(spec)) return "box";
+	const implementation = implementationOf(spec, config);
+	if (isFolderStatImplementation(implementation)) return "stat";
+	return BINDING_OF_IMPLEMENTATION.get(implementation) ?? "implementation";
 }
 
-// TRADE-OFF: an index ref becomes the stored id — minting one on a read is a write nobody asked for
-function wrapRows(rows: readonly StoredRow[]): { id: string; value: unknown }[] {
-	return rows.map((row) => ({ id: row.ref, value: valueIn(row) }));
+function declaredImplementationOf(spec: Held<DeclaredProp>): string {
+	const source = sourceImplementationOf(spec);
+	if (source) return source;
+	if (spec?.default?.from === "memory") return SCREEN_STATE;
+	return declaredOf(spec) === undefined ? vaultImplementationOf(spec) : typedImplementationOf(spec);
 }
 
-function flattenProps(data: unknown): unknown {
-	return isPlain(data) ? flattenPlain(data) : data;
+function sourceImplementationOf(spec: Held<DeclaredProp>): string | null {
+	const source = spec?.source;
+	if (!isPlain(source)) return null;
+	return typeof source["implementation"] === "string" ? source["implementation"] : null;
 }
 
-function flattenPlain(data: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
-	const { props, ...rest } = data;
-	return isPlain(props) ? { ...rest, ...props } : rest;
-}
-
-function patchValue(value: unknown, data: unknown): unknown {
-	if (!isPlain(value) || !isPlain(data)) return flattenProps(data);
-	return { ...value, ...flattenPlain(data) };
-}
-
-function updateStoredRow(write: RowsWrite, { ref, data }: RowPatch): StoredRow | null {
-	let next: StoredRow | null = null;
-	write((rows) =>
-		rows.map((row) => {
-			if (row.ref !== ref) return row;
-			const patched = rowOf<unknown>(patchValue(valueIn(row), data), ref);
-			next = patched;
-			return patched;
-		}),
-	);
-	return next;
-}
-
-const withMintedRef = (row: unknown): StoredRow => (hasRef(row) ? row : rowOf<unknown>(row, mintRef()));
-
-function hardcodeWrites(write: RowsWrite): {
-	create: (draft: unknown) => StoredRow;
-	update: (input: RowPatch) => StoredRow | null;
-	remove: (ref: string) => void;
-	replace: (rows: Held<readonly unknown[]>) => void;
-} {
-	return {
-		create: (draft) => {
-			const row = rowOf<unknown>(flattenProps(draft), mintRef());
-			write((rows) => [...rows, row]);
-			return row;
-		},
-		update: (input) => updateStoredRow(write, input),
-		remove: (ref) => {
-			write((rows) => rows.filter((row) => row.ref !== ref));
-		},
-		replace: (rows) => {
-			write(() => (rows ?? []).map(withMintedRef));
-		},
-	};
-}
-
-function hardcodeReads(rowsNow: () => StoredRow[]): {
-	list: (query: Query | void) => RowsResult<unknown>;
-	get: (ref: string) => StoredRow | null;
-} {
-	return {
-		list: (query) => applyQuery(rowsNow(), query),
-		get: (ref) => rowsNow().find((row) => row.ref === ref) ?? null,
-	};
-}
-
-function bindingNamed(declared: DeclaredProp, held: PropConfig): PropBinding {
-	const matched = BINDING_BY_CONFIG_SHAPE.find(([, isMatch]) => isMatch(declared, held));
-	if (matched) return matched[0];
-	return declared.default?.value !== undefined || declared.default?.rows !== undefined ? "hardcode" : "vault";
+function allowOf(config: Held<PropConfig>): Pick<PropConfig, "allow"> {
+	return config?.allow === undefined ? {} : { allow: config.allow };
 }
 
 function allowWritten(config: Held<PropConfig>, unasked: readonly string[]): readonly unknown[] {
@@ -328,9 +254,13 @@ function allowWritten(config: Held<PropConfig>, unasked: readonly string[]): rea
 
 function createDeclaredGateway(key: string, spec: DeclaredProp, config: Held<PropConfig>): DeclaredGateway {
 	if (spec.kind === "collection") {
-		const rows = storedRows(config?.rows ?? spec.default?.rows);
+		const rows = storedRows(typedIn(spec, config) ?? spec.default?.rows);
 		return arrayGateway(rows, {}, `slot:${key}?${stableKey(rows)}`);
 	}
-	const value = config?.value ?? spec.default?.value ?? null;
+	const value = typedIn(spec, config) ?? spec.default?.value ?? null;
 	return soloGateway<unknown>(value, {}, `slot:${key}?${stableKey(value)}`);
+}
+
+function typedImplementationOf(spec: Held<DeclaredProp>): string {
+	return spec?.kind === "collection" ? TYPED_ROWS : TYPED_VALUE;
 }

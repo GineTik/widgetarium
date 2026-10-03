@@ -75,6 +75,7 @@ export type { RowsFields, ValueFields } from "../../core/src/gateway/defaults";
 export {
 	IBaseGateway,
 	ICatalogue,
+	ICarrier,
 	IConfigureMounts,
 	IContent,
 	ICrudGateway,
@@ -84,6 +85,7 @@ export {
 	IListGateway,
 	IMounts,
 	INavigator,
+	IPreview,
 	IReader,
 	RecordRefSchema,
 	ISlot,
@@ -92,7 +94,6 @@ export {
 	defineLayout,
 	defineMetadata,
 	defineMigrations,
-	defineProps,
 	z,
 } from "../../core/src/gateway/declared";
 
@@ -110,7 +111,7 @@ export { fieldOf, textOf } from "../../core/src/gateway/match";
 export { narrow, normalizeWhere } from "../../core/src/gateway/narrow";
 export { useNarrowed } from "../../core/src/gateway/use-narrowed";
 export { useValue } from "../../core/src/gateway/use-value";
-export { pickedValue } from "../../core/src/gateway/picked";
+export { pickedValue } from "../../core/src/gateway/picked-value";
 
 export type {
 	ConfigureMounts,
@@ -129,6 +130,11 @@ export type {
 	Slot,
 	ViewHost,
 	WidgetCatalogue,
+	WidgetPreview,
+	Carrier,
+	CarriedWidget,
+	PlaceAt,
+	CarryPointer,
 } from "../../core/src/gateway/host";
 
 export type { CreatedWidget, WidgetToCreate } from "../../core/src/widget-api";

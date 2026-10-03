@@ -1,6 +1,10 @@
+import type { FilterRow, SortRow } from "../gateway/contract.js";
 import type { CommandMetadata, GatewayMetadata } from "../gateway/implementation-metadata.js";
-import type { VaultSlot } from "../gateway/obsidian.js";
-import type { RefDescription } from "../gateway/refs.js";
+import type { FileHost, FolderHost, VaultSlot } from "../gateway/obsidian.js";
+import type { NeedOfField } from "../gateway/props.js";
+import type { RefDescription, ViewCell } from "../gateway/refs.js";
+import { NO_CATALOGUE_PORT } from "./catalogue-port.js";
+import type { CataloguePort } from "./catalogue-port.js";
 
 export interface CommandLineOutcome {
 	readonly ok: boolean;
@@ -57,7 +61,43 @@ export interface ImplementationPorts {
 	readonly network: NetworkPort;
 	readonly vault: VaultPort;
 	readonly refs: RefsPort;
+	readonly catalogue: CataloguePort;
 	confirm(said: string): Promise<boolean>;
+}
+
+export interface PropPort {
+	readonly kind: "value" | "collection" | null;
+	readonly type: string | undefined;
+	readonly writes: readonly string[];
+	readonly declared: unknown;
+	readonly where: readonly FilterRow[];
+	readonly sort: readonly SortRow[];
+	readonly needs: Readonly<Record<string, NeedOfField>>;
+	readonly isDeclaredSource: boolean;
+}
+
+export interface KeptPort {
+	read(): unknown;
+	update(step: (stored: unknown) => unknown): void;
+}
+
+export interface ScreenPort {
+	cell(key: string): ViewCell;
+}
+
+export interface ShapeReader {
+	readShape?(path: string): unknown;
+}
+
+export interface NotesPort extends FolderHost, FileHost {
+	readonly shapes?: ShapeReader | null | undefined;
+}
+
+export interface QueryPorts extends ImplementationPorts {
+	readonly prop: PropPort;
+	readonly kept: KeptPort;
+	readonly screen: ScreenPort;
+	readonly notes: NotesPort;
 }
 
 export interface Pack {
@@ -72,6 +112,7 @@ export interface PortsHost {
 	readonly workingDirectory?: string | undefined;
 	readonly network?: NetworkPort | undefined;
 	readonly vault?: VaultPort | undefined;
+	readonly catalogue?: CataloguePort | undefined;
 	readonly confirm?: ((said: string) => Promise<boolean>) | undefined;
 }
 
@@ -102,12 +143,16 @@ const SHUT_VAULT: VaultPort = {
 	},
 };
 
+const NAMED_TWICE = "{id} names two implementations of one pack";
+
 const REGISTERED = new Map<string, Pack>();
 
 export function definePack(pack: Pack): Pack {
 	const ids = [...pack.queries, ...pack.commands].map((entry) => entry.id);
 	const outside = ids.find((id) => !id.startsWith(`${pack.id}/`));
 	if (outside) throw new Error(OUTSIDE_THE_PACK.replace("{id}", outside).split("{pack}").join(pack.id));
+	const twice = ids.find((id, at) => ids.indexOf(id) !== at);
+	if (twice) throw new Error(NAMED_TWICE.replace("{id}", twice));
 	return pack;
 }
 
@@ -131,6 +176,7 @@ export function portsOf(host: PortsHost, refs: RefsPort, self: string): Implemen
 		network: host.network ?? SHUT_NETWORK,
 		vault: host.vault ?? SHUT_VAULT,
 		refs,
+		catalogue: host.catalogue ?? NO_CATALOGUE_PORT,
 		confirm: host.confirm ?? (async () => false),
 	};
 }

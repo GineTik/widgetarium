@@ -22,7 +22,7 @@ An Obsidian plugin. A note can hold a **board**: a fenced ` ```widgetarium ` blo
 widget **tiles** and the **layout tree** they stand in. Saving the note redraws it. A **widget** is a
 folder under `.widgetarium/widgets/@scope/name/` holding `widget.tsx`. Every value a widget reads is
 a **gateway** the person binds — to a vault folder, one note, a value typed into the tile
-(`from: typed`), or another tile's prop (`from: ref`).
+(`@core/typed-value`), or another tile's prop (`@core/from-tile-value`).
 
 ```yaml
 v: 2
@@ -30,8 +30,8 @@ tiles:
   - id: w0
     widget: "@default/metric-total"
     props:
-      records: { from: vault, path: Metrics, allow: [list, create, update] }
-      title: { from: typed, value: Revenue }
+      getRecords: { implementation: "@obsidian/folder", fields: { path: Metrics }, allow: [list, create, update] }
+      getTitle: { implementation: "@core/typed-value", fields: { value: Revenue } }
 layout:
   dir: row
   of:
@@ -64,7 +64,7 @@ Also `install <id>`, `check <id>`, `base <name>`, `card <name>`, `layout <note>`
 ## What usually goes wrong
 
 - **The tile is in `tiles` but not in `layout`**, so nothing draws. Check both.
-- **A prop is still on its default.** A board of `from: typed` tiles is a mock-up.
+- **A prop is still on its default.** A board of typed tiles is a mock-up.
 - **A verb does nothing** because the binding's `allow` does not list it.
 - **A widget edit never reached the vault.** A scope that is a real directory is a frozen copy.
 - **The YAML does not parse**, and the whole note stops rendering.

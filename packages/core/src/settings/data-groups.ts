@@ -2,9 +2,9 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Row, RowLabel, RowValue, Switch } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
-import { allowedVerbs, bindingOf } from "../gateway/props.js";
+import { allowedVerbs, bindingOf, fieldsIn } from "../gateway/props.js";
 import type { PropBinding } from "../gateway/props.js";
-import { sortRowsIn } from "../engine/host-gateways.js";
+import { sortRowsIn } from "../engine/held-reading.js";
 import { textIn } from "../engine/held-text.js";
 import { propConfigOf, writeProp } from "./prop-writing.js";
 import { group, reportRow, titleCase } from "./settings-rows.js";
@@ -57,7 +57,7 @@ function propDataGroups(state: SettingsState, prop: DataProp): ReactElement[] {
 }
 
 function sortGroup({ key, spec, config, label }: DataProp): ReactElement | null {
-	const sort = [...(spec.sort ?? []), ...sortRowsIn(config.sort)];
+	const sort = [...(spec.sort ?? []), ...sortRowsIn(fieldsIn(config.fields)["sort"])];
 	if (sort.length === 0) return null;
 	return group(
 		`sort:${key}`,
@@ -77,7 +77,7 @@ function verbsGroup(state: SettingsState, prop: DataProp): ReactElement {
 	const isHardcoded = binding === "hardcode";
 	const path = boundPath(config) || textIn(spec.default?.path);
 	const isOn = isHardcoded || Boolean(path);
-	const decisions = allowedVerbs(spec, config, binding);
+	const decisions = allowedVerbs(spec, config);
 	const verbsSwitchedOn = decisions.filter((decision) => decision.can).map((decision) => decision.verb);
 	const flipVerb =
 		(verb: string) =>

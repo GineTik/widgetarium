@@ -3,7 +3,7 @@ import type { DeclaredProps } from "../packages/core/src/gateway/declared-types.
 import type { Described } from "../packages/core/src/gateway/written.js";
 
 const { seenOf, isShown, shownEntries } = await import("../packages/core/src/prop-visibility.js");
-const { IListGateway, IMounts, ISlot, defineProps, manifestOfModule, z } =
+const { IListGateway, IMounts, ISlot, declareProps, manifestOfModule, z } =
 	await import("../packages/core/src/gateway/declared.ts");
 
 let failed = 0;
@@ -32,8 +32,12 @@ function seenPropOf(seen: Seen, key: string): Seen[string] {
 }
 
 const placed = seenOf(manifest, { props: {} });
-const perRow = seenOf(manifest, { props: { fills: { from: "typed", value: "per-row" } } });
-const bound = seenOf(manifest, { props: { items: { from: "vault", path: "Sessions" } } });
+const perRow = seenOf(manifest, {
+	props: { fills: { implementation: "@core/typed-value", fields: { value: "per-row" } } },
+});
+const bound = seenOf(manifest, {
+	props: { items: { implementation: "@obsidian/folder", fields: { path: "Sessions" } } },
+});
 
 check("an unset value is seen as its default", seenPropOf(placed, "fills").value, "placed");
 check("a typed value is seen as what was typed", seenPropOf(perRow, "fills").value, "per-row");
@@ -84,7 +88,7 @@ check(
 function refusalOf(held: DeclaredProps, described: Described): string | null {
 	try {
 		manifestOfModule({
-			default: { declared: defineProps({ rows: IListGateway.of(z.unknown()), ...held }) },
+			default: { declared: declareProps({ rows: IListGateway.of(z.unknown()), ...held }) },
 			metadata: { title: "Tried", description: "A manifest the engine should refuse.", props: described },
 			layout: { role: "collection", size: { preferredWidth: "full", preferredHeight: "auto" } },
 		});

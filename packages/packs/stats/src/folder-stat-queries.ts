@@ -1,18 +1,31 @@
-import type { TileProp } from "@widgetarium/core/model.js";
-import { statGateway } from "@widgetarium/core/gateway/stats.js";
-import type { StatAlgorithm, StatQuery } from "@widgetarium/core/gateway/stats.js";
-import { textIn } from "@widgetarium/core/engine/held-text.js";
-import { folderRows } from "@widgetarium/core/engine/folder-rows.js";
-import { EngineBackedValue } from "@widgetarium/core/engine/engine-backed.js";
-import type { HostFields, HostGateway, ImplementationContext } from "@widgetarium/core/engine/engine-backed.js";
+import { z } from "zod";
+import type { ValueGateway } from "@widgetarium/core/gateway/contract.js";
+import type { EveryValueVerb } from "@widgetarium/core/gateway/needs.js";
+import { IQuery } from "@widgetarium/core/gateway/queries.js";
+import type { StatAlgorithm, StatQuery } from "@widgetarium/core/engine/stat-fields.js";
+import type { HostFields } from "@widgetarium/core/engine/host-context.js";
+import type { QueryPorts } from "@widgetarium/core/engine/packs.js";
+import { READS_AS_IS, folderRows } from "@widgetarium/pack-obsidian";
+import { statGateway } from "./stat-of.js";
 
-export class FolderStatQuery extends EngineBackedValue {
+export class FolderStatQuery extends IQuery.returns(z.number().nullable()) {
 	static algorithm: string = "count";
 
-	static override build(fields: HostFields, context: ImplementationContext): HostGateway {
-		const { host, refs } = context;
-		const rows = folderRows({ spec: {}, host, config: fields, refs, path: textIn(fields.path), requested: ["list"] });
-		return statGateway(rows, statQueryOf(fields, this.algorithm));
+	private readonly counted: ValueGateway<number | null, EveryValueVerb>;
+
+	constructor(fields: HostFields, ports: QueryPorts) {
+		super();
+		const { notes, refs } = ports;
+		const rows = folderRows({ notes, refs, fields, declared: READS_AS_IS, requested: ["list"] });
+		this.counted = statGateway(rows, statQueryOf(fields, new.target.algorithm));
+	}
+
+	get(): Promise<number | null> {
+		return this.counted.get();
+	}
+
+	override subscribe(changed: () => void): () => void {
+		return this.counted.subscribe(() => changed());
 	}
 }
 
@@ -30,8 +43,8 @@ function statQueryOf(fields: HostFields, algorithm: string): StatQuery {
 }
 
 function isStatQuery(
-	held: TileProp & { readonly algorithm: string },
-): held is TileProp & { readonly algorithm: string } & StatQuery {
+	held: HostFields & { readonly algorithm: string },
+): held is HostFields & { readonly algorithm: string } & StatQuery {
 	const texts = [held.field, held.date, held.window, held.compare];
 	const isText = (text: unknown): boolean => text === undefined || typeof text === "string";
 	return texts.every(isText) && (held.counts === undefined || Array.isArray(held.counts));

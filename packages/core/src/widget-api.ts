@@ -18,7 +18,7 @@ import { rootWidget, WidgetRoot } from "./widget-root.js";
 import { useData } from "./gateway/use-data";
 import { useNarrowed } from "./gateway/use-narrowed";
 import { useValue } from "./gateway/use-value";
-import { defineProps, isDeclaredProps } from "./gateway/declared";
+import { declareProps, isDeclaredProps } from "./gateway/declared";
 import type { DeclaredProps, DrawnProps as DrawnPropsOf, GivenProps as GivenPropsOf } from "./gateway/declared";
 import type { Release } from "./gateway/host.js";
 import { createDeclaredWidget } from "./declared-widget.js";
@@ -81,7 +81,7 @@ export const reactSurface = {
 export const kit = kitModule;
 export const emojis = emojiModule;
 
-// TRADE-OFF: an object is only claimed to hold props; defineProps refuses every entry that is not one
+// TRADE-OFF: an object is only claimed to hold props; declareProps refuses every entry that is not one
 export function isPropsToDefine(held: unknown): held is DeclaredProps {
 	return isObject(held);
 }
@@ -89,7 +89,7 @@ export function isPropsToDefine(held: unknown): held is DeclaredProps {
 function injectedProps(inject: unknown): DeclaredProps {
 	if (isDeclaredProps(inject)) return inject;
 	if (!isPropsToDefine(inject)) throw new Error(NOT_A_WIDGET);
-	return defineProps(inject);
+	return declareProps(inject);
 }
 
 function isWidgetDeclaration(held: unknown): held is WidgetDeclaration {

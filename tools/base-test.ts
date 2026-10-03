@@ -118,7 +118,7 @@ for (const name of LAYOUT_NAMES) {
 		leaves.every((leaf) => skeleton.tiles.some((tile) => tile.id === leaf.id)),
 		true,
 	);
-	const titles = skeleton.tiles.filter((tile) => fieldAt(tile.props, "heading", "value") === 1);
+	const titles = skeleton.tiles.filter((tile) => fieldAt(tile.props, "heading", "fields", "value") === 1);
 	check(`${name} carries one page title and no second one`, titles.length, 1);
 	const titleColumn = nodes.find(
 		(node) => isBox(node) && node.of.some((child) => isLeaf(child) && child.id === titles[0]?.id),
@@ -127,7 +127,7 @@ for (const name of LAYOUT_NAMES) {
 		`${name} says under the title, in one line, what the page is`,
 		titleColumn &&
 			childrenOf(titleColumn).map((child) =>
-				fieldAt(tileOf(skeleton, String(said(child, "id")))?.props, "tone", "value"),
+				fieldAt(tileOf(skeleton, String(said(child, "id")))?.props, "tone", "fields", "value"),
 			),
 		["value", "caption"],
 	);
@@ -138,7 +138,9 @@ for (const name of LAYOUT_NAMES) {
 	);
 	check(
 		`${name} types every line into the tile, so nothing reads the vault before a person binds it`,
-		skeleton.tiles.every((tile) => Object.values(tile.props ?? {}).every((prop) => fieldIn(prop, "from") === "typed")),
+		skeleton.tiles.every((tile) =>
+			Object.values(tile.props ?? {}).every((prop) => fieldIn(prop, "implementation") === "@core/typed-value"),
+		),
 		true,
 	);
 
@@ -146,7 +148,9 @@ for (const name of LAYOUT_NAMES) {
 	check(`${name} ships sections, each with a heading`, sections.length >= 3, true);
 	check(
 		`${name} gives every section its own heading tile`,
-		sections.every((section) => skeleton.tiles.some((tile) => fieldAt(tile.props, "text", "value") === section.name)),
+		sections.every((section) =>
+			skeleton.tiles.some((tile) => fieldAt(tile.props, "text", "fields", "value") === section.name),
+		),
 		true,
 	);
 

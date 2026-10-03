@@ -1,10 +1,11 @@
-import type { CanResult, CollectionGateway, RecordRef, Row, ValueGateway } from "./contract";
-import type { EveryValueVerb } from "./needs";
-import { canDo, valueGateway } from "./create";
-import { fieldOf } from "./match";
-import { isEmpty } from "./narrow";
-import { combineSubscribes } from "./combined";
-import type { Subscribe } from "./combined";
+import type { CanResult, CollectionGateway, RecordRef, Row, ValueGateway } from "@widgetarium/core/gateway/contract.js";
+import type { EveryValueVerb } from "@widgetarium/core/gateway/needs.js";
+import { canDo, valueGateway } from "@widgetarium/core/gateway/create.js";
+import { fieldOf } from "@widgetarium/core/gateway/match.js";
+import { isEmpty } from "@widgetarium/core/gateway/narrow.js";
+import { combineSubscribes } from "@widgetarium/core/gateway/combined.js";
+import type { Subscribe } from "@widgetarium/core/gateway/combined.js";
+import { pickedValue } from "@widgetarium/core/gateway/picked-value.js";
 
 export interface SelectionSpec<T> {
 	id: string;
@@ -73,11 +74,6 @@ export function createPickedGateway<T>(spec: PickSpec<T>): ValueGateway<unknown,
 			spec.watches ?? null,
 		]),
 	});
-}
-
-export function pickedValue(chosen: unknown): string {
-	const held = Array.isArray(chosen) ? chosen[0] : chosen;
-	return held === undefined || held === null ? "" : String(held);
 }
 
 function identityOf(row: Row<unknown>, named: string): unknown {

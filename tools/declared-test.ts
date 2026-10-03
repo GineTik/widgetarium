@@ -8,7 +8,7 @@ import {
 	IValueGateway,
 	defineLayout,
 	defineMetadata,
-	defineProps,
+	declareProps,
 	z,
 } from "../packages/core/src/gateway/declared.ts";
 import { byId } from "./dom-find.ts";
@@ -43,13 +43,13 @@ const { createWidget } = await import("../packages/core/src/widget-api.js");
 type ModuleParts = Parameters<typeof manifestOfModule>[0];
 
 const manifestOf = (
-	props: Parameters<typeof defineProps>[0],
+	props: Parameters<typeof declareProps>[0],
 	metadata: ModuleParts["metadata"],
 	layout: ModuleParts["layout"],
 ): NonNullable<ReturnType<typeof manifestOfModule>> =>
 	present(
 		manifestOfModule({
-			default: { declared: defineProps(props) },
+			default: { declared: declareProps(props) },
 			...(metadata ? { metadata } : {}),
 			...(layout ? { layout } : {}),
 		}),
@@ -103,7 +103,7 @@ class TasksInMemoryGateway extends ICrudGateway.of(TaskSchema).pick("list", "get
 	}
 }
 
-const props = defineProps({
+const props = declareProps({
 	heading: IValueGateway.of(z.string().default("To do")).pick("get"),
 	count: IValueGateway.of(z.number().default(0)).pick("get"),
 	query: IValueGateway.of(z.string().default("")).pick("get", "update"),
@@ -224,7 +224,7 @@ function caught<P extends DeclaredProps>(
 	return { widget, read: () => present(held.drawn, "the drawn props") };
 }
 
-const batched = caught(defineProps({ tasks: ICrudGateway.of(TaskSchema).pick("create") }));
+const batched = caught(declareProps({ tasks: ICrudGateway.of(TaskSchema).pick("create") }));
 const batchedStore = new BatchedTasks([]);
 render(h(batched.widget, { tasks: batchedStore }), host);
 await batched.read().tasks.createMany([{ title: "One" }, { title: "Two" }]);
@@ -256,8 +256,8 @@ check(
 	true,
 );
 check(
-	"defineProps refuses a class that does not extend IBaseGateway",
-	refusal(() => callAsUntypedSource(defineProps, { tasks: class Tasks {} })),
+	"declareProps refuses a class that does not extend IBaseGateway",
+	refusal(() => callAsUntypedSource(declareProps, { tasks: class Tasks {} })),
 	'prop "tasks" is a class that does not extend IBaseGateway, so it declares no gateway',
 );
 
@@ -283,7 +283,7 @@ check(
 	"of() names no schema for reading — give read, or other for every verb not named",
 );
 
-const shapedCaught = caught(defineProps({ tasks: shaped }));
+const shapedCaught = caught(declareProps({ tasks: shaped }));
 const shapedStore = Object.assign(new TasksInMemoryGateway([rowOf<Task>({ title: "Write" }, "a")]), {
 	create: (data: Partial<Task>) => rowOf<Task>(data, "made"),
 });
@@ -311,7 +311,7 @@ check("and a partial one passes", (await shapedTasks.update({ ref: refOf("a"), d
 
 check(
 	"an implementation declared as a prop is refused: a widget declares the interface",
-	refusal(() => callAsUntypedSource(defineProps, { tasks: TasksInMemoryGateway }))?.startsWith(
+	refusal(() => callAsUntypedSource(declareProps, { tasks: TasksInMemoryGateway }))?.startsWith(
 		'prop "tasks" is TasksInMemoryGateway, an implementation',
 	),
 	true,
@@ -336,7 +336,7 @@ const rowsHeld = arrayGateway(
 	},
 	"declared-test/many",
 );
-const manyCaught = caught(defineProps({ tasks: ICrudGateway.of(TaskSchema) }));
+const manyCaught = caught(declareProps({ tasks: ICrudGateway.of(TaskSchema) }));
 render(h(manyCaught.widget, { tasks: rowsHeld }), host);
 const many = manyCaught.read().tasks;
 const createdMany = await many.createMany([{ title: "One" }, { title: "Two" }]);
@@ -394,7 +394,7 @@ check(
 );
 
 const pickedCaught = caught(
-	defineProps({
+	declareProps({
 		readAndWritten: IValueGateway.of(z.string().default("kept")).pick("get", "update"),
 		readOnly: IValueGateway.of(z.string().default("kept")).pick("get"),
 		writtenOnly: IValueGateway.of(z.string().default("kept")).pick("update"),
@@ -462,11 +462,11 @@ check(
 );
 
 check(
-	"defineProps refuses an entry that is not a declared gateway where it is written",
-	refusal(() => callAsUntypedSource(defineProps, { heading: props.heading, placeholder: "Search" })),
+	"declareProps refuses an entry that is not a declared gateway where it is written",
+	refusal(() => callAsUntypedSource(declareProps, { heading: props.heading, placeholder: "Search" })),
 	'prop "placeholder" is not a gateway declared with IQuery.expects, ICommand.sends, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)',
 );
-check("and hands back the very props it was given", defineProps(props) === props, true);
+check("and hands back the very props it was given", declareProps(props) === props, true);
 check(
 	"defineMetadata refuses a description of a prop the widget does not declare",
 	refusal(() =>
@@ -645,9 +645,9 @@ check(
 check(
 	"a widget declaring an implementation's word is refused with the word that fits",
 	[
-		refusalOf(() => callAsUntypedSource(defineProps, { getTasks: IQuery.returns(z.array(TaskSchema)) })),
-		refusalOf(() => callAsUntypedSource(defineProps, { getTasks: IQuery.returnsAny(z.array(z.object({}))) })),
-		refusalOf(() => callAsUntypedSource(defineProps, { move: ICommand.takes(z.object({ ref: z.string() })) })),
+		refusalOf(() => callAsUntypedSource(declareProps, { getTasks: IQuery.returns(z.array(TaskSchema)) })),
+		refusalOf(() => callAsUntypedSource(declareProps, { getTasks: IQuery.returnsAny(z.array(z.object({}))) })),
+		refusalOf(() => callAsUntypedSource(declareProps, { move: ICommand.takes(z.object({ ref: z.string() })) })),
 	],
 	[
 		'prop "getTasks" is declared with IQuery.returns, the word an implementation extends: a widget writes IQuery.expects',
@@ -662,13 +662,28 @@ check(
 	[
 		refusalOf(() => callAsUntypedSource(defineGatewayMetadata, AskingQuery, { id: "@test/asks", title: "Asks" })),
 		refusalOf(() =>
-			callAsUntypedSource(defineGatewayMetadata, AnsweringQuery, { id: "@test/answers", title: "Answers" }),
+			callAsUntypedSource(defineGatewayMetadata, AnsweringQuery, {
+				id: "@test/answers",
+				title: "Answers",
+				resource: "This board",
+			}),
 		),
 	],
 	[
 		"AskingQuery extends IQuery.expects, the word a widget declares: an implementation extends IQuery.returns or IQuery.returnsAny",
 		"not refused",
 	],
+);
+check(
+	"an implementation naming no resource it can be listed under is refused",
+	refusalOf(() =>
+		callAsUntypedSource(defineGatewayMetadata, AnsweringQuery, {
+			id: "@test/answers",
+			title: "Answers",
+			resource: "Disk",
+		}),
+	),
+	'@test/answers names the resource "Disk"; name one of This board, Another widget, Note, Folder, Search, Statistics, Web, Git, Catalogue, Console',
 );
 check(
 	"returnsAny marks a bound, returns does not",

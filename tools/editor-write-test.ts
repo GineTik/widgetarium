@@ -18,7 +18,13 @@ const BLOCK_BODY = 'v: 2\ntiles:\n  - id: a\n    widget: "@default/search-input"
 const NOTE = `# Orbitask\n\n${FENCE_OPEN}${BLOCK_BODY}\n\`\`\`\n\nAfter.\n`;
 const FENCE_LINE = 2;
 const board = normalizeBoard({
-	tiles: [{ id: "a", widget: "@default/search-input", props: { value: { value: "Hi" } } }],
+	tiles: [
+		{
+			id: "a",
+			widget: "@default/search-input",
+			props: { value: { implementation: "@core/typed-value", fields: { value: "Hi" } } },
+		},
+	],
 });
 
 interface LiveWidget {

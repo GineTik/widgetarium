@@ -8,7 +8,8 @@ import type { ConditionKind, ValueShape } from "../gateway/operators.js";
 import type { FilterRow } from "../gateway/contract.js";
 import type { FieldReport } from "../gateway/fields.js";
 import type { TileProp } from "../model.js";
-import { filterRowsIn } from "../engine/host-gateways.js";
+import { filterRowsIn } from "../engine/held-reading.js";
+import { fieldsIn, withFieldsPatched } from "../gateway/props.js";
 import { isObject } from "../engine/is-object.js";
 import { completionRows, draftOf, offeredValues, refLabel } from "./offered-boxes.js";
 import type { OfferedEntry } from "./offered-boxes.js";
@@ -55,7 +56,7 @@ export interface OpenStep {
 type Fields = readonly ConditionField[];
 
 export function conditionRowsIn(config: TileProp, list: ConditionList): FilterRow[] {
-	return filterRowsIn(config[list]);
+	return filterRowsIn(fieldsIn(config.fields)[list]);
 }
 
 export function conditionSentence(state: SettingsState, fields: Fields, row: FilterRow): string {
@@ -114,7 +115,11 @@ function fieldNamed(fields: Fields, prop: string | undefined): ConditionField {
 
 function writeWhere(state: SettingsState, at: ConditionAt, rows: readonly FilterRow[]): void {
 	const fixed = conditionRowsIn(at.config, at.list).filter((row) => row.fixed === true);
-	state.onPatch({ props: { ...(state.tile.props ?? {}), [at.key]: { ...at.config, [at.list]: [...fixed, ...rows] } } });
+	state.onPatch({ props: { ...(state.tile.props ?? {}), [at.key]: withListIn(at, [...fixed, ...rows]) } });
+}
+
+function withListIn(at: ConditionAt, rows: readonly FilterRow[]): TileProp {
+	return withFieldsPatched(at.config, { [at.list]: rows });
 }
 
 function withRowAt(rows: readonly FilterRow[], index: RowIndex, row: FilterRow): FilterRow[] {

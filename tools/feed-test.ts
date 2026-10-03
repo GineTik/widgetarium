@@ -115,7 +115,7 @@ const unfed = slotDefaults(
 			lines: { kind: "collection", default: { rows: ["a"] } },
 		},
 	},
-	{ props: { collapsible: { value: true } } },
+	{ props: { collapsible: { fields: { value: true } } } },
 );
 check("every declared prop is a gateway", Object.keys(unfed), ["source", "collapsible", "lines"]);
 check(

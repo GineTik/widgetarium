@@ -2,6 +2,7 @@ import { action, arrayGateway, canDo, collectionGateway, soloGateway, valueGatew
 import {
 	IBaseGateway,
 	ICatalogue,
+	ICarrier,
 	IConfigureMounts,
 	IContent,
 	ICrudGateway,
@@ -11,6 +12,7 @@ import {
 	IListGateway,
 	IMounts,
 	INavigator,
+	IPreview,
 	IReader,
 	RecordRefSchema,
 	ISlot,
@@ -19,7 +21,6 @@ import {
 	defineLayout,
 	defineMetadata,
 	defineMigrations,
-	defineProps,
 	z,
 } from "./gateway/declared";
 import { defineGatewayMetadata } from "./gateway/implementation-metadata";
@@ -31,7 +32,7 @@ import { pickedValue } from "./gateway/refs.js";
 import { applyTabStep, archivedOf, movesRows, movesSelection, tabsOf } from "./tab-rows.js";
 
 export { gatewayCache, stableKey } from "./gateway/cache";
-export { collectionGateway, rowOf, soloGateway, toRows, valueGateway } from "./gateway/create";
+export { canOf, collectionGateway, rowOf, soloGateway, toRows, valueGateway } from "./gateway/create";
 export { narrow } from "./gateway/narrow";
 export { EMOJI_TABLE, EMOJI_VIEW_BOX } from "@widgetarium/kit/emoji-table";
 export { extendTailwindMerge } from "tailwind-merge";
@@ -40,6 +41,7 @@ export { ICON_TABLE, ICON_VIEW_BOX, ICON_WORDS } from "@widgetarium/kit/icons";
 export const coreSurface = {
 	IBaseGateway,
 	ICatalogue,
+	ICarrier,
 	ICommand,
 	IQuery,
 	IConfigureMounts,
@@ -51,6 +53,7 @@ export const coreSurface = {
 	IListGateway,
 	IMounts,
 	INavigator,
+	IPreview,
 	IReader,
 	RecordRefSchema,
 	ISlot,
@@ -64,7 +67,6 @@ export const coreSurface = {
 	ValueInMemoryGateway,
 	defineMetadata,
 	defineMigrations,
-	defineProps,
 	action,
 	arrayGateway,
 	collectionGateway,

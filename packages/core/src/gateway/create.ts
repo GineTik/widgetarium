@@ -67,13 +67,13 @@ export function canDo(verb?: { can(): CanResult } | null): boolean {
 	return verb?.can().can === true;
 }
 
-export function canOf(holder: unknown): CanResult {
+export function canOf(holder: unknown, verb?: string): CanResult {
 	const asked: unknown =
 		(typeof holder === "object" && holder !== null) || typeof holder === "function"
 			? Reflect.get(holder, "can")
 			: undefined;
 	if (typeof asked !== "function") return { can: true };
-	const parsed = CanResultSchema.safeParse(Reflect.apply(asked, holder, []));
+	const parsed = CanResultSchema.safeParse(Reflect.apply(asked, holder, verb === undefined ? [] : [verb]));
 	return parsed.success ? parsed.data : { can: false, reason: NOT_A_DECISION };
 }
 

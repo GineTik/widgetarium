@@ -11,8 +11,7 @@ import type { Subscribe } from "./combined";
 
 export type AnyGateway = GatewayBase;
 export type { Subscribe } from "./combined";
-export { createPickedGateway, pickedValue, selectionGateway } from "./picked";
-export type { PickSpec, SelectionSpec } from "./picked";
+export { pickedValue } from "./picked-value";
 
 export interface RefDescription {
 	ref?: PropRef;
@@ -22,7 +21,6 @@ export interface RefDescription {
 	title: string;
 	kind: string;
 	shape?: string;
-	isTyped?: boolean;
 	isVault?: boolean;
 }
 
@@ -83,6 +81,12 @@ export function createGatewayRefs(): GatewayRefs {
 	};
 }
 
+export interface RefsReader {
+	read(ref: PropRef): Promise<unknown>;
+	watch(refs: PropRef[], listener: () => void): Unsubscribe;
+	get(ref: PropRef): unknown;
+}
+
 export function refsWithin(rows: FilterRow[] | null | undefined): PropRef[] {
 	return (rows ?? []).map(refIn).filter(Boolean) as PropRef[];
 }
@@ -90,7 +94,7 @@ export function refsWithin(rows: FilterRow[] | null | undefined): PropRef[] {
 const NOT_A_NARROWING =
 	'Widgetarium: "{ref}" answered with something no condition can be made of, so it narrows nothing.';
 
-export async function resolveWhere(rows: FilterRow[], refs: GatewayRefs): Promise<FilterRow[]> {
+export async function resolveWhere(rows: FilterRow[], refs: RefsReader): Promise<FilterRow[]> {
 	const out: FilterRow[] = [];
 	for (const row of rows) out.push(...(await resolveRow(row, refs)));
 	return out;
@@ -99,7 +103,7 @@ export async function resolveWhere(rows: FilterRow[], refs: GatewayRefs): Promis
 export function narrowByRefs<T>(
 	base: CollectionGateway<T>,
 	rows: FilterRow[] | null | undefined,
-	refs: GatewayRefs,
+	refs: RefsReader,
 ): CollectionGateway<T> {
 	const held = rows ?? [];
 	const named = refsWithin(held);
@@ -114,7 +118,7 @@ export function narrowByRefs<T>(
 	);
 }
 
-export function refValue(refs: GatewayRefs, ref: PropRef, id?: string): ValueGateway<unknown, EveryValueVerb> {
+export function refValue(refs: RefsReader, ref: PropRef, id?: string): ValueGateway<unknown, EveryValueVerb> {
 	return valueGateway<unknown>({
 		id: id ?? `ref:${ref}`,
 		handlers: {
@@ -132,11 +136,10 @@ type WriteVerb = { (input: never): Promise<unknown>; can(): CanResult };
 
 const NOTHING_PUBLISHED = "Nothing is published at {ref} yet, so it cannot be written to.";
 
-export function refCollection<T>(refs: GatewayRefs, ref: PropRef): CollectionGateway<T> {
-	const target = refs.get(ref);
+export function refCollection<T>(refs: RefsReader, ref: PropRef): CollectionGateway<T> {
 	const writes = delegateWrites(refs, ref);
 	return collectionGateway<T>({
-		id: `ref:${ref}?${target?.id ?? ""}`,
+		id: `ref:${ref}?${gatewayIdIn(refs.get(ref))}`,
 		cans: writes.cans,
 		handlers: {
 			list: (query: never) => callVerbOf(refs.get(ref), "list", query) ?? { rows: [], total: 0 },
@@ -145,6 +148,10 @@ export function refCollection<T>(refs: GatewayRefs, ref: PropRef): CollectionGat
 		},
 		subscribe: (listener) => refs.watch([ref], listener as () => void),
 	});
+}
+
+function gatewayIdIn(held: unknown): string {
+	return typeof held === "object" && held !== null && "id" in held && typeof held.id === "string" ? held.id : "";
 }
 
 function notify(state: RefsState) {
@@ -275,7 +282,7 @@ function clausesOn(row: FilterRow, chosen: unknown, by: PropRef): FilterRow[] {
 	return [{ prop: row.prop, op: "in", value: chosen, by }];
 }
 
-async function resolveRow(row: FilterRow, refs: GatewayRefs): Promise<FilterRow[]> {
+async function resolveRow(row: FilterRow, refs: RefsReader): Promise<FilterRow[]> {
 	if (isUnwired(row?.spread) || isUnwired(row?.value)) return [];
 	const spread = row?.spread?.ref;
 	if (typeof spread === "string") return spreadClauses(await refs.read(spread), spread);
@@ -284,7 +291,7 @@ async function resolveRow(row: FilterRow, refs: GatewayRefs): Promise<FilterRow[
 	return clausesOn(row, await refs.read(named), named);
 }
 
-function delegateWrites(refs: GatewayRefs, ref: PropRef) {
+function delegateWrites(refs: RefsReader, ref: PropRef) {
 	const handlers: Record<string, (input: never) => unknown> = {};
 	const cans: Record<string, () => CanResult> = {};
 	const refused = { can: false as const, reason: NOTHING_PUBLISHED.replace("{ref}", ref) };

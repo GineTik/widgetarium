@@ -1,30 +1,38 @@
 import { pageOf } from "./gateway/match";
 import { collectionGateway, rowOf, soloGateway } from "./gateway/create";
-import { createPickedGateway, selectionGateway } from "./gateway/refs";
+import { createGatewayRefs, createViewCells, refOf } from "./gateway/refs";
+import type { GatewayRefs } from "./gateway/refs";
 import { mapCollection } from "./gateway/mapped";
-import { declaredOf, needsOf, storedRows } from "./gateway/props.js";
-import type { DeclaredGateway, DeclaredProp, StoredRow } from "./gateway/props.js";
-import type { CollectionGateway, ValueGateway } from "./gateway/contract";
-import type { EveryValueVerb } from "./gateway/needs";
-import { selectedRowPicking, selectionPicking } from "./engine/row-picking.js";
-import type { PickingFields, RowPicking } from "./engine/row-picking.js";
+import { declaredOf, needsOf } from "./gateway/props.js";
+import type { DeclaredGateway, DeclaredProp } from "./gateway/props.js";
+import { storedRows } from "./gateway/kept-in-tile.js";
+import type { StoredRow } from "./gateway/kept-in-tile.js";
+import type { CollectionGateway } from "./gateway/contract";
+import type { TileProp, TileProps } from "./model.js";
 import type { Fields } from "./engine/catalogue-index.js";
+import type { HostGatewayContext, HostGatewayHost, PatchStep } from "./engine/host-context.js";
+import { resolveHostGateway } from "./engine/host-gateways.js";
 import { typeOf } from "./engine/record-type.js";
 import { isObject } from "./engine/is-object.js";
+import { isHostSpec } from "./surface/prop-gateway.js";
 
 export type PreviewGateways = Record<string, DeclaredGateway>;
 
 type GatewayFor = (name: string | null | undefined) => DeclaredGateway | null;
 
-type AwaitedPicking = {
-	readonly fieldName: string | null | (() => Promise<unknown>);
-	readonly isFallbackToFirst: boolean;
-};
+type PreviewWorld = Omit<HostGatewayContext, "name" | "spec">;
 
-interface SourceFields extends PickingFields {
-	readonly rows?: string | null;
-	readonly picked?: string | null;
-}
+const SELECTION = "@core/selection";
+
+const SELECTED_ROW = "@core/selected-row";
+
+const PREVIEW_READS_NO_VAULT = "a preview reads no vault";
+
+const PREVIEW_HOST: HostGatewayHost = {
+	slot: () => {
+		throw new Error(PREVIEW_READS_NO_VAULT);
+	},
+};
 
 interface PreviewRecord {
 	readonly [field: string]: unknown;
@@ -38,15 +46,12 @@ export function previewGateways(manifest: Fields | null | undefined): PreviewGat
 
 	for (const [name, spec] of props) gateways[name] = createManifestGateway(manifest, name, spec);
 
-	for (const [name, spec] of props) {
-		const selecting = resolvesASelection(spec, gatewayFor);
-		if (selecting) gateways[name] = selectionOverFirst(manifest, name, spec, selecting, gatewayFor);
-	}
+	const world = createPreviewWorld(manifest, props, gateways);
+	for (const [name, spec] of props.filter(([, spec]) => isSelecting(spec, gatewayFor)))
+		resolveInPreview(world, gateways, name, spec);
 
-	for (const [name, spec] of props) {
-		const picking = resolvesAPickedRow(spec, gatewayFor);
-		if (picking) gateways[name] = createSelectedRowGateway(manifest, name, spec, picking, gatewayFor);
-	}
+	for (const [name, spec] of props.filter(([, spec]) => isPickingARow(spec, gatewayFor)))
+		resolveInPreview(world, gateways, name, spec);
 
 	return gateways;
 }
@@ -89,7 +94,7 @@ function toRecord(row: unknown, index: number): PreviewRecord {
 }
 
 function previewPropId(manifest: Fields | null | undefined, name: string): string {
-	return `preview/${String(manifest?.["id"] ?? "widget")}/${name}`;
+	return refOf(previewTileId(manifest), name);
 }
 
 function seededIn(manifest: Fields | null | undefined, name: string): Fields | null {
@@ -130,88 +135,88 @@ function createManifestGateway(manifest: Fields | null | undefined, name: string
 	return createHeldCollection(id, seededRows(seeded, spec), spec);
 }
 
-function sourceFieldsOf(spec: DeclaredProp): SourceFields {
+function createPreviewWorld(
+	manifest: Fields | null | undefined,
+	props: readonly [string, DeclaredProp][],
+	gateways: PreviewGateways,
+): PreviewWorld {
+	const tile = { id: previewTileId(manifest), props: keptInPreview(manifest, props) };
+	return {
+		tile,
+		refs: refsOverPreview(tile.id, gateways),
+		host: PREVIEW_HOST,
+		cellFor: screenSeededBy(manifest, tile.id, props),
+		...propsKeptBy(tile.props),
+	};
+}
+
+function propsKeptBy(props: TileProps): Pick<PreviewWorld, "propsRef" | "patchProp"> {
+	const propsRef: { current: TileProps } = { current: props };
+	const patchProp = (name: string, step: PatchStep): void => {
+		propsRef.current = { ...propsRef.current, [name]: step(propsRef.current[name]) };
+	};
+	return { propsRef, patchProp };
+}
+
+function resolveInPreview(world: PreviewWorld, gateways: PreviewGateways, name: string, spec: DeclaredProp): void {
+	if (!isHostSpec(spec)) return;
+	const gateway = resolveHostGateway({ ...world, name, spec });
+	world.refs.put(refOf(world.tile.id, name), gateway);
+	gateways[name] = gateway;
+}
+
+function refsOverPreview(tileId: string, gateways: PreviewGateways): GatewayRefs {
+	const refs = createGatewayRefs();
+	for (const [name, gateway] of Object.entries(gateways)) refs.put(refOf(tileId, name), gateway);
+	return refs;
+}
+
+function keptInPreview(manifest: Fields | null | undefined, props: readonly [string, DeclaredProp][]): TileProps {
+	return Object.fromEntries(
+		props.flatMap(([name]): [string, TileProp][] => {
+			const value = seededIn(manifest, name)?.["value"];
+			return value === undefined ? [] : [[name, { fields: { value } }]];
+		}),
+	);
+}
+
+function screenSeededBy(
+	manifest: Fields | null | undefined,
+	tileId: string,
+	props: readonly [string, DeclaredProp][],
+): HostGatewayContext["cellFor"] {
+	const cellFor = createViewCells();
+	for (const [name, spec] of props) {
+		const seeded = seededIn(manifest, name)?.["value"];
+		if (implementationOf(spec) === SELECTION && seeded !== undefined && seeded !== null)
+			void cellFor(refOf(tileId, name)).update(seeded);
+	}
+	return cellFor;
+}
+
+function previewTileId(manifest: Fields | null | undefined): string {
+	return `preview/${String(manifest?.["id"] ?? "widget")}`;
+}
+
+function siblingNamed(spec: DeclaredProp, field: string): string | null {
 	const source = spec.source;
 	const fields = isObject(source) ? source["fields"] : null;
-	if (!isObject(fields)) return {};
-	return {
-		rows: textIn(fields["rows"]),
-		picked: textIn(fields["picked"]),
-		fieldFrom: textIn(fields["fieldFrom"]),
-		field: textIn(fields["field"]),
-		whenNothingPicked: fields["whenNothingPicked"],
-	};
-}
-
-function textIn(held: unknown): string | null {
-	return typeof held === "string" ? held : null;
-}
-
-function readFieldWith(gatewayFor: GatewayFor): (prop: string) => unknown {
-	return (prop) => {
-		const gateway = gatewayFor(prop);
-		return gateway?.kind === "value" ? gateway.get() : null;
-	};
-}
-
-function awaited(picking: RowPicking): AwaitedPicking {
-	const named = picking.fieldName;
-	if (typeof named !== "function") return { fieldName: named, isFallbackToFirst: picking.isFallbackToFirst };
-	return { fieldName: async () => named(), isFallbackToFirst: picking.isFallbackToFirst };
+	const named = isObject(fields) ? fields[field] : null;
+	return typeof named === "string" ? named : null;
 }
 
 function implementationOf(spec: DeclaredProp): unknown {
 	return isObject(spec.source) ? spec.source["implementation"] : undefined;
 }
 
-function selectionOverFirst(
-	manifest: Fields | null | undefined,
-	name: string,
-	spec: DeclaredProp,
-	collection: CollectionGateway<unknown>,
-	gatewayFor: GatewayFor,
-): ValueGateway<unknown, EveryValueVerb> {
-	return selectionGateway({
-		id: previewPropId(manifest, name),
-		memory: soloGateway(seededValue(seededIn(manifest, name), { kind: "value" }), {}, previewPropId(manifest, name)),
-		collection,
-		...awaited(selectionPicking(sourceFieldsOf(spec), readFieldWith(gatewayFor))),
-	});
+function isSelecting(spec: DeclaredProp, gatewayFor: GatewayFor): boolean {
+	if (implementationOf(spec) !== SELECTION) return false;
+	return gatewayFor(siblingNamed(spec, "rows"))?.kind === "collection";
 }
 
-function createSelectedRowGateway(
-	manifest: Fields | null | undefined,
-	name: string,
-	spec: DeclaredProp,
-	{ chosen, collection }: PickedSources,
-	gatewayFor: GatewayFor,
-): ValueGateway<unknown, EveryValueVerb> {
-	const inTile = createManifestGateway(manifest, name, spec);
-	return createPickedGateway({
-		id: previewPropId(manifest, name),
-		chosen,
-		collection,
-		...awaited(selectedRowPicking(sourceFieldsOf(spec), readFieldWith(gatewayFor))),
-		inTile: inTile.kind === "value" ? inTile : null,
-	});
-}
-
-interface PickedSources {
-	readonly chosen: ValueGateway<unknown, EveryValueVerb>;
-	readonly collection: CollectionGateway<unknown>;
-}
-
-function resolvesASelection(spec: DeclaredProp, gatewayFor: GatewayFor): CollectionGateway<unknown> | null {
-	if (implementationOf(spec) !== "@core/selection") return null;
-	const rows = gatewayFor(sourceFieldsOf(spec).rows);
-	return rows?.kind === "collection" ? rows : null;
-}
-
-function resolvesAPickedRow(spec: DeclaredProp, gatewayFor: GatewayFor): PickedSources | null {
-	if (implementationOf(spec) !== "@core/selected-row") return null;
-	const fields = sourceFieldsOf(spec);
-	const chosen = gatewayFor(fields.picked);
-	const collection = gatewayFor(fields.rows);
-	if (chosen?.kind !== "value" || collection?.kind !== "collection") return null;
-	return { chosen, collection };
+function isPickingARow(spec: DeclaredProp, gatewayFor: GatewayFor): boolean {
+	if (implementationOf(spec) !== SELECTED_ROW) return false;
+	const chosen = gatewayFor(siblingNamed(spec, "picked"));
+	const collection = gatewayFor(siblingNamed(spec, "rows"));
+	return chosen?.kind === "value" && collection?.kind === "collection";
 }

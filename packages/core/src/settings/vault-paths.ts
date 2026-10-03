@@ -1,6 +1,6 @@
 import { propConfig } from "../model.js";
 import type { Tile, TileProp } from "../model.js";
-import { bindingOf } from "../gateway/props.js";
+import { bindingOf, fieldsIn } from "../gateway/props.js";
 import type { DeclaredProp } from "../gateway/props.js";
 import type { PropAka } from "../held-records.js";
 import { isObject } from "../engine/is-object.js";
@@ -22,7 +22,7 @@ interface LoadedFile {
 }
 
 export function boundPath(config: TileProp): string {
-	return textIn(config.path);
+	return textIn(fieldsIn(config.fields)["path"]);
 }
 
 export function vaultPathsOf(manifest: PathsManifest | null | undefined, tile: Pick<Tile, "props">): string[] {
@@ -44,9 +44,9 @@ export function offeredPaths(host: VaultFilesHost | null | undefined, spec: Decl
 }
 
 function folderToRead(spec: DeclaredProp, config: TileProp): string {
-	if (bindingOf(spec, config).binding === "stat") return boundPath(config);
-	if (spec.kind === "value" || spec.source) return "";
-	if (bindingOf(spec, config).binding !== "vault") return "";
+	const { binding } = bindingOf(spec, config);
+	if (binding === "stat") return boundPath(config);
+	if (spec.kind === "value" || binding !== "vault") return "";
 	return boundPath(config);
 }
 

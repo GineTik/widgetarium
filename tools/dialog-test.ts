@@ -224,8 +224,8 @@ let board = normalizeBoard({
 			id: "board",
 			widget: KANBAN,
 			props: {
-				tasks: { allow: EVERY_VERB, path: FOLDER },
-				boards: { allow: EVERY_VERB, path: "Orbitask/DialogBoards" },
+				tasks: { implementation: "@obsidian/folder", fields: { path: FOLDER }, allow: EVERY_VERB },
+				boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/DialogBoards" }, allow: EVERY_VERB },
 			},
 		},
 	],
@@ -595,8 +595,8 @@ const listBecomes = async (properties: readonly string[]): Promise<void> => {
 						...tile,
 						props: {
 							...tile.props,
-							boards: { allow: EVERY_VERB, path: "Orbitask/NoBoards" },
-							board: { value: record },
+							boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/NoBoards" }, allow: EVERY_VERB },
+							board: { implementation: "@core/typed-value", fields: { value: record } },
 						},
 					}
 				: tile,
@@ -826,9 +826,12 @@ let plain = normalizeBoard({
 			id: "board",
 			widget: KANBAN,
 			props: {
-				tasks: { allow: EVERY_VERB, path: PLAIN },
-				boards: { allow: EVERY_VERB, path: "Orbitask/NoBoards" },
-				board: { value: { columns: [{ name: "To Do" }], properties: ["Status"] } },
+				tasks: { implementation: "@obsidian/folder", fields: { path: PLAIN }, allow: EVERY_VERB },
+				boards: { implementation: "@obsidian/folder", fields: { path: "Orbitask/NoBoards" }, allow: EVERY_VERB },
+				board: {
+					implementation: "@core/typed-value",
+					fields: { value: { columns: [{ name: "To Do" }], properties: ["Status"] } },
+				},
 			},
 		},
 	],

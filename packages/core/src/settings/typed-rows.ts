@@ -7,7 +7,7 @@ import type { DescribedField, PropBinding } from "../gateway/props.js";
 import { isObject } from "../engine/is-object.js";
 import { readYaml, yamlOf } from "./item-yaml.js";
 import type { Item } from "./item-yaml.js";
-import { FIELDS_SHOWN, TYPED_HERE, writeProp, writtenText } from "./prop-writing.js";
+import { FIELDS_SHOWN, writeProp, writtenText } from "./prop-writing.js";
 import { draftOnInput, shownValue } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
 
@@ -35,7 +35,7 @@ export function itemBody(
 	const isExisting = index < rows.length;
 	const read = readYaml(state.draft, fields);
 	const write = (next: readonly unknown[]): void => {
-		writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, next));
+		writeProp(state, key, spec, withTyped(spec, config, next));
 		state.openEditor(`prop:${key}`, writtenText(spec, next));
 	};
 	const apply = (): void => {

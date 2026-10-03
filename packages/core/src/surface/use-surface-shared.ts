@@ -9,7 +9,7 @@ import type { GatewayRefs, ViewCell } from "../gateway/refs.js";
 import type { MeasureHost } from "../surface-measure.js";
 import type { Tile } from "../model.js";
 import type { WidgetLookup } from "../registry.js";
-import type { HostGatewayHost } from "../engine/host-gateways.js";
+import type { HostGatewayHost } from "../engine/host-context.js";
 import type { CatalogueHost } from "../catalogue-preview.js";
 import type { Here, Navigation } from "../gateway/host.js";
 import type { SettingsHost, TilePatch } from "../settings/settings-state.js";

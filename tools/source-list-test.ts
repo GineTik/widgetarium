@@ -6,6 +6,7 @@ import esbuild from "esbuild";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
 import { findBrowser } from "./harness.ts";
+import { RESOURCES } from "../packages/core/src/gateway/implementation-metadata.js";
 
 const bundle = await esbuild.build({
 	entryPoints: ["tools/source-list-page.tsx"],
@@ -69,6 +70,8 @@ function check(what: string, got: unknown, wanted: unknown): void {
 
 const fieldOf = (value: unknown, key: string): unknown => (isObject(value) ? value[key] : undefined);
 const numberOf = (value: unknown, key: string): number => Number(fieldOf(value, key));
+const inResourceOrderOf = (headings: readonly string[]): string[] =>
+	RESOURCES.filter((resource) => headings.includes(resource));
 
 const before = fieldOf(read, "before");
 check(
@@ -88,6 +91,31 @@ check(
 	true,
 );
 check("the list scrolls on its own", fieldOf(read, "scrolledTo"), 200);
+
+const sections = Array.isArray(fieldOf(before, "sections")) ? (fieldOf(before, "sections") as unknown[]) : [];
+const headings = sections.map((section) => String(fieldOf(section, "heading")));
+const rowsUnder = (heading: string): unknown =>
+	fieldOf(
+		sections.find((section) => fieldOf(section, "heading") === heading),
+		"rows",
+	);
+check(
+	"the sources stand in one section per resource, each named once, in the fixed order",
+	[
+		headings.length > 2,
+		new Set(headings).size === headings.length,
+		headings.join() === inResourceOrderOf(headings).join(),
+	],
+	[true, true, true],
+);
+check(
+	"and each source stands under the resource it acts on",
+	[
+		rowsUnder("This board"),
+		Array.isArray(rowsUnder("Statistics")) && JSON.stringify(rowsUnder("Statistics")).includes("How many"),
+	],
+	[["Typed here", "This screen"], true],
+);
 check(
 	"and scrolling it leaves the popover where it was",
 	fieldOf(read, "popBottomAfterScroll"),

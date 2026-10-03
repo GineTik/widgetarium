@@ -4,6 +4,7 @@ import { widgetKeyOf } from "./engine/widget-ref.js";
 import { mountList, mountRows, uniqueName } from "./held-records.js";
 import type { MountSpec } from "./held-records.js";
 import type { HeldRecord, Tile } from "./board-tiles.js";
+import { fieldsIn } from "./gateway/props.js";
 
 export type NameOf = (id: string) => string | null | undefined;
 
@@ -49,7 +50,8 @@ function swapInto(layout: BoxNode, group: Tile, views: readonly View[]): BoxNode
 }
 
 function isStripShown(tile: Tile): boolean {
-	const typed = tile.props["getIsTabsShown"]?.value ?? tile.props["isTabsShown"]?.value;
+	const typed =
+		fieldsIn(tile.props["getIsTabsShown"]?.fields)["value"] ?? fieldsIn(tile.props["isTabsShown"]?.fields)["value"];
 	return (typed ?? tile.settings["isTabsShown"]) !== false;
 }
 

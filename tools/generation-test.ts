@@ -5,7 +5,7 @@ import {
 	ICrudGateway,
 	IListGateway,
 	IValueGateway,
-	defineProps,
+	declareProps,
 	manifestOfModule,
 	z,
 } from "../packages/core/src/gateway/declared.ts";
@@ -69,7 +69,7 @@ const withProps = (
 	extra: { readonly migrate?: unknown } = {},
 ): Manifested => ({
 	...manifestOfModule({
-		default: { declared: defineProps(gatewaysOf(props)) },
+		default: { declared: declareProps(gatewaysOf(props)) },
 		metadata: { title: "Tabs", description: "Tabs.", props: metaOf(props) },
 		layout: { size: { preferredWidth: "full", preferredHeight: "auto" } },
 	}),
@@ -126,7 +126,10 @@ const reshaped = withProps(
 			{
 				from: { tabs: base.props?.["tabs"], label: base.props?.["label"] },
 				run: (old: Readonly<Record<string, TileProp | undefined>>) => ({
-					label: { from: "typed", value: String(fieldIn(old["label"], "value") ?? "").length },
+					label: {
+						implementation: "@core/typed-value",
+						fields: { value: String(fieldIn(fieldIn(old["label"], "fields"), "value") ?? "").length },
+					},
 				}),
 			},
 		],
@@ -137,8 +140,10 @@ check("a changed type breaks", reshapedVerdict.isCompatible, false);
 check("and a migration from the old props lets tiles move", reshapedVerdict.canMoveTiles, true);
 check(
 	"moving runs the migration over the tile's own config",
-	moveTileProps({ label: { from: "typed", value: "title" } }, reshapedVerdict)["label"],
-	{ from: "typed", value: 5 },
+	moveTileProps({ label: { implementation: "@core/typed-value", fields: { value: "title" } } }, reshapedVerdict)[
+		"label"
+	],
+	{ implementation: "@core/typed-value", fields: { value: 5 } },
 );
 
 const renamedVerdict = verdictFor(
@@ -146,8 +151,8 @@ const renamedVerdict = verdictFor(
 );
 check(
 	"moving carries a renamed prop onto its new name",
-	moveTileProps({ label: { from: "typed", value: "x" } }, renamedVerdict),
-	{ field: { from: "typed", value: "x" } },
+	moveTileProps({ label: { implementation: "@core/typed-value", fields: { value: "x" } } }, renamedVerdict),
+	{ field: { implementation: "@core/typed-value", fields: { value: "x" } } },
 );
 
 const card = (manifest: Manifested): string => JSON.stringify(cardOf(manifest, 1));

@@ -1,10 +1,8 @@
 import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
-import type { CollectionGateway, GatewayEvent, Unsubscribe, ValueGateway } from "./contract";
-import { collectionGateway, valueGateway } from "./create";
+import type { CanResult, CollectionGateway, GatewayEvent, Unsubscribe, ValueGateway } from "./contract";
+import { canOf, collectionGateway, valueGateway } from "./create";
 import { MANY_VERBS } from "./many";
 import type { EveryValueVerb } from "./needs";
-
-export const ENGINE_GATEWAY = Symbol.for("widgetarium.engine-gateway");
 
 export interface AdaptedDeclaration {
 	readonly kind: unknown;
@@ -17,6 +15,13 @@ type Method = (this: unknown, input?: unknown) => unknown;
 
 type Listener = (event: GatewayEvent) => void;
 
+interface WritesInFlight {
+	readonly during: (write: () => unknown) => unknown;
+	readonly isWriting: () => boolean;
+}
+
+const READ_VERBS: readonly string[] = ["list", "get", "describe"];
+
 const implementationIds = new WeakMap<object, string>();
 let implementationsSeen = 0;
 
@@ -26,19 +31,8 @@ export function gatewayOverImplementation(
 	implementation: object,
 	stableId?: string,
 ): AdaptedGateway {
-	const standard = declaration.kind === "collection" ? COLLECTION_VERBS : VALUE_VERBS;
-	const verbs = [...new Set([...standard, ...declaration.writes, ...MANY_VERBS])].filter(
-		(verb) => methodOf(implementation, verb) !== null,
-	);
-	const handlers = Object.fromEntries(
-		verbs.map((verb) => [verb, (input: unknown) => callVerb(implementation, verb, input)] as const),
-	);
-	const options = {
-		id: stableId ?? idOfImplementation(implementation, name),
-		handlers,
-		settlesNow: Reflect.get(implementation, "settlesNow") === true,
-		...subscribeOver(implementation),
-	};
+	const id = stableId ?? idOfImplementation(implementation, name);
+	const options = optionsOver(implementation, verbsOf(declaration, implementation), id);
 	return declaration.kind === "collection" ? collectionGateway(options) : valueGateway(options);
 }
 
@@ -47,15 +41,79 @@ export function isImplementation(declaration: AdaptedDeclaration, held: unknown)
 	return methodOf(held, declaration.kind === "collection" ? "list" : "get") !== null;
 }
 
-function subscribeOver(implementation: object): { subscribe?: (listener: Listener) => Unsubscribe } {
-	if (methodOf(implementation, "subscribe") === null) return {};
+function optionsOver(implementation: object, verbs: readonly string[], id: string) {
+	const writes = writesInFlight();
 	return {
-		subscribe: (listener) => {
-			const stop = callVerb(implementation, "subscribe", () => listener({}));
-			return () => {
-				if (isMethod(stop)) stop.call(undefined);
-			};
+		id,
+		handlers: Object.fromEntries(verbs.map((verb) => [verb, handlerOf(implementation, verb, writes)] as const)),
+		settlesNow: Reflect.get(implementation, "settlesNow") === true,
+		...cansOver(implementation, verbs),
+		...subscribeOver(implementation, writes),
+	};
+}
+
+function handlerOf(implementation: object, verb: string, writes: WritesInFlight): (input: unknown) => unknown {
+	if (READ_VERBS.includes(verb)) return (input) => callVerb(implementation, verb, input);
+	return (input) => writes.during(() => callVerb(implementation, verb, input));
+}
+
+function writesInFlight(): WritesInFlight {
+	let open = 0;
+	const settle = (): void => {
+		open -= 1;
+	};
+	return {
+		isWriting: () => open > 0,
+		during: (write) => {
+			open += 1;
+			return settledAfter(write, settle);
 		},
+	};
+}
+
+function settledAfter(write: () => unknown, settle: () => void): unknown {
+	try {
+		const result = write();
+		if (isThenable(result)) return Promise.resolve(result).finally(settle);
+		settle();
+		return result;
+	} catch (failure) {
+		settle();
+		throw failure;
+	}
+}
+
+function isThenable(held: unknown): held is PromiseLike<unknown> {
+	return typeof held === "object" && held !== null && typeof Reflect.get(held, "then") === "function";
+}
+
+function verbsOf(declaration: AdaptedDeclaration, implementation: object): string[] {
+	const standard = declaration.kind === "collection" ? COLLECTION_VERBS : VALUE_VERBS;
+	return [...new Set([...standard, ...READ_VERBS, ...declaration.writes, ...MANY_VERBS])].filter(
+		(verb) => methodOf(implementation, verb) !== null,
+	);
+}
+
+function cansOver(implementation: object, verbs: readonly string[]): { cans?: Record<string, () => CanResult> } {
+	if (methodOf(implementation, "can") === null) return {};
+	return { cans: Object.fromEntries(verbs.map((verb) => [verb, () => canOf(implementation, verb)] as const)) };
+}
+
+function subscribeOver(
+	implementation: object,
+	writes: WritesInFlight,
+): { subscribe?: (listener: Listener) => Unsubscribe } {
+	if (methodOf(implementation, "subscribe") === null) return {};
+	const heardUnlessWriting = (listener: Listener) => (): void => {
+		if (!writes.isWriting()) listener({});
+	};
+	return { subscribe: (listener) => subscribedTo(implementation, heardUnlessWriting(listener)) };
+}
+
+function subscribedTo(implementation: object, changed: () => void): Unsubscribe {
+	const stop = callVerb(implementation, "subscribe", changed);
+	return () => {
+		if (isMethod(stop)) stop.call(undefined);
 	};
 }
 

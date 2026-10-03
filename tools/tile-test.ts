@@ -300,7 +300,13 @@ console.log("\n— a tile's own box is heard on a board that remounted before th
 {
 	const openerBoard = (): Board =>
 		normalizeBoard({
-			tiles: [{ id: "opener", widget: OPENER, props: { items: { value: [{ id: "a" }] } } }],
+			tiles: [
+				{
+					id: "opener",
+					widget: OPENER,
+					props: { items: { implementation: "@core/typed-rows", fields: { rows: [{ id: "a" }] } } },
+				},
+			],
 			layout: { left: [], main: [[{ id: "opener", height: 200 }]], right: [] },
 		});
 	const openedText = (): string | null | undefined => everywhere(".probe-opened")[0]?.textContent;

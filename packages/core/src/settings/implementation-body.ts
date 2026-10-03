@@ -2,9 +2,10 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Segmented } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
-import { fieldsIn, hostGatewayFor, isPackImplementation } from "../engine/host-gateways.js";
+import { hostGatewayFor } from "../engine/host-gateways.js";
+import { SCREEN_STATE, SELECTED_ROW, fieldsIn, implementationOf } from "../gateway/props.js";
 import { packFieldRows } from "./pack-fields.js";
-import type { HostFields } from "../engine/host-gateways.js";
+import type { HostFields } from "../engine/host-context.js";
 import { offeredEntries, offeredLabelOf, refLabel } from "./offered-boxes.js";
 import { writeProp } from "./prop-writing.js";
 import type { SettingsProp } from "./prop-row.js";
@@ -28,23 +29,25 @@ const FALLBACKS = [
 
 export function implementationBody(state: SettingsState, prop: SettingsProp): ReactElement[] {
 	const { key, spec, config } = prop;
-	if (config.implementation === "@core/selected-row") return selectedRowBody(state, key, spec, config);
-	if (config.implementation === "@core/screen-state") return [note(SCREEN_NOTE)];
+	const id = implementationOf(spec, config);
+	if (id === SELECTED_ROW) return selectedRowBody(state, key, spec, config);
+	if (id === SCREEN_STATE) return [note(SCREEN_NOTE)];
 	const chosen = hostGatewayFor(spec, config);
-	if (!chosen || !isPackImplementation(chosen.id)) return [];
-	const write = (next: HostFields): void => writeProp(state, key, spec, { ...config, fields: next });
+	if (!chosen) return [];
+	const write = (next: HostFields): void =>
+		writeProp(state, key, spec, { ...config, implementation: chosen.id, fields: next });
 	return packFieldRows(chosen.fields, fieldsIn(config.fields), write, offeredEntries(state.refs));
 }
 
 export function implementationLabel(state: SettingsState, prop: SettingsProp): string {
 	const { spec, config } = prop;
-	const rows = fieldsIn(config.fields).rows;
-	if (config.implementation === "@core/selected-row" && rows) return refLabel(state, rows);
+	const rows = fieldsIn(config.fields)["rows"];
+	if (implementationOf(spec, config) === SELECTED_ROW && rows) return refLabel(state, rows);
 	return hostGatewayFor(spec, config)?.title ?? String(config.implementation);
 }
 
 function selectedRowBody(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactElement[] {
-	const fields = fieldsIn(config.fields);
+	const fields: HostFields = fieldsIn(config.fields);
 	const write = (next: HostFields): void => writeProp(state, key, spec, { ...config, fields: next });
 	const { picked: formerPicker, ...unpicked } = fields;
 	const others = offeredEntries(state.refs).filter((entry) => entry.tile !== state.tile.id);

@@ -2,11 +2,12 @@ import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { Button, Field, Icon } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
-import { ALGORITHMS_READING_A_FIELD, DEFAULT_DATE_FIELD } from "../gateway/stats.js";
-import { STAT_TITLES } from "../engine/host-gateways.js";
+import { ALGORITHMS_READING_A_FIELD, DEFAULT_DATE_FIELD } from "../engine/stat-fields.js";
+import { hostGatewayFor } from "../engine/host-gateways.js";
 import { textIn } from "../engine/held-text.js";
 import { OTHER_FIELD } from "./condition-steps.js";
-import { STATISTICS, writeProp } from "./prop-writing.js";
+import { writeProp } from "./prop-writing.js";
+import { fieldsIn, implementationOf, withFields } from "../gateway/props.js";
 import { draftOnInput, note, pickRow, useItButton, valueRow } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
 import { FOLDERS_SHOWN, boundPath, foldersOf } from "./vault-paths.js";
@@ -14,6 +15,22 @@ import { FOLDERS_SHOWN, boundPath, foldersOf } from "./vault-paths.js";
 type StatStep = (state: SettingsState, key: string, spec: SettingsSpec, config: TileProp) => ReactNode[];
 
 type StatChoice = "window" | "compare";
+
+interface StatShown {
+	readonly folder: string;
+	readonly field: string | null;
+	readonly date: string;
+	readonly window: string;
+	readonly compare: string;
+}
+
+interface StatAt {
+	readonly key: string;
+	readonly spec: SettingsSpec;
+	readonly config: TileProp;
+}
+
+const STATISTICS_PACK = "@stats/";
 
 type StatProperty = "field" | "date";
 
@@ -56,8 +73,7 @@ const STAT_STEPS: ReadonlyMap<string, StatStep> = new Map<string, StatStep>([
 ]);
 
 export function statLabel(config: TileProp): string {
-	const algorithm = String(config.algorithm ?? "count");
-	const counted = STAT_TITLES[algorithm] ?? algorithm;
+	const counted = hostGatewayFor(null, config)?.title ?? algorithmOf(config);
 	const path = boundPath(config);
 	return path ? `${counted} · ${path}` : counted;
 }
@@ -76,8 +92,12 @@ export function statBody(state: SettingsState, key: string, spec: SettingsSpec, 
 	return step ? step(state, key, spec, config) : statSummary(state, key, config);
 }
 
-function writeStat(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp, patch: TileProp): void {
-	writeProp(state, key, spec, { ...config, from: STATISTICS, ...patch });
+function algorithmOf(config: TileProp): string {
+	return textIn(config.implementation).slice(STATISTICS_PACK.length);
+}
+
+function writeStat(state: SettingsState, { key, spec, config }: StatAt, patch: Readonly<Record<string, string>>): void {
+	writeProp(state, key, spec, withFields(config, implementationOf(spec, config), patch));
 	openStatStep(state, key, null);
 }
 
@@ -97,11 +117,11 @@ function choiceStep(
 	labels: Readonly<Record<string, string>>,
 	fallback: string,
 ): ReactNode[] {
-	const held = config[name] ?? fallback;
+	const held = fieldsIn(config.fields)[name] ?? fallback;
 	return [
 		note(STAT_STEP_NOTES[name]),
 		...Object.entries(labels).map(([value, label]) =>
-			pickRow(value, label, () => writeStat(state, key, spec, config, { [name]: value }), value === held),
+			pickRow(value, label, () => writeStat(state, { key, spec, config }, { [name]: value }), value === held),
 		),
 		backFoot(state, key, null),
 	];
@@ -123,7 +143,12 @@ function folderStep(state: SettingsState, key: string, spec: SettingsSpec, confi
 			onInput: draftOnInput(state),
 		}),
 		...found.map((entry) =>
-			pickRow(entry, entry, () => writeStat(state, key, spec, config, { path: entry }), entry === config.path),
+			pickRow(
+				entry,
+				entry,
+				() => writeStat(state, { key, spec, config }, { path: entry }),
+				entry === boundPath(config),
+			),
 		),
 		backFoot(state, key, null),
 	];
@@ -137,7 +162,7 @@ function propertyStep(
 	name: StatProperty,
 ): ReactNode[] {
 	const typed = String(state.draft ?? "").trim();
-	const held = config[name] ?? (name === "date" ? DEFAULT_DATE_FIELD : "");
+	const held = fieldsIn(config.fields)[name] ?? (name === "date" ? DEFAULT_DATE_FIELD : "");
 	const fields = state.vaultFields?.[boundPath(config)] ?? [];
 	return [
 		note(name === "date" ? STAT_DATE_NOTE : STAT_PROPERTY_NOTE),
@@ -145,7 +170,7 @@ function propertyStep(
 			pickRow(
 				field.prop,
 				field.prop,
-				() => writeStat(state, key, spec, config, { [name]: field.prop }),
+				() => writeStat(state, { key, spec, config }, { [name]: field.prop }),
 				field.prop === held,
 			),
 		),
@@ -159,7 +184,7 @@ function propertyStep(
 		backFoot(
 			state,
 			key,
-			useItButton(typed === "", () => writeStat(state, key, spec, config, { [name]: typed })),
+			useItButton(typed === "", () => writeStat(state, { key, spec, config }, { [name]: typed })),
 		),
 	];
 }
@@ -172,17 +197,34 @@ function statSummary(state: SettingsState, key: string, config: TileProp): React
 			value: h("span", { className: "wg-set-path" }, value),
 			onClick: () => openStatStep(state, key, step),
 		});
-	const algorithm = String(config.algorithm ?? "count");
-	const window = String(config.window ?? "all");
-	const compare = String(config.compare ?? "none");
+	const shown = statShownOf(config);
 	return [
-		row("folder", "Folder", boundPath(config) || "Pick a folder"),
-		ALGORITHMS_READING_A_FIELD.some((reading) => reading === algorithm)
-			? row("field", "Property", textIn(config.field) || "Pick one")
-			: null,
-		row("date", "Date", textIn(config.date) || DEFAULT_DATE_FIELD),
-		row("window", "Period", WINDOW_LABELS[window] ?? window),
-		row("compare", "Shows", COMPARISON_LABELS[compare] ?? compare),
+		row("folder", "Folder", shown.folder),
+		shown.field === null ? null : row("field", "Property", shown.field),
+		row("date", "Date", shown.date),
+		row("window", "Period", shown.window),
+		row("compare", "Shows", shown.compare),
 		note(STAT_CONDITIONS_NOTE),
 	];
+}
+
+function statShownOf(config: TileProp): StatShown {
+	const fields = fieldsIn(config.fields);
+	return {
+		folder: boundPath(config) || "Pick a folder",
+		field: readsAField(config) ? textIn(fields["field"]) || "Pick one" : null,
+		date: textIn(fields["date"]) || DEFAULT_DATE_FIELD,
+		window: labelIn(WINDOW_LABELS, fields["window"], "all"),
+		compare: labelIn(COMPARISON_LABELS, fields["compare"], "none"),
+	};
+}
+
+function labelIn(labels: Readonly<Record<string, string>>, held: unknown, fallback: string): string {
+	const word = textIn(held) || fallback;
+	return labels[word] ?? word;
+}
+
+function readsAField(config: TileProp): boolean {
+	const algorithm = algorithmOf(config);
+	return ALGORITHMS_READING_A_FIELD.some((reading) => reading === algorithm);
 }

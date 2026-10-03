@@ -2,7 +2,7 @@ import { propConfig } from "../model.js";
 import type { Tile, TileProp } from "../model.js";
 import type { FormEvent, FunctionComponent } from "react";
 import { Field, TextArea } from "@widgetarium/kit";
-import { declaredOf } from "../gateway/props.js";
+import { declaredOf, isVaultImplementation } from "../gateway/props.js";
 import type { SettingsSpec, TilePatch } from "./settings-state.js";
 
 export interface TypedControlProps {
@@ -31,15 +31,7 @@ const PLAIN_TYPES: ReadonlyMap<unknown, PlainWriting> = new Map<unknown, PlainWr
 	["boolean", { blank: false, control: Field }],
 ]);
 
-export const TYPED_HERE = "typed";
-
-export const IN_VAULT = "vault";
-
-export const FROM_WIDGET = "ref";
-
 export const FIELDS_SHOWN = 6;
-
-export const STATISTICS = "stat";
 
 export function propConfigOf(state: Pick<PropWritingState, "tile">, key: string, spec: SettingsSpec): TileProp {
 	return propConfig(state.tile, key, spec);
@@ -83,7 +75,9 @@ export function writeProp(
 	const formerNames = namesIn(spec?.aka);
 	const kept = Object.entries(state.tile.props ?? {}).filter(([propName]) => !formerNames.includes(propName));
 	const consented =
-		config.from === IN_VAULT && config.allow === undefined ? { ...config, allow: [...(spec?.writes ?? [])] } : config;
+		isVaultImplementation(config.implementation) && config.allow === undefined
+			? { ...config, allow: [...(spec?.writes ?? [])] }
+			: config;
 	state.onPatch({ props: { ...Object.fromEntries(kept), [key]: consented } });
 }
 

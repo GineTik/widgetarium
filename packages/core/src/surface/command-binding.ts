@@ -5,7 +5,8 @@ import { isObject } from "../engine/is-object.js";
 import { PropRefSchema } from "../engine/prop-ref.js";
 import type { Tile } from "../model.js";
 import { registeredCommands } from "../engine/packs.js";
-import type { CommandConsent } from "../gateway/implementation-metadata.js";
+import { inResourceOrder } from "../gateway/implementation-metadata.js";
+import type { CommandConsent, Resource } from "../gateway/implementation-metadata.js";
 
 export const TARGET_FIELD = "target";
 
@@ -16,6 +17,7 @@ export type CommandTarget = "collection" | "value";
 export interface OfferedCommand {
 	readonly id: string;
 	readonly title: string;
+	readonly resource: Resource;
 	readonly said: string;
 	readonly target: CommandTarget | null;
 	readonly consent: CommandConsent;
@@ -23,9 +25,10 @@ export interface OfferedCommand {
 }
 
 export function offeredCommands(): OfferedCommand[] {
-	return registeredCommands().map((entry) => ({
+	return inResourceOrder(registeredCommands()).map((entry) => ({
 		id: entry.id,
 		title: entry.title,
+		resource: entry.resource,
 		said: entry.description,
 		target: entry.target,
 		consent: entry.consent,

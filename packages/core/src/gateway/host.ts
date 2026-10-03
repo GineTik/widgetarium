@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { VaultRecord } from "./needs";
+import type { DropTarget } from "../tree-drop";
 
 export interface HostConsole {
 	can: { log: boolean; run: boolean };
@@ -85,6 +86,32 @@ export type ConfigureMounts = (name: string, rows: readonly MountRow[]) => void;
 export interface WidgetCatalogue {
 	canOpen: boolean;
 	open(options?: { mode?: string; kind?: string }): Promise<string | null>;
+}
+
+export interface WidgetPreview {
+	readonly canPreview: boolean;
+	readonly Drawn: (props: { readonly widget: string }) => ReactNode;
+}
+
+export interface CarryPointer {
+	readonly clientX: number;
+	readonly clientY: number;
+	readonly button: number;
+	preventDefault(): void;
+}
+
+export interface CarriedWidget {
+	readonly widget: string;
+	readonly label: string;
+}
+
+export type PlaceAt =
+	| { readonly kind: "board"; readonly board: string; readonly target: DropTarget }
+	| { readonly kind: "note"; readonly note: string; readonly line: number };
+
+export interface Carrier {
+	readonly canCarry: boolean;
+	lift(pointer: CarryPointer, carried: CarriedWidget): Promise<PlaceAt | null>;
 }
 
 export type FoldIntoGroup = () => boolean;

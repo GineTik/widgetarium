@@ -18,7 +18,7 @@ import type { FakeVault } from "./fake-vault.ts";
 import { standIn } from "./stand-in.ts";
 
 const { createHost } = await import("../apps/obsidian/src/host.js");
-const { folderGateway } = await import("../packages/core/src/gateway/obsidian.js");
+const { folderGateway } = await import("../packages/packs/obsidian/src/folder-gateway.ts");
 const { mapCollection } = await import("../packages/core/src/gateway/mapped.ts");
 const { narrow } = await import("../packages/core/src/gateway/narrow.ts");
 const { gatewayCache } = await import("../packages/core/src/gateway/cache.ts");

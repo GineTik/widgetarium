@@ -10,7 +10,7 @@ import { compileWidget } from "./engine/widget-build.js";
 import { moduleFromCompiled } from "./engine/compiled-module.js";
 import type { RequireModule } from "./engine/compiled-module.js";
 import { isObject } from "./engine/is-object.js";
-import { isDeclaredProps, manifestOfModule } from "./gateway/declared";
+import { declareProps, isDeclaredProps, manifestOfModule } from "./gateway/declared";
 import type { DeclaredModule, DeclaredProps } from "./gateway/declared";
 import type { GivenProps } from "./declared-widget.js";
 import type { DrawWidget } from "./mounted.js";
@@ -96,7 +96,7 @@ export function foreignScope(
 			...coreSurface,
 			...built.reactSurface,
 			createWidget: (widget: unknown) =>
-				built.reactSurface.createWidget({ ...fieldsOf(widget), inject: coreSurface.defineProps(injectOf(widget)) }),
+				built.reactSurface.createWidget({ ...fieldsOf(widget), inject: declareProps(injectOf(widget)) }),
 		},
 		kit: built.kit,
 		emojis: built.emojis,

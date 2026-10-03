@@ -53,6 +53,7 @@ export function checkCollectionWrites<T>(
 		settlesNow: Boolean(verbs["list"]?.meta?.readNow),
 		cans,
 		subscribe: gateway.subscribe,
+		announcesOwnWrites: false,
 	});
 }
 
@@ -75,7 +76,7 @@ export function parseReadsBy<Held extends HeldGateway>(
 		id: `${gateway.id}#parsed`,
 		settlesNow: Boolean(verbs[kind === "collection" ? "list" : "get"]?.meta?.readNow),
 		cans,
-		...(gateway.subscribe ? { subscribe: gateway.subscribe } : {}),
+		...(gateway.subscribe ? { subscribe: gateway.subscribe, announcesOwnWrites: false } : {}),
 	};
 	if (kind === "value")
 		return valueGateway({

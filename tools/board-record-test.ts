@@ -219,14 +219,22 @@ const PICKED = "boards/selection";
 function surfaceOverBoards(boardsPath: string): ReturnType<typeof normalizeBoard> {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { allow: EVERY_VERB, path: boardsPath } } },
+			{
+				id: "boards",
+				widget: "@default/editable-tabs",
+				props: { tabs: { implementation: "@obsidian/folder", fields: { path: boardsPath }, allow: EVERY_VERB } },
+			},
 			{
 				id: "board",
 				widget: "@default/kanban-board",
 				props: {
-					tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { allow: EVERY_VERB, path: boardsPath },
-					selection: { from: "ref", ref: PICKED },
+					tasks: {
+						implementation: "@obsidian/folder",
+						fields: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+						allow: EVERY_VERB,
+					},
+					boards: { implementation: "@obsidian/folder", fields: { path: boardsPath }, allow: EVERY_VERB },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: PICKED } },
 				},
 			},
 		],
@@ -240,14 +248,22 @@ function surfaceBoard(
 ): ReturnType<typeof normalizeBoard> {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { rows: named(tabs) } } },
+			{
+				id: "boards",
+				widget: "@default/editable-tabs",
+				props: { tabs: { implementation: "@core/typed-rows", fields: { rows: named(tabs) } } },
+			},
 			{
 				id: "board",
 				widget: "@default/kanban-board",
 				props: {
-					tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { allow: EVERY_VERB, path: boardsPath },
-					selection: { from: "ref", ref: PICKED },
+					tasks: {
+						implementation: "@obsidian/folder",
+						fields: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+						allow: EVERY_VERB,
+					},
+					boards: { implementation: "@obsidian/folder", fields: { path: boardsPath }, allow: EVERY_VERB },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: PICKED } },
 				},
 			},
 		],
@@ -411,15 +427,21 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 				{
 					id: "boards",
 					widget: "@default/editable-tabs",
-					props: { tabs: { rows: named(["Marketing Team", "Ux Team"]) } },
+					props: {
+						tabs: { implementation: "@core/typed-rows", fields: { rows: named(["Marketing Team", "Ux Team"]) } },
+					},
 				},
 				{
 					id: "board",
 					widget: "@default/kanban-board",
 					props: {
-						tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-						boards: { allow: EVERY_VERB, path: NOWHERE_STILL },
-						selection: { from: "ref", ref: PICKED },
+						tasks: {
+							implementation: "@obsidian/folder",
+							fields: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+							allow: EVERY_VERB,
+						},
+						boards: { implementation: "@obsidian/folder", fields: { path: NOWHERE_STILL }, allow: EVERY_VERB },
+						selection: { implementation: "@core/from-tile-value", fields: { ref: PICKED } },
 					},
 				},
 			],
@@ -444,15 +466,21 @@ check("switching board still works from the old string", all(".orbi-kanban").len
 				{
 					id: "boards",
 					widget: "@default/editable-tabs",
-					props: { tabs: { rows: named(["Marketing Team", "Ux Team"]) } },
+					props: {
+						tabs: { implementation: "@core/typed-rows", fields: { rows: named(["Marketing Team", "Ux Team"]) } },
+					},
 				},
 				{
 					id: "board",
 					widget: "@default/kanban-board",
 					props: {
-						tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-						boards: { allow: EVERY_VERB, path: NEVER_MOVED },
-						selection: { from: "ref", ref: PICKED },
+						tasks: {
+							implementation: "@obsidian/folder",
+							fields: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+							allow: EVERY_VERB,
+						},
+						boards: { implementation: "@obsidian/folder", fields: { path: NEVER_MOVED }, allow: EVERY_VERB },
+						selection: { implementation: "@core/from-tile-value", fields: { ref: PICKED } },
 					},
 				},
 			],

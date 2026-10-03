@@ -1,4 +1,4 @@
-import { bindingOf, declaredOf, typedIn } from "./gateway/props.js";
+import { bindingOf, declaredOf, fieldsIn, typedIn } from "./gateway/props.js";
 import type { DeclaredProp, PropBinding, PropConfig } from "./gateway/props.js";
 import { propConfig } from "./model.js";
 import type { TileProps } from "./model.js";
@@ -61,7 +61,7 @@ const heldBy = (spec: SeenSpec | null | undefined, typed: unknown): unknown =>
 	typed === undefined ? declaredOf(spec) : typed;
 
 const wasChosen = (typed: unknown, config: PropConfig): boolean =>
-	typed !== undefined || Boolean(config.path) || Boolean(config.ref);
+	typed !== undefined || Boolean(fieldsIn(config.fields)["path"]) || Boolean(fieldsIn(config.fields)["ref"]);
 
 function dataSeen(spec: SeenSpec | null | undefined, held: unknown): SeenData {
 	if (!isCollection(spec)) return { value: held ?? null };

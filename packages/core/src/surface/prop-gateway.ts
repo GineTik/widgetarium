@@ -2,7 +2,7 @@ import type { z } from "zod";
 import { declarationIn } from "../gateway/declaration.js";
 import { collectionGateway, valueGateway } from "../gateway/create.js";
 import { resolveHostGateway } from "../engine/host-gateways.js";
-import type { HostGateway, HostGatewayContext, HostSpec, HostTile } from "../engine/host-gateways.js";
+import type { HostGateway, HostGatewayContext, HostSpec, HostTile } from "../engine/host-context.js";
 import { failureMessage } from "../engine/failure-message.js";
 import { isObject } from "../engine/is-object.js";
 import { refOf } from "../gateway/refs.js";

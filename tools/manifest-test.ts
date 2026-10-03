@@ -4,7 +4,7 @@ import {
 	IValueGateway,
 	defineLayout,
 	defineMigrations,
-	defineProps,
+	declareProps,
 	manifestOfModule,
 	z,
 } from "../packages/core/src/gateway/declared.ts";
@@ -46,7 +46,7 @@ const manifestWith = <const P extends DeclaredProps>(
 ): ModuleManifest =>
 	present(
 		manifestOfModule({
-			default: { declared: defineProps(props) },
+			default: { declared: declareProps(props) },
 			metadata: { title: "Probe", description: "x", props: described },
 			layout,
 		}),
@@ -176,7 +176,7 @@ refusal(
 	"a module naming no preferred size is refused",
 	() =>
 		manifestOfModule({
-			default: { declared: defineProps({}) },
+			default: { declared: declareProps({}) },
 			metadata: { title: "Probe", description: "x", props: {} },
 		}),
 	"size names no preferredWidth",
@@ -222,11 +222,16 @@ const oldProps = { label: IValueGateway.of(z.string().default("")).pick("get") }
 const migrations = defineMigrations([
 	{
 		from: oldProps,
-		run: (old) => ({ label: { from: "typed", value: String(fieldIn(old["label"], "value") ?? "").length } }),
+		run: (old) => ({
+			label: {
+				implementation: "@core/typed-value",
+				fields: { value: String(fieldIn(fieldIn(old["label"], "fields"), "value") ?? "").length },
+			},
+		}),
 	},
 ]);
 const migrated = manifestOfModule({
-	default: { declared: defineProps({ label: IValueGateway.of(z.number().default(0)).pick("get") }) },
+	default: { declared: declareProps({ label: IValueGateway.of(z.number().default(0)).pick("get") }) },
 	metadata: { title: "Probe", description: "x" },
 	layout: FULL_WIDTH,
 	migrations,
@@ -234,8 +239,10 @@ const migrated = manifestOfModule({
 const oldManifest = manifestWith(oldProps);
 check(
 	"a migration declared beside the widget is found from the props a tile was made with",
-	migrationFrom(migrated, oldManifest.props)?.run({ label: { value: "title" } }),
-	{ label: { from: "typed", value: 5 } },
+	migrationFrom(migrated, oldManifest.props)?.run({
+		label: { implementation: "@core/typed-value", fields: { value: "title" } },
+	}),
+	{ label: { implementation: "@core/typed-value", fields: { value: 5 } } },
 );
 check(
 	"and not from props it does not name",

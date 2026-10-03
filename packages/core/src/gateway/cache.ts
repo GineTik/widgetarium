@@ -98,7 +98,6 @@ function fetchNow(state: CacheState, key: string): Promise<void> {
 	);
 }
 
-// TRADE-OFF: one refetch per key per tick, because a single write reaches this through the wrapper's emitter and the base's alike, and each one used to re-read the whole folder
 function refetchOnceThisTick(state: CacheState, key: string) {
 	if (state.awaitingRefetch.has(key)) return;
 	state.awaitingRefetch.add(key);

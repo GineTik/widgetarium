@@ -5,6 +5,7 @@ import type { Seen } from "../packages/core/src/prop-visibility.js";
 import type { BoardNode, BoxNode } from "../packages/core/src/tree-nodes.js";
 import type { BoardRegistry, SurfaceHost } from "../packages/core/src/surface/use-surface-shared.js";
 import { byId, found } from "./dom-find.ts";
+import { fieldAt } from "./held-fields.ts";
 import { standIn } from "./stand-in.ts";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
@@ -41,6 +42,7 @@ Object.defineProperty(dom.window.HTMLElement.prototype, "clientWidth", { configu
 
 const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
+const { CATALOGUE_REQUESTS } = await import("../packages/core/src/engine/catalogue-requests.js");
 const { GRID } = await import("../packages/core/src/paths.js");
 boardWidthPx = 20 * GRID.cellPx + 19 * GRID.gapPx + 2 * GRID.padPx;
 const { CHROME, barPlacement, dialogBox, freeArea, openingScale, openingPan, clampPan } =
@@ -477,106 +479,38 @@ console.log("\n— and the panel writes what it draws —");
 		true,
 	);
 
-	// THE SLOT PICKER IS THE CATALOGUE. What fills a slot is drawn on every row of the parent, so
-	// the question is what it LOOKS like — and the same surface can say which candidates the slot
-	// actually feeds, which a list of titles cannot.
 	await press(rowSaying("Card"));
-	check("pressing the slot row opens the catalogue", Boolean(find(".wg-cat-dialog")), true);
+	const request = CATALOGUE_REQUESTS.current();
+	check("pressing the slot row asks the sidebar catalogue to fill it", request?.mode, "fill");
+	check("and opens no dialog of its own", Boolean(find(".wg-cat-dialog")), false);
 	check(
-		"in fill mode, so every tile offers to fill",
-		all(".wg-cat-dialog .wg-cat-tile").every((tile) =>
-			present(tile.getAttribute("aria-label"), "aria-label").startsWith("Use "),
-		),
+		"the settings window steps aside while the catalogue is asked",
+		Boolean(find(".wg-set-panel")?.closest(".wg-dialog-overlay.is-aside")),
 		true,
 	);
-
-	const named = () => all(".wg-cat-dialog .wg-cat-tile").map((tile) => found(tile, ".wg-cat-name").textContent);
-	check("it draws a tile per widget, not a row of names", named().length, 3);
-
-	// RANK, NOT FILTER. `gives` is a declaration and drifts from the object the parent really
-	// builds, so a hard filter turns normal drift into "my widget vanished and nothing said why".
-	check("the candidate the slot feeds sorts first", named()[0], "Task card");
-	check("and the one it cannot feed is still listed, last", named().at(-1), "Compact card");
-	check("a widget that declares nothing is neither, so it sits between", named()[1], "Kanban board");
-
-	const lacks = all(".wg-cat-dialog .wg-cat-tile").map(
-		(tile) => tile.querySelector(".wg-cat-lack")?.textContent ?? null,
-	);
-	check("the misfit names the field it is missing", lacks.at(-1), "Needs estimate");
-	check("the one that fits says nothing", lacks[0], null);
-	check("and neither does the one that declared nothing", lacks[1], null);
-
-	// THE DIVIDER IS A LATTICE ROW, not a sibling in a list — so where it sits is a row number,
-	// and what it separates is everything above that row from everything below it.
-	const divider = find(".wg-cat-dialog .wg-cat-divide");
-	check("a divider is drawn above the misfits", Boolean(divider), true);
-	// CONTEXT: cards flow in document order now, so "above" is a position in that order
-	const inOrder = all(".wg-cat-dialog .wg-cat-tile, .wg-cat-dialog .wg-cat-divide");
-	const at = divider ? inOrder.indexOf(divider) : -1;
-	const drawn = all(".wg-cat-dialog .wg-cat-tile");
-	const short = drawn.filter((tile) => tile.querySelector(".wg-cat-lack"));
+	const ranked = [manifest, fitting, misfit]
+		.map((one) => ({ title: one.title, fit: request?.rank?.(one) ?? null }))
+		.sort((one, other) => (one.fit?.order ?? 0) - (other.fit?.order ?? 0));
 	check(
-		"every candidate that fits lies above it",
-		drawn.filter((tile) => !tile.querySelector(".wg-cat-lack")).every((tile) => inOrder.indexOf(tile) < at),
-		true,
+		"the candidate the slot feeds ranks first, the one it cannot feed last, and nothing is withheld",
+		ranked.map((one) => one.title),
+		["Task card", "Kanban board", "Compact card"],
 	);
 	check(
-		"and every one that falls short lies below it",
-		short.length > 0 && short.every((tile) => inOrder.indexOf(tile) > at),
-		true,
+		"the misfit names the field it is missing, and the others say nothing",
+		ranked.map((one) => one.fit?.lacks ?? null),
+		[null, null, "Needs estimate"],
 	);
-	check(
-		"the slot can still fall back to the widget's own default",
-		Boolean(all(".wg-cat-dialog .wg-dialog-foot button").length),
-		true,
-	);
-
-	// EACH CANDIDATE IS A CARD carrying its own playground — the board's lattice at the scale
-	// that card needs — so the picker shows how much board a candidate would eat.
-	const card = drawn.find((tile) => found(tile, ".wg-cat-name").textContent === "Task card");
-	check(
-		"no candidate draws a lattice",
-		drawn.some((tile) => tile.querySelector(".wg-cells")),
-		false,
-	);
-	check(
-		"with more than one span among them, or this proves nothing",
-		new Set(drawn.map((tile) => tile.getAttribute("data-span"))).size > 1,
-		true,
-	);
-	// CONTEXT: these fixtures declare no preview, so the span falls back to the board size
-	check(
-		"and the span shown is the size the manifest declares",
-		present(card, "Task card").getAttribute("data-span"),
-		`${fitting.defaultSize.w}x${fitting.defaultSize.h}`,
-	);
-	check("and no span badge is printed beside the name", present(card, "Task card").querySelector(".wg-cat-span"), null);
-	check(
-		"every candidate carries one button and no state mark",
-		drawn.every(
-			(tile) =>
-				[...tile.querySelectorAll("button")].filter((node) => !node.closest(".wg-cat-pic")).length === 1 &&
-				tile.querySelectorAll(".wg-cat-badge").length === 0,
-		),
-		true,
-	);
-	check(
-		"and the press says the same word on every one",
-		new Set(drawn.map((tile) => present(tile.getAttribute("aria-label"), "aria-label").split(" ")[0])).size,
-		1,
-	);
-	check(
-		"nothing sits under the list of candidates",
-		present(found(document, ".wg-cat-dialog .wg-cat-main").lastElementChild, "last child").className,
-		"wg-cat-scroll",
-	);
-	check("and no global strip names a selection", find(".wg-cat-dialog > .wg-cat-bar"), null);
-
-	const pick = all(".wg-cat-dialog .wg-cat-tile").find((tile) => tile.textContent.includes("Compact card"));
-	check("a misfit is offered, not withheld", Boolean(pick), true);
-	await press(pick);
-	check("picking it closes the catalogue", Boolean(find(".wg-cat-dialog")), false);
+	CATALOGUE_REQUESTS.answer(OTHER_ID);
+	await tick();
+	await tick();
+	check("a misfit can be picked, and the window comes back", Boolean(find(".wg-dialog-overlay.is-aside")), false);
 	check("the pick is written to the draft", rowSaying("Card")?.textContent.includes(OTHER_ID), true);
+	check(
+		"and the slot can still fall back to the widget's own default",
+		all(".wg-set-slot button").some((button) => button.textContent.trim() === "Back to the widget's default"),
+		true,
+	);
 
 	check(
 		"the slot says what it wears, nothing until someone picks",
@@ -693,9 +627,9 @@ console.log("\n— and the panel writes what it draws —");
 	check("pressing it again gives the widget back", htmlElementOf(find(".wg-set-body"))?.style.visibility, "visible");
 
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
-	check("Done saves the typed value", propOf(tileOf(board, 0).props, "groupBy").value, "assignee");
+	check("Done saves the typed value", typedFieldOf(propOf(tileOf(board, 0).props, "groupBy"), "value"), "assignee");
 	// the section cleared this field on purpose, and an empty own path is what falls back
-	check("and the cleared source, still cleared", propOf(tileOf(board, 0).props, "tasks").path, "");
+	check("and the cleared source, still cleared", typedFieldOf(propOf(tileOf(board, 0).props, "tasks"), "path"), "");
 	check("and the slot that was picked", heldOf(tileOf(board, 0).slots, "card").widget, OTHER_ID);
 	// CONTEXT: this file's check stringifies, so two objects always match — the comparison must be text
 	check(
@@ -996,12 +930,12 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
 	check(
 		"Done writes the child's edit into the child's record",
-		propOf(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).props, "groupBy").value,
+		typedFieldOf(propOf(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).props, "groupBy"), "value"),
 		"assignee",
 	);
 	check(
 		"and the grandchild's into the grandchild's",
-		propOf(heldOf(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).slots, "panel").props, "width").value,
+		typedFieldOf(propOf(heldOf(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).slots, "panel").props, "width"), "value"),
 		"wide",
 	);
 	check(
@@ -1011,7 +945,10 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	);
 	check(
 		"a fed slot's own setting lands in that slot's record",
-		present(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).slots, "slots")["card"]?.props?.["lines"]?.value,
+		typedFieldOf(
+			present(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).slots, "slots")["card"]?.props?.["lines"],
+			"value",
+		),
 		"6",
 	);
 	check(
@@ -1038,12 +975,12 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
 	check(
 		"the second tile keeps its own edit",
-		propOf(heldOf(tileOf(board, 1).mounted, KANBAN_VIEW).props, "groupBy").value,
+		typedFieldOf(propOf(heldOf(tileOf(board, 1).mounted, KANBAN_VIEW).props, "groupBy"), "value"),
 		"priority",
 	);
 	check(
 		"and the first tile's survives it",
-		propOf(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).props, "groupBy").value,
+		typedFieldOf(propOf(heldOf(tileOf(board, 0).mounted, KANBAN_VIEW).props, "groupBy"), "value"),
 		"assignee",
 	);
 	await new Promise((done) => setTimeout(done, 240));
@@ -1110,7 +1047,7 @@ console.log("\n— an unfed child is a level of its own, and the trail is the wa
 	check("and the setting's old key goes with it", "views" in tileOf(board, 0).settings, false);
 	check(
 		"the renamed row's record came with the name",
-		tileOf(board, 0).mounted["Archived columns 2"]?.props?.["groupBy"]?.value,
+		typedFieldOf(tileOf(board, 0).mounted["Archived columns 2"]?.props?.["groupBy"], "value"),
 		"assignee",
 	);
 	check("and nothing is left behind under the old one", "Kanban board" in tileOf(board, 0).mounted, false);
@@ -1205,13 +1142,17 @@ console.log("\n— a tile that was skipped by the memo still writes onto the boa
 
 	present(configureBy["b"], "b's write")("from b");
 	await settle();
-	check("the second tile's write landed", propOf(tileOf(board, 1).props, "note").value, "from b");
+	check("the second tile's write landed", typedFieldOf(propOf(tileOf(board, 1).props, "note"), "value"), "from b");
 	check("and the first tile was skipped, or this proves nothing", configureBy["a"] === held, true);
 
 	present(configureBy["a"], "a's write")("from a");
 	await settle();
-	check("the skipped tile's own write lands", propOf(tileOf(board, 0).props, "note").value, "from a");
-	check("and it does not put the other tile back", propOf(tileOf(board, 1).props, "note").value, "from b");
+	check("the skipped tile's own write lands", typedFieldOf(propOf(tileOf(board, 0).props, "note"), "value"), "from a");
+	check(
+		"and it does not put the other tile back",
+		typedFieldOf(propOf(tileOf(board, 1).props, "note"), "value"),
+		"from b",
+	);
 
 	render(null, mount);
 }
@@ -1248,12 +1189,21 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 
 	let board = normalizeBoard({
 		tiles: [
-			{ id: "alone", widget: READER_ID, props: { rows: { path: FOLDER } } },
+			{
+				id: "alone",
+				widget: READER_ID,
+				props: { rows: { implementation: "@obsidian/folder", fields: { path: FOLDER } } },
+			},
 			{
 				id: "group",
 				widget: GROUP_ID,
 				settings: { holds: [{ name: "Mine", widget: READER_ID }] },
-				mounted: { Mine: { widget: READER_ID, props: { rows: { path: FOLDER } } } },
+				mounted: {
+					Mine: {
+						widget: READER_ID,
+						props: { rows: { implementation: "@obsidian/folder", fields: { path: FOLDER } } },
+					},
+				},
 			},
 		],
 		layouts: {
@@ -1300,7 +1250,13 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 	);
 	// CONTEXT: VACUOUS unless the count can be wrong — one reader must draw no hint at all
 	board = normalizeBoard({
-		tiles: [{ id: "alone", widget: READER_ID, props: { rows: { path: FOLDER } } }],
+		tiles: [
+			{
+				id: "alone",
+				widget: READER_ID,
+				props: { rows: { implementation: "@obsidian/folder", fields: { path: FOLDER } } },
+			},
+		],
 		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] },
 	});
 	render(null, mount);
@@ -1310,7 +1266,8 @@ console.log("\n— a folder's readers are counted by the widget in the record, n
 	check(
 		"and the only reader on a board is told nothing",
 		[
-			document.querySelector(OPEN_POP + " .wg-set-pop-hint")?.textContent.trim() ?? null,
+			document.querySelector(OPEN_POP + " .wg-set-pop-title .wg-kit-help-button")?.getAttribute("aria-description") ??
+				null,
 			[...document.querySelectorAll(OPEN_POP + " .wg-set-pop-note")].map((node) => node.textContent.trim()),
 		],
 		["Every note in the folder arrives as one item.", []],
@@ -1364,7 +1321,13 @@ console.log("\n— a prop renamed in the manifest still finds the folder the til
 	};
 
 	let board = normalizeBoard({
-		tiles: [{ id: "alone", widget: RENAMED_ID, props: { rows: { path: CHOSEN } } }],
+		tiles: [
+			{
+				id: "alone",
+				widget: RENAMED_ID,
+				props: { rows: { implementation: "@obsidian/folder", fields: { path: CHOSEN } } },
+			},
+		],
 		layouts: { 20: [{ id: "alone", x: 0, y: 0, w: 9, h: 6 }] },
 	});
 	const mount = byId(document, "host");
@@ -1410,7 +1373,7 @@ console.log("\n— a prop renamed in the manifest still finds the folder the til
 	await press([...document.querySelectorAll(OPEN_POP + " button")].find((node) => node.textContent === "Apply"));
 	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
 	check("and the first write moves the record onto the new key", Object.keys(tileOf(board, 0).props ?? {}), ["days"]);
-	check("without losing the folder on the way", propOf(tileOf(board, 0).props, "days").path, CHOSEN);
+	check("without losing the folder on the way", typedFieldOf(propOf(tileOf(board, 0).props, "days"), "path"), CHOSEN);
 
 	render(null, mount);
 }
@@ -1439,7 +1402,10 @@ console.log("\n— a line is typed into a field, a text into an area that keeps 
 			{
 				id: "writer",
 				widget: WRITER_ID,
-				props: { title: { from: "typed", value: "Hi" }, body: { from: "typed", value: "# Hi" } },
+				props: {
+					title: { implementation: "@core/typed-value", fields: { value: "Hi" } },
+					body: { implementation: "@core/typed-value", fields: { value: "# Hi" } },
+				},
 			},
 		],
 		layouts: { 20: [{ id: "writer", x: 0, y: 0, w: 9, h: 6 }] },
@@ -1494,7 +1460,11 @@ console.log("\n— a line is typed into a field, a text into an area that keeps 
 	await tick();
 	await press([...document.querySelectorAll(OPEN_POP + " button")].find((node) => node.textContent === "Apply"));
 	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
-	check("and what was typed in the area keeps its line breaks", propOf(tileOf(board, 0).props, "body").value, typed);
+	check(
+		"and what was typed in the area keeps its line breaks",
+		typedFieldOf(propOf(tileOf(board, 0).props, "body"), "value"),
+		typed,
+	);
 
 	render(null, mount);
 }
@@ -1526,7 +1496,13 @@ console.log("\n— a text reads a note: its content, its name, or one of its pro
 		ui: { notify() {}, openNote() {} },
 	};
 	let board = normalizeBoard({
-		tiles: [{ id: "reader", widget: READER_ID, props: { body: { from: "typed", value: "# Hi" } } }],
+		tiles: [
+			{
+				id: "reader",
+				widget: READER_ID,
+				props: { body: { implementation: "@core/typed-value", fields: { value: "# Hi" } } },
+			},
+		],
 		layouts: { 20: [{ id: "reader", x: 0, y: 0, w: 9, h: 6 }] },
 	});
 	const mount = byId(document, "host");
@@ -1568,13 +1544,13 @@ console.log("\n— a text reads a note: its content, its name, or one of its pro
 		);
 	check(
 		"the prop names where its data comes from behind one button, not a row of tabs",
-		Boolean(popButton("File")),
+		Boolean(popButton("Its content or a property")),
 		false,
 	);
 	await press(document.querySelector(OPEN_POP + ' button[aria-label="Where the data comes from"]'));
 	check(
 		"a text is offered a file, beside typing it",
-		[Boolean(sourceRow("File")), Boolean(sourceRow("Typed here"))],
+		[Boolean(sourceRow("Its content or a property")), Boolean(sourceRow("Typed here"))],
 		[true, true],
 	);
 	check(
@@ -1583,7 +1559,7 @@ console.log("\n— a text reads a note: its content, its name, or one of its pro
 		"true",
 	);
 
-	await press(sourceRow("File"));
+	await press(sourceRow("Its content or a property"));
 	await press(popButton("Habits.md"));
 	check(
 		"the parts offered are content, name and the note's own properties",
@@ -1605,12 +1581,15 @@ console.log("\n— a text reads a note: its content, its name, or one of its pro
 	await press([...document.querySelectorAll(".wg-set-head button")].find((node) => node.textContent === "Done"));
 	check(
 		"picking a property binds that property of that note",
-		(["from", "path", "field"] as const).map((name) => propOf(tileOf(board, 0).props, "body")[name]),
-		["vault", "Habits.md", "status"],
+		[
+			propOf(tileOf(board, 0).props, "body").implementation,
+			...(["path", "field"] as const).map((name) => typedFieldOf(propOf(tileOf(board, 0).props, "body"), name)),
+		],
+		["@obsidian/file", "Habits.md", "status"],
 	);
 	check(
 		"the field survives the board being written",
-		propOf(present(serializeBoard(board).tiles[0], "tile 0").props, "body").field,
+		typedFieldOf(propOf(present(serializeBoard(board).tiles[0], "tile 0").props, "body"), "field"),
 		"status",
 	);
 
@@ -1726,7 +1705,7 @@ console.log("\n— an emoji and an icon are picked off a grid, never typed —")
 	await press(named("crying-cat"));
 	check(
 		"picking one writes its name into the draft",
-		tileOf(board, 0).props?.["mood"]?.value ?? "not written yet",
+		typedFieldOf(tileOf(board, 0).props?.["mood"], "value") ?? "not written yet",
 		"not written yet",
 	);
 	check(
@@ -1761,13 +1740,16 @@ console.log("\n— an emoji and an icon are picked off a grid, never typed —")
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
 	check(
 		"Done writes both picks to the board",
-		[propOf(tileOf(board, 0).props, "mood").value, propOf(tileOf(board, 0).props, "glyph").value],
+		[
+			typedFieldOf(propOf(tileOf(board, 0).props, "mood"), "value"),
+			typedFieldOf(propOf(tileOf(board, 0).props, "glyph"), "value"),
+		],
 		["crying-cat", "anchor"],
 	);
 	check(
 		"and each is kept as a typed value, not a path",
-		[propOf(tileOf(board, 0).props, "mood").from, propOf(tileOf(board, 0).props, "glyph").from],
-		["typed", "typed"],
+		[propOf(tileOf(board, 0).props, "mood").implementation, propOf(tileOf(board, 0).props, "glyph").implementation],
+		["@core/typed-value", "@core/typed-value"],
 	);
 
 	render(null, mount);
@@ -1957,8 +1939,16 @@ console.log("\n— one switch, and the window asks only for the half in use —"
 	const host = { platform: "test", can: {}, slot: () => null, ui: { notify() {}, openNote() {} } };
 	let board = normalizeBoard({
 		tiles: [
-			{ id: "placed", widget: SWITCHY, props: { filling: { from: "typed", value: "placed" } } },
-			{ id: "perRow", widget: SWITCHY, props: { filling: { from: "typed", value: "per-row" } } },
+			{
+				id: "placed",
+				widget: SWITCHY,
+				props: { filling: { implementation: "@core/typed-value", fields: { value: "placed" } } },
+			},
+			{
+				id: "perRow",
+				widget: SWITCHY,
+				props: { filling: { implementation: "@core/typed-value", fields: { value: "per-row" } } },
+			},
 		],
 		layouts: {
 			20: [
@@ -2033,7 +2023,7 @@ console.log("\n— one switch, and the window asks only for the half in use —"
 	check("the window follows the press at once", labels().includes("Slots"), true);
 	await press(all(".wg-set-head button").find((button) => button.textContent.trim() === "Done"));
 	await tick();
-	check("and Done writes it to the tile", propOf(tileOf(board, 0).props, "filling").value, "per-row");
+	check("and Done writes it to the tile", typedFieldOf(propOf(tileOf(board, 0).props, "filling"), "value"), "per-row");
 
 	render(null, mount);
 }
@@ -2042,3 +2032,7 @@ console.log(
 	failed ? `\n${failed} things the settings window got wrong` : "\nthe settings window lands, clamps and writes",
 );
 process.exit(failed ? 1 : 0);
+
+function typedFieldOf(config: TileProp | null | undefined, name: string): unknown {
+	return fieldAt(config, "fields", name);
+}

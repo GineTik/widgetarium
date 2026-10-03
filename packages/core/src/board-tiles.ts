@@ -8,20 +8,7 @@ export type TileSettings = Readonly<Record<string, unknown>>;
 
 export type TileMounts = Readonly<Record<string, unknown>>;
 
-export interface TileProp extends PropConfig {
-	readonly where?: unknown;
-	readonly sort?: unknown;
-	readonly wants?: unknown;
-	readonly implementation?: unknown;
-	readonly fields?: unknown;
-	readonly field?: unknown;
-	readonly map?: unknown;
-	readonly algorithm?: unknown;
-	readonly date?: unknown;
-	readonly window?: unknown;
-	readonly compare?: unknown;
-	readonly counts?: unknown;
-}
+export type TileProp = PropConfig;
 
 export type TileProps = Readonly<Record<string, TileProp | null>>;
 

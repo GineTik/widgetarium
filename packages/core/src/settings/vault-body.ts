@@ -5,7 +5,8 @@ import type { TileProp } from "../model.js";
 import { NOTE_CONTENT, NOTE_NAME, noteFieldOf } from "../gateway/obsidian.js";
 import { NOTHING_OFFERED, offeredEntries } from "./offered-boxes.js";
 import type { OfferedEntry } from "./offered-boxes.js";
-import { FROM_WIDGET, IN_VAULT, writeProp, writtenPlainly } from "./prop-writing.js";
+import { writeProp, writtenPlainly } from "./prop-writing.js";
+import { fieldsIn, fromTileImplementationOf, vaultImplementationOf, withFields } from "../gateway/props.js";
 import { draftOnInput, popoverFoot } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
 import { FOLDERS_SHOWN, boundPath, offeredPaths } from "./vault-paths.js";
@@ -33,7 +34,7 @@ export function vaultBody(state: SettingsState, key: string, spec: SettingsSpec,
 		popoverFoot(
 			state,
 			() => state.setDraft(""),
-			(typed) => writeProp(state, key, spec, { ...config, from: IN_VAULT, path: typed.trim() }),
+			(typed) => writeProp(state, key, spec, withFields(config, vaultImplementationOf(spec), { path: typed.trim() })),
 		),
 	];
 }
@@ -45,10 +46,11 @@ export function refBody(state: SettingsState, key: string, spec: SettingsSpec, c
 	const byTitle = new Map<string, OfferedEntry[]>();
 	for (const entry of offered) byTitle.set(entry.title, [...(byTitle.get(entry.title) ?? []), entry]);
 	const pick = (entry: OfferedEntry): void =>
-		writeProp(state, key, spec, { ...config, from: FROM_WIDGET, ref: entry.ref });
+		writeProp(state, key, spec, withFields(config, fromTileImplementationOf(spec), { ref: entry.ref }));
+	const held = fieldsIn(config.fields)["ref"];
 	return [...byTitle.entries()].flatMap(([title, entries]) => [
 		h("p", { className: "wg-set-pop-note", key: `t${title}` }, title),
-		...entries.map((entry) => pickedItem(entry.ref, entry.label, entry.ref === config.ref, () => pick(entry))),
+		...entries.map((entry) => pickedItem(entry.ref, entry.label, entry.ref === held, () => pick(entry))),
 	]);
 }
 
@@ -64,9 +66,10 @@ function noteFieldItems(
 	path: string,
 ): ReactNode[] {
 	if (!writtenPlainly(spec) || !path) return [];
-	const picked = noteFieldOf(spec, config);
+	const picked = noteFieldOf(spec, fieldsIn(config.fields));
 	const properties = state.host?.propertiesOf?.(path) ?? [];
-	const pick = (field: string): void => writeProp(state, key, spec, { ...config, from: IN_VAULT, path, field });
+	const pick = (field: string): void =>
+		writeProp(state, key, spec, withFields(config, vaultImplementationOf(spec), { path, field }));
 	const item = (field: string, label: string): ReactElement =>
 		pickedItem(`field:${field}`, label, field === picked, () => pick(field));
 	return [
@@ -85,5 +88,5 @@ function pickNote(state: SettingsState, key: string, spec: SettingsSpec, config:
 		state.setDraft(entry);
 		return;
 	}
-	writeProp(state, key, spec, { ...config, from: IN_VAULT, path: entry });
+	writeProp(state, key, spec, withFields(config, vaultImplementationOf(spec), { path: entry }));
 }

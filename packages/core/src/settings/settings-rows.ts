@@ -1,4 +1,4 @@
-import { createElement as h } from "react";
+import { Fragment, createElement as h } from "react";
 import type { FormEvent, MouseEvent, ReactElement, ReactNode } from "react";
 import {
 	Button,
@@ -10,6 +10,7 @@ import {
 	Row,
 	RowLabel,
 	RowValue,
+	Help,
 	SidebarGroup,
 	SidebarRow,
 } from "@widgetarium/kit";
@@ -31,6 +32,7 @@ export interface ValueRowParts {
 	readonly label: ReactNode;
 	readonly value: ReactNode;
 	readonly sub?: ReactNode;
+	readonly help?: ReactNode;
 	readonly glyph?: ReactNode;
 	readonly after?: ReactNode;
 	readonly unset?: boolean | undefined;
@@ -50,7 +52,12 @@ export function shownValue(value: unknown, fallback: unknown): string | null {
 }
 
 export function group(key: string, heading: ReactNode, rows: ReactNode, under: ReactNode): ReactElement {
-	return h(SidebarGroup, { className: "wg-set-group", key, label: heading, hint: under }, rows);
+	return h(SidebarGroup, { className: "wg-set-group", key, label: withHelp(heading, under) }, rows);
+}
+
+export function withHelp(label: ReactNode, help: ReactNode): ReactNode {
+	if (!help) return label;
+	return h(Fragment, null, label, h(Help, null, help));
 }
 
 export function valueRow(parts: ValueRowParts): ReactElement {
@@ -60,7 +67,7 @@ export function valueRow(parts: ValueRowParts): ReactElement {
 		state: { pressable: true, unset: parts.unset },
 		onClick: parts.onClick,
 		icon: parts.glyph,
-		label: parts.label,
+		label: withHelp(parts.label, parts.help),
 		sub: parts.sub,
 		value: parts.value,
 		after: parts.after ?? h(Icon, { name: "chevron", className: "wg-set-chev", key: "chev" }),

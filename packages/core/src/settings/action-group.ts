@@ -17,7 +17,9 @@ import { offeredEntries } from "./offered-boxes.js";
 import { isConsentNeededFor } from "../surface/host-commands.js";
 
 const NO_REFS = { described: () => null };
-import { draftOnInput, editorPopover, group, note, reportRow, valueRow } from "./settings-rows.js";
+import { draftOnInput, editorPopover, group, note, reportRow, valueRow, withHelp } from "./settings-rows.js";
+import { ChoiceList } from "./choice-list.js";
+import type { Choice } from "./choice-list.js";
 import type { SettingsState } from "./settings-state.js";
 
 const ACTIONS_HINT = "What the widget can do. Each one runs through what you pick.";
@@ -72,7 +74,7 @@ function commandRow(state: SettingsState, [name, spec]: Named): ReactElement {
 	const binding = commandBindingOf(state.tile, name, spec);
 	const sourcesOpen = state.openRow === sourcesKeyOf(name);
 	const sub = spec.hint ?? sayingOf(binding);
-	const trigger = valueRow({ label: spec.label, sub, value: null, unset: !binding.implementation });
+	const trigger = valueRow({ label: spec.label, help: sub, value: null, unset: !binding.implementation });
 	const choices =
 		sourcesOpen || !hasChoicesOfItsOwn(binding)
 			? implementationChoices(state, name, binding)
@@ -85,8 +87,7 @@ function commandHead(state: SettingsState, name: string, spec: ParsedCommandSpec
 	const binding = commandBindingOf(state.tile, name, spec);
 	return h("div", { className: "wg-set-pop-headline", key: "head" }, [
 		h("div", { className: "wg-set-pop-head", key: "said" }, [
-			h("span", { className: "wg-set-pop-title", key: "title" }, spec.label),
-			h("span", { className: "wg-set-pop-hint", key: "hint" }, sayingOf(binding)),
+			h("span", { className: "wg-set-pop-title", key: "title" }, withHelp(spec.label, sayingOf(binding))),
 		]),
 		sourcesToggle(state, name, sourcesOpen),
 	]);
@@ -107,10 +108,10 @@ function sourcesToggle(state: SettingsState, name: string, sourcesOpen: boolean)
 }
 
 function implementationChoices(state: SettingsState, name: string, binding: CommandBinding): ReactNode[] {
-	const rows = offeredCommands().map((offered) =>
-		implementationRow(state, { name, offered, selected: binding.implementation === offered.id }),
+	const choices = offeredCommands().map((offered) =>
+		implementationChoice(state, { name, offered, selected: binding.implementation === offered.id }),
 	);
-	return [note(WHERE_IT_ACTS), h(SidebarGroup, { className: "wg-set-sources", key: "sources" }, rows)];
+	return [note(WHERE_IT_ACTS), h(ChoiceList, { key: "sources", choices })];
 }
 
 interface ImplementationRowAsk {
@@ -119,12 +120,12 @@ interface ImplementationRowAsk {
 	readonly selected: boolean;
 }
 
-function implementationRow(state: SettingsState, { name, offered, selected }: ImplementationRowAsk): ReactElement {
-	const onClick = (): void => {
+function implementationChoice(state: SettingsState, { name, offered, selected }: ImplementationRowAsk): Choice {
+	const onPick = (): void => {
 		writeBinding(state, name, { implementation: offered.id });
 		if (offered.target || offered.fields) state.openEditor(popKeyOf(name), "");
 	};
-	return h(SidebarRow, { key: offered.id, as: "button", label: offered.title, sub: offered.said, selected, onClick });
+	return { id: offered.id, title: offered.title, section: offered.resource, said: offered.said, selected, onPick };
 }
 
 function hasChoicesOfItsOwn(binding: CommandBinding): boolean {

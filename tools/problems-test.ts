@@ -1,16 +1,19 @@
 import type { z as Zod } from "zod";
-import type { HostGatewayContext, HostGatewayHost } from "../packages/core/src/engine/engine-backed.js";
+import type { HostGatewayContext, HostGatewayHost } from "../packages/core/src/engine/host-context.js";
 import { isObject } from "../packages/core/src/engine/is-object.js";
-import type { HostGateway } from "../packages/core/src/engine/engine-backed.js";
+import type { HostGateway } from "../packages/core/src/engine/host-context.js";
 import type { CollectionGateway } from "../packages/core/src/gateway/contract.js";
 import type { DeclaredModule, WidgetLayout } from "../packages/core/src/gateway/declared-types.js";
+import type { ActionMeta } from "../packages/core/src/gateway/create.js";
 import { runWidgetSource } from "./run-widget-source.ts";
+import { present } from "./page-dom.ts";
 
 const { resolveHostGateway } = await import("../packages/core/src/engine/host-gateways.js");
 const { createGatewayRefs, createViewCells } = await import("../packages/core/src/gateway/refs.ts");
 const { arrayGateway, soloGateway } = await import("../packages/core/src/gateway/create.ts");
 const { problemsOf } = await import("../packages/core/src/gateway/problems.ts");
-const { ICrudGateway, IValueGateway, defineProps, manifestOfModule, z } =
+const { createGatewayCache } = await import("../packages/core/src/gateway/cache.ts");
+const { ICrudGateway, IValueGateway, declareProps, manifestOfModule, z } =
 	await import("../packages/core/src/gateway/declared.ts");
 const { createDeclaredWidget } = await import("../packages/core/src/declared-widget.js");
 
@@ -38,6 +41,16 @@ const pathIn = (value: unknown, ...keys: readonly string[]): unknown =>
 function collectionOf(gateway: HostGateway): CollectionGateway<unknown> {
 	if (gateway.kind !== "collection") throw new Error(`${gateway.id} is no collection gateway`);
 	return gateway;
+}
+
+function metaOf(verb: unknown): ActionMeta | null {
+	const meta: unknown = typeof verb === "function" ? Reflect.get(verb, "meta") : null;
+	return isActionMeta(meta) ? meta : null;
+}
+
+function isActionMeta(held: unknown): held is ActionMeta {
+	if (!isObject(held)) return false;
+	return typeof held["gatewayId"] === "string" && typeof held["subscribe"] === "function";
 }
 
 function valueOf(gateway: HostGateway): Extract<HostGateway, { readonly kind: "value" }> {
@@ -134,6 +147,31 @@ tasks = [{ ref: "c", path: "Tasks/c.md", title: "Plan" }];
 await listed.list();
 check("a whole read forgets the rows its source no longer holds", problems.of("t2/tasks"), []);
 
+tasks = [{ ref: "d", path: "Tasks/d.md", title: 9 }];
+const cache = createGatewayCache();
+const readByTile = (tileId: string): Promise<void> => {
+	const read = collectionOf(
+		resolveHostGateway({
+			...context("tasks", "@core/from-tile-rows", "t1/tasks", TaskSchema),
+			tile: { id: tileId, props: { tasks: { implementation: "@core/from-tile-rows", fields: { ref: "t1/tasks" } } } },
+		}),
+	);
+	cache.subscribe(
+		present(metaOf(read.list), "the list's meta"),
+		undefined,
+		() => read.list(),
+		() => {},
+	);
+	return new Promise((settled) => setTimeout(settled, 0));
+};
+await readByTile("t5");
+await readByTile("t6");
+check(
+	"two tiles reading one source through the same binding each report what their own read left out",
+	[problems.of("t5/tasks").length, problems.of("t6/tasks").length],
+	[1, 1],
+);
+
 const counted = valueOf(resolveHostGateway(context("count", "@core/from-tile-value", "t1/count", z.number())));
 check("a value its schema refuses is answered as missing", await counted.get(), null);
 check(
@@ -158,7 +196,7 @@ const { render } = await import("../packages/core/src/engine/render.ts");
 const KindSchema = z.enum(["area", "bar"]);
 const kindsDrawn: unknown[] = [];
 const KindProbe = createDeclaredWidget(
-	defineProps({ kind: IValueGateway.of(KindSchema.default("area")).pick("get") }),
+	declareProps({ kind: IValueGateway.of(KindSchema.default("area")).pick("get") }),
 	({ kind }) => {
 		kindsDrawn.push(kind);
 		return null;
@@ -227,7 +265,7 @@ const days = { days: ICrudGateway.of(DayNoteSchema) };
 // TODO: Described types describes as never, so a module describing fields is narrowed by a guard
 const described = manifestOfModule(
 	declaredModuleOf({
-		default: createDeclaredWidget(defineProps(days), () => null),
+		default: createDeclaredWidget(declareProps(days), () => null),
 		metadata: { title: "Days", props: { days: { describes: { done: { label: "Kept", type: "number" } } } } },
 		layout: LAYOUT,
 	}),
@@ -249,7 +287,7 @@ const FaceSchema = z.object({
 });
 const wrapped = manifestOfModule({
 	default: createDeclaredWidget(
-		defineProps({ face: IValueGateway.of(FaceSchema.default({})).pick("get") }),
+		declareProps({ face: IValueGateway.of(FaceSchema.default({})).pick("get") }),
 		() => null,
 	),
 	metadata: { title: "Face" },
@@ -265,7 +303,7 @@ check(
 	refusal(() =>
 		manifestOfModule(
 			declaredModuleOf({
-				default: createDeclaredWidget(defineProps(days), () => null),
+				default: createDeclaredWidget(declareProps(days), () => null),
 				metadata: { title: "Days", props: { days: { describes: { done: { aka: ["kept"] } } } } },
 				layout: LAYOUT,
 			}),
@@ -286,7 +324,7 @@ check(
 check(
 	"and names the new form when handed the old one",
 	refusal(() => {
-		Reflect.apply(createWidget, undefined, [defineProps({}), () => null]);
+		Reflect.apply(createWidget, undefined, [declareProps({}), () => null]);
 	}),
 	"createWidget takes what the widget injects and the function that draws it: createWidget({ inject: { ... }, draw: (props) => ... })",
 );

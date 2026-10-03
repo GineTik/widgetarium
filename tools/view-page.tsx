@@ -110,7 +110,9 @@ function read(): Readonly<Record<string, unknown>> {
 		popRows: textsAt(".wg-set-pop .wg-set-row .wg-kit-row-label"),
 		popNote: textOf(document.querySelector(".wg-set-pop.is-open:not(.is-exiting) .wg-set-pop-note")) ?? null,
 		popTitle: textOf(document.querySelector(".wg-set-pop .wg-set-pop-title")) ?? null,
-		popHint: textOf(document.querySelector(".wg-set-pop .wg-set-pop-hint")) ?? null,
+		popHint:
+			document.querySelector(".wg-set-pop .wg-set-pop-title .wg-kit-help-button")?.getAttribute("aria-description") ??
+			null,
 		popArea: valueOf(document.querySelector(".wg-set-pop textarea")),
 		popError: textOf(document.querySelector(".wg-set-pop .wg-set-pop-error")) ?? null,
 		applyOff: textOf(document.querySelector(".wg-set-pop button[disabled]")) ?? null,
@@ -126,7 +128,10 @@ function read(): Readonly<Record<string, unknown>> {
 		),
 		hints: elementsAt(".wg-set-window .wg-kit-side-group")
 			.filter((node) => ["Settings", "Selection"].includes(textOf(node.querySelector(".wg-kit-side-label")) ?? ""))
-			.map((node) => textOf(node.querySelector(".wg-kit-side-hint")) ?? null),
+			.map(
+				(node) =>
+					node.querySelector(".wg-kit-side-label .wg-kit-help-button")?.getAttribute("aria-description") ?? null,
+			),
 		items: textsAt(".wg-kit-pop-item"),
 		tabItems: textsAt(".orbi-view-tabs .wg-kit-pop-item"),
 		rows: elementsAt(".wg-set-panel .wg-set-row .wg-kit-row-label")

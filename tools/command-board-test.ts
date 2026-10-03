@@ -101,7 +101,7 @@ let board: Board = normalizeBoard({
 			id: "t1",
 			widget: ID,
 			props: {
-				tasks: { from: "typed", rows: [{ title: "Ship spec", status: "doing" }] },
+				tasks: { implementation: "@core/typed-rows", fields: { rows: [{ title: "Ship spec", status: "doing" }] } },
 				move: { implementation: "@core/rows-update", fields: { target: "t1/tasks" } },
 				create: { implementation: "@core/rows-create", fields: { target: "t1/tasks" } },
 			},
@@ -195,7 +195,7 @@ const withProps = (props: Tile["props"]): void => {
 	draw();
 };
 const moveInVault = { implementation: "@core/rows-update", fields: { target: "t1/tasks" } };
-withProps({ tasks: { from: "vault", path: "Tasks" }, move: moveInVault });
+withProps({ tasks: { implementation: "@obsidian/folder", fields: { path: "Tasks" } }, move: moveInVault });
 await tick();
 check("a command over a vault list stays shut until it is switched on", last().move.can(), {
 	can: false,
@@ -239,12 +239,18 @@ registerPacks(
 		id: "@test",
 		title: "Test",
 		queries: [
-			defineGatewayMetadata(PackTasksQuery, { id: "@test/tasks", title: "Packed tasks", fields: PackFieldsSchema }),
+			defineGatewayMetadata(PackTasksQuery, {
+				id: "@test/tasks",
+				title: "Packed tasks",
+				resource: "Folder",
+				fields: PackFieldsSchema,
+			}),
 		],
 		commands: [
 			defineCommandMetadata(PackMoveCommand, {
 				id: "@test/move",
 				title: "Packed move",
+				resource: "Folder",
 				description: "Records the move.",
 				fields: PackFieldsSchema,
 			}),

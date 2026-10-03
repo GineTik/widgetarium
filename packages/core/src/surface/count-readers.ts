@@ -1,5 +1,6 @@
 import type { HeldRecord, Tile, TileProps } from "../model.js";
 import type { SurfaceRegistry } from "./use-surface-shared.js";
+import { fieldsIn } from "../gateway/props.js";
 
 type MountedRecords = Readonly<Record<string, HeldRecord>> | null | undefined;
 
@@ -13,7 +14,7 @@ export function countReaders(
 	const walk = (widget: string, props: TileProps | null | undefined): void => {
 		const declared = registry.get(widget)?.manifest?.props ?? {};
 		for (const name of Object.keys(declared)) {
-			if ((props?.[name]?.path || "") === folderPath) found += 1;
+			if (fieldsIn(props?.[name]?.fields)["path"] === folderPath) found += 1;
 		}
 	};
 	const descend = (held: MountedRecords): void => {

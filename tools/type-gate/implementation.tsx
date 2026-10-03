@@ -1,13 +1,4 @@
-import {
-	ICrudGateway,
-	IListGateway,
-	IValueGateway,
-	RecordRefSchema,
-	createWidget,
-	defineProps,
-	useData,
-	z,
-} from "widgetarium";
+import { ICrudGateway, IListGateway, IValueGateway, RecordRefSchema, createWidget, useData, z } from "widgetarium";
 import type { GivenProps, Implementation, Query, RecordRef, Row, RowsResult } from "widgetarium";
 
 const BoardSchema = z.object({ name: z.string(), columns: z.array(z.string()) });
@@ -76,13 +67,11 @@ class TasksInMemory extends ICrudGateway.of(TaskSchema).pick("list", "get", "cre
 	}
 }
 
-const props = defineProps({
-	board: IValueGateway.of(BoardSchema.nullable().default(null)).pick("get"),
-	tasks: ICrudGateway.of(TaskSchema).pick("list", "create"),
-});
-
 const Board = createWidget({
-	inject: props,
+	inject: {
+		board: IValueGateway.of(BoardSchema.nullable().default(null)).pick("get"),
+		tasks: ICrudGateway.of(TaskSchema).pick("list", "create"),
+	},
 	draw: ({ board, tasks }) => {
 		const shown = useData(tasks.list).data;
 		return `${board?.name ?? ""}${shown.length}`;
@@ -91,7 +80,7 @@ const Board = createWidget({
 
 declare const picked: Implementation<typeof PickedRef>;
 const boards = new BoardsInMemory([]);
-const given: GivenProps<typeof props> = {
+const given: GivenProps<typeof Board.declared> = {
 	board: new SelectedRow({ rows: boards, picked, whenNothingPicked: "first" }),
 	tasks: new TasksInMemory(),
 };

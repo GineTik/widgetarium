@@ -217,9 +217,15 @@ const BOUND = {
 			id: "group",
 			widget: HOLDER,
 			mounts: { holds: [{ name: "Source", widget: VALUE }] },
-			mounted: { Source: { widget: VALUE, props: { value: { from: "typed", value: 42 } } } },
+			mounted: {
+				Source: { widget: VALUE, props: { value: { implementation: "@core/typed-value", fields: { value: 42 } } } },
+			},
 		},
-		{ id: "reader", widget: VALUE, props: { value: { from: "ref", ref: "group/Source/value" } } },
+		{
+			id: "reader",
+			widget: VALUE,
+			props: { value: { implementation: "@core/from-tile-value", fields: { ref: "group/Source/value" } } },
+		},
 	],
 	layout: { left: [], main: [[{ id: "group", height: 300 }], [{ id: "reader", height: 80 }]], right: [] },
 };

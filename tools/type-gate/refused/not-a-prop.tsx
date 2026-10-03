@@ -1,5 +1,6 @@
-import { defineProps } from "widgetarium";
+import { createWidget } from "widgetarium";
 
-export const props = defineProps({
-	entries: { default: [], writes: ["create"] },
+export default createWidget({
+	inject: { entries: { default: [], writes: ["create"] } },
+	draw: () => null,
 });

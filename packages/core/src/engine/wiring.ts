@@ -1,6 +1,7 @@
 // TRADE-OFF: a widget id in a manifest, the way a slot already names its default widget — a bare prop name would collide, since two widgets both offer `selection`
 import { widgetKeyOf } from "./widget-ref.js";
 import { isObject } from "./is-object.js";
+import { fieldsIn, fromTileImplementationOf, withFields, withFieldsPatched } from "../gateway/props.js";
 import type { Fields } from "./catalogue-index.js";
 import type { HeldRecord, Tile, TileProp, TileProps } from "../model.js";
 
@@ -62,20 +63,22 @@ function wireWhere(spec: Fields, config: TileProp, standing: Standing): unknown[
 	const rows = rowsOf(spec["where"])
 		.map((row) => wireRow(row, standing))
 		.filter((row): row is Fields => row !== null);
-	const own = rowsOf(config.where).filter((row) => !isObject(row) || row["fixed"] !== true);
+	const own = rowsOf(fieldsIn(config.fields)["where"]).filter((row) => !isObject(row) || row["fixed"] !== true);
 	if (rows.length === 0) return null;
 	return [...rows, ...own];
 }
 
 function wireProp(spec: Fields, config: TileProp, standing: Standing): TileProp | null {
 	if (typeof spec["wants"] === "string") {
-		if (typeof config.ref === "string") return null;
+		if (typeof fieldsIn(config.fields)["ref"] === "string") return null;
 		const ref = refFor(spec["wants"], standing);
-		return ref ? { ...config, from: "ref", ref } : null;
+		return ref ? withFields(config, fromTileImplementationOf({ kind: spec["kind"] }), { ref }) : null;
 	}
 	const where = wireWhere(spec, config, standing);
 	if (!where) return null;
-	return stableWhere(where) === stableWhere(config.where) ? null : { ...config, where };
+	return stableWhere(where) === stableWhere(fieldsIn(config.fields)["where"])
+		? null
+		: withFieldsPatched(config, { where });
 }
 
 function stableWhere(rows: unknown): string {

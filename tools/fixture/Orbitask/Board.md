@@ -10,8 +10,9 @@ tiles:
     widget: "@default/editable-tabs"
     props:
       tabs:
-        from: vault
-        path: Orbitask/Boards
+        implementation: "@obsidian/folder"
+        fields:
+          path: Orbitask/Boards
         allow: [list, create, update, remove]
   - id: views
     widget: "@default/view-tabs"
@@ -19,12 +20,14 @@ tiles:
     widget: "@default/kanban-board"
     props:
       tasks:
-        from: vault
-        path: Orbitask/Tasks
+        implementation: "@obsidian/folder"
+        fields:
+          path: Orbitask/Tasks
         allow: [list, get, create, update, remove]
       boards:
-        from: vault
-        path: Orbitask/Boards
+        implementation: "@obsidian/folder"
+        fields:
+          path: Orbitask/Boards
         allow: [list, create, update, repairIds]
     slots:
       card: "@default/task-card"
@@ -32,8 +35,9 @@ tiles:
     widget: "@default/filter-panel"
     props:
       tasks:
-        from: vault
-        path: Orbitask/Tasks
+        implementation: "@obsidian/folder"
+        fields:
+          path: Orbitask/Tasks
 mode: expanded
 layouts:
   "4":

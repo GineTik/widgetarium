@@ -92,25 +92,31 @@ export default Checklist;
 them typed. `defineMetadata` takes the created widget. Never annotate `inject` or `draw` with a type:
 that erases what the component is typed from. Props are declared in `inject` and nowhere else; code
 outside `draw` takes their types from the widget itself: `PropsOf<typeof Board>`, imported with
-`import type Board from "./widget"` in a sibling file. `defineProps` is not used in a new widget.
+`import type Board from "./widget"` in a sibling file.
 
 ### A prop is a gateway class
 
-| Declared                                                    | Arrives as                                                |
-| ----------------------------------------------------------- | --------------------------------------------------------- |
-| `getTasks: IQuery.expects(z.array(RowSchema))`              | a list read: `useData(getTasks, { where, sort, limit })`  |
-| `getHeading: IQuery.expects(z.string().default("To do"))`   | the value: `draw: ({ getHeading: heading }) => …`         |
-| `ICommand.sends(InputSchema)`, or `ICommand` with no input  | `await move(input)` answers `{ ok }` or `{ ok, reason }`  |
-| `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema            |
-| `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                       |
-| `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                               |
-| `IListGateway.of(RowSchema, { where, sort, default })`      | a gateway that reads: `list`, `get`                       |
-| `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`     | a gateway with every verb, or only the ones picked        |
-| `ISlot.of<Given>({ default, surface, gives })`              | a function drawing the widget in the slot, or `null`      |
-| `IMounts.of({ default: [] })`                               | `MountEntry[]`, each drawn with `<Mounted entry={...} />` |
-| `IHost`, `INavigator`, `IHere`                              | what the engine hands over, only when declared            |
-| `IReader`, `IContent`                                       | the passage and its reader, for an `inline` widget        |
-| `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer   |
+| Declared                                                    | Arrives as                                                                                                  |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `getTasks: IQuery.expects(z.array(RowSchema))`              | a list read: `useData(getTasks, { where, sort, limit })`                                                    |
+| `getHeading: IQuery.expects(z.string().default("To do"))`   | the value: `draw: ({ getHeading: heading }) => …`                                                           |
+| `ICommand.sends(InputSchema)`, or `ICommand` with no input  | `await move(input)` answers `{ ok }` or `{ ok, reason }`                                                    |
+| `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema                                                              |
+| `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                                                                         |
+| `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                                                                                 |
+| `IListGateway.of(RowSchema, { where, sort, default })`      | a gateway that reads: `list`, `get`                                                                         |
+| `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`     | a gateway with every verb, or only the ones picked                                                          |
+| `ISlot.of<Given>({ default, surface, gives })`              | a function drawing the widget in the slot, or `null`                                                        |
+| `IMounts.of({ default: [] })`                               | `MountEntry[]`, each drawn with `<Mounted entry={...} />`                                                   |
+| `IHost`, `INavigator`, `IHere`                              | what the engine hands over, only when declared                                                              |
+| `IReader`, `IContent`                                       | the passage and its reader, for an `inline` widget                                                          |
+| `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer                                                     |
+| `IPreview`                                                  | `{ canPreview, Drawn }`: `<Drawn widget={id} />` draws any widget the catalogue knows as its preview        |
+| `ICarrier`                                                  | `{ canCarry, lift(pointer, { widget, label }) }`: a drag the host runs, answering where it landed or `null` |
+
+`ICatalogue.open()` raises no dialog: it asks the sidebar catalogue and answers the widget picked
+there, or `null`. `ICarrier` is how a widget starts a drag without touching `window`: hand its answer
+to `@catalogue/place`.
 
 **Reads are `IQuery`, writes are `ICommand`; prefer them in a new widget.** A query over `z.array(...)`
 takes the input every list takes (`where`, `sort`, `offset`, `limit`); any other query takes none
@@ -145,9 +151,12 @@ word on the wrong side is refused with the word that fits. An implementation cla
 engine holds none. A class is built `new Class(fields, ports)`: `fields` are what the person set in
 the settings window (text, numbers, switches, a choice, or another widget's prop for a field marked
 `.meta({ pick: "collection" })`), and `ports` are what the host lends — `self`, `commandLine`
-(`execFile`, never a shell), `workingDirectory`, `network`, `vault`, `refs` and `confirm`. A built-in
-that needs the engine's own state extends `EngineBackedValue`/`EngineBackedRows` instead and is
-built with the host context. `definePack({ id, title, queries, commands })` lists them with
+(`execFile`, never a shell), `workingDirectory`, `network`, `vault`, `refs` and `confirm`. A query
+also gets `prop` (its prop's declared kind, type, writes, default, where, sort and field needs),
+`kept` (the value its tile keeps, read and written), `screen` (cells that live while the screen is
+open) and `notes` (the host's folders and notes); every built-in, the typed, wiring, file, folder and
+statistic sources included, is such a class and holds its own logic. A verb that may refuse answers
+through `can(verb)`. `definePack({ id, title, queries, commands })` lists them with
 `defineGatewayMetadata` and `defineCommandMetadata`, every id under the pack's own name, and the host
 calls `registerPacks` once at load. A command's `consent` is `always` (shut until switched on in the
 Data tab, the default), `vault-target` (shut only over a vault-bound target) or `free`. A source is
@@ -158,11 +167,27 @@ exact shape fits a list whose described fields it carries and a value whose cont
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | `@core`     | `typed-value`, `typed-rows`, `screen-state`, `from-tile-value`, `from-tile-rows`, `selection`, `selected-row`, `fetch`, `fetch-rows` | `console-log`, `value-set`, `rows-create                                                              | update | remove                      | replace | repair-ids`, `fetch-send` |
 | `@obsidian` | `file`, `folder`, `tag`, `search`                                                                                                    | `folder-create                                                                                        | update | remove`, `file-set`, `open` |
-| `@stats`    | `number`, `series`, `breakdown`, `streak` over another widget's rows; one per algorithm over a folder                                | —                                                                                                     |
+| `@stats`    | `number`, `series`, `breakdown`, `days-kept` over another widget's rows; one per algorithm over a folder                             | —                                                                                                     |
 | `@git`      | `commits`, `branches`, `current-branch`, `status`, `commit-files`, `tags`, `worktrees`                                               | `stage`, `unstage`, `commit`, `checkout`, `create-branch`, `pull`, `push` (asks first), `worktree-add | remove | lock                        | unlock` |
 
-`@core/file` and `@core/folder` are read as `@obsidian/file` and `@obsidian/folder`, and
-`@core/stat-<algorithm>` as `@stats/<algorithm>`, so a note bound before keeps its source.
+| Pack         | Queries                                                                                                                  | Commands                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `@catalogue` | `entries`, `count`, `showing`, `packs`, `tags`, `templates`, `said`, `docs-said`, `doc-pages`, `doc-page`, `install-job` | `install`, `uninstall` (asks first), `pick`, `place`, `use-template`, `open-view`, `clear-filters` |
+
+**The catalogue and the docs are boards of `@catalogue` widgets in the right sidebar.** The plugin lays
+that scope into `.widgetarium/widgets/@catalogue` whenever the bundle's stamp differs from the one in its
+`.laid-by-plugin` mark (a scope without the mark is left alone), so the catalogue works before anything
+is installed, and an unchanged start costs one read. Every filter is a value
+another widget holds, named by ref in the query's fields (`keyword`, `showing`, `pack`, `tag`); a
+widget never filters. An install is one job per widget id, owned by `INSTALL_JOBS`: `install-job` and
+the `job` on every entry read the same owner, so a card and a tile still installing draw the same ring.
+
+**A binding is `{ implementation, fields, allow }` and nothing else.** The settings window writes
+that shape for every source, the typed ones included: `@core/typed-value` keeps its value in
+`fields.value`, `@core/typed-rows` its rows in `fields.rows`. Every implementation names its
+`resource` — `This board`, `Another widget`, `Note`, `Folder`, `Search`, `Statistics`, `Web`, `Git`,
+`Catalogue` or `Console` — and the source and action lists draw one section per resource in that
+order, so its `title` reads under that heading: `Folder` › `Notes in it`.
 
 **The schema is the type and the default.** A value's schema must carry `.default()`; one without is
 refused. The built-in gateways check what they read against the schema through `context.parse`: a
@@ -254,7 +279,7 @@ catalogue card draws with), and per prop:
 
 | Key             | Means                                                                                                                                                                                                  |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `label`, `hint` | what the settings window shows; `label` is read off the key when not written                                                                                                                           |
+| `label`, `hint` | `label` names the field; `hint` is one short sentence for a person, shown behind the field's (?) button                                                                                                |
 | `describes`     | for a collection: the row's fields. A string is a label; an object may carry `label`, `hint`, `type`, `many`, `required`. A field's `aka` belongs to the schema, and `describes` naming one is refused |
 | `aka`           | every name this prop had before, newest last                                                                                                                                                           |
 | `control`       | only when the type does not say how to draw it: `text`, `emoji`, `icon`                                                                                                                                |
@@ -294,7 +319,9 @@ widget fills — a tab pressed, a card opened — and a box draws nothing in the
 export const migrations = defineMigrations([
 	{
 		from: { label: IValueGateway.of(z.string().default("")).pick("get") },
-		run: (old) => ({ label: { from: "typed", value: String(old.label?.value ?? "").length } }),
+		run: (old) => ({
+			label: { implementation: "@core/typed-value", fields: { value: String(old.label?.fields?.value ?? "").length } },
+		}),
 	},
 ]);
 ```

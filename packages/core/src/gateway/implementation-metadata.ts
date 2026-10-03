@@ -1,8 +1,23 @@
 import type { z } from "zod";
-import type { Kind } from "./declaration";
+import type { DeclaringWord, Kind } from "./declaration";
 import { WIDGET_WORDS, declarationIn } from "./declaration";
 
 type Constructed = new (fields: never, host: never) => object;
+
+export const RESOURCES = [
+	"This board",
+	"Another widget",
+	"Note",
+	"Folder",
+	"Search",
+	"Statistics",
+	"Web",
+	"Git",
+	"Catalogue",
+	"Console",
+] as const;
+
+export type Resource = (typeof RESOURCES)[number];
 
 type FieldsOf<C extends Constructed> = ConstructorParameters<C>[0];
 
@@ -10,6 +25,7 @@ export interface GatewayMetadata<C extends Constructed = Constructed> {
 	readonly implementation: C;
 	readonly id: string;
 	readonly title: string;
+	readonly resource: Resource;
 	readonly description?: string;
 	readonly fields: z.ZodType;
 	readonly kind: Kind;
@@ -18,6 +34,7 @@ export interface GatewayMetadata<C extends Constructed = Constructed> {
 export interface GatewayMetadataInput<C extends Constructed> {
 	readonly id: string;
 	readonly title: string;
+	readonly resource: Resource;
 	readonly description?: string;
 	readonly fields: z.ZodType<FieldsOf<C>>;
 }
@@ -35,12 +52,8 @@ export function defineGatewayMetadata<C extends Constructed>(
 	const declaration = declarationIn(implementation);
 	if (!declaration)
 		throw new Error(EXTENDS_NO_INTERFACE.replace("{implementation}", implementation.name || "this class"));
-	if (declaration.word && WIDGET_WORDS.includes(declaration.word))
-		throw new Error(
-			WIDGET_WORD_IN_IMPLEMENTATION.replace("{implementation}", implementation.name || "this class")
-				.replace("{word}", declaration.word === "sends" ? "ICommand.sends" : "IQuery.expects")
-				.replace("{fits}", declaration.word === "sends" ? "ICommand.takes" : "IQuery.returns or IQuery.returnsAny"),
-		);
+	refuseWidgetWord(implementation, declaration.word);
+	refuseUnknownResource(metadata);
 	return { ...metadata, implementation, kind: declaration.kind };
 }
 
@@ -52,6 +65,7 @@ export interface CommandMetadata<C extends Constructed = Constructed> {
 	readonly implementation: C;
 	readonly id: string;
 	readonly title: string;
+	readonly resource: Resource;
 	readonly description: string;
 	readonly fields: z.ZodType;
 	readonly target: CommandTargetKind | null;
@@ -61,11 +75,14 @@ export interface CommandMetadata<C extends Constructed = Constructed> {
 export interface CommandMetadataInput<C extends Constructed> {
 	readonly id: string;
 	readonly title: string;
+	readonly resource: Resource;
 	readonly description: string;
 	readonly fields: z.ZodType<FieldsOf<C>>;
 	readonly target?: CommandTargetKind;
 	readonly consent?: CommandConsent;
 }
+
+const UNKNOWN_RESOURCE = '{id} names the resource "{resource}"; name one of {resources}';
 
 const NOT_A_COMMAND = "{implementation} is not a command implementation — extend ICommand.takes(schema)";
 
@@ -76,5 +93,28 @@ export function defineCommandMetadata<C extends Constructed>(
 	const declaration = declarationIn(implementation);
 	if (declaration?.kind !== "command" || declaration.word !== "takes")
 		throw new Error(NOT_A_COMMAND.replace("{implementation}", implementation.name || "this class"));
+	refuseUnknownResource(metadata);
 	return { ...metadata, implementation, target: metadata.target ?? null, consent: metadata.consent ?? "always" };
+}
+
+export function inResourceOrder<Entry extends { readonly resource: Resource }>(entries: readonly Entry[]): Entry[] {
+	return [...entries].sort((one, other) => RESOURCES.indexOf(one.resource) - RESOURCES.indexOf(other.resource));
+}
+
+function refuseUnknownResource({ id, resource }: { readonly id: string; readonly resource: unknown }): void {
+	if (RESOURCES.some((known) => known === resource)) return;
+	throw new Error(
+		UNKNOWN_RESOURCE.replace("{id}", id)
+			.replace("{resource}", String(resource))
+			.replace("{resources}", RESOURCES.join(", ")),
+	);
+}
+
+function refuseWidgetWord(implementation: Constructed, word: DeclaringWord | undefined): void {
+	if (!word || !WIDGET_WORDS.includes(word)) return;
+	throw new Error(
+		WIDGET_WORD_IN_IMPLEMENTATION.replace("{implementation}", implementation.name || "this class")
+			.replace("{word}", word === "sends" ? "ICommand.sends" : "IQuery.expects")
+			.replace("{fits}", word === "sends" ? "ICommand.takes" : "IQuery.returns or IQuery.returnsAny"),
+	);
 }

@@ -6,7 +6,7 @@ import type { Tile } from "../model.js";
 import type { WidgetDefinition } from "../registry.js";
 import { DrawnInShell } from "../mounted.js";
 import type { TileShells } from "../engine/tile-shells.js";
-import type { PatchStep } from "../engine/host-gateways.js";
+import type { PatchStep } from "../engine/host-context.js";
 import type { TilePatch } from "../settings/settings-state.js";
 import type { LaidLeaf } from "../tree-laid.js";
 import { behindBoundary } from "./behind-boundary.js";

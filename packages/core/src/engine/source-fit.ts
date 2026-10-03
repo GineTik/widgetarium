@@ -3,7 +3,7 @@ import { declarationIn } from "../gateway/declaration.js";
 import type { GatewayMetadata } from "../gateway/implementation-metadata.js";
 import { innerOf } from "../gateway/written.js";
 import { isObject } from "./is-object.js";
-import type { HostSpec } from "./engine-backed.js";
+import type { HostSpec } from "./host-context.js";
 
 const SCHEMA_OF_CONTROL: Readonly<Record<string, (schema: z.ZodType) => boolean>> = {
 	number: (schema) => schema instanceof z.ZodNumber,

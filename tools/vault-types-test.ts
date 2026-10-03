@@ -34,16 +34,22 @@ function check(name: string, held: unknown, wanted: unknown): void {
 	console.log(`${same ? "ok  " : "not ok"} ${name}${same ? "" : `\n      held ${held}`}`);
 }
 
-const DECLARED = `import { ICrudGateway, IValueGateway, createWidget, defineLayout, defineMetadata, defineProps, useData, z } from "widgetarium";
+const DECLARED = `import { ICrudGateway, IValueGateway, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 
 const Entry = z.object({ title: z.string(), done: z.boolean().optional() });
 
-const props = defineProps({
-	heading: IValueGateway.of(z.string().default("To do")).pick("get"),
-	entries: ICrudGateway.of(Entry).pick("list", "create"),
+const Checklist = createWidget({
+	inject: {
+		heading: IValueGateway.of(z.string().default("To do")).pick("get"),
+		entries: ICrudGateway.of(Entry).pick("list", "create"),
+	},
+	draw: ({ heading, entries }) => {
+		const { data } = useData(entries.list);
+		return <div>{heading.toUpperCase() + data.map((entry) => entry.title + entry.ref).join("")}</div>;
+	},
 });
 
-export const metadata = defineMetadata(props, {
+export const metadata = defineMetadata(Checklist, {
 	title: "Checklist",
 	description: "The widget a vault is measured on.",
 	props: { heading: { label: "Heading" } },
@@ -51,13 +57,7 @@ export const metadata = defineMetadata(props, {
 
 export const layout = defineLayout({ size: { preferredWidth: "full", preferredHeight: "auto" } });
 
-export default createWidget({
-	inject: props,
-	draw: ({ heading, entries }) => {
-		const { data } = useData(entries.list);
-		return <div>{heading.toUpperCase() + data.map((entry) => entry.title + entry.ref).join("")}</div>;
-	},
-});
+export default Checklist;
 `;
 
 fs.writeFileSync(path.join(laid, "@you/checklist/widget.tsx"), DECLARED);

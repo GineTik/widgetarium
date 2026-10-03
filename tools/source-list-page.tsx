@@ -80,6 +80,19 @@ interface ListMeasure {
 	readonly squeezedRows: number;
 	readonly popBottom: number;
 	readonly viewport: number;
+	readonly sections: readonly SectionDrawn[];
+}
+
+interface SectionDrawn {
+	readonly heading: string;
+	readonly rows: readonly string[];
+}
+
+function sectionsIn(list: HTMLElement): SectionDrawn[] {
+	return [...list.querySelectorAll(".wg-set-sources")].map((group) => ({
+		heading: group.querySelector(".wg-kit-side-label")?.textContent ?? "",
+		rows: [...group.querySelectorAll("button")].map((row) => row.textContent ?? ""),
+	}));
 }
 
 function measured(list: HTMLElement, pop: Element): ListMeasure {
@@ -92,6 +105,7 @@ function measured(list: HTMLElement, pop: Element): ListMeasure {
 		squeezedRows: rows.filter((row) => row.scrollHeight > row.clientHeight + 1).length,
 		popBottom: pop.getBoundingClientRect().bottom,
 		viewport: window.innerHeight,
+		sections: sectionsIn(list),
 	};
 }
 
@@ -106,7 +120,7 @@ setTimeout(async () => {
 	elementAt('.wg-set-pop.is-open button[aria-label="Where the data comes from"]')?.click();
 	await wait(400);
 	const pop = document.querySelector(".wg-set-pop.is-open");
-	const list = pop ? elementAt(".wg-set-sources .wg-kit-side-list", pop) : null;
+	const list = pop ? elementAt(".wg-set-choice-sections", pop) : null;
 	const before = list && pop ? measured(list, pop) : null;
 	if (list) list.scrollTop = 200;
 	await wait(200);

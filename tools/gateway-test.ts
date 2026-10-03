@@ -12,15 +12,18 @@ type GatewayBundle = typeof import("../packages/core/src/gateway/create.ts") &
 	typeof import("../packages/core/src/gateway/refs.ts") &
 	typeof import("../packages/core/src/gateway/cache.ts") &
 	typeof import("../packages/core/src/gateway/props.ts") &
+	typeof import("../packages/core/src/gateway/kept-in-tile.ts") &
 	typeof import("../packages/core/src/gateway/narrow.ts") &
 	typeof import("../packages/core/src/gateway/match.ts") &
 	typeof import("../packages/core/src/gateway/fields.ts") &
 	typeof import("../packages/core/src/gateway/operators.ts") &
-	typeof import("../packages/core/src/gateway/obsidian.ts");
+	typeof import("../packages/core/src/gateway/obsidian.ts") &
+	typeof import("../packages/packs/core/src/picked.ts") &
+	typeof import("../packages/packs/obsidian/src/file-gateway.ts");
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./packages/core/src/gateway/create"; export * from "./packages/core/src/gateway/refs"; export * from "./packages/core/src/gateway/cache"; export * from "./packages/core/src/gateway/props.js"; export * from "./packages/core/src/gateway/narrow"; export * from "./packages/core/src/gateway/match"; export * from "./packages/core/src/gateway/fields"; export * from "./packages/core/src/gateway/operators"; export * from "./packages/core/src/gateway/obsidian.js";`,
+		contents: `export * from "./packages/core/src/gateway/create"; export * from "./packages/core/src/gateway/refs"; export * from "./packages/core/src/gateway/cache"; export * from "./packages/core/src/gateway/props.js"; export * from "./packages/core/src/gateway/kept-in-tile.js"; export * from "./packages/core/src/gateway/narrow"; export * from "./packages/core/src/gateway/match"; export * from "./packages/core/src/gateway/fields"; export * from "./packages/core/src/gateway/operators"; export * from "./packages/core/src/gateway/obsidian.js"; export * from "./packages/packs/core/src/picked.ts"; export * from "./packages/packs/obsidian/src/file-gateway.ts";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},

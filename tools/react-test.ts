@@ -153,8 +153,8 @@ await registry.load();
 
 const BOARD = {
 	tiles: [
-		{ id: "hosted", widget: HOSTED, props: { value: { from: "typed", value: 11 } } },
-		{ id: "own", widget: OWN, props: { value: { from: "typed", value: 22 } } },
+		{ id: "hosted", widget: HOSTED, props: { value: { implementation: "@core/typed-value", fields: { value: 11 } } } },
+		{ id: "own", widget: OWN, props: { value: { implementation: "@core/typed-value", fields: { value: 22 } } } },
 	],
 	layout: { left: [], main: [[{ id: "hosted", height: 120 }], [{ id: "own", height: 120 }]], right: [] },
 };

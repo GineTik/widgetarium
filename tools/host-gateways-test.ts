@@ -4,9 +4,9 @@ import { createGatewayRefs, createViewCells } from "../packages/core/src/gateway
 import { arrayGateway, soloGateway } from "../packages/core/src/gateway/create.ts";
 import { defineGatewayMetadata } from "../packages/core/src/gateway/implementation-metadata.ts";
 import { IValueGateway, z } from "../packages/core/src/gateway/declared.ts";
-import type { HostGatewayContext } from "../packages/core/src/engine/engine-backed.ts";
+import type { HostGatewayContext } from "../packages/core/src/engine/host-context.ts";
 import type { Patch } from "../packages/core/src/gateway/contract.ts";
-import { updateOf, valueGatewayOf } from "./gateway-kinds.ts";
+import { collectionOf, updateOf, valueGatewayOf } from "./gateway-kinds.ts";
 import { fieldIn } from "./held-fields.ts";
 import { createRowSlot } from "./vault-fixture.ts";
 
@@ -35,6 +35,7 @@ check(
 			(entry) =>
 				!entry.id.startsWith("@stats/") &&
 				!entry.id.startsWith("@git/") &&
+				!entry.id.startsWith("@catalogue/") &&
 				!entry.id.startsWith("@core/fetch") &&
 				!["@obsidian/tag", "@obsidian/search"].includes(entry.id),
 		)
@@ -67,7 +68,7 @@ check(
 			class Loose {
 				constructor(readonly fields: object) {}
 			},
-			{ id: "x", title: "X", fields: z.object({}) },
+			{ id: "x", title: "X", resource: "This board", fields: z.object({}) },
 		),
 	),
 	"Loose extends no gateway interface — extend IQuery.returns, IQuery.returnsAny, ICommand.takes, IValueGateway, IListGateway or ICrudGateway",
@@ -83,7 +84,7 @@ check(
 				return null;
 			}
 		},
-		{ id: "x", title: "X", fields: z.object({}) },
+		{ id: "x", title: "X", resource: "This board", fields: z.object({}) },
 	).kind,
 	"value",
 );
@@ -91,20 +92,33 @@ check(
 const value = { kind: "value" };
 const rows = { kind: "collection" };
 check(
-	"a tile written before names its gateway through the shape it holds",
+	"a prop bound to nothing reads from what its declaration says",
 	[
-		hostGatewayFor(value, { from: "typed", value: 3 })?.id,
-		hostGatewayFor(value, { ref: "t1/selection" })?.id,
-		hostGatewayFor(rows, { path: "Tasks" })?.id,
-		hostGatewayFor(value, { from: "stat", path: "Log", algorithm: "sum" })?.id,
+		hostGatewayFor({ kind: "value", default: { value: 3 } }, {})?.id,
+		hostGatewayFor({ kind: "collection", default: { rows: [] } }, {})?.id,
 		hostGatewayFor({ kind: "value", default: { from: "memory", value: false } }, {})?.id,
+		hostGatewayFor(value, {})?.id,
+		hostGatewayFor(rows, {})?.id,
+		hostGatewayFor({ kind: "value", source: { implementation: "@core/selected-row", fields: {} } }, {})?.id,
 	],
-	["@core/typed-value", "@core/from-tile-value", "@obsidian/folder", "@stats/sum", "@core/screen-state"],
+	[
+		"@core/typed-value",
+		"@core/typed-rows",
+		"@core/screen-state",
+		"@obsidian/file",
+		"@obsidian/folder",
+		"@core/selected-row",
+	],
 );
 check(
-	"a tile written now names it outright",
-	hostGatewayFor(value, { implementation: "@core/selected-row", fields: {} })?.id,
-	"@core/selected-row",
+	"a binding names its implementation outright, and nothing else names one",
+	[
+		hostGatewayFor(value, { implementation: "@core/from-tile-value", fields: { ref: "t1/selection" } })?.id,
+		hostGatewayFor(value, { implementation: "@stats/sum", fields: { path: "Log" } })?.id,
+		hostGatewayFor(value, { implementation: "@core/selected-row", fields: {} })?.id,
+		hostGatewayFor(value, { implementation: "@core/stat-sum" })?.id ?? null,
+	],
+	["@core/from-tile-value", "@stats/sum", "@core/selected-row", null],
 );
 
 check(
@@ -195,6 +209,52 @@ check(
 		'SelectionQuery needs "rows" to name a prop of another tile, written tile/prop; it holds 7',
 	],
 );
+
+const readOnlyNote = valueGatewayOf(
+	resolveHostGateway({
+		...contextFor({}),
+		spec: { kind: "value", type: "text", writes: ["get", "update"] },
+		tile: {
+			id: "t5",
+			props: { board: { implementation: "@obsidian/file", fields: { path: "Note.md" }, allow: ["get", "update"] } },
+		},
+		host: {
+			slot: () => createRowSlot([]),
+			file: () => ({ canUpdate: false, get: async () => ({ path: "Note.md", content: "kept" }), update: () => true }),
+		},
+	}),
+);
+check(
+	"a note its host cannot write answers can() no for update, though the person switched it on",
+	readOnlyNote.update.can().can,
+	false,
+);
+check("and still reads its body", await readOnlyNote.get(), "kept");
+
+let keptRows: unknown = [];
+const typedRows = collectionOf(
+	resolveHostGateway({
+		...contextFor({}),
+		name: "tasks",
+		spec: { kind: "collection", writes: ["list", "create"] },
+		schema: z.object({ title: z.string() }),
+		tile: { id: "t6", props: { tasks: { implementation: "@core/typed-rows", fields: { rows: [] } } } },
+		propsRef: { current: { tasks: { implementation: "@core/typed-rows", fields: { rows: keptRows } } } },
+		patchProp: (_name, step) => {
+			keptRows = fieldIn(
+				fieldIn(step({ implementation: "@core/typed-rows", fields: { rows: keptRows } }), "fields"),
+				"rows",
+			);
+		},
+	}),
+);
+let heard = 0;
+const stopHearing = typedRows.subscribe(() => {
+	heard += 1;
+});
+await typedRows.create({ title: "Water plants" });
+stopHearing();
+check("one write is announced once, not once per layer it passes through", heard, 1);
 
 console.log(`\n${failed === 0 ? "host gateways: clean" : `host gateways: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

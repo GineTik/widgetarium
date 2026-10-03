@@ -8,15 +8,7 @@ import { EMOJI_TABLE } from "@widgetarium/kit/emoji-table";
 import type { TileProp } from "../model.js";
 import { declaredOf, typedIn, withTyped } from "../gateway/props.js";
 import type { PropBinding } from "../gateway/props.js";
-import {
-	TYPED_HERE,
-	isSwitched,
-	parseTyped,
-	typedControlOf,
-	writeProp,
-	writtenPlainly,
-	writtenText,
-} from "./prop-writing.js";
+import { isSwitched, parseTyped, typedControlOf, writeProp, writtenPlainly, writtenText } from "./prop-writing.js";
 import { draftOnInput, pickRow, popoverFoot } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
 import { collectionFields } from "./typed-rows.js";
@@ -75,8 +67,7 @@ export function typedLabel(spec: SettingsSpec, config: TileProp): string {
 }
 
 export function switchedValue(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactElement {
-	const flip = (next: boolean): void =>
-		writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, next));
+	const flip = (next: boolean): void => writeProp(state, key, spec, withTyped(spec, config, next));
 	return h(
 		"span",
 		{ className: "wg-set-switch", onClick: (event: MouseEvent) => event.stopPropagation() },
@@ -87,7 +78,7 @@ export function switchedValue(state: SettingsState, key: string, spec: SettingsS
 export function choiceBody(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactElement[] {
 	const now = typedTextOf(spec, config);
 	const take = (value: string): void => {
-		writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, value));
+		writeProp(state, key, spec, withTyped(spec, config, value));
 		state.openEditor(null);
 	};
 	return (spec.options ?? []).map((choice) =>
@@ -112,7 +103,7 @@ export function pickedRowValue(spec: SettingsSpec, config: TileProp, binding: Pr
 
 function applyTyped(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp, typed: string): void {
 	if (writtenPlainly(spec)) {
-		writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, parseTyped(spec, typed)));
+		writeProp(state, key, spec, withTyped(spec, config, parseTyped(spec, typed)));
 		return;
 	}
 	const parsed = parsedJson(typed);
@@ -124,7 +115,7 @@ function applyTyped(state: SettingsState, key: string, spec: SettingsSpec, confi
 		state.host?.ui?.notify?.(NOT_A_LIST);
 		return;
 	}
-	writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, parsed));
+	writeProp(state, key, spec, withTyped(spec, config, parsed));
 }
 
 function parsedJson(typed: string): unknown {
@@ -148,7 +139,7 @@ function pickerBody(
 	picker: GlyphSet,
 ): ReactNode[] {
 	const pick = (name: string): void => {
-		writeProp(state, key, spec, withTyped(spec, { ...config, from: TYPED_HERE }, name));
+		writeProp(state, key, spec, withTyped(spec, config, name));
 		state.openEditor(null);
 	};
 	return [h(GlyphPicker, { key: "picker", picker, value: typedTextOf(spec, config), onPick: pick })];

@@ -130,7 +130,7 @@ const cardNamingNoRole: Readonly<Record<string, unknown>> = { title: "x" };
 check("a manifest with no role is a finding", rulesIn(checkWidget({ ...clean, card: cardNamingNoRole })), ["role"]);
 check("no card at all is not judged for a role", rulesIn(checkWidget({ ...clean, card: null })), []);
 
-const surface = ["useData", "createWidget", "defineProps"];
+const surface = ["useData", "createWidget", "defineMetadata"];
 const reaching = { ...clean, source: 'import { useData, flatRows } from "widgetarium";\n' + clean.source };
 check("an import the surface does not carry is a finding", rulesIn(checkWidget({ ...reaching, surface })), ["reaches"]);
 check(

@@ -3,7 +3,7 @@ import type { ReactElement, ReactNode } from "react";
 import { z } from "zod";
 import { defaultImplementationFor } from "./gateway/defaults";
 import { canOf, refuseVerb } from "./gateway/create";
-import { ENGINE_GATEWAY, gatewayOverImplementation, isImplementation } from "./gateway/adapted";
+import { gatewayOverImplementation, isImplementation } from "./gateway/adapted";
 import type { AdaptedGateway } from "./gateway/adapted";
 import { gatewayCache, stableKey } from "./gateway/cache";
 import type { Action, CanResult, CollectionGateway, Query, ValueGateway } from "./gateway/contract";
@@ -162,8 +162,7 @@ function useGateway(name: string, declaration: Declaration, given: unknown): Ada
 
 function gatewayOver(name: string, declaration: Declaration, given: unknown): AdaptedGateway {
 	if (isGateway(given)) return given;
-	if (isImplementation(declaration, given))
-		return engineGatewayOf(given) ?? gatewayOverImplementation(name, declaration, given);
+	if (isImplementation(declaration, given)) return gatewayOverImplementation(name, declaration, given);
 	return gatewayOverGiven(name, declaration, given);
 }
 
@@ -224,11 +223,6 @@ function gatewayOverGiven(name: string, declaration: Declaration, given: unknown
 	const Default = defaultImplementationFor(declaredInterfaces.get(declaration), name);
 	const made = new Default(declaration.kind === "collection" ? { rows: held ?? [] } : { value: held });
 	return gatewayOverImplementation(name, declaration, made);
-}
-
-function engineGatewayOf(given: object): AdaptedGateway | null {
-	const engine: unknown = Reflect.get(given, ENGINE_GATEWAY);
-	return isGateway(engine) ? engine : null;
 }
 
 function isGateway(held: unknown): held is AdaptedGateway {

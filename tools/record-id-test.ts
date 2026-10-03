@@ -201,14 +201,22 @@ const PICKED = "boards/selection";
 function surfaceOver(folder: string): Board {
 	return normalizeBoard({
 		tiles: [
-			{ id: "boards", widget: "@default/editable-tabs", props: { tabs: { allow: EVERY_VERB, path: folder } } },
+			{
+				id: "boards",
+				widget: "@default/editable-tabs",
+				props: { tabs: { implementation: "@obsidian/folder", fields: { path: folder }, allow: EVERY_VERB } },
+			},
 			{
 				id: "board",
 				widget: "@default/kanban-board",
 				props: {
-					tasks: { allow: EVERY_VERB, path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
-					boards: { allow: EVERY_VERB, path: folder },
-					selection: { from: "ref", ref: PICKED },
+					tasks: {
+						implementation: "@obsidian/folder",
+						fields: { path: TASKS, where: [{ prop: "board", op: "is", value: { ref: PICKED } }] },
+						allow: EVERY_VERB,
+					},
+					boards: { implementation: "@obsidian/folder", fields: { path: folder }, allow: EVERY_VERB },
+					selection: { implementation: "@core/from-tile-value", fields: { ref: PICKED } },
 				},
 			},
 		],

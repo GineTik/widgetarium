@@ -16,7 +16,6 @@ import { FetchSendCommand, FetchSendFieldsSchema } from "./fetch-send-command.js
 import { ScreenStateQuery, TypedRowsQuery, TypedValueQuery } from "./typed-queries.js";
 import { FromTileRowsQuery, FromTileValueQuery, SelectedRowQuery, SelectionQuery } from "./wiring-queries.js";
 
-export { createTypedGateway } from "./typed-gateway.js";
 export {
 	ConsoleLogCommand,
 	FetchRowsQuery,
@@ -56,36 +55,42 @@ export const corePack = definePack({
 		defineGatewayMetadata(TypedValueQuery, {
 			id: "@core/typed-value",
 			title: "Typed here",
+			resource: "This board",
 			description: "A value typed into the tile and kept in the note.",
 			fields: z.looseObject({ value: z.unknown().optional() }),
 		}),
 		defineGatewayMetadata(TypedRowsQuery, {
 			id: "@core/typed-rows",
 			title: "Typed here",
+			resource: "This board",
 			description: "Rows typed into the tile and kept in the note.",
 			fields: z.looseObject({ rows: z.array(z.unknown()).optional(), ...RowsReadSchema }),
 		}),
 		defineGatewayMetadata(ScreenStateQuery, {
 			id: "@core/screen-state",
 			title: "This screen",
+			resource: "This board",
 			description: "A value that lives while the screen is open and never reaches the note.",
 			fields: z.looseObject({}),
 		}),
 		defineGatewayMetadata(FromTileValueQuery, {
 			id: "@core/from-tile-value",
-			title: "From a widget",
+			title: "Its value",
+			resource: "Another widget",
 			description: "The value another tile on this board holds.",
 			fields: z.looseObject({ ref: PropRefSchema }),
 		}),
 		defineGatewayMetadata(FromTileRowsQuery, {
 			id: "@core/from-tile-rows",
-			title: "From a widget",
+			title: "Its rows",
+			resource: "Another widget",
 			description: "The rows another tile on this board holds.",
 			fields: z.looseObject({ ref: PropRefSchema }),
 		}),
 		defineGatewayMetadata(SelectedRowQuery, {
 			id: "@core/selected-row",
-			title: "Picked in a widget",
+			title: "The row it picked",
+			resource: "Another widget",
 			description: "The row of a list that another widget, or this screen, has picked.",
 			fields: z.looseObject({
 				rows: PropRefSchema,
@@ -96,7 +101,8 @@ export const corePack = definePack({
 		}),
 		defineGatewayMetadata(SelectionQuery, {
 			id: "@core/selection",
-			title: "Chosen from a list",
+			title: "A row chosen from it",
+			resource: "Another widget",
 			description: "Which row of a list is chosen, kept while the screen is open.",
 			fields: z.looseObject({
 				rows: PropRefSchema,
@@ -106,13 +112,15 @@ export const corePack = definePack({
 		}),
 		defineGatewayMetadata(FetchValueQuery, {
 			id: "@core/fetch",
-			title: "From the web",
+			title: "A JSON value",
+			resource: "Web",
 			description: "One JSON value read over HTTP.",
 			fields: FetchFieldsSchema,
 		}),
 		defineGatewayMetadata(FetchRowsQuery, {
 			id: "@core/fetch-rows",
-			title: "From the web",
+			title: "A JSON list",
+			resource: "Web",
 			description: "A JSON list read over HTTP, a page at a time.",
 			fields: FetchFieldsSchema,
 		}),
@@ -120,7 +128,8 @@ export const corePack = definePack({
 	commands: [
 		defineCommandMetadata(ConsoleLogCommand, {
 			id: "@core/console-log",
-			title: "Print to the console",
+			title: "Print what is sent",
+			resource: "Console",
 			description: "Prints what the widget sends to the developer console and changes nothing.",
 			fields: z.looseObject({}),
 			consent: "free",
@@ -128,6 +137,7 @@ export const corePack = definePack({
 		defineCommandMetadata(ValueSetCommand, {
 			id: "@core/value-set",
 			title: "Set a value",
+			resource: "This board",
 			description: "Sets a value on this board.",
 			fields: TargetSchema,
 			target: "value",
@@ -136,6 +146,7 @@ export const corePack = definePack({
 		defineCommandMetadata(RowsCreateCommand, {
 			id: "@core/rows-create",
 			title: "Add a row",
+			resource: "This board",
 			description: "Adds a row to a list on this board.",
 			fields: TargetSchema,
 			target: "collection",
@@ -144,6 +155,7 @@ export const corePack = definePack({
 		defineCommandMetadata(RowsUpdateCommand, {
 			id: "@core/rows-update",
 			title: "Change a row",
+			resource: "This board",
 			description: "Rewrites a row of a list on this board.",
 			fields: TargetSchema,
 			target: "collection",
@@ -152,6 +164,7 @@ export const corePack = definePack({
 		defineCommandMetadata(RowsRemoveCommand, {
 			id: "@core/rows-remove",
 			title: "Remove a row",
+			resource: "This board",
 			description: "Drops a row from a list on this board.",
 			fields: TargetSchema,
 			target: "collection",
@@ -160,6 +173,7 @@ export const corePack = definePack({
 		defineCommandMetadata(RowsReplaceCommand, {
 			id: "@core/rows-replace",
 			title: "Replace every row",
+			resource: "This board",
 			description: "Writes a new set of rows over a list on this board.",
 			fields: TargetSchema,
 			target: "collection",
@@ -168,6 +182,7 @@ export const corePack = definePack({
 		defineCommandMetadata(RowsRepairIdsCommand, {
 			id: "@core/rows-repair-ids",
 			title: "Repair row ids",
+			resource: "This board",
 			description: "Gives a fresh id to every row of a list that shares one with another.",
 			fields: TargetSchema,
 			target: "collection",
@@ -175,7 +190,8 @@ export const corePack = definePack({
 		}),
 		defineCommandMetadata(FetchSendCommand, {
 			id: "@core/fetch-send",
-			title: "Send to the web",
+			title: "Send it as JSON",
+			resource: "Web",
 			description: "Sends what the widget sends as JSON to a URL.",
 			fields: FetchSendFieldsSchema,
 		}),

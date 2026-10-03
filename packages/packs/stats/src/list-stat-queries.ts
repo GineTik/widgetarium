@@ -7,10 +7,9 @@ import {
 	STAT_ALGORITHMS,
 	STAT_COMPARISONS,
 	STAT_WINDOWS,
-	statOf,
-	todayIso,
-} from "@widgetarium/core/gateway/stats.js";
-import type { StatQuery } from "@widgetarium/core/gateway/stats.js";
+} from "@widgetarium/core/engine/stat-fields.js";
+import type { StatQuery } from "@widgetarium/core/engine/stat-fields.js";
+import { statOf, todayIso } from "./stat-of.js";
 import { PropRefSchema } from "@widgetarium/core/engine/prop-ref.js";
 import type { ImplementationPorts } from "@widgetarium/core/engine/packs.js";
 import { breakdownOf, seriesOf } from "./aggregate.js";

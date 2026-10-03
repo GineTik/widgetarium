@@ -1,24 +1,15 @@
-import type { CollectionGateway, FilterRow, ValueGateway } from "./contract";
-import type { EveryValueVerb } from "./needs";
-import { valueGateway, valueIn } from "./create";
-import { stableKey } from "./cache";
-import { isMatch, valueOf } from "./match";
-
-export const STAT_ALGORITHMS = [
-	"count",
-	"sum",
-	"average",
-	"min",
-	"max",
-	"percent",
-	"active-days",
-	"streak",
-	"best-streak",
-	"record-streak",
-	"best-record-streak",
-] as const;
-export const STAT_WINDOWS = ["all", "today", "7d", "30d", "90d", "365d", "week", "month", "year"] as const;
-export const STAT_COMPARISONS = ["none", "change", "change-percent"] as const;
+import type { CollectionGateway, ValueGateway } from "@widgetarium/core/gateway/contract.js";
+import type { EveryValueVerb } from "@widgetarium/core/gateway/needs.js";
+import { valueGateway, valueIn } from "@widgetarium/core/gateway/create.js";
+import { stableKey } from "@widgetarium/core/gateway/cache.js";
+import { isMatch, valueOf } from "@widgetarium/core/gateway/match.js";
+import {
+	DEFAULT_DATE_FIELD,
+	STAT_ALGORITHMS,
+	STAT_COMPARISONS,
+	STAT_WINDOWS,
+} from "@widgetarium/core/engine/stat-fields.js";
+import type { StatAlgorithm, StatComparison, StatQuery, StatWindow } from "@widgetarium/core/engine/stat-fields.js";
 
 export const STAT_TITLES: Readonly<Record<string, string>> = {
 	count: "How many",
@@ -34,21 +25,6 @@ export const STAT_TITLES: Readonly<Record<string, string>> = {
 	"best-record-streak": "Most notes in a row",
 };
 
-export type StatAlgorithm = (typeof STAT_ALGORITHMS)[number];
-export type StatWindow = (typeof STAT_WINDOWS)[number];
-export type StatComparison = (typeof STAT_COMPARISONS)[number];
-
-export const ALGORITHMS_READING_A_FIELD: readonly StatAlgorithm[] = ["sum", "average", "min", "max"];
-
-export interface StatQuery {
-	algorithm?: string;
-	field?: string;
-	date?: string;
-	window?: string;
-	compare?: string;
-	counts?: FilterRow[];
-}
-
 interface Occurrence {
 	day: number | null;
 	record: unknown;
@@ -62,8 +38,6 @@ interface Span {
 const DAY_MS = 86400000;
 const A_DAY = /\d{4}-\d{2}-\d{2}/;
 const ROLLING_DAYS: Partial<Record<StatWindow, number>> = { today: 1, "7d": 7, "30d": 30, "90d": 90, "365d": 365 };
-
-export const DEFAULT_DATE_FIELD = "date";
 
 export function todayIso(now: Date = new Date()): string {
 	const month = String(now.getMonth() + 1).padStart(2, "0");

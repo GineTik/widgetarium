@@ -20,25 +20,25 @@ tiles:
   - id: nav
     widget: "@default/icon-list"
     props:
-      getEntries: { from: vault, path: Boards }
+      getEntries: { implementation: "@obsidian/folder", fields: { path: Boards } }
   - id: running
     widget: "@flow/in-flight"
     props:
-      getFlights: { from: vault, path: Sessions, allow: [list, update] }
+      getFlights: { implementation: "@obsidian/folder", fields: { path: Sessions }, allow: [list, update] }
   - id: bugs
     widget: "@flow/plan-qa"
     props:
-      getQuestions: { from: vault, path: Bugs }
+      getQuestions: { implementation: "@obsidian/folder", fields: { path: Bugs } }
   - id: tail
     widget: "@flow/session-tail"
     props:
-      getLines: { from: vault, path: Sessions/live.md }
+      getLines: { implementation: "@obsidian/folder", fields: { path: Sessions/live.md } }
   - id: notice
     widget: "@flow/notice"
     props:
-      getTitle: { from: typed, value: One bug found here }
-      getBody: { from: typed, value: normalizeBoard writes a surface onto a node the person set by hand. }
-      getTone: { from: typed, value: error }
+      getTitle: { implementation: "@core/typed-value", fields: { value: One bug found here } }
+      getBody: { implementation: "@core/typed-value", fields: { value: normalizeBoard writes a surface onto a node the person set by hand. } }
+      getTone: { implementation: "@core/typed-value", fields: { value: error } }
 layout:
   dir: row
   of:
@@ -100,21 +100,21 @@ tiles:
   - id: tabs
     widget: "@default/segmented-switch"
     props:
-      getOptions: { from: typed, rows: [{ name: Added }, { name: Title }, { name: Artist }] }
+      getOptions: { implementation: "@core/typed-rows", fields: { rows: [{ name: Added }, { name: Title }, { name: Artist }] } }
   - id: tracks
     widget: "@media/track-list"
     props:
-      getTracks: { from: vault, path: Music/Tracks, allow: [list, update] }
-      getFilter: { from: ref, ref: "tabs/getSelection" }
+      getTracks: { implementation: "@obsidian/folder", fields: { path: Music/Tracks }, allow: [list, update] }
+      getFilter: { implementation: "@core/from-tile-value", fields: { ref: "tabs/getSelection" } }
   - id: albums
     widget: "@media/album-grid"
     props:
-      getAlbums: { from: vault, path: Music/Albums }
+      getAlbums: { implementation: "@obsidian/folder", fields: { path: Music/Albums } }
   - id: player
     widget: "@media/player"
     props:
-      getTracks: { from: vault, path: Music/Tracks }
-      getPlaying: { from: ref, ref: "tracks/getSelection" }
+      getTracks: { implementation: "@obsidian/folder", fields: { path: Music/Tracks } }
+      getPlaying: { implementation: "@core/from-tile-value", fields: { ref: "tracks/getSelection" } }
 layout:
   dir: column
   of:
@@ -165,20 +165,20 @@ tiles:
   - id: tabs
     widget: "@default/underline-tabs"
     props:
-      getOptions: { from: typed, rows: [{ name: Summary }, { name: Plan }, { name: Implementation }] }
+      getOptions: { implementation: "@core/typed-rows", fields: { rows: [{ name: Summary }, { name: Plan }, { name: Implementation }] } }
   - id: body
     widget: "@flow/report"
     props:
-      getBody: { from: vault, path: Tasks/152.md, field: content }
-      getTestPlan: { from: vault, path: Tasks/152/checks }
+      getBody: { implementation: "@obsidian/file", fields: { path: Tasks/152.md, field: content } }
+      getTestPlan: { implementation: "@obsidian/folder", fields: { path: Tasks/152/checks } }
   - id: progress
     widget: "@default/metric-total"
     props:
-      getRecords: { from: vault, path: Tasks/152/steps }
+      getRecords: { implementation: "@obsidian/folder", fields: { path: Tasks/152/steps } }
   - id: jump
     widget: "@default/icon-list"
     props:
-      getEntries: { from: vault, path: Tasks/152/links }
+      getEntries: { implementation: "@obsidian/folder", fields: { path: Tasks/152/links } }
 layout:
   dir: row
   of:
@@ -224,20 +224,20 @@ tiles:
   - id: projects
     widget: "@default/section"
     props:
-      getHeading: { from: typed, value: Projects }
-      getBadge: { from: typed, value: 5 open }
-      getFilling: { from: typed, value: per-row }
-      getArrangement: { from: typed, value: grid }
-      getMinWidthPx: { from: typed, value: 280 }
-      getItems: { from: vault, path: Projects, allow: [list] }
+      getHeading: { implementation: "@core/typed-value", fields: { value: Projects } }
+      getBadge: { implementation: "@core/typed-value", fields: { value: 5 open } }
+      getFilling: { implementation: "@core/typed-value", fields: { value: per-row } }
+      getArrangement: { implementation: "@core/typed-value", fields: { value: grid } }
+      getMinWidthPx: { implementation: "@core/typed-value", fields: { value: 280 } }
+      getItems: { implementation: "@obsidian/folder", fields: { path: Projects }, allow: [list] }
     slots:
       item: { widget: "@flow/project-card" }
   - id: today
     widget: "@default/section"
     props:
-      getHeading: { from: typed, value: Today }
-      getFilling: { from: typed, value: placed }
-      getArrangement: { from: typed, value: column }
+      getHeading: { implementation: "@core/typed-value", fields: { value: Today } }
+      getFilling: { implementation: "@core/typed-value", fields: { value: placed } }
+      getArrangement: { implementation: "@core/typed-value", fields: { value: column } }
     mounts:
       widgets:
         - { name: Reminders, widget: "@default/reminder" }

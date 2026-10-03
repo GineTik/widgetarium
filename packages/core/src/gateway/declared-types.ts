@@ -273,10 +273,9 @@ export interface DeclaredModule {
 }
 
 export interface TileProp {
-	readonly from?: string;
-	readonly value?: unknown;
-	readonly rows?: readonly unknown[];
-	readonly [key: string]: unknown;
+	readonly implementation?: string;
+	readonly fields?: { readonly value?: unknown; readonly rows?: readonly unknown[]; readonly [key: string]: unknown };
+	readonly allow?: readonly string[];
 }
 
 export interface MigrationStep<From extends DeclaredProps> {

@@ -92,6 +92,10 @@ children carrying a `collapse` leave the row. **Nothing is chosen by breakpoint:
 | `menu`   | a panel growing from the press that opened it             |
 | `hide`   | nothing on screen; its widgets stay mounted               |
 
+`collapse: { into: sheet, docks: false }` is collapsed on every width: it never stands in the column
+and opens only from its `trigger`. A collapsed box opens over the pane that holds its board, and over
+the whole window only on a phone.
+
 A collapsed box needs a way back. By default a button appears in Obsidian's own view header.
 `toggle: always` keeps it there on every screen and writes `folded` to the note; `toggle: adaptive`
 shows it only while the width takes the box out of the row. For a button inside the screen, place a
@@ -116,12 +120,12 @@ the only kind allowed to draw its own `h2`; every other widget is titled from ou
 - id: projects
   widget: "@default/section"
   props:
-    getHeading: { from: typed, value: Projects }
-    getBadge: { from: typed, value: 5 open }
-    getFilling: { from: typed, value: per-row }
-    getItems: { from: vault, path: Projects, allow: [list] }
-    getArrangement: { from: typed, value: grid }
-    getMinWidthPx: { from: typed, value: 280 }
+    getHeading: { implementation: "@core/typed-value", fields: { value: Projects } }
+    getBadge: { implementation: "@core/typed-value", fields: { value: 5 open } }
+    getFilling: { implementation: "@core/typed-value", fields: { value: per-row } }
+    getItems: { implementation: "@obsidian/folder", fields: { path: Projects }, allow: [list] }
+    getArrangement: { implementation: "@core/typed-value", fields: { value: grid } }
+    getMinWidthPx: { implementation: "@core/typed-value", fields: { value: 280 } }
   slots:
     item: { widget: "@flow/project-card" }
 ```
@@ -160,24 +164,28 @@ and nothing refuses one placed bare.
 
 ## Binding a prop
 
-Every value a widget reads is a gateway. Three shapes:
+Every value a widget reads is a gateway, and a binding has one shape: `implementation` names what
+answers, `fields` is what it is told, `allow` lists the verbs switched on.
 
 ```yaml
 props:
-  records: { from: vault, path: Metrics, allow: [list, create, update] } # a folder, or one note
-  status: { from: vault, path: Habits.md, field: status } # one part of one note
-  title: { from: typed, value: Revenue } # a value living in the tile
-  columns: { from: typed, rows: [{ name: To Do }] } # a list living in the tile
-  period: { from: ref, ref: "w1/tabs" } # another tile's prop
+  records: { implementation: "@obsidian/folder", fields: { path: Metrics }, allow: [list, create, update] }
+  status: { implementation: "@obsidian/file", fields: { path: Habits.md, field: status } }
+  title: { implementation: "@core/typed-value", fields: { value: Revenue } }
+  columns: { implementation: "@core/typed-rows", fields: { rows: [{ name: To Do }] } }
+  period: { implementation: "@core/from-tile-value", fields: { ref: "w1/tabs" } }
+  done: { implementation: "@stats/count", fields: { path: Log } }
 ```
 
-- **`from: vault`** — `path` is a folder (every note is a row) or a single `.md` file. A value prop
-  over one note may name `field`: `content`, `name`, or any property. `allow` lists what the tile may
-  do; without it a vault binding only reads. **A board whose tiles are all `typed` is a mock-up, not
-  a screen.**
-- **`from: typed`** — `rows` for a collection, `value` for a primitive.
-- **`from: ref`** — `<tileId>/<propName>`. This is how a tab strip drives the widgets below it.
-  **There is no shared bus; a ref is the only way two tiles talk.**
+- **`@obsidian/folder`** — every note of `path` is a row. **`@obsidian/file`** — one `.md` note; a
+  value may name `field`: `content`, `name`, or any property. Without `allow` a vault binding only
+  reads. **A board whose tiles are all typed is a mock-up, not a screen.**
+- **`@core/typed-value`, `@core/typed-rows`** — `value` for a primitive, `rows` for a collection.
+- **`@core/from-tile-value`, `@core/from-tile-rows`** — `ref` is `<tileId>/<propName>`. This is how
+  a tab strip drives the widgets below it. **There is no shared bus; a ref is the only way two tiles
+  talk.**
+- **`@stats/<algorithm>`** — one number counted over the notes of `path`.
+- A prop with no binding reads what its declaration says: its default, kept in the tile.
 
 `widgets.mjs show <id>` prints a widget's props.
 

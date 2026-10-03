@@ -3,6 +3,7 @@ import type { LayoutBase } from "./layout-bases.js";
 import type { BaseBox, BaseNode, BaseText } from "./layout-regions.js";
 import type { BoardNode, BoxNode, LeafNode } from "./tree.js";
 import { isObject } from "./engine/is-object.js";
+import { TYPED_VALUE } from "./gateway/props.js";
 
 export { LAYOUTS };
 export type { LayoutBase };
@@ -12,8 +13,8 @@ export const HEADING_WIDGET = "@default/text-line";
 export const LAYOUT_NAMES: readonly string[] = Object.keys(LAYOUTS);
 
 interface TypedValue {
-	readonly from: "typed";
-	readonly value: unknown;
+	readonly implementation: typeof TYPED_VALUE;
+	readonly fields: { readonly value: unknown };
 }
 
 interface SkeletonTile {
@@ -107,6 +108,10 @@ function placeBox(node: BaseBox, minting: Minting): BoxNode {
 	return { ...box, of: node.of.map((child) => placeNode(child, minting)) };
 }
 
+function typedValueOf(value: unknown): TypedValue {
+	return { implementation: TYPED_VALUE, fields: { value } };
+}
+
 function mintText(node: BaseText, minting: Minting): LeafNode {
 	const id = `t${minting.at}`;
 	minting.at += 1;
@@ -114,9 +119,9 @@ function mintText(node: BaseText, minting: Minting): LeafNode {
 		id,
 		widget: HEADING_WIDGET,
 		props: {
-			text: { from: "typed", value: node.text },
-			tone: { from: "typed", value: node.tone },
-			heading: { from: "typed", value: node.level },
+			text: typedValueOf(node.text),
+			tone: typedValueOf(node.tone),
+			heading: typedValueOf(node.level),
 		},
 	});
 	return { id, ...(node.surface ? { surface: node.surface } : {}) };

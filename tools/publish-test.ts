@@ -61,11 +61,13 @@ export default createWidget({ draw: () => <b>${word}</b> });
 const declaring = (
 	word: string,
 	metadata: Readonly<Record<string, unknown>> = {},
-): string => `import { IListGateway, ISlot, createWidget, defineLayout, defineProps, z } from "widgetarium";
-const props = defineProps({ days: IListGateway.of(z.unknown()), face: ISlot.of({ default: "@demo/face" }) });
+): string => `import { IListGateway, ISlot, createWidget, defineLayout, z } from "widgetarium";
 export const metadata = ${JSON.stringify(metadata)};
 ${LAYOUT}
-export default createWidget({ inject: props, draw: () => <b>${word}</b> });
+export default createWidget({
+	inject: { days: IListGateway.of(z.unknown()), face: ISlot.of({ default: "@demo/face" }) },
+	draw: () => <b>${word}</b>,
+});
 `;
 
 function firstOf<T>(list: readonly T[]): T {

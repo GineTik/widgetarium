@@ -12,7 +12,7 @@ import {
 } from "../packages/core/src/model.js";
 import { leavesOf, nodeAt } from "../packages/core/src/tree.js";
 import { BLOCK_FORMAT } from "../packages/core/src/version.js";
-import { storedRows } from "../packages/core/src/gateway/props.js";
+import { storedRows } from "../packages/core/src/gateway/kept-in-tile.js";
 import { measureGrid, GRID } from "../packages/core/src/paths.js";
 import { fieldAt, fieldIn, itemsIn } from "./held-fields.ts";
 import { callAsUntypedSource } from "./untyped-source.ts";
@@ -474,7 +474,10 @@ console.log(
 	check("the write moves the list onto the new key", Object.keys(onNewKey.mounts), ["holds"]);
 	check("and leaves neither old key behind", [Object.keys(onNewKey.settings), "views" in onNewKey.mounts], [[], false]);
 
-	const tuned = { settings: { days: 30 }, props: { period: { from: "typed", value: 7 } } };
+	const tuned = {
+		settings: { days: 30 },
+		props: { period: { implementation: "@core/typed-value", fields: { value: 7 } } },
+	};
 	const number = { kind: "value", type: "number" };
 	check(
 		"a setting the note still carries is never read as a prop",
@@ -482,12 +485,12 @@ console.log(
 		{},
 	);
 	check("a prop is read under the name it had before", propConfig(tuned, "days", { ...number, aka: ["period"] }), {
-		from: "typed",
-		value: 7,
+		implementation: "@core/typed-value",
+		fields: { value: 7 },
 	});
 	check("and under an older name still", propConfig(tuned, "days", { ...number, aka: ["span", "period"] }), {
-		from: "typed",
-		value: 7,
+		implementation: "@core/typed-value",
+		fields: { value: 7 },
 	});
 	check(
 		"records are left as they were written",
@@ -820,7 +823,15 @@ console.log("\n— a mount keeps its own look through a save —");
 
 {
 	const odd = normalizeBoard({
-		tiles: [null, { id: 7, widget: 3, settings: "loud", props: { kept: { from: "typed", value: 1 }, junk: "x" } }],
+		tiles: [
+			null,
+			{
+				id: 7,
+				widget: 3,
+				settings: "loud",
+				props: { kept: { implementation: "@core/typed-value", fields: { value: 1 } }, junk: "x" },
+			},
+		],
 		layout: { dir: "row", of: [] },
 	});
 	check("a tile that is no object is read as an empty one, not thrown on", fieldAt(odd, "tiles", "0", "id"), "w0");

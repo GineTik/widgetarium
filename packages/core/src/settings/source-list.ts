@@ -1,26 +1,23 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Icon, IconButton, SidebarGroup, SidebarRow } from "@widgetarium/kit";
+import { Icon, IconButton } from "@widgetarium/kit";
+import { ChoiceList } from "./choice-list.js";
 import type { TileProp } from "../model.js";
-import { typedIn, withTyped } from "../gateway/props.js";
-import { hostGatewayFor, isFolderStat, sourcesFor } from "../engine/host-gateways.js";
+import { bindingOf, typedIn, withFields, withTyped } from "../gateway/props.js";
+import { hostGatewayFor, sourcesFor } from "../engine/host-gateways.js";
 import type { GatewayMetadata } from "../gateway/implementation-metadata.js";
 import { offeredEntries } from "./offered-boxes.js";
-import { FROM_WIDGET, IN_VAULT, STATISTICS, TYPED_HERE, blankValue, writeProp, writtenText } from "./prop-writing.js";
+import { blankValue, writeProp, writtenText } from "./prop-writing.js";
 import { note } from "./settings-rows.js";
 import type { SettingsSpec, SettingsState } from "./settings-state.js";
 import { openStatStep } from "./stat-body.js";
+import { boundPath } from "./vault-paths.js";
 
-const SOURCE_KIND: ReadonlyMap<string, string> = new Map([
-	["@core/typed-value", TYPED_HERE],
-	["@core/typed-rows", TYPED_HERE],
-	["@obsidian/file", IN_VAULT],
-	["@obsidian/folder", IN_VAULT],
-	["@core/from-tile-value", FROM_WIDGET],
-	["@core/from-tile-rows", FROM_WIDGET],
-]);
-
-const STAT_SOURCE = "@stats/";
+interface Picking {
+	readonly key: string;
+	readonly spec: SettingsSpec;
+	readonly config: TileProp;
+}
 
 const SOURCES_OPEN = "#source";
 
@@ -51,17 +48,15 @@ export function sourceButton(state: SettingsState, key: string, spec: SettingsSp
 
 export function sourceList(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp): ReactElement[] {
 	const chosen = hostGatewayFor(spec, config)?.id;
-	const rows = offeredSources(state, spec).map((entry) =>
-		h(SidebarRow, {
-			key: entry.id,
-			as: "button",
-			label: entry.title,
-			sub: entry.description,
-			selected: entry.id === chosen,
-			onClick: () => pickSource(state, key, spec, config, entry),
-		}),
-	);
-	return [note(WHERE_FROM), h(SidebarGroup, { className: "wg-set-sources", key: "sources" }, rows)];
+	const choices = offeredSources(state, spec).map((entry) => ({
+		id: entry.id,
+		title: entry.title,
+		section: entry.resource,
+		said: entry.description,
+		selected: entry.id === chosen,
+		onPick: () => pickSource(state, { key, spec, config }, entry.id),
+	}));
+	return [note(WHERE_FROM), h(ChoiceList, { key: "sources", choices })];
 }
 
 function offeredSources(state: SettingsState, spec: SettingsSpec): GatewayMetadata[] {
@@ -69,43 +64,20 @@ function offeredSources(state: SettingsState, spec: SettingsSpec): GatewayMetada
 	return sourcesFor(spec).filter((entry) => othersOffer || !NEEDS_ANOTHER_TILE.includes(entry.id));
 }
 
-function pickSource(
-	state: SettingsState,
-	key: string,
-	spec: SettingsSpec,
-	config: TileProp,
-	entry: GatewayMetadata,
-): void {
-	const { implementation: formerSource, fields, ...legacy } = config;
-	const kind = SOURCE_KIND.get(entry.id);
-	if (kind) {
-		switchKind(state, key, spec, legacy, kind);
+function pickSource(state: SettingsState, picking: Picking, implementation: string): void {
+	const { key, spec, config } = picking;
+	const { binding } = bindingOf(spec, { implementation });
+	if (binding === "hardcode") {
+		pickTyped(state, picking);
 		return;
 	}
-	if (isFolderStat(entry.id)) {
-		writeProp(state, key, spec, { ...legacy, from: STATISTICS, algorithm: entry.id.slice(STAT_SOURCE.length) });
-		openStatStep(state, key, null);
-		return;
-	}
-	const kept = formerSource === entry.id ? (fields ?? {}) : {};
-	writeProp(state, key, spec, { implementation: entry.id, fields: kept });
-	state.openEditor(`prop:${key}`);
+	writeProp(state, key, spec, withFields(config, implementation, {}));
+	if (binding === "stat") openStatStep(state, key, null);
+	else state.openEditor(`prop:${key}`, binding === "vault" ? boundPath(config) : undefined);
 }
 
-// TRADE-OFF: the sources the host already drew an editor for keep their written shape, so a tile bound before still opens in the editor it was bound in
-function switchKind(state: SettingsState, key: string, spec: SettingsSpec, config: TileProp, kind: string): void {
-	const typed = kind === TYPED_HERE;
-	const typedBefore = typedIn(spec, config);
-	const path = config.path === undefined && kind === IN_VAULT ? "" : config.path;
-	const kept = withTyped(
-		spec,
-		{ ...config, from: kind, path },
-		typedBefore === undefined && typed ? blankValue(spec) : typedBefore,
-	);
-	writeProp(state, key, spec, kept);
-	state.openEditor(`prop:${key}`, typed ? writtenText(spec, typedIn(spec, kept)) : pathSeedOf(kept));
-}
-
-function pathSeedOf(config: TileProp): string | undefined {
-	return typeof config.path === "string" ? config.path : undefined;
+function pickTyped(state: SettingsState, { key, spec, config }: Picking): void {
+	const typed = withTyped(spec, config, typedIn(spec, config) ?? blankValue(spec));
+	writeProp(state, key, spec, typed);
+	state.openEditor(`prop:${key}`, writtenText(spec, typedIn(spec, typed)));
 }
