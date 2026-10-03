@@ -73,8 +73,7 @@ for everything a person reads, `export const layout = defineLayout({...})` for `
 `inline` and `view`, and `export default Name`; `export const migrations = defineMigrations([...])`
 when a tile cannot follow a change alone. The old `createWidget(props, draw)` throws. Props live in
 `inject` and nowhere else: code outside `draw` takes their types from the widget, `PropsOf<typeof
-Name>`, and no repo widget calls `defineProps` — it stays exported only for vault widgets written
-before (`@you/breakdown-bars`, `@you/property-coverage`).
+Name>`. `defineProps` is gone.
 All of it lives in `packages/core/src/gateway/declared.ts`. Each `define*` returns what it was given,
 typed and checked on its own line; `createWidget` builds the component that reads and caches
 (`define*` returns its input, `create*` builds something new). `manifestOfModule` turns the module
@@ -107,7 +106,7 @@ export default Checklist;
 
 **Every gateway is an abstract class under `IBaseGateway`, named `I*Gateway`; an implementation is a
 class named `*Gateway` that extends one.** `IValueGateway`, `IListGateway`, `ICrudGateway` and any
-interface extending them inherit `IBaseGateway.of`; `defineProps` refuses a class outside the root
+interface extending them inherit `IBaseGateway.of`; `createWidget` refuses a class outside the root
 and refuses an implementation where an interface belongs. `.of(schema)` types every verb from one
 zod schema; `.of({ read, create, update, other })` types each verb from its own, `other` standing for
 every verb not named. Without `.of` an interface is untyped (`unknown`) — there is no generic form.
@@ -140,7 +139,12 @@ declaration: `.of()` takes no options for a value, and the widget's metadata nam
 starts from — `props.<name>.source = { implementation, fields }`, `@core/selection` for which row is
 chosen and `@core/selected-row` for the row a sibling picks, resolved by `SelectionQuery` and
 `SelectedRowQuery` in `packages/packs/core`; `fields` name sibling props by
-their prop name. What still sits in declarations is `wants` and a declared list `where`/`sort`; they
+their prop name. Every built-in source is a pack class built `new Class(fields, ports)` and holds
+its own logic — the picking in `packages/packs/core`, file and folder reading in
+`packages/packs/obsidian`, the statistics in `packages/packs/stats` — while core holds only the
+contract: `QueryPorts` in `packages/core/src/engine/packs.ts` (`prop`, `kept`, `screen`, `notes`
+beside the ports a command gets), built by `queryPortsOf`, and one resolver path in
+`engine/host-gateways.ts`. A catalogue preview resolves its picked props through the same path. What still sits in declarations is `wants` and a declared list `where`/`sort`; they
 leave for gateway implementations the packs offer per prop (`FolderQuery`,
 `TypedValueQuery`, `ScreenStateQuery`), each registered with `defineGatewayMetadata` and the fields
 the settings window draws from its constructor's schema. `keep: "screen"` is said in `defineMetadata`
@@ -166,7 +170,7 @@ only tells the settings window how to draw it.
 **A row is the record, and `ref` is its address.** `Row<T> = T & { ref }` — there is no `{ ref, value }`
 wrapper, so a widget writes `entry.title`, keys by `entry.ref`, and `useData` answers with `data`
 alone: an array for a list, the value for a value, `total` beside it. `ref` in a row type must be
-typed `RecordRef` or left out, and `defineProps` and `defineMetadata` refuse a described or defaulted `ref` outright.
+typed `RecordRef` or left out, and `createWidget` and `defineMetadata` refuse a described or defaulted `ref` outright.
 `rowOf` and `valueIn` in `packages/core/src/gateway/create.ts` are the only places an address is put on or taken
 off. A list of primitives is the one exception and keeps `{ value, ref }`, because a string has
 nowhere else to hold itself.
@@ -310,9 +314,11 @@ declares `settlesNow`, and the cache settles it on the first read rather than a 
 Without it every number read through `useData` is `isLoading` on its first frame, and a number that
 lives in the tile itself blinks on every mount.
 
-**A setting is never read as a prop.** `tile.settings` is not consulted for any prop. A value a person
-typed is `{ from: typed, value }` for a value and `{ from: typed, rows }` for a list, and `typedIn` in
-`packages/core/src/gateway/props.ts` is the one place that knows which key a prop's data lives under.
+**A setting is never read as a prop.** `tile.settings` is not consulted for any prop. A binding is
+`{ implementation, fields, allow }` and nothing else, typed values included: `@core/typed-value` keeps
+`fields.value`, `@core/typed-rows` keeps `fields.rows`, and `typedIn` and `withTyped` in
+`packages/core/src/gateway/props.ts` are the one place that knows which field a prop's data lives
+under. A prop with no binding reads what `implementationOf` there derives from its declaration.
 
 **One law, three storages.** Where a list can live in more than one place, the verbs — add, rename,
 archive, reorder, delete — are written **once** over rows, and each storage supplies only
@@ -427,7 +433,7 @@ between repeats of one widget, and a `swap` adds no level. Each step is what the
 8px: between two plates one plate's padding is taken off, so cards stand close at every level; from a
 plate to bare content the step is drawn in full; a bare widget is measured from its first content, the
 empty edge `packages/core/src/content-insets.ts` finds inside it taken off. So grouping is the only decision, and a box of its parent's direction with no
-surface and no heading is a phantom `lint` names. A `pad` in a note is read and dropped. Corners are
+surface and no heading is a phantom `lint` names. A `pad` in a note is read and dropped. A host may shrink every step at once with `--wg-gap-scale`; the catalogue sidebar sets `0.5`, measured against its canvas by `npm run test:catalogue-paint`. Corners are
 never written either: every plate is rounded concentric with the one around it, re-laid on every
 change. `packages/core/src/board-lint.ts`,
 run as `widgets.mjs lint <note>`, is the check the agent runs after every write. Inside a widget the
@@ -485,6 +491,20 @@ board is born with all three, and all three stand in reading mode too.
 **A widget is added where it will stand.** Every column box ends, while the board is being edited, in
 a press that opens the catalogue and puts the pick at the end of **that** box. There is no board-wide
 add: a press that named no box left the person guessing where the widget went.
+
+**The catalogue is a board of widgets in the sidebar, and every pick is a request.** The catalogue
+and the docs are two `ItemView`s drawing boards of `@catalogue` widgets, and all their logic is the
+`@catalogue` pack's queries and commands. **Each board is a widgetarium block in the very format a
+note holds, shipped inside the plugin** (`apps/obsidian/boards/catalogue.md`, `docs.md`) and read by
+`catalogue-boards.ts`: never written to the vault, never editable, so a plugin update is what changes
+the sidebar. The old catalogue dialog (`packages/core/src/catalogue-dialog.ts` and its parts) is kept
+but hidden: nothing opens it. A box's add press, a slot, a view and a substitution each ask
+`CATALOGUE_REQUESTS` (`packages/core/src/engine/catalogue-requests.ts`), which reveals the sidebar and
+answers the pick; a dialog that asked steps aside until it is answered. A card is carried onto a board
+or into a note by `ICarrier`: every board registers a drop receiver
+(`packages/core/src/surface/drop-receivers.ts`), and a drop on markdown writes a new board block under
+the line. A widget placed before it is installed stands at once and draws the install ring, read from
+the one owner of install progress, `INSTALL_JOBS`.
 
 **A tile is carried to a path, and the drop says what it means.** A carry measures every box and leaf
 on the board, takes the deepest one under the pointer, and reads the pointer against it: along the
@@ -557,11 +577,30 @@ makes them one program, and every one is a build input); everything the engine m
 `widget.css` when the sheet asked to be compiled — and a vault wears the built sheet in place of the
 author's. `tools/publish.ts` is the author's check that it all builds, not the thing that builds it.
 What is built is a fact of its own: `lock.builds[id]` names the source, the compiler and a hash per
-input, separately from `lock.widgets[id]`, which only means installed from a repository. At load and
-at every widget-folder change the engine asks each folder whether the files its build was made from
-are still the files on disk, and rebuilds the ones that answer no — which is why an edit in a
-symlinked scope shows with no install. `node --import ./tools/loader/register.mts tools/build-vault.ts` runs that same pass from the
+input, separately from `lock.widgets[id]`, which only means installed from a repository. After the
+first draw and at every widget-folder change the engine asks each folder whether the files its build
+was made from are still the files on disk, and rebuilds the ones that answer no — which is why an edit
+in a symlinked scope shows with no install. `node --import ./tools/loader/register.mts tools/build-vault.ts` runs that same pass from the
 terminal.
+
+**A start reads no widget file.** An iCloud vault on a full disk evicts `.widgetarium/`, and every
+read waited ~1.7 s for a download: 655 reads, ten minutes of an empty screen. The plugin now mounts
+from a snapshot kept on this machine in IndexedDB (`packages/core/src/startup-snapshot.ts`, the store
+in `apps/obsidian/src/startup-snapshot-store.ts`), never in the vault: what `readVault` read, the
+packages, the plugin stamp, and each file's `mtime:size` taken **before** it was read. A snapshot zod
+refuses is ignored and the vault is read; one from another plugin build mounts like any other, because
+it holds raw files and the fingerprint lists with the running build's own `listVault` — refusing it
+sent the first start after every install back to iCloud, 11 to 50 s measured. Laid files follow the
+same rule: `types/` and `@catalogue` carry a `.laid-by-plugin` mark with the bundle hash, so an
+unchanged lay is one read, not 433 downloads queued in front of the note being opened, and a changed
+one writes without reading first, removing each file before writing it, because writing over an
+evicted file downloads it first (35 ms against minutes, measured). Only a folder named `@…` is a scope
+(`isScopeFolder`): `types/` was walked as one, and iCloud's `x.d 2.ts` conflict copies passed as widget
+modules, six minutes of queued reads after every start. After the first draw the plugin
+lists and stats every file — metadata only, no download — and reloads, rebuilds and rewrites the
+snapshot only when something differs; the build pass is skipped while the snapshot says it ran clean
+over these exact files. Every `registry.load()` rewrites the snapshot through `onLoaded`.
+`npm run test:startup-snapshot` measures it.
 
 **Tailwind is asked for in CSS and answered at build time.** A `widget.css` opening with
 `@import "tailwindcss"` is compiled by the real `tailwindcss` package, fetched into the vault's module
