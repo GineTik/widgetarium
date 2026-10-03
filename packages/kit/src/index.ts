@@ -23,6 +23,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
 
 import { Progress, ProgressBar, StatusProgress } from "./components/progress";
+import { ProgressRing } from "./components/progress-ring";
 
 import { Segmented, Tabs } from "./components/segmented";
 
@@ -166,6 +167,7 @@ export const Kit = {
 	Calendar,
 	Progress,
 	ProgressBar,
+	ProgressRing,
 	StatusProgress,
 	inkedClass,
 	barGeometry,
@@ -233,6 +235,7 @@ export { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } 
 
 export { Grid, Layout, LayoutActions, LayoutHeader, LayoutItem, LayoutTitle, Rows } from "./components/layout";
 export { Heading } from "./components/heading";
+export { Help } from "./components/help";
 
 export { List, Row, RowBadge, RowLabel, RowValue, SlotList } from "./components/list";
 
@@ -247,6 +250,7 @@ export {
 } from "./components/popover";
 
 export { Progress, ProgressBar, StatusProgress } from "./components/progress";
+export { ProgressRing } from "./components/progress-ring";
 
 export { Segmented, Tabs } from "./components/segmented";
 

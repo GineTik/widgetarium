@@ -36,6 +36,7 @@ export type { PopoverSearchProps } from "./components/popover-search";
 export type { PopoverSeparatorProps } from "./components/popover-separator";
 export type { PopoverTriggerProps } from "./components/popover-trigger";
 export type { ProgressBarProps, ProgressProps, StatusProgressProps } from "./components/progress";
+export type { ProgressRingProps } from "./components/progress-ring";
 export type { RenderedMarkdownProps } from "./components/rendered-markdown";
 export type { SegmentedItem, SegmentedProps } from "./components/segmented";
 export type {

@@ -1,6 +1,8 @@
 import { createElement as h, useRef } from "react";
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../utils/cn";
+import { portalLayer } from "../utils/portal-layer";
 import { stepIndex } from "../utils/roving";
 import type { Step } from "../utils/roving";
 import { POPOVER_ITEM, dataStateOf, usePopover } from "./popover-context";
@@ -21,7 +23,7 @@ export function PopoverContent({ children, className: cls }: PopoverContentProps
 	const popover = usePopover();
 	const held = useRef<ReactNode>(null);
 	if (popover.isOpen) held.current = children;
-	return (
+	const panel = (
 		<div
 			id={popover.id}
 			ref={popover.panelRef}
@@ -42,6 +44,7 @@ export function PopoverContent({ children, className: cls }: PopoverContentProps
 			<div className="wg-kit-pop-inner">{popover.shown ? held.current : null}</div>
 		</div>
 	);
+	return popover.isPortaled ? createPortal(panel, portalLayer()) : panel;
 }
 
 function moveBetweenItems(event: KeyboardEvent<HTMLDivElement>): void {

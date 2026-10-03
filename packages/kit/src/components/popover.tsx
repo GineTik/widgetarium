@@ -23,6 +23,7 @@ export interface PopoverProps {
 	readonly onOpenChange?: ((open: boolean) => void) | undefined;
 	readonly className?: string | undefined;
 	readonly placement?: PlacementName;
+	readonly isPortaled?: boolean;
 }
 
 export function Popover({
@@ -34,10 +35,11 @@ export function Popover({
 	onOpenChange,
 	className: cls,
 	placement = "over",
+	isPortaled = false,
 }: PopoverProps): ReactElement {
 	const popover = usePopoverState({ open: open ?? openAsLegacy, defaultOpen, onOpenChange, placement });
 	return (
-		<PopoverContext.Provider value={{ ...popover, className: cls }}>
+		<PopoverContext.Provider value={{ ...popover, className: cls, isPortaled }}>
 			{trigger === undefined ? (
 				<span className="wg-kit-anchor" ref={popover.anchorRef} data-state={dataStateOf(popover.isOpen)}>
 					{children}
