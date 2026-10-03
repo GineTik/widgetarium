@@ -9,6 +9,7 @@ import { installWidget } from "./install-command.js";
 import type { Installed } from "./install-command.js";
 import { BASE_NAMES, baseNamed, cardLayoutNamed, everyBase } from "./shape-command.js";
 import type { Told } from "./shape-command.js";
+import { specOfApp, stageOfApp } from "./spec-command.js";
 import { surfaceNamesIn } from "./widget-surface.js";
 import { rankWidgets, refuseReading } from "./find-command.js";
 import type { FindOptions } from "./find-command.js";
@@ -54,6 +55,10 @@ const COMMANDS: Readonly<Record<string, Command>> = {
 	layout: { asks: "note", run: (argument, options) => layout(String(argument), options) },
 	surfaces: { asks: "note", run: (argument, options) => surfaces(String(argument), options) },
 	lint: { asks: "note", run: (argument, options) => lint(String(argument), options) },
+	spec: { run: async (argument, options) => tell(options, await specOfApp(VAULT, argument)) },
+	stage: {
+		run: async (argument, options) => tell(options, await stageOfApp(VAULT, argument, options._[2], options["said"])),
+	},
 };
 
 const MISSING_ARGUMENT: Readonly<Record<string, (argument: unknown) => number>> = {

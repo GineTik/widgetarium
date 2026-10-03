@@ -3,6 +3,9 @@ import { WIDGET_CHECK_RULES } from "@widgetarium/core/widget-check.js";
 
 export const HELP = `widgets — the Widgetarium catalogue, for the agent
 
+  node widgets.mjs spec <app>           check Design/<app>/spec.md and show it to the person as a card
+  node widgets.mjs stage <app> <stage>  say a build stage is done: data, design, widgets, pages
+    --said <line>                       what the stage made, in one line
   node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
   node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
   node widgets.mjs bases               every base a screen can start from

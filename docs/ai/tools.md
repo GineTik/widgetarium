@@ -2,23 +2,25 @@
 
 `node {tool} <command>`. Every command takes `--text` for lines instead of JSON.
 
-| Command                         | Gives                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| `find`                          | the whole catalogue, ranked against what you need                        |
-| `list`                          | the same, unranked                                                       |
-| `packs`, `sources`              | the scopes installed, and the registries configured                      |
-| `show <id>`                     | one widget's props, role and size                                        |
-| `source <id>`                   | its source, to read before copying anything from it                      |
-| `install <id>`                  | writes it and its scope's shared files into the vault                    |
-| `start <id>`                    | your access to a widget's files, and the progress card in the chat       |
-| `check <id>`                    | six defects in a widget you wrote; exits 1 while any stands              |
-| `bases`                         | every base a screen can start from                                       |
-| `base <name>`                   | one base: its regions, its sections, ready to write into a note          |
-| `base <body> --with aside,dock` | the body with these shell zones added: `nav`, `index`, `aside`, `dock`   |
-| `card <name>`                   | a card layout: what it wears alone and among peers, and the parts it has |
-| `layout <note>`                 | the real width of every region and tile on a drawn board                 |
-| `lint <note>`                   | what is wrong with the board; exits 1 until it is valid                  |
-| `surfaces <note>`               | which plates look wrong beside each other, on a **drawn** board          |
+| Command                             | Gives                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `spec <app>`                        | checks `Design/<app>/spec.md` and shows it to the person as a card       |
+| `stage <app> <stage> --said <line>` | fills a row of the build card: `data`, `design`, `widgets`, `pages`      |
+| `find`                              | the whole catalogue, ranked against what you need                        |
+| `list`                              | the same, unranked                                                       |
+| `packs`, `sources`                  | the scopes installed, and the registries configured                      |
+| `show <id>`                         | one widget's props, role and size                                        |
+| `source <id>`                       | its source, to read before copying anything from it                      |
+| `install <id>`                      | writes it and its scope's shared files into the vault                    |
+| `start <id>`                        | your access to a widget's files, and the progress card in the chat       |
+| `check <id>`                        | six defects in a widget you wrote; exits 1 while any stands              |
+| `bases`                             | every base a screen can start from                                       |
+| `base <name>`                       | one base: its regions, its sections, ready to write into a note          |
+| `base <body> --with aside,dock`     | the body with these shell zones added: `nav`, `index`, `aside`, `dock`   |
+| `card <name>`                       | a card layout: what it wears alone and among peers, and the parts it has |
+| `layout <note>`                     | the real width of every region and tile on a drawn board                 |
+| `lint <note>`                       | what is wrong with the board; exits 1 until it is valid                  |
+| `surfaces <note>`                   | which plates look wrong beside each other, on a **drawn** board          |
 
 ## Finding a widget
 

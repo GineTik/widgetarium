@@ -45,16 +45,22 @@ applies a rule. Read the page that covers a change before touching the code, and
 same change: a law that changed in code and not there is a law the next agent breaks. Why the shapes
 are what they are lives in `docs/decisions.md`.
 
-**A screen is built in three stages, and the order is the law.** `brief.md` holds them. Stage 1 is
-the domain: the record shapes the screen must show, one folder per kind, seeded with real rows, and
-the fields the domain needs rather than only the ones the vault happens to hold. Stage 2 is the
-design in words, region by region, and **the form is chosen there** — a board of tiles is one answer
-to "how should this be shown", a page of prose, a single full-bleed widget or a deck are others, and
-the data picks none of them. Stage 3 is the screen: search the catalogue for what fits the design,
-write a widget for everything that does not, place, bind, surface, lint, measure. Measured before
-the order was written down: the board that came out of starting at stage 3 had five of seven tiles
-on their defaults and one surface on nine nodes, and `lint` called it valid. **The catalogue is not
-the ceiling on the design** — the old wording, "write a widget only when nothing fits", made it one.
+**An app is built in five stages, and the order is the law.** `brief.md` holds them. Stage 1 is
+the spec: `Design/<app>/spec.md`, whose front matter (`AppSpecSchema` in `packages/core/src/app-spec.ts`)
+holds the features in the person's words, the choices, the pages with their bodies and the checks,
+and below it, for the agent, what each list allows. `widgets.mjs spec <app>` draws it in the chat as
+a card the person answers on — unticking a feature or picking a choice writes the note through
+`withFeatureKept` and `withChoicePicked`, the only writers — and the agent waits there for Build it.
+Only a big change (a new app, page, kind of record, or feature) starts at stage 1; a small one goes
+straight to the build. Stage 2 is the domain: record shapes, one folder per kind, seeded with real
+rows. Stage 3 is the design in words, page by page with its shell and body, and **the form is chosen
+there**. Stage 4 maps every kept feature to a widget whose card declares the verbs the spec said yes
+to. Stage 5 places, binds with `allow` equal to those verbs, surfaces, lints and walks the checks.
+Stages 2–5 each end in `widgets.mjs stage <app> <stage> --said`, one row of the build card. Measured
+twice: the board that came out of starting at the screen had five of seven tiles on their defaults;
+four agents given the three-stage order built read-only lists, one page where two were needed and
+fields nobody asked for, because no stage ever wrote down what the person can do. **The catalogue is
+not the ceiling on the design.**
 
 **A screen note holds the board and nothing above it, and the board claims the window.** Two
 defects hid behind each other here. `kind: screen` painted nothing at all: its only rule,

@@ -45,6 +45,7 @@ const LONGEST_HINT = 120;
 
 export const OUR_NAME = "Widgetarium";
 const OUR_TOOL_CALL = /widgets\.mjs\s+([a-z][a-z-]*)([\s\S]*)$/;
+const ARGUMENT = /"([^"]*)"|'([^']*)'|((?:\\.|[^\s"'])+)/g;
 
 export function glyphForTool(name: unknown): string {
 	return (typeof name === "string" ? GLYPH_FOR_TOOL[name] : undefined) ?? "widget";
@@ -54,6 +55,10 @@ export function ourCallIn(command: unknown): OurCall | null {
 	const found = String(command ?? "").match(OUR_TOOL_CALL);
 	if (!found) return null;
 	return { verb: found[1] ?? "", said: (found[2] ?? "").trim() };
+}
+
+export function argumentsIn(said: string): string[] {
+	return [...said.matchAll(ARGUMENT)].map((found) => found[1] ?? found[2] ?? (found[3] ?? "").replace(/\\(.)/g, "$1"));
 }
 
 export const ourCallOf = (call: CallSeen | null | undefined): OurCall | null =>

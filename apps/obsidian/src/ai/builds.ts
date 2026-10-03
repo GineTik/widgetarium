@@ -1,5 +1,5 @@
 import { isObject } from "@widgetarium/core/engine/is-object.js";
-import { clipLine, ourCallOf } from "./tools.js";
+import { argumentsIn, clipLine, ourCallOf } from "./tools.js";
 import type { KeptCall } from "./transcript.js";
 
 export type StepStatus = "pending" | "failed" | "active" | "done";
@@ -189,5 +189,5 @@ function ourSaidOf(call: KeptCall): string {
 }
 
 function firstWordOf(said: string): string {
-	return said.split(/\s+/)[0]?.replace(/^["']|["']$/g, "") ?? "";
+	return argumentsIn(said)[0] ?? "";
 }

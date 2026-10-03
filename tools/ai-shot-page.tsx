@@ -17,6 +17,7 @@ const PROVIDERS = PRESETS.filter((provider) => SHOWN_PROVIDERS.has(provider.id))
 const TASK_PROGRESS_ID = "@default/task-progress";
 
 const AI = {
+	specs: { read: async () => null, watch: () => () => {}, change: async () => {} },
 	chosen: "claude-code",
 	provider: DEFAULT_PRESET,
 	providers: PROVIDERS,

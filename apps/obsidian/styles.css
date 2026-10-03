@@ -4933,6 +4933,193 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--text-error);
 }
 
+:is(.wg-root, .wg-portal) .wg-ai-spec {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-4, 16px);
+	margin: var(--size-4-2, 8px) 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-title {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 0 var(--size-4-1, 4px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-title h3 {
+	margin: 0;
+	font-size: var(--h3-size, 1.25em);
+	font-weight: var(--font-bold, 700);
+	color: var(--wg-kit-text);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-title span,
+:is(.wg-root, .wg-portal) .wg-ai-spec-sub {
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-m);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-group,
+:is(.wg-root, .wg-portal) .wg-ai-spec-details {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-details {
+	gap: var(--size-4-4, 16px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-label {
+	padding: 0 var(--size-4-1, 4px);
+	font-size: var(--wg-kit-text-s);
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-plate {
+	display: flex;
+	flex-direction: column;
+	padding: 0 var(--size-4-4, 16px);
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-group-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	width: 100%;
+	min-height: var(--wg-kit-control-l);
+	padding: var(--size-4-3, 12px) 0;
+	box-sizing: border-box;
+	border: none;
+	border-top: 1px solid var(--wg-kit-group-line);
+	background: none;
+	box-shadow: none;
+	color: var(--wg-kit-text);
+	font: inherit;
+	text-align: left;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-plate > :first-child,
+:is(.wg-root, .wg-portal) .wg-ai-spec-plate > :first-child > .wg-ai-spec-row:first-child {
+	border-top: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-pressable {
+	cursor: pointer;
+	height: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-inner {
+	padding-left: calc(26px + var(--size-4-3, 12px));
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-text {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	flex-direction: column;
+	gap: 1px;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-name {
+	font-size: var(--wg-kit-text-l);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-off .wg-ai-spec-name,
+:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-pending .wg-ai-spec-name {
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-off .wg-ai-spec-name {
+	text-decoration: line-through;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-check,
+:is(.wg-root, .wg-portal) .wg-ai-stage-dot {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: var(--wg-kit-pill);
+	box-shadow: inset 0 0 0 1.5px var(--wg-kit-card-edge);
+	background: none;
+	color: var(--text-on-accent);
+	transition:
+		transform var(--wg-press) var(--wg-ease),
+		background-color var(--wg-press) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-check {
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-check:active {
+	transform: scale(0.9);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-check[aria-pressed="true"] {
+	background: var(--wg-kit-accent);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-stage-dot.is-done {
+	background: var(--wg-kit-success);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-stage-dot.is-active {
+	box-shadow: inset 0 0 0 2.5px var(--wg-kit-accent);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-tile {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	border-radius: var(--wg-kit-item);
+	background: var(--wg-kit-raise);
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-buttons {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-refused {
+	margin: 0;
+	color: var(--wg-kit-error-ink);
+	font-size: var(--wg-kit-text-m);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-target.is-attached {
+	background: var(--wg-kit-accent-wash);
+	color: var(--wg-kit-accent-ink);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-attached-clear {
+	display: flex;
+	padding: 2px;
+	border: none;
+	background: none;
+	box-shadow: none;
+	color: inherit;
+	cursor: pointer;
+}
+
 :is(.wg-root, .wg-portal) .wg-ai-failure {
 	display: flex;
 	flex-direction: column;

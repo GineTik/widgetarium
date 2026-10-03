@@ -3,12 +3,15 @@ import type { KeyboardEvent, MouseEvent, ReactElement, RefObject } from "react";
 import { Icon, IconButton } from "@widgetarium/kit";
 import type { OpenNote } from "./assistant.js";
 import { TargetNote } from "./target-note.js";
+import { AttachedChip } from "./attached-chip.js";
+import type { Attached } from "./attached-chip.js";
 
 export type SendState = "streaming" | "typing" | "idle";
 
 export interface ComposerProps {
 	readonly busy: boolean;
 	readonly note: OpenNote | null | undefined;
+	readonly attached?: Attached | null;
 	readonly onSend: (said: string) => void;
 	readonly onStop: () => void;
 }
@@ -24,7 +27,7 @@ export function sendState({ busy, hasInput }: { readonly busy: boolean; readonly
 	return hasInput ? "typing" : "idle";
 }
 
-export function Composer({ busy, note, onSend, onStop }: ComposerProps): ReactElement {
+export function Composer({ busy, note, attached, onSend, onStop }: ComposerProps): ReactElement {
 	const [draft, setDraft] = useState("");
 	const composerBox = useRef<HTMLTextAreaElement>(null);
 	const state = sendState({ busy, hasInput: draft.trim() !== "" });
@@ -48,6 +51,7 @@ export function Composer({ busy, note, onSend, onStop }: ComposerProps): ReactEl
 	};
 
 	useFitsDraft(composerBox, draft);
+	useFocusesWhenAttached(composerBox, attached);
 
 	return h("div", { className: "wg-ai-composer" }, [
 		h("p", { className: "wg-ai-risk", key: "risk" }, OWN_RISK),
@@ -63,7 +67,7 @@ export function Composer({ busy, note, onSend, onStop }: ComposerProps): ReactEl
 				onKeyDown,
 			}),
 			h("div", { className: "wg-ai-bar", key: "bar" }, [
-				h(TargetNote, { key: "target", note }),
+				attached ? h(AttachedChip, { key: "attached", attached }) : h(TargetNote, { key: "target", note }),
 				h(
 					IconButton,
 					{
@@ -89,4 +93,14 @@ function useFitsDraft(composerBox: RefObject<HTMLTextAreaElement | null>, draft:
 		node.style.height = `${Math.min(TALLEST_BOX_PX, node.scrollHeight)}px`;
 		node.style.overflowY = node.scrollHeight > TALLEST_BOX_PX ? "auto" : "hidden";
 	}, [composerBox, draft]);
+}
+
+function useFocusesWhenAttached(
+	composerBox: RefObject<HTMLTextAreaElement | null>,
+	attached: Attached | null | undefined,
+): void {
+	const label = attached?.label ?? null;
+	useEffect(() => {
+		if (label) composerBox.current?.focus();
+	}, [composerBox, label]);
 }

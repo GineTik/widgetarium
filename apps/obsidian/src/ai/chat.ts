@@ -7,11 +7,16 @@ import { BuildProgress } from "./build-progress.js";
 import type { OpenByBuild } from "./build-progress.js";
 import type { AssistantState } from "./assistant.js";
 import type { Session, SessionState } from "./session.js";
+import type { KeptCall } from "./transcript.js";
 import { Turn } from "./turn.js";
 import { EmptyChat } from "./empty-chat.js";
 import { ProviderMenu } from "./provider-menu.js";
 import { Working } from "./working.js";
 import { Composer } from "./composer.js";
+import { SpecCard } from "./spec-card.js";
+import { BuildRunCard } from "./build-run-card.js";
+import { buildRunIn, lastSpecAppIn } from "./spec-calls.js";
+import { specPathOf } from "@widgetarium/core/app-spec.js";
 
 export { sendState } from "./composer.js";
 
@@ -30,11 +35,16 @@ interface ChatBuilds {
 
 const TITLE = "Widgetarium AI";
 const RETRY = "Try again";
+const BUILD_IT = "Build it";
+const CHANGING = "Changing the {app} spec";
+const CHANGE_ASKED = "Change the spec at {path} as follows: {said}\nThen show the spec again.";
 
 export function AiChat({ session, ai, onChoose, onOpenProviders }: AiChatProps): ReactElement {
 	const state = useSessionState(session);
 	const scroller = useScrolledToEnd(state);
 	const builds = useBuilds(state);
+	const [changing, setChanging] = useState<string | null>(null);
+	const lastAt = state.turns.length - 1;
 
 	return h("div", { className: "wg-ai" }, [
 		h("header", { className: "wg-ai-head", key: "head" }, [
@@ -49,7 +59,18 @@ export function AiChat({ session, ai, onChoose, onOpenProviders }: AiChatProps):
 				? h(EmptyChat, { key: "empty", ai, onOpenProviders })
 				: [
 						...state.turns.flatMap((turn, at) => [
-							h(Turn, { key: at, turn, host: ai.host, live: state.busy && at === state.turns.length - 1 }),
+							h(Turn, { key: at, turn, host: ai.host, live: state.busy && at === lastAt }),
+							...specCardsOf(turn.calls, {
+								turnAt: at,
+								port: ai.specs,
+								isAnswerable: at === lastAt && !state.busy,
+								isRunning: state.busy && at === lastAt,
+								onBuild: () => {
+									setChanging(null);
+									void session.send(BUILD_IT);
+								},
+								onChange: setChanging,
+							}),
 							...(builds.ofTurns[at] ?? [])
 								.filter((build) => !build.isLive)
 								.map((build) =>
@@ -81,7 +102,12 @@ export function AiChat({ session, ai, onChoose, onOpenProviders }: AiChatProps):
 			key: "composer",
 			busy: state.busy,
 			note: ai.note,
-			onSend: (said) => void session.send(said),
+			attached: changing ? { label: CHANGING.replace("{app}", changing), onClear: () => setChanging(null) } : null,
+			onSend: (said) => {
+				const asked = changing ? CHANGE_ASKED.replace("{path}", specPathOf(changing)).replace("{said}", said) : said;
+				setChanging(null);
+				void session.send(asked);
+			},
 			onStop: () => session.stop(),
 		}),
 	]);
@@ -107,4 +133,29 @@ function useBuilds(state: SessionState): ChatBuilds {
 	const lastAt = state.turns.length - 1;
 	const ofTurns = state.turns.map((turn, at) => buildsIn(turn.calls, state.busy && at === lastAt));
 	return { openByBuild, ofTurns, pinned: ofTurns[lastAt]?.find((build) => build.isLive) ?? null };
+}
+
+interface SpecCardsAsk {
+	readonly turnAt: number;
+	readonly port: AssistantState["specs"];
+	readonly isAnswerable: boolean;
+	readonly isRunning: boolean;
+	readonly onBuild: () => void;
+	readonly onChange: (app: string) => void;
+}
+
+function specCardsOf(calls: readonly KeptCall[], ask: SpecCardsAsk): ReactElement[] {
+	const run = buildRunIn(calls, ask.isRunning);
+	const built = run ? [h(BuildRunCard, { key: run.key, run, port: ask.port })] : [];
+	const app = lastSpecAppIn(calls);
+	if (!app) return built;
+	const spec = h(SpecCard, {
+		key: `spec-${ask.turnAt}-${app}`,
+		app,
+		port: ask.port,
+		isAnswerable: ask.isAnswerable,
+		onBuild: ask.onBuild,
+		onChange: () => ask.onChange(app),
+	});
+	return [spec, ...built];
 }

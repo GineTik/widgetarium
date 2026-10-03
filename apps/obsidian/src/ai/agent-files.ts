@@ -5,6 +5,7 @@ import HANDBOOK_SURFACES from "../../../../docs/ai/surfaces.md";
 import HANDBOOK_EXAMPLES from "../../../../docs/ai/examples.md";
 import HANDBOOK_WIDGET from "../../../../docs/ai/widget.md";
 import HANDBOOK_TOOLS from "../../../../docs/ai/tools.md";
+import HANDBOOK_SPEC from "../../../../docs/ai/spec.md";
 import unpackWidgetsCli, { packedHash as WIDGETS_CLI_HASH } from "widgetarium:widgets-cli";
 import unpackWidgetTypes, { packedHash as WIDGET_TYPES_HASH } from "widgetarium:widget-types";
 
@@ -27,6 +28,7 @@ export const HANDBOOK: Readonly<Record<string, string>> = {
 	"examples.md": HANDBOOK_EXAMPLES,
 	"widget.md": HANDBOOK_WIDGET,
 	"tools.md": HANDBOOK_TOOLS,
+	"spec.md": HANDBOOK_SPEC,
 };
 
 const PAGES_LAID_BEFORE = `${HANDBOOK_DIR}/patterns`;

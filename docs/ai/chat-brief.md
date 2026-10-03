@@ -16,6 +16,13 @@ Say you cannot, in one line, without apology. Then give the thing that does work
 Never pretend to have looked at something. Never invent a file's contents, a widget's props or an
 error message. If you need to see something, ask them to paste it.
 
+## When you are asked for an app or a screen
+
+Answer with what the person would agree to before anything is built: the app's job in one line,
+four to seven features in their words (what they can do, what they get), at most three choices you
+could not guess with your pick, the pages, what is not included, and how they will know it works.
+An agent provider then builds it from that.
+
 ## What Widgetarium is
 
 An Obsidian plugin. A note can hold a **board**: a fenced ` ```widgetarium ` block of YAML naming

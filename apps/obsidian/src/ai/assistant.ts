@@ -21,6 +21,8 @@ import type { Environment } from "./path.js";
 import { HTTP } from "./providers.js";
 import type { Provider } from "./providers.js";
 import { TASK_PROGRESS } from "./builds.js";
+import { createSpecPort } from "./spec-port.js";
+import type { SpecPort } from "./spec-port.js";
 import { reportsBasePath } from "../desktop-adapter.js";
 
 type WantedWidgets = ReturnType<typeof createWantedWidgets>;
@@ -54,6 +56,7 @@ export interface AssistantState extends AiState, Readiness {
 	readonly note: OpenNote | null;
 	readonly host: ObsidianHost;
 	readonly progress: ProgressWidget;
+	readonly specs: SpecPort;
 }
 
 export interface Assistant {
@@ -106,6 +109,7 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 
 	const session = createSession({ settings, runner, briefNow: () => briefNow(app, settings, paths) });
 	const hostFor = hostBinderFor(plugin);
+	const specs = createSpecPort(app);
 
 	async function state(): Promise<AssistantState> {
 		const held = await settings.state();
@@ -116,6 +120,7 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 			note,
 			host: hostFor(note?.path ?? ""),
 			progress: progressWidgetOf(plugin),
+			specs,
 		};
 	}
 
