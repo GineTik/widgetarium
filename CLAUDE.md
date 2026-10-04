@@ -726,6 +726,13 @@ in the vault: a symlinked scope picks up a new folder inside it, a copied scope 
 scope exists nowhere until it is linked or published. When a change does not show, look here first —
 before re-reading the code, before blaming the cache, and before reloading the plugin a third time.
 
+## Commits
+
+**The subject is a few words; everything else is the body.** What used to stand before the dash is
+the subject, cut to a few words: `feat(ai): design canvas states`. What stood after the dash goes to
+the body: the files and what each does, then `verified:` and what was not verified. Same types and
+scopes, same body as before, only the subject is short.
+
 ## House rules
 
 - All colours from `--wg-kit-*` tokens; no hardcoded colours. The kit's controls paint fill and corner
