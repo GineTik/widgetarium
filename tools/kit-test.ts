@@ -718,6 +718,56 @@ check(
 );
 found(host, ".wg-kit-check").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 check("and it reports the new value rather than holding one", ticked.value, true);
+const FORM_SPEC = [
+	{ name: "word", label: "Word", isRequired: true },
+	{ name: "count", label: "Count", kind: "number" as const },
+	{ name: "examples", label: "Examples", kind: "lines" as const },
+];
+check(
+	"FORM: a record becomes a draft of text, a list one line per item",
+	Kit.draftOfRecord(FORM_SPEC, { word: "nuance", count: 3, examples: ["a", "b"] }),
+	{ word: "nuance", count: "3", examples: "a\nb" },
+);
+check(
+	"and a draft becomes values typed by each field's kind",
+	Kit.valuesOfDraft(FORM_SPEC, { word: " nuance ", count: "3", examples: "a\n\n b " }),
+	{ word: "nuance", count: 3, examples: ["a", "b"] },
+);
+check(
+	"an edit writes only the fields the person changed, so an untouched value keeps its type",
+	Kit.changedValues(
+		FORM_SPEC,
+		{ word: "nuance", count: "3", examples: "a" },
+		{ word: "nuance", count: "4", examples: "a" },
+	),
+	{ count: 4 },
+);
+check(
+	"a number field holding no number leaves the draft incomplete",
+	Kit.isDraftComplete(FORM_SPEC, { word: "x", count: "3 cups" }),
+	false,
+);
+check(
+	"a draft is complete only once every required field holds text",
+	[Kit.isDraftComplete(FORM_SPEC, { word: "  " }), Kit.isDraftComplete(FORM_SPEC, { word: "x" })],
+	[false, true],
+);
+const typedInto: { name: string; value: string }[] = [];
+render(
+	h(Kit.FormFields, {
+		fields: FORM_SPEC,
+		draft: { word: "nuance" },
+		onChange: (name: string, value: string) => typedInto.push({ name, value }),
+	}),
+	host,
+);
+check(
+	"FormFields draws one labelled kit control per field, a list as a text area",
+	[...host.querySelectorAll(".wg-kit-form-label")]
+		.map((label) => label.textContent)
+		.concat(String(host.querySelectorAll("textarea").length)),
+	["Word", "Count", "Examples", "1"],
+);
 render(h(Kit.Checkbox, { checked: true }), host);
 check(
 	"without a handler it is only the drawing, so the row around it stays the one control",
@@ -3319,6 +3369,7 @@ check(
 	const PROBE = "probe-class";
 	const NEEDED_TO_DRAW: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 		Popover: { trigger: h("button", null, "open"), isOpen: true },
+		FormFields: { fields: [], draft: {}, onChange: () => undefined },
 		Calendar: { month: new Date(2026, 8, 1), today: new Date(2026, 8, 21) },
 		Segmented: { items: [{ value: "a", label: "A" }], value: "a" },
 		Tabs: { items: [{ value: "a", label: "A" }], value: "a" },

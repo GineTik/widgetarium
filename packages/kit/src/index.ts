@@ -47,6 +47,8 @@ import { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } 
 
 import { Switch } from "./components/switch";
 import { Checkbox } from "./components/checkbox";
+import { FormFields } from "./components/form-fields";
+import { FORM_FIELD_KINDS, changedValues, draftOfRecord, isDraftComplete, valuesOfDraft } from "./utils/form-fields";
 
 import {
 	Table,
@@ -200,6 +202,12 @@ export const Kit = {
 	DataTable,
 	Switch,
 	Checkbox,
+	FormFields,
+	FORM_FIELD_KINDS,
+	changedValues,
+	draftOfRecord,
+	isDraftComplete,
+	valuesOfDraft,
 	buttonClass,
 	iconButtonClass,
 	pillClass,
@@ -278,6 +286,8 @@ export { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } 
 
 export { Switch } from "./components/switch";
 export { Checkbox } from "./components/checkbox";
+export { FormFields } from "./components/form-fields";
+export { FORM_FIELD_KINDS, changedValues, draftOfRecord, isDraftComplete, valuesOfDraft } from "./utils/form-fields";
 
 export { DataTable } from "./components/data-table";
 export type { DataColumn, SortOrder } from "./utils/data-table";

@@ -62,6 +62,8 @@ export type { SparklineBarsProps, SparklineDotProps, SparklinePathProps, Sparkli
 export type { SpinnerProps } from "./components/spinner";
 export type { SwitchProps } from "./components/switch";
 export type { CheckboxProps } from "./components/checkbox";
+export type { FormFieldsProps } from "./components/form-fields";
+export type { FormDraft, FormFieldKind, FormFieldSpec } from "./utils/form-fields";
 export type { TableCellProps, TableHeadProps, TableProps } from "./components/table";
 export type { LayoutKind } from "./constants/layout";
 export type { MarkShape } from "./constants/marks";
