@@ -700,6 +700,36 @@ render(
 found(host, ".wg-kit-switch").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 check("Switch reports the new value rather than holding one", flipped.value, true);
 
+const ticked: { value: boolean | null } = { value: null };
+render(
+	h(Kit.Checkbox, {
+		checked: false,
+		onCheckedChange: (value: boolean) => {
+			ticked.value = value;
+		},
+		label: "Keep",
+	}),
+	host,
+);
+check(
+	"CHECKBOX: with a handler it is a checkbox the keyboard reaches",
+	found(host, ".wg-kit-check").getAttribute("role"),
+	"checkbox",
+);
+found(host, ".wg-kit-check").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+check("and it reports the new value rather than holding one", ticked.value, true);
+render(h(Kit.Checkbox, { checked: true }), host);
+check(
+	"without a handler it is only the drawing, so the row around it stays the one control",
+	[
+		found(host, ".wg-kit-check").tagName,
+		found(host, ".wg-kit-check").getAttribute("aria-hidden"),
+		found(host, ".wg-kit-check").getAttribute("data-state"),
+	],
+	["SPAN", "true", "checked"],
+);
+check("a checked box draws the tick", host.querySelectorAll(".wg-kit-check svg").length, 1);
+
 const plated = (said: string) => [...host.querySelectorAll(".wg-kit-surface")].map((one) => one.getAttribute(said));
 const seeded = (value: PlatesAbove, drawn: ReactNode) => render(h(PLATES_ABOVE.Provider, { value }, drawn), host);
 const ONE_PLATE_ABOVE: PlatesAbove = { surface: "group", levels: 1, ownPlates: 0 };
@@ -2244,6 +2274,24 @@ check(
 		[true, null],
 	);
 	check("a half ring carries both", [Boolean(ring.active), Boolean(ring.track)], [true, true]);
+	check(
+		"A SMALL RING DRAWS A THIN STROKE: 2px at a row's 22 and 28, 3 between, the full 4 from 48",
+		[22, 28, 36, 48, 96].map((size) => circleGeometry(size, 50).stroke),
+		[2, 2, 3, 4, 4],
+	);
+	const gapPx = (size: number): number => {
+		const drawn = circleGeometry(size, 50, { isWavy: false });
+		const end = (present(drawn.active).split("L").at(-1) ?? "").split(" ").map(Number);
+		const start = present(drawn.track).slice(1).split("L")[0]?.split(" ").map(Number) ?? [];
+		return Math.hypot((end[0] ?? 0) - (start[0] ?? 0), (end[1] ?? 0) - (start[1] ?? 0));
+	};
+	check("and its gap shrinks with it, so a thin ring is not mostly gap", gapPx(22) < gapPx(48) * 0.6, true);
+	render(h(Kit.ProgressBar, { shape: "circle", value: 50, size: 22 }), host);
+	check(
+		"the drawn ring wears the stroke its size asks for",
+		[...host.querySelectorAll(".wg-kit-ring path")].map((path) => path.getAttribute("stroke-width")),
+		["2", "2"],
+	);
 	check(
 		"THE RING WAVES AROUND ITS RADIUS, and stands still when asked to",
 		[ring, circleGeometry(48, 50, { isWavy: false })]

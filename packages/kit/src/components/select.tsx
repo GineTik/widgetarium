@@ -23,6 +23,7 @@ export interface SelectProps {
 	readonly defaultOpen?: boolean;
 	readonly onOpenChange?: ((open: boolean) => void) | undefined;
 	readonly placement?: PlacementName;
+	readonly isPortaled?: boolean;
 	readonly children?: ReactNode;
 }
 
@@ -34,6 +35,7 @@ export function Select({
 	defaultOpen = false,
 	onOpenChange,
 	placement = "below",
+	isPortaled = false,
 	children,
 }: SelectProps): ReactElement {
 	const [selected, setSelected] = useControllableState<unknown>({
@@ -48,7 +50,7 @@ export function Select({
 	};
 	return (
 		<SelectContext.Provider value={{ selected, choose, labels: labelsIn(children, new Map()) }}>
-			<Popover open={isOpen} onOpenChange={setOpen} placement={placement}>
+			<Popover open={isOpen} onOpenChange={setOpen} placement={placement} isPortaled={isPortaled}>
 				{children}
 			</Popover>
 		</SelectContext.Provider>

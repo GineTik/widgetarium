@@ -17,6 +17,10 @@ export const PROGRESS_STEPS: ReadonlyMap<string, number> = new Map([
 
 export const BAR_STROKE = 4;
 
+export const RING_STROKE_MIN = 2;
+
+export const RING_PX_PER_STROKE = 12;
+
 export const BAR_GAP = 4;
 
 export const WAVE_AMPLITUDE = 3;

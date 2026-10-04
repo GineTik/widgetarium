@@ -28,8 +28,8 @@ export function ProgressCircle({
 			{...rangeAria(shown)}
 		>
 			<svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-				{drawn.track && <path className="wg-kit-bar-track" d={drawn.track} />}
-				{drawn.active && <path className="wg-kit-bar-active" d={drawn.active} />}
+				{drawn.track && <path className="wg-kit-bar-track" d={drawn.track} strokeWidth={drawn.stroke} />}
+				{drawn.active && <path className="wg-kit-bar-active" d={drawn.active} strokeWidth={drawn.stroke} />}
 			</svg>
 			<span className="wg-kit-ring-value">{said}</span>
 		</div>

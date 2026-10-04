@@ -1246,6 +1246,7 @@ body {
 	align-items: center;
 	gap: var(--size-4-3, 12px);
 	width: 100%;
+	height: auto;
 	padding: var(--size-4-3, 12px) var(--size-4-4, 16px);
 	/* CONTEXT: measured — a <button> row kept the UA's 2px border and pushed the label off the hairline */
 	border: none;
@@ -1256,6 +1257,10 @@ body {
 }
 
 /* CONTEXT: reference:372 — padding + badge + gap, the inset that reads as iOS and not as a table */
+:is(.wg-root, .wg-portal) .wg-kit-row:has(> .wg-kit-check) {
+	--wg-kit-row-hairline: calc(var(--size-4-4, 16px) + 26px + var(--size-4-3, 12px));
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-row:has(.wg-kit-row-badge) {
 	--wg-kit-row-hairline: calc(var(--size-4-4, 16px) + 30px + var(--size-4-3, 12px));
 }
@@ -1268,7 +1273,7 @@ body {
 	left: var(--wg-kit-row-hairline);
 	right: 0;
 	height: 1px;
-	background: var(--wg-line);
+	background: var(--wg-kit-group-line);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-row.is-pressable {
@@ -1824,7 +1829,6 @@ body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-ring :is(.wg-kit-bar-active, .wg-kit-bar-track) {
 	fill: none;
-	stroke-width: 4px;
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
@@ -2250,6 +2254,48 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-switch::before {
 	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-check {
+	position: relative;
+	isolation: isolate;
+	flex: none;
+	display: inline-grid;
+	place-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+	color: var(--text-on-accent);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-check::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--wg-kit-pill);
+	box-shadow: inset 0 0 0 1.5px var(--wg-kit-card-edge);
+	transition:
+		background var(--wg-quick) var(--wg-ease),
+		transform var(--wg-press) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-check[data-state="checked"]::before {
+	background: var(--wg-kit-accent);
+	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal) :is(.wg-kit-check:active, :active > .wg-kit-check)::before {
+	transform: scale(0.88);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-check:focus-visible::before {
+	box-shadow: 0 0 0 2px var(--interactive-accent);
 }
 :is(.wg-root, .wg-portal) .wg-kit-switch[aria-checked="true"]::before {
 	background: var(--text-success);
@@ -4659,6 +4705,12 @@ body.wg-tree-carrying .wg-tile-body {
 
 :is(.wg-root, .wg-portal) .wg-ai-turn.is-mine .wg-ai-said {
 	padding: 10px 12px;
+	background: var(--wg-kit-fill);
+	box-shadow: none;
+}
+
+.workspace-leaf-content[data-type="widgetarium-ai"] > .view-content,
+.wg-ai-host {
 	background: var(--background-primary);
 }
 
@@ -4700,12 +4752,8 @@ body.wg-tree-carrying .wg-tile-body {
 	height: 24px;
 	margin-right: -6px;
 	border-radius: 8px;
-	background: var(--background-primary);
-	/* TRADE-OFF: the edge is spelled out rather than taken from --wg-kit-control-edge, because that token is `none` in some themes and `none` inside a shadow list voids the whole declaration */
-	/* TRADE-OFF: the shadow falls leftward, along the overlap, because a downward drop separates nothing between chips that sit side by side */
-	box-shadow:
-		inset 0 0 0 1px var(--wg-kit-card-edge),
-		-2px 0 4px -1px var(--wg-kit-lift-ink-soft);
+	background: var(--wg-kit-fill);
+	box-shadow: 0 0 0 2px var(--background-primary);
 	color: var(--wg-kit-text-muted);
 }
 
@@ -4896,6 +4944,19 @@ body.wg-tree-carrying .wg-tile-body {
 	animation: wg-ai-build-arrive 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+:is(.wg-root, .wg-portal) .wg-ai-pinned-run {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-group-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-pinned-run .wg-ai-spec-name {
+	font-size: var(--wg-kit-text-m);
+}
+
 :is(.wg-root, .wg-portal) .wg-ai-pinned {
 	flex: none;
 	display: flex;
@@ -4978,43 +5039,13 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-plate {
-	display: flex;
-	flex-direction: column;
-	padding: 0 var(--size-4-4, 16px);
-	border-radius: var(--wg-kit-plate);
-	background: var(--wg-kit-group-fill);
+:is(.wg-root, .wg-portal) .wg-kit-row.is-inner {
+	--wg-kit-row-hairline: calc(var(--size-4-4, 16px) + 28px + var(--size-4-3, 12px));
+	padding-left: var(--wg-kit-row-hairline);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-row {
-	display: flex;
-	align-items: center;
-	gap: var(--size-4-3, 12px);
-	width: 100%;
-	min-height: var(--wg-kit-control-l);
-	padding: var(--size-4-3, 12px) 0;
-	box-sizing: border-box;
-	border: none;
-	border-top: 1px solid var(--wg-kit-group-line);
-	background: none;
-	box-shadow: none;
-	color: var(--wg-kit-text);
-	font: inherit;
-	text-align: left;
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-spec-plate > :first-child,
-:is(.wg-root, .wg-portal) .wg-ai-spec-plate > :first-child > .wg-ai-spec-row:first-child {
-	border-top: none;
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-pressable {
-	cursor: pointer;
-	height: auto;
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-inner {
-	padding-left: calc(26px + var(--size-4-3, 12px));
+:is(.wg-root, .wg-portal) .wg-kit-row.is-inner .wg-ai-spec-name {
+	font-size: var(--wg-kit-text-m);
 }
 
 :is(.wg-root, .wg-portal) .wg-ai-spec-text {
@@ -5030,54 +5061,29 @@ body.wg-tree-carrying .wg-tile-body {
 	font-weight: var(--font-semibold, 600);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-off .wg-ai-spec-name,
-:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-pending .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-ai-spec-name,
+:is(.wg-root, .wg-portal) .wg-kit-row.is-pending .wg-ai-spec-name {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-row.is-off .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-ai-spec-name {
 	text-decoration: line-through;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-check,
-:is(.wg-root, .wg-portal) .wg-ai-stage-dot {
-	flex: none;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 26px;
-	height: 26px;
-	padding: 0;
-	border: none;
-	border-radius: var(--wg-kit-pill);
-	box-shadow: inset 0 0 0 1.5px var(--wg-kit-card-edge);
-	background: none;
-	color: var(--text-on-accent);
-	transition:
-		transform var(--wg-press) var(--wg-ease),
-		background-color var(--wg-press) var(--wg-ease);
+:is(.wg-root, .wg-portal) .wg-ai-stage-ring.is-active svg {
+	animation: wg-ai-stage-turn 1400ms linear infinite;
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-check {
-	cursor: pointer;
+@keyframes wg-ai-stage-turn {
+	to {
+		transform: rotate(360deg);
+	}
 }
 
-:is(.wg-root, .wg-portal) .wg-ai-spec-check:active {
-	transform: scale(0.9);
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-spec-check[aria-pressed="true"] {
-	background: var(--wg-kit-accent);
-	box-shadow: none;
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-stage-dot.is-done {
-	background: var(--wg-kit-success);
-	box-shadow: none;
-}
-
-:is(.wg-root, .wg-portal) .wg-ai-stage-dot.is-active {
-	box-shadow: inset 0 0 0 2.5px var(--wg-kit-accent);
+@media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal) .wg-ai-stage-ring.is-active svg {
+		animation: none;
+	}
 }
 
 :is(.wg-root, .wg-portal) .wg-ai-spec-tile {

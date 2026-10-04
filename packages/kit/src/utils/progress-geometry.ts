@@ -6,6 +6,8 @@ import {
 	CURSOR_HEIGHT,
 	CURSOR_WIDTH,
 	PROGRESS_MAX,
+	RING_PX_PER_STROKE,
+	RING_STROKE_MIN,
 	TAU,
 	WAVELENGTH,
 	WAVE_AMPLITUDE,
@@ -40,6 +42,7 @@ export interface CircleGeometry {
 	readonly size: number;
 	readonly middle: number;
 	readonly radius: number;
+	readonly stroke: number;
 	readonly active: string | null;
 	readonly track: string | null;
 }
@@ -81,18 +84,24 @@ export function circleGeometry(size: number, percent: unknown, { isWavy = true }
 	const share = clampPercent(percent) / PROGRESS_MAX;
 	const amplitude = isWavy ? CIRCLE_AMPLITUDE : 0;
 	const middle = size / 2;
-	const radius = middle - BAR_STROKE / 2 - amplitude;
-	const gap = (BAR_GAP + BAR_STROKE) / radius;
+	const stroke = ringStrokeOf(size);
+	const radius = middle - stroke / 2 - amplitude;
+	const gap = ((BAR_GAP * stroke) / BAR_STROKE + stroke) / radius;
 	const top = -Math.PI / 2;
 	const track = ringTrack(share, gap);
 	return {
 		size,
 		middle,
 		radius,
+		stroke,
 		active:
 			share > 0 ? ringPath(middle, radius, { from: top, sweep: share * TAU }, amplitude, ringWavesOf(radius)) : null,
 		track: track ? ringPath(middle, radius, { from: top + track.from, sweep: track.sweep }, 0, 1) : null,
 	};
+}
+
+export function ringStrokeOf(size: number): number {
+	return Math.min(BAR_STROKE, Math.max(RING_STROKE_MIN, Math.round(size / RING_PX_PER_STROKE)));
 }
 
 function wavePath(from: number, to: number, middle: number, amplitude: number): string {

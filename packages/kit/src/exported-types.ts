@@ -61,6 +61,7 @@ export type { SlotProps } from "./components/slot";
 export type { SparklineBarsProps, SparklineDotProps, SparklinePathProps, SparklineProps } from "./components/sparkline";
 export type { SpinnerProps } from "./components/spinner";
 export type { SwitchProps } from "./components/switch";
+export type { CheckboxProps } from "./components/checkbox";
 export type { TableCellProps, TableHeadProps, TableProps } from "./components/table";
 export type { LayoutKind } from "./constants/layout";
 export type { MarkShape } from "./constants/marks";

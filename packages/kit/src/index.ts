@@ -46,6 +46,7 @@ import { DataTable } from "./components/data-table";
 import { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } from "./components/sparkline";
 
 import { Switch } from "./components/switch";
+import { Checkbox } from "./components/checkbox";
 
 import {
 	Table,
@@ -198,6 +199,7 @@ export const Kit = {
 	TableCaption,
 	DataTable,
 	Switch,
+	Checkbox,
 	buttonClass,
 	iconButtonClass,
 	pillClass,
@@ -275,6 +277,7 @@ export { Skeleton } from "./components/skeleton";
 export { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } from "./components/sparkline";
 
 export { Switch } from "./components/switch";
+export { Checkbox } from "./components/checkbox";
 
 export { DataTable } from "./components/data-table";
 export type { DataColumn, SortOrder } from "./utils/data-table";
