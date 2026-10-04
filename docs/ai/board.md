@@ -189,6 +189,24 @@ props:
 
 `widgets.mjs show <id>` prints a widget's props.
 
+## Switching a command on
+
+A widget's commands (`createWord`, `updateWord`, `answerCard`, …) are listed under
+`manifest.commands` in `show <id>`. **A command that writes the vault stays shut until the tile
+gives it a binding of its own with `allow: [run]`** — that line is the person's consent, and
+without it the widget hides its Add, Save or Delete, or says the action is switched off. The
+target's own `allow` must hold the verb as well:
+
+```yaml
+props:
+  getWords: { implementation: "@obsidian/folder", fields: { path: Words }, allow: [list, create, update] }
+  createWord: { implementation: "@core/rows-create", fields: { target: words/getWords }, allow: [run] }
+  updateWord: { implementation: "@core/rows-update", fields: { target: words/getWords }, allow: [run] }
+```
+
+`target` is `<tileId>/<propName>`. Switch on exactly the commands the spec's actions name; `report`
+names every one that is still shut and prints the line that opens it.
+
 ## Views: one place, several screens
 
 A **swap box** draws one child at a time and keeps the others mounted, so their refs stay alive.

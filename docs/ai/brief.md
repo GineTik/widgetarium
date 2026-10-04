@@ -28,12 +28,30 @@ one reads, and each has a line that says when it is over. Starting the build ear
 a board of empty tiles wearing no surfaces, and a list nobody can add a row to: the failures this
 order exists to prevent.
 
-**Big or small decides where you start.** A new app or page, a new kind of record, a feature added
-or taken away is big: start at stage 1. Moving, restyling, renaming, showing a field that already
-exists, fixing something broken is small: go straight to the build and say "a small change".
+**`stage` is a command of its own, run the moment a stage is over.** The person's progress card
+moves only when that call returns, so never chain it with `;`, `&&` or a pipe to anything else, and
+never fold it into the first reads of the next stage: a stage said inside a long command is a stage
+the person does not see until that command ends.
 
-**Stage 1 — the spec.** Open `spec.md` in the handbook on disk and write `.widgetarium/apps/<app>/spec.md` by
-it: the job, the features in the person's words, at most three choices you could not guess, the
+**The size of the change decides where you start, never your taste.**
+
+| The change                                        | Research | Spec | Then                                  |
+| ------------------------------------------------- | -------- | ---- | ------------------------------------- |
+| a new app                                         | yes      | yes  | every stage                           |
+| a new page or a new kind of record in an app      | no       | yes  | the app's references stay as they are |
+| one feature added or taken away                   | no       | yes  | the build                             |
+| moving, restyling, renaming, a fix, a field shown | no       | no   | say "a small change"                  |
+
+**Stage 1 — research, then the spec.** For a new app, first look at how two or three real products already do
+this job (for words: Anki, Noji, Duolingo; for reading: Readwise, Kindle, StoryGraph): with a web
+tool when you have one, from what you know when you do not. For each, note what a person can do
+there that the request did not mention: the study button with its count, the filters, the stats,
+the undo. Write them in `.widgetarium/apps/<app>/research.md`. This is where the screen's richness
+comes from: a feature most of them share and this app lacks is a feature to suggest.
+
+Then open `spec.md` in the handbook on disk and write `.widgetarium/apps/<app>/spec.md` by
+it: the products you looked at with what you take from each, the job, the features in the person's
+words — what they asked for, and as `mark: suggested` what the research says they will want — at most three choices you could not guess, the
 pages with their bodies, what is not included, the checks; below them, for you, what each list
 allows. Then `node {tool} spec <app>`: the person sees it as a card and answers on it. Say one line
 and never repeat the spec in the chat. **Stop there and wait** — this is the one place you wait, and everything after it you do without asking. When
@@ -53,11 +71,75 @@ fine; lorem is not, because a screen designed against filler is designed against
 _Over when a gateway bound to each folder would answer with rows._ Nothing is placed yet. Say it:
 `node {tool} stage <app> data --said "<what you made, in one line>"`.
 
-**Stage 3 — the design, in words.** Write what a person should see, before a single widget is named.
-Page by page: its shell zones and its body (law 6), then region by region the one question that
-region answers, which fields from stage 2 it draws, what the eye should land on first, and what it
-looks like when the data is empty, slow or refused. Every kept feature names the page and slot that
-carry it.
+**Stage 3 — the design, drawn on a canvas the person approves.** Draw every page whole, in one
+pass, the way a designer draws a canvas, and show it before anything is wired. In
+`.widgetarium/apps/<app>/design/` write one note per page, each holding one widgetarium board, and
+`canvas.json` naming them in the order they are read:
+
+```json
+{
+	"screens": [
+		{ "name": "Inbox", "file": "Inbox.md" },
+		{ "name": "Projects", "file": "Projects.md" }
+	]
+}
+```
+
+**Read `.widgetarium/design-system.md` first and follow it**: it is the person's, and a screen that
+breaks it is redrawn before they see it. A screen is the page as it will be built, drawn with the
+very pieces it will be built from: the base and its regions, catalogue widgets, headings, captions,
+the add button, the record actions. **A design is a picture, never wired to the vault**: every prop
+reads sample rows kept in the tile (`@core/typed-rows`, `@core/typed-value`, copied from what stage 2
+seeded), and `design` refuses a screen bound to a folder. **Draw the states a person will meet, not
+one frozen moment**, each a note of its own that the canvas sets beside the others as a frame, all of
+it static. **Every screen that shows rows has an `Empty` state**: the same screen with every list,
+count and chart a person fills left empty, drawing what will appear there and the one action that
+fills it; rows the app ships with, such as checklist steps, stay. Add a state for every other look
+that changes — a review before and after an answer, a record closed and open:
+
+```json
+{
+	"name": "Inbox",
+	"states": [
+		{ "name": "Full", "file": "Inbox.md" },
+		{ "name": "Empty", "file": "Inbox empty.md" }
+	]
+}
+```
+
+**Draw it in one shot**, the way a designer
+draws a canvas: one message that writes every screen note and, for every block the catalogue lacks,
+a draft widget in `.widgetarium/widgets/@draft/<name>/widget.tsx`. A draft is only the look: kit
+components with its sample rows written inline, exactly as the finished widget will look, but no
+props, no commands, no `start`, no `check`. Stage 4 turns each draft into the real widget after the
+person approved, keeping its look. Then `node {tool} shot --design <app>`, open the picture (the whole
+canvas, every page side by side) and redraw what is not the app you would pay for, again in one
+message. Then `node {tool} design <app>`: the
+person sees it as a card in the chat, opens it in a tab, and answers. **Stop and wait** for "Approve
+design"; a change comes back as a message saying what to change. Each page, region by region, still
+answers one question, draws the fields stage 2 wrote, and has its empty, loading and refused states.
+Every kept feature stands on a screen.
+
+**Design the finished product, not the smallest diff.** You are drawing the screen a person would
+pay for, and building it is not your cost: the logic already lives in commands and queries, every
+widget is an island a person removes in one press, and a widget that misbehaves breaks only itself.
+So a missing detail is the defect, never an extra one. What makes a screen feel finished is what a
+good app in this domain has beside what was asked: a count and a "start" with its number ("Study 14
+cards"), search, sort and filters on every list, progress split into what it means, an undo after
+anything destructive, a way into every page and a way back out of it. Leave a block out only when it
+answers nothing the person would ask; never because it is more work.
+
+**Every block is written down as the person will see it**, so whoever builds it, or finds it in the
+catalogue, is judging against a picture and not a guess:
+
+- what it shows, with a real example row, and what the eye lands on first;
+- its states: empty (what it says and the one action that fills it), loading, one row, a hundred;
+- its controls and where they stand: the page's one primary action, secondary adds, record actions
+  in the record's header, an add from a selection beside the selection;
+- where it leads: which page a press opens, and how the person gets back.
+
+Every page is reachable from the page the app opens on, and every page has a way back. A page
+nothing links to does not exist for the person.
 
 **The form is chosen here, not assumed.** A board of tiles is one answer to "how should this be
 shown" and not always the right one. A page of prose with two widgets inside it, one widget taking
@@ -65,26 +147,42 @@ the whole note, a table, a printed handout, a deck someone presents — each is 
 the data does not pick between them. Name the form, say why it suits this domain, and say what you
 are giving up by choosing it.
 
-Write it as `.widgetarium/apps/<app>/design.md`. **It never goes on the screen note itself**, which holds the
+What the screens cannot show, the decisions and what each block does when pressed, goes in
+`.widgetarium/apps/<app>/design.md`. **Neither ever goes on a page note itself**, which holds the
 board and nothing above it.
 
-_Over when a person who cannot see the screen could describe it._ No widget has been chosen yet.
-`node {tool} stage <app> design --said "..."`.
+_Over when the person pressed Approve design._ Then `node {tool} stage <app> design --said "..."`.
 
 **Stage 4 — the widgets.** Now the catalogue, and not before. For every kept feature, and every
 "yes" in the spec's actions, find the widget that does it: its props match the fields stage 2
 wrote, and its card declares the verbs the action needs — `node {tool} show <id>` lists them under
 `manifest.props.<prop>.writes`. A list whose spec says add needs a widget that declares `create`;
-one whose spec says no offers none. Write each feature's `widget` into the spec ("Flashcard, on
-Review"). The catalogue comes first: install every widget it already has for a feature, then say
-`node {tool} stage <app> catalogue --said "<what you installed or found>"`. The widgets nothing in
-the catalogue covers are law 15's list; write them, each behind its own `start`.
+one whose spec says no offers none. Write each feature's `widget` (its id, `@you/flashcard`) and
+`page` (a page name from the spec) into the spec. **A catalogue widget fits when it draws the block
+stage 3 wrote down, not when it merely holds the data**: links drawn as a markdown list are not a
+navigation, a generic list is not a shelf of covers. Read its card and its preview against the
+block; a widget that would make the screen look like a different, poorer app is a widget to write.
+The catalogue comes first among the ones that fit: install every widget it already has for a feature, then say `node {tool} stage <app> catalogue --said "<what you installed
+or found>"`. The widgets nothing in the catalogue covers are law 15's list; write them, each behind
+its own `start`.
 
-_Over when every kept feature names a widget that exists in this vault._
-`node {tool} stage <app> widgets --said "<the new widgets, by name>"`.
+_Over when every kept feature names a widget that exists here and passes `check`._ The tool holds
+you to it: `node {tool} stage <app> widgets --said "..."` is refused until it is true, and says
+which features are not.
 
-**Stage 5 — the pages.** For each page the spec names, look for the widget whose props already
-match the fields stage 2 wrote:
+**You are the orchestrator from here on.** If your tools can start sub-agents, give every new
+widget and every page to a sub-agent of its own, one at a time, with what it needs and nothing else:
+the feature it serves, the record shape from stage 2, the spec path, and the rule that it is done
+only when `node {tool} check <id>` (a widget) or `node {tool} lint <note>` (a page) passes. You do
+not write widget code yourself; you hand it out, read what comes back, and send it back while it is
+not done. Without sub-agents, do the same yourself, one feature at a time.
+
+**Stage 5 — the pages.** Each page starts as a copy of its approved screen: the same tiles, the same
+tree, now in the vault note the spec names. The person approved that picture, so the page must look
+like it; change it only where a widget from stage 4 replaced a draft, and move every prop off
+its sample rows onto the folder stage 2 seeded. The empty state the canvas drew is the one an empty
+folder must show. Where a block still has no
+widget, look for the one whose props already match the fields stage 2 wrote:
 
 ```bash
 node {tool} find --role <role> --reading <kind> --needs <types> --about <words>
@@ -95,8 +193,19 @@ Called with nothing it is the whole catalogue — **not the vault**. Every row s
 widget** — law 15 says how you begin. Then place, bind every prop with `allow` holding exactly the
 verbs the spec said yes to, give every node its surface, lint, measure, and look at it.
 
-_Over when every check in the spec passes on the drawn board._
-`node {tool} stage <app> pages --said "<the pages, by name>"`.
+Write each page's `note` (its vault path) into the spec as you make it.
+
+**Then look at it, the way a designer looks at a canvas.** `node {tool} shot <note>` prints the path
+of a picture of the page as Obsidian draws it; open that picture. Hold it against the page's blocks
+beside its approved screen (`node {tool} shot --design <app>`), block by block: is each one there, where the screen put it, showing real rows, with
+its controls where they belong; is the eye drawn first to what the design said; is anything empty,
+cut off, crowded, raw or plain ugly. Fix what is not right and shot again. A page you have not
+looked at is not done, whatever `lint` says: lint checks the rules, only the picture shows the page.
+
+_Over when `node {tool} report <app>` says every kept feature is ✓_: its widget exists, passes
+`check`, stands on its page's note, and that note lints. `stage <app> pages` is refused until then.
+**End your last message with the report's lines as they printed** — one line per feature, where to
+find it. A feature you cannot finish stays ✗ in that list with its reason; never leave it out.
 
 **A titled part of a region is a section, not a bare widget.** `@default/section` carries the
 heading, the badge and the controls, and holds either the widgets you place or one widget drawn again
@@ -238,7 +347,13 @@ region and tile.
 **13. Nothing is done until it is on the board and drawing.** Written but not placed, placed but not
 bound, a prop left on its default — none of those are finished.
 
-**14. One widget answers one question, and holds one role.** A widget's `role` is the whole of what it
+**14. A widget is a component, not a page: one job, one role.** Say its job in one sentence without
+"and". Its size follows the job: a kanban or a full-page map is big because its job (moving a card
+between columns, panning a map) breaks if it is split. Ask of every part: would it work alone, or on
+another page? Then it is a widget of its own, or a slot. Does the job break without it? Then it
+stays. A card's body, an add button and a record's edit and delete always work alone.
+
+A widget's `role` is the whole of what it
 draws: an `indicator` draws no rows, a `collection` draws no figure over them, a `control` draws no
 list it filters. Where one design block needs two roles, it is two widgets in one section. A figure
 against a target and the rows it adds up are two widgets; a chart and the numbers beside it are two;
@@ -249,12 +364,20 @@ is read as one shape, so it belongs to the indicator whose number it explains.
 wrong — one widget, two roles           right — one section, two widgets
 ┌ Training ─────────────────────┐       section "Training"
 │ This week      435 of 240 min │  →      ├ indicator   "This week" · progress · caption
-│ ████████████████████████████  │         └ collection  "Sessions" · + · rows
-│ Sessions                    + │
+│ ████████████████████████████  │         └ collection  "Sessions" · rows
+│ Sessions                      │
 │ ≋ Swim · Sun 20 Sept   10 min │
-│ ⚲ Pull day · Sun…      49 min │
+│ ⚲ Pull day · Sun…      49 min │         section controls: + (@default/add-button)
 └───────────────────────────────┘
 ```
+
+**The widget that shows records never adds them, and never edits or deletes the one it shows.** A
+list shows and picks; a card shows one record. Adding is `@default/add-button` (role `composer`)
+standing where the page's controls stand: beside the search, in a section's `mounts.controls`, in
+the header. Editing and deleting the open record is `@default/record-actions` (role `control`) beside
+its title. Both take a `getFields` list and open a dialog, so nobody draws a form for them. `check`
+refuses a `collection` or `detail` that creates records (`adds`). A widget whose job is the press
+itself, such as a streak marking today or a tab strip adding a tab, keeps it.
 
 The boundary is where the reading changes: a summary answers "how much", rows answer "which ones". A
 widget that draws both cannot be rearranged, re-plated or reused, and the design loses the choice of
