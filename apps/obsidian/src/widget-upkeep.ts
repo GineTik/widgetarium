@@ -2,6 +2,7 @@ import { Notice } from "obsidian";
 import { WIDGETS_DIR, COMPONENTS_DIR } from "@widgetarium/core/paths.js";
 import type { RebuiltDrifted } from "@widgetarium/core/installer-upkeep.js";
 import { watchWidgetScopes } from "./widget-watch.js";
+import { writeBuiltCards } from "./built-cards.js";
 import type WidgetariumPlugin from "./main.js";
 
 const WIDGET_POLL_MS = 1000;
@@ -100,13 +101,25 @@ async function reloadWidgets(plugin: WidgetariumPlugin): Promise<void> {
 	await rebuildWidgets(plugin);
 	await plugin.registry.load();
 	plugin.refresh();
+	await writeCards(plugin);
+}
+
+async function writeCards(plugin: WidgetariumPlugin): Promise<void> {
+	const written = await writeBuiltCards(plugin.app.vault.adapter, plugin.registry).catch((failure: unknown) => {
+		console.error(
+			"[widgetarium] the vault widgets' cards were not written, so the agent's tool cannot read their props",
+			failure,
+		);
+		return [];
+	});
+	if (written.length > 0) console.info(`[widgetarium] cards written: ${written.join(", ")}`);
 }
 
 async function revalidate(plugin: WidgetariumPlugin): Promise<void> {
 	const changed = await plugin.startupCache.filesChanged();
 	if (changed?.length === 0 && plugin.startupCache.areBuildsChecked()) {
 		console.info("[widgetarium] revalidate: unchanged");
-		return;
+		return writeCards(plugin);
 	}
 	console.info(`[widgetarium] revalidate: ${revalidationOf(changed)}`);
 	const done = await rebuildWidgets(plugin);
@@ -115,6 +128,7 @@ async function revalidate(plugin: WidgetariumPlugin): Promise<void> {
 		plugin.refresh();
 	}
 	if (done.failures.length === 0) plugin.startupCache.markBuildsChecked();
+	await writeCards(plugin);
 }
 
 function revalidationOf(changed: readonly string[] | null): string {

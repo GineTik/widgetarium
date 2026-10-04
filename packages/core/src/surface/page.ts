@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { useDrawsInPane } from "./use-draws-in-pane.js";
 
-const PANE_SELECTOR = ".view-content";
+const PANE_SELECTOR = ".wg-design-screen, .markdown-reading-view, .markdown-source-view, .view-content";
 
 export interface PageProps {
 	readonly boardNode?: Element | null | undefined;

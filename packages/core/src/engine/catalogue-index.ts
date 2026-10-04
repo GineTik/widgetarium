@@ -41,6 +41,7 @@ interface KeyedEntry {
 }
 
 export const RECORD_FILE = "manifest.generated.json";
+export const BUILT_CARD_FILE = "build/card.json";
 export const RECORD_FILES: readonly string[] = [RECORD_FILE];
 const GENERATED_NOTE = "widgetarium build — do not edit";
 

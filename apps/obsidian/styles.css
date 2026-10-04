@@ -735,6 +735,10 @@ body {
 	overflow: visible;
 }
 
+.wg-tree-region:has([data-wg-overlay]) {
+	z-index: 50;
+}
+
 .wg-tile:has([data-wg-overlay]) .wg-tile-body,
 .wg-widget-root:has([data-wg-overlay]) {
 	overflow: visible;
@@ -1254,6 +1258,8 @@ body {
 	font-size: var(--wg-kit-text-m);
 	color: var(--wg-kit-text);
 	text-align: left;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 /* CONTEXT: reference:372 — padding + badge + gap, the inset that reads as iOS and not as a table */
@@ -2222,13 +2228,13 @@ body {
    group's fill IS the control's fill, so a trailing button vanished. It raises, the way a card
    raises off a plate. Two rules, so hover is not left to source order. */
 /* CONTEXT: raised is white in light, the foreground step in dark — the one fill needing a rim */
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn::before,
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:not(.is-accent, .is-danger)::before,
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon::before {
 	background: var(--wg-kit-raise);
 	--wg-kit-control-edge: inset 0 0 0 1px var(--wg-kit-card-edge);
 }
 /* CONTEXT: the rim belongs to the raised fill — a grey control carries no edge */
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:hover::before,
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:not(.is-accent, .is-danger):hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon:hover::before {
 	background: var(--wg-kit-fill-hover);
 	--wg-kit-control-edge: none;
@@ -2254,6 +2260,25 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-switch::before {
 	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-cards, 16px);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-form-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items, 4px);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-form-label {
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-check {
@@ -4579,6 +4604,24 @@ body.wg-tree-carrying .wg-tile-body {
 	white-space: nowrap;
 }
 
+:is(.wg-root, .wg-portal) .wg-ai-scroll-frame {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-to-end {
+	position: absolute;
+	bottom: 8px;
+	left: 50%;
+	transform: translateX(-50%);
+	border-radius: 999px;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+
 :is(.wg-root, .wg-portal) .wg-ai-scroll {
 	flex: 1;
 	min-height: 0;
@@ -4946,6 +4989,14 @@ body.wg-tree-carrying .wg-tile-body {
 
 :is(.wg-root, .wg-portal) .wg-ai-pinned-run {
 	display: flex;
+	width: 100%;
+	height: auto;
+	border: 0;
+	box-shadow: none;
+	text-align: start;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
 	align-items: center;
 	gap: var(--size-4-3, 12px);
 	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
@@ -5039,6 +5090,53 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
+:is(.wg-root, .wg-portal) .wg-ai-spec-label.is-fold {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-1, 4px);
+	align-self: flex-start;
+	height: auto;
+	margin: 0;
+	border: 0;
+	background: none;
+	box-shadow: none;
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-fold {
+	display: grid;
+	grid-template-rows: 1fr;
+	opacity: 1;
+	transition:
+		grid-template-rows var(--wg-quick) var(--wg-ease),
+		opacity var(--wg-quick) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-fold.is-shut {
+	grid-template-rows: 0fr;
+	opacity: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-fold > div {
+	min-height: 0;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-fold-chevron {
+	flex: none;
+	margin-inline-start: auto;
+	color: var(--wg-kit-text-muted);
+	transition: rotate var(--wg-quick) var(--wg-spring);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-fold-chevron.is-shut {
+	rotate: -90deg;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-label.is-fold .wg-ai-fold-chevron {
+	margin-inline-start: 0;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-row.is-inner {
 	--wg-kit-row-hairline: calc(var(--size-4-4, 16px) + 28px + var(--size-4-3, 12px));
 	padding-left: var(--wg-kit-row-hairline);
@@ -5066,7 +5164,14 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-ai-spec-name {
+:is(.wg-root, .wg-portal) .wg-kit-row.is-locked:disabled,
+:is(.wg-root, .wg-portal) .wg-ai-spec-verbs .wg-kit-btn:disabled {
+	opacity: 1;
+	cursor: default;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-row.is-off .wg-ai-spec-name,
+:is(.wg-root, .wg-portal) .wg-ai-spec-reference.is-off .wg-ai-spec-name {
 	text-decoration: line-through;
 }
 
@@ -5086,6 +5191,47 @@ body.wg-tree-carrying .wg-tile-body {
 	}
 }
 
+:is(.wg-root, .wg-portal) .wg-ai-spec-link {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+	min-width: 0;
+	color: inherit;
+	text-decoration: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-link-icon {
+	flex: none;
+	margin-inline-start: auto;
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-link:hover .wg-ai-spec-name {
+	text-decoration: underline;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-link:hover .wg-ai-spec-link-icon {
+	color: var(--wg-kit-text);
+}
+
+:is(.wg-root, .wg-portal) :is(.wg-kit-row, .wg-ai-stage-fold) + .wg-ai-stage-fold > .wg-kit-row::after,
+:is(.wg-root, .wg-portal) .wg-ai-stage-fold + .wg-kit-row::after,
+:is(.wg-root, .wg-portal) .wg-ai-stage-fold > .wg-ai-fold > div > .wg-kit-row:first-child::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: var(--wg-kit-row-hairline);
+	right: 0;
+	height: 1px;
+	background: var(--wg-kit-group-line);
+}
+
+:is(.wg-root, .wg-portal) :is(.wg-ai-stage-fold > button, .wg-ai-spec-label.is-fold):focus:not(:focus-visible) {
+	outline: none;
+	box-shadow: none;
+}
+
 :is(.wg-root, .wg-portal) .wg-ai-spec-tile {
 	flex: none;
 	display: flex;
@@ -5096,6 +5242,17 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: var(--wg-kit-item);
 	background: var(--wg-kit-raise);
 	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-record {
+	flex-wrap: wrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-spec-verbs {
+	display: flex;
+	flex: none;
+	gap: var(--size-4-1, 4px);
+	margin-inline-start: auto;
 }
 
 :is(.wg-root, .wg-portal) .wg-ai-spec-buttons {
@@ -6551,4 +6708,186 @@ body.wg-tree-carrying .wg-tile-body {
 	font-family: var(--font-monospace, monospace);
 	font-size: var(--font-ui-smaller, 12px);
 	color: var(--text-faint);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3, 12px);
+	width: 100%;
+	height: auto;
+	padding: var(--size-4-3, 12px);
+	border: 0;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-group-fill);
+	box-shadow: none;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design:hover {
+	background: var(--wg-kit-fill-hover);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-preview {
+	display: flex;
+	gap: var(--size-4-2, 8px);
+	height: 140px;
+	padding: var(--size-4-3, 12px);
+	border-radius: calc(var(--wg-kit-plate) - 4px);
+	background-color: var(--wg-kit-page);
+	background-image: radial-gradient(var(--wg-kit-card-edge) 1px, transparent 1px);
+	background-size: 12px 12px;
+	overflow: hidden;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-frame {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+	padding: var(--size-4-2, 8px);
+	border-radius: 8px;
+	background: var(--wg-kit-raise);
+	box-shadow: 0 0 0 1px var(--wg-kit-card-edge);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-frame b {
+	overflow: hidden;
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text-muted);
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-frame i {
+	height: 6px;
+	border-radius: 3px;
+	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-frame i.is-accent {
+	background: var(--wg-kit-accent-wash);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-said {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3, 12px);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-design-go {
+	flex: none;
+	margin-inline-start: auto;
+	color: var(--wg-kit-accent);
+}
+
+.wg-design-view {
+	padding: 0;
+	overflow: hidden;
+}
+
+.wg-design-mount {
+	height: 100%;
+}
+
+.wg-design-field {
+	position: relative;
+	height: 100%;
+	overflow: hidden;
+	touch-action: none;
+	cursor: grab;
+	background-color: var(--background-secondary);
+	background-image: radial-gradient(var(--background-modifier-border) 1px, transparent 1px);
+	background-size: 20px 20px;
+}
+
+.wg-design-layer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	transform-origin: 0 0;
+}
+
+.wg-design-frame {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.wg-design-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: 36px;
+}
+
+.wg-design-name {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold, 600);
+	color: var(--text-muted);
+}
+
+.wg-design-screen {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	border-radius: 16px;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	cursor: default;
+}
+
+.wg-design-screen > .wg-page {
+	position: relative;
+	inset: auto;
+	flex: 1 0 auto;
+	display: flex;
+	flex-direction: column;
+	overflow: visible;
+}
+
+.wg-design-screen > .wg-page > .wg-root {
+	flex: 1 0 auto;
+}
+
+.wg-design-head,
+.wg-design-zoom,
+.wg-design-hint {
+	position: absolute;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	border-radius: 12px;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	font-size: var(--font-ui-small);
+}
+
+.wg-design-head {
+	top: 16px;
+	left: 16px;
+}
+
+.wg-design-head span,
+.wg-design-hint,
+.wg-design-percent {
+	color: var(--text-muted);
+}
+
+.wg-design-zoom {
+	bottom: 16px;
+	left: 16px;
+	gap: 2px;
+}
+
+.wg-design-hint {
+	right: 16px;
+	bottom: 16px;
 }

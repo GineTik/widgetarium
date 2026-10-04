@@ -32,6 +32,8 @@ import { pluginInstaller } from "./widget-offers.js";
 import { activeRules, normalizeRules, ruleBlock } from "./substitution.js";
 import { ensureFolders, revalidateWidgets, watchWidgets } from "./widget-upkeep.js";
 import { indexedDbSnapshotStore } from "./startup-snapshot-store.js";
+import { answerShotRequests } from "./shot-requests.js";
+import { registerDesignView } from "./design-view.js";
 import type WidgetariumPlugin from "./main.js";
 import type { WantedWidgets } from "./main.js";
 
@@ -64,6 +66,7 @@ export function startPlugin(plugin: WidgetariumPlugin): void {
 		.catch((failure: unknown) => console.error("[widgetarium] the widgets could not be read", failure));
 	startAssistant(plugin);
 	registerBoardViews(plugin);
+	registerDesignView(plugin);
 	receiveDropsInNotes(plugin);
 	addCommandsAndRibbon(plugin);
 	trace("onload done", { ms: Math.round(performance.now() - startedAt) });
@@ -81,6 +84,7 @@ export async function startUp(plugin: WidgetariumPlugin): Promise<void> {
 		`[widgetarium] startup: ${mounted.from} ${mounted.widgets} widgets → drawn in ${Math.round(performance.now() - startedAt)} ms`,
 	);
 	scheduleUpkeep(plugin);
+	answerShotRequests(plugin);
 }
 
 // TRADE-OFF: a fixed wait, not "after every board drew" — a board may never be opened, and each disk question asked while boards draw queues behind theirs
