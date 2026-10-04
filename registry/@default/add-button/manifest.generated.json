@@ -1,0 +1,95 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Add button",
+	"description": "A button that opens a form and adds one record to a list another widget draws.",
+	"keywords": ["add", "new", "create", "plus", "button", "form", "dialog", "record"],
+	"role": "composer",
+	"size": {
+		"preferredWidth": 240,
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 2,
+			"h": 1
+		},
+		"props": {
+			"getLabel": {
+				"value": "Add word"
+			}
+		}
+	},
+	"commands": {
+		"create": {
+			"label": "Add the record",
+			"hint": "Bind it to @core/rows-create aimed at the list, and switch it on."
+		}
+	},
+	"props": {
+		"getLabel": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Label",
+			"hint": "Empty draws a plus alone; write a label when what is added is not obvious from where it stands.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Form title",
+			"hint": "Heads the form, and names the plus for a screen reader.",
+			"writes": ["get"],
+			"default": {
+				"value": "Add"
+			}
+		},
+		"getFields": {
+			"kind": "collection",
+			"label": "Fields",
+			"hint": "One row per field the form asks for: name, label, kind (line, text, number, choice, lines), options, isRequired.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": [
+					{
+						"name": "name",
+						"label": "Name",
+						"kind": "line",
+						"options": [],
+						"isRequired": true
+					}
+				]
+			}
+		},
+		"getPreset": {
+			"kind": "value",
+			"control": "json",
+			"label": "Preset",
+			"hint": "Values every new record starts with. $today becomes today's date.",
+			"writes": ["get"],
+			"default": {
+				"value": {}
+			}
+		},
+		"getNameFrom": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Note name from",
+			"hint": "The field whose value names the new note.",
+			"writes": ["get"],
+			"default": {
+				"value": "name"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

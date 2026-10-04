@@ -1,0 +1,20 @@
+.wg-record-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--wg-gap-parts);
+	min-width: 0;
+}
+
+.wg-record-actions-form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-cards, 16px);
+}
+
+.wg-record-actions-refused {
+	flex-basis: 100%;
+	margin: 0;
+	color: var(--wg-kit-error);
+}

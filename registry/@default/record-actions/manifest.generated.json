@@ -1,0 +1,112 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Record actions",
+	"description": "An edit button and a menu holding delete, for the one record another widget has open.",
+	"keywords": ["edit", "delete", "remove", "actions", "menu", "record", "toolbar"],
+	"role": "control",
+	"size": {
+		"preferredWidth": 120,
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 2,
+			"h": 1
+		}
+	},
+	"commands": {
+		"update": {
+			"label": "Save an edit",
+			"source": {
+				"implementation": "@core/rows-update",
+				"fields": {
+					"target": "getRows"
+				}
+			}
+		},
+		"remove": {
+			"label": "Delete the record",
+			"source": {
+				"implementation": "@core/rows-remove",
+				"fields": {
+					"target": "getRows"
+				}
+			}
+		}
+	},
+	"props": {
+		"getRows": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The list the open record belongs to; edits and deletes are written here.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getPicked": {
+			"kind": "value",
+			"control": "json",
+			"label": "Open record",
+			"hint": "Bind it to the selection of the widget that opens records.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		},
+		"getRecord": {
+			"kind": "value",
+			"control": "row",
+			"label": "Record",
+			"hint": "The record the open one names.",
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "getRows",
+					"picked": "getPicked",
+					"whenNothingPicked": "none"
+				}
+			},
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		},
+		"getFields": {
+			"kind": "collection",
+			"label": "Fields",
+			"hint": "What the edit form asks for: name, label, kind (line, text, number, choice, lines), options, isRequired. Empty hides edit.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getNoun": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Called",
+			"hint": "What one record is called: Edit word, Delete word.",
+			"writes": ["get"],
+			"default": {
+				"value": "record"
+			}
+		},
+		"getTitleField": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title field",
+			"hint": "The field the delete question names the record by.",
+			"writes": ["get"],
+			"default": {
+				"value": "name"
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx", "action-buttons.tsx", "edit-dialog.tsx", "labels.ts", "widget.css"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

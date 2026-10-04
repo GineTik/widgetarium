@@ -213,6 +213,23 @@ export function heldProperties(record: unknown): Record<string, unknown> {
 	return Object.fromEntries(Object.entries(heldValues(record)).filter(([key]) => !NEVER_A_PROPERTY.includes(key)));
 }
 
+export const FormFieldSchema = z.object({
+	name: z.string(),
+	label: z.string(),
+	kind: z.enum(["line", "text", "number", "choice", "lines"]).default("line"),
+	options: z.array(z.string()).default([]),
+	isRequired: z.boolean().default(false),
+});
+
+const TODAY = "$today";
+
+export function presetValues(preset: Readonly<Record<string, unknown>>, now: Date): Record<string, unknown> {
+	const today = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
+		.map((part) => String(part).padStart(2, "0"))
+		.join("-");
+	return Object.fromEntries(Object.entries(preset).map(([key, value]) => [key, value === TODAY ? today : value]));
+}
+
 function isRecord(held: unknown): held is Record<string, unknown> {
 	return typeof held === "object" && held !== null;
 }

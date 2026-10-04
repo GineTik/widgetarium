@@ -170,6 +170,27 @@
 		}
 	},
 	"@catalogue/filter-bar": {
+		"getView": {
+			"kind": "value",
+			"control": "json",
+			"label": "Shown view",
+			"hint": "Bind a view box's selection.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		},
+		"getHiddenInView": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Hidden in view",
+			"hint": "While this view is shown the bar draws nothing; empty shows it always.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
 		"getIsOpen": {
 			"kind": "value",
 			"control": "memory",
@@ -321,6 +342,27 @@
 			}
 		}
 	},
+	"@catalogue/view-switch": {
+		"getViews": {
+			"kind": "collection",
+			"label": "Views",
+			"hint": "Bind a view box's holds and the switch offers its views.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getView": {
+			"kind": "value",
+			"control": "json",
+			"label": "Shown view",
+			"hint": "Bind the same view box's selection and the two move together.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		}
+	},
 	"@catalogue/widget-list": {
 		"getEntries": {
 			"kind": "collection",
@@ -356,6 +398,68 @@
 			"writes": ["get"],
 			"default": {
 				"value": 12
+			}
+		}
+	},
+	"@default/add-button": {
+		"getLabel": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Label",
+			"hint": "Empty draws a plus alone; write a label when what is added is not obvious from where it stands.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Form title",
+			"hint": "Heads the form, and names the plus for a screen reader.",
+			"writes": ["get"],
+			"default": {
+				"value": "Add"
+			}
+		},
+		"getFields": {
+			"kind": "collection",
+			"label": "Fields",
+			"hint": "One row per field the form asks for: name, label, kind (line, text, number, choice, lines), options, isRequired.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": [
+					{
+						"name": "name",
+						"label": "Name",
+						"kind": "line",
+						"options": [],
+						"isRequired": true
+					}
+				]
+			}
+		},
+		"getPreset": {
+			"kind": "value",
+			"control": "json",
+			"label": "Preset",
+			"hint": "Values every new record starts with. $today becomes today's date.",
+			"writes": ["get"],
+			"default": {
+				"value": {}
+			}
+		},
+		"getNameFrom": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Note name from",
+			"hint": "The field whose value names the new note.",
+			"writes": ["get"],
+			"default": {
+				"value": "name"
 			}
 		}
 	},
@@ -1483,6 +1587,76 @@
 			"writes": ["get"],
 			"default": {
 				"value": true
+			}
+		}
+	},
+	"@default/record-actions": {
+		"getRows": {
+			"kind": "collection",
+			"label": "Records",
+			"hint": "The list the open record belongs to; edits and deletes are written here.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getPicked": {
+			"kind": "value",
+			"control": "json",
+			"label": "Open record",
+			"hint": "Bind it to the selection of the widget that opens records.",
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		},
+		"getRecord": {
+			"kind": "value",
+			"control": "row",
+			"label": "Record",
+			"hint": "The record the open one names.",
+			"source": {
+				"implementation": "@core/selected-row",
+				"fields": {
+					"rows": "getRows",
+					"picked": "getPicked",
+					"whenNothingPicked": "none"
+				}
+			},
+			"writes": ["get"],
+			"default": {
+				"value": null
+			}
+		},
+		"getFields": {
+			"kind": "collection",
+			"label": "Fields",
+			"hint": "What the edit form asks for: name, label, kind (line, text, number, choice, lines), options, isRequired. Empty hides edit.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
+		},
+		"getNoun": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Called",
+			"hint": "What one record is called: Edit word, Delete word.",
+			"writes": ["get"],
+			"default": {
+				"value": "record"
+			}
+		},
+		"getTitleField": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Title field",
+			"hint": "The field the delete question names the record by.",
+			"writes": ["get"],
+			"default": {
+				"value": "name"
 			}
 		}
 	},
