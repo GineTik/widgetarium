@@ -18,10 +18,18 @@ export function PinnedRun({ run, builds }: PinnedRunProps): ReactElement {
 	const activeAt = run.rows.findIndex((row) => row.status !== "done");
 	const at = activeAt < 0 ? run.rows.length : activeAt + 1;
 	const where = WHERE.replace("{app}", run.app).replace("{at}", String(at)).replace("{all}", String(run.rows.length));
-	return h("div", { className: "wg-ai-pinned-run", role: "status" }, [
+	const showCard = (): void => scrollToCard(run.key);
+	return h("button", { type: "button", className: "wg-ai-pinned-run", "aria-live": "polite", onClick: showCard }, [
 		stageRing("active", PINNED_RING_PX, Math.max(stageDoneShare(run.rows), 10)),
 		rowText(where, doingOf(run, builds, activeAt)),
 	]);
+}
+
+export function scrollToCard(key: string): void {
+	const card = [...document.querySelectorAll<HTMLElement>("[data-build-key]")].find(
+		(node) => node.dataset["buildKey"] === key,
+	);
+	card?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function doingOf(run: BuildRun, builds: readonly Build[], activeAt: number): string | null {

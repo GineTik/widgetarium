@@ -1,5 +1,8 @@
 import BRIEF from "../../../../docs/ai/brief.md";
 import CHAT_BRIEF from "../../../../docs/ai/chat-brief.md";
+import ORCHESTRATOR from "../../../../docs/ai/roles/orchestrator.md";
+import WIDGET_DEVELOPER from "../../../../docs/ai/roles/widget-developer.md";
+import PAGE_DESIGNER from "../../../../docs/ai/roles/page-designer.md";
 import { HANDBOOK } from "./agent-files.js";
 
 const NO_NOTE = "The person has no note open. Ask which note the screen should be built in before you write anything.";
@@ -26,17 +29,44 @@ export interface BriefAsk {
 	readonly note?: BriefNote | null;
 	readonly publishWidgets?: boolean;
 	readonly canEdit?: boolean;
+	readonly helpers?: boolean;
 }
 
 const PLACEHOLDER = /\{([a-z]+)\}/g;
 
-export const templatePlaceholders = (): string[] => [...new Set(placeholdersIn(`${BRIEF}\n${CHAT_BRIEF}`))];
+export const templatePlaceholders = (): string[] => [
+	...new Set(placeholdersIn(`${BRIEF}\n${CHAT_BRIEF}\n${ORCHESTRATOR}\n${WIDGET_DEVELOPER}\n${PAGE_DESIGNER}`)),
+];
+
+const HELPERS = {
+	"widget-developer": {
+		description: "Builds exactly one Widgetarium widget for one feature, from the kit, until check passes.",
+		prompt: WIDGET_DEVELOPER,
+	},
+	"page-designer": {
+		description:
+			"Lays out exactly one page of a Widgetarium app: body, slots, headings, captions, surfaces, until lint passes.",
+		prompt: PAGE_DESIGNER,
+	},
+};
 
 // TRADE-OFF: only the template is substituted, never the handbook after it, so a page that comes
 // TRADE-OFF: to hold {vault} in an example is printed as written instead of silently rewritten
-export function briefFor({ paths, note, publishWidgets, canEdit = true }: BriefAsk): string {
+export function briefFor({ paths, note, publishWidgets, canEdit = true, helpers = false }: BriefAsk): string {
 	if (!canEdit) return [substitutePaths(CHAT_BRIEF, paths), noteNamed(note)].join("\n\n");
-	return [substitutePaths(BRIEF, paths), handbookInFull(), thisRun(note, publishWidgets)].join("\n\n");
+	const guide = helpers ? substitutePaths(ORCHESTRATOR, paths) : handbookInFull();
+	return [substitutePaths(BRIEF, paths), guide, thisRun(note, publishWidgets)].join("\n\n");
+}
+
+export function helpersFor(paths: BriefPaths): string {
+	return JSON.stringify(
+		Object.fromEntries(
+			Object.entries(HELPERS).map(([name, helper]) => [
+				name,
+				{ ...helper, prompt: substitutePaths(helper.prompt, paths) },
+			]),
+		),
+	);
 }
 
 function placeholdersIn(template: string): string[] {

@@ -1,4 +1,5 @@
 import { Platform } from "obsidian";
+import { openDesign } from "../design-view.js";
 import type { App } from "obsidian";
 import { bindNote } from "../host.js";
 import type { ObsidianHost } from "../host.js";
@@ -11,8 +12,8 @@ import type { AiSettings, AiState } from "./settings.js";
 import { createRunner } from "./run.js";
 import type { KillGroup, Spawn } from "./run.js";
 import { createSession } from "./session.js";
-import type { Session } from "./session.js";
-import { briefFor } from "./brief.js";
+import type { BriefNow, Session } from "./session.js";
+import { briefFor, helpersFor } from "./brief.js";
 import type { BriefNote } from "./brief.js";
 import { openProviderWindow } from "./provider-window.js";
 import { HANDBOOK_DIR, TOOL_PATH } from "./agent-files.js";
@@ -57,6 +58,7 @@ export interface AssistantState extends AiState, Readiness {
 	readonly host: ObsidianHost;
 	readonly progress: ProgressWidget;
 	readonly specs: SpecPort;
+	readonly openDesign: (app: string) => void;
 }
 
 export interface Assistant {
@@ -121,6 +123,7 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 			host: hostFor(note?.path ?? ""),
 			progress: progressWidgetOf(plugin),
 			specs,
+			openDesign: (name: string) => void openDesign(app, name),
 		};
 	}
 
@@ -200,20 +203,19 @@ async function noteNow(app: App): Promise<OpenNote | null> {
 	return { path: file.path, hasBoard: text.includes(`${FENCE}${BLOCK_LANGUAGE}`) };
 }
 
-async function briefNow(app: App, settings: AiSettings, { vaultPath, pluginPath }: AgentPaths): Promise<string> {
+async function briefNow(app: App, settings: AiSettings, { vaultPath, pluginPath }: AgentPaths): Promise<BriefNow> {
 	const held = await settings.state();
-	return briefFor({
-		paths: {
-			vault: vaultPath,
-			plugin: pluginPath,
-			widgets: `${vaultPath}/${WIDGETS_DIR}`,
-			handbook: `${vaultPath}/${HANDBOOK_DIR}`,
-			tool: `${vaultPath}/${TOOL_PATH}`,
-		},
-		note: await noteNow(app),
-		publishWidgets: held.publishWidgets,
-		canEdit: held.provider.canEdit !== false,
-	});
+	const paths = {
+		vault: vaultPath,
+		plugin: pluginPath,
+		widgets: `${vaultPath}/${WIDGETS_DIR}`,
+		handbook: `${vaultPath}/${HANDBOOK_DIR}`,
+		tool: `${vaultPath}/${TOOL_PATH}`,
+	};
+	const canEdit = held.provider.canEdit !== false;
+	const helpers = canEdit && held.helperAgents;
+	const brief = briefFor({ paths, note: await noteNow(app), publishWidgets: held.publishWidgets, canEdit, helpers });
+	return { brief, helpers: helpers ? helpersFor(paths) : null };
 }
 
 function hostBinderFor(plugin: AssistantPlugin): (notePath: string) => ObsidianHost {

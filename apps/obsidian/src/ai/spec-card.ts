@@ -1,15 +1,24 @@
 import { createElement as h, useState } from "react";
 import type { ReactElement } from "react";
 import { Button, Icon } from "@widgetarium/kit";
-import { keptFeaturesOf, withChoicePicked, withFeatureToggled } from "@widgetarium/core/app-spec.js";
-import type { AppSpec } from "@widgetarium/core/app-spec.js";
+import {
+	keptFeaturesOf,
+	withChoicePicked,
+	withFeatureToggled,
+	withRecordVerbToggled,
+	withReferenceToggled,
+} from "@widgetarium/core/app-spec.js";
+import type { AppSpec, RecordVerb } from "@widgetarium/core/app-spec.js";
 import { useSpec } from "./use-spec.js";
 import type { HeldSpec } from "./use-spec.js";
-import { plainRow, platedRows, pressableRow, rowText } from "./spec-rows.js";
+import { foldedRows, plainRow, platedRows, pressableRow, rowText, useFolds } from "./spec-rows.js";
+import type { Fold } from "./spec-rows.js";
 import type { SpecPort } from "./spec-port.js";
 import { SpecTitle } from "./spec-title.js";
 import { FeatureRow } from "./feature-row.js";
 import { ChoiceRow } from "./choice-row.js";
+import { RecordRow } from "./record-row.js";
+import { ResearchRow } from "./research-row.js";
 
 export interface SpecCardProps {
 	readonly app: string;
@@ -27,8 +36,10 @@ interface CardSpec {
 const FEATURES = "Features";
 const FEATURES_KEPT = "Features · {kept} of {all}";
 const CHOSEN = "I chose for you";
+const RECORDS = "What you can do with them";
 const DETAILS = "Details";
 const DETAILS_SAID = "{pages} pages · not included · {checks} checks";
+const RESEARCH = "References";
 const PAGES = "Pages";
 const EXCLUDED = "Not included";
 const CHECKS = "Done when";
@@ -39,40 +50,71 @@ const CHANGE = "Change";
 export function SpecCard({ app, port, isAnswerable, onBuild, onChange }: SpecCardProps): ReactElement | null {
 	const held = useSpec(port, app);
 	const [isOpen, setOpen] = useState(false);
+	const foldFor = useFolds();
 	if (!held.read) return null;
 	if (held.read.refusal !== undefined) return h("p", { className: "wg-ai-spec-refused" }, held.read.refusal);
 	const { spec } = held.read;
 	return h("section", { className: "wg-ai-spec" }, [
-		h(SpecTitle, { key: "title", title: spec.app, said: spec.job }),
-		featureRows({ spec, held }),
-		choiceRows({ spec, held }, { isOpen, onToggle: () => setOpen(!isOpen) }),
+		...answeredRows({ spec, held }, !isAnswerable, foldFor),
+		choiceRows({ spec, held }, { isOpen, onToggle: () => setOpen(!isOpen) }, foldFor("choices")),
 		isOpen ? specDetails(spec) : null,
 		held.problem ? h("p", { key: "problem", className: "wg-ai-spec-refused" }, held.problem) : null,
 		isAnswerable ? specButtons(spec, onBuild, onChange) : null,
 	]);
 }
 
-function featureRows({ spec, held }: CardSpec): ReactElement {
+function answeredRows(card: CardSpec, isLocked: boolean, foldFor: (section: string) => Fold): ReactElement[] {
+	return [
+		h(SpecTitle, { key: "title", title: card.spec.app, said: card.spec.job }),
+		referenceRows(card, isLocked, foldFor("research")),
+		featureRows(card, isLocked, foldFor("features")),
+		recordRows(card, isLocked, foldFor("records")),
+	];
+}
+
+function featureRows({ spec, held }: CardSpec, isLocked: boolean, fold: Fold): ReactElement {
 	const kept = keptFeaturesOf(spec).length;
 	const all = spec.features.length;
 	const label = kept === all ? FEATURES : FEATURES_KEPT.replace("{kept}", String(kept)).replace("{all}", String(all));
 	const toggle = (title: string) => () => held.change((text) => withFeatureToggled(text, title));
-	return platedRows(
+	return foldedRows(
 		"features",
 		label,
-		spec.features.map((feature) => h(FeatureRow, { key: feature.title, feature, onToggle: toggle(feature.title) })),
+		spec.features.map((feature) =>
+			h(FeatureRow, { key: feature.title, feature, isLocked, onToggle: toggle(feature.title) }),
+		),
+		fold,
 	);
 }
 
-function choiceRows({ spec, held }: CardSpec, details: { isOpen: boolean; onToggle: () => void }): ReactElement {
+function recordRows({ spec, held }: CardSpec, isLocked: boolean, fold: Fold): ReactElement {
+	const toggle = (name: string) => (verb: RecordVerb) => held.change((text) => withRecordVerbToggled(text, name, verb));
+	return foldedRows(
+		"records",
+		RECORDS,
+		spec.records.map((record) => h(RecordRow, { key: record.name, record, isLocked, onToggle: toggle(record.name) })),
+		fold,
+	);
+}
+
+function referenceRows({ spec, held }: CardSpec, isLocked: boolean, fold: Fold): ReactElement {
+	const toggle = (product: string) => () => held.change((text) => withReferenceToggled(text, product));
+	const rows = spec.research.map((one) =>
+		h(ResearchRow, { key: one.product, research: one, isLocked, onToggle: toggle(one.product) }),
+	);
+	return foldedRows("research", RESEARCH, rows, fold);
+}
+
+function choiceRows({ spec, held }: CardSpec, details: Fold, fold: Fold): ReactElement {
 	const pick = (name: string) => (picked: string) => held.change((text) => withChoicePicked(text, name, picked));
-	return platedRows("choices", spec.choices.length > 0 ? CHOSEN : null, [
+	const rows = [
 		...spec.choices.map((choice) => h(ChoiceRow, { key: choice.name, choice, onPick: pick(choice.name) })),
 		pressableRow({ ...details, className: "is-details" }, [
 			h("span", { key: "tile", className: "wg-ai-spec-tile" }, h(Icon, { name: "list", size: 16 })),
 			rowText(DETAILS, detailsSaidOf(spec)),
 		]),
-	]);
+	];
+	return spec.choices.length > 0 ? foldedRows("choices", CHOSEN, rows, fold) : platedRows("choices", null, rows);
 }
 
 function detailsSaidOf(spec: AppSpec): string {

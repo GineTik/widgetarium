@@ -1233,7 +1233,11 @@ const sessionRunner = createRunner({
 	pluginPath: "/p",
 	env: {},
 });
-const session = createSession({ settings: sessionSettings, runner: sessionRunner, briefNow: async () => "BRIEF" });
+const session = createSession({
+	settings: sessionSettings,
+	runner: sessionRunner,
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
+});
 
 await session.send("build me a board");
 check(
@@ -1258,7 +1262,7 @@ const opencodeSpawn = fakeSpawn(["READY"]);
 const opencodeSession = createSession({
 	settings: continuing,
 	runner: createRunner({ spawn: opencodeSpawn, vaultPath: "/v", pluginPath: "/p", env: {} }),
-	briefNow: async () => "BRIEF",
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
 });
 await opencodeSession.send("first");
 check("a CLI that names no session is still marked as resumable", opencodeSession.now().session, "last");
@@ -1282,7 +1286,11 @@ await session.retry();
 check("retrying replaces the failed exchange rather than stacking one", session.now().turns.length, 2);
 check("retrying asks the same thing again", at(session.now().turns, 0).text, "first");
 
-const carriedOver = createSession({ settings: sessionSettings, runner: sessionRunner, briefNow: async () => "BRIEF" });
+const carriedOver = createSession({
+	settings: sessionSettings,
+	runner: sessionRunner,
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
+});
 await carriedOver.restore();
 check(
 	"a conversation is still there after the plugin is loaded again",
@@ -1295,7 +1303,7 @@ check("nothing is left running by a conversation that was only read back", carri
 const alreadyTalking = createSession({
 	settings: sessionSettings,
 	runner: sessionRunner,
-	briefNow: async () => "BRIEF",
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
 });
 const midRun = alreadyTalking.send("mine");
 await alreadyTalking.restore();
@@ -1310,7 +1318,7 @@ await session.clear();
 const afterClearing = createSession({
 	settings: sessionSettings,
 	runner: sessionRunner,
-	briefNow: async () => "BRIEF",
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
 });
 await afterClearing.restore();
 check("clearing the context forgets it for the next load too", afterClearing.now().turns.length, 0);
@@ -1376,9 +1384,17 @@ const tooMuch = turnsToKeep(
 	})),
 );
 check(
-	"a conversation too big to keep loses its oldest turns, not its newest",
-	[tooMuch.length < 200, at(tooMuch, tooMuch.length - 1).text],
-	[true, "199"],
+	"a conversation too big to keep empties its oldest tool answers first and keeps every turn",
+	[tooMuch.length, at(at(tooMuch, 0).calls, 0).output, at(at(tooMuch, 199).calls, 0).output.length],
+	[200, "", 1999],
+);
+const tooMuchSaid = turnsToKeep(
+	Array.from({ length: 200 }, (_unused, index) => ({ role: "agent", text: `${index} ${"w".repeat(1999)}` })),
+);
+check(
+	"only when its words alone are too many does it lose its oldest turns, never its newest",
+	[tooMuchSaid.length < 200, at(tooMuchSaid, tooMuchSaid.length - 1).text.startsWith("199 ")],
+	[true, true],
 );
 
 const vault = mkdtempSync(path.join(tmpdir(), "wg-ai-"));

@@ -47,6 +47,10 @@ export class AssistantView extends ItemView {
 					await this.draw();
 				},
 				onOpenProviders: () => this.assistant.openProviders(),
+				onHelperAgents: async (on: boolean) => {
+					await this.assistant.settings.setHelperAgents(on);
+					await this.draw();
+				},
 			}),
 			this.node,
 		);

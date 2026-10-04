@@ -6,6 +6,7 @@ import HANDBOOK_EXAMPLES from "../../../../docs/ai/examples.md";
 import HANDBOOK_WIDGET from "../../../../docs/ai/widget.md";
 import HANDBOOK_TOOLS from "../../../../docs/ai/tools.md";
 import HANDBOOK_SPEC from "../../../../docs/ai/spec.md";
+import DESIGN_SYSTEM from "../../../../docs/ai/design-system.md";
 import unpackWidgetsCli, { packedHash as WIDGETS_CLI_HASH } from "widgetarium:widgets-cli";
 import unpackWidgetTypes, { packedHash as WIDGET_TYPES_HASH } from "widgetarium:widget-types";
 
@@ -13,6 +14,7 @@ export const HANDBOOK_DIR = `${ROOT}/agent`;
 export const BIN_DIR = `${ROOT}/bin`;
 export const WIDGETS_DIR = `${ROOT}/widgets`;
 export const TOOL_PATH = `${BIN_DIR}/widgets.mjs`;
+export const DESIGN_SYSTEM_PATH = `${ROOT}/design-system.md`;
 const TYPES_DIR = `${WIDGETS_DIR}/types`;
 export const LAID_MARK_FILE = ".laid-by-plugin";
 const TYPES_MARK_PATH = `${TYPES_DIR}/${LAID_MARK_FILE}`;
@@ -43,8 +45,15 @@ export async function layAgentFiles(adapter: AgentFilesAdapter): Promise<string[
 	}
 	written.push(...(await sweepPagesNoLongerLaid(adapter)));
 	if (await layTool(adapter)) written.push("widgets.mjs");
+	if (await layDesignSystemOnce(adapter)) written.push("design-system.md");
 	written.push(...(await layWidgetTypes(adapter)));
 	return written;
+}
+
+export async function layDesignSystemOnce(adapter: AgentFilesAdapter): Promise<boolean> {
+	if (await adapter.exists(DESIGN_SYSTEM_PATH)) return false;
+	await adapter.write(DESIGN_SYSTEM_PATH, DESIGN_SYSTEM);
+	return true;
 }
 
 export async function writeIfChanged(adapter: AgentFilesAdapter, path: string, text: string): Promise<boolean> {

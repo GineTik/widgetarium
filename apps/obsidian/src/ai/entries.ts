@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { RECORD_FILES } from "@widgetarium/core/engine/catalogue-index.js";
+import { BUILT_CARD_FILE, RECORD_FILES } from "@widgetarium/core/engine/catalogue-index.js";
 import { rankSearch } from "@widgetarium/core/engine/search.js";
 
 export interface PageAsk {
@@ -23,7 +23,7 @@ export function matches(entry: object, asked: unknown): boolean {
 
 export async function cardIn(folder: unknown): Promise<unknown> {
 	if (typeof folder !== "string" || folder === "") return null;
-	for (const name of RECORD_FILES) {
+	for (const name of [...RECORD_FILES, BUILT_CARD_FILE]) {
 		const read = await readFile(join(folder, name), "utf8").catch(() => null);
 		if (read === null) continue;
 		try {

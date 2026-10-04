@@ -18,7 +18,9 @@ const TASK_PROGRESS_ID = "@default/task-progress";
 
 const AI = {
 	specs: { read: async () => null, watch: () => () => {}, change: async () => {} },
+	openDesign: () => undefined,
 	chosen: "claude-code",
+	helperAgents: true,
 	provider: DEFAULT_PRESET,
 	providers: PROVIDERS,
 	ready: true,
@@ -234,5 +236,6 @@ createRoot(holder).render(
 		ai: { ...AI, progress: PROGRESS },
 		onChoose: () => {},
 		onOpenProviders: () => {},
+		onHelperAgents: () => {},
 	}),
 );

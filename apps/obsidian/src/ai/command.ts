@@ -7,6 +7,7 @@ export interface ArgsGiven {
 	readonly pluginPath: string;
 	readonly session?: string | null | undefined;
 	readonly skipPermissions?: boolean | undefined;
+	readonly helpers?: string | null | undefined;
 }
 
 type ProviderArgs = Pick<Provider, "args" | "modelArgs" | "model" | "resumeArgs" | "bypassArgs">;
@@ -22,6 +23,7 @@ export function expandArgs(provider: ProviderArgs, given: ArgsGiven): string[] {
 		"{model}": fillTemplate(provider.modelArgs, provider.model),
 		"{resume}": fillTemplate(provider.resumeArgs, given.session),
 		"{yolo}": given.skipPermissions === false ? [] : tokensOf(provider.bypassArgs),
+		"{agents}": given.helpers ? ["--agents", given.helpers] : [],
 	};
 	return tokensOf(provider.args).flatMap((token) => expansions[token] ?? [token]);
 }

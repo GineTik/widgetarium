@@ -18,10 +18,15 @@ export interface SessionState {
 
 export type SessionWatcher = (state: SessionState) => void;
 
+export interface BriefNow {
+	readonly brief: string;
+	readonly helpers: string | null;
+}
+
 export interface SessionDoors {
 	readonly settings: AiSettings;
 	readonly runner: Runner;
-	readonly briefNow: () => Promise<string>;
+	readonly briefNow: () => Promise<BriefNow>;
 }
 
 export interface Session {
@@ -155,13 +160,20 @@ function applyEvent(store: SessionStore, event: StreamPart): void {
 	notifyWatchersSoon(store);
 }
 
-function askOf(asked: string, history: ChatTurn[], held: AiState, brief: string, session: string | null): RunAsk {
+function askOf(
+	asked: string,
+	history: ChatTurn[],
+	held: AiState,
+	{ brief, helpers }: BriefNow,
+	session: string | null,
+): RunAsk {
 	return {
 		prompt: briefGoesInTheMessage(held.provider) ? `${brief}\n\n---\n\n${asked}` : asked,
 		brief,
 		history,
 		session,
 		skipPermissions: held.skipPermissions,
+		helpers,
 	};
 }
 

@@ -24,7 +24,7 @@ const TRANSCRIPT_KEPT_BYTES = 262144;
 
 // TRADE-OFF: the oldest turns go rather than the longest, because a conversation read back out of order reads as somebody else's
 export function turnsToKeep(turns: unknown): KeptTurn[] {
-	let kept = (Array.isArray(turns) ? turns : []).map(turnToKeep);
+	let kept = withOldestAnswersEmptied((Array.isArray(turns) ? turns : []).map(turnToKeep));
 	while (kept.length > 1 && JSON.stringify(kept).length > TRANSCRIPT_KEPT_BYTES) kept = kept.slice(1);
 	return kept;
 }
@@ -59,4 +59,17 @@ function turnToKeep(given: unknown): KeptTurn {
 		text: wordsIn(turn["text"]),
 		calls: Array.isArray(calls) ? calls.map(callToKeep) : [],
 	};
+}
+
+function withOldestAnswersEmptied(turns: KeptTurn[]): KeptTurn[] {
+	let over = JSON.stringify(turns).length - TRANSCRIPT_KEPT_BYTES;
+	if (over <= 0) return turns;
+	return turns.map((turn) => ({
+		...turn,
+		calls: turn.calls.map((call) => {
+			if (over <= 0 || call.output === "") return call;
+			over -= call.output.length;
+			return { ...call, output: "" };
+		}),
+	}));
 }

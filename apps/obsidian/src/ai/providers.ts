@@ -27,7 +27,7 @@ export const DEFAULT_PRESET: Provider = {
 	kind: CLI,
 	canEdit: true,
 	command: "claude",
-	args: "-p --output-format stream-json --verbose --include-partial-messages --add-dir {vault} --add-dir {plugin} --append-system-prompt {brief} {model} {yolo} {resume} {prompt}",
+	args: "-p --output-format stream-json --verbose --include-partial-messages --setting-sources project,local --add-dir {vault} --add-dir {plugin} --append-system-prompt {brief} {agents} {model} {yolo} {resume} {prompt}",
 	modelArgs: "--model {value}",
 	resumeArgs: "--resume {value}",
 	bypassArgs: "--permission-mode bypassPermissions",

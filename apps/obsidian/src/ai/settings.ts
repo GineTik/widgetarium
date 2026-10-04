@@ -19,6 +19,7 @@ export interface AiState {
 	readonly chosen: string;
 	readonly skipPermissions: boolean;
 	readonly publishWidgets: boolean;
+	readonly helperAgents: boolean;
 	readonly provider: Provider;
 	readonly providers: Provider[];
 }
@@ -35,6 +36,7 @@ export interface AiSettings {
 	choose(id: string): Promise<AiState>;
 	setSkipPermissions(on: unknown): Promise<AiState>;
 	setPublishWidgets(on: unknown): Promise<AiState>;
+	setHelperAgents(on: unknown): Promise<AiState>;
 	update(id: string, patch: unknown): Promise<AiState>;
 	reset(id: string): Promise<AiState>;
 }
@@ -56,6 +58,7 @@ export function aiStateOf(stored: unknown): AiState {
 		chosen: chosen.id,
 		skipPermissions: skipsPermissionsIn(stored),
 		publishWidgets: publishesWidgetsIn(stored),
+		helperAgents: aiIn(stored)["helperAgents"] !== false,
 		provider: withOverrides(stored, chosen),
 		providers: PRESETS.map((preset) => withOverrides(stored, preset)),
 	};
@@ -96,6 +99,10 @@ export function createAiSettings({ read, write }: PluginDataStore): AiSettings {
 
 		async setPublishWidgets(on) {
 			return writeAi({ publishWidgets: on === true });
+		},
+
+		async setHelperAgents(on) {
+			return writeAi({ helperAgents: on === true });
 		},
 
 		async update(id, patch) {

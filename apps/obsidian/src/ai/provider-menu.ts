@@ -8,14 +8,22 @@ export interface ProviderMenuProps {
 	readonly onChoose: (id: string) => void;
 	readonly onOpenProviders: () => void;
 	readonly onClear: () => void;
+	readonly onHelperAgents: (on: boolean) => void;
 }
 
 const CONFIGURE = "Configure providers";
 const CLEAR = "Clear context";
 const CHAT_ONLY = "chat only";
 const MENU = "Provider and context";
+const HELPERS = "Use helper agents";
 
-export function ProviderMenu({ ai, onChoose, onOpenProviders, onClear }: ProviderMenuProps): ReactElement {
+export function ProviderMenu({
+	ai,
+	onChoose,
+	onOpenProviders,
+	onClear,
+	onHelperAgents,
+}: ProviderMenuProps): ReactElement {
 	const [isOpen, setOpen] = useState(false);
 	const pick = (id: string): void => {
 		setOpen(false);
@@ -45,6 +53,11 @@ export function ProviderMenu({ ai, onChoose, onOpenProviders, onClear }: Provide
 				),
 			),
 			h(PopoverSeparator, { key: "line" }),
+			h(
+				PopoverItem,
+				{ key: "helpers", checked: ai.helperAgents, onClick: closingThen(() => onHelperAgents(!ai.helperAgents)) },
+				HELPERS,
+			),
 			h(PopoverItem, { key: "configure", onClick: closingThen(onOpenProviders) }, CONFIGURE),
 			h(PopoverItem, { key: "clear", onClick: closingThen(onClear) }, CLEAR),
 		],

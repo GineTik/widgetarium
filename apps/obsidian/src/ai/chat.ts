@@ -1,5 +1,5 @@
-import { createElement as h, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactElement, ReactNode, RefObject } from "react";
+import { createElement as h, useEffect, useMemo, useState } from "react";
+import type { ReactElement, ReactNode, ComponentProps } from "react";
 import { Button } from "@widgetarium/kit";
 import { buildsIn } from "./builds.js";
 import type { Build } from "./builds.js";
@@ -16,7 +16,11 @@ import { Composer } from "./composer.js";
 import { SpecCard } from "./spec-card.js";
 import { BuildRunCard } from "./build-run-card.js";
 import { PinnedRun } from "./pinned-run.js";
-import { buildRunIn, installsIn, lastSpecAppIn } from "./spec-calls.js";
+import { buildRunIn, buildSpanOf, buildStartedIn, installsIn, lastDesignAppIn, lastSpecAppIn } from "./spec-calls.js";
+import type { BuildSpan } from "./spec-calls.js";
+import { DesignCard } from "./design-card.js";
+import { ToEndButton, useStuckToEnd } from "./stuck-scroll.js";
+import { designPathOf } from "@widgetarium/core/app-design.js";
 import { specPathOf } from "@widgetarium/core/app-spec.js";
 
 export { sendState } from "./composer.js";
@@ -26,6 +30,7 @@ export interface AiChatProps {
 	readonly ai: AssistantState;
 	readonly onChoose: (id: string) => void;
 	readonly onOpenProviders: () => void;
+	readonly onHelperAgents: (on: boolean) => void;
 }
 
 interface ChatBuilds {
@@ -39,50 +44,64 @@ interface TurnDraw {
 	readonly ai: AssistantState;
 	readonly builds: ChatBuilds;
 	readonly onBuild: () => void;
-	readonly onChange: (app: string) => void;
+	readonly onChange: (changing: Changed) => void;
+	readonly onApproveDesign: () => void;
 }
+
+type Changed = { readonly app: string; readonly what: "spec" | "design" };
 
 const TITLE = "Widgetarium AI";
 const RETRY = "Try again";
 const BUILD_IT = "Build it";
-const CHANGING = "Changing the {app} spec";
-const CHANGE_ASKED = "Change the spec at {path} as follows: {said}\nThen show the spec again.";
+const APPROVE_DESIGN = "Approve design";
+const CHANGING = "Changing the {app} {what}";
+const CHANGE_ASKED = "Change the {what} at {path} as follows: {said}\nThen show the {what} again.";
 
-export function AiChat({ session, ai, onChoose, onOpenProviders }: AiChatProps): ReactElement {
+export function AiChat({ session, ai, onChoose, onOpenProviders, onHelperAgents }: AiChatProps): ReactElement {
 	const state = useSessionState(session);
-	const scroller = useScrolledToEnd(state);
-	const builds = useBuilds(state);
-	const [changing, setChanging] = useState<string | null>(null);
-	const onBuild = (): void => {
-		setChanging(null);
-		void session.send(BUILD_IT);
-	};
-	const draw: TurnDraw = { state, ai, builds, onBuild, onChange: setChanging };
-	const menu = { ai, onChoose, onOpenProviders, onClear: () => void session.clear() };
+	const { scroller, isStuck, onScroll, toEnd } = useStuckToEnd([state.turns, state.busy]);
+	const { draw, changing, setChanging } = useTurnDraw(session, state, ai);
+	const menu = { ai, onChoose, onOpenProviders, onHelperAgents, onClear: () => void session.clear() };
 	return h("div", { className: "wg-ai" }, [
-		h("header", { className: "wg-ai-head", key: "head" }, [
-			h("span", { className: "wg-ai-title", key: "title" }, TITLE),
-			h("span", { className: "wg-ai-who", key: "who" }, ai.provider.label),
-			h(ProviderMenu, { key: "menu", ...menu }),
+		chatHead(ai, menu),
+		h("div", { className: "wg-ai-scroll-frame", key: "scroll" }, [
+			h(
+				"div",
+				{ className: "wg-ai-scroll", key: "scroll", ref: scroller, onScroll },
+				scrollOf(session, draw, onOpenProviders),
+			),
+			isStuck ? null : h(ToEndButton, { key: "end", toEnd }),
 		]),
-		h("div", { className: "wg-ai-scroll", key: "scroll", ref: scroller }, scrollOf(session, draw, onOpenProviders)),
 		pinnedOf(draw),
 		composerOf(session, draw, { changing, setChanging }),
 	]);
 }
 
+function chatHead(ai: AssistantState, menu: ComponentProps<typeof ProviderMenu>): ReactElement {
+	return h("header", { className: "wg-ai-head", key: "head" }, [
+		h("span", { className: "wg-ai-title", key: "title" }, TITLE),
+		h("span", { className: "wg-ai-who", key: "who" }, ai.provider.label),
+		h(ProviderMenu, { key: "menu", ...menu }),
+	]);
+}
+
 interface Changing {
-	readonly changing: string | null;
-	readonly setChanging: (app: string | null) => void;
+	readonly changing: Changed | null;
+	readonly setChanging: (changing: Changed | null) => void;
 }
 
 function composerOf(session: Session, { state, ai }: TurnDraw, { changing, setChanging }: Changing): ReactElement {
 	const onSend = (said: string): void => {
-		const asked = changing ? CHANGE_ASKED.replace("{path}", specPathOf(changing)).replace("{said}", said) : said;
+		const asked = changing ? changeAsked(changing, said) : said;
 		setChanging(null);
 		void session.send(asked);
 	};
-	const attached = changing ? { label: CHANGING.replace("{app}", changing), onClear: () => setChanging(null) } : null;
+	const attached = changing
+		? {
+				label: CHANGING.replace("{app}", changing.app).replace("{what}", changing.what),
+				onClear: () => setChanging(null),
+			}
+		: null;
 	const onStop = (): void => session.stop();
 	return h(Composer, { key: "composer", busy: state.busy, note: ai.note, attached, onSend, onStop });
 }
@@ -102,19 +121,54 @@ function scrollOf(session: Session, draw: TurnDraw, onOpenProviders: () => void)
 	];
 }
 
+function useTurnDraw(session: Session, state: SessionState, ai: AssistantState) {
+	const builds = useBuilds(state);
+	const [changing, setChanging] = useState<Changed | null>(null);
+	const send = (said: string) => (): void => {
+		setChanging(null);
+		void session.send(said);
+	};
+	const draw: TurnDraw = {
+		state,
+		ai,
+		builds,
+		onBuild: send(BUILD_IT),
+		onChange: setChanging,
+		onApproveDesign: send(APPROVE_DESIGN),
+	};
+	return { draw, changing, setChanging };
+}
+
 function turnElements(turn: KeptTurn, at: number, draw: TurnDraw): ReactNode[] {
-	const { state, ai, builds } = draw;
+	const { state, ai } = draw;
 	const lastAt = state.turns.length - 1;
 	const isRunning = state.busy && at === lastAt;
-	const widgetBuilds = builds.ofTurns[at] ?? [];
-	const run = buildRunIn(turn.calls, isRunning);
 	return [
+		buildCardOf(turn, at, draw, isRunning),
 		h(Turn, { key: at, turn, host: ai.host, live: isRunning }),
 		...specCardsOf(turn.calls, at, draw, at === lastAt && !state.busy),
-		run
-			? h(BuildRunCard, { key: run.key, run, port: ai.specs, builds: widgetBuilds, installs: installsIn(turn.calls) })
-			: null,
+		...designCardsOf(turn.calls, at, draw, at === lastAt && !state.busy),
 	];
+}
+
+function buildCardOf(turn: KeptTurn, at: number, draw: TurnDraw, isRunning: boolean): ReactElement | null {
+	const span = buildSpanOf(draw.state.turns, at, BUILD_IT);
+	if (span && span.startAt !== at) return null;
+	const { calls, builds } = span ? spanOf(draw, span) : { calls: turn.calls, builds: draw.builds.ofTurns[at] ?? [] };
+	const isSpanRunning = span ? draw.state.busy && span.endAt === draw.state.turns.length - 1 : isRunning;
+	const run = buildRunIn(calls, isSpanRunning, span ? buildStartedIn(draw.state.turns, at, BUILD_IT) : null);
+	if (!run) return null;
+	const card = { run, port: draw.ai.specs, builds, installs: installsIn(calls), isRunning: isSpanRunning };
+	return h(BuildRunCard, { key: `${run.key}-${at}`, ...card });
+}
+
+function spanOf({ state, builds }: TurnDraw, span: BuildSpan): { calls: KeptCall[]; builds: Build[] } {
+	const turns = state.turns.slice(span.startAt, span.endAt + 1);
+	const held = Array.from(
+		{ length: span.endAt - span.startAt + 1 },
+		(_unused, index) => builds.ofTurns[span.startAt + index] ?? [],
+	);
+	return { calls: turns.flatMap((turn) => turn.calls), builds: held.flat() };
 }
 
 function buildProgressOf(build: Build, { ai, builds }: TurnDraw): ReactElement {
@@ -125,8 +179,11 @@ function pinnedOf(draw: TurnDraw): ReactElement | null {
 	const { state, builds } = draw;
 	const lastAt = state.turns.length - 1;
 	const last = state.turns[lastAt];
-	const run = state.busy && last ? buildRunIn(last.calls, true) : null;
-	const pinned = run ? h(PinnedRun, { run, builds: builds.ofTurns[lastAt] ?? [] }) : null;
+	const span = buildSpanOf(state.turns, lastAt, BUILD_IT);
+	const held = span ? spanOf(draw, span) : { calls: last?.calls ?? [], builds: builds.ofTurns[lastAt] ?? [] };
+	const startedFor = span ? buildStartedIn(state.turns, span.startAt, BUILD_IT) : null;
+	const run = state.busy && last ? buildRunIn(held.calls, true, startedFor) : null;
+	const pinned = run ? h(PinnedRun, { run, builds: held.builds }) : null;
 	const shown = pinned ?? (builds.pinned ? buildProgressOf(builds.pinned, draw) : null);
 	return shown ? h("div", { className: "wg-ai-pinned", key: "pinned" }, shown) : null;
 }
@@ -146,24 +203,41 @@ function specCardsOf(
 			port: draw.ai.specs,
 			isAnswerable,
 			onBuild: draw.onBuild,
-			onChange: () => draw.onChange(app),
+			onChange: () => draw.onChange({ app, what: "spec" }),
 		}),
 	];
+}
+
+function designCardsOf(
+	calls: readonly KeptCall[],
+	turnAt: number,
+	draw: TurnDraw,
+	isAnswerable: boolean,
+): ReactElement[] {
+	const app = lastDesignAppIn(calls);
+	if (!app) return [];
+	return [
+		h(DesignCard, {
+			key: `design-${turnAt}-${app}`,
+			app,
+			port: draw.ai.specs,
+			isAnswerable,
+			onOpen: () => draw.ai.openDesign(app),
+			onApprove: draw.onApproveDesign,
+			onChange: () => draw.onChange({ app, what: "design" }),
+		}),
+	];
+}
+
+function changeAsked(changing: Changed, said: string): string {
+	const path = changing.what === "spec" ? specPathOf(changing.app) : designPathOf(changing.app);
+	return CHANGE_ASKED.replaceAll("{what}", changing.what).replace("{path}", path).replace("{said}", said);
 }
 
 function useSessionState(session: Session): SessionState {
 	const [state, setState] = useState(() => session.now());
 	useEffect(() => session.watch(setState), [session]);
 	return state;
-}
-
-function useScrolledToEnd(state: SessionState): RefObject<HTMLDivElement | null> {
-	const scroller = useRef<HTMLDivElement>(null);
-	useEffect(() => {
-		const node = scroller.current;
-		if (node) node.scrollTop = node.scrollHeight;
-	}, [state.turns, state.busy]);
-	return scroller;
 }
 
 function useBuilds(state: SessionState): ChatBuilds {

@@ -18,6 +18,7 @@ export interface RunAsk {
 	readonly history: readonly ChatTurn[];
 	readonly session?: string | null;
 	readonly skipPermissions?: boolean;
+	readonly helpers?: string | null;
 }
 
 export interface RunAnswer {

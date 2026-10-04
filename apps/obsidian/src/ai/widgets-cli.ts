@@ -10,17 +10,21 @@ import type { Installed } from "./install-command.js";
 import { BASE_NAMES, baseNamed, cardLayoutNamed, everyBase } from "./shape-command.js";
 import type { Told } from "./shape-command.js";
 import { specOfApp, stageOfApp } from "./spec-command.js";
+import { checkedWidget } from "./widget-checking.js";
+import { refuseStage, reportOfApp, isReportClean } from "./report-command.js";
+import { shotOfDesign, shotOfNote, shotSaid } from "./shot-command.js";
+import { designOfApp } from "./design-command.js";
+import type { ReportPlace } from "./report-command.js";
 import { surfaceNamesIn } from "./widget-surface.js";
 import { rankWidgets, refuseReading } from "./find-command.js";
 import type { FindOptions } from "./find-command.js";
-import { checkWidget, saidWidgetCheck } from "@widgetarium/core/widget-check.js";
+import { saidWidgetCheck } from "@widgetarium/core/widget-check.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { HELP } from "./widgets-cli-help.js";
 import { LOCK_PATH } from "@widgetarium/core/paths.js";
 import { SOURCE_FILES, isWidgetModule } from "@widgetarium/core/engine/widget-build.js";
 import { VAULT, WIDGETS_DIR } from "./cli-paths.js";
 import { configuredSources, entryById, everyWidget, installedWidgets } from "./catalogue-entries.js";
-import type { WidgetEntry } from "./widget-entry.js";
 
 type Options = FindOptions & { readonly _: string[]; readonly [flag: string]: unknown };
 
@@ -31,7 +35,6 @@ interface Command {
 	run(argument: string | undefined, options: Options): Ran | Promise<Ran>;
 }
 
-const STYLE_FILES = ["widget.css"];
 const WIDGET_ID = /^@[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
 const NOT_AN_ID = "{id} is not a widget id. Name it @scope/name, in lowercase words joined by hyphens.";
 const STARTED_NEW = "Building {id}, a new widget. Write its files in {folder}.";
@@ -56,9 +59,10 @@ const COMMANDS: Readonly<Record<string, Command>> = {
 	surfaces: { asks: "note", run: (argument, options) => surfaces(String(argument), options) },
 	lint: { asks: "note", run: (argument, options) => lint(String(argument), options) },
 	spec: { run: async (argument, options) => tell(options, await specOfApp(VAULT, argument)) },
-	stage: {
-		run: async (argument, options) => tell(options, await stageOfApp(VAULT, argument, options._[2], options["said"])),
-	},
+	design: { run: async (argument, options) => tell(options, await designOfApp(VAULT, argument)) },
+	stage: { run: (argument, options) => runStage(argument, options) },
+	report: { run: (argument, options) => runReport(argument, options) },
+	shot: { run: (argument, options) => runShot(argument, options) },
 };
 
 const MISSING_ARGUMENT: Readonly<Record<string, (argument: unknown) => number>> = {
@@ -188,23 +192,9 @@ async function runCheck(id: string, asked: Options): Promise<number> {
 		);
 		return 1;
 	}
-	const card = await cardIn(entry.folder);
-	const found = checkWidget({
-		id,
-		source: await joinFiles(entry, isWidgetModule),
-		styles: await joinFiles(entry, (name) => STYLE_FILES.includes(name)),
-		card: isObject(card) ? card : null,
-		surface,
-	});
+	const found = await checkedWidget(entry, surface);
 	say(asked, { widget: id, clean: found.length === 0, findings: found }, saidWidgetCheck(found));
 	return found.length === 0 ? 0 : 1;
-}
-
-async function joinFiles(entry: WidgetEntry, isWanted: (name: string) => boolean): Promise<string> {
-	const named = (entry.files ?? []).filter(isWanted);
-	const texts: string[] = [];
-	for (const name of named) texts.push(await readFile(join(entry.folder ?? "", name), "utf8").catch(() => ""));
-	return texts.join("\n");
 }
 
 async function show(id: string, asked: Options): Promise<number> {
@@ -296,4 +286,39 @@ function missingBase(): number {
 function missing(id: string): number {
 	console.error(`No widget is called ${id}. Run "find" to see what there is.`);
 	return 1;
+}
+
+async function reportPlace(): Promise<ReportPlace> {
+	const surface = (await surfaceNamesIn(join(WIDGETS_DIR, "types"))) ?? [];
+	return { vault: VAULT, installed: await installedWidgets(), surface };
+}
+
+async function runReport(app: string | undefined, asked: Options): Promise<number> {
+	const told = await reportOfApp(await reportPlace(), app);
+	if (told.refusal !== undefined) return tell(asked, told);
+	say(asked, told.value, told.text);
+	return isReportClean(told.value) ? 0 : 1;
+}
+
+async function runShot(note: string | undefined, asked: Options): Promise<number> {
+	const design = typeof asked["design"] === "string" ? asked["design"] : "";
+	if (!note && !design) return missingNote();
+	const answer = design ? await shotOfDesign(design) : await shotOfNote(String(note));
+	if (answer.path === undefined) {
+		console.error(answer.refusal);
+		return 1;
+	}
+	console.log(shotSaid(design ? `the design of ${design}` : String(note), answer.path));
+	return 0;
+}
+
+async function runStage(app: string | undefined, asked: Options): Promise<number> {
+	const stage = asked._[2];
+	const told = await reportOfApp(await reportPlace(), app);
+	const refusal = told.refusal === undefined ? refuseStage(stage, told.value) : null;
+	if (refusal) {
+		console.error(refusal);
+		return 1;
+	}
+	return tell(asked, await stageOfApp(VAULT, app, stage, asked["said"]));
 }
