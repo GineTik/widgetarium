@@ -9,11 +9,21 @@ export const BUILD_STAGES = ["data", "design", "catalogue", "widgets", "pages"] 
 
 export type BuildStage = (typeof BUILD_STAGES)[number];
 
+export const RECORD_VERBS = ["create", "update", "remove"] as const;
+
+export type RecordVerb = (typeof RECORD_VERBS)[number];
+
 const FRONT_MATTER = /^\uFEFF?---(\r?\n)([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
 const SPEC_WITHOUT_FRONT_MATTER = "the spec holds no front matter: open it with --- and close it with ---";
 const YAML_REFUSED = "the front matter is not YAML: {why}";
 const NO_SUCH_FEATURE = 'the spec has no feature "{title}"';
 const NO_SUCH_CHOICE = 'the spec has no choice "{name}"';
+const RECORDS_MISSING =
+	"list every kind of record the app keeps, each as { name, can: [create, update, remove] } holding the verbs it allows — the card shows Add, Edit and Delete for each";
+const RESEARCH_MISSING =
+	"name the products you looked at before writing this spec, each as { product, takes, url } — what that product does that this app should do too, and its site";
+const NO_SUCH_REFERENCE = 'the spec has no reference "{product}"';
+const NO_SUCH_RECORD = 'the spec has no record "{name}"';
 const NOT_AN_OPTION = '"{picked}" is not one of the options of {name}: {options}';
 
 export function specPathOf(app: string): string {
@@ -55,6 +65,27 @@ export function withChoicePicked(text: string, name: string, picked: string): st
 	return withFrontSet(text, ["choices", at, "picked"], picked);
 }
 
+export function withReferenceToggled(text: string, product: string): string {
+	const research = specOrThrow(text).research;
+	const at = research.findIndex((one) => one.product === product);
+	const reference = research[at];
+	if (!reference) throw new Error(NO_SUCH_REFERENCE.replace("{product}", product));
+	return withFrontSet(text, ["research", at, "kept"], !reference.kept);
+}
+
+export function withRecordVerbToggled(text: string, name: string, verb: RecordVerb): string {
+	const records = specOrThrow(text).records;
+	const at = records.findIndex((record) => record.name === name);
+	const record = records[at];
+	if (!record) throw new Error(NO_SUCH_RECORD.replace("{name}", name));
+	const can = record.can.includes(verb) ? record.can.filter((held) => held !== verb) : [...record.can, verb];
+	return withFrontSet(
+		text,
+		["records", at, "can"],
+		RECORD_VERBS.filter((one) => can.includes(one)),
+	);
+}
+
 export function keptFeaturesOf(spec: AppSpec): AppSpec["features"] {
 	return spec.features.filter((feature) => feature.kept);
 }
@@ -65,6 +96,10 @@ export function specSummaryOf(spec: AppSpec): string {
 		`${spec.app} — ${spec.job}`,
 		`${kept.length} of ${spec.features.length} features kept, ${spec.pages.length} pages, ${spec.checks.length} checks`,
 		...spec.features.map((feature) => `  ${feature.kept ? "[x]" : "[ ]"} ${feature.title}`),
+		...spec.records.map(
+			(record) =>
+				`  ${record.name}: ${RECORD_VERBS.map((verb) => `${record.can.includes(verb) ? "" : "no "}${verb}`).join(", ")}`,
+		),
 	].join("\n");
 }
 
@@ -72,8 +107,22 @@ const FeatureSchema = z.object({
 	title: z.string().trim().min(1),
 	says: z.string().trim().min(1),
 	kept: z.boolean().default(true),
-	mark: z.enum(["new", "changed"]).optional(),
+	mark: z.enum(["new", "changed", "suggested"]).optional(),
 	widget: z.string().trim().min(1).optional(),
+	page: z.string().trim().min(1).optional(),
+	actions: z.array(z.enum(["create", "update", "remove"])),
+});
+
+const ResearchSchema = z.object({
+	product: z.string().trim().min(1),
+	takes: z.string().trim().min(1),
+	url: z.url({ error: "url: the product's site, or the page you read about it, so the person can open it" }),
+	kept: z.boolean().default(true),
+});
+
+const RecordSchema = z.object({
+	name: z.string().trim().min(1),
+	can: z.array(z.enum(RECORD_VERBS)),
 });
 
 const ChoiceSchema = z
@@ -91,6 +140,7 @@ const PageSchema = z.object({
 	name: z.string().trim().min(1),
 	says: z.string().trim().min(1),
 	body: z.string().refine((said) => BODY_NAMES.includes(said), { message: `body is one of ${BODY_NAMES.join(", ")}` }),
+	note: z.string().trim().min(1).optional(),
 });
 
 const uniqueBy =
@@ -104,10 +154,18 @@ export const AppSpecSchema = z.object({
 	features: z
 		.array(FeatureSchema)
 		.min(1)
-		.max(7)
+		.max(12)
 		.refine(
 			uniqueBy((feature: { readonly title: string }) => feature.title),
 			{ message: "every feature needs a title of its own" },
+		),
+	research: z.array(ResearchSchema, { error: RESEARCH_MISSING }).min(1, { message: RESEARCH_MISSING }),
+	records: z
+		.array(RecordSchema, { error: RECORDS_MISSING })
+		.min(1, { message: RECORDS_MISSING })
+		.refine(
+			uniqueBy((record: { readonly name: string }) => record.name),
+			{ message: "every record needs a name of its own" },
 		),
 	choices: z
 		.array(ChoiceSchema)
