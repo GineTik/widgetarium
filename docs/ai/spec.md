@@ -1,6 +1,6 @@
 # The spec
 
-A spec is what the person agrees to before anything is built. It lives at `Design/<app>/spec.md`,
+A spec is what the person agrees to before anything is built. It lives at `.widgetarium/apps/<app>/spec.md`,
 one per app, and `node {tool} spec <app>` checks it and shows it in the chat as a card: the
 features with a check each, your choices as pickers, Details, and Build it / Change. The person
 answers on the card, so write it for them, not for you.
@@ -107,7 +107,8 @@ the spec again, build only what is kept, and say each stage as you finish it:
 ```bash
 node {tool} stage Vocabulary data --said "Words and reviews, 54 notes to try it with"
 node {tool} stage Vocabulary design --said "Words beside the open word, Review as one card"
-node {tool} stage Vocabulary widgets --said "3 ready, Flashcard written"
+node {tool} stage Vocabulary catalogue --said "List and Record installed, Search was here"
+node {tool} stage Vocabulary widgets --said "Flashcard written"
 node {tool} stage Vocabulary pages --said "Words, Review"
 ```
 

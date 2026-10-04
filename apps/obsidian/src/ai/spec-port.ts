@@ -1,5 +1,4 @@
-import { TFile } from "obsidian";
-import type { App, TAbstractFile } from "obsidian";
+import type { App } from "obsidian";
 
 export interface SpecPort {
 	read(path: string): Promise<string | null>;
@@ -8,40 +7,36 @@ export interface SpecPort {
 }
 
 const NO_SPEC_FILE = "There is no spec at {path} to change.";
+const STAT_EVERY_MS = 1000;
 
 export function createSpecPort(app: App): SpecPort {
 	return {
-		read: (path) => readNote(app, path),
-		watch: (path, onChange) => watchNote(app, path, onChange),
-		change: (path, edit) => changeNote(app, path, edit),
+		read: (path) => readSpecFile(app, path),
+		watch: (path, onChange) => watchSpecFile(app, path, onChange),
+		change: (path, edit) => changeSpecFile(app, path, edit),
 	};
 }
 
-function fileAt(app: App, path: string): TFile | null {
-	const found = app.vault.getAbstractFileByPath(path);
-	return found instanceof TFile ? found : null;
+async function readSpecFile(app: App, path: string): Promise<string | null> {
+	const { adapter } = app.vault;
+	return (await adapter.exists(path)) ? adapter.read(path) : null;
 }
 
-async function readNote(app: App, path: string): Promise<string | null> {
-	const file = fileAt(app, path);
-	return file ? app.vault.read(file) : null;
+// TRADE-OFF: polls the file's mtime, because the vault index and its events skip the .widgetarium folder
+function watchSpecFile(app: App, path: string, onChange: () => void): () => void {
+	let seen: number | null = null;
+	const timer = window.setInterval(() => {
+		void app.vault.adapter.stat(path).then((stat) => {
+			const mtime = stat?.mtime ?? -1;
+			if (seen !== null && mtime !== seen) onChange();
+			seen = mtime;
+		});
+	}, STAT_EVERY_MS);
+	return () => window.clearInterval(timer);
 }
 
-function watchNote(app: App, path: string, onChange: () => void): () => void {
-	const isOurs = (file: TAbstractFile, oldPath?: string): void => {
-		if (file.path === path || oldPath === path) onChange();
-	};
-	const refs = [
-		app.vault.on("modify", isOurs),
-		app.vault.on("create", isOurs),
-		app.vault.on("delete", isOurs),
-		app.vault.on("rename", isOurs),
-	];
-	return () => refs.forEach((ref) => app.vault.offref(ref));
-}
-
-async function changeNote(app: App, path: string, edit: (text: string) => string): Promise<void> {
-	const file = fileAt(app, path);
-	if (!file) throw new Error(NO_SPEC_FILE.replace("{path}", path));
-	await app.vault.process(file, edit);
+async function changeSpecFile(app: App, path: string, edit: (text: string) => string): Promise<void> {
+	const { adapter } = app.vault;
+	if (!(await adapter.exists(path))) throw new Error(NO_SPEC_FILE.replace("{path}", path));
+	await adapter.process(path, edit);
 }

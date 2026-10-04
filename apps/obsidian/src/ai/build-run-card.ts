@@ -1,41 +1,40 @@
-import { createElement as h, useState } from "react";
+import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Icon } from "@widgetarium/kit";
+import { List, Row } from "@widgetarium/kit";
 import { keptFeaturesOf } from "@widgetarium/core/app-spec.js";
-import type { AppSpec, BuildStage } from "@widgetarium/core/app-spec.js";
+import type { AppSpec } from "@widgetarium/core/app-spec.js";
 import { useSpec } from "./use-spec.js";
 import { SpecTitle } from "./spec-title.js";
-import { pressableRow, rowText } from "./spec-rows.js";
-import type { BuildRun, StageRow } from "./spec-calls.js";
+import { rowText } from "./spec-rows.js";
+import { STAGE_NAMES, buildSaidOf, buildShareOf, buildStatusOf, stageRing } from "./build-stages.js";
+import type { Build } from "./builds.js";
+import type { BuildRun, InstallRow, StageRow } from "./spec-calls.js";
 import type { SpecPort } from "./spec-port.js";
 
 export interface BuildRunCardProps {
 	readonly run: BuildRun;
 	readonly port: SpecPort;
+	readonly builds: readonly Build[];
+	readonly installs: readonly InstallRow[];
 }
 
 const BUILDING = "Building {app}";
 const BUILT = "Built {app}";
 const SIZE = "{features} features · {pages} pages";
-const STAGE_NAMES: Readonly<Record<BuildStage, string>> = {
-	data: "Data",
-	design: "Design",
-	widgets: "Widgets",
-	pages: "Pages",
-};
-const NO_WIDGET = "no widget named yet";
+const INSTALL_SAID = { done: "installed", active: "installing", failed: "could not be installed" } as const;
+const STAGE_RING_PX = 28;
+const ITEM_RING_PX = 22;
 
-export function BuildRunCard({ run, port }: BuildRunCardProps): ReactElement {
+export function BuildRunCard({ run, port, builds, installs }: BuildRunCardProps): ReactElement {
 	const spec = useSpec(port, run.app).read?.spec ?? null;
-	const [isOpen, setOpen] = useState(false);
 	const isDone = run.rows.every((row) => row.status === "done");
-	const widgets = { spec, isOpen, onToggle: () => setOpen(!isOpen) };
+	const title = (isDone ? BUILT : BUILDING).replace("{app}", run.app);
 	return h("section", { className: "wg-ai-spec" }, [
-		h(SpecTitle, { key: "title", title: (isDone ? BUILT : BUILDING).replace("{app}", run.app), said: sizeOf(spec) }),
+		h(SpecTitle, { key: "title", title, said: sizeOf(spec) }),
 		h(
-			"div",
-			{ key: "plate", className: "wg-ai-spec-plate" },
-			run.rows.map((row) => (row.stage === "widgets" ? widgetsRows(row, widgets) : stageLine(row))),
+			List,
+			{ key: "stages" },
+			run.rows.flatMap((row) => [stageLine(row), ...itemRowsOf(row, builds, installs)]),
 		),
 	]);
 }
@@ -46,33 +45,29 @@ function sizeOf(spec: AppSpec | null): string | null {
 }
 
 function stageLine(row: StageRow): ReactElement {
-	return h("div", { key: row.stage, className: `wg-ai-spec-row is-${row.status}` }, stageParts(row));
-}
-
-function stageParts(row: StageRow): ReactElement[] {
-	const dot = row.status === "done" ? h(Icon, { name: "tick", size: 16 }) : null;
-	return [
-		h("span", { key: "dot", className: `wg-ai-stage-dot is-${row.status}` }, dot),
+	return h(Row, { key: row.stage, className: `is-${row.status}` }, [
+		stageRing(row.status, STAGE_RING_PX),
 		rowText(STAGE_NAMES[row.stage], row.said || null),
-	];
+	]);
 }
 
-interface WidgetsOpen {
-	readonly spec: AppSpec | null;
-	readonly isOpen: boolean;
-	readonly onToggle: () => void;
+function itemRowsOf(row: StageRow, builds: readonly Build[], installs: readonly InstallRow[]): ReactElement[] {
+	if (row.stage === "catalogue") return installs.map(installRow);
+	if (row.stage === "widgets") return builds.map(widgetBuildRow);
+	return [];
 }
 
-function widgetsRows(row: StageRow, { spec, isOpen, onToggle }: WidgetsOpen): ReactElement {
-	const features = isOpen && spec ? keptFeaturesOf(spec) : [];
-	return h("div", { key: row.stage, className: "wg-ai-stage-widgets" }, [
-		pressableRow({ isOpen, onToggle, className: `is-${row.status}` }, stageParts(row)),
-		...features.map((feature) =>
-			h(
-				"div",
-				{ key: feature.title, className: "wg-ai-spec-row is-inner" },
-				rowText(feature.title, feature.widget ?? NO_WIDGET),
-			),
-		),
+function installRow(install: InstallRow): ReactElement {
+	return h(Row, { key: install.key, className: `is-inner is-${install.status}` }, [
+		stageRing(install.status, ITEM_RING_PX),
+		rowText(install.widget, INSTALL_SAID[install.status]),
+	]);
+}
+
+function widgetBuildRow(build: Build): ReactElement {
+	const status = buildStatusOf(build);
+	return h(Row, { key: build.key, className: `is-inner is-${status}` }, [
+		stageRing(status, ITEM_RING_PX, status === "active" ? Math.max(buildShareOf(build), 10) : undefined),
+		rowText(build.name, buildSaidOf(build)),
 	]);
 }

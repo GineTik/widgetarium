@@ -27,12 +27,15 @@ const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
 const { readSpec, withFeatureToggled, withChoicePicked, specPathOf, BUILD_STAGES } =
 	await import("../packages/core/src/app-spec.js");
-const { specAppIn, lastSpecAppIn, buildRunIn } = await import("../apps/obsidian/src/ai/spec-calls.js");
+const { specAppIn, lastSpecAppIn, buildRunIn, installsIn } = await import("../apps/obsidian/src/ai/spec-calls.js");
+const { buildsIn } = await import("../apps/obsidian/src/ai/builds.js");
+const { PinnedRun } = await import("../apps/obsidian/src/ai/pinned-run.js");
 const { argumentsIn } = await import("../apps/obsidian/src/ai/tools.js");
 const { specOfApp, stageOfApp } = await import("../apps/obsidian/src/ai/spec-command.js");
 const { SpecCard } = await import("../apps/obsidian/src/ai/spec-card.js");
 const { BuildRunCard } = await import("../apps/obsidian/src/ai/build-run-card.js");
 const { briefFor } = await import("../apps/obsidian/src/ai/brief.js");
+const { noteNameOf } = await import("../apps/obsidian/src/ai/target-note.js");
 const { HANDBOOK } = await import("../apps/obsidian/src/ai/agent-files.js");
 import type { KeptCall } from "../apps/obsidian/src/ai/transcript.js";
 import type { SpecPort } from "../apps/obsidian/src/ai/spec-port.js";
@@ -171,7 +174,11 @@ check(
 	).refusal?.startsWith("features"),
 	true,
 );
-check("a spec lives under Design, one folder per app", specPathOf("Vocabulary"), "Design/Vocabulary/spec.md");
+check(
+	"a spec lives in the plugin's own folder, never among the person's notes",
+	specPathOf("Vocabulary"),
+	".widgetarium/apps/Vocabulary/spec.md",
+);
 
 const BIN = "node /v/.widgetarium/bin/widgets.mjs";
 const callOf = (ref: string, command: string, answer: Partial<KeptCall> = {}): KeptCall => ({
@@ -230,8 +237,15 @@ check("the next stage is the active one while the agent runs", statusesOf([data,
 	"done",
 	"active",
 	"pending",
+	"pending",
 ]);
-check("nothing is active once the turn ended", statusesOf([data], false), ["done", "pending", "pending", "pending"]);
+check("nothing is active once the turn ended", statusesOf([data], false), [
+	"done",
+	"pending",
+	"pending",
+	"pending",
+	"pending",
+]);
 check(
 	"a stage the tool refused fills no row",
 	statusesOf([callOf("f", `${BIN} stage Vocabulary data --said x`, { failed: true })], true),
@@ -239,7 +253,7 @@ check(
 );
 
 const vault = await mkdtemp(join(tmpdir(), "wg-spec-"));
-await mkdir(join(vault, "Design", "Vocabulary"), { recursive: true });
+await mkdir(join(vault, ".widgetarium", "apps", "Vocabulary"), { recursive: true });
 await writeFile(join(vault, specPathOf("Vocabulary")), SPEC);
 check(
 	"a spec named in another case is refused with the folder's real name",
@@ -249,7 +263,7 @@ check(
 check("the tool reads a spec that fits", (await specOfApp(vault, "Vocabulary")).refusal, undefined);
 check(
 	"and names a missing one by its path",
-	(await specOfApp(vault, "Garden")).refusal?.includes("Design/Garden/spec.md"),
+	(await specOfApp(vault, "Garden")).refusal?.includes(".widgetarium/apps/Garden/spec.md"),
 	true,
 );
 check(
@@ -258,8 +272,8 @@ check(
 	true,
 );
 check(
-	"a stage that is not one of the four is refused",
-	(await stageOfApp(vault, "Vocabulary", "deploy", "x")).refusal?.includes("data, design, widgets, pages"),
+	"a stage that is not one of the five is refused",
+	(await stageOfApp(vault, "Vocabulary", "deploy", "x")).refusal?.includes("data, design, catalogue, widgets, pages"),
 	true,
 );
 check(
@@ -312,30 +326,44 @@ check(
 	host.querySelector(".wg-ai-spec-title")?.textContent,
 	"VocabularyKeep the words you meet.",
 );
-check("every feature is a row with a check", host.querySelectorAll(".wg-ai-spec-check").length, 2);
-check("a feature the agent marked new says so", host.querySelector(".wg-ai-spec-row .wg-kit-pill")?.textContent, "new");
+check("every feature is a row with a check", host.querySelectorAll(".wg-kit-check").length, 2);
+check("a feature the agent marked new says so", host.querySelector(".wg-kit-row .wg-kit-pill")?.textContent, "new");
 check("a choice and the details follow the features", names().slice(2), ["Review", "Details"]);
 check("the two answers stand side by side", buttons(), ["Build it", "Change"]);
 
-host.querySelector<HTMLButtonElement>(".wg-ai-spec-check")?.click();
+host.querySelector<HTMLElement>(".wg-kit-check")?.click();
 await settle();
 check(
 	"unticking a feature writes the note through the one writer",
 	readSpec(written.at(-1) ?? "").spec?.features[0]?.kept,
 	false,
 );
-check("the row shows it is left out", host.querySelector(".wg-ai-spec-row")?.classList.contains("is-off"), true);
+check("the row shows it is left out", host.querySelector(".wg-kit-row")?.classList.contains("is-off"), true);
 check("and Build says how many features it will build", buttons()[0], "Build 1 features");
 
+host.querySelectorAll<HTMLElement>(".wg-kit-row .wg-ai-spec-name")[1]?.click();
+await settle();
+check(
+	"pressing anywhere on a feature row toggles it, not only the box",
+	readSpec(written.at(-1) ?? "").spec?.features[1]?.kept,
+	false,
+);
+check(
+	"the whole row is one button the keyboard reaches",
+	host.querySelectorAll("button.wg-kit-row[aria-pressed]").length,
+	2,
+);
+host.querySelectorAll<HTMLElement>(".wg-kit-row .wg-ai-spec-name")[1]?.click();
+await settle();
 host.querySelectorAll<HTMLButtonElement>(".wg-ai-spec-buttons button")[0]?.click();
 host.querySelectorAll<HTMLButtonElement>(".wg-ai-spec-buttons button")[1]?.click();
 check("Build and Change answer the agent", asked, ["build", "change"]);
 
-host.querySelector<HTMLButtonElement>(".wg-ai-spec-row.is-pressable")?.click();
+host.querySelector<HTMLButtonElement>(".wg-kit-row.is-details")?.click();
 await settle();
 check(
 	"Details opens the pages, what is left out and the checks",
-	host.querySelectorAll(".wg-ai-spec-details .wg-ai-spec-plate").length,
+	host.querySelectorAll(".wg-ai-spec-details .wg-kit-list").length,
 	3,
 );
 
@@ -353,7 +381,64 @@ check(
 );
 
 text = SPEC;
-render(h(BuildRunCard, { run: buildRunIn([data, design], true) ?? { key: "", app: "", rows: [] }, port }), host);
+const slowWrites: (() => void)[] = [];
+const slowPort: SpecPort = {
+	read: async () => text,
+	watch: () => () => {},
+	change: (_path, edit) =>
+		new Promise((done, refuse) => {
+			slowWrites.push(() => {
+				if (text === "refuse") return refuse(new Error("the disk said no"));
+				text = edit(text);
+				done();
+			});
+		}),
+};
+const drawSlow = (): void =>
+	render(
+		h(SpecCard, { app: "Vocabulary", port: slowPort, isAnswerable: true, onBuild: () => {}, onChange: () => {} }),
+		host,
+	);
+drawSlow();
+await settle();
+host.querySelector<HTMLElement>(".wg-kit-check")?.click();
+await settle();
+check(
+	"a tick shows at once, before a slow vault has written it",
+	host.querySelector(".wg-kit-row")?.classList.contains("is-off"),
+	true,
+);
+check("while the write is still on its way", slowWrites.length, 1);
+slowWrites.shift()?.();
+await settle();
+check("and the write lands what the card already showed", readSpec(text).spec?.features[0]?.kept, false);
+const keptBefore = text;
+host.querySelector<HTMLElement>(".wg-kit-check")?.click();
+await settle();
+text = "refuse";
+slowWrites.shift()?.();
+text = keptBefore;
+await settle(60);
+check(
+	"a write the vault refused takes the tick back",
+	host.querySelector(".wg-kit-row")?.classList.contains("is-off"),
+	true,
+);
+check("and says why", host.querySelector(".wg-ai-spec-refused")?.textContent, "the disk said no");
+
+text = SPEC;
+const installed = callOf("i", `${BIN} install @default/list`);
+const writing = callOf("w", `${BIN} start @you/flashcard --title Flashcard`);
+const runCalls = [
+	data,
+	design,
+	installed,
+	callOf("c", `${BIN} stage Vocabulary catalogue --said "List installed"`),
+	writing,
+];
+const liveRun = buildRunIn(runCalls, true) ?? { key: "", app: "", rows: [] };
+const liveBuilds = buildsIn(runCalls, true);
+render(h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: installsIn(runCalls) }), host);
 await settle();
 check("the build card names the app", host.querySelector(".wg-ai-spec-title h3")?.textContent, "Building Vocabulary");
 check(
@@ -361,13 +446,50 @@ check(
 	host.querySelector(".wg-ai-spec-title span")?.textContent,
 	"2 features · 1 pages",
 );
-check("a done stage wears a done dot", host.querySelectorAll(".wg-ai-stage-dot.is-done").length, 2);
-check("the stage in progress wears the active one", host.querySelectorAll(".wg-ai-stage-dot.is-active").length, 1);
+check(
+	"a done stage draws the kit's done circle",
+	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-stage-ring.is-done").length,
+	3,
+);
+check(
+	"a widget installed from the catalogue stands under its stage",
+	[...host.querySelectorAll(".wg-kit-row.is-inner .wg-ai-spec-name")].map((node) => node.textContent),
+	["@default/list", "Flashcard"],
+);
+check(
+	"and the widget being written stands under New widgets, with the step it is on",
+	host.querySelectorAll(".wg-kit-row.is-inner .wg-ai-spec-sub")[1]?.textContent,
+	"Writing the widget",
+);
+check(
+	"each widget stands right under the stage it belongs to",
+	[...host.querySelectorAll(".wg-kit-row .wg-ai-spec-name")].map((node) => node.textContent),
+	["Data", "Design", "From the catalogue", "@default/list", "New widgets", "Flashcard", "Pages"],
+);
+check(
+	"the stage names say where the widgets come from",
+	[...host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-name")].map((node) => node.textContent),
+	["Data", "Design", "From the catalogue", "New widgets", "Pages"],
+);
+check(
+	"the stage in progress draws a turning one",
+	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-stage-ring.is-active").length,
+	1,
+);
+render(h(PinnedRun, { run: liveRun, builds: liveBuilds }), host);
+await settle();
+check(
+	"the pinned bar says where the build is, and what it is doing right now",
+	[...host.querySelectorAll(".wg-ai-spec-text > span")].map((node) => node.textContent),
+	["Vocabulary · 4 of 5", "New widgets · Flashcard · Writing the widget"],
+);
 render(null, host);
 
 const prompt = briefFor({ paths: { vault: "/v", plugin: "/p", widgets: "/w", handbook: "/h", tool: "/t" } });
 check("the spec page is laid on disk", Object.keys(HANDBOOK).includes("spec.md"), true);
 check("and left out of the prompt, which only points at it", prompt.includes("=== HANDBOOK PAGE: spec.md ==="), false);
+
+check("the open note is named by its name alone", noteNameOf("Widgetarium agents/Shell demo/Flow.md"), "Flow");
 
 console.log(`\nspec gate: ${failed === 0 ? "clean" : `${failed} of ${checks} failed`}, ${checks} checks`);
 process.exit(failed === 0 ? 0 : 1);

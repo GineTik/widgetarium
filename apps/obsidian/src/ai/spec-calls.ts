@@ -17,6 +17,24 @@ export interface BuildRun {
 	readonly rows: readonly StageRow[];
 }
 
+export type ItemStatus = "done" | "active" | "failed";
+
+export interface InstallRow {
+	readonly key: string;
+	readonly widget: string;
+	readonly status: ItemStatus;
+}
+
+export function installsIn(calls: readonly KeptCall[]): InstallRow[] {
+	return calls.flatMap((call) => {
+		const ours = ourCallOf(call);
+		const widget = ours?.verb === "install" ? argumentsIn(ours.said)[0] : undefined;
+		if (!widget) return [];
+		const status: ItemStatus = !call.answered ? "active" : call.failed ? "failed" : "done";
+		return [{ key: call.ref, widget, status }];
+	});
+}
+
 export function specAppIn(call: KeptCall): string | null {
 	const ours = ourCallOf(call);
 	if (ours?.verb !== "spec" || !call.answered || call.failed) return null;

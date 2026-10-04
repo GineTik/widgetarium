@@ -68,7 +68,7 @@ function choiceRows({ spec, held }: CardSpec, details: { isOpen: boolean; onTogg
 	const pick = (name: string) => (picked: string) => held.change((text) => withChoicePicked(text, name, picked));
 	return platedRows("choices", spec.choices.length > 0 ? CHOSEN : null, [
 		...spec.choices.map((choice) => h(ChoiceRow, { key: choice.name, choice, onPick: pick(choice.name) })),
-		pressableRow(details, [
+		pressableRow({ ...details, className: "is-details" }, [
 			h("span", { key: "tile", className: "wg-ai-spec-tile" }, h(Icon, { name: "list", size: 16 })),
 			rowText(DETAILS, detailsSaidOf(spec)),
 		]),

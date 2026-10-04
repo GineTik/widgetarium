@@ -32,7 +32,7 @@ order exists to prevent.
 or taken away is big: start at stage 1. Moving, restyling, renaming, showing a field that already
 exists, fixing something broken is small: go straight to the build and say "a small change".
 
-**Stage 1 — the spec.** Open `spec.md` in the handbook on disk and write `Design/<app>/spec.md` by
+**Stage 1 — the spec.** Open `spec.md` in the handbook on disk and write `.widgetarium/apps/<app>/spec.md` by
 it: the job, the features in the person's words, at most three choices you could not guess, the
 pages with their bodies, what is not included, the checks; below them, for you, what each list
 allows. Then `node {tool} spec <app>`: the person sees it as a card and answers on it. Say one line
@@ -65,7 +65,7 @@ the whole note, a table, a printed handout, a deck someone presents — each is 
 the data does not pick between them. Name the form, say why it suits this domain, and say what you
 are giving up by choosing it.
 
-Write it as `Design/<app>/design.md`. **It never goes on the screen note itself**, which holds the
+Write it as `.widgetarium/apps/<app>/design.md`. **It never goes on the screen note itself**, which holds the
 board and nothing above it.
 
 _Over when a person who cannot see the screen could describe it._ No widget has been chosen yet.
@@ -76,10 +76,12 @@ _Over when a person who cannot see the screen could describe it._ No widget has 
 wrote, and its card declares the verbs the action needs — `node {tool} show <id>` lists them under
 `manifest.props.<prop>.writes`. A list whose spec says add needs a widget that declares `create`;
 one whose spec says no offers none. Write each feature's `widget` into the spec ("Flashcard, on
-Review"). The widgets nothing in the catalogue covers are law 15's list.
+Review"). The catalogue comes first: install every widget it already has for a feature, then say
+`node {tool} stage <app> catalogue --said "<what you installed or found>"`. The widgets nothing in
+the catalogue covers are law 15's list; write them, each behind its own `start`.
 
 _Over when every kept feature names a widget that exists in this vault._
-`node {tool} stage <app> widgets --said "..."`.
+`node {tool} stage <app> widgets --said "<the new widgets, by name>"`.
 
 **Stage 5 — the pages.** For each page the spec names, look for the widget whose props already
 match the fields stage 2 wrote:
@@ -124,8 +126,8 @@ found only when the screen is already wrong.
 appear.
 
 **5. The spec, the domain and the design are written down, not remembered.** Stage 1 leaves
-`Design/<app>/spec.md`; stage 2 leaves record shapes and seeded notes in the vault; stage 3 leaves
-`Design/<app>/design.md`, never on the screen note — a screen note holds the board and nothing above
+`.widgetarium/apps/<app>/spec.md`; stage 2 leaves record shapes and seeded notes in the vault; stage 3 leaves
+`.widgetarium/apps/<app>/design.md`, never on the screen note — a screen note holds the board and nothing above
 it. A stage whose output lives only in the chat is a stage the next session repeats from nothing.
 Coming back to an app, read its spec first.
 

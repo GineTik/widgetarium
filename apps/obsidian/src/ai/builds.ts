@@ -13,6 +13,7 @@ export interface BuildStep {
 export interface Build {
 	readonly key: string;
 	readonly widget: string;
+	readonly name: string;
 	readonly title: string;
 	readonly steps: BuildStep[];
 	readonly isLive: boolean;
@@ -88,6 +89,7 @@ function buildOf(build: StartedBuild, isLive: boolean): Build {
 	return {
 		key: build.ref,
 		widget: build.id,
+		name: build.title,
 		title: (isClean ? BUILT : BUILDING).replace("{title}", build.title),
 		steps,
 		isLive,

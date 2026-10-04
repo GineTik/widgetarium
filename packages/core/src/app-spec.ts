@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { parseDocument, parse as parseYaml } from "yaml";
 import { BODY_NAMES } from "./layout-bodies.js";
+import { ROOT } from "./paths.js";
 
-export const SPEC_FOLDER = "Design";
+export const SPEC_FOLDER = `${ROOT}/apps`;
 export const SPEC_FILE = "spec.md";
-export const BUILD_STAGES = ["data", "design", "widgets", "pages"] as const;
+export const BUILD_STAGES = ["data", "design", "catalogue", "widgets", "pages"] as const;
 
 export type BuildStage = (typeof BUILD_STAGES)[number];
 

@@ -46,7 +46,7 @@ same change: a law that changed in code and not there is a law the next agent br
 are what they are lives in `docs/decisions.md`.
 
 **An app is built in five stages, and the order is the law.** `brief.md` holds them. Stage 1 is
-the spec: `Design/<app>/spec.md`, whose front matter (`AppSpecSchema` in `packages/core/src/app-spec.ts`)
+the spec: `.widgetarium/apps/<app>/spec.md`, whose front matter (`AppSpecSchema` in `packages/core/src/app-spec.ts`)
 holds the features in the person's words, the choices, the pages with their bodies and the checks,
 and below it, for the agent, what each list allows. `widgets.mjs spec <app>` draws it in the chat as
 a card the person answers on — unticking a feature or picking a choice writes the note through
