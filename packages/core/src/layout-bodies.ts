@@ -8,6 +8,7 @@ export interface SlotRule {
 	readonly maxWidgets?: number;
 	readonly isOptional?: boolean;
 	readonly accepts?: readonly string[];
+	readonly opensWithHeading?: boolean;
 }
 
 export interface LayoutBody extends LayoutBase {
@@ -20,11 +21,11 @@ type RoleOf = (id: unknown) => unknown;
 export const SHELL_ZONES: readonly string[] = ["nav", "index", "aside", "dock"];
 
 const SHELL_SLOTS: Readonly<Record<string, SlotRule>> = {
-	nav: { isOptional: true, accepts: ["navigation", TEXT_ROLE] },
-	index: { isOptional: true, accepts: ["navigation", TEXT_ROLE] },
+	nav: { isOptional: true, opensWithHeading: true, accepts: ["navigation", TEXT_ROLE] },
+	index: { isOptional: true, opensWithHeading: true, accepts: ["navigation", TEXT_ROLE] },
 	main: {},
 	header: { maxWidgets: 4, accepts: [TEXT_ROLE, "control", "navigation"] },
-	aside: { isOptional: true },
+	aside: { isOptional: true, opensWithHeading: true },
 	dock: { isOptional: true, maxWidgets: 1, accepts: ["control", "media", "indicator", "composer"] },
 };
 
@@ -201,6 +202,7 @@ export function bodySlotProblems(said: unknown, root: unknown, roleOf: RoleOf = 
 	return Object.entries(body.slots).flatMap(([name, rule]) => [
 		...slotProblemsOf(name, rule, childrenByName.get(name) ?? [], isStarted),
 		...roleProblemsOf(name, rule, childrenByName.get(name)?.[0] ?? [], roleOf),
+		...headingProblemsOf(name, rule, childrenByName.get(name)?.[0] ?? [], roleOf),
 	]);
 }
 
@@ -317,6 +319,16 @@ function overfullProblemsOf(name: string, rule: SlotRule, children: readonly unk
 function stillEmptySaid(name: string, rule: SlotRule): string {
 	const way = rule.isOptional ? "delete it" : "take another body";
 	return `slot "${name}" is still empty while the others hold widgets: fill it, or ${way}`;
+}
+
+function headingProblemsOf(name: string, rule: SlotRule, children: readonly unknown[], roleOf: RoleOf): string[] {
+	if (!rule.opensWithHeading || widgetCountIn(children) === 0) return [];
+	const [first] = children;
+	const isHeading = isObject(first) && (first["role"] === TEXT_ROLE || roleOf(first["id"]) === TEXT_ROLE);
+	if (isHeading) return [];
+	return [
+		`zone "${name}" holds widgets and no heading: open it with a text line saying what it holds, so the column reads as a place and not as leftovers`,
+	];
 }
 
 function roleProblemsOf(name: string, rule: SlotRule, children: readonly unknown[], roleOf: RoleOf): string[] {

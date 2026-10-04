@@ -404,6 +404,27 @@ check(
 	),
 	['slot "aside" is still empty while the others hold widgets: fill it, or delete it'],
 );
+const asideHolding = (held: readonly BoardNode[]): SerializedBoard =>
+	asBoard({
+		...flowWithAside,
+		tiles: [
+			...flowWithAside.tiles,
+			{ id: "x1", widget: "feed" },
+			{ id: "x2", widget: "chart" },
+			{ id: "x3", widget: HEADING_WIDGET },
+		],
+		layout: withSlotHolding(withSlotHolding(flowWithAside.layout, "stack", [{ id: "x1" }]), "aside", held),
+	});
+const headingSaid = (board: SerializedBoard): string[] =>
+	roleMessagesOf(board).filter((message) => message.includes("no heading"));
+check(
+	"a side zone holding widgets with no heading is named, so a column never reads as leftovers",
+	headingSaid(asideHolding([{ id: "x2" }])),
+	[
+		'zone "aside" holds widgets and no heading: open it with a text line saying what it holds, so the column reads as a place and not as leftovers',
+	],
+);
+check("one opened by a text line is not", headingSaid(asideHolding([{ id: "x3" }, { id: "x2" }])), []);
 const conversation = present(skeletonOf("conversation", asBoard), "the conversation body");
 check(
 	"a conversation pins its composer as the last slot of main",

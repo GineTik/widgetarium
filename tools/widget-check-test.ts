@@ -25,6 +25,76 @@ check("a widget that breaks nothing is named clean", rulesIn(checkWidget(clean))
 check("and says so", saidWidgetCheck(checkWidget(clean)), "the widget is clean");
 
 check("a hex colour is a finding", rulesIn(checkWidget({ ...clean, styles: "color: #ff8800;" })), ["colour"]);
+check(
+	"a raw button drawn in a widget is a finding, because Obsidian paints every bare control",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<button className="pick" onClick={go}>Pick</button>` })),
+	["control"],
+);
+check(
+	"and it names the kit control that replaces each tag",
+	checkWidget({ ...clean, source: `${clean.source}\n<input value={v} />\nh("select", {})` })[0]?.message.includes(
+		"<input> → Field or Checkbox; <select> → Select",
+	),
+	true,
+);
+check(
+	"a collection that adds records is a finding, because adding is a composer of its own",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\ncreateWord: ICommand.sends(WordSchema),` })),
+	["adds"],
+);
+check(
+	"and so is one whose metadata aims a command at @core/rows-create",
+	rulesIn(
+		checkWidget({
+			...clean,
+			card: { role: "detail" },
+			source: `${clean.source}\nsource: { implementation: "@core/rows-create" }`,
+		}),
+	),
+	["adds"],
+);
+check(
+	"so is a list that picks create on its rows, or names its command plainly create",
+	[
+		rulesIn(
+			checkWidget({ ...clean, source: `${clean.source}\ngetRows: ICrudGateway.of(RowSchema).pick("list", "create"),` }),
+		),
+		rulesIn(checkWidget({ ...clean, source: `${clean.source}\ncreate: ICommand.sends(RowSchema),` })),
+	],
+	[["adds"], ["adds"]],
+);
+check(
+	"a hint that only mentions @core/rows-create is not",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\nhint: "Bind it to @core/rows-create on the list"` })),
+	[],
+);
+check(
+	"an indicator that logs a day by creating a row is not",
+	rulesIn(
+		checkWidget({
+			...clean,
+			card: { role: "indicator" },
+			source: `${clean.source}\ncreateEntry: ICommand.sends(EntrySchema),`,
+		}),
+	),
+	[],
+);
+check(
+	"and a composer adds by its very job",
+	rulesIn(
+		checkWidget({
+			...clean,
+			card: { role: "composer" },
+			source: `${clean.source}\ncreate: ICommand.sends(RowSchema), "@core/rows-create"`,
+		}),
+	),
+	[],
+);
+check(
+	"the kit's own Button is not a raw control",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<Button onClick={go}>Pick</Button>` })),
+	[],
+);
 check("an rgb colour is a finding", rulesIn(checkWidget({ ...clean, styles: "background: rgba(0,0,0,0.4);" })), [
 	"colour",
 ]);
@@ -170,12 +240,16 @@ check(
 const allBroken = {
 	id: "@x/bad",
 	source:
-		"import { flatRows } from \"widgetarium\";\nconst l = useData(rows.list);\nl.data.map((r) => r);\nconst c = '#abc';\nreturn <h1>Title</h1>;",
+		"import { flatRows } from \"widgetarium\";\nconst l = useData(rows.list);\nl.data.map((r) => r);\nconst c = '#abc';\nreturn <h1>Title<button>Go</button></h1>;",
 	styles: "font-family: Inter;",
 	card: {},
 	surface,
 };
-check("every rule can fire at once", rulesIn(checkWidget(allBroken)), [...WIDGET_CHECK_RULES].sort());
+check(
+	"every rule that judges no role can fire at once",
+	rulesIn(checkWidget(allBroken)),
+	WIDGET_CHECK_RULES.filter((rule) => rule !== "adds").sort(),
+);
 check(
 	"each finding carries the widget it came from",
 	[...new Set(checkWidget(allBroken).map((one) => one.widget))],

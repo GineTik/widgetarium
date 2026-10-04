@@ -13,8 +13,35 @@ const WIDGETARIUM_IMPORT = /import\s+(type\s+)?\{([^}]+)\}\s+from\s+"widgetarium
 const BOARD_HEADING = /<(h[12])[\s/>]/g;
 const KIT_BOARD_HEADING = /<Heading\b[^>]*\b(?:level|size)=\{?["']?([12])\b/g;
 const ROLES_THAT_MAY_TITLE: readonly string[] = ["text", "layout"];
+const RAW_CONTROL =
+	/<(button|input|select|textarea)[\s/>]|createElement\(\s*["'](button|input|select|textarea)["']|\bh\(\s*["'](button|input|select|textarea)["']/g;
+const KIT_CONTROL_FOR: Readonly<Record<string, string>> = {
+	button: "Button, IconButton or a pressable Row",
+	input: "Field or Checkbox",
+	select: "Select",
+	textarea: "TextArea",
+};
 
-export const WIDGET_CHECK_RULES = ["colour", "font", "unbounded", "role", "reaches", "heading"] as const;
+const ROLES_THAT_MAY_NOT_ADD: readonly string[] = ["collection", "detail"];
+const ADDS_ROWS = [
+	/\.pick\([^)]*["']create["']/,
+	/\b(?:create|add)\w*\s*:\s*ICommand\b/,
+	/implementation\s*:\s*["']@core\/rows-create["']/,
+];
+
+const RAW_CONTROL_SAID =
+	"a raw control drawn by hand ({instead}); Obsidian styles every bare control with its own fill and border, so it never looks or answers like the kit — take the kit's";
+
+export const WIDGET_CHECK_RULES = [
+	"colour",
+	"font",
+	"unbounded",
+	"role",
+	"reaches",
+	"heading",
+	"control",
+	"adds",
+] as const;
 
 type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
 
@@ -46,19 +73,44 @@ export function checkWidget({
 	surface = null,
 }: WidgetCheckInput): WidgetFinding[] {
 	const text = `${source}\n${styles}`;
-	return [
-		...colourFindings(text),
-		...fontFindings(text),
-		...unboundedFindings(source),
-		...roleFindings(card),
-		...reachFindings(source, surface),
-		...headingFindings(source, card),
-	].map((one) => ({ widget: id, ...one }));
+	return [...colourFindings(text), ...fontFindings(text), ...sourceFindings(source, card, surface)].map((one) => ({
+		widget: id,
+		...one,
+	}));
 }
 
 export function saidWidgetCheck(findings: readonly WidgetFinding[]): string {
 	if (findings.length === 0) return "the widget is clean";
 	return findings.map((one) => `${one.widget} ${one.rule}: ${one.message}`).join("\n");
+}
+
+function sourceFindings(source: string, card: CheckedCard | null, surface: readonly unknown[] | null): Finding[] {
+	return [
+		...unboundedFindings(source),
+		...roleFindings(card),
+		...reachFindings(source, surface),
+		...headingFindings(source, card),
+		...controlFindings(source),
+		...addFindings(source, card),
+	];
+}
+
+function addFindings(source: string, card: CheckedCard | null): Finding[] {
+	if (!card || typeof card.role !== "string" || !ROLES_THAT_MAY_NOT_ADD.includes(card.role)) return [];
+	if (!ADDS_ROWS.some((pattern) => pattern.test(source))) return [];
+	return [
+		{
+			rule: "adds",
+			message: `a ${card.role} that adds records; adding is its own widget with the composer role — place @default/add-button beside it and bind its create to this list, so the page decides where adding stands`,
+		},
+	];
+}
+
+function controlFindings(source: string): Finding[] {
+	const tags = [...new Set([...source.matchAll(RAW_CONTROL)].map((found) => found[1] ?? found[2] ?? found[3] ?? ""))];
+	if (tags.length === 0) return [];
+	const instead = tags.map((tag) => `<${tag}> → ${KIT_CONTROL_FOR[tag] ?? "the kit's control"}`).join("; ");
+	return [{ rule: "control", message: RAW_CONTROL_SAID.replace("{instead}", instead) }];
 }
 
 function reachFindings(source: string, surface: readonly unknown[] | null): Finding[] {
