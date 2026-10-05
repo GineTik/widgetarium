@@ -15,6 +15,17 @@ export interface DrawnScreen {
 	readonly states: readonly DrawnState[];
 }
 
+export interface DrawnReference {
+	readonly name: string;
+	readonly src: string;
+	readonly why?: string | undefined;
+}
+
+export interface DrawnDesign {
+	readonly screens: readonly DrawnScreen[];
+	readonly references: readonly DrawnReference[];
+}
+
 export interface Size {
 	readonly width: number;
 	readonly height: number;

@@ -7,13 +7,14 @@ import { ScreenBoard } from "./design-screen-board.js";
 export interface ScreenFrameProps extends Drawing {
 	readonly frame: Frame;
 	readonly at: number;
+	readonly top: number;
 	readonly size: Size;
 }
 
-export function ScreenFrame({ frame, at, size, registry, host }: ScreenFrameProps): ReactElement {
+export function ScreenFrame({ frame, at, top, size, registry, host }: ScreenFrameProps): ReactElement {
 	const style = {
 		left: `${MARGIN_PX + at * (size.width + GAP_PX)}px`,
-		top: `${MARGIN_PX}px`,
+		top: `${top}px`,
 		width: `${size.width}px`,
 	};
 	return h("div", { className: "wg-design-frame", style }, [

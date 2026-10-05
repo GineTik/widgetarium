@@ -1,4 +1,4 @@
-import { ItemView, parseYaml } from "obsidian";
+import { ItemView, Notice, parseYaml } from "obsidian";
 import type { App, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
@@ -6,10 +6,18 @@ import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
 import { findBlocks } from "@widgetarium/core/block-writer.js";
 import { normalizeBoard } from "@widgetarium/core/model.js";
 import type { Board } from "@widgetarium/core/model.js";
-import { designPathOf, readDesign, screenPathOf, statesOf, vaultBindingOf } from "@widgetarium/core/app-design.js";
+import {
+	designPathOf,
+	readDesign,
+	referencePathOf,
+	screenPathOf,
+	statesOf,
+	vaultBindingOf,
+} from "@widgetarium/core/app-design.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { DesignCanvas } from "./design-canvas.js";
-import type { DrawnScreen, DrawnState } from "./design-canvas-shapes.js";
+import type { DrawnDesign, DrawnState } from "./design-canvas-shapes.js";
+import { addPhotos, imageFilesIn } from "./design-photos.js";
 import type WidgetariumPlugin from "./main.js";
 
 export const DESIGN_VIEW_TYPE = "widgetarium-design";
@@ -20,6 +28,7 @@ const BOUND_TO_VAULT =
 	"{name} reads the vault ({binding}): a design is drawn from sample rows only. Ask the agent to redraw it.";
 const DESIGN_POLL_MS = 1500;
 const NO_DESIGN = "{app} has no design yet, or it was removed.";
+const PHOTOS_FAILED = "The photos were not added to the canvas: {why}";
 
 export class DesignView extends ItemView {
 	private appName = "";
@@ -64,6 +73,25 @@ export class DesignView extends ItemView {
 		watched.observe(this.contentEl);
 		this.register(() => watched.disconnect());
 		this.registerInterval(window.setInterval(() => void this.redrawWhenChanged(), DESIGN_POLL_MS));
+		this.registerDomEvent(document, "paste", (event) => this.pastePhotos(event));
+		await this.draw();
+	}
+
+	private pastePhotos(event: ClipboardEvent): void {
+		if (this.app.workspace.getActiveViewOfType(DesignView) !== this) return;
+		const photos = imageFilesIn(event.clipboardData?.files);
+		if (photos.length === 0) return;
+		event.preventDefault();
+		void this.addPhotos(photos);
+	}
+
+	private async addPhotos(photos: readonly File[]): Promise<void> {
+		try {
+			await addPhotos(this.plugin.app.vault.adapter, this.appName, photos);
+		} catch (failure) {
+			console.error("[widgetarium] design photos were not added", failure);
+			new Notice(PHOTOS_FAILED.replace("{why}", failure instanceof Error ? failure.message : String(failure)));
+		}
 		await this.draw();
 	}
 
@@ -86,11 +114,10 @@ export class DesignView extends ItemView {
 		const node = this.node;
 		const size = { width: this.contentEl.clientWidth, height: this.contentEl.clientHeight };
 		if (!node || !this.appName || size.width === 0 || size.height === 0) return;
-		const screens = await screensOf(this.plugin, this.appName);
-		render(
-			h(DesignCanvas, { app: this.appName, screens, size, registry: this.plugin.registry, host: this.plugin.host }),
-			node,
-		);
+		const { screens, references } = await designOf(this.plugin, this.appName);
+		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
+		const drawing = { registry: this.plugin.registry, host: this.plugin.host };
+		render(h(DesignCanvas, { app: this.appName, screens, references, size, onAddPhotos, ...drawing }), node);
 	}
 }
 
@@ -109,19 +136,28 @@ function refreshHeader(leaf: unknown): void {
 	if (isObject(leaf) && typeof leaf["updateHeader"] === "function") Reflect.apply(leaf["updateHeader"], leaf, []);
 }
 
-async function screensOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnScreen[]> {
+async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDesign> {
 	const adapter = plugin.app.vault.adapter;
 	const text = await adapter.read(designPathOf(app)).catch(() => null);
-	if (text === null)
-		return [{ name: app, states: [{ name: app, board: null, refusal: NO_DESIGN.replace("{app}", app) }] }];
+	if (text === null) return refusedDesign(app, NO_DESIGN.replace("{app}", app));
 	const read = readDesign(text);
-	if (read.refusal !== undefined) return [{ name: app, states: [{ name: app, board: null, refusal: read.refusal }] }];
-	return Promise.all(
+	if (read.refusal !== undefined) return refusedDesign(app, read.refusal);
+	const screens = await Promise.all(
 		read.design.screens.map(async (screen) => ({
 			name: screen.name,
 			states: await Promise.all(statesOf(screen).map((state) => stateOf(plugin, app, state))),
 		})),
 	);
+	const references = read.design.references.map((reference) => ({
+		name: "url" in reference ? reference.url : reference.file,
+		src: "url" in reference ? reference.url : adapter.getResourcePath(referencePathOf(app, reference.file)),
+		why: reference.why,
+	}));
+	return { screens, references };
+}
+
+function refusedDesign(app: string, refusal: string): DrawnDesign {
+	return { screens: [{ name: app, states: [{ name: app, board: null, refusal }] }], references: [] };
 }
 
 async function stateOf(

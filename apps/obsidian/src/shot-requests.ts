@@ -19,7 +19,12 @@ interface Captured {
 }
 
 interface CapturingContents {
-	capturePage: (rect: { x: number; y: number; width: number; height: number }) => Promise<Captured>;
+	capturePage: (
+		rect: { x: number; y: number; width: number; height: number },
+		opts?: { stayHidden: boolean },
+	) => Promise<Captured>;
+	setBackgroundThrottling?: (isAllowed: boolean) => void;
+	invalidate?: () => void;
 }
 
 export function answerShotRequests(plugin: WidgetariumPlugin): void {
@@ -73,8 +78,19 @@ async function shotOf(app: App, asked: ShotAsked): Promise<ArrayBuffer> {
 }
 
 async function capturedLeaf(leaf: WorkspaceLeaf): Promise<ArrayBuffer> {
-	const pane = leaf.view.containerEl;
+	const contents = contentsOf();
+	contents.setBackgroundThrottling?.(false);
+	try {
+		return await capturedPane(leaf.view.containerEl, contents);
+	} finally {
+		contents.setBackgroundThrottling?.(true);
+	}
+}
+
+async function capturedPane(pane: HTMLElement, contents: CapturingContents): Promise<ArrayBuffer> {
 	await drawnIn(pane);
+	contents.invalidate?.();
+	await pause(SETTLE_MS);
 	const box = pane.getBoundingClientRect();
 	const zoom = zoomFactor();
 	const rect = {
@@ -83,7 +99,7 @@ async function capturedLeaf(leaf: WorkspaceLeaf): Promise<ArrayBuffer> {
 		width: Math.round(box.width * zoom),
 		height: Math.round(box.height * zoom),
 	};
-	const png = (await contentsOf().capturePage(rect)).toPNG();
+	const png = (await contents.capturePage(rect, { stayHidden: true })).toPNG();
 	return png.buffer.slice(png.byteOffset, png.byteOffset + png.byteLength) as ArrayBuffer;
 }
 

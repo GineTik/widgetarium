@@ -1,14 +1,19 @@
 import { createElement as h, useCallback, useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent, ReactElement, RefObject } from "react";
+import type { DragEvent, PointerEvent as ReactPointerEvent, ReactElement, RefObject } from "react";
 import { Button } from "@widgetarium/kit";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import { GAP_PX, MARGIN_PX } from "./design-canvas-shapes.js";
-import type { DrawnScreen, Frame, Size } from "./design-canvas-shapes.js";
+import type { DrawnReference, DrawnScreen, Frame, Size } from "./design-canvas-shapes.js";
+import { REFERENCE_PX, ReferencesLane } from "./design-references.js";
+import { imageFilesIn } from "./design-photos.js";
+import { AddPhoto } from "./design-add-photo.js";
 import { ScreenFrame } from "./design-screen-frame.js";
 
 export interface DesignCanvasProps {
 	readonly app: string;
 	readonly screens: readonly DrawnScreen[];
+	readonly references: readonly DrawnReference[];
+	readonly onAddPhotos: (photos: readonly File[]) => void;
 	readonly size: Size;
 	readonly registry: WidgetSurfaceProps["registry"];
 	readonly host: WidgetSurfaceProps["host"];
@@ -29,11 +34,14 @@ const SCREENS_SAID = "{count} screens · {frames} frames · read only";
 const STATE_LABEL = "{screen} · {state}";
 const HINT = "Approve or change it in the chat";
 
-export function DesignCanvas({ app, screens, size, registry, host }: DesignCanvasProps): ReactElement {
+export function DesignCanvas(props: DesignCanvasProps): ReactElement {
+	const { app, screens, references, size, registry, host, onAddPhotos } = props;
 	const screenSize = screenSizeOf(size);
 	const frames = framesOf(screens);
+	const [laneWidth, setLaneWidth] = useState(0);
+	const screensTop = references.length === 0 ? MARGIN_PX : MARGIN_PX + LABEL_PX + REFERENCE_PX + GAP_PX;
 	const { layerRef, tallest } = useTallestFrame(screenSize.height, frames.length);
-	const field = fieldSizeOf(frames.length, { width: screenSize.width, height: tallest });
+	const field = fieldSizeOf(frames.length, { width: screenSize.width, height: tallest }, { screensTop, laneWidth });
 	const fit = fitLook(field, size);
 	const { look, setLook, refit, fieldRef, moves } = usePanZoom(fit);
 	const layer = {
@@ -42,18 +50,32 @@ export function DesignCanvas({ app, screens, size, registry, host }: DesignCanva
 		height: `${field.height}px`,
 	};
 	const drawn = frames.map((frame, at) =>
-		h(ScreenFrame, { key: `${at}-${frame.label}`, frame, at, size: screenSize, registry, host }),
+		h(ScreenFrame, { key: `${at}-${frame.label}`, frame, at, top: screensTop, size: screenSize, registry, host }),
 	);
+	const lane = h(ReferencesLane, { key: "references", references, onWidth: setLaneWidth });
 	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames.length));
-	return h("div", { className: "wg-design-field wg-portal", ref: fieldRef, ...moves }, [
-		h("div", { key: "layer", className: "wg-design-layer", style: layer, ref: layerRef }, drawn),
+	return h("div", { className: "wg-design-field wg-portal", ref: fieldRef, ...moves, ...photoDrops(onAddPhotos) }, [
+		h("div", { key: "layer", className: "wg-design-layer", style: layer, ref: layerRef }, [lane, ...drawn]),
 		h("div", { key: "head", className: "wg-design-head" }, [
 			h("b", { key: "app" }, app),
 			h("span", { key: "count" }, said),
+			h(AddPhoto, { key: "add", onAddPhotos }),
 		]),
 		zoomBar(look, setLook, refit),
 		h("div", { key: "hint", className: "wg-design-hint" }, HINT),
 	]);
+}
+
+function photoDrops(onAddPhotos: (photos: readonly File[]) => void) {
+	return {
+		onDragOver: (event: DragEvent): void => event.preventDefault(),
+		onDrop: (event: DragEvent): void => {
+			const photos = imageFilesIn(event.dataTransfer?.files);
+			if (photos.length === 0) return;
+			event.preventDefault();
+			onAddPhotos(photos);
+		},
+	};
 }
 
 function framesOf(screens: readonly DrawnScreen[]): Frame[] {
@@ -78,11 +100,13 @@ function useTallestFrame(floor: number, count: number) {
 			setTallest(
 				Math.max(
 					floor,
-					...[...layer.children].map((frame) => (frame instanceof HTMLElement ? frame.offsetHeight - LABEL_PX : 0)),
+					...[...layer.querySelectorAll<HTMLElement>(":scope > .wg-design-frame")].map(
+						(frame) => frame.offsetHeight - LABEL_PX,
+					),
 				),
 			);
 		const watcher = new ResizeObserver(measure);
-		for (const frame of layer.children) watcher.observe(frame);
+		for (const frame of layer.querySelectorAll(":scope > .wg-design-frame")) watcher.observe(frame);
 		measure();
 		return () => watcher.disconnect();
 	}, [floor, count]);
@@ -143,10 +167,15 @@ function screenSizeOf(size: Size): Size {
 	return { width: Math.max(size.width, 360), height: Math.max(size.height, 480) };
 }
 
-function fieldSizeOf(count: number, screen: Size): Size {
+function fieldSizeOf(
+	count: number,
+	screen: Size,
+	{ screensTop, laneWidth }: { screensTop: number; laneWidth: number },
+): Size {
+	const screensWidth = count * screen.width + Math.max(0, count - 1) * GAP_PX;
 	return {
-		width: MARGIN_PX * 2 + count * screen.width + Math.max(0, count - 1) * GAP_PX,
-		height: MARGIN_PX * 2 + LABEL_PX + screen.height,
+		width: MARGIN_PX * 2 + Math.max(screensWidth, laneWidth),
+		height: screensTop + MARGIN_PX + (count === 0 ? 0 : LABEL_PX + screen.height),
 	};
 }
 
