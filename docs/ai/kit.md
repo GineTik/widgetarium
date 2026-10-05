@@ -29,14 +29,14 @@ change without rewriting the block.
 
 ## Ready-made pieces
 
-| Piece                                                                                                         | Use it for                                                                                     |
-| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `<Hero title eyebrow text photo action corner />`                                                             | the one opening of a page: a photo with the words on a dark fade, or 3D shapes without a photo |
-| `<PhotoCard title subtitle meta photo badge shape="wide                                                       | tall                                                                                           | square" onOpen />` | a record led by its photo, a frosted badge, a round open button; a shape stands in without a photo |
-| `<EmptyState title text shape tones action />`                                                                | where nothing is yet: a cluster of 3D shapes, a title, one line, one action                    |
-| `<CommandMenu>` with `CommandMenuInput`, `CommandMenuSection`, `CommandMenuItem`, inside `CommandMenuOverlay` | search over anything: sections of results, each led by a photo or a shape                      |
-| `<Shape name seed tones />`                                                                                   | a 3D Material shape on a number, a tile, a record without a picture                            |
-| `<PhotoStack photos isRound />`                                                                               | overlapping faces or photos at a card's corner                                                 |
+| Piece                                                                                                         | Use it for                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `<Hero title eyebrow text photo action corner />`                                                             | the one opening of a page: a photo with the words on a dark fade, or 3D shapes without a photo                                      |
+| `<PhotoCard title subtitle meta photo badge shape="tall" onOpen />`                                           | a record led by its photo, a frosted badge, a round open button; a shape stands in without a photo; `shape` is wide, tall or square |
+| `<EmptyState title text shape tones action />`                                                                | where nothing is yet: a cluster of 3D shapes, a title, one line, one action                                                         |
+| `<CommandMenu>` with `CommandMenuInput`, `CommandMenuSection`, `CommandMenuItem`, inside `CommandMenuOverlay` | search over anything: sections of results, each led by a photo or a shape                                                           |
+| `<Shape name seed tones />`                                                                                   | a 3D Material shape on a number, a tile, a record without a picture                                                                 |
+| `<PhotoStack photos isRound />`                                                                               | overlapping faces or photos at a card's corner                                                                                      |
 
 These are visual: they take any data you hand them. Draw them from rows with `map`.
 
