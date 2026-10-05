@@ -49,6 +49,12 @@ there that the request did not mention: the study button with its count, the fil
 the undo. Write them in `.widgetarium/apps/<app>/research.md`. This is where the screen's richness
 comes from: a feature most of them share and this app lacks is a feature to suggest.
 
+**Put what you looked at on the canvas.** For each product, find two or three pictures of the
+screens this app will have — the product's own site, Dribbble, Mobbin; on a page, its `og:image` —
+and run `node {tool} reference <app> <the image's https address> --why "<what to take from it>"`.
+They stand above the screens for the person, who adds their own beside them. Nothing is
+downloaded: the canvas shows them from their address.
+
 Then open `spec.md` in the handbook on disk and write `.widgetarium/apps/<app>/spec.md` by
 it: the products you looked at with what you take from each, the job, the features in the person's
 words — what they asked for, and as `mark: suggested` what the research says they will want — at most three choices you could not guess, the
@@ -72,9 +78,20 @@ _Over when a gateway bound to each folder would answer with rows._ Nothing is pl
 `node {tool} stage <app> data --said "<what you made, in one line>"`.
 
 **Stage 3 — the design, drawn on a canvas the person approves.** Draw every page whole, in one
-pass, the way a designer draws a canvas, and show it before anything is wired. In
-`.widgetarium/apps/<app>/design/` write one note per page, each holding one widgetarium board, and
-`canvas.json` naming them in the order they are read:
+pass, the way a designer draws a canvas, and show it before anything is wired. **Draw every page in
+one draft widget**, `.widgetarium/widgets/@draft/<app-name>/widget.tsx` with its `widget.css`, whose
+props say what to draw — `getPage` a `z.enum` of the pages, `getDialog` which dialog is open,
+`getState` full or empty — each `IQuery.expects(z.enum([...]).default(...))`. **Then place each
+screen with the tool, never by hand**:
+
+```
+node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people
+node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people,state=empty --state Empty
+node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people,dialog=add --state "Add person"
+```
+
+It writes each screen's note in `.widgetarium/apps/<app>/design/` and its place in `canvas.json`,
+which ends up like this:
 
 ```json
 {
@@ -85,7 +102,13 @@ pass, the way a designer draws a canvas, and show it before anything is wired. I
 }
 ```
 
-**Read `.widgetarium/design-system.md` first and follow it**: it is the person's, and a screen that
+**Look at the references first.** Every picture on the canvas is listed under `references` in
+`canvas.json`: a `file` the person added lives in `.widgetarium/apps/<app>/design/references/`, a
+`url` is one you or they linked. Open every one before drawing — a `url` fetched into a temporary
+folder outside the vault, only to look — and draw the app the way they are drawn: their layout, type
+scale, photos and restraint, with our components. **Photos are linked, never downloaded, while you
+design**: a draft shows one as `<img>` or a background with its literal `https://` address (an
+Unsplash photo that fits the record), wherever the references would. **Then read `.widgetarium/design-system.md` and follow it**: it is the person's, and a screen that
 breaks it is redrawn before they see it. A screen is the page as it will be built, drawn with the
 very pieces it will be built from: the base and its regions, catalogue widgets, headings, captions,
 the add button, the record actions. **A design is a picture, never wired to the vault**: every prop
@@ -114,7 +137,14 @@ components with its sample rows written inline, exactly as the finished widget w
 props, no commands, no `start`, no `check`. Stage 4 turns each draft into the real widget after the
 person approved, keeping its look. Then `node {tool} shot --design <app>`, open the picture (the whole
 canvas, every page side by side) and redraw what is not the app you would pay for, again in one
-message. Then `node {tool} design <app>`: the
+message. **Draw every dialog too.** List every press on every screen that opens something — add, edit,
+delete, confirm, warn, pick — and give each its own state of that screen, named after it, with the
+dialog open over the page: a person approves what they will meet, and an add or a delete nobody drew
+is built by guesswork. **Then check it against the person's design system**: `node {tool} rules <app>` prints every
+rule in force — theirs in `.widgetarium/design-system.md` and the app's own in
+`.widgetarium/apps/<app>/design-system.md` — and you answer each id with yes or no in your message,
+redrawing until every answer is yes. A rule is the person's word: never skip one, never argue it
+away. Then `node {tool} design <app>`: the
 person sees it as a card in the chat, opens it in a tab, and answers. **Stop and wait** for "Approve
 design"; a change comes back as a message saying what to change. Each page, region by region, still
 answers one question, draws the fields stage 2 wrote, and has its empty, loading and refused states.
@@ -151,7 +181,9 @@ What the screens cannot show, the decisions and what each block does when presse
 `.widgetarium/apps/<app>/design.md`. **Neither ever goes on a page note itself**, which holds the
 board and nothing above it.
 
-_Over when the person pressed Approve design._ Then `node {tool} stage <app> design --said "..."`.
+_Over when the person pressed Approve design._ Then `node {tool} photos <app>`: only now, with the
+person's yes, the photos the approved screens link to are downloaded into `design/photos/`, and
+`photos.json` maps each address to its file. Then `node {tool} stage <app> design --said "..."`.
 
 **Stage 4 — the widgets.** Now the catalogue, and not before. For every kept feature, and every
 "yes" in the spec's actions, find the widget that does it: its props match the fields stage 2
@@ -299,7 +331,8 @@ heading; a single widget that answers its own question stands in the slot withou
 A screen that already holds widgets is continued from the base it declares. `node {tool} bases` also
 lists fifteen older page bases; a new screen takes a body, never one of those.
 
-**7. The vault is the research. Never search the web while building.**
+**7. The web is for research and references only.** Stage 1 and stage 3 may look outside; from
+stage 4 on, the vault is the research and you never search the web.
 
 **8. Give every node its surface as you place it.** The plugin lays none for you and never overwrites
 what you wrote. Three laws are a gate and the rest is yours — `surfaces.md` has both, `examples.md`

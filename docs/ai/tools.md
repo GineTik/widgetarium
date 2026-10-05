@@ -2,29 +2,32 @@
 
 `node {tool} <command>`. Every command takes `--text` for lines instead of JSON.
 
-| Command                             | Gives                                                                               |
-| ----------------------------------- | ----------------------------------------------------------------------------------- |
-| `spec <app>`                        | checks `.widgetarium/apps/<app>/spec.md` and shows it to the person as a card       |
-| `stage <app> <stage> --said <line>` | fills a row of the build card: `data`, `design`, `catalogue`, `widgets`, `pages`    |
-| `report <app>`                      | per kept feature: widget, page, check, lint — ✓ or what is left; exits 1 until done |
-| `shot <note>`                       | a PNG of the note as Obsidian draws it; open the path it prints and look            |
-| `shot --design <app>`               | a PNG of the whole design canvas, every screen side by side                         |
-| `design <app>`                      | checks `.widgetarium/apps/<app>/design/` and shows it to the person as a card       |
-| `find`                              | the whole catalogue, ranked against what you need                                   |
-| `list`                              | the same, unranked                                                                  |
-| `packs`, `sources`                  | the scopes installed, and the registries configured                                 |
-| `show <id>`                         | one widget's props, role and size                                                   |
-| `source <id>`                       | its source, to read before copying anything from it                                 |
-| `install <id>`                      | writes it and its scope's shared files into the vault                               |
-| `start <id>`                        | your access to a widget's files, and the progress card in the chat                  |
-| `check <id>`                        | six defects in a widget you wrote; exits 1 while any stands                         |
-| `bases`                             | every base a screen can start from                                                  |
-| `base <name>`                       | one base: its regions, its sections, ready to write into a note                     |
-| `base <body> --with aside,dock`     | the body with these shell zones added: `nav`, `index`, `aside`, `dock`              |
-| `card <name>`                       | a card layout: what it wears alone and among peers, and the parts it has            |
-| `layout <note>`                     | the real width of every region and tile on a drawn board                            |
-| `lint <note>`                       | what is wrong with the board; exits 1 until it is valid                             |
-| `surfaces <note>`                   | which plates look wrong beside each other, on a **drawn** board                     |
+| Command                              | Gives                                                                                                                                   |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `spec <app>`                         | checks `.widgetarium/apps/<app>/spec.md` and shows it to the person as a card                                                           |
+| `stage <app> <stage> --said <line>`  | fills a row of the build card: `data`, `design`, `catalogue`, `widgets`, `pages`                                                        |
+| `report <app>`                       | per kept feature: widget, page, check, lint — ✓ or what is left; exits 1 until done                                                     |
+| `shot <note>`                        | a PNG of the note as Obsidian draws it; open the path it prints and look                                                                |
+| `shot --design <app>`                | a PNG of the whole design canvas, every screen side by side                                                                             |
+| `design <app>`                       | checks `.widgetarium/apps/<app>/design/` and shows it to the person as a card                                                           |
+| `reference <app> <url> --why <line>` | puts a picture from the web on the canvas above the screens; nothing is downloaded                                                      |
+| `rules <app>`                        | every rule of `.widgetarium/design-system.md` and the app's own `design-system.md`, as a checklist to answer before `design`            |
+| `photos <app>`                       | after Approve design only: downloads every photo the approved screens link to into `design/photos/`, `photos.json` maps address to file |
+| `find`                               | the whole catalogue, ranked against what you need                                                                                       |
+| `list`                               | the same, unranked                                                                                                                      |
+| `packs`, `sources`                   | the scopes installed, and the registries configured                                                                                     |
+| `show <id>`                          | one widget's props, role and size                                                                                                       |
+| `source <id>`                        | its source, to read before copying anything from it                                                                                     |
+| `install <id>`                       | writes it and its scope's shared files into the vault                                                                                   |
+| `start <id>`                         | your access to a widget's files, and the progress card in the chat                                                                      |
+| `check <id>`                         | six defects in a widget you wrote; exits 1 while any stands                                                                             |
+| `bases`                              | every base a screen can start from                                                                                                      |
+| `base <name>`                        | one base: its regions, its sections, ready to write into a note                                                                         |
+| `base <body> --with aside,dock`      | the body with these shell zones added: `nav`, `index`, `aside`, `dock`                                                                  |
+| `card <name>`                        | a card layout: what it wears alone and among peers, and the parts it has                                                                |
+| `layout <note>`                      | the real width of every region and tile on a drawn board                                                                                |
+| `lint <note>`                        | what is wrong with the board; exits 1 until it is valid                                                                                 |
+| `surfaces <note>`                    | which plates look wrong beside each other, on a **drawn** board                                                                         |
 
 ## Finding a widget
 

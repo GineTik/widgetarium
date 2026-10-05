@@ -413,6 +413,29 @@ corner; `size={24}` makes it an avatar. `shape` and `tone` name one outright whe
 has a colour. It is `aria-hidden` — the label beside it is what a screen reader reads. No seed is the
 empty seed: one mark, shared by everything nameless.
 
+## Shapes: the objects that keep a quiet page alive
+
+`<Shape name="cookie9-sided" tones={["yellow", "orange"]} size={64}/>` from `widgetarium/kit` draws
+one of the 35 Material 3 Expressive shapes as a lit 3D object — a highlight on the side facing the
+light, shading opposite, a soft shadow — painted from kit colour tones. `SHAPE_NAMES` lists them:
+`circle`, `square`, `slanted`, `arch`, `fan`, `arrow`, `semi-circle`, `oval`, `pill`, `triangle`,
+`diamond`, `clam-shell`, `pentagon`, `gem`, `sunny`, `very-sunny`, `cookie4-sided` to
+`cookie12-sided`, `ghostish`, `clover4-leaf`, `clover8-leaf`, `burst`, `soft-burst`, `boom`,
+`soft-boom`, `flower`, `puffy`, `puffy-diamond`, `pixel-circle`, `pixel-triangle`, `bun`, `heart`.
+
+- `tones` are kit colour names: the first is the body, the second the light side.
+- `seed={record.title}` instead of `name` picks a shape and a tone from the seed, the same every time.
+- Children sit in the middle: `<Shape name="cookie9-sided" tones={["yellow", "orange"]}>€</Shape>`.
+- Changing `name` morphs it into the new shape, light and colour included.
+- `look="flat"` draws it without light.
+
+`<PhotoStack photos={[a, b, c]} size={56}/>` overlaps photos at a card's corner; `isRound` for faces.
+
+Recipes: a key number stands on a shape that means it (money on a `cookie9-sided` coin, a count on a
+`circle`, a place on a `pentagon`); a record without a picture wears `<Shape seed={record.title}/>`;
+an empty state is one large shape with two or three small ones around it, its title and one action
+under it; each kind of thing owns one tone everywhere it appears.
+
 ## A badge, a heading, a "show more", a progress bar
 
 Take these from `widgetarium/kit` rather than drawing them:
