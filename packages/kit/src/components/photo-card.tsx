@@ -1,8 +1,9 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import type { BadgeColor } from "../constants/tones";
-import { Icon } from "../icons/icon";
+import { PhotoCardOpen } from "./photo-card-open";
 import { Picture } from "./photo-card-picture";
+import { PhotoCardWords } from "./photo-card-words";
 import { cn } from "../utils/cn";
 
 export interface PhotoCardProps {
@@ -32,23 +33,13 @@ export function PhotoCard(props: PhotoCardProps): ReactElement {
 		children,
 		className: cls,
 	} = props;
-	const words = (
-		<span className="wg-kit-photo-card-words">
-			<b>{title}</b>
-			{subtitle ? <span>{subtitle}</span> : null}
-			{meta ? <span className="is-meta">{meta}</span> : null}
-		</span>
-	);
+	const words = <PhotoCardWords title={title} subtitle={subtitle} meta={meta} />;
 	return (
 		<article className={cn("wg-kit-photo-card", `is-${shape}`, isTextOnPhoto && "is-text-on-photo", cls)}>
 			<span className="wg-kit-photo-card-picture">
 				<Picture {...props} />
 				{badge ? <span className="wg-kit-photo-card-badge">{badge}</span> : null}
-				{onOpen ? (
-					<button type="button" className="wg-kit-photo-card-open" aria-label={title} onClick={onOpen}>
-						<Icon name="arrow-up-right" />
-					</button>
-				) : null}
+				<PhotoCardOpen title={title} onOpen={onOpen} />
 				{isTextOnPhoto ? words : null}
 			</span>
 			{isTextOnPhoto ? null : words}
