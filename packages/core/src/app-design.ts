@@ -68,7 +68,7 @@ export function screenFileOf(screen: string, state: string | undefined): string 
 export function screenNoteOf(widget: string, values: Readonly<Record<string, string>>): string {
 	const props = Object.entries(values).map(
 		([prop, value]) =>
-			`      ${prop}: { implementation: "@core/typed-value", fields: { value: ${JSON.stringify(value)} } }`,
+			`      ${prop}: { implementation: "@core/typed-value", fields: { value: ${JSON.stringify(typedOf(value))} } }`,
 	);
 	return [
 		"---",
@@ -173,4 +173,9 @@ function screenWith(placed: unknown, screen: string, state: string | undefined, 
 		(one) => !(typeof one === "object" && one !== null && Reflect.get(one, "name") === state),
 	);
 	return { name: screen, states: [...states, { name: state, file }] };
+}
+
+function typedOf(value: string): string | number | boolean {
+	if (value === "true" || value === "false") return value === "true";
+	return /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : value;
 }

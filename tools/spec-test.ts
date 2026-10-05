@@ -868,6 +868,13 @@ check(
 	),
 	true,
 );
+await screenOfApp(screenVault, "Trips", "Grid", { widget: "@draft/trips", set: "columns=3,dark=true" });
+const gridNote = await readFile(join(screenVault, ".widgetarium/apps/Trips/design/Grid.md"), "utf8");
+check(
+	"a number and a boolean are written typed, so the prop takes them",
+	gridNote.includes("fields: { value: 3 }") && gridNote.includes("fields: { value: true }"),
+	true,
+);
 check(
 	"screen refuses a set it cannot read",
 	(await screenOfApp(screenVault, "Trips", "X", { widget: "@draft/trips", set: "page" })).refusal?.startsWith(
