@@ -1,0 +1,143 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Hero",
+	"description": "The one large opening of a page: a photo with the title on a dark fade, or 3D shapes when there is no photo, and one action.",
+	"keywords": ["hero", "banner", "header", "welcome", "cover", "title", "intro", "photo", "landing"],
+	"role": "layout",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": 340
+	},
+	"preview": {
+		"size": {
+			"w": 12,
+			"h": 4
+		},
+		"props": {
+			"getTitle": {
+				"value": "Welcome to the team"
+			},
+			"getEyebrow": {
+				"value": "Handbook"
+			}
+		}
+	},
+	"props": {
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get title",
+			"hint": "The page's one display title.",
+			"writes": ["get"],
+			"default": {
+				"value": "Welcome"
+			}
+		},
+		"getEyebrow": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get eyebrow",
+			"hint": "A small line above the title.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getText": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get text",
+			"hint": "One or two lines under the title.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getPhoto": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get photo",
+			"hint": "An https address of the photo. Left empty, 3D shapes stand in its place.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getTone": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get tone",
+			"hint": "The colour of the shapes when there is no photo.",
+			"writes": ["get"],
+			"default": {
+				"value": "purple"
+			},
+			"options": [
+				{
+					"value": "purple",
+					"label": "purple"
+				},
+				{
+					"value": "pink",
+					"label": "pink"
+				},
+				{
+					"value": "orange",
+					"label": "orange"
+				},
+				{
+					"value": "yellow",
+					"label": "yellow"
+				},
+				{
+					"value": "green",
+					"label": "green"
+				},
+				{
+					"value": "cyan",
+					"label": "cyan"
+				},
+				{
+					"value": "blue",
+					"label": "blue"
+				},
+				{
+					"value": "red",
+					"label": "red"
+				}
+			]
+		},
+		"getAction": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get action",
+			"hint": "The label of the one action. Left empty, no button is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getLink": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get link",
+			"hint": "The note the action opens.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

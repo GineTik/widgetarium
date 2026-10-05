@@ -1,0 +1,112 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Photo cards",
+	"description": "Records as cards, each led by its photo — or a 3D shape when it has none — with a frosted badge and a round button that opens it.",
+	"keywords": ["cards", "photos", "gallery", "people", "team", "news", "grid", "records", "profiles", "articles"],
+	"role": "collection",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 12,
+			"h": 5
+		}
+	},
+	"props": {
+		"getCards": {
+			"kind": "collection",
+			"label": "Get cards",
+			"hint": "The records drawn as cards.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "line",
+					"aka": ["name"]
+				},
+				"subtitle": {
+					"label": "Line under it",
+					"type": "line",
+					"aka": ["role", "description"]
+				},
+				"meta": {
+					"label": "Small grey line",
+					"type": "line",
+					"aka": ["date", "where"]
+				},
+				"photo": {
+					"label": "Photo address",
+					"type": "line",
+					"aka": ["image", "cover", "picture"]
+				},
+				"badge": {
+					"label": "Badge",
+					"type": "line",
+					"aka": ["tag", "kind", "area"]
+				},
+				"link": {
+					"label": "Opens",
+					"type": "line",
+					"aka": ["url", "note"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"getShape": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get shape",
+			"hint": "Wide for places and news, tall for people, square for things.",
+			"writes": ["get"],
+			"default": {
+				"value": "wide"
+			},
+			"options": [
+				{
+					"value": "wide",
+					"label": "wide"
+				},
+				{
+					"value": "tall",
+					"label": "tall"
+				},
+				{
+					"value": "square",
+					"label": "square"
+				}
+			]
+		},
+		"getTextOnPhoto": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Get text on photo",
+			"hint": "Write the title on the photo instead of under it.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"getColumns": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Get columns",
+			"hint": "How many cards stand side by side.",
+			"writes": ["get"],
+			"default": {
+				"value": 3
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

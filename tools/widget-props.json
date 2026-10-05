@@ -669,6 +669,66 @@
 			}
 		}
 	},
+	"@default/command-menu": {
+		"getEntries": {
+			"kind": "collection",
+			"label": "Get entries",
+			"hint": "What can be found.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "line",
+					"aka": ["name"]
+				},
+				"subtitle": {
+					"label": "Line under it",
+					"type": "line",
+					"aka": ["role", "description"]
+				},
+				"section": {
+					"label": "Section",
+					"type": "line",
+					"aka": ["kind", "type", "group"]
+				},
+				"photo": {
+					"label": "Photo address",
+					"type": "line",
+					"aka": ["image", "picture"]
+				},
+				"link": {
+					"label": "Opens",
+					"type": "line",
+					"aka": ["url", "note"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"getPlaceholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get placeholder",
+			"hint": "The words in the empty search field.",
+			"writes": ["get"],
+			"default": {
+				"value": "Search"
+			}
+		},
+		"getIsDialog": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Get is dialog",
+			"hint": "Draw a search button that opens the menu over the page.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
 	"@default/editable-tabs": {
 		"getTabs": {
 			"kind": "collection",
@@ -734,6 +794,138 @@
 				}
 			},
 			"writes": ["get"]
+		}
+	},
+	"@default/empty-state": {
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get title",
+			"hint": "What is missing, in a few words.",
+			"writes": ["get"],
+			"default": {
+				"value": "Nothing here yet"
+			}
+		},
+		"getText": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get text",
+			"hint": "What will appear here and how it gets here.",
+			"writes": ["get"],
+			"default": {
+				"value": "What appears here, and how it gets here."
+			}
+		},
+		"getShape": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get shape",
+			"hint": "The large shape in the middle.",
+			"writes": ["get"],
+			"default": {
+				"value": "cookie9-sided"
+			},
+			"options": [
+				{
+					"value": "cookie9-sided",
+					"label": "cookie9-sided"
+				},
+				{
+					"value": "circle",
+					"label": "circle"
+				},
+				{
+					"value": "flower",
+					"label": "flower"
+				},
+				{
+					"value": "clover4-leaf",
+					"label": "clover4-leaf"
+				},
+				{
+					"value": "soft-burst",
+					"label": "soft-burst"
+				},
+				{
+					"value": "pentagon",
+					"label": "pentagon"
+				},
+				{
+					"value": "heart",
+					"label": "heart"
+				}
+			]
+		},
+		"getTone": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get tone",
+			"hint": "The colour of the shapes.",
+			"writes": ["get"],
+			"default": {
+				"value": "purple"
+			},
+			"options": [
+				{
+					"value": "purple",
+					"label": "purple"
+				},
+				{
+					"value": "pink",
+					"label": "pink"
+				},
+				{
+					"value": "orange",
+					"label": "orange"
+				},
+				{
+					"value": "yellow",
+					"label": "yellow"
+				},
+				{
+					"value": "green",
+					"label": "green"
+				},
+				{
+					"value": "cyan",
+					"label": "cyan"
+				},
+				{
+					"value": "blue",
+					"label": "blue"
+				},
+				{
+					"value": "red",
+					"label": "red"
+				}
+			]
+		},
+		"getAction": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get action",
+			"hint": "The label of the one action. Left empty, no button is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getLink": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get link",
+			"hint": "The note the action opens.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
 		}
 	},
 	"@default/feed": {
@@ -917,6 +1109,119 @@
 			"writes": ["get"],
 			"default": {
 				"value": true
+			}
+		}
+	},
+	"@default/hero": {
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get title",
+			"hint": "The page's one display title.",
+			"writes": ["get"],
+			"default": {
+				"value": "Welcome"
+			}
+		},
+		"getEyebrow": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get eyebrow",
+			"hint": "A small line above the title.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getText": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get text",
+			"hint": "One or two lines under the title.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getPhoto": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get photo",
+			"hint": "An https address of the photo. Left empty, 3D shapes stand in its place.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getTone": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get tone",
+			"hint": "The colour of the shapes when there is no photo.",
+			"writes": ["get"],
+			"default": {
+				"value": "purple"
+			},
+			"options": [
+				{
+					"value": "purple",
+					"label": "purple"
+				},
+				{
+					"value": "pink",
+					"label": "pink"
+				},
+				{
+					"value": "orange",
+					"label": "orange"
+				},
+				{
+					"value": "yellow",
+					"label": "yellow"
+				},
+				{
+					"value": "green",
+					"label": "green"
+				},
+				{
+					"value": "cyan",
+					"label": "cyan"
+				},
+				{
+					"value": "blue",
+					"label": "blue"
+				},
+				{
+					"value": "red",
+					"label": "red"
+				}
+			]
+		},
+		"getAction": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get action",
+			"hint": "The label of the one action. Left empty, no button is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getLink": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get link",
+			"hint": "The note the action opens.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
 			}
 		}
 	},
@@ -1539,6 +1844,96 @@
 			"writes": ["get"],
 			"default": {
 				"value": 0
+			}
+		}
+	},
+	"@default/photo-cards": {
+		"getCards": {
+			"kind": "collection",
+			"label": "Get cards",
+			"hint": "The records drawn as cards.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "line",
+					"aka": ["name"]
+				},
+				"subtitle": {
+					"label": "Line under it",
+					"type": "line",
+					"aka": ["role", "description"]
+				},
+				"meta": {
+					"label": "Small grey line",
+					"type": "line",
+					"aka": ["date", "where"]
+				},
+				"photo": {
+					"label": "Photo address",
+					"type": "line",
+					"aka": ["image", "cover", "picture"]
+				},
+				"badge": {
+					"label": "Badge",
+					"type": "line",
+					"aka": ["tag", "kind", "area"]
+				},
+				"link": {
+					"label": "Opens",
+					"type": "line",
+					"aka": ["url", "note"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"getShape": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get shape",
+			"hint": "Wide for places and news, tall for people, square for things.",
+			"writes": ["get"],
+			"default": {
+				"value": "wide"
+			},
+			"options": [
+				{
+					"value": "wide",
+					"label": "wide"
+				},
+				{
+					"value": "tall",
+					"label": "tall"
+				},
+				{
+					"value": "square",
+					"label": "square"
+				}
+			]
+		},
+		"getTextOnPhoto": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Get text on photo",
+			"hint": "Write the title on the photo instead of under it.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		},
+		"getColumns": {
+			"kind": "value",
+			"control": "number",
+			"type": "number",
+			"label": "Get columns",
+			"hint": "How many cards stand side by side.",
+			"writes": ["get"],
+			"default": {
+				"value": 3
 			}
 		}
 	},

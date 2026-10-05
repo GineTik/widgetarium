@@ -1,0 +1,82 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Command menu",
+	"description": "Search across records, grouped into sections, each result led by its photo or a shape; inline, or opened as a dialog from a button.",
+	"keywords": ["search", "command", "menu", "palette", "find", "spotlight", "quick open", "jump", "dialog"],
+	"role": "navigation",
+	"size": {
+		"preferredWidth": 560,
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 8,
+			"h": 5
+		}
+	},
+	"props": {
+		"getEntries": {
+			"kind": "collection",
+			"label": "Get entries",
+			"hint": "What can be found.",
+			"writes": ["list", "get"],
+			"describes": {
+				"title": {
+					"label": "Title",
+					"type": "line",
+					"aka": ["name"]
+				},
+				"subtitle": {
+					"label": "Line under it",
+					"type": "line",
+					"aka": ["role", "description"]
+				},
+				"section": {
+					"label": "Section",
+					"type": "line",
+					"aka": ["kind", "type", "group"]
+				},
+				"photo": {
+					"label": "Photo address",
+					"type": "line",
+					"aka": ["image", "picture"]
+				},
+				"link": {
+					"label": "Opens",
+					"type": "line",
+					"aka": ["url", "note"]
+				}
+			},
+			"default": {
+				"rows": []
+			}
+		},
+		"getPlaceholder": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get placeholder",
+			"hint": "The words in the empty search field.",
+			"writes": ["get"],
+			"default": {
+				"value": "Search"
+			}
+		},
+		"getIsDialog": {
+			"kind": "value",
+			"control": "boolean",
+			"type": "boolean",
+			"label": "Get is dialog",
+			"hint": "Draw a search button that opens the menu over the page.",
+			"writes": ["get"],
+			"default": {
+				"value": false
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}

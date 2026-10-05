@@ -1,0 +1,172 @@
+{
+	"$generated": "widgetarium build — do not edit",
+	"api": 2,
+	"title": "Empty state",
+	"description": "What a person sees where nothing is yet: a cluster of 3D shapes, a title, one line and the one action that fills it.",
+	"keywords": [
+		"empty",
+		"empty state",
+		"nothing",
+		"placeholder",
+		"zero",
+		"blank",
+		"illustration",
+		"shapes",
+		"first run"
+	],
+	"role": "detail",
+	"size": {
+		"preferredWidth": "full",
+		"preferredHeight": "auto"
+	},
+	"preview": {
+		"size": {
+			"w": 6,
+			"h": 4
+		},
+		"props": {
+			"getTitle": {
+				"value": "No news yet"
+			},
+			"getText": {
+				"value": "Deals appear here, newest first."
+			}
+		}
+	},
+	"props": {
+		"getTitle": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get title",
+			"hint": "What is missing, in a few words.",
+			"writes": ["get"],
+			"default": {
+				"value": "Nothing here yet"
+			}
+		},
+		"getText": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get text",
+			"hint": "What will appear here and how it gets here.",
+			"writes": ["get"],
+			"default": {
+				"value": "What appears here, and how it gets here."
+			}
+		},
+		"getShape": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get shape",
+			"hint": "The large shape in the middle.",
+			"writes": ["get"],
+			"default": {
+				"value": "cookie9-sided"
+			},
+			"options": [
+				{
+					"value": "cookie9-sided",
+					"label": "cookie9-sided"
+				},
+				{
+					"value": "circle",
+					"label": "circle"
+				},
+				{
+					"value": "flower",
+					"label": "flower"
+				},
+				{
+					"value": "clover4-leaf",
+					"label": "clover4-leaf"
+				},
+				{
+					"value": "soft-burst",
+					"label": "soft-burst"
+				},
+				{
+					"value": "pentagon",
+					"label": "pentagon"
+				},
+				{
+					"value": "heart",
+					"label": "heart"
+				}
+			]
+		},
+		"getTone": {
+			"kind": "value",
+			"control": "choice",
+			"type": "line",
+			"label": "Get tone",
+			"hint": "The colour of the shapes.",
+			"writes": ["get"],
+			"default": {
+				"value": "purple"
+			},
+			"options": [
+				{
+					"value": "purple",
+					"label": "purple"
+				},
+				{
+					"value": "pink",
+					"label": "pink"
+				},
+				{
+					"value": "orange",
+					"label": "orange"
+				},
+				{
+					"value": "yellow",
+					"label": "yellow"
+				},
+				{
+					"value": "green",
+					"label": "green"
+				},
+				{
+					"value": "cyan",
+					"label": "cyan"
+				},
+				{
+					"value": "blue",
+					"label": "blue"
+				},
+				{
+					"value": "red",
+					"label": "red"
+				}
+			]
+		},
+		"getAction": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get action",
+			"hint": "The label of the one action. Left empty, no button is drawn.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		},
+		"getLink": {
+			"kind": "value",
+			"control": "line",
+			"type": "line",
+			"label": "Get link",
+			"hint": "The note the action opens.",
+			"writes": ["get"],
+			"default": {
+				"value": ""
+			}
+		}
+	},
+	"migrates": [],
+	"files": ["widget.tsx"],
+	"dependencies": {},
+	"widgetDependencies": []
+}
