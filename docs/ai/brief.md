@@ -87,8 +87,21 @@ every page. `kit.md` (in this prompt) is the kit as the HTML it replaces; build 
 lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `Hero`, `PhotoCard`,
 `EmptyState`, `CommandMenu` — rather than writing that HTML and CSS by hand.
 
+**Style with Tailwind, inside the TSX.** The draft's `widget.css` is two lines,
+`@import "tailwindcss";` and `@import "widgetarium/theme.css";`, and every look is a class on the
+element: the theme names the kit's tokens (`bg-group`, `bg-fill`, `text-muted`, `text-accent`,
+`text-h3`, `rounded-plate`, `gap-cards`, `p-plate`) and Tailwind does the layout (`flex`, `grid`,
+`justify-between`, `items-center`). A block's look then lives in its own code and moves with it when
+stage 4 makes it a widget; a rule written in the sheet stays behind, the widget drifts from the
+screen the person approved, and `check` refuses it. The colours are always the kit's: Tailwind only
+replaces CSS. Cards, rows and anything else the kit lacks are yours to draw this way, and so is every
+widget you write in stage 4 or later.
+Two things are not: a colour from Tailwind's own palette (`bg-violet-500`, `text-white`), which no
+theme repaints and `check` refuses, and a kit component restyled through its `className`. When a kit
+control lacks the look the design needs, say so in your message; never paint over it.
+
 **Then draw every page in one draft widget**, `.widgetarium/widgets/@draft/<app-name>/widget.tsx`
-with its `widget.css`, whose props say what to draw — `getPage` a `z.enum` of the pages,
+with its two-line `widget.css`, whose props say what to draw — `getPage` a `z.enum` of the pages,
 `getDialog` which dialog is open, `getState` full or empty — each
 `IQuery.expects(z.enum([...]).default(...))`. Each block in it is one component named for what it
 is (`PeopleGrid`, `OfficeCard`), so stage 4 lifts each into a widget of its own unchanged. **Then
@@ -144,7 +157,8 @@ that changes — a review before and after an answer, a record closed and open:
 draws a canvas: one message that writes every screen note and, for every block the catalogue lacks,
 a draft widget in `.widgetarium/widgets/@draft/<name>/widget.tsx`. A draft is only the look: kit
 components with its sample rows written inline, exactly as the finished widget will look, but no
-props, no commands, no `start`, no `check`. Stage 4 turns each draft into the real widget after the
+commands and no `start`. `node {tool} check @draft/<name>` passes before the person sees it: it is
+what catches a colour from outside the theme. Stage 4 turns each draft into the real widget after the
 person approved, keeping its look. Then `node {tool} shot --design <app>`, open the picture (the whole
 canvas, every page side by side) and redraw what is not the app you would pay for, again in one
 message. **Draw every dialog too.** List every press on every screen that opens something — add, edit,

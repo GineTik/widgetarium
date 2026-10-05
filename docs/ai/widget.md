@@ -733,9 +733,19 @@ the last one full (`highlight` names another index, or `"none"`); `SparklineDot`
 `first`, `last`, `min`, `max` or an index. With no children it draws the line alone. Without
 `label` it is hidden from a screen reader, so give one when nothing beside it says the same.
 
-## Tailwind, when the widget's styling asks for it
+## Styling is Tailwind, written in the TSX
 
-A `widget.css` may be a Tailwind sheet. Three imports give it the kit's whole vocabulary:
+A widget is styled with Tailwind classes on its elements, and its `widget.css` only opens Tailwind
+and the kit's theme; `check` refuses a rule written beside them. Tailwind replaces CSS and nothing
+else: every colour is still the kit's. The look then lives beside the markup it styles, so a block lifted out of a
+draft keeps it, and nothing is left to keep in step in a second file:
+
+```css
+@import "tailwindcss";
+@import "widgetarium/theme.css";
+```
+
+A scope may add a `theme.css` of its own, imported third, and a `@theme` of yours comes last:
 
 ```css
 @import "tailwindcss";
@@ -760,8 +770,11 @@ so a class you pass wins a conflict with the kit's own (`cn("p-plate", "p-2")` i
 knows the theme's names, so `text-h3 text-muted` keeps both.
 
 `@plugin` and `@config` load JavaScript and are refused; `@utility` and `@custom-variant` are not.
-Preflight is refused too, and so is every other name under `widgetarium/`. A widget whose styling
-needs Tailwind declares `api: 2`.
+Preflight is refused too, and so is every other name under `widgetarium/`. Tailwind 3's entry points
+(`@tailwind base`, `@import "tailwindcss/utilities"`) compile to nothing here, and `check` names them.
+A colour from Tailwind's own palette — `bg-violet-500`, `text-white` — is refused by `check` like a
+hex: no theme repaints it. Never restyle a kit component through its `className`; a look the kit
+lacks is a variant the kit gains.
 
 ## A plate inside a widget
 

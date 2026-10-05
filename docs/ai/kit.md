@@ -21,6 +21,27 @@ actions stand on the page itself.
 `Layout kind` switches between `stack`, `row`, `grid` and `rows` with one word, so the design can
 change without rewriting the block.
 
+## Between the pieces: Tailwind
+
+What the kit has no piece for — a card of your own, a row, the space between blocks — is Tailwind
+classes on the element, named from the kit's theme. `widget.css` holds only
+`@import "tailwindcss";` and `@import "widgetarium/theme.css";`.
+
+| For            | Classes                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------ |
+| fills          | `bg-page`, `bg-group`, `bg-group-inset`, `bg-fill`, `bg-raise`                             |
+| ink            | `text-ink`, `text-muted`, `text-accent`, `text-success`, `text-warning`, `text-error`      |
+| a tinted plate | `bg-accent-wash`, `bg-success-wash`, `bg-warning-wash`, `bg-error-wash`, `bg-info-wash`    |
+| hues           | `red`, `orange`, `yellow`, `green`, `cyan`, `blue`, `purple`, `pink` after `bg-`/`text-`   |
+| type           | `text-xs`, `text-sm`, `text-base`, `text-lg`, `text-h1` … `text-h6`, `font-medium`         |
+| corners        | `rounded-plate`, `rounded-item`, `rounded-pill`                                            |
+| spacing        | `gap-items`, `gap-parts`, `gap-cards`, `p-plate`                                           |
+| lines and lift | `border-line`, `border-edge`, `shadow-raise`                                               |
+| layout         | Tailwind's own: `flex`, `grid`, `grid-cols-3`, `justify-between`, `items-center`, `w-full` |
+
+Join classes with `cn` from `widgetarium/kit`. A colour from Tailwind's own palette (`bg-violet-500`,
+`text-white`) is refused by `check`, and a kit component is never restyled through its `className`.
+
 ## Controls
 
 `Button`, `IconButton` (round), `Field`, `TextArea`, `Select`, `Checkbox`, `Switch`, `Segmented`,
