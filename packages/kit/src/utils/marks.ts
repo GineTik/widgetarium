@@ -16,6 +16,10 @@ export function markOf(seed: unknown): Mark {
 	};
 }
 
+export function pickedBySeed<W>(held: readonly W[], seed: unknown, stream: number, fallback: W): W {
+	return pickedFrom(held, stir(hashOf(String(seed ?? "")) ^ stream), fallback);
+}
+
 export function pathOf(name: unknown): string | null {
 	return isOneOf(MARK_SHAPE_NAMES, name) ? MARK_SHAPES[name] : null;
 }

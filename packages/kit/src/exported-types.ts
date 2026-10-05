@@ -62,6 +62,13 @@ export type { SparklineBarsProps, SparklineDotProps, SparklinePathProps, Sparkli
 export type { SpinnerProps } from "./components/spinner";
 export type { SwitchProps } from "./components/switch";
 export type { CheckboxProps } from "./components/checkbox";
+export type { ArtObjectProps } from "./components/art-object";
+export type { ArtFieldProps } from "./components/art-field";
+export type { ConfettiProps } from "./components/confetti";
+export type { PhotoStackProps } from "./components/photo-stack";
+export type { ShapeProps } from "./shapes/shape";
+export type { ShapeLook, ShapeName } from "./shapes/shape-names";
+export type { ArtShape } from "./constants/art";
 export type { FormFieldsProps } from "./components/form-fields";
 export type { FormDraft, FormFieldKind, FormFieldSpec } from "./utils/form-fields";
 export type { TableCellProps, TableHeadProps, TableProps } from "./components/table";

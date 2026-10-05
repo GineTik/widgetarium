@@ -780,6 +780,87 @@ check(
 );
 check("a checked box draws the tick", host.querySelectorAll(".wg-kit-check svg").length, 1);
 
+render(h(Kit.ArtObject, { shape: "orb", tones: ["green", "cyan"], size: 40 }), host);
+check(
+	"an art object paints only kit colours, named by tone, at its size",
+	[found(host, ".wg-kit-art").className, found(host, ".wg-kit-art").getAttribute("style")],
+	["wg-kit-art is-orb", "--wg-art-a: var(--wg-kit-green); --wg-art-b: var(--wg-kit-cyan); --wg-art-size: 40px;"],
+);
+check("and is a drawing a reader skips", found(host, ".wg-kit-art").getAttribute("aria-hidden"), "true");
+render(h(Kit.ArtObject, { shape: "capsules", count: 99 }), host);
+check(
+	"capsules are capped so a count from data cannot flood the page",
+	host.querySelectorAll(".wg-kit-art i").length,
+	24,
+);
+render(h(Kit.ArtObject, { shape: "discs", count: 9, tones: ["orange"] }), host);
+check(
+	"discs stack at most four, the first in the tone asked",
+	[host.querySelectorAll(".wg-kit-art i").length, host.querySelector(".wg-kit-art i")?.getAttribute("style")],
+	[4, "--wg-art-a: var(--wg-kit-orange); --wg-art-place: 0;"],
+);
+render(h(Kit.ArtObject, { shape: "coin" }, "€"), host);
+check("a coin carries its symbol", found(host, ".wg-kit-art b").textContent, "€");
+render(h(Kit.Confetti, { pieces: 5 }), host);
+check(
+	"confetti scatters the pieces asked, each in a kit colour",
+	[...host.querySelectorAll(".wg-kit-confetti i")].map((piece) =>
+		(piece.getAttribute("style") ?? "").includes("var(--wg-kit-"),
+	),
+	[true, true, true, true, true],
+);
+render(h(Kit.PhotoStack, { photos: ["a.jpg", "b.jpg", "c.jpg"], size: 48 }), host);
+check(
+	"a photo stack overlaps its photos at the size asked",
+	[host.querySelectorAll(".wg-kit-photo-stack img").length, found(host, ".wg-kit-photo-stack").getAttribute("style")],
+	[3, "--wg-photo-size: 48px;"],
+);
+render(h(Kit.Shape, { name: "circle", tones: ["green", "cyan"], size: 40 }), host);
+check(
+	"a shape is a Material outline lit in 3D by default, painted from kit tones",
+	[
+		found(host, ".wg-kit-shape").className,
+		found(host, ".wg-kit-shape").getAttribute("style"),
+		host.querySelectorAll(".wg-kit-shape path").length,
+	],
+	[
+		"wg-kit-shape is-3d",
+		"--wg-shape-a: var(--wg-kit-green); --wg-shape-b: var(--wg-kit-cyan); --wg-shape-size: 40px;",
+		3,
+	],
+);
+render(h(Kit.Shape, { name: "heart", look: "flat" }), host);
+check(
+	"a flat shape is one plain outline with no light",
+	[host.querySelectorAll(".wg-kit-shape path").length, host.querySelectorAll(".wg-kit-shape radialGradient").length],
+	[1, 0],
+);
+render(h(Kit.Shape, { seed: "Morning run" }), host);
+const seededOutline = found(host, ".wg-kit-shape path").getAttribute("d");
+render(h(Kit.Shape, { seed: "Morning run" }), host);
+check(
+	"the same seed draws the same shape every time",
+	found(host, ".wg-kit-shape path").getAttribute("d"),
+	seededOutline,
+);
+check("every one of the 35 Material shapes is offered", Kit.SHAPE_NAMES.length, 35);
+const { lightSpotOf, pointsIn: shapePointsIn } = await import("../packages/kit/src/utils/shape-morph.ts");
+const { SHAPE_POINTS } = await import("../packages/kit/src/shapes/shape-table.ts");
+const litCircle = lightSpotOf(shapePointsIn(SHAPE_POINTS.circle));
+const litHalf = lightSpotOf(shapePointsIn(SHAPE_POINTS["semi-circle"]));
+check(
+	"the highlight sits on the side facing the light, inside the shape",
+	litCircle.shineX < 0.5 && litCircle.shineY < 0.5 && litCircle.shineX > 0.15,
+	true,
+);
+check("and follows the shape: a half disc moves it down with its body", litHalf.shineY > litCircle.shineY, true);
+render(h(Kit.ArtField, { tones: ["blue"], isSoft: true }, "inside"), host);
+check(
+	"an art field holds what it is given on a soft field of its tone",
+	[found(host, ".wg-kit-art-field").className, found(host, ".wg-kit-art-field").textContent],
+	["wg-kit-art-field is-soft", "inside"],
+);
+
 const plated = (said: string) => [...host.querySelectorAll(".wg-kit-surface")].map((one) => one.getAttribute(said));
 const seeded = (value: PlatesAbove, drawn: ReactNode) => render(h(PLATES_ABOVE.Provider, { value }, drawn), host);
 const ONE_PLATE_ABOVE: PlatesAbove = { surface: "group", levels: 1, ownPlates: 0 };

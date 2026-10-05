@@ -91,6 +91,7 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-blue: var(--color-blue, #086ddd);
 	--wg-kit-purple: var(--color-purple, #7852ee);
 	--wg-kit-pink: var(--color-pink, #d53984);
+	--wg-kit-shine: #ffffff;
 	--wg-badge-wash: 16%;
 	--wg-kit-h1-size: 32px;
 	--wg-kit-h1-weight: 700;
@@ -2317,6 +2318,244 @@ body {
 
 :is(.wg-root, .wg-portal) :is(.wg-kit-check:active, :active > .wg-kit-check)::before {
 	transform: scale(0.88);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art {
+	--wg-art-glow: color-mix(in srgb, var(--wg-art-a) 28%, transparent);
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: var(--wg-art-size);
+	height: var(--wg-art-size);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art:is(.is-orb, .is-coin, .is-halo) {
+	border-radius: 50%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-orb {
+	background:
+		radial-gradient(circle at 32% 28%, var(--wg-kit-shine) 0 6%, transparent 32%),
+		radial-gradient(circle at 65% 75%, var(--wg-art-b), var(--wg-art-a) 75%);
+	box-shadow: 0 calc(var(--wg-art-size) * 0.18) calc(var(--wg-art-size) * 0.32) var(--wg-art-glow);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-coin {
+	background:
+		radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--wg-kit-shine) 80%, transparent) 0 8%, transparent 34%),
+		conic-gradient(from 200deg, var(--wg-art-a), var(--wg-art-b), var(--wg-art-a), var(--wg-art-b), var(--wg-art-a));
+	box-shadow:
+		inset 0 0 0 calc(var(--wg-art-size) * 0.09) color-mix(in srgb, var(--wg-art-b) 40%, transparent),
+		0 calc(var(--wg-art-size) * 0.15) calc(var(--wg-art-size) * 0.28) var(--wg-art-glow);
+	color: color-mix(in srgb, var(--wg-art-b) 60%, var(--wg-kit-text));
+	font-size: calc(var(--wg-art-size) * 0.32);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-prism {
+	border-radius: 26%;
+	transform: rotate(12deg);
+	background:
+		linear-gradient(135deg, color-mix(in srgb, var(--wg-kit-shine) 80%, transparent), transparent 45%),
+		linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--wg-art-a) 70%, transparent),
+			color-mix(in srgb, var(--wg-art-b) 65%, transparent)
+		);
+	box-shadow:
+		inset 0 0 0 1px color-mix(in srgb, var(--wg-kit-shine) 70%, transparent),
+		0 calc(var(--wg-art-size) * 0.16) calc(var(--wg-art-size) * 0.3) var(--wg-art-glow);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-cube {
+	border-radius: 22%;
+	transform: rotate(-8deg);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--wg-kit-shine) 55%, transparent) 0 30%, transparent 30%),
+		linear-gradient(90deg, var(--wg-art-a) 0 55%, var(--wg-art-b) 55%);
+	box-shadow: 0 calc(var(--wg-art-size) * 0.16) calc(var(--wg-art-size) * 0.3) var(--wg-art-glow);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-halo {
+	border: calc(var(--wg-art-size) * 0.12) solid color-mix(in srgb, var(--wg-kit-shine) 55%, transparent);
+	backdrop-filter: blur(6px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-ring {
+	border-radius: 50%;
+	background: conic-gradient(var(--wg-art-a), var(--wg-art-b), var(--wg-art-a));
+	-webkit-mask: radial-gradient(circle, transparent 54%, var(--wg-kit-text) 56%);
+	mask: radial-gradient(circle, transparent 54%, var(--wg-kit-text) 56%);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-discs i {
+	position: absolute;
+	left: 6%;
+	bottom: calc(var(--wg-art-place) * var(--wg-art-size) * 0.24);
+	width: 88%;
+	height: 40%;
+	border-radius: 50%;
+	background: linear-gradient(90deg, var(--wg-art-a), color-mix(in srgb, var(--wg-art-a) 55%, var(--wg-kit-shine)));
+	box-shadow: 0 4px 0 color-mix(in srgb, var(--wg-kit-text) 14%, transparent);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-blocks {
+	align-items: flex-end;
+	gap: 6%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-blocks i {
+	width: 28%;
+	height: calc(45% + var(--wg-art-place) * 18%);
+	border-radius: 18% 18% 6% 6%;
+	background: linear-gradient(180deg, var(--wg-art-a), color-mix(in srgb, var(--wg-art-a) 60%, var(--wg-kit-shine)));
+	box-shadow: inset -4px 0 0 color-mix(in srgb, var(--wg-kit-text) 10%, transparent);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-capsules {
+	display: inline-grid;
+	grid-template-columns: repeat(6, 1fr);
+	gap: 8%;
+	align-content: center;
+	width: auto;
+	min-width: var(--wg-art-size);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art.is-capsules i {
+	width: calc(var(--wg-art-size) * 0.22);
+	height: calc(var(--wg-art-size) * 0.34);
+	border-radius: 999px;
+	box-shadow: inset 2px 3px 0 color-mix(in srgb, var(--wg-kit-shine) 45%, transparent);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art-field {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--wg-kit-plate);
+	background:
+		radial-gradient(70% 90% at 15% 10%, color-mix(in srgb, var(--wg-art-a) 55%, transparent), transparent 70%),
+		radial-gradient(60% 80% at 90% 90%, color-mix(in srgb, var(--wg-art-b) 50%, transparent), transparent 70%),
+		color-mix(in srgb, var(--wg-art-a) 12%, var(--wg-kit-page));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-art-field.is-soft {
+	background:
+		radial-gradient(40% 70% at 50% 60%, color-mix(in srgb, var(--wg-art-a) 26%, transparent), transparent 70%),
+		radial-gradient(30% 60% at 70% 30%, color-mix(in srgb, var(--wg-art-b) 22%, transparent), transparent 70%);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-confetti {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-confetti i {
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	border-radius: 3px;
+	transform: rotate(24deg);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-confetti i.is-1 {
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-confetti i.is-2 {
+	width: 18px;
+	height: 6px;
+	transform: rotate(-30deg);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape {
+	position: relative;
+	display: inline-grid;
+	place-items: center;
+	flex: none;
+	width: var(--wg-shape-size);
+	height: var(--wg-shape-size);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape > svg {
+	grid-area: 1 / 1;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape.is-3d > svg {
+	filter: drop-shadow(
+		0 calc(var(--wg-shape-size) * 0.12) calc(var(--wg-shape-size) * 0.14)
+			color-mix(in srgb, var(--wg-shape-a) 30%, transparent)
+	);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape stop {
+	transition:
+		stop-color var(--wg-shape-morph, 520ms) var(--wg-ease),
+		stop-opacity var(--wg-shape-morph, 520ms) var(--wg-ease);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-lit {
+	stop-color: color-mix(in srgb, var(--wg-shape-b) 70%, var(--wg-kit-shine));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-body {
+	stop-color: var(--wg-shape-a);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-shade {
+	stop-color: color-mix(in srgb, var(--wg-shape-a) 68%, var(--wg-kit-text));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-bounce {
+	stop-color: var(--wg-shape-b);
+	stop-opacity: 0.55;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-shine {
+	stop-color: var(--wg-kit-shine);
+	stop-opacity: 0.95;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-glow {
+	stop-color: var(--wg-kit-shine);
+	stop-opacity: 0.35;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape .is-clear {
+	stop-color: var(--wg-kit-shine);
+	stop-opacity: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-shape-mark {
+	grid-area: 1 / 1;
+	position: relative;
+	color: var(--wg-kit-shine);
+	font-size: calc(var(--wg-shape-size) * 0.34);
+	line-height: 1;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-stack {
+	display: inline-flex;
+	padding-left: calc(var(--wg-photo-size) * 0.2);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-stack img {
+	width: var(--wg-photo-size);
+	height: var(--wg-photo-size);
+	margin-left: calc(var(--wg-photo-size) * -0.2);
+	border-radius: 28%;
+	object-fit: cover;
+	box-shadow: 0 0 0 3px var(--wg-kit-shine);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-stack.is-round img {
+	border-radius: 50%;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-check:focus-visible::before {

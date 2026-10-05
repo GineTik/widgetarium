@@ -47,6 +47,12 @@ import { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } 
 
 import { Switch } from "./components/switch";
 import { Checkbox } from "./components/checkbox";
+import { ArtObject } from "./components/art-object";
+import { ArtField } from "./components/art-field";
+import { Confetti } from "./components/confetti";
+import { PhotoStack } from "./components/photo-stack";
+import { Shape } from "./shapes/shape";
+import { SHAPE_NAMES } from "./shapes/shape-names";
 import { FormFields } from "./components/form-fields";
 import { FORM_FIELD_KINDS, changedValues, draftOfRecord, isDraftComplete, valuesOfDraft } from "./utils/form-fields";
 
@@ -202,6 +208,12 @@ export const Kit = {
 	DataTable,
 	Switch,
 	Checkbox,
+	ArtObject,
+	ArtField,
+	Confetti,
+	PhotoStack,
+	Shape,
+	SHAPE_NAMES,
 	FormFields,
 	FORM_FIELD_KINDS,
 	changedValues,
@@ -286,6 +298,13 @@ export { Sparkline, SparklineArea, SparklineBars, SparklineDot, SparklineLine } 
 
 export { Switch } from "./components/switch";
 export { Checkbox } from "./components/checkbox";
+export { ArtObject } from "./components/art-object";
+export { ArtField } from "./components/art-field";
+export { Confetti } from "./components/confetti";
+export { PhotoStack } from "./components/photo-stack";
+export { Shape } from "./shapes/shape";
+export { SHAPE_NAMES } from "./shapes/shape-names";
+export { ART_SHAPES, ART_TONES } from "./constants/art";
 export { FormFields } from "./components/form-fields";
 export { FORM_FIELD_KINDS, changedValues, draftOfRecord, isDraftComplete, valuesOfDraft } from "./utils/form-fields";
 

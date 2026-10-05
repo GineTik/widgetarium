@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { shapeTableOf } from "./shape-points.mts";
 
 interface ShapesPackage {
 	readonly MaterialShapes: object;
@@ -11,6 +12,7 @@ interface ShapesPackage {
 
 const PACKAGE = "material-shapes-ts@0.3.0";
 const OUT = path.join(process.cwd(), "packages", "kit", "assets", "shapes");
+const TABLE = path.join(process.cwd(), "packages", "kit", "src", "shapes", "shape-table.ts");
 
 const work = mkdtempSync(path.join(tmpdir(), "wg-shapes-"));
 writeFileSync(path.join(work, "package.json"), JSON.stringify({ name: "wg-shapes", private: true, type: "module" }));
@@ -30,7 +32,8 @@ for (const name of Object.getOwnPropertyNames(MaterialShapes)) {
 
 mkdirSync(OUT, { recursive: true });
 writeFileSync(path.join(OUT, "shapes.json"), `${JSON.stringify(shapes, null, "\t")}\n`);
-console.log(`${Object.keys(shapes).length} shapes -> assets/shapes/shapes.json`);
+writeFileSync(TABLE, shapeTableOf(shapes));
+console.log(`${Object.keys(shapes).length} shapes -> assets/shapes/shapes.json and src/shapes/shape-table.ts`);
 
 function isShapesPackage(value: unknown): value is ShapesPackage {
 	if (typeof value !== "object" || value === null) return false;
