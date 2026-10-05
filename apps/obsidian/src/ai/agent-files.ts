@@ -1,5 +1,6 @@
 import type { DataAdapter } from "obsidian";
 import { ROOT } from "@widgetarium/core/paths.js";
+import { DESIGN_SYSTEM_PATH } from "@widgetarium/core/design-rules.js";
 import HANDBOOK_BOARD from "../../../../docs/ai/board.md";
 import HANDBOOK_SURFACES from "../../../../docs/ai/surfaces.md";
 import HANDBOOK_EXAMPLES from "../../../../docs/ai/examples.md";
@@ -14,7 +15,6 @@ export const HANDBOOK_DIR = `${ROOT}/agent`;
 export const BIN_DIR = `${ROOT}/bin`;
 export const WIDGETS_DIR = `${ROOT}/widgets`;
 export const TOOL_PATH = `${BIN_DIR}/widgets.mjs`;
-export const DESIGN_SYSTEM_PATH = `${ROOT}/design-system.md`;
 const TYPES_DIR = `${WIDGETS_DIR}/types`;
 export const LAID_MARK_FILE = ".laid-by-plugin";
 const TYPES_MARK_PATH = `${TYPES_DIR}/${LAID_MARK_FILE}`;
