@@ -78,11 +78,21 @@ _Over when a gateway bound to each folder would answer with rows._ Nothing is pl
 `node {tool} stage <app> data --said "<what you made, in one line>"`.
 
 **Stage 3 — the design, drawn on a canvas the person approves.** Draw every page whole, in one
-pass, the way a designer draws a canvas, and show it before anything is wired. **Draw every page in
-one draft widget**, `.widgetarium/widgets/@draft/<app-name>/widget.tsx` with its `widget.css`, whose
-props say what to draw — `getPage` a `z.enum` of the pages, `getDialog` which dialog is open,
-`getState` full or empty — each `IQuery.expects(z.enum([...]).default(...))`. **Then place each
-screen with the tool, never by hand**:
+pass, the way a designer draws a canvas, and show it before anything is wired.
+
+**First, the catalogue.** For every block the pages need — a hero, a list of people, an empty
+state, a search — run `node {tool} find --about "<the block>"` and open the `picture` of each
+candidate. A widget whose picture is that block is placed, not redrawn: it keeps the same look on
+every page. `kit.md` (in this prompt) is the kit as the HTML it replaces; build what the catalogue
+lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `Hero`, `PhotoCard`,
+`EmptyState`, `CommandMenu` — rather than writing that HTML and CSS by hand.
+
+**Then draw every page in one draft widget**, `.widgetarium/widgets/@draft/<app-name>/widget.tsx`
+with its `widget.css`, whose props say what to draw — `getPage` a `z.enum` of the pages,
+`getDialog` which dialog is open, `getState` full or empty — each
+`IQuery.expects(z.enum([...]).default(...))`. Each block in it is one component named for what it
+is (`PeopleGrid`, `OfficeCard`), so stage 4 lifts each into a widget of its own unchanged. **Then
+place each screen with the tool, never by hand**:
 
 ```
 node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people
