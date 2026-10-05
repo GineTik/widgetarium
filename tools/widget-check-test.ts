@@ -26,6 +26,100 @@ check("and says so", saidWidgetCheck(checkWidget(clean)), "the widget is clean")
 
 check("a hex colour is a finding", rulesIn(checkWidget({ ...clean, styles: "color: #ff8800;" })), ["colour"]);
 check(
+	"a colour from Tailwind's own palette is a finding, because no theme repaints it",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<div className="bg-violet-500 text-white" />` })),
+	["colour"],
+);
+check(
+	"a colour from the kit's theme is not",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<div className="bg-group text-muted text-red" />` })),
+	[],
+);
+check(
+	"a sheet opening with Tailwind 3's entry points is a finding, because none of it compiles",
+	rulesIn(checkWidget({ ...clean, styles: '@import "tailwindcss/base";\n@import "tailwindcss/utilities";' })),
+	["tailwind"],
+);
+check("and so is the @tailwind directive", rulesIn(checkWidget({ ...clean, styles: "@tailwind base;" })), ["tailwind"]);
+check(
+	"a draft whose sheet writes its own rules is a finding, because the look stays behind when a block is lifted",
+	rulesIn(checkWidget({ ...clean, id: "@draft/app", styles: ".card {\n\tpadding: 8px;\n}" })),
+	["hand-written"],
+);
+check(
+	"so is a Tailwind sheet that still writes rules beside its classes",
+	rulesIn(checkWidget({ ...clean, styles: '@import "tailwindcss";\n.card {\n\tpadding: 8px;\n}' })),
+	["hand-written"],
+);
+check(
+	"an older widget's plain sheet is left alone until the catalogue is converted",
+	rulesIn(checkWidget({ ...clean, styles: ".card {\n\tpadding: 8px;\n}" })),
+	[],
+);
+check(
+	"a draft sheet of imports and a @theme is clean",
+	rulesIn(
+		checkWidget({
+			...clean,
+			id: "@draft/app",
+			styles:
+				'@import "tailwindcss";\n@import "widgetarium/theme.css";\n@theme {\n\t--color-brand: var(--wg-kit-accent);\n}',
+		}),
+	),
+	[],
+);
+check(
+	"a side border, a shadow and a ring offset from Tailwind's palette are findings too",
+	["border-t-red-500", "shadow-white", "ring-offset-blue-200"].map(
+		(name) => rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<div className="${name}" />` }))[0],
+	),
+	["colour", "colour", "colour"],
+);
+check(
+	"a class of one's own that only contains a palette word is not",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<div className="my-bg-white text-white-space" />` })),
+	[],
+);
+check(
+	"a commented-out import neither opens Tailwind nor names Tailwind 3",
+	rulesIn(
+		checkWidget({ ...clean, styles: '/* @import "tailwindcss"; @tailwind base; */\n.card {\n\tpadding: 8px;\n}' }),
+	),
+	[],
+);
+check(
+	"a sheet opening Tailwind through its layered imports is held the same way",
+	rulesIn(
+		checkWidget({
+			...clean,
+			styles: '@import "tailwindcss/utilities.css" layer(utilities);\n.card {\n\tpadding: 8px;\n}',
+		}),
+	),
+	["hand-written"],
+);
+check(
+	"every rule of a minified sheet is counted",
+	checkWidget({ ...clean, id: "@draft/app", styles: ".a{x:1}.b{y:2}" })[0]?.message.startsWith("2 rules"),
+	true,
+);
+check(
+	"the steps of a keyframe inside a @theme are not rules of one's own",
+	rulesIn(
+		checkWidget({
+			...clean,
+			id: "@draft/app",
+			styles:
+				'@import "tailwindcss";\n@theme {\n\t@keyframes spin {\n\t\tfrom {\n\t\t\trotate: 0deg;\n\t\t}\n\t\tto {\n\t\t\trotate: 360deg;\n\t\t}\n\t}\n}',
+		}),
+	),
+	[],
+);
+check(
+	"a Tailwind 4 sheet is clean",
+	rulesIn(checkWidget({ ...clean, styles: '@import "tailwindcss";\n@import "widgetarium/theme.css";' })),
+	[],
+);
+check(
 	"a raw button drawn in a widget is a finding, because Obsidian paints every bare control",
 	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<button className="pick" onClick={go}>Pick</button>` })),
 	["control"],
@@ -241,7 +335,7 @@ const allBroken = {
 	id: "@x/bad",
 	source:
 		"import { flatRows } from \"widgetarium\";\nconst l = useData(rows.list);\nl.data.map((r) => r);\nconst c = '#abc';\nreturn <h1>Title<button>Go</button></h1>;",
-	styles: "font-family: Inter;",
+	styles: '@import "tailwindcss/base";\n@import "tailwindcss";\n.bad { font-family: Inter; }',
 	card: {},
 	surface,
 };

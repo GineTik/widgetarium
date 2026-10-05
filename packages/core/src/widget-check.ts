@@ -1,3 +1,5 @@
+import { TAILWIND_PALETTE_CLASS, sheetFindings } from "./widget-check-tailwind.js";
+
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
 const FUNCTIONAL_COLOUR = /\b(?:rgba?|hsla?|oklch|lab|lch)\s*\(/g;
 const PLATE_PROPERTY = /(background[a-z-]*|border[a-z-]*|box-shadow|outline[a-z-]*)\s*:\s*([^;`"']+)/g;
@@ -41,6 +43,8 @@ export const WIDGET_CHECK_RULES = [
 	"heading",
 	"control",
 	"adds",
+	"tailwind",
+	"hand-written",
 ] as const;
 
 type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
@@ -73,7 +77,12 @@ export function checkWidget({
 	surface = null,
 }: WidgetCheckInput): WidgetFinding[] {
 	const text = `${source}\n${styles}`;
-	return [...colourFindings(text), ...fontFindings(text), ...sourceFindings(source, card, surface)].map((one) => ({
+	return [
+		...colourFindings(text),
+		...fontFindings(text),
+		...sheetFindings(id, styles),
+		...sourceFindings(source, card, surface),
+	].map((one) => ({
 		widget: id,
 		...one,
 	}));
@@ -134,7 +143,11 @@ function colourFindings(text: string): Finding[] {
 	const written = [...text.matchAll(HEX), ...text.matchAll(FUNCTIONAL_COLOUR)]
 		.filter((found) => !lineNamesToken(text, found.index ?? 0))
 		.map((found) => found[0]);
-	const said = [...written, ...borrowedPaint(text)];
+	const said = [
+		...written,
+		...borrowedPaint(text),
+		...[...text.matchAll(TAILWIND_PALETTE_CLASS)].map((found) => found[0]),
+	];
 	if (said.length === 0) return [];
 	return [
 		{
