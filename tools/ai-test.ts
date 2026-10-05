@@ -448,11 +448,57 @@ check(
 	"Building Habit streak",
 );
 check("a running build has no end yet", at(buildsIn([started, wrote], true), 0).endedAt, 0);
-const two = buildsIn([started, wrote, callOf("s2", "Bash", { command: `${BIN} start @mine/mood-month` }), wrote], true);
+const startedMood = callOf("s2", "Bash", { command: `${BIN} start @mine/mood-month` });
+const wroteMood = callOf("w2", "Write", { file_path: "/v/.widgetarium/widgets/@mine/mood-month/widget.tsx" });
+const checkedMood = callOf("c3", "Bash", { command: `${BIN} check @mine/mood-month` });
+const two = buildsIn([started, wrote, startedMood, wrote], true);
 check(
-	"only the last of two builds is live",
-	two.map((build) => build.isLive),
+	"two widgets built side by side are both still building while neither has passed its check",
+	two.map((build) => [build.title, build.endedAt]),
+	[
+		["Building Habit streak", 0],
+		["Building Mood month", 0],
+	],
+);
+check(
+	"only the widget worked on last is the live one a pinned view follows",
+	buildsIn([started, startedMood, wroteMood, wrote], true).map((build) => build.isLive),
+	[true, false],
+);
+check(
+	"a widget started again leaves its first build finished, not building forever",
+	buildsIn([started, wrote, checkRefused, started, wrote], true).map((build) => build.endedAt === 0),
 	[false, true],
+);
+check(
+	"an edit after a passed check needs another check before the widget counts as built",
+	buildsIn([started, wrote, checked, wrote, startedMood, wroteMood], true).map((build) => build.endedAt === 0),
+	[true, true],
+);
+const interleaved = buildsIn([started, startedMood, wroteMood, wrote, checkedMood], true);
+check(
+	"a call goes to the widget it names, not to the one started last",
+	interleaved.map((build) => statusesOf(build)),
+	[
+		["active", "pending", "pending", "pending"],
+		["done", "active", "pending", "pending"],
+	],
+);
+check(
+	"a widget whose check passed stops its clock once another one is worked on",
+	buildsIn([started, startedMood, wroteMood, checkedMood, wrote], true).map((build) => [
+		build.endedAt === 0,
+		statusesOf(build)[1],
+	]),
+	[
+		[true, "pending"],
+		[false, "done"],
+	],
+);
+check(
+	"a note written goes to the widget worked on last",
+	buildsIn([started, startedMood, wroteMood, checkedMood, placed], true).map((build) => statusesOf(build)[2]),
+	["pending", "active"],
 );
 check("a write into another widget's folder is not this build's", statusesOf(two[1]), [
 	"active",

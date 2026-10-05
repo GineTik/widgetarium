@@ -58,8 +58,13 @@ const NOTE_FILE = /\.md$/;
 const TITLE_OPTION = /--title\s+(?:"([^"]*)"|'([^']*)'|(\S+))/;
 
 export function buildsIn(calls: readonly KeptCall[] | null | undefined, isRunning: boolean): Build[] {
-	const started = startedBuilds(calls ?? []);
-	return started.map((build, at) => buildOf(build, isRunning && at === started.length - 1));
+	const { started, touchedLast } = startedBuilds(calls ?? []);
+	return started.map((build) =>
+		buildOf(build, {
+			isLive: isRunning && build === touchedLast,
+			isOpen: isRunning && (build === touchedLast || isUnfinished(build, started)),
+		}),
+	);
 }
 
 export function startIn(call: KeptCall): BuildStart | null {
@@ -70,22 +75,50 @@ export function startIn(call: KeptCall): BuildStart | null {
 	return { id, title: titleIn(said) || titleFromId(id) };
 }
 
-function startedBuilds(calls: readonly KeptCall[]): StartedBuild[] {
+function startedBuilds(calls: readonly KeptCall[]): { started: StartedBuild[]; touchedLast: StartedBuild | null } {
 	const started: StartedBuild[] = [];
+	let touchedLast: StartedBuild | null = null;
 	for (const call of calls) {
 		const opened = startIn(call);
 		if (opened) started.push({ ...opened, ref: call.ref, at: Number(call.at ?? 0), owned: [] });
-		const current = started[started.length - 1];
-		if (!current) continue;
-		const at = STEPS.findIndex((step) => step.owns(call, current.id));
-		if (at >= 0) current.owned.push({ step: at, call });
+		const owner: StartedBuild | null = buildNamedBy(call, started) ?? touchedLast;
+		if (!owner) continue;
+		touchedLast = owner;
+		const at = STEPS.findIndex((step) => step.owns(call, owner.id));
+		if (at >= 0) owner.owned.push({ step: at, call });
 	}
-	return started;
+	return { started, touchedLast };
 }
 
-function buildOf(build: StartedBuild, isLive: boolean): Build {
-	const steps = stepsOf(build, isLive);
-	const isClean = !isLive && steps.every((step) => step.status === "done");
+function buildNamedBy(call: KeptCall, started: readonly StartedBuild[]): StartedBuild | null {
+	for (let at = started.length - 1; at >= 0; at -= 1) {
+		const build = started[at];
+		if (build && namesWidget(call, build.id)) return build;
+	}
+	return null;
+}
+
+function namesWidget(call: KeptCall, id: string): boolean {
+	return writesInto(call, id) || startIn(call)?.id === id || isCheckOf(call, id);
+}
+
+function isUnfinished(build: StartedBuild, started: readonly StartedBuild[]): boolean {
+	const isSuperseded = started.slice(started.indexOf(build) + 1).some((later) => later.id === build.id);
+	return !isSuperseded && !hasPassedCheckSinceWriting(build);
+}
+
+function hasPassedCheckSinceWriting(build: StartedBuild): boolean {
+	const lastWorked = build.owned.filter((owned) => owned.step === WRITING_STEP || owned.step === CHECK_STEP).pop();
+	return lastWorked?.step === CHECK_STEP && lastWorked.call.answered && !lastWorked.call.failed;
+}
+
+function isCheckOf(call: KeptCall, id: string): boolean {
+	return ourVerbOf(call) === "check" && firstWordOf(ourSaidOf(call)) === id;
+}
+
+function buildOf(build: StartedBuild, { isLive, isOpen }: { isLive: boolean; isOpen: boolean }): Build {
+	const steps = stepsOf(build, isOpen);
+	const isClean = !isOpen && steps.every((step) => step.status === "done");
 	return {
 		key: build.ref,
 		widget: build.id,
@@ -94,7 +127,7 @@ function buildOf(build: StartedBuild, isLive: boolean): Build {
 		steps,
 		isLive,
 		startedAt: build.at,
-		endedAt: isLive || build.at === 0 ? 0 : endOf(build),
+		endedAt: isOpen || build.at === 0 ? 0 : endOf(build),
 	};
 }
 
@@ -102,6 +135,9 @@ function titleIn(said: string): string {
 	const named = said.match(TITLE_OPTION);
 	return (named?.[1] ?? named?.[2] ?? named?.[3] ?? "").trim();
 }
+
+const WRITING_STEP = 0;
+const CHECK_STEP = 1;
 
 const STEPS: readonly Step[] = [
 	{
@@ -111,7 +147,7 @@ const STEPS: readonly Step[] = [
 	},
 	{
 		label: CHECKING,
-		owns: (call, id) => ourVerbOf(call) === "check" && firstWordOf(ourSaidOf(call)) === id,
+		owns: isCheckOf,
 		hint: checkHint,
 	},
 	{
