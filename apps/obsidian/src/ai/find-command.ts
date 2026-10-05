@@ -50,6 +50,8 @@ const SCORE_NEEDS_COMPATIBLE = 15;
 const SCORE_ROLE = 30;
 const SCORE_READING = 25;
 const SCORE_ABOUT = 20;
+const SCORE_ABOUT_IN_TITLE = 20;
+const SCORE_ABOUT_IN_KEYWORDS = 10;
 const WILDCARD_FIELD_TYPE = "text";
 
 export const READING_KINDS = READINGS.join(" | ");
@@ -143,7 +145,11 @@ function readingScore(readings: ReadonlySet<Reading>, asked: unknown): Score | n
 function aboutScore(entry: WidgetEntry, options: FindOptions): Score | null {
 	const said = typeof options.about === "string" ? options.about : options.search;
 	if (typeof said !== "string" || !matches(entry, said)) return null;
-	return { score: SCORE_ABOUT, reason: `named for ${said}` };
+	const phrase = said.trim().toLowerCase();
+	const inTitle = entry.title.toLowerCase().includes(phrase);
+	const inKeywords = entry.keywords.some((keyword) => keyword.toLowerCase() === phrase);
+	const score = SCORE_ABOUT + (inTitle ? SCORE_ABOUT_IN_TITLE : 0) + (inKeywords ? SCORE_ABOUT_IN_KEYWORDS : 0);
+	return { score, reason: inTitle ? `titled ${said}` : `named for ${said}` };
 }
 
 function needScore(type: string, types: ReadonlySet<string>): Score {

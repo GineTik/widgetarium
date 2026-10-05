@@ -201,6 +201,34 @@ check("and names every rule it broke", (dirty.findings ?? []).map((one) => one.r
 ]);
 check("a widget that does not exist is refused", (await checked("@test/nothing").catch(() => ({ code: 1 }))).code, 1);
 
+const { rankWidgets } = await import("../apps/obsidian/src/ai/find-command.ts");
+const entryNamed = (id: string, title: string, description: string, keywords: string[]) => ({
+	id,
+	pack: id.split("/")[0] ?? "",
+	title,
+	description,
+	keywords,
+	defaultSize: null,
+	api: 1,
+	role: null,
+	installed: true,
+});
+const ranked = await rankWidgets(
+	[
+		entryNamed("@x/a-flashcard", "Flashcard review", "Shows when a deck is empty and the state of every card.", [
+			"review",
+			"state",
+		]),
+		entryNamed("@x/z-empty-state", "Empty state", "Where nothing is yet.", ["empty state", "placeholder"]),
+	],
+	{ about: "empty state" },
+);
+check(
+	"a widget titled what was asked ranks above one that only mentions it",
+	ranked.value.widgets[0]?.id,
+	"@x/z-empty-state",
+);
+
 await rm(vault, { recursive: true, force: true });
 
 console.log(`\n${checks - failed}/${checks} checks passed`);
