@@ -854,6 +854,88 @@ check(
 	true,
 );
 check("and follows the shape: a half disc moves it down with its body", litHalf.shineY > litCircle.shineY, true);
+render(
+	h(
+		Kit.CommandMenu,
+		{ label: "Search" },
+		h(Kit.CommandMenuInput, { value: "real" }),
+		h(
+			Kit.CommandMenuSection,
+			{ title: "Pages" },
+			h(Kit.CommandMenuItem, { title: "Real Estate", subtitle: "What we do" }),
+		),
+		h(Kit.CommandMenuSection, { title: "People" }, h(Kit.CommandMenuItem, { title: "Rikard", isActive: true })),
+	),
+	host,
+);
+check(
+	"a command menu is sections of items the caller hands it, the active one marked",
+	[
+		[...host.querySelectorAll(".wg-kit-command-section h3")].map((head) => head.textContent),
+		host.querySelectorAll("[data-command-item]").length,
+		found(host, ".wg-kit-command-item.is-active").textContent,
+	],
+	[["Pages", "People"], 2, "Rikard"],
+);
+const commandItems = [...host.querySelectorAll<HTMLElement>("[data-command-item]")];
+commandItems[0]?.focus();
+found(host, ".wg-kit-command").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+check("and the arrow keys move between its items", document.activeElement === commandItems[1], true);
+let overlayClosed = 0;
+render(
+	h(
+		Kit.CommandMenuOverlay,
+		{ isOpen: true, isPortaled: false, onClose: () => (overlayClosed += 1) },
+		h("i", null, "inside"),
+	),
+	host,
+);
+found(host, ".wg-kit-command-overlay").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+check("its overlay closes on Escape", overlayClosed, 1);
+render(h(Kit.CommandMenuOverlay, { isOpen: false }, "x"), host);
+check("and draws nothing while shut", host.innerHTML, "");
+render(
+	h(Kit.EmptyState, { title: "No news yet", text: "Deals appear here.", action: h("button", null, "Read") }),
+	host,
+);
+check(
+	"an empty state is a cluster of shapes over its title, text and one action",
+	[
+		host.querySelectorAll(".wg-kit-empty .wg-kit-shape").length,
+		found(host, ".wg-kit-empty-title").textContent,
+		host.querySelectorAll(".wg-kit-empty-action button").length,
+	],
+	[3, "No news yet", 1],
+);
+render(
+	h(Kit.PhotoCard, {
+		title: "Rikard",
+		subtitle: "Head of Real Estate",
+		photo: "a.jpg",
+		badge: "Real Estate",
+		onOpen: () => undefined,
+	}),
+	host,
+);
+check(
+	"a photo card holds its photo, a frosted badge and a round open button",
+	[
+		host.querySelectorAll(".wg-kit-photo-card img").length,
+		found(host, ".wg-kit-photo-card-badge").textContent,
+		host.querySelectorAll(".wg-kit-photo-card-open").length,
+	],
+	[1, "Real Estate", 1],
+);
+render(h(Kit.PhotoCard, { title: "No photo" }), host);
+check("and wears a shape where there is no photo", host.querySelectorAll(".wg-kit-photo-card .wg-kit-shape").length, 1);
+render(h(Kit.Hero, { title: "Welcome", photo: "team.jpg", eyebrow: "Handbook" }), host);
+check(
+	"a hero lays its words over the photo",
+	[found(host, ".wg-kit-hero").className, found(host, ".wg-kit-hero-title").textContent],
+	["wg-kit-hero is-photo", "Welcome"],
+);
+render(h(Kit.Hero, { title: "Welcome" }), host);
+check("and over shapes when it has no photo", host.querySelectorAll(".wg-kit-hero-art .wg-kit-shape").length, 3);
 render(h(Kit.ArtField, { tones: ["blue"], isSoft: true }, "inside"), host);
 check(
 	"an art field holds what it is given on a soft field of its tone",
@@ -3450,6 +3532,7 @@ check(
 	const PROBE = "probe-class";
 	const NEEDED_TO_DRAW: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 		Popover: { trigger: h("button", null, "open"), isOpen: true },
+		CommandMenuOverlay: { isOpen: true, isPortaled: false },
 		FormFields: { fields: [], draft: {}, onChange: () => undefined },
 		Calendar: { month: new Date(2026, 8, 1), today: new Date(2026, 8, 21) },
 		Segmented: { items: [{ value: "a", label: "A" }], value: "a" },

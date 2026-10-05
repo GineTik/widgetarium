@@ -52,6 +52,14 @@ import { ArtField } from "./components/art-field";
 import { Confetti } from "./components/confetti";
 import { PhotoStack } from "./components/photo-stack";
 import { Shape } from "./shapes/shape";
+import { CommandMenu } from "./components/command-menu";
+import { CommandMenuOverlay } from "./components/command-menu-overlay";
+import { CommandMenuInput } from "./components/command-menu-input";
+import { CommandMenuSection } from "./components/command-menu-section";
+import { CommandMenuItem } from "./components/command-menu-item";
+import { EmptyState } from "./components/empty-state";
+import { PhotoCard } from "./components/photo-card";
+import { Hero } from "./components/hero";
 import { SHAPE_NAMES } from "./shapes/shape-names";
 import { FormFields } from "./components/form-fields";
 import { FORM_FIELD_KINDS, changedValues, draftOfRecord, isDraftComplete, valuesOfDraft } from "./utils/form-fields";
@@ -213,6 +221,14 @@ export const Kit = {
 	Confetti,
 	PhotoStack,
 	Shape,
+	CommandMenu,
+	CommandMenuOverlay,
+	CommandMenuInput,
+	CommandMenuSection,
+	CommandMenuItem,
+	EmptyState,
+	PhotoCard,
+	Hero,
 	SHAPE_NAMES,
 	FormFields,
 	FORM_FIELD_KINDS,
@@ -303,6 +319,14 @@ export { ArtField } from "./components/art-field";
 export { Confetti } from "./components/confetti";
 export { PhotoStack } from "./components/photo-stack";
 export { Shape } from "./shapes/shape";
+export { CommandMenu } from "./components/command-menu";
+export { CommandMenuOverlay } from "./components/command-menu-overlay";
+export { CommandMenuInput } from "./components/command-menu-input";
+export { CommandMenuSection } from "./components/command-menu-section";
+export { CommandMenuItem } from "./components/command-menu-item";
+export { EmptyState } from "./components/empty-state";
+export { PhotoCard } from "./components/photo-card";
+export { Hero } from "./components/hero";
 export { SHAPE_NAMES } from "./shapes/shape-names";
 export { ART_SHAPES, ART_TONES } from "./constants/art";
 export { FormFields } from "./components/form-fields";

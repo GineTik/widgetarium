@@ -2540,6 +2540,385 @@ body {
 	line-height: 1;
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-command-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: var(--layer-modal, 50);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 12vh;
+	background: var(--wg-overlay-scrim);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-overlay.is-inline {
+	position: absolute;
+	padding-top: 90px;
+	border-radius: inherit;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: min(560px, 92%);
+	max-height: 70vh;
+	overflow: auto;
+	padding: 14px;
+	border-radius: 26px;
+	background: var(--wg-kit-raise);
+	box-shadow: var(--wg-kit-shadow);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-input {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 12px 16px;
+	border-radius: 999px;
+	background: var(--wg-kit-group-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-input input {
+	flex: 1;
+	min-width: 0;
+	padding: 0;
+	border: none;
+	background: none;
+	box-shadow: none;
+	color: var(--wg-kit-text);
+	font: inherit;
+	font-weight: 600;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-input kbd {
+	padding: 2px 8px;
+	border-radius: 8px;
+	background: var(--wg-kit-fill);
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-xs);
+	font-family: inherit;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-section {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-section h3 {
+	margin: 10px 8px 2px;
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+	font-weight: 500;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	height: auto;
+	padding: 8px 10px;
+	border: none;
+	border-radius: 16px;
+	background: none;
+	box-shadow: none;
+	color: var(--wg-kit-text);
+	text-align: left;
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-item:is(.is-active, :hover, :focus-visible) {
+	background: var(--wg-kit-group-fill);
+	outline: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-leading {
+	display: inline-flex;
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-text {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-text > span {
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 36px 16px;
+	text-align: center;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty.is-compact {
+	padding: 20px 12px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-art {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 220px;
+	height: 150px;
+	margin-bottom: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty.is-compact .wg-kit-empty-art {
+	width: auto;
+	height: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-art > .is-left {
+	position: absolute;
+	left: 8px;
+	top: 14px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-art > .is-right {
+	position: absolute;
+	right: 6px;
+	bottom: 14px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-title {
+	font-size: 1.2em;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-text {
+	max-width: 420px;
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-action {
+	margin-top: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-picture {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	aspect-ratio: 16 / 10;
+	margin-bottom: 6px;
+	border-radius: 22px;
+	background: var(--wg-kit-group-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-tall .wg-kit-photo-card-picture {
+	aspect-ratio: 4 / 5;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-square .wg-kit-photo-card-picture {
+	aspect-ratio: 1;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-picture > img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-art {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-badge {
+	position: absolute;
+	left: 12px;
+	bottom: 12px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: var(--wg-kit-glass-tint);
+	backdrop-filter: blur(var(--wg-kit-glass-blur, 14px));
+	color: var(--wg-kit-text);
+	font-size: var(--wg-kit-text-s);
+	font-weight: 500;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-open {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	display: inline-grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: var(--wg-kit-glass-tint);
+	backdrop-filter: blur(var(--wg-kit-glass-blur, 14px));
+	box-shadow: none;
+	color: var(--wg-kit-text);
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-words {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-words > b {
+	font-size: 1.05em;
+	line-height: 1.25;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card-words > span {
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-text-on-photo .wg-kit-photo-card-picture::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to top, var(--wg-overlay-scrim), transparent 60%);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-text-on-photo .wg-kit-photo-card-words {
+	position: absolute;
+	z-index: 1;
+	left: 16px;
+	right: 64px;
+	bottom: 16px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-text-on-photo .wg-kit-photo-card-words > * {
+	color: var(--wg-kit-shine);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-text-on-photo .wg-kit-photo-card-badge {
+	top: 12px;
+	bottom: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-photo-card.is-text-on-photo .wg-kit-photo-card-open {
+	top: auto;
+	bottom: 14px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	align-items: flex-start;
+	min-height: 340px;
+	overflow: hidden;
+	border-radius: 28px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero.is-art {
+	background: var(--wg-kit-group-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-picture {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero.is-photo::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to top, var(--wg-overlay-scrim), var(--wg-overlay-scrim) 35%, transparent 75%);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-art {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-art > * {
+	position: absolute;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-art > .is-big {
+	right: 8%;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-art > .is-small {
+	right: 32%;
+	top: 18%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-art > .is-tiny {
+	right: 5%;
+	bottom: 14%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-words {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	max-width: 560px;
+	padding: 32px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero.is-photo .wg-kit-hero-words {
+	color: var(--wg-kit-shine);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-eyebrow {
+	font-size: var(--wg-kit-text-s);
+	font-weight: 500;
+	opacity: 0.85;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-title {
+	font-size: 3.2em;
+	line-height: 1;
+	letter-spacing: -0.03em;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-text {
+	line-height: 1.4;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-action {
+	margin-top: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-hero-corner {
+	position: absolute;
+	z-index: 1;
+	right: 28px;
+	bottom: 28px;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-photo-stack {
 	display: inline-flex;
 	padding-left: calc(var(--wg-photo-size) * 0.2);
