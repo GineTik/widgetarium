@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { readingOfProp, wrapOf, READINGS } from "@widgetarium/core/reading.js";
 import type { Reading } from "@widgetarium/core/reading.js";
@@ -16,11 +18,14 @@ export interface FindOptions extends PageAsk {
 	readonly about?: unknown;
 }
 
+const PICTURE_FILE = "shot-light.png";
+
 export interface RankedWidget extends WidgetEntry {
 	readonly reads: Reading[];
 	readonly wraps: string[];
 	readonly score: number;
 	readonly why: string[];
+	readonly picture: string | null;
 }
 
 export interface RankAnswer {
@@ -112,7 +117,14 @@ function scoreEntry(entry: WidgetEntry, card: Card | null, options: FindOptions)
 		wraps: [...new Set([...readings].map(wrapOf))],
 		score: scored.reduce((sum, one) => sum + one.score, 0),
 		why: scored.map((one) => one.reason),
+		picture: pictureOf(entry.folder),
 	};
+}
+
+function pictureOf(folder: string | undefined): string | null {
+	if (!folder) return null;
+	const picture = join(folder, PICTURE_FILE);
+	return existsSync(picture) ? picture : null;
 }
 
 function roleScore(card: Card | null, asked: unknown): Score | null {

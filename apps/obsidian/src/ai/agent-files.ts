@@ -7,6 +7,7 @@ import HANDBOOK_EXAMPLES from "../../../../docs/ai/examples.md";
 import HANDBOOK_WIDGET from "../../../../docs/ai/widget.md";
 import HANDBOOK_TOOLS from "../../../../docs/ai/tools.md";
 import HANDBOOK_SPEC from "../../../../docs/ai/spec.md";
+import HANDBOOK_KIT from "../../../../docs/ai/kit.md";
 import DESIGN_SYSTEM from "../../../../docs/ai/design-system.md";
 import unpackWidgetsCli, { packedHash as WIDGETS_CLI_HASH } from "widgetarium:widgets-cli";
 import unpackWidgetTypes, { packedHash as WIDGET_TYPES_HASH } from "widgetarium:widget-types";
@@ -31,6 +32,7 @@ export const HANDBOOK: Readonly<Record<string, string>> = {
 	"widget.md": HANDBOOK_WIDGET,
 	"tools.md": HANDBOOK_TOOLS,
 	"spec.md": HANDBOOK_SPEC,
+	"kit.md": HANDBOOK_KIT,
 };
 
 const PAGES_LAID_BEFORE = `${HANDBOOK_DIR}/patterns`;
