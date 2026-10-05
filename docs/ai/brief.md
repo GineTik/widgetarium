@@ -103,9 +103,12 @@ control lacks the look the design needs, say so in your message; never paint ove
 **Then draw every page in one draft widget**, `.widgetarium/widgets/@draft/<app-name>/widget.tsx`
 with its two-line `widget.css`, whose props say what to draw — `getPage` a `z.enum` of the pages,
 `getDialog` which dialog is open, `getState` full or empty — each
-`IQuery.expects(z.enum([...]).default(...))`. Each block in it is one component named for what it
-is (`PeopleGrid`, `OfficeCard`), so stage 4 lifts each into a widget of its own unchanged. **Then
-place each screen with the tool, never by hand**:
+`IQuery.expects(z.enum([...]).default(...))`. **Every block is a file of its own**,
+`blocks/people-grid.tsx`, exporting one component named for what it is (`PeopleGrid`) that takes the
+rows it draws as typed props — `{ people: Person[] }`, never a sample list of its own. `widget.tsx`
+holds the sample rows and the pages: which blocks stand where, fed what. Stage 4 then moves each
+block file into a widget of its own unchanged, so the widget is the screen the person approved and
+nothing is drawn twice. **Then place each screen with the tool, never by hand**:
 
 ```
 node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people
@@ -154,10 +157,10 @@ that changes — a review before and after an answer, a record closed and open:
 ```
 
 **Draw it in one shot**, the way a designer
-draws a canvas: one message that writes every screen note and, for every block the catalogue lacks,
-a draft widget in `.widgetarium/widgets/@draft/<name>/widget.tsx`. A draft is only the look: kit
-components with its sample rows written inline, exactly as the finished widget will look, but no
-commands and no `start`. `node {tool} check @draft/<name>` passes before the person sees it: it is
+draws a canvas: one message that writes the draft — `widget.tsx`, its `blocks/` and the two-line
+sheet — and places every screen. A draft is only the look: kit components and Tailwind fed by sample
+rows, exactly as the finished widgets will look, but no commands and no `start`.
+`node {tool} check @draft/<name>` passes before the person sees it: it is
 what catches a colour from outside the theme. Stage 4 turns each draft into the real widget after the
 person approved, keeping its look. Then `node {tool} shot --design <app>`, open the picture (the whole
 canvas, every page side by side) and redraw what is not the app you would pay for, again in one
@@ -219,24 +222,37 @@ stage 3 wrote down, not when it merely holds the data**: links drawn as a markdo
 navigation, a generic list is not a shelf of covers. Read its card and its preview against the
 block; a widget that would make the screen look like a different, poorer app is a widget to write.
 The catalogue comes first among the ones that fit: install every widget it already has for a feature, then say `node {tool} stage <app> catalogue --said "<what you installed
-or found>"`. The widgets nothing in the catalogue covers are law 15's list; write them, each behind
-its own `start`.
+or found>"`. The widgets nothing in the catalogue covers are law 15's list, and each one is a block
+of the draft moved, not written again:
+
+1. `node {tool} start @you/people-grid --title "People grid"`;
+2. copy `@draft/<app>/blocks/people-grid.tsx` into `@you/people-grid/` unchanged;
+3. write `widget.tsx`: `createWidget` whose `inject` reads exactly the props the block takes, with
+   the record shape from stage 2, and whose `draw` passes them to the block — the sample rows stay
+   in the draft;
+4. the two-line `widget.css`, then `node {tool} check @you/people-grid`.
+
+Change the block only where the real data needs it: paging a list, an empty state the draft drew
+elsewhere, a verb's button calling the command it now has.
 
 _Over when every kept feature names a widget that exists here and passes `check`._ The tool holds
 you to it: `node {tool} stage <app> widgets --said "..."` is refused until it is true, and says
 which features are not.
 
 **You are the orchestrator from here on.** If your tools can start sub-agents, give every new
-widget and every page to a sub-agent of its own, one at a time, with what it needs and nothing else:
-the feature it serves, the record shape from stage 2, the spec path, and the rule that it is done
-only when `node {tool} check <id>` (a widget) or `node {tool} lint <note>` (a page) passes. You do
-not write widget code yourself; you hand it out, read what comes back, and send it back while it is
-not done. Without sub-agents, do the same yourself, one feature at a time.
+widget to a sub-agent of its own, **all of them at once**, with what it needs and nothing else: the
+block file it moves, the record shape from stage 2, the feature it serves, and the rule that it is
+done only when `node {tool} check <id>` passes. A widget never reads another widget, so none waits
+for another. Pages follow the same way once their widgets pass, one sub-agent per page, done when
+`node {tool} lint <note>` passes. You do not write widget code yourself; you hand it out, read what
+comes back, and send it back while it is not done. Without sub-agents, do the same yourself, one
+feature at a time.
 
-**Stage 5 — the pages.** Each page starts as a copy of its approved screen: the same tiles, the same
-tree, now in the vault note the spec names. The person approved that picture, so the page must look
-like it; change it only where a widget from stage 4 replaced a draft, and move every prop off
-its sample rows onto the folder stage 2 seeded. The empty state the canvas drew is the one an empty
+**Stage 5 — the pages.** Each page is the draft's page read back as a board, in the vault note the
+spec names: every block the draft's `widget.tsx` stands on that page becomes a tile of the widget it
+moved into, in the same order, and every row or column of blocks there becomes a box of that
+direction. The person approved that picture, so the page must look like it; bind every prop to
+the folder stage 2 seeded instead of the sample rows. The empty state the canvas drew is the one an empty
 folder must show. Where a block still has no
 widget, look for the one whose props already match the fields stage 2 wrote:
 
@@ -451,8 +467,8 @@ node {tool} start @you/habit-streak --title "Habit streak"
 
 That is your access to a widget's files, for a new widget and for an edit alike. It is what puts the
 card in the chat that shows the person which widget is being built and how far it has got; a widget
-written without it is built where nobody can watch. One `start` per widget, and finish one before you
-start the next.
+written without it is built where nobody can watch. One `start` per widget; widgets moved by
+sub-agents are built side by side, each under its own `start`, and the card follows every one.
 
 ## In this vault
 
