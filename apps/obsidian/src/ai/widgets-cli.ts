@@ -14,6 +14,10 @@ import { checkedWidget } from "./widget-checking.js";
 import { refuseStage, reportOfApp, isReportClean } from "./report-command.js";
 import { shotOfDesign, shotOfNote, shotSaid } from "./shot-command.js";
 import { designOfApp } from "./design-command.js";
+import { referenceOfApp } from "./reference-command.js";
+import { photosOfApp } from "./photos-command.js";
+import { rulesOfApp } from "./rules-command.js";
+import { screenOfApp } from "./screen-command.js";
 import type { ReportPlace } from "./report-command.js";
 import { surfaceNamesIn } from "./widget-surface.js";
 import { rankWidgets, refuseReading } from "./find-command.js";
@@ -59,7 +63,16 @@ const COMMANDS: Readonly<Record<string, Command>> = {
 	surfaces: { asks: "note", run: (argument, options) => surfaces(String(argument), options) },
 	lint: { asks: "note", run: (argument, options) => lint(String(argument), options) },
 	spec: { run: async (argument, options) => tell(options, await specOfApp(VAULT, argument)) },
-	design: { run: async (argument, options) => tell(options, await designOfApp(VAULT, argument)) },
+	design: { run: async (argument, options) => tell(asText(options), await designOfApp(VAULT, argument)) },
+	reference: {
+		run: async (argument, options) =>
+			tell(asText(options), await referenceOfApp(VAULT, argument, options._[2], options["why"])),
+	},
+	photos: { run: async (argument, options) => tell(asText(options), await photosOfApp(VAULT, argument)) },
+	rules: { run: async (argument, options) => tell(asText(options), await rulesOfApp(VAULT, argument)) },
+	screen: {
+		run: async (argument, options) => tell(asText(options), await screenOfApp(VAULT, argument, options._[2], options)),
+	},
 	stage: { run: (argument, options) => runStage(argument, options) },
 	report: { run: (argument, options) => runReport(argument, options) },
 	shot: { run: (argument, options) => runShot(argument, options) },
@@ -106,6 +119,10 @@ function ranCommand(named: string | undefined, given: string | undefined, asked:
 	}
 	if (found.asks === undefined || given) return found.run(given, asked);
 	return MISSING_ARGUMENT[found.asks]?.(given);
+}
+
+function asText(asked: Options): Options {
+	return asked["json"] ? asked : { ...asked, text: true };
 }
 
 function say(asked: Options, value: unknown, lines: string): void {

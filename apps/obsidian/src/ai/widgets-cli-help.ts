@@ -10,6 +10,14 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs shot <note>          a picture of the note as Obsidian draws it; open the path it prints
     --design <app>                      a picture of the app's design canvas instead
   node widgets.mjs design <app>         check .widgetarium/apps/<app>/design/ and show it to the person as a card
+  node widgets.mjs reference <app> <url>   put a picture from the web on the canvas, above the screens
+    --why <line>                        what to take from it, shown under the picture
+  node widgets.mjs photos <app>         after Approve design: download the photos the screens use
+  node widgets.mjs rules <app>          every design rule in force for the app, to check the canvas against
+  node widgets.mjs screen <app> <screen>   write one screen of the design canvas: its note and its place in canvas.json
+    --widget @draft/<name>              the draft that draws it
+    --set page=inbox,dialog=add         values its props read (getPage, getDialog, …)
+    --state <name>                      a state of that screen: Empty, a dialog open, …
   node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
   node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
   node widgets.mjs bases               every base a screen can start from

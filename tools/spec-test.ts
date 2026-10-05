@@ -1,5 +1,5 @@
 import { JSDOM } from "jsdom";
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -748,9 +748,145 @@ check(
 );
 await writeFile(join(designFolder, "Inbox.md"), screenNote("@core/typed-rows"));
 check("and one drawn on sample rows is shown", (await designOfApp(designVault, "Inbox")).refusal, undefined);
+const { withReferencesAdded, referenceFileOf } = await import("../packages/core/src/app-design.ts");
+const refsOnly = withReferencesAdded(null, [{ file: "a1-hotel.webp" }]);
+check(
+	"a photo dropped on a canvas that has no design yet starts one holding the photo",
+	readDesign(refsOnly).design?.references,
+	[{ file: "a1-hotel.webp" }],
+);
+const refsAdded = withReferencesAdded(DESIGN, [{ file: "b2-serene.png" }]);
+check(
+	"adding a photo keeps the screens and appends the photo",
+	[readDesign(refsAdded).design?.screens.length, readDesign(refsAdded).design?.references.length],
+	[2, 1],
+);
+check(
+	"a reference path is refused",
+	readDesign('{"screens":[],"references":[{"file":"../x.png"}]}').refusal !== undefined,
+	true,
+);
+check(
+	"a reference that is not a picture is refused",
+	readDesign('{"screens":[],"references":[{"file":"notes.md"}]}').refusal?.includes("picture"),
+	true,
+);
+check(
+	"a dropped file's name becomes a safe file name",
+	referenceFileOf("My photo (1).JPG", "x0"),
+	"x0-My-photo-1-.JPG",
+);
+check(
+	"a reference from the web is kept by its address",
+	readDesign(withReferencesAdded(DESIGN, [{ url: "https://cdn.example/hotel.webp", why: "photo hero" }])).design
+		?.references,
+	[{ url: "https://cdn.example/hotel.webp", why: "photo hero" }],
+);
+check(
+	"a reference over plain http is refused",
+	readDesign(withReferencesAdded(DESIGN, [{ url: "http://cdn.example/hotel.webp" }])).refusal?.includes("https"),
+	true,
+);
+const { referenceOfApp } = await import("../apps/obsidian/src/ai/reference-command.js");
+const { photosOfApp, photoKeyOf } = await import("../apps/obsidian/src/ai/photos-command.js");
+const referenceVault = await mkdtemp(join(tmpdir(), "wg-reference-"));
+const referenced = await referenceOfApp(referenceVault, "Trips", "https://cdn.example/a.png", "the list rows");
+check(
+	"the reference command starts a canvas holding the picture",
+	referenced.refusal === undefined &&
+		readDesign(await readFile(join(referenceVault, designPathOf("Trips")), "utf8")).design?.references.length,
+	1,
+);
+check(
+	"the reference command refuses an address that is not https",
+	(await referenceOfApp(referenceVault, "Trips", "ftp://x/a.png", undefined)).refusal?.includes("https"),
+	true,
+);
+const photosOfReferencesOnly = await photosOfApp(referenceVault, "Trips");
+check(
+	"photos on a canvas with no screens keeps nothing: references are never downloaded",
+	"value" in photosOfReferencesOnly ? photosOfReferencesOnly.value : photosOfReferencesOnly.refusal,
+	{},
+);
+check(
+	"a photo's file name is the same for the same address, so a second run downloads nothing",
+	photoKeyOf("https://cdn.example/a.png") === photoKeyOf("https://cdn.example/a.png") &&
+		photoKeyOf("https://cdn.example/a.png") !== photoKeyOf("https://cdn.example/b.png"),
+	true,
+);
+const { rulesIn, rulesInForce } = await import("../packages/core/src/design-rules.ts");
+const { readFileSync } = await import("node:fs");
+const shippedRules = rulesIn(readFileSync("docs/ai/design-system.md", "utf8"), "vault");
+check(
+	"every rule the shipped design system holds is read with its id, and no id twice",
+	shippedRules.length > 20 && new Set(shippedRules.map((rule) => rule.id)).size === shippedRules.length,
+	true,
+);
+check(
+	"a rule written over two lines is read whole",
+	shippedRules.find((rule) => rule.id === "P1")?.text.endsWith("it never manages them."),
+	true,
+);
+const appRules = "- **B1 · Primary is purple** here.\n- **Y1 · Use the word quest.**\n";
+const inForce = rulesInForce("- **B1 · Primary is black.**\n- **B2 · No purple buttons.**\n", appRules);
+check(
+	"an app's rule replaces the vault's rule of the same id and adds its own",
+	inForce.map((rule) => `${rule.id}:${rule.from}`),
+	["B2:vault", "B1:app", "Y1:app"],
+);
+check(
+	"a line without an id is reference, not a rule",
+	rulesIn("- **Add your own** under the heading.\n| a | table |\n", "vault"),
+	[],
+);
+const { screenOfApp } = await import("../apps/obsidian/src/ai/screen-command.js");
+const screenVault = await mkdtemp(join(tmpdir(), "wg-screen-"));
+const firstScreen = await screenOfApp(screenVault, "Trips", "People", { widget: "@draft/trips", set: "page=people" });
+await screenOfApp(screenVault, "Trips", "People", {
+	widget: "@draft/trips",
+	set: "page=people,dialog=add",
+	state: "Add person",
+});
+await screenOfApp(screenVault, "Trips", "Home", { widget: "@draft/trips", set: "page=home" });
+const writtenCanvas = readDesign(await readFile(join(screenVault, designPathOf("Trips")), "utf8")).design;
+check(
+	"screen writes the note and its place on the canvas",
+	[firstScreen.refusal, writtenCanvas?.screens.map((screen) => screen.name)],
+	[undefined, ["People", "Home"]],
+);
+check(
+	"a state joins its screen instead of adding a second one",
+	JSON.stringify(writtenCanvas?.screens[0]),
+	JSON.stringify({ name: "People", states: [{ name: "Add person", file: "People · Add person.md" }] }),
+);
+const shownTrips = await designOfApp(screenVault, "Trips");
+check("the notes it writes are boards the design command accepts", shownTrips.refusal, undefined);
+check(
+	"a prop named without get gets it",
+	(await readFile(join(screenVault, ".widgetarium/apps/Trips/design/Home.md"), "utf8")).includes(
+		'getPage: { implementation: "@core/typed-value", fields: { value: "home" } }',
+	),
+	true,
+);
+check(
+	"screen refuses a set it cannot read",
+	(await screenOfApp(screenVault, "Trips", "X", { widget: "@draft/trips", set: "page" })).refusal?.startsWith(
+		"Each --set",
+	),
+	true,
+);
+await writeFile(
+	join(screenVault, ".widgetarium/apps/Trips/design/Home.md"),
+	"```widgetarium\ntiles: []\nlayout: { dir: row, of: [] }\n```\n",
+);
+check(
+	"design refuses a screen that places no widget",
+	(await designOfApp(screenVault, "Trips")).refusal?.includes("places no widget"),
+	true,
+);
 check(
 	"a design with no screens is refused",
-	readDesign('{"app":"Vocabulary","screens":[]}').refusal?.startsWith("screens"),
+	readDesign('{"app":"Vocabulary","screens":[]}').refusal?.includes("at least one screen or one reference"),
 	true,
 );
 check(
