@@ -1,5 +1,5 @@
 import { APART, COLUMN, GROUP, isPainted, NO_SURFACE, ROW } from "@widgetarium/kit/plates";
-import { DRAWER_MAX_PX, HIDE, REGION_PAD_PX, SURFACE_PAD_PX, SWAP, TEXT_ROLE } from "./tree-constants.js";
+import { DRAWER_MAX_PX, HIDE, REGION_PAD_PX, SURFACE_PAD_PX, SWAP } from "./tree-constants.js";
 import { isBox, pathKey, slotOf } from "./tree-nodes.js";
 import type { AskLeaf, BoardNode, BoxDirection, BoxNode, LeafNode, NodePath, PlaceFlags } from "./tree-nodes.js";
 import { innerWidthOf, insetOf, pairGapOf, plateOf, stepOf } from "./tree-spacing.js";
@@ -99,7 +99,6 @@ export function layRegion(
 		edges: allEdges(pad),
 		plates,
 		underSurface: isPainted(worn) ? worn.surface : NO_SURFACE,
-		regionRole: isBox(region) ? (region.role ?? null) : null,
 		regionPx: given,
 		level: 0,
 		viewportPx,
@@ -112,12 +111,9 @@ export function withoutSurface(node: BoardNode): BoardNode {
 	return surface === undefined && side === undefined ? node : bare;
 }
 
-const REGIONS_THAT_PLATE: readonly string[] = ["indicators"];
-const ROLES_LEFT_BARE: readonly string[] = [TEXT_ROLE, "layout", "control", "navigation"];
-
 export function layNode(node: BoardNode, width: number, how: LayAsk): LaidNode {
 	const held: LayPlace = { path: [], edges: allEdges(0), plates: 0, underSurface: NO_SURFACE, level: 0, ...how };
-	if (!isBox(node)) return layLeaf(wearInRegion(node, held), width, held);
+	if (!isBox(node)) return layLeaf(node, width, held);
 	const inner = width - 2 * insetOf(node);
 	if (node.dir === SWAP) return laySwap(node, width, inner, held);
 	if (node.dir === COLUMN) return layColumn(node, width, inner, held);
@@ -371,13 +367,4 @@ function laySwap(node: BoxNode, width: number, inner: number, how: LayPlace): La
 			return { ...layNode(child, inner, placed.how), ...placed.divider, ...slotOf(child), grow: 0, basis: "auto" };
 		}),
 	};
-}
-
-function wearInRegion(leaf: LeafNode, how: LayPlace): LeafNode {
-	if (leaf.surface !== undefined) return leaf;
-	if (!REGIONS_THAT_PLATE.some((role) => role === how.regionRole)) return leaf;
-	if (how.underSurface !== NO_SURFACE) return leaf;
-	const { role } = how.ask(leaf.id);
-	if (ROLES_LEFT_BARE.some((bare) => bare === role)) return leaf;
-	return { ...leaf, surface: GROUP };
 }

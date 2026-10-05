@@ -222,7 +222,7 @@ check(
 	"5",
 );
 check("while one group above still leaves it a plate", plateRefusal(platesAtCell(shallow), "group"), null);
-console.log("\n— an indicators region lays a group on each widget in it —\n");
+console.log("\n— no region lays a plate: the designer places every one —\n");
 
 const REGION_ROLE_OF: Readonly<Record<string, string>> = {
 	note: "text",
@@ -255,19 +255,20 @@ const aside = (role: string) =>
 	).node;
 const wornIn = (node: LaidNode): (readonly [string, string | null])[] =>
 	node.kind === "leaf" ? [[node.id, node.surface ?? null]] : laidBox(node).of.flatMap(wornIn);
+for (const role of ["indicators", "collection"]) {
+	check(`a ${role} region leaves every widget wearing what it was given`, Object.fromEntries(wornIn(aside(role))), {
+		note: null,
+		stat: null,
+		pick: null,
+		own: "none",
+		inGroup: null,
+	});
+}
 check(
-	"a widget in it wears a group however deep its section, a heading and a control stay bare",
-	Object.fromEntries(wornIn(aside("indicators"))),
-	{ note: null, stat: "group", pick: null, own: "none", inGroup: null },
+	"so a widget in it counts no plate the engine laid",
+	cellOf(childAt(childAt(aside("indicators"), 1), 0)).plates,
+	0,
 );
-check("the same region under another role lays nothing", Object.fromEntries(wornIn(aside("collection"))), {
-	note: null,
-	stat: null,
-	pick: null,
-	own: "none",
-	inGroup: null,
-});
-check("the laid group counts as the widget's plate", cellOf(childAt(childAt(aside("indicators"), 1), 0)).plates, 1);
 
 const noPlates = layRegion({ dir: "row", of: [{ dir: "column", of: [{ id: "flat" }] }] }, 0, 600, {
 	ask: () => ({}),

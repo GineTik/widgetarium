@@ -409,9 +409,8 @@ is a 3% grey with no edge** — `--wg-kit-page` under the board and the pane of 
 white (`--wg-kit-group-inset`). **The kit carries the rules for what is drawn inside a widget**:
 `Rows` is one plate with a line between its items (`--wg-kit-group-line`), `Grid` gives every cell a
 `Card`, and `Layout kind` is all of them behind one word, so a design changes by one prop.
-**An `indicators` region lays a `group` on every widget in it** that names no surface — `wearInRegion`
-in `packages/core/src/tree.ts`, at lay time, never written to the note — except a `text`, `layout`, `control` or
-`navigation` widget and one already standing on a plate. The only CSS that decides the colour is `[data-surface="group"] [data-surface="group"]`. `object`, a plate lifted with a
+**No region lays a plate.** `wearInRegion`, which put a `group` on every widget of an `indicators`
+region at lay time, is gone: the designer places every plate. The only CSS that decides the colour is `[data-surface="group"] [data-surface="group"]`. `object`, a plate lifted with a
 hairline, was a second plate nobody placed and is gone; `item` was a fourth name. Both are read once
 at `normalizeBoard` through `SURFACE_WAS` beside `fill`, `outline`, `raise` and `divider` as a
 `group`, then never written again. A

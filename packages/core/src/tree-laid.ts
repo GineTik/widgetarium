@@ -18,7 +18,6 @@ export interface LayAsk {
 	readonly plates?: number;
 	readonly underSurface?: SurfaceWord;
 	readonly level?: number;
-	readonly regionRole?: string | null;
 	readonly regionPx?: number;
 	readonly viewportPx?: number;
 	readonly opened?: string;
