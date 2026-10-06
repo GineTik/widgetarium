@@ -1223,6 +1223,15 @@
 			"default": {
 				"value": ""
 			}
+		},
+		"getFaces": {
+			"kind": "collection",
+			"label": "Get faces",
+			"hint": "Up to four faces, https addresses, stacked in the corner.",
+			"writes": ["list", "get"],
+			"default": {
+				"rows": []
+			}
 		}
 	},
 	"@default/icon-list": {
