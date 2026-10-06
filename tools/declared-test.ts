@@ -196,6 +196,19 @@ check(
 );
 check("and useData answers no refused list", "refused" in listed, false);
 
+const plainlyRead: { value: unknown; rows: unknown } = { value: null, rows: null };
+const PlainReader = () => {
+	plainlyRead.value = useData("Ada").data;
+	plainlyRead.rows = useData([{ name: "Ada" }, { name: "Grace" }]).data;
+	return null;
+};
+render(h(PlainReader, {}), host);
+await settleOnce();
+check("useData handed a plain value or list answers it as ready data instead of crashing the widget", plainlyRead, {
+	value: "Ada",
+	rows: [{ name: "Ada" }, { name: "Grace" }],
+});
+
 class BatchedTasks extends TasksInMemoryGateway {
 	readonly calls: string[] = [];
 
@@ -436,7 +449,7 @@ check(
 );
 
 check(
-	"a value whose schema has no default is refused like any prop without one",
+	"a value whose schema has no default is accepted, starting empty",
 	refusal(() =>
 		manifestOf(
 			{ heading: IValueGateway.of(z.string()) },
@@ -445,8 +458,8 @@ check(
 				size: { preferredWidth: 320, preferredHeight: "auto" },
 			},
 		),
-	)?.includes('prop "heading" declares no default'),
-	true,
+	),
+	null,
 );
 
 check(

@@ -54,9 +54,24 @@ export function refuseImplementationWords(props: Readonly<Record<string, unknown
 }
 
 export function defaultOf(declaration: Declaration): unknown {
+	const declared = declaredDefaultOf(declaration);
+	return declared === undefined ? emptyValueOf(declaration.schema) : declared;
+}
+
+export function declaredDefaultOf(declaration: Declaration): unknown {
 	if (declaration.kind === "collection") return declaration.rows ?? [];
 	const parsed = declaration.schema.safeParse(undefined);
 	return parsed.success ? parsed.data : undefined;
+}
+
+const EMPTY_OF_TYPE: Readonly<Record<string, unknown>> = { array: [], string: "", number: 0, boolean: false };
+
+export function emptyValueOf(schema: unknown): unknown {
+	const def: unknown = Reflect.get(Reflect.get(Object(schema), "_zod") ?? {}, "def");
+	const type: unknown = Reflect.get(Object(def), "type");
+	if (typeof type === "string" && type in EMPTY_OF_TYPE) return EMPTY_OF_TYPE[type];
+	if (type === "enum") return Object.values(Object(Reflect.get(Object(def), "entries")))[0] ?? null;
+	return null;
 }
 
 function isDeclaration(held: unknown): held is Declaration {

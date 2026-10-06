@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Declaration } from "./declaration";
-import { DECLARATION, declarationIn, defaultOf } from "./declaration";
+import { DECLARATION, declarationIn, declaredDefaultOf, defaultOf } from "./declaration";
 import type { DeclaredProps, MigrationStep, PropMetadata } from "./declared";
 import type { Choice, CommandSpec, HeldSpec } from "./manifest";
 import { PROP_MARK, specOf } from "./manifest";
@@ -127,7 +127,7 @@ function propOfDeclared(name: string, declaration: Declaration, described: PropM
 		...(declaration.where ? { where: declaration.where } : {}),
 		...(declaration.sort ? { sort: declaration.sort } : {}),
 		...(declaration.writes.length > 0 ? { writes: [...declaration.writes] } : {}),
-		default: defaultOf(declaration),
+		default: described.source ? declaredDefaultOf(declaration) : defaultOf(declaration),
 		[PROP_MARK]: true,
 	};
 }

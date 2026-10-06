@@ -254,7 +254,6 @@ export function sizeProblems(size: WidgetSize | undefined): string[] {
 }
 
 const DEFAULTS_TO_A_PATH = 'prop "{name}" defaults to a vault path, and a default may only be a value kept in the tile';
-const DECLARES_NO_DEFAULT = 'prop "{name}" declares no default';
 const SOURCE_PICKS_NO_ROW =
 	'prop "{name}" starts from {implementation}; a widget may only start a prop from @core/selection or @core/selected-row, and the person binds everything else';
 const REF_IS_RESERVED = "prop \"{name}\" describes a field named ref, and ref is the engine's name for a row's address";
@@ -348,8 +347,7 @@ function propProblem(name: string, spec: PropSpec, input: WrittenProp): string |
 		return SOURCE_PICKS_NO_ROW.replace("{name}", name).replace("{implementation}", input.source.implementation);
 	if (spec.describes && "ref" in spec.describes) return REF_IS_RESERVED.replace("{name}", name);
 	if (carriesKey(input.default, "ref")) return DEFAULT_CARRIES_A_REF.replace("{name}", name);
-	if (input.default !== undefined || input.source !== undefined) return null;
-	return DECLARES_NO_DEFAULT.replace("{name}", name);
+	return null;
 }
 
 function heldProblems(holder: string, held: Readonly<Record<string, HeldSpec>> | undefined): string[] {

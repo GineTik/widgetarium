@@ -142,10 +142,15 @@ refusal(
 	() => manifestWith({ notes: IValueGateway.of(z.unknown().default({ ref: "abc", title: "One" })).pick("get") }),
 	"data carrying ref",
 );
-refusal(
-	"a value whose schema has no default is refused",
-	() => manifestWith({ notes: IValueGateway.of(z.string()).pick("get") }),
-	"declares no default",
+check(
+	"a value whose schema has no default starts empty rather than being refused, so the view never waits on the model",
+	[
+		propOf(manifestWith({ notes: IValueGateway.of(z.string()).pick("get") }), "notes").default,
+		propOf(manifestWith({ count: IValueGateway.of(z.number()).pick("get") }), "count").default,
+		propOf(manifestWith({ shelf: IValueGateway.of(z.enum(["reading", "done"])).pick("get") }), "shelf").default,
+		propOf(manifestWith({ person: IValueGateway.of(z.object({ name: z.string() })).pick("get") }), "person").default,
+	],
+	[{ value: "" }, { value: 0 }, { value: "reading" }, { value: null }],
 );
 refusal(
 	"a described ref is refused",
