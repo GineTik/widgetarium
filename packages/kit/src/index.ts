@@ -16,6 +16,8 @@ export { Help } from "./components/help";
 
 export { List, Row, RowBadge, RowLabel, RowSupporting, RowText, RowValue, SlotList } from "./components/list";
 export { Page } from "./components/page";
+export { Container } from "./components/container";
+export type { ContainerProps, ContainerWidth } from "./components/container";
 export type { PageKind, PageProps } from "./components/page";
 export { Section } from "./components/section";
 export type { SectionMore, SectionProps } from "./components/section";

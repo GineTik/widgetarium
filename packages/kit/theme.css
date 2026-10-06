@@ -75,6 +75,7 @@
 	--spacing-items: var(--wg-gap-items);
 	--spacing-parts: var(--wg-gap-parts);
 	--spacing-cards: var(--wg-gap-cards);
+	--spacing-sections: var(--wg-kit-section-gap);
 	--spacing-plate: var(--wg-group-pad);
 
 	--shadow-raise: var(--wg-kit-shadow);

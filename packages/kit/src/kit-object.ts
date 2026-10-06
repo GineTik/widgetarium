@@ -12,6 +12,7 @@ import { Heading } from "./components/heading";
 
 import { List, Row, RowBadge, RowLabel, RowSupporting, RowText, RowValue, SlotList } from "./components/list";
 import { Page } from "./components/page";
+import { Container } from "./components/container";
 import { Section } from "./components/section";
 
 import {
@@ -160,6 +161,7 @@ export const Kit = {
 	RowText,
 	RowSupporting,
 	Page,
+	Container,
 	Section,
 	RowValue,
 	Field,
