@@ -15,9 +15,9 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs photos <app>         after Approve design: download the photos the screens use
   node widgets.mjs rules <app>          every design rule in force for the app, to check the canvas against
   node widgets.mjs screen <app> <screen>   write one screen of the design canvas: its note and its place in canvas.json
-    --board                             place the board you wrote at design/<screen>[ · <state>].md
-    --widget @draft/<name>              or: write a note drawn by one draft
-    --set page=inbox,dialog=add         values its props read (getPage, getDialog, …)
+    --widget @<app>/<page>-page         the page widget that draws this screen
+    --set state=empty,dialog=add        values its props read (getState, getDialog, …)
+    --board                             or: place a board you wrote at design/<screen>[ · <state>].md
     --state <name>                      a state of that screen: Empty, a dialog open, …
   node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
   node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it

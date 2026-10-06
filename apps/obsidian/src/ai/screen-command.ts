@@ -12,8 +12,8 @@ import {
 import type { Told } from "./shape-command.js";
 
 const NO_APP =
-	'Name the app and the screen, for example: screen "Weekly review" "Inbox" --widget @draft/review --set page=inbox';
-const NO_WIDGET = "Name the draft that draws this screen with --widget @draft/<name>.";
+	'Name the app and the screen, for example: screen "Weekly review" "Inbox" --widget @weekly-review/inbox-page --set state=empty';
+const NO_WIDGET = "Name the page widget that draws this screen with --widget @<app>/<page>-page.";
 const BAD_SET = 'Each --set is prop=value, several split by commas: --set "page=inbox,dialog=add"';
 const REFUSED = "That screen does not fit the canvas: {why}";
 const WRITTEN = "{file} drawn by {widget} is on the {app} canvas as {where}. Run `shot --design {app}` to see it.";
