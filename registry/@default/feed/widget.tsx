@@ -1,4 +1,13 @@
-import { IQuery, ISlot, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import {
+	IQuery,
+	IRepeat,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
 import { FeedPages } from "./feed-pages";
 import { FeedSaid } from "./feed-said";
 import type { Drawn, Given, ItemSlot } from "./types";
@@ -16,7 +25,7 @@ const FeedWidget = createWidget({
 	inject: {
 		getItems: IQuery.expects(z.array(ItemSchema)),
 		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		item: ISlot.of<Given>({
+		item: IRepeat.of<Given>({
 			default: "@default/obsidian-markdown-preview",
 			surface: "group",
 			gives: { getSource: ["content", "path"] },

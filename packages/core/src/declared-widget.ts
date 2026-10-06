@@ -16,6 +16,8 @@ import { withManyVerbs } from "./gateway/many";
 import type { EveryValueVerb } from "./gateway/needs";
 import { checkCollectionWrites, checkValueUpdate } from "./gateway/parsed";
 import { isObject } from "./engine/is-object.js";
+import { useSlotsOf } from "./slot-components.js";
+import type { MountEntry } from "./gateway/host.js";
 
 const NOT_READ = "A prop could not be read";
 const NOT_DECLARED = 'prop "{name}" declares no gateway interface';
@@ -47,7 +49,6 @@ const HANDED: Readonly<Partial<Record<Declaration["kind"], Hand>>> = {
 	passed: (_name, declaration, given) =>
 		declaration.passed === undefined ? null : (given[declaration.passed] ?? null),
 	slot: (name, _declaration, given) => fieldOf(given["slots"], name) ?? given[name] ?? null,
-	mounts: (name, _declaration, given) => fieldOf(given["mounts"], name) ?? given[name] ?? [],
 };
 
 export function createDeclaredWidget(props: DeclaredProps, draw: (drawn: DrawnProps) => ReactNode): InjectedWidget {
@@ -81,6 +82,11 @@ function declarationOfInterface(held: unknown): Declaration | null {
 
 function readOf(name: string, declaration: Declaration | null, given: GivenProps): PropRead {
 	if (!declaration) throw new TypeError(NOT_DECLARED.replace("{name}", name));
+	if (declaration.kind === "mounts")
+		return {
+			value: useSlotsOf(entriesOf(fieldOf(given["mounts"], name) ?? given[name]), declaration.held?.single === true),
+			failure: null,
+		};
 	const hand = HANDED[declaration.kind];
 	if (hand) return { value: hand(name, declaration, given), failure: null };
 	return useProp(name, declaration, given[name]);
@@ -239,4 +245,12 @@ function verbIn(drawn: object, verb: string): unknown {
 
 function fieldOf(held: unknown, key: string): unknown {
 	return isObject(held) ? held[key] : undefined;
+}
+
+function entriesOf(held: unknown): readonly MountEntry[] {
+	return Array.isArray(held) ? held.filter(isMountEntry) : [];
+}
+
+function isMountEntry(held: unknown): held is MountEntry {
+	return isObject(held) && typeof held["name"] === "string";
 }

@@ -3,7 +3,7 @@ import {
 	IHost,
 	INavigator,
 	IQuery,
-	ISlot,
+	IRepeat,
 	RecordRefSchema,
 	createWidget,
 	defineLayout,
@@ -76,7 +76,7 @@ const KanbanBoard = createWidget({
 		getOpened: IQuery.expects(z.string().nullable().default(null)),
 		open: ICommand.sends(z.string().nullable()),
 		getGroupBy: IQuery.expects(z.string().default("status")),
-		card: ISlot.of<{ getTask: CardFace }>({
+		card: IRepeat.of<{ getTask: CardFace }>({
 			default: "@default/task-card",
 			surface: "group",
 			gives: { getTask: ["title", "tags", "tagTones", "priority", "status", "progress", "initials", "due", "files"] },

@@ -46,13 +46,16 @@ export const WIDGET_CHECK_RULES = [
 
 const COLLECTION_TITLE = /<LayoutTitle\b|<LayoutHeader\b[^>]*\btitle=/;
 const PAGE_ID = /-page$/;
-const KIT_PAGE = /<Page\b/;
+const KIT_PAGE = /<(?:Container|Page)\b/;
+const DECLARES_SLOT = /\bISlot\b/;
+const NO_SLOTS_SAID =
+	"a page widget that declares no ISlot; its blocks stand in slots a person fills and re-binds by hand (hero: ISlot, main: ISlot.array()), never imported into its code";
 const HAND_PAGE_WIDTH = /(?<![\w-])(?:max-w-[\w[\].-]+|mx-auto)(?![\w-])/g;
 const TITLED_SAID =
 	"a collection that draws its own title; the Section around it owns the title, the count and the add, so the list starts at its first row";
 const NO_KIT_PAGE_SAID =
-	"a page widget that draws no <Page kind=…>; the archetype sets the width, the header and the hero, so the page lays none of them by hand";
-const HAND_WIDTH_SAID = "a page widget that sets its own width ({classes}); the width comes from <Page kind=…>";
+	"a page widget that draws no <Container width=…> (or <Page kind=…>); the kit sets the width, so the page never lays it by hand";
+const HAND_WIDTH_SAID = "a page widget that sets its own width ({classes}); the width comes from <Container width=…>";
 const KIT_HERO_IN_PAGE = /import\s*\{[^}]*\bHero\b[^}]*\}\s*from\s*"widgetarium\/kit"/;
 const KIT_HERO_SAID =
 	"a page that draws the kit's Hero itself; a page block is a widget — import @default/hero (or the catalogue's) and feed it, so the catalogue owns how a hero looks";
@@ -153,6 +156,7 @@ function restyledFindings(source: string): Finding[] {
 function pageFindings(id: string, source: string): Finding[] {
 	if (!PAGE_ID.test(id)) return [];
 	if (!KIT_PAGE.test(source)) return [{ rule: "page", message: NO_KIT_PAGE_SAID }];
+	if (!DECLARES_SLOT.test(source)) return [{ rule: "page", message: NO_SLOTS_SAID }];
 	if (KIT_HERO_IN_PAGE.test(source)) return [{ rule: "page", message: KIT_HERO_SAID }];
 	const classes = [...new Set([...source.matchAll(HAND_PAGE_WIDTH)].map((found) => found[0]))];
 	if (classes.length === 0) return [];

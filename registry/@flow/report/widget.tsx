@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IHost, IQuery, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IHost, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row } from "widgetarium";
 import { Figures } from "./figures";
 import { Fixes } from "./fixes";
@@ -100,7 +100,7 @@ const ReportWidget = createWidget({
 		getFixes: IQuery.expects(z.array(FixSchema)),
 		getMeasure: IQuery.expects(z.number().default(MEASURE_CH)),
 		getStepsPerPage: IQuery.expects(z.number().default(STEPS_PER_PAGE)),
-		figure: ISlot.of<{ getSource: Figure }>({
+		figure: IRepeat.of<{ getSource: Figure }>({
 			default: "@flow/report-figure",
 			surface: "none",
 			gives: { getSource: ["caption", "image", "alt", "drawing"] },

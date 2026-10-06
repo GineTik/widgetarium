@@ -83,7 +83,7 @@ export {
 	IHere,
 	IHost,
 	IListGateway,
-	IMounts,
+	IRepeat,
 	INavigator,
 	IPreview,
 	IReader,
@@ -113,6 +113,7 @@ export { narrow, normalizeWhere } from "../../core/src/gateway/narrow";
 export { useNarrowed } from "../../core/src/gateway/use-narrowed";
 export { useValue } from "../../core/src/gateway/use-value";
 export { pickedValue } from "../../core/src/gateway/picked-value";
+export type { SlotComponent, SlotList } from "../../core/src/slot-components";
 
 export type {
 	ConfigureMounts,

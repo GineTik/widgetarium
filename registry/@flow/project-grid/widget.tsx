@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import {
 	ICommand,
 	IQuery,
-	ISlot,
+	IRepeat,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -62,7 +62,7 @@ const ProjectGrid = createWidget({
 		getSelection: IQuery.expects(z.unknown()),
 		select: ICommand.sends(z.unknown()),
 		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		card: ISlot.of<{ getProject: Row<Project> }>({
+		card: IRepeat.of<{ getProject: Row<Project> }>({
 			default: "@flow/project-card",
 			surface: "group",
 			gives: { getProject: ["mark", "name", "repository", "open", "doing", "done", "touched"] },

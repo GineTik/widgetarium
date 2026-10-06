@@ -1,4 +1,4 @@
-import { useData, type PropsOf, type MountEntry, type Slot } from "widgetarium";
+import { useData, type PropsOf, type Slot, type SlotList } from "widgetarium";
 import { Layout, type LayoutKind } from "widgetarium/kit";
 import { PER_ROW } from "./body-modes";
 import { PerRow } from "./per-row";
@@ -10,7 +10,7 @@ type BodyProps = {
 	getItems: PropsOf<typeof SectionWidget>["getItems"];
 	pageSize: number;
 	Drawn: Slot<Record<string, unknown>> | undefined;
-	placed: readonly MountEntry[];
+	placed: SlotList;
 	kind: LayoutKind;
 	narrowest: number;
 };

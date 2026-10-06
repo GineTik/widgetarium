@@ -55,7 +55,8 @@ export function mountGroups(state: WindowState): ReactElement[] {
 			write(next, moveRecord(tile.mounted, heldKey(tile.mounted, was.name, was.was), now.name));
 		};
 		const drawn = rows.map((row, index) => mountRow(state, { rows, row, index, write, rename }));
-		return group(key, spec.label ?? titleCase(name), [...drawn, picker], spec.hint ?? null);
+		const isFull = spec.single === true && rows.length > 0;
+		return group(key, spec.label ?? titleCase(name), isFull ? drawn : [...drawn, picker], spec.hint ?? null);
 	});
 }
 

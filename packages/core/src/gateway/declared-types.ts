@@ -3,6 +3,7 @@ import type { Action, CanResult, GatewayBase, Query, Row, RowsResult } from "./c
 import type { ManifestCard, PropCommon, RecordRef, RowWithRef, WidgetSize } from "./manifest";
 import type { ManyVerbsOf } from "./many";
 import type { Described } from "./written";
+import type { MountRow } from "./host";
 import type {
 	Answer,
 	CollectionWrite,
@@ -28,6 +29,14 @@ export declare const gatewayKind: unique symbol;
 export declare const passedAs: unique symbol;
 export declare const queryRowHeld: unique symbol;
 export declare const commandInput: unique symbol;
+export declare const slotGiven: unique symbol;
+
+export interface SlotState {
+	readonly widget: string;
+	readonly state?: string | undefined;
+	readonly surface?: "group" | "none" | undefined;
+	readonly props?: Readonly<Record<string, unknown>> | undefined;
+}
 
 export type Answering = {
 	readonly answersInAWidget?: "an implementation's word: a widget writes IQuery.expects or ICommand.sends";
@@ -183,6 +192,7 @@ export type WidgetProp = (
 	| QueryValueDeclared<unknown>
 	| CommandDeclared<never>
 	| PassedDeclared<unknown>
+	| (PassedDeclared<unknown> & { readonly [slotGiven]?: unknown })
 ) & { readonly schemaMissing?: never; readonly answersInAWidget?: never };
 
 export type DeclaredProps = Readonly<Record<string, WidgetProp>>;
@@ -210,7 +220,15 @@ type DrawnOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 					? DrawnList<Held, Verbs, CreateIn, PatchIn>
 					: never;
 
-type GivenOf<C> = C extends { readonly [passedAs]?: infer Drawn }
+type GivenOf<C> = [SlotGivenOf<C>] extends [never] ? GivenOfGateway<C> : SlotGivenOf<C>;
+
+type SlotGivenOf<C> = C extends { readonly [slotGiven]?: infer State }
+	? unknown extends State
+		? never
+		: Exclude<State, undefined>
+	: never;
+
+type GivenOfGateway<C> = C extends { readonly [passedAs]?: infer Drawn }
 	? Drawn
 	: C extends { readonly [commandInput]?: infer Input }
 		? CommandContract<Input>
@@ -285,4 +303,15 @@ export interface MigrationStep<From extends DeclaredProps> {
 
 export interface DeclaredWidget<P extends DeclaredProps> {
 	readonly declared: P;
+}
+
+export interface SlotOptions {
+	readonly default?: string;
+	readonly surface?: string;
+	readonly gives?: Readonly<Record<string, readonly string[]>>;
+}
+
+export interface MountsOptions {
+	readonly default?: readonly MountRow[];
+	readonly was?: string;
 }

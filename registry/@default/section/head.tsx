@@ -1,4 +1,4 @@
-import type { MountEntry } from "widgetarium";
+import type { SlotList } from "widgetarium";
 import { Pill, type ToneName } from "widgetarium/kit";
 import { Controls } from "./controls";
 
@@ -6,7 +6,7 @@ type HeadProps = {
 	heading: string;
 	badge: string;
 	badgeTone: ToneName;
-	controls: readonly MountEntry[];
+	controls: SlotList;
 };
 
 export function Head({ heading, badge, badgeTone, controls }: HeadProps) {

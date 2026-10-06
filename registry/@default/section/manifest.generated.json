@@ -202,9 +202,9 @@
 		"body.tsx",
 		"controls.tsx",
 		"head.tsx",
+		"nothing-placed.tsx",
 		"per-row.tsx",
-		"placed.tsx",
-		"stands.tsx"
+		"placed.tsx"
 	],
 	"dependencies": {},
 	"widgetDependencies": []

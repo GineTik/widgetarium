@@ -1,4 +1,4 @@
-import { IMounts, IQuery, ISlot, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ISlot, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 import type { Slot } from "widgetarium";
 import type { LayoutKind } from "widgetarium/kit";
 import { Body } from "./body";
@@ -41,9 +41,9 @@ const SectionWidget = createWidget({
 		getMinWidthPx: IQuery.expects(z.number().default(240)),
 		getItems: IQuery.expects(z.array(z.looseObject({}))),
 		getPageSize: IQuery.expects(z.number().default(24)),
-		controls: IMounts.of({ default: [] }),
-		widgets: IMounts.of({ default: [] }),
-		item: ISlot.of({ surface: "none" }),
+		controls: ISlot.array({ default: [] }),
+		widgets: ISlot.array({ default: [] }),
+		item: IRepeat.of({ surface: "none" }),
 	},
 	draw: ({
 		getHeading: heading,

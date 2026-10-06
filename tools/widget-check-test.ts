@@ -173,12 +173,37 @@ check(
 	["page"],
 );
 check(
+	"a page widget laid in a kit Container is clean: the layout owns its structure, the kit only its width",
+	rulesIn(
+		checkWidget({
+			...clean,
+			id: "@crm/people-page",
+			card: { role: "layout" },
+			source: "inject: { hero: ISlot }\n<Container width={1040}><Hero /></Container>",
+		}),
+	),
+	[],
+);
+check(
+	"a page widget that imports its blocks instead of declaring slots is a finding: nothing in it could be changed by hand",
+	checkWidget({
+		...clean,
+		id: "@crm/people-page",
+		card: { role: "layout" },
+		source: 'import ReachOut from "@crm/reach-out";\n<Container width={1040}><ReachOut /></Container>',
+	})
+		.find((one) => one.rule === "page")
+		?.message.includes("ISlot"),
+	true,
+);
+check(
 	"and so is one that sets its own width",
 	checkWidget({
 		...clean,
 		id: "@crm/people-page",
 		card: { role: "layout" },
-		source: '<Page kind="index" title="People"><div className="mx-auto max-w-[720px]" /></Page>',
+		source:
+			'inject: { main: ISlot.array() }\n<Page kind="index" title="People"><div className="mx-auto max-w-[720px]" /></Page>',
 	})
 		.find((one) => one.rule === "page")
 		?.message.includes("mx-auto, max-w-[720px]"),
@@ -233,7 +258,7 @@ check(
 			...clean,
 			id: "@crm/people-page",
 			card: { role: "layout" },
-			source: '<Page kind="index" title="People">x</Page>',
+			source: 'inject: { main: ISlot.array() }\n<Page kind="index" title="People">x</Page>',
 		}),
 	),
 	[],

@@ -154,10 +154,21 @@ export interface HeldSpec {
 	default?: unknown;
 	surface?: string;
 	of?: string;
+	single?: boolean;
 	gives?: Readonly<Record<string, readonly string[]>>;
 }
 
-export const HELD_KEYS: readonly string[] = ["label", "hint", "was", "isVisible", "default", "surface", "of", "gives"];
+export const HELD_KEYS: readonly string[] = [
+	"label",
+	"hint",
+	"was",
+	"isVisible",
+	"default",
+	"surface",
+	"of",
+	"gives",
+	"single",
+];
 
 export type Manifest = ManifestCard & {
 	props: Readonly<Record<string, PropSpec>>;

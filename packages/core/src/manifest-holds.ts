@@ -9,6 +9,7 @@ export interface SlotSpec {
 }
 
 export interface MountsSpec extends MountSpec {
+	readonly single?: boolean | undefined;
 	readonly label?: string | undefined;
 	readonly hint?: string | undefined;
 	readonly isVisible?: unknown;
@@ -31,6 +32,7 @@ export function mountSpecsOf(manifest: unknown): Specs<MountsSpec> {
 		label: textAt(held, "label"),
 		hint: textAt(held, "hint"),
 		default: held["default"],
+		single: held["single"] === true,
 		isVisible: held["isVisible"],
 	}));
 }

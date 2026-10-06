@@ -1,7 +1,7 @@
 import {
 	ICommand,
 	IQuery,
-	ISlot,
+	IRepeat,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -133,7 +133,7 @@ const InFlight = createWidget({
 		getSelection: IQuery.expects(z.unknown()),
 		select: ICommand.sends(z.unknown()),
 		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		row: ISlot.of<{ getFlight: FlightFace }>({
+		row: IRepeat.of<{ getFlight: FlightFace }>({
 			default: "@flow/flight-row",
 			surface: "group",
 			gives: { getFlight: ["title", "status", "stage", "project", "branch", "activity", "elapsed", "who"] },

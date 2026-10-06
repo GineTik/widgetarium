@@ -5,6 +5,7 @@ export const NODE_MARK = "data-wg-node";
 export const WIDGET_MARK = "data-wg-widget";
 export const HELD_MARK = "data-wg-held";
 export const SCOPE_MARK = "data-wg-scope";
+export const SLOT_ENTRY_MARK = "data-wg-slot-entry";
 
 const PAGE_FOLDER = /-page$/;
 const SOURCE_PLUGINS = ["jsx", "typescript"] as const;

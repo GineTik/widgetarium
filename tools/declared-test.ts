@@ -477,7 +477,7 @@ check(
 check(
 	"declareProps refuses an entry that is not a declared gateway where it is written",
 	refusal(() => callAsUntypedSource(declareProps, { heading: props.heading, placeholder: "Search" })),
-	'prop "placeholder" is not a gateway declared with IQuery.expects, ICommand.sends, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot.of, IMounts.of or one the host hands over (IHost, INavigator, …)',
+	'prop "placeholder" is not a gateway declared with IQuery.expects, ICommand.sends, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot, ISlot.array, IRepeat.of or one the host hands over (IHost, INavigator, …)',
 );
 check("and hands back the very props it was given", declareProps(props) === props, true);
 check(

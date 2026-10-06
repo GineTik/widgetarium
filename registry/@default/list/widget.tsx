@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
 	ICommand,
 	IQuery,
-	ISlot,
+	IRepeat,
 	RecordRefSchema,
 	VaultRecordSchema,
 	createWidget,
@@ -119,7 +119,7 @@ const ListWidget = createWidget({
 		getFilterField: IQuery.expects(z.string().default("title")),
 		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
 		getHeading: IQuery.expects(z.string().default("")),
-		row: ISlot.of<Handed>({ default: "@default/task-card", surface: "group" }),
+		row: IRepeat.of<Handed>({ default: "@default/task-card", surface: "group" }),
 	},
 	draw: ({
 		getRows,

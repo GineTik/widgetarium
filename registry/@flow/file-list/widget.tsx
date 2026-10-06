@@ -1,7 +1,7 @@
 import {
 	ICommand,
 	IQuery,
-	ISlot,
+	IRepeat,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -136,7 +136,7 @@ const FileList = createWidget({
 		select: ICommand.sends(z.unknown()),
 		getHeading: IQuery.expects(z.string().default("Files touched")),
 		getShownFiles: IQuery.expects(z.number().default(SHOWN)),
-		file: ISlot.of<{ getFile: FileFace }>({
+		file: IRepeat.of<{ getFile: FileFace }>({
 			default: "@flow/file-row",
 			surface: "group",
 			gives: { getFile: ["path", "added", "removed", "change", "from"] },

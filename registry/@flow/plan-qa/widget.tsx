@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IQuery, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row, Slot } from "widgetarium";
 import { Button, SlotList } from "widgetarium/kit";
 
@@ -71,7 +71,7 @@ const PlanQa = createWidget({
 				},
 			]),
 		),
-		question: ISlot.of<Given>({
+		question: IRepeat.of<Given>({
 			default: "@flow/qa-block",
 			surface: "group",
 			gives: { getAsked: ["question", "options", "answer", "reason"] },

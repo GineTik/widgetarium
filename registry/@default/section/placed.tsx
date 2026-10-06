@@ -1,16 +1,20 @@
-import type { MountEntry } from "widgetarium";
-import { Stands } from "./stands";
+import type { SlotList } from "widgetarium";
+import { LayoutItem } from "widgetarium/kit";
+import { NothingPlaced } from "./nothing-placed";
 
-export function Placed({ held }: { held: readonly MountEntry[] }) {
-	return held.length === 0 ? (
-		<div className="wg-section-empty">Nothing stands here yet.</div>
-	) : (
+export function Placed({ held }: { held: SlotList }) {
+	if (held.length === 0) return <NothingPlaced />;
+	return (
 		<>
-			{held
-				.filter((entry) => !entry.hidden)
-				.map((entry) => (
-					<Stands key={entry.name} entry={entry} />
-				))}
+			{held.map((Slot) =>
+				Slot.entry?.surface ? (
+					<Slot key={Slot.id} className="wg-section-stands" />
+				) : (
+					<LayoutItem key={Slot.id} className="wg-section-stands">
+						<Slot />
+					</LayoutItem>
+				),
+			)}
 		</>
 	);
 }

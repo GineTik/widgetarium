@@ -5,7 +5,7 @@ import {
 	EditableTabs,
 	Mounted,
 	ICommand,
-	IMounts,
+	ISlot,
 	IQuery,
 	applyTabStep,
 	archivedOf,
@@ -79,7 +79,7 @@ function rowOf(entry: MountEntry): MountRow {
 
 const ViewGroup = createWidget({
 	inject: {
-		holds: IMounts.of({
+		holds: ISlot.array({
 			default: [
 				{ name: "Kanban", widget: "@default/kanban-board" },
 				{ name: "Archived columns", widget: "@default/archived-columns" },
@@ -93,10 +93,10 @@ const ViewGroup = createWidget({
 		catalogue: ICatalogue,
 	},
 	draw: ({ getIsTabsShown: isTabsShown, getSelection: selection, select, holds, configureMounts, catalogue }) => {
-		const rows = holds.map(rowOf);
+		const rows = holds.entries.map(rowOf);
 		const tabs = tabsOf(rows);
 		const archived = archivedOf(rows);
-		const shown = holds.filter((entry) => !entry.hidden);
+		const shown = holds.entries.filter((entry) => !entry.hidden);
 		const isStriped = isTabsShown && Boolean(configureMounts);
 
 		const asked = shown.find((entry) => entry.name === selection);

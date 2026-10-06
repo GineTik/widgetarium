@@ -5,8 +5,6 @@ import type {
 	ConfigureMounts,
 	FoldIntoGroup,
 	Here,
-	MountEntry,
-	MountRow,
 	Navigation,
 	PassageReader,
 	Slot,
@@ -15,6 +13,7 @@ import type {
 	WidgetPreview,
 	Carrier,
 } from "./host";
+import type { SlotComponent, SlotList } from "../slot-components.js";
 import type { DeclaredFilterRow, HeldSpec, ModuleManifest, RecordRef as RecordRefType } from "./manifest";
 import { manifestOfDeclared, sizeProblems } from "./manifest";
 import type { Declaration } from "./declaration";
@@ -37,7 +36,11 @@ import type {
 	gatewayKind,
 	ListDeclared,
 	MigrationStep,
+	MountsOptions,
 	passedAs,
+	SlotOptions,
+	slotGiven,
+	SlotState,
 	PatchInOf,
 	ReadOf,
 	SchemaOrShapes,
@@ -112,17 +115,6 @@ export interface ListOptions<Held> {
 	readonly where?: readonly DeclaredFilterRow[];
 	readonly sort?: readonly SortRow[];
 	readonly default?: readonly Partial<Held>[];
-}
-
-export interface SlotOptions {
-	readonly default?: string;
-	readonly surface?: string;
-	readonly gives?: Readonly<Record<string, readonly string[]>>;
-}
-
-export interface MountsOptions {
-	readonly default?: readonly MountRow[];
-	readonly was?: string;
 }
 
 export type AbstractOf<Instance> = abstract new () => Instance;
@@ -227,19 +219,24 @@ Object.defineProperty(ICrudGateway, DECLARATION, {
 	value: { kind: "collection", schema: z.unknown(), reads: COLLECTION_READS, writes: COLLECTION_WRITES },
 });
 
-export type ISlot<Given = Readonly<Record<string, unknown>>> = Slot<Given>;
-export const ISlot = {
+export type IRepeat<Given = Readonly<Record<string, unknown>>> = Slot<Given>;
+export const IRepeat = {
 	of<Given = Readonly<Record<string, unknown>>>(options: SlotOptions = {}): PassedDeclared<Slot<Given>> {
 		return createHeldClass("slot", { of: "widget", ...options }) as PassedDeclared<Slot<Given>>;
 	},
 };
 
-export type IMounts = readonly MountEntry[];
-export const IMounts = {
-	of(options: MountsOptions = {}): PassedDeclared<IMounts> {
-		return createHeldClass("mounts", { default: [], ...options }) as PassedDeclared<IMounts>;
+export type ISlot = SlotComponent;
+export type SlotArrayDeclared = PassedDeclared<SlotList> & { readonly [slotGiven]?: readonly SlotState[] };
+export interface SlotDeclared extends PassedDeclared<SlotComponent> {
+	readonly [slotGiven]?: SlotState;
+	array(options?: MountsOptions): SlotArrayDeclared;
+}
+export const ISlot = Object.assign(createHeldClass("mounts", { default: [], single: true }), {
+	array(options: MountsOptions = {}) {
+		return createHeldClass("mounts", { default: [], ...options }) as SlotArrayDeclared;
 	},
-};
+}) as SlotDeclared;
 
 export type IHost = ViewHost;
 export const IHost = createPassedClass("host") as PassedDeclared<IHost>;

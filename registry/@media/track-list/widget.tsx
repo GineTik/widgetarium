@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
 	ICommand,
 	IQuery,
-	ISlot,
+	IRepeat,
 	RecordRefSchema,
 	VaultRecordSchema,
 	createWidget,
@@ -74,7 +74,7 @@ const TrackList = createWidget({
 		getFilter: IQuery.expects(z.string().default("")),
 		setFilter: ICommand.sends(z.string()),
 		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		row: ISlot.of<Given>({
+		row: IRepeat.of<Given>({
 			default: "@media/track-row",
 			surface: "group",
 			gives: { getTrack: ["title", "artist", "album", "addedAt", "duration", "favourite"] },

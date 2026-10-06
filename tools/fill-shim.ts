@@ -31,7 +31,7 @@ export {
 	IHere,
 	IHost,
 	IListGateway,
-	IMounts,
+	IRepeat,
 	INavigator,
 	IReader,
 	RecordRefSchema,

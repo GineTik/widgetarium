@@ -3,7 +3,7 @@ import type { DeclaredProps } from "../packages/core/src/gateway/declared-types.
 import type { Described } from "../packages/core/src/gateway/written.js";
 
 const { seenOf, isShown, shownEntries } = await import("../packages/core/src/prop-visibility.js");
-const { IListGateway, IMounts, ISlot, declareProps, manifestOfModule, z } =
+const { IListGateway, ISlot, IRepeat, declareProps, manifestOfModule, z } =
 	await import("../packages/core/src/gateway/declared.ts");
 
 let failed = 0;
@@ -99,13 +99,13 @@ function refusalOf(held: DeclaredProps, described: Described): string | null {
 }
 
 const misspelledKey: string = "isVisibel";
-const misspelled = refusalOf({ held: IMounts.of() }, { held: { [misspelledKey]: () => false } });
+const misspelled = refusalOf({ held: ISlot.array() }, { held: { [misspelledKey]: () => false } });
 check("a misspelled isVisible on a mount is refused", misspelled !== null, true);
 check("and the refusal names the key", misspelled?.includes("isVisibel"), true);
 check("and names the mount it stands on", misspelled?.includes('mount "held"'), true);
 check(
 	"a slot declaring what the engine reads is accepted",
-	refusalOf({ item: ISlot.of({ surface: "none" }) }, { item: { label: "Item", isVisible: () => true } }),
+	refusalOf({ item: IRepeat.of({ surface: "none" }) }, { item: { label: "Item", isVisible: () => true } }),
 	null,
 );
 

@@ -1,4 +1,4 @@
-import { ICommand, IQuery, ISlot, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { ICommand, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
 import type { Row } from "widgetarium";
 import { TailPatience } from "./tail-patience";
 import { TailRows } from "./tail-rows";
@@ -44,7 +44,7 @@ const SessionTail = createWidget({
 		getLinesKept: IQuery.expects(z.number().default(LINES_KEPT)),
 		getIsFollowing: IQuery.expects(z.boolean().default(true)),
 		setIsFollowing: ICommand.sends(z.boolean()),
-		line: ISlot.of<{ getEntry: Row<LogLine> }>({
+		line: IRepeat.of<{ getEntry: Row<LogLine> }>({
 			default: "@flow/log-line",
 			surface: "none",
 			gives: { getEntry: ["at", "text", "tone"] },

@@ -1,4 +1,13 @@
-import { IQuery, ISlot, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import {
+	IQuery,
+	IRepeat,
+	VaultRecordSchema,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	useData,
+	z,
+} from "widgetarium";
 import { AlbumPage } from "./album-page";
 import { MIN_CELL_PX, NARROW_PX } from "./cell-sizes";
 import { MoreWhenSeen, usePages } from "widgetarium/kit";
@@ -62,7 +71,7 @@ const AlbumGrid = createWidget({
 			]),
 		),
 		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		cover: ISlot.of<Given>({
+		cover: IRepeat.of<Given>({
 			default: "@media/album-cover",
 			surface: "none",
 			gives: { getAlbum: ["title", "artist", "cover", "tracks"], getBeside: [] },
