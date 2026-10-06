@@ -1,47 +1,32 @@
-import { createElement as h, useEffect, useState } from "react";
+import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { MARGIN_PX } from "./design-canvas-shapes.js";
 import type { DrawnReference } from "./design-canvas-shapes.js";
+import { Group } from "./design-group.js";
+import { NotedPicture } from "./design-noted-picture.js";
+import { Region } from "./design-region.js";
 
-export const REFERENCE_PX = 640;
-const REFERENCES_SAID = "References · {count}";
-
-export interface ReferencesLaneProps {
+export interface ReferencesRegionProps {
 	readonly references: readonly DrawnReference[];
-	readonly onWidth: (width: number) => void;
 }
 
-export function ReferencesLane({ references, onWidth }: ReferencesLaneProps): ReactElement | null {
-	const [lane, setLane] = useState<HTMLDivElement | null>(null);
-	useWritesWidth(lane, onWidth);
+const REFERENCES = "References";
+
+export function ReferencesRegion({ references }: ReferencesRegionProps): ReactElement | null {
 	if (references.length === 0) return null;
-	const style = { left: `${MARGIN_PX}px`, top: `${MARGIN_PX}px` };
-	return h("div", { className: "wg-design-references", style, ref: setLane }, [
-		h(
-			"div",
-			{ key: "top", className: "wg-design-top" },
-			h("span", { className: "wg-design-name" }, REFERENCES_SAID.replace("{count}", String(references.length))),
-		),
-		h(
-			"div",
-			{ key: "row", className: "wg-design-reference-row", style: { height: `${REFERENCE_PX}px` } },
-			references.map((reference) =>
-				h("figure", { key: reference.name, className: "wg-design-reference" }, [
-					h("img", { key: "img", src: reference.src, alt: reference.why ?? reference.name, draggable: false }),
-					reference.why ? h("figcaption", { key: "why" }, reference.why) : null,
-				]),
+	return h(
+		Region,
+		{ title: REFERENCES, count: references.length },
+		references.map((reference) =>
+			h(
+				Group,
+				{ key: reference.name, title: titleOf(reference), badge: reference.kind, sub: reference.why },
+				h(NotedPicture, { reference }),
 			),
 		),
-	]);
+	);
 }
 
-function useWritesWidth(watched: HTMLDivElement | null, onWidth: (width: number) => void): void {
-	useEffect(() => {
-		if (!watched) return onWidth(0);
-		const measure = (): void => onWidth(watched.offsetWidth);
-		const watcher = new ResizeObserver(measure);
-		watcher.observe(watched);
-		measure();
-		return () => watcher.disconnect();
-	}, [watched, onWidth]);
+function titleOf(reference: DrawnReference): string {
+	const name = reference.name.split("/").pop() ?? reference.name;
+	return decodeURIComponent(name.split("?")[0] ?? name);
 }

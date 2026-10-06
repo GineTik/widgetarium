@@ -7674,11 +7674,82 @@ body.wg-tree-carrying .wg-tile-body {
 	position: absolute;
 	top: 0;
 	left: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 120px;
+	width: max-content;
+	padding: 80px;
 	transform-origin: 0 0;
 }
 
+.wg-design-region {
+	display: flex;
+	flex-direction: column;
+	gap: 40px;
+	max-width: none;
+	padding: 48px;
+	border-radius: 40px;
+	background: color-mix(in srgb, var(--background-modifier-border) 35%, var(--background-secondary));
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	cursor: default;
+}
+
+.wg-design-region-head {
+	font-size: 40px;
+	font-weight: var(--font-bold, 700);
+	color: var(--text-normal);
+}
+
+.wg-design-region-body {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 56px;
+	max-width: 5500px;
+}
+
+.wg-design-group {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	padding: 28px;
+	border-radius: 28px;
+	background: var(--background-secondary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+}
+
+.wg-design-group-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 12px;
+	font-size: 24px;
+	color: var(--text-normal);
+}
+
+.wg-design-group-sub {
+	font-size: var(--font-ui-medium);
+	color: var(--text-muted);
+}
+
+.wg-design-badge {
+	padding: 2px 10px;
+	border-radius: 999px;
+	background: var(--background-modifier-hover);
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+.wg-design-group-body {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 40px;
+	max-width: 5300px;
+}
+
 .wg-design-frame {
-	position: absolute;
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
@@ -7721,28 +7792,12 @@ body.wg-tree-carrying .wg-tile-body {
 	flex: 1 0 auto;
 }
 
-.wg-design-region-head {
-	position: absolute;
-}
-
-.wg-design-regions {
-	position: absolute;
-	display: flex;
-	flex-direction: column;
-	gap: 120px;
-}
-
-.wg-design-region {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.wg-design-bento {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-start;
-	gap: 40px;
+.wg-design-drawn {
+	container-type: inline-size;
+	min-width: 0;
+	--wg-gap-items: 16px;
+	--wg-gap-parts: 8px;
+	--wg-gap-cards: 8px;
 }
 
 .wg-design-widget {
@@ -7752,61 +7807,95 @@ body.wg-tree-carrying .wg-tile-body {
 	margin: 0;
 }
 
-.wg-design-widget-name {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
+.wg-design-state-name {
 	font-size: var(--font-ui-medium);
-	color: var(--text-normal);
-}
-
-.wg-design-widget-name > span {
-	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold, 600);
 	color: var(--text-muted);
 }
 
 .wg-design-widget-body {
 	overflow: hidden;
-	padding: 8px;
+	padding: 20px;
 	border-radius: 16px;
 	background: var(--background-primary);
 	box-shadow: 0 0 0 1px var(--background-modifier-border);
-	cursor: default;
 }
 
-.wg-design-references {
-	position: absolute;
-	width: max-content;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+.wg-design-noted {
+	position: relative;
+	display: grid;
+	grid-template-columns: 280px auto 280px;
+	align-items: start;
+	gap: 48px;
 }
 
-.wg-design-reference-row {
-	display: flex;
-	gap: 40px;
-}
-
-.wg-design-reference {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	height: 100%;
-	margin: 0;
-}
-
-.wg-design-reference img {
-	flex: 1;
-	min-height: 0;
+.wg-design-noted > img {
+	height: 540px;
 	width: auto;
+	max-width: none;
 	border-radius: 16px;
 	box-shadow: 0 0 0 1px var(--background-modifier-border);
 }
 
-.wg-design-reference figcaption {
-	max-width: 420px;
+.wg-design-notes {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.wg-design-note {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 14px 16px;
+	border-radius: 6px;
+	background: var(--wg-kit-warning-wash);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	color: var(--wg-kit-text);
 	font-size: var(--font-ui-medium);
+	line-height: 1.4;
+}
+
+.wg-design-note.is-take {
+	background: var(--wg-kit-success-wash);
+}
+
+.wg-design-note.is-like {
+	background: var(--wg-kit-info-wash);
+}
+
+.wg-design-note.is-dislike {
+	background: var(--wg-kit-error-wash);
+}
+
+.wg-design-note:nth-child(odd) {
+	transform: rotate(-1deg);
+}
+
+.wg-design-note:nth-child(even) {
+	transform: rotate(1deg);
+}
+
+.wg-design-note > b {
+	font-size: var(--font-ui-small);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
 	color: var(--text-muted);
+}
+
+.wg-design-note-lines {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+}
+
+.wg-design-note-lines line {
+	stroke: var(--text-faint);
+	stroke-width: 1.5;
+	stroke-dasharray: 4 4;
 }
 
 .wg-design-head,

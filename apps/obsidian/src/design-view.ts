@@ -20,7 +20,7 @@ import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
 import { LOCK_PATH } from "@widgetarium/core/paths.js";
 import { DesignCanvas } from "./design-canvas.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
-import type { DrawnDesign, DrawnState } from "./design-canvas-shapes.js";
+import type { DrawnDesign, DrawnState, StatePicture } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
 import type WidgetariumPlugin from "./main.js";
 
@@ -157,20 +157,17 @@ async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDe
 	const screens = await Promise.all(
 		read.design.screens.map(async (screen) => ({
 			name: screen.name,
-			states: await Promise.all(statesOf(screen).map((state) => stateOf(plugin, app, state))),
+			states: await Promise.all(statesOf(screen).map((state) => stateOf(plugin, app, state, screen.name))),
 		})),
 	);
 	const references = read.design.references.map((reference) => ({
 		name: "url" in reference ? reference.url : reference.file,
 		src: "url" in reference ? reference.url : adapter.getResourcePath(referencePathOf(app, reference.file)),
 		why: reference.why,
+		kind: reference.kind,
+		notes: reference.notes ?? [],
 	}));
 	return { screens, references, widgets: await widgetsOf(plugin, app, screens) };
-}
-
-function widgetsDrawnBy(plugin: WidgetariumPlugin, id: string): readonly string[] {
-	const uses = plugin.registry.get(id)?.uses ?? [];
-	return uses.length > 0 ? uses : [id];
 }
 
 async function widgetsOf(
@@ -178,13 +175,17 @@ async function widgetsOf(
 	app: string,
 	screens: DrawnDesign["screens"],
 ): Promise<DrawnDesign["widgets"]> {
-	const onScreens = widgetsOnScreens(screens).flatMap((id) => widgetsDrawnBy(plugin, id));
+	const pages = new Set(widgetsOnScreens(screens));
+	const onScreens = [...pages].flatMap((id) => plugin.registry.get(id)?.uses ?? []);
 	const used = appWidgetsOf([...(await specWidgetsOf(plugin, app)), ...onScreens], await catalogueInstallsOf(plugin));
-	const exists = (id: string): boolean => Boolean(plugin.registry.get(id)?.component);
+	const isShown = (id: string): boolean => Boolean(plugin.registry.get(id)?.component) && !pages.has(id);
 	const blocks = draftsOn(screens).flatMap((draft) =>
 		blocksOf(plugin.registry, draft).map((block) => blockIdOf(draft, block)),
 	);
-	return { fromCatalogue: used.fromCatalogue.filter(exists), made: [...blocks, ...used.made.filter(exists)] };
+	return [
+		...used.fromCatalogue.filter(isShown).map((id) => ({ id, isFromCatalogue: true })),
+		...[...blocks, ...used.made.filter(isShown)].map((id) => ({ id, isFromCatalogue: false })),
+	];
 }
 
 function isDraft(id: string): boolean {
@@ -229,7 +230,7 @@ function refusedDesign(app: string, refusal: string): DrawnDesign {
 	return {
 		screens: [{ name: app, states: [{ name: app, board: null, refusal }] }],
 		references: [],
-		widgets: { fromCatalogue: [], made: [] },
+		widgets: [],
 	};
 }
 
@@ -237,10 +238,13 @@ async function stateOf(
 	plugin: WidgetariumPlugin,
 	app: string,
 	state: { name: string; file: string },
+	screen: string,
 ): Promise<DrawnState> {
 	const text = await plugin.app.vault.adapter.read(screenPathOf(app, state.file)).catch(() => "");
 	const board = boardIn(text);
 	if (!board) return { name: state.name, board, refusal: NO_BOARD.replace("{name}", state.file) };
+	const picture = pictureOf(plugin, board, state.name === screen ? null : state.name);
+	if (picture) return { name: state.name, board, picture };
 	const binding = vaultBindingOf(board);
 	if (binding)
 		return {
@@ -249,6 +253,15 @@ async function stateOf(
 			refusal: BOUND_TO_VAULT.replace("{name}", state.file).replace("{binding}", binding),
 		};
 	return { name: state.name, board };
+}
+
+function pictureOf(plugin: WidgetariumPlugin, board: Board, state: string | null): StatePicture | null {
+	const [tile] = board.tiles;
+	if (!tile || board.tiles.length > 1) return null;
+	const states = plugin.registry.get(tile.widget)?.states ?? {};
+	const [first] = Object.keys(states);
+	const props = states[state ?? first ?? ""];
+	return props ? { widget: tile.widget, props } : null;
 }
 
 function boardIn(text: string): Board | null {

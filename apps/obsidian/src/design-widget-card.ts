@@ -1,31 +1,28 @@
-import { createElement as h, useMemo } from "react";
+import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { normalizeBoard } from "@widgetarium/core/model.js";
-import type { Board } from "@widgetarium/core/model.js";
 import type { Drawing } from "./design-canvas-shapes.js";
-import { ScreenBoard } from "./design-screen-board.js";
+import { DefaultDrawing } from "./design-default-drawing.js";
+import { StateDrawing } from "./design-state-drawing.js";
 
 export interface WidgetCardProps extends Drawing {
 	readonly id: string;
+	readonly label: string;
+	readonly props?: Readonly<Record<string, unknown>> | undefined;
 }
 
-const CARD_PX = { narrow: 480, wide: 960 } as const;
+const CARD_PX = { narrow: 400, wide: 800 } as const;
 const WIDE_FROM_PX = 560;
 
-export function WidgetCard({ id, registry, host }: WidgetCardProps): ReactElement {
-	const manifest = registry.get(id)?.manifest;
-	const cardPx = isWide(manifest?.["preferredSize"]) ? CARD_PX.wide : CARD_PX.narrow;
-	const title = manifest?.["title"];
-	const board = useMemo(() => boardOfOne(id), [id]);
+export function WidgetCard({ id, label, props, registry, host }: WidgetCardProps): ReactElement {
+	const cardPx = isWide(registry.get(id)?.manifest["preferredSize"]) ? CARD_PX.wide : CARD_PX.narrow;
 	return h("figure", { className: "wg-design-widget", style: { width: `${cardPx}px` } }, [
-		h("figcaption", { key: "name", className: "wg-design-widget-name" }, [
-			h("b", { key: "title" }, typeof title === "string" ? title : id),
-			h("span", { key: "id" }, id),
-		]),
+		h("figcaption", { key: "name", className: "wg-design-state-name" }, label),
 		h(
 			"div",
 			{ key: "drawn", className: "wg-design-widget-body", inert: true },
-			h(ScreenBoard, { board, width: cardPx, registry, host }),
+			props
+				? h(StateDrawing, { picture: { widget: id, props }, registry })
+				: h(DefaultDrawing, { id, width: cardPx, registry, host }),
 		),
 	]);
 }
@@ -34,12 +31,4 @@ function isWide(size: unknown): boolean {
 	if (typeof size !== "object" || size === null || !("preferredWidth" in size)) return false;
 	const preferred = size.preferredWidth;
 	return preferred === "full" || (typeof preferred === "number" && preferred >= WIDE_FROM_PX);
-}
-
-function boardOfOne(id: string): Board {
-	return normalizeBoard({
-		v: 2,
-		tiles: [{ id: "widget", widget: id }],
-		layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: "widget" }] }] },
-	});
 }
