@@ -4,6 +4,8 @@ const OLD_PICTURES = "pictures";
 const DATABASE_VERSION = 2;
 const FORGOTTEN_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 const TOUCHED_EVERY_MS = 24 * 60 * 60 * 1000;
+const ANSWERS_WITHIN_MS = 3000;
+const NOT_ANSWERING = "the canvas picture store did not open in time, so pictures are made without it";
 
 export interface FramePicture {
 	readonly key: string;
@@ -31,18 +33,31 @@ function database(): Promise<IDBDatabase> {
 		await forgetUnused(opening);
 		return opening;
 	});
+	void opened.catch(() => (opened = null));
 	return opened;
 }
 
 function openDatabase(): Promise<IDBDatabase> {
 	return new Promise((done, failed) => {
 		const opening = window.indexedDB.open(DATABASE, DATABASE_VERSION);
+		const timer = window.setTimeout(() => failed(new Error(NOT_ANSWERING)), ANSWERS_WITHIN_MS);
 		opening.onupgradeneeded = () => {
 			if (opening.result.objectStoreNames.contains(OLD_PICTURES)) opening.result.deleteObjectStore(OLD_PICTURES);
 			if (!opening.result.objectStoreNames.contains(FRAMES)) opening.result.createObjectStore(FRAMES);
 		};
-		opening.onsuccess = () => done(opening.result);
-		opening.onerror = () => failed(opening.error);
+		opening.onsuccess = () => {
+			window.clearTimeout(timer);
+			const held = opening.result;
+			held.onversionchange = () => {
+				held.close();
+				opened = null;
+			};
+			done(held);
+		};
+		opening.onerror = () => {
+			window.clearTimeout(timer);
+			failed(opening.error);
+		};
 	});
 }
 

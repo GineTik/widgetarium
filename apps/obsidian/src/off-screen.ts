@@ -1,4 +1,4 @@
-import { Platform, arrayBufferToBase64, base64ToArrayBuffer, requestUrl } from "obsidian";
+import { arrayBufferToBase64, base64ToArrayBuffer, requestUrl } from "obsidian";
 import type { ReactNode } from "react";
 import { domToCanvas, domToPng } from "modern-screenshot";
 import { render } from "@widgetarium/core/engine/render.js";
@@ -15,12 +15,11 @@ const STACK_GAP_PX = 40;
 const NO_CANVAS = "this window cannot draw on a canvas";
 const ON_THE_PICTURE = { position: "static", left: "0", top: "0", opacity: "1" } as const;
 const SYSTEM_FONT_KEYWORD = /-apple-system|system-ui|ui-sans-serif/;
-const EMBEDDED_FAMILY = "Widgetarium System";
-const NAMED_SYSTEM_FACES = `"${EMBEDDED_FAMILY}", "Segoe UI", Roboto`;
-const MAC_SYSTEM_FONT_FILE = "/System/Library/Fonts/SFNS.ttf";
-const EMBEDDED_FACE = `@font-face { font-family: "${EMBEDDED_FAMILY}"; font-weight: 1 1000; src: url(data:font/ttf;base64,{data}) format("truetype"); }`;
+const NAMED_SYSTEM_FACES = `system-ui, "Segoe UI", Roboto`;
+const NOT_PICTURED =
+	/^(animation|transition|scroll|overscroll|touch-action|will-change|cursor|pointer-events|user-select|-webkit-user|caret|speak|page-break|break-|orphans|widows|counter-|contain|content-visibility|container|view-transition|anchor|position-try|position-anchor|position-area|interpolate-size|ruby-|text-emphasis|accent-color|app-region|field-sizing|interactivity|interest-)/;
 
-let systemFontFace: string | null | undefined;
+let picturedProperties: string[] | undefined;
 
 export async function drawnOffScreen<T>(
 	size: OffScreenSize,
@@ -77,31 +76,23 @@ function pictureOptionsOf(node: HTMLElement, scale: number) {
 		fetchFn: dataUrlOf,
 		style: ON_THE_PICTURE,
 		onCloneEachNode: namesTheSystemFont,
-		...embeddedFontOf(),
+		includeStyleProperties: picturedPropertiesOf(),
+		features: { copyScrollbar: false, removeControlCharacter: false, fixSvgXmlDecode: false },
 	};
+}
+
+function picturedPropertiesOf(): string[] {
+	picturedProperties ??= [...getComputedStyle(document.body)].filter(
+		(name) => !name.startsWith("--") && !NOT_PICTURED.test(name),
+	);
+	return picturedProperties;
 }
 
 function pageColourOf(): string | null {
 	return getComputedStyle(document.body).getPropertyValue("--background-primary").trim() || null;
 }
 
-function embeddedFontOf(): { font?: { cssText: string } } {
-	systemFontFace ??= systemFontFaceRead();
-	return systemFontFace ? { font: { cssText: systemFontFace } } : {};
-}
-
-function systemFontFaceRead(): string | null {
-	if (!Platform.isMacOS || typeof require !== "function") return null;
-	try {
-		const fs: typeof import("node:fs") = require("node:fs");
-		return EMBEDDED_FACE.replace("{data}", fs.readFileSync(MAC_SYSTEM_FONT_FILE).toString("base64"));
-	} catch (failure) {
-		console.warn("[widgetarium] shots fall back to a named font: the system font was not read", failure);
-		return null;
-	}
-}
-
-// TRADE-OFF: an SVG drawn as an image resolves no system font keyword, so the clone names an embedded copy of it.
+// TRADE-OFF: an SVG drawn as an image resolves only system-ui, so the clone leads with it.
 function namesTheSystemFont(cloned: Node): void {
 	if (!(cloned instanceof HTMLElement || cloned instanceof SVGElement)) return;
 	if (cloned instanceof HTMLElement) keepsOneLine(cloned);

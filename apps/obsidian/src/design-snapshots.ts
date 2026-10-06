@@ -13,7 +13,7 @@ export interface ShownPicture {
 const SNAPSHOT_SCALE = 0.5;
 const SETTLED_AFTER_MS = 400;
 const STILL_FOR_MS = 1500;
-const AT_ONCE = 3;
+const AT_ONCE = 1;
 const shown = new Map<string, ShownPicture>();
 const waiting = new Map<string, { readonly key: string; readonly nodeOf: () => HTMLElement | null }>();
 const queued: string[] = [];
