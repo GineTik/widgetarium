@@ -1,5 +1,7 @@
 import { ItemView, Notice } from "obsidian";
 import { boardIn } from "./board-in-note.js";
+import { movedNode } from "@widgetarium/core/engine/node-moves.js";
+import type { LayerMove } from "./layer-moves.js";
 import type { App, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
@@ -34,10 +36,13 @@ const DESIGN_POLL_MS = 1500;
 const DRAFT_PREFIX = "@draft/";
 const NO_DESIGN = "{app} has no design yet, or it was removed.";
 const PHOTOS_FAILED = "The photos were not added to the canvas: {why}";
+const NO_PAGE_FOLDER = "{widget} has no folder in this vault, so its layout cannot be changed here.";
+const NOT_MOVED = "Nothing was moved: {why}";
 
 export class DesignView extends ItemView {
 	private appName = "";
 	private page = "";
+	private isLayersOpen = false;
 	private node: HTMLElement | null = null;
 
 	constructor(
@@ -60,12 +65,13 @@ export class DesignView extends ItemView {
 	}
 
 	override getState(): Record<string, unknown> {
-		return { app: this.appName, page: this.page };
+		return { app: this.appName, page: this.page, layers: this.isLayersOpen };
 	}
 
 	override async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		this.appName = isObject(state) && typeof state["app"] === "string" ? state["app"] : "";
 		this.page = isObject(state) && typeof state["page"] === "string" ? state["page"] : "";
+		this.isLayersOpen = isObject(state) && state["layers"] === true;
 		await super.setState(state, result);
 		refreshHeader(this.leaf);
 		await this.draw();
@@ -135,8 +141,29 @@ export class DesignView extends ItemView {
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
 		const drawing = { registry: withBlocks(this.plugin.registry), host: this.plugin.host };
 		const paging = { page: this.page, onPage: (page: string): void => this.turnTo(page) };
+		const layering = {
+			isLayersOpen: this.isLayersOpen,
+			onLayers: (): void => this.toggleLayers(),
+			onMove: (widget: string, move: LayerMove): void => void this.moveLayer(widget, move),
+		};
 		const design = { app: this.appName, screens, references, widgets, size, onAddPhotos };
-		render(h(DesignCanvas, { key: this.page, ...design, ...paging, ...drawing }), node);
+		render(h(DesignCanvas, { key: this.page, ...design, ...paging, ...layering, ...drawing }), node);
+	}
+
+	private toggleLayers(): void {
+		this.isLayersOpen = !this.isLayersOpen;
+		this.app.workspace.requestSaveLayout();
+		void this.draw();
+	}
+
+	private async moveLayer(widget: string, move: LayerMove): Promise<void> {
+		const folder = this.plugin.registry.get(widget)?.folder;
+		if (!folder) return void new Notice(NO_PAGE_FOLDER.replace("{widget}", widget));
+		const path = `${folder}/${move.file}`;
+		const adapter = this.plugin.app.vault.adapter;
+		const moved = movedNode(await adapter.read(path), move);
+		if ("refusal" in moved) return void new Notice(NOT_MOVED.replace("{why}", moved.refusal));
+		await adapter.write(path, moved.source);
 	}
 
 	private turnTo(page: string): void {
@@ -150,10 +177,11 @@ export function registerDesignView(plugin: WidgetariumPlugin): void {
 	plugin.registerView(DESIGN_VIEW_TYPE, (leaf) => new DesignView(leaf, plugin));
 }
 
-export async function openDesign(obsidian: App, app: string): Promise<void> {
+export async function openDesign(obsidian: App, app: string, page?: string): Promise<void> {
 	const open = obsidian.workspace.getLeavesOfType(DESIGN_VIEW_TYPE).find((held) => held.view.getState()["app"] === app);
 	const leaf = open ?? obsidian.workspace.getLeaf("tab");
-	await leaf.setViewState({ type: DESIGN_VIEW_TYPE, active: true, state: { app } });
+	const kept = open?.view.getState() ?? {};
+	await leaf.setViewState({ type: DESIGN_VIEW_TYPE, active: true, state: { ...kept, app, ...(page ? { page } : {}) } });
 	await obsidian.workspace.revealLeaf(leaf);
 }
 

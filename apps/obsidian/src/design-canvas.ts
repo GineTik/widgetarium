@@ -1,10 +1,12 @@
 import { createElement as h, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, ReactElement } from "react";
-import { Button } from "@widgetarium/kit";
+import { Button, Icon, IconButton } from "@widgetarium/kit";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import type { DrawnReference, DrawnScreen, DrawnWidget, Size } from "./design-canvas-shapes.js";
 import { imageFilesIn } from "./design-photos.js";
-import { canvasPagesOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
+import { WIDGETS_PAGE, canvasPagesOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
+import { LayersPanel } from "./design-layers-panel.js";
+import type { LayerMove } from "./layer-moves.js";
 import { fitLook, usePanZoom } from "./design-pan-zoom.js";
 import type { PanZoom } from "./design-pan-zoom.js";
 import { PicturesProgress } from "./design-pictures-progress.js";
@@ -18,6 +20,9 @@ export interface DesignCanvasProps {
 	readonly onAddPhotos: (photos: readonly File[]) => void;
 	readonly page: string;
 	readonly onPage: (page: string) => void;
+	readonly isLayersOpen: boolean;
+	readonly onLayers: () => void;
+	readonly onMove: (widget: string, move: LayerMove) => void;
 	readonly size: Size;
 	readonly registry: WidgetSurfaceProps["registry"];
 	readonly host: WidgetSurfaceProps["host"];
@@ -26,6 +31,7 @@ export interface DesignCanvasProps {
 const ZOOM_STEP = 0.1;
 const SCREENS_SAID = "{count} screens · {frames} frames · read only";
 const HINT = "Approve or change it in the chat";
+const LAYERS_SAID = "Layers";
 
 export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 	const { layerRef, field } = useLayerSize(props.size);
@@ -43,17 +49,41 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 		[
 			h("div", { key: "layer", className: "wg-design-layer", ref: layerRef }, regions),
 			topBarOf(props, page),
+			layersOf(props, page),
 			zoomBar(pan),
 			h("div", { key: "hint", className: "wg-design-hint" }, HINT),
 		],
 	);
 }
 
-function topBarOf({ app, screens, onPage, onAddPhotos }: DesignCanvasProps, page: string): ReactElement {
+function topBarOf(
+	{ app, screens, onPage, onAddPhotos, isLayersOpen, onLayers }: DesignCanvasProps,
+	page: string,
+): ReactElement {
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
 	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames));
 	const status = h(PicturesProgress, { key: "pictures" });
-	return h(TopBar, { key: "top", app, said, pages: canvasPagesOf(screens), page, onPage, onAddPhotos, status });
+	const layers =
+		page === WIDGETS_PAGE
+			? null
+			: h(
+					IconButton,
+					{
+						key: "layers",
+						size: "s",
+						variant: isLayersOpen ? "raised" : "ghost",
+						label: LAYERS_SAID,
+						onClick: onLayers,
+					},
+					h(Icon, { name: "panel-left", size: 16 }),
+				);
+	return h(TopBar, { key: "top", app, said, pages: canvasPagesOf(screens), page, onPage, onAddPhotos, status, layers });
+}
+
+function layersOf({ screens, registry, isLayersOpen, onMove }: DesignCanvasProps, page: string): ReactElement | null {
+	const screen = screens.find((one) => one.name === page);
+	if (!isLayersOpen || !screen) return null;
+	return h(LayersPanel, { key: "layers-panel", screen, registry, onMove });
 }
 
 function useLayerSize(view: Size) {

@@ -198,6 +198,12 @@ add, so the list starts at its first row (`check` names it `titled`). A widget o
 hold its own search and filters with its list when they serve only that list; it stays in the app's
 scope and never goes to the catalogue.
 
+**Name every group a person might move things between.** The canvas has a Layers panel that shows
+the page's code as a tree and lets the person drag widgets between groups; it reads `data-name` on
+an element (`<div data-name="Side column">`), and a `Section` is named by its `title`. A group with
+no name shows as Row, Column or Group, which tells the person nothing. Keep the page's own layout in
+plain elements and kit components inside the page file, so every group stands in the tree.
+
 A widget used as a component takes a plain value for every prop it reads; a prop left out draws as
 its empty value, never an error. Place each state with the tool, its name the same as the key in
 `states` (the first state is the screen itself); never edit `canvas.json`:

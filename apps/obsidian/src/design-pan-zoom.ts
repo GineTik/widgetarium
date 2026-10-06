@@ -32,7 +32,8 @@ const WHEEL_RATE = 0.003;
 const PINCH_DELTA_BELOW = 30;
 const SHARP_AFTER_MS = 150;
 const MOVING = "is-moving";
-const PRESSABLE = "button, [role=radio], [role=tab]";
+const PRESSABLE = "button, [role=radio], [role=tab], .wg-design-layers";
+const OWN_SCROLL = ".wg-design-layers";
 
 export function fitLook(field: Size, view: Size): Look {
 	const scale = Math.max(ZOOM_FLOOR, Math.min(1, view.width / field.width, view.height / field.height));
@@ -107,6 +108,7 @@ function useNativeWheel(
 		const field = fieldRef.current;
 		if (!field) return;
 		const onWheel = (event: WheelEvent): void => {
+			if (event.target instanceof Element && event.target.closest(OWN_SCROLL)) return;
 			event.preventDefault();
 			event.stopPropagation();
 			const box = field.getBoundingClientRect();

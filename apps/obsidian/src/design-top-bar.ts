@@ -11,11 +11,13 @@ export interface TopBarProps {
 	readonly onPage: (page: string) => void;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
 	readonly status?: ReactNode;
+	readonly layers?: ReactNode;
 }
 
-export function TopBar({ app, said, pages, page, onPage, onAddPhotos, status }: TopBarProps): ReactElement {
+export function TopBar({ app, said, pages, page, onPage, onAddPhotos, status, layers }: TopBarProps): ReactElement {
 	return h("div", { className: "wg-design-topbar" }, [
 		h("div", { key: "head", className: "wg-design-head" }, [
+			layers ?? null,
 			h("b", { key: "app" }, app),
 			h("span", { key: "count" }, said),
 			h(AddPhoto, { key: "add", onAddPhotos }),

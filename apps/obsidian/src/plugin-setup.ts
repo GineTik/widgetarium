@@ -33,7 +33,8 @@ import { activeRules, normalizeRules, ruleBlock } from "./substitution.js";
 import { ensureFolders, revalidateWidgets, watchWidgets } from "./widget-upkeep.js";
 import { indexedDbSnapshotStore } from "./startup-snapshot-store.js";
 import { answerShotRequests } from "./shot-requests.js";
-import { registerDesignView } from "./design-view.js";
+import { openDesign, registerDesignView } from "./design-view.js";
+import { appScreenOfNote } from "./app-of-note.js";
 import type WidgetariumPlugin from "./main.js";
 import type { WantedWidgets } from "./main.js";
 
@@ -147,9 +148,16 @@ function headerActionsOf(plugin: WidgetariumPlugin): HeaderActions {
 			icon: "pencil",
 			title: plugin.editing ? EDIT_TITLE.on : EDIT_TITLE.off,
 			isOn: plugin.editing,
-			press: () => plugin.toggleEditing(),
+			press: () => void editInCanvasOrHere(plugin),
 		}),
 	});
+}
+
+async function editInCanvasOrHere(plugin: WidgetariumPlugin): Promise<void> {
+	const note = plugin.app.workspace.getActiveFile()?.path;
+	const screen = note ? await appScreenOfNote(plugin.app.vault.adapter, note) : null;
+	if (!screen) return plugin.toggleEditing();
+	await openDesign(plugin.app, screen.app, screen.screen);
 }
 
 function shapeStoreFollowingRenames(plugin: WidgetariumPlugin): ShapeStore {
