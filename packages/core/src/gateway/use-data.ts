@@ -13,24 +13,31 @@ export interface DataState<O> {
 	failure: string | null;
 }
 
-export function useData<I, O>(read: Action<I, O>, input?: I): DataState<O> {
+export function useData<I, O>(read: Action<I, O>, input?: I): DataState<O>;
+export function useData<T>(value: T): DataState<T>;
+export function useData<I, O>(read: Action<I, O> | O, input?: I): DataState<O> {
 	const meta = metaOf(read);
 	const inputKey = stableKey(input);
+	const given = useMemo(() => givenEntryOf(read), [read]);
 
 	const subscribe = useCallback(
 		(listener: () => void) =>
-			gatewayCache.subscribe(meta, input, read as (given: unknown) => Promise<unknown>, listener),
-		[meta.gatewayId, meta.verb, inputKey],
+			meta ? gatewayCache.subscribe(meta, input, read as (given: unknown) => Promise<unknown>, listener) : () => {},
+		[meta?.gatewayId, meta?.verb, inputKey],
 	);
-	const entry = useSyncExternalStore(subscribe, () => gatewayCache.read(meta, input));
+	const entry = useSyncExternalStore(subscribe, () => (meta ? gatewayCache.read(meta, input) : given));
 
-	return useMemo(() => toDataState<O>(entry, meta.verb === "list"), [entry, meta.verb]);
+	return useMemo(() => toDataState<O>(entry, meta ? meta.verb === "list" : Array.isArray(read)), [entry, meta?.verb]);
 }
 
-function metaOf(read: unknown): ActionMeta {
-	const meta = (read as { meta?: ActionMeta })?.meta;
-	if (!meta) throw new Error("useData wants a gateway verb such as tasks.list — this function is not one");
-	return meta;
+function metaOf(read: unknown): ActionMeta | null {
+	if (typeof read !== "function") return null;
+	return (read as { meta?: ActionMeta }).meta ?? null;
+}
+
+function givenEntryOf(value: unknown): { status: string; data: unknown; failure: string | null } {
+	const data = Array.isArray(value) ? { rows: value, total: value.length } : (value ?? null);
+	return { status: "ready", data, failure: null };
 }
 
 function toDataState<O>(
