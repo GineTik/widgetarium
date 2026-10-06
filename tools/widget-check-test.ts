@@ -147,6 +147,46 @@ check(
 	[],
 );
 check(
+	"a collection that draws its own title is a finding: the Section above owns it",
+	[
+		rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<LayoutTitle>People</LayoutTitle>` })),
+		rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<LayoutHeader title="People" />` })),
+	],
+	[["titled"], ["titled"]],
+);
+check(
+	"a detail may title itself",
+	rulesIn(checkWidget({ ...clean, card: { role: "detail" }, source: `${clean.source}\n<h3>Maya</h3>` })),
+	[],
+);
+check(
+	"a page widget that draws no kit Page is a finding",
+	rulesIn(checkWidget({ ...clean, id: "@crm/people-page", card: { role: "layout" }, source: "<main>x</main>" })),
+	["page"],
+);
+check(
+	"and so is one that sets its own width",
+	checkWidget({
+		...clean,
+		id: "@crm/people-page",
+		card: { role: "layout" },
+		source: '<Page kind="index" title="People"><div className="mx-auto max-w-[720px]" /></Page>',
+	})[0]?.message.includes("mx-auto, max-w-[720px]"),
+	true,
+);
+check(
+	"a page widget drawn by the kit Page is clean",
+	rulesIn(
+		checkWidget({
+			...clean,
+			id: "@crm/people-page",
+			card: { role: "layout" },
+			source: '<Page kind="index" title="People">x</Page>',
+		}),
+	),
+	[],
+);
+check(
 	"the kit's own Button is not a raw control",
 	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<Button onClick={go}>Pick</Button>` })),
 	[],
@@ -304,7 +344,7 @@ const allBroken = {
 check(
 	"every rule that judges no role can fire at once",
 	rulesIn(checkWidget(allBroken)),
-	WIDGET_CHECK_RULES.filter((rule) => rule !== "blocks").sort(),
+	WIDGET_CHECK_RULES.filter((rule) => !["blocks", "titled", "page"].includes(rule)).sort(),
 );
 check(
 	"each finding carries the widget it came from",

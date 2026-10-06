@@ -38,7 +38,19 @@ export const WIDGET_CHECK_RULES = [
 	"tailwind",
 	"hand-written",
 	"blocks",
+	"titled",
+	"page",
 ] as const;
+
+const COLLECTION_TITLE = /<LayoutTitle\b|<LayoutHeader\b[^>]*\btitle=/;
+const PAGE_ID = /-page$/;
+const KIT_PAGE = /<Page\b/;
+const HAND_PAGE_WIDTH = /(?<![\w-])(?:max-w-[\w[\].-]+|mx-auto)(?![\w-])/g;
+const TITLED_SAID =
+	"a collection that draws its own title; the Section around it owns the title, the count and the add, so the list starts at its first row";
+const NO_KIT_PAGE_SAID =
+	"a page widget that draws no <Page kind=…>; the archetype sets the width, the header and the hero, so the page lays none of them by hand";
+const HAND_WIDTH_SAID = "a page widget that sets its own width ({classes}); the width comes from <Page kind=…>";
 
 type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
 
@@ -76,6 +88,7 @@ export function checkWidget({
 		...sheetFindings(id, styles),
 		...draftBlockFindings(id, source),
 		...sourceFindings(source, card, surface),
+		...pageFindings(id, source),
 	].map((one) => ({
 		widget: id,
 		...one,
@@ -94,7 +107,21 @@ function sourceFindings(source: string, card: CheckedCard | null, surface: reado
 		...reachFindings(source, surface),
 		...headingFindings(source, card),
 		...controlFindings(source),
+		...titledFindings(source, card),
 	];
+}
+
+function titledFindings(source: string, card: CheckedCard | null): Finding[] {
+	if (card?.role !== "collection" || !COLLECTION_TITLE.test(source)) return [];
+	return [{ rule: "titled", message: TITLED_SAID }];
+}
+
+function pageFindings(id: string, source: string): Finding[] {
+	if (!PAGE_ID.test(id)) return [];
+	if (!KIT_PAGE.test(source)) return [{ rule: "page", message: NO_KIT_PAGE_SAID }];
+	const classes = [...new Set([...source.matchAll(HAND_PAGE_WIDTH)].map((found) => found[0]))];
+	if (classes.length === 0) return [];
+	return [{ rule: "page", message: HAND_WIDTH_SAID.replace("{classes}", classes.join(", ")) }];
 }
 
 function controlFindings(source: string): Finding[] {
