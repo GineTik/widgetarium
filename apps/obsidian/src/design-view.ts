@@ -168,15 +168,17 @@ async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDe
 	return { screens, references, widgets: await widgetsOf(plugin, app, screens) };
 }
 
+function widgetsDrawnBy(plugin: WidgetariumPlugin, id: string): readonly string[] {
+	const uses = plugin.registry.get(id)?.uses ?? [];
+	return uses.length > 0 ? uses : [id];
+}
+
 async function widgetsOf(
 	plugin: WidgetariumPlugin,
 	app: string,
 	screens: DrawnDesign["screens"],
 ): Promise<DrawnDesign["widgets"]> {
-	const onScreens = widgetsOnScreens(screens).flatMap((id) => {
-		const uses = plugin.registry.get(id)?.uses ?? [];
-		return uses.length > 0 ? uses : [id];
-	});
+	const onScreens = widgetsOnScreens(screens).flatMap((id) => widgetsDrawnBy(plugin, id));
 	const used = appWidgetsOf([...(await specWidgetsOf(plugin, app)), ...onScreens], await catalogueInstallsOf(plugin));
 	const exists = (id: string): boolean => Boolean(plugin.registry.get(id)?.component);
 	const blocks = draftsOn(screens).flatMap((draft) =>
