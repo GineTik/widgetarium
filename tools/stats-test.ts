@@ -1,6 +1,7 @@
 export {};
 
-const { statOf, statGateway, todayIso } = await import("../packages/packs/stats/src/stat-of.ts");
+const { statOf, statGateway } = await import("../packages/packs/stats/src/stat-of.ts");
+const { todayIso } = await import("../packages/core/src/today.ts");
 const { arrayGateway } = await import("../packages/core/src/gateway/create.ts");
 
 let failed = 0;

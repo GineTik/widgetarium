@@ -3,6 +3,7 @@ import { declaredOf, needsOf, requestedVerbs, typedIn, typedKeyOf, withFieldsPat
 import { refOf } from "../gateway/refs.js";
 import type { HostGatewayContext, HostSpec } from "./host-context.js";
 import { portsOf } from "./packs.js";
+import { pageParamCell } from "./page-params.js";
 import type { KeptPort, PropPort, QueryPorts } from "./packs.js";
 
 export function queryPortsOf(context: HostGatewayContext, isDeclaredSource: boolean): QueryPorts {
@@ -12,6 +13,7 @@ export function queryPortsOf(context: HostGatewayContext, isDeclaredSource: bool
 		prop: propPortOf(spec, isDeclaredSource),
 		kept: keptPortOf(context),
 		screen: { cell: cellFor },
+		page: { param: (key) => (host.notePath ? pageParamCell(host.notePath, key) : null) },
 		notes: host,
 	};
 }

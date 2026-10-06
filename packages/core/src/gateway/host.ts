@@ -24,7 +24,7 @@ export type NavigationTarget = "self" | "blank";
 export interface Navigation {
 	canNavigate: boolean;
 	resolve(link: string): string | null;
-	navigate(link: string, options?: { target?: NavigationTarget }): boolean;
+	navigate(link: string, options?: { target?: NavigationTarget; params?: Readonly<Record<string, string>> }): boolean;
 }
 
 export interface ReadAnswer {

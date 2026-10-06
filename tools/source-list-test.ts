@@ -114,7 +114,7 @@ check(
 		rowsUnder("This board"),
 		Array.isArray(rowsUnder("Statistics")) && JSON.stringify(rowsUnder("Statistics")).includes("How many"),
 	],
-	[["Typed here", "This screen"], true],
+	[["Typed here", "This screen", "This page's record"], true],
 );
 check(
 	"and scrolling it leaves the popover where it was",

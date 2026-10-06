@@ -14,6 +14,7 @@ import {
 import { FetchRowsQuery, FetchValueQuery, FetchFieldsSchema } from "./fetch-queries.js";
 import { FetchSendCommand, FetchSendFieldsSchema } from "./fetch-send-command.js";
 import { ScreenStateQuery, TypedRowsQuery, TypedValueQuery } from "./typed-queries.js";
+import { PageParamQuery, TodayQuery } from "./page-queries.js";
 import { FromTileRowsQuery, FromTileValueQuery, SelectedRowQuery, SelectionQuery } from "./wiring-queries.js";
 
 export {
@@ -28,7 +29,9 @@ export {
 	RowsRepairIdsCommand,
 	RowsReplaceCommand,
 	RowsUpdateCommand,
+	PageParamQuery,
 	ScreenStateQuery,
+	TodayQuery,
 	SelectedRowQuery,
 	SelectionQuery,
 	TypedRowsQuery,
@@ -70,7 +73,23 @@ export const corePack = definePack({
 			id: "@core/screen-state",
 			title: "This screen",
 			resource: "This board",
-			description: "A value that lives while the screen is open and never reaches the note.",
+			description:
+				"A value that lives while the screen is open and never reaches the note; widgets naming the same key share it.",
+			fields: z.looseObject({ key: z.string().optional() }),
+		}),
+		defineGatewayMetadata(PageParamQuery, {
+			id: "@core/page-param",
+			title: "This page's record",
+			resource: "This board",
+			description:
+				"A value the press that opened this page handed over, such as which project it opened; empty when the page was opened another way.",
+			fields: z.looseObject({ key: z.string() }),
+		}),
+		defineGatewayMetadata(TodayQuery, {
+			id: "@core/today",
+			title: "Today",
+			resource: "This board",
+			description: "Today's date, as YYYY-MM-DD in the person's own time zone, turning over at midnight.",
 			fields: z.looseObject({}),
 		}),
 		defineGatewayMetadata(FromTileValueQuery, {

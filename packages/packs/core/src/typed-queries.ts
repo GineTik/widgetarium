@@ -14,6 +14,8 @@ import type { HostFields } from "@widgetarium/core/engine/host-context.js";
 import type { QueryPorts } from "@widgetarium/core/engine/packs.js";
 import { isRow, isRowsResult, readNowOf, typedRowsGateway, typedValueGateway } from "./typed-gateway.js";
 
+const SHARED_KEY_PREFIX = "shared:";
+
 export class TypedValueQuery extends IValueGateway {
 	readonly settlesNow = true;
 
@@ -82,9 +84,10 @@ export class TypedRowsQuery extends ICrudGateway {
 export class ScreenStateQuery extends IValueGateway {
 	private readonly cell: ValueGateway<unknown, EveryValueVerb>;
 
-	constructor(_fields: HostFields, ports: QueryPorts) {
+	constructor(fields: HostFields, ports: QueryPorts) {
 		super();
-		this.cell = ports.screen.cell(ports.self);
+		const key = fields["key"];
+		this.cell = ports.screen.cell(typeof key === "string" && key !== "" ? `${SHARED_KEY_PREFIX}${key}` : ports.self);
 	}
 
 	get(): Promise<unknown> {

@@ -9,7 +9,8 @@ import {
 	STAT_WINDOWS,
 } from "@widgetarium/core/engine/stat-fields.js";
 import type { StatQuery } from "@widgetarium/core/engine/stat-fields.js";
-import { statOf, todayIso } from "./stat-of.js";
+import { statOf } from "./stat-of.js";
+import { todayIso } from "@widgetarium/core/today.js";
 import { PropRefSchema } from "@widgetarium/core/engine/prop-ref.js";
 import type { ImplementationPorts } from "@widgetarium/core/engine/packs.js";
 import { breakdownOf, seriesOf } from "./aggregate.js";

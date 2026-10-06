@@ -2,6 +2,8 @@ import { TFile } from "obsidian";
 import type { App, TAbstractFile } from "obsidian";
 import { readLink } from "@widgetarium/core/engine/link.js";
 import { readTarget, refuseRead } from "@widgetarium/core/engine/read-file.js";
+import { withPageParams } from "@widgetarium/core/engine/page-params.js";
+import type { PageParams } from "@widgetarium/core/engine/page-params.js";
 import type { Navigation, NavigationTarget, PassageReader, ReadAnswer } from "@widgetarium/core/gateway/host.js";
 
 const LEAF_OF_TARGET: Readonly<Record<string, false | "tab">> = { self: false, blank: "tab" };
@@ -12,7 +14,7 @@ export function createNavigator(app: App, from: string): Navigation {
 	return {
 		canNavigate: true,
 		resolve: (link) => find(link)?.path ?? null,
-		navigate: (link, { target = "self" }: { target?: NavigationTarget } = {}) => {
+		navigate: (link, { target = "self", params = {} }: { target?: NavigationTarget; params?: PageParams } = {}) => {
 			const leaf = LEAF_OF_TARGET[target];
 			if (leaf === undefined) {
 				console.error(`[widgetarium] navigate refused: "${target}" is not a target, only self or blank`);
@@ -20,7 +22,7 @@ export function createNavigator(app: App, from: string): Navigation {
 			}
 			const file = find(link);
 			if (!(file instanceof TFile)) return false;
-			void app.workspace.getLeaf(leaf).openFile(file);
+			void withPageParams(file.path, params).then(() => app.workspace.getLeaf(leaf).openFile(file));
 			return true;
 		},
 	};

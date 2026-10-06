@@ -2,6 +2,7 @@ import type { CollectionGateway, ValueGateway } from "@widgetarium/core/gateway/
 import type { EveryValueVerb } from "@widgetarium/core/gateway/needs.js";
 import { valueGateway, valueIn } from "@widgetarium/core/gateway/create.js";
 import { stableKey } from "@widgetarium/core/gateway/cache.js";
+import { todayIso } from "@widgetarium/core/today.js";
 import { isMatch, valueOf } from "@widgetarium/core/gateway/match.js";
 import {
 	DEFAULT_DATE_FIELD,
@@ -38,12 +39,6 @@ interface Span {
 const DAY_MS = 86400000;
 const A_DAY = /\d{4}-\d{2}-\d{2}/;
 const ROLLING_DAYS: Partial<Record<StatWindow, number>> = { today: 1, "7d": 7, "30d": 30, "90d": 90, "365d": 365 };
-
-export function todayIso(now: Date = new Date()): string {
-	const month = String(now.getMonth() + 1).padStart(2, "0");
-	const day = String(now.getDate()).padStart(2, "0");
-	return `${now.getFullYear()}-${month}-${day}`;
-}
 
 export function statOf(records: readonly unknown[], query: StatQuery, today: string): number | null {
 	const occurrences = occurrencesOf(records, query.date || DEFAULT_DATE_FIELD);

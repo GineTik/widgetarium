@@ -9,6 +9,8 @@ import type { Patch } from "../packages/core/src/gateway/contract.ts";
 import { collectionOf, updateOf, valueGatewayOf } from "./gateway-kinds.ts";
 import { fieldIn } from "./held-fields.ts";
 import { createRowSlot } from "./vault-fixture.ts";
+import { withPageParams } from "../packages/core/src/engine/page-params.ts";
+import { todayIso } from "../packages/core/src/today.ts";
 
 let failed = 0;
 function check(what: string, got: unknown, wanted: unknown): void {
@@ -44,6 +46,8 @@ check(
 		["@core/typed-value", "TypedValueQuery", "value"],
 		["@core/typed-rows", "TypedRowsQuery", "collection"],
 		["@core/screen-state", "ScreenStateQuery", "value"],
+		["@core/page-param", "PageParamQuery", "value"],
+		["@core/today", "TodayQuery", "value"],
 		["@core/from-tile-value", "FromTileValueQuery", "value"],
 		["@core/from-tile-rows", "FromTileRowsQuery", "collection"],
 		["@core/selected-row", "SelectedRowQuery", "value"],
@@ -188,6 +192,67 @@ check(
 		}),
 	),
 	'prop "board" names the gateway "@core/nowhere", which this host does not offer',
+);
+
+const screenStateOf = (tileId: string, fields: Readonly<Record<string, string>>) =>
+	valueGatewayOf(
+		resolveHostGateway({
+			...contextFor({}),
+			name: "view",
+			tile: { id: tileId, props: { view: { implementation: "@core/screen-state", fields } } },
+		}),
+	);
+const switcherView = screenStateOf("switcher", { key: "home.view" });
+const gridView = screenStateOf("grid", { key: "home.view" });
+const ownView = screenStateOf("other", {});
+await updateOf(switcherView)("list");
+check(
+	"two widgets naming one screen key share it, and a widget naming none keeps its own",
+	[await gridView.get(), await ownView.get()],
+	["list", undefined],
+);
+
+await cellFor("t1/selection").update("swap-pick");
+await updateOf(screenStateOf("intruder", { key: "t1/selection" }))("written by a key");
+check(
+	"a shared key lives apart from the cells the engine keeps for itself",
+	await cellFor("t1/selection").get(),
+	"swap-pick",
+);
+
+const onPage = (notePath: string, tileId: string, implementation: string, fields: Readonly<Record<string, string>>) =>
+	valueGatewayOf(
+		resolveHostGateway({
+			...contextFor({}),
+			name: "project",
+			host: { slot: () => createRowSlot([]), notePath },
+			tile: { id: tileId, props: { project: { implementation, fields } } },
+		}),
+	);
+await withPageParams("Desk/Project.md", { project: "p1" });
+check(
+	"a page parameter answers what the press that opened its note handed over, and nothing on another note",
+	[
+		await onPage("Desk/Project.md", "header", "@core/page-param", { key: "project" }).get(),
+		await onPage("Desk/Home.md", "grid", "@core/page-param", { key: "project" }).get(),
+	],
+	["p1", null],
+);
+check(
+	"one tile id on two notes is two gateways, so a read cached for one note is never the other's",
+	onPage("Desk/Project.md", "opened", "@core/page-param", { key: "project" }).id ===
+		onPage("Desk/Home.md", "opened", "@core/page-param", { key: "project" }).id,
+	false,
+);
+check(
+	"a page parameter with no key is refused by name",
+	refusal(() => onPage("Desk/Project.md", "header", "@core/page-param", {})),
+	'a page parameter names its key, such as "project"',
+);
+check(
+	"today is the local day the stats count from",
+	await onPage("Desk/Home.md", "digest", "@core/today", {}).get(),
+	todayIso(),
 );
 
 const boundTo = (implementation: string, fields: Readonly<Record<string, unknown>>): string | null =>
