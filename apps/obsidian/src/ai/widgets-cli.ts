@@ -14,7 +14,7 @@ import { checkedWidget } from "./widget-checking.js";
 import { refuseStage, reportOfApp, isReportClean } from "./report-command.js";
 import { shotOfDesign, shotOfNote, shotSaid } from "./shot-command.js";
 import { designOfApp } from "./design-command.js";
-import { referenceOfApp } from "./reference-command.js";
+import { noteOfApp, referenceOfApp } from "./reference-command.js";
 import { photosOfApp } from "./photos-command.js";
 import { rulesOfApp } from "./rules-command.js";
 import { screenOfApp } from "./screen-command.js";
@@ -66,7 +66,11 @@ const COMMANDS: Readonly<Record<string, Command>> = {
 	design: { run: async (argument, options) => tell(asText(options), await designOfApp(VAULT, argument)) },
 	reference: {
 		run: async (argument, options) =>
-			tell(asText(options), await referenceOfApp(VAULT, argument, options._[2], options["why"])),
+			tell(asText(options), await referenceOfApp(VAULT, argument, options._[2], options)),
+	},
+	note: {
+		run: async (argument, options) =>
+			tell(asText(options), await noteOfApp(VAULT, argument, [options._[2], options._[3]], options)),
 	},
 	photos: { run: async (argument, options) => tell(asText(options), await photosOfApp(VAULT, argument)) },
 	rules: { run: async (argument, options) => tell(asText(options), await rulesOfApp(VAULT, argument)) },

@@ -12,6 +12,10 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs design <app>         check .widgetarium/apps/<app>/design/ and show it to the person as a card
   node widgets.mjs reference <app> <url>   put a picture from the web on the canvas, above the screens
     --why <line>                        what to take from it, shown under the picture
+    --kind app|site|marketing|photo     what the picture is: a product screen, a website, marketing art, a photo
+  node widgets.mjs note <app> <reference> <text>   a sticky note beside a reference: what you take, like or leave
+    --tone take|like|dislike|note       its colour
+    --at 0.4,0.2                        the point on the picture it is about, from the top left
   node widgets.mjs photos <app>         after Approve design: download the photos the screens use
   node widgets.mjs rules <app>          every design rule in force for the app, to check the canvas against
   node widgets.mjs screen <app> <screen>   write one screen of the design canvas: its note and its place in canvas.json

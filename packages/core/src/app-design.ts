@@ -60,6 +60,23 @@ export function withReferencesAdded(text: string | null, entries: readonly Refer
 	return `${JSON.stringify({ ...canvas, screens: Array.isArray(screens) ? screens : [], references }, null, 2)}\n`;
 }
 
+export function withReferenceNoted(
+	text: string,
+	named: string,
+	note: Readonly<Record<string, unknown>>,
+): string | null {
+	const held: unknown = JSON.parse(text);
+	if (typeof held !== "object" || held === null || Array.isArray(held)) return null;
+	const kept: unknown = Reflect.get(held, "references");
+	const references: unknown[] = Array.isArray(kept) ? kept : [];
+	const at = references.findIndex((one) => isNamedReference(one, named));
+	const reference = references[at];
+	if (at === -1 || typeof reference !== "object" || reference === null) return null;
+	const notes: unknown = Reflect.get(reference, "notes");
+	const noted = { ...reference, notes: [...(Array.isArray(notes) ? notes : []), note] };
+	return `${JSON.stringify({ ...held, references: references.map((one, index) => (index === at ? noted : one)) }, null, 2)}\n`;
+}
+
 export function screenFileOf(screen: string, state: string | undefined): string {
 	const named = state ? `${screen} · ${state}` : screen;
 	return `${named.replace(/[\\/:*?"<>|]+/g, "-").trim()}.md`;
@@ -127,6 +144,24 @@ const ScreenFileSchema = z
 		message: "a screen's file is a name inside the design folder, never a path",
 	});
 
+export const REFERENCE_KINDS = ["app", "site", "marketing", "photo"] as const;
+
+export const NOTE_TONES = ["take", "like", "dislike", "note"] as const;
+
+const ReferenceNoteSchema = z.object({
+	text: z.string().trim().min(1),
+	tone: z.enum(NOTE_TONES).default("note"),
+	at: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]).optional(),
+});
+
+export type ReferenceNote = z.infer<typeof ReferenceNoteSchema>;
+
+const ReferenceReadingSchema = {
+	why: z.string().trim().min(1).optional(),
+	kind: z.enum(REFERENCE_KINDS).optional(),
+	notes: z.array(ReferenceNoteSchema).optional(),
+};
+
 const ReferenceFileSchema = z.object({
 	file: z
 		.string()
@@ -135,12 +170,12 @@ const ReferenceFileSchema = z.object({
 		.refine((file) => !file.includes("/") && !file.includes("\\") && !file.includes(".."), {
 			message: "a reference is a name inside the references folder, never a path",
 		}),
-	why: z.string().trim().min(1).optional(),
+	...ReferenceReadingSchema,
 });
 
 const ReferenceUrlSchema = z.object({
 	url: z.url({ protocol: /^https$/, message: "a reference from the web is an https address" }),
-	why: z.string().trim().min(1).optional(),
+	...ReferenceReadingSchema,
 });
 
 const ReferenceSchema = z.union([ReferenceFileSchema, ReferenceUrlSchema]);
@@ -186,4 +221,9 @@ function statesHeldBy(placed: unknown, screen: string): object[] {
 function typedOf(value: string): string | number | boolean {
 	if (value === "true" || value === "false") return value === "true";
 	return /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : value;
+}
+function isNamedReference(held: unknown, named: string): boolean {
+	if (typeof held !== "object" || held === null) return false;
+	const name: unknown = Reflect.get(held, "url") ?? Reflect.get(held, "file");
+	return typeof name === "string" && (name === named || name.endsWith(named));
 }
