@@ -163,12 +163,12 @@ Data tab, the default), `vault-target` (shut only over a vault-bound target) or 
 offered for a prop only when it fits: one returning any shape always fits its kind, one returning an
 exact shape fits a list whose described fields it carries and a value whose control matches.
 
-| Pack        | Queries                                                                                                                              | Commands                                                                                              |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `@core`     | `typed-value`, `typed-rows`, `screen-state`, `from-tile-value`, `from-tile-rows`, `selection`, `selected-row`, `fetch`, `fetch-rows` | `console-log`, `value-set`, `rows-create                                                              | update | remove                      | replace | repair-ids`, `fetch-send` |
-| `@obsidian` | `file`, `folder`, `tag`, `search`                                                                                                    | `folder-create                                                                                        | update | remove`, `file-set`, `open` |
-| `@stats`    | `number`, `series`, `breakdown`, `days-kept` over another widget's rows; one per algorithm over a folder                             | —                                                                                                     |
-| `@git`      | `commits`, `branches`, `current-branch`, `status`, `commit-files`, `tags`, `worktrees`                                               | `stage`, `unstage`, `commit`, `checkout`, `create-branch`, `pull`, `push` (asks first), `worktree-add | remove | lock                        | unlock` |
+| Pack        | Queries                                                                                                                                                     | Commands                                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `@core`     | `typed-value`, `typed-rows`, `screen-state`, `page-param`, `today`, `from-tile-value`, `from-tile-rows`, `selection`, `selected-row`, `fetch`, `fetch-rows` | `console-log`, `value-set`, `rows-create                                                              | update | remove                      | replace | repair-ids`, `fetch-send` |
+| `@obsidian` | `file`, `folder`, `tag`, `search`                                                                                                                           | `folder-create                                                                                        | update | remove`, `file-set`, `open` |
+| `@stats`    | `number`, `series`, `breakdown`, `days-kept` over another widget's rows; one per algorithm over a folder                                                    | —                                                                                                     |
+| `@git`      | `commits`, `branches`, `current-branch`, `status`, `commit-files`, `tags`, `worktrees`                                                                      | `stage`, `unstage`, `commit`, `checkout`, `create-branch`, `pull`, `push` (asks first), `worktree-add | remove | lock                        | unlock` |
 
 | Pack         | Queries                                                                                                                  | Commands                                                                                           |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
@@ -251,6 +251,26 @@ export const metadata = defineMetadata(Board, {
 its `whenNothingPicked` is `"first"` unless written. `of()` given options for a value is refused.
 `keep: "screen"` in the prop's metadata, `props: { open: { keep: "screen" } }`, makes a value a fact
 about this screen that never reaches the note.
+
+## State shared by name, never by another widget
+
+Two widgets that must agree — a grid/list switch and the grid it switches — never point at each
+other. Each binds its prop to the same named state, and neither knows the other exists:
+
+| Binding                                                                  | Holds                                                                                 |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| `{ implementation: "@core/screen-state", fields: { key: "home.view" } }` | a value every widget on this board naming the key shares, until it closes             |
+| `{ implementation: "@core/page-param", fields: { key: "project" } }`     | what the press that opened this page handed over                                      |
+| `{ implementation: "@core/today" }`                                      | today's date, `YYYY-MM-DD`, turning over at midnight — never a date typed into a tile |
+
+**A page opened for a record says which one in the press.** The card that opens a project calls
+`navigator.navigate("Project", { params: { project: project.id } })`; every widget on that page that
+needs the project binds a prop to `@core/page-param` with `key: "project"` and reads the row through
+`@core/selected-row` with `picked` naming that prop and `whenNothingPicked: "none"`. A page opened
+another way — from the file list, after a restart — has no project, and its widgets draw that state
+("Pick a project") rather than the first row. Never write a timestamp into a record to remember which
+one was opened: a press that writes to the vault, and every widget then re-deciding which record is
+current, is the defect this replaces.
 
 **An own verb is not declarable yet.** `pick` refuses a verb its interface does not have, and a
 class extending the declared one is refused as an implementation. Compose the verbs you picked

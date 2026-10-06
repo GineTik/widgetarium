@@ -74,6 +74,11 @@ why the domain needs them. Then seed every folder with real notes: enough rows t
 an aggregate means something, and every state a person will meet actually occurs. Mock rows are
 fine; lorem is not, because a screen designed against filler is designed against nothing.
 
+Name the state the pages share as well, beside the records: every switch two widgets must agree on
+(`home.view`: grid or list), and every record a page is opened for (`project` on the Project page).
+These are names, not records — widgets bind to them in stage 5 (`widget.md`, "State shared by name"),
+so no widget ever has to read another one.
+
 _Over when a gateway bound to each folder would answer with rows._ Nothing is placed yet. Say it:
 `node {tool} stage <app> data --said "<what you made, in one line>"`.
 
