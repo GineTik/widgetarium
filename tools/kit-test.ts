@@ -380,6 +380,11 @@ for (const [table, name] of [
 
 // A SECONDARY IS NOT A SECOND ACCENT: the quiet one must not carry the accent's own class.
 check("the quiet button is the kit's neutral", buttonClass({ variant: "neutral", size: "s" }), "wg-kit-btn is-s");
+check(
+	"the page's one main action is the primary button",
+	buttonClass({ variant: "primary" }),
+	"wg-kit-btn is-primary is-m",
+);
 
 const host = byId(document, "host");
 render(h(Kit.Button, { variant: "accent", size: "l" }, "Create"), host);

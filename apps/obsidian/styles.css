@@ -833,6 +833,9 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-block {
 	width: 100%;
 }
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-primary {
+	color: var(--wg-kit-page);
+}
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-accent {
 	color: var(--text-on-accent);
 }
@@ -2180,6 +2183,13 @@ body {
 	background: var(--wg-kit-error-wash);
 	box-shadow: none;
 }
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-primary::before {
+	background: var(--wg-kit-text);
+	box-shadow: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-primary:hover::before {
+	opacity: 0.85;
+}
 
 /* CONTEXT: blur and inset edge clip to their own box, so they follow the corner onto ::before */
 :is(.wg-root, .wg-portal) .wg-kit-btn.wg-kit-glass,
@@ -2229,13 +2239,13 @@ body {
    group's fill IS the control's fill, so a trailing button vanished. It raises, the way a card
    raises off a plate. Two rules, so hover is not left to source order. */
 /* CONTEXT: raised is white in light, the foreground step in dark — the one fill needing a rim */
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:not(.is-accent, .is-danger)::before,
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:not(.is-primary, .is-accent, .is-danger)::before,
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon::before {
 	background: var(--wg-kit-raise);
 	--wg-kit-control-edge: inset 0 0 0 1px var(--wg-kit-card-edge);
 }
 /* CONTEXT: the rim belongs to the raised fill — a grey control carries no edge */
-:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:not(.is-accent, .is-danger):hover::before,
+:is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-btn:not(.is-primary, .is-accent, .is-danger):hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-row .wg-kit-icon:hover::before {
 	background: var(--wg-kit-fill-hover);
 	--wg-kit-control-edge: none;

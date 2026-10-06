@@ -44,6 +44,10 @@ Join classes with `cn` from `widgetarium/kit`. A colour from Tailwind's own pale
 
 ## Controls
 
+`Button` takes `variant`: `primary` (ink-filled, the page's one main action such as "Add project"),
+`accent`, `neutral` (the default), `ghost`, `plain`, `danger`; and `size`: `s`, `m`, `l`.
+`Segmented size="s"` is a small tab switch in a heading; `SparklineLine` is a line with no fill.
+
 `Button`, `IconButton` (round), `Field`, `TextArea`, `Select`, `Checkbox`, `Switch`, `Segmented`,
 `Tabs`, `Badge`. A raw `<button>`, `<input>` or `<select>` is refused by `check`. Tabs need not be
 `Segmented`: a widget of tabs or chips from the catalogue is as good.

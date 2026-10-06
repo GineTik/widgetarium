@@ -2,7 +2,14 @@ import { TONE_CLASSES } from "../constants/tones";
 import { cn, variants } from "./cn";
 
 const BUTTON_WORDS = {
-	variant: { accent: "is-accent", neutral: "", ghost: "is-ghost", plain: "is-plain", danger: "is-danger" },
+	variant: {
+		primary: "is-primary",
+		accent: "is-accent",
+		neutral: "",
+		ghost: "is-ghost",
+		plain: "is-plain",
+		danger: "is-danger",
+	},
 	size: { l: "is-l", m: "is-m", s: "is-s" },
 	block: { true: "is-block" },
 };
