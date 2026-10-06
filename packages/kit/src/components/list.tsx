@@ -47,6 +47,18 @@ export const RowLabel: FunctionComponent<SlotPartProps> = createSlotPart(
 	"RowLabel",
 );
 
+export const RowText: FunctionComponent<SlotPartProps> = createSlotPart(
+	"span",
+	(props) => cn("wg-kit-row-text", props.className),
+	"RowText",
+);
+
+export const RowSupporting: FunctionComponent<SlotPartProps> = createSlotPart(
+	"span",
+	(props) => cn("wg-kit-row-supporting", props.className),
+	"RowSupporting",
+);
+
 export const RowValue: FunctionComponent<SlotPartProps> = createSlotPart(
 	"span",
 	(props) => cn("wg-kit-row-value", props.className),

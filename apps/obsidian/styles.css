@@ -5029,6 +5029,140 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: var(--wg-gap-items, 8px);
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-page {
+	--wg-kit-page-width: 1040px;
+	--wg-kit-page-side: 320px;
+	--wg-kit-page-sections: 40px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-kit-page-sections);
+	width: 100%;
+	max-width: var(--wg-kit-page-width);
+	margin-inline: auto;
+	padding: 32px 24px 48px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page.is-index {
+	--wg-kit-page-width: 800px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page.is-index.is-wide,
+:is(.wg-root, .wg-portal) .wg-kit-page.is-dashboard {
+	--wg-kit-page-width: 1280px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page.is-form {
+	--wg-kit-page-width: 640px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page-back {
+	flex: 1 0 100%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page-title {
+	margin: 0;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page-action {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page-body {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--wg-kit-page-sections);
+	align-items: start;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page.has-side .wg-kit-page-body {
+	grid-template-columns: minmax(0, 1fr) var(--wg-kit-page-side);
+}
+
+@container (max-width: 760px) {
+	:is(.wg-root, .wg-portal) .wg-kit-page.has-side .wg-kit-page-body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-page-main,
+:is(.wg-root, .wg-portal) .wg-kit-page-side {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-kit-page-sections);
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-section-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-section-title {
+	margin: 0;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-section-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-left: auto;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-section-body {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-section-more {
+	align-self: flex-start;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-row-text {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-row-supporting {
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+	overflow-wrap: anywhere;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-row:has(> .wg-kit-row-text > .wg-kit-row-supporting) {
+	align-items: flex-start;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="apart"]::before {
 	content: "";
 	position: absolute;
