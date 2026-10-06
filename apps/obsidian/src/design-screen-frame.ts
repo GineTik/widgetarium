@@ -3,6 +3,8 @@ import type { ReactElement } from "react";
 import type { Drawing, DrawnState, Size } from "./design-canvas-shapes.js";
 import { ScreenBoard } from "./design-screen-board.js";
 import { StateDrawing } from "./design-state-drawing.js";
+import { DrawnWhenSeen } from "./design-drawn-when-seen.js";
+import { snapshotKeyOf } from "./design-snapshots.js";
 
 export interface ScreenFrameProps extends Drawing {
 	readonly label: string;
@@ -15,8 +17,21 @@ const SCREEN_HOLDER = { key: "screen", className: "wg-design-screen", inert: tru
 export function ScreenFrame({ label, state, size, registry, host }: ScreenFrameProps): ReactElement {
 	return h("div", { className: "wg-design-frame", style: { width: `${size.width}px` } }, [
 		h("div", { key: "top", className: "wg-design-top" }, h("span", { className: "wg-design-name" }, label)),
-		h("div", { ...SCREEN_HOLDER, style: { minHeight: `${size.height}px` } }, screenOf(state, size, { registry, host })),
+		h(
+			"div",
+			{ ...SCREEN_HOLDER, style: { minHeight: `${size.height}px` } },
+			h(
+				DrawnWhenSeen,
+				{ minHeight: size.height, pictureKey: framePictureKeyOf(state, label, registry) },
+				screenOf(state, size, { registry, host }),
+			),
+		),
 	]);
+}
+
+function framePictureKeyOf(state: DrawnState, label: string, registry: Drawing["registry"]): string {
+	const widget = state.picture?.widget ?? state.board?.tiles[0]?.widget ?? label;
+	return snapshotKeyOf(registry.get(widget), widget, label);
 }
 
 function screenOf(state: DrawnState, size: Size, drawing: Drawing): ReactElement {
