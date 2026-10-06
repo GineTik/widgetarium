@@ -81,6 +81,8 @@ export const requestUrl = (): never => {
 	throw new Error("requestUrl is not stubbed");
 };
 export const getAllTags = (): string[] => [];
+export const arrayBufferToBase64 = (buffer: ArrayBuffer): string => Buffer.from(buffer).toString("base64");
+export const base64ToArrayBuffer = (text: string): ArrayBuffer => Uint8Array.from(Buffer.from(text, "base64")).buffer;
 export const parseYaml = (text: string): unknown => parse(text);
 export const stringifyYaml = (value: unknown): string => stringify(value);
 
