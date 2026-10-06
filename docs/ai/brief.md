@@ -111,34 +111,56 @@ spec said yes to — no implementation yet, that is stage 4. Its look is the fin
 Tailwind, and every state it meets drawn by it (empty, one row, a hundred). `node {tool} check <id>`
 passes for each. If your tools can start sub-agents, hand every widget to one, all at once.
 
-**Then every screen is a board you write**, `.widgetarium/apps/<app>/design/<Screen>.md`: the page's
-tree — the base, its regions, its rows and columns arranged with `justify`, `align` and `wrap`
-(`board.md`) — holding tiles of the catalogue's widgets and your own. Every prop reads sample rows
-kept in the tile: `@core/typed-rows` with rows copied from what stage 2 seeded, `@core/typed-value`
-for a value; an open dialog or a picked tab is a `@core/screen-state` value set on that screen. A
-state is another note holding the same board with other sample values (`People · Empty.md` with
-every list empty). Place each with the tool, never by editing `canvas.json`:
+**Then every page is one page widget, plain React**, `@<app>/<page>-page` with the `layout` role.
+It imports the app's widgets and the catalogue's by their id and draws them as components, feeding
+each the sample rows stage 2 seeded as plain values; the page's own layout is TSX and Tailwind:
+
+```tsx
+import PersonList from "@crm/person-list";
+import NextSteps from "@crm/next-steps";
+
+const PEOPLE = [{ name: "Ada Lovelace", company: "Analytical", stage: "lead" }];
+
+const PeoplePage = createWidget({
+	inject: { getState: IQuery.expects(z.enum(["full", "empty", "add"]).default("full")) },
+	draw: ({ getState: state }) => (
+		<main className="mx-auto flex max-w-[1200px] flex-col gap-10 p-8">
+			<header className="flex items-center justify-between">
+				<h1 className="text-h1">People</h1>
+				<Button variant="primary">Add person</Button>
+			</header>
+			<div className="grid grid-cols-[minmax(0,720px)_320px] gap-8">
+				<PersonList getPeople={state === "empty" ? [] : PEOPLE} />
+				<NextSteps getSteps={[]} />
+			</div>
+		</main>
+	),
+});
+```
+
+A widget used as a component takes a plain value for every prop it reads; a prop left out draws as
+its empty value, never an error. A state is the same page with another `state`. Place each with the
+tool, never by editing `canvas.json`:
 
 ```
-node {tool} screen <app> "People" --board
-node {tool} screen <app> "People" --board --state Empty
-node {tool} screen <app> "People" --board --state "Add person"
+node {tool} screen <app> "People" --widget @<app>/people-page
+node {tool} screen <app> "People" --widget @<app>/people-page --set state=empty --state Empty
+node {tool} screen <app> "People" --widget @<app>/people-page --set state=add --state "Add person"
 ```
 
-It checks the note holds a board and puts it on the canvas, which ends up like this:
+The canvas draws the page with the very widgets the app will run, and sets every widget a page
+imports beside the pages by itself, under From the catalogue and New widgets. Nothing is drawn twice:
+after Approve design, the page widget reads the vault instead of its samples.
 
-```json
-{
-	"screens": [
-		{ "name": "Inbox", "file": "Inbox.md" },
-		{ "name": "Projects", "file": "Projects.md" }
-	]
-}
-```
+**A page's layout keeps these rules:**
 
-The canvas draws these boards with the very widgets the app will run, and sets every widget they
-hold beside the pages by itself, under From the catalogue and New widgets. Nothing is drawn twice:
-after Approve design, a page is its screen's board bound to data.
+- content is at most 1200px wide and centred; a list, a form or text to read is at most 720px;
+- the page opens with a title naming what the person does here, its one primary action on the right
+  of the same row;
+- an add stands in the header of the section it adds to, never as a tile of its own;
+- sections stand 32–48px apart (`gap-8`–`gap-12`), parts inside one 12–16px (`gap-3`–`gap-4`);
+- at most two lists on a page; the rest is a summary, a chart, a detail, a hero;
+- an empty page shows one empty state for the page, not one per section.
 
 **Look at the references first.** Every picture on the canvas is listed under `references` in
 `canvas.json`: a `file` the person added lives in `.widgetarium/apps/<app>/design/references/`, a
@@ -169,7 +191,7 @@ that changes — a review before and after an answer, a record closed and open:
 ```
 
 **Write it in one shot**, the way a designer draws a canvas: one message that writes every widget and
-every screen board. Then `node {tool} shot --design <app>`, open the picture (the whole canvas, every
+every page widget. Then `node {tool} shot --design <app>`, open the picture (the whole canvas, every
 page side by side) and redraw what is not the app you would pay for, again in one message. **Draw every dialog too, with the kit's `Dialog`**, whose scrim covers the whole page. List every press on every screen that opens something — add, edit,
 delete, confirm, warn, pick — and give each its own state of that screen, named after it, with the
 dialog open over the page: a person approves what they will meet, and an add or a delete nobody drew
@@ -238,13 +260,13 @@ for another. Pages follow the same way once their widgets pass, one sub-agent pe
 comes back, and send it back while it is not done. Without sub-agents, do the same yourself, one
 feature at a time.
 
-**Stage 5 — the pages.** Each page is its approved screen's board, copied whole into the vault note
-the spec names: the same tree, the same tiles, the same arrangement. Then rebind, and change nothing
-else: every prop that read sample rows reads the folder stage 2 seeded, with `allow` holding exactly
-the verbs the spec said yes to, and a `@core/screen-state` value that only set a design state (an
-open dialog) is dropped. The person approved that board; a page drawn again by hand is a page that
-drifts from it. The empty state the canvas drew is the one an empty folder must show. Lint, measure,
-and look at it.
+**Stage 5 — the pages.** Each page is its approved page widget, placed alone in the vault note the
+spec names. Its look does not change: its sample rows become props in its `inject` —
+`IQuery.expects` typed by stage 2's shapes, `ICommand.sends` for each verb the spec said yes to —
+handed down to the widgets it draws. Bind each prop to the folder stage 2 seeded, with `allow` holding
+exactly those verbs; a `state` that only opened a dialog becomes the page's own `useState`. The
+person approved that page; a page drawn again is a page that drifts from it. The empty state the
+canvas drew is the one an empty folder must show. Lint, measure, and look at it.
 
 Write each page's `note` (its vault path) into the spec as you make it.
 
@@ -421,17 +443,14 @@ wrong — one widget, two roles           right — one section, two widgets
 │ ████████████████████████████  │         └ collection  "Sessions" · rows
 │ Sessions                      │
 │ ≋ Swim · Sun 20 Sept   10 min │
-│ ⚲ Pull day · Sun…      49 min │         section controls: + (@default/add-button)
+│ ⚲ Pull day · Sun…      49 min │         section header: Sessions · + Add
 └───────────────────────────────┘
 ```
 
-**The widget that shows records never adds them, and never edits or deletes the one it shows.** A
-list shows and picks; a card shows one record. Adding is `@default/add-button` (role `composer`)
-standing where the page's controls stand: beside the search, in a section's `mounts.controls`, in
-the header. Editing and deleting the open record is `@default/record-actions` (role `control`) beside
-its title. Both take a `getFields` list and open a dialog, so nobody draws a form for them. `check`
-refuses a `collection` or `detail` that creates records (`adds`). A widget whose job is the press
-itself, such as a streak marking today or a tab strip adding a tab, keeps it.
+**An add stands in the header of what it adds to.** A list draws its own header row — its title on
+the left, its add on the right — and the page's header holds the page's one primary action. Neither
+is a tile of its own scattered between sections. Editing and deleting the open record stand beside
+its title. Each opens the kit's `Dialog`, drawn as a state of its screen.
 
 The boundary is where the reading changes: a summary answers "how much", rows answer "which ones". A
 widget that draws both cannot be rearranged, re-plated or reused, and the design loses the choice of
