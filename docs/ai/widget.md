@@ -757,8 +757,8 @@ the last one full (`highlight` names another index, or `"none"`); `SparklineDot`
 
 A widget is styled with Tailwind classes on its elements, and its `widget.css` only opens Tailwind
 and the kit's theme; `check` refuses a rule written beside them. Tailwind replaces CSS and nothing
-else: every colour is still the kit's. The look then lives beside the markup it styles, so a block lifted out of a
-draft keeps it, and nothing is left to keep in step in a second file:
+else: every colour is still the kit's. The look then lives beside the markup it styles, and nothing is left to keep in step
+in a second file:
 
 ```css
 @import "tailwindcss";

@@ -9,6 +9,7 @@
 | `report <app>`                       | per kept feature: widget, page, check, lint — ✓ or what is left; exits 1 until done                                                     |
 | `shot <note>`                        | a PNG of the note as Obsidian draws it; open the path it prints and look                                                                |
 | `shot --design <app>`                | a PNG of the whole design canvas, every screen side by side                                                                             |
+| `screen <app> <screen> --board`      | puts the board you wrote at `design/<screen>.md` on the canvas; `--state <name>` for `design/<screen> · <name>.md`                      |
 | `design <app>`                       | checks `.widgetarium/apps/<app>/design/` and shows it to the person as a card                                                           |
 | `reference <app> <url> --why <line>` | puts a picture from the web on the canvas above the screens; nothing is downloaded                                                      |
 | `rules <app>`                        | every rule of `.widgetarium/design-system.md` and the app's own `design-system.md`, as a checklist to answer before `design`            |

@@ -92,40 +92,40 @@ every page. `kit.md` (in this prompt) is the kit as the HTML it replaces; build 
 lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `Hero`, `PhotoCard`,
 `EmptyState`, `CommandMenu` — rather than writing that HTML and CSS by hand.
 
-**Style with Tailwind, inside the TSX.** The draft's `widget.css` is two lines,
+**Style with Tailwind, inside the TSX.** A widget's `widget.css` is two lines,
 `@import "tailwindcss";` and `@import "widgetarium/theme.css";`, and every look is a class on the
 element: the theme names the kit's tokens (`bg-group`, `bg-fill`, `text-muted`, `text-accent`,
 `text-h3`, `rounded-plate`, `gap-cards`, `p-plate`) and Tailwind does the layout (`flex`, `grid`,
-`justify-between`, `items-center`). A block's look then lives in its own code and moves with it when
-stage 4 makes it a widget; a rule written in the sheet stays behind, the widget drifts from the
-screen the person approved, and `check` refuses it. The colours are always the kit's: Tailwind only
-replaces CSS. Cards, rows and anything else the kit lacks are yours to draw this way, and so is every
-widget you write in stage 4 or later.
+`justify-between`, `items-center`). A widget's look then lives in its own code, and `check` refuses a
+rule written in the sheet. The colours are always the kit's: Tailwind only replaces CSS. Cards, rows
+and anything else the kit lacks are yours to draw this way.
 Two things are not: a colour from Tailwind's own palette (`bg-violet-500`, `text-white`), which no
 theme repaints and `check` refuses, and a kit component restyled through its `className`. When a kit
 control lacks the look the design needs, say so in your message; never paint over it.
 
-**Then draw every page in one draft widget**, `.widgetarium/widgets/@draft/<app-name>/widget.tsx`
-with its two-line `widget.css`, whose props say what to draw — `getPage` a `z.enum` of the pages,
-`getDialog` which dialog is open, `getState` full or empty — each
-`IQuery.expects(z.enum([...]).default(...))`. **Every block is a file of its own**,
-`blocks/people-grid.tsx`, exporting one component named for what it is (`PeopleGrid`) that takes the
-rows it draws as typed props — `{ people: Person[] }`, never a sample list of its own. `widget.tsx`
-holds the sample rows and the pages: which blocks stand where, fed what. It also exports every block
-fed its sample rows — `export const blocks = { PeopleGrid: () => <PeopleGrid people={PEOPLE} /> }` —
-and the canvas draws each of them on its own under New widgets; `check` refuses a draft without it.
-Stage 4 then moves each
-block file into a widget of its own unchanged, so the widget is the screen the person approved and
-nothing is drawn twice. **Then place each screen with the tool, never by hand**:
+**Then write every block the catalogue lacks as a widget of the app's own, now.** One widget per
+block, in the app's scope (`@reading-list/book-covers`, the scope named after the app), begun with
+`node {tool} start` like any widget (law 15). It is the view only: `createWidget` whose `inject`
+reads exactly what the block draws, typed by the record shapes stage 2 wrote, plus the verbs the
+spec said yes to — no implementation yet, that is stage 4. Its look is the finished look: the kit and
+Tailwind, and every state it meets drawn by it (empty, one row, a hundred). `node {tool} check <id>`
+passes for each. If your tools can start sub-agents, hand every widget to one, all at once.
+
+**Then every screen is a board you write**, `.widgetarium/apps/<app>/design/<Screen>.md`: the page's
+tree — the base, its regions, its rows and columns arranged with `justify`, `align` and `wrap`
+(`board.md`) — holding tiles of the catalogue's widgets and your own. Every prop reads sample rows
+kept in the tile: `@core/typed-rows` with rows copied from what stage 2 seeded, `@core/typed-value`
+for a value; an open dialog or a picked tab is a `@core/screen-state` value set on that screen. A
+state is another note holding the same board with other sample values (`People · Empty.md` with
+every list empty). Place each with the tool, never by editing `canvas.json`:
 
 ```
-node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people
-node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people,state=empty --state Empty
-node {tool} screen <app> "People" --widget @draft/<app-name> --set page=people,dialog=add --state "Add person"
+node {tool} screen <app> "People" --board
+node {tool} screen <app> "People" --board --state Empty
+node {tool} screen <app> "People" --board --state "Add person"
 ```
 
-It writes each screen's note in `.widgetarium/apps/<app>/design/` and its place in `canvas.json`,
-which ends up like this:
+It checks the note holds a board and puts it on the canvas, which ends up like this:
 
 ```json
 {
@@ -136,12 +136,16 @@ which ends up like this:
 }
 ```
 
+The canvas draws these boards with the very widgets the app will run, and sets every widget they
+hold beside the pages by itself, under From the catalogue and New widgets. Nothing is drawn twice:
+after Approve design, a page is its screen's board bound to data.
+
 **Look at the references first.** Every picture on the canvas is listed under `references` in
 `canvas.json`: a `file` the person added lives in `.widgetarium/apps/<app>/design/references/`, a
 `url` is one you or they linked. Open every one before drawing — a `url` fetched into a temporary
 folder outside the vault, only to look — and draw the app the way they are drawn: their layout, type
 scale, photos and restraint, with our components. **Photos are linked, never downloaded, while you
-design**: a draft shows one as `<img>` or a background with its literal `https://` address (an
+design**: a widget shows one as `<img>` or a background with its literal `https://` address (an
 Unsplash photo that fits the record), wherever the references would. **Then read `.widgetarium/design-system.md` and follow it**: it is the person's, and a screen that
 breaks it is redrawn before they see it. A screen is the page as it will be built, drawn with the
 very pieces it will be built from: the base and its regions, catalogue widgets, headings, captions,
@@ -164,15 +168,9 @@ that changes — a review before and after an answer, a record closed and open:
 }
 ```
 
-**Draw it in one shot**, the way a designer
-draws a canvas: one message that writes the draft — `widget.tsx`, its `blocks/` and the two-line
-sheet — and places every screen. A draft is only the look: kit components and Tailwind fed by sample
-rows, exactly as the finished widgets will look, but no commands and no `start`.
-`node {tool} check @draft/<name>` passes before the person sees it: it is
-what catches a colour from outside the theme. Stage 4 turns each draft into the real widget after the
-person approved, keeping its look. Then `node {tool} shot --design <app>`, open the picture (the whole
-canvas, every page side by side) and redraw what is not the app you would pay for, again in one
-message. **Draw every dialog too, with the kit's `Dialog`**, whose scrim covers the whole page. List every press on every screen that opens something — add, edit,
+**Write it in one shot**, the way a designer draws a canvas: one message that writes every widget and
+every screen board. Then `node {tool} shot --design <app>`, open the picture (the whole canvas, every
+page side by side) and redraw what is not the app you would pay for, again in one message. **Draw every dialog too, with the kit's `Dialog`**, whose scrim covers the whole page. List every press on every screen that opens something — add, edit,
 delete, confirm, warn, pick — and give each its own state of that screen, named after it, with the
 dialog open over the page: a person approves what they will meet, and an add or a delete nobody drew
 is built by guesswork. **Then check it against the person's design system**: `node {tool} rules <app>` prints every
@@ -220,28 +218,12 @@ _Over when the person pressed Approve design._ Then `node {tool} photos <app>`: 
 person's yes, the photos the approved screens link to are downloaded into `design/photos/`, and
 `photos.json` maps each address to its file. Then `node {tool} stage <app> design --said "..."`.
 
-**Stage 4 — the widgets.** Now the catalogue, and not before. For every kept feature, and every
-"yes" in the spec's actions, find the widget that does it: its props match the fields stage 2
-wrote, and its card declares the verbs the action needs — `node {tool} show <id>` lists them under
-`manifest.props.<prop>.writes`. A list whose spec says add needs a widget that declares `create`;
-one whose spec says no offers none. Write each feature's `widget` (its id, `@you/flashcard`) and
-`page` (a page name from the spec) into the spec. **A catalogue widget fits when it draws the block
-stage 3 wrote down, not when it merely holds the data**: links drawn as a markdown list are not a
-navigation, a generic list is not a shelf of covers. Read its card and its preview against the
-block; a widget that would make the screen look like a different, poorer app is a widget to write.
-The catalogue comes first among the ones that fit: install every widget it already has for a feature, then say `node {tool} stage <app> catalogue --said "<what you installed
-or found>"`. The widgets nothing in the catalogue covers are law 15's list, and each one is a block
-of the draft moved, not written again:
-
-1. `node {tool} start @you/people-grid --title "People grid"`;
-2. copy `@draft/<app>/blocks/people-grid.tsx` into `@you/people-grid/` unchanged;
-3. write `widget.tsx`: `createWidget` whose `inject` reads exactly the props the block takes, with
-   the record shape from stage 2, and whose `draw` passes them to the block — the sample rows stay
-   in the draft;
-4. the two-line `widget.css`, then `node {tool} check @you/people-grid`.
-
-Change the block only where the real data needs it: paging a list, an empty state the draft drew
-elsewhere, a verb's button calling the command it now has.
+**Stage 4 — the widgets' data.** The widgets exist and the person approved how they look; this stage
+never changes a look. For every kept feature, and every "yes" in the spec's actions, check that its
+widget declares the verbs the action needs — `node {tool} show <id>` lists them under
+`manifest.props.<prop>.writes` — and add a missing one to its `inject` and its button, nothing else.
+Write each feature's `widget` (its id) and `page` (a page name from the spec) into the spec, then say
+`node {tool} stage <app> catalogue --said "<the catalogue widgets the screens use>"`.
 
 _Over when every kept feature names a widget that exists here and passes `check`._ The tool holds
 you to it: `node {tool} stage <app> widgets --said "..."` is refused until it is true, and says
@@ -249,29 +231,20 @@ which features are not.
 
 **You are the orchestrator from here on.** If your tools can start sub-agents, give every new
 widget to a sub-agent of its own, **all of them at once**, with what it needs and nothing else: the
-block file it moves, the record shape from stage 2, the feature it serves, and the rule that it is
-done only when `node {tool} check <id>` passes. A widget never reads another widget, so none waits
+widget, the record shape from stage 2, the feature it serves, and the rule that it is done only when
+`node {tool} check <id>` passes. A widget never reads another widget, so none waits
 for another. Pages follow the same way once their widgets pass, one sub-agent per page, done when
 `node {tool} lint <note>` passes. You do not write widget code yourself; you hand it out, read what
 comes back, and send it back while it is not done. Without sub-agents, do the same yourself, one
 feature at a time.
 
-**Stage 5 — the pages.** Each page is the draft's page read back as a board, in the vault note the
-spec names: every block the draft's `widget.tsx` stands on that page becomes a tile of the widget it
-moved into, in the same order, and every row or column of blocks there becomes a box of that
-direction. The person approved that picture, so the page must look like it; bind every prop to
-the folder stage 2 seeded instead of the sample rows. The empty state the canvas drew is the one an empty
-folder must show. Where a block still has no
-widget, look for the one whose props already match the fields stage 2 wrote:
-
-```bash
-node {tool} find --role <role> --reading <kind> --needs <types> --about <words>
-```
-
-Called with nothing it is the whole catalogue — **not the vault**. Every row says `have` or `GET `; a
-`GET ` row is one `node {tool} install <id>` away. Where nothing matches the design, **write the
-widget** — law 15 says how you begin. Then place, bind every prop with `allow` holding exactly the
-verbs the spec said yes to, give every node its surface, lint, measure, and look at it.
+**Stage 5 — the pages.** Each page is its approved screen's board, copied whole into the vault note
+the spec names: the same tree, the same tiles, the same arrangement. Then rebind, and change nothing
+else: every prop that read sample rows reads the folder stage 2 seeded, with `allow` holding exactly
+the verbs the spec said yes to, and a `@core/screen-state` value that only set a design state (an
+open dialog) is dropped. The person approved that board; a page drawn again by hand is a page that
+drifts from it. The empty state the canvas drew is the one an empty folder must show. Lint, measure,
+and look at it.
 
 Write each page's `note` (its vault path) into the spec as you make it.
 
