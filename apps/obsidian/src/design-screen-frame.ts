@@ -4,7 +4,7 @@ import type { Drawing, DrawnState, Size } from "./design-canvas-shapes.js";
 import { ScreenBoard } from "./design-screen-board.js";
 import { StateDrawing } from "./design-state-drawing.js";
 import { DrawnWhenSeen } from "./design-drawn-when-seen.js";
-import { snapshotKeyOf } from "./design-snapshots.js";
+import { frameIdOf, snapshotKeyOf } from "./design-snapshots.js";
 
 export interface ScreenFrameProps extends Drawing {
 	readonly label: string;
@@ -22,16 +22,23 @@ export function ScreenFrame({ label, state, size, registry, host }: ScreenFrameP
 			{ ...SCREEN_HOLDER, style: { minHeight: `${size.height}px` } },
 			h(
 				DrawnWhenSeen,
-				{ minHeight: size.height, pictureKey: framePictureKeyOf(state, label, registry) },
+				{ minHeight: size.height, ...framePictureOf(state, label, registry) },
 				screenOf(state, size, { registry, host }),
 			),
 		),
 	]);
 }
 
-function framePictureKeyOf(state: DrawnState, label: string, registry: Drawing["registry"]): string {
+function framePictureOf(
+	state: DrawnState,
+	label: string,
+	registry: Drawing["registry"],
+): { readonly frame: string; readonly pictureKey: string } {
 	const widget = state.picture?.widget ?? state.board?.tiles[0]?.widget ?? label;
-	return snapshotKeyOf(registry, widget, label, state.picture?.props ?? state.board);
+	return {
+		frame: frameIdOf(widget, label),
+		pictureKey: snapshotKeyOf(registry, widget, label, state.picture?.props ?? state.board),
+	};
 }
 
 function screenOf(state: DrawnState, size: Size, drawing: Drawing): ReactElement {

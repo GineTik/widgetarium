@@ -111,12 +111,14 @@ export class DesignView extends ItemView {
 			[designPathOf(this.appName), specPathOf(this.appName)].map((path) => adapter.stat(path).catch(() => null)),
 		);
 		const blocksNow = this.drawnDrafts.map((draft) => blocksOf(this.plugin.registry, draft).join(",")).join(";");
-		const now = [...stats.map((stat) => String(stat?.mtime ?? "")), blocksNow].join("|");
+		const buildsNow = this.drawnWidgets.map((id) => this.plugin.registry.get(id)?.buildKey ?? "").join(",");
+		const now = [...stats.map((stat) => String(stat?.mtime ?? "")), blocksNow, buildsNow].join("|");
 		if (this.seen !== "" && now !== this.seen) await this.draw();
 		this.seen = now;
 	}
 
 	private drawnDrafts: string[] = [];
+	private drawnWidgets: string[] = [];
 
 	override async onClose(): Promise<void> {
 		if (this.node) render(null, this.node);
@@ -129,6 +131,7 @@ export class DesignView extends ItemView {
 		if (!node || !this.appName || size.width === 0 || size.height === 0) return;
 		const { screens, references, widgets } = await designOf(this.plugin, this.appName);
 		this.drawnDrafts = draftsOn(screens);
+		this.drawnWidgets = widgetsDrawnOn(this.plugin, screens, widgets);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
 		const drawing = { registry: withBlocks(this.plugin.registry), host: this.plugin.host };
 		const paging = { page: this.page, onPage: (page: string): void => this.turnTo(page) };
@@ -210,6 +213,16 @@ async function widgetsOf(
 
 function draftBlocksOf(plugin: WidgetariumPlugin, screens: DrawnDesign["screens"]): string[] {
 	return draftsOn(screens).flatMap((draft) => blocksOf(plugin.registry, draft).map((block) => blockIdOf(draft, block)));
+}
+
+function widgetsDrawnOn(
+	plugin: WidgetariumPlugin,
+	screens: DrawnDesign["screens"],
+	widgets: DrawnDesign["widgets"],
+): string[] {
+	const pages = widgetsOnScreens(screens);
+	const used = pages.flatMap((id) => plugin.registry.get(id)?.uses ?? []);
+	return [...new Set([...pages, ...used, ...widgets.map((widget) => widget.id)])];
 }
 
 function isDraft(id: string): boolean {

@@ -1,81 +1,97 @@
 import { useSyncExternalStore } from "react";
 import { contentHash } from "@widgetarium/core/engine/content-hash.js";
 import type { Drawing } from "./design-canvas-shapes.js";
-import { storePicture, storedPictureOf } from "./design-pictures-store.js";
+import { framePictureOf, keepFramePicture } from "./design-pictures-store.js";
 import { msSinceMoved } from "./design-zoom.js";
 import { canvasOf } from "./off-screen.js";
+
+export interface ShownPicture {
+	readonly key: string;
+	readonly url: string;
+}
 
 const SNAPSHOT_SCALE = 0.5;
 const SETTLED_AFTER_MS = 400;
 const STILL_FOR_MS = 1500;
 const AT_ONCE = 3;
-const pictures = new Map<string, string>();
-const waiting = new Map<string, () => HTMLElement | null>();
+const shown = new Map<string, ShownPicture>();
+const waiting = new Map<string, { readonly key: string; readonly nodeOf: () => HTMLElement | null }>();
 const queued: string[] = [];
 const listeners = new Set<() => void>();
 let taking = 0;
 let lookStamp: string | null = null;
 
-// TODO: prune stored pictures no canvas asked for in a month.
+export function frameIdOf(widget: string, state: string): string {
+	return `${widget}#${state}`;
+}
+
 export function snapshotKeyOf(registry: Drawing["registry"], widget: string, state: string, drawn: unknown): string {
 	const definition = registry.get(widget);
 	const builds = [widget, ...(definition?.uses ?? [])].map((id) => registry.get(id)?.buildKey ?? id);
 	return contentHash(JSON.stringify([builds, state, drawn, lookStampOf()]));
 }
 
-export function useSnapshot(key: string): string | undefined {
-	return useSyncExternalStore(subscribe, () => pictures.get(key));
+export function useFramePicture(frame: string): ShownPicture | undefined {
+	return useSyncExternalStore(subscribe, () => shown.get(frame));
 }
 
 export function useSnapshotsWaiting(): number {
 	return useSyncExternalStore(subscribe, () => waiting.size);
 }
 
-export function askForSnapshot(key: string, nodeOf: () => HTMLElement | null): void {
-	if (pictures.has(key) || waiting.has(key)) return;
-	waiting.set(key, nodeOf);
+export function askForSnapshot(frame: string, key: string, nodeOf: () => HTMLElement | null): void {
+	if (shown.get(frame)?.key === key || waiting.get(frame)?.key === key) return;
+	waiting.set(frame, { key, nodeOf });
 	told();
-	void storedOrQueued(key);
+	void storedOrQueued(frame, key);
 }
 
-async function storedOrQueued(key: string): Promise<void> {
-	const stored = await storedPictureOf(key).catch(() => null);
-	if (stored) return settle(key, URL.createObjectURL(stored));
-	queued.push(key);
+async function storedOrQueued(frame: string, key: string): Promise<void> {
+	const stored = await framePictureOf(frame).catch(() => null);
+	if (stored && shown.get(frame)?.key !== stored.key) show(frame, stored.key, stored.picture);
+	if (stored?.key === key) return settle(frame);
+	queued.push(frame);
 	window.setTimeout(takeMore, SETTLED_AFTER_MS);
 }
 
 function takeMore(): void {
 	while (taking < AT_ONCE && queued.length > 0) {
-		const key = queued.shift();
-		if (key === undefined) return;
+		const frame = queued.shift();
+		if (frame === undefined) return;
 		taking += 1;
-		void take(key).finally(() => {
+		void take(frame).finally(() => {
 			taking -= 1;
 			takeMore();
 		});
 	}
 }
 
-async function take(key: string): Promise<void> {
+async function take(frame: string): Promise<void> {
 	while (msSinceMoved() < STILL_FOR_MS) await pause(STILL_FOR_MS);
-	const node = waiting.get(key)?.();
-	if (!node?.isConnected) return settle(key, null);
+	const asked = waiting.get(frame);
+	const node = asked?.nodeOf();
+	if (!asked || !node?.isConnected) return settle(frame);
 	try {
 		const picture = await pictureOf(node);
-		void storePicture(key, picture).catch((failure: unknown) =>
-			console.warn("[widgetarium] a canvas picture was made but not kept", failure),
+		show(frame, asked.key, picture);
+		await keepFramePicture(frame, asked.key, picture).catch((failure: unknown) =>
+			console.warn("[widgetarium] a canvas picture was made but not kept; it is made again next time", failure),
 		);
-		settle(key, URL.createObjectURL(picture));
 	} catch (failure) {
-		console.warn("[widgetarium] a canvas picture was not made; the frame stays live", key, failure);
-		settle(key, null);
+		console.warn("[widgetarium] a canvas picture was not made; the frame stays live", frame, failure);
 	}
+	settle(frame);
 }
 
-function settle(key: string, url: string | null): void {
-	if (url) pictures.set(key, url);
-	waiting.delete(key);
+function show(frame: string, key: string, picture: Blob): void {
+	const was = shown.get(frame);
+	if (was) URL.revokeObjectURL(was.url);
+	shown.set(frame, { key, url: URL.createObjectURL(picture) });
+	told();
+}
+
+function settle(frame: string): void {
+	waiting.delete(frame);
 	told();
 }
 

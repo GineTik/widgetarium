@@ -7730,6 +7730,19 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: 999px;
 }
 
+.wg-design-seen {
+	position: relative;
+}
+
+.wg-design-refreshing {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	opacity: 0;
+	pointer-events: none;
+}
+
 .wg-design-snapshot {
 	display: block;
 	width: 100%;

@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import type { Drawing } from "./design-canvas-shapes.js";
 import { DefaultDrawing } from "./design-default-drawing.js";
 import { DrawnWhenSeen } from "./design-drawn-when-seen.js";
-import { snapshotKeyOf } from "./design-snapshots.js";
+import { frameIdOf, snapshotKeyOf } from "./design-snapshots.js";
 import { StateDrawing } from "./design-state-drawing.js";
 
 export interface WidgetCardProps extends Drawing {
@@ -25,7 +25,11 @@ export function WidgetCard({ id, label, props, registry, host }: WidgetCardProps
 			{ key: "drawn", className: "wg-design-widget-body", inert: true },
 			h(
 				DrawnWhenSeen,
-				{ minHeight: CARD_UNSEEN_PX, pictureKey: snapshotKeyOf(registry, id, label, props ?? null) },
+				{
+					minHeight: CARD_UNSEEN_PX,
+					frame: frameIdOf(id, label),
+					pictureKey: snapshotKeyOf(registry, id, label, props ?? null),
+				},
 				props
 					? h(StateDrawing, { picture: { widget: id, props }, registry })
 					: h(DefaultDrawing, { id, width: cardPx, registry, host }),
