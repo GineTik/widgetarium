@@ -7,11 +7,11 @@
 | `spec <app>`                          | checks `.widgetarium/apps/<app>/spec.md` and shows it to the person as a card                                                           |
 | `stage <app> <stage> --said <line>`   | fills a row of the build card: `data`, `design`, `catalogue`, `widgets`, `pages`                                                        |
 | `report <app>`                        | per kept feature: widget, page, check, lint — ✓ or what is left; exits 1 until done                                                     |
-| `shot <note>`                         | a PNG of the note as Obsidian draws it; open the path it prints and look                                                                |
+| `shot <note>`                         | a PNG of the note's board, drawn off screen — no tab opens; open the path it prints and look                                            |
 | `shot --design <app>`                 | a PNG of the whole design canvas, every screen side by side                                                                             |
 | `screen <app> <screen> --widget <id>` | puts a page widget on the canvas; `--state <name>` draws the state of that name from the widget's `states`                              |
 | `design <app>`                        | checks `.widgetarium/apps/<app>/design/` and shows it to the person as a card                                                           |
-| `reference <app> <url> --why <line>`  | puts a picture from the web on the canvas; `--kind app\|site\|marketing\|photo` says what it is; nothing is downloaded                  |
+| `reference <app> <url> --why <line>`  | a picture on the canvas; `--kind app\|site\|marketing\|photo` says what it is, `--page People,Person` the screens it informs            |
 | `note <app> <reference> <text>`       | a sticky note beside a reference: `--tone take\|like\|dislike\|note`, `--at 0.4,0.2` the point it is about                              |
 | `rules <app>`                         | every rule of `.widgetarium/design-system.md` and the app's own `design-system.md`, as a checklist to answer before `design`            |
 | `photos <app>`                        | after Approve design only: downloads every photo the approved screens link to into `design/photos/`, `photos.json` maps address to file |

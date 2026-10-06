@@ -1,10 +1,9 @@
-import { ItemView, Notice, parseYaml } from "obsidian";
+import { ItemView, Notice } from "obsidian";
+import { boardIn } from "./board-in-note.js";
 import type { App, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
-import { findBlocks } from "@widgetarium/core/block-writer.js";
-import { normalizeBoard } from "@widgetarium/core/model.js";
 import type { Board } from "@widgetarium/core/model.js";
 import {
 	designPathOf,
@@ -38,6 +37,7 @@ const PHOTOS_FAILED = "The photos were not added to the canvas: {why}";
 
 export class DesignView extends ItemView {
 	private appName = "";
+	private page = "";
 	private node: HTMLElement | null = null;
 
 	constructor(
@@ -60,11 +60,12 @@ export class DesignView extends ItemView {
 	}
 
 	override getState(): Record<string, unknown> {
-		return { app: this.appName };
+		return { app: this.appName, page: this.page };
 	}
 
 	override async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		this.appName = isObject(state) && typeof state["app"] === "string" ? state["app"] : "";
+		this.page = isObject(state) && typeof state["page"] === "string" ? state["page"] : "";
 		await super.setState(state, result);
 		refreshHeader(this.leaf);
 		await this.draw();
@@ -130,7 +131,15 @@ export class DesignView extends ItemView {
 		this.drawnDrafts = draftsOn(screens);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
 		const drawing = { registry: withBlocks(this.plugin.registry), host: this.plugin.host };
-		render(h(DesignCanvas, { app: this.appName, screens, references, widgets, size, onAddPhotos, ...drawing }), node);
+		const paging = { page: this.page, onPage: (page: string): void => this.turnTo(page) };
+		const design = { app: this.appName, screens, references, widgets, size, onAddPhotos };
+		render(h(DesignCanvas, { key: this.page, ...design, ...paging, ...drawing }), node);
+	}
+
+	private turnTo(page: string): void {
+		this.page = page;
+		this.app.workspace.requestSaveLayout();
+		void this.draw();
 	}
 }
 
@@ -145,11 +154,7 @@ export async function openDesign(obsidian: App, app: string): Promise<void> {
 	await obsidian.workspace.revealLeaf(leaf);
 }
 
-function refreshHeader(leaf: unknown): void {
-	if (isObject(leaf) && typeof leaf["updateHeader"] === "function") Reflect.apply(leaf["updateHeader"], leaf, []);
-}
-
-async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDesign> {
+export async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDesign> {
 	const text = await plugin.app.vault.adapter.read(designPathOf(app)).catch(() => null);
 	if (text === null) return refusedDesign(app, NO_DESIGN.replace("{app}", app));
 	const read = readDesign(text);
@@ -183,6 +188,7 @@ function drawnReferencesOf(
 		src: "url" in reference ? reference.url : adapter.getResourcePath(referencePathOf(app, reference.file)),
 		why: reference.why,
 		kind: reference.kind,
+		pages: reference.pages ?? [],
 		notes: reference.notes ?? [],
 	}));
 }
@@ -281,13 +287,6 @@ function statePropsOf<Props>(states: Readonly<Record<string, Props>>, state: str
 	return states[state ?? first ?? ""];
 }
 
-function boardIn(text: string): Board | null {
-	const lines = text.split("\n");
-	const [block] = findBlocks(lines);
-	if (!block) return null;
-	try {
-		return normalizeBoard(parseYaml(lines.slice(block.start + 1, block.end).join("\n")));
-	} catch {
-		return null;
-	}
+function refreshHeader(leaf: unknown): void {
+	if (isObject(leaf) && typeof leaf["updateHeader"] === "function") Reflect.apply(leaf["updateHeader"], leaf, []);
 }

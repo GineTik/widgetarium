@@ -2,6 +2,8 @@ import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surfac
 import type { Board } from "@widgetarium/core/model.js";
 import type { ReferenceNote } from "@widgetarium/core/app-design.js";
 
+export const DESKTOP_FRAME = { width: 1280, height: 832 } as const;
+
 export interface StatePicture {
 	readonly widget: string;
 	readonly props: Readonly<Record<string, unknown>>;
@@ -24,6 +26,7 @@ export interface DrawnReference {
 	readonly src: string;
 	readonly why?: string | undefined;
 	readonly kind?: string | undefined;
+	readonly pages: readonly string[];
 	readonly notes: readonly ReferenceNote[];
 }
 

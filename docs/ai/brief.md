@@ -51,8 +51,9 @@ comes from: a feature most of them share and this app lacks is a feature to sugg
 
 **Put what you looked at on the canvas.** For each product, find two or three pictures of the
 screens this app will have — the product's own site, Dribbble, Mobbin; on a page, its `og:image` —
-and run `node {tool} reference <app> <the image's https address> --kind app|site|marketing|photo --why "<what to take from it>"`.
-They stand above the screens for the person, who adds their own beside them. Nothing is
+and run `node {tool} reference <app> <the image's https address> --kind app|site|marketing|photo --page "<Screen>,<Screen>" --why "<what to take from it>"`.
+The canvas has a page per screen, and a reference stands on the pages it names — the screens it
+informs — above that screen's states; one that names none stands on every screen's page. Nothing is
 downloaded: the canvas shows them from their address.
 
 **Then take every reference apart, in notes the person reads.** Open the picture and say what it is
@@ -433,7 +434,10 @@ A screen that already holds widgets is continued from the base it declares. `nod
 lists fifteen older page bases; a new screen takes a body, never one of those.
 
 **7. The web is for research and references only.** Stage 1 and stage 3 may look outside; from
-stage 4 on, the vault is the research and you never search the web.
+stage 4 on, the vault is the research and you never search the web. **You never open a tab or a
+note the person did not ask for, and never write a note only to look at it**: `shot <note>` and
+`shot --design <app>` draw off screen and leave the person's window as it was, and a page is judged
+from its own note or its canvas state, never from a temporary `zz-preview` copy.
 
 **8. Give every node its surface as you place it.** The plugin lays none for you and never overwrites
 what you wrote. Three laws are a gate and the rest is yours — `surfaces.md` has both, `examples.md`

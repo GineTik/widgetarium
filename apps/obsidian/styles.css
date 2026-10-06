@@ -5029,6 +5029,14 @@ body.wg-tree-carrying .wg-tile-body {
 	gap: var(--wg-gap-items, 8px);
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-loader {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-page {
 	--wg-kit-page-width: 1040px;
 	--wg-kit-page-side: 320px;
@@ -7683,6 +7691,61 @@ body.wg-tree-carrying .wg-tile-body {
 	transform-origin: 0 0;
 }
 
+.wg-design-topbar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 16px 16px 40px;
+	pointer-events: none;
+}
+
+.wg-design-topbar::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	backdrop-filter: blur(14px);
+	mask-image: linear-gradient(to bottom, black 45%, transparent);
+}
+
+.wg-design-topbar > * {
+	position: relative;
+	pointer-events: auto;
+}
+
+.wg-design-topbar > .wg-design-head {
+	position: relative;
+	top: auto;
+	left: auto;
+}
+
+.wg-design-page-switch {
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	background: var(--background-primary);
+	border-radius: 999px;
+}
+
+.wg-design-snapshot {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-width: none;
+}
+
+.wg-design-layer.is-moving {
+	will-change: transform;
+}
+
+.wg-design-frame,
+.wg-design-widget {
+	contain: layout paint;
+}
+
 .wg-design-region {
 	display: flex;
 	flex-direction: column;
@@ -7790,6 +7853,18 @@ body.wg-tree-carrying .wg-tile-body {
 
 .wg-design-screen > .wg-page > .wg-root {
 	flex: 1 0 auto;
+}
+
+.wg-off-screen {
+	position: fixed;
+	top: 0;
+	left: -100000px;
+	pointer-events: none;
+	contain: layout paint;
+}
+
+.wg-off-screen-page {
+	background: var(--background-primary);
 }
 
 .wg-design-drawn {
