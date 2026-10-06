@@ -3,8 +3,7 @@ import type { ReactElement, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useOverlayLayer } from "../hooks/use-overlay-layer";
 import { cn } from "../utils/cn";
-import { Icon } from "../icons/icon";
-import { IconButton } from "./icon-button";
+import { DialogHead } from "./dialog-head";
 
 export interface DialogProps {
 	readonly isOpen: boolean;
@@ -15,8 +14,6 @@ export interface DialogProps {
 	readonly children?: ReactNode;
 	readonly className?: string | undefined;
 }
-
-const CLOSE_LABEL = "Close";
 
 export function Dialog({
 	isOpen,
@@ -36,16 +33,7 @@ export function Dialog({
 			onKeyDown={(event) => event.key === "Escape" && onClose?.()}
 		>
 			<div className={cn("wg-kit-dialog", size === "s" && "is-s", cls)} role="dialog" aria-modal="true">
-				{title || onClose ? (
-					<header className="wg-kit-dialog-head">
-						<span className="wg-kit-dialog-title">{title}</span>
-						{onClose ? (
-							<IconButton variant="ghost" size="s" label={CLOSE_LABEL} onClick={onClose}>
-								<Icon name="x" />
-							</IconButton>
-						) : null}
-					</header>
-				) : null}
+				<DialogHead title={title} onClose={onClose} />
 				{children}
 				{actions ? <footer className="wg-kit-dialog-actions">{actions}</footer> : null}
 			</div>
