@@ -1,4 +1,4 @@
-import { HELD_MARK, NODE_MARK, SCOPE_MARK, WIDGET_MARK } from "@widgetarium/core/engine/node-marks.js";
+import { HELD_MARK, NODE_MARK, SCOPE_MARK, SLOT_ENTRY_MARK, WIDGET_MARK } from "@widgetarium/core/engine/node-marks.js";
 
 export type LayerKind = "widget" | "row" | "column" | "grid" | "group" | "input" | "button" | "text" | "picture";
 
@@ -14,6 +14,7 @@ export interface Layer {
 }
 
 const NAMED_BY = "data-name";
+const SLOT_ENTRY_PREFIX = "slot:";
 const INPUT_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
 const TEXT_TAGS = ["H1", "H2", "H3", "H4", "H5", "H6", "P", "SPAN", "B", "STRONG", "LABEL"];
 const KIND_SAID: Readonly<Record<LayerKind, string>> = {
@@ -32,7 +33,23 @@ export function layersIn(root: Element): Layer[] {
 	return mergedRepeats([...root.children].flatMap(layersOf));
 }
 
+function slotEntryLayer(element: Element, entry: string): Layer {
+	const holder = element.parentElement?.closest(`[${SLOT_ENTRY_MARK}]`)?.getAttribute(SLOT_ENTRY_MARK);
+	return {
+		mark: `${SLOT_ENTRY_PREFIX}${holder ? `${holder}/` : ""}${entry}`,
+		kind: "widget",
+		name: element.getAttribute(NAMED_BY) ?? entry,
+		widget: element.getAttribute(WIDGET_MARK) ?? undefined,
+		repeats: 1,
+		isHeld: true,
+		scope: "",
+		children: mergedRepeats([...element.children].flatMap(layersOf)),
+	};
+}
+
 function layersOf(element: Element): Layer[] {
+	const entry = element.getAttribute(SLOT_ENTRY_MARK);
+	if (entry !== null) return [slotEntryLayer(element, entry)];
 	const mark = element.getAttribute(NODE_MARK);
 	const widget = element.getAttribute(WIDGET_MARK);
 	if (widget)

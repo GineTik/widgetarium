@@ -22,6 +22,7 @@ import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
 import { LOCK_PATH } from "@widgetarium/core/paths.js";
 import type { CanvasMode } from "./design-tools.js";
 import { DesignCanvas } from "./design-canvas.js";
+import { statePropsOf } from "./design-state-drawing.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
 import type { DrawnDesign, DrawnState, StatePicture } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
@@ -332,11 +333,6 @@ function pictureOf(plugin: WidgetariumPlugin, board: Board, state: string | null
 	if (!tile || board.tiles.length > 1) return null;
 	const props = statePropsOf(plugin.registry.get(tile.widget)?.states ?? {}, state);
 	return props ? { widget: tile.widget, props } : null;
-}
-
-function statePropsOf<Props>(states: Readonly<Record<string, Props>>, state: string | null): Props | undefined {
-	const [first] = Object.keys(states);
-	return states[state ?? first ?? ""];
 }
 
 function refreshHeader(leaf: unknown): void {
