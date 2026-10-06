@@ -116,8 +116,9 @@ outside `draw` takes their types from the widget itself: `PropsOf<typeof Board>`
 | `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                                                                                 |
 | `IListGateway.of(RowSchema, { where, sort, default })`      | a gateway that reads: `list`, `get`                                                                         |
 | `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`     | a gateway with every verb, or only the ones picked                                                          |
-| `ISlot.of<Given>({ default, surface, gives })`              | a function drawing the widget in the slot, or `null`                                                        |
-| `IMounts.of({ default: [] })`                               | `MountEntry[]`, each drawn with `<Mounted entry={...} />`                                                   |
+| `hero: ISlot`                                               | a component: `<Hero />` draws the one widget a person placed there, nothing when empty                      |
+| `main: ISlot.array()`                                       | an array of components: `main.map((Slot) => <Slot key={Slot.id} />)`, `main.length`; hidden ones left out   |
+| `IRepeat.of<Given>({ default, surface, gives })`            | a function drawing one widget again for every row, or `null`                                                |
 | `IHost`, `INavigator`, `IHere`                              | what the engine hands over, only when declared                                                              |
 | `IReader`, `IContent`                                       | the passage and its reader, for an `inline` widget                                                          |
 | `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer                                                     |

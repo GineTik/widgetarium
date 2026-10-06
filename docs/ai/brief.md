@@ -143,70 +143,106 @@ has. The canvas draws every widget once per state, labelled, and `check` names a
 them (`states`). `node {tool} check <id>` passes for each. If your tools can start sub-agents, hand
 every widget to one, all at once.
 
-**Then every page is one page widget, plain React**, `@<app>/<page>-page` with the `layout` role.
-It imports the app's widgets and the catalogue's by their id and draws them as components, handing
-each what it reads. Its frame is the kit's `Page`, whose `kind` is the archetype from the design
-system — `home`, `index`, `record`, `dashboard` or `form` — and which lays the width, the header and
-the hero; every block stands in a `Section`, which owns its title, count, add and "See all". The
-page reads its data through its own `inject`, and its states hold the samples, one state per frame
-the canvas shows:
+**Then every page is one layout widget**, `@<app>/<page>-page` with the `layout` role. A page is the
+place things stand, never the things: its code decides where each block goes, and the blocks stand in
+**slots** a person fills, swaps and re-binds by hand, with no code. Declare a slot in `inject`:
+`ISlot` is one place (a hero), `ISlot.array()` a list of places (a column of sections). The widget
+receives each as a component — `<Hero />`, `main.map((Slot) => <Slot key={Slot.id} />)`,
+`side.length` — and draws it inside its own structure. `check` names a page that declares no slot.
+The page's frame is the kit's `Container` (`width` 640, 800, 1040 or 1280 from the design system), and
+everything inside it is yours: rows, grids, overlaps, a title row, written with Tailwind and answering
+to its own width through container queries (`@3xl:grid-cols-[2fr_1fr]`), so the page holds on a phone
+as it does on a desk. Space blocks with `gap-sections` and items with `gap-cards`. A page reads data
+**only to choose which slots show**, never to draw rows:
 
 ```tsx
-import Hero from "@default/hero";
-import ReachOut from "@crm/reach-out";
-import FollowUps from "@crm/follow-ups";
-import Birthdays from "@crm/birthdays";
-
 const HomePage = createWidget({
 	inject: {
 		getPeople: IQuery.expects(z.array(PersonSchema)),
-		getSteps: IQuery.expects(z.array(StepSchema)),
-		getDialog: IQuery.expects(z.enum(["none", "add"]).default("none")),
+		actions: ISlot.array(),
+		hero: ISlot,
+		main: ISlot.array(),
+		side: ISlot.array(),
+		empty: ISlot,
 	},
-	draw: ({ getPeople: people, getSteps: steps, getDialog: dialog }) => (
-		<Page
-			kind="home"
-			title="People"
-			hero={<Hero getTitle={`${late(people).length} people to reach out to`} getFaces={facesOf(people)} />}
-			action={<Button variant="primary">Add person</Button>}
-			side={
-				<Section title="Birthdays">
-					<Birthdays getPeople={upcoming(people)} />
-				</Section>
-			}
-		>
-			<Section title="Reach out" count={late(people).length} more={{ label: "See all" }}>
-				<ReachOut getPeople={late(people).slice(0, 5)} />
-			</Section>
-			<Section title="Follow up" action={<IconButton icon="plus" aria-label="Add follow-up" />}>
-				<FollowUps getSteps={open(steps)} />
-			</Section>
-			{dialog === "add" ? <AddPersonDialog /> : null}
-		</Page>
-	),
-});
-
-export const states = defineStates(HomePage, {
-	Full: { getPeople: PEOPLE, getSteps: STEPS },
-	Empty: { getPeople: [], getSteps: [] },
-	"Add person": { getPeople: PEOPLE, getSteps: STEPS, getDialog: "add" },
+	draw: ({ getPeople, actions, hero: Hero, main, side, empty: Empty }) => {
+		const isEmpty = useData(getPeople, { limit: 1 }).data.length === 0;
+		return (
+			<Container width={1040} className="relative" data-name="People" data-wg-overlay-layer="">
+				<header className="flex items-center justify-between gap-parts" data-name="Title row">
+					<h1 className="text-h1 m-0">People</h1>
+					<div className="flex items-center gap-parts" data-name="Actions">
+						{actions.map((Slot) => (
+							<Slot key={Slot.id} />
+						))}
+					</div>
+				</header>
+				<Hero />
+				{isEmpty ? (
+					<Empty />
+				) : (
+					<div className="grid gap-sections @3xl:grid-cols-[2fr_1fr]" data-name="Columns">
+						<div className="flex flex-col gap-sections min-w-0" data-name="Main column">
+							{main.map((Slot) => (
+								<Slot key={Slot.id} />
+							))}
+						</div>
+						<div className="flex flex-col gap-sections min-w-0" data-name="Side column">
+							{side.map((Slot) => (
+								<Slot key={Slot.id} />
+							))}
+						</div>
+					</div>
+				)}
+			</Container>
+		);
+	},
 });
 ```
 
+**A block that needs a title stands in `@default/section`**, the catalogue's section: a heading, a
+`controls` slot beside it (a search, a filter, an add) and a `widgets` slot under it. Logic a block
+needs — a headline that counts, a button with its dialog — is a widget of the app's own, standing in
+a slot like any other. A dialog finds the page's `data-wg-overlay-layer`, so it covers the page.
+
+**The page's states fill its slots**, one state per frame the canvas shows. A slot in a state names
+a widget by id and one of that widget's own states, or hands it `props`; a list slot takes a list:
+
+```tsx
+const section = (heading: string, widget: string) => ({
+	widget: "@default/section",
+	props: { getHeading: heading, widgets: [{ widget, state: "Full" }] },
+});
+
+export const states = defineStates(HomePage, {
+	Full: {
+		getPeople: PEOPLE,
+		actions: [{ widget: "@crm/add-person" }],
+		hero: { widget: "@crm/people-hero", state: "Full" },
+		main: [section("Reach out", "@crm/reach-out"), section("Follow up", "@crm/follow-ups")],
+		side: [section("Birthdays", "@crm/birthdays")],
+	},
+	Empty: {
+		getPeople: [],
+		hero: { widget: "@crm/people-hero", state: "Empty" },
+		empty: { widget: "@default/empty-state", props: { getTitle: "No one here yet" } },
+	},
+	"Add person": { getPeople: PEOPLE, actions: [{ widget: "@crm/add-person", state: "Open" }] },
+});
+```
+
+Every widget a page shows then keeps its own samples in its own `states`, and the canvas draws the
+page by drawing each of them where the page puts it.
+
 A widget that draws rows draws no title of its own: the section above it holds the title and the
-add, so the list starts at its first row (`check` names it `titled`). A widget of the app's own may
-hold its own search and filters with its list when they serve only that list; it stays in the app's
-scope and never goes to the catalogue.
+controls, so the list starts at its first row (`check` names it `titled`).
 
-**Name every group a person might move things between.** The canvas has a Layers panel that shows
-the page's code as a tree and lets the person drag widgets between groups; it reads `data-name` on
-an element (`<div data-name="Side column">`), and a `Section` is named by its `title`. A group with
-no name shows as Row, Column or Group, which tells the person nothing. Keep the page's own layout in
-plain elements and kit components inside the page file, so every group stands in the tree.
+**Name every group a person might move things between.** The Layers panel shows the page's code and
+its slots as a tree; it reads `data-name` on an element (`<div data-name="Side column">`). A group with
+no name shows as Row, Column or Group, which tells the person nothing.
 
-A widget used as a component takes a plain value for every prop it reads; a prop left out draws as
-its empty value, never an error. Place each state with the tool, its name the same as the key in
-`states` (the first state is the screen itself); never edit `canvas.json`:
+Place each state with the tool, its name the same as the key in `states` (the first state is the
+screen itself); never edit `canvas.json`:
 
 ```
 node {tool} screen <app> "People" --widget @<app>/people-page
@@ -215,14 +251,11 @@ node {tool} screen <app> "People" --widget @<app>/people-page --state "Add perso
 ```
 
 The canvas is three regions — References, Pages, Widgets — and every group in them is titled: a
-page with all its states, a widget with all its states, a reference with its notes. It draws each
-page state from the page's `states`, and sets every widget a page imports in Widgets, badged New or
-From catalogue. Nothing is drawn twice, and nothing is lost after Approve design: the page reads the
-vault through its `inject`, and the states keep drawing the canvas.
+page with all its states, a widget with all its states, a reference with its notes.
 
 **A page keeps the design system's page rules** — the archetype table, `PG`, `S`, `R` and `C` in
 `.widgetarium/design-system.md`. The ones marked `check: kit` hold by themselves once the page is
-drawn with `Page` and `Section`; `rules <app>` measures the ones marked `check: measured` on the
+drawn in `Container` with its blocks in `@default/section`; `rules <app>` measures the ones marked `check: measured` on the
 drawn canvas and names the frame that fails each. Before drawing any list, answer C3: which of a
 chart, a timeline, a calendar, cards, faces or a map shows it better.
 
@@ -326,11 +359,41 @@ feature at a time.
 
 **Stage 5 — the pages.** Each page is its approved page widget, placed alone in the vault note the
 spec names. Its look does not change and **its `states` stay exactly as approved** — they are what
-the canvas draws, and a page that loses them leaves the person a blank canvas. What it reads is
-already in its `inject`: add `ICommand.sends` for each verb the spec said yes to, hand them down to
-the widgets it draws, and bind each prop to the folder stage 2 seeded, with `allow` holding exactly
-those verbs; a prop that only opened a dialog becomes the page's own `useState`. The person approved
-that page; a page drawn again is a page that drifts from it. The empty state the
+the canvas draws, and a page that loses them leaves the person a blank canvas. The note fills the
+page's slots with what its `Full` state placed: each slot's rows under `mounts`, and each placed
+widget under `mounted` with **its own** `props` bound — the folder stage 2 seeded for a read, the verb
+the spec said yes to for a command (`@obsidian/folder-create`, `@obsidian/folder-update`), with `allow`
+holding exactly those verbs. Nothing is handed down through the page; a value two widgets share (a
+search and the list it filters) is one `@core/screen-state` key bound in both:
+
+```yaml
+tiles:
+  - id: page
+    widget: "@crm/people-page"
+    props:
+      getPeople: { implementation: "@obsidian/folder", fields: { path: CRM/People } }
+    mounts:
+      actions: [{ name: Add person, widget: "@crm/add-person" }]
+      main: [{ name: Reach out, widget: "@default/section" }]
+    mounted:
+      Add person:
+        widget: "@crm/add-person"
+        props:
+          createPerson: { implementation: "@obsidian/folder-create", fields: { path: CRM/People }, allow: [run] }
+      Reach out:
+        widget: "@default/section"
+        props:
+          getHeading: { implementation: "@core/typed-value", fields: { value: Reach out } }
+        mounts:
+          widgets: [{ name: Late, widget: "@crm/reach-out" }]
+        mounted:
+          Late:
+            widget: "@crm/reach-out"
+            props:
+              getPeople: { implementation: "@obsidian/folder", fields: { path: CRM/People } }
+```
+
+The person approved that page; a page drawn again is a page that drifts from it. The empty state the
 canvas drew is the one an empty folder must show. Lint, measure, and look at it.
 
 Write each page's `note` (its vault path) into the spec as you make it.

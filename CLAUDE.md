@@ -117,7 +117,7 @@ and refuses an implementation where an interface belongs. `.of(schema)` types ev
 zod schema; `.of({ read, create, update, other })` types each verb from its own, `other` standing for
 every verb not named. Without `.of` an interface is untyped (`unknown`) — there is no generic form.
 The compiler holds an implementation's reads in its own class (`TS2515`) and its picked writes where it
-is given to a prop (`Implementation<typeof declared>`). `ISlot.of`, `IMounts.of`, `IHost`,
+is given to a prop (`Implementation<typeof declared>`). `ISlot`, `ISlot.array()`, `IRepeat.of`, `IHost`,
 `INavigator`, `IHere`, `IReader`, `IContent`, `ICatalogue`, `IFoldIntoGroup` and `IConfigureMounts` are
 what the host hands over, and a widget gets one only by declaring it. A zod schema value is named
 `*Schema` and its type carries no suffix; a record's address is `RecordRef`, one branded name.

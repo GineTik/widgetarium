@@ -76,6 +76,7 @@ Before writing a block, look for a widget that is already that block: `@default/
 returns. `find` gives each widget's `picture` when it has one — open it and judge by the picture.
 A widget you place keeps its look on every page and every app; a block you redraw drifts.
 
-A widget can hold another widget: a slot (`ISlot.of`) draws one widget per row, mounts
-(`IMounts.of`) draw the widgets a person placed. A card list whose card is a catalogue widget is
-built that way, never by copying the card's code.
+A widget can hold other widgets. `ISlot` is one place a person fills, `ISlot.array()` a list of
+places, each drawn as a component (`<Hero />`, `main.map((Slot) => <Slot key={Slot.id} />)`);
+`IRepeat.of` draws one widget again for every row. A card list whose card is a catalogue widget
+is built that way, never by copying the card's code.
