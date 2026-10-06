@@ -550,13 +550,7 @@ check("and says why", host.querySelector(".wg-ai-spec-refused")?.textContent, "t
 text = SPEC;
 const installed = callOf("i", `${BIN} install @default/list`);
 const writing = callOf("w", `${BIN} start @you/flashcard --title Flashcard`);
-const runCalls = [
-	data,
-	design,
-	installed,
-	callOf("c", `${BIN} stage Vocabulary catalogue --said "List installed"`),
-	writing,
-];
+const runCalls = [data, installed, writing];
 const liveRun = buildRunIn(runCalls, true) ?? { key: "", app: "", rows: [] };
 const liveBuilds = buildsIn(runCalls, true);
 render(h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: installsIn(runCalls) }), host);
@@ -570,27 +564,27 @@ check(
 check(
 	"a done stage draws the kit's done circle",
 	host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-stage-ring.is-done").length,
-	4,
+	2,
 );
 check(
-	"a widget installed from the catalogue stands under its stage",
+	"a widget installed from the catalogue and one being written both stand under design, where they happen",
 	[...host.querySelectorAll(".wg-kit-row.is-inner .wg-ai-spec-name")].map((node) => node.textContent),
 	["@default/list", "Flashcard"],
 );
 check(
-	"and the widget being written stands under New widgets, with the step it is on",
+	"and the widget being written says the step it is on",
 	host.querySelectorAll(".wg-kit-row.is-inner .wg-ai-spec-sub")[1]?.textContent,
 	"Writing the widget",
 );
 check(
 	"each widget stands right under the stage it belongs to",
 	[...host.querySelectorAll(".wg-kit-row .wg-ai-spec-name")].map((node) => node.textContent),
-	["Research", "Data", "Design", "From the catalogue", "@default/list", "New widgets", "Flashcard", "Pages"],
+	["Research", "Data", "Design", "@default/list", "Flashcard", "Verbs", "Widgets ready", "Pages"],
 );
 check(
-	"the stage names say where the widgets come from",
+	"the stages are the design-first flow: design writes the widgets, then verbs, then pages",
 	[...host.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-name")].map((node) => node.textContent),
-	["Research", "Data", "Design", "From the catalogue", "New widgets", "Pages"],
+	["Research", "Data", "Design", "Verbs", "Widgets ready", "Pages"],
 );
 check(
 	"the stage in progress draws a turning one",
@@ -603,15 +597,15 @@ const stageButton = (name: string): HTMLElement | undefined =>
 	);
 check(
 	"a stage with widgets under it is a button that folds them, open at first",
-	[stageButton("New widgets")?.getAttribute("aria-expanded"), stageButton("Data") === undefined],
+	[stageButton("Design")?.getAttribute("aria-expanded"), stageButton("Data") === undefined],
 	["true", true],
 );
-stageButton("New widgets")?.click();
+stageButton("Design")?.click();
 await settle();
 check(
 	"pressing it shuts that stage's list and only that one",
 	[...host.querySelectorAll(".wg-ai-stage-fold > .wg-ai-fold")].map((fold) => fold.classList.contains("is-shut")),
-	[false, true],
+	[true],
 );
 const { buildStatusOf } = await import("../apps/obsidian/src/ai/build-stages.js");
 const finishedElsewhere = {
@@ -679,7 +673,7 @@ await settle();
 check(
 	"the pinned bar says where the build is, and what it is doing right now",
 	[...host.querySelectorAll(".wg-ai-spec-text > span")].map((node) => node.textContent),
-	["Vocabulary · 4 of 5", "New widgets · Flashcard · Writing the widget"],
+	["Vocabulary · 2 of 5", "Design · Flashcard · Writing the widget"],
 );
 render(null, host);
 

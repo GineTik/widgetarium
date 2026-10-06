@@ -8,8 +8,8 @@ import type { ItemStatus, StageRow, StageStatus } from "./spec-calls.js";
 export const STAGE_NAMES: Readonly<Record<BuildStage, string>> = {
 	data: "Data",
 	design: "Design",
-	catalogue: "From the catalogue",
-	widgets: "New widgets",
+	catalogue: "Verbs",
+	widgets: "Widgets ready",
 	pages: "Pages",
 };
 

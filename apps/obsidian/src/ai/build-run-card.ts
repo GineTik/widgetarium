@@ -38,7 +38,7 @@ const ITEM_RING_PX = 22;
 export function BuildRunCard({ run, port, builds, installs, isRunning = false }: BuildRunCardProps): ReactElement {
 	const spec = useSpec(port, run.app).read?.spec ?? null;
 	const isDone = run.rows.every((row) => row.status === "done");
-	const settling = { isRunning, isStageDone: run.rows.some((row) => row.stage === "widgets" && row.status === "done") };
+	const settling = { isRunning, isStageDone: run.rows.some((row) => row.stage === "design" && row.status === "done") };
 	const items = (row: StageRow): ReactElement[] =>
 		itemRowsOf(row, { builds: latestPerWidget(builds), installs, settling });
 	const title = (isDone ? BUILT : BUILDING).replace("{app}", run.app);
@@ -90,9 +90,8 @@ interface StageItems {
 }
 
 function itemRowsOf(row: StageRow, { builds, installs, settling }: StageItems): ReactElement[] {
-	if (row.stage === "catalogue") return installs.map(installRow);
-	if (row.stage === "widgets") return builds.map((build) => widgetBuildRow(build, settling));
-	return [];
+	if (row.stage !== "design") return [];
+	return [...installs.map(installRow), ...builds.map((build) => widgetBuildRow(build, settling))];
 }
 
 function installRow(install: InstallRow): ReactElement {

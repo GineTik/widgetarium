@@ -35,7 +35,7 @@ export function scrollToCard(key: string): void {
 function doingOf(run: BuildRun, builds: readonly Build[], activeAt: number): string | null {
 	const row = run.rows[activeAt];
 	if (!row) return null;
-	const live = row.stage === "widgets" ? builds.find((build) => build.isLive) : undefined;
+	const live = row.stage === "design" ? builds.find((build) => build.isLive) : undefined;
 	const doing = live ? `${live.name} · ${buildSaidOf(live)}` : null;
 	return doing ? NOW.replace("{stage}", STAGE_NAMES[row.stage]).replace("{doing}", doing) : STAGE_NAMES[row.stage];
 }
