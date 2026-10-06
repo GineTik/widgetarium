@@ -28,6 +28,7 @@ import { Progress, ProgressBar, StatusProgress } from "./components/progress";
 import { ProgressRing } from "./components/progress-ring";
 
 import { Segmented, Tabs } from "./components/segmented";
+import { Loader } from "./components/loader";
 
 import { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
 
@@ -175,6 +176,7 @@ export const Kit = {
 	toneOf,
 	toneClass,
 	Segmented,
+	Loader,
 	useSegmentedThumb,
 	useRoomForLabel,
 	Popover,

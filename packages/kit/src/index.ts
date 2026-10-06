@@ -34,6 +34,8 @@ export { Progress, ProgressBar, StatusProgress } from "./components/progress";
 export { ProgressRing } from "./components/progress-ring";
 
 export { Segmented, Tabs } from "./components/segmented";
+export { Loader } from "./components/loader";
+export type { LoaderProps } from "./components/loader";
 
 export { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
 export { Slot, Slottable, composeRefs, createSlotPart } from "./components/slot";
