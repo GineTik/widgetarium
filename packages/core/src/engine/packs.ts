@@ -85,6 +85,10 @@ export interface ScreenPort {
 	cell(key: string): ViewCell;
 }
 
+export interface PagePort {
+	param(key: string): ViewCell | null;
+}
+
 export interface ShapeReader {
 	readShape?(path: string): unknown;
 }
@@ -97,6 +101,7 @@ export interface QueryPorts extends ImplementationPorts {
 	readonly prop: PropPort;
 	readonly kept: KeptPort;
 	readonly screen: ScreenPort;
+	readonly page: PagePort;
 	readonly notes: NotesPort;
 }
 
@@ -114,6 +119,7 @@ export interface PortsHost {
 	readonly vault?: VaultPort | undefined;
 	readonly catalogue?: CataloguePort | undefined;
 	readonly confirm?: ((said: string) => Promise<boolean>) | undefined;
+	readonly notePath?: string | undefined;
 }
 
 const OUTSIDE_THE_PACK = '{id} is not named under its pack "{pack}": name it "{pack}/…"';

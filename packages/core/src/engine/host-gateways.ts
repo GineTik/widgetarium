@@ -114,12 +114,21 @@ function parsedGatewayOf(context: HostGatewayContext, chosen: GatewayMetadata, c
 		`${chosen.id}?${stableKey(fields)}`,
 	);
 	const ports = queryPortsOf(context, sourceOf(spec, config) !== null);
-	return parseReadsBy(gatewayOfImplementation(chosen, fields, ports), { ...context, ...problems }, kindOf(chosen));
+	return parseReadsBy(
+		gatewayOfImplementation(chosen, fields, ports, context.host.notePath ?? ""),
+		{ ...context, ...problems },
+		kindOf(chosen),
+	);
 }
 
-function gatewayOfImplementation(chosen: GatewayMetadata, fields: HostFields, ports: QueryPorts): HostGateway {
+function gatewayOfImplementation(
+	chosen: GatewayMetadata,
+	fields: HostFields,
+	ports: QueryPorts,
+	notePath: string,
+): HostGateway {
 	const instance: object = Reflect.construct(chosen.implementation, [fields, ports]);
-	const id = `${ports.self}?${chosen.id}&${stableKey(fields)}${keptKeyOf(ports.kept.read())}`;
+	const id = `${ports.self}?${chosen.id}&${stableKey(fields)}${keptKeyOf(ports.kept.read())}&note=${notePath}`;
 	return gatewayOverImplementation(ports.self, { kind: kindOf(chosen), writes: ROW_UPKEEP_VERBS }, instance, id);
 }
 
