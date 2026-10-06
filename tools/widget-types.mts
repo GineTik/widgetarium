@@ -137,6 +137,7 @@ function standaloneTsconfig(): string {
 			widgetarium: [`./${LAID_AT}/widgetarium.d.ts`],
 			...kitPaths(),
 			"@*/lib": ["./@*/lib"],
+			"@*": ["./@*/widget.tsx", `./${PACKAGES_LAID_AT}/@*`],
 			"*": [`./${PACKAGES_LAID_AT}/*`, `./${PACKAGES_LAID_AT}/@types/*`],
 		},
 		types: [],

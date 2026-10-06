@@ -120,13 +120,25 @@ export function blocksIn(shell: unknown): Readonly<Record<string, WidgetComponen
 	);
 }
 
+export interface WidgetImports {
+	take(name: string): unknown;
+}
+
 export function runCode(
 	code: string,
 	libs: Libs,
 	packages?: PackageTaker | null,
 	scope: WidgetScope = ENGINE_SCOPE,
+	widgets: WidgetImports | null = null,
 ): unknown {
-	return moduleFromCompiled(code, { require: createRequire(libs, packages, scope), globals: injectedGlobals(scope) });
+	return moduleFromCompiled(code, {
+		require: createRequire(libs, packages, scope, widgets),
+		globals: injectedGlobals(scope),
+	});
+}
+
+export function drawnByScope(scope: WidgetScope, component: unknown, props: unknown): ReactNode {
+	return Reflect.apply(Object(scope.react.createElement), scope.react, [component, props]);
 }
 
 // TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either
@@ -206,7 +218,12 @@ function refusingMissingExports(api: Readonly<Record<string, unknown>>): Readonl
 	});
 }
 
-function createRequire(libs: Libs, packages: PackageTaker | null | undefined, scope: WidgetScope): RequireModule {
+function createRequire(
+	libs: Libs,
+	packages: PackageTaker | null | undefined,
+	scope: WidgetScope,
+	widgets: WidgetImports | null,
+): RequireModule {
 	const modules: Readonly<Record<string, unknown>> = {
 		widgetarium: refusingMissingExports(scope.api),
 		"widgetarium/kit": scope.kit,
@@ -217,7 +234,7 @@ function createRequire(libs: Libs, packages: PackageTaker | null | undefined, sc
 		...Object.fromEntries(libs),
 	};
 	return (name) => {
-		const found = packages?.take(name) ?? modules[name];
+		const found = packages?.take(name) ?? modules[name] ?? widgets?.take(name);
 		if (!found)
 			throw new Error(
 				`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`,

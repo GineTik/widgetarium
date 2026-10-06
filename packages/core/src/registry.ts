@@ -15,6 +15,7 @@ import {
 	ENGINE_SCOPE,
 	blocksIn,
 	componentIn,
+	drawnByScope,
 	foreignScope,
 	isReactLike,
 	runCode,
@@ -26,6 +27,7 @@ import type { HeldWidget, OwnedSheet, PackageSource, RegistryAdapter, VaultRead 
 import type { ReactIdentity } from "./fit.js";
 import type { DrawWidget } from "./mounted.js";
 import type { GivenProps } from "./declared-widget.js";
+import type { ReactNode } from "react";
 
 export { ENGINE_SCOPE };
 
@@ -33,6 +35,7 @@ export interface WidgetDefinition {
 	readonly manifest: EngineManifest;
 	readonly component?: WidgetComponent;
 	readonly blocks?: Readonly<Record<string, WidgetComponent>>;
+	readonly uses?: readonly string[];
 	readonly error?: unknown;
 	readonly folder?: string;
 	readonly react?: ReactIdentity;
@@ -322,21 +325,43 @@ export class WidgetRegistry implements WidgetLookup {
 
 	drawnDefinition(record: WidgetRecord, held: HeldWidget, folder: string): WidgetDefinition {
 		const scope = this.scopeFor(record.id);
-		const module = this.runWidget(record.id, held, folder, scope);
+		const uses = new Set<string>();
+		const module = this.runWidget(record.id, held, folder, { scope, uses });
 		const exported = componentIn(module, folder);
 		return {
 			manifest: manifestOf(record, exported),
 			component: exported,
 			blocks: blocksIn(module),
+			uses: [...uses],
 			folder,
 			react: { instance: scope.instance, version: scope.react.version },
 			draw: scope.draw,
 		};
 	}
 
-	runWidget(id: string, held: HeldWidget, folder: string, scope: WidgetScope): unknown {
-		return runCode(this.codeToRun(id, held, folder), this.libs, this.packagesFor(id, scope), scope);
+	runWidget(id: string, held: HeldWidget, folder: string, { scope, uses }: WidgetRun): unknown {
+		const widgets = { take: (name: string) => this.importedWidget(id, name, { scope, uses }) };
+		return runCode(this.codeToRun(id, held, folder), this.libs, this.packagesFor(id, scope), scope, widgets);
 	}
+
+	importedWidget(importer: string, name: string, { scope, uses }: WidgetRun): unknown {
+		if (name === importer || !this.isWidgetFolder(name)) return undefined;
+		uses.add(name);
+		const drawn = (props: unknown): ReactNode => {
+			const component = this.get(name)?.component;
+			return component ? drawnByScope(scope, component, props) : null;
+		};
+		return { __esModule: true, default: drawn };
+	}
+
+	isWidgetFolder(name: string): boolean {
+		return this.mounted?.widgets.folders.some((folder) => idOfFolder(folder) === name) ?? false;
+	}
+}
+
+interface WidgetRun {
+	readonly scope: WidgetScope;
+	readonly uses: Set<string>;
 }
 
 function isInlineOnly(entry: ManifestHolder): boolean {
