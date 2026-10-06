@@ -40,6 +40,8 @@ export const WIDGET_CHECK_RULES = [
 	"blocks",
 	"titled",
 	"page",
+	"restyled",
+	"states",
 ] as const;
 
 const COLLECTION_TITLE = /<LayoutTitle\b|<LayoutHeader\b[^>]*\btitle=/;
@@ -51,6 +53,18 @@ const TITLED_SAID =
 const NO_KIT_PAGE_SAID =
 	"a page widget that draws no <Page kind=…>; the archetype sets the width, the header and the hero, so the page lays none of them by hand";
 const HAND_WIDTH_SAID = "a page widget that sets its own width ({classes}); the width comes from <Page kind=…>";
+const KIT_HERO_IN_PAGE = /import\s*\{[^}]*\bHero\b[^}]*\}\s*from\s*"widgetarium\/kit"/;
+const KIT_HERO_SAID =
+	"a page that draws the kit's Hero itself; a page block is a widget — import @default/hero (or the catalogue's) and feed it, so the catalogue owns how a hero looks";
+const DECLARES_STATES = /export\s+const\s+states\s*=\s*defineStates\(/;
+const NO_STATES_SAID =
+	"a widget that declares no states; write `export const states = defineStates(Widget, { Full: {…sample props}, Empty: {…} })` so the canvas draws it with real-looking rows and empty, never blank";
+const KIT_IMPORT = /import\s*\{([^}]*)\}\s*from\s*"widgetarium\/kit"/g;
+const TAG_WITH_CLASS = /<([A-Z]\w*)\b[^>]*?\bclassName=(?:"([^"]*)"|\{`([^`]*)`\})/g;
+const PAINTING_CLASS =
+	/(?:^|\s)(?:bg|border|ring|shadow|rounded|fill|stroke|from|to|via)-[\w[\]/.-]+|(?:^|\s)text-(?!(?:xs|sm|base|lg|[2-9]?xl|h[1-6]|left|right|center|start|end|wrap|nowrap|ellipsis|clip|balance|pretty)(?:\s|$))[\w[\]/.-]+/g;
+const RESTYLED_SAID =
+	"a kit component painted by hand ({painted}); a person may swap the kit, and a component repainted here would keep its old look — use the kit's own variant, or say the kit lacks it";
 
 type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
 
@@ -108,6 +122,8 @@ function sourceFindings(source: string, card: CheckedCard | null, surface: reado
 		...headingFindings(source, card),
 		...controlFindings(source),
 		...titledFindings(source, card),
+		...restyledFindings(source),
+		...statesFindings(source),
 	];
 }
 
@@ -116,9 +132,28 @@ function titledFindings(source: string, card: CheckedCard | null): Finding[] {
 	return [{ rule: "titled", message: TITLED_SAID }];
 }
 
+function statesFindings(source: string): Finding[] {
+	if (DECLARES_STATES.test(source)) return [];
+	return [{ rule: "states", message: NO_STATES_SAID }];
+}
+
+function restyledFindings(source: string): Finding[] {
+	const kitNames = new Set(
+		[...source.matchAll(KIT_IMPORT)].flatMap((found) => (found[1] ?? "").split(",").map((name) => name.trim())),
+	);
+	const painted = [...source.matchAll(TAG_WITH_CLASS)]
+		.filter((found) => kitNames.has(found[1] ?? ""))
+		.flatMap((found) =>
+			[...(found[2] ?? found[3] ?? "").matchAll(PAINTING_CLASS)].map((one) => `${found[1]} ${one[0].trim()}`),
+		);
+	if (painted.length === 0) return [];
+	return [{ rule: "restyled", message: RESTYLED_SAID.replace("{painted}", [...new Set(painted)].join(", ")) }];
+}
+
 function pageFindings(id: string, source: string): Finding[] {
 	if (!PAGE_ID.test(id)) return [];
 	if (!KIT_PAGE.test(source)) return [{ rule: "page", message: NO_KIT_PAGE_SAID }];
+	if (KIT_HERO_IN_PAGE.test(source)) return [{ rule: "page", message: KIT_HERO_SAID }];
 	const classes = [...new Set([...source.matchAll(HAND_PAGE_WIDTH)].map((found) => found[0]))];
 	if (classes.length === 0) return [];
 	return [{ rule: "page", message: HAND_WIDTH_SAID.replace("{classes}", classes.join(", ")) }];

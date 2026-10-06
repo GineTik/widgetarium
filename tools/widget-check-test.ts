@@ -13,7 +13,11 @@ const check = (name: string, got: unknown, want: unknown): void => {
 	);
 };
 
-const rulesIn = (found: ReturnType<typeof checkWidget>): string[] => found.map((one) => one.rule).sort();
+const rulesIn = (found: ReturnType<typeof checkWidget>): string[] =>
+	found
+		.map((one) => one.rule)
+		.filter((rule) => rule !== "states")
+		.sort();
 const CLEAN_SOURCE = "const a = useData(rows.list, { limit: 20 });\nrows.map((r) => r);";
 const clean = {
 	id: "@x/ok",
@@ -24,7 +28,11 @@ const clean = {
 
 const draftClean = { ...clean, id: "@draft/app", source: `${CLEAN_SOURCE}\nexport const blocks = {};` };
 check("a widget that breaks nothing is named clean", rulesIn(checkWidget(clean)), []);
-check("and says so", saidWidgetCheck(checkWidget(clean)), "the widget is clean");
+check(
+	"and says so",
+	saidWidgetCheck(checkWidget({ ...clean, source: `${clean.source}\nexport const states = defineStates(Ok, {});` })),
+	"the widget is clean",
+);
 
 check("a hex colour is a finding", rulesIn(checkWidget({ ...clean, styles: "color: #ff8800;" })), ["colour"]);
 check(
@@ -171,8 +179,52 @@ check(
 		id: "@crm/people-page",
 		card: { role: "layout" },
 		source: '<Page kind="index" title="People"><div className="mx-auto max-w-[720px]" /></Page>',
-	})[0]?.message.includes("mx-auto, max-w-[720px]"),
+	})
+		.find((one) => one.rule === "page")
+		?.message.includes("mx-auto, max-w-[720px]"),
 	true,
+);
+check(
+	"a widget that declares no states is a finding, one that does is not",
+	[
+		checkWidget(clean).map((one) => one.rule),
+		checkWidget({ ...clean, source: `${clean.source}\nexport const states = defineStates(Ok, { Full: {} });` }).map(
+			(one) => one.rule,
+		),
+	],
+	[["states"], []],
+);
+check(
+	"a page drawing the kit's Hero itself is a finding: a hero is a catalogue widget",
+	rulesIn(
+		checkWidget({
+			...clean,
+			id: "@crm/people-page",
+			card: { role: "layout" },
+			source:
+				'import { Hero, Page } from "widgetarium/kit";\n<Page kind="home" title="People" hero={<Hero title="Hi" />}>x</Page>',
+		}),
+	),
+	["page"],
+);
+check(
+	"a kit component painted by hand is a finding, a size or a layout class is not",
+	[
+		rulesIn(
+			checkWidget({
+				...clean,
+				source: `${clean.source}\nimport { Button } from "widgetarium/kit";\n<Button className="bg-group text-accent rounded-none">Go</Button>`,
+			}),
+		),
+		rulesIn(
+			checkWidget({
+				...clean,
+				source: `${clean.source}\nimport { Button } from "widgetarium/kit";\n<Button className="w-full text-sm">Go</Button>`,
+			}),
+		),
+		rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<Mine className="bg-group">Go</Mine>` })),
+	],
+	[["restyled"], [], []],
 );
 check(
 	"a page widget drawn by the kit Page is clean",
@@ -344,7 +396,7 @@ const allBroken = {
 check(
 	"every rule that judges no role can fire at once",
 	rulesIn(checkWidget(allBroken)),
-	WIDGET_CHECK_RULES.filter((rule) => !["blocks", "titled", "page"].includes(rule)).sort(),
+	WIDGET_CHECK_RULES.filter((rule) => !["blocks", "titled", "page", "restyled", "states"].includes(rule)).sort(),
 );
 check(
 	"each finding carries the widget it came from",

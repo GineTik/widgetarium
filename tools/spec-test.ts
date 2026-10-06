@@ -784,7 +784,7 @@ check(
 const { referenceOfApp } = await import("../apps/obsidian/src/ai/reference-command.js");
 const { photosOfApp, photoKeyOf } = await import("../apps/obsidian/src/ai/photos-command.js");
 const referenceVault = await mkdtemp(join(tmpdir(), "wg-reference-"));
-const referenced = await referenceOfApp(referenceVault, "Trips", "https://cdn.example/a.png", "the list rows");
+const referenced = await referenceOfApp(referenceVault, "Trips", "https://cdn.example/a.png", { why: "the list rows" });
 check(
 	"the reference command starts a canvas holding the picture",
 	referenced.refusal === undefined &&
@@ -793,7 +793,7 @@ check(
 );
 check(
 	"the reference command refuses an address that is not https",
-	(await referenceOfApp(referenceVault, "Trips", "ftp://x/a.png", undefined)).refusal?.includes("https"),
+	(await referenceOfApp(referenceVault, "Trips", "ftp://x/a.png", {})).refusal?.includes("https"),
 	true,
 );
 const photosOfReferencesOnly = await photosOfApp(referenceVault, "Trips");
@@ -1023,7 +1023,10 @@ checks:
 ---
 `;
 await writeFile(join(appFolder, "spec.md"), REPORT_SPEC);
-await writeFile(join(widgetFolder, "widget.tsx"), "export default function List() { return <Button>Add</Button>; }");
+await writeFile(
+	join(widgetFolder, "widget.tsx"),
+	"export const states = defineStates(List, {});\nexport default function List() { return <Button>Add</Button>; }",
+);
 const WORDS_ALLOW = "[list, create]";
 const SWITCHED_ON =
 	'\n      createWord: { implementation: "@core/rows-create", fields: { target: w0/getWords }, allow: [run] }';
@@ -1078,13 +1081,19 @@ check(
 	true,
 );
 check("an ungated stage is never refused", refuseStage("data", rowsOf(firstReport)), null);
-await writeFile(join(widgetFolder, "widget.tsx"), "export default function List() { return <button>Add</button>; }");
+await writeFile(
+	join(widgetFolder, "widget.tsx"),
+	"export const states = defineStates(List, {});\nexport default function List() { return <button>Add</button>; }",
+);
 check(
 	"a widget that fails check fails its feature",
 	rowsOf(await reportOfApp(reportPlace, "Garden")).find((row) => row.feature === "Plant a word")?.problems,
 	["check: control"],
 );
-await writeFile(join(widgetFolder, "widget.tsx"), "export default function List() { return <Button>Add</Button>; }");
+await writeFile(
+	join(widgetFolder, "widget.tsx"),
+	"export const states = defineStates(List, {});\nexport default function List() { return <Button>Add</Button>; }",
+);
 await writeFile(join(reportVault, "Pages", "Words.md"), boardNote(["@default/text-line"]));
 check(
 	"a widget left off its page fails its feature",
