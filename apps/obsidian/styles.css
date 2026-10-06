@@ -7582,7 +7582,7 @@ body.wg-tree-carrying .wg-tile-body {
 
 .wg-design-widget-body {
 	overflow: hidden;
-	padding: 24px;
+	padding: 8px;
 	border-radius: 16px;
 	background: var(--background-primary);
 	box-shadow: 0 0 0 1px var(--background-modifier-border);

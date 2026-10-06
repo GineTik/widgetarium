@@ -19,6 +19,7 @@ import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
 import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
 import { LOCK_PATH } from "@widgetarium/core/paths.js";
 import { DesignCanvas } from "./design-canvas.js";
+import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
 import type { DrawnDesign, DrawnState } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
 import type WidgetariumPlugin from "./main.js";
@@ -30,6 +31,7 @@ const NO_BOARD = "{name} holds no widgetarium board";
 const BOUND_TO_VAULT =
 	"{name} reads the vault ({binding}): a design is drawn from sample rows only. Ask the agent to redraw it.";
 const DESIGN_POLL_MS = 1500;
+const DRAFT_PREFIX = "@draft/";
 const NO_DESIGN = "{app} has no design yet, or it was removed.";
 const PHOTOS_FAILED = "The photos were not added to the canvas: {why}";
 
@@ -102,11 +104,17 @@ export class DesignView extends ItemView {
 
 	private async redrawWhenChanged(): Promise<void> {
 		if (!this.appName) return;
-		const stat = await this.plugin.app.vault.adapter.stat(designPathOf(this.appName)).catch(() => null);
-		const now = String(stat?.mtime ?? "");
+		const adapter = this.plugin.app.vault.adapter;
+		const stats = await Promise.all(
+			[designPathOf(this.appName), specPathOf(this.appName)].map((path) => adapter.stat(path).catch(() => null)),
+		);
+		const blocksNow = this.drawnDrafts.map((draft) => blocksOf(this.plugin.registry, draft).join(",")).join(";");
+		const now = [...stats.map((stat) => String(stat?.mtime ?? "")), blocksNow].join("|");
 		if (this.seen !== "" && now !== this.seen) await this.draw();
 		this.seen = now;
 	}
+
+	private drawnDrafts: string[] = [];
 
 	override async onClose(): Promise<void> {
 		if (this.node) render(null, this.node);
@@ -118,8 +126,9 @@ export class DesignView extends ItemView {
 		const size = { width: this.contentEl.clientWidth, height: this.contentEl.clientHeight };
 		if (!node || !this.appName || size.width === 0 || size.height === 0) return;
 		const { screens, references, widgets } = await designOf(this.plugin, this.appName);
+		this.drawnDrafts = draftsOn(screens);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
-		const drawing = { registry: this.plugin.registry, host: this.plugin.host };
+		const drawing = { registry: withBlocks(this.plugin.registry), host: this.plugin.host };
 		render(h(DesignCanvas, { app: this.appName, screens, references, widgets, size, onAddPhotos, ...drawing }), node);
 	}
 }
@@ -159,11 +168,22 @@ async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDe
 	const onScreens = screens.flatMap((screen) =>
 		screen.states.flatMap((state) => state.board?.tiles.map((tile) => tile.widget) ?? []),
 	);
-	const widgets = appWidgetsOf(
-		[...(await specWidgetsOf(plugin, app)), ...onScreens],
-		await catalogueInstallsOf(plugin),
+	const used = appWidgetsOf([...(await specWidgetsOf(plugin, app)), ...onScreens], await catalogueInstallsOf(plugin));
+	const exists = (id: string): boolean => Boolean(plugin.registry.get(id)?.component);
+	const blocks = draftsOn(screens).flatMap((draft) =>
+		blocksOf(plugin.registry, draft).map((block) => blockIdOf(draft, block)),
 	);
+	const widgets = { fromCatalogue: used.fromCatalogue.filter(exists), made: [...blocks, ...used.made.filter(exists)] };
 	return { screens, references, widgets };
+}
+
+function isDraft(id: string): boolean {
+	return id.startsWith(DRAFT_PREFIX);
+}
+
+function draftsOn(screens: DrawnDesign["screens"]): string[] {
+	const tiles = screens.flatMap((screen) => screen.states.flatMap((state) => state.board?.tiles ?? []));
+	return [...new Set(tiles.map((tile) => tile.widget).filter(isDraft))];
 }
 
 async function specWidgetsOf(plugin: WidgetariumPlugin, app: string): Promise<string[]> {

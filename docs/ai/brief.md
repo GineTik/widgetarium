@@ -111,7 +111,10 @@ with its two-line `widget.css`, whose props say what to draw — `getPage` a `z.
 `IQuery.expects(z.enum([...]).default(...))`. **Every block is a file of its own**,
 `blocks/people-grid.tsx`, exporting one component named for what it is (`PeopleGrid`) that takes the
 rows it draws as typed props — `{ people: Person[] }`, never a sample list of its own. `widget.tsx`
-holds the sample rows and the pages: which blocks stand where, fed what. Stage 4 then moves each
+holds the sample rows and the pages: which blocks stand where, fed what. It also exports every block
+fed its sample rows — `export const blocks = { PeopleGrid: () => <PeopleGrid people={PEOPLE} /> }` —
+and the canvas draws each of them on its own under New widgets; `check` refuses a draft without it.
+Stage 4 then moves each
 block file into a widget of its own unchanged, so the widget is the screen the person approved and
 nothing is drawn twice. **Then place each screen with the tool, never by hand**:
 

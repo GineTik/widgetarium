@@ -112,6 +112,14 @@ export function componentIn(shell: unknown, at: string): WidgetComponent {
 	return exported;
 }
 
+export function blocksIn(shell: unknown): Readonly<Record<string, WidgetComponent>> {
+	const held: unknown = isObject(shell) ? Reflect.get(shell, "blocks") : undefined;
+	if (!isObject(held)) return {};
+	return Object.fromEntries(
+		Object.entries(held).filter((entry): entry is [string, WidgetComponent] => isWidgetComponent(entry[1])),
+	);
+}
+
 export function runCode(
 	code: string,
 	libs: Libs,

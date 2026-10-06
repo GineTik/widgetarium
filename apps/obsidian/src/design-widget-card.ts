@@ -9,12 +9,12 @@ export interface WidgetCardProps extends Drawing {
 	readonly id: string;
 }
 
-const CARD_PX = { narrow: 360, wide: 760 } as const;
+const CARD_PX = { narrow: 480, wide: 960 } as const;
 const WIDE_FROM_PX = 560;
 
 export function WidgetCard({ id, registry, host }: WidgetCardProps): ReactElement {
 	const manifest = registry.get(id)?.manifest;
-	const cardPx = isWide(manifest?.["size"]) ? CARD_PX.wide : CARD_PX.narrow;
+	const cardPx = isWide(manifest?.["preferredSize"]) ? CARD_PX.wide : CARD_PX.narrow;
 	const title = manifest?.["title"];
 	const board = useMemo(() => boardOfOne(id), [id]);
 	return h("figure", { className: "wg-design-widget", style: { width: `${cardPx}px` } }, [
@@ -40,6 +40,6 @@ function boardOfOne(id: string): Board {
 	return normalizeBoard({
 		v: 2,
 		tiles: [{ id: "widget", widget: id }],
-		layout: { dir: "column", of: [{ id: "widget" }] },
+		layout: { dir: "row", of: [{ dir: "column", keep: true, of: [{ id: "widget" }] }] },
 	});
 }

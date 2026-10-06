@@ -1,4 +1,4 @@
-import { TAILWIND_PALETTE_CLASS, sheetFindings } from "./widget-check-tailwind.js";
+import { TAILWIND_PALETTE_CLASS, draftBlockFindings, sheetFindings } from "./widget-check-tailwind.js";
 
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
 const FUNCTIONAL_COLOUR = /\b(?:rgba?|hsla?|oklch|lab|lch)\s*\(/g;
@@ -45,6 +45,7 @@ export const WIDGET_CHECK_RULES = [
 	"adds",
 	"tailwind",
 	"hand-written",
+	"blocks",
 ] as const;
 
 type WidgetCheckRule = (typeof WIDGET_CHECK_RULES)[number];
@@ -81,6 +82,7 @@ export function checkWidget({
 		...colourFindings(text),
 		...fontFindings(text),
 		...sheetFindings(id, styles),
+		...draftBlockFindings(id, source),
 		...sourceFindings(source, card, surface),
 	].map((one) => ({
 		widget: id,

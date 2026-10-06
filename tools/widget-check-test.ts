@@ -14,6 +14,7 @@ const check = (name: string, got: unknown, want: unknown): void => {
 };
 
 const rulesIn = (found: ReturnType<typeof checkWidget>): string[] => found.map((one) => one.rule).sort();
+const CLEAN_SOURCE = "const a = useData(rows.list, { limit: 20 });\nrows.map((r) => r);";
 const clean = {
 	id: "@x/ok",
 	source: "const a = useData(rows.list, { limit: 20 });\nrows.map((r) => r);",
@@ -21,6 +22,7 @@ const clean = {
 	card: { role: "collection" },
 };
 
+const draftClean = { ...clean, id: "@draft/app", source: `${CLEAN_SOURCE}\nexport const blocks = {};` };
 check("a widget that breaks nothing is named clean", rulesIn(checkWidget(clean)), []);
 check("and says so", saidWidgetCheck(checkWidget(clean)), "the widget is clean");
 
@@ -43,7 +45,7 @@ check(
 check("and so is the @tailwind directive", rulesIn(checkWidget({ ...clean, styles: "@tailwind base;" })), ["tailwind"]);
 check(
 	"a draft whose sheet writes its own rules is a finding, because the look stays behind when a block is lifted",
-	rulesIn(checkWidget({ ...clean, id: "@draft/app", styles: ".card {\n\tpadding: 8px;\n}" })),
+	rulesIn(checkWidget({ ...draftClean, styles: ".card {\n\tpadding: 8px;\n}" })),
 	["hand-written"],
 );
 check(
@@ -60,8 +62,7 @@ check(
 	"a draft sheet of imports and a @theme is clean",
 	rulesIn(
 		checkWidget({
-			...clean,
-			id: "@draft/app",
+			...draftClean,
 			styles:
 				'@import "tailwindcss";\n@import "widgetarium/theme.css";\n@theme {\n\t--color-brand: var(--wg-kit-accent);\n}',
 		}),
@@ -99,19 +100,28 @@ check(
 );
 check(
 	"every rule of a minified sheet is counted",
-	checkWidget({ ...clean, id: "@draft/app", styles: ".a{x:1}.b{y:2}" })[0]?.message.startsWith("2 rules"),
+	checkWidget({ ...draftClean, styles: ".a{x:1}.b{y:2}" })[0]?.message.startsWith("2 rules"),
 	true,
 );
 check(
 	"the steps of a keyframe inside a @theme are not rules of one's own",
 	rulesIn(
 		checkWidget({
-			...clean,
-			id: "@draft/app",
+			...draftClean,
 			styles:
 				'@import "tailwindcss";\n@theme {\n\t@keyframes spin {\n\t\tfrom {\n\t\t\trotate: 0deg;\n\t\t}\n\t\tto {\n\t\t\trotate: 360deg;\n\t\t}\n\t}\n}',
 		}),
 	),
+	[],
+);
+check(
+	"a draft that exports no blocks is a finding, because the canvas cannot draw its new widgets",
+	rulesIn(checkWidget({ ...clean, id: "@draft/app" })),
+	["blocks"],
+);
+check(
+	"a draft exporting its blocks is clean",
+	rulesIn(checkWidget({ ...draftClean, source: `${clean.source}\nexport const blocks = { Covers };` })),
 	[],
 );
 check(
@@ -342,7 +352,7 @@ const allBroken = {
 check(
 	"every rule that judges no role can fire at once",
 	rulesIn(checkWidget(allBroken)),
-	WIDGET_CHECK_RULES.filter((rule) => rule !== "adds").sort(),
+	WIDGET_CHECK_RULES.filter((rule) => rule !== "adds" && rule !== "blocks").sort(),
 );
 check(
 	"each finding carries the widget it came from",

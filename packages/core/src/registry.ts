@@ -11,7 +11,15 @@ import { manifestOf, readRecord } from "./engine/catalogue-index.js";
 import type { EngineManifest, Fields, WidgetRecord } from "./engine/catalogue-index.js";
 import { idOfFolder } from "./engine/github.js";
 import { isObject } from "./engine/is-object.js";
-import { ENGINE_SCOPE, componentIn, foreignScope, isReactLike, runCode, runModule } from "./registry-scope.js";
+import {
+	ENGINE_SCOPE,
+	blocksIn,
+	componentIn,
+	foreignScope,
+	isReactLike,
+	runCode,
+	runModule,
+} from "./registry-scope.js";
 import type { PackageTaker, WidgetComponent, WidgetScope } from "./registry-scope.js";
 import { parseLock, readVault } from "./registry-reading.js";
 import type { HeldWidget, OwnedSheet, PackageSource, RegistryAdapter, VaultRead } from "./registry-reading.js";
@@ -24,6 +32,7 @@ export { ENGINE_SCOPE };
 export interface WidgetDefinition {
 	readonly manifest: EngineManifest;
 	readonly component?: WidgetComponent;
+	readonly blocks?: Readonly<Record<string, WidgetComponent>>;
 	readonly error?: unknown;
 	readonly folder?: string;
 	readonly react?: ReactIdentity;
@@ -313,13 +322,17 @@ export class WidgetRegistry implements WidgetLookup {
 
 	drawnDefinition(record: WidgetRecord, held: HeldWidget, folder: string): WidgetDefinition {
 		const scope = this.scopeFor(record.id);
-		const exported = componentIn(
-			runCode(this.codeToRun(record.id, held, folder), this.libs, this.packagesFor(record.id, scope), scope),
-			folder,
+		const module = runCode(
+			this.codeToRun(record.id, held, folder),
+			this.libs,
+			this.packagesFor(record.id, scope),
+			scope,
 		);
+		const exported = componentIn(module, folder);
 		return {
 			manifest: manifestOf(record, exported),
 			component: exported,
+			blocks: blocksIn(module),
 			folder,
 			react: { instance: scope.instance, version: scope.react.version },
 			draw: scope.draw,

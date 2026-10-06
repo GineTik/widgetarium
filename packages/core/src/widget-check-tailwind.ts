@@ -12,15 +12,27 @@ const TAILWIND_IMPORT = /@import\s+(?:url\(\s*)?["']tailwindcss(?:\/[a-z]+\.css)
 const HAND_WRITTEN_RULE = /(?:^|[{}])[ \t]*(?!(?:from|to)\s*\{)([.#[a-zA-Z*:][^{};@]*)\{/gm;
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
 const DRAFT_ID_PREFIX = "@draft/";
+const EXPORTS_BLOCKS = /export\s+const\s+blocks\s*=/;
 
 interface SheetFinding {
-	readonly rule: "tailwind" | "hand-written";
+	readonly rule: "tailwind" | "hand-written" | "blocks";
 	readonly message: string;
 }
 
 export function sheetFindings(id: string, styles: string): SheetFinding[] {
 	const uncommented = styles.replace(CSS_COMMENT, "");
 	return [...legacyTailwindFindings(uncommented), ...handWrittenRuleFindings(id, uncommented)];
+}
+
+export function draftBlockFindings(id: string, source: string): SheetFinding[] {
+	if (!id.startsWith(DRAFT_ID_PREFIX) || EXPORTS_BLOCKS.test(source)) return [];
+	return [
+		{
+			rule: "blocks",
+			message:
+				"a draft exports no blocks; add export const blocks = { BookCovers: () => <BookCovers books={BOOKS} /> } naming every block with its sample rows, so the canvas draws each one as a new widget",
+		},
+	];
 }
 
 function legacyTailwindFindings(styles: string): SheetFinding[] {
