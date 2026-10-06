@@ -28,30 +28,54 @@ export async function screenOfApp(
 	asked: Readonly<Record<string, unknown>>,
 ): Promise<Told<string>> {
 	if (!app || !isSafeAppName(app) || typeof screen !== "string" || screen.trim() === "") return { refusal: NO_APP };
-	const state = typeof asked["state"] === "string" && asked["state"].trim() !== "" ? asked["state"].trim() : undefined;
-	const file = screenFileOf(screen.trim(), state);
-	if (asked["board"] === true) return placeBoard(vault, app, { screen: screen.trim(), state, file });
-	const widget = asked["widget"];
-	if (typeof widget !== "string" || !widget.startsWith("@")) return { refusal: NO_WIDGET };
-	const values = valuesIn(asked["set"]);
-	if (values === null) return { refusal: BAD_SET };
-	const placed = await placeOnCanvas(vault, app, { screen: screen.trim(), state, file });
-	if (placed.refusal !== undefined) return placed;
-	const notePath = join(vault, screenPathOf(app, file));
-	await mkdir(dirname(notePath), { recursive: true });
-	await writeFile(notePath, screenNoteOf(widget, values));
-	await placed.write();
-	const said = WRITTEN.replace("{file}", file)
-		.replace("{widget}", widget)
-		.replaceAll("{app}", app)
-		.replace("{where}", whereOf({ screen: screen.trim(), state, file }));
-	return { value: file, text: said };
+	const place = placeOf(screen.trim(), asked["state"]);
+	if (asked["board"] === true) return placeBoard(vault, app, place);
+	return placeDraft(vault, app, place, asked);
 }
 
 interface ScreenPlace {
 	readonly screen: string;
 	readonly state: string | undefined;
 	readonly file: string;
+}
+
+function placeOf(screen: string, state: unknown): ScreenPlace {
+	const named = typeof state === "string" && state.trim() !== "" ? state.trim() : undefined;
+	return { screen, state: named, file: screenFileOf(screen, named) };
+}
+
+async function placeDraft(
+	vault: string,
+	app: string,
+	place: ScreenPlace,
+	asked: Readonly<Record<string, unknown>>,
+): Promise<Told<string>> {
+	const draft = draftOf(asked);
+	if (draft.refusal !== undefined) return draft;
+	const placed = await placeOnCanvas(vault, app, place);
+	if (placed.refusal !== undefined) return placed;
+	await writeWithFolder(join(vault, screenPathOf(app, place.file)), screenNoteOf(draft.widget, draft.values));
+	await placed.write();
+	return { value: place.file, text: draftPlacedText(app, place, draft.widget) };
+}
+
+function draftPlacedText(app: string, place: ScreenPlace, widget: string): string {
+	return WRITTEN.replace("{file}", place.file)
+		.replace("{widget}", widget)
+		.replaceAll("{app}", app)
+		.replace("{where}", whereOf(place));
+}
+
+type Draft =
+	| { readonly refusal: string }
+	| { readonly refusal?: undefined; readonly widget: string; readonly values: Record<string, string> };
+
+function draftOf(asked: Readonly<Record<string, unknown>>): Draft {
+	const widget = asked["widget"];
+	if (typeof widget !== "string" || !widget.startsWith("@")) return { refusal: NO_WIDGET };
+	const values = valuesIn(asked["set"]);
+	if (values === null) return { refusal: BAD_SET };
+	return { widget, values };
 }
 
 async function placeBoard(vault: string, app: string, place: ScreenPlace): Promise<Told<string>> {
@@ -67,22 +91,21 @@ async function placeBoard(vault: string, app: string, place: ScreenPlace): Promi
 	};
 }
 
-async function placeOnCanvas(
-	vault: string,
-	app: string,
-	{ screen, state, file }: ScreenPlace,
-): Promise<{ readonly refusal: string } | { readonly refusal?: undefined; readonly write: () => Promise<void> }> {
+type CanvasPlacing =
+	{ readonly refusal: string } | { readonly refusal?: undefined; readonly write: () => Promise<void> };
+
+async function placeOnCanvas(vault: string, app: string, place: ScreenPlace): Promise<CanvasPlacing> {
 	const canvasPath = join(vault, designPathOf(app));
 	const held = await readFile(canvasPath, "utf8").catch(() => null);
-	const written = withScreenAdded(held, screen, state, file);
+	const written = withScreenAdded(held, place.screen, place.state, place.file);
 	const read = readDesign(written);
 	if (read.refusal !== undefined) return { refusal: REFUSED.replace("{why}", read.refusal) };
-	return {
-		write: async () => {
-			await mkdir(dirname(canvasPath), { recursive: true });
-			await writeFile(canvasPath, written);
-		},
-	};
+	return { write: () => writeWithFolder(canvasPath, written) };
+}
+
+async function writeWithFolder(path: string, text: string): Promise<void> {
+	await mkdir(dirname(path), { recursive: true });
+	await writeFile(path, text);
 }
 
 function whereOf({ screen, state }: ScreenPlace): string {
