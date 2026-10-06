@@ -24,13 +24,6 @@ const KIT_CONTROL_FOR: Readonly<Record<string, string>> = {
 	textarea: "TextArea",
 };
 
-const ROLES_THAT_MAY_NOT_ADD: readonly string[] = ["collection", "detail"];
-const ADDS_ROWS = [
-	/\.pick\([^)]*["']create["']/,
-	/\b(?:create|add)\w*\s*:\s*ICommand\b/,
-	/implementation\s*:\s*["']@core\/rows-create["']/,
-];
-
 const RAW_CONTROL_SAID =
 	"a raw control drawn by hand ({instead}); Obsidian styles every bare control with its own fill and border, so it never looks or answers like the kit — take the kit's";
 
@@ -42,7 +35,6 @@ export const WIDGET_CHECK_RULES = [
 	"reaches",
 	"heading",
 	"control",
-	"adds",
 	"tailwind",
 	"hand-written",
 	"blocks",
@@ -102,18 +94,6 @@ function sourceFindings(source: string, card: CheckedCard | null, surface: reado
 		...reachFindings(source, surface),
 		...headingFindings(source, card),
 		...controlFindings(source),
-		...addFindings(source, card),
-	];
-}
-
-function addFindings(source: string, card: CheckedCard | null): Finding[] {
-	if (!card || typeof card.role !== "string" || !ROLES_THAT_MAY_NOT_ADD.includes(card.role)) return [];
-	if (!ADDS_ROWS.some((pattern) => pattern.test(source))) return [];
-	return [
-		{
-			rule: "adds",
-			message: `a ${card.role} that adds records; adding is its own widget with the composer role — place @default/add-button beside it and bind its create to this list, so the page decides where adding stands`,
-		},
 	];
 }
 

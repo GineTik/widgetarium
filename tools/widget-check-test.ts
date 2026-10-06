@@ -142,56 +142,8 @@ check(
 	true,
 );
 check(
-	"a collection that adds records is a finding, because adding is a composer of its own",
+	"a collection that adds records is clean: its add stands in its own header",
 	rulesIn(checkWidget({ ...clean, source: `${clean.source}\ncreateWord: ICommand.sends(WordSchema),` })),
-	["adds"],
-);
-check(
-	"and so is one whose metadata aims a command at @core/rows-create",
-	rulesIn(
-		checkWidget({
-			...clean,
-			card: { role: "detail" },
-			source: `${clean.source}\nsource: { implementation: "@core/rows-create" }`,
-		}),
-	),
-	["adds"],
-);
-check(
-	"so is a list that picks create on its rows, or names its command plainly create",
-	[
-		rulesIn(
-			checkWidget({ ...clean, source: `${clean.source}\ngetRows: ICrudGateway.of(RowSchema).pick("list", "create"),` }),
-		),
-		rulesIn(checkWidget({ ...clean, source: `${clean.source}\ncreate: ICommand.sends(RowSchema),` })),
-	],
-	[["adds"], ["adds"]],
-);
-check(
-	"a hint that only mentions @core/rows-create is not",
-	rulesIn(checkWidget({ ...clean, source: `${clean.source}\nhint: "Bind it to @core/rows-create on the list"` })),
-	[],
-);
-check(
-	"an indicator that logs a day by creating a row is not",
-	rulesIn(
-		checkWidget({
-			...clean,
-			card: { role: "indicator" },
-			source: `${clean.source}\ncreateEntry: ICommand.sends(EntrySchema),`,
-		}),
-	),
-	[],
-);
-check(
-	"and a composer adds by its very job",
-	rulesIn(
-		checkWidget({
-			...clean,
-			card: { role: "composer" },
-			source: `${clean.source}\ncreate: ICommand.sends(RowSchema), "@core/rows-create"`,
-		}),
-	),
 	[],
 );
 check(
@@ -352,7 +304,7 @@ const allBroken = {
 check(
 	"every rule that judges no role can fire at once",
 	rulesIn(checkWidget(allBroken)),
-	WIDGET_CHECK_RULES.filter((rule) => rule !== "adds" && rule !== "blocks").sort(),
+	WIDGET_CHECK_RULES.filter((rule) => rule !== "blocks").sort(),
 );
 check(
 	"each finding carries the widget it came from",
