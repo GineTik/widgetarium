@@ -35,30 +35,37 @@ const HINT = "Approve or change it in the chat";
 const DESKTOP_FRAME: Size = { width: 1280, height: 832 };
 
 export function DesignCanvas(props: DesignCanvasProps): ReactElement {
-	const { app, screens, references, widgets, size, registry, host, onAddPhotos } = props;
-	const { layerRef, field } = useLayerSize(size);
-	const pan = usePanZoom(fitLook(field, size));
+	const { layerRef, field } = useLayerSize(props.size);
+	const pan = usePanZoom(fitLook(field, props.size));
 	const layer = { transform: `translate(${pan.look.x}px, ${pan.look.y}px) scale(${pan.look.scale})` };
-	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
-	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames));
 	return h(
 		"div",
-		{ className: "wg-design-field wg-portal", ref: pan.fieldRef, ...pan.moves, ...photoDrops(onAddPhotos) },
+		{ className: "wg-design-field wg-portal", ref: pan.fieldRef, ...pan.moves, ...photoDrops(props.onAddPhotos) },
 		[
-			h("div", { key: "layer", className: "wg-design-layer", style: layer, ref: layerRef }, [
-				h(ReferencesRegion, { key: "references", references }),
-				h(PagesRegion, { key: "pages", screens, size: DESKTOP_FRAME, registry, host }),
-				h(WidgetsRegion, { key: "widgets", widgets, registry, host }),
-			]),
-			h("div", { key: "head", className: "wg-design-head" }, [
-				h("b", { key: "app" }, app),
-				h("span", { key: "count" }, said),
-				h(AddPhoto, { key: "add", onAddPhotos }),
-			]),
+			h("div", { key: "layer", className: "wg-design-layer", style: layer, ref: layerRef }, regionsOf(props)),
+			canvasHeadOf(props),
 			zoomBar(pan.look, pan.setLook, pan.refit),
 			h("div", { key: "hint", className: "wg-design-hint" }, HINT),
 		],
 	);
+}
+
+function regionsOf({ screens, references, widgets, registry, host }: DesignCanvasProps): ReactElement[] {
+	return [
+		h(ReferencesRegion, { key: "references", references }),
+		h(PagesRegion, { key: "pages", screens, size: DESKTOP_FRAME, registry, host }),
+		h(WidgetsRegion, { key: "widgets", widgets, registry, host }),
+	];
+}
+
+function canvasHeadOf({ app, screens, onAddPhotos }: DesignCanvasProps): ReactElement {
+	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
+	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames));
+	return h("div", { key: "head", className: "wg-design-head" }, [
+		h("b", { key: "app" }, app),
+		h("span", { key: "count" }, said),
+		h(AddPhoto, { key: "add", onAddPhotos }),
+	]);
 }
 
 function useLayerSize(view: Size) {

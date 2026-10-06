@@ -25,20 +25,7 @@ export function NotedPicture({ reference }: { readonly reference: DrawnReference
 		h("div", { key: "left", className: "wg-design-notes is-left" }, left.map(noteOf)),
 		h("img", { key: "img", src: reference.src, alt: reference.why ?? reference.name, draggable: false }),
 		h("div", { key: "right", className: "wg-design-notes is-right" }, right.map(noteOf)),
-		h(
-			"svg",
-			{ key: "lines", className: "wg-design-note-lines", "aria-hidden": true },
-			lines.map((line, at) =>
-				h("line", {
-					key: at,
-					className: `is-${line.tone}`,
-					x1: line.from[0],
-					y1: line.from[1],
-					x2: line.to[0],
-					y2: line.to[1],
-				}),
-			),
-		),
+		h("svg", { key: "lines", className: "wg-design-note-lines", "aria-hidden": true }, lines.map(lineDrawnOf)),
 	]);
 }
 
@@ -48,6 +35,17 @@ function noteOf(note: ReferenceNote, at: number): ReactElement {
 		{ key: at, className: `wg-design-note is-${note.tone}`, "data-at": note.at ? note.at.join(",") : undefined },
 		[h("b", { key: "tone" }, TONE_SAID[note.tone]), h("span", { key: "text" }, note.text)],
 	);
+}
+
+function lineDrawnOf(line: Line, at: number): ReactElement {
+	return h("line", {
+		key: at,
+		className: `is-${line.tone}`,
+		x1: line.from[0],
+		y1: line.from[1],
+		x2: line.to[0],
+		y2: line.to[1],
+	});
 }
 
 function useLinesIn(body: RefObject<HTMLDivElement | null>, notes: readonly ReferenceNote[]): readonly Line[] {
@@ -67,21 +65,28 @@ function useLinesIn(body: RefObject<HTMLDivElement | null>, notes: readonly Refe
 function linesIn(body: HTMLDivElement): Line[] {
 	const picture = body.querySelector("img");
 	if (!picture) return [];
-	return [...body.querySelectorAll<HTMLElement>(".wg-design-note[data-at]")].flatMap((note) => {
-		const column = note.parentElement;
-		if (!column) return [];
-		const [x = 0, y = 0] = (note.dataset["at"] ?? "").split(",").map(Number);
-		const isLeft = column.classList.contains("is-left");
-		const from: [number, number] = [
-			column.offsetLeft + note.offsetLeft + (isLeft ? note.offsetWidth : 0),
-			column.offsetTop + note.offsetTop + note.offsetHeight / 2,
-		];
-		const to: [number, number] = [
-			picture.offsetLeft + x * picture.offsetWidth,
-			picture.offsetTop + y * picture.offsetHeight,
-		];
-		return [{ from, to, tone: toneOf(note) }];
-	});
+	return [...body.querySelectorAll<HTMLElement>(".wg-design-note[data-at]")].flatMap((note) =>
+		linesFrom(note, picture),
+	);
+}
+
+function linesFrom(note: HTMLElement, picture: HTMLImageElement): Line[] {
+	const column = note.parentElement;
+	if (!column) return [];
+	const [x = 0, y = 0] = (note.dataset["at"] ?? "").split(",").map(Number);
+	const to: [number, number] = [
+		picture.offsetLeft + x * picture.offsetWidth,
+		picture.offsetTop + y * picture.offsetHeight,
+	];
+	return [{ from: noteEdgeOf(note, column), to, tone: toneOf(note) }];
+}
+
+function noteEdgeOf(note: HTMLElement, column: HTMLElement): [number, number] {
+	const isLeft = column.classList.contains("is-left");
+	return [
+		column.offsetLeft + note.offsetLeft + (isLeft ? note.offsetWidth : 0),
+		column.offsetTop + note.offsetTop + note.offsetHeight / 2,
+	];
 }
 
 function toneOf(note: HTMLElement): ReferenceNote["tone"] {

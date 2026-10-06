@@ -67,13 +67,11 @@ export function withReferenceNoted(
 ): string | null {
 	const held: unknown = JSON.parse(text);
 	if (typeof held !== "object" || held === null || Array.isArray(held)) return null;
-	const kept: unknown = Reflect.get(held, "references");
-	const references: unknown[] = Array.isArray(kept) ? kept : [];
+	const references = listIn(held, "references");
 	const at = references.findIndex((one) => isNamedReference(one, named));
 	const reference = references[at];
-	if (at === -1 || typeof reference !== "object" || reference === null) return null;
-	const notes: unknown = Reflect.get(reference, "notes");
-	const noted = { ...reference, notes: [...(Array.isArray(notes) ? notes : []), note] };
+	if (typeof reference !== "object" || reference === null) return null;
+	const noted = { ...reference, notes: [...listIn(reference, "notes"), note] };
 	return `${JSON.stringify({ ...held, references: references.map((one, index) => (index === at ? noted : one)) }, null, 2)}\n`;
 }
 
@@ -226,4 +224,9 @@ function isNamedReference(held: unknown, named: string): boolean {
 	if (typeof held !== "object" || held === null) return false;
 	const name: unknown = Reflect.get(held, "url") ?? Reflect.get(held, "file");
 	return typeof name === "string" && (name === named || name.endsWith(named));
+}
+
+function listIn(held: object, key: string): unknown[] {
+	const kept: unknown = Reflect.get(held, key);
+	return Array.isArray(kept) ? kept : [];
 }

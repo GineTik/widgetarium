@@ -14,6 +14,7 @@ import {
 	statesOf,
 	vaultBindingOf,
 } from "@widgetarium/core/app-design.js";
+import type { Design, ScreenState } from "@widgetarium/core/app-design.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
 import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
@@ -149,25 +150,41 @@ function refreshHeader(leaf: unknown): void {
 }
 
 async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDesign> {
-	const adapter = plugin.app.vault.adapter;
-	const text = await adapter.read(designPathOf(app)).catch(() => null);
+	const text = await plugin.app.vault.adapter.read(designPathOf(app)).catch(() => null);
 	if (text === null) return refusedDesign(app, NO_DESIGN.replace("{app}", app));
 	const read = readDesign(text);
 	if (read.refusal !== undefined) return refusedDesign(app, read.refusal);
-	const screens = await Promise.all(
-		read.design.screens.map(async (screen) => ({
+	const screens = await drawnScreensOf(plugin, app, read.design.screens);
+	const references = drawnReferencesOf(plugin, app, read.design.references);
+	return { screens, references, widgets: await widgetsOf(plugin, app, screens) };
+}
+
+function drawnScreensOf(
+	plugin: WidgetariumPlugin,
+	app: string,
+	screens: Design["screens"],
+): Promise<DrawnDesign["screens"]> {
+	return Promise.all(
+		screens.map(async (screen) => ({
 			name: screen.name,
 			states: await Promise.all(statesOf(screen).map((state) => stateOf(plugin, app, state, screen.name))),
 		})),
 	);
-	const references = read.design.references.map((reference) => ({
+}
+
+function drawnReferencesOf(
+	plugin: WidgetariumPlugin,
+	app: string,
+	references: Design["references"],
+): DrawnDesign["references"] {
+	const adapter = plugin.app.vault.adapter;
+	return references.map((reference) => ({
 		name: "url" in reference ? reference.url : reference.file,
 		src: "url" in reference ? reference.url : adapter.getResourcePath(referencePathOf(app, reference.file)),
 		why: reference.why,
 		kind: reference.kind,
 		notes: reference.notes ?? [],
 	}));
-	return { screens, references, widgets: await widgetsOf(plugin, app, screens) };
 }
 
 async function widgetsOf(
@@ -179,13 +196,14 @@ async function widgetsOf(
 	const onScreens = [...pages].flatMap((id) => plugin.registry.get(id)?.uses ?? []);
 	const used = appWidgetsOf([...(await specWidgetsOf(plugin, app)), ...onScreens], await catalogueInstallsOf(plugin));
 	const isShown = (id: string): boolean => Boolean(plugin.registry.get(id)?.component) && !pages.has(id);
-	const blocks = draftsOn(screens).flatMap((draft) =>
-		blocksOf(plugin.registry, draft).map((block) => blockIdOf(draft, block)),
-	);
 	return [
 		...used.fromCatalogue.filter(isShown).map((id) => ({ id, isFromCatalogue: true })),
-		...[...blocks, ...used.made.filter(isShown)].map((id) => ({ id, isFromCatalogue: false })),
+		...[...draftBlocksOf(plugin, screens), ...used.made.filter(isShown)].map((id) => ({ id, isFromCatalogue: false })),
 	];
+}
+
+function draftBlocksOf(plugin: WidgetariumPlugin, screens: DrawnDesign["screens"]): string[] {
+	return draftsOn(screens).flatMap((draft) => blocksOf(plugin.registry, draft).map((block) => blockIdOf(draft, block)));
 }
 
 function isDraft(id: string): boolean {
@@ -237,7 +255,7 @@ function refusedDesign(app: string, refusal: string): DrawnDesign {
 async function stateOf(
 	plugin: WidgetariumPlugin,
 	app: string,
-	state: { name: string; file: string },
+	state: ScreenState,
 	screen: string,
 ): Promise<DrawnState> {
 	const text = await plugin.app.vault.adapter.read(screenPathOf(app, state.file)).catch(() => "");
@@ -246,22 +264,21 @@ async function stateOf(
 	const picture = pictureOf(plugin, board, state.name === screen ? null : state.name);
 	if (picture) return { name: state.name, board, picture };
 	const binding = vaultBindingOf(board);
-	if (binding)
-		return {
-			name: state.name,
-			board: null,
-			refusal: BOUND_TO_VAULT.replace("{name}", state.file).replace("{binding}", binding),
-		};
-	return { name: state.name, board };
+	if (!binding) return { name: state.name, board };
+	const refusal = BOUND_TO_VAULT.replace("{name}", state.file).replace("{binding}", binding);
+	return { name: state.name, board: null, refusal };
 }
 
 function pictureOf(plugin: WidgetariumPlugin, board: Board, state: string | null): StatePicture | null {
 	const [tile] = board.tiles;
 	if (!tile || board.tiles.length > 1) return null;
-	const states = plugin.registry.get(tile.widget)?.states ?? {};
-	const [first] = Object.keys(states);
-	const props = states[state ?? first ?? ""];
+	const props = statePropsOf(plugin.registry.get(tile.widget)?.states ?? {}, state);
 	return props ? { widget: tile.widget, props } : null;
+}
+
+function statePropsOf<Props>(states: Readonly<Record<string, Props>>, state: string | null): Props | undefined {
+	const [first] = Object.keys(states);
+	return states[state ?? first ?? ""];
 }
 
 function boardIn(text: string): Board | null {

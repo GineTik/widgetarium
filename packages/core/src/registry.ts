@@ -329,12 +329,8 @@ export class WidgetRegistry implements WidgetLookup {
 		const scope = this.scopeFor(record.id);
 		const uses = new Set<string>();
 		const module = this.runWidget(record.id, held, folder, { scope, uses });
-		const exported = componentIn(module, folder);
 		return {
-			manifest: manifestOf(record, exported),
-			component: exported,
-			blocks: blocksIn(module),
-			states: statesIn(module),
+			...exportsOfModule(record, module, folder),
 			uses: [...uses],
 			folder,
 			react: { instance: scope.instance, version: scope.react.version },
@@ -365,6 +361,11 @@ export class WidgetRegistry implements WidgetLookup {
 interface WidgetRun {
 	readonly scope: WidgetScope;
 	readonly uses: Set<string>;
+}
+
+function exportsOfModule(record: WidgetRecord, module: unknown, folder: string) {
+	const component = componentIn(module, folder);
+	return { manifest: manifestOf(record, component), component, blocks: blocksIn(module), states: statesIn(module) };
 }
 
 function isInlineOnly(entry: ManifestHolder): boolean {

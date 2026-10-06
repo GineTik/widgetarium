@@ -18,21 +18,16 @@ export function PagesRegion({ screens, size, registry, host }: PagesRegionProps)
 	return h(
 		Region,
 		{ title: PAGES, count: screens.length },
-		screens.map((screen) =>
-			h(
-				Group,
-				{ key: screen.name, title: screen.name, sub: STATES_SAID.replace("{count}", String(screen.states.length)) },
-				screen.states.map((state) =>
-					h(ScreenFrame, {
-						key: state.name,
-						label: frameLabelOf(screen, state.name),
-						state,
-						size,
-						registry,
-						host,
-					}),
-				),
-			),
+		screens.map((screen) => screenGroupOf(screen, { size, registry, host })),
+	);
+}
+
+function screenGroupOf(screen: DrawnScreen, framing: Omit<PagesRegionProps, "screens">): ReactElement {
+	return h(
+		Group,
+		{ key: screen.name, title: screen.name, sub: STATES_SAID.replace("{count}", String(screen.states.length)) },
+		screen.states.map((state) =>
+			h(ScreenFrame, { key: state.name, label: frameLabelOf(screen, state.name), state, ...framing }),
 		),
 	);
 }

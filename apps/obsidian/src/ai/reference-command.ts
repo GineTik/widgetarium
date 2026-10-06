@@ -21,50 +21,84 @@ const NO_REFERENCE = "{app} has no reference named {named}: run `reference` firs
 const BAD_AT = "--at is two numbers from 0 to 1 split by a comma, the point the note is about: --at 0.4,0.2";
 const NOTED = "The note stands beside {named} on the {app} canvas.";
 
+type CommandFlags = Readonly<Record<string, unknown>>;
+
 export async function referenceOfApp(
 	vault: string,
 	app: string | undefined,
 	url: unknown,
-	{ why, kind }: Readonly<Record<string, unknown>>,
+	flags: CommandFlags,
 ): Promise<Told<string>> {
 	if (!app || !isSafeAppName(app)) return { refusal: NO_APP };
 	if (typeof url !== "string" || url.trim() === "") return { refusal: NO_URL };
-	const entry = {
-		url: url.trim(),
-		...(typeof why === "string" && why.trim() !== "" ? { why: why.trim() } : {}),
-		...(isReferenceKind(kind) ? { kind } : {}),
-	};
+	const entry = referenceEntryOf(url, flags);
 	const path = join(vault, designPathOf(app));
-	const held = await readFile(path, "utf8").catch(() => null);
-	const written = withReferencesAdded(held, [entry]);
-	const read = readDesign(written);
-	if (read.refusal !== undefined) return { refusal: REFUSED.replace("{why}", read.refusal) };
-	await mkdir(dirname(path), { recursive: true });
-	await writeFile(path, written);
-	const said = ADDED.replace("{url}", entry.url)
-		.replace("{app}", app)
-		.replace("{why}", "why" in entry ? ` — ${entry.why}` : "");
-	return { value: entry.url, text: said };
+	const written = withReferencesAdded(await readFile(path, "utf8").catch(() => null), [entry]);
+	const refusal = await writeValidDesign(path, written);
+	if (refusal !== null) return { refusal };
+	return { value: entry.url, text: addedSaidOf(app, entry) };
 }
 
 export async function noteOfApp(
 	vault: string,
 	app: string | undefined,
-	[named, text]: readonly unknown[],
-	{ tone, at }: Readonly<Record<string, unknown>>,
+	words: readonly unknown[],
+	flags: CommandFlags,
 ): Promise<Told<string>> {
-	if (!app || !isSafeAppName(app) || typeof named !== "string" || typeof text !== "string" || text.trim() === "")
-		return { refusal: NO_NOTE };
-	const point = pointOf(at);
-	if (point === null) return { refusal: BAD_AT };
-	const note = { text: text.trim(), tone: isNoteTone(tone) ? tone : "note", ...(point ? { at: point } : {}) };
-	const path = join(vault, designPathOf(app));
-	const written = withReferenceNoted(await readFile(path, "utf8").catch(() => "{}"), named, note);
-	if (written === null) return { refusal: NO_REFERENCE.replace("{app}", app).replace("{named}", named) };
+	const asked = askedNoteOf(app, words, flags);
+	if ("refusal" in asked) return { refusal: asked.refusal };
+	const path = join(vault, designPathOf(asked.app));
+	const written = withReferenceNoted(await readFile(path, "utf8").catch(() => "{}"), asked.named, asked.note);
+	if (written === null) return { refusal: NO_REFERENCE.replace("{app}", asked.app).replace("{named}", asked.named) };
+	const refusal = await writeValidDesign(path, written);
+	if (refusal !== null) return { refusal };
+	return { value: asked.named, text: NOTED.replace("{named}", asked.named).replace("{app}", asked.app) };
+}
+
+interface AskedNote {
+	readonly app: string;
+	readonly named: string;
+	readonly note: Exclude<ReturnType<typeof noteOf>, null>;
+}
+
+function referenceEntryOf(url: string, { why, kind }: CommandFlags) {
+	return {
+		url: url.trim(),
+		...(typeof why === "string" && why.trim() !== "" ? { why: why.trim() } : {}),
+		...(isReferenceKind(kind) ? { kind } : {}),
+	};
+}
+
+function addedSaidOf(app: string, entry: { readonly url: string; readonly why?: string }): string {
+	return ADDED.replace("{url}", entry.url)
+		.replace("{app}", app)
+		.replace("{why}", entry.why === undefined ? "" : ` — ${entry.why}`);
+}
+
+async function writeValidDesign(path: string, written: string): Promise<string | null> {
 	const read = readDesign(written);
-	if (read.refusal !== undefined) return { refusal: REFUSED.replace("{why}", read.refusal) };
+	if (read.refusal !== undefined) return REFUSED.replace("{why}", read.refusal);
+	await mkdir(dirname(path), { recursive: true });
 	await writeFile(path, written);
-	return { value: named, text: NOTED.replace("{named}", named).replace("{app}", app) };
+	return null;
+}
+
+function askedNoteOf(
+	app: string | undefined,
+	[named, text]: readonly unknown[],
+	flags: CommandFlags,
+): AskedNote | { readonly refusal: string } {
+	if (!app || !isSafeAppName(app)) return { refusal: NO_NOTE };
+	if (typeof named !== "string" || typeof text !== "string" || text.trim() === "") return { refusal: NO_NOTE };
+	const note = noteOf(text, flags);
+	if (note === null) return { refusal: BAD_AT };
+	return { app, named, note };
+}
+
+function noteOf(text: string, { tone, at }: CommandFlags) {
+	const point = pointOf(at);
+	if (point === null) return null;
+	return { text: text.trim(), tone: isNoteTone(tone) ? tone : "note", ...(point ? { at: point } : {}) };
 }
 
 function pointOf(at: unknown): readonly [number, number] | undefined | null {
