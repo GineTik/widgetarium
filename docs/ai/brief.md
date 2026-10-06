@@ -51,9 +51,25 @@ comes from: a feature most of them share and this app lacks is a feature to sugg
 
 **Put what you looked at on the canvas.** For each product, find two or three pictures of the
 screens this app will have — the product's own site, Dribbble, Mobbin; on a page, its `og:image` —
-and run `node {tool} reference <app> <the image's https address> --why "<what to take from it>"`.
+and run `node {tool} reference <app> <the image's https address> --kind app|site|marketing|photo --why "<what to take from it>"`.
 They stand above the screens for the person, who adds their own beside them. Nothing is
 downloaded: the canvas shows them from their address.
+
+**Then take every reference apart, in notes the person reads.** Open the picture and say what it is
+— a product screen whose layout can be taken, a website, marketing art with no layout in it, a photo.
+Then write a sticky note for every part worth a word: the layout you take, a block you will copy (a
+greeting with a composer as the hero, a "Getting started" checklist), what you like, what you leave
+and why. Each points at its spot on the picture:
+
+```
+node {tool} note <app> <reference> "Home as quiet titled lists, three rows each: take this layout" --tone take --at 0.45,0.4
+node {tool} note <app> <reference> "Greeting + composer is a strong hero for Home" --tone like --at 0.5,0.12
+node {tool} note <app> <reference> "Rhythm pill on every row is noise; sort instead" --tone dislike --at 0.62,0.7
+```
+
+`take` is what the design copies, `like` what it admires, `dislike` what it leaves, `note` anything
+else. The notes stand around the picture on the canvas; the reasons behind them go in `research.md`,
+and in `design.md` every block names the note it came from.
 
 Then open `spec.md` in the handbook on disk and write `.widgetarium/apps/<app>/spec.md` by
 it: the products you looked at with what you take from each, the job, the features in the person's
@@ -88,8 +104,10 @@ pass, the way a designer draws a canvas, and show it before anything is wired.
 **First, the catalogue.** For every block the pages need — a hero, a list of people, an empty
 state, a search — run `node {tool} find --about "<the block>"` and open the `picture` of each
 candidate. A widget whose picture is that block is placed, not redrawn: it keeps the same look on
-every page. `kit.md` (in this prompt) is the kit as the HTML it replaces; build what the catalogue
-lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `Hero`, `PhotoCard`,
+every page. **A page block is always a widget** — the hero is `@default/hero`, never the kit's `Hero`
+drawn in a page (`check` refuses it) — so a person can swap any block for another from the
+catalogue. `kit.md` (in this prompt) is the kit as the HTML it replaces; build the widgets the
+catalogue lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `PhotoCard`,
 `EmptyState`, `CommandMenu` — rather than writing that HTML and CSS by hand.
 
 **Style with Tailwind, inside the TSX.** A widget's `widget.css` is two lines,
@@ -108,45 +126,69 @@ block, in the app's scope (`@reading-list/book-covers`, the scope named after th
 `node {tool} start` like any widget (law 15). It is the view only: `createWidget` whose `inject`
 reads exactly what the block draws, typed by the record shapes stage 2 wrote, plus the verbs the
 spec said yes to — no implementation yet, that is stage 4. Its look is the finished look: the kit and
-Tailwind, and every state it meets drawn by it (empty, one row, a hundred). `node {tool} check <id>`
-passes for each. If your tools can start sub-agents, hand every widget to one, all at once.
-
-**Then every page is one page widget, plain React**, `@<app>/<page>-page` with the `layout` role.
-It imports the app's widgets and the catalogue's by their id and draws them as components, feeding
-each the sample rows stage 2 seeded as plain values. Its frame is the kit's `Page`, whose `kind` is
-the archetype from the design system — `home`, `index`, `record`, `dashboard` or `form` — and which
-lays the width, the header and the hero; every block stands in a `Section`, which owns its title,
-count, add and "See all":
+Tailwind, and every state it meets drawn by it (empty, one row, a hundred). **Its sample data lives
+in its states**, never in `draw`:
 
 ```tsx
+export const states = defineStates(ReachOut, {
+	Full: { getPeople: [{ name: "Sofia Marin", late: 48, rhythm: "every 3 months" }, …] },
+	Empty: { getPeople: [] },
+	Error: { getPeople: … },
+});
+```
+
+`Full` with rows copied from what stage 2 seeded, `Empty` always, and any other look the widget
+has. The canvas draws every widget once per state, labelled, and `check` names a widget without
+them (`states`). `node {tool} check <id>` passes for each. If your tools can start sub-agents, hand
+every widget to one, all at once.
+
+**Then every page is one page widget, plain React**, `@<app>/<page>-page` with the `layout` role.
+It imports the app's widgets and the catalogue's by their id and draws them as components, handing
+each what it reads. Its frame is the kit's `Page`, whose `kind` is the archetype from the design
+system — `home`, `index`, `record`, `dashboard` or `form` — and which lays the width, the header and
+the hero; every block stands in a `Section`, which owns its title, count, add and "See all". The
+page reads its data through its own `inject`, and its states hold the samples, one state per frame
+the canvas shows:
+
+```tsx
+import Hero from "@default/hero";
 import ReachOut from "@crm/reach-out";
 import FollowUps from "@crm/follow-ups";
 import Birthdays from "@crm/birthdays";
 
-const LATE = [{ name: "Sofia", late: 48, rhythm: "every 3 months" }];
-
 const HomePage = createWidget({
-	inject: { getState: IQuery.expects(z.enum(["full", "empty", "add"]).default("full")) },
-	draw: ({ getState: state }) => (
+	inject: {
+		getPeople: IQuery.expects(z.array(PersonSchema)),
+		getSteps: IQuery.expects(z.array(StepSchema)),
+		getDialog: IQuery.expects(z.enum(["none", "add"]).default("none")),
+	},
+	draw: ({ getPeople: people, getSteps: steps, getDialog: dialog }) => (
 		<Page
 			kind="home"
 			title="People"
-			hero={<Hero title="8 people to reach out to" text="Sofia is 48 days past her rhythm" />}
+			hero={<Hero getTitle={`${late(people).length} people to reach out to`} getFaces={facesOf(people)} />}
 			action={<Button variant="primary">Add person</Button>}
 			side={
 				<Section title="Birthdays">
-					<Birthdays getPeople={BIRTHDAYS} />
+					<Birthdays getPeople={upcoming(people)} />
 				</Section>
 			}
 		>
-			<Section title="Reach out" count={8} more={{ label: "See all" }}>
-				<ReachOut getPeople={state === "empty" ? [] : LATE} />
+			<Section title="Reach out" count={late(people).length} more={{ label: "See all" }}>
+				<ReachOut getPeople={late(people).slice(0, 5)} />
 			</Section>
 			<Section title="Follow up" action={<IconButton icon="plus" aria-label="Add follow-up" />}>
-				<FollowUps getSteps={STEPS} />
+				<FollowUps getSteps={open(steps)} />
 			</Section>
+			{dialog === "add" ? <AddPersonDialog /> : null}
 		</Page>
 	),
+});
+
+export const states = defineStates(HomePage, {
+	Full: { getPeople: PEOPLE, getSteps: STEPS },
+	Empty: { getPeople: [], getSteps: [] },
+	"Add person": { getPeople: PEOPLE, getSteps: STEPS, getDialog: "add" },
 });
 ```
 
@@ -156,18 +198,20 @@ hold its own search and filters with its list when they serve only that list; it
 scope and never goes to the catalogue.
 
 A widget used as a component takes a plain value for every prop it reads; a prop left out draws as
-its empty value, never an error. A state is the same page with another `state`. Place each with the
-tool, never by editing `canvas.json`:
+its empty value, never an error. Place each state with the tool, its name the same as the key in
+`states` (the first state is the screen itself); never edit `canvas.json`:
 
 ```
 node {tool} screen <app> "People" --widget @<app>/people-page
-node {tool} screen <app> "People" --widget @<app>/people-page --set state=empty --state Empty
-node {tool} screen <app> "People" --widget @<app>/people-page --set state=add --state "Add person"
+node {tool} screen <app> "People" --widget @<app>/people-page --state Empty
+node {tool} screen <app> "People" --widget @<app>/people-page --state "Add person"
 ```
 
-The canvas draws the page with the very widgets the app will run, and sets every widget a page
-imports beside the pages by itself, under From the catalogue and New widgets. Nothing is drawn twice:
-after Approve design, the page widget reads the vault instead of its samples.
+The canvas is three regions — References, Pages, Widgets — and every group in them is titled: a
+page with all its states, a widget with all its states, a reference with its notes. It draws each
+page state from the page's `states`, and sets every widget a page imports in Widgets, badged New or
+From catalogue. Nothing is drawn twice, and nothing is lost after Approve design: the page reads the
+vault through its `inject`, and the states keep drawing the canvas.
 
 **A page keeps the design system's page rules** — the archetype table, `PG`, `S`, `R` and `C` in
 `.widgetarium/design-system.md`. The ones marked `check: kit` hold by themselves once the page is
@@ -184,9 +228,8 @@ design**: a widget shows one as `<img>` or a background with its literal `https:
 Unsplash photo that fits the record), wherever the references would. **Then read `.widgetarium/design-system.md` and follow it**: it is the person's, and a screen that
 breaks it is redrawn before they see it. A screen is the page as it will be built, drawn with the
 very pieces it will be built from: the base and its regions, catalogue widgets, headings, captions,
-the add button, the record actions. **A design is a picture, never wired to the vault**: every prop
-reads sample rows kept in the tile (`@core/typed-rows`, `@core/typed-value`, copied from what stage 2
-seeded), and `design` refuses a screen bound to a folder. **Draw the states a person will meet, not
+the add button, the record actions. **A design is a picture, never wired to the vault**: every frame
+draws a state from the page's `states`, whose rows are copied from what stage 2 seeded. **Draw the states a person will meet, not
 one frozen moment**, each a note of its own that the canvas sets beside the others as a frame, all of
 it static. **Every screen that shows rows has an `Empty` state**: the same screen with every list,
 count and chart a person fills left empty, drawing what will appear there and the one action that
@@ -275,11 +318,12 @@ comes back, and send it back while it is not done. Without sub-agents, do the sa
 feature at a time.
 
 **Stage 5 — the pages.** Each page is its approved page widget, placed alone in the vault note the
-spec names. Its look does not change: its sample rows become props in its `inject` —
-`IQuery.expects` typed by stage 2's shapes, `ICommand.sends` for each verb the spec said yes to —
-handed down to the widgets it draws. Bind each prop to the folder stage 2 seeded, with `allow` holding
-exactly those verbs; a `state` that only opened a dialog becomes the page's own `useState`. The
-person approved that page; a page drawn again is a page that drifts from it. The empty state the
+spec names. Its look does not change and **its `states` stay exactly as approved** — they are what
+the canvas draws, and a page that loses them leaves the person a blank canvas. What it reads is
+already in its `inject`: add `ICommand.sends` for each verb the spec said yes to, hand them down to
+the widgets it draws, and bind each prop to the folder stage 2 seeded, with `allow` holding exactly
+those verbs; a prop that only opened a dialog becomes the page's own `useState`. The person approved
+that page; a page drawn again is a page that drifts from it. The empty state the
 canvas drew is the one an empty folder must show. Lint, measure, and look at it.
 
 Write each page's `note` (its vault path) into the spec as you make it.

@@ -41,6 +41,7 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
+	defineStates,
 	useData,
 	z,
 } from "widgetarium";
@@ -84,8 +85,17 @@ export const layout = defineLayout({
 	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
 });
 
+export const states = defineStates(Checklist, {
+	Full: { getHeading: "Today", getEntries: [{ title: "Water the plants", done: true }, { title: "Call mum" }] },
+	Empty: { getEntries: [] },
+});
+
 export default Checklist;
 ```
+
+**`states` is the widget's sample data, one entry per look**, each a plain value for every prop it
+names — `Full`, `Empty`, and any other state the widget has. The design canvas draws the widget once
+per state, and a page widget's states are the frames of its screen. Samples never live in `draw`.
 
 **`createWidget({ inject, draw })` declares and draws, `metadata` describes, `layout` places.**
 `inject` holds the gateways the widget reads and may be left out when it reads none; `draw` gets

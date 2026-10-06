@@ -9,9 +9,10 @@
 | `report <app>`                        | per kept feature: widget, page, check, lint — ✓ or what is left; exits 1 until done                                                     |
 | `shot <note>`                         | a PNG of the note as Obsidian draws it; open the path it prints and look                                                                |
 | `shot --design <app>`                 | a PNG of the whole design canvas, every screen side by side                                                                             |
-| `screen <app> <screen> --widget <id>` | puts a page widget on the canvas; `--set state=empty` for the values it reads, `--state <name>` for a state of that screen              |
+| `screen <app> <screen> --widget <id>` | puts a page widget on the canvas; `--state <name>` draws the state of that name from the widget's `states`                              |
 | `design <app>`                        | checks `.widgetarium/apps/<app>/design/` and shows it to the person as a card                                                           |
-| `reference <app> <url> --why <line>`  | puts a picture from the web on the canvas above the screens; nothing is downloaded                                                      |
+| `reference <app> <url> --why <line>`  | puts a picture from the web on the canvas; `--kind app\|site\|marketing\|photo` says what it is; nothing is downloaded                  |
+| `note <app> <reference> <text>`       | a sticky note beside a reference: `--tone take\|like\|dislike\|note`, `--at 0.4,0.2` the point it is about                              |
 | `rules <app>`                         | every rule of `.widgetarium/design-system.md` and the app's own `design-system.md`, as a checklist to answer before `design`            |
 | `photos <app>`                        | after Approve design only: downloads every photo the approved screens link to into `design/photos/`, `photos.json` maps address to file |
 | `find`                                | the whole catalogue, ranked against what you need                                                                                       |
@@ -93,15 +94,19 @@ the name a person reads; left out, it is made from the id.
 node {tool} check @you/clock
 ```
 
-| Finding       | What it means                                                                     |
-| ------------- | --------------------------------------------------------------------------------- |
-| **colour**    | a colour written by hand; a theme repaints a token and cannot repaint a hex       |
-| **type**      | a `font-family` or `font-size` written by hand                                    |
-| **unbounded** | rows drawn from a `list` read with no `limit`                                     |
-| **role**      | a manifest naming none, so no surface law can judge it                            |
-| **reaches**   | a name imported from `widgetarium` that the surface does not carry; it will crash |
-| **heading**   | an `h1` or `h2` inside a widget whose role is not `text`                          |
-| **control**   | a raw `<button>`, `<input>`, `<select>` or `<textarea>` instead of the kit's      |
+| Finding       | What it means                                                                      |
+| ------------- | ---------------------------------------------------------------------------------- |
+| **colour**    | a colour written by hand; a theme repaints a token and cannot repaint a hex        |
+| **type**      | a `font-family` or `font-size` written by hand                                     |
+| **unbounded** | rows drawn from a `list` read with no `limit`                                      |
+| **role**      | a manifest naming none, so no surface law can judge it                             |
+| **reaches**   | a name imported from `widgetarium` that the surface does not carry; it will crash  |
+| **heading**   | an `h1` or `h2` inside a widget whose role is not `text`                           |
+| **control**   | a raw `<button>`, `<input>`, `<select>` or `<textarea>` instead of the kit's       |
+| **titled**    | a collection drawing its own title; the `Section` above it owns it                 |
+| **page**      | an `-page` widget without `<Page kind>`, with its own width, or drawing kit `Hero` |
+| **restyled**  | a kit component painted through `className`; a swapped kit would miss it           |
+| **states**    | no `export const states = defineStates(…)`; the canvas would draw it blank         |
 
 ## Measuring a board
 
