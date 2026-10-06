@@ -165,25 +165,34 @@ async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDe
 		src: "url" in reference ? reference.url : adapter.getResourcePath(referencePathOf(app, reference.file)),
 		why: reference.why,
 	}));
-	const onScreens = screens.flatMap((screen) =>
-		screen.states.flatMap((state) => state.board?.tiles.map((tile) => tile.widget) ?? []),
-	);
+	return { screens, references, widgets: await widgetsOf(plugin, app, screens) };
+}
+
+async function widgetsOf(
+	plugin: WidgetariumPlugin,
+	app: string,
+	screens: DrawnDesign["screens"],
+): Promise<DrawnDesign["widgets"]> {
+	const onScreens = widgetsOnScreens(screens);
 	const used = appWidgetsOf([...(await specWidgetsOf(plugin, app)), ...onScreens], await catalogueInstallsOf(plugin));
 	const exists = (id: string): boolean => Boolean(plugin.registry.get(id)?.component);
 	const blocks = draftsOn(screens).flatMap((draft) =>
 		blocksOf(plugin.registry, draft).map((block) => blockIdOf(draft, block)),
 	);
-	const widgets = { fromCatalogue: used.fromCatalogue.filter(exists), made: [...blocks, ...used.made.filter(exists)] };
-	return { screens, references, widgets };
+	return { fromCatalogue: used.fromCatalogue.filter(exists), made: [...blocks, ...used.made.filter(exists)] };
 }
 
 function isDraft(id: string): boolean {
 	return id.startsWith(DRAFT_PREFIX);
 }
 
-function draftsOn(screens: DrawnDesign["screens"]): string[] {
+function widgetsOnScreens(screens: DrawnDesign["screens"]): string[] {
 	const tiles = screens.flatMap((screen) => screen.states.flatMap((state) => state.board?.tiles ?? []));
-	return [...new Set(tiles.map((tile) => tile.widget).filter(isDraft))];
+	return tiles.map((tile) => tile.widget);
+}
+
+function draftsOn(screens: DrawnDesign["screens"]): string[] {
+	return [...new Set(widgetsOnScreens(screens).filter(isDraft))];
 }
 
 async function specWidgetsOf(plugin: WidgetariumPlugin, app: string): Promise<string[]> {

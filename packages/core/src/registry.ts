@@ -322,12 +322,7 @@ export class WidgetRegistry implements WidgetLookup {
 
 	drawnDefinition(record: WidgetRecord, held: HeldWidget, folder: string): WidgetDefinition {
 		const scope = this.scopeFor(record.id);
-		const module = runCode(
-			this.codeToRun(record.id, held, folder),
-			this.libs,
-			this.packagesFor(record.id, scope),
-			scope,
-		);
+		const module = this.runWidget(record.id, held, folder, scope);
 		const exported = componentIn(module, folder);
 		return {
 			manifest: manifestOf(record, exported),
@@ -337,6 +332,10 @@ export class WidgetRegistry implements WidgetLookup {
 			react: { instance: scope.instance, version: scope.react.version },
 			draw: scope.draw,
 		};
+	}
+
+	runWidget(id: string, held: HeldWidget, folder: string, scope: WidgetScope): unknown {
+		return runCode(this.codeToRun(id, held, folder), this.libs, this.packagesFor(id, scope), scope);
 	}
 }
 

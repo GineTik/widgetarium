@@ -1,4 +1,5 @@
 import { briefGoesInTheMessage, resumesWithoutAnId } from "./providers.js";
+import type { Provider } from "./providers.js";
 import { withResult } from "./tools.js";
 import type { AiSettings, AiState } from "./settings.js";
 import type { ChatTurn, Run, Runner, RunAsk } from "./run.js";
@@ -76,8 +77,7 @@ export function createSession(doors: SessionDoors): Session {
 		stop() {
 			store.activeRun?.stop();
 			store.activeRun = null;
-			if (store.drawTimer !== null) clearTimeout(store.drawTimer);
-			store.drawTimer = null;
+			cancelDraw(store);
 			patchState(store, { busy: false, tool: null, phase: null, failure: STOPPED });
 			notifyWatchers(store);
 			void keep(doors, store);
@@ -203,26 +203,39 @@ async function sendThrough(doors: SessionDoors, store: SessionStore, said: unkno
 	const brief = await doors.briefNow();
 	const { provider } = held;
 	const ask = askOf(asked, history, held, brief, store.state.session);
+	const run = startRun(doors, store, provider, ask);
+	const done = await run.done;
+	if (store.activeRun !== run) return;
+	settleRun(store, provider, done.failure);
+	await keep(doors, store);
+}
+
+function startRun(doors: SessionDoors, store: SessionStore, provider: Provider, ask: RunAsk): Run {
 	let run: Run | null = null;
 	run = doors.runner.run(provider, ask, (event) => {
 		if (run !== null && store.activeRun === run) applyEvent(store, event);
 	});
 	store.activeRun = run;
-	const done = await run.done;
-	if (store.activeRun !== run) return;
+	return run;
+}
+
+function settleRun(store: SessionStore, provider: Provider, failure: string | null): void {
 	store.activeRun = null;
-	if (store.drawTimer !== null) clearTimeout(store.drawTimer);
-	store.drawTimer = null;
+	cancelDraw(store);
 	// TRADE-OFF: a marker, because a CLI that resumes its own last conversation names no id to carry
 	const carried =
-		store.state.session ?? (done.failure === null && resumesWithoutAnId(provider) ? RESUMES_ITS_OWN_LAST : null);
+		store.state.session ?? (failure === null && resumesWithoutAnId(provider) ? RESUMES_ITS_OWN_LAST : null);
 	patchState(store, {
 		busy: false,
 		tool: null,
 		phase: null,
 		session: carried,
-		failure: done.failure ?? store.state.failure,
+		failure: failure ?? store.state.failure,
 	});
 	notifyWatchers(store);
-	await keep(doors, store);
+}
+
+function cancelDraw(store: SessionStore): void {
+	if (store.drawTimer !== null) clearTimeout(store.drawTimer);
+	store.drawTimer = null;
 }
