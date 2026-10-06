@@ -1,10 +1,21 @@
 import { parse } from "@babel/parser";
+import { contentHash } from "./content-hash.js";
 
 export const NODE_MARK = "data-wg-node";
 export const WIDGET_MARK = "data-wg-widget";
+export const HELD_MARK = "data-wg-held";
+export const SCOPE_MARK = "data-wg-scope";
 
 const PAGE_FOLDER = /-page$/;
 const SOURCE_PLUGINS = ["jsx", "typescript"] as const;
+const MARK_SHAPE = /^(.+)#(\d+):(\d+)$/;
+const FUNCTIONS = new Set([
+	"ArrowFunctionExpression",
+	"FunctionExpression",
+	"FunctionDeclaration",
+	"ObjectMethod",
+	"ClassMethod",
+]);
 
 export interface SourceNode {
 	readonly type: string;
@@ -13,19 +24,28 @@ export interface SourceNode {
 	readonly [key: string]: unknown;
 }
 
+export interface NodeMark {
+	readonly file: string;
+	readonly sourceKey: string;
+	readonly start: number;
+}
+
 export function isPageFolder(folder: string): boolean {
 	return PAGE_FOLDER.test(folder);
 }
 
-export function nodeMarkOf(file: string, start: number): string {
-	return `${file}:${start}`;
+export function nodeMarkOf(file: string, sourceKey: string, start: number): string {
+	return `${file}#${sourceKey}:${start}`;
 }
 
-export function readNodeMark(mark: string): { readonly file: string; readonly start: number } | null {
-	const at = mark.lastIndexOf(":");
-	const start = Number(mark.slice(at + 1));
-	if (at <= 0 || !Number.isInteger(start)) return null;
-	return { file: mark.slice(0, at), start };
+export function readNodeMark(mark: string): NodeMark | null {
+	const [, file, sourceKey, start] = MARK_SHAPE.exec(mark) ?? [];
+	if (!file || !sourceKey || !start) return null;
+	return { file, sourceKey, start: Number(start) };
+}
+
+export function sourceKeyOf(source: string): string {
+	return contentHash(source);
 }
 
 export function parsedSource(source: string): SourceNode | null {
@@ -38,27 +58,49 @@ export function parsedSource(source: string): SourceNode | null {
 }
 
 export function jsxElementsIn(root: SourceNode): SourceNode[] {
-	const found: SourceNode[] = [];
-	walk(root, (node) => {
-		if (node.type === "JSXElement") found.push(node);
-	});
-	return found;
+	return nodesIn(root, (node) => node.type === "JSXElement");
+}
+
+export function jsxHoldersIn(root: SourceNode): SourceNode[] {
+	return nodesIn(root, (node) => node.type === "JSXElement" || node.type === "JSXFragment");
+}
+
+export function scopeOf(functions: readonly SourceNode[], node: SourceNode): number {
+	const around = functions.filter((one) => one.start <= node.start && one.end >= node.end);
+	return around.reduce((inner, one) => (one.start > inner ? one.start : inner), -1);
+}
+
+export function functionsIn(root: SourceNode): SourceNode[] {
+	return nodesIn(root, (node) => FUNCTIONS.has(node.type));
 }
 
 export function withNodeMarks(source: string, file: string): string {
 	const root = parsedSource(source);
 	if (!root) return source;
+	const sourceKey = sourceKeyOf(source);
+	const children = new Set(jsxHoldersIn(root).flatMap(jsxChildrenOf));
+	const functions = functionsIn(root);
 	const marks = jsxElementsIn(root).flatMap((element) => {
 		const opening = element["openingElement"];
 		const name = isSourceNode(opening) ? opening["name"] : null;
-		return isSourceNode(name) ? [{ at: name.end, mark: nodeMarkOf(file, element.start) }] : [];
+		if (!isSourceNode(name)) return [];
+		const held = children.has(element) ? "" : ` ${HELD_MARK}=""`;
+		const scope = ` ${SCOPE_MARK}="${scopeOf(functions, element)}"`;
+		return [
+			{
+				at: name.end,
+				said: ` ${NODE_MARK}=${JSON.stringify(nodeMarkOf(file, sourceKey, element.start))}${held}${scope}`,
+			},
+		];
 	});
 	return marks
 		.sort((a, b) => b.at - a.at)
-		.reduce(
-			(text, { at, mark }) => `${text.slice(0, at)} ${NODE_MARK}=${JSON.stringify(mark)}${text.slice(at)}`,
-			source,
-		);
+		.reduce((text, { at, said }) => `${text.slice(0, at)}${said}${text.slice(at)}`, source);
+}
+
+export function jsxChildrenOf(holder: SourceNode): SourceNode[] {
+	const children = holder["children"];
+	return Array.isArray(children) ? children.filter(isSourceNode).filter((node) => node.type === "JSXElement") : [];
 }
 
 export function isSourceNode(held: unknown): held is SourceNode {
@@ -69,6 +111,14 @@ export function isSourceNode(held: unknown): held is SourceNode {
 		typeof Reflect.get(held, "start") === "number" &&
 		typeof Reflect.get(held, "end") === "number"
 	);
+}
+
+function nodesIn(root: SourceNode, isWanted: (node: SourceNode) => boolean): SourceNode[] {
+	const found: SourceNode[] = [];
+	walk(root, (node) => {
+		if (isWanted(node)) found.push(node);
+	});
+	return found;
 }
 
 function walk(node: SourceNode, visit: (node: SourceNode) => void): void {

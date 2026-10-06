@@ -1,6 +1,7 @@
 export interface WidgetDefinition {
 	readonly component?: unknown;
 	readonly error?: unknown;
+	readonly newerFailed?: unknown;
 }
 
 export type Drawable<Held extends WidgetDefinition> = Held & { readonly component: NonNullable<Held["component"]> };

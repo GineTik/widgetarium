@@ -10,6 +10,7 @@ import type { Tile } from "../model.js";
 import type { WidgetDefinition } from "./is-drawable.js";
 
 const COULD_NOT_LOAD = "This widget could not be loaded";
+const NEWER_FAILED = "The latest code of this widget does not build, so the last working version is shown. {why}";
 const INSTALL_THAT_VERSION = "Install the version this board was made with";
 const NOT_INSTALLED = "This widget is not installed";
 const COULD_NOT_INSTALL = "This widget could not be installed";
@@ -34,6 +35,16 @@ export function failedTile(tile: Pick<Tile, "widget">, definition: WidgetDefinit
 		h("p", { key: "named", className: "wg-missing-id" }, tile.widget),
 		h("span", { key: "why" }, String(errorMessageOf(definition.error) ?? definition.error ?? "")),
 	]);
+}
+
+export function newerFailedNote(definition: WidgetDefinition): ReactElement | null {
+	if (!definition.newerFailed) return null;
+	const why = String(errorMessageOf(definition.newerFailed) ?? definition.newerFailed);
+	return h(
+		"div",
+		{ className: "wg-newer is-failed", key: "newer-failed" },
+		h("span", {}, NEWER_FAILED.replace("{why}", why)),
+	);
 }
 
 export function missingTile(tile: Pick<Tile, "widget">, host: InstallingHost | null | undefined): ReactElement {

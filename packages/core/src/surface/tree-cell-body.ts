@@ -12,7 +12,7 @@ import type { LaidLeaf } from "../tree-laid.js";
 import { behindBoundary } from "./behind-boundary.js";
 import type { PatchTile, TileChange } from "./board-edits.js";
 import { isDrawable } from "./is-drawable.js";
-import { failedTile, missingTile } from "./missing-tile.js";
+import { failedTile, missingTile, newerFailedNote } from "./missing-tile.js";
 import { newerGenerationNote } from "./newer-generation.js";
 import { resolvePatch } from "./resolve-patch.js";
 import type { SettingsSession } from "./use-settings-session.js";
@@ -62,7 +62,8 @@ export function treeCellBody({
 		),
 	);
 	const note = editing ? newerGenerationNote(shared.registry, tile, patchTile) : null;
-	return note ? [note, drawn] : drawn;
+	const failed = newerFailedNote(definition);
+	return note || failed ? [failed, note, drawn] : drawn;
 }
 
 function drawTile(shells: TileShells, tile: Tile, child: ReactNode): ReactElement {

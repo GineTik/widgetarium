@@ -10,6 +10,7 @@ import { compileWidget } from "./engine/widget-build.js";
 import { moduleFromCompiled } from "./engine/compiled-module.js";
 import type { RequireModule } from "./engine/compiled-module.js";
 import { isObject } from "./engine/is-object.js";
+import { HELD_MARK, NODE_MARK, SCOPE_MARK, WIDGET_MARK } from "./engine/node-marks.js";
 import { declareProps, isDeclaredProps, manifestOfModule } from "./gateway/declared";
 import type { DeclaredModule, DeclaredProps } from "./gateway/declared";
 import type { GivenProps } from "./declared-widget.js";
@@ -145,6 +146,23 @@ export function runCode(
 		require: createRequire(libs, packages, scope, widgets),
 		globals: injectedGlobals(scope),
 	});
+}
+
+export function drawnAsImportedWidget(
+	scope: WidgetScope,
+	name: string,
+	component: WidgetComponent,
+	props: unknown,
+): ReactNode {
+	const { [NODE_MARK]: mark, [HELD_MARK]: held, [SCOPE_MARK]: drawnIn, ...given } = isObject(props) ? props : {};
+	const marks = {
+		[WIDGET_MARK]: name,
+		[NODE_MARK]: mark,
+		[HELD_MARK]: held,
+		[SCOPE_MARK]: drawnIn,
+		style: { display: "contents" },
+	};
+	return drawnByScope(scope, "div", marks, drawnByScope(scope, component, given));
 }
 
 export function drawnByScope(

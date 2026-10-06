@@ -7,7 +7,7 @@ import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
 import { WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS } from "./engine/widget-source.js";
 import { compileWidget, compileWidgetFolder } from "./engine/widget-build.js";
 import { contentHash } from "./engine/content-hash.js";
-import { NODE_MARK, WIDGET_MARK, isPageFolder } from "./engine/node-marks.js";
+import { isPageFolder } from "./engine/node-marks.js";
 import type { FolderFiles } from "./engine/widget-build.js";
 import { manifestOf, readRecord } from "./engine/catalogue-index.js";
 import type { EngineManifest, Fields, WidgetRecord } from "./engine/catalogue-index.js";
@@ -18,7 +18,7 @@ import {
 	blocksIn,
 	statesIn,
 	componentIn,
-	drawnByScope,
+	drawnAsImportedWidget,
 	foreignScope,
 	isReactLike,
 	runCode,
@@ -42,6 +42,7 @@ export interface WidgetDefinition {
 	readonly buildKey?: string;
 	readonly uses?: readonly string[];
 	readonly error?: unknown;
+	readonly newerFailed?: unknown;
 	readonly folder?: string;
 	readonly react?: ReactIdentity;
 	readonly draw?: DrawWidget<GivenProps> | null;
@@ -118,6 +119,7 @@ export class WidgetRegistry implements WidgetLookup {
 	readonly surfaceSource: string | null;
 	readonly scopes = new Map<string, WidgetScope>();
 	readonly widgets = new Map<string, WidgetDefinition>();
+	private readonly lastWorking = new Map<string, WidgetDefinition>();
 	readonly renamed = new Map<unknown, string>();
 	readonly libs = new Map<string, unknown>();
 	readonly packages = new Map<string, HeldPackage>();
@@ -184,6 +186,9 @@ export class WidgetRegistry implements WidgetLookup {
 	mount(read: VaultRead): Map<string, WidgetDefinition> {
 		const { widgets: found, packages } = read;
 		this.mounted = read;
+		this.lastWorking.clear();
+		for (const [id, definition] of this.widgets)
+			if (definition.component && !definition.error) this.lastWorking.set(id, definition);
 		this.widgets.clear();
 		this.renamed.clear();
 		this.libs.clear();
@@ -325,6 +330,12 @@ export class WidgetRegistry implements WidgetLookup {
 		} catch (failure) {
 			console.error(`[widgetarium] failed to load ${folder}`, failure);
 			const id = idOfFolder(folder);
+			const working = this.lastWorking.get(id);
+			if (working) {
+				console.warn(`[widgetarium] ${id}: new code failed → the last working build stays on screen`);
+				this.widgets.set(id, { ...working, newerFailed: failure });
+				return;
+			}
 			this.widgets.set(id, { manifest: { id, title: id }, error: failure, folder });
 		}
 	}
@@ -354,10 +365,7 @@ export class WidgetRegistry implements WidgetLookup {
 		uses.add(name);
 		const drawn = (props: unknown): ReactNode => {
 			const component = this.get(name)?.component;
-			if (!component) return null;
-			const { [NODE_MARK]: mark, ...given } = isObject(props) ? props : {};
-			const marks = { [WIDGET_MARK]: name, [NODE_MARK]: mark, style: { display: "contents" } };
-			return drawnByScope(scope, "div", marks, drawnByScope(scope, component, given));
+			return component ? drawnAsImportedWidget(scope, name, component, props) : null;
 		};
 		return { __esModule: true, default: drawn };
 	}
