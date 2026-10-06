@@ -261,13 +261,19 @@ function boxShape(node: BoxNode, dir: BoxDirection, width: number, how: LayPlace
 		width,
 		gap: stepOf(how.level),
 		...(node.measure !== undefined && node.measure > 0 ? { measure: node.measure } : {}),
-		...(node.justify ? { justify: node.justify } : {}),
-		...(node.align ? { align: node.align } : {}),
-		...(node.wrap ? { wrap: true } : {}),
+		...arrangementFields(node),
 		...(node.name ? { slot: node.name } : {}),
 		...surfaceFields(node),
 		...plateFields(node, how),
 		...toggleFields(node, how.path),
+	};
+}
+
+function arrangementFields(node: BoxNode): Pick<BoxNode, "justify" | "align" | "wrap"> {
+	return {
+		...(node.justify ? { justify: node.justify } : {}),
+		...(node.align ? { align: node.align } : {}),
+		...(node.wrap ? { wrap: true } : {}),
 	};
 }
 
