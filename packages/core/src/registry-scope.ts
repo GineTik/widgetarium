@@ -147,8 +147,13 @@ export function runCode(
 	});
 }
 
-export function drawnByScope(scope: WidgetScope, component: unknown, props: unknown): ReactNode {
-	return Reflect.apply(Object(scope.react.createElement), scope.react, [component, props]);
+export function drawnByScope(
+	scope: WidgetScope,
+	component: unknown,
+	props: unknown,
+	...children: ReactNode[]
+): ReactNode {
+	return Reflect.apply(Object(scope.react.createElement), scope.react, [component, props, ...children]);
 }
 
 // TRADE-OFF: one path for a widget and for a lib — two would drift on the first change to either

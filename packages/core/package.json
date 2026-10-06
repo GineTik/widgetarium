@@ -7,6 +7,7 @@
 		"./*": "./src/*"
 	},
 	"dependencies": {
+		"@babel/parser": "^8.0.5",
 		"@widgetarium/kit": "0.1.0",
 		"sucrase": "^3.35.0",
 		"yaml": "^2.9.0",

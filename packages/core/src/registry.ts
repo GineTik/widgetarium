@@ -7,6 +7,7 @@ import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
 import { WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS } from "./engine/widget-source.js";
 import { compileWidget, compileWidgetFolder } from "./engine/widget-build.js";
 import { contentHash } from "./engine/content-hash.js";
+import { NODE_MARK, WIDGET_MARK, isPageFolder } from "./engine/node-marks.js";
 import type { FolderFiles } from "./engine/widget-build.js";
 import { manifestOf, readRecord } from "./engine/catalogue-index.js";
 import type { EngineManifest, Fields, WidgetRecord } from "./engine/catalogue-index.js";
@@ -293,7 +294,8 @@ export class WidgetRegistry implements WidgetLookup {
 
 	codeToRun(id: string, held: HeldWidget, folder: string): string {
 		const files = held.files ?? {};
-		if (held.build !== null && buildMatchesSources(this.lock.builds[id], folder, files)) return held.build;
+		if (held.build !== null && !isPageFolder(folder) && buildMatchesSources(this.lock.builds[id], folder, files))
+			return held.build;
 		return compileWidgetFolder(files, folder);
 	}
 
@@ -352,7 +354,10 @@ export class WidgetRegistry implements WidgetLookup {
 		uses.add(name);
 		const drawn = (props: unknown): ReactNode => {
 			const component = this.get(name)?.component;
-			return component ? drawnByScope(scope, component, props) : null;
+			if (!component) return null;
+			const { [NODE_MARK]: mark, ...given } = isObject(props) ? props : {};
+			const marks = { [WIDGET_MARK]: name, [NODE_MARK]: mark, style: { display: "contents" } };
+			return drawnByScope(scope, "div", marks, drawnByScope(scope, component, given));
 		};
 		return { __esModule: true, default: drawn };
 	}

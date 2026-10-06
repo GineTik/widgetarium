@@ -1,4 +1,5 @@
 import { transform } from "sucrase";
+import { isPageFolder, withNodeMarks } from "./node-marks.js";
 import type { Transform } from "sucrase";
 
 export type FolderFiles = Readonly<Record<string, string>>;
@@ -101,10 +102,12 @@ export function compileWidgetFolder(files: FolderFiles, folder: string): string 
 	const entry = sourceFileIn(files);
 	if (entry === null) throw new Error(missingSourceRefusal(Object.keys(files), folder));
 	const modules = modulesIn(files);
-	if (modules.length <= 1) return compileWidget(sourceOf(files, entry), `${folder}/${entry}`);
+	const sourceToCompile = (name: string): string =>
+		isPageFolder(folder) ? withNodeMarks(sourceOf(files, name), name) : sourceOf(files, name);
+	if (modules.length <= 1) return compileWidget(sourceToCompile(entry), `${folder}/${entry}`);
 	const compiled = modules.map(
 		(name) =>
-			`${JSON.stringify(name)}: function (require, module, exports) {\n${compileWidget(sourceOf(files, name), `${folder}/${name}`)}\n}`,
+			`${JSON.stringify(name)}: function (require, module, exports) {\n${compileWidget(sourceToCompile(name), `${folder}/${name}`)}\n}`,
 	);
 	return FOLDER_LOADER.replace("{entry}", JSON.stringify(entry)).replace("{modules}", () => compiled.join(",\n"));
 }
