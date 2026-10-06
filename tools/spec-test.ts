@@ -882,6 +882,26 @@ check(
 	),
 	true,
 );
+await writeFile(
+	join(screenVault, ".widgetarium/apps/Trips/design/Board.md"),
+	'```widgetarium\nv: 2\ntiles:\n  - { id: a, widget: "@default/text-line" }\nlayout: { dir: row, of: [{ dir: column, keep: true, of: [{ id: a }] }] }\n```\n',
+);
+const placedBoard = await screenOfApp(screenVault, "Trips", "Board", { board: true });
+check(
+	"a board the agent wrote is placed on the canvas as it stands",
+	[
+		placedBoard.refusal,
+		readDesign(await readFile(join(screenVault, designPathOf("Trips")), "utf8")).design?.screens.some(
+			(one) => one.name === "Board",
+		),
+	],
+	[undefined, true],
+);
+check(
+	"placing a board that was never written is refused with what to write",
+	(await screenOfApp(screenVault, "Trips", "Nowhere", { board: true })).refusal?.includes("design/Nowhere.md"),
+	true,
+);
 await screenOfApp(screenVault, "Trips", "Grid", { widget: "@draft/trips", set: "columns=3,dark=true" });
 const gridNote = await readFile(join(screenVault, ".widgetarium/apps/Trips/design/Grid.md"), "utf8");
 check(
