@@ -94,6 +94,7 @@ export {
 	defineLayout,
 	defineMetadata,
 	defineMigrations,
+	defineStates,
 	z,
 } from "../../core/src/gateway/declared";
 

@@ -41,6 +41,7 @@ import type {
 	PatchInOf,
 	ReadOf,
 	SchemaOrShapes,
+	GivenProps,
 	ValueDeclared,
 	ValueInOf,
 	WidgetLayout,
@@ -90,6 +91,7 @@ export const VaultRecordSchema = z.looseObject({
 export type VaultRecord = z.infer<typeof VaultRecordSchema>;
 
 const DEFINED_PROPS = Symbol.for("widgetarium.defined-props");
+const STATE_NAMES_NOTHING = 'state "{state}" gives {props}, which the widget does not inject';
 
 export type Read = "list" | "get";
 
@@ -277,6 +279,19 @@ export function defineMetadata<P extends DeclaredProps>(
 	refuseMetadataForNothing(propsIn(of), metadata.props ?? {});
 	refuseSourcesOverNothing(propsIn(of), metadata.props ?? {});
 	return metadata;
+}
+
+export function defineStates<P extends DeclaredProps, const S extends Readonly<Record<string, GivenProps<P>>>>(
+	of: DeclaredWidget<P>,
+	states: S,
+): S {
+	const declared = Object.keys(of.declared);
+	for (const [state, given] of Object.entries(states)) {
+		const unknown = Object.keys(given).filter((prop) => !declared.includes(prop));
+		if (unknown.length > 0)
+			throw new Error(STATE_NAMES_NOTHING.replace("{state}", state).replace("{props}", unknown.join(", ")));
+	}
+	return states;
 }
 
 export function defineLayout(layout: WidgetLayout): WidgetLayout {

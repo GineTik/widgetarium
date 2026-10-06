@@ -120,6 +120,16 @@ export function blocksIn(shell: unknown): Readonly<Record<string, WidgetComponen
 	);
 }
 
+export type WidgetStates = Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+
+export function statesIn(shell: unknown): WidgetStates {
+	const held: unknown = isObject(shell) ? Reflect.get(shell, "states") : undefined;
+	if (!isObject(held)) return {};
+	return Object.fromEntries(
+		Object.entries(held).filter((entry): entry is [string, Readonly<Record<string, unknown>>] => isObject(entry[1])),
+	);
+}
+
 export interface WidgetImports {
 	take(name: string): unknown;
 }

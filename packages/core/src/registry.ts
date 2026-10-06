@@ -14,6 +14,7 @@ import { isObject } from "./engine/is-object.js";
 import {
 	ENGINE_SCOPE,
 	blocksIn,
+	statesIn,
 	componentIn,
 	drawnByScope,
 	foreignScope,
@@ -21,7 +22,7 @@ import {
 	runCode,
 	runModule,
 } from "./registry-scope.js";
-import type { PackageTaker, WidgetComponent, WidgetScope } from "./registry-scope.js";
+import type { PackageTaker, WidgetComponent, WidgetScope, WidgetStates } from "./registry-scope.js";
 import { parseLock, readVault } from "./registry-reading.js";
 import type { HeldWidget, OwnedSheet, PackageSource, RegistryAdapter, VaultRead } from "./registry-reading.js";
 import type { ReactIdentity } from "./fit.js";
@@ -35,6 +36,7 @@ export interface WidgetDefinition {
 	readonly manifest: EngineManifest;
 	readonly component?: WidgetComponent;
 	readonly blocks?: Readonly<Record<string, WidgetComponent>>;
+	readonly states?: WidgetStates;
 	readonly uses?: readonly string[];
 	readonly error?: unknown;
 	readonly folder?: string;
@@ -332,6 +334,7 @@ export class WidgetRegistry implements WidgetLookup {
 			manifest: manifestOf(record, exported),
 			component: exported,
 			blocks: blocksIn(module),
+			states: statesIn(module),
 			uses: [...uses],
 			folder,
 			react: { instance: scope.instance, version: scope.react.version },

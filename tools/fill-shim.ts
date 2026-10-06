@@ -41,6 +41,7 @@ export {
 	defineLayout,
 	defineMetadata,
 	defineMigrations,
+	defineStates,
 	z,
 } from "../packages/core/src/gateway/declared";
 export { ICommand, IQuery } from "../packages/core/src/gateway/queries";

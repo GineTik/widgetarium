@@ -21,6 +21,7 @@ import {
 	defineLayout,
 	defineMetadata,
 	defineMigrations,
+	defineStates,
 	z,
 } from "./gateway/declared";
 import { defineGatewayMetadata } from "./gateway/implementation-metadata";
@@ -67,6 +68,7 @@ export const coreSurface = {
 	ValueInMemoryGateway,
 	defineMetadata,
 	defineMigrations,
+	defineStates,
 	action,
 	arrayGateway,
 	collectionGateway,
