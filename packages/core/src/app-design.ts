@@ -167,12 +167,20 @@ const DesignSchema = z
 	});
 
 function screenWith(placed: unknown, screen: string, state: string | undefined, file: string): unknown {
-	if (!state) return { name: screen, file };
-	const kept: unknown = typeof placed === "object" && placed !== null ? Reflect.get(placed, "states") : undefined;
-	const states = (Array.isArray(kept) ? kept : []).filter(
-		(one) => !(typeof one === "object" && one !== null && Reflect.get(one, "name") === state),
-	);
-	return { name: screen, states: [...states, { name: state, file }] };
+	const name = state ?? screen;
+	const others = statesHeldBy(placed, screen).filter((one) => Reflect.get(one, "name") !== name);
+	const states = name === screen ? [{ name, file }, ...others] : [...others, { name, file }];
+	const [only] = states;
+	if (states.length === 1 && only !== undefined && Reflect.get(only, "name") === screen) return { name: screen, file };
+	return { name: screen, states };
+}
+
+function statesHeldBy(placed: unknown, screen: string): object[] {
+	if (typeof placed !== "object" || placed === null) return [];
+	const states: unknown = Reflect.get(placed, "states");
+	if (Array.isArray(states)) return states.filter((one): one is object => typeof one === "object" && one !== null);
+	const file: unknown = Reflect.get(placed, "file");
+	return typeof file === "string" ? [{ name: screen, file }] : [];
 }
 
 function typedOf(value: string): string | number | boolean {

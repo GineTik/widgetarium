@@ -855,9 +855,23 @@ check(
 	[undefined, ["People", "Home"]],
 );
 check(
-	"a state joins its screen instead of adding a second one",
+	"a state joins its screen beside the screen itself, which stays first",
 	JSON.stringify(writtenCanvas?.screens[0]),
-	JSON.stringify({ name: "People", states: [{ name: "Add person", file: "People · Add person.md" }] }),
+	JSON.stringify({
+		name: "People",
+		states: [
+			{ name: "People", file: "People.md" },
+			{ name: "Add person", file: "People · Add person.md" },
+		],
+	}),
+);
+await screenOfApp(screenVault, "Trips", "People", { widget: "@draft/trips", set: "page=people" });
+check(
+	"placing the screen again after its states keeps every state",
+	readDesign(await readFile(join(screenVault, designPathOf("Trips")), "utf8")).design?.screens[0]?.states?.map(
+		(state) => state.name,
+	),
+	["People", "Add person"],
 );
 const shownTrips = await designOfApp(screenVault, "Trips");
 check("the notes it writes are boards the design command accepts", shownTrips.refusal, undefined);

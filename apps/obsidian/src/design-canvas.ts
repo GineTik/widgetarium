@@ -119,7 +119,7 @@ function framesOf(screens: readonly DrawnScreen[]): Frame[] {
 	return screens.flatMap((screen) =>
 		screen.states.map((state) => ({
 			label:
-				screen.states.length < 2
+				screen.states.length < 2 || state.name === screen.name
 					? screen.name
 					: STATE_LABEL.replace("{screen}", screen.name).replace("{state}", state.name),
 			state,
