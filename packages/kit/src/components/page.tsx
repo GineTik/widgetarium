@@ -1,9 +1,11 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { cn } from "../utils/cn";
+import { dataAttributesOf } from "../utils/data-attributes";
+import type { DataAttributes } from "../utils/data-attributes";
 import { PageHead } from "./page-head";
 
-interface PageCommon {
+interface PageCommon extends DataAttributes {
 	readonly action?: ReactNode;
 	readonly back?: ReactNode;
 	readonly className?: string | undefined;
@@ -53,6 +55,8 @@ export function Page(props: PageProps): ReactElement {
 	const isWide = props.kind === "index" && props.wide === true;
 	return (
 		<div
+			{...dataAttributesOf(props)}
+			data-name={props["data-name"] ?? props.title ?? "Page"}
 			className={cn(
 				"wg-kit-page",
 				`is-${props.kind}`,

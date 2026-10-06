@@ -1,6 +1,8 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { cn } from "../utils/cn";
+import { dataAttributesOf } from "../utils/data-attributes";
+import type { DataAttributes } from "../utils/data-attributes";
 import { Button } from "./button";
 import { Count } from "./count";
 import { Heading } from "./heading";
@@ -10,7 +12,7 @@ export interface SectionMore {
 	readonly onPress?: (() => void) | undefined;
 }
 
-export interface SectionProps {
+export interface SectionProps extends DataAttributes {
 	readonly title: string;
 	readonly count?: ReactNode;
 	readonly action?: ReactNode;
@@ -28,9 +30,15 @@ export function Section({
 	more,
 	className: cls,
 	children,
+	...rest
 }: SectionProps): ReactElement {
 	return (
-		<section className={cn("wg-kit-section", cls)} data-wg-section="">
+		<section
+			{...dataAttributesOf(rest)}
+			data-name={rest["data-name"] ?? title}
+			className={cn("wg-kit-section", cls)}
+			data-wg-section=""
+		>
 			<header className="wg-kit-section-head">
 				<Heading level={2} size={4} className="wg-kit-section-title">
 					{title}
