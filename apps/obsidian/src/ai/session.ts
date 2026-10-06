@@ -74,10 +74,13 @@ export function createSession(doors: SessionDoors): Session {
 		},
 
 		stop() {
-			if (!store.activeRun) return;
-			store.activeRun.stop();
-			patchState(store, { failure: STOPPED });
+			store.activeRun?.stop();
+			store.activeRun = null;
+			if (store.drawTimer !== null) clearTimeout(store.drawTimer);
+			store.drawTimer = null;
+			patchState(store, { busy: false, tool: null, phase: null, failure: STOPPED });
 			notifyWatchers(store);
+			void keep(doors, store);
 		},
 
 		clear() {
@@ -200,8 +203,13 @@ async function sendThrough(doors: SessionDoors, store: SessionStore, said: unkno
 	const brief = await doors.briefNow();
 	const { provider } = held;
 	const ask = askOf(asked, history, held, brief, store.state.session);
-	store.activeRun = doors.runner.run(provider, ask, (event) => applyEvent(store, event));
-	const done = await store.activeRun.done;
+	let run: Run | null = null;
+	run = doors.runner.run(provider, ask, (event) => {
+		if (run !== null && store.activeRun === run) applyEvent(store, event);
+	});
+	store.activeRun = run;
+	const done = await run.done;
+	if (store.activeRun !== run) return;
 	store.activeRun = null;
 	if (store.drawTimer !== null) clearTimeout(store.drawTimer);
 	store.drawTimer = null;

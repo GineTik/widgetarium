@@ -11,6 +11,7 @@ import type { ArgsGiven } from "../apps/obsidian/src/ai/command.ts";
 import type { Provider } from "../apps/obsidian/src/ai/providers.ts";
 import type { Held, StreamPart, ToolCall, ToolResult } from "../apps/obsidian/src/ai/stream.ts";
 import type { KeptCall } from "../apps/obsidian/src/ai/transcript.ts";
+import type { RunAnswer } from "../apps/obsidian/src/ai/run.ts";
 import type { Build, StepStatus } from "../apps/obsidian/src/ai/builds.ts";
 import type { SaidProps } from "../apps/obsidian/src/ai/markdown.ts";
 import type { Spawn, SpawnAsk } from "../apps/obsidian/src/ai/run.ts";
@@ -1331,6 +1332,51 @@ await session.send("first");
 await session.retry();
 check("retrying replaces the failed exchange rather than stacking one", session.now().turns.length, 2);
 check("retrying asks the same thing again", at(session.now().turns, 0).text, "first");
+
+let stopHeld: unknown = { ai: { provider: "claude-code" } };
+const stopSettings = createAiSettings({
+	read: async () => stopHeld,
+	write: async (next) => {
+		stopHeld = next;
+	},
+});
+const stubborn = { stopped: 0, emit: (_part: StreamPart): void => {}, finish: (_answer: RunAnswer): void => {} };
+const stubbornSession = createSession({
+	settings: stopSettings,
+	runner: {
+		run: (_provider, _ask, emit) => {
+			stubborn.emit = emit;
+			return {
+				stop: () => void (stubborn.stopped += 1),
+				done: new Promise<RunAnswer>((finish) => void (stubborn.finish = finish)),
+			};
+		},
+	},
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
+});
+const stubbornSent = stubbornSession.send("build me a board");
+await new Promise((settled) => setTimeout(settled, 0));
+stubbornSession.stop();
+check(
+	"stop ends the run at once, though the process has not answered yet",
+	[stubborn.stopped, stubbornSession.now().busy, stubbornSession.now().failure],
+	[1, false, "Stopped."],
+);
+stubborn.emit({ text: "still talking after the stop" });
+stubborn.finish({ failure: null });
+await stubbornSent;
+check(
+	"nothing a stopped run says afterwards reaches the chat",
+	[at(stubbornSession.now().turns, 1).text, stubbornSession.now().failure],
+	["", "Stopped."],
+);
+const idleSession = createSession({
+	settings: stopSettings,
+	runner: sessionRunner,
+	briefNow: async () => ({ brief: "BRIEF", helpers: null }),
+});
+idleSession.stop();
+check("stop with no run in flight still leaves the chat idle", idleSession.now().busy, false);
 
 const carriedOver = createSession({
 	settings: sessionSettings,
