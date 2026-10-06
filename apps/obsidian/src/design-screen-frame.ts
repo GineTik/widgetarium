@@ -31,7 +31,7 @@ export function ScreenFrame({ label, state, size, registry, host }: ScreenFrameP
 
 function framePictureKeyOf(state: DrawnState, label: string, registry: Drawing["registry"]): string {
 	const widget = state.picture?.widget ?? state.board?.tiles[0]?.widget ?? label;
-	return snapshotKeyOf(registry.get(widget), widget, label);
+	return snapshotKeyOf(registry, widget, label, state.picture?.props ?? state.board);
 }
 
 function screenOf(state: DrawnState, size: Size, drawing: Drawing): ReactElement {

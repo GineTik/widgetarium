@@ -6,6 +6,7 @@ import type { WidgetLock } from "./engine/widget-lock.js";
 import { generationOf, widgetKeyOf, widgetRef } from "./engine/widget-ref.js";
 import { WHAT_A_FOLDER_WAS_STAMPED_BEFORE_STAMPS } from "./engine/widget-source.js";
 import { compileWidget, compileWidgetFolder } from "./engine/widget-build.js";
+import { contentHash } from "./engine/content-hash.js";
 import type { FolderFiles } from "./engine/widget-build.js";
 import { manifestOf, readRecord } from "./engine/catalogue-index.js";
 import type { EngineManifest, Fields, WidgetRecord } from "./engine/catalogue-index.js";
@@ -37,6 +38,7 @@ export interface WidgetDefinition {
 	readonly component?: WidgetComponent;
 	readonly blocks?: Readonly<Record<string, WidgetComponent>>;
 	readonly states?: WidgetStates;
+	readonly buildKey?: string;
 	readonly uses?: readonly string[];
 	readonly error?: unknown;
 	readonly folder?: string;
@@ -328,19 +330,21 @@ export class WidgetRegistry implements WidgetLookup {
 	drawnDefinition(record: WidgetRecord, held: HeldWidget, folder: string): WidgetDefinition {
 		const scope = this.scopeFor(record.id);
 		const uses = new Set<string>();
-		const module = this.runWidget(record.id, held, folder, { scope, uses });
+		const code = this.codeToRun(record.id, held, folder);
+		const module = this.runWidget(record.id, code, { scope, uses });
 		return {
 			...exportsOfModule(record, module, folder),
 			uses: [...uses],
+			buildKey: contentHash(code),
 			folder,
 			react: { instance: scope.instance, version: scope.react.version },
 			draw: scope.draw,
 		};
 	}
 
-	runWidget(id: string, held: HeldWidget, folder: string, { scope, uses }: WidgetRun): unknown {
+	runWidget(id: string, code: string, { scope, uses }: WidgetRun): unknown {
 		const widgets = { take: (name: string) => this.importedWidget(id, name, { scope, uses }) };
-		return runCode(this.codeToRun(id, held, folder), this.libs, this.packagesFor(id, scope), scope, widgets);
+		return runCode(code, this.libs, this.packagesFor(id, scope), scope, widgets);
 	}
 
 	importedWidget(importer: string, name: string, { scope, uses }: WidgetRun): unknown {

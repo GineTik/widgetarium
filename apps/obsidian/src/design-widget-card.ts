@@ -25,7 +25,7 @@ export function WidgetCard({ id, label, props, registry, host }: WidgetCardProps
 			{ key: "drawn", className: "wg-design-widget-body", inert: true },
 			h(
 				DrawnWhenSeen,
-				{ minHeight: CARD_UNSEEN_PX, pictureKey: snapshotKeyOf(registry.get(id), id, label) },
+				{ minHeight: CARD_UNSEEN_PX, pictureKey: snapshotKeyOf(registry, id, label, props ?? null) },
 				props
 					? h(StateDrawing, { picture: { widget: id, props }, registry })
 					: h(DefaultDrawing, { id, width: cardPx, registry, host }),
