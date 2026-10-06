@@ -83,10 +83,7 @@ function linesFrom(note: HTMLElement, picture: HTMLImageElement): Line[] {
 
 function noteEdgeOf(note: HTMLElement, column: HTMLElement): [number, number] {
 	const isLeft = column.classList.contains("is-left");
-	return [
-		column.offsetLeft + note.offsetLeft + (isLeft ? note.offsetWidth : 0),
-		column.offsetTop + note.offsetTop + note.offsetHeight / 2,
-	];
+	return [note.offsetLeft + (isLeft ? note.offsetWidth : 0), note.offsetTop + note.offsetHeight / 2];
 }
 
 function toneOf(note: HTMLElement): ReferenceNote["tone"] {
