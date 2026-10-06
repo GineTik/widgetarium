@@ -2,6 +2,8 @@ import { createElement as h, useLayoutEffect, useRef, useState } from "react";
 import type { ReactElement, RefObject } from "react";
 import type { ReferenceNote } from "@widgetarium/core/app-design.js";
 import type { DrawnReference } from "./design-canvas-shapes.js";
+import { placedNotes } from "./note-layout.js";
+import type { NoteSide, PlacedNote } from "./note-layout.js";
 
 const TONE_SAID: Readonly<Record<ReferenceNote["tone"], string>> = {
 	take: "Take",
@@ -9,6 +11,8 @@ const TONE_SAID: Readonly<Record<ReferenceNote["tone"], string>> = {
 	dislike: "Leave",
 	note: "Note",
 };
+const NOTE_GAP_PX = 16;
+const SIDES: readonly NoteSide[] = ["left", "right"];
 
 interface Line {
 	readonly from: readonly [number, number];
@@ -16,25 +20,37 @@ interface Line {
 	readonly tone: ReferenceNote["tone"];
 }
 
+interface Laid {
+	readonly placed: readonly PlacedNote[];
+	readonly lines: readonly Line[];
+	readonly height: number;
+}
+
 export function NotedPicture({ reference }: { readonly reference: DrawnReference }): ReactElement {
 	const body = useRef<HTMLDivElement | null>(null);
-	const lines = useLinesIn(body, reference.notes);
-	const left = reference.notes.filter((note) => (note.at?.[0] ?? 1) < 0.5);
-	const right = reference.notes.filter((note) => (note.at?.[0] ?? 1) >= 0.5);
+	const laid = useLaidNotes(body, reference.notes);
+	const columnOf = (side: NoteSide): ReactElement =>
+		h(
+			"div",
+			{ key: side, className: `wg-design-notes is-${side}`, style: { height: `${laid?.height ?? 0}px` } },
+			reference.notes.map((note, at) => noteOf(note, at, laid?.placed[at], side)),
+		);
 	return h("div", { className: "wg-design-noted", ref: body }, [
-		h("div", { key: "left", className: "wg-design-notes is-left" }, left.map(noteOf)),
+		columnOf("left"),
 		h("img", { key: "img", src: reference.src, alt: reference.why ?? reference.name, draggable: false }),
-		h("div", { key: "right", className: "wg-design-notes is-right" }, right.map(noteOf)),
-		h("svg", { key: "lines", className: "wg-design-note-lines", "aria-hidden": true }, lines.map(lineDrawnOf)),
+		columnOf("right"),
+		h("svg", { key: "lines", className: "wg-design-note-lines", "aria-hidden": true }, laid?.lines.map(lineDrawnOf)),
 	]);
 }
 
-function noteOf(note: ReferenceNote, at: number): ReactElement {
-	return h(
-		"div",
-		{ key: at, className: `wg-design-note is-${note.tone}`, "data-at": note.at ? note.at.join(",") : undefined },
-		[h("b", { key: "tone" }, TONE_SAID[note.tone]), h("span", { key: "text" }, note.text)],
-	);
+function noteOf(note: ReferenceNote, at: number, place: PlacedNote | undefined, side: NoteSide): ReactElement | null {
+	const isHere = place ? place.side === side : side === "right";
+	if (!isHere) return null;
+	const style = place ? { top: `${place.top}px` } : { visibility: "hidden" as const };
+	return h("div", { key: at, className: `wg-design-note is-${note.tone}`, "data-note": at, style }, [
+		h("b", { key: "tone" }, TONE_SAID[note.tone]),
+		h("span", { key: "text" }, note.text),
+	]);
 }
 
 function lineDrawnOf(line: Line, at: number): ReactElement {
@@ -48,45 +64,48 @@ function lineDrawnOf(line: Line, at: number): ReactElement {
 	});
 }
 
-function useLinesIn(body: RefObject<HTMLDivElement | null>, notes: readonly ReferenceNote[]): readonly Line[] {
-	const [lines, setLines] = useState<readonly Line[]>([]);
+function useLaidNotes(body: RefObject<HTMLDivElement | null>, notes: readonly ReferenceNote[]): Laid | null {
+	const [laid, setLaid] = useState<Laid | null>(null);
 	useLayoutEffect(() => {
 		const held = body.current;
 		if (!held) return;
-		const measure = (): void => setLines(linesIn(held));
+		const measure = (): void => setLaid(laidIn(held, notes));
 		const watcher = new ResizeObserver(measure);
 		watcher.observe(held);
 		measure();
 		return () => watcher.disconnect();
 	}, [body, notes]);
-	return lines;
+	return laid;
 }
 
-function linesIn(body: HTMLDivElement): Line[] {
+function laidIn(body: HTMLDivElement, notes: readonly ReferenceNote[]): Laid | null {
 	const picture = body.querySelector("img");
-	if (!picture) return [];
-	return [...body.querySelectorAll<HTMLElement>(".wg-design-note[data-at]")].flatMap((note) =>
-		linesFrom(note, picture),
+	const columns = SIDES.map((side) => body.querySelector<HTMLElement>(`.wg-design-notes.is-${side}`));
+	if (!picture || picture.offsetHeight === 0) return null;
+	const heights = notes.map((_, at) => body.querySelector<HTMLElement>(`[data-note="${at}"]`)?.offsetHeight ?? 0);
+	const placed = placedNotes(
+		notes.map((note, at) => ({ at: note.at, height: heights[at] ?? 0 })),
+		picture.offsetHeight,
+		NOTE_GAP_PX,
 	);
+	const lines = notes.flatMap((note, at) => lineOf(note, placed[at], heights[at] ?? 0, { picture, columns }));
+	const bottom = Math.max(picture.offsetHeight, ...placed.map((place, at) => place.top + (heights[at] ?? 0)));
+	return { placed, lines, height: bottom };
 }
 
-function linesFrom(note: HTMLElement, picture: HTMLImageElement): Line[] {
-	const column = note.parentElement;
-	if (!column) return [];
-	const [x = 0, y = 0] = (note.dataset["at"] ?? "").split(",").map(Number);
+function lineOf(
+	note: ReferenceNote,
+	place: PlacedNote | undefined,
+	height: number,
+	{ picture, columns }: { readonly picture: HTMLImageElement; readonly columns: readonly (HTMLElement | null)[] },
+): Line[] {
+	const column = columns[place?.side === "left" ? 0 : 1];
+	if (!note.at || !place || !column) return [];
+	const edge = place.side === "left" ? column.offsetLeft + column.offsetWidth : column.offsetLeft;
+	const from: [number, number] = [edge, column.offsetTop + place.top + height / 2];
 	const to: [number, number] = [
-		picture.offsetLeft + x * picture.offsetWidth,
-		picture.offsetTop + y * picture.offsetHeight,
+		picture.offsetLeft + note.at[0] * picture.offsetWidth,
+		picture.offsetTop + note.at[1] * picture.offsetHeight,
 	];
-	return [{ from: noteEdgeOf(note, column), to, tone: toneOf(note) }];
-}
-
-function noteEdgeOf(note: HTMLElement, column: HTMLElement): [number, number] {
-	const isLeft = column.classList.contains("is-left");
-	return [note.offsetLeft + (isLeft ? note.offsetWidth : 0), note.offsetTop + note.offsetHeight / 2];
-}
-
-function toneOf(note: HTMLElement): ReferenceNote["tone"] {
-	const found = (["take", "like", "dislike"] as const).find((tone) => note.classList.contains(`is-${tone}`));
-	return found ?? "note";
+	return [{ from, to, tone: note.tone }];
 }

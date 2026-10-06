@@ -7913,9 +7913,13 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 .wg-design-notes {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+	position: relative;
+}
+
+.wg-design-notes > .wg-design-note {
+	position: absolute;
+	left: 0;
+	right: 0;
 }
 
 .wg-design-note {
