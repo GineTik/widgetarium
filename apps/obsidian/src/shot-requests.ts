@@ -2,6 +2,8 @@ import { TFile } from "obsidian";
 import type { App, WorkspaceLeaf } from "obsidian";
 import { ROOT } from "@widgetarium/core/paths.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
+import { measuredFindingsIn } from "@widgetarium/core/page-measure.js";
+import type { MeasuredFinding } from "@widgetarium/core/page-measure.js";
 import type WidgetariumPlugin from "./main.js";
 import { DESIGN_VIEW_TYPE } from "./design-view.js";
 
@@ -55,13 +57,20 @@ async function answerPending(app: App): Promise<void> {
 async function answerOne(app: App, id: string, asked: ShotAsked): Promise<void> {
 	const adapter = app.vault.adapter;
 	try {
-		await adapter.writeBinary(`${SHOTS_DIR}/${id}.png`, await shotOf(app, asked));
+		const shot = await shotOf(app, asked);
+		if (shot.measured) await adapter.write(`${SHOTS_DIR}/${id}.measured.json`, JSON.stringify(shot.measured));
+		await adapter.writeBinary(`${SHOTS_DIR}/${id}.png`, shot.png);
 	} catch (failure) {
 		await adapter.write(`${SHOTS_DIR}/${id}.failed.txt`, failure instanceof Error ? failure.message : String(failure));
 	}
 }
 
-async function shotOf(app: App, asked: ShotAsked): Promise<ArrayBuffer> {
+interface Shot {
+	readonly png: ArrayBuffer;
+	readonly measured: readonly MeasuredFinding[] | null;
+}
+
+async function shotOf(app: App, asked: ShotAsked): Promise<Shot> {
 	const file = asked.design ? null : app.vault.getAbstractFileByPath(asked.note);
 	if (!asked.design && !(file instanceof TFile)) throw new Error(NO_NOTE.replace("{note}", asked.note));
 	const before = app.workspace.getMostRecentLeaf();
@@ -70,7 +79,8 @@ async function shotOf(app: App, asked: ShotAsked): Promise<ArrayBuffer> {
 		if (file instanceof TFile) await leaf.openFile(file);
 		else await leaf.setViewState({ type: DESIGN_VIEW_TYPE, active: true, state: { app: asked.design } });
 		app.workspace.setActiveLeaf(leaf, { focus: false });
-		return await capturedLeaf(leaf);
+		const png = await capturedLeaf(leaf);
+		return { png, measured: asked.design ? measuredFindingsIn(leaf.view.containerEl) : null };
 	} finally {
 		leaf.detach();
 		if (before) app.workspace.setActiveLeaf(before, { focus: false });

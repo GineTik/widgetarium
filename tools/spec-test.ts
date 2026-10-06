@@ -821,6 +821,16 @@ check(
 	shippedRules.find((rule) => rule.id === "P1")?.text.endsWith("it never manages them."),
 	true,
 );
+check(
+	"a rule's check line says how it is held, and a rule without one is judged",
+	["PG1", "S2", "R2"].map((id) => shippedRules.find((rule) => rule.id === id)?.check),
+	["kit", "measured", "judged"],
+);
+check(
+	"the check line is not read into the rule's words",
+	shippedRules.find((rule) => rule.id === "S2")?.text.includes("check:"),
+	false,
+);
 const appRules = "- **B1 · Primary is purple** here.\n- **Y1 · Use the word quest.**\n";
 const inForce = rulesInForce("- **B1 · Primary is black.**\n- **B2 · No purple buttons.**\n", appRules);
 check(
