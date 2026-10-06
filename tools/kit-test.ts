@@ -3538,6 +3538,7 @@ check(
 	const NEEDED_TO_DRAW: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 		Popover: { trigger: h("button", null, "open"), isOpen: true },
 		CommandMenuOverlay: { isOpen: true, isPortaled: false },
+		Dialog: { isOpen: true },
 		FormFields: { fields: [], draft: {}, onChange: () => undefined },
 		Calendar: { month: new Date(2026, 8, 1), today: new Date(2026, 8, 21) },
 		Segmented: { items: [{ value: "a", label: "A" }], value: "a" },

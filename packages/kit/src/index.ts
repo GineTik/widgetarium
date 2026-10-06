@@ -54,6 +54,7 @@ import { PhotoStack } from "./components/photo-stack";
 import { Shape } from "./shapes/shape";
 import { CommandMenu } from "./components/command-menu";
 import { CommandMenuOverlay } from "./components/command-menu-overlay";
+import { Dialog } from "./components/dialog";
 import { CommandMenuInput } from "./components/command-menu-input";
 import { CommandMenuSection } from "./components/command-menu-section";
 import { CommandMenuItem } from "./components/command-menu-item";
@@ -223,6 +224,7 @@ export const Kit = {
 	Shape,
 	CommandMenu,
 	CommandMenuOverlay,
+	Dialog,
 	CommandMenuInput,
 	CommandMenuSection,
 	CommandMenuItem,
@@ -321,6 +323,7 @@ export { PhotoStack } from "./components/photo-stack";
 export { Shape } from "./shapes/shape";
 export { CommandMenu } from "./components/command-menu";
 export { CommandMenuOverlay } from "./components/command-menu-overlay";
+export { Dialog } from "./components/dialog";
 export { CommandMenuInput } from "./components/command-menu-input";
 export { CommandMenuSection } from "./components/command-menu-section";
 export { CommandMenuItem } from "./components/command-menu-item";

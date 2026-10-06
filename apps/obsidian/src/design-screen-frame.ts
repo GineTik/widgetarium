@@ -19,10 +19,20 @@ export function ScreenFrame({ frame, at, top, size, registry, host }: ScreenFram
 	};
 	return h("div", { className: "wg-design-frame", style }, [
 		h("div", { key: "top", className: "wg-design-top" }, h("span", { className: "wg-design-name" }, frame.label)),
-		h("div", { key: "screen", className: "wg-design-screen", inert: true, style: { minHeight: `${size.height}px` } }, [
-			frame.state.board
-				? h(ScreenBoard, { key: "board", board: frame.state.board, width: size.width, registry, host })
-				: h("p", { key: "refused", className: "wg-ai-spec-refused" }, frame.state.refusal ?? ""),
-		]),
+		h(
+			"div",
+			{
+				key: "screen",
+				className: "wg-design-screen",
+				inert: true,
+				"data-wg-overlay-layer": "",
+				style: { minHeight: `${size.height}px` },
+			},
+			[
+				frame.state.board
+					? h(ScreenBoard, { key: "board", board: frame.state.board, width: size.width, registry, host })
+					: h("p", { key: "refused", className: "wg-ai-spec-refused" }, frame.state.refusal ?? ""),
+			],
+		),
 	]);
 }

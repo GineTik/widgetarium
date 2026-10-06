@@ -69,6 +69,7 @@ export type { PhotoStackProps } from "./components/photo-stack";
 export type { ShapeProps } from "./shapes/shape";
 export type { CommandMenuProps } from "./components/command-menu";
 export type { CommandMenuOverlayProps } from "./components/command-menu-overlay";
+export type { DialogProps } from "./components/dialog";
 export type { CommandMenuInputProps } from "./components/command-menu-input";
 export type { CommandMenuSectionProps } from "./components/command-menu-section";
 export type { CommandMenuItemProps } from "./components/command-menu-item";

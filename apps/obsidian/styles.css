@@ -2561,6 +2561,58 @@ body {
 	background: var(--wg-overlay-scrim);
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-dialog-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: var(--layer-modal, 50);
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 12vh 16px 16px;
+	background: var(--wg-overlay-scrim);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog-overlay.is-scoped {
+	position: absolute;
+	padding-top: 120px;
+	border-radius: inherit;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts, 12px);
+	width: min(560px, 100%);
+	padding: 24px;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-raise);
+	box-shadow: var(--wg-kit-shadow);
+	color: var(--wg-kit-text);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog.is-s {
+	width: min(420px, 100%);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog-title {
+	font-size: var(--wg-kit-text-l);
+	font-weight: var(--font-semibold, 600);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding-top: 8px;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-command-overlay.is-inline {
 	position: absolute;
 	padding-top: 90px;
