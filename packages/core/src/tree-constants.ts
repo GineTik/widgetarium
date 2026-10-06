@@ -32,6 +32,10 @@ export const ADAPTIVE = "adaptive";
 
 export const TOGGLES = [ALWAYS, ADAPTIVE] as const;
 
+export const JUSTIFIES = ["start", "center", "end", "between"] as const;
+
+export const ALIGNS = ["start", "center", "end", "stretch"] as const;
+
 export const MENU_PX = 360;
 
 export const STEP_PX = [24, 16, 8] as const;

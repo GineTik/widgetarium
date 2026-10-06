@@ -4546,6 +4546,57 @@ body {
 	min-width: 0;
 }
 
+/* TRADE-OFF: important beats the ratio basis written inline; a widget root has no width of its own */
+.wg-tree-row:is([data-justify], [data-wrap]) > .wg-tree-cell {
+	flex: 0 1 auto !important;
+	inline-size: 100%;
+}
+
+.wg-tree-row:is([data-justify], [data-wrap]) > .wg-tree-cell[data-full] {
+	flex: 1 1 0 !important;
+}
+
+.wg-tree-row[data-wrap] {
+	flex-wrap: wrap;
+	gap: var(--wg-tree-gap);
+}
+
+.wg-tree-row[data-wrap] > .wg-tree-gap {
+	display: none;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-justify="start"] {
+	justify-content: flex-start;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-justify="center"] {
+	justify-content: center;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-justify="end"] {
+	justify-content: flex-end;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-justify="between"] {
+	justify-content: space-between;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-align="start"] {
+	align-items: flex-start;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-align="center"] {
+	align-items: center;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-align="end"] {
+	align-items: flex-end;
+}
+
+:is(.wg-tree-row, .wg-tree)[data-align="stretch"] {
+	align-items: stretch;
+}
+
 .wg-tree-swap {
 	display: flex;
 	flex-direction: column;

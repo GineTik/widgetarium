@@ -1,4 +1,14 @@
-import type { AskLeaf, Axis, BoxDirection, CollapseKind, NodePath, SurfaceSide, SurfaceWord } from "./tree-nodes.js";
+import type {
+	Align,
+	AskLeaf,
+	Axis,
+	BoxDirection,
+	CollapseKind,
+	Justify,
+	NodePath,
+	SurfaceSide,
+	SurfaceWord,
+} from "./tree-nodes.js";
 import type { Plate } from "./tree-spacing.js";
 import type { Limits, WornSize } from "./tree-sizes.js";
 import type { ScreenSide } from "./tree-columns.js";
@@ -64,6 +74,9 @@ export interface LaidBox extends SurfaceFields, Partial<Plate> {
 	readonly width: number;
 	readonly gap: number;
 	readonly measure?: number;
+	readonly justify?: Justify;
+	readonly align?: Align;
+	readonly wrap?: boolean;
 	readonly isAlwaysToggled?: boolean;
 	readonly openKey?: string;
 	readonly label?: string | null;

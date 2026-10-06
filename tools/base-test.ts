@@ -201,6 +201,35 @@ check(
 const asked = { v: 2, tiles: [], base: "workspace", layout: skeleton.layout };
 check("a board keeps the base it was cut from", normalizeBoard(asked).base, "workspace");
 check("and writes it back", serializeBoard(normalizeBoard(asked)).base, "workspace");
+
+const arranged = {
+	tiles: [
+		{ id: "a", widget: "@default/text-line" },
+		{ id: "b", widget: "@default/text-line" },
+	],
+	layout: { dir: "row", justify: "between", align: "center", wrap: true, of: [{ id: "a" }, { id: "b" }] },
+};
+const arrangedRoot = serializeBoard(normalizeBoard(arranged)).layout;
+check(
+	"a box keeps how it arranges its children, read and written back",
+	[fieldIn(arrangedRoot, "justify"), fieldIn(arrangedRoot, "align"), fieldIn(arrangedRoot, "wrap")],
+	["between", "center", true],
+);
+check(
+	"a word no box knows is dropped rather than written back",
+	fieldIn(
+		serializeBoard(
+			normalizeBoard({ ...arranged, layout: { ...arranged.layout, justify: "around", align: "baseline" } }),
+		).layout,
+		"justify",
+	),
+	undefined,
+);
+check(
+	"lint knows the words, so an arranged box is no finding",
+	lintBoard(arranged).filter((one) => one.message.includes("justify") || one.message.includes("align")),
+	[],
+);
 check("a skeleton matches the base it came from", baseMismatch("workspace", skeleton.layout), null);
 check(
 	"a board with the wrong region count is named",

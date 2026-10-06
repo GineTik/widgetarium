@@ -45,6 +45,7 @@ export function TreeCell(props: TreeCellProps): ReactElement {
 		"data-cell": cell.id,
 		...(cell.path ? { "data-path": pathKey(cell.path) } : {}),
 		...(cell.path && cell.across ? { "data-stands-across": cell.across } : {}),
+		...(cell.path && cell.preferredWidth === "full" ? { "data-full": "" } : {}),
 	};
 	if (standInPx) return standIn(cell, standInPx);
 	const shownInCell = settingsStandInPx

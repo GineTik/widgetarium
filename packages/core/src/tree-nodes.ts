@@ -1,7 +1,7 @@
 import { COLUMN } from "@widgetarium/kit/plates";
 import type { APART, GROUP, NO_SURFACE, ROW } from "@widgetarium/kit/plates";
 import { SWAP } from "./tree-constants.js";
-import type { COLLAPSES, TOGGLES } from "./tree-constants.js";
+import type { ALIGNS, COLLAPSES, JUSTIFIES, TOGGLES } from "./tree-constants.js";
 import type { TabRow } from "./tab-rows.js";
 import type { WidgetSize } from "./gateway/manifest.js";
 
@@ -18,6 +18,10 @@ export type SurfaceSide = "start" | "end";
 export type CollapseKind = (typeof COLLAPSES)[number];
 
 export type CollapseToggle = (typeof TOGGLES)[number];
+
+export type Justify = (typeof JUSTIFIES)[number];
+
+export type Align = (typeof ALIGNS)[number];
 
 export interface Collapse {
 	readonly into: CollapseKind;
@@ -47,6 +51,9 @@ export interface BoxNode extends PlaceFlags {
 	readonly folded?: boolean;
 	readonly trigger?: string;
 	readonly scroll?: boolean;
+	readonly justify?: Justify;
+	readonly align?: Align;
+	readonly wrap?: boolean;
 	readonly id?: string;
 	readonly strip?: boolean;
 	readonly role?: string;

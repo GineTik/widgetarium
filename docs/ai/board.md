@@ -51,6 +51,9 @@ collapse: { into: drawer, toggle: always } # what happens when it does not fit
 trigger: t1/open # the ref of a @default/toggle that opens it
 folded: true # it starts folded
 scroll: true # it scrolls on its own
+justify: between # start, center, end or between: where its children stand along it
+align: center # start, center, end or stretch: where they stand across it
+wrap: true # a row whose children go on to the next line when they do not fit
 name: Filters # a label, presentation only
 surface: group # none, apart or group — see surfaces.md
 side: start # which edge an apart line stands on: start or end
@@ -59,6 +62,11 @@ purpose: How the selected habit is going # the one question this box answers
 ```
 
 `collapse: drawer` is short for `{ into: drawer, toggle: adaptive }`.
+
+In a row that names `justify` or `wrap`, a tile takes its preferred width and a `full` tile takes the
+rest: a heading beside its action is `{ dir: row, justify: between, align: center, of: [{ id: title },
+{ id: add }] }`, the title on the left and the button at the right edge. Lay a page out this way, in the
+tree, never inside a widget.
 
 Boxes nest to any depth. `[[A], [B, [C over D]]]` is a row of two columns, the second holding B above
 a row of C and D.

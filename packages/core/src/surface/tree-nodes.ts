@@ -80,6 +80,7 @@ function rowElement(row: Laid<LaidBox>, draw: TreeDraw): ReactElement {
 			at > 0 && !row.hasCollapsed
 				? h("div", {
 						key: `gap-${pathKey(child.path)}`,
+						className: "wg-tree-gap",
 						style: { flex: `0 0 ${scaledGapOf(row.of[at - 1]?.gapAfter ?? 0)}` },
 					})
 				: null,
@@ -100,7 +101,16 @@ function columnElement(column: Laid<LaidBox>, draw: TreeDraw): ReactElement {
 
 function boxAttrsOf(box: Laid<LaidBox>, className: string, dir: string): Record<string, unknown> {
 	const key = pathKey(box.path);
-	const named = { className, key, "data-path": key, "data-dir": dir, "data-name": box.slot };
+	const named = {
+		className,
+		key,
+		"data-path": key,
+		"data-dir": dir,
+		"data-name": box.slot,
+		"data-justify": box.justify,
+		"data-align": box.align,
+		"data-wrap": box.wrap ? "" : undefined,
+	};
 	return { ...named, style: styleOfNode(box), ...surfaceAttrs(box) };
 }
 

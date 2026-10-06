@@ -1,6 +1,7 @@
 import { ADAPTIVE, ALWAYS, APART, COLUMN, DRAWER, ROW } from "./tree.js";
 import type { BoardNode, BoxNode, Collapse, LeafNode, PlaceFlags } from "./tree.js";
 import { isObject } from "./engine/is-object.js";
+import { ALIGNS, JUSTIFIES } from "./tree-constants.js";
 import { isKnownRole } from "./surface-roles.js";
 import { isBoxDirection, isCollapseKind, isCollapseToggle, isSurfaceSide, surfaceWordOf } from "./node-words.js";
 
@@ -54,6 +55,7 @@ export function boxFlags(input: RawFields): BoxFlags {
 			: {}),
 		...(typeof trigger === "string" && trigger.includes("/") ? { trigger } : {}),
 		...(input["scroll"] === true ? { scroll: true } : {}),
+		...arrangementOf(input),
 		...(typeof id === "string" && id !== "" ? { id } : {}),
 		...(input["strip"] === false ? { strip: false } : {}),
 		...(isKnownRole(role) ? { role } : {}),
@@ -102,4 +104,17 @@ function collapseSaid(said: unknown): RawFields {
 
 function normalizeNode(input: unknown): BoardNode | null {
 	return isRawBox(input) ? normalizeBox(input) : normalizeLeaf(input);
+}
+
+function arrangementOf(input: RawFields): Pick<BoxFlags, "justify" | "align" | "wrap"> {
+	const { justify, align } = input;
+	return {
+		...(isOneOf(JUSTIFIES, justify) ? { justify } : {}),
+		...(isOneOf(ALIGNS, align) ? { align } : {}),
+		...(input["wrap"] === true ? { wrap: true } : {}),
+	};
+}
+
+function isOneOf<Word extends string>(words: readonly Word[], said: unknown): said is Word {
+	return words.some((word) => word === said);
 }
