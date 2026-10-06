@@ -79,12 +79,16 @@ async function shotOf(app: App, asked: ShotAsked): Promise<Shot> {
 		if (file instanceof TFile) await leaf.openFile(file);
 		else await leaf.setViewState({ type: DESIGN_VIEW_TYPE, active: true, state: { app: asked.design } });
 		app.workspace.setActiveLeaf(leaf, { focus: false });
-		const png = await capturedLeaf(leaf);
-		return { png, measured: asked.design ? measuredFindingsIn(leaf.view.containerEl) : null };
+		return await shotOfLeaf(leaf, Boolean(asked.design));
 	} finally {
 		leaf.detach();
 		if (before) app.workspace.setActiveLeaf(before, { focus: false });
 	}
+}
+
+async function shotOfLeaf(leaf: WorkspaceLeaf, isDesign: boolean): Promise<Shot> {
+	const png = await capturedLeaf(leaf);
+	return { png, measured: isDesign ? measuredFindingsIn(leaf.view.containerEl) : null };
 }
 
 async function capturedLeaf(leaf: WorkspaceLeaf): Promise<ArrayBuffer> {

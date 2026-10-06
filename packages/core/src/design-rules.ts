@@ -25,15 +25,9 @@ export function rulesIn(text: string, from: DesignRule["from"]): DesignRule[] {
 	const rules: DesignRule[] = [];
 	for (const line of text.replace(/\r\n/g, "\n").split("\n")) {
 		const started = RULE_START.exec(line);
-		if (started) {
-			rules.push({ id: started[1] ?? "", text: plainOf(started[2] ?? ""), from, check: "judged" });
-			continue;
-		}
-		const last = rules[rules.length - 1];
-		const check = CHECK_LINE.exec(line)?.[1];
-		if (last && isRuleCheck(check)) rules[rules.length - 1] = { ...last, check };
-		else if (last && CONTINUED.test(line))
-			rules[rules.length - 1] = { ...last, text: `${last.text} ${plainOf(line.trim())}` };
+		const last = rules.pop();
+		if (last) rules.push(started ? last : withLine(last, line));
+		if (started) rules.push({ id: started[1] ?? "", text: plainOf(started[2] ?? ""), from, check: "judged" });
 	}
 	return rules;
 }
@@ -43,6 +37,13 @@ export function rulesInForce(vaultText: string | null, appText: string | null): 
 	const replaced = new Set(appRules.map((rule) => rule.id));
 	const vaultRules = (vaultText === null ? [] : rulesIn(vaultText, "vault")).filter((rule) => !replaced.has(rule.id));
 	return [...vaultRules, ...appRules];
+}
+
+function withLine(rule: DesignRule, line: string): DesignRule {
+	const check = CHECK_LINE.exec(line)?.[1];
+	if (isRuleCheck(check)) return { ...rule, check };
+	if (!CONTINUED.test(line)) return rule;
+	return { ...rule, text: `${rule.text} ${plainOf(line.trim())}` };
 }
 
 function isRuleCheck(held: unknown): held is RuleCheck {

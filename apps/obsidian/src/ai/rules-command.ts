@@ -31,20 +31,21 @@ export async function rulesOfApp(vault: string, app: string | undefined): Promis
 	const rules = rulesInForce(vaultText, appText);
 	if (rules.length === 0) return { refusal: NO_RULES.replace("{path}", DESIGN_SYSTEM_PATH) };
 	const measuring = await measuredCanvas(app);
-	const isMeasured = (rule: DesignRule): boolean => measuring.findings !== null && isMeasuredRule(rule);
 	const said = SAID.replace("{measured}", measuredSaid(rules.filter(isMeasuredRule), measuring))
 		.replace("{picture}", measuring.picture ?? NO_PICTURE.replace("{app}", app))
 		.replaceAll("{app}", app)
 		.replace("{from}", appText === null ? "" : FROM_APP.replace("{path}", appDesignSystemPathOf(app)))
-		.replace("{judged}", linesOf(rules.filter((rule) => rule.check !== "kit" && !isMeasured(rule))))
-		.replace(
-			"{kit}",
-			rules
-				.filter((rule) => rule.check === "kit")
-				.map((rule) => rule.id)
-				.join(", ") || "none",
-		);
+		.replace("{judged}", linesOf(judgedRules(rules, measuring)))
+		.replace("{kit}", idsOf(rules.filter((rule) => rule.check === "kit")));
 	return { value: rules, text: said };
+}
+
+function judgedRules(rules: readonly DesignRule[], { findings }: Measuring): DesignRule[] {
+	return rules.filter((rule) => rule.check !== "kit" && !(findings !== null && isMeasuredRule(rule)));
+}
+
+function idsOf(rules: readonly DesignRule[]): string {
+	return rules.map((rule) => rule.id).join(", ") || "none";
 }
 
 interface Measuring {
