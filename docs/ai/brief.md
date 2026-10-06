@@ -113,30 +113,47 @@ passes for each. If your tools can start sub-agents, hand every widget to one, a
 
 **Then every page is one page widget, plain React**, `@<app>/<page>-page` with the `layout` role.
 It imports the app's widgets and the catalogue's by their id and draws them as components, feeding
-each the sample rows stage 2 seeded as plain values; the page's own layout is TSX and Tailwind:
+each the sample rows stage 2 seeded as plain values. Its frame is the kit's `Page`, whose `kind` is
+the archetype from the design system — `home`, `index`, `record`, `dashboard` or `form` — and which
+lays the width, the header and the hero; every block stands in a `Section`, which owns its title,
+count, add and "See all":
 
 ```tsx
-import PersonList from "@crm/person-list";
-import NextSteps from "@crm/next-steps";
+import ReachOut from "@crm/reach-out";
+import FollowUps from "@crm/follow-ups";
+import Birthdays from "@crm/birthdays";
 
-const PEOPLE = [{ name: "Ada Lovelace", company: "Analytical", stage: "lead" }];
+const LATE = [{ name: "Sofia", late: 48, rhythm: "every 3 months" }];
 
-const PeoplePage = createWidget({
+const HomePage = createWidget({
 	inject: { getState: IQuery.expects(z.enum(["full", "empty", "add"]).default("full")) },
 	draw: ({ getState: state }) => (
-		<main className="mx-auto flex max-w-[1200px] flex-col gap-10 p-8">
-			<header className="flex items-center justify-between">
-				<h1 className="text-h1">People</h1>
-				<Button variant="primary">Add person</Button>
-			</header>
-			<div className="grid grid-cols-[minmax(0,720px)_320px] gap-8">
-				<PersonList getPeople={state === "empty" ? [] : PEOPLE} />
-				<NextSteps getSteps={[]} />
-			</div>
-		</main>
+		<Page
+			kind="home"
+			title="People"
+			hero={<Hero title="8 people to reach out to" text="Sofia is 48 days past her rhythm" />}
+			action={<Button variant="primary">Add person</Button>}
+			side={
+				<Section title="Birthdays">
+					<Birthdays getPeople={BIRTHDAYS} />
+				</Section>
+			}
+		>
+			<Section title="Reach out" count={8} more={{ label: "See all" }}>
+				<ReachOut getPeople={state === "empty" ? [] : LATE} />
+			</Section>
+			<Section title="Follow up" action={<IconButton icon="plus" aria-label="Add follow-up" />}>
+				<FollowUps getSteps={STEPS} />
+			</Section>
+		</Page>
 	),
 });
 ```
+
+A widget that draws rows draws no title of its own: the section above it holds the title and the
+add, so the list starts at its first row (`check` names it `titled`). A widget of the app's own may
+hold its own search and filters with its list when they serve only that list; it stays in the app's
+scope and never goes to the catalogue.
 
 A widget used as a component takes a plain value for every prop it reads; a prop left out draws as
 its empty value, never an error. A state is the same page with another `state`. Place each with the
@@ -152,15 +169,11 @@ The canvas draws the page with the very widgets the app will run, and sets every
 imports beside the pages by itself, under From the catalogue and New widgets. Nothing is drawn twice:
 after Approve design, the page widget reads the vault instead of its samples.
 
-**A page's layout keeps these rules:**
-
-- content is at most 1200px wide and centred; a list, a form or text to read is at most 720px;
-- the page opens with a title naming what the person does here, its one primary action on the right
-  of the same row;
-- an add stands in the header of the section it adds to, never as a tile of its own;
-- sections stand 32–48px apart (`gap-8`–`gap-12`), parts inside one 12–16px (`gap-3`–`gap-4`);
-- at most two lists on a page; the rest is a summary, a chart, a detail, a hero;
-- an empty page shows one empty state for the page, not one per section.
+**A page keeps the design system's page rules** — the archetype table, `PG`, `S`, `R` and `C` in
+`.widgetarium/design-system.md`. The ones marked `check: kit` hold by themselves once the page is
+drawn with `Page` and `Section`; `rules <app>` measures the ones marked `check: measured` on the
+drawn canvas and names the frame that fails each. Before drawing any list, answer C3: which of a
+chart, a timeline, a calendar, cards, faces or a map shows it better.
 
 **Look at the references first.** Every picture on the canvas is listed under `references` in
 `canvas.json`: a `file` the person added lives in `.widgetarium/apps/<app>/design/references/`, a
@@ -197,8 +210,9 @@ delete, confirm, warn, pick — and give each its own state of that screen, name
 dialog open over the page: a person approves what they will meet, and an add or a delete nobody drew
 is built by guesswork. **Then check it against the person's design system**: `node {tool} rules <app>` prints every
 rule in force — theirs in `.widgetarium/design-system.md` and the app's own in
-`.widgetarium/apps/<app>/design-system.md` — and you answer each id with yes or no in your message,
-redrawing until every answer is yes. A rule is the person's word: never skip one, never argue it
+`.widgetarium/apps/<app>/design-system.md` — measures the canvas against the measured ones and
+names every frame that fails, and you answer each judged id with yes or no in your message,
+redrawing until every measured rule passes and every answer is yes. A rule is the person's word: never skip one, never argue it
 away. Then `node {tool} design <app>`: the
 person sees it as a card in the chat, opens it in a tab, and answers. **Stop and wait** for "Approve
 design"; a change comes back as a message saying what to change. Each page, region by region, still

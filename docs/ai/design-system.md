@@ -3,8 +3,15 @@
 This file is yours. The plugin wrote it once and never writes it again.
 
 **How it works.** Every rule is one line starting with its id in bold, like `- **B1 · Primary is
-black.** …`. Before showing a design, the agent runs `widgets.mjs rules <app>`, answers every rule
-yes or no against the picture of its canvas, and redraws until all are yes. So:
+the kit's primary.** …`, and may carry a `check:` line saying how it is held:
+
+- `check: kit` — the kit's component makes the wrong thing impossible; nobody is asked.
+- `check: measured` — `widgets.mjs rules <app>` measures the drawn canvas and names every frame that
+  fails.
+- no `check:` line — judged: the agent answers it yes or no against the picture of its canvas.
+
+Before showing a design the agent runs `rules <app>` and redraws until every measured rule passes
+and every judged answer is yes. So:
 
 - **Change a rule** by editing its line; **drop one** by deleting it.
 - **Add your own** under "Your rules" with a new id, `- **Y1 · …**`.
@@ -15,8 +22,21 @@ Tables and text without an id are reference, read but not checked.
 
 ## The style in one line
 
-**Quiet and strict**: white page, grey plates, black type and black primary buttons; imagery carries
-the colour; one accent, purple, only where progress or a key value needs it.
+**Quiet and strict**: white page, grey plates, the theme's type and the kit's primary button; imagery
+carries the colour; one accent, purple, only where progress or a key value needs it.
+
+## Page archetypes
+
+Every page is one of five, and the archetype decides its width, its header and its hero. The page
+widget draws `<Page kind="…">` from the kit, which lays all three; it never sets a width of its own.
+
+| Archetype   | Width                                       | Hero                                                                          | Body                                                                           |
+| ----------- | ------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `home`      | 1040                                        | required: a greeting with the next action, a key number on an object, a photo | 3–5 overview sections, ≤5 rows each, then "See all ›"; an optional side column |
+| `index`     | 800 for rows; `wide` 1280 for a table, grid | none                                                                          | search and filters in one row, then one collection                             |
+| `record`    | 1040: main and a 320 side column            | its identity: face or picture, name, the key fact merged into a line          | main: timeline, notes; side: status, key fact, metadata                        |
+| `dashboard` | 1280                                        | a row of key numbers                                                          | a grid of cards and charts                                                     |
+| `form`      | 640                                         | none                                                                          | one column of fields, the action at the end                                    |
 
 ## Pages
 
@@ -24,15 +44,61 @@ the colour; one accent, purple, only where progress or a key value needs it.
   onward ("See all ›"); it never manages them.
 - **P2 · A list and the record it opens are two pages**, reached by a press and left by Back. A side
   panel holds a record only when reading beside the list is the job (mail, a reader).
-- **P3 · At most one hero and three sections on a page.** A fourth means the page is two pages.
 - **P4 · One navigation for the whole app**, the same on every page, showing where the person is.
+- **PG1 · Every page names its archetype** with `<Page kind="home | index | record | dashboard | form">`.
+  check: kit
+- **PG2 · The width comes from the archetype**; a page widget writes no `max-w-*` or `mx-auto`.
+  check: kit
+- **PG3 · The header holds a title naming the job on the left and at most one primary action on the
+  right.**
+  check: kit
+- **PG4 · Home has a hero; an index and a form never do.**
+  check: kit
+- **PG5 · At most five sections on a page**; a sixth means the page is two pages.
+  check: measured
 
-## Width
+## Sections
 
-- **W1 · A list page is a centred column of about 820px**: transactions, an inbox, a feed.
-- **W2 · A summary with its parts is two columns** on a wide screen: the summary left (number,
-  chart, primary action), the parts right as a 2-column grid.
-- **W3 · Nothing stretches to the window edge.** A dashboard is at most about 1280px, centred.
+- **S1 · A section owns its title, its count and its actions** (`<Section title count action>`); the
+  widget inside it draws no title and starts at its first row.
+  check: kit
+- **S2 · An add stands in its section's header, on the trailing side**, never below the list.
+  check: measured
+- **S3 · At most two actions in a header**; the rest go in a `⋯` menu.
+  check: kit
+- **S4 · An overview section on Home shows at most five rows**, then "See all ›".
+  check: measured
+- **S5 · Space is laid by the page**: 40px between sections, 12px from a title to its content, 8px
+  between rows. A page widget writes no gap between sections.
+  check: kit
+
+## Rows
+
+- **R1 · A row is leading · title · one grey supporting line · trailing value** (`Row`, `RowText`,
+  `RowSupporting`, `RowValue`); never a third line.
+- **R2 · One fact, one place**: a state a summary already shows is not repeated as a badge in the list.
+- **R3 · A badge is for the exception**: the same badge on more than a third of the rows is dropped,
+  and the list is sorted by it instead.
+  check: measured
+- **R4 · Label and value are one phrase**: "48 days late", never "Last: 78 days · Rhythm: 30".
+- **R5 · A row's icon stands level with its first line**, not with the middle of the row.
+  check: kit
+
+## Composition
+
+- **C1 · No page is lists alone**: at least one thing that is not a list — a hero, a key number on an
+  object, a chart, a grid of cards, photos.
+  check: measured
+- **C2 · At most two lists stacked in one column**; a third goes beside them, or into tabs.
+  check: measured
+- **C3 · Before drawing a list, say which of these shows it better: a chart, a timeline, a calendar,
+  cards, faces, a map.** It is a list only when none does, and your message says why.
+- **C4 · One focal point**: at most two big elements on a page.
+  check: measured
+- **C5 · A line of text holds at most 75 characters.**
+  check: measured
+- **C6 · An empty page shows one empty state**, never one per section.
+  check: measured
 
 ## Something to look at
 
@@ -80,7 +146,7 @@ quiet plates and black type, with small glossy objects that carry the colour.
 
 ## Buttons and badges
 
-- **B1 · Primary is black** with white text, one per page, where the eye ends; white on a photo.
+- **B1 · Primary is the kit's primary button** (`variant="primary"`), one per page, where the eye ends; never a hand-painted black, which disappears in dark mode.
 - **B2 · No purple buttons** unless the person asked for colour; purple marks progress or one key value.
 - **B3 · A card's one action is a round icon button on its corner**, top or bottom right.
 - **B4 · Quick actions are round buttons with a label under each**, three to five.
@@ -89,11 +155,11 @@ quiet plates and black type, with small glossy objects that carry the colour.
 
 ## Forms
 
-- **C1 · Show the choices instead of hiding them.** Up to about eight options are chips or a radio
+- **FM1 · Show the choices instead of hiding them.** Up to about eight options are chips or a radio
   list on the page; a dropdown only for a long list (countries, time zones).
-- **C2 · The value the form is about is drawn large**: an amount as a big number, a date as a
+- **FM2 · The value the form is about is drawn large**: an amount as a big number, a date as a
   calendar, a colour as swatches — never a plain one-line field.
-- **C3 · Several choices from a set are chips**, picked ones filled grey with black text.
+- **FM3 · Several choices from a set are chips**, picked ones filled grey with black text.
 
 ## Details
 
@@ -123,9 +189,7 @@ quiet plates and black type, with small glossy objects that carry the colour.
 
 - **L1 · A plate is a choice**: rows that belong together share one grey plate; a hero, a photo card,
   a heading or quick actions stand on the page.
-- **L2 · Adding is always possible** where a list can grow: a black "Add …" at the top right, or a
-  round "+" in the quick actions.
-- **L3 · Every list has its empty state**: what will appear and the one action that fills it.
+- **L3 · Every page has its empty state**: what will appear and the one action that fills it (C6).
 - **L4 · Nothing is a dead end**: Next, Skip, Cancel or Done is always offered.
 - **L5 · Every dialog is drawn.** Each press that opens something — add, edit, delete, a
   confirmation, a warning, a picker — has its own frame on the canvas, named `<Page> · <Dialog>`,
