@@ -61,11 +61,12 @@ interface AskedNote {
 	readonly note: Exclude<ReturnType<typeof noteOf>, null>;
 }
 
-function referenceEntryOf(url: string, { why, kind }: CommandFlags) {
+function referenceEntryOf(url: string, { why, kind, page }: CommandFlags) {
 	return {
 		url: url.trim(),
 		...(typeof why === "string" && why.trim() !== "" ? { why: why.trim() } : {}),
 		...(isReferenceKind(kind) ? { kind } : {}),
+		...(typeof page === "string" && page.trim() !== "" ? { pages: pagesIn(page) } : {}),
 	};
 }
 
@@ -115,4 +116,11 @@ function isReferenceKind(held: unknown): held is (typeof REFERENCE_KINDS)[number
 
 function isNoteTone(held: unknown): held is (typeof NOTE_TONES)[number] {
 	return NOTE_TONES.some((tone) => tone === held);
+}
+
+function pagesIn(said: string): string[] {
+	return said
+		.split(",")
+		.map((page) => page.trim())
+		.filter((page) => page !== "");
 }

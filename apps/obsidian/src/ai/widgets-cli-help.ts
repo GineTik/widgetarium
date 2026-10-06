@@ -13,6 +13,7 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs reference <app> <url>   put a picture from the web on the canvas, above the screens
     --why <line>                        what to take from it, shown under the picture
     --kind app|site|marketing|photo     what the picture is: a product screen, a website, marketing art, a photo
+    --page People,Person                the screens it informs; left out, it stands on every screen's page
   node widgets.mjs note <app> <reference> <text>   a sticky note beside a reference: what you take, like or leave
     --tone take|like|dislike|note       its colour
     --at 0.4,0.2                        the point on the picture it is about, from the top left

@@ -157,6 +157,7 @@ export type ReferenceNote = z.infer<typeof ReferenceNoteSchema>;
 const ReferenceReadingSchema = {
 	why: z.string().trim().min(1).optional(),
 	kind: z.enum(REFERENCE_KINDS).optional(),
+	pages: z.array(z.string().trim().min(1)).optional(),
 	notes: z.array(ReferenceNoteSchema).optional(),
 };
 
