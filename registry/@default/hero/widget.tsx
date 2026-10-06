@@ -1,4 +1,5 @@
-import { INavigator, IQuery, createWidget, defineLayout, defineMetadata, defineStates, z } from "widgetarium";
+import { INavigator, IQuery, createWidget, defineLayout, defineMetadata, defineStates, useData, z } from "widgetarium";
+import type { PropsOf } from "widgetarium";
 import { Button, Hero, Icon, PhotoStack } from "widgetarium/kit";
 
 const TONES = ["purple", "pink", "orange", "yellow", "green", "cyan", "blue", "red"] as const;
@@ -23,7 +24,7 @@ const HeroWidget = createWidget({
 		getTone: tone,
 		getAction: action,
 		getLink: link,
-		getFaces: faces,
+		getFaces,
 		navigator,
 	}) => (
 		<Hero
@@ -40,7 +41,7 @@ const HeroWidget = createWidget({
 					</Button>
 				) : null
 			}
-			corner={faces.length > 0 ? <PhotoStack photos={faces.slice(0, 4)} size={44} isRound /> : null}
+			corner={<Faces getFaces={getFaces} />}
 		/>
 	),
 });
@@ -87,3 +88,16 @@ export const metadata = defineMetadata(HeroWidget, {
 export const layout = defineLayout({ role: "layout", size: { preferredWidth: "full", preferredHeight: 340 } });
 
 export default HeroWidget;
+
+function Faces({ getFaces }: Pick<PropsOf<typeof HeroWidget>, "getFaces">) {
+	const faces = useData(getFaces, { limit: 4 })
+		.data.map(faceOf)
+		.filter((face) => face !== "");
+	return faces.length > 0 ? <PhotoStack photos={faces} size={44} isRound /> : null;
+}
+
+function faceOf(row: unknown): string {
+	if (typeof row === "string") return row;
+	const held: unknown = typeof row === "object" && row !== null ? Reflect.get(row, "value") : null;
+	return typeof held === "string" ? held : "";
+}
