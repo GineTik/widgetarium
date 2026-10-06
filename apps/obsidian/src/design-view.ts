@@ -20,6 +20,7 @@ import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
 import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
 import { LOCK_PATH } from "@widgetarium/core/paths.js";
+import type { CanvasMode } from "./design-tools.js";
 import { DesignCanvas } from "./design-canvas.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
 import type { DrawnDesign, DrawnState, StatePicture } from "./design-canvas-shapes.js";
@@ -43,6 +44,7 @@ export class DesignView extends ItemView {
 	private appName = "";
 	private page = "";
 	private isLayersOpen = false;
+	private mode: CanvasMode = "hand";
 	private node: HTMLElement | null = null;
 
 	constructor(
@@ -65,13 +67,14 @@ export class DesignView extends ItemView {
 	}
 
 	override getState(): Record<string, unknown> {
-		return { app: this.appName, page: this.page, layers: this.isLayersOpen };
+		return { app: this.appName, page: this.page, layers: this.isLayersOpen, mode: this.mode };
 	}
 
 	override async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		this.appName = isObject(state) && typeof state["app"] === "string" ? state["app"] : "";
 		this.page = isObject(state) && typeof state["page"] === "string" ? state["page"] : "";
 		this.isLayersOpen = isObject(state) && state["layers"] === true;
+		this.mode = isObject(state) && state["mode"] === "pointer" ? "pointer" : "hand";
 		await super.setState(state, result);
 		refreshHeader(this.leaf);
 		await this.draw();
@@ -144,10 +147,18 @@ export class DesignView extends ItemView {
 		const layering = {
 			isLayersOpen: this.isLayersOpen,
 			onLayers: (): void => this.toggleLayers(),
+			mode: this.mode,
+			onMode: (mode: CanvasMode): void => this.turnMode(mode),
 			onMove: (widget: string, move: LayerMove): void => void this.moveLayer(widget, move),
 		};
 		const design = { app: this.appName, screens, references, widgets, size, onAddPhotos };
 		render(h(DesignCanvas, { key: this.page, ...design, ...paging, ...layering, ...drawing }), node);
+	}
+
+	private turnMode(mode: CanvasMode): void {
+		this.mode = mode;
+		this.app.workspace.requestSaveLayout();
+		void this.draw();
 	}
 
 	private toggleLayers(): void {

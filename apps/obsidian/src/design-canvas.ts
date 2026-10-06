@@ -6,6 +6,10 @@ import type { DrawnReference, DrawnScreen, DrawnWidget, Size } from "./design-ca
 import { imageFilesIn } from "./design-photos.js";
 import { WIDGETS_PAGE, canvasPagesOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
 import { LayersPanel } from "./design-layers-panel.js";
+import type { LayerFocus } from "./design-layers-panel.js";
+import { Highlight } from "./design-spotlight.js";
+import { useCanvasSelection } from "./design-canvas-selection.js";
+import type { CanvasMode } from "./design-tools.js";
 import type { LayerMove } from "./layer-moves.js";
 import { fitLook, usePanZoom } from "./design-pan-zoom.js";
 import type { PanZoom } from "./design-pan-zoom.js";
@@ -23,6 +27,8 @@ export interface DesignCanvasProps {
 	readonly isLayersOpen: boolean;
 	readonly onLayers: () => void;
 	readonly onMove: (widget: string, move: LayerMove) => void;
+	readonly mode: CanvasMode;
+	readonly onMode: (mode: CanvasMode) => void;
 	readonly size: Size;
 	readonly registry: WidgetSurfaceProps["registry"];
 	readonly host: WidgetSurfaceProps["host"];
@@ -32,24 +38,44 @@ const ZOOM_STEP = 0.1;
 const SCREENS_SAID = "{count} screens · {frames} frames · read only";
 const HINT = "Approve or change it in the chat";
 const LAYERS_SAID = "Layers";
+const PAGE_FADE_MS = 140;
+const FADED_ON_TURN = ".wg-design-layer, .wg-design-layers.is-open";
 
 export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 	const { layerRef, field } = useLayerSize(props.size);
 	const fit = useMemo(() => fitLook(field, props.size), [field, props.size]);
-	const pan = usePanZoom(layerRef, fit);
+	const pan = usePanZoom(layerRef, fit, props.mode === "hand");
+	const selection = useCanvasSelection(layerRef, pan);
 	const { screens, references, widgets, registry, host } = props;
 	const page = shownPageOf(props.page, screens);
+	useEscapeClears(selection.picked !== null, selection.clear);
 	const regions = useMemo(
 		() => regionsOfPage({ page, screens, references, widgets, registry, host }),
 		[page, screens, references, widgets, registry, host],
 	);
+	const isPointer = props.mode === "pointer";
 	return h(
 		"div",
-		{ className: "wg-design-field wg-portal", ref: pan.fieldRef, ...pan.moves, ...photoDrops(props.onAddPhotos) },
+		{
+			className: `wg-design-field wg-portal ${isPointer ? "is-pointer" : "is-hand"}`,
+			ref: pan.fieldRef,
+			...pan.moves,
+			...(isPointer ? selection.pointing : {}),
+			...photoDrops(props.onAddPhotos),
+		},
 		[
-			h("div", { key: "layer", className: "wg-design-layer", ref: layerRef }, regions),
-			topBarOf(props, page),
-			layersOf(props, page),
+			h(
+				"div",
+				{ key: "layer", className: "wg-design-layer", ref: layerRef },
+				regions,
+				h(Highlight, { key: "hovered", spot: isPointer ? selection.hovered : null, tone: "hover" }),
+				h(Highlight, { key: "picked", spot: selection.picked, tone: "picked" }),
+			),
+			topBarOf({ ...props, onPage: (next) => fadedTurn(pan.fieldRef.current, () => props.onPage(next)) }, page),
+			layersOf(
+				{ ...props, picked: selection.picked?.mark ?? null, onFocus: selection.onFocus, keepsLiveCopy: isPointer },
+				page,
+			),
 			zoomBar(pan),
 			h("div", { key: "hint", className: "wg-design-hint" }, HINT),
 		],
@@ -57,7 +83,7 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 }
 
 function topBarOf(
-	{ app, screens, onPage, onAddPhotos, isLayersOpen, onLayers }: DesignCanvasProps,
+	{ app, screens, onPage, onAddPhotos, mode, onMode, isLayersOpen, onLayers }: DesignCanvasProps,
 	page: string,
 ): ReactElement {
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
@@ -77,13 +103,63 @@ function topBarOf(
 					},
 					h(Icon, { name: "panel-left", size: 16 }),
 				);
-	return h(TopBar, { key: "top", app, said, pages: canvasPagesOf(screens), page, onPage, onAddPhotos, status, layers });
+	return h(TopBar, {
+		key: "top",
+		app,
+		said,
+		pages: canvasPagesOf(screens),
+		page,
+		onPage,
+		onAddPhotos,
+		mode,
+		onMode,
+		status,
+		layers,
+	});
 }
 
-function layersOf({ screens, registry, isLayersOpen, onMove }: DesignCanvasProps, page: string): ReactElement | null {
+interface Picking {
+	readonly picked: string | null;
+	readonly onFocus: (focus: LayerFocus | null) => void;
+	readonly keepsLiveCopy: boolean;
+}
+
+function layersOf(
+	{ screens, registry, isLayersOpen, onMove, picked, onFocus, keepsLiveCopy }: DesignCanvasProps & Picking,
+	page: string,
+): ReactElement | null {
 	const screen = screens.find((one) => one.name === page);
-	if (!isLayersOpen || !screen) return null;
-	return h(LayersPanel, { key: "layers-panel", screen, registry, onMove });
+	if (!screen) return null;
+	return h(LayersPanel, {
+		key: "layers-panel",
+		screen,
+		isOpen: isLayersOpen,
+		keepsLiveCopy,
+		registry,
+		picked,
+		onMove,
+		onFocus,
+	});
+}
+
+function useEscapeClears(isSet: boolean, clear: () => void): void {
+	useEffect(() => {
+		if (!isSet) return;
+		const onKey = (event: KeyboardEvent): void => {
+			if (event.key === "Escape") clear();
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [isSet, clear]);
+}
+
+function fadedTurn(field: HTMLElement | null, turn: () => void): void {
+	const shown = field ? [...field.querySelectorAll<HTMLElement>(FADED_ON_TURN)] : [];
+	if (shown.length === 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return turn();
+	const outs = shown.map((element) =>
+		element.animate([{ opacity: 1 }, { opacity: 0 }], { duration: PAGE_FADE_MS, easing: "ease-out", fill: "forwards" }),
+	);
+	void Promise.all(outs.map((out) => out.finished)).then(turn);
 }
 
 function useLayerSize(view: Size) {

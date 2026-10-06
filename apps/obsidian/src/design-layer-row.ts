@@ -1,20 +1,25 @@
-import { createElement as h, useState } from "react";
-import type { DragEvent, ReactElement } from "react";
+import { createElement as h, useEffect, useState } from "react";
+import type { MouseEvent, PointerEvent, ReactElement } from "react";
 import { Icon } from "@widgetarium/kit";
 import type { Layer, LayerKind } from "./layer-tree.js";
 import { canHoldChildren } from "./layer-moves.js";
-import type { DropPlace } from "./layer-moves.js";
+import type { LayerDrag } from "./design-layer-drag.js";
+import { foldOf } from "./ai/spec-rows.js";
+import { Tip } from "./design-tip.js";
 
 export interface LayerRowProps {
 	readonly layer: Layer;
 	readonly depth: number;
 	readonly isLocked: boolean;
+	readonly picked: string | null;
+	readonly opened: ReadonlySet<string>;
+	readonly drag: LayerDrag;
+	readonly onPick: (mark: string) => void;
 	readonly onHover: (depth: number) => void;
-	readonly onDrop: (dragged: string, target: string, place: DropPlace) => void;
 }
 
-const DRAGGED = "application/x-widgetarium-layer";
 const INDENT_PX = 14;
+const HELD_SAID = "Handed to a component as a prop, so it stays where it is";
 const KIND_ICON: Readonly<Record<LayerKind, string>> = {
 	widget: "puzzle",
 	row: "columns-3",
@@ -27,60 +32,86 @@ const KIND_ICON: Readonly<Record<LayerKind, string>> = {
 	picture: "image",
 };
 
-export function LayerRow({ layer, depth, isLocked, onHover, onDrop }: LayerRowProps): ReactElement {
-	const [isOpen, setOpen] = useState(true);
-	const [place, setPlace] = useState<DropPlace | null>(null);
-	const isDraggable = layer.kind === "widget" || !isLocked;
+export function LayerRow(props: LayerRowProps): ReactElement {
+	const { layer, depth, isLocked, picked, opened, drag, onPick, onHover } = props;
+	const [isOpen, setOpen] = useOpenedWhenHoldingPicked(opened.has(layer.mark));
+	const isDraggable = !layer.isHeld && (layer.kind === "widget" || !isLocked);
 	const hasChildren = layer.children.length > 0;
 	return h("div", { className: "wg-design-layer-branch" }, [
 		h(
 			"div",
 			{
 				key: "row",
-				className: `wg-design-layer-row${place ? ` is-drop-${place}` : ""}${layer.kind === "widget" ? " is-widget" : ""}`,
+				className: rowClassOf(layer, picked, isDraggable),
 				style: { paddingLeft: `${depth * INDENT_PX + 6}px` },
-				draggable: isDraggable,
+				"data-mark": layer.mark,
+				"data-depth": depth,
+				"data-can-hold": canHoldChildren(layer),
+				"data-held": layer.isHeld,
+				"data-scope": layer.scope,
 				onMouseEnter: () => onHover(depth),
-				onDragStart: (event: DragEvent) => event.dataTransfer.setData(DRAGGED, layer.mark),
-				onDragOver: (event: DragEvent) => {
-					event.preventDefault();
-					onHover(depth);
-					setPlace(dropPlaceOf(event, layer));
+				onPointerDown: (event: PointerEvent) => {
+					drag.onPointerDown(event, layer.mark, isDraggable);
 				},
-				onDragLeave: () => setPlace(null),
-				onDrop: (event: DragEvent) => {
-					event.preventDefault();
-					setPlace(null);
-					const dragged = event.dataTransfer.getData(DRAGGED);
-					if (dragged) onDrop(dragged, layer.mark, dropPlaceOf(event, layer));
+				onClick: () => {
+					if (!drag.wasDragged()) onPick(layer.mark);
 				},
 			},
 			[
-				h(
-					"button",
-					{ key: "open", className: "wg-design-layer-open", onClick: () => setOpen(!isOpen), disabled: !hasChildren },
-					hasChildren ? h(Icon, { name: isOpen ? "chevron-down" : "chevron-right", size: 12 }) : null,
-				),
+				openerOf(hasChildren, isOpen, () => setOpen(!isOpen)),
 				h(Icon, { key: "kind", name: KIND_ICON[layer.kind], size: 14 }),
-				h("span", { key: "name", className: "wg-design-layer-name" }, layer.name),
+				nameOf(layer),
 				layer.repeats > 1 ? h("span", { key: "times", className: "wg-design-layer-times" }, `×${layer.repeats}`) : null,
 			],
 		),
-		isOpen && hasChildren
-			? h(
-					"div",
-					{ key: "children" },
-					layer.children.map((child) =>
-						h(LayerRow, { key: child.mark, layer: child, depth: depth + 1, isLocked, onHover, onDrop }),
-					),
+		hasChildren
+			? foldOf(
+					isOpen,
+					layer.children.map((child) => h(LayerRow, { ...props, key: child.mark, layer: child, depth: depth + 1 })),
 				)
 			: null,
 	]);
 }
 
-function dropPlaceOf(event: DragEvent, layer: Layer): DropPlace {
-	const box = event.currentTarget.getBoundingClientRect();
-	const share = (event.clientY - box.top) / Math.max(1, box.height);
-	if (canHoldChildren(layer) && share > 0.3 && share < 0.7) return "inside";
-	return share < 0.5 ? "before" : "after";
+function useOpenedWhenHoldingPicked(holdsPicked: boolean): [boolean, (isOpen: boolean) => void] {
+	const [isOpen, setOpen] = useState(true);
+	useEffect(() => {
+		if (holdsPicked) setOpen(true);
+	}, [holdsPicked]);
+	return [isOpen, setOpen];
+}
+
+function rowClassOf(layer: Layer, picked: string | null, isDraggable: boolean): string {
+	const kind = layer.kind === "widget" ? " is-widget" : "";
+	const pick = picked === layer.mark ? " is-picked" : "";
+	const still = isDraggable ? "" : " is-still";
+	return `wg-design-layer-row${kind}${pick}${still}`;
+}
+
+function openerOf(hasChildren: boolean, isOpen: boolean, onToggle: () => void): ReactElement {
+	if (!hasChildren) return h("span", { key: "open", className: "wg-design-layer-open" });
+	return h(
+		"button",
+		{
+			key: "open",
+			type: "button",
+			className: "wg-design-layer-open is-pressable",
+			"aria-expanded": isOpen,
+			onPointerDown: (event: PointerEvent) => event.stopPropagation(),
+			onClick: (event: MouseEvent) => {
+				event.stopPropagation();
+				onToggle();
+			},
+		},
+		h(Icon, {
+			name: "chevron-down",
+			size: 12,
+			className: isOpen ? "wg-design-layer-chevron" : "wg-design-layer-chevron is-shut",
+		}),
+	);
+}
+
+function nameOf(layer: Layer): ReactElement {
+	const name = h("span", { key: "name", className: "wg-design-layer-name" }, layer.name);
+	return layer.isHeld ? h(Tip, { key: "name", label: HELD_SAID }, name) : name;
 }

@@ -7689,6 +7689,7 @@ body.wg-tree-carrying .wg-tile-body {
 	width: max-content;
 	padding: 80px;
 	transform-origin: 0 0;
+	animation: wg-design-fade-in var(--wg-quick) var(--wg-ease);
 }
 
 .wg-design-topbar {
@@ -7722,6 +7723,54 @@ body.wg-tree-carrying .wg-tile-body {
 	position: relative;
 	top: auto;
 	left: auto;
+	padding-inline: 0;
+	background: none;
+	box-shadow: none;
+}
+
+.wg-design-field.is-pointer {
+	cursor: default;
+}
+
+.wg-design-tools {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wg-design-modes {
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	background: var(--background-primary);
+	border-radius: 999px;
+}
+
+.wg-design-tip {
+	position: relative;
+	display: inline-flex;
+}
+
+.wg-design-tip-bubble {
+	position: fixed;
+	z-index: var(--layer-tooltip);
+	width: max-content;
+	max-width: 320px;
+	padding: 6px 10px;
+	border-radius: 8px;
+	background: var(--wg-kit-text);
+	color: var(--background-primary);
+	font-size: var(--wg-kit-text-s);
+	font-weight: 500;
+	line-height: 1.35;
+	translate: -50% 0;
+	pointer-events: none;
+	animation: wg-design-tip-in var(--wg-quick) var(--wg-spring);
+}
+
+@keyframes wg-design-tip-in {
+	from {
+		opacity: 0;
+		translate: -50% -4px;
+	}
 }
 
 .wg-design-page-switch {
@@ -7759,8 +7808,23 @@ body.wg-tree-carrying .wg-tile-body {
 	display: flex;
 	flex-direction: column;
 	width: 260px;
-	padding: 84px 8px 16px;
+	padding: 84px 8px 16px 10px;
 	cursor: default;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition:
+		opacity var(--wg-quick) var(--wg-ease),
+		visibility 0s linear var(--wg-quick);
+}
+
+.wg-design-layers.is-open {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transition:
+		opacity var(--wg-quick) var(--wg-ease),
+		visibility 0s;
 }
 
 .wg-design-layers::before {
@@ -7788,9 +7852,17 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 .wg-design-layers-tree {
+	position: relative;
 	flex: 1;
 	overflow: auto;
 	scrollbar-width: none;
+	animation: wg-design-fade-in var(--wg-quick) var(--wg-ease);
+}
+
+@keyframes wg-design-fade-in {
+	from {
+		opacity: 0;
+	}
 }
 
 .wg-design-layer-row {
@@ -7805,10 +7877,16 @@ body.wg-tree-carrying .wg-tile-body {
 	white-space: nowrap;
 	font-size: var(--font-ui-small);
 	color: var(--text-normal);
+	cursor: pointer;
+	transition:
+		background-color var(--wg-quick) var(--wg-ease),
+		box-shadow var(--wg-quick) var(--wg-ease);
 }
 
-.wg-design-layer-row:hover {
-	background: var(--background-modifier-hover);
+.wg-design-layer-row.is-picked,
+.wg-design-layer-row:hover:not(:has(.wg-design-layer-open:hover)) {
+	background: var(--wg-kit-raise);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
 }
 
 .wg-design-layer-row.is-widget {
@@ -7816,28 +7894,110 @@ body.wg-tree-carrying .wg-tile-body {
 	cursor: grab;
 }
 
-.wg-design-layer-row.is-drop-before {
-	box-shadow: inset 0 2px 0 var(--wg-kit-accent);
+.wg-design-layers-tree.is-dragging {
+	cursor: grabbing;
 }
 
-.wg-design-layer-row.is-drop-after {
-	box-shadow: inset 0 -2px 0 var(--wg-kit-accent);
+.wg-design-layers-tree.is-dragging .wg-design-layer-row {
+	transition: transform var(--wg-quick) var(--wg-ease);
 }
 
-.wg-design-layer-row.is-drop-inside {
-	box-shadow: inset 0 0 0 1px var(--wg-kit-accent);
-}
-
-.wg-design-layer-open {
-	display: grid;
-	place-items: center;
-	width: 14px;
-	height: 14px;
-	padding: 0;
-	border: none;
+.wg-design-layers-tree.is-dragging .wg-design-layer-row:not(.is-lifted):not(.is-picked):hover {
 	background: none;
 	box-shadow: none;
+}
+
+.wg-design-layers-tree.is-dragging .wg-ai-fold:not(.is-shut) > div {
+	overflow: visible;
+}
+
+.wg-design-layers-tree .wg-design-layer-row.is-lifted {
+	position: relative;
+	z-index: 2;
+	background: var(--wg-kit-raise);
+	box-shadow:
+		inset 0 0 0 1px var(--wg-kit-card-edge),
+		0 8px 20px -8px var(--wg-overlay-scrim);
+	transition: none;
+}
+
+.wg-design-layer-slot {
+	position: absolute;
+	right: 0;
+	border-radius: 6px;
+	background: color-mix(in srgb, var(--wg-kit-accent) 14%, transparent);
+	pointer-events: none;
+	animation: wg-design-fade-in var(--wg-quick) var(--wg-ease);
+	transition:
+		top var(--wg-quick) var(--wg-ease),
+		left var(--wg-quick) var(--wg-ease),
+		height var(--wg-quick) var(--wg-ease);
+}
+
+.wg-design-layers .wg-design-layer-open {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: none;
+	border-radius: 5px;
+	background: transparent;
+	box-shadow: none;
 	color: var(--text-faint);
+	transition:
+		background-color var(--wg-quick) var(--wg-ease),
+		box-shadow var(--wg-quick) var(--wg-ease);
+}
+
+.wg-design-layers .wg-design-layer-open.is-pressable {
+	cursor: pointer;
+}
+
+.wg-design-layers .wg-design-layer-open.is-pressable:hover {
+	background: var(--wg-kit-raise);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	color: var(--text-normal);
+}
+
+.wg-design-spot {
+	position: absolute;
+	pointer-events: none;
+	opacity: 1;
+	animation: wg-design-fade-in var(--wg-quick) var(--wg-ease);
+	transition:
+		opacity var(--wg-quick) var(--wg-ease),
+		left var(--wg-quick) var(--wg-ease),
+		top var(--wg-quick) var(--wg-ease),
+		width var(--wg-quick) var(--wg-ease),
+		height var(--wg-quick) var(--wg-ease),
+		border-radius var(--wg-quick) var(--wg-ease);
+}
+
+.wg-design-spot.is-hover {
+	background: color-mix(in srgb, var(--wg-kit-accent) 8%, transparent);
+}
+
+.wg-design-spot.is-picked {
+	background: color-mix(in srgb, var(--wg-kit-accent) 16%, transparent);
+}
+
+.wg-design-spot.is-leaving {
+	opacity: 0;
+}
+
+.wg-design-layers .wg-ai-fold {
+	width: max-content;
+	min-width: 100%;
+}
+
+.wg-design-layer-chevron {
+	transition: rotate var(--wg-quick) var(--wg-spring);
+}
+
+.wg-design-layer-chevron.is-shut {
+	rotate: -90deg;
 }
 
 .wg-design-layer-name {
@@ -7848,6 +8008,17 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-design-layer-times {
 	color: var(--text-faint);
 	font-size: var(--font-ui-smaller);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-design-layer,
+	.wg-design-spot,
+	.wg-design-layers,
+	.wg-design-layers-tree,
+	.wg-design-layer-chevron {
+		transition: none;
+		animation: none;
+	}
 }
 
 .wg-design-layer.is-moving {
@@ -8042,7 +8213,6 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: 14px 16px;
 	border-radius: 6px;
 	background: var(--wg-kit-warning-wash);
-	box-shadow: 0 0 0 1px var(--background-modifier-border);
 	color: var(--wg-kit-text);
 	font-size: var(--font-ui-medium);
 	line-height: 1.4;
@@ -8118,6 +8288,7 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-design-zoom {
 	bottom: 16px;
 	left: 16px;
+	z-index: 2;
 	gap: 2px;
 }
 

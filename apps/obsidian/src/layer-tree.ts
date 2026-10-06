@@ -1,4 +1,4 @@
-import { NODE_MARK, WIDGET_MARK } from "@widgetarium/core/engine/node-marks.js";
+import { HELD_MARK, NODE_MARK, SCOPE_MARK, WIDGET_MARK } from "@widgetarium/core/engine/node-marks.js";
 
 export type LayerKind = "widget" | "row" | "column" | "grid" | "group" | "input" | "button" | "text" | "picture";
 
@@ -8,6 +8,8 @@ export interface Layer {
 	readonly name: string;
 	readonly widget?: string | undefined;
 	readonly repeats: number;
+	readonly isHeld: boolean;
+	readonly scope: string;
 	readonly children: readonly Layer[];
 }
 
@@ -35,12 +37,33 @@ function layersOf(element: Element): Layer[] {
 	const widget = element.getAttribute(WIDGET_MARK);
 	if (widget)
 		return mark
-			? [{ mark, kind: "widget", name: element.getAttribute(NAMED_BY) ?? widget, widget, repeats: 1, children: [] }]
+			? [
+					{
+						mark,
+						kind: "widget",
+						name: element.getAttribute(NAMED_BY) ?? widget,
+						widget,
+						repeats: 1,
+						isHeld: element.hasAttribute(HELD_MARK),
+						scope: element.getAttribute(SCOPE_MARK) ?? "",
+						children: [],
+					},
+				]
 			: [];
 	const children = mergedRepeats([...element.children].flatMap(layersOf));
 	if (!mark) return children;
 	const kind = kindOf(element);
-	return [{ mark, kind, name: element.getAttribute(NAMED_BY) ?? KIND_SAID[kind], repeats: 1, children }];
+	return [
+		{
+			mark,
+			kind,
+			name: element.getAttribute(NAMED_BY) ?? KIND_SAID[kind],
+			repeats: 1,
+			isHeld: element.hasAttribute(HELD_MARK),
+			scope: element.getAttribute(SCOPE_MARK) ?? "",
+			children,
+		},
+	];
 }
 
 function kindOf(element: Element): LayerKind {

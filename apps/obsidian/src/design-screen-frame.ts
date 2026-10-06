@@ -15,7 +15,12 @@ export interface ScreenFrameProps extends Drawing {
 const SCREEN_HOLDER = { key: "screen", className: "wg-design-screen", inert: true, "data-wg-overlay-layer": "" };
 
 export function ScreenFrame({ label, state, size, registry, host }: ScreenFrameProps): ReactElement {
-	return h("div", { className: "wg-design-frame", style: { width: `${size.width}px` } }, [
+	const frame = {
+		className: "wg-design-frame",
+		"data-wg-screen": state.picture?.widget,
+		style: { width: `${size.width}px` },
+	};
+	return h("div", frame, [
 		h("div", { key: "top", className: "wg-design-top" }, h("span", { className: "wg-design-name" }, label)),
 		h(
 			"div",
