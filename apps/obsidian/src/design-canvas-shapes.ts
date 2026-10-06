@@ -1,5 +1,6 @@
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import type { Board } from "@widgetarium/core/model.js";
+import type { AppWidgets } from "@widgetarium/core/app-widgets.js";
 
 export const GAP_PX = 120;
 export const MARGIN_PX = 80;
@@ -24,6 +25,7 @@ export interface DrawnReference {
 export interface DrawnDesign {
 	readonly screens: readonly DrawnScreen[];
 	readonly references: readonly DrawnReference[];
+	readonly widgets: AppWidgets;
 }
 
 export interface Size {

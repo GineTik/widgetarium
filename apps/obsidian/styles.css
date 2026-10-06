@@ -7484,6 +7484,59 @@ body.wg-tree-carrying .wg-tile-body {
 	flex: 1 0 auto;
 }
 
+.wg-design-region-head {
+	position: absolute;
+}
+
+.wg-design-regions {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	gap: 120px;
+}
+
+.wg-design-region {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.wg-design-bento {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 40px;
+}
+
+.wg-design-widget {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin: 0;
+}
+
+.wg-design-widget-name {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: var(--font-ui-medium);
+	color: var(--text-normal);
+}
+
+.wg-design-widget-name > span {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+.wg-design-widget-body {
+	overflow: hidden;
+	padding: 24px;
+	border-radius: 16px;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	cursor: default;
+}
+
 .wg-design-references {
 	position: absolute;
 	width: max-content;

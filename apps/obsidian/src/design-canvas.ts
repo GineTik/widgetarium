@@ -8,11 +8,14 @@ import { REFERENCE_PX, ReferencesLane } from "./design-references.js";
 import { imageFilesIn } from "./design-photos.js";
 import { AddPhoto } from "./design-add-photo.js";
 import { ScreenFrame } from "./design-screen-frame.js";
+import { WidgetRegions } from "./design-widgets.js";
+import type { AppWidgets } from "@widgetarium/core/app-widgets.js";
 
 export interface DesignCanvasProps {
 	readonly app: string;
 	readonly screens: readonly DrawnScreen[];
 	readonly references: readonly DrawnReference[];
+	readonly widgets: AppWidgets;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
 	readonly size: Size;
 	readonly registry: WidgetSurfaceProps["registry"];
@@ -33,37 +36,71 @@ const ZOOM_PER_WHEEL = 0.003;
 const SCREENS_SAID = "{count} screens · {frames} frames · read only";
 const STATE_LABEL = "{screen} · {state}";
 const HINT = "Approve or change it in the chat";
+const PAGES_SAID = "Pages · {count}";
 
 export function DesignCanvas(props: DesignCanvasProps): ReactElement {
-	const { app, screens, references, size, registry, host, onAddPhotos } = props;
-	const screenSize = screenSizeOf(size);
+	const { app, screens, references, widgets, size, registry, host, onAddPhotos } = props;
+	const laid = useCanvasLayout(screens, references.length, size);
+	const pan = usePanZoom(fitLook(laid.field, size));
+	const layer = {
+		transform: `translate(${pan.look.x}px, ${pan.look.y}px) scale(${pan.look.scale})`,
+		width: `${laid.field.width}px`,
+		height: `${laid.field.height}px`,
+	};
+	const drawn = laid.frames.map((frame, at) =>
+		h(ScreenFrame, { key: `${at}-${frame.label}`, frame, at, top: laid.screensTop, size: laid.screen, registry, host }),
+	);
+	const regions = h(WidgetRegions, { key: "regions", widgets, ...laid.regions, registry, host });
+	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(laid.frames.length));
+	return h(
+		"div",
+		{ className: "wg-design-field wg-portal", ref: pan.fieldRef, ...pan.moves, ...photoDrops(onAddPhotos) },
+		[
+			h("div", { key: "layer", className: "wg-design-layer", style: layer, ref: laid.layerRef }, [
+				h(ReferencesLane, { key: "references", references, onWidth: laid.setLaneWidth }),
+				laid.frames.length > 0 ? pagesHeadOf(laid.pagesTop, screens.length) : null,
+				...drawn,
+				regions,
+			]),
+			h("div", { key: "head", className: "wg-design-head" }, [
+				h("b", { key: "app" }, app),
+				h("span", { key: "count" }, said),
+				h(AddPhoto, { key: "add", onAddPhotos }),
+			]),
+			zoomBar(pan.look, pan.setLook, pan.refit),
+			h("div", { key: "hint", className: "wg-design-hint" }, HINT),
+		],
+	);
+}
+
+function useCanvasLayout(screens: readonly DrawnScreen[], referenceCount: number, size: Size) {
+	const screen = screenSizeOf(size);
 	const frames = framesOf(screens);
 	const [laneWidth, setLaneWidth] = useState(0);
-	const screensTop = references.length === 0 ? MARGIN_PX : MARGIN_PX + LABEL_PX + REFERENCE_PX + GAP_PX;
-	const { layerRef, tallest } = useTallestFrame(screenSize.height, frames.length);
-	const field = fieldSizeOf(frames.length, { width: screenSize.width, height: tallest }, { screensTop, laneWidth });
-	const fit = fitLook(field, size);
-	const { look, setLook, refit, fieldRef, moves } = usePanZoom(fit);
-	const layer = {
-		transform: `translate(${look.x}px, ${look.y}px) scale(${look.scale})`,
-		width: `${field.width}px`,
-		height: `${field.height}px`,
+	const [regionsHeight, setRegionsHeight] = useState(0);
+	const pagesTop = referenceCount === 0 ? MARGIN_PX : MARGIN_PX + LABEL_PX + REFERENCE_PX + GAP_PX;
+	const screensTop = pagesTop + LABEL_PX;
+	const { layerRef, tallest } = useTallestFrame(screen.height, frames.length);
+	const screensBox = fieldSizeOf(frames.length, { width: screen.width, height: tallest }, { screensTop, laneWidth });
+	const regionsTop = screensBox.height - MARGIN_PX + GAP_PX;
+	const field = {
+		width: screensBox.width,
+		height: regionsHeight === 0 ? screensBox.height : regionsTop + regionsHeight + MARGIN_PX,
 	};
-	const drawn = frames.map((frame, at) =>
-		h(ScreenFrame, { key: `${at}-${frame.label}`, frame, at, top: screensTop, size: screenSize, registry, host }),
+	const regions = { top: regionsTop, width: screensBox.width - MARGIN_PX * 2, onHeight: setRegionsHeight };
+	return { screen, frames, pagesTop, screensTop, field, regions, layerRef, setLaneWidth };
+}
+
+function pagesHeadOf(top: number, count: number): ReactElement {
+	return h(
+		"div",
+		{
+			key: "pages",
+			className: "wg-design-top wg-design-region-head",
+			style: { left: `${MARGIN_PX}px`, top: `${top}px` },
+		},
+		h("span", { className: "wg-design-name" }, PAGES_SAID.replace("{count}", String(count))),
 	);
-	const lane = h(ReferencesLane, { key: "references", references, onWidth: setLaneWidth });
-	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames.length));
-	return h("div", { className: "wg-design-field wg-portal", ref: fieldRef, ...moves, ...photoDrops(onAddPhotos) }, [
-		h("div", { key: "layer", className: "wg-design-layer", style: layer, ref: layerRef }, [lane, ...drawn]),
-		h("div", { key: "head", className: "wg-design-head" }, [
-			h("b", { key: "app" }, app),
-			h("span", { key: "count" }, said),
-			h(AddPhoto, { key: "add", onAddPhotos }),
-		]),
-		zoomBar(look, setLook, refit),
-		h("div", { key: "hint", className: "wg-design-hint" }, HINT),
-	]);
 }
 
 function photoDrops(onAddPhotos: (photos: readonly File[]) => void) {

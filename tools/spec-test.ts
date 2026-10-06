@@ -1188,5 +1188,15 @@ check(
 );
 check("an unchanged card is not written again", await writeBuiltCards(cardAdapter, lookup), []);
 
+const { appWidgetsOf } = await import("../packages/core/src/app-widgets.ts");
+check(
+	"a canvas splits an app's widgets into the catalogue's and its own, by the scopes the catalogue installed",
+	appWidgetsOf(
+		["@default/hero", "@agent-desk/project-grid", "@draft/agent-desk", "@default/hero@abc1234", "@flow/git-tree"],
+		["@default/month", "@flow/commit-row"],
+	),
+	{ fromCatalogue: ["@default/hero", "@flow/git-tree"], made: ["@agent-desk/project-grid"] },
+);
+
 console.log(`\nspec gate: ${failed === 0 ? "clean" : `${failed} of ${checks} failed`}, ${checks} checks`);
 process.exit(failed === 0 ? 0 : 1);

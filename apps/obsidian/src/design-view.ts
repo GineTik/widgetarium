@@ -15,6 +15,9 @@ import {
 	vaultBindingOf,
 } from "@widgetarium/core/app-design.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
+import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
+import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
+import { LOCK_PATH } from "@widgetarium/core/paths.js";
 import { DesignCanvas } from "./design-canvas.js";
 import type { DrawnDesign, DrawnState } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
@@ -114,10 +117,10 @@ export class DesignView extends ItemView {
 		const node = this.node;
 		const size = { width: this.contentEl.clientWidth, height: this.contentEl.clientHeight };
 		if (!node || !this.appName || size.width === 0 || size.height === 0) return;
-		const { screens, references } = await designOf(this.plugin, this.appName);
+		const { screens, references, widgets } = await designOf(this.plugin, this.appName);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
 		const drawing = { registry: this.plugin.registry, host: this.plugin.host };
-		render(h(DesignCanvas, { app: this.appName, screens, references, size, onAddPhotos, ...drawing }), node);
+		render(h(DesignCanvas, { app: this.appName, screens, references, widgets, size, onAddPhotos, ...drawing }), node);
 	}
 }
 
@@ -153,11 +156,47 @@ async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDe
 		src: "url" in reference ? reference.url : adapter.getResourcePath(referencePathOf(app, reference.file)),
 		why: reference.why,
 	}));
-	return { screens, references };
+	const onScreens = screens.flatMap((screen) =>
+		screen.states.flatMap((state) => state.board?.tiles.map((tile) => tile.widget) ?? []),
+	);
+	const widgets = appWidgetsOf(
+		[...(await specWidgetsOf(plugin, app)), ...onScreens],
+		await catalogueInstallsOf(plugin),
+	);
+	return { screens, references, widgets };
+}
+
+async function specWidgetsOf(plugin: WidgetariumPlugin, app: string): Promise<string[]> {
+	const text = await plugin.app.vault.adapter.read(specPathOf(app)).catch(() => null);
+	const read = text === null ? null : readSpec(text);
+	if (!read?.spec) return [];
+	const named = read.spec.features.flatMap((feature) => (feature.widget ? [feature.widget] : []));
+	const pageNotes = read.spec.pages.flatMap((page) => (page.note ? [page.note] : []));
+	const onPages = await Promise.all(pageNotes.map((note) => widgetsOnNote(plugin, note)));
+	return [...named, ...onPages.flat()];
+}
+
+async function widgetsOnNote(plugin: WidgetariumPlugin, note: string): Promise<string[]> {
+	const text = await plugin.app.vault.adapter.read(note).catch(() => "");
+	return boardIn(text)?.tiles.map((tile) => tile.widget) ?? [];
+}
+
+async function catalogueInstallsOf(plugin: WidgetariumPlugin): Promise<string[]> {
+	const text = await plugin.app.vault.adapter.read(LOCK_PATH).catch(() => "");
+	try {
+		const lock: unknown = JSON.parse(text);
+		return isObject(lock) && isObject(lock["widgets"]) ? Object.keys(lock["widgets"]) : [];
+	} catch {
+		return [];
+	}
 }
 
 function refusedDesign(app: string, refusal: string): DrawnDesign {
-	return { screens: [{ name: app, states: [{ name: app, board: null, refusal }] }], references: [] };
+	return {
+		screens: [{ name: app, states: [{ name: app, board: null, refusal }] }],
+		references: [],
+		widgets: { fromCatalogue: [], made: [] },
+	};
 }
 
 async function stateOf(
