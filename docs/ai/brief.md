@@ -169,7 +169,7 @@ rows, exactly as the finished widgets will look, but no commands and no `start`.
 what catches a colour from outside the theme. Stage 4 turns each draft into the real widget after the
 person approved, keeping its look. Then `node {tool} shot --design <app>`, open the picture (the whole
 canvas, every page side by side) and redraw what is not the app you would pay for, again in one
-message. **Draw every dialog too.** List every press on every screen that opens something — add, edit,
+message. **Draw every dialog too, with the kit's `Dialog`**, whose scrim covers the whole page. List every press on every screen that opens something — add, edit,
 delete, confirm, warn, pick — and give each its own state of that screen, named after it, with the
 dialog open over the page: a person approves what they will meet, and an add or a delete nobody drew
 is built by guesswork. **Then check it against the person's design system**: `node {tool} rules <app>` prints every
