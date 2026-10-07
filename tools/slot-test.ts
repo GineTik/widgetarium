@@ -63,7 +63,11 @@ document.body.appendChild(host);
 const given = () => ({
 	mounts: {
 		hero: [entryOf("Hero", { manifest: { preferredSize: { preferredWidth: 160 } } })],
-		main: [entryOf("Reach out"), entryOf("Hidden", { hidden: true }), entryOf("Follow up")],
+		main: [
+			entryOf("Reach out", { manifest: { role: "control" } }),
+			entryOf("Hidden", { hidden: true }),
+			entryOf("Follow up"),
+		],
 		empty: [],
 	},
 });
@@ -79,9 +83,17 @@ check(
 );
 check("an empty single slot draws nothing", host.querySelector("aside")?.childNodes.length, 0);
 check(
-	"a widget that prefers a width gets that width in its slot, so a button in a row never collapses to nothing",
-	(host.querySelector("header .wg-slot") as HTMLElement | null)?.style.width,
-	"160px",
+	"a preferred size never sizes a slot: the page decides the place, and the slot carries no width of its own",
+	[
+		host.querySelector("header .wg-slot")?.className,
+		(host.querySelector("header .wg-slot") as HTMLElement | null)?.getAttribute("style"),
+	],
+	["wg-slot", null],
+);
+check(
+	"a control is as wide as what it draws; every other role fills its place",
+	[...host.querySelectorAll("main .wg-slot")].map((slot) => slot.className),
+	["wg-slot is-content-width", "wg-slot"],
 );
 
 render(h(Drawn, given()), host);

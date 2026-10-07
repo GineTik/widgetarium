@@ -339,7 +339,9 @@ widget fills — a tab pressed, a card opened — and a box draws nothing in the
   a size it is promised.** The width is a ceiling the cell narrows under, `"full"` takes the whole
   cell; the height is where a short widget is drawn to, and one with more to draw grows past it,
   `"auto"` is as tall as it draws. `keepsRatio: true` holds height to width. `at` steps by the width
-  of the **region**, never the screen: `at: [{ belowPx: 520, preferredWidth: "full" }]`.
+  of the **region**, never the screen: `at: [{ belowPx: 520, preferredWidth: "full" }]`. These sizes
+  lay a tile on a board; **in a page's slots they are ignored**: a `control` is as wide as what it
+  draws, every other role fills the place the page gives it, and the page decides that place.
   `collapseBelowPx` and `stackBelowPx` are the floors a row stacks and a widget collapses at. Use
   `useNarrowed`, never a media query.
 - `inline: true` — a widget that stands in text; declare `IContent` and `IReader`.

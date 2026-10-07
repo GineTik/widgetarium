@@ -3,7 +3,6 @@ import type { ReactElement } from "react";
 import { Card } from "@widgetarium/kit";
 import { Mounted } from "./mounted.js";
 import type { MountEntry } from "./gateway/host.js";
-import { isObject } from "./engine/is-object.js";
 import { SLOT_ENTRY_MARK, WIDGET_MARK } from "./engine/node-marks.js";
 
 export interface SlotComponent {
@@ -19,6 +18,7 @@ export interface SlotProps {
 export type SlotList = readonly SlotComponent[] & { readonly entries: readonly MountEntry[] };
 
 const NOT_DRAWN = "{name} could not be drawn: {why}";
+const CONTENT_SIZED_ROLE = "control";
 
 export function useSlotsOf(entries: readonly MountEntry[], isSingle: boolean): SlotComponent | SlotList {
 	const made = useRef(new Map<string, SlotComponent>());
@@ -61,22 +61,14 @@ function drawnEntry(entry: MountEntry, className: string | undefined): ReactElem
 		);
 	const drawn = h(Mounted, { entry });
 	const plated = entry.surface ? h(Card, { type: entry.surface, className }, drawn) : drawn;
-	const width = preferredWidthOf(entry.manifest);
 	return h(
 		"div",
 		{
-			className: "wg-slot",
-			style: width === null ? undefined : { width, flexShrink: 1 },
+			className: entry.manifest?.["role"] === CONTENT_SIZED_ROLE ? "wg-slot is-content-width" : "wg-slot",
 			[SLOT_ENTRY_MARK]: entry.name,
 			[WIDGET_MARK]: entry.id ?? "",
 			"data-name": entry.title || entry.name,
 		},
 		plated,
 	);
-}
-
-function preferredWidthOf(manifest: MountEntry["manifest"]): number | null {
-	const size = manifest?.["preferredSize"];
-	const width = isObject(size) ? size["preferredWidth"] : null;
-	return typeof width === "number" ? width : null;
 }
