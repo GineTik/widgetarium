@@ -27,12 +27,15 @@ carries the colour; one accent, purple, only where progress or a key value needs
 
 ## Page archetypes
 
-Every page is one of five, and the archetype decides its width, its header and its hero. The page
-widget draws `<Page kind="…">` from the kit, which lays all three; it never sets a width of its own.
+Five archetypes are starting points, never templates. A page either draws `<Page kind="…">` from the
+kit, which lays its width, header and hero, or builds its own structure inside the kit's `Container`
+(width 640, 800, 1040 or 1280); it never sets a width of its own. Two pages of one app look alike
+only when they do the same job, and an app never looks like another app because it was copied from
+it.
 
 | Archetype   | Width                                       | Hero                                                                          | Body                                                                           |
 | ----------- | ------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `home`      | 1040                                        | required: a greeting with the next action, a key number on an object, a photo | 3–5 overview sections, ≤5 rows each, then "See all ›"; an optional side column |
+| `home`      | 1040                                        | optional: a greeting with the next action, a key number on an object, a photo | 3–5 overview sections, ≤5 rows each, then "See all ›"; an optional side column |
 | `index`     | 800 for rows; `wide` 1280 for a table, grid | none                                                                          | search and filters in one row, then one collection                             |
 | `record`    | 1040: main and a 320 side column            | its identity: face or picture, name, the key fact merged into a line          | main: timeline, notes; side: status, key fact, metadata                        |
 | `dashboard` | 1280                                        | a row of key numbers                                                          | a grid of cards and charts                                                     |
@@ -45,15 +48,18 @@ widget draws `<Page kind="…">` from the kit, which lays all three; it never se
 - **P2 · A list and the record it opens are two pages**, reached by a press and left by Back. A side
   panel holds a record only when reading beside the list is the job (mail, a reader).
 - **P4 · One navigation for the whole app**, the same on every page, showing where the person is.
-- **PG1 · Every page names its archetype** with `<Page kind="home | index | record | dashboard | form">`.
+- **PG1 · Every page is drawn in the kit's `Container` or `Page`**; the structure inside is the
+  design's own.
   check: kit
-- **PG2 · The width comes from the archetype**; a page widget writes no `max-w-*` or `mx-auto`.
+- **PG2 · The width comes from `Container` or the archetype**; a page widget writes no `max-w-*` or
+  `mx-auto`.
   check: kit
 - **PG3 · The header holds a title naming the job on the left and at most one primary action on the
   right.**
   check: kit
-- **PG4 · Home has a hero; an index and a form never do.**
-  check: kit
+- **PG4 · A hero is a choice, never a default**: one when a single thing should greet the person (a
+  photo, a number, the next action); an index and a form never have one.
+  check: judged
 - **PG5 · At most five sections on a page**; a sixth means the page is two pages.
   check: measured
 
@@ -98,6 +104,23 @@ widget draws `<Page kind="…">` from the kit, which lays all three; it never se
 - **C5 · A line of text holds at most 75 characters.**
   check: measured
 - **C6 · An empty page shows one empty state**, never one per section.
+  check: measured
+
+## Finish
+
+What separates a product from a picture of one. Each is measured on the drawn canvas.
+
+- **FN1 · Whatever looks pressable answers a press.** A button, a dashed drop zone, a day in a
+  calendar, a card that looks draggable: it works, or it stops looking like it does.
+  check: measured
+- **FN2 · No holes.** No gap of more than 120px between stacked blocks, and none across more than a
+  third of a row: a cover at one edge and its button at the other is a row with nothing in it.
+  check: measured
+- **FN3 · A highlight reaches its plate's edge.** A selected or hovered row in a plate lights up edge
+  to edge, never inset by the plate's padding while the rows around it run full width.
+  check: measured
+- **FN4 · Stacked blocks share their edge.** A subtitle 4px off its title reads as a mistake, never as
+  a choice.
   check: measured
 
 ## Something to look at

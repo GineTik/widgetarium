@@ -4,7 +4,21 @@ export interface MeasuredFinding {
 	readonly said: string;
 }
 
-export const MEASURED_RULES = ["PG5", "S2", "S4", "R3", "C1", "C2", "C4", "C5", "C6"] as const;
+export const MEASURED_RULES = [
+	"PG5",
+	"S2",
+	"S4",
+	"R3",
+	"C1",
+	"C2",
+	"C4",
+	"C5",
+	"C6",
+	"FN1",
+	"FN2",
+	"FN3",
+	"FN4",
+] as const;
 
 const FRAME = ".wg-design-frame";
 const FRAME_NAME = ".wg-design-name";
@@ -22,6 +36,23 @@ const BIG_TIMES_BODY = 2.5;
 const MOST_CHARACTERS_PER_LINE = 75;
 const CHARACTER_EM = 0.5;
 const SAME_COLUMN_PX = 4;
+const LOOKS_PRESSABLE = "button, [role=button], .wg-kit-btn, a:not([href])";
+const PRESS_PROPS = [
+	"onClick",
+	"onPointerDown",
+	"onPointerUp",
+	"onMouseDown",
+	"onKeyDown",
+	"onChange",
+	"onValueChange",
+];
+const REACT_PROPS = "__reactProps$";
+const HOLE_PX = 120;
+const HOLE_ACROSS_SHARE = 0.33;
+const HOLE_ACROSS_PX = 160;
+const MISSED_EDGE_PX = 8;
+const SELECTED = '[aria-selected="true"], [aria-current], .is-selected, .is-active, .is-current';
+const SHORT_OF_PLATE_PX = 2;
 
 const SAID = {
 	PG5: "{count} sections on one page; a sixth means the page is two pages",
@@ -33,6 +64,10 @@ const SAID = {
 	C4: "{count} big elements; keep one focal point, at most 2",
 	C5: "a line of text {count} characters long; keep text at most 75 per line",
 	C6: "{count} empty states; an empty page shows one",
+	FN1: '"{label}" looks pressable and nothing answers a press; make it work or stop it looking pressable',
+	FN2: 'a {px}px hole between "{before}" and "{after}"; close it, or fill it with what belongs there',
+	FN3: '"{label}" lights up {px}px short of its plate\'s edge; let the highlight reach the edge',
+	FN4: '"{before}" and "{after}" miss each other\'s edge by {px}px; line them up',
 };
 
 type MeasuredRule = keyof typeof SAID;
@@ -60,6 +95,10 @@ function frameFindings(frame: Element): Found[] {
 		...bigFindings(frame),
 		...measureFindings(frame),
 		...emptyStateFindings(frame),
+		...deadPressFindings(frame),
+		...holeFindings(frame),
+		...shortHighlightFindings(frame),
+		...missedEdgeFindings(frame),
 	];
 }
 
@@ -166,4 +205,105 @@ function hasOwnText(node: Element): boolean {
 function fontPx(node: Element): number {
 	const px = Number.parseFloat(node.ownerDocument.defaultView?.getComputedStyle(node).fontSize ?? "");
 	return Number.isFinite(px) && px > 0 ? px : 16;
+}
+
+function deadPressFindings(frame: Element): Found[] {
+	return [...frame.querySelectorAll(LOOKS_PRESSABLE)]
+		.filter((node) => !node.matches(":disabled, [aria-disabled='true']") && !answersPress(node, frame))
+		.map((node) => found("FN1", { label: labelOf(node) }));
+}
+
+// TRADE-OFF: React keeps a handler on a private key of the element; there is no public way to ask whether a press is answered
+function answersPress(node: Element, frame: Element): boolean {
+	for (let at: Element | null = node; at && at !== frame; at = at.parentElement) {
+		const key = Object.keys(at).find((one) => one.startsWith(REACT_PROPS));
+		const props: unknown = key ? Reflect.get(at, key) : null;
+		if (
+			typeof props === "object" &&
+			props !== null &&
+			PRESS_PROPS.some((name) => typeof Reflect.get(props, name) === "function")
+		)
+			return true;
+		if (at.matches("label, summary, a[href], [contenteditable='true']")) return true;
+	}
+	return false;
+}
+
+function holeFindings(frame: Element): Found[] {
+	const findings: Found[] = [];
+	for (const parent of frame.querySelectorAll("*")) {
+		const children = [...parent.children].filter(isDrawn);
+		for (let at = 1; at < children.length; at += 1) {
+			const before = children[at - 1];
+			const after = children[at];
+			if (!before || !after) continue;
+			const px = holeBetween(parent, before, after);
+			if (px !== null) findings.push(found("FN2", { px, before: labelOf(before), after: labelOf(after) }));
+		}
+	}
+	return findings;
+}
+
+function holeBetween(parent: Element, before: Element, after: Element): number | null {
+	const one = before.getBoundingClientRect();
+	const other = after.getBoundingClientRect();
+	const down = Math.round(other.top - one.bottom);
+	const isBelow = other.top >= one.bottom - 1;
+	if (isBelow && down > HOLE_PX) return down;
+	const across = Math.round(other.left - one.right);
+	const width = parent.getBoundingClientRect().width;
+	const isBeside = Math.abs(other.top - one.top) < one.height && other.left >= one.right - 1;
+	return isBeside && across > HOLE_ACROSS_PX && across > width * HOLE_ACROSS_SHARE ? across : null;
+}
+
+function shortHighlightFindings(frame: Element): Found[] {
+	return outermost(frame, LIST).flatMap((list) => {
+		const plate = list.getBoundingClientRect();
+		if (!wearsFill(list) || plate.width === 0) return [];
+		return [...list.querySelectorAll(ROW)]
+			.filter((row) => row.matches(SELECTED) || (wearsFill(row) && fillOf(row) !== fillOf(list)))
+			.flatMap((row) => {
+				const rect = row.getBoundingClientRect();
+				const px = Math.round(Math.max(rect.left - plate.left, plate.right - rect.right));
+				return px > SHORT_OF_PLATE_PX && wearsFill(row) ? [found("FN3", { label: labelOf(row), px })] : [];
+			});
+	});
+}
+
+function missedEdgeFindings(frame: Element): Found[] {
+	const findings: Found[] = [];
+	for (const parent of frame.querySelectorAll("*")) {
+		const children = [...parent.children].filter(isDrawn);
+		for (let at = 1; at < children.length; at += 1) {
+			const before = children[at - 1];
+			const after = children[at];
+			if (!before || !after) continue;
+			const one = before.getBoundingClientRect();
+			const other = after.getBoundingClientRect();
+			const px = Math.round(Math.abs(other.left - one.left));
+			if (other.top >= one.bottom - 1 && px > 0 && px <= MISSED_EDGE_PX)
+				findings.push(found("FN4", { px, before: labelOf(before), after: labelOf(after) }));
+		}
+	}
+	return findings;
+}
+
+function isDrawn(node: Element): boolean {
+	const rect = node.getBoundingClientRect();
+	return rect.width > 0 && rect.height > 0 && !node.matches("style, script, template");
+}
+
+function wearsFill(node: Element): boolean {
+	const fill = fillOf(node);
+	return fill !== "" && fill !== "transparent" && fill !== "rgba(0, 0, 0, 0)";
+}
+
+function fillOf(node: Element): string {
+	return node.ownerDocument.defaultView?.getComputedStyle(node).backgroundColor ?? "";
+}
+
+function labelOf(node: Element): string {
+	const named = node.getAttribute("aria-label") ?? node.getAttribute("data-name") ?? node.textContent ?? "";
+	const said = named.replace(/\s+/g, " ").trim();
+	return said.length > 40 ? `${said.slice(0, 40)}…` : said || node.tagName.toLowerCase();
 }
