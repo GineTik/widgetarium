@@ -105,3 +105,41 @@ A widget can hold other widgets. `ISlot` is one place a person fills, `ISlot.arr
 places, each drawn as a component (`<Hero />`, `main.map((Slot) => <Slot key={Slot.id} />)`);
 `IRepeat.of` draws one widget again for every row. A card list whose card is a catalogue widget
 is built that way, never by copying the card's code.
+
+## Chat and AI
+
+shadcn's chat parts, with their names, props and keyboard. A bubble, an attachment and a questionnaire
+choice are kit plates, so the plate laws decide their fill; never paint one yourself.
+
+| shadcn                                                                                                                                                                                                                                                                                                                                                                       | Notes                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Message align="start"\|"end"`, `MessageGroup`, `MessageAvatar`, `MessageContent`, `MessageHeader`, `MessageFooter`                                                                                                                                                                                                                                                          | the avatar sits at the bottom and rises above a footer; a `Bubble` inside takes the message's side                                                                                                                    |
+| `Bubble variant align`, `BubbleContent render`, `BubbleReactions side align`, `BubbleGroup`                                                                                                                                                                                                                                                                                  | `variant`: `default` (brand), `secondary`, `muted`, `tinted`, `outline`, `ghost`, `destructive`; `render={<button/>}` or `<a/>` makes the bubble pressable                                                            |
+| `Attachment state size orientation`, `AttachmentMedia variant`, `AttachmentContent`, `AttachmentTitle`, `AttachmentDescription`, `AttachmentActions`, `AttachmentAction`, `AttachmentTrigger render`, `AttachmentGroup`                                                                                                                                                      | `uploading` and `processing` spin over the media; `error` wears the error tone; label every icon-only action                                                                                                          |
+| `MessageScrollerProvider autoScroll defaultScrollPosition scrollPreviousItemPeek`, `MessageScroller`, `MessageScrollerViewport`, `MessageScrollerContent`, `MessageScrollerItem messageId scrollAnchor`, `MessageScrollerButton`                                                                                                                                             | follows streamed text while the reader is at the end, lets go on a scroll up, keeps the row in place when older ones load above; `useMessageScroller`, `useMessageScrollerScrollable`, `useMessageScrollerVisibility` |
+| `Questionnaire shortcuts onSubmit`, `QuestionnaireProgress`, `QuestionnaireItem name required multiple`, `QuestionnaireTitle`, `QuestionnaireDescription`, `QuestionnaireChoices`, `QuestionnaireChoice value`, `QuestionnaireInput`, `QuestionnaireError`, `QuestionnaireActions`, `QuestionnairePrevious`, `QuestionnaireSkip`, `QuestionnaireNext`, `QuestionnaireSubmit` | one item at a time; the item's `name` is the form field of its answers; `shortcuts="letters"` picks with A, B, C; Enter goes on; give `QuestionnaireInput` an `aria-label`                                            |
+
+Ours beyond shadcn: `<MessageParts parts={message.parts} />` draws an AI SDK or TanStack AI message's
+parts as plain data — text in a bubble, reasoning or thinking folded, a tool call with its stage,
+a file or source as an attachment — and `readChatParts` reads them without drawing.
+
+```tsx
+<MessageScrollerProvider autoScroll>
+	<MessageScroller>
+		<MessageScrollerViewport>
+			<MessageScrollerContent>
+				{messages.map((message) => (
+					<MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === "user"}>
+						<Message align={message.role === "user" ? "end" : "start"}>
+							<MessageContent>
+								<MessageParts parts={message.parts} />
+							</MessageContent>
+						</Message>
+					</MessageScrollerItem>
+				))}
+			</MessageScrollerContent>
+		</MessageScrollerViewport>
+		<MessageScrollerButton />
+	</MessageScroller>
+</MessageScrollerProvider>
+```

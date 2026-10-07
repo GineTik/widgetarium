@@ -48,6 +48,7 @@ import { Cell, Named, Section, WideSection } from "./kit-demo-frame.tsx";
 import { TableWithPages } from "./kit-demo-table.tsx";
 import { USAGE } from "./kit-demo-usage.ts";
 import { ShadcnButtons, ShadcnCard, ShadcnCommand, ShadcnForm, ShadcnSwitches } from "./kit-demo-shadcn.tsx";
+import { AttachmentDemo, BubbleDemo, CHAT_USAGE, ChatDemo, QuestionnaireDemo } from "./kit-demo-chat.tsx";
 import {
 	Area,
 	AreaChart,
@@ -374,6 +375,24 @@ function Demo() {
 				</Section>
 				<Section title="Tabs · ToggleGroup · Empty" usage={USAGE.shadcnSwitches}>
 					<ShadcnSwitches />
+				</Section>
+			</Grid>
+			<WideSection
+				title="Message · MessageParts · MessageScroller"
+				note="AI SDK and TanStack AI message parts as plain data; sticks to the latest turn"
+				usage={CHAT_USAGE.chat}
+			>
+				<ChatDemo />
+			</WideSection>
+			<Grid min={340}>
+				<Section title="Bubble" note="seven variants through the plate laws" usage={CHAT_USAGE.bubble}>
+					<BubbleDemo />
+				</Section>
+				<Section title="Attachment" note="state · size · orientation" usage={CHAT_USAGE.attachment}>
+					<AttachmentDemo />
+				</Section>
+				<Section title="Questionnaire" note="press A, B, C to pick; Enter to go on" usage={CHAT_USAGE.questionnaire}>
+					<QuestionnaireDemo />
 				</Section>
 			</Grid>
 			<WideSection title="Chart" note="Recharts parts inside ChartContainer, coloured by config" usage={USAGE.chart}>

@@ -68,6 +68,7 @@
 		"test:import": "node --single-threaded --import ./tools/loader/register.mts tools/import-test.ts",
 		"test:expand": "node --single-threaded --import ./tools/loader/register.mts tools/expand-test.ts",
 		"test:kit": "node --single-threaded --import ./tools/loader/register.mts tools/kit-test.ts",
+		"test:kit-chat": "node --single-threaded --import ./tools/loader/register.mts tools/kit-chat-test.ts",
 		"test:fill": "node --single-threaded --import ./tools/loader/register.mts tools/fill-test.ts",
 		"test:settings": "node --single-threaded --import ./tools/loader/register.mts tools/settings-test.ts",
 		"test:view": "node --single-threaded --import ./tools/loader/register.mts tools/view-test.ts",
