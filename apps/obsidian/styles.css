@@ -628,6 +628,15 @@ body {
 	height: auto;
 }
 
+.wg-slot.is-content-width {
+	width: fit-content;
+}
+
+.wg-slot.is-content-width :is(.wg-widget-root, .wg-design-drawn) {
+	container-type: normal;
+	width: auto;
+}
+
 .wg-mounted-holder {
 	position: relative;
 	display: flex;
@@ -5049,6 +5058,13 @@ body.wg-tree-carrying .wg-tile-body {
 	font-size: var(--wg-kit-text-s);
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-container-frame {
+	position: relative;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 32px 24px 48px;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-container {
 	box-sizing: border-box;
 	display: flex;
@@ -8189,6 +8205,14 @@ body.wg-tree-carrying .wg-tile-body {
 	margin: 0;
 }
 
+.wg-design-widget-body {
+	position: relative;
+}
+
+.wg-design-widget-body:has(.wg-kit-dialog-overlay) {
+	min-height: 640px;
+}
+
 .wg-design-state-name {
 	font-size: var(--font-ui-medium);
 	font-weight: var(--font-semibold, 600);
@@ -8318,4 +8342,253 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-design-hint {
 	right: 16px;
 	bottom: 16px;
+}
+
+.wg-design-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wg-design-job-dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	background: var(--text-faint);
+}
+
+.wg-design-job-dot.is-running {
+	background: var(--interactive-accent);
+	animation: wg-design-job-pulse 1.4s ease-in-out infinite;
+}
+
+.wg-design-job-dot.is-waiting {
+	background: var(--color-orange, var(--text-warning));
+}
+
+.wg-design-job-dot.is-failed {
+	background: var(--text-error);
+}
+
+.wg-design-job-dot.is-done {
+	background: var(--color-green, var(--text-success));
+}
+
+@keyframes wg-design-job-pulse {
+	50% {
+		opacity: 0.35;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-design-job-dot.is-running {
+		animation: none;
+	}
+}
+
+.wg-design-doc {
+	width: 960px;
+	max-width: 100%;
+	font-size: 20px;
+	line-height: 1.55;
+	user-select: text;
+}
+
+.wg-design-doc.is-plain {
+	white-space: pre-wrap;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-jobs {
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1, 4px);
+	padding: var(--size-4-2, 8px) var(--wg-ai-gutter);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-jobs-app {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2, 8px);
+	padding: var(--size-4-2, 8px) var(--size-4-3, 12px);
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-group-fill);
+	font-size: var(--wg-kit-text-s);
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-jobs-said {
+	flex: 1;
+	min-width: 0;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wg-design-job-frame {
+	position: relative;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--background-primary);
+	box-shadow: inset 0 0 0 1px var(--background-modifier-border);
+	cursor: default;
+}
+
+.wg-design-job-frame.is-running {
+	background-image: linear-gradient(
+		100deg,
+		transparent 30%,
+		color-mix(in srgb, var(--text-normal) 4%, transparent) 50%,
+		transparent 70%
+	);
+	background-size: 60% 100%;
+	background-repeat: no-repeat;
+	animation: wg-design-job-wave 2.2s ease-in-out infinite;
+}
+
+@keyframes wg-design-job-wave {
+	from {
+		background-position: -160% 0;
+	}
+	to {
+		background-position: 260% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-design-job-frame.is-running {
+		animation: none;
+	}
+}
+
+.wg-design-job-line {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 19px;
+}
+
+.wg-design-job-status {
+	display: flex;
+	align-items: center;
+	gap: 13px;
+	color: var(--text-normal);
+}
+
+.wg-design-job-status .wg-kit-loader {
+	flex: none;
+}
+
+.wg-design-job-mark {
+	flex: none;
+	width: 18px;
+	height: 18px;
+	border-radius: 30% 70% 60% 40%;
+	background: var(--text-faint);
+}
+
+.wg-design-job-mark.is-queued {
+	width: 16px;
+	height: 16px;
+	border-radius: 999px;
+	background: none;
+	box-shadow: inset 0 0 0 2px var(--text-faint);
+}
+
+.wg-design-job-mark.is-waiting {
+	background: var(--color-orange, var(--text-warning));
+}
+
+.wg-design-job-mark.is-failed {
+	background: var(--text-error);
+}
+
+.wg-design-job-mark.is-done {
+	background: var(--color-green, var(--text-success));
+}
+
+.wg-design-job-meta {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding-inline-start: 31px;
+	font-size: 15px;
+	color: var(--text-faint);
+	font-variant-numeric: tabular-nums;
+}
+
+.wg-design-job-act {
+	margin: -3px -8px;
+	padding: 3px 8px;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font: inherit;
+	font-weight: var(--font-semibold, 600);
+	cursor: pointer;
+	transition:
+		background-color 160ms ease-out,
+		color 160ms ease-out;
+}
+
+.wg-design-job-act:hover,
+.wg-design-job-act:focus-visible {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	outline: none;
+}
+
+.wg-design-job-act:active {
+	transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wg-design-job-act {
+		transition: none;
+	}
+}
+
+.wg-design-group-aside {
+	margin-inline-start: auto;
+}
+
+.wg-design-draft {
+	display: inline-flex;
+	align-items: flex-start;
+	gap: 20px;
+}
+
+.wg-design-draft-said {
+	padding: 2px 10px;
+	border-radius: 999px;
+	background: var(--background-modifier-hover);
+	font-size: 16px;
+	color: var(--text-muted);
+}
+
+.wg-design-note-widget {
+	align-self: flex-start;
+	margin-top: 4px;
+	padding: 4px 10px;
+	border: 0;
+	border-radius: 999px;
+	background: var(--background-primary);
+	box-shadow: none;
+	color: var(--text-normal);
+	font: inherit;
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold, 600);
+	cursor: pointer;
+	transition: background-color 160ms ease-out;
+}
+
+.wg-design-note-widget:hover,
+.wg-design-note-widget:focus-visible {
+	background: var(--background-primary-alt);
+	outline: none;
 }

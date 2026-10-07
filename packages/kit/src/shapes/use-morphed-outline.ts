@@ -23,7 +23,7 @@ export function useMorphedOutline(points: string): MorphedShape {
 		}
 		const began = performance.now();
 		let frame = requestAnimationFrame(function step(now: number) {
-			const progress = Math.min(1, (now - began) / MORPH_MS);
+			const progress = Math.min(1, Math.max(0, (now - began) / MORPH_MS));
 			const mixed = mixedPoints(from, to, springOf(progress));
 			shown.current = mixed;
 			setDrawn(mixed);
