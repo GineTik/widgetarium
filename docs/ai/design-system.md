@@ -25,21 +25,54 @@ Tables and text without an id are reference, read but not checked.
 **Quiet and strict**: white page, grey plates, the theme's type and the kit's primary button; imagery
 carries the colour; one accent, purple, only where progress or a key value needs it.
 
+## App shell
+
+The shell is what stands around every page: where the navigation lives and how the window is cut. It
+is chosen once per app, **before any page is drawn**, from this table — the set Material 3's
+canonical layouts, Apple's sidebar and split view and shadcn's sidebar blocks agree on — and written
+in the app's own `design-system.md`.
+
+| Shell                 | When                                                         | Drawn as                                                                                   |
+| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `sidebar`             | 5 or more pages, at most two levels                          | the kit's `Sidebar` on the left, 240–280 wide, the current page marked; the page beside it |
+| `rail + list`         | a collection opened one item at a time: mail, notes, records | an icon rail, a list pane beside it, the open item filling the rest                        |
+| `tabs`                | 2–4 flat pages and nothing deeper                            | one row of page tabs over the page                                                         |
+| `sidebar + inspector` | an editor or a canvas with the selected thing's properties   | `sidebar` with a pane on the right that follows the selection                              |
+| `none`                | one tool, one page                                           | no navigation; the page is the app                                                         |
+
+- **SH1 · The shell follows the table**, by the number of pages and how deep they go; `tabs` for
+  five pages or more is the defect, never the default.
+  check: judged
+- **SH2 · The shell is one widget of the app's own** (`@<app>/shell`), with the pages' bodies in its
+  slot; every page stands in it, so navigation is drawn once and is the same everywhere (P4). The
+  canvas shows the shell holding each page, one screen per state; a page widget is never placed as a
+  screen of its own, or every page is drawn twice.
+  check: judged
+- **SH4 · The shell is 1440 wide at most and its navigation is flush**: `Container width={1440}`,
+  `<Sidebar surface="edge">` running its whole height at the shell's edge, a hairline on its inner side, never a card
+  floating far from the window's edge and top. The body stands `gap-sections` from the hairline, the same space as between two sections, never touching it.
+  check: judged
+- **SH3 · A collapsed shell is still there**: a sidebar folds to an icon rail, never to nothing, and
+  a narrow window turns it into a drawer opened from the page's own header.
+  check: judged
+
 ## Page archetypes
 
-Five archetypes are starting points, never templates. A page either draws `<Page kind="…">` from the
-kit, which lays its width, header and hero, or builds its own structure inside the kit's `Container`
-(width 640, 800, 1040 or 1280); it never sets a width of its own. Two pages of one app look alike
-only when they do the same job, and an app never looks like another app because it was copied from
-it.
+Six archetypes are starting points, never templates. A page's body either draws `<Page kind="…">`
+from the kit, which lays its width, header and hero, or builds its own structure inside the kit's
+`Container` (width 640, 800, 1040, 1280, 1440 or `full`); it never sets a width of its own. The
+shell stands outside the body in a `Container` of 1440 (SH4); the body fills the space beside the
+navigation, in a `Container` of its archetype's width, or `full` for a `workspace`. Two pages of one app look alike only when they do the same job, and an app never
+looks like another app because it was copied from it.
 
-| Archetype   | Width                                       | Hero                                                                          | Body                                                                           |
-| ----------- | ------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `home`      | 1040                                        | optional: a greeting with the next action, a key number on an object, a photo | 3–5 overview sections, ≤5 rows each, then "See all ›"; an optional side column |
-| `index`     | 800 for rows; `wide` 1280 for a table, grid | none                                                                          | search and filters in one row, then one collection                             |
-| `record`    | 1040: main and a 320 side column            | its identity: face or picture, name, the key fact merged into a line          | main: timeline, notes; side: status, key fact, metadata                        |
-| `dashboard` | 1280                                        | a row of key numbers                                                          | a grid of cards and charts                                                     |
-| `form`      | 640                                         | none                                                                          | one column of fields, the action at the end                                    |
+| Archetype   | Width                                       | Hero                                                                          | Body                                                                                         |
+| ----------- | ------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `home`      | 1040                                        | optional: a greeting with the next action, a key number on an object, a photo | 3–5 overview sections, ≤5 rows each, then "See all ›"; an optional side column               |
+| `index`     | 800 for rows; `wide` 1280 for a table, grid | none                                                                          | search and filters in one row, then one collection                                           |
+| `record`    | 1040: main and a 320 side column            | its identity: face or picture, name, the key fact merged into a line          | main: timeline, notes; side: status, key fact, metadata                                      |
+| `dashboard` | 1280                                        | a row of key numbers                                                          | a grid of cards and charts                                                                   |
+| `form`      | 640                                         | none                                                                          | one column of fields, the action at the end                                                  |
+| `workspace` | `full`                                      | none: a toolbar over the surface                                              | one surface filling the body — a board, a calendar, a map, a table — that scrolls on its own |
 
 ## Pages
 
@@ -47,7 +80,7 @@ it.
   onward ("See all ›"); it never manages them.
 - **P2 · A list and the record it opens are two pages**, reached by a press and left by Back. A side
   panel holds a record only when reading beside the list is the job (mail, a reader).
-- **P4 · One navigation for the whole app**, the same on every page, showing where the person is.
+- **P4 · One navigation for the whole app**, the same on every page, showing where the person is: the shell (SH2).
 - **PG1 · Every page is drawn in the kit's `Container` or `Page`**; the structure inside is the
   design's own.
   check: kit
@@ -57,6 +90,10 @@ it.
 - **PG3 · The header holds a title naming the job on the left and at most one primary action on the
   right.**
   check: kit
+- **PG6 · A header is one block**: its title, the line under it, its filters and its action stand
+  `gap-parts` apart; `gap-sections` is only between sections, and a page opens at its title, with no
+  empty band above it. A status beside the title (a ring, a count) stands on the title's line.
+  check: judged
 - **PG4 · A hero is a choice, never a default**: one when a single thing should greet the person (a
   photo, a number, the next action); an index and a form never have one.
   check: judged
@@ -122,6 +159,19 @@ What separates a product from a picture of one. Each is measured on the drawn ca
 - **FN4 · Stacked blocks share their edge.** A subtitle 4px off its title reads as a mistake, never as
   a choice.
   check: measured
+- **FN5 · Corners are concentric**: a plate inside a plate has the outer radius minus the padding
+  between them, never more; a 24px corner holding a 24px corner at 12px inset is the defect.
+  check: judged
+- **FN6 · Nothing overlaps by accident.** Two blocks cross only where the design meant it (D4) — a
+  card over a photo's edge — never a search field under its filters or a label under a dot.
+  check: judged
+- **FN7 · Content wider than its place scrolls, it is never cut.** A row of columns, a strip of
+  cards or a wide table scrolls sideways in its own plate; a cover is shown whole or cropped by its
+  frame, never squeezed.
+  check: judged
+- **FN8 · A press leads somewhere that exists.** A link, a chevron or a "See all ›" opens a page,
+  dialog or state that is drawn; an arrow pointing at a page the spec does not have is removed.
+  check: judged
 
 ## Something to look at
 
