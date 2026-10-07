@@ -22,7 +22,7 @@ export function WidgetCard({ id, label, props, registry, host }: WidgetCardProps
 		h("figcaption", { key: "name", className: "wg-design-state-name" }, label),
 		h(
 			"div",
-			{ key: "drawn", className: "wg-design-widget-body", inert: true },
+			{ key: "drawn", className: "wg-design-widget-body", inert: true, "data-wg-overlay-layer": "" },
 			h(
 				DrawnWhenSeen,
 				{

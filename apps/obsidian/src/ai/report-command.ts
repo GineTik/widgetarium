@@ -111,7 +111,9 @@ interface Placement {
 async function placementProblems(place: ReportPlace, { widget, note, actions }: Placement): Promise<string[]> {
 	const raw = await rawBoardOfNote(place.vault, note);
 	const tiles = isObject(raw) && Array.isArray(raw["tiles"]) ? raw["tiles"] : [];
-	const tile = tiles.find((one) => isObject(one) && widgetKeyOf(textOf(one["widget"])) === widgetKeyOf(widget));
+	const tile = tiles
+		.flatMap(heldIn)
+		.find((one) => isObject(one) && widgetKeyOf(textOf(one["widget"])) === widgetKeyOf(widget));
 	const wiring = tile === undefined ? [] : await wiringProblems(place, { widget, tiles, tile, actions });
 	return [
 		...(tile === undefined ? [NOT_PLACED.replace("{widget}", widget).replace("{note}", note)] : []),

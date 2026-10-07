@@ -55,6 +55,7 @@ const CLEAN = "No problems found";
 const LONGEST_HINT = 100;
 const WRITING_TOOLS = new Set(["Write", "Edit", "MultiEdit", "NotebookEdit"]);
 const NOTE_FILE = /\.md$/;
+const SHELL_VARIABLE = /\$(?:\w|\{)/;
 const TITLE_OPTION = /--title\s+(?:"([^"]*)"|'([^']*)'|(\S+))/;
 
 export function buildsIn(calls: readonly KeptCall[] | null | undefined, isRunning: boolean): Build[] {
@@ -133,7 +134,8 @@ function buildOf(build: StartedBuild, { isLive, isOpen }: { isLive: boolean; isO
 
 function titleIn(said: string): string {
 	const named = said.match(TITLE_OPTION);
-	return (named?.[1] ?? named?.[2] ?? named?.[3] ?? "").trim();
+	const title = (named?.[1] ?? named?.[2] ?? named?.[3] ?? "").trim();
+	return SHELL_VARIABLE.test(title) ? "" : title;
 }
 
 const WRITING_STEP = 0;
