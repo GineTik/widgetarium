@@ -22,7 +22,6 @@ export const JobSchema = z.object({
 	phase: z.enum(JOB_PHASES),
 	says: z.string().min(1),
 	after: z.array(z.string()).default([]),
-	approval: z.boolean().default(false),
 	status: z.enum(JOB_STATUSES).default("queued"),
 	reason: z.string().nullable().default(null),
 	question: QuestionSchema.nullable().default(null),
@@ -67,8 +66,6 @@ const MOVES: Readonly<Record<JobStatus, readonly JobStatus[]>> = {
 const NOT_JSON = "the job is not JSON: {why}";
 const NOT_A_MOVE = "job {id} is {from} and cannot become {to}";
 const SAID_AT_MOST = 1200;
-
-export const APPROVE = "Approve";
 
 export function jobsFolderOf(app: string): string {
 	return `${SPEC_FOLDER}/${app}/${JOBS_FOLDER}`;
@@ -115,26 +112,13 @@ export function movedJob(job: Job, move: JobMove): JobMoved {
 
 export function isStartable(job: Job, jobs: readonly Job[]): boolean {
 	if (job.status !== "queued") return false;
+	if (jobs.some((other) => other.id !== job.id && other.status === "running" && other.phase === job.phase))
+		return false;
 	return job.after.every((id) => jobs.find((other) => other.id === id)?.status === "done");
 }
 
 export function isLive(job: Job): boolean {
 	return job.status !== "done";
-}
-
-const SHOWN_FIRST: readonly JobStatus[] = ["running", "waiting", "failed", "paused", "queued", "done"];
-
-export function jobOfPage(jobs: readonly Job[], page: string): Job | null {
-	const ofPage = jobs.filter((job) => job.page === page);
-	for (const status of SHOWN_FIRST) {
-		const found = ofPage.find((job) => job.status === status);
-		if (found) return found;
-	}
-	return null;
-}
-
-export function pagesOfJobs(jobs: readonly Job[]): string[] {
-	return [...new Set(jobs.flatMap((job) => (job.page ? [job.page] : [])))];
 }
 
 export function ownerOf(jobs: readonly Job[], widget: string): Job | null {

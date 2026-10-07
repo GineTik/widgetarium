@@ -23,7 +23,6 @@ export interface JobAdd {
 	readonly phase: unknown;
 	readonly says: unknown;
 	readonly after: unknown;
-	readonly approval: unknown;
 	readonly budget: unknown;
 	readonly id: unknown;
 }
@@ -70,7 +69,6 @@ export async function addJob(vault: string, app: unknown, asked: JobAdd, now: nu
 		phase,
 		says: textOf(asked.says),
 		after,
-		approval: asked.approval === true,
 		budget: asked.budget === undefined ? null : Number(asked.budget),
 		createdAt: now,
 	});
@@ -121,8 +119,11 @@ export async function refuseOwnedElsewhere(
 ): Promise<string | null> {
 	const [app, id] = (running ?? "").split("/");
 	if (!app || !id) return null;
-	const owner = ownerOf(await jobsOfApp(vault, app), widget);
-	if (!owner || owner.id === id) return null;
+	const jobs = await jobsOfApp(vault, app);
+	const owner = ownerOf(jobs, widget);
+	const asking = jobs.find((job) => job.id === id);
+	if (!owner || owner.id === id || owner.phase === asking?.phase) return null;
+	if (owner.page !== null && owner.page === asking?.page) return null;
 	return OWNED.replace("{widget}", widget).replace("{owner}", owner.id);
 }
 

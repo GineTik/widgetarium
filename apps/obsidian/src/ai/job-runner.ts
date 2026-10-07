@@ -1,4 +1,4 @@
-import { APPROVE, isLive, isStartable, movedJob } from "@widgetarium/core/app-jobs.js";
+import { isLive, isStartable, movedJob } from "@widgetarium/core/app-jobs.js";
 import type { Job, JobAsk, JobMove, JobQuestion } from "@widgetarium/core/app-jobs.js";
 import { CLI, briefGoesInTheMessage } from "./providers.js";
 import type { AiSettings } from "./settings.js";
@@ -9,6 +9,7 @@ import { startIn } from "./builds.js";
 import { JOB_ENV } from "./job-command.js";
 import type { JobFiles } from "./job-store.js";
 import { askedSaid, endingOf, promptOf } from "./job-endings.js";
+import type { EndedBy } from "./job-endings.js";
 
 export interface LiveJob {
 	readonly activity: string | null;
@@ -47,7 +48,7 @@ interface Running {
 	text: string;
 	activity: string | null;
 	question: JobQuestion | null;
-	endedBy: "stopped" | "budget" | null;
+	endedBy: EndedBy | null;
 	unsaved: string[];
 }
 
@@ -150,20 +151,22 @@ function liveOf(state: JobsHeld, key: string): LiveJob | null {
 async function startJob(state: JobsHeld, key: string): Promise<void> {
 	const job = state.held.get(key);
 	if (!job || state.running.has(key)) return;
-	if (job.status === "queued") return begin(state, job);
-	const queued = await move(state, job, { to: "queued", note: null });
-	if (queued) await begin(state, queued);
+	const queued = job.status === "queued" ? job : await move(state, job, { to: "queued", note: null });
+	if (queued && isStartable(queued, jobsOfApp(state, queued.app))) await begin(state, queued);
+}
+
+function halt(state: JobsHeld, key: string, why: EndedBy): void {
+	const live = state.running.get(key);
+	if (!live || live.endedBy !== null) return;
+	live.endedBy = why;
+	live.run.stop();
+	void settle(state, key, null);
 }
 
 async function stopJob(state: JobsHeld, key: string): Promise<void> {
 	const job = state.held.get(key);
-	const live = state.running.get(key);
 	if (!job) return;
-	if (live) {
-		live.endedBy = STOPPED;
-		live.run.stop();
-		return;
-	}
+	if (state.running.has(key)) return halt(state, key, STOPPED);
 	if (job.status === "queued") await move(state, job, { to: "paused", reason: STOPPED, at: state.doors.now() });
 }
 
@@ -178,10 +181,6 @@ async function noteJob(state: JobsHeld, key: string, said: string): Promise<void
 async function answerJob(state: JobsHeld, key: string, said: string): Promise<void> {
 	const job = state.held.get(key);
 	if (!job || job.status !== "waiting") return;
-	if (said === APPROVE) {
-		await move(state, job, { to: "done", said: null, at: state.doors.now() });
-		return tellWhenAllDone(state, job.app);
-	}
 	await move(state, job, { to: "queued", note: ANSWERED.replace("{said}", said) });
 }
 
@@ -192,7 +191,7 @@ async function stopAll(state: JobsHeld): Promise<void> {
 function closeJobs(state: JobsHeld, timers: readonly ReturnType<typeof setInterval>[]): void {
 	for (const timer of timers) clearInterval(timer);
 	for (const live of state.running.values()) {
-		live.endedBy = STOPPED;
+		live.endedBy = INTERRUPTED;
 		live.run.stop();
 	}
 }
@@ -218,13 +217,16 @@ async function load(state: JobsHeld): Promise<void> {
 			seen.add(key);
 			if (state.held.has(key)) continue;
 			state.held.set(key, job);
-			if (job.status === "running" && !state.running.has(key))
-				await move(state, job, { to: "paused", reason: INTERRUPTED, at: state.doors.now() });
+			if (isCutOff(job) && !state.running.has(key)) await move(state, job, { to: "queued", note: null });
 		}
 		for (const key of [...state.held.keys()])
 			if (key.startsWith(`${app}/`) && !seen.has(key) && !state.running.has(key)) state.held.delete(key);
 		await takeAsks(state, app);
 	}
+}
+
+function isCutOff(job: Job): boolean {
+	return job.status === "running" || (job.status === "paused" && job.reason === INTERRUPTED);
 }
 
 async function takeAsks(state: JobsHeld, app: string): Promise<void> {
@@ -308,10 +310,7 @@ function heard(state: JobsHeld, key: string, event: StreamPart): void {
 	if ("spent" in event && Number.isFinite(event.spent)) live.spentNow = event.spent;
 	if ("text" in event && event.text) live.text += event.text;
 	if ("call" in event && event.call) heardCall(state, key, live, event.call);
-	if (job.budget !== null && live.spentBefore + live.spentNow > job.budget && live.endedBy === null) {
-		live.endedBy = OVER_BUDGET;
-		live.run.stop();
-	}
+	if (job.budget !== null && live.spentBefore + live.spentNow > job.budget) halt(state, key, OVER_BUDGET);
 	notify(state);
 }
 

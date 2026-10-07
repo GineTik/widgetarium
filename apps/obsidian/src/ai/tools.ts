@@ -44,7 +44,8 @@ const HINT_FIELDS = ["command", "file_path", "path", "pattern", "query", "url", 
 const LONGEST_HINT = 120;
 
 export const OUR_NAME = "Widgetarium";
-const OUR_TOOL_CALL = /widgets\.mjs\s+([a-z][a-z-]*)([\s\S]*)$/;
+const OUR_TOOL_CALL = /widgets\.mjs\s+([a-z][a-z-]*)((?:"[^"]*"|'[^']*'|\\.|[^;&|<>\n"'])*)/;
+const REDIRECTED_STREAM = /\s\d+$/;
 const ARGUMENT = /"([^"]*)"|'([^']*)'|((?:\\.|[^\s"'])+)/g;
 
 export function glyphForTool(name: unknown): string {
@@ -52,9 +53,12 @@ export function glyphForTool(name: unknown): string {
 }
 
 export function ourCallIn(command: unknown): OurCall | null {
-	const found = String(command ?? "").match(OUR_TOOL_CALL);
+	const said = String(command ?? "");
+	const found = said.match(OUR_TOOL_CALL);
 	if (!found) return null;
-	return { verb: found[1] ?? "", said: (found[2] ?? "").trim() };
+	const ends = said[(found.index ?? 0) + found[0].length];
+	const words = ends === ">" || ends === "<" ? (found[2] ?? "").replace(REDIRECTED_STREAM, "") : (found[2] ?? "");
+	return { verb: found[1] ?? "", said: words.trim() };
 }
 
 export function argumentsIn(said: string): string[] {

@@ -1,4 +1,4 @@
-import { createElement as h } from "react";
+import { createElement as h, useSyncExternalStore } from "react";
 import type { ReactElement } from "react";
 import { List, Row } from "@widgetarium/kit";
 import { keptFeaturesOf } from "@widgetarium/core/app-spec.js";
@@ -12,6 +12,9 @@ import type { BuildSettling } from "./build-stages.js";
 import type { Build } from "./builds.js";
 import type { BuildRun, InstallRow, StageRow } from "./spec-calls.js";
 import type { SpecPort } from "./spec-port.js";
+import { jobRow, jobStagesOf, preparingRow } from "./build-job-rows.js";
+import type { JobStage } from "./build-job-rows.js";
+import type { Jobs } from "./job-runner.js";
 
 export interface BuildRunCardProps {
 	readonly run: BuildRun;
@@ -19,6 +22,7 @@ export interface BuildRunCardProps {
 	readonly builds: readonly Build[];
 	readonly installs: readonly InstallRow[];
 	readonly isRunning?: boolean;
+	readonly jobs: Jobs;
 }
 
 const BUILDING = "Building {app}";
@@ -35,19 +39,49 @@ const LOOKED_AT = "Looked at {products}";
 const STAGE_RING_PX = 28;
 const ITEM_RING_PX = 22;
 
-export function BuildRunCard({ run, port, builds, installs, isRunning = false }: BuildRunCardProps): ReactElement {
+export function BuildRunCard(props: BuildRunCardProps): ReactElement {
+	const { run, port, jobs } = props;
+	useSyncExternalStore(jobs.watch, () => jobs.version());
 	const spec = useSpec(port, run.app).read?.spec ?? null;
+	const foldFor = useFolds();
+	const planned = jobs.jobsOf(run.app);
+	if (planned.length === 0) return stagedCardOf(props, spec, foldFor);
+	const isDone = planned.every((job) => job.status === "done");
+	const presses = {
+		start: (id: string) => void jobs.start(run.app, id),
+		stop: (id: string) => void jobs.stop(run.app, id),
+	};
+	return h("section", { className: "wg-ai-spec", "data-build-key": run.key }, [
+		h(SpecTitle, { key: "title", title: (isDone ? BUILT : BUILDING).replace("{app}", run.app), said: sizeOf(spec) }),
+		h(List, { key: "stages" }, [
+			researchRow(spec),
+			preparingRow(planned),
+			...jobStagesOf(planned).map((stage) =>
+				stageOf(
+					{ key: stage.key, name: stage.name, status: stage.status, said: stage.said },
+					stage.jobs.map((job) => jobRow(job, planned, presses)),
+					foldFor(stage.key),
+				),
+			),
+		]),
+	]);
+}
+
+function stagedCardOf(
+	{ run, builds, installs, isRunning = false }: BuildRunCardProps,
+	spec: AppSpec | null,
+	foldFor: (section: string) => Fold,
+): ReactElement {
 	const isDone = run.rows.every((row) => row.status === "done");
 	const settling = { isRunning, isStageDone: run.rows.some((row) => row.stage === "design" && row.status === "done") };
 	const items = (row: StageRow): ReactElement[] =>
 		itemRowsOf(row, { builds: latestPerWidget(builds), installs, settling });
 	const title = (isDone ? BUILT : BUILDING).replace("{app}", run.app);
-	const foldFor = useFolds();
 	return h("section", { className: "wg-ai-spec", "data-build-key": run.key }, [
 		h(SpecTitle, { key: "title", title, said: sizeOf(spec) }),
 		h(List, { key: "stages" }, [
 			researchRow(spec),
-			...run.rows.map((row) => stageOf(row, items(row), foldFor(row.stage))),
+			...run.rows.map((row) => stageOf(shownStageOf(row), items(row), foldFor(row.stage))),
 		]),
 	]);
 }
@@ -69,11 +103,22 @@ function sizeOf(spec: AppSpec | null): string | null {
 	return SIZE.replace("{features}", String(keptFeaturesOf(spec).length)).replace("{pages}", String(spec.pages.length));
 }
 
-function stageOf(row: StageRow, items: ReactElement[], fold: Fold): ReactElement {
-	const parts = [stageRing(row.status, STAGE_RING_PX), rowText(STAGE_NAMES[row.stage], row.said || null)];
-	if (items.length === 0) return h(Row, { key: row.stage, className: `is-${row.status}` }, parts);
+function shownStageOf(row: StageRow): ShownStage {
+	return { key: row.stage, name: STAGE_NAMES[row.stage], status: row.status, said: row.said };
+}
+
+interface ShownStage {
+	readonly key: string;
+	readonly name: string;
+	readonly status: StageRow["status"] | JobStage["status"];
+	readonly said: string;
+}
+
+function stageOf(row: ShownStage, items: ReactElement[], fold: Fold): ReactElement {
+	const parts = [stageRing(row.status, STAGE_RING_PX), rowText(row.name, row.said || null)];
+	if (items.length === 0) return h(Row, { key: row.key, className: `is-${row.status}` }, parts);
 	const press = { type: "button", "aria-expanded": fold.isOpen, onClick: fold.onToggle };
-	return h("div", { key: row.stage, className: "wg-ai-stage-fold" }, [
+	return h("div", { key: row.key, className: "wg-ai-stage-fold" }, [
 		h(
 			Row,
 			{ key: "line", asChild: true, pressable: true, className: `is-${row.status}` },

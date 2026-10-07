@@ -60,7 +60,9 @@ downloaded: the canvas shows them from their address.
 — a product screen whose layout can be taken, a website, marketing art with no layout in it, a photo.
 Then write a sticky note for every part worth a word: the layout you take, a block you will copy (a
 greeting with a composer as the hero, a "Getting started" checklist), what you like, what you leave
-and why. Each points at its spot on the picture:
+and why. **Read every part by its meaning, not its shape**: what job it does for the person, and why
+it stands where it does — "a ring that tells a learner how much of today is left, beside the button
+that continues", never only "a ring". Each points at its spot on the picture:
 
 ```
 node {tool} note <app> <reference> "Home as quiet titled lists, three rows each: take this layout" --tone take --at 0.45,0.4
@@ -97,28 +99,27 @@ _Over when the person pressed Build it._ Nothing else is written yet.
 
 **Then plan the build as jobs, and stop.** The person gets the first page in minutes and the rest
 while they look at it, instead of everything at once at the end. One job per page and phase, with
-`node {tool} job add <app> --title "…" --phase … --page "…" --says "…" [--after …] [--approval]`:
+`node {tool} job add <app> --title "…" --phase … --page "…" --says "…" [--after …]`:
 
 | Job                                   | Phase       | After                                             | Says                                                                                                                      |
 | ------------------------------------- | ----------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| the page the app opens on             | `design`    | —, with `--approval`                              | it also writes `.widgetarium/apps/<app>/design-system.md` and draws three directions, then asks which to keep (`job ask`) |
+| the page the app opens on             | `design`    | —                                                 | it also writes `.widgetarium/apps/<app>/design-system.md` and draws three directions, then asks which to keep (`job ask`) |
 | every other page, in the spec's order | `design`    | the previous page's design job                    | follow the first page's direction and reuse its widgets                                                                   |
 | every page                            | `implement` | its own design job and the previous implement job | make the interaction contract real, place the note, bind it                                                               |
-| every page                            | `review`    | its own implement job                             | the first polish round: the job role's four questions, then fixes                                                         |
 
-Design jobs run one after another, so the app reads as one hand made it; an implement job runs
-beside the next design. **`--says` carries everything the job needs and nothing else**: the page's
+Design jobs run one after another — the plugin never runs two jobs of one phase at once, because they would edit the same widgets — so the app reads as one hand made it. The person corrects
+each design on the canvas while the next one is drawn. **`--says` carries everything the job needs and nothing else**: the page's
 name and what it is for, the spec path, the kept features that stand on it with their actions, the
 records it shows and the `Data` choice, the references that name it. A job never reads the chat.
 Then run `node {tool} jobs <app>`, say in one line when the first page will stand on the canvas,
-and end your turn. Never open the canvas yourself; the chat offers it.
+and end your turn. Never open the canvas yourself.
 
 **While the jobs run you answer for them.** A message saying a job failed: read `jobs <app>`, then
 `job start` it again, send it a `job note`, or tell the person plainly what blocks it. A
 correction the person writes in the chat about one page: `job note <app> <id> "<their words>"`.
-A message saying a job asks the person — a direction to pick, a page to approve: put the question
+A message saying a job asks the person — a direction to pick: put the question
 to them in one line with its options, and pass their reply with
-`job answer <app> <id> "<their words>"` (`Approve` approves).
+`job answer <app> <id> "<their words>"`. Nothing waits to be approved: the person corrects a page on the canvas or in the chat whenever they like.
 The message saying every job is done: run `report <app>` and end with its lines. A small change
 after the build is one `task` job, or yours to do.
 
@@ -194,7 +195,8 @@ place things stand, never the things: its code decides where each block goes, an
 `ISlot` is one place (a hero), `ISlot.array()` a list of places (a column of sections). The widget
 receives each as a component — `<Hero />`, `main.map((Slot) => <Slot key={Slot.id} />)`,
 `side.length` — and draws it inside its own structure. `check` names a page that declares no slot.
-The page's frame is the kit's `Container` (`width` 640, 800, 1040 or 1280 from the design system), and
+The page stands in the app's shell widget (`@<app>/shell`, SH2), and its body's frame is the kit's
+`Container` (`width` 640, 800, 1040, 1280 or `full`, from the page's archetype), and
 everything inside it is yours: rows, grids, overlaps, a title row, written with Tailwind and answering
 to its own width through container queries (`@3xl:grid-cols-[2fr_1fr]`), so the page holds on a phone
 as it does on a desk. Space blocks with `gap-sections` and items with `gap-cards`. A page reads data
@@ -214,31 +216,13 @@ const HomePage = createWidget({
 		const isEmpty = useData(getPeople, { limit: 1 }).data.length === 0;
 		return (
 			<Container width={1040} data-name="People">
-				<header className="flex items-center justify-between gap-parts" data-name="Title row">
-					<h1 className="text-h1 m-0">People</h1>
-					<div className="flex items-center gap-parts" data-name="Actions">
-						{actions.map((Slot) => (
-							<Slot key={Slot.id} />
-						))}
-					</div>
-				</header>
-				<Hero />
-				{isEmpty ? (
-					<Empty />
-				) : (
-					<div className="grid gap-sections @3xl:grid-cols-[2fr_1fr]" data-name="Columns">
-						<div className="flex flex-col gap-sections min-w-0" data-name="Main column">
-							{main.map((Slot) => (
-								<Slot key={Slot.id} />
-							))}
-						</div>
-						<div className="flex flex-col gap-sections min-w-0" data-name="Side column">
-							{side.map((Slot) => (
-								<Slot key={Slot.id} />
-							))}
-						</div>
-					</div>
-				)}
+				<div className="flex flex-col gap-sections" data-name="Slots">
+					{actions.map((Slot) => (
+						<Slot key={Slot.id} />
+					))}
+					<Hero />
+					{isEmpty ? <Empty /> : [...main, ...side].map((Slot) => <Slot key={Slot.id} />)}
+				</div>
 			</Container>
 		);
 	},
@@ -279,12 +263,14 @@ export const states = defineStates(HomePage, {
 Every widget a page shows then keeps its own samples in its own `states`, and the canvas draws the
 page by drawing each of them where the page puts it.
 
-**The example shows how slots work, never a look to copy.** A title row over a hero over two columns
-is one answer, and the most common one; an app built that way again feels like every other app. Shape
-each page for its own job and its own references — an editorial page led by one big photo and a
-single column, a command page of numbers over a split of work and detail, a work surface (a board, a
-calendar, a map) filling the page with its controls floating over it — and give two pages one shape
-only when they do one job. **Never take another app in this vault as a template**: its pages are
+**The example stacks its slots in one plain column only to show how slots work; it is no layout.**
+A page's shape comes from two choices `design-system.md` holds: the app's **shell** (the App shell
+table — a sidebar for five pages or more, tabs only for two to four) and each page's **archetype**
+(`home`, `index`, `record`, `dashboard`, `form`, `workspace`). A title row over a hero over two
+columns is the answer every generated app gives, which is why it is never the default. Shape each page
+for its own job and its own references — an editorial page led by one big photo, a command page of
+numbers over a split of work and detail, a work surface (a board, a calendar, a map) filling the body
+and scrolling on its own — and give two pages one shape only when they do one job. **Never take another app in this vault as a template**: its pages are
 its answer to its person, and reading them to copy a structure is how every app ends up the same.
 
 A widget that draws rows draws no title of its own: the section above it holds the title and the
@@ -295,12 +281,12 @@ its slots as a tree; it reads `data-name` on an element (`<div data-name="Side c
 no name shows as Row, Column or Group, which tells the person nothing.
 
 Place each state with the tool, its name the same as the key in `states` (the first state is the
-screen itself); never edit `canvas.json`:
+screen itself), and `--for` the situation it answers; never edit `canvas.json`:
 
 ```
-node {tool} screen <app> "People" --widget @<app>/people-page
-node {tool} screen <app> "People" --widget @<app>/people-page --state Empty
-node {tool} screen <app> "People" --widget @<app>/people-page --state "Add person"
+node {tool} screen <app> "People" --widget @<app>/people-page --for "back on a routine day: who is due"
+node {tool} screen <app> "People" --widget @<app>/people-page --state Empty --for "first visit, nobody added yet"
+node {tool} screen <app> "People" --widget @<app>/people-page --state "Add person" --for "just met someone, adding them"
 ```
 
 The canvas is three regions — References, Pages, Widgets — and every group in them is titled: a
@@ -339,15 +325,17 @@ that changes — a review before and after an answer, a record closed and open:
 }
 ```
 
-**First, three directions for the page the app opens on.** Before any other page, draw that one page
-three ways that differ in structure, not in colour — what leads, how the page is cut, what the eye
-meets first — each its own page widget, `@<app>/<page>-a-page`, `-b-page` and `-c-page`, with the
+**First, three directions for the page the app opens on.** Before any other page, count the spec's
+pages and pick the shell from the App shell table; then draw that one page three ways that differ in
+structure, not in colour — at least two of them in different shells where the table allows more than
+one, and in different archetypes — what leads, how the page is cut, what the eye meets first — each
+its own page widget, `@<app>/<page>-a-page`, `-b-page` and `-c-page`, with the
 same widgets standing in their slots, placed as screens named `<Page> · A`, `<Page> · B` and
 `<Page> · C`. Shoot them (`node {tool} shot --design <app>`), then ask the person which to keep —
 `node {tool} job ask <app> <job> --options "A,B,C" "<what each direction bets on, in one line>"` —
 and end your turn; the pick comes back as your next message. Keep the picked one as
 `@<app>/<page>-page`, delete the other two and their screens; every other page's job draws in the
-picked direction.
+picked direction. Write the picked shell and each page's archetype in the app's `design-system.md`, a table of page · archetype · why, so every later page job reads them instead of copying the first page.
 
 **Then draw the rest of your page in one shot**, the way a designer draws a canvas: one message that
 writes every widget and the page widget. Then `node {tool} shot --design <app>`, open the picture
@@ -360,7 +348,7 @@ rule in force — theirs in `.widgetarium/design-system.md` and the app's own in
 names every frame that fails, and you answer each judged id with yes or no in your message,
 redrawing until every measured rule passes and every answer is yes. A rule is the person's word: never skip one, never argue it
 away. The person sees your page on the canvas the moment its screens are placed, and answers in the chat;
-the first page's job is approved there too, and a change comes back as your next message. Each page, region by region, still
+a change comes back as your next message. Each page, region by region, still
 answers one question, draws the fields stage 2 wrote, and has its empty, loading and refused states.
 Every kept feature stands on a screen.
 
@@ -384,6 +372,17 @@ catalogue, is judging against a picture and not a guess:
 
 Every page is reachable from the page the app opens on, and every page has a way back. A page
 nothing links to does not exist for the person.
+
+**A page is drawn for its situations, never as one screen.** Before drawing, write the page's
+situation map in `design.md`: every situation a person arrives in, each with four lines — who
+arrives and with what; their job right now; what must be visible, and what must not be; the main
+action, and how the screen answers it. Find them in the features, in the data (nothing yet, one,
+many), in the main record's own life when it has one (a record in one state needs other tools than
+in the next, and shows nothing that belongs to a later one), in a first visit against a routine
+one, and in the moment right after an action, when the screen should answer it visibly. **Each
+situation is a frame**, placed with `screen … --for "<the situation, in one line>"`, and a frame
+that answers no situation is cut. One frame for a page that meets five situations is a page drawn
+for nobody.
 
 **The form is chosen here, not assumed.** A board of tiles is one answer to "how should this be
 shown" and not always the right one. A page of prose with two widgets inside it, one widget taking

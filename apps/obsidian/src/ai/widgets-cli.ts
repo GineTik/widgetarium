@@ -374,7 +374,6 @@ function jobAddOf(asked: Options): JobAdd {
 		phase: asked["phase"],
 		says: asked["says"],
 		after: asked["after"],
-		approval: asked["approval"],
 		budget: asked["budget"],
 		id: asked["id"],
 	};

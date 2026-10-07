@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 Object.assign(globalThis, { window: globalThis });
 
-const { JobSchema, movedJob, isStartable, jobOfPage, readJob, jobText, APPROVE, jobPathOf } =
+const { JobSchema, movedJob, isStartable, readJob, jobText, jobPathOf } =
 	await import("../packages/core/src/app-jobs.js");
 const { createJobs } = await import("../apps/obsidian/src/ai/job-runner.js");
 const { createJobFiles } = await import("../apps/obsidian/src/ai/job-store.js");
@@ -73,15 +73,18 @@ const after = JobSchema.parse({ ...base, id: "people-design", page: "People", af
 check("a job waits for the jobs it comes after", isStartable(after, [base, after]), false);
 check("and starts once they are done", isStartable(after, [{ ...base, status: "done" }, after]), true);
 check(
-	"a page shows its working job before its finished one",
-	jobOfPage(
-		[
-			{ ...base, status: "done" },
-			{ ...base, id: "home-review", status: "running" },
-		],
-		"Home",
-	)?.id,
-	"home-review",
+	"a job never runs beside another of its phase, so two never edit the same widgets",
+	isStartable(after, [{ ...base, status: "done" }, { ...base, id: "inbox-design", status: "running" }, after]),
+	false,
+);
+check(
+	"a review runs beside the next design",
+	isStartable(after, [
+		{ ...base, status: "done" },
+		{ ...base, id: "home-review", phase: "review", status: "running" },
+		after,
+	]),
+	true,
 );
 
 check(
@@ -167,7 +170,6 @@ function scriptedRunner(): {
 				return {
 					stop() {
 						scripted.stopped = true;
-						finish(null);
 					},
 					done,
 				};
@@ -252,7 +254,7 @@ async function jobsWith(stored: Record<string, unknown>) {
 
 {
 	const { jobs, runs, put, adapter } = await jobsWith({});
-	put(JobSchema.parse({ ...base, approval: true }));
+	put(base);
 	await settle();
 	runs[0]?.emit({ session: "s-2" });
 	await adapter.mkdir(".widgetarium/apps/Studio/jobs/asks");
@@ -276,13 +278,7 @@ async function jobsWith(stored: Record<string, unknown>) {
 	);
 	runs[1]?.finish(null);
 	await settle();
-	check(
-		"a job that needs approval waits for it when it finishes",
-		[jobs.jobsOf("Studio")[0]?.status, jobs.jobsOf("Studio")[0]?.question?.options],
-		["waiting", [APPROVE]],
-	);
-	await jobs.answer("Studio", "home-design", APPROVE);
-	check("Approve finishes it", jobs.jobsOf("Studio")[0]?.status, "done");
+	check("an answered job finishes without asking to be approved", jobs.jobsOf("Studio")[0]?.status, "done");
 	jobs.close();
 }
 
@@ -308,6 +304,28 @@ async function jobsWith(stored: Record<string, unknown>) {
 		["paused", "stopped"],
 	);
 	check("a stopped job is not started again by itself", runs.length, 2);
+	put(
+		JobSchema.parse({
+			...base,
+			id: "home-implement",
+			phase: "implement",
+			after: ["home-review"],
+			status: "paused",
+			reason: "stopped",
+			createdAt: 5,
+		}),
+	);
+	put(
+		JobSchema.parse({ ...base, id: "home-review", phase: "review", createdAt: 4, status: "paused", reason: "stopped" }),
+	);
+	await settle();
+	await jobs.start("Studio", "home-implement");
+	await settle();
+	check(
+		"Resume on a job whose turn has not come queues it and starts nothing",
+		[runs.length, jobs.jobsOf("Studio").find((one) => one.id === "home-implement")?.status],
+		[2, "queued"],
+	);
 	await jobs.start("Studio", "home-design");
 	await settle();
 	runs[2]?.finish("claude exited with code 1.");
@@ -337,14 +355,21 @@ async function jobsWith(stored: Record<string, unknown>) {
 
 {
 	const { jobs, runs, put } = await jobsWith({});
-	put({ ...base, status: "running" });
+	put({ ...base, status: "running", session: "s-9" });
+	put({ ...base, id: "people-design", page: "People", status: "paused", reason: "stopped" });
 	await settle();
 	check(
-		"a job left running by a closed Obsidian is paused as interrupted",
-		[jobs.jobsOf("Studio")[0]?.status, jobs.jobsOf("Studio")[0]?.reason, runs.length],
-		["paused", "interrupted", 0],
+		"a job left running by a closed Obsidian starts again in its own session; one the person paused stays paused",
+		[runs.length, runs[0]?.ask.session, jobs.jobsOf("Studio").find((one) => one.id === "people-design")?.status],
+		[1, "s-9", "paused"],
 	);
 	jobs.close();
+	await settle();
+	check(
+		"closing Obsidian leaves a working job as it was, to be picked up on the next start",
+		jobs.jobsOf("Studio")[0]?.status,
+		"running",
+	);
 }
 
 {
@@ -409,7 +434,9 @@ checks:
 
 const { withReferenceNoted, readDesign } = await import("../packages/core/src/app-design.js");
 const { NotedPicture } = await import("../apps/obsidian/src/design-noted-picture.js");
-const { DraftStatus } = await import("../apps/obsidian/src/design-draft-status.js");
+const { JobLine } = await import("../apps/obsidian/src/design-job-line.js");
+const { Group } = await import("../apps/obsidian/src/design-group.js");
+const { canvasPagesOf } = await import("../apps/obsidian/src/design-canvas-page.js");
 const { noteOfApp } = await import("../apps/obsidian/src/ai/reference-command.js");
 const { renderToStaticMarkup } = await import("react-dom/server");
 const { createElement } = await import("react");
@@ -452,21 +479,36 @@ check(
 	[1, true],
 );
 
-const review = JobSchema.parse({ ...base, id: "ideas-review", page: "Ideas", phase: "review", status: "queued" });
-const draftControls = {
-	live: () => null,
-	start: () => undefined,
-	stop: () => undefined,
-	openChat: () => undefined,
-	startsThemselves: true,
-};
-const draftDrawn = renderToStaticMarkup(
-	createElement(DraftStatus, { job: review, jobs: [review], controls: draftControls }),
+const review = JobSchema.parse({ ...base, id: "ideas-review", page: "Ideas", phase: "review", status: "running" });
+const headDrawn = renderToStaticMarkup(
+	createElement(
+		Group,
+		{
+			title: "Ideas",
+			sub: "4 states",
+			status: createElement(JobLine, {
+				job: review,
+				controls: { live: () => null, stop: () => undefined },
+				isInline: true,
+			}),
+		},
+		null,
+	),
 );
 check(
-	"a drawn page with work left says it is a first draft and what comes next",
-	[draftDrawn.includes("First draft"), draftDrawn.includes("Polishing Ideas next")],
+	"a drawn page being worked on says so in one line beside its name",
+	[headDrawn.includes("is-inline"), /<b>Ideas<\/b>.*Reviewing the Ideas page/.test(headDrawn)],
 	[true, true],
+);
+const planned = [
+	{ ...base, status: "done" as const },
+	{ ...base, id: "ideas-design", page: "Ideas", status: "running" as const },
+	{ ...base, id: "people-design", page: "People", after: ["ideas-design"] },
+];
+check(
+	"the canvas shows a page only once something is drawn or being drawn on it",
+	canvasPagesOf({ screens: [], jobs: planned, docs: { brief: [], system: [] } }),
+	["Ideas", "Widgets"],
 );
 
 const vault = await mkdtemp(join(tmpdir(), "wg-jobs-"));
@@ -504,19 +546,18 @@ const add = (asked: Record<string, unknown>) =>
 			phase: undefined,
 			says: undefined,
 			after: undefined,
-			approval: undefined,
 			budget: undefined,
 			id: undefined,
 			...asked,
 		},
 		7,
 	);
-const added = await add({ title: "Design Home", page: "Home", phase: "design", says: "Draw Home", approval: true });
+const added = await add({ title: "Design Home", page: "Home", phase: "design", says: "Draw Home" });
 const addedJob = added.refusal === undefined ? added.value : null;
 check(
 	"job add writes a queued job named after its page and phase",
-	[addedJob?.id, addedJob?.status, addedJob?.approval],
-	["home-design", "queued", true],
+	[addedJob?.id, addedJob?.status],
+	["home-design", "queued"],
 );
 const toldText = (told: {
 	readonly refusal?: string | undefined;
@@ -559,11 +600,29 @@ check(
 	(await askJob(vault, "Studio", { kind: "stop", job: "nope" }, 9)).refusal,
 	"Studio has no job nope. `jobs Studio` lists them.",
 );
-const owned = JobSchema.parse({ ...base, id: "people-design", widgets: ["@studio/hook-list"] });
+const owned = JobSchema.parse({ ...base, id: "people-design", page: "People", widgets: ["@studio/hook-list"] });
 await writeFile(join(vault, jobPathOf("Studio", "people-design")), jobText(owned));
+await writeFile(
+	join(vault, jobPathOf("Studio", "people-review")),
+	jobText(JobSchema.parse({ ...base, id: "people-review", page: "People", phase: "review" })),
+);
 check(
-	"start refuses a widget another job owns",
-	(await refuseOwnedElsewhere(vault, "@studio/hook-list", "Studio/home-design"))?.startsWith(
+	"a later job of the same page works on the page's widgets",
+	await refuseOwnedElsewhere(vault, "@studio/hook-list", "Studio/people-review"),
+	null,
+);
+check(
+	"a later design works on an earlier design's widget, since two designs never run at once",
+	await refuseOwnedElsewhere(vault, "@studio/hook-list", "Studio/home-design"),
+	null,
+);
+await writeFile(
+	join(vault, jobPathOf("Studio", "home-implement")),
+	jobText(JobSchema.parse({ ...base, id: "home-implement", phase: "implement" })),
+);
+check(
+	"start refuses a widget a job of another page and phase owns, since the two may run at once",
+	(await refuseOwnedElsewhere(vault, "@studio/hook-list", "Studio/home-implement"))?.startsWith(
 		"@studio/hook-list belongs to the job people-design",
 	),
 	true,

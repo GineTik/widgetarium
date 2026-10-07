@@ -74,7 +74,7 @@ export function AiChat({ session, ai, onChoose, onOpenProviders, onHelperAgents 
 			isStuck ? null : h(ToEndButton, { key: "end", toEnd }),
 		]),
 		pinnedOf(draw),
-		h(JobsStrip, { key: "jobs", jobs: ai.jobs, openDesign: ai.openDesign }),
+		h(JobsStrip, { key: "jobs", jobs: ai.jobs }),
 		composerOf(session, draw, { changing, setChanging }),
 	]);
 }
@@ -160,7 +160,14 @@ function buildCardOf(turn: KeptTurn, at: number, draw: TurnDraw, isRunning: bool
 	const isSpanRunning = span ? draw.state.busy && span.endAt === draw.state.turns.length - 1 : isRunning;
 	const run = buildRunIn(calls, isSpanRunning, span ? buildStartedIn(draw.state.turns, at, BUILD_IT) : null);
 	if (!run) return null;
-	const card = { run, port: draw.ai.specs, builds, installs: installsIn(calls), isRunning: isSpanRunning };
+	const card = {
+		run,
+		port: draw.ai.specs,
+		builds,
+		installs: installsIn(calls),
+		isRunning: isSpanRunning,
+		jobs: draw.ai.jobs,
+	};
 	return h(BuildRunCard, { key: `${run.key}-${at}`, ...card });
 }
 

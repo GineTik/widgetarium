@@ -72,7 +72,7 @@ export function startIn(call: KeptCall): BuildStart | null {
 	if (ourVerbOf(call) !== "start") return null;
 	const said = ourSaidOf(call);
 	const id = firstWordOf(said);
-	if (id === "") return null;
+	if (id === "" || id.includes("$")) return null;
 	return { id, title: titleIn(said) || titleFromId(id) };
 }
 

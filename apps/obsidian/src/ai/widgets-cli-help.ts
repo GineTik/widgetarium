@@ -13,7 +13,6 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
     --page <name>                       the spec page it works on; its tab on the canvas shows the job
     --says <instructions>               everything it needs and nothing else
     --after id,id                       jobs that must be done before it starts
-    --approval                          the person approves it on the canvas before what comes after starts
     --budget <tokens>                   it pauses once it has written this many tokens
   node widgets.mjs job note <app> <id> <text>    a correction the job reads before it goes on
   node widgets.mjs job ask <app> <id> <question> --options A,B,C   from inside a job: ask the person, then end the turn
@@ -38,6 +37,7 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
     --set state=empty,dialog=add        values its props read (getState, getDialog, …)
     --board                             or: place a board you wrote at design/<screen>[ · <state>].md
     --state <name>                      a state of that screen: Empty, a dialog open, …
+    --for <situation>                   who arrives and with what job; every frame answers one
   node widgets.mjs find [options]       every widget, ranked against the data and the hole to fill
   node widgets.mjs install <id>         put an offered widget in this vault, so a board may use it
   node widgets.mjs bases               every base a screen can start from

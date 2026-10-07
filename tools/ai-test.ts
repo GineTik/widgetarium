@@ -373,6 +373,15 @@ check(
 	"terminal",
 );
 check("a command naming no tool of ours is not claimed", ourCallIn("npm run build"), null);
+check(
+	"our call ends where the shell chains the next command, so an app is never read as `Studio;`",
+	[
+		ourCallIn("node bin/widgets.mjs spec Studio; echo done")?.said,
+		ourCallIn('node bin/widgets.mjs spec "Studio; Two" && ls')?.said,
+		ourCallIn("node bin/widgets.mjs jobs Studio 2>&1 | head")?.said,
+	],
+	["Studio", '"Studio; Two"', "Studio"],
+);
 
 const BIN = "node /v/.widgetarium/bin/widgets.mjs";
 const FOLDER = "/v/.widgetarium/widgets/@mine/habit-streak";

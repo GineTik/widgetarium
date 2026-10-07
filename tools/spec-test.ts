@@ -40,6 +40,8 @@ const { noteNameOf } = await import("../apps/obsidian/src/ai/target-note.js");
 const { HANDBOOK } = await import("../apps/obsidian/src/ai/agent-files.js");
 import type { KeptCall } from "../apps/obsidian/src/ai/transcript.js";
 import type { SpecPort } from "../apps/obsidian/src/ai/spec-port.js";
+import type { Jobs } from "../apps/obsidian/src/ai/job-runner.js";
+import type { Job } from "../packages/core/src/app-jobs.js";
 
 let failed = 0;
 let checks = 0;
@@ -553,7 +555,23 @@ const writing = callOf("w", `${BIN} start @you/flashcard --title Flashcard`);
 const runCalls = [data, installed, writing];
 const liveRun = buildRunIn(runCalls, true) ?? { key: "", app: "", rows: [] };
 const liveBuilds = buildsIn(runCalls, true);
-render(h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: installsIn(runCalls) }), host);
+const jobsHolding = (held: readonly Job[]): Jobs => ({
+	watch: () => () => undefined,
+	version: () => 0,
+	apps: () => (held.length > 0 ? ["Vocabulary"] : []),
+	jobsOf: () => [...held],
+	liveOf: () => null,
+	start: async () => undefined,
+	stop: async () => undefined,
+	note: async () => undefined,
+	answer: async () => undefined,
+	stopAll: async () => undefined,
+	close: () => undefined,
+});
+render(
+	h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: installsIn(runCalls), jobs: jobsHolding([]) }),
+	host,
+);
 await settle();
 check("the build card names the app", host.querySelector(".wg-ai-spec-title h3")?.textContent, "Building Vocabulary");
 check(
@@ -652,6 +670,44 @@ check(
 	["b", "c"],
 );
 const scrolledTo: string[] = [];
+{
+	const { JobSchema } = await import("../packages/core/src/app-jobs.js");
+	const planned = (fields: Partial<Job> & Pick<Job, "id" | "page" | "phase">): Job =>
+		JobSchema.parse({ app: "Vocabulary", title: `${fields.phase} ${fields.page}`, says: "x", ...fields });
+	const held = [
+		planned({ id: "home-design", page: "Home", phase: "design", status: "done" }),
+		planned({ id: "home-review", page: "Home", phase: "review", status: "running", after: ["home-design"] }),
+		planned({ id: "cards-design", page: "Cards", phase: "design", status: "running", after: ["home-design"] }),
+		planned({ id: "deck-design", page: "Deck", phase: "design", after: ["cards-design"] }),
+		planned({ id: "home-implement", page: "Home", phase: "implement", status: "paused", after: ["home-review"] }),
+	];
+	const jobsHost = window.document.createElement("div");
+	render(h(BuildRunCard, { run: liveRun, port, builds: liveBuilds, installs: [], jobs: jobsHolding(held) }), jobsHost);
+	await settle();
+	check(
+		"once the build is planned as jobs, the card's stages are the jobs' stages",
+		[...jobsHost.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-name")].map((node) => node.textContent),
+		["Research", "Preparing", "Canvas", "Connecting logic"],
+	);
+	check(
+		"the canvas stage says what is being worked on now",
+		jobsHost.querySelectorAll(".wg-kit-row:not(.is-inner) .wg-ai-spec-sub")[2]?.textContent,
+		"Reviewing the Home page · Designing the Cards page",
+	);
+	check(
+		"a job waiting on another says which, and offers no press",
+		[...jobsHost.querySelectorAll(".wg-kit-row.is-inner")]
+			.filter((row) => row.querySelector(".wg-ai-spec-name")?.textContent === "design Deck")
+			.map((row) => [row.querySelector(".wg-ai-spec-sub")?.textContent, row.querySelector("button")]),
+		[["After design Cards", null]],
+	);
+	check(
+		"a paused job offers Resume where it stands",
+		[...jobsHost.querySelectorAll(".wg-kit-row.is-inner button")].map((node) => node.textContent),
+		["Pause", "Pause", "Resume"],
+	);
+}
+
 Object.defineProperty(window.HTMLElement.prototype, "scrollIntoView", {
 	configurable: true,
 	value(this: HTMLElement) {
@@ -660,7 +716,7 @@ Object.defineProperty(window.HTMLElement.prototype, "scrollIntoView", {
 });
 render(
 	h("div", {}, [
-		h(BuildRunCard, { key: "card", run: liveRun, port, builds: liveBuilds, installs: [] }),
+		h(BuildRunCard, { key: "card", run: liveRun, port, builds: liveBuilds, installs: [], jobs: jobsHolding([]) }),
 		h(PinnedRun, { key: "pinned", run: liveRun, builds: liveBuilds }),
 	]),
 	host,
@@ -845,13 +901,22 @@ check(
 );
 const { screenOfApp } = await import("../apps/obsidian/src/ai/screen-command.js");
 const screenVault = await mkdtemp(join(tmpdir(), "wg-screen-"));
-const firstScreen = await screenOfApp(screenVault, "Trips", "People", { widget: "@draft/trips", set: "page=people" });
+const firstScreen = await screenOfApp(screenVault, "Trips", "People", {
+	widget: "@draft/trips",
+	set: "page=people",
+	for: "planning who comes",
+});
 await screenOfApp(screenVault, "Trips", "People", {
 	widget: "@draft/trips",
 	set: "page=people,dialog=add",
 	state: "Add person",
+	for: "just met someone, adding them",
 });
-await screenOfApp(screenVault, "Trips", "Home", { widget: "@draft/trips", set: "page=home" });
+await screenOfApp(screenVault, "Trips", "Home", {
+	widget: "@draft/trips",
+	set: "page=home",
+	for: "back on a routine day",
+});
 const writtenCanvas = readDesign(await readFile(join(screenVault, designPathOf("Trips")), "utf8")).design;
 check(
 	"screen writes the note and its place on the canvas",
@@ -864,12 +929,23 @@ check(
 	JSON.stringify({
 		name: "People",
 		states: [
-			{ name: "People", file: "People.md" },
-			{ name: "Add person", file: "People · Add person.md" },
+			{ name: "People", file: "People.md", situation: "planning who comes" },
+			{ name: "Add person", file: "People · Add person.md", situation: "just met someone, adding them" },
 		],
 	}),
 );
-await screenOfApp(screenVault, "Trips", "People", { widget: "@draft/trips", set: "page=people" });
+check(
+	"a frame placed with no situation is refused with how to name one",
+	(await screenOfApp(screenVault, "Trips", "Plain", { widget: "@draft/trips", set: "page=plain" })).refusal?.startsWith(
+		"Say which situation this frame draws",
+	),
+	true,
+);
+await screenOfApp(screenVault, "Trips", "People", {
+	widget: "@draft/trips",
+	set: "page=people",
+	for: "planning who comes",
+});
 check(
 	"placing the screen again after its states keeps every state",
 	readDesign(await readFile(join(screenVault, designPathOf("Trips")), "utf8")).design?.screens[0]?.states?.map(
@@ -890,7 +966,10 @@ await writeFile(
 	join(screenVault, ".widgetarium/apps/Trips/design/Board.md"),
 	'```widgetarium\nv: 2\ntiles:\n  - { id: a, widget: "@default/text-line" }\nlayout: { dir: row, of: [{ dir: column, keep: true, of: [{ id: a }] }] }\n```\n',
 );
-const placedBoard = await screenOfApp(screenVault, "Trips", "Board", { board: true });
+const placedBoard = await screenOfApp(screenVault, "Trips", "Board", {
+	board: true,
+	for: "the whole trip at a glance",
+});
 check(
 	"a board the agent wrote is placed on the canvas as it stands",
 	[
@@ -903,10 +982,16 @@ check(
 );
 check(
 	"placing a board that was never written is refused with what to write",
-	(await screenOfApp(screenVault, "Trips", "Nowhere", { board: true })).refusal?.includes("design/Nowhere.md"),
+	(await screenOfApp(screenVault, "Trips", "Nowhere", { board: true, for: "nowhere" })).refusal?.includes(
+		"design/Nowhere.md",
+	),
 	true,
 );
-await screenOfApp(screenVault, "Trips", "Grid", { widget: "@draft/trips", set: "columns=3,dark=true" });
+await screenOfApp(screenVault, "Trips", "Grid", {
+	widget: "@draft/trips",
+	set: "columns=3,dark=true",
+	for: "comparing trips",
+});
 const gridNote = await readFile(join(screenVault, ".widgetarium/apps/Trips/design/Grid.md"), "utf8");
 check(
 	"a number and a boolean are written typed, so the prop takes them",
@@ -915,7 +1000,7 @@ check(
 );
 check(
 	"screen refuses a set it cannot read",
-	(await screenOfApp(screenVault, "Trips", "X", { widget: "@draft/trips", set: "page" })).refusal?.startsWith(
+	(await screenOfApp(screenVault, "Trips", "X", { widget: "@draft/trips", set: "page", for: "x" })).refusal?.startsWith(
 		"Each --set",
 	),
 	true,

@@ -74,7 +74,7 @@ export function buildRunIn(
 	const app = startedFor ?? stages[0]?.app;
 	if (!app) return null;
 	const saidOf = new Map(stages.filter((one) => one.app === app).map((one) => [one.stage, one.said]));
-	return { key: `build-${app}`, app, rows: stageRowsOf(saidOf, isRunning) };
+	return { key: buildKeyOf(app), app, rows: stageRowsOf(saidOf, isRunning) };
 }
 
 export interface BuildSpan {
@@ -98,6 +98,10 @@ export function buildStartedIn(turns: readonly KeptTurn[], at: number, buildSaid
 	const asked = turns[at - 1];
 	if (turns[at]?.role !== "agent" || asked?.role !== "user" || asked.text.trim() !== buildSaid) return null;
 	return lastSpecAppIn(turns.slice(0, at - 1).flatMap((turn) => turn.calls));
+}
+
+export function buildKeyOf(app: string): string {
+	return `build-${app}`;
 }
 
 function stageRowsOf(saidOf: ReadonlyMap<BuildStage, string>, isRunning: boolean): StageRow[] {
