@@ -3696,10 +3696,23 @@ check(
 		DialogClose: "Dialog",
 		PopoverAnchor: "Popover",
 		SidebarTrigger: "SidebarProvider",
+		AccordionItem: "Accordion",
+		AccordionTrigger: "AccordionItem",
+		AccordionContent: "AccordionItem",
+		CollapsibleTrigger: "Collapsible",
+		CollapsibleContent: "Collapsible",
+		ResizablePanel: "ResizablePanelGroup",
+		ResizableHandle: "ResizablePanelGroup",
+		CarouselContent: "Carousel",
+		CarouselPrevious: "Carousel",
+		CarouselNext: "Carousel",
 	};
-	const PART_NEEDS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = { SelectItem: { value: "a" } };
+	const PART_NEEDS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+		SelectItem: { value: "a" },
+		AccordionItem: { value: "a" },
+	};
 	const DRAWN_ONLY_ONCE_AN_IMAGE_LOADS = new Set(["EmblemImage", "AvatarImage"]);
-	const DRAWS_NO_ELEMENT_OF_ITS_OWN = new Set(["Select"]);
+	const DRAWS_NO_ELEMENT_OF_ITS_OWN = new Set(["Select", "ScrollBar", "DirectionProvider"]);
 	const PARENT_NEEDS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 		Emblem: { label: "probe" },
 		Popover: { defaultOpen: true },
@@ -3707,6 +3720,7 @@ check(
 		Sparkline: { data: [1, 2] },
 		Tabs: { defaultValue: "a" },
 		Dialog: { defaultOpen: true },
+		AccordionItem: { value: "a" },
 	};
 	const withoutClass: string[] = [];
 	for (const [name, drawn] of Object.entries(Kit)) {
@@ -3719,8 +3733,10 @@ check(
 			continue;
 		render(null, host);
 		const part = h(drawn, { ...NEEDED_TO_DRAW[name], ...PART_NEEDS[name], className: PROBE });
-		const parent = PART_OF[name];
-		render(parent ? h(drawableOf(memberOf(Kit, parent)), PARENT_NEEDS[parent], part) : part, host);
+		let tree = part;
+		for (let parent = PART_OF[name]; parent; parent = PART_OF[parent])
+			tree = h(drawableOf(memberOf(Kit, parent)), PARENT_NEEDS[parent], tree);
+		render(tree, host);
 		await settle();
 		if (!document.querySelector(`.${PROBE}`)) withoutClass.push(name);
 	}
@@ -3764,10 +3780,10 @@ check(
 	);
 	check("THE LAST DRAWN BAR IS THE HIGHLIGHTED ONE", highlightedIndex([1, 2, null], "last"), 1);
 	check("A BAR AT ZERO STAYS VISIBLE", present(sparkBars([0, 4], 100, 40)[0]).height, 1.5);
-	check("A NUMBERED CHART COLOUR IS ITS TOKEN", chartColorOf(3, 0), "var(--wg-kit-chart-3)");
+	check("A NUMBERED CHART COLOUR IS ITS TOKEN", chartColorOf(3, 0), "var(--chart-3)");
 	check("A PALETTE NAME IS THE KIT'S INK", chartColorOf("purple", 0), "var(--wg-kit-purple)");
-	check("A SERIES WITH NO COLOUR TAKES ITS PLACE'S TOKEN", chartColorOf(undefined, 6), "var(--wg-kit-chart-2)");
-	check("A HAND-WRITTEN COLOUR IS REFUSED FOR THE PLACE'S TOKEN", chartColorOf("#ff0000", 0), "var(--wg-kit-chart-1)");
+	check("A SERIES WITH NO COLOUR TAKES ITS PLACE'S TOKEN", chartColorOf(undefined, 6), "var(--chart-2)");
+	check("A HAND-WRITTEN COLOUR IS REFUSED FOR THE PLACE'S TOKEN", chartColorOf("#ff0000", 0), "var(--chart-1)");
 	check("A SERIES KEY BECOMES A SAFE PROPERTY NAME", seriesColorName("notes per day"), "--color-notes-per-day");
 
 	const { Sparkline, SparklineArea, SparklineLine, SparklineDot } = await import("../packages/kit/src/index.ts");
@@ -3824,7 +3840,7 @@ check(
 	check(
 		"A CHART'S SERIES TAKE THEIR COLOURS FROM ITS CONFIG",
 		[chartBox?.style.getPropertyValue("--color-s0"), chartBox?.style.getPropertyValue("--color-s1")],
-		["var(--wg-kit-chart-1)", "var(--wg-kit-cyan)"],
+		["var(--chart-1)", "var(--wg-kit-cyan)"],
 	);
 	const tip = host.querySelector(".wg-kit-chart-tip");
 	check("THE CHART TOOLTIP IS THE KIT'S GLASS", tip?.classList.contains("wg-kit-glass"), true);

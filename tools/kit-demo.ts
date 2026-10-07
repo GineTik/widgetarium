@@ -23,7 +23,9 @@ const DEMO_CHROME = `body { margin: 0; background: var(--wg-kit-page); color: va
 .demo-bottom { align-items: flex-end; }
 .demo-named { display: flex; flex-direction: column; gap: var(--wg-gap-parts); min-width: 0; }
 .demo-end { text-align: right; }
-.demo-narrow { max-width: 340px; container: widget / inline-size; }`;
+.demo-narrow { max-width: 340px; container: widget / inline-size; }
+.demo-pane { box-sizing: border-box; height: 100%; padding: 12px; }
+.demo-slide { display: flex; align-items: center; gap: 16px; min-height: 96px; font-size: var(--wg-kit-text-l); }`;
 
 function themed(scheme: Theme): string {
 	return `${THEMES[scheme]} color-scheme: ${scheme};`;

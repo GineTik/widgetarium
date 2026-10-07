@@ -138,3 +138,33 @@ export type { PlateEdges } from "./utils/plate-edges";
 export type { DisplayValue, ProgressReading } from "./utils/progress";
 export type { BarGeometry, CircleGeometry } from "./utils/progress-geometry";
 export type { StyleProp, TokenStyle } from "./utils/token-style";
+export type {
+	AccordionContentProps,
+	AccordionItemProps,
+	AccordionMultipleProps,
+	AccordionProps,
+	AccordionSingleProps,
+	AccordionTriggerProps,
+} from "./components/accordion";
+export type { CollapsibleContentProps, CollapsibleProps, CollapsibleTriggerProps } from "./components/collapsible";
+export type { AlertProps, AlertVariant } from "./components/alert";
+export type { AspectRatioProps } from "./components/aspect-ratio";
+export type { BreadcrumbLinkProps } from "./components/breadcrumb";
+export type { SeparatorProps } from "./components/separator";
+export type { ScrollAreaProps, ScrollAreaType, ScrollBarProps } from "./components/scroll-area";
+export type { ResizablePanelGroupProps } from "./components/resizable-panel-group";
+export type { ResizablePanelProps } from "./components/resizable-panel";
+export type { ResizableHandleProps } from "./components/resizable-handle";
+export type { PanelSize } from "./utils/resizable";
+export type { CarouselProps } from "./components/carousel";
+export type {
+	CarouselApi,
+	CarouselEvent,
+	CarouselListener,
+	CarouselOptions,
+	CarouselOrientation,
+} from "./utils/carousel";
+export type { ItemMediaProps, ItemMediaVariant, ItemProps, ItemSize, ItemVariant } from "./components/item";
+export type { DirectionProviderProps } from "./components/direction-provider";
+export type { Direction } from "./components/direction-context";
+export type { MarkerProps, MarkerVariant } from "./components/marker";
