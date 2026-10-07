@@ -1,3 +1,36 @@
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./components/accordion";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "./components/alert";
+import { AspectRatio } from "./components/aspect-ratio";
+import {
+	Breadcrumb,
+	BreadcrumbEllipsis,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "./components/breadcrumb";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "./components/carousel";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./components/collapsible";
+import { DirectionProvider } from "./components/direction-provider";
+import {
+	Item,
+	ItemActions,
+	ItemContent,
+	ItemDescription,
+	ItemFooter,
+	ItemGroup,
+	ItemHeader,
+	ItemMedia,
+	ItemSeparator,
+	ItemTitle,
+} from "./components/item";
+import { Marker, MarkerContent, MarkerIcon } from "./components/marker";
+import { ResizableHandle } from "./components/resizable-handle";
+import { ResizablePanel } from "./components/resizable-panel";
+import { ResizablePanelGroup } from "./components/resizable-panel-group";
+import { ScrollArea, ScrollBar } from "./components/scroll-area";
+import { Separator } from "./components/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "./components/avatar";
 import { CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/card";
 import {
@@ -115,4 +148,48 @@ export const SHADCN_PARTS = {
 	SidebarMenuButton,
 	SidebarTrigger,
 	SidebarInset,
+	Accordion,
+	AccordionItem,
+	AccordionTrigger,
+	AccordionContent,
+	Collapsible,
+	CollapsibleTrigger,
+	CollapsibleContent,
+	Alert,
+	AlertTitle,
+	AlertDescription,
+	AlertAction,
+	AspectRatio,
+	Breadcrumb,
+	BreadcrumbList,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+	BreadcrumbEllipsis,
+	Separator,
+	ScrollArea,
+	ScrollBar,
+	ResizablePanelGroup,
+	ResizablePanel,
+	ResizableHandle,
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselPrevious,
+	CarouselNext,
+	Item,
+	ItemGroup,
+	ItemSeparator,
+	ItemMedia,
+	ItemContent,
+	ItemTitle,
+	ItemDescription,
+	ItemActions,
+	ItemHeader,
+	ItemFooter,
+	Marker,
+	MarkerIcon,
+	MarkerContent,
+	DirectionProvider,
 };

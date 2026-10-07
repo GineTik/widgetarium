@@ -1,0 +1,85 @@
+import { createElement as h, useEffect } from "react";
+import { createRoot } from "react-dom/client";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+	AspectRatio,
+	Carousel,
+	CarouselContent,
+	CarouselItem,
+	CarouselNext,
+	CarouselPrevious,
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+	ScrollArea,
+} from "../packages/kit/src/index";
+
+const ROWS = Array.from({ length: 30 }, (_, at) => `Row ${at + 1}`);
+const SLIDES = ["One", "Two", "Three", "Four"];
+
+function Page() {
+	useEffect(() => {
+		Reflect.set(window, "ready", true);
+	}, []);
+	return (
+		<div style={{ width: "320px", display: "flex", flexDirection: "column", gap: "24px" }}>
+			<AspectRatio id="aspect" ratio={16 / 9}>
+				<div />
+			</AspectRatio>
+			<Accordion id="accordion" type="single" collapsible defaultValue="a">
+				<AccordionItem value="a">
+					<AccordionTrigger>First</AccordionTrigger>
+					<AccordionContent>
+						<div style={{ height: "120px" }}>Body of the first</div>
+					</AccordionContent>
+				</AccordionItem>
+				<AccordionItem value="b">
+					<AccordionTrigger>Second</AccordionTrigger>
+					<AccordionContent>
+						<div style={{ height: "120px" }}>Body of the second</div>
+					</AccordionContent>
+				</AccordionItem>
+			</Accordion>
+			<ScrollArea id="scroll" fade style={{ height: "200px" }}>
+				{ROWS.map((row) => (
+					<div key={row} style={{ height: "40px" }}>
+						{row}
+					</div>
+				))}
+			</ScrollArea>
+			<p id="shimmer" className="wg-kit-shimmer">
+				Thinking…
+			</p>
+			<Carousel id="carousel">
+				<CarouselContent>
+					{SLIDES.map((slide) => (
+						<CarouselItem key={slide}>
+							<div style={{ height: "100px" }}>{slide}</div>
+						</CarouselItem>
+					))}
+				</CarouselContent>
+				<CarouselPrevious id="prev" />
+				<CarouselNext id="next" />
+			</Carousel>
+			<div style={{ height: "120px" }}>
+				<ResizablePanelGroup id="resizable" direction="horizontal">
+					<ResizablePanel id="left" defaultSize={50} minSize={20}>
+						Left
+					</ResizablePanel>
+					<ResizableHandle id="handle" withHandle />
+					<ResizablePanel id="right" defaultSize={50}>
+						Right
+					</ResizablePanel>
+				</ResizablePanelGroup>
+			</div>
+			<div id="tailwind" />
+		</div>
+	);
+}
+
+const host = document.getElementById("host");
+if (!host) throw new Error("kit layout page: no #host");
+createRoot(host).render(<Page />);

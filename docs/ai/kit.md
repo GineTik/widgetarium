@@ -105,3 +105,37 @@ A widget can hold other widgets. `ISlot` is one place a person fills, `ISlot.arr
 places, each drawn as a component (`<Hero />`, `main.map((Slot) => <Slot key={Slot.id} />)`);
 `IRepeat.of` draws one widget again for every row. A card list whose card is a catalogue widget
 is built that way, never by copying the card's code.
+
+## Layout, display, effects
+
+| shadcn                                                                                                                                    | Notes                                                                                                                                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Accordion type="single" collapsible \| type="multiple"`, `AccordionItem value`, `AccordionTrigger`, `AccordionContent`                   | `value`, `defaultValue`, `onValueChange`; the height springs open; shut content stays mounted and `inert`                                               |
+| `Collapsible open onOpenChange`, `CollapsibleTrigger asChild`, `CollapsibleContent`                                                       | the same animated panel as the accordion                                                                                                                |
+| `Alert variant="default"\|"destructive"`, `AlertTitle`, `AlertDescription`, `AlertAction`                                                 | an `Icon` first draws in the icon column; plus `tone` (`success`, `warning`, `info`, …); it is a `Card`, so the plate laws judge it                     |
+| `AspectRatio ratio={16 / 9}`                                                                                                              | its child fills it                                                                                                                                      |
+| `Breadcrumb`, `BreadcrumbList`, `BreadcrumbItem`, `BreadcrumbLink asChild`, `BreadcrumbPage`, `BreadcrumbSeparator`, `BreadcrumbEllipsis` | the separator is a chevron unless you give it children                                                                                                  |
+| `Separator orientation decorative`                                                                                                        | the hairline; `decorative={false}` announces it. `Line` is a toned line of text, not a separator                                                        |
+| `ScrollArea`, `ScrollBar orientation="horizontal"`                                                                                        | the kit's own thin thumb, shown on hover; plus `type="always"` and `fade`, which fades only the edges that hide rows                                    |
+| `ResizablePanelGroup direction`, `ResizablePanel defaultSize minSize maxSize`, `ResizableHandle withHandle`                               | sizes are percentages; `onLayout(sizes)`; a focused handle resizes with the arrows, `Home` and `End`                                                    |
+| `Carousel orientation opts={{ loop }} setApi`, `CarouselContent`, `CarouselItem`, `CarouselPrevious`, `CarouselNext`                      | native scroll-snap with a mouse drag; the API has embla's `scrollPrev`, `scrollNext`, `scrollTo`, `canScrollPrev`, `selectedScrollSnap`, `on("select")` |
+| `Item variant="default"\|"outline"\|"muted" size="default"\|"sm"\|"xs"`, `ItemMedia variant="icon"\|"image"\|"avatar"`, `ItemContent`, …  | `ItemTitle`, `ItemDescription`, `ItemActions`, `ItemHeader`, `ItemFooter`, `ItemGroup`, `ItemSeparator`; `asChild` or `render={<a href />}`             |
+| `Marker variant="default"\|"border"\|"separator"`, `MarkerIcon`, `MarkerContent`                                                          | a status line; `role="status"` with a `Spinner` while it runs; a labelled separator such as "Conversation compacted"                                    |
+| `DirectionProvider direction="rtl"`, `useDirection()`                                                                                     | the carousel and the resizable handle turn their arrow keys round                                                                                       |
+| `ChartContainer config`, `ChartTooltip content={<ChartTooltipContent />}`, `ChartLegend content={<ChartLegendContent />}`                 | from `widgetarium/kit/charts`; a series is coloured `var(--chart-N)` by its place, by `color: 1…5`, or by a kit hue                                     |
+
+Typography is components named after shadcn's typography page: `TypographyH1` … `TypographyH4`,
+`TypographyP`, `TypographyBlockquote`, `TypographyList`, `TypographyInlineCode`, `TypographyLead`,
+`TypographyLarge`, `TypographySmall`, `TypographyMuted`, on the `--wg-kit-h*` scale. A table is
+`Table`. A heading inside a widget that is not a `text` widget is still refused by `check`.
+
+Two effects come from shadcn's `shadcn/tailwind.css`, and `@import "widgetarium/theme.css"` brings
+them with the same names: `shimmer` (with `shimmer-once`, `shimmer-reverse`, `shimmer-none`,
+`shimmer-color-*`, `shimmer-duration-*`, `shimmer-spread-*`, `shimmer-angle-*`) for text that is
+being worked on, and `scroll-fade`, `scroll-fade-x`, `scroll-fade-t|b|s|e|l|r`, `scroll-fade-*`
+and `scroll-fade-none` for a scroller whose hidden edges fade. `no-scrollbar` and shadcn's
+`data-open:`, `data-closed:`, `data-checked:`, `data-active:`, `data-disabled:`, `data-horizontal:`,
+`data-vertical:` variants come with them. Without Tailwind the kit's own classes are
+`wg-kit-shimmer` and `wg-kit-scroll-fade` (`wg-kit-scroll-fade-x` across). The fade is driven by
+the scroll in CSS; `useScrollFog` stays for a component that needs the edge distances in code.
+Shimmer stops under reduced motion.
