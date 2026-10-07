@@ -9,10 +9,13 @@ import {
 	screenPathOf,
 	withScreenAdded,
 } from "@widgetarium/core/app-design.js";
+import type { ScreenPlacement } from "@widgetarium/core/app-design.js";
 import type { Told } from "./shape-command.js";
 
 const NO_APP =
 	'Name the app and the screen, for example: screen "Weekly review" "Inbox" --widget @weekly-review/inbox-page --set state=empty';
+const NO_SITUATION =
+	'Say which situation this frame draws: --for "<who arrives, with what job right now>", for example --for "first visit, nothing added yet" or --for "a record just finished, checking how it went".';
 const NO_WIDGET = "Name the page widget that draws this screen with --widget @<app>/<page>-page.";
 const BAD_SET = 'Each --set is prop=value, several split by commas: --set "page=inbox,dialog=add"';
 const REFUSED = "That screen does not fit the canvas: {why}";
@@ -28,18 +31,16 @@ export async function screenOfApp(
 	asked: Readonly<Record<string, unknown>>,
 ): Promise<Told<string>> {
 	if (!app || !isSafeAppName(app) || typeof screen !== "string" || screen.trim() === "") return { refusal: NO_APP };
-	const place = placeOf(screen.trim(), asked["state"]);
+	const situation = typeof asked["for"] === "string" ? asked["for"].trim() : "";
+	if (situation === "") return { refusal: NO_SITUATION };
+	const place = { ...placeOf(screen.trim(), asked["state"]), situation };
 	if (asked["board"] === true) return placeBoard(vault, app, place);
 	return placeDraft(vault, app, place, asked);
 }
 
-interface ScreenPlace {
-	readonly screen: string;
-	readonly state: string | undefined;
-	readonly file: string;
-}
+type ScreenPlace = ScreenPlacement;
 
-function placeOf(screen: string, state: unknown): ScreenPlace {
+function placeOf(screen: string, state: unknown): Omit<ScreenPlace, "situation"> {
 	const named = typeof state === "string" && state.trim() !== "" ? state.trim() : undefined;
 	return { screen, state: named, file: screenFileOf(screen, named) };
 }
@@ -97,7 +98,7 @@ type CanvasPlacing =
 async function placeOnCanvas(vault: string, app: string, place: ScreenPlace): Promise<CanvasPlacing> {
 	const canvasPath = join(vault, designPathOf(app));
 	const held = await readFile(canvasPath, "utf8").catch(() => null);
-	const written = withScreenAdded(held, place.screen, place.state, place.file);
+	const written = withScreenAdded(held, place);
 	const read = readDesign(written);
 	if (read.refusal !== undefined) return { refusal: REFUSED.replace("{why}", read.refusal) };
 	return { write: () => writeWithFolder(canvasPath, written) };

@@ -115,14 +115,22 @@ export function screenNoteOf(widget: string, values: Readonly<Record<string, str
 	].join("\n");
 }
 
-export function withScreenAdded(text: string | null, screen: string, state: string | undefined, file: string): string {
+export interface ScreenPlacement {
+	readonly screen: string;
+	readonly state: string | undefined;
+	readonly file: string;
+	readonly situation: string | undefined;
+}
+
+export function withScreenAdded(text: string | null, placement: ScreenPlacement): string {
 	const held: unknown = text === null ? {} : JSON.parse(text);
 	const canvas = typeof held === "object" && held !== null && !Array.isArray(held) ? { ...held } : {};
 	const kept: unknown = Reflect.get(canvas, "screens");
 	const screens: unknown[] = Array.isArray(kept) ? [...kept] : [];
+	const { screen } = placement;
 	const at = screens.findIndex((one) => typeof one === "object" && one !== null && Reflect.get(one, "name") === screen);
 	const placed = at === -1 ? undefined : screens[at];
-	screens.splice(at === -1 ? screens.length : at, at === -1 ? 0 : 1, screenWith(placed, screen, state, file));
+	screens.splice(at === -1 ? screens.length : at, at === -1 ? 0 : 1, screenWith(placed, placement));
 	const references: unknown = Reflect.get(canvas, "references");
 	return `${JSON.stringify({ ...canvas, screens, references: Array.isArray(references) ? references : [] }, null, 2)}\n`;
 }
@@ -187,7 +195,11 @@ const ReferenceUrlSchema = z.object({
 
 const ReferenceSchema = z.union([ReferenceFileSchema, ReferenceUrlSchema]);
 
-const StateSchema = z.object({ name: z.string().trim().min(1), file: ScreenFileSchema });
+const StateSchema = z.object({
+	name: z.string().trim().min(1),
+	file: ScreenFileSchema,
+	situation: z.string().trim().min(1).optional(),
+});
 
 const ScreenSchema = z
 	.object({
@@ -208,12 +220,15 @@ const DesignSchema = z
 		message: "a design shows at least one screen or one reference",
 	});
 
-function screenWith(placed: unknown, screen: string, state: string | undefined, file: string): unknown {
+function screenWith(placed: unknown, { screen, state, file, situation }: ScreenPlacement): unknown {
 	const name = state ?? screen;
 	const others = statesHeldBy(placed, screen).filter((one) => Reflect.get(one, "name") !== name);
-	const states = name === screen ? [{ name, file }, ...others] : [...others, { name, file }];
+	const entry = situation === undefined ? { name, file } : { name, file, situation };
+	const states = name === screen ? [entry, ...others] : [...others, entry];
 	const [only] = states;
-	if (states.length === 1 && only !== undefined && Reflect.get(only, "name") === screen) return { name: screen, file };
+	const isPlain =
+		states.length === 1 && only !== undefined && Reflect.get(only, "name") === screen && situation === undefined;
+	if (isPlain) return { name: screen, file };
 	return { name: screen, states };
 }
 
