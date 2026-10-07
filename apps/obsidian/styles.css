@@ -9898,3 +9898,658 @@ body.wg-tree-carrying .wg-tile-body {
 		animation: none;
 	}
 }
+
+/* TRADE-OFF: the footer row is a fixed height so the avatar can rise above it without measuring */
+:is(.wg-root, .wg-portal) .wg-kit-message {
+	--wg-kit-message-footer: 32px;
+	display: flex;
+	align-items: flex-end;
+	gap: var(--wg-gap-parts, 8px);
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message[data-align="end"] {
+	flex-direction: row-reverse;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-avatar {
+	flex: none;
+	display: flex;
+}
+:is(.wg-root, .wg-portal)
+	.wg-kit-message:has(> .wg-kit-message-content > .wg-kit-message-footer)
+	> .wg-kit-message-avatar {
+	margin-block-end: calc(var(--wg-kit-message-footer) + 4px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-content {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	min-width: 0;
+	max-width: min(80%, 640px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message[data-align="end"] > .wg-kit-message-content {
+	align-items: flex-end;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-header {
+	align-self: flex-start;
+	display: flex;
+	align-items: baseline;
+	gap: var(--wg-gap-parts, 8px);
+	padding-inline: 6px;
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-footer {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	min-height: var(--wg-kit-message-footer);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-group {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-parts {
+	display: flex;
+	flex-direction: column;
+	align-items: inherit;
+	gap: 6px;
+	min-width: 0;
+	max-width: 100%;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-bubble {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	max-width: 100%;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble[data-align="end"] {
+	align-items: flex-end;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble:has(> .wg-kit-bubble-reactions[data-side="bottom"]) {
+	margin-block-end: 14px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble:has(> .wg-kit-bubble-reactions[data-side="top"]) {
+	margin-block-start: 14px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-bubble-content {
+	--wg-kit-bubble-corner: 22px;
+	--wg-kit-bubble-tail: 6px;
+	box-sizing: border-box;
+	max-width: 100%;
+	padding: 10px 16px;
+	border-radius: var(--wg-kit-bubble-corner);
+	font-size: var(--wg-kit-text-m);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	text-align: start;
+	text-decoration: none;
+	transition: scale var(--wg-press) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble[data-align="start"] > .wg-kit-bubble-content {
+	border-end-start-radius: var(--wg-kit-bubble-tail);
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble[data-align="end"] > .wg-kit-bubble-content {
+	border-end-end-radius: var(--wg-kit-bubble-tail);
+}
+:is(.wg-root, .wg-portal)
+	.wg-kit-bubble-group
+	> .wg-kit-bubble[data-align="start"]:not(:first-child)
+	> .wg-kit-bubble-content {
+	border-start-start-radius: var(--wg-kit-bubble-tail);
+}
+:is(.wg-root, .wg-portal)
+	.wg-kit-bubble-group
+	> .wg-kit-bubble[data-align="end"]:not(:first-child)
+	> .wg-kit-bubble-content {
+	border-start-end-radius: var(--wg-kit-bubble-tail);
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-content:not(.wg-kit-tone) {
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-content.is-muted {
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-content.is-outline {
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-bubble-content.is-ghost {
+	padding-inline: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-content.is-pressable {
+	height: auto;
+	border: none;
+	font-family: inherit;
+	cursor: pointer;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-content.is-pressable:active {
+	scale: 0.96;
+	transition-timing-function: var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-content.is-pressable:focus-visible {
+	outline: 2px solid var(--wg-kit-accent);
+	outline-offset: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-group {
+	display: flex;
+	flex-direction: column;
+	align-items: inherit;
+	gap: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-reactions {
+	position: absolute;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px 8px;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-raise);
+	box-shadow: var(--wg-kit-shadow);
+	font-size: var(--wg-kit-text-xs);
+	line-height: 20px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-reactions[data-side="bottom"] {
+	bottom: -14px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-reactions[data-side="top"] {
+	top: -14px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-reactions[data-align="end"] {
+	inset-inline-end: 10px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-bubble-reactions[data-align="start"] {
+	inset-inline-start: 10px;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-message-summary {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-parts, 8px);
+	min-height: 28px;
+	list-style: none;
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
+	cursor: pointer;
+	user-select: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-summary::-webkit-details-marker {
+	display: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-chevron {
+	transition: rotate var(--wg-grow) var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) details[open] > .wg-kit-message-summary > .wg-kit-message-chevron {
+	rotate: 180deg;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-reasoning {
+	max-width: 100%;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-reasoning-text {
+	margin-block-start: 4px;
+	padding-inline-start: 12px;
+	box-shadow: inset 2px 0 0 var(--wg-kit-card-edge);
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.55;
+	color: var(--wg-kit-text-muted);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-message-tool {
+	box-sizing: border-box;
+	width: min(100%, 520px);
+	padding: 6px 14px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-tool-name {
+	font-family: var(--font-monospace);
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-tool .wg-kit-message-chevron {
+	margin-inline-start: auto;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-tool-value {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding-block: 6px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-tool-label {
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-tool-value > pre {
+	margin: 0;
+	max-height: 240px;
+	overflow: auto;
+	font-family: var(--font-monospace);
+	font-size: var(--wg-kit-text-xs);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-message-tool-error {
+	margin: 0;
+	padding-block: 6px;
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-error);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-attachment {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	box-sizing: border-box;
+	min-width: 0;
+	max-width: 320px;
+	padding: 8px 14px 8px 8px;
+	transition: scale var(--wg-press) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment[data-orientation="vertical"] {
+	flex-direction: column;
+	align-items: stretch;
+	width: 168px;
+	padding: 8px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-attachment[data-size="sm"] {
+	gap: 10px;
+	padding: 6px 12px 6px 6px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-attachment[data-size="xs"] {
+	gap: 8px;
+	padding: 4px 10px 4px 4px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment:has(> .wg-kit-attachment-trigger:active) {
+	scale: 0.97;
+	transition-timing-function: var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-media {
+	position: relative;
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 44px;
+	overflow: hidden;
+	border-radius: var(--wg-kit-item);
+	background: var(--wg-kit-fill);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment[data-size="sm"] .wg-kit-attachment-media {
+	width: 36px;
+	height: 36px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment[data-size="xs"] .wg-kit-attachment-media {
+	width: 28px;
+	height: 28px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment[data-orientation="vertical"] .wg-kit-attachment-media {
+	width: 100%;
+	height: auto;
+	aspect-ratio: 4 / 3;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-media > img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-busy {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	background: color-mix(in srgb, var(--wg-kit-page) 64%, transparent);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-content {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-title,
+:is(.wg-root, .wg-portal) .wg-kit-attachment-description {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-title {
+	font-size: var(--wg-kit-text-s);
+	font-weight: var(--font-medium, 500);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-description {
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment[data-state="error"] .wg-kit-attachment-description {
+	color: var(--wg-kit-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-actions {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex: none;
+	gap: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-trigger {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	height: auto;
+	margin: 0;
+	padding: 0;
+	border: none;
+	border-radius: inherit;
+	background: none;
+	box-shadow: none;
+	cursor: pointer;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-trigger:focus-visible {
+	outline: 2px solid var(--wg-kit-accent);
+	outline-offset: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-group {
+	display: flex;
+	gap: var(--wg-gap-parts, 8px);
+	max-width: 100%;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	scrollbar-width: thin;
+}
+:is(.wg-root, .wg-portal) .wg-kit-attachment-group > * {
+	flex: none;
+	scroll-snap-align: start;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-scroller {
+	position: relative;
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	min-height: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-viewport {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-anchor: none;
+	overscroll-behavior: contain;
+	outline: none;
+	scrollbar-width: thin;
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-viewport:focus-visible {
+	box-shadow: inset 0 0 0 2px var(--wg-kit-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-viewport[data-pending-scroll] {
+	visibility: hidden;
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-content {
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items, 16px);
+	padding: var(--wg-gap-items, 16px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-item {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-button {
+	position: absolute;
+	z-index: 2;
+	inset-inline-start: 50%;
+	bottom: var(--wg-gap-items, 16px);
+	translate: -50% 0;
+	transition:
+		scale var(--wg-grow) var(--wg-spring),
+		opacity var(--wg-quick) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-button[data-direction="start"] {
+	top: var(--wg-gap-items, 16px);
+	bottom: auto;
+}
+:is(.wg-root, .wg-portal) .wg-kit-scroller-button[data-active="false"] {
+	scale: 0.5;
+	opacity: 0;
+	pointer-events: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-quiz {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items, 16px);
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-progress {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts, 8px);
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-progress-track {
+	display: block;
+	height: 6px;
+	overflow: hidden;
+	border-radius: var(--wg-kit-pill);
+	background: var(--wg-kit-fill);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-progress-fill {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--wg-kit-accent);
+	transition: inline-size var(--wg-grow) var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-item {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
+	outline: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-item[hidden],
+:is(.wg-root, .wg-portal) .wg-kit-quiz-step[hidden],
+:is(.wg-root, .wg-portal) .wg-kit-quiz-error[hidden] {
+	display: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-item[data-active] {
+	animation: wg-kit-quiz-in var(--wg-grow) var(--wg-spring);
+}
+@keyframes wg-kit-quiz-in {
+	from {
+		opacity: 0;
+		translate: 0 14px;
+	}
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-title {
+	padding: 0;
+	font-size: var(--wg-kit-h4-size);
+	font-weight: var(--wg-kit-h4-weight);
+	line-height: var(--wg-kit-h4-line);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-description {
+	margin: 0;
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.5;
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choices {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts, 8px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-surface.wg-kit-quiz-choice {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	box-sizing: border-box;
+	min-height: 60px;
+	padding: 12px 14px 12px 18px;
+	border-radius: var(--wg-kit-plate);
+	cursor: pointer;
+	transition:
+		scale var(--wg-press) var(--wg-ease),
+		background var(--wg-quick) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice:hover:not([data-checked]):not([data-disabled]) {
+	background: var(--wg-kit-fill-hover);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice:active:not([data-disabled]) {
+	scale: 0.98;
+	transition-timing-function: var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice:has(> .wg-kit-quiz-choice-input:focus-visible) {
+	outline: 2px solid var(--wg-kit-accent);
+	outline-offset: 2px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark {
+	position: relative;
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 22px;
+	height: 22px;
+	border-radius: var(--wg-kit-pill);
+	box-shadow: inset 0 0 0 1.5px var(--wg-kit-card-edge);
+	transition: background var(--wg-quick) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-type="checkbox"] .wg-kit-quiz-choice-mark {
+	border-radius: 7px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark::after {
+	content: "";
+	width: 8px;
+	height: 8px;
+	border-radius: inherit;
+	background: var(--text-on-accent);
+	scale: 0;
+	transition: scale var(--wg-grow) var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-checked] .wg-kit-quiz-choice-mark {
+	background: var(--wg-kit-accent);
+	box-shadow: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-checked] .wg-kit-quiz-choice-mark::after {
+	scale: 1;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-invalid] .wg-kit-quiz-choice-mark {
+	box-shadow: inset 0 0 0 1.5px var(--wg-kit-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-text {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-label {
+	font-size: var(--wg-kit-text-m);
+	font-weight: var(--font-medium, 500);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-description {
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-key {
+	flex: none;
+	display: grid;
+	place-items: center;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 6px;
+	box-sizing: border-box;
+	border: none;
+	border-radius: var(--wg-kit-item);
+	background: none;
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	font-family: var(--font-monospace);
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-checked] .wg-kit-quiz-choice-key {
+	box-shadow: inset 0 0 0 1px var(--wg-kit-accent);
+	color: var(--wg-kit-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-input {
+	box-sizing: border-box;
+	width: 100%;
+	height: auto;
+	min-height: 60px;
+	padding: 0 18px;
+	border: none;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+	box-shadow: none;
+	font-family: inherit;
+	font-size: var(--wg-kit-text-m);
+	color: var(--wg-kit-text);
+	transition: box-shadow var(--wg-quick) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-input:focus,
+:is(.wg-root, .wg-portal) .wg-kit-quiz-input[data-filled] {
+	box-shadow: inset 0 0 0 2px var(--wg-kit-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-error {
+	margin: 0;
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--wg-gap-parts, 8px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-quiz-actions > [data-slot="questionnaire-previous"] {
+	margin-inline-end: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal)
+		:is(
+			.wg-kit-quiz-item,
+			.wg-kit-quiz-choice,
+			.wg-kit-quiz-choice-mark,
+			.wg-kit-quiz-progress-fill,
+			.wg-kit-scroller-button,
+			.wg-kit-attachment,
+			.wg-kit-bubble-content,
+			.wg-kit-message-chevron
+		) {
+		animation: none;
+		transition: none;
+	}
+	:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark::after {
+		transition: none;
+	}
+}
