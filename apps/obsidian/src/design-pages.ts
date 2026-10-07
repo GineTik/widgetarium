@@ -8,25 +8,26 @@ import { ScreenFrame } from "./design-screen-frame.js";
 export interface PagesRegionProps extends Drawing {
 	readonly screens: readonly DrawnScreen[];
 	readonly size: Size;
-	readonly draft?: ReactNode;
+	readonly status?: ReactNode;
+	readonly aside?: ReactNode;
 }
 
 const PAGES = "Pages";
 const STATES_SAID = "{count} states";
 
-export function PagesRegion({ screens, size, draft, registry, host }: PagesRegionProps): ReactElement | null {
+export function PagesRegion({ screens, size, status, aside, registry, host }: PagesRegionProps): ReactElement | null {
 	if (screens.length === 0) return null;
 	return h(
 		Region,
-		{ title: PAGES, count: screens.length },
-		screens.map((screen) => screenGroupOf(screen, { size, registry, host }, draft ?? null)),
+		{ title: PAGES, count: screens.length, aside },
+		screens.map((screen) => screenGroupOf(screen, { size, registry, host }, status ?? null)),
 	);
 }
 
 function screenGroupOf(
 	screen: DrawnScreen,
-	framing: Omit<PagesRegionProps, "screens" | "draft">,
-	draft: ReactNode,
+	framing: Omit<PagesRegionProps, "screens" | "status" | "aside">,
+	status: ReactNode,
 ): ReactElement {
 	return h(
 		Group,
@@ -34,7 +35,7 @@ function screenGroupOf(
 			key: screen.name,
 			title: screen.name,
 			sub: STATES_SAID.replace("{count}", String(screen.states.length)),
-			aside: draft,
+			status,
 		},
 		screen.states.map((state) =>
 			h(ScreenFrame, { key: state.name, label: frameLabelOf(screen, state.name), state, ...framing }),

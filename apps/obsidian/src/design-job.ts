@@ -1,6 +1,5 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { jobOfPage } from "@widgetarium/core/app-jobs.js";
 import type { Job } from "@widgetarium/core/app-jobs.js";
 import type { LiveJob } from "./ai/job-runner.js";
 import type { Size } from "./design-canvas-shapes.js";
@@ -10,31 +9,33 @@ import { JobLine } from "./design-job-line.js";
 
 export interface JobControls {
 	readonly live: (id: string) => LiveJob | null;
-	readonly start: (id: string) => void;
 	readonly stop: (id: string) => void;
-	readonly openChat: () => void;
-	readonly startsThemselves: boolean;
 }
 
 const PAGES = "Pages";
 
+export function runningJobOfPage(jobs: readonly Job[], page: string): Job | null {
+	return jobs.find((job) => job.page === page && job.status === "running") ?? null;
+}
+
+export function pagesBeingWorkedOn(jobs: readonly Job[]): string[] {
+	return [...new Set(jobs.flatMap((job) => (job.page && job.status === "running" ? [job.page] : [])))];
+}
+
 export function pageLabelOf(page: string, jobs: readonly Job[]): ReactNode {
-	const job = jobOfPage(jobs, page);
-	if (!job || job.status === "done") return page;
+	if (!runningJobOfPage(jobs, page)) return page;
 	return h("span", { className: "wg-design-tab" }, [
-		h("span", { key: "dot", className: `wg-design-job-dot is-${job.status}` }),
+		h("span", { key: "dot", className: "wg-design-job-dot is-running" }),
 		h("span", { key: "name" }, page),
 	]);
 }
 
 export function PlannedPageRegion({
 	job,
-	jobs,
 	controls,
 	size,
 }: {
 	job: Job;
-	jobs: readonly Job[];
 	controls: JobControls;
 	size: Size;
 }): ReactElement {
@@ -49,12 +50,8 @@ export function PlannedPageRegion({
 				h("div", { key: "top", className: "wg-design-top" }, h("span", { className: "wg-design-name" }, page)),
 				h(
 					"div",
-					{
-						key: "job",
-						className: `wg-design-job-frame${job.status === "running" ? " is-running" : ""}`,
-						style: { minHeight: `${size.height}px` },
-					},
-					h(JobLine, { job, jobs, controls }),
+					{ key: "job", className: "wg-design-job-frame is-running", style: { minHeight: `${size.height}px` } },
+					h(JobLine, { job, controls }),
 				),
 			]),
 		),

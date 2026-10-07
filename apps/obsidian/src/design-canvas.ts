@@ -4,15 +4,18 @@ import { Button, Icon, IconButton } from "@widgetarium/kit";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import type { DrawnReference, DrawnScreen, DrawnWidget, Size } from "./design-canvas-shapes.js";
 import { imageFilesIn } from "./design-photos.js";
-import { WIDGETS_PAGE, canvasPagesOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
+import { WIDGETS_PAGE, canvasPagesOf, isCanvasDoc, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
 import { pageLabelOf } from "./design-job.js";
 import type { Job } from "@widgetarium/core/app-jobs.js";
 import type { CanvasDocs } from "./design-docs.js";
 import type { JobControls } from "./design-job.js";
 import type { WidgetOpener } from "./design-noted-picture.js";
+import { shownVariantOf } from "./design-variants.js";
+import type { VariantPick } from "./design-variants.js";
 import { LayersPanel } from "./design-layers-panel.js";
 import type { LayerFocus } from "./design-layers-panel.js";
-import { Highlight, lookOnto, screenBoxOf } from "./design-spotlight.js";
+import { Highlight, lookOnto } from "./design-spotlight.js";
+import type { Box } from "./design-flight.js";
 import { useCanvasSelection } from "./design-canvas-selection.js";
 import type { CanvasMode } from "./design-tools.js";
 import type { LayerMove } from "./layer-moves.js";
@@ -30,6 +33,7 @@ export interface DesignCanvasProps {
 	readonly docs: CanvasDocs;
 	readonly controls: JobControls;
 	readonly opener: WidgetOpener;
+	readonly pick: VariantPick;
 	readonly focusWidget: string | null;
 	readonly onFocusedWidget: () => void;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
@@ -57,13 +61,13 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 	const fit = useMemo(() => fitLook(field, props.size), [field, props.size]);
 	const pan = usePanZoom(layerRef, fit, props.mode === "hand");
 	const selection = useCanvasSelection(layerRef, pan);
-	const { screens, references, widgets, jobs, docs, controls, opener, registry, host } = props;
+	const { screens, references, widgets, jobs, docs, controls, opener, pick, registry, host } = props;
 	const page = shownPageOf(props.page, { screens, jobs, docs });
 	useEscapeClears(selection.picked !== null, selection.clear);
 	useFliesToWidget({ layerRef, pan, page, widget: props.focusWidget, onDone: props.onFocusedWidget });
 	const regions = useMemo(
-		() => regionsOfPage({ page, screens, references, widgets, jobs, docs, controls, opener, registry, host }),
-		[page, screens, references, widgets, jobs, docs, controls, opener, registry, host],
+		() => regionsOfPage({ page, screens, references, widgets, jobs, docs, controls, opener, pick, registry, host }),
+		[page, screens, references, widgets, jobs, docs, controls, opener, pick, registry, host],
 	);
 	const isPointer = props.mode === "pointer";
 	return h(
@@ -83,7 +87,6 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 				h(Highlight, { key: "hovered", spot: isPointer ? selection.hovered : null, tone: "hover" }),
 				h(Highlight, { key: "picked", spot: selection.picked, tone: "picked" }),
 			),
-			topBarOf({ ...props, onPage: (next) => fadedTurn(pan.fieldRef.current, () => props.onPage(next)) }, page),
 			layersOf(
 				{ ...props, picked: selection.picked?.mark ?? null, onFocus: selection.onFocus, keepsLiveCopy: isPointer },
 				page,
@@ -94,6 +97,15 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 	);
 }
 
+export interface CanvasTopBarProps extends DesignCanvasProps {
+	readonly fieldOf: () => HTMLElement | null;
+}
+
+export function CanvasTopBar(props: CanvasTopBarProps): ReactElement {
+	const page = shownPageOf(props.page, props);
+	return topBarOf({ ...props, onPage: (next) => fadedTurn(props.fieldOf(), () => props.onPage(next)) }, page);
+}
+
 function topBarOf(
 	{ app, screens, jobs, docs, onPage, onAddPhotos, mode, onMode, isLayersOpen, onLayers }: DesignCanvasProps,
 	page: string,
@@ -101,6 +113,7 @@ function topBarOf(
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
 	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames));
 	const status = h(PicturesProgress, { key: "pictures" });
+	const canvasPages = canvasPagesOf({ screens, jobs, docs });
 	const layers =
 		page === WIDGETS_PAGE
 			? null
@@ -119,7 +132,8 @@ function topBarOf(
 		key: "top",
 		app,
 		said,
-		pages: canvasPagesOf({ screens, jobs, docs }).map((one) => ({ value: one, label: pageLabelOf(one, jobs) })),
+		tabs: canvasPages.filter(isCanvasDoc).map((one) => ({ value: one, label: one })),
+		pages: canvasPages.filter((one) => !isCanvasDoc(one)).map((one) => ({ value: one, label: pageLabelOf(one, jobs) })),
 		page,
 		onPage,
 		onAddPhotos,
@@ -137,10 +151,10 @@ interface Picking {
 }
 
 function layersOf(
-	{ screens, registry, isLayersOpen, onMove, picked, onFocus, keepsLiveCopy }: DesignCanvasProps & Picking,
+	{ screens, pick, registry, isLayersOpen, onMove, picked, onFocus, keepsLiveCopy }: DesignCanvasProps & Picking,
 	page: string,
 ): ReactElement | null {
-	const screen = screens.find((one) => one.name === page);
+	const [screen] = shownVariantOf(screens, page, pick);
 	if (!screen) return null;
 	return h(LayersPanel, {
 		key: "layers-panel",
@@ -227,9 +241,21 @@ function useFliesToWidget({ layerRef, pan, page, widget, onDone }: WidgetFlight)
 			const group = layer
 				? [...layer.querySelectorAll<HTMLElement>("[data-wg-group]")].find((one) => one.dataset["wgGroup"] === widget)
 				: null;
-			if (layer && group) pan.flyTo(lookOnto(screenBoxOf(layer, group, pan.lookNow().scale), pan.fieldRef.current));
+			if (layer && group) pan.flyTo(lookOnto(boxInLayer(layer, group), pan.fieldRef.current));
 			onDone();
 		});
 		return () => cancelAnimationFrame(frame);
 	}, [layerRef, pan, page, widget, onDone]);
+}
+
+function boxInLayer(layer: HTMLElement, element: HTMLElement): Box {
+	const origin = layer.getBoundingClientRect();
+	const drawn = element.getBoundingClientRect();
+	const scale = drawn.width / Math.max(1, element.offsetWidth);
+	return {
+		x: (drawn.left - origin.left) / scale,
+		y: (drawn.top - origin.top) / scale,
+		width: element.offsetWidth,
+		height: element.offsetHeight,
+	};
 }

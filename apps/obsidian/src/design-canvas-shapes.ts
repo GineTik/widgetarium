@@ -14,6 +14,7 @@ export interface DrawnState {
 	readonly board: Board | null;
 	readonly picture?: StatePicture | undefined;
 	readonly refusal?: string | undefined;
+	readonly situation?: string | undefined;
 }
 
 export interface DrawnScreen {

@@ -5,7 +5,7 @@ import { JobSchema } from "../packages/core/src/app-jobs.ts";
 import type { Job } from "../packages/core/src/app-jobs.ts";
 import type { JobControls } from "../apps/obsidian/src/design-job.ts";
 import { PlannedPageRegion, pageLabelOf } from "../apps/obsidian/src/design-job.ts";
-import { DraftStatus } from "../apps/obsidian/src/design-draft-status.ts";
+import { JobLine } from "../apps/obsidian/src/design-job-line.ts";
 import { ReferencesRegion } from "../apps/obsidian/src/design-references.ts";
 
 const PICTURE = `data:image/svg+xml;utf8,${encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='640' height='420'><rect width='640' height='420' fill='#f3f3f1'/></svg>")}`;
@@ -24,7 +24,6 @@ const JOBS: Job[] = [
 		page: "Studio",
 		phase: "design",
 		status: "waiting",
-		approval: true,
 		spent: 48210,
 		startedAt: NOW - 14 * MINUTE,
 		endedAt: NOW - MINUTE,
@@ -82,10 +81,7 @@ const LINES = [
 const controls: JobControls = {
 	live: (id) =>
 		id === "ideas-design" ? { activity: "Widgetarium · shot — --design Studio", lines: LINES, spent: 9120 } : null,
-	start: () => undefined,
 	stop: () => undefined,
-	openChat: () => undefined,
-	startsThemselves: true,
 };
 
 const host = document.getElementById("host");
@@ -150,7 +146,7 @@ createRoot(host).render(
 						key: "page",
 						title: "Ideas",
 						sub: "4 states",
-						aside: h(DraftStatus, {
+						status: h(JobLine, {
 							job: JobSchema.parse({
 								id: "ideas-review",
 								app: "Studio",
@@ -162,8 +158,8 @@ createRoot(host).render(
 								spent: 3400,
 								startedAt: NOW - 2 * MINUTE,
 							}),
-							jobs: JOBS,
 							controls,
+							isInline: true,
 						}),
 					},
 					h("div", {
@@ -191,8 +187,8 @@ createRoot(host).render(
 				},
 			},
 			[
-				...["ideas-design", "filming-design", "studio-implement", "studio-design", "hooks-review"].map((id) =>
-					h(PlannedPageRegion, { key: id, job: byId(id), jobs: JOBS, controls, size: { width: 1280, height: 832 } }),
+				...["ideas-design"].map((id) =>
+					h(PlannedPageRegion, { key: id, job: byId(id), controls, size: { width: 1280, height: 832 } }),
 				),
 			],
 		),

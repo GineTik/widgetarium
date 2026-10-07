@@ -3,7 +3,7 @@ import { boardIn } from "./board-in-note.js";
 import { movedNode } from "@widgetarium/core/engine/node-moves.js";
 import type { LayerMove } from "./layer-moves.js";
 import type { App, ViewStateResult, WorkspaceLeaf } from "obsidian";
-import { createElement as h } from "react";
+import { Fragment, createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
 import type { Board } from "@widgetarium/core/model.js";
@@ -18,10 +18,9 @@ import {
 import type { Design, ScreenState } from "@widgetarium/core/app-design.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
-import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
-import { LOCK_PATH } from "@widgetarium/core/paths.js";
+import { specPathOf } from "@widgetarium/core/app-spec.js";
 import type { CanvasMode } from "./design-tools.js";
-import { DesignCanvas } from "./design-canvas.js";
+import { CanvasTopBar, DesignCanvas } from "./design-canvas.js";
 import { WIDGETS_PAGE } from "./design-canvas-page.js";
 import { widgetOpenerOf } from "./design-references.js";
 import { statePropsOf } from "./design-state-drawing.js";
@@ -33,6 +32,7 @@ import type { Job } from "@widgetarium/core/app-jobs.js";
 import { NO_DOCS } from "./design-docs.js";
 import { docsOf } from "./design-docs-read.js";
 import type { JobControls } from "./design-job.js";
+import { catalogueInstallsOf, specWidgetsOf } from "./design-spec-widgets.js";
 
 export const DESIGN_VIEW_TYPE = "widgetarium-design";
 
@@ -54,6 +54,11 @@ export class DesignView extends ItemView {
 	private isLayersOpen = false;
 	private mode: CanvasMode = "hand";
 	private focusWidget: string | null = null;
+	private variants: Readonly<Record<string, string>> = {};
+	private readonly onVariant = (page: string, screen: string): void => {
+		this.variants = { ...this.variants, [page]: screen };
+		void this.draw();
+	};
 	private readonly onFocusedWidget = (): void => {
 		this.focusWidget = null;
 	};
@@ -94,7 +99,7 @@ export class DesignView extends ItemView {
 
 	override async onOpen(): Promise<void> {
 		this.contentEl.addClass("wg-design-view");
-		this.node = this.contentEl.createDiv({ cls: "wg-mount wg-design-mount" });
+		this.node = this.contentEl.createDiv({ cls: "wg-mount wg-design-mount wg-portal" });
 		shieldFromEditor(this.node);
 		await this.plugin.started;
 		const watched = new ResizeObserver(() => void this.draw());
@@ -122,18 +127,12 @@ export class DesignView extends ItemView {
 		return this.plugin.assistant?.jobs.jobsOf(this.appName) ?? [];
 	}
 
-	private async controlsNow(): Promise<JobControls> {
+	private controlsNow(): JobControls {
 		const app = this.appName;
-		const assistant = this.plugin.assistant;
-		const held = assistant ? await assistant.settings.state() : null;
-		const jobs = assistant?.jobs;
-		const redrawn = (done: Promise<unknown> | undefined): void => void done?.then(() => this.draw());
+		const jobs = this.plugin.assistant?.jobs;
 		return {
 			live: (id) => jobs?.liveOf(app, id) ?? null,
-			start: (id) => redrawn(jobs?.start(app, id)),
-			stop: (id) => redrawn(jobs?.stop(app, id)),
-			openChat: () => void this.plugin.showAssistant(true),
-			startsThemselves: held?.jobsStartThemselves ?? true,
+			stop: (id) => void jobs?.stop(app, id).then(() => this.draw()),
 		};
 	}
 
@@ -198,11 +197,20 @@ export class DesignView extends ItemView {
 			onMode: (mode: CanvasMode): void => this.turnMode(mode),
 			onMove: (widget: string, move: LayerMove): void => void this.moveLayer(widget, move),
 		};
-		const controls = await this.controlsNow();
+		const controls = this.controlsNow();
 		const opener = widgetOpenerOf(drawing.registry, (widget) => this.openWidget(widget));
 		const focusing = { focusWidget: this.focusWidget, onFocusedWidget: this.onFocusedWidget };
+		const pick = { variants: this.variants, onVariant: this.onVariant };
 		const design = { app: this.appName, screens, references, widgets, jobs, docs, controls, opener, size, onAddPhotos };
-		render(h(DesignCanvas, { key: this.page, ...design, ...focusing, ...paging, ...layering, ...drawing }), node);
+		const canvas = { ...design, ...focusing, pick, ...paging, ...layering, ...drawing };
+		const fieldOf = (): HTMLElement | null => node.querySelector<HTMLElement>(".wg-design-field");
+		render(
+			h(Fragment, null, [
+				h(DesignCanvas, { key: this.page, ...canvas }),
+				h(CanvasTopBar, { key: "top", ...canvas, fieldOf }),
+			]),
+			node,
+		);
 	}
 
 	private turnMode(mode: CanvasMode): void {
@@ -270,7 +278,12 @@ function drawnScreensOf(
 	return Promise.all(
 		screens.map(async (screen) => ({
 			name: screen.name,
-			states: await Promise.all(statesOf(screen).map((state) => stateOf(plugin, app, state, screen.name))),
+			states: await Promise.all(
+				statesOf(screen).map(async (state) => ({
+					...(await stateOf(plugin, app, state, screen.name)),
+					situation: state.situation,
+				})),
+			),
 		})),
 	);
 }
@@ -331,31 +344,6 @@ function widgetsOnScreens(screens: DrawnDesign["screens"]): string[] {
 
 function draftsOn(screens: DrawnDesign["screens"]): string[] {
 	return [...new Set(widgetsOnScreens(screens).filter(isDraft))];
-}
-
-async function specWidgetsOf(plugin: WidgetariumPlugin, app: string): Promise<string[]> {
-	const text = await plugin.app.vault.adapter.read(specPathOf(app)).catch(() => null);
-	const read = text === null ? null : readSpec(text);
-	if (!read?.spec) return [];
-	const named = read.spec.features.flatMap((feature) => (feature.widget ? [feature.widget] : []));
-	const pageNotes = read.spec.pages.flatMap((page) => (page.note ? [page.note] : []));
-	const onPages = await Promise.all(pageNotes.map((note) => widgetsOnNote(plugin, note)));
-	return [...named, ...onPages.flat()];
-}
-
-async function widgetsOnNote(plugin: WidgetariumPlugin, note: string): Promise<string[]> {
-	const text = await plugin.app.vault.adapter.read(note).catch(() => "");
-	return boardIn(text)?.tiles.map((tile) => tile.widget) ?? [];
-}
-
-async function catalogueInstallsOf(plugin: WidgetariumPlugin): Promise<string[]> {
-	const text = await plugin.app.vault.adapter.read(LOCK_PATH).catch(() => "");
-	try {
-		const lock: unknown = JSON.parse(text);
-		return isObject(lock) && isObject(lock["widgets"]) ? Object.keys(lock["widgets"]) : [];
-	} catch {
-		return [];
-	}
 }
 
 function refusedDesign(app: string, refusal: string): DrawnDesign {
