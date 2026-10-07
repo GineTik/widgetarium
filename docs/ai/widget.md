@@ -563,8 +563,15 @@ not, and the state written on the element.
 
 - **One naming rule.** `value` / `defaultValue` / `onValueChange` (Select, Segmented, Tabs),
   `checked` / `defaultChecked` / `onCheckedChange` (Switch), `open` / `defaultOpen` / `onOpenChange`
-  (Popover, Select, SidebarSheet), `month` / `defaultMonth` / `onMonthChange` (Calendar). Pass the
-  first to control it, the second to let it hold its own.
+  (Popover, Select, SidebarSheet), `month` / `defaultMonth` / `onMonthChange` (Calendar),
+  `pressed` / `defaultPressed` / `onPressedChange` (Toggle), `value` as an array (Slider). Pass the
+  first to control it, the second to let it hold its own. `Calendar` takes `selected` / `onSelect`
+  in shadcn's `mode="single" | "multiple" | "range"`.
+- **A form is `useForm` plus `Controller`**, shadcn's React Hook Form example with the kit's own hook:
+  `useForm({ schema, defaultValues })`, `<Controller name control={form.control} render={({ field,
+fieldState }) => …} />`, `form.handleSubmit(send)`. The schema is your zod object; the kit only calls
+  its `safeParse`. The whole pattern and the Bug report example are in `kit.md`, "Inputs, calendar,
+  forms".
 - **`asChild`** on `Button`, `IconButton`, `Badge`, `Card`, `Plate`, `List`, `Row`, `Sidebar` and
   `PopoverTrigger` draws the kit's look and behaviour on your own element — an `<a>` that is a
   button, a row that is a link. Props merge the Radix way: yours win, both click handlers run.

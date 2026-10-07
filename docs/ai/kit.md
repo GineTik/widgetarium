@@ -177,3 +177,169 @@ a file or source as an attachment — and `readChatParts` reads them without dra
 	</MessageScroller>
 </MessageScrollerProvider>
 ```
+
+## Inputs, calendar, forms
+
+shadcn's names, parts and props, built on the kit's own hooks: no Radix, no react-day-picker, no
+input-otp, no React Hook Form.
+
+| shadcn                                                                                                                            | Notes                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Label htmlFor`                                                                                                                   | `FieldLabel htmlFor` inside a `Field`                                                                                         |
+| `InputGroup`, `InputGroupAddon align="inline-start\|inline-end\|block-start\|block-end"`, `InputGroupInput`, `InputGroupTextarea` | `InputGroupButton size="xs\|sm\|icon-xs\|icon-sm"`, `InputGroupText`; a press on an addon focuses the input                   |
+| `InputOTP maxLength pattern value onChange onComplete`, `InputOTPGroup`, `InputOTPSlot index`, `InputOTPSeparator`                | `REGEXP_ONLY_DIGITS`, `REGEXP_ONLY_CHARS`, `REGEXP_ONLY_DIGITS_AND_CHARS`; `pasteTransformer`                                 |
+| `RadioGroup value onValueChange`, `RadioGroupItem value id`                                                                       | arrows move and check, skipping disabled items                                                                                |
+| `NativeSelect`, `NativeSelectOption`, `NativeSelectOptGroup`                                                                      | a real `<select>`; `size="sm"`; plus `onValueChange`                                                                          |
+| `Slider defaultValue={[50]} min max step`, two values for a range                                                                 | `onValueChange`, `onValueCommit`, `orientation`, `inverted`, `minStepsBetweenThumbs`; thumbs never cross                      |
+| `Toggle pressed onPressedChange variant="default\|outline" size`                                                                  |                                                                                                                               |
+| `ButtonGroup orientation`, `ButtonGroupSeparator`, `ButtonGroupText`                                                              | inner corners close up and open on a press                                                                                    |
+| `Kbd`, `KbdGroup`                                                                                                                 |                                                                                                                               |
+| `Combobox items multiple value onValueChange itemToStringValue autoHighlight`                                                     | `ComboboxInput showTrigger showClear`, `ComboboxContent`, `ComboboxList {(item) => …}`, `ComboboxItem value`, `ComboboxEmpty` |
+| `ComboboxChips`, `ComboboxValue {(values) => …}`, `ComboboxChip`, `ComboboxChipsInput`                                            | `ComboboxGroup`, `ComboboxLabel`, `ComboboxSeparator`, `ComboboxTrigger`; `ComboboxCollection` is not built                   |
+| `Calendar mode="single\|multiple\|range" selected onSelect`                                                                       | see below                                                                                                                     |
+
+**Calendar** takes react-day-picker's names: `month`, `defaultMonth`, `onMonthChange`,
+`captionLayout="label|dropdown|dropdown-months|dropdown-years"`, `startMonth`, `endMonth`,
+`numberOfMonths`, `disabled` (a date, dates, `{ from, to }`, `{ before }`, `{ after }`,
+`{ dayOfWeek }` or a function, alone or in a list), `required`, `showOutsideDays`, `fixedWeeks`,
+`weekStartsOn`. The kit's defaults differ in three places: the week starts on Monday, there are
+always six weeks, and outside days are shown. The dropdowns are the kit's `Select`; the year list
+runs from `startMonth` to `endMonth`, a hundred years back and ten ahead without them. With no `mode`
+it is a single pick that cannot be emptied, `onSelect(day)`, which is how every calendar written
+before took it; `renderDay` and `today` stay.
+
+**A date picker** is a composition, as in shadcn:
+
+```tsx
+const [date, setDate] = useState<Date | undefined>();
+const [open, setOpen] = useState(false);
+
+<Popover open={open} onOpenChange={setOpen} placement="below">
+	<PopoverTrigger asChild>
+		<Button variant="outline">{date ? date.toLocaleDateString() : "Select date"}</Button>
+	</PopoverTrigger>
+	<PopoverContent>
+		<Calendar mode="single" captionLayout="dropdown" selected={date}
+			onSelect={(day) => { setDate(day); setOpen(false); }} />
+	</PopoverContent>
+</Popover>
+
+<Calendar mode="range" numberOfMonths={2} defaultMonth={range?.from} selected={range} onSelect={setRange} />
+```
+
+A `Select` opened inside a `Popover` keeps it open: a press in a nested panel is not outside.
+
+**A form** is shadcn's React Hook Form example with `useForm` and `Controller` from the kit. The
+kit imports no zod: `schema` is anything with `safeParse`, so your zod object fits as it is. Errors
+appear after the first submit and are judged again on every change after it
+(`mode: "onChange" | "onBlur" | "onTouched"` judge earlier); an invalid submit focuses the first
+invalid field. `form` also has `register(name)`, `getFieldState`, `getValues`, `watch`, `setValue`,
+`reset` and `formState` (`errors`, `isValid`, `isDirty`, `isSubmitted`, `isSubmitting`).
+
+```tsx
+import { z } from "zod";
+import {
+	Button,
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+	Controller,
+	Field,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+	Input,
+	InputGroup,
+	InputGroupAddon,
+	InputGroupText,
+	InputGroupTextarea,
+	useForm,
+} from "widgetarium/kit";
+
+const BugSchema = z.object({
+	title: z
+		.string()
+		.min(5, "Bug title must be at least 5 characters.")
+		.max(32, "Bug title must be at most 32 characters."),
+	description: z
+		.string()
+		.min(20, "Description must be at least 20 characters.")
+		.max(100, "Description must be at most 100 characters."),
+});
+
+function BugReport({ report }: { report: (bug: z.infer<typeof BugSchema>) => Promise<unknown> }) {
+	const form = useForm({ schema: BugSchema, defaultValues: { title: "", description: "" } });
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>Bug Report</CardTitle>
+				<CardDescription>Help us improve by reporting bugs you encounter.</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form id="bug-report" onSubmit={form.handleSubmit(report)}>
+					<FieldGroup>
+						<Controller
+							name="title"
+							control={form.control}
+							render={({ field, fieldState }) => (
+								<Field data-invalid={fieldState.invalid}>
+									<FieldLabel htmlFor="bug-title">Bug Title</FieldLabel>
+									<Input
+										{...field}
+										id="bug-title"
+										aria-invalid={fieldState.invalid}
+										placeholder="Login button not working on mobile"
+										autoComplete="off"
+									/>
+									{fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
+								</Field>
+							)}
+						/>
+						<Controller
+							name="description"
+							control={form.control}
+							render={({ field, fieldState }) => (
+								<Field data-invalid={fieldState.invalid}>
+									<FieldLabel htmlFor="bug-description">Description</FieldLabel>
+									<InputGroup>
+										<InputGroupTextarea
+											{...field}
+											id="bug-description"
+											rows={6}
+											aria-invalid={fieldState.invalid}
+											placeholder="I'm having an issue with the login button on mobile."
+										/>
+										<InputGroupAddon align="block-end">
+											<InputGroupText>{`${field.value.length}/100 characters`}</InputGroupText>
+										</InputGroupAddon>
+									</InputGroup>
+									<FieldDescription>
+										Include steps to reproduce, expected behavior, and what actually happened.
+									</FieldDescription>
+									{fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
+								</Field>
+							)}
+						/>
+					</FieldGroup>
+				</form>
+			</CardContent>
+			<CardFooter>
+				<Button type="button" variant="outline" onClick={() => form.reset()}>
+					Reset
+				</Button>
+				<Button type="submit" variant="default" form="bug-report">
+					Submit
+				</Button>
+			</CardFooter>
+		</Card>
+	);
+}
+```
+
+`FormFields` draws the same anatomy from a list of field specs: a `Field` per spec, its
+`FieldLabel` naming the control, and `errors` (the shape of `formState.errors`) drawn as a
+`FieldError` under the field it belongs to.

@@ -7,6 +7,7 @@ import type { ClassNameValue } from "../utils/cn";
 export interface HeldPopover extends PopoverState {
 	readonly className?: ClassNameValue;
 	readonly isPortaled?: boolean;
+	readonly parentId?: string | undefined;
 	readonly askPlacement?: ((placement: PlacementName) => void) | undefined;
 }
 

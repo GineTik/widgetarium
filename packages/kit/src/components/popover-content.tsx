@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import type { PopoverAlign, PopoverSide } from "../constants/popover";
 import { useAsksPlacement } from "../hooks/use-asks-placement";
 import { cn } from "../utils/cn";
+import { NESTED_PANEL_PARENT } from "../utils/nested-panels";
 import { portalLayer } from "../utils/portal-layer";
 import { stepIndex } from "../utils/roving";
 import type { Step } from "../utils/roving";
@@ -46,6 +47,7 @@ export function PopoverContent({ side, align, children, className: cls }: Popove
 			data-state={dataStateOf(popover.isOpen)}
 			data-side={popover.placement}
 			data-wg-overlay={popover.shown ? "" : undefined}
+			{...{ [NESTED_PANEL_PARENT]: popover.parentId }}
 			onKeyDown={moveBetweenItems}
 		>
 			<div className="wg-kit-pop-inner">{popover.shown ? held.current : null}</div>

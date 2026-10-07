@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { TabStep } from "../packages/core/src/tab-rows.ts";
 import type { TabStripFacts } from "../packages/core/src/tab-strip-verbs.ts";
-import type { CalendarProps } from "../packages/kit/src/components/calendar.tsx";
+import type { CalendarPickProps as CalendarProps } from "../packages/kit/src/components/calendar.tsx";
 import type { PlacementName } from "../packages/kit/src/constants/popover.ts";
 import type { Mark } from "../packages/kit/src/utils/marks.ts";
 import type { PlaceholderMarkProps } from "../packages/kit/src/components/placeholder-mark.tsx";
