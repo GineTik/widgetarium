@@ -1171,9 +1171,9 @@ for (const theme of ["light", "dark"] as const) {
 	check("a kanban column is the grey plate on a bare tile", field(kanban, "column", "fill"), field(kanban, "fill"));
 	check("and a card inside it rises off the column", field(kanban, "card", "fill"), field(kanban, "raise"));
 	check(
-		"both are padded by the kit rather than by the widget",
+		"both are padded by the kit: a plate holding plates by the tight step, so its corner stays concentric; a plate of text in full",
 		[field(kanban, "column", "pad"), field(kanban, "card", "pad")],
-		["16px", "16px"],
+		["8px", "16px"],
 	);
 	check(
 		"with the card rounded one step inside the column",

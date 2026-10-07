@@ -1477,6 +1477,10 @@ body {
 	z-index: 0;
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-seg-thumb.is-arriving {
+	transition: none;
+}
+
 /* CONTEXT: the anchor stands between the tile and the trigger, so it must pass both the
    width it is given and the permission to shrink */
 :is(.wg-root, .wg-portal) .wg-kit-anchor {
@@ -1724,7 +1728,6 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-cal {
 	display: flex;
 	flex-direction: column;
-	padding: var(--size-2-3, 6px) var(--size-4-2, 8px) var(--size-4-2, 8px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-cal-head {
@@ -1732,7 +1735,7 @@ body {
 	align-items: center;
 	justify-content: space-between;
 	gap: var(--size-4-2, 8px);
-	padding: var(--size-2-2, 4px) var(--size-2-3, 6px) var(--size-4-2, 8px);
+	padding-bottom: var(--size-4-2, 8px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-cal-month {
@@ -1757,7 +1760,10 @@ body {
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-cal-day {
-	height: 28px;
+	height: auto;
+	aspect-ratio: 1;
+	width: min(100%, 44px);
+	justify-self: center;
 	padding: 0;
 	border: none;
 	font-family: inherit;
@@ -2246,6 +2252,12 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-cal-day.is-picked.is-picked::before {
 	background: var(--interactive-accent);
 }
+:is(.wg-root, .wg-portal) .wg-kit-cal-day::before {
+	inset: 50% auto auto 50%;
+	height: 100%;
+	aspect-ratio: 1;
+	translate: -50% -50%;
+}
 :is(.wg-root, .wg-portal) .wg-kit-row::before {
 	border-radius: 0;
 }
@@ -2593,6 +2605,11 @@ body {
 	background: var(--wg-overlay-scrim);
 }
 
+:is(.wg-root, .wg-portal) [data-wg-overlay-root],
+:is(.wg-root, .wg-portal) [data-wg-overlay-layer] {
+	position: relative;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-dialog-overlay.is-scoped {
 	position: absolute;
 	padding-top: 120px;
@@ -2600,9 +2617,13 @@ body {
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-dialog {
+	/* TRADE-OFF: level-1 steps restated from STEP_PX; a dialog is portaled out of its cell's gaps */
+	--wg-gap-items: 16px;
+	--wg-gap-parts: 8px;
+	--wg-gap-cards: 8px;
 	display: flex;
 	flex-direction: column;
-	gap: var(--wg-gap-parts, 12px);
+	gap: var(--wg-gap-items);
 	width: min(560px, 100%);
 	padding: 24px;
 	border-radius: var(--wg-kit-plate);
@@ -4359,6 +4380,23 @@ body {
 }
 
 /* CONTEXT: a sidebar is READ, so glass here is the dense panel fill, never the thin chrome tint */
+:is(.wg-root, .wg-portal) .wg-kit-side.is-edge {
+	--wg-kit-card-fill: transparent;
+	--wg-kit-card-corner: 0;
+	align-self: stretch;
+	box-shadow: none;
+	border-inline-end: 1px solid var(--wg-kit-group-line);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-side.is-edge.is-end {
+	border-inline-end: 0;
+	border-inline-start: 1px solid var(--wg-kit-group-line);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-container-frame .wg-kit-container-frame {
+	padding: 0;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-side.is-glass {
 	--wg-kit-card-fill: var(--wg-kit-glass-panel);
 	backdrop-filter: var(--wg-kit-glass-blur);
@@ -4953,6 +4991,10 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="group"] {
 	padding: var(--wg-group-pad);
 	border-radius: var(--wg-surface-corner, var(--wg-kit-plate));
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-surface[data-surface="group"]:has([data-surface="group"], > img, > picture) {
+	padding: var(--wg-kit-plate-pad);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-layout {
@@ -7697,13 +7739,15 @@ body.wg-tree-carrying .wg-tile-body {
 	color: var(--wg-kit-accent);
 }
 
-.wg-design-view {
+.workspace-leaf-content > .view-content.wg-design-view {
 	padding: 0;
 	overflow: hidden;
 }
 
-.wg-design-mount {
+.wg-mount.wg-design-mount {
+	position: relative;
 	height: 100%;
+	padding: 0;
 }
 
 .wg-design-field {
@@ -7816,6 +7860,28 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: 0 0 0 1px var(--background-modifier-border);
 	background: var(--background-primary);
 	border-radius: 999px;
+}
+
+:is(.wg-root, .wg-portal) .wg-design-page-switch button:has(.wg-design-pages-trigger) {
+	padding: 0;
+}
+
+.wg-design-page-switch .wg-kit-anchor {
+	display: flex;
+	height: 100%;
+}
+
+.wg-design-pages-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 100%;
+	padding: 0 var(--size-4-2, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-pop.wg-design-pages-menu .wg-kit-pop-inner {
+	max-height: 320px;
+	overflow-y: auto;
 }
 
 .wg-design-seen {
@@ -8363,18 +8429,6 @@ body.wg-tree-carrying .wg-tile-body {
 	animation: wg-design-job-pulse 1.4s ease-in-out infinite;
 }
 
-.wg-design-job-dot.is-waiting {
-	background: var(--color-orange, var(--text-warning));
-}
-
-.wg-design-job-dot.is-failed {
-	background: var(--text-error);
-}
-
-.wg-design-job-dot.is-done {
-	background: var(--color-green, var(--text-success));
-}
-
 @keyframes wg-design-job-pulse {
 	50% {
 		opacity: 0.35;
@@ -8415,6 +8469,17 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: var(--wg-kit-plate);
 	background: var(--wg-kit-group-fill);
 	font-size: var(--wg-kit-text-s);
+	width: 100%;
+	height: auto;
+	border: 0;
+	box-shadow: none;
+	color: var(--text-normal);
+	text-align: start;
+	cursor: pointer;
+}
+
+:is(.wg-root, .wg-portal) .wg-ai-jobs-app:hover {
+	background: var(--wg-kit-group-inset);
 }
 
 :is(.wg-root, .wg-portal) .wg-ai-jobs-said {
@@ -8482,34 +8547,6 @@ body.wg-tree-carrying .wg-tile-body {
 	flex: none;
 }
 
-.wg-design-job-mark {
-	flex: none;
-	width: 18px;
-	height: 18px;
-	border-radius: 30% 70% 60% 40%;
-	background: var(--text-faint);
-}
-
-.wg-design-job-mark.is-queued {
-	width: 16px;
-	height: 16px;
-	border-radius: 999px;
-	background: none;
-	box-shadow: inset 0 0 0 2px var(--text-faint);
-}
-
-.wg-design-job-mark.is-waiting {
-	background: var(--color-orange, var(--text-warning));
-}
-
-.wg-design-job-mark.is-failed {
-	background: var(--text-error);
-}
-
-.wg-design-job-mark.is-done {
-	background: var(--color-green, var(--text-success));
-}
-
 .wg-design-job-meta {
 	display: flex;
 	align-items: baseline;
@@ -8520,7 +8557,7 @@ body.wg-tree-carrying .wg-tile-body {
 	font-variant-numeric: tabular-nums;
 }
 
-.wg-design-job-act {
+.wg-design-field button.wg-design-job-act {
 	margin: -3px -8px;
 	padding: 3px 8px;
 	border: 0;
@@ -8536,42 +8573,38 @@ body.wg-tree-carrying .wg-tile-body {
 		color 160ms ease-out;
 }
 
-.wg-design-job-act:hover,
-.wg-design-job-act:focus-visible {
+.wg-design-field button.wg-design-job-act:hover,
+.wg-design-field button.wg-design-job-act:focus-visible {
 	background: var(--background-modifier-hover);
 	color: var(--text-normal);
 	outline: none;
 }
 
-.wg-design-job-act:active {
+.wg-design-field button.wg-design-job-act:active {
 	transform: scale(0.96);
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.wg-design-job-act {
+	.wg-design-field button.wg-design-job-act {
 		transition: none;
 	}
 }
 
-.wg-design-group-aside {
-	margin-inline-start: auto;
+.wg-design-group-status {
+	margin-inline-start: 8px;
 }
 
-.wg-design-draft {
-	display: inline-flex;
-	align-items: flex-start;
-	gap: 20px;
+.wg-design-job-line.is-inline {
+	flex-direction: row;
+	align-items: baseline;
+	gap: 14px;
 }
 
-.wg-design-draft-said {
-	padding: 2px 10px;
-	border-radius: 999px;
-	background: var(--background-modifier-hover);
-	font-size: 16px;
-	color: var(--text-muted);
+.wg-design-job-line.is-inline .wg-design-job-meta {
+	padding-inline-start: 0;
 }
 
-.wg-design-note-widget {
+.wg-design-field button.wg-design-note-widget {
 	align-self: flex-start;
 	margin-top: 4px;
 	padding: 4px 10px;
@@ -8587,8 +8620,23 @@ body.wg-tree-carrying .wg-tile-body {
 	transition: background-color 160ms ease-out;
 }
 
-.wg-design-note-widget:hover,
-.wg-design-note-widget:focus-visible {
+.wg-design-field button.wg-design-note-widget:hover,
+.wg-design-field button.wg-design-note-widget:focus-visible {
 	background: var(--background-primary-alt);
 	outline: none;
+}
+
+.wg-design-situation {
+	font-size: var(--font-ui-small);
+	color: var(--text-faint);
+}
+
+.wg-design-region-head {
+	display: flex;
+	align-items: center;
+	gap: 28px;
+}
+
+.wg-design-variants {
+	zoom: 2;
 }

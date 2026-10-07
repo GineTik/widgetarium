@@ -79,6 +79,7 @@
 		"test:preview": "node --single-threaded --import ./tools/loader/register.mts tools/preview-test.ts",
 		"test:substitution": "node --single-threaded --import ./tools/loader/register.mts tools/substitution-test.ts",
 		"test:paint": "node --single-threaded --import ./tools/loader/register.mts tools/paint-test.ts",
+		"test:overlay-paint": "node --single-threaded --import ./tools/loader/register.mts tools/overlay-paint-test.ts",
 		"test:tree": "node --single-threaded --import ./tools/loader/register.mts tools/tree-test.ts",
 		"test:surfaces": "node --single-threaded --import ./tools/loader/register.mts tools/surface-test.ts",
 		"audit:gaps": "node --single-threaded --import ./tools/loader/register.mts tools/gap-audit.ts",

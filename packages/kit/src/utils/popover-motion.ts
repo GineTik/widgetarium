@@ -37,6 +37,11 @@ export function restPanel(panel: HTMLElement, anchor: HTMLElement): void {
 	anchor.style.visibility = "";
 }
 
+export function endFold(panel: HTMLElement, anchor: HTMLElement): void {
+	restPanel(panel, anchor);
+	panel.style.visibility = "hidden";
+}
+
 export function enterPanel(panel: HTMLElement, anchor: HTMLElement, placement: Placement): StopMotion | undefined {
 	clearMotion(panel);
 	const placed = placePanel(panel, anchor.getBoundingClientRect(), placement);
@@ -161,6 +166,7 @@ function unstage(panel: HTMLElement): void {
 
 function clearMotion(panel: HTMLElement): void {
 	panel.style.opacity = "";
+	panel.style.visibility = "";
 	panel.style.width = "";
 	panel.style.height = "";
 	panel.style.backgroundColor = "";

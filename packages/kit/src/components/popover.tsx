@@ -24,6 +24,7 @@ export interface PopoverProps {
 	readonly className?: string | undefined;
 	readonly placement?: PlacementName;
 	readonly isPortaled?: boolean;
+	readonly onExited?: (() => void) | undefined;
 }
 
 export function Popover({
@@ -36,8 +37,9 @@ export function Popover({
 	className: cls,
 	placement = "over",
 	isPortaled = false,
+	onExited,
 }: PopoverProps): ReactElement {
-	const popover = usePopoverState({ open: open ?? openAsLegacy, defaultOpen, onOpenChange, placement });
+	const popover = usePopoverState({ open: open ?? openAsLegacy, defaultOpen, onOpenChange, placement, onExited });
 	return (
 		<PopoverContext.Provider value={{ ...popover, className: cls, isPortaled }}>
 			{trigger === undefined ? (

@@ -391,6 +391,34 @@ render(h(Kit.Button, { variant: "accent", size: "l" }, "Create"), host);
 check("Button renders a real button", host.querySelector("button.wg-kit-btn.is-accent.is-l")?.textContent, "Create");
 check("type=button, so it never submits a form it lands in", found(host, "button").getAttribute("type"), "button");
 
+render(
+	h(Kit.Container, { width: 1440, "data-name": "Shell" }, [
+		h("nav", { key: "nav" }, "Pages"),
+		h(
+			Kit.Container,
+			{ key: "page", width: 1040, "data-name": "Page" },
+			h(Kit.Dialog, { isOpen: true, title: "Edit" }, "Body"),
+		),
+	]),
+	host,
+);
+await settle();
+check(
+	"a dialog in a page that stands in a shell covers the whole shell, so the navigation is under the scrim too",
+	host.querySelector(".wg-kit-dialog-overlay")?.parentElement === host.querySelector(".wg-kit-container-frame"),
+	true,
+);
+render(h(Kit.Sidebar, { surface: "edge", at: "end" }, "Pages"), host);
+check(
+	"an app's sidebar can stand flush with a hairline on its inner side, at either end",
+	[
+		host.firstElementChild?.classList.contains("is-edge"),
+		host.firstElementChild?.classList.contains("is-end"),
+		host.firstElementChild?.hasAttribute("at"),
+	],
+	[true, true, false],
+);
+
 // AN ICON THE KIT DOES NOT KNOW RENDERS NOTHING AT ALL — no error, no box, an empty button.
 render(h(Kit.Icon, { name: "dots" }), host);
 check("the three-dot menu has a glyph", host.querySelectorAll("svg.wg-kit-icon-glyph circle").length, 3);
@@ -637,10 +665,11 @@ Object.assign(globalThis, {
 	},
 });
 
+let exited = 0;
 render(
 	h(
 		Kit.Popover,
-		{ trigger: h(Kit.IconButton, { label: "More" }, "…") },
+		{ trigger: h(Kit.IconButton, { label: "More" }, "…"), onExited: () => (exited += 1) },
 		h(Kit.PopoverItem, { checked: true }, "Rename"),
 	),
 	host,
@@ -681,7 +710,14 @@ check(
 	foundAs(host, ".wg-kit-anchor", HTMLElement).style.visibility,
 	"hidden",
 );
+check("onExited waits for the fold, so heavy work never runs under it", exited, 0);
 endExit(found(host, ".wg-kit-pop"));
+check("and comes exactly once when the fold ends", exited, 1);
+check(
+	"the folded panel is hidden at once, never shown at full size for the frame before is-open goes",
+	foundAs(host, ".wg-kit-pop", HTMLElement).style.visibility,
+	"hidden",
+);
 await settle();
 check("when the fold ends the panel is gone", host.querySelector(".wg-kit-pop")?.classList.contains("is-open"), false);
 check("and the trigger comes back exactly then", foundAs(host, ".wg-kit-anchor", HTMLElement).style.visibility, "");
@@ -1386,7 +1422,65 @@ check(
 	);
 	globalThis.getComputedStyle = realStyle;
 	render(null, host);
+
+	Element.prototype.getBoundingClientRect = function (this: Element): DOMRect {
+		if (this.classList.contains("wg-kit-seg")) return domRect(0, 0, 150, 19);
+		if (this.tagName !== "BUTTON") return domRect(0, 0, 0, 19);
+		if (this.parentNode === null) throw new TypeError("a button with no parent");
+		const row: Element[] = [...this.parentNode.querySelectorAll("button")];
+		return domRect(2 + row.indexOf(this) * 50, 0, 50, 19);
+	};
+	const offsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth");
+	Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+		configurable: true,
+		get(this: HTMLElement) {
+			return this.classList.contains("wg-kit-seg") ? 300 : 0;
+		},
+	});
+	renders = 0;
+	render(h(Bar, {}), host);
+	const firstFrame = foundAs(host, ".wg-kit-seg-thumb", HTMLElement).className;
+	await settle();
+	check("on its first frame the thumb is placed without a glide", firstFrame, "wg-kit-seg-thumb is-arriving");
+	check(
+		"on a canvas zoomed to half the thumb still lands on its tab, at the tab's own width",
+		[
+			foundAs(host, ".wg-kit-seg-thumb", HTMLElement).style.transform,
+			foundAs(host, ".wg-kit-seg-thumb", HTMLElement).style.width,
+		],
+		["translateX(104px)", "100px"],
+	);
+	await settle();
+	check(
+		"it appears where it belongs instead of flying in, and glides from then on",
+		foundAs(host, ".wg-kit-seg-thumb", HTMLElement).className,
+		"wg-kit-seg-thumb",
+	);
+	if (offsetWidth) Object.defineProperty(HTMLElement.prototype, "offsetWidth", offsetWidth);
+	render(null, host);
 	Element.prototype.getBoundingClientRect = was;
+}
+
+{
+	const host = byId(document, "host");
+	host.innerHTML =
+		'<div data-wg-overlay-layer=""><div data-wg-overlay-root="" id="screen"><div id="mount"></div></div></div>';
+	render(
+		h(
+			Kit.Container,
+			{ width: 1440 },
+			h(Kit.Container, { width: 1040 }, h(Kit.Dialog, { isOpen: true, title: "Edit" }, "Body")),
+		),
+		found(host, "#mount"),
+	);
+	await settle();
+	check(
+		"a dialog never covers more than its own screen on the canvas, nor less than the whole app in it",
+		host.querySelector(".wg-kit-dialog-overlay")?.parentElement?.id,
+		"screen",
+	);
+	render(null, found(host, "#mount"));
+	host.innerHTML = "";
 }
 
 // A CONTROL THE KIT ALREADY DRAWS MUST NOT BE DRAWN AGAIN BY A WIDGET. Two tab bars shipped

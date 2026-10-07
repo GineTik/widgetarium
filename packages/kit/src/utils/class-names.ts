@@ -31,7 +31,11 @@ const CARD_WORDS = {
 	selected: { true: "is-selected" },
 };
 
-const SIDEBAR_WORDS = { mode: { full: "", minimal: "is-minimal" }, surface: { solid: "", glass: "is-glass" } };
+const SIDEBAR_WORDS = {
+	mode: { full: "", minimal: "is-minimal" },
+	surface: { solid: "", glass: "is-glass", edge: "is-edge" },
+	at: { start: "", end: "is-end" },
+};
 
 const FIELD_WORDS = { size: { m: "", s: "is-s" }, block: { true: "is-block" } };
 
@@ -50,6 +54,8 @@ export type PillSize = keyof (typeof PILL_WORDS)["size"];
 export type SidebarMode = keyof (typeof SIDEBAR_WORDS)["mode"];
 
 export type SidebarSurface = keyof (typeof SIDEBAR_WORDS)["surface"];
+
+export type SidebarAt = keyof (typeof SIDEBAR_WORDS)["at"];
 
 export type FieldSize = keyof (typeof FIELD_WORDS)["size"];
 
@@ -76,6 +82,7 @@ export const glassClass = variants("wg-kit-glass", {});
 export const sidebarClass = variants(cn("wg-kit-side", cardClass({ variant: "light", lift: true })), SIDEBAR_WORDS, {
 	mode: "full",
 	surface: "solid",
+	at: "start",
 });
 
 export const fieldClass = variants("wg-kit-field", FIELD_WORDS, { size: "m" });

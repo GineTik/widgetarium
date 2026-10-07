@@ -17,10 +17,13 @@ interface ThumbSpot {
 }
 
 const NOT_LAID_OUT_YET = 0;
+const THUMB = "wg-kit-seg-thumb";
+const ARRIVING_THUMB = "wg-kit-seg-thumb is-arriving";
 
 export function useSegmentedThumb(value: unknown, items?: readonly unknown[] | number): SegmentedThumb {
 	const listRef = useRef<HTMLDivElement>(null);
 	const [thumb, setThumb] = useState<ThumbSpot | null>(null);
+	const [hasArrived, setHasArrived] = useState(false);
 	// TRADE-OFF: keyed by count, not the list — an inline list re-ran this every render and froze the app
 	const count = Array.isArray(items) ? items.length : items;
 
@@ -36,13 +39,20 @@ export function useSegmentedThumb(value: unknown, items?: readonly unknown[] | n
 		if (typeof ResizeObserver !== "function") return undefined;
 		const watcher = new ResizeObserver(measure);
 		watcher.observe(list);
+		for (const tab of list.querySelectorAll('[role="tab"]')) watcher.observe(tab);
 		return () => watcher.disconnect();
 	}, [value, count]);
+
+	useLayoutEffect(() => {
+		if (thumb === null || hasArrived) return undefined;
+		const frame = requestAnimationFrame(() => setHasArrived(true));
+		return () => cancelAnimationFrame(frame);
+	}, [thumb, hasArrived]);
 
 	return {
 		listRef,
 		thumbProps: {
-			className: "wg-kit-seg-thumb",
+			className: hasArrived ? THUMB : ARRIVING_THUMB,
 			style: thumb ? { transform: `translateX(${thumb.left}px)`, width: `${thumb.width}px` } : { opacity: 0 },
 		},
 	};
@@ -55,6 +65,10 @@ function thumbSpotIn(list: HTMLElement): ThumbSpot | null {
 	const activeRect = active.getBoundingClientRect();
 	if (activeRect.width === NOT_LAID_OUT_YET) return null;
 	const listRect = list.getBoundingClientRect();
+	const scale = list.offsetWidth === NOT_LAID_OUT_YET ? 1 : listRect.width / list.offsetWidth;
 	const paddingBoxLeftPx = parseFloat(getComputedStyle(list).borderLeftWidth) || 0;
-	return { left: activeRect.left - listRect.left - paddingBoxLeftPx + list.scrollLeft, width: activeRect.width };
+	return {
+		left: (activeRect.left - listRect.left) / scale - paddingBoxLeftPx + list.scrollLeft,
+		width: activeRect.width / scale,
+	};
 }

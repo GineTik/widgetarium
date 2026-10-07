@@ -5,7 +5,7 @@ import { dataAttributesOf } from "../utils/data-attributes";
 import type { DataAttributes } from "../utils/data-attributes";
 import { OVERLAY_LAYER_ATTRIBUTE } from "../hooks/use-overlay-layer";
 
-export type ContainerWidth = 640 | 800 | 1040 | 1280 | "full";
+export type ContainerWidth = 640 | 800 | 1040 | 1280 | 1440 | "full";
 
 export interface ContainerProps extends DataAttributes {
 	readonly width?: ContainerWidth | undefined;

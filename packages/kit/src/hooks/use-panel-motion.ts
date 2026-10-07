@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import type { Placement } from "../constants/popover";
 import { POPOVER_ITEM } from "../components/popover-context";
 import { isFocusable } from "../utils/dom-nodes";
-import { enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
+import { endFold, enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
 import type { StopMotion } from "../utils/popover-motion";
 
 export interface PanelMotionAsk {
@@ -15,6 +15,7 @@ export interface PanelMotionAsk {
 	readonly openedByKeyboard: RefObject<boolean>;
 	readonly wasOpen: RefObject<boolean>;
 	readonly setExiting: (isExiting: boolean) => void;
+	readonly onExited?: (() => void) | undefined;
 }
 
 const FOCUSABLE = "button, a, input, [tabindex]";
@@ -22,6 +23,8 @@ const FOCUSABLE = "button, a, input, [tabindex]";
 export function usePanelMotion(ask: PanelMotionAsk): void {
 	const { isOpen, where, anchorRef, panelRef, triggerRef, openedByKeyboard, wasOpen, setExiting } = ask;
 	const stopExit = useRef<StopMotion | null>(null);
+	const onExited = useRef(ask.onExited);
+	onExited.current = ask.onExited;
 
 	useLayoutEffect(() => {
 		const panel = panelRef.current;
@@ -39,9 +42,15 @@ export function usePanelMotion(ask: PanelMotionAsk): void {
 			if (openedByKeyboard.current) panel.querySelector<HTMLElement>(POPOVER_ITEM)?.focus();
 			return stopEnter;
 		}
-		if (!closing || prefersReducedMotion()) {
+		if (!closing) {
 			setExiting(false);
 			restPanel(panel, anchor);
+			return undefined;
+		}
+		if (prefersReducedMotion()) {
+			setExiting(false);
+			endFold(panel, anchor);
+			onExited.current?.();
 			return undefined;
 		}
 
@@ -49,7 +58,8 @@ export function usePanelMotion(ask: PanelMotionAsk): void {
 		stopExit.current = exitPanel(panel, anchor, () => {
 			stopExit.current = null;
 			setExiting(false);
-			restPanel(panel, anchor);
+			endFold(panel, anchor);
+			onExited.current?.();
 		});
 		return () => {
 			stopExit.current?.();

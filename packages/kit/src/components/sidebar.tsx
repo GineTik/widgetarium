@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { sidebarClass } from "../utils/class-names";
-import type { SidebarMode, SidebarSurface } from "../utils/class-names";
+import type { SidebarAt, SidebarMode, SidebarSurface } from "../utils/class-names";
 import { domPropsOf } from "../utils/dom-props";
 import { Slot } from "./slot";
 
@@ -17,6 +17,7 @@ export type SidebarTag = "div" | "aside" | "nav" | "section" | "button" | "li" |
 export interface SidebarLook {
 	readonly mode?: SidebarMode | undefined;
 	readonly surface?: SidebarSurface | undefined;
+	readonly at?: SidebarAt | undefined;
 }
 
 export interface SidebarProps extends HTMLAttributes<HTMLElement>, SidebarLook {
@@ -24,6 +25,6 @@ export interface SidebarProps extends HTMLAttributes<HTMLElement>, SidebarLook {
 	readonly asChild?: boolean;
 }
 
-export function Sidebar({ as = "div", asChild = false, children, ...props }: SidebarProps): ReactElement {
-	return h(asChild ? Slot : as, { ...domPropsOf(props), className: sidebarClass(props) }, children);
+export function Sidebar({ as = "div", asChild = false, at, children, ...props }: SidebarProps): ReactElement {
+	return h(asChild ? Slot : as, { ...domPropsOf(props), className: sidebarClass({ ...props, at }) }, children);
 }
