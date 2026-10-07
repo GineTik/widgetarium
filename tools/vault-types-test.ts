@@ -156,6 +156,71 @@ fs.renameSync(REACT_LAID_AT, `${REACT_LAID_AT}-gone`);
 check("and without the laid React types the same widget does not compile", said(laid).includes("error TS2307"), true);
 fs.renameSync(`${REACT_LAID_AT}-gone`, REACT_LAID_AT);
 
+const DRAWING_WITH_SHADCN_NAMES = `import { useState } from "react";
+import { createWidget } from "widgetarium";
+import {
+	Button,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+	Dialog,
+	DialogContent,
+	DialogTitle,
+	DialogTrigger,
+	Field,
+	FieldLabel,
+	Input,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+} from "widgetarium/kit";
+
+export default createWidget({
+	draw: () => {
+		const [name, setName] = useState("");
+		return (
+			<Card>
+				<CardHeader><CardTitle>Team</CardTitle></CardHeader>
+				<CardContent>
+					<Field><FieldLabel>Name</FieldLabel><Input value={name} onValueChange={setName} /></Field>
+					<Field value={name} onInput={(event) => setName(event.currentTarget.value)} />
+					<Tabs defaultValue="a" onValueChange={(next) => setName(next)}>
+						<TabsList><TabsTrigger value="a">A</TabsTrigger></TabsList>
+						<TabsContent value="a">first</TabsContent>
+					</Tabs>
+					<Command>
+						<CommandInput placeholder="Find" />
+						<CommandList>
+							<CommandEmpty>Nothing</CommandEmpty>
+							<CommandGroup heading="Go"><CommandItem onSelect={(value) => setName(value)}>Home</CommandItem></CommandGroup>
+						</CommandList>
+					</Command>
+					<Dialog>
+						<DialogTrigger asChild><Button variant="outline" size="sm">Open</Button></DialogTrigger>
+						<DialogContent><DialogTitle>Edit</DialogTitle></DialogContent>
+					</Dialog>
+				</CardContent>
+			</Card>
+		);
+	},
+});
+`;
+fs.writeFileSync(path.join(laid, "@you/checklist/widget.tsx"), DRAWING_WITH_SHADCN_NAMES);
+check("a widget written in shadcn's names typechecks against the laid types", said(laid).trim(), "");
+fs.writeFileSync(
+	path.join(laid, "@you/checklist/widget.tsx"),
+	DRAWING_WITH_SHADCN_NAMES.replace('variant="outline"', 'variant="bordered"'),
+);
+check("and a variant shadcn never had is refused", said(laid).includes("is not assignable to type"), true);
+
 fs.rmSync(laid, { recursive: true, force: true });
 console.log(failures === 0 ? "vault types: every check passed" : `vault types: ${failures} checks red`);
 process.exit(failures === 0 ? 0 : 1);

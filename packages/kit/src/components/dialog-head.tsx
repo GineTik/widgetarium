@@ -2,11 +2,11 @@ import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { Icon } from "../icons/icon";
 import { IconButton } from "./icon-button";
-import type { DialogProps } from "./dialog";
+import type { DialogPanelProps } from "./dialog-panel";
 
 const CLOSE_LABEL = "Close";
 
-export function DialogHead({ title, onClose }: Pick<DialogProps, "title" | "onClose">): ReactElement | null {
+export function DialogHead({ title, onClose }: Pick<DialogPanelProps, "title" | "onClose">): ReactElement | null {
 	if (!title && !onClose) return null;
 	return (
 		<header className="wg-kit-dialog-head">

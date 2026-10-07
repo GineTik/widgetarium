@@ -37,6 +37,7 @@ export function Button({
 	return (
 		<Comp
 			type={asChild ? undefined : "button"}
+			data-slot="button"
 			{...domPropsOf(props)}
 			disabled={isDisabled}
 			aria-busy={isLoading ? "true" : undefined}

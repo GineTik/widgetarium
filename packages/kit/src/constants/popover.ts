@@ -45,3 +45,11 @@ export const PLACEMENTS: Readonly<Record<PlacementName, Placement>> = {
 		flipped: (rect, size) => ({ left: rect.right - size.width, top: rect.top - ANCHOR_GAP_PX - size.height }),
 	},
 };
+
+export type PopoverSide = "top" | "right" | "bottom" | "left";
+
+export type PopoverAlign = "start" | "center" | "end";
+
+export const DRAWN_SIDES: readonly PopoverSide[] = ["bottom"];
+
+export const DRAWN_ALIGN: PopoverAlign = "start";

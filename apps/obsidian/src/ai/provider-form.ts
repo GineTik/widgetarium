@@ -1,6 +1,6 @@
 import { createElement as h, useState } from "react";
 import type { ReactElement } from "react";
-import { Field } from "@widgetarium/kit";
+import { Input } from "@widgetarium/kit";
 import { HTTP } from "./providers.js";
 import type { EditableField, Provider } from "./providers.js";
 import type { ProviderFields } from "./settings.js";
@@ -49,7 +49,7 @@ export function ProviderForm({ provider, onUpdate }: ProviderFormProps): ReactEl
 		fields.map((field) =>
 			h("label", { className: "wg-ai-field", key: field.key }, [
 				h("span", { className: "wg-ai-field-label", key: "label" }, field.label),
-				h(Field, {
+				h(Input, {
 					key: "box",
 					block: true,
 					value: fieldValue(field.key),

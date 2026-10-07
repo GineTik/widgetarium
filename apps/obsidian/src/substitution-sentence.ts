@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Button, Field, Icon, cn } from "@widgetarium/kit";
+import { Button, Input, Icon, cn } from "@widgetarium/kit";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import type { Rule } from "./substitution.js";
 import { MATCH_WORDS } from "./substitution-say.js";
@@ -24,7 +24,7 @@ const PATTERN_PLACEHOLDER = "^@(\\d{1,2}:\\d{2})\\s+(.+)$";
 export function RuleSentence({ rule, patch, chosen, onPickWidget, error }: RuleSentenceProps): ReactElement {
 	const words = MATCH_WORDS[rule.mode];
 	const trigger = (key: TriggerField, value: string, placeholder: string, wide = false): ReactElement =>
-		h(Field, {
+		h(Input, {
 			key,
 			value,
 			placeholder,

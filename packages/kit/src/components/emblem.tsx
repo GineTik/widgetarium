@@ -3,6 +3,8 @@ import type { ReactElement, ReactNode } from "react";
 import { EMBLEM_SHAPE_WORD, EMBLEM_SIZE_WORD, EMBLEM_SIZES, EMBLEM_STATUS } from "../constants/emblem";
 import type { EmblemShape, EmblemSize, EmblemStatus } from "../constants/emblem";
 import { cn } from "../utils/cn";
+import { dataAttributesOf } from "../utils/data-attributes";
+import type { DataAttributes } from "../utils/data-attributes";
 import { isOneOf } from "../utils/is-one-of";
 import { wornWord } from "../utils/surface";
 import type { StyleProp, TokenStyle } from "../utils/token-style";
@@ -19,7 +21,7 @@ export type { EmblemFallbackProps } from "./emblem-fallback";
 export type { EmblemImageProps } from "./emblem-image";
 export type { PlaceholderMarkProps } from "./placeholder-mark";
 
-export interface EmblemProps {
+export interface EmblemProps extends DataAttributes {
 	readonly size?: EmblemSize | number | string;
 	readonly shape?: EmblemShape | undefined;
 	readonly label?: string | undefined;
@@ -35,6 +37,7 @@ export function Emblem({
 	className: cls,
 	style,
 	children,
+	...rest
 }: EmblemProps): ReactElement {
 	const [status, setStatus] = useState<EmblemStatus>("idle");
 	const px = emblemPx(size);
@@ -42,6 +45,7 @@ export function Emblem({
 	return (
 		<EMBLEM_STATUS.Provider value={{ status, setStatus }}>
 			<span
+				{...dataAttributesOf(rest)}
 				className={cn("wg-kit-emblem", `is-${wornWord(shape, EMBLEM_SHAPE_WORD)}`, cls)}
 				style={sized}
 				role={label ? "img" : undefined}

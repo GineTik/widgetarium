@@ -1,4 +1,4 @@
-import { Button, Field } from "widgetarium/kit";
+import { Button, Input } from "widgetarium/kit";
 import type { FormEvent } from "react";
 import { TonePicker } from "./tone-picker";
 
@@ -15,7 +15,7 @@ export function TagEditor({ name, picked, onName, onPick, onCancel, onSave }: Ta
 	return (
 		<>
 			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && onSave()}>
-				<Field
+				<Input
 					block
 					size="s"
 					placeholder="Name it"

@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Button, Card, Field, Pill, Switch } from "@widgetarium/kit";
+import { Button, Card, Input, Pill, Switch } from "@widgetarium/kit";
 import type { Rule } from "./substitution.js";
 import { ruleStatus } from "./substitution-say.js";
 import type { RuleEditing } from "./use-rule-editing.js";
@@ -22,7 +22,7 @@ export function RuleHead({ editing, rule, error }: RuleHeadProps): ReactElement 
 
 	return h("header", { className: "wg-sub-head" }, [
 		h("div", { key: "ident", className: "wg-sub-ident" }, [
-			h(Field, {
+			h(Input, {
 				key: "name",
 				value: rule.name,
 				placeholder: NAME,

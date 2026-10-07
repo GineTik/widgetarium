@@ -9,8 +9,23 @@ const BUTTON_WORDS = {
 		ghost: "is-ghost",
 		plain: "is-plain",
 		danger: "is-danger",
+		default: "is-primary",
+		secondary: "",
+		destructive: "is-danger",
+		outline: "is-outline",
+		link: "is-plain",
 	},
-	size: { l: "is-l", m: "is-m", s: "is-s" },
+	size: {
+		l: "is-l",
+		m: "is-m",
+		s: "is-s",
+		lg: "is-l",
+		default: "is-m",
+		sm: "is-s",
+		icon: "is-m is-icon",
+		"icon-lg": "is-l is-icon",
+		"icon-sm": "is-s is-icon",
+	},
 	block: { true: "is-block" },
 };
 
@@ -21,7 +36,16 @@ const ICON_BUTTON_WORDS = {
 
 const PILL_WORDS = {
 	tone: TONE_CLASSES,
-	variant: { soft: "", solid: "is-solid", outline: "is-outline", dot: "is-dot", text: "is-text" },
+	variant: {
+		soft: "",
+		solid: "is-solid",
+		outline: "is-outline",
+		dot: "is-dot",
+		text: "is-text",
+		default: "is-primary",
+		secondary: "is-secondary",
+		destructive: "is-destructive",
+	},
 	size: { s: "is-s", m: "" },
 };
 

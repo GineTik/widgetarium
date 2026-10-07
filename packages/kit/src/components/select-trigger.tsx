@@ -19,7 +19,7 @@ export function SelectTrigger({
 	if (asChild) return <PopoverTrigger asChild aria-haspopup="listbox" {...props} children={children} />;
 	return (
 		<PopoverTrigger asChild aria-haspopup="listbox">
-			<Button {...props} className={cn("wg-kit-select-trigger", cls)}>
+			<Button data-slot="select-trigger" {...props} className={cn("wg-kit-select-trigger", cls)}>
 				{children}
 				<Icon name="chevron-down" size={CHEVRON_PX} className="wg-kit-select-chevron" />
 			</Button>

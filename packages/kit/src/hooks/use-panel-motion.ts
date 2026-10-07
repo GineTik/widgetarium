@@ -10,6 +10,7 @@ export interface PanelMotionAsk {
 	readonly isOpen: boolean;
 	readonly where: Placement;
 	readonly anchorRef: RefObject<HTMLElement | null>;
+	readonly pointRef: RefObject<HTMLElement | null>;
 	readonly panelRef: RefObject<HTMLElement | null>;
 	readonly triggerRef: RefObject<HTMLElement | null>;
 	readonly openedByKeyboard: RefObject<boolean>;
@@ -21,14 +22,14 @@ export interface PanelMotionAsk {
 const FOCUSABLE = "button, a, input, [tabindex]";
 
 export function usePanelMotion(ask: PanelMotionAsk): void {
-	const { isOpen, where, anchorRef, panelRef, triggerRef, openedByKeyboard, wasOpen, setExiting } = ask;
+	const { isOpen, where, anchorRef, pointRef, panelRef, triggerRef, openedByKeyboard, wasOpen, setExiting } = ask;
 	const stopExit = useRef<StopMotion | null>(null);
 	const onExited = useRef(ask.onExited);
 	onExited.current = ask.onExited;
 
 	useLayoutEffect(() => {
 		const panel = panelRef.current;
-		const anchor = anchorRef.current;
+		const anchor = pointRef.current ?? anchorRef.current;
 		if (!panel || !anchor) return undefined;
 		const closing = wasOpen.current && !isOpen;
 		wasOpen.current = isOpen;

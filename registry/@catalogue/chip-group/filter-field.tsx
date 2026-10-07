@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CommandAnswer } from "widgetarium";
-import { Field, Icon } from "widgetarium/kit";
+import { Input, Icon } from "widgetarium/kit";
 
 interface FilterFieldProps {
 	readonly placeholder: string;
@@ -11,7 +11,7 @@ interface FilterFieldProps {
 export function FilterField({ placeholder, held, write }: FilterFieldProps) {
 	const [draft, setDraft] = useDraftOf(held);
 	return (
-		<Field
+		<Input
 			block
 			size="s"
 			icon={<Icon name="search" size={14} />}

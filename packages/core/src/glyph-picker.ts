@@ -1,6 +1,6 @@
 import { createElement as h, useState } from "react";
 import type { ComponentType, Dispatch, ReactElement, SetStateAction, UIEvent } from "react";
-import { Field, Icon } from "@widgetarium/kit";
+import { Input, Icon } from "@widgetarium/kit";
 
 const FIRST_PAGE = 120;
 const NEXT_PAGE = 120;
@@ -66,7 +66,7 @@ function searchField(
 	setKeyword: (keyword: string) => void,
 	setShownCount: SetCount,
 ): ReactElement {
-	return h(Field, {
+	return h(Input, {
 		block: true,
 		size: "s",
 		key: "search",

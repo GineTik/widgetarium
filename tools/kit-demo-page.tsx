@@ -7,11 +7,11 @@ import {
 	Calendar,
 	Emblem,
 	EmblemFallback,
-	Field,
 	Grid,
 	Heading,
 	Icon,
 	IconButton,
+	Input,
 	Layout,
 	LayoutActions,
 	LayoutHeader,
@@ -47,6 +47,7 @@ import {
 import { Cell, Named, Section, WideSection } from "./kit-demo-frame.tsx";
 import { TableWithPages } from "./kit-demo-table.tsx";
 import { USAGE } from "./kit-demo-usage.ts";
+import { ShadcnButtons, ShadcnCard, ShadcnCommand, ShadcnForm, ShadcnSwitches } from "./kit-demo-shadcn.tsx";
 import {
 	Area,
 	AreaChart,
@@ -124,7 +125,7 @@ function Badges() {
 function Inputs() {
 	return (
 		<div className="demo-stack">
-			<Field icon={<Icon name="search" size={16} />} placeholder="Search invoices" />
+			<Input icon={<Icon name="search" size={16} />} placeholder="Search invoices" />
 			<Select defaultValue="sent">
 				<SelectTrigger>
 					<SelectValue placeholder="Status" />
@@ -334,7 +335,7 @@ function Demo() {
 				<Section title="Badge" note="tone · color · variant · size" usage={USAGE.badge}>
 					<Badges />
 				</Section>
-				<Section title="Field · Select · Segmented · Switch" usage={USAGE.inputs}>
+				<Section title="Input · Select · Segmented · Switch" usage={USAGE.inputs}>
 					<Inputs />
 				</Section>
 				<Section title="Emblem" note="size s · m · l · xl, the fallback mark from a seed" usage={USAGE.emblem}>
@@ -348,6 +349,31 @@ function Demo() {
 				</Section>
 				<Section title="Calendar" usage={USAGE.calendar}>
 					<Calendar defaultMonth={new Date(2026, 8, 1)} today={new Date(2026, 8, 24)} />
+				</Section>
+			</Grid>
+			<Grid min={340}>
+				<Section
+					title="shadcn Button · Badge"
+					note="default · secondary · outline · ghost · link · destructive"
+					usage={USAGE.shadcnButton}
+				>
+					<ShadcnButtons />
+				</Section>
+				<Section
+					title="Card parts · Avatar"
+					note="CardHeader · CardTitle · CardDescription · CardAction · CardContent · CardFooter"
+					usage={USAGE.shadcnCard}
+				>
+					<ShadcnCard />
+				</Section>
+				<Section title="Field · Input · Textarea" note="shadcn form fields" usage={USAGE.shadcnForm}>
+					<ShadcnForm />
+				</Section>
+				<Section title="Command" note="filters as you type" usage={USAGE.shadcnCommand}>
+					<ShadcnCommand />
+				</Section>
+				<Section title="Tabs · ToggleGroup · Empty" usage={USAGE.shadcnSwitches}>
+					<ShadcnSwitches />
 				</Section>
 			</Grid>
 			<WideSection title="Chart" note="Recharts parts inside ChartContainer, coloured by config" usage={USAGE.chart}>

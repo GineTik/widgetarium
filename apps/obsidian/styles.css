@@ -156,6 +156,41 @@ pre:has(> .block-language-widgetarium),
 	--wg-kit-chart-4: var(--wg-kit-orange);
 	--wg-kit-chart-5: var(--wg-kit-pink);
 
+	--background: var(--wg-kit-page);
+	--foreground: var(--wg-kit-text);
+	--card: var(--wg-kit-group-fill);
+	--card-foreground: var(--wg-kit-text);
+	--popover: var(--wg-kit-raise);
+	--popover-foreground: var(--wg-kit-text);
+	--primary: var(--wg-kit-text);
+	--primary-foreground: var(--wg-kit-page);
+	--secondary: var(--wg-kit-fill);
+	--secondary-foreground: var(--wg-kit-text);
+	--muted: var(--wg-kit-fill);
+	--muted-foreground: var(--wg-kit-text-muted);
+	--accent: var(--wg-kit-fill-hover);
+	--accent-foreground: var(--wg-kit-text);
+	--destructive: var(--wg-kit-error);
+	--border: var(--wg-kit-card-edge);
+	--input: var(--wg-kit-card-edge);
+	--ring: var(--wg-kit-accent);
+	--radius: var(--wg-kit-plate);
+	--chart-1: var(--wg-kit-chart-1);
+	--chart-2: var(--wg-kit-chart-2);
+	--chart-3: var(--wg-kit-chart-3);
+	--chart-4: var(--wg-kit-chart-4);
+	--chart-5: var(--wg-kit-chart-5);
+	--sidebar: var(--wg-kit-page);
+	--sidebar-foreground: var(--wg-kit-text);
+	--sidebar-primary: var(--wg-kit-text);
+	--sidebar-primary-foreground: var(--wg-kit-page);
+	--sidebar-accent: var(--wg-kit-accent-wash);
+	--sidebar-accent-foreground: var(--wg-kit-text);
+	--sidebar-border: var(--wg-kit-group-line);
+	--sidebar-ring: var(--wg-kit-accent);
+	--brand: var(--wg-kit-accent);
+	--brand-foreground: var(--text-on-accent);
+
 	/* TRADE-OFF: our own radii because Obsidian stops at 16px and the look needs more */
 	--wg-kit-plate: 14px;
 	--wg-kit-plate-pad: 8px;
@@ -1042,6 +1077,18 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-pill.is-text {
 	background: none;
 	padding-inline: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-primary {
+	background: var(--wg-kit-text);
+	color: var(--wg-kit-page);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-secondary {
+	background: var(--wg-kit-fill);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-pill.is-destructive {
+	background: var(--wg-kit-error);
+	color: var(--wg-kit-shine);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-heading {
@@ -2300,6 +2347,19 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-ghost:hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon.is-ghost:hover::before {
 	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-outline::before {
+	background: none;
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-outline:hover::before {
+	background: var(--wg-kit-fill);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-icon {
+	aspect-ratio: 1;
+	padding: 0;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-switch::before {
@@ -8639,4 +8699,342 @@ body.wg-tree-carrying .wg-tile-body {
 
 .wg-design-variants {
 	zoom: 2;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-surface:has(> [data-slot="card-header"], > [data-slot="card-content"]) {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items, 16px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-header {
+	display: grid;
+	grid-auto-rows: min-content;
+	align-items: start;
+	gap: 4px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-header:has(> .wg-kit-card-action) {
+	grid-template-columns: 1fr auto;
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-title {
+	font-size: var(--wg-kit-text-l);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1.3;
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-description {
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.45;
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-action {
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	align-self: start;
+	justify-self: end;
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts, 8px);
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-card-footer {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-parts, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-form-field.is-horizontal {
+	flex-direction: row;
+	align-items: center;
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-description {
+	margin: 0;
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.45;
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-error {
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-error);
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-error-list {
+	margin: 0;
+	padding-inline-start: 16px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-cards, 16px);
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-content {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-title {
+	font-size: var(--wg-kit-text-m);
+	font-weight: var(--font-medium, 500);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-set {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items, 16px);
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-legend {
+	margin-bottom: 4px;
+	padding: 0;
+	font-size: var(--wg-kit-text-l);
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-legend.is-label {
+	font-size: var(--wg-kit-text-m);
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-separator {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-parts, 8px);
+	font-size: var(--wg-kit-text-s);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-form-separator::before,
+:is(.wg-root, .wg-portal) .wg-kit-form-separator[data-content]::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--wg-kit-group-line);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-cmd {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+	padding: 8px;
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-raise);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-command-overlay > .wg-kit-cmd {
+	width: min(560px, 92%);
+	max-height: 70vh;
+	padding: 14px;
+	box-shadow: var(--wg-kit-shadow);
+}
+:is(.wg-root, .wg-portal) .wg-kit-cmd-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	max-height: 300px;
+	overflow-y: auto;
+}
+:is(.wg-root, .wg-portal) .wg-kit-cmd-empty {
+	padding: 24px 8px;
+	text-align: center;
+	font-size: var(--wg-kit-text-m);
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-cmd-separator {
+	height: 1px;
+	margin: 4px 0;
+	background: var(--wg-kit-group-line);
+}
+:is(.wg-root, .wg-portal) .wg-kit-cmd-shortcut {
+	margin-inline-start: auto;
+	font-size: var(--wg-kit-text-xs);
+	letter-spacing: 0.1em;
+	color: var(--wg-kit-text-muted);
+}
+:is(.wg-root, .wg-portal) .wg-kit-command-item[disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+:is(.wg-root, .wg-portal) .wg-kit-command-item > svg {
+	flex: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-empty-header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--wg-gap-parts, 8px);
+	max-width: 420px;
+}
+:is(.wg-root, .wg-portal) div.wg-kit-empty-title {
+	font-weight: var(--font-semibold, 600);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-empty-media {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: var(--wg-gap-parts, 8px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-empty-media.is-icon {
+	width: var(--wg-kit-control-m);
+	height: var(--wg-kit-control-m);
+	border-radius: var(--wg-kit-plate);
+	background: var(--wg-kit-fill);
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) div.wg-kit-empty-action {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: var(--wg-gap-parts, 8px);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-tabs {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--wg-gap-items, 8px);
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-tabs.is-vertical {
+	flex-direction: row;
+}
+:is(.wg-root, .wg-portal) .wg-kit-tabs-content {
+	align-self: stretch;
+	min-width: 0;
+	outline: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg button[disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button[data-state="on"] {
+	color: var(--wg-kit-text);
+	font-weight: var(--font-semibold, 600);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button[data-state="on"]::before {
+	background: var(--wg-kit-raise);
+	box-shadow: var(--wg-kit-shadow);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle.is-outline {
+	background: none;
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-dialog[data-slot="dialog-content"] {
+	position: relative;
+}
+:is(.wg-root, .wg-portal) .wg-kit-dialog-close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-dialog-header {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding-inline-end: var(--wg-kit-control-s);
+}
+:is(.wg-root, .wg-portal) h2.wg-kit-dialog-title {
+	margin: 0;
+	line-height: 1.3;
+	color: var(--wg-kit-text);
+}
+:is(.wg-root, .wg-portal) .wg-kit-dialog-description {
+	margin: 0;
+	font-size: var(--wg-kit-text-m);
+	line-height: 1.5;
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-select-group {
+	display: flex;
+	flex-direction: column;
+}
+:is(.wg-root, .wg-portal) .wg-kit-select-label {
+	padding: 6px 10px 2px;
+	font-size: var(--wg-kit-text-s);
+	font-weight: var(--font-medium, 500);
+	color: var(--wg-kit-text-muted);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-side-wrapper {
+	display: flex;
+	width: 100%;
+	min-height: 100%;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side.is-collapsed {
+	display: none;
+}
+:is(.wg-root, .wg-portal) :is(.wg-kit-side-header, .wg-kit-side-footer) {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts, 8px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items, 16px);
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-group-content {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-item {
+	position: relative;
+	margin: 0;
+	list-style: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-button {
+	display: flex;
+	align-items: center;
+	gap: var(--wg-gap-parts, 8px);
+	box-sizing: border-box;
+	width: 100%;
+	height: auto;
+	border: none;
+	font: inherit;
+	text-align: start;
+	text-decoration: none;
+	color: var(--wg-kit-text);
+	cursor: pointer;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-button::before {
+	border-radius: var(--wg-kit-item);
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-button.is-sm {
+	min-height: 28px;
+	font-size: var(--wg-kit-text-s);
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-button.is-lg {
+	min-height: 48px;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-button.is-outline::before {
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-menu-button > svg {
+	flex: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-side-inset {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
 }

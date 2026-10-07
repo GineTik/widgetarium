@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { Button, Field } from "@widgetarium/kit";
+import { Button, Input } from "@widgetarium/kit";
 import { boxNamed, referenceIn } from "../ref-draft.js";
 import type { ReferenceDraft } from "../ref-draft.js";
 import { conditionOfRow, conditionsFor, rowFor } from "../gateway/operators.js";
@@ -144,7 +144,7 @@ function fieldStep(state: SettingsState, at: ConditionAt, fields: Fields): React
 	return [
 		note(PICK_FIELD),
 		...fields.map((field) => pickRow(field.prop, field.prop, () => start(field.prop), field.prop === rowAt(at).prop)),
-		h(Field, {
+		h(Input, {
 			block: true,
 			key: "typed",
 			value: state.draft ?? "",
@@ -206,7 +206,7 @@ function valueStep(state: SettingsState, at: ConditionAt, field: ConditionField,
 	return [
 		note(PICK_VALUE),
 		...valueChoices(state, at, field, kind),
-		h(Field, {
+		h(Input, {
 			block: true,
 			key: "typed",
 			className: referenceClassOf(said, pointedAt) ?? undefined,

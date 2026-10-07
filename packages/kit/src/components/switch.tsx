@@ -34,6 +34,7 @@ export function Switch({
 		<button
 			type="button"
 			role="switch"
+			data-slot="switch"
 			aria-checked={isOn}
 			aria-label={label}
 			data-state={isOn ? "checked" : "unchecked"}

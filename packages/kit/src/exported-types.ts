@@ -17,7 +17,37 @@ export type {
 	EmblemProps,
 	PlaceholderMarkProps,
 } from "./components/emblem";
-export type { CodeAreaProps, FieldProps, MarkdownEditorProps, TextAreaProps } from "./components/field";
+export type {
+	CodeAreaProps,
+	FieldErrorProps,
+	FieldLegendProps,
+	FieldLook,
+	FieldOrientation,
+	FieldProps,
+	FieldRootProps,
+	MarkdownEditorProps,
+	TextAreaProps,
+} from "./components/field";
+export type { InputLook, InputProps } from "./components/input";
+export type {
+	CommandDialogProps,
+	CommandGroupProps,
+	CommandInputProps,
+	CommandItemProps,
+	CommandProps,
+} from "./components/command";
+export type { EmptyMediaProps } from "./components/empty-state";
+export type { TabsContentProps, TabsListProps, TabsProps, TabsRootProps, TabsTriggerProps } from "./components/tabs";
+export type { ToggleGroupItemProps, ToggleGroupProps } from "./components/toggle-group";
+export type {
+	DialogCloseProps,
+	DialogContentProps,
+	DialogPanelProps,
+	DialogRootProps,
+	DialogTriggerProps,
+} from "./components/dialog";
+export type { PopoverAnchorProps } from "./components/popover-anchor";
+export type { PopoverAlign, PopoverSide } from "./constants/popover";
 export type { FlameProps } from "./components/flame";
 export type { HeadingLevel, HeadingProps } from "./components/heading";
 export type { IconButtonProps } from "./components/icon-button";
@@ -55,6 +85,11 @@ export type {
 	SidebarSheetProps,
 	SheetHeight,
 	SidebarTag,
+	SidebarCollapsible,
+	SidebarMenuButtonProps,
+	SidebarProviderProps,
+	SidebarState,
+	SidebarVariant,
 } from "./components/sidebar";
 export type { SkeletonKind, SkeletonProps } from "./components/skeleton";
 export type { SlotProps } from "./components/slot";

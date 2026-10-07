@@ -10,6 +10,8 @@ export { SelectContent } from "./select-content";
 export { SelectItem } from "./select-item";
 export { SelectTrigger } from "./select-trigger";
 export { SelectValue } from "./select-value";
+export { SelectGroup, SelectLabel } from "./select-parts";
+export { SelectSeparator } from "./select-separator";
 export type { SelectContentProps } from "./select-content";
 export type { SelectItemProps } from "./select-item";
 export type { SelectTriggerProps } from "./select-trigger";

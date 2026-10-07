@@ -7,7 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "widgetarium";
-import { Button, ButtonLabel, Field, TONE_NAMES, toneClass } from "widgetarium/kit";
+import { Button, ButtonLabel, Input, TONE_NAMES, toneClass } from "widgetarium/kit";
 import type { TierRow } from "./types";
 import { useRowDraft } from "./use-row-draft";
 
@@ -36,7 +36,7 @@ export function RowDialog({
 					<DialogDescription>{RENAME_REWRITES.replace("{count}", String(heldCards))}</DialogDescription>
 				</DialogHeader>
 				<div className="wr-pop">
-					<Field value={label} placeholder="Name" onInput={(event) => setLabel(event.currentTarget.value)} />
+					<Input value={label} placeholder="Name" onInput={(event) => setLabel(event.currentTarget.value)} />
 					<p className="wr-pop-hint">{EIGHT_COLOURS}</p>
 					<div className="wr-swatches">
 						{TONE_NAMES.map((name: string) => (

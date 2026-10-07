@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { FormEvent, ReactElement } from "react";
 import { z } from "zod";
-import { Field, Switch } from "@widgetarium/kit";
+import { Input, Switch } from "@widgetarium/kit";
 import { TARGET_FIELD } from "../surface/command-binding.js";
 import { offeredLabelOf } from "./offered-boxes.js";
 import type { OfferedEntry } from "./offered-boxes.js";
@@ -60,7 +60,7 @@ function controlsOf({ key, field, held, write, offered }: FieldAsk): ReactElemen
 		set(field.kind === "number" && typed !== "" ? Number(typed) : typed);
 	};
 	const shown = typeof value === "string" || typeof value === "number" ? String(value) : "";
-	return [h(Field, { block: true, key, value: shown, placeholder: labelOf(key), onInput })];
+	return [h(Input, { block: true, key, value: shown, placeholder: labelOf(key), onInput })];
 }
 
 function kindOf(field: unknown): FieldKind | null {

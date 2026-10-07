@@ -42,7 +42,42 @@ check(
 );
 check(
 	"a colour from the kit's theme is not",
-	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<div className="bg-group text-muted text-red" />` })),
+	rulesIn(
+		checkWidget({
+			...clean,
+			source: `${clean.source}\n<div className="bg-group text-muted-foreground text-red bg-primary text-brand" />`,
+		}),
+	),
+	[],
+);
+check(
+	"a plate painted from a shadcn token is the kit's own paint",
+	rulesIn(checkWidget({ ...clean, styles: "background: var(--card);\nbox-shadow: 0 0 0 1px var(--ring);" })),
+	[],
+);
+check(
+	"a variable that only starts like one is not",
+	rulesIn(checkWidget({ ...clean, styles: "background: var(--cardboard);" })),
+	["colour"],
+);
+check(
+	"text-muted and text-accent under their old meaning are a finding",
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\n<p className="text-muted hover:text-accent" />` })),
+	["renamed"],
+);
+check(
+	"and the finding names both renames",
+	checkWidget({ ...clean, source: `${clean.source}\n<p className="text-muted hover:text-accent" />` })
+		.map((one) => one.message)
+		.join()
+		.includes("text-muted-foreground, text-brand"),
+	true,
+);
+check(
+	"shadcn's own names are not",
+	rulesIn(
+		checkWidget({ ...clean, source: `${clean.source}\n<p className="text-muted-foreground bg-accent bg-muted" />` }),
+	),
 	[],
 );
 check(
@@ -145,7 +180,7 @@ check(
 check(
 	"and it names the kit control that replaces each tag",
 	checkWidget({ ...clean, source: `${clean.source}\n<input value={v} />\nh("select", {})` })[0]?.message.includes(
-		"<input> → Field or Checkbox; <select> → Select",
+		"<input> → Input or Checkbox; <select> → Select",
 	),
 	true,
 );
@@ -238,7 +273,7 @@ check(
 		rulesIn(
 			checkWidget({
 				...clean,
-				source: `${clean.source}\nimport { Button } from "widgetarium/kit";\n<Button className="bg-group text-accent rounded-none">Go</Button>`,
+				source: `${clean.source}\nimport { Button } from "widgetarium/kit";\n<Button className="bg-group text-brand rounded-none">Go</Button>`,
 			}),
 		),
 		rulesIn(
@@ -413,7 +448,7 @@ check(
 const allBroken = {
 	id: "@x/bad",
 	source:
-		"import { flatRows } from \"widgetarium\";\nconst l = useData(rows.list);\nl.data.map((r) => r);\nconst c = '#abc';\nreturn <h1>Title<button>Go</button></h1>;",
+		'import { flatRows } from "widgetarium";\nconst l = useData(rows.list);\nl.data.map((r) => r);\nconst c = \'#abc\';\nreturn <h1 className="text-muted">Title<button>Go</button></h1>;',
 	styles: '@import "tailwindcss/base";\n@import "tailwindcss";\n.bad { font-family: Inter; }',
 	card: {},
 	surface,

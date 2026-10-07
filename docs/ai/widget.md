@@ -790,9 +790,9 @@ A scope may add a `theme.css` of its own, imported third, and a `@theme` of your
 }
 ```
 
-The kit's theme names every token as a Tailwind one — `bg-group`, `bg-fill`, `text-muted`,
-`text-accent`, `rounded-plate`, `rounded-pill`, `text-sm`, `text-h3`, `gap-cards`, `p-plate` — so you
-repeat no variable. A scope file beside your widgets carries what all of them share, and a `@theme`
+The kit's theme names every token as a Tailwind one, shadcn's names and the kit's own —
+`bg-card`, `bg-muted`, `text-muted-foreground`, `text-brand`, `bg-group`, `bg-fill`, `rounded-plate`,
+`rounded-pill`, `text-sm`, `text-h3`, `gap-cards`, `p-plate` — so you repeat no variable. A scope file beside your widgets carries what all of them share, and a `@theme`
 of your own comes last and wins: add a colour, or change one of the kit's for this widget alone
 (`--radius-plate: 18px`). `--color-*: initial` drops a whole namespace, `--*: initial` starts from
 nothing.
@@ -800,7 +800,7 @@ nothing.
 Style a kit control's state with Tailwind's data variants — `data-[state=open]:bg-group`,
 `data-[highlighted]:bg-fill` — and join classes with `cn` from `widgetarium/kit`: it is shadcn's,
 so a class you pass wins a conflict with the kit's own (`cn("p-plate", "p-2")` is `p-2`), and it
-knows the theme's names, so `text-h3 text-muted` keeps both.
+knows the theme's names, so `text-h3 text-muted-foreground` keeps both.
 
 `@plugin` and `@config` load JavaScript and are refused; `@utility` and `@custom-variant` are not.
 Preflight is refused too, and so is every other name under `widgetarium/`. Tailwind 3's entry points

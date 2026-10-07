@@ -1,6 +1,8 @@
 import { createElement as h, useRef } from "react";
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { createPortal } from "react-dom";
+import type { PopoverAlign, PopoverSide } from "../constants/popover";
+import { useAsksPlacement } from "../hooks/use-asks-placement";
 import { cn } from "../utils/cn";
 import { portalLayer } from "../utils/portal-layer";
 import { stepIndex } from "../utils/roving";
@@ -8,6 +10,9 @@ import type { Step } from "../utils/roving";
 import { POPOVER_ITEM, dataStateOf, usePopover } from "./popover-context";
 
 export interface PopoverContentProps {
+	readonly side?: PopoverSide | undefined;
+	readonly align?: PopoverAlign | undefined;
+	readonly sideOffset?: number | undefined;
 	readonly children?: ReactNode;
 	readonly className?: string | undefined;
 }
@@ -19,10 +24,11 @@ const STEP_OF_KEY: ReadonlyMap<string, Step> = new Map<string, Step>([
 	["End", "last"],
 ]);
 
-export function PopoverContent({ children, className: cls }: PopoverContentProps): ReactElement {
+export function PopoverContent({ side, align, children, className: cls }: PopoverContentProps): ReactElement {
 	const popover = usePopover();
 	const held = useRef<ReactNode>(null);
 	if (popover.isOpen) held.current = children;
+	useAsksPlacement({ side, align, askPlacement: popover.askPlacement });
 	const panel = (
 		<div
 			id={popover.id}
@@ -36,6 +42,7 @@ export function PopoverContent({ children, className: cls }: PopoverContentProps
 				cls,
 			)}
 			role="dialog"
+			data-slot="popover-content"
 			data-state={dataStateOf(popover.isOpen)}
 			data-side={popover.placement}
 			data-wg-overlay={popover.shown ? "" : undefined}

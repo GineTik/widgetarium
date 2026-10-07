@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
-import { Field, Icon } from "widgetarium/kit";
+import { Input, Icon } from "widgetarium/kit";
 
 const CatalogueSearch = createWidget({
 	inject: {
@@ -17,7 +17,7 @@ const CatalogueSearch = createWidget({
 		};
 		return (
 			<div>
-				<Field
+				<Input
 					block
 					className="wg-catalogue-search"
 					icon={<Icon name="search" />}

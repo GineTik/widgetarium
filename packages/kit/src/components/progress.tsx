@@ -18,7 +18,12 @@ export interface ProgressProps {
 export function Progress({ value = 0, onChange, label, className: cls }: ProgressProps): ReactElement {
 	const { shown, isGrabbed, trackRef, sliderProps, trackProps } = useSlider(value, onChange);
 	return (
-		<div className={cn("wg-kit-progress", isGrabbed && "is-grabbed", cls)} aria-label={label} {...sliderProps}>
+		<div
+			data-slot="progress"
+			className={cn("wg-kit-progress", isGrabbed && "is-grabbed", cls)}
+			aria-label={label}
+			{...sliderProps}
+		>
 			<span className="wg-kit-progress-track" ref={trackRef} {...trackProps}>
 				<i className="wg-kit-progress-fill" style={{ width: `${shown}%` }} />
 				<span className="wg-kit-progress-knob" style={{ left: `${shown}%` }} />

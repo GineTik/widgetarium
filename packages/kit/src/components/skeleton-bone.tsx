@@ -14,5 +14,12 @@ export interface SkeletonPartProps extends Omit<HTMLAttributes<HTMLSpanElement>,
 }
 
 export function SkeletonBone(props: SkeletonPartProps): ReactElement {
-	return <span {...domPropsOf(props)} className={cn("wg-kit-skeleton", props.className)} aria-hidden="true" />;
+	return (
+		<span
+			data-slot="skeleton"
+			{...domPropsOf(props)}
+			className={cn("wg-kit-skeleton", props.className)}
+			aria-hidden="true"
+		/>
+	);
 }

@@ -7,7 +7,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "widgetarium";
-import { Button, ButtonLabel, Field } from "widgetarium/kit";
+import { Button, ButtonLabel, Input } from "widgetarium/kit";
 import type { CardRow, Draft } from "./types";
 import { useCardDraft } from "./use-card-draft";
 
@@ -37,12 +37,12 @@ export function CardDialog({
 					<DialogDescription>{CARD_PICTURE_SAID}</DialogDescription>
 				</DialogHeader>
 				<div className="wr-pop">
-					<Field
+					<Input
 						value={draft.name}
 						placeholder="Name"
 						onInput={(event) => setDraft({ ...draft, name: event.currentTarget.value })}
 					/>
-					<Field
+					<Input
 						value={draft.picture}
 						placeholder="Picture"
 						onInput={(event) => setDraft({ ...draft, picture: event.currentTarget.value })}

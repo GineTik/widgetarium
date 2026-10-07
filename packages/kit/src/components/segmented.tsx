@@ -4,8 +4,7 @@ import { useControllableState } from "../hooks/use-controllable-state";
 import { useSegmentedThumb } from "../hooks/use-segmented-thumb";
 import { cn } from "../utils/cn";
 import { isFocusable } from "../utils/dom-nodes";
-import { stepIndex } from "../utils/roving";
-import type { Step } from "../utils/roving";
+import { ACROSS_STEP_OF_KEY, stepIndex } from "../utils/roving";
 
 export interface SegmentedItem<V extends Key> {
 	readonly value: V;
@@ -21,15 +20,6 @@ export interface SegmentedProps<V extends Key> {
 	readonly size?: "s" | "m" | "l";
 	readonly className?: string | undefined;
 }
-
-const STEP_OF_KEY: ReadonlyMap<string, Step> = new Map<string, Step>([
-	["ArrowRight", 1],
-	["ArrowDown", 1],
-	["ArrowLeft", -1],
-	["ArrowUp", -1],
-	["Home", "first"],
-	["End", "last"],
-]);
 
 export function Segmented<V extends Key>({
 	items,
@@ -52,7 +42,7 @@ export function Segmented<V extends Key>({
 	const { listRef, thumbProps } = useSegmentedThumb(current, items);
 
 	const moveWithKeys = (event: KeyboardEvent): void => {
-		const step = STEP_OF_KEY.get(event.key);
+		const step = ACROSS_STEP_OF_KEY.get(event.key);
 		if (step === undefined) return;
 		event.preventDefault();
 		const next = stepIndex(
@@ -96,5 +86,3 @@ export function Segmented<V extends Key>({
 		</div>
 	);
 }
-
-export const Tabs = Segmented;

@@ -2,7 +2,7 @@ import { Fragment, createElement as h } from "react";
 import type { FormEvent, MouseEvent, ReactElement, ReactNode } from "react";
 import {
 	Button,
-	Field,
+	Input,
 	Icon,
 	IconButton,
 	Popover,
@@ -148,7 +148,7 @@ export function popoverFoot(state: EditorState, onReset: () => void, onApply: Ap
 export function textEditor(state: EditorState, fallback: unknown, onApply: Apply): ReactElement {
 	const fallbackText = fallback === undefined || fallback === null ? "" : String(fallback);
 	return h("div", { className: "wg-set-pop-body" }, [
-		h(Field, {
+		h(Input, {
 			block: true,
 			key: "field",
 			value: state.draft ?? "",

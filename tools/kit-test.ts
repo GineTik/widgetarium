@@ -12,6 +12,8 @@ import { byId, found, foundAs } from "./dom-find.ts";
 import { standIn } from "./stand-in.ts";
 import type { ReactNode } from "react";
 import type { PlatesAbove } from "../packages/kit/src/utils/surface.ts";
+import type { FieldRootProps } from "../packages/kit/src/components/field.tsx";
+import type { TabsRootProps } from "../packages/kit/src/components/tabs.tsx";
 
 const dom = new JSDOM('<!doctype html><body><div id="host"></div></body>', { pretendToBeVisual: true });
 Object.assign(globalThis, {
@@ -441,7 +443,11 @@ check("and keeps that element's own props", host.querySelector("a")?.getAttribut
 {
 	const { cn } = await import("../packages/kit/src/index.ts");
 	check("CN, AS IN SHADCN: a caller's class wins a conflict with the kit's", cn("p-plate", "p-2"), "p-2");
-	check("and the kit's own sizes and colours are told apart", cn("text-h3", "text-muted"), "text-h3 text-muted");
+	check(
+		"and the kit's own sizes and colours are told apart",
+		cn("text-h3", "text-muted-foreground"),
+		"text-h3 text-muted-foreground",
+	);
 	check("and a kit class is never taken for a utility", cn("wg-kit-btn is-m", "is-l"), "wg-kit-btn is-m is-l");
 }
 
@@ -1126,7 +1132,12 @@ check(
 	[mustHtmlOf(host.firstChild).className, mustHtmlOf(host.firstChild).textContent],
 	["wg-kit-btn is-s wg-kit-action", "Add"],
 );
-check("tabs are the segmented tablist", Kit.Tabs, Kit.Segmented);
+render(h(Kit.Tabs, { items: [{ value: "a", label: "A" }], value: "a" }), host);
+check(
+	"tabs given items are the segmented tablist they always were",
+	[mustHtmlOf(host.firstElementChild).className, mustHtmlOf(host.firstElementChild).getAttribute("role")],
+	["wg-kit-seg", "tablist"],
+);
 
 let pressed = 0;
 render(h(Kit.Button, { isLoading: true, onClick: () => (pressed += 1) }, "Save"), host);
@@ -3652,6 +3663,11 @@ check(
 		Line: { tone: "inherit", text: "line" },
 		RenderedMarkdown: { host: { can: { renderMarkdown: false }, ui: {} }, markdown: "text" },
 		MoreWhenSeen: { onSeen: () => {} },
+		FieldError: { children: "wrong" },
+		CommandDialog: { open: true },
+		TabsTrigger: { value: "a" },
+		TabsContent: { value: "a" },
+		ToggleGroupItem: { value: "a" },
 	};
 	const PART_OF: Readonly<Record<string, string>> = {
 		EmblemImage: "Emblem",
@@ -3667,15 +3683,30 @@ check(
 		SparklineArea: "Sparkline",
 		SparklineBars: "Sparkline",
 		SparklineDot: "Sparkline",
+		CommandInput: "Command",
+		CommandEmpty: "Command",
+		CommandGroup: "Command",
+		CommandItem: "Command",
+		TabsList: "Tabs",
+		TabsTrigger: "Tabs",
+		TabsContent: "Tabs",
+		ToggleGroupItem: "ToggleGroup",
+		DialogTrigger: "Dialog",
+		DialogContent: "Dialog",
+		DialogClose: "Dialog",
+		PopoverAnchor: "Popover",
+		SidebarTrigger: "SidebarProvider",
 	};
 	const PART_NEEDS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = { SelectItem: { value: "a" } };
-	const DRAWN_ONLY_ONCE_AN_IMAGE_LOADS = new Set(["EmblemImage"]);
+	const DRAWN_ONLY_ONCE_AN_IMAGE_LOADS = new Set(["EmblemImage", "AvatarImage"]);
 	const DRAWS_NO_ELEMENT_OF_ITS_OWN = new Set(["Select"]);
 	const PARENT_NEEDS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 		Emblem: { label: "probe" },
 		Popover: { defaultOpen: true },
 		Select: { defaultOpen: true },
 		Sparkline: { data: [1, 2] },
+		Tabs: { defaultValue: "a" },
+		Dialog: { defaultOpen: true },
 	};
 	const withoutClass: string[] = [];
 	for (const [name, drawn] of Object.entries(Kit)) {
@@ -4099,6 +4130,293 @@ check(
 		"A SELECTED ROW SAYS SO ON THE ELEMENT",
 		host.querySelector("tr.wg-kit-table-row")?.getAttribute("data-state"),
 		"selected",
+	);
+	render(null, host);
+}
+
+{
+	const host = byId(document, "host");
+	render(null, host);
+	const kit = await import("../packages/kit/src/index.ts");
+	const FormField = (props: FieldRootProps): ReactNode => kit.Field(props);
+	const ShadcnTabs = (props: TabsRootProps): ReactNode => kit.Tabs(props);
+	const classOfButton = async (props: Record<string, unknown>): Promise<string> => {
+		render(h(kit.Button, props, "Go"), host);
+		await settle();
+		return foundTag(host, "button", "button").className;
+	};
+
+	check(
+		"A BUTTON WITH NO VARIANT KEEPS ITS NEUTRAL LOOK, so no caller written before shadcn changes",
+		await classOfButton({}),
+		"wg-kit-btn is-m",
+	);
+	check(
+		"shadcn's variants paint what shadcn means by them",
+		[
+			await classOfButton({ variant: "default" }),
+			await classOfButton({ variant: "secondary" }),
+			await classOfButton({ variant: "destructive" }),
+			await classOfButton({ variant: "outline" }),
+			await classOfButton({ variant: "link" }),
+		],
+		[
+			"wg-kit-btn is-primary is-m",
+			"wg-kit-btn is-m",
+			"wg-kit-btn is-danger is-m",
+			"wg-kit-btn is-outline is-m",
+			"wg-kit-btn is-plain is-m",
+		],
+	);
+	check(
+		"and its sizes, an icon size square",
+		[await classOfButton({ size: "sm" }), await classOfButton({ size: "lg" }), await classOfButton({ size: "icon" })],
+		["wg-kit-btn is-s", "wg-kit-btn is-l", "wg-kit-btn is-m is-icon"],
+	);
+	check("a button names its shadcn slot", found(host, "button").getAttribute("data-slot"), "button");
+
+	render(h(kit.Badge, { variant: "destructive" }, "Late"), host);
+	await settle();
+	check("a destructive badge is its own plate", found(host, "span").className.includes("is-destructive"), true);
+
+	render(
+		h(
+			kit.Card,
+			null,
+			h(kit.CardHeader, null, [
+				h(kit.CardTitle, { key: "t" }, "Title"),
+				h(kit.CardDescription, { key: "d" }, "Said"),
+				h(kit.CardAction, { key: "a" }, "x"),
+			]),
+			h(kit.CardContent, null, "Body"),
+			h(kit.CardFooter, null, "Foot"),
+		),
+		host,
+	);
+	await settle();
+	check(
+		"A CARD'S PARTS CARRY SHADCN'S SLOTS",
+		[...host.querySelectorAll("[data-slot]")].map((one) => one.getAttribute("data-slot")),
+		["card", "card-header", "card-title", "card-description", "card-action", "card-content", "card-footer"],
+	);
+
+	const typed: string[] = [];
+	render(h(kit.Field, { value: "", placeholder: "Name", onValueChange: (next: string) => typed.push(next) }), host);
+	await settle();
+	check(
+		"A FIELD WITH NO CHILDREN IS STILL THE INPUT IT WAS",
+		[
+			Boolean(host.querySelector("label.wg-kit-field > input[data-slot='input']")),
+			host.querySelector("[data-slot='field']") !== null,
+		],
+		[true, false],
+	);
+	const fieldInput = foundTag(host, "input", "input");
+	fieldInput.value = "Ada";
+	fieldInput.dispatchEvent(inputEvent());
+	check("and it still answers with the text typed", typed, ["Ada"]);
+
+	render(
+		h(FormField, {
+			orientation: "horizontal",
+			children: [
+				h(kit.FieldLabel, { key: "l" }, "Name"),
+				h(kit.Input, { key: "i" }),
+				h(kit.FieldError, { key: "e", errors: [{ message: "Required" }] }),
+			],
+		}),
+		host,
+	);
+	await settle();
+	check(
+		"A FIELD WITH CHILDREN IS SHADCN'S FORM FIELD",
+		[
+			found(host, "[data-slot='field']").getAttribute("role"),
+			found(host, "[data-slot='field']").getAttribute("data-orientation"),
+			found(host, "label[data-slot='field-label']").textContent,
+			found(host, "[data-slot='field-error']").textContent,
+		],
+		["group", "horizontal", "Name", "Required"],
+	);
+
+	const selected: string[] = [];
+	const items = ["Calendar", "Search emoji"].map((label) =>
+		h(kit.CommandItem, { key: label, onSelect: (value: string) => selected.push(value) }, label),
+	);
+	render(
+		h(kit.Command, null, [
+			h(kit.CommandInput, { key: "in", placeholder: "Type" }),
+			h(kit.CommandList, { key: "list" }, [
+				h(kit.CommandEmpty, { key: "empty" }, "No results"),
+				h(kit.CommandGroup, { key: "group", heading: "Suggestions" }, items),
+			]),
+		]),
+		host,
+	);
+	await settle();
+	check(
+		"A COMMAND SHOWS EVERY ITEM BEFORE ANYTHING IS TYPED",
+		host.querySelectorAll("[data-slot='command-item']").length,
+		2,
+	);
+	check("and no empty line", host.querySelector("[data-slot='command-empty']") !== null, false);
+	const commandInput = foundTag(host, "input", "input");
+	commandInput.value = "cal";
+	commandInput.dispatchEvent(inputEvent());
+	await settle();
+	check(
+		"TYPING NARROWS THE ITEMS, the way cmdk does",
+		[...host.querySelectorAll("[data-slot='command-item']")].map((one) => one.textContent),
+		["Calendar"],
+	);
+	found(host, "[data-slot='command-item']").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	check("a picked item answers with its value", selected, ["Calendar"]);
+	commandInput.value = "zzz";
+	commandInput.dispatchEvent(inputEvent());
+	await settle();
+	check(
+		"NOTHING MATCHING SHOWS THE EMPTY LINE AND HIDES THE GROUP",
+		[
+			found(host, "[data-slot='command-empty']").textContent,
+			host.querySelector("[data-slot='command-group']") !== null,
+		],
+		["No results", false],
+	);
+
+	const shownTabs: string[] = [];
+	render(
+		h(ShadcnTabs, { defaultValue: "a", onValueChange: (next: string) => shownTabs.push(next) }, [
+			h(kit.TabsList, { key: "list" }, [
+				h(kit.TabsTrigger, { key: "a", value: "a" }, "A"),
+				h(kit.TabsTrigger, { key: "b", value: "b" }, "B"),
+			]),
+			h(kit.TabsContent, { key: "ca", value: "a" }, "first"),
+			h(kit.TabsContent, { key: "cb", value: "b" }, "second"),
+		]),
+		host,
+	);
+	await settle();
+	check("SHADCN TABS SHOW THE DEFAULT PANEL", found(host, "[data-slot='tabs-content']").textContent, "first");
+	nth([...host.querySelectorAll("[data-slot='tabs-trigger']")], 1).dispatchEvent(
+		new MouseEvent("click", { bubbles: true }),
+	);
+	await settle();
+	check(
+		"and a pressed trigger shows its own, told to the caller",
+		[found(host, "[data-slot='tabs-content']").textContent, shownTabs],
+		["second", ["b"]],
+	);
+
+	const pressedNow: unknown[] = [];
+	render(
+		h(kit.ToggleGroup, { type: "multiple", onValueChange: (next: string[]) => pressedNow.push(next) }, [
+			h(kit.ToggleGroupItem, { key: "b", value: "bold" }, "B"),
+			h(kit.ToggleGroupItem, { key: "i", value: "italic" }, "I"),
+		]),
+		host,
+	);
+	await settle();
+	for (const item of host.querySelectorAll("[data-slot='toggle-group-item']")) {
+		item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		await settle();
+	}
+	check("A MULTIPLE TOGGLE GROUP ANSWERS WITH EVERY PRESSED VALUE", pressedNow, [["bold"], ["bold", "italic"]]);
+
+	render(
+		h(kit.Dialog, null, [
+			h(kit.DialogTrigger, { key: "t" }, "Open"),
+			h(kit.DialogContent, { key: "c" }, [
+				h(kit.DialogHeader, { key: "h" }, h(kit.DialogTitle, null, "Edit")),
+				h(kit.DialogFooter, { key: "f" }, h(kit.DialogClose, null, "Cancel")),
+			]),
+		]),
+		host,
+	);
+	await settle();
+	check("A SHADCN DIALOG STARTS SHUT", document.querySelector("[data-slot='dialog-content']") !== null, false);
+	found(host, "[data-slot='dialog-trigger']").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check("its trigger opens it", document.querySelector("[data-slot='dialog-title']")?.textContent, "Edit");
+	found(document, "[data-slot='dialog-close']").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check("and its close shuts it", document.querySelector("[data-slot='dialog-content']") !== null, false);
+
+	render(h(kit.Dialog, { isOpen: true, title: "Old one" }, "body"), host);
+	await settle();
+	check(
+		"A DIALOG GIVEN isOpen IS STILL THE ONE-PIECE PANEL",
+		document.querySelector(".wg-kit-dialog-title")?.textContent,
+		"Old one",
+	);
+
+	const ticks: boolean[] = [];
+	render(h(kit.Checkbox, { defaultChecked: true, onCheckedChange: (next: boolean) => ticks.push(next) }), host);
+	await settle();
+	found(host, "[role='checkbox']").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check(
+		"AN UNCONTROLLED CHECKBOX TICKS ITSELF",
+		[found(host, "[data-slot='checkbox']").getAttribute("data-state"), ticks],
+		["unchecked", [false]],
+	);
+	render(h(kit.Checkbox, { checked: true }), host);
+	await settle();
+	check("a checked one with no handler only shows", found(host, "[data-slot='checkbox']").tagName, "SPAN");
+
+	render(
+		h(kit.SidebarProvider, null, [
+			h(kit.Sidebar, { key: "s", collapsible: "icon" }, h(kit.SidebarContent, null, "nav")),
+			h(kit.SidebarTrigger, { key: "t" }),
+		]),
+		host,
+	);
+	await settle();
+	check(
+		"A SIDEBAR IN ITS PROVIDER STARTS EXPANDED",
+		found(host, "[data-slot='sidebar']").getAttribute("data-state"),
+		"expanded",
+	);
+	found(host, "[data-slot='sidebar-trigger']").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check(
+		"and its trigger folds it to icons",
+		[
+			found(host, "[data-slot='sidebar']").getAttribute("data-state"),
+			found(host, "[data-slot='sidebar']").classList.contains("is-minimal"),
+		],
+		["collapsed", true],
+	);
+
+	render(
+		h(kit.SidebarGroup, null, [
+			h(kit.SidebarGroupLabel, { key: "l" }, "Pages"),
+			h(
+				kit.SidebarMenu,
+				{ key: "m" },
+				h(kit.SidebarMenuItem, null, h(kit.SidebarMenuButton, { isActive: true }, "Home")),
+			),
+		]),
+		host,
+	);
+	await settle();
+	check(
+		"A SIDEBAR GROUP OF SHADCN PARTS LAYS NO PLATE OF ITS OWN",
+		[
+			host.querySelector(".wg-kit-side-list") !== null,
+			found(host, "[data-slot='sidebar-menu-button']").getAttribute("aria-current"),
+		],
+		[false, "page"],
+	);
+	render(h(kit.SidebarGroup, { label: "Rows" }, h(kit.SidebarRow, { label: "one" })), host);
+	await settle();
+	check("one of rows keeps its plate", Boolean(host.querySelector(".wg-kit-side-list")), true);
+
+	render(h(kit.Avatar, { label: "Ada" }, h(kit.AvatarFallback, null, "AL")), host);
+	await settle();
+	check(
+		"AN AVATAR IS AN EMBLEM WEARING SHADCN'S SLOTS",
+		[found(host, ".wg-kit-emblem").getAttribute("data-slot"), found(host, "[data-slot='avatar-fallback']").textContent],
+		["avatar", "AL"],
 	);
 	render(null, host);
 }

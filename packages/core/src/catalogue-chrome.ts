@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Button, Field, Icon, List, Segmented, Sidebar, SidebarRow, SidebarSheet } from "@widgetarium/kit";
+import { Button, Input, Icon, List, Segmented, Sidebar, SidebarRow, SidebarSheet } from "@widgetarium/kit";
 import type { SegmentedItem } from "@widgetarium/kit";
 import { DOC_PAGES } from "./docs.js";
 import { fillLine } from "./catalogue-entries.js";
@@ -49,7 +49,7 @@ export function sideHead({ shown }: CatalogueView): ReactElement {
 }
 
 export function searchField({ page, onShelf, keyword, setKeyword }: CatalogueView): ReactElement {
-	return h(Field, {
+	return h(Input, {
 		key: "search",
 		block: true,
 		className: "wg-cat-search",

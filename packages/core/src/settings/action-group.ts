@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { Field, Icon, IconButton, SidebarGroup, SidebarRow, Switch } from "@widgetarium/kit";
+import { Input, Icon, IconButton, SidebarGroup, SidebarRow, Switch } from "@widgetarium/kit";
 import type { RefDescription } from "../gateway/refs.js";
 import {
 	TARGET_FIELD,
@@ -155,7 +155,7 @@ function targetChoices(state: SettingsState, name: string, binding: CommandBindi
 
 function findField(state: SettingsState): ReactElement {
 	const onInput = draftOnInput(state);
-	return h(Field, { block: true, key: "find", value: state.draft ?? "", placeholder: FIND_IT, onInput });
+	return h(Input, { block: true, key: "find", value: state.draft ?? "", placeholder: FIND_IT, onInput });
 }
 
 interface TileGroupAsk {

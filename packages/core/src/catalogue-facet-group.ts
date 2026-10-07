@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { Field, Icon } from "@widgetarium/kit";
+import { Input, Icon } from "@widgetarium/kit";
 
 export interface FacetGroupProps {
 	readonly label: ReactNode;
@@ -13,7 +13,7 @@ export interface FacetGroupProps {
 export function FacetGroup({ label, placeholder, query, onQuery, children }: FacetGroupProps): ReactElement {
 	return h("div", { className: "wg-kit-side-group wg-cat-facet" }, [
 		h("span", { className: "wg-kit-side-label", key: "label" }, label),
-		h(Field, {
+		h(Input, {
 			key: "search",
 			block: true,
 			size: "s",

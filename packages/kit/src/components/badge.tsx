@@ -32,6 +32,7 @@ export function Badge({ asChild = false, color, style, children, ...props }: Bad
 	const Comp = asChild ? Slot : "span";
 	return (
 		<Comp
+			data-slot="badge"
 			{...domPropsOf(props)}
 			style={{ ...style, ...badgeInksOf(color) }}
 			className={cn(pillClass(props), isThemed && "is-themed")}

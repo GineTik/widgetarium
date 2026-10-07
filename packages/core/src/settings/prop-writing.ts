@@ -1,7 +1,7 @@
 import { propConfig } from "../model.js";
 import type { Tile, TileProp } from "../model.js";
 import type { FormEvent, FunctionComponent } from "react";
-import { Field, TextArea } from "@widgetarium/kit";
+import { Input, TextArea } from "@widgetarium/kit";
 import { declaredOf, isVaultImplementation } from "../gateway/props.js";
 import type { SettingsSpec, TilePatch } from "./settings-state.js";
 
@@ -25,10 +25,10 @@ export interface PropWritingState {
 }
 
 const PLAIN_TYPES: ReadonlyMap<unknown, PlainWriting> = new Map<unknown, PlainWriting>([
-	["line", { blank: "", control: Field }],
+	["line", { blank: "", control: Input }],
 	["text", { blank: "", control: TextArea }],
-	["number", { blank: 0, control: Field }],
-	["boolean", { blank: false, control: Field }],
+	["number", { blank: 0, control: Input }],
+	["boolean", { blank: false, control: Input }],
 ]);
 
 export const FIELDS_SHOWN = 6;
@@ -42,8 +42,8 @@ export function writtenPlainly(spec: SettingsSpec): boolean {
 }
 
 export function typedControlOf(spec: SettingsSpec): TypedControl {
-	if (spec.kind !== "value") return Field;
-	return PLAIN_TYPES.get(spec.type)?.control ?? Field;
+	if (spec.kind !== "value") return Input;
+	return PLAIN_TYPES.get(spec.type)?.control ?? Input;
 }
 
 export function isSwitched(spec: SettingsSpec): boolean {

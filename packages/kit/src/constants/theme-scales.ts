@@ -1,3 +1,5 @@
+import { SHADCN_COLOUR_TOKENS } from "./shadcn-tokens";
+
 export const THEME_SCALES = {
 	color: [
 		"page",
@@ -9,8 +11,7 @@ export const THEME_SCALES = {
 		"raise",
 		"edge",
 		"ink",
-		"muted",
-		"accent",
+		...SHADCN_COLOUR_TOKENS.filter((name) => !name.startsWith("chart-")),
 		"success",
 		"warning",
 		"error",
@@ -18,6 +19,7 @@ export const THEME_SCALES = {
 		"note",
 		"standout",
 		"highlight",
+		"brand-wash",
 		"accent-wash",
 		"success-wash",
 		"warning-wash",
@@ -43,8 +45,8 @@ export const THEME_SCALES = {
 	text: ["xs", "sm", "base", "lg", "h6", "h5", "h4", "h3", "h2", "h1"],
 	font: ["sans", "mono"],
 	"font-weight": ["normal", "medium", "semibold", "bold"],
-	radius: ["plate", "item", "pill"],
-	spacing: ["items", "parts", "cards", "plate"],
+	radius: ["sm", "md", "lg", "xl", "plate", "item", "pill"],
+	spacing: ["items", "parts", "cards", "sections", "plate"],
 	shadow: ["raise", "glass"],
 	ease: ["spring", "standard"],
 };

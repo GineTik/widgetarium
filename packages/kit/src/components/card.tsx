@@ -29,6 +29,7 @@ export function Card({ asChild = false, type = GROUP, tone, side, across, style,
 	return (
 		<PLATES_ABOVE.Provider value={platesInside(above, surface)}>
 			<Comp
+				data-slot="card"
 				{...domPropsOf(rest)}
 				{...plateProps(above, { surface, side, across, style })}
 				className={cn("wg-kit-surface", tonedPlateClass(tone), rest.className)}
@@ -40,6 +41,8 @@ export function Card({ asChild = false, type = GROUP, tone, side, across, style,
 }
 
 export const Surface = Card;
+
+export { CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./card-parts";
 
 export const Plate: FunctionComponent<SlotPartProps> = createSlotPart("div", plateClass, "Plate");
 

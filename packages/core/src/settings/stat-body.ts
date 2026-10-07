@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { Button, Field, Icon } from "@widgetarium/kit";
+import { Button, Input, Icon } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
 import { ALGORITHMS_READING_A_FIELD, DEFAULT_DATE_FIELD } from "../engine/stat-fields.js";
 import { hostGatewayFor } from "../engine/host-gateways.js";
@@ -134,7 +134,7 @@ function folderStep(state: SettingsState, key: string, spec: SettingsSpec, confi
 		.slice(0, FOLDERS_SHOWN);
 	return [
 		note(STAT_STEP_NOTES.folder),
-		h(Field, {
+		h(Input, {
 			block: true,
 			key: "field",
 			icon: h(Icon, { name: "search" }),
@@ -174,7 +174,7 @@ function propertyStep(
 				field.prop === held,
 			),
 		),
-		h(Field, {
+		h(Input, {
 			block: true,
 			key: "typed",
 			value: state.draft ?? "",

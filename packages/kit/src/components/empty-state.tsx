@@ -5,6 +5,10 @@ import type { ShapeName } from "../shapes/shape-names";
 import { cn } from "../utils/cn";
 import { EmptyStateArt } from "./empty-state-art";
 
+export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "./empty-parts";
+export { EmptyMedia } from "./empty-media";
+export type { EmptyMediaProps } from "./empty-media";
+
 export interface EmptyStateProps {
 	readonly title: string;
 	readonly text?: string | undefined;

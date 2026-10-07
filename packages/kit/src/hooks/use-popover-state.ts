@@ -23,6 +23,7 @@ export interface PopoverState {
 	readonly shown: boolean;
 	readonly setOpen: (open: boolean) => void;
 	readonly anchorRef: RefObject<HTMLSpanElement | null>;
+	readonly pointRef: RefObject<HTMLElement | null>;
 	readonly panelRef: RefObject<HTMLDivElement | null>;
 	readonly triggerRef: RefObject<HTMLElement | null>;
 	readonly openedByKeyboard: RefObject<boolean>;
@@ -32,6 +33,7 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 	const where = placementNamed(placement);
 	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
 	const anchorRef = useRef<HTMLSpanElement>(null);
+	const pointRef = useRef<HTMLElement>(null);
 	const panelRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLElement>(null);
 	const openedByKeyboard = useRef(false);
@@ -41,7 +43,18 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 	const wasOpen = useRef(false);
 	const shown = isOpen || isExiting || wasOpen.current;
 
-	usePanelMotion({ isOpen, where, anchorRef, panelRef, triggerRef, openedByKeyboard, wasOpen, setExiting, onExited });
+	usePanelMotion({
+		isOpen,
+		where,
+		anchorRef,
+		pointRef,
+		panelRef,
+		triggerRef,
+		openedByKeyboard,
+		wasOpen,
+		setExiting,
+		onExited,
+	});
 	useCloseOnOutsidePress({ isOpen, setOpen, anchorRef, panelRef });
 
 	return {
@@ -53,6 +66,7 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 		shown,
 		setOpen,
 		anchorRef,
+		pointRef,
 		panelRef,
 		triggerRef,
 		openedByKeyboard,

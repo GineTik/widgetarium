@@ -1,11 +1,13 @@
 import { createContext, useContext } from "react";
 import type { Context } from "react";
+import type { PlacementName } from "../constants/popover";
 import type { PopoverState } from "../hooks/use-popover-state";
 import type { ClassNameValue } from "../utils/cn";
 
 export interface HeldPopover extends PopoverState {
 	readonly className?: ClassNameValue;
 	readonly isPortaled?: boolean;
+	readonly askPlacement?: ((placement: PlacementName) => void) | undefined;
 }
 
 export type PopoverDataState = "open" | "closed";

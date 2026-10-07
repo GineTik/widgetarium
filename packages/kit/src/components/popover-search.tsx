@@ -3,7 +3,7 @@ import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { useScrollReach } from "../hooks/use-scroll-reach";
 import { Icon } from "../icons/icon";
 import { cn } from "../utils/cn";
-import { Field } from "./field";
+import { Input } from "./input";
 import { POPOVER_ITEM } from "./popover-context";
 
 export interface PopoverSearchProps {
@@ -33,7 +33,7 @@ export function PopoverSearch({ placeholder, hint, children, className: cls }: P
 	return (
 		<>
 			<div className={cn("wg-kit-pop-search", cls)}>
-				<Field
+				<Input
 					block={true}
 					size="s"
 					className="wg-kit-pop-search-field"

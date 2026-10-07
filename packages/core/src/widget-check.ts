@@ -1,3 +1,4 @@
+import { SHADCN_TOKENS } from "@widgetarium/kit";
 import { TAILWIND_PALETTE_CLASS, draftBlockFindings, sheetFindings } from "./widget-check-tailwind.js";
 
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
@@ -10,6 +11,11 @@ const BARE_PAINT = /^(?:transparent|none|inherit|currentColor|unset|initial|0)$|
 const HAS_MAP_CALL = /\.map\s*\(/;
 const USE_DATA_LIST = /useData\s*\(\s*([A-Za-z_$][\w$]*)\.list\s*\)/g;
 const KIT_TOKEN_PREFIX = "--wg-kit-";
+const SHADCN_TOKEN = new RegExp(`var\\(--(?:${SHADCN_TOKENS.join("|")})\\)`);
+const RENAMED_CLASS = /(?<![\w-])text-(muted|accent)(?![\w-])/g;
+const RENAMED_TO: Readonly<Record<string, string>> = { muted: "text-muted-foreground", accent: "text-brand" };
+const RENAMED_SAID =
+	"{classes} take the kit's old names; the theme now speaks shadcn's, where muted and accent are surfaces, so this text is painted the colour of a fill — write {instead}";
 
 const WIDGETARIUM_IMPORT = /import\s+(type\s+)?\{([^}]+)\}\s+from\s+"widgetarium"/g;
 const BOARD_HEADING = /<(h[12])[\s/>]/g;
@@ -19,9 +25,9 @@ const RAW_CONTROL =
 	/<(button|input|select|textarea)[\s/>]|createElement\(\s*["'](button|input|select|textarea)["']|\bh\(\s*["'](button|input|select|textarea)["']/g;
 const KIT_CONTROL_FOR: Readonly<Record<string, string>> = {
 	button: "Button, IconButton or a pressable Row",
-	input: "Field or Checkbox",
+	input: "Input or Checkbox",
 	select: "Select",
-	textarea: "TextArea",
+	textarea: "Textarea",
 };
 
 const RAW_CONTROL_SAID =
@@ -42,6 +48,7 @@ export const WIDGET_CHECK_RULES = [
 	"page",
 	"restyled",
 	"states",
+	"renamed",
 ] as const;
 
 const COLLECTION_TITLE = /<LayoutTitle\b|<LayoutHeader\b[^>]*\btitle=/;
@@ -127,6 +134,7 @@ function sourceFindings(source: string, card: CheckedCard | null, surface: reado
 		...titledFindings(source, card),
 		...restyledFindings(source),
 		...statesFindings(source),
+		...renamedFindings(source),
 	];
 }
 
@@ -138,6 +146,14 @@ function titledFindings(source: string, card: CheckedCard | null): Finding[] {
 function statesFindings(source: string): Finding[] {
 	if (DECLARES_STATES.test(source)) return [];
 	return [{ rule: "states", message: NO_STATES_SAID }];
+}
+
+function renamedFindings(source: string): Finding[] {
+	const found = [...new Set([...source.matchAll(RENAMED_CLASS)].map((one) => one[1] ?? ""))];
+	if (found.length === 0) return [];
+	const classes = found.map((word) => `text-${word}`).join(", ");
+	const instead = found.map((word) => RENAMED_TO[word]).join(", ");
+	return [{ rule: "renamed", message: RENAMED_SAID.replace("{classes}", classes).replace("{instead}", instead) }];
 }
 
 function restyledFindings(source: string): Finding[] {
@@ -200,7 +216,7 @@ function colourFindings(text: string): Finding[] {
 	return [
 		{
 			rule: "colour",
-			message: `a plate painted from outside the kit (${said[0]}); a background, a border and a shadow come from a ${KIT_TOKEN_PREFIX}* token, because the surface laws measure those and a person's theme repaints them — ink may still come from the host's own text colours`,
+			message: `a plate painted from outside the kit (${said[0]}); a background, a border and a shadow come from a ${KIT_TOKEN_PREFIX}* or shadcn token (var(--card), var(--border)), because the surface laws measure those and a person's theme repaints them — ink may still come from the host's own text colours`,
 		},
 	];
 }
@@ -210,7 +226,7 @@ function borrowedPaint(text: string): string[] {
 	return [...text.matchAll(PLATE_PROPERTY)]
 		.filter((found) => !SHAPE_PROPERTY.test(found[1] ?? ""))
 		.map((found) => (found[2] ?? "").trim())
-		.filter((value) => !BARE_PAINT.test(value) && !value.includes(KIT_TOKEN_PREFIX));
+		.filter((value) => !BARE_PAINT.test(value) && !namesKitToken(value));
 }
 
 function fontFindings(text: string): Finding[] {
@@ -275,5 +291,9 @@ function mayTitle(role: unknown): boolean {
 function lineNamesToken(text: string, at: number): boolean {
 	const lineEnd = text.indexOf("\n", at);
 	const line = text.slice(text.lastIndexOf("\n", at) + 1, lineEnd === -1 ? undefined : lineEnd);
-	return line.includes(KIT_TOKEN_PREFIX);
+	return namesKitToken(line);
+}
+
+function namesKitToken(text: string): boolean {
+	return text.includes(KIT_TOKEN_PREFIX) || SHADCN_TOKEN.test(text);
 }

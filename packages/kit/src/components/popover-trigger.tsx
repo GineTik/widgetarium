@@ -13,6 +13,7 @@ export function PopoverTrigger({ asChild = false, onClick, children, ...props }:
 		asChild ? Slot : "button",
 		{
 			type: asChild ? undefined : "button",
+			"data-slot": "popover-trigger",
 			"aria-haspopup": "dialog",
 			"aria-expanded": popover.isOpen,
 			"aria-controls": popover.id,

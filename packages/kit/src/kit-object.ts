@@ -28,7 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Progress, ProgressBar, StatusProgress } from "./components/progress";
 import { ProgressRing } from "./components/progress-ring";
 
-import { Segmented, Tabs } from "./components/segmented";
+import { Segmented } from "./components/segmented";
+import { Tabs } from "./components/tabs";
 import { Loader } from "./components/loader";
 
 import { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
@@ -115,6 +116,7 @@ import { usePages } from "./hooks/use-pages";
 import { useScrollFog } from "./hooks/use-scroll-fog";
 import { useShown } from "./hooks/use-shown";
 import { useWhenSeen } from "./hooks/use-when-seen";
+import { SHADCN_PARTS } from "./kit-object-shadcn";
 
 export const Kit = {
 	Sidebar,
@@ -271,4 +273,5 @@ export const Kit = {
 	useScrollFog,
 	useShown,
 	useWhenSeen,
+	...SHADCN_PARTS,
 };

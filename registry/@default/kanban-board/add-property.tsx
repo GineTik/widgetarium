@@ -1,4 +1,4 @@
-import { Field, Popover } from "widgetarium/kit";
+import { Input, Popover } from "widgetarium/kit";
 import { useState, type FormEvent } from "react";
 import { anchorOf } from "./anchors";
 import { Glyph } from "./glyph";
@@ -28,7 +28,7 @@ export function AddProperty({ taken, onAdd }: { taken: string[]; onAdd: (name: s
 			}
 		>
 			<div className="otd-pop-field" onKeyDown={(event) => event.key === "Enter" && commit()}>
-				<Field
+				<Input
 					block
 					size="s"
 					placeholder="Name it"

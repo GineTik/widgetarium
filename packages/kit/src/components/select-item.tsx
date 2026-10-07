@@ -17,6 +17,7 @@ export function SelectItem({ value, disabled, className: cls, children }: Select
 	return (
 		<PopoverItem
 			role="option"
+			data-slot="select-item"
 			aria-selected={isChosen}
 			checked={isChosen}
 			disabled={disabled}

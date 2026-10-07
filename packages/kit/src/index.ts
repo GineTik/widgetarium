@@ -4,8 +4,35 @@ export { ActionButton, Button, ButtonLabel, IconButton, ShowMore, Spinner } from
 export { Badge, Count, Pill } from "./components/badge";
 
 export { Calendar } from "./components/calendar";
-export { Card, Plate, Surface } from "./components/card";
-export { CodeArea, Field, MarkdownEditor, TextArea } from "./components/field";
+export {
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+	Plate,
+	Surface,
+} from "./components/card";
+export { Avatar, AvatarFallback, AvatarImage } from "./components/avatar";
+export {
+	CodeArea,
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+	FieldLegend,
+	FieldSeparator,
+	FieldSet,
+	FieldTitle,
+	MarkdownEditor,
+	TextArea,
+	Textarea,
+} from "./components/field";
+export { Input } from "./components/input";
 export { CodeBlock } from "./components/code-block";
 
 export { Emblem, EmblemDiceBear, EmblemFallback, EmblemImage, PlaceholderMark } from "./components/emblem";
@@ -24,6 +51,7 @@ export type { SectionMore, SectionProps } from "./components/section";
 
 export {
 	Popover,
+	PopoverAnchor,
 	PopoverContent,
 	PopoverItem,
 	PopoverSearch,
@@ -35,13 +63,41 @@ export {
 export { Progress, ProgressBar, StatusProgress } from "./components/progress";
 export { ProgressRing } from "./components/progress-ring";
 
-export { Segmented, Tabs } from "./components/segmented";
+export { Segmented } from "./components/segmented";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/tabs";
+export { ToggleGroup, ToggleGroupItem } from "./components/toggle-group";
 export { Loader } from "./components/loader";
 export type { LoaderProps } from "./components/loader";
 
-export { Sidebar, SidebarGroup, SidebarRow, SidebarSheet } from "./components/sidebar";
+export {
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupContent,
+	SidebarGroupLabel,
+	SidebarHeader,
+	SidebarInset,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	SidebarProvider,
+	SidebarRow,
+	SidebarSheet,
+	SidebarTrigger,
+	useSidebar,
+} from "./components/sidebar";
 export { Slot, Slottable, composeRefs, createSlotPart } from "./components/slot";
-export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/select";
+export {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
+} from "./components/select";
 
 export {
 	Pagination,
@@ -67,12 +123,40 @@ export { Confetti } from "./components/confetti";
 export { PhotoStack } from "./components/photo-stack";
 export { Shape } from "./shapes/shape";
 export { CommandMenu } from "./components/command-menu";
+export {
+	Command,
+	CommandDialog,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+	CommandSeparator,
+	CommandShortcut,
+} from "./components/command";
 export { CommandMenuOverlay } from "./components/command-menu-overlay";
-export { Dialog } from "./components/dialog";
+export {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "./components/dialog";
 export { CommandMenuInput } from "./components/command-menu-input";
 export { CommandMenuSection } from "./components/command-menu-section";
 export { CommandMenuItem } from "./components/command-menu-item";
-export { EmptyState } from "./components/empty-state";
+export {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyState,
+	EmptyTitle,
+} from "./components/empty-state";
 export { PhotoCard } from "./components/photo-card";
 export { Hero } from "./components/hero";
 export { SHAPE_NAMES } from "./shapes/shape-names";
@@ -95,6 +179,7 @@ export {
 } from "./components/table";
 
 export { LAYOUT_KINDS } from "./constants/layout";
+export { SHADCN_TOKENS } from "./constants/shadcn-tokens";
 export { MARK_SHAPE_NAMES, MARK_TONE_NAMES } from "./constants/marks";
 export { APPROVAL_TONES, BADGE_COLORS, BADGE_VARIANTS, PRIORITY_TONES, TONE_NAMES } from "./constants/tones";
 export { useRoomForLabel } from "./hooks/use-room-for-label";

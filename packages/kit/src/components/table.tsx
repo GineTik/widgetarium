@@ -14,8 +14,8 @@ export type TableHeadProps = SlotPartProps &
 
 export function Table({ children, ...props }: TableProps): ReactElement {
 	return (
-		<div className="wg-kit-table-scroll">
-			<table {...domPropsOf(props)} className={cn("wg-kit-table", props.className)}>
+		<div data-slot="table-container" className="wg-kit-table-scroll">
+			<table data-slot="table" {...domPropsOf(props)} className={cn("wg-kit-table", props.className)}>
 				{children}
 			</table>
 		</div>

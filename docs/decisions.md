@@ -120,3 +120,16 @@ run for what is on screen.
 
 Reading accepts the old shape, writing emits the new one, and nothing bulk rewrites a vault. A prop's
 `aka` carries every name it had.
+
+## The kit speaks shadcn's vocabulary
+
+The kit's public names are shadcn/ui's — tokens, components, parts, props, variants — with our own
+implementation inside and our extras on top. Compatibility runs one way: shadcn-shaped code (a ported
+block, an agent's widget) works against the kit; our widgets never have to run on a foreign kit. A
+name may mean more than shadcn's, never something else. Two of the theme's names did: `muted` was
+muted text and `accent` the interactive colour, so `muted` and `accent` are surfaces now and the
+interactive colour is `brand`. Every older name stays as an alias, because vault widgets outside the
+repo import it: `Field` with no children is still the input, `Tabs items` still the segmented switch,
+`Dialog isOpen` still the one-piece panel. A `Button` or `Badge` with no `variant` keeps the kit's
+quiet look rather than shadcn's primary one, because every caller written before the switch passes
+none.

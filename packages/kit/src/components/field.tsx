@@ -1,51 +1,54 @@
 import { createElement as h } from "react";
-import type { InputHTMLAttributes, ReactElement, ReactNode } from "react";
-import { fieldClass } from "../utils/class-names";
-import type { FieldSize } from "../utils/class-names";
+import type { HTMLAttributes, ReactElement, ReactNode } from "react";
+import { cn } from "../utils/cn";
+import { Input } from "./input";
+import type { InputLook, InputProps } from "./input";
 
 export { CodeArea } from "./code-area";
 export { MarkdownEditor } from "./markdown-editor";
-export { TextArea } from "./text-area";
+export { TextArea, Textarea } from "./text-area";
+export { FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldSet, FieldTitle } from "./field-parts";
+export { FieldError } from "./field-error";
+export { FieldLegend } from "./field-legend";
+export { FieldSeparator } from "./field-separator";
 export type { CodeAreaProps } from "./code-area";
 export type { MarkdownEditorProps } from "./markdown-editor";
 export type { TextAreaProps } from "./text-area";
+export type { FieldErrorProps } from "./field-error";
+export type { FieldLegendProps } from "./field-legend";
 
-export interface FieldLook {
-	readonly size?: FieldSize | undefined;
-	readonly block?: boolean | undefined;
+export type FieldLook = InputLook;
+
+export type FieldOrientation = "vertical" | "horizontal" | "responsive";
+
+export interface FieldRootProps extends HTMLAttributes<HTMLDivElement> {
+	readonly orientation?: FieldOrientation | undefined;
+	readonly children: ReactNode;
 }
 
-export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "size">, FieldLook {
-	readonly icon?: ReactNode;
-	readonly onValueChange?: ((value: string) => void) | undefined;
-}
+export type FieldInputProps = Omit<InputProps, "children"> & { readonly children?: undefined };
 
-export function Field({
-	icon,
-	value,
-	onInput,
-	onValueChange,
-	placeholder,
-	type = "text",
-	size,
-	block,
-	className,
-	...behaviour
-}: FieldProps): ReactElement {
+export type FieldProps = FieldRootProps | FieldInputProps;
+
+// TRADE-OFF: a Field with no children is the input it named before shadcn's form field took the name
+export function Field(props: FieldRootProps): ReactElement;
+export function Field(props: FieldInputProps): ReactElement;
+export function Field(props: FieldProps): ReactElement {
+	if (isInputShaped(props)) return <Input {...props} />;
+	const { orientation = "vertical", className, children, ...rest } = props;
 	return (
-		<label className={fieldClass({ size, block, className })} data-disabled={behaviour.disabled ? "" : undefined}>
-			{icon}
-			<input
-				{...behaviour}
-				className="wg-kit-field-input"
-				type={type}
-				value={value}
-				placeholder={placeholder}
-				onInput={(event) => {
-					onInput?.(event);
-					onValueChange?.(event.currentTarget.value);
-				}}
-			/>
-		</label>
+		<div
+			role="group"
+			data-slot="field"
+			data-orientation={orientation}
+			{...rest}
+			className={cn("wg-kit-form-field", `is-${orientation}`, className)}
+		>
+			{children}
+		</div>
 	);
+}
+
+function isInputShaped(props: FieldProps): props is FieldInputProps {
+	return props.children === undefined || props.children === null;
 }

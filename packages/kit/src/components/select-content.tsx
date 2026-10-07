@@ -11,7 +11,9 @@ export interface SelectContentProps {
 export function SelectContent({ className: cls, children }: SelectContentProps): ReactElement {
 	return (
 		<PopoverContent className={cn("wg-kit-select-content", cls)}>
-			<div role="listbox">{children}</div>
+			<div role="listbox" data-slot="select-content">
+				{children}
+			</div>
 		</PopoverContent>
 	);
 }

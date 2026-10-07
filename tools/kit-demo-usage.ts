@@ -1,4 +1,50 @@
 export const USAGE = {
+	shadcnButton: `import { Badge, Button } from "widgetarium/kit";
+
+<Button variant="default">Save</Button>
+<Button variant="outline" size="sm">Invite</Button>
+<Button variant="destructive">Delete</Button>
+<Badge variant="secondary">Draft</Badge>`,
+	shadcnCard: `import { Card, CardHeader, CardTitle, CardDescription, CardAction,
+	CardContent, CardFooter, Avatar, AvatarFallback } from "widgetarium/kit";
+
+<Card>
+	<CardHeader>
+		<CardTitle>Team</CardTitle>
+		<CardDescription>Who works on the launch.</CardDescription>
+		<CardAction><Button size="sm" variant="outline">Invite</Button></CardAction>
+	</CardHeader>
+	<CardContent><Avatar><AvatarFallback>AL</AvatarFallback></Avatar></CardContent>
+	<CardFooter><Button>Save</Button></CardFooter>
+</Card>`,
+	shadcnForm: `import { Field, FieldLabel, FieldDescription, FieldError, Input } from "widgetarium/kit";
+
+<Field>
+	<FieldLabel>Email</FieldLabel>
+	<Input placeholder="ada@example.org" />
+	<FieldError errors={[{ message: "Enter an email address." }]} />
+</Field>`,
+	shadcnCommand: `import { Command, CommandInput, CommandList, CommandEmpty,
+	CommandGroup, CommandItem } from "widgetarium/kit";
+
+<Command>
+	<CommandInput placeholder="Search…" />
+	<CommandList>
+		<CommandEmpty>No results found.</CommandEmpty>
+		<CommandGroup heading="Suggestions">
+			<CommandItem onSelect={open}>Calendar</CommandItem>
+		</CommandGroup>
+	</CommandList>
+</Command>`,
+	shadcnSwitches: `import { Tabs, TabsList, TabsTrigger, TabsContent } from "widgetarium/kit";
+
+<Tabs defaultValue="account">
+	<TabsList>
+		<TabsTrigger value="account">Account</TabsTrigger>
+		<TabsTrigger value="password">Password</TabsTrigger>
+	</TabsList>
+	<TabsContent value="account">…</TabsContent>
+</Tabs>`,
 	button: `import { Button, IconButton, Icon } from "widgetarium/kit";
 
 <Button variant="accent" size="l">Create</Button>
@@ -11,10 +57,10 @@ export const USAGE = {
 <Badge tone="success">Paid</Badge>
 <Badge tone="accent" variant="solid">3</Badge>
 <Badge color="purple" size="s">purple</Badge>`,
-	inputs: `import { Field, Icon, Segmented, Select, SelectContent,
+	inputs: `import { Input, Icon, Segmented, Select, SelectContent,
 	SelectItem, SelectTrigger, SelectValue, Switch } from "widgetarium/kit";
 
-<Field icon={<Icon name="search" size={16} />} placeholder="Search invoices" />
+<Input icon={<Icon name="search" size={16} />} placeholder="Search invoices" />
 
 <Select value={status} onValueChange={setStatus}>
 	<SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>

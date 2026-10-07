@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { Field, Icon, PopoverItem } from "@widgetarium/kit";
+import { Input, Icon, PopoverItem } from "@widgetarium/kit";
 import type { TileProp } from "../model.js";
 import { NOTE_CONTENT, NOTE_NAME, noteFieldOf } from "../gateway/obsidian.js";
 import { NOTHING_OFFERED, offeredEntries } from "./offered-boxes.js";
@@ -22,7 +22,7 @@ export function vaultBody(state: SettingsState, key: string, spec: SettingsSpec,
 	const found = offered.filter((entry) => entry.toLowerCase().includes(needle)).slice(0, FOLDERS_SHOWN);
 	return [
 		...noteFieldItems(state, key, spec, config, path),
-		h(Field, {
+		h(Input, {
 			block: true,
 			key: "field",
 			icon: h(Icon, { name: "search" }),

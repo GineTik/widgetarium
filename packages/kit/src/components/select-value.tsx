@@ -12,7 +12,11 @@ export function SelectValue({ placeholder, className: cls }: SelectValueProps): 
 	const { selected, labels } = useSelect();
 	const isChosen = labels.has(selected);
 	return (
-		<span className={cn("wg-kit-select-value", cls)} data-placeholder={isChosen ? undefined : ""}>
+		<span
+			data-slot="select-value"
+			className={cn("wg-kit-select-value", cls)}
+			data-placeholder={isChosen ? undefined : ""}
+		>
 			{isChosen ? labels.get(selected) : placeholder}
 		</span>
 	);

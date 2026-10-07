@@ -155,12 +155,12 @@ every page. **A page block is always a widget** — a hero too, from the catalog
 never the kit's `Hero` drawn in a page (`check` refuses it) — so a person can swap any block for
 another from the catalogue. `kit.md` (in this prompt) is the kit as the HTML it replaces; build the widgets the
 catalogue lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `PhotoCard`,
-`EmptyState`, `CommandMenu` — rather than writing that HTML and CSS by hand.
+`Empty`, `Command` — rather than writing that HTML and CSS by hand.
 
 **Style with Tailwind, inside the TSX.** A widget's `widget.css` is two lines,
 `@import "tailwindcss";` and `@import "widgetarium/theme.css";`, and every look is a class on the
-element: the theme names the kit's tokens (`bg-group`, `bg-fill`, `text-muted`, `text-accent`,
-`text-h3`, `rounded-plate`, `gap-cards`, `p-plate`) and Tailwind does the layout (`flex`, `grid`,
+element: the theme carries shadcn's token names and the kit's own (`bg-card`, `bg-muted`,
+`text-muted-foreground`, `text-brand`, `bg-group`, `text-h3`, `rounded-plate`, `gap-cards`, `p-plate`) and Tailwind does the layout (`flex`, `grid`,
 `justify-between`, `items-center`). A widget's look then lives in its own code, and `check` refuses a
 rule written in the sheet. The colours are always the kit's: Tailwind only replaces CSS. Cards, rows
 and anything else the kit lacks are yours to draw this way.
@@ -582,7 +582,7 @@ each one is written:
 | a state, a category, a count               | `Badge`, `Count`                                                        |
 | a person, a company, a project             | `Emblem`, `PlaceholderMark` when there is no picture                    |
 | one of a few, another view                 | `Segmented`, `Tabs`; `Select` for many                                  |
-| on or off, a date, text                    | `Switch`, `Calendar`, `Field`, `TextArea`, `MarkdownEditor`             |
+| on or off, a date, text                    | `Switch`, `Calendar`, `Input`, `Textarea`, `MarkdownEditor`             |
 | an action, a menu of actions               | `Button`, `IconButton`, `Popover` with `PopoverItem`                    |
 | code, an icon, a face                      | `CodeBlock`, `Icon`, `Emoji` from `widgetarium/kit/emojis`              |
 
