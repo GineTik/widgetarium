@@ -70,6 +70,11 @@ choices:
       - Optional
       - Required
       - None
+  - name: Data
+    picked: Sample rows
+    options:
+      - Sample rows
+      - My notes
 pages:
   - name: Words
     body: list-detail
@@ -106,7 +111,10 @@ checks:
   fill: if `can` holds a verb, some kept feature's `actions` holds it too.
 - **A choice is what you could not guess**: at most three, each with a name of its own, your pick
   and the options. Write the options as a list, one per line: in `[a, b]` a comma inside an option
-  splits it in two. The person changes it on the card; you build what `picked` says.
+  splits it in two. The person changes it on the card; you build what `picked` says. **One choice
+  is always there**: `Data`, with the options `Sample rows` and `My notes`, so the person says on the
+  card whether the app starts on rows you write or on what their vault already holds; it counts
+  toward the three.
 - **A page** names its body (`flow`, `dashboard`, `list-detail`, `collection`, `conversation`,
   `focus`) and what it is for.
 - **`checks`** are the acceptance checks you walk on the drawn board before you say done.

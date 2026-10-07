@@ -7,6 +7,8 @@ import { sessionToKeep, turnsToKeep } from "./transcript.js";
 import type { KeptTurn } from "./transcript.js";
 
 export const AI_KEY = "ai";
+export const DEFAULT_JOBS_AT_ONCE = 2;
+export const MOST_JOBS_AT_ONCE = 4;
 
 export type ProviderFields = Partial<Record<EditableField, string>>;
 
@@ -20,6 +22,8 @@ export interface AiState {
 	readonly skipPermissions: boolean;
 	readonly publishWidgets: boolean;
 	readonly helperAgents: boolean;
+	readonly jobsStartThemselves: boolean;
+	readonly jobsAtOnce: number;
 	readonly provider: Provider;
 	readonly providers: Provider[];
 }
@@ -59,6 +63,8 @@ export function aiStateOf(stored: unknown): AiState {
 		skipPermissions: skipsPermissionsIn(stored),
 		publishWidgets: publishesWidgetsIn(stored),
 		helperAgents: aiIn(stored)["helperAgents"] !== false,
+		jobsStartThemselves: aiIn(stored)["jobsStartThemselves"] !== false,
+		jobsAtOnce: jobsAtOnceIn(stored),
 		provider: withOverrides(stored, chosen),
 		providers: PRESETS.map((preset) => withOverrides(stored, preset)),
 	};
@@ -144,6 +150,11 @@ function skipsPermissionsIn(stored: unknown): boolean {
 
 function publishesWidgetsIn(stored: unknown): boolean {
 	return aiIn(stored)["publishWidgets"] !== false;
+}
+
+function jobsAtOnceIn(stored: unknown): number {
+	const held = Number(aiIn(stored)["jobsAtOnce"]);
+	return Number.isInteger(held) && held >= 1 && held <= MOST_JOBS_AT_ONCE ? held : DEFAULT_JOBS_AT_ONCE;
 }
 
 function isUsable(field: EditableField, value: unknown): value is string {

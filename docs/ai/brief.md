@@ -28,10 +28,10 @@ one reads, and each has a line that says when it is over. Starting the build ear
 a board of empty tiles wearing no surfaces, and a list nobody can add a row to: the failures this
 order exists to prevent.
 
-**`stage` is a command of its own, run the moment a stage is over.** The person's progress card
-moves only when that call returns, so never chain it with `;`, `&&` or a pipe to anything else, and
-never fold it into the first reads of the next stage: a stage said inside a long command is a stage
-the person does not see until that command ends.
+**You do stage 1; jobs do stages 2 to 5, a page at a time.** After Build it you plan the build as
+jobs (below), each a session of its own that the plugin runs, and the person watches every page's
+job on the design canvas and answers its questions to you in the chat. The stages below are what each job follows for its
+own page.
 
 **The size of the change decides where you start, never your taste.**
 
@@ -72,6 +72,19 @@ node {tool} note <app> <reference> "Rhythm pill on every row is noise; sort inst
 else. The notes stand around the picture on the canvas; the reasons behind them go in `research.md`,
 and in `design.md` every block names the note it came from.
 
+**References are the design's source, not its mood.** Competitors spent years on the structure of
+these screens; take it. Look at every screen of every reference a page at a time and take more than
+you think you need — the structure, the navigation, a board, a list, the statuses, a well-placed
+button — and everything a person can do on the reference screen is either taken or written in
+`excluded`. Structure and behaviour only: the look is always the kit's, and a line of copy is
+rewritten in your words, never lifted.
+
+**The notes are the record of what was taken, and the only one.** Each note says what exactly, in a
+few words. When a page is drawn, every `take` or `like` that became a widget is written again with
+`--into @<app>/<widget>`, and the note grows a button that opens that widget on the canvas. A take
+that became the page's layout or a line of copy says so in its own words ("Board under a week strip
+became the Ideas layout"). A `dislike` says why it was left, and nothing else.
+
 Then open `spec.md` in the handbook on disk and write `.widgetarium/apps/<app>/spec.md` by
 it: the products you looked at with what you take from each, the job, the features in the person's
 words — what they asked for, and as `mark: suggested` what the research says they will want — at most three choices you could not guess, the
@@ -81,6 +94,33 @@ and never repeat the spec in the chat. **Stop there and wait** — this is the o
 the next message is "Build it", read the spec again and build only the features still kept.
 
 _Over when the person pressed Build it._ Nothing else is written yet.
+
+**Then plan the build as jobs, and stop.** The person gets the first page in minutes and the rest
+while they look at it, instead of everything at once at the end. One job per page and phase, with
+`node {tool} job add <app> --title "…" --phase … --page "…" --says "…" [--after …] [--approval]`:
+
+| Job                                   | Phase       | After                                             | Says                                                                                                                      |
+| ------------------------------------- | ----------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| the page the app opens on             | `design`    | —, with `--approval`                              | it also writes `.widgetarium/apps/<app>/design-system.md` and draws three directions, then asks which to keep (`job ask`) |
+| every other page, in the spec's order | `design`    | the previous page's design job                    | follow the first page's direction and reuse its widgets                                                                   |
+| every page                            | `implement` | its own design job and the previous implement job | make the interaction contract real, place the note, bind it                                                               |
+| every page                            | `review`    | its own implement job                             | the first polish round: the job role's four questions, then fixes                                                         |
+
+Design jobs run one after another, so the app reads as one hand made it; an implement job runs
+beside the next design. **`--says` carries everything the job needs and nothing else**: the page's
+name and what it is for, the spec path, the kept features that stand on it with their actions, the
+records it shows and the `Data` choice, the references that name it. A job never reads the chat.
+Then run `node {tool} jobs <app>`, say in one line when the first page will stand on the canvas,
+and end your turn. Never open the canvas yourself; the chat offers it.
+
+**While the jobs run you answer for them.** A message saying a job failed: read `jobs <app>`, then
+`job start` it again, send it a `job note`, or tell the person plainly what blocks it. A
+correction the person writes in the chat about one page: `job note <app> <id> "<their words>"`.
+A message saying a job asks the person — a direction to pick, a page to approve: put the question
+to them in one line with its options, and pass their reply with
+`job answer <app> <id> "<their words>"` (`Approve` approves).
+The message saying every job is done: run `report <app>` and end with its lines. A small change
+after the build is one `task` job, or yours to do.
 
 **Stage 2 — the domain.** Name every fact the screen must show, and where each one lives. One record
 shape per kind of thing, with its fields spelled out; one vault folder per kind, so a gateway can
@@ -96,8 +136,13 @@ Name the state the pages share as well, beside the records: every switch two wid
 These are names, not records — widgets bind to them in stage 5 (`widget.md`, "State shared by name"),
 so no widget ever has to read another one.
 
-_Over when a gateway bound to each folder would answer with rows._ Nothing is placed yet. Say it:
-`node {tool} stage <app> data --said "<what you made, in one line>"`.
+**Stage 2 is part of each page's design job**, for the records that page shows: the designer makes
+the data its design needs, never a domain drawn before anyone knew what the screens show. The spec's
+`Data` choice decides where rows come from: `Sample rows` are written by the job; `My notes` means
+find what the person already keeps (`find`, the vault's folders), name it in the job's last message,
+and seed only what is missing.
+
+_Over when a gateway bound to each folder would answer with rows._ Nothing is placed yet.
 
 **Stage 3 — the design, drawn on a canvas the person approves.** Draw every page whole, in one
 pass, the way a designer draws a canvas, and show it before anything is wired.
@@ -105,9 +150,9 @@ pass, the way a designer draws a canvas, and show it before anything is wired.
 **First, the catalogue.** For every block the pages need — a hero, a list of people, an empty
 state, a search — run `node {tool} find --about "<the block>"` and open the `picture` of each
 candidate. A widget whose picture is that block is placed, not redrawn: it keeps the same look on
-every page. **A page block is always a widget** — the hero is `@default/hero`, never the kit's `Hero`
-drawn in a page (`check` refuses it) — so a person can swap any block for another from the
-catalogue. `kit.md` (in this prompt) is the kit as the HTML it replaces; build the widgets the
+every page. **A page block is always a widget** — a hero too, from the catalogue or the app's own,
+never the kit's `Hero` drawn in a page (`check` refuses it) — so a person can swap any block for
+another from the catalogue. `kit.md` (in this prompt) is the kit as the HTML it replaces; build the widgets the
 catalogue lacks from it — `Card`, `Rows`, `Grid`, `Layout`, `List`, `Sidebar`, `PhotoCard`,
 `EmptyState`, `CommandMenu` — rather than writing that HTML and CSS by hand.
 
@@ -168,7 +213,7 @@ const HomePage = createWidget({
 	draw: ({ getPeople, actions, hero: Hero, main, side, empty: Empty }) => {
 		const isEmpty = useData(getPeople, { limit: 1 }).data.length === 0;
 		return (
-			<Container width={1040} className="relative" data-name="People" data-wg-overlay-layer="">
+			<Container width={1040} data-name="People">
 				<header className="flex items-center justify-between gap-parts" data-name="Title row">
 					<h1 className="text-h1 m-0">People</h1>
 					<div className="flex items-center gap-parts" data-name="Actions">
@@ -203,7 +248,7 @@ const HomePage = createWidget({
 **A block that needs a title stands in `@default/section`**, the catalogue's section: a heading, a
 `controls` slot beside it (a search, a filter, an add) and a `widgets` slot under it. Logic a block
 needs — a headline that counts, a button with its dialog — is a widget of the app's own, standing in
-a slot like any other. A dialog finds the page's `data-wg-overlay-layer`, so it covers the page.
+a slot like any other. `Container` is the page's overlay layer, so a dialog covers the whole page.
 
 **The page's states fill its slots**, one state per frame the canvas shows. A slot in a state names
 a widget by id and one of that widget's own states, or hands it `props`; a list slot takes a list:
@@ -233,6 +278,14 @@ export const states = defineStates(HomePage, {
 
 Every widget a page shows then keeps its own samples in its own `states`, and the canvas draws the
 page by drawing each of them where the page puts it.
+
+**The example shows how slots work, never a look to copy.** A title row over a hero over two columns
+is one answer, and the most common one; an app built that way again feels like every other app. Shape
+each page for its own job and its own references — an editorial page led by one big photo and a
+single column, a command page of numbers over a split of work and detail, a work surface (a board, a
+calendar, a map) filling the page with its controls floating over it — and give two pages one shape
+only when they do one job. **Never take another app in this vault as a template**: its pages are
+its answer to its person, and reading them to copy a structure is how every app ends up the same.
 
 A widget that draws rows draws no title of its own: the section above it holds the title and the
 controls, so the list starts at its first row (`check` names it `titled`).
@@ -286,9 +339,19 @@ that changes — a review before and after an answer, a record closed and open:
 }
 ```
 
-**Write it in one shot**, the way a designer draws a canvas: one message that writes every widget and
-every page widget. Then `node {tool} shot --design <app>`, open the picture (the whole canvas, every
-page side by side) and redraw what is not the app you would pay for, again in one message. **Draw every dialog too, with the kit's `Dialog`**, whose scrim covers the whole page. List every press on every screen that opens something — add, edit,
+**First, three directions for the page the app opens on.** Before any other page, draw that one page
+three ways that differ in structure, not in colour — what leads, how the page is cut, what the eye
+meets first — each its own page widget, `@<app>/<page>-a-page`, `-b-page` and `-c-page`, with the
+same widgets standing in their slots, placed as screens named `<Page> · A`, `<Page> · B` and
+`<Page> · C`. Shoot them (`node {tool} shot --design <app>`), then ask the person which to keep —
+`node {tool} job ask <app> <job> --options "A,B,C" "<what each direction bets on, in one line>"` —
+and end your turn; the pick comes back as your next message. Keep the picked one as
+`@<app>/<page>-page`, delete the other two and their screens; every other page's job draws in the
+picked direction.
+
+**Then draw the rest of your page in one shot**, the way a designer draws a canvas: one message that
+writes every widget and the page widget. Then `node {tool} shot --design <app>`, open the picture
+and redraw what is not the app you would pay for, again in one message. **Draw every dialog too, with the kit's `Dialog`**, whose scrim covers the whole page. List every press on every screen that opens something — add, edit,
 delete, confirm, warn, pick — and give each its own state of that screen, named after it, with the
 dialog open over the page: a person approves what they will meet, and an add or a delete nobody drew
 is built by guesswork. **Then check it against the person's design system**: `node {tool} rules <app>` prints every
@@ -296,9 +359,8 @@ rule in force — theirs in `.widgetarium/design-system.md` and the app's own in
 `.widgetarium/apps/<app>/design-system.md` — measures the canvas against the measured ones and
 names every frame that fails, and you answer each judged id with yes or no in your message,
 redrawing until every measured rule passes and every answer is yes. A rule is the person's word: never skip one, never argue it
-away. Then `node {tool} design <app>`: the
-person sees it as a card in the chat, opens it in a tab, and answers. **Stop and wait** for "Approve
-design"; a change comes back as a message saying what to change. Each page, region by region, still
+away. The person sees your page on the canvas the moment its screens are placed, and answers in the chat;
+the first page's job is approved there too, and a change comes back as your next message. Each page, region by region, still
 answers one question, draws the fields stage 2 wrote, and has its empty, loading and refused states.
 Every kept feature stands on a screen.
 
@@ -331,31 +393,23 @@ are giving up by choosing it.
 
 What the screens cannot show, the decisions and what each block does when pressed, goes in
 `.widgetarium/apps/<app>/design.md`. **Neither ever goes on a page note itself**, which holds the
-board and nothing above it.
+board and nothing above it. **Every widget gets its interaction contract there**: what presses, what
+drags and where it lands, what each press opens, every state. The implement job builds exactly that,
+and a widget that looks pressable and is not fails `FN1` on the canvas.
 
-_Over when the person pressed Approve design._ Then `node {tool} photos <app>`: only now, with the
-person's yes, the photos the approved screens link to are downloaded into `design/photos/`, and
-`photos.json` maps each address to its file. Then `node {tool} stage <app> design --said "..."`.
+_Over when the page's screens pass `rules <app>`._ The implement job runs `node {tool} photos <app>`
+before it places the page: the photos the screens link to are downloaded into `design/photos/`, and
+`photos.json` maps each address to its file.
 
 **Stage 4 — the widgets' data.** The widgets exist and the person approved how they look; this stage
 never changes a look. For every kept feature, and every "yes" in the spec's actions, check that its
 widget declares the verbs the action needs — `node {tool} show <id>` lists them under
 `manifest.props.<prop>.writes` — and add a missing one to its `inject` and its button, nothing else.
-Write each feature's `widget` (its id) and `page` (a page name from the spec) into the spec, then say
-`node {tool} stage <app> catalogue --said "<the catalogue widgets the screens use>"`.
+Write each feature's `widget` (its id) and `page` (a page name from the spec) into the spec. Then
+make the interaction contract real: a card that looks draggable drags and lands where the contract
+says, a day that looks pressable opens it, a dialog's every field writes.
 
-_Over when every kept feature names a widget that exists here and passes `check`._ The tool holds
-you to it: `node {tool} stage <app> widgets --said "..."` is refused until it is true, and says
-which features are not.
-
-**You are the orchestrator from here on.** If your tools can start sub-agents, give every new
-widget to a sub-agent of its own, **all of them at once**, with what it needs and nothing else: the
-widget, the record shape from stage 2, the feature it serves, and the rule that it is done only when
-`node {tool} check <id>` passes. A widget never reads another widget, so none waits
-for another. Pages follow the same way once their widgets pass, one sub-agent per page, done when
-`node {tool} lint <note>` passes. You do not write widget code yourself; you hand it out, read what
-comes back, and send it back while it is not done. Without sub-agents, do the same yourself, one
-feature at a time.
+_Over when every kept feature of the page names a widget that exists here and passes `check`._
 
 **Stage 5 — the pages.** Each page is its approved page widget, placed alone in the vault note the
 spec names. Its look does not change and **its `states` stay exactly as approved** — they are what
@@ -405,10 +459,9 @@ its controls where they belong; is the eye drawn first to what the design said; 
 cut off, crowded, raw or plain ugly. Fix what is not right and shot again. A page you have not
 looked at is not done, whatever `lint` says: lint checks the rules, only the picture shows the page.
 
-_Over when `node {tool} report <app>` says every kept feature is ✓_: its widget exists, passes
-`check`, stands on its page's note, and that note lints. `stage <app> pages` is refused until then.
-**End your last message with the report's lines as they printed** — one line per feature, where to
-find it. A feature you cannot finish stays ✗ in that list with its reason; never leave it out.
+_Over when `node {tool} report <app>` says every kept feature of the page is ✓_: its widget exists,
+passes `check`, stands on its page's note, and that note lints. **The orchestrator ends the build
+with the report's lines as they printed** — one line per feature, where to find it. A feature you cannot finish stays ✗ in that list with its reason; never leave it out.
 
 **A titled part of a region is a section, not a bare widget.** `@default/section` carries the
 heading, the badge and the controls, and holds either the widgets you place or one widget drawn again

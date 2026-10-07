@@ -12,9 +12,25 @@ import { buildWidget } from "../packages/core/src/registry.js";
 import taskProgressSource from "widget-source:@default/task-progress/widget.tsx";
 import taskProgressCard from "../registry/@default/task-progress/manifest.generated.json";
 
+import type { Jobs } from "../apps/obsidian/src/ai/job-runner.js";
+
 const SHOWN_PROVIDERS = new Set(["claude-code", "opencode", "ollama"]);
 const PROVIDERS = PRESETS.filter((provider) => SHOWN_PROVIDERS.has(provider.id));
 const TASK_PROGRESS_ID = "@default/task-progress";
+
+const NO_JOBS: Jobs = {
+	watch: () => () => {},
+	version: () => 0,
+	apps: () => [],
+	jobsOf: () => [],
+	liveOf: () => null,
+	start: async () => {},
+	stop: async () => {},
+	note: async () => {},
+	answer: async () => {},
+	stopAll: async () => {},
+	close: () => {},
+};
 
 const AI = {
 	specs: { read: async () => null, watch: () => () => {}, change: async () => {} },
@@ -27,6 +43,9 @@ const AI = {
 	reason: null,
 	skipPermissions: true,
 	publishWidgets: true,
+	jobsStartThemselves: true,
+	jobsAtOnce: 2,
+	jobs: NO_JOBS,
 	note: { path: "Boards/Dashboard.md", hasBoard: true },
 	host: standIn<ObsidianHost>({}, [], "ai shot host"),
 };

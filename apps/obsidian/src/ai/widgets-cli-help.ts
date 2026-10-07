@@ -6,6 +6,19 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs spec <app>           check .widgetarium/apps/<app>/spec.md and show it to the person as a card
   node widgets.mjs stage <app> <stage>  say a build stage is done: data, design, catalogue, widgets, pages
     --said <line>                       what the stage made, in one line
+  node widgets.mjs jobs <app>           every job of the app: its status, what it said, what it asks, what it owns
+  node widgets.mjs job add <app>        plan one job; the plugin runs it in a session of its own
+    --title <words>                     the job as the person reads it: "Design the People page"
+    --phase design|implement|review|task   which stages it runs
+    --page <name>                       the spec page it works on; its tab on the canvas shows the job
+    --says <instructions>               everything it needs and nothing else
+    --after id,id                       jobs that must be done before it starts
+    --approval                          the person approves it on the canvas before what comes after starts
+    --budget <tokens>                   it pauses once it has written this many tokens
+  node widgets.mjs job note <app> <id> <text>    a correction the job reads before it goes on
+  node widgets.mjs job ask <app> <id> <question> --options A,B,C   from inside a job: ask the person, then end the turn
+  node widgets.mjs job answer <app> <id> <reply> pass the person's reply to a job that asked; Approve approves
+  node widgets.mjs job stop|start <app> <id>     stop a job, or start one now
   node widgets.mjs report <app>         every kept feature: built, checked, placed — or what is left
   node widgets.mjs shot <note>          a picture of the note as Obsidian draws it; open the path it prints
     --design <app>                      a picture of the app's design canvas instead
@@ -17,6 +30,7 @@ export const HELP = `widgets — the Widgetarium catalogue, for the agent
   node widgets.mjs note <app> <reference> <text>   a sticky note beside a reference: what you take, like or leave
     --tone take|like|dislike|note       its colour
     --at 0.4,0.2                        the point on the picture it is about, from the top left
+    --into @scope/name                  a take or like that became a widget: the note gets a button to it
   node widgets.mjs photos <app>         after Approve design: download the photos the screens use
   node widgets.mjs rules <app>          every design rule in force for the app, to check the canvas against
   node widgets.mjs screen <app> <screen>   write one screen of the design canvas: its note and its place in canvas.json

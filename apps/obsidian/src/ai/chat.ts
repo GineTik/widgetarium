@@ -16,6 +16,7 @@ import { Composer } from "./composer.js";
 import { SpecCard } from "./spec-card.js";
 import { BuildRunCard } from "./build-run-card.js";
 import { PinnedRun } from "./pinned-run.js";
+import { JobsStrip } from "./jobs-strip.js";
 import { buildRunIn, buildSpanOf, buildStartedIn, installsIn, lastDesignAppIn, lastSpecAppIn } from "./spec-calls.js";
 import type { BuildSpan } from "./spec-calls.js";
 import { DesignCard } from "./design-card.js";
@@ -73,6 +74,7 @@ export function AiChat({ session, ai, onChoose, onOpenProviders, onHelperAgents 
 			isStuck ? null : h(ToEndButton, { key: "end", toEnd }),
 		]),
 		pinnedOf(draw),
+		h(JobsStrip, { key: "jobs", jobs: ai.jobs, openDesign: ai.openDesign }),
 		composerOf(session, draw, { changing, setChanging }),
 	]);
 }

@@ -1419,7 +1419,11 @@ const { createAssistant } = await import("../apps/obsidian/src/ai/assistant.js")
 let vaultData: unknown = { ai: { transcript: { turns: [{ role: "user", text: "kept", calls: [] }], session: "s-1" } } };
 const assistantApp = standIn<App>(
 	{
-		vault: { configDir: ".obsidian", adapter: { getBasePath: () => "/v" }, cachedRead: async () => "" },
+		vault: {
+			configDir: ".obsidian",
+			adapter: { getBasePath: () => "/v", exists: async () => false },
+			cachedRead: async () => "",
+		},
 		workspace: { getActiveFile: () => null },
 	},
 	["vault", "workspace"],

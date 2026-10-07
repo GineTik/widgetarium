@@ -13,7 +13,10 @@ import { createRunner } from "./run.js";
 import type { KillGroup, Spawn } from "./run.js";
 import { createSession } from "./session.js";
 import type { BriefNow, Session } from "./session.js";
-import { briefFor, helpersFor } from "./brief.js";
+import { briefFor, helpersFor, jobBriefFor } from "./brief.js";
+import { createJobs } from "./job-runner.js";
+import type { Jobs } from "./job-runner.js";
+import { createJobFiles } from "./job-store.js";
 import type { BriefNote } from "./brief.js";
 import { openProviderWindow } from "./provider-window.js";
 import { HANDBOOK_DIR, TOOL_PATH } from "./agent-files.js";
@@ -59,10 +62,12 @@ export interface AssistantState extends AiState, Readiness {
 	readonly progress: ProgressWidget;
 	readonly specs: SpecPort;
 	readonly openDesign: (app: string) => void;
+	readonly jobs: Jobs;
 }
 
 export interface Assistant {
 	readonly session: Session;
+	readonly jobs: Jobs;
 	readonly settings: AiSettings;
 	state(): Promise<AssistantState>;
 	restore(): Promise<void>;
@@ -109,7 +114,22 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 		env: doors.env,
 	});
 
-	const session = createSession({ settings, runner, briefNow: () => briefNow(app, settings, paths) });
+	const chat = createSession({ settings, runner, briefNow: () => briefNow(app, settings, paths) });
+	const jobs = createJobs({
+		files: createJobFiles(app.vault.adapter),
+		runner,
+		settings,
+		briefOf: async (job) => jobBriefFor(briefPathsOf(paths), job, (await settings.state()).publishWidgets),
+		tell: orchestratorTeller(chat),
+		now: () => Date.now(),
+	});
+	const session: Session = {
+		...chat,
+		stop() {
+			chat.stop();
+			void jobs.stopAll();
+		},
+	};
 	const hostFor = hostBinderFor(plugin);
 	const specs = createSpecPort(app);
 
@@ -124,6 +144,7 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 			progress: progressWidgetOf(plugin),
 			specs,
 			openDesign: (name: string) => void openDesign(app, name),
+			jobs,
 		};
 	}
 
@@ -131,13 +152,15 @@ export function createAssistant(app: App, plugin: AssistantPlugin): Assistant {
 
 	return {
 		session,
+		jobs,
 		settings,
 		state,
 		restore: () => session.restore(),
 		forgetContext: () => session.clear(),
 		openProviders: providerWindow.open,
 		close() {
-			session.stop();
+			chat.stop();
+			jobs.close();
 			providerWindow.close();
 		},
 	};
@@ -203,15 +226,34 @@ async function noteNow(app: App): Promise<OpenNote | null> {
 	return { path: file.path, hasBoard: text.includes(`${FENCE}${BLOCK_LANGUAGE}`) };
 }
 
-async function briefNow(app: App, settings: AiSettings, { vaultPath, pluginPath }: AgentPaths): Promise<BriefNow> {
-	const held = await settings.state();
-	const paths = {
+function briefPathsOf({ vaultPath, pluginPath }: AgentPaths): Readonly<Record<string, string>> {
+	return {
 		vault: vaultPath,
 		plugin: pluginPath,
 		widgets: `${vaultPath}/${WIDGETS_DIR}`,
 		handbook: `${vaultPath}/${HANDBOOK_DIR}`,
 		tool: `${vaultPath}/${TOOL_PATH}`,
 	};
+}
+
+function orchestratorTeller(chat: Session): (app: string, said: string) => void {
+	const waiting: string[] = [];
+	const sendNext = (): void => {
+		const next = waiting[0];
+		if (next === undefined || chat.now().busy) return;
+		waiting.shift();
+		void chat.send(next);
+	};
+	chat.watch(() => sendNext());
+	return (_app, said) => {
+		if (!waiting.includes(said)) waiting.push(said);
+		sendNext();
+	};
+}
+
+async function briefNow(app: App, settings: AiSettings, agentPaths: AgentPaths): Promise<BriefNow> {
+	const held = await settings.state();
+	const paths = briefPathsOf(agentPaths);
 	const canEdit = held.provider.canEdit !== false;
 	const helpers = canEdit && held.helperAgents;
 	const brief = briefFor({ paths, note: await noteNow(app), publishWidgets: held.publishWidgets, canEdit, helpers });

@@ -10,6 +10,8 @@ import type { Installed } from "./install-command.js";
 import { BASE_NAMES, baseNamed, cardLayoutNamed, everyBase } from "./shape-command.js";
 import type { Told } from "./shape-command.js";
 import { specOfApp, stageOfApp } from "./spec-command.js";
+import { JOB_ENV, addJob, askJob, listJobs, refuseOwnedElsewhere } from "./job-command.js";
+import type { JobAdd } from "./job-command.js";
 import { checkedWidget } from "./widget-checking.js";
 import { refuseStage, reportOfApp, isReportClean } from "./report-command.js";
 import { shotOfDesign, shotOfNote, shotSaid } from "./shot-command.js";
@@ -46,6 +48,8 @@ const STARTED_EDIT = "Building {id}, which is already here. Edit its files in {f
 const STARTED_PUBLISHED =
 	"{id} was installed from a repository, so the next update replaces whatever you change in {folder}.";
 
+const JOB_VERBS = "Say what to do with a job: job add|note|ask|stop|start <app> …";
+
 const COMMANDS: Readonly<Record<string, Command>> = {
 	find: { run: (_argument, options) => findRanked(options) },
 	list: { run: (_argument, options) => findRanked(options) },
@@ -78,6 +82,8 @@ const COMMANDS: Readonly<Record<string, Command>> = {
 		run: async (argument, options) => tell(asText(options), await screenOfApp(VAULT, argument, options._[2], options)),
 	},
 	stage: { run: (argument, options) => runStage(argument, options) },
+	jobs: { run: async (argument, options) => tell(asText(options), await listJobs(VAULT, argument)) },
+	job: { run: (argument, options) => runJob(argument, options) },
 	report: { run: (argument, options) => runReport(argument, options) },
 	shot: { run: (argument, options) => runShot(argument, options) },
 };
@@ -173,6 +179,11 @@ async function runInstall(id: string, asked: Options): Promise<number> {
 async function runStart(id: string, asked: Options): Promise<number> {
 	if (!WIDGET_ID.test(id)) {
 		console.error(NOT_AN_ID.replace("{id}", id));
+		return 1;
+	}
+	const owned = await refuseOwnedElsewhere(VAULT, id, process.env[JOB_ENV]);
+	if (owned) {
+		console.error(owned);
 		return 1;
 	}
 	const folder = join(WIDGETS_DIR, ...id.split("/"));
@@ -331,6 +342,42 @@ async function runShot(note: string | undefined, asked: Options): Promise<number
 	}
 	console.log(shotSaid(design ? `the design of ${design}` : String(note), answer.path));
 	return 0;
+}
+
+function runJob(verb: string | undefined, asked: Options): Promise<number> | number {
+	const app = asked._[2];
+	const id = String(asked._[3] ?? "");
+	const said = asked._.slice(4).join(" ");
+	const now = Date.now();
+	if (verb === "add") return addJob(VAULT, app, jobAddOf(asked), now).then((told) => tell(asText(asked), told));
+	if (verb === "note")
+		return askJob(VAULT, app, { kind: "note", job: id, said }, now).then((told) => tell(asText(asked), told));
+	if (verb === "stop")
+		return askJob(VAULT, app, { kind: "stop", job: id }, now).then((told) => tell(asText(asked), told));
+	if (verb === "answer")
+		return askJob(VAULT, app, { kind: "answer", job: id, said }, now).then((told) => tell(asText(asked), told));
+	if (verb === "start")
+		return askJob(VAULT, app, { kind: "start", job: id }, now).then((told) => tell(asText(asked), told));
+	if (verb === "ask") {
+		const options = typeof asked["options"] === "string" ? asked["options"].split(",").map((one) => one.trim()) : [];
+		const question = { kind: "question" as const, job: id, said, options: options.filter((one) => one !== "") };
+		return askJob(VAULT, app, question, now).then((told) => tell(asText(asked), told));
+	}
+	console.error(JOB_VERBS);
+	return 1;
+}
+
+function jobAddOf(asked: Options): JobAdd {
+	return {
+		title: asked["title"],
+		page: asked["page"],
+		phase: asked["phase"],
+		says: asked["says"],
+		after: asked["after"],
+		approval: asked["approval"],
+		budget: asked["budget"],
+		id: asked["id"],
+	};
 }
 
 async function runStage(app: string | undefined, asked: Options): Promise<number> {

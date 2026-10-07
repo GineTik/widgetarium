@@ -19,6 +19,7 @@ export interface RunAsk {
 	readonly session?: string | null;
 	readonly skipPermissions?: boolean;
 	readonly helpers?: string | null;
+	readonly env?: Readonly<Record<string, string>>;
 }
 
 export interface RunAnswer {
@@ -244,7 +245,11 @@ function startChild({ doors, provider, ask, emit, state, settle }: ChildStart): 
 
 	let child: RunningChild;
 	try {
-		child = spawn(provider.command, argv, { cwd: vaultPath || undefined, env: environmentFor(env), detached: true });
+		child = spawn(provider.command, argv, {
+			cwd: vaultPath || undefined,
+			env: environmentFor({ ...env, ...ask.env }),
+			detached: true,
+		});
 	} catch (failure) {
 		finish(startFailure(failure, withCommandName));
 		return;

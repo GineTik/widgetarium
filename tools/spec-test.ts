@@ -1170,7 +1170,7 @@ const { createAiSettings } = await import("../apps/obsidian/src/ai/settings.js")
 const helperPaths = { vault: "/v", plugin: "/p", widgets: "/w", handbook: "/h", tool: "/t" };
 const withHelpers = briefFor({ paths: helperPaths, helpers: true });
 const alone = briefFor({ paths: helperPaths, helpers: false });
-check("with helpers the agent is told it leads them", withHelpers.includes("## You lead helpers"), true);
+check("with helpers the agent is told it leads jobs", withHelpers.includes("## You lead jobs"), true);
 check(
 	"and carries no handbook bodies, which are its helpers' to read",
 	withHelpers.includes("=== HANDBOOK PAGE: board.md ==="),

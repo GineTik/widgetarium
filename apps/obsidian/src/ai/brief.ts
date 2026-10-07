@@ -3,6 +3,7 @@ import CHAT_BRIEF from "../../../../docs/ai/chat-brief.md";
 import ORCHESTRATOR from "../../../../docs/ai/roles/orchestrator.md";
 import WIDGET_DEVELOPER from "../../../../docs/ai/roles/widget-developer.md";
 import PAGE_DESIGNER from "../../../../docs/ai/roles/page-designer.md";
+import JOB from "../../../../docs/ai/roles/job.md";
 import { HANDBOOK } from "./agent-files.js";
 
 const NO_NOTE = "The person has no note open. Ask which note the screen should be built in before you write anything.";
@@ -35,7 +36,7 @@ export interface BriefAsk {
 const PLACEHOLDER = /\{([a-z]+)\}/g;
 
 export const templatePlaceholders = (): string[] => [
-	...new Set(placeholdersIn(`${BRIEF}\n${CHAT_BRIEF}\n${ORCHESTRATOR}\n${WIDGET_DEVELOPER}\n${PAGE_DESIGNER}`)),
+	...new Set(placeholdersIn(`${BRIEF}\n${CHAT_BRIEF}\n${ORCHESTRATOR}\n${WIDGET_DEVELOPER}\n${PAGE_DESIGNER}\n${JOB}`)),
 ];
 
 const HELPERS = {
@@ -56,6 +57,33 @@ export function briefFor({ paths, note, publishWidgets, canEdit = true, helpers 
 	if (!canEdit) return [substitutePaths(CHAT_BRIEF, paths), noteNamed(note)].join("\n\n");
 	const guide = helpers ? substitutePaths(ORCHESTRATOR, paths) : handbookInFull();
 	return [substitutePaths(BRIEF, paths), guide, thisRun(note, publishWidgets)].join("\n\n");
+}
+
+export interface JobBriefed {
+	readonly app: string;
+	readonly id: string;
+	readonly phase: string;
+	readonly page: string | null;
+	readonly says: string;
+}
+
+const THIS_JOB = "App: {app}. Your job id: {id}. Phase: {phase}. Page: {page}.";
+const NO_PAGE_JOB = "the whole app";
+
+export function jobBriefFor(paths: BriefPaths, job: JobBriefed, publishWidgets: boolean | undefined): string {
+	const head = THIS_JOB.replace("{app}", job.app)
+		.replace("{id}", job.id)
+		.replace("{phase}", job.phase)
+		.replace("{page}", job.page ?? NO_PAGE_JOB);
+	return [
+		substitutePaths(BRIEF, paths),
+		handbookInFull(),
+		substitutePaths(JOB, paths),
+		"=== THIS JOB ===",
+		publishWidgets === false ? MAY_NOT_SHARE : MAY_SHARE,
+		head,
+		job.says,
+	].join("\n\n");
 }
 
 export function helpersFor(paths: BriefPaths): string {
