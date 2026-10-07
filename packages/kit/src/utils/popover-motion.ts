@@ -1,5 +1,13 @@
-import { CONTENT_DELAY_MS, CONTENT_MS, EXIT_GUARD_MS, GROW_MS, LAND_MARGIN_MS } from "../constants/popover";
-import type { Placement } from "../constants/popover";
+import {
+	CONTENT_DELAY_MS,
+	CONTENT_MS,
+	EXIT_GUARD_MS,
+	GROW_MS,
+	LAND_MARGIN_MS,
+	SCREEN_MARGIN_PX,
+} from "../constants/popover";
+import type { FloatingSpot, PanelSize, Placement } from "../constants/popover";
+import { viewportSize } from "./floating-placement";
 
 type Styled = Element & ElementCSSInlineStyle;
 
@@ -8,6 +16,7 @@ interface Placed {
 	readonly flippedY: boolean;
 	readonly width: number;
 	readonly height: number;
+	readonly origin: string;
 }
 
 interface Seat {
@@ -22,8 +31,6 @@ interface Paint {
 }
 
 export type StopMotion = () => void;
-
-const SCREEN_MARGIN_PX = 8;
 
 export function prefersReducedMotion(): boolean {
 	return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
@@ -49,7 +56,7 @@ export function enterPanel(panel: HTMLElement, anchor: HTMLElement, placement: P
 	if (prefersReducedMotion()) return undefined;
 	const seat = seatOnAnchor(anchor, placed);
 	const rest = panelPaint(panel);
-	sitOnAnchor(panel, seat, anchorPaint(anchor), growthOrigin(placed));
+	sitOnAnchor(panel, seat, anchorPaint(anchor), placed.origin);
 
 	let landing = 0;
 	const frame = requestAnimationFrame(() => {
@@ -119,6 +126,8 @@ function placePanel(panel: HTMLElement, rect: DOMRect, placement: Placement): Pl
 	panel.style.top = "0px";
 	panel.style.setProperty("--wg-kit-anchor-width", `${rect.width}px`);
 	const zero = panel.getBoundingClientRect();
+	const solved = placement.solve?.(rect, zero, viewportSize());
+	if (solved) return wearSolved(panel, zero, solved);
 	const wanted = placement.origin(rect);
 	const away = placement.flipped(rect, zero);
 	const flippedX = wanted.left + zero.width > window.innerWidth - SCREEN_MARGIN_PX;
@@ -129,8 +138,24 @@ function placePanel(panel: HTMLElement, rect: DOMRect, placement: Placement): Pl
 	panel.style.top = `${top - zero.top}px`;
 	panel.style.setProperty("--wg-kit-pop-available-width", `${window.innerWidth - SCREEN_MARGIN_PX - left}px`);
 	panel.style.setProperty("--wg-kit-pop-available-height", `${window.innerHeight - SCREEN_MARGIN_PX - top}px`);
-	panel.style.setProperty("--wg-kit-pop-origin", growthOrigin({ flippedX, flippedY }));
-	return { flippedX, flippedY, width: zero.width, height: zero.height };
+	const origin = growthOrigin({ flippedX, flippedY });
+	panel.style.setProperty("--wg-kit-pop-origin", origin);
+	return { flippedX, flippedY, width: zero.width, height: zero.height, origin };
+}
+
+function wearSolved(panel: HTMLElement, zero: DOMRect, solved: FloatingSpot): Placed {
+	panel.style.left = `${solved.left - zero.left}px`;
+	panel.style.top = `${solved.top - zero.top}px`;
+	panel.style.setProperty("--wg-kit-pop-available-width", `${solved.availableWidth}px`);
+	panel.style.setProperty("--wg-kit-pop-available-height", `${solved.availableHeight}px`);
+	panel.style.setProperty("--wg-kit-pop-origin", solved.origin);
+	panel.dataset["side"] = solved.side;
+	panel.dataset["align"] = solved.align;
+	return { ...sizeOf(zero), flippedX: false, flippedY: false, origin: solved.origin };
+}
+
+function sizeOf(box: DOMRect): PanelSize {
+	return { width: box.width, height: box.height };
 }
 
 function growthOrigin(placed: Pick<Placed, "flippedX" | "flippedY">): string {

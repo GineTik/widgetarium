@@ -1,7 +1,7 @@
 import { useId, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { PLACEMENTS } from "../constants/popover";
-import type { Placement, PlacementName } from "../constants/popover";
+import type { Placement, PlacementChoice } from "../constants/popover";
+import { placementOf } from "../utils/floating-placement";
 import { useCloseOnOutsidePress } from "./use-close-on-outside-press";
 import { useControllableState } from "./use-controllable-state";
 import { usePanelMotion } from "./use-panel-motion";
@@ -10,14 +10,14 @@ export interface PopoverAsk {
 	readonly open?: boolean | undefined;
 	readonly defaultOpen: boolean;
 	readonly onOpenChange?: ((open: boolean) => void) | undefined;
-	readonly placement: PlacementName;
+	readonly placement: PlacementChoice;
 	readonly onExited?: (() => void) | undefined;
 }
 
 export interface PopoverState {
 	readonly id: string;
 	readonly where: Placement;
-	readonly placement: PlacementName;
+	readonly placement: PlacementChoice;
 	readonly isOpen: boolean;
 	readonly isExiting: boolean;
 	readonly shown: boolean;
@@ -30,7 +30,7 @@ export interface PopoverState {
 }
 
 export function usePopoverState({ open, defaultOpen, onOpenChange, placement, onExited }: PopoverAsk): PopoverState {
-	const where = placementNamed(placement);
+	const where = placementOf(placement);
 	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
 	const anchorRef = useRef<HTMLSpanElement>(null);
 	const pointRef = useRef<HTMLElement>(null);
@@ -71,8 +71,4 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 		triggerRef,
 		openedByKeyboard,
 	};
-}
-
-function placementNamed(name: unknown): Placement {
-	return name === "below" ? PLACEMENTS.below : PLACEMENTS.over;
 }

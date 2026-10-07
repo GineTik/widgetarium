@@ -1,6 +1,6 @@
 import { createElement as h, useState } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
-import type { PlacementName } from "../constants/popover";
+import type { PlacementChoice, PlacementName } from "../constants/popover";
 import { usePopoverState } from "../hooks/use-popover-state";
 import type { PopoverState } from "../hooks/use-popover-state";
 import { isNode } from "../utils/dom-nodes";
@@ -40,7 +40,7 @@ export function Popover({
 	isPortaled = false,
 	onExited,
 }: PopoverProps): ReactElement {
-	const [askedPlacement, askPlacement] = useState<PlacementName | null>(null);
+	const [askedPlacement, askPlacement] = useState<PlacementChoice | null>(null);
 	const popover = usePopoverState({
 		open: open ?? openAsLegacy,
 		defaultOpen,

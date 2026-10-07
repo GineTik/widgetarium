@@ -1,0 +1,686 @@
+import { JSDOM } from "jsdom";
+import type { ReactNode } from "react";
+import { found } from "./dom-find.ts";
+
+const dom = new JSDOM('<!doctype html><body><div id="host"></div><button id="outside">outside</button></body>', {
+	pretendToBeVisual: true,
+});
+Object.assign(globalThis, {
+	window: dom.window,
+	document: dom.window.document,
+	Node: dom.window.Node,
+	Element: dom.window.Element,
+	HTMLElement: dom.window.HTMLElement,
+	SVGElement: dom.window.SVGElement,
+	Event: dom.window.Event,
+	getComputedStyle: (node: Element) => dom.window.getComputedStyle(node),
+	requestAnimationFrame: dom.window.requestAnimationFrame,
+	cancelAnimationFrame: dom.window.cancelAnimationFrame,
+	MouseEvent: dom.window.MouseEvent,
+	KeyboardEvent: dom.window.KeyboardEvent,
+	FocusEvent: dom.window.FocusEvent,
+	ResizeObserver: class {
+		observe(): void {}
+		disconnect(): void {}
+	},
+});
+const motion = { isReduced: false };
+Object.assign(dom.window, { matchMedia: () => ({ matches: motion.isReduced }) });
+
+const RECT_ATTRIBUTE = "data-test-rect";
+const POP_SIZE = { width: 200, height: 100 };
+const TRIGGER_AT: Readonly<Record<string, string>> = { [RECT_ATTRIBUTE]: "300,300,60,30" };
+Object.assign(dom.window.Element.prototype, { getBoundingClientRect: stubbedRect });
+
+const { createElement: h } = await import("react");
+const { render } = await import("../packages/core/src/engine/render.ts");
+const kit = await import("../packages/kit/src/index.ts");
+const { placeFloating } = await import("../packages/kit/src/utils/floating-placement.ts");
+const { openLayerCount } = await import("../packages/kit/src/utils/layer-stack.ts");
+
+const host = found(document, "#host");
+const outside = found(document, "#outside");
+let failed = 0;
+let checks = 0;
+
+function check(name: string, got: unknown, want: unknown): void {
+	checks += 1;
+	const ok = shown(got) === shown(want);
+	if (!ok) failed += 1;
+	console.log(`${ok ? "OK " : "!! "} ${name}${ok ? "" : `  got ${shown(got)}, want ${shown(want)}`}`);
+}
+
+function shown(value: unknown): string {
+	try {
+		return JSON.stringify(value) ?? String(value);
+	} catch {
+		return String(value);
+	}
+}
+
+function stubbedRect(this: Element): DOMRect {
+	const said = this.getAttribute(RECT_ATTRIBUTE)?.split(",").map(Number);
+	if (said) return rectOf(said[0] ?? 0, said[1] ?? 0, said[2] ?? 0, said[3] ?? 0);
+	if (this.classList.contains("wg-kit-anchor") && this.firstElementChild)
+		return stubbedRect.call(this.firstElementChild);
+	if (this.classList.contains("wg-kit-pop") && this instanceof dom.window.HTMLElement)
+		return rectOf(parseFloat(this.style.left) || 0, parseFloat(this.style.top) || 0, POP_SIZE.width, POP_SIZE.height);
+	return rectOf(0, 0, 0, 0);
+}
+
+function rectOf(left: number, top: number, width: number, height: number): DOMRect {
+	const box = { left, top, width, height, right: left + width, bottom: top + height, x: left, y: top };
+	return { ...box, toJSON: () => box };
+}
+
+const settle = (): Promise<void> => new Promise((done) => requestAnimationFrame(() => setTimeout(done, 0)));
+const wait = (ms: number): Promise<void> => new Promise((done) => setTimeout(done, ms));
+
+async function draw(tree: ReactNode): Promise<void> {
+	render(tree, host);
+	await settle();
+}
+
+function fire(target: Element | Document, type: string, init: MouseEventInit = {}): void {
+	target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, ...init }));
+}
+
+function key(target: Element | null, name: string): void {
+	if (!target) throw new Error(`no element to press ${name} on`);
+	target.dispatchEvent(new KeyboardEvent("keydown", { key: name, bubbles: true, cancelable: true }));
+}
+
+function hover(target: Element): void {
+	fire(target, "pointerover", { relatedTarget: null });
+}
+
+function unhover(target: Element): void {
+	fire(target, "pointerout", { relatedTarget: outside });
+}
+
+function slotted(slot: string): Element | null {
+	return document.querySelector(`[data-slot="${slot}"]`);
+}
+
+function isDrawn(slot: string): boolean {
+	return slotted(slot) !== null;
+}
+
+function stateOf(slot: string): string | null {
+	return slotted(slot)?.getAttribute("data-state") ?? null;
+}
+
+function focusedText(): string {
+	return document.activeElement?.textContent?.trim() ?? "";
+}
+
+async function placement(): Promise<void> {
+	const anchor = { left: 100, top: 100, right: 140, bottom: 120, width: 40, height: 20 };
+	const viewport = { width: 800, height: 600 };
+	const panel = { width: 200, height: 100 };
+	const base = { anchor, viewport, panel, sideOffset: 4, alignOffset: 0 } as const;
+	const below = placeFloating({ ...base, side: "bottom", align: "center" });
+	check("bottom center stands under the anchor's middle", [below.left, below.top, below.side], [20, 124, "bottom"]);
+	check("it grows from the anchor's middle, at the edge facing it", below.origin, "100px top");
+	const low = { ...anchor, top: 560, bottom: 580 };
+	const flipped = placeFloating({ ...base, anchor: low, side: "bottom", align: "start" });
+	check("bottom with no room below flips above", [flipped.side, flipped.top], ["top", 456]);
+	const edge = { ...anchor, left: 760, right: 790, width: 30 };
+	const beside = placeFloating({ ...base, anchor: edge, side: "right", align: "start" });
+	check("right with no room flips to the left", [beside.side, beside.left], ["left", 556]);
+	const shifted = placeFloating({ ...base, anchor: edge, side: "bottom", align: "start" });
+	check("a panel past the right edge is shifted back into view", shifted.left, 592);
+	const middle = { left: 300, top: 300, right: 340, bottom: 320, width: 40, height: 20 };
+	const ended = placeFloating({ ...base, anchor: middle, side: "top", align: "end" });
+	check("top end ends at the anchor's right edge, above it", [ended.left, ended.top, ended.side], [140, 196, "top"]);
+}
+
+async function sidedPopover(): Promise<void> {
+	await draw(
+		h(kit.Popover, { defaultOpen: true }, [
+			h(kit.PopoverTrigger, { key: "t", ...TRIGGER_AT }, "Open"),
+			h(kit.PopoverContent, { key: "c", side: "top", align: "end" }, "Body"),
+		]),
+	);
+	const panel = found(document, '[data-slot="popover-content"]');
+	check(
+		"POPOVER CONTENT side=top align=end IS DRAWN THERE: above the trigger, its right edge on the trigger's",
+		[panel.getAttribute("data-side"), panel.getAttribute("data-align"), styleOf(panel, "top"), styleOf(panel, "left")],
+		["top", "end", "196px", "160px"],
+	);
+	await draw(null);
+	await draw(
+		h(kit.Popover, { defaultOpen: true }, [
+			h(kit.PopoverTrigger, { key: "t" }, "Open"),
+			h(kit.PopoverContent, { key: "c" }, "Body"),
+		]),
+	);
+	check(
+		"a popover asked for no side keeps its old place over the trigger",
+		slotted("popover-content")?.getAttribute("data-side"),
+		"over",
+	);
+	await draw(null);
+}
+
+function styleOf(element: Element, property: "top" | "left"): string {
+	return element instanceof dom.window.HTMLElement ? element.style[property] : "";
+}
+
+async function tooltip(): Promise<void> {
+	await draw(
+		h(
+			kit.TooltipProvider,
+			{ delayDuration: 0 },
+			h(kit.Tooltip, null, [
+				h(kit.TooltipTrigger, { key: "t" }, "Hover me"),
+				h(kit.TooltipContent, { key: "c" }, "Add to library"),
+			]),
+		),
+	);
+	const trigger = found(document, '[data-slot="tooltip-trigger"]');
+	check("a tooltip is not drawn before the pointer comes", isDrawn("tooltip-content"), false);
+	hover(trigger);
+	await settle();
+	const content = document.querySelector('[role="tooltip"]');
+	check(
+		"HOVER OPENS THE TOOLTIP and the trigger is described by it",
+		[
+			content?.getAttribute("data-slot"),
+			trigger.getAttribute("aria-describedby") === content?.id,
+			stateOf("tooltip-trigger"),
+		],
+		["tooltip-content", true, "open"],
+	);
+	key(document.body, "Escape");
+	await settle();
+	check("Escape closes it", stateOf("tooltip-content"), "closed");
+	await wait(260);
+	check("and once it has faded it leaves the page", isDrawn("tooltip-content"), false);
+	await draw(
+		h(kit.Tooltip, { delayDuration: 60 }, [
+			h(kit.TooltipTrigger, { key: "t" }, "Slow"),
+			h(kit.TooltipContent, { key: "c" }, "Tip"),
+		]),
+	);
+	hover(found(document, '[data-slot="tooltip-trigger"]'));
+	await settle();
+	const early = isDrawn("tooltip-content");
+	await wait(90);
+	check("a delayed tooltip waits for its delay", [early, stateOf("tooltip-content")], [false, "open"]);
+	motion.isReduced = true;
+	key(document.body, "Escape");
+	await settle();
+	await settle();
+	check("WITH REDUCED MOTION A CLOSED TOOLTIP LEAVES AT ONCE, no fade held", isDrawn("tooltip-content"), false);
+	motion.isReduced = false;
+	await draw(null);
+}
+
+async function hoverCard(): Promise<void> {
+	await draw(
+		h(kit.HoverCard, { openDelay: 0, closeDelay: 0 }, [
+			h(kit.HoverCardTrigger, { key: "t", href: "#" }, "@nextjs"),
+			h(kit.HoverCardContent, { key: "c" }, "The React framework"),
+		]),
+	);
+	const trigger = found(document, '[data-slot="hover-card-trigger"]');
+	hover(trigger);
+	await settle();
+	check("HOVER CARD OPENS ON HOVER", [trigger.tagName, stateOf("hover-card-content")], ["A", "open"]);
+	unhover(trigger);
+	await settle();
+	check("and closes when the pointer leaves", stateOf("hover-card-content"), "closed");
+	await draw(null);
+}
+
+function dropdown(
+	onSelect: (event: Event) => void,
+	onChecked: (checked: boolean) => void,
+	onPicked: (value: string) => void,
+): ReactNode {
+	return h(kit.DropdownMenu, null, [
+		h(kit.DropdownMenuTrigger, { key: "t" }, "Open"),
+		h(kit.DropdownMenuContent, { key: "c" }, [
+			h(kit.DropdownMenuLabel, { key: "l" }, "My account"),
+			h(kit.DropdownMenuItem, { key: "p", onSelect }, "Profile"),
+			h(kit.DropdownMenuItem, { key: "d", disabled: true }, "Disabled"),
+			h(kit.DropdownMenuItem, { key: "s" }, "Settings", h(kit.DropdownMenuShortcut, null, "⌘S")),
+			h(kit.DropdownMenuCheckboxItem, { key: "x", onCheckedChange: onChecked }, "Status bar"),
+			h(kit.DropdownMenuRadioGroup, { key: "r", defaultValue: "a", onValueChange: onPicked }, [
+				h(kit.DropdownMenuRadioItem, { key: "a", value: "a" }, "Top"),
+				h(kit.DropdownMenuRadioItem, { key: "b", value: "b" }, "Bottom"),
+			]),
+			h(kit.DropdownMenuSeparator, { key: "sep" }),
+			h(kit.DropdownMenuSub, { key: "sub" }, [
+				h(kit.DropdownMenuSubTrigger, { key: "st" }, "Invite"),
+				h(kit.DropdownMenuSubContent, { key: "sc" }, [
+					h(kit.DropdownMenuItem, { key: "e" }, "Email"),
+					h(kit.DropdownMenuItem, { key: "m" }, "Message"),
+				]),
+			]),
+			h(kit.DropdownMenuItem, { key: "out", variant: "destructive" }, "Log out"),
+		]),
+	]);
+}
+
+async function dropdownMenu(): Promise<void> {
+	const said: string[] = [];
+	await draw(
+		dropdown(
+			(event) => said.push(`select ${event.type}`),
+			(checked) => said.push(`checked ${checked}`),
+			(value) => said.push(`picked ${value}`),
+		),
+	);
+	const trigger = found(document, '[data-slot="dropdown-menu-trigger"]');
+	fire(trigger, "click", { detail: 0 });
+	await settle();
+	check(
+		"A DROPDOWN OPENED BY KEYBOARD IS A MENU WITH ITS FIRST ITEM FOCUSED",
+		[found(document, '[role="menu"]').getAttribute("data-slot"), trigger.getAttribute("aria-expanded"), focusedText()],
+		["dropdown-menu-content", "true", "Profile"],
+	);
+	key(document.activeElement, "ArrowDown");
+	check("ArrowDown steps over a disabled item", focusedText(), "Settings⌘S");
+	key(document.activeElement, "End");
+	check("End goes to the last item", focusedText(), "Log out");
+	key(document.activeElement, "s");
+	check("typing a letter goes to the item it starts", focusedText(), "Settings⌘S");
+	check(
+		"the destructive variant is marked",
+		slotted("dropdown-menu-content")?.querySelector('[data-variant="destructive"]')?.textContent,
+		"Log out",
+	);
+	fire(found(document, '[role="menuitemcheckbox"]'), "click");
+	await settle();
+	check(
+		"a checkbox item reports its new state and closes the menu",
+		[said.at(-1), stateOf("dropdown-menu-content")],
+		["checked true", "closed"],
+	);
+	fire(trigger, "click", { detail: 1 });
+	await settle();
+	check("a pointer opening focuses the panel, not an item", document.activeElement?.getAttribute("role"), "menu");
+	fire(found(document, '[role="menuitemradio"]:not([aria-checked="true"])'), "click");
+	await settle();
+	check("a radio item picks its value", said.at(-1), "picked b");
+	fire(trigger, "click", { detail: 0 });
+	await settle();
+	key(found(document, '[data-slot="dropdown-menu-item"]'), "Enter");
+	await settle();
+	check(
+		"Enter on an item selects it and closes the menu",
+		[said.at(-1), stateOf("dropdown-menu-content")],
+		["select select", "closed"],
+	);
+	await subMenu(trigger);
+	await draw(null);
+}
+
+async function subMenu(trigger: Element): Promise<void> {
+	await wait(220);
+	fire(trigger, "click", { detail: 0 });
+	await settle();
+	const subTrigger = found(document, '[data-slot="dropdown-menu-sub-trigger"]');
+	key(subTrigger, "ArrowRight");
+	await settle();
+	check(
+		"ARROW RIGHT OPENS THE SUB MENU AND FOCUSES ITS FIRST ITEM",
+		[stateOf("dropdown-menu-sub-content"), subTrigger.getAttribute("aria-expanded"), focusedText()],
+		["open", "true", "Email"],
+	);
+	fire(found(document, '[data-slot="dropdown-menu-sub-content"]'), "pointerdown");
+	await settle();
+	check("a press inside the sub menu is not outside the root", stateOf("dropdown-menu-content"), "open");
+	key(document.activeElement, "ArrowLeft");
+	await settle();
+	check(
+		"ArrowLeft closes the sub menu and returns to its trigger",
+		[stateOf("dropdown-menu-sub-content"), focusedText()],
+		["closed", "Invite"],
+	);
+	key(document.activeElement, "Escape");
+	await settle();
+	check(
+		"Escape closes the menu and gives focus back to the trigger",
+		[stateOf("dropdown-menu-content"), document.activeElement === trigger],
+		["closed", true],
+	);
+	fire(trigger, "click", { detail: 1 });
+	await settle();
+	fire(outside, "pointerdown");
+	await settle();
+	check("a press outside closes it", stateOf("dropdown-menu-content"), "closed");
+}
+
+async function contextMenu(): Promise<void> {
+	await draw(
+		h(kit.ContextMenu, null, [
+			h(kit.ContextMenuTrigger, { key: "t" }, "Right click here"),
+			h(kit.ContextMenuContent, { key: "c" }, [h(kit.ContextMenuItem, { key: "b" }, "Back")]),
+		]),
+	);
+	fire(found(document, '[data-slot="context-menu-trigger"]'), "contextmenu", { clientX: 120, clientY: 80 });
+	await settle();
+	const panel = found(document, '[data-slot="context-menu-content"]');
+	check(
+		"A RIGHT CLICK OPENS THE CONTEXT MENU AT THE POINTER",
+		[panel.getAttribute("data-state"), styleOf(panel, "left"), styleOf(panel, "top"), panel.getAttribute("data-side")],
+		["open", "122px", "80px", "right"],
+	);
+	await draw(null);
+}
+
+async function menubar(): Promise<void> {
+	await draw(
+		h(kit.Menubar, null, [
+			h(kit.MenubarMenu, { key: "f", value: "file" }, [
+				h(kit.MenubarTrigger, { key: "t" }, "File"),
+				h(kit.MenubarContent, { key: "c" }, h(kit.MenubarItem, null, "New tab")),
+			]),
+			h(kit.MenubarMenu, { key: "e", value: "edit" }, [
+				h(kit.MenubarTrigger, { key: "t" }, "Edit"),
+				h(kit.MenubarContent, { key: "c" }, [
+					h(kit.MenubarItem, { key: "u" }, "Undo"),
+					h(kit.MenubarSub, { key: "s" }, [
+						h(kit.MenubarSubTrigger, { key: "t" }, "Find"),
+						h(kit.MenubarSubContent, { key: "c" }, h(kit.MenubarItem, null, "Search the web")),
+					]),
+				]),
+			]),
+		]),
+	);
+	const [file, edit] = [...document.querySelectorAll('[data-slot="menubar-trigger"]')];
+	if (!file || !edit) throw new Error("the menubar drew no triggers");
+	fire(file, "click", { detail: 1 });
+	await settle();
+	hover(edit);
+	await settle();
+	check(
+		"HOVERING ANOTHER TRIGGER WHILE ONE IS OPEN SWITCHES THE MENU",
+		[file.getAttribute("aria-expanded"), edit.getAttribute("aria-expanded")],
+		["false", "true"],
+	);
+	key(found(document, '[data-slot="menubar-sub-trigger"]'), "ArrowRight");
+	await settle();
+	check(
+		"ARROW RIGHT ON A SUB TRIGGER IN THE BAR OPENS THE SUB MENU, NOT THE NEXT MENU",
+		[edit.getAttribute("aria-expanded"), focusedText()],
+		["true", "Search the web"],
+	);
+	key(document.activeElement, "ArrowLeft");
+	await settle();
+	key(found(document, '[data-slot="menubar-content"][data-state="open"]'), "ArrowRight");
+	await settle();
+	check(
+		"ArrowRight in a menu opens the next one, wrapping round",
+		[file.getAttribute("aria-expanded"), focusedText()],
+		["true", "New tab"],
+	);
+	key(document.activeElement, "Escape");
+	await settle();
+	key(file, "ArrowRight");
+	check("ArrowRight on a trigger moves along the bar", document.activeElement === edit, true);
+	await draw(null);
+}
+
+async function navigationMenu(): Promise<void> {
+	await draw(
+		h(
+			kit.NavigationMenu,
+			null,
+			h(kit.NavigationMenuList, null, [
+				h(kit.NavigationMenuItem, { key: "a", value: "start" }, [
+					h(kit.NavigationMenuTrigger, { key: "t" }, "Getting started"),
+					h(kit.NavigationMenuContent, { key: "c" }, h(kit.NavigationMenuLink, { href: "#intro" }, "Introduction")),
+				]),
+				h(
+					kit.NavigationMenuItem,
+					{ key: "d" },
+					h(kit.NavigationMenuLink, { href: "#docs", className: kit.navigationMenuTriggerStyle() }, "Docs"),
+				),
+				h(kit.NavigationMenuIndicator, { key: "i" }),
+			]),
+		),
+	);
+	const trigger = found(document, '[data-slot="navigation-menu-trigger"]');
+	fire(trigger, "click");
+	await settle();
+	check(
+		"A NAVIGATION TRIGGER OPENS ITS CONTENT INSIDE THE ONE VIEWPORT",
+		[
+			trigger.getAttribute("aria-expanded"),
+			slotted("navigation-menu-viewport")?.querySelector('[data-slot="navigation-menu-content"]') !== null,
+		],
+		["true", true],
+	);
+	fire(found(document, '[href="#intro"]'), "click");
+	await settle();
+	check("a link inside closes the menu", stateOf("navigation-menu-viewport"), "closed");
+	check("navigationMenuTriggerStyle names the trigger's look", kit.navigationMenuTriggerStyle(), "wg-kit-nav-trigger");
+	await wait(260);
+	key(trigger, "ArrowDown");
+	await settle();
+	await settle();
+	check("ARROW DOWN ON A CLOSED TRIGGER OPENS IT AND FOCUSES ITS FIRST LINK", focusedText(), "Introduction");
+	await draw(null);
+}
+
+async function sheetAndAlert(): Promise<void> {
+	await draw(
+		h(kit.Sheet, null, [
+			h(kit.SheetTrigger, { key: "t" }, "Open"),
+			h(kit.SheetContent, { key: "c", side: "left" }, [
+				h(kit.SheetHeader, { key: "h" }, [
+					h(kit.SheetTitle, { key: "t" }, "Edit profile"),
+					h(kit.SheetDescription, { key: "d" }, "Change it here."),
+				]),
+				h(kit.SheetFooter, { key: "f" }, h(kit.SheetClose, null, "Done")),
+			]),
+		]),
+	);
+	fire(found(document, '[data-slot="sheet-trigger"]'), "click");
+	await settle();
+	const sheet = found(document, '[data-slot="sheet-content"]');
+	check(
+		"A SHEET IS A MODAL DIALOG ON ITS SIDE, NAMED BY ITS TITLE",
+		[
+			sheet.getAttribute("role"),
+			sheet.getAttribute("data-side"),
+			sheet.getAttribute("aria-labelledby") === slotted("sheet-title")?.id,
+		],
+		["dialog", "left", true],
+	);
+	fire(found(document, '[data-slot="sheet-overlay"]'), "pointerdown");
+	await settle();
+	check("a press on its scrim closes it", stateOf("sheet-content"), "closed");
+	await draw(null);
+	const said: string[] = [];
+	await draw(
+		h(kit.AlertDialog, { defaultOpen: true, onOpenChange: (open: boolean) => said.push(`open ${open}`) }, [
+			h(kit.AlertDialogContent, { key: "c" }, [
+				h(kit.AlertDialogTitle, { key: "t" }, "Delete the note?"),
+				h(kit.AlertDialogFooter, { key: "f" }, [
+					h(kit.AlertDialogAction, { key: "a" }, "Delete"),
+					h(kit.AlertDialogCancel, { key: "x" }, "Cancel"),
+				]),
+			]),
+		]),
+	);
+	await settle();
+	fire(found(document, '[data-slot="alert-dialog-overlay"]'), "pointerdown");
+	await settle();
+	check(
+		"AN ALERT DIALOG IGNORES ITS SCRIM AND FOCUSES CANCEL FIRST",
+		[slotted("alert-dialog-content")?.getAttribute("role"), stateOf("alert-dialog-content"), focusedText()],
+		["alertdialog", "open", "Cancel"],
+	);
+	fire(found(document, '[data-slot="alert-dialog-action"]'), "click");
+	await settle();
+	check("its action closes it", [stateOf("alert-dialog-content"), said], ["closed", ["open false"]]);
+	await draw(null);
+}
+
+async function layeredEscape(): Promise<void> {
+	await draw(
+		h(
+			kit.Sheet,
+			{ defaultOpen: true },
+			h(kit.SheetContent, null, [
+				h(kit.SheetTitle, { key: "t" }, "Filters"),
+				h(kit.DropdownMenu, { key: "m", defaultOpen: true }, [
+					h(kit.DropdownMenuTrigger, { key: "t" }, "Sort"),
+					h(kit.DropdownMenuContent, { key: "c" }, h(kit.DropdownMenuItem, null, "Newest")),
+				]),
+			]),
+		),
+	);
+	await settle();
+	key(document.body, "Escape");
+	await settle();
+	check(
+		"ESCAPE CLOSES ONLY THE TOP LAYER: the menu goes, the sheet stays",
+		[stateOf("dropdown-menu-content"), stateOf("sheet-content")],
+		["closed", "open"],
+	);
+	await draw(null);
+	await settle();
+	check("every layer leaves the stack when it is gone", openLayerCount(), 0);
+}
+
+async function drawer(): Promise<void> {
+	await draw(h(kit.Drawer, { defaultOpen: true }, h(kit.DrawerContent, null, h(kit.DrawerTitle, null, "Move goal"))));
+	const panel = found(document, '[data-slot="drawer-content"]');
+	Object.defineProperty(panel, "offsetHeight", { value: 400 });
+	await draw(h(kit.Drawer, { defaultOpen: true }, h(kit.DrawerContent, null, h(kit.DrawerTitle, null, "Move goal"))));
+	const handle = found(document, ".wg-kit-drawer-handle");
+	fire(handle, "pointerdown", { clientY: 100 });
+	await settle();
+	fire(handle, "pointermove", { clientY: 150 });
+	await settle();
+	check("A DRAWER FOLLOWS THE FINGER DOWN", styleVar(panel, "--wg-kit-drawer-drag"), "50px");
+	fire(handle, "pointerup");
+	await settle();
+	check("a short drag springs back open", stateOf("drawer-content"), "open");
+	fire(handle, "pointerdown", { clientY: 100 });
+	fire(handle, "pointermove", { clientY: 360 });
+	await settle();
+	fire(handle, "pointerup");
+	await settle();
+	check("a long drag dismisses it", stateOf("drawer-content"), "closed");
+	await draw(null);
+}
+
+function styleVar(element: Element, name: string): string {
+	return element instanceof dom.window.HTMLElement ? element.style.getPropertyValue(name) : "";
+}
+
+async function toasts(): Promise<void> {
+	await draw(h(kit.Toaster, { duration: 60 }));
+	const said: string[] = [];
+	const id = kit.toast("Event created", {
+		description: "Sunday at 9:00",
+		action: { label: "Undo", onClick: () => said.push("undo") },
+	});
+	await settle();
+	const shown = found(document, '[data-slot="toast"]');
+	check(
+		"TOAST() DRAWS A TOAST WITH ITS TITLE, DESCRIPTION AND ACTION",
+		[
+			shown.querySelector(".wg-kit-toast-title")?.textContent,
+			shown.querySelector(".wg-kit-toast-description")?.textContent,
+			shown.getAttribute("data-type"),
+		],
+		["Event created", "Sunday at 9:00", "default"],
+	);
+	fire(found(shown, ".wg-kit-toast-button"), "click");
+	await settle();
+	check("its action runs and dismisses it", [said, shown.getAttribute("data-state")], [["undo"], "closed"]);
+	await wait(300);
+	check(
+		"a dismissed toast leaves the queue",
+		kit.toast.getToasts().some((toast) => toast.id === id),
+		false,
+	);
+	kit.toast.success("Saved", { onAutoClose: () => said.push("auto") });
+	await settle();
+	check("toast.success is typed", slotted("toast")?.getAttribute("data-type"), "success");
+	await wait(120);
+	check("a toast closes on its own after its duration", said.at(-1), "auto");
+	await leavingToast();
+	await promiseToast();
+	await pausedToast();
+	await draw(null);
+}
+
+async function leavingToast(): Promise<void> {
+	const older = kit.toast("Older", { duration: Infinity });
+	kit.toast("Newer", { duration: Infinity });
+	await settle();
+	kit.toast.dismiss(older);
+	await settle();
+	const leaving = [...document.querySelectorAll('[data-slot="toast"]')].find((toast) => toast.textContent === "Older");
+	check(
+		"A TOAST LEAVING FROM BEHIND THE FRONT KEEPS ITS PLACE IN THE STACK",
+		leaving ? styleVar(leaving, "--wg-kit-toast-index") : "gone",
+		"1",
+	);
+	kit.toast.dismiss();
+	await wait(300);
+}
+
+async function promiseToast(): Promise<void> {
+	let finish: (name: string) => void = () => undefined;
+	const saving = new Promise<string>((done) => {
+		finish = done;
+	});
+	const id = kit.toast.promise(saving, {
+		loading: "Saving…",
+		success: (name: string) => `${name} saved`,
+		error: "Failed",
+	});
+	await settle();
+	finish("Notes");
+	check(
+		"toast.promise first shows loading",
+		document.querySelector(`[data-type="loading"] .wg-kit-toast-title`)?.textContent,
+		"Saving…",
+	);
+	await settle();
+	const settled = kit.toast.getToasts().find((toast) => toast.id === id);
+	check(
+		"then the same toast turns into the success the promise gave",
+		[settled?.type, settled?.title],
+		["success", "Notes saved"],
+	);
+	kit.toast.dismiss();
+	await wait(300);
+}
+
+async function pausedToast(): Promise<void> {
+	kit.toast.info("Hold me", { duration: 40 });
+	await settle();
+	fire(found(document, '[data-slot="toaster"]'), "pointerover", { relatedTarget: null });
+	await wait(90);
+	check("A TOAST UNDER THE POINTER WAITS", slotted("toast")?.getAttribute("data-state"), "open");
+	fire(found(document, '[data-slot="toaster"]'), "pointerout", { relatedTarget: outside });
+	await wait(90);
+	check("and closes once the pointer leaves", kit.toast.getToasts().filter((toast) => !toast.isLeaving).length, 0);
+}
+
+await placement();
+await sidedPopover();
+await tooltip();
+await hoverCard();
+await dropdownMenu();
+await contextMenu();
+await menubar();
+await navigationMenu();
+await sheetAndAlert();
+await layeredEscape();
+await drawer();
+await toasts();
+
+console.log(failed ? `\n${failed} failed of ${checks}` : `\nall passed (${checks} checks)`);
+process.exit(failed ? 1 : 0);

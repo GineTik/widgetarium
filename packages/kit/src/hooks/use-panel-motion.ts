@@ -29,7 +29,7 @@ export function usePanelMotion(ask: PanelMotionAsk): void {
 
 	useLayoutEffect(() => {
 		const panel = panelRef.current;
-		const anchor = pointRef.current ?? anchorRef.current;
+		const anchor = pointRef.current ?? (where.solve ? triggerRef.current : null) ?? anchorRef.current;
 		if (!panel || !anchor) return undefined;
 		const closing = wasOpen.current && !isOpen;
 		wasOpen.current = isOpen;
@@ -39,6 +39,7 @@ export function usePanelMotion(ask: PanelMotionAsk): void {
 
 		if (isOpen) {
 			setExiting(false);
+			if (anchorRef.current && anchorRef.current !== anchor) anchorRef.current.style.visibility = "";
 			const stopEnter = enterPanel(panel, anchor, where);
 			if (openedByKeyboard.current) panel.querySelector<HTMLElement>(POPOVER_ITEM)?.focus();
 			return stopEnter;
@@ -66,7 +67,7 @@ export function usePanelMotion(ask: PanelMotionAsk): void {
 			stopExit.current?.();
 			stopExit.current = null;
 		};
-	}, [isOpen]);
+	}, [isOpen, where.key]);
 }
 
 function returnFocus(panel: HTMLElement, trigger: HTMLElement): void {
