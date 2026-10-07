@@ -5,6 +5,7 @@ import type { PopoverAlign, PopoverSide } from "../constants/popover";
 import { useAsksPlacement } from "../hooks/use-asks-placement";
 import { cn } from "../utils/cn";
 import { NESTED_PANEL_PARENT } from "../utils/nested-panels";
+import { sideNameOf } from "../utils/floating-placement";
 import { portalLayer } from "../utils/portal-layer";
 import { stepIndex } from "../utils/roving";
 import type { Step } from "../utils/roving";
@@ -14,6 +15,7 @@ export interface PopoverContentProps {
 	readonly side?: PopoverSide | undefined;
 	readonly align?: PopoverAlign | undefined;
 	readonly sideOffset?: number | undefined;
+	readonly alignOffset?: number | undefined;
 	readonly children?: ReactNode;
 	readonly className?: string | undefined;
 }
@@ -25,11 +27,18 @@ const STEP_OF_KEY: ReadonlyMap<string, Step> = new Map<string, Step>([
 	["End", "last"],
 ]);
 
-export function PopoverContent({ side, align, children, className: cls }: PopoverContentProps): ReactElement {
+export function PopoverContent({
+	side,
+	align,
+	sideOffset,
+	alignOffset,
+	children,
+	className: cls,
+}: PopoverContentProps): ReactElement {
 	const popover = usePopover();
 	const held = useRef<ReactNode>(null);
 	if (popover.isOpen) held.current = children;
-	useAsksPlacement({ side, align, askPlacement: popover.askPlacement });
+	useAsksPlacement({ side, align, sideOffset, alignOffset, askPlacement: popover.askPlacement });
 	const panel = (
 		<div
 			id={popover.id}
@@ -45,7 +54,7 @@ export function PopoverContent({ side, align, children, className: cls }: Popove
 			role="dialog"
 			data-slot="popover-content"
 			data-state={dataStateOf(popover.isOpen)}
-			data-side={popover.placement}
+			data-side={popover.where.solve ? undefined : sideNameOf(popover.placement)}
 			data-wg-overlay={popover.shown ? "" : undefined}
 			{...{ [NESTED_PANEL_PARENT]: popover.parentId }}
 			onKeyDown={moveBetweenItems}

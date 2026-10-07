@@ -1,0 +1,58 @@
+import { createElement as h } from "react";
+import type { FunctionComponent, ReactElement } from "react";
+import { classedSlotPart } from "./create-slot-part";
+import type { SlotPartProps } from "./create-slot-part";
+import type { DialogCloseProps } from "./dialog-close";
+import { DialogRoot } from "./dialog-root";
+import type { DialogRootProps } from "./dialog-root";
+import type { DialogTriggerProps } from "./dialog-trigger";
+import { DrawerDirectionContext } from "./drawer-direction";
+import type { ModalSide } from "./modal-layer";
+import { modalClose, modalTextPart, modalTrigger } from "./modal-parts";
+
+export { DrawerContent } from "./drawer-content";
+export { OverlayPortal as DrawerPortal } from "./overlay-portal";
+export { OverlayScrimPart as DrawerOverlay } from "./overlay-scrim-part";
+export type { DrawerContentProps } from "./drawer-content";
+
+export interface DrawerProps extends DialogRootProps {
+	readonly direction?: ModalSide | undefined;
+}
+
+export function Drawer({ direction = "bottom", ...root }: DrawerProps): ReactElement {
+	return (
+		<DrawerDirectionContext.Provider value={direction}>
+			<DialogRoot {...root} />
+		</DrawerDirectionContext.Provider>
+	);
+}
+
+export const DrawerTrigger: FunctionComponent<DialogTriggerProps> = modalTrigger("DrawerTrigger");
+
+export const DrawerClose: FunctionComponent<DialogCloseProps> = modalClose("DrawerClose");
+
+export const DrawerHeader: FunctionComponent<SlotPartProps> = classedSlotPart(
+	"div",
+	"wg-kit-modal-header",
+	"DrawerHeader",
+);
+
+export const DrawerFooter: FunctionComponent<SlotPartProps> = classedSlotPart(
+	"div",
+	"wg-kit-modal-footer",
+	"DrawerFooter",
+);
+
+export const DrawerTitle: FunctionComponent<SlotPartProps> = modalTextPart(
+	"h2",
+	"wg-kit-modal-title",
+	"DrawerTitle",
+	"titleId",
+);
+
+export const DrawerDescription: FunctionComponent<SlotPartProps> = modalTextPart(
+	"p",
+	"wg-kit-modal-description",
+	"DrawerDescription",
+	"descriptionId",
+);

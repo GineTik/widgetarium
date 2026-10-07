@@ -13,7 +13,35 @@ export interface Placement {
 	readonly hidesTrigger: boolean;
 	readonly origin: (rect: DOMRect) => PanelSpot;
 	readonly flipped: (rect: DOMRect, size: PanelSize) => PanelSpot;
+	readonly solve?: ((rect: AnchorBox, size: PanelSize, viewport: PanelSize) => FloatingSpot) | undefined;
+	readonly key?: string | undefined;
 }
+
+export interface AnchorBox {
+	readonly left: number;
+	readonly top: number;
+	readonly right: number;
+	readonly bottom: number;
+	readonly width: number;
+	readonly height: number;
+}
+
+export interface FloatingSpot extends PanelSpot {
+	readonly side: PopoverSide;
+	readonly align: PopoverAlign;
+	readonly origin: string;
+	readonly availableWidth: number;
+	readonly availableHeight: number;
+}
+
+export interface SidePlacement {
+	readonly side: PopoverSide;
+	readonly align: PopoverAlign;
+	readonly sideOffset: number;
+	readonly alignOffset: number;
+}
+
+export type PlacementChoice = PlacementName | SidePlacement;
 
 export type PlacementName = "over" | "below";
 
@@ -50,6 +78,6 @@ export type PopoverSide = "top" | "right" | "bottom" | "left";
 
 export type PopoverAlign = "start" | "center" | "end";
 
-export const DRAWN_SIDES: readonly PopoverSide[] = ["bottom"];
+export const DEFAULT_SIDE_OFFSET = 4;
 
-export const DRAWN_ALIGN: PopoverAlign = "start";
+export const SCREEN_MARGIN_PX = 8;

@@ -51,6 +51,7 @@ import { ShadcnButtons, ShadcnCard, ShadcnCommand, ShadcnForm, ShadcnSwitches } 
 import { LayoutDemos } from "./kit-demo-layout.tsx";
 import { AttachmentDemo, BubbleDemo, CHAT_USAGE, ChatDemo, QuestionnaireDemo } from "./kit-demo-chat.tsx";
 import { InputsSections } from "./kit-demo-inputs-sections.tsx";
+import { OVERLAYS_USAGE, OverlaysShowcase, openedFromHash } from "./kit-demo-overlays.tsx";
 import {
 	Area,
 	AreaChart,
@@ -411,6 +412,13 @@ function Demo() {
 			</WideSection>
 			<WideSection title="Skeleton" note="One component, a preset per kit item" usage={USAGE.skeleton}>
 				<Skeletons />
+			</WideSection>
+			<WideSection
+				title="Overlays and menus"
+				note="Tooltip · HoverCard · DropdownMenu · ContextMenu · Menubar · NavigationMenu · Sheet · Drawer · AlertDialog · Toaster. Add #open=floating|sheet|drawer|alert|toast to the address to see one open"
+				usage={OVERLAYS_USAGE}
+			>
+				<OverlaysShowcase opened={openedFromHash(location.hash)} />
 			</WideSection>
 		</Layout>
 	);

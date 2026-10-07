@@ -71,6 +71,8 @@
 		"test:kit-layout": "node --single-threaded --import ./tools/loader/register.mts tools/kit-layout-test.ts",
 		"test:kit-chat": "node --single-threaded --import ./tools/loader/register.mts tools/kit-chat-test.ts",
 		"test:kit-inputs": "node --single-threaded --import ./tools/loader/register.mts tools/kit-inputs-test.ts",
+		"test:kit-overlays": "node --single-threaded --import ./tools/loader/register.mts tools/kit-overlays-test.ts",
+		"shot:kit-overlays": "node --single-threaded --import ./tools/loader/register.mts tools/kit-overlays-shot.ts",
 		"test:fill": "node --single-threaded --import ./tools/loader/register.mts tools/fill-test.ts",
 		"test:settings": "node --single-threaded --import ./tools/loader/register.mts tools/settings-test.ts",
 		"test:view": "node --single-threaded --import ./tools/loader/register.mts tools/view-test.ts",
