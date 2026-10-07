@@ -21,6 +21,7 @@ export function WidgetGroup({ widget, registry, host }: WidgetGroupProps): React
 			title: typeof title === "string" ? title : widget.id,
 			sub: widget.id,
 			badge: widget.isFromCatalogue ? FROM_CATALOGUE : NEW,
+			mark: widget.id,
 		},
 		cardsOf(widget.id, Object.entries(definition?.states ?? {}), { registry, host }),
 	);

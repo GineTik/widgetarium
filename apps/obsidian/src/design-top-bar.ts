@@ -7,7 +7,7 @@ import type { CanvasMode } from "./design-tools.js";
 export interface TopBarProps {
 	readonly app: string;
 	readonly said: string;
-	readonly pages: readonly string[];
+	readonly pages: readonly { readonly value: string; readonly label: ReactNode }[];
 	readonly page: string;
 	readonly onPage: (page: string) => void;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
@@ -39,7 +39,7 @@ export function TopBar({
 		]),
 		h(Segmented<string>, {
 			key: "pages",
-			items: pages.map((one) => ({ value: one, label: one })),
+			items: pages,
 			value: page,
 			onValueChange: onPage,
 			size: "s",

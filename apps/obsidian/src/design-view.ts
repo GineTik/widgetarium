@@ -22,11 +22,17 @@ import { readSpec, specPathOf } from "@widgetarium/core/app-spec.js";
 import { LOCK_PATH } from "@widgetarium/core/paths.js";
 import type { CanvasMode } from "./design-tools.js";
 import { DesignCanvas } from "./design-canvas.js";
+import { WIDGETS_PAGE } from "./design-canvas-page.js";
+import { widgetOpenerOf } from "./design-references.js";
 import { statePropsOf } from "./design-state-drawing.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
 import type { DrawnDesign, DrawnState, StatePicture } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
 import type WidgetariumPlugin from "./main.js";
+import type { Job } from "@widgetarium/core/app-jobs.js";
+import { NO_DOCS } from "./design-docs.js";
+import { docsOf } from "./design-docs-read.js";
+import type { JobControls } from "./design-job.js";
 
 export const DESIGN_VIEW_TYPE = "widgetarium-design";
 
@@ -40,12 +46,17 @@ const NO_DESIGN = "{app} has no design yet, or it was removed.";
 const PHOTOS_FAILED = "The photos were not added to the canvas: {why}";
 const NO_PAGE_FOLDER = "{widget} has no folder in this vault, so its layout cannot be changed here.";
 const NOT_MOVED = "Nothing was moved: {why}";
+const JOBS_REDRAW_MS = 400;
 
 export class DesignView extends ItemView {
 	private appName = "";
 	private page = "";
 	private isLayersOpen = false;
 	private mode: CanvasMode = "hand";
+	private focusWidget: string | null = null;
+	private readonly onFocusedWidget = (): void => {
+		this.focusWidget = null;
+	};
 	private node: HTMLElement | null = null;
 
 	constructor(
@@ -91,7 +102,39 @@ export class DesignView extends ItemView {
 		this.register(() => watched.disconnect());
 		this.registerInterval(window.setInterval(() => void this.redrawWhenChanged(), DESIGN_POLL_MS));
 		this.registerDomEvent(document, "paste", (event) => this.pastePhotos(event));
+		this.watchJobs();
 		await this.draw();
+	}
+
+	private watchJobs(): void {
+		let soon: number | null = null;
+		const stop = this.plugin.assistant?.jobs.watch(() => {
+			if (soon !== null) return;
+			soon = window.setTimeout(() => {
+				soon = null;
+				void this.draw();
+			}, JOBS_REDRAW_MS);
+		});
+		if (stop) this.register(stop);
+	}
+
+	private jobsNow(): readonly Job[] {
+		return this.plugin.assistant?.jobs.jobsOf(this.appName) ?? [];
+	}
+
+	private async controlsNow(): Promise<JobControls> {
+		const app = this.appName;
+		const assistant = this.plugin.assistant;
+		const held = assistant ? await assistant.settings.state() : null;
+		const jobs = assistant?.jobs;
+		const redrawn = (done: Promise<unknown> | undefined): void => void done?.then(() => this.draw());
+		return {
+			live: (id) => jobs?.liveOf(app, id) ?? null,
+			start: (id) => redrawn(jobs?.start(app, id)),
+			stop: (id) => redrawn(jobs?.stop(app, id)),
+			openChat: () => void this.plugin.showAssistant(true),
+			startsThemselves: held?.jobsStartThemselves ?? true,
+		};
 	}
 
 	private pastePhotos(event: ClipboardEvent): void {
@@ -139,7 +182,10 @@ export class DesignView extends ItemView {
 		const node = this.node;
 		const size = { width: this.contentEl.clientWidth, height: this.contentEl.clientHeight };
 		if (!node || !this.appName || size.width === 0 || size.height === 0) return;
-		const { screens, references, widgets } = await designOf(this.plugin, this.appName);
+		const jobs = this.jobsNow();
+		const docs = await docsOf(this.plugin, this.appName);
+		const isStarting = jobs.length > 0 || docs !== NO_DOCS;
+		const { screens, references, widgets } = await designOf(this.plugin, this.appName, isStarting);
 		this.drawnDrafts = draftsOn(screens);
 		this.drawnWidgets = widgetsDrawnOn(this.plugin, screens, widgets);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
@@ -152,8 +198,11 @@ export class DesignView extends ItemView {
 			onMode: (mode: CanvasMode): void => this.turnMode(mode),
 			onMove: (widget: string, move: LayerMove): void => void this.moveLayer(widget, move),
 		};
-		const design = { app: this.appName, screens, references, widgets, size, onAddPhotos };
-		render(h(DesignCanvas, { key: this.page, ...design, ...paging, ...layering, ...drawing }), node);
+		const controls = await this.controlsNow();
+		const opener = widgetOpenerOf(drawing.registry, (widget) => this.openWidget(widget));
+		const focusing = { focusWidget: this.focusWidget, onFocusedWidget: this.onFocusedWidget };
+		const design = { app: this.appName, screens, references, widgets, jobs, docs, controls, opener, size, onAddPhotos };
+		render(h(DesignCanvas, { key: this.page, ...design, ...focusing, ...paging, ...layering, ...drawing }), node);
 	}
 
 	private turnMode(mode: CanvasMode): void {
@@ -178,6 +227,11 @@ export class DesignView extends ItemView {
 		await adapter.write(path, moved.source);
 	}
 
+	private openWidget(widget: string): void {
+		this.focusWidget = widget;
+		this.turnTo(WIDGETS_PAGE);
+	}
+
 	private turnTo(page: string): void {
 		this.page = page;
 		this.app.workspace.requestSaveLayout();
@@ -197,8 +251,9 @@ export async function openDesign(obsidian: App, app: string, page?: string): Pro
 	await obsidian.workspace.revealLeaf(leaf);
 }
 
-export async function designOf(plugin: WidgetariumPlugin, app: string): Promise<DrawnDesign> {
+export async function designOf(plugin: WidgetariumPlugin, app: string, isStarting = false): Promise<DrawnDesign> {
 	const text = await plugin.app.vault.adapter.read(designPathOf(app)).catch(() => null);
+	if (text === null && isStarting) return { screens: [], references: [], widgets: [] };
 	if (text === null) return refusedDesign(app, NO_DESIGN.replace("{app}", app));
 	const read = readDesign(text);
 	if (read.refusal !== undefined) return refusedDesign(app, read.refusal);

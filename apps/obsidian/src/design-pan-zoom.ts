@@ -35,7 +35,7 @@ const WHEEL_RATE = 0.003;
 const PINCH_DELTA_BELOW = 30;
 const SHARP_AFTER_MS = 150;
 const MOVING = "is-moving";
-const PRESSABLE = "button, [role=radio], [role=tab], .wg-design-layers";
+const PRESSABLE = "button, input, textarea, [role=radio], [role=tab], [role=switch], .wg-design-layers, .wg-design-job";
 const OWN_SCROLL = ".wg-design-layers";
 
 export function fitLook(field: Size, view: Size): Look {

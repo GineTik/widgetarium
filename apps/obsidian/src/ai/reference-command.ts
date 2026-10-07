@@ -18,6 +18,9 @@ const ADDED = "{url} is on the {app} canvas{why}. The person sees it above the s
 const NO_NOTE =
 	'Name the app, the reference and the note, for example: note "Weekly review" dex-home.png "Take the greeting with a composer as the hero" --tone take --at 0.4,0.2';
 const NO_REFERENCE = "{app} has no reference named {named}: run `reference` first.";
+const WIDGET_ID = /^@[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*$/;
+const BAD_INTO =
+	"--into names the widget a take became, @scope/name; a take that became a layout or a line of copy says so in the note's own words.";
 const BAD_AT = "--at is two numbers from 0 to 1 split by a comma, the point the note is about: --at 0.4,0.2";
 const NOTED = "The note stands beside {named} on the {app} canvas.";
 
@@ -91,15 +94,21 @@ function askedNoteOf(
 ): AskedNote | { readonly refusal: string } {
 	if (!app || !isSafeAppName(app)) return { refusal: NO_NOTE };
 	if (typeof named !== "string" || typeof text !== "string" || text.trim() === "") return { refusal: NO_NOTE };
+	if (flags["into"] !== undefined && !WIDGET_ID.test(String(flags["into"]))) return { refusal: BAD_INTO };
 	const note = noteOf(text, flags);
 	if (note === null) return { refusal: BAD_AT };
 	return { app, named, note };
 }
 
-function noteOf(text: string, { tone, at }: CommandFlags) {
+function noteOf(text: string, { tone, at, into }: CommandFlags) {
 	const point = pointOf(at);
 	if (point === null) return null;
-	return { text: text.trim(), tone: isNoteTone(tone) ? tone : "note", ...(point ? { at: point } : {}) };
+	return {
+		text: text.trim(),
+		tone: isNoteTone(tone) ? tone : "note",
+		...(point ? { at: point } : {}),
+		...(typeof into === "string" && into.trim() !== "" ? { into: into.trim() } : {}),
+	};
 }
 
 function pointOf(at: unknown): readonly [number, number] | undefined | null {

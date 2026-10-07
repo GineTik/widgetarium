@@ -8,7 +8,7 @@ import { boardIn } from "./board-in-note.js";
 import { DESKTOP_FRAME } from "./design-canvas-shapes.js";
 import { DRAWS_AT_ONCE } from "./design-drawn-when-seen.js";
 import { PagesRegion } from "./design-pages.js";
-import { ReferencesRegion } from "./design-references.js";
+import { ReferencesRegion, widgetOpenerOf } from "./design-references.js";
 import { WidgetsRegion } from "./design-widgets.js";
 import { withBlocks } from "./design-block-registry.js";
 import { ScreenBoard } from "./design-screen-board.js";
@@ -75,7 +75,7 @@ async function designShotOf(plugin: WidgetariumPlugin, app: string): Promise<Sho
 	const design = await designOf(plugin, app);
 	const drawing = { registry: withBlocks(plugin.registry), host: plugin.host };
 	const chunks = [
-		h(ReferencesRegion, { references: design.references }),
+		h(ReferencesRegion, { references: design.references, opener: widgetOpenerOf(drawing.registry, () => undefined) }),
 		...design.screens.map((screen) => h(PagesRegion, { screens: [screen], size: DESKTOP_FRAME, ...drawing })),
 		...widgetBatchesOf(design.widgets).map((widgets) => h(WidgetsRegion, { widgets, ...drawing })),
 	];

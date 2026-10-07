@@ -71,7 +71,14 @@ export function withReferenceNoted(
 	const at = references.findIndex((one) => isNamedReference(one, named));
 	const reference = references[at];
 	if (typeof reference !== "object" || reference === null) return null;
-	const noted = { ...reference, notes: [...listIn(reference, "notes"), note] };
+	const notes = listIn(reference, "notes");
+	const same = notes.findIndex(
+		(one) => typeof one === "object" && one !== null && Reflect.get(one, "text") === note["text"],
+	);
+	const noted = {
+		...reference,
+		notes: same === -1 ? [...notes, note] : notes.map((one, index) => (index === same ? note : one)),
+	};
 	return `${JSON.stringify({ ...held, references: references.map((one, index) => (index === at ? noted : one)) }, null, 2)}\n`;
 }
 
@@ -150,6 +157,7 @@ const ReferenceNoteSchema = z.object({
 	text: z.string().trim().min(1),
 	tone: z.enum(NOTE_TONES).default("note"),
 	at: z.tuple([z.number().min(0).max(1), z.number().min(0).max(1)]).optional(),
+	into: z.string().trim().min(1).optional(),
 });
 
 export type ReferenceNote = z.infer<typeof ReferenceNoteSchema>;

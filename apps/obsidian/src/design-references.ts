@@ -1,17 +1,19 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import type { DrawnReference } from "./design-canvas-shapes.js";
+import type { Drawing, DrawnReference } from "./design-canvas-shapes.js";
 import { Group } from "./design-group.js";
 import { NotedPicture } from "./design-noted-picture.js";
+import type { WidgetOpener } from "./design-noted-picture.js";
 import { Region } from "./design-region.js";
 
 export interface ReferencesRegionProps {
 	readonly references: readonly DrawnReference[];
+	readonly opener: WidgetOpener;
 }
 
 const REFERENCES = "References";
 
-export function ReferencesRegion({ references }: ReferencesRegionProps): ReactElement | null {
+export function ReferencesRegion({ references, opener }: ReferencesRegionProps): ReactElement | null {
 	if (references.length === 0) return null;
 	return h(
 		Region,
@@ -20,10 +22,20 @@ export function ReferencesRegion({ references }: ReferencesRegionProps): ReactEl
 			h(
 				Group,
 				{ key: reference.name, title: titleOf(reference), badge: reference.kind, sub: reference.why },
-				h(NotedPicture, { reference }),
+				h(NotedPicture, { reference, opener }),
 			),
 		),
 	);
+}
+
+export function widgetOpenerOf(registry: Drawing["registry"], open: (widget: string) => void): WidgetOpener {
+	return {
+		open,
+		nameOf: (widget) => {
+			const title = registry.get(widget)?.manifest["title"];
+			return typeof title === "string" ? title : widget;
+		},
+	};
 }
 
 function titleOf(reference: DrawnReference): string {

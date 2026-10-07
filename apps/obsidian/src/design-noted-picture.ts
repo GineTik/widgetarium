@@ -5,6 +5,7 @@ import type { DrawnReference } from "./design-canvas-shapes.js";
 import { placedNotes } from "./note-layout.js";
 import type { NoteSide, PlacedNote } from "./note-layout.js";
 
+const OPEN_WIDGET = "{name} ↗";
 const TONE_SAID: Readonly<Record<ReferenceNote["tone"], string>> = {
 	take: "Take",
 	like: "Like",
@@ -26,14 +27,25 @@ interface Laid {
 	readonly height: number;
 }
 
-export function NotedPicture({ reference }: { readonly reference: DrawnReference }): ReactElement {
+export interface WidgetOpener {
+	readonly open: (widget: string) => void;
+	readonly nameOf: (widget: string) => string;
+}
+
+export function NotedPicture({
+	reference,
+	opener,
+}: {
+	readonly reference: DrawnReference;
+	readonly opener: WidgetOpener;
+}): ReactElement {
 	const body = useRef<HTMLDivElement | null>(null);
 	const laid = useLaidNotes(body, reference.notes);
 	const columnOf = (side: NoteSide): ReactElement =>
 		h(
 			"div",
 			{ key: side, className: `wg-design-notes is-${side}`, style: { height: `${laid?.height ?? 0}px` } },
-			reference.notes.map((note, at) => noteOf(note, at, laid?.placed[at], side)),
+			reference.notes.map((note, at) => noteOf(note, at, laid?.placed[at], side, opener)),
 		);
 	return h("div", { className: "wg-design-noted", ref: body }, [
 		columnOf("left"),
@@ -43,13 +55,20 @@ export function NotedPicture({ reference }: { readonly reference: DrawnReference
 	]);
 }
 
-function noteOf(note: ReferenceNote, at: number, place: PlacedNote | undefined, side: NoteSide): ReactElement | null {
+function noteOf(
+	note: ReferenceNote,
+	at: number,
+	place: PlacedNote | undefined,
+	side: NoteSide,
+	opener: WidgetOpener,
+): ReactElement | null {
 	const isHere = place ? place.side === side : side === "right";
 	if (!isHere) return null;
 	const style = place ? { top: `${place.top}px` } : { visibility: "hidden" as const };
 	return h("div", { key: at, className: `wg-design-note is-${note.tone}`, "data-note": at, style }, [
 		h("b", { key: "tone" }, TONE_SAID[note.tone]),
 		h("span", { key: "text" }, note.text),
+		note.into ? widgetButtonOf(note.into, opener) : null,
 	]);
 }
 
@@ -108,4 +127,12 @@ function lineOf(
 		picture.offsetTop + note.at[1] * picture.offsetHeight,
 	];
 	return [{ from, to, tone: note.tone }];
+}
+
+function widgetButtonOf(widget: string, opener: WidgetOpener): ReactElement {
+	return h(
+		"button",
+		{ key: "into", type: "button", className: "wg-design-note-widget", onClick: () => opener.open(widget) },
+		OPEN_WIDGET.replace("{name}", opener.nameOf(widget)),
+	);
 }

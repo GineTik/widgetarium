@@ -1,13 +1,18 @@
 import { createElement as h, useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent, ReactElement } from "react";
+import type { DragEvent, ReactElement, RefObject } from "react";
 import { Button, Icon, IconButton } from "@widgetarium/kit";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import type { DrawnReference, DrawnScreen, DrawnWidget, Size } from "./design-canvas-shapes.js";
 import { imageFilesIn } from "./design-photos.js";
 import { WIDGETS_PAGE, canvasPagesOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
+import { pageLabelOf } from "./design-job.js";
+import type { Job } from "@widgetarium/core/app-jobs.js";
+import type { CanvasDocs } from "./design-docs.js";
+import type { JobControls } from "./design-job.js";
+import type { WidgetOpener } from "./design-noted-picture.js";
 import { LayersPanel } from "./design-layers-panel.js";
 import type { LayerFocus } from "./design-layers-panel.js";
-import { Highlight } from "./design-spotlight.js";
+import { Highlight, lookOnto, screenBoxOf } from "./design-spotlight.js";
 import { useCanvasSelection } from "./design-canvas-selection.js";
 import type { CanvasMode } from "./design-tools.js";
 import type { LayerMove } from "./layer-moves.js";
@@ -21,6 +26,12 @@ export interface DesignCanvasProps {
 	readonly screens: readonly DrawnScreen[];
 	readonly references: readonly DrawnReference[];
 	readonly widgets: readonly DrawnWidget[];
+	readonly jobs: readonly Job[];
+	readonly docs: CanvasDocs;
+	readonly controls: JobControls;
+	readonly opener: WidgetOpener;
+	readonly focusWidget: string | null;
+	readonly onFocusedWidget: () => void;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
 	readonly page: string;
 	readonly onPage: (page: string) => void;
@@ -36,7 +47,7 @@ export interface DesignCanvasProps {
 
 const ZOOM_STEP = 0.1;
 const SCREENS_SAID = "{count} screens · {frames} frames · read only";
-const HINT = "Approve or change it in the chat";
+const HINT = "Answer a job on its page, or tell the agent in the chat";
 const LAYERS_SAID = "Layers";
 const PAGE_FADE_MS = 140;
 const FADED_ON_TURN = ".wg-design-layer, .wg-design-layers.is-open";
@@ -46,12 +57,13 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 	const fit = useMemo(() => fitLook(field, props.size), [field, props.size]);
 	const pan = usePanZoom(layerRef, fit, props.mode === "hand");
 	const selection = useCanvasSelection(layerRef, pan);
-	const { screens, references, widgets, registry, host } = props;
-	const page = shownPageOf(props.page, screens);
+	const { screens, references, widgets, jobs, docs, controls, opener, registry, host } = props;
+	const page = shownPageOf(props.page, { screens, jobs, docs });
 	useEscapeClears(selection.picked !== null, selection.clear);
+	useFliesToWidget({ layerRef, pan, page, widget: props.focusWidget, onDone: props.onFocusedWidget });
 	const regions = useMemo(
-		() => regionsOfPage({ page, screens, references, widgets, registry, host }),
-		[page, screens, references, widgets, registry, host],
+		() => regionsOfPage({ page, screens, references, widgets, jobs, docs, controls, opener, registry, host }),
+		[page, screens, references, widgets, jobs, docs, controls, opener, registry, host],
 	);
 	const isPointer = props.mode === "pointer";
 	return h(
@@ -83,7 +95,7 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 }
 
 function topBarOf(
-	{ app, screens, onPage, onAddPhotos, mode, onMode, isLayersOpen, onLayers }: DesignCanvasProps,
+	{ app, screens, jobs, docs, onPage, onAddPhotos, mode, onMode, isLayersOpen, onLayers }: DesignCanvasProps,
 	page: string,
 ): ReactElement {
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
@@ -107,7 +119,7 @@ function topBarOf(
 		key: "top",
 		app,
 		said,
-		pages: canvasPagesOf(screens),
+		pages: canvasPagesOf({ screens, jobs, docs }).map((one) => ({ value: one, label: pageLabelOf(one, jobs) })),
 		page,
 		onPage,
 		onAddPhotos,
@@ -197,4 +209,27 @@ function zoomBar(pan: PanZoom): ReactElement {
 		h(Button, { key: "in", size: "s", variant: "ghost", onClick: () => pan.zoomBy(ZOOM_STEP) }, "+"),
 		h("span", { key: "said", className: "wg-design-percent", ref: pan.percentRef }),
 	]);
+}
+
+interface WidgetFlight {
+	readonly layerRef: RefObject<HTMLDivElement | null>;
+	readonly pan: PanZoom;
+	readonly page: string;
+	readonly widget: string | null;
+	readonly onDone: () => void;
+}
+
+function useFliesToWidget({ layerRef, pan, page, widget, onDone }: WidgetFlight): void {
+	useEffect(() => {
+		if (widget === null || page !== WIDGETS_PAGE) return undefined;
+		const frame = requestAnimationFrame(() => {
+			const layer = layerRef.current;
+			const group = layer
+				? [...layer.querySelectorAll<HTMLElement>("[data-wg-group]")].find((one) => one.dataset["wgGroup"] === widget)
+				: null;
+			if (layer && group) pan.flyTo(lookOnto(screenBoxOf(layer, group, pan.lookNow().scale), pan.fieldRef.current));
+			onDone();
+		});
+		return () => cancelAnimationFrame(frame);
+	}, [layerRef, pan, page, widget, onDone]);
 }
