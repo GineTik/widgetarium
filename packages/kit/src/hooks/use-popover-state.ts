@@ -55,7 +55,7 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 		setExiting,
 		onExited,
 	});
-	useCloseOnOutsidePress({ isOpen, setOpen, anchorRef, panelRef });
+	useCloseOnOutsidePress({ id, isOpen, setOpen, anchorRef, panelRef });
 
 	return {
 		id,

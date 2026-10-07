@@ -48,6 +48,7 @@ import { Cell, Named, Section, WideSection } from "./kit-demo-frame.tsx";
 import { TableWithPages } from "./kit-demo-table.tsx";
 import { USAGE } from "./kit-demo-usage.ts";
 import { ShadcnButtons, ShadcnCard, ShadcnCommand, ShadcnForm, ShadcnSwitches } from "./kit-demo-shadcn.tsx";
+import { InputsSections } from "./kit-demo-inputs-sections.tsx";
 import {
 	Area,
 	AreaChart,
@@ -376,6 +377,7 @@ function Demo() {
 					<ShadcnSwitches />
 				</Section>
 			</Grid>
+			<InputsSections />
 			<WideSection title="Chart" note="Recharts parts inside ChartContainer, coloured by config" usage={USAGE.chart}>
 				<Charts />
 			</WideSection>
