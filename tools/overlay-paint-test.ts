@@ -2,7 +2,9 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { paged } from "./chrome-ask.ts";
+import { commandAccordionTwinChecks } from "./twins-command-accordion-paint.ts";
 import { dialogTwinChecks } from "./twins-dialog-paint.ts";
+import { twinChecks } from "./twins-paint.ts";
 
 const SHEET = readFileSync("apps/obsidian/styles.css", "utf8");
 const FRAME = `<div class="wg-design-frame" style="width:600px">
@@ -47,8 +49,8 @@ check(
 	{ coversScreen: true, coversTitle: false, dialogDrop: 120, dialogCentred: true },
 );
 page.close();
-const { twinChecks } = await import("./twins-paint.ts");
 for (const [what, got, wanted] of await twinChecks()) check(what, got, wanted);
 for (const [what, got, wanted] of await dialogTwinChecks()) check(what, got, wanted);
+for (const [what, got, wanted] of await commandAccordionTwinChecks()) check(what, got, wanted);
 console.log(`\n${failed === 0 ? "overlay paint: clean" : `overlay paint: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

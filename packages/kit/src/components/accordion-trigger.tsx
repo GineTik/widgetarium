@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, ReactElement } from "react";
 import { Icon } from "../icons/icon";
-import { cn } from "../utils/cn";
+import { rowClass } from "../utils/class-names";
 import { useAccordion, useAccordionItem } from "./accordion-context";
 
 export type AccordionTriggerProps = ButtonHTMLAttributes<HTMLButtonElement>;
@@ -23,13 +23,13 @@ export function AccordionTrigger({ className, children, ...rest }: AccordionTrig
 				aria-disabled={item.isDisabled || (item.isOpen && !accordion.canShut) || undefined}
 				disabled={item.isDisabled}
 				data-state={item.isOpen ? "open" : "closed"}
-				className={cn("wg-kit-accordion-trigger", className)}
+				className={rowClass({ pressable: !item.isDisabled, className: ["wg-kit-accordion-trigger", className] })}
 				onClick={(event) => {
 					rest.onClick?.(event);
 					accordion.toggle(item.value);
 				}}
 			>
-				{children}
+				<span className="wg-kit-row-label">{children}</span>
 				<Icon name="chevron-down" size={CHEVRON_PX} className="wg-kit-accordion-chevron" />
 			</button>
 		</h3>

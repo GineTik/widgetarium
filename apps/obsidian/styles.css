@@ -2722,6 +2722,12 @@ body {
 	font-weight: 600;
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-command-input input:is(:focus, :focus-visible) {
+	border: none;
+	box-shadow: none;
+	outline: none;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-command-input kbd,
 :is(.wg-root, .wg-portal) .wg-kit-kbd {
 	padding: 2px 8px;
@@ -9022,16 +9028,8 @@ body.wg-tree-carrying .wg-tile-body {
 	transition: visibility 0s linear var(--wg-grow);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-accordion {
-	display: flex;
-	flex-direction: column;
-	min-width: 0;
-}
-:is(.wg-root, .wg-portal) .wg-kit-accordion-item {
-	border-bottom: 1px solid var(--wg-kit-group-line);
-}
-:is(.wg-root, .wg-portal) .wg-kit-accordion-item:last-child {
-	border-bottom: none;
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > .wg-kit-accordion-item {
+	padding: 0;
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-header {
 	display: flex;
@@ -9039,40 +9037,12 @@ body.wg-tree-carrying .wg-tile-body {
 	font: inherit;
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-trigger {
-	position: relative;
-	display: flex;
-	flex: 1;
-	align-items: center;
-	justify-content: space-between;
-	gap: 16px;
-	min-height: var(--wg-kit-control-l, 52px);
-	padding: 12px 0;
-	border: none;
-	border-radius: var(--wg-kit-item);
-	background: none;
-	box-shadow: none;
-	color: var(--wg-kit-text);
-	font: inherit;
-	font-size: var(--wg-kit-text-m);
-	font-weight: var(--font-medium, 500);
-	text-align: start;
-	cursor: pointer;
-	outline: none;
-}
-:is(.wg-root, .wg-portal) .wg-kit-accordion-trigger:hover:not(:disabled) {
-	text-decoration: underline;
-	text-underline-offset: 4px;
-}
-:is(.wg-root, .wg-portal) .wg-kit-accordion-trigger:focus-visible {
-	box-shadow: 0 0 0 2px var(--ring);
+	padding-inline: var(--wg-group-pad);
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-trigger:disabled {
 	opacity: 0.5;
-	cursor: default;
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-chevron {
-	flex: none;
-	color: var(--wg-kit-text-muted);
 	transition: transform var(--wg-grow) var(--wg-spring);
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-trigger[data-state="open"] > .wg-kit-accordion-chevron {
@@ -9085,7 +9055,7 @@ body.wg-tree-carrying .wg-tile-body {
 	transform: rotate(180deg) scale(0.85);
 }
 :is(.wg-root, .wg-portal) .wg-kit-accordion-body {
-	padding-bottom: 16px;
+	padding: 0 var(--wg-group-pad) var(--size-4-4, 16px);
 	font-size: var(--wg-kit-text-s);
 	line-height: 1.55;
 	color: var(--wg-kit-text);
