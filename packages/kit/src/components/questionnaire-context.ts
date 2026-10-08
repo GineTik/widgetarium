@@ -21,7 +21,7 @@ export interface QuestionnairePosition {
 
 export interface QuestionnaireState {
 	readonly active: string | undefined;
-	readonly isActiveRequired: boolean;
+	readonly isActiveSkippable: boolean;
 	readonly position: QuestionnairePosition;
 	readonly shortcuts: ShortcutKind | undefined;
 	readonly statusOf: (name: string) => QuestionStatus;

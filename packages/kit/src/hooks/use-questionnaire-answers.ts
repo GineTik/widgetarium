@@ -3,15 +3,12 @@ import type { QuestionStatus } from "../constants/questionnaire";
 import type { QuestionnaireEntry } from "../components/questionnaire-context";
 import {
 	choiceInputsOf,
-	isAnswered,
-	isChoice,
-	isInput,
-	isSettled,
-	NOTHING_READ,
+	isChoiceControl,
+	isInputTarget,
 	readingOf,
-	statusOf,
 	textInputsOf,
-} from "../utils/questionnaire";
+} from "../components/questionnaire-fields";
+import { isAnswered, isSettled, NOTHING_READ, statusOf } from "../utils/questionnaire";
 import type { ItemReading } from "../utils/questionnaire";
 
 export interface QuestionnaireAnswers {
@@ -56,7 +53,7 @@ export function useQuestionnaireAnswers(): QuestionnaireAnswers {
 		register,
 		reread: (target) => {
 			const entry = entryHolding(entries, target);
-			if (!entry || !isInput(target)) return;
+			if (!entry || !isInputTarget(target)) return;
 			if (!entry.multiple) clearOtherAnswer(entry.element, target);
 			const reading = readingOf(entry.element);
 			if (isAnswered(reading)) keep(entry.name, reading);
@@ -84,7 +81,7 @@ function entryHolding(entries: readonly QuestionnaireEntry[], target: EventTarge
 }
 
 function clearOtherAnswer(fieldset: Element, changed: HTMLInputElement): void {
-	if (isChoice(changed)) {
+	if (isChoiceControl(changed)) {
 		if (changed.checked) for (const text of textInputsOf(fieldset)) text.value = "";
 		return;
 	}

@@ -124,7 +124,10 @@ is built that way, never by copying the card's code.
 | `DirectionProvider direction="rtl"`, `useDirection()`                                                                                     | the carousel and the resizable handle turn their arrow keys round                                                                                       |
 | `ChartContainer config`, `ChartTooltip content={<ChartTooltipContent />}`, `ChartLegend content={<ChartLegendContent />}`                 | from `widgetarium/kit/charts`; a series is coloured `var(--chart-N)` by its place, by `color: 1…5`, or by a kit hue                                     |
 
-Typography is components named after shadcn's typography page: `TypographyH1` … `TypographyH4`,
+`itemVariants` and `markerVariants` are the class builders `Item` and `Marker` draw with, and
+`useCarousel()` hands a part inside a `Carousel` its API.
+
+Typography is components named after shadcn's typography page: `TypographyH1`, `TypographyH2`, `TypographyH3`, `TypographyH4`,
 `TypographyP`, `TypographyBlockquote`, `TypographyList`, `TypographyInlineCode`, `TypographyLead`,
 `TypographyLarge`, `TypographySmall`, `TypographyMuted`, on the `--wg-kit-h*` scale. A table is
 `Table`. A heading inside a widget that is not a `text` widget is still refused by `check`.
@@ -155,7 +158,11 @@ choice are kit plates, so the plate laws decide their fill; never paint one your
 
 Ours beyond shadcn: `<MessageParts parts={message.parts} />` draws an AI SDK or TanStack AI message's
 parts as plain data — text in a bubble, reasoning or thinking folded, a tool call with its stage,
-a file or source as an attachment — and `readChatParts` reads them without drawing.
+a file or source as an attachment — and `readChatParts` reads them without drawing. It keeps only
+`http`, `https` and data URLs of an image, audio, video or PDF; a part type it does not know warns
+once and draws nothing. `MessageReasoning text isStreaming label` and
+`MessageTool name stage input isInputRaw output error` are the two parts it draws, usable alone; a
+tool value is cut at 4000 characters.
 
 ```tsx
 <MessageScrollerProvider autoScroll>
@@ -206,7 +213,9 @@ input-otp, no React Hook Form.
 always six weeks, and outside days are shown. The dropdowns are the kit's `Select`; the year list
 runs from `startMonth` to `endMonth`, a hundred years back and ten ahead without them. With no `mode`
 it is a single pick that cannot be emptied, `onSelect(day)`, which is how every calendar written
-before took it; `renderDay` and `today` stay.
+before took it; `renderDay` and `today` stay. `DateRange`, `Matcher` and `Matchers` are the types of
+a range and of `disabled`. `OTPInputContext` is input-otp's context: the `slots` an `InputOTPSlot`
+reads.
 
 **A date picker** is a composition, as in shadcn:
 
@@ -362,3 +371,9 @@ Every piece below is shadcn's, named and composed as shadcn writes it. Each floa
 | `<Toaster position expand richColors closeButton duration />` once, then `toast("Saved", { description, action: { label, onClick } })`, `toast.success`, `toast.error`, `toast.warning`, `toast.info`, `toast.loading`, `toast.promise(promise, { loading, success, error })`, `toast.dismiss(id)`                                                                                                                                                                                 | Sonner's API; toasts stack and spread on hover, and the hover pauses their timers                                                                                    |
 
 `SheetOverlay`, `DrawerOverlay` and `AlertDialogOverlay` exist so ported code imports, and draw nothing: the content lays its own scrim. Swiping a toast away and the Drawer's snap points are not drawn.
+
+`ContextMenu*` and `Menubar*` carry every item part: `CheckboxItem`, `Group`, `Item`, `Label`, `RadioGroup`, `RadioItem`, `Separator`, `Shortcut`, `Sub`, `SubTrigger`, `SubContent`, `Portal`.
+
+`DropdownMenuPortal`, `ContextMenuPortal`, `MenubarPortal`, `SheetPortal`, `DrawerPortal` and `AlertDialogPortal` draw their children where they stand, since every panel already floats on the kit's layer; `container` is accepted, ignored. `modal` on `DropdownMenu` and `ContextMenu` is accepted, ignored: a menu never blocks the page.
+
+`toast.promise` without `error` shows the error's own message; `errorTextOf(error)` is that text, for an `error` callback of your own.

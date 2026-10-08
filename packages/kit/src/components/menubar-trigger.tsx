@@ -3,6 +3,7 @@ import type { ButtonHTMLAttributes, KeyboardEvent, MouseEvent, PointerEvent, Rea
 import { chain } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { focusQuietly } from "../utils/focus";
+import { toggleMenu } from "../utils/menu-trigger";
 import type { MenuState } from "./menu-context";
 import { useMenu } from "./menu-context";
 import { MENUBAR_VALUE_ATTRIBUTE, MenubarValueContext, useMenubar } from "./menubar-context";
@@ -36,17 +37,11 @@ export function MenubarTrigger({
 			data-slot="menubar-trigger"
 			data-state={dataStateOf(menu.isOpen)}
 			className={cn("wg-kit-menubar-trigger", className)}
-			onClick={chain(onClick, (event: MouseEvent<HTMLElement>) => toggle(menu, event.detail === 0))}
+			onClick={chain(onClick, (event: MouseEvent<HTMLElement>) => toggleMenu(menu, event.detail === 0))}
 			onKeyDown={chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(menu, event))}
 			onPointerEnter={chain(onPointerEnter, (event: PointerEvent<HTMLElement>) => switchOnHover(bar, own, event))}
 		/>
 	);
-}
-
-function toggle(menu: MenuState, isByKeyboard: boolean): void {
-	menu.focusIntent.current = isByKeyboard ? "first" : "panel";
-	if (menu.isOpen) menu.closeTree();
-	else menu.setOpen(true);
 }
 
 function openOnArrowDown(menu: MenuState, event: KeyboardEvent<HTMLElement>): void {

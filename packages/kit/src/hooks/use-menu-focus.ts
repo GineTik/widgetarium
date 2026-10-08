@@ -5,8 +5,6 @@ import { isInMenuTree } from "../components/menu-context";
 import { focusQuietly } from "../utils/focus";
 import { focusMenuItem } from "../utils/menu-keys";
 
-const CLOSING_MENU = '.wg-kit-menu[data-state="closed"]';
-
 export function useMenuFocus(menu: MenuState, panelRef: RefObject<HTMLElement | null>): void {
 	useEffect(() => {
 		const panel = panelRef.current;
@@ -27,10 +25,11 @@ function focusByIntent(panel: HTMLElement, intent: FocusIntent): void {
 }
 
 function returnFocus(menu: MenuState, panel: HTMLElement): void {
+	if (shouldReturnFocus(menu, panel)) focusQuietly(menu.triggerRef.current);
+}
+
+function shouldReturnFocus(menu: MenuState, panel: HTMLElement): boolean {
 	const active = document.activeElement;
-	const isFocusInTree =
-		active === null || active === document.body || panel.contains(active) || isInMenuTree(active, menu.treeId);
-	const trigger = menu.triggerRef.current;
-	if (!isFocusInTree || trigger?.closest(CLOSING_MENU)) return;
-	focusQuietly(trigger);
+	if (active === null || active === document.body || panel.contains(active)) return true;
+	return menu.parent === null && isInMenuTree(active, menu.treeId);
 }

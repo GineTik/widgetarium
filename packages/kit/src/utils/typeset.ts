@@ -4,7 +4,7 @@ import { cn } from "./cn";
 
 export type TypesetTag = "h1" | "h2" | "h3" | "h4" | "p" | "blockquote" | "ul" | "code" | "div" | "small";
 
-export function typesetPart(
+export function createTypesetPart(
 	tag: TypesetTag,
 	kind: string,
 	name: string,

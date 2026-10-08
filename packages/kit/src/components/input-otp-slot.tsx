@@ -1,14 +1,14 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { cn } from "../utils/cn";
-import { useOtp } from "./input-otp-context";
+import { useOtpState } from "./input-otp-context";
 
 export interface InputOTPSlotProps extends HTMLAttributes<HTMLDivElement> {
 	readonly index: number;
 }
 
 export function InputOTPSlot({ index, className, ...rest }: InputOTPSlotProps): ReactElement {
-	const slot = useOtp().slots[index];
+	const slot = useOtpState().slots[index];
 	return (
 		<div
 			data-slot="input-otp-slot"

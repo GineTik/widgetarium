@@ -41,7 +41,7 @@ export function NavigationMenuTrigger({
 			data-slot="navigation-menu-trigger"
 			data-state={dataStateOf(isOpen)}
 			className={navigationMenuTriggerStyle(["group", className])}
-			onClick={chain(onClick, () => toggle(nav, item))}
+			onClick={chain(onClick, () => toggleNavigationItem(nav, item))}
 			onKeyDown={chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(nav, item, event))}
 			onPointerEnter={chain(onPointerEnter, (event: PointerEvent<HTMLElement>) => openOnHover(nav, item, event))}
 			onPointerLeave={chain(onPointerLeave, () => nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS))}
@@ -52,7 +52,7 @@ export function NavigationMenuTrigger({
 	);
 }
 
-function toggle(nav: NavigationMenuState, item: NavigationItemState): void {
+function toggleNavigationItem(nav: NavigationMenuState, item: NavigationItemState): void {
 	nav.delayed.stop();
 	nav.setValue(nav.value === item.value ? "" : item.value);
 }

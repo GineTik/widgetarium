@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import { firstAnswerControlOf } from "../utils/questionnaire";
+import { firstAnswerControlOf } from "../components/questionnaire-fields";
 
 export type FocusMode = "item" | "answer";
 

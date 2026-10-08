@@ -8,12 +8,12 @@ import { ModalIdsContext } from "./modal-ids-context";
 import type { ModalIds } from "./modal-ids-context";
 import { Slot } from "./slot";
 
-export { modalClose } from "./modal-close";
-export { modalTrigger } from "./modal-trigger";
+export { createModalClose } from "./modal-close";
+export { createModalTrigger } from "./modal-trigger";
 
 export type ModalTextRole = keyof ModalIds;
 
-export function modalTextPart(
+export function createModalTextPart(
 	tag: "h2" | "p",
 	baseClass: string,
 	name: string,

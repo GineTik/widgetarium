@@ -16,7 +16,9 @@ export interface MenuState {
 	readonly triggerRef: RefObject<HTMLElement | null>;
 	readonly anchorBox: () => AnchorBox | null;
 	readonly focusIntent: RefObject<FocusIntent>;
-	readonly childCloser: RefObject<(() => void) | null>;
+	readonly openChild: (closeChild: () => void) => void;
+	readonly closeChildren: () => void;
+	readonly panelRef: RefObject<HTMLDivElement | null>;
 	readonly isInside: (node: Node) => boolean;
 	readonly parent: MenuState | null;
 }

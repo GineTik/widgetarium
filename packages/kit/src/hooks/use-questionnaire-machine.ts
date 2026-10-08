@@ -2,7 +2,7 @@ import { useRef } from "react";
 import type { FormEvent, RefObject } from "react";
 import type { ShortcutKind } from "../constants/questionnaire";
 import type { QuestionnaireEntry, QuestionnaireState } from "../components/questionnaire-context";
-import { neighbourOf } from "../utils/questionnaire";
+import { isSkippable, neighbourOf } from "../utils/questionnaire";
 import { useControllableState } from "./use-controllable-state";
 import { focusIn, useFocusOnMove } from "./use-focus-on-move";
 import type { FocusMode } from "./use-focus-on-move";
@@ -22,11 +22,13 @@ export interface QuestionnaireAsk {
 	readonly shortcuts?: ShortcutKind | undefined;
 }
 
+type AdvanceVerdict = "advance" | "flag" | "hold";
+
 export interface QuestionnaireMachine {
 	readonly state: QuestionnaireState;
 	readonly form: RefObject<HTMLFormElement | null>;
 	readonly activeElement: () => HTMLFieldSetElement | null;
-	readonly canAdvance: () => boolean;
+	readonly advanceIfSettled: () => (() => void) | null;
 	readonly reread: (target: EventTarget | null) => void;
 	readonly refuseSubmit: (event: FormEvent<HTMLFormElement>) => boolean;
 	readonly restart: () => void;
@@ -63,7 +65,8 @@ export function useQuestionnaireMachine(ask: QuestionnaireAsk): QuestionnaireMac
 		state: stateOf(moves, ask.shortcuts),
 		form,
 		activeElement: () => moves.activeEntry?.element ?? null,
-		canAdvance: () => (moves.activeEntry ? answers.isSettledEntry(moves.activeEntry) : false),
+		advanceIfSettled: () =>
+			advanceVerdictOf(answers, moves.activeEntry) === "advance" ? () => advance(moves, "advance") : null,
 		reread: answers.reread,
 		refuseSubmit: (event) => refuseSubmit(moves, event),
 		restart: () => {
@@ -78,7 +81,7 @@ function stateOf(moves: Moves, shortcuts: ShortcutKind | undefined): Questionnai
 	const at = active === undefined ? -1 : order.indexOf(active);
 	return {
 		active,
-		isActiveRequired: moves.activeEntry?.required ?? false,
+		isActiveSkippable: isSkippable(moves.activeEntry),
 		position: { current: at + 1, total: order.length, first: at <= 0, last: at === order.length - 1 },
 		shortcuts,
 		statusOf: answers.statusOf,
@@ -87,18 +90,23 @@ function stateOf(moves: Moves, shortcuts: ShortcutKind | undefined): Questionnai
 		isFlagged: answers.isFlagged,
 		register: answers.register,
 		previous: () => movePrevious(moves),
-		next: () => moveNext(moves),
+		next: () => advance(moves, advanceVerdictOf(answers, moves.activeEntry)),
 		skip: () => moveSkipping(moves),
 	};
 }
 
-function moveNext({ answers, order, active, activeEntry, form, goTo }: Moves): void {
-	if (!activeEntry) return;
-	if (!answers.isSettledEntry(activeEntry)) {
+function advanceVerdictOf(answers: QuestionnaireAnswers, entry: QuestionnaireEntry | undefined): AdvanceVerdict {
+	if (!entry) return "hold";
+	return answers.isSettledEntry(entry) ? "advance" : "flag";
+}
+
+function advance({ answers, order, active, activeEntry, form, goTo }: Moves, verdict: AdvanceVerdict): void {
+	if (verdict === "flag" && activeEntry) {
 		answers.flag([activeEntry.name]);
 		focusIn(activeEntry.element, "answer");
 		return;
 	}
+	if (verdict !== "advance") return;
 	const after = neighbourOf(order, active, 1);
 	if (after === null) form.current?.requestSubmit();
 	else goTo(after, "item");
@@ -110,14 +118,14 @@ function movePrevious({ order, active, goTo }: Moves): void {
 }
 
 function moveSkipping({ answers, order, active, activeEntry, goTo }: Moves): void {
-	if (!activeEntry || activeEntry.required) return;
+	if (!activeEntry || !isSkippable(activeEntry)) return;
 	answers.skip(activeEntry);
 	const after = neighbourOf(order, active, 1);
 	if (after !== null) goTo(after, "item");
 }
 
 function refuseSubmit({ answers, active, goTo }: Moves, event: FormEvent<HTMLFormElement>): boolean {
-	const failing = answers.entries.filter((entry) => !entry.disabled && !answers.isSettledEntry(entry));
+	const failing = answers.entries.filter((entry) => !entry.disabled && advanceVerdictOf(answers, entry) !== "advance");
 	const first = failing[0];
 	if (!first) return false;
 	event.preventDefault();

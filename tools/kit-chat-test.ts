@@ -117,6 +117,66 @@ function inputIn(selector: string): HTMLInputElement {
 }
 
 {
+	const warned: unknown[] = [];
+	const warn = console.warn;
+	console.warn = (...said: unknown[]) => warned.push(said[0]);
+	const unsafe = kit.readChatParts([
+		{ type: "file", mediaType: "image/png", url: "javascript:alert(1)" },
+		{ type: "file", mediaType: "text/html", url: "data:text/html;base64,PHNjcmlwdD4=" },
+		{ type: "file", mediaType: "image/png", url: "data:image/png;base64,AAAA" },
+		{ type: "file", mediaType: "image/svg+xml", url: "data:image/svg+xml;base64,PHN2Zz4=" },
+		{ type: "source-url", sourceId: "j", url: "javascript:alert(1)", title: "Bad" },
+		{ type: "image", source: { type: "data", value: "PHNjcmlwdD4=", mimeType: "text/html" } },
+		{ type: "tool-approval-request", approvalId: "x" },
+		{ type: "widget-card" },
+		{ type: "widget-card" },
+		{ type: "tool-call", id: "r", name: "raw", arguments: "{not json" },
+		{ type: "tool-call", id: "p", name: "parsed", arguments: '{"a":1}' },
+	]);
+	console.warn = warn;
+	check(
+		"A FILE OR SOURCE URL IS KEPT ONLY WHEN IT IS HTTP(S) OR A DATA URL OF A DRAWN MEDIA TYPE",
+		unsafe.map((part) => (part.kind === "file" ? part.url : part.kind)),
+		[null, null, "data:image/png;base64,AAAA", null, null, null, "tool", "tool"],
+	);
+	check("A TOOL- PART THAT IS NOT A CALL IS NOT READ AS ONE, AND AN UNKNOWN TYPE WARNS ONCE", warned.map(String), [
+		'readChatParts: a part of type "tool-approval-request" is not one the kit reads, so it draws nothing',
+		'readChatParts: a part of type "widget-card" is not one the kit reads, so it draws nothing',
+	]);
+	check(
+		"TOOL ARGUMENTS THAT ARE NOT JSON ARE MARKED RAW, PARSED ONES ARE NOT",
+		unsafe.map((part) => (part.kind === "tool" ? `${part.name}:${String(part.isInputRaw)}` : "")).filter(Boolean),
+		["raw:true", "parsed:false"],
+	);
+	const circular: { self?: unknown; big: bigint } = { big: 12n };
+	circular.self = circular;
+	render(
+		h(kit.MessageTool, {
+			name: "loop",
+			stage: "done",
+			input: circular,
+			isInputRaw: false,
+			output: "x".repeat(5000),
+		}),
+		drawn,
+	);
+	const [shownInput = "", shownOutput = ""] = all("[data-slot=message-tool] pre").map((pre) => pre.textContent ?? "");
+	check(
+		"A TOOL VALUE THAT POINTS AT ITSELF OR HOLDS A BIGINT IS DRAWN, AND A LONG ONE IS CUT",
+		[shownInput.includes('"self": "[Circular]"'), shownInput.includes('"big": "12n"'), shownOutput.length],
+		[true, true, 4002],
+	);
+	const rawCall = [{ type: "tool-call", id: "r", name: "raw", arguments: "{not json" }];
+	render(h(kit.MessageParts, { parts: rawCall }), drawn);
+	check(
+		"RAW TOOL INPUT IS LABELLED AS NOT JSON",
+		one("[data-slot=message-tool] .wg-kit-message-tool-label").textContent,
+		"Input, not valid JSON",
+	);
+	render(null, drawn);
+}
+
+{
 	render(
 		h(
 			kit.Message,
@@ -230,6 +290,12 @@ function inputIn(selector: string): HTMLInputElement {
 			.slice(0, 2)
 			.map((node) => node.dataset["shortcut"]),
 		["A", "B"],
+	);
+	await press(inputIn("input[value=live]"), "Enter");
+	check(
+		"ENTER ON AN UNPICKED CHOICE OF A REQUIRED ITEM WAITS WITHOUT FLAGGING IT",
+		[items()[0], one("[data-slot=questionnaire-item]").hasAttribute("data-invalid")],
+		["+unanswered", false],
 	);
 	await tap(one("[data-slot=questionnaire-next]"));
 	check(

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isRecord } from "./is-record";
 import { TOAST_QUEUE } from "./toast-queue";
 import type { ToastId, ToastOptions, ToastRecord, ToastType } from "./toast-queue";
 
@@ -9,7 +10,7 @@ export type Settled<T> = ReactNode | ((value: T) => ReactNode);
 export interface PromiseMessages<T> {
 	readonly loading: ReactNode;
 	readonly success: Settled<T>;
-	readonly error: Settled<unknown>;
+	readonly error?: Settled<unknown>;
 	readonly description?: ReactNode;
 	readonly finally?: (() => void) | undefined;
 }
@@ -38,6 +39,12 @@ export const toast: ToastApi = Object.assign(showAs("default"), {
 	getToasts: () => TOAST_QUEUE.read(),
 });
 
+export function errorTextOf(error: unknown): string {
+	if (typeof error === "string") return error;
+	if (isRecord(error) && typeof error["message"] === "string") return error["message"];
+	return String(error);
+}
+
 function showAs(type: ToastType): ShowToast {
 	return (title, options = {}) => TOAST_QUEUE.show(title, type, options);
 }
@@ -49,7 +56,8 @@ function promiseToast<T>(promise: Promise<T> | (() => Promise<T>), messages: Pro
 	running
 		.then(
 			(value) => TOAST_QUEUE.show(settledText(messages.success, value), "success", { ...shared, id }),
-			(error: unknown) => TOAST_QUEUE.show(settledText(messages.error, error), "error", { ...shared, id }),
+			(error: unknown) =>
+				TOAST_QUEUE.show(settledText(messages.error ?? errorTextOf, error), "error", { ...shared, id }),
 		)
 		.finally(() => messages.finally?.());
 	return id;

@@ -3,10 +3,11 @@ import type { ReactPortal } from "react";
 import { createPortal } from "react-dom";
 import { TOAST_DURATION_MS, TOAST_VISIBLE } from "../constants/overlays";
 import { useToastHeights } from "../hooks/use-toast-heights";
+import { useDrivesToastClock } from "../hooks/use-drives-toast-clock";
 import { useToasts } from "../hooks/use-toasts";
 import { cn } from "../utils/cn";
 import { portalLayer } from "../utils/portal-layer";
-import { frontHeightOf, stackOf } from "../utils/toast-stack";
+import { stackOf } from "../utils/toast-stack";
 import type { TokenStyle } from "../utils/token-style";
 import { ToastItem } from "./toast-item";
 
@@ -37,6 +38,8 @@ export function Toaster({
 	const records = useToasts();
 	const { heights, report } = useToastHeights();
 	const [isHovered, setHovered] = useState(false);
+	useDrivesToastClock({ defaultDurationMs: duration, isPaused: isHovered });
+	const stack = stackOf(records, heights, visibleToasts);
 	return createPortal(
 		<section aria-label={REGION_LABEL} aria-live="polite" className="wg-kit-toaster-region">
 			<ol
@@ -45,19 +48,12 @@ export function Toaster({
 				data-expanded={expand || isHovered}
 				data-rich-colors={richColors}
 				className={cn("wg-kit-toaster", className)}
-				style={frontHeightStyle(frontHeightOf(records, heights))}
+				style={frontHeightStyle(stack.frontHeightPx)}
 				onPointerEnter={() => setHovered(true)}
 				onPointerLeave={() => setHovered(false)}
 			>
-				{stackOf(records, heights, visibleToasts).map(({ record, spot }) => (
-					<ToastItem
-						key={record.id}
-						record={record}
-						spot={spot}
-						look={{ closeButton, durationMs: duration }}
-						isPaused={isHovered}
-						onHeight={report}
-					/>
+				{stack.items.map(({ record, spot }) => (
+					<ToastItem key={record.id} record={record} spot={spot} closeButton={closeButton} onHeight={report} />
 				))}
 			</ol>
 		</section>,
