@@ -1,23 +1,41 @@
-import { useRef, useState } from "react";
+import { useReducer, useRef } from "react";
+import type { Dispatch } from "react";
 import { isFocusable } from "../utils/dom-nodes";
 import {
+	fieldErrorsOf,
+	fieldWriteOf,
+	formReducer,
 	isDirtyAgainst,
 	isErrorShown,
 	isFieldDirty,
-	issuesByField,
-	schemaErrorsOf,
-	valueOfChange,
-	valuesAs,
+	storeOf,
+	withField,
 } from "../utils/form-state";
-import type { FieldErrorEntry, FormErrors, FormMode, FormSchema, FormValues } from "../utils/form-state";
-import { useFormMarks } from "./use-form-marks";
-import type { FormMarks } from "./use-form-marks";
+import type {
+	FieldErrorEntry,
+	FormAction,
+	FormErrors,
+	FormMode,
+	FormParse,
+	FormSchema,
+	FormStore,
+	FormValues,
+} from "../utils/form-state";
+import { warnOnce } from "../utils/surface";
 
-export interface FormAsk<V extends FormValues, T> {
+export interface CheckedFormAsk<V extends FormValues, T> {
 	readonly defaultValues: V;
-	readonly schema?: FormSchema<T> | undefined;
+	readonly schema: FormSchema<T>;
 	readonly mode?: FormMode | undefined;
 }
+
+export interface UncheckedFormAsk<V extends FormValues> {
+	readonly defaultValues: V;
+	readonly schema?: undefined;
+	readonly mode?: FormMode | undefined;
+}
+
+export type FormAsk<V extends FormValues, T> = CheckedFormAsk<V, T> | UncheckedFormAsk<V>;
 
 export interface FieldState {
 	readonly invalid: boolean;
@@ -62,94 +80,159 @@ export interface UseFormReturn<V extends FormValues, T> {
 	readonly reset: (values?: V) => void;
 }
 
-interface SubmitAsk<T> {
-	readonly schema: FormSchema<T> | undefined;
-	readonly values: FormValues;
-	readonly marks: FormMarks;
-	readonly elements: ReadonlyMap<string, Element>;
-	readonly setSubmitting: (isSubmitting: boolean) => void;
+type ValuesParser<V, T> = (values: V) => FormParse<T>;
+
+interface ParseCache<V, T> {
+	readonly values: V;
+	readonly schema: unknown;
+	readonly parsed: FormParse<T>;
 }
 
-export function useForm<V extends FormValues, T = V>(ask: FormAsk<V, T>): UseFormReturn<V, T> {
-	const { defaultValues, schema, mode = "onSubmit" } = ask;
-	const [defaults, setDefaults] = useState<FormValues>(defaultValues);
-	const [values, setValues] = useState<FormValues>(defaultValues);
-	const [isSubmitting, setSubmitting] = useState(false);
-	const marks = useFormMarks();
+interface SubmitAsk<V extends FormValues, T> {
+	readonly parsed: () => FormParse<T>;
+	readonly dispatch: Dispatch<FormAction<V>>;
+	readonly elements: ReadonlyMap<string, Element>;
+}
+
+interface FormParts<V extends FormValues> {
+	readonly store: FormStore<V>;
+	readonly dispatch: Dispatch<FormAction<V>>;
+	readonly errors: FormErrors;
+	readonly elements: Map<string, Element>;
+}
+
+export function useForm<V extends FormValues, T>(ask: CheckedFormAsk<V, T>): UseFormReturn<V, T>;
+export function useForm<V extends FormValues>(ask: UncheckedFormAsk<V>): UseFormReturn<V, V>;
+export function useForm<V extends FormValues, T>(ask: FormAsk<V, T>): UseFormReturn<V, T | V> {
+	const parse: ValuesParser<V, T | V> = ask.schema ? parserOf(ask.schema) : acceptValues;
+	return useFormParsedBy(ask, parse);
+}
+
+function useFormParsedBy<V extends FormValues, T>(
+	ask: FormAsk<V, unknown>,
+	parse: ValuesParser<V, T>,
+): UseFormReturn<V, T> {
+	const mode = ask.mode ?? "onSubmit";
+	const [store, dispatch] = useReducer(formReducer<V>, ask.defaultValues, storeOf);
 	const elements = useRef(new Map<string, Element>());
-	const allErrors = schemaErrorsOf(schema, values);
-	const errors = filterShownErrors(allErrors, mode, marks);
-	const getFieldState = (name: string): FieldState => ({
-		invalid: errors[name] !== undefined,
-		error: errors[name],
-		isTouched: marks.touched.has(name),
-		isDirty: isFieldDirty(values, defaults, name),
-	});
-	const change = (name: string, value: unknown): void => {
-		setValues((held) => ({ ...held, [name]: value }));
-		marks.markChanged(name);
-	};
-	const register = <K extends keyof V & string>(name: K): FieldBinding<V, K> => ({
-		name,
-		value: valuesAs<V>(values)[name],
-		onChange: (next) => change(name, valueOfChange(next)),
-		onBlur: () => marks.markTouched(name),
-		ref: (element) => {
-			if (element) elements.current.set(name, element);
-		},
-	});
+	const parsed = useParseCache(parse, ask.schema, store.values);
+	const errors = store.submitCount > 0 || mode !== "onSubmit" ? shownErrorsOf(errorsIn(parsed()), mode, store) : {};
+	const parts: FormParts<V> = { store, dispatch, errors, elements: elements.current };
+	const getFieldState = (name: string): FieldState => fieldStateOf(parts, name);
+	const register = <K extends keyof V & string>(name: K): FieldBinding<V, K> => bindingOf(parts, name);
 	const form: UseFormReturn<V, T> = {
 		get control() {
 			return form;
 		},
 		formState: {
 			errors,
-			isValid: Object.keys(allErrors).length === 0,
-			isDirty: isDirtyAgainst(values, defaults),
-			isSubmitted: marks.submitCount > 0,
-			isSubmitting,
-			submitCount: marks.submitCount,
+			get isValid() {
+				return parsed().success;
+			},
+			isDirty: isDirtyAgainst(store.values, store.defaults),
+			isSubmitted: store.submitCount > 0,
+			isSubmitting: store.isSubmitting,
+			submitCount: store.submitCount,
 		},
 		field: (name) => ({ field: register(name), fieldState: getFieldState(name) }),
 		register,
 		getFieldState,
-		getValues: () => valuesAs<V>(values),
-		watch: (name) => valuesAs<V>(values)[name],
-		setValue: change,
-		handleSubmit: createSubmitter({ schema, values, marks, elements: elements.current, setSubmitting }),
-		reset: (next) => {
-			if (next) setDefaults(next);
-			setValues(next ?? defaults);
-			marks.clear();
-		},
+		getValues: () => store.values,
+		watch: (name) => store.values[name],
+		setValue: (name, value) => writeField(dispatch, name, value),
+		handleSubmit: createSubmitter({ parsed, dispatch, elements: elements.current }),
+		reset: (values) => dispatch({ type: "reset", values }),
 	};
 	return form;
 }
 
-function filterShownErrors(errors: FormErrors, mode: FormMode, marks: FormMarks): FormErrors {
-	return Object.fromEntries(Object.entries(errors).filter(([name]) => isErrorShown({ name, mode, ...marks })));
+function useParseCache<V, T>(parse: ValuesParser<V, T>, schema: unknown, values: V): () => FormParse<T> {
+	const cache = useRef<ParseCache<V, T> | null>(null);
+	return () => {
+		const held = cache.current;
+		if (held && held.values === values && held.schema === schema) return held.parsed;
+		const parsed = parse(values);
+		cache.current = { values, schema, parsed };
+		return parsed;
+	};
 }
 
-function createSubmitter<T>(ask: SubmitAsk<T>): UseFormReturn<FormValues, T>["handleSubmit"] {
+function parserOf<V, T>(schema: FormSchema<T>): ValuesParser<V, T> {
+	return (values) => schema.safeParse(values);
+}
+
+function acceptValues<V>(values: V): FormParse<V> {
+	return { success: true, data: values };
+}
+
+function errorsIn<T>(parsed: FormParse<T>): FormErrors {
+	return parsed.success ? {} : fieldErrorsOf(parsed.error.issues);
+}
+
+function shownErrorsOf<V extends FormValues>(errors: FormErrors, mode: FormMode, store: FormStore<V>): FormErrors {
+	return Object.fromEntries(Object.entries(errors).filter(([name]) => isErrorShown({ name, mode, store })));
+}
+
+function fieldStateOf<V extends FormValues>({ store, errors }: FormParts<V>, name: string): FieldState {
+	return {
+		invalid: errors[name] !== undefined,
+		error: errors[name],
+		isTouched: store.touched.has(name),
+		isDirty: isFieldDirty(store.values, store.defaults, name),
+	};
+}
+
+function bindingOf<V extends FormValues, K extends keyof V & string>(parts: FormParts<V>, name: K): FieldBinding<V, K> {
+	const { store, dispatch, elements } = parts;
+	return {
+		name,
+		value: store.values[name],
+		onChange: (change) => {
+			const write = fieldWriteOf(change, store.values[name]);
+			if (!write) return warnOnce(`the field ${name} refused a change that is not of its default's kind`);
+			writeField(dispatch, name, write.value);
+		},
+		onBlur: () => dispatch({ type: "touch", name }),
+		ref: (element) => {
+			if (element) elements.set(name, element);
+		},
+	};
+}
+
+function writeField<V extends FormValues, K extends keyof V & string>(
+	dispatch: Dispatch<FormAction<V>>,
+	name: K,
+	value: V[K],
+): void {
+	dispatch({ type: "change", name, write: (values) => withField(values, name, value) });
+}
+
+function createSubmitter<V extends FormValues, T>({
+	parsed,
+	dispatch,
+	elements,
+}: SubmitAsk<V, T>): UseFormReturn<V, T>["handleSubmit"] {
 	return (onValid, onInvalid) => async (event) => {
 		event?.preventDefault?.();
-		ask.marks.markSubmitted();
-		const parsed = ask.schema
-			? ask.schema.safeParse(ask.values)
-			: { success: true as const, data: valuesAs<T>(ask.values) };
-		if (!parsed.success) {
-			const errors = issuesByField(parsed.error.issues);
-			focusFirstInvalid(ask.elements, Object.keys(errors));
-			await onInvalid?.(errors);
-			return;
-		}
-		ask.setSubmitting(true);
+		dispatch({ type: "submit" });
+		const result = parsed();
+		if (!result.success) return rejectInvalid(errorsIn(result), elements, onInvalid);
+		dispatch({ type: "settle", isSubmitting: true });
 		try {
-			await onValid(parsed.data);
+			await onValid(result.data);
 		} finally {
-			ask.setSubmitting(false);
+			dispatch({ type: "settle", isSubmitting: false });
 		}
 	};
+}
+
+async function rejectInvalid(
+	errors: FormErrors,
+	elements: ReadonlyMap<string, Element>,
+	onInvalid: ((errors: FormErrors) => unknown) | undefined,
+): Promise<void> {
+	focusFirstInvalid(elements, Object.keys(errors));
+	await onInvalid?.(errors);
 }
 
 function focusFirstInvalid(elements: ReadonlyMap<string, Element>, invalid: readonly string[]): void {

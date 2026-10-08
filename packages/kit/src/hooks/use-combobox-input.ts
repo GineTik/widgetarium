@@ -57,7 +57,7 @@ function answerKey(event: KeyboardEvent<HTMLInputElement>, combobox: ComboboxSta
 		return items.find((item) => item.dataset["key"] === combobox.highlighted)?.click();
 	}
 	if (event.key === "Backspace" && combobox.isMultiple && event.currentTarget.value === "") {
-		const last = combobox.selected.at(-1);
+		const last = combobox.selectedKeys.at(-1);
 		if (last !== undefined) combobox.remove(last);
 	}
 }

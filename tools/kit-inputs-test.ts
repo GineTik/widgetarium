@@ -1,6 +1,8 @@
 import { JSDOM } from "jsdom";
 import type { ReactElement, ReactNode } from "react";
+import { z } from "zod";
 import type { FieldRootProps } from "../packages/kit/src/components/field.tsx";
+import type { FormSchema, Matchers, UseFormReturn } from "../packages/kit/src/index.ts";
 import { byId, found } from "./dom-find.ts";
 
 const dom = new JSDOM('<!doctype html><body><div id="host"></div></body>', { pretendToBeVisual: true });
@@ -650,6 +652,302 @@ const BUG_SCHEMA = {
 		],
 		["INPUT", "true", "Say a word."],
 	);
+}
+
+type Tally = {
+	readonly count: number;
+	readonly agree: boolean;
+	readonly tags: readonly string[];
+	readonly files: readonly unknown[];
+	readonly title: string;
+};
+
+const TALLY: Tally = { count: 0, agree: false, tags: [], files: [], title: "" };
+
+{
+	const holder: { form: UseFormReturn<Tally, Tally> | null } = { form: null };
+	const counts: number[] = [];
+	function TallyForm(): ReactNode {
+		const form = kit.useForm({ defaultValues: TALLY });
+		holder.form = form;
+		return h("form", { onSubmit: form.handleSubmit((data) => counts.push(data.count)) }, [
+			h("input", { key: "c", id: "tally-count", type: "number", ...form.register("count") }),
+			h("button", { key: "s", type: "submit", id: "tally-send" }, "Send"),
+		]);
+	}
+	const formNow = (): UseFormReturn<Tally, Tally> => {
+		if (!holder.form) throw new Error("the tally form never drew");
+		return holder.form;
+	};
+	await draw(h(TallyForm, null));
+	typeInto(inputIn("#tally-count"), "12");
+	await settle();
+	formNow()
+		.register("agree")
+		.onChange({ target: { type: "checkbox", checked: true } });
+	formNow()
+		.register("tags")
+		.onChange({ target: { multiple: true, selectedOptions: [{ value: "a" }, { value: "b" }] } });
+	formNow()
+		.register("files")
+		.onChange({ target: { type: "file", files: [{ name: "log.txt" }] } });
+	await settle();
+	const written = formNow().getValues();
+	check(
+		"FORMS UNCHECKED: a number input writes a number, a checkbox a boolean, a multiple select its values, a file input its files",
+		[typeof written.count, written.count, written.agree, written.tags, written.files.length],
+		["number", 12, true, ["a", "b"], 1],
+	);
+	const warned: unknown[] = [];
+	const warn = console.warn;
+	console.warn = (line: unknown) => warned.push(line);
+	formNow().register("agree").onChange("yes");
+	formNow().register("title").onChange({ target: {} });
+	await settle();
+	console.warn = warn;
+	check(
+		"a change of another kind is refused and said, and an event with no value is never stored",
+		[formNow().getValues().agree, formNow().getValues().title, warned.length],
+		[true, "", 2],
+	);
+	found(host, "#tally-send").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check("with no schema the handler gets the values themselves", counts, [12]);
+	const next: Tally = { ...TALLY, title: "kept" };
+	formNow().reset(next);
+	formNow().reset();
+	await settle();
+	check("reset(next) then reset() lands on next, the defaults it set", formNow().getValues().title, "kept");
+}
+
+{
+	const parses = { count: 0 };
+	const COUNTED_SCHEMA: FormSchema<{ readonly title: string }> = {
+		safeParse(input: unknown) {
+			parses.count += 1;
+			const title = typeof input === "object" && input !== null ? String(Reflect.get(input, "title")) : "";
+			return { success: true, data: { title } };
+		},
+	};
+	const seen: number[] = [];
+	function CountedForm(): ReactNode {
+		const form = kit.useForm({ schema: COUNTED_SCHEMA, defaultValues: { title: "" } });
+		return h("form", { onSubmit: form.handleSubmit(() => undefined) }, [
+			h("input", { key: "t", id: "counted-title", ...form.register("title") }),
+			h("button", { key: "s", type: "submit", id: "counted-send" }, "Send"),
+		]);
+	}
+	await draw(h(CountedForm, null));
+	typeInto(inputIn("#counted-title"), "a");
+	await settle();
+	typeInto(inputIn("#counted-title"), "ab");
+	await settle();
+	seen.push(parses.count);
+	found(host, "#counted-send").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	seen.push(parses.count);
+	typeInto(inputIn("#counted-title"), "abc");
+	await settle();
+	seen.push(parses.count);
+	check(
+		"FORMS PARSE: onSubmit parses nothing before the submit, the submit and its redraw parse once, a change once more",
+		seen,
+		[0, 1, 2],
+	);
+}
+
+{
+	const NESTED_SCHEMA: FormSchema<{ readonly city: string }> = {
+		safeParse: () => ({
+			success: false,
+			error: {
+				issues: [
+					{ path: ["address", "city"], message: "Name a city." },
+					{ path: [], message: "The form is incomplete." },
+				],
+			},
+		}),
+	};
+	const refused: string[][] = [];
+	function NestedForm(): ReactNode {
+		const form = kit.useForm({ schema: NESTED_SCHEMA, defaultValues: { address: { city: "" } } });
+		return h(
+			"form",
+			{
+				onSubmit: form.handleSubmit(
+					() => undefined,
+					(errors) => refused.push(Object.keys(errors)),
+				),
+			},
+			h("button", { type: "submit", id: "nested-send" }, "Send"),
+		);
+	}
+	await draw(h(NestedForm, null));
+	found(host, "#nested-send").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check("FORMS ERRORS: a nested issue is named by its whole path, a pathless one by root", refused, [
+		["address.city", "root"],
+	]);
+}
+
+const TRIMMED_SCHEMA = z.object({ title: z.string().trim() });
+const ZOD_FITS: FormSchema<z.infer<typeof TRIMMED_SCHEMA>> = TRIMMED_SCHEMA;
+
+{
+	const sent: string[] = [];
+	function ZodForm(): ReactNode {
+		const form = kit.useForm({ schema: ZOD_FITS, defaultValues: { title: "  Hi  " } });
+		return h(
+			"form",
+			{ onSubmit: form.handleSubmit((data) => sent.push(data.title)) },
+			h("button", { type: "submit", id: "zod-send" }, "Send"),
+		);
+	}
+	await draw(h(ZodForm, null));
+	found(host, "#zod-send").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+	await settle();
+	check("FORMS ZOD: a real zod object is a FormSchema and the handler gets its output", sent, ["Hi"]);
+}
+
+interface City {
+	readonly id: number;
+	readonly label: string;
+}
+
+const isCity = (value: unknown): value is City =>
+	typeof value === "object" && value !== null && typeof Reflect.get(value, "id") === "number";
+
+const TWIN_CITIES: readonly City[] = [
+	{ id: 1, label: "Paris" },
+	{ id: 2, label: "Paris" },
+];
+
+const cityOptions = (): ReactElement =>
+	h(
+		kit.ComboboxContent,
+		null,
+		h(kit.ComboboxList<City>, {
+			isItem: isCity,
+			children: (city: City) => h(kit.ComboboxItem, { key: city.id, value: city }, city.label),
+		}),
+	);
+
+{
+	const picked: (City | null)[] = [];
+	await draw(null);
+	await draw(
+		h(kit.Combobox<City>, { items: TWIN_CITIES, onValueChange: (city: City | null) => picked.push(city) }, [
+			h(kit.ComboboxInput, { key: "i" }),
+			h("div", { key: "c" }, cityOptions()),
+		]),
+	);
+	inputIn("[role='combobox']").click();
+	await settle();
+	const ids = all("[data-slot='combobox-item']").map((option) => option.id);
+	all("[data-slot='combobox-item']")[0]?.click();
+	await settle();
+	inputIn("[role='combobox']").click();
+	await settle();
+	check(
+		"COMBOBOX IDENTITY: two objects with one label have two option ids, and a pick selects only the one pressed",
+		[new Set(ids).size, picked.map((city) => city?.id), all("[aria-selected='true']").length],
+		[2, [1], 1],
+	);
+}
+
+{
+	await draw(null);
+	await draw(
+		h(
+			kit.Combobox<City>,
+			{ items: TWIN_CITIES, value: { id: 2, label: "Paris" }, itemToStringValue: (city: City) => String(city.id) },
+			[h(kit.ComboboxInput, { key: "i" }), h("div", { key: "c" }, cityOptions())],
+		),
+	);
+	inputIn("[role='combobox']").click();
+	await settle();
+	check(
+		"itemToStringValue is the identity: a controlled copy of the second city marks the second option",
+		all("[data-slot='combobox-item']").map((option) => option.getAttribute("aria-selected")),
+		["false", "true"],
+	);
+}
+
+{
+	const picked: (City | null)[] = [];
+	await draw(null);
+	await draw(
+		h(kit.Combobox<City>, { isItem: isCity, onValueChange: (city: City | null) => picked.push(city) }, [
+			h(kit.ComboboxInput, { key: "i" }),
+			h(
+				kit.ComboboxContent,
+				{ key: "c" },
+				h(
+					kit.ComboboxList,
+					null,
+					TWIN_CITIES.map((city) => h(kit.ComboboxItem, { key: city.id, value: city }, city.label)),
+				),
+			),
+		]),
+	);
+	inputIn("[role='combobox']").click();
+	await settle();
+	all("[data-slot='combobox-item']")[1]?.click();
+	await settle();
+	check("COMBOBOX CHILDREN: isItem types items written as children", [picked[0]?.id], [2]);
+}
+
+{
+	await draw(null);
+	await draw(
+		h(kit.Calendar, { mode: "single", defaultMonth: SEPTEMBER, today: TODAY, disabled: TODAY, endMonth: SEPTEMBER }),
+	);
+	const stops = all("[tabindex='0']");
+	check(
+		"CALENDAR ALLOWED: the tab stop leaves a disabled today for the first allowed day",
+		stops.map((stop) => [stop.dataset["date"], stop.hasAttribute("disabled")]),
+		[["2026-8-1", false]],
+	);
+	check(
+		"and a day past endMonth is disabled like any other",
+		found(host, "[data-date='2026-9-1'][data-outside]").hasAttribute("disabled"),
+		true,
+	);
+}
+
+{
+	const ODD_MATCHERS: Matchers = JSON.parse('[{ "before": "2026-09-10" }]');
+	const warned: unknown[] = [];
+	const warn = console.warn;
+	console.warn = (line: unknown) => warned.push(line);
+	await draw(null);
+	await draw(h(kit.Calendar, { mode: "single", defaultMonth: SEPTEMBER, today: TODAY, disabled: ODD_MATCHERS }));
+	console.warn = warn;
+	check(
+		"CALENDAR MATCHERS: a matcher of an unknown shape disables no day of the drawn month and is said once",
+		[
+			all(".wg-kit-cal-day").length,
+			all(".wg-kit-cal-day[disabled]").length,
+			warned.filter((line) => String(line).includes("unknown shape")).length,
+		],
+		[42, 0, 1],
+	);
+}
+
+{
+	const RealDate = Date;
+	const clock = { now: new RealDate(2026, 8, 3).getTime() };
+	const FakeDate = new Proxy(RealDate, {
+		construct: (target, args) => Reflect.construct(target, args.length === 0 ? [clock.now] : args),
+	});
+	Object.assign(globalThis, { Date: FakeDate });
+	await draw(null);
+	await draw(h(kit.Calendar, { mode: "single", defaultMonth: SEPTEMBER }));
+	clock.now = new RealDate(2026, 8, 20).getTime();
+	await draw(h(kit.Calendar, { mode: "single", defaultMonth: SEPTEMBER, className: "redrawn" }));
+	const today = found(host, ".is-today").getAttribute("data-date");
+	Object.assign(globalThis, { Date: RealDate });
+	check("CALENDAR TODAY: today is read once, not again on every draw", today, "2026-8-3");
 }
 
 await draw(null);

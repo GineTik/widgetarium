@@ -1,4 +1,4 @@
-import { sameDay, startOfDay } from "./calendar";
+import { dayValueOf, sameDay } from "./calendar";
 import { isInRange } from "./calendar-matchers";
 import type { DateRange } from "./calendar-matchers";
 
@@ -22,21 +22,16 @@ export interface DayMarks {
 
 const UNMARKED: DayMarks = { selected: false, rangeStart: false, rangeMiddle: false, rangeEnd: false };
 
-export function selectionAfter({ mode, held, day, required }: PickAsk): CalendarSelection {
+export function withDayPicked({ mode, held, day, required }: PickAsk): CalendarSelection {
 	if (mode === "multiple") return toggleDay(datesIn(held), day, required);
-	if (mode === "range") return rangeAfter(rangeIn(held), day);
-	const isSame = sameDay(dateIn(held), day);
-	return isSame && !required ? undefined : day;
+	if (mode === "range") return extendRange(rangeIn(held), day);
+	return sameDay(firstSelected(held), day) && !required ? undefined : day;
 }
 
 export function marksOf(date: Date, mode: CalendarMode, held: CalendarSelection): DayMarks {
 	if (mode === "range") return rangeMarksOf(date, rangeIn(held));
 	const selected = datesIn(held).some((one) => sameDay(one, date));
 	return { ...UNMARKED, selected };
-}
-
-export function dateIn(selection: CalendarSelection): Date | undefined {
-	return selection instanceof Date ? selection : undefined;
 }
 
 export function datesIn(selection: CalendarSelection): readonly Date[] {
@@ -61,10 +56,10 @@ function toggleDay(days: readonly Date[], day: Date, required: boolean): readonl
 	return left.length === 0 ? undefined : left;
 }
 
-function rangeAfter(range: DateRange | undefined, day: Date): DateRange {
+function extendRange(range: DateRange | undefined, day: Date): DateRange {
 	const from = range?.from;
 	if (!from || range?.to) return { from: day, to: undefined };
-	if (startOfDay(day) < startOfDay(from)) return { from: day, to: from };
+	if (dayValueOf(day) < dayValueOf(from)) return { from: day, to: from };
 	return { from, to: day };
 }
 

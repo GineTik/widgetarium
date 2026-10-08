@@ -76,8 +76,16 @@ export function dayKey(date: Date): string {
 	return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
-export function startOfDay(date: Date): Date {
-	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+export function dayValueOf(date: Date): number {
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+export function daysOfMonth(month: Date): Date[] {
+	const year = month.getFullYear();
+	return Array.from(
+		{ length: daysInMonth(year, month.getMonth()) },
+		(_, at) => new Date(year, month.getMonth(), at + 1),
+	);
 }
 
 export function startOfMonth(date: Date): Date {
