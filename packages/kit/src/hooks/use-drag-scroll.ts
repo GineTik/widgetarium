@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import type { MouseEvent, PointerEvent } from "react";
 import type { CarouselApi, CarouselOrientation } from "../utils/carousel";
+import { clamp } from "../utils/clamp";
+import { pointerAxisOf } from "../utils/pointer-axis";
 
 export interface DragScroll {
 	readonly isDragging: boolean;
@@ -25,7 +27,6 @@ export function useDragScroll(api: CarouselApi, orientation: CarouselOrientation
 	const wasDragged = useRef(false);
 	const [isDragging, setDragging] = useState(false);
 	const isVertical = orientation === "vertical";
-	const pointerAt = (event: PointerEvent<HTMLElement>): number => (isVertical ? event.clientY : event.clientX);
 	return {
 		isDragging,
 		onPointerDown: (event) => {
@@ -33,7 +34,7 @@ export function useDragScroll(api: CarouselApi, orientation: CarouselOrientation
 			const viewport = event.currentTarget;
 			const scroll = isVertical ? viewport.scrollTop : viewport.scrollLeft;
 			drag.current = {
-				pointer: pointerAt(event),
+				pointer: pointerAxisOf(event, isVertical),
 				scroll,
 				selected: api.selectedScrollSnap(),
 				moved: 0,
@@ -44,7 +45,7 @@ export function useDragScroll(api: CarouselApi, orientation: CarouselOrientation
 		onPointerMove: (event) => {
 			const start = drag.current;
 			if (!start) return;
-			const moved = pointerAt(event) - start.pointer;
+			const moved = pointerAxisOf(event, isVertical) - start.pointer;
 			if (!start.isMoving && Math.abs(moved) < FLICK_PX / 4) return;
 			if (!start.isMoving) {
 				event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -74,5 +75,5 @@ export function useDragScroll(api: CarouselApi, orientation: CarouselOrientation
 function landingOf(start: DragStart, nearest: number, count: number): number {
 	if (nearest !== start.selected || Math.abs(start.moved) < FLICK_PX) return nearest;
 	const step = start.moved < 0 ? 1 : -1;
-	return Math.min(Math.max(start.selected + step, 0), count - 1);
+	return clamp(start.selected + step, 0, count - 1);
 }

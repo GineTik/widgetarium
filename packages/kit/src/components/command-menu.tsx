@@ -1,6 +1,8 @@
 import { createElement as h } from "react";
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { cn } from "../utils/cn";
+import { focusStepped } from "../utils/focus-step";
+import { UP_DOWN_STEP_OF_KEY } from "../utils/roving";
 
 export interface CommandMenuProps {
 	readonly label?: string | undefined;
@@ -19,11 +21,6 @@ export function CommandMenu({ label, children, className: cls }: CommandMenuProp
 }
 
 function movesBetweenItems(event: KeyboardEvent<HTMLDivElement>): void {
-	if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
 	const items = [...event.currentTarget.querySelectorAll<HTMLElement>(ITEM)];
-	if (items.length === 0) return;
-	event.preventDefault();
-	const at = items.findIndex((item) => item === document.activeElement);
-	const step = event.key === "ArrowDown" ? 1 : -1;
-	items[(at + step + items.length) % items.length]?.focus();
+	focusStepped(event, items, UP_DOWN_STEP_OF_KEY.get(event.key));
 }

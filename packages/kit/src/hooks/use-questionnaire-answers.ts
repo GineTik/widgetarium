@@ -39,8 +39,8 @@ export function useQuestionnaireAnswers(): QuestionnaireAnswers {
 	}, []);
 	const keep = (name: string, reading: ItemReading): void => {
 		setReadings((was) => ({ ...was, [name]: reading }));
-		setSkipped((was) => without(was, name));
-		setFlagged((was) => without(was, name));
+		setSkipped((was) => withoutName(was, name));
+		setFlagged((was) => withoutName(was, name));
 	};
 	const status = (name: string): QuestionStatus => statusOf(readings[name] ?? NOTHING_READ, skipped.has(name));
 	return {
@@ -99,7 +99,7 @@ function inDocumentOrder(entries: readonly QuestionnaireEntry[]): readonly Quest
 	);
 }
 
-function without(names: ReadonlySet<string>, name: string): ReadonlySet<string> {
+function withoutName(names: ReadonlySet<string>, name: string): ReadonlySet<string> {
 	if (!names.has(name)) return names;
 	const left = new Set(names);
 	left.delete(name);

@@ -1,7 +1,7 @@
 import { useLayoutEffect } from "react";
 import type { RefObject } from "react";
 
-const ENABLED_RADIO = "[role='radio']:not([disabled])";
+export const ENABLED_RADIO = "[role='radio']:not([disabled])";
 
 export function useRadioTabStop(groupRef: RefObject<HTMLElement | null>): void {
 	useLayoutEffect(() => {

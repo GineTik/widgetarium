@@ -1,4 +1,4 @@
-import { AUTOSCROLL_SETTLE_MS, REDUCED_MOTION_QUERY, RELEASE_KEYS } from "../constants/message-scroller";
+import { AUTOSCROLL_SETTLE_MS, RELEASE_KEYS } from "../constants/message-scroller";
 import type { ScrollPosition } from "../constants/message-scroller";
 import {
 	anchorsIn,
@@ -16,6 +16,9 @@ import {
 	topInScroll,
 } from "./message-scroll-geometry";
 import type { KeptRow } from "./message-scroll-geometry";
+import { clamp } from "./clamp";
+import { prefersReducedMotion } from "./reduced-motion";
+import { createResizeObserver } from "./resize-watch";
 
 export interface ScrollSettings {
 	readonly autoScroll: boolean;
@@ -180,7 +183,7 @@ function watchViewport(run: Run, viewport: HTMLElement, content: HTMLElement): (
 	};
 	const onTouch = (): void => tookOver(run, false);
 	const onSettled = (): void => finishAutoscroll(run);
-	const sizes = typeof ResizeObserver === "function" ? new ResizeObserver(() => handleResize(run)) : null;
+	const sizes = createResizeObserver(() => handleResize(run));
 	sizes?.observe(content);
 	sizes?.observe(viewport);
 	run.held.sizes = sizes;
@@ -328,7 +331,7 @@ function jumpTo(run: Run, top: number, jump: ScrollJump | undefined): void {
 	const { held } = run;
 	const { viewport } = held;
 	if (!viewport) return;
-	const target = Math.min(Math.max(0, top), endTopOf(viewport));
+	const target = clamp(top, 0, endTopOf(viewport));
 	stopAutoscroll(held);
 	if (!isSmooth(jump) || Math.abs(target - viewport.scrollTop) <= 1) {
 		viewport.scrollTop = target;
@@ -370,7 +373,7 @@ function isAtEnd(run: Run, viewport: HTMLElement): boolean {
 
 function isSmooth(jump: ScrollJump | undefined): boolean {
 	if ((jump?.behavior ?? "smooth") !== "smooth") return false;
-	return typeof matchMedia !== "function" || !matchMedia(REDUCED_MOTION_QUERY).matches;
+	return !prefersReducedMotion();
 }
 
 function reportOf(held: Held, settings: ScrollSettings): ScrollReport {

@@ -8,6 +8,8 @@ import type {
 	CarouselOptions,
 	CarouselOrientation,
 } from "../utils/carousel";
+import { prefersReducedMotion } from "../utils/reduced-motion";
+import { watchSizes } from "../utils/resize-watch";
 
 export interface CarouselTrackAsk {
 	readonly orientation: CarouselOrientation;
@@ -95,12 +97,13 @@ function watchTrack(viewport: HTMLElement | null, { api, listeners, setView }: T
 	};
 	measure();
 	viewport.addEventListener("scroll", scrolled, { passive: true });
-	const watcher = typeof ResizeObserver === "function" ? new ResizeObserver(resized) : null;
-	watcher?.observe(viewport);
-	if (viewport.firstElementChild) watcher?.observe(viewport.firstElementChild);
+	const stopSizes = watchSizes(
+		viewport.firstElementChild ? [viewport, viewport.firstElementChild] : [viewport],
+		resized,
+	);
 	return () => {
 		viewport.removeEventListener("scroll", scrolled);
-		watcher?.disconnect();
+		stopSizes();
 	};
 }
 
@@ -119,14 +122,11 @@ function scrolledOf(viewport: HTMLElement | null, orientation: CarouselOrientati
 
 function slideTo(viewport: HTMLElement | null, orientation: CarouselOrientation, to: number | undefined): void {
 	if (!viewport || to === undefined) return;
-	const side = orientation === "vertical" ? "top" : "left";
+	const isVertical = orientation === "vertical";
 	if (typeof viewport.scrollTo !== "function") {
-		viewport[side === "top" ? "scrollTop" : "scrollLeft"] = to;
+		viewport[isVertical ? "scrollTop" : "scrollLeft"] = to;
 		return;
 	}
-	viewport.scrollTo({ [side]: to, behavior: prefersStill() ? "auto" : "smooth" });
-}
-
-function prefersStill(): boolean {
-	return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+	const behavior = prefersReducedMotion() ? "auto" : "smooth";
+	viewport.scrollTo(isVertical ? { top: to, behavior } : { left: to, behavior });
 }

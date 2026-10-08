@@ -1,6 +1,6 @@
 import { createElement as h, useId } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { useControllableState } from "../hooks/use-controllable-state";
+import { useOpenState } from "../hooks/use-open-state";
 import { cn } from "../utils/cn";
 import { CollapsibleContext } from "./collapsible-context";
 
@@ -24,7 +24,7 @@ export function Collapsible({
 	className,
 	...rest
 }: CollapsibleProps): ReactElement {
-	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
+	const [isOpen, setOpen] = useOpenState({ open, defaultOpen, onOpenChange });
 	const contentId = useId();
 	const toggle = (): void => setOpen(!isOpen);
 	return (

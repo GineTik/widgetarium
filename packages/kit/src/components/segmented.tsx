@@ -4,7 +4,7 @@ import { useControllableState } from "../hooks/use-controllable-state";
 import { useSegmentedThumb } from "../hooks/use-segmented-thumb";
 import { cn } from "../utils/cn";
 import { isFocusable } from "../utils/dom-nodes";
-import { ACROSS_STEP_OF_KEY, stepIndex } from "../utils/roving";
+import { ANY_ARROW_STEP_OF_KEY, stepIndex } from "../utils/roving";
 
 export interface SegmentedItem<V extends Key> {
 	readonly value: V;
@@ -42,7 +42,7 @@ export function Segmented<V extends Key>({
 	const { listRef, thumbProps } = useSegmentedThumb(current, items);
 
 	const moveWithKeys = (event: KeyboardEvent): void => {
-		const step = ACROSS_STEP_OF_KEY.get(event.key);
+		const step = ANY_ARROW_STEP_OF_KEY.get(event.key);
 		if (step === undefined) return;
 		event.preventDefault();
 		const next = stepIndex(

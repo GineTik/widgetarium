@@ -1,6 +1,6 @@
 import type { FocusEvent, HTMLAttributes, PointerEvent } from "react";
 import type { HoverLayer } from "../hooks/use-hover-layer";
-import { chain } from "./chain";
+import { chainHandlers } from "./chain";
 import { isFocusVisible } from "./focus";
 
 export type HoverHandlers = Pick<
@@ -10,20 +10,20 @@ export type HoverHandlers = Pick<
 
 export function hoverTriggerHandlers(layer: HoverLayer, theirs: HoverHandlers): Required<HoverHandlers> {
 	return {
-		onPointerEnter: chain(theirs.onPointerEnter, (event: PointerEvent<HTMLElement>) => {
+		onPointerEnter: chainHandlers(theirs.onPointerEnter, (event: PointerEvent<HTMLElement>) => {
 			if (event.pointerType !== "touch") layer.openSoon();
 		}),
-		onPointerLeave: chain(theirs.onPointerLeave, () => layer.closeSoon()),
-		onFocus: chain(theirs.onFocus, (event: FocusEvent<HTMLElement>) => {
+		onPointerLeave: chainHandlers(theirs.onPointerLeave, () => layer.closeSoon()),
+		onFocus: chainHandlers(theirs.onFocus, (event: FocusEvent<HTMLElement>) => {
 			if (isFocusVisible(event.currentTarget)) layer.settle(true);
 		}),
-		onBlur: chain(theirs.onBlur, () => layer.settle(false)),
+		onBlur: chainHandlers(theirs.onBlur, () => layer.settle(false)),
 	};
 }
 
 export function hoverContentHandlers(layer: HoverLayer, theirs: HoverHandlers): HoverHandlers {
 	return {
-		onPointerEnter: chain(theirs.onPointerEnter, () => layer.settle(true)),
-		onPointerLeave: chain(theirs.onPointerLeave, () => layer.closeSoon()),
+		onPointerEnter: chainHandlers(theirs.onPointerEnter, () => layer.settle(true)),
+		onPointerLeave: chainHandlers(theirs.onPointerLeave, () => layer.closeSoon()),
 	};
 }

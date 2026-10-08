@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, ReactElement, Ref } from "react";
 import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
-import { Slot } from "./slot";
+import { buttonPartOf } from "./slot";
 
 export interface PaginationButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	readonly look?: string | undefined;
@@ -19,10 +19,10 @@ export function PaginationButton({
 	children,
 	...props
 }: PaginationButtonProps): ReactElement {
-	const Comp = asChild ? Slot : "button";
+	const { part: Comp, type } = buttonPartOf(asChild);
 	return (
 		<Comp
-			type={asChild ? undefined : "button"}
+			type={type}
 			aria-current={isActive ? "page" : undefined}
 			data-active={isActive ? "" : undefined}
 			{...domPropsOf(props)}

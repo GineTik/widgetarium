@@ -1,3 +1,5 @@
+import { clamp } from "./clamp";
+
 export type ScrollAxis = "vertical" | "horizontal";
 
 export interface ScrollMetrics {
@@ -26,8 +28,8 @@ export function metricsOf(viewport: HTMLElement, track: number, axis: ScrollAxis
 export function thumbOf({ scroll, client, total, track }: ScrollMetrics): ThumbGeometry {
 	const reach = total - client;
 	if (reach <= 1 || track <= 0) return NO_THUMB;
-	const size = Math.min(track, Math.max(SHORTEST_THUMB_PX, (track * client) / total));
-	const offset = ((track - size) * Math.min(Math.max(scroll, 0), reach)) / reach;
+	const size = clamp((track * client) / total, SHORTEST_THUMB_PX, track);
+	const offset = ((track - size) * clamp(scroll, 0, reach)) / reach;
 	return { size, offset, isNeeded: true };
 }
 

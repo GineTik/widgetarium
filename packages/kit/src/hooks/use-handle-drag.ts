@@ -5,6 +5,7 @@ import { useDirection } from "../components/direction-context";
 import { WHOLE } from "../utils/resizable";
 import type { PanelSizes } from "../utils/resizable";
 import { PANEL_ID } from "./use-resizable-group";
+import { pointerAxisOf } from "../utils/pointer-axis";
 
 export interface HandleNeighbours {
 	readonly before: string;
@@ -25,13 +26,16 @@ interface DragStart extends HandleNeighbours {
 	readonly sizes: PanelSizes;
 }
 
-export const KEY_STEP = 10;
+const KEY_STEP = 10;
 
 export function useHandleDrag(group: ResizableState): HandleDrag {
 	const drag = useRef<DragStart | null>(null);
 	const isVertical = group.orientation === "vertical";
 	const flip = useDirection() === "rtl" && !isVertical ? -1 : 1;
-	const pointerAt = (event: PointerEvent<HTMLElement>): number => (isVertical ? event.clientY : event.clientX);
+	const release = (): void => {
+		drag.current = null;
+		group.setDragging(false);
+	};
 	return {
 		onPointerDown: (event) => {
 			const neighbours = neighboursOf(event.currentTarget);
@@ -39,23 +43,17 @@ export function useHandleDrag(group: ResizableState): HandleDrag {
 			if (!neighbours || span <= 0 || event.button !== 0) return;
 			event.preventDefault();
 			event.currentTarget.setPointerCapture?.(event.pointerId);
-			drag.current = { ...neighbours, pointer: pointerAt(event), span, sizes: group.sizes };
+			drag.current = { ...neighbours, pointer: pointerAxisOf(event, isVertical), span, sizes: group.sizes };
 			group.setDragging(true);
 		},
 		onPointerMove: (event) => {
 			const start = drag.current;
 			if (!start) return;
-			const delta = (((pointerAt(event) - start.pointer) * WHOLE) / start.span) * flip;
+			const delta = (((pointerAxisOf(event, isVertical) - start.pointer) * WHOLE) / start.span) * flip;
 			group.step({ before: start.before, after: start.after, delta }, start.sizes);
 		},
-		onPointerUp: () => {
-			drag.current = null;
-			group.setDragging(false);
-		},
-		onPointerCancel: () => {
-			drag.current = null;
-			group.setDragging(false);
-		},
+		onPointerUp: release,
+		onPointerCancel: release,
 		onKeyDown: (event) => {
 			const neighbours = neighboursOf(event.currentTarget);
 			const delta = keyDeltaOf(event.key, isVertical, flip);

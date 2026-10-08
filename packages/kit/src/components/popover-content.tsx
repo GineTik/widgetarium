@@ -6,8 +6,8 @@ import type { PopoverAlign, PopoverSide } from "../constants/popover";
 import { useAsksPlacement } from "../hooks/use-asks-placement";
 import { cn } from "../utils/cn";
 import { portalLayer } from "../utils/portal-layer";
-import { stepIndex } from "../utils/roving";
-import type { Step } from "../utils/roving";
+import { focusStepped } from "../utils/focus-step";
+import { COLUMN_STEP_OF_KEY } from "../utils/roving";
 import { dataStateOf, usePopover } from "./popover-context";
 
 export interface PopoverContentProps {
@@ -18,13 +18,6 @@ export interface PopoverContentProps {
 	readonly children?: ReactNode;
 	readonly className?: string | undefined;
 }
-
-const STEP_OF_KEY: ReadonlyMap<string, Step> = new Map<string, Step>([
-	["ArrowDown", 1],
-	["ArrowUp", -1],
-	["Home", "first"],
-	["End", "last"],
-]);
 
 export function PopoverContent({
 	side,
@@ -63,11 +56,6 @@ export function PopoverContent({
 }
 
 function moveBetweenItems(event: KeyboardEvent<HTMLDivElement>): void {
-	const step = STEP_OF_KEY.get(event.key);
-	if (step === undefined) return;
 	const items = [...event.currentTarget.querySelectorAll<HTMLElement>(POPOVER_ITEM)];
-	if (items.length === 0) return;
-	event.preventDefault();
-	const at = items.findIndex((item) => item === document.activeElement);
-	items[stepIndex(at, step, items.length)]?.focus();
+	focusStepped(event, items, COLUMN_STEP_OF_KEY.get(event.key));
 }

@@ -2,7 +2,8 @@ import { Children, createElement as h } from "react";
 import type { HTMLAttributes, KeyboardEvent, ReactElement } from "react";
 import { useSegmentedThumb } from "../hooks/use-segmented-thumb";
 import { cn } from "../utils/cn";
-import { ACROSS_STEP_OF_KEY, stepIndex } from "../utils/roving";
+import { focusAndClick, focusStepped } from "../utils/focus-step";
+import { ANY_ARROW_STEP_OF_KEY } from "../utils/roving";
 import { useTabs } from "./tabs-context";
 
 export interface TabsListProps extends HTMLAttributes<HTMLDivElement> {
@@ -34,13 +35,6 @@ export function TabsList({ size = "m", className, children, ...rest }: TabsListP
 }
 
 function pressesNextTab(event: KeyboardEvent<HTMLDivElement>): void {
-	const step = ACROSS_STEP_OF_KEY.get(event.key);
-	if (step === undefined) return;
 	const tabs = [...event.currentTarget.querySelectorAll<HTMLElement>(ENABLED_TAB)];
-	const at = tabs.findIndex((tab) => tab === document.activeElement);
-	const next = tabs[stepIndex(at, step, tabs.length)];
-	if (!next) return;
-	event.preventDefault();
-	next.focus();
-	next.click();
+	focusStepped(event, tabs, ANY_ARROW_STEP_OF_KEY.get(event.key), { focus: focusAndClick });
 }

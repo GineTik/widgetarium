@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
+import { clamp } from "../utils/clamp";
 
 export interface SheetDragAsk {
 	readonly isOpen: boolean;
@@ -51,7 +52,7 @@ export function useSheetDrag({ isOpen, setOpen, peekPx, maxPx, onHeight }: Sheet
 	const move = (event: PointerEvent): void => {
 		if (!from.current) return;
 		const wanted = from.current.height + (from.current.y - event.clientY);
-		setDragged(Math.max(peekPx, Math.min(maxPx, wanted)));
+		setDragged(clamp(wanted, peekPx, Math.max(peekPx, maxPx)));
 	};
 
 	// TRADE-OFF: a press that never moved still commits — the grip was a toggle, and people already have that gesture

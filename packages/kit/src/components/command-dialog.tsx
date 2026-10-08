@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { useControllableState } from "../hooks/use-controllable-state";
+import { useOpenState } from "../hooks/use-open-state";
 import { Command } from "./command";
 import { CommandMenuOverlay } from "./command-menu-overlay";
 
@@ -25,7 +25,7 @@ export function CommandDialog({
 	className,
 	children,
 }: CommandDialogProps): ReactElement | null {
-	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
+	const [isOpen, setOpen] = useOpenState({ open, defaultOpen, onOpenChange });
 	return (
 		<CommandMenuOverlay isOpen={isOpen} onClose={() => setOpen(false)}>
 			<Command label={title} shouldFilter={shouldFilter} className={className}>

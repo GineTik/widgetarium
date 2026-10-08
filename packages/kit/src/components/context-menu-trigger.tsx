@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, MouseEvent, ReactElement } from "react";
 import { useLongPress } from "../hooks/use-long-press";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { pointBox, useContextMenuPoint } from "./context-menu-point";
 import { useMenu } from "./menu-context";
 import { dataStateOf } from "./popover-context";
@@ -33,7 +33,7 @@ export function ContextMenuTrigger({
 		"data-state": dataStateOf(menu.isOpen),
 		"data-disabled": disabled ? "" : undefined,
 		ref: menu.triggerRef,
-		onContextMenu: chain(onContextMenu, (event: MouseEvent<HTMLElement>) => {
+		onContextMenu: chainHandlers(onContextMenu, (event: MouseEvent<HTMLElement>) => {
 			if (disabled) return;
 			event.preventDefault();
 			openAt(event.clientX, event.clientY);

@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactElement } from "react";
 import { DEFAULT_SIDE_OFFSET } from "../constants/popover";
 import type { PopoverAlign, PopoverSide } from "../constants/popover";
 import { useMenuPanel } from "../hooks/use-menu-panel";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { moveInMenu } from "../utils/menu-keys";
 import { FloatingPanel } from "./floating-panel";
@@ -44,7 +44,7 @@ export function MenuContent({
 			panelRef={registeredPanelRef}
 			data-slot={menuSlot(menu, menu.parent ? "sub-content" : "content")}
 			className={cn("wg-kit-menu", className)}
-			onKeyDown={chain(onKeyDown, (event) => moveInMenu(event, menu))}
+			onKeyDown={chainHandlers(onKeyDown, (event) => moveInMenu(event, menu))}
 		/>
 	);
 }

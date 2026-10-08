@@ -1,14 +1,13 @@
 import { useLayoutEffect } from "react";
 import type { RefObject } from "react";
+import { watchSizes } from "../utils/resize-watch";
 
 export function useMorphingSize(panelRef: RefObject<HTMLElement | null>, inner: HTMLElement | null, key: string): void {
 	useLayoutEffect(() => {
 		if (!inner) return undefined;
 		const fit = (): void => fitPanelTo(panelRef.current, inner);
 		fit();
-		const watch = new ResizeObserver(fit);
-		watch.observe(inner);
-		return () => watch.disconnect();
+		return watchSizes([inner], fit);
 	}, [inner, key]);
 }
 

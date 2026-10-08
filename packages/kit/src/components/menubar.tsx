@@ -2,7 +2,7 @@ import { createElement as h, useRef } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import type { FocusIntent } from "./menu-context";
 import { useControllableState } from "../hooks/use-controllable-state";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { moveAcrossTriggers } from "../utils/menubar-keys";
 import { MenubarContext } from "./menubar-context";
@@ -52,7 +52,7 @@ export function Menubar({
 				ref={rootRef}
 				data-slot="menubar"
 				className={cn("wg-kit-menubar", className)}
-				onKeyDown={chain(onKeyDown, moveAcrossTriggers)}
+				onKeyDown={chainHandlers(onKeyDown, moveAcrossTriggers)}
 			/>
 		</MenubarContext.Provider>
 	);

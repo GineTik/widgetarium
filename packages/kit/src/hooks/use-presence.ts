@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { prefersReducedMotion } from "../utils/popover-motion";
+import { prefersReducedMotion } from "../utils/reduced-motion";
 import { useHeldPresence } from "./use-held-presence";
 import type { Presence } from "./use-held-presence";
 

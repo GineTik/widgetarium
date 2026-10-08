@@ -2,6 +2,7 @@ import { CONTENT_DELAY_MS, CONTENT_MS, EXIT_GUARD_MS, GROW_MS, LAND_MARGIN_MS } 
 import type { Placement } from "../constants/popover";
 import { viewportSize } from "./floating-placement";
 import { wearAnchorWidth, wearSpot } from "./wear-spot";
+import { prefersReducedMotion } from "./reduced-motion";
 
 type Styled = Element & ElementCSSInlineStyle;
 
@@ -23,10 +24,6 @@ interface Paint {
 }
 
 export type StopMotion = () => void;
-
-export function prefersReducedMotion(): boolean {
-	return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
-}
 
 export function restPanel(panel: HTMLElement, anchor: HTMLElement): void {
 	panel.style.transition = "";

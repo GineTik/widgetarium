@@ -1,6 +1,8 @@
 import { Children, isValidElement } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { isElement } from "./dom-nodes";
+import { focusStepped } from "./focus-step";
+import { UP_DOWN_STEP_OF_KEY } from "./roving";
 
 export const COMMAND_ITEM = "[data-command-item]:not([disabled])";
 
@@ -45,9 +47,5 @@ export function movesBetweenCommandItems(event: KeyboardEvent<HTMLElement>): voi
 		items[0]?.click();
 		return;
 	}
-	if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-	event.preventDefault();
-	const at = items.findIndex((item) => item === document.activeElement);
-	const step = event.key === "ArrowDown" ? 1 : -1;
-	items[(at + step + items.length) % items.length]?.focus();
+	focusStepped(event, items, UP_DOWN_STEP_OF_KEY.get(event.key));
 }

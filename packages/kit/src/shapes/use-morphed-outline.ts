@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { lightSpotOf, mixedPoints, outlineOf, pointsIn, springOf } from "../utils/shape-morph";
 import type { ShapeLightSpot } from "../utils/shape-morph";
+import { clamp } from "../utils/clamp";
+import { prefersReducedMotion } from "../utils/reduced-motion";
 
 const MORPH_MS = 520;
 
@@ -23,7 +25,7 @@ export function useMorphedOutline(points: string): MorphedShape {
 		}
 		const began = performance.now();
 		let frame = requestAnimationFrame(function step(now: number) {
-			const progress = Math.min(1, Math.max(0, (now - began) / MORPH_MS));
+			const progress = clamp((now - began) / MORPH_MS, 0, 1);
 			const mixed = mixedPoints(from, to, springOf(progress));
 			shown.current = mixed;
 			setDrawn(mixed);
@@ -36,5 +38,5 @@ export function useMorphedOutline(points: string): MorphedShape {
 
 function canAnimate(): boolean {
 	if (typeof requestAnimationFrame !== "function" || typeof window === "undefined") return false;
-	return !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+	return !prefersReducedMotion();
 }

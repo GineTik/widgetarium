@@ -5,7 +5,7 @@ import type { IconButtonSize, IconButtonVariant } from "../utils/class-names";
 import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 import { buttonMark } from "./button-mark";
-import { Slot } from "./slot";
+import { buttonPartOf } from "./slot";
 import { Slottable } from "./slottable";
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -26,11 +26,11 @@ export function IconButton({
 	children,
 	...props
 }: IconButtonProps): ReactElement {
-	const Comp = asChild ? Slot : "button";
+	const { part: Comp, type } = buttonPartOf(asChild);
 	const isDisabled = Boolean(props.disabled) || isLoading;
 	return (
 		<Comp
-			type={asChild ? undefined : "button"}
+			type={type}
 			aria-label={label}
 			{...domPropsOf(props)}
 			disabled={isDisabled}

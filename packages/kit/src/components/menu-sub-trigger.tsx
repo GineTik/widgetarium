@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, KeyboardEvent, PointerEvent, ReactElement } from "react";
 import { Icon } from "../icons/icon";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { focusQuietly } from "../utils/focus";
 import { menuItemMarks } from "../utils/menu-item";
@@ -41,9 +41,9 @@ export function MenuSubTrigger({
 				sub.triggerRef.current = node;
 			}}
 			className={cn("wg-kit-menu-item is-sub-trigger", className)}
-			onPointerMove={chain(onPointerMove, (event) => openByPointer(sub, event, disabled))}
-			onClick={chain(onClick, () => openByKeys(sub, disabled))}
-			onKeyDown={chain(onKeyDown, (event) => openOnForwardKey(sub, event, disabled))}
+			onPointerMove={chainHandlers(onPointerMove, (event) => openByPointer(sub, event, disabled))}
+			onClick={chainHandlers(onClick, () => openByKeys(sub, disabled))}
+			onKeyDown={chainHandlers(onKeyDown, (event) => openOnForwardKey(sub, event, disabled))}
 		>
 			{children}
 			<Icon name="chevron-right" size={CHEVRON_PX} className="wg-kit-menu-chevron" />

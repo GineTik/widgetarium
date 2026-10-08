@@ -3,7 +3,7 @@ import { useCombobox } from "../components/combobox-context";
 import type { ComboboxState } from "../components/combobox-context";
 import { usePopover } from "../components/popover-context";
 import { COMBOBOX_ITEM, optionIdOf } from "../utils/combobox";
-import { stepIndex } from "../utils/roving";
+import { UP_DOWN_STEP_OF_KEY, stepIndex } from "../utils/roving";
 
 export interface ComboboxInputBinding {
 	readonly role: "combobox";
@@ -18,11 +18,6 @@ export interface ComboboxInputBinding {
 	readonly onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
 	readonly onClick: () => void;
 }
-
-const STEP_OF_KEY: ReadonlyMap<string, number> = new Map([
-	["ArrowDown", 1],
-	["ArrowUp", -1],
-]);
 
 export function useComboboxInput(): ComboboxInputBinding {
 	const combobox = useCombobox();
@@ -45,7 +40,7 @@ export function useComboboxInput(): ComboboxInputBinding {
 
 function answerKey(event: KeyboardEvent<HTMLInputElement>, combobox: ComboboxState, panel: HTMLElement | null): void {
 	const items = [...(panel?.querySelectorAll<HTMLElement>(COMBOBOX_ITEM) ?? [])];
-	const step = STEP_OF_KEY.get(event.key);
+	const step = UP_DOWN_STEP_OF_KEY.get(event.key);
 	if (step !== undefined) {
 		event.preventDefault();
 		if (!combobox.isOpen) return combobox.setOpen(true);

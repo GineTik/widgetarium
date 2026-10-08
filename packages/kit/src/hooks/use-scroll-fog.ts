@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
+import { watchScrollBox } from "../utils/resize-watch";
 
 export type ScrollEdges = { left: number; right: number; top: number; bottom: number };
 
@@ -18,15 +19,7 @@ export function useScrollFog(
 	useLayoutEffect(() => {
 		const node = scrollRef.current;
 		if (!node) return undefined;
-		const measure = () => latest.current(edgesOf(node));
-		node.addEventListener("scroll", measure, { passive: true });
-		const watcher = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
-		watcher?.observe(node);
-		for (const child of Array.from(node.children)) watcher?.observe(child);
-		return () => {
-			node.removeEventListener("scroll", measure);
-			watcher?.disconnect();
-		};
+		return watchScrollBox(node, () => latest.current(edgesOf(node)));
 	}, [scrollRef, watched]);
 }
 

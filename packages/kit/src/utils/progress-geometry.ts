@@ -14,6 +14,7 @@ import {
 	WAVE_STEP_PX,
 } from "../constants/progress";
 import { clampPercent } from "./progress";
+import { clamp } from "./clamp";
 
 export interface BarLook {
 	readonly isWavy?: boolean;
@@ -101,7 +102,7 @@ export function circleGeometry(size: number, percent: unknown, { isWavy = true }
 }
 
 export function ringStrokeOf(size: number): number {
-	return Math.min(BAR_STROKE, Math.max(RING_STROKE_MIN, Math.round(size / RING_PX_PER_STROKE)));
+	return clamp(Math.round(size / RING_PX_PER_STROKE), RING_STROKE_MIN, BAR_STROKE);
 }
 
 function wavePath(from: number, to: number, middle: number, amplitude: number): string {
@@ -127,7 +128,7 @@ function barEdges(width: number, share: number, isCursorVisible: boolean): BarEd
 	const end = width - BAR_STROKE / 2;
 	const at = start + share * (end - start);
 	if (!isCursorVisible) return { start, end, activeEnd: at, trackStart: share === 0 ? at : at + BAR_STROKE + BAR_GAP };
-	const cursorX = Math.min(width - CURSOR_WIDTH / 2, Math.max(CURSOR_WIDTH / 2, at));
+	const cursorX = clamp(at, CURSOR_WIDTH / 2, width - CURSOR_WIDTH / 2);
 	const reach = CURSOR_WIDTH / 2 + BAR_GAP + BAR_STROKE / 2;
 	return { start, end, activeEnd: cursorX - reach, trackStart: cursorX + reach, cursorX };
 }

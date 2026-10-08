@@ -1,7 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { ResizableOrientation, ResizableState } from "../components/resizable-context";
-import { limitsOf, sizesLaid, sizesStepped } from "../utils/resizable";
+import { limitsOf, layPanelSizes, stepPanelSizes } from "../utils/resizable";
 import type { PanelLimits, PanelSizes } from "../utils/resizable";
 
 export interface ResizableGroupAsk {
@@ -33,7 +33,7 @@ export function useResizableGroup({ orientation, onLayout }: ResizableGroupAsk):
 	useLayoutEffect(() => {
 		const order = panelOrderIn(groupRef.current);
 		if (order.every((id) => id in latest.current.sizes)) return;
-		lay(sizesLaid(order, limits.current));
+		lay(layPanelSizes(order, limits.current));
 	}, [panelsSeen]);
 	const group = useMemo<Omit<ResizableState, "sizes">>(
 		() => ({
@@ -47,7 +47,7 @@ export function useResizableGroup({ orientation, onLayout }: ResizableGroupAsk):
 					setPanelsSeen((seen) => seen + 1);
 				};
 			},
-			step: (step, from) => lay(sizesStepped(from ?? latest.current.sizes, step, limits.current)),
+			step: (step, from) => lay(stepPanelSizes(from ?? latest.current.sizes, step, limits.current)),
 			setDragging,
 		}),
 		[orientation],
@@ -55,7 +55,7 @@ export function useResizableGroup({ orientation, onLayout }: ResizableGroupAsk):
 	return { groupRef, group: { ...group, sizes }, isDragging };
 }
 
-export function panelOrderIn(group: Element | null): string[] {
+function panelOrderIn(group: Element | null): string[] {
 	if (!group) return [];
 	return [...group.children].flatMap((child) => child.getAttribute(PANEL_ID) ?? []);
 }

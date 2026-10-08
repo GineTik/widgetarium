@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, MouseEvent, ReactElement } from "react";
 import { useDialog } from "./dialog-context";
-import { Slot } from "./slot";
+import { buttonPartOf } from "./slot";
 
 export interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	readonly asChild?: boolean;
@@ -9,8 +9,9 @@ export interface DialogTriggerProps extends ButtonHTMLAttributes<HTMLButtonEleme
 
 export function DialogTrigger({ asChild = false, onClick, ...rest }: DialogTriggerProps): ReactElement {
 	const { isOpen, setOpen } = useDialog();
-	return h(asChild ? Slot : "button", {
-		type: asChild ? undefined : "button",
+	const { part, type } = buttonPartOf(asChild);
+	return h(part, {
+		type,
 		"data-slot": "dialog-trigger",
 		"aria-haspopup": "dialog",
 		"aria-expanded": isOpen,

@@ -1,6 +1,6 @@
 import type { MouseEvent, ReactNode } from "react";
 import { TOAST_DURATION_MS, TOAST_EXIT_MS } from "../constants/overlays";
-import { prefersReducedMotion } from "./popover-motion";
+import { prefersReducedMotion } from "./reduced-motion";
 import { ToastClock } from "./toast-clock";
 
 export type ToastType = "default" | "success" | "error" | "warning" | "info" | "loading";

@@ -3,15 +3,9 @@ import type { MenuState } from "../components/menu-context";
 import { MENU_ITEM, TYPEAHEAD_RESET_MS } from "../constants/overlays";
 import { isNode } from "./dom-nodes";
 import { focusQuietly } from "./focus";
-import { stepIndex } from "./roving";
+import { focusStepped } from "./focus-step";
+import { COLUMN_STEP_OF_KEY } from "./roving";
 import type { Step } from "./roving";
-
-const STEP_OF_KEY: ReadonlyMap<string, Step> = new Map<string, Step>([
-	["ArrowDown", 1],
-	["ArrowUp", -1],
-	["Home", "first"],
-	["End", "last"],
-]);
 
 interface Typed {
 	readonly text: string;
@@ -22,7 +16,7 @@ const TYPED_IN = new WeakMap<Element, Typed>();
 
 export function moveInMenu(event: KeyboardEvent<HTMLElement>, menu: MenuState): void {
 	if (!isNode(event.target) || !event.currentTarget.contains(event.target)) return;
-	const step = STEP_OF_KEY.get(event.key);
+	const step = COLUMN_STEP_OF_KEY.get(event.key);
 	if (step !== undefined) {
 		event.preventDefault();
 		focusMenuItem(event.currentTarget, step);
@@ -43,13 +37,10 @@ export function moveInMenu(event: KeyboardEvent<HTMLElement>, menu: MenuState): 
 }
 
 export function focusMenuItem(panel: Element, step: Step): void {
-	const items = menuItemsIn(panel);
-	if (items.length === 0) return;
-	const at = items.findIndex((item) => item === document.activeElement);
-	focusQuietly(items[stepIndex(at, step, items.length)]);
+	focusStepped(null, menuItemsIn(panel), step, { focus: focusQuietly });
 }
 
-export function menuItemsIn(panel: Element): HTMLElement[] {
+function menuItemsIn(panel: Element): HTMLElement[] {
 	return [...panel.querySelectorAll<HTMLElement>(MENU_ITEM)];
 }
 

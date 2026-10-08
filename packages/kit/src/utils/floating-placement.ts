@@ -12,6 +12,7 @@ import type {
 	PopoverSide,
 	SidePlacement,
 } from "../constants/popover";
+import { clamp } from "./clamp";
 
 export interface FloatingAsk extends SidePlacement {
 	readonly anchor: AnchorBox;
@@ -145,20 +146,16 @@ function shiftedIntoView({ panel, viewport }: FloatingAsk, side: PopoverSide, wa
 	const size = isVertical(side) ? panel.width : panel.height;
 	const room = isVertical(side) ? viewport.width : viewport.height;
 	const last = room - SCREEN_MARGIN_PX - size;
-	return Math.max(SCREEN_MARGIN_PX, Math.min(last, wanted));
+	return clamp(wanted, SCREEN_MARGIN_PX, Math.max(SCREEN_MARGIN_PX, last));
 }
 
 function originFacing({ anchor, panel }: FloatingAsk, side: PopoverSide, spot: { left: number; top: number }): string {
 	if (isVertical(side)) {
-		const x = clamp(anchor.left + anchor.width / 2 - spot.left, panel.width);
+		const x = clamp(anchor.left + anchor.width / 2 - spot.left, 0, panel.width);
 		return `${Math.round(x)}px ${OPPOSITE[side]}`;
 	}
-	const y = clamp(anchor.top + anchor.height / 2 - spot.top, panel.height);
+	const y = clamp(anchor.top + anchor.height / 2 - spot.top, 0, panel.height);
 	return `${OPPOSITE[side]} ${Math.round(y)}px`;
-}
-
-function clamp(value: number, ceiling: number): number {
-	return Math.max(0, Math.min(ceiling, value));
 }
 
 function placeByName(name: PlacementName, anchor: AnchorBox, panel: PanelSize, viewport: PanelSize): FloatingSpot {

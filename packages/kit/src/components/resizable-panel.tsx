@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactElement } from "react";
 import { useRegistersPanel } from "../hooks/use-registers-panel";
 import { PANEL_ID } from "../hooks/use-resizable-group";
 import { cn } from "../utils/cn";
-import { WHOLE, percentOf } from "../utils/resizable";
+import { WHOLE, panelPercentOf } from "../utils/resizable";
 import type { PanelSize } from "../utils/resizable";
 import { useResizable } from "./resizable-context";
 
@@ -26,7 +26,11 @@ export function ResizablePanel({
 	const group = useResizable();
 	const ownId = useId();
 	const panelId = id ?? ownId;
-	const asked = { defaultSize: percentOf(defaultSize), min: percentOf(minSize) ?? 0, max: percentOf(maxSize) ?? WHOLE };
+	const asked = {
+		defaultSize: panelPercentOf(defaultSize),
+		min: panelPercentOf(minSize) ?? 0,
+		max: panelPercentOf(maxSize) ?? WHOLE,
+	};
 	useRegistersPanel(group, panelId, asked);
 	const size = group.sizes[panelId] ?? asked.defaultSize;
 	return (

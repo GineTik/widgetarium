@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
 import { rowClass } from "../utils/class-names";
 import { cn } from "../utils/cn";
-import { Slot } from "./slot";
+import { buttonPartOf } from "./slot";
 
 export interface SidebarMenuButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	readonly asChild?: boolean;
@@ -21,8 +21,9 @@ export function SidebarMenuButton({
 	className,
 	...rest
 }: SidebarMenuButtonProps): ReactElement {
-	return h(asChild ? Slot : "button", {
-		type: asChild ? undefined : "button",
+	const { part, type } = buttonPartOf(asChild);
+	return h(part, {
+		type,
 		title: typeof tooltip === "string" ? tooltip : undefined,
 		"data-slot": "sidebar-menu-button",
 		"data-size": size,

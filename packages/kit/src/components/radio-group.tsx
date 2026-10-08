@@ -1,9 +1,10 @@
 import { createElement as h, useRef } from "react";
 import type { HTMLAttributes, KeyboardEvent, ReactElement } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
-import { useRadioTabStop } from "../hooks/use-radio-tab-stop";
+import { ENABLED_RADIO, useRadioTabStop } from "../hooks/use-radio-tab-stop";
 import { cn } from "../utils/cn";
-import { ACROSS_STEP_OF_KEY, stepIndex } from "../utils/roving";
+import { focusAndClick, focusStepped } from "../utils/focus-step";
+import { ANY_ARROW_STEP_OF_KEY } from "../utils/roving";
 import { RadioGroupContext } from "./radio-group-context";
 
 export { RadioGroupItem } from "./radio-group-item";
@@ -17,8 +18,6 @@ export interface RadioGroupProps extends Omit<HTMLAttributes<HTMLDivElement>, "d
 	readonly orientation?: "horizontal" | "vertical" | undefined;
 	readonly required?: boolean | undefined;
 }
-
-const ENABLED_RADIO = "[role='radio']:not([disabled])";
 
 export function RadioGroup({
 	value,
@@ -54,19 +53,6 @@ export function RadioGroup({
 }
 
 function moveToNextRadio(event: KeyboardEvent<HTMLDivElement>): void {
-	const step = ACROSS_STEP_OF_KEY.get(event.key);
-	if (step === undefined) return;
 	const radios = [...event.currentTarget.querySelectorAll<HTMLElement>(ENABLED_RADIO)];
-	if (radios.length === 0) return;
-	event.preventDefault();
-	const next =
-		radios[
-			stepIndex(
-				radios.findIndex((radio) => radio === document.activeElement),
-				step,
-				radios.length,
-			)
-		];
-	next?.focus();
-	next?.click();
+	focusStepped(event, radios, ANY_ARROW_STEP_OF_KEY.get(event.key), { focus: focusAndClick });
 }

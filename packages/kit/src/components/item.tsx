@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { variants } from "../utils/cn";
 import type { ClassOf } from "../utils/cn";
-import { renderedChildren } from "../utils/render-prop";
+import { renderChildren } from "../utils/render-prop";
 import { Card } from "./card";
 import { Slot } from "./slot";
 
@@ -43,7 +43,7 @@ export function Item({
 	...rest
 }: ItemProps): ReactElement {
 	const isSlotted = asChild || render !== undefined;
-	const drawn = renderedChildren(render, children);
+	const drawn = renderChildren(render, children);
 	const item = {
 		...rest,
 		"data-variant": variant,

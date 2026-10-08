@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, PointerEvent, ReactElement } from "react";
 import { HOVER_GRACE_MS } from "../constants/overlays";
 import { Icon } from "../icons/icon";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { focusFirstLinkIn, navigationMenuTriggerStyle } from "../utils/navigation-menu";
 import {
 	NAVIGATION_ATTRIBUTE,
@@ -41,10 +41,12 @@ export function NavigationMenuTrigger({
 			data-slot="navigation-menu-trigger"
 			data-state={dataStateOf(isOpen)}
 			className={navigationMenuTriggerStyle(["group", className])}
-			onClick={chain(onClick, () => toggleNavigationItem(nav, item))}
-			onKeyDown={chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(nav, item, event))}
-			onPointerEnter={chain(onPointerEnter, (event: PointerEvent<HTMLElement>) => openOnHover(nav, item, event))}
-			onPointerLeave={chain(onPointerLeave, () => nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS))}
+			onClick={chainHandlers(onClick, () => toggleNavigationItem(nav, item))}
+			onKeyDown={chainHandlers(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(nav, item, event))}
+			onPointerEnter={chainHandlers(onPointerEnter, (event: PointerEvent<HTMLElement>) =>
+				openOnHover(nav, item, event),
+			)}
+			onPointerLeave={chainHandlers(onPointerLeave, () => nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS))}
 		>
 			{children}
 			<Icon name="chevron-down" size={CHEVRON_PX} className="wg-kit-nav-chevron" aria-hidden="true" />

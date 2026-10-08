@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { variants } from "../utils/cn";
 import type { ClassOf } from "../utils/cn";
-import { renderedChildren } from "../utils/render-prop";
+import { renderChildren } from "../utils/render-prop";
 import { Slot } from "./slot";
 
 export { MarkerContent, MarkerIcon } from "./marker-parts";
@@ -34,7 +34,7 @@ export function Marker({
 	const Comp = asChild || render !== undefined ? Slot : "div";
 	return (
 		<Comp data-slot="marker" data-variant={variant} {...rest} className={markerVariants({ variant, className })}>
-			{renderedChildren(render, children)}
+			{renderChildren(render, children)}
 		</Comp>
 	);
 }

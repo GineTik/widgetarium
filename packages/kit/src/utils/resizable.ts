@@ -1,3 +1,5 @@
+import { clamp } from "./clamp";
+
 export type PanelSize = number | `${number}%`;
 
 export interface PanelLimits {
@@ -16,13 +18,13 @@ export interface PairStep {
 
 export const WHOLE = 100;
 
-export function percentOf(size: PanelSize | undefined): number | undefined {
+export function panelPercentOf(size: PanelSize | undefined): number | undefined {
 	if (size === undefined) return undefined;
 	const value = typeof size === "number" ? size : Number.parseFloat(size);
 	return Number.isFinite(value) ? value : undefined;
 }
 
-export function sizesLaid(order: readonly string[], limits: ReadonlyMap<string, PanelLimits>): PanelSizes {
+export function layPanelSizes(order: readonly string[], limits: ReadonlyMap<string, PanelLimits>): PanelSizes {
 	const asked = order.map((id) => limits.get(id)?.defaultSize);
 	const taken = asked.reduce<number>((sum, size) => sum + (size ?? 0), 0);
 	const unsized = asked.filter((size) => size === undefined).length;
@@ -30,7 +32,11 @@ export function sizesLaid(order: readonly string[], limits: ReadonlyMap<string, 
 	return Object.fromEntries(order.map((id, at) => [id, asked[at] ?? share]));
 }
 
-export function sizesStepped(sizes: PanelSizes, step: PairStep, limits: ReadonlyMap<string, PanelLimits>): PanelSizes {
+export function stepPanelSizes(
+	sizes: PanelSizes,
+	step: PairStep,
+	limits: ReadonlyMap<string, PanelLimits>,
+): PanelSizes {
 	const before = sizes[step.before];
 	const after = sizes[step.after];
 	if (before === undefined || after === undefined) return sizes;
@@ -39,7 +45,7 @@ export function sizesStepped(sizes: PanelSizes, step: PairStep, limits: Readonly
 	const afterLimits = limitsOf(limits, step.after);
 	const lowest = Math.max(beforeLimits.min, pair - afterLimits.max);
 	const highest = Math.min(beforeLimits.max, pair - afterLimits.min);
-	const next = Math.min(highest, Math.max(lowest, before + step.delta));
+	const next = clamp(before + step.delta, lowest, highest);
 	if (next === before) return sizes;
 	return { ...sizes, [step.before]: next, [step.after]: pair - next };
 }

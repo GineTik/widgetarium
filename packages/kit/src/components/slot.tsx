@@ -14,6 +14,11 @@ type AnyProps = Readonly<Record<string, unknown>>;
 
 type Handler = (...args: readonly unknown[]) => unknown;
 
+export interface ButtonPart {
+	readonly part: typeof Slot | "button";
+	readonly type: "button" | undefined;
+}
+
 export function Slot({ children, ...slotProps }: SlotProps): ReactNode {
 	const childArray = Children.toArray(children);
 	const slottable = childArray.find(isSlottable);
@@ -22,6 +27,10 @@ export function Slot({ children, ...slotProps }: SlotProps): ReactNode {
 	if (!isValidElement<{ children?: ReactNode }>(slotted)) return null;
 	const around = childArray.map((child) => (child === slottable ? slotted.props.children : child));
 	return <SlotClone {...slotProps}>{cloneElement(slotted, undefined, ...around)}</SlotClone>;
+}
+
+export function buttonPartOf(asChild: boolean): ButtonPart {
+	return asChild ? { part: Slot, type: undefined } : { part: "button", type: "button" };
 }
 
 export function composeRefs<T>(...refs: Array<Ref<T> | undefined>): RefCallback<T> {
@@ -74,8 +83,8 @@ function mergeProps(slotProps: AnyProps, childProps: AnyProps): AnyProps {
 }
 
 function mergedProp(name: string, fromSlot: unknown, fromChild: unknown): unknown {
-	if (isHandlerName(name) && isHandler(fromSlot) && isHandler(fromChild)) return composeHandlers(fromChild, fromSlot);
-	if (isHandlerName(name) && fromSlot) return fromSlot;
+	if (isHandlerName(name))
+		return isHandler(fromSlot) && isHandler(fromChild) ? composeHandlers(fromChild, fromSlot) : fromSlot || fromChild;
 	if (name === "style") return { ...spreadable(fromSlot), ...spreadable(fromChild) };
 	if (name === "className") return [fromSlot, fromChild].filter(Boolean).join(" ");
 	return fromChild;

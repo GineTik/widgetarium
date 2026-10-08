@@ -1,11 +1,11 @@
 import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, MouseEvent, ReactElement, Ref } from "react";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { toggleMenu } from "../utils/menu-trigger";
 import type { MenuState } from "./menu-context";
 import { useMenu } from "./menu-context";
 import { dataStateOf } from "./popover-context";
-import { composeRefs, Slot } from "./slot";
+import { buttonPartOf, composeRefs } from "./slot";
 
 export interface DropdownMenuTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	readonly asChild?: boolean;
@@ -20,8 +20,9 @@ export function DropdownMenuTrigger({
 	...rest
 }: DropdownMenuTriggerProps): ReactElement {
 	const menu = useMenu();
-	return h(asChild ? Slot : "button", {
-		type: asChild ? undefined : "button",
+	const { part, type } = buttonPartOf(asChild);
+	return h(part, {
+		type,
 		"aria-haspopup": "menu",
 		"aria-expanded": menu.isOpen,
 		"aria-controls": menu.isOpen ? menu.contentId : undefined,
@@ -29,8 +30,8 @@ export function DropdownMenuTrigger({
 		...rest,
 		"data-slot": "dropdown-menu-trigger",
 		ref: composeRefs(menu.triggerRef, ref),
-		onClick: chain(onClick, (event: MouseEvent<HTMLElement>) => toggleMenu(menu, event.detail === 0)),
-		onKeyDown: chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnVerticalArrow(menu, event)),
+		onClick: chainHandlers(onClick, (event: MouseEvent<HTMLElement>) => toggleMenu(menu, event.detail === 0)),
+		onKeyDown: chainHandlers(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnVerticalArrow(menu, event)),
 	});
 }
 

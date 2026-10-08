@@ -75,8 +75,11 @@ export function useComboboxState<T>(ask: ComboboxAsk<T>): ComboboxState {
 		type: (text) => {
 			setQuery(text);
 			setOpenHeld(true);
-			const first = catalogue.known.find((entry) => matchesQuery(entry.label, text));
-			highlight(ask.autoHighlight && ask.hasItems && first ? first.key : null);
+			const first =
+				ask.autoHighlight && ask.hasItems
+					? catalogue.known.find((entry) => matchesQuery(entry.label, text))
+					: undefined;
+			highlight(first?.key ?? null);
 		},
 		selectedItems: selected,
 		keyOf: (value) => catalogue.byItem.get(value)?.key ?? null,

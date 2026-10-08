@@ -20,11 +20,14 @@ Object.assign(globalThis, {
 const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
 const kit = await import("../packages/kit/src/index.ts");
-const { sizesLaid, sizesStepped } = await import("../packages/kit/src/utils/resizable.ts");
+const { layPanelSizes, stepPanelSizes } = await import("../packages/kit/src/utils/resizable.ts");
 const { distinctSnaps, nearestSnap, steppedSnap } = await import("../packages/kit/src/utils/carousel.ts");
 const { thumbOf } = await import("../packages/kit/src/utils/scroll-thumb.ts");
-const { toggledOpen } = await import("../packages/kit/src/utils/accordion.ts");
+const { toggleOpened } = await import("../packages/kit/src/utils/accordion.ts");
 const { chartColorOf } = await import("../packages/kit/src/utils/chart-colors.ts");
+const { clamp } = await import("../packages/kit/src/utils/clamp.ts");
+const { focusStepped } = await import("../packages/kit/src/utils/focus-step.ts");
+const { stepKeysOf } = await import("../packages/kit/src/utils/roving.ts");
 
 let failed = 0;
 let checks = 0;
@@ -122,7 +125,7 @@ async function accordionChecks(): Promise<void> {
 	);
 	check(
 		"collapsible single shuts its only open item",
-		toggledOpen(["a"], "a", { isMultiple: false, isCollapsible: true }),
+		toggleOpened(["a"], "a", { isMultiple: false, isCollapsible: true }),
 		[],
 	);
 }
@@ -304,17 +307,17 @@ async function resizableChecks(): Promise<void> {
 	]);
 	check(
 		"a pair never grows past the maximum of one side",
-		sizesStepped({ a: 50, b: 50 }, { before: "a", after: "b", delta: 30 }, limits),
+		stepPanelSizes({ a: 50, b: 50 }, { before: "a", after: "b", delta: 30 }, limits),
 		{ a: 60, b: 40 },
 	);
 	check(
 		"nor shrinks the other past its minimum",
-		sizesStepped({ a: 50, b: 50 }, { before: "b", after: "a", delta: 45 }, limits),
+		stepPanelSizes({ a: 50, b: 50 }, { before: "b", after: "a", delta: 45 }, limits),
 		{ a: 10, b: 90 },
 	);
 	check(
 		"sizes laid split the rest evenly",
-		sizesLaid(["a", "b", "c"], new Map([["a", { defaultSize: 40, min: 0, max: 100 }]])),
+		layPanelSizes(["a", "b", "c"], new Map([["a", { defaultSize: 40, min: 0, max: 100 }]])),
 		{ a: 40, b: 30, c: 30 },
 	);
 }
@@ -380,6 +383,41 @@ function directionAndChartChecks(): void {
 	);
 }
 
+function sharedHelperChecks(): void {
+	check(
+		"CLAMP HOLDS A VALUE INSIDE ITS BOUNDS, AND THE HIGH BOUND WINS WHEN THEY CROSS",
+		[clamp(5, 0, 10), clamp(-1, 0, 10), clamp(11, 0, 10), clamp(5, 10, 0)],
+		[5, 0, 10, 0],
+	);
+	host.innerHTML = '<button id="r1"></button><button id="r2"></button><button id="r3"></button>';
+	const row = [...host.querySelectorAll<HTMLElement>("button")];
+	focusStepped(null, row, 1, { entersFromOutside: false });
+	const stayedOut = row.some((button) => button === document.activeElement);
+	focusStepped(null, row, -1);
+	const enteredAtEnd = document.activeElement?.id;
+	focusStepped(null, row, 1);
+	const wrapped = document.activeElement?.id;
+	focusStepped(null, row, 1, { from: row[1] });
+	const fromGiven = document.activeElement?.id;
+	check(
+		"FOCUS STEPS IN FROM OUTSIDE ONLY WHEN ASKED, WRAPS, AND COUNTS FROM A GIVEN ITEM",
+		[stayedOut, enteredAtEnd, wrapped, fromGiven],
+		[false, "r3", "r1", "r3"],
+	);
+	check(
+		"a horizontal rtl row steps by the mirrored arrows",
+		[...stepKeysOf("horizontal", "rtl")],
+		[
+			["ArrowLeft", 1],
+			["ArrowRight", -1],
+			["Home", "first"],
+			["End", "last"],
+		],
+	);
+	host.innerHTML = "";
+}
+
+sharedHelperChecks();
 await accordionChecks();
 await collapsibleChecks();
 displayChecks();

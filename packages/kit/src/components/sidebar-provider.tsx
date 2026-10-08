@@ -1,6 +1,6 @@
 import { createElement as h, useState } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { useControllableState } from "../hooks/use-controllable-state";
+import { useOpenState } from "../hooks/use-open-state";
 import { cn } from "../utils/cn";
 import { SidebarContext } from "./sidebar-context";
 
@@ -18,7 +18,7 @@ export function SidebarProvider({
 	children,
 	...rest
 }: SidebarProviderProps): ReactElement {
-	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
+	const [isOpen, setOpen] = useOpenState({ open, defaultOpen, onOpenChange });
 	const [openMobile, setOpenMobile] = useState(false);
 	const sidebar = {
 		state: isOpen ? "expanded" : "collapsed",

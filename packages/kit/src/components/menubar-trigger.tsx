@@ -1,6 +1,6 @@
 import { createElement as h, useContext } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, MouseEvent, PointerEvent, ReactElement } from "react";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { focusQuietly } from "../utils/focus";
 import { toggleMenu } from "../utils/menu-trigger";
@@ -37,9 +37,11 @@ export function MenubarTrigger({
 			data-slot="menubar-trigger"
 			data-state={dataStateOf(menu.isOpen)}
 			className={cn("wg-kit-menubar-trigger", className)}
-			onClick={chain(onClick, (event: MouseEvent<HTMLElement>) => toggleMenu(menu, event.detail === 0))}
-			onKeyDown={chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(menu, event))}
-			onPointerEnter={chain(onPointerEnter, (event: PointerEvent<HTMLElement>) => switchOnHover(bar, own, event))}
+			onClick={chainHandlers(onClick, (event: MouseEvent<HTMLElement>) => toggleMenu(menu, event.detail === 0))}
+			onKeyDown={chainHandlers(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(menu, event))}
+			onPointerEnter={chainHandlers(onPointerEnter, (event: PointerEvent<HTMLElement>) =>
+				switchOnHover(bar, own, event),
+			)}
 		/>
 	);
 }

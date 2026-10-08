@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { AnchorHTMLAttributes, MouseEvent, ReactElement } from "react";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { useNavigationMenu } from "./navigation-menu-context";
 import { Slot } from "./slot";
@@ -26,7 +26,7 @@ export function NavigationMenuLink({
 		"data-active": active ? "" : undefined,
 		"aria-current": active ? "page" : undefined,
 		className: cn("wg-kit-nav-link", className),
-		onClick: chain(onClick, (event: MouseEvent<HTMLElement>) => {
+		onClick: chainHandlers(onClick, (event: MouseEvent<HTMLElement>) => {
 			const select = new Event("select", { cancelable: true });
 			onSelect?.(select);
 			if (select.defaultPrevented) event.preventDefault();

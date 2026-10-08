@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, MouseEvent, ReactElement } from "react";
 import { useCollapsible } from "./collapsible-context";
-import { Slot } from "./slot";
+import { buttonPartOf } from "./slot";
 
 export interface CollapsibleTriggerProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 	readonly asChild?: boolean | undefined;
@@ -9,10 +9,10 @@ export interface CollapsibleTriggerProps extends ButtonHTMLAttributes<HTMLButton
 
 export function CollapsibleTrigger({ asChild = false, ...rest }: CollapsibleTriggerProps): ReactElement {
 	const collapsible = useCollapsible();
-	const Comp = asChild ? Slot : "button";
+	const { part: Comp, type } = buttonPartOf(asChild);
 	return (
 		<Comp
-			type={asChild ? undefined : "button"}
+			type={type}
 			data-slot="collapsible-trigger"
 			{...rest}
 			aria-controls={collapsible.contentId}

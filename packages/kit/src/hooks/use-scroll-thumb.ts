@@ -2,6 +2,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent, RefObject } from "react";
 import { NO_THUMB, metricsOf, scrollPerThumbPx, thumbOf } from "../utils/scroll-thumb";
 import type { ScrollAxis, ThumbGeometry } from "../utils/scroll-thumb";
+import { watchScrollBox } from "../utils/resize-watch";
+import { pointerAxisOf } from "../utils/pointer-axis";
 
 export interface ScrollThumb {
 	readonly barRef: RefObject<HTMLDivElement | null>;
@@ -24,7 +26,6 @@ export function useScrollThumb(viewportRef: RefObject<HTMLElement | null>, axis:
 	const drag = useRef<DragStart | null>(null);
 	const [isDragging, setDragging] = useState(false);
 	useLayoutEffect(() => watchThumb({ viewport: viewportRef.current, bar: barRef.current, axis, setThumb }), [axis]);
-	const pointerAt = (event: PointerEvent<HTMLElement>): number => (axis === "vertical" ? event.clientY : event.clientX);
 	return {
 		barRef,
 		thumb,
@@ -36,14 +37,22 @@ export function useScrollThumb(viewportRef: RefObject<HTMLElement | null>, axis:
 			event.preventDefault();
 			event.currentTarget.setPointerCapture?.(event.pointerId);
 			const metrics = metricsOf(viewport, trackOf(bar, axis), axis);
-			drag.current = { pointer: pointerAt(event), scroll: metrics.scroll, ratio: scrollPerThumbPx(metrics) };
+			drag.current = {
+				pointer: pointerAxisOf(event, axis === "vertical"),
+				scroll: metrics.scroll,
+				ratio: scrollPerThumbPx(metrics),
+			};
 			setDragging(true);
 		},
 		onThumbMove: (event) => {
 			const start = drag.current;
 			const viewport = viewportRef.current;
 			if (!start || !viewport) return;
-			scrollTo(viewport, axis, start.scroll + (pointerAt(event) - start.pointer) * start.ratio);
+			scrollTo(
+				viewport,
+				axis,
+				start.scroll + (pointerAxisOf(event, axis === "vertical") - start.pointer) * start.ratio,
+			);
 		},
 		onThumbUp: () => {
 			drag.current = null;
@@ -63,14 +72,7 @@ function watchThumb({ viewport, bar, axis, setThumb }: ThumbWatch): (() => void)
 	if (!viewport || !bar) return undefined;
 	const measure = (): void => setThumb(thumbOf(metricsOf(viewport, trackOf(bar, axis), axis)));
 	measure();
-	viewport.addEventListener("scroll", measure, { passive: true });
-	const watcher = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
-	watcher?.observe(viewport);
-	for (const child of Array.from(viewport.children)) watcher?.observe(child);
-	return () => {
-		viewport.removeEventListener("scroll", measure);
-		watcher?.disconnect();
-	};
+	return watchScrollBox(viewport, measure);
 }
 
 function trackOf(bar: HTMLElement, axis: ScrollAxis): number {

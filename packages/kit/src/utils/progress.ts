@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PROGRESS_MAX } from "../constants/progress";
 import type { ProgressState } from "../constants/progress";
+import { clamp } from "./clamp";
 
 export interface RangeAria {
 	readonly "aria-valuemin": number;
@@ -18,7 +19,7 @@ export type DisplayValue = ReactNode | ((reading: ProgressReading) => ReactNode)
 export function clampPercent(value: unknown): number {
 	const asked = Number(value);
 	if (!Number.isFinite(asked)) return 0;
-	return Math.min(PROGRESS_MAX, Math.max(0, Math.round(asked)));
+	return clamp(Math.round(asked), 0, PROGRESS_MAX);
 }
 
 export function rangeAria(shown: number): RangeAria {

@@ -2,7 +2,7 @@ import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { useRangeSlider } from "../hooks/use-range-slider";
 import { cn } from "../utils/cn";
-import { percentOf, sliderAskOf } from "../utils/slider-range";
+import { sliderPercentOf, sliderAskOf } from "../utils/slider-range";
 import type { SliderSettings } from "../utils/slider-range";
 import type { TokenStyle } from "../utils/token-style";
 import type { RangeSliderPointer } from "../hooks/use-range-slider";
@@ -15,7 +15,7 @@ export interface SliderProps
 export function Slider({ className, ...props }: SliderProps): ReactElement {
 	const { ask, rest } = sliderAskOf(props);
 	const slider = useRangeSlider(ask);
-	const percents = slider.values.map((held) => percentOf(held, ask.scale));
+	const percents = slider.values.map((held) => sliderPercentOf(held, ask.scale));
 	return (
 		<span
 			data-slot="slider"

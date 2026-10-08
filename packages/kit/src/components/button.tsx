@@ -7,7 +7,7 @@ import { domPropsOf } from "../utils/dom-props";
 import { buttonMark } from "./button-mark";
 import { createSlotPart } from "./create-slot-part";
 import type { SlotPartProps } from "./create-slot-part";
-import { Slot } from "./slot";
+import { buttonPartOf } from "./slot";
 import { Slottable } from "./slottable";
 
 export { IconButton } from "./icon-button";
@@ -32,11 +32,11 @@ export function Button({
 	children,
 	...props
 }: ButtonProps): ReactElement {
-	const Comp = asChild ? Slot : "button";
+	const { part: Comp, type } = buttonPartOf(asChild);
 	const isDisabled = Boolean(props.disabled) || isLoading;
 	return (
 		<Comp
-			type={asChild ? undefined : "button"}
+			type={type}
 			data-slot="button"
 			{...domPropsOf(props)}
 			disabled={isDisabled}

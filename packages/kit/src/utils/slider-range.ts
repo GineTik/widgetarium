@@ -1,3 +1,7 @@
+import { clamp } from "./clamp";
+import { PROGRESS_STEPS } from "../constants/progress";
+import type { PointerSpot } from "./pointer-axis";
+
 export interface SliderScale {
 	readonly min: number;
 	readonly max: number;
@@ -38,11 +42,6 @@ export interface TrackAsk {
 	readonly inverted: boolean;
 }
 
-export interface PointerSpot {
-	readonly clientX: number;
-	readonly clientY: number;
-}
-
 const PERCENT = 100;
 
 const BIG_STEPS = 10;
@@ -55,15 +54,6 @@ const HORIZONTAL_SWAP: ReadonlyMap<string, string> = new Map([
 const VERTICAL_SWAP: ReadonlyMap<string, string> = new Map([
 	["ArrowUp", "ArrowDown"],
 	["ArrowDown", "ArrowUp"],
-]);
-
-const STEPS_OF_KEY: ReadonlyMap<string, number> = new Map([
-	["ArrowRight", 1],
-	["ArrowUp", 1],
-	["ArrowLeft", -1],
-	["ArrowDown", -1],
-	["PageUp", BIG_STEPS],
-	["PageDown", -BIG_STEPS],
 ]);
 
 export function sliderAskOf<P extends SliderSettings>(props: P) {
@@ -88,14 +78,7 @@ export function uprightKeyOf(key: string, orientation: SliderOrientation, invert
 	return swapped.get(key) ?? key;
 }
 
-export function snapToStep(value: number, scale: SliderScale): number {
-	const steps = Math.round((value - scale.min) / scale.step);
-	const decimals = decimalsOf(scale.step);
-	const near = Number((scale.min + steps * scale.step).toFixed(decimals));
-	return Math.min(scale.max, Math.max(scale.min, near));
-}
-
-export function percentOf(value: number, scale: SliderScale): number {
+export function sliderPercentOf(value: number, scale: SliderScale): number {
 	const span = scale.max - scale.min;
 	return span === 0 ? 0 : ((value - scale.min) / span) * PERCENT;
 }
@@ -105,7 +88,7 @@ export function valueUnder(spot: PointerSpot, ask: TrackAsk, scale: SliderScale)
 	const length = ask.orientation === "vertical" ? box?.height : box?.width;
 	if (!box || !length) return null;
 	const along = ask.orientation === "vertical" ? box.bottom - spot.clientY : spot.clientX - box.left;
-	const fraction = Math.min(1, Math.max(0, along / length));
+	const fraction = clamp(along / length, 0, 1);
 	return snapToStep(scale.min + (ask.inverted ? 1 - fraction : fraction) * (scale.max - scale.min), scale);
 }
 
@@ -123,17 +106,24 @@ export function withThumbAt(values: readonly number[], at: number, value: number
 	const gap = scale.minStepsBetweenThumbs * scale.step;
 	const floor = at > 0 ? (values[at - 1] ?? scale.min) + gap : scale.min;
 	const ceiling = at < values.length - 1 ? (values[at + 1] ?? scale.max) - gap : scale.max;
-	const placed = Math.min(ceiling, Math.max(floor, snapToStep(value, scale)));
+	const placed = clamp(snapToStep(value, scale), floor, ceiling);
 	return values.map((held, index) => (index === at ? placed : held));
 }
 
 export function keyedValue(key: string, isShift: boolean, value: number, scale: SliderScale): number | null {
 	if (key === "Home") return scale.min;
 	if (key === "End") return scale.max;
-	const steps = STEPS_OF_KEY.get(key);
+	const steps = PROGRESS_STEPS.get(key);
 	if (steps === undefined) return null;
 	const multiplier = isShift && Math.abs(steps) === 1 ? BIG_STEPS : 1;
 	return snapToStep(value + steps * multiplier * scale.step, scale);
+}
+
+function snapToStep(value: number, scale: SliderScale): number {
+	const steps = Math.round((value - scale.min) / scale.step);
+	const decimals = decimalsOf(scale.step);
+	const near = Number((scale.min + steps * scale.step).toFixed(decimals));
+	return clamp(near, scale.min, scale.max);
 }
 
 function decimalsOf(step: number): number {

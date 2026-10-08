@@ -2,7 +2,7 @@ import { createElement as h, useContext } from "react";
 import type { HTMLAttributes, ReactElement, Ref } from "react";
 import { BUBBLE_PLATES } from "../constants/chat";
 import { cn } from "../utils/cn";
-import { renderedElement } from "../utils/render-prop";
+import { renderElement } from "../utils/render-prop";
 import type { RenderProp } from "../utils/render-prop";
 import type { StyleProp } from "../utils/token-style";
 import { BubbleVariantContext } from "./bubble-context";
@@ -25,7 +25,7 @@ export function BubbleContent({ render, className, children, ...rest }: BubbleCo
 			{...rest}
 			className={cn("wg-kit-bubble-content", plate.look, render !== undefined && "is-pressable", className)}
 		>
-			{render === undefined ? children : renderedElement(render, children)}
+			{render === undefined ? children : renderElement(render, children)}
 		</Card>
 	);
 }

@@ -10,6 +10,7 @@ import { PaginationNext } from "./pagination-next";
 import { PaginationContent, PaginationItem } from "./pagination-parts";
 import { PaginationPrevious } from "./pagination-previous";
 import { PaginationRoot } from "./pagination-root";
+import { clamp } from "../utils/clamp";
 
 export interface PaginationPresetProps extends HTMLAttributes<HTMLElement> {
 	readonly page?: number | undefined;
@@ -33,7 +34,7 @@ export function PaginationPreset({
 }: PaginationPresetProps): ReactElement | null {
 	const [asked, setPage] = useControllableState({ prop: page, defaultProp: defaultPage, onChange: onPageChange });
 	if (count <= 1) return null;
-	const current = Math.min(Math.max(asked, FIRST_PAGE), count);
+	const current = clamp(asked, FIRST_PAGE, count);
 	return (
 		<PaginationRoot {...props} data-variant={wornWord(variant, PAGINATION_VARIANT_WORD)}>
 			<PaginationContent>

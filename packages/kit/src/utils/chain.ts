@@ -1,6 +1,6 @@
 export type Handler<E> = (event: E) => void;
 
-export function chain<E>(theirs: Handler<E> | undefined, ours: Handler<E>): Handler<E> {
+export function chainHandlers<E>(theirs: Handler<E> | undefined, ours: Handler<E>): Handler<E> {
 	return (event) => {
 		theirs?.(event);
 		if (isPrevented(event)) return;

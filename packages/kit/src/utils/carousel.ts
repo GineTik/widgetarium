@@ -1,3 +1,5 @@
+import { clamp } from "./clamp";
+
 export type CarouselOrientation = "horizontal" | "vertical";
 
 export type CarouselEvent = "select" | "scroll" | "reInit";
@@ -23,7 +25,7 @@ export type CarouselListener = (api: CarouselApi, event: CarouselEvent) => void;
 
 const SAME_SNAP_PX = 1;
 
-export const ITEM_SELECTOR = "[data-slot='carousel-item']";
+const ITEM_SELECTOR = "[data-slot='carousel-item']";
 
 export function snapsIn(viewport: HTMLElement, orientation: CarouselOrientation): number[] {
 	const isVertical = orientation === "vertical";
@@ -37,7 +39,7 @@ export function snapsIn(viewport: HTMLElement, orientation: CarouselOrientation)
 		const margin = Number.parseFloat(getComputedStyle(item)[isVertical ? "scrollMarginTop" : "scrollMarginLeft"]) || 0;
 		return (isVertical ? at.top - box.top : at.left - box.left) + scrolled - margin;
 	});
-	return distinctSnaps(starts.map((start) => Math.min(Math.max(start, 0), Math.max(reach, 0))));
+	return distinctSnaps(starts.map((start) => clamp(start, 0, Math.max(reach, 0))));
 }
 
 export function distinctSnaps(starts: readonly number[]): number[] {
@@ -58,5 +60,5 @@ export function nearestSnap(snaps: readonly number[], at: number): number {
 export function steppedSnap(at: number, step: number, count: number, isLooping: boolean): number {
 	const next = at + step;
 	if (isLooping) return (next + count) % count;
-	return Math.min(Math.max(next, 0), count - 1);
+	return clamp(next, 0, count - 1);
 }

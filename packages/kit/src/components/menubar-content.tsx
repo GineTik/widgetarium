@@ -1,6 +1,6 @@
 import { createElement as h, useContext } from "react";
 import type { KeyboardEvent, ReactElement } from "react";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { isNode } from "../utils/dom-nodes";
 import { MenuContent } from "./menu-content";
 import type { MenuContentProps } from "./menu-content";
@@ -32,7 +32,7 @@ export function MenubarContent({ onKeyDown, ...props }: MenubarContentProps): Re
 			sideOffset={BELOW_THE_BAR_PX}
 			alignOffset={LEVEL_WITH_THE_TRIGGER_PX}
 			{...props}
-			onKeyDown={chain(onKeyDown, crossToNeighbour)}
+			onKeyDown={chainHandlers(onKeyDown, crossToNeighbour)}
 		/>
 	);
 }

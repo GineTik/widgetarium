@@ -1,7 +1,7 @@
 import type { HTMLAttributes, KeyboardEvent, PointerEvent } from "react";
 import type { MenuState } from "../components/menu-context";
 import { menuSlot } from "../components/menu-context";
-import { chain } from "./chain";
+import { chainHandlers } from "./chain";
 import { focusQuietly } from "./focus";
 
 export type ItemHandlers = Pick<
@@ -43,22 +43,22 @@ export function menuItemMarks(menu: MenuState, { part, inset, disabled }: ItemLo
 
 export function menuItemHandlers(menu: MenuState, { disabled, onSelect, theirs }: ItemPress): Required<ItemHandlers> {
 	return {
-		onClick: chain(theirs.onClick, () => {
+		onClick: chainHandlers(theirs.onClick, () => {
 			if (!disabled) selectItem(menu, onSelect);
 		}),
-		onKeyDown: chain(theirs.onKeyDown, pressOnEnterOrSpace),
-		onPointerMove: chain(theirs.onPointerMove, (event: PointerEvent<HTMLElement>) => {
+		onKeyDown: chainHandlers(theirs.onKeyDown, pressOnEnterOrSpace),
+		onPointerMove: chainHandlers(theirs.onPointerMove, (event: PointerEvent<HTMLElement>) => {
 			if (disabled || event.pointerType === "touch") return;
 			menu.closeChildren();
 			if (document.activeElement !== event.currentTarget) focusQuietly(event.currentTarget);
 		}),
-		onPointerLeave: chain(theirs.onPointerLeave, (event: PointerEvent<HTMLElement>) => {
+		onPointerLeave: chainHandlers(theirs.onPointerLeave, (event: PointerEvent<HTMLElement>) => {
 			focusQuietly(event.currentTarget.closest('[role="menu"]'));
 		}),
 	};
 }
 
-export function pressOnEnterOrSpace(event: KeyboardEvent<HTMLElement>): void {
+function pressOnEnterOrSpace(event: KeyboardEvent<HTMLElement>): void {
 	if (event.key !== "Enter" && event.key !== " ") return;
 	event.preventDefault();
 	event.currentTarget.click();

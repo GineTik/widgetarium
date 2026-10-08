@@ -1,6 +1,7 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
 import { cn } from "../utils/cn";
+import { clamp } from "../utils/clamp";
 
 export interface ProgressRingProps {
 	readonly done?: number | undefined;
@@ -15,7 +16,7 @@ const WAITING_ARC = 0.28;
 
 export function ProgressRing({ done = 0, total = 0, label, className }: ProgressRingProps): ReactElement {
 	const isMeasured = total > 0;
-	const share = isMeasured ? Math.min(Math.max(done / total, 0), 1) : 0;
+	const share = isMeasured ? clamp(done / total, 0, 1) : 0;
 	return (
 		<span className={cn("wg-kit-ring", className)} role="progressbar" aria-label={label}>
 			<svg

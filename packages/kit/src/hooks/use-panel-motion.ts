@@ -3,7 +3,8 @@ import type { RefObject } from "react";
 import { POPOVER_ITEM } from "../constants/popover";
 import type { Placement } from "../constants/popover";
 import { returnFocusTo } from "../utils/focus";
-import { endFold, enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
+import { endFold, enterPanel, exitPanel, restPanel } from "../utils/popover-motion";
+import { prefersReducedMotion } from "../utils/reduced-motion";
 import type { StopMotion } from "../utils/popover-motion";
 
 export interface PanelMotionAsk {

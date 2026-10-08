@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, RefObject } from "react";
+import { watchSizes } from "../utils/resize-watch";
 
 export interface ThumbProps {
 	readonly className: string;
@@ -36,11 +37,7 @@ export function useSegmentedThumb(value: unknown, items?: readonly unknown[] | n
 			setThumb((was) => (was && was.left === spot.left && was.width === spot.width ? was : spot));
 		};
 		measure();
-		if (typeof ResizeObserver !== "function") return undefined;
-		const watcher = new ResizeObserver(measure);
-		watcher.observe(list);
-		for (const tab of list.querySelectorAll('[role="tab"]')) watcher.observe(tab);
-		return () => watcher.disconnect();
+		return watchSizes([list, ...list.querySelectorAll('[role="tab"]')], measure);
 	}, [value, count]);
 
 	useLayoutEffect(() => {

@@ -34,5 +34,3 @@ export const SCROLL_BUTTON_LABELS: Readonly<Record<ScrollDirection, string>> = {
 	end: "Scroll to the latest message",
 	start: "Scroll to the first message",
 };
-
-export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";

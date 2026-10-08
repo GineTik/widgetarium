@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { useControllableState } from "../hooks/use-controllable-state";
+import { useOpenState } from "../hooks/use-open-state";
 import { DialogContext } from "./dialog-context";
 
 export interface DialogRootProps {
@@ -11,6 +11,6 @@ export interface DialogRootProps {
 }
 
 export function DialogRoot({ open, defaultOpen = false, onOpenChange, children }: DialogRootProps): ReactElement {
-	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
+	const [isOpen, setOpen] = useOpenState({ open, defaultOpen, onOpenChange });
 	return <DialogContext.Provider value={{ isOpen, setOpen }}>{children}</DialogContext.Provider>;
 }

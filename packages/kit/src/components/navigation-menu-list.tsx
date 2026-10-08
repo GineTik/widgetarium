@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { moveAcrossNavigation } from "../utils/navigation-menu";
 
@@ -12,7 +12,7 @@ export function NavigationMenuList({ className, onKeyDown, ...rest }: Navigation
 			{...rest}
 			data-slot="navigation-menu-list"
 			className={cn("wg-kit-nav-list", className)}
-			onKeyDown={chain(onKeyDown, moveAcrossNavigation)}
+			onKeyDown={chainHandlers(onKeyDown, moveAcrossNavigation)}
 		/>
 	);
 }

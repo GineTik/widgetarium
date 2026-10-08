@@ -1,7 +1,7 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { HOVER_GRACE_MS } from "../constants/overlays";
-import { chain } from "../utils/chain";
+import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { useNavigationItem, useNavigationMenu } from "./navigation-menu-context";
 import { NavigationFloatingContent } from "./navigation-floating-content";
@@ -24,8 +24,8 @@ export function NavigationMenuContent({
 			data-slot="navigation-menu-content"
 			data-state={dataStateOf(nav.value === item.value)}
 			className={cn("wg-kit-nav-content", className)}
-			onPointerEnter={chain(onPointerEnter, () => nav.delayed.stop())}
-			onPointerLeave={chain(onPointerLeave, () => nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS))}
+			onPointerEnter={chainHandlers(onPointerEnter, () => nav.delayed.stop())}
+			onPointerLeave={chainHandlers(onPointerLeave, () => nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS))}
 		/>
 	);
 	if (nav.isViewport) return <NavigationViewportPortal isShown={nav.shownValue === item.value} content={body} />;

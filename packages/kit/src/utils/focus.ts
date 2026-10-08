@@ -11,10 +11,6 @@ export function isFocusVisible(element: Element): boolean {
 	}
 }
 
-export function focusablesIn(root: ParentNode): HTMLElement[] {
-	return [...root.querySelectorAll(FOCUSABLE)].filter(isFocusable);
-}
-
 export function focusQuietly(target: Element | null | undefined): void {
 	const held = target ?? null;
 	if (isFocusable(held)) held.focus({ preventScroll: true });
@@ -50,4 +46,8 @@ export function trapTab(event: KeyPress, panel: HTMLElement): void {
 	if (!leavesAtEnd && !leavesAtStart) return;
 	event.preventDefault();
 	focusQuietly(leavesAtEnd ? first : last);
+}
+
+function focusablesIn(root: ParentNode): HTMLElement[] {
+	return [...root.querySelectorAll(FOCUSABLE)].filter(isFocusable);
 }
