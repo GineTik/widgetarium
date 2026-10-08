@@ -1,19 +1,11 @@
-import {
-	CONTENT_DELAY_MS,
-	CONTENT_MS,
-	EXIT_GUARD_MS,
-	GROW_MS,
-	LAND_MARGIN_MS,
-	SCREEN_MARGIN_PX,
-} from "../constants/popover";
-import type { FloatingSpot, PanelSize, Placement } from "../constants/popover";
+import { CONTENT_DELAY_MS, CONTENT_MS, EXIT_GUARD_MS, GROW_MS, LAND_MARGIN_MS } from "../constants/popover";
+import type { Placement } from "../constants/popover";
 import { viewportSize } from "./floating-placement";
+import { wearAnchorWidth, wearSpot } from "./wear-spot";
 
 type Styled = Element & ElementCSSInlineStyle;
 
 interface Placed {
-	readonly flippedX: boolean;
-	readonly flippedY: boolean;
 	readonly width: number;
 	readonly height: number;
 	readonly origin: string;
@@ -51,7 +43,7 @@ export function endFold(panel: HTMLElement, anchor: HTMLElement): void {
 
 export function enterPanel(panel: HTMLElement, anchor: HTMLElement, placement: Placement): StopMotion | undefined {
 	clearMotion(panel);
-	const placed = placePanel(panel, anchor.getBoundingClientRect(), placement);
+	const placed = placePopoverPanel(panel, anchor.getBoundingClientRect(), placement);
 	anchor.style.visibility = placement.hidesTrigger ? "hidden" : "";
 	if (prefersReducedMotion()) return undefined;
 	const seat = seatOnAnchor(anchor, placed);
@@ -119,47 +111,16 @@ function transformedAnchorRadius(anchor: Element, rect: DOMRect, scaleX: number,
 	return `${real / scaleX}px / ${real / scaleY}px`;
 }
 
-function placePanel(panel: HTMLElement, rect: DOMRect, placement: Placement): Placed {
+function placePopoverPanel(panel: HTMLElement, anchor: DOMRect, placement: Placement): Placed {
 	panel.style.transition = "none";
 	panel.style.transform = "none";
 	panel.style.left = "0px";
 	panel.style.top = "0px";
-	panel.style.setProperty("--wg-kit-anchor-width", `${rect.width}px`);
-	const zero = panel.getBoundingClientRect();
-	const solved = placement.solve?.(rect, zero, viewportSize());
-	if (solved) return wearSolved(panel, zero, solved);
-	const wanted = placement.origin(rect);
-	const away = placement.flipped(rect, zero);
-	const flippedX = wanted.left + zero.width > window.innerWidth - SCREEN_MARGIN_PX;
-	const flippedY = wanted.top + zero.height > window.innerHeight - SCREEN_MARGIN_PX;
-	const left = flippedX ? Math.max(SCREEN_MARGIN_PX, away.left) : wanted.left;
-	const top = flippedY ? Math.max(SCREEN_MARGIN_PX, away.top) : wanted.top;
-	panel.style.left = `${left - zero.left}px`;
-	panel.style.top = `${top - zero.top}px`;
-	panel.style.setProperty("--wg-kit-pop-available-width", `${window.innerWidth - SCREEN_MARGIN_PX - left}px`);
-	panel.style.setProperty("--wg-kit-pop-available-height", `${window.innerHeight - SCREEN_MARGIN_PX - top}px`);
-	const origin = growthOrigin({ flippedX, flippedY });
-	panel.style.setProperty("--wg-kit-pop-origin", origin);
-	return { flippedX, flippedY, width: zero.width, height: zero.height, origin };
-}
-
-function wearSolved(panel: HTMLElement, zero: DOMRect, solved: FloatingSpot): Placed {
-	panel.style.left = `${solved.left - zero.left}px`;
-	panel.style.top = `${solved.top - zero.top}px`;
-	panel.style.setProperty("--wg-kit-pop-available-width", `${solved.availableWidth}px`);
-	panel.style.setProperty("--wg-kit-pop-available-height", `${solved.availableHeight}px`);
-	panel.style.setProperty("--wg-kit-pop-origin", solved.origin);
-	panel.dataset["side"] = solved.side;
-	panel.dataset["align"] = solved.align;
-	return { ...sizeOf(zero), flippedX: false, flippedY: false, origin: solved.origin };
-}
-
-function sizeOf(box: DOMRect): PanelSize {
-	return { width: box.width, height: box.height };
-}
-
-function growthOrigin(placed: Pick<Placed, "flippedX" | "flippedY">): string {
-	return `${placed.flippedX ? "right" : "left"} ${placed.flippedY ? "bottom" : "top"}`;
+	wearAnchorWidth(panel, anchor);
+	const laid = panel.getBoundingClientRect();
+	const spot = placement.solve(anchor, laid, viewportSize());
+	wearSpot(panel, spot, laid);
+	return { width: laid.width, height: laid.height, origin: spot.origin };
 }
 
 function fold(panel: HTMLElement, anchor: HTMLElement): void {

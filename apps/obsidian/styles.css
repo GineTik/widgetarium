@@ -2654,46 +2654,9 @@ body {
 	background: var(--wg-overlay-scrim);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-dialog-overlay {
-	position: fixed;
-	inset: 0;
-	z-index: var(--layer-modal, 50);
-	display: flex;
-	align-items: flex-start;
-	justify-content: center;
-	padding: 12vh 16px 16px;
-	background: var(--wg-overlay-scrim);
-}
-
 :is(.wg-root, .wg-portal) [data-wg-overlay-root],
 :is(.wg-root, .wg-portal) [data-wg-overlay-layer] {
 	position: relative;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-dialog-overlay.is-scoped {
-	position: absolute;
-	padding-top: 120px;
-	border-radius: inherit;
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-dialog {
-	/* TRADE-OFF: level-1 steps restated from STEP_PX; a dialog is portaled out of its cell's gaps */
-	--wg-gap-items: 16px;
-	--wg-gap-parts: 8px;
-	--wg-gap-cards: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: var(--wg-gap-items);
-	width: min(560px, 100%);
-	padding: 24px;
-	border-radius: var(--wg-kit-plate);
-	background: var(--wg-kit-raise);
-	box-shadow: var(--wg-kit-shadow);
-	color: var(--wg-kit-text);
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-dialog.is-s {
-	width: min(420px, 100%);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-dialog-head {
@@ -8335,7 +8298,7 @@ body.wg-tree-carrying .wg-tile-body {
 	position: relative;
 }
 
-.wg-design-widget-body:has(.wg-kit-dialog-overlay) {
+.wg-design-widget-body:has(.wg-kit-modal-layer) {
 	min-height: 640px;
 }
 
@@ -8925,14 +8888,6 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-dialog[data-slot="dialog-content"] {
-	position: relative;
-}
-:is(.wg-root, .wg-portal) .wg-kit-dialog-close {
-	position: absolute;
-	top: 16px;
-	right: 16px;
-}
 :is(.wg-root, .wg-portal) .wg-kit-dialog-header {
 	display: flex;
 	flex-direction: column;
@@ -11385,7 +11340,7 @@ body.wg-tree-carrying .wg-tile-body {
 	position: fixed;
 	z-index: 60;
 	box-sizing: border-box;
-	transform-origin: var(--wg-kit-float-origin, top center);
+	transform-origin: var(--wg-kit-pop-origin, top center);
 	color: var(--popover-foreground);
 	font-size: var(--wg-kit-text-m);
 	opacity: 1;
@@ -11411,7 +11366,7 @@ body.wg-tree-carrying .wg-tile-body {
 
 :is(.wg-root, .wg-portal) .wg-kit-menu {
 	min-width: max(208px, var(--wg-kit-anchor-width, 0px));
-	max-height: var(--wg-kit-float-available-height, 70vh);
+	max-height: var(--wg-kit-pop-available-height, 70vh);
 	overflow-y: auto;
 	padding: 6px;
 	border-radius: var(--wg-kit-plate);
@@ -11507,7 +11462,7 @@ body.wg-tree-carrying .wg-tile-body {
 
 :is(.wg-root, .wg-portal) .wg-kit-tooltip {
 	z-index: 70;
-	max-width: min(280px, var(--wg-kit-float-available-width, 280px));
+	max-width: min(280px, var(--wg-kit-pop-available-width, 280px));
 	padding: 7px 12px;
 	border-radius: var(--wg-kit-item);
 	background: var(--primary);
@@ -11516,7 +11471,7 @@ body.wg-tree-carrying .wg-tile-body {
 	line-height: 1.4;
 }
 :is(.wg-root, .wg-portal) .wg-kit-hover-card {
-	width: min(288px, var(--wg-kit-float-available-width, 288px));
+	width: min(288px, var(--wg-kit-pop-available-width, 288px));
 	padding: 16px;
 	border-radius: var(--wg-kit-plate);
 	background: var(--wg-kit-glass-panel);
@@ -11817,6 +11772,32 @@ body.wg-tree-carrying .wg-tile-body {
 	max-height: calc(100% - 32px);
 	border-radius: var(--wg-kit-plate);
 	transform: translate(-50%, -50%);
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog {
+	top: 12vh;
+	left: 50%;
+	width: min(560px, calc(100% - 32px));
+	max-height: calc(100% - 12vh - 16px);
+	border-radius: var(--wg-kit-plate);
+	box-shadow: var(--wg-kit-shadow);
+	transform: translateX(-50%);
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal-layer.is-scoped .wg-kit-modal.is-dialog {
+	top: 120px;
+	max-height: calc(100% - 136px);
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog.is-s {
+	width: min(420px, calc(100% - 32px));
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog[data-state="closed"] {
+	opacity: 0;
+	scale: 0.94;
+}
+@starting-style {
+	:is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog {
+		opacity: 0;
+		scale: 0.94;
+	}
 }
 :is(.wg-root, .wg-portal) .wg-kit-modal.is-alert-dialog.is-sm {
 	width: min(340px, calc(100% - 32px));

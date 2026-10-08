@@ -26,6 +26,12 @@ export function HoverCard({
 	closeDelay = HOVER_CARD_CLOSE_MS,
 	children,
 }: HoverCardProps): ReactElement {
-	const card = useHoverLayer({ open, defaultOpen, onOpenChange, openDelay: () => openDelay, closeDelay });
+	const card = useHoverLayer({
+		open,
+		defaultOpen,
+		onOpenChange,
+		openDelay: () => openDelay,
+		closeDelay: () => closeDelay,
+	});
 	return <HoverCardContext.Provider value={card}>{children}</HoverCardContext.Provider>;
 }

@@ -1,8 +1,8 @@
 import { useId, useRef } from "react";
 import type { RefObject } from "react";
 import { MODAL_EXIT_MS } from "../constants/overlays";
-import type { ModalIds } from "../components/modal-ids-context";
-import { useEscapeLayer } from "./use-escape-layer";
+import type { ModalIds } from "../constants/overlays";
+import { useDismissLayer } from "./use-dismiss-layer";
 import { useFocusTrap } from "./use-focus-trap";
 import { useOverlayLayer } from "./use-overlay-layer";
 import { usePresence } from "./use-presence";
@@ -22,7 +22,7 @@ export function useModalLayer(isOpen: boolean, onEscape: () => void): ModalLayer
 	const panelRef = useRef<HTMLDivElement>(null);
 	const titleId = useId();
 	const descriptionId = useId();
-	useEscapeLayer(isOpen, onEscape);
+	useDismissLayer({ isOpen, holds: (node) => Boolean(panelRef.current?.contains(node)), onEscape });
 	useFocusTrap(panelRef, isOpen && layer !== null);
 	return { isMounted, layer, isScoped, anchorRef, panelRef, ids: { titleId, descriptionId } };
 }

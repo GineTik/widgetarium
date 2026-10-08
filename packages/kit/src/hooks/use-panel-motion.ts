@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
+import { POPOVER_ITEM } from "../constants/popover";
 import type { Placement } from "../constants/popover";
-import { POPOVER_ITEM } from "../components/popover-context";
-import { isFocusable } from "../utils/dom-nodes";
+import { returnFocusTo } from "../utils/focus";
 import { endFold, enterPanel, exitPanel, prefersReducedMotion, restPanel } from "../utils/popover-motion";
 import type { StopMotion } from "../utils/popover-motion";
 
@@ -14,64 +14,65 @@ export interface PanelMotionAsk {
 	readonly panelRef: RefObject<HTMLElement | null>;
 	readonly triggerRef: RefObject<HTMLElement | null>;
 	readonly openedByKeyboard: RefObject<boolean>;
-	readonly wasOpen: RefObject<boolean>;
-	readonly setExiting: (isExiting: boolean) => void;
+	readonly release: () => void;
 	readonly onExited?: (() => void) | undefined;
 }
 
-const FOCUSABLE = "button, a, input, [tabindex]";
-
 export function usePanelMotion(ask: PanelMotionAsk): void {
-	const { isOpen, where, anchorRef, pointRef, panelRef, triggerRef, openedByKeyboard, wasOpen, setExiting } = ask;
+	const wasOpen = useRef(false);
 	const stopExit = useRef<StopMotion | null>(null);
-	const onExited = useRef(ask.onExited);
-	onExited.current = ask.onExited;
+	const latest = useRef(ask);
+	latest.current = ask;
 
 	useLayoutEffect(() => {
-		const panel = panelRef.current;
-		const anchor = pointRef.current ?? (where.solve ? triggerRef.current : null) ?? anchorRef.current;
-		if (!panel || !anchor) return undefined;
-		const closing = wasOpen.current && !isOpen;
-		wasOpen.current = isOpen;
+		const panel = ask.panelRef.current;
+		const anchor = motionAnchorOf(ask);
+		if (!panel || !anchor) {
+			if (!ask.isOpen) latest.current.release();
+			return undefined;
+		}
+		const isClosing = wasOpen.current && !ask.isOpen;
+		wasOpen.current = ask.isOpen;
 		stopExit.current?.();
 		stopExit.current = null;
-		if (closing) returnFocus(panel, triggerRef.current ?? anchor);
-
-		if (isOpen) {
-			setExiting(false);
-			if (anchorRef.current && anchorRef.current !== anchor) anchorRef.current.style.visibility = "";
-			const stopEnter = enterPanel(panel, anchor, where);
-			if (openedByKeyboard.current) panel.querySelector<HTMLElement>(POPOVER_ITEM)?.focus();
-			return stopEnter;
-		}
-		if (!closing) {
-			setExiting(false);
+		if (isClosing && panel.contains(document.activeElement)) returnFocusTo(ask.triggerRef.current ?? anchor);
+		if (ask.isOpen) return openPanel(panel, anchor, ask);
+		if (!isClosing) {
 			restPanel(panel, anchor);
+			latest.current.release();
 			return undefined;
 		}
-		if (prefersReducedMotion()) {
-			setExiting(false);
-			endFold(panel, anchor);
-			onExited.current?.();
-			return undefined;
-		}
-
-		setExiting(true);
-		stopExit.current = exitPanel(panel, anchor, () => {
+		stopExit.current = closePanel(panel, anchor, () => {
 			stopExit.current = null;
-			setExiting(false);
-			endFold(panel, anchor);
-			onExited.current?.();
+			latest.current.onExited?.();
+			latest.current.release();
 		});
 		return () => {
 			stopExit.current?.();
 			stopExit.current = null;
 		};
-	}, [isOpen, where.key]);
+	}, [ask.isOpen, ask.where.key]);
 }
 
-function returnFocus(panel: HTMLElement, trigger: HTMLElement): void {
-	if (!panel.contains(document.activeElement)) return;
-	const target = trigger.matches(FOCUSABLE) ? trigger : trigger.querySelector(FOCUSABLE);
-	if (isFocusable(target)) target.focus();
+function motionAnchorOf({ pointRef, where, triggerRef, anchorRef }: PanelMotionAsk): HTMLElement | null {
+	return pointRef.current ?? (where.measuresTrigger ? triggerRef.current : null) ?? anchorRef.current;
+}
+
+function closePanel(panel: HTMLElement, anchor: HTMLElement, done: () => void): StopMotion | null {
+	const finish = (): void => {
+		endFold(panel, anchor);
+		done();
+	};
+	if (prefersReducedMotion()) {
+		finish();
+		return null;
+	}
+	return exitPanel(panel, anchor, finish);
+}
+
+function openPanel(panel: HTMLElement, anchor: HTMLElement, ask: PanelMotionAsk): StopMotion | undefined {
+	if (ask.anchorRef.current && ask.anchorRef.current !== anchor) ask.anchorRef.current.style.visibility = "";
+	const stopEnter = enterPanel(panel, anchor, ask.where);
+	if (ask.openedByKeyboard.current) panel.querySelector<HTMLElement>(POPOVER_ITEM)?.focus();
+	return stopEnter;
 }

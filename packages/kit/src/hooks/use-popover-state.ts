@@ -1,10 +1,11 @@
-import { useId, useRef, useState } from "react";
+import { useId, useRef } from "react";
 import type { RefObject } from "react";
 import type { Placement, PlacementChoice } from "../constants/popover";
 import { placementOf } from "../utils/floating-placement";
-import { useCloseOnOutsidePress } from "./use-close-on-outside-press";
 import { useControllableState } from "./use-controllable-state";
+import { useDismissLayer } from "./use-dismiss-layer";
 import { usePanelMotion } from "./use-panel-motion";
+import { useHeldPresence } from "./use-held-presence";
 
 export interface PopoverAsk {
 	readonly open?: boolean | undefined;
@@ -30,6 +31,7 @@ export interface PopoverState {
 }
 
 export function usePopoverState({ open, defaultOpen, onOpenChange, placement, onExited }: PopoverAsk): PopoverState {
+	const id = useId();
 	const where = placementOf(placement);
 	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
 	const anchorRef = useRef<HTMLSpanElement>(null);
@@ -37,11 +39,8 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 	const panelRef = useRef<HTMLDivElement>(null);
 	const triggerRef = useRef<HTMLElement>(null);
 	const openedByKeyboard = useRef(false);
-	const id = useId();
-
-	const [isExiting, setExiting] = useState(false);
-	const wasOpen = useRef(false);
-	const shown = isOpen || isExiting || wasOpen.current;
+	const presence = useHeldPresence(isOpen);
+	const close = (): void => setOpen(false);
 
 	usePanelMotion({
 		isOpen,
@@ -51,19 +50,23 @@ export function usePopoverState({ open, defaultOpen, onOpenChange, placement, on
 		panelRef,
 		triggerRef,
 		openedByKeyboard,
-		wasOpen,
-		setExiting,
+		release: presence.release,
 		onExited,
 	});
-	useCloseOnOutsidePress({ id, isOpen, setOpen, anchorRef, panelRef });
+	useDismissLayer({
+		isOpen,
+		holds: (node) => Boolean(panelRef.current?.contains(node) || anchorRef.current?.contains(node)),
+		onEscape: close,
+		onOutsidePress: close,
+	});
 
 	return {
 		id,
 		where,
 		placement,
 		isOpen,
-		isExiting,
-		shown,
+		isExiting: presence.isExiting,
+		shown: presence.isMounted,
 		setOpen,
 		anchorRef,
 		pointRef,

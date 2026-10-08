@@ -1,5 +1,5 @@
 import { FOCUSABLE } from "../constants/overlays";
-import { isFocusable, isNode } from "./dom-nodes";
+import { isFocusable } from "./dom-nodes";
 
 const AUTOFOCUS = "[data-wg-autofocus]";
 
@@ -25,18 +25,18 @@ export function focusInitial(panel: HTMLElement | null): void {
 	focusQuietly(panel.querySelector(AUTOFOCUS) ?? focusablesIn(panel)[0] ?? panel);
 }
 
+export function returnFocusTo(trigger: Element | null | undefined): void {
+	if (!trigger) return;
+	focusQuietly(trigger.matches(FOCUSABLE) ? trigger : focusablesIn(trigger)[0]);
+}
+
 export interface KeyPress {
 	readonly key: string;
 	readonly shiftKey: boolean;
 	preventDefault(): void;
 }
 
-export function trapTabInside(event: KeyPress & { readonly target: EventTarget }, panel: HTMLElement | null): void {
-	if (!panel || !isNode(event.target) || !panel.contains(event.target)) return;
-	trapTab(event, panel);
-}
-
-function trapTab(event: KeyPress, panel: HTMLElement): void {
+export function trapTab(event: KeyPress, panel: HTMLElement): void {
 	if (event.key !== "Tab") return;
 	const inside = focusablesIn(panel);
 	const first = inside[0];

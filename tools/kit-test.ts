@@ -407,7 +407,7 @@ render(
 await settle();
 check(
 	"a dialog in a page that stands in a shell covers the whole shell, so the navigation is under the scrim too",
-	host.querySelector(".wg-kit-dialog-overlay")?.parentElement === host.querySelector(".wg-kit-container-frame"),
+	host.querySelector(".wg-kit-modal-layer")?.parentElement === host.querySelector(".wg-kit-container-frame"),
 	true,
 );
 render(h(Kit.Sidebar, { surface: "edge", at: "end" }, "Pages"), host);
@@ -1487,7 +1487,7 @@ check(
 	await settle();
 	check(
 		"a dialog never covers more than its own screen on the canvas, nor less than the whole app in it",
-		host.querySelector(".wg-kit-dialog-overlay")?.parentElement?.id,
+		host.querySelector(".wg-kit-modal-layer")?.parentElement?.id,
 		"screen",
 	);
 	render(null, found(host, "#mount"));
@@ -1858,7 +1858,7 @@ check(
 	// CONTEXT: a fade whose start value is resolved as 0 plays nothing — the panel is gone in one frame
 	const measured = nth(flushes, 0);
 	const folding = nth(flushes, -1);
-	check("the exit measures a panel `is-open` has already left", measured.open, false);
+	check("the exit measures a panel that still wears `is-open`, never dropped for a frame", measured.open, true);
 	check("SO IT HOLDS THE OPACITY UP BEFORE MEASURING", measured.opacity, "1");
 	check("because opacity is not in the curve still in force there", /opacity/.test(measured.transition), false);
 	check("only then is it sent to nothing", folding.opacity, "0");
@@ -4355,7 +4355,11 @@ check(
 	check("its trigger opens it", document.querySelector("[data-slot='dialog-title']")?.textContent, "Edit");
 	found(document, "[data-slot='dialog-close']").dispatchEvent(new MouseEvent("click", { bubbles: true }));
 	await settle();
-	check("and its close shuts it", document.querySelector("[data-slot='dialog-content']") !== null, false);
+	check(
+		"and its close shuts it",
+		document.querySelector("[data-slot='dialog-content']")?.getAttribute("data-state"),
+		"closed",
+	);
 
 	render(h(kit.Dialog, { isOpen: true, title: "Old one" }, "body"), host);
 	await settle();

@@ -579,9 +579,10 @@ fieldState }) => …} />`, `form.handleSubmit(send)`. The schema is your zod obj
   in `Calendar` (PageUp/PageDown turn the month); Escape closes a Popover and hands focus back.
 - **State is on the element**: `data-state="open|closed|checked|unchecked|active|inactive"`,
   `data-disabled`, `data-highlighted`, `data-loading`, `data-selected`, `data-today`.
-- An open `PopoverContent` carries `--wg-kit-anchor-width`, `--wg-kit-pop-available-width`,
-  `--wg-kit-pop-available-height` and `--wg-kit-pop-origin`, so content can match its trigger and
-  stop at the screen's edge in plain CSS.
+- An open `PopoverContent`, menu, tooltip or hover card carries `--wg-kit-anchor-width`,
+  `--wg-kit-pop-available-width`, `--wg-kit-pop-available-height` and `--wg-kit-pop-origin`, and
+  `data-side`/`data-align` for where it landed, so content can match its trigger and stop at the
+  screen's edge in plain CSS.
 
 ## A table, its pages, and a skeleton
 

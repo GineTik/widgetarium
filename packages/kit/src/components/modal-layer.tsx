@@ -2,15 +2,13 @@ import { Fragment, createElement as h } from "react";
 import type { HTMLAttributes, ReactElement, Ref } from "react";
 import { createPortal } from "react-dom";
 import { useModalLayer } from "../hooks/use-modal-layer";
-import { chain } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { composeRefs } from "./slot";
-import { trapTabInside } from "../utils/focus";
 import { useDialog } from "./dialog-context";
 import { ModalIdsContext } from "./modal-ids-context";
 import { dataStateOf } from "./popover-context";
 
-export type ModalKind = "sheet" | "drawer" | "alert-dialog";
+export type ModalKind = "dialog" | "sheet" | "drawer" | "alert-dialog";
 
 export type ModalSide = "top" | "right" | "bottom" | "left";
 
@@ -27,7 +25,6 @@ export function ModalLayer({
 	closesOnScrim,
 	panelRef: outerRef,
 	className,
-	onKeyDown,
 	...rest
 }: ModalLayerProps): ReactElement {
 	const { isOpen, setOpen } = useDialog();
@@ -54,7 +51,6 @@ export function ModalLayer({
 					data-state={state}
 					data-side={side}
 					className={cn("wg-kit-modal", `is-${kind}`, className)}
-					onKeyDown={chain(onKeyDown, (event) => trapTabInside(event, modal.panelRef.current))}
 				/>
 			</div>
 		</ModalIdsContext.Provider>

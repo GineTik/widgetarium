@@ -1,3 +1,8 @@
+export interface ModalIds {
+	readonly titleId: string | undefined;
+	readonly descriptionId: string | undefined;
+}
+
 export const FLOAT_EXIT_MS = 200;
 
 export const MODAL_EXIT_MS = 320;
@@ -13,6 +18,8 @@ export const HOVER_CARD_CLOSE_MS = 300;
 export const HOVER_GRACE_MS = 120;
 
 export const NAVIGATION_OPEN_MS = 200;
+
+export const HOVER_OPEN_MS = 400;
 
 export const LONG_PRESS_MS = 600;
 
