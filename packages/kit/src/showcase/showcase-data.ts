@@ -1,15 +1,20 @@
-import type { ChartConfig } from "../packages/kit/src/charts/index";
-import type { SegmentedItem, SkeletonKind, SkeletonProps, ToneName } from "../packages/kit/src/index";
+import type { ChartConfig } from "../charts/index";
+import type { SkeletonKind, SkeletonProps, ToneName } from "../index";
 
-export interface DemoStatus {
+export interface ShowcaseStatus {
 	readonly label: string;
 	readonly tone: ToneName;
+}
+
+export interface ShowcaseChoice {
+	readonly value: string;
+	readonly label: string;
 }
 
 export type Invoice = {
 	readonly id: string;
 	readonly client: string;
-	readonly status: DemoStatus;
+	readonly status: ShowcaseStatus;
 	readonly issued: string;
 	readonly due: string;
 	readonly owner: string;
@@ -52,7 +57,7 @@ export const CHART_MARGIN = { top: 8, right: 12, left: 12, bottom: 0 };
 
 export const WEEKS = [12, 14, 13, 17, 16, 19, 18, 22, 21, 24, 23, 27];
 
-export const CLIENTS = [
+const CLIENTS = [
 	"Halden & Co",
 	"Northwind Studio",
 	"Juniper Books",
@@ -63,9 +68,9 @@ export const CLIENTS = [
 	"Brigham & Sons",
 ];
 
-const PAID: DemoStatus = { label: "Paid", tone: "success" };
+const PAID: ShowcaseStatus = { label: "Paid", tone: "success" };
 
-export const STATUSES: readonly DemoStatus[] = [
+export const STATUSES: readonly ShowcaseStatus[] = [
 	PAID,
 	{ label: "Sent", tone: "info" },
 	{ label: "Overdue", tone: "error" },
@@ -94,19 +99,14 @@ export const CAPTION = "Sample invoices, {count} rows, {per} a page.";
 
 export const NARROW_CAPTION = "The same table in a 340px region scrolls sideways, and the pages drop their words.";
 
-export const THEMES: readonly SegmentedItem<string>[] = [
-	{ value: "light", label: "Light" },
-	{ value: "dark", label: "Dark" },
-];
-
-export const STATUS_ITEMS: readonly SegmentedItem<string>[] = [
+export const STATUS_ITEMS: readonly ShowcaseChoice[] = [
 	{ value: "draft", label: "Draft" },
 	{ value: "sent", label: "Sent" },
 	{ value: "overdue", label: "Overdue" },
 	{ value: "paid", label: "Paid" },
 ];
 
-export const VIEWS: readonly SegmentedItem<string>[] = [
+export const VIEWS: readonly ShowcaseChoice[] = [
 	{ value: "list", label: "List" },
 	{ value: "board", label: "Board" },
 	{ value: "calendar", label: "Calendar" },
@@ -120,6 +120,10 @@ export const SKELETON_SHOWN: readonly ShownSkeleton[] = [
 	{ kind: "chart" },
 	{ kind: "card" },
 ];
+
+export const SHOWCASE_TODAY = new Date(2026, 9, 8);
+
+export const FRAMEWORKS = ["Next.js", "SvelteKit", "Nuxt.js", "Remix", "Astro"];
 
 export function spokenAmount(amount: number): string {
 	return amount.toLocaleString("en", { style: "currency", currency: "EUR" });

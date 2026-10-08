@@ -1,7 +1,7 @@
 import { CONTENT_DELAY_MS, CONTENT_MS, EXIT_GUARD_MS, GROW_MS, LAND_MARGIN_MS } from "../constants/popover";
 import type { Placement } from "../constants/popover";
 import { viewportSize } from "./floating-placement";
-import { wearAnchorWidth, wearSpot } from "./wear-spot";
+import { laidFrameOf, wearAnchorWidth, wearSpot } from "./wear-spot";
 import { prefersReducedMotion } from "./reduced-motion";
 
 type Styled = Element & ElementCSSInlineStyle;
@@ -113,10 +113,11 @@ function placePopoverPanel(panel: HTMLElement, anchor: DOMRect, placement: Place
 	panel.style.transform = "none";
 	panel.style.left = "0px";
 	panel.style.top = "0px";
-	wearAnchorWidth(panel, anchor);
+	const frame = laidFrameOf(panel);
+	wearAnchorWidth(panel, anchor, frame);
 	const laid = panel.getBoundingClientRect();
 	const spot = placement.solve(anchor, laid, viewportSize());
-	wearSpot(panel, spot, laid);
+	wearSpot(panel, spot, frame);
 	return { width: laid.width, height: laid.height, origin: spot.origin };
 }
 

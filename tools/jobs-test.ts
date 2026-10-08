@@ -508,7 +508,7 @@ const planned = [
 check(
 	"the canvas shows a page only once something is drawn or being drawn on it",
 	canvasPagesOf({ screens: [], jobs: planned, docs: { brief: [], system: [] } }),
-	["Ideas", "Widgets"],
+	["Ideas", "Design system", "Widgets"],
 );
 
 const vault = await mkdtemp(join(tmpdir(), "wg-jobs-"));

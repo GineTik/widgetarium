@@ -12,6 +12,7 @@
 		"./emojis": "./src/emojis/emoji.tsx",
 		"./charts": "./src/charts/index.ts",
 		"./shapes": "./src/utils/shapes.ts",
+		"./showcase": "./src/showcase/index.ts",
 		"./theme.css": "./theme.css"
 	},
 	"peerDependencies": {

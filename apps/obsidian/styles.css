@@ -8216,6 +8216,150 @@ body.wg-tree-carrying .wg-tile-body {
 	max-width: 5300px;
 }
 
+.wg-design-regions-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 120px;
+}
+
+.wg-design-kit {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+	align-items: start;
+	gap: var(--wg-gap-cards);
+	width: 1640px;
+	color: var(--wg-kit-text);
+	font-family: var(--font-interface);
+	font-size: var(--wg-kit-text-m);
+}
+
+.wg-design-kit > .is-wide {
+	grid-column: 1 / -1;
+}
+
+.wg-showcase {
+	--wg-gap-cards: 24px;
+	--wg-gap-items: 16px;
+	--wg-gap-parts: 8px;
+}
+
+.wg-showcase-note {
+	margin: 0;
+	font-size: var(--wg-kit-text-s);
+	line-height: 1.5;
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-showcase-code {
+	font-family: var(--font-monospace);
+	font-size: var(--wg-kit-text-xs);
+	color: var(--wg-kit-text-muted);
+}
+
+.wg-showcase-stack {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-items);
+	min-width: 0;
+}
+
+.wg-showcase-tight-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.wg-showcase-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--wg-gap-parts);
+}
+
+.wg-showcase-bottom {
+	align-items: flex-end;
+}
+
+.wg-showcase-named {
+	display: flex;
+	flex-direction: column;
+	gap: var(--wg-gap-parts);
+	min-width: 0;
+}
+
+.wg-showcase-end {
+	text-align: right;
+}
+
+.wg-showcase-narrow {
+	max-width: 340px;
+	container: widget / inline-size;
+}
+
+.wg-showcase-pane {
+	box-sizing: border-box;
+	height: 100%;
+	padding: 12px;
+}
+
+.wg-showcase-slide {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	min-height: 96px;
+	font-size: var(--wg-kit-text-l);
+}
+
+.wg-showcase-overlays {
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	min-height: 760px;
+}
+
+.wg-showcase-overlays-row {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 440px));
+	align-items: start;
+	justify-items: start;
+	gap: 24px;
+}
+
+.wg-showcase-overlays-row.is-low {
+	margin-top: 500px;
+}
+
+.wg-showcase-context-area {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 320px;
+	height: 120px;
+	border-radius: var(--wg-kit-plate);
+	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
+	color: var(--wg-kit-text-muted);
+	font-size: var(--wg-kit-text-s);
+}
+
+.wg-showcase-nav-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 220px);
+	gap: 4px;
+}
+
+.wg-showcase-pad {
+	padding: 12px;
+	min-width: 220px;
+}
+
+.wg-showcase-goal {
+	padding: 16px 0;
+	text-align: center;
+	font-size: var(--wg-kit-text-l);
+	font-weight: 600;
+}
+
 .wg-design-frame {
 	display: flex;
 	flex-direction: column;

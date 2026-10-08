@@ -5,6 +5,7 @@ import { DESKTOP_FRAME } from "./design-canvas-shapes.js";
 import type { Drawing, DrawnReference, DrawnScreen, DrawnWidget } from "./design-canvas-shapes.js";
 import { DocsRegion } from "./design-docs.js";
 import type { CanvasDocs } from "./design-docs.js";
+import { systemPageOf } from "./design-kit.js";
 import { PlannedPageRegion, pagesBeingWorkedOn, runningJobOfPage } from "./design-job.js";
 import type { JobControls } from "./design-job.js";
 import { JobLine } from "./design-job-line.js";
@@ -40,13 +41,7 @@ export interface CanvasPagesOf {
 export function canvasPagesOf({ screens, jobs, docs }: CanvasPagesOf): string[] {
 	const drawn = [...new Set(screens.map((screen) => pageOfScreen(screen.name)))];
 	const coming = pagesBeingWorkedOn(jobs).filter((page) => !drawn.includes(page));
-	return [
-		...(docs.brief.length > 0 ? [BRIEF_PAGE] : []),
-		...drawn,
-		...coming,
-		...(docs.system.length > 0 ? [SYSTEM_PAGE] : []),
-		WIDGETS_PAGE,
-	];
+	return [...(docs.brief.length > 0 ? [BRIEF_PAGE] : []), ...drawn, ...coming, SYSTEM_PAGE, WIDGETS_PAGE];
 }
 
 export function shownPageOf(page: string, held: CanvasPagesOf): string {
@@ -63,7 +58,7 @@ export function regionsOfPage(props: CanvasPageProps): ReactElement[] {
 			h(DocsRegion, { key: "docs", title: BRIEF_PAGE, docs: docs.brief, host }),
 			h(ReferencesRegion, { key: "references", references, opener }),
 		];
-	if (page === SYSTEM_PAGE) return [h(DocsRegion, { key: "docs", title: SYSTEM_PAGE, docs: docs.system, host })];
+	if (page === SYSTEM_PAGE) return [systemPageOf({ title: SYSTEM_PAGE, docs: docs.system, host })];
 	const shown = shownVariantOf(screens, page, props.pick);
 	const aside = h(VariantSwitch, { screens, page, pick: props.pick });
 	const ofPage = references.filter((reference) => reference.pages.length === 0 || reference.pages.includes(page));

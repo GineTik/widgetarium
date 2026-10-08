@@ -1,20 +1,23 @@
 import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { Card, CodeBlock, LayoutHeader, LayoutItem } from "../packages/kit/src/index";
+import { NO_SURFACE } from "../packages/kit/src/utils/surface";
 
 export interface SectionProps {
 	readonly title: string;
-	readonly note?: string;
+	readonly note?: string | undefined;
 	readonly usage: string;
-	readonly children?: ReactNode;
-}
-
-export interface NamedProps {
-	readonly name: string;
+	readonly paintsPlates?: boolean | undefined;
 	readonly children?: ReactNode;
 }
 
 export function Section(props: SectionProps): ReactElement {
+	if (props.paintsPlates)
+		return (
+			<Card type={NO_SURFACE}>
+				<SectionBody {...props} />
+			</Card>
+		);
 	return (
 		<LayoutItem>
 			<SectionBody {...props} />
@@ -24,34 +27,17 @@ export function Section(props: SectionProps): ReactElement {
 
 export function WideSection(props: SectionProps): ReactElement {
 	return (
-		<Card>
+		<Card type={props.paintsPlates ? NO_SURFACE : undefined}>
 			<SectionBody {...props} />
 		</Card>
 	);
 }
 
-export function Named({ name, children }: NamedProps): ReactElement {
-	return (
-		<div className="demo-named">
-			<span className="demo-code">{name}</span>
-			{children}
-		</div>
-	);
-}
-
-export function Cell(props: NamedProps): ReactElement {
-	return (
-		<LayoutItem>
-			<Named {...props} />
-		</LayoutItem>
-	);
-}
-
 function SectionBody({ title, note, usage, children }: SectionProps): ReactElement {
 	return (
-		<div className="demo-stack">
+		<div className="wg-showcase-stack">
 			<LayoutHeader title={title} />
-			{note ? <p className="demo-note">{note}</p> : null}
+			{note ? <p className="wg-showcase-note">{note}</p> : null}
 			{children}
 			<CodeBlock code={usage} label={`${title}, how it is written`} />
 		</div>

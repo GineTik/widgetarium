@@ -1,4 +1,4 @@
-export const USAGE = {
+export const BASICS_USAGE = {
 	shadcnButton: `import { Badge, Button } from "widgetarium/kit";
 
 <Button variant="default">Save</Button>
@@ -45,20 +45,20 @@ export const USAGE = {
 	</TabsList>
 	<TabsContent value="account">…</TabsContent>
 </Tabs>`,
-	button: `import { Button, IconButton, Icon } from "widgetarium/kit";
+	button: `import { Button, Icon } from "widgetarium/kit";
 
-<Button variant="accent" size="l">Create</Button>
-<Button variant="danger">Delete</Button>
+<Button variant="default" size="lg">Create</Button>
+<Button variant="destructive">Delete</Button>
 <Button isLoading>Saving</Button>
 <Button isDone>Saved</Button>
-<IconButton label="Search"><Icon name="search" /></IconButton>`,
+<Button size="icon" variant="ghost" aria-label="Search"><Icon name="search" /></Button>`,
 	badge: `import { Badge } from "widgetarium/kit";
 
 <Badge tone="success">Paid</Badge>
-<Badge tone="accent" variant="solid">3</Badge>
+<Badge variant="default">3</Badge>
 <Badge color="purple" size="s">purple</Badge>`,
-	inputs: `import { Input, Icon, Segmented, Select, SelectContent,
-	SelectItem, SelectTrigger, SelectValue, Switch } from "widgetarium/kit";
+	inputs: `import { Input, Icon, Select, SelectContent, SelectItem, SelectTrigger,
+	SelectValue, Switch, Tabs, TabsList, TabsTrigger } from "widgetarium/kit";
 
 <Input icon={<Icon name="search" size={16} />} placeholder="Search invoices" />
 
@@ -70,16 +70,20 @@ export const USAGE = {
 	</SelectContent>
 </Select>
 
-<Segmented items={[{ value: "list", label: "List" }, { value: "board", label: "Board" }]}
-	value={view} onValueChange={setView} />
+<Tabs value={view} onValueChange={setView}>
+	<TabsList>
+		<TabsTrigger value="list">List</TabsTrigger>
+		<TabsTrigger value="board">Board</TabsTrigger>
+	</TabsList>
+</Tabs>
 
 <Switch checked={isOn} onCheckedChange={setOn} label="Archive when done" />`,
-	emblem: `import { Emblem, EmblemImage, EmblemFallback } from "widgetarium/kit";
+	avatar: `import { Avatar, AvatarImage, AvatarFallback } from "widgetarium/kit";
 
-<Emblem size="l" label={person.name}>
-	<EmblemImage src={person.photo} />
-	<EmblemFallback seed={person.ref} />
-</Emblem>`,
+<Avatar size="l" label={person.name}>
+	<AvatarImage src={person.photo} />
+	<AvatarFallback seed={person.ref} />
+</Avatar>`,
 	progress: `import { ProgressBar, StatusProgress } from "widgetarium/kit";
 
 <ProgressBar value={64} label="Loaded" />
@@ -144,7 +148,4 @@ const count = Math.ceil(read.total / 6);
 <Skeleton kind="chart" />
 <Skeleton kind="card" />
 <Skeleton className="h-16" />`,
-	calendar: `import { Calendar } from "widgetarium/kit";
-
-<Calendar selected={due} onSelect={setDue} today={new Date()} />`,
 };

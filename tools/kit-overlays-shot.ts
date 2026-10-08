@@ -14,7 +14,7 @@ const HOST = `--font-interface: "Helvetica Neue", Helvetica, Arial, sans-serif; 
 	--font-normal: 400; --font-medium: 500; --font-semibold: 600; --font-bold: 700;`;
 
 const OPEN_THE_CONTEXT_MENU = `setTimeout(() => {
-	const area = document.getElementById("demo-context-area");
+	const area = document.getElementById("wg-showcase-context-area");
 	if (!area || location.hash !== "#open=floating") return;
 	const box = area.getBoundingClientRect();
 	area.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: box.left + 40, clientY: box.top + 30 }));
