@@ -1,4 +1,4 @@
-import { createElement as h, useMemo, useRef, useState } from "react";
+import { createElement as h } from "react";
 import type { ReactElement, ReactNode } from "react";
 import {
 	SCROLL_EDGE_THRESHOLD_PX,
@@ -6,8 +6,8 @@ import {
 	SCROLL_PREVIOUS_ITEM_PEEK_PX,
 } from "../constants/message-scroller";
 import type { ScrollPosition } from "../constants/message-scroller";
-import { createScrollEngine, OPENING_REPORT } from "../utils/message-scroll-engine";
-import type { ScrollReport, ScrollSettings } from "../utils/message-scroll-engine";
+import { useScrollerEngine } from "../hooks/use-scroller-engine";
+import type { ProviderSettings } from "../hooks/use-scroller-engine";
 import { wornWord } from "../utils/surface";
 import { MessageScrollerContext } from "./message-scroller-context";
 
@@ -20,47 +20,27 @@ export interface MessageScrollerProviderProps {
 	readonly children?: ReactNode;
 }
 
-type ProviderSettings = Omit<ScrollSettings, "preserveScrollOnPrepend">;
+type ScrollerAsk = Omit<MessageScrollerProviderProps, "children">;
 
-export function MessageScrollerProvider({
-	autoScroll = false,
-	defaultScrollPosition,
-	scrollEdgeThreshold = SCROLL_EDGE_THRESHOLD_PX,
-	scrollMargin = 0,
-	scrollPreviousItemPeek = SCROLL_PREVIOUS_ITEM_PEEK_PX,
-	children,
-}: MessageScrollerProviderProps): ReactElement {
-	const said: ProviderSettings = {
-		autoScroll,
-		defaultScrollPosition: wornWord(defaultScrollPosition, SCROLL_POSITION_WORD),
-		scrollEdgeThreshold,
-		scrollMargin,
-		scrollPreviousItemPeek,
-	};
-	const settings = useRef(said);
-	settings.current = said;
-	const preserve = useRef(true);
-	const [report, setReport] = useState<ScrollReport>(OPENING_REPORT);
-	const [engine] = useState(() =>
-		createScrollEngine(
-			() => ({ ...settings.current, preserveScrollOnPrepend: preserve.current }),
-			(next) => setReport((was) => (isSameReport(was, next) ? was : next)),
-		),
-	);
-	const state = useMemo(
-		() => ({ engine, report, setPreserveOnPrepend: (isPreserved: boolean) => (preserve.current = isPreserved) }),
-		[engine, report],
-	);
+type ScrollDistance = "scrollEdgeThreshold" | "scrollMargin" | "scrollPreviousItemPeek";
+
+export function MessageScrollerProvider({ children, ...asked }: MessageScrollerProviderProps): ReactElement {
+	const state = useScrollerEngine(providerSettingsOf(asked));
 	return <MessageScrollerContext.Provider value={state}>{children}</MessageScrollerContext.Provider>;
 }
 
-function isSameReport(was: ScrollReport, next: ScrollReport): boolean {
-	return (
-		was.start === next.start &&
-		was.end === next.end &&
-		was.autoscrolling === next.autoscrolling &&
-		was.pending === next.pending &&
-		was.currentAnchorId === next.currentAnchorId &&
-		was.visibleMessageIds.join("\n") === next.visibleMessageIds.join("\n")
-	);
+function providerSettingsOf(asked: ScrollerAsk): ProviderSettings {
+	return {
+		autoScroll: asked.autoScroll ?? false,
+		defaultScrollPosition: wornWord(asked.defaultScrollPosition, SCROLL_POSITION_WORD),
+		...scrollDistancesOf(asked),
+	};
+}
+
+function scrollDistancesOf(asked: ScrollerAsk): Pick<ProviderSettings, ScrollDistance> {
+	return {
+		scrollEdgeThreshold: asked.scrollEdgeThreshold ?? SCROLL_EDGE_THRESHOLD_PX,
+		scrollMargin: asked.scrollMargin ?? 0,
+		scrollPreviousItemPeek: asked.scrollPreviousItemPeek ?? SCROLL_PREVIOUS_ITEM_PEEK_PX,
+	};
 }

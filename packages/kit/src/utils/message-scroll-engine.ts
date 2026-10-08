@@ -15,7 +15,9 @@ import {
 	shiftOfKept,
 	topInScroll,
 } from "./message-scroll-geometry";
-import type { KeptRow } from "./message-scroll-geometry";
+import { freshHeld } from "./message-scroll-held";
+import type { Held } from "./message-scroll-held";
+import { listen } from "./dom-listen";
 import { clamp } from "./clamp";
 import { prefersReducedMotion } from "./reduced-motion";
 import { createResizeObserver } from "./resize-watch";
@@ -60,25 +62,9 @@ export const OPENING_REPORT: ScrollReport = {
 	visibleMessageIds: [],
 };
 
-interface Held {
-	viewport: HTMLElement | null;
-	content: HTMLElement | null;
-	isOpen: boolean;
-	hasOpened: boolean;
-	isFollowing: boolean;
-	wasAtEnd: boolean;
-	lastTop: number;
-	kept: KeptRow | null;
-	knownAnchors: ReadonlySet<string>;
-	roomAnchor: HTMLElement | null;
-	queued: { readonly id: string; readonly jump: ScrollJump | undefined } | null;
-	autoscroll: { readonly target: number; readonly timer: ReturnType<typeof setTimeout> } | null;
-	rows: Set<HTMLElement>;
-	visible: Set<string>;
-	rowObserver: IntersectionObserver | null;
-	sizes: ResizeObserver | null;
-	unwatch: (() => void) | null;
-}
+type AttachedNodes = { readonly viewport?: HTMLElement | null; readonly content?: HTMLElement | null };
+
+const PASSIVE: AddEventListenerOptions = { passive: true };
 
 interface Run {
 	readonly held: Held;
@@ -102,38 +88,11 @@ export function createScrollEngine(
 	};
 }
 
-function freshHeld(): Held {
-	return {
-		viewport: null,
-		content: null,
-		isOpen: false,
-		hasOpened: false,
-		isFollowing: false,
-		wasAtEnd: false,
-		lastTop: 0,
-		kept: null,
-		knownAnchors: new Set(),
-		roomAnchor: null,
-		queued: null,
-		autoscroll: null,
-		rows: new Set(),
-		visible: new Set(),
-		rowObserver: null,
-		sizes: null,
-		unwatch: null,
-	};
-}
-
-function attachNodes(
-	run: Run,
-	nodes: { readonly viewport?: HTMLElement | null; readonly content?: HTMLElement | null },
-): void {
+function attachNodes(run: Run, nodes: AttachedNodes): void {
 	const { held } = run;
-	if (held.isOpen && (nodes.viewport === held.viewport || nodes.content === held.content)) return;
+	if (held.isOpen && isAttached(held, nodes)) return;
 	if (nodes.viewport === null || nodes.content === null) {
-		stopEngine(run);
-		if (nodes.viewport === null) held.viewport = null;
-		if (nodes.content === null) held.content = null;
+		detachNodes(run, nodes);
 		return;
 	}
 	if (nodes.viewport) held.viewport = nodes.viewport;
@@ -141,21 +100,39 @@ function attachNodes(
 	startEngine(run);
 }
 
+function isAttached(held: Held, nodes: AttachedNodes): boolean {
+	return nodes.viewport === held.viewport || nodes.content === held.content;
+}
+
+function detachNodes(run: Run, nodes: AttachedNodes): void {
+	stopEngine(run);
+	if (nodes.viewport === null) run.held.viewport = null;
+	if (nodes.content === null) run.held.content = null;
+}
+
 function startEngine(run: Run): void {
+	const { viewport, content, isOpen } = run.held;
+	if (!viewport || !content || isOpen) return;
+	openEngine(run, viewport, content);
+	if (!jumpToQueued(run, viewport, content)) settleScroll(run);
+}
+
+function openEngine(run: Run, viewport: HTMLElement, content: HTMLElement): void {
 	const { held } = run;
-	const { viewport, content } = held;
-	if (!viewport || !content || held.isOpen) return;
 	held.isOpen = true;
 	if (!held.hasOpened) viewport.scrollTop = openingTopOf(viewport, content, run.settingsOf());
 	held.hasOpened = true;
 	held.knownAnchors = new Set(anchorsIn(content).map(messageIdOf));
 	held.rowObserver = createRowObserver(run, viewport);
 	held.unwatch = watchViewport(run, viewport, content);
+	observeRows(held);
+}
+
+function observeRows(held: Held): void {
 	for (const row of held.rows) {
 		held.rowObserver?.observe(row);
 		held.sizes?.observe(row);
 	}
-	if (!jumpToQueued(run, viewport, content)) settleScroll(run);
 }
 
 function stopEngine(run: Run): void {
@@ -176,31 +153,33 @@ function openingTopOf(viewport: HTMLElement, content: HTMLElement, settings: Scr
 }
 
 function watchViewport(run: Run, viewport: HTMLElement, content: HTMLElement): () => void {
-	const onScroll = (): void => handleScroll(run);
-	const onWheel = (event: WheelEvent): void => tookOver(run, event.deltaY < 0);
-	const onKey = (event: KeyboardEvent): void => {
-		if (RELEASE_KEYS.includes(event.key) || (event.key === " " && event.shiftKey)) tookOver(run, true);
+	const unwatchSizes = watchSizes(run, viewport, content);
+	const unlisten = [
+		listen(viewport, "scroll", () => handleScroll(run), PASSIVE),
+		listen(viewport, "wheel", (event) => tookOver(run, event.deltaY < 0), PASSIVE),
+		listen(viewport, "keydown", (event) => handleReleaseKey(run, event)),
+		listen(viewport, "touchstart", () => tookOver(run, false), PASSIVE),
+		listen(viewport, "scrollend", () => finishAutoscroll(run)),
+	];
+	return () => {
+		unwatchSizes();
+		for (const stop of unlisten) stop();
 	};
-	const onTouch = (): void => tookOver(run, false);
-	const onSettled = (): void => finishAutoscroll(run);
+}
+
+function watchSizes(run: Run, viewport: HTMLElement, content: HTMLElement): () => void {
 	const sizes = createResizeObserver(() => handleResize(run));
 	sizes?.observe(content);
 	sizes?.observe(viewport);
 	run.held.sizes = sizes;
-	viewport.addEventListener("scroll", onScroll, { passive: true });
-	viewport.addEventListener("wheel", onWheel, { passive: true });
-	viewport.addEventListener("keydown", onKey);
-	viewport.addEventListener("touchstart", onTouch, { passive: true });
-	viewport.addEventListener("scrollend", onSettled);
 	return () => {
 		sizes?.disconnect();
 		run.held.sizes = null;
-		viewport.removeEventListener("scroll", onScroll);
-		viewport.removeEventListener("wheel", onWheel);
-		viewport.removeEventListener("keydown", onKey);
-		viewport.removeEventListener("touchstart", onTouch);
-		viewport.removeEventListener("scrollend", onSettled);
 	};
+}
+
+function handleReleaseKey(run: Run, event: KeyboardEvent): void {
+	if (RELEASE_KEYS.includes(event.key) || (event.key === " " && event.shiftKey)) tookOver(run, true);
 }
 
 function createRowObserver(run: Run, viewport: HTMLElement): IntersectionObserver | null {

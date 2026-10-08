@@ -3,6 +3,7 @@ import type { HTMLAttributes, ReactElement, Ref } from "react";
 import { MESSAGES_LABEL } from "../constants/message-scroller";
 import { usePrependPreserved } from "../hooks/use-prepend-preserved";
 import { cn } from "../utils/cn";
+import { dataFlagsOf } from "../utils/data-flags";
 import { scrollableOf, useMessageScrollerState } from "./message-scroller-context";
 import { composeRefs } from "./slot";
 
@@ -11,12 +12,8 @@ export interface MessageScrollerViewportProps extends HTMLAttributes<HTMLDivElem
 	readonly ref?: Ref<HTMLDivElement>;
 }
 
-export function MessageScrollerViewport({
-	preserveScrollOnPrepend = true,
-	ref,
-	className,
-	...rest
-}: MessageScrollerViewportProps): ReactElement {
+export function MessageScrollerViewport(props: MessageScrollerViewportProps): ReactElement {
+	const { preserveScrollOnPrepend = true, ref, className, ...rest } = props;
 	const { engine, report, setPreserveOnPrepend } = useMessageScrollerState();
 	const attached = useMemo(() => composeRefs<HTMLDivElement>(engine.attachViewport, ref), [engine, ref]);
 	usePrependPreserved(setPreserveOnPrepend, preserveScrollOnPrepend);
@@ -27,8 +24,7 @@ export function MessageScrollerViewport({
 			tabIndex={0}
 			data-slot="message-scroller-viewport"
 			data-scrollable={scrollableOf(report)}
-			data-autoscrolling={report.autoscrolling ? "" : undefined}
-			data-pending-scroll={report.pending ? "" : undefined}
+			{...dataFlagsOf({ autoscrolling: report.autoscrolling, "pending-scroll": report.pending })}
 			{...rest}
 			ref={attached}
 			className={cn("wg-kit-scroller-viewport", className)}
