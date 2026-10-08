@@ -10,6 +10,7 @@ import type {
 } from "../utils/carousel";
 import { prefersReducedMotion } from "../utils/reduced-motion";
 import { watchSizes } from "../utils/resize-watch";
+import { scrollOffsetOf, scrollToOffset } from "../utils/scroll-axis";
 
 export interface CarouselTrackAsk {
 	readonly orientation: CarouselOrientation;
@@ -28,36 +29,65 @@ export interface CarouselTrack {
 	readonly view: CarouselView;
 }
 
+type Listeners = Map<CarouselEvent, Set<CarouselListener>>;
+
+type ReadonlyListeners = ReadonlyMap<CarouselEvent, ReadonlySet<CarouselListener>>;
+
 interface TrackHeld {
 	readonly viewportRef: RefObject<HTMLDivElement | null>;
-	readonly listeners: Map<CarouselEvent, Set<CarouselListener>>;
+	readonly listeners: Listeners;
 	readonly latest: RefObject<CarouselTrackAsk>;
 }
+
+interface TrackApi {
+	readonly api: CarouselApi;
+	readonly listeners: Listeners;
+}
+
+type SnapNavigation = Omit<CarouselApi, "rootNode" | "on" | "off">;
 
 export function useCarouselTrack(ask: CarouselTrackAsk): CarouselTrack {
 	const viewportRef = useRef<HTMLDivElement | null>(null);
 	const [view, setView] = useState<CarouselView>({ selected: 0, count: 0 });
-	const latest = useRef(ask);
-	latest.current = ask;
-	const listeners = useRef(new Map<CarouselEvent, Set<CarouselListener>>());
-	const api = useMemo(() => apiOf({ viewportRef, listeners: listeners.current, latest }), []);
-	useLayoutEffect(
-		() => watchTrack(viewportRef.current, { api, listeners: listeners.current, setView }),
-		[ask.orientation],
-	);
-	useEffect(() => {
-		ask.setApi?.(api);
-	}, [api, ask.setApi]);
-	useEffect(() => emit(listeners.current, api, "select"), [view.selected]);
+	const { api, listeners } = useTrackApi(viewportRef, ask);
+	useLayoutEffect(() => watchTrack(viewportRef.current, { api, listeners, setView }), [ask.orientation]);
+	useEffect(() => emit(listeners, api, "select"), [view.selected]);
 	return { viewportRef, api, view };
 }
 
-function apiOf({ viewportRef, listeners, latest }: TrackHeld): CarouselApi {
+function useTrackApi(viewportRef: RefObject<HTMLDivElement | null>, ask: CarouselTrackAsk): TrackApi {
+	const latest = useRef(ask);
+	latest.current = ask;
+	const listeners = useRef<Listeners>(new Map());
+	const api = useMemo(() => apiOf({ viewportRef, listeners: listeners.current, latest }), []);
+	useEffect(() => {
+		ask.setApi?.(api);
+	}, [api, ask.setApi]);
+	return { api, listeners: listeners.current };
+}
+
+function apiOf(held: TrackHeld): CarouselApi {
+	const api: CarouselApi = {
+		...snapNavigationOf(held),
+		rootNode: () => held.viewportRef.current,
+		on: (event, listener) => {
+			held.listeners.set(event, new Set([...(held.listeners.get(event) ?? []), listener]));
+			return api;
+		},
+		off: (event, listener) => {
+			held.listeners.get(event)?.delete(listener);
+			return api;
+		},
+	};
+	return api;
+}
+
+function snapNavigationOf({ viewportRef, latest }: TrackHeld): SnapNavigation {
 	const snaps = (): number[] => (viewportRef.current ? snapsIn(viewportRef.current, latest.current.orientation) : []);
 	const selected = (): number => nearestSnap(snaps(), scrolledOf(viewportRef.current, latest.current.orientation));
 	const isLooping = (): boolean => Boolean(latest.current.opts.loop);
 	const go = (index: number): void => slideTo(viewportRef.current, latest.current.orientation, snaps()[index]);
-	const api: CarouselApi = {
+	return {
 		scrollTo: go,
 		scrollPrev: () => go(steppedSnap(selected(), -1, snaps().length, isLooping())),
 		scrollNext: () => go(steppedSnap(selected(), 1, snaps().length, isLooping())),
@@ -65,66 +95,56 @@ function apiOf({ viewportRef, listeners, latest }: TrackHeld): CarouselApi {
 		canScrollNext: () => snaps().length > 1 && (isLooping() || selected() < snaps().length - 1),
 		selectedScrollSnap: selected,
 		scrollSnapList: snaps,
-		rootNode: () => viewportRef.current,
-		on: (event, listener) => {
-			listeners.set(event, new Set([...(listeners.get(event) ?? []), listener]));
-			return api;
-		},
-		off: (event, listener) => {
-			listeners.get(event)?.delete(listener);
-			return api;
-		},
 	};
-	return api;
 }
 
 interface TrackWatch {
 	readonly api: CarouselApi;
-	readonly listeners: ReadonlyMap<CarouselEvent, ReadonlySet<CarouselListener>>;
+	readonly listeners: ReadonlyListeners;
 	readonly setView: (view: CarouselView) => void;
 }
 
-function watchTrack(viewport: HTMLElement | null, { api, listeners, setView }: TrackWatch): (() => void) | undefined {
+function watchTrack(viewport: HTMLElement | null, watch: TrackWatch): (() => void) | undefined {
 	if (!viewport) return undefined;
-	const measure = (): void => setView({ selected: api.selectedScrollSnap(), count: api.scrollSnapList().length });
-	const scrolled = (): void => {
-		measure();
-		emit(listeners, api, "scroll");
-	};
-	const resized = (): void => {
-		measure();
-		emit(listeners, api, "reInit");
-	};
-	measure();
+	const scrolled = remeasureListenerOf(watch, "scroll");
+	measureView(watch);
 	viewport.addEventListener("scroll", scrolled, { passive: true });
-	const stopSizes = watchSizes(
-		viewport.firstElementChild ? [viewport, viewport.firstElementChild] : [viewport],
-		resized,
-	);
+	const stopSizes = watchSizes(trackBoxesOf(viewport), remeasureListenerOf(watch, "reInit"));
 	return () => {
 		viewport.removeEventListener("scroll", scrolled);
 		stopSizes();
 	};
 }
 
-function emit(
-	listeners: ReadonlyMap<CarouselEvent, ReadonlySet<CarouselListener>>,
-	api: CarouselApi,
-	event: CarouselEvent,
-): void {
+function measureView({ api, setView }: TrackWatch): void {
+	setView({ selected: api.selectedScrollSnap(), count: api.scrollSnapList().length });
+}
+
+function remeasureListenerOf(watch: TrackWatch, event: CarouselEvent): () => void {
+	return () => {
+		measureView(watch);
+		emit(watch.listeners, watch.api, event);
+	};
+}
+
+function trackBoxesOf(viewport: HTMLElement): Element[] {
+	return viewport.firstElementChild ? [viewport, viewport.firstElementChild] : [viewport];
+}
+
+function emit(listeners: ReadonlyListeners, api: CarouselApi, event: CarouselEvent): void {
 	for (const listener of listeners.get(event) ?? []) listener(api, event);
 }
 
 function scrolledOf(viewport: HTMLElement | null, orientation: CarouselOrientation): number {
 	if (!viewport) return 0;
-	return orientation === "vertical" ? viewport.scrollTop : viewport.scrollLeft;
+	return scrollOffsetOf(viewport, orientation === "vertical");
 }
 
 function slideTo(viewport: HTMLElement | null, orientation: CarouselOrientation, to: number | undefined): void {
 	if (!viewport || to === undefined) return;
 	const isVertical = orientation === "vertical";
 	if (typeof viewport.scrollTo !== "function") {
-		viewport[isVertical ? "scrollTop" : "scrollLeft"] = to;
+		scrollToOffset(viewport, isVertical, to);
 		return;
 	}
 	const behavior = prefersReducedMotion() ? "auto" : "smooth";

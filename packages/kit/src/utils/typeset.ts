@@ -4,11 +4,9 @@ import { cn } from "./cn";
 
 export type TypesetTag = "h1" | "h2" | "h3" | "h4" | "p" | "blockquote" | "ul" | "code" | "div" | "small";
 
-export function createTypesetPart(
-	tag: TypesetTag,
-	kind: string,
-	name: string,
-): FunctionComponent<HTMLAttributes<HTMLElement>> {
+type TypesetPart = FunctionComponent<HTMLAttributes<HTMLElement>>;
+
+export function createTypesetPart(tag: TypesetTag, kind: string, name: string): TypesetPart {
 	function Part({ className, ...rest }: HTMLAttributes<HTMLElement>): ReactElement {
 		return h(tag, {
 			"data-slot": "typography",

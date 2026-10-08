@@ -41,10 +41,7 @@ export function stepPanelSizes(
 	const after = sizes[step.after];
 	if (before === undefined || after === undefined) return sizes;
 	const pair = before + after;
-	const beforeLimits = limitsOf(limits, step.before);
-	const afterLimits = limitsOf(limits, step.after);
-	const lowest = Math.max(beforeLimits.min, pair - afterLimits.max);
-	const highest = Math.min(beforeLimits.max, pair - afterLimits.min);
+	const { lowest, highest } = beforeRangeOf(limits, step, pair);
 	const next = clamp(before + step.delta, lowest, highest);
 	if (next === before) return sizes;
 	return { ...sizes, [step.before]: next, [step.after]: pair - next };
@@ -52,4 +49,18 @@ export function stepPanelSizes(
 
 export function limitsOf(limits: ReadonlyMap<string, PanelLimits>, id: string): PanelLimits {
 	return limits.get(id) ?? { defaultSize: undefined, min: 0, max: WHOLE };
+}
+
+interface SizeRange {
+	readonly lowest: number;
+	readonly highest: number;
+}
+
+function beforeRangeOf(limits: ReadonlyMap<string, PanelLimits>, step: PairStep, pair: number): SizeRange {
+	const beforeLimits = limitsOf(limits, step.before);
+	const afterLimits = limitsOf(limits, step.after);
+	return {
+		lowest: Math.max(beforeLimits.min, pair - afterLimits.max),
+		highest: Math.min(beforeLimits.max, pair - afterLimits.min),
+	};
 }
