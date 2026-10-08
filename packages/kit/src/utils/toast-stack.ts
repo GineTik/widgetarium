@@ -1,29 +1,38 @@
-import type { ToastSpot } from "../components/toast-item";
 import { TOAST_GAP_PX } from "../constants/overlays";
 import type { ToastId, ToastRecord } from "./toast-queue";
+
+export interface ToastSpot {
+	readonly index: number;
+	readonly offsetPx: number;
+	readonly isVisible: boolean;
+}
 
 export interface StackedToast {
 	readonly record: ToastRecord;
 	readonly spot: ToastSpot;
 }
 
+export interface ToastStack {
+	readonly items: readonly StackedToast[];
+	readonly frontHeightPx: number;
+}
+
 export function stackOf(
 	records: readonly ToastRecord[],
 	heights: ReadonlyMap<ToastId, number>,
 	visibleCount: number,
-): StackedToast[] {
+): ToastStack {
 	let index = 0;
 	let offsetPx = 0;
-	return records.map((record) => {
+	let frontHeightPx = 0;
+	const items = records.map((record) => {
 		const spot = { index, offsetPx, isVisible: index < visibleCount };
 		if (record.isLeaving) return { record, spot };
+		const heightPx = heights.get(record.id) ?? 0;
+		if (index === 0) frontHeightPx = heightPx;
 		index += 1;
-		offsetPx += (heights.get(record.id) ?? 0) + TOAST_GAP_PX;
+		offsetPx += heightPx + TOAST_GAP_PX;
 		return { record, spot };
 	});
-}
-
-export function frontHeightOf(records: readonly ToastRecord[], heights: ReadonlyMap<ToastId, number>): number {
-	const front = records.find((record) => !record.isLeaving);
-	return front ? (heights.get(front.id) ?? 0) : 0;
+	return { items, frontHeightPx };
 }

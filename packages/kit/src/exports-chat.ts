@@ -29,9 +29,11 @@ export {
 	MessageScrollerProvider,
 	MessageScrollerViewport,
 } from "./components/message-scroller";
-export { useMessageScroller } from "./hooks/use-message-scroller";
-export { useMessageScrollerScrollable } from "./hooks/use-message-scroller-scrollable";
-export { useMessageScrollerVisibility } from "./hooks/use-message-scroller-visibility";
+export {
+	useMessageScroller,
+	useMessageScrollerScrollable,
+	useMessageScrollerVisibility,
+} from "./hooks/use-message-scroller";
 export {
 	Questionnaire,
 	QuestionnaireActions,

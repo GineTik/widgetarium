@@ -17,8 +17,10 @@ export interface MessagePartProps {
 export function MessagePart({ part, variant, renderText }: MessagePartProps): ReactElement {
 	if (part.kind === "reasoning") return <MessageReasoning text={part.text} isStreaming={part.isStreaming} />;
 	if (part.kind === "tool") {
-		const { name, stage, input, output, error } = part;
-		return <MessageTool name={name} stage={stage} input={input} output={output} error={error} />;
+		const { name, stage, input, isInputRaw, output, error } = part;
+		return (
+			<MessageTool name={name} stage={stage} input={input} isInputRaw={isInputRaw} output={output} error={error} />
+		);
 	}
 	if (part.kind === "file") return <MessageFile file={part} />;
 	return (

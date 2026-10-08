@@ -30,8 +30,7 @@ export type {
 } from "./constants/chat";
 export type { ScrollDirection, ScrollPosition } from "./constants/message-scroller";
 export type { QuestionStatus, ShortcutKind } from "./constants/questionnaire";
-export type { MessageScrollerCommands } from "./hooks/use-message-scroller";
-export type { MessageScrollerVisibility } from "./hooks/use-message-scroller-visibility";
+export type { MessageScrollerCommands, MessageScrollerVisibility } from "./hooks/use-message-scroller";
 export type { QuestionnaireItemData } from "./hooks/use-questionnaire-machine";
 export type { ChatPartLike, ChatPartRead } from "./utils/chat-parts";
 export type { ScrollJump } from "./utils/message-scroll-engine";

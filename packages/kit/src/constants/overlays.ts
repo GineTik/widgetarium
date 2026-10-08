@@ -35,8 +35,6 @@ export const TOAST_EXIT_MS = 240;
 
 export const TOAST_GAP_PX = 14;
 
-export const TOAST_PEEK_PX = 12;
-
 export const TOAST_VISIBLE = 3;
 
 export const FOCUSABLE =

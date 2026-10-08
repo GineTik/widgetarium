@@ -49,8 +49,7 @@ export function menuItemHandlers(menu: MenuState, { disabled, onSelect, theirs }
 		onKeyDown: chain(theirs.onKeyDown, pressOnEnterOrSpace),
 		onPointerMove: chain(theirs.onPointerMove, (event: PointerEvent<HTMLElement>) => {
 			if (disabled || event.pointerType === "touch") return;
-			menu.childCloser.current?.();
-			menu.childCloser.current = null;
+			menu.closeChildren();
 			if (document.activeElement !== event.currentTarget) focusQuietly(event.currentTarget);
 		}),
 		onPointerLeave: chain(theirs.onPointerLeave, (event: PointerEvent<HTMLElement>) => {

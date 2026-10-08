@@ -101,5 +101,5 @@ export {
 	AlertDialogTrigger,
 } from "./components/alert-dialog";
 export { Toaster } from "./components/toaster";
-export { toast } from "./utils/toast";
+export { errorTextOf, toast } from "./utils/toast";
 export type * from "./exported-overlay-types";

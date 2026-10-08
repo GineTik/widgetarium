@@ -4,7 +4,7 @@ import { slotNameOf } from "../utils/slot-name";
 import { DialogClose } from "./dialog-close";
 import type { DialogCloseProps } from "./dialog-close";
 
-export function modalClose(name: string, look: DialogCloseProps = {}): FunctionComponent<DialogCloseProps> {
+export function createModalClose(name: string, look: DialogCloseProps = {}): FunctionComponent<DialogCloseProps> {
 	const slot = slotNameOf(name);
 	function Close(props: DialogCloseProps): ReactElement {
 		return <DialogClose {...look} {...props} data-slot={slot} />;

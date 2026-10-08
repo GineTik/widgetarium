@@ -49,12 +49,9 @@ function createStep(kind: QuestionnaireStepKind): FunctionComponent<ButtonProps>
 	return Step;
 }
 
-function isStepVisible(
-	kind: QuestionnaireStepKind,
-	{ active, isActiveRequired, position }: QuestionnaireState,
-): boolean {
+function isStepVisible(kind: QuestionnaireStepKind, { isActiveSkippable, position }: QuestionnaireState): boolean {
 	if (kind === "previous") return !position.first;
-	if (kind === "skip") return active !== undefined && !isActiveRequired;
+	if (kind === "skip") return isActiveSkippable;
 	if (kind === "next") return !position.last;
 	return position.last;
 }

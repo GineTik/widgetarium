@@ -43,7 +43,7 @@ export function MenuSubTrigger({
 			className={cn("wg-kit-menu-item is-sub-trigger", className)}
 			onPointerMove={chain(onPointerMove, (event) => openByPointer(sub, event, disabled))}
 			onClick={chain(onClick, () => openByKeys(sub, disabled))}
-			onKeyDown={chain(onKeyDown, (event) => openOnArrow(sub, event, disabled))}
+			onKeyDown={chain(onKeyDown, (event) => openOnForwardKey(sub, event, disabled))}
 		>
 			{children}
 			<Icon name="chevron-right" size={CHEVRON_PX} className="wg-kit-menu-chevron" />
@@ -68,13 +68,13 @@ function openByKeys(sub: MenuState, disabled: boolean | undefined): void {
 	sub.setOpen(true);
 }
 
-function openOnArrow(sub: MenuState, event: KeyboardEvent<HTMLElement>, disabled: boolean | undefined): void {
+function openOnForwardKey(sub: MenuState, event: KeyboardEvent<HTMLElement>, disabled: boolean | undefined): void {
 	if (event.key !== "ArrowRight" && event.key !== "Enter" && event.key !== " ") return;
 	event.preventDefault();
 	openByKeys(sub, disabled);
 }
 
 function focusInto(sub: MenuState): void {
-	const panel = document.getElementById(sub.contentId);
+	const panel = sub.panelRef.current;
 	if (panel) focusMenuItem(panel, "first");
 }

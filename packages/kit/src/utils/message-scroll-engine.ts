@@ -72,7 +72,7 @@ interface Held {
 	autoscroll: { readonly target: number; readonly timer: ReturnType<typeof setTimeout> } | null;
 	rows: Set<HTMLElement>;
 	visible: Set<string>;
-	rowSeer: IntersectionObserver | null;
+	rowObserver: IntersectionObserver | null;
 	sizes: ResizeObserver | null;
 	unwatch: (() => void) | null;
 }
@@ -90,8 +90,8 @@ export function createScrollEngine(
 	const held = freshHeld();
 	const run: Run = { held, settingsOf, report: () => onReport(reportOf(held, settingsOf())) };
 	return {
-		attachViewport: (node) => attach(run, { viewport: node }),
-		attachContent: (node) => attach(run, { content: node }),
+		attachViewport: (node) => attachNodes(run, { viewport: node }),
+		attachContent: (node) => attachNodes(run, { content: node }),
 		watchRow: (node) => watchRow(run, node),
 		scrollToEnd: (jump) => scrollToEdge(run, "end", jump),
 		scrollToStart: (jump) => scrollToEdge(run, "start", jump),
@@ -115,30 +115,30 @@ function freshHeld(): Held {
 		autoscroll: null,
 		rows: new Set(),
 		visible: new Set(),
-		rowSeer: null,
+		rowObserver: null,
 		sizes: null,
 		unwatch: null,
 	};
 }
 
-function attach(
+function attachNodes(
 	run: Run,
 	nodes: { readonly viewport?: HTMLElement | null; readonly content?: HTMLElement | null },
 ): void {
 	const { held } = run;
 	if (held.isOpen && (nodes.viewport === held.viewport || nodes.content === held.content)) return;
 	if (nodes.viewport === null || nodes.content === null) {
-		close(run);
+		stopEngine(run);
 		if (nodes.viewport === null) held.viewport = null;
 		if (nodes.content === null) held.content = null;
 		return;
 	}
 	if (nodes.viewport) held.viewport = nodes.viewport;
 	if (nodes.content) held.content = nodes.content;
-	open(run);
+	startEngine(run);
 }
 
-function open(run: Run): void {
+function startEngine(run: Run): void {
 	const { held } = run;
 	const { viewport, content } = held;
 	if (!viewport || !content || held.isOpen) return;
@@ -146,22 +146,22 @@ function open(run: Run): void {
 	if (!held.hasOpened) viewport.scrollTop = openingTopOf(viewport, content, run.settingsOf());
 	held.hasOpened = true;
 	held.knownAnchors = new Set(anchorsIn(content).map(messageIdOf));
-	held.rowSeer = rowSeerOf(run, viewport);
-	held.unwatch = watched(run, viewport, content);
+	held.rowObserver = createRowObserver(run, viewport);
+	held.unwatch = watchViewport(run, viewport, content);
 	for (const row of held.rows) {
-		held.rowSeer?.observe(row);
+		held.rowObserver?.observe(row);
 		held.sizes?.observe(row);
 	}
-	if (!jumpToQueued(run, viewport, content)) settle(run);
+	if (!jumpToQueued(run, viewport, content)) settleScroll(run);
 }
 
-function close(run: Run): void {
+function stopEngine(run: Run): void {
 	const { held } = run;
 	held.unwatch?.();
-	held.rowSeer?.disconnect();
+	held.rowObserver?.disconnect();
 	stopAutoscroll(held);
 	held.unwatch = null;
-	held.rowSeer = null;
+	held.rowObserver = null;
 	held.isOpen = false;
 }
 
@@ -172,15 +172,15 @@ function openingTopOf(viewport: HTMLElement, content: HTMLElement, settings: Scr
 	return topInScroll(viewport, anchor) - settings.scrollPreviousItemPeek;
 }
 
-function watched(run: Run, viewport: HTMLElement, content: HTMLElement): () => void {
-	const onScroll = (): void => scrolled(run);
+function watchViewport(run: Run, viewport: HTMLElement, content: HTMLElement): () => void {
+	const onScroll = (): void => handleScroll(run);
 	const onWheel = (event: WheelEvent): void => tookOver(run, event.deltaY < 0);
 	const onKey = (event: KeyboardEvent): void => {
 		if (RELEASE_KEYS.includes(event.key) || (event.key === " " && event.shiftKey)) tookOver(run, true);
 	};
 	const onTouch = (): void => tookOver(run, false);
 	const onSettled = (): void => finishAutoscroll(run);
-	const sizes = typeof ResizeObserver === "function" ? new ResizeObserver(() => resized(run)) : null;
+	const sizes = typeof ResizeObserver === "function" ? new ResizeObserver(() => handleResize(run)) : null;
 	sizes?.observe(content);
 	sizes?.observe(viewport);
 	run.held.sizes = sizes;
@@ -200,7 +200,7 @@ function watched(run: Run, viewport: HTMLElement, content: HTMLElement): () => v
 	};
 }
 
-function rowSeerOf(run: Run, viewport: HTMLElement): IntersectionObserver | null {
+function createRowObserver(run: Run, viewport: HTMLElement): IntersectionObserver | null {
 	if (typeof IntersectionObserver !== "function") return null;
 	return new IntersectionObserver(
 		(entries) => {
@@ -219,24 +219,24 @@ function watchRow(run: Run, row: HTMLElement): () => void {
 	const { held } = run;
 	const id = messageIdOf(row);
 	held.rows.add(row);
-	held.rowSeer?.observe(row);
+	held.rowObserver?.observe(row);
 	held.sizes?.observe(row);
 	return () => {
 		held.rows.delete(row);
-		held.rowSeer?.unobserve(row);
+		held.rowObserver?.unobserve(row);
 		held.sizes?.unobserve(row);
 		held.visible.delete(id);
 	};
 }
 
-function scrolled(run: Run): void {
+function handleScroll(run: Run): void {
 	const { held } = run;
 	const { viewport } = held;
 	if (!viewport) return;
 	if (held.autoscroll && Math.abs(viewport.scrollTop - held.autoscroll.target) <= 1) finishAutoscroll(run);
 	else if (!held.autoscroll && viewport.scrollTop < held.lastTop - 1 && !isAtEnd(run, viewport))
 		held.isFollowing = false;
-	settle(run);
+	settleScroll(run);
 }
 
 function tookOver(run: Run, isLeavingTheEnd: boolean): void {
@@ -245,7 +245,7 @@ function tookOver(run: Run, isLeavingTheEnd: boolean): void {
 	run.report();
 }
 
-function resized(run: Run): void {
+function handleResize(run: Run): void {
 	const { held } = run;
 	const { viewport, content } = held;
 	if (!viewport || !content || !held.isOpen) return;
@@ -253,7 +253,7 @@ function resized(run: Run): void {
 	if (jumpToQueued(run, viewport, content)) return;
 	if (fresh && (held.isFollowing || held.wasAtEnd)) placeTurn(run, viewport, fresh);
 	else holdPlace(run, viewport, content);
-	settle(run);
+	settleScroll(run);
 }
 
 function takeFreshAnchor(held: Held, content: HTMLElement): HTMLElement | null {
@@ -332,7 +332,7 @@ function jumpTo(run: Run, top: number, jump: ScrollJump | undefined): void {
 	stopAutoscroll(held);
 	if (!isSmooth(jump) || Math.abs(target - viewport.scrollTop) <= 1) {
 		viewport.scrollTop = target;
-		settle(run);
+		settleScroll(run);
 		return;
 	}
 	held.autoscroll = { target, timer: setTimeout(() => finishAutoscroll(run), AUTOSCROLL_SETTLE_MS) };
@@ -345,7 +345,7 @@ function finishAutoscroll(run: Run): void {
 	if (!held.autoscroll) return;
 	stopAutoscroll(held);
 	if (held.isFollowing && held.viewport) held.viewport.scrollTop = endTopOf(held.viewport);
-	settle(run);
+	settleScroll(run);
 }
 
 function stopAutoscroll(held: Held): void {
@@ -353,7 +353,7 @@ function stopAutoscroll(held: Held): void {
 	held.autoscroll = null;
 }
 
-function settle(run: Run): void {
+function settleScroll(run: Run): void {
 	const { held } = run;
 	const { viewport, content } = held;
 	if (!viewport || !content) return;

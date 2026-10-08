@@ -3,7 +3,7 @@ import { classedSlotPart } from "./create-slot-part";
 import type { SlotPartProps } from "./create-slot-part";
 import type { DialogCloseProps } from "./dialog-close";
 import type { DialogTriggerProps } from "./dialog-trigger";
-import { modalClose, modalTextPart, modalTrigger } from "./modal-parts";
+import { createModalClose, createModalTextPart, createModalTrigger } from "./modal-parts";
 
 export { DialogRoot as AlertDialog } from "./dialog-root";
 export { AlertDialogContent } from "./alert-dialog-content";
@@ -12,9 +12,9 @@ export { OverlayPortal as AlertDialogPortal } from "./overlay-portal";
 export { OverlayScrimPart as AlertDialogOverlay } from "./overlay-scrim-part";
 export type { AlertDialogContentProps } from "./alert-dialog-content";
 
-export const AlertDialogTrigger: FunctionComponent<DialogTriggerProps> = modalTrigger("AlertDialogTrigger");
+export const AlertDialogTrigger: FunctionComponent<DialogTriggerProps> = createModalTrigger("AlertDialogTrigger");
 
-export const AlertDialogAction: FunctionComponent<DialogCloseProps> = modalClose("AlertDialogAction", {
+export const AlertDialogAction: FunctionComponent<DialogCloseProps> = createModalClose("AlertDialogAction", {
 	variant: "default",
 });
 
@@ -30,14 +30,14 @@ export const AlertDialogFooter: FunctionComponent<SlotPartProps> = classedSlotPa
 	"AlertDialogFooter",
 );
 
-export const AlertDialogTitle: FunctionComponent<SlotPartProps> = modalTextPart(
+export const AlertDialogTitle: FunctionComponent<SlotPartProps> = createModalTextPart(
 	"h2",
 	"wg-kit-modal-title",
 	"AlertDialogTitle",
 	"titleId",
 );
 
-export const AlertDialogDescription: FunctionComponent<SlotPartProps> = modalTextPart(
+export const AlertDialogDescription: FunctionComponent<SlotPartProps> = createModalTextPart(
 	"p",
 	"wg-kit-modal-description",
 	"AlertDialogDescription",

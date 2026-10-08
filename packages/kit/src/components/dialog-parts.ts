@@ -1,7 +1,7 @@
 import type { FunctionComponent } from "react";
 import { classedSlotPart } from "./create-slot-part";
 import type { SlotPartProps } from "./create-slot-part";
-import { modalTextPart } from "./modal-parts";
+import { createModalTextPart } from "./modal-parts";
 
 export const DialogHeader: FunctionComponent<SlotPartProps> = classedSlotPart(
 	"div",
@@ -9,14 +9,14 @@ export const DialogHeader: FunctionComponent<SlotPartProps> = classedSlotPart(
 	"DialogHeader",
 );
 
-export const DialogTitle: FunctionComponent<SlotPartProps> = modalTextPart(
+export const DialogTitle: FunctionComponent<SlotPartProps> = createModalTextPart(
 	"h2",
 	"wg-kit-dialog-title",
 	"DialogTitle",
 	"titleId",
 );
 
-export const DialogDescription: FunctionComponent<SlotPartProps> = modalTextPart(
+export const DialogDescription: FunctionComponent<SlotPartProps> = createModalTextPart(
 	"p",
 	"wg-kit-dialog-description",
 	"DialogDescription",

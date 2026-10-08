@@ -1,6 +1,7 @@
 import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, MouseEvent, ReactElement, Ref } from "react";
 import { chain } from "../utils/chain";
+import { toggleMenu } from "../utils/menu-trigger";
 import type { MenuState } from "./menu-context";
 import { useMenu } from "./menu-context";
 import { dataStateOf } from "./popover-context";
@@ -29,17 +30,11 @@ export function DropdownMenuTrigger({
 		"data-slot": "dropdown-menu-trigger",
 		ref: composeRefs(menu.triggerRef, ref),
 		onClick: chain(onClick, (event: MouseEvent<HTMLElement>) => toggleMenu(menu, event.detail === 0)),
-		onKeyDown: chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrow(menu, event)),
+		onKeyDown: chain(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnVerticalArrow(menu, event)),
 	});
 }
 
-function toggleMenu(menu: MenuState, isByKeyboard: boolean): void {
-	menu.focusIntent.current = isByKeyboard ? "first" : "panel";
-	if (menu.isOpen) menu.closeTree();
-	else menu.setOpen(true);
-}
-
-function openOnArrow(menu: MenuState, event: KeyboardEvent<HTMLElement>): void {
+function openOnVerticalArrow(menu: MenuState, event: KeyboardEvent<HTMLElement>): void {
 	if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
 	event.preventDefault();
 	menu.focusIntent.current = event.key === "ArrowDown" ? "first" : "last";

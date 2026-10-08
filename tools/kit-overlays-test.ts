@@ -340,6 +340,22 @@ async function subMenu(trigger: Element): Promise<void> {
 		[stateOf("dropdown-menu-sub-content"), focusedText()],
 		["closed", "Invite"],
 	);
+	fire(subTrigger, "pointermove");
+	await settle();
+	fire(subTrigger, "click");
+	await settle();
+	check(
+		"A PRESS ON A SUB TRIGGER OPENED BY HOVER FOCUSES INTO ITS PANEL",
+		[stateOf("dropdown-menu-sub-content"), focusedText()],
+		["open", "Email"],
+	);
+	fire(menuItemNamed("Log out"), "pointermove");
+	await settle();
+	check(
+		"HOVERING A SIBLING ITEM CLOSES THE OPEN SUB MENU AND LEAVES THE FOCUS ON THAT ITEM",
+		[stateOf("dropdown-menu-sub-content"), focusedText()],
+		["closed", "Log out"],
+	);
 	key(document.activeElement, "Escape");
 	await settle();
 	check(
@@ -352,6 +368,26 @@ async function subMenu(trigger: Element): Promise<void> {
 	fire(outside, "pointerdown");
 	await settle();
 	check("a press outside closes it", stateOf("dropdown-menu-content"), "closed");
+	await wait(220);
+	fire(trigger, "click", { detail: 0 });
+	await settle();
+	key(found(document, '[data-slot="dropdown-menu-sub-trigger"]'), "ArrowRight");
+	await settle();
+	key(document.activeElement, "Enter");
+	await settle();
+	check(
+		"SELECTING AN ITEM IN A SUB MENU CLOSES THE WHOLE TREE AND GIVES THE FOCUS TO THE ROOT TRIGGER",
+		[stateOf("dropdown-menu-content"), stateOf("dropdown-menu-sub-content"), document.activeElement === trigger],
+		["closed", "closed", true],
+	);
+}
+
+function menuItemNamed(text: string): Element {
+	const item = [...document.querySelectorAll('[data-slot="dropdown-menu-item"]')].find(
+		(node) => node.textContent === text,
+	);
+	if (!item) throw new Error(`no menu item reads ${text}`);
+	return item;
 }
 
 async function contextMenu(): Promise<void> {
@@ -422,6 +458,19 @@ async function menubar(): Promise<void> {
 	await settle();
 	key(file, "ArrowRight");
 	check("ArrowRight on a trigger moves along the bar", document.activeElement === edit, true);
+	fire(edit, "click", { detail: 1 });
+	await settle();
+	key(found(document, '[data-slot="menubar-sub-trigger"]'), "ArrowRight");
+	await settle();
+	hover(file);
+	await settle();
+	hover(edit);
+	await settle();
+	check(
+		"A SUB MENU LEFT OPEN WHEN THE BAR SWITCHED AWAY IS SHUT WHEN ITS MENU OPENS AGAIN",
+		[edit.getAttribute("aria-expanded"), stateOf("menubar-sub-content") === "open"],
+		["true", false],
+	);
 	await draw(null);
 }
 
@@ -766,6 +815,7 @@ async function toasts(): Promise<void> {
 	await leavingToast();
 	await promiseToast();
 	await pausedToast();
+	await queueOwnedLifetime();
 	await draw(null);
 }
 
@@ -822,6 +872,46 @@ async function pausedToast(): Promise<void> {
 	fire(found(document, '[data-slot="toaster"]'), "pointerout", { relatedTarget: outside });
 	await wait(90);
 	check("and closes once the pointer leaves", kit.toast.getToasts().filter((toast) => !toast.isLeaving).length, 0);
+}
+
+function openToastCount(): number {
+	return kit.toast.getToasts().filter((toast) => !toast.isLeaving).length;
+}
+
+async function queueOwnedLifetime(): Promise<void> {
+	await draw(null);
+	kit.toast("Unseen", { duration: 40 });
+	await wait(80);
+	check("A TOAST SHOWN WITH NO TOASTER ON SCREEN WAITS FOR ONE", openToastCount(), 1);
+	await draw(h(kit.Toaster, { duration: 60 }));
+	await wait(80);
+	check("and runs its lifetime once a Toaster draws it", openToastCount(), 0);
+	const said: string[] = [];
+	kit.toast("Counting", { duration: 120, onAutoClose: () => said.push("auto") });
+	await wait(70);
+	await draw(null);
+	await draw(h(kit.Toaster, { duration: 60 }));
+	await wait(90);
+	check("A TOAST'S LIFETIME RUNS FROM ITS SHOW, NOT FROM ITS TOASTER'S LAST DRAW", said, ["auto"]);
+	kit.toast.info("Paused", { duration: 100 });
+	await settle();
+	const toaster = found(document, '[data-slot="toaster"]');
+	fire(toaster, "pointerover", { relatedTarget: null });
+	await wait(150);
+	fire(toaster, "pointerout", { relatedTarget: outside });
+	await wait(50);
+	check("A PAUSED TOAST RESUMES WITH THE TIME IT HAD LEFT", openToastCount(), 1);
+	await wait(110);
+	check("and closes when that time runs out", openToastCount(), 0);
+	kit.toast.promise(Promise.reject(new Error("Disk full")), { loading: "Saving…", success: "Saved" });
+	await settle();
+	check(
+		"A REJECTED PROMISE WITH NO ERROR MESSAGE SHOWS THE ERROR'S OWN TEXT",
+		kit.toast.getToasts().find((toast) => toast.type === "error")?.title,
+		"Disk full",
+	);
+	kit.toast.dismiss();
+	await wait(300);
 }
 
 await placement();

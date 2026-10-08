@@ -113,4 +113,12 @@ export const TOOL_INPUT_LABEL = "Input";
 
 export const TOOL_OUTPUT_LABEL = "Output";
 
+export const TOOL_RAW_INPUT_LABEL = "Input, not valid JSON";
+
+export const TOOL_TEXT_MAX_CHARS = 4000;
+
+export const TOOL_TEXT_CUT = "\n…";
+
+export const TOOL_CIRCULAR_MARK = "[Circular]";
+
 export const UNNAMED_FILE = "Attached file";

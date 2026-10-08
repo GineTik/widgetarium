@@ -1,47 +1,44 @@
-import { useId, useRef } from "react";
+import { useCallback, useId, useRef } from "react";
 import type { FocusIntent, MenuState } from "../components/menu-context";
 import { useMenu } from "../components/menu-context";
 import { boxOf } from "../utils/floating-placement";
-import { useControllableState } from "./use-controllable-state";
+import { useMenuChildren } from "./use-menu-children";
+import { useOpenState } from "./use-open-state";
+import type { OpenAsk } from "./use-open-state";
 
-export interface MenuSubAsk {
-	readonly open?: boolean | undefined;
-	readonly defaultOpen?: boolean | undefined;
-	readonly onOpenChange?: ((open: boolean) => void) | undefined;
-}
-
-export function useMenuSub({ open, defaultOpen, onOpenChange }: MenuSubAsk): MenuState {
+export function useMenuSub(ask: OpenAsk): MenuState {
 	const parent = useMenu();
-	const [isOpen, setOpen] = useControllableState({
-		prop: open,
-		defaultProp: defaultOpen ?? false,
-		onChange: onOpenChange,
-	});
+	const [isOpen, setOpen] = useOpenState(ask);
+	const { openChild, closeChildren } = useMenuChildren(isOpen);
 	const triggerRef = useRef<HTMLElement>(null);
+	const panelRef = useRef<HTMLDivElement>(null);
 	const focusIntent = useRef<FocusIntent>("none");
-	const childCloser = useRef<(() => void) | null>(null);
-	const closeSelf = useRef(() => {
-		childCloser.current?.();
-		setOpen(false);
-	});
 	const contentId = useId();
+	const closeSelf = useCallback(() => {
+		closeChildren();
+		setOpen(false);
+	}, [closeChildren, setOpen]);
 	return {
-		...parent,
+		family: parent.family,
+		treeId: parent.treeId,
+		closeTree: parent.closeTree,
+		isInside: parent.isInside,
 		isOpen,
 		setOpen: (next) => {
-			if (next) openAlone(parent, closeSelf.current);
-			setOpen(next);
+			if (!next) {
+				closeSelf();
+				return;
+			}
+			parent.openChild(closeSelf);
+			setOpen(true);
 		},
+		openChild,
+		closeChildren,
 		contentId,
 		triggerRef,
+		panelRef,
 		anchorBox: boxOf(triggerRef),
 		focusIntent,
-		childCloser,
 		parent,
 	};
-}
-
-function openAlone(parent: MenuState, closeSelf: () => void): void {
-	if (parent.childCloser.current !== closeSelf) parent.childCloser.current?.();
-	parent.childCloser.current = closeSelf;
 }

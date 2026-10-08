@@ -4,27 +4,23 @@ import type { FocusIntent, MenuFamily, MenuState } from "../components/menu-cont
 import { isInMenuTree } from "../components/menu-context";
 import type { AnchorBox } from "../constants/popover";
 import { boxOf } from "../utils/floating-placement";
-import { useControllableState } from "./use-controllable-state";
+import { useMenuChildren } from "./use-menu-children";
+import { useOpenState } from "./use-open-state";
+import type { OpenAsk } from "./use-open-state";
 
-export interface MenuRootAsk {
+export interface MenuRootAsk extends OpenAsk {
 	readonly family: MenuFamily;
-	readonly open?: boolean | undefined;
-	readonly defaultOpen?: boolean | undefined;
-	readonly onOpenChange?: ((open: boolean) => void) | undefined;
 	readonly anchorBox?: (() => AnchorBox | null) | undefined;
 	readonly focusIntent?: RefObject<FocusIntent> | undefined;
 	readonly isAlsoInside?: ((node: Node) => boolean) | undefined;
 }
 
 export function useMenuRoot(ask: MenuRootAsk): MenuState {
-	const [isOpen, setOpen] = useControllableState({
-		prop: ask.open,
-		defaultProp: ask.defaultOpen ?? false,
-		onChange: ask.onOpenChange,
-	});
+	const [isOpen, setOpen] = useOpenState(ask);
+	const { openChild, closeChildren } = useMenuChildren(isOpen);
 	const triggerRef = useRef<HTMLElement>(null);
+	const panelRef = useRef<HTMLDivElement>(null);
 	const ownIntent = useRef<FocusIntent>("panel");
-	const childCloser = useRef<(() => void) | null>(null);
 	const treeId = useId();
 	const contentId = useId();
 	return {
@@ -32,15 +28,17 @@ export function useMenuRoot(ask: MenuRootAsk): MenuState {
 		isOpen,
 		setOpen,
 		closeTree: () => {
-			childCloser.current?.();
+			closeChildren();
 			setOpen(false);
 		},
+		openChild,
+		closeChildren,
 		treeId,
 		contentId,
 		triggerRef,
+		panelRef,
 		anchorBox: ask.anchorBox ?? boxOf(triggerRef),
 		focusIntent: ask.focusIntent ?? ownIntent,
-		childCloser,
 		isInside: (node) =>
 			isInMenuTree(node, treeId) || Boolean(triggerRef.current?.contains(node)) || Boolean(ask.isAlsoInside?.(node)),
 		parent: null,

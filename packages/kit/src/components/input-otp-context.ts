@@ -13,7 +13,7 @@ export interface OtpState {
 
 export const OTPInputContext: Context<OtpState | null> = createContext<OtpState | null>(null);
 
-export function useOtp(): OtpState {
+export function useOtpState(): OtpState {
 	const otp = useContext(OTPInputContext);
 	if (!otp) throw new Error("an input OTP part stands outside an InputOTP");
 	return otp;

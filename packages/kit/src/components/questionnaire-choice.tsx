@@ -2,9 +2,10 @@ import { createElement as h, useId, useLayoutEffect, useRef, useState } from "re
 import type { ChangeEventHandler, ReactElement, ReactNode } from "react";
 import { CHOICE_INPUT_ATTRIBUTE } from "../constants/questionnaire";
 import { cn } from "../utils/cn";
-import { choiceInputsOf, shortcutOf } from "../utils/questionnaire";
+import { shortcutOf } from "../utils/questionnaire";
 import { Card } from "./card";
 import { useQuestionnaireItem } from "./questionnaire-context";
+import { choiceInputsOf } from "./questionnaire-fields";
 
 export interface QuestionnaireChoiceProps {
 	readonly value: string;
