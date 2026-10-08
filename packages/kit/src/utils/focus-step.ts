@@ -14,11 +14,7 @@ export function focusStepped(
 	step: Step | undefined,
 	rule: StepRule = {},
 ): void {
-	if (step === undefined || items.length === 0) return;
-	const current = rule.from ?? document.activeElement;
-	const at = items.findIndex((item) => item === current);
-	if (at === -1 && rule.entersFromOutside === false) return;
-	const next = items[stepIndex(at, step, items.length)];
+	const next = nextItemOf(items, step, rule);
 	if (!next) return;
 	event?.preventDefault();
 	(rule.focus ?? focusItem)(next);
@@ -31,6 +27,14 @@ export function focusAndClick(item: HTMLElement): void {
 
 export function ownedBy(root: Element, selector: string, owner: string): HTMLElement[] {
 	return [...root.querySelectorAll<HTMLElement>(selector)].filter((item) => item.closest(owner) === root);
+}
+
+function nextItemOf(items: readonly HTMLElement[], step: Step | undefined, rule: StepRule): HTMLElement | undefined {
+	if (step === undefined || items.length === 0) return undefined;
+	const current = rule.from ?? document.activeElement;
+	const at = items.findIndex((item) => item === current);
+	if (at === -1 && rule.entersFromOutside === false) return undefined;
+	return items[stepIndex(at, step, items.length)];
 }
 
 function focusItem(item: HTMLElement): void {

@@ -6,49 +6,55 @@ import { cn } from "../utils/cn";
 import { focusQuietly } from "../utils/focus";
 import { menuItemMarks } from "../utils/menu-item";
 import { focusMenuItem } from "../utils/menu-keys";
+import { menuTriggerAria } from "../utils/menu-trigger-aria";
 import type { MenuState } from "./menu-context";
 import { useMenu } from "./menu-context";
 import { dataStateOf } from "./popover-context";
+import { composeRefs } from "./slot";
 
 export interface MenuSubTriggerProps extends HTMLAttributes<HTMLDivElement> {
 	readonly inset?: boolean | undefined;
 	readonly disabled?: boolean | undefined;
 }
 
+type SubTriggerHandlers = Required<Pick<HTMLAttributes<HTMLElement>, "onPointerMove" | "onClick" | "onKeyDown">>;
+
+interface SubTriggerPress {
+	readonly disabled: boolean | undefined;
+	readonly theirs: Partial<SubTriggerHandlers>;
+}
+
 const CHEVRON_PX = 16;
 
-export function MenuSubTrigger({
-	inset,
-	disabled,
-	className,
-	children,
-	onPointerMove,
-	onKeyDown,
-	onClick,
-	...rest
-}: MenuSubTriggerProps): ReactElement {
+export function MenuSubTrigger({ inset, disabled, className, children, ...rest }: MenuSubTriggerProps): ReactElement {
 	const sub = useMenu();
 	return (
 		<div
 			role="menuitem"
-			aria-haspopup="menu"
-			aria-expanded={sub.isOpen}
-			aria-controls={sub.isOpen ? sub.contentId : undefined}
+			{...menuTriggerAria(sub)}
 			data-state={dataStateOf(sub.isOpen)}
 			{...rest}
 			{...menuItemMarks(sub, { part: "sub-trigger", inset, disabled })}
-			ref={(node: HTMLDivElement | null) => {
-				sub.triggerRef.current = node;
-			}}
+			ref={composeRefs(sub.triggerRef)}
 			className={cn("wg-kit-menu-item is-sub-trigger", className)}
-			onPointerMove={chainHandlers(onPointerMove, (event) => openByPointer(sub, event, disabled))}
-			onClick={chainHandlers(onClick, () => openByKeys(sub, disabled))}
-			onKeyDown={chainHandlers(onKeyDown, (event) => openOnForwardKey(sub, event, disabled))}
+			{...subTriggerHandlers(sub, { disabled, theirs: rest })}
 		>
 			{children}
 			<Icon name="chevron-right" size={CHEVRON_PX} className="wg-kit-menu-chevron" />
 		</div>
 	);
+}
+
+function subTriggerHandlers(sub: MenuState, { disabled, theirs }: SubTriggerPress): SubTriggerHandlers {
+	return {
+		onPointerMove: chainHandlers(theirs.onPointerMove, (event: PointerEvent<HTMLElement>) =>
+			openByPointer(sub, event, disabled),
+		),
+		onClick: chainHandlers(theirs.onClick, () => openByKeys(sub, disabled)),
+		onKeyDown: chainHandlers(theirs.onKeyDown, (event: KeyboardEvent<HTMLElement>) =>
+			openOnForwardKey(sub, event, disabled),
+		),
+	};
 }
 
 function openByPointer(sub: MenuState, event: PointerEvent<HTMLElement>, disabled: boolean | undefined): void {

@@ -1,8 +1,8 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { cn } from "../utils/cn";
-import { menuItemHandlers, menuItemMarks } from "../utils/menu-item";
-import { useMenu, useMenuRadio } from "./menu-context";
+import { useMenuRadio } from "./menu-context";
+import { MenuIndicatedItem } from "./menu-indicated-item";
+import type { IndicatedKind } from "./menu-indicated-item";
 
 export interface MenuRadioItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect"> {
 	readonly value: string;
@@ -11,34 +11,21 @@ export interface MenuRadioItemProps extends Omit<HTMLAttributes<HTMLDivElement>,
 	readonly onSelect?: ((event: Event) => void) | undefined;
 }
 
-export function MenuRadioItem({
-	value,
-	disabled,
-	inset,
-	onSelect,
-	className,
-	children,
-	...rest
-}: MenuRadioItemProps): ReactElement {
-	const menu = useMenu();
+export function MenuRadioItem({ value, onSelect, ...item }: MenuRadioItemProps): ReactElement {
 	const radio = useMenuRadio();
 	const isPicked = radio.value === value;
 	const pick = (event: Event): void => {
 		radio.setValue(value);
 		onSelect?.(event);
 	};
-	return (
-		<div
-			role="menuitemradio"
-			aria-checked={isPicked}
-			data-state={isPicked ? "checked" : "unchecked"}
-			{...rest}
-			{...menuItemMarks(menu, { part: "radio-item", inset, disabled })}
-			{...menuItemHandlers(menu, { disabled, onSelect: pick, theirs: rest })}
-			className={cn("wg-kit-menu-item is-indicated", className)}
-		>
-			<span className="wg-kit-menu-indicator">{isPicked ? <span className="wg-kit-menu-dot" /> : null}</span>
-			{children}
-		</div>
-	);
+	return <MenuIndicatedItem {...item} kind={radioKindOf(isPicked)} onSelect={pick} />;
+}
+
+function radioKindOf(isPicked: boolean): IndicatedKind {
+	return {
+		role: "menuitemradio",
+		part: "radio-item",
+		marks: { "aria-checked": isPicked, "data-state": isPicked ? "checked" : "unchecked" },
+		indicator: isPicked ? <span className="wg-kit-menu-dot" /> : null,
+	};
 }

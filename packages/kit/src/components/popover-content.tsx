@@ -1,14 +1,11 @@
 import { createElement as h, useRef } from "react";
-import type { KeyboardEvent, ReactElement, ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { POPOVER_ITEM } from "../constants/popover";
 import type { PopoverAlign, PopoverSide } from "../constants/popover";
 import { useAsksPlacement } from "../hooks/use-asks-placement";
-import { cn } from "../utils/cn";
 import { portalLayer } from "../utils/portal-layer";
-import { focusStepped } from "../utils/focus-step";
-import { COLUMN_STEP_OF_KEY } from "../utils/roving";
-import { dataStateOf, usePopover } from "./popover-context";
+import { usePopover } from "./popover-context";
+import { PopoverPanel } from "./popover-panel";
 
 export interface PopoverContentProps {
 	readonly side?: PopoverSide | undefined;
@@ -19,43 +16,16 @@ export interface PopoverContentProps {
 	readonly className?: string | undefined;
 }
 
-export function PopoverContent({
-	side,
-	align,
-	sideOffset,
-	alignOffset,
-	children,
-	className: cls,
-}: PopoverContentProps): ReactElement {
+export function PopoverContent({ children, className, ...placement }: PopoverContentProps): ReactElement {
 	const popover = usePopover();
 	const held = useRef<ReactNode>(null);
 	if (popover.isOpen) held.current = children;
-	useAsksPlacement({ side, align, sideOffset, alignOffset, askPlacement: popover.askPlacement });
+	useAsksPlacement({ ...placement, askPlacement: popover.askPlacement });
 	const panel = (
-		<div
-			id={popover.id}
-			ref={popover.panelRef}
-			className={cn(
-				"wg-kit-pop",
-				popover.where.panelClass,
-				(popover.isOpen || popover.isExiting) && "is-open",
-				popover.isExiting && "is-exiting",
-				popover.className,
-				cls,
-			)}
-			role="dialog"
-			data-slot="popover-content"
-			data-state={dataStateOf(popover.isOpen)}
-			data-wg-overlay={popover.shown ? "" : undefined}
-			onKeyDown={moveBetweenItems}
-		>
-			<div className="wg-kit-pop-inner">{popover.shown ? held.current : null}</div>
-		</div>
+		<PopoverPanel popover={popover} className={className}>
+			{popover.shown ? held.current : null}
+		</PopoverPanel>
 	);
-	return popover.isPortaled ? createPortal(panel, portalLayer()) : panel;
-}
-
-function moveBetweenItems(event: KeyboardEvent<HTMLDivElement>): void {
-	const items = [...event.currentTarget.querySelectorAll<HTMLElement>(POPOVER_ITEM)];
-	focusStepped(event, items, COLUMN_STEP_OF_KEY.get(event.key));
+	if (!popover.isPortaled) return panel;
+	return createPortal(panel, portalLayer());
 }

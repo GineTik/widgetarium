@@ -2,6 +2,7 @@ import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, MouseEvent, ReactElement, Ref } from "react";
 import { chainHandlers } from "../utils/chain";
 import { toggleMenu } from "../utils/menu-trigger";
+import { menuTriggerAria } from "../utils/menu-trigger-aria";
 import type { MenuState } from "./menu-context";
 import { useMenu } from "./menu-context";
 import { dataStateOf } from "./popover-context";
@@ -23,9 +24,7 @@ export function DropdownMenuTrigger({
 	const { part, type } = buttonPartOf(asChild);
 	return h(part, {
 		type,
-		"aria-haspopup": "menu",
-		"aria-expanded": menu.isOpen,
-		"aria-controls": menu.isOpen ? menu.contentId : undefined,
+		...menuTriggerAria(menu),
 		"data-state": dataStateOf(menu.isOpen),
 		...rest,
 		"data-slot": "dropdown-menu-trigger",

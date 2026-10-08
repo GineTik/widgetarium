@@ -1,18 +1,13 @@
-import { createElement as h, useRef } from "react";
+import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { useControllableState } from "../hooks/use-controllable-state";
-import { useFoldsOnEscape } from "../hooks/use-folds-on-escape";
-import { useSheetDrag } from "../hooks/use-sheet-drag";
+import { useSidebarSheet } from "../hooks/use-sidebar-sheet";
+import type { SheetHeight } from "../hooks/use-sidebar-sheet";
 import { sidebarClass } from "../utils/class-names";
-import { cn } from "../utils/cn";
 import type { StyleProp } from "../utils/token-style";
 import type { SidebarLook, SidebarTag } from "./sidebar";
+import { SidebarSheetPanel } from "./sidebar-sheet-panel";
 
-export interface SheetHeight {
-	readonly peekPx?: number;
-	readonly maxPx?: number;
-	readonly onHeight?: ((height: number) => void) | undefined;
-}
+export type { SheetHeight } from "../hooks/use-sidebar-sheet";
 
 export interface SidebarSheetProps extends Omit<HTMLAttributes<HTMLElement>, "style">, SidebarLook {
 	readonly as?: SidebarTag;
@@ -24,53 +19,15 @@ export interface SidebarSheetProps extends Omit<HTMLAttributes<HTMLElement>, "st
 	readonly style?: StyleProp | undefined;
 }
 
-const PEEK_PX = 220;
-
-const SHEET_MAX_PX = 640;
-
-const RAISE_THE_SHEET = "Raise the sheet";
-
 export function SidebarSheet({
-	as = "div",
+	open,
+	defaultOpen,
+	onOpenChange,
+	height,
 	mode,
 	surface,
-	open,
-	defaultOpen = false,
-	onOpenChange,
-	height = {},
-	grip = RAISE_THE_SHEET,
-	className: cls,
-	style,
-	children,
-	...rest
+	...panel
 }: SidebarSheetProps): ReactElement {
-	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
-	const sheetRef = useRef<HTMLElement>(null);
-	const gripRef = useRef<HTMLButtonElement>(null);
-	const { peekPx = PEEK_PX, maxPx = SHEET_MAX_PX, onHeight } = height;
-	const drag = useSheetDrag({ isOpen, setOpen, peekPx, maxPx, onHeight });
-	useFoldsOnEscape({ isOpen, setOpen, sheetRef, gripRef });
-
-	return h(
-		as,
-		{
-			...rest,
-			ref: sheetRef,
-			className: cn("wg-kit-sheet", sidebarClass({ mode, surface }), drag.isDragging && "is-dragging", cls),
-			style: { ...style, height: `${Math.round(drag.height)}px` },
-			"data-state": isOpen ? "open" : "closed",
-		},
-		[
-			<button
-				key="grip"
-				ref={gripRef}
-				type="button"
-				className="wg-kit-sheet-grip"
-				aria-label={grip}
-				aria-pressed={isOpen}
-				{...drag.gripProps}
-			/>,
-			children,
-		],
-	);
+	const sheet = useSidebarSheet({ open, defaultOpen, onOpenChange, height });
+	return <SidebarSheetPanel {...panel} sheet={sheet} lookClass={sidebarClass({ mode, surface })} />;
 }

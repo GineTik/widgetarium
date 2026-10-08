@@ -2,9 +2,8 @@ import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
 import { NAVIGATION_OPEN_MS } from "../constants/overlays";
 import { useNavigationRoot } from "../hooks/use-navigation-root";
-import { cn } from "../utils/cn";
 import { NavigationMenuContext } from "./navigation-menu-context";
-import { NavigationMenuViewport } from "./navigation-menu-viewport";
+import { NavigationMenuRoot } from "./navigation-menu-root";
 
 export { NavigationMenuList } from "./navigation-menu-list";
 export { NavigationMenuItem } from "./navigation-menu-item";
@@ -29,25 +28,12 @@ export function NavigationMenu({
 	onValueChange,
 	delayDuration = NAVIGATION_OPEN_MS,
 	viewport = true,
-	className,
-	children,
 	...rest
 }: NavigationMenuProps): ReactElement {
 	const nav = useNavigationRoot({ value, defaultValue, onValueChange, openDelay: delayDuration, isViewport: viewport });
 	return (
 		<NavigationMenuContext.Provider value={nav}>
-			<nav
-				{...rest}
-				ref={(node: HTMLElement | null) => {
-					nav.rootRef.current = node;
-				}}
-				data-slot="navigation-menu"
-				data-viewport={viewport}
-				className={cn("wg-kit-nav", className)}
-			>
-				{children}
-				{viewport ? <NavigationMenuViewport /> : null}
-			</nav>
+			<NavigationMenuRoot {...rest} nav={nav} />
 		</NavigationMenuContext.Provider>
 	);
 }

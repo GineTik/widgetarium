@@ -3,6 +3,7 @@ import type { AnchorHTMLAttributes, MouseEvent, ReactElement } from "react";
 import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { useNavigationMenu } from "./navigation-menu-context";
+import type { NavigationMenuState } from "./navigation-menu-context";
 import { Slot } from "./slot";
 
 export interface NavigationMenuLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "onSelect"> {
@@ -10,6 +11,8 @@ export interface NavigationMenuLinkProps extends Omit<AnchorHTMLAttributes<HTMLA
 	readonly active?: boolean | undefined;
 	readonly onSelect?: ((event: Event) => void) | undefined;
 }
+
+type OnSelect = NavigationMenuLinkProps["onSelect"];
 
 export function NavigationMenuLink({
 	asChild = false,
@@ -26,11 +29,13 @@ export function NavigationMenuLink({
 		"data-active": active ? "" : undefined,
 		"aria-current": active ? "page" : undefined,
 		className: cn("wg-kit-nav-link", className),
-		onClick: chainHandlers(onClick, (event: MouseEvent<HTMLElement>) => {
-			const select = new Event("select", { cancelable: true });
-			onSelect?.(select);
-			if (select.defaultPrevented) event.preventDefault();
-			else nav.setValue("");
-		}),
+		onClick: chainHandlers(onClick, (event: MouseEvent<HTMLElement>) => selectLink(event, nav, onSelect)),
 	});
+}
+
+function selectLink(event: MouseEvent<HTMLElement>, nav: NavigationMenuState, onSelect: OnSelect): void {
+	const select = new Event("select", { cancelable: true });
+	onSelect?.(select);
+	if (select.defaultPrevented) event.preventDefault();
+	else nav.setValue("");
 }

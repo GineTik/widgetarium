@@ -35,17 +35,13 @@ export interface KeyPress {
 export function trapTab(event: KeyPress, panel: HTMLElement): void {
 	if (event.key !== "Tab") return;
 	const inside = focusablesIn(panel);
-	const first = inside[0];
-	const last = inside.at(-1);
-	if (!first || !last) {
-		event.preventDefault();
-		return;
-	}
-	const leavesAtEnd = !event.shiftKey && document.activeElement === last;
-	const leavesAtStart = event.shiftKey && document.activeElement === first;
-	if (!leavesAtEnd && !leavesAtStart) return;
+	if (inside.length > 0 && !isLeavingPanel(inside, event.shiftKey)) return;
 	event.preventDefault();
-	focusQuietly(leavesAtEnd ? first : last);
+	focusQuietly(event.shiftKey ? inside.at(-1) : inside[0]);
+}
+
+function isLeavingPanel(inside: readonly HTMLElement[], isBackward: boolean): boolean {
+	return document.activeElement === (isBackward ? inside[0] : inside.at(-1));
 }
 
 function focusablesIn(root: ParentNode): HTMLElement[] {

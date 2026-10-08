@@ -1,8 +1,9 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, MouseEvent, ReactElement } from "react";
 import { useLongPress } from "../hooks/use-long-press";
+import { useOpensAtPoint } from "../hooks/use-opens-at-point";
+import type { OpenAt } from "../hooks/use-opens-at-point";
 import { chainHandlers } from "../utils/chain";
-import { pointBox, useContextMenuPoint } from "./context-menu-point";
 import { useMenu } from "./menu-context";
 import { dataStateOf } from "./popover-context";
 import { Slot } from "./slot";
@@ -19,12 +20,7 @@ export function ContextMenuTrigger({
 	...rest
 }: ContextMenuTriggerProps): ReactElement {
 	const menu = useMenu();
-	const setPoint = useContextMenuPoint();
-	const openAt = (x: number, y: number): void => {
-		setPoint(pointBox(x, y));
-		menu.focusIntent.current = "panel";
-		menu.setOpen(true);
-	};
+	const openAt = useOpensAtPoint(menu);
 	const longPress = useLongPress(openAt);
 	return h(asChild ? Slot : "span", {
 		...rest,
@@ -33,10 +29,14 @@ export function ContextMenuTrigger({
 		"data-state": dataStateOf(menu.isOpen),
 		"data-disabled": disabled ? "" : undefined,
 		ref: menu.triggerRef,
-		onContextMenu: chainHandlers(onContextMenu, (event: MouseEvent<HTMLElement>) => {
-			if (disabled) return;
-			event.preventDefault();
-			openAt(event.clientX, event.clientY);
-		}),
+		onContextMenu: chainHandlers(onContextMenu, (event: MouseEvent<HTMLElement>) =>
+			openAtPointer(event, openAt, disabled),
+		),
 	});
+}
+
+function openAtPointer(event: MouseEvent<HTMLElement>, openAt: OpenAt, disabled: boolean | undefined): void {
+	if (disabled) return;
+	event.preventDefault();
+	openAt(event.clientX, event.clientY);
 }

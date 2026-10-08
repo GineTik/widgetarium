@@ -19,44 +19,60 @@ export interface PanelMotionAsk {
 	readonly onExited?: (() => void) | undefined;
 }
 
+interface MotionMemory {
+	readonly wasOpen: RefObject<boolean>;
+	readonly stopExit: RefObject<StopMotion | null>;
+	readonly latest: RefObject<PanelMotionAsk>;
+}
+
 export function usePanelMotion(ask: PanelMotionAsk): void {
 	const wasOpen = useRef(false);
 	const stopExit = useRef<StopMotion | null>(null);
 	const latest = useRef(ask);
 	latest.current = ask;
+	useLayoutEffect(() => movePanel(ask, { wasOpen, stopExit, latest }), [ask.isOpen, ask.where.key]);
+}
 
-	useLayoutEffect(() => {
-		const panel = ask.panelRef.current;
-		const anchor = motionAnchorOf(ask);
-		if (!panel || !anchor) {
-			if (!ask.isOpen) latest.current.release();
-			return undefined;
-		}
-		const isClosing = wasOpen.current && !ask.isOpen;
-		wasOpen.current = ask.isOpen;
-		stopExit.current?.();
-		stopExit.current = null;
-		if (isClosing && panel.contains(document.activeElement)) returnFocusTo(ask.triggerRef.current ?? anchor);
-		if (ask.isOpen) return openPanel(panel, anchor, ask);
-		if (!isClosing) {
-			restPanel(panel, anchor);
-			latest.current.release();
-			return undefined;
-		}
-		stopExit.current = closePanel(panel, anchor, () => {
-			stopExit.current = null;
-			latest.current.onExited?.();
-			latest.current.release();
-		});
-		return () => {
-			stopExit.current?.();
-			stopExit.current = null;
-		};
-	}, [ask.isOpen, ask.where.key]);
+function movePanel(ask: PanelMotionAsk, memory: MotionMemory): StopMotion | undefined {
+	const panel = ask.panelRef.current;
+	const anchor = motionAnchorOf(ask);
+	if (!panel || !anchor) return releaseWhenClosed(ask, memory);
+	const isClosing = memory.wasOpen.current && !ask.isOpen;
+	memory.wasOpen.current = ask.isOpen;
+	stopExiting(memory.stopExit);
+	if (isClosing) returnFocusIfInside(panel, ask.triggerRef.current ?? anchor);
+	if (ask.isOpen) return openPanel(panel, anchor, ask);
+	if (isClosing) return foldAndRelease(panel, anchor, memory);
+	restPanel(panel, anchor);
+	memory.latest.current.release();
+	return undefined;
 }
 
 function motionAnchorOf({ pointRef, where, triggerRef, anchorRef }: PanelMotionAsk): HTMLElement | null {
 	return pointRef.current ?? (where.measuresTrigger ? triggerRef.current : null) ?? anchorRef.current;
+}
+
+function releaseWhenClosed(ask: PanelMotionAsk, { latest }: MotionMemory): undefined {
+	if (!ask.isOpen) latest.current.release();
+	return undefined;
+}
+
+function stopExiting(stopExit: RefObject<StopMotion | null>): void {
+	stopExit.current?.();
+	stopExit.current = null;
+}
+
+function returnFocusIfInside(panel: HTMLElement, target: HTMLElement): void {
+	if (panel.contains(document.activeElement)) returnFocusTo(target);
+}
+
+function foldAndRelease(panel: HTMLElement, anchor: HTMLElement, { stopExit, latest }: MotionMemory): StopMotion {
+	stopExit.current = closePanel(panel, anchor, () => {
+		stopExit.current = null;
+		latest.current.onExited?.();
+		latest.current.release();
+	});
+	return () => stopExiting(stopExit);
 }
 
 function closePanel(panel: HTMLElement, anchor: HTMLElement, done: () => void): StopMotion | null {

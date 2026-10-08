@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { PointerEvent } from "react";
+import type { PointerEvent, RefObject } from "react";
 import { HOVER_OPEN_MS } from "../constants/overlays";
 import { useDelayed } from "./use-delayed";
 
@@ -9,26 +9,30 @@ export interface HoverOpen {
 	readonly forgetHover: () => void;
 }
 
-export function useHoverOpen(setOpen: (open: boolean) => void): HoverOpen {
+type SetOpen = (open: boolean) => void;
+
+export function useHoverOpen(setOpen: SetOpen): HoverOpen {
 	const delayed = useDelayed();
 	const isOpenedByHover = useRef(false);
-	const openByHover = (): void => {
-		isOpenedByHover.current = true;
-		setOpen(true);
-	};
 	const forgetHover = (): void => {
 		delayed.stop();
 		isOpenedByHover.current = false;
 	};
 	return {
 		onPointerEnter: (event) => {
-			if (event.pointerType === "mouse") delayed.start(openByHover, HOVER_OPEN_MS);
+			if (event.pointerType === "mouse") delayed.start(() => openByHover(isOpenedByHover, setOpen), HOVER_OPEN_MS);
 		},
-		onPointerLeave: () => {
-			const wasOpenedByHover = isOpenedByHover.current;
-			forgetHover();
-			if (wasOpenedByHover) setOpen(false);
-		},
+		onPointerLeave: () => closeOpenedByHover(isOpenedByHover.current, forgetHover, setOpen),
 		forgetHover,
 	};
+}
+
+function openByHover(isOpenedByHover: RefObject<boolean>, setOpen: SetOpen): void {
+	isOpenedByHover.current = true;
+	setOpen(true);
+}
+
+function closeOpenedByHover(wasOpenedByHover: boolean, forgetHover: () => void, setOpen: SetOpen): void {
+	forgetHover();
+	if (wasOpenedByHover) setOpen(false);
 }
