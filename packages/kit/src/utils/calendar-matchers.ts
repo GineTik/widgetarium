@@ -35,6 +35,11 @@ export type Matcher =
 	| DayOfWeek
 	| ((date: Date) => boolean);
 
+interface DayInterval {
+	readonly before: number;
+	readonly after: number;
+}
+
 export type Matchers = Matcher | readonly Matcher[] | undefined;
 
 export interface DayAllowedAsk {
@@ -73,12 +78,20 @@ function matchesOne(date: Date, matcher: Matcher): boolean {
 
 function matchesBounds(date: Date, bounds: Partial<DateInterval>): boolean {
 	const day = dayValueOf(date);
-	const before = bounds.before ? dayValueOf(bounds.before) : undefined;
-	const after = bounds.after ? dayValueOf(bounds.after) : undefined;
-	if (before !== undefined && after !== undefined)
-		return before > after ? day < before && day > after : day < before || day > after;
+	const before = dayValueOrNoneOf(bounds.before);
+	const after = dayValueOrNoneOf(bounds.after);
+	if (before !== undefined && after !== undefined) return matchesInterval(day, { before, after });
 	if (before !== undefined) return day < before;
 	return after !== undefined && day > after;
+}
+
+function matchesInterval(day: number, { before, after }: DayInterval): boolean {
+	if (before > after) return day < before && day > after;
+	return day < before || day > after;
+}
+
+function dayValueOrNoneOf(date: Date | undefined): number | undefined {
+	return date && dayValueOf(date);
 }
 
 function isMatcherList(matchers: Matcher | readonly Matcher[]): matchers is readonly Matcher[] {
