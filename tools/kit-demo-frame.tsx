@@ -14,7 +14,7 @@ export interface SectionProps {
 export function Section(props: SectionProps): ReactElement {
 	if (props.paintsPlates)
 		return (
-			<Card type={NO_SURFACE}>
+			<Card type={NO_SURFACE} className="wg-showcase-bare">
 				<SectionBody {...props} />
 			</Card>
 		);
@@ -27,7 +27,10 @@ export function Section(props: SectionProps): ReactElement {
 
 export function WideSection(props: SectionProps): ReactElement {
 	return (
-		<Card type={props.paintsPlates ? NO_SURFACE : undefined}>
+		<Card
+			type={props.paintsPlates ? NO_SURFACE : undefined}
+			className={props.paintsPlates ? "wg-showcase-bare" : undefined}
+		>
 			<SectionBody {...props} />
 		</Card>
 	);

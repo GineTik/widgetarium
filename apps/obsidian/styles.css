@@ -8263,6 +8263,10 @@ body.wg-tree-carrying .wg-tile-body {
 	--wg-gap-parts: 8px;
 }
 
+.wg-showcase-bare {
+	padding: var(--wg-group-pad);
+}
+
 .wg-showcase-note {
 	margin: 0;
 	font-size: var(--wg-kit-text-s);

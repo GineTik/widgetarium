@@ -1,6 +1,6 @@
 import { createElement as h } from "react";
 import type { ReactElement } from "react";
-import { Card, LayoutHeader } from "@widgetarium/kit";
+import { Card, LayoutHeader, cn } from "@widgetarium/kit";
 import { SHOWCASE } from "@widgetarium/kit/showcase";
 import { NO_SURFACE } from "@widgetarium/kit/surface";
 import type { ShowcaseEntry } from "@widgetarium/kit/showcase";
@@ -32,7 +32,7 @@ function kitCardOf(entry: ShowcaseEntry): ReactElement {
 		{
 			key: entry.id,
 			type: entry.paintsPlates ? NO_SURFACE : undefined,
-			className: entry.isWide ? "is-wide" : undefined,
+			className: cn(entry.isWide && "is-wide", entry.paintsPlates && "wg-showcase-bare"),
 		},
 		h("div", { className: "wg-showcase-stack" }, [
 			h(LayoutHeader, { key: "title", title: entry.title }),
