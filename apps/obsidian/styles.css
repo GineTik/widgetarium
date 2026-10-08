@@ -5018,6 +5018,26 @@ body.wg-tree-carrying .wg-tile-body {
 	padding: var(--wg-kit-plate-pad);
 }
 
+:is(.wg-root, .wg-portal) [data-surface="group"] [data-full-step] {
+	--wg-full-step-rest: calc(var(--wg-group-pad) - var(--wg-kit-plate-pad));
+}
+
+:is(.wg-root, .wg-portal) [data-surface="group"] [data-full-step~="top"] {
+	margin-top: var(--wg-full-step-rest);
+}
+
+:is(.wg-root, .wg-portal) [data-surface="group"] [data-full-step~="right"] {
+	margin-right: var(--wg-full-step-rest);
+}
+
+:is(.wg-root, .wg-portal) [data-surface="group"] [data-full-step~="bottom"] {
+	margin-bottom: var(--wg-full-step-rest);
+}
+
+:is(.wg-root, .wg-portal) [data-surface="group"] [data-full-step~="left"] {
+	margin-left: var(--wg-full-step-rest);
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-layout {
 	display: flex;
 	flex-direction: column;

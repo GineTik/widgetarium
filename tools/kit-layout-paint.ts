@@ -113,6 +113,21 @@ const TAILWIND = `(() => {
 	return { shimmer: text.animationName, fill: text.webkitTextFillColor, noBar: text.scrollbarWidth, mask: scroller.maskImage.includes("linear-gradient") };
 })()`;
 
+const STEPS = `(() => {
+	const inset = (plate, inner) => {
+		const outer = plate.getBoundingClientRect();
+		const box = inner.getBoundingClientRect();
+		return { left: Math.round(box.left - outer.left), top: Math.round(box.top - outer.top), right: Math.round(outer.right - box.right), bottom: Math.round(outer.bottom - box.bottom) };
+	};
+	const titleAt = (id) => {
+		const plate = document.getElementById(id);
+		const { left, top } = inset(plate, plate.querySelector(".title"));
+		return [left, top];
+	};
+	const inner = inset(document.getElementById("holding-plate"), document.getElementById("inner-plate"));
+	return { bare: titleAt("bare-plate"), holding: titleAt("holding-plate"), inner: [inner.left, inner.right, inner.bottom] };
+})()`;
+
 function pageHtml(script: string, tailwindCss: string): string {
 	return `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
@@ -181,6 +196,7 @@ export async function paintChecks(): Promise<Painted[]> {
 				await page.ask(RESIZE),
 				{ before: 50, dragged: 70, floored: 20 },
 			],
+			...stepsPainted(await page.ask(STEPS)),
 			[
 				"TAILWIND'S shimmer AND scroll-fade PAINT IN CHROME",
 				await page.ask(TAILWIND),
@@ -198,6 +214,16 @@ function accordionPainted(seen: unknown): Painted[] {
 			"AN ACCORDION'S HEIGHT ANIMATES OPEN AND SHUT, IN CHROME",
 			seen,
 			{ before: [136, 0], shutInner: "hidden", isMidway: true, after: [0, 136] },
+		],
+	];
+}
+
+function stepsPainted(seen: unknown): Painted[] {
+	return [
+		[
+			"A TITLE ON A PLATE THAT HOLDS A PLATE STANDS AT THE FULL STEP, LIKE ONE ON A PLATE THAT HOLDS NONE; THE INNER PLATE AT THE SHORT STEP ON THE SIDES AND THE BOTTOM IT TOUCHES",
+			seen,
+			{ bare: [16, 16], holding: [16, 16], inner: [8, 8, 8] },
 		],
 	];
 }

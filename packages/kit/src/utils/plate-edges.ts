@@ -1,3 +1,5 @@
+export const ROWS_TAKE_THE_PLATE_EDGE = "data-rows-flush";
+
 export interface PlateEdges {
 	readonly plate: Element;
 	readonly edges: string;
@@ -18,7 +20,7 @@ export function plateEdgesTakenBy(node: Element): PlateEdges | null {
 	return { plate, edges: edges.join(" ") };
 }
 
-function holdsNothing(node: Element): boolean {
+export function holdsNothing(node: Element): boolean {
 	if (NEVER_CONTENT.has(node.tagName)) return true;
 	return (
 		(node.textContent ?? "").trim() === "" &&
