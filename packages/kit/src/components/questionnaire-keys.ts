@@ -7,30 +7,48 @@ import { choiceInputsOf, isChoiceTarget, isTextTarget } from "./questionnaire-fi
 type KeyAnswer = () => void;
 
 export function keyAnswerOf(event: KeyboardEvent<HTMLFormElement>, machine: QuestionnaireMachine): KeyAnswer | null {
-	const { key, target } = event;
-	if (key === "Enter" && (event.metaKey || event.ctrlKey)) return machine.state.next;
-	if (event.metaKey || event.ctrlKey || event.altKey) return null;
-	if (isTextTarget(target)) return isFilledLineEnter(key, target) ? machine.state.next : null;
+	if (event.metaKey || event.ctrlKey || event.altKey) return modifiedKeyAnswerOf(event, machine);
+	return targetKeyAnswerOf(event.key, event.target, machine);
+}
+
+function modifiedKeyAnswerOf(event: KeyboardEvent<HTMLFormElement>, machine: QuestionnaireMachine): KeyAnswer | null {
+	const isCommandEnter = event.key === "Enter" && (event.metaKey || event.ctrlKey);
+	if (!isCommandEnter) return null;
+	return machine.state.next;
+}
+
+function targetKeyAnswerOf(key: string, target: EventTarget, machine: QuestionnaireMachine): KeyAnswer | null {
+	if (isTextTarget(target)) return textKeyAnswerOf(key, target, machine);
 	if (target instanceof Element && target.localName === "button") return null;
 	if (isChoiceTarget(target)) return choiceKeyAnswerOf(key, target, machine);
 	return looseKeyAnswerOf(key, machine);
 }
 
+function textKeyAnswerOf(
+	key: string,
+	control: HTMLInputElement | HTMLTextAreaElement,
+	machine: QuestionnaireMachine,
+): KeyAnswer | null {
+	if (key !== "Enter" || control.localName !== "input" || control.value.trim() === "") return null;
+	return machine.state.next;
+}
+
 function choiceKeyAnswerOf(key: string, input: HTMLInputElement, machine: QuestionnaireMachine): KeyAnswer | null {
 	if (key === "Enter") return machine.advanceIfSettled() ?? blockImplicitSubmit;
+	if (input.type === "radio" && isArrowKey(key)) return null;
 	const step = ANSWER_MOVE_KEYS[key];
-	const isArrow = step !== undefined || key === "ArrowLeft" || key === "ArrowRight";
-	if (input.type === "radio" && isArrow) return null;
 	if (step !== undefined) return () => focusNeighbour(input, step);
 	return looseKeyAnswerOf(key, machine);
+}
+
+function isArrowKey(key: string): boolean {
+	return ANSWER_MOVE_KEYS[key] !== undefined || key === "ArrowLeft" || key === "ArrowRight";
 }
 
 function looseKeyAnswerOf(key: string, machine: QuestionnaireMachine): KeyAnswer | null {
 	if (key === "ArrowLeft") return machine.state.previous;
 	if (key === "ArrowRight") return machine.advanceIfSettled();
-	const fieldset = machine.activeElement();
-	const index = shortcutIndexOf(key, machine.state.shortcuts);
-	const input = fieldset && index >= 0 ? choiceInputsOf(fieldset)[index] : undefined;
+	const input = shortcutInputOf(key, machine);
 	if (!input) return null;
 	return () => {
 		input.focus();
@@ -38,8 +56,11 @@ function looseKeyAnswerOf(key: string, machine: QuestionnaireMachine): KeyAnswer
 	};
 }
 
-function isFilledLineEnter(key: string, control: HTMLInputElement | HTMLTextAreaElement): boolean {
-	return key === "Enter" && control.localName === "input" && control.value.trim() !== "";
+function shortcutInputOf(key: string, machine: QuestionnaireMachine): HTMLInputElement | undefined {
+	const fieldset = machine.activeElement();
+	const index = shortcutIndexOf(key, machine.state.shortcuts);
+	if (!fieldset || index < 0) return undefined;
+	return choiceInputsOf(fieldset)[index];
 }
 
 function blockImplicitSubmit(): void {}

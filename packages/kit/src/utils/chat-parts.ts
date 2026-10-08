@@ -62,6 +62,30 @@ const AI_SDK_TOOL_PREFIX = "tool-";
 
 const WARNED_TYPES = new Set<string>();
 
+interface PartAt {
+	readonly fields: Fields;
+	readonly at: string;
+	readonly results: Results;
+	readonly type: string;
+}
+
+type PartReader = (part: PartAt) => ChatPartRead;
+
+const PART_READERS: ReadonlyMap<string, PartReader> = new Map<string, PartReader>([
+	["text", ({ fields, at }) => readWords("text", fields, at)],
+	["reasoning", ({ fields, at }) => readWords("reasoning", fields, at)],
+	["thinking", ({ fields, at }) => readWords("reasoning", fields, at)],
+	["tool-call", ({ fields, at, results }) => readTanstackTool(fields, at, results)],
+	["dynamic-tool", ({ fields, at }) => readAiSdkTool(fields, at, stringIn(fields, "toolName") ?? "tool")],
+	["file", ({ fields, at }) => readFile(fields, at)],
+	...TANSTACK_MEDIA.map((media): [string, PartReader] => [
+		media,
+		({ fields, at, type }) => readMedia(fields, at, type),
+	]),
+	["source-url", ({ fields, at }) => readSource(fields, at)],
+	["source-document", ({ fields, at }) => readSource(fields, at)],
+]);
+
 interface ParsedArguments {
 	readonly value: unknown;
 	readonly isRaw: boolean;
@@ -78,14 +102,9 @@ export function readChatParts<P extends ChatPartLike>(parts: readonly P[]): read
 function readPart(fields: Fields, at: string, results: Results): ChatPartRead | null {
 	const type = stringIn(fields, "type") ?? "";
 	if (isDrawnElsewhere(type)) return null;
-	if (type === "text") return readWords("text", fields, at);
-	if (type === "reasoning" || type === "thinking") return readWords("reasoning", fields, at);
-	if (type === "tool-call") return readTanstackTool(fields, at, results);
-	if (type === "dynamic-tool") return readAiSdkTool(fields, at, stringIn(fields, "toolName") ?? "tool");
+	const reader = PART_READERS.get(type);
+	if (reader) return reader({ fields, at, results, type });
 	if (isAiSdkToolPart(type, fields)) return readAiSdkTool(fields, at, type.slice(AI_SDK_TOOL_PREFIX.length));
-	if (type === "file") return readFile(fields, at);
-	if (TANSTACK_MEDIA.includes(type)) return readMedia(fields, at, type);
-	if (type === "source-url" || type === "source-document") return readSource(fields, at);
 	warnUnknownPartOnce(type);
 	return null;
 }
@@ -141,11 +160,16 @@ function readTanstackTool(fields: Fields, at: string, results: Results): ToolPar
 }
 
 function tanstackStageOf(call: Fields, result: Fields | undefined): ToolStage {
-	if (result) return TANSTACK_RESULT_STAGES[stringIn(result, "state") ?? ""] ?? "running";
+	if (result) return resultStageOf(result);
 	const approval = call["approval"];
 	if (isRecord(approval) && approval["approved"] === false) return "denied";
 	if (call["state"] === "approval-requested") return "approval";
-	return call["output"] === undefined ? "running" : "done";
+	if (call["output"] === undefined) return "running";
+	return "done";
+}
+
+function resultStageOf(result: Fields): ToolStage {
+	return TANSTACK_RESULT_STAGES[stringIn(result, "state") ?? ""] ?? "running";
 }
 
 function readFile(fields: Fields, key: string): FilePartRead {
@@ -160,7 +184,7 @@ function readFile(fields: Fields, key: string): FilePartRead {
 }
 
 function readMedia(fields: Fields, key: string, type: string): FilePartRead {
-	const source = isRecord(fields["source"]) ? fields["source"] : {};
+	const source = sourceOf(fields);
 	const mediaType = mediaTypeOf(stringIn(source, "mimeType"));
 	return {
 		kind: "file",
@@ -182,6 +206,12 @@ function readSource(fields: Fields, at: string): FilePartRead {
 		title: stringIn(fields, "title") ?? stringIn(fields, "filename") ?? url,
 		isSource: true,
 	};
+}
+
+function sourceOf(fields: Fields): Fields {
+	const source = fields["source"];
+	if (isRecord(source)) return source;
+	return {};
 }
 
 function sourceUrlOf(source: Fields, mediaType: string | null): string | null {
