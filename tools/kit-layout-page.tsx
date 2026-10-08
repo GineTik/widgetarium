@@ -50,6 +50,7 @@ function Page() {
 					</div>
 				))}
 			</ScrollArea>
+			<span id="skeleton" className="wg-kit-skeleton" />
 			<p id="shimmer" className="wg-kit-shimmer">
 				Thinking…
 			</p>

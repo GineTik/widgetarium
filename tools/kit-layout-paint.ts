@@ -57,6 +57,14 @@ const SHIMMER = `(async () => {
 	return { name: style.animationName, fill: style.webkitTextFillColor, clip: style.backgroundClip, moves: getComputedStyle(document.getElementById("shimmer")).backgroundPosition !== first };
 })()`;
 
+const SWEEPS = `(() => {
+	const sweepOf = (id) => document.getAnimations().find((each) => each.effect.target.id === id);
+	const movedBy = (animation) => Object.keys(animation.effect.getKeyframes().at(-1)).filter((key) => !["offset", "easing", "composite", "computedOffset"].includes(key));
+	const bone = sweepOf("skeleton");
+	const text = sweepOf("shimmer");
+	return { bone: [bone.animationName, bone.effect.pseudoElement, movedBy(bone)], text: [text.animationName, movedBy(text)] };
+})()`;
+
 const CAROUSEL = `(async () => {
 	Element.prototype.setPointerCapture = () => {};
 	const viewport = document.querySelector("#carousel [data-slot='carousel-content']");
@@ -154,6 +162,14 @@ export async function paintChecks(): Promise<Painted[]> {
 				"THE KIT'S SHIMMER RUNS: CLIPPED TO TEXT, MOVING",
 				await page.ask(SHIMMER),
 				{ name: "wg-kit-shimmer", fill: "rgba(0, 0, 0, 0)", clip: "text", moves: true },
+			],
+			[
+				"THE SKELETON'S BONE SWEEPS BY TRANSFORM AND THE SHIMMER BY BACKGROUND, EACH UNDER ITS OWN KEYFRAMES",
+				await page.ask(SWEEPS),
+				{
+					bone: ["wg-kit-skeleton-sweep", "::after", ["transform"]],
+					text: ["wg-kit-shimmer", ["backgroundPositionX", "backgroundPositionY"]],
+				},
 			],
 			[
 				"A CAROUSEL STEPS BY ITS BUTTON AND BY A MOUSE DRAG, IN CHROME",

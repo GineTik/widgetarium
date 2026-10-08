@@ -1902,8 +1902,10 @@ body {
 
 :is(.wg-root, .wg-portal) .wg-kit-ring {
 	position: relative;
-	display: inline-grid;
+	display: grid;
 	place-items: center;
+	width: 32px;
+	height: 32px;
 	flex: none;
 }
 :is(.wg-root, .wg-portal) .wg-kit-ring > svg {
@@ -3750,10 +3752,6 @@ body {
 	display: contents;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="true"] .wg-kit-pop-tick {
-	opacity: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
 	.wg-set-window,
 	.wg-set-chrome {
@@ -5497,15 +5495,6 @@ body.wg-tree-carrying .wg-tile-body {
 	}
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-ring {
-	position: relative;
-	display: grid;
-	place-items: center;
-	width: 32px;
-	height: 32px;
-	flex: none;
-}
-
 :is(.wg-root, .wg-portal) .wg-kit-ring-svg {
 	position: absolute;
 	inset: 0;
@@ -6721,10 +6710,10 @@ body.wg-tree-carrying .wg-tile-body {
 	inset: 0;
 	background: linear-gradient(90deg, transparent, var(--wg-kit-fill-hover), transparent);
 	transform: translateX(-100%);
-	animation: wg-kit-shimmer 1.6s var(--wg-ease) infinite;
+	animation: wg-kit-skeleton-sweep 1.6s var(--wg-ease) infinite;
 }
 
-@keyframes wg-kit-shimmer {
+@keyframes wg-kit-skeleton-sweep {
 	to {
 		transform: translateX(100%);
 	}
@@ -8171,6 +8160,9 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 .wg-design-region-head {
+	display: flex;
+	align-items: center;
+	gap: 28px;
 	font-size: 40px;
 	font-weight: var(--font-bold, 700);
 	color: var(--text-normal);
@@ -8296,6 +8288,11 @@ body.wg-tree-carrying .wg-tile-body {
 
 .wg-design-widget-body {
 	position: relative;
+	overflow: hidden;
+	padding: 20px;
+	border-radius: 16px;
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
 }
 
 .wg-design-widget-body:has(.wg-kit-modal-layer) {
@@ -8306,14 +8303,6 @@ body.wg-tree-carrying .wg-tile-body {
 	font-size: var(--font-ui-medium);
 	font-weight: var(--font-semibold, 600);
 	color: var(--text-muted);
-}
-
-.wg-design-widget-body {
-	overflow: hidden;
-	padding: 20px;
-	border-radius: 16px;
-	background: var(--background-primary);
-	box-shadow: 0 0 0 1px var(--background-modifier-border);
 }
 
 .wg-design-noted {
@@ -8652,12 +8641,6 @@ body.wg-tree-carrying .wg-tile-body {
 .wg-design-situation {
 	font-size: var(--font-ui-small);
 	color: var(--text-faint);
-}
-
-.wg-design-region-head {
-	display: flex;
-	align-items: center;
-	gap: 28px;
 }
 
 .wg-design-variants {
@@ -9834,26 +9817,6 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-shimmer:dir(rtl) {
 	animation-direction: reverse;
 }
-
-@media (prefers-reduced-motion: reduce) {
-	:is(.wg-root, .wg-portal)
-		:is(
-			.wg-kit-collapse,
-			.wg-kit-accordion-chevron,
-			.wg-kit-resizable-panel,
-			.wg-kit-resizable-grip,
-			.wg-kit-item,
-			.wg-kit-scrollbar
-		) {
-		transition: none;
-	}
-	:is(.wg-root, .wg-portal) .wg-kit-shimmer {
-		background-image: none;
-		-webkit-text-fill-color: currentColor;
-		animation: none;
-	}
-}
-
 /* TRADE-OFF: the footer row is a fixed height so the avatar can rise above it without measuring */
 :is(.wg-root, .wg-portal) .wg-kit-message {
 	--wg-kit-message-footer: 32px;
@@ -10488,27 +10451,6 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-quiz-actions > [data-slot="questionnaire-previous"] {
 	margin-inline-end: auto;
 }
-
-@media (prefers-reduced-motion: reduce) {
-	:is(.wg-root, .wg-portal)
-		:is(
-			.wg-kit-quiz-item,
-			.wg-kit-quiz-choice,
-			.wg-kit-quiz-choice-mark,
-			.wg-kit-quiz-progress-fill,
-			.wg-kit-scroller-button,
-			.wg-kit-attachment,
-			.wg-kit-bubble-content,
-			.wg-kit-message-chevron
-		) {
-		animation: none;
-		transition: none;
-	}
-	:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark::after {
-		transition: none;
-	}
-}
-
 :is(.wg-root, .wg-portal) .wg-kit-label {
 	display: inline-flex;
 	align-items: center;
@@ -11311,31 +11253,6 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-cal-day.is-range-end.is-picked::after {
 	inset-inline-start: -1px;
 }
-
-@media (prefers-reduced-motion: reduce) {
-	.wg-kit-otp-slot,
-	.wg-kit-radio,
-	.wg-kit-radio-dot,
-	.wg-kit-slider-thumb,
-	.wg-kit-toggle,
-	.wg-kit-toggle::before,
-	.wg-kit-btn-group > ::before,
-	.wg-kit-input-group,
-	.wg-kit-combobox-item,
-	.wg-kit-combobox-chevron {
-		transition: none;
-	}
-
-	.wg-kit-combobox-chip,
-	.wg-kit-otp-caret {
-		animation: none;
-	}
-
-	.wg-kit-otp-slot[data-active="true"] {
-		transform: none;
-	}
-}
-
 :is(.wg-root, .wg-portal) .wg-kit-float {
 	position: fixed;
 	z-index: 60;
@@ -12004,6 +11921,60 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal)
+		:is(
+			.wg-kit-collapse,
+			.wg-kit-accordion-chevron,
+			.wg-kit-resizable-panel,
+			.wg-kit-resizable-grip,
+			.wg-kit-item,
+			.wg-kit-scrollbar
+		) {
+		transition: none;
+	}
+	:is(.wg-root, .wg-portal) .wg-kit-shimmer {
+		background-image: none;
+		-webkit-text-fill-color: currentColor;
+		animation: none;
+	}
+	:is(.wg-root, .wg-portal)
+		:is(
+			.wg-kit-quiz-item,
+			.wg-kit-quiz-choice,
+			.wg-kit-quiz-choice-mark,
+			.wg-kit-quiz-progress-fill,
+			.wg-kit-scroller-button,
+			.wg-kit-attachment,
+			.wg-kit-bubble-content,
+			.wg-kit-message-chevron
+		) {
+		animation: none;
+		transition: none;
+	}
+	:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark::after {
+		transition: none;
+	}
+	.wg-kit-otp-slot,
+	.wg-kit-radio,
+	.wg-kit-radio-dot,
+	.wg-kit-slider-thumb,
+	.wg-kit-toggle,
+	.wg-kit-toggle::before,
+	.wg-kit-btn-group > ::before,
+	.wg-kit-input-group,
+	.wg-kit-combobox-item,
+	.wg-kit-combobox-chevron {
+		transition: none;
+	}
+
+	.wg-kit-combobox-chip,
+	.wg-kit-otp-caret {
+		animation: none;
+	}
+
+	.wg-kit-otp-slot[data-active="true"] {
+		transform: none;
+	}
 	:is(.wg-root, .wg-portal) .wg-kit-float,
 	:is(.wg-root, .wg-portal) .wg-kit-modal,
 	:is(.wg-root, .wg-portal) .wg-kit-modal-scrim,
