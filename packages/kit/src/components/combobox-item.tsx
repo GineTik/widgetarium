@@ -3,6 +3,7 @@ import type { HTMLAttributes, ReactElement } from "react";
 import { Icon } from "../icons/icon";
 import { cn } from "../utils/cn";
 import { optionIdOf } from "../utils/combobox";
+import { warnOnce } from "../utils/surface";
 import { useCombobox } from "./combobox-context";
 
 export interface ComboboxItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect"> {
@@ -20,9 +21,13 @@ export function ComboboxItem({
 	...rest
 }: ComboboxItemProps): ReactElement | null {
 	const combobox = useCombobox();
-	const key = combobox.stringOf(value);
-	if (!combobox.hasItems && !combobox.matches(key)) return null;
-	const isSelected = combobox.isSelected(value);
+	const key = combobox.keyOf(value);
+	if (key === null) {
+		warnOnce("a ComboboxItem's value is neither in the Combobox's items nor passes its isItem, so it is not drawn");
+		return null;
+	}
+	if (!combobox.hasItems && !combobox.matches(combobox.labelOf(key))) return null;
+	const isSelected = combobox.isSelected(key);
 	return (
 		<div
 			role="option"
@@ -46,7 +51,7 @@ export function ComboboxItem({
 			}}
 			onClick={(event) => {
 				rest.onClick?.(event);
-				if (!disabled) combobox.choose(value);
+				if (!disabled) combobox.choose(key);
 			}}
 		>
 			{children}

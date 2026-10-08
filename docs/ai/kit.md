@@ -198,10 +198,20 @@ input-otp, no React Hook Form.
 | `ComboboxChips`, `ComboboxValue {(values) => …}`, `ComboboxChip`, `ComboboxChipsInput`                                            | `ComboboxGroup`, `ComboboxLabel`, `ComboboxSeparator`, `ComboboxTrigger`; `ComboboxCollection` is not built                   |
 | `Calendar mode="single\|multiple\|range" selected onSelect`                                                                       | see below                                                                                                                     |
 
+**Combobox** items are told apart by `itemToStringValue`, never by their label: two objects with one
+label stay two options, and without it an object is itself, so a controlled copy needs
+`itemToStringValue`. `itemToStringLabel` is what is shown and filtered (a string, a number, or an
+object's `label` or `value` without it). Items come from `items`, or are written as `ComboboxItem`
+children with `isItem`, the guard that says which child values are items; a `ComboboxItem` whose
+value is neither is not drawn. `ComboboxList` and `ComboboxValue` hand strings to a function child;
+for other items give them the same `isItem`:
+`<ComboboxList isItem={isCity}>{(city) => <ComboboxItem value={city}>{city.label}</ComboboxItem>}</ComboboxList>`.
+
 **Calendar** takes react-day-picker's names: `month`, `defaultMonth`, `onMonthChange`,
 `captionLayout="label|dropdown|dropdown-months|dropdown-years"`, `startMonth`, `endMonth`,
 `numberOfMonths`, `disabled` (a date, dates, `{ from, to }`, `{ before }`, `{ after }`,
-`{ dayOfWeek }` or a function, alone or in a list), `required`, `showOutsideDays`, `fixedWeeks`,
+`{ dayOfWeek }` or a function, alone or in a list; a day past `startMonth` or `endMonth` is disabled
+too, and a matcher of any other shape matches nothing and warns), `required`, `showOutsideDays`, `fixedWeeks`,
 `weekStartsOn`. The kit's defaults differ in three places: the week starts on Monday, there are
 always six weeks, and outside days are shown. The dropdowns are the kit's `Select`; the year list
 runs from `startMonth` to `endMonth`, a hundred years back and ten ahead without them. With no `mode`
@@ -234,7 +244,13 @@ kit imports no zod: `schema` is anything with `safeParse`, so your zod object fi
 appear after the first submit and are judged again on every change after it
 (`mode: "onChange" | "onBlur" | "onTouched"` judge earlier); an invalid submit focuses the first
 invalid field. `form` also has `register(name)`, `getFieldState`, `getValues`, `watch`, `setValue`,
-`reset` and `formState` (`errors`, `isValid`, `isDirty`, `isSubmitted`, `isSubmitting`).
+`reset` and `formState` (`errors`, `isValid`, `isDirty`, `isSubmitted`, `isSubmitting`). Without a
+schema the handler gets the values themselves. A change through `register` must be of its default's
+kind — a number field reads the typed text as a number, a checkbox its `checked`, a multiple select
+its values, a file input its files — and any other is refused with a warning, so give every field a
+default of its kind. An error is keyed by its whole path, `address.city`, and one with no path by
+`root`. A named shape for the values is a `type`: an `interface` has no index signature and is
+refused.
 
 ```tsx
 import { z } from "zod";

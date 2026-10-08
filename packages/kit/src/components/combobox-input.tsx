@@ -34,7 +34,7 @@ export function ComboboxInput({
 			{children}
 			<InputGroupInput {...rest} {...binding} disabled={binding.disabled || rest.disabled} />
 			<InputGroupAddon align="inline-end">
-				{showClear && combobox.selected.length > 0 ? (
+				{showClear && combobox.selectedKeys.length > 0 ? (
 					<InputGroupButton size="icon-xs" aria-label="Clear" data-slot="combobox-clear" onClick={combobox.clear}>
 						<Icon name="x" size={ICON_PX} />
 					</InputGroupButton>

@@ -1,16 +1,27 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement, ReactNode } from "react";
-import { asCallerItems } from "../utils/combobox";
 import { cn } from "../utils/cn";
+import { drawEach, isText } from "../utils/combobox";
+import type { ItemGuard, ItemsRender } from "../utils/combobox";
 import { useCombobox } from "./combobox-context";
 
-export interface ComboboxListProps<T> extends Omit<HTMLAttributes<HTMLDivElement>, "children"> {
-	readonly children?: ReactNode | ((item: T, index: number) => ReactNode);
+type ComboboxListBase = Omit<HTMLAttributes<HTMLDivElement>, "children">;
+
+interface ComboboxTextListProps extends ComboboxListBase {
+	readonly isItem?: undefined;
+	readonly children?: ItemsRender<string>;
 }
 
-export function ComboboxList<T = string>({ className, children, ...rest }: ComboboxListProps<T>): ReactElement {
+interface ComboboxTypedListProps<T> extends ComboboxListBase {
+	readonly isItem: ItemGuard<T>;
+	readonly children?: ItemsRender<T>;
+}
+
+export type ComboboxListProps<T> = ComboboxTextListProps | ComboboxTypedListProps<T>;
+
+export function ComboboxList<T = string>(props: ComboboxListProps<T>): ReactElement {
+	const { className, children: _children, isItem: _isItem, ...rest } = props;
 	const combobox = useCombobox();
-	const drawn = typeof children === "function" ? asCallerItems<T>(combobox.filtered).map(children) : children;
 	return (
 		<div
 			role="listbox"
@@ -21,7 +32,12 @@ export function ComboboxList<T = string>({ className, children, ...rest }: Combo
 			{...rest}
 			className={cn("wg-kit-combobox-list", className)}
 		>
-			{drawn}
+			{drawnItemsOf(props, combobox.filteredItems)}
 		</div>
 	);
+}
+
+function drawnItemsOf<T>(props: ComboboxListProps<T>, items: readonly unknown[]): ReactNode {
+	if (props.isItem) return drawEach(items.filter(props.isItem), props.children);
+	return drawEach(items.filter(isText), props.children);
 }

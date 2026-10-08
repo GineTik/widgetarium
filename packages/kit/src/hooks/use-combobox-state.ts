@@ -1,16 +1,17 @@
 import { useId, useState } from "react";
 import type { ComboboxState } from "../components/combobox-context";
-import { matchesQuery } from "../utils/combobox";
+import { entriesOf, matchesQuery } from "../utils/combobox";
+import type { ComboboxEntry, ItemNaming } from "../utils/combobox";
 import { useControllableState } from "./use-controllable-state";
 
-export interface ComboboxAsk {
+export interface ComboboxAsk<T> {
 	readonly isMultiple: boolean;
-	readonly items: readonly unknown[] | undefined;
-	readonly childValues: readonly unknown[];
-	readonly stringOf: (item: unknown) => string;
-	readonly selected: readonly unknown[] | undefined;
-	readonly defaultSelected: readonly unknown[];
-	readonly onSelectedChange: (next: readonly unknown[]) => void;
+	readonly known: readonly T[];
+	readonly hasItems: boolean;
+	readonly naming: ItemNaming<T>;
+	readonly selected: readonly T[] | undefined;
+	readonly defaultSelected: readonly T[];
+	readonly onSelectedChange: (next: readonly T[]) => void;
 	readonly open?: boolean | undefined;
 	readonly defaultOpen: boolean;
 	readonly onOpenChange?: ((open: boolean) => void) | undefined;
@@ -18,8 +19,25 @@ export interface ComboboxAsk {
 	readonly disabled: boolean;
 }
 
-export function useComboboxState(ask: ComboboxAsk): ComboboxState {
-	const { isMultiple, stringOf } = ask;
+interface Catalogue<T> {
+	readonly known: readonly ComboboxEntry<T>[];
+	readonly selected: readonly ComboboxEntry<T>[];
+	readonly byKey: ReadonlyMap<string, ComboboxEntry<T>>;
+	readonly byItem: ReadonlyMap<unknown, ComboboxEntry<T>>;
+}
+
+interface MovesAsk<T> {
+	readonly isMultiple: boolean;
+	readonly catalogue: Catalogue<T>;
+	readonly selected: readonly T[];
+	readonly setSelected: (next: readonly T[]) => void;
+	readonly setQuery: (query: string | null) => void;
+	readonly setOpenHeld: (open: boolean) => void;
+}
+
+type SelectionMoves = Pick<ComboboxState, "selectedKeys" | "isSelected" | "choose" | "remove" | "clear">;
+
+export function useComboboxState<T>(ask: ComboboxAsk<T>): ComboboxState {
 	const [selected, setSelected] = useControllableState({
 		prop: ask.selected,
 		defaultProp: ask.defaultSelected,
@@ -33,52 +51,85 @@ export function useComboboxState(ask: ComboboxAsk): ComboboxState {
 	const [query, setQuery] = useState<string | null>(null);
 	const [highlighted, highlight] = useState<string | null>(null);
 	const listId = useId();
-	const asked = query ?? "";
-	const matches = (text: string): boolean => matchesQuery(text, asked);
-	const filtered = (ask.items ?? []).filter((item) => matches(stringOf(item)));
-	const isSelected = (value: unknown): boolean => selected.some((one) => stringOf(one) === stringOf(value));
-	const selectedWithout = (value: unknown): readonly unknown[] =>
-		selected.filter((one) => stringOf(one) !== stringOf(value));
-	const setOpen = (open: boolean): void => {
-		if (!open) setQuery(null);
-		setOpenHeld(open);
-	};
-	const firstLabel = selected[0] === undefined ? "" : stringOf(selected[0]);
+	const catalogue = catalogueOf(ask, selected);
+	const matches = (text: string): boolean => matchesQuery(text, query ?? "");
+	const matching = catalogue.known.filter((entry) => matches(entry.label));
+	const moves = selectionMovesOf({
+		isMultiple: ask.isMultiple,
+		catalogue,
+		selected,
+		setSelected,
+		setQuery,
+		setOpenHeld,
+	});
 	return {
-		isMultiple,
+		...moves,
+		isMultiple: ask.isMultiple,
 		disabled: ask.disabled,
 		isOpen,
-		setOpen,
-		inputText: query ?? (isMultiple ? "" : firstLabel),
+		setOpen: (open) => {
+			if (!open) setQuery(null);
+			setOpenHeld(open);
+		},
+		inputText: query ?? (ask.isMultiple ? "" : (catalogue.selected[0]?.label ?? "")),
 		type: (text) => {
 			setQuery(text);
 			setOpenHeld(true);
-			const first = ask.items ? ask.items.find((item) => matchesQuery(stringOf(item), text)) : undefined;
-			highlight(ask.autoHighlight && first !== undefined ? stringOf(first) : null);
+			const first = catalogue.known.find((entry) => matchesQuery(entry.label, text));
+			highlight(ask.autoHighlight && ask.hasItems && first ? first.key : null);
 		},
-		selected,
-		isSelected,
-		choose: (value) => {
-			setQuery(null);
-			if (!isMultiple) {
-				setSelected([value]);
-				setOpenHeld(false);
-				return;
-			}
-			setSelected(isSelected(value) ? selectedWithout(value) : [...selected, value]);
-		},
-		remove: (value) => setSelected(selectedWithout(value)),
-		clear: () => {
-			setQuery(null);
-			setSelected([]);
-		},
-		stringOf,
-		hasItems: ask.items !== undefined,
-		filtered,
-		isEmpty: ask.items ? filtered.length === 0 : !ask.childValues.some((value) => matches(stringOf(value))),
+		selectedItems: selected,
+		keyOf: (value) => catalogue.byItem.get(value)?.key ?? null,
+		labelOf: (key) => catalogue.byKey.get(key)?.label ?? "",
+		hasItems: ask.hasItems,
+		filteredItems: ask.hasItems ? matching.map((entry) => entry.item) : [],
+		isEmpty: matching.length === 0,
 		matches,
 		highlighted,
 		highlight,
 		listId,
+	};
+}
+
+function selectionMovesOf<T>({
+	isMultiple,
+	catalogue,
+	selected,
+	setSelected,
+	setQuery,
+	setOpenHeld,
+}: MovesAsk<T>): SelectionMoves {
+	const selectedKeys = catalogue.selected.map((entry) => entry.key);
+	const isSelected = (key: string): boolean => selectedKeys.includes(key);
+	const keptWithout = (key: string): T[] =>
+		catalogue.selected.flatMap((entry) => (entry.key === key ? [] : [entry.item]));
+	return {
+		selectedKeys,
+		isSelected,
+		choose: (key) => {
+			const entry = catalogue.byKey.get(key);
+			if (!entry) return;
+			setQuery(null);
+			if (isMultiple) return setSelected(isSelected(key) ? keptWithout(key) : [...selected, entry.item]);
+			setSelected([entry.item]);
+			setOpenHeld(false);
+		},
+		remove: (key) => setSelected(keptWithout(key)),
+		clear: () => {
+			setQuery(null);
+			setSelected([]);
+		},
+	};
+}
+
+function catalogueOf<T>(ask: ComboboxAsk<T>, selected: readonly T[]): Catalogue<T> {
+	const known = entriesOf(ask.known, ask.naming);
+	const chosen = entriesOf(selected, ask.naming);
+	const every = [...known, ...chosen];
+	return {
+		known,
+		selected: chosen,
+		byKey: new Map(every.map((entry) => [entry.key, entry])),
+		byItem: new Map(every.map((entry) => [entry.item, entry])),
 	};
 }
