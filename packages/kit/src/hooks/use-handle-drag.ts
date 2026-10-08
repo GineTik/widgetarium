@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { KeyboardEvent, PointerEvent } from "react";
+import type { KeyboardEvent, PointerEvent, RefObject } from "react";
 import type { ResizableState } from "../components/resizable-context";
 import { useDirection } from "../components/direction-context";
 import { WHOLE } from "../utils/resizable";
@@ -26,41 +26,27 @@ interface DragStart extends HandleNeighbours {
 	readonly sizes: PanelSizes;
 }
 
+interface HandleHeld {
+	readonly group: ResizableState;
+	readonly drag: RefObject<DragStart | null>;
+	readonly isVertical: boolean;
+	readonly flip: number;
+}
+
 const KEY_STEP = 10;
 
 export function useHandleDrag(group: ResizableState): HandleDrag {
 	const drag = useRef<DragStart | null>(null);
 	const isVertical = group.orientation === "vertical";
 	const flip = useDirection() === "rtl" && !isVertical ? -1 : 1;
-	const release = (): void => {
-		drag.current = null;
-		group.setDragging(false);
-	};
+	const held: HandleHeld = { group, drag, isVertical, flip };
+	const release = (): void => releaseHandle(held);
 	return {
-		onPointerDown: (event) => {
-			const neighbours = neighboursOf(event.currentTarget);
-			const span = spanOf(event.currentTarget, isVertical);
-			if (!neighbours || span <= 0 || event.button !== 0) return;
-			event.preventDefault();
-			event.currentTarget.setPointerCapture?.(event.pointerId);
-			drag.current = { ...neighbours, pointer: pointerAxisOf(event, isVertical), span, sizes: group.sizes };
-			group.setDragging(true);
-		},
-		onPointerMove: (event) => {
-			const start = drag.current;
-			if (!start) return;
-			const delta = (((pointerAxisOf(event, isVertical) - start.pointer) * WHOLE) / start.span) * flip;
-			group.step({ before: start.before, after: start.after, delta }, start.sizes);
-		},
+		onPointerDown: (event) => grabHandle(event, held),
+		onPointerMove: (event) => dragHandle(event, held),
 		onPointerUp: release,
 		onPointerCancel: release,
-		onKeyDown: (event) => {
-			const neighbours = neighboursOf(event.currentTarget);
-			const delta = keyDeltaOf(event.key, isVertical, flip);
-			if (!neighbours || delta === null) return;
-			event.preventDefault();
-			group.step({ ...neighbours, delta });
-		},
+		onKeyDown: (event) => stepHandleByKey(event, held),
 	};
 }
 
@@ -68,6 +54,36 @@ export function neighboursOf(handle: Element): HandleNeighbours | null {
 	const before = siblingPanel(handle, "previousElementSibling");
 	const after = siblingPanel(handle, "nextElementSibling");
 	return before && after ? { before, after } : null;
+}
+
+function grabHandle(event: PointerEvent<HTMLElement>, { group, drag, isVertical }: HandleHeld): void {
+	const neighbours = neighboursOf(event.currentTarget);
+	const span = spanOf(event.currentTarget, isVertical);
+	if (!neighbours || span <= 0 || event.button !== 0) return;
+	event.preventDefault();
+	event.currentTarget.setPointerCapture?.(event.pointerId);
+	drag.current = { ...neighbours, pointer: pointerAxisOf(event, isVertical), span, sizes: group.sizes };
+	group.setDragging(true);
+}
+
+function dragHandle(event: PointerEvent<HTMLElement>, { group, drag, isVertical, flip }: HandleHeld): void {
+	const start = drag.current;
+	if (!start) return;
+	const delta = (((pointerAxisOf(event, isVertical) - start.pointer) * WHOLE) / start.span) * flip;
+	group.step({ before: start.before, after: start.after, delta }, start.sizes);
+}
+
+function releaseHandle({ group, drag }: HandleHeld): void {
+	drag.current = null;
+	group.setDragging(false);
+}
+
+function stepHandleByKey(event: KeyboardEvent<HTMLElement>, { group, isVertical, flip }: HandleHeld): void {
+	const neighbours = neighboursOf(event.currentTarget);
+	const delta = keyDeltaOf(event.key, isVertical, flip);
+	if (!neighbours || delta === null) return;
+	event.preventDefault();
+	group.step({ ...neighbours, delta });
 }
 
 function siblingPanel(handle: Element, way: "previousElementSibling" | "nextElementSibling"): string | null {
