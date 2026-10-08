@@ -11382,28 +11382,26 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog {
 	top: 12vh;
 	left: 50%;
-	width: min(560px, calc(100% - 32px));
-	max-height: calc(100% - 12vh - 16px);
+	box-sizing: content-box;
+	width: min(560px, calc(100% - 80px));
+	max-height: calc(100% - 12vh - 64px);
 	border-radius: var(--wg-kit-plate);
 	box-shadow: var(--wg-kit-shadow);
 	transform: translateX(-50%);
+	transition: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal-scrim[data-slot="dialog-overlay"] {
+	transition: none;
 }
 :is(.wg-root, .wg-portal) .wg-kit-modal-layer.is-scoped .wg-kit-modal.is-dialog {
 	top: 120px;
-	max-height: calc(100% - 136px);
+	max-height: calc(100% - 184px);
 }
 :is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog.is-s {
-	width: min(420px, calc(100% - 32px));
+	width: min(420px, calc(100% - 80px));
 }
 :is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog[data-state="closed"] {
 	opacity: 0;
-	scale: 0.94;
-}
-@starting-style {
-	:is(.wg-root, .wg-portal) .wg-kit-modal.is-dialog {
-		opacity: 0;
-		scale: 0.94;
-	}
 }
 :is(.wg-root, .wg-portal) .wg-kit-modal.is-alert-dialog.is-sm {
 	width: min(340px, calc(100% - 32px));
