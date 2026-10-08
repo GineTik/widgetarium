@@ -1,8 +1,6 @@
 import { useLayoutEffect } from "react";
 import type { RefObject } from "react";
-import { plateEdgesTakenBy } from "../utils/plate-edges";
-
-const ROWS_TAKE_THE_PLATE_EDGE = "data-rows-flush";
+import { plateEdgesTakenBy, ROWS_TAKE_THE_PLATE_EDGE } from "../utils/plate-edges";
 
 export function useEdgesOfThePlate(node: RefObject<Element | null>, isOnPlate: boolean): void {
 	useLayoutEffect(() => {

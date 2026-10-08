@@ -10,6 +10,13 @@ export function watchSizes(nodes: readonly Element[], onResize: () => void): Sto
 	return () => watcher?.disconnect();
 }
 
+export function watchShapes(node: Node, shape: MutationObserverInit, onChange: () => void): StopWatching {
+	if (typeof MutationObserver !== "function") return () => undefined;
+	const watcher = new MutationObserver(onChange);
+	watcher.observe(node, shape);
+	return () => watcher.disconnect();
+}
+
 export function watchScrollBox(node: HTMLElement, measure: () => void): StopWatching {
 	node.addEventListener("scroll", measure, { passive: true });
 	const stopSizes = watchSizes([node, ...Array.from(node.children)], measure);

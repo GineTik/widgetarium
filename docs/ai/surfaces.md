@@ -134,7 +134,8 @@ its `getArrangement` decides the plates of what stands in it, by rules 2 and 3.
 
 Never write a gap or a radius. Children stand 24px apart in a region, 16px one box down, 8px deeper,
 one step closer after a `text` widget and between repeats of one widget. Between two plates one
-plate's padding comes off. Every plate is rounded concentric with the one around it and re-laid on
+plate's padding comes off, edge by edge; a heading or text beside the inner plate keeps the full
+step. Every plate is rounded concentric with the one around it and re-laid on
 every change.
 
 So a box exists only where a surface, a heading or a turn of direction makes the group visible. A box

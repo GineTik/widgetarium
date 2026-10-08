@@ -1,11 +1,12 @@
-import { createElement as h, useContext } from "react";
+import { createElement as h, useContext, useRef } from "react";
 import type { FunctionComponent, HTMLAttributes, ReactElement, Ref } from "react";
 import type { ToneName } from "../constants/tones";
 import { plateClass } from "../utils/class-names";
 import { cn } from "../utils/cn";
 import { domPropsOf } from "../utils/dom-props";
 import type { PlateRefusal } from "../utils/plate-laws";
-import { Slot, createSlotPart } from "./slot";
+import { Slot, composeRefs, createSlotPart } from "./slot";
+import { useFullStepForBareContent } from "../hooks/use-full-step-for-bare-content";
 import type { SlotPartProps } from "./create-slot-part";
 import { GROUP, PLATES_ABOVE, plateProps, platesInside, warnOnce, wornPlate } from "../utils/surface";
 import { tonedPlateClass } from "../utils/tones";
@@ -25,6 +26,8 @@ export function Card({ asChild = false, type = GROUP, tone, side, across, style,
 	const above = useContext(PLATES_ABOVE);
 	const { surface, refusal } = wornPlate(above, type);
 	if (refusal) sayRefusedPlate(type, refusal);
+	const plate = useRef<HTMLDivElement>(null);
+	useFullStepForBareContent(plate);
 	const Comp = asChild ? Slot : "div";
 	return (
 		<PLATES_ABOVE.Provider value={platesInside(above, surface)}>
@@ -32,6 +35,7 @@ export function Card({ asChild = false, type = GROUP, tone, side, across, style,
 				data-slot="card"
 				{...domPropsOf(rest)}
 				{...plateProps(above, { surface, side, across, style })}
+				ref={composeRefs(plate, rest.ref)}
 				className={cn("wg-kit-surface", tonedPlateClass(tone), rest.className)}
 			>
 				{rest.children}

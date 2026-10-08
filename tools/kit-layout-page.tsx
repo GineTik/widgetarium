@@ -6,6 +6,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 	AspectRatio,
+	Card,
 	Carousel,
 	CarouselContent,
 	CarouselItem,
@@ -76,6 +77,16 @@ function Page() {
 					</ResizablePanel>
 				</ResizablePanelGroup>
 			</div>
+			<Card id="bare-plate">
+				<div className="title">Text only</div>
+				<div>Nothing on a plate here.</div>
+			</Card>
+			<Card id="holding-plate">
+				<div>
+					<div className="title">Holds a plate</div>
+					<Card id="inner-plate">Inner plate</Card>
+				</div>
+			</Card>
 			<div id="tailwind" />
 		</div>
 	);
