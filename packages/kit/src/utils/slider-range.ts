@@ -42,6 +42,17 @@ export interface TrackAsk {
 	readonly inverted: boolean;
 }
 
+export interface KeyedAsk {
+	readonly key: string;
+	readonly isShift: boolean;
+	readonly value: number;
+}
+
+interface SpotOnTrack {
+	readonly along: number;
+	readonly length: number;
+}
+
 const PERCENT = 100;
 
 const BIG_STEPS = 10;
@@ -55,6 +66,11 @@ const VERTICAL_SWAP: ReadonlyMap<string, string> = new Map([
 	["ArrowUp", "ArrowDown"],
 	["ArrowDown", "ArrowUp"],
 ]);
+
+const SPOT_ON_TRACK: Readonly<Record<SliderOrientation, (spot: PointerSpot, box: DOMRect) => SpotOnTrack>> = {
+	horizontal: (spot, box) => ({ along: spot.clientX - box.left, length: box.width }),
+	vertical: (spot, box) => ({ along: box.bottom - spot.clientY, length: box.height }),
+};
 
 export function sliderAskOf<P extends SliderSettings>(props: P) {
 	const { value, defaultValue, onValueChange, onValueCommit, min = 0, max = 100, step = 1, ...more } = props;
@@ -85,9 +101,9 @@ export function sliderPercentOf(value: number, scale: SliderScale): number {
 
 export function valueUnder(spot: PointerSpot, ask: TrackAsk, scale: SliderScale): number | null {
 	const box = ask.track?.getBoundingClientRect();
-	const length = ask.orientation === "vertical" ? box?.height : box?.width;
-	if (!box || !length) return null;
-	const along = ask.orientation === "vertical" ? box.bottom - spot.clientY : spot.clientX - box.left;
+	if (!box) return null;
+	const { along, length } = SPOT_ON_TRACK[ask.orientation](spot, box);
+	if (!length) return null;
 	const fraction = clamp(along / length, 0, 1);
 	return snapToStep(scale.min + (ask.inverted ? 1 - fraction : fraction) * (scale.max - scale.min), scale);
 }
@@ -110,7 +126,7 @@ export function withThumbAt(values: readonly number[], at: number, value: number
 	return values.map((held, index) => (index === at ? placed : held));
 }
 
-export function keyedValue(key: string, isShift: boolean, value: number, scale: SliderScale): number | null {
+export function keyedValue({ key, isShift, value }: KeyedAsk, scale: SliderScale): number | null {
 	if (key === "Home") return scale.min;
 	if (key === "End") return scale.max;
 	const steps = PROGRESS_STEPS.get(key);

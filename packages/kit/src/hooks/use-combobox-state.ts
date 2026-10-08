@@ -1,138 +1,112 @@
-import { useId, useState } from "react";
 import type { ComboboxState } from "../components/combobox-context";
-import { entriesOf, matchesQuery } from "../utils/combobox";
-import type { ComboboxEntry, ItemNaming } from "../utils/combobox";
-import { useControllableState } from "./use-controllable-state";
+import { matchesQuery } from "../utils/combobox";
+import { useComboboxParts } from "./use-combobox-parts";
+import type { Catalogue, ComboboxAsk, ComboboxParts } from "./use-combobox-parts";
 
-export interface ComboboxAsk<T> {
-	readonly isMultiple: boolean;
-	readonly known: readonly T[];
-	readonly hasItems: boolean;
-	readonly naming: ItemNaming<T>;
-	readonly selected: readonly T[] | undefined;
-	readonly defaultSelected: readonly T[];
-	readonly onSelectedChange: (next: readonly T[]) => void;
-	readonly open?: boolean | undefined;
-	readonly defaultOpen: boolean;
-	readonly onOpenChange?: ((open: boolean) => void) | undefined;
-	readonly autoHighlight: boolean;
-	readonly disabled: boolean;
-}
+export type { ComboboxAsk } from "./use-combobox-parts";
 
-interface Catalogue<T> {
-	readonly known: readonly ComboboxEntry<T>[];
-	readonly selected: readonly ComboboxEntry<T>[];
-	readonly byKey: ReadonlyMap<string, ComboboxEntry<T>>;
-	readonly byItem: ReadonlyMap<unknown, ComboboxEntry<T>>;
-}
-
-interface MovesAsk<T> {
-	readonly isMultiple: boolean;
+interface ToggleAsk<T> {
 	readonly catalogue: Catalogue<T>;
 	readonly selected: readonly T[];
-	readonly setSelected: (next: readonly T[]) => void;
-	readonly setQuery: (query: string | null) => void;
-	readonly setOpenHeld: (open: boolean) => void;
+	readonly key: string;
+	readonly item: T;
 }
 
 type SelectionMoves = Pick<ComboboxState, "selectedKeys" | "isSelected" | "choose" | "remove" | "clear">;
 
+type QueryMoves = Pick<ComboboxState, "setOpen" | "inputText" | "type" | "filteredItems" | "isEmpty" | "matches">;
+
 export function useComboboxState<T>(ask: ComboboxAsk<T>): ComboboxState {
-	const [selected, setSelected] = useControllableState({
-		prop: ask.selected,
-		defaultProp: ask.defaultSelected,
-		onChange: ask.onSelectedChange,
-	});
-	const [isOpen, setOpenHeld] = useControllableState({
-		prop: ask.open,
-		defaultProp: ask.defaultOpen,
-		onChange: ask.onOpenChange,
-	});
-	const [query, setQuery] = useState<string | null>(null);
-	const [highlighted, highlight] = useState<string | null>(null);
-	const listId = useId();
-	const catalogue = catalogueOf(ask, selected);
-	const matches = (text: string): boolean => matchesQuery(text, query ?? "");
-	const matching = catalogue.known.filter((entry) => matches(entry.label));
-	const moves = selectionMovesOf({
-		isMultiple: ask.isMultiple,
-		catalogue,
-		selected,
-		setSelected,
-		setQuery,
-		setOpenHeld,
-	});
+	const parts = useComboboxParts(ask);
+	return { ...selectionMovesOf(parts), ...queryMovesOf(parts), ...lookupOf(parts) };
+}
+
+function lookupOf<T>(parts: ComboboxParts<T>): Omit<ComboboxState, keyof SelectionMoves | keyof QueryMoves> {
+	const { ask, catalogue } = parts;
 	return {
-		...moves,
 		isMultiple: ask.isMultiple,
 		disabled: ask.disabled,
-		isOpen,
-		setOpen: (open) => {
-			if (!open) setQuery(null);
-			setOpenHeld(open);
-		},
-		inputText: query ?? (ask.isMultiple ? "" : (catalogue.selected[0]?.label ?? "")),
-		type: (text) => {
-			setQuery(text);
-			setOpenHeld(true);
-			const first =
-				ask.autoHighlight && ask.hasItems
-					? catalogue.known.find((entry) => matchesQuery(entry.label, text))
-					: undefined;
-			highlight(first?.key ?? null);
-		},
-		selectedItems: selected,
+		hasItems: ask.hasItems,
+		isOpen: parts.isOpen,
+		selectedItems: parts.selected,
 		keyOf: (value) => catalogue.byItem.get(value)?.key ?? null,
 		labelOf: (key) => catalogue.byKey.get(key)?.label ?? "",
-		hasItems: ask.hasItems,
-		filteredItems: ask.hasItems ? matching.map((entry) => entry.item) : [],
-		isEmpty: matching.length === 0,
-		matches,
-		highlighted,
-		highlight,
-		listId,
+		highlighted: parts.highlighted,
+		highlight: parts.highlight,
+		listId: parts.listId,
 	};
 }
 
-function selectionMovesOf<T>({
-	isMultiple,
-	catalogue,
-	selected,
-	setSelected,
-	setQuery,
-	setOpenHeld,
-}: MovesAsk<T>): SelectionMoves {
-	const selectedKeys = catalogue.selected.map((entry) => entry.key);
-	const isSelected = (key: string): boolean => selectedKeys.includes(key);
-	const keptWithout = (key: string): T[] =>
-		catalogue.selected.flatMap((entry) => (entry.key === key ? [] : [entry.item]));
+function selectionMovesOf<T>(parts: ComboboxParts<T>): SelectionMoves {
+	const selectedKeys = parts.catalogue.selected.map((entry) => entry.key);
 	return {
 		selectedKeys,
-		isSelected,
-		choose: (key) => {
-			const entry = catalogue.byKey.get(key);
-			if (!entry) return;
-			setQuery(null);
-			if (isMultiple) return setSelected(isSelected(key) ? keptWithout(key) : [...selected, entry.item]);
-			setSelected([entry.item]);
-			setOpenHeld(false);
-		},
-		remove: (key) => setSelected(keptWithout(key)),
+		isSelected: (key) => isKeyChosen(parts.catalogue, key),
+		choose: (key) => chooseKey(parts, key),
+		remove: (key) => parts.setSelected(keptWithout(parts.catalogue, key)),
 		clear: () => {
-			setQuery(null);
-			setSelected([]);
+			parts.setQuery(null);
+			parts.setSelected([]);
 		},
 	};
 }
 
-function catalogueOf<T>(ask: ComboboxAsk<T>, selected: readonly T[]): Catalogue<T> {
-	const known = entriesOf(ask.known, ask.naming);
-	const chosen = entriesOf(selected, ask.naming);
-	const every = [...known, ...chosen];
+function chooseKey<T>(
+	{ ask, catalogue, selected, setSelected, setQuery, setOpenHeld }: ComboboxParts<T>,
+	key: string,
+): void {
+	const entry = catalogue.byKey.get(key);
+	if (!entry) return;
+	setQuery(null);
+	if (ask.isMultiple) return setSelected(toggledIn({ catalogue, selected, key, item: entry.item }));
+	setSelected([entry.item]);
+	setOpenHeld(false);
+}
+
+function toggledIn<T>({ catalogue, selected, key, item }: ToggleAsk<T>): readonly T[] {
+	if (isKeyChosen(catalogue, key)) return keptWithout(catalogue, key);
+	return [...selected, item];
+}
+
+function isKeyChosen<T>(catalogue: Catalogue<T>, key: string): boolean {
+	return catalogue.selected.some((entry) => entry.key === key);
+}
+
+function keptWithout<T>(catalogue: Catalogue<T>, key: string): T[] {
+	return catalogue.selected.flatMap((entry) => (entry.key === key ? [] : [entry.item]));
+}
+
+function queryMovesOf<T>(parts: ComboboxParts<T>): QueryMoves {
+	const { ask, query } = parts;
+	const matches = (text: string): boolean => matchesQuery(text, query ?? "");
+	const matching = parts.catalogue.known.filter((entry) => matches(entry.label));
 	return {
-		known,
-		selected: chosen,
-		byKey: new Map(every.map((entry) => [entry.key, entry])),
-		byItem: new Map(every.map((entry) => [entry.item, entry])),
+		matches,
+		setOpen: (open) => setOpenClearing(parts, open),
+		inputText: query ?? inputTextOf(parts),
+		type: (text) => typeQuery(parts, text),
+		filteredItems: ask.hasItems ? matching.map((entry) => entry.item) : [],
+		isEmpty: matching.length === 0,
 	};
+}
+
+function setOpenClearing<T>({ setQuery, setOpenHeld }: ComboboxParts<T>, open: boolean): void {
+	if (!open) setQuery(null);
+	setOpenHeld(open);
+}
+
+function inputTextOf<T>({ ask, catalogue }: ComboboxParts<T>): string {
+	if (ask.isMultiple) return "";
+	return catalogue.selected[0]?.label ?? "";
+}
+
+function typeQuery<T>(parts: ComboboxParts<T>, text: string): void {
+	parts.setQuery(text);
+	parts.setOpenHeld(true);
+	parts.highlight(firstMatchKeyOf(parts, text));
+}
+
+function firstMatchKeyOf<T>({ ask, catalogue }: ComboboxParts<T>, text: string): string | null {
+	if (!ask.autoHighlight || !ask.hasItems) return null;
+	return catalogue.known.find((entry) => matchesQuery(entry.label, text))?.key ?? null;
 }

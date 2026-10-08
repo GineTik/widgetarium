@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { optionIdOf } from "../utils/combobox";
 import { warnOnce } from "../utils/surface";
 import { useCombobox } from "./combobox-context";
+import type { ComboboxState } from "./combobox-context";
 
 export interface ComboboxItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect"> {
 	readonly value: unknown;
@@ -35,24 +36,10 @@ export function ComboboxItem({
 			data-slot="combobox-item"
 			data-key={key}
 			aria-selected={isSelected}
-			aria-disabled={disabled || undefined}
-			data-disabled={disabled ? "" : undefined}
-			data-selected={isSelected ? "" : undefined}
-			data-highlighted={combobox.highlighted === key ? "" : undefined}
+			{...optionMarksOf({ disabled, isSelected, isHighlighted: combobox.highlighted === key })}
 			{...rest}
+			{...pressesOf({ own: rest, combobox, itemKey: key, disabled })}
 			className={cn("wg-kit-combobox-item", className)}
-			onPointerEnter={(event) => {
-				rest.onPointerEnter?.(event);
-				combobox.highlight(key);
-			}}
-			onMouseDown={(event) => {
-				rest.onMouseDown?.(event);
-				event.preventDefault();
-			}}
-			onClick={(event) => {
-				rest.onClick?.(event);
-				if (!disabled) combobox.choose(key);
-			}}
 		>
 			{children}
 			{isSelected ? <Icon name="tick" size={TICK_PX} className="wg-kit-combobox-tick" /> : null}
@@ -62,4 +49,50 @@ export function ComboboxItem({
 
 export function isComboboxItem(type: unknown): boolean {
 	return type === ComboboxItem;
+}
+
+interface OptionMarksAsk {
+	readonly disabled: boolean | undefined;
+	readonly isSelected: boolean;
+	readonly isHighlighted: boolean;
+}
+
+function optionMarksOf({ disabled, isSelected, isHighlighted }: OptionMarksAsk): HTMLAttributes<HTMLDivElement> {
+	return {
+		"aria-disabled": disabled || undefined,
+		...markIf("data-disabled", disabled),
+		...markIf("data-selected", isSelected),
+		...markIf("data-highlighted", isHighlighted),
+	};
+}
+
+function markIf(attribute: string, isOn: boolean | undefined): Readonly<Record<string, string>> {
+	if (!isOn) return {};
+	return { [attribute]: "" };
+}
+
+interface PressesAsk {
+	readonly own: ItemPresses;
+	readonly combobox: ComboboxState;
+	readonly itemKey: string;
+	readonly disabled: boolean | undefined;
+}
+
+type ItemPresses = Pick<HTMLAttributes<HTMLDivElement>, "onPointerEnter" | "onMouseDown" | "onClick">;
+
+function pressesOf({ own, combobox, itemKey, disabled }: PressesAsk): ItemPresses {
+	return {
+		onPointerEnter: (event) => {
+			own.onPointerEnter?.(event);
+			combobox.highlight(itemKey);
+		},
+		onMouseDown: (event) => {
+			own.onMouseDown?.(event);
+			event.preventDefault();
+		},
+		onClick: (event) => {
+			own.onClick?.(event);
+			if (!disabled) combobox.choose(itemKey);
+		},
+	};
 }

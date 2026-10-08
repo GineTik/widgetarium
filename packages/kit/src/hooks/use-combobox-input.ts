@@ -4,6 +4,7 @@ import type { ComboboxState } from "../components/combobox-context";
 import { usePopover } from "../components/popover-context";
 import { COMBOBOX_ITEM, optionIdOf } from "../utils/combobox";
 import { UP_DOWN_STEP_OF_KEY, stepIndex } from "../utils/roving";
+import type { Step } from "../utils/roving";
 
 export interface ComboboxInputBinding {
 	readonly role: "combobox";
@@ -19,40 +20,68 @@ export interface ComboboxInputBinding {
 	readonly onClick: () => void;
 }
 
+interface KeyAsk {
+	readonly event: KeyboardEvent<HTMLInputElement>;
+	readonly combobox: ComboboxState;
+	readonly panel: HTMLElement | null;
+}
+
+const INPUT_ROLE: Pick<ComboboxInputBinding, "role" | "autoComplete" | "aria-autocomplete"> = {
+	role: "combobox",
+	autoComplete: "off",
+	"aria-autocomplete": "list",
+};
+
 export function useComboboxInput(): ComboboxInputBinding {
 	const combobox = useCombobox();
 	const { panelRef } = usePopover();
 	return {
-		role: "combobox",
+		...INPUT_ROLE,
 		value: combobox.inputText,
 		disabled: combobox.disabled,
-		autoComplete: "off",
 		"aria-expanded": combobox.isOpen,
 		"aria-controls": combobox.listId,
-		"aria-autocomplete": "list",
-		"aria-activedescendant":
-			combobox.isOpen && combobox.highlighted !== null ? optionIdOf(combobox.listId, combobox.highlighted) : undefined,
+		"aria-activedescendant": activeDescendantOf(combobox),
 		onChange: (event) => combobox.type(event.currentTarget.value),
-		onKeyDown: (event) => answerKey(event, combobox, panelRef.current),
+		onKeyDown: (event) => answerKey({ event, combobox, panel: panelRef.current }),
 		onClick: () => combobox.setOpen(true),
 	};
 }
 
-function answerKey(event: KeyboardEvent<HTMLInputElement>, combobox: ComboboxState, panel: HTMLElement | null): void {
-	const items = [...(panel?.querySelectorAll<HTMLElement>(COMBOBOX_ITEM) ?? [])];
-	const step = UP_DOWN_STEP_OF_KEY.get(event.key);
-	if (step !== undefined) {
-		event.preventDefault();
-		if (!combobox.isOpen) return combobox.setOpen(true);
-		const at = items.findIndex((item) => item.dataset["key"] === combobox.highlighted);
-		return combobox.highlight(items[stepIndex(at, step, items.length)]?.dataset["key"] ?? null);
-	}
-	if (event.key === "Enter" && combobox.isOpen) {
-		event.preventDefault();
-		return items.find((item) => item.dataset["key"] === combobox.highlighted)?.click();
-	}
-	if (event.key === "Backspace" && combobox.isMultiple && event.currentTarget.value === "") {
-		const last = combobox.selectedKeys.at(-1);
-		if (last !== undefined) combobox.remove(last);
-	}
+function activeDescendantOf(combobox: ComboboxState): string | undefined {
+	if (!combobox.isOpen || combobox.highlighted === null) return undefined;
+	return optionIdOf(combobox.listId, combobox.highlighted);
+}
+
+function answerKey(ask: KeyAsk): void {
+	const step = UP_DOWN_STEP_OF_KEY.get(ask.event.key);
+	if (step !== undefined) return stepHighlight(ask, step);
+	if (ask.event.key === "Enter") return chooseHighlighted(ask);
+	if (ask.event.key === "Backspace") removeLastChosen(ask);
+}
+
+function stepHighlight({ event, combobox, panel }: KeyAsk, step: Step): void {
+	event.preventDefault();
+	if (!combobox.isOpen) return combobox.setOpen(true);
+	const items = itemsIn(panel);
+	const at = items.findIndex((item) => item.dataset["key"] === combobox.highlighted);
+	combobox.highlight(items[stepIndex(at, step, items.length)]?.dataset["key"] ?? null);
+}
+
+function chooseHighlighted({ event, combobox, panel }: KeyAsk): void {
+	if (!combobox.isOpen) return;
+	event.preventDefault();
+	itemsIn(panel)
+		.find((item) => item.dataset["key"] === combobox.highlighted)
+		?.click();
+}
+
+function removeLastChosen({ event, combobox }: KeyAsk): void {
+	if (!combobox.isMultiple || event.currentTarget.value !== "") return;
+	const last = combobox.selectedKeys.at(-1);
+	if (last !== undefined) combobox.remove(last);
+}
+
+function itemsIn(panel: HTMLElement | null): HTMLElement[] {
+	return [...(panel?.querySelectorAll<HTMLElement>(COMBOBOX_ITEM) ?? [])];
 }

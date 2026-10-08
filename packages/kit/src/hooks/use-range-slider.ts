@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent, RefObject } from "react";
-import { keyedValue, nearestThumb, uprightKeyOf, valueUnder, withThumbAt } from "../utils/slider-range";
+import { keyedValue, nearestThumb, uprightKeyOf, valueUnder } from "../utils/slider-range";
 import type { RangeSliderAsk } from "../utils/slider-range";
-import { useControllableState } from "./use-controllable-state";
+import { useHeldThumbs } from "./use-held-thumbs";
+import type { HeldThumbs } from "./use-held-thumbs";
 
 export interface RangeSliderPointer {
 	readonly onPointerDown: (event: PointerEvent<HTMLElement>) => void;
@@ -19,56 +20,76 @@ export interface RangeSlider {
 	readonly keysOf: (at: number) => (event: KeyboardEvent<HTMLElement>) => void;
 }
 
+interface DragAsk {
+	readonly ask: RangeSliderAsk;
+	readonly held: HeldThumbs;
+	readonly trackRef: RefObject<HTMLSpanElement | null>;
+	readonly grabbed: number | null;
+	readonly setGrabbed: (at: number | null) => void;
+}
+
+type ThumbKeyAsk = Pick<DragAsk, "ask" | "held">;
+
 export function useRangeSlider(ask: RangeSliderAsk): RangeSlider {
-	const { scale, orientation, inverted, disabled } = ask;
-	const [values, setValues] = useControllableState<readonly number[]>({
-		prop: ask.value,
-		defaultProp: ask.defaultValue ?? [scale.min],
-		onChange: (next) => ask.onValueChange?.([...next]),
-	});
+	const held = useHeldThumbs(ask);
 	const trackRef = useRef<HTMLSpanElement>(null);
 	const [grabbed, setGrabbed] = useState<number | null>(null);
-	const latest = useRef(values);
-	latest.current = values;
-	const moveThumb = (at: number, value: number | null): readonly number[] => {
-		if (value === null) return latest.current;
-		const next = withThumbAt(latest.current, at, value, scale);
-		if (next.every((held, index) => held === latest.current[index])) return latest.current;
-		latest.current = next;
-		setValues(next);
-		return next;
+	return {
+		values: held.values,
+		grabbed,
+		trackRef,
+		pointer: pointerOf({ ask, held, trackRef, grabbed, setGrabbed }),
+		keysOf: (at) => (event) => answerThumbKey({ ask, held }, at, event),
 	};
-	const commit = (next: readonly number[]): void => ask.onValueCommit?.([...next]);
-	const under = (event: PointerEvent<HTMLElement>): number | null =>
-		valueUnder(event, { track: trackRef.current, orientation, inverted }, scale);
-	const pointer: RangeSliderPointer = {
-		onPointerDown: (event) => {
-			const value = under(event);
-			if (disabled || value === null) return;
-			const at = nearestThumb(latest.current, value);
-			event.currentTarget.setPointerCapture?.(event.pointerId);
-			event.preventDefault();
-			setGrabbed(at);
-			moveThumb(at, value);
-			event.currentTarget.querySelectorAll<HTMLElement>("[role='slider']")[at]?.focus();
-		},
+}
+
+function pointerOf(drag: DragAsk): RangeSliderPointer {
+	const { ask, held, grabbed, setGrabbed } = drag;
+	return {
+		onPointerDown: (event) => grabNearest(drag, event),
 		onPointerMove: (event) => {
-			if (grabbed !== null) moveThumb(grabbed, under(event));
+			if (grabbed !== null) held.moveThumb(grabbed, valueAt(drag, event));
 		},
 		onPointerUp: () => {
-			if (grabbed !== null) commit(latest.current);
+			if (grabbed !== null) commitValues(ask, held.latest.current);
 			setGrabbed(null);
 		},
 		onPointerCancel: () => setGrabbed(null),
 	};
-	const keysOf = (at: number) => (event: KeyboardEvent<HTMLElement>) => {
-		const key = uprightKeyOf(event.key, orientation, inverted);
-		const value = keyedValue(key, event.shiftKey, latest.current[at] ?? scale.min, scale);
-		if (disabled || value === null) return;
-		event.preventDefault();
-		const before = latest.current;
-		const next = moveThumb(at, value);
-		if (next !== before) commit(next);
-	};
-	return { values, grabbed, trackRef, pointer, keysOf };
+}
+
+function grabNearest(drag: DragAsk, event: PointerEvent<HTMLElement>): void {
+	const value = valueAt(drag, event);
+	if (drag.ask.disabled || value === null) return;
+	const at = nearestThumb(drag.held.latest.current, value);
+	event.currentTarget.setPointerCapture?.(event.pointerId);
+	event.preventDefault();
+	drag.setGrabbed(at);
+	drag.held.moveThumb(at, value);
+	event.currentTarget.querySelectorAll<HTMLElement>("[role='slider']")[at]?.focus();
+}
+
+function valueAt({ ask, trackRef }: DragAsk, event: PointerEvent<HTMLElement>): number | null {
+	return valueUnder(
+		event,
+		{ track: trackRef.current, orientation: ask.orientation, inverted: ask.inverted },
+		ask.scale,
+	);
+}
+
+function answerThumbKey({ ask, held }: ThumbKeyAsk, at: number, event: KeyboardEvent<HTMLElement>): void {
+	const key = uprightKeyOf(event.key, ask.orientation, ask.inverted);
+	const value = keyedValue(
+		{ key, isShift: event.shiftKey, value: held.latest.current[at] ?? ask.scale.min },
+		ask.scale,
+	);
+	if (ask.disabled || value === null) return;
+	event.preventDefault();
+	const before = held.latest.current;
+	const next = held.moveThumb(at, value);
+	if (next !== before) commitValues(ask, next);
+}
+
+function commitValues(ask: RangeSliderAsk, next: readonly number[]): void {
+	ask.onValueCommit?.([...next]);
 }

@@ -25,7 +25,8 @@ const UNMARKED: DayMarks = { selected: false, rangeStart: false, rangeMiddle: fa
 export function withDayPicked({ mode, held, day, required }: PickAsk): CalendarSelection {
 	if (mode === "multiple") return toggleDay(datesIn(held), day, required);
 	if (mode === "range") return extendRange(rangeIn(held), day);
-	return sameDay(firstSelected(held), day) && !required ? undefined : day;
+	if (sameDay(firstSelected(held), day) && !required) return undefined;
+	return day;
 }
 
 export function marksOf(date: Date, mode: CalendarMode, held: CalendarSelection): DayMarks {
@@ -36,7 +37,8 @@ export function marksOf(date: Date, mode: CalendarMode, held: CalendarSelection)
 
 export function datesIn(selection: CalendarSelection): readonly Date[] {
 	if (selection instanceof Date) return [selection];
-	return isDateList(selection) ? selection : [];
+	if (isDateList(selection)) return selection;
+	return [];
 }
 
 export function rangeIn(selection: CalendarSelection): DateRange | undefined {
@@ -53,7 +55,8 @@ function toggleDay(days: readonly Date[], day: Date, required: boolean): readonl
 	if (!isHeld) return [...days, day];
 	if (required && days.length === 1) return days;
 	const left = days.filter((one) => !sameDay(one, day));
-	return left.length === 0 ? undefined : left;
+	if (left.length === 0) return undefined;
+	return left;
 }
 
 function extendRange(range: DateRange | undefined, day: Date): DateRange {

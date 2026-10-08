@@ -84,6 +84,11 @@ export function fieldErrorsOf(issues: readonly FormIssue[]): FormErrors {
 	return errors;
 }
 
+export function errorsIn<T>(parsed: FormParse<T>): FormErrors {
+	if (parsed.success) return {};
+	return fieldErrorsOf(parsed.error.issues);
+}
+
 export function isErrorShown<V extends FormValues>({ name, mode, store }: ShownAsk<V>): boolean {
 	if (store.submitCount > 0) return true;
 	if (mode === "onChange") return store.changed.has(name);

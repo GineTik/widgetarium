@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CalendarProps } from "../components/calendar-props";
+import type { CalendarPickProps, CalendarProps } from "../components/calendar-props";
 import { datesIn, firstSelected, rangeIn, withDayPicked } from "../utils/calendar-selection";
 import type { CalendarMode, CalendarSelection } from "../utils/calendar-selection";
 
@@ -23,14 +23,17 @@ export function useCalendarSelection(props: CalendarProps): CalendarChoice {
 }
 
 function notifyPick(props: CalendarProps, next: CalendarSelection, day: Date): void {
-	switch (props.mode) {
-		case "multiple":
-			return props.onSelect?.(next === undefined ? undefined : [...datesIn(next)], day);
-		case "range":
-			return props.onSelect?.(rangeIn(next), day);
-		case "single":
-			return props.onSelect?.(firstSelected(next), day);
-		case undefined:
-			return props.onSelect?.(firstSelected(next) ?? day, day);
-	}
+	if (props.mode === "multiple") return props.onSelect?.(datesOrNoneIn(next), day);
+	if (props.mode === "range") return props.onSelect?.(rangeIn(next), day);
+	if (props.mode === "single") return props.onSelect?.(firstSelected(next), day);
+	notifyRequiredPick(props, next, day);
+}
+
+function notifyRequiredPick(props: CalendarPickProps, next: CalendarSelection, day: Date): void {
+	props.onSelect?.(firstSelected(next) ?? day, day);
+}
+
+function datesOrNoneIn(selection: CalendarSelection): Date[] | undefined {
+	if (selection === undefined) return undefined;
+	return [...datesIn(selection)];
 }

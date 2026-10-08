@@ -12,6 +12,27 @@ export interface CalendarDayProps {
 	readonly renderDay?: ((day: CalendarCell) => ReactNode) | undefined;
 }
 
+type DayFlag = Exclude<keyof CalendarCell, "date">;
+
+const MARK_OF_FLAG: readonly (readonly [attribute: string, flag: DayFlag, mark: string])[] = [
+	["data-selected", "selected", ""],
+	["data-today", "today", ""],
+	["data-outside", "outside", ""],
+	["data-disabled", "disabled", ""],
+	["data-range-start", "rangeStart", "true"],
+	["data-range-middle", "rangeMiddle", "true"],
+	["data-range-end", "rangeEnd", "true"],
+];
+
+const CLASS_OF_DAY: readonly (readonly [className: string, isWorn: (day: CalendarCell) => boolean])[] = [
+	["is-outside", (day) => day.outside],
+	["is-today", (day) => day.today],
+	["is-picked", (day) => day.selected && !day.rangeMiddle],
+	["is-between", (day) => day.rangeMiddle],
+	["is-range-start", (day) => day.rangeStart && !day.rangeEnd],
+	["is-range-end", (day) => day.rangeEnd && !day.rangeStart],
+];
+
 export function CalendarDay({ day, tabStop, isHidden = false, onSelect, renderDay }: CalendarDayProps): ReactElement {
 	const { date } = day;
 	if (isHidden) return <span role="gridcell" className="wg-kit-cal-day is-hidden" aria-hidden="true" />;
@@ -20,24 +41,10 @@ export function CalendarDay({ day, tabStop, isHidden = false, onSelect, renderDa
 			type="button"
 			data-date={dayKey(date)}
 			data-day={date.toISOString()}
-			data-selected={day.selected ? "" : undefined}
-			data-today={day.today ? "" : undefined}
-			data-outside={day.outside ? "" : undefined}
-			data-disabled={day.disabled ? "" : undefined}
-			data-range-start={day.rangeStart ? "true" : undefined}
-			data-range-middle={day.rangeMiddle ? "true" : undefined}
-			data-range-end={day.rangeEnd ? "true" : undefined}
-			tabIndex={sameDay(date, tabStop) && !day.outside ? 0 : -1}
+			{...dayMarksOf(day)}
+			tabIndex={isTabStop(day, tabStop) ? 0 : -1}
 			disabled={day.disabled}
-			className={cn(
-				"wg-kit-cal-day",
-				day.outside && "is-outside",
-				day.today && "is-today",
-				day.selected && !day.rangeMiddle && "is-picked",
-				day.rangeMiddle && "is-between",
-				day.rangeStart && !day.rangeEnd && "is-range-start",
-				day.rangeEnd && !day.rangeStart && "is-range-end",
-			)}
+			className={dayClassOf(day)}
 			role="gridcell"
 			aria-selected={day.selected}
 			onClick={() => onSelect?.(date)}
@@ -45,4 +52,18 @@ export function CalendarDay({ day, tabStop, isHidden = false, onSelect, renderDa
 			{renderDay ? renderDay(day) : String(date.getDate())}
 		</button>
 	);
+}
+
+function dayMarksOf(day: CalendarCell): Readonly<Record<string, string>> {
+	return Object.fromEntries(
+		MARK_OF_FLAG.filter(([, flag]) => day[flag]).map(([attribute, , mark]) => [attribute, mark]),
+	);
+}
+
+function dayClassOf(day: CalendarCell): string {
+	return cn("wg-kit-cal-day", ...CLASS_OF_DAY.filter(([, isWorn]) => isWorn(day)).map(([className]) => className));
+}
+
+function isTabStop(day: CalendarCell, tabStop: Date): boolean {
+	return sameDay(day.date, tabStop) && !day.outside;
 }
