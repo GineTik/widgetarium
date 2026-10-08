@@ -16,28 +16,32 @@ const TYPED_IN = new WeakMap<Element, Typed>();
 
 export function moveInMenu(event: KeyboardEvent<HTMLElement>, menu: MenuState): void {
 	if (!isNode(event.target) || !event.currentTarget.contains(event.target)) return;
-	const step = COLUMN_STEP_OF_KEY.get(event.key);
-	if (step !== undefined) {
-		event.preventDefault();
-		focusMenuItem(event.currentTarget, step);
+	if (isTypedLetter(event)) {
+		typeAhead(event.currentTarget, event.key);
 		return;
 	}
-	if (event.key === "ArrowLeft" && menu.parent) {
-		event.preventDefault();
-		menu.setOpen(false);
-		focusQuietly(menu.triggerRef.current);
-		return;
-	}
-	if (event.key === "Tab") {
-		event.preventDefault();
-		menu.closeTree();
-		return;
-	}
-	if (isTypedLetter(event)) typeAhead(event.currentTarget, event.key);
+	const answer = menuKeyAnswer(event, menu);
+	if (!answer) return;
+	event.preventDefault();
+	answer();
 }
 
 export function focusMenuItem(panel: Element, step: Step): void {
 	focusStepped(null, menuItemsIn(panel), step, { focus: focusQuietly });
+}
+
+function menuKeyAnswer(event: KeyboardEvent<HTMLElement>, menu: MenuState): (() => void) | null {
+	const panel = event.currentTarget;
+	const step = COLUMN_STEP_OF_KEY.get(event.key);
+	if (step !== undefined) return () => focusMenuItem(panel, step);
+	if (event.key === "ArrowLeft" && menu.parent) return () => closeSubMenu(menu);
+	if (event.key === "Tab") return menu.closeTree;
+	return null;
+}
+
+function closeSubMenu(menu: MenuState): void {
+	menu.setOpen(false);
+	focusQuietly(menu.triggerRef.current);
 }
 
 function menuItemsIn(panel: Element): HTMLElement[] {

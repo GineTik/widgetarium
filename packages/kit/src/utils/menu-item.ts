@@ -47,15 +47,21 @@ export function menuItemHandlers(menu: MenuState, { disabled, onSelect, theirs }
 			if (!disabled) selectItem(menu, onSelect);
 		}),
 		onKeyDown: chainHandlers(theirs.onKeyDown, pressOnEnterOrSpace),
-		onPointerMove: chainHandlers(theirs.onPointerMove, (event: PointerEvent<HTMLElement>) => {
-			if (disabled || event.pointerType === "touch") return;
-			menu.closeChildren();
-			if (document.activeElement !== event.currentTarget) focusQuietly(event.currentTarget);
-		}),
-		onPointerLeave: chainHandlers(theirs.onPointerLeave, (event: PointerEvent<HTMLElement>) => {
-			focusQuietly(event.currentTarget.closest('[role="menu"]'));
-		}),
+		onPointerMove: chainHandlers(theirs.onPointerMove, (event: PointerEvent<HTMLElement>) =>
+			focusUnderPointer(menu, event, disabled),
+		),
+		onPointerLeave: chainHandlers(theirs.onPointerLeave, focusMenuOnLeave),
 	};
+}
+
+function focusUnderPointer(menu: MenuState, event: PointerEvent<HTMLElement>, disabled: boolean | undefined): void {
+	if (disabled || event.pointerType === "touch") return;
+	menu.closeChildren();
+	if (document.activeElement !== event.currentTarget) focusQuietly(event.currentTarget);
+}
+
+function focusMenuOnLeave(event: PointerEvent<HTMLElement>): void {
+	focusQuietly(event.currentTarget.closest('[role="menu"]'));
 }
 
 function pressOnEnterOrSpace(event: KeyboardEvent<HTMLElement>): void {

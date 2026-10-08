@@ -20,6 +20,11 @@ export interface FloatingAsk extends SidePlacement {
 	readonly viewport: PanelSize;
 }
 
+interface Flips {
+	readonly x: boolean;
+	readonly y: boolean;
+}
+
 interface NamedSpots {
 	readonly wanted: (anchor: AnchorBox) => PanelSpot;
 	readonly away: (anchor: AnchorBox, panel: PanelSize) => PanelSpot;
@@ -160,18 +165,28 @@ function originFacing({ anchor, panel }: FloatingAsk, side: PopoverSide, spot: {
 
 function placeByName(name: PlacementName, anchor: AnchorBox, panel: PanelSize, viewport: PanelSize): FloatingSpot {
 	const wanted = NAMED_SPOTS[name].wanted(anchor);
-	const away = NAMED_SPOTS[name].away(anchor, panel);
-	const flipsX = wanted.left + panel.width > viewport.width - SCREEN_MARGIN_PX;
-	const flipsY = wanted.top + panel.height > viewport.height - SCREEN_MARGIN_PX;
-	const left = flipsX ? Math.max(SCREEN_MARGIN_PX, away.left) : wanted.left;
-	const top = flipsY ? Math.max(SCREEN_MARGIN_PX, away.top) : wanted.top;
+	const flips = flipsOf(wanted, panel, viewport);
+	const spot = spotAfterFlips(wanted, NAMED_SPOTS[name].away(anchor, panel), flips);
 	return {
-		left,
-		top,
+		...spot,
 		side: name,
-		align: flipsX ? "end" : "start",
-		origin: `${flipsX ? "right" : "left"} ${flipsY ? "bottom" : "top"}`,
-		availableWidth: viewport.width - SCREEN_MARGIN_PX - left,
-		availableHeight: viewport.height - SCREEN_MARGIN_PX - top,
+		align: flips.x ? "end" : "start",
+		origin: `${flips.x ? "right" : "left"} ${flips.y ? "bottom" : "top"}`,
+		availableWidth: viewport.width - SCREEN_MARGIN_PX - spot.left,
+		availableHeight: viewport.height - SCREEN_MARGIN_PX - spot.top,
+	};
+}
+
+function flipsOf(wanted: PanelSpot, panel: PanelSize, viewport: PanelSize): Flips {
+	return {
+		x: wanted.left + panel.width > viewport.width - SCREEN_MARGIN_PX,
+		y: wanted.top + panel.height > viewport.height - SCREEN_MARGIN_PX,
+	};
+}
+
+function spotAfterFlips(wanted: PanelSpot, away: PanelSpot, flips: Flips): PanelSpot {
+	return {
+		left: flips.x ? Math.max(SCREEN_MARGIN_PX, away.left) : wanted.left,
+		top: flips.y ? Math.max(SCREEN_MARGIN_PX, away.top) : wanted.top,
 	};
 }

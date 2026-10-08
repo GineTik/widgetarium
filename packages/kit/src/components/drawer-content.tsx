@@ -5,17 +5,15 @@ import { cn } from "../utils/cn";
 import type { TokenStyle } from "../utils/token-style";
 import { useDialog } from "./dialog-context";
 import { DrawerDirectionContext } from "./drawer-direction";
+import { DrawerHandle } from "./drawer-handle";
 import { ModalLayer } from "./modal-layer";
 
 export type DrawerContentProps = HTMLAttributes<HTMLDivElement>;
-
-const DRAG_TO_CLOSE = "Drag down to close";
 
 export function DrawerContent({ className, style, children, ...rest }: DrawerContentProps): ReactElement {
 	const direction = useContext(DrawerDirectionContext);
 	const { isOpen, setOpen } = useDialog();
 	const drag = useDrawerDrag(isOpen, setOpen);
-	const isBottom = direction === "bottom";
 	return (
 		<ModalLayer
 			kind="drawer"
@@ -26,17 +24,7 @@ export function DrawerContent({ className, style, children, ...rest }: DrawerCon
 			className={cn(drag.isDragging && "is-dragging", className)}
 			style={dragStyle(style, drag.offsetPx)}
 		>
-			{isBottom ? (
-				<div
-					className="wg-kit-drawer-handle"
-					role="button"
-					tabIndex={-1}
-					aria-label={DRAG_TO_CLOSE}
-					{...drag.gripProps}
-				>
-					<span className="wg-kit-drawer-grip" />
-				</div>
-			) : null}
+			{direction === "bottom" ? <DrawerHandle gripProps={drag.gripProps} /> : null}
 			{children}
 		</ModalLayer>
 	);

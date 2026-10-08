@@ -1,11 +1,9 @@
-import { useId, useRef } from "react";
-import type { RefObject } from "react";
 import type { Placement, PlacementChoice } from "../constants/popover";
 import { placementOf } from "../utils/floating-placement";
-import { useControllableState } from "./use-controllable-state";
-import { useDismissLayer } from "./use-dismiss-layer";
-import { usePanelMotion } from "./use-panel-motion";
-import { useHeldPresence } from "./use-held-presence";
+import { useOpenState } from "./use-open-state";
+import { usePopoverLayer } from "./use-popover-layer";
+import { usePopoverParts } from "./use-popover-parts";
+import type { PopoverParts } from "./use-popover-parts";
 
 export interface PopoverAsk {
 	readonly open?: boolean | undefined;
@@ -15,63 +13,27 @@ export interface PopoverAsk {
 	readonly onExited?: (() => void) | undefined;
 }
 
-export interface PopoverState {
-	readonly id: string;
+export interface PopoverState extends PopoverParts {
 	readonly where: Placement;
 	readonly placement: PlacementChoice;
 	readonly isOpen: boolean;
 	readonly isExiting: boolean;
 	readonly shown: boolean;
 	readonly setOpen: (open: boolean) => void;
-	readonly anchorRef: RefObject<HTMLSpanElement | null>;
-	readonly pointRef: RefObject<HTMLElement | null>;
-	readonly panelRef: RefObject<HTMLDivElement | null>;
-	readonly triggerRef: RefObject<HTMLElement | null>;
-	readonly openedByKeyboard: RefObject<boolean>;
 }
 
-export function usePopoverState({ open, defaultOpen, onOpenChange, placement, onExited }: PopoverAsk): PopoverState {
-	const id = useId();
-	const where = placementOf(placement);
-	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
-	const anchorRef = useRef<HTMLSpanElement>(null);
-	const pointRef = useRef<HTMLElement>(null);
-	const panelRef = useRef<HTMLDivElement>(null);
-	const triggerRef = useRef<HTMLElement>(null);
-	const openedByKeyboard = useRef(false);
-	const presence = useHeldPresence(isOpen);
-	const close = (): void => setOpen(false);
-
-	usePanelMotion({
-		isOpen,
-		where,
-		anchorRef,
-		pointRef,
-		panelRef,
-		triggerRef,
-		openedByKeyboard,
-		release: presence.release,
-		onExited,
-	});
-	useDismissLayer({
-		isOpen,
-		holds: (node) => Boolean(panelRef.current?.contains(node) || anchorRef.current?.contains(node)),
-		onEscape: close,
-		onOutsidePress: close,
-	});
-
+export function usePopoverState(ask: PopoverAsk): PopoverState {
+	const parts = usePopoverParts();
+	const where = placementOf(ask.placement);
+	const [isOpen, setOpen] = useOpenState(ask);
+	const presence = usePopoverLayer({ parts, isOpen, setOpen, where, onExited: ask.onExited });
 	return {
-		id,
+		...parts,
 		where,
-		placement,
+		placement: ask.placement,
 		isOpen,
 		isExiting: presence.isExiting,
 		shown: presence.isMounted,
 		setOpen,
-		anchorRef,
-		pointRef,
-		panelRef,
-		triggerRef,
-		openedByKeyboard,
 	};
 }

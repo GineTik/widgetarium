@@ -12,20 +12,17 @@ import {
 } from "./navigation-menu-context";
 import type { NavigationItemState, NavigationMenuState } from "./navigation-menu-context";
 import { dataStateOf } from "./popover-context";
+import { composeRefs } from "./slot";
 
 export type NavigationMenuTriggerProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
+type TriggerHandlers = Required<
+	Pick<ButtonHTMLAttributes<HTMLElement>, "onClick" | "onKeyDown" | "onPointerEnter" | "onPointerLeave">
+>;
+
 const CHEVRON_PX = 14;
 
-export function NavigationMenuTrigger({
-	className,
-	children,
-	onClick,
-	onKeyDown,
-	onPointerEnter,
-	onPointerLeave,
-	...rest
-}: NavigationMenuTriggerProps): ReactElement {
+export function NavigationMenuTrigger({ className, children, ...rest }: NavigationMenuTriggerProps): ReactElement {
 	const nav = useNavigationMenu();
 	const item = useNavigationItem();
 	const isOpen = nav.value === item.value;
@@ -35,23 +32,35 @@ export function NavigationMenuTrigger({
 			aria-expanded={isOpen}
 			{...rest}
 			{...{ [NAVIGATION_VALUE_ATTRIBUTE]: item.value }}
-			ref={(node: HTMLButtonElement | null) => {
-				item.triggerRef.current = node;
-			}}
+			ref={composeRefs(item.triggerRef)}
 			data-slot="navigation-menu-trigger"
 			data-state={dataStateOf(isOpen)}
 			className={navigationMenuTriggerStyle(["group", className])}
-			onClick={chainHandlers(onClick, () => toggleNavigationItem(nav, item))}
-			onKeyDown={chainHandlers(onKeyDown, (event: KeyboardEvent<HTMLElement>) => openOnArrowDown(nav, item, event))}
-			onPointerEnter={chainHandlers(onPointerEnter, (event: PointerEvent<HTMLElement>) =>
-				openOnHover(nav, item, event),
-			)}
-			onPointerLeave={chainHandlers(onPointerLeave, () => nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS))}
+			{...navigationTriggerHandlers(nav, item, rest)}
 		>
 			{children}
 			<Icon name="chevron-down" size={CHEVRON_PX} className="wg-kit-nav-chevron" aria-hidden="true" />
 		</button>
 	);
+}
+
+function navigationTriggerHandlers(
+	nav: NavigationMenuState,
+	item: NavigationItemState,
+	theirs: Partial<TriggerHandlers>,
+): TriggerHandlers {
+	return {
+		onClick: chainHandlers(theirs.onClick, () => toggleNavigationItem(nav, item)),
+		onKeyDown: chainHandlers(theirs.onKeyDown, (event: KeyboardEvent<HTMLElement>) =>
+			openOnArrowDown(nav, item, event),
+		),
+		onPointerEnter: chainHandlers(theirs.onPointerEnter, (event: PointerEvent<HTMLElement>) =>
+			openOnHover(nav, item, event),
+		),
+		onPointerLeave: chainHandlers(theirs.onPointerLeave, () =>
+			nav.delayed.start(() => nav.setValue(""), HOVER_GRACE_MS),
+		),
+	};
 }
 
 function toggleNavigationItem(nav: NavigationMenuState, item: NavigationItemState): void {

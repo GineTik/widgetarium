@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { FLOAT_EXIT_MS } from "../constants/overlays";
 import type { AnchorBox, SidePlacement } from "../constants/popover";
 import { placeFloating, viewportSize } from "../utils/floating-placement";
 import { wearAnchorWidth, wearSpot } from "../utils/wear-spot";
+import { useFollowsViewport } from "./use-follows-viewport";
 import { usePresence } from "./use-presence";
 
 export interface FloatingLayerAsk {
@@ -17,27 +18,14 @@ export interface FloatingLayer {
 	readonly isMounted: boolean;
 }
 
-const CAPTURE_EVERY_SCROLLER = true;
-
 export function useFloatingLayer({ isOpen, anchorBox, placement }: FloatingLayerAsk): FloatingLayer {
 	const panelRef = useRef<HTMLDivElement>(null);
 	const { isMounted } = usePresence(isOpen, FLOAT_EXIT_MS);
 	const place = (): void => placeFloatingPanel(panelRef.current, anchorBox(), placement);
-	const latest = useRef(place);
-	latest.current = place;
 	useLayoutEffect(() => {
 		if (isMounted) place();
 	});
-	useEffect(() => {
-		if (!isOpen) return undefined;
-		const follow = (): void => latest.current();
-		window.addEventListener("resize", follow);
-		window.addEventListener("scroll", follow, CAPTURE_EVERY_SCROLLER);
-		return () => {
-			window.removeEventListener("resize", follow);
-			window.removeEventListener("scroll", follow, CAPTURE_EVERY_SCROLLER);
-		};
-	}, [isOpen]);
+	useFollowsViewport(isOpen, place);
 	return { panelRef, isMounted };
 }
 

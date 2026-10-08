@@ -1,7 +1,6 @@
-import { createElement as h, useRef } from "react";
+import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import type { FocusIntent } from "./menu-context";
-import { useControllableState } from "../hooks/use-controllable-state";
+import { useMenubarState } from "../hooks/use-menubar-state";
 import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
 import { moveAcrossTriggers } from "../utils/menubar-keys";
@@ -31,25 +30,19 @@ export interface MenubarProps extends Omit<HTMLAttributes<HTMLDivElement>, "defa
 
 export function Menubar({
 	value,
-	defaultValue = "",
+	defaultValue,
 	onValueChange,
 	className,
 	onKeyDown,
 	...rest
 }: MenubarProps): ReactElement {
-	const [openValue, setValue] = useControllableState({
-		prop: value,
-		defaultProp: defaultValue,
-		onChange: onValueChange,
-	});
-	const rootRef = useRef<HTMLDivElement>(null);
-	const focusIntent = useRef<FocusIntent>("panel");
+	const bar = useMenubarState({ value, defaultValue, onValueChange });
 	return (
-		<MenubarContext.Provider value={{ value: openValue, setValue, rootRef, focusIntent }}>
+		<MenubarContext.Provider value={bar}>
 			<div
 				role="menubar"
 				{...rest}
-				ref={rootRef}
+				ref={bar.rootRef}
 				data-slot="menubar"
 				className={cn("wg-kit-menubar", className)}
 				onKeyDown={chainHandlers(onKeyDown, moveAcrossTriggers)}

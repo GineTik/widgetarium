@@ -1,12 +1,12 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { useControllableState } from "../hooks/use-controllable-state";
+import { useCheckToggle } from "../hooks/use-check-toggle";
+import type { CheckedState } from "../hooks/use-check-toggle";
 import { Icon } from "../icons/icon";
-import { cn } from "../utils/cn";
-import { menuItemHandlers, menuItemMarks } from "../utils/menu-item";
-import { useMenu } from "./menu-context";
+import { MenuIndicatedItem } from "./menu-indicated-item";
+import type { IndicatedKind } from "./menu-indicated-item";
 
-export type CheckedState = boolean | "indeterminate";
+export type { CheckedState } from "../hooks/use-check-toggle";
 
 export interface MenuCheckboxItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect" | "defaultChecked"> {
 	readonly checked?: CheckedState | undefined;
@@ -21,39 +21,22 @@ const INDICATOR_PX = 16;
 
 export function MenuCheckboxItem({
 	checked,
-	defaultChecked = false,
+	defaultChecked,
 	onCheckedChange,
-	disabled,
-	inset,
 	onSelect,
-	className,
-	children,
-	...rest
+	...item
 }: MenuCheckboxItemProps): ReactElement {
-	const menu = useMenu();
-	const [isChecked, setChecked] = useControllableState<CheckedState>({ prop: checked, defaultProp: defaultChecked });
-	const toggle = (event: Event): void => {
-		const next = isChecked !== true;
-		setChecked(next);
-		onCheckedChange?.(next);
-		onSelect?.(event);
+	const [isChecked, toggle] = useCheckToggle({ checked, defaultChecked, onCheckedChange, onSelect });
+	return <MenuIndicatedItem {...item} kind={checkboxKindOf(isChecked)} onSelect={toggle} />;
+}
+
+function checkboxKindOf(checked: CheckedState): IndicatedKind {
+	return {
+		role: "menuitemcheckbox",
+		part: "checkbox-item",
+		marks: { "aria-checked": checked === "indeterminate" ? "mixed" : checked, "data-state": checkedWord(checked) },
+		indicator: checked === false ? null : <Icon name={indicatorOf(checked)} size={INDICATOR_PX} />,
 	};
-	return (
-		<div
-			role="menuitemcheckbox"
-			aria-checked={isChecked === "indeterminate" ? "mixed" : isChecked}
-			data-state={checkedWord(isChecked)}
-			{...rest}
-			{...menuItemMarks(menu, { part: "checkbox-item", inset, disabled })}
-			{...menuItemHandlers(menu, { disabled, onSelect: toggle, theirs: rest })}
-			className={cn("wg-kit-menu-item is-indicated", className)}
-		>
-			<span className="wg-kit-menu-indicator">
-				{isChecked === false ? null : <Icon name={indicatorOf(isChecked)} size={INDICATOR_PX} />}
-			</span>
-			{children}
-		</div>
-	);
 }
 
 function indicatorOf(checked: CheckedState): string {
