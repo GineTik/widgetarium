@@ -4,7 +4,7 @@ import { useScrollReach } from "../hooks/use-scroll-reach";
 import { Icon } from "../icons/icon";
 import { cn } from "../utils/cn";
 import { Input } from "./input";
-import { POPOVER_ITEM } from "./popover-context";
+import { POPOVER_ITEM } from "../constants/popover";
 
 export interface PopoverSearchProps {
 	readonly placeholder?: string | undefined;

@@ -1,12 +1,18 @@
 import { useEffect } from "react";
 import type { RefObject } from "react";
-import { focusInitial, focusQuietly } from "../utils/focus";
+import { focusInitial, focusQuietly, trapTab } from "../utils/focus";
 
 export function useFocusTrap(panelRef: RefObject<HTMLElement | null>, isActive: boolean): void {
 	useEffect(() => {
-		if (!isActive) return undefined;
+		const panel = panelRef.current;
+		if (!isActive || !panel) return undefined;
 		const before = document.activeElement;
-		focusInitial(panelRef.current);
-		return () => focusQuietly(before);
+		focusInitial(panel);
+		const keepTabInside = (event: KeyboardEvent): void => trapTab(event, panel);
+		panel.addEventListener("keydown", keepTabInside);
+		return () => {
+			panel.removeEventListener("keydown", keepTabInside);
+			focusQuietly(before);
+		};
 	}, [isActive]);
 }

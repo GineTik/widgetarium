@@ -29,7 +29,7 @@ export function Tooltip({ open, defaultOpen, onOpenChange, delayDuration, childr
 			onOpenChange?.(next);
 		},
 		openDelay: () => openDelayOf(timing, delayDuration),
-		closeDelay: HOVER_GRACE_MS,
+		closeDelay: () => HOVER_GRACE_MS,
 	});
 	return <TooltipContext.Provider value={tooltip}>{children}</TooltipContext.Provider>;
 }

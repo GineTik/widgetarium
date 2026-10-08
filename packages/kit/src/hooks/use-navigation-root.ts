@@ -4,8 +4,7 @@ import type { NavigationMenuState } from "../components/navigation-menu-context"
 import { focusQuietly } from "../utils/focus";
 import { useControllableState } from "./use-controllable-state";
 import { useDelayed } from "./use-delayed";
-import { useEscapeLayer } from "./use-escape-layer";
-import { useOutsidePress } from "./use-outside-press";
+import { useDismissLayer } from "./use-dismiss-layer";
 
 export interface NavigationRootAsk {
 	readonly value?: string | undefined;
@@ -45,9 +44,13 @@ function useNavigationDismiss(nav: NavigationMenuState): void {
 		nav.delayed.stop();
 		nav.setValue("");
 	};
-	useOutsidePress({ isOpen: nav.value !== "", isInside: (node) => isInNavigation(node, nav), onOutside: close });
-	useEscapeLayer(nav.value !== "", () => {
-		focusQuietly(activeTriggerOf(nav));
-		close();
+	useDismissLayer({
+		isOpen: nav.value !== "",
+		holds: (node) => isInNavigation(node, nav),
+		onEscape: () => {
+			focusQuietly(activeTriggerOf(nav));
+			close();
+		},
+		onOutsidePress: close,
 	});
 }

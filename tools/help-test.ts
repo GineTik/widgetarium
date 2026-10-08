@@ -25,7 +25,7 @@ Object.assign(globalThis, {
 const { createElement: h } = await import("react");
 const { render } = await import("../packages/core/src/engine/render.js");
 const { Help } = await import("../packages/kit/src/index.ts");
-const { HOVER_OPEN_MS } = await import("../packages/kit/src/hooks/use-hover-open.ts");
+const { HOVER_OPEN_MS } = await import("../packages/kit/src/constants/overlays.ts");
 
 const SAID = "How many widgets the filters leave.";
 

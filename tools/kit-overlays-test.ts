@@ -549,6 +549,161 @@ async function layeredEscape(): Promise<void> {
 	check("every layer leaves the stack when it is gone", openLayerCount(), 0);
 }
 
+async function escapeInsideDialog(): Promise<void> {
+	const said: string[] = [];
+	await draw(
+		h(
+			kit.Dialog,
+			{ defaultOpen: true, onOpenChange: (open: boolean) => said.push(`dialog ${open}`) },
+			h(kit.DialogContent, null, [
+				h(kit.DialogTitle, { key: "t" }, "Edit"),
+				h(kit.Popover, { key: "p", defaultOpen: true }, [
+					h(kit.PopoverTrigger, { key: "t" }, "Due"),
+					h(kit.PopoverContent, { key: "c" }, "Body"),
+				]),
+			]),
+		),
+	);
+	await settle();
+	key(document.body, "Escape");
+	await settle();
+	check(
+		"ESCAPE OVER A POPOVER IN A DIALOG CLOSES THE POPOVER ALONE",
+		[stateOf("popover-content"), stateOf("dialog-content"), said],
+		["closed", "open", []],
+	);
+	key(document.body, "Escape");
+	await settle();
+	check("and the next Escape closes the dialog, once", said, ["dialog false"]);
+	await draw(null);
+}
+
+async function escapeInsideInlineSheet(): Promise<void> {
+	await draw(
+		h(
+			kit.SidebarSheet,
+			{ defaultOpen: true },
+			h(kit.Popover, { defaultOpen: true }, [
+				h(kit.PopoverTrigger, { key: "t" }, "Sort"),
+				h(kit.PopoverContent, { key: "c" }, "Newest"),
+			]),
+		),
+	);
+	const sheetState = (): string | null => found(document, ".wg-kit-sheet").getAttribute("data-state");
+	const opener = found(document, '[data-slot="popover-trigger"]');
+	key(opener, "Escape");
+	await settle();
+	check(
+		"A SHEET AND THE POPOVER IN IT, OPEN TOGETHER: ESCAPE INSIDE TAKES THE POPOVER FIRST",
+		[stateOf("popover-content"), sheetState()],
+		["closed", "open"],
+	);
+	key(outside, "Escape");
+	await settle();
+	check("an inline sheet leaves an Escape pressed outside it alone", sheetState(), "open");
+	key(opener, "Escape");
+	await settle();
+	check("and folds on one pressed inside it", sheetState(), "closed");
+	await draw(null);
+}
+
+async function inlineCommandOverlay(): Promise<void> {
+	let shut = 0;
+	await draw(
+		h(kit.CommandMenuOverlay, { isOpen: true, isPortaled: false, onClose: () => (shut += 1) }, h("button", null, "In")),
+	);
+	const stray = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+	outside.dispatchEvent(stray);
+	check(
+		"AN INLINE COMMAND OVERLAY LEAVES AN ESCAPE PRESSED OUTSIDE IT ALONE",
+		[shut, stray.defaultPrevented],
+		[0, false],
+	);
+	key(found(document, ".wg-kit-command-overlay button"), "Escape");
+	check("and closes on one pressed inside it", shut, 1);
+	await draw(null);
+}
+
+async function dialogBridge(): Promise<void> {
+	let closes = 0;
+	await draw(h(kit.Dialog, { isOpen: true, title: "Edit", onClose: () => (closes += 1) }, h("button", null, "Save")));
+	await settle();
+	key(document.body, "Escape");
+	await settle();
+	check("A DIALOG GIVEN isOpen ANSWERS ESCAPE THROUGH onClose EXACTLY ONCE", closes, 1);
+	const save = [...document.querySelectorAll<HTMLElement>('[data-slot="dialog-content"] button')].at(-1);
+	save?.focus();
+	key(save ?? null, "Tab");
+	check(
+		"and Tab from its last control wraps to its first",
+		document.activeElement?.getAttribute("aria-label"),
+		"Close",
+	);
+	await draw(null);
+}
+
+async function hoverCardLayer(): Promise<void> {
+	await draw(
+		h(kit.HoverCard, { openDelay: 0, closeDelay: 0 }, [
+			h(kit.HoverCardTrigger, { key: "t", href: "#" }, "@nextjs"),
+			h(kit.HoverCardContent, { key: "c" }, "The React framework"),
+		]),
+	);
+	hover(found(document, '[data-slot="hover-card-trigger"]'));
+	await settle();
+	check(
+		"A FLOATING PANEL SAYS WHERE IT MAY GROW IN THE POPOVER'S OWN WORDS",
+		styleVar(found(document, '[data-slot="hover-card-content"]'), "--wg-kit-pop-available-width") !== "",
+		true,
+	);
+	key(document.body, "Escape");
+	await settle();
+	check("a hover card closes on Escape", stateOf("hover-card-content"), "closed");
+	await draw(null);
+}
+
+async function placementChangedMidExit(): Promise<void> {
+	const panelFor = (placement: "over" | "below") =>
+		h(kit.Popover, { isOpen: false, placement, trigger: h("button", null, "T") }, "Body");
+	await draw(h(kit.Popover, { isOpen: true, placement: "over", trigger: h("button", null, "T") }, "Body"));
+	await draw(panelFor("over"));
+	await draw(panelFor("below"));
+	check(
+		"A POPOVER WHOSE PLACEMENT CHANGES WHILE IT FOLDS STILL LEAVES THE PAGE",
+		document.querySelector(".wg-kit-pop")?.classList.contains("is-open"),
+		false,
+	);
+	await draw(null);
+}
+
+async function handledEscape(): Promise<void> {
+	await draw(
+		h(kit.Popover, { defaultOpen: true }, [
+			h(kit.PopoverTrigger, { key: "t" }, "Due"),
+			h(kit.PopoverContent, { key: "c" }, "Body"),
+		]),
+	);
+	const claim = (event: Event): void => event.preventDefault();
+	window.addEventListener("keydown", claim, true);
+	key(document.body, "Escape");
+	window.removeEventListener("keydown", claim, true);
+	await settle();
+	check("AN ESCAPE SOMETHING ELSE ALREADY HANDLED CLOSES NO LAYER", stateOf("popover-content"), "open");
+	await draw(null);
+}
+
+async function layerOwnership(): Promise<void> {
+	await placementChangedMidExit();
+	await handledEscape();
+	await escapeInsideDialog();
+	await escapeInsideInlineSheet();
+	await inlineCommandOverlay();
+	await dialogBridge();
+	await hoverCardLayer();
+	await settle();
+	check("and every one of them leaves the stack", openLayerCount(), 0);
+}
+
 async function drawer(): Promise<void> {
 	await draw(h(kit.Drawer, { defaultOpen: true }, h(kit.DrawerContent, null, h(kit.DrawerTitle, null, "Move goal"))));
 	const panel = found(document, '[data-slot="drawer-content"]');
@@ -679,6 +834,7 @@ await menubar();
 await navigationMenu();
 await sheetAndAlert();
 await layeredEscape();
+await layerOwnership();
 await drawer();
 await toasts();
 

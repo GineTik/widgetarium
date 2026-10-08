@@ -1,4 +1,4 @@
-import { createElement as h, useContext, useState } from "react";
+import { createElement as h, useState } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 import type { PlacementChoice, PlacementName } from "../constants/popover";
 import { usePopoverState } from "../hooks/use-popover-state";
@@ -40,7 +40,6 @@ export function Popover({
 	isPortaled = false,
 	onExited,
 }: PopoverProps): ReactElement {
-	const parentId = useContext(PopoverContext)?.id;
 	const [askedPlacement, askPlacement] = useState<PlacementChoice | null>(null);
 	const popover = usePopoverState({
 		open: open ?? openAsLegacy,
@@ -50,7 +49,7 @@ export function Popover({
 		onExited,
 	});
 	return (
-		<PopoverContext.Provider value={{ ...popover, className: cls, isPortaled, askPlacement, parentId }}>
+		<PopoverContext.Provider value={{ ...popover, className: cls, isPortaled, askPlacement }}>
 			{trigger === undefined ? (
 				<span className="wg-kit-anchor" ref={popover.anchorRef} data-state={dataStateOf(popover.isOpen)}>
 					{children}

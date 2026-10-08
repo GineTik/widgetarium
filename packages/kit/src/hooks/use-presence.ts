@@ -1,20 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { prefersReducedMotion } from "../utils/popover-motion";
-
-export interface Presence {
-	readonly isMounted: boolean;
-	readonly isExiting: boolean;
-}
+import { useHeldPresence } from "./use-held-presence";
+import type { Presence } from "./use-held-presence";
 
 export function usePresence(isOpen: boolean, exitMs: number): Presence {
-	const [isHeld, setHeld] = useState(isOpen);
+	const presence = useHeldPresence(isOpen);
 	useEffect(() => {
-		if (isOpen) {
-			setHeld(true);
-			return undefined;
-		}
-		const timer = setTimeout(() => setHeld(false), prefersReducedMotion() ? 0 : exitMs);
+		if (isOpen) return undefined;
+		const timer = setTimeout(presence.release, prefersReducedMotion() ? 0 : exitMs);
 		return () => clearTimeout(timer);
 	}, [isOpen]);
-	return { isMounted: isOpen || isHeld, isExiting: !isOpen && isHeld };
+	return presence;
 }

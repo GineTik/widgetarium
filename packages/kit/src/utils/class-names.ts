@@ -63,6 +63,8 @@ const SIDEBAR_WORDS = {
 
 const FIELD_WORDS = { size: { m: "", s: "is-s" }, block: { true: "is-block" } };
 
+const DIALOG_WORDS = { size: { m: "", s: "is-s" } };
+
 export type ButtonVariant = keyof (typeof BUTTON_WORDS)["variant"];
 
 export type ButtonSize = keyof (typeof BUTTON_WORDS)["size"];
@@ -82,6 +84,8 @@ export type SidebarSurface = keyof (typeof SIDEBAR_WORDS)["surface"];
 export type SidebarAt = keyof (typeof SIDEBAR_WORDS)["at"];
 
 export type FieldSize = keyof (typeof FIELD_WORDS)["size"];
+
+export type DialogSize = keyof (typeof DIALOG_WORDS)["size"];
 
 export const buttonClass = variants("wg-kit-btn", BUTTON_WORDS, { variant: "neutral", size: "m" });
 
@@ -110,3 +114,5 @@ export const sidebarClass = variants(cn("wg-kit-side", cardClass({ variant: "lig
 });
 
 export const fieldClass = variants("wg-kit-field", FIELD_WORDS, { size: "m" });
+
+export const dialogClass = variants("", DIALOG_WORDS, { size: "m" });

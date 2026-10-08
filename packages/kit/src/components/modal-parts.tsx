@@ -5,7 +5,7 @@ import { domPropsOf } from "../utils/dom-props";
 import { slotNameOf } from "../utils/slot-name";
 import type { SlotPartProps } from "./create-slot-part";
 import { ModalIdsContext } from "./modal-ids-context";
-import type { ModalIds } from "./modal-ids-context";
+import type { ModalIds } from "../constants/overlays";
 import { Slot } from "./slot";
 
 export { modalClose } from "./modal-close";

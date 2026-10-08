@@ -1,15 +1,14 @@
 import { createElement as h, useRef } from "react";
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { POPOVER_ITEM } from "../constants/popover";
 import type { PopoverAlign, PopoverSide } from "../constants/popover";
 import { useAsksPlacement } from "../hooks/use-asks-placement";
 import { cn } from "../utils/cn";
-import { NESTED_PANEL_PARENT } from "../utils/nested-panels";
-import { sideNameOf } from "../utils/floating-placement";
 import { portalLayer } from "../utils/portal-layer";
 import { stepIndex } from "../utils/roving";
 import type { Step } from "../utils/roving";
-import { POPOVER_ITEM, dataStateOf, usePopover } from "./popover-context";
+import { dataStateOf, usePopover } from "./popover-context";
 
 export interface PopoverContentProps {
 	readonly side?: PopoverSide | undefined;
@@ -54,9 +53,7 @@ export function PopoverContent({
 			role="dialog"
 			data-slot="popover-content"
 			data-state={dataStateOf(popover.isOpen)}
-			data-side={popover.where.solve ? undefined : sideNameOf(popover.placement)}
 			data-wg-overlay={popover.shown ? "" : undefined}
-			{...{ [NESTED_PANEL_PARENT]: popover.parentId }}
 			onKeyDown={moveBetweenItems}
 		>
 			<div className="wg-kit-pop-inner">{popover.shown ? held.current : null}</div>

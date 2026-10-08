@@ -8,7 +8,7 @@ export interface HoverLayerAsk {
 	readonly defaultOpen?: boolean | undefined;
 	readonly onOpenChange?: ((open: boolean) => void) | undefined;
 	readonly openDelay: () => number;
-	readonly closeDelay: number;
+	readonly closeDelay: () => number;
 }
 
 export interface HoverLayer {
@@ -36,7 +36,7 @@ export function useHoverLayer({ open, defaultOpen, onOpenChange, openDelay, clos
 		triggerRef,
 		contentId,
 		openSoon: () => delayed.start(() => setOpen(true), openDelay()),
-		closeSoon: () => delayed.start(() => setOpen(false), closeDelay),
+		closeSoon: () => delayed.start(() => setOpen(false), closeDelay()),
 		settle: (next) => {
 			delayed.stop();
 			setOpen(next);

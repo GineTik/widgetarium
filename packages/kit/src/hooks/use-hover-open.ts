@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import type { PointerEvent } from "react";
-
-export const HOVER_OPEN_MS = 400;
+import { HOVER_OPEN_MS } from "../constants/overlays";
+import { useDelayed } from "./use-delayed";
 
 export interface HoverOpen {
 	readonly onPointerEnter: (event: PointerEvent) => void;
@@ -9,59 +9,26 @@ export interface HoverOpen {
 	readonly forgetHover: () => void;
 }
 
-interface Timer {
-	readonly start: (run: () => void, ms: number) => void;
-	readonly stop: () => void;
-}
-
 export function useHoverOpen(setOpen: (open: boolean) => void): HoverOpen {
-	const timer = useTimer();
-	const opener = useRef<HoverOpener | null>(null);
-	opener.current ??= new HoverOpener(timer, setOpen);
-	return opener.current;
-}
-
-class HoverOpener implements HoverOpen {
-	private isOpenedByHover = false;
-
-	constructor(
-		private readonly timer: Timer,
-		private readonly setOpen: (open: boolean) => void,
-	) {}
-
-	readonly onPointerEnter = (event: PointerEvent): void => {
-		if (event.pointerType === "mouse") this.timer.start(this.openByHover, HOVER_OPEN_MS);
+	const delayed = useDelayed();
+	const isOpenedByHover = useRef(false);
+	const openByHover = (): void => {
+		isOpenedByHover.current = true;
+		setOpen(true);
 	};
-
-	readonly onPointerLeave = (): void => {
-		const wasOpenedByHover = this.isOpenedByHover;
-		this.forgetHover();
-		if (wasOpenedByHover) this.setOpen(false);
+	const forgetHover = (): void => {
+		delayed.stop();
+		isOpenedByHover.current = false;
 	};
-
-	readonly forgetHover = (): void => {
-		this.timer.stop();
-		this.isOpenedByHover = false;
-	};
-
-	private readonly openByHover = (): void => {
-		this.isOpenedByHover = true;
-		this.setOpen(true);
-	};
-}
-
-function useTimer(): Timer {
-	const held = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const stop = (): void => {
-		if (held.current !== null) clearTimeout(held.current);
-		held.current = null;
-	};
-	useEffect(() => stop, []);
 	return {
-		start: (run, ms) => {
-			stop();
-			held.current = setTimeout(run, ms);
+		onPointerEnter: (event) => {
+			if (event.pointerType === "mouse") delayed.start(openByHover, HOVER_OPEN_MS);
 		},
-		stop,
+		onPointerLeave: () => {
+			const wasOpenedByHover = isOpenedByHover.current;
+			forgetHover();
+			if (wasOpenedByHover) setOpen(false);
+		},
+		forgetHover,
 	};
 }

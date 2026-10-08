@@ -1,6 +1,7 @@
 import { createElement as h, useRef } from "react";
-import type { HTMLAttributes, KeyboardEvent, ReactElement } from "react";
+import type { HTMLAttributes, ReactElement } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
+import { useFoldsOnEscape } from "../hooks/use-folds-on-escape";
 import { useSheetDrag } from "../hooks/use-sheet-drag";
 import { sidebarClass } from "../utils/class-names";
 import { cn } from "../utils/cn";
@@ -44,25 +45,20 @@ export function SidebarSheet({
 	...rest
 }: SidebarSheetProps): ReactElement {
 	const [isOpen, setOpen] = useControllableState({ prop: open, defaultProp: defaultOpen, onChange: onOpenChange });
+	const sheetRef = useRef<HTMLElement>(null);
 	const gripRef = useRef<HTMLButtonElement>(null);
 	const { peekPx = PEEK_PX, maxPx = SHEET_MAX_PX, onHeight } = height;
 	const drag = useSheetDrag({ isOpen, setOpen, peekPx, maxPx, onHeight });
-
-	const collapseOnEscape = (event: KeyboardEvent): void => {
-		if (event.key !== "Escape" || !isOpen) return;
-		event.stopPropagation();
-		setOpen(false);
-		gripRef.current?.focus();
-	};
+	useFoldsOnEscape({ isOpen, setOpen, sheetRef, gripRef });
 
 	return h(
 		as,
 		{
 			...rest,
+			ref: sheetRef,
 			className: cn("wg-kit-sheet", sidebarClass({ mode, surface }), drag.isDragging && "is-dragging", cls),
 			style: { ...style, height: `${Math.round(drag.height)}px` },
 			"data-state": isOpen ? "open" : "closed",
-			onKeyDown: collapseOnEscape,
 		},
 		[
 			<button

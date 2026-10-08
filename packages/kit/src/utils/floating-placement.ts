@@ -1,11 +1,13 @@
 import type { RefObject } from "react";
-import { PLACEMENTS, SCREEN_MARGIN_PX } from "../constants/popover";
+import { ANCHOR_GAP_PX, SCREEN_MARGIN_PX } from "../constants/popover";
 import type {
 	AnchorBox,
 	FloatingSpot,
 	PanelSize,
+	PanelSpot,
 	Placement,
 	PlacementChoice,
+	PlacementName,
 	PopoverAlign,
 	PopoverSide,
 	SidePlacement,
@@ -16,6 +18,39 @@ export interface FloatingAsk extends SidePlacement {
 	readonly panel: PanelSize;
 	readonly viewport: PanelSize;
 }
+
+interface NamedSpots {
+	readonly wanted: (anchor: AnchorBox) => PanelSpot;
+	readonly away: (anchor: AnchorBox, panel: PanelSize) => PanelSpot;
+}
+
+const NAMED_SPOTS: Readonly<Record<PlacementName, NamedSpots>> = {
+	over: {
+		wanted: (anchor) => ({ left: anchor.left, top: anchor.top }),
+		away: (anchor, panel) => ({ left: anchor.right - panel.width, top: anchor.bottom - panel.height }),
+	},
+	below: {
+		wanted: (anchor) => ({ left: anchor.left, top: anchor.bottom + ANCHOR_GAP_PX }),
+		away: (anchor, panel) => ({ left: anchor.right - panel.width, top: anchor.top - ANCHOR_GAP_PX - panel.height }),
+	},
+};
+
+const NAMED_PLACEMENTS: Readonly<Record<PlacementName, Placement>> = {
+	over: {
+		panelClass: "",
+		hidesTrigger: true,
+		measuresTrigger: false,
+		key: "over",
+		solve: (anchor, panel, viewport) => placeByName("over", anchor, panel, viewport),
+	},
+	below: {
+		panelClass: "is-below",
+		hidesTrigger: false,
+		measuresTrigger: false,
+		key: "below",
+		solve: (anchor, panel, viewport) => placeByName("below", anchor, panel, viewport),
+	},
+};
 
 const OPPOSITE: Readonly<Record<PopoverSide, PopoverSide>> = {
 	top: "bottom",
@@ -40,17 +75,14 @@ export function placeFloating(ask: FloatingAsk): FloatingSpot {
 }
 
 export function placementOf(choice: PlacementChoice): Placement {
-	if (typeof choice === "string") return choice === "below" ? PLACEMENTS.below : PLACEMENTS.over;
+	if (typeof choice === "string") return NAMED_PLACEMENTS[choice];
 	return {
-		...PLACEMENTS.below,
 		panelClass: "is-sided",
+		hidesTrigger: false,
+		measuresTrigger: true,
 		key: `${choice.side}/${choice.align}/${choice.sideOffset}/${choice.alignOffset}`,
 		solve: (anchor, panel, viewport) => placeFloating({ ...choice, anchor, panel, viewport }),
 	};
-}
-
-export function sideNameOf(choice: PlacementChoice): string {
-	return typeof choice === "string" ? choice : choice.side;
 }
 
 export function boxOf(ref: RefObject<Element | null>): () => AnchorBox | null {
@@ -127,4 +159,22 @@ function originFacing({ anchor, panel }: FloatingAsk, side: PopoverSide, spot: {
 
 function clamp(value: number, ceiling: number): number {
 	return Math.max(0, Math.min(ceiling, value));
+}
+
+function placeByName(name: PlacementName, anchor: AnchorBox, panel: PanelSize, viewport: PanelSize): FloatingSpot {
+	const wanted = NAMED_SPOTS[name].wanted(anchor);
+	const away = NAMED_SPOTS[name].away(anchor, panel);
+	const flipsX = wanted.left + panel.width > viewport.width - SCREEN_MARGIN_PX;
+	const flipsY = wanted.top + panel.height > viewport.height - SCREEN_MARGIN_PX;
+	const left = flipsX ? Math.max(SCREEN_MARGIN_PX, away.left) : wanted.left;
+	const top = flipsY ? Math.max(SCREEN_MARGIN_PX, away.top) : wanted.top;
+	return {
+		left,
+		top,
+		side: name,
+		align: flipsX ? "end" : "start",
+		origin: `${flipsX ? "right" : "left"} ${flipsY ? "bottom" : "top"}`,
+		availableWidth: viewport.width - SCREEN_MARGIN_PX - left,
+		availableHeight: viewport.height - SCREEN_MARGIN_PX - top,
+	};
 }

@@ -7,15 +7,12 @@ import type { ClassNameValue } from "../utils/cn";
 export interface HeldPopover extends PopoverState {
 	readonly className?: ClassNameValue;
 	readonly isPortaled?: boolean;
-	readonly parentId?: string | undefined;
 	readonly askPlacement?: ((placement: PlacementChoice) => void) | undefined;
 }
 
 export type PopoverDataState = "open" | "closed";
 
 export const PopoverContext: Context<HeldPopover | null> = createContext<HeldPopover | null>(null);
-
-export const POPOVER_ITEM = ".wg-kit-pop-item:not([disabled])";
 
 export function usePopover(): HeldPopover {
 	const popover = useContext(PopoverContext);
