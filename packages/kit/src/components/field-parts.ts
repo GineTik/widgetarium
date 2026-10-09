@@ -1,14 +1,10 @@
 import type { FunctionComponent } from "react";
-import { cn } from "../utils/cn";
-import { classedSlotPart, createSlotPart } from "./create-slot-part";
+import { classedSlotPart } from "./create-slot-part";
 import type { SlotPartProps } from "./create-slot-part";
 import type { LabelProps } from "./label";
+import { createPressingLabel } from "./pressing-label";
 
-export const FieldLabel: FunctionComponent<LabelProps> = createSlotPart<LabelProps>(
-	"label",
-	(props) => cn("wg-kit-form-label", props.className),
-	"FieldLabel",
-);
+export const FieldLabel: FunctionComponent<LabelProps> = createPressingLabel("wg-kit-form-label", "FieldLabel");
 
 export const FieldDescription: FunctionComponent<SlotPartProps> = classedSlotPart(
 	"p",

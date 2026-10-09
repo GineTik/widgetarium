@@ -7,6 +7,8 @@ import {
 	AccordionTrigger,
 	AspectRatio,
 	Card,
+	Checkbox,
+	Switch,
 	Carousel,
 	Field,
 	FieldDescription,
@@ -25,6 +27,7 @@ import {
 	ResizablePanelGroup,
 	ScrollArea,
 } from "../packages/kit/src/index";
+import { Label, RadioGroup, RadioGroupItem } from "../packages/kit/src/exports-inputs";
 
 const ROWS = Array.from({ length: 30 }, (_, at) => `Row ${at + 1}`);
 const SLIDES = ["One", "Two", "Three", "Four"];
@@ -38,6 +41,22 @@ function Page() {
 			<AspectRatio id="aspect" ratio={16 / 9}>
 				<div />
 			</AspectRatio>
+			<Field id="label-field" orientation="horizontal">
+				<Checkbox />
+				<FieldLabel id="checkbox-label">Remember me</FieldLabel>
+			</Field>
+			<div id="switch-row" style={{ display: "flex", gap: "12px" }}>
+				<Switch id="label-switch" />
+				<Label id="switch-label" htmlFor="label-switch">
+					Sync
+				</Label>
+			</div>
+			<RadioGroup>
+				<Label id="radio-label">
+					<RadioGroupItem value="a" />
+					Daily
+				</Label>
+			</RadioGroup>
 			<Accordion id="accordion" type="single" collapsible defaultValue="a">
 				<AccordionItem value="a">
 					<AccordionTrigger>First</AccordionTrigger>

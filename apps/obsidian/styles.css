@@ -2394,23 +2394,10 @@ body {
 	margin-top: calc(var(--wg-gap-parts, 8px) / -2);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-form-field.is-vertical:has(> .wg-kit-field) {
-	--wg-kit-form-text-inset: var(--wg-kit-field-inset);
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-form-field.is-vertical:has(> .wg-kit-field.is-s) {
-	--wg-kit-form-text-inset: var(--wg-kit-field-inset-s);
-}
-
-:is(.wg-root, .wg-portal)
-	.wg-kit-form-field.is-vertical
-	> :is(.wg-kit-form-label, .wg-kit-label, .wg-kit-form-description, .wg-kit-form-error) {
-	padding-inline: var(--wg-kit-form-text-inset, 0);
-}
-
 :is(.wg-root, .wg-portal) .wg-kit-form-label {
 	font-size: var(--wg-kit-text-s);
 	color: var(--wg-kit-text-muted);
+	user-select: none;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-check {
@@ -2743,7 +2730,12 @@ body {
 	box-shadow: none;
 	color: var(--wg-kit-text);
 	font: inherit;
-	font-weight: 600;
+	font-size: var(--wg-kit-text-m);
+	font-weight: var(--font-normal, 400);
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-command-input input::placeholder {
+	color: var(--text-faint);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-command-input input:is(:focus, :focus-visible) {
@@ -9110,6 +9102,9 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-raise);
 	box-shadow: var(--wg-kit-shadow);
 }
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle {
+	gap: var(--wg-kit-joined-gap);
+}
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button::before {
 	border-radius: calc(var(--wg-kit-control-l) / 2);
 	transition:
@@ -10887,7 +10882,7 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-btn-group {
 	display: inline-flex;
 	align-items: stretch;
-	gap: 2px;
+	gap: var(--wg-kit-joined-gap);
 	width: fit-content;
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn-group.is-vertical {

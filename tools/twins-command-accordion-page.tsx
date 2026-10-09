@@ -8,6 +8,7 @@ import {
 	Command,
 	CommandInput,
 	CommandMenuInput,
+	Input,
 	List,
 	Row,
 	RowLabel,
@@ -33,6 +34,7 @@ function Page() {
 			<Command id="command">
 				<CommandInput placeholder="Type a command or search…" />
 			</Command>
+			<Input id="field-twin" placeholder="Field" />
 			<Rows id="rows">
 				{QUESTIONS.map((question) => (
 					<Rows.Item key={question}>{question}</Rows.Item>

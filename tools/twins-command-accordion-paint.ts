@@ -34,7 +34,10 @@ const COMMAND = `(() => {
 		input.blur();
 		return { resting, focused };
 	};
-	return { before: drawn(document.getElementById("before")), after: drawn(document.getElementById("command")) };
+	const TYPE = ["fontSize", "fontWeight"];
+	const typeOf = (input) => ({ typed: pick(input, TYPE), placeholder: { ...Object.fromEntries(TYPE.map((name) => [name, getComputedStyle(input, "::placeholder")[name]])), color: getComputedStyle(input, "::placeholder").color } });
+	const type = { command: typeOf(document.querySelector("#command input")), field: typeOf(document.getElementById("field-twin")) };
+	return { before: drawn(document.getElementById("before")), after: drawn(document.getElementById("command")), type };
 })()`;
 
 const ACCORDION = `(() => {
@@ -83,14 +86,19 @@ function commandTwins(seen: unknown): Twin[] {
 			readingOf(seen, "after", "focused", "input"),
 			{
 				paddingTop: "0px",
-				fontSize: "16px",
-				fontWeight: "600",
+				fontSize: "14px",
+				fontWeight: "400",
 				color: "rgb(34, 34, 34)",
 				backgroundColor: "rgba(0, 0, 0, 0)",
 				borderTopStyle: "none",
 				boxShadow: "none",
 				outlineStyle: "none",
 			},
+		],
+		[
+			"A CommandInput'S TYPED TEXT AND PLACEHOLDER ARE SIZED, WEIGHTED AND COLOURED AS AN Input'S",
+			readingOf(seen, "type", "command"),
+			readingOf(seen, "type", "field"),
 		],
 		[
 			"THE FOCUSED CommandInput FIELD'S box-shadow IS ff6393f's: CommandMenuInput HAD NO FOCUS RULE ON ITS PILL",
