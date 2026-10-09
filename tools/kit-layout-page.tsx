@@ -8,6 +8,10 @@ import {
 	AspectRatio,
 	Card,
 	Carousel,
+	Field,
+	FieldDescription,
+	FieldLabel,
+	Input,
 	CarouselContent,
 	CarouselItem,
 	CarouselNext,
@@ -87,6 +91,29 @@ function Page() {
 					<Card id="inner-plate">Inner plate</Card>
 				</div>
 			</Card>
+			<Card id="sharing-plate">
+				<div className="title">Questions</div>
+				<Accordion type="single">
+					<AccordionItem value="x">
+						<AccordionTrigger>Shared</AccordionTrigger>
+						<AccordionContent>Body</AccordionContent>
+					</AccordionItem>
+				</Accordion>
+				<p id="sharing-note">Below the rows</p>
+			</Card>
+			<Card id="alone-plate">
+				<Accordion type="single">
+					<AccordionItem value="y">
+						<AccordionTrigger>Alone</AccordionTrigger>
+						<AccordionContent>Body</AccordionContent>
+					</AccordionItem>
+				</Accordion>
+			</Card>
+			<Field id="form-field">
+				<FieldLabel htmlFor="form-input">Email</FieldLabel>
+				<Input id="form-input" placeholder="ada@example.org" />
+				<FieldDescription>Enter an email address.</FieldDescription>
+			</Field>
 			<div id="tailwind" />
 		</div>
 	);

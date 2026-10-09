@@ -33,6 +33,35 @@ const ACCORDION = `(async () => {
 	return { before, shutInner, isMidway: midway > 0 && midway < before[0], after: heights() };
 })()`;
 
+const SHARED_PLATE = `(() => {
+	const left = (node) => Math.round(node.getBoundingClientRect().left);
+	const plate = (id) => document.getElementById(id);
+	const sharing = plate("sharing-plate");
+	const rows = sharing.querySelector("[data-slot='accordion']");
+	const alone = plate("alone-plate");
+	return {
+		sharingPad: getComputedStyle(sharing).padding,
+		titleIn: left(sharing.querySelector(".title")) - left(sharing),
+		noteIn: left(document.getElementById("sharing-note")) - left(sharing),
+		rowsIn: left(rows) - left(sharing),
+		rowTextIn: left(rows.querySelector(".wg-kit-row-label")) - left(sharing),
+		rowsCorner: getComputedStyle(rows).borderTopLeftRadius,
+		alonePad: getComputedStyle(alone).padding,
+	};
+})()`;
+
+const FIELD = `(() => {
+	const field = document.getElementById("form-field");
+	const [label, control, message] = [...field.children];
+	const box = (node) => node.getBoundingClientRect();
+	const textLeft = (node) => Math.round(box(node).left + parseFloat(getComputedStyle(node).paddingLeft));
+	return {
+		labelToInput: Math.round(box(control).top - box(label).bottom),
+		inputToMessage: Math.round(box(message).top - box(control).bottom),
+		textStarts: [textLeft(label), textLeft(control), textLeft(message)].map((at) => at - Math.round(box(control).left)),
+	};
+})()`;
+
 const SCROLL = `(async () => {
 	const viewport = document.querySelector("#scroll [data-slot='scroll-area-viewport']");
 	const thumb = document.querySelector("#scroll [data-slot='scroll-area-thumb']");
@@ -172,6 +201,8 @@ export async function paintChecks(): Promise<Painted[]> {
 			...compiledChecks(css),
 			["AN ASPECT RATIO 16/9 IS 180 TALL AT 320 WIDE, IN CHROME", await page.ask(ASPECT), [320, 180]],
 			...accordionPainted(await page.ask(ACCORDION)),
+			...sharedPlatePainted(await page.ask(SHARED_PLATE)),
+			...fieldPainted(await page.ask(FIELD)),
 			...scrollPainted(await page.ask(SCROLL)),
 			[
 				"THE KIT'S SHIMMER RUNS: CLIPPED TO TEXT, MOVING",
@@ -214,6 +245,34 @@ function accordionPainted(seen: unknown): Painted[] {
 			"AN ACCORDION'S HEIGHT ANIMATES OPEN AND SHUT, IN CHROME",
 			seen,
 			{ before: [136, 0], shutInner: "hidden", isMidway: true, after: [0, 136] },
+		],
+	];
+}
+
+function sharedPlatePainted(seen: unknown): Painted[] {
+	return [
+		[
+			"ROWS SHARING A CARD TAKE NONE OF ITS PADDING: TITLE AND NOTE KEEP THE FULL INSET, THE ROWS ARE THEIR OWN ROUNDED SHAPE WITH TEXT ON THE TITLE'S LINE; ROWS ALONE STILL TAKE EVERY EDGE",
+			seen,
+			{
+				sharingPad: "16px",
+				titleIn: 16,
+				noteIn: 16,
+				rowsIn: 8,
+				rowTextIn: 16,
+				rowsCorner: "8px",
+				alonePad: "0px",
+			},
+		],
+	];
+}
+
+function fieldPainted(seen: unknown): Painted[] {
+	return [
+		[
+			"A FIELD'S MESSAGE STANDS CLOSER TO ITS INPUT THAN ITS LABEL, AND BOTH START WHERE THE INPUT'S TEXT STARTS",
+			seen,
+			{ labelToInput: 8, inputToMessage: 4, textStarts: [16, 16, 16] },
 		],
 	];
 }

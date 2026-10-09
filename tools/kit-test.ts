@@ -1287,10 +1287,20 @@ render(
 	host,
 );
 check("a sheet and a wrapper before them are not content, so the top is still theirs", flushOf(), "inline top bottom");
+const sharesOf = () => found(host, ".wg-kit-layout").hasAttribute("data-shares-plate");
+check("rows alone in a card do not mark themselves as sharing it", sharesOf(), false);
 render(h(Kit.Card, null, h("p", null, "Above"), h(Kit.Rows, null, h(Kit.LayoutItem, null, "x"))), host);
-check("something above them leaves the card its top", flushOf(), "inline bottom");
+check(
+	"something above them leaves the card every edge, and the rows say they share it",
+	[flushOf(), sharesOf()],
+	[null, true],
+);
 render(h(Kit.Card, null, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")), h(Kit.Button, null, "More")), host);
-check("something below them leaves the card its bottom", flushOf(), "inline top");
+check(
+	"something below them leaves the card every edge, and the rows say they share it",
+	[flushOf(), sharesOf()],
+	[null, true],
+);
 render(h(Kit.Card, null, "plain"), host);
 check("a card with no rows keeps every edge", flushOf(), null);
 seeded(ONE_PLATE_ABOVE, h(Kit.Rows, null, h(Kit.LayoutItem, null, "x")));
