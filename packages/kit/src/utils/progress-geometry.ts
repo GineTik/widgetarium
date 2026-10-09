@@ -95,7 +95,7 @@ export function barGeometry(
 export function sliderGeometry(
 	width: number,
 	shares: readonly number[],
-	{ isWavy = true }: CircleLook = {},
+	{ isWavy = true }: Pick<BarLook, "isWavy"> = {},
 ): SliderGeometry {
 	const start = BAR_STROKE / 2;
 	const end = width - BAR_STROKE / 2;
@@ -156,6 +156,7 @@ function barEdges(width: number, share: number): BarEdges {
 }
 
 function activeSpanOf(spots: readonly number[], start: number, isPastStart: boolean): Span | null {
+	if (spots.length === 0) return null;
 	const isRange = spots.length > 1;
 	const from = isRange ? Math.min(...spots) + CURSOR_REACH : start;
 	const to = Math.max(...spots) - CURSOR_REACH;
@@ -163,6 +164,7 @@ function activeSpanOf(spots: readonly number[], start: number, isPastStart: bool
 }
 
 function trackSpansOf(spots: readonly number[], start: number, end: number): readonly Span[] {
+	if (spots.length === 0) return [[start, end]];
 	const after: Span = [Math.max(...spots) + CURSOR_REACH, end];
 	if (spots.length < 2) return [after];
 	return [[start, Math.min(...spots) - CURSOR_REACH], after];

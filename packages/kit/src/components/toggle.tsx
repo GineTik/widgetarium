@@ -1,6 +1,7 @@
 import { Children, createElement as h, isValidElement } from "react";
 import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
+import { Icon } from "../icons/icon";
 import { buttonClass } from "../utils/class-names";
 import type { ButtonSize } from "../utils/class-names";
 
@@ -60,5 +61,6 @@ function restingVariantOf(isOn: boolean, variant: ToggleVariant): "accent" | "ou
 
 function isIconOnly(children: ReactNode): boolean {
 	const parts = Children.toArray(children);
-	return parts.length === 1 && isValidElement(parts[0]);
+	const [only] = parts;
+	return parts.length === 1 && isValidElement(only) && only.type === Icon;
 }

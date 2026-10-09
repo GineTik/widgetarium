@@ -10504,6 +10504,9 @@ body.wg-tree-carrying .wg-tile-body {
 	font-variant-numeric: tabular-nums;
 	transition: border-radius var(--wg-grow) var(--wg-spring);
 }
+:is(.wg-root, .wg-portal) .wg-kit-field.wg-kit-otp-slot[data-active="true"] {
+	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
 :is(.wg-root, .wg-portal) .wg-kit-otp-group > .wg-kit-otp-slot:not(:first-child) {
 	border-start-start-radius: var(--wg-kit-item);
 	border-end-start-radius: var(--wg-kit-item);

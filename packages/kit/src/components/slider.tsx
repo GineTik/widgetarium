@@ -6,7 +6,7 @@ import type { RangeSlider, RangeSliderPointer } from "../hooks/use-range-slider"
 import { useWidthOf } from "../hooks/use-width-of";
 import { cn } from "../utils/cn";
 import { sliderGeometry } from "../utils/progress-geometry";
-import { sliderAskOf, sliderPercentOf } from "../utils/slider-range";
+import { sliderAskOf, sliderShareOf } from "../utils/slider-range";
 import type { RangeSliderAsk, SliderSettings } from "../utils/slider-range";
 import { inkedClass } from "../utils/tones";
 import type { TokenStyle } from "../utils/token-style";
@@ -15,8 +15,6 @@ import { SliderThumb } from "./slider-thumb";
 
 export interface SliderProps
 	extends Omit<HTMLAttributes<HTMLSpanElement>, "defaultValue" | "onChange" | "dir">, SliderSettings {}
-
-const PERCENT = 100;
 
 const THICKNESS: TokenStyle = { "--wg-slider-thickness": `${CURSOR_HEIGHT}px` };
 
@@ -27,7 +25,7 @@ export function Slider({ className, style, ...props }: SliderProps): ReactElemen
 	const length = useWidthOf(slider.trackRef);
 	const drawn = sliderGeometry(
 		length,
-		slider.values.map((held) => sliderPercentOf(held, ask.scale) / PERCENT),
+		slider.values.map((held) => sliderShareOf(held, ask.scale)),
 	);
 	return (
 		<span

@@ -1,7 +1,6 @@
 import { createElement as h, useContext } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, MouseEvent, PointerEvent, ReactElement } from "react";
 import { chainHandlers } from "../utils/chain";
-import { cn } from "../utils/cn";
 import { focusQuietly } from "../utils/focus";
 import { toggleMenu } from "../utils/menu-trigger";
 import { menuTriggerAria } from "../utils/menu-trigger-aria";
@@ -37,7 +36,7 @@ export function MenubarTrigger({ className, ...rest }: MenubarTriggerProps): Rea
 			ref={composeRefs(menu.triggerRef)}
 			data-slot="menubar-trigger"
 			data-state={dataStateOf(menu.isOpen)}
-			className={cn("wg-kit-menubar-trigger", className)}
+			className={className}
 			{...menubarTriggerHandlers({ menu, bar, own, theirs: rest })}
 		/>
 	);

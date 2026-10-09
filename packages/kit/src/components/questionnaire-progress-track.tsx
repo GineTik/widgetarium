@@ -11,8 +11,8 @@ export interface QuestionnaireProgressTrackProps {
 export function QuestionnaireProgressTrack({ position }: QuestionnaireProgressTrackProps): ReactElement {
 	const share = position.total > 0 ? (position.current / position.total) * PROGRESS_MAX : 0;
 	return (
-		<span className="wg-kit-quiz-progress-track" aria-hidden="true">
+		<div aria-hidden="true">
 			<ProgressBar value={share} />
-		</span>
+		</div>
 	);
 }

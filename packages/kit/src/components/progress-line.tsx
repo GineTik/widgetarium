@@ -1,13 +1,13 @@
 import { createElement as h, useRef } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { PROGRESS_MAX, VALUE_GAP_PX } from "../constants/progress";
+import { VALUE_GAP_PX } from "../constants/progress";
 import type { ToneName } from "../constants/tones";
 import { useSlider } from "../hooks/use-slider";
 import type { Slider } from "../hooks/use-slider";
 import { useWidthOf } from "../hooks/use-width-of";
 import { cn } from "../utils/cn";
 import { rangeAria, shownValue } from "../utils/progress";
-import { barGeometry, sliderGeometry } from "../utils/progress-geometry";
+import { barGeometry } from "../utils/progress-geometry";
 import type { BarLook, SliderGeometry } from "../utils/progress-geometry";
 import { inkedClass } from "../utils/tones";
 import type { TokenStyle } from "../utils/token-style";
@@ -59,7 +59,6 @@ export function ProgressLine({
 }
 
 function lineDrawn(width: number, shown: number, look: Required<BarLook>): SliderGeometry {
-	if (look.isCursorVisible) return sliderGeometry(width, [shown / PROGRESS_MAX], look);
 	const { cursor, ...drawn } = barGeometry(width, shown, look);
 	return { ...drawn, cursors: cursor ? [cursor] : [] };
 }
