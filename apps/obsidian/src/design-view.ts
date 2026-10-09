@@ -21,7 +21,7 @@ import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
 import { specPathOf } from "@widgetarium/core/app-spec.js";
 import type { CanvasMode } from "./design-tools.js";
 import { CanvasTopBar, DesignCanvas } from "./design-canvas.js";
-import { WIDGETS_PAGE } from "./design-canvas-page.js";
+import { COMPONENTS_PAGE } from "./design-canvas-page.js";
 import { widgetOpenerOf } from "./design-references.js";
 import { statePropsOf } from "./design-state-drawing.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
@@ -29,7 +29,6 @@ import type { DrawnDesign, DrawnState, StatePicture } from "./design-canvas-shap
 import { addPhotos, imageFilesIn } from "./design-photos.js";
 import type WidgetariumPlugin from "./main.js";
 import type { Job } from "@widgetarium/core/app-jobs.js";
-import { NO_DOCS } from "./design-docs.js";
 import { docsOf } from "./design-docs-read.js";
 import type { JobControls } from "./design-job.js";
 import { catalogueInstallsOf, specWidgetsOf } from "./design-spec-widgets.js";
@@ -183,7 +182,7 @@ export class DesignView extends ItemView {
 		if (!node || !this.appName || size.width === 0 || size.height === 0) return;
 		const jobs = this.jobsNow();
 		const docs = await docsOf(this.plugin, this.appName);
-		const isStarting = jobs.length > 0 || docs !== NO_DOCS;
+		const isStarting = jobs.length > 0 || docs.length > 0;
 		const { screens, references, widgets } = await designOf(this.plugin, this.appName, isStarting);
 		this.drawnDrafts = draftsOn(screens);
 		this.drawnWidgets = widgetsDrawnOn(this.plugin, screens, widgets);
@@ -237,7 +236,7 @@ export class DesignView extends ItemView {
 
 	private openWidget(widget: string): void {
 		this.focusWidget = widget;
-		this.turnTo(WIDGETS_PAGE);
+		this.turnTo(COMPONENTS_PAGE);
 	}
 
 	private turnTo(page: string): void {

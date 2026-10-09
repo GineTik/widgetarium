@@ -12,13 +12,6 @@ export interface CanvasDoc {
 	readonly markdown: string;
 }
 
-export interface CanvasDocs {
-	readonly brief: readonly CanvasDoc[];
-	readonly system: readonly CanvasDoc[];
-}
-
-export const NO_DOCS: CanvasDocs = { brief: [], system: [] };
-
 export function DocsRegion({
 	title,
 	docs,

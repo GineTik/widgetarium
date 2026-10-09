@@ -86,7 +86,7 @@ const controls: JobControls = {
 
 const host = document.getElementById("host");
 if (!host) throw new Error("jobs shot: the page has no #host");
-const pages = ["Brief", "Studio", "Ideas", "Filming", "Hooks", "Design system", "Widgets", "Jobs"];
+const pages = ["Docs", "Studio", "Ideas", "Filming", "Hooks", "References", "Components", "Jobs"];
 const byId = (id: string): Job =>
 	JOBS.find((one) => one.id === id) ?? JOBS[0] ?? job({ id: "x", title: "x", page: null, phase: "task" });
 

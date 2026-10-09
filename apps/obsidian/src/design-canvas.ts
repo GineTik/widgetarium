@@ -4,10 +4,10 @@ import { Button, Icon, IconButton } from "@widgetarium/kit";
 import type { WidgetSurfaceProps } from "@widgetarium/core/surface/widget-surface.js";
 import type { DrawnReference, DrawnScreen, DrawnWidget, Size } from "./design-canvas-shapes.js";
 import { imageFilesIn } from "./design-photos.js";
-import { WIDGETS_PAGE, canvasPagesOf, isCanvasDoc, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
+import { COMPONENTS_PAGE, canvasTabsOf, regionsOfPage, shownPageOf } from "./design-canvas-page.js";
 import { pageLabelOf } from "./design-job.js";
 import type { Job } from "@widgetarium/core/app-jobs.js";
-import type { CanvasDocs } from "./design-docs.js";
+import type { CanvasDoc } from "./design-docs.js";
 import type { JobControls } from "./design-job.js";
 import type { WidgetOpener } from "./design-noted-picture.js";
 import { shownVariantOf } from "./design-variants.js";
@@ -23,6 +23,7 @@ import { fitLook, usePanZoom } from "./design-pan-zoom.js";
 import type { PanZoom } from "./design-pan-zoom.js";
 import { PicturesProgress } from "./design-pictures-progress.js";
 import { TopBar } from "./design-top-bar.js";
+import type { CanvasTab } from "./design-top-bar.js";
 
 export interface DesignCanvasProps {
 	readonly app: string;
@@ -30,7 +31,7 @@ export interface DesignCanvasProps {
 	readonly references: readonly DrawnReference[];
 	readonly widgets: readonly DrawnWidget[];
 	readonly jobs: readonly Job[];
-	readonly docs: CanvasDocs;
+	readonly docs: readonly CanvasDoc[];
 	readonly controls: JobControls;
 	readonly opener: WidgetOpener;
 	readonly pick: VariantPick;
@@ -62,7 +63,7 @@ export function DesignCanvas(props: DesignCanvasProps): ReactElement {
 	const pan = usePanZoom(layerRef, fit, props.mode === "hand");
 	const selection = useCanvasSelection(layerRef, pan);
 	const { screens, references, widgets, jobs, docs, controls, opener, pick, registry, host } = props;
-	const page = shownPageOf(props.page, { screens, jobs, docs });
+	const page = shownPageOf(props.page, { screens, references, jobs, docs });
 	useEscapeClears(selection.picked !== null, selection.clear);
 	useFliesToWidget({ layerRef, pan, page, widget: props.focusWidget, onDone: props.onFocusedWidget });
 	const regions = useMemo(
@@ -107,15 +108,27 @@ export function CanvasTopBar(props: CanvasTopBarProps): ReactElement {
 }
 
 function topBarOf(
-	{ app, screens, jobs, docs, onPage, onAddPhotos, mode, onMode, isLayersOpen, onLayers }: DesignCanvasProps,
+	{
+		app,
+		screens,
+		references,
+		jobs,
+		docs,
+		onPage,
+		onAddPhotos,
+		mode,
+		onMode,
+		isLayersOpen,
+		onLayers,
+	}: DesignCanvasProps,
 	page: string,
 ): ReactElement {
 	const frames = screens.reduce((count, screen) => count + screen.states.length, 0);
 	const said = SCREENS_SAID.replace("{count}", String(screens.length)).replace("{frames}", String(frames));
 	const status = h(PicturesProgress, { key: "pictures" });
-	const canvasPages = canvasPagesOf({ screens, jobs, docs });
+	const tabs = canvasTabsOf({ screens, references, jobs, docs });
 	const layers =
-		page === WIDGETS_PAGE
+		page === COMPONENTS_PAGE
 			? null
 			: h(
 					IconButton,
@@ -132,8 +145,9 @@ function topBarOf(
 		key: "top",
 		app,
 		said,
-		tabs: canvasPages.filter(isCanvasDoc).map((one) => ({ value: one, label: one })),
-		pages: canvasPages.filter((one) => !isCanvasDoc(one)).map((one) => ({ value: one, label: pageLabelOf(one, jobs) })),
+		leading: tabs.leading.map(tabOf),
+		pages: tabs.screens.map((one) => ({ value: one, label: pageLabelOf(one, jobs) })),
+		trailing: tabs.trailing.map(tabOf),
 		page,
 		onPage,
 		onAddPhotos,
@@ -142,6 +156,10 @@ function topBarOf(
 		status,
 		layers,
 	});
+}
+
+function tabOf(page: string): CanvasTab {
+	return { value: page, label: page };
 }
 
 interface Picking {
@@ -235,7 +253,7 @@ interface WidgetFlight {
 
 function useFliesToWidget({ layerRef, pan, page, widget, onDone }: WidgetFlight): void {
 	useEffect(() => {
-		if (widget === null || page !== WIDGETS_PAGE) return undefined;
+		if (widget === null || page !== COMPONENTS_PAGE) return undefined;
 		const frame = requestAnimationFrame(() => {
 			const layer = layerRef.current;
 			const group = layer

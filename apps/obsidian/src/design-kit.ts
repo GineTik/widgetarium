@@ -4,10 +4,7 @@ import { Card, LayoutHeader, cn } from "@widgetarium/kit";
 import { SHOWCASE } from "@widgetarium/kit/showcase";
 import { NO_SURFACE } from "@widgetarium/kit/surface";
 import type { ShowcaseEntry } from "@widgetarium/kit/showcase";
-import { DocsRegion } from "./design-docs.js";
 import { Region } from "./design-region.js";
-
-export type SystemPageAsk = Parameters<typeof DocsRegion>[0];
 
 const KIT = "Kit";
 
@@ -17,13 +14,6 @@ export function KitRegion(): ReactElement {
 		{ title: KIT, count: SHOWCASE.length },
 		h("div", { className: "wg-design-kit wg-showcase" }, SHOWCASE.map(kitCardOf)),
 	);
-}
-
-export function systemPageOf(ask: SystemPageAsk): ReactElement {
-	return h("div", { key: "system", className: "wg-design-regions-row" }, [
-		h(DocsRegion, { key: "docs", ...ask }),
-		h(KitRegion, { key: "kit" }),
-	]);
 }
 
 function kitCardOf(entry: ShowcaseEntry): ReactElement {

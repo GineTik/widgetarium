@@ -1,34 +1,37 @@
+import type { DataAdapter } from "obsidian";
 import { readSpec, specPathOf, SPEC_FOLDER } from "@widgetarium/core/app-spec.js";
 import { ROOT } from "@widgetarium/core/paths.js";
-import { NO_DOCS, specMarkdownOf } from "./design-docs.js";
-import type { CanvasDoc, CanvasDocs } from "./design-docs.js";
+import { specMarkdownOf } from "./design-docs.js";
+import type { CanvasDoc } from "./design-docs.js";
 import type WidgetariumPlugin from "./main.js";
 
-const BRIEF_DOCS = [
+const APP_DOCS = [
 	{ name: "Research", file: "research.md" },
 	{ name: "Design notes", file: "design.md" },
+	{ name: "This app's design system", file: "design-system.md" },
 ] as const;
 const SPEC_DOC = "Spec";
-const APP_SYSTEM = "This app's design system";
 const VAULT_SYSTEM = "Your design system";
 
-export async function docsOf(plugin: WidgetariumPlugin, app: string): Promise<CanvasDocs> {
+export async function docsOf(plugin: WidgetariumPlugin, app: string): Promise<readonly CanvasDoc[]> {
 	const adapter = plugin.app.vault.adapter;
-	const read = async (name: string, path: string): Promise<CanvasDoc[]> => {
-		const markdown = await adapter.read(path).catch(() => null);
-		return markdown === null || markdown.trim() === "" ? [] : [{ name, path, markdown }];
-	};
-	const specText = await adapter.read(specPathOf(app)).catch(() => null);
-	const spec = specText === null ? null : readSpec(specText).spec;
-	const specDoc = spec ? [{ name: SPEC_DOC, path: specPathOf(app), markdown: specMarkdownOf(spec) }] : [];
 	const folder = `${SPEC_FOLDER}/${app}`;
-	const brief = [
-		...specDoc,
-		...(await Promise.all(BRIEF_DOCS.map((doc) => read(doc.name, `${folder}/${doc.file}`)))).flat(),
-	];
-	const system = [
-		...(await read(APP_SYSTEM, `${folder}/design-system.md`)),
-		...(await read(VAULT_SYSTEM, `${ROOT}/design-system.md`)),
-	];
-	return brief.length === 0 && system.length === 0 ? NO_DOCS : { brief, system };
+	const docs = await Promise.all([
+		specDocOf(adapter, app),
+		...APP_DOCS.map((doc) => docAt(adapter, doc.name, `${folder}/${doc.file}`)),
+		docAt(adapter, VAULT_SYSTEM, `${ROOT}/design-system.md`),
+	]);
+	return docs.flat();
+}
+
+async function docAt(adapter: DataAdapter, name: string, path: string): Promise<CanvasDoc[]> {
+	const markdown = await adapter.read(path).catch(() => null);
+	return markdown === null || markdown.trim() === "" ? [] : [{ name, path, markdown }];
+}
+
+async function specDocOf(adapter: DataAdapter, app: string): Promise<CanvasDoc[]> {
+	const path = specPathOf(app);
+	const text = await adapter.read(path).catch(() => null);
+	const spec = text === null ? null : readSpec(text).spec;
+	return spec ? [{ name: SPEC_DOC, path, markdown: specMarkdownOf(spec) }] : [];
 }

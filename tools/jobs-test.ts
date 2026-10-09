@@ -436,7 +436,7 @@ const { withReferenceNoted, readDesign } = await import("../packages/core/src/ap
 const { NotedPicture } = await import("../apps/obsidian/src/design-noted-picture.js");
 const { JobLine } = await import("../apps/obsidian/src/design-job-line.js");
 const { Group } = await import("../apps/obsidian/src/design-group.js");
-const { canvasPagesOf } = await import("../apps/obsidian/src/design-canvas-page.js");
+const { canvasPagesOf, canvasTabsOf, shownPageOf } = await import("../apps/obsidian/src/design-canvas-page.js");
 const { noteOfApp } = await import("../apps/obsidian/src/ai/reference-command.js");
 const { renderToStaticMarkup } = await import("react-dom/server");
 const { createElement } = await import("react");
@@ -507,8 +507,29 @@ const planned = [
 ];
 check(
 	"the canvas shows a page only once something is drawn or being drawn on it",
-	canvasPagesOf({ screens: [], jobs: planned, docs: { brief: [], system: [] } }),
-	["Ideas", "Design system", "Widgets"],
+	canvasPagesOf({ screens: [], references: [], jobs: planned, docs: [] }),
+	["Ideas", "Components"],
+);
+const held = {
+	screens: [],
+	references: [reference],
+	jobs: planned,
+	docs: [{ name: "Spec", path: ".widgetarium/apps/Studio/spec.md", markdown: "**Ideas**" }],
+};
+check("docs lead the tabs, the screens follow, references and components close them", canvasTabsOf(held), {
+	leading: ["Docs"],
+	screens: ["Ideas"],
+	trailing: ["References", "Components"],
+});
+check(
+	"a tab saved under its old name opens the tab it moved into",
+	["Brief", "Design system", "Widgets"].map((page) => shownPageOf(page, held)),
+	["Docs", "Docs", "Components"],
+);
+check(
+	"an old docs tab with no docs left opens the first page, never a blank one",
+	shownPageOf("Brief", { ...held, docs: [] }),
+	"Ideas",
 );
 
 const vault = await mkdtemp(join(tmpdir(), "wg-jobs-"));

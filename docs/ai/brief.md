@@ -53,8 +53,8 @@ comes from: a feature most of them share and this app lacks is a feature to sugg
 screens this app will have — the product's own site, Dribbble, Mobbin; on a page, its `og:image` —
 and run `node {tool} reference <app> <the image's https address> --kind app|site|marketing|photo --page "<Screen>,<Screen>" --why "<what to take from it>"`.
 The canvas has a page per screen, and a reference stands on the pages it names — the screens it
-informs — above that screen's states; one that names none stands on every screen's page. Nothing is
-downloaded: the canvas shows them from their address.
+informs — above that screen's states; one that names none stands on every screen's page. All of them
+stand together on the References tab. Nothing is downloaded: the canvas shows them from their address.
 
 **Then take every reference apart, in notes the person reads.** Open the picture and say what it is
 — a product screen whose layout can be taken, a website, marketing art with no layout in it, a photo.
@@ -289,7 +289,8 @@ node {tool} screen <app> "People" --widget @<app>/people-page --state Empty --fo
 node {tool} screen <app> "People" --widget @<app>/people-page --state "Add person" --for "just met someone, adding them"
 ```
 
-The canvas is three regions — References, Pages, Widgets — and every group in them is titled: a
+The canvas is tabs — Docs (the spec, research, design notes and both design systems), a page per
+screen, References, Components (your widgets beside the kit) — and every group in them is titled: a
 page with all its states, a widget with all its states, a reference with its notes.
 
 **A page keeps the design system's page rules** — the archetype table, `PG`, `S`, `R` and `C` in
