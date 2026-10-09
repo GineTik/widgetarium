@@ -51,14 +51,18 @@ export async function packEngine(): Promise<PackedPackage[]> {
 	fs.rmSync(PACKED_INTO, { recursive: true, force: true });
 	fs.mkdirSync(PACKED_INTO, { recursive: true });
 	try {
-		for (const folder of folders) await bundleEntries(folder, builtIn(folder));
-		for (const folder of folders) {
-			copyHandWrittenDeclarations(folder, builtIn(folder));
-			emitDeclarations(folder, builtIn(folder));
-		}
+		await buildEach(folders);
 		return folders.map(npmPack);
 	} finally {
 		clearBuilds();
+	}
+}
+
+async function buildEach(folders: readonly string[]): Promise<void> {
+	for (const folder of folders) await bundleEntries(folder, builtIn(folder));
+	for (const folder of folders) {
+		copyHandWrittenDeclarations(folder, builtIn(folder));
+		emitDeclarations(folder, builtIn(folder));
 	}
 }
 

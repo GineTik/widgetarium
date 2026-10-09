@@ -99,12 +99,17 @@ function driftOf(pair: SurfacePair, names: (module: string) => ReadonlySet<strin
 	];
 }
 
+function probeProjectIn(api: API, folder: string): Project {
+	const [project] = api.updateSnapshot({ openProjects: [path.join(folder, "tsconfig.json")] }).getProjects();
+	if (project === undefined) throw new Error("the probe project did not open");
+	return project;
+}
+
 function surfaceDrift(pairs: readonly SurfacePair[]): string[] {
 	const folder = writeProbe(pairs.flatMap(({ shipped, typedAgainst }) => [shipped, typedAgainst]));
 	const api = new API({ cwd: folder });
 	try {
-		const [project] = api.updateSnapshot({ openProjects: [path.join(folder, "tsconfig.json")] }).getProjects();
-		if (project === undefined) throw new Error("the probe project did not open");
+		const project = probeProjectIn(api, folder);
 		const probe = path.join(folder, PROBE);
 		const unresolved = project.program.getSemanticDiagnostics(probe).map(({ text }) => `probe: ${text}`);
 		return [

@@ -262,13 +262,7 @@ function createRequire(
 	scope: WidgetScope,
 	widgets: WidgetImports | null,
 ): RequireModule {
-	const heldByTheEngine: Readonly<Record<string, unknown>> = {
-		widgetarium: refusingMissingExports(scope.api),
-		"widgetarium/kit": scope.kit,
-		"widgetarium/kit/emojis": scope.emojis,
-		"widgetarium/kit/charts": scope.charts,
-		zod: scope.zod,
-	};
+	const heldByTheEngine = heldByTheEngineIn(scope);
 	const modules: Readonly<Record<string, unknown>> = {
 		...heldByTheEngine,
 		react: scope.react,
@@ -278,12 +272,23 @@ function createRequire(
 	return (name) => {
 		const engineAnswer = HELD_BY_THE_ENGINE.includes(name) ? heldByTheEngine[name] : undefined;
 		const found = engineAnswer ?? packages?.take(name) ?? modules[name] ?? widgets?.take(name);
-		if (!found)
-			throw new Error(
-				`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`,
-			);
+		if (!found) throw new Error(importRefusal(name, [...Object.keys(modules), ...(packages?.names ?? [])]));
 		return found;
 	};
+}
+
+function heldByTheEngineIn(scope: WidgetScope): Readonly<Record<string, unknown>> {
+	return {
+		widgetarium: refusingMissingExports(scope.api),
+		"widgetarium/kit": scope.kit,
+		"widgetarium/kit/emojis": scope.emojis,
+		"widgetarium/kit/charts": scope.charts,
+		zod: scope.zod,
+	};
+}
+
+function importRefusal(name: string, importable: readonly string[]): string {
+	return `cannot import "${name}" — a widget may only import ${importable.join(", ")}`;
 }
 
 function surfaceExports(source: string, ownReact: ReactLike, ownReactDom: unknown): SurfaceBuild {
