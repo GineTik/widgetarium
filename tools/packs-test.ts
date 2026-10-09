@@ -1,5 +1,6 @@
 import type { ImplementationPorts, NetworkAsk, VaultNote } from "../packages/core/src/engine/packs.ts";
-import { definePack, registeredCommands, registeredQueries } from "../packages/core/src/engine/packs.ts";
+import { definePack, registeredCommands, registeredQueries, shutPortsOf } from "../packages/core/src/engine/packs.ts";
+import { handlerContextOf } from "../packages/core/src/gateway/handler-context.ts";
 import { NO_CATALOGUE_PORT } from "../packages/core/src/engine/catalogue-port.ts";
 import { sourcesFor } from "../packages/core/src/engine/host-gateways.ts";
 import { arrayGateway } from "../packages/core/src/gateway/create.ts";
@@ -8,6 +9,7 @@ import { FetchRowsQuery, FetchSendCommand, FetchValueQuery } from "../packages/p
 import {
 	FileSetCommand,
 	FolderCreateCommand,
+	FolderPageQuery,
 	FolderRemoveCommand,
 	FolderUpdateCommand,
 	OpenCommand,
@@ -262,6 +264,53 @@ check(
 		});
 	}),
 	"@twice/count names two implementations of one pack",
+);
+
+console.log("\n— the folder answers pages —");
+const folderNotes = arrayGateway(
+	Array.from({ length: 7 }, (_, at) => ({
+		ref: `Tasks/${at}.md`,
+		value: { path: `Tasks/${at}.md`, status: at % 2 === 0 ? "open" : "done" },
+	})),
+);
+const folderPages = new FolderPageQuery(folderNotes);
+const openContext = handlerContextOf(shutPortsOf("pages"), new AbortController().signal);
+const openFirst = await folderPages.query(
+	{ limit: 2, where: [{ prop: "status", op: "eq", value: "open" }] },
+	openContext,
+);
+const openSecond = await folderPages.query(
+	{ limit: 2, cursor: openFirst.next, where: [{ prop: "status", op: "eq", value: "open" }] },
+	openContext,
+);
+check(
+	"a page holds only the rows its filter keeps, and its cursor is the offset where the next one starts",
+	[
+		openFirst.items.map((row) => row.ref),
+		openFirst.next,
+		openFirst.total,
+		openSecond.items.map((row) => row.ref),
+		openSecond.next,
+	],
+	[["Tasks/0.md", "Tasks/2.md"], "2", 4, ["Tasks/4.md", "Tasks/6.md"], null],
+);
+const newestFirst = await folderPages.query({ limit: 2, sort: [{ prop: "path", dir: "desc" }] }, openContext);
+check(
+	"a page is cut from the rows in the order its sort asks",
+	newestFirst.items.map((row) => row.ref),
+	["Tasks/6.md", "Tasks/5.md"],
+);
+check(
+	"a cursor that is not an offset is refused, not read as the first page",
+	await refusalOf(() => folderPages.query({ limit: 2, cursor: "two" }, openContext)),
+	'a cursor of this page is an offset, written in digits; "two" is not one',
+);
+const stopped = new AbortController();
+stopped.abort();
+check(
+	"a read whose asker is gone stops instead of answering",
+	await refusalOf(() => folderPages.query({ limit: 2 }, handlerContextOf(shutPortsOf("pages"), stopped.signal))),
+	"This operation was aborted",
 );
 
 console.log(`\n${failed === 0 ? "packs: clean" : `packs: ${failed} failed`}`);

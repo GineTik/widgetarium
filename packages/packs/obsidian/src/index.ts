@@ -14,6 +14,7 @@ import {
 import { FileQuery, FolderQuery } from "./vault-queries.js";
 
 export { READS_AS_IS, folderRows } from "./folder-rows.js";
+export { FolderPageQuery } from "./folder-page-query.js";
 
 export {
 	FileQuery,

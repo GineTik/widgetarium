@@ -2,7 +2,10 @@ import { z } from "zod";
 import type { CollectionGateway, Query, Row, RowsResult, ValueGateway } from "./contract";
 import type { EveryValueVerb } from "./needs";
 import { collectionGateway, valueGateway } from "./create";
+import { pageIn } from "./paged-read";
 import type { GatewayContext } from "./problems";
+import { reportUnansweredFilter, UnansweredFilterError } from "./problems";
+import { isObject } from "../engine/is-object";
 
 const WRITE_REFUSED = 'prop "{name}" refused a {verb} its schema does not accept: {issues}';
 
@@ -19,12 +22,16 @@ type Verb = ((input: unknown) => Promise<unknown>) & {
 
 type CanAnswer = { can: true } | { can: false; reason: string };
 
-type HeldVerb = ((input: unknown) => unknown) & {
+type HeldVerb = ((input: unknown, signal?: AbortSignal) => unknown) & {
 	can?: () => CanAnswer;
 	meta?: { readNow?: (input: unknown) => unknown };
 };
 
 type Cans = Record<string, () => CanAnswer>;
+
+type Reading = (input: unknown, signal?: AbortSignal) => unknown;
+
+const AN_ITEM = "an item";
 
 interface HeldGateway {
 	readonly id: string;
@@ -83,23 +90,64 @@ export function parseReadsBy<Held extends HeldGateway>(
 			...common,
 			handlers: { ...passed, get: readsOf(verbs["get"], (value) => parseValue(value, context)) },
 		});
+	const query = verbs["query"];
 	return collectionGateway({
 		...common,
 		handlers: {
 			...passed,
-			list: readsOf(verbs["list"], (result, query) =>
-				parseRows(result as RowsResult<unknown>, context, query as Query | undefined),
+			list: reportingUnanswered(
+				readsOf(verbs["list"], (result, query) =>
+					parseRows(result as RowsResult<unknown>, context, query as Query | undefined),
+				),
+				context,
 			),
 			get: readsOf(verbs["get"], (row) => (row ? parseRow(row as HeldRow, context) : null)),
+			...(query ? { query: reportingUnanswered(pagesOf(query, context), context) } : {}),
 		},
 	});
+}
+
+function pagesOf(query: HeldVerb, context: GatewayContext): Reading {
+	return async (input, signal) => parsePage(await query(input, signal), context);
+}
+
+function reportingUnanswered(read: Reading, context: GatewayContext): Reading {
+	const reportAndRethrow = (failure: unknown): never => {
+		if (failure instanceof UnansweredFilterError) reportUnansweredFilter(failure, context.report);
+		throw failure;
+	};
+	return (input, signal) => {
+		try {
+			const answer = read(input, signal);
+			return isThenable(answer) ? Promise.resolve(answer).catch(reportAndRethrow) : answer;
+		} catch (failure: unknown) {
+			return reportAndRethrow(failure);
+		}
+	};
+}
+
+function isThenable(held: unknown): held is PromiseLike<unknown> {
+	return isObject(held) && typeof held["then"] === "function";
+}
+
+function parsePage(answer: unknown, context: GatewayContext): unknown {
+	const page = pageIn(answer);
+	const items = page.items.flatMap((item: unknown) => {
+		const parsed = isHeldRow(item) ? parseRow(item, context) : context.parse(item, { label: AN_ITEM });
+		return parsed === null ? [] : [parsed];
+	});
+	return { ...page, items };
+}
+
+function isHeldRow(held: unknown): held is HeldRow {
+	return isObject(held) && typeof held["ref"] === "string";
 }
 
 function handlersOf(gateway: HeldGateway) {
 	const verbs = verbsOf(gateway);
 	const writes = Object.keys(verbs).filter((key) => !NOT_A_VERB.includes(key));
 	const passed = Object.fromEntries(
-		writes.map((verb) => [verb, (input: unknown) => verbs[verb]?.call(gateway, input)]),
+		writes.map((verb) => [verb, (input: unknown, signal?: AbortSignal) => verbs[verb]?.call(gateway, input, signal)]),
 	);
 	const cans: Cans = Object.fromEntries(
 		writes.flatMap((verb) => {

@@ -4,6 +4,9 @@ import { ICommand, IQuery } from "../packages/core/src/gateway/queries.ts";
 import type { Command } from "../packages/core/src/gateway/declared.ts";
 import type { CommandAnswer } from "../packages/core/src/gateway/run-handler.ts";
 import type { Query, RowsResult } from "../packages/core/src/gateway/contract.ts";
+import type { HandlerContext } from "../packages/core/src/gateway/handler-context.ts";
+import { defineCommandMetadata } from "../packages/core/src/gateway/implementation-metadata.ts";
+import { definePack, registerPacks } from "../packages/core/src/engine/packs.ts";
 import { canOf, rowOf } from "../packages/core/src/gateway/create.ts";
 import { commandBindingOf } from "../packages/core/src/surface/command-binding.ts";
 import { normalizeBoard } from "../packages/core/src/model.ts";
@@ -230,5 +233,91 @@ check("a can() that answers something else is no permission", canOf({ can: () =>
 	reason: "its can() answered something that is not a decision",
 });
 
+console.log("\n— a handler is handed ctx beside its input —");
+const handedToRun: HandlerContext[] = [];
+const pings: Command<string>[] = [];
+const Pinger = createWidget({
+	inject: { ping: ICommand.input(z.string()) },
+	draw: ({ ping }) => {
+		pings.push(ping);
+		return null;
+	},
+});
+render(
+	h(Pinger, {
+		ping: {
+			run: (_input: string, ctx: HandlerContext): void => void handedToRun.push(ctx),
+		},
+	}),
+	byId(document, "host"),
+);
+await tick();
+await present(pings[pings.length - 1], "the drawn ping")("hello");
+const ranWith = present(handedToRun[0], "the ctx a widget's command was handed");
+check(
+	"a command handed by the widget's parent gets ctx: no user yet, a live signal, a shut host named for the prop",
+	[ranWith.user, ranWith.signal instanceof AbortSignal, ranWith.signal.aborted, ranWith.host.self],
+	[null, true, false, "ping"],
+);
+check(
+	"and the shut host refuses by name instead of answering empty",
+	await ranWith.host.confirm("delete?").then(
+		() => "answered",
+		(refusal: unknown) => (refusal instanceof Error ? refusal.message : String(refusal)),
+	),
+	"ports are not available to ping",
+);
+render(null, byId(document, "host"));
+check("and the signal is aborted once the widget is gone", ranWith.signal.aborted, true);
+
+class CtxProbeCommand extends ICommand.input(z.number()) {
+	constructor(readonly fields: object) {
+		super();
+	}
+	run(_input: number, ctx: HandlerContext): void {
+		handedToRun.push(ctx);
+	}
+}
+registerPacks(
+	definePack({
+		id: "@ctx-probe",
+		title: "Ctx probe",
+		queries: [],
+		commands: [
+			defineCommandMetadata(CtxProbeCommand, {
+				id: "@ctx-probe/run",
+				title: "Probe",
+				resource: "Console",
+				description: "Records the ctx it is handed.",
+				fields: z.looseObject({}),
+				consent: "free",
+			}),
+		],
+	}),
+);
+const ctxTile = present(
+	normalizeBoard({
+		tiles: [{ id: "c1", widget: "@test/ctx", props: { press: { implementation: "@ctx-probe/run" } } }],
+	}).tiles[0],
+	"the ctx probe tile",
+);
+function CtxCommandProbe(): null {
+	probed.push(useHostCommands({ id: "@test/ctx", commands: { press: { label: "Press" } } }, ctxTile, refs, {}));
+	return null;
+}
+render(h(CtxCommandProbe), byId(document, "host"));
+await tick();
+await present(probed[probed.length - 1]?.["press"], "the ctx probe press").run(1);
+const hostRanWith = present(handedToRun[1], "the ctx a pack command was handed");
+check(
+	"a pack command gets ctx whose host is the ports it was built with",
+	[hostRanWith.user, hostRanWith.signal.aborted, hostRanWith.host.self],
+	[null, false, "c1/press"],
+);
+
+const { checkMoreDuringReread, checkPageLaws, checkPagedReads } = await import("./page-query-checks.ts");
+await checkPagedReads(check);
+await checkMoreDuringReread(check);
+await checkPageLaws(check);
 console.log(`\n${failed === 0 ? "commands: clean" : `commands: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

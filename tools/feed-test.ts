@@ -1,6 +1,8 @@
 import { JSDOM } from "jsdom";
 import type { FunctionComponent, ReactElement, ReactNode } from "react";
 import type { Query } from "../packages/core/src/gateway/contract.ts";
+import { offsetOfCursor, pageAt } from "../packages/core/src/gateway/page.ts";
+import type { PageInput } from "../packages/core/src/gateway/page.ts";
 import type { WidgetComponent } from "../packages/core/src/registry-scope.js";
 import { byId } from "./dom-find.ts";
 import { collectionOf, valueGatewayOf } from "./gateway-kinds.ts";
@@ -262,6 +264,26 @@ check(
 	"a feed with no widget in its slot says so",
 	(host.textContent ?? "").trim(),
 	"This feed has no widget to draw its items with.",
+);
+
+console.log("\n— the feed over a handler that answers pages itself —");
+const cursorsAsked: (string | null | undefined)[] = [];
+const pagesOfNotes = {
+	query: (input: PageInput) => {
+		cursorsAsked.push(input.cursor);
+		const offset = offsetOfCursor(input.cursor);
+		const rows = NOTES.map((note) => ({ ...note, ref: note.path }));
+		return pageAt(rows.slice(offset, offset + input.limit), offset, rows.length);
+	},
+};
+render(null, host);
+await draw({ getItems: pagesOfNotes, getPageSize: soloGateway(10, {}, "feed-test/size"), slots: { item: cards } });
+check("the first page the handler hands is drawn", shown().length, 10);
+await reveal();
+check(
+	"the second page is drawn below it, asked with the cursor the first page handed",
+	[shown().length, shown().at(-1), cursorsAsked],
+	[20, "Body of Daily/20.md", [null, "10"]],
 );
 
 console.log(failed ? `\n${failed} failed` : "\nthe feed holds");

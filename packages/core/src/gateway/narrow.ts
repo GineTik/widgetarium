@@ -27,13 +27,13 @@ export function normalizeWhere(where: Narrowing, by?: string): FilterRow[] {
 	return Object.entries(where).flatMap(([prop, value]) => clausesFor(prop, value, by));
 }
 
-export function delegateVerbs(base: object): Record<string, (input: never) => unknown> {
-	const handlers: Record<string, (input: never) => unknown> = {};
+export function delegateVerbs(base: object): Record<string, (input: never, signal?: AbortSignal) => unknown> {
+	const handlers: Record<string, (input: never, signal?: AbortSignal) => unknown> = {};
 	for (const verb of Object.keys(base)) {
 		const held = verbOf(base, verb);
 		if (verb === "list" || !isAction(held)) continue;
 		if (held.can().can === false) continue;
-		handlers[verb] = (input: never) => held(input);
+		handlers[verb] = (input: never, signal?: AbortSignal) => held(input, signal);
 	}
 	return handlers;
 }

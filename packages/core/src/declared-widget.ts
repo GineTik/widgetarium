@@ -17,6 +17,11 @@ import type { Declaration } from "./gateway/declaration";
 import { withManyVerbs } from "./gateway/many";
 import type { EveryValueVerb } from "./gateway/needs";
 import { checkCollectionWrites, checkValueUpdate } from "./gateway/parsed";
+import { askedReadOf } from "./gateway/asked-read";
+import type { AskedRead, AskedShape } from "./gateway/asked-read";
+import { shutHostFor } from "./gateway/handler-context";
+import type { HandlerContext } from "./gateway/handler-context";
+import { useHandlerContext } from "./gateway/use-signal-until-unmount";
 import { isObject } from "./engine/is-object.js";
 import { useSlotsOf } from "./slot-components.js";
 import type { MountEntry } from "./gateway/host.js";
@@ -48,6 +53,7 @@ interface DeclaredCommand {
 	readonly declaration: Declaration;
 	readonly given: unknown;
 	readonly readGatewayIdsNow: () => readonly string[];
+	readonly context: HandlerContext;
 }
 
 const declaredInterfaces = new WeakMap<Declaration, unknown>();
@@ -108,9 +114,16 @@ function notReadNotice(failures: readonly string[]): ReactElement {
 
 function useProp(name: string, declaration: Declaration, given: unknown): PropRead {
 	const gateway = useGateway(name, declaration, given);
+	const { input, output } = declaration;
+	if (input && output)
+		return { value: useAskedRead(name, { input, output }, gateway), failure: null, gatewayId: gateway.id };
 	if (gateway.kind === "collection")
 		return { value: useCollectionProp(name, declaration, gateway), failure: null, gatewayId: gateway.id };
 	return { ...useValueProp(name, declaration, gateway), gatewayId: gateway.id };
+}
+
+function useAskedRead(name: string, shape: AskedShape, gateway: AdaptedGateway): AskedRead {
+	return useMemo(() => askedReadOf(name, shape, gateway), [gateway]);
 }
 
 function useCommandOver(
@@ -121,9 +134,18 @@ function useCommandOver(
 ): Action<unknown, CommandAnswer<unknown>> {
 	const latestReadGatewayIds = useRef(readGatewayIds);
 	latestReadGatewayIds.current = readGatewayIds;
+	const host = useMemo(() => shutHostFor(name), [name]);
+	const context = useHandlerContext(host);
 	return useMemo(
-		() => commandOver({ name, declaration, given, readGatewayIdsNow: () => latestReadGatewayIds.current }),
-		[given],
+		() =>
+			commandOver({
+				name,
+				declaration,
+				given,
+				readGatewayIdsNow: () => latestReadGatewayIds.current,
+				context,
+			}),
+		[given, context],
 	);
 }
 
@@ -142,16 +164,17 @@ async function runDeclaredCommand(command: DeclaredCommand, input: unknown): Pro
 	if (!allowed.can) return { ok: false, reason: allowed.reason, ran: false };
 	const fitted = fitOutput(declaration.schema, input);
 	if (!fitted.ok) return { ...fitted, ran: false };
-	const answered = await runToAnswer(name, given, fitted.output);
+	const answered = await runToAnswer(command, fitted.output);
 	if (answered.ok || answered.ran) await gatewayCache.refetch(command.readGatewayIdsNow());
 	if (!answered.ok) return answered;
 	return answerAfterRun(name, declaration.output, answered.output);
 }
 
-function runToAnswer(name: string, given: unknown, input: unknown): Promise<CommandAnswer<unknown>> {
+function runToAnswer({ name, given, context }: DeclaredCommand, input: unknown): Promise<CommandAnswer<unknown>> {
 	if (given instanceof AnsweringCommand) return given.run(input);
-	if (typeof given === "function") return runHandler({ run: given }, input, { output: z.unknown(), name });
-	if (isObject(given) && typeof given["run"] === "function") return runHandler(given, input, handlerContractOf(given));
+	if (typeof given === "function") return runHandler({ run: given }, input, { output: z.unknown(), name }, context);
+	if (isObject(given) && typeof given["run"] === "function")
+		return runHandler(given, input, handlerContractOf(given), context);
 	console.log(`[widgetarium] ${name} sent`, input);
 	return Promise.resolve({ ok: true, output: undefined });
 }
@@ -169,7 +192,8 @@ function useGateway(name: string, declaration: Declaration, given: unknown): Ada
 
 function gatewayOver(name: string, declaration: Declaration, given: unknown): AdaptedGateway {
 	if (isGateway(given)) return given;
-	if (isImplementation(declaration, given)) return gatewayOverImplementation(name, declaration, given);
+	if (isImplementation(declaration, given))
+		return gatewayOverImplementation(name, declaration, given, { host: shutHostFor(name) });
 	return gatewayOverGiven(name, declaration, given);
 }
 
@@ -229,7 +253,7 @@ function gatewayOverGiven(name: string, declaration: Declaration, given: unknown
 	const held = given === undefined ? defaultOf(declaration) : given;
 	const Default = defaultImplementationFor(declaredInterfaces.get(declaration), name);
 	const made = new Default(declaration.kind === "collection" ? { rows: held ?? [] } : { value: held });
-	return gatewayOverImplementation(name, declaration, made);
+	return gatewayOverImplementation(name, declaration, made, { host: shutHostFor(name) });
 }
 
 function isGateway(held: unknown): held is AdaptedGateway {

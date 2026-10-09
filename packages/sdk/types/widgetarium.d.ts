@@ -98,7 +98,10 @@ export {
 	z,
 } from "../../core/src/gateway/declared";
 
-export type { DataState, Listed } from "../../core/src/gateway/use-data";
+export type { DataState, Listed, PageState } from "../../core/src/gateway/use-data";
+export type { Page, PageInput } from "../../core/src/gateway/page";
+export { PageInputSchema, PageOf } from "../../core/src/gateway/page";
+export type { HandlerContext, HandlerUser } from "../../core/src/gateway/handler-context";
 export { useData } from "../../core/src/gateway/use-data";
 export {
 	action,

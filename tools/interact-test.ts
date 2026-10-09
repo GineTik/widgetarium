@@ -1453,7 +1453,7 @@ const pickView = async (name: string, id = "views") => {
 		Object.keys(recordIn(notes(), "the notes gateway"))
 			.filter((key) => typeof fieldOf(notes(), key) === "function")
 			.sort(),
-		["create", "describe", "get", "list", "remove", "repairIds", "subscribe", "update"],
+		["create", "describe", "get", "list", "query", "remove", "repairIds", "subscribe", "update"],
 	);
 
 	// A MOUNTED widget must not be handed less than a tile: the list belongs to the board, and

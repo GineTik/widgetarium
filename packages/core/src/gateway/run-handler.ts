@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { CanResult } from "./contract";
+import type { HandlerContext } from "./handler-context";
 
 export type CommandAnswer<Output = void> =
 	| { readonly ok: true; readonly output: Output }
@@ -40,11 +41,12 @@ export async function runHandler(
 	handler: object,
 	input: unknown,
 	{ output, name }: HandlerContract,
+	context: HandlerContext,
 ): Promise<CommandAnswer<unknown>> {
 	const run: unknown = Reflect.get(handler, "run");
 	if (typeof run !== "function") return { ok: false, reason: RUNS_NOTHING.replace("{name}", name), ran: false };
 	try {
-		return answerAfterRun(name, output, await Reflect.apply(run, handler, [input]));
+		return answerAfterRun(name, output, await Reflect.apply(run, handler, [input, context]));
 	} catch (failure: unknown) {
 		console.error(`Widgetarium: command "${name}" failed`, failure);
 		return { ok: false, reason: failure instanceof Error ? failure.message : String(failure), ran: false };

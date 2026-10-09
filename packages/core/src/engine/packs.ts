@@ -1,4 +1,5 @@
 import type { FilterRow, SortRow } from "../gateway/contract.js";
+import type { HandlerHost } from "../gateway/handler-context.js";
 import type { CommandMetadata, GatewayMetadata } from "../gateway/implementation-metadata.js";
 import type { FileHost, FolderHost, VaultSlot } from "../gateway/obsidian.js";
 import type { NeedOfField } from "../gateway/props.js";
@@ -54,15 +55,13 @@ export interface RefsPort {
 	described(ref: string): RefDescription | null;
 }
 
-export interface ImplementationPorts {
-	readonly self: string;
+export interface ImplementationPorts extends HandlerHost {
 	readonly commandLine: CommandLinePort;
 	readonly workingDirectory: string | undefined;
 	readonly network: NetworkPort;
 	readonly vault: VaultPort;
 	readonly refs: RefsPort;
 	readonly catalogue: CataloguePort;
-	confirm(said: string): Promise<boolean>;
 }
 
 export interface PropPort {
@@ -172,6 +171,17 @@ export function registeredQueries(): GatewayMetadata[] {
 
 export function registeredCommands(): CommandMetadata[] {
 	return [...REGISTERED.values()].flatMap((pack) => pack.commands);
+}
+
+const NO_REFS: RefsPort = {
+	read: async () => undefined,
+	watch: () => () => {},
+	get: () => undefined,
+	described: () => null,
+};
+
+export function shutPortsOf(self: string): ImplementationPorts {
+	return portsOf({}, NO_REFS, self);
 }
 
 export function portsOf(host: PortsHost, refs: RefsPort, self: string): ImplementationPorts {

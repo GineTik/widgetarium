@@ -15,7 +15,11 @@ import { callVerbOf, verbOf } from "@widgetarium/core/gateway/verbs-of.js";
 import { textIn } from "@widgetarium/core/engine/held-text.js";
 import type { HostFields } from "@widgetarium/core/engine/host-context.js";
 import type { PropPort, QueryPorts } from "@widgetarium/core/engine/packs.js";
+import { declareQueryInput } from "@widgetarium/core/pack-reading.js";
+import type { HandlerContext, Page } from "@widgetarium/core/pack-reading.js";
 import { fileGateway } from "./file-gateway.js";
+import { FolderPageInputSchema, FolderPageQuery } from "./folder-page-query.js";
+import type { FolderPageInput } from "./folder-page-query.js";
 import { folderRows } from "./folder-rows.js";
 
 const VAULT_WRITES: readonly string[] = ["create", "update", "remove"];
@@ -53,6 +57,7 @@ export class FileQuery extends IValueGateway {
 
 export class FolderQuery extends ICrudGateway {
 	private readonly rows: CollectionGateway<unknown>;
+	private readonly pages: FolderPageQuery;
 
 	constructor(fields: HostFields, ports: QueryPorts) {
 		super();
@@ -63,10 +68,15 @@ export class FolderQuery extends ICrudGateway {
 			declared: ports.prop,
 			requested: writableInVault(ports.prop),
 		});
+		this.pages = new FolderPageQuery(this.rows);
 	}
 
 	list(query?: Query): Promise<RowsResult<unknown>> {
 		return this.rows.list(query);
+	}
+
+	query(input: FolderPageInput, ctx: HandlerContext): Promise<Page<Row<unknown>>> {
+		return this.pages.query(input, ctx);
 	}
 
 	get(ref: RecordRef): Promise<Row<unknown> | null> {
@@ -101,6 +111,8 @@ export class FolderQuery extends ICrudGateway {
 		return this.rows.subscribe(() => changed());
 	}
 }
+
+declareQueryInput(FolderQuery, FolderPageInputSchema);
 
 function writableInVault(prop: PropPort): readonly string[] {
 	return [...new Set([...prop.writes, ...VAULT_WRITES])];

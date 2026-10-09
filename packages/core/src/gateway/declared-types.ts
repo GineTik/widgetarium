@@ -16,7 +16,8 @@ import type {
 	ValueContract,
 	ValueWrite,
 } from "./declared";
-import type { CommandContract, QueryRowsContract, QueryValueContract } from "./queries";
+import type { Page, PAGE_ITEM } from "./page";
+import type { CommandContract, QueryAskContract, QueryRowsContract, QueryValueContract } from "./queries";
 import type { CommandAnswer } from "./run-handler";
 
 export declare const rowHeld: unique symbol;
@@ -31,6 +32,8 @@ export declare const passedAs: unique symbol;
 export declare const queryRowHeld: unique symbol;
 export declare const commandInput: unique symbol;
 export declare const commandOutput: unique symbol;
+export declare const askedInput: unique symbol;
+export declare const askedOutput: unique symbol;
 export declare const slotGiven: unique symbol;
 
 export interface SlotState {
@@ -129,6 +132,36 @@ export type Command<Input, Output = void> = ([Input] extends [void | undefined]
 
 export type QueryRead<R> = Action<Query | void, RowsResult<R>> & { readonly get: Action<RecordRef, Row<R> | null> };
 
+export type QueryAskDeclared<In, Received, Out, Returned> = (abstract new () => QueryAskContract<
+	Received,
+	Returned
+>) & {
+	readonly [askedInput]?: In;
+	readonly [askedOutput]?: Out;
+};
+
+type PagedOutput<Item> = Page<Item> & { readonly [PAGE_ITEM]: Item };
+
+export type AskedOutputOf<O extends z.ZodType> = O extends { readonly [PAGE_ITEM]: infer Item extends z.ZodType }
+	? PagedOutput<z.output<Item>>
+	: z.output<O>;
+
+type PageItemOf<Out> = Out extends { readonly [PAGE_ITEM]: infer Item } ? Item : never;
+
+export type AskedHeldOf<Out> = [PageItemOf<Out>] extends [never] ? Out : PageItemOf<Out>;
+
+type AskedAnswer<Out> = [PageItemOf<Out>] extends [never] ? Out : Page<RowWithRef<PageItemOf<Out>>>;
+
+export type AskedRead<In, Out> = Action<In, AskedAnswer<Out>>;
+
+type AskedGiven<Out> =
+	| ([PageItemOf<Out>] extends [never]
+			? Out | (GatewayBase & { readonly kind: "value" })
+			: readonly PageItemOf<Out>[] | (GatewayBase & { readonly kind: "collection" }))
+	| QueryAskContract<never, unknown>;
+
+type AskedHeld<Out> = [PageItemOf<Out>] extends [never] ? Out : readonly PageItemOf<Out>[];
+
 type QueryRowOf<S extends z.ZodType> = z.output<S> extends readonly (infer Held)[] ? Held : never;
 
 export type QueryHeldOf<S extends z.ZodType> = z.output<S> extends readonly unknown[] ? QueryRowOf<S> : z.output<S>;
@@ -194,6 +227,7 @@ export type WidgetProp = (
 	| QueryRowsDeclared<unknown>
 	| QueryValueDeclared<unknown>
 	| CommandDeclared<never, never, unknown>
+	| QueryAskDeclared<unknown, never, unknown, unknown>
 	| PassedDeclared<unknown>
 	| (PassedDeclared<unknown> & { readonly [slotGiven]?: unknown })
 ) & { readonly schemaMissing?: never };
@@ -204,24 +238,26 @@ type DrawnOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 	? Drawn
 	: C extends { readonly [commandInput]?: infer Input; readonly [commandOutput]?: infer Output }
 		? Command<Input, Output>
-		: C extends { readonly [queryRowHeld]?: infer Held }
-			? QueryRead<RowWithRef<Held>>
-			: C extends {
-						readonly [valueHeld]?: infer Held;
-						readonly [valueWrites]?: infer Verbs;
-						readonly [valueIn]?: infer ValueIn;
-				  }
-				? [Exclude<Verbs, "get">] extends [never]
-					? Held
-					: DrawnValue<Held, Verbs, ValueIn>
+		: C extends { readonly [askedInput]?: infer In; readonly [askedOutput]?: infer Out }
+			? AskedRead<In, Out>
+			: C extends { readonly [queryRowHeld]?: infer Held }
+				? QueryRead<RowWithRef<Held>>
 				: C extends {
-							readonly [rowHeld]?: infer Held;
-							readonly [listWrites]?: infer Verbs extends string;
-							readonly [createIn]?: infer CreateIn;
-							readonly [patchIn]?: infer PatchIn;
+							readonly [valueHeld]?: infer Held;
+							readonly [valueWrites]?: infer Verbs;
+							readonly [valueIn]?: infer ValueIn;
 					  }
-					? DrawnList<Held, Verbs, CreateIn, PatchIn>
-					: never;
+					? [Exclude<Verbs, "get">] extends [never]
+						? Held
+						: DrawnValue<Held, Verbs, ValueIn>
+					: C extends {
+								readonly [rowHeld]?: infer Held;
+								readonly [listWrites]?: infer Verbs extends string;
+								readonly [createIn]?: infer CreateIn;
+								readonly [patchIn]?: infer PatchIn;
+						  }
+						? DrawnList<Held, Verbs, CreateIn, PatchIn>
+						: never;
 
 type GivenOf<C> = [SlotGivenOf<C>] extends [never] ? GivenOfGateway<C> : SlotGivenOf<C>;
 
@@ -237,13 +273,15 @@ type GivenOfGateway<C> = C extends { readonly [passedAs]?: infer Drawn }
 		? C extends abstract new () => CommandContract<infer Received, unknown>
 			? CommandContract<Received, Output>
 			: never
-		: C extends { readonly [queryRowHeld]?: infer Held }
-			? readonly Held[] | QueryRowsContract<Held> | (GatewayBase & { readonly kind: "collection" })
-			: C extends { readonly [valueHeld]?: infer Held }
-				? Held | AnyImplementation<C>
-				: C extends { readonly [rowHeld]?: infer Held }
-					? readonly Held[] | AnyImplementation<C>
-					: never;
+		: C extends { readonly [askedOutput]?: infer Out }
+			? AskedGiven<Out>
+			: C extends { readonly [queryRowHeld]?: infer Held }
+				? readonly Held[] | QueryRowsContract<Held> | (GatewayBase & { readonly kind: "collection" })
+				: C extends { readonly [valueHeld]?: infer Held }
+					? Held | AnyImplementation<C>
+					: C extends { readonly [rowHeld]?: infer Held }
+						? readonly Held[] | AnyImplementation<C>
+						: never;
 
 type DrawnValue<Held, Verbs, ValueIn> = (["get"] extends [Verbs] ? { readonly value: Held } : unknown) &
 	(["update"] extends [Verbs] ? { readonly update: Action<ValueIn, Held | null> } : unknown) &
@@ -257,11 +295,13 @@ export type GivenProps<P> = { readonly [K in keyof P]?: GivenOf<P[K]> };
 
 type HeldOf<C> = C extends { readonly [valueHeld]?: infer Held }
 	? Held
-	: C extends { readonly [queryRowHeld]?: infer Held }
-		? readonly Held[]
-		: C extends { readonly [rowHeld]?: infer Held }
+	: C extends { readonly [askedOutput]?: infer Out }
+		? AskedHeld<Out>
+		: C extends { readonly [queryRowHeld]?: infer Held }
 			? readonly Held[]
-			: never;
+			: C extends { readonly [rowHeld]?: infer Held }
+				? readonly Held[]
+				: never;
 
 type DescribedKey =
 	| "label"

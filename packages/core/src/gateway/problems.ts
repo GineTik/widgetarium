@@ -35,6 +35,14 @@ export interface ProblemsStore {
 const boards = new WeakMap<object, ProblemsStore>();
 const NO_PROBLEMS: readonly Problem[] = [];
 const LEFT_OUT = "[widgetarium] {key} left out {label}:";
+const FILTER_LABEL = 'the filter on "{field}"';
+const SORT_LABEL = 'the sort by "{field}"';
+const FILTER_UNANSWERED =
+	'the filter on "{fields}" names a field no property of this folder answers yet: pick the property in the Data tab';
+const SORT_DROPPED =
+	'sorting by "{field}" is dropped: no property of this folder answers it yet, so the rows come in their own order';
+
+type Report = (problem: Problem) => void;
 
 export function problemsOf(board: object): ProblemsStore {
 	const held = boards.get(board);
@@ -117,6 +125,25 @@ export function createProblems(): ProblemsStore {
 			return () => listeners.delete(listener);
 		},
 	};
+}
+
+export class UnansweredFilterError extends Error {
+	constructor(readonly fields: readonly string[]) {
+		super(FILTER_UNANSWERED.replace("{fields}", fields.join('", "')));
+		this.name = "UnansweredFilterError";
+	}
+}
+
+export function reportUnansweredFilter(failure: UnansweredFilterError, report: Report): void {
+	for (const field of failure.fields) report(unansweredProblem(FILTER_LABEL, field, failure.message));
+}
+
+export function reportDroppedSort(fields: readonly string[], report: Report): void {
+	for (const field of fields) report(unansweredProblem(SORT_LABEL, field, SORT_DROPPED.replace("{field}", field)));
+}
+
+function unansweredProblem(label: string, field: string, message: string): Problem {
+	return { label: label.replace("{field}", field), issues: [{ path: [field], message }] };
 }
 
 const addressOf = (at: ProblemAt) => at.ref ?? at.label;

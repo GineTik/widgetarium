@@ -17,14 +17,12 @@ export interface Resolution {
 	missing: string[];
 }
 
-// TRADE-OFF: one property answers at most one need — without that, a lone text field is claimed by every text need at once
 export function resolveNeeds(
 	needs: DeclaredNeeds,
 	fields: readonly FieldReport[],
 	chosen: ChosenProps = {},
 ): Resolution {
 	const map = resolveByName(needs, fields, chosen);
-	resolveByType(needs, fields, map);
 	const unresolved = Object.keys(needs).filter((need) => !map[need]);
 	return { map, unresolved, missing: unresolved.filter((need) => needs[need]?.required) };
 }
@@ -65,12 +63,6 @@ function namedPlainly(
 	return only;
 }
 
-function theOnlyFieldThatFits(fields: readonly FieldReport[], declared: DeclaredNeed): FieldReport | null {
-	const [only, andMore] = fields.filter((field) => fits(field, declared));
-	if (!only || andMore) return null;
-	return only;
-}
-
 function namedFor(need: string, declared: DeclaredNeed, fields: readonly FieldReport[]): string | null {
 	const names = namesOf(need, declared);
 	return (namedExactly(fields, names, declared) ?? namedPlainly(fields, names, declared))?.prop ?? null;
@@ -87,18 +79,4 @@ function resolveByName(
 		if (picked) map[need] = picked;
 	}
 	return map;
-}
-
-function resolveByType(needs: DeclaredNeeds, fields: readonly FieldReport[], map: Record<string, string>): void {
-	const claimed = new Set(Object.values(map));
-	for (const [need, declared] of Object.entries(needs)) {
-		if (map[need]) continue;
-		const found = theOnlyFieldThatFits(
-			fields.filter((field) => !claimed.has(field.prop)),
-			declared,
-		);
-		if (!found) continue;
-		map[need] = found.prop;
-		claimed.add(found.prop);
-	}
 }

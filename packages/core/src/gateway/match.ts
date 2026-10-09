@@ -1,4 +1,5 @@
 import type { FilterRow, Row, SortRow } from "./contract";
+import { PAGE_UNASKED } from "./page";
 
 type Held = Record<string, unknown>;
 
@@ -18,8 +19,6 @@ const OPERATIONS: Record<string, (left: unknown, right: unknown) => boolean> = {
 };
 
 export const KNOWN_OPERATORS = Object.keys(OPERATIONS);
-
-const PAGE_UNASKED = 100;
 
 export function fieldOf(record: unknown, prop: string): unknown {
 	if (!isHeld(record) || !prop) return undefined;

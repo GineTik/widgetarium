@@ -1,5 +1,9 @@
 import esbuild from "esbuild";
 import { readFile } from "node:fs/promises";
+import { z } from "zod";
+import { collectionOf } from "./gateway-kinds.ts";
+import type * as Parsed from "../packages/core/src/gateway/parsed.js";
+import type * as Problems from "../packages/core/src/gateway/problems.js";
 import { propsOfEveryShippedWidget } from "./widget-props.ts";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mts";
 import { isObject } from "../packages/core/src/engine/is-object.js";
@@ -13,7 +17,7 @@ import type { Query } from "../packages/core/src/gateway/contract.js";
 
 const built = await esbuild.build({
 	stdin: {
-		contents: `export * from "./packages/core/src/gateway/create"; export * from "./packages/core/src/gateway/fields"; export * from "./packages/core/src/gateway/resolve-needs"; export * from "./packages/core/src/gateway/mapped"; export { needsOf } from "./packages/core/src/gateway/props.js";`,
+		contents: `export * from "./packages/core/src/gateway/create"; export * from "./packages/core/src/gateway/fields"; export * from "./packages/core/src/gateway/resolve-needs"; export * from "./packages/core/src/gateway/mapped"; export { needsOf } from "./packages/core/src/gateway/props.js"; export { parseReadsBy } from "./packages/core/src/gateway/parsed"; export { createProblems, UnansweredFilterError } from "./packages/core/src/gateway/problems";`,
 		resolveDir: process.cwd(),
 		loader: "js",
 	},
@@ -27,9 +31,24 @@ const built = await esbuild.build({
 type GatewayBundle = typeof Create &
 	typeof Fields &
 	typeof ResolveNeeds &
-	typeof Mapped & { readonly needsOf: typeof needsOf };
+	typeof Mapped & {
+		readonly needsOf: typeof needsOf;
+		readonly parseReadsBy: typeof Parsed.parseReadsBy;
+		readonly createProblems: typeof Problems.createProblems;
+		readonly UnansweredFilterError: typeof Problems.UnansweredFilterError;
+	};
 
-const BUNDLED_FUNCTIONS = ["applyQuery", "collectionGateway", "fieldsOf", "resolveNeeds", "mapCollection", "needsOf"];
+const BUNDLED_FUNCTIONS = [
+	"applyQuery",
+	"collectionGateway",
+	"fieldsOf",
+	"resolveNeeds",
+	"mapCollection",
+	"needsOf",
+	"parseReadsBy",
+	"createProblems",
+	"UnansweredFilterError",
+];
 
 function isGatewayBundle(value: unknown): value is GatewayBundle {
 	return isObject(value) && BUNDLED_FUNCTIONS.every((name) => typeof value[name] === "function");
@@ -97,13 +116,14 @@ const resolveNeeds = gateway.resolveNeeds;
 	check("ladder: an alias resolves the need nobody named", map["days"] === "entries", JSON.stringify(map));
 	check("ladder: an exact name wins", map["title"] === "name");
 	check(
-		"ladder: the only field of the wanted type is taken even under another name",
-		map["goal"] === "target",
+		"ladder: the only field of the wanted type is not taken under another name — a type alone maps nothing",
+		map["goal"] === undefined,
 		JSON.stringify(map),
 	);
 	check(
-		"ladder: nothing is missing while every required need resolved",
-		missing.length === 0 && unresolved.length === 0,
+		"ladder: nothing required is missing, and only the need no name answers stays open",
+		missing.length === 0 && JSON.stringify(unresolved) === JSON.stringify(["goal"]),
+		JSON.stringify(unresolved),
 	);
 }
 
@@ -112,10 +132,10 @@ const resolveNeeds = gateway.resolveNeeds;
 		...rest,
 		props: { name: props["name"], kept: props["entries"] },
 	}));
-	const { map } = resolveNeeds(NEEDS, fieldsOf(renamed));
+	const { map, missing } = resolveNeeds(NEEDS, fieldsOf(renamed));
 	check(
-		"drift: an unrecognisable name still resolves while it is the only date list",
-		map["days"] === "kept",
+		"drift: an unrecognisable name is the question even while it is the only date list",
+		map["days"] === undefined && missing.includes("days"),
 		JSON.stringify(map),
 	);
 }
@@ -267,11 +287,40 @@ function folderStandIn(records: readonly Habit[], { canWrite = true } = {}) {
 	const { gateway: base } = folderStandIn(HABITS);
 	const wanting: DeclaredNeeds = { ...NEEDS, colour: { type: "text", required: true } };
 	const mapped = gateway.mapCollection(base, { needs: wanting });
-	const listed = await mapped.list({ where: [{ prop: "colour", op: "is", value: "red" }] });
+	const asked: Query = { where: [{ prop: "colour", op: "is", value: "red" }] };
+	const refusal: unknown = await mapped.list(asked).then(
+		(listed) => listed.rows.length,
+		(failure: unknown) => failure,
+	);
 	check(
-		"read: a condition on an unanswered need narrows nothing rather than to nothing",
-		listed.rows.length === HABITS.length,
-		String(listed.rows.length),
+		"read: a condition on an unanswered need is refused, never widened to every row",
+		refusal instanceof gateway.UnansweredFilterError && refusal.fields.join() === "colour",
+		String(refusal),
+	);
+
+	const problems = gateway.createProblems();
+	const parsed = gateway.parseReadsBy(mapped, problems.contextFor("t1/habits", z.looseObject({})), "collection");
+	const parsedRefusal: unknown = await collectionOf(parsed)
+		.list(asked)
+		.then(
+			(listed) => listed.rows.length,
+			(failure: unknown) => failure,
+		);
+	check(
+		"read: the refusal is reported beside the prop, where the settings window draws its red mark",
+		parsedRefusal instanceof gateway.UnansweredFilterError &&
+			problems
+				.of("t1/habits")
+				.map((problem) => problem.label)
+				.join() === 'the filter on "colour"',
+		JSON.stringify(problems.of("t1/habits")),
+	);
+
+	const sorted = await mapped.list({ sort: [{ prop: "colour", dir: "desc" }] });
+	check(
+		"read: a sort on an unanswered need is dropped and the rows still come",
+		sorted.rows.length === HABITS.length,
+		String(sorted.rows.length),
 	);
 }
 
@@ -346,6 +395,6 @@ function folderStandIn(records: readonly Habit[], { canWrite = true } = {}) {
 		JSON.stringify(map),
 	);
 }
-
+await (await import("./mapped-page-checks.ts")).checkMappedPages(check);
 console.log(failed ? `needs gate: ${failed} failure(s)` : "needs gate: clean");
 process.exit(failed ? 1 : 0);

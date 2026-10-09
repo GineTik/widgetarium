@@ -26,6 +26,7 @@ import {
 } from "./gateway/declared";
 import { defineGatewayMetadata } from "./gateway/implementation-metadata";
 import { ICommand, IQuery } from "./gateway/queries";
+import { PageInputSchema, PageOf } from "./gateway/page";
 import { defineDefaultImplementation, RowsInMemoryGateway, ValueInMemoryGateway } from "./gateway/defaults";
 import { fieldOf, textOf } from "./gateway/match";
 import { narrow, normalizeWhere } from "./gateway/narrow";
@@ -45,6 +46,8 @@ export const coreSurface = {
 	ICarrier,
 	ICommand,
 	IQuery,
+	PageInputSchema,
+	PageOf,
 	IConfigureMounts,
 	IContent,
 	ICrudGateway,

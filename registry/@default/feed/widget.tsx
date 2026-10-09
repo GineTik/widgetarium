@@ -1,6 +1,8 @@
 import {
 	IQuery,
 	IRepeat,
+	PageInputSchema,
+	PageOf,
 	VaultRecordSchema,
 	createWidget,
 	defineLayout,
@@ -8,13 +10,11 @@ import {
 	useData,
 	z,
 } from "widgetarium";
-import { FeedPages } from "./feed-pages";
+import { FeedList } from "./feed-list";
 import { FeedSaid } from "./feed-said";
 import type { Drawn, Given, ItemSlot } from "./types";
-import { usePages } from "widgetarium/kit";
 
 const PAGE_SIZE = 10;
-const PAGES_KEY = "@default/feed";
 
 const NO_SLOT = "This feed has no widget to draw its items with.";
 const NOTHING = "Nothing here yet.";
@@ -23,7 +23,7 @@ export const ItemSchema = VaultRecordSchema.extend({ content: z.string().nullabl
 
 const FeedWidget = createWidget({
 	inject: {
-		getItems: IQuery.output(z.array(ItemSchema)),
+		getItems: IQuery.input(PageInputSchema).output(PageOf(ItemSchema)),
 		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
 		item: IRepeat.of<Given>({
 			default: "@default/obsidian-markdown-preview",
@@ -32,12 +32,10 @@ const FeedWidget = createWidget({
 		}),
 	},
 	draw: ({ getItems, getPageSize: pageSize, item }) => {
-		const size = pageSizeOf(pageSize);
-		const first = useData(getItems, { offset: 0, limit: size });
-		const { pages, more } = usePages(PAGES_KEY, size);
-		const said = saidInstead(item, first);
+		const listed = useData(getItems, { limit: pageSizeOf(pageSize) });
+		const said = saidInstead(item, listed);
 		if (said) return <FeedSaid text={said} />;
-		return <FeedPages items={getItems} Drawn={item as Drawn} size={size} pages={pages} onMore={more} />;
+		return <FeedList items={listed.data} Drawn={item as Drawn} hasMore={listed.hasMore} onMore={listed.more} />;
 	},
 });
 
@@ -94,11 +92,11 @@ export default FeedWidget;
 
 function saidInstead(
 	slot: ItemSlot | null | undefined,
-	first: { failure: string | null; isLoading: boolean; total: number | null },
+	listed: { failure: string | null; isLoading: boolean; data: readonly unknown[] },
 ) {
 	if (!slot) return NO_SLOT;
-	if (first.failure) return first.failure;
-	return !first.isLoading && first.total === 0 ? NOTHING : null;
+	if (listed.data.length > 0 || listed.isLoading) return null;
+	return listed.failure ?? NOTHING;
 }
 
 function pageSizeOf(pageSize: number) {

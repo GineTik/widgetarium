@@ -8,7 +8,7 @@ export type Row<T> = T & { ref: RecordRef };
 
 export type CanResult = { can: true } | { can: false; reason: string };
 
-export type Action<I, O> = ((input: I) => Promise<O>) & { can(): CanResult };
+export type Action<I, O> = ((input: I, signal?: AbortSignal) => Promise<O>) & { can(): CanResult };
 
 export type MaybePromise<O> = O | Promise<O>;
 
@@ -91,5 +91,6 @@ export type ValueGateway<T, Wanted = DefaultValueVerbs> = GatewayBase & {
 
 export const COLLECTION_VERBS = ["list", "get", "create", "update", "remove"] as const;
 export const VALUE_VERBS = ["get", "update", "remove"] as const;
+export const READ_VERBS: readonly string[] = ["list", "get", "query", "describe"];
 
 export type PropKind = "collection" | "value";

@@ -1,17 +1,24 @@
-import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
+import type { z } from "zod";
+import { COLLECTION_VERBS, READ_VERBS, VALUE_VERBS } from "./contract";
 import type { CanResult, CollectionGateway, GatewayEvent, Unsubscribe, ValueGateway } from "./contract";
 import { canOf, collectionGateway, valueGateway } from "./create";
 import { MANY_VERBS } from "./many";
 import type { EveryValueVerb } from "./needs";
+import { classNameOf, queryInputOf } from "./declaration";
+import { handlerContextOf } from "./handler-context";
+import type { HandlerHost } from "./handler-context";
 
 export interface AdaptedDeclaration {
 	readonly kind: unknown;
 	readonly writes: readonly string[];
+	readonly input?: z.ZodType | undefined;
 }
 
 export type AdaptedGateway = CollectionGateway<unknown> | ValueGateway<unknown, EveryValueVerb>;
 
-type Method = (this: unknown, input?: unknown) => unknown;
+type Method = (this: unknown, ...given: readonly unknown[]) => unknown;
+
+type Handler = (input: unknown, signal?: AbortSignal) => unknown;
 
 type Listener = (event: GatewayEvent) => void;
 
@@ -20,41 +27,70 @@ interface WritesInFlight {
 	readonly isWriting: () => boolean;
 }
 
-const READ_VERBS: readonly string[] = ["list", "get", "describe"];
-
 const implementationIds = new WeakMap<object, string>();
 let implementationsSeen = 0;
+
+export interface Adapting {
+	readonly id?: string;
+	readonly host: HandlerHost;
+}
+
+interface Asking {
+	readonly host: HandlerHost;
+	readonly declaredInput: z.ZodType | undefined;
+}
+
+const NO_QUERY_INPUT =
+	"the query of {name} declares no input, so nothing can check what it is asked: declare it with IQuery.input(schema)";
+
+const NEVER_ABORTED = new AbortController().signal;
 
 export function gatewayOverImplementation(
 	name: string,
 	declaration: AdaptedDeclaration,
 	implementation: object,
-	stableId?: string,
+	{ id = idOfImplementation(implementation, name), host }: Adapting,
 ): AdaptedGateway {
-	const id = stableId ?? idOfImplementation(implementation, name);
-	const options = optionsOver(implementation, verbsOf(declaration, implementation), id);
+	const asking = { host, declaredInput: declaration.input };
+	const options = optionsOver(implementation, verbsOf(declaration, implementation), { id, asking });
 	return declaration.kind === "collection" ? collectionGateway(options) : valueGateway(options);
 }
 
 export function isImplementation(declaration: AdaptedDeclaration, held: unknown): held is object {
 	if (typeof held !== "object" || held === null) return false;
-	return methodOf(held, declaration.kind === "collection" ? "list" : "get") !== null;
+	return (
+		methodOf(held, "query") !== null || methodOf(held, declaration.kind === "collection" ? "list" : "get") !== null
+	);
 }
 
-function optionsOver(implementation: object, verbs: readonly string[], id: string) {
+function optionsOver(
+	implementation: object,
+	verbs: readonly string[],
+	{ id, asking }: { readonly id: string; readonly asking: Asking },
+) {
 	const writes = writesInFlight();
+	const handlerFor = (verb: string): Handler =>
+		verb === "query" ? askedOf(implementation, asking) : handlerOf(implementation, verb, writes);
 	return {
 		id,
-		handlers: Object.fromEntries(verbs.map((verb) => [verb, handlerOf(implementation, verb, writes)] as const)),
+		handlers: Object.fromEntries(verbs.map((verb) => [verb, handlerFor(verb)] as const)),
 		settlesNow: Reflect.get(implementation, "settlesNow") === true,
 		...cansOver(implementation, verbs),
 		...subscribeOver(implementation, writes),
 	};
 }
 
-function handlerOf(implementation: object, verb: string, writes: WritesInFlight): (input: unknown) => unknown {
+function handlerOf(implementation: object, verb: string, writes: WritesInFlight): Handler {
 	if (READ_VERBS.includes(verb)) return (input) => callVerb(implementation, verb, input);
 	return (input) => writes.during(() => callVerb(implementation, verb, input));
+}
+
+function askedOf(implementation: object, { host, declaredInput }: Asking): Handler {
+	const madeBy: unknown = Reflect.get(implementation, "constructor");
+	const input = queryInputOf(madeBy) ?? declaredInput;
+	if (!input) return () => Promise.reject(new TypeError(NO_QUERY_INPUT.replace("{name}", classNameOf(madeBy))));
+	return (asked, signal = NEVER_ABORTED) =>
+		callVerb(implementation, "query", input.parse(asked), handlerContextOf(host, signal));
 }
 
 function writesInFlight(): WritesInFlight {
@@ -117,10 +153,10 @@ function subscribedTo(implementation: object, changed: () => void): Unsubscribe 
 	};
 }
 
-function callVerb(implementation: object, verb: string, input: unknown): unknown {
+function callVerb(implementation: object, verb: string, ...given: unknown[]): unknown {
 	const method = methodOf(implementation, verb);
 	if (method === null) throw new TypeError(`implementation.${verb} is not a function`);
-	return method.call(implementation, input);
+	return method.apply(implementation, given);
 }
 
 function methodOf(implementation: object, verb: string): Method | null {

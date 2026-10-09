@@ -1,4 +1,9 @@
-import { registeredQueries } from "../packages/core/src/engine/packs.ts";
+import { definePack, registerPacks, registeredQueries } from "../packages/core/src/engine/packs.ts";
+import type { HandlerContext } from "../packages/core/src/gateway/handler-context.ts";
+import { PageInputSchema, PageOf, pageAt } from "../packages/core/src/gateway/page.ts";
+import type { Page, PageInput } from "../packages/core/src/gateway/page.ts";
+import { IQuery } from "../packages/core/src/gateway/queries.ts";
+import { present } from "./page-dom.ts";
 import { hostGatewayFor, resolveHostGateway, sourcesFor } from "../packages/core/src/engine/host-gateways.js";
 import { createGatewayRefs, createViewCells } from "../packages/core/src/gateway/refs.ts";
 import { arrayGateway, soloGateway } from "../packages/core/src/gateway/create.ts";
@@ -320,6 +325,65 @@ const stopHearing = typedRows.subscribe(() => {
 await typedRows.create({ title: "Water plants" });
 stopHearing();
 check("one write is announced once, not once per layer it passes through", heard, 1);
+
+const queriedWith: { readonly input: PageInput; readonly ctx: HandlerContext }[] = [];
+class CtxPageQuery extends IQuery.input(PageInputSchema).output(PageOf(z.looseObject({}))) {
+	constructor(readonly fields: object) {
+		super();
+	}
+	query(input: PageInput, ctx: HandlerContext): Page<never> {
+		queriedWith.push({ input, ctx });
+		return pageAt([], 0, 0);
+	}
+}
+registerPacks(
+	definePack({
+		id: "@ctx-query",
+		title: "Ctx query",
+		queries: [
+			defineGatewayMetadata(CtxPageQuery, {
+				id: "@ctx-query/page",
+				title: "Pages",
+				resource: "This board",
+				fields: z.looseObject({}),
+			}),
+		],
+		commands: [],
+	}),
+);
+const ctxPages = resolveHostGateway({
+	...contextFor({}),
+	name: "notes",
+	spec: { kind: "collection" },
+	tile: { id: "t7", props: { notes: { implementation: "@ctx-query/page", fields: {} } } },
+});
+await Reflect.apply(present(Reflect.get(ctxPages, "query"), "the bound page query"), ctxPages, [{}]);
+const queried = present(queriedWith[0], "the ctx a bound page query was handed");
+check(
+	"a bound page query is asked through its own input schema and handed the query ports as ctx.host",
+	[queried.input.limit, queried.ctx.user, queried.ctx.host.self, "prop" in queried.ctx.host],
+	[100, null, "t7/notes", true],
+);
+
+const folderPages = resolveHostGateway({
+	...contextFor({}),
+	name: "notes",
+	spec: { kind: "collection" },
+	tile: { id: "t8", props: { notes: { implementation: "@obsidian/folder", fields: { path: "Notes" } } } },
+	host: {
+		slot: () => createRowSlot(["a", "b", "c"].map((name) => ({ path: `Notes/${name}.md`, name, props: {} }))),
+	},
+});
+const firstFolderPage: unknown = await Reflect.apply(
+	present(Reflect.get(folderPages, "query"), "the folder's page query"),
+	folderPages,
+	[{ limit: 2 }],
+);
+check(
+	"a folder bound on the board answers a page with the cursor of the next",
+	[fieldIn(firstFolderPage, "next"), fieldIn(firstFolderPage, "total")],
+	["2", 3],
+);
 
 console.log(`\n${failed === 0 ? "host gateways: clean" : `host gateways: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

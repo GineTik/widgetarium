@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type { SortRow } from "./contract";
 import type { DeclaredFilterRow, HeldSpec } from "./manifest";
 
@@ -7,6 +7,10 @@ export const DECLARATION = Symbol.for("widgetarium.declaration");
 export const BARE_QUERY = Symbol.for("widgetarium.bare-query");
 
 export const QUERY_WITHOUT_SCHEMA = 'prop "{name}" is a query with no shape: write IQuery.output(schema)';
+
+const QUERY_INPUT = Symbol.for("widgetarium.query-input");
+
+const NOT_A_GATEWAY = "declareQueryInput takes a class extending a gateway interface — {name} is not one";
 
 export type Kind = "collection" | "value" | "command" | "passed" | "slot" | "mounts";
 
@@ -22,7 +26,6 @@ export interface Declaration {
 	readonly sort?: readonly SortRow[];
 	readonly rows?: readonly unknown[];
 	readonly isQuery?: boolean;
-	// TODO: read by handle(input) in C2
 	readonly input?: z.ZodType;
 	readonly output?: z.ZodType;
 	readonly isBound?: boolean;
@@ -34,6 +37,20 @@ export function declarationIn(held: unknown): Declaration | null {
 	if (typeof held !== "function" || !(DECLARATION in held)) return null;
 	const declared = held[DECLARATION];
 	return isDeclaration(declared) ? declared : null;
+}
+
+export function declareQueryInput<C extends abstract new (...given: never[]) => object>(
+	implementation: C,
+	input: z.ZodType,
+): C {
+	if (!declarationIn(implementation)) throw new TypeError(NOT_A_GATEWAY.replace("{name}", classNameOf(implementation)));
+	Object.defineProperty(implementation, QUERY_INPUT, { value: input });
+	return implementation;
+}
+
+export function queryInputOf(implementation: unknown): z.ZodType | undefined {
+	const declared: unknown = typeof implementation === "function" ? Reflect.get(implementation, QUERY_INPUT) : undefined;
+	return declared instanceof z.ZodType ? declared : declarationIn(implementation)?.input;
 }
 
 export function isPortItself(held: unknown): boolean {

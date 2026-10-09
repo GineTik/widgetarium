@@ -129,7 +129,10 @@ function gatewayOfImplementation(
 ): HostGateway {
 	const instance: object = Reflect.construct(chosen.implementation, [fields, ports]);
 	const id = `${ports.self}?${chosen.id}&${stableKey(fields)}${keptKeyOf(ports.kept.read())}&note=${notePath}`;
-	return gatewayOverImplementation(ports.self, { kind: kindOf(chosen), writes: ROW_UPKEEP_VERBS }, instance, id);
+	return gatewayOverImplementation(ports.self, { kind: kindOf(chosen), writes: ROW_UPKEEP_VERBS }, instance, {
+		id,
+		host: ports,
+	});
 }
 
 function keptKeyOf(kept: unknown): string {

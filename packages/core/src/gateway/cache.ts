@@ -13,14 +13,27 @@ const NOT_LOADED: CacheEntry = { status: "loading", data: null, failure: null, v
 
 const KEY_GAP_NO_PATH_HOLDS = "\u0000";
 
-type Runner = (input: unknown) => Promise<unknown>;
+export type Runner = (input: unknown, signal: AbortSignal) => Promise<unknown>;
+
+export type Extension = (before: unknown, signal: AbortSignal) => Promise<unknown>;
 
 interface Tracked {
 	run: Runner;
 	input: unknown;
 	listeners: Set<() => void>;
 	ticket: number;
+	controller: AbortController | null;
+	inFlight: InFlight;
+	queued: Extension[];
 }
+
+type InFlight =
+	| { readonly kind: "idle" }
+	| { readonly kind: "fetching" }
+	| { readonly kind: "extending"; readonly extension: Extension };
+
+const IDLE: InFlight = { kind: "idle" };
+const FETCHING: InFlight = { kind: "fetching" };
 
 type Subscriber = ActionMeta["subscribe"];
 
@@ -42,6 +55,7 @@ export function createGatewayCache() {
 		read: (meta: ActionMeta, input: unknown): CacheEntry => readEntry(state, meta, input),
 		subscribe: (meta: ActionMeta, input: unknown, run: Runner, listener: () => void) =>
 			track(state, { meta, input, run, listener }),
+		extend: (meta: ActionMeta, input: unknown, extension: Extension) => extend(state, keyOf(meta, input), extension),
 		invalidate: (gatewayId: string) => invalidate(state, gatewayId),
 		refetch: (gatewayIds: readonly string[]) => refetch(state, gatewayIds),
 	};
@@ -73,11 +87,48 @@ function settle(state: CacheState, key: string, ticket: number, next: (before?: 
 	notify(state, key);
 }
 
-function fetchNow(state: CacheState, key: string): Promise<void> {
+async function fetchNow(state: CacheState, key: string): Promise<void> {
 	const held = state.tracked.get(key);
-	if (!held) return Promise.resolve();
+	if (!held) return;
+	if (held.inFlight.kind === "extending") held.queued.unshift(held.inFlight.extension);
+	held.inFlight = FETCHING;
+	const settled = settleAnswer(state, key, held, (signal) => held.run(held.input, signal));
+	const ticket = held.ticket;
+	await settled;
+	if (held.inFlight.kind !== "fetching" || held.ticket !== ticket) return;
+	held.inFlight = IDLE;
+	await extendQueued(state, key, held);
+}
+
+async function extend(state: CacheState, key: string, extension: Extension): Promise<void> {
+	const held = state.tracked.get(key);
+	const before = state.entries.get(key);
+	if (!held || before === undefined || before.data === null) return;
+	if (held.inFlight.kind !== "idle") {
+		held.queued.push(extension);
+		return;
+	}
+	const extending: InFlight = { kind: "extending", extension };
+	held.inFlight = extending;
+	await settleAnswer(state, key, held, (signal) => extension(before.data, signal));
+	if (held.inFlight !== extending) return;
+	held.inFlight = IDLE;
+	await extendQueued(state, key, held);
+}
+
+function extendQueued(state: CacheState, key: string, held: Tracked): Promise<void> {
+	const queued = held.queued.shift();
+	return queued ? extend(state, key, queued) : Promise.resolve();
+}
+
+function settleAnswer(
+	state: CacheState,
+	key: string,
+	held: Tracked,
+	answer: (signal: AbortSignal) => Promise<unknown>,
+): Promise<void> {
 	const ticket = ++held.ticket;
-	return held.run(held.input).then(
+	return answer(freshSignal(held)).then(
 		(data) =>
 			settle(state, key, ticket, (before) => ({
 				status: "ready",
@@ -85,17 +136,26 @@ function fetchNow(state: CacheState, key: string): Promise<void> {
 				failure: null,
 				version: (before?.version ?? 0) + 1,
 			})),
-		(failure: unknown) => {
-			console.error(`Widgetarium: ${key.split(KEY_GAP_NO_PATH_HOLDS, 2).join(".")} failed`, failure);
-			const said = failure instanceof Error ? failure.message : String(failure);
-			settle(state, key, ticket, (before) => ({
-				status: "failed",
-				data: before?.data ?? null,
-				failure: said,
-				version: (before?.version ?? 0) + 1,
-			}));
-		},
+		(failure: unknown) => settleFailure(state, key, ticket, failure),
 	);
+}
+
+function settleFailure(state: CacheState, key: string, ticket: number, failure: unknown): void {
+	if (state.tracked.get(key)?.ticket !== ticket) return;
+	console.error(`Widgetarium: ${key.split(KEY_GAP_NO_PATH_HOLDS, 2).join(".")} failed`, failure);
+	const said = failure instanceof Error ? failure.message : String(failure);
+	settle(state, key, ticket, (before) => ({
+		status: "failed",
+		data: before?.data ?? null,
+		failure: said,
+		version: (before?.version ?? 0) + 1,
+	}));
+}
+
+function freshSignal(held: Tracked): AbortSignal {
+	held.controller?.abort();
+	held.controller = new AbortController();
+	return held.controller.signal;
 }
 
 function refetchOnceThisTick(state: CacheState, key: string) {
@@ -160,6 +220,7 @@ function untrack(state: CacheState, { key, held, listener, meta }: UntrackReques
 	detach(state, meta);
 	if (held.listeners.size > 0) return;
 	held.ticket += 1;
+	held.controller?.abort();
 	state.tracked.delete(key);
 }
 
@@ -173,7 +234,15 @@ interface TrackRequest {
 function track(state: CacheState, { meta, input, run, listener }: TrackRequest): Unsubscribe {
 	const key = keyOf(meta, input);
 	const nothingWasSubscribed = !state.attached.has(meta.gatewayId);
-	const held = state.tracked.get(key) ?? { run, input, listeners: new Set<() => void>(), ticket: 0 };
+	const held = state.tracked.get(key) ?? {
+		run,
+		input,
+		listeners: new Set<() => void>(),
+		ticket: 0,
+		controller: null,
+		inFlight: IDLE,
+		queued: [],
+	};
 	keepFreshestRun(held, run, input);
 	state.tracked.set(key, held);
 	held.listeners.add(listener);

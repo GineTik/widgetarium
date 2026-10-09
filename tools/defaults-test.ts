@@ -6,6 +6,7 @@ import {
 	defineDefaultImplementation,
 } from "../packages/core/src/gateway/defaults.ts";
 import { gatewayOverImplementation } from "../packages/core/src/gateway/adapted.js";
+import { shutHostFor } from "../packages/core/src/gateway/handler-context.ts";
 import { declarationIn } from "../packages/core/src/gateway/declaration.ts";
 import { present } from "./page-dom.ts";
 import { collectionOf, valueGatewayOf } from "./gateway-kinds.ts";
@@ -49,6 +50,7 @@ const tasks = collectionOf(
 		"tasks",
 		present(declarationIn(Tasks), "the tasks declaration"),
 		new RowsInMemoryGateway({ rows: [{ title: "Write" }] }),
+		{ host: shutHostFor("tasks") },
 	),
 );
 const created = await tasks.create({ title: "Ship" });
@@ -65,6 +67,7 @@ const heading = valueGatewayOf(
 		"heading",
 		present(declarationIn(Heading), "the heading declaration"),
 		new ValueInMemoryGateway({ value: "Habit" }),
+		{ host: shutHostFor("heading") },
 	),
 );
 await heading.update("Run");

@@ -2,8 +2,10 @@ import type { Query, RecordRef, Row, RowsResult } from "./contract";
 import { rowOf, toRows } from "./create";
 import { classNameOf, declarationIn } from "./declaration";
 import { ICrudGateway, IListGateway, IValueGateway } from "./declared";
-import { QueryRowsContract, QueryValueContract } from "./queries";
+import { QueryAskContract, QueryPageContract, QueryRowsContract, QueryValueContract } from "./queries";
 import { isMatch, pageOf, sortRows } from "./match";
+import { pageOverListing } from "./page";
+import type { Page, PageInput } from "./page";
 import { verbOf } from "./verbs-of";
 
 const DEFAULT_IMPLEMENTATION = Symbol.for("widgetarium.default-implementation");
@@ -78,6 +80,10 @@ export class RowsInMemoryGateway extends ICrudGateway {
 		return this.rows.find((row) => row.ref === ref) ?? null;
 	}
 
+	query(input: PageInput): Promise<Page<unknown>> {
+		return pageOverListing((query) => this.list(query), input);
+	}
+
 	create(data: unknown): Row<unknown> {
 		const row = rowOf(data, this.unusedRef());
 		this.rows = [...this.rows, row];
@@ -127,6 +133,10 @@ export class ValueInMemoryGateway extends IValueGateway {
 		return this.value;
 	}
 
+	query(): unknown {
+		return this.value;
+	}
+
 	update(value: unknown): unknown {
 		this.value = value;
 		this.listeners.tell();
@@ -161,3 +171,5 @@ defineDefaultImplementation(IListGateway, RowsInMemoryGateway);
 defineDefaultImplementation(ICrudGateway, RowsInMemoryGateway);
 defineDefaultImplementation(QueryValueContract, ValueInMemoryGateway);
 defineDefaultImplementation(QueryRowsContract, RowsInMemoryGateway);
+defineDefaultImplementation(QueryAskContract, ValueInMemoryGateway);
+defineDefaultImplementation(QueryPageContract, RowsInMemoryGateway);

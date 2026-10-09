@@ -11,7 +11,7 @@ import type {
 	ValueGateway,
 } from "./contract";
 import { z } from "zod";
-import { COLLECTION_VERBS, VALUE_VERBS } from "./contract";
+import { COLLECTION_VERBS, READ_VERBS, VALUE_VERBS } from "./contract";
 import type { EveryValueVerb } from "./needs";
 import { isMatch, pageOf, sortRows } from "./match";
 import { isAction, verbOf } from "./verbs-of";
@@ -21,13 +21,12 @@ export interface ActionMeta {
 	verb: string;
 	subscribe(listener: (event: GatewayEvent) => void): Unsubscribe;
 	readNow?: (input: unknown) => unknown;
+	isPaged?: boolean;
 }
 
-type AnyHandler = (input: never) => MaybePromise<unknown>;
+type AnyHandler = (input: never, signal?: AbortSignal) => MaybePromise<unknown>;
 
 type HandlerMap = Record<string, AnyHandler>;
-
-const READ_VERBS = new Set(["list", "get", "subscribe"]);
 
 const CanResultSchema = z.union([
 	z.object({ can: z.literal(true) }),
@@ -85,10 +84,15 @@ export function action<I, O>(run: (input: I) => MaybePromise<O>): Action<I, O> {
 }
 
 export function refuseVerb(original: unknown, reason: string): Action<never, unknown> {
-	const refused = refuseAction<never, unknown>(reason) as Action<never, unknown> & { meta?: ActionMeta };
-	const meta = (original as { meta?: ActionMeta } | null)?.meta;
-	if (meta) refused.meta = meta;
-	return refused;
+	const refused = refuseAction<never, unknown>(reason);
+	const meta = metaOf(original);
+	return meta ? Object.assign(refused, { meta }) : refused;
+}
+
+export function metaOf(held: unknown): ActionMeta | null {
+	if (typeof held !== "function") return null;
+	const meta: unknown = Reflect.get(held, "meta");
+	return isActionMeta(meta) ? meta : null;
 }
 
 export function collectionGateway<T>(options: {
@@ -212,10 +216,10 @@ function combineSubscribe(emitter: ReturnType<typeof createEmitter>, outer?: Sub
 function buildVerb(options: AssembleOptions, verb: string, notify: () => void): Action<never, unknown> {
 	const held = options.handlers[verb];
 	if (!held) return refuseAction(refusalOf(options, verb));
-	const announces = options.announcesOwnWrites !== false && !READ_VERBS.has(verb);
+	const announces = options.announcesOwnWrites !== false && !READ_VERBS.includes(verb);
 	return withCan(
-		async (input: never) => {
-			const result = await held(input);
+		async (input: never, signal?: AbortSignal) => {
+			const result = await held(input, signal);
 			if (announces) notify();
 			return result;
 		},
@@ -225,7 +229,7 @@ function buildVerb(options: AssembleOptions, verb: string, notify: () => void): 
 
 function readNowHandlerFor(options: AssembleOptions, verb: string): ((input: unknown) => unknown) | undefined {
 	const held = options.handlers[verb];
-	if (!options.settlesNow || !held || !READ_VERBS.has(verb)) return undefined;
+	if (!options.settlesNow || !held || !READ_VERBS.includes(verb)) return undefined;
 	return held as (input: unknown) => unknown;
 }
 
@@ -249,6 +253,15 @@ function assemble(options: AssembleOptions): object {
 		gateway[verb] = built;
 	}
 	return gateway;
+}
+
+function isActionMeta(held: unknown): held is ActionMeta {
+	if (typeof held !== "object" || held === null) return false;
+	return (
+		typeof Reflect.get(held, "gatewayId") === "string" &&
+		typeof Reflect.get(held, "verb") === "string" &&
+		typeof Reflect.get(held, "subscribe") === "function"
+	);
 }
 
 function isCollectionGateway<T>(held: object): held is CollectionGateway<T> {

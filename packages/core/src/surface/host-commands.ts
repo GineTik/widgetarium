@@ -5,6 +5,8 @@ import type { Tile } from "../model.js";
 import { canOf } from "../gateway/create.js";
 import { AnsweringCommand, runHandler } from "../gateway/run-handler.js";
 import { declarationIn } from "../gateway/declaration.js";
+import { handlerContextOf } from "../gateway/handler-context.js";
+import { useSignalUntilUnmount } from "../gateway/use-signal-until-unmount.js";
 import { portsOf, registeredCommands } from "../engine/packs.js";
 import type { PortsHost } from "../engine/packs.js";
 import type { CommandMetadata } from "../gateway/implementation-metadata.js";
@@ -19,6 +21,7 @@ interface CommandAsk {
 	readonly refs: GatewayRefs;
 	readonly tileId: string;
 	readonly host: PortsHost;
+	readonly signal: AbortSignal;
 }
 
 const NOT_ALLOWED = '"{name}" is switched off for this tile';
@@ -33,16 +36,17 @@ export function useHostCommands(
 	host: PortsHost,
 ): Record<string, AnsweringCommand> {
 	const specs = commandSpecsOf(manifest["commands"]);
+	const signal = useSignalUntilUnmount();
 	return useMemo(
 		() =>
 			Object.fromEntries(
 				Object.entries(specs).flatMap(([name, spec]) => {
 					const binding = commandBindingOf(tile, name, spec);
-					const command = hostCommandOf({ name, binding, refs, tileId: tile.id, host });
+					const command = hostCommandOf({ name, binding, refs, tileId: tile.id, host, signal });
 					return command ? [[name, command] as const] : [];
 				}),
 			),
-		[tile.props, refs, host, Object.keys(specs).join("\u0000")],
+		[tile.props, refs, host, signal, Object.keys(specs).join("\u0000")],
 	);
 }
 
@@ -75,14 +79,15 @@ function hostCommandOf(ask: CommandAsk): AnsweringCommand | null {
 
 function createPackedCommand(
 	packed: CommandMetadata,
-	{ name, binding, refs, tileId, host }: CommandAsk,
+	{ name, binding, refs, tileId, host, signal }: CommandAsk,
 ): AnsweringCommand {
 	const ports = portsOf(host, refs, `${tileId}/${name}`);
 	const instance: object = Reflect.construct(packed.implementation, [binding.fields ?? {}, ports]);
 	const contract = { output: declarationIn(packed.implementation)?.output, name: packed.id };
+	const context = handlerContextOf(ports, signal);
 	return new AnsweringCommand(
 		() => canOf(instance),
-		(input) => runHandler(instance, input, contract),
+		(input) => runHandler(instance, input, contract, context),
 	);
 }
 

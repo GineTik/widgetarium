@@ -81,7 +81,7 @@
 		}
 	},
 	"migrates": [],
-	"files": ["widget.tsx", "feed-page.tsx", "feed-pages.tsx", "feed-said.tsx", "types.ts"],
+	"files": ["widget.tsx", "feed-list.tsx", "feed-said.tsx", "types.ts"],
 	"dependencies": {},
 	"widgetDependencies": ["@default/obsidian-markdown-preview"]
 }

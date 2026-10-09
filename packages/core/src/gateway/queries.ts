@@ -4,7 +4,18 @@ import { BARE_QUERY, DECLARATION } from "./declaration";
 import type { Declaration } from "./declaration";
 import { IBaseGateway } from "./declared";
 import type { AbstractOf, Answer, RefReserved } from "./declared";
-import type { CommandInputDeclared, commandInput, commandOutput, QueryDeclared, QueryHeldOf } from "./declared-types";
+import type {
+	AskedHeldOf,
+	AskedOutputOf,
+	CommandInputDeclared,
+	commandInput,
+	commandOutput,
+	QueryAskDeclared,
+	QueryDeclared,
+	QueryHeldOf,
+} from "./declared-types";
+import type { HandlerContext } from "./handler-context";
+import { pageItemOf } from "./page";
 import { innerOf } from "./written";
 
 export abstract class QueryRowsContract<T> extends IBaseGateway {
@@ -15,8 +26,14 @@ export abstract class QueryValueContract<T> extends IBaseGateway {
 	abstract get(): Answer<T | null>;
 }
 
+export abstract class QueryAskContract<I, O> extends (IBaseGateway as AbstractOf<IBaseGateway>) {
+	abstract query(input: I, ctx: HandlerContext): Answer<O>;
+}
+
+export abstract class QueryPageContract<I, O> extends QueryAskContract<I, O> {}
+
 export abstract class CommandContract<I, O = void> extends (IBaseGateway as AbstractOf<IBaseGateway>) {
-	abstract run(input: I): Answer<O>;
+	abstract run(input: I, ctx: HandlerContext): Answer<O>;
 }
 
 const VALUE_QUERY: Declaration = { kind: "value", schema: z.unknown(), reads: ["get"], writes: [], isQuery: true };
@@ -28,7 +45,13 @@ const ROWS_QUERY: Declaration = {
 	pickableWrites: [],
 	isQuery: true,
 };
+const ASKED_VALUE: Declaration = { ...VALUE_QUERY, reads: ["query"] };
+// TODO: Page as its own gateway kind, not riding the collection's list/get plumbing
+const ASKED_PAGE: Declaration = { ...ROWS_QUERY, reads: ["query"] };
 const BARE_COMMAND: Declaration = { kind: "command", schema: z.undefined(), writes: ["run"] };
+
+const PAGE_LOST =
+	"this output has a page's items and next but lost the PageOf mark, so it would be read as one value: declare PageOf(extendedItem); PageOf(x).extend/optional/nullable loses paging";
 
 const OUTPUT_TRANSFORMS =
 	".output() refuses a schema holding a transform or a pipe ({at}): an output is parsed by the handler and again by the widget, so it must parse to itself — convert the value in run() or draw(), and keep .output() to shapes, .default and .catch";
@@ -38,10 +61,14 @@ const TRANSFORMING_TYPES = new Set(["pipe", "transform"]);
 
 Object.defineProperty(QueryRowsContract, DECLARATION, { value: ROWS_QUERY });
 Object.defineProperty(QueryValueContract, DECLARATION, { value: VALUE_QUERY });
+Object.defineProperty(QueryAskContract, DECLARATION, { value: ASKED_VALUE });
+Object.defineProperty(QueryPageContract, DECLARATION, { value: ASKED_PAGE });
 Object.defineProperty(CommandContract, DECLARATION, { value: BARE_COMMAND });
 
-export interface QueryInputDeclared {
-	output<const S extends z.ZodType>(schema: S & RefReserved<QueryHeldOf<S>>): QueryDeclared<S>;
+export interface QueryInputDeclared<I extends z.ZodType> {
+	output<const O extends z.ZodType>(
+		schema: O & RefReserved<AskedHeldOf<AskedOutputOf<O>>>,
+	): QueryAskDeclared<z.input<I>, z.output<I>, AskedOutputOf<O>, z.input<O>>;
 }
 
 export abstract class IQuery extends (IBaseGateway as AbstractOf<IBaseGateway>) {
@@ -56,8 +83,8 @@ export abstract class IQuery extends (IBaseGateway as AbstractOf<IBaseGateway>) 
 		return createQueryClass({ schema: bound, isBound: true }) as QueryDeclared<B>;
 	}
 
-	static input(input: z.ZodType): QueryInputDeclared {
-		return withOutput({}, (schema) => createQueryClass({ schema, input })) as QueryInputDeclared;
+	static input<const I extends z.ZodType>(input: I): QueryInputDeclared<I> {
+		return withOutput({}, (output) => createAskedQueryClass(input, output)) as QueryInputDeclared<I>;
 	}
 }
 
@@ -121,7 +148,23 @@ function indexedParts(parts: unknown): readonly (readonly [string, unknown])[] {
 	return Array.isArray(parts) ? parts.map((part: unknown, index) => [`|${index}`, part] as const) : [];
 }
 
-type QueryShape = Pick<Declaration, "schema" | "input" | "isBound">;
+type QueryShape = Pick<Declaration, "schema" | "isBound">;
+
+function createAskedQueryClass(input: z.ZodType, output: z.ZodType): AbstractOf<IBaseGateway> {
+	const item = pageItemOf(output);
+	if (item) return createDeclaredClass(QueryPageContract, { ...ASKED_PAGE, schema: item, input, output });
+	if (isUnmarkedPage(output)) throw new TypeError(PAGE_LOST);
+	return createDeclaredClass(QueryAskContract, { ...ASKED_VALUE, schema: output, input, output });
+}
+
+function isUnmarkedPage(schema: z.ZodType): boolean {
+	if (!(schema instanceof z.ZodObject)) {
+		const inner = innerOf(schema);
+		return inner ? isUnmarkedPage(inner) : false;
+	}
+	const items: unknown = schema.shape["items"];
+	return items instanceof z.ZodType && arrayElementOf(items) !== null && "next" in schema.shape;
+}
 
 function createQueryClass({ schema, ...shape }: QueryShape): AbstractOf<IBaseGateway> {
 	const element = arrayElementOf(schema);

@@ -3,7 +3,7 @@ import { isObject } from "../engine/is-object";
 
 export type LooseVerb = (input?: unknown) => unknown;
 
-export type LooseAction = ((input?: unknown) => Promise<unknown>) & { can(): CanResult };
+export type LooseAction = ((input?: unknown, signal?: AbortSignal) => Promise<unknown>) & { can(): CanResult };
 
 export function verbOf(gateway: unknown, verb: string): unknown {
 	return isObject(gateway) ? gateway[verb] : undefined;
