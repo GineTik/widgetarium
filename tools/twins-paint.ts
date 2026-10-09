@@ -120,6 +120,20 @@ async function openPage(): Promise<AskedPage> {
 	return page;
 }
 
+const TOGGLE_MOTION = `(async () => {
+	const [, italic, underline] = document.querySelectorAll("#toggles button");
+	const endOf = () => parseFloat(getComputedStyle(italic, "::before").borderTopRightRadius);
+	const before = endOf();
+	underline.click();
+	await new Promise((done) => setTimeout(done, 90));
+	const midway = endOf();
+	await new Promise((done) => setTimeout(done, 700));
+	const after = endOf();
+	underline.click();
+	await new Promise((done) => setTimeout(done, 700));
+	return { before, isMidway: midway > after && midway < before, after };
+})()`;
+
 async function navOpenedByRestThenPress(page: AskedPage): Promise<unknown> {
 	const [x, y] = (await page.ask(NAV_SPOT)) as [number, number];
 	await page.hover(x - 2, y);
@@ -172,10 +186,15 @@ export async function twinChecks(): Promise<readonly Twin[]> {
 				{
 					boldEnd: "6px",
 					italicStart: "6px",
-					italicEnd: "999px",
-					loneStrike: ["999px", "999px"],
+					italicEnd: "26px",
+					loneStrike: ["26px", "26px"],
 					pressedToggleIsTheAccentButton: true,
 				},
+			],
+			[
+				"TURNING ON THE TOGGLE BETWEEN TWO PRESSED ONES SHRINKS THE TOUCHING CORNERS OVER TIME, NOT AT ONCE",
+				await answerOf(page, TOGGLE_MOTION),
+				{ before: 26, isMidway: true, after: 6 },
 			],
 			[
 				"JOINED CONTROLS MEET ON THE SMALL CORNER WITH NO LINE BETWEEN, A FIELD INCLUDED; AN OTP SLOT IS OUR FIELD",

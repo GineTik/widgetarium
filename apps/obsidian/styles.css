@@ -8876,6 +8876,7 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: var(--wg-kit-shadow);
 }
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button::before {
+	border-radius: calc(var(--wg-kit-control-l) / 2);
 	transition:
 		background var(--wg-quick) var(--wg-ease),
 		border-radius var(--wg-grow) var(--wg-spring);
@@ -10566,6 +10567,7 @@ body.wg-tree-carrying .wg-tile-body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-field.wg-kit-otp-slot {
 	position: relative;
+	border-radius: calc(var(--wg-kit-control-l) / 2);
 	justify-content: center;
 	width: var(--wg-kit-control-m);
 	padding: 0;
@@ -10740,6 +10742,7 @@ body.wg-tree-carrying .wg-tile-body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-btn, .wg-kit-icon)::before,
 :is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-field, .wg-kit-input-group, .wg-kit-btn-group-text) {
+	border-radius: calc(var(--wg-kit-control-l) / 2);
 	transition:
 		background var(--wg-quick) var(--wg-ease),
 		border-radius var(--wg-grow) var(--wg-spring);
@@ -10773,7 +10776,7 @@ body.wg-tree-carrying .wg-tile-body {
 	border-end-end-radius: var(--wg-kit-item);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-btn, .wg-kit-icon):active::before {
-	border-radius: var(--wg-kit-pill);
+	border-radius: calc(var(--wg-kit-control-l) / 2);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn-group > .wg-kit-btn.is-outline::before {
 	background: var(--wg-kit-fill);
