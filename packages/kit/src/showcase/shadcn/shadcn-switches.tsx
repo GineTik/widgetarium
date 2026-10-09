@@ -31,6 +31,15 @@ export function ShadcnSwitches(): ReactElement {
 					<TabsContent value="password">Change your password here.</TabsContent>
 				</Tabs>
 			</Named>
+			<Named name='TabsList variant="line"'>
+				<Tabs defaultValue="overview">
+					<TabsList variant="line">
+						<TabsTrigger value="overview">Overview</TabsTrigger>
+						<TabsTrigger value="activity">Activity</TabsTrigger>
+						<TabsTrigger value="settings">Settings</TabsTrigger>
+					</TabsList>
+				</Tabs>
+			</Named>
 			<Named name="ToggleGroup type=multiple">
 				<ToggleGroup type="multiple" defaultValue={["bold"]}>
 					<ToggleGroupItem value="bold" aria-label="Bold">
