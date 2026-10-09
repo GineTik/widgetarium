@@ -2394,20 +2394,6 @@ body {
 	margin-top: calc(var(--wg-gap-parts, 8px) / -2);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-form-field.is-vertical:has(> .wg-kit-field) {
-	--wg-kit-form-text-inset: var(--wg-kit-field-inset);
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-form-field.is-vertical:has(> .wg-kit-field.is-s) {
-	--wg-kit-form-text-inset: var(--wg-kit-field-inset-s);
-}
-
-:is(.wg-root, .wg-portal)
-	.wg-kit-form-field.is-vertical
-	> :is(.wg-kit-form-label, .wg-kit-label, .wg-kit-form-description, .wg-kit-form-error) {
-	padding-inline: var(--wg-kit-form-text-inset, 0);
-}
-
 :is(.wg-root, .wg-portal) .wg-kit-form-label {
 	font-size: var(--wg-kit-text-s);
 	color: var(--wg-kit-text-muted);

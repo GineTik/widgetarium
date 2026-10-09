@@ -290,9 +290,9 @@ function sharedPlatePainted(seen: unknown): Painted[] {
 function fieldPainted(seen: unknown): Painted[] {
 	return [
 		[
-			"A FIELD'S MESSAGE STANDS CLOSER TO ITS INPUT THAN ITS LABEL, AND BOTH START WHERE THE INPUT'S TEXT STARTS",
+			"A FIELD'S MESSAGE STANDS CLOSER TO ITS INPUT THAN ITS LABEL, AND BOTH START AT THE INPUT'S EDGE",
 			seen,
-			{ labelToInput: 8, inputToMessage: 4, textStarts: [16, 16, 16] },
+			{ labelToInput: 8, inputToMessage: 4, textStarts: [0, 16, 0] },
 		],
 	];
 }
