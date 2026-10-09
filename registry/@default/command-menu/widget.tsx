@@ -50,9 +50,9 @@ const OTHER = "Other";
 
 const CommandMenuWidget = createWidget({
 	inject: {
-		getEntries: IQuery.expects(z.array(EntrySchema)),
-		getPlaceholder: IQuery.expects(z.string().default("Search")),
-		getIsDialog: IQuery.expects(z.boolean().default(false)),
+		getEntries: IQuery.output(z.array(EntrySchema)),
+		getPlaceholder: IQuery.output(z.string().default("Search")),
+		getIsDialog: IQuery.output(z.boolean().default(false)),
 		navigator: INavigator,
 	},
 	draw: ({ getEntries, getPlaceholder: placeholder, getIsDialog: isDialog, navigator }) => {

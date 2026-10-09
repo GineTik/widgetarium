@@ -52,7 +52,7 @@ const SAID: Readonly<Record<CatalogueMode, { readonly title: string; readonly le
 	template: { title: "Templates", lead: "Pick one and it becomes a page, with every widget it stands on" },
 };
 
-export class EntriesQuery extends IQuery.returns(z.array(CatalogueEntrySchema)) {
+export class EntriesQuery extends IQuery.output(z.array(CatalogueEntrySchema)) {
 	constructor(
 		private readonly fields: FiltersFields,
 		private readonly ports: ImplementationPorts,
@@ -77,7 +77,7 @@ export class EntriesQuery extends IQuery.returns(z.array(CatalogueEntrySchema)) 
 	}
 }
 
-export class CountQuery extends IQuery.returns(z.number()) {
+export class CountQuery extends IQuery.output(z.number()) {
 	constructor(
 		private readonly fields: CountFields,
 		private readonly ports: ImplementationPorts,
@@ -94,7 +94,7 @@ export class CountQuery extends IQuery.returns(z.number()) {
 	}
 }
 
-export class ShowingQuery extends IQuery.returns(z.array(FacetSchema)) {
+export class ShowingQuery extends IQuery.output(z.array(FacetSchema)) {
 	constructor(
 		private readonly fields: FiltersFields,
 		private readonly ports: ImplementationPorts,
@@ -126,7 +126,7 @@ export class ShowingQuery extends IQuery.returns(z.array(FacetSchema)) {
 	}
 }
 
-export class PacksQuery extends IQuery.returns(z.array(FacetSchema)) {
+export class PacksQuery extends IQuery.output(z.array(FacetSchema)) {
 	constructor(
 		private readonly fields: KeywordFields & Pick<FiltersFields, "kind">,
 		private readonly ports: ImplementationPorts,
@@ -158,7 +158,7 @@ export class PacksQuery extends IQuery.returns(z.array(FacetSchema)) {
 	}
 }
 
-export class TagsQuery extends IQuery.returns(z.array(FacetSchema)) {
+export class TagsQuery extends IQuery.output(z.array(FacetSchema)) {
 	constructor(
 		private readonly fields: KeywordFields & Pick<FiltersFields, "kind">,
 		private readonly ports: ImplementationPorts,
@@ -189,7 +189,7 @@ export class TagsQuery extends IQuery.returns(z.array(FacetSchema)) {
 	}
 }
 
-export class TemplatesQuery extends IQuery.returns(z.array(TemplateRowSchema)) {
+export class TemplatesQuery extends IQuery.output(z.array(TemplateRowSchema)) {
 	constructor(
 		private readonly fields: KeywordFields,
 		private readonly ports: ImplementationPorts,
@@ -219,7 +219,7 @@ export class TemplatesQuery extends IQuery.returns(z.array(TemplateRowSchema)) {
 	}
 }
 
-export class SaidQuery extends IQuery.returns(SaidSchema) {
+export class SaidQuery extends IQuery.output(SaidSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -238,7 +238,7 @@ export class SaidQuery extends IQuery.returns(SaidSchema) {
 	}
 }
 
-export class InstallJobQuery extends IQuery.returns(InstallJobSchema.nullable()) {
+export class InstallJobQuery extends IQuery.output(InstallJobSchema.nullable()) {
 	constructor(
 		private readonly fields: JobFields,
 		private readonly ports: ImplementationPorts,

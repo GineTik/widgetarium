@@ -108,11 +108,11 @@ function useActiveInView(rowRef: RefObject<HTMLDivElement | null>, activeRef: st
 
 const UnderlineTabs = createWidget({
 	inject: {
-		getOptions: IQuery.expects(
+		getOptions: IQuery.output(
 			z.array(ChoiceSchema).default([{ label: "Summary" }, { label: "Plan" }, { label: "Implementation" }]),
 		),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
 	},
 	draw: ({ getOptions, getSelection: selection, select }) => {
 		const listed = useData(getOptions, { limit: ALL_OPTIONS });

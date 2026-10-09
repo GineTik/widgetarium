@@ -14,8 +14,8 @@ const NEXT = "Next";
 
 const DocPage = createWidget({
 	inject: {
-		getPage: IQuery.expects(PageSchema.nullable().default(null)),
-		openPage: ICommand.sends(z.string()),
+		getPage: IQuery.output(PageSchema.nullable().default(null)),
+		openPage: ICommand.input(z.string()),
 		host: IHost,
 	},
 	draw: ({ getPage: page, openPage, host }) => {

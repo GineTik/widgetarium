@@ -61,7 +61,7 @@ type Streak = z.infer<typeof StreakSchema>;
 
 const PAGE_UNASKED = 100;
 
-export class NumberQuery extends IQuery.returns(z.number().nullable()) {
+export class NumberQuery extends IQuery.output(z.number().nullable()) {
 	constructor(
 		readonly fields: NumberFields,
 		readonly ports: ImplementationPorts,
@@ -86,7 +86,7 @@ export class NumberQuery extends IQuery.returns(z.number().nullable()) {
 	}
 }
 
-export class SeriesQuery extends IQuery.returns(z.array(PointSchema)) {
+export class SeriesQuery extends IQuery.output(z.array(PointSchema)) {
 	constructor(
 		readonly fields: SeriesFields,
 		readonly ports: ImplementationPorts,
@@ -109,7 +109,7 @@ export class SeriesQuery extends IQuery.returns(z.array(PointSchema)) {
 	}
 }
 
-export class BreakdownQuery extends IQuery.returns(z.array(ShareSchema)) {
+export class BreakdownQuery extends IQuery.output(z.array(ShareSchema)) {
 	constructor(
 		readonly fields: BreakdownFields,
 		readonly ports: ImplementationPorts,
@@ -132,7 +132,7 @@ export class BreakdownQuery extends IQuery.returns(z.array(ShareSchema)) {
 	}
 }
 
-export class StreakQuery extends IQuery.returns(StreakSchema) {
+export class StreakQuery extends IQuery.output(StreakSchema) {
 	constructor(
 		readonly fields: StreakFields,
 		readonly ports: ImplementationPorts,

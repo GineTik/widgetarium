@@ -8,13 +8,13 @@ const CLEAR_ALL = "Clear all";
 
 const FilterBar = createWidget({
 	inject: {
-		getView: IQuery.expects(z.string().nullable().default(null)),
-		getHiddenInView: IQuery.expects(z.string().default("")),
-		getIsOpen: IQuery.expects(z.boolean().default(false)),
-		setIsOpen: ICommand.sends(z.boolean()),
-		getShown: IQuery.expects(z.number().default(0)),
-		getNarrowed: IQuery.expects(z.number().default(0)),
-		clearFilters: ICommand.sends(z.unknown()),
+		getView: IQuery.output(z.string().nullable().default(null)),
+		getHiddenInView: IQuery.output(z.string().default("")),
+		getIsOpen: IQuery.output(z.boolean().default(false)),
+		setIsOpen: ICommand.input(z.boolean()),
+		getShown: IQuery.output(z.number().default(0)),
+		getNarrowed: IQuery.output(z.number().default(0)),
+		clearFilters: ICommand.input(z.unknown()),
 	},
 	draw: ({
 		getView: view,

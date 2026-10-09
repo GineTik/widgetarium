@@ -62,20 +62,20 @@ function toColumns(rows: TaskRow[], columnNames: string[], groupBy: string, arch
 
 const KanbanBoard = createWidget({
 	inject: {
-		getTasks: IQuery.expects(z.array(TaskSchema).default([])),
-		createTask: ICommand.sends(TaskSchema.extend({ id: z.uuid() })),
-		updateTask: ICommand.sends(TaskSchema.partial().extend({ ref: RecordRefSchema })),
-		getChosen: IQuery.expects(ChosenSchema.default({})),
-		getBoards: IQuery.expects(z.array(KanbanBoardSchema).default([])),
+		getTasks: IQuery.output(z.array(TaskSchema).default([])),
+		createTask: ICommand.input(TaskSchema.extend({ id: z.uuid() })),
+		updateTask: ICommand.input(TaskSchema.partial().extend({ ref: RecordRefSchema })),
+		getChosen: IQuery.output(ChosenSchema.default({})),
+		getBoards: IQuery.output(z.array(KanbanBoardSchema).default([])),
 		repairBoardIds: ICommand,
-		getSelection: IQuery.expects(z.unknown()),
-		getBoard: IQuery.expects(
+		getSelection: IQuery.output(z.unknown()),
+		getBoard: IQuery.output(
 			KanbanBoardSchema.default({ columns: [{ name: "To Do" }, { name: "Doing" }, { name: "Done" }] }),
 		),
-		updateBoard: ICommand.sends(KanbanBoardSchema),
-		getOpened: IQuery.expects(z.string().nullable().default(null)),
-		open: ICommand.sends(z.string().nullable()),
-		getGroupBy: IQuery.expects(z.string().default("status")),
+		updateBoard: ICommand.input(KanbanBoardSchema),
+		getOpened: IQuery.output(z.string().nullable().default(null)),
+		open: ICommand.input(z.string().nullable()),
+		getGroupBy: IQuery.output(z.string().default("status")),
 		card: IRepeat.of<{ getTask: CardFace }>({
 			default: "@default/task-card",
 			surface: "group",

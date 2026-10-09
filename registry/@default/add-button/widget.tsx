@@ -24,14 +24,14 @@ const NO_NAME = "{field} names the new note, so it cannot be empty";
 
 const AddButton = createWidget({
 	inject: {
-		getLabel: IQuery.expects(z.string().default("")),
-		getTitle: IQuery.expects(z.string().default("Add")),
-		getFields: IQuery.expects(
+		getLabel: IQuery.output(z.string().default("")),
+		getTitle: IQuery.output(z.string().default("Add")),
+		getFields: IQuery.output(
 			z.array(FormFieldSchema).default([{ name: "name", label: "Name", kind: "line", options: [], isRequired: true }]),
 		),
-		getPreset: IQuery.expects(z.record(z.string(), z.unknown()).default({})),
-		getNameFrom: IQuery.expects(z.string().default("name")),
-		create: ICommand.sends(z.record(z.string(), z.unknown())),
+		getPreset: IQuery.output(z.record(z.string(), z.unknown()).default({})),
+		getNameFrom: IQuery.output(z.string().default("name")),
+		create: ICommand.input(z.record(z.string(), z.unknown())),
 	},
 	draw: ({ getLabel: label, getTitle: title, getFields, getPreset: preset, getNameFrom: nameFrom, create }) => {
 		const [isOpen, setOpen] = useState(false);

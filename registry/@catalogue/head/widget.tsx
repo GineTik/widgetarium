@@ -17,9 +17,9 @@ const VIEWS = [
 
 const CatalogueHead = createWidget({
 	inject: {
-		getSaid: IQuery.expects(SaidSchema.default({ title: "Widgets", lead: "", mode: "browse", isAsking: false })),
-		getView: IQuery.expects(ViewSchema.default("catalogue")),
-		openView: ICommand.sends(z.object({ view: ViewSchema })),
+		getSaid: IQuery.output(SaidSchema.default({ title: "Widgets", lead: "", mode: "browse", isAsking: false })),
+		getView: IQuery.output(ViewSchema.default("catalogue")),
+		openView: ICommand.input(z.object({ view: ViewSchema })),
 	},
 	draw: ({ getSaid: said, getView: view, openView }) => (
 		<div>

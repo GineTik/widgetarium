@@ -109,16 +109,16 @@ const CSS = `
 
 const ListWidget = createWidget({
 	inject: {
-		getRows: IQuery.expects(z.array(VaultRecordSchema)),
-		updateRow: ICommand.sends(VaultRecordSchema.partial().extend({ ref: RecordRefSchema })),
-		getHandedAs: IQuery.expects(z.string().default("getTask")),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getFilter: IQuery.expects(z.string().default("")),
-		setFilter: ICommand.sends(z.string()),
-		getFilterField: IQuery.expects(z.string().default("title")),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		getHeading: IQuery.expects(z.string().default("")),
+		getRows: IQuery.output(z.array(VaultRecordSchema)),
+		updateRow: ICommand.input(VaultRecordSchema.partial().extend({ ref: RecordRefSchema })),
+		getHandedAs: IQuery.output(z.string().default("getTask")),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getFilter: IQuery.output(z.string().default("")),
+		setFilter: ICommand.input(z.string()),
+		getFilterField: IQuery.output(z.string().default("title")),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
+		getHeading: IQuery.output(z.string().default("")),
 		row: IRepeat.of<Handed>({ default: "@default/task-card", surface: "group" }),
 	},
 	draw: ({

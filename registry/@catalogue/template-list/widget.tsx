@@ -8,8 +8,8 @@ const NOTHING = "No template answers to that.";
 
 const TemplateList = createWidget({
 	inject: {
-		getTemplates: IQuery.expects(z.array(TemplateSchema).default([])),
-		useTemplate: ICommand.sends(z.object({ template: z.string() })),
+		getTemplates: IQuery.output(z.array(TemplateSchema).default([])),
+		useTemplate: ICommand.input(z.object({ template: z.string() })),
 	},
 	draw: ({ getTemplates, useTemplate }) => {
 		const listed = useData(getTemplates, { offset: 0, limit: SHOWN_AT_MOST });

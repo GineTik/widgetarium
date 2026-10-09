@@ -34,16 +34,16 @@ export const LogLineSchema = z.object({
 
 const SessionTail = createWidget({
 	inject: {
-		getLines: IQuery.expects(
+		getLines: IQuery.output(
 			z.array(LogLineSchema).default([
 				{ at: "14:32:09", text: "wrote widgets/@flow/log-line/widget.tsx", tone: "accent" },
 				{ at: "14:32:04", text: "tsc --noEmit: no errors", tone: "success" },
 				{ at: "14:31:52", text: "Session started.", tone: "neutral" },
 			]),
 		),
-		getLinesKept: IQuery.expects(z.number().default(LINES_KEPT)),
-		getIsFollowing: IQuery.expects(z.boolean().default(true)),
-		setIsFollowing: ICommand.sends(z.boolean()),
+		getLinesKept: IQuery.output(z.number().default(LINES_KEPT)),
+		getIsFollowing: IQuery.output(z.boolean().default(true)),
+		setIsFollowing: ICommand.input(z.boolean()),
 		line: IRepeat.of<{ getEntry: Row<LogLine> }>({
 			default: "@flow/log-line",
 			surface: "none",

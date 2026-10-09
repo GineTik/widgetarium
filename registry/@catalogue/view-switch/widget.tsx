@@ -11,9 +11,9 @@ function viewNamesOf(rows: readonly ViewRow[]): string[] {
 
 const ViewSwitch = createWidget({
 	inject: {
-		getViews: IQuery.expects(z.array(ViewSchema).default([])),
-		getView: IQuery.expects(z.string().nullable().default(null)),
-		setView: ICommand.sends(z.string()),
+		getViews: IQuery.output(z.array(ViewSchema).default([])),
+		getView: IQuery.output(z.string().nullable().default(null)),
+		setView: ICommand.input(z.string()),
 	},
 	draw: ({ getViews, getView: picked, setView }) => {
 		const viewNames = viewNamesOf(useData(getViews).data);

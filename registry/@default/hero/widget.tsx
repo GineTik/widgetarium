@@ -6,14 +6,14 @@ const TONES = ["purple", "pink", "orange", "yellow", "green", "cyan", "blue", "r
 
 const HeroWidget = createWidget({
 	inject: {
-		getTitle: IQuery.expects(z.string().default("Welcome")),
-		getEyebrow: IQuery.expects(z.string().default("")),
-		getText: IQuery.expects(z.string().default("")),
-		getPhoto: IQuery.expects(z.string().default("")),
-		getTone: IQuery.expects(z.enum(TONES).default("purple")),
-		getAction: IQuery.expects(z.string().default("")),
-		getLink: IQuery.expects(z.string().default("")),
-		getFaces: IQuery.expects(z.array(z.string()).default([])),
+		getTitle: IQuery.output(z.string().default("Welcome")),
+		getEyebrow: IQuery.output(z.string().default("")),
+		getText: IQuery.output(z.string().default("")),
+		getPhoto: IQuery.output(z.string().default("")),
+		getTone: IQuery.output(z.enum(TONES).default("purple")),
+		getAction: IQuery.output(z.string().default("")),
+		getLink: IQuery.output(z.string().default("")),
+		getFaces: IQuery.output(z.array(z.string()).default([])),
 		navigator: INavigator,
 	},
 	draw: ({

@@ -20,7 +20,7 @@ function check(what: string, got: unknown, wanted: unknown): void {
 const CARD = `import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 
 const Card = createWidget({
-	inject: { getName: IQuery.expects(z.string()) },
+	inject: { getName: IQuery.output(z.string()) },
 	draw: ({ getName: name }) => <b className="card">{name}</b>,
 });
 

@@ -259,11 +259,11 @@ function dayColumns(shown: string[], keptDays: Set<string>, today: string, canWr
 
 const HabitStreak = createWidget({
 	inject: {
-		getDays: IQuery.expects(z.array(DayNoteSchema)),
-		updateDay: ICommand.sends(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
-		createDay: ICommand.sends(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
-		getTitle: IQuery.expects(z.string().default("Habit")),
-		getEmoji: IQuery.expects(z.string().default("smiling-face-with-halo")),
+		getDays: IQuery.output(z.array(DayNoteSchema)),
+		updateDay: ICommand.input(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
+		createDay: ICommand.input(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
+		getTitle: IQuery.output(z.string().default("Habit")),
+		getEmoji: IQuery.output(z.string().default("smiling-face-with-halo")),
 	},
 	draw: ({ getDays, updateDay, createDay, getTitle: title, getEmoji: emoji }) => {
 		const rail = useRef<HTMLDivElement | null>(null);

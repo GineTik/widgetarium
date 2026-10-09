@@ -8,14 +8,14 @@ const MORE = "+{count}";
 
 const ChipGroup = createWidget({
 	inject: {
-		getHeading: IQuery.expects(z.string().default("")),
-		getChips: IQuery.expects(z.array(ChipSchema).default([])),
-		getShown: IQuery.expects(z.number().default(6)),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getFilter: IQuery.expects(z.string().default("")),
-		setFilter: ICommand.sends(z.string()),
-		getFilterPlaceholder: IQuery.expects(z.string().default("")),
+		getHeading: IQuery.output(z.string().default("")),
+		getChips: IQuery.output(z.array(ChipSchema).default([])),
+		getShown: IQuery.output(z.number().default(6)),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getFilter: IQuery.output(z.string().default("")),
+		setFilter: ICommand.input(z.string()),
+		getFilterPlaceholder: IQuery.output(z.string().default("")),
 	},
 	draw: ({
 		getHeading: heading,

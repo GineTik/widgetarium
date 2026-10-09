@@ -10,7 +10,7 @@ export const FetchSendFieldsSchema = z.object({
 
 export type FetchSendFields = z.infer<typeof FetchSendFieldsSchema>;
 
-export class FetchSendCommand extends ICommand.takes(z.unknown()) {
+export class FetchSendCommand extends ICommand.input(z.unknown()) {
 	constructor(
 		readonly fields: FetchSendFields,
 		readonly ports: ImplementationPorts,

@@ -23,8 +23,8 @@ export const ItemSchema = VaultRecordSchema.extend({ content: z.string().nullabl
 
 const FeedWidget = createWidget({
 	inject: {
-		getItems: IQuery.expects(z.array(ItemSchema)),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		getItems: IQuery.output(z.array(ItemSchema)),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
 		item: IRepeat.of<Given>({
 			default: "@default/obsidian-markdown-preview",
 			surface: "group",

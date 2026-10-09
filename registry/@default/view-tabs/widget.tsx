@@ -39,14 +39,14 @@ const ChoiceSchema = z.looseObject({ label: z.string().optional(), value: z.stri
 
 const ViewTabs = createWidget({
 	inject: {
-		getOptions: IQuery.expects(
+		getOptions: IQuery.output(
 			z.array(ChoiceSchema).default([
 				{ label: "Kanban", value: "Kanban" },
 				{ label: "Archived columns", value: "Archived columns" },
 			]),
 		),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
 		foldIntoGroup: IFoldIntoGroup,
 	},
 	draw: ({ getOptions, getSelection: selection, select, foldIntoGroup }) => {

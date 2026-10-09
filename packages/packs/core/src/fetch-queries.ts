@@ -16,7 +16,7 @@ export type FetchFields = z.infer<typeof FetchFieldsSchema>;
 const PAGE_UNASKED = 100;
 const NOT_A_LIST = "{url} answered {path} with something that is not a list";
 
-export class FetchValueQuery extends IQuery.returnsAny(z.unknown()) {
+export class FetchValueQuery extends IQuery.outputWithin(z.unknown()) {
 	constructor(
 		readonly fields: FetchFields,
 		readonly ports: ImplementationPorts,
@@ -33,7 +33,7 @@ export class FetchValueQuery extends IQuery.returnsAny(z.unknown()) {
 	}
 }
 
-export class FetchRowsQuery extends IQuery.returnsAny(z.array(z.unknown())) {
+export class FetchRowsQuery extends IQuery.outputWithin(z.array(z.unknown())) {
 	constructor(
 		readonly fields: FetchFields,
 		readonly ports: ImplementationPorts,

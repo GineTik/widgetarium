@@ -14,7 +14,7 @@ type NoteRow = Record<string, unknown>;
 
 const PAGE_UNASKED = 100;
 
-export class TagQuery extends IQuery.returnsAny(z.array(z.looseObject({}))) {
+export class TagQuery extends IQuery.outputWithin(z.array(z.looseObject({}))) {
 	constructor(
 		readonly fields: TagFields,
 		readonly ports: ImplementationPorts,
@@ -29,7 +29,7 @@ export class TagQuery extends IQuery.returnsAny(z.array(z.looseObject({}))) {
 	}
 }
 
-export class SearchQuery extends IQuery.returnsAny(z.array(z.looseObject({}))) {
+export class SearchQuery extends IQuery.outputWithin(z.array(z.looseObject({}))) {
 	constructor(
 		readonly fields: SearchFields,
 		readonly ports: ImplementationPorts,

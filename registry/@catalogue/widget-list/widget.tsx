@@ -22,12 +22,12 @@ const NOTHING = "Nothing here answers to that.";
 
 const WidgetList = createWidget({
 	inject: {
-		getEntries: IQuery.expects(z.array(EntrySchema).default([])),
-		getSaid: IQuery.expects(SaidSchema.default({ title: "", lead: "", mode: "browse", isAsking: false })),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
-		install: ICommand.sends(z.object({ widget: z.string() })),
-		pick: ICommand.sends(z.object({ widget: z.string() })),
-		place: ICommand.sends(z.object({ widget: z.string(), at: z.unknown() })),
+		getEntries: IQuery.output(z.array(EntrySchema).default([])),
+		getSaid: IQuery.output(SaidSchema.default({ title: "", lead: "", mode: "browse", isAsking: false })),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
+		install: ICommand.input(z.object({ widget: z.string() })),
+		pick: ICommand.input(z.object({ widget: z.string() })),
+		place: ICommand.input(z.object({ widget: z.string(), at: z.unknown() })),
 		preview: IPreview,
 		carrier: ICarrier,
 	},

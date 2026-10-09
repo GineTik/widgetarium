@@ -25,14 +25,14 @@ type Field = z.output<typeof FormFieldSchema>;
 
 const RecordActions = createWidget({
 	inject: {
-		getRows: IQuery.expects(z.array(RecordSchema)),
-		getPicked: IQuery.expects(z.unknown().default(null)),
-		getRecord: IQuery.expects(RecordSchema.nullable().default(null)),
-		getFields: IQuery.expects(z.array(FormFieldSchema).default([])),
-		getNoun: IQuery.expects(z.string().default("record")),
-		getTitleField: IQuery.expects(z.string().default("name")),
-		update: ICommand.sends(RecordSchema.and(z.object({ ref: RecordRefSchema }))),
-		remove: ICommand.sends(z.object({ ref: RecordRefSchema })),
+		getRows: IQuery.output(z.array(RecordSchema)),
+		getPicked: IQuery.output(z.unknown().default(null)),
+		getRecord: IQuery.output(RecordSchema.nullable().default(null)),
+		getFields: IQuery.output(z.array(FormFieldSchema).default([])),
+		getNoun: IQuery.output(z.string().default("record")),
+		getTitleField: IQuery.output(z.string().default("name")),
+		update: ICommand.input(RecordSchema.and(z.object({ ref: RecordRefSchema }))),
+		remove: ICommand.input(z.object({ ref: RecordRefSchema })),
 	},
 	draw: ({ getRecord: record, getFields, getNoun: noun, getTitleField: titleField, update, remove }) => {
 		const fields = useData(getFields).data;

@@ -24,7 +24,7 @@ export class PageParamQuery extends IValueGateway {
 	}
 }
 
-export class TodayQuery extends IQuery.returns(z.string()) {
+export class TodayQuery extends IQuery.output(z.string()) {
 	readonly settlesNow = true;
 
 	constructor(_fields: HostFields) {

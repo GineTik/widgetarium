@@ -129,10 +129,10 @@ function saidInstead(
 
 const InFlight = createWidget({
 	inject: {
-		getFlights: IQuery.expects(z.array(FlightSchema)),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		getFlights: IQuery.output(z.array(FlightSchema)),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
 		row: IRepeat.of<{ getFlight: FlightFace }>({
 			default: "@flow/flight-row",
 			surface: "group",

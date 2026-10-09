@@ -307,18 +307,18 @@ export const StepSchema = z.object({
 
 const TaskProgress = createWidget({
 	inject: {
-		getTitle: IQuery.expects(z.string().default("Building a widget")),
-		getSteps: IQuery.expects(
+		getTitle: IQuery.output(z.string().default("Building a widget")),
+		getSteps: IQuery.output(
 			z.array(StepSchema).default([
 				{ label: "Write the widget", status: "done" },
 				{ label: "Check it", status: "active", hint: "widgets.mjs check" },
 				{ label: "Place it on the board", status: "pending" },
 			]),
 		),
-		getIsOpen: IQuery.expects(z.boolean().default(false)),
-		setIsOpen: ICommand.sends(z.boolean()),
-		getStartedAt: IQuery.expects(z.number().default(0)),
-		getEndedAt: IQuery.expects(z.number().default(0)),
+		getIsOpen: IQuery.output(z.boolean().default(false)),
+		setIsOpen: ICommand.input(z.boolean()),
+		getStartedAt: IQuery.output(z.number().default(0)),
+		getEndedAt: IQuery.output(z.number().default(0)),
 	},
 	draw: (drawn) => {
 		const progress = useProgress(drawn);

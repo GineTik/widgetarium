@@ -7,10 +7,10 @@ const CSS = `
 
 const ToggleWidget = createWidget({
 	inject: {
-		getIsOpen: IQuery.expects(z.boolean().default(false)),
-		setIsOpen: ICommand.sends(z.boolean()),
-		getIcon: IQuery.expects(z.string().default("menu")),
-		getLabel: IQuery.expects(z.string().default("Open the panel")),
+		getIsOpen: IQuery.output(z.boolean().default(false)),
+		setIsOpen: ICommand.input(z.boolean()),
+		getIcon: IQuery.output(z.string().default("menu")),
+		getLabel: IQuery.output(z.string().default("Open the panel")),
 	},
 	draw: ({ getIsOpen: isOpen, setIsOpen, getIcon: icon, getLabel: label }) => {
 		return (

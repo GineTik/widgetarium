@@ -58,10 +58,10 @@ export const ProjectSchema = VaultRecordSchema.extend({
 
 const ProjectGrid = createWidget({
 	inject: {
-		getProjects: IQuery.expects(z.array(ProjectSchema).default([])),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		getProjects: IQuery.output(z.array(ProjectSchema).default([])),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
 		card: IRepeat.of<{ getProject: Row<Project> }>({
 			default: "@flow/project-card",
 			surface: "group",

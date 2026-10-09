@@ -141,7 +141,7 @@ function parentCount(value: Commit["parents"]): number {
 
 const CommitRow = createWidget({
 	inject: {
-		getCommit: IQuery.expects(
+		getCommit: IQuery.output(
 			CommitSchema.default({
 				sha: "70a3c80f42",
 				subject:

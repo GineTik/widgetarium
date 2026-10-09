@@ -90,9 +90,9 @@ const ChoiceSchema = z.looseObject({
 
 const SegmentedSwitch = createWidget({
 	inject: {
-		getOptions: IQuery.expects(z.array(ChoiceSchema).default([{ label: "Git tree" }, { label: "Report" }])),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
+		getOptions: IQuery.output(z.array(ChoiceSchema).default([{ label: "Git tree" }, { label: "Report" }])),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
 	},
 	draw: ({ getOptions, getSelection: selection, select }) => {
 		const listed = useData(getOptions, { limit: ALL_OPTIONS });

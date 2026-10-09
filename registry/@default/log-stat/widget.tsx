@@ -129,11 +129,11 @@ type Metric = { caption: string; glyph: string; tone: string };
 
 const LogStat = createWidget({
 	inject: {
-		getHabits: IQuery.expects(z.array(HabitSchema)),
-		getPick: IQuery.expects(z.unknown()),
-		getMetric: IQuery.expects(z.enum(["streak", "best", "total", "rate", "goal"]).default("streak")),
-		getPeriod: IQuery.expects(z.number().default(30)),
-		getLook: IQuery.expects(z.enum(["default", "stat1"]).default("default")),
+		getHabits: IQuery.output(z.array(HabitSchema)),
+		getPick: IQuery.output(z.unknown()),
+		getMetric: IQuery.output(z.enum(["streak", "best", "total", "rate", "goal"]).default("streak")),
+		getPeriod: IQuery.output(z.number().default(30)),
+		getLook: IQuery.output(z.enum(["default", "stat1"]).default("default")),
 	},
 	draw: ({ getPick: pick, getMetric: metricKey, getPeriod: period, getHabits, getLook: look }) => {
 		const picked = pickedValue(pick);

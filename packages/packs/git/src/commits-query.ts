@@ -21,7 +21,7 @@ const FILTERED_FIELDS: Readonly<Record<string, string>> = { author: "--author", 
 
 const FILTERS_ONLY = "@git/commits filters only by author and subject, not by {field}";
 
-export class CommitsQuery extends IQuery.returns(z.array(CommitSchema)) {
+export class CommitsQuery extends IQuery.output(z.array(CommitSchema)) {
 	constructor(
 		private readonly fields: CommitsFields,
 		private readonly ports: ImplementationPorts,

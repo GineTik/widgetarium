@@ -90,7 +90,7 @@ function clockOf(at: unknown): string {
 
 const LogLine = createWidget({
 	inject: {
-		getEntry: IQuery.expects(LogEntrySchema.default({ at: "14:32:07", text: "Session started.", tone: "neutral" })),
+		getEntry: IQuery.output(LogEntrySchema.default({ at: "14:32:07", text: "Session started.", tone: "neutral" })),
 	},
 	draw: ({ getEntry: entry }) => {
 		const mark = markOf(entry.tone);

@@ -5,9 +5,9 @@ const CLEAR_ALL = "Clear all";
 
 const SheetHead = createWidget({
 	inject: {
-		getTitle: IQuery.expects(z.string().default("Filters")),
-		getNarrowed: IQuery.expects(z.number().default(0)),
-		clearFilters: ICommand.sends(z.unknown()),
+		getTitle: IQuery.output(z.string().default("Filters")),
+		getNarrowed: IQuery.output(z.number().default(0)),
+		clearFilters: ICommand.input(z.unknown()),
 	},
 	draw: ({ getTitle: title, getNarrowed: narrowed, clearFilters }) => (
 		<div>

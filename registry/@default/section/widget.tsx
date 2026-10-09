@@ -33,14 +33,14 @@ const STYLE = `
 
 const SectionWidget = createWidget({
 	inject: {
-		getHeading: IQuery.expects(z.string().default("Section")),
-		getBadgeTone: IQuery.expects(BadgeToneSchema.default("neutral")),
-		getBadge: IQuery.expects(z.string().default("")),
-		getFilling: IQuery.expects(z.enum([PLACED, PER_ROW]).default(PLACED)),
-		getArrangement: IQuery.expects(ArrangementSchema.default("column")),
-		getMinWidthPx: IQuery.expects(z.number().default(240)),
-		getItems: IQuery.expects(z.array(z.looseObject({}))),
-		getPageSize: IQuery.expects(z.number().default(24)),
+		getHeading: IQuery.output(z.string().default("Section")),
+		getBadgeTone: IQuery.output(BadgeToneSchema.default("neutral")),
+		getBadge: IQuery.output(z.string().default("")),
+		getFilling: IQuery.output(z.enum([PLACED, PER_ROW]).default(PLACED)),
+		getArrangement: IQuery.output(ArrangementSchema.default("column")),
+		getMinWidthPx: IQuery.output(z.number().default(240)),
+		getItems: IQuery.output(z.array(z.looseObject({}))),
+		getPageSize: IQuery.output(z.number().default(24)),
 		controls: ISlot.array({ default: [] }),
 		widgets: ISlot.array({ default: [] }),
 		item: IRepeat.of({ surface: "none" }),

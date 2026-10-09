@@ -224,7 +224,7 @@ export const TaskSchema = z.object({
 
 const TaskCard = createWidget({
 	inject: {
-		getTask: IQuery.expects(
+		getTask: IQuery.output(
 			TaskSchema.default({
 				title: "Design the onboarding flow",
 				tags: ["design", "research"],

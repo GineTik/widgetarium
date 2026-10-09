@@ -5,7 +5,7 @@ import { gitIn } from "./git-run.js";
 import type { RepositoryFields } from "./schemas.js";
 
 export function gitCommand<const S extends z.ZodType>(input: S, argsOf: (sent: z.output<S>) => readonly string[]) {
-	return class extends ICommand.takes(input) {
+	return class extends ICommand.input(input) {
 		constructor(
 			readonly fields: RepositoryFields,
 			readonly ports: ImplementationPorts,

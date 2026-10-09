@@ -60,7 +60,7 @@ const CSS = `
 
 const AlbumGrid = createWidget({
 	inject: {
-		getAlbums: IQuery.expects(
+		getAlbums: IQuery.output(
 			z.array(AlbumSchema).default([
 				{ title: "Kind of Blue", artist: "Miles Davis", tracks: 5 },
 				{ title: "In Rainbows", artist: "Radiohead", tracks: 10 },
@@ -70,7 +70,7 @@ const AlbumGrid = createWidget({
 				{ title: "Unmarked tape", tracks: 3 },
 			]),
 		),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
 		cover: IRepeat.of<Given>({
 			default: "@media/album-cover",
 			surface: "none",

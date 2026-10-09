@@ -47,10 +47,10 @@ type Kind = z.infer<typeof KindSchema>;
 
 const ChartWidget = createWidget({
 	inject: {
-		getRecords: IQuery.expects(z.array(VaultRecordSchema)),
-		getAcross: IQuery.expects(z.string().default("")),
-		getSeries: IQuery.expects(z.array(SeriesSchema)),
-		getKind: IQuery.expects(KindSchema.default("area")),
+		getRecords: IQuery.output(z.array(VaultRecordSchema)),
+		getAcross: IQuery.output(z.string().default("")),
+		getSeries: IQuery.output(z.array(SeriesSchema)),
+		getKind: IQuery.output(KindSchema.default("area")),
 	},
 	draw: ({ getRecords, getAcross: across, getSeries, getKind: kind }) => {
 		const read = useData(getRecords, { limit: POINTS_AT_MOST });

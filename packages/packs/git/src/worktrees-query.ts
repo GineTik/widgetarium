@@ -10,7 +10,7 @@ import { pageOf } from "./page.js";
 import { WorktreeSchema } from "./schemas.js";
 import type { RepositoryFields, Worktree } from "./schemas.js";
 
-export class WorktreesQuery extends IQuery.returns(z.array(WorktreeSchema)) {
+export class WorktreesQuery extends IQuery.output(z.array(WorktreeSchema)) {
 	constructor(
 		private readonly fields: RepositoryFields,
 		private readonly ports: ImplementationPorts,

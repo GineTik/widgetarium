@@ -4,9 +4,9 @@ import { Field, Icon } from "widgetarium/kit";
 
 const SearchInput = createWidget({
 	inject: {
-		getValue: IQuery.expects(z.string().default("")),
-		setValue: ICommand.sends(z.string()),
-		getPlaceholder: IQuery.expects(z.string().default("Search")),
+		getValue: IQuery.output(z.string().default("")),
+		setValue: ICommand.input(z.string()),
+		getPlaceholder: IQuery.output(z.string().default("Search")),
 	},
 	draw: ({ getValue: value, setValue, getPlaceholder: placeholder }) => {
 		const [draft, setDraft] = useDraftOf(value);

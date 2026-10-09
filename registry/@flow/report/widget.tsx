@@ -94,12 +94,12 @@ export const ProseSourceSchema = z.union([
 
 const ReportWidget = createWidget({
 	inject: {
-		getBody: IQuery.expects(ProseSourceSchema.default("")),
-		getFigures: IQuery.expects(z.array(FigureSchema)),
-		getTestPlan: IQuery.expects(z.array(TestStepSchema)),
-		getFixes: IQuery.expects(z.array(FixSchema)),
-		getMeasure: IQuery.expects(z.number().default(MEASURE_CH)),
-		getStepsPerPage: IQuery.expects(z.number().default(STEPS_PER_PAGE)),
+		getBody: IQuery.output(ProseSourceSchema.default("")),
+		getFigures: IQuery.output(z.array(FigureSchema)),
+		getTestPlan: IQuery.output(z.array(TestStepSchema)),
+		getFixes: IQuery.output(z.array(FixSchema)),
+		getMeasure: IQuery.output(z.number().default(MEASURE_CH)),
+		getStepsPerPage: IQuery.output(z.number().default(STEPS_PER_PAGE)),
 		figure: IRepeat.of<{ getSource: Figure }>({
 			default: "@flow/report-figure",
 			surface: "none",

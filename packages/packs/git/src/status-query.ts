@@ -9,7 +9,7 @@ import { pageOf } from "./page.js";
 import { FileChangeSchema } from "./schemas.js";
 import type { FileChange, RepositoryFields } from "./schemas.js";
 
-export class StatusQuery extends IQuery.returns(z.array(FileChangeSchema)) {
+export class StatusQuery extends IQuery.output(z.array(FileChangeSchema)) {
 	constructor(
 		private readonly fields: RepositoryFields,
 		private readonly ports: ImplementationPorts,

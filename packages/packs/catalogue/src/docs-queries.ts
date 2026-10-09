@@ -14,7 +14,7 @@ const DOCS_SAID = {
 	lead: "The plugin's own pages, one per file, shipped with the version you are running",
 };
 
-export class DocsSaidQuery extends IQuery.returns(SaidSchema) {
+export class DocsSaidQuery extends IQuery.output(SaidSchema) {
 	constructor(
 		readonly fields: NoFields,
 		readonly ports: ImplementationPorts,
@@ -27,7 +27,7 @@ export class DocsSaidQuery extends IQuery.returns(SaidSchema) {
 	}
 }
 
-export class DocPagesQuery extends IQuery.returns(z.array(DocPageRowSchema)) {
+export class DocPagesQuery extends IQuery.output(z.array(DocPageRowSchema)) {
 	constructor(
 		private readonly fields: KeywordFields,
 		private readonly ports: ImplementationPorts,
@@ -53,7 +53,7 @@ export class DocPagesQuery extends IQuery.returns(z.array(DocPageRowSchema)) {
 	}
 }
 
-export class DocPageQuery extends IQuery.returns(DocPageSchema.nullable()) {
+export class DocPageQuery extends IQuery.output(DocPageSchema.nullable()) {
 	constructor(
 		private readonly fields: PageFields,
 		private readonly ports: ImplementationPorts,

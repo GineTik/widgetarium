@@ -130,12 +130,12 @@ function saidInstead(
 
 const FileList = createWidget({
 	inject: {
-		getFiles: IQuery.expects(z.array(FileChangeSchema).default([])),
-		getCommit: IQuery.expects(z.unknown().default(null)),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getHeading: IQuery.expects(z.string().default("Files touched")),
-		getShownFiles: IQuery.expects(z.number().default(SHOWN)),
+		getFiles: IQuery.output(z.array(FileChangeSchema).default([])),
+		getCommit: IQuery.output(z.unknown().default(null)),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getHeading: IQuery.output(z.string().default("Files touched")),
+		getShownFiles: IQuery.output(z.number().default(SHOWN)),
 		file: IRepeat.of<{ getFile: FileFace }>({
 			default: "@flow/file-row",
 			surface: "group",

@@ -61,25 +61,25 @@ const CANNOT_KEEP_PERIOD = "This card cannot remember the period you picked, so 
 
 export const MetricTotal = createWidget({
 	inject: {
-		getRecords: IQuery.expects(z.array(MetricSchema)),
-		createRecord: ICommand.sends(MetricSchema.extend({ id: z.uuid() })),
-		updateRecord: ICommand.sends(MetricSchema.partial().extend({ ref: RecordRefSchema })),
-		removeRecord: ICommand.sends(z.object({ ref: RecordRefSchema })),
-		getTitle: IQuery.expects(z.string().default("Total")),
-		getUnit: IQuery.expects(z.string().default("")),
-		getRising: IQuery.expects(z.enum(["good", "bad"]).default("good")),
-		getPeriods: IQuery.expects(
+		getRecords: IQuery.output(z.array(MetricSchema)),
+		createRecord: ICommand.input(MetricSchema.extend({ id: z.uuid() })),
+		updateRecord: ICommand.input(MetricSchema.partial().extend({ ref: RecordRefSchema })),
+		removeRecord: ICommand.input(z.object({ ref: RecordRefSchema })),
+		getTitle: IQuery.output(z.string().default("Total")),
+		getUnit: IQuery.output(z.string().default("")),
+		getRising: IQuery.output(z.enum(["good", "bad"]).default("good")),
+		getPeriods: IQuery.output(
 			z.array(PeriodRowSchema).default([
 				{ label: "Past 7 days", days: 7 },
 				{ label: "Past 30 days", days: 30 },
 				{ label: "Past 90 days", days: 90 },
 			]),
 		),
-		getPeriodPick: IQuery.expects(z.unknown()),
-		selectPeriod: ICommand.sends(z.unknown()),
-		getPeriod: IQuery.expects(PeriodRowSchema.nullable()),
-		getView: IQuery.expects(z.enum(["curve", "bars"]).default("curve")),
-		setView: ICommand.sends(z.enum(["curve", "bars"])),
+		getPeriodPick: IQuery.output(z.unknown()),
+		selectPeriod: ICommand.input(z.unknown()),
+		getPeriod: IQuery.output(PeriodRowSchema.nullable()),
+		getView: IQuery.output(z.enum(["curve", "bars"]).default("curve")),
+		setView: ICommand.input(z.enum(["curve", "bars"])),
 		host: IHost,
 	},
 	draw: ({

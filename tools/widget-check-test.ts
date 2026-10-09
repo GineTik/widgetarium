@@ -186,7 +186,7 @@ check(
 );
 check(
 	"a collection that adds records is clean: its add stands in its own header",
-	rulesIn(checkWidget({ ...clean, source: `${clean.source}\ncreateWord: ICommand.sends(WordSchema),` })),
+	rulesIn(checkWidget({ ...clean, source: `${clean.source}\ncreateWord: ICommand.input(WordSchema),` })),
 	[],
 );
 check(

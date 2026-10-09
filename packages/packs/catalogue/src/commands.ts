@@ -17,7 +17,7 @@ const NOT_PLACED = "{widget} was not placed: the spot it was dropped on is gone"
 const UNINSTALL_ASKED = "Remove {widget} from this vault? Tiles that draw it will say it is not installed.";
 const NOT_REMOVED = "{widget} was not removed";
 
-export class InstallCommand extends ICommand.takes(WidgetAskedSchema) {
+export class InstallCommand extends ICommand.input(WidgetAskedSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -31,7 +31,7 @@ export class InstallCommand extends ICommand.takes(WidgetAskedSchema) {
 	}
 }
 
-export class UninstallCommand extends ICommand.takes(WidgetAskedSchema) {
+export class UninstallCommand extends ICommand.input(WidgetAskedSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -46,7 +46,7 @@ export class UninstallCommand extends ICommand.takes(WidgetAskedSchema) {
 	}
 }
 
-export class PickCommand extends ICommand.takes(WidgetAskedSchema) {
+export class PickCommand extends ICommand.input(WidgetAskedSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -60,7 +60,7 @@ export class PickCommand extends ICommand.takes(WidgetAskedSchema) {
 	}
 }
 
-export class PlaceCommand extends ICommand.takes(PlaceAskedSchema) {
+export class PlaceCommand extends ICommand.input(PlaceAskedSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -74,7 +74,7 @@ export class PlaceCommand extends ICommand.takes(PlaceAskedSchema) {
 	}
 }
 
-export class ApplyTemplateCommand extends ICommand.takes(TemplateAskedSchema) {
+export class ApplyTemplateCommand extends ICommand.input(TemplateAskedSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -88,7 +88,7 @@ export class ApplyTemplateCommand extends ICommand.takes(TemplateAskedSchema) {
 	}
 }
 
-export class OpenViewCommand extends ICommand.takes(ViewAskedSchema) {
+export class OpenViewCommand extends ICommand.input(ViewAskedSchema) {
 	constructor(
 		readonly fields: NoFields,
 		private readonly ports: ImplementationPorts,
@@ -101,7 +101,7 @@ export class OpenViewCommand extends ICommand.takes(ViewAskedSchema) {
 	}
 }
 
-export class ClearFiltersCommand extends ICommand.takes(ClearAskedSchema) {
+export class ClearFiltersCommand extends ICommand.input(ClearAskedSchema) {
 	constructor(
 		private readonly fields: ClearFields,
 		private readonly ports: ImplementationPorts,

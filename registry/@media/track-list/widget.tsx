@@ -66,14 +66,14 @@ export const TrackSchema = VaultRecordSchema.extend({
 
 const TrackList = createWidget({
 	inject: {
-		getTracks: IQuery.expects(z.array(TrackSchema)),
-		updateTrack: ICommand.sends(TrackSchema.partial().extend({ ref: RecordRefSchema })),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getPlaying: IQuery.expects(z.unknown()),
-		getFilter: IQuery.expects(z.string().default("")),
-		setFilter: ICommand.sends(z.string()),
-		getPageSize: IQuery.expects(z.number().default(PAGE_SIZE)),
+		getTracks: IQuery.output(z.array(TrackSchema)),
+		updateTrack: ICommand.input(TrackSchema.partial().extend({ ref: RecordRefSchema })),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getPlaying: IQuery.output(z.unknown()),
+		getFilter: IQuery.output(z.string().default("")),
+		setFilter: ICommand.input(z.string()),
+		getPageSize: IQuery.output(z.number().default(PAGE_SIZE)),
 		row: IRepeat.of<Given>({
 			default: "@media/track-row",
 			surface: "group",

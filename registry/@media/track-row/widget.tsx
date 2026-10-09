@@ -154,7 +154,7 @@ type Track = z.infer<typeof TrackSchema>;
 
 const TrackRow = createWidget({
 	inject: {
-		getTrack: IQuery.expects(
+		getTrack: IQuery.output(
 			TrackSchema.default({
 				title: "Weightless",
 				artist: "Marconi Union",
@@ -164,9 +164,9 @@ const TrackRow = createWidget({
 				favourite: false,
 			}),
 		),
-		setTrack: ICommand.sends(TrackSchema),
-		getPosition: IQuery.expects(z.number().default(0)),
-		getIsPlaying: IQuery.expects(z.boolean().default(false)),
+		setTrack: ICommand.input(TrackSchema),
+		getPosition: IQuery.output(z.number().default(0)),
+		getIsPlaying: IQuery.output(z.boolean().default(false)),
 	},
 	draw: ({ getTrack: held, setTrack, getPosition: position, getIsPlaying: isPlaying }) => {
 		const isFavourite = held.favourite === true;

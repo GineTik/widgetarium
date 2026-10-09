@@ -150,7 +150,7 @@ export const FlightSchema = z.object({
 
 const FlightRow = createWidget({
 	inject: {
-		getFlight: IQuery.expects(
+		getFlight: IQuery.output(
 			FlightSchema.default({
 				title: "Rewrite the board tree reader",
 				status: "running",

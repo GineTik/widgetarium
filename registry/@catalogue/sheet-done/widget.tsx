@@ -5,8 +5,8 @@ const SHOW = "Show {count} widgets";
 
 const SheetDone = createWidget({
 	inject: {
-		getShown: IQuery.expects(z.number().default(0)),
-		close: ICommand.sends(z.boolean()),
+		getShown: IQuery.output(z.number().default(0)),
+		close: ICommand.input(z.boolean()),
 	},
 	draw: ({ getShown: shown, close }) => (
 		<div>

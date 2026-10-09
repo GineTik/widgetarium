@@ -13,7 +13,7 @@ export const CommitFilesFieldsSchema = RepositoryFieldsSchema.extend({ sha: z.st
 
 export type CommitFilesFields = z.infer<typeof CommitFilesFieldsSchema>;
 
-export class CommitFilesQuery extends IQuery.returns(z.array(FileChangeSchema)) {
+export class CommitFilesQuery extends IQuery.output(z.array(FileChangeSchema)) {
 	constructor(
 		private readonly fields: CommitFilesFields,
 		private readonly ports: ImplementationPorts,

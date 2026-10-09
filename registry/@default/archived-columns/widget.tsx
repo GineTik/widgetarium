@@ -57,10 +57,10 @@ const STYLE = `
 
 const ArchivedColumns = createWidget({
 	inject: {
-		getBoards: IQuery.expects(z.array(BoardSchema)),
-		getSelection: IQuery.expects(z.unknown()),
-		getBoard: IQuery.expects(BoardSchema.nullable().default(null)),
-		updateBoard: ICommand.sends(BoardSchema),
+		getBoards: IQuery.output(z.array(BoardSchema)),
+		getSelection: IQuery.output(z.unknown()),
+		getBoard: IQuery.output(BoardSchema.nullable().default(null)),
+		updateBoard: ICommand.input(BoardSchema),
 	},
 	draw: ({ getSelection: selection, getBoard: record, updateBoard }) => {
 		const onBoard = pickedValue(selection);

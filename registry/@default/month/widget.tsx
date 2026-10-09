@@ -166,11 +166,11 @@ function weekStartsMonday(held: unknown): boolean {
 
 const HabitMonth = createWidget({
 	inject: {
-		getDays: IQuery.expects(z.array(DayNoteSchema)),
-		updateDay: ICommand.sends(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
-		createDay: ICommand.sends(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
-		getPick: IQuery.expects(z.unknown()),
-		getIsWeekStartingMonday: IQuery.expects(z.boolean().default(true)),
+		getDays: IQuery.output(z.array(DayNoteSchema)),
+		updateDay: ICommand.input(DayNoteSchema.partial().extend({ ref: RecordRefSchema })),
+		createDay: ICommand.input(DayNoteSchema.partial({ path: true }).extend({ id: z.uuid() })),
+		getPick: IQuery.output(z.unknown()),
+		getIsWeekStartingMonday: IQuery.output(z.boolean().default(true)),
 	},
 	draw: ({ getIsWeekStartingMonday: fromMonday, getDays, updateDay, createDay, getPick: pick }) => {
 		const room = useRef<HTMLDivElement | null>(null);

@@ -9,7 +9,7 @@ import { pageOf } from "./page.js";
 import { TagSchema } from "./schemas.js";
 import type { RepositoryFields, Tag } from "./schemas.js";
 
-export class TagsQuery extends IQuery.returns(z.array(TagSchema)) {
+export class TagsQuery extends IQuery.output(z.array(TagSchema)) {
 	constructor(
 		private readonly fields: RepositoryFields,
 		private readonly ports: ImplementationPorts,

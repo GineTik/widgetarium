@@ -5,7 +5,7 @@ import { BRANCH_FORMAT, branchesIn } from "./parse-refs.js";
 import { BranchSchema } from "./schemas.js";
 import type { Branch, RepositoryFields } from "./schemas.js";
 
-export class CurrentBranchQuery extends IQuery.returns(BranchSchema.nullable()) {
+export class CurrentBranchQuery extends IQuery.output(BranchSchema.nullable()) {
 	constructor(
 		private readonly fields: RepositoryFields,
 		private readonly ports: ImplementationPorts,

@@ -116,13 +116,13 @@ function onBoard(board: unknown) {
 
 const FilterPanel = createWidget({
 	inject: {
-		getTasks: IQuery.expects(z.array(VaultRecordSchema)),
-		getBoard: IQuery.expects(z.unknown().default(null)),
-		getGroups: IQuery.expects(z.array(FilterGroupSchema)),
-		getOpenGroup: IQuery.expects(z.string().default("")),
-		getProperties: IQuery.expects(z.array(VaultRecordSchema)),
-		getChosen: IQuery.expects(ChosenSchema.default({})),
-		setChosen: ICommand.sends(ChosenSchema),
+		getTasks: IQuery.output(z.array(VaultRecordSchema)),
+		getBoard: IQuery.output(z.unknown().default(null)),
+		getGroups: IQuery.output(z.array(FilterGroupSchema)),
+		getOpenGroup: IQuery.output(z.string().default("")),
+		getProperties: IQuery.output(z.array(VaultRecordSchema)),
+		getChosen: IQuery.output(ChosenSchema.default({})),
+		setChosen: ICommand.input(ChosenSchema),
 	},
 	draw: ({
 		getTasks,

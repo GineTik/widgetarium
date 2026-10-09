@@ -13,7 +13,7 @@ export const BranchesFieldsSchema = RepositoryFieldsSchema.extend({ isRemoteIncl
 
 export type BranchesFields = z.infer<typeof BranchesFieldsSchema>;
 
-export class BranchesQuery extends IQuery.returns(z.array(BranchSchema)) {
+export class BranchesQuery extends IQuery.output(z.array(BranchSchema)) {
 	constructor(
 		private readonly fields: BranchesFields,
 		private readonly ports: ImplementationPorts,

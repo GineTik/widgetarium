@@ -108,8 +108,8 @@ export function languageOf(link: unknown, asked: string): string {
 
 const CodeBlock = createWidget({
 	inject: {
-		getLines: IQuery.expects(z.number().default(30)),
-		getMaxKilobytes: IQuery.expects(z.number().default(256)),
+		getLines: IQuery.output(z.number().default(30)),
+		getMaxKilobytes: IQuery.output(z.number().default(256)),
 		content: IContent,
 		reader: IReader,
 		host: IHost,

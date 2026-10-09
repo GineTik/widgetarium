@@ -7,12 +7,12 @@ const TONES = ["purple", "pink", "orange", "yellow", "green", "cyan", "blue", "r
 
 const EmptyStateWidget = createWidget({
 	inject: {
-		getTitle: IQuery.expects(z.string().default("Nothing here yet")),
-		getText: IQuery.expects(z.string().default("What appears here, and how it gets here.")),
-		getShape: IQuery.expects(z.enum(SHAPES).default("cookie9-sided")),
-		getTone: IQuery.expects(z.enum(TONES).default("purple")),
-		getAction: IQuery.expects(z.string().default("")),
-		getLink: IQuery.expects(z.string().default("")),
+		getTitle: IQuery.output(z.string().default("Nothing here yet")),
+		getText: IQuery.output(z.string().default("What appears here, and how it gets here.")),
+		getShape: IQuery.output(z.enum(SHAPES).default("cookie9-sided")),
+		getTone: IQuery.output(z.enum(TONES).default("purple")),
+		getAction: IQuery.output(z.string().default("")),
+		getLink: IQuery.output(z.string().default("")),
 		navigator: INavigator,
 	},
 	draw: ({

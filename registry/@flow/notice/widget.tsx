@@ -72,13 +72,13 @@ const CSS = `
 
 const NoticeWidget = createWidget({
 	inject: {
-		getTitle: IQuery.expects(z.string().default("")),
-		getBody: IQuery.expects(z.string().default("")),
-		getIcon: IQuery.expects(z.string().default("")),
-		getTone: IQuery.expects(z.enum(["neutral", "info", "success", "warning", "error"]).default("neutral")),
-		getAction: IQuery.expects(z.string().default("")),
-		getIsPressed: IQuery.expects(z.boolean().default(false)),
-		setIsPressed: ICommand.sends(z.boolean()),
+		getTitle: IQuery.output(z.string().default("")),
+		getBody: IQuery.output(z.string().default("")),
+		getIcon: IQuery.output(z.string().default("")),
+		getTone: IQuery.output(z.enum(["neutral", "info", "success", "warning", "error"]).default("neutral")),
+		getAction: IQuery.output(z.string().default("")),
+		getIsPressed: IQuery.output(z.boolean().default(false)),
+		setIsPressed: ICommand.input(z.boolean()),
 	},
 	draw: ({
 		getTitle: title,

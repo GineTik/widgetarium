@@ -38,10 +38,10 @@ const CARDS_AT_MOST = 24;
 
 const PhotoCards = createWidget({
 	inject: {
-		getCards: IQuery.expects(z.array(CardSchema)),
-		getShape: IQuery.expects(z.enum(["wide", "tall", "square"]).default("wide")),
-		getTextOnPhoto: IQuery.expects(z.boolean().default(false)),
-		getColumns: IQuery.expects(z.number().default(3)),
+		getCards: IQuery.output(z.array(CardSchema)),
+		getShape: IQuery.output(z.enum(["wide", "tall", "square"]).default("wide")),
+		getTextOnPhoto: IQuery.output(z.boolean().default(false)),
+		getColumns: IQuery.output(z.number().default(3)),
 		navigator: INavigator,
 	},
 	draw: ({ getCards, getShape: shape, getTextOnPhoto: isTextOnPhoto, getColumns: columns, navigator }) => {

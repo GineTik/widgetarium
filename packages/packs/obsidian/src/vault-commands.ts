@@ -17,7 +17,7 @@ const NO_FILE = "no note: type its path in the settings window";
 const NO_FIELD = "no property: type its name in the settings window";
 const CANNOT = "{path} cannot {verb}";
 
-export class FolderCreateCommand extends ICommand.takes(NoteDraftSchema) {
+export class FolderCreateCommand extends ICommand.input(NoteDraftSchema) {
 	constructor(
 		readonly fields: FolderFields,
 		readonly ports: ImplementationPorts,
@@ -33,7 +33,7 @@ export class FolderCreateCommand extends ICommand.takes(NoteDraftSchema) {
 	}
 }
 
-export class FolderUpdateCommand extends ICommand.takes(NotePatchSchema) {
+export class FolderUpdateCommand extends ICommand.input(NotePatchSchema) {
 	constructor(
 		readonly fields: FolderFields,
 		readonly ports: ImplementationPorts,
@@ -49,7 +49,7 @@ export class FolderUpdateCommand extends ICommand.takes(NotePatchSchema) {
 	}
 }
 
-export class FolderRemoveCommand extends ICommand.takes(NoteAddressSchema) {
+export class FolderRemoveCommand extends ICommand.input(NoteAddressSchema) {
 	constructor(
 		readonly fields: FolderFields,
 		readonly ports: ImplementationPorts,
@@ -64,7 +64,7 @@ export class FolderRemoveCommand extends ICommand.takes(NoteAddressSchema) {
 	}
 }
 
-export class FileSetCommand extends ICommand.takes(z.unknown()) {
+export class FileSetCommand extends ICommand.input(z.unknown()) {
 	constructor(
 		readonly fields: FileFieldFields,
 		readonly ports: ImplementationPorts,
@@ -83,7 +83,7 @@ export class FileSetCommand extends ICommand.takes(z.unknown()) {
 	}
 }
 
-export class OpenCommand extends ICommand.takes(z.union([z.looseObject({ ref: z.string() }), z.string()])) {
+export class OpenCommand extends ICommand.input(z.union([z.looseObject({ ref: z.string() }), z.string()])) {
 	constructor(
 		readonly fields: object,
 		readonly ports: ImplementationPorts,

@@ -8,7 +8,7 @@ import type { QueryPorts } from "@widgetarium/core/engine/packs.js";
 import { READS_AS_IS, folderRows } from "@widgetarium/pack-obsidian";
 import { statGateway } from "./stat-of.js";
 
-export class FolderStatQuery extends IQuery.returns(z.number().nullable()) {
+export class FolderStatQuery extends IQuery.output(z.number().nullable()) {
 	static algorithm: string = "count";
 
 	private readonly counted: ValueGateway<number | null, EveryValueVerb>;

@@ -39,6 +39,7 @@
 		"test:help": "node --single-threaded --import ./tools/loader/register.mts tools/help-test.ts",
 		"test:declared": "node --single-threaded --import ./tools/loader/register.mts tools/declared-test.ts",
 		"test:command": "node --single-threaded --import ./tools/loader/register.mts tools/command-test.ts",
+		"codemod:contract-words": "node --import ./tools/loader/register.mts tools/codemod-contract-words.mts",
 		"test:command-board": "node --single-threaded --import ./tools/loader/register.mts tools/command-board-test.ts",
 		"test:git-pack": "node --single-threaded --import ./tools/loader/register.mts tools/git-pack-test.ts",
 		"test:packs": "node --single-threaded --import ./tools/loader/register.mts tools/packs-test.ts",

@@ -18,7 +18,7 @@ function check(what: string, got: unknown, wanted: unknown): void {
 }
 
 const PAGE = `const PeoplePage = createWidget({
-	inject: { getPeople: IQuery.expects(z.array(PersonSchema)) },
+	inject: { getPeople: IQuery.output(z.array(PersonSchema)) },
 	draw: ({ getPeople: people }: { getPeople: readonly Person[] }) => (
 		<Page kind="home" title="People">
 			<div data-name="Main">

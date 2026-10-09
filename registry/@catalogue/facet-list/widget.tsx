@@ -8,13 +8,13 @@ const SHOWN_AT_MOST = 50;
 
 const FacetList = createWidget({
 	inject: {
-		getHeading: IQuery.expects(z.string().default("")),
-		getRows: IQuery.expects(z.array(FacetSchema).default([])),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
-		getFilter: IQuery.expects(z.string().default("")),
-		setFilter: ICommand.sends(z.string()),
-		getFilterPlaceholder: IQuery.expects(z.string().default("")),
+		getHeading: IQuery.output(z.string().default("")),
+		getRows: IQuery.output(z.array(FacetSchema).default([])),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
+		getFilter: IQuery.output(z.string().default("")),
+		setFilter: ICommand.input(z.string()),
+		getFilterPlaceholder: IQuery.output(z.string().default("")),
 	},
 	draw: ({
 		getHeading: heading,
