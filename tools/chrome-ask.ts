@@ -12,12 +12,18 @@ export interface PageAsk {
 
 export interface AskedPage {
 	readonly ask: (expression: string) => Promise<unknown>;
+	readonly press: (x: number, y: number) => Promise<void>;
+	readonly hover: (x: number, y: number) => Promise<void>;
+	readonly shoot: () => Promise<Buffer>;
 	readonly close: () => void;
 }
 
 interface PageSocket {
 	readonly close: () => void;
 	readonly ask: (expression: string) => Promise<unknown>;
+	readonly press: (x: number, y: number) => Promise<void>;
+	readonly hover: (x: number, y: number) => Promise<void>;
+	readonly shoot: () => Promise<Buffer>;
 	readonly viewportSetTo: (size: PageSize) => Promise<unknown>;
 }
 
@@ -49,6 +55,9 @@ export function waited(ms: number): Promise<void> {
 function handled(socket: PageSocket, chrome: ChildProcess): AskedPage {
 	return {
 		ask: socket.ask,
+		press: socket.press,
+		hover: socket.hover,
+		shoot: socket.shoot,
 		close: () => {
 			socket.close();
 			chrome.kill();
@@ -127,9 +136,21 @@ async function talking(socketUrl: string): Promise<PageSocket> {
 	return {
 		close: () => socket.close(),
 		ask: (expression) => answered(send, expression),
+		press: (x, y) => pressedAt(send, x, y),
+		hover: async (x, y) => {
+			await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+		},
+		shoot: async () =>
+			Buffer.from(String(fieldOf(fieldOf(await send("Page.captureScreenshot", {}), "result"), "data")), "base64"),
 		viewportSetTo: ([width, height]) =>
 			send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false }),
 	};
+}
+
+async function pressedAt(send: Send, x: number, y: number): Promise<void> {
+	await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+	await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
+	await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
 }
 
 function opening(socket: WebSocket): Promise<unknown> {

@@ -1,7 +1,9 @@
-import { createElement as h } from "react";
-import type { ButtonHTMLAttributes, ReactElement } from "react";
+import { Children, createElement as h, isValidElement } from "react";
+import type { ButtonHTMLAttributes, ReactElement, ReactNode } from "react";
 import { useControllableState } from "../hooks/use-controllable-state";
-import { cn } from "../utils/cn";
+import { Icon } from "../icons/icon";
+import { buttonClass } from "../utils/class-names";
+import type { ButtonSize } from "../utils/class-names";
 
 export type ToggleVariant = "default" | "outline";
 
@@ -15,7 +17,9 @@ export interface ToggleProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 	readonly size?: ToggleSize | undefined;
 }
 
-const SIZE_CLASS: Readonly<Record<ToggleSize, string>> = { default: "", sm: "is-s", lg: "is-l" };
+const TEXT_SIZE: Readonly<Record<ToggleSize, ButtonSize>> = { default: "default", sm: "sm", lg: "lg" };
+
+const ICON_SIZE: Readonly<Record<ToggleSize, ButtonSize>> = { default: "icon", sm: "icon-sm", lg: "icon-lg" };
 
 export function Toggle({
 	pressed,
@@ -37,11 +41,26 @@ export function Toggle({
 			data-variant={variant}
 			data-size={size}
 			data-disabled={rest.disabled ? "" : undefined}
-			className={cn("wg-kit-toggle", SIZE_CLASS[size], variant === "outline" && "is-outline", className)}
+			className={buttonClass({
+				variant: restingVariantOf(isOn, variant),
+				size: (isIconOnly(rest.children) ? ICON_SIZE : TEXT_SIZE)[size],
+				className: ["wg-kit-toggle", className],
+			})}
 			onClick={(event) => {
 				rest.onClick?.(event);
 				if (!event.defaultPrevented) setOn(!isOn);
 			}}
 		/>
 	);
+}
+
+function restingVariantOf(isOn: boolean, variant: ToggleVariant): "accent" | "outline" | "ghost" {
+	if (isOn) return "accent";
+	return variant === "outline" ? "outline" : "ghost";
+}
+
+function isIconOnly(children: ReactNode): boolean {
+	const parts = Children.toArray(children);
+	const [only] = parts;
+	return parts.length === 1 && isValidElement(only) && only.type === Icon;
 }

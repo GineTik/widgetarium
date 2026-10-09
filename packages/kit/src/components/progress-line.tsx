@@ -8,6 +8,7 @@ import { useWidthOf } from "../hooks/use-width-of";
 import { cn } from "../utils/cn";
 import { rangeAria, shownValue } from "../utils/progress";
 import { barGeometry } from "../utils/progress-geometry";
+import type { BarLook, SliderGeometry } from "../utils/progress-geometry";
 import { inkedClass } from "../utils/tones";
 import type { TokenStyle } from "../utils/token-style";
 import { BarDrawing } from "./bar-drawing";
@@ -43,7 +44,7 @@ export function ProgressLine({
 				{width > 0 && (
 					<BarDrawing
 						width={width}
-						drawn={barGeometry(width, slider.shown, { isWavy, isCursorVisible: isControlled })}
+						drawn={lineDrawn(width, slider.shown, { isWavy, isCursorVisible: isControlled })}
 						hasStopMark={hasStopMark}
 					/>
 				)}
@@ -55,6 +56,11 @@ export function ProgressLine({
 			</span>
 		</div>
 	);
+}
+
+function lineDrawn(width: number, shown: number, look: Required<BarLook>): SliderGeometry {
+	const { cursor, ...drawn } = barGeometry(width, shown, look);
+	return { ...drawn, cursors: cursor ? [cursor] : [] };
 }
 
 function barRootClass({ isGrabbed }: Slider, isControlled: boolean, tone: ToneName): string {

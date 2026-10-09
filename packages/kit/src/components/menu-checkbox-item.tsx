@@ -40,7 +40,7 @@ function checkboxKindOf(checked: CheckedState): IndicatedKind {
 }
 
 function indicatorOf(checked: CheckedState): string {
-	return checked === true ? "check" : "minus";
+	return checked === true ? "tick" : "minus";
 }
 
 function checkedWord(checked: CheckedState): string {

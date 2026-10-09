@@ -48,13 +48,20 @@ export interface CircleGeometry {
 	readonly track: string | null;
 }
 
+export interface SliderGeometry extends Omit<BarGeometry, "cursor"> {
+	readonly cursors: readonly BarCursor[];
+}
+
 interface BarEdges {
 	readonly start: number;
 	readonly end: number;
 	readonly activeEnd: number;
 	readonly trackStart: number;
-	readonly cursorX?: number;
 }
+
+type Span = readonly [from: number, to: number];
+
+const CURSOR_REACH = CURSOR_WIDTH / 2 + BAR_GAP + BAR_STROKE / 2;
 
 interface RingArc {
 	readonly from: number;
@@ -67,17 +74,41 @@ export function barGeometry(
 	{ isWavy = true, isCursorVisible = false }: BarLook = {},
 ): BarGeometry {
 	const share = clampPercent(percent) / PROGRESS_MAX;
-	const height = barHeight(isWavy, isCursorVisible);
+	if (isCursorVisible) {
+		const { cursors, ...drawn } = sliderGeometry(width, [share], { isWavy });
+		return { ...drawn, cursor: cursors[0] ?? null };
+	}
+	const height = isWavy ? 2 * WAVE_AMPLITUDE + BAR_STROKE : BAR_STROKE;
 	const middle = height / 2;
-	const { start, end, activeEnd, trackStart, cursorX } = barEdges(width, share, isCursorVisible);
+	const { start, end, activeEnd, trackStart } = barEdges(width, share);
 	const isActiveDrawn = share > 0 && activeEnd > start;
 	return {
 		height,
 		middle,
 		active: isActiveDrawn ? wavePath(start, activeEnd, middle, isWavy ? WAVE_AMPLITUDE : 0) : null,
-		track: trackStart < end ? `M${trackStart} ${middle}L${end} ${middle}` : null,
+		track: spansPath([[trackStart, end]], middle),
 		stop: end,
-		cursor: cursorX === undefined ? null : { x: cursorX - CURSOR_WIDTH / 2, width: CURSOR_WIDTH },
+		cursor: null,
+	};
+}
+
+export function sliderGeometry(
+	width: number,
+	shares: readonly number[],
+	{ isWavy = true }: Pick<BarLook, "isWavy"> = {},
+): SliderGeometry {
+	const start = BAR_STROKE / 2;
+	const end = width - BAR_STROKE / 2;
+	const spots = shares.map((share) => clamp(start + share * (end - start), CURSOR_WIDTH / 2, width - CURSOR_WIDTH / 2));
+	const active = activeSpanOf(spots, start, (shares[0] ?? 0) > 0);
+	const middle = CURSOR_HEIGHT / 2;
+	return {
+		height: CURSOR_HEIGHT,
+		middle,
+		active: active ? wavePath(active[0], active[1], middle, isWavy ? WAVE_AMPLITUDE : 0) : null,
+		track: spansPath(trackSpansOf(spots, start, end), middle),
+		stop: end,
+		cursors: spots.map((spot) => ({ x: spot - CURSOR_WIDTH / 2, width: CURSOR_WIDTH })),
 	};
 }
 
@@ -117,20 +148,31 @@ function waveY(along: number, middle: number, amplitude: number): number {
 	return +(middle - amplitude * Math.sin((2 * Math.PI * along) / WAVELENGTH)).toFixed(2);
 }
 
-function barHeight(isWavy: boolean, isCursorVisible: boolean): number {
-	if (isCursorVisible) return CURSOR_HEIGHT;
-	if (isWavy) return 2 * WAVE_AMPLITUDE + BAR_STROKE;
-	return BAR_STROKE;
-}
-
-function barEdges(width: number, share: number, isCursorVisible: boolean): BarEdges {
+function barEdges(width: number, share: number): BarEdges {
 	const start = BAR_STROKE / 2;
 	const end = width - BAR_STROKE / 2;
 	const at = start + share * (end - start);
-	if (!isCursorVisible) return { start, end, activeEnd: at, trackStart: share === 0 ? at : at + BAR_STROKE + BAR_GAP };
-	const cursorX = clamp(at, CURSOR_WIDTH / 2, width - CURSOR_WIDTH / 2);
-	const reach = CURSOR_WIDTH / 2 + BAR_GAP + BAR_STROKE / 2;
-	return { start, end, activeEnd: cursorX - reach, trackStart: cursorX + reach, cursorX };
+	return { start, end, activeEnd: at, trackStart: share === 0 ? at : at + BAR_STROKE + BAR_GAP };
+}
+
+function activeSpanOf(spots: readonly number[], start: number, isPastStart: boolean): Span | null {
+	if (spots.length === 0) return null;
+	const isRange = spots.length > 1;
+	const from = isRange ? Math.min(...spots) + CURSOR_REACH : start;
+	const to = Math.max(...spots) - CURSOR_REACH;
+	return (isRange || isPastStart) && to > from ? [from, to] : null;
+}
+
+function trackSpansOf(spots: readonly number[], start: number, end: number): readonly Span[] {
+	if (spots.length === 0) return [[start, end]];
+	const after: Span = [Math.max(...spots) + CURSOR_REACH, end];
+	if (spots.length < 2) return [after];
+	return [[start, Math.min(...spots) - CURSOR_REACH], after];
+}
+
+function spansPath(spans: readonly Span[], middle: number): string | null {
+	const drawn = spans.filter(([from, to]) => from < to).map(([from, to]) => `M${from} ${middle}L${to} ${middle}`);
+	return drawn.length > 0 ? drawn.join("") : null;
 }
 
 function ringPath(middle: number, radius: number, arc: RingArc, amplitude: number, waves: number): string {

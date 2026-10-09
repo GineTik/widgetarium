@@ -66,7 +66,8 @@ function grabNearest(drag: DragAsk, event: PointerEvent<HTMLElement>): void {
 	event.preventDefault();
 	drag.setGrabbed(at);
 	drag.held.moveThumb(at, value);
-	event.currentTarget.querySelectorAll<HTMLElement>("[role='slider']")[at]?.focus();
+	const thumb = event.currentTarget.querySelectorAll<HTMLElement>("[role='slider']")[at];
+	(thumb ?? event.currentTarget.closest<HTMLElement>("[role='slider']"))?.focus();
 }
 
 function valueAt({ ask, trackRef }: DragAsk, event: PointerEvent<HTMLElement>): number | null {

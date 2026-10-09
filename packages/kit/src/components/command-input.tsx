@@ -12,7 +12,7 @@ export interface CommandInputProps extends Omit<InputHTMLAttributes<HTMLInputEle
 export function CommandInput({ value, onValueChange, className, ...rest }: CommandInputProps): ReactElement {
 	const { search, setSearch } = useCommandSearch(value);
 	return (
-		<div data-slot="command-input-wrapper" className={cn("wg-kit-command-input", className)}>
+		<label data-slot="command-input-wrapper" className={cn("wg-kit-command-input", className)}>
 			<Icon name="search" />
 			<input
 				data-slot="command-input"
@@ -25,6 +25,6 @@ export function CommandInput({ value, onValueChange, className, ...rest }: Comma
 					onValueChange?.(event.currentTarget.value);
 				}}
 			/>
-		</div>
+		</label>
 	);
 }

@@ -2,6 +2,7 @@ import { createElement as h } from "react";
 import type { ButtonHTMLAttributes, ReactElement } from "react";
 import { cn } from "../utils/cn";
 import { useRadioGroup } from "./radio-group-context";
+import { RadioDot } from "./radio-dot";
 
 export interface RadioGroupItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "value"> {
 	readonly value: string;
@@ -23,13 +24,13 @@ export function RadioGroupItem({ value, disabled, className, ...rest }: RadioGro
 			data-disabled={isDisabled ? "" : undefined}
 			disabled={isDisabled}
 			tabIndex={isChecked ? 0 : -1}
-			className={cn("wg-kit-radio", className)}
+			className={cn("wg-kit-check is-radio", className)}
 			onClick={(event) => {
 				rest.onClick?.(event);
 				if (!event.defaultPrevented) group.choose(value);
 			}}
 		>
-			<span data-slot="radio-group-indicator" className="wg-kit-radio-dot" />
+			<RadioDot />
 		</button>
 	);
 }

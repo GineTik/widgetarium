@@ -507,7 +507,11 @@ async function navigationMenu(): Promise<void> {
 	fire(found(document, '[href="#intro"]'), "click");
 	await settle();
 	check("a link inside closes the menu", stateOf("navigation-menu-viewport"), "closed");
-	check("navigationMenuTriggerStyle names the trigger's look", kit.navigationMenuTriggerStyle(), "wg-kit-nav-trigger");
+	check(
+		"navigationMenuTriggerStyle names the trigger's look: our ghost Button",
+		kit.navigationMenuTriggerStyle(),
+		"wg-kit-btn is-ghost is-m wg-kit-nav-trigger",
+	);
 	await wait(260);
 	key(trigger, "ArrowDown");
 	await settle();

@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from "react";
+import { buttonClass } from "./class-names";
 import { cn } from "./cn";
 import type { ClassNameValue } from "./cn";
 import { focusQuietly } from "./focus";
@@ -9,7 +10,7 @@ const TOP_LEVEL =
 	':scope > li > [data-slot="navigation-menu-trigger"], :scope > li > [data-slot="navigation-menu-link"]';
 
 export function navigationMenuTriggerStyle(className?: ClassNameValue): string {
-	return cn("wg-kit-nav-trigger", className);
+	return buttonClass({ variant: "ghost", className: cn("wg-kit-nav-trigger", className) });
 }
 
 export function moveAcrossNavigation(event: KeyboardEvent<HTMLElement>): void {

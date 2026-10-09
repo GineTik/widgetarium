@@ -8,7 +8,7 @@ export interface QuestionnaireChoiceKeyProps {
 export function QuestionnaireChoiceKey({ shortcut }: QuestionnaireChoiceKeyProps): ReactElement | null {
 	if (!shortcut) return null;
 	return (
-		<kbd className="wg-kit-quiz-choice-key" aria-hidden="true">
+		<kbd className="wg-kit-kbd wg-kit-quiz-choice-key" aria-hidden="true">
 			{shortcut}
 		</kbd>
 	);

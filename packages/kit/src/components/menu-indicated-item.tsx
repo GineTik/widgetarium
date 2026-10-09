@@ -31,10 +31,10 @@ export function MenuIndicatedItem({ kind, className, children, ...item }: MenuIn
 			{...rest}
 			{...menuItemMarks(menu, { part: kind.part, inset, disabled })}
 			{...menuItemHandlers(menu, { disabled, onSelect, theirs: rest })}
-			className={cn("wg-kit-menu-item is-indicated", className)}
+			className={cn("wg-kit-pop-item wg-kit-menu-item", className)}
 		>
-			<span className="wg-kit-menu-indicator">{kind.indicator}</span>
 			{children}
+			<span className="wg-kit-pop-tick">{kind.indicator}</span>
 		</div>
 	);
 }

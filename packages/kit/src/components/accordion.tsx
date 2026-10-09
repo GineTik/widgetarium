@@ -6,6 +6,7 @@ import { cn } from "../utils/cn";
 import { focusStepped, ownedBy } from "../utils/focus-step";
 import { stepKeysOf } from "../utils/roving";
 import { AccordionContext } from "./accordion-context";
+import { Layout } from "./layout";
 
 export { AccordionItem } from "./accordion-item";
 export { AccordionTrigger } from "./accordion-trigger";
@@ -57,10 +58,11 @@ export function Accordion(props: AccordionProps): ReactElement {
 		<AccordionContext.Provider
 			value={{ opened, toggle, isDisabled: disabled, canShut: isMultiple || isCollapsible, idOf }}
 		>
-			<div
+			<Layout
 				data-slot="accordion"
 				data-orientation={orientation}
 				{...withoutCollapsible(rest)}
+				kind="rows"
 				className={cn("wg-kit-accordion", rest.className)}
 				onKeyDown={(event) => {
 					rest.onKeyDown?.(event);

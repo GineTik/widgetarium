@@ -1,8 +1,11 @@
 import { createElement as h } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
+import { Icon } from "../icons/icon";
 import { useMenuRadio } from "./menu-context";
 import { MenuIndicatedItem } from "./menu-indicated-item";
 import type { IndicatedKind } from "./menu-indicated-item";
+
+const INDICATOR_PX = 16;
 
 export interface MenuRadioItemProps extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect"> {
 	readonly value: string;
@@ -26,6 +29,6 @@ function radioKindOf(isPicked: boolean): IndicatedKind {
 		role: "menuitemradio",
 		part: "radio-item",
 		marks: { "aria-checked": isPicked, "data-state": isPicked ? "checked" : "unchecked" },
-		indicator: isPicked ? <span className="wg-kit-menu-dot" /> : null,
+		indicator: isPicked ? <Icon name="tick" size={INDICATOR_PX} /> : null,
 	};
 }

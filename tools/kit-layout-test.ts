@@ -240,7 +240,13 @@ function itemChecks(): void {
 		["A", "#x", "item"],
 	);
 	check("an item group is a list", attr("[data-slot='item-group']", "role"), "list");
-	check("its separator is a separator", attr("[data-slot='item-separator']", "data-orientation"), "horizontal");
+	check(
+		"in a group the plate's hairline is the separator, so an ItemSeparator draws nothing",
+		host.querySelector("[data-slot='item-separator']"),
+		null,
+	);
+	mount(h(kit.ItemSeparator, { id: "apart" }));
+	check("alone it is a separator", attr("#apart", "data-orientation"), "horizontal");
 	mount(
 		h(kit.Marker, { variant: "separator", role: "status" }, [
 			h(kit.MarkerIcon, { key: "i" }, "•"),

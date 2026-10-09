@@ -18,6 +18,7 @@ export function useNavigationRoot(ask: NavigationRootAsk): NavigationMenuState {
 		...useNavigationValue(ask),
 		id: useId(),
 		rootRef: useRef<HTMLElement>(null),
+		openedByHover: useRef(""),
 		isViewport: ask.isViewport,
 		viewportTarget,
 		setViewportTarget,

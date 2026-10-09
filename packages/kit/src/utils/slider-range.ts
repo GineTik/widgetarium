@@ -99,6 +99,10 @@ export function sliderPercentOf(value: number, scale: SliderScale): number {
 	return span === 0 ? 0 : ((value - scale.min) / span) * PERCENT;
 }
 
+export function sliderShareOf(value: number, scale: SliderScale): number {
+	return sliderPercentOf(value, scale) / PERCENT;
+}
+
 export function valueUnder(spot: PointerSpot, ask: TrackAsk, scale: SliderScale): number | null {
 	const box = ask.track?.getBoundingClientRect();
 	if (!box) return null;

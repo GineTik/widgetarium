@@ -5,6 +5,7 @@ import { cn } from "../utils/cn";
 import { dataFlagsOf } from "../utils/data-flags";
 import { shortcutOf } from "../utils/questionnaire";
 import { Card } from "./card";
+import { ChoiceMark } from "./choice-mark";
 import { QuestionnaireChoiceKey } from "./questionnaire-choice-key";
 import { QuestionnaireChoiceText } from "./questionnaire-choice-text";
 import { useQuestionnaireItem } from "./questionnaire-context";
@@ -53,7 +54,7 @@ export function QuestionnaireChoice(props: QuestionnaireChoiceProps): ReactEleme
 					aria-describedby={description ? descriptionId : undefined}
 					className="wg-kit-quiz-choice-input"
 				/>
-				<span className="wg-kit-quiz-choice-mark" aria-hidden="true" />
+				<ChoiceMark isMultiple={item.multiple} isChecked={isChecked} className="wg-kit-quiz-choice-mark" />
 				<QuestionnaireChoiceText descriptionId={descriptionId} description={description}>
 					{children}
 				</QuestionnaireChoiceText>

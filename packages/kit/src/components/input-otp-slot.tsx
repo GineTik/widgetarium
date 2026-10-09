@@ -15,7 +15,7 @@ export function InputOTPSlot({ index, className, ...rest }: InputOTPSlotProps): 
 			data-active={slot?.isActive ? "true" : undefined}
 			data-filled={slot?.char ? "" : undefined}
 			{...rest}
-			className={cn("wg-kit-otp-slot", className)}
+			className={cn("wg-kit-field wg-kit-otp-slot", className)}
 		>
 			{slot?.char}
 			{slot?.hasFakeCaret ? <span className="wg-kit-otp-caret" /> : null}

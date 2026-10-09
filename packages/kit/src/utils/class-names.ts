@@ -105,6 +105,14 @@ export const listClass = variants(cn("wg-kit-list", cardClass({ variant: "solid"
 
 export const rowClass = variants("wg-kit-row", { pressable: { true: "is-pressable" } });
 
+export const ROW_PART = {
+	badge: "wg-kit-row-badge",
+	label: "wg-kit-row-label",
+	text: "wg-kit-row-text",
+	supporting: "wg-kit-row-supporting",
+	value: "wg-kit-row-value",
+} as const;
+
 export const glassClass = variants("wg-kit-glass", {});
 
 export const sidebarClass = variants(cn("wg-kit-side", cardClass({ variant: "light", lift: true })), SIDEBAR_WORDS, {
