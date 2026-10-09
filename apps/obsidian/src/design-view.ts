@@ -15,7 +15,7 @@ import { CanvasTopBar, DesignCanvas } from "./design-canvas.js";
 import { COMPONENTS_PAGE, shownPageOf } from "./design-canvas-page.js";
 import { noteToReturnTo, readAppSpec } from "./app-of-note.js";
 import { widgetOpenerOf } from "./design-references.js";
-import { stateOf } from "./design-state-of.js";
+import { readDrawnState } from "./design-drawn-state.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
 import type { DrawnDesign } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
@@ -292,12 +292,16 @@ function drawnScreensOf(
 	app: string,
 	screens: Design["screens"],
 ): Promise<DrawnDesign["screens"]> {
+	const source = {
+		adapter: plugin.app.vault.adapter,
+		statesOf: (widget: string) => plugin.registry.get(widget)?.states,
+	};
 	return Promise.all(
 		screens.map(async (screen) => ({
 			name: screen.name,
 			states: await Promise.all(
 				statesOf(screen).map(async (state) => ({
-					...(await stateOf(plugin, app, state, screen.name)),
+					...(await readDrawnState(source, app, state, screen.name)),
 					situation: state.situation,
 				})),
 			),

@@ -15,7 +15,7 @@ export interface TopBarProps {
 	readonly trailing: readonly CanvasTab[];
 	readonly page: string;
 	readonly onPage: (page: string) => void;
-	readonly tools: ReactNode;
+	readonly canvasTools: ReactNode;
 	readonly onReturn: () => void;
 	readonly status?: ReactNode;
 	readonly layers?: ReactNode;
@@ -33,7 +33,7 @@ export function TopBar({
 	trailing,
 	page,
 	onPage,
-	tools,
+	canvasTools,
 	onReturn,
 	status,
 	layers,
@@ -76,7 +76,7 @@ export function TopBar({
 			layers ?? null,
 			h("b", { key: "app" }, app),
 			h("span", { key: "count" }, said),
-			tools,
+			canvasTools,
 			status ?? null,
 		]),
 		h("div", { key: "end", className: "wg-design-top-end" }, [

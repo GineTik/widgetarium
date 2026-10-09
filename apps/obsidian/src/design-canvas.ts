@@ -153,7 +153,7 @@ function topBarOf(
 		trailing: tabs.trailing.map(tabOf),
 		page,
 		onPage,
-		tools: h(CanvasTools, { key: "tools", mode, onMode, onAddPhotos }),
+		canvasTools: h(CanvasTools, { key: "canvas-tools", mode, onMode, onAddPhotos }),
 		onReturn,
 		status,
 		layers,
