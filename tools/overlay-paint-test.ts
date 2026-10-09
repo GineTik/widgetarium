@@ -4,6 +4,7 @@ import path from "node:path";
 import { paged } from "./chrome-ask.ts";
 import { commandAccordionTwinChecks } from "./twins-command-accordion-paint.ts";
 import { dialogTwinChecks } from "./twins-dialog-paint.ts";
+import { drawerPaintChecks } from "./drawer-paint.ts";
 import { twinChecks } from "./twins-paint.ts";
 import { tabsTwinChecks } from "./twins-tabs-paint.ts";
 import { itemTwinChecks } from "./twins-item-paint.ts";
@@ -56,5 +57,6 @@ for (const [what, got, wanted] of await dialogTwinChecks()) check(what, got, wan
 for (const [what, got, wanted] of await commandAccordionTwinChecks()) check(what, got, wanted);
 for (const [what, got, wanted] of await itemTwinChecks()) check(what, got, wanted);
 for (const [what, got, wanted] of await tabsTwinChecks()) check(what, got, wanted);
+for (const [what, got, wanted] of await drawerPaintChecks()) check(what, got, wanted);
 console.log(`\n${failed === 0 ? "overlay paint: clean" : `overlay paint: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

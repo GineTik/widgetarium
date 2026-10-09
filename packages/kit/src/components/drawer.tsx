@@ -2,28 +2,29 @@ import { createElement as h } from "react";
 import type { FunctionComponent, ReactElement } from "react";
 import { classedSlotPart } from "./create-slot-part";
 import type { SlotPartProps } from "./create-slot-part";
+import { useDrawerRoot } from "../hooks/use-drawer-root";
+import type { DrawerRootAsk } from "../hooks/use-drawer-root";
 import type { DialogCloseProps } from "./dialog-close";
-import { DialogRoot } from "./dialog-root";
+import { DialogContext } from "./dialog-context";
 import type { DialogRootProps } from "./dialog-root";
 import type { DialogTriggerProps } from "./dialog-trigger";
-import { DrawerDirectionContext } from "./drawer-direction";
-import type { ModalSide } from "./modal-layer";
+import { DrawerContext } from "./drawer-context";
 import { createModalClose, createModalTextPart, createModalTrigger } from "./modal-parts";
 
 export { DrawerContent } from "./drawer-content";
 export { OverlayPortal as DrawerPortal } from "./overlay-portal";
 export { OverlayScrimPart as DrawerOverlay } from "./overlay-scrim-part";
 export type { DrawerContentProps } from "./drawer-content";
+export type { SnapPoint } from "../utils/drawer-snaps";
 
-export interface DrawerProps extends DialogRootProps {
-	readonly direction?: ModalSide | undefined;
-}
+export interface DrawerProps extends DialogRootProps, DrawerRootAsk {}
 
-export function Drawer({ direction = "bottom", ...root }: DrawerProps): ReactElement {
+export function Drawer({ children, ...ask }: DrawerProps): ReactElement {
+	const { dialog, settings } = useDrawerRoot(ask);
 	return (
-		<DrawerDirectionContext.Provider value={direction}>
-			<DialogRoot {...root} />
-		</DrawerDirectionContext.Provider>
+		<DrawerContext.Provider value={settings}>
+			<DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>
+		</DrawerContext.Provider>
 	);
 }
 

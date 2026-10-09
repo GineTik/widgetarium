@@ -37,6 +37,7 @@ const { render } = await import("../packages/core/src/engine/render.ts");
 const kit = await import("../packages/kit/src/index.ts");
 const { placeFloating } = await import("../packages/kit/src/utils/floating-placement.ts");
 const { openLayerCount } = await import("../packages/kit/src/utils/layer-stack.ts");
+const snaps = await import("../packages/kit/src/utils/drawer-snaps.ts");
 
 const host = found(document, "#host");
 const outside = found(document, "#outside");
@@ -768,9 +769,17 @@ async function drawer(): Promise<void> {
 	fire(handle, "pointermove", { clientY: 150 });
 	await settle();
 	check("A DRAWER FOLLOWS THE FINGER DOWN", styleVar(panel, "--wg-kit-drawer-drag"), "50px");
+	await wait(150);
 	fire(handle, "pointerup");
 	await settle();
 	check("a short drag springs back open", stateOf("drawer-content"), "open");
+	fire(handle, "pointerdown", { clientY: 100 });
+	fire(handle, "pointermove", { clientY: 200 });
+	fire(handle, "pointermove", { clientY: 101 });
+	await wait(150);
+	fire(handle, "pointerup");
+	await settle();
+	check("A DRAG ON THE GRIP THAT COMES BACK TO WHERE IT STARTED IS NOT A PRESS", stateOf("drawer-content"), "open");
 	fire(handle, "pointerdown", { clientY: 100 });
 	fire(handle, "pointermove", { clientY: 360 });
 	await settle();
@@ -778,6 +787,123 @@ async function drawer(): Promise<void> {
 	await settle();
 	check("a long drag dismisses it", stateOf("drawer-content"), "closed");
 	await draw(null);
+	await drawerSnaps();
+	await drawerCloseButton();
+	await undismissibleDrawer();
+	drawerSnapArithmetic();
+}
+
+function snapDrawer(
+	props: Readonly<Record<string, unknown>>,
+	content: Readonly<Record<string, unknown>> = {},
+): ReactNode {
+	return h(
+		kit.Drawer,
+		{ defaultOpen: true, snapPoints: [0.4, 0.75], ...props },
+		h(kit.DrawerContent, content, h(kit.DrawerTitle, null, "Move goal")),
+	);
+}
+
+async function measuredSnapDrawer(tree: () => ReactNode): Promise<Element> {
+	await draw(tree());
+	const panel = found(document, '[data-slot="drawer-content"]');
+	if (panel.parentElement) Object.defineProperty(panel.parentElement, "clientHeight", { value: 1000 });
+	await draw(tree());
+	return panel;
+}
+
+async function drawerSnaps(): Promise<void> {
+	const picked: unknown[] = [];
+	const panel = await measuredSnapDrawer(() =>
+		snapDrawer({ setActiveSnapPoint: (snap: unknown) => picked.push(snap) }),
+	);
+	check(
+		"A SNAPPED DRAWER OPENS AT ITS FIRST SNAP, THE REST OF ITS HEIGHT BELOW THE EDGE",
+		styleVar(panel, "--wg-kit-drawer-drag"),
+		"350px",
+	);
+	check("and is as tall as its top snap", styleVar(panel, "--wg-kit-drawer-height"), "750px");
+	check("and holds its content still while it is low", panel.classList.contains("is-held-low"), true);
+	const handle = found(document, ".wg-kit-drawer-handle");
+	key(handle, "ArrowUp");
+	await settle();
+	check(
+		"ARROW UP ON THE GRIP GROWS IT TO THE NEXT SNAP",
+		[picked, styleVar(panel, "--wg-kit-drawer-drag")],
+		[[0.75], "0px"],
+	);
+	check("and its content scrolls at the top snap", panel.classList.contains("is-held-low"), false);
+	key(handle, "ArrowDown");
+	await settle();
+	check("arrow down brings it back", picked, [0.75, 0.4]);
+	fire(handle, "pointerdown", { clientY: 500 });
+	fire(handle, "pointerup", { clientY: 500 });
+	await settle();
+	check("A STILL PRESS ON THE GRIP STEPS TO THE NEXT SNAP", picked, [0.75, 0.4, 0.75]);
+	key(handle, "Enter");
+	await settle();
+	check("and Enter at the top snap closes it", stateOf("drawer-content"), "closed");
+	await draw(null);
+}
+
+async function drawerCloseButton(): Promise<void> {
+	await draw(snapDrawer({}));
+	check(
+		"A DRAWER DRAWS NO CLOSE BUTTON UNLESS ASKED",
+		document.querySelector('[data-slot="drawer-content"] .wg-kit-modal-close'),
+		null,
+	);
+	await draw(null);
+	await draw(snapDrawer({}, { showCloseButton: true }));
+	const close = found(document, '[data-slot="drawer-content"] .wg-kit-modal-close');
+	fire(close, "click");
+	await settle();
+	check("showCloseButton draws one, and it closes the drawer", stateOf("drawer-content"), "closed");
+	await draw(null);
+}
+
+async function undismissibleDrawer(): Promise<void> {
+	const panel = await measuredSnapDrawer(() => snapDrawer({ dismissible: false }));
+	key(panel, "Escape");
+	await settle();
+	check("AN UNDISMISSIBLE DRAWER STAYS OPEN ON ESCAPE", stateOf("drawer-content"), "open");
+	const handle = found(document, ".wg-kit-drawer-handle");
+	fire(handle, "pointerdown", { clientY: 600 });
+	fire(handle, "pointermove", { clientY: 990 });
+	fire(handle, "pointerup", { clientY: 990 });
+	await settle();
+	check(
+		"and a fling down only lands it on its lowest snap",
+		[stateOf("drawer-content"), styleVar(panel, "--wg-kit-drawer-drag")],
+		["open", "350px"],
+	);
+	await draw(null);
+}
+
+function drawerSnapArithmetic(): void {
+	const heights = [400, 750];
+	const released = (shownPx: number, upwardPxPerMs: number, isDismissible = true): number =>
+		snaps.settledSnapIndex({ heights, shownPx, upwardPxPerMs, isDismissible });
+	check(
+		"A RELEASE SETTLES ON THE SNAP NEAREST WHERE ITS SPEED WOULD CARRY IT",
+		[released(450, 0), released(450, 1.5), released(700, -1.5), released(380, -2), released(380, -2, false)],
+		[0, 1, 0, snaps.CLOSED_SNAP, 0],
+	);
+	check(
+		"the scrim fades in between the snap below fadeFromIndex and that snap",
+		[
+			snaps.fadeAt(heights, 1, 400),
+			snaps.fadeAt(heights, 1, 575),
+			snaps.fadeAt(heights, 1, 750),
+			snaps.fadeAt(heights, 0, 200),
+		],
+		[0, 0.5, 1, 0.5],
+	);
+	check(
+		"a snap is a fraction of the layer or pixels, never past its top inset",
+		snaps.snapHeightsOf(["148px", 0.5, 1], { layerPx: 1000, insetPx: 8 }),
+		[148, 500, 992],
+	);
 }
 
 function styleVar(element: Element, name: string): string {

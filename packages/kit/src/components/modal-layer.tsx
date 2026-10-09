@@ -1,5 +1,6 @@
 import { Fragment, createElement as h } from "react";
 import type { HTMLAttributes, ReactElement, Ref } from "react";
+import type { StyleProp } from "../utils/token-style";
 import { createPortal } from "react-dom";
 import { useModalLayer } from "../hooks/use-modal-layer";
 import { cn } from "../utils/cn";
@@ -12,23 +13,33 @@ export type ModalKind = "dialog" | "sheet" | "drawer" | "alert-dialog";
 
 export type ModalSide = "top" | "right" | "bottom" | "left";
 
+export interface ModalDismissal {
+	readonly byScrim: boolean;
+	readonly byEscape: boolean;
+}
+
+export const DISMISSED_ANYWHERE: ModalDismissal = { byScrim: true, byEscape: true };
+
+export const DISMISSED_BY_ESCAPE: ModalDismissal = { byScrim: false, byEscape: true };
+
 export interface ModalLayerProps extends HTMLAttributes<HTMLDivElement> {
 	readonly kind: ModalKind;
 	readonly side?: ModalSide | undefined;
-	readonly closesOnScrim: boolean;
+	readonly dismissal: ModalDismissal;
+	readonly scrimStyle?: StyleProp | undefined;
 	readonly panelRef?: Ref<HTMLDivElement> | undefined;
 }
 
 export function ModalLayer({
 	kind,
 	side,
-	closesOnScrim,
+	dismissal,
+	scrimStyle,
 	panelRef: outerRef,
-	className,
 	...rest
 }: ModalLayerProps): ReactElement {
 	const { isOpen, setOpen } = useDialog();
-	const modal = useModalLayer(isOpen, () => setOpen(false));
+	const modal = useModalLayer(isOpen, () => dismissal.byEscape && setOpen(false));
 	const state = dataStateOf(isOpen);
 	const layer = (
 		<ModalIdsContext.Provider value={modal.ids}>
@@ -37,7 +48,8 @@ export function ModalLayer({
 					className="wg-kit-modal-scrim"
 					data-slot={`${kind}-overlay`}
 					data-state={state}
-					onPointerDown={(event) => closesOnScrim && event.target === event.currentTarget && setOpen(false)}
+					style={scrimStyle}
+					onPointerDown={(event) => dismissal.byScrim && event.target === event.currentTarget && setOpen(false)}
 				/>
 				<div
 					role={kind === "alert-dialog" ? "alertdialog" : "dialog"}
@@ -50,7 +62,7 @@ export function ModalLayer({
 					data-slot={`${kind}-content`}
 					data-state={state}
 					data-side={side}
-					className={cn("wg-kit-modal", `is-${kind}`, className)}
+					className={cn("wg-kit-modal", `is-${kind}`, rest.className)}
 				/>
 			</div>
 		</ModalIdsContext.Provider>
