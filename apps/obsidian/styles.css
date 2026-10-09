@@ -84,6 +84,7 @@ pre:has(> .block-language-widgetarium),
 	--wg-group-pad: 16px;
 	--wg-kit-section-gap: 40px;
 	--wg-kit-accent-wash: color-mix(in srgb, var(--interactive-accent) 12%, var(--background-primary));
+	--wg-kit-accent-wash-hover: color-mix(in srgb, var(--interactive-accent) 20%, var(--background-primary));
 	--wg-kit-red: var(--color-red, #e93147);
 	--wg-kit-orange: var(--color-orange, #ec7500);
 	--wg-kit-yellow: var(--color-yellow, #e0ac00);
@@ -2299,6 +2300,16 @@ body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-plain:hover::before {
 	background: var(--wg-kit-accent-wash);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-tinted {
+	color: var(--interactive-accent);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-tinted::before {
+	background: var(--wg-kit-accent-wash);
+	box-shadow: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn.is-tinted:hover::before {
+	background: var(--wg-kit-accent-wash-hover);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-item::before {
@@ -7882,6 +7893,12 @@ body.wg-tree-carrying .wg-tile-body {
 	animation: wg-design-fade-in var(--wg-quick) var(--wg-ease);
 }
 
+.wg-design-top-end {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
 .wg-design-topbar {
 	position: absolute;
 	top: 0;
@@ -7967,6 +7984,10 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: 0 0 0 1px var(--background-modifier-border);
 	background: var(--background-primary);
 	border-radius: 999px;
+}
+
+:is(.wg-root, .wg-portal) .wg-design-page-switch.is-s button {
+	height: calc(var(--wg-kit-control-s) - 4px);
 }
 
 :is(.wg-root, .wg-portal) .wg-design-page-switch button:has(.wg-design-pages-trigger) {

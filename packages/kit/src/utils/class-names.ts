@@ -5,6 +5,7 @@ const BUTTON_WORDS = {
 	variant: {
 		primary: "is-primary",
 		accent: "is-accent",
+		tinted: "is-tinted",
 		neutral: "",
 		ghost: "is-ghost",
 		plain: "is-plain",
