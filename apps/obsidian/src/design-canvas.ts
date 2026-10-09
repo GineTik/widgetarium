@@ -17,6 +17,7 @@ import type { LayerFocus } from "./design-layers-panel.js";
 import { Highlight, lookOnto } from "./design-spotlight.js";
 import type { Box } from "./design-flight.js";
 import { useCanvasSelection } from "./design-canvas-selection.js";
+import { CanvasTools } from "./design-tools.js";
 import type { CanvasMode } from "./design-tools.js";
 import type { LayerMove } from "./layer-moves.js";
 import { fitLook, usePanZoom } from "./design-pan-zoom.js";
@@ -45,6 +46,7 @@ export interface DesignCanvasProps {
 	readonly onMove: (widget: string, move: LayerMove) => void;
 	readonly mode: CanvasMode;
 	readonly onMode: (mode: CanvasMode) => void;
+	readonly onReturn: () => void;
 	readonly size: Size;
 	readonly registry: WidgetSurfaceProps["registry"];
 	readonly host: WidgetSurfaceProps["host"];
@@ -118,6 +120,7 @@ function topBarOf(
 		onAddPhotos,
 		mode,
 		onMode,
+		onReturn,
 		isLayersOpen,
 		onLayers,
 	}: DesignCanvasProps,
@@ -150,9 +153,8 @@ function topBarOf(
 		trailing: tabs.trailing.map(tabOf),
 		page,
 		onPage,
-		onAddPhotos,
-		mode,
-		onMode,
+		tools: h(CanvasTools, { key: "tools", mode, onMode, onAddPhotos }),
+		onReturn,
 		status,
 		layers,
 	});

@@ -1,4 +1,4 @@
-import { Notice } from "obsidian";
+import { MarkdownView, Notice } from "obsidian";
 import type { MarkdownPostProcessorContext, TAbstractFile } from "obsidian";
 import { createShapeStore, shapesOf } from "@widgetarium/kit/shapes";
 import type { ShapeStore } from "@widgetarium/kit/shapes";
@@ -33,7 +33,7 @@ import { activeRules, normalizeRules, ruleBlock } from "./substitution.js";
 import { ensureFolders, revalidateWidgets, watchWidgets } from "./widget-upkeep.js";
 import { indexedDbSnapshotStore } from "./startup-snapshot-store.js";
 import { answerShotRequests } from "./shot-requests.js";
-import { openDesign, registerDesignView } from "./design-view.js";
+import { openDesignInLeaf, registerDesignView } from "./design-view.js";
 import { appScreenOfNote } from "./app-of-note.js";
 import type WidgetariumPlugin from "./main.js";
 import type { WantedWidgets } from "./main.js";
@@ -154,10 +154,12 @@ function headerActionsOf(plugin: WidgetariumPlugin): HeaderActions {
 }
 
 async function editInCanvasOrHere(plugin: WidgetariumPlugin): Promise<void> {
-	const note = plugin.app.workspace.getActiveFile()?.path;
-	const screen = note ? await appScreenOfNote(plugin.app.vault.adapter, note) : null;
+	const view = plugin.app.workspace.getActiveViewOfType(MarkdownView);
+	const note = view?.file?.path;
+	if (!view || !note) return plugin.toggleEditing();
+	const screen = await appScreenOfNote(plugin.app.vault.adapter, note);
 	if (!screen) return plugin.toggleEditing();
-	await openDesign(plugin.app, screen.app, screen.screen);
+	await openDesignInLeaf(view.leaf, screen.app, screen.screen, note);
 }
 
 function shapeStoreFollowingRenames(plugin: WidgetariumPlugin): ShapeStore {

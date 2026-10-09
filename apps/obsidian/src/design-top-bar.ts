@@ -1,8 +1,6 @@
 import { createElement as h, useRef, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { Icon, Popover, PopoverItem, Segmented } from "@widgetarium/kit";
-import { CanvasTools } from "./design-tools.js";
-import type { CanvasMode } from "./design-tools.js";
+import { Button, Icon, Popover, PopoverItem, Segmented } from "@widgetarium/kit";
 
 export interface CanvasTab {
 	readonly value: string;
@@ -17,15 +15,15 @@ export interface TopBarProps {
 	readonly trailing: readonly CanvasTab[];
 	readonly page: string;
 	readonly onPage: (page: string) => void;
-	readonly onAddPhotos: (photos: readonly File[]) => void;
-	readonly mode: CanvasMode;
-	readonly onMode: (mode: CanvasMode) => void;
+	readonly tools: ReactNode;
+	readonly onReturn: () => void;
 	readonly status?: ReactNode;
 	readonly layers?: ReactNode;
 }
 
 const PAGES_TAB = "\u0000pages";
 const PAGES = "Pages";
+const RETURN = "Back to view";
 
 export function TopBar({
 	app,
@@ -35,9 +33,8 @@ export function TopBar({
 	trailing,
 	page,
 	onPage,
-	onAddPhotos,
-	mode,
-	onMode,
+	tools,
+	onReturn,
 	status,
 	layers,
 }: TopBarProps): ReactElement {
@@ -79,16 +76,19 @@ export function TopBar({
 			layers ?? null,
 			h("b", { key: "app" }, app),
 			h("span", { key: "count" }, said),
-			h(CanvasTools, { key: "tools", mode, onMode, onAddPhotos }),
+			tools,
 			status ?? null,
 		]),
-		h(Segmented<string>, {
-			key: "pages",
-			items: [...leading, ...(pages.length > 0 ? [pagesTab] : []), ...trailing],
-			value: isOnPage ? PAGES_TAB : page,
-			onValueChange: (next) => (next === PAGES_TAB ? undefined : onPage(next)),
-			size: "s",
-			className: "wg-design-page-switch",
-		}),
+		h("div", { key: "end", className: "wg-design-top-end" }, [
+			h(Segmented<string>, {
+				key: "pages",
+				items: [...leading, ...(pages.length > 0 ? [pagesTab] : []), ...trailing],
+				value: isOnPage ? PAGES_TAB : page,
+				onValueChange: (next) => (next === PAGES_TAB ? undefined : onPage(next)),
+				size: "s",
+				className: "wg-design-page-switch",
+			}),
+			h(Button, { key: "return", size: "s", variant: "tinted", onClick: onReturn }, RETURN),
+		]),
 	]);
 }

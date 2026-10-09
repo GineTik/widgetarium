@@ -1,31 +1,23 @@
-import { ItemView, Notice } from "obsidian";
-import { boardIn } from "./board-in-note.js";
+import { ItemView, Notice, TFile } from "obsidian";
 import { movedNode } from "@widgetarium/core/engine/node-moves.js";
 import type { LayerMove } from "./layer-moves.js";
 import type { App, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import { Fragment, createElement as h } from "react";
 import { render } from "@widgetarium/core/engine/render.js";
 import { shieldFromEditor } from "@widgetarium/core/editor-shield.js";
-import type { Board } from "@widgetarium/core/model.js";
-import {
-	designPathOf,
-	readDesign,
-	referencePathOf,
-	screenPathOf,
-	statesOf,
-	vaultBindingOf,
-} from "@widgetarium/core/app-design.js";
-import type { Design, ScreenState } from "@widgetarium/core/app-design.js";
+import { designPathOf, readDesign, referencePathOf, statesOf } from "@widgetarium/core/app-design.js";
+import type { Design } from "@widgetarium/core/app-design.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { appWidgetsOf } from "@widgetarium/core/app-widgets.js";
 import { specPathOf } from "@widgetarium/core/app-spec.js";
 import type { CanvasMode } from "./design-tools.js";
 import { CanvasTopBar, DesignCanvas } from "./design-canvas.js";
-import { COMPONENTS_PAGE } from "./design-canvas-page.js";
+import { COMPONENTS_PAGE, shownPageOf } from "./design-canvas-page.js";
+import { noteToReturnTo, readAppSpec } from "./app-of-note.js";
 import { widgetOpenerOf } from "./design-references.js";
-import { statePropsOf } from "./design-state-drawing.js";
+import { stateOf } from "./design-state-of.js";
 import { blockIdOf, blocksOf, withBlocks } from "./design-block-registry.js";
-import type { DrawnDesign, DrawnState, StatePicture } from "./design-canvas-shapes.js";
+import type { DrawnDesign } from "./design-canvas-shapes.js";
 import { addPhotos, imageFilesIn } from "./design-photos.js";
 import type WidgetariumPlugin from "./main.js";
 import type { Job } from "@widgetarium/core/app-jobs.js";
@@ -36,9 +28,6 @@ import { catalogueInstallsOf, specWidgetsOf } from "./design-spec-widgets.js";
 export const DESIGN_VIEW_TYPE = "widgetarium-design";
 
 const TITLE = "Design · {app}";
-const NO_BOARD = "{name} holds no widgetarium board";
-const BOUND_TO_VAULT =
-	"{name} reads the vault ({binding}): a design is drawn from sample rows only. Ask the agent to redraw it.";
 const DESIGN_POLL_MS = 1500;
 const DRAFT_PREFIX = "@draft/";
 const NO_DESIGN = "{app} has no design yet, or it was removed.";
@@ -46,10 +35,14 @@ const PHOTOS_FAILED = "The photos were not added to the canvas: {why}";
 const NO_PAGE_FOLDER = "{widget} has no folder in this vault, so its layout cannot be changed here.";
 const NOT_MOVED = "Nothing was moved: {why}";
 const JOBS_REDRAW_MS = 400;
+const NO_NOTE_TO_RETURN_TO = "{app} has no page with a note to go back to.";
+const SPEC_REFUSED = "The spec of {app} cannot be read: {why}";
 
 export class DesignView extends ItemView {
 	private appName = "";
 	private page = "";
+	private shownPage = "";
+	private fromNote = "";
 	private isLayersOpen = false;
 	private mode: CanvasMode = "hand";
 	private focusWidget: string | null = null;
@@ -83,12 +76,14 @@ export class DesignView extends ItemView {
 	}
 
 	override getState(): Record<string, unknown> {
-		return { app: this.appName, page: this.page, layers: this.isLayersOpen, mode: this.mode };
+		return { app: this.appName, page: this.page, fromNote: this.fromNote, layers: this.isLayersOpen, mode: this.mode };
 	}
 
 	override async setState(state: unknown, result: ViewStateResult): Promise<void> {
-		this.appName = isObject(state) && typeof state["app"] === "string" ? state["app"] : "";
-		this.page = isObject(state) && typeof state["page"] === "string" ? state["page"] : "";
+		this.appName = textIn(state, "app");
+		this.page = textIn(state, "page");
+		this.shownPage = this.page;
+		this.fromNote = textIn(state, "fromNote");
 		this.isLayersOpen = isObject(state) && state["layers"] === true;
 		this.mode = isObject(state) && state["mode"] === "pointer" ? "pointer" : "hand";
 		await super.setState(state, result);
@@ -184,6 +179,7 @@ export class DesignView extends ItemView {
 		const docs = await docsOf(this.plugin, this.appName);
 		const isStarting = jobs.length > 0 || docs.length > 0;
 		const { screens, references, widgets } = await designOf(this.plugin, this.appName, isStarting);
+		this.shownPage = shownPageOf(this.page, { screens, references, jobs, docs });
 		this.drawnDrafts = draftsOn(screens);
 		this.drawnWidgets = widgetsDrawnOn(this.plugin, screens, widgets);
 		const onAddPhotos = (photos: readonly File[]): void => void this.addPhotos(photos);
@@ -194,6 +190,7 @@ export class DesignView extends ItemView {
 			onLayers: (): void => this.toggleLayers(),
 			mode: this.mode,
 			onMode: (mode: CanvasMode): void => this.turnMode(mode),
+			onReturn: (): void => void this.returnToAppNote(),
 			onMove: (widget: string, move: LayerMove): void => void this.moveLayer(widget, move),
 		};
 		const controls = this.controlsNow();
@@ -210,6 +207,18 @@ export class DesignView extends ItemView {
 			]),
 			node,
 		);
+	}
+
+	private async returnToAppNote(): Promise<void> {
+		const read = await readAppSpec(this.app.vault.adapter, this.appName);
+		if (read?.refusal !== undefined) {
+			console.error("[widgetarium] the canvas cannot return to the app", read.refusal);
+			return void new Notice(SPEC_REFUSED.replace("{app}", this.appName).replace("{why}", read.refusal));
+		}
+		const note = noteToReturnTo(read?.spec.pages ?? [], this.shownPage, this.fromNote);
+		const file = note && this.app.vault.getAbstractFileByPath(note);
+		if (!(file instanceof TFile)) return void new Notice(NO_NOTE_TO_RETURN_TO.replace("{app}", this.appName));
+		await this.leaf.openFile(file, { active: true });
 	}
 
 	private turnMode(mode: CanvasMode): void {
@@ -248,6 +257,15 @@ export class DesignView extends ItemView {
 
 export function registerDesignView(plugin: WidgetariumPlugin): void {
 	plugin.registerView(DESIGN_VIEW_TYPE, (leaf) => new DesignView(leaf, plugin));
+}
+
+export async function openDesignInLeaf(
+	leaf: WorkspaceLeaf,
+	app: string,
+	page: string,
+	fromNote: string,
+): Promise<void> {
+	await leaf.setViewState({ type: DESIGN_VIEW_TYPE, active: true, state: { app, page, fromNote } });
 }
 
 export async function openDesign(obsidian: App, app: string, page?: string): Promise<void> {
@@ -353,28 +371,9 @@ function refusedDesign(app: string, refusal: string): DrawnDesign {
 	};
 }
 
-async function stateOf(
-	plugin: WidgetariumPlugin,
-	app: string,
-	state: ScreenState,
-	screen: string,
-): Promise<DrawnState> {
-	const text = await plugin.app.vault.adapter.read(screenPathOf(app, state.file)).catch(() => "");
-	const board = boardIn(text);
-	if (!board) return { name: state.name, board, refusal: NO_BOARD.replace("{name}", state.file) };
-	const picture = pictureOf(plugin, board, state.name === screen ? null : state.name);
-	if (picture) return { name: state.name, board, picture };
-	const binding = vaultBindingOf(board);
-	if (!binding) return { name: state.name, board };
-	const refusal = BOUND_TO_VAULT.replace("{name}", state.file).replace("{binding}", binding);
-	return { name: state.name, board: null, refusal };
-}
-
-function pictureOf(plugin: WidgetariumPlugin, board: Board, state: string | null): StatePicture | null {
-	const [tile] = board.tiles;
-	if (!tile || board.tiles.length > 1) return null;
-	const props = statePropsOf(plugin.registry.get(tile.widget)?.states ?? {}, state);
-	return props ? { widget: tile.widget, props } : null;
+function textIn(state: unknown, key: string): string {
+	const value = isObject(state) ? state[key] : undefined;
+	return typeof value === "string" ? value : "";
 }
 
 function refreshHeader(leaf: unknown): void {
