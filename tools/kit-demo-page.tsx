@@ -1,7 +1,7 @@
 import "./packs-registered.ts";
 import { createElement as h, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Heading, Layout, LayoutActions, LayoutHeader, ToggleGroup, ToggleGroupItem } from "../packages/kit/src/index";
+import { Heading, Layout, LayoutActions, LayoutHeader, Tabs, TabsList, TabsTrigger } from "../packages/kit/src/index";
 import { SHOWCASE, openedFromHash } from "../packages/kit/src/showcase/index";
 import { ShowcaseSections } from "./kit-demo-sections.tsx";
 
@@ -21,13 +21,15 @@ function ThemeSwitch() {
 		setTheme(next);
 	};
 	return (
-		<ToggleGroup type="single" variant="outline" value={theme} onValueChange={choose} aria-label="Theme">
-			{THEMES.map((item) => (
-				<ToggleGroupItem key={item.value} value={item.value}>
-					{item.label}
-				</ToggleGroupItem>
-			))}
-		</ToggleGroup>
+		<Tabs value={theme} onValueChange={choose}>
+			<TabsList aria-label="Theme">
+				{THEMES.map((item) => (
+					<TabsTrigger key={item.value} value={item.value}>
+						{item.label}
+					</TabsTrigger>
+				))}
+			</TabsList>
+		</Tabs>
 	);
 }
 
