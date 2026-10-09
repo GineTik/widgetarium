@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
+import type { Plugin } from "esbuild";
 import { isObject } from "../packages/core/src/engine/is-object.js";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mts";
 
@@ -138,9 +139,17 @@ export function shoot(file: string, extra: readonly string[], { width, height }:
 	);
 }
 
-export async function bundleOf(entry: string): Promise<string> {
+export const OBSIDIAN_STUB: Plugin = {
+	name: "obsidian-stub",
+	setup(build) {
+		build.onResolve({ filter: /^obsidian$/ }, () => ({ path: path.resolve("tools/loader/obsidian-stub.mts") }));
+	},
+};
+
+export async function bundleOf(entry: string, plugins: readonly Plugin[] = []): Promise<string> {
 	const built = await esbuild.build({
 		entryPoints: [entry],
+		plugins: [...plugins],
 		bundle: true,
 		loader: TEXT_LOADERS,
 		write: false,

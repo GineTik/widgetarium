@@ -4,17 +4,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import esbuild from "esbuild";
 import type { Plugin } from "esbuild";
-import { shoot, THEMES } from "./harness.ts";
+import { OBSIDIAN_STUB, shoot, THEMES } from "./harness.ts";
 import type { Theme } from "./harness.ts";
 
 const WIDGET_SOURCE_PREFIX = "widget-source:";
-
-const obsidianStub: Plugin = {
-	name: "obsidian-stub",
-	setup(build) {
-		build.onResolve({ filter: /^obsidian$/ }, () => ({ path: path.resolve("tools/loader/obsidian-stub.mts") }));
-	},
-};
 
 const widgetSourceAsText: Plugin = {
 	name: "widget-source-as-text",
@@ -42,7 +35,7 @@ const built = await esbuild.build({
 	jsxFactory: "h",
 	jsxFragment: "Fragment",
 	logLevel: "warning",
-	plugins: [obsidianStub, widgetSourceAsText],
+	plugins: [OBSIDIAN_STUB, widgetSourceAsText],
 });
 const bundled = built.outputFiles[0];
 if (!bundled) throw new Error("esbuild wrote no output");

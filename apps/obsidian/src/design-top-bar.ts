@@ -12,8 +12,9 @@ export interface CanvasTab {
 export interface TopBarProps {
 	readonly app: string;
 	readonly said: string;
-	readonly tabs: readonly CanvasTab[];
+	readonly leading: readonly CanvasTab[];
 	readonly pages: readonly CanvasTab[];
+	readonly trailing: readonly CanvasTab[];
 	readonly page: string;
 	readonly onPage: (page: string) => void;
 	readonly onAddPhotos: (photos: readonly File[]) => void;
@@ -29,8 +30,9 @@ const PAGES = "Pages";
 export function TopBar({
 	app,
 	said,
-	tabs,
+	leading,
 	pages,
+	trailing,
 	page,
 	onPage,
 	onAddPhotos,
@@ -82,7 +84,7 @@ export function TopBar({
 		]),
 		h(Segmented<string>, {
 			key: "pages",
-			items: pages.length > 0 ? [...tabs, pagesTab] : tabs,
+			items: [...leading, ...(pages.length > 0 ? [pagesTab] : []), ...trailing],
 			value: isOnPage ? PAGES_TAB : page,
 			onValueChange: (next) => (next === PAGES_TAB ? undefined : onPage(next)),
 			size: "s",
