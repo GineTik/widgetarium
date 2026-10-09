@@ -13,3 +13,5 @@ registry/*/*/build/
 .claude/
 .design/
 .tasks/
+/dist-packages/
+/packages/**/dist/

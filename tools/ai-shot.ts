@@ -27,6 +27,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-ai-shot-"));
 const built = await esbuild.build({
 	entryPoints: ["tools/ai-shot-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: { ".md": "text" },
 	write: false,
 	format: "iife",

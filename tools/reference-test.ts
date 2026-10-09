@@ -9,6 +9,7 @@ const built = await esbuild.build({
 		loader: "js",
 	},
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "esm",

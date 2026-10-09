@@ -1,15 +1,23 @@
 {
 	"name": "@widgetarium/core",
 	"version": "0.1.0",
-	"private": true,
 	"license": "FSL-1.1-ALv2",
+	"type": "module",
+	"files": [
+		"dist"
+	],
 	"exports": {
-		"./*": "./src/*"
+		"./*": {
+			"source": "./src/*",
+			"types": "./dist/*",
+			"default": "./dist/*"
+		}
 	},
 	"dependencies": {
 		"@babel/parser": "^8.0.5",
 		"@widgetarium/kit": "0.1.0",
 		"sucrase": "^3.35.0",
+		"tailwind-merge": "^3.7.0",
 		"yaml": "^2.9.0",
 		"zod": "^4.6.5"
 	},

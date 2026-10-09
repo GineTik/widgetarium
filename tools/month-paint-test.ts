@@ -125,6 +125,7 @@ for (const scope of fs.readdirSync("registry").filter((name) => name.startsWith(
 const bundle = await esbuild.build({
 	stdin: { contents: PAGE, resolveDir: ROOT, sourcefile: "month-paint.jsx", loader: "jsx" },
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

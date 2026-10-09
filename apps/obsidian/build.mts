@@ -47,6 +47,7 @@ export function surfaceOptions({ minify = false }: SurfaceAsk = {}): BuildOption
 	return {
 		entryPoints: ["packages/core/src/widget-api.ts"],
 		bundle: true,
+		conditions: ["source"],
 		write: false,
 		format: "cjs",
 		platform: "browser",
@@ -75,6 +76,7 @@ export function bundleOptions({
 		],
 		entryPoints: ["apps/obsidian/src/main.ts"],
 		bundle: true,
+		conditions: ["source"],
 		outfile,
 		format: "cjs",
 		platform: "browser",
@@ -99,6 +101,7 @@ function widgetsCliOptions(): BuildOptions {
 	return {
 		entryPoints: [WIDGETS_CLI_SOURCE],
 		bundle: true,
+		conditions: ["source"],
 		write: false,
 		format: "esm",
 		platform: "node",

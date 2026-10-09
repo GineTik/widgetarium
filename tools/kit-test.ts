@@ -2978,6 +2978,7 @@ check(
 	const built = await esbuild.build({
 		stdin: { contents: entry, resolveDir: process.cwd(), sourcefile: "mirror-page.js", loader: "js" },
 		bundle: true,
+		conditions: ["source"],
 		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",

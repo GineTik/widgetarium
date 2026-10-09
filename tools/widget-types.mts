@@ -2,10 +2,12 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { sourceOfExport } from "./export-source.mts";
 
 const REPO = process.cwd();
 const HANDED_TO_A_WIDGET = "packages/sdk/types/widgetarium.d.ts";
 const WIDGET_OPTIONS = "packages/sdk/tsconfig.widgets.json";
+const REPO_ONLY_OPTIONS: readonly string[] = ["customConditions"];
 const KIT = "packages/kit";
 const CORE = "packages/core";
 const DECLARATIONS = "node_modules/.cache/widgetarium";
@@ -53,9 +55,11 @@ function kitManifest(): KitManifest {
 }
 
 function kitEntries(): KitEntry[] {
-	return Object.entries(kitManifest().exports)
-		.filter((entry): entry is [string, string] => typeof entry[1] === "string" && /\.tsx?$/.test(entry[1]))
-		.map(([entry, source]) => ({ subpath: entry.slice(1), source: path.posix.join(KIT, source) }));
+	return Object.entries(kitManifest().exports).flatMap(([entry, target]) => {
+		const source = sourceOfExport(target);
+		if (source === null || !/\.tsx?$/.test(source)) return [];
+		return [{ subpath: entry.slice(1), source: path.posix.join(KIT, source) }];
+	});
 }
 
 const declarationOfKitSource = (source: string): string =>
@@ -129,10 +133,13 @@ function kitPaths(): Record<string, string[]> {
 	return paths;
 }
 
+function vaultFacingOptions(held: Readonly<Record<string, unknown>>): Record<string, unknown> {
+	return Object.fromEntries(Object.entries(held).filter(([option]) => !REPO_ONLY_OPTIONS.includes(option)));
+}
+
 function standaloneTsconfig(): string {
-	const held = widgetOptions();
 	const options = {
-		...held.compilerOptions,
+		...vaultFacingOptions(widgetOptions().compilerOptions),
 		paths: {
 			widgetarium: [`./${LAID_AT}/widgetarium.d.ts`],
 			...kitPaths(),

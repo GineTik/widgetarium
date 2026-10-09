@@ -2,9 +2,10 @@ import type { z } from "zod";
 import type { CanResult } from "@widgetarium/core/gateway/contract.js";
 import { canOf } from "@widgetarium/core/gateway/create.js";
 import { ICommand } from "@widgetarium/core/gateway/queries.js";
+import type { CommandContract } from "@widgetarium/core/gateway/queries.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { PropRefSchema } from "@widgetarium/core/engine/prop-ref.js";
-import type { ImplementationPorts } from "@widgetarium/core/engine/packs.js";
+import type { ImplementationPorts, PackCommandClass } from "@widgetarium/core/engine/packs.js";
 
 export type Verbs = Readonly<Record<string, unknown>>;
 
@@ -22,7 +23,18 @@ const TARGET_CANNOT = "{ref} cannot {verb}";
 
 const RUNNING_ON_TARGET = new Map<string, Promise<unknown>>();
 
-export function targetedCommand<const S extends z.ZodType>(input: S, verb: string, write: Write) {
+export interface TargetedCommand<S extends z.ZodType> extends CommandContract<z.output<S>> {
+	readonly fields: TargetFields;
+	readonly ports: ImplementationPorts;
+	can(): CanResult;
+	run(sent: z.output<S>): Promise<void>;
+}
+
+export function targetedCommand<const S extends z.ZodType>(
+	input: S,
+	verb: string,
+	write: Write,
+): PackCommandClass<S, TargetFields, TargetedCommand<S>> {
 	return class extends ICommand.input(input) {
 		constructor(
 			readonly fields: TargetFields,

@@ -4,8 +4,16 @@ import type { CommandMetadata, GatewayMetadata } from "../gateway/implementation
 import type { FileHost, FolderHost, VaultSlot } from "../gateway/obsidian.js";
 import type { NeedOfField } from "../gateway/props.js";
 import type { RefDescription, ViewCell } from "../gateway/refs.js";
+import type { CommandInputDeclared, commandInput, commandOutput } from "../gateway/declared-types.js";
 import { NO_CATALOGUE_PORT } from "./catalogue-port.js";
 import type { CataloguePort } from "./catalogue-port.js";
+import type { z } from "zod";
+
+export type PackCommandClass<Input extends z.ZodType, Fields, Command> = (new (
+	fields: Fields,
+	ports: ImplementationPorts,
+) => Command) &
+	Pick<CommandInputDeclared<Input>, typeof commandInput | typeof commandOutput>;
 
 export interface CommandLineOutcome {
 	readonly ok: boolean;

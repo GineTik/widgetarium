@@ -1310,6 +1310,7 @@ function isCdpPage(entry: unknown): entry is CdpPage {
 	const built = await esbuild.build({
 		entryPoints: ["tools/substitution-page.tsx"],
 		bundle: true,
+		conditions: ["source"],
 		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
@@ -1594,6 +1595,7 @@ function isCdpPage(entry: unknown): entry is CdpPage {
 	const built = await esbuild.build({
 		entryPoints: ["tools/inline-page.tsx"],
 		bundle: true,
+		conditions: ["source"],
 		write: false,
 		format: "iife",
 		platform: "browser",

@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { sourceOfExport } from "../export-source.mts";
 
 export const REPO = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -48,19 +49,20 @@ function packageExports(name: WorkspacePackage): ExportsMap {
 	const manifest: unknown = JSON.parse(
 		fs.readFileSync(path.join(REPO, WORKSPACE_FOLDERS[name], "package.json"), "utf8"),
 	);
-	const read = stringExportsIn(manifest);
+	const read = sourceExportsIn(manifest);
 	exportsOf.set(name, read);
 	return read;
 }
 
-function stringExportsIn(manifest: unknown): ExportsMap {
+function sourceExportsIn(manifest: unknown): ExportsMap {
 	if (typeof manifest !== "object" || manifest === null || !("exports" in manifest)) return new Map();
 	const { exports } = manifest;
 	if (typeof exports !== "object" || exports === null) return new Map();
 	return new Map(
-		Object.entries(exports).flatMap(([key, target]: [string, unknown]) =>
-			typeof target === "string" ? [[key, target] as const] : [],
-		),
+		Object.entries(exports).flatMap(([key, target]: [string, unknown]) => {
+			const source = sourceOfExport(target);
+			return source === null ? [] : [[key, source] as const];
+		}),
 	);
 }
 

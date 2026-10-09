@@ -83,6 +83,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-dialog-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/dialog-fit-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

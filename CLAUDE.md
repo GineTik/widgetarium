@@ -23,10 +23,19 @@ packages/core     FSL  the board builder: tree, engine, queries and commands, re
 packages/packs/*  MIT  every query and command implementation, one workspace per pack (@core, @obsidian, @stats, @git): schemas, *Query, *Command; the host registers them
 packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
 packages/sdk      FSL  what a widget author compiles against: types/widgetarium.d.ts
+packages/widgetarium FSL  the package a project's widgets import: `widgetarium`, `widgetarium/kit[/emojis|/charts]`
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
 Data reaches a widget only through `IQuery` and `ICommand`.
+
+**The engine ships as versioned packages.** Every published package's `exports` carries three
+conditions: `source` → `src` (the monorepo, the test loader and the plugin build resolve it), `types`
+and `default` → `dist`. A new tsconfig or esbuild call inside the repo sets the `source` condition, or
+it reads a `dist` that `npm run pack:engine` deletes after packing. `npm run pack:engine` builds and
+packs each one into `dist-packages/`; `npm run test:engine-package` installs the tarballs into a
+project outside the repo and type-checks a widget there. Widgets import `z` from `zod`; the engine
+hands `zod` to vault widgets like React.
 
 **Kit imports nothing but React, tailwind-merge and, behind `/charts` and `/showcase` alone, Recharts; core never
 imports the app.** A plate law lives in

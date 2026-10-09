@@ -76,6 +76,7 @@ const files = collectFiles("registry", WIDGETS_DIR, /\.(json|tsx|ts|jsx|js|css|m
 const built = await esbuild.build({
 	entryPoints: ["tools/substitution-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

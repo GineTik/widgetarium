@@ -100,6 +100,7 @@ const board = { tiles: isObject(saved) ? saved["tiles"] : undefined };
 const bundle = await esbuild.build({
 	entryPoints: ["tools/tree-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

@@ -1,18 +1,59 @@
 {
 	"name": "@widgetarium/kit",
 	"version": "0.1.0",
-	"private": true,
 	"license": "MIT",
+	"type": "module",
+	"files": [
+		"dist",
+		"theme.css",
+		"assets"
+	],
 	"exports": {
-		".": "./src/index.ts",
-		"./surface": "./src/utils/surface.ts",
-		"./plates": "./src/plates.ts",
-		"./icons": "./src/icons/icon-table.ts",
-		"./emoji-table": "./src/emojis/emoji-table.ts",
-		"./emojis": "./src/emojis/emoji.tsx",
-		"./charts": "./src/charts/index.ts",
-		"./shapes": "./src/utils/shapes.ts",
-		"./showcase": "./src/showcase/index.ts",
+		".": {
+			"source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./surface": {
+			"source": "./src/utils/surface.ts",
+			"types": "./dist/utils/surface.d.ts",
+			"default": "./dist/utils/surface.js"
+		},
+		"./plates": {
+			"source": "./src/plates.ts",
+			"types": "./dist/plates.d.ts",
+			"default": "./dist/plates.js"
+		},
+		"./icons": {
+			"source": "./src/icons/icon-table.ts",
+			"types": "./dist/icons/icon-table.d.ts",
+			"default": "./dist/icons/icon-table.js"
+		},
+		"./emoji-table": {
+			"source": "./src/emojis/emoji-table.ts",
+			"types": "./dist/emojis/emoji-table.d.ts",
+			"default": "./dist/emojis/emoji-table.js"
+		},
+		"./emojis": {
+			"source": "./src/emojis/emoji.tsx",
+			"types": "./dist/emojis/emoji.d.ts",
+			"default": "./dist/emojis/emoji.js"
+		},
+		"./charts": {
+			"source": "./src/charts/index.ts",
+			"types": "./dist/charts/index.d.ts",
+			"default": "./dist/charts/index.js"
+		},
+		"./shapes": {
+			"source": "./src/utils/shapes.ts",
+			"types": "./dist/utils/shapes.d.ts",
+			"default": "./dist/utils/shapes.js"
+		},
+		"./showcase": {
+			"source": "./src/showcase/index.ts",
+			"types": "./dist/showcase/index.d.ts",
+			"default": "./dist/showcase/index.js"
+		},
 		"./theme.css": "./theme.css"
 	},
 	"peerDependencies": {

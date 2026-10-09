@@ -14,6 +14,7 @@ const THEME_ORDER: readonly Theme[] = ["light", "dark"];
 const built = await esbuild.build({
 	entryPoints: ["tools/dialog-fit-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

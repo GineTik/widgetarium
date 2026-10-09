@@ -151,6 +151,7 @@ export async function bundleOf(entry: string, plugins: readonly Plugin[] = []): 
 		entryPoints: [entry],
 		plugins: [...plugins],
 		bundle: true,
+		conditions: ["source"],
 		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",
@@ -167,6 +168,7 @@ export async function stage({ board, files, steps, editing, rows }: StageAsk): P
 	const bundle = await esbuild.build({
 		entryPoints: ["tools/view-page.tsx"],
 		bundle: true,
+		conditions: ["source"],
 		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",

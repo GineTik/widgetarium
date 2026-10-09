@@ -11,6 +11,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-shot-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/window-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

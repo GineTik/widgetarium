@@ -220,6 +220,7 @@ const ALIASED: Readonly<Record<string, string>> = {
 
 const BUNDLING: BuildOptions = {
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

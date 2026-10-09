@@ -50,6 +50,7 @@ const work = mkdtempSync(path.join(tmpdir(), "wg-fill-"));
 const bundle = await esbuild.build({
 	entryPoints: ["tools/fill-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

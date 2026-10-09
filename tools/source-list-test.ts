@@ -11,6 +11,7 @@ import { RESOURCES } from "../packages/core/src/gateway/implementation-metadata.
 const bundle = await esbuild.build({
 	entryPoints: ["tools/source-list-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

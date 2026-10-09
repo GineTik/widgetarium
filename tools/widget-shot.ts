@@ -83,6 +83,7 @@ render(
 const bundle = await esbuild.build({
 	stdin: { contents: PAGE, resolveDir: process.cwd(), sourcefile: "shot.jsx", loader: "jsx" },
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

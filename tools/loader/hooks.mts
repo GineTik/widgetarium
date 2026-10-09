@@ -5,6 +5,7 @@ import type { LoadFnOutput, LoadHookSync, ResolveHookSync } from "node:module";
 import { transformSync, type Loader } from "esbuild";
 import { REPO, isModuleJs, nearestTsconfig, sourceUrlOf } from "./source-path.mts";
 import { isVirtual, virtualSource } from "./virtual-modules.mts";
+import { SOURCE_CONDITION } from "../export-source.mts";
 
 const OBSIDIAN_STUB_URL = new URL("./obsidian-stub.mts", import.meta.url).href;
 const TRANSFORMED: ReadonlyMap<string, Loader> = new Map([
@@ -21,7 +22,7 @@ export const resolve: ResolveHookSync = (specifier, context, nextResolve) => {
 	if (isVirtual(specifier)) return { url: specifier, format: "module", shortCircuit: true };
 	const found = sourceUrlOf(specifier, context.parentURL);
 	if (found) return { url: found, shortCircuit: true };
-	return nextResolve(specifier, context);
+	return nextResolve(specifier, { ...context, conditions: [SOURCE_CONDITION, ...context.conditions] });
 };
 
 export const load: LoadHookSync = (url, context, nextLoad) => {

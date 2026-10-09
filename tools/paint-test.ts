@@ -49,6 +49,7 @@ async function bundle(source: string): Promise<string> {
 	const built = await esbuild.build({
 		stdin: { contents: source, resolveDir: ROOT, loader: "jsx", sourcefile: "probe.jsx" },
 		bundle: true,
+		conditions: ["source"],
 		loader: TEXT_LOADERS,
 		write: false,
 		format: "iife",

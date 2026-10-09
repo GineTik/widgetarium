@@ -22,6 +22,7 @@ const files = collectFiles("registry", WIDGETS_DIR, /\.(json|jsx|js|css)$/);
 const built = await esbuild.build({
 	entryPoints: ["tools/catalogue-page.tsx"],
 	bundle: true,
+	conditions: ["source"],
 	loader: TEXT_LOADERS,
 	write: false,
 	format: "iife",

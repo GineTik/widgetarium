@@ -140,7 +140,7 @@ export type QueryAskDeclared<In, Received, Out, Returned> = (abstract new () => 
 	readonly [askedOutput]?: Out;
 };
 
-type PagedOutput<Item> = Page<Item> & { readonly [PAGE_ITEM]: Item };
+export type PagedOutput<Item> = Page<Item> & { readonly [PAGE_ITEM]: Item };
 
 export type AskedOutputOf<O extends z.ZodType> = O extends { readonly [PAGE_ITEM]: infer Item extends z.ZodType }
 	? PagedOutput<z.output<Item>>
