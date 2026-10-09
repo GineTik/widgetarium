@@ -21,6 +21,20 @@ src/shared/libs/<library>/             third-party code the project keeps
 docs/                                  the spec, the design, the references
 ```
 
+Only `name` is required: `{ "name": "shop", "paths": { "widgets": "src/ui/widgets" } }` moves one layer
+and keeps the rest; a path is relative to the root, never `..`. `@kit`, `@schemas`, `@libs`, `@logic`
+and `@widgets` point at their paths, and `aliases` adds to them. Discovery skips `node_modules`, `build`, `dist` and every dot-folder, and these
+names must be unique across the project:
+
+- **a widget** is its folder's name; a folder holding `widget.tsx` is a widget and its subfolders are
+  its own modules, never other widgets.
+- **a kit item** is a `.ts` or `.tsx` file's name anywhere under the kit, except `index.ts`, tests,
+  `.d.ts` and files under `utils/`, `hooks/` or `constants/`, which are helpers.
+- **a handler** is an exported class under `logic` or `sources` extending `IQuery…` or `ICommand…`.
+- **a schema** is an exported `*Schema` const under `schemas`; a re-export does not count twice.
+- **a route** is a folder under `routes` holding `board.json`: `index` adds nothing to the path,
+  `[id]` becomes `:id`, and `layout.board.json` beside it is that folder's layout.
+
 **Imports point down only: app → widgets → logic → shared.** A widget never imports a handler and a
 handler never imports a widget; both import the schema in `src/shared/schemas`, which is where they
 meet. A feature handler holds the business rules and maps a ready source to the shape a widget asks
