@@ -129,15 +129,13 @@ function settleAnswer(
 ): Promise<void> {
 	const ticket = ++held.ticket;
 	return answer(freshSignal(held)).then(
-		(data) =>
-			settle(state, key, ticket, (before) => ({
-				status: "ready",
-				data,
-				failure: null,
-				version: (before?.version ?? 0) + 1,
-			})),
+		(data) => settle(state, key, ticket, (before) => readyAfter(before, data)),
 		(failure: unknown) => settleFailure(state, key, ticket, failure),
 	);
+}
+
+function readyAfter(before: CacheEntry | undefined, data: unknown): CacheEntry {
+	return { status: "ready", data, failure: null, version: (before?.version ?? 0) + 1 };
 }
 
 function settleFailure(state: CacheState, key: string, ticket: number, failure: unknown): void {
@@ -234,21 +232,17 @@ interface TrackRequest {
 function track(state: CacheState, { meta, input, run, listener }: TrackRequest): Unsubscribe {
 	const key = keyOf(meta, input);
 	const nothingWasSubscribed = !state.attached.has(meta.gatewayId);
-	const held = state.tracked.get(key) ?? {
-		run,
-		input,
-		listeners: new Set<() => void>(),
-		ticket: 0,
-		controller: null,
-		inFlight: IDLE,
-		queued: [],
-	};
+	const held = state.tracked.get(key) ?? createTracked(run, input);
 	keepFreshestRun(held, run, input);
 	state.tracked.set(key, held);
 	held.listeners.add(listener);
 	attach(state, meta);
 	if (nothingWasSubscribed || !state.entries.has(key)) fetchNow(state, key);
 	return () => untrack(state, { key, held, listener, meta });
+}
+
+function createTracked(run: Runner, input: unknown): Tracked {
+	return { run, input, listeners: new Set<() => void>(), ticket: 0, controller: null, inFlight: IDLE, queued: [] };
 }
 
 function settleNow(state: CacheState, key: string, meta: ActionMeta, input: unknown): CacheEntry {

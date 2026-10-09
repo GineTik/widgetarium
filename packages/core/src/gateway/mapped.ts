@@ -236,20 +236,26 @@ function mapHandlers<T>(
 	resolutionOf: Reading,
 ): Record<string, Handler> {
 	const query = actionOf(base, "query");
-	const mapped: Record<string, Handler> = {
+	const delegated = delegateVerbs(base);
+	return {
+		...delegated,
+		...keepDelegatedVerbs(rowHandlersOf(base, spec, resolutionOf), delegated),
+		list: readsRows(base, spec, resolutionOf) as Handler,
+		...(query ? { query: readsPage(query, spec, resolutionOf) as Handler } : {}),
+	};
+}
+
+function rowHandlersOf<T>(base: CollectionGateway<T>, spec: RenamingSpec, resolutionOf: Reading) {
+	return {
 		get: readsOne(base, spec, resolutionOf),
 		update: writesOne(base, spec, resolutionOf),
 		create: createsOne(base, spec, resolutionOf),
 	};
-	const delegated = delegateVerbs(base);
-	const handlers: Record<string, Handler> = {
-		...delegated,
-		list: readsRows(base, spec, resolutionOf) as Handler,
-		...(query ? { query: readsPage(query, spec, resolutionOf) as Handler } : {}),
-	};
-	for (const verb of Object.keys(mapped)) {
-		const held = mapped[verb];
-		if (delegated[verb] && held) handlers[verb] = held;
-	}
-	return handlers;
+}
+
+function keepDelegatedVerbs(
+	mapped: Record<string, Handler>,
+	delegated: Record<string, unknown>,
+): Record<string, Handler> {
+	return Object.fromEntries(Object.entries(mapped).filter(([verb]) => delegated[verb]));
 }

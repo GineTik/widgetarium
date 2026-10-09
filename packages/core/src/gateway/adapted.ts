@@ -40,6 +40,11 @@ interface Asking {
 	readonly declaredInput: z.ZodType | undefined;
 }
 
+interface IdentifiedAsking {
+	readonly id: string;
+	readonly asking: Asking;
+}
+
 const NO_QUERY_INPUT =
 	"the query of {name} declares no input, so nothing can check what it is asked: declare it with IQuery.input(schema)";
 
@@ -63,11 +68,7 @@ export function isImplementation(declaration: AdaptedDeclaration, held: unknown)
 	);
 }
 
-function optionsOver(
-	implementation: object,
-	verbs: readonly string[],
-	{ id, asking }: { readonly id: string; readonly asking: Asking },
-) {
+function optionsOver(implementation: object, verbs: readonly string[], { id, asking }: IdentifiedAsking) {
 	const writes = writesInFlight();
 	const handlerFor = (verb: string): Handler =>
 		verb === "query" ? askedOf(implementation, asking) : handlerOf(implementation, verb, writes);

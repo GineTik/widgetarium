@@ -1,4 +1,4 @@
-import { createElement as h, useMemo, useRef } from "react";
+import { createElement as h, useCallback, useMemo, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 import { z } from "zod";
 import { defaultImplementationFor } from "./gateway/defaults";
@@ -132,21 +132,20 @@ function useCommandOver(
 	given: unknown,
 	readGatewayIds: readonly string[],
 ): Action<unknown, CommandAnswer<unknown>> {
-	const latestReadGatewayIds = useRef(readGatewayIds);
-	latestReadGatewayIds.current = readGatewayIds;
+	const readGatewayIdsNow = useReaderOfLatest(readGatewayIds);
+	const context = useShutHostContext(name);
+	return useMemo(() => commandOver({ name, declaration, given, readGatewayIdsNow, context }), [given, context]);
+}
+
+function useReaderOfLatest<T>(held: T): () => T {
+	const latest = useRef(held);
+	latest.current = held;
+	return useCallback(() => latest.current, []);
+}
+
+function useShutHostContext(name: string): HandlerContext {
 	const host = useMemo(() => shutHostFor(name), [name]);
-	const context = useHandlerContext(host);
-	return useMemo(
-		() =>
-			commandOver({
-				name,
-				declaration,
-				given,
-				readGatewayIdsNow: () => latestReadGatewayIds.current,
-				context,
-			}),
-		[given, context],
-	);
+	return useHandlerContext(host);
 }
 
 function commandOver(command: DeclaredCommand): Action<unknown, CommandAnswer<unknown>> {

@@ -34,6 +34,13 @@ interface Entry {
 	readonly failure: string | null;
 }
 
+interface Reading {
+	readonly read: unknown;
+	readonly meta: ActionMeta | null;
+	readonly asked: unknown;
+	readonly inputKey: string;
+}
+
 const NO_ROWS: readonly Row<unknown>[] = [];
 
 export function useData<I, Item>(read: Action<I, Page<Item>>, input: Omit<I, "cursor">): PageState<Item>;
@@ -43,22 +50,29 @@ export function useData(read: unknown, input?: unknown): DataState<unknown> | Pa
 	const meta = metaOf(read);
 	const isPaged = meta?.isPaged === true;
 	const asked = isPaged ? withoutCursor(input) : input;
-	const inputKey = stableKey(asked);
+	const reading: Reading = { read, meta, asked, inputKey: stableKey(asked) };
+	const entry = useEntry(reading);
+	const more = useMore(reading);
+	return useMemo(() => {
+		if (isPaged) return toPageState(entry, more);
+		return toDataState(entry, meta ? meta.verb === "list" : Array.isArray(read));
+	}, [entry, meta?.verb, more]);
+}
+
+function useEntry({ read, meta, asked, inputKey }: Reading): Entry {
 	const given = useMemo(() => givenEntryOf(read), [read]);
 	const subscribe = useCallback(
 		(listener: () => void) =>
 			meta ? gatewayCache.subscribe(meta, asked, runnerOf(readingOf(read), meta, asked), listener) : () => {},
 		[meta?.gatewayId, meta?.verb, inputKey],
 	);
-	const entry = useSyncExternalStore(subscribe, () => (meta ? gatewayCache.read(meta, asked) : given));
-	const more = useCallback(() => {
-		if (meta && isPaged) void gatewayCache.extend(meta, asked, nextPageOf(readingOf(read), asked));
-	}, [read, meta?.gatewayId, inputKey]);
+	return useSyncExternalStore(subscribe, () => (meta ? gatewayCache.read(meta, asked) : given));
+}
 
-	return useMemo(() => {
-		if (isPaged) return toPageState(entry, more);
-		return toDataState(entry, meta ? meta.verb === "list" : Array.isArray(read));
-	}, [entry, meta?.verb, more]);
+function useMore({ read, meta, asked, inputKey }: Reading): () => void {
+	return useCallback(() => {
+		if (meta?.isPaged === true) void gatewayCache.extend(meta, asked, nextPageOf(readingOf(read), asked));
+	}, [read, meta?.gatewayId, inputKey]);
 }
 
 function readingOf(read: unknown): PageReading {

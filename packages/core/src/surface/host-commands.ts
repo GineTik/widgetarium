@@ -24,6 +24,12 @@ interface CommandAsk {
 	readonly signal: AbortSignal;
 }
 
+interface TileCommandsAsk extends Pick<CommandAsk, "refs" | "host" | "signal"> {
+	readonly tile: Tile;
+}
+
+type CommandSpecs = ReturnType<typeof commandSpecsOf>;
+
 const NOT_ALLOWED = '"{name}" is switched off for this tile';
 const VAULT_NOT_SWITCHED_ON = '"{name}" writes the vault, which stays shut until it is switched on in the Data tab';
 const PACK_NOT_SWITCHED_ON = '"{name}" runs {title}, which stays shut until it is switched on in the Data tab';
@@ -38,14 +44,7 @@ export function useHostCommands(
 	const specs = commandSpecsOf(manifest["commands"]);
 	const signal = useSignalUntilUnmount();
 	return useMemo(
-		() =>
-			Object.fromEntries(
-				Object.entries(specs).flatMap(([name, spec]) => {
-					const binding = commandBindingOf(tile, name, spec);
-					const command = hostCommandOf({ name, binding, refs, tileId: tile.id, host, signal });
-					return command ? [[name, command] as const] : [];
-				}),
-			),
+		() => hostCommandsOf(specs, { tile, refs, host, signal }),
 		[tile.props, refs, host, signal, Object.keys(specs).join("\u0000")],
 	);
 }
@@ -53,6 +52,16 @@ export function useHostCommands(
 export function isConsentNeededFor(binding: CommandBinding, refs: DescribedRefs): boolean {
 	const packed = commandOf(binding.implementation);
 	return packed ? isConsentNeeded(packed, binding, refs) : false;
+}
+
+function hostCommandsOf(specs: CommandSpecs, { tile, ...asked }: TileCommandsAsk): Record<string, AnsweringCommand> {
+	return Object.fromEntries(
+		Object.entries(specs).flatMap(([name, spec]) => {
+			const binding = commandBindingOf(tile, name, spec);
+			const command = hostCommandOf({ ...asked, name, binding, tileId: tile.id });
+			return command ? [[name, command] as const] : [];
+		}),
+	);
 }
 
 function isConsentNeeded(packed: CommandMetadata, binding: CommandBinding, refs: DescribedRefs): boolean {

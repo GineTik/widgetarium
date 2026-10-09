@@ -31,6 +31,10 @@ type Cans = Record<string, () => CanAnswer>;
 
 type Reading = (input: unknown, signal?: AbortSignal) => unknown;
 
+type HeldVerbs = Partial<Record<string, HeldVerb>>;
+
+type Passed = Record<string, Reading>;
+
 const AN_ITEM = "an item";
 
 interface HeldGateway {
@@ -79,32 +83,38 @@ export function parseReadsBy<Held extends HeldGateway>(
 ): Held | CollectionGateway<unknown> | ValueGateway<unknown, EveryValueVerb> {
 	if (isOpen(context.schema)) return gateway;
 	const { verbs, passed, cans } = handlersOf(gateway);
-	const common = {
+	const common = parsedCommonOf(gateway, verbs[kind === "collection" ? "list" : "get"], cans);
+	if (kind === "value") return valueGateway({ ...common, handlers: parsedValueHandlers(verbs, passed, context) });
+	return collectionGateway({ ...common, handlers: parsedCollectionHandlers(verbs, passed, context) });
+}
+
+function parsedCommonOf(gateway: HeldGateway, settlingRead: HeldVerb | undefined, cans: Cans) {
+	return {
 		id: `${gateway.id}#parsed`,
-		settlesNow: Boolean(verbs[kind === "collection" ? "list" : "get"]?.meta?.readNow),
+		settlesNow: Boolean(settlingRead?.meta?.readNow),
 		cans,
 		...(gateway.subscribe ? { subscribe: gateway.subscribe, announcesOwnWrites: false } : {}),
 	};
-	if (kind === "value")
-		return valueGateway({
-			...common,
-			handlers: { ...passed, get: readsOf(verbs["get"], (value) => parseValue(value, context)) },
-		});
+}
+
+function parsedValueHandlers(verbs: HeldVerbs, passed: Passed, context: GatewayContext) {
+	return { ...passed, get: readsOf(verbs["get"], (value) => parseValue(value, context)) };
+}
+
+function parsedCollectionHandlers(verbs: HeldVerbs, passed: Passed, context: GatewayContext) {
 	const query = verbs["query"];
-	return collectionGateway({
-		...common,
-		handlers: {
-			...passed,
-			list: reportingUnanswered(
-				readsOf(verbs["list"], (result, query) =>
-					parseRows(result as RowsResult<unknown>, context, query as Query | undefined),
-				),
-				context,
-			),
-			get: readsOf(verbs["get"], (row) => (row ? parseRow(row as HeldRow, context) : null)),
-			...(query ? { query: reportingUnanswered(pagesOf(query, context), context) } : {}),
-		},
-	});
+	return {
+		...passed,
+		list: reportingUnanswered(parsedListOf(verbs["list"], context), context),
+		get: readsOf(verbs["get"], (row) => (row ? parseRow(row as HeldRow, context) : null)),
+		...(query ? { query: reportingUnanswered(pagesOf(query, context), context) } : {}),
+	};
+}
+
+function parsedListOf(list: HeldVerb | undefined, context: GatewayContext): Reading {
+	return readsOf(list, (result, query) =>
+		parseRows(result as RowsResult<unknown>, context, query as Query | undefined),
+	);
 }
 
 function pagesOf(query: HeldVerb, context: GatewayContext): Reading {
@@ -159,7 +169,7 @@ function handlersOf(gateway: HeldGateway) {
 	return { verbs, passed, cans };
 }
 
-function verbsOf(gateway: HeldGateway): Partial<Record<string, HeldVerb>> {
+function verbsOf(gateway: HeldGateway): HeldVerbs {
 	const keys = new Set([...Object.keys(gateway), "list", "get"]);
 	return Object.fromEntries(
 		[...keys].flatMap((key) => {
