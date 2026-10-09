@@ -2,8 +2,15 @@ import { HELD_BY_THE_ENGINE } from "@widgetarium/core/engine/modules.js";
 import type { ProjectConfig } from "@widgetarium/core/project/index.js";
 import type { CatalogueEntry } from "./catalogue-read.js";
 import { CliRefusal } from "./cli-output.js";
-import { libraryNameOf, moduleNameOf, withLibAliases, type LibFile, type LibRewrite } from "./lib-imports.js";
-import { inWidgetFolder, widgetSourcesOf } from "./widget-sources.js";
+import {
+	libraryNameOf,
+	moduleNameOf,
+	withLibAliases,
+	type LibFile,
+	type LibRewrite,
+	type SourceFile,
+} from "./lib-imports.js";
+import { inWidgetFolder, widgetSourcesOf, type WidgetSources } from "./widget-sources.js";
 
 export interface PlannedFile {
 	readonly at: string;
@@ -21,24 +28,26 @@ export interface AddPlan {
 
 export async function planAdd(entry: CatalogueEntry, config: ProjectConfig, name: string): Promise<AddPlan> {
 	const sources = await widgetSourcesOf(entry);
+	const rewrite = libRewriteOf(config, entry.scope, sources);
 	const libsFolder = `${config.paths.libs}/${libraryNameOf(entry.scope)}`;
-	const libsAlias = `${aliasOfFolder(config, config.paths.libs)}/${libraryNameOf(entry.scope)}`;
-	const rewrite: LibRewrite = {
-		scope: sources.scope,
-		libs: sources.libs,
-		aliasOf: (lib: LibFile) => `${libsAlias}/${moduleNameOf(lib)}`,
-	};
 	const widgetFolder = `${config.paths.widgets}/${name}`;
+	const planned = (at: string, file: SourceFile): PlannedFile => ({ at, text: withLibAliases(file, rewrite) });
 	return {
 		entry,
 		name,
 		widgetFolder,
-		widgetFiles: sources.files.map((file) => ({
-			at: `${widgetFolder}/${inWidgetFolder(entry, file)}`,
-			text: withLibAliases(file, rewrite),
-		})),
-		libFiles: sources.libs.map((lib) => ({ at: `${libsFolder}/${lib.inLibrary}`, text: withLibAliases(lib, rewrite) })),
+		widgetFiles: sources.files.map((file) => planned(`${widgetFolder}/${inWidgetFolder(entry, file)}`, file)),
+		libFiles: sources.libs.map((lib) => planned(`${libsFolder}/${lib.inLibrary}`, lib)),
 		dependencies: dependenciesToAdd(entry.card.dependencies),
+	};
+}
+
+function libRewriteOf(config: ProjectConfig, scope: string, sources: WidgetSources): LibRewrite {
+	const libsAlias = `${aliasOfFolder(config, config.paths.libs)}/${libraryNameOf(scope)}`;
+	return {
+		scope: sources.scope,
+		libs: sources.libs,
+		aliasOf: (lib: LibFile) => `${libsAlias}/${moduleNameOf(lib)}`,
 	};
 }
 

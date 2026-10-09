@@ -66,10 +66,14 @@ async function readRegistryAt(place: string): Promise<RegistryRead> {
 	const registry = readRegistry(text, `${place}/${REGISTRY_FILE}`);
 	if (registry.refusal !== null) return refusedRegistry(place, registry.refusal);
 	const rows = await Promise.all(registry.rows.map((row) => rowRead(row, reader)));
+	return registryReadOf(place, registry.name, rows);
+}
+
+function registryReadOf(at: string, name: string | null, rows: readonly RowRead[]): RegistryRead {
 	return {
 		reading: {
-			at: place,
-			name: registry.name,
+			at,
+			name,
 			refusal: null,
 			problems: rows.flatMap((row) => ("problem" in row ? [row.problem] : [])),
 		},

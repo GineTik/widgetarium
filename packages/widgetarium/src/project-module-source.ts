@@ -36,24 +36,31 @@ export async function projectModuleSourceOf(root: string, files: ProjectFiles, c
 }
 
 // TODO: import and draw each route's layout.board.json
-function moduleSourceOf({ root, config, map, widgets }: ProjectToImport): string {
+function moduleSourceOf(project: ProjectToImport): string {
+	const fields = projectFieldsOf(project).join(", ");
+	return [...importLinesOf(project), `export const project = { ${fields} };`, ""].join("\n");
+}
+
+function importLinesOf({ root, map, widgets }: ProjectToImport): string[] {
 	const at = (relative: string): string => JSON.stringify(`${root}/${relative}`);
-	const imports = [
+	return [
 		...widgets.map(({ file }, index) => `import * as widget${index} from ${at(file)};`),
 		...map.handlers.map(({ name, path }, index) => `import { ${name} as handler${index} } from ${at(path)};`),
 		...map.routes.map(({ file }, index) => `import board${index} from ${at(file)};`),
 	];
+}
+
+function projectFieldsOf({ config, map, widgets }: ProjectToImport): string[] {
 	const routes = map.routes.map(
 		({ path, params }, index) =>
 			`{ path: ${JSON.stringify(path)}, params: ${JSON.stringify(params)}, board: board${index} }`,
 	);
-	const project = [
+	return [
 		`name: ${JSON.stringify(config.name)}`,
 		`routes: [${routes.join(", ")}]`,
 		`widgets: { ${widgets.map(({ name }, index) => `${JSON.stringify(name)}: widget${index}`).join(", ")} }`,
 		`handlers: { ${map.handlers.map(({ name }, index) => `${JSON.stringify(name)}: handler${index}`).join(", ")} }`,
 	];
-	return [...imports, `export const project = { ${project.join(", ")} };`, ""].join("\n");
 }
 
 async function widgetSourceIn(files: ProjectFiles, folder: string): Promise<string> {

@@ -39,16 +39,26 @@ export function createBrowserRouter(routes: readonly ProjectRouteBoard[]): Brows
 	};
 	window.addEventListener("popstate", () => arrive({}));
 	void writeParamsAt(routes, window.location.pathname, {});
+	return routerOver(routes, listeners, arrive);
+}
+
+function routerOver(
+	routes: readonly ProjectRouteBoard[],
+	listeners: Set<() => void>,
+	arrive: (given: PageParams) => void,
+): BrowserRouter {
 	return {
 		canNavigate: true,
 		resolve: (link) => (matchRoute(routes, pathnameOf(link)) ? link : null),
 		navigate: (link, options) => navigateTo(routes, link, options ?? {}, arrive),
-		subscribe: (changed) => {
-			listeners.add(changed);
-			return () => listeners.delete(changed);
-		},
+		subscribe: (changed) => subscribeTo(listeners, changed),
 		pathname: () => window.location.pathname,
 	};
+}
+
+function subscribeTo(listeners: Set<() => void>, changed: () => void): () => void {
+	listeners.add(changed);
+	return () => listeners.delete(changed);
 }
 
 function navigateTo(
