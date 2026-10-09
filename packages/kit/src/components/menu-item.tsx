@@ -34,6 +34,6 @@ export function MenuItem({
 		...menuItemHandlers(menu, { disabled, onSelect, theirs: rest }),
 		"data-variant": variant,
 		"data-text-value": textValue,
-		className: cn("wg-kit-menu-item", className),
+		className: cn("wg-kit-pop-item wg-kit-menu-item", className),
 	});
 }

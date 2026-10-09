@@ -1,13 +1,14 @@
 import { createElement as h, useRef } from "react";
 import type { HTMLAttributes, ReactElement } from "react";
-import { VALUE_GAP_PX } from "../constants/progress";
+import { PROGRESS_MAX, VALUE_GAP_PX } from "../constants/progress";
 import type { ToneName } from "../constants/tones";
 import { useSlider } from "../hooks/use-slider";
 import type { Slider } from "../hooks/use-slider";
 import { useWidthOf } from "../hooks/use-width-of";
 import { cn } from "../utils/cn";
 import { rangeAria, shownValue } from "../utils/progress";
-import { barGeometry } from "../utils/progress-geometry";
+import { barGeometry, sliderGeometry } from "../utils/progress-geometry";
+import type { BarLook, SliderGeometry } from "../utils/progress-geometry";
 import { inkedClass } from "../utils/tones";
 import type { TokenStyle } from "../utils/token-style";
 import { BarDrawing } from "./bar-drawing";
@@ -43,7 +44,7 @@ export function ProgressLine({
 				{width > 0 && (
 					<BarDrawing
 						width={width}
-						drawn={barGeometry(width, slider.shown, { isWavy, isCursorVisible: isControlled })}
+						drawn={lineDrawn(width, slider.shown, { isWavy, isCursorVisible: isControlled })}
 						hasStopMark={hasStopMark}
 					/>
 				)}
@@ -55,6 +56,12 @@ export function ProgressLine({
 			</span>
 		</div>
 	);
+}
+
+function lineDrawn(width: number, shown: number, look: Required<BarLook>): SliderGeometry {
+	if (look.isCursorVisible) return sliderGeometry(width, [shown / PROGRESS_MAX], look);
+	const { cursor, ...drawn } = barGeometry(width, shown, look);
+	return { ...drawn, cursors: cursor ? [cursor] : [] };
 }
 
 function barRootClass({ isGrabbed }: Slider, isControlled: boolean, tone: ToneName): string {

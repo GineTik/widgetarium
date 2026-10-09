@@ -44,7 +44,7 @@ export function Menubar({
 				{...rest}
 				ref={bar.rootRef}
 				data-slot="menubar"
-				className={cn("wg-kit-menubar", className)}
+				className={cn("wg-kit-seg is-toggle wg-kit-menubar", className)}
 				onKeyDown={chainHandlers(onKeyDown, moveAcrossTriggers)}
 			/>
 		</MenubarContext.Provider>

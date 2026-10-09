@@ -13,7 +13,7 @@ export function MenuSeparator({ className, ...rest }: MenuSeparatorProps): React
 			aria-orientation="horizontal"
 			{...rest}
 			data-slot={menuSlot(menu, "separator")}
-			className={cn("wg-kit-menu-separator", className)}
+			className={cn("wg-kit-pop-sep", className)}
 		/>
 	);
 }

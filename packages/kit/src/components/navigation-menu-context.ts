@@ -8,6 +8,7 @@ export interface NavigationMenuState {
 	readonly setValue: (value: string) => void;
 	readonly shownValue: string;
 	readonly rootRef: RefObject<HTMLElement | null>;
+	readonly openedByHover: RefObject<string>;
 	readonly isViewport: boolean;
 	readonly viewportTarget: HTMLElement | null;
 	readonly setViewportTarget: (target: HTMLElement | null) => void;

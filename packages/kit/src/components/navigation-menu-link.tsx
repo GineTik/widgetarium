@@ -1,7 +1,9 @@
-import { createElement as h } from "react";
+import { createElement as h, useContext } from "react";
 import type { AnchorHTMLAttributes, MouseEvent, ReactElement } from "react";
 import { chainHandlers } from "../utils/chain";
 import { cn } from "../utils/cn";
+import { navigationMenuTriggerStyle } from "../utils/navigation-menu";
+import { NavigationContentContext } from "./navigation-content-context";
 import { useNavigationMenu } from "./navigation-menu-context";
 import type { NavigationMenuState } from "./navigation-menu-context";
 import { Slot } from "./slot";
@@ -23,12 +25,15 @@ export function NavigationMenuLink({
 	...rest
 }: NavigationMenuLinkProps): ReactElement {
 	const nav = useNavigationMenu();
+	const isInContent = useContext(NavigationContentContext);
 	return h(asChild ? Slot : "a", {
 		...rest,
 		"data-slot": "navigation-menu-link",
 		"data-active": active ? "" : undefined,
 		"aria-current": active ? "page" : undefined,
-		className: cn("wg-kit-nav-link", className),
+		className: isInContent
+			? cn("wg-kit-pop-item wg-kit-nav-link", className)
+			: navigationMenuTriggerStyle(["wg-kit-nav-link", className]),
 		onClick: chainHandlers(onClick, (event: MouseEvent<HTMLElement>) => selectLink(event, nav, onSelect)),
 	});
 }

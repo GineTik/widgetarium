@@ -1,4 +1,4 @@
-import { createElement as h } from "react";
+import { createElement as h, useMemo } from "react";
 import type { ButtonHTMLAttributes, KeyboardEvent, PointerEvent, ReactElement } from "react";
 import { HOVER_GRACE_MS } from "../constants/overlays";
 import { Icon } from "../icons/icon";
@@ -26,13 +26,14 @@ export function NavigationMenuTrigger({ className, children, ...rest }: Navigati
 	const nav = useNavigationMenu();
 	const item = useNavigationItem();
 	const isOpen = nav.value === item.value;
+	const triggerRef = useMemo(() => composeRefs(item.triggerRef), [item.triggerRef]);
 	return (
 		<button
 			type="button"
 			aria-expanded={isOpen}
 			{...rest}
 			{...{ [NAVIGATION_VALUE_ATTRIBUTE]: item.value }}
-			ref={composeRefs(item.triggerRef)}
+			ref={triggerRef}
 			data-slot="navigation-menu-trigger"
 			data-state={dataStateOf(isOpen)}
 			className={navigationMenuTriggerStyle(["group", className])}
@@ -65,12 +66,22 @@ function navigationTriggerHandlers(
 
 function toggleNavigationItem(nav: NavigationMenuState, item: NavigationItemState): void {
 	nav.delayed.stop();
-	nav.setValue(nav.value === item.value ? "" : item.value);
+	const isOpen = nav.value === item.value;
+	const isHeldOpenByHover = isOpen && nav.openedByHover.current === item.value;
+	nav.openedByHover.current = "";
+	if (isHeldOpenByHover) return;
+	nav.setValue(isOpen ? "" : item.value);
 }
 
 function openOnHover(nav: NavigationMenuState, item: NavigationItemState, event: PointerEvent<HTMLElement>): void {
 	if (event.pointerType === "touch") return;
-	nav.delayed.start(() => nav.setValue(item.value), nav.value === "" ? nav.openDelay : 0);
+	nav.delayed.start(
+		() => {
+			nav.openedByHover.current = item.value;
+			nav.setValue(item.value);
+		},
+		nav.value === "" ? nav.openDelay : 0,
+	);
 }
 
 function openOnArrowDown(nav: NavigationMenuState, item: NavigationItemState, event: KeyboardEvent<HTMLElement>): void {

@@ -46,5 +46,7 @@ check(
 	{ coversScreen: true, coversTitle: false, dialogDrop: 120, dialogCentred: true },
 );
 page.close();
+const { twinChecks } = await import("./twins-paint.ts");
+for (const [what, got, wanted] of await twinChecks()) check(what, got, wanted);
 console.log(`\n${failed === 0 ? "overlay paint: clean" : `overlay paint: ${failed} failed`}`);
 process.exit(failed === 0 ? 0 : 1);

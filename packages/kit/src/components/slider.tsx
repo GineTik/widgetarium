@@ -1,21 +1,34 @@
-import { createElement as h } from "react";
-import type { HTMLAttributes, ReactElement } from "react";
+import { createElement as h, useState } from "react";
+import type { HTMLAttributes, PointerEvent, ReactElement } from "react";
+import { CURSOR_HEIGHT } from "../constants/progress";
 import { useRangeSlider } from "../hooks/use-range-slider";
+import type { RangeSlider, RangeSliderPointer } from "../hooks/use-range-slider";
+import { useWidthOf } from "../hooks/use-width-of";
 import { cn } from "../utils/cn";
-import { sliderPercentOf, sliderAskOf } from "../utils/slider-range";
-import type { SliderSettings } from "../utils/slider-range";
+import { sliderGeometry } from "../utils/progress-geometry";
+import { sliderAskOf, sliderPercentOf } from "../utils/slider-range";
+import type { RangeSliderAsk, SliderSettings } from "../utils/slider-range";
+import { inkedClass } from "../utils/tones";
 import type { TokenStyle } from "../utils/token-style";
-import type { RangeSliderPointer } from "../hooks/use-range-slider";
-import type { PointerEvent } from "react";
+import { BarDrawing } from "./bar-drawing";
 import { SliderThumb } from "./slider-thumb";
 
 export interface SliderProps
 	extends Omit<HTMLAttributes<HTMLSpanElement>, "defaultValue" | "onChange" | "dir">, SliderSettings {}
 
-export function Slider({ className, ...props }: SliderProps): ReactElement {
+const PERCENT = 100;
+
+const THICKNESS: TokenStyle = { "--wg-slider-thickness": `${CURSOR_HEIGHT}px` };
+
+export function Slider({ className, style, ...props }: SliderProps): ReactElement {
 	const { ask, rest } = sliderAskOf(props);
 	const slider = useRangeSlider(ask);
-	const percents = slider.values.map((held) => sliderPercentOf(held, ask.scale));
+	const [focusedAt, setFocusedAt] = useState<number | null>(null);
+	const length = useWidthOf(slider.trackRef);
+	const drawn = sliderGeometry(
+		length,
+		slider.values.map((held) => sliderPercentOf(held, ask.scale) / PERCENT),
+	);
 	return (
 		<span
 			data-slot="slider"
@@ -24,36 +37,36 @@ export function Slider({ className, ...props }: SliderProps): ReactElement {
 			aria-disabled={ask.disabled || undefined}
 			{...rest}
 			{...mergePointer(rest, slider.pointer)}
-			className={cn(
-				"wg-kit-slider",
-				`is-${ask.orientation}`,
-				ask.inverted && "is-inverted",
-				slider.grabbed !== null && "is-grabbed",
-				className,
-			)}
+			style={{ ...style, ...THICKNESS }}
+			className={sliderClass(ask, slider, className)}
 		>
-			<span data-slot="slider-track" className="wg-kit-slider-track" ref={slider.trackRef}>
-				<span data-slot="slider-range" className="wg-kit-slider-range" style={rangeStyleOf(percents)} />
+			<span data-slot="slider-track" className="wg-kit-bar-line" ref={slider.trackRef}>
+				{length > 0 && <BarDrawing width={length} drawn={drawn} hasStopMark={false} focusedAt={focusedAt} />}
+				{slider.values.map((held, at) => (
+					<SliderThumb
+						key={at}
+						value={held}
+						at={drawn.cursors[at]}
+						ask={ask}
+						isGrabbed={slider.grabbed === at}
+						onKeyDown={slider.keysOf(at)}
+						onFocusVisible={(isVisible) => setFocusedAt(isVisible ? at : null)}
+					/>
+				))}
 			</span>
-			{slider.values.map((held, at) => (
-				<SliderThumb
-					key={at}
-					value={held}
-					percent={percents[at] ?? 0}
-					scale={ask.scale}
-					orientation={ask.orientation}
-					disabled={ask.disabled}
-					isGrabbed={slider.grabbed === at}
-					onKeyDown={slider.keysOf(at)}
-				/>
-			))}
 		</span>
 	);
 }
 
-function rangeStyleOf(percents: readonly number[]): TokenStyle {
-	const from = percents.length > 1 ? Math.min(...percents) : 0;
-	return { "--wg-slider-from": `${from}%`, "--wg-slider-to": `${Math.max(0, ...percents)}%` };
+function sliderClass(ask: RangeSliderAsk, slider: RangeSlider, className: string | undefined): string {
+	return cn(
+		"wg-kit-bar wg-kit-slider is-settable",
+		inkedClass("accent"),
+		`is-${ask.orientation}`,
+		ask.inverted && "is-inverted",
+		slider.grabbed !== null && "is-grabbed",
+		className,
+	);
 }
 
 interface OwnPointer {

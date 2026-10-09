@@ -1638,6 +1638,7 @@ body {
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-pop-item {
+	box-sizing: border-box;
 	display: flex;
 	align-items: center;
 	/* CONTEXT: the host centres a bare button, and text-align cannot place a flex item */
@@ -1674,7 +1675,7 @@ body {
 	color: var(--wg-kit-text-muted);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-pop-item[disabled] {
+:is(.wg-root, .wg-portal) .wg-kit-pop-item:is([disabled], [data-disabled]) {
 	cursor: not-allowed;
 	color: var(--text-faint);
 }
@@ -2036,7 +2037,8 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-bar-cursor {
 	fill: var(--wg-ink);
 }
-:is(.wg-root, .wg-portal) .wg-kit-bar:focus-visible .wg-kit-bar-cursor {
+:is(.wg-root, .wg-portal) .wg-kit-bar:focus-visible .wg-kit-bar-cursor,
+:is(.wg-root, .wg-portal) .wg-kit-bar-cursor.is-focused {
 	stroke: color-mix(in srgb, var(--wg-ink) 26%, var(--background-primary));
 	stroke-width: 4px;
 	paint-order: stroke;
@@ -2720,7 +2722,8 @@ body {
 	font-weight: 600;
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-command-input kbd {
+:is(.wg-root, .wg-portal) .wg-kit-command-input kbd,
+:is(.wg-root, .wg-portal) .wg-kit-kbd {
 	padding: 2px 8px;
 	border-radius: 8px;
 	background: var(--wg-kit-fill);
@@ -8858,13 +8861,26 @@ body.wg-tree-carrying .wg-tile-body {
 	opacity: 0.4;
 	cursor: not-allowed;
 }
-:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button[data-state="on"] {
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button:is([data-state="on"], [data-state="open"]) {
 	color: var(--wg-kit-text);
 	font-weight: var(--font-semibold, 600);
 }
-:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button[data-state="on"]::before {
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button:is([data-state="on"], [data-state="open"])::before {
 	background: var(--wg-kit-raise);
 	box-shadow: var(--wg-kit-shadow);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button::before {
+	transition:
+		background var(--wg-quick) var(--wg-ease),
+		border-radius var(--wg-grow) var(--wg-spring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button[data-state="on"]:has(+ button[data-state="on"])::before {
+	border-start-end-radius: var(--wg-kit-item);
+	border-end-end-radius: var(--wg-kit-item);
+}
+:is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle button[data-state="on"] + button[data-state="on"]::before {
+	border-start-start-radius: var(--wg-kit-item);
+	border-end-start-radius: var(--wg-kit-item);
 }
 :is(.wg-root, .wg-portal) .wg-kit-seg.is-toggle.is-outline {
 	background: none;
@@ -10255,20 +10271,6 @@ body.wg-tree-carrying .wg-tile-body {
 	font-size: var(--wg-kit-text-s);
 	color: var(--wg-kit-text-muted);
 }
-:is(.wg-root, .wg-portal) .wg-kit-quiz-progress-track {
-	display: block;
-	height: 6px;
-	overflow: hidden;
-	border-radius: var(--wg-kit-pill);
-	background: var(--wg-kit-fill);
-}
-:is(.wg-root, .wg-portal) .wg-kit-quiz-progress-fill {
-	display: block;
-	height: 100%;
-	border-radius: inherit;
-	background: var(--wg-kit-accent);
-	transition: inline-size var(--wg-grow) var(--wg-spring);
-}
 :is(.wg-root, .wg-portal) .wg-kit-quiz-item {
 	display: flex;
 	flex-direction: column;
@@ -10348,37 +10350,7 @@ body.wg-tree-carrying .wg-tile-body {
 	opacity: 0;
 	pointer-events: none;
 }
-:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark {
-	position: relative;
-	flex: none;
-	display: grid;
-	place-items: center;
-	width: 22px;
-	height: 22px;
-	border-radius: var(--wg-kit-pill);
-	box-shadow: inset 0 0 0 1.5px var(--wg-kit-card-edge);
-	transition: background var(--wg-quick) var(--wg-ease);
-}
-:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-type="checkbox"] .wg-kit-quiz-choice-mark {
-	border-radius: 7px;
-}
-:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark::after {
-	content: "";
-	width: 8px;
-	height: 8px;
-	border-radius: inherit;
-	background: var(--text-on-accent);
-	scale: 0;
-	transition: scale var(--wg-grow) var(--wg-spring);
-}
-:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-checked] .wg-kit-quiz-choice-mark {
-	background: var(--wg-kit-accent);
-	box-shadow: none;
-}
-:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-checked] .wg-kit-quiz-choice-mark::after {
-	scale: 1;
-}
-:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-invalid] .wg-kit-quiz-choice-mark {
+:is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-invalid] .wg-kit-quiz-choice-mark[data-state="unchecked"]::before {
 	box-shadow: inset 0 0 0 1.5px var(--wg-kit-error);
 }
 :is(.wg-root, .wg-portal) .wg-kit-quiz-choice-text {
@@ -10399,22 +10371,8 @@ body.wg-tree-carrying .wg-tile-body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-quiz-choice-key {
 	flex: none;
-	display: grid;
-	place-items: center;
-	min-width: 28px;
-	height: 28px;
-	padding: 0 6px;
-	box-sizing: border-box;
-	border: none;
-	border-radius: var(--wg-kit-item);
-	background: none;
-	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
-	font-family: var(--font-monospace);
-	font-size: var(--wg-kit-text-xs);
-	color: var(--wg-kit-text-muted);
 }
 :is(.wg-root, .wg-portal) .wg-kit-quiz-choice[data-checked] .wg-kit-quiz-choice-key {
-	box-shadow: inset 0 0 0 1px var(--wg-kit-accent);
 	color: var(--wg-kit-accent);
 }
 :is(.wg-root, .wg-portal) .wg-kit-quiz-input {
@@ -10474,23 +10432,10 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: inset 0 0 0 1.5px var(--wg-kit-error);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-kbd,
-:is(.wg-root, .wg-portal) .wg-kit-kbd-group .wg-kit-kbd {
+:is(.wg-root, .wg-portal) .wg-kit-kbd {
 	display: inline-flex;
 	align-items: center;
-	justify-content: center;
-	gap: 4px;
-	box-sizing: border-box;
-	min-width: 22px;
-	height: 22px;
-	padding: 0 6px;
-	border-radius: 7px;
-	background: var(--wg-kit-fill);
-	box-shadow: inset 0 -1px 0 var(--wg-kit-card-edge);
-	font-family: var(--font-interface);
-	font-size: var(--wg-kit-text-xs);
-	font-weight: var(--font-medium, 500);
-	color: var(--wg-kit-text-muted);
+	gap: var(--size-2-2, 4px);
 	pointer-events: none;
 	user-select: none;
 }
@@ -10647,27 +10592,24 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-otp-group {
 	display: flex;
 	align-items: center;
-	gap: 6px;
+	gap: 2px;
 }
-:is(.wg-root, .wg-portal) .wg-kit-otp-slot {
+:is(.wg-root, .wg-portal) .wg-kit-field.wg-kit-otp-slot {
 	position: relative;
-	display: grid;
-	place-items: center;
-	width: 48px;
-	height: 56px;
-	border-radius: var(--wg-kit-item, 14px);
-	background: var(--wg-kit-fill);
-	font-size: var(--wg-kit-text-l);
-	font-weight: var(--font-semibold, 600);
-	font-variant-numeric: tabular-nums;
+	justify-content: center;
+	width: var(--wg-kit-control-m);
+	padding: 0;
 	color: var(--wg-kit-text);
-	transition:
-		box-shadow var(--wg-quick) var(--wg-ease),
-		transform var(--wg-press) var(--wg-spring);
+	font-variant-numeric: tabular-nums;
+	transition: border-radius var(--wg-grow) var(--wg-spring);
 }
-:is(.wg-root, .wg-portal) .wg-kit-otp-slot[data-active="true"] {
-	box-shadow: 0 0 0 2px var(--ring);
-	transform: scale(1.06);
+:is(.wg-root, .wg-portal) .wg-kit-otp-group > .wg-kit-otp-slot:not(:first-child) {
+	border-start-start-radius: var(--wg-kit-item);
+	border-end-start-radius: var(--wg-kit-item);
+}
+:is(.wg-root, .wg-portal) .wg-kit-otp-group > .wg-kit-otp-slot:not(:last-child) {
+	border-start-end-radius: var(--wg-kit-item);
+	border-end-end-radius: var(--wg-kit-item);
 }
 :is(.wg-root, .wg-portal) .wg-kit-otp[data-invalid] .wg-kit-otp-slot,
 :is(.wg-root, .wg-portal) .wg-kit-otp:has(> [aria-invalid="true"]) .wg-kit-otp-slot {
@@ -10699,47 +10641,20 @@ body.wg-tree-carrying .wg-tile-body {
 	grid-auto-flow: column;
 	justify-content: start;
 }
-:is(.wg-root, .wg-portal) .wg-kit-radio {
-	position: relative;
-	display: inline-grid;
-	place-items: center;
-	flex: none;
-	width: 26px;
-	height: 26px;
-	padding: 0;
-	border: none;
-	border-radius: var(--wg-kit-pill);
-	background: none;
-	box-shadow: inset 0 0 0 1.5px var(--wg-kit-card-edge);
-	cursor: pointer;
-	transition: box-shadow var(--wg-quick) var(--wg-ease);
-}
-:is(.wg-root, .wg-portal) .wg-kit-radio[data-state="checked"] {
-	box-shadow: inset 0 0 0 1.5px var(--wg-kit-accent);
-}
-:is(.wg-root, .wg-portal) .wg-kit-radio:focus-visible {
-	outline: none;
-	box-shadow:
-		inset 0 0 0 1.5px var(--wg-kit-accent),
-		0 0 0 2px var(--ring);
-}
-:is(.wg-root, .wg-portal) .wg-kit-radio:disabled {
-	opacity: 0.5;
-	cursor: default;
+:is(.wg-root, .wg-portal) .wg-kit-check.is-radio:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
 :is(.wg-root, .wg-portal) .wg-kit-radio-dot {
-	width: 14px;
-	height: 14px;
+	width: 10px;
+	height: 10px;
 	border-radius: var(--wg-kit-pill);
-	background: var(--wg-kit-accent);
-	transform: scale(0);
-	transition: transform var(--wg-grow) var(--wg-spring);
+	background: currentColor;
+	scale: 0;
+	transition: scale var(--wg-grow) var(--wg-spring);
 }
-:is(.wg-root, .wg-portal) .wg-kit-radio[data-state="checked"] .wg-kit-radio-dot {
-	transform: scale(1);
-}
-:is(.wg-root, .wg-portal) .wg-kit-radio:active .wg-kit-radio-dot {
-	transform: scale(0.7);
+:is(.wg-root, .wg-portal) .wg-kit-check[data-state="checked"] .wg-kit-radio-dot {
+	scale: 1;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-native-select {
@@ -10755,7 +10670,7 @@ body.wg-tree-carrying .wg-tile-body {
 	width: 100%;
 	height: var(--wg-kit-control-m);
 	margin: 0;
-	padding: 0 40px 0 var(--size-4-4, 16px);
+	padding: 0 calc(var(--size-4-5, 20px) + 16px + var(--size-4-2, 8px)) 0 var(--size-4-5, 20px);
 	appearance: none;
 	border: none;
 	border-radius: var(--wg-kit-pill);
@@ -10764,11 +10679,14 @@ body.wg-tree-carrying .wg-tile-body {
 	background: var(--wg-kit-fill);
 	font: inherit;
 	font-size: var(--wg-kit-text-m);
+	font-weight: var(--font-semibold, 600);
+	line-height: 1;
 	color: var(--wg-kit-text);
 	cursor: pointer;
 	transition:
 		background var(--wg-quick) var(--wg-ease),
-		box-shadow var(--wg-quick) var(--wg-ease);
+		box-shadow var(--wg-quick) var(--wg-ease),
+		transform var(--wg-press) var(--wg-ease);
 }
 :is(.wg-root, .wg-portal) .wg-kit-native-select select.wg-kit-native-select-control:hover {
 	background: var(--wg-kit-fill-hover);
@@ -10777,174 +10695,68 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: 0 0 0 2px var(--ring);
 }
 :is(.wg-root, .wg-portal) .wg-kit-native-select select.wg-kit-native-select-control:disabled {
-	opacity: 0.5;
-	cursor: default;
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+:is(.wg-root, .wg-portal) .wg-kit-native-select select.wg-kit-native-select-control:active {
+	transform: scale(0.955);
 }
 :is(.wg-root, .wg-portal) .wg-kit-native-select.is-s select.wg-kit-native-select-control {
 	height: var(--wg-kit-control-s);
-	padding-inline-start: var(--size-4-3, 12px);
-	font-size: var(--wg-kit-text-s);
+	padding-inline-start: var(--size-4-4, 16px);
 }
 :is(.wg-root, .wg-portal) .wg-kit-native-select-icon {
 	position: absolute;
-	inset-inline-end: 14px;
+	inset-inline-end: var(--size-4-5, 20px);
 	pointer-events: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-native-select.is-s .wg-kit-native-select-icon {
+	inset-inline-end: var(--size-4-4, 16px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-slider {
-	--wg-slider-track: 10px;
-	--wg-slider-thumb: 26px;
 	position: relative;
-	display: flex;
-	align-items: center;
-	box-sizing: border-box;
-	width: 100%;
 	min-width: 96px;
-	height: var(--wg-slider-thumb);
 	touch-action: none;
 	user-select: none;
-	cursor: pointer;
+}
+:is(.wg-root, .wg-portal) .wg-kit-slider .wg-kit-bar-line {
+	position: relative;
+	height: var(--wg-slider-thickness);
+}
+:is(.wg-root, .wg-portal) .wg-kit-slider.is-inverted:not(.is-vertical) .wg-kit-bar-line {
+	scale: -1 1;
 }
 :is(.wg-root, .wg-portal) .wg-kit-slider.is-vertical {
-	flex-direction: column;
-	width: var(--wg-slider-thumb);
+	container-type: size;
+	width: var(--wg-slider-thickness);
 	min-width: 0;
 	height: 100%;
 	min-height: 120px;
 }
-:is(.wg-root, .wg-portal) .wg-kit-slider[data-disabled] {
-	opacity: 0.5;
-	cursor: default;
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider-track {
-	position: relative;
-	flex: 1 1 auto;
-	height: var(--wg-slider-track);
-	border-radius: var(--wg-kit-pill);
-	background: var(--wg-kit-fill-hover);
-	overflow: hidden;
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider.is-vertical .wg-kit-slider-track {
-	width: var(--wg-slider-track);
-	height: auto;
-	align-self: center;
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider-range {
+:is(.wg-root, .wg-portal) .wg-kit-slider.is-vertical .wg-kit-bar-line {
 	position: absolute;
-	inset-block: 0;
-	inset-inline-start: var(--wg-slider-from);
-	inset-inline-end: calc(100% - var(--wg-slider-to));
-	background: var(--wg-kit-accent);
+	top: 50%;
+	left: 50%;
+	width: 100cqh;
+	translate: -50% -50%;
+	rotate: -90deg;
 }
-:is(.wg-root, .wg-portal) .wg-kit-slider.is-inverted .wg-kit-slider-range {
-	inset-inline-start: calc(100% - var(--wg-slider-to));
-	inset-inline-end: var(--wg-slider-from);
+:is(.wg-root, .wg-portal) .wg-kit-slider.is-vertical.is-inverted .wg-kit-bar-line {
+	rotate: 90deg;
 }
-:is(.wg-root, .wg-portal) .wg-kit-slider.is-vertical .wg-kit-slider-range {
-	inset-inline: 0;
-	inset-block-end: var(--wg-slider-from);
-	inset-block-start: calc(100% - var(--wg-slider-to));
+:is(.wg-root, .wg-portal) .wg-kit-slider[data-disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
 }
 :is(.wg-root, .wg-portal) .wg-kit-slider-thumb {
 	position: absolute;
-	top: 50%;
+	top: 0;
 	left: var(--wg-slider-at);
-	box-sizing: border-box;
-	width: var(--wg-slider-thumb);
-	height: var(--wg-slider-thumb);
-	border-radius: var(--wg-kit-pill);
-	background: var(--wg-kit-raise);
-	box-shadow: var(--wg-kit-shadow, none), var(--wg-kit-glass-edge, none);
+	width: var(--wg-slider-thickness);
+	height: 100%;
+	translate: -50% 0;
 	outline: none;
-	transform: translate(-50%, -50%);
-	transition:
-		width var(--wg-press) var(--wg-spring),
-		height var(--wg-press) var(--wg-spring),
-		box-shadow var(--wg-quick) var(--wg-ease);
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider.is-inverted .wg-kit-slider-thumb {
-	left: calc(100% - var(--wg-slider-at));
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider.is-vertical .wg-kit-slider-thumb {
-	top: calc(100% - var(--wg-slider-at));
-	left: 50%;
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider-thumb.is-grabbed {
-	width: calc(var(--wg-slider-thumb) + 6px);
-	height: calc(var(--wg-slider-thumb) + 6px);
-}
-:is(.wg-root, .wg-portal) .wg-kit-slider-thumb:focus-visible {
-	box-shadow: 0 0 0 3px var(--ring);
-}
-
-:is(.wg-root, .wg-portal) .wg-kit-toggle {
-	position: relative;
-	isolation: isolate;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--wg-gap-parts, 8px);
-	box-sizing: border-box;
-	min-width: var(--wg-kit-control-m);
-	height: var(--wg-kit-control-m);
-	padding: 0 var(--size-4-3, 12px);
-	border: none;
-	border-radius: 0;
-	background: none;
-	box-shadow: none;
-	outline: none;
-	font: inherit;
-	font-size: var(--wg-kit-text-m);
-	font-weight: var(--font-medium, 500);
-	color: var(--wg-kit-text-muted);
-	cursor: pointer;
-	transition: color var(--wg-quick) var(--wg-ease);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	border-radius: var(--wg-kit-pill);
-	background: none;
-	transition:
-		background var(--wg-quick) var(--wg-ease),
-		border-radius var(--wg-grow) var(--wg-spring),
-		transform var(--wg-press) var(--wg-ease);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle:hover::before {
-	background: var(--wg-kit-fill);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle.is-outline::before {
-	box-shadow: inset 0 0 0 1px var(--wg-kit-card-edge);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle[data-state="on"] {
-	color: var(--wg-kit-accent-ink, var(--wg-kit-accent));
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle[data-state="on"]::before {
-	background: var(--wg-kit-accent-wash);
-	border-radius: var(--wg-kit-item, 14px);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle:active::before {
-	transform: scale(0.94);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle:focus-visible::before {
-	box-shadow: 0 0 0 2px var(--ring);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle:disabled {
-	opacity: 0.5;
-	cursor: default;
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle.is-s {
-	min-width: var(--wg-kit-control-s);
-	height: var(--wg-kit-control-s);
-	padding: 0 var(--size-4-2, 8px);
-	font-size: var(--wg-kit-text-s);
-}
-:is(.wg-root, .wg-portal) .wg-kit-toggle.is-l {
-	min-width: 52px;
-	height: 52px;
-	padding: 0 var(--size-4-4, 16px);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-btn-group {
@@ -10956,37 +10768,49 @@ body.wg-tree-carrying .wg-tile-body {
 :is(.wg-root, .wg-portal) .wg-kit-btn-group.is-vertical {
 	flex-direction: column;
 }
-:is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-btn, .wg-kit-icon, .wg-kit-toggle)::before {
+:is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-btn, .wg-kit-icon)::before,
+:is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-field, .wg-kit-input-group, .wg-kit-btn-group-text) {
 	transition:
 		background var(--wg-quick) var(--wg-ease),
 		border-radius var(--wg-grow) var(--wg-spring);
 }
+:is(.wg-root, .wg-portal) .wg-kit-btn-group.is-horizontal > :is(.wg-kit-btn, .wg-kit-icon):not(:first-child)::before,
 :is(.wg-root, .wg-portal)
 	.wg-kit-btn-group.is-horizontal
-	> :is(.wg-kit-btn, .wg-kit-icon, .wg-kit-toggle):not(:first-child)::before {
-	border-start-start-radius: 6px;
-	border-end-start-radius: 6px;
+	> :is(.wg-kit-field, .wg-kit-input-group, .wg-kit-btn-group-text):not(:first-child) {
+	border-start-start-radius: var(--wg-kit-item);
+	border-end-start-radius: var(--wg-kit-item);
 }
+:is(.wg-root, .wg-portal) .wg-kit-btn-group.is-horizontal > :is(.wg-kit-btn, .wg-kit-icon):not(:last-child)::before,
 :is(.wg-root, .wg-portal)
 	.wg-kit-btn-group.is-horizontal
-	> :is(.wg-kit-btn, .wg-kit-icon, .wg-kit-toggle):not(:last-child)::before {
-	border-start-end-radius: 6px;
-	border-end-end-radius: 6px;
+	> :is(.wg-kit-field, .wg-kit-input-group, .wg-kit-btn-group-text):not(:last-child) {
+	border-start-end-radius: var(--wg-kit-item);
+	border-end-end-radius: var(--wg-kit-item);
 }
+:is(.wg-root, .wg-portal) .wg-kit-btn-group.is-vertical > :is(.wg-kit-btn, .wg-kit-icon):not(:first-child)::before,
 :is(.wg-root, .wg-portal)
 	.wg-kit-btn-group.is-vertical
-	> :is(.wg-kit-btn, .wg-kit-icon, .wg-kit-toggle):not(:first-child)::before {
-	border-start-start-radius: 6px;
-	border-start-end-radius: 6px;
+	> :is(.wg-kit-field, .wg-kit-input-group, .wg-kit-btn-group-text):not(:first-child) {
+	border-start-start-radius: var(--wg-kit-item);
+	border-start-end-radius: var(--wg-kit-item);
 }
+:is(.wg-root, .wg-portal) .wg-kit-btn-group.is-vertical > :is(.wg-kit-btn, .wg-kit-icon):not(:last-child)::before,
 :is(.wg-root, .wg-portal)
 	.wg-kit-btn-group.is-vertical
-	> :is(.wg-kit-btn, .wg-kit-icon, .wg-kit-toggle):not(:last-child)::before {
-	border-end-start-radius: 6px;
-	border-end-end-radius: 6px;
+	> :is(.wg-kit-field, .wg-kit-input-group, .wg-kit-btn-group-text):not(:last-child) {
+	border-end-start-radius: var(--wg-kit-item);
+	border-end-end-radius: var(--wg-kit-item);
 }
-:is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-btn, .wg-kit-icon, .wg-kit-toggle):active::before {
+:is(.wg-root, .wg-portal) .wg-kit-btn-group > :is(.wg-kit-btn, .wg-kit-icon):active::before {
 	border-radius: var(--wg-kit-pill);
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn-group > .wg-kit-btn.is-outline::before {
+	background: var(--wg-kit-fill);
+	box-shadow: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-btn-group > .wg-kit-btn.is-outline:hover::before {
+	background: var(--wg-kit-fill-hover);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn-group > .wg-kit-input-group,
 :is(.wg-root, .wg-portal) .wg-kit-btn-group > .wg-kit-field {
@@ -10997,32 +10821,14 @@ body.wg-tree-carrying .wg-tile-body {
 	align-items: center;
 	gap: var(--wg-gap-parts, 8px);
 	padding: 0 var(--size-4-4, 16px);
-	border-radius: 6px;
+	border-radius: var(--wg-kit-pill);
 	background: var(--wg-kit-fill);
 	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-medium, 500);
 	color: var(--wg-kit-text-muted);
 }
-:is(.wg-root, .wg-portal) .wg-kit-btn-group-text:first-child {
-	border-start-start-radius: var(--wg-kit-pill);
-	border-end-start-radius: var(--wg-kit-pill);
-}
-:is(.wg-root, .wg-portal) .wg-kit-btn-group-text:last-child {
-	border-start-end-radius: var(--wg-kit-pill);
-	border-end-end-radius: var(--wg-kit-pill);
-}
 :is(.wg-root, .wg-portal) .wg-kit-btn-group-separator {
-	align-self: stretch;
-	flex: none;
-	background: var(--wg-kit-card-edge);
-}
-:is(.wg-root, .wg-portal) .wg-kit-btn-group-separator.is-vertical {
-	width: 1px;
-	margin-block: 8px;
-}
-:is(.wg-root, .wg-portal) .wg-kit-btn-group-separator.is-horizontal {
-	height: 1px;
-	margin-inline: 8px;
+	display: none;
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-combobox-input {
@@ -11282,10 +11088,10 @@ body.wg-tree-carrying .wg-tile-body {
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-menu {
-	min-width: max(208px, var(--wg-kit-anchor-width, 0px));
+	min-width: max(200px, var(--wg-kit-anchor-width, 200px));
 	max-height: var(--wg-kit-pop-available-height, 70vh);
 	overflow-y: auto;
-	padding: 6px;
+	padding: var(--size-4-2, 8px);
 	border-radius: var(--wg-kit-plate);
 	background: var(--wg-kit-glass-panel);
 	backdrop-filter: var(--wg-kit-glass-blur);
@@ -11294,87 +11100,37 @@ body.wg-tree-carrying .wg-tile-body {
 	outline: none;
 }
 :is(.wg-root, .wg-portal) .wg-kit-menu-item {
-	position: relative;
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	min-height: 38px;
-	padding: 6px 12px;
-	border-radius: var(--wg-kit-item);
-	font-size: var(--wg-kit-text-m);
-	color: var(--wg-kit-text);
-	cursor: default;
 	user-select: none;
-	outline: none;
-	transition:
-		background var(--wg-quick) var(--wg-ease),
-		scale var(--wg-press) var(--wg-spring);
 }
-:is(.wg-root, .wg-portal) .wg-kit-menu-item:focus,
-:is(.wg-root, .wg-portal) .wg-kit-menu-item.is-sub-trigger[data-state="open"] {
-	background: var(--accent);
-	color: var(--accent-foreground);
-}
-:is(.wg-root, .wg-portal) .wg-kit-menu-item:active:not([data-disabled]) {
-	scale: 0.97;
-}
-:is(.wg-root, .wg-portal) .wg-kit-menu-item[data-disabled] {
-	opacity: 0.45;
-	pointer-events: none;
+:is(.wg-root, .wg-portal) .wg-kit-menu-item.is-sub-trigger[data-state="open"]::before {
+	background: var(--background-modifier-hover);
 }
 :is(.wg-root, .wg-portal) .wg-kit-menu-item[data-inset],
-:is(.wg-root, .wg-portal) .wg-kit-menu-item.is-indicated,
 :is(.wg-root, .wg-portal) .wg-kit-menu-label[data-inset] {
-	padding-inline-start: 36px;
+	padding-inline-start: calc(2 * var(--size-4-3, 12px) + 16px);
 }
 :is(.wg-root, .wg-portal) .wg-kit-menu-item[data-variant="destructive"] {
-	color: var(--destructive);
+	color: var(--text-error);
 }
-:is(.wg-root, .wg-portal) .wg-kit-menu-item[data-variant="destructive"]:focus {
+:is(.wg-root, .wg-portal) .wg-kit-menu-item[data-variant="destructive"]:hover::before {
 	background: var(--wg-kit-error-wash);
 }
-:is(.wg-root, .wg-portal) .wg-kit-menu-item > svg {
-	flex: none;
-	color: var(--muted-foreground);
-}
-:is(.wg-root, .wg-portal) .wg-kit-menu-item[data-variant="destructive"] > svg {
-	color: currentColor;
-}
-:is(.wg-root, .wg-portal) .wg-kit-menu-indicator {
-	position: absolute;
-	inset-inline-start: 12px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 16px;
-	height: 16px;
-}
-:is(.wg-root, .wg-portal) .wg-kit-menu-dot {
-	width: 8px;
-	height: 8px;
-	border-radius: var(--wg-kit-pill);
-	background: currentColor;
+:is(.wg-root, .wg-portal) .wg-kit-pop-item[aria-checked="mixed"] .wg-kit-pop-tick {
+	opacity: 1;
 }
 :is(.wg-root, .wg-portal) .wg-kit-menu-chevron {
 	margin-inline-start: auto;
 }
 :is(.wg-root, .wg-portal) .wg-kit-menu-label {
-	padding: 8px 12px 4px;
+	padding: var(--size-4-2, 8px) var(--size-4-3, 12px) var(--size-2-2, 4px);
 	font-size: var(--wg-kit-text-s);
 	font-weight: var(--font-semibold, 600);
-	color: var(--muted-foreground);
-}
-:is(.wg-root, .wg-portal) .wg-kit-menu-separator {
-	height: 1px;
-	margin: 6px -6px;
-	background: var(--wg-kit-group-line);
+	color: var(--wg-kit-text-muted);
 }
 :is(.wg-root, .wg-portal) .wg-kit-menu-shortcut {
 	margin-inline-start: auto;
-	padding-inline-start: 16px;
 	font-size: var(--wg-kit-text-xs);
-	letter-spacing: 0.08em;
-	color: var(--muted-foreground);
+	color: var(--wg-kit-text-muted);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-tooltip {
@@ -11397,65 +11153,8 @@ body.wg-tree-carrying .wg-tile-body {
 	box-shadow: var(--wg-kit-glass-edge);
 }
 
-:is(.wg-root, .wg-portal) .wg-kit-menubar {
-	display: inline-flex;
-	align-items: center;
-	gap: 2px;
-	padding: 4px;
-	border-radius: calc(var(--wg-kit-item) + 4px);
-	box-shadow: inset 0 0 0 1px var(--border);
-}
-:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger,
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger {
-	position: relative;
-	isolation: isolate;
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	height: auto;
-	min-height: 34px;
-	padding: 0 12px;
-	border: none;
-	border-radius: 0;
-	background: none;
-	box-shadow: none;
-	font: inherit;
-	font-size: var(--wg-kit-text-m);
-	font-weight: var(--font-medium, 500);
-	color: var(--wg-kit-text);
-	text-decoration: none;
-	cursor: pointer;
-	outline: none;
-	transition: scale var(--wg-press) var(--wg-spring);
-}
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger {
-	min-height: 40px;
-	padding: 0 16px;
-}
-:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger::before,
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	z-index: -1;
-	border-radius: var(--wg-kit-item);
-	background: none;
-	transition: background var(--wg-quick) var(--wg-ease);
-}
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger::before {
-	border-radius: var(--wg-kit-pill);
-}
-:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger:hover::before,
-:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger:focus-visible::before,
-:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger[data-state="open"]::before,
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger:hover::before,
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger:focus-visible::before,
 :is(.wg-root, .wg-portal) .wg-kit-nav-trigger[data-state="open"]::before {
-	background: var(--accent);
-}
-:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger:active,
-:is(.wg-root, .wg-portal) .wg-kit-nav-trigger:active {
-	scale: 0.96;
+	background: var(--wg-kit-fill);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-nav {
@@ -11511,27 +11210,17 @@ body.wg-tree-carrying .wg-tile-body {
 	}
 }
 :is(.wg-root, .wg-portal) .wg-kit-nav-link {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	padding: 10px 14px;
-	border-radius: calc(var(--wg-kit-plate) - 6px);
-	font-size: var(--wg-kit-text-m);
-	color: var(--wg-kit-text);
 	text-decoration: none;
-	outline: none;
-	transition:
-		background var(--wg-quick) var(--wg-ease),
-		scale var(--wg-press) var(--wg-spring);
 }
-:is(.wg-root, .wg-portal) .wg-kit-nav-link:hover,
-:is(.wg-root, .wg-portal) .wg-kit-nav-link:focus-visible,
-:is(.wg-root, .wg-portal) .wg-kit-nav-link[data-active] {
-	background: var(--accent);
+:is(.wg-root, .wg-portal) .wg-kit-pop-item.wg-kit-nav-link {
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 1px;
 }
-:is(.wg-root, .wg-portal) .wg-kit-nav-link:active {
-	scale: 0.98;
+:is(.wg-root, .wg-portal) .wg-kit-pop-item.wg-kit-nav-link[data-active]::before {
+	background: var(--background-modifier-hover);
 }
+
 :is(.wg-root, .wg-portal) .wg-kit-nav-indicator {
 	position: absolute;
 	top: 100%;
@@ -11941,8 +11630,6 @@ body.wg-tree-carrying .wg-tile-body {
 		:is(
 			.wg-kit-quiz-item,
 			.wg-kit-quiz-choice,
-			.wg-kit-quiz-choice-mark,
-			.wg-kit-quiz-progress-fill,
 			.wg-kit-scroller-button,
 			.wg-kit-attachment,
 			.wg-kit-bubble-content,
@@ -11951,15 +11638,8 @@ body.wg-tree-carrying .wg-tile-body {
 		animation: none;
 		transition: none;
 	}
-	:is(.wg-root, .wg-portal) .wg-kit-quiz-choice-mark::after {
-		transition: none;
-	}
 	.wg-kit-otp-slot,
-	.wg-kit-radio,
 	.wg-kit-radio-dot,
-	.wg-kit-slider-thumb,
-	.wg-kit-toggle,
-	.wg-kit-toggle::before,
 	.wg-kit-btn-group > ::before,
 	.wg-kit-input-group,
 	.wg-kit-combobox-item,
@@ -11972,16 +11652,11 @@ body.wg-tree-carrying .wg-tile-body {
 		animation: none;
 	}
 
-	.wg-kit-otp-slot[data-active="true"] {
-		transform: none;
-	}
 	:is(.wg-root, .wg-portal) .wg-kit-float,
 	:is(.wg-root, .wg-portal) .wg-kit-modal,
 	:is(.wg-root, .wg-portal) .wg-kit-modal-scrim,
 	:is(.wg-root, .wg-portal) .wg-kit-toast,
 	:is(.wg-root, .wg-portal) .wg-kit-menu-item,
-	:is(.wg-root, .wg-portal) .wg-kit-menubar-trigger,
-	:is(.wg-root, .wg-portal) .wg-kit-nav-trigger,
 	:is(.wg-root, .wg-portal) .wg-kit-nav-chevron,
 	:is(.wg-root, .wg-portal) .wg-kit-nav-content,
 	:is(.wg-root, .wg-portal) .wg-kit-nav-link,

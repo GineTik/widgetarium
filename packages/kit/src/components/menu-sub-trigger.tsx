@@ -36,7 +36,7 @@ export function MenuSubTrigger({ inset, disabled, className, children, ...rest }
 			{...rest}
 			{...menuItemMarks(sub, { part: "sub-trigger", inset, disabled })}
 			ref={composeRefs(sub.triggerRef)}
-			className={cn("wg-kit-menu-item is-sub-trigger", className)}
+			className={cn("wg-kit-pop-item wg-kit-menu-item is-sub-trigger", className)}
 			{...subTriggerHandlers(sub, { disabled, theirs: rest })}
 		>
 			{children}
