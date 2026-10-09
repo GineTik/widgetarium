@@ -13,8 +13,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { Button, FormFields, Icon, IconButton, isDraftComplete, valuesOfDraft } from "widgetarium/kit";
 import type { FormDraft } from "widgetarium/kit";
 import { FormFieldSchema, presetValues } from "@default/lib";

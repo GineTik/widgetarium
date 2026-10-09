@@ -1,4 +1,5 @@
-import { ICrudGateway, createWidget, z } from "widgetarium";
+import { ICrudGateway, createWidget } from "widgetarium";
+import { z } from "zod";
 import type { GivenProps } from "widgetarium";
 
 const TaskSchema = z.object({ title: z.string() });

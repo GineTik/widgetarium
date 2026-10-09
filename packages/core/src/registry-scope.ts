@@ -5,8 +5,10 @@ import * as coreModule from "./api-core.js";
 import { coreSurface } from "./api-core.js";
 import { reactSurface, kit, emojis, isPropsToDefine } from "./widget-api.js";
 import * as charts from "@widgetarium/kit/charts";
+import * as zod from "zod";
 import { WIDGET_API } from "./version.js";
 import { compileWidget } from "./engine/widget-build.js";
+import { HELD_BY_THE_ENGINE } from "./engine/modules.js";
 import { moduleFromCompiled } from "./engine/compiled-module.js";
 import type { RequireModule } from "./engine/compiled-module.js";
 import { isObject } from "./engine/is-object.js";
@@ -34,6 +36,7 @@ export interface WidgetScope {
 	readonly kit: unknown;
 	readonly emojis: unknown;
 	readonly charts: unknown;
+	readonly zod: unknown;
 	readonly draw: DrawWidget<GivenProps> | null;
 }
 
@@ -74,6 +77,7 @@ export const ENGINE_SCOPE: WidgetScope = {
 	kit,
 	emojis,
 	charts,
+	zod,
 	draw: null,
 };
 
@@ -102,6 +106,7 @@ export function foreignScope(
 		kit: built.kit,
 		emojis: built.emojis,
 		charts: createRefusedModule(CHARTS_NEED_THE_ENGINE_REACT.replace("{react}", said)),
+		zod,
 		draw: isDrawWidget(built.drawWidget) ? built.drawWidget : null,
 	};
 }
@@ -257,17 +262,22 @@ function createRequire(
 	scope: WidgetScope,
 	widgets: WidgetImports | null,
 ): RequireModule {
-	const modules: Readonly<Record<string, unknown>> = {
+	const heldByTheEngine: Readonly<Record<string, unknown>> = {
 		widgetarium: refusingMissingExports(scope.api),
 		"widgetarium/kit": scope.kit,
 		"widgetarium/kit/emojis": scope.emojis,
 		"widgetarium/kit/charts": scope.charts,
+		zod: scope.zod,
+	};
+	const modules: Readonly<Record<string, unknown>> = {
+		...heldByTheEngine,
 		react: scope.react,
 		"react-dom": scope.reactDom,
 		...Object.fromEntries(libs),
 	};
 	return (name) => {
-		const found = packages?.take(name) ?? modules[name] ?? widgets?.take(name);
+		const engineAnswer = HELD_BY_THE_ENGINE.includes(name) ? heldByTheEngine[name] : undefined;
+		const found = engineAnswer ?? packages?.take(name) ?? modules[name] ?? widgets?.take(name);
 		if (!found)
 			throw new Error(
 				`cannot import "${name}" — a widget may only import ${[...Object.keys(modules), ...(packages?.names ?? [])].join(", ")}`,

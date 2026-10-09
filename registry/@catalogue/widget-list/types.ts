@@ -1,4 +1,4 @@
-import { z } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 
 export const JobSchema = z.object({

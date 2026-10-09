@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { IHost, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IHost, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 import { Figures } from "./figures";
 import { Fixes } from "./fixes";

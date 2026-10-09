@@ -1,4 +1,5 @@
-import type { Row, VaultRecord, z } from "widgetarium";
+import type { Row, VaultRecord } from "widgetarium";
+import type { z } from "zod";
 import type { ChosenSchema } from "./widget";
 
 export type Group = { prop: string; control: string; label: string };

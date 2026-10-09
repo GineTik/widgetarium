@@ -1,4 +1,5 @@
-import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Options } from "./options";
 import { Reason } from "./reason";
 import type { Chip } from "./types";

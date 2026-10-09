@@ -222,7 +222,7 @@ A filter is a plain field picked from the record. A rule a write must satisfy (`
 the input of the command that writes, never to a shape that is read.
 
 ```ts file=src/shared/schemas/task.ts
-import { z } from "widgetarium";
+import { z } from "zod";
 
 export const TaskStatusSchema = z.enum(["todo", "doing", "done"]);
 
@@ -247,8 +247,9 @@ maps each note to a `Task`. The mapping and the business rule live here, never i
 signature, as the project ships it:
 
 ```ts file=src/shared/sources/obsidian/notes.ts
-import { ICommand, IQuery, PageInputSchema, PageOf, z } from "widgetarium";
+import { ICommand, IQuery, PageInputSchema, PageOf } from "widgetarium";
 import type { HandlerContext } from "widgetarium";
+import { z } from "zod";
 
 export const NoteSchema = z.object({ path: z.string(), properties: z.record(z.string(), z.unknown()) });
 const NotePageSchema = PageOf(NoteSchema);
@@ -266,8 +267,9 @@ export declare class CreateNoteCommand extends ICommand.input(NewNoteSchema).out
 ```
 
 ```ts file=src/logic/tasks/tasks-query.ts
-import { IQuery, PageInputSchema, PageOf, z } from "widgetarium";
+import { IQuery, PageInputSchema, PageOf } from "widgetarium";
 import type { HandlerContext } from "widgetarium";
+import { z } from "zod";
 import { TaskFilterSchema, TaskSchema } from "../../shared/schemas/task";
 import type { Task } from "../../shared/schemas/task";
 import { NoteSchema, NotesInFolderQuery } from "../../shared/sources/obsidian/notes";
@@ -359,8 +361,9 @@ The widget mints the record's `id` at the press, so a retry writes nothing twice
 so it is never sent again.
 
 ```ts file=src/logic/tasks/create-task-command.ts
-import { ICommand, z } from "widgetarium";
+import { ICommand } from "widgetarium";
 import type { HandlerContext } from "widgetarium";
+import { z } from "zod";
 import { NewTaskSchema, TaskSchema } from "../../shared/schemas/task";
 import { CreateNoteCommand } from "../../shared/sources/obsidian/notes";
 

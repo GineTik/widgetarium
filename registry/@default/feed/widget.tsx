@@ -8,8 +8,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { FeedList } from "./feed-list";
 import { FeedSaid } from "./feed-said";
 import type { Drawn, Given, ItemSlot } from "./types";

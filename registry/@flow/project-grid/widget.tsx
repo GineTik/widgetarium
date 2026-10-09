@@ -9,8 +9,8 @@ import {
 	defineMetadata,
 	pickedValue,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 import { Cells } from "./cells";
 import { GridSaid } from "./grid-said";

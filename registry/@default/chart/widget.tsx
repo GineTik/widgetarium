@@ -6,8 +6,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import {
 	Area,
 	AreaChart,

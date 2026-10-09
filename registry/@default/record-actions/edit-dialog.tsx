@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, z } from "widgetarium";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "widgetarium";
+import { z } from "zod";
 import { Button, FormFields, changedValues, draftOfRecord, isDraftComplete } from "widgetarium/kit";
 import type { FormDraft } from "widgetarium/kit";
 import { FormFieldSchema } from "@default/lib";

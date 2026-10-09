@@ -1,4 +1,4 @@
-import { z } from "widgetarium";
+import { z } from "zod";
 import type { EntrySchema } from "./widget";
 
 export type Entry = z.infer<typeof EntrySchema>;

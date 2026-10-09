@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Icon } from "widgetarium/kit";
 
 const SaidSchema = z.object({

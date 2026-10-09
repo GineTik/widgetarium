@@ -1,4 +1,5 @@
-import { IContent, IHere, IHost, IQuery, IReader, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IContent, IHere, IHost, IQuery, IReader, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Button, Icon, IconButton, Card } from "widgetarium/kit";
 import { useEffect, useState } from "react";
 import { LanguagePicker } from "./language-picker";

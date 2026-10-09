@@ -1,4 +1,5 @@
-import { z, type PropsOf, type Row, type Slot } from "widgetarium";
+import { type PropsOf, type Row, type Slot } from "widgetarium";
+import { z } from "zod";
 import type AlbumGrid from "./widget";
 import type { AlbumSchema } from "./widget";
 

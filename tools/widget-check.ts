@@ -70,6 +70,7 @@ function runCompiled(code: string): Exports {
 		"widgetarium/kit": ENGINE_SCOPE.kit,
 		"widgetarium/kit/emojis": ENGINE_SCOPE.emojis,
 		"widgetarium/kit/charts": ENGINE_SCOPE.charts,
+		zod: ENGINE_SCOPE.zod,
 		react: ENGINE_SCOPE.react,
 		"react-dom": ENGINE_SCOPE.reactDom,
 		...Object.fromEntries(libs),

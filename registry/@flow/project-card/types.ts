@@ -1,4 +1,4 @@
-import type { z } from "widgetarium";
+import type { z } from "zod";
 import type { ToneName } from "widgetarium/kit";
 import type { ProjectSchema } from "./widget";
 

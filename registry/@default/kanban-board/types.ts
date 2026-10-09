@@ -1,4 +1,5 @@
-import { z, type PropsOf, type Navigation, type RecordRef, type ViewHost } from "widgetarium";
+import { type PropsOf, type Navigation, type RecordRef, type ViewHost } from "widgetarium";
+import { z } from "zod";
 import type { ToneName } from "widgetarium/kit";
 import type KanbanBoard from "./widget";
 import type { TaskSchema } from "./widget";

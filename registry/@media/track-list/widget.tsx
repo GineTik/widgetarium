@@ -10,8 +10,8 @@ import {
 	defineMetadata,
 	pickedValue,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { SlotList } from "widgetarium/kit";
 import { Foot } from "./foot";
 import { Header } from "./header";

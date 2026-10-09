@@ -58,6 +58,7 @@ function importing(): (name: string) => unknown {
 	const modules: Readonly<Record<string, unknown>> = {
 		widgetarium,
 		"widgetarium/kit": kit,
+		zod: ENGINE_SCOPE.zod,
 		react,
 		...Object.fromEntries(libs),
 	};

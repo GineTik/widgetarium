@@ -1,4 +1,5 @@
-import { INavigator, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { INavigator, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Button, EmptyState } from "widgetarium/kit";
 
 const SHAPES = ["cookie9-sided", "circle", "flower", "clover4-leaf", "soft-burst", "pentagon", "heart"] as const;

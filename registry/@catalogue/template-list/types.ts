@@ -1,4 +1,4 @@
-import { z } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 
 const CellSchema = z.object({ label: z.string(), grow: z.number() });

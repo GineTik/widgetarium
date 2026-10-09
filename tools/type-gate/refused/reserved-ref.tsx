@@ -1,4 +1,5 @@
-import { IListGateway, createWidget, z } from "widgetarium";
+import { IListGateway, createWidget } from "widgetarium";
+import { z } from "zod";
 
 const Entry = z.object({ title: z.string(), ref: z.string() });
 

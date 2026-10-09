@@ -95,8 +95,9 @@ export {
 	defineMetadata,
 	defineMigrations,
 	defineStates,
-	z,
 } from "../../core/src/gateway/declared";
+// TODO: remove z re-export once no widget imports it
+export { z } from "../../core/src/gateway/declared";
 
 export type { DataState, Listed, PageState } from "../../core/src/gateway/use-data";
 export type { Page, PageInput } from "../../core/src/gateway/page";

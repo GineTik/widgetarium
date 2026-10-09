@@ -1,4 +1,5 @@
-import { ISlot, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ISlot, IQuery, IRepeat, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import type { Slot } from "widgetarium";
 import type { LayoutKind } from "widgetarium/kit";
 import { Body } from "./body";

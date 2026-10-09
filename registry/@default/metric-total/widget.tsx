@@ -9,9 +9,9 @@ import {
 	defineMetadata,
 	pickedValue,
 	useData,
-	z,
 	type CommandAnswer,
 } from "widgetarium";
+import { z } from "zod";
 import { useId, useRef } from "react";
 import { allowedOf } from "./allowed-of";
 import { isoFrom } from "./days";

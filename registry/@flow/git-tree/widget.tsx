@@ -1,4 +1,5 @@
-import { IQuery, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IQuery, VaultRecordSchema, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 import { Graph } from "./graph";
 import { Said } from "./said";

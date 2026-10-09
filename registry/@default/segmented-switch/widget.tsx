@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, fieldOf, textOf, useData, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, fieldOf, textOf, useData } from "widgetarium";
+import { z } from "zod";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem, Segmented } from "widgetarium/kit";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";

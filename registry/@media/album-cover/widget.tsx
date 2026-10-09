@@ -1,4 +1,5 @@
-import { IHost, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IHost, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Art } from "./art";
 import type { Album } from "./types";
 

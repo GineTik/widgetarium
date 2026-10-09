@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import type { PropsOf } from "widgetarium";
 import { Row, RowLabel, RowValue } from "widgetarium/kit";
 import { Equaliser } from "./equaliser";

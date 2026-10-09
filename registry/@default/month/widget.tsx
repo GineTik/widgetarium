@@ -8,8 +8,8 @@ import {
 	defineMetadata,
 	pickedValue,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { PropsOf, RecordRef, Row } from "widgetarium";
 import { useRef, useState } from "react";
 import { daysLogged, isoOf, leadDaysOf, pressing, shapeOf } from "@default/lib";

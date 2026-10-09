@@ -1,4 +1,5 @@
-import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Badges } from "./badges";
 import { has } from "./has";
 import { MetaRow } from "./meta-row";

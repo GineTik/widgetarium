@@ -68,7 +68,12 @@ const isFeed = (value: unknown): value is FunctionComponent<FeedProps> => typeof
 const isWidgetComponent = (value: unknown): value is WidgetComponent => typeof value === "function";
 
 function defaultExportOf<C>(file: string, isKind: (value: unknown) => value is C): C {
-	const modules: Readonly<Record<string, unknown>> = { widgetarium, "widgetarium/kit": kit, react };
+	const modules: Readonly<Record<string, unknown>> = {
+		widgetarium,
+		"widgetarium/kit": kit,
+		zod: ENGINE_SCOPE.zod,
+		react,
+	};
 	const drawn = runWidgetSource(file, (name) => modules[name], h, Fragment)["default"];
 	if (!isKind(drawn)) throw new Error(`${file} exports no component as its default`);
 	return drawn;

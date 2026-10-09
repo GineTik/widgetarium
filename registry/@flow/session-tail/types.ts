@@ -1,4 +1,5 @@
-import { z, type PropsOf } from "widgetarium";
+import { type PropsOf } from "widgetarium";
+import { z } from "zod";
 import type SessionTail from "./widget";
 import type { LogLineSchema } from "./widget";
 

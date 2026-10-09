@@ -1,4 +1,5 @@
-import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Icon, Row, cn } from "widgetarium/kit";
 import { saidOf } from "./counts";
 import { DiffStat } from "./diff-stat";

@@ -1,4 +1,5 @@
-import { IValueGateway, createWidget, defineMetadata, z } from "widgetarium";
+import { IValueGateway, createWidget, defineMetadata } from "widgetarium";
+import { z } from "zod";
 
 const Paged = createWidget({
 	inject: { pageSize: IValueGateway.of(z.number().default(10)).pick("get") },

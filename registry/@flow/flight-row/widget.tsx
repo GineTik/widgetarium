@@ -1,4 +1,5 @@
-import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Row, RowLabel } from "widgetarium/kit";
 import { Mark } from "./mark";
 import { Meta } from "./meta";

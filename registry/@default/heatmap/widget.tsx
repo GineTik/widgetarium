@@ -7,8 +7,8 @@ import {
 	defineMetadata,
 	pickedValue,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { readLog } from "@default/lib";
 import { CELL } from "./grid-geometry";
 import { YearGrid } from "./year-grid";

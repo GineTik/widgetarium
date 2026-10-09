@@ -1,14 +1,5 @@
-import {
-	ICarrier,
-	ICommand,
-	IPreview,
-	IQuery,
-	createWidget,
-	defineLayout,
-	defineMetadata,
-	useData,
-	z,
-} from "widgetarium";
+import { ICarrier, ICommand, IPreview, IQuery, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import { useShown, useWhenSeen } from "widgetarium/kit";
 import { useCallback } from "react";
 import { EntryCard } from "./entry-card";

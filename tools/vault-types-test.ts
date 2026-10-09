@@ -112,6 +112,19 @@ fs.writeFileSync(
 );
 check("and what the lib returns is typed, not any", said(laid).includes("error TS2551"), true);
 
+const TAKING_ZOD_FROM_ZOD = DECLARED.replace(
+	'useData, z } from "widgetarium";',
+	'useData } from "widgetarium";\nimport { z } from "zod";',
+);
+fs.writeFileSync(path.join(laid, "@you/checklist/widget.tsx"), TAKING_ZOD_FROM_ZOD);
+check("a widget taking z from zod itself typechecks against the laid types", said(laid).trim(), "");
+
+fs.writeFileSync(
+	path.join(laid, "@you/checklist/widget.tsx"),
+	TAKING_ZOD_FROM_ZOD.replace("heading.toUpperCase()", "heading.toFixed()"),
+);
+check("and the schema it builds still types the value it reads", said(laid).includes("error TS2551"), true);
+
 const DRAWING_WITH_THE_KIT = `import { useState } from "react";
 import { createPortal } from "react-dom";
 import { createWidget } from "widgetarium";

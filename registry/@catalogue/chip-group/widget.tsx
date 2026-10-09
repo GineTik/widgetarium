@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, pickedValue, useData, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, pickedValue, useData } from "widgetarium";
+import { z } from "zod";
 import { Chip } from "./chip";
 import { FilterField } from "./filter-field";
 

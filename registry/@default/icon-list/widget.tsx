@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { IHost, IQuery, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IHost, IQuery, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import { Button } from "widgetarium/kit";
 import type { Row } from "widgetarium";
 import { EntryRow } from "./entry-row";

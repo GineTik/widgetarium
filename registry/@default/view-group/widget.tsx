@@ -15,8 +15,8 @@ import {
 	movesRows,
 	movesSelection,
 	tabsOf,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { MountEntry, MountRow, WidgetCatalogue } from "widgetarium";
 import { Missing } from "./missing";
 import { Unfilled } from "./unfilled";

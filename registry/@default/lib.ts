@@ -1,4 +1,5 @@
-import { VaultRecordSchema, fieldOf, z } from "widgetarium";
+import { VaultRecordSchema, fieldOf } from "widgetarium";
+import { z } from "zod";
 import type { RecordRef } from "widgetarium";
 
 export const BoardSchema = VaultRecordSchema.extend({

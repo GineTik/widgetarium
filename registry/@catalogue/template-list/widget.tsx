@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import { TemplateCard } from "./template-card";
 import { TemplateSchema } from "./types";
 

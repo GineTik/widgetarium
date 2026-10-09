@@ -7,8 +7,8 @@ import {
 	defineMetadata,
 	textOf,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { Button, Popover, PopoverSearch, useRoomForLabel } from "widgetarium/kit";
 import { useRef, useState } from "react";
 import { PEOPLE, RADIO, valuesFor } from "./control-kinds";

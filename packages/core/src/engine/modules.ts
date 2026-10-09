@@ -55,6 +55,7 @@ export const HELD_BY_THE_ENGINE: readonly string[] = [
 	"widgetarium/kit",
 	"widgetarium/kit/emojis",
 	"widgetarium/kit/charts",
+	"zod",
 ];
 export const ANSWERED_BY_THE_ENGINE: readonly string[] = [...HELD_BY_THE_ENGINE, ...KEPT_OUTSIDE_A_BUNDLE];
 

@@ -1,4 +1,5 @@
-import { z, type PropsOf, type Row, type ViewHost } from "widgetarium";
+import { type PropsOf, type Row, type ViewHost } from "widgetarium";
+import { z } from "zod";
 import type { useDragging } from "./use-dragging";
 import type { useOpened } from "./use-opened";
 import type { useWriting } from "./use-writing";

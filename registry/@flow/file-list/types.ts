@@ -1,4 +1,5 @@
-import { z, type Row, type Slot } from "widgetarium";
+import { type Row, type Slot } from "widgetarium";
+import { z } from "zod";
 import type { FileChangeSchema } from "./widget";
 
 type FileChangeRecord = z.infer<typeof FileChangeSchema>;

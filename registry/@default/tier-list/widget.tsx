@@ -8,8 +8,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { ViewHost } from "widgetarium";
 import { useRef } from "react";
 import { cardSizeOf } from "./cards";

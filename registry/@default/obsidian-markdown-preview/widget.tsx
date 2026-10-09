@@ -1,4 +1,5 @@
-import { IHost, INavigator, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IHost, INavigator, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Icon, IconButton, RenderedMarkdown } from "widgetarium/kit";
 import { Collapsed } from "./collapsed";
 

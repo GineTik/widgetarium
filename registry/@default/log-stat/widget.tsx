@@ -6,8 +6,8 @@ import {
 	defineMetadata,
 	pickedValue,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { FLAME } from "widgetarium/kit";
 import { isoOf, readLog, streakOf } from "@default/lib";
 import type { LogEntry } from "@default/lib";

@@ -1,4 +1,5 @@
-import { ICommand, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { ICommand, IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 import { TailPatience } from "./tail-patience";
 import { TailRows } from "./tail-rows";

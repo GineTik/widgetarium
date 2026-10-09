@@ -7,8 +7,8 @@ import {
 	defineMetadata,
 	textOf,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { Button, ButtonLabel, Icon, Popover, PopoverItem } from "widgetarium/kit";
 import { useState } from "react";
 

@@ -15,7 +15,8 @@ the catalogue.
 ## 2. Declare what it reads, then draw it
 
 ```tsx
-import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 
 const Clock = createWidget({
 	inject: {

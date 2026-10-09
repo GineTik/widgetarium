@@ -1,4 +1,5 @@
-import { ICommand, IHost, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ICommand, IHost, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Button, Icon, RenderedMarkdown } from "widgetarium/kit";
 
 const PageSchema = z.object({

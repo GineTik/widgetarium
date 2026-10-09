@@ -1,4 +1,5 @@
-import { IHost, INavigator, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IHost, INavigator, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import type { Navigation } from "widgetarium";
 import { RenderedMarkdown } from "widgetarium/kit";
 import { MissingImage } from "./missing-image";

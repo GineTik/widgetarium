@@ -1,4 +1,5 @@
-import { ICrudGateway, IListGateway, IValueGateway, RecordRefSchema, createWidget, useData, z } from "widgetarium";
+import { ICrudGateway, IListGateway, IValueGateway, RecordRefSchema, createWidget, useData } from "widgetarium";
+import { z } from "zod";
 import type { GivenProps, Implementation, Query, RecordRef, Row, RowsResult } from "widgetarium";
 
 const BoardSchema = z.object({ name: z.string(), columns: z.array(z.string()) });

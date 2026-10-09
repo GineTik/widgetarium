@@ -7,8 +7,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { Line } from "widgetarium/kit";
 import { askedCount, heldProperties } from "@default/lib";
 import { Grid } from "./grid";

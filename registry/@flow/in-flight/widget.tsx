@@ -7,8 +7,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { Row } from "widgetarium";
 import { SlotList } from "widgetarium/kit";
 import { InFlightSaid } from "./in-flight-said";

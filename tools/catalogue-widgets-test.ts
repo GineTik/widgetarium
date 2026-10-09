@@ -34,7 +34,12 @@ const { collectionGateway, soloGateway } = await import("../packages/core/src/ga
 
 type Props = Readonly<Record<string, unknown>>;
 
-const modules: Readonly<Record<string, unknown>> = { widgetarium, "widgetarium/kit": kit, react };
+const modules: Readonly<Record<string, unknown>> = {
+	widgetarium,
+	"widgetarium/kit": kit,
+	zod: ENGINE_SCOPE.zod,
+	react,
+};
 
 function widgetAt(file: string): FunctionComponent<Props> {
 	const held = runWidgetSource(file, (name) => modules[name], h, Fragment)["default"];

@@ -46,7 +46,12 @@ const pathIn = (value: unknown, ...keys: readonly string[]): unknown =>
 	keys.reduce<unknown>((held, key) => (isObject(held) ? held[key] : undefined), value);
 
 function run(file: string): Readonly<Record<string, unknown>> {
-	const modules: Readonly<Record<string, unknown>> = { widgetarium, "widgetarium/kit": kit, react };
+	const modules: Readonly<Record<string, unknown>> = {
+		widgetarium,
+		"widgetarium/kit": kit,
+		zod: ENGINE_SCOPE.zod,
+		react,
+	};
 	return runWidgetSource(file, (name) => modules[name], h, Fragment);
 }
 

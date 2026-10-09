@@ -1,4 +1,5 @@
-import { ICrudGateway, IValueGateway, createWidget, z } from "widgetarium";
+import { ICrudGateway, IValueGateway, createWidget } from "widgetarium";
+import { z } from "zod";
 import type { PropsOf } from "widgetarium";
 
 const Entry = z.object({ title: z.string() });

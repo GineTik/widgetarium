@@ -9,8 +9,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { type TabRow, tabRowsOf } from "./tab-rows";
 import { useTabSteps } from "./use-tab-steps";
 

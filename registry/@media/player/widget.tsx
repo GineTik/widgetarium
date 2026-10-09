@@ -7,8 +7,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { Icon } from "widgetarium/kit";
 import { Cover } from "./cover";
 import { Deck } from "./deck";

@@ -8,8 +8,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import {
 	Button,
 	CommandMenu,

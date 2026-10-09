@@ -147,8 +147,9 @@ draws the change.
 a list widget and a form widget whole; their shape:
 
 ```tsx
-import { IQuery, createWidget, defineLayout, defineMetadata, defineStates, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, defineStates } from "widgetarium";
 import { Card } from "widgetarium/kit";
+import { z } from "zod";
 
 const Clock = createWidget({
 	inject: {

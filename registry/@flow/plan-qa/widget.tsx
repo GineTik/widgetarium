@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { IQuery, IRepeat, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import type { Row, Slot } from "widgetarium";
 import { Button, SlotList } from "widgetarium/kit";
 

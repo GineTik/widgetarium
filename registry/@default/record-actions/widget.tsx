@@ -8,8 +8,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { FormFieldSchema } from "@default/lib";
 import { ActionButtons } from "./action-buttons";
 import { EditDialog } from "./edit-dialog";

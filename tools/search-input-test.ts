@@ -35,7 +35,12 @@ interface SearchInputProps {
 const isSearchInput = (value: unknown): value is FunctionComponent<SearchInputProps> => typeof value === "function";
 
 const WIDGET = "registry/@default/search-input/widget.tsx";
-const modules: Readonly<Record<string, unknown>> = { widgetarium: ENGINE_SCOPE.api, "widgetarium/kit": kit, react };
+const modules: Readonly<Record<string, unknown>> = {
+	widgetarium: ENGINE_SCOPE.api,
+	"widgetarium/kit": kit,
+	zod: ENGINE_SCOPE.zod,
+	react,
+};
 const SearchInput = runWidgetSource(WIDGET, (name) => modules[name], h, Fragment)["default"];
 if (!isSearchInput(SearchInput)) throw new Error(`${WIDGET} exports no component as its default`);
 

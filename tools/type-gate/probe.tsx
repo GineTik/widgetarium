@@ -7,8 +7,8 @@ import {
 	defineMetadata,
 	defineMigrations,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { PropsOf } from "widgetarium";
 
 const Entry = z.object({

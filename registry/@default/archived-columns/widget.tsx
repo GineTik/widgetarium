@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, pickedValue, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, pickedValue } from "widgetarium";
+import { z } from "zod";
 import { BoardSchema, archivedColumnsOf, patchColumn, columnsOf, columnsToWrite, restoreColumn } from "@default/lib";
 import { Button, Icon, List, Row, RowLabel } from "widgetarium/kit";
 

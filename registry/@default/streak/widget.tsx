@@ -7,8 +7,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import type { RecordRef } from "widgetarium";
 import { useRef } from "react";
 import { daysLogged, isoOf, pressing, shiftBy, streakOf } from "@default/lib";

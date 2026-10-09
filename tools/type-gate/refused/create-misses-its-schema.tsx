@@ -1,4 +1,5 @@
-import { ICrudGateway, createWidget, z } from "widgetarium";
+import { ICrudGateway, createWidget } from "widgetarium";
+import { z } from "zod";
 
 const TaskSchema = z.object({ title: z.string(), done: z.boolean().optional() });
 const NewTaskSchema = z.object({ title: z.string() });

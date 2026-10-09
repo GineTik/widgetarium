@@ -8,8 +8,8 @@ import {
 	createWidget,
 	defineLayout,
 	defineMetadata,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { BoardSchema } from "@default/lib";
 import { useState } from "react";
 import { BoardDialogs } from "./board-dialogs";

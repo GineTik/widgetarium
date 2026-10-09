@@ -7,8 +7,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { SlotList } from "widgetarium/kit";
 import { commitWhereOf } from "./commit-where";
 import { Head } from "./head";

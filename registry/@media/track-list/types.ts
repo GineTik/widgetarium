@@ -1,4 +1,5 @@
-import type { CanResult, CommandAnswer, PropsOf, Row as Held, RecordRef, Slot, z } from "widgetarium";
+import type { CanResult, CommandAnswer, PropsOf, Row as Held, RecordRef, Slot } from "widgetarium";
+import type { z } from "zod";
 import type TrackList from "./widget";
 import type { TrackSchema } from "./widget";
 

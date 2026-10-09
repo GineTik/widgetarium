@@ -6,8 +6,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { EmptyState, PhotoCard } from "widgetarium/kit";
 
 const CardSchema = VaultRecordSchema.extend({

@@ -37,7 +37,12 @@ type ListProps = Readonly<Record<string, unknown>>;
 const isList = (value: unknown): value is FunctionComponent<ListProps> => typeof value === "function";
 
 const WIDGET = "registry/@default/list/widget.tsx";
-const modules: Readonly<Record<string, unknown>> = { widgetarium, "widgetarium/kit": kit, react };
+const modules: Readonly<Record<string, unknown>> = {
+	widgetarium,
+	"widgetarium/kit": kit,
+	zod: ENGINE_SCOPE.zod,
+	react,
+};
 const List = runWidgetSource(WIDGET, (name) => modules[name], h, Fragment)["default"];
 if (!isList(List)) throw new Error(`${WIDGET} exports no component as its default`);
 

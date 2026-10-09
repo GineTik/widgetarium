@@ -1,4 +1,5 @@
-import { z, type Row } from "widgetarium";
+import { type Row } from "widgetarium";
+import { z } from "zod";
 import type { StepSchema } from "./widget";
 
 export type Step = z.infer<typeof StepSchema>;

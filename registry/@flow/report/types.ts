@@ -1,4 +1,5 @@
-import { z, type Slot } from "widgetarium";
+import { type Slot } from "widgetarium";
+import { z } from "zod";
 import type { FigureSchema, FixSchema, ProseSourceSchema, TestStepSchema } from "./widget";
 
 export type ProseSource = z.infer<typeof ProseSourceSchema>;

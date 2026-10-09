@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata } from "widgetarium";
+import { z } from "zod";
 import { Button } from "widgetarium/kit";
 
 const SHOW = "Show {count} widgets";

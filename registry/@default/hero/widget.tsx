@@ -1,4 +1,5 @@
-import { INavigator, IQuery, createWidget, defineLayout, defineMetadata, defineStates, useData, z } from "widgetarium";
+import { INavigator, IQuery, createWidget, defineLayout, defineMetadata, defineStates, useData } from "widgetarium";
+import { z } from "zod";
 import type { PropsOf } from "widgetarium";
 import { Button, Hero, Icon, PhotoStack } from "widgetarium/kit";
 

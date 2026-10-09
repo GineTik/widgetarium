@@ -1,4 +1,5 @@
-import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, useData, z } from "widgetarium";
+import { ICommand, IQuery, createWidget, defineLayout, defineMetadata, useData } from "widgetarium";
+import { z } from "zod";
 import { Segmented } from "widgetarium/kit";
 
 const ViewSchema = z.looseObject({ name: z.string().optional(), hidden: z.boolean().optional() });

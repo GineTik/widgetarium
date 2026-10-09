@@ -7,8 +7,8 @@ import {
 	defineLayout,
 	defineMetadata,
 	useData,
-	z,
 } from "widgetarium";
+import { z } from "zod";
 import { COUNTED_CEILING, Line } from "widgetarium/kit";
 import { askedCount } from "@default/lib";
 import { Bars } from "./bars";
