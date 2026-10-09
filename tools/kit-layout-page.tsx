@@ -1,4 +1,4 @@
-import { createElement as h, useEffect } from "react";
+import { createElement as h, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
 	Accordion,
@@ -19,6 +19,7 @@ import {
 	Input,
 	Item,
 	ItemContent,
+	Progress,
 	ItemGroup,
 	ItemTitle,
 	CarouselContent,
@@ -30,10 +31,15 @@ import {
 	ResizablePanelGroup,
 	ScrollArea,
 } from "../packages/kit/src/index";
-import { ButtonGroup, Label, RadioGroup, RadioGroupItem } from "../packages/kit/src/exports-inputs";
+import { ButtonGroup, Label, RadioGroup, RadioGroupItem, Slider } from "../packages/kit/src/exports-inputs";
 
 const ROWS = Array.from({ length: 30 }, (_, at) => `Row ${at + 1}`);
 const SLIDES = ["One", "Two", "Three", "Four"];
+
+function SettableProgress() {
+	const [percent, setPercent] = useState(0);
+	return <Progress className="settable-progress" value={percent} onChange={setPercent} label="Done" />;
+}
 
 function Page() {
 	useEffect(() => {
@@ -65,6 +71,15 @@ function Page() {
 				<ToggleGroupItem value="i">I</ToggleGroupItem>
 				<ToggleGroupItem value="u">U</ToggleGroupItem>
 			</ToggleGroup>
+			<Slider id="stepped-slider" min={0} max={100} step={10} defaultValue={[0]} style={{ width: "300px" }} />
+			<SettableProgress />
+			<div id="hover-buttons" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+				{(["primary", "accent", "neutral", "ghost", "outline", "plain"] as const).map((variant) => (
+					<Button key={variant} variant={variant} data-variant-shown={variant}>
+						{variant}
+					</Button>
+				))}
+			</div>
 			<ButtonGroup id="button-group">
 				<Button>One</Button>
 				<Button>Two</Button>

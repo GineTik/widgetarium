@@ -25,7 +25,7 @@ export function Slider({ className, style, ...props }: SliderProps): ReactElemen
 	const length = useWidthOf(slider.trackRef);
 	const drawn = sliderGeometry(
 		length,
-		slider.values.map((held) => sliderShareOf(held, ask.scale)),
+		slider.drawnValues.map((held) => sliderShareOf(held, ask.scale)),
 	);
 	return (
 		<span

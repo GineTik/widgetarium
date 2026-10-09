@@ -147,6 +147,10 @@ pre:has(> .block-language-widgetarium),
 
 	--wg-kit-neutral: var(--text-muted);
 	--wg-kit-accent: var(--interactive-accent);
+	--wg-kit-accent-hover: var(
+		--interactive-accent-hover,
+		color-mix(in srgb, var(--wg-kit-accent) 86%, var(--wg-kit-text))
+	);
 	--wg-kit-success: var(--text-success);
 	--wg-kit-error: var(--text-error);
 
@@ -2258,7 +2262,7 @@ body {
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-accent:hover::before,
 :is(.wg-root, .wg-portal) .wg-kit-icon.is-accent:hover::before {
-	background: var(--interactive-accent-hover);
+	background: var(--wg-kit-accent-hover);
 }
 :is(.wg-root, .wg-portal) .wg-kit-btn.is-danger::before {
 	background: var(--wg-kit-error-wash);

@@ -44,7 +44,7 @@ export function ProgressLine({
 				{width > 0 && (
 					<BarDrawing
 						width={width}
-						drawn={lineDrawn(width, slider.shown, { isWavy, isCursorVisible: isControlled })}
+						drawn={lineDrawn(width, slider.drawn, { isWavy, isCursorVisible: isControlled })}
 						hasStopMark={hasStopMark}
 					/>
 				)}

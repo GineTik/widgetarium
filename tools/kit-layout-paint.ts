@@ -103,6 +103,90 @@ const JOINED_GAPS = `(() => {
 	return { toggle: gaps("toggle-group"), buttons: gaps("button-group"), joinedCorner: corner(0) !== corner(2) };
 })()`;
 
+const BUTTON_AT = (variant: string): string => `(() => {
+	const box = document.querySelector("[data-variant-shown='${variant}']").getBoundingClientRect();
+	return [Math.round(box.left + box.width / 2), Math.round(box.top + box.height / 2)];
+})()`;
+
+const BUTTON_FILL = (variant: string): string => `(async () => {
+	const button = document.querySelector("[data-variant-shown='${variant}']");
+	await Promise.all(button.getAnimations({ subtree: true }).map((animation) => animation.finished));
+	const plate = getComputedStyle(button, "::before");
+	return [plate.backgroundColor, plate.opacity];
+})()`;
+
+const HOVERED_VARIANTS = ["primary", "accent", "neutral", "ghost", "outline", "plain"];
+
+async function buttonHovers(page: AskedPage): Promise<unknown> {
+	const answers: Record<string, unknown> = {};
+	for (const variant of HOVERED_VARIANTS) {
+		const resting = await page.ask(BUTTON_FILL(variant));
+		const at = await page.ask(BUTTON_AT(variant));
+		if (Array.isArray(at)) await page.hover(Number(at[0]), Number(at[1]));
+		const hovered = await page.ask(BUTTON_FILL(variant));
+		answers[variant] = { answers: JSON.stringify(resting) !== JSON.stringify(hovered), opaque: isOpaque(hovered) };
+	}
+	await page.hover(0, 0);
+	return answers;
+}
+
+function isOpaque(fill: unknown): boolean {
+	if (!Array.isArray(fill)) return false;
+	const [color = "", opacity = "0"] = fill.map(String);
+	return Number(opacity) > 0.5 && color !== "rgba(0, 0, 0, 0)" && !/ \/ 0\)$|, 0\)$/.test(color);
+}
+
+const SLIDER_DRAG = `(async () => {
+	const frame = () => new Promise((done) => requestAnimationFrame(done));
+	const pause = (ms) => new Promise((done) => setTimeout(done, ms));
+	const slider = document.getElementById("stepped-slider");
+	const track = slider.querySelector("[data-slot='slider-track']");
+	const thumb = slider.querySelector("[role='slider']");
+	const knob = document.querySelector(".settable-progress .wg-kit-progress-knob");
+	const progressTrack = document.querySelector(".settable-progress .wg-kit-progress-track");
+	const thumbPx = () => parseFloat(thumb.style.getPropertyValue("--wg-slider-at"));
+	const knobPercent = () => parseFloat(knob.style.left);
+	const send = (target, type, share) => {
+		const box = target.getBoundingClientRect();
+		target.dispatchEvent(new PointerEvent(type, { clientX: box.left + box.width * share, clientY: box.top + box.height / 2, pointerId: 1, pointerType: "mouse", button: 0, bubbles: true }));
+	};
+	const settledAt = async (target, share) => {
+		send(target, "pointerdown", share);
+		send(target, "pointerup", share);
+		await pause(700);
+	};
+	await settledAt(track, 0.3);
+	const at30 = thumbPx();
+	await settledAt(track, 0.4);
+	const at40 = thumbPx();
+	send(track, "pointerdown", 0.33);
+	await frame();
+	send(track, "pointermove", 0.36);
+	await frame();
+	const midway = thumbPx();
+	const midwayValue = thumb.getAttribute("aria-valuenow");
+	send(track, "pointerup", 0.36);
+	const settling = [];
+	for (let started = performance.now(); performance.now() - started < 600; ) {
+		await frame();
+		settling.push(thumbPx());
+	}
+	send(progressTrack, "pointerdown", 0.333);
+	await frame();
+	const knobMidway = knobPercent();
+	send(progressTrack, "pointerup", 0.333);
+	await pause(700);
+	return {
+		midwayBetweenSteps: midway > at30 && midway < at40,
+		midwayValue,
+		movedOnRelease: settling.some((px) => px !== midway && px !== at40),
+		settledOnStep: thumbPx() === at40,
+		committed: thumb.getAttribute("aria-valuenow"),
+		progressMidwayIsBetweenPercents: !Number.isInteger(knobMidway),
+		progressSettled: knobPercent(),
+	};
+})()`;
+
 const SCROLL = `(async () => {
 	const viewport = document.querySelector("#scroll [data-slot='scroll-area-viewport']");
 	const thumb = document.querySelector("#scroll [data-slot='scroll-area-thumb']");
@@ -252,6 +336,24 @@ export async function paintChecks(): Promise<Painted[]> {
 			...accordionPainted(await page.ask(ACCORDION)),
 			...sharedPlatePainted(await page.ask(SHARED_PLATE)),
 			...labelsPainted(await labelPresses(page)),
+			[
+				"A STEPPED SLIDER'S CURSOR FOLLOWS THE POINTER BETWEEN STEPS, THEN SPRINGS TO THE NEAREST STEP ON RELEASE AND COMMITS THERE; Progress SHARES THE ENGINE",
+				await page.ask(SLIDER_DRAG),
+				{
+					midwayBetweenSteps: true,
+					midwayValue: "40",
+					movedOnRelease: true,
+					settledOnStep: true,
+					committed: "40",
+					progressMidwayIsBetweenPercents: true,
+					progressSettled: 33,
+				},
+			],
+			[
+				"EVERY BUTTON VARIANT ANSWERS A HOVER WITH A FILL YOU CAN SEE — NONE TURNS TRANSPARENT",
+				await buttonHovers(page),
+				Object.fromEntries(HOVERED_VARIANTS.map((variant) => [variant, { answers: true, opaque: true }])),
+			],
 			[
 				"TOGGLES IN A ToggleGroup STAND THE ButtonGroup's GAP APART, AND TWO PRESSED NEIGHBOURS STILL JOIN THEIR CORNERS",
 				await page.ask(JOINED_GAPS),

@@ -109,7 +109,7 @@ export function valueUnder(spot: PointerSpot, ask: TrackAsk, scale: SliderScale)
 	const { along, length } = SPOT_ON_TRACK[ask.orientation](spot, box);
 	if (!length) return null;
 	const fraction = clamp(along / length, 0, 1);
-	return snapToStep(scale.min + (ask.inverted ? 1 - fraction : fraction) * (scale.max - scale.min), scale);
+	return scale.min + (ask.inverted ? 1 - fraction : fraction) * (scale.max - scale.min);
 }
 
 export function nearestThumb(values: readonly number[], value: number): number {
@@ -123,11 +123,15 @@ export function nearestThumb(values: readonly number[], value: number): number {
 }
 
 export function withThumbAt(values: readonly number[], at: number, value: number, scale: SliderScale): number[] {
+	const placed = thumbWithin(values, at, snapToStep(value, scale), scale);
+	return values.map((held, index) => (index === at ? placed : held));
+}
+
+export function thumbWithin(values: readonly number[], at: number, value: number, scale: SliderScale): number {
 	const gap = scale.minStepsBetweenThumbs * scale.step;
 	const floor = at > 0 ? (values[at - 1] ?? scale.min) + gap : scale.min;
 	const ceiling = at < values.length - 1 ? (values[at + 1] ?? scale.max) - gap : scale.max;
-	const placed = clamp(snapToStep(value, scale), floor, ceiling);
-	return values.map((held, index) => (index === at ? placed : held));
+	return clamp(value, floor, ceiling);
 }
 
 export function keyedValue({ key, isShift, value }: KeyedAsk, scale: SliderScale): number | null {
