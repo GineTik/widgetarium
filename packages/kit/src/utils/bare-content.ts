@@ -10,7 +10,9 @@ type Frame = Readonly<Record<Side, number>>;
 
 const PLATE = '[data-surface="group"]';
 
-const STANDS_AS_A_PLATE = `${PLATE}, img, picture`;
+const FILLED_CONTROL = ".wg-kit-field, .wg-kit-input-group, .wg-kit-native-select, .wg-kit-quiz-input";
+
+const STANDS_AS_A_PLATE = `${PLATE}, img, picture, ${FILLED_CONTROL}`;
 
 const SHORTENS_THE_PLATE = `${PLATE}, :scope > img, :scope > picture`;
 

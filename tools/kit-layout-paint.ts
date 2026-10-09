@@ -27,10 +27,13 @@ const ACCORDION = `(async () => {
 	const before = heights();
 	const shutInner = getComputedStyle(panels()[1].firstElementChild).visibility;
 	document.querySelectorAll("#accordion [data-slot='accordion-trigger']")[1].click();
-	await new Promise((done) => setTimeout(done, 90));
-	const midway = heights()[1];
-	await ${SETTLE};
-	return { before, shutInner, isMidway: midway > 0 && midway < before[0], after: heights() };
+	const sampled = [];
+	const started = performance.now();
+	while (performance.now() - started < 700) {
+		await new Promise((done) => requestAnimationFrame(done));
+		sampled.push(heights()[1]);
+	}
+	return { before, shutInner, isMidway: sampled.some((height) => height > 0 && height < before[0]), after: heights() };
 })()`;
 
 const SHARED_PLATE = `(() => {
@@ -60,6 +63,21 @@ const FIELD = `(() => {
 		inputToMessage: Math.round(box(message).top - box(control).bottom),
 		textStarts: [textLeft(label), textLeft(control), textLeft(message)].map((at) => at - Math.round(box(control).left)),
 	};
+})()`;
+
+const GROUPED_ITEMS = `(() => {
+	const corners = (node) => {
+		const style = getComputedStyle(node);
+		return [style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius].map((each) => parseFloat(each));
+	};
+	const group = document.getElementById("item-group");
+	return { group: corners(group)[0], items: [...group.querySelectorAll(":scope > [data-slot='item']")].map(corners), lone: corners(document.getElementById("lone-item"))[0] };
+})()`;
+
+const FILLED_BESIDE_PLATES = `(() => {
+	const plate = document.getElementById("choice-plate").getBoundingClientRect();
+	const filled = document.getElementById("filled-input").closest(".wg-kit-field").getBoundingClientRect();
+	return { left: Math.round(filled.left - plate.left), right: Math.round(plate.right - filled.right) };
 })()`;
 
 const SCROLL = `(async () => {
@@ -203,6 +221,8 @@ export async function paintChecks(): Promise<Painted[]> {
 			...accordionPainted(await page.ask(ACCORDION)),
 			...sharedPlatePainted(await page.ask(SHARED_PLATE)),
 			...fieldPainted(await page.ask(FIELD)),
+			...groupedItemsPainted(await page.ask(GROUPED_ITEMS)),
+			...filledBesidePlatesPainted(await page.ask(FILLED_BESIDE_PLATES)),
 			...scrollPainted(await page.ask(SCROLL)),
 			[
 				"THE KIT'S SHIMMER RUNS: CLIPPED TO TEXT, MOVING",
@@ -275,6 +295,28 @@ function fieldPainted(seen: unknown): Painted[] {
 			{ labelToInput: 8, inputToMessage: 4, textStarts: [16, 16, 16] },
 		],
 	];
+}
+
+function groupedItemsPainted(seen: unknown): Painted[] {
+	return [
+		[
+			"ITEMS IN A GROUP ARE ONE PLATE: THE FIRST ROUNDS ONLY ITS TOP, THE LAST ONLY ITS BOTTOM, CONCENTRIC WITH THE GROUP; THE MIDDLE ONE IS SQUARE; A LONE MUTED ITEM KEEPS ITS CORNERS",
+			seen,
+			{
+				group: 14,
+				items: [
+					[14, 14, 0, 0],
+					[0, 0, 0, 0],
+					[0, 0, 14, 14],
+				],
+				lone: 14,
+			},
+		],
+	];
+}
+
+function filledBesidePlatesPainted(seen: unknown): Painted[] {
+	return [["A FILLED INPUT BESIDE PLATES STANDS ON THE PLATES' LEFT AND RIGHT EDGES", seen, { left: 0, right: 0 }]];
 }
 
 function stepsPainted(seen: unknown): Painted[] {
