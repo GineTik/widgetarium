@@ -13,6 +13,37 @@ const OBSIDIAN_FOCUSED_SEARCH = `input[type='search']:focus, input[type='search'
 	box-shadow: 0 0 0 2px var(--interactive-accent);
 }`;
 
+const HOST_OUTLINE = "rgb(255, 140, 0)";
+
+const OBSIDIAN_FOCUS_OUTLINE = `input[type='text']:focus-visible, input[type='search']:focus-visible, textarea:focus-visible, select:focus-visible {
+	outline: 2px solid ${HOST_OUTLINE};
+}`;
+
+const FOCUS_RINGS = `(async () => {
+	const probe = document.createElement("i");
+	probe.style.color = "var(--interactive-accent)";
+	document.body.append(probe);
+	const accent = getComputedStyle(probe).color;
+	probe.remove();
+	const ringOf = (control) => {
+		for (let at = control; at && at !== document.body; at = at.parentElement) {
+			if ([getComputedStyle(at).boxShadow, getComputedStyle(at, "::before").boxShadow].some((shadow) => shadow.includes(accent))) return true;
+		}
+		return false;
+	};
+	const seen = async (control) => {
+		control.focus({ focusVisible: true });
+		await Promise.all(document.getAnimations().map((animation) => animation.finished));
+		const reading = { outline: getComputedStyle(control).outlineStyle, ring: ringOf(control) };
+		control.blur();
+		return reading;
+	};
+	const ringed = [document.getElementById("field-twin"), ...document.querySelectorAll("#focus-rings :is(textarea, select, input:not([type='radio'], [type='checkbox']))")];
+	const readings = [];
+	for (const control of ringed) readings.push(await seen(control));
+	return { ringed: readings, command: (await seen(document.querySelector("#command input"))).outline };
+})()`;
+
 const READY = `new Promise((done, fail) => {
 	const started = Date.now();
 	const poll = () => (window.ready === true ? done(true) : Date.now() - started > 15000 ? fail(new Error("the twins page never drew")) : setTimeout(poll, 50));
@@ -75,6 +106,7 @@ function pageHtml(script: string): string {
 	return `<!doctype html><html><head><meta charset="utf-8">
 <style>${readFileSync("apps/obsidian/styles.css", "utf8")}</style>
 <style>${OBSIDIAN_FOCUSED_SEARCH}</style>
+<style>${OBSIDIAN_FOCUS_OUTLINE}</style>
 <style>:root { ${THEMES.light} ${HOST_FONTS} } body { margin: 0; padding: 20px; font-family: var(--font-interface); }</style>
 </head><body class="wg-root theme-light"><div id="host"></div><script>${script}</script></body></html>`;
 }
@@ -116,6 +148,17 @@ function commandTwins(seen: unknown): Twin[] {
 	];
 }
 
+function focusRingTwins(seen: unknown): Twin[] {
+	const OURS = { outline: "none", ring: true };
+	return [
+		[
+			"A FOCUSED KIT TEXT CONTROL — Input, Textarea, InputGroup, NativeSelect, QuestionnaireInput — WEARS NO HOST OR BROWSER OUTLINE, ONLY THE ACCENT RING; CommandInput WEARS NO OUTLINE EITHER",
+			seen,
+			{ ringed: [OURS, OURS, OURS, OURS, OURS], command: "none" },
+		],
+	];
+}
+
 function accordionTwins(seen: unknown): Twin[] {
 	return [
 		[
@@ -149,7 +192,8 @@ export async function commandAccordionTwinChecks(): Promise<readonly (readonly [
 		await page.ask(READY);
 		const command = await page.ask(COMMAND);
 		const accordion = await page.ask(ACCORDION);
-		return [...commandTwins(command), ...accordionTwins(accordion)];
+		const rings = await page.ask(FOCUS_RINGS);
+		return [...commandTwins(command), ...accordionTwins(accordion), ...focusRingTwins(rings)];
 	} finally {
 		page.close();
 	}

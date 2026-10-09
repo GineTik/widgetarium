@@ -2741,7 +2741,24 @@ body {
 :is(.wg-root, .wg-portal) .wg-kit-command-input input:is(:focus, :focus-visible) {
 	border: none;
 	box-shadow: none;
+}
+
+:is(.wg-root, .wg-portal)
+	:is(
+		.wg-kit-field-input,
+		.wg-kit-field-area,
+		.wg-kit-quiz-input,
+		.wg-kit-input-group-control,
+		.wg-kit-native-select-control,
+		.wg-kit-combobox-chips-input,
+		.wg-kit-otp-input,
+		.wg-kit-command-input input
+	):is(:focus, :focus-visible) {
 	outline: none;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-field:not(.wg-kit-otp-slot):has(> :is(input, textarea):focus-visible) {
+	box-shadow: 0 0 0 2px var(--ring);
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-command-input kbd,
