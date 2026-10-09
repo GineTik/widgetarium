@@ -4,40 +4,258 @@ Only when `find` offers nothing close. A near neighbour with different controls 
 
 **One widget draws one thing.** A total with its bar, a chart, a list of rows: each is a widget of
 its own, and a section places them together. When the design asks for a figure over a list, write
-two widgets reading the same folder, never one that draws both. Shared arithmetic goes in the scope's
-`lib.ts`.
+two widgets reading the same query, never one that draws both.
+
+## The project
+
+`widgetarium.json` at the project's root names where each layer lives. The defaults:
+
+```
+src/app/routes/<route>/board.json      one board per route
+src/widgets/**/widget.tsx              a widget, at any depth; its folder is the widget
+src/logic/<feature>/                   the feature's queries and commands
+src/shared/schemas/                    zod schemas widgets and handlers both import
+src/shared/sources/<pack>/             ready generic handlers: folders, notes, statistics, git
+src/shared/kit/                        the kit, copied in; items found by name, every name unique
+src/shared/libs/<library>/             third-party code the project keeps
+docs/                                  the spec, the design, the references
+```
+
+**Imports point down only: app → widgets → logic → shared.** A widget never imports a handler and a
+handler never imports a widget; both import the schema in `src/shared/schemas`, which is where they
+meet. A feature handler holds the business rules and maps a ready source to the shape a widget asks
+for, so a widget draws states and formats values, and never filters, maps fields or picks a row.
+
+**A widget from the catalogue is a starting point, not a dependency.** After adding it, move its
+schema into `src/shared/schemas` or map the project's records to it in a feature handler, and
+refactor it to the project like code of your own.
+
+The catalogue is reached through the `widgetarium` CLI — **available after stage S8**:
+
+```bash
+widgetarium catalogue list
+widgetarium catalogue search "tasks by day"
+widgetarium catalogue show @default/table
+widgetarium add @default/table
+```
+
+Until then, `node {tool} find`, `show` and `install` (tools.md) do the same against the vault.
 
 ## The folder
 
+A widget folder holds `widget.tsx`, or `widget.ts` when it draws no JSX, and any `.ts` or `.tsx`
+modules it imports relatively, nested folders included. A `widget.jsx` or `widget.js` is refused and
+draws the rename that fixes it. The engine compiles everything into `build/` beside it: **never write
+anything in `build/`.** Save and it appears — no publish, no reload. The plugin lays `tsconfig.json`
+and `types/` beside the widgets so an editor types every port instead of handing you `any`.
+
+## Ports: what a widget reads and writes
+
+**Data reaches a widget only through `IQuery` and `ICommand`**, declared in `createWidget({ inject })`:
+
+| Declared in `inject`            | Is                                       | Used as                                     |
+| ------------------------------- | ---------------------------------------- | ------------------------------------------- |
+| `IQuery.output(S)`              | a value or a setting; takes no input     | arrives as the value: `({ getYear: year })` |
+| `IQuery.input(I).output(O)`     | a query with a typed input               | `useData(getTasks, input)`                  |
+| `ICommand.input(I).output(O)`   | a command answering data                 | `await createTask(input)`                   |
+| `ICommand.input(I)`, `ICommand` | answering nothing; bare, no input either | `await archive(input)`, `await refresh()`   |
+
+**The same builder after `extends` is a handler; position decides.** In `inject` it is the port the
+widget needs; `class TasksQuery extends IQuery.input(I).output(O)` is the code that answers it:
+
+```ts skip-check
+class TasksQuery extends IQuery.input(TasksInputSchema).output(PageOf(TaskSchema)) {
+	async query(input: TasksInput, ctx: HandlerContext): Promise<TaskPage> { … }
+}
+
+class SaveTaskCommand extends ICommand.input(TaskSchema).output(TaskSchema) {
+	async run(input: Task, ctx: HandlerContext): Promise<Task> { … }
+}
 ```
-.widgetarium/widgets/@you/clock/widget.tsx
+
+`ctx` is `{ user, signal, host }`: who asked, the signal that cancels a read nobody waits for, and the
+host. A handler is named `*Query` or `*Command` and registered in a pack under an id the board binds.
+
+**Naming.** A query is `get` and what it reads: `getTasks` (a list is plural), `getYear`,
+`getIsRound`; a value query is renamed where it is drawn, `({ getYear: year })`. A command is named for
+the action: `createTask`, `move`.
+
+### Lists are pages
+
+A query that answers rows answers `PageOf(RowSchema)` and takes `PageInputSchema`:
+
+| Schema              | Shape                                                       |
+| ------------------- | ----------------------------------------------------------- |
+| `PageInputSchema`   | `{ cursor?: string \| null, limit: number }`, `limit` ≤ 100 |
+| `PageOf(RowSchema)` | `{ items: Row[], next: string \| null, total?: number }`    |
+
+Their types are `PageInput` and `Page<Row>`. The engine knows a `PageOf` output: a read that names no
+`limit` gets a hundred rows, a `limit` the widget names is honoured, it asks for the next page with `next`, and hands the widget the items with `hasMore` and
+`more`. **Anything that draws rows paginates**, from the first row. A page may come
+back shorter than `limit`; only `next` says whether more exist.
+
+**A filter is a plain field of the input**, usually picked from the record's shared schema:
+`PageInputSchema.extend(TaskSchema.pick({ status: true }).partial().shape)`. A handler's input schema is
+what it can serve: a widget asking for a field the handler's input lacks is never bound to it.
+
+### Reading and writing
+
+```ts skip-check
+const { data, total, isLoading, failure, hasMore, more } = useData(getTasks, { status, limit: 20 });
+const answer = await createTask({ id: crypto.randomUUID(), title, due: null });
 ```
 
-The path names it: `@you/clock` is the id, `@you` the scope. Save and it appears — no publish, no
-reload. The engine compiles the TSX into `build/` beside your file. **Never write anything in
-`build/`.** A widget is TypeScript: `widget.tsx`, or `widget.ts` when it draws no JSX. A
-`widget.jsx` or `widget.js` is refused and draws its refusal instead; rename it to `widget.tsx`,
-which builds as it stands. A scope may also hold `lib.ts`, `tokens.css` and `theme.css`, shared by its
-widgets; a widget imports the lib as `@you/lib`, is typed by it, and rebuilds when it changes. An older
-`lib.js` still loads.
+`useData(query, input)` over a page answers `{ data, total, hasMore, more, isLoading, failure }`:
+`data` is the items read so far, `hasMore` is true while the last page had a `next`, and `more()`
+appends the next page. **Read a query inside the widget that draws it**:
+read a level up and passed down, a correct value draws a stale screen.
 
-**A widget may split its code into sibling modules.** `widget.tsx` stays the entry and imports the
-rest relatively — `import { columns } from "./board-state"`, `"./parts/card"` — any `.ts` or `.tsx`
-in the folder or a folder under it. The engine builds, installs and checks them as one widget. Logic
-only this widget uses lives in its own folder; the scope's `lib.ts` is for what several widgets of one
-scope share, and a hook or part every scope could use belongs in the kit.
+A command answers `{ ok: true, output }` or `{ ok: false, reason, ran }` and never throws. Draw
+`reason`. **`ran: true` means the write happened and only its output was refused: never send it
+again.** A create carries its own `id: z.uuid()`, minted at the press, so a retry with the same id
+writes nothing twice. The command settles after every query of the tile has re-read, so the next frame
+draws the change.
 
-Beside the scopes the plugin lays `tsconfig.json` and `types/` — written, never edited, and what
-makes an editor type every prop from its declaration instead of handing you `any`.
+### Schemas
 
-## Props, metadata and layout
+- **An output schema describes shape only.** No `transform` or `pipe`: an output is parsed by the
+  handler and again by the widget, so it must parse to itself. `.default` and `.catch` are allowed.
+- **A rule belongs to the input of the command that writes**: `title: z.string().min(1)` stands in
+  the command's input, never in a shape that is read.
+- **A value is parsed strictly**, and a failure names its exact path. A field that should fall back
+  instead of failing says so with `.catch(...)`. A value query's schema carries `.default()`.
+- A fixed set of choices is `z.enum([...]).default(...)`; its values are the options a person picks.
+- **`aka` names the properties a hand-written note may use for a field**:
+  `done: z.boolean().optional().meta({ aka: ["complete"] })` lets a note holding `complete:` answer
+  for `done`, only when the note has no `done` of its own. It is a list, and it is nothing else.
+
+### What the host hands over
+
+| Declared                                         | Arrives as                                                                        |
+| ------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `hero: ISlot`                                    | a component: `<Hero />` draws the widget placed there, nothing when empty         |
+| `main: ISlot.array()`                            | components: `main.map((Slot) => <Slot key={Slot.id} />)`, `main.length`           |
+| `IRepeat.of<Given>({ default, surface, gives })` | a function drawing one widget again for every row, or `null`                      |
+| `IHost`, `INavigator`, `IHere`                   | the host, navigation, the note it stands in                                       |
+| `IReader`, `IContent`                            | the passage and its reader, for an `inline` widget                                |
+| `ICatalogue`, `ICarrier`, `IPreview`             | the sidebar catalogue's pick, a drag the host runs, any widget drawn as a preview |
+
+## A whole widget
+
+`createWidget({ inject, draw })` declares and draws; `defineMetadata` describes it for a person;
+`defineLayout` places it; `defineStates` holds its sample data, one entry per look. `examples.md` has
+a list widget and a form widget whole; their shape:
+
+```tsx
+import { IQuery, createWidget, defineLayout, defineMetadata, defineStates, z } from "widgetarium";
+import { Card } from "widgetarium/kit";
+
+const Clock = createWidget({
+	inject: {
+		getZone: IQuery.output(z.string().default("UTC")),
+	},
+	draw: ({ getZone: zone }) => <Card>{new Date().toLocaleTimeString("en-GB", { timeZone: zone })}</Card>,
+});
+
+export const metadata = defineMetadata(Clock, {
+	title: "Clock",
+	description: "The time in one zone.",
+	keywords: ["clock", "time", "zone"],
+	props: { getZone: { label: "Time zone", hint: "An IANA zone, such as Europe/Kyiv." } },
+});
+
+export const layout = defineLayout({ role: "indicator", size: { preferredWidth: 240, preferredHeight: "auto" } });
+
+export const states = defineStates(Clock, { Kyiv: { getZone: "Europe/Kyiv" } });
+
+export default Clock;
+```
+
+Never annotate `inject` or `draw` with a type: that erases what the component is typed from. Code
+outside `draw` takes the ports' types from the widget, `PropsOf<typeof Clock>`. The component is an
+ordinary one: `<Clock getZone="Asia/Tokyo" />` draws outside a board too, a plain value standing for
+the query's answer.
+
+**`states` are the widget's sample data**, never `draw`: `Full` with real rows, `Empty` always, and any
+other look it has. A paged query's state is its rows, a plain array: `getTasks: [{ … }]`, never
+`{ items, next }`. The design canvas draws the widget once per state; `check` names a widget without
+them.
+
+### Metadata is what a person reads
+
+`title`, `description` (the one question the widget answers), `keywords`, `preview`, and per prop:
+
+| Key             | Means                                                                            |
+| --------------- | -------------------------------------------------------------------------------- |
+| `label`, `hint` | the field's name; one short sentence behind its (?) button                       |
+| `aka`           | every name this prop had before, newest last, so an older tile finds its binding |
+| `control`       | only when the type does not say how to draw it: `text`, `emoji`, `icon`          |
+| `options`       | labels for an enum's values: `[{ value, label }]`, the same values as the enum   |
+| `design`        | the prop belongs on the Design tab                                               |
+| `source`        | the handler a prop starts from: `{ implementation, fields }`                     |
+| `keep`          | `"screen"`: the value is a fact about this screen and never reaches the note     |
+| `isVisible`     | a function over every prop, answering whether the settings window draws this one |
+
+**`source` is how a widget works with nothing set up.** `@core/selection` is which row of a sibling's
+rows is chosen; `@core/selected-row` is the row it names; a command's `source` names the handler it
+runs by default, `@core/value-set` over a sibling value for a toggle. `fields` name siblings by prop
+name. A command with neither a binding nor a source runs `@core/console-log`, which prints what was
+sent and changes nothing.
+
+### State shared by name, never by another widget
+
+| Binding                                                                  | Holds                                                       |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `{ implementation: "@core/screen-state", fields: { key: "home.view" } }` | a value every widget naming the key shares, until it closes |
+| `{ implementation: "@core/page-param", fields: { key: "project" } }`     | what the press that opened this page handed over            |
+| `{ implementation: "@core/today" }`                                      | today's date, `YYYY-MM-DD`, turning over at midnight        |
+
+**A page opened for a record says which one in the press**:
+`navigator.navigate("Project", { params: { project: project.id } })`, and the page's widgets read it
+through `@core/page-param`. A page opened another way has no project and draws that state. Never write
+a timestamp into a record to remember which one was opened.
+
+### Layout is where it stands
+
+- `role` — required, and one. A widget drawing two roles is two widgets (brief law 14).
+- `size` — required. `preferredWidth` (pixels or `"full"`) and `preferredHeight` (pixels or `"auto"`)
+  are what it prefers, never what it is promised; `keepsRatio` holds height to width; `at` steps by the
+  width of the **region**: `at: [{ belowPx: 520, preferredWidth: "full" }]`. In a page's slots they are
+  ignored. Use `useNarrowed`, never a media query.
+- `inline: true` — a widget that stands in text; declare `IContent` and `IReader`.
+
+### A migration, when tiles cannot follow alone
+
+```ts skip-check
+export const migrations = defineMigrations([
+	{
+		from: { label: IQuery.output(z.string().default("")) },
+		run: (old) => ({ getLabel: old.label }),
+	},
+]);
+```
+
+`from` is the ports as an older version declared them; a tile made with exactly those moves by a
+press, through `run`.
+
+### A default is never a path
+
+**A default never names a file or a folder, at any depth, under any spelling. This is a security
+law.** A path in a default would let a widget read a person's notes before they chose anything.
+`path` or `ref` in a default is refused, and renaming the field is not a fix.
+
+## A page widget
+
+A page is one `layout` widget, `@<app>/<page>-page`. Its code decides where each block stands; the
+blocks stand in slots a person fills and swaps without code. It reads data **only to choose which
+slots show**:
 
 ```tsx
 import {
-	ICrudGateway,
-	IHost,
-	IValueGateway,
-	VaultRecordSchema,
+	IQuery,
+	ISlot,
+	PageInputSchema,
+	PageOf,
 	createWidget,
 	defineLayout,
 	defineMetadata,
@@ -45,365 +263,64 @@ import {
 	useData,
 	z,
 } from "widgetarium";
+import { Container } from "widgetarium/kit";
 
-const EntrySchema = VaultRecordSchema.extend({
-	title: z.string().optional(),
-	done: z
-		.boolean()
-		.optional()
-		.meta({ aka: ["complete", "finished"] }),
-});
+const PersonSchema = z.object({ id: z.uuid(), name: z.string() });
 
-const Checklist = createWidget({
+const PeoplePage = createWidget({
 	inject: {
-		entries: ICrudGateway.of(EntrySchema).pick("list", "update"),
-		heading: IValueGateway.of(z.string().default("To do")).pick("get"),
-		host: IHost,
+		getPeople: IQuery.input(PageInputSchema).output(PageOf(PersonSchema)),
+		hero: ISlot,
+		main: ISlot.array(),
+		empty: ISlot,
 	},
-	draw: ({ entries, heading }) => {
-		const { data } = useData(entries.list, { limit: 20 });
+	draw: ({ getPeople, hero: Hero, main, empty: Empty }) => {
+		const isEmpty = useData(getPeople, { limit: 1 }).data.length === 0;
 		return (
-			<>
-				<h3>{heading}</h3>
-				{data.map((entry) => (
-					<div key={entry.ref}>{entry.title}</div>
-				))}
-			</>
+			<Container width={1040} data-name="People">
+				<div className="flex flex-col gap-sections" data-name="Slots">
+					<Hero />
+					{isEmpty ? <Empty /> : main.map((Slot) => <Slot key={Slot.id} />)}
+				</div>
+			</Container>
 		);
 	},
 });
 
-export const metadata = defineMetadata(Checklist, {
-	title: "Checklist",
-	description: "The entries still to do, ticked off where they stand.",
-	keywords: ["checklist", "todo", "tasks"],
-	props: { entries: { hint: "One note per entry.", describes: { done: { label: "Done", type: "boolean" } } } },
-});
+export const metadata = defineMetadata(PeoplePage, { title: "People", description: "Everyone, and who is due." });
 
-export const layout = defineLayout({
-	role: "collection",
-	size: { preferredWidth: "full", preferredHeight: "auto", collapseBelowPx: 200, stackBelowPx: 320 },
-});
+export const layout = defineLayout({ role: "layout", size: { preferredWidth: "full", preferredHeight: "auto" } });
 
-export const states = defineStates(Checklist, {
-	Full: { getHeading: "Today", getEntries: [{ title: "Water the plants", done: true }, { title: "Call mum" }] },
-	Empty: { getEntries: [] },
-});
-
-export default Checklist;
-```
-
-**`states` is the widget's sample data, one entry per look**, each a plain value for every prop it
-names — `Full`, `Empty`, and any other state the widget has. The design canvas draws the widget once
-per state, and a page widget's states are the frames of its screen. Samples never live in `draw`.
-
-**`createWidget({ inject, draw })` declares and draws, `metadata` describes, `layout` places.**
-`inject` holds the gateways the widget reads and may be left out when it reads none; `draw` gets
-them typed. `defineMetadata` takes the created widget. Never annotate `inject` or `draw` with a type:
-that erases what the component is typed from. Props are declared in `inject` and nowhere else; code
-outside `draw` takes their types from the widget itself: `PropsOf<typeof Board>`, imported with
-`import type Board from "./widget"` in a sibling file.
-
-### A prop is a gateway class
-
-| Declared                                                                                                       | Arrives as                                                                                                  |
-| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `getTasks: IQuery.output(z.array(RowSchema))`                                                                  | a list read: `useData(getTasks, { where, sort, limit })`                                                    |
-| `getHeading: IQuery.output(z.string().default("To do"))`                                                       | the value: `draw: ({ getHeading: heading }) => …`                                                           |
-| `ICommand.input(InputSchema)`, `.output(OutputSchema)` added when it answers data, or `ICommand` with no input | `await move(input)` answers `{ ok, output }` or `{ ok: false, reason, ran }`                                |
-| `IValueGateway.of(z.string().default("To do")).pick("get")`                                                    | the value, read and checked against the schema                                                              |
-| `IValueGateway.of(schema).pick("get", "update")`                                                               | `{ value, update }`                                                                                         |
-| `IValueGateway.of(schema)`                                                                                     | `{ value, update, remove }`                                                                                 |
-| `IListGateway.of(RowSchema, { where, sort, default })`                                                         | a gateway that reads: `list`, `get`                                                                         |
-| `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`                                                        | a gateway with every verb, or only the ones picked                                                          |
-| `hero: ISlot`                                                                                                  | a component: `<Hero />` draws the one widget a person placed there, nothing when empty                      |
-| `main: ISlot.array()`                                                                                          | an array of components: `main.map((Slot) => <Slot key={Slot.id} />)`, `main.length`; hidden ones left out   |
-| `IRepeat.of<Given>({ default, surface, gives })`                                                               | a function drawing one widget again for every row, or `null`                                                |
-| `IHost`, `INavigator`, `IHere`                                                                                 | what the engine hands over, only when declared                                                              |
-| `IReader`, `IContent`                                                                                          | the passage and its reader, for an `inline` widget                                                          |
-| `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`                                                             | the catalogue, `foldIntoGroup`, the mount list's writer                                                     |
-| `IPreview`                                                                                                     | `{ canPreview, Drawn }`: `<Drawn widget={id} />` draws any widget the catalogue knows as its preview        |
-| `ICarrier`                                                                                                     | `{ canCarry, lift(pointer, { widget, label }) }`: a drag the host runs, answering where it landed or `null` |
-
-`ICatalogue.open()` raises no dialog: it asks the sidebar catalogue and answers the widget picked
-there, or `null`. `ICarrier` is how a widget starts a drag without touching `window`: hand its answer
-to `@catalogue/place`.
-
-**Reads are `IQuery`, writes are `ICommand`; prefer them in a new widget.** A query over `z.array(...)`
-takes the input every list takes (`where`, `sort`, `offset`, `limit`); any other query takes none
-and arrives as its value. A bare `IQuery` is refused: it needs `IQuery.output(schema)`. **A query is named
-`get` and what it reads**, booleans included: `getTasks` (a list is plural), `getYear`, `getIsRound`.
-A value query is renamed where it is drawn, `({ getYear: year })`, so the body reads the value. A
-prop renamed from an older name keeps it in metadata, `getTasks: { aka: ["tasks"] }`, so a tile bound
-before still finds its binding. A command is named for the action: `move`, `create`. A command answers `{ ok: true, output }`, `output` checked against the schema its `.output(...)`
-named and `undefined` without one, or `{ ok: false, reason, ran }`; a failure never throws. `ran: true`
-means the handler acted and only its output was refused, so the widget must not send it again. Its promise settles after every query of the tile has re-read, so the next
-frame draws the change. A create carries its own `id: z.uuid()`, minted at the press, and a retry
-with that id writes nothing. Ask `move.can()` before drawing the control, and draw `reason` when it
-answers `ok: false`. The person picks what runs a command in the Actions group of the settings
-window; `metadata.props.<command>.source = { implementation, fields }` names the default, with
-`fields` naming sibling props, so a toggle works with nothing set up. The host runs `@core/value-set`,
-`@core/rows-create`, `@core/rows-update` (input `{ ref, ...changed }`), `@core/rows-remove`
-(`{ ref }`), `@core/rows-replace` and `@core/rows-repair-ids`, each over the sibling named in
-`fields.target`: `source: { implementation: "@core/value-set", fields: { target: "getIsOpen" } }`.
-A command whose target is bound to the vault stays shut until the person switches it on in the
-Data tab; over anything kept in the tile or the screen it runs at once. A parent hands a slotted
-widget a command as a function: `updateTask: (patch) => updateRow({ ref: row.ref, ...patch })`. A command with neither runs
-`@core/console-log`: it prints the tile, the command and what was sent to the console and changes
-nothing, the way an unbound query shows its typed default.
-
-**A widget and its handler say the same words; the side is told by position.** `IQuery.output(S)`, or
-`IQuery.input(I).output(S)` for a query that takes an input, and `ICommand.input(I)` with
-`.output(O)` when it answers data. A widget writes them in `inject`; a handler is a class that
-extends one, plus `IQuery.outputWithin(B)` for any shape within the bound `B` (a folder answers any
-list of objects: `IQuery.outputWithin(z.array(z.object({})))`). A handler's `run` may return a value,
-checked against its `output` schema and again against the widget's, so `.output()` refuses a schema
-holding a `transform` or `pipe`: an output must parse to itself, and `.default` and `.catch` do. A handler class put in `inject`, or the bare port given where a
-handler belongs, is refused with the fix. A handler class is named `*Query` or `*Command`.
-
-**Every implementation ships in a pack.** A pack is a workspace under `packages/packs/<name>`; the
-engine holds none. A class is built `new Class(fields, ports)`: `fields` are what the person set in
-the settings window (text, numbers, switches, a choice, or another widget's prop for a field marked
-`.meta({ pick: "collection" })`), and `ports` are what the host lends — `self`, `commandLine`
-(`execFile`, never a shell), `workingDirectory`, `network`, `vault`, `refs` and `confirm`. A query
-also gets `prop` (its prop's declared kind, type, writes, default, where, sort and field needs),
-`kept` (the value its tile keeps, read and written), `screen` (cells that live while the screen is
-open) and `notes` (the host's folders and notes); every built-in, the typed, wiring, file, folder and
-statistic sources included, is such a class and holds its own logic. A verb that may refuse answers
-through `can(verb)`. `definePack({ id, title, queries, commands })` lists them with
-`defineGatewayMetadata` and `defineCommandMetadata`, every id under the pack's own name, and the host
-calls `registerPacks` once at load. A command's `consent` is `always` (shut until switched on in the
-Data tab, the default), `vault-target` (shut only over a vault-bound target) or `free`. A source is
-offered for a prop only when it fits: one returning any shape always fits its kind, one returning an
-exact shape fits a list whose described fields it carries and a value whose control matches.
-
-| Pack        | Queries                                                                                                                                                     | Commands                                                                                              |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `@core`     | `typed-value`, `typed-rows`, `screen-state`, `page-param`, `today`, `from-tile-value`, `from-tile-rows`, `selection`, `selected-row`, `fetch`, `fetch-rows` | `console-log`, `value-set`, `rows-create                                                              | update | remove                      | replace | repair-ids`, `fetch-send` |
-| `@obsidian` | `file`, `folder`, `tag`, `search`                                                                                                                           | `folder-create                                                                                        | update | remove`, `file-set`, `open` |
-| `@stats`    | `number`, `series`, `breakdown`, `days-kept` over another widget's rows; one per algorithm over a folder                                                    | —                                                                                                     |
-| `@git`      | `commits`, `branches`, `current-branch`, `status`, `commit-files`, `tags`, `worktrees`                                                                      | `stage`, `unstage`, `commit`, `checkout`, `create-branch`, `pull`, `push` (asks first), `worktree-add | remove | lock                        | unlock` |
-
-| Pack         | Queries                                                                                                                  | Commands                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `@catalogue` | `entries`, `count`, `showing`, `packs`, `tags`, `templates`, `said`, `docs-said`, `doc-pages`, `doc-page`, `install-job` | `install`, `uninstall` (asks first), `pick`, `place`, `use-template`, `open-view`, `clear-filters` |
-
-**The catalogue and the docs are boards of `@catalogue` widgets in the right sidebar.** The plugin lays
-that scope into `.widgetarium/widgets/@catalogue` whenever the bundle's stamp differs from the one in its
-`.laid-by-plugin` mark (a scope without the mark is left alone), so the catalogue works before anything
-is installed, and an unchanged start costs one read. Every filter is a value
-another widget holds, named by ref in the query's fields (`keyword`, `showing`, `pack`, `tag`); a
-widget never filters. An install is one job per widget id, owned by `INSTALL_JOBS`: `install-job` and
-the `job` on every entry read the same owner, so a card and a tile still installing draw the same ring.
-
-**A binding is `{ implementation, fields, allow }` and nothing else.** The settings window writes
-that shape for every source, the typed ones included: `@core/typed-value` keeps its value in
-`fields.value`, `@core/typed-rows` its rows in `fields.rows`. Every implementation names its
-`resource` — `This board`, `Another widget`, `Note`, `Folder`, `Search`, `Statistics`, `Web`, `Git`,
-`Catalogue` or `Console` — and the source and action lists draw one section per resource in that
-order, so its `title` reads under that heading: `Folder` › `Notes in it`.
-
-**The schema is the type and the default.** A value's schema must carry `.default()`; one without is
-refused. The built-in gateways check what they read against the schema through `context.parse`: a
-record that does not fit is left out, a value that does not fit is drawn as the default, and both
-are reported on the red "!" beside the prop in the settings window — so a widget never receives a
-value its schema refuses, and needs no fallback of its own. `useData` answers `data`, never a list
-of refused rows. A fixed set of choices is `z.enum([...]).default(...)`: its values become the
-options a person picks from, and metadata `options` beside it may add labels but must name exactly
-the same values. A row schema is `VaultRecordSchema.extend({...})` for notes, or any `z.object`; `ref` in
-it is typed `RecordRef` or left out.
-
-**A field's other names live in the schema.** `done: z.boolean().optional().meta({ aka: ["complete"] })`
-lets a note holding `complete:` answer for `done`. An `aka` maps a field only when the record has no
-field of its own name, and it is a list: `aka: "complete"` does not compile.
-
-**`.pick(...)` is the widget asking; `allow` on the tile is the person answering.** Without `.pick`
-a gateway has every method of its interface; with it, only the ones named, reads included, so a
-collection that reads and writes picks `"list"` beside its writes. A value picked only `"get"` arrives
-as the plain value. A verb not picked does not exist on the gateway at compile time. A collection that picked
-`create` also has `createMany`, `update` has `updateMany`, `remove` has `removeMany`, and `create`
-with `update` has `upsert({ ref, data })`: each answers `{ done, failed }` and never stops at the
-first failure.
-
-**A value takes no options in `.of()`; its metadata names the source it starts from.** The widget
-never picks a row or falls back itself: `props.<name>.source` names a host implementation, and that
-implementation does the picking. Sibling props are named by their prop name:
-
-```tsx
-const Board = createWidget({
-	inject: {
-		getTabs: IQuery.output(z.array(TabSchema)),
-		getSelection: IQuery.output(z.unknown()),
-		getBoard: IQuery.output(BoardSchema),
+export const states = defineStates(PeoplePage, {
+	Full: {
+		getPeople: [{ id: "0b6c4c1e-2f1a-4c8e-9d3b-5a7e1f2c3d40", name: "Sofia Marin" }],
+		hero: { widget: "@crm/people-hero", state: "Full" },
+		main: [{ widget: "@default/section", props: { getHeading: "Reach out" } }],
 	},
-	draw: ({ getTabs, getSelection, getBoard }) => { … },
+	Empty: { getPeople: [], empty: { widget: "@default/empty-state" } },
 });
 
-export const metadata = defineMetadata(Board, {
-	title: "Board",
-	description: "…",
-	props: {
-		getSelection: {
-			source: {
-				implementation: "@core/selection",
-				fields: { rows: "getTabs", field: "name", whenNothingPicked: "first" },
-			},
-		},
-		getBoard: {
-			source: {
-				implementation: "@core/selected-row",
-				fields: { rows: "getTabs", picked: "getSelection", field: "name", whenNothingPicked: "first" },
-			},
-		},
-	},
-});
+export default PeoplePage;
 ```
 
-`@core/selection` is which row of `rows` is chosen, kept while the screen is open; `field` (or
-`fieldFrom`, a prop holding the field's name) says which field of the row it holds, and
-`whenNothingPicked` is `"none"` unless written. `@core/selected-row` is the row that `picked` names;
-its `whenNothingPicked` is `"first"` unless written. `of()` given options for a value is refused.
-`keep: "screen"` in the prop's metadata, `props: { open: { keep: "screen" } }`, makes a value a fact
-about this screen that never reaches the note.
-
-## State shared by name, never by another widget
-
-Two widgets that must agree — a grid/list switch and the grid it switches — never point at each
-other. Each binds its prop to the same named state, and neither knows the other exists:
-
-| Binding                                                                  | Holds                                                                                 |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| `{ implementation: "@core/screen-state", fields: { key: "home.view" } }` | a value every widget on this board naming the key shares, until it closes             |
-| `{ implementation: "@core/page-param", fields: { key: "project" } }`     | what the press that opened this page handed over                                      |
-| `{ implementation: "@core/today" }`                                      | today's date, `YYYY-MM-DD`, turning over at midnight — never a date typed into a tile |
-
-**A page opened for a record says which one in the press.** The card that opens a project calls
-`navigator.navigate("Project", { params: { project: project.id } })`; every widget on that page that
-needs the project binds a prop to `@core/page-param` with `key: "project"` and reads the row through
-`@core/selected-row` with `picked` naming that prop and `whenNothingPicked: "none"`. A page opened
-another way — from the file list, after a restart — has no project, and its widgets draw that state
-("Pick a project") rather than the first row. Never write a timestamp into a record to remember which
-one was opened: a press that writes to the vault, and every widget then re-deciding which record is
-current, is the defect this replaces.
-
-**An own verb is not declarable yet.** `pick` refuses a verb its interface does not have, and a
-class extending the declared one is refused as an implementation. Compose the verbs you picked
-inside the widget instead: `const finish = (ref) => tasks.update({ ref, data: { done: true } })`.
-
-**The component is an ordinary one.** `<Checklist heading="Today" entries={[{ title: "Write" }]} />`
-draws outside the board too: an implementation passed in is used as it stands, and a plain value or
-array is handed to the interface's default implementation — `RowsInMemoryGateway` for a list,
-`ValueInMemoryGateway` for a value — so a write to it lands. An interface of your own names its own
-default, and one lacking a verb of the interface is refused:
-
-```tsx
-defineDefaultImplementation(IBoardsGateway, BoardsInMemoryGateway);
-```
-
-Every implementation is constructed `new XGateway(fields, context)`: `fields` are what the person or
-the code gave, `context` is what the engine hands over. `context.parse(held, { label, ref })` checks
-a record against the widget's schema and answers it parsed, or `null` after reporting it;
-`context.report({ label, ref, issues })` reports anything else. Reports show as the red "!" beside
-the prop in the settings window; the widget never sees them.
-
-### Metadata is what a person reads
-
-`title`, `description` (the one question the widget answers), `keywords`, `preview` (sample props the
-catalogue card draws with), and per prop:
-
-| Key             | Means                                                                                                                                                                                                  |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `label`, `hint` | `label` names the field; `hint` is one short sentence for a person, shown behind the field's (?) button                                                                                                |
-| `describes`     | for a collection: the row's fields. A string is a label; an object may carry `label`, `hint`, `type`, `many`, `required`. A field's `aka` belongs to the schema, and `describes` naming one is refused |
-| `aka`           | every name this prop had before, newest last                                                                                                                                                           |
-| `control`       | only when the type does not say how to draw it: `text`, `emoji`, `icon`                                                                                                                                |
-| `options`       | the answers a person picks between: `[{ value, label }]`                                                                                                                                               |
-| `design`        | the prop belongs on the Design tab                                                                                                                                                                     |
-| `wants`         | the other widget's prop this one is usually bound to                                                                                                                                                   |
-| `source`        | where a value starts from: `{ implementation: "@core/selection" \| "@core/selected-row", fields }`, the host implementation that picks the row                                                         |
-| `isVisible`     | a function over every prop, answering whether the settings window draws this one                                                                                                                       |
-
-Metadata naming a prop `inject` does not declare, or one the engine hands over, is refused.
-
-**`isVisible` is how one switch changes what the window asks for.** It is handed every prop as
-`{ kind, control, binding, isSet, value }` for a value and `{ ..., rows }` for a collection, reading
-what the person typed and falling back to the default. It works on a slot or a mount too. A rule that
-throws draws the thing it would have hidden and says so in the console. The function is code, so
-`manifest.generated.json` does not carry it.
-
-**A choice is `options`, never a second prop holding the answers.** A `source` binds a prop to a box the
-widget fills — a tab pressed, a card opened — and a box draws nothing in the settings window.
-
-### Layout is where it stands
-
-- `role` — required, and one. A widget drawing two roles (a figure and its rows) is two widgets —
-  `brief.md` law 14.
-- `size` — required. **`preferredWidth` and `preferredHeight` are the size the widget prefers, never
-  a size it is promised.** The width is a ceiling the cell narrows under, `"full"` takes the whole
-  cell; the height is where a short widget is drawn to, and one with more to draw grows past it,
-  `"auto"` is as tall as it draws. `keepsRatio: true` holds height to width. `at` steps by the width
-  of the **region**, never the screen: `at: [{ belowPx: 520, preferredWidth: "full" }]`. These sizes
-  lay a tile on a board; **in a page's slots they are ignored**: a `control` is as wide as what it
-  draws, every other role fills the place the page gives it, and the page decides that place.
-  `collapseBelowPx` and `stackBelowPx` are the floors a row stacks and a widget collapses at. Use
-  `useNarrowed`, never a media query.
-- `inline: true` — a widget that stands in text; declare `IContent` and `IReader`.
-
-### A migration, when tiles cannot follow alone
-
-```tsx
-export const migrations = defineMigrations([
-	{
-		from: { label: IValueGateway.of(z.string().default("")).pick("get") },
-		run: (old) => ({
-			label: { implementation: "@core/typed-value", fields: { value: String(old.label?.fields?.value ?? "").length } },
-		}),
-	},
-]);
-```
-
-`from` is the props as an older version declared them; a tile made with exactly those moves by a
-press, through `run`.
-
-### A default is never a path
-
-**A default never names a file or a folder, at any depth, under any spelling. This is a security
-law.** A path in a default would let a widget read a person's notes before they chose anything, or
-delete files on first render. `path` or `ref` in a default — in an object, in an array's rows, or
-nested inside either — is refused, and renaming the field is not a fix.
-
-## Reading and writing
-
-```tsx
-const { data, total } = useData(entries.list); // data is always an array
-const page = useData(entries.list, { offset: 20, limit: 10 });
-if (canDo(entries.update)) await entries.update({ ref, data: { done: true } });
-```
-
-**Read the gateway inside the widget that draws it.** Reading a level up and passing the value down
-gives a correct value and a stale screen.
-
-**Everything that draws rows paginates.** A list read with no `limit` stops at a hundred rows and the
-screen is silently short. An aggregate that needs more says how many in its own source.
+A slot in a state names a widget and one of its states, or hands it `props`. The page's body frame is
+the kit's `Container` (`width` 640, 800, 1040, 1280 or `full`); inside it rows and grids are Tailwind
+answering to their own width (`@3xl:grid-cols-[2fr_1fr]`). Space blocks with `gap-sections`, items
+with `gap-cards`, and name every group a person might move things between with `data-name`. A block
+that needs a title stands in `@default/section`; a widget that draws rows draws no title of its own.
 
 ## Spacing inside a widget
 
-Never write a gap as a number. The engine sets three variables on every cell:
-
-| Variable              | Between                                                             |
-| --------------------- | ------------------------------------------------------------------- |
-| `var(--wg-gap-items)` | bare items of a list, the sections of the widget                    |
-| `var(--wg-gap-parts)` | the parts of one item: a title and its value, an icon and its label |
-| `var(--wg-gap-cards)` | items that each wear a plate                                        |
-
-`SlotList` from `widgetarium/kit` draws what a slot holds and picks the right one itself.
+Never write a gap as a number. Every cell carries `var(--wg-gap-items)` (bare items, sections),
+`var(--wg-gap-parts)` (the parts of one item) and `var(--wg-gap-cards)` (items that each wear a plate);
+Tailwind names them `gap-items`, `gap-parts`, `gap-cards`. `SlotList` from the kit picks the right one.
 
 ## A picture: `Emblem`
 
 Every picture that stands for something — a person, a company, a project, a place — is an `Emblem`:
 one component whether it ends up reading as an avatar, a logo or a mark.
 
-```tsx
+```tsx skip-check
 <Emblem label={person.name}>
 	<EmblemImage src={person.photo} />
 	<EmblemFallback seed={person.name} />
@@ -476,7 +393,7 @@ under it; each kind of thing owns one tone everywhere it appears.
 
 Take these from `widgetarium/kit` rather than drawing them:
 
-```tsx
+```tsx skip-check
 <Badge color="purple" size="s">implementing</Badge>
 <Badge tone="error" variant="solid">3</Badge>
 <Heading level={3}>Due this week</Heading>
@@ -541,7 +458,7 @@ finished"; the plain `ProgressBar` knows nothing of states.
 The kit's controls follow Radix and shadcn: parts with flat names, state that works controlled or
 not, and the state written on the element.
 
-```tsx
+```tsx skip-check
 <Select value={status} onValueChange={setStatus}>
 	<SelectTrigger>
 		<SelectValue placeholder="Status" />
@@ -593,12 +510,8 @@ Rows are drawn by `DataTable`, the way shadcn pairs a data table with its table 
 it is the kit's own component rather than code you copy, so how every table behaves changes in one
 place:
 
-```tsx
-const read = useData(records.list, {
-	sort: sort ? [{ prop: sort.key, dir: sort.direction }] : [],
-	offset: (page - 1) * size,
-	limit: size,
-});
+```tsx skip-check
+const read = useData(getInvoices, { limit: 20, sortBy: sort?.key, direction: sort?.direction });
 
 <DataTable
 	rows={read.data}
@@ -614,10 +527,10 @@ const read = useData(records.list, {
 	onSelect={setPicked}
 	isLoading={read.isLoading}
 	failure={read.failure}
-	page={page}
-	count={Math.ceil(read.total / size)}
-	onPageChange={setPage}
 />;
+{
+	read.more ? <ShowMore isLoading={read.isLoading} onMore={read.more} /> : null;
+}
 ```
 
 - A column's `type` (`text`, `number`, `date`) aligns its head and its cells together; `number`
@@ -625,19 +538,19 @@ const read = useData(records.list, {
 - A cell shows `row[key]`, a number written for a person and a dash for nothing. `render(row)`
   draws anything else in it — a kit component, one of the widget's own, or markup of its own.
 - `onSortChange` makes every head a sort button, and `sortable: false` takes one out. The table
-  only asks for an order, `{ key, direction }`; the gateway sorts, because a table sorting its own
-  rows would sort one page of a hundred and say nothing.
+  only asks for an order, `{ key, direction }`; the order is a field of the query's input and the
+  handler sorts, because a table sorting its own rows would sort one page of a hundred.
 - `onSelect(key, row)` makes a row pressable by pointer and keyboard; `selected` marks it. A row's
   key is its `ref`, else its `id`, else its place — `rowKey(row, index)` names another.
 - `rowProps(row)` puts a class, a handler or a `data-*` on a row.
 - `isLoading` with no rows draws skeleton rows, `failure` a sentence in the error tone, and no rows
-  the `empty` sentence. `count` over one draws the kit's `Pagination` under it.
+  the `empty` sentence. `page`, `count` and `onPageChange` draw the kit's `Pagination` under it.
 
 A table `DataTable` cannot draw — cells spanning columns, rows in groups — is built from the parts.
 They are shadcn's, and a table scrolls sideways inside its own box when its columns are wider than
 the region. There are no cards for a narrow region: the table stays a table.
 
-```tsx
+```tsx skip-check
 <Table>
 	<TableCaption>Invoices due this month</TableCaption>
 	<TableHeader>
@@ -661,7 +574,7 @@ the region. There are no cards for a narrow region: the table stays a table.
 
 Pages are drawn by the kit whole, so how a pagination looks and behaves changes in one place:
 
-```tsx
+```tsx skip-check
 <Pagination page={page} count={count} onPageChange={setPage} />
 ```
 
@@ -674,7 +587,7 @@ Reach for the parts only for a pagination the ready one cannot draw. They are sh
 `paginationItems(page, count, siblings)` says which pages to lay out, with `{ kind: "gap" }` where
 pages were left out:
 
-```tsx
+```tsx skip-check
 <Pagination>
 	<PaginationContent>
 		<PaginationItem>
@@ -700,9 +613,8 @@ pages were left out:
 </Pagination>
 ```
 
-A page read through a gateway is `useData(list, { offset: (page - 1) * size, limit: size })`, and
-`total` beside the rows is what `count` is made from. `ShowMore` stays the answer for a list that
-grows as it is read.
+A query's pages are read forward with `more`, so `ShowMore` is the answer for a list that grows as it
+is read; numbered pages need `total` from the handler and a cursor per page, kept by the widget.
 
 `Skeleton` stands where something has not been read yet, in the shape of what is coming. `kind`
 names the kit item it stands in for: `block` (sized by its class), `text` (`lines`, 3 by default),
@@ -720,7 +632,7 @@ A chart is composed the way shadcn composes one: Recharts' own parts inside the 
 `ChartContainer`, all of them from `widgetarium/kit/charts`. Import nothing from `recharts` itself;
 the plugin holds the one copy, and it draws with the plugin's own React.
 
-```tsx
+```tsx skip-check
 import {
 	Area,
 	AreaChart,
@@ -763,7 +675,7 @@ of your own reads the config with `useChart()` inside the container. Recharts' r
 A sparkline is a line with no axes drawn at the size of a word, from the main kit and with no
 Recharts under it, so a hundred rows can each carry one:
 
-```tsx
+```tsx skip-check
 <Sparkline data={rows} dataKey="value" color="success" label="Notes, twelve weeks">
 	<SparklineArea />
 	<SparklineLine />
@@ -826,7 +738,7 @@ lacks is a variant the kit gains.
 query, size, clipping — the board decides the tile's plate, and every plate you paint under it comes
 from `widgetarium/kit`:
 
-```tsx
+```tsx skip-check
 <Card>…</Card>
 <Card tone="warning">…</Card>
 <Rows>{rows.map((row) => <LayoutItem key={row.ref}>…</LayoutItem>)}</Rows>
@@ -838,6 +750,16 @@ from `widgetarium/kit`:
 One block goes in `Card`, rows of data in `Rows`, a grid of things in `Grid`. `Layout kind` is the
 same behind one word, so a design changes by changing it. The rules they follow are in
 [surfaces.md](surfaces.md).
+
+- `Card` is one plate: `type` `group` by default, `none` paints nothing, `apart` is a line taking
+  `side` and `across`; `tone` is any kit tone.
+- `Rows` is one plate; each `LayoutItem` stands bare on it with a line above every item after the
+  first, and carries the side inset itself so a line and a toned row reach both edges. Rows standing
+  on a plate already paint no second one, and take the card's padding on every edge they touch.
+- `LayoutHeader` stands **above** the plate, flush with its edge: `LayoutTitle` (an `h3`) and
+  `LayoutActions` (anything at the end of the line; `ActionButton` is the small grey one).
+- `Grid` is bare; every `LayoutItem` is a `Card`. `min` is the narrowest a cell may be before it wraps.
+- `Layout kind` is `stack`, `row`, `grid` or `rows`, and `LayoutItem` becomes what the kind asks for.
 
 **The laws decide it, not you.** Two plates stand from the region, the tile's own included, so a
 tile already wearing a `group` leaves you one plate and the next is refused: it paints nothing and

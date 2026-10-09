@@ -16,9 +16,9 @@ the rename that fixes it. A `widget.js` beside a TypeScript source is ignored, n
 **The repository is an npm-workspaces monorepo, and the arrows between its parts point one way.**
 
 ```
-apps/obsidian     FSL  the host: mounts core in a note, gives it the vault as its gateways
+apps/obsidian     FSL  the host: mounts core in a note, hands it the vault through handlers
       ↓
-packages/core     FSL  the board builder: tree, engine, gateways, renderer, laws
+packages/core     FSL  the board builder: tree, engine, queries and commands, renderer, laws
       ↓
 packages/packs/*  MIT  every query and command implementation, one workspace per pack (@core, @obsidian, @stats, @git): schemas, *Query, *Command; the host registers them
 packages/kit      MIT  everything drawn: TSX, one file per kit item in components/ (emblem, button, layout, popover, …); plate laws in utils/plate-laws.ts
@@ -26,13 +26,7 @@ packages/sdk      FSL  what a widget author compiles against: types/widgetarium.
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
-**The gateway is deprecated and is the next thing deleted.** `IBaseGateway`, `IValueGateway`,
-`IListGateway`, `ICrudGateway`, `.of`, `.pick` and the universal `Query { where, sort }` are replaced by
-`IQuery` and `ICommand`. New code never extends, imports or designs around them, and no plan, spec or
-answer cites them as the way things work: every passage below that describes a gateway is history,
-not law. Measured 2026-10-09: `packages/core/src/gateway/` holds 34 files imported by 105 others, and
-10 pack classes still extend an `I*Gateway` against 44 on `IQuery`/`ICommand`. `IQuery` and `ICommand`
-live in `gateway/queries.ts` only until the folder goes, and move out with that deletion.
+Data reaches a widget only through `IQuery` and `ICommand`.
 
 **Kit imports nothing but React, tailwind-merge and, behind `/charts` and `/showcase` alone, Recharts; core never
 imports the app.** A plate law lives in
@@ -46,10 +40,14 @@ map of which folder is MIT and which FSL-1.1-ALv2, and `REUSE.toml` maps paths t
 
 **The handbook written for the in-app agent is your handbook too.** `docs/ai/` is the whole of it:
 `brief.md` is the prompt, `board.md`, `surfaces.md` and `examples.md` go into the agent's context in
-full, `widget.md` and `tools.md` are laid on disk and read when needed, and `chat-brief.md` is the
-prompt a provider that cannot edit gets instead. `examples.md` is the one that does the work — whole
-boards with a surface on every node, because the agent copies a screen far more reliably than it
-applies a rule. Read the page that covers a change before touching the code, and keep it true in the
+full, `widget.md`, `tools.md`, `spec.md` and `kit.md` are laid on disk and read when needed, and
+`chat-brief.md` is the prompt a provider that cannot edit gets instead. **Brief, board, surfaces and
+examples stay under 6,000 words together**: a long or wrong context file lowers an agent's success,
+so detail moves to the pages read on demand. `examples.md` is the one that does the work — whole
+boards with a surface on every node and one whole example per code pattern, because the agent copies
+a screen far more reliably than it applies a rule. Every `ts`/`tsx` block under `docs/ai/` compiles
+against the real sources under `npm run test:docs-code`; a fragment is marked `skip-check` and
+counted. Read the page that covers a change before touching the code, and keep it true in the
 same change: a law that changed in code and not there is a law the next agent breaks. Why the shapes
 are what they are lives in `docs/decisions.md`.
 
@@ -62,8 +60,9 @@ a card the person answers on — unticking a feature or picking a choice writes 
 Only a big change (a new app, page, kind of record, or feature) starts at stage 1; a small one goes
 straight to the build. Stage 2 is the domain: record shapes, one folder per kind, seeded with real
 rows. Stage 3 is the design in words, page by page with its shell and body, and **the form is chosen
-there**. Stage 4 maps every kept feature to a widget whose card declares the verbs the spec said yes
-to. Stage 5 places, binds with `allow` equal to those verbs, surfaces, lints and walks the checks.
+there**. Stage 4 maps every kept feature to a widget declaring the queries and commands the spec said
+yes to, and writes their handlers. Stage 5 places, binds every query, switches on with `allow: [run]`
+exactly the commands the spec said yes to, surfaces, lints and walks the checks.
 Stages 2–5 each end in `widgets.mjs stage <app> <stage> --said`, one row of the build card. Measured
 twice: the board that came out of starting at the screen had five of seven tiles on their defaults;
 four agents given the three-stage order built read-only lists, one page where two were needed and
@@ -81,14 +80,14 @@ of its own. `is-page` stays a separate thing: `mode: expanded` changes the board
 only claims height, and conflating them moved every drag measurement in the tree gate.
 
 **A widget is a created component and two declarations, in TypeScript only, and it knows interfaces,
-never implementations.** `const Name = createWidget({ inject: {...}, draw })` — `inject` the gateway
-interfaces it reads, omitted when none — then `export const metadata = defineMetadata(Name, {...})`
+never implementations.** `const Name = createWidget({ inject: {...}, draw })` — `inject` the queries
+and commands it uses, omitted when none — then `export const metadata = defineMetadata(Name, {...})`
 for everything a person reads, `export const layout = defineLayout({...})` for `role`, `size`,
 `inline` and `view`, and `export default Name`; `export const migrations = defineMigrations([...])`
 when a tile cannot follow a change alone. The old `createWidget(props, draw)` throws. Props live in
 `inject` and nowhere else: code outside `draw` takes their types from the widget, `PropsOf<typeof
 Name>`. `defineProps` is gone.
-All of it lives in `packages/core/src/gateway/declared.ts`. Each `define*` returns what it was given,
+Each `define*` returns what it was given,
 typed and checked on its own line; `createWidget` builds the component that reads and caches
 (`define*` returns its input, `create*` builds something new). `manifestOfModule` turns the module
 into the one manifest shape the engine reads, and `tools/props-test.ts` pins what every shipped
@@ -96,103 +95,79 @@ widget resolves to. A `widget.jsx` or `widget.js` is refused with the command th
 target is written down in https://claude.ai/artifact/RxMVaSunPzhiHGjTESozqT.
 
 ```tsx
-const EntrySchema = VaultRecordSchema.extend({
-	title: z.string(),
-	done: z.boolean().optional().meta({ aka: ["complete"] }),
-});
-
-const Checklist = createWidget({
+const TaskList = createWidget({
 	inject: {
 		getHeading: IQuery.output(z.string().default("To do")),
-		getEntries: IQuery.output(z.array(EntrySchema)),
-		createEntry: ICommand.input(EntrySchema.extend({ id: z.uuid() })),
-		updateEntry: ICommand.input(EntrySchema.partial().extend({ ref: RecordRefSchema })),
+		getTasks: IQuery.input(PageInputSchema.extend(TaskFilterSchema.shape)).output(PageOf(TaskSchema)),
+		createTask: ICommand.input(NewTaskSchema).output(TaskSchema),
 		host: IHost,
 	},
-	draw: ({ getHeading: heading, getEntries, createEntry, updateEntry }) => { ... },
+	draw: ({ getHeading: heading, getTasks, createTask }) => { ... },
 });
 
-type ChecklistProps = PropsOf<typeof Checklist>;
+type TaskListProps = PropsOf<typeof TaskList>;
 
-export const metadata = defineMetadata(Checklist, { ... });
-export default Checklist;
+export const metadata = defineMetadata(TaskList, { ... });
+export default TaskList;
 ```
 
-**Every gateway is an abstract class under `IBaseGateway`, named `I*Gateway`; an implementation is a
-class named `*Gateway` that extends one.** `IValueGateway`, `IListGateway`, `ICrudGateway` and any
-interface extending them inherit `IBaseGateway.of`; `createWidget` refuses a class outside the root
-and refuses an implementation where an interface belongs. `.of(schema)` types every verb from one
-zod schema; `.of({ read, create, update, other })` types each verb from its own, `other` standing for
-every verb not named. Without `.of` an interface is untyped (`unknown`) — there is no generic form.
-The compiler holds an implementation's reads in its own class (`TS2515`) and its picked writes where it
-is given to a prop (`Implementation<typeof declared>`). `ISlot`, `ISlot.array()`, `IRepeat.of`, `IHost`,
-`INavigator`, `IHere`, `IReader`, `IContent`, `ICatalogue`, `IFoldIntoGroup` and `IConfigureMounts` are
-what the host hands over, and a widget gets one only by declaring it. A zod schema value is named
-`*Schema` and its type carries no suffix; a record's address is `RecordRef`, one branded name.
+**A widget declares ports; a handler is the same builder after `extends`, and position decides.**
+`IQuery.output(S)` is a value or a setting with no input, `IQuery.input(I).output(O)` a query with a
+typed input, `ICommand.input(I).output(O)` a command, and a bare `ICommand` one with neither. A
+handler answers a port: `class TasksQuery extends IQuery.input(I).output(O) { async query(input, ctx) }`,
+`class SaveTaskCommand extends ICommand.input(I).output(O) { async run(input, ctx) }`, with
+`ctx = { user, signal, host }`; it is named `*Query` or `*Command` and registered in a pack.
+`ISlot`, `ISlot.array()`, `IRepeat.of`, `IHost`, `INavigator`, `IHere`, `IReader`, `IContent`,
+`ICatalogue`, `IFoldIntoGroup` and `IConfigureMounts` are what the host hands over, and a widget gets
+one only by declaring it. A zod schema value is named `*Schema` and its type carries no suffix; a
+record's address is `RecordRef`, one branded name.
 
-**Values are checked where they cross, never in the widget.** The built-in gateways check what they
-read against the widget's schema through `context.parse` (`gateway/parsed.ts`, `gateway/problems.ts`):
-a record that does not fit is left out and reported to the settings window's red "!" beside the
-prop, and `useData` carries no `refused`. A value that does not fit is reported the same way and
-drawn as the default, so a widget never receives what its schema refuses and keeps no fallback of its
-own; a fixed set of choices is `z.enum([...]).default(...)`, whose values are the options
-(`optionsOf` in `gateway/written.ts` refuses metadata `options` naming other values). `createWidget` wraps whatever it is given — an engine gateway, any class
-extending an interface, or a plain value or array (`packages/core/src/declared-widget.ts`) — and a
-`create` or `update` the schema refuses rejects before it reaches the implementation. A value picked
-only `"get"` arrives as the value, `{ value, update }` when it picked `"get", "update"`. After any write it handed out the runtime
-re-reads that gateway; `subscribe` is optional and only means "read again".
+**Lists are pages.** A query answering rows takes `PageInputSchema` — `{ cursor?: string | null, limit }`,
+`limit` a hundred unless asked — and answers `PageOf(RowSchema)` — `{ items, next: string | null, total? }`, typed
+`Page<Row>` (`packages/core/src/gateway/page.ts`). The engine recognises a `PageOf` output: a read
+naming no `limit` gets a hundred rows, an asked `limit` is honoured, and it hands the widget the items as `data`, with `hasMore` and `more()`, which
+reads `next`. A paged query's `defineStates` entry is its rows, a plain array.
+A filter is a plain zod field of the input, usually picked from the shared schema
+(`TaskSchema.pick({ status: true }).partial()`), and a handler's input schema is what it can serve.
+A widget reads with `useData(query, input)`, answering `{ data, total, hasMore, more, isLoading, failure }` over a page, and
+writes with `await command(input)`, answering `{ ok: true, output }` or `{ ok: false, reason, ran }`:
+`ran: true` means the write happened and only its output was refused, so it is never retried. After a
+command, every query of the tile re-reads.
 
-**`.pick(...)` is the widget asking, `allow` is the person answering.** Without `.pick` a gateway has
-every method of its interface; with it, only the ones named, reads included. A verb not picked does not exist on the gateway **at compile time** (`entries.remove`
-is `TS2339`). A picked `create`, `update` or `remove` brings `createMany`, `updateMany` or
-`removeMany`, and `create` with `update` brings `upsert` (`packages/core/src/gateway/many.ts`): each
-answers `{ done, failed }`, and an implementation that has its own is used instead.
+**Values are checked where they cross, never in the widget.** A handler's output is parsed against its
+own schema and again against the widget's, strictly, a failure naming its exact path; `.catch` is how
+a field falls back. An output schema describes shape only: `.output()` refuses a `transform` or a
+`pipe`, because an output must parse to itself. A rule such as `min(1)` belongs to the input of the
+command that writes. A fixed set of choices is `z.enum([...]).default(...)`, whose values are the
+options.
 
-**Still to build: an implementation holds every piece of logic.** A selection has left the
-declaration: `.of()` takes no options for a value, and the widget's metadata names where the prop
-starts from — `props.<name>.source = { implementation, fields }`, `@core/selection` for which row is
-chosen and `@core/selected-row` for the row a sibling picks, resolved by `SelectionQuery` and
-`SelectedRowQuery` in `packages/packs/core`; `fields` name sibling props by
-their prop name. Every built-in source is a pack class built `new Class(fields, ports)` and holds
-its own logic — the picking in `packages/packs/core`, file and folder reading in
-`packages/packs/obsidian`, the statistics in `packages/packs/stats` — while core holds only the
-contract: `QueryPorts` in `packages/core/src/engine/packs.ts` (`prop`, `kept`, `screen`, `notes`
-beside the ports a command gets), built by `queryPortsOf`, and one resolver path in
-`engine/host-gateways.ts`. A catalogue preview resolves its picked props through the same path. What still sits in declarations is `wants` and a declared list `where`/`sort`; they
-leave for gateway implementations the packs offer per prop (`FolderQuery`,
-`TypedValueQuery`, `ScreenStateQuery`), each registered with `defineGatewayMetadata` and the fields
-the settings window draws from its constructor's schema. `keep: "screen"` is said in `defineMetadata`
-(`props.<name>.keep`), never in `.of()`; without it the value is kept in the tile. A widget then draws states and formats
+**A handler holds every piece of logic.** A feature's queries and commands live in
+`src/logic/<feature>` of a project and map a ready source (`src/shared/sources/<pack>`) to the shape a
+widget asks for; the widget and the handler meet only in `src/shared/schemas`, and imports point down,
+app → widgets → logic → shared. `widgetarium.json` names where each layer lives. Every built-in
+handler is a pack class built `new Class(fields, ports)` — the picking in `packages/packs/core`, file
+and folder reading in `packages/packs/obsidian`, the statistics in `packages/packs/stats` — while core
+holds only the contract: `QueryPorts` in `packages/core/src/engine/packs.ts`, built by `queryPortsOf`.
+A widget's metadata names where a prop starts from, `props.<name>.source = { implementation, fields }`:
+`@core/selection` for which row is chosen and `@core/selected-row` for the row a sibling picks, with
+`fields` naming sibling props by their prop name. `keep: "screen"` in `props.<name>.keep` makes a value
+a fact about the screen; without it the value is kept in the tile. A widget draws states and formats
 values; it never picks a row, falls back to the first, maps fields or filters by another widget. A
 relation is the target's id, written by the widget that creates the record.
 
-**`describes` in metadata is what the schema could not say.** One object keyed by the row's fields, holding the
-label a person reads and the `type` the engine matches fields by. The `aka` a vault note may use for
-a field lives in the schema, `done: z.number().optional().meta({ aka: ["kept"] })`, maps the field
-only when the record has no field of its own name, and is merged into `describes` by the manifest
-build (`packages/core/src/gateway/written.ts`); `describes` naming `aka` throws. A prop's own `aka`,
-the names the prop had, stays in metadata. It replaced both `item.fields` and `needs`, which described the same row twice.
-Four readers, each drawing a **different** conclusion from it, and no two of them ever compute the
-same answer: `describedFields` and `needsOf` in `packages/core/src/gateway/props.ts` — the field list the settings
-window draws, and the fields that take part in matching a note's properties — `inputsOfProp` in
-`packages/core/src/reading.ts`, which counts them to classify the prop's reading, and `typesIn` in
-`apps/obsidian/src/ai/find-command.ts`, which collects their types to rank a search. The line between the first
-two is `aka`: **a field takes part in matching a note's properties exactly when it
-names other names.** Without `aka` the widget reads the field under its own name, and `describes`
-only tells the settings window how to draw it.
+**`aka` in a schema names the properties a hand-written note may use for a field**,
+`done: z.boolean().optional().meta({ aka: ["complete"] })`, read only when the note has no field of its
+own name. A prop's own `aka`, the names the prop had, stays in metadata. Nothing matches fields by
+declared type.
 
 **A row is the record, and `ref` is its address.** `Row<T> = T & { ref }` — there is no `{ ref, value }`
-wrapper, so a widget writes `entry.title`, keys by `entry.ref`, and `useData` answers with `data`
-alone: an array for a list, the value for a value, `total` beside it. `ref` in a row type must be
-typed `RecordRef` or left out, and `createWidget` and `defineMetadata` refuse a described or defaulted `ref` outright.
-`rowOf` and `valueIn` in `packages/core/src/gateway/create.ts` are the only places an address is put on or taken
-off. A list of primitives is the one exception and keeps `{ value, ref }`, because a string has
-nowhere else to hold itself.
+wrapper, so a widget writes `entry.title` and keys by `entry.ref`. `ref` in a row type must be typed
+`RecordRef` or left out, and `createWidget` and `defineMetadata` refuse a described or defaulted `ref`
+outright. `rowOf` and `valueIn` are the only places an address is put on or taken off.
 
-The engine resolves each prop to a gateway from the binding the person chose — a vault folder or
-file, a value kept in the tile, or another tile's ref. Widgets read through `useData(gateway.list)`
-and write through verbs; every verb is asked through `can()`. The manifest carries no id, no version
-and no api: the id is the folder, the version is the commit, the api is stamped by the build.
+The engine resolves each port to a handler from the binding the person chose — a vault folder or
+file, a value kept in the tile, another tile's ref, or a feature handler. The manifest carries no id,
+no version and no api: the id is the folder, the version is the commit, the api is stamped by the build.
 **A surface is written by whoever places the node, and nothing lays one for you.** `main.js` no
 longer hands `normalizeBoard` a `roleOf`, so `withDefaultSurfaces` in `packages/core/src/surface-default.ts` does
 not run on a drawn board: it survives behind that switch, with `tools/surface-default-test.ts` as
@@ -236,9 +211,9 @@ the engine reads.
 
 **A widget folder is typed wherever it stands.** The repo has `registry/tsconfig.json`, so an editor
 opening a widget resolves `widgetarium` instead of reporting `TS2307` and handing every prop `any` —
-`packages/core/tsconfig.json` covers only the gateway's TypeScript. The vault gets the same: `layAgentFiles` lays
+`packages/core/tsconfig.json` covers only core's TypeScript. The vault gets the same: `layAgentFiles` lays
 `.widgetarium/widgets/tsconfig.json` and `types/` beside the widgets, built by `tools/widget-types.mts`
-from the gateway's emitted declarations, so a widget written in a vault is typed by the same manifest
+from core's emitted declarations, so a widget written in a vault is typed by the same manifest
 the engine reads. `npm run test:vault-types` lays them into a temp folder and compiles a widget
 against them.
 
@@ -250,12 +225,12 @@ install runs the code and refuses a card that says something the code does not.
 `tools/widget-props.json` pins every shipped widget's resolved props — regenerate it with `node
 --import ./tools/loader/register.mts tools/widget-props.ts` when a prop change is intended.
 
-**A list never hands over everything.** `pageOf` caps an unasked read at `PAGE_UNASKED` — a hundred
-rows — so a widget that draws what it read draws a hundred at most and a vault of a thousand notes
-cannot take the frame with it. A widget that needs more says how many and thereby says why: an
-aggregate names its own ceiling in its source, where a reader can see it. **Anything that draws rows
-paginates**, and the paging is there from the first row rather than appearing at the thousandth;
-`total` comes back beside `rows` so a widget knows what it did not get.
+**A list never hands over everything.** A read that names no `limit` gets a hundred rows
+(`PAGE_UNASKED`, `pageOf`), so a widget that draws what it read draws a hundred at most and a vault of a thousand notes
+cannot take the frame with it. A widget that needs more reads on with `more`; an aggregate names its
+own ceiling in its source, where a reader can see it. **Anything that draws rows paginates**, and the
+paging is there from the first row rather than appearing at the thousandth; `next` says what the
+widget did not get.
 
 **A widget is checked by the plugin, not by the person who wrote it.** `checkWidget` in
 `packages/core/src/widget-check.ts` reads a widget's own source, sheet and card and names six things a generated
@@ -279,7 +254,7 @@ destructive verb could then delete files on first render, with no binding made, 
 nothing to undo. The person names the path in the settings window, and only then does the widget
 touch anything. That order is the whole protection, and a default naming a path removes it.
 
-The manifest is refused: `carriesKey` in `packages/core/src/gateway/manifest.ts` walks a default to any depth
+The manifest is refused: `carriesKey` walks a default to any depth
 and refuses `path` in an object, in an array's rows, or nested inside either. `ref` is refused the
 same way, because a row's address is minted by the engine. Measured before the walk was added — the
 two checks used to be mirror images of each other's holes: `path` was caught only on a plain object,
@@ -289,11 +264,10 @@ two checks used to be mirror images of each other's holes: `path` was caught onl
 spelling of the same thing is the same defect; the name heuristic is what the engine can enforce, not
 what the law means. A widget shipping a path-shaped default does not reach the catalogue.
 
-**A tile's verbs are switched on by the person.** A binding carries `allow: [verbs]`; binding a folder
-in the settings window writes the widget's `writes` there, and the Data tab switches each one off and
-on. A vault binding with no `allow` only reads (`list`, `get`); a binding to rows kept in the tile may
-do whatever the widget declared. `allowedVerbs` in `packages/core/src/gateway/props.ts` decides, and a cut verb answers
-`can() === { can: false, reason }`.
+**A command is switched on by the person.** A command that writes the vault runs only once its
+binding carries `allow: [run]`, which the Data tab switches; that line is the person's consent. A
+query carries nothing to allow. A command over rows kept in the tile or the screen runs at once. A
+switched-off command answers `{ ok: false, reason }`, and its widget hides the control or says so.
 
 **A tile names the version it was made with.** `widget: "@scope/name@<commit>"` for a widget installed
 from a repository, a bare id for one that lives in the vault; `widgetKeyOf` in
@@ -308,31 +282,30 @@ note naming a commit the vault lacks offers to install that version.
 
 **A record's identity is an id, not its name.** Full decision in `docs/decisions.md`. A UUID in
 frontmatter under a namespaced key, exposed as `record.id`; stored references use it, names are
-labels. **Assigned only on an explicit action, never on render** — a gateway that writes while being
+labels. **Assigned only on an explicit action, never on render** — a query that writes while being
 drawn litters the vault. Everything must work for records with no id yet: resolve id first, name or
 path second. Duplicate ids come from **copies**, not from generation; the survivor is the one whose
 path sorts first, detection is on read, and the re-mint is a write, so it waits for one.
 
-**There are no settings. Every prop is a gateway, primitives included.** A list of named things —
-tabs, views, columns, boards — is an `IListGateway` or `ICrudGateway`. A single thing is an `IValueGateway`, and the
-card the build writes names what it holds: `{ "kind": "value", "control": "number" }`,
+**There are no settings. Every prop is a query or a command, primitives included.** A list of named
+things — tabs, views, columns, boards — is a query answering rows. A single thing is a value query, and
+the card the build writes names what it holds: `{ "kind": "value", "control": "number" }`,
 and `line`, `text` and `boolean` alike. The control is what the settings window draws from — a
 switch for a boolean, a one-line field for a number or a `line`, an area resized downward for a `text`,
 JSON for anything else — and it is what
 lets a number typed into the tile be re-bound to another widget without touching the widget that
-reads it. `here` is a solo gateway with `get`/`update` and deliberately no `list` and no filters,
-because a solo thing needs no collection surface.
+reads it. `IHere` is the note a widget stands in, read and written, and deliberately no list and no
+filters, because a solo thing needs no collection surface.
 
-**A value kept in the tile answers in the tick it is asked.** A gateway whose handlers touch no I/O
+**A value kept in the tile answers in the tick it is asked.** A query whose handler touches no I/O
 declares `settlesNow`, and the cache settles it on the first read rather than a microtask later.
 Without it every number read through `useData` is `isLoading` on its first frame, and a number that
 lives in the tile itself blinks on every mount.
 
 **A setting is never read as a prop.** `tile.settings` is not consulted for any prop. A binding is
 `{ implementation, fields, allow }` and nothing else, typed values included: `@core/typed-value` keeps
-`fields.value`, `@core/typed-rows` keeps `fields.rows`, and `typedIn` and `withTyped` in
-`packages/core/src/gateway/props.ts` are the one place that knows which field a prop's data lives
-under. A prop with no binding reads what `implementationOf` there derives from its declaration.
+`fields.value`, `@core/typed-rows` keeps `fields.rows`, and `typedIn` and `withTyped` are the one
+place that knows which field a prop's data lives under. `allow` holds only `run`, on a command. A prop with no binding reads what `implementationOf` there derives from its declaration.
 
 **One law, three storages.** Where a list can live in more than one place, the verbs — add, rename,
 archive, reorder, delete — are written **once** over rows, and each storage supplies only
@@ -380,7 +353,7 @@ archive, restore and delete of a view are the tab-rows law applied to the box's 
 (`withHolds`), and deleting a view takes its tiles off the board in the same write. A drop never
 lands as a sibling of a swap child — a drop names nothing — so it falls through to the view on
 screen and wraps. `@default/view-group` is read into a swap box that keeps the group's id, its mounted
-records become tiles, and the box answers to the widget id in wiring so a switcher that `wants` the
+records become tiles, and the box answers to the widget id in wiring so a switcher bound to the
 group finds it. Full decision in `docs/decisions.md`.
 
 **A background belongs to a group, not to a widget.** The engine draws every widget's root — its
@@ -426,8 +399,8 @@ slot wears one too: the manifest's `slots.<name>.surface` is the default, a tile
 the pick, and `withSlotSurface` wraps every item the slot draws in that plate, so the widget in a slot
 draws no background either — a kanban's `task-card` lies in the `group` its manifest names, raised
 because the column under it is a group already. A prop the
-parent does not feed a slotted widget arrives as a gateway over its declared default (`slotDefaults`),
-and a list is read a page at a time with `{ offset, limit }` (`pageOf`), which is how `@default/feed` loads
+parent does not feed a slotted widget arrives as its declared default (`slotDefaults`),
+and a list is read a page at a time (`pageOf`), which is how `@default/feed` loads
 ten more each time its end comes into view. A widget names its
 `role` in its manifest, a group names `role` and `purpose` on its box, and the role bounds how far it
 may be set apart. The nesting table in `packages/core/src/surface-roles.ts` is absolute: an `outline` is only ever
@@ -563,13 +536,13 @@ The section itself wears no plate, so the heading stands outside every plate and
 plate laws still count from there.
 
 **One widget points at another by ref, never by a shared name.** There is no context bus. A ref is
-`<tileId>/<propName>`; the board holds one registry of them (`packages/core/src/gateway/refs.ts`) and a where row
-carries `{ ref }` where a value would stand. A selection — which tab, which view, which card is open
+`<tileId>/<propName>`; the board holds one registry of them, and `@core/from-tile-value` binds a prop
+to one. A selection — which tab, which view, which card is open
 — is a box the engine owns over the very list it selects from, so a pick that names a row the list
 no longer holds is no pick at all. Full decision in `docs/decisions.md`.
 
 **Declared is not rendered.** Six rounds shipped with every gate green and were rejected on sight.
-A value sliced by a selection must be read through its gateway **inside the widget that draws it**,
+A value sliced by a selection must be read through its query **inside the widget that draws it**,
 with `useData`. One level up gives a correct declared value and a stale screen.
 
 **A markdown post-processor is reading mode only.** Live Preview is a different engine and needs a
@@ -642,12 +615,12 @@ Remind the person of this list at the end of every finished task, until each is 
 
 - [Only reviewed commits reach a vault](.tasks/approved-commits/artifacts/task.md) — until a curator
   list of approved commit hashes exists, every commit a registry serves installs unreviewed.
-- [Widget code cannot reach past its gateways](.tasks/widget-code-scanner/artifacts/task.md) — kit
+- [Widget code cannot reach past its ports](.tasks/widget-code-scanner/artifacts/task.md) — kit
   APIs for window events and portals, then a scanner refusing `window`, `document` and
   `ownerDocument` in widget source.
 - [Widgets know interfaces, implementations hold the logic](https://claude.ai/artifact/RxMVaSunPzhiHGjTESozqT)
-  — `I*` gateway interfaces, `defineGatewayImplementation`, the settings window's implementation
-  picker, the widgets off declared `where`/`sort` and `wants`, schemas renamed `*Schema`.
+  — every widget on `IQuery`/`ICommand` ports with `PageOf` lists, handlers in packs and
+  `src/logic`, the settings window's handler picker.
 
 ## Verification
 
@@ -759,7 +732,7 @@ scopes, same body as before, only the subject is short.
   3. A hook that performs an effect every render is named for what it does: `useWritesOwnSize`.
   4. One idiom per name: `manifestOfDeclared`, never `manifestOfWritten`.
      Idioms that stay: `xOf(y)` for a derivation read off `y`, `isX`/`hasX`, `refuseX` answering a reason
-     or null, `withX(y)`, `useX`, `createX`, `defineX`, `*Gateway`/`I*Gateway`, `*Schema`.
+     or null, `withX(y)`, `useX`, `createX`, `defineX`, `*Query`/`*Command`, `*Schema`.
 - Migrations are **lazy**: reading accepts the old shape, writing emits the new one, and nothing bulk
   rewrites the vault. A prop's `was` carries every name it had. Until the first release this law is
   suspended for the manifest and tile shapes: boards written before are rebound by hand, and every

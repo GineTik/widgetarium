@@ -15,30 +15,29 @@ the catalogue.
 ## 2. Declare what it reads, then draw it
 
 ```tsx
-import { IValueGateway, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
+import { IQuery, createWidget, defineLayout, defineMetadata, z } from "widgetarium";
 
 const Clock = createWidget({
 	inject: {
-		zone: IValueGateway.of(z.string().default("UTC")).pick("get"),
+		getZone: IQuery.output(z.string().default("UTC")),
 	},
-	draw: ({ zone }) => <div>{new Date().toLocaleTimeString("en-GB", { timeZone: zone })}</div>,
+	draw: ({ getZone: zone }) => <div>{new Date().toLocaleTimeString("en-GB", { timeZone: zone })}</div>,
 });
 
 export const metadata = defineMetadata(Clock, { title: "Clock", description: "The time in one zone." });
 
-export const layout = defineLayout({ role: "figure", size: { preferredWidth: 240, preferredHeight: "auto" } });
+export const layout = defineLayout({ role: "indicator", size: { preferredWidth: 240, preferredHeight: "auto" } });
 
 export default Clock;
 ```
 
-Every prop is a gateway class typed by a zod schema. A folder of notes, a file, or a value typed into
-the tile — the widget reads through the same declaration either way, and the person binding it
-chooses which. `IValueGateway` holds one value and arrives as that value when it picks only `"get"`;
-`IListGateway` and `ICrudGateway` hold rows and arrive as a gateway read with `useData`. Without
-`.pick` a gateway has every method of its interface; with it, only the ones named, reads included. A record that does not fit its
-schema is left out and shown on the red "!" beside the prop; a field's other names go in the schema,
-`done: z.boolean().optional().meta({ aka: ["complete"] })`. The widget is TypeScript: a
-`widget.jsx` is refused with the command that renames it.
+A widget reads through queries and writes through commands, each typed by a zod schema.
+`IQuery.output(schema)` is a value and arrives as that value; `IQuery.input(input).output(Page(Row))`
+is a list, read a page at a time with `useData`; `ICommand.input(input)` is a write, awaited for its
+answer. A folder of notes, a file, or a value typed into the tile — the widget reads through the same
+declaration either way, and the person binding it chooses which. The names a hand-written note may use
+for a field go in the schema, `done: z.boolean().optional().meta({ aka: ["complete"] })`. The widget is
+TypeScript: a `widget.jsx` is refused with the command that renames it.
 
 ## 3. It shows up in the list on its own
 

@@ -27,9 +27,11 @@ An agent provider then builds it from that.
 
 An Obsidian plugin. A note can hold a **board**: a fenced ` ```widgetarium ` block of YAML naming
 widget **tiles** and the **layout tree** they stand in. Saving the note redraws it. A **widget** is a
-folder under `.widgetarium/widgets/@scope/name/` holding `widget.tsx`. Every value a widget reads is
-a **gateway** the person binds — to a vault folder, one note, a value typed into the tile
-(`@core/typed-value`), or another tile's prop (`@core/from-tile-value`).
+folder under `.widgetarium/widgets/@scope/name/` holding `widget.tsx`. Data reaches a widget only
+through its **queries** (what it reads) and **commands** (what it writes), each bound on the tile to a
+handler — a vault folder, one note, a value typed into the tile (`@core/typed-value`), or another
+tile's prop (`@core/from-tile-value`). A command that writes the vault runs only once its binding
+carries `allow: [run]`.
 
 ```yaml
 v: 2
@@ -37,21 +39,20 @@ tiles:
   - id: w0
     widget: "@default/metric-total"
     props:
-      getRecords: { implementation: "@obsidian/folder", fields: { path: Metrics }, allow: [list, create, update] }
+      getRecords: { implementation: "@obsidian/folder", fields: { path: Metrics } }
       getTitle: { implementation: "@core/typed-value", fields: { value: Revenue } }
 layout:
   dir: row
   of:
     - dir: column
       keep: true
-      surface: group
-      of: [{ id: w0, height: 320 }]
+      of: [{ id: w0 }]
 ```
 
 - `layout` is a tree. A node is a **leaf** (`{ id }`) or a **box** (`dir: row | column | swap`).
 - A box carrying `collapse` is a side region; one carrying `keep: true` is the main one.
 - Every node may wear a `surface`: `none`, `apart` or `group`. A `group` is a faint grey plate
-  with a hairline, white on another group, and most nodes wear none.
+  with no edge, white on another group, earned only by a repeat; most nodes wear none.
 - Spacing is never written. It follows the tree: 24px in a region, 16px one box down, 8px deeper.
 - A board of typed tiles is a mock-up, not a screen.
 
@@ -72,7 +73,7 @@ Also `install <id>`, `check <id>`, `base <name>`, `card <name>`, `layout <note>`
 
 - **The tile is in `tiles` but not in `layout`**, so nothing draws. Check both.
 - **A prop is still on its default.** A board of typed tiles is a mock-up.
-- **A verb does nothing** because the binding's `allow` does not list it.
+- **A button does nothing** because its command's binding carries no `allow: [run]`.
 - **A widget edit never reached the vault.** A scope that is a real directory is a frozen copy.
 - **The YAML does not parse**, and the whole note stops rendering.
 

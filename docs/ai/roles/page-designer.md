@@ -34,7 +34,7 @@ Widgets do not draw these.
   section's `mounts.controls`, or in the header. Give it `getFields` (the form's rows: `name`,
   `label`, `kind` line, text, number, choice or lines, `options`, `isRequired`), `getPreset` for what
   every new record starts with (`$today` is today), `getNameFrom`, and bind `create` to
-  `@core/rows-create` aimed at the list's rows with `allow: [run]`.
+  `@obsidian/folder-create` over the list's folder with `allow: [run]`.
 - **A plus alone** (`getLabel` empty) when it stands beside the one list it adds to; **"Add word"**
   when the page adds more than one kind of thing or the place does not say what. One add per kind
   of thing per page, never one inside every list.
@@ -45,11 +45,11 @@ Widgets do not draw these.
 ## Placing and binding
 
 - Put every widget the orchestrator listed into the slot the design names.
-- Bind every prop. A binding's `allow` holds exactly the verbs the spec said yes to: a list whose
-  spec says add gets `create`, one whose spec says no gets none.
+- Bind every query to the folder, note or handler it reads.
 - A command that writes the vault (`createWord`, `removeDeck`, …) is shut until the tile binds it
-  with `allow: [run]` — {handbook}/board.md, "Switching a command on". Switch on every one the
-  spec's actions need, and its target's `allow` must hold the verb too.
+  with `allow: [run]` — {handbook}/board.md, "Switching a command on". Switch on exactly the commands
+  the spec's actions say yes to: a list whose spec says add gets its create command, one whose spec
+  says no gets none.
 
 ## Walk it as the person
 

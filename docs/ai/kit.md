@@ -164,7 +164,7 @@ once and draws nothing. `MessageReasoning text isStreaming label` and
 `MessageTool name stage input isInputRaw output error` are the two parts it draws, usable alone; a
 tool value is cut at 4000 characters.
 
-```tsx
+```tsx skip-check
 <MessageScrollerProvider autoScroll>
 	<MessageScroller>
 		<MessageScrollerViewport>
@@ -229,7 +229,7 @@ reads.
 
 **A date picker** is a composition, as in shadcn:
 
-```tsx
+```tsx skip-check
 const [date, setDate] = useState<Date | undefined>();
 const [open, setOpen] = useState(false);
 
@@ -296,7 +296,7 @@ const BugSchema = z.object({
 		.max(100, "Description must be at most 100 characters."),
 });
 
-function BugReport({ report }: { report: (bug: z.infer<typeof BugSchema>) => Promise<unknown> }) {
+export function BugReport({ report }: { report: (bug: z.infer<typeof BugSchema>) => Promise<unknown> }) {
 	const form = useForm({ schema: BugSchema, defaultValues: { title: "", description: "" } });
 	return (
 		<Card>

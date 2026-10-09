@@ -18,11 +18,11 @@
 | `find`                                | the whole catalogue, ranked against what you need                                                                                       |
 | `list`                                | the same, unranked                                                                                                                      |
 | `packs`, `sources`                    | the scopes installed, and the registries configured                                                                                     |
-| `show <id>`                           | one widget's props, role and size                                                                                                       |
+| `show <id>`                           | one widget's queries, commands, role and size                                                                                           |
 | `source <id>`                         | its source, to read before copying anything from it                                                                                     |
 | `install <id>`                        | writes it and its scope's shared files into the vault                                                                                   |
 | `start <id>`                          | your access to a widget's files, and the progress card in the chat                                                                      |
-| `check <id>`                          | six defects in a widget you wrote; exits 1 while any stands                                                                             |
+| `check <id>`                          | the defects below in a widget you wrote; exits 1 while any stands                                                                       |
 | `bases`                               | every base a screen can start from                                                                                                      |
 | `base <name>`                         | one base: its regions, its sections, ready to write into a note                                                                         |
 | `base <body> --with aside,dock`       | the body with these shell zones added: `nav`, `index`, `aside`, `dock`                                                                  |
@@ -34,11 +34,10 @@
 ## Finding a widget
 
 ```bash
-node {tool} find --role collection --reading sequence --needs date,text --about "tasks by day"
+node {tool} find --role collection --about "tasks by day"
 ```
 
-`--reading` takes `sequence`, `comparison`, `table`, `cross`, `field`. `--pack`, `--tag`, `--source`
-narrow it. Called with nothing it is the whole catalogue. Every row prints why it ranked where it
+`--pack`, `--tag`, `--source` narrow it. Called with nothing it is the whole catalogue. Every row prints why it ranked where it
 did, and nothing is filtered out — a near neighbour with different controls is a good answer.
 
 **It is the catalogue, not the vault.** Every row says `have` or `GET `, and **the difference does
@@ -98,7 +97,7 @@ node {tool} check @you/clock
 | ------------- | ---------------------------------------------------------------------------------- |
 | **colour**    | a colour written by hand; a theme repaints a token and cannot repaint a hex        |
 | **type**      | a `font-family` or `font-size` written by hand                                     |
-| **unbounded** | rows drawn from a `list` read with no `limit`                                      |
+| **unbounded** | rows drawn from a query read with no `limit`                                       |
 | **role**      | a manifest naming none, so no surface law can judge it                             |
 | **reaches**   | a name imported from `widgetarium` that the surface does not carry; it will crash  |
 | **heading**   | an `h1` or `h2` inside a widget whose role is not `text`                           |
@@ -117,3 +116,53 @@ node {tool} lint <note> --text
 
 `lint` every save. `layout` before claiming a width is right. `surfaces` only when something looks
 off on a board already drawn — it reads what is on screen and never hands you surfaces to write.
+
+## The design canvas
+
+Stage 3 is drawn here, a page at a time, and the person corrects it while the next page is drawn.
+
+**References.** For each product the research names, two or three pictures of the screens this app
+will have — the product's site, Dribbble, Mobbin, a page's `og:image`:
+
+```
+node {tool} reference <app> <https address> --kind app|site|marketing|photo --page "People,Person" --why "<what to take>"
+node {tool} note <app> <reference> "Home as quiet titled lists: take this layout" --tone take --at 0.45,0.4
+node {tool} note <app> <reference> "Rhythm pill on every row is noise; sort instead" --tone dislike --at 0.62,0.7
+```
+
+A reference stands on the pages it names. `take` is what the design copies, `like` what it admires,
+`dislike` what it leaves and why, `note` anything else; each note says what exactly, in a few words.
+When a take becomes a widget, write it again with `--into @<app>/<widget>`. Nothing is downloaded
+while you design: a widget shows a photo by its literal `https://` address, and the implement job runs
+`photos <app>` before it places the page.
+
+**Three directions first.** Pick the shell from the App shell table in `design-system.md`, then draw
+the opening page three ways that differ in structure — what leads, how the page is cut — as
+`@<app>/<page>-a-page`, `-b-page` and `-c-page`, placed as screens `<Page> · A`, `· B`, `· C`. Shoot
+them, ask, and end your turn:
+
+```
+node {tool} shot --design <app>
+node {tool} job ask <app> <job> --options "A,B,C" "<what each direction bets on, in one line>"
+```
+
+Keep the pick as `@<app>/<page>-page`, delete the other two, and write the shell and each page's
+archetype in the app's `design-system.md`. Never copy another app in this vault.
+
+**Every situation is a screen.** Before drawing, write the page's situation map in `design.md`: who
+arrives with what, their job right now, what must and must not be visible, the main action. Each
+situation is a frame, named as the key in the page widget's `states`:
+
+```
+node {tool} screen <app> "People" --widget @<app>/people-page --for "back on a routine day: who is due"
+node {tool} screen <app> "People" --widget @<app>/people-page --state Empty --for "first visit, nobody added yet"
+node {tool} screen <app> "People" --widget @<app>/people-page --state "Add person" --for "adding someone"
+```
+
+Every screen that shows rows has an `Empty` state; every press that opens something — add, edit,
+delete, confirm — has its own state with the kit's `Dialog` open over the page. Never edit
+`canvas.json`.
+
+**Then the rules.** `node {tool} rules <app>` prints every rule of `.widgetarium/design-system.md` and
+the app's own, measures the canvas against the measured ones and names each failing frame; answer
+every judged one yes or no and redraw until all pass. A rule is the person's word: never skip one.

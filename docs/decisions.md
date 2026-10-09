@@ -7,7 +7,7 @@ Why the shapes are what they are. Written once, when the decision cost something
 A UUID in frontmatter under a namespaced key, exposed as `record.id`. Stored references use it; names
 are labels.
 
-**Assigned only on an explicit action, never on render.** A gateway that writes while being drawn
+**Assigned only on an explicit action, never on render.** A query that writes while being drawn
 litters the vault with ids nobody asked for. Everything works for records with no id yet: resolve id
 first, name or path second.
 
@@ -69,14 +69,26 @@ where row carries `{ ref }` where a value would stand.
 A selection — which tab, which view, which card is open — is a box the engine owns **over the very
 list it selects from**, so a pick naming a row the list no longer holds is no pick at all.
 
-**There are no settings. Every prop is a gateway, primitives included.** A list of named things is a
-collection; a single thing is a value, and its card names the control it draws with. `tile.settings`
-is never consulted for a prop: a value a person typed is `{ from: typed, value }` or
-`{ from: typed, rows }`.
+**There are no settings. Every prop is a query or a command, primitives included.** A list of named
+things is a query answering rows; a single thing is a value query, and its card names the control it
+draws with. `tile.settings` is never consulted for a prop: a value a person typed is bound to
+`@core/typed-value` with `fields.value`, or `@core/typed-rows` with `fields.rows`.
 
 **Declared is not rendered.** Six rounds shipped with every gate green and were rejected on sight. A
-value sliced by a selection must be read through its gateway **inside the widget that draws it**. One
+value sliced by a selection must be read through its query **inside the widget that draws it**. One
 level up gives a correct declared value and a stale screen.
+
+## Data reaches a widget only through `IQuery` and `ICommand`
+
+A widget declares ports — `IQuery.output(S)`, `IQuery.input(I).output(O)`, `ICommand.input(I).output(O)`
+— and a handler is the same builder after `extends`, so both sides say the same words and position
+tells them apart. Lists are `Page(Row)` read with `PageInput`, filters are plain fields of the input,
+and a handler holds every rule and every mapping.
+
+It replaced collection and value interfaces whose verbs a widget picked and a person allowed one by
+one, a universal filter and sort query, and field matching by declared types: two vocabularies for
+one job, and the logic split between a widget's declaration and its source. A port carries no verbs
+to allow; the person's consent is one switch per command, `allow: [run]`.
 
 ## A plate is one component, and the laws decide it at render
 

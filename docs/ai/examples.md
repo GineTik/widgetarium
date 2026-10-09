@@ -1,6 +1,6 @@
 # Examples
 
-Whole boards, every node's surface written. Build what these build.
+Whole boards with every node's surface written, then the four code patterns. Build what these build.
 
 ## A dashboard with a rail on each side
 
@@ -24,7 +24,7 @@ tiles:
   - id: running
     widget: "@flow/in-flight"
     props:
-      getFlights: { implementation: "@obsidian/folder", fields: { path: Sessions }, allow: [list, update] }
+      getFlights: { implementation: "@obsidian/folder", fields: { path: Sessions } }
   - id: bugs
     widget: "@flow/plan-qa"
     props:
@@ -56,18 +56,8 @@ layout:
       role: collection
       purpose: The work this vault is doing
       of:
-        - dir: column
-          role: collection
-          purpose: What is running now
-          surface: group
-          of:
-            - { id: running }
-        - dir: column
-          role: collection
-          purpose: What the flow found
-          surface: group
-          of:
-            - { id: bugs }
+        - { id: running }
+        - { id: bugs }
     - dir: column
       role: detail
       purpose: The session being watched
@@ -76,14 +66,14 @@ layout:
       width: 320
       collapse: { into: drawer, toggle: adaptive }
       of:
-        - { id: tail, surface: group }
-        - { id: notice, surface: group }
+        - { id: tail }
+        - { id: notice }
 ```
 ````
 
-The rails are `apart` — a line, no plate. The middle wears nothing; each of its two sections is a
-`group`, and the rows the widgets draw inside come back white because a group on a group is white.
-The right rail's two tiles are each their own `group` on a rail that has no plate, so both are grey.
+The rails are `apart`: a line, no plate. Nothing else wears one: each tile is one thing standing
+alone, and only a repeat earns a plate. A box wrapping a single tile would be a phantom. The rows the widgets draw inside are the
+repeat, and the widgets plate them themselves.
 
 ## A list, a grid of complete things, and a bar
 
@@ -104,7 +94,7 @@ tiles:
   - id: tracks
     widget: "@media/track-list"
     props:
-      getTracks: { implementation: "@obsidian/folder", fields: { path: Music/Tracks }, allow: [list, update] }
+      getTracks: { implementation: "@obsidian/folder", fields: { path: Music/Tracks } }
       getFilter: { implementation: "@core/from-tile-value", fields: { ref: "tabs/getSelection" } }
   - id: albums
     widget: "@media/album-grid"
@@ -126,7 +116,6 @@ layout:
         - dir: row
           role: collection
           purpose: Every track, filtered the way the switch says
-          surface: group
           of:
             - { id: tabs }
             - { id: tracks }
@@ -145,71 +134,11 @@ layout:
 ```
 ````
 
-The track list is one `group`; its rows are drawn by the widget, not by the board. The album grid
-wears **nothing** — each album is a `group` the widget draws itself, and a plate around them would
-be an edge drawn twice. The player is `apart` along the bottom.
-
-## A record with a rail of its own
-
-````markdown
----
-widgetarium: { kind: screen }
----
-
-# Derive the empty state
-
-```widgetarium
-v: 2
-base: supporting-pane
-tiles:
-  - id: tabs
-    widget: "@default/underline-tabs"
-    props:
-      getOptions: { implementation: "@core/typed-rows", fields: { rows: [{ name: Summary }, { name: Plan }, { name: Implementation }] } }
-  - id: body
-    widget: "@flow/report"
-    props:
-      getBody: { implementation: "@obsidian/file", fields: { path: Tasks/152.md, field: content } }
-      getTestPlan: { implementation: "@obsidian/folder", fields: { path: Tasks/152/checks } }
-  - id: progress
-    widget: "@default/metric-total"
-    props:
-      getRecords: { implementation: "@obsidian/folder", fields: { path: Tasks/152/steps } }
-  - id: jump
-    widget: "@default/icon-list"
-    props:
-      getEntries: { implementation: "@obsidian/folder", fields: { path: Tasks/152/links } }
-layout:
-  dir: row
-  of:
-    - dir: column
-      keep: true
-      role: detail
-      purpose: The task being read
-      of:
-        - { id: tabs }
-        - { id: body }
-    - dir: column
-      role: indicators
-      purpose: Where this task stands
-      surface: apart
-      side: start
-      width: 300
-      collapse: { into: drawer, toggle: adaptive }
-      of:
-        - { id: progress }
-        - { id: jump }
-```
-````
-
-The tabs and the report stand bare in the kept column — a heading and the spacing step already say
-they belong together. The rail is `apart`, and each block on it is a `group` that nobody wrote: the
-rail's role is `indicators`, and an `indicators` region lays a plate on every widget in it.
+The switch and the track list stand bare: the list plates its own rows. The album grid wears **nothing**:
+each album is a plate the widget draws, and a plate around them would be an edge drawn twice. The
+player is `apart` along the bottom.
 
 ## A section, and the two ways it fills
-
-`@default/section` is a widget with `role: layout`. It titles a part of a region and holds what stands
-under it. `filling` decides which half of it the settings window even asks for.
 
 ````markdown
 ---
@@ -229,7 +158,7 @@ tiles:
       getFilling: { implementation: "@core/typed-value", fields: { value: per-row } }
       getArrangement: { implementation: "@core/typed-value", fields: { value: grid } }
       getMinWidthPx: { implementation: "@core/typed-value", fields: { value: 280 } }
-      getItems: { implementation: "@obsidian/folder", fields: { path: Projects }, allow: [list] }
+      getItems: { implementation: "@obsidian/folder", fields: { path: Projects } }
     slots:
       item: { widget: "@flow/project-card" }
   - id: today
@@ -265,21 +194,13 @@ layout:
 ```
 ````
 
-`projects` fills **per row**: one `@flow/project-card` is drawn again for every note in the folder,
-the whole row handed down, and the grid wraps once a card would go under 280px. Nothing is edited per
-card — the binding is the edit.
-
-`today` fills **placed**: two widgets a person put there, each keeping its own props and its own
-settings, reached from the board itself while it is being edited. Its `controls` stand at the end of
-the heading row and govern that section only.
-
-Neither section wears a plate; the arrangement plates what stands in it. `projects` is a `grid`, so
-every card is a plate of its own. `today` is a `column`, so its two widgets stand bare. Were `today`
-a list of the same kind of row, it would be `rows`: one plate around all of them, a line between.
+`projects` fills **per row**: `@flow/project-card` is drawn again for every note in the folder, and
+the grid wraps once a card would go under 280px. `today` fills **placed**: two widgets a person put
+there, each with its own props; its `controls` govern that section only. Neither section wears a
+plate: a `grid` gives every card one, a `column` leaves its widgets bare, `rows` would put one plate
+around all of them with a line between.
 
 ## Words on the screen
-
-Text is placed with `@default/obsidian-markdown-preview`, or written as markdown outside the block.
 
 | Markdown | Where                                          |
 | -------- | ---------------------------------------------- |
@@ -287,5 +208,212 @@ Text is placed with `@default/obsidian-markdown-preview`, or written as markdown
 | `##`     | first in a region holding more than one widget |
 | `###`    | first in a group, when a region holds several  |
 
-A widget that names itself gets no title above it. Never skip a level, never a second `#`. Text wears
-no surface.
+A widget that names itself gets no title above it. Never skip a level. Text wears no surface.
+
+## The code patterns
+
+One feature, tasks, in the project layout `widget.md` describes. Every block below is a whole file;
+`npm run test:docs-code` compiles them together.
+
+### A shared schema both sides import
+
+The schema is the meeting point: a widget and a handler never import each other, both import this.
+A filter is a plain field picked from the record. A rule a write must satisfy (`min(1)`) belongs to
+the input of the command that writes, never to a shape that is read.
+
+```ts file=src/shared/schemas/task.ts
+import { z } from "widgetarium";
+
+export const TaskStatusSchema = z.enum(["todo", "doing", "done"]);
+
+export const TaskSchema = z.object({
+	id: z.uuid(),
+	title: z.string(),
+	status: TaskStatusSchema,
+	due: z.iso.date().nullable(),
+});
+
+export const TaskFilterSchema = TaskSchema.pick({ status: true }).partial();
+
+export const NewTaskSchema = TaskSchema.pick({ id: true, due: true }).extend({ title: z.string().min(1) });
+
+export type Task = z.infer<typeof TaskSchema>;
+```
+
+### A feature query mapping a ready source
+
+`src/shared/sources/obsidian` ships generic handlers; this feature reads notes through one of them and
+maps each note to a `Task`. The mapping and the business rule live here, never in the widget. Its
+signature, as the project ships it:
+
+```ts file=src/shared/sources/obsidian/notes.ts
+import { ICommand, IQuery, PageInputSchema, PageOf, z } from "widgetarium";
+import type { HandlerContext } from "widgetarium";
+
+export const NoteSchema = z.object({ path: z.string(), properties: z.record(z.string(), z.unknown()) });
+const NotePageSchema = PageOf(NoteSchema);
+const NewNoteSchema = z.object({ name: z.string(), properties: z.record(z.string(), z.unknown()) });
+
+export declare class NotesInFolderQuery extends IQuery.input(PageInputSchema).output(NotePageSchema) {
+	constructor(fields: { path: string });
+	query(input: z.output<typeof PageInputSchema>, ctx: HandlerContext): Promise<z.output<typeof NotePageSchema>>;
+}
+
+export declare class CreateNoteCommand extends ICommand.input(NewNoteSchema).output(NoteSchema) {
+	constructor(fields: { path: string });
+	run(input: z.output<typeof NewNoteSchema>, ctx: HandlerContext): Promise<z.output<typeof NoteSchema>>;
+}
+```
+
+```ts file=src/logic/tasks/tasks-query.ts
+import { IQuery, PageInputSchema, PageOf, z } from "widgetarium";
+import type { HandlerContext } from "widgetarium";
+import { TaskFilterSchema, TaskSchema } from "../../shared/schemas/task";
+import type { Task } from "../../shared/schemas/task";
+import { NoteSchema, NotesInFolderQuery } from "../../shared/sources/obsidian/notes";
+
+const TasksInputSchema = PageInputSchema.extend(TaskFilterSchema.shape);
+const TaskPageSchema = PageOf(TaskSchema);
+
+export class TasksQuery extends IQuery.input(TasksInputSchema).output(TaskPageSchema) {
+	readonly #notes = new NotesInFolderQuery({ path: "Tasks" });
+
+	async query(input: z.output<typeof TasksInputSchema>, ctx: HandlerContext): Promise<z.output<typeof TaskPageSchema>> {
+		const notes = await this.#notes.query({ cursor: input.cursor ?? null, limit: input.limit }, ctx);
+		const tasks = notes.items.flatMap(taskOf);
+		return { items: input.status ? tasks.filter((task) => task.status === input.status) : tasks, next: notes.next };
+	}
+}
+
+function taskOf(note: z.output<typeof NoteSchema>): Task[] {
+	const parsed = TaskSchema.safeParse({ ...note.properties, title: note.path.replace(/\.md$/, "") });
+	return parsed.success ? [parsed.data] : [];
+}
+```
+
+A page may come back shorter than `limit`; `next` alone says whether more exist.
+
+### A list widget reading that query
+
+The widget declares the port it needs, with the same input and output the handler serves, and draws
+states. It never filters, maps fields or picks a row.
+
+```tsx file=src/widgets/tasks/task-list/widget.tsx
+import {
+	IQuery,
+	PageInputSchema,
+	PageOf,
+	createWidget,
+	defineLayout,
+	defineMetadata,
+	defineStates,
+	useData,
+} from "widgetarium";
+import { Badge, EmptyState, LayoutItem, Rows, ShowMore } from "widgetarium/kit";
+import { TaskFilterSchema, TaskSchema, TaskStatusSchema } from "../../../shared/schemas/task";
+
+const TaskList = createWidget({
+	inject: {
+		getTasks: IQuery.input(PageInputSchema.extend(TaskFilterSchema.shape)).output(PageOf(TaskSchema)),
+		getStatus: IQuery.output(TaskStatusSchema.default("todo")),
+	},
+	draw: ({ getTasks, getStatus: status }) => {
+		const { data, isLoading, failure, hasMore, more } = useData(getTasks, { status, limit: 20 });
+		if (failure) return <EmptyState title="The tasks could not be read" text={failure} />;
+		if (!isLoading && data.length === 0) return <EmptyState title="Nothing in this status" />;
+		return (
+			<Rows>
+				{data.map((task) => (
+					<LayoutItem key={task.id}>
+						{task.title} <Badge size="s">{task.status}</Badge>
+					</LayoutItem>
+				))}
+				{hasMore ? <ShowMore isLoading={isLoading} onMore={more} /> : null}
+			</Rows>
+		);
+	},
+});
+
+export const metadata = defineMetadata(TaskList, {
+	title: "Task list",
+	description: "Which tasks are in this status.",
+	keywords: ["tasks", "todo", "status"],
+});
+
+export const layout = defineLayout({ role: "collection", size: { preferredWidth: "full", preferredHeight: "auto" } });
+
+export const states = defineStates(TaskList, {
+	Full: {
+		getTasks: [{ id: "6f1c7c0e-4f7a-4c55-9a43-0b7a3e1f2d10", title: "Call the plumber", status: "todo", due: null }],
+	},
+	Empty: { getTasks: [] },
+});
+
+export default TaskList;
+```
+
+### A form widget and the command it sends
+
+The widget mints the record's `id` at the press, so a retry writes nothing twice. An answer with
+`ok: false` carries `reason`; `ran: true` means the write happened and only its output was refused,
+so it is never sent again.
+
+```ts file=src/logic/tasks/create-task-command.ts
+import { ICommand, z } from "widgetarium";
+import type { HandlerContext } from "widgetarium";
+import { NewTaskSchema, TaskSchema } from "../../shared/schemas/task";
+import { CreateNoteCommand } from "../../shared/sources/obsidian/notes";
+
+export class CreateTaskCommand extends ICommand.input(NewTaskSchema).output(TaskSchema) {
+	readonly #notes = new CreateNoteCommand({ path: "Tasks" });
+
+	async run(input: z.output<typeof NewTaskSchema>, ctx: HandlerContext): Promise<z.output<typeof TaskSchema>> {
+		const task = { ...input, status: "todo" as const };
+		await this.#notes.run({ name: task.title, properties: { id: task.id, status: task.status, due: task.due } }, ctx);
+		return task;
+	}
+}
+```
+
+```tsx file=src/widgets/tasks/new-task/widget.tsx
+import { useState } from "react";
+import { ICommand, createWidget, defineLayout, defineMetadata, defineStates } from "widgetarium";
+import { Button, Input } from "widgetarium/kit";
+import { NewTaskSchema, TaskSchema } from "../../../shared/schemas/task";
+
+const NewTask = createWidget({
+	inject: {
+		createTask: ICommand.input(NewTaskSchema).output(TaskSchema),
+	},
+	draw: ({ createTask }) => {
+		const [title, setTitle] = useState("");
+		const [refusal, setRefusal] = useState<string | null>(null);
+		const send = async (): Promise<void> => {
+			const answer = await createTask({ id: crypto.randomUUID(), title, due: null });
+			setRefusal(answer.ok ? null : answer.reason);
+			if (answer.ok) setTitle("");
+		};
+		return (
+			<form className="flex flex-col gap-cards" onSubmit={(event) => (event.preventDefault(), void send())}>
+				<Input value={title} onValueChange={setTitle} placeholder="What needs doing" />
+				{refusal ? <p className="text-destructive">{refusal}</p> : null}
+				<Button type="submit" disabled={title.trim() === ""}>
+					Add task
+				</Button>
+			</form>
+		);
+	},
+});
+
+export const metadata = defineMetadata(NewTask, {
+	title: "New task",
+	description: "Adds a task with a title.",
+	keywords: ["task", "add", "form"],
+});
+
+export const layout = defineLayout({ role: "composer", size: { preferredWidth: 480, preferredHeight: "auto" } });
+
+export const states = defineStates(NewTask, { Empty: {} });
+
+export default NewTask;
+```

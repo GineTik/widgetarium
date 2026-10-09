@@ -141,7 +141,7 @@ stands, so the build knows where rows are added and where not:
 | review  | yes      | Review · content      | knew it / not yet               |
 ```
 
-A "no" is a decision: nothing on the board may offer it, and no binding's `allow` holds its verb.
+A "no" is a decision: nothing on the board may offer it, and no command for it is switched on.
 
 ## After the yes
 
