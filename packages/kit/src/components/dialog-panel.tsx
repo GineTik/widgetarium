@@ -5,7 +5,7 @@ import type { DialogSize } from "../utils/class-names";
 import { DialogContext } from "./dialog-context";
 import type { DialogState } from "./dialog-context";
 import { DialogHead } from "./dialog-head";
-import { ModalLayer } from "./modal-layer";
+import { DISMISSED_ANYWHERE, ModalLayer } from "./modal-layer";
 
 export interface DialogPanelProps {
 	readonly isOpen: boolean;
@@ -28,7 +28,7 @@ export function DialogPanel({
 }: DialogPanelProps): ReactElement {
 	return (
 		<DialogContext.Provider value={dialogStateOf(isOpen, onClose)}>
-			<ModalLayer kind="dialog" closesOnScrim={true} className={dialogClass({ size, className })}>
+			<ModalLayer kind="dialog" dismissal={DISMISSED_ANYWHERE} className={dialogClass({ size, className })}>
 				<DialogHead title={title} onClose={onClose} />
 				{children}
 				{actions ? <footer className="wg-kit-dialog-actions">{actions}</footer> : null}

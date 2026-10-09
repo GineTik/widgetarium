@@ -11407,7 +11407,7 @@ body.wg-tree-carrying .wg-tile-body {
 	position: absolute;
 	inset: 0;
 	background: var(--wg-overlay-scrim);
-	opacity: 1;
+	opacity: var(--wg-kit-scrim-fade, 1);
 	transition: opacity var(--wg-grow) var(--wg-ease);
 }
 @starting-style {
@@ -11460,7 +11460,7 @@ body.wg-tree-carrying .wg-tile-body {
 	max-height: 80%;
 	border-radius: var(--wg-kit-plate);
 }
-:is(.wg-root, .wg-portal) .wg-kit-modal.is-sheet[data-side="bottom"] {
+:is(.wg-root, .wg-portal) .wg-kit-modal:is(.is-sheet, .is-drawer)[data-side="bottom"] {
 	right: 8px;
 	bottom: 8px;
 	left: 8px;
@@ -11468,19 +11468,30 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: var(--wg-kit-plate);
 }
 :is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer[data-side="bottom"] {
-	right: 0;
-	bottom: 0;
-	left: 0;
 	max-height: 85%;
 	padding-top: 0;
-	border-radius: var(--wg-kit-plate) var(--wg-kit-plate) 0 0;
 	transform: translateY(var(--wg-kit-drawer-drag, 0px));
 	transition:
 		translate var(--wg-grow) var(--wg-spring),
 		transform var(--wg-grow) var(--wg-spring),
 		opacity var(--wg-quick) var(--wg-ease);
 }
-:is(.wg-root, .wg-portal) .wg-kit-modal.is-dragging {
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer.has-snaps {
+	height: var(--wg-kit-drawer-height);
+	max-height: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer.has-snaps .wg-kit-modal-footer {
+	margin-top: 0;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer.is-held-low {
+	overflow: hidden;
+	touch-action: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer.is-dragging {
+	transition: none;
+	user-select: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal-layer:has(> .wg-kit-modal.is-dragging) > .wg-kit-modal-scrim {
 	transition: none;
 }
 @starting-style {
@@ -11590,12 +11601,25 @@ body.wg-tree-carrying .wg-tile-body {
 	right: 16px;
 }
 :is(.wg-root, .wg-portal) .wg-kit-drawer-handle {
+	position: sticky;
+	top: 0;
+	z-index: 1;
 	display: flex;
+	flex: none;
+	order: -1;
+	align-items: flex-start;
 	justify-content: center;
-	margin: 0 -24px;
-	padding: 10px 0 6px;
+	box-sizing: border-box;
+	height: 24px;
+	margin: 0 -24px -16px;
+	padding-top: 10px;
+	background: inherit;
+	outline: none;
 	cursor: grab;
 	touch-action: none;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-dragging .wg-kit-drawer-handle {
+	cursor: grabbing;
 }
 :is(.wg-root, .wg-portal) .wg-kit-drawer-grip {
 	width: 44px;
@@ -11603,6 +11627,29 @@ body.wg-tree-carrying .wg-tile-body {
 	border-radius: var(--wg-kit-pill);
 	background: var(--muted-foreground);
 	opacity: 0.4;
+	transition:
+		width var(--wg-press) var(--wg-spring),
+		opacity var(--wg-quick) var(--wg-ease);
+}
+:is(.wg-root, .wg-portal) .wg-kit-drawer-handle:hover .wg-kit-drawer-grip {
+	opacity: 0.6;
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-dragging .wg-kit-drawer-grip {
+	width: 56px;
+	opacity: 0.7;
+}
+:is(.wg-root, .wg-portal) .wg-kit-drawer-handle:focus-visible .wg-kit-drawer-grip {
+	opacity: 1;
+	box-shadow: 0 0 0 2px var(--ring);
+}
+:is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer .wg-kit-modal-close {
+	z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+	:is(.wg-root, .wg-portal) .wg-kit-modal.is-drawer[data-side],
+	:is(.wg-root, .wg-portal) .wg-kit-drawer-grip {
+		transition: none;
+	}
 }
 
 :is(.wg-root, .wg-portal) .wg-kit-toaster-region {

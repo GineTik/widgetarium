@@ -10,10 +10,22 @@ export interface PageAsk {
 	readonly size: PageSize;
 }
 
+export type PagePoint = readonly [x: number, y: number];
+
+export interface PointerPath {
+	readonly from: PagePoint;
+	readonly to: PagePoint;
+	readonly steps: number;
+	readonly stepMs: number;
+}
+
 export interface AskedPage {
 	readonly ask: (expression: string) => Promise<unknown>;
 	readonly press: (x: number, y: number) => Promise<void>;
 	readonly hover: (x: number, y: number) => Promise<void>;
+	readonly drag: (path: PointerPath) => Promise<void>;
+	readonly release: (at: PagePoint) => Promise<unknown>;
+	readonly reduceMotion: () => Promise<unknown>;
 	readonly shoot: () => Promise<Buffer>;
 	readonly close: () => void;
 }
@@ -23,6 +35,9 @@ interface PageSocket {
 	readonly ask: (expression: string) => Promise<unknown>;
 	readonly press: (x: number, y: number) => Promise<void>;
 	readonly hover: (x: number, y: number) => Promise<void>;
+	readonly drag: (path: PointerPath) => Promise<void>;
+	readonly release: (at: PagePoint) => Promise<unknown>;
+	readonly reduceMotion: () => Promise<unknown>;
 	readonly shoot: () => Promise<Buffer>;
 	readonly viewportSetTo: (size: PageSize) => Promise<unknown>;
 }
@@ -57,6 +72,9 @@ function handled(socket: PageSocket, chrome: ChildProcess): AskedPage {
 		ask: socket.ask,
 		press: socket.press,
 		hover: socket.hover,
+		drag: socket.drag,
+		release: socket.release,
+		reduceMotion: socket.reduceMotion,
 		shoot: socket.shoot,
 		close: () => {
 			socket.close();
@@ -140,6 +158,11 @@ async function talking(socketUrl: string): Promise<PageSocket> {
 		hover: async (x, y) => {
 			await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
 		},
+		drag: (path) => draggedAlong(send, path),
+		release: ([x, y]) =>
+			send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 }),
+		reduceMotion: () =>
+			send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] }),
 		shoot: async () =>
 			Buffer.from(String(fieldOf(fieldOf(await send("Page.captureScreenshot", {}), "result"), "data")), "base64"),
 		viewportSetTo: ([width, height]) =>
@@ -151,6 +174,18 @@ async function pressedAt(send: Send, x: number, y: number): Promise<void> {
 	await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
 	await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
 	await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+}
+
+async function draggedAlong(send: Send, { from, to, steps, stepMs }: PointerPath): Promise<void> {
+	const [fromX, fromY] = from;
+	await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: fromX, y: fromY });
+	await send("Input.dispatchMouseEvent", { type: "mousePressed", x: fromX, y: fromY, button: "left", clickCount: 1 });
+	for (let step = 1; step <= steps; step += 1) {
+		await waited(stepMs);
+		const x = fromX + ((to[0] - fromX) * step) / steps;
+		const y = fromY + ((to[1] - fromY) * step) / steps;
+		await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y, button: "left", buttons: 1 });
+	}
 }
 
 function opening(socket: WebSocket): Promise<unknown> {

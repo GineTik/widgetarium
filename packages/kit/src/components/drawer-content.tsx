@@ -1,35 +1,45 @@
 import { createElement as h, useContext } from "react";
-import type { CSSProperties, HTMLAttributes, ReactElement } from "react";
-import { useDrawerDrag } from "../hooks/use-drawer-drag";
+import type { HTMLAttributes, ReactElement } from "react";
+import type { DragPointerProps } from "../hooks/use-drawer-drag";
+import { useDrawerMotion } from "../hooks/use-drawer-motion";
 import { cn } from "../utils/cn";
-import type { TokenStyle } from "../utils/token-style";
 import { useDialog } from "./dialog-context";
-import { DrawerDirectionContext } from "./drawer-direction";
+import { DrawerContext } from "./drawer-context";
 import { DrawerHandle } from "./drawer-handle";
-import { ModalLayer } from "./modal-layer";
+import { ModalCloseButton } from "./modal-close-button";
+import { DISMISSED_ANYWHERE, ModalLayer } from "./modal-layer";
+import type { ModalDismissal } from "./modal-layer";
 
-export type DrawerContentProps = HTMLAttributes<HTMLDivElement>;
+const NEVER_DISMISSED: ModalDismissal = { byScrim: false, byEscape: false };
 
-export function DrawerContent({ className, style, children, ...rest }: DrawerContentProps): ReactElement {
-	const direction = useContext(DrawerDirectionContext);
-	const { isOpen, setOpen } = useDialog();
-	const drag = useDrawerDrag(isOpen, setOpen);
+export interface DrawerContentProps extends Omit<HTMLAttributes<HTMLDivElement>, keyof DragPointerProps> {
+	readonly showCloseButton?: boolean | undefined;
+}
+
+export function DrawerContent({
+	showCloseButton = false,
+	className,
+	style,
+	children,
+	...rest
+}: DrawerContentProps): ReactElement {
+	const settings = useContext(DrawerContext);
+	const motion = useDrawerMotion(settings, useDialog());
 	return (
 		<ModalLayer
 			kind="drawer"
-			side={direction}
-			closesOnScrim={true}
+			side={settings.direction}
+			dismissal={settings.isDismissible ? DISMISSED_ANYWHERE : NEVER_DISMISSED}
+			scrimStyle={motion.scrimStyle}
 			{...rest}
-			panelRef={drag.panelRef}
-			className={cn(drag.isDragging && "is-dragging", className)}
-			style={dragStyle(style, drag.offsetPx)}
+			{...motion.pointerProps}
+			panelRef={motion.panelRef}
+			className={cn(motion.className, className)}
+			style={{ ...style, ...motion.panelStyle }}
 		>
-			{direction === "bottom" ? <DrawerHandle gripProps={drag.gripProps} /> : null}
 			{children}
+			{showCloseButton ? <ModalCloseButton /> : null}
+			{settings.direction === "bottom" ? <DrawerHandle grip={motion.grip} /> : null}
 		</ModalLayer>
 	);
-}
-
-function dragStyle(style: CSSProperties | undefined, offsetPx: number): TokenStyle {
-	return { ...style, "--wg-kit-drawer-drag": `${offsetPx}px` };
 }

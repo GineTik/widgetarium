@@ -32,7 +32,7 @@ export type { NavigationMenuTriggerProps } from "./components/navigation-menu-tr
 export type { SheetContentProps } from "./components/sheet-content";
 export type { ModalSide } from "./components/modal-layer";
 export type { DrawerContentProps } from "./components/drawer-content";
-export type { DrawerProps } from "./components/drawer";
+export type { DrawerProps, SnapPoint } from "./components/drawer";
 export type { AlertDialogContentProps } from "./components/alert-dialog-content";
 export type { ToasterPosition, ToasterProps } from "./components/toaster";
 export type { PromiseMessages, ToastApi } from "./utils/toast";

@@ -27,8 +27,6 @@ export const LONG_PRESS_SLOP_PX = 8;
 
 export const TYPEAHEAD_RESET_MS = 500;
 
-export const DRAWER_PEEK_PX = 0;
-
 export const TOAST_DURATION_MS = 4000;
 
 export const TOAST_EXIT_MS = 240;
