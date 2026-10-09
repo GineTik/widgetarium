@@ -1,14 +1,9 @@
 import type { FunctionComponent } from "react";
-import { cn } from "../utils/cn";
-import { createSlotPart } from "./create-slot-part";
 import type { SlotPartProps } from "./create-slot-part";
+import { createPressingLabel } from "./pressing-label";
 
 export interface LabelProps extends SlotPartProps {
 	readonly htmlFor?: string | undefined;
 }
 
-export const Label: FunctionComponent<LabelProps> = createSlotPart<LabelProps>(
-	"label",
-	(props) => cn("wg-kit-label", props.className),
-	"Label",
-);
+export const Label: FunctionComponent<LabelProps> = createPressingLabel("wg-kit-label", "Label");

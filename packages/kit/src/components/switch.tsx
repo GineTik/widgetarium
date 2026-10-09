@@ -10,6 +10,7 @@ export interface SwitchProps {
 	readonly onChange?: ((checked: boolean) => void) | undefined;
 	readonly disabled?: boolean | undefined;
 	readonly label?: string | undefined;
+	readonly id?: string | undefined;
 	readonly className?: string | undefined;
 }
 
@@ -20,6 +21,7 @@ export function Switch({
 	onChange,
 	disabled,
 	label,
+	id,
 	className: cls,
 }: SwitchProps): ReactElement {
 	const [isOn, setOn] = useControllableState({
@@ -32,6 +34,7 @@ export function Switch({
 	});
 	return (
 		<button
+			id={id}
 			type="button"
 			role="switch"
 			data-slot="switch"

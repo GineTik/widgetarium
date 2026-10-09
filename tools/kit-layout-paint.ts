@@ -80,6 +80,20 @@ const FILLED_BESIDE_PLATES = `(() => {
 	return { left: Math.round(filled.left - plate.left), right: Math.round(plate.right - filled.right) };
 })()`;
 
+const LABEL_TEXT_AT = (id: string): string => `(() => {
+	const range = document.createRange();
+	range.selectNodeContents(document.getElementById("${id}"));
+	const box = [...range.getClientRects()].at(-1);
+	return [Math.round(box.left + box.width / 2), Math.round(box.top + box.height / 2)];
+})()`;
+
+const LABELLED_STATES = `(() => ({
+	checkbox: document.querySelector("#label-field [role='checkbox']").getAttribute("aria-checked"),
+	switch: document.querySelector("#switch-row [role='switch']").getAttribute("aria-checked"),
+	radio: document.querySelector("#radio-label [role='radio']").getAttribute("aria-checked"),
+	unselectable: ["checkbox-label", "switch-label"].map((id) => getComputedStyle(document.getElementById(id)).userSelect),
+}))()`;
+
 const SCROLL = `(async () => {
 	const viewport = document.querySelector("#scroll [data-slot='scroll-area-viewport']");
 	const thumb = document.querySelector("#scroll [data-slot='scroll-area-thumb']");
@@ -220,6 +234,7 @@ export async function paintChecks(): Promise<Painted[]> {
 			["AN ASPECT RATIO 16/9 IS 180 TALL AT 320 WIDE, IN CHROME", await page.ask(ASPECT), [320, 180]],
 			...accordionPainted(await page.ask(ACCORDION)),
 			...sharedPlatePainted(await page.ask(SHARED_PLATE)),
+			...labelsPainted(await labelPresses(page)),
 			...fieldPainted(await page.ask(FIELD)),
 			...groupedItemsPainted(await page.ask(GROUPED_ITEMS)),
 			...filledBesidePlatesPainted(await page.ask(FILLED_BESIDE_PLATES)),
@@ -317,6 +332,28 @@ function groupedItemsPainted(seen: unknown): Painted[] {
 
 function filledBesidePlatesPainted(seen: unknown): Painted[] {
 	return [["A FILLED INPUT BESIDE PLATES STANDS ON THE PLATES' LEFT AND RIGHT EDGES", seen, { left: 0, right: 0 }]];
+}
+
+async function labelPresses(page: AskedPage): Promise<unknown> {
+	const before = await page.ask(LABELLED_STATES);
+	for (const id of ["checkbox-label", "switch-label", "radio-label"]) {
+		const at = await page.ask(LABEL_TEXT_AT(id));
+		if (Array.isArray(at)) await page.press(Number(at[0]), Number(at[1]));
+	}
+	return { before, after: await page.ask(LABELLED_STATES) };
+}
+
+function labelsPainted(seen: unknown): Painted[] {
+	return [
+		[
+			"A MOUSE PRESS ON A LABEL'S TEXT TOGGLES ITS CONTROL: A FieldLabel BESIDE A Checkbox IN A Field, A Label FOR A Switch, A Label WRAPPING A RadioGroupItem; THE LABEL TEXT IS NOT SELECTABLE",
+			seen,
+			{
+				before: { checkbox: "false", switch: "false", radio: "false", unselectable: ["none", "none"] },
+				after: { checkbox: "true", switch: "true", radio: "true", unselectable: ["none", "none"] },
+			},
+		],
+	];
 }
 
 function stepsPainted(seen: unknown): Painted[] {
