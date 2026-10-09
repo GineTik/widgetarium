@@ -31,6 +31,23 @@ export function addEngineDependencies(target: string, engine: Readonly<Record<st
 	writeJson(at, { ...manifest, dependencies: sortedByKey(dependencies) });
 }
 
+export interface DependencyOutcome {
+	readonly name: string;
+	readonly range: string;
+	readonly held: string | null;
+}
+
+export function addMissingDependencies(target: string, wanted: Readonly<Record<string, string>>): DependencyOutcome[] {
+	const at = path.join(target, PACKAGE_MANIFEST);
+	const manifest = jsonObjectAt(at);
+	const dependencies = DependenciesSchema.parse(manifest["dependencies"] ?? {});
+	const outcomes = Object.entries(wanted).map(([name, range]) => ({ name, range, held: dependencies[name] ?? null }));
+	const added = outcomes.filter(({ held }) => held === null).map(({ name, range }) => [name, range]);
+	if (added.length > 0)
+		writeJson(at, { ...manifest, dependencies: sortedByKey({ ...dependencies, ...Object.fromEntries(added) }) });
+	return outcomes;
+}
+
 export function addTsconfigPaths(target: string, aliases: ProjectAliases): void {
 	const at = path.join(target, TSCONFIG);
 	const tsconfig = jsonObjectAt(at);

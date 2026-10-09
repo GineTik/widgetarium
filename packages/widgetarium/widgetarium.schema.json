@@ -61,6 +61,20 @@
 			"additionalProperties": {
 				"type": "string"
 			}
+		},
+		"catalogue": {
+			"type": "object",
+			"properties": {
+				"registries": {
+					"default": [],
+					"type": "array",
+					"items": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			},
+			"additionalProperties": false
 		}
 	},
 	"required": ["name"],

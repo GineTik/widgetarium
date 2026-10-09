@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import * as fileSystem from "node:fs/promises";
 import os from "node:os";
@@ -9,6 +8,7 @@ import { HANDBOOK_PAGES } from "../packages/widgetarium/src/cli/handbook-copy.js
 import type { CliOutput } from "../packages/widgetarium/src/cli/cli-output.js";
 import { z } from "zod";
 import { fieldOf } from "./export-source.mts";
+import { fakeEngine } from "./fake-engine.ts";
 
 interface CliRun {
 	readonly code: number;
@@ -33,7 +33,6 @@ const EXPECTED_FILES = [
 	"docs/references/.gitkeep",
 	"index.html",
 	"package.json",
-	"src/app/app.tsx",
 	"src/app/routes/board.json",
 	"src/logic/.gitkeep",
 	"src/main.tsx",
@@ -51,21 +50,6 @@ const EXPECTED_FILES = [
 	"widgetarium.json",
 ];
 
-const FAKE_ENGINE = [
-	{
-		name: "widgetarium",
-		file: "widgetarium-0.1.0.tgz",
-		dependencies: { "@widgetarium/core": "0.1.0", "@widgetarium/kit": "0.1.0" },
-	},
-	{
-		name: "@widgetarium/core",
-		file: "widgetarium-core-0.1.0.tgz",
-		dependencies: { "@widgetarium/kit": "0.1.0", yaml: "^2.9.0" },
-	},
-	{ name: "@widgetarium/kit", file: "widgetarium-kit-0.1.0.tgz", dependencies: {} },
-	{ name: "@widgetarium/packs-obsidian", file: "widgetarium-packs-obsidian-0.1.0.tgz", dependencies: {} },
-];
-
 let failures = 0;
 
 function check(name: string, held: unknown, wanted: unknown): void {
@@ -81,21 +65,6 @@ async function cli(argv: readonly string[]): Promise<CliRun> {
 	const output: CliOutput = { out: (text) => lines.push(text), err: (text) => lines.push(text) };
 	const code = await runCli(argv, output);
 	return { code, said: lines.join("\n") };
-}
-
-function fakeEngine(into: string, skipped: string | null = null): string {
-	fs.mkdirSync(into, { recursive: true });
-	for (const { name, file, dependencies } of FAKE_ENGINE.filter((tarball) => tarball.name !== skipped)) {
-		const staged = fs.mkdtempSync(path.join(os.tmpdir(), "wg-fake-tarball-"));
-		fs.mkdirSync(path.join(staged, "package"));
-		fs.writeFileSync(
-			path.join(staged, "package/package.json"),
-			JSON.stringify({ name, version: "0.1.0", dependencies }),
-		);
-		execFileSync("tar", ["-czf", path.join(into, file), "-C", staged, "package"]);
-		fs.rmSync(staged, { recursive: true, force: true });
-	}
-	return into;
 }
 
 function filesIn(root: string): string[] {
@@ -239,8 +208,6 @@ try {
 	);
 	const badName = await cli(["create", path.join(scratch, "My App"), "--engine", engine, "--no-install", "--no-git"]);
 	check("create refuses a folder name npm would refuse", [badName.code, badName.said.includes("--name")], [1, true]);
-	const reserved = await cli(["catalogue"]);
-	check("catalogue is reserved for S8", [reserved.code, reserved.said.includes("coming in S8")], [1, true]);
 	check("help answers 0", (await cli(["--help"])).code, 0);
 } finally {
 	fs.rmSync(scratch, { recursive: true, force: true });

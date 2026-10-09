@@ -29,6 +29,12 @@ export function packageLocations(): PackageLocations {
 	};
 }
 
+export function ancestorHolding(start: string, marker: string): string | null {
+	if (fs.existsSync(path.join(start, marker))) return start;
+	const parent = path.dirname(start);
+	return parent === start ? null : ancestorHolding(parent, marker);
+}
+
 function handbookIn(packageRoot: string, repo: string | null): string {
 	const candidates = [
 		path.join(packageRoot, PACKED_HANDBOOK),
@@ -37,10 +43,4 @@ function handbookIn(packageRoot: string, repo: string | null): string {
 	const found = candidates.find((candidate) => fs.existsSync(candidate));
 	if (found === undefined) throw new CliRefusal(`no handbook beside the CLI: looked in ${candidates.join(", ")}`);
 	return found;
-}
-
-function ancestorHolding(start: string, marker: string): string | null {
-	if (fs.existsSync(path.join(start, marker))) return start;
-	const parent = path.dirname(start);
-	return parent === start ? null : ancestorHolding(parent, marker);
 }

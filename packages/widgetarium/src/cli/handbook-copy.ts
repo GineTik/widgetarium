@@ -9,6 +9,7 @@ export const HANDBOOK_PAGES: readonly string[] = [
 	"examples.md",
 	"kit.md",
 	"design-system.md",
+	"catalogue.md",
 ];
 
 export function copyHandbook(handbook: string, target: string): void {

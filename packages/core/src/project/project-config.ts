@@ -26,11 +26,16 @@ const ProjectPathsSchema = z.strictObject({
 
 const AliasesSchema = z.record(z.string().regex(/^@/), ProjectPathSchema);
 
+const CatalogueSchema = z.strictObject({
+	registries: z.array(z.string().min(1)).default([]),
+});
+
 export const ProjectConfigSchema = z.strictObject({
 	$schema: z.string().optional(),
 	name: z.string().min(1),
 	paths: ProjectPathsSchema.prefault({}),
 	aliases: AliasesSchema.optional(),
+	catalogue: CatalogueSchema.optional(),
 });
 
 export type ProjectPaths = z.output<typeof ProjectPathsSchema>;

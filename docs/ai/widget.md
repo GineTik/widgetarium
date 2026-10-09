@@ -44,16 +44,17 @@ for, so a widget draws states and formats values, and never filters, maps fields
 schema into `src/shared/schemas` or map the project's records to it in a feature handler, and
 refactor it to the project like code of your own.
 
-The catalogue is reached through the `widgetarium` CLI — **available after stage S8**:
+In a project the catalogue is reached through the `widgetarium` CLI (catalogue.md has the whole of it):
 
 ```bash
-widgetarium catalogue list
 widgetarium catalogue search "tasks by day"
 widgetarium catalogue show @default/table
 widgetarium add @default/table
 ```
 
-Until then, `node {tool} find`, `show` and `install` (tools.md) do the same against the vault.
+`add` copies the folder into `src/widgets/<name>/`, the scope's lib into `src/shared/libs/<library>/`
+with its imports moved onto `@libs`, and writes `origin.json` beside it. In a vault,
+`node {tool} find`, `show` and `install` (tools.md) do the same.
 
 ## The folder
 

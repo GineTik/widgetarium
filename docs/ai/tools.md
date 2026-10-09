@@ -46,6 +46,10 @@ draws. `install <id>` is still there for taking one before you place it, but you
 Writing a widget because the vault happened not to hold one is the mistake this command exists to
 stop.
 
+In a project made by `widgetarium create` there is no vault: the same catalogue is
+`widgetarium catalogue search <words>`, `catalogue show <id>` and `widgetarium add <id>`, which copy
+the widget into the project as code of its own (catalogue.md).
+
 ## Taking a base
 
 ```bash
