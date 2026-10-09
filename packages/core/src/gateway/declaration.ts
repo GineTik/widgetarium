@@ -6,14 +6,7 @@ export const DECLARATION = Symbol.for("widgetarium.declaration");
 
 export const BARE_QUERY = Symbol.for("widgetarium.bare-query");
 
-export const QUERY_WITHOUT_SCHEMA = 'prop "{name}" is a query with no shape: write IQuery.expects(schema)';
-
-export const IMPLEMENTATION_WORD_IN_WIDGET =
-	'prop "{name}" is declared with {word}, the word an implementation extends: a widget writes {fits}';
-
-export type DeclaringWord = "expects" | "returns" | "returnsAny" | "sends" | "takes";
-
-export const WIDGET_WORDS: readonly DeclaringWord[] = ["expects", "sends"];
+export const QUERY_WITHOUT_SCHEMA = 'prop "{name}" is a query with no shape: write IQuery.output(schema)';
 
 export type Kind = "collection" | "value" | "command" | "passed" | "slot" | "mounts";
 
@@ -29,7 +22,9 @@ export interface Declaration {
 	readonly sort?: readonly SortRow[];
 	readonly rows?: readonly unknown[];
 	readonly isQuery?: boolean;
-	readonly word?: DeclaringWord;
+	// TODO: read by handle(input) in C2
+	readonly input?: z.ZodType;
+	readonly output?: z.ZodType;
 	readonly isBound?: boolean;
 	readonly passed?: string;
 	readonly held?: Readonly<HeldSpec>;
@@ -41,16 +36,12 @@ export function declarationIn(held: unknown): Declaration | null {
 	return isDeclaration(declared) ? declared : null;
 }
 
-export function refuseImplementationWords(props: Readonly<Record<string, unknown>>): void {
-	for (const [name, held] of Object.entries(props)) {
-		const word = declarationIn(held)?.word;
-		if (!word || WIDGET_WORDS.includes(word)) continue;
-		const fits = word === "takes" ? "ICommand.sends" : "IQuery.expects";
-		const said = `${word === "takes" ? "ICommand" : "IQuery"}.${word}`;
-		throw new Error(
-			IMPLEMENTATION_WORD_IN_WIDGET.replace("{name}", name).replace("{word}", said).replace("{fits}", fits),
-		);
-	}
+export function isPortItself(held: unknown): boolean {
+	return typeof held === "function" && Object.prototype.hasOwnProperty.call(held, DECLARATION);
+}
+
+export function classNameOf(held: unknown): string {
+	return typeof held === "function" && held.name !== "" ? held.name : "this class";
 }
 
 export function defaultOf(declaration: Declaration): unknown {

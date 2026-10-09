@@ -1,6 +1,6 @@
 import type { z } from "zod";
-import type { DeclaringWord, Kind } from "./declaration";
-import { WIDGET_WORDS, declarationIn } from "./declaration";
+import type { Kind } from "./declaration";
+import { classNameOf, declarationIn, isPortItself } from "./declaration";
 
 type Constructed = new (fields: never, host: never) => object;
 
@@ -40,19 +40,18 @@ export interface GatewayMetadataInput<C extends Constructed> {
 }
 
 const EXTENDS_NO_INTERFACE =
-	"{implementation} extends no gateway interface — extend IQuery.returns, IQuery.returnsAny, ICommand.takes, IValueGateway, IListGateway or ICrudGateway";
+	"{implementation} extends no gateway interface — extend IQuery.output, IQuery.outputWithin, ICommand.input, IValueGateway, IListGateway or ICrudGateway";
 
-const WIDGET_WORD_IN_IMPLEMENTATION =
-	"{implementation} extends {word}, the word a widget declares: an implementation extends {fits}";
+const THE_PORT_ITSELF =
+	"the declared port itself was given where a handler class belongs: write class Handler extends IQuery.output(schema) or ICommand.input(schema) and pass Handler";
 
 export function defineGatewayMetadata<C extends Constructed>(
 	implementation: C,
 	metadata: GatewayMetadataInput<C>,
 ): GatewayMetadata<C> {
+	refusePortItself(implementation);
 	const declaration = declarationIn(implementation);
-	if (!declaration)
-		throw new Error(EXTENDS_NO_INTERFACE.replace("{implementation}", implementation.name || "this class"));
-	refuseWidgetWord(implementation, declaration.word);
+	if (!declaration) throw new Error(EXTENDS_NO_INTERFACE.replace("{implementation}", classNameOf(implementation)));
 	refuseUnknownResource(metadata);
 	return { ...metadata, implementation, kind: declaration.kind };
 }
@@ -84,15 +83,15 @@ export interface CommandMetadataInput<C extends Constructed> {
 
 const UNKNOWN_RESOURCE = '{id} names the resource "{resource}"; name one of {resources}';
 
-const NOT_A_COMMAND = "{implementation} is not a command implementation — extend ICommand.takes(schema)";
+const NOT_A_COMMAND = "{implementation} is not a command implementation — extend ICommand.input(schema)";
 
 export function defineCommandMetadata<C extends Constructed>(
 	implementation: C,
 	metadata: CommandMetadataInput<C>,
 ): CommandMetadata<C> {
-	const declaration = declarationIn(implementation);
-	if (declaration?.kind !== "command" || declaration.word !== "takes")
-		throw new Error(NOT_A_COMMAND.replace("{implementation}", implementation.name || "this class"));
+	refusePortItself(implementation);
+	if (declarationIn(implementation)?.kind !== "command")
+		throw new Error(NOT_A_COMMAND.replace("{implementation}", classNameOf(implementation)));
 	refuseUnknownResource(metadata);
 	return { ...metadata, implementation, target: metadata.target ?? null, consent: metadata.consent ?? "always" };
 }
@@ -110,11 +109,6 @@ function refuseUnknownResource({ id, resource }: { readonly id: string; readonly
 	);
 }
 
-function refuseWidgetWord(implementation: Constructed, word: DeclaringWord | undefined): void {
-	if (!word || !WIDGET_WORDS.includes(word)) return;
-	throw new Error(
-		WIDGET_WORD_IN_IMPLEMENTATION.replace("{implementation}", implementation.name || "this class")
-			.replace("{word}", word === "sends" ? "ICommand.sends" : "IQuery.expects")
-			.replace("{fits}", word === "sends" ? "ICommand.takes" : "IQuery.returns or IQuery.returnsAny"),
-	);
+function refusePortItself(implementation: Constructed): void {
+	if (isPortItself(implementation)) throw new Error(THE_PORT_ITSELF);
 }

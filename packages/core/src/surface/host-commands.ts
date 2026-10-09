@@ -1,19 +1,15 @@
 import { useMemo } from "react";
-import type { CanResult } from "../gateway/contract";
 import type { GatewayRefs } from "../gateway/refs.js";
 import type { EngineManifest } from "../engine/catalogue-index.js";
 import type { Tile } from "../model.js";
 import { canOf } from "../gateway/create.js";
+import { AnsweringCommand, runHandler } from "../gateway/run-handler.js";
+import { declarationIn } from "../gateway/declaration.js";
 import { portsOf, registeredCommands } from "../engine/packs.js";
 import type { PortsHost } from "../engine/packs.js";
 import type { CommandMetadata } from "../gateway/implementation-metadata.js";
 import { commandBindingOf, commandSpecsOf, isRunAllowed, targetOf } from "./command-binding.js";
 import type { CommandBinding } from "./command-binding.js";
-
-export interface HostCommand {
-	run(input: unknown): Promise<void>;
-	can(): CanResult;
-}
 
 type DescribedRefs = Pick<GatewayRefs, "described">;
 
@@ -29,14 +25,13 @@ const NOT_ALLOWED = '"{name}" is switched off for this tile';
 const VAULT_NOT_SWITCHED_ON = '"{name}" writes the vault, which stays shut until it is switched on in the Data tab';
 const PACK_NOT_SWITCHED_ON = '"{name}" runs {title}, which stays shut until it is switched on in the Data tab';
 const UNKNOWN_IMPLEMENTATION = '"{name}" names {implementation}, which this host does not run';
-const RUNS_NOTHING = "{implementation} has no run";
 
 export function useHostCommands(
 	manifest: EngineManifest,
 	tile: Tile,
 	refs: GatewayRefs,
 	host: PortsHost,
-): Record<string, HostCommand> {
+): Record<string, AnsweringCommand> {
 	const specs = commandSpecsOf(manifest["commands"]);
 	return useMemo(
 		() =>
@@ -63,7 +58,8 @@ function isConsentNeeded(packed: CommandMetadata, binding: CommandBinding, refs:
 	return target ? refs.described(target)?.isVault === true : false;
 }
 
-function hostCommandOf({ name, binding, refs, tileId, host }: CommandAsk): HostCommand | null {
+function hostCommandOf(ask: CommandAsk): AnsweringCommand | null {
+	const { name, binding } = ask;
 	const { implementation } = binding;
 	if (binding.allow && !binding.allow.includes("run")) return createRefusedCommand(NOT_ALLOWED.replace("{name}", name));
 	if (!implementation) return null;
@@ -72,18 +68,22 @@ function hostCommandOf({ name, binding, refs, tileId, host }: CommandAsk): HostC
 		return createRefusedCommand(
 			UNKNOWN_IMPLEMENTATION.replace("{name}", name).replace("{implementation}", implementation),
 		);
-	if (!isRunAllowed(binding, isConsentNeeded(packed, binding, refs)))
+	if (!isRunAllowed(binding, isConsentNeeded(packed, binding, ask.refs)))
 		return createRefusedCommand(shutReasonOf(name, packed));
+	return createPackedCommand(packed, ask);
+}
+
+function createPackedCommand(
+	packed: CommandMetadata,
+	{ name, binding, refs, tileId, host }: CommandAsk,
+): AnsweringCommand {
 	const ports = portsOf(host, refs, `${tileId}/${name}`);
 	const instance: object = Reflect.construct(packed.implementation, [binding.fields ?? {}, ports]);
-	return {
-		can: () => canOf(instance),
-		run: async (input) => {
-			const run: unknown = Reflect.get(instance, "run");
-			if (typeof run !== "function") throw new Error(RUNS_NOTHING.replace("{implementation}", packed.id));
-			await Reflect.apply(run, instance, [input]);
-		},
-	};
+	const contract = { output: declarationIn(packed.implementation)?.output, name: packed.id };
+	return new AnsweringCommand(
+		() => canOf(instance),
+		(input) => runHandler(instance, input, contract),
+	);
 }
 
 function commandOf(implementation: string | undefined): CommandMetadata | undefined {
@@ -95,9 +95,9 @@ function shutReasonOf(name: string, packed: CommandMetadata): string {
 	return PACK_NOT_SWITCHED_ON.replace("{name}", name).replace("{title}", packed.title);
 }
 
-function createRefusedCommand(reason: string): HostCommand {
-	return {
-		can: () => ({ can: false, reason }),
-		run: () => Promise.reject(new Error(reason)),
-	};
+function createRefusedCommand(reason: string): AnsweringCommand {
+	return new AnsweringCommand(
+		() => ({ can: false, reason }),
+		() => Promise.resolve({ ok: false, reason, ran: false }),
+	);
 }

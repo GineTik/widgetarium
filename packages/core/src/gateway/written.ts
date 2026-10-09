@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Declaration } from "./declaration";
-import { DECLARATION, declarationIn, declaredDefaultOf, defaultOf } from "./declaration";
+import { classNameOf, declarationIn, declaredDefaultOf, defaultOf, isPortItself } from "./declaration";
 import type { DeclaredProps, MigrationStep, PropMetadata } from "./declared";
 import type { Choice, CommandSpec, HeldSpec } from "./manifest";
 import { PROP_MARK, specOf } from "./manifest";
@@ -8,13 +8,13 @@ import { PROP_MARK, specOf } from "./manifest";
 export type Described = Readonly<Record<string, PropMetadata<unknown> | undefined>>;
 
 const NOT_DECLARED =
-	'prop "{name}" is not a gateway declared with IQuery.expects, ICommand.sends, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot, ISlot.array, IRepeat.of or one the host hands over (IHost, INavigator, …)';
+	'prop "{name}" is not a gateway declared with IQuery.output, ICommand.input, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot, ISlot.array, IRepeat.of or one the host hands over (IHost, INavigator, …)';
 const METADATA_FOR_NOTHING = 'metadata describes prop "{name}", which props do not declare';
 const METADATA_FOR_THE_ENGINE = 'metadata describes prop "{name}", which the engine hands over and a person never sets';
 const READS_NOTHING_DECLARED =
 	'prop "{name}" starts from a source whose {option} is "{target}", which props do not declare';
 const AN_IMPLEMENTATION =
-	'prop "{name}" is {implementation}, an implementation; a widget declares the interface it needs (IValueGateway.of(...), ICrudGateway.of(...)) and the host decides what fills it';
+	'prop "{name}" is {implementation}, an implementation; a widget declares the port it needs (IQuery.output(...), ICommand.input(...)) and the host decides what fills it';
 const MIGRATES_FROM_NOTHING = "migration {at} names no props it migrates from";
 const OPTIONS_BESIDE_THE_ENUM =
 	'prop "{name}" lists the options {listed} beside a schema whose values are {values}; the options must name exactly the values of the enum';
@@ -56,16 +56,9 @@ export function refuseUndeclared(props: DeclaredProps) {
 }
 
 export function refuseImplementations(props: DeclaredProps) {
-	const named = Object.keys(props).find(
-		(name) => declarationIn(props[name]) !== null && !Object.prototype.hasOwnProperty.call(props[name], DECLARATION),
-	);
+	const named = Object.keys(props).find((name) => declarationIn(props[name]) !== null && !isPortItself(props[name]));
 	if (named)
-		throw new Error(
-			AN_IMPLEMENTATION.replace("{name}", named).replace(
-				"{implementation}",
-				(props[named] as { name?: string }).name ?? "a class",
-			),
-		);
+		throw new Error(AN_IMPLEMENTATION.replace("{name}", named).replace("{implementation}", classNameOf(props[named])));
 }
 
 export function refuseSourcesOverNothing(props: DeclaredProps, described: Described) {

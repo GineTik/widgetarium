@@ -5,6 +5,7 @@ import type { Board, Tile } from "../packages/core/src/model.js";
 import type { Command, RecordRef } from "../packages/core/src/gateway/declared.ts";
 import type { BoardRegistry, SurfaceHost } from "../packages/core/src/surface/use-surface-shared.js";
 import { standIn } from "./stand-in.ts";
+import { StatusSchema, TaskSchema, packMoves, packStamps, registerTestPack } from "./command-board-pack.ts";
 
 const dom = new JSDOM(`<!doctype html><body><div class="view-content"><div id="host"></div></div></body>`, {
 	pretendToBeVisual: true,
@@ -50,25 +51,24 @@ function check(what: string, got: unknown, wanted: unknown): void {
 	);
 }
 
-const StatusSchema = z.enum(["todo", "doing", "done"]);
-const TaskSchema = z.object({ title: z.string(), status: StatusSchema, id: z.string().optional() });
-
 interface Seen {
 	readonly tasks: readonly { readonly ref: RecordRef; readonly title: string; readonly status: string }[];
 	readonly move: Command<{ ref: RecordRef; status: "todo" | "doing" | "done" }>;
-	readonly create: Command<{ id: string; title: string; status: "todo" | "doing" | "done" }>;
+	readonly create: Command<{ id: string; title: string; status: "todo" | "doing" | "done" }, { ref: RecordRef } | null>;
+	readonly stamp: Command<unknown, { hash: string }>;
 }
 const seen: Seen[] = [];
 
 const TaskBoard = createWidget({
 	inject: {
-		tasks: IQuery.expects(z.array(TaskSchema)),
-		move: ICommand.sends(z.object({ ref: RecordRefSchema, status: StatusSchema })),
-		create: ICommand.sends(TaskSchema.extend({ id: z.uuid() })),
+		tasks: IQuery.output(z.array(TaskSchema)),
+		move: ICommand.input(z.object({ ref: RecordRefSchema, status: StatusSchema })),
+		create: ICommand.input(TaskSchema.extend({ id: z.uuid() })).output(z.object({ ref: RecordRefSchema }).nullable()),
+		stamp: ICommand.input(z.unknown()).output(z.object({ hash: z.string().length(7) })),
 	},
-	draw: ({ tasks, move, create }) => {
+	draw: ({ tasks, move, create, stamp }) => {
 		const read = useData(tasks);
-		seen.push({ tasks: read.data, move, create });
+		seen.push({ tasks: read.data, move, create, stamp });
 		return h("b", null, String(read.data.length));
 	},
 });
@@ -154,13 +154,14 @@ check(
 );
 
 const id = "0f8fad5b-d9cb-469f-a165-70867728950e";
-check("a create with its own id answers ok", await last().create({ id, title: "Port heatmap", status: "todo" }), {
-	ok: true,
-});
+const refOf = (answer: Awaited<ReturnType<Seen["create"]>>): string | null =>
+	answer.ok ? (answer.output?.ref ?? null) : null;
+const created = await last().create({ id, title: "Port heatmap", status: "todo" });
 await tick();
-check("and the same create again answers ok", await last().create({ id, title: "Port heatmap", status: "todo" }), {
-	ok: true,
-});
+const heatmapRef = last().tasks.find((row) => row.title === "Port heatmap")?.ref ?? "no such row";
+check("a create answers the ref of the row it made", [created.ok, refOf(created)], [true, heatmapRef]);
+const again = await last().create({ id, title: "Port heatmap", status: "todo" });
+check("and the same create again answers the same row", [again.ok, refOf(again)], [true, heatmapRef]);
 await tick();
 check(
 	"but leaves one record",
@@ -174,7 +175,15 @@ const pressedTwice = await Promise.all([
 	last().create({ id: racing, title: "Pressed twice", status: "todo" }),
 ]);
 await tick();
-check("two presses at once with one id both answer ok", pressedTwice, [{ ok: true }, { ok: true }]);
+const racingRef = refOf(present(pressedTwice[0], "a press"));
+check(
+	"two presses at once with one id both answer ok, naming one row",
+	pressedTwice.map((answer) => [answer.ok, racingRef !== null && refOf(answer) === racingRef]),
+	[
+		[true, true],
+		[true, true],
+	],
+);
 check("and still leave one record", last().tasks.filter((row) => row.title === "Pressed twice").length, 1);
 
 const malformed = { implementation: "@core/rows-update", fields: { target: "t1/tasks" }, allow: "run" };
@@ -207,56 +216,7 @@ check("and opens once the Data tab switches it on", last().move.can(), { can: tr
 withProps({ tasks: typedTasks, move: moveInVault });
 await tick();
 
-const { definePack, registerPacks } = await import("../packages/core/src/engine/packs.ts");
-const { defineCommandMetadata, defineGatewayMetadata } =
-	await import("../packages/core/src/gateway/implementation-metadata.ts");
-const { rowOf } = await import("../packages/core/src/gateway/create.ts");
-const packMoves: unknown[] = [];
-class PackTasksQuery extends IQuery.returns(z.array(TaskSchema)) {
-	constructor(readonly fields: { readonly prefix?: string | undefined }) {
-		super();
-	}
-
-	list() {
-		const rows = [
-			rowOf<{ title: string; status: "todo" }>({ title: `${this.fields.prefix ?? ""}Packed`, status: "todo" }, "p1"),
-		];
-		return { rows, total: 1 };
-	}
-}
-class PackMoveCommand extends ICommand.takes(z.object({ ref: z.string(), status: StatusSchema })) {
-	constructor(readonly fields: { readonly prefix?: string | undefined }) {
-		super();
-	}
-
-	run(input: unknown): void {
-		packMoves.push([this.fields.prefix, input]);
-	}
-}
-const PackFieldsSchema = z.object({ prefix: z.string().optional() });
-registerPacks(
-	definePack({
-		id: "@test",
-		title: "Test",
-		queries: [
-			defineGatewayMetadata(PackTasksQuery, {
-				id: "@test/tasks",
-				title: "Packed tasks",
-				resource: "Folder",
-				fields: PackFieldsSchema,
-			}),
-		],
-		commands: [
-			defineCommandMetadata(PackMoveCommand, {
-				id: "@test/move",
-				title: "Packed move",
-				resource: "Folder",
-				description: "Records the move.",
-				fields: PackFieldsSchema,
-			}),
-		],
-	}),
-);
+registerTestPack();
 const packedMove = { implementation: "@test/move", fields: { prefix: "x-" } };
 withProps({ tasks: { implementation: "@test/tasks", fields: { prefix: "x-" } }, move: packedMove });
 await tick();
@@ -277,6 +237,28 @@ check(
 	{ ok: true },
 );
 check("and the pack's command got the input", packMoves, [["x-", { ref: "p1", status: "done" }]]);
+
+const stampWith = async (prefix: string) => {
+	withProps({ stamp: { implementation: "@test/stamp", fields: { prefix }, allow: ["run"] } });
+	await tick();
+	return last().stamp(null);
+};
+const reasonHead = (answer: Awaited<ReturnType<Seen["stamp"]>>): unknown =>
+	answer.ok ? answer : [answer.ran, answer.reason.split(":")[0]];
+check("a pack command's output reaches the widget", await stampWith("abcdefg"), {
+	ok: true,
+	output: { hash: "abcdefg" },
+});
+check("an output the pack's schema refuses answers ran, naming the pack's id", reasonHead(await stampWith("ab")), [
+	true,
+	"@test/stamp answered an output its schema refuses",
+]);
+check(
+	"a host command whose output breaks the widget's schema answers ok false, ran",
+	reasonHead(await stampWith("abc")),
+	[true, "stamp answered an output its schema refuses"],
+);
+check("and both refused outputs came after the handler ran", packStamps, ["abcdefg", "ab", "abc"]);
 withProps({ tasks: typedTasks, move: moveInVault });
 await tick();
 
@@ -289,7 +271,14 @@ const printing = console.log;
 console.log = (...parts: unknown[]): void => void printed.push(parts);
 const answeredUnbound = await last().move({ ref: shipped.ref, status: "todo" });
 console.log = printing;
-check("a command bound to nothing runs the console log and answers ok", answeredUnbound, { ok: true });
+check(
+	"a command bound to nothing runs the console log and answers ok with no output",
+	Object.entries(answeredUnbound),
+	[
+		["ok", true],
+		["output", null],
+	],
+);
 check("and prints the tile, the command and what it was sent", printed, [
 	["[widgetarium] t1/move sent", { ref: shipped.ref, status: "todo" }],
 ]);

@@ -18,7 +18,7 @@ import type { DeclaredFilterRow, HeldSpec, ModuleManifest, RecordRef as RecordRe
 import { manifestOfDeclared, sizeProblems } from "./manifest";
 import type { Declaration } from "./declaration";
 import { listOptions, schemasOf } from "./declared-schemas";
-import { BARE_QUERY, DECLARATION, QUERY_WITHOUT_SCHEMA, declarationIn, refuseImplementationWords } from "./declaration";
+import { BARE_QUERY, DECLARATION, QUERY_WITHOUT_SCHEMA, declarationIn } from "./declaration";
 import {
 	refuseEmptyMigrations,
 	refuseImplementations,
@@ -261,10 +261,7 @@ export const IReader = createPassedClass("reader") as PassedDeclared<IReader>;
 
 export function declareProps<const P extends DeclaredProps>(props: P): P {
 	refuseOutsideTheRoot(props);
-	refuseBareQuery(props);
-	refuseImplementationWords(props);
-	refuseUndeclared(props);
-	refuseImplementations(props);
+	refuseBadProps(props);
 	Object.defineProperty(props, DEFINED_PROPS, { value: true });
 	return props;
 }
@@ -308,9 +305,7 @@ export function manifestOfModule(module: DeclaredModule): ModuleManifest | null 
 	const { props: described, ...card } = module.metadata ?? {};
 	refuseMetadataForNothing(props, described ?? {});
 	refuseSourcesOverNothing(props, described ?? {});
-	refuseBareQuery(props);
-	refuseImplementationWords(props);
-	refuseUndeclared(props);
+	refuseBadProps(props);
 	const input = {
 		...card,
 		...module.layout,
@@ -330,6 +325,12 @@ function refuseOutsideTheRoot(props: DeclaredProps) {
 		return typeof held === "function" && !(held.prototype instanceof IBaseGateway);
 	});
 	if (named) throw new Error(OUTSIDE_THE_ROOT.replace("{name}", named));
+}
+
+function refuseBadProps(props: DeclaredProps) {
+	refuseBareQuery(props);
+	refuseUndeclared(props);
+	refuseImplementations(props);
 }
 
 function refuseBareQuery(props: DeclaredProps) {

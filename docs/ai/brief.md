@@ -205,7 +205,7 @@ as it does on a desk. Space blocks with `gap-sections` and items with `gap-cards
 ```tsx
 const HomePage = createWidget({
 	inject: {
-		getPeople: IQuery.expects(z.array(PersonSchema)),
+		getPeople: IQuery.output(z.array(PersonSchema)),
 		actions: ISlot.array(),
 		hero: ISlot,
 		main: ISlot.array(),

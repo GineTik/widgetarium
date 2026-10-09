@@ -10,7 +10,9 @@ import type { Action, CanResult, CollectionGateway, Query, ValueGateway } from "
 import { useData } from "./gateway/use-data";
 import { declarationIn, defaultOf } from "./gateway/declared";
 import type { DeclaredProps } from "./gateway/declared";
-import type { CommandAnswer } from "./gateway/queries";
+import { AnsweringCommand, answerAfterRun, fitOutput, runHandler } from "./gateway/run-handler";
+import type { CommandAnswer, HandlerContract } from "./gateway/run-handler";
+import { classNameOf } from "./gateway/declaration";
 import type { Declaration } from "./gateway/declaration";
 import { withManyVerbs } from "./gateway/many";
 import type { EveryValueVerb } from "./gateway/needs";
@@ -41,7 +43,12 @@ interface PropRead {
 	readonly gatewayId?: string;
 }
 
-type Runner = (input: unknown) => unknown;
+interface DeclaredCommand {
+	readonly name: string;
+	readonly declaration: Declaration;
+	readonly given: unknown;
+	readonly readGatewayIdsNow: () => readonly string[];
+}
 
 const declaredInterfaces = new WeakMap<Declaration, unknown>();
 
@@ -111,54 +118,48 @@ function useCommandOver(
 	declaration: Declaration,
 	given: unknown,
 	readGatewayIds: readonly string[],
-): Action<unknown, CommandAnswer> {
+): Action<unknown, CommandAnswer<unknown>> {
 	const latestReadGatewayIds = useRef(readGatewayIds);
 	latestReadGatewayIds.current = readGatewayIds;
-	return useMemo(() => commandOver(name, declaration, given, () => latestReadGatewayIds.current), [given]);
+	return useMemo(
+		() => commandOver({ name, declaration, given, readGatewayIdsNow: () => latestReadGatewayIds.current }),
+		[given],
+	);
 }
 
-function commandOver(
-	name: string,
-	declaration: Declaration,
-	given: unknown,
-	readGatewayIdsNow: () => readonly string[],
-): Action<unknown, CommandAnswer> {
-	const runner = runnerOf(given) ?? printTo(name);
-	const can = (): CanResult => (given === undefined ? { can: true } : canOf(given));
-	const run = async (input: unknown): Promise<CommandAnswer> => {
-		const allowed = can();
-		if (!allowed.can) return { ok: false, reason: allowed.reason };
-		const parsed = declaration.schema.safeParse(input);
-		if (!parsed.success) return { ok: false, reason: z.prettifyError(parsed.error) };
-		const failure = await failureOf(name, () => runner(parsed.data));
-		if (failure) return { ok: false, reason: failure };
-		await gatewayCache.refetch(readGatewayIdsNow());
-		return { ok: true };
-	};
-	return Object.assign(run, { can });
+function commandOver(command: DeclaredCommand): Action<unknown, CommandAnswer<unknown>> {
+	const run = (input: unknown) => runDeclaredCommand(command, input);
+	return Object.assign(run, { can: () => canOfGiven(command.given) });
 }
 
-async function failureOf(name: string, run: () => unknown): Promise<string | null> {
-	try {
-		await run();
-		return null;
-	} catch (failure: unknown) {
-		console.error(`Widgetarium: command "${name}" failed`, failure);
-		return failure instanceof Error ? failure.message : String(failure);
-	}
+function canOfGiven(given: unknown): CanResult {
+	return given === undefined ? { can: true } : canOf(given);
 }
 
-function printTo(name: string): Runner {
-	return (input) => {
-		console.log(`[widgetarium] ${name} sent`, input);
-	};
+async function runDeclaredCommand(command: DeclaredCommand, input: unknown): Promise<CommandAnswer<unknown>> {
+	const { name, declaration, given } = command;
+	const allowed = canOfGiven(given);
+	if (!allowed.can) return { ok: false, reason: allowed.reason, ran: false };
+	const fitted = fitOutput(declaration.schema, input);
+	if (!fitted.ok) return { ...fitted, ran: false };
+	const answered = await runToAnswer(name, given, fitted.output);
+	if (answered.ok || answered.ran) await gatewayCache.refetch(command.readGatewayIdsNow());
+	if (!answered.ok) return answered;
+	return answerAfterRun(name, declaration.output, answered.output);
 }
 
-function runnerOf(given: unknown): Runner | null {
-	if (typeof given === "function") return (input) => Reflect.apply(given, undefined, [input]);
-	if (!isObject(given)) return null;
-	const run: unknown = given["run"];
-	return typeof run === "function" ? (input) => Reflect.apply(run, given, [input]) : null;
+function runToAnswer(name: string, given: unknown, input: unknown): Promise<CommandAnswer<unknown>> {
+	if (given instanceof AnsweringCommand) return given.run(input);
+	if (typeof given === "function") return runHandler({ run: given }, input, { output: z.unknown(), name });
+	if (isObject(given) && typeof given["run"] === "function") return runHandler(given, input, handlerContractOf(given));
+	console.log(`[widgetarium] ${name} sent`, input);
+	return Promise.resolve({ ok: true, output: undefined });
+}
+
+function handlerContractOf(handler: object): HandlerContract {
+	const handlerClass: unknown = Reflect.get(handler, "constructor");
+	const declaration = declarationIn(handlerClass);
+	return { output: declaration ? declaration.output : z.unknown(), name: classNameOf(handlerClass) };
 }
 
 function useGateway(name: string, declaration: Declaration, given: unknown): AdaptedGateway {

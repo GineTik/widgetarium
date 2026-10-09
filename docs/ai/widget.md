@@ -106,24 +106,24 @@ outside `draw` takes their types from the widget itself: `PropsOf<typeof Board>`
 
 ### A prop is a gateway class
 
-| Declared                                                    | Arrives as                                                                                                  |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `getTasks: IQuery.expects(z.array(RowSchema))`              | a list read: `useData(getTasks, { where, sort, limit })`                                                    |
-| `getHeading: IQuery.expects(z.string().default("To do"))`   | the value: `draw: ({ getHeading: heading }) => …`                                                           |
-| `ICommand.sends(InputSchema)`, or `ICommand` with no input  | `await move(input)` answers `{ ok }` or `{ ok, reason }`                                                    |
-| `IValueGateway.of(z.string().default("To do")).pick("get")` | the value, read and checked against the schema                                                              |
-| `IValueGateway.of(schema).pick("get", "update")`            | `{ value, update }`                                                                                         |
-| `IValueGateway.of(schema)`                                  | `{ value, update, remove }`                                                                                 |
-| `IListGateway.of(RowSchema, { where, sort, default })`      | a gateway that reads: `list`, `get`                                                                         |
-| `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`     | a gateway with every verb, or only the ones picked                                                          |
-| `hero: ISlot`                                               | a component: `<Hero />` draws the one widget a person placed there, nothing when empty                      |
-| `main: ISlot.array()`                                       | an array of components: `main.map((Slot) => <Slot key={Slot.id} />)`, `main.length`; hidden ones left out   |
-| `IRepeat.of<Given>({ default, surface, gives })`            | a function drawing one widget again for every row, or `null`                                                |
-| `IHost`, `INavigator`, `IHere`                              | what the engine hands over, only when declared                                                              |
-| `IReader`, `IContent`                                       | the passage and its reader, for an `inline` widget                                                          |
-| `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`          | the catalogue, `foldIntoGroup`, the mount list's writer                                                     |
-| `IPreview`                                                  | `{ canPreview, Drawn }`: `<Drawn widget={id} />` draws any widget the catalogue knows as its preview        |
-| `ICarrier`                                                  | `{ canCarry, lift(pointer, { widget, label }) }`: a drag the host runs, answering where it landed or `null` |
+| Declared                                                                                                       | Arrives as                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `getTasks: IQuery.output(z.array(RowSchema))`                                                                  | a list read: `useData(getTasks, { where, sort, limit })`                                                    |
+| `getHeading: IQuery.output(z.string().default("To do"))`                                                       | the value: `draw: ({ getHeading: heading }) => …`                                                           |
+| `ICommand.input(InputSchema)`, `.output(OutputSchema)` added when it answers data, or `ICommand` with no input | `await move(input)` answers `{ ok, output }` or `{ ok: false, reason, ran }`                                |
+| `IValueGateway.of(z.string().default("To do")).pick("get")`                                                    | the value, read and checked against the schema                                                              |
+| `IValueGateway.of(schema).pick("get", "update")`                                                               | `{ value, update }`                                                                                         |
+| `IValueGateway.of(schema)`                                                                                     | `{ value, update, remove }`                                                                                 |
+| `IListGateway.of(RowSchema, { where, sort, default })`                                                         | a gateway that reads: `list`, `get`                                                                         |
+| `ICrudGateway.of(RowSchema)`, `.pick("list", "create")`                                                        | a gateway with every verb, or only the ones picked                                                          |
+| `hero: ISlot`                                                                                                  | a component: `<Hero />` draws the one widget a person placed there, nothing when empty                      |
+| `main: ISlot.array()`                                                                                          | an array of components: `main.map((Slot) => <Slot key={Slot.id} />)`, `main.length`; hidden ones left out   |
+| `IRepeat.of<Given>({ default, surface, gives })`                                                               | a function drawing one widget again for every row, or `null`                                                |
+| `IHost`, `INavigator`, `IHere`                                                                                 | what the engine hands over, only when declared                                                              |
+| `IReader`, `IContent`                                                                                          | the passage and its reader, for an `inline` widget                                                          |
+| `ICatalogue`, `IFoldIntoGroup`, `IConfigureMounts`                                                             | the catalogue, `foldIntoGroup`, the mount list's writer                                                     |
+| `IPreview`                                                                                                     | `{ canPreview, Drawn }`: `<Drawn widget={id} />` draws any widget the catalogue knows as its preview        |
+| `ICarrier`                                                                                                     | `{ canCarry, lift(pointer, { widget, label }) }`: a drag the host runs, answering where it landed or `null` |
 
 `ICatalogue.open()` raises no dialog: it asks the sidebar catalogue and answers the widget picked
 there, or `null`. `ICarrier` is how a widget starts a drag without touching `window`: hand its answer
@@ -131,12 +131,13 @@ to `@catalogue/place`.
 
 **Reads are `IQuery`, writes are `ICommand`; prefer them in a new widget.** A query over `z.array(...)`
 takes the input every list takes (`where`, `sort`, `offset`, `limit`); any other query takes none
-and arrives as its value. A bare `IQuery` is refused: it needs `IQuery.expects(schema)`. **A query is named
+and arrives as its value. A bare `IQuery` is refused: it needs `IQuery.output(schema)`. **A query is named
 `get` and what it reads**, booleans included: `getTasks` (a list is plural), `getYear`, `getIsRound`.
 A value query is renamed where it is drawn, `({ getYear: year })`, so the body reads the value. A
 prop renamed from an older name keeps it in metadata, `getTasks: { aka: ["tasks"] }`, so a tile bound
-before still finds its binding. A command is named for the action: `move`, `create`. A command returns only
-a status, never data: its promise settles after every query of the tile has re-read, so the next
+before still finds its binding. A command is named for the action: `move`, `create`. A command answers `{ ok: true, output }`, `output` checked against the schema its `.output(...)`
+named and `undefined` without one, or `{ ok: false, reason, ran }`; a failure never throws. `ran: true`
+means the handler acted and only its output was refused, so the widget must not send it again. Its promise settles after every query of the tile has re-read, so the next
 frame draws the change. A create carries its own `id: z.uuid()`, minted at the press, and a retry
 with that id writes nothing. Ask `move.can()` before drawing the control, and draw `reason` when it
 answers `ok: false`. The person picks what runs a command in the Actions group of the settings
@@ -151,12 +152,14 @@ widget a command as a function: `updateTask: (patch) => updateRow({ ref: row.ref
 `@core/console-log`: it prints the tile, the command and what was sent to the console and changes
 nothing, the way an unbound query shows its typed default.
 
-**A widget expects and sends; an implementation returns and takes.** `IQuery.expects` and
-`ICommand.sends` are the only words a widget declares with. An implementation extends
-`IQuery.returns(S)` for one shape, `IQuery.returnsAny(B)` for any shape within the bound `B` (a folder
-returns any list of objects: `IQuery.returnsAny(z.array(z.object({})))`), and `ICommand.takes(S)`. A
-word on the wrong side is refused with the word that fits. An implementation class is named
-`*Query` or `*Command`.
+**A widget and its handler say the same words; the side is told by position.** `IQuery.output(S)`, or
+`IQuery.input(I).output(S)` for a query that takes an input, and `ICommand.input(I)` with
+`.output(O)` when it answers data. A widget writes them in `inject`; a handler is a class that
+extends one, plus `IQuery.outputWithin(B)` for any shape within the bound `B` (a folder answers any
+list of objects: `IQuery.outputWithin(z.array(z.object({})))`). A handler's `run` may return a value,
+checked against its `output` schema and again against the widget's, so `.output()` refuses a schema
+holding a `transform` or `pipe`: an output must parse to itself, and `.default` and `.catch` do. A handler class put in `inject`, or the bare port given where a
+handler belongs, is refused with the fix. A handler class is named `*Query` or `*Command`.
 
 **Every implementation ships in a pack.** A pack is a workspace under `packages/packs/<name>`; the
 engine holds none. A class is built `new Class(fields, ports)`: `fields` are what the person set in
@@ -229,9 +232,9 @@ implementation does the picking. Sibling props are named by their prop name:
 ```tsx
 const Board = createWidget({
 	inject: {
-		getTabs: IQuery.expects(z.array(TabSchema)),
-		getSelection: IQuery.expects(z.unknown()),
-		getBoard: IQuery.expects(BoardSchema),
+		getTabs: IQuery.output(z.array(TabSchema)),
+		getSelection: IQuery.output(z.unknown()),
+		getBoard: IQuery.output(BoardSchema),
 	},
 	draw: ({ getTabs, getSelection, getBoard }) => { … },
 });

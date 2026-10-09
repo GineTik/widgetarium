@@ -16,7 +16,8 @@ import type {
 	ValueContract,
 	ValueWrite,
 } from "./declared";
-import type { CommandAnswer, CommandContract, QueryRowsContract, QueryValueContract } from "./queries";
+import type { CommandContract, QueryRowsContract, QueryValueContract } from "./queries";
+import type { CommandAnswer } from "./run-handler";
 
 export declare const rowHeld: unique symbol;
 export declare const valueHeld: unique symbol;
@@ -29,6 +30,7 @@ export declare const gatewayKind: unique symbol;
 export declare const passedAs: unique symbol;
 export declare const queryRowHeld: unique symbol;
 export declare const commandInput: unique symbol;
+export declare const commandOutput: unique symbol;
 export declare const slotGiven: unique symbol;
 
 export interface SlotState {
@@ -37,10 +39,6 @@ export interface SlotState {
 	readonly surface?: "group" | "none" | undefined;
 	readonly props?: Readonly<Record<string, unknown>> | undefined;
 }
-
-export type Answering = {
-	readonly answersInAWidget?: "an implementation's word: a widget writes IQuery.expects or ICommand.sends";
-};
 
 interface ImplementationOps<Held> {
 	replace: Action<readonly Partial<Held>[], void>;
@@ -114,13 +112,18 @@ export type QueryValueDeclared<Held> = typeof QueryValueContract<Held> & {
 	readonly [valueWrites]?: "get";
 };
 
-export type CommandDeclared<Input> = (abstract new () => CommandContract<Input>) & {
+export type CommandDeclared<Input, Received, Output> = (abstract new () => CommandContract<Received, Output>) & {
 	readonly [commandInput]?: Input;
+	readonly [commandOutput]?: Output;
 };
 
-export type Command<Input> = ([Input] extends [void | undefined]
-	? () => Promise<CommandAnswer>
-	: (input: Input) => Promise<CommandAnswer>) & {
+export type CommandInputDeclared<I extends z.ZodType> = CommandDeclared<z.input<I>, z.output<I>, void> & {
+	output<const O extends z.ZodType>(output: O): CommandDeclared<z.input<I>, z.output<I>, z.output<O>>;
+};
+
+export type Command<Input, Output = void> = ([Input] extends [void | undefined]
+	? () => Promise<CommandAnswer<Output>>
+	: (input: Input) => Promise<CommandAnswer<Output>>) & {
 	can(): CanResult;
 };
 
@@ -190,17 +193,17 @@ export type WidgetProp = (
 	| ListDeclared<unknown, string>
 	| QueryRowsDeclared<unknown>
 	| QueryValueDeclared<unknown>
-	| CommandDeclared<never>
+	| CommandDeclared<never, never, unknown>
 	| PassedDeclared<unknown>
 	| (PassedDeclared<unknown> & { readonly [slotGiven]?: unknown })
-) & { readonly schemaMissing?: never; readonly answersInAWidget?: never };
+) & { readonly schemaMissing?: never };
 
 export type DeclaredProps = Readonly<Record<string, WidgetProp>>;
 
 type DrawnOf<C> = C extends { readonly [passedAs]?: infer Drawn }
 	? Drawn
-	: C extends { readonly [commandInput]?: infer Input }
-		? Command<Input>
+	: C extends { readonly [commandInput]?: infer Input; readonly [commandOutput]?: infer Output }
+		? Command<Input, Output>
 		: C extends { readonly [queryRowHeld]?: infer Held }
 			? QueryRead<RowWithRef<Held>>
 			: C extends {
@@ -230,8 +233,10 @@ type SlotGivenOf<C> = C extends { readonly [slotGiven]?: infer State }
 
 type GivenOfGateway<C> = C extends { readonly [passedAs]?: infer Drawn }
 	? Drawn
-	: C extends { readonly [commandInput]?: infer Input }
-		? CommandContract<Input>
+	: C extends { readonly [commandInput]?: unknown; readonly [commandOutput]?: infer Output }
+		? C extends abstract new () => CommandContract<infer Received, unknown>
+			? CommandContract<Received, Output>
+			: never
 		: C extends { readonly [queryRowHeld]?: infer Held }
 			? readonly Held[] | QueryRowsContract<Held> | (GatewayBase & { readonly kind: "collection" })
 			: C extends { readonly [valueHeld]?: infer Held }

@@ -1,6 +1,6 @@
 import type { Query, RecordRef, Row, RowsResult } from "./contract";
 import { rowOf, toRows } from "./create";
-import { declarationIn } from "./declaration";
+import { classNameOf, declarationIn } from "./declaration";
 import { ICrudGateway, IListGateway, IValueGateway } from "./declared";
 import { QueryRowsContract, QueryValueContract } from "./queries";
 import { isMatch, pageOf, sortRows } from "./match";
@@ -30,7 +30,7 @@ export function defineDefaultImplementation<I extends Constructed, C extends new
 	implementation: C,
 ): C {
 	const declaration = declarationIn(gatewayInterface);
-	if (!declaration) throw new Error(NOT_AN_INTERFACE.replace("{name}", gatewayInterface.name || "this class"));
+	if (!declaration) throw new Error(NOT_AN_INTERFACE.replace("{name}", classNameOf(gatewayInterface)));
 	const missing = [...(declaration.reads ?? []), ...declaration.writes].find(
 		(verb) => typeof verbOf(implementation.prototype, verb) !== "function",
 	);

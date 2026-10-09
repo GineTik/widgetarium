@@ -103,10 +103,10 @@ const EntrySchema = VaultRecordSchema.extend({
 
 const Checklist = createWidget({
 	inject: {
-		getHeading: IQuery.expects(z.string().default("To do")),
-		getEntries: IQuery.expects(z.array(EntrySchema)),
-		createEntry: ICommand.sends(EntrySchema.extend({ id: z.uuid() })),
-		updateEntry: ICommand.sends(EntrySchema.partial().extend({ ref: RecordRefSchema })),
+		getHeading: IQuery.output(z.string().default("To do")),
+		getEntries: IQuery.output(z.array(EntrySchema)),
+		createEntry: ICommand.input(EntrySchema.extend({ id: z.uuid() })),
+		updateEntry: ICommand.input(EntrySchema.partial().extend({ ref: RecordRefSchema })),
 		host: IHost,
 	},
 	draw: ({ getHeading: heading, getEntries, createEntry, updateEntry }) => { ... },

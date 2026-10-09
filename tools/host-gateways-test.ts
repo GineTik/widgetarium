@@ -75,7 +75,7 @@ check(
 			{ id: "x", title: "X", resource: "This board", fields: z.object({}) },
 		),
 	),
-	"Loose extends no gateway interface — extend IQuery.returns, IQuery.returnsAny, ICommand.takes, IValueGateway, IListGateway or ICrudGateway",
+	"Loose extends no gateway interface — extend IQuery.output, IQuery.outputWithin, ICommand.input, IValueGateway, IListGateway or ICrudGateway",
 );
 check(
 	"and takes its kind from the interface it extends",

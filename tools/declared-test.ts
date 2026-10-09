@@ -20,7 +20,7 @@ import { callAsUntypedSource, constructAsUntypedSource } from "./untyped-source.
 import type { Patch, RecordRef, Row, RowsResult } from "../packages/core/src/gateway/contract.ts";
 import { rowOf } from "../packages/core/src/gateway/create.ts";
 import { ICommand, IQuery } from "../packages/core/src/gateway/queries.ts";
-import { defineGatewayMetadata } from "../packages/core/src/gateway/implementation-metadata.ts";
+import { defineCommandMetadata, defineGatewayMetadata } from "../packages/core/src/gateway/implementation-metadata.ts";
 
 const dom = new JSDOM(`<!doctype html><body><div id="host"></div></body>`, { pretendToBeVisual: true });
 Object.assign(globalThis, {
@@ -477,7 +477,7 @@ check(
 check(
 	"declareProps refuses an entry that is not a declared gateway where it is written",
 	refusal(() => callAsUntypedSource(declareProps, { heading: props.heading, placeholder: "Search" })),
-	'prop "placeholder" is not a gateway declared with IQuery.expects, ICommand.sends, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot, ISlot.array, IRepeat.of or one the host hands over (IHost, INavigator, …)',
+	'prop "placeholder" is not a gateway declared with IQuery.output, ICommand.input, IValueGateway.of, IListGateway.of, ICrudGateway.of, ISlot, ISlot.array, IRepeat.of or one the host hands over (IHost, INavigator, …)',
 );
 check("and hands back the very props it was given", declareProps(props) === props, true);
 check(
@@ -623,8 +623,8 @@ check(
 const queried: { heading: unknown; titles: unknown[]; total: number | null }[] = [];
 const QueryProbe = createWidget({
 	inject: {
-		heading: IQuery.expects(z.string().default("Tasks")),
-		tasks: IQuery.expects(z.array(TaskSchema)),
+		heading: IQuery.output(z.string().default("Tasks")),
+		tasks: IQuery.output(z.array(TaskSchema)),
 	},
 	draw: ({ heading, tasks }) => {
 		const read = useData(tasks, { where: [{ prop: "title", op: "is", value: "Ship" }], limit: 5 });
@@ -640,40 +640,69 @@ check("a list query is read through useData with a where", lastQueried.titles, [
 check("and answers its total beside the rows", lastQueried.total, 1);
 check(
 	"a query over an array declares a list that only reads",
-	[declarationIn(IQuery.expects(z.array(TaskSchema)))?.kind, declarationIn(IQuery.expects(z.array(TaskSchema)))?.reads],
+	[declarationIn(IQuery.output(z.array(TaskSchema)))?.kind, declarationIn(IQuery.output(z.array(TaskSchema)))?.reads],
 	["collection", ["list"]],
 );
-check("a query over anything else declares a value", declarationIn(IQuery.expects(z.number()))?.kind, "value");
+check("a query over anything else declares a value", declarationIn(IQuery.output(z.number()))?.kind, "value");
 check(
 	"an array default becomes the list's rows",
-	declarationIn(IQuery.expects(z.array(TaskSchema).default([{ title: "Seed" }])))?.rows,
+	declarationIn(IQuery.output(z.array(TaskSchema).default([{ title: "Seed" }])))?.rows,
 	[{ title: "Seed" }],
 );
 check(
 	"a bare IQuery in inject is refused with the fix",
 	refusalOf(() => callAsUntypedSource(createWidget, { inject: { tasks: IQuery }, draw: () => null })),
-	'prop "tasks" is a query with no shape: write IQuery.expects(schema)',
+	'prop "tasks" is a query with no shape: write IQuery.output(schema)',
 );
 
+const SearchSchema = z.object({ text: z.string() });
 check(
-	"a widget declaring an implementation's word is refused with the word that fits",
-	[
-		refusalOf(() => callAsUntypedSource(declareProps, { getTasks: IQuery.returns(z.array(TaskSchema)) })),
-		refusalOf(() => callAsUntypedSource(declareProps, { getTasks: IQuery.returnsAny(z.array(z.object({}))) })),
-		refusalOf(() => callAsUntypedSource(declareProps, { move: ICommand.takes(z.object({ ref: z.string() })) })),
-	],
-	[
-		'prop "getTasks" is declared with IQuery.returns, the word an implementation extends: a widget writes IQuery.expects',
-		'prop "getTasks" is declared with IQuery.returnsAny, the word an implementation extends: a widget writes IQuery.expects',
-		'prop "move" is declared with ICommand.takes, the word an implementation extends: a widget writes ICommand.sends',
-	],
+	"a widget declares its ports with the words a handler extends",
+	refusalOf(() =>
+		callAsUntypedSource(declareProps, {
+			getTasks: IQuery.output(z.array(TaskSchema)),
+			findTasks: IQuery.input(SearchSchema).output(z.array(TaskSchema)),
+			getAny: IQuery.outputWithin(z.array(z.object({}))),
+			move: ICommand.input(z.object({ ref: z.string() })),
+			add: ICommand.input(TaskSchema).output(z.object({ id: z.string() })),
+		}),
+	),
+	"not refused",
 );
-abstract class AskingQuery extends IQuery.expects(z.array(TaskSchema)) {}
-abstract class AnsweringQuery extends IQuery.returns(z.array(TaskSchema)) {}
 check(
-	"an implementation extending a widget's word is refused, one extending its own word is not",
+	"a query's input is recorded on its declaration",
+	declarationIn(IQuery.input(SearchSchema).output(z.array(TaskSchema)))?.input === SearchSchema,
+	true,
+);
+abstract class AnsweringQuery extends IQuery.output(z.array(TaskSchema)) {}
+const HANDLER_IN_INJECT =
+	'prop "getTasks" is AnsweringQuery, an implementation; a widget declares the port it needs (IQuery.output(...), ICommand.input(...)) and the host decides what fills it';
+check(
+	"a handler given where a widget declares a port is refused by its position",
 	[
-		refusalOf(() => callAsUntypedSource(defineGatewayMetadata, AskingQuery, { id: "@test/asks", title: "Asks" })),
+		refusalOf(() => callAsUntypedSource(createWidget, { inject: { getTasks: AnsweringQuery }, draw: () => null })),
+		refusalOf(() => callAsUntypedSource(manifestOfModule, { default: { declared: { getTasks: AnsweringQuery } } })),
+	],
+	[HANDLER_IN_INJECT, HANDLER_IN_INJECT],
+);
+check(
+	"the declared port itself is refused where a handler belongs, a class extending it is not",
+	[
+		refusalOf(() =>
+			callAsUntypedSource(defineGatewayMetadata, IQuery.output(z.array(TaskSchema)), {
+				id: "@test/asks",
+				title: "Asks",
+				resource: "This board",
+			}),
+		),
+		refusalOf(() =>
+			callAsUntypedSource(defineCommandMetadata, ICommand.input(TaskSchema), {
+				id: "@test/sends",
+				title: "Sends",
+				resource: "This board",
+				description: "",
+			}),
+		),
 		refusalOf(() =>
 			callAsUntypedSource(defineGatewayMetadata, AnsweringQuery, {
 				id: "@test/answers",
@@ -683,7 +712,8 @@ check(
 		),
 	],
 	[
-		"AskingQuery extends IQuery.expects, the word a widget declares: an implementation extends IQuery.returns or IQuery.returnsAny",
+		"the declared port itself was given where a handler class belongs: write class Handler extends IQuery.output(schema) or ICommand.input(schema) and pass Handler",
+		"the declared port itself was given where a handler class belongs: write class Handler extends IQuery.output(schema) or ICommand.input(schema) and pass Handler",
 		"not refused",
 	],
 );
@@ -699,10 +729,10 @@ check(
 	'@test/answers names the resource "Disk"; name one of This board, Another widget, Note, Folder, Search, Statistics, Web, Git, Catalogue, Console',
 );
 check(
-	"returnsAny marks a bound, returns does not",
+	"outputWithin marks a bound, output does not",
 	[
-		declarationIn(IQuery.returnsAny(z.array(z.object({}))))?.isBound,
-		declarationIn(IQuery.returns(z.array(TaskSchema)))?.isBound,
+		declarationIn(IQuery.outputWithin(z.array(z.object({}))))?.isBound,
+		declarationIn(IQuery.output(z.array(TaskSchema)))?.isBound,
 	],
 	[true, undefined],
 );
