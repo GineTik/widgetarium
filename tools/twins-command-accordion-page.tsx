@@ -10,10 +10,17 @@ import {
 	CommandMenuInput,
 	Input,
 	List,
+	Questionnaire,
+	QuestionnaireChoice,
+	QuestionnaireChoices,
+	QuestionnaireInput,
+	QuestionnaireItem,
+	Textarea,
 	Row,
 	RowLabel,
 	Rows,
 } from "../packages/kit/src/index";
+import { InputGroup, InputGroupInput, NativeSelect, NativeSelectOption } from "../packages/kit/src/exports-inputs";
 
 const QUESTIONS = ["How does sync work?", "Can I undo a delete?", "Where are widgets kept?"];
 
@@ -35,6 +42,23 @@ function Page() {
 				<CommandInput placeholder="Type a command or search…" />
 			</Command>
 			<Input id="field-twin" placeholder="Field" />
+			<div id="focus-rings">
+				<Textarea placeholder="Note" />
+				<InputGroup>
+					<InputGroupInput placeholder="Search" />
+				</InputGroup>
+				<NativeSelect>
+					<NativeSelectOption value="a">A</NativeSelectOption>
+				</NativeSelect>
+				<Questionnaire>
+					<QuestionnaireItem name="pace">
+						<QuestionnaireChoices>
+							<QuestionnaireChoice value="live">Live</QuestionnaireChoice>
+							<QuestionnaireInput aria-label="Describe another" placeholder="Describe another…" />
+						</QuestionnaireChoices>
+					</QuestionnaireItem>
+				</Questionnaire>
+			</div>
 			<Rows id="rows">
 				{QUESTIONS.map((question) => (
 					<Rows.Item key={question}>{question}</Rows.Item>

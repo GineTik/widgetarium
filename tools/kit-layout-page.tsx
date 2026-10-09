@@ -6,9 +6,12 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 	AspectRatio,
+	Button,
 	Card,
 	Checkbox,
 	Switch,
+	ToggleGroup,
+	ToggleGroupItem,
 	Carousel,
 	Field,
 	FieldDescription,
@@ -27,7 +30,7 @@ import {
 	ResizablePanelGroup,
 	ScrollArea,
 } from "../packages/kit/src/index";
-import { Label, RadioGroup, RadioGroupItem } from "../packages/kit/src/exports-inputs";
+import { ButtonGroup, Label, RadioGroup, RadioGroupItem } from "../packages/kit/src/exports-inputs";
 
 const ROWS = Array.from({ length: 30 }, (_, at) => `Row ${at + 1}`);
 const SLIDES = ["One", "Two", "Three", "Four"];
@@ -57,6 +60,15 @@ function Page() {
 					Daily
 				</Label>
 			</RadioGroup>
+			<ToggleGroup id="toggle-group" type="multiple" defaultValue={["b", "i"]}>
+				<ToggleGroupItem value="b">B</ToggleGroupItem>
+				<ToggleGroupItem value="i">I</ToggleGroupItem>
+				<ToggleGroupItem value="u">U</ToggleGroupItem>
+			</ToggleGroup>
+			<ButtonGroup id="button-group">
+				<Button>One</Button>
+				<Button>Two</Button>
+			</ButtonGroup>
 			<Accordion id="accordion" type="single" collapsible defaultValue="a">
 				<AccordionItem value="a">
 					<AccordionTrigger>First</AccordionTrigger>

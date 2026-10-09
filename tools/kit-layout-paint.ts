@@ -94,6 +94,15 @@ const LABELLED_STATES = `(() => ({
 	unselectable: ["checkbox-label", "switch-label"].map((id) => getComputedStyle(document.getElementById(id)).userSelect),
 }))()`;
 
+const JOINED_GAPS = `(() => {
+	const gaps = (id) => {
+		const boxes = [...document.getElementById(id).children].map((child) => child.getBoundingClientRect());
+		return boxes.slice(1).map((box, at) => Math.round(box.left - boxes[at].right));
+	};
+	const corner = (child) => getComputedStyle(document.querySelectorAll("#toggle-group button")[child], "::before").borderTopRightRadius;
+	return { toggle: gaps("toggle-group"), buttons: gaps("button-group"), joinedCorner: corner(0) !== corner(2) };
+})()`;
+
 const SCROLL = `(async () => {
 	const viewport = document.querySelector("#scroll [data-slot='scroll-area-viewport']");
 	const thumb = document.querySelector("#scroll [data-slot='scroll-area-thumb']");
@@ -102,9 +111,17 @@ const SCROLL = `(async () => {
 	const top = [progress("wg-kit-fade-start"), progress("wg-kit-fade-end")];
 	const mask = getComputedStyle(viewport).maskImage;
 	viewport.scrollTop = 300;
-	await frame();
+	const offsetOf = () => new DOMMatrix(getComputedStyle(thumb).transform).m42;
+	const started = performance.now();
+	let settled = 0;
+	for (let last = NaN; settled < 3 && performance.now() - started < 1500; ) {
+		await frame();
+		const now = offsetOf();
+		settled = now === last && now !== 0 ? settled + 1 : 0;
+		last = now;
+	}
 	const middle = [progress("wg-kit-fade-start"), progress("wg-kit-fade-end")];
-	const offset = new DOMMatrix(getComputedStyle(thumb).transform).m42;
+	const offset = offsetOf();
 	viewport.scrollTop = 100000;
 	await frame();
 	const bottom = [progress("wg-kit-fade-start"), progress("wg-kit-fade-end")];
@@ -235,6 +252,11 @@ export async function paintChecks(): Promise<Painted[]> {
 			...accordionPainted(await page.ask(ACCORDION)),
 			...sharedPlatePainted(await page.ask(SHARED_PLATE)),
 			...labelsPainted(await labelPresses(page)),
+			[
+				"TOGGLES IN A ToggleGroup STAND THE ButtonGroup's GAP APART, AND TWO PRESSED NEIGHBOURS STILL JOIN THEIR CORNERS",
+				await page.ask(JOINED_GAPS),
+				{ toggle: [2, 2], buttons: [2], joinedCorner: true },
+			],
 			...fieldPainted(await page.ask(FIELD)),
 			...groupedItemsPainted(await page.ask(GROUPED_ITEMS)),
 			...filledBesidePlatesPainted(await page.ask(FILLED_BESIDE_PLATES)),
