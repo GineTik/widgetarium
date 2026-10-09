@@ -26,6 +26,14 @@ packages/sdk      FSL  what a widget author compiles against: types/widgetarium.
 registry/         MIT  the widget library everyone installs from: @default, @flow, @media
 ```
 
+**The gateway is deprecated and is the next thing deleted.** `IBaseGateway`, `IValueGateway`,
+`IListGateway`, `ICrudGateway`, `.of`, `.pick` and the universal `Query { where, sort }` are replaced by
+`IQuery` and `ICommand`. New code never extends, imports or designs around them, and no plan, spec or
+answer cites them as the way things work: every passage below that describes a gateway is history,
+not law. Measured 2026-10-09: `packages/core/src/gateway/` holds 34 files imported by 105 others, and
+10 pack classes still extend an `I*Gateway` against 44 on `IQuery`/`ICommand`. `IQuery` and `ICommand`
+live in `gateway/queries.ts` only until the folder goes, and move out with that deletion.
+
 **Kit imports nothing but React, tailwind-merge and, behind `/charts` and `/showcase` alone, Recharts; core never
 imports the app.** A plate law lives in
 `packages/kit/src/utils/plate-laws.ts` (the words in `constants/surfaces.ts`) because `Card` answers it, and `tree.js` and `surface-roles.js`
