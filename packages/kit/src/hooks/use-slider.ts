@@ -14,6 +14,7 @@ export interface SliderProps extends RangeAria {
 
 export interface Slider {
 	readonly shown: number;
+	readonly drawn: number;
 	readonly isGrabbed: boolean;
 	readonly trackRef: RefObject<HTMLSpanElement | null>;
 	readonly trackProps: RangeSliderPointer;
@@ -27,6 +28,7 @@ export function useSlider(value: unknown, onChange: ((next: number) => void) | u
 	const slider = useRangeSlider(percentAskOf(shown, onChange));
 	return {
 		shown,
+		drawn: slider.drawnValues[0] ?? shown,
 		isGrabbed: slider.grabbed !== null,
 		trackRef: slider.trackRef,
 		trackProps: slider.pointer,

@@ -11,12 +11,13 @@ export function pressFieldControl(event: MouseEvent<HTMLElement>): void {
 	if (event.defaultPrevented || !(label instanceof HTMLLabelElement) || label.control) return;
 	const control = onlyControlOf(label);
 	if (!control) return;
-	if (control.matches(TYPED_INTO)) return control.focus();
-	control.click();
+	if (!control.matches(TYPED_INTO)) control.click();
 	control.focus({ preventScroll: true });
 }
 
 function onlyControlOf(label: HTMLLabelElement): HTMLElement | null {
 	const controls = [...(label.closest(FIELD)?.querySelectorAll<HTMLElement>(CONTROL) ?? [])];
-	return controls.length === 1 && !label.contains(controls[0] ?? null) ? (controls[0] ?? null) : null;
+	const [only] = controls;
+	if (controls.length !== 1 || !only || label.contains(only)) return null;
+	return only;
 }
