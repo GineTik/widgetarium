@@ -12,6 +12,10 @@ import {
 	FieldDescription,
 	FieldLabel,
 	Input,
+	Item,
+	ItemContent,
+	ItemGroup,
+	ItemTitle,
 	CarouselContent,
 	CarouselItem,
 	CarouselNext,
@@ -114,6 +118,32 @@ function Page() {
 				<Input id="form-input" placeholder="ada@example.org" />
 				<FieldDescription>Enter an email address.</FieldDescription>
 			</Field>
+			<ItemGroup id="item-group">
+				<Item variant="outline">
+					<ItemContent>
+						<ItemTitle>First</ItemTitle>
+					</ItemContent>
+				</Item>
+				<Item variant="muted">
+					<ItemContent>
+						<ItemTitle>Middle</ItemTitle>
+					</ItemContent>
+				</Item>
+				<Item>
+					<ItemContent>
+						<ItemTitle>Last</ItemTitle>
+					</ItemContent>
+				</Item>
+			</ItemGroup>
+			<Item id="lone-item" variant="muted">
+				<ItemContent>
+					<ItemTitle>Alone</ItemTitle>
+				</ItemContent>
+			</Item>
+			<Card id="filled-beside-plates">
+				<Card id="choice-plate">A choice</Card>
+				<Input id="filled-input" placeholder="Describe another…" />
+			</Card>
 			<div id="tailwind" />
 		</div>
 	);

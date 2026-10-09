@@ -5140,6 +5140,23 @@ body.wg-tree-carrying .wg-tile-body {
 	border-top: 1px solid var(--wg-kit-group-line);
 }
 
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"],
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]::before {
+	border-radius: 0;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:first-child,
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:first-child::before {
+	border-start-start-radius: inherit;
+	border-start-end-radius: inherit;
+}
+
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:last-child,
+:is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > [data-slot="item"]:last-child::before {
+	border-end-start-radius: inherit;
+	border-end-end-radius: inherit;
+}
+
 :is(.wg-root, .wg-portal) .wg-kit-layout.is-rows > .wg-kit-layout-item.wg-kit-tone {
 	color: inherit;
 }
