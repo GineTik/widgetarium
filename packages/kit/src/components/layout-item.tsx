@@ -3,22 +3,21 @@ import type { HTMLAttributes, ReactElement } from "react";
 import { LAYOUT_KIND } from "../constants/layout";
 import type { ToneName } from "../constants/tones";
 import { cn } from "../utils/cn";
-import { tonedPlateClass } from "../utils/tones";
-import { Card } from "./card";
+import { Item } from "./item";
 
 export interface LayoutItemProps extends HTMLAttributes<HTMLDivElement> {
 	readonly tone?: ToneName | undefined;
 }
 
-export function LayoutItem({ tone, className: cls, children, ...rest }: LayoutItemProps): ReactElement {
+export function LayoutItem({ className, ...rest }: LayoutItemProps): ReactElement {
 	const kind = useContext(LAYOUT_KIND);
-	const itemClass = cn("wg-kit-layout-item", cls);
-	if (kind === "grid" || kind === "row")
-		return <Card {...rest} tone={tone} className={itemClass} children={children} />;
-	if (kind === "rows") return <div {...rest} className={cn(itemClass, tonedPlateClass(tone))} children={children} />;
+	const isOwnPlate = kind === "grid" || kind === "row";
 	return (
-		<div {...rest} className={itemClass}>
-			{children}
-		</div>
+		<Item
+			{...rest}
+			variant={isOwnPlate ? "muted" : "default"}
+			holds="block"
+			className={cn("wg-kit-layout-item", className)}
+		/>
 	);
 }
