@@ -36,6 +36,18 @@
 			"types": "./dist/kit-charts.d.ts",
 			"default": "./dist/kit-charts.js"
 		},
+		"./app": {
+			"source": "./src/app.ts",
+			"types": "./dist/app.d.ts",
+			"default": "./dist/app.js"
+		},
+		"./project-module": {
+			"types": "./dist/project-module.d.ts"
+		},
+		"./styles.css": {
+			"style": "./dist/styles.css",
+			"default": "./dist/styles.css"
+		},
 		"./vite": {
 			"source": "./src/vite.ts",
 			"types": "./dist/vite.d.ts",
@@ -44,7 +56,8 @@
 	},
 	"dependencies": {
 		"@widgetarium/core": "0.1.0",
-		"@widgetarium/kit": "0.1.0"
+		"@widgetarium/kit": "0.1.0",
+		"@widgetarium/pack-core": "0.1.0"
 	},
 	"peerDependencies": {
 		"react": "^19.2.8",

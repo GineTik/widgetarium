@@ -1,0 +1,84 @@
+:root {
+	--size-2-2: 4px;
+	--size-2-3: 6px;
+	--size-4-1: 4px;
+	--size-4-2: 8px;
+	--size-4-3: 12px;
+	--size-4-4: 16px;
+	--size-4-5: 20px;
+	--size-4-6: 24px;
+
+	--radius-s: 4px;
+	--radius-m: 8px;
+	--radius-l: 12px;
+	--radius-xl: 16px;
+
+	--font-interface: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--font-monospace: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	--font-ui-smaller: 12px;
+	--font-ui-small: 13px;
+	--font-ui-medium: 15px;
+	--font-ui-large: 20px;
+	--font-normal: 400;
+	--font-medium: 500;
+	--font-semibold: 600;
+	--font-bold: 700;
+	--line-height-normal: 1.5;
+	--h3-size: 1.375em;
+
+	--layer-modal: 50;
+	--layer-tooltip: 70;
+
+	--color-red: #e93147;
+	--color-orange: #ec7500;
+	--color-yellow: #e0ac00;
+	--color-green: #08b94e;
+	--color-cyan: #00bfbc;
+	--color-blue: #086ddd;
+	--color-purple: #7852ee;
+	--color-pink: #d53984;
+
+	--background-primary: #ffffff;
+	--background-primary-alt: #fafafa;
+	--background-secondary: #f6f6f6;
+	--background-modifier-border: #e4e4e4;
+	--background-modifier-hover: rgba(0, 0, 0, 0.05);
+	--bases-table-border-color: var(--background-modifier-border);
+	--text-normal: #222222;
+	--text-muted: #707070;
+	--text-faint: #a0a0a0;
+	--text-on-accent: #ffffff;
+	--text-error: #c0392b;
+	--text-success: #1f8a4c;
+	--interactive-accent: #6d4ee0;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background-primary: #1e1e1e;
+		--background-primary-alt: #242424;
+		--background-secondary: #161616;
+		--background-modifier-border: #333333;
+		--background-modifier-hover: rgba(255, 255, 255, 0.07);
+		--text-normal: #dadada;
+		--text-muted: #999999;
+		--text-faint: #6b6b6b;
+		--text-on-accent: #ffffff;
+		--text-error: #e06c5f;
+		--text-success: #4ec97f;
+		--interactive-accent: #8b6cef;
+	}
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-medium);
+}
+
+.wg-no-route {
+	padding: var(--size-4-6);
+}

@@ -14,6 +14,7 @@ const ENGINE = path.join(REPO, "packages/widgetarium");
 const KIT = path.join(REPO, "packages/kit");
 const SDK_SURFACE = path.join(REPO, "packages/sdk/types/widgetarium.d.ts");
 const KIT_SUBPATH = "./kit";
+const HOST_ENTRIES: readonly string[] = ["./app"];
 const PROBE = "probe.ts";
 const PROBE_OPTIONS = {
 	target: "ES2022",
@@ -57,10 +58,12 @@ function typedAgainstOf(engineSubpath: string, kitSources: ReadonlyMap<string, s
 
 function surfacePairs(): SurfacePair[] {
 	const kitSources = exportSourcesOf(KIT);
-	return [...exportSourcesOf(ENGINE)].map(([subpath, shipped]) => ({
-		shipped,
-		typedAgainst: typedAgainstOf(subpath, kitSources),
-	}));
+	return [...exportSourcesOf(ENGINE)]
+		.filter(([subpath]) => !HOST_ENTRIES.includes(subpath))
+		.map(([subpath, shipped]) => ({
+			shipped,
+			typedAgainst: typedAgainstOf(subpath, kitSources),
+		}));
 }
 
 function probeText(modules: readonly string[]): string {

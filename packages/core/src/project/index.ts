@@ -1,4 +1,4 @@
-export { checkProject } from "./check-project.js";
+export { checkDiscovered, checkProject } from "./check-project.js";
 export { discoverProject, type ProjectMap } from "./discover-project.js";
 export {
 	PROJECT_CONFIG_FILE,

@@ -9,14 +9,12 @@ import { compileWidget, compileWidgetFolder } from "./engine/widget-build.js";
 import { contentHash } from "./engine/content-hash.js";
 import { isPageFolder } from "./engine/node-marks.js";
 import type { FolderFiles } from "./engine/widget-build.js";
-import { manifestOf, readRecord } from "./engine/catalogue-index.js";
+import { readRecord } from "./engine/catalogue-index.js";
 import type { EngineManifest, Fields, WidgetRecord } from "./engine/catalogue-index.js";
 import { idOfFolder } from "./engine/github.js";
 import { isObject } from "./engine/is-object.js";
 import {
 	ENGINE_SCOPE,
-	blocksIn,
-	statesIn,
 	componentIn,
 	drawnAsImportedWidget,
 	foreignScope,
@@ -26,6 +24,7 @@ import {
 } from "./registry-scope.js";
 import type { PackageTaker, WidgetComponent, WidgetScope, WidgetStates } from "./registry-scope.js";
 import { parseLock, readVault } from "./registry-reading.js";
+import { exportsOfModule, refusedDefinitionOf } from "./registry-definition.js";
 import type { HeldWidget, OwnedSheet, PackageSource, RegistryAdapter, VaultRead } from "./registry-reading.js";
 import type { ReactIdentity } from "./fit.js";
 import type { DrawWidget } from "./mounted.js";
@@ -336,7 +335,7 @@ export class WidgetRegistry implements WidgetLookup {
 				this.widgets.set(id, { ...working, newerFailed: failure });
 				return;
 			}
-			this.widgets.set(id, { manifest: { id, title: id }, error: failure, folder });
+			this.widgets.set(id, refusedDefinitionOf(id, failure, folder));
 		}
 	}
 
@@ -378,11 +377,6 @@ export class WidgetRegistry implements WidgetLookup {
 interface WidgetRun {
 	readonly scope: WidgetScope;
 	readonly uses: Set<string>;
-}
-
-function exportsOfModule(record: WidgetRecord, module: unknown, folder: string) {
-	const component = componentIn(module, folder);
-	return { manifest: manifestOf(record, component), component, blocks: blocksIn(module), states: statesIn(module) };
 }
 
 function isInlineOnly(entry: ManifestHolder): boolean {

@@ -46,6 +46,11 @@ const DECLARATION = /\.d\.ts$/;
 const NODE_TARGET = "node20";
 const BUILT_BIN = /^\.\/dist\/(.+)\.js$/;
 const HANDBOOK = { from: path.join(REPO, "docs/ai"), into: path.join(REPO, "packages/widgetarium/dist/handbook") };
+const BROWSER_STYLES = {
+	host: path.join(REPO, "packages/widgetarium/src/browser-host.css"),
+	board: path.join(REPO, "apps/obsidian/styles.css"),
+	into: path.join(REPO, "packages/widgetarium/dist/styles.css"),
+};
 
 export async function packEngine(): Promise<PackedPackage[]> {
 	const folders = ENGINE_PACKAGES.map((folder) => path.join(REPO, folder));
@@ -65,6 +70,7 @@ async function buildEach(folders: readonly string[]): Promise<void> {
 	for (const folder of folders) await bundleEntries(folder, builtIn(folder));
 	for (const folder of folders) await bundleNodeEntries(folder, builtIn(folder));
 	fs.cpSync(HANDBOOK.from, HANDBOOK.into, { recursive: true });
+	writeBrowserStyles();
 	for (const folder of folders) {
 		copyHandWrittenDeclarations(folder, builtIn(folder));
 		emitDeclarations(folder, builtIn(folder));
@@ -72,6 +78,12 @@ async function buildEach(folders: readonly string[]): Promise<void> {
 }
 
 const builtIn = (folder: string): string => path.join(folder, BUILT_TO);
+
+// TRADE-OFF: the engine package's sheet is cut from the app's styles.css; moving that owner into core touches every paint gate
+function writeBrowserStyles(): void {
+	const sheets = [BROWSER_STYLES.host, BROWSER_STYLES.board].map((at) => fs.readFileSync(at, "utf8"));
+	fs.writeFileSync(BROWSER_STYLES.into, sheets.join("\n"));
+}
 
 function manifestIn(folder: string): PackageManifest {
 	return PackageManifestSchema.parse(JSON.parse(fs.readFileSync(path.join(folder, "package.json"), "utf8")));

@@ -8,7 +8,10 @@ import { parseJson } from "./project-json.js";
 export async function checkProject(files: ProjectFiles): Promise<ProjectFinding[]> {
 	const reading = await readProjectConfig(files);
 	if ("refusal" in reading) return [{ path: PROJECT_CONFIG_FILE, message: reading.refusal }];
-	const map = await discoverProject(files, reading.config);
+	return checkDiscovered(files, await discoverProject(files, reading.config));
+}
+
+export async function checkDiscovered(files: ProjectFiles, map: ProjectMap): Promise<ProjectFinding[]> {
 	return [...map.refused, ...duplicatesIn(map), ...(await unreadableBoardsIn(files, map.routes))];
 }
 
