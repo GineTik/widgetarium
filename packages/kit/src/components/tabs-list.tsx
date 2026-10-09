@@ -8,11 +8,18 @@ import { useTabs } from "./tabs-context";
 
 export interface TabsListProps extends HTMLAttributes<HTMLDivElement> {
 	readonly size?: "s" | "m" | "l" | undefined;
+	readonly variant?: "default" | "line" | undefined;
 }
 
 const ENABLED_TAB = '[role="tab"]:not([disabled])';
 
-export function TabsList({ size = "m", className, children, ...rest }: TabsListProps): ReactElement {
+export function TabsList({
+	size = "m",
+	variant = "default",
+	className,
+	children,
+	...rest
+}: TabsListProps): ReactElement {
 	const { value } = useTabs();
 	const { listRef, thumbProps } = useSegmentedThumb(value, Children.count(children));
 	return (
@@ -20,9 +27,16 @@ export function TabsList({ size = "m", className, children, ...rest }: TabsListP
 			role="tablist"
 			data-slot="tabs-list"
 			aria-orientation="horizontal"
+			data-variant={variant}
 			{...rest}
 			ref={listRef}
-			className={cn("wg-kit-seg", size === "l" && "is-l", size === "s" && "is-s", className)}
+			className={cn(
+				"wg-kit-seg",
+				size === "l" && "is-l",
+				size === "s" && "is-s",
+				variant === "line" && "is-line",
+				className,
+			)}
 			onKeyDown={(event) => {
 				rest.onKeyDown?.(event);
 				pressesNextTab(event);
