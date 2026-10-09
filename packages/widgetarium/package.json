@@ -4,8 +4,16 @@
 	"description": "What a widget imports: the widget API, the kit, its emojis and charts",
 	"license": "FSL-1.1-ALv2",
 	"type": "module",
+	"engines": {
+		"node": ">=20.12"
+	},
+	"bin": {
+		"widgetarium": "./dist/cli.js"
+	},
 	"files": [
-		"dist"
+		"dist",
+		"templates",
+		"widgetarium.schema.json"
 	],
 	"exports": {
 		".": {
@@ -27,6 +35,11 @@
 			"source": "./src/kit-charts.ts",
 			"types": "./dist/kit-charts.d.ts",
 			"default": "./dist/kit-charts.js"
+		},
+		"./vite": {
+			"source": "./src/vite.ts",
+			"types": "./dist/vite.d.ts",
+			"node": "./dist/vite.js"
 		}
 	},
 	"dependencies": {

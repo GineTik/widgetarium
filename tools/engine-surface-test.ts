@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { API, type Project } from "typescript/unstable/sync";
-import { fieldOf, sourceOfExport } from "./export-source.mts";
+import { fieldOf, isNodeExport, sourceOfExport } from "./export-source.mts";
 
 interface SurfacePair {
 	readonly shipped: string;
@@ -37,6 +37,7 @@ function exportSourcesOf(folder: string): Map<string, string> {
 	const entries = typeof exports === "object" && exports !== null ? Object.entries(exports) : [];
 	return new Map(
 		entries.flatMap(([subpath, target]) => {
+			if (isNodeExport(target)) return [];
 			const source = sourceOfExport(target);
 			return source === null ? [] : [[subpath, path.join(folder, source)]];
 		}),

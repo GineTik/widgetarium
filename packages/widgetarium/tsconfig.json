@@ -17,7 +17,7 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
-		"types": []
+		"types": ["node"]
 	},
 	"references": [{ "path": "../kit" }, { "path": "../core" }],
 	"include": ["src/**/*.ts", "../core/src/*.d.ts"]

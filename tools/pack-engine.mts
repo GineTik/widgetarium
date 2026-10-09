@@ -5,7 +5,7 @@ import path from "node:path";
 import esbuild, { type Plugin } from "esbuild";
 import { TEXT_LOADERS } from "../apps/obsidian/build.mts";
 import { z } from "zod";
-import { SOURCE_CONDITION, fieldOf, sourceOfExport } from "./export-source.mts";
+import { SOURCE_CONDITION, fieldOf, isNodeExport, sourceOfExport } from "./export-source.mts";
 
 export interface PackedPackage {
 	readonly name: string;
@@ -43,6 +43,9 @@ const SOURCE_FOLDER = "src";
 const KIT_THEME = /^@widgetarium\/kit\/theme\.css$/;
 const ENTRY_SOURCE = /\.tsx?$/;
 const DECLARATION = /\.d\.ts$/;
+const NODE_TARGET = "node20";
+const BUILT_BIN = /^\.\/dist\/(.+)\.js$/;
+const HANDBOOK = { from: path.join(REPO, "docs/ai"), into: path.join(REPO, "packages/widgetarium/dist/handbook") };
 
 export async function packEngine(): Promise<PackedPackage[]> {
 	const folders = ENGINE_PACKAGES.map((folder) => path.join(REPO, folder));
@@ -60,6 +63,8 @@ export async function packEngine(): Promise<PackedPackage[]> {
 
 async function buildEach(folders: readonly string[]): Promise<void> {
 	for (const folder of folders) await bundleEntries(folder, builtIn(folder));
+	for (const folder of folders) await bundleNodeEntries(folder, builtIn(folder));
+	fs.cpSync(HANDBOOK.from, HANDBOOK.into, { recursive: true });
 	for (const folder of folders) {
 		copyHandWrittenDeclarations(folder, builtIn(folder));
 		emitDeclarations(folder, builtIn(folder));
@@ -126,15 +131,58 @@ async function bundleEntries(folder: string, built: string): Promise<void> {
 	});
 }
 
-function entrySourcesOf(folder: string): string[] {
-	const manifest: unknown = JSON.parse(fs.readFileSync(path.join(folder, "package.json"), "utf8"));
-	const exports = fieldOf(manifest, "exports");
-	const targets = typeof exports === "object" && exports !== null ? Object.values(exports) : [];
-	const sources = targets.flatMap((target) => {
-		const source = sourceOfExport(target);
-		return source === null ? [] : sourcesMatching(folder, source);
+async function bundleNodeEntries(folder: string, built: string): Promise<void> {
+	const entryPoints = [...nodeExportSourcesOf(folder), ...binSourcesOf(folder)];
+	if (entryPoints.length === 0) return;
+	await esbuild.build({
+		entryPoints,
+		outdir: built,
+		outbase: path.join(folder, SOURCE_FOLDER),
+		bundle: true,
+		format: "esm",
+		platform: "node",
+		target: NODE_TARGET,
+		packages: "external",
+		conditions: [SOURCE_CONDITION],
+		logLevel: "warning",
 	});
-	return [...new Set(sources)];
+}
+
+function exportTargetsOf(folder: string): unknown[] {
+	const exports = fieldOf(rawManifestIn(folder), "exports");
+	return typeof exports === "object" && exports !== null ? Object.values(exports) : [];
+}
+
+function rawManifestIn(folder: string): unknown {
+	return JSON.parse(fs.readFileSync(path.join(folder, "package.json"), "utf8"));
+}
+
+function entrySourcesOf(folder: string): string[] {
+	const browserTargets = exportTargetsOf(folder).filter((target) => !isNodeExport(target));
+	return [...new Set(browserTargets.flatMap((target) => sourcesOfTarget(folder, target)))];
+}
+
+function nodeExportSourcesOf(folder: string): string[] {
+	return exportTargetsOf(folder)
+		.filter(isNodeExport)
+		.flatMap((target) => sourcesOfTarget(folder, target));
+}
+
+function sourcesOfTarget(folder: string, target: unknown): string[] {
+	const source = sourceOfExport(target);
+	return source === null ? [] : sourcesMatching(folder, source);
+}
+
+function binSourcesOf(folder: string): string[] {
+	const bin = fieldOf(rawManifestIn(folder), "bin");
+	const targets = typeof bin === "object" && bin !== null ? Object.values(bin) : [];
+	return targets.map((target) => {
+		const built = typeof target === "string" ? BUILT_BIN.exec(target) : null;
+		const source = built?.[1] === undefined ? null : path.join(folder, SOURCE_FOLDER, `${built[1]}.ts`);
+		if (source === null || !fs.existsSync(source))
+			throw new Error(`${folder} ships bin ${String(target)} built from no source`);
+		return source;
+	});
 }
 
 function sourcesMatching(folder: string, source: string): string[] {
@@ -175,6 +223,7 @@ function publishedDeclarationsConfig(folder: string, built: string, configAt: st
 		extends: path.join(folder, "tsconfig.json"),
 		compilerOptions: {
 			customConditions: [],
+			typeRoots: [path.join(REPO, "node_modules/@types")],
 			composite: false,
 			noEmit: false,
 			declaration: true,

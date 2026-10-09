@@ -5,6 +5,8 @@
 	"type": "module",
 	"files": [
 		"dist",
+		"src/**/*.ts",
+		"src/**/*.tsx",
 		"theme.css",
 		"assets"
 	],

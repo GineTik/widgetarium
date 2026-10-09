@@ -1,0 +1,68 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"name": {
+			"type": "string",
+			"minLength": 1
+		},
+		"paths": {
+			"default": {},
+			"type": "object",
+			"properties": {
+				"routes": {
+					"default": "src/app/routes",
+					"type": "string"
+				},
+				"widgets": {
+					"default": "src/widgets",
+					"type": "string"
+				},
+				"logic": {
+					"default": "src/logic",
+					"type": "string"
+				},
+				"schemas": {
+					"default": "src/shared/schemas",
+					"type": "string"
+				},
+				"sources": {
+					"default": "src/shared/sources",
+					"type": "string"
+				},
+				"kit": {
+					"default": "src/shared/kit",
+					"type": "string"
+				},
+				"libs": {
+					"default": "src/shared/libs",
+					"type": "string"
+				},
+				"docs": {
+					"default": "docs",
+					"type": "string"
+				},
+				"references": {
+					"default": "docs/references",
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		},
+		"aliases": {
+			"type": "object",
+			"propertyNames": {
+				"type": "string",
+				"pattern": "^@"
+			},
+			"additionalProperties": {
+				"type": "string"
+			}
+		}
+	},
+	"required": ["name"],
+	"additionalProperties": false
+}
