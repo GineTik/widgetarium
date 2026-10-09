@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { PropsOf, TabStep } from "widgetarium";
 import { patchOf } from "./patch-of";
 import { ARCHIVED_AT } from "./tab-fields";
@@ -13,62 +12,72 @@ const CANNOT_DELETE = "This list does not drop records, so the tab is still here
 type TabsProps = PropsOf<typeof EditableTabsWidget>;
 type TabWrites = Pick<TabsProps, "createTab" | "updateTab" | "removeTab" | "select" | "host"> & { label: string };
 
-export function useTabSteps(
-	rows: TabRow[],
-	{ label, createTab, updateTab, removeTab, select: selectRef, host }: TabWrites,
-) {
-	const [createdName, setCreatedName] = useState<string | null>(null);
+interface TabSteps {
+	readonly rows: TabRow[];
+	readonly writes: TabWrites;
+}
 
-	const rowNamed = (name: string) => rows.find((row) => row.label === name) ?? null;
-	const created = createdName === null ? null : rowNamed(createdName);
-	useEffect(() => {
-		if (!created) return;
-		setCreatedName(null);
-		void selectRef(created.ref);
-	}, [created?.ref]);
+type StepRun = (steps: TabSteps, step: TabStep) => Promise<void> | void;
 
-	const refuse = (said: string) => host?.ui?.notify(said);
-	const select = (name: string) => {
-		const row = rowNamed(name);
-		if (row) void selectRef(row.ref);
-	};
+const STEP_RUNS: Readonly<Record<TabStep["verb"], StepRun>> = {
+	select: (steps, step) => selectTab(steps, step.selected ?? ""),
+	add: (steps, step) => addTab(steps, step.name ?? ""),
+	rename: (steps, step) => renameTab(steps, step.was ?? "", step.name ?? ""),
+	restore: (steps, step) => archiveTab(steps, step.name ?? "", null),
+	delete: (steps, step) => deleteTab(steps, step.name ?? ""),
+	archive: archiveKeepingSelection,
+};
 
-	const add = async (name: string) => {
-		if (!createTab.can().can) return refuse(CANNOT_ADD);
-		const made = await createTab({ id: crypto.randomUUID(), ...patchOf(label, name) });
-		if (made.ok) setCreatedName(name);
-	};
+export function useTabSteps(rows: TabRow[], writes: TabWrites) {
+	return async (step: TabStep) => STEP_RUNS[step.verb]?.({ rows, writes }, step);
+}
 
-	const rename = async (was: string, name: string) => {
-		const row = rowNamed(was);
-		if (!row) return;
-		if (!updateTab.can().can) return refuse(CANNOT_RENAME);
-		await updateTab({ ref: row.ref, ...patchOf(label, name) });
-	};
+function rowNamed(rows: TabRow[], name: string): TabRow | null {
+	return rows.find((row) => row.label === name) ?? null;
+}
 
-	const archive = async (name: string, at: string | null) => {
-		const row = rowNamed(name);
-		if (!row) return;
-		if (!updateTab.can().can) return refuse(CANNOT_ARCHIVE);
-		await updateTab({ ref: row.ref, props: { [ARCHIVED_AT]: at } });
-	};
+function refuse({ writes }: TabSteps, said: string): void {
+	writes.host?.ui?.notify(said);
+}
 
-	const remove = async (name: string) => {
-		const row = rowNamed(name);
-		if (!row) return;
-		if (!removeTab.can().can) return refuse(CANNOT_DELETE);
-		await removeTab({ ref: row.ref });
-	};
+function selectTab({ rows, writes }: TabSteps, name: string): void {
+	const row = rowNamed(rows, name);
+	if (row) void writes.select(row.ref);
+}
 
-	return async (step: TabStep) => {
-		if (step.verb === "select") return select(step.selected ?? "");
-		if (step.verb === "add") return add(step.name ?? "");
-		if (step.verb === "rename") return rename(step.was ?? "", step.name ?? "");
-		if (step.verb === "restore") return archive(step.name ?? "", null);
-		if (step.verb === "delete") return remove(step.name ?? "");
-		if (step.verb !== "archive") return;
-		select(step.selected ?? "");
-		await archive(step.name ?? "", new Date().toISOString());
-		if (!rowNamed(step.selected ?? "")) await add(step.selected ?? "");
-	};
+async function addTab(steps: TabSteps, name: string): Promise<void> {
+	const { createTab, label, select } = steps.writes;
+	if (!createTab.can().can) return refuse(steps, CANNOT_ADD);
+	const made = await createTab({ id: crypto.randomUUID(), ...patchOf(label, name) });
+	if (made.ok && made.output) await select(made.output.ref);
+}
+
+async function renameTab(steps: TabSteps, was: string, name: string): Promise<void> {
+	const { updateTab, label } = steps.writes;
+	const row = rowNamed(steps.rows, was);
+	if (!row) return;
+	if (!updateTab.can().can) return refuse(steps, CANNOT_RENAME);
+	await updateTab({ ref: row.ref, ...patchOf(label, name) });
+}
+
+async function archiveTab(steps: TabSteps, name: string, at: string | null): Promise<void> {
+	const { updateTab } = steps.writes;
+	const row = rowNamed(steps.rows, name);
+	if (!row) return;
+	if (!updateTab.can().can) return refuse(steps, CANNOT_ARCHIVE);
+	await updateTab({ ref: row.ref, props: { [ARCHIVED_AT]: at } });
+}
+
+async function deleteTab(steps: TabSteps, name: string): Promise<void> {
+	const { removeTab } = steps.writes;
+	const row = rowNamed(steps.rows, name);
+	if (!row) return;
+	if (!removeTab.can().can) return refuse(steps, CANNOT_DELETE);
+	await removeTab({ ref: row.ref });
+}
+
+async function archiveKeepingSelection(steps: TabSteps, step: TabStep): Promise<void> {
+	selectTab(steps, step.selected ?? "");
+	await archiveTab(steps, step.name ?? "", new Date().toISOString());
+	if (!rowNamed(steps.rows, step.selected ?? "")) await addTab(steps, step.selected ?? "");
 }

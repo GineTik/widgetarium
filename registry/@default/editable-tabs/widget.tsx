@@ -26,14 +26,14 @@ const TabRecord = VaultRecordSchema.partial().extend({
 
 export const EditableTabsWidget = createWidget({
 	inject: {
-		getTabs: IQuery.expects(z.array(TabRecord)),
-		createTab: ICommand.sends(TabRecord.extend({ id: z.uuid() })),
-		updateTab: ICommand.sends(TabRecord.partial().extend({ ref: RecordRefSchema })),
-		removeTab: ICommand.sends(z.object({ ref: RecordRefSchema })),
-		getLabel: IQuery.expects(z.string().default("name")),
-		getValue: IQuery.expects(z.string().default("board")),
-		getSelection: IQuery.expects(z.unknown()),
-		select: ICommand.sends(z.unknown()),
+		getTabs: IQuery.output(z.array(TabRecord)),
+		createTab: ICommand.input(TabRecord.extend({ id: z.uuid() })).output(z.object({ ref: RecordRefSchema }).nullable()),
+		updateTab: ICommand.input(TabRecord.partial().extend({ ref: RecordRefSchema })),
+		removeTab: ICommand.input(z.object({ ref: RecordRefSchema })),
+		getLabel: IQuery.output(z.string().default("name")),
+		getValue: IQuery.output(z.string().default("board")),
+		getSelection: IQuery.output(z.unknown()),
+		select: ICommand.input(z.unknown()),
 		host: IHost,
 	},
 	draw: ({

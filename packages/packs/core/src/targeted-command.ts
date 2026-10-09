@@ -23,7 +23,7 @@ const TARGET_CANNOT = "{ref} cannot {verb}";
 const RUNNING_ON_TARGET = new Map<string, Promise<unknown>>();
 
 export function targetedCommand<const S extends z.ZodType>(input: S, verb: string, write: Write) {
-	return class extends ICommand.takes(input) {
+	return class extends ICommand.input(input) {
 		constructor(
 			readonly fields: TargetFields,
 			readonly ports: ImplementationPorts,
@@ -32,19 +32,30 @@ export function targetedCommand<const S extends z.ZodType>(input: S, verb: strin
 		}
 
 		can(): CanResult {
-			const decided = decisionOf(this.fields, this.ports, verb);
-			return decided.can ? { can: true } : decided;
+			return canOnTarget(this.fields, this.ports, verb);
 		}
 
-		run(sent: z.output<S>): Promise<void> {
-			const target = targetIn(this.fields) ?? this.ports.self;
-			return runAfterOthersOn(target, async () => {
-				const decided = decisionOf(this.fields, this.ports, verb);
-				if (!decided.can) throw new Error(decided.reason);
-				await write(decided.verbs, sent);
-			});
+		async run(sent: z.output<S>): Promise<void> {
+			await writeOnTarget(this.fields, this.ports, verb, (verbs) => write(verbs, sent));
 		}
 	};
+}
+
+export function canOnTarget(fields: TargetFields, ports: ImplementationPorts, verb: string): CanResult {
+	const decided = decisionOf(fields, ports, verb);
+	return decided.can ? { can: true } : decided;
+}
+
+export function writeOnTarget(
+	fields: TargetFields,
+	ports: ImplementationPorts,
+	verb: string,
+	write: (verbs: Verbs) => Promise<unknown>,
+): Promise<unknown> {
+	return runAfterOthersOn(targetIn(fields) ?? ports.self, () => {
+		const decided = decisionOf(fields, ports, verb);
+		return decided.can ? write(decided.verbs) : Promise.reject(new Error(decided.reason));
+	});
 }
 
 export function call(verbs: Verbs, verb: string, input: unknown): Promise<unknown> {
@@ -77,7 +88,7 @@ function nameOf(self: string): string {
 	return self.slice(self.indexOf("/") + 1);
 }
 
-function runAfterOthersOn(target: string, run: () => Promise<void>): Promise<void> {
+function runAfterOthersOn(target: string, run: () => Promise<unknown>): Promise<unknown> {
 	const before = RUNNING_ON_TARGET.get(target) ?? Promise.resolve();
 	const next = before.then(run, run);
 	RUNNING_ON_TARGET.set(target, next);
