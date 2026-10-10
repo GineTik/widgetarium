@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { bundleOf, shoot, THEMES } from "./harness.ts";
-import { catalogueWidgetFiles } from "./catalogue-widget-files.mts";
+import { systemWidgetFiles } from "./system-widget-files.mts";
 import { CATALOGUE_BOARD } from "../apps/obsidian/src/catalogue-boards.ts";
 
 interface Rect {
@@ -47,7 +47,7 @@ const shotsAt = path.resolve(process.argv[2] ?? path.join(tmpdir(), "wg-catalogu
 mkdirSync(shotsAt, { recursive: true });
 
 const files = Object.fromEntries(
-	Object.entries(catalogueWidgetFiles()).map(([name, text]) => [`.widgetarium/widgets/@catalogue/${name}`, text]),
+	Object.entries(systemWidgetFiles()).map(([name, text]) => [`.widgetarium/widgets/${name}`, text]),
 );
 const bundle = await bundleOf("tools/catalogue-board-page.tsx");
 

@@ -25,6 +25,7 @@ import type { PanZoom } from "./design-pan-zoom.js";
 import { PicturesProgress } from "./design-pictures-progress.js";
 import { AgentLookChip } from "./design-agent-look.js";
 import { TopBar } from "./design-top-bar.js";
+import { WindowCorner } from "./window-corner.js";
 import type { CanvasTab } from "./design-top-bar.js";
 
 export interface DesignCanvasProps {
@@ -126,6 +127,8 @@ function topBarOf(
 		onReturn,
 		isLayersOpen,
 		onLayers,
+		registry,
+		host,
 	}: DesignCanvasProps,
 	page: string,
 ): ReactElement {
@@ -160,6 +163,10 @@ function topBarOf(
 		onReturn,
 		status,
 		layers,
+		corners: {
+			start: h(WindowCorner, { key: "start", side: "left", app, registry, host }),
+			end: h(WindowCorner, { key: "end", side: "right", app, registry, host }),
+		},
 	});
 }
 

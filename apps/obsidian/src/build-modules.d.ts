@@ -12,7 +12,7 @@ declare module "widgetarium:widget-types" {
 	export default function unpack(): Promise<Readonly<Record<string, string>>>;
 }
 
-declare module "widgetarium:catalogue-widgets" {
+declare module "widgetarium:system-widgets" {
 	const files: Readonly<Record<string, string>>;
 	export default files;
 }

@@ -5,6 +5,7 @@ import type { WidgetRegistry } from "@widgetarium/core/registry.js";
 import type { StartupCache } from "@widgetarium/core/startup-snapshot.js";
 import { setTracing, tracing, measure, spentSoFar, forgetSpent, traceSub } from "@widgetarium/core/trace.js";
 import type { Board } from "@widgetarium/core/model.js";
+import type { AppsPort } from "@widgetarium/core/engine/apps-port.js";
 import type { createWantedWidgets } from "@widgetarium/core/engine/widgets-wanted.js";
 import { isObject } from "@widgetarium/core/engine/is-object.js";
 import { AI_VIEW_TYPE, AssistantView } from "./ai/view.js";
@@ -52,6 +53,7 @@ export default class WidgetariumPlugin extends Plugin {
 	declare installer: Installer;
 	declare wanted: WantedWidgets;
 	declare cataloguePort: PluginCataloguePort;
+	declare appsPort: AppsPort;
 	declare started: Promise<void>;
 	assistant: Assistant | null = null;
 	available: Drawn<AvailableOffer>[] | null = null;

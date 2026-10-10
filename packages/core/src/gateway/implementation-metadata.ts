@@ -14,6 +14,7 @@ export const RESOURCES = [
 	"Web",
 	"Git",
 	"Catalogue",
+	"Apps",
 	"Console",
 ] as const;
 

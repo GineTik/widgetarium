@@ -535,6 +535,18 @@ or into a note by `ICarrier`: every board registers a drop receiver
 the line. A widget placed before it is installed stands at once and draws the install ring, read from
 the one owner of install progress, `INSTALL_JOBS`.
 
+**An app window has no Obsidian header, and its two corners are widgets.** A note that is a page of an
+app (`appScreenOfNote`) loses `.view-header` and wears two corner boards (`app-windows.ts`), and the
+canvas top bar wears the same two (`window-corner.ts`): left the system's safe area and
+`@chrome/control-menu`, right `@chrome/ai-button` and the other safe area, each a `@chrome/corner`
+board built by `corner-board.ts`. Their logic is the `@chrome` pack over the host's `AppsPort`
+(`packages/core/src/engine/apps-port.ts`); the apps are the folders under `.widgetarium/apps`. A board
+draws nothing under 120px, so a corner box is sized to what it holds and its board overflows it.
+**`@catalogue` and `@chrome` ship inside the plugin** (`tools/system-widget-files.mts`), read-only,
+so a Tailwind sheet among them cannot be built in the vault: `npm run system-sheets` compiles each one
+at plugin build time and the bundle carries the compiled `build/widget.css`. `npm run test:window-corner`
+measures the corners in real Chrome.
+
 **A tile is carried to a path, and the drop says what it means.** A carry measures every box and leaf
 on the board, takes the deepest one under the pointer, and reads the pointer against it: along the
 parent's own direction the tile becomes a **sibling** at that index, and across the grain it **wraps**

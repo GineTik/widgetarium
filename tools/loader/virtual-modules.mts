@@ -1,13 +1,13 @@
 import { widgetsCliBundleSync } from "../../apps/obsidian/build.mts";
 import { widgetTypeFiles } from "../widget-types.mts";
-import { catalogueWidgetFiles } from "../catalogue-widget-files.mts";
+import { systemWidgetFiles } from "../system-widget-files.mts";
 import { packedModuleSource } from "../packed-module.mts";
 
 const VIRTUAL_MODULES: ReadonlyMap<string, () => string> = new Map([
 	["widgetarium:surface", () => "export const REACT_SURFACE_SOURCE = null;\n"],
 	["widgetarium:widgets-cli", () => packedModuleSource(widgetsCliBundleSync())],
 	["widgetarium:widget-types", () => packedModuleSource(widgetTypeFiles())],
-	["widgetarium:catalogue-widgets", () => exportedDefault(catalogueWidgetFiles())],
+	["widgetarium:system-widgets", () => exportedDefault(systemWidgetFiles())],
 	["widgetarium:build-stamp", () => 'export const BUILD_STAMP = "under-test";\n'],
 ]);
 

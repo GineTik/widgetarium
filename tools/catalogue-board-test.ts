@@ -1,6 +1,6 @@
 import { JSDOM } from "jsdom";
 import { createFileTree, createProbeHost, createRowSlot } from "./vault-fixture.ts";
-import { catalogueWidgetFiles } from "./catalogue-widget-files.mts";
+import { systemWidgetFiles } from "./system-widget-files.mts";
 import type { MergedEntry } from "../packages/core/src/catalogue-entries.ts";
 import type { CataloguePort } from "../packages/core/src/engine/catalogue-port.ts";
 import { INSTALL_JOBS } from "../packages/core/src/engine/install-jobs.ts";
@@ -62,7 +62,7 @@ const settled = async (): Promise<void> => {
 };
 
 const laid = Object.fromEntries(
-	Object.entries(catalogueWidgetFiles()).map(([name, text]) => [`.widgetarium/widgets/@catalogue/${name}`, text]),
+	Object.entries(systemWidgetFiles()).map(([name, text]) => [`.widgetarium/widgets/${name}`, text]),
 );
 const registry = new WidgetRegistry({ vault: { adapter: createFileTree(laid) } });
 await registry.load();

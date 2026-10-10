@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import esbuild, { type BuildOptions, type Loader, type OutputFile, type Plugin } from "esbuild";
 import { widgetTypeFiles } from "../../tools/widget-types.mts";
 import { packedModuleSource } from "../../tools/packed-module.mts";
-import { catalogueWidgetFiles, catalogueWidgetPaths } from "../../tools/catalogue-widget-files.mts";
+import { systemWidgetFiles, systemWidgetPaths } from "../../tools/system-widget-files.mts";
 
 export interface SurfaceAsk {
 	readonly minify?: boolean;
@@ -19,7 +19,7 @@ export const TEXT_LOADERS: Readonly<Record<string, Loader>> = { ".md": "text", "
 const WIDGETS_CLI_SPECIFIER = "widgetarium:widgets-cli";
 const WIDGETS_CLI_SOURCE = "apps/obsidian/src/ai/widgets-cli.ts";
 const WIDGET_TYPES_SPECIFIER = "widgetarium:widget-types";
-const CATALOGUE_WIDGETS_SPECIFIER = "widgetarium:catalogue-widgets";
+const SYSTEM_WIDGETS_SPECIFIER = "widgetarium:system-widgets";
 const BUILD_STAMP_SPECIFIER = "widgetarium:build-stamp";
 
 const SUPPLIED_BY_ELECTRON_AT_RUNTIME = [
@@ -71,7 +71,7 @@ export function bundleOptions({
 			surfaceSource(minify),
 			widgetsCliSource(),
 			widgetTypesSource(),
-			catalogueWidgetsSource(),
+			systemWidgetsSource(),
 			buildStampSource(),
 		],
 		entryPoints: ["apps/obsidian/src/main.ts"],
@@ -154,18 +154,18 @@ function widgetTypesSource(): Plugin {
 	};
 }
 
-function catalogueWidgetsSource(): Plugin {
+function systemWidgetsSource(): Plugin {
 	return {
-		name: "widgetarium-catalogue-widgets",
+		name: "widgetarium-system-widgets",
 		setup(build) {
-			build.onResolve({ filter: new RegExp(`^${CATALOGUE_WIDGETS_SPECIFIER}$`) }, (found) => ({
+			build.onResolve({ filter: new RegExp(`^${SYSTEM_WIDGETS_SPECIFIER}$`) }, (found) => ({
 				path: found.path,
-				namespace: "wg-catalogue-widgets",
+				namespace: "wg-system-widgets",
 			}));
-			build.onLoad({ filter: /.*/, namespace: "wg-catalogue-widgets" }, () => ({
-				contents: `export default ${JSON.stringify(catalogueWidgetFiles())};`,
+			build.onLoad({ filter: /.*/, namespace: "wg-system-widgets" }, () => ({
+				contents: `export default ${JSON.stringify(systemWidgetFiles())};`,
 				loader: "js",
-				watchFiles: catalogueWidgetPaths(),
+				watchFiles: systemWidgetPaths(),
 			}));
 		},
 	};

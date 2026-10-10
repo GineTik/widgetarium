@@ -19,6 +19,12 @@ export interface TopBarProps {
 	readonly onReturn: () => void;
 	readonly status?: ReactNode;
 	readonly layers?: ReactNode;
+	readonly corners?: WindowCorners;
+}
+
+export interface WindowCorners {
+	readonly start: ReactNode;
+	readonly end: ReactNode;
 }
 
 const PAGES_TAB = "\u0000pages";
@@ -37,6 +43,7 @@ export function TopBar({
 	onReturn,
 	status,
 	layers,
+	corners,
 }: TopBarProps): ReactElement {
 	const [isPicking, setIsPicking] = useState(false);
 	const isOnPage = pages.some((one) => one.value === page);
@@ -72,12 +79,15 @@ export function TopBar({
 		),
 	};
 	return h("div", { className: "wg-design-topbar" }, [
-		h("div", { key: "head", className: "wg-design-head" }, [
-			layers ?? null,
-			h("b", { key: "app" }, app),
-			h("span", { key: "count" }, said),
-			canvasTools,
-			status ?? null,
+		h("div", { key: "start", className: "wg-design-top-start" }, [
+			corners?.start ?? null,
+			h("div", { key: "head", className: "wg-design-head" }, [
+				layers ?? null,
+				h("b", { key: "app" }, app),
+				h("span", { key: "count" }, said),
+				canvasTools,
+				status ?? null,
+			]),
 		]),
 		h("div", { key: "end", className: "wg-design-top-end" }, [
 			h(Segmented<string>, {
@@ -89,6 +99,7 @@ export function TopBar({
 				className: "wg-design-page-switch",
 			}),
 			h(Button, { key: "return", size: "s", variant: "tinted", onClick: onReturn }, RETURN),
+			corners?.end ?? null,
 		]),
 	]);
 }

@@ -15,7 +15,7 @@ Object.assign(globalThis, {
 
 const { WidgetRegistry } = await import("../packages/core/src/registry.js");
 const { StartupCache } = await import("../packages/core/src/startup-snapshot.js");
-const { removeLaidCatalogue, withSystemWidgets } = await import("../apps/obsidian/src/catalogue-widgets.js");
+const { removeLaidCatalogue, withSystemWidgets } = await import("../apps/obsidian/src/system-widgets.js");
 const { boardWidgets, isSystemDefinition } = await import("../packages/core/src/registry.js");
 const { SYSTEM_WIDGETS_DIR } = await import("../packages/core/src/paths.js");
 
